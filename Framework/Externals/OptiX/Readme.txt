@@ -1,0 +1,1 @@
+Custom public development build of goldenrod from 12/4/15. Added support for OpenGL sRGB texture formats.
