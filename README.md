@@ -15,8 +15,14 @@ Prerequisites
 	* `GL_NV_uniform_buffer_unified_memory`
 	* `GL_EXT_texture_filter_anisotropic`
 	* `GL_NV_shader_buffer_load`
-	If you are using an NVIDIA GPU, Kepler or newer is required.
-	
+
+If you are using an NVIDIA GPU, GeForce 900 series or newer is required.
+
+Optional Modules
+----------------
+To create CUDA and OptiX applications you will need to install the CUDA Toolkit 7.5
+
+
 *Sample* Class
 -------------------
 This is the bootstrapper class of the application. Your class should inherit from it and override its protected methods which serve as the callback functions.
