@@ -1,0 +1,66 @@
+{
+    "version": 0,
+    "materials": [
+        {
+            "name": "BLA",
+            "id": 1,
+            "alpha": {
+                "color": [
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0
+                ]
+            },
+            "normal": {
+                "color": [
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "texture": "torus\\normal2.png"
+            },
+            "height": {
+                "color": [
+                    0.0,
+                    1.0,
+                    1.0,
+                    1.0
+                ]
+            },
+            "layers": [
+                {
+                    "type": "lambert",
+                    "ndf": "ggx",
+                    "blend": "add",
+                    "albedo": {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "texture": "torus\\diffuse.jpg"
+                    },
+                    "roughness": {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0,
+                            1.0
+                        ]
+                    },
+                    "extra_param": {
+                        "color": [
+                            1.0,
+                            1.0,
+                            1.0,
+                            1.0
+                        ]
+                    }
+                }
+            ]
+        }
+    ]
+}
