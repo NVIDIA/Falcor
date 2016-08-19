@@ -43,7 +43,7 @@ void PostProcess::onLoad()
 
     // Setup controller
     mCameraController.attachCamera(mpCamera);
-    mCameraController.setModelParams(mpSphere->getCenter(), mpSphere->getRadius(), 4.0f);
+    mCameraController.setModelParams(mpTeapot->getCenter(), mpTeapot->getRadius(), 10.0f);
 
     mSkybox.pProgram = Program::createFromFile("postprocess.vs", "postprocess.fs", "_TEXTURE_ONLY");
     mpPerFrameCB = UniformBuffer::create(mSkybox.pProgram->getActiveProgramVersion().get(), "PerFrameCB");

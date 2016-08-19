@@ -74,7 +74,7 @@ void ShaderBuffersSample::onLoad()
 
     // Initialize the camera controller
     mCameraController.attachCamera(mpCamera);
-    mCameraController.setModelParams(center, radius, radius * 3);
+    mCameraController.setModelParams(center, radius, radius * 10);
 
     // create the uniform buffers
     auto pActiveVersion = mpProgram->getActiveProgramVersion().get();

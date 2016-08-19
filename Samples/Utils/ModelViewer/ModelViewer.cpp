@@ -362,14 +362,14 @@ void ModelViewer::resetCamera()
         float Radius = mpModel->getRadius();
         const glm::vec3& ModelCenter = mpModel->getCenter();
         glm::vec3 CamPos = ModelCenter;
-        CamPos.z += Radius * 2;
+        CamPos.z += Radius * 5;
 
         mpCamera->setPosition(CamPos);
         mpCamera->setTarget(ModelCenter);
         mpCamera->setUpVector(glm::vec3(0, 1, 0));
 
         // Update the controllers
-        mModelViewCameraController.setModelParams(ModelCenter, Radius, 2);
+        mModelViewCameraController.setModelParams(ModelCenter, Radius, 5);
         mFirstPersonCameraController.setCameraSpeed(Radius*0.25f);
         m6DoFCameraController.setCameraSpeed(Radius*0.25f);
 
