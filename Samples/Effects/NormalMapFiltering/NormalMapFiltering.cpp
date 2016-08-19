@@ -55,7 +55,7 @@ std::string getProgramDefines(bool leanMap, const Scene* pScene, uint32_t leanMa
 
 void NormalMapFiltering::onLoad()
 {
-    Scene::SharedPtr pScene = Scene::loadFromFile("falcor-scenes\\ogre.fscene", Model::GenerateTangentSpace);
+    Scene::SharedPtr pScene = Scene::loadFromFile("scenes\\ogre.fscene", Model::GenerateTangentSpace);
     if(pScene == nullptr)
     {
         exit(1);
@@ -76,7 +76,7 @@ void NormalMapFiltering::onLoad()
     mpLeanMap->setIntoUniformBuffer(mpLeanMapBuffer.get(), 0, mpLinearSampler.get());
     mpLeanMapBuffer->uploadToGPU();
     mCameraController.attachCamera(pScene->getCamera(0));
-    mCameraController.setModelParams(pScene->getModel(0)->getCenter(), pScene->getModel(0)->getRadius(), 2);
+    mCameraController.setModelParams(pScene->getModel(0)->getCenter(), pScene->getModel(0)->getRadius(), 4);
     
     initUI();
 }

@@ -139,7 +139,6 @@ namespace Falcor
         return true;
     }
 
-
     std::vector<std::string> gDataDirectories = 
     {
         // Ordering matters here, we want that while developing, resources will be loaded from the development media directory
@@ -147,9 +146,9 @@ namespace Falcor
         std::string(getWorkingDirectory() + "\\data"),
         std::string(getExecutableDirectory()),
         std::string(getExecutableDirectory() + "\\data"),
-        // media directory in P4
-        std::string(getExecutableDirectory() + "\\..\\..\\..\\..\\..\\..\\media"),
-        std::string(getWorkingDirectory() + "\\..\\..\\..\\..\\..\\media"),
+
+        // The local solution media folder
+        std::string(getExecutableDirectory() + "\\..\\..\\..\\Media"),
     };
 
     const std::vector<std::string>& getDataDirectoriesList()

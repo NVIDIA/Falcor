@@ -10,17 +10,14 @@ Its features include:
 Prerequisites
 ------------------------
 * Visual Studio 2013.
-* GPU with OpenGL 4.4 support and the following extensions:
-	* `GL_ARB_Bindless_texture`
-	* `GL_NV_uniform_buffer_unified_memory`
-	* `GL_EXT_texture_filter_anisotropic`
-	* `GL_NV_shader_buffer_load`
+* NVIDIA® Geforce™ 900 series or better GPU.
+The project uses extentions which are supported only by NVIDIA GPUs.
 
-If you are using an NVIDIA GPU, GeForce 900 series or newer is required.
 
 Optional Modules
 ----------------
-To create CUDA and OptiX applications you will need to install the CUDA Toolkit 7.5
+To create CUDA applications you will need to install the CUDA Toolkit 7.5.
+To create OptiX applications you will need to install the CUDA Toolkit 7.5 and NVIDIA® OptiX™ Ray Tracing Engine.
 
 
 *Sample* Class
