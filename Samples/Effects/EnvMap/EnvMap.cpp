@@ -43,6 +43,8 @@ void EnvMap::onLoad()
     samplerDesc.setFilterMode(Sampler::Filter::Linear, Sampler::Filter::Linear, Sampler::Filter::Linear);
     mpTriLinearSampler = Sampler::create(samplerDesc);
     initUI();
+
+    mpSkybox = SkyBox::createFromTexCube("Cubemaps\\Sorsele3\\Sorsele3.dds", true, mpTriLinearSampler);
 }
 
 void EnvMap::loadTexture()
