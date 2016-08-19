@@ -1,0 +1,13 @@
+
+newmtl ogre
+	Ns 100
+	d 1
+	Tr 1
+	Tf 1 1 1
+	illum 2
+	Ka 0.0000 0.0000 0.0000
+	Kd 0.7 0.7 0.7
+	Ks 1.0 1.0 1.0
+	map_Kd diffuse.png
+	map_Ka diffuse.png
+	map_bump normalmap.png
