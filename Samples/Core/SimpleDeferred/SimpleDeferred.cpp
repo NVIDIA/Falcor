@@ -206,7 +206,7 @@ void SimpleDeferred::onLoad()
     mpLightingFrameCB = UniformBuffer::create(mpLightingPass->getProgram()->getActiveProgramVersion().get(), "PerImageCB");
 
     // Load default model
-    loadModelFromFile("Fairy/Fairy.bin");
+    loadModelFromFile("Ogre/bs_rest.obj");
 
     initUI();
 }
@@ -372,14 +372,14 @@ void SimpleDeferred::resetCamera()
         float radius = mpModel->getRadius();
         const glm::vec3& modelCenter = mpModel->getCenter();
         glm::vec3 camPos = modelCenter;
-        camPos.z += radius * 2;
+        camPos.z += radius * 4;
 
         mpCamera->setPosition(camPos);
         mpCamera->setTarget(modelCenter);
         mpCamera->setUpVector(glm::vec3(0, 1, 0));
 
         // Update the controllers
-        mModelViewCameraController.setModelParams(modelCenter, radius, 2);
+        mModelViewCameraController.setModelParams(modelCenter, radius, 4);
         mFirstPersonCameraController.setCameraSpeed(radius*0.25f);
         mNearZ = std::max(0.1f, mpModel->getRadius() / 750.0f);
         mFarZ = radius * 10;

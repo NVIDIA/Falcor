@@ -52,7 +52,7 @@ void SimpleCuda::onLoad()
 
     initUI();
 
-	loadModelFromFile("Fairy/Fairy.bin");
+	loadModelFromFile("ogre/bs_smile.obj");
 
 	mpProgram = Program::createFromFile("SimpleCuda.vs", "SimpleCuda.fs");
 
@@ -329,7 +329,7 @@ void SimpleCuda::resetCamera()
         mpCamera->setUpVector(glm::vec3(0, 1, 0));
 
 		// Update the controllers
-		mModelViewCameraController.setModelParams(modelCenter, radius, 2);
+		mModelViewCameraController.setModelParams(modelCenter, radius, 10);
 		/*m_pFirstPersonCameraController->SetCameraSpeed(Radius*0.25f);
 		m_p6DoFCameraController->SetCameraSpeed(Radius*0.25f);
 		*/

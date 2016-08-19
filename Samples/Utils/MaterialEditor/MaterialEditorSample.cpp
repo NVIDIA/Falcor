@@ -129,17 +129,17 @@ void MaterialEditorSample::resetCamera()
         float radius = mpModel->getRadius();
         const glm::vec3& modelCenter = mpModel->getCenter();
         glm::vec3 camPos = modelCenter;
-        camPos.z += radius * 2;
+        camPos.z += radius * 7;
 
         mpCamera->setPosition(camPos);
         mpCamera->setTarget(modelCenter);
         mpCamera->setUpVector(glm::vec3(0, 1, 0));
 
         // Update the controllers
-        mCamControl.setModelParams(modelCenter, radius, 4.5f);
+        mCamControl.setModelParams(modelCenter, radius, 7);
 
         mNearZ = std::max(0.1f, mpModel->getRadius() / 750.0f);
-        mFarZ = radius * 10;
+        mFarZ = radius * 20;
     }
 }
 
