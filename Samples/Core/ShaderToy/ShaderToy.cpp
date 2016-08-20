@@ -137,6 +137,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
     SampleConfig config;
     config.windowDesc.swapChainDesc.width = 1280;
     config.windowDesc.swapChainDesc.height = 720;
+    config.windowDesc.swapChainDesc.isSrgb = false;
     config.enableVsync = true;
     config.windowDesc.resizableWindow = true;
     config.windowDesc.title = "Falcor Shader Toy";
