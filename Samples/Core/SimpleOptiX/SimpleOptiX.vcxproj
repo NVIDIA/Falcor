@@ -26,7 +26,10 @@
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="Data\camera.cu" />
-    <CudaCompile Include="Data\simple_shader.cu" />
+    <CudaCompile Include="Data\simple_shader.cu">
+      <CompileOut Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(OutDir)\Data\%(Filename).ptx</CompileOut>
+      <CompileOut Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(OutDir)\Data\%(Filename).ptx</CompileOut>
+    </CudaCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="Data\Raster.fs" />
@@ -117,7 +120,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <AdditionalDependencies>optix.1.lib;optixu.1.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(FALCOR_PROJECT_DIR)\..\..\Internals\OptiX\lib64;$(FALCOR_PROJECT_DIR)\Externals\OptiX\lib64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <CudaCompile>
       <NvccCompilation>ptx</NvccCompilation>

@@ -23,7 +23,11 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <CudaCompile Include="Raytracing\Data\mesh.cu" />
+    <CudaCompile Include="Raytracing\Data\mesh.cu">
+      <CodeGeneration Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">compute_50,sm_50</CodeGeneration>
+      <CompileOut Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(OutDir)\Data\%(Filename).ptx</CompileOut>
+      <CompileOut Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(OutDir)\Data\%(Filename).ptx</CompileOut>
+    </CudaCompile>
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{31CD50F5-2F45-47B5-B6A1-E067CFBB5C37}</ProjectGuid>
@@ -102,7 +106,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(FALCOR_PROJECT_DIR)\..\..\Internals\OptiX\include;$(FALCOR_PROJECT_DIR)\Externals\OptiX\include;$(CUDA_PATH_V7_5)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(FALCOR_PROJECT_DIR)\Externals\OptiX\include;$(CUDA_PATH_V7_5)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
