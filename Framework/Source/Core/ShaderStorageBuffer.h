@@ -101,8 +101,14 @@ namespace Falcor
             \param[in] offset Offset into the buffer to read from
             \param[in] size   Number of bytes to read. If this value is -1, will update the [Offset, EndOfBuffer] range.
         */
-        void readFromGPU(size_t offset = 0, size_t size = -1);
+        void readFromGPU(size_t offset = 0, size_t size = -1) const;
+
+        /** Set the GPUCopyDirty flag
+        */
+        void setGpuCopyDirty() const { mGpuCopyDirty = true; }
+
     private:
         ShaderStorageBuffer(const std::string& bufferName);
+        mutable bool mGpuCopyDirty = false;
     };
 }

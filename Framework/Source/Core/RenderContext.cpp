@@ -291,6 +291,7 @@ namespace Falcor
             if(pSSBO)
             {
                 pSSBO->uploadToGPU();
+                pSSBO->setGpuCopyDirty();
             }
         }
         prepareForDrawApi();

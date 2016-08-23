@@ -53,7 +53,7 @@ namespace Falcor
 
     }
 
-    void ShaderStorageBuffer::readFromGPU(size_t offset, size_t size)
+    void ShaderStorageBuffer::readFromGPU(size_t offset, size_t size) const
     {
         if(size == -1)
         {
@@ -64,7 +64,11 @@ namespace Falcor
             Logger::log(Logger::Level::Warning, "ShaderStorageBuffer::readFromGPU() - trying to read more data than what the buffer contains. Call is ignored.");
             return;
         }
-        mpBuffer->readData(mData.data(), offset, size);
+        if(mGpuCopyDirty)
+        {
+            mGpuCopyDirty = false;
+            mpBuffer->readData((void*)mData.data(), offset, size);
+        }
     }
 
     ShaderStorageBuffer::~ShaderStorageBuffer() = default;
@@ -76,6 +80,7 @@ namespace Falcor
             Logger::log(Logger::Level::Warning, "ShaderStorageBuffer::readBlob() - trying to read more data than what the buffer contains. Call is ignored.");
             return;
         }
+        readFromGPU();
         memcpy(pDest, mData.data() + offset, size);
     }
 
@@ -84,6 +89,7 @@ namespace Falcor
     {                                                           \
         if(checkVariableByOffset(VariableDesc::Type::_var_type, offset, 1, mVariables, mName)) \
         {                                                       \
+            readFromGPU();                                      \
             const uint8_t* pVar = mData.data() + offset;        \
             value = *(const _c_type*)pVar;                      \
         }                                                       \
@@ -176,6 +182,7 @@ namespace Falcor
     {                                                               \
         if(checkVariableByOffset(VariableDesc::Type::_var_type, offset, count, mVariables, mName))          \
         {                                                           \
+            readFromGPU();                                          \
             const uint8_t* pVar = mData.data() + offset;            \
             const _c_type* pMat = (_c_type*)pVar;                   \
             for(size_t i = 0; i < count; i++)                       \
