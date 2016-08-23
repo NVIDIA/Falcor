@@ -689,7 +689,7 @@ void RTContext::setLights(const std::initializer_list<Light*>& list)
     LightData* lights = (LightData*)mLights->map();
     for(auto elem : list)
     {
-        *lights = elem->getData();
+        memcpy(lights, &elem->getData(), sizeof(LightData));
         lights++;
     }
     mLights->unmap();
