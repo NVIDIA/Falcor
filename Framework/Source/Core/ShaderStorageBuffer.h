@@ -40,7 +40,15 @@ namespace Falcor
     class ShaderStorageBuffer : public UniformBuffer, std::enable_shared_from_this<ShaderStorageBuffer>
     {
     public:
-        using SharedPtr = std::shared_ptr<ShaderStorageBuffer>;
+        class SsboVar : public UboVar<ShaderStorageBuffer>
+        {
+        public:
+            SsboVar(ShaderStorageBuffer* pBuf, size_t offset) : UboVar(pBuf, offset) {}
+            using UboVar::operator=;
+            template <typename T> operator T() { T val; mpBuf->getVariable(mOffset, val) ; return val; }
+        };
+
+        using SharedPtr = UniformBuffer::SharedPtrT<SsboVar>;
         using SharedConstPtr = std::shared_ptr<const ShaderStorageBuffer>;
 
         /** create a new uniform buffer.\n

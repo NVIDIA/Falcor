@@ -130,10 +130,9 @@ void ShaderBuffersSample::onFrameRender()
     if(mCountPixelShaderInvocations)
     {
 #ifndef FALCOR_DX11
-        uint32_t FsInvocations;
-        mpPixelCountBuffer->getVariable("count", FsInvocations);
+        uint32_t FsInvocations = mpPixelCountBuffer["count"];
         Txt += "FS was invoked " + std::to_string(FsInvocations) + " times.";
-        mpPixelCountBuffer->setVariable("count", 0U);
+        mpPixelCountBuffer["count"] = 0U;
 #endif
     }
     renderText(Txt, glm::vec2(10, 10));

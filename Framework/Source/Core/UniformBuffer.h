@@ -44,28 +44,32 @@ namespace Falcor
     class UniformBuffer : public std::enable_shared_from_this<UniformBuffer>
     {
     public:
-        class SharedPtr : public std::shared_ptr<UniformBuffer>
+        template<typename T>
+        class UboVar
         {
         public:
-            SharedPtr() = default;
-            SharedPtr(UniformBuffer* pUbo) : std::shared_ptr<UniformBuffer>(pUbo) {}
+            using BufType = T;
+            UboVar(BufType* pBuf, size_t offset) : mpBuf(pBuf), mOffset(offset) {}
+            template<typename T> void operator=(const T& val) { mpBuf->setVariable(mOffset, val); }
 
-            class UboVar
-            {
-            public:
-                UboVar(UniformBuffer* pUbo, size_t offset) : mpUbo(pUbo), mOffset(offset) {}
-                template<typename T> void operator=(const T& val) { mpUbo->setVariable(mOffset, val); }
-
-                size_t getOffset() const { return mOffset; }
-            private:
-                UniformBuffer* mpUbo;
-                size_t mOffset;
-            };
-
-            UboVar operator[](size_t offset) { return UboVar(get(), offset); }
-            UboVar operator[](const std::string& var) {return UboVar(get(), get()->getVariableOffset(var)); }
+            size_t getOffset() const { return mOffset; }
+        protected:
+            BufType* mpBuf;
+            size_t mOffset;
         };
 
+        template<typename UboVarType>
+        class SharedPtrT : public std::shared_ptr<typename UboVarType::BufType>
+        {
+        public:
+            SharedPtrT() = default;
+            SharedPtrT(typename UboVarType::BufType* pBuf) : std::shared_ptr<typename UboVarType::BufType>(pBuf) {}
+
+            UboVarType operator[](size_t offset) { return UboVarType(get(), offset); }
+            UboVarType operator[](const std::string& var) { return UboVarType(get(), get()->getVariableOffset(var)); }
+        };
+
+        using SharedPtr = SharedPtrT<UboVar<UniformBuffer>>;
         using SharedConstPtr = std::shared_ptr<const UniformBuffer>;
 
         /** create a new uniform buffer.\n
