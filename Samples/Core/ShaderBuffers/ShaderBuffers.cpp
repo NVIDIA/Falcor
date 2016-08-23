@@ -105,12 +105,12 @@ void ShaderBuffersSample::onFrameRender()
     mCameraController.update();
 
     // Update uniform-buffers data
-    mpPerFrameCB->setVariable("m.worldMat", glm::mat4());
-    mpPerFrameCB->setVariable("m.wvpMat", mpCamera->getProjMatrix() * mpCamera->getViewMatrix());
-    mpPerFrameCB->setVariable("surfaceColor", mSurfaceColor);
+    mpPerFrameCB["m.worldMat"] = glm::mat4();
+    mpPerFrameCB["m.wvpMat"] = mpCamera->getProjMatrix() * mpCamera->getViewMatrix();
+    mpPerFrameCB["surfaceColor"] = mSurfaceColor;
 
-    mpLightCB->setVariable("worldDir", mLightData.worldDir);
-    mpLightCB->setVariable("intensity", mLightData.intensity);
+    mpLightCB["worldDir"] = mLightData.worldDir;
+    mpLightCB["intensity"] = mLightData.intensity;
     
     // Set uniform buffers
     mpRenderContext->setProgram(mpProgram->getActiveProgramVersion());

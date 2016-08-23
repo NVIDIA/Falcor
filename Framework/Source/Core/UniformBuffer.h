@@ -44,7 +44,27 @@ namespace Falcor
     class UniformBuffer : public std::enable_shared_from_this<UniformBuffer>
     {
     public:
-        using SharedPtr = std::shared_ptr<UniformBuffer>;
+        class SharedPtr : public std::shared_ptr<UniformBuffer>
+        {
+        public:
+            SharedPtr() = default;
+            SharedPtr(UniformBuffer* pUbo) : std::shared_ptr<UniformBuffer>(pUbo) {}
+
+            class UboVar
+            {
+            public:
+                UboVar(UniformBuffer* pUbo, size_t offset) : mpUbo(pUbo), mOffset(offset) {}
+                template<typename T> void operator=(const T& val) { mpUbo->setVariable(mOffset, val); }
+
+            private:
+                UniformBuffer* mpUbo;
+                size_t mOffset;
+            };
+
+            UboVar operator[](size_t offset) { return UboVar(get(), offset); }
+            UboVar operator[](const std::string& var) {return UboVar(get(), get()->getVariableOffset(var)); }
+        };
+
         using SharedConstPtr = std::shared_ptr<const UniformBuffer>;
 
         /** create a new uniform buffer.\n
