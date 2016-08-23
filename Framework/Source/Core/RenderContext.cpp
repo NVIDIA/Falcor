@@ -285,6 +285,14 @@ namespace Falcor
                 pUBO->uploadToGPU();
             }
         }
+
+        for(auto& pSSBO : mState.pShaderStorageBuffers)
+        {
+            if(pSSBO)
+            {
+                pSSBO->uploadToGPU();
+            }
+        }
         prepareForDrawApi();
     }
 }

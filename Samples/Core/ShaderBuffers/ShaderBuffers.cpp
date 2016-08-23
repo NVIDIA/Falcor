@@ -135,7 +135,6 @@ void ShaderBuffersSample::onFrameRender()
         mpPixelCountBuffer->getVariable("count", FsInvocations);
         Txt += "FS was invoked " + std::to_string(FsInvocations) + " times.";
         mpPixelCountBuffer->setVariable("count", 0U);
-        mpPixelCountBuffer->uploadToGPU();
 #endif
     }
     renderText(Txt, glm::vec2(10, 10));
