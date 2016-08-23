@@ -17,7 +17,6 @@ The project uses extentions which are supported only by NVIDIA GPUs.
 Optional Modules
 ----------------
 To create CUDA applications you will need to install the CUDA Toolkit 7.5.
-To create OptiX applications you will need to install the CUDA Toolkit 7.5 and NVIDIA® OptiX™ Ray Tracing Engine.
 
 
 *Sample* Class
