@@ -216,7 +216,7 @@ namespace Falcor
         }
     }
 
-    void RenderContext::prepareForDraw() const
+    void RenderContext::prepareForDrawApi() const
     {
         // Set the input layout
         const Shader* pShader = mState.pProgram ? mState.pProgram->getShader(ShaderType::Vertex) : nullptr;

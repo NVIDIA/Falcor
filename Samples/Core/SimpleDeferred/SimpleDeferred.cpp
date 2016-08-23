@@ -251,7 +251,6 @@ void SimpleDeferred::onFrameRender()
 
         // Render model
         mpModel->bindSamplerToMaterials(mpLinearSampler);
-        mpDeferredPerFrameCB->uploadToGPU();
         mpRenderContext->setUniformBuffer(0, mpDeferredPerFrameCB);
         ModelRenderer::render(mpRenderContext.get(), mpDeferredPassProgram.get(), mpModel, mpCamera.get());
     }
@@ -280,7 +279,6 @@ void SimpleDeferred::onFrameRender()
         mpLightingFrameCB->setVariable("gDebugMode", (uint32_t)mDebugMode);
 
         // Kick it off
-        mpLightingFrameCB->uploadToGPU();
         mpRenderContext->setUniformBuffer(0, mpLightingFrameCB);
         mpLightingPass->execute(mpRenderContext.get());
     }

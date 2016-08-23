@@ -304,7 +304,6 @@ void ModelViewer::onFrameRender()
         }
 
         mpPerFrameCB->setVariable("gAmbient", mAmbientIntensity);
-        mpPerFrameCB->uploadToGPU();
         mpRenderContext->setUniformBuffer(0, mpPerFrameCB);
         ModelRenderer::render(mpRenderContext.get(), mpProgram.get(), mpModel, mpCamera.get());
     }

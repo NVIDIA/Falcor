@@ -208,7 +208,6 @@ void SimpleOptix::onFrameRender()
         mpRenderContext->setDepthStencilState(mpDepthTestDS, 0);
         mpDirLight->setIntoUniformBuffer(mpPerFrameCB.get(), "gDirLight");
         mpPointLight->setIntoUniformBuffer(mpPerFrameCB.get(), "gPointLight");
-        mpPerFrameCB->uploadToGPU();
         mpRenderContext->setUniformBuffer(0, mpPerFrameCB);
 
         mpRenderer->renderScene(mpRenderContext.get(), mpRasterShader.get());

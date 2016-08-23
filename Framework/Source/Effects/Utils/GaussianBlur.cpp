@@ -104,14 +104,12 @@ namespace Falcor
 
         // Horizontal pass
         mpUbo->setTexture(0, pSrc, mpSampler.get(), false);
-        mpUbo->uploadToGPU();
         pRenderContext->pushFbo(mpTmpFbo);
         pRenderContext->setUniformBuffer(0, mpUbo);
         mpHorizontalBlur->execute(pRenderContext);
 
         // Vertical pass
         mpUbo->setTexture(0, mpTmpFbo->getColorTexture(0).get(), mpSampler.get(), false);
-        mpUbo->uploadToGPU();
         pRenderContext->setFbo(pDst);
         mpVerticalBlur->execute(pRenderContext);
 

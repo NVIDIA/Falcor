@@ -112,7 +112,6 @@ namespace Falcor
         mpUbo->setTexture(mTexOffset, mpTexture.get(), mpSampler.get());
         mpUbo->setVariable(mScaleOffset, mScale);
 
-        mpUbo->uploadToGPU();
         pRenderCtx->setUniformBuffer(0, mpUbo);
 
         // Store the state

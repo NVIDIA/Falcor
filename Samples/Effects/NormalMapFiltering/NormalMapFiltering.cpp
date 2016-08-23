@@ -74,7 +74,6 @@ void NormalMapFiltering::onLoad()
     mpLightBuffer = UniformBuffer::create(mpProgram->getActiveProgramVersion().get(), "PerFrameCB");
     mpLeanMapBuffer = UniformBuffer::create(mpProgram->getActiveProgramVersion().get(), "LeanMapsCB");
     mpLeanMap->setIntoUniformBuffer(mpLeanMapBuffer.get(), 0, mpLinearSampler.get());
-    mpLeanMapBuffer->uploadToGPU();
     mCameraController.attachCamera(pScene->getCamera(0));
     mCameraController.setModelParams(pScene->getModel(0)->getCenter(), pScene->getModel(0)->getRadius(), 4);
     
@@ -91,7 +90,6 @@ void NormalMapFiltering::onFrameRender()
     mpRenderContext->setBlendState(nullptr);
     mpRenderContext->setDepthStencilState(nullptr, 0);
     setSceneLightsIntoUniformBuffer(mpRenderer->getScene(), mpLightBuffer.get());
-    mpLightBuffer->uploadToGPU();
     mpRenderContext->setUniformBuffer(0, mpLightBuffer);
     mpRenderContext->setUniformBuffer(1, mpLeanMapBuffer);
     mCameraController.update();

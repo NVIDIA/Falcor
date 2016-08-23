@@ -91,8 +91,13 @@ namespace Falcor
 
     }
 
-    void UniformBuffer::uploadToGPU(size_t offset, size_t size)
+    void UniformBuffer::uploadToGPU(size_t offset, size_t size) const
     {
+        if(mDirty == false)
+        {
+            return;
+        }
+
         if(mpBuffer == nullptr)
         {
             return;     // Can happen in DX11, if the buffer only contained textures
@@ -119,6 +124,7 @@ namespace Falcor
         assert(pData);
         memcpy(pData + offset, mData.data() + offset, size);
         mpBuffer->unmap();
+        mDirty = true;
     }
 
     template<bool ExpectArrayIndex>
@@ -258,14 +264,16 @@ namespace Falcor
     }
 
 #define set_uniform_offset(_var_type, _c_type) \
-    template<> void UniformBuffer::setVariable(size_t offset, const _c_type& value) const    \
+    template<> void UniformBuffer::setVariable(size_t offset, const _c_type& value)    \
     {                                                           \
         if(checkVariableByOffset(VariableDesc::Type::_var_type, offset, 1, mVariables, mName)) \
         {                                                       \
             const uint8_t* pVar = mData.data() + offset;        \
             *(_c_type*)pVar = value;                            \
+            mDirty = true;                                      \
         }                                                       \
     }
+
     set_uniform_offset(Bool, bool);
     set_uniform_offset(Bool2, glm::bvec2);
     set_uniform_offset(Bool3, glm::bvec3);
@@ -303,7 +311,7 @@ namespace Falcor
 #undef set_uniform_offset
 
 #define set_uniform_string(_var_type, _c_type) \
-    template<> void UniformBuffer::setVariable(const std::string& name, const _c_type& value) const    \
+    template<> void UniformBuffer::setVariable(const std::string& name, const _c_type& value)    \
     {                                                           \
         size_t offset;                                    \
         const auto* pUniform = getVariableData<true>(name, offset);    \
@@ -313,6 +321,7 @@ namespace Falcor
             setVariable(offset, value);                         \
         }                                                       \
     }
+
     set_uniform_string(Bool, bool);
     set_uniform_string(Bool2, glm::bvec2);
     set_uniform_string(Bool3, glm::bvec3);
@@ -349,7 +358,7 @@ namespace Falcor
 #undef set_uniform_string
 
 #define set_uniform_array_offset(_var_type, _c_type) \
-    template<> void UniformBuffer::setVariableArray(size_t offset, const _c_type* pValue, size_t count) const       \
+    template<> void UniformBuffer::setVariableArray(size_t offset, const _c_type* pValue, size_t count)             \
     {                                                                                                               \
         if(checkVariableByOffset(VariableDesc::Type::_var_type, offset, count, mVariables, mName))                  \
         {                                                                                                           \
@@ -359,6 +368,7 @@ namespace Falcor
             {                                                                                                       \
                 pData[i] = pValue[i];                                                                               \
             }                                                                                                       \
+            mDirty = true;                                                                                          \
         }                                                                                                           \
     }
 
@@ -400,7 +410,7 @@ namespace Falcor
 
 #define set_uniform_array_string(_var_type, _c_type) \
     template<>                                      \
-    void UniformBuffer::setVariableArray(const std::string& name, const _c_type* pValue, size_t count) const      \
+    void UniformBuffer::setVariableArray(const std::string& name, const _c_type* pValue, size_t count)            \
     {                                                                                                             \
         size_t offset;                                                                                            \
         const auto pUniform = getVariableData<false>(name, offset);                                               \
@@ -464,6 +474,7 @@ namespace Falcor
             return;
         }
         memcpy(mData.data() + offset, pSrc, size);
+        mDirty = true;
     }
 
     bool checkResourceDimension(const Texture* pTexture, const ShaderResourceDesc& shaderDesc, bool bindAsImage, const std::string& name, const std::string& bufferName)
@@ -560,7 +571,7 @@ namespace Falcor
         return true;
     }
 
-    void UniformBuffer::setTexture(size_t offset, const Texture* pTexture, const Sampler* pSampler, bool bindAsImage) const
+    void UniformBuffer::setTexture(size_t offset, const Texture* pTexture, const Sampler* pSampler, bool bindAsImage)
     {
         bool bOK = true;
 #if _LOG_ENABLED
@@ -613,11 +624,12 @@ namespace Falcor
 
         if(bOK)
         {
+            mDirty = true;
             setTextureInternal(offset, pTexture, pSampler);
         }
     }
 
-    void UniformBuffer::setTexture(const std::string& name, const Texture* pTexture, const Sampler* pSampler, bool bindAsImage) const
+    void UniformBuffer::setTexture(const std::string& name, const Texture* pTexture, const Sampler* pSampler, bool bindAsImage)
     {
         size_t Offset;
         const auto pUniform = getVariableData<true>(name, Offset);
@@ -638,7 +650,7 @@ namespace Falcor
         }
     }
 
-    void UniformBuffer::setTextureArray(const std::string& name, const Texture* pTexture[], const Sampler* pSampler, size_t count, bool bindAsImage) const
+    void UniformBuffer::setTextureArray(const std::string& name, const Texture* pTexture[], const Sampler* pSampler, size_t count, bool bindAsImage)
     {
         size_t Offset;
         const auto pUniform = getVariableData<false>(name, Offset);

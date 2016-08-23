@@ -57,6 +57,5 @@ namespace Falcor
             pLight->setIntoUniformBuffer(pBuffer, pLight->getName());
         }
         pBuffer->setVariable("gAmbient", pScene->getAmbientIntensity());
-        pBuffer->uploadToGPU();
     }
 }

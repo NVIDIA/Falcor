@@ -110,7 +110,6 @@ void Shadows::runMainPass()
     mLightingPass.pPerFrameCB->setVariable("visualizeCascades", mControls.visualizeCascades);
     mLightingPass.pPerFrameCB->setVariable("lightIndex", mControls.lightIndex);
     mLightingPass.pPerFrameCB->setVariable("camVpAtLastCsmUpdate", mCamVpAtLastCsmUpdate);
-    mLightingPass.pPerFrameCB->uploadToGPU();
     mpRenderContext->setUniformBuffer(0, mLightingPass.pPerFrameCB);
     mpRenderer->renderScene(mpRenderContext.get(), mLightingPass.pProgram.get());
 }
@@ -119,7 +118,6 @@ void Shadows::displayShadowMap()
 {
     mShadowVisualizer.pBuffer->setTexture("gTexture", mpCsmTech[mControls.lightIndex]->getShadowMap().get(), nullptr);
     mShadowVisualizer.pBuffer->setVariable("cascade", mControls.displayedCascade);
-    mShadowVisualizer.pBuffer->uploadToGPU();
     mpRenderContext->setUniformBuffer(0, mShadowVisualizer.pBuffer);
     mShadowVisualizer.pProgram->execute(mpRenderContext.get());
 }

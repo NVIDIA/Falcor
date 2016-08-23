@@ -131,7 +131,6 @@ void StereoRendering::blitTexture(const Texture* pTexture, uint32_t xStart)
         vp.maxDepth = 1;
         mpRenderContext->pushViewport(0, vp);
         mpBlitUbo->setTexture(0, pTexture, nullptr);
-        mpBlitUbo->uploadToGPU();
         mpRenderContext->setUniformBuffer(0, mpBlitUbo);
         mpBlit->execute(mpRenderContext.get());
         mpRenderContext->popViewport(0);
@@ -145,7 +144,6 @@ void StereoRendering::onFrameRender()
     if(mpSceneRenderer)
     {
         setSceneLightsIntoUniformBuffer(mpScene.get(), mpUniformBuffer.get());
-        mpUniformBuffer->uploadToGPU();
         mpRenderContext->setUniformBuffer(0, mpUniformBuffer);
         mpSceneRenderer->update(mCurrentTime);
 

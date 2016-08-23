@@ -72,7 +72,6 @@ namespace Falcor
                 a.val = mpLastMaterial->getAlphaValue().constantColor.x;
 #endif
                 mpAlphaMapUbo->setBlob(&a, 0, sizeof(a));
-                mpAlphaMapUbo->uploadToGPU();
             }
             return true;
         };
@@ -454,11 +453,9 @@ namespace Falcor
     void CascadedShadowMaps::renderScene(RenderContext* pCtx)
     {
         mShadowPass.pLightUbo->setBlob(&mCsmData, 0, sizeof(mCsmData));
-        mShadowPass.pLightUbo->uploadToGPU();
         pCtx->setUniformBuffer(0, mShadowPass.pLightUbo);
         pCtx->setUniformBuffer(1, mShadowPass.pAlphaUbo);
         mShadowPass.pAlphaUbo->setVariable("evsmExp", mCsmData.evsmExponents);
-        mShadowPass.pAlphaUbo->uploadToGPU();
         mpSceneRenderer->renderScene(pCtx, mShadowPass.pProg.get(), mpLightCamera.get());
     }
 

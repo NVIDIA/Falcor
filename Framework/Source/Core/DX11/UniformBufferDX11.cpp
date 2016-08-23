@@ -121,7 +121,7 @@ namespace Falcor
         return true;
     }
 
-    void UniformBuffer::setTextureInternal(size_t offset, const Texture* pTexture, const Sampler* pSampler) const
+    void UniformBuffer::setTextureInternal(size_t offset, const Texture* pTexture, const Sampler* pSampler)
     {
 #ifdef _LOG_ENABLED
         if(pSampler)

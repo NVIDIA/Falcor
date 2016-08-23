@@ -90,7 +90,6 @@ void ShaderToy::onFrameRender()
     mpToyCB->setVariable("iGlobalTime", iGlobalTime);
 
     // run final pass
-    mpToyCB->uploadToGPU();
     mpRenderContext->setUniformBuffer(mToyCBBinding, mpToyCB);
     mpMainPass->execute(mpRenderContext.get());
 

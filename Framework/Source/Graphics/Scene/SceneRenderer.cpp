@@ -111,7 +111,6 @@ namespace Falcor
         if (currentData.pCamera)
         {
             currentData.pCamera->setIntoUniformBuffer(sPerFrameCB.get(), sCameraDataOffset);
-            sPerFrameCB->uploadToGPU();
         }
     }
 
@@ -121,7 +120,6 @@ namespace Falcor
         if(currentData.pModel->hasBones())
         {
             sPerSkinnedMeshCB->setVariableArray(sBonesOffset, currentData.pModel->getBonesMatrices(), currentData.pModel->getBonesCount());
-            sPerSkinnedMeshCB->uploadToGPU();
         }
 		return true;
     }
@@ -149,7 +147,6 @@ namespace Falcor
     bool SceneRenderer::setPerMaterialData(RenderContext* pContext, const CurrentWorkingData& currentData)
     {
         currentData.pMaterial->setIntoUniformBuffer(sPerMaterialCB.get(), "gMaterial");
-        sPerMaterialCB->uploadToGPU();
 		return true;
     }
 
@@ -173,7 +170,6 @@ namespace Falcor
             }
         }
 
-        sPerStaticMeshCB->uploadToGPU();
         // Draw
         pContext->drawIndexedInstanced(pMesh->getIndexCount(), instanceCount, 0, 0, 0);
         postFlushDraw(pContext, currentData);

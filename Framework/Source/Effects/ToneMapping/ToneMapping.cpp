@@ -87,7 +87,6 @@ namespace Falcor
         mpUbo->setVariable(mUboOffsets.luminanceLod, mLuminanceLod);
         mpUbo->setVariable(mUboOffsets.whiteScale, mWhiteScale);
 
-        mpUbo->uploadToGPU();
         pRenderContext->setUniformBuffer(0, mpUbo);
 
         // Calculate luminance

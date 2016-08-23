@@ -60,7 +60,7 @@ namespace Falcor
         return reflectBufferVariables(programID, bufferName, bufferType, mSize, mVariables, mResources);
     }
 
-    void UniformBuffer::setTextureInternal(size_t offset, const Texture* pTexture, const Sampler* pSampler) const
+    void UniformBuffer::setTextureInternal(size_t offset, const Texture* pTexture, const Sampler* pSampler)
     {
         const uint8_t* pVar = mData.data() + offset;
         if(pTexture)

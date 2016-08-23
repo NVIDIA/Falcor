@@ -290,5 +290,6 @@ namespace Falcor
         void applyShaderStorageBuffer(uint32_t Index) const;
         void applyTopology() const;
         void prepareForDraw() const;
+        void prepareForDrawApi() const;
     };
 }

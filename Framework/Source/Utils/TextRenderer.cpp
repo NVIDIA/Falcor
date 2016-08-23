@@ -130,7 +130,6 @@ namespace Falcor
         // Set the font texture
         const Texture* pFontTex = mpFont->getTexture();
         mpPerFrameCB->setTexture(mUniformOffsets.fontTex, pFontTex, nullptr);
-        mpPerFrameCB->uploadToGPU();
 
         pRenderContext->setUniformBuffer(0, mpPerFrameCB);
 

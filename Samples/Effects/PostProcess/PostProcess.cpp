@@ -121,8 +121,6 @@ void PostProcess::renderMesh(const Mesh* pMesh, const Program* pProgram, Rasteri
     mpPerFrameCB->setVariable("gLightIntensity", mLightIntensity);
     mpPerFrameCB->setVariable("gSurfaceRoughness", mSurfaceRoughness);
 
-    mpPerFrameCB->uploadToGPU();
-
     // Set uniform buffers
     mpRenderContext->setProgram(pProgram->getActiveProgramVersion());
 

@@ -109,13 +109,9 @@ void ShaderBuffersSample::onFrameRender()
     mpPerFrameCB->setVariable("m.wvpMat", mpCamera->getProjMatrix() * mpCamera->getViewMatrix());
     mpPerFrameCB->setVariable("surfaceColor", mSurfaceColor);
 
-    mpPerFrameCB->uploadToGPU();
-
     mpLightCB->setVariable("worldDir", mLightData.worldDir);
     mpLightCB->setVariable("intensity", mLightData.intensity);
     
-    mpLightCB->uploadToGPU();
-
     // Set uniform buffers
     mpRenderContext->setProgram(mpProgram->getActiveProgramVersion());
     mpRenderContext->setShaderStorageBuffer(0, mpPixelCountBuffer);

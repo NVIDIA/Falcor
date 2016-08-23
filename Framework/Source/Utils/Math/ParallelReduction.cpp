@@ -88,7 +88,6 @@ namespace Falcor
     {
         // Bind the input texture
         pUbo->setTexture(0, pInput, pPointSampler.get());
-        pUbo->uploadToGPU();
         pRenderCtx->setUniformBuffer(0, pUbo);
 
         // Set draw params

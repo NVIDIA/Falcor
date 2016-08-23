@@ -275,4 +275,16 @@ namespace Falcor
         mState.scissors[index] = sc;
         applyScissor(index);
     }
+
+    void RenderContext::prepareForDraw() const
+    {
+        for(auto& pUBO : mState.pUniformBuffers)
+        {
+            if(pUBO)
+            {
+                pUBO->uploadToGPU();
+            }
+        }
+        prepareForDrawApi();
+    }
 }

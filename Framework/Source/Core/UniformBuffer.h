@@ -64,7 +64,7 @@ namespace Falcor
         \param[in] value Value to set
         */
         template<typename T>
-        void setVariable(const std::string& name, const T& value) const;
+        void setVariable(const std::string& name, const T& value);
 
         /** Set a uniform array in the buffer.
         The function will validate that the value Type matches the declaration in the shader. If there's a mismatch, an error will be logged and the call will be ignored.
@@ -73,7 +73,7 @@ namespace Falcor
         \param[in] count pValue array size
         */
         template<typename T>
-        void setVariableArray(size_t offset, const T* pValue, size_t count) const;
+        void setVariableArray(size_t offset, const T* pValue, size_t count);
 
         /** Set a uniform into the buffer.
         The function will validate that the value Type matches the declaration in the shader. If there's a mismatch, an error will be logged and the call will be ignored.
@@ -81,7 +81,7 @@ namespace Falcor
         \param[in] value Value to set
         */
         template<typename T>
-        void setVariable(size_t offset, const T& value) const;
+        void setVariable(size_t offset, const T& value);
 
         /** Set a uniform array in the buffer.
         The function will validate that the value Type matches the declaration in the shader. If there's a mismatch, an error will be logged and the call will be ignored.
@@ -90,7 +90,7 @@ namespace Falcor
         \param[in] count pValue array size
         */
         template<typename T>
-        void setVariableArray(const std::string& name, const T* pValue, size_t count) const;
+        void setVariableArray(const std::string& name, const T* pValue, size_t count);
 
         /** Set a texture or image.
         The function will validate that the resource Type matches the declaration in the shader. If there's a mismatch, an error will be logged and the call will be ignored.
@@ -99,7 +99,7 @@ namespace Falcor
         \param[in] pSampler The sampler to use for filtering. If this is nullptr, the default sampler will be used
         \param[in] BindAsImage Whether pTexture should be bound as an image
         */
-        void setTexture(const std::string& name, const Texture* pTexture, const Sampler* pSampler, bool bindAsImage = false) const;
+        void setTexture(const std::string& name, const Texture* pTexture, const Sampler* pSampler, bool bindAsImage = false);
 
         /** Set a texture or image.
         The function will validate that the resource Type matches the declaration in the shader. If there's a mismatch, an error will be logged and the call will be ignored.
@@ -109,7 +109,7 @@ namespace Falcor
         \param[in] count Number of textures to bind
         \param[in] BindAsImage Whether pTexture should be bound as an image
         */
-        void setTextureArray(const std::string& name, const Texture* pTexture[], const Sampler* pSampler, size_t count, bool bindAsImage = false) const;
+        void setTextureArray(const std::string& name, const Texture* pTexture[], const Sampler* pSampler, size_t count, bool bindAsImage = false);
 
         /** Set a texture or image.
         The function will validate that the resource Type matches the declaration in the shader. If there's a mismatch, an error will be logged and the call will be ignored.
@@ -118,14 +118,14 @@ namespace Falcor
         \param[in] pSampler The sampler to use for filtering. If this is nullptr, the default sampler will be used
         \param[in] BindAsImage Whether pTexture should be bound as an image
         */
-        void setTexture(size_t Offset, const Texture* pTexture, const Sampler* pSampler, bool bindAsImage = false) const;
+        void setTexture(size_t Offset, const Texture* pTexture, const Sampler* pSampler, bool bindAsImage = false);
 
         /** Apply the changes to the actual GPU buffer.
             Note that it is possible to use this function to update only part of the GPU copy of the buffer. This might lead to inconsistencies between the GPU and CPU buffer, so make sure you know what you are doing.
             \param[in] offset Offset into the buffer to write to
             \param[in] size   Number of bytes to upload. If this value is -1, will update the [Offset, EndOfBuffer] range.
         */
-        void uploadToGPU(size_t offset = 0, size_t size = -1);
+        void uploadToGPU(size_t offset = 0, size_t size = -1) const;
 
         /** Get the internal buffer object
         */
@@ -147,13 +147,14 @@ namespace Falcor
     protected:
         bool init(const ProgramVersion* pProgram, const std::string& bufferName, size_t overrideSize, bool isUniformBuffer);
         bool apiInit(const ProgramVersion* pProgram, const std::string& bufferName, bool isUniformBuffer);
-        void setTextureInternal(size_t offset, const Texture* pTexture, const Sampler* pSampler) const;
+        void setTextureInternal(size_t offset, const Texture* pTexture, const Sampler* pSampler);
 
         UniformBuffer(const std::string& bufferName);
         Buffer::SharedPtr mpBuffer = nullptr;
         const std::string mName;
         std::vector<uint8_t> mData;
         size_t mSize = 0;
+        mutable bool mDirty = true;
 
         ShaderReflection::VariableDescMap mVariables;
         ShaderReflection::ShaderResourceDescMap mResources;

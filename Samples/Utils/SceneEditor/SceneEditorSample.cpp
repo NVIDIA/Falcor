@@ -107,7 +107,6 @@ void SceneEditorSample::onFrameRender()
         mpRenderContext->setBlendState(nullptr);
         mpRenderContext->setDepthStencilState(nullptr, 0);
         setSceneLightsIntoUniformBuffer(mpScene.get(), mpLightBuffer.get());
-        mpLightBuffer->uploadToGPU();
         mpRenderContext->setUniformBuffer(0, mpLightBuffer);
         mpRenderer->update(mCurrentTime);
         mpRenderer->renderScene(mpRenderContext.get(), mpProgram.get());

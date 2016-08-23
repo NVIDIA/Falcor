@@ -487,12 +487,14 @@ namespace Falcor
 
     void RenderContext::draw(uint32_t vertexCount, uint32_t startVertexLocation)
     {
+        prepareForDraw();
         GLenum glTopology = getGlTopology(mState.topology);
         gl_call(glDrawArrays(glTopology, startVertexLocation, vertexCount));
     }
 
     void RenderContext::drawIndexed(uint32_t indexCount, uint32_t startIndexLocation, int baseVertexLocation)
     {
+        prepareForDraw();
         GLenum glTopology = getGlTopology(mState.topology);
         uint32_t offset = sizeof(uint32_t) * startIndexLocation;
 
@@ -501,6 +503,7 @@ namespace Falcor
 
     void RenderContext::drawIndexedInstanced(uint32_t indexCount, uint32_t instanceCount, uint32_t startIndexLocation, int baseVertexLocation, uint32_t startInstanceLocation)
     {
+        prepareForDraw();
         GLenum glTopology = getGlTopology(mState.topology);
         uint32_t offset = sizeof(uint32_t) * startIndexLocation;
 
@@ -518,6 +521,11 @@ namespace Falcor
     {
         const Scissor& sc = mState.scissors[index];
         gl_call(glScissorIndexed(index, sc.originX, sc.originY, sc.width, sc.height));
+    }
+
+    void RenderContext::prepareForDrawApi() const
+    {
+
     }
 }
 #endif //#ifdef FALCOR_GL
