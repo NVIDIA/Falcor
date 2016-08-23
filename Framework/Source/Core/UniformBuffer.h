@@ -56,6 +56,7 @@ namespace Falcor
                 UboVar(UniformBuffer* pUbo, size_t offset) : mpUbo(pUbo), mOffset(offset) {}
                 template<typename T> void operator=(const T& val) { mpUbo->setVariable(mOffset, val); }
 
+                size_t getOffset() const { return mOffset; }
             private:
                 UniformBuffer* mpUbo;
                 size_t mOffset;
