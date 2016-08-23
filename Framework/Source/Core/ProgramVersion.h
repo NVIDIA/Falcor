@@ -72,13 +72,13 @@ namespace Falcor
 
         /** Get the location of an input attribute
             \param[in] attribute The attribute name in the program
-            \return The index of the attribute if it is found, otherwise CApiProgram#k_invalidLocation
+            \return The index of the attribute if it is found, otherwise ProgramVersion#kInvalidLocation
             */
         int32_t getAttributeLocation(const std::string& attribute) const;
 
         /** Get the uniform buffer binding index
         \param[in] name The uniform buffer name
-        \return The index of the buffer if it is found, otherwise CApiProgram#InvalidLocation
+        \return The index of the buffer if it is found, otherwise ProgramVersion#kInvalidLocation
         */
         uint32_t getUniformBufferBinding(const std::string& name) const;
 

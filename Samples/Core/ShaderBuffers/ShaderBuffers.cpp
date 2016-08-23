@@ -77,10 +77,7 @@ void ShaderBuffersSample::onLoad()
     mCameraController.setModelParams(center, radius, radius * 10);
 
     // create the uniform buffers
-    auto pActiveVersion = mpProgram->getActiveProgramVersion().get();
-    mpPerFrameCB = UniformBuffer::create(pActiveVersion, "PerFrameCB");
-    mpLightCB = UniformBuffer::create(pActiveVersion, "LightCB");
-    mpPixelCountBuffer = ShaderStorageBuffer::create(pActiveVersion, "PixelCount");
+    mpPixelCountBuffer = ShaderStorageBuffer::create(mpProgram->getActiveProgramVersion().get(), "PixelCount");
 
     // create rasterizer state
     RasterizerState::Desc rsDesc;
@@ -105,22 +102,17 @@ void ShaderBuffersSample::onFrameRender()
     mCameraController.update();
 
     // Update uniform-buffers data
-    mpPerFrameCB["m.worldMat"] = glm::mat4();
-    mpPerFrameCB["m.wvpMat"] = mpCamera->getProjMatrix() * mpCamera->getViewMatrix();
-    mpPerFrameCB["surfaceColor"] = mSurfaceColor;
+    mpProgram["PerFrameCB"]["m.worldMat"] = glm::mat4();
+    mpProgram["PerFrameCB"]["m.wvpMat"] = mpCamera->getProjMatrix() * mpCamera->getViewMatrix();
+    mpProgram["PerFrameCB"]["surfaceColor"] = mSurfaceColor;
 
-    mpLightCB["worldDir"] = mLightData.worldDir;
-    mpLightCB["intensity"] = mLightData.intensity;
+    mpProgram["LightCB"]["worldDir"] = mLightData.worldDir;
+    mpProgram["LightCB"]["intensity"] = mLightData.intensity;
     
     // Set uniform buffers
     mpRenderContext->setProgram(mpProgram->getActiveProgramVersion());
     mpRenderContext->setShaderStorageBuffer(0, mpPixelCountBuffer);
-
-    // Just for the sake of the example, we fetch the buffer location from the program here. We could have cached it, or better yet, just use "layout(binding = <someindex>" in the shader
-    uint32_t bufferLocation = mpProgram->getUniformBufferBinding("PerFrameCB");
-    mpRenderContext->setUniformBuffer(bufferLocation, mpPerFrameCB);
-    bufferLocation = mpProgram->getUniformBufferBinding("LightCB");
-    mpRenderContext->setUniformBuffer(bufferLocation, mpLightCB);
+    mpProgram->setUniformBuffersIntoContext(mpRenderContext.get());
 
     mpRenderContext->setVao(mpVao);
     mpRenderContext->setTopology(RenderContext::Topology::TriangleList);

@@ -49,8 +49,6 @@ private:
     Vao::SharedConstPtr mpVao;
     uint32_t mIndexCount = 0;
 
-    UniformBuffer::SharedPtr mpPerFrameCB = nullptr;
-    UniformBuffer::SharedPtr mpLightCB = nullptr;
     ShaderStorageBuffer::SharedPtr mpPixelCountBuffer = nullptr;
 
     bool mCountPixelShaderInvocations = false;

@@ -31,13 +31,14 @@
 #include <map>
 #include <vector>
 #include "Core/ProgramVersion.h"
+#include "Core/UniformBuffer.h"
 
 namespace Falcor
 {
     class Texture;
     class Sampler;
-    class UniformBuffer;
     class Shader;
+    class RenderContext;
 
     /** High-level abstraction of a program class.
         This class manages different versions of the same program. Different versions means same shader files, different macro definitions. This allows simple usage in case different macros are required - for example static vs. animated models.
@@ -45,7 +46,14 @@ namespace Falcor
     class Program : public std::enable_shared_from_this<Program>
     {
     public:
-        using SharedPtr = std::shared_ptr<Program>;
+        class SharedPtr : public std::shared_ptr<Program>
+        {
+        public:
+            SharedPtr() : std::shared_ptr<Program>() {}
+            SharedPtr(Program* pProg) : std::shared_ptr<Program>(pProg) {}
+            UniformBuffer::SharedPtr operator[](const std::string& uboName) { return get()->getUniformBuffer(uboName); }
+        };
+
         using SharedConstPtr = std::shared_ptr<const Program>;
 
         /** create a new program object.
@@ -121,6 +129,24 @@ namespace Falcor
         /** Reload and relink all programs.
         */
         static void reloadAllPrograms();
+
+        /** Get a uniform-buffer object associated with this program. the function will return one of the following:
+            - A new UniformBuffer object if no buffer was associated with bufName
+            - An already existing buffer associated with bufName. The existing buffer might have been created using a previous getUniformBuffer() call or bindUniformBuffer() call
+            - nullptr if bufName is not a name of a buffer declared in the program
+            Note that setting a new define string will force the creation of a new UniformBuffer object
+        */
+        UniformBuffer::SharedPtr getUniformBuffer(const std::string& bufName);
+
+        /** Binds a uniform buffer into the program. This is useful in cases when we want to share UBOs between programs.
+            The first program will call getUniformBuffer() to generate a buffer, then bind it to other programs that we'd like to share it with.
+            Note that there is not data layout check here. It's your responsibility to make sure that the layouts match,
+        */
+        void bindUniformBuffer(const std::string& bufName, UniformBuffer::SharedPtr& pUbo);
+
+        /** Set all uniform-buffers into the render-context            
+        */
+        void setUniformBuffersIntoContext(RenderContext* pContext);
     private:
         static const uint32_t kShaderCount = (uint32_t)ShaderType::Count;
 
@@ -130,6 +156,7 @@ namespace Falcor
         std::string mShaderStrings[kShaderCount]; // Either a filename or a string, depending on the value of mCreatedFromFile
 
         std::map<const std::string, ProgramVersion::SharedConstPtr> mProgramVersions;
+        std::map<const std::string, UniformBuffer::SharedPtr> mUboMap;
         ProgramVersion::SharedConstPtr mpActiveProgram = nullptr;
         std::string mActiveDefineString;
 
