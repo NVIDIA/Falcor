@@ -671,7 +671,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>FALCOR_GL;WIN32;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)\..\Externals\GLM;$(ProjectDir)\..\Externals\glew-1.12.0\include;$(ProjectDir)\..\Externals\GLFW\include;$(ProjectDir)\..\Externals\AntTweakBar\include;$(ProjectDir)\..\Externals\FreeImage;$(ProjectDir)\..\Externals\assimp\include;$(ProjectDir)\..\Externals\FFMpeg\Include;$(ProjectDir)\..\Externals\OculusSDK\LibOVR\Include;$(ProjectDir)\..\Externals\OculusSDK\LibOVRKernel\Src;$(ProjectDir)\..\Externals\openvr\headers;$(ProjectDir)\..;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)\..\Externals\GLM;$(ProjectDir)\..\Externals\glew\include;$(ProjectDir)\..\Externals\GLFW\include;$(ProjectDir)\..\Externals\AntTweakBar\include;$(ProjectDir)\..\Externals\FreeImage;$(ProjectDir)\..\Externals\assimp\include;$(ProjectDir)\..\Externals\FFMpeg\Include;$(ProjectDir)\..\Externals\OculusSDK\LibOVR\Include;$(ProjectDir)\..\Externals\OculusSDK\LibOVRKernel\Src;$(ProjectDir)\..\Externals\openvr\headers;$(ProjectDir)\..;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <TreatWarningAsError>true</TreatWarningAsError>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <MinimalRebuild>false</MinimalRebuild>
@@ -694,7 +694,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>FALCOR_DX11;WIN32;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)\..\Externals\GLM;$(ProjectDir)\..\Externals\glew-1.12.0\include;$(ProjectDir)\..\Externals\GLFW\include;$(ProjectDir)\..\Externals\AntTweakBar\include;$(ProjectDir)\..\Externals\FreeImage;$(ProjectDir)\..\Externals\assimp\include;$(ProjectDir)\..\Externals\FFMpeg\Include;$(ProjectDir)\..\Externals\OculusSDK\LibOVR\Include;$(ProjectDir)\..\Externals\OculusSDK\LibOVRKernel\Src;$(ProjectDir)\..;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)\..\Externals\GLM;$(ProjectDir)\..\Externals\glew\include;$(ProjectDir)\..\Externals\GLFW\include;$(ProjectDir)\..\Externals\AntTweakBar\include;$(ProjectDir)\..\Externals\FreeImage;$(ProjectDir)\..\Externals\assimp\include;$(ProjectDir)\..\Externals\FFMpeg\Include;$(ProjectDir)\..\Externals\OculusSDK\LibOVR\Include;$(ProjectDir)\..\Externals\OculusSDK\LibOVRKernel\Src;$(ProjectDir)\..;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <TreatWarningAsError>true</TreatWarningAsError>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <MinimalRebuild>false</MinimalRebuild>
@@ -719,7 +719,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>FALCOR_GL;WIN32;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)\..\Externals\GLM;$(ProjectDir)\..\Externals\glew-1.12.0\include;$(ProjectDir)\..\Externals\GLFW\include;$(ProjectDir)\..\Externals\AntTweakBar\include;$(ProjectDir)\..\Externals\FreeImage;$(ProjectDir)\..\Externals\assimp\include;$(ProjectDir)\..\Externals\FFMpeg\Include;$(ProjectDir)\..\Externals\OculusSDK\LibOVR\Include;$(ProjectDir)\..\Externals\OculusSDK\LibOVRKernel\Src;$(ProjectDir)\..\Externals\openvr\headers;$(ProjectDir)\..;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)\..\Externals\GLM;$(ProjectDir)\..\Externals\glew\include;$(ProjectDir)\..\Externals\GLFW\include;$(ProjectDir)\..\Externals\AntTweakBar\include;$(ProjectDir)\..\Externals\FreeImage;$(ProjectDir)\..\Externals\assimp\include;$(ProjectDir)\..\Externals\FFMpeg\Include;$(ProjectDir)\..\Externals\OculusSDK\LibOVR\Include;$(ProjectDir)\..\Externals\OculusSDK\LibOVRKernel\Src;$(ProjectDir)\..\Externals\openvr\headers;$(ProjectDir)\..;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <TreatWarningAsError>true</TreatWarningAsError>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
@@ -745,7 +745,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>FALCOR_DX11;WIN32;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)\..\Externals\GLM;$(ProjectDir)\..\Externals\glew-1.12.0\include;$(ProjectDir)\..\Externals\GLFW\include;$(ProjectDir)\..\Externals\AntTweakBar\include;$(ProjectDir)\..\Externals\FreeImage;$(ProjectDir)\..\Externals\assimp\include;$(ProjectDir)\..\Externals\FFMpeg\Include;$(ProjectDir)\..\Externals\OculusSDK\LibOVR\Include;$(ProjectDir)\..\Externals\OculusSDK\LibOVRKernel\Src;$(ProjectDir)\..;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)\..\Externals\GLM;$(ProjectDir)\..\Externals\glew\include;$(ProjectDir)\..\Externals\GLFW\include;$(ProjectDir)\..\Externals\AntTweakBar\include;$(ProjectDir)\..\Externals\FreeImage;$(ProjectDir)\..\Externals\assimp\include;$(ProjectDir)\..\Externals\FFMpeg\Include;$(ProjectDir)\..\Externals\OculusSDK\LibOVR\Include;$(ProjectDir)\..\Externals\OculusSDK\LibOVRKernel\Src;$(ProjectDir)\..;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <TreatWarningAsError>true</TreatWarningAsError>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
