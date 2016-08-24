@@ -62,7 +62,7 @@ void NormalMapFiltering::onLoad()
     }
     mpRenderer = SceneRenderer::create(pScene);
     mpLeanMap = LeanMap::create(pScene.get());
-    mpProgram = Program::createFromFile("NormalMapFiltering.vs", "NormalMapFiltering.fs");
+    mpProgram = Program::createFromFile("", "NormalMapFiltering.fs");
     
     mUseLeanMap = true;
     Sampler::Desc samplerDesc;

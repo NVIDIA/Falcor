@@ -15,8 +15,5 @@
     <None Include="Data\NormalMapFiltering.fs">
       <Filter>Data</Filter>
     </None>
-    <None Include="Data\NormalMapFiltering.vs">
-      <Filter>Data</Filter>
-    </None>
   </ItemGroup>
 </Project>

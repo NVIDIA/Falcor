@@ -9,9 +9,6 @@
     <None Include="Data\DeferredPass.fs">
       <Filter>Data</Filter>
     </None>
-    <None Include="Data\DeferredPass.vs">
-      <Filter>Data</Filter>
-    </None>
     <None Include="Data\LightingPass.fs">
       <Filter>Data</Filter>
     </None>

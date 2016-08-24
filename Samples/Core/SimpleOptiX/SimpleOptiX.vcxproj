@@ -33,7 +33,6 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Data\Raster.fs" />
-    <None Include="Data\Raster.vs" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{321624AC-58D2-4899-A471-CD58157CBD69}</ProjectGuid>

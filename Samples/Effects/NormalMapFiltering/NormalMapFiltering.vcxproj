@@ -18,7 +18,6 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Data\NormalMapFiltering.fs" />
-    <None Include="Data\NormalMapFiltering.vs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Framework\Source\Falcor.vcxproj">

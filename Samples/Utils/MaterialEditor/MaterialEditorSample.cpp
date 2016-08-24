@@ -181,7 +181,7 @@ void MaterialEditorSample::onLoad()
     mpCamera = Camera::create();
     mCamControl.attachCamera(mpCamera);
 
-    mpProgram = Program::createFromFile("MaterialEditor.vs", "MaterialEditor.fs");
+    mpProgram = Program::createFromFile("", "MaterialEditor.fs");
 
     // Samplers
     Sampler::Desc SamplerDesc;

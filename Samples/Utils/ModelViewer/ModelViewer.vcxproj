@@ -23,7 +23,6 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Data\ModelViewer.fs" />
-    <None Include="Data\ModelViewer.vs" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{7BFFD891-AAD6-4E5C-8ADC-611C2625DCD9}</ProjectGuid>

@@ -164,6 +164,6 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 {
     ShaderBuffersSample buffersSample;
     SampleConfig config;
-    config.windowDesc.title = "Falcor Project Template";
+    config.windowDesc.title = "Shader Buffers";
     buffersSample.run(config);
 }

@@ -35,7 +35,6 @@
 //#define _ALPHA_FROM_ALBEDO_MAP
 namespace Falcor
 {
-    const char* kDepthPassVSFile = "Effects/ShadowPass.vs";
     const char* kDepthPassGsFile = "Effects/ShadowPass.gs";
     const char* kDepthPassFsFile = "Effects/ShadowPass.fs";
     const char* kSdsmMinMaxFile = "Effects/SDSMMinMax.fs";
@@ -137,7 +136,7 @@ namespace Falcor
         }
         mCsmData.cascadeCount = cascadeCount;
         createShadowPassResources(mapWidth, mapHeight);
-        mDepthPass.pProg = Program::createFromFile(kDepthPassVSFile, "", "_APPLY_PROJECTION");
+        mDepthPass.pProg = Program::createFromFile("", "", "_APPLY_PROJECTION");
 
         mpLightCamera = Camera::create();
         RasterizerState::Desc rsDesc;
@@ -235,7 +234,7 @@ namespace Falcor
         mShadowPass.fboAspectRatio = (float)mapWidth / (float)mapHeight;
 
         // Create the program
-        mShadowPass.pProg = Program::createFromFile(kDepthPassVSFile, kDepthPassFsFile, kDepthPassGsFile, "", "", progDef);
+        mShadowPass.pProg = Program::createFromFile("", kDepthPassFsFile, kDepthPassGsFile, "", "", progDef);
         mShadowPass.pLightUbo = UniformBuffer::create(mShadowPass.pProg->getActiveProgramVersion().get(), "PerLightCB");
         mShadowPass.pAlphaUbo = UniformBuffer::create(mShadowPass.pProg->getActiveProgramVersion().get(), "AlphaMapCB");
 

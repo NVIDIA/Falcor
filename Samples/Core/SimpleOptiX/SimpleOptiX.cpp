@@ -144,7 +144,7 @@ void SimpleOptix::onLoad()
     mpLinearSampler = Sampler::create(samplerDesc);
 
     // Load raster routines
-    mpRasterShader = Program::createFromFile("Raster.vs", "Raster.fs");
+    mpRasterShader = Program::createFromFile("", "Raster.fs");
     mpPerFrameCB = UniformBuffer::create(mpRasterShader->getActiveProgramVersion().get(), "PerFrameCB");
 
     // create rasterizer state

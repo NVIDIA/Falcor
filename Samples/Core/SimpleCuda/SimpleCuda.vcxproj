@@ -26,7 +26,6 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Data\SimpleCuda.fs" />
-    <None Include="Data\SimpleCuda.vs" />
     <None Include="Data\SimpleCudaKernels.cu" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
