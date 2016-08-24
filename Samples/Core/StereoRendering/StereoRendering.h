@@ -35,7 +35,6 @@ class StereoRendering : public Sample
 public:
     void onLoad() override;
     void onFrameRender() override;
-    void onShutdown() override;
     void onResizeSwapChain() override;
     bool onKeyEvent(const KeyboardEvent& keyEvent) override;
     bool onMouseEvent(const MouseEvent& mouseEvent) override;

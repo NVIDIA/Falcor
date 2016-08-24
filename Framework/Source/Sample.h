@@ -54,6 +54,7 @@ namespace Falcor
         bool showMessageBoxOnError = _SHOW_MB_BY_DEFAULT; ///< Show message box on framework/API errors.
         float timeScale = 1;                ///< A scaling factor for the time elapsed between frames.
         bool freezeTimeOnStartup = false;   ///< Control whether or not to start the clock when the sample start running.
+        bool enableVR            = false;   ///< If you need VR support, set it to true to let Sample control the VR calls. Alternatively, if you want better control, you can call the VRSystem yourself
     };
 
     /** Bootstrapper class for Falcor.
@@ -182,6 +183,7 @@ namespace Falcor
 
         bool mCaptureScreen = false;
         bool mShowUI = true;
+        bool mVrEnabled = false;
 
         struct VideoCaptureData
         {
