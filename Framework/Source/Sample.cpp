@@ -33,6 +33,7 @@
 #include "Graphics/Program.h"
 #include "Utils/OS.h"
 #include "Core/FBO.h"
+#include "VR\OpenVR\VRSystem.h"
 
 namespace Falcor
 {
@@ -152,6 +153,7 @@ namespace Falcor
         {
             endVideoCapture();
         }
+        VRSystem::cleanup();
     }
 
     void Sample::run(const SampleConfig& config)
@@ -186,6 +188,13 @@ namespace Falcor
         // Init the UI
         initUI();
 
+        // Init VR
+        mVrEnabled = config.enableVR;
+        if(mVrEnabled)
+        {
+            VRSystem::start(mpRenderContext);
+        }
+
         // Call the load callback
         onLoad();
         handleFrameBufferSizeChange(mpWindow->getDefaultFBO());
@@ -193,7 +202,6 @@ namespace Falcor
         mpWindow->msgLoop();
 
         onShutdown();
-
         Logger::shutdown();
     }
 

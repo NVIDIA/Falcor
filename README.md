@@ -17,7 +17,7 @@ The project uses extentions which are supported only by NVIDIA GPUs.
 Optional Modules
 ----------------
 To create CUDA applications you will need to install the CUDA Toolkit 7.5.
-
+To create VR applications, you will need the SDK which came with your headset (SteamVR for Vive, Oculus SDK, etc.).
 
 *Sample* Class
 -------------------

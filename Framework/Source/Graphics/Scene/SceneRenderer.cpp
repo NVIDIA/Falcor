@@ -280,7 +280,7 @@ namespace Falcor
             {
                 // Get the VR data
                 pVR->pollEvents();
-                pVR->refreshTracking();                
+                pVR->refreshTracking();
             }
         }
     }

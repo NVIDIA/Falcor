@@ -36,61 +36,78 @@ void StereoRendering::initUI()
     mpGui->addButton("Load Scene", &StereoRendering::loadSceneCB, this);
     Gui::dropdown_list submitModeList;
     submitModeList.push_back({(int)SceneRenderer::RenderMode::Mono, "Render to Screen"});
-#ifdef _ENABLE_OPENVR
-    mpGui->addCheckBox("Display VR FBO", &mShowStereoViews);
-    submitModeList.push_back({(int)SceneRenderer::RenderMode::SinglePassStereo, "Single Pass Stereo"});
-#endif
+
+    if(VRSystem::instance())
+    {
+        mpGui->addCheckBox("Display VR FBO", &mShowStereoViews);
+        submitModeList.push_back({(int)SceneRenderer::RenderMode::SinglePassStereo, "Single Pass Stereo"});
+    }
     mpGui->addDropdownWithCallback("Submission Mode", submitModeList, setRenderModeCB, getRenderModeCB, this);
 }
 
-    void StereoRendering::initVR()
-    {
-#ifdef _ENABLE_OPENVR
-        VRSystem::start(mpRenderContext);
-        VRDisplay* pDisplay = VRSystem::instance()->getHMD().get();
+void StereoRendering::initVR()
+{
+    VRDisplay* pDisplay = VRSystem::instance()->getHMD().get();
 
-        // Create the FBOs
-        glm::ivec2 renderSize = pDisplay->getRecommendedRenderSize();
-        ResourceFormat colorFormat = ResourceFormat::RGBA8UnormSrgb;
-        mpVrFbo = VrFbo::create(&colorFormat, 1, ResourceFormat::D24Unorm);
-#endif
-    }
+    // Create the FBOs
+    glm::ivec2 renderSize = pDisplay->getRecommendedRenderSize();
+    ResourceFormat colorFormat = ResourceFormat::RGBA8UnormSrgb;
+    mpVrFbo = VrFbo::create(&colorFormat, 1, ResourceFormat::D24Unorm);
+}
 
-#ifdef _ENABLE_OPENVR
-    void StereoRendering::submitSinglePassStereo()
-    {
-        PROFILE(SPS);
+void StereoRendering::submitSinglePassStereo()
+{
+    PROFILE(SPS);
 
-        // Set the viewport
-        mpVrFbo->pushViewport(mpRenderContext.get(), 0);
+    // Set the viewport
+    mpVrFbo->pushViewport(mpRenderContext.get(), 0);
 
-        // Clear the FBO
-        mpVrFbo->getFbo()->clear(kClearColor, 1.0f, 0, FboAttachmentType::All);
-        mpRenderContext->pushFbo(mpVrFbo->getFbo());
+    // Clear the FBO
+    mpVrFbo->getFbo()->clear(kClearColor, 1.0f, 0, FboAttachmentType::All);
+    mpRenderContext->pushFbo(mpVrFbo->getFbo());
 
-        // Render
-        mpSceneRenderer->renderScene(mpRenderContext.get(), mpProgram.get());
+    // Render
+    mpSceneRenderer->renderScene(mpRenderContext.get(), mpProgram.get());
 
-        // Restore the state
-        mpRenderContext->popFbo();
-        mpRenderContext->popViewport(0);
+    // Restore the state
+    mpRenderContext->popFbo();
+    mpRenderContext->popViewport(0);
 
-        // Submit the views and display them
-        mpVrFbo->submitToHmd();
-        blitTexture(mpVrFbo->getEyeResourceView(VRDisplay::Eye::Left).get(), 0);
-        blitTexture(mpVrFbo->getEyeResourceView(VRDisplay::Eye::Right).get(), mpDefaultFBO->getWidth() / 2);
-    }
-#endif
+    // Submit the views and display them
+    mpVrFbo->submitToHmd();
+    blitTexture(mpVrFbo->getEyeResourceView(VRDisplay::Eye::Left).get(), 0);
+    blitTexture(mpVrFbo->getEyeResourceView(VRDisplay::Eye::Right).get(), mpDefaultFBO->getWidth() / 2);
+}
 
-    void StereoRendering::submitToScreen()
-    {
-        mpSceneRenderer->renderScene(mpRenderContext.get(), mpProgram.get());
-    }
+void StereoRendering::submitToScreen()
+{
+    mpSceneRenderer->renderScene(mpRenderContext.get(), mpProgram.get());
+}
 
 void StereoRendering::loadSceneCB(void* pThis)
 {
     StereoRendering* pSR = (StereoRendering*)pThis;
     pSR->loadScene();
+}
+
+void StereoRendering::setRenderMode()
+{
+    if(mpScene)
+    {
+        std::string lights;
+        getSceneLightString(mpScene.get(), lights);
+        std::string defines = "_LIGHT_SOURCES " + lights + "\n";
+
+        switch(mRenderMode)
+        {
+        case SceneRenderer::RenderMode::SinglePassStereo:
+            defines += "_SINGLE_PASS_STEREO";
+            break;
+        }
+
+        mpProgram->setActiveProgramDefines(defines);
+        mpSceneRenderer->setRenderMode(mRenderMode);
+    }
 }
 
 void StereoRendering::loadScene()
@@ -101,10 +118,8 @@ void StereoRendering::loadScene()
         mpScene = Scene::loadFromFile(Filename, Model::GenerateTangentSpace);
         mpSceneRenderer = SceneRenderer::create(mpScene);
 
-        std::string lights;
-        getSceneLightString(mpScene.get(), lights);
-        lights = "_LIGHT_SOURCES " + lights;
-        mpProgram = Program::createFromFile("", "StereoRendering.fs", lights);
+        mpProgram = Program::createFromFile("", "StereoRendering.fs");
+        setRenderMode();
         mpUniformBuffer = UniformBuffer::create(mpProgram->getActiveProgramVersion().get(), "PerFrameCB");
     }
 }
@@ -152,24 +167,15 @@ void StereoRendering::onFrameRender()
         case SceneRenderer::RenderMode::Mono:
             submitToScreen();
             break;
-#ifdef _ENABLE_OPENVR
         case SceneRenderer::RenderMode::SinglePassStereo:
             submitSinglePassStereo();
             break;
-#endif
         default:
             should_not_get_here();
         }
     }
 
     renderText(getGlobalSampleMessage(true), glm::vec2(10, 10));
-}
-
-void StereoRendering::onShutdown()
-{
-#ifdef _ENABLE_OPENVR
-//    VRSystem::cleanup();
-#endif
 }
 
 bool StereoRendering::onKeyEvent(const KeyboardEvent& keyEvent)
@@ -212,15 +218,7 @@ void StereoRendering::setRenderModeCB(const void* pVal, void* pUserData)
 {
     StereoRendering* pThis = (StereoRendering*)pUserData;
     pThis->mRenderMode = (SceneRenderer::RenderMode)*(uint32_t*)pVal;
-    switch(pThis->mRenderMode)
-    {
-    case SceneRenderer::RenderMode::SinglePassStereo:
-        pThis->mpProgram->setActiveProgramDefines("_SINGLE_PASS_STEREO");
-        break;
-    default:
-        pThis->mpProgram->setActiveProgramDefines("");
-    }
-    pThis->mpSceneRenderer->setRenderMode(pThis->mRenderMode);
+    pThis->setRenderMode();
 }
 
 int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ LPSTR lpCmdLine, _In_ int nShowCmd)
@@ -230,5 +228,6 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
     config.windowDesc.title = "Stereo Rendering";
     config.windowDesc.swapChainDesc.height = 1024;
     config.windowDesc.swapChainDesc.width = 1600;
+    config.enableVR = true;
     sample.run(config);
 }

@@ -35,7 +35,6 @@ class StereoRendering : public Sample
 public:
     void onLoad() override;
     void onFrameRender() override;
-    void onShutdown() override;
     void onResizeSwapChain() override;
     bool onKeyEvent(const KeyboardEvent& keyEvent) override;
     bool onMouseEvent(const MouseEvent& mouseEvent) override;
@@ -62,6 +61,7 @@ private:
     UniformBuffer::SharedPtr mpBlitUbo;
     bool mShowStereoViews = true;
     void submitSinglePassStereo();
+    void setRenderMode();
 
     static void GUI_CALL getRenderModeCB(void* pVal, void* pUserData);
     static void GUI_CALL setRenderModeCB(const void* pVal, void* pUserData);
