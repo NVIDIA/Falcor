@@ -61,6 +61,7 @@ private:
     UniformBuffer::SharedPtr mpBlitUbo;
     bool mShowStereoViews = true;
     void submitSinglePassStereo();
+    void setRenderMode();
 
     static void GUI_CALL getRenderModeCB(void* pVal, void* pUserData);
     static void GUI_CALL setRenderModeCB(const void* pVal, void* pUserData);

@@ -90,6 +90,26 @@ void StereoRendering::loadSceneCB(void* pThis)
     pSR->loadScene();
 }
 
+void StereoRendering::setRenderMode()
+{
+    if(mpScene)
+    {
+        std::string lights;
+        getSceneLightString(mpScene.get(), lights);
+        std::string defines = "_LIGHT_SOURCES " + lights + "\n";
+
+        switch(mRenderMode)
+        {
+        case SceneRenderer::RenderMode::SinglePassStereo:
+            defines += "_SINGLE_PASS_STEREO";
+            break;
+        }
+
+        mpProgram->setActiveProgramDefines(defines);
+        mpSceneRenderer->setRenderMode(mRenderMode);
+    }
+}
+
 void StereoRendering::loadScene()
 {
     std::string Filename;
@@ -98,10 +118,8 @@ void StereoRendering::loadScene()
         mpScene = Scene::loadFromFile(Filename, Model::GenerateTangentSpace);
         mpSceneRenderer = SceneRenderer::create(mpScene);
 
-        std::string lights;
-        getSceneLightString(mpScene.get(), lights);
-        lights = "_LIGHT_SOURCES " + lights;
-        mpProgram = Program::createFromFile("", "StereoRendering.fs", lights);
+        mpProgram = Program::createFromFile("", "StereoRendering.fs");
+        setRenderMode();
         mpUniformBuffer = UniformBuffer::create(mpProgram->getActiveProgramVersion().get(), "PerFrameCB");
     }
 }
@@ -200,16 +218,7 @@ void StereoRendering::setRenderModeCB(const void* pVal, void* pUserData)
 {
     StereoRendering* pThis = (StereoRendering*)pUserData;
     pThis->mRenderMode = (SceneRenderer::RenderMode)*(uint32_t*)pVal;
-
-    switch(pThis->mRenderMode)
-    {
-    case SceneRenderer::RenderMode::SinglePassStereo:
-        pThis->mpProgram->setActiveProgramDefines("_SINGLE_PASS_STEREO");
-        break;
-    default:
-        pThis->mpProgram->setActiveProgramDefines("");
-    }
-    pThis->mpSceneRenderer->setRenderMode(pThis->mRenderMode);
+    pThis->setRenderMode();
 }
 
 int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ LPSTR lpCmdLine, _In_ int nShowCmd)
