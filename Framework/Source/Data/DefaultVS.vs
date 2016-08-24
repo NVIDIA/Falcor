@@ -43,6 +43,12 @@ layout(location = VERTEX_BONE_WEIGHT_LOC)  in vec4 vBoneWeights;
 layout(location = VERTEX_BONE_ID_LOC)      in uvec4 vBoneIds;
 #endif
 
+#ifdef _SINGLE_PASS_STEREO
+#extension GL_NV_viewport_array2: require
+#extension GL_NV_stereo_view_rendering: require
+layout(secondary_view_offset=1) out int gl_Layer;
+#endif
+
 out vec3 normalW;
 out vec3 tangentW;
 out vec3 bitangentW;
@@ -57,6 +63,7 @@ void main()
 #else
     mat4 worldMat = gWorldMat[gl_InstanceID];
 #endif
+
     posW = (worldMat * vPos).xyz;
     gl_Position = gCam.viewProjMat * worldMat * vPos;
     texC = vTexC;
@@ -64,4 +71,10 @@ void main()
     normalW = (mat3x3(worldMat) * vNormal).xyz;
     tangentW = (mat3x3(worldMat) * vTangent).xyz;
     bitangentW = (mat3x3(worldMat) * vBitangent).xyz;
+
+#ifdef _SINGLE_PASS_STEREO
+  gl_SecondaryPositionNV.x = (gCam.rightEyeViewProjMat * vec4(posW, 1)).x;
+  gl_SecondaryPositionNV.yzw = gl_Position.yzw;
+  gl_Layer = 0;
+#endif
 }
