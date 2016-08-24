@@ -27,27 +27,13 @@
 ***************************************************************************/
 #version 420
 #include "hlslglslcommon.h"
+#define _COMPILE_DEFAULT_VS
 #include "VertexAttrib.h"
 #include "ShaderCommon.h"
 
-layout(location = VERTEX_POSITION_LOC)  in vec4 vPos;
-layout(location = VERTEX_TEXCOORD_LOC) in vec2 vTexC;
-
-#ifdef _VERTEX_BLENDING
-layout(location = VERTEX_BONE_WEIGHT_LOC)  in vec4 vBoneWeights;
-layout(location = VERTEX_BONE_ID_LOC)      in uvec4 vBoneIds;
-#endif
-
-out vec2 texC;
-
 void main()
 {
-    mat4 worldMat;
-#ifdef _VERTEX_BLENDING
-    mat4 worldMat = gWorldMat[gl_InstanceID]  * blendVertices(vBoneWeights, vBoneIds);
-#else
-    worldMat = gWorldMat[gl_InstanceID];
-#endif
+    mat4 worldMat = getWorldMat();
     gl_Position = worldMat * vPos;
 #ifdef _APPLY_PROJECTION
     gl_Position = gCam.viewProjMat * gl_Position;
