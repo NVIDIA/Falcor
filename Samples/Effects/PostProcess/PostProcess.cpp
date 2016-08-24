@@ -71,13 +71,13 @@ void PostProcess::loadImage()
     switch(mHdrImageIndex)
     {
     case HdrImage::AtTheWindow:
-        filename = "20060807_wells6_hd.hdr";
+        filename = "LightProbes\\20060807_wells6_hd.hdr";
         break;
     case HdrImage::EveningSun:
-        filename = "hallstatt4_hd.hdr";
+        filename = "LightProbes\\hallstatt4_hd.hdr";
         break;
     case HdrImage::OvercastDay:
-        filename = "20050806-03_hd.hdr";
+        filename = "LightProbes\\20050806-03_hd.hdr";
         break;
     }
 

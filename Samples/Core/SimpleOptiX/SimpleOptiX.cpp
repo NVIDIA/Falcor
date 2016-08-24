@@ -162,7 +162,7 @@ void SimpleOptix::onLoad()
     mpDirLight->setWorldDirection(vec3(-0.5f, -0.2f, -1.0f));
 
     // Load default model
-    loadSceneFromFile("bumpyplane.fscene");
+    loadSceneFromFile("Scenes//bumpyplane.fscene");
 
     initUI();
 }

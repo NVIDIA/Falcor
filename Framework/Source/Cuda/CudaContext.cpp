@@ -88,7 +88,7 @@ namespace Cuda {
         cuCtxCreate(&mpCudaContext, CU_CTX_SCHED_AUTO, mpCudaDevice );
 
 		//Add CUDA possible header locations paths//
-		const std::string cudaPathEnvVar = "CUDA_PATH";
+		const std::string cudaPathEnvVar = "CUDA_PATH_V7_5";
         std::string cudaPath;
 		if (Falcor::getEnvironemntVariable(cudaPathEnvVar, cudaPath)) {
 			Falcor::addDataDirectory(cudaPath + std::string("/include/"));

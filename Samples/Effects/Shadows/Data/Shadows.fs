@@ -36,13 +36,12 @@ void main()
     ShadingOutput result;
     fragColor = vec4(0,0,0,1);
 #foreach p in _LIGHT_SOURCES
-        if($(_valIndex) == lightIndex)
-        {
-            evalMaterial(shAttr, $(p), result, true);
-	    shadowFactor = calcShadowFactor(gCsmData[$(_valIndex)], ShadowsDepthC, shAttr.P);
-	    fragColor.rgb += result.diffuseAlbedo * result.diffuseIllumination * shadowFactor;
-	    fragColor.rgb += result.specularAlbedo * result.specularIllumination * (0.01f + shadowFactor * 0.99f);
-        }
+    {
+        evalMaterial(shAttr, $(p), result, $(_valIndex) == 0);
+    	shadowFactor = calcShadowFactor(gCsmData[$(_valIndex)], ShadowsDepthC, shAttr.P);
+        fragColor.rgb += result.diffuseAlbedo * result.diffuseIllumination * shadowFactor;
+        fragColor.rgb += result.specularAlbedo * result.specularIllumination * (0.01f + shadowFactor * 0.99f);
+    }
 #endforeach
     fragColor.rgb += gAmbient * result.diffuseAlbedo * 0.1;
     if(visualizeCascades)

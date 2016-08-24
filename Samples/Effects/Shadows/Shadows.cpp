@@ -98,7 +98,7 @@ void Shadows::createScene(const std::string& filename)
 void Shadows::onLoad()
 {
     initUI();
-    createScene("dragonplane.fscene");
+    createScene("Scenes/dragonplane.fscene");
     createVisualizationProgram();
 }
 
