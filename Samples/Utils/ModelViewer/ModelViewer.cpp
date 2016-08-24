@@ -219,7 +219,7 @@ void ModelViewer::setModelUIElements()
 void ModelViewer::onLoad()
 {
     mpCamera = Camera::create();
-    mpProgram = Program::createFromFile("ModelViewer.vs", "ModelViewer.fs");
+    mpProgram = Program::createFromFile("", "ModelViewer.fs");
 
     // create rasterizer state
     RasterizerState::Desc wireframeDesc;

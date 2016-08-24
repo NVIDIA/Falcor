@@ -112,7 +112,6 @@ namespace Falcor
         { VERTEX_BONE_WEIGHT_LOC,   VERTEX_BONE_WEIGHT_NAME,    ResourceFormat::RGBA32Float },
         { VERTEX_BONE_ID_LOC,       VERTEX_BONE_ID_NAME,        ResourceFormat::RGBA8Uint },
         { VERTEX_DIFFUSE_COLOR_LOC, VERTEX_DIFFUSE_COLOR_NAME,  ResourceFormat::RGBA32Float },
-        { VERTEX_AO_RADIUS_LOC,     VERTEX_AO_RADIUS_NAME,      ResourceFormat::R32Float },
     };
 
 
@@ -724,8 +723,6 @@ namespace Falcor
             return pAiMesh->HasBones();
         case VERTEX_DIFFUSE_COLOR_LOC:
             return pAiMesh->HasVertexColors(0);
-        case VERTEX_AO_RADIUS_LOC:
-            return false; //currently unsupported
         case VERTEX_TEXCOORD_LOC:
             return pAiMesh->HasTextureCoords(0);
         default:

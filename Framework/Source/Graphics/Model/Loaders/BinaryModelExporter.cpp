@@ -122,8 +122,6 @@ namespace Falcor
             return AttribType_Color;
         else if(name == VERTEX_TEXCOORD_NAME)
             return AttribType_TexCoord;
-        else if(name == VERTEX_AO_RADIUS_NAME)
-            return AttribType_AORadius;
 
         should_not_get_here();
         return AttribType_Max;
