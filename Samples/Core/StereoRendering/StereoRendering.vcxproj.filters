@@ -15,9 +15,6 @@
     <None Include="Data\StereoRendering.fs">
       <Filter>Data</Filter>
     </None>
-    <None Include="Data\StereoRendering.vs">
-      <Filter>Data</Filter>
-    </None>
     <None Include="Data\Blit.fs">
       <Filter>Data</Filter>
     </None>

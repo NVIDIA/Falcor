@@ -104,7 +104,7 @@ void StereoRendering::loadScene()
         std::string lights;
         getSceneLightString(mpScene.get(), lights);
         lights = "_LIGHT_SOURCES " + lights;
-        mpProgram = Program::createFromFile("StereoRendering.vs", "StereoRendering.fs", lights);
+        mpProgram = Program::createFromFile("", "StereoRendering.fs", lights);
         mpUniformBuffer = UniformBuffer::create(mpProgram->getActiveProgramVersion().get(), "PerFrameCB");
     }
 }

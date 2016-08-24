@@ -23,7 +23,6 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Data\DeferredPass.fs" />
-    <None Include="Data\DeferredPass.vs" />
     <None Include="Data\LightingPass.fs" />
   </ItemGroup>
   <PropertyGroup Label="Globals">

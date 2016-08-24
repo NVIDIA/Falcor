@@ -23,7 +23,6 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="data\MaterialEditor.fs" />
-    <None Include="data\MaterialEditor.vs" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{31CABFA1-B7A1-4705-B3F0-E714F10E34C7}</ProjectGuid>

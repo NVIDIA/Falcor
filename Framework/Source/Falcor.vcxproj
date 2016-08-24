@@ -587,6 +587,7 @@
     <None Include="..\..\Externals\GLM\glm\gtx\wrap.inl" />
     <None Include="..\CopyData.bat" />
     <None Include="..\CopyLibs.bat" />
+    <None Include="Data\DefaultVS.vs" />
     <None Include="Data\Effects\GaussianBlur.fs" />
     <None Include="Data\Effects\ShadowPass.fs" />
     <None Include="Data\Effects\ShadowPass.gs" />

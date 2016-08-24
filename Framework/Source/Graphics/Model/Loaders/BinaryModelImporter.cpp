@@ -200,8 +200,6 @@ namespace Falcor
             return VERTEX_DIFFUSE_COLOR_NAME;
         case AttribType_TexCoord:
             return VERTEX_TEXCOORD_NAME;
-        case AttribType_AORadius:
-            return VERTEX_AO_RADIUS_NAME;
         case AttribType_Tangent:
             return VERTEX_TANGENT_NAME;
         case AttribType_Bitangent:
@@ -272,8 +270,6 @@ namespace Falcor
             return VERTEX_DIFFUSE_COLOR_LOC;
         case AttribType_TexCoord:
             return VERTEX_TEXCOORD_LOC;
-        case AttribType_AORadius:
-            return VERTEX_AO_RADIUS_LOC;
         case AttribType_Tangent:
             return VERTEX_TANGENT_LOC;
         case AttribType_Bitangent:

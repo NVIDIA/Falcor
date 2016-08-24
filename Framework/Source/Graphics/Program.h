@@ -57,7 +57,7 @@ namespace Falcor
         using SharedConstPtr = std::shared_ptr<const Program>;
 
         /** create a new program object.
-            \param[in] vertexFile Vertex shader filename.
+            \param[in] vertexFile Vertex shader filename. If this string is empty (""), it will use a default vertex shader which transforms and outputs all the vertex attributes.
             \param[in] fragmentFile Fragment shader filename.
             \param[in] shaderDefines A string of macro definitions to set into the shaders. Definitions are separated by a newline characters. The macro definition will be assigned to all the shaders.
             \return A new object, or nullptr if creation failed.
@@ -73,7 +73,7 @@ namespace Falcor
         static SharedPtr createFromString(const std::string& vertexShader, const std::string& fragmentShader, const std::string& shaderDefines = "");
 
         /** create a new program object.
-            \param[in] vertexFile Vertex shader filename.
+            \param[in] vertexFile Vertex shader filename. If this string is empty (""), it will use a default vertex shader which transforms and outputs all the vertex attributes.
             \param[in] fragmentFile Fragment shader filename.
             \param[in] geometryFile Geometry shader filename.
             \param[in] hullFile Hull shader filename.

@@ -54,7 +54,7 @@ void SimpleCuda::onLoad()
 
 	loadModelFromFile("ogre/bs_smile.obj");
 
-	mpProgram = Program::createFromFile("SimpleCuda.vs", "SimpleCuda.fs");
+	mpProgram = Program::createFromFile("", "SimpleCuda.fs");
 
 	Sampler::Desc samplerDesc;
 	samplerDesc.setFilterMode(Sampler::Filter::Linear, Sampler::Filter::Linear, Sampler::Filter::Point);

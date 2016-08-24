@@ -15,8 +15,5 @@
     <None Include="Data\ModelViewer.fs">
       <Filter>Data</Filter>
     </None>
-    <None Include="Data\ModelViewer.vs">
-      <Filter>Data</Filter>
-    </None>
   </ItemGroup>
 </Project>

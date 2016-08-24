@@ -15,8 +15,5 @@
     <None Include="Data\SceneEditorSample.fs">
       <Filter>Data</Filter>
     </None>
-    <None Include="Data\SceneEditorSample.vs">
-      <Filter>Data</Filter>
-    </None>
   </ItemGroup>
 </Project>

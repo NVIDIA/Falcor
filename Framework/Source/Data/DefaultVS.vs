@@ -26,51 +26,10 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 #version 420
-
+#define _COMPILE_DEFAULT_VS
 #include "VertexAttrib.h"
-#include "ShaderCommon.h"
-#include "HlslGlslCommon.h"
-
-layout(location = VERTEX_POSITION_LOC)  in vec4 vPos;
-layout(location = VERTEX_NORMAL_LOC)    in vec3 vNormal;
-layout(location = VERTEX_TANGENT_LOC)   in vec3 vTangent;
-layout(location = VERTEX_BITANGENT_LOC) in vec3 vBitangent;
-layout(location = VERTEX_TEXCOORD_LOC)  in vec2 vTexC;
-
-#ifdef _VERTEX_BLENDING
-layout(location = VERTEX_BONE_WEIGHT_LOC)  in vec4 vBoneWeights;
-layout(location = VERTEX_BONE_ID_LOC)      in uvec4 vBoneIds;
-#endif
-
-out vec3 normalW;
-out vec3 tangentW;
-out vec3 bitangentW;
-out vec2 texC;
-out vec3 posW;
-
-#ifdef _SINGLE_PASS_STEREO
-#extension GL_NV_viewport_array2: require
-#extension GL_NV_stereo_view_rendering: require
-layout(secondary_view_offset=1) out int gl_Layer;
-#endif
 
 void main()
 {
-#ifdef _VERTEX_BLENDING
-    mat4 worldMat = gWorldMat[gl_InstanceID]  * blendVertices(vBoneWeights, vBoneIds);
-#else
-    mat4 worldMat = gWorldMat[gl_InstanceID];
-#endif
-    posW = (worldMat * vPos).xyz;
-    gl_Position = gCam.viewProjMat * worldMat * vPos;
-    texC = vTexC;
-    normalW = (mat3x3(worldMat) * vNormal).xyz;
-    tangentW = (mat3x3(worldMat) * vTangent).xyz;
-    bitangentW = (mat3x3(worldMat) * vBitangent).xyz;
-
-#ifdef _SINGLE_PASS_STEREO
-  gl_SecondaryPositionNV.x = (gCam.rightEyeViewProjMat * vec4(posW, 1)).x;
-  gl_SecondaryPositionNV.yzw = gl_Position.yzw;
-  gl_Layer = 0;
-#endif
+    defaultVS();
 }

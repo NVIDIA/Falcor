@@ -56,7 +56,6 @@ namespace Falcor
             BoneWeight = VERTEX_BONE_WEIGHT_LOC,
             BoneID = VERTEX_BONE_ID_LOC,
             Color = VERTEX_DIFFUSE_COLOR_LOC,
-            AORadius = VERTEX_AO_RADIUS_LOC,
             TexCoord = VERTEX_TEXCOORD_LOC,
             User0 = VERTEX_USER0_LOC,
             User1 = VERTEX_USER0_LOC + 1,

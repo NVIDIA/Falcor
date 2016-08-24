@@ -168,7 +168,7 @@ void SimpleDeferred::onLoad()
 {
     mpCamera = Camera::create();
 
-	mpDeferredPassProgram = Program::createFromFile("DeferredPass.vs", "DeferredPass.fs");
+	mpDeferredPassProgram = Program::createFromFile("", "DeferredPass.fs");
 
     mpLightingPass = FullScreenPass::create("LightingPass.fs");
 
@@ -404,6 +404,6 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
     config.windowDesc.swapChainDesc.width = 1280;
     config.windowDesc.swapChainDesc.height = 720;
     config.windowDesc.resizableWindow = true;
-    config.windowDesc.title = "Falcor Model Viewer";
+    config.windowDesc.title = "Simple Deferred";
     sample.run(config);
 }

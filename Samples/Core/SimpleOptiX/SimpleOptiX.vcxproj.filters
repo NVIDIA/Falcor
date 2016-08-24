@@ -23,8 +23,5 @@
     <None Include="Data\Raster.fs">
       <Filter>Data</Filter>
     </None>
-    <None Include="Data\Raster.vs">
-      <Filter>Data</Filter>
-    </None>
   </ItemGroup>
 </Project>

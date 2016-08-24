@@ -15,8 +15,5 @@
     <None Include="data\MaterialEditor.fs">
       <Filter>data</Filter>
     </None>
-    <None Include="data\MaterialEditor.vs">
-      <Filter>data</Filter>
-    </None>
   </ItemGroup>
 </Project>
