@@ -368,7 +368,7 @@ void ModelViewer::resetCamera()
         mpCamera->setUpVector(glm::vec3(0, 1, 0));
 
         // Update the controllers
-        mModelViewCameraController.setModelParams(ModelCenter, Radius, 5);
+        mModelViewCameraController.setModelParams(ModelCenter, Radius, 3.5f);
         mFirstPersonCameraController.setCameraSpeed(Radius*0.25f);
         m6DoFCameraController.setCameraSpeed(Radius*0.25f);
 

@@ -38,6 +38,7 @@
 #include "Core/Sampler.h"
 #include "Utils/ShaderUtils.h"
 #include "Core/RenderContext.h"
+#include "Utils/StringUtils.h"
 
 namespace Falcor
 {
@@ -106,20 +107,64 @@ namespace Falcor
         pProgram->mShaderStrings[(uint32_t)ShaderType::Hull] = HS;
         pProgram->mShaderStrings[(uint32_t)ShaderType::Domain] = DS;
         pProgram->mCreatedFromFile = createdFromFile;
-        pProgram->setActiveProgramDefines(shaderDefines);
+        pProgram->setInitialProgramDefines(shaderDefines);
 
         return pProgram;
     }
 
-    void Program::setActiveProgramDefines(const std::string& defines)
+    void Program::setInitialProgramDefines(const std::string& defines)
     {
-        mActiveDefineString = defines;
-        mDefineStringDirty = true;
+        if(defines.size())
+        {
+            std::vector<std::string> definesVec = splitString(defines, "\n");
+
+            for(auto def : definesVec)
+            {
+                if(def.size())
+                {
+                    // Find the first space
+                    size_t space = def.find(' ');
+                    std::string val;
+                    if(space != std::string::npos)
+                    {
+                        val = def.substr(space + 1);
+                        def = def.substr(0, space);
+                    }
+                    addDefine(def, val);
+                }
+            }
+        }
+    }
+
+    void Program::addDefine(const std::string& name, const std::string& value)
+    {
+        removeDefine(name);
+        mDefineSet.insert(name);
+        mActiveDefineString += name;
+        if(value.size())
+        {
+            mActiveDefineString += ' ' + value;
+        }
+        mActiveDefineString += '\n';
+        mLinkRequired = true;
+    }
+
+    void Program::removeDefine(const std::string& name)
+    {
+        auto& def = mDefineSet.find(name);
+        if(def != mDefineSet.end())
+        {
+            mDefineSet.erase(def);
+            size_t start = mActiveDefineString.find(name);
+            size_t end = mActiveDefineString.find('\n', start);
+            mActiveDefineString.erase(start, end-start+1);
+            mLinkRequired = true;
+        }
     }
 
     ProgramVersion::SharedConstPtr Program::getActiveProgramVersion() const
     {
-        if(mDefineStringDirty)
+        if(mLinkRequired)
         {
             const auto& it = mProgramVersions.find(mActiveDefineString);
             ProgramVersion::SharedConstPtr pVersion = nullptr;
@@ -138,7 +183,7 @@ namespace Falcor
                 }
             }
             mpActiveProgram = mProgramVersions[mActiveDefineString];
-            mDefineStringDirty = false;
+            mLinkRequired = false;
         }
 
         return mpActiveProgram;
@@ -201,7 +246,7 @@ namespace Falcor
         for(auto& pProgram : sPrograms)
         {
 			pProgram->mProgramVersions.clear();
-			pProgram->setActiveProgramDefines(pProgram->mActiveDefineString);
+            pProgram->mLinkRequired = true;
         }
     }
 

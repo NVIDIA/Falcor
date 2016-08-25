@@ -72,7 +72,7 @@ private:
         ModelViewCamera,
         FirstPersonCamera,
         SixDoFCamera
-    } mCameraType = SixDoFCamera;
+    } mCameraType = ModelViewCamera;
 
     CameraController& getActiveCameraController();
 

@@ -32,6 +32,7 @@
 #include <vector>
 #include "Core/ProgramVersion.h"
 #include "Core/UniformBuffer.h"
+#include <unordered_set>
 
 namespace Falcor
 {
@@ -105,10 +106,18 @@ namespace Falcor
         */
         ProgramVersion::SharedConstPtr getActiveProgramVersion() const;
 
-        /** Sets the active program defines. This might cause the creation of a new API program object.
-            \param[in] Defines A string of macro definitions to set into the shaders. Definitions are separated by a newline characters. The macro definition will be assigned to all the shaders.
+        /** Adds a macro definition to the program. The new definition will be added to the end of the define string.
+            \param[in] name The name of define. Must be valid
+            \param[in] value Optional. The value of the define string
+
+            If the macro already exists, it will remove the existing one and then add the new macro. The new definition will be added to the end of the list, so it's not a replace operation.
         */
-        void setActiveProgramDefines(const std::string& defines);
+        void addDefine(const std::string& name, const std::string& value = "");
+
+        /** Remove a macro definition from the program. If the definition doesn't exist, the function call will be silently ignored.
+            \param[in] name The name of define. Must be valid
+        */
+        void removeDefine(const std::string& name);
 
         /** Get the location of an input attribute for the active program version. Note that different versions might return different locations.
             \param[in] Attribute The attribute name in the program
@@ -156,13 +165,15 @@ namespace Falcor
         std::string mShaderStrings[kShaderCount]; // Either a filename or a string, depending on the value of mCreatedFromFile
 
         std::string mActiveDefineString;
+        std::unordered_set<std::string> mDefineSet;
 
         // We are doing lazy compilation, so these are mutable
-        mutable bool mDefineStringDirty = true;
+        mutable bool mLinkRequired = true;
         mutable std::map<const std::string, ProgramVersion::SharedConstPtr> mProgramVersions;
         mutable ProgramVersion::SharedConstPtr mpActiveProgram = nullptr;
         mutable std::map<const std::string, UniformBuffer::SharedPtr> mUboMap;
 
+        void setInitialProgramDefines(const std::string& defines);
         std::string getProgramDescString() const;
         static std::vector<Program*> sPrograms;
 

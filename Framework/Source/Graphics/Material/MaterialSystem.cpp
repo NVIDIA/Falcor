@@ -91,24 +91,18 @@ namespace Falcor
             ProgramVersion::SharedConstPtr pMaterialProg = findProgramInMap(programMap, pProgVersion);
             if(pMaterialProg == nullptr)
             {
-                // Get the active defines
-                const std::string activeDefs = pProgram->getActiveDefines();
-
                 // Add the material desc
                 std::string materialDesc;
                 pMaterial->getMaterialDescStr(materialDesc);
-                materialDesc = "_MS_STATIC_MATERIAL_DESC " + materialDesc;
-                std::string newDefs = materialDesc + "\n" + activeDefs;
+                pProgram->addDefine("_MS_STATIC_MATERIAL_DESC", materialDesc);
 
-                // Compile
-                pProgram->setActiveProgramDefines(newDefs);
-                
+               
                 // Get the program version and set it into the map
                 pMaterialProg = pProgram->getActiveProgramVersion();
                 programMap[pProgVersion] = pMaterialProg;
 
                 // Restore the previous define string
-                pProgram->setActiveProgramDefines(activeDefs);
+                pProgram->removeDefine("_MS_STATIC_MATERIAL_DESC");
             }
 
             return pMaterialProg;

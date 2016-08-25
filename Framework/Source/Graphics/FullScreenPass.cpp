@@ -90,24 +90,22 @@ namespace Falcor
         dsDesc.setStencilWriteMask(!disableStencil);
         mpDepthStencilState = DepthStencilState::create(dsDesc);
 
-        mVpMaskString = std::string();
+        std::string defs = shaderDefines;
         std::string gs;
 
         if(viewportMask)
         {
-            mVpMaskString += "\n_VIEWPORT_MASK " + std::to_string(viewportMask) + "\n";
+            defs += "_VIEWPORT_MASK " + std::to_string(viewportMask) + "\n";
             if(checkForViewportArray2Support())
             {
-                mVpMaskString += "_USE_VP2_EXT\n";
+                defs += "_USE_VP2_EXT\n";
             }
             else
             {
-                mVpMaskString += "_OUTPUT_PRIM_COUNT " + std::to_string(__popcnt(viewportMask)) + "\n";
+                defs += "_OUTPUT_PRIM_COUNT " + std::to_string(__popcnt(viewportMask)) + "\n";
                 gs = "Framework\\FullScreenPass.gs";
             }
         }
-
-        std::string defs = shaderDefines + "\n" + mVpMaskString;
 
         const std::string vs("Framework\\FullScreenPass.vs");
         mpProgram = Program::createFromFile(vs, fragmentShaderFile, gs, "", "", defs);

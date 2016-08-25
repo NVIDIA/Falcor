@@ -229,12 +229,9 @@ namespace Falcor
 		if (setPerModelData(pContext, currentData))
 		{
 			// Bind the program
-			std::string activeDefines;
 			if(pModel->hasBones())
 			{
-				// Store the active program defines.
-				activeDefines = pProgram->getActiveDefines();
-				pProgram->setActiveProgramDefines(activeDefines + "\n_VERTEX_BLENDING");
+				pProgram->addDefine("_VERTEX_BLENDING");
 			}
 
 
@@ -249,8 +246,8 @@ namespace Falcor
 			// Restore the program state
 			if(pModel->hasBones())
 			{
-				pProgram->setActiveProgramDefines(activeDefines);
-			}		
+                pProgram->removeDefine("_VERTEX_BLENDING");
+            }
 		}
 
     }
