@@ -103,12 +103,12 @@ namespace Falcor
 
         /** Get the API handle of the active program
         */
-        ProgramVersion::SharedConstPtr getActiveProgramVersion() const { return mpActiveProgram; }
+        ProgramVersion::SharedConstPtr getActiveProgramVersion() const;
 
         /** Sets the active program defines. This might cause the creation of a new API program object.
             \param[in] Defines A string of macro definitions to set into the shaders. Definitions are separated by a newline characters. The macro definition will be assigned to all the shaders.
         */
-        bool setActiveProgramDefines(const std::string defines);
+        void setActiveProgramDefines(const std::string& defines);
 
         /** Get the location of an input attribute for the active program version. Note that different versions might return different locations.
             \param[in] Attribute The attribute name in the program
@@ -151,14 +151,17 @@ namespace Falcor
         static const uint32_t kShaderCount = (uint32_t)ShaderType::Count;
 
         Program();
-        static SharedPtr createInternal(const std::string& vs, const std::string& fs, const std::string& gs, const std::string& hs, const std::string& ds, const std::string& shaderDefines, bool isFromFile);
-        ProgramVersion::SharedConstPtr link(const std::string& defines);
+        static SharedPtr createInternal(const std::string& vs, const std::string& fs, const std::string& gs, const std::string& hs, const std::string& ds, const std::string& shaderDefines, bool createdFromFile);
+        ProgramVersion::SharedConstPtr link(const std::string& defines) const;
         std::string mShaderStrings[kShaderCount]; // Either a filename or a string, depending on the value of mCreatedFromFile
 
-        std::map<const std::string, ProgramVersion::SharedConstPtr> mProgramVersions;
-        std::map<const std::string, UniformBuffer::SharedPtr> mUboMap;
-        ProgramVersion::SharedConstPtr mpActiveProgram = nullptr;
         std::string mActiveDefineString;
+
+        // We are doing lazy compilation, so these are mutable
+        mutable bool mDefineStringDirty = true;
+        mutable std::map<const std::string, ProgramVersion::SharedConstPtr> mProgramVersions;
+        mutable ProgramVersion::SharedConstPtr mpActiveProgram = nullptr;
+        mutable std::map<const std::string, UniformBuffer::SharedPtr> mUboMap;
 
         std::string getProgramDescString() const;
         static std::vector<Program*> sPrograms;

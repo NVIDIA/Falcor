@@ -68,7 +68,7 @@ namespace Falcor
         /** Sets the active program defines. This might cause the creation of a new API program object.
             \param[in] Defines A string of macro definitions to set into the shaders. Definitions are separated by a newline characters. The macro definition will be assigned to all the shaders.
         */
-        bool setActiveProgramDefines(const std::string defines) { return mpProgram->setActiveProgramDefines(mVpMaskString + defines); }
+        void setActiveProgramDefines(const std::string defines) { mpProgram->setActiveProgramDefines(mVpMaskString + defines); }
 
     protected:
         FullScreenPass() = default;

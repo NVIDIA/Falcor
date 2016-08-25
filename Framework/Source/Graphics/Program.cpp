@@ -97,7 +97,7 @@ namespace Falcor
         return createInternal(vertexShader, fragmentShader, geometryShader, hullShader, domainShader, shaderDefines, false);
     }
 
-    Program::SharedPtr Program::createInternal(const std::string& VS, const std::string& FS, const std::string& GS, const std::string& HS, const std::string& DS, const std::string& shaderDefines, bool bFromFile)
+    Program::SharedPtr Program::createInternal(const std::string& VS, const std::string& FS, const std::string& GS, const std::string& HS, const std::string& DS, const std::string& shaderDefines, bool createdFromFile)
     {
         SharedPtr pProgram = SharedPtr(new Program);
         pProgram->mShaderStrings[(uint32_t)ShaderType::Vertex] = VS.size() ? VS : "DefaultVS.vs";
@@ -105,39 +105,46 @@ namespace Falcor
         pProgram->mShaderStrings[(uint32_t)ShaderType::Geometry] = GS;
         pProgram->mShaderStrings[(uint32_t)ShaderType::Hull] = HS;
         pProgram->mShaderStrings[(uint32_t)ShaderType::Domain] = DS;
-        pProgram->mCreatedFromFile = bFromFile;
+        pProgram->mCreatedFromFile = createdFromFile;
+        pProgram->setActiveProgramDefines(shaderDefines);
 
-        if(pProgram->setActiveProgramDefines(shaderDefines) == false)
-        {
-            pProgram = nullptr;
-        }
         return pProgram;
     }
 
-    bool Program::setActiveProgramDefines(const std::string Defines) 
+    void Program::setActiveProgramDefines(const std::string& defines)
     {
-        const auto& it = mProgramVersions.find(Defines);
-        ProgramVersion::SharedConstPtr pVersion = nullptr;
-        if(it == mProgramVersions.end())
-        {
-            // New version
-            pVersion = link(Defines);
-
-            if(pVersion == nullptr)
-            {
-                return false;
-            }
-            else
-            {
-                mProgramVersions[Defines] = std::move(pVersion);
-            }
-        }
-        mpActiveProgram = mProgramVersions[Defines];
-        mActiveDefineString = Defines;
-        return true;
+        mActiveDefineString = defines;
+        mDefineStringDirty = true;
     }
 
-    ProgramVersion::SharedConstPtr Program::link(const std::string& defines)
+    ProgramVersion::SharedConstPtr Program::getActiveProgramVersion() const
+    {
+        if(mDefineStringDirty)
+        {
+            const auto& it = mProgramVersions.find(mActiveDefineString);
+            ProgramVersion::SharedConstPtr pVersion = nullptr;
+            if(it == mProgramVersions.end())
+            {
+                // New version
+                pVersion = link(mActiveDefineString);
+
+                if(pVersion == nullptr)
+                {
+                    return false;
+                }
+                else
+                {
+                    mProgramVersions[mActiveDefineString] = std::move(pVersion);
+                }
+            }
+            mpActiveProgram = mProgramVersions[mActiveDefineString];
+            mDefineStringDirty = false;
+        }
+
+        return mpActiveProgram;
+    }
+
+    ProgramVersion::SharedConstPtr Program::link(const std::string& defines) const
     {
         mUboMap.clear();
         while(1)
@@ -200,17 +207,17 @@ namespace Falcor
 
     const Shader* Program::getShader(ShaderType Type) const
     {
-        return mpActiveProgram->getShader(Type);
+        return getActiveProgramVersion()->getShader(Type);
     }
     
     int32_t Program::getAttributeLocation(const std::string& Attribute) const
     {
-        return mpActiveProgram->getAttributeLocation(Attribute);
+        return getActiveProgramVersion()->getAttributeLocation(Attribute);
     }
 
     uint32_t Program::getUniformBufferBinding(const std::string& Name) const
     {
-        return mpActiveProgram->getUniformBufferBinding(Name);
+        return getActiveProgramVersion()->getUniformBufferBinding(Name);
     }
 
     UniformBuffer::SharedPtr Program::getUniformBuffer(const std::string& bufName)
