@@ -64,10 +64,10 @@ void SceneEditorSample::initNewScene()
         mpEditor = nullptr;    // Need to do that for the UI to work correctly
         mpEditor = SceneEditor::create(mpScene);
 
+        mpProgram = Program::createFromFile("", "SceneEditorSample.fs");
         std::string lights;
         getSceneLightString(mpScene.get(), lights);
-        lights = "_LIGHT_SOURCES " + lights;
-        mpProgram = Program::createFromFile("", "SceneEditorSample.fs", lights);
+        mpProgram->addDefine("_LIGHT_SOURCES", lights);
         mpLightBuffer = UniformBuffer::create(mpProgram->getActiveProgramVersion().get(), "PerFrameCB");
     }
 }

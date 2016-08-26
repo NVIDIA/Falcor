@@ -72,14 +72,14 @@ namespace Falcor
     };
 #undef INVERT_Y
 
-    FullScreenPass::UniquePtr FullScreenPass::create(const std::string& fragmentShaderFile, const std::string& shaderDefines, bool disableDepth, bool disableStencil, uint32_t viewportMask)
+    FullScreenPass::UniquePtr FullScreenPass::create(const std::string& fragmentShaderFile, const Program::DefineList& programDefines, bool disableDepth, bool disableStencil, uint32_t viewportMask)
     {
         UniquePtr pPass = UniquePtr(new FullScreenPass());
-        pPass->init(fragmentShaderFile, shaderDefines, disableDepth, disableStencil, viewportMask);
+        pPass->init(fragmentShaderFile, programDefines, disableDepth, disableStencil, viewportMask);
         return pPass;
     }
 
-    void FullScreenPass::init(const std::string& fragmentShaderFile, const std::string& shaderDefines, bool disableDepth, bool disableStencil, uint32_t viewportMask)
+    void FullScreenPass::init(const std::string& fragmentShaderFile, const Program::DefineList& programDefines, bool disableDepth, bool disableStencil, uint32_t viewportMask)
     {
         // create depth stencil state
         DepthStencilState::Desc dsDesc;
@@ -90,19 +90,19 @@ namespace Falcor
         dsDesc.setStencilWriteMask(!disableStencil);
         mpDepthStencilState = DepthStencilState::create(dsDesc);
 
-        std::string defs = shaderDefines;
+        Program::DefineList defs = programDefines;
         std::string gs;
 
         if(viewportMask)
         {
-            defs += "_VIEWPORT_MASK " + std::to_string(viewportMask) + "\n";
+            defs.add("_VIEWPORT_MASK", std::to_string(viewportMask));
             if(checkForViewportArray2Support())
             {
-                defs += "_USE_VP2_EXT\n";
+                defs.add("_USE_VP2_EXT");
             }
             else
             {
-                defs += "_OUTPUT_PRIM_COUNT " + std::to_string(__popcnt(viewportMask)) + "\n";
+                defs.add("_OUTPUT_PRIM_COUNT", std::to_string(__popcnt(viewportMask)));
                 gs = "Framework\\FullScreenPass.gs";
             }
         }

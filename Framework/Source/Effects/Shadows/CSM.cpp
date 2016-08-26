@@ -137,7 +137,8 @@ namespace Falcor
         }
         mCsmData.cascadeCount = cascadeCount;
         createShadowPassResources(mapWidth, mapHeight);
-        mDepthPass.pProg = Program::createFromFile(kDepthPassVSFile, "", "_APPLY_PROJECTION");
+        mDepthPass.pProg = Program::createFromFile(kDepthPassVSFile, "");
+        mDepthPass.pProg->addDefine("_APPLY_PROJECTION");
 
         mpLightCamera = Camera::create();
         RasterizerState::Desc rsDesc;
@@ -201,27 +202,28 @@ namespace Falcor
     {
         mShadowPass.mapSize = glm::vec2(float(mapWidth), float(mapHeight));
         const ResourceFormat depthFormat = ResourceFormat::D32Float;
-        std::string progDef = "_CASCADE_COUNT " + std::to_string(mCsmData.cascadeCount) + "\n";
+        Program::DefineList progDef;
+        progDef.add("_CASCADE_COUNT", std::to_string(mCsmData.cascadeCount));
 
 #ifdef _ALPHA_FROM_ALBEDO_MAP
-        progDef += "_ALPHA_CHANNEL a\n";
+        progDef.add("_ALPHA_CHANNEL", "a");
 #else
-        progDef += "_ALPHA_CHANNEL r\n";
+        progDef.add("_ALPHA_CHANNEL", "r");
 #endif
         ResourceFormat colorFormat = ResourceFormat::Unknown;
         switch(mCsmData.filterMode)
         {
         case CsmFilterVsm:
             colorFormat = ResourceFormat::RG32Float;
-            progDef += "_VSM\n";
+            progDef.add("_VSM");
             break;
         case CsmFilterEvsm2:
             colorFormat = ResourceFormat::RG32Float;
-            progDef += "_EVSM2\n";
+            progDef.add("_EVSM2");
             break;
         case CsmFilterEvsm4:
             colorFormat = ResourceFormat::RGBA32Float;
-            progDef += "_EVSM4\n";
+            progDef.add("_EVSM4");
             break;
         default:
             mShadowPass.pFbo = FboHelper::createDepthOnly(mapWidth, mapHeight, depthFormat, mCsmData.cascadeCount);

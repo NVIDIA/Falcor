@@ -29,10 +29,10 @@
 #include "Framework.h"
 #include <string>
 #include <map>
+#include <forward_list>
 #include <vector>
 #include "Core/ProgramVersion.h"
 #include "Core/UniformBuffer.h"
-#include <unordered_set>
 
 namespace Falcor
 {
@@ -57,21 +57,27 @@ namespace Falcor
 
         using SharedConstPtr = std::shared_ptr<const Program>;
 
+        class DefineList : public std::forward_list<std::pair<std::string, std::string>>
+        {
+        public:
+            void add(const std::string& name, const std::string& val = "") { std::forward_list<std::pair<std::string, std::string>>::push_front({name, val}); }
+        };
+
         /** create a new program object.
             \param[in] vertexFile Vertex shader filename. If this string is empty (""), it will use a default vertex shader which transforms and outputs all the vertex attributes.
             \param[in] fragmentFile Fragment shader filename.
-            \param[in] shaderDefines A string of macro definitions to set into the shaders. Definitions are separated by a newline characters. The macro definition will be assigned to all the shaders.
+            \param[in] programDefines A string of macro definitions to set into the shaders. Definitions are separated by a newline characters. The macro definition will be assigned to all the shaders.
             \return A new object, or nullptr if creation failed.
         */
-        static SharedPtr createFromFile(const std::string& vertexFile, const std::string& fragmentFile, const std::string& shaderDefines = "");
+        static SharedPtr createFromFile(const std::string& vertexFile, const std::string& fragmentFile, const DefineList& programDefines = DefineList());
 
         /** create a new program object.
         \param[in] vertexFile Vertex shader string.
         \param[in] fragmentFile Fragment shader string.
-        \param[in] shaderDefines A string of macro definitions to set into the shaders. Definitions are separated by a newline characters. The macro definition will be assigned to all the shaders.
+        \param[in] programDefines A string of macro definitions to set into the shaders. Definitions are separated by a newline characters. The macro definition will be assigned to all the shaders.
         \return A new object, or nullptr if creation failed.
         */
-        static SharedPtr createFromString(const std::string& vertexShader, const std::string& fragmentShader, const std::string& shaderDefines = "");
+        static SharedPtr createFromString(const std::string& vertexShader, const std::string& fragmentShader, const DefineList& programDefines = DefineList());
 
         /** create a new program object.
             \param[in] vertexFile Vertex shader filename. If this string is empty (""), it will use a default vertex shader which transforms and outputs all the vertex attributes.
@@ -79,10 +85,10 @@ namespace Falcor
             \param[in] geometryFile Geometry shader filename.
             \param[in] hullFile Hull shader filename.
             \param[in] domainFile Domain shader filename.
-            \param[in] shaderDefines A string of macro definitions to set into the shaders. Definitions are separated by a newline characters. The macro definition will be assigned to all the shaders.
+            \param[in] programDefines A string of macro definitions to set into the shaders.
             \return A new object, or nullptr if creation failed.
         */
-        static SharedPtr createFromFile(const std::string& vertexFile, const std::string& fragmentFile, const std::string& geometryFile, const std::string& hullFile, const std::string& domainFile, const std::string& shaderDefines = "");
+        static SharedPtr createFromFile(const std::string& vertexFile, const std::string& fragmentFile, const std::string& geometryFile, const std::string& hullFile, const std::string& domainFile, const DefineList& programDefines = DefineList());
 
         /** create a new program object.
         \param[in] vertexShader Vertex shader string.
@@ -90,10 +96,10 @@ namespace Falcor
         \param[in] geometryShader Geometry shader string.
         \param[in] hullShader Hull shader string.
         \param[in] domainShader Domain shader string.
-        \param[in] shaderDefines A string of macro definitions to set into the shaders. Definitions are separated by a newline characters. The macro definition will be assigned to all the shaders.
+        \param[in] programDefines A list of macro definitions to set into the shaders.
         \return A new object, or nullptr if creation failed.
         */
-        static SharedPtr createFromString(const std::string& vertexShader, const std::string& fragmentShader, const std::string& geometryShader, const std::string& hullShader, const std::string& domainShader, const std::string& shaderDefines = "");
+        static SharedPtr createFromString(const std::string& vertexShader, const std::string& fragmentShader, const std::string& geometryShader, const std::string& hullShader, const std::string& domainShader, const DefineList& programDefines = DefineList());
 
         ~Program();
         /** Get a shader object associated with this program
@@ -106,19 +112,24 @@ namespace Falcor
         */
         ProgramVersion::SharedConstPtr getActiveProgramVersion() const;
 
-        /** Adds a macro definition to the program. The new definition will be added to the end of the define string.
+        /** Adds a macro definition to the program. If the macro already exists, its will be replaced.
+
             \param[in] name The name of define. Must be valid
             \param[in] value Optional. The value of the define string
-
-            If the macro already exists, it will remove the existing one and then add the new macro. The new definition will be added to the end of the list, so it's not a replace operation.
+            \return true if the macro already existed, otherwise false
         */
-        void addDefine(const std::string& name, const std::string& value = "");
+        bool addDefine(const std::string& name, const std::string& value = "");
 
         /** Remove a macro definition from the program. If the definition doesn't exist, the function call will be silently ignored.
             \param[in] name The name of define. Must be valid
+            \return true if the macro existed, otherwise false
         */
-        void removeDefine(const std::string& name);
+        bool removeDefine(const std::string& name);
 
+        /** Clear the macro definition list
+        */
+        void clearDefines() { mDefineList.clear(); }
+    
         /** Get the location of an input attribute for the active program version. Note that different versions might return different locations.
             \param[in] Attribute The attribute name in the program
             \return The index of the attribute if it is found, otherwise CApiProgram#InvalidLocation
@@ -133,7 +144,9 @@ namespace Falcor
 
         /** Get the macro definition string of the active program version
         */
-        const std::string& getActiveDefines() const { return mActiveDefineString; }
+        const DefineList& getActiveDefinesList() const { return mDefineList; }
+
+        std::string getActiveDefinesString() const;
 
         /** Reload and relink all programs.
         */
@@ -160,20 +173,18 @@ namespace Falcor
         static const uint32_t kShaderCount = (uint32_t)ShaderType::Count;
 
         Program();
-        static SharedPtr createInternal(const std::string& vs, const std::string& fs, const std::string& gs, const std::string& hs, const std::string& ds, const std::string& shaderDefines, bool createdFromFile);
-        ProgramVersion::SharedConstPtr link(const std::string& defines) const;
+        static SharedPtr createInternal(const std::string& vs, const std::string& fs, const std::string& gs, const std::string& hs, const std::string& ds, const DefineList& programDefines, bool createdFromFile);
+        ProgramVersion::SharedConstPtr link() const;
         std::string mShaderStrings[kShaderCount]; // Either a filename or a string, depending on the value of mCreatedFromFile
 
-        std::string mActiveDefineString;
-        std::unordered_set<std::string> mDefineSet;
+        DefineList mDefineList;
 
         // We are doing lazy compilation, so these are mutable
         mutable bool mLinkRequired = true;
-        mutable std::map<const std::string, ProgramVersion::SharedConstPtr> mProgramVersions;
+        mutable std::map<const DefineList, ProgramVersion::SharedConstPtr> mProgramVersions;
         mutable ProgramVersion::SharedConstPtr mpActiveProgram = nullptr;
         mutable std::map<const std::string, UniformBuffer::SharedPtr> mUboMap;
 
-        void setInitialProgramDefines(const std::string& defines);
         std::string getProgramDescString() const;
         static std::vector<Program*> sPrograms;
 

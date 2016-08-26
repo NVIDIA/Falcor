@@ -88,11 +88,12 @@ void Shadows::createScene(const std::string& filename)
     setLightIndex(0);
 
     // Create the main effect
-    std::string defines;
-    getSceneLightString(mpScene.get(), defines);
-    defines = "_LIGHT_SOURCES " + defines + "\n";
-    defines += "_LIGHT_COUNT " + std::to_string(mpScene->getLightCount());
-    mLightingPass.pProgram = Program::createFromFile("Shadows.vs", "Shadows.fs", defines);
+    mLightingPass.pProgram = Program::createFromFile("Shadows.vs", "Shadows.fs");
+    std::string lights;
+    getSceneLightString(mpScene.get(), lights);
+    mLightingPass.pProgram->addDefine("_LIGHT_SOURCES", lights);
+    mLightingPass.pProgram->addDefine("_LIGHT_COUNT", std::to_string(mpScene->getLightCount()));
+
     mLightingPass.pPerFrameCB = UniformBuffer::create(mLightingPass.pProgram->getActiveProgramVersion().get(), "PerFrameCB");
 }
 
@@ -188,8 +189,11 @@ void Shadows::onResizeSwapChain()
 void Shadows::createVisualizationProgram()
 {
     // Create the shadow visualizer
-    const auto progDef = (mControls.cascadeCount == 1) ? "" : "_USE_2D_ARRAY";
-    mShadowVisualizer.pProgram = FullScreenPass::create("VisualizeMap.fs", progDef);
+    mShadowVisualizer.pProgram = FullScreenPass::create("VisualizeMap.fs");
+    if(mControls.cascadeCount > 1)
+    {
+        mShadowVisualizer.pProgram->getProgram()->addDefine("_USE_2D_ARRAY");
+    }
     mShadowVisualizer.pBuffer = UniformBuffer::create(mShadowVisualizer.pProgram->getProgram()->getActiveProgramVersion().get(), "PerImageCB");
 }
 

@@ -72,10 +72,10 @@ namespace Falcor
         mpDepthStencilState = DepthStencilState::create(dsDesc);
 
         // Create the program
-        std::string defines;
+        Program::DefineList defines;
         if(renderStereo)
         {
-            defines += "_SINGLE_PASS_STEREO";
+            defines.add("_SINGLE_PASS_STEREO");
         }
         mpProgram = Program::createFromFile("Effects\\SkyBox.vs", "Effects\\Skybox.fs", defines);
         mpUbo = UniformBuffer::create(mpProgram->getActiveProgramVersion().get(), "PerFrameCB");

@@ -29,6 +29,7 @@
 #include <string>
 #include <vector>
 #include <map>
+#include "Graphics/Program.h"
 
 namespace Falcor
 {
@@ -161,17 +162,16 @@ namespace Falcor
             \param[in] shaderDefines Optional. A string containing a list of macro definitions to add. Do not put the #define directive, just the macro. Macro definitions are separated by a newline character.
             \return true if parsing was succesful, otherwise false. Call GetErrorString() to get the error message.
         */
-        static bool parseShader(const std::string& filename, std::string& shader, std::string& errorMsg, const std::string& shaderDefines = "");
+        static bool parseShader(const std::string& filename, std::string& shader, std::string& errorMsg, const Program::DefineList& shaderDefines = Program::DefineList());
 
     private:
         ShaderPreprocessor(std::string& errorStr);
-        bool parseInternal(const std::string& filename, std::string& shader, std::string& errorMsg, const std::string& shaderDefines = "");
 
         std::string& mErrorStr;
 
         using pragma_block_generate_body = bool(*)(const std::string& bodyTemplate, const std::string& linePragma, std::string& body, std::string& error);
 
-        bool addDefines(std::string& shader, const std::string& shaderDefines);
+        bool addDefines(std::string& shader, const Program::DefineList& shaderDefines);
         bool addIncludes(std::string& shader);
         bool parsePragmaBlock(std::string& shader, const std::string& startPragma, const std::string& endPragma, pragma_block_generate_body pfnGenerateBody);
         bool parseExpect(std::string& shader);
