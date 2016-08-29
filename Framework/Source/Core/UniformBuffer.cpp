@@ -124,7 +124,7 @@ namespace Falcor
         assert(pData);
         memcpy(pData + offset, mData.data() + offset, size);
         mpBuffer->unmap();
-        mDirty = true;
+        mDirty = false;
     }
 
     template<bool ExpectArrayIndex>

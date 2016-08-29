@@ -112,35 +112,28 @@ namespace Falcor
         return pProgram;
     }
 
-    bool Program::addDefine(const std::string& name, const std::string& value)
+    void Program::addDefine(const std::string& name, const std::string& value)
     {
-        mLinkRequired = true;
-        for(auto& def : mDefineList)
+        // Make sure that it doesn't exist already
+        if(mDefineList.find(name) != mDefineList.end())
         {
-            // Check if the name already exists
-            if(name == def.first)
+            if(mDefineList[name] == value)
             {
-                def.second = value;
-                return true;
+                // Same define
+                return;
             }
         }
-
-        // New macro
-        mDefineList.add(name, value);
-        return false;
+        mLinkRequired = true;
+        mDefineList[name] = value;
     }
 
-    bool Program::removeDefine(const std::string& name)
+    void Program::removeDefine(const std::string& name)
     {
-        for(auto& def : mDefineList)
+        if(mDefineList.find(name) != mDefineList.end())
         {
-            if(name == def.first)
-            {
-                mDefineList.remove(def);
-                return true;
-            }
+            mLinkRequired = true;
+            mDefineList.erase(name);
         }
-        return false;
     }
 
     ProgramVersion::SharedConstPtr Program::getActiveProgramVersion() const

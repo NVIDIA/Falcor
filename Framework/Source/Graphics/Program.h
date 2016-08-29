@@ -29,7 +29,6 @@
 #include "Framework.h"
 #include <string>
 #include <map>
-#include <forward_list>
 #include <vector>
 #include "Core/ProgramVersion.h"
 #include "Core/UniformBuffer.h"
@@ -57,10 +56,11 @@ namespace Falcor
 
         using SharedConstPtr = std::shared_ptr<const Program>;
 
-        class DefineList : public std::forward_list<std::pair<std::string, std::string>>
+        class DefineList : public std::map<std::string, std::string>
         {
         public:
-            void add(const std::string& name, const std::string& val = "") { std::forward_list<std::pair<std::string, std::string>>::push_front({name, val}); }
+            void add(const std::string& name, const std::string& val = "") { (*this)[name] = val; }
+            void remove(const std::string& name) {(*this).erase(name); }
         };
 
         /** create a new program object.
@@ -116,15 +116,13 @@ namespace Falcor
 
             \param[in] name The name of define. Must be valid
             \param[in] value Optional. The value of the define string
-            \return true if the macro already existed, otherwise false
         */
-        bool addDefine(const std::string& name, const std::string& value = "");
+        void addDefine(const std::string& name, const std::string& value = "");
 
         /** Remove a macro definition from the program. If the definition doesn't exist, the function call will be silently ignored.
             \param[in] name The name of define. Must be valid
-            \return true if the macro existed, otherwise false
         */
-        bool removeDefine(const std::string& name);
+        void removeDefine(const std::string& name);
 
         /** Clear the macro definition list
         */
