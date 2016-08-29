@@ -863,7 +863,7 @@ namespace Falcor
         return true;
     }
 
-    bool ShaderPreprocessor::addDefines(std::string& code, const std::string& shaderDefines)
+    bool ShaderPreprocessor::addDefines(std::string& code, const Program::DefineList& shaderDefines)
     {
         // Adding the defines right after the version string
         size_t verStart = 0;
@@ -905,19 +905,15 @@ namespace Falcor
 
         std::string allDefines = "#ifndef " + api + "\n#define " + api + "\n#endif\n" + extensions + "\n";
 
-        if(shaderDefines.size())
+        for(const auto& defDcl : shaderDefines)
         {
-            // Build a string containing all defines
-            std::vector<std::string> definesVec = splitString(shaderDefines, "\n");
-
-            for(const auto& Def : definesVec)
+            std::string def = defDcl.first;
+            if(defDcl.second.size())
             {
-                if(Def.size())
-                {
-                    addMacroDefinitionToMap(Def);
-                    allDefines += "#define " + Def + "\n";;
-                }
+                def += ' ' + defDcl.second;
             }
+            addMacroDefinitionToMap(def);
+            allDefines += "#define " + def + "\n";;
         }
 
         // Patch the code
@@ -967,7 +963,7 @@ namespace Falcor
         mDefineMap.clear();
     }
 
-    bool ShaderPreprocessor::parseShader(const std::string& filename, std::string& shader, std::string& errorMsg, const std::string& shaderDefines)
+    bool ShaderPreprocessor::parseShader(const std::string& filename, std::string& shader, std::string& errorMsg, const Program::DefineList& shaderDefines)
     {
         ShaderPreprocessor preProc(errorMsg);
 

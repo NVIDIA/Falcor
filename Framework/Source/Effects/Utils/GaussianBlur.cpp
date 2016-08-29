@@ -71,17 +71,19 @@ namespace Falcor
 
     void GaussianBlur::createProgram()
     {
-        std::string defines = kShaderFilename + "\n";
-        defines += std::string("_KERNEL_WIDTH ") + std::to_string(mKernelSize) + "\n";
+        Program::DefineList defines;
+        defines.add("_KERNEL_WIDTH", std::to_string(mKernelSize));
         if(mpTmpFbo->getColorTexture(0)->getArraySize() > 1)
         {
-            defines += "_USE_TEX2D_ARRAY\n";
+            defines.add("_USE_TEX2D_ARRAY");
         }
 
         uint32_t arraySize = mpTmpFbo->getColorTexture(0)->getArraySize();
         uint32_t layerMask = (arraySize > 1) ? ((1 << arraySize) - 1) : 0;
-        mpHorizontalBlur = FullScreenPass::create(kShaderFilename, defines + "_HORIZONTAL_BLUR", true, true, layerMask);
-        mpVerticalBlur = FullScreenPass::create(kShaderFilename, defines + "_VERTICAL_BLUR", true, true, layerMask);
+        mpHorizontalBlur = FullScreenPass::create(kShaderFilename, defines, true, true, layerMask);
+        mpHorizontalBlur->getProgram()->addDefine("_HORIZONTAL_BLUR");
+        mpVerticalBlur = FullScreenPass::create(kShaderFilename, defines, true, true, layerMask);
+        mpVerticalBlur->getProgram()->addDefine("_VERTICAL_BLUR");
         mpUbo = UniformBuffer::create(mpVerticalBlur->getProgram()->getActiveProgramVersion().get(), "PerImageCB");
     }
 

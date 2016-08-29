@@ -48,12 +48,12 @@ namespace Falcor
 
         /** create a new object
             \param[in] fragmentShaderFile Fragment shader filename
-            \param[in] shaderDefines Optional. A string with macro definitions to be patched into the shaders. Definitions are seperated by a newline.
+            \param[in] shaderDefines Optional. A list of macro definitions to be patched into the shaders.
             \param[in] disableDepth Optional. Disable depth test (and therefore depth writes).  This is the common case; however, e.g. writing depth in fullscreen passes can sometimes be useful.
             \param[in] disableStencil Optional. As DisableDepth for stencil.
             \param[in] viewportMask Optional. If different than zero, than will be used to initialize the gl_Layer and gl_ViewportMask[]. Useful for multi-projection passes
         */
-        static UniquePtr create(const std::string& fragmentShaderFile, const std::string& shaderDefines = "", bool disableDepth = true, bool disableStencil = true, uint32_t viewportMask = 0);
+        static UniquePtr create(const std::string& fragmentShaderFile, const Program::DefineList& programDefines = Program::DefineList(), bool disableDepth = true, bool disableStencil = true, uint32_t viewportMask = 0);
 
         /** Execute the pass\n.The function will change the state of the rendering context. You can wrap this call with RenderContext#PushState() and RenderContext#PopState() to save and restore the render state.
             \param[in] pRenderContext The render context.
@@ -65,26 +65,15 @@ namespace Falcor
         const Program* getProgram() const { return mpProgram.get(); }
         Program* getProgram() { return mpProgram.get(); }
 
-        /** Sets the active program defines. This might cause the creation of a new API program object.
-            \param[in] Defines A string of macro definitions to set into the shaders. Definitions are separated by a newline characters. The macro definition will be assigned to all the shaders.
-        */
-        bool setActiveProgramDefines(const std::string defines) { return mpProgram->setActiveProgramDefines(mVpMaskString + defines); }
-
     protected:
         FullScreenPass() = default;
 
-        /** initialize a new object
-        \param[in] fragmentShaderFile Fragment shader filename
-        \param[in] shaderDefines Optional. A string with macro definitions to be patched into the shaders. Definitions are seperated by a newline.
-        \param[in] disableDepth Optional. Disable depth test (and therefore depth writes).  This is the common case; however, e.g. writing depth in fullscreen passes can sometimes be useful.
-        \param[in] disableStencil Optional. As DisableDepth for stencil.
-        */
-        void init(const std::string & fragmentShaderFile, const std::string & shaderDefines, bool disableDepth, bool disableStencil, uint32_t viewportMask);
+        void init(const std::string & fragmentShaderFile, const Program::DefineList& programDefines, bool disableDepth, bool disableStencil, uint32_t viewportMask);
 
     private:
         Program::SharedPtr mpProgram;
         DepthStencilState::SharedPtr mpDepthStencilState;
-        std::string mVpMaskString;
+
         // Static
         static Buffer::SharedPtr spVertexBuffer;
         static Vao::SharedPtr    spVao;

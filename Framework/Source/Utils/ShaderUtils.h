@@ -27,7 +27,7 @@
 ***************************************************************************/
 #pragma once
 #include <string>
-#include "Core/Shader.h"
+#include "Graphics/Program.h"
 
 namespace Falcor
 {
@@ -43,7 +43,7 @@ namespace Falcor
     \return A pointer to a new object if compilation was successful, otherwise nullptr.
     In case of compilation error, a message box will appear with the log, allowing quick shader fixes without having to restart the program.
     */
-    const Shader::SharedPtr createShaderFromFile(const std::string& filename, ShaderType type, const std::string& shaderDefines = "");
+    const Shader::SharedPtr createShaderFromFile(const std::string& filename, ShaderType type, const Program::DefineList& shaderDefines = Program::DefineList());
 
     /** create a new shader from a string. The shader will be processed using the shader pre-processor before creating the hardware object. See CShaderPreprocessor reference to see its supported directives.
     \param[in] shaderString The shader.
@@ -51,5 +51,5 @@ namespace Falcor
     \param[in] shaderDefines A string containing macro definitions to be patched into the shaders. Defines are separated by newline.
     \return A pointer to a new object if compilation was successful, otherwise nullptr.
     */
-    const Shader::SharedPtr createShaderFromString(const std::string& shaderString, ShaderType type, const std::string& shaderDefines = "");
+    const Shader::SharedPtr createShaderFromString(const std::string& shaderString, ShaderType type, const Program::DefineList& shaderDefines = Program::DefineList());
 }

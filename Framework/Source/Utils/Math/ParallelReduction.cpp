@@ -38,12 +38,13 @@ namespace Falcor
     ParallelReduction::ParallelReduction(ParallelReduction::Type reductionType, uint32_t readbackLatency, uint32_t width, uint32_t height) : mReductionType(reductionType)
     {
         ResourceFormat texFormat;
-        std::string defines = "_TILE_SIZE " + std::to_string(kTileSize) + "\n";
+        Program::DefineList defines;
+        defines.add("_TILE_SIZE", std::to_string(kTileSize));
         switch(reductionType)
         {
         case Type::MinMax:
            texFormat = ResourceFormat::RG32Float;
-           defines += "_MIN_MAX_REDUCTION\n";
+           defines.add("_MIN_MAX_REDUCTION");
            break;
         default:
             should_not_get_here();
@@ -59,7 +60,8 @@ namespace Falcor
         {
             pFbo = FboHelper::create2D(1, 1, &texFormat);
         }
-        mpFirstIterProg = FullScreenPass::create(fsFilename, defines + "_FIRST_ITERATION\n");
+        mpFirstIterProg = FullScreenPass::create(fsFilename, defines);
+        mpFirstIterProg->getProgram()->addDefine("_FIRST_ITERATION");
         mpRestIterProg = FullScreenPass::create(fsFilename, defines);
         mpUbo = UniformBuffer::create(mpFirstIterProg->getProgram()->getActiveProgramVersion().get(), "PerImageCB");
 

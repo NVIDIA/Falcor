@@ -40,17 +40,17 @@ void NormalMapFiltering::initUI()
     mpGui->addCheckBox("Lean Map", &mUseLeanMap);
 }
 
-std::string getProgramDefines(bool leanMap, const Scene* pScene, uint32_t leanMapCount)
+void setProgramDefines(Program* pProgram, bool leanMap, const Scene* pScene, uint32_t leanMapCount)
 {
-    std::string defines;
-    getSceneLightString(pScene, defines);
-    defines = "_LIGHT_SOURCES " + defines;
+    std::string lights;
+    pProgram->clearDefines();
+    getSceneLightString(pScene, lights);
+    pProgram->addDefine("_LIGHT_SOURCES", lights);
     if(leanMap)
     {
-        defines += "\n_MS_USER_NORMAL_MAPPING\n";
-        defines += "_LEAN_MAP_COUNT " + std::to_string(leanMapCount) + "\n";
+        pProgram->addDefine("_MS_USER_NORMAL_MAPPING");
+        pProgram->addDefine("_LEAN_MAP_COUNT", std::to_string(leanMapCount));
     }
-    return defines;
 }
 
 void NormalMapFiltering::onLoad()
@@ -70,7 +70,7 @@ void NormalMapFiltering::onLoad()
     mpLinearSampler = Sampler::create(samplerDesc);
     pScene->getModel(0)->bindSamplerToMaterials(mpLinearSampler);
 
-    mpProgram->setActiveProgramDefines(getProgramDefines(mUseLeanMap, pScene.get(), mpLeanMap->getRequiredLeanMapShaderArraySize()));
+    setProgramDefines(mpProgram.get(), mUseLeanMap, pScene.get(), mpLeanMap->getRequiredLeanMapShaderArraySize());
     mpLightBuffer = UniformBuffer::create(mpProgram->getActiveProgramVersion().get(), "PerFrameCB");
     mpLeanMapBuffer = UniformBuffer::create(mpProgram->getActiveProgramVersion().get(), "LeanMapsCB");
     mpLeanMap->setIntoUniformBuffer(mpLeanMapBuffer.get(), 0, mpLinearSampler.get());
@@ -82,7 +82,7 @@ void NormalMapFiltering::onLoad()
 
 void NormalMapFiltering::onFrameRender()
 {
-    mpProgram->setActiveProgramDefines(getProgramDefines(mUseLeanMap, mpRenderer->getScene(), mpLeanMap->getRequiredLeanMapShaderArraySize()));
+    setProgramDefines(mpProgram.get(), mUseLeanMap, mpRenderer->getScene(), mpLeanMap->getRequiredLeanMapShaderArraySize());
 
     const glm::vec4 clearColor(0.38f, 0.52f, 0.10f, 1);
     mpDefaultFBO->clear(clearColor, 1.0f, 0, FboAttachmentType::All);

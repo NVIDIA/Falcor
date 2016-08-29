@@ -103,33 +103,32 @@ namespace Falcor
 
     void ToneMapping::createToneMapPass(ToneMapping::Operator op)
     {
-        std::string define;
+        mpToneMapPass = FullScreenPass::create(kShaderFilename);
+
         mOperator = op;
         switch(op)
         {
         case Operator::Clamp:
-            define = "_CLAMP";
+            mpToneMapPass->getProgram()->addDefine("_CLAMP");
             break;
         case Operator::Linear:
-            define = "_LINEAR";
+            mpToneMapPass->getProgram()->addDefine("_LINEAR");
             break;
         case Operator::Reinhard:
-            define = "_REINHARD";
+            mpToneMapPass->getProgram()->addDefine("_REINHARD");
             break;
         case Operator::ReinhardModified:
-            define = "_REINHARD_MOD";
+            mpToneMapPass->getProgram()->addDefine("_REINHARD_MOD");
             break;
         case Operator::HejiHableAlu:
-            define = "_HEJI_HABLE_ALU";
+            mpToneMapPass->getProgram()->addDefine("_HEJI_HABLE_ALU");
             break;
         case Operator::HableUc2:
-            define = "_HABLE_UC2";
+            mpToneMapPass->getProgram()->addDefine("_HABLE_UC2");
             break;
         default:
             should_not_get_here();
         }
-
-        mpToneMapPass = FullScreenPass::create(kShaderFilename, define);
 
         // Initialize the UBO offsets
         mpUbo = UniformBuffer::create(mpLuminancePass->getProgram()->getActiveProgramVersion().get(), "PerImageCB");
@@ -143,7 +142,8 @@ namespace Falcor
 
     void ToneMapping::createLuminancePass()
     {
-        mpLuminancePass = FullScreenPass::create(kShaderFilename, "_LUMINANCE");
+        mpLuminancePass = FullScreenPass::create(kShaderFilename);
+        mpLuminancePass->getProgram()->addDefine("_LUMINANCE");
     }
 
     void GUI_CALL ToneMapping::getToneMapOperator(void* pVal, void* pThis)

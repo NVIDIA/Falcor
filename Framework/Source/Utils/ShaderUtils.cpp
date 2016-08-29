@@ -55,7 +55,7 @@ namespace Falcor
         }
     }
 
-    const Shader::SharedPtr createShaderFromString(const std::string& shaderString, ShaderType shaderType, const std::string& shaderDefines)
+    const Shader::SharedPtr createShaderFromString(const std::string& shaderString, ShaderType shaderType, const Program::DefineList& shaderDefines)
     {
         std::string shader = shaderString;
         std::string errorMsg;
@@ -79,7 +79,7 @@ namespace Falcor
         return pShader;
     }
 
-    const Shader::SharedPtr createShaderFromFile(const std::string& filename, ShaderType shaderType, const std::string& shaderDefines)
+    const Shader::SharedPtr createShaderFromFile(const std::string& filename, ShaderType shaderType, const Program::DefineList& shaderDefines)
     {
         // New shader, look for the file
         std::string fullpath;
