@@ -611,13 +611,13 @@ void _fn sampleMaterial(
 			{
 			case NDFBeckmann: // Beckmann normal distribution function 
 			{
-				result.thp *= sampleBeckmannDistribution(wo, roughness, v2(rSample.x, rSample.y), m, result.wi, result.pdf);
+				result.thp *= sampleBeckmannDistribution(wo, roughness, rSample, m, result.wi, result.pdf);
 			}
 			break;
 
 			case NDFGGX: // GGX normal distribution function
 			{
-				result.thp *= sampleGGXDistribution(wo, roughness, v2(rSample.x, rSample.y), m, result.wi, result.pdf);
+				result.thp *= sampleGGXDistribution(wo, roughness, rSample, m, result.wi, result.pdf);
 			}
 			break;
 			}
@@ -635,6 +635,7 @@ void _fn sampleMaterial(
         else
         {
             // Rescale random number value
+            rSample.x -= specData.pmf;
             rSample.x /= 1.f - specData.pmf;
         }
 	}
