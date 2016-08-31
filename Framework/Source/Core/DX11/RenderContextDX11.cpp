@@ -141,7 +141,7 @@ namespace Falcor
         pCtx->OMSetRenderTargets(colorTargets, pRTV.data(), pDSV);
     }
 
-    void RenderContext::blitFbo(const Fbo* pSource, const Fbo* pTarget, const glm::ivec4& srcRegion, const glm::ivec4& dstRegion, bool useLinearFiltering, FboAttachmentType copyFlags, int srcIdx, int dstIdx)
+    void RenderContext::blitFbo(const Fbo* pSource, const Fbo* pTarget, const glm::ivec4& srcRegion, const glm::ivec4& dstRegion, bool useLinearFiltering, FboAttachmentType copyFlags, uint32_t srcIdx, uint32_t dstIdx)
 	{
         UNSUPPORTED_IN_DX11("BlitFbo");
 	}

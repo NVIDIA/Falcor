@@ -44,7 +44,7 @@ namespace Falcor
         \param[in] screenWidth The width of the screen
         \param[in] screenHeight The height of the screen
         \param[in] format The requested data format
-        \param[in] pData Destination buffer. Buffer should be allocated by the user. Buffer size should be ScreenWidth*ScreenHeight*GetFormatBytesPerPixel(Format)
+        \param[in] pData Destination buffer. Buffer should be allocated by the user. Buffer size should be ScreenWidth*ScreenHeight*getFormatBytesPerBlock(Format)
         */
         void captureToMemory(uint32_t screenWidth, uint32_t screenHeight, ResourceFormat format, uint8_t* pData);
         

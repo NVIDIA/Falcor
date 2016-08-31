@@ -132,8 +132,6 @@ namespace Falcor
 		*/
 		void setZeroAttachments(uint32_t width, uint32_t height, uint32_t layers=1, uint32_t samples=1, bool fixedSampleLocs=false);
 
-    protected:
-        friend class Window;
 #ifdef FALCOR_DX11
         ID3D11DepthStencilView* getDepthStencilView() const;
         ID3D11RenderTargetView* getRenderTargetView(uint32_t rtIndex) const;

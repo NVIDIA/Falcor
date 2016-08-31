@@ -506,8 +506,8 @@ namespace Falcor
 
 			for (uint32_t mipCounter = 0; mipCounter < mipDepth; ++mipCounter)
 			{
-				uint32_t heightPitch = max(width >> mipCounter, 1) * getFormatBytesPerBlock(format);
-				uint32_t currentMipHeight = max(height >> mipCounter, 1);
+				uint32_t heightPitch = max(width >> mipCounter, 1U) * getFormatBytesPerBlock(format);
+				uint32_t currentMipHeight = max(height >> mipCounter, 1U);
 				uint32_t depthPitch = currentMipHeight * heightPitch;	
 
 				for (uint32_t depthCounter = 0; depthCounter < depth; ++depthCounter)
@@ -658,7 +658,7 @@ namespace Falcor
 		} 
 		else
 		{
-			mipLevels = (ddsData.header.flags & DdsHeader::kMipCountMask) ? max(ddsData.header.mipCount, 1) : 1;
+			mipLevels = (ddsData.header.flags & DdsHeader::kMipCountMask) ? max(ddsData.header.mipCount, 1U) : 1;
 		}
 	
 		if (ddsData.hasDX10Header)

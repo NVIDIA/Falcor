@@ -81,7 +81,7 @@ namespace Falcor
                     element.SemanticIndex = arrayIndex;
                     pData->ElementDesc.push_back(element);
 
-                    element.AlignedByteOffset += getFormatBytesPerPixel(pLayout->getElementFormat(elemID));
+                    element.AlignedByteOffset += getFormatBytesPerBlock(pLayout->getElementFormat(elemID));
                 }
             }
         }

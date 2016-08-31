@@ -43,7 +43,7 @@ namespace Falcor
 
     }
 
-    void ShaderStorageBuffer::readFromGPU(size_t offset, size_t size)
+    void ShaderStorageBuffer::readFromGPU(size_t offset, size_t size) const
     {
     }
 

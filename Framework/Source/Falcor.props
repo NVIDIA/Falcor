@@ -3,7 +3,7 @@
   <ImportGroup Label="PropertySheets" />
   <PropertyGroup Label="UserMacros">
     <FALCOR_PROJECT_DIR>C:\Work\GIT\FalcorGH\framework\source\\..\</FALCOR_PROJECT_DIR>
-    <FALCOR_BACKEND>FALCOR_GL</FALCOR_BACKEND>
+    <FALCOR_BACKEND>FALCOR_DX11</FALCOR_BACKEND>
   </PropertyGroup>
   <PropertyGroup>
     <OutDir>$(SolutionDir)Bin\$(PlatformShortName)\$(Configuration)\</OutDir>

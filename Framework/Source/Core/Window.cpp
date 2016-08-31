@@ -45,8 +45,7 @@ namespace Falcor
     {
         if(mpDefaultFBO == nullptr)
         {
-            mpDefaultFBO = std::unique_ptr<Fbo>(new Fbo());
-            mpDefaultFBO->mApiHandle = 0;
+            mpDefaultFBO = Fbo::create();
         }
 
         mpDefaultFBO->attachColorTarget(pColorTex, 0, 0);

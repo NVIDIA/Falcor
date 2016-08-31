@@ -144,7 +144,7 @@ namespace Falcor
             {
                 auto& data = initData[D3D11CalcSubresource(mip, array, mipLevels)];
                 data.pSysMem = pSrc;
-                data.SysMemPitch = getFormatBytesPerPixel(format) * (width >> mip);
+                data.SysMemPitch = getFormatBytesPerBlock(format) * (width >> mip);
                 data.SysMemSlicePitch = data.SysMemPitch * (height >> mip);
                 pSrc += data.SysMemSlicePitch * depth;
             }
@@ -255,7 +255,7 @@ namespace Falcor
         return pTexture;
     }
 
-    Texture::SharedPtr Texture::create3D(uint32_t width, uint32_t height, uint32_t depth, ResourceFormat format, uint32_t mipLevels, const void* pData)
+    Texture::SharedPtr Texture::create3D(uint32_t width, uint32_t height, uint32_t depth, ResourceFormat format, uint32_t mipLevels, const void* pData, bool isSparse)
     {
         bool isDepth = isDepthStencilFormat(format);
         if(isDepth && mipLevels)
