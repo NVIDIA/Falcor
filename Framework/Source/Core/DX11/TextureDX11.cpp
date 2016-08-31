@@ -376,5 +376,10 @@ namespace Falcor
 		UNSUPPORTED_IN_DX11("Texture::GenerateMips");
 	}
 
+    Texture::SharedPtr Texture::createView(uint32_t firstArraySlice, uint32_t arraySize, uint32_t mostDetailedMip, uint32_t mipCount) const
+    {
+        UNSUPPORTED_IN_DX11("createView");
+        return nullptr;
+    }
 }
 #endif //#ifdef FALCOR_DX11

@@ -676,5 +676,11 @@ namespace Falcor
     void Window::pollForEvents()
     {
     }
+
+    bool checkExtensionSupport(const std::string& name)
+    {
+        UNSUPPORTED_IN_DX11("checkExtensionSupport");
+        return false;
+    }
 }
 #endif //#ifdef FALCOR_DX11
