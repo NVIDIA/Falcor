@@ -140,7 +140,7 @@ namespace Falcor
         if(var == mVariables.end())
         {
             // Textures might come from our struct. Try again.
-            std::string texName = name + ".Texture";
+            std::string texName = name + ".t";
             var = mVariables.find(texName);
         }
 #endif
