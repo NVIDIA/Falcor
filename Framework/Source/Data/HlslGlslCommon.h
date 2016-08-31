@@ -45,6 +45,7 @@
 
 #define UNIFORM_BUFFER(name, index) cbuffer name : register(b##index)
 #define mix lerp
+#define fract frac
 
 /*** Vectors / Matrices ***/
 #define VECTOR(gl, dx) typedef vector<dx, 2> gl##2; typedef vector<dx, 3> gl##3; typedef vector<dx, 4> gl##4;

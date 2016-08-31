@@ -66,7 +66,7 @@ vec4 getRBCColor(float x)
 //    }
 //}
 
-void mainImage(out vec4 fragColor, in vec2 fragCoord)
+vec4 mainImage(in vec2 fragCoord)
 {
     vec2 uv = fragCoord / iResolution.y;
 
@@ -79,7 +79,7 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord)
 
     //param_pos = uv;
 
-    vec2 closest_center = floor(param_pos * freq + vec2(0.5)) / freq;
+    vec2 closest_center = floor(param_pos * freq + vec2(0.5, 0.5)) / freq;
 
     float ballrad = (0.25 + 0.1 * rand(closest_center.x + 37.0 + closest_center.y)) * gap;
     float jitterrad = 0.5 * gap - ballrad;
@@ -99,11 +99,11 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord)
 
     float s = (dist * dist) / (ballrad * ballrad);
 
-    fragColor = mix(
+    vec4 color = mix(
         mix(getRBCColor(dist / ballrad), v4DarkRed, far),
         v4DarkRed,
         smoothstep(ballrad*0.95, ballrad*1.05, dist));
 
+    return color;
     //fragColor.rgb = pow(fragColor.rgb, 2.0f);
-
 }
