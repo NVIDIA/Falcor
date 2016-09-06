@@ -107,6 +107,7 @@
     <ClCompile Include="Utils\Logger.cpp" />
     <ClCompile Include="Utils\Math\ParallelReduction.cpp" />
     <ClCompile Include="Utils\MonitorInfo.cpp" />
+    <ClCompile Include="Utils\Process.cpp" />
     <ClCompile Include="Utils\Profiler.cpp" />
     <ClCompile Include="Utils\Psychophysics\Experiment.cpp" />
     <ClCompile Include="Utils\Psychophysics\SingleThresholdMeasurement.cpp" />
@@ -456,6 +457,7 @@
     <ClInclude Include="Utils\Math\ParallelReduction.h" />
     <ClInclude Include="Utils\MonitorInfo.h" />
     <ClInclude Include="Utils\OS.h" />
+    <ClInclude Include="Utils\Process.h" />
     <ClInclude Include="Utils\Profiler.h" />
     <ClInclude Include="Utils\Psychophysics\Experiment.h" />
     <ClInclude Include="Utils\Psychophysics\SingleThresholdMeasurement.h" />

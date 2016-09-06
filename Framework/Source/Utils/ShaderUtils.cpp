@@ -30,6 +30,9 @@
 #include "Utils/ShaderPreprocessor.h"
 #include "Core/Shader.h"
 #include "Utils/OS.h"
+#include <fstream>
+#include <sstream>
+#include "Utils/Process.h"
 
 namespace Falcor
 {
@@ -55,6 +58,47 @@ namespace Falcor
         }
     }
 
+    bool glslToHlslShader(std::string& shader)
+    {
+        const char* compiler = "crosscompiler.exe";
+        std::string cmdLine;
+        if(findFileInDataDirectories(compiler, cmdLine) == false)
+        {
+            Logger::log(Logger::Level::Fatal, "can't find the cross compiler. Quiting.");
+            exit(1);
+        }
+        std::ofstream o("shader.glsl");
+        o << shader;
+        o.close();
+
+        cmdLine += " -o shader.hlsl shader.glsl";
+        std::unique_ptr<Process> pProcess = std::make_unique<Process>(cmdLine);
+        if(pProcess == nullptr)
+        {
+            Logger::log(Logger::Level::Fatal, "can't start the cross compiler. Quiting.");
+            exit(1);
+        }
+
+        if(pProcess->getRetVal() != 0)
+        {
+            std::string err;
+            pProcess->readStdErr(err);
+            Logger::log(Logger::Level::Error, "Error when trying to convert glsl to hlsl\n" + err);
+            return false;
+        }
+
+        std::ifstream i("shader.hlsl");
+        std::stringstream ss;
+        ss << i.rdbuf();
+        shader = std::move(ss.str());
+
+        // delete the files
+        std::remove("shader.hlsl");
+        std::remove("shader.glsl");
+
+        return true;
+    }
+
     const Shader::SharedPtr createShaderFromString(const std::string& shaderString, ShaderType shaderType, const Program::DefineList& shaderDefines)
     {
         std::string shader = shaderString;
@@ -66,7 +110,12 @@ namespace Falcor
             Logger::log(Logger::Level::Fatal, msg);
             return nullptr;
         }
-
+#ifdef FALCOR_DX11
+        if(glslToHlslShader(shader) == false)
+        {
+            return nullptr;
+        }
+#endif
         std::string log;
         auto pShader = Shader::create(shader, shaderType, log);
         if(pShader == nullptr)
@@ -110,6 +159,16 @@ namespace Falcor
             else
             {
                 // Preprocessing is good
+#ifdef FALCOR_DX11
+                if(glslToHlslShader(shader) == false)
+                {
+                    if(msgBox("retry cross-compilation?", MsgBoxType::RetryCancel) == MsgBoxButton::Cancel)
+                    {
+                        return nullptr;
+                    }
+                    continue;
+                }
+#endif
                 std::string errorLog;
                 auto pShader = Shader::create(shader, shaderType, errorLog);
 

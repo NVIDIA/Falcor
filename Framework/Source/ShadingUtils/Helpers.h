@@ -31,7 +31,7 @@
 #include "HlslGlslCommon.h"
 
 /**
-	Helper macro to iterate through layers
+Helper macro to iterate through layers
 */
 #ifndef _MS_NUM_LAYERS
 #define FOR_MAT_LAYERS(_iterator, _material) for(int _iterator = 0;_iterator<MatMaxLayers && _material.desc.layers[_iterator].type != MatNone;++_iterator)
@@ -40,7 +40,7 @@
 #endif
 
 /*******************************************************************
-					Math functions
+Math functions
 *******************************************************************/
 
 #ifndef M_PIf
@@ -54,11 +54,11 @@
 #ifndef __CUDACC__
 float _fn saturate(float f)
 {
-	return clamp(f, 0.0f, 1.0f);
+    return clamp(f, 0.0f, 1.0f);
 }
 #endif
 
-_fn vec3 sample_disk(float rnd1, float rnd2, float minR = 0.0f)
+_fn vec3 sample_disk(float rnd1, float rnd2, float minR)
 {
     vec3 p;
     const float r = max(sqrt(rnd1), minR);
@@ -67,6 +67,12 @@ _fn vec3 sample_disk(float rnd1, float rnd2, float minR = 0.0f)
     p.y = r * sin(phi);
     p.z = 0.0f;
     return p;
+}
+
+// Note: this is required because GLSL doesn't officially support default arguments
+_fn vec3 sample_disk(float rnd1, float rnd2)
+{
+    return sample_disk(rnd1, rnd2, 0.0f);
 }
 
 _fn vec3 sample_gauss(float rnd1, float rnd2)
@@ -145,7 +151,7 @@ _fn vec3 uniform_sample_hemisphere(float rnd1, float rnd2)
     return p;
 }
 /**
-	Random numbers based on Mersenne Twister
+Random numbers based on Mersenne Twister
 */
 _fn uint rand_init(uint val0, uint val1, uint backoff = 16)
 {
@@ -156,8 +162,8 @@ _fn uint rand_init(uint val0, uint val1, uint backoff = 16)
     for(uint n = 0; n < backoff; n++)
     {
         s0 += 0x9e3779b9;
-        v0 += ((v1<<4)+0xa341316c)^(v1+s0)^((v1>>5)+0xc8013ea4);
-        v1 += ((v0<<4)+0xad90777d)^(v0+s0)^((v0>>5)+0x7e95761e);
+        v0 += ((v1 << 4) + 0xa341316c) ^ (v1 + s0) ^ ((v1 >> 5) + 0xc8013ea4);
+        v1 += ((v0 << 4) + 0xad90777d) ^ (v0 + s0) ^ ((v0 >> 5) + 0x7e95761e);
     }
 
     return v0;
@@ -172,16 +178,16 @@ _fn float rand_next(_ref(uint) s)
 }
 
 /*******************************************************************
-					Geometric routines
+Geometric routines
 *******************************************************************/
 
 void _fn createTangentFrame(in const vec3 normal, _ref(vec3) tangent, _ref(vec3) bitangent)
 {
-	if(abs(normal.x) > abs(normal.y))
-		bitangent = v3(normal.z, 0.f, -normal.x) / length(v2(normal.x, normal.z));
-	else
-		bitangent = v3(0.f, normal.z, -normal.y) / length(v2(normal.y, normal.z));
-	tangent = cross(bitangent, normal);
+    if(abs(normal.x) > abs(normal.y))
+        bitangent = v3(normal.z, 0.f, -normal.x) / length(v2(normal.x, normal.z));
+    else
+        bitangent = v3(0.f, normal.z, -normal.y) / length(v2(normal.y, normal.z));
+    tangent = cross(bitangent, normal);
 }
 
 void _fn reflectFrame(vec3 n, vec3 reflect, _ref(vec3) t, _ref(vec3) b)
@@ -193,7 +199,7 @@ void _fn reflectFrame(vec3 n, vec3 reflect, _ref(vec3) t, _ref(vec3) b)
 }
 
 /*******************************************************************
-					Texturing routines
+Texturing routines
 *******************************************************************/
 
 vec4 _fn sampleTexture(in sampler2D sampler, in const ShadingAttribs ShAttr)
@@ -201,7 +207,7 @@ vec4 _fn sampleTexture(in sampler2D sampler, in const ShadingAttribs ShAttr)
 #ifndef _MS_USER_DERIVATIVES
     return textureBias(sampler, ShAttr.UV, ShAttr.lodBias);
 #else
-	return textureGrad(sampler, ShAttr.UV, ShAttr.DPDX, ShAttr.DPDY);
+    return textureGrad(sampler, ShAttr.UV, ShAttr.DPDX, ShAttr.DPDY);
 #endif
 }
 
@@ -219,26 +225,26 @@ vec4 _fn sampleTexture(in sampler2DArray sampler, in const ShadingAttribs ShAttr
 vec4 _fn evalTex(in uint32_t hasTexture, in const MaterialValue val, in const ShadingAttribs ShAttr, in vec4 defaultValue)
 {
 #ifndef _MS_DISABLE_TEXTURES
-	if(hasTexture != 0)
+    if(hasTexture != 0)
     {
         defaultValue = sampleTexture(val.texture.ptr, ShAttr);
     }
 #endif
-	return defaultValue;
+    return defaultValue;
 }
 
 vec4 _fn evalWithColor(in uint32_t hasTexture, in const MaterialValue val, in const ShadingAttribs ShAttr)
 {
-	return evalTex(hasTexture, val, ShAttr, val.constantColor);
+    return evalTex(hasTexture, val, ShAttr, val.constantColor);
 }
 
 /*******************************************************************
-					Normal mapping
+Normal mapping
 *******************************************************************/
 
 vec3 _fn normalToRGB(in const vec3 normal)
 {
-	return normal * 0.5f + v3(0.5f);
+    return normal * 0.5f + v3(0.5f);
 }
 
 vec3 _fn RGBToNormal(in const vec3 rgbval)
@@ -258,8 +264,8 @@ vec3 _fn toLocal(in vec3 v, in vec3 t, in vec3 b, in vec3 n)
 
 void _fn applyNormalMap(in vec3 texValue, _ref(vec3) n, _ref(vec3) t, _ref(vec3) b)
 {
-	const vec3 normalMap = normalize(texValue);
-	n = fromLocal(normalMap, normalize(t), normalize(b), normalize(n));
+    const vec3 normalMap = normalize(texValue);
+    n = fromLocal(normalMap, normalize(t), normalize(b), normalize(n));
     // Orthogonalize tangent frame
     t = normalize(t - n * dot(t, n));
     b = normalize(b - n * dot(b, n));
@@ -275,16 +281,22 @@ void _fn perturbNormal(in const MaterialData mat, _ref(ShadingAttribs) shAttr, b
 #endif
     )
 {
-	if(forceSample || mat.desc.hasNormalMap != 0)
-	{
-		vec3 texValue = v3(sampleTexture(mat.values.normalMap.texture.ptr, shAttr));
+    if(forceSample || mat.desc.hasNormalMap != 0)
+    {
+        vec3 texValue = v3(sampleTexture(mat.values.normalMap.texture.ptr, shAttr));
         applyNormalMap(RGBToNormal(texValue), shAttr.N, shAttr.T, shAttr.B);
-	}
+    }
 }
 #endif
 
+void _fn perturbNormal(in const MaterialData mat, _ref(ShadingAttribs) shAttr)
+{
+    perturbNormal(mat, shAttr, false);
+}
+
+
 /*******************************************************************
-					Alpha test
+Alpha test
 *******************************************************************/
 
 bool _fn alphaTestEnabled(in const MaterialData mat)
@@ -313,7 +325,7 @@ void _fn applyAlphaTest(in const MaterialData mat, in const ShadingAttribs ShAtt
 }
 
 /*******************************************************************
-					Color conversion
+Color conversion
 *******************************************************************/
 
 

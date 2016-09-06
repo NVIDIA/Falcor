@@ -30,12 +30,12 @@
 #define _FALCOR_HOST_DEVICE_H_
 
 /*******************************************************************
-                    Common structures & routines
+Common structures & routines
 *******************************************************************/
 
 
 /*******************************************************************
-                    Glue code for CPU/GPU compilation
+Glue code for CPU/GPU compilation
 *******************************************************************/
 
 #if (defined(__STDC_HOSTED__) || defined(__cplusplus)) && !defined(__CUDACC__)    // we're in C-compliant compiler, probably host
@@ -52,7 +52,7 @@
 
 #ifdef HOST_CODE
 /*******************************************************************
-                    CPU declarations
+CPU declarations
 *******************************************************************/
 using glm::vec2;
 using glm::vec3;
@@ -78,13 +78,13 @@ struct TexPtr
     };
     Falcor::Texture::SharedPtr pTexture;
     uint64_t pad;
-}; 
+};
 
 static_assert(sizeof(TexPtr) == 4 * sizeof(uint64_t), "TexPtr has a wrong size");
 typedef TexPtr BufPtr;
 #elif defined(CUDA_CODE)
 /*******************************************************************
-                    CUDA declarations
+CUDA declarations
 *******************************************************************/
 // Modifiers
 #define DEFAULTS(x_)
@@ -104,7 +104,7 @@ typedef TexPtr BufPtr;
 #define vec2 float2
 #define vec3 float3
 #define vec4 float4
-typedef float mat4_t [16];
+typedef float mat4_t[16];
 #ifndef mat4
 #define mat4 mat4_t
 #endif
@@ -126,7 +126,7 @@ _fn vec3 cross(const vec3& x, const vec3& y) {
 _fn float length(const vec3& a) { return sqrt(dot(a, a)); }
 _fn float length(const vec2& a) { return sqrt(dot(a, a)); }
 _fn vec3 normalize(const vec3& a) { return a / length(a); }
-_fn vec3 mix(const vec3& a, const vec3& b, const float w) { return a + w * (b-a); }
+_fn vec3 mix(const vec3& a, const vec3& b, const float w) { return a + w * (b - a); }
 _fn vec2 sqrt(const vec2& a) { return v2(sqrt(a.x), sqrt(a.y)); }
 // Texture access
 _fn bool isSamplerBound(sampler2D sampler) { return sampler > 0; }
@@ -142,7 +142,7 @@ struct TexPtr
 typedef TexPtr BufPtr;
 #else
 /*******************************************************************
-                    GLSL declarations
+GLSL declarations
 *******************************************************************/
 #define _fn 
 #define __device__ 
@@ -165,17 +165,21 @@ struct TexPtr
 
 struct BufPtr
 {
+#ifdef FALCOR_GLSL_CROSS
+    uint         ptr[2];
+#else
     uintptr_t    ptr;
+#endif
     uint         pad[6];
 };
 #endif
 
 /*******************************************************************
-                    Lights
+Lights
 *******************************************************************/
 
 /**
-    Types of light sources. Used in LightData structure.
+Types of light sources. Used in LightData structure.
 */
 #define LightPoint           0    ///< Point light source, can be a spot light if its opening angle is < 2pi
 #define LightDirectional     1    ///< Directional light source
@@ -192,8 +196,8 @@ struct CameraData
 {
     mat4            viewMat                DEFAULTS(mat4());                ///< Camera view matrix.
     mat4            projMat                DEFAULTS(mat4());                ///< Camera projection matrix.
-	mat4            viewProjMat            DEFAULTS(mat4());                ///< Camera view-projection matrix.
-	mat4            invViewProj			   DEFAULTS(mat4());                ///< Camera inverse view-projection matrix.
+    mat4            viewProjMat            DEFAULTS(mat4());                ///< Camera view-projection matrix.
+    mat4            invViewProj			   DEFAULTS(mat4());                ///< Camera inverse view-projection matrix.
     mat4            prevViewProjMat        DEFAULTS(mat4());                ///< Camera view-projection matrix associated to previous frame.
 
     vec3            position               DEFAULTS(vec3(0, 0, 0));         ///< Camera world-space position.
@@ -215,13 +219,13 @@ struct CameraData
     mat4            rightEyePrevViewProjMat;
 };
 /*******************************************************************
-                    Material
+Material
 *******************************************************************/
 
-/** Type of the material layer: 
-    Diffuse (Lambert model, can be Oren-Nayar if roughness is not 1), 
-    Reflective material (conductor), 
-    Refractive material (dielectric)
+/** Type of the material layer:
+Diffuse (Lambert model, can be Oren-Nayar if roughness is not 1),
+Reflective material (conductor),
+Refractive material (dielectric)
 */
 #define     MatNone            0            ///< A "null" material. Used to end the list of layers
 #define     MatLambert         1            ///< A simple diffuse Lambertian BRDF layer
@@ -231,8 +235,8 @@ struct CameraData
 #define     MatUser            5            ///< User-defined material, should be parsed and processed by user
 
 /** Type of used Normal Distribution Function (NDF). Options so far
-    Beckmann distribution (original Blinn-Phong)
-    GGX distribution (smoother highlight, better fit for some materials, default)
+Beckmann distribution (original Blinn-Phong)
+GGX distribution (smoother highlight, better fit for some materials, default)
 */
 #define     NDFBeckmann        0    ///< Beckmann distribution for NDF
 #define     NDFGGX             1    ///< GGX distribution for NDF
@@ -243,28 +247,28 @@ struct CameraData
 #define     BlendAdd           2    ///< Material layer is added to the previous layers
 
 /**
-    This number specifies a maximum possible number of layers in a material.
-    There seems to be a good trade-off between performance and flexibility.
-    With three layers, we can represent e.g. a base conductor material with diffuse component, coated with a dielectric.
-    If this number is changed, the scene serializer should make sure the new number of layers is saved/loaded correctly.
+This number specifies a maximum possible number of layers in a material.
+There seems to be a good trade-off between performance and flexibility.
+With three layers, we can represent e.g. a base conductor material with diffuse component, coated with a dielectric.
+If this number is changed, the scene serializer should make sure the new number of layers is saved/loaded correctly.
 */
 #define     MatMaxLayers    3
 
 /**
-    A basic material value. Contains a constant color as well as an optional texture slot.
-    Used for all spatially-varying shading parameters of the material, such as albedo, roughness, etc.
+A basic material value. Contains a constant color as well as an optional texture slot.
+Used for all spatially-varying shading parameters of the material, such as albedo, roughness, etc.
 */
 struct MaterialValue
 {
     TexPtr      texture;
-    vec4        constantColor DEFAULTS(v4(1,1,1,1));
+    vec4        constantColor DEFAULTS(v4(1, 1, 1, 1));
 };
 
 
 /**
-    A description for a single material layer. 
-    Contains information about underlying BRDF, NDF, and rules for blending with other layers.
-    Also contains material properties, such as albedo and roughness.
+A description for a single material layer.
+Contains information about underlying BRDF, NDF, and rules for blending with other layers.
+Also contains material properties, such as albedo and roughness.
 */
 struct MaterialLayerDesc
 {
@@ -272,7 +276,7 @@ struct MaterialLayerDesc
     uint32_t        ndf             DEFAULTS(NDFGGX);              ///< Specifies a model for normal distribution function (NDF): Beckmann, GGX, etc.
     uint32_t        blending        DEFAULTS(BlendAdd);            ///< Specifies how this layer should be combined with previous layers. E.g., blended based on Fresnel (useful for dielectric coatings), or just added on top, etc.
     uint32_t        hasAlbedoTexture        DEFAULTS(0);
- 
+
     uint32_t        hasRoughnessTexture     DEFAULTS(0);
     uint32_t        hasExtraParamTexture    DEFAULTS(0);
     vec2            pad                     DEFAULTS(vec2(0, 0));
@@ -288,8 +292,8 @@ struct MaterialLayerValues
 };
 
 /**
-    The main material description structure. Contains a dense list of layers. The layers are stored from inner to outer, ending with a MatNone layer.
-    Besides, the material contains its scene-unique id, as well as various modifiers, like normal/displacement map and alpha test map.
+The main material description structure. Contains a dense list of layers. The layers are stored from inner to outer, ending with a MatNone layer.
+Besides, the material contains its scene-unique id, as well as various modifiers, like normal/displacement map and alpha test map.
 */
 struct MaterialDesc
 {
@@ -319,10 +323,10 @@ struct MaterialData
 };
 
 /**
-    The structure stores the complete information about the shading point,
-    except for a light source information.
-    It stores pre-evaluated material parameters with pre-fetched textures,
-    shading point position, normal, viewing direction etc.
+The structure stores the complete information about the shading point,
+except for a light source information.
+It stores pre-evaluated material parameters with pre-fetched textures,
+shading point position, normal, viewing direction etc.
 */
 struct ShadingAttribs
 {
@@ -334,7 +338,7 @@ struct ShadingAttribs
     vec2    UV;               ///< Texture mapping coordinates
 
 #ifdef _MS_USER_DERIVATIVES
-    vec2    DPDX;                
+    vec2    DPDX;
     vec2    DPDY;             ///< User-provided 2x2 full matrix of duv/dxy derivatives of a shading point footprint in texture space
 #else
     float   lodBias;          ///< LOD bias to use when sampling textures
@@ -349,49 +353,49 @@ struct ShadingAttribs
 };
 
 /*******************************************************************
-                    Lights
+Lights
 *******************************************************************/
 
-/** 
-    This is a general host/device structure that describe a light source.
+/**
+This is a general host/device structure that describe a light source.
 */
 struct LightData
 {
-	vec3            worldPos           DEFAULTS(v3(0, 0, 0));     ///< World-space position of the center of a light source
-	uint32_t        type               DEFAULTS(LightPoint);      ///< Type of the light source (see above)
-	vec3            worldDir           DEFAULTS(v3(0, -1, 0));    ///< World-space orientation of the light source
-	float           openingAngle       DEFAULTS(3.14159265f);     ///< For point (spot) light: Opening angle of a spot light cut-off, pi by default - full-sphere point light
-	vec3            intensity          DEFAULTS(v3(1, 1, 1));     ///< Emitted radiance of th light source
-	float           cosOpeningAngle    DEFAULTS(-1.f);            ///< For point (spot) light: cos(openingAngle), -1 by default because openingAngle is pi by default
-	vec3            aabbMin            DEFAULTS(v3(1e20f));       ///< For area light: minimum corner of the AABB
-	float           penumbraAngle      DEFAULTS(0.f);             ///< For point (spot) light: Opening angle of penumbra region in radians, usually does not exceed openingAngle. 0.f by default, meaning a spot light with hard cut-off
-	vec3            aabbMax            DEFAULTS(v3(-1e20f));      ///< For area light: maximum corner of the AABB
-	float           surfaceArea        DEFAULTS(0.f);             ///< Surface area of the geometry mesh
-	mat4            transMat           DEFAULTS(mat4());          ///< Transformation matrix of the model instance for area lights
+    vec3            worldPos           DEFAULTS(v3(0, 0, 0));     ///< World-space position of the center of a light source
+    uint32_t        type               DEFAULTS(LightPoint);      ///< Type of the light source (see above)
+    vec3            worldDir           DEFAULTS(v3(0, -1, 0));    ///< World-space orientation of the light source
+    float           openingAngle       DEFAULTS(3.14159265f);     ///< For point (spot) light: Opening angle of a spot light cut-off, pi by default - full-sphere point light
+    vec3            intensity          DEFAULTS(v3(1, 1, 1));     ///< Emitted radiance of th light source
+    float           cosOpeningAngle    DEFAULTS(-1.f);            ///< For point (spot) light: cos(openingAngle), -1 by default because openingAngle is pi by default
+    vec3            aabbMin            DEFAULTS(v3(1e20f));       ///< For area light: minimum corner of the AABB
+    float           penumbraAngle      DEFAULTS(0.f);             ///< For point (spot) light: Opening angle of penumbra region in radians, usually does not exceed openingAngle. 0.f by default, meaning a spot light with hard cut-off
+    vec3            aabbMax            DEFAULTS(v3(-1e20f));      ///< For area light: maximum corner of the AABB
+    float           surfaceArea        DEFAULTS(0.f);             ///< Surface area of the geometry mesh
+    mat4            transMat           DEFAULTS(mat4());          ///< Transformation matrix of the model instance for area lights
 
-	// For area light
-	BufPtr          indexPtr;                                     ///< Buffer id for indices
-	BufPtr          vertexPtr;                                    ///< Buffer id for vertices
-	BufPtr          texCoordPtr;                                  ///< Buffer id for texcoord
+    // For area light
+    BufPtr          indexPtr;                                     ///< Buffer id for indices
+    BufPtr          vertexPtr;                                    ///< Buffer id for vertices
+    BufPtr          texCoordPtr;                                  ///< Buffer id for texcoord
 
-	BufPtr          meshCDFPtr;                                   ///< Pointer to probability distributions of triangle meshes
+    BufPtr          meshCDFPtr;                                   ///< Pointer to probability distributions of triangle meshes
 
-	MaterialData    material;                                     ///< Emissive material of the geometry mesh
+    MaterialData    material;                                     ///< Emissive material of the geometry mesh
 
-	uint32_t        numIndices         DEFAULTS(0);               ///< Number of triangle indices in a polygonal area light
-	uint32_t        pad1               DEFAULTS(0);
-	uint32_t        pad2               DEFAULTS(0);
-	uint32_t        pad3               DEFAULTS(0);
+    uint32_t        numIndices         DEFAULTS(0);               ///< Number of triangle indices in a polygonal area light
+    uint32_t        pad1               DEFAULTS(0);
+    uint32_t        pad2               DEFAULTS(0);
+    uint32_t        pad3               DEFAULTS(0);
 };
 
 /*******************************************************************
-                    Shared material routines
+Shared material routines
 *******************************************************************/
 
 
 /** Converts specular power to roughness. Note there is no "the conversion".
-    Reference: http://simonstechblog.blogspot.com/2011/12/microfacet-brdf.html
-    \param shininess specular power of an obsolete Phong BSDF
+Reference: http://simonstechblog.blogspot.com/2011/12/microfacet-brdf.html
+\param shininess specular power of an obsolete Phong BSDF
 */
 inline float _fn convertShininessToRoughness(const float shininess)
 {
@@ -405,7 +409,7 @@ inline vec2 _fn convertShininessToRoughness(const vec2 shininess)
 
 inline float _fn convertRoughnessToShininess(const float a)
 {
-    return 2.0f/clamp(a*a, 1e-8f, 1.f) - 2.0f;
+    return 2.0f / clamp(a*a, 1e-8f, 1.f) - 2.0f;
 }
 
 inline vec2 _fn convertRoughnessToShininess(const vec2 a)
@@ -427,19 +431,19 @@ inline float _fn luminance(const vec3 rgb)
 }
 
 /** Converts color from RGB to YCgCo space
-\param RGBColor linear HDR RGB color 
+\param RGBColor linear HDR RGB color
 */
 inline vec3 _fn RGBToYCgCo(const vec3 rgb)
 {
-    const float Y  = dot(rgb, v3( 0.25f, 0.50f,  0.25f));
+    const float Y = dot(rgb, v3(0.25f, 0.50f, 0.25f));
     const float Cg = dot(rgb, v3(-0.25f, 0.50f, -0.25f));
-    const float Co = dot(rgb, v3( 0.50f, 0.00f, -0.50f));
+    const float Co = dot(rgb, v3(0.50f, 0.00f, -0.50f));
 
     return v3(Y, Cg, Co);
 }
 
 /** Converts color from YCgCo to RGB space
-\param YCgCoColor linear HDR YCgCo color 
+\param YCgCoColor linear HDR YCgCo color
 */
 inline vec3 _fn YCgCoToRGB(const vec3 YCgCo)
 {
@@ -458,9 +462,9 @@ inline vec3 _fn RGBToYUV(const vec3 rgb)
 {
     vec3 ret;
 
-    ret.x = dot(rgb, v3( 0.2126f,   0.7152f,   0.0722f));
-    ret.y = dot(rgb, v3(-0.09991f, -0.33609f,  0.436f));
-    ret.z = dot(rgb, v3( 0.615f,   -0.55861f, -0.05639f));
+    ret.x = dot(rgb, v3(0.2126f, 0.7152f, 0.0722f));
+    ret.y = dot(rgb, v3(-0.09991f, -0.33609f, 0.436f));
+    ret.z = dot(rgb, v3(0.615f, -0.55861f, -0.05639f));
 
     return ret;
 }
@@ -472,9 +476,9 @@ inline vec3 _fn YUVToRGB(const vec3 yuv)
 {
     vec3 ret;
 
-    ret.x = dot(yuv, v3(1.0f,  0.0f,      1.28033f));
+    ret.x = dot(yuv, v3(1.0f, 0.0f, 1.28033f));
     ret.y = dot(yuv, v3(1.0f, -0.21482f, -0.38059f));
-    ret.z = dot(yuv, v3(1.0f,  2.12798f,  0.0f));
+    ret.z = dot(yuv, v3(1.0f, 2.12798f, 0.0f));
 
     return ret;
 }
@@ -484,14 +488,14 @@ inline vec3 _fn YUVToRGB(const vec3 yuv)
 */
 inline float _fn SRGBToLinear(const float srgb)
 {
-        if (srgb <= 0.04045f)
-        {
-            return srgb * (1.0f / 12.92f);
-        }
-        else 
-        {
-            return pow((srgb + 0.055f) * (1.0f / 1.055f), 2.4f);
-        }
+    if(srgb <= 0.04045f)
+    {
+        return srgb * (1.0f / 12.92f);
+    }
+    else
+    {
+        return pow((srgb + 0.055f) * (1.0f / 1.055f), 2.4f);
+    }
 }
 
 /** Returns a linear-space RGB version of an input RGB color in the ITU-R BT.709 color space
@@ -500,8 +504,8 @@ inline float _fn SRGBToLinear(const float srgb)
 inline vec3 _fn SRGBToLinear(const vec3 srgb)
 {
     return v3(
-        SRGBToLinear(srgb.x), 
-        SRGBToLinear(srgb.y), 
+        SRGBToLinear(srgb.x),
+        SRGBToLinear(srgb.y),
         SRGBToLinear(srgb.z));
 }
 
@@ -510,14 +514,14 @@ inline vec3 _fn SRGBToLinear(const vec3 srgb)
 */
 inline float _fn LinearToSRGB(const float linear)
 {
-        if (linear <= 0.0031308f)
-        {
-            return linear * 12.92f;
-        }
-        else 
-        {
-            return pow(linear, (1.0f / 2.4f)) * (1.055f) - 0.055f;
-        }
+    if(linear <= 0.0031308f)
+    {
+        return linear * 12.92f;
+    }
+    else
+    {
+        return pow(linear, (1.0f / 2.4f)) * (1.055f) - 0.055f;
+    }
 }
 
 /** Returns a sRGB version of an input linear RGB color in the ITU-R BT.709 color space
@@ -526,8 +530,8 @@ inline float _fn LinearToSRGB(const float linear)
 inline vec3 _fn LinearToSRGB(const vec3 linear)
 {
     return v3(
-        LinearToSRGB(linear.x), 
-        LinearToSRGB(linear.y), 
+        LinearToSRGB(linear.x),
+        LinearToSRGB(linear.y),
         LinearToSRGB(linear.z));
 }
 
@@ -537,7 +541,7 @@ inline vec3 _fn LinearToSRGB(const vec3 linear)
 */
 inline float _fn computeMichelsonContrast(const float iMin, const float iMax)
 {
-    if (iMin == 0.0f && iMax == 0.0f) return 0.0f;
+    if(iMin == 0.0f && iMax == 0.0f) return 0.0f;
     else return (iMax - iMin) / (iMax + iMin);
 }
 

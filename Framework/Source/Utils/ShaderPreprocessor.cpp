@@ -896,7 +896,7 @@ namespace Falcor
 
 
 #ifdef FALCOR_DX11
-        static const std::string api = "FALCOR_HLSL";
+        static const std::string api = "FALCOR_GLSL";
         static const std::string extensions;
 #elif defined FALCOR_GL
         static const std::string api = "FALCOR_GLSL";

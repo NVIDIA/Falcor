@@ -312,6 +312,9 @@
     <ClCompile Include="Graphics\Model\Loaders\BinaryImage.cpp">
       <Filter>Graphics\Model\Loaders</Filter>
     </ClCompile>
+    <ClCompile Include="Utils\Process.cpp">
+      <Filter>Utils</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Sample.h" />
@@ -1347,6 +1350,9 @@
     </ClInclude>
     <ClInclude Include="Graphics\Model\Loaders\BinaryImage.hpp">
       <Filter>Graphics\Model\Loaders</Filter>
+    </ClInclude>
+    <ClInclude Include="Utils\Process.h">
+      <Filter>Utils</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

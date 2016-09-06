@@ -30,11 +30,11 @@
 #define _FALCOR_LIGHTS_H_
 
 /*******************************************************************
-					Lights
+Lights
 *******************************************************************/
 
 /**
-	This routine computes the position of the the light based on the point 'shadingPosition'.
+This routine computes the position of the the light based on the point 'shadingPosition'.
 */
 inline vec3 _fn getLightPos(in const LightData Light, in const vec3 shadingPosition)
 {
@@ -50,7 +50,7 @@ inline vec3 _fn getLightPos(in const LightData Light, in const vec3 shadingPosit
 }
 
 /**
-	This routine computes the radiance from the light at the point 'shadingPosition'.
+This routine computes the radiance from the light at the point 'shadingPosition'.
 */
 inline vec3 _fn getLightRadiance(in const LightData Light, in const vec3 shadingPosition)
 {
@@ -66,151 +66,156 @@ inline vec3 _fn getLightRadiance(in const LightData Light, in const vec3 shading
 }
 
 /**
-	This routine prepares attributes for shading a point with a particular light source.
-	The outputs are an incident radiance towards the shading point 
-	and the direction from the shading point towards the light source.
+This routine prepares attributes for shading a point with a particular light source.
+The outputs are an incident radiance towards the shading point
+and the direction from the shading point towards the light source.
 */
 inline void _fn prepareLightAttribs(in const LightData Light, in const ShadingAttribs ShAttr, _ref(LightAttribs) LightAttr)
 {
-	/* Evaluate direction to the light */
+    /* Evaluate direction to the light */
     LightAttr.P = getLightPos(Light, ShAttr.P);
     vec3 PosToLight = LightAttr.P - ShAttr.P;
     if(dot(PosToLight, PosToLight) > 1e-3f)
-	    LightAttr.L = normalize(PosToLight);
+        LightAttr.L = normalize(PosToLight);
     else
         LightAttr.L = v3(0.f);
-	LightAttr.lightIntensity = Light.intensity;
+    LightAttr.lightIntensity = Light.intensity;
     if(Light.type == LightDirectional)
-		LightAttr.L = -Light.worldDir;
+        LightAttr.L = -Light.worldDir;
     else if(Light.type == LightArea || Light.type == LightPoint)
-	{
-		/* Evaluate various attenuation factors: cosine, 1/r^2, etc. */
-		float Atten = 1.f;
+    {
+        /* Evaluate various attenuation factors: cosine, 1/r^2, etc. */
+        float Atten = 1.f;
 
-		const float cosTheta = -dot(LightAttr.L, Light.worldDir);	// cos of angle of light orientation with outgoing direction
+        const float cosTheta = -dot(LightAttr.L, Light.worldDir);	// cos of angle of light orientation with outgoing direction
         if(Light.type == LightArea)			// Cosine attenuation
         {
-			Atten = max(0.f, cosTheta) * Light.surfaceArea;
+            Atten = max(0.f, cosTheta) * Light.surfaceArea;
         }
         else if(Light.type == LightPoint)
-		{
-			// Spot light cone angle
-			if(cosTheta < Light.cosOpeningAngle)
-				Atten = 0.f;
-			if(Light.penumbraAngle > 0.f)	// Compute cone attenuation of a spot light
-			{
-				float deltaAngle = Light.openingAngle - acos(cosTheta);
-				Atten *= clamp((deltaAngle - Light.penumbraAngle) / Light.penumbraAngle, 0.f, 1.f);
-			}
-		}
+        {
+            // Spot light cone angle
+            if(cosTheta < Light.cosOpeningAngle)
+                Atten = 0.f;
+            if(Light.penumbraAngle > 0.f)	// Compute cone attenuation of a spot light
+            {
+                float deltaAngle = Light.openingAngle - acos(cosTheta);
+                Atten *= clamp((deltaAngle - Light.penumbraAngle) / Light.penumbraAngle, 0.f, 1.f);
+            }
+        }
 
-		// Quadratic attenuation
+        // Quadratic attenuation
         Atten /= max(1e-3f, dot(PosToLight, PosToLight));
 
-		LightAttr.lightIntensity *= Atten;
-	}
+        LightAttr.lightIntensity *= Atten;
+    }
 }
 
 /**
-    This routine samples the light source.
+This routine samples the light source.
 */
 void _fn sampleLight(in const vec3 shadingHitPos, in const LightData lData, const vec3 rSample, _ref(LightAttribs) lAttr)
 {
-	// Sample the light based on its type: point, directional, or area
-	switch (lData.type)
-	{
-	    case LightPoint:
-	    {
-			// Get the position
-            lAttr.P = getLightPos(lData, shadingHitPos);
+    // Sample the light based on its type: point, directional, or area
+    switch(lData.type)
+    {
+    case LightPoint:
+    {
+        // Get the position
+        lAttr.P = getLightPos(lData, shadingHitPos);
 
-			vec3 PosToLight = lAttr.P - shadingHitPos;
-            float lDist = length(PosToLight);
-            lAttr.L = PosToLight / max(1e-3f, lDist);
+        vec3 PosToLight = lAttr.P - shadingHitPos;
+        float lDist = length(PosToLight);
+        lAttr.L = PosToLight / max(1e-3f, lDist);
 
-			// For point light, its normal is always along the L direction
-			lAttr.N = lAttr.L;
+        // For point light, its normal is always along the L direction
+        lAttr.N = lAttr.L;
 
-			// Compute the intensity and the PDF
-			lAttr.lightIntensity = getLightRadiance(lData, shadingHitPos);
-			lAttr.pdf = 1.f;
-		}
-	    break;
+        // Compute the intensity and the PDF
+        lAttr.lightIntensity = getLightRadiance(lData, shadingHitPos);
+        lAttr.pdf = 1.f;
+    }
+    break;
 
-		case LightDirectional:
-		{
-			// Get the position
-			lAttr.P = getLightPos(lData, shadingHitPos);
-			lAttr.L = -lData.worldDir;
+    case LightDirectional:
+    {
+        // Get the position
+        lAttr.P = getLightPos(lData, shadingHitPos);
+        lAttr.L = -lData.worldDir;
 
-			// For directional light, its normal is always along the L direction
-			lAttr.N = lAttr.L;
-			
-			// Compute the intensity and the PDF
-			lAttr.lightIntensity = lData.intensity;
-			lAttr.pdf = 1.f;
-		}
-		break;
+        // For directional light, its normal is always along the L direction
+        lAttr.N = lAttr.L;
 
-		case LightArea:
-		{
-			if (lData.numIndices != 0)
-			{
-				// Randomly pick a triangle on the mesh
-				// TODO: Pick a triangle mesh based on probability distributions
-				int index = min((int)(rSample.z * lData.numIndices), (int)(lData.numIndices - 1));
+        // Compute the intensity and the PDF
+        lAttr.lightIntensity = lData.intensity;
+        lAttr.pdf = 1.f;
+    }
+    break;
 
-				// Access the geometry buffers
+    case LightArea:
+    {
+        if(lData.numIndices != 0)
+        {
+            // Randomly pick a triangle on the mesh
+            // TODO: Pick a triangle mesh based on probability distributions
+            int index = min(int(rSample.z * lData.numIndices), int(lData.numIndices - 1));
+
+            // Access the geometry buffers
 #ifdef CUDA_CODE
-				optix::bufferId<int3, 1> indices(lData.indexPtr.ptr);
-				optix::bufferId<vec3, 1> vertices(lData.vertexPtr.ptr);
-				// Retrieve indices
-				const ivec3 pId = indices[index];
-				// Get vertices pointed by the corresponding index
-				vec3 p0 = vertices[pId.x];
-				vec3 p1 = vertices[pId.y];
-				vec3 p2 = vertices[pId.z];
+            optix::bufferId<int3, 1> indices(lData.indexPtr.ptr);
+            optix::bufferId<vec3, 1> vertices(lData.vertexPtr.ptr);
+            // Retrieve indices
+            const ivec3 pId = indices[index];
+            // Get vertices pointed by the corresponding index
+            vec3 p0 = vertices[pId.x];
+            vec3 p1 = vertices[pId.y];
+            vec3 p2 = vertices[pId.z];
+#elif defined(FALCOR_GLSL_CROSS)
+            vec3 p0 = vec3(0.0f);
+            vec3 p1 = p0;
+            vec3 p2 = p0;
+
 #else
-				int* indices = (int*)(lData.indexPtr.ptr);
-				float* vertices = (float*)(lData.vertexPtr.ptr);
-				// Retrieve indices
-				const ivec3 pId = ivec3(indices[index * 3 + 0], indices[index * 3 + 1], indices[index * 3 + 2]);
-				// Get vertices pointed by the corresponding index
-				vec3 p0 = vec3(vertices[pId.x * 3 + 0], vertices[pId.x * 3 + 1], vertices[pId.x * 3 + 2]);
-				vec3 p1 = vec3(vertices[pId.y * 3 + 0], vertices[pId.y * 3 + 1], vertices[pId.y * 3 + 2]);
-				vec3 p2 = vec3(vertices[pId.z * 3 + 0], vertices[pId.z * 3 + 1], vertices[pId.z * 3 + 2]);
+            int* indices = (int*)(lData.indexPtr.ptr);
+            float* vertices = (float*)(lData.vertexPtr.ptr);
+            // Retrieve indices
+            const ivec3 pId = ivec3(indices[index * 3 + 0], indices[index * 3 + 1], indices[index * 3 + 2]);
+            // Get vertices pointed by the corresponding index
+            vec3 p0 = vec3(vertices[pId.x * 3 + 0], vertices[pId.x * 3 + 1], vertices[pId.x * 3 + 2]);
+            vec3 p1 = vec3(vertices[pId.y * 3 + 0], vertices[pId.y * 3 + 1], vertices[pId.y * 3 + 2]);
+            vec3 p2 = vec3(vertices[pId.z * 3 + 0], vertices[pId.z * 3 + 1], vertices[pId.z * 3 + 2]);
 #endif
 
-				// Apply model instance transformation matrix
-				p0 = v3(mul(lData.transMat, v4(p0, 1.0)));
-				p1 = v3(mul(lData.transMat, v4(p1, 1.0)));
-				p2 = v3(mul(lData.transMat, v4(p2, 1.0)));
+            // Apply model instance transformation matrix
+            p0 = v3(mul(lData.transMat, v4(p0, 1.0)));
+            p1 = v3(mul(lData.transMat, v4(p1, 1.0)));
+            p2 = v3(mul(lData.transMat, v4(p2, 1.0)));
 
-				// Sample a point on the triangle mesh using barycentric coordinates
-				float a = sqrt(rSample.x);
-				const vec2 bary = v2(1.f - a, a * rSample.y);
+            // Sample a point on the triangle mesh using barycentric coordinates
+            float a = sqrt(rSample.x);
+            const vec2 bary = v2(1.f - a, a * rSample.y);
 
-				lAttr.P = p0 * bary.x + p1 * bary.y + p2 * (1.f - bary.x - bary.y);
+            lAttr.P = p0 * bary.x + p1 * bary.y + p2 * (1.f - bary.x - bary.y);
 
-				lAttr.N = normalize(cross(p1 - p0, p2 - p0));
-			}
+            lAttr.N = normalize(cross(p1 - p0, p2 - p0));
+        }
 
-			vec3 PosToLight = lAttr.P - shadingHitPos;
-            float lDist = length(PosToLight);
-            lAttr.L = PosToLight / max(1e-3f, lDist);
+        vec3 PosToLight = lAttr.P - shadingHitPos;
+        float lDist = length(PosToLight);
+        lAttr.L = PosToLight / max(1e-3f, lDist);
 
-			lAttr.lightIntensity = lData.intensity;
+        lAttr.lightIntensity = lData.intensity;
 
-			// Compute the PDF
-			lAttr.pdf = lDist * lDist / (abs(dot(lAttr.N, lAttr.L)) * lData.surfaceArea);
+        // Compute the PDF
+        lAttr.pdf = lDist * lDist / (abs(dot(lAttr.N, lAttr.L)) * lData.surfaceArea);
 
-			// Set light's contribution
-			if (lAttr.pdf > 0.f && dot(lAttr.N, lAttr.L) < 0.f)
-				lAttr.lightIntensity /= lAttr.pdf;
-			else
-				lAttr.lightIntensity = v3(0.f);
-		}
-		break;
-	}
+        // Set light's contribution
+        if(lAttr.pdf > 0.f && dot(lAttr.N, lAttr.L) < 0.f)
+            lAttr.lightIntensity /= lAttr.pdf;
+        else
+            lAttr.lightIntensity = v3(0.f);
+    }
+    break;
+    }
 }
 #endif	// _FALCOR_LIGHTS_H_

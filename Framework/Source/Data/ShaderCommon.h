@@ -27,7 +27,7 @@
 ***************************************************************************/
 
 /*******************************************************************
-                    Common OGL bindings
+Common OGL bindings
 *******************************************************************/
 
 #ifndef _FALCOR_SHADER_COMMON_H_
@@ -75,18 +75,28 @@ layout(binding = 53) uniform InternalPerMaterialCB
 };
 
 /*******************************************************************
-                    GLSL Evaluation routines
+GLSL Evaluation routines
 *******************************************************************/
 
 bool isSamplerBound(in sampler2D sampler)
 {
+#ifdef FALCOR_GLSL_CROSS
+    return true;
+
+    // Note: the code in the `#else` block isn't actually valid GLSL,
+    // but I'm not going to correct it for now in case there are
+    // reasons for writing it that way. The correct code should be:
+    //
+    // return uvec2(sampler) != uvec2(0);
+#else
     return any(uvec2(sampler) != 0);
+#endif
 }
 
 vec4 fetchTextureIfFound(in sampler2D sampler, in vec2 uv, in vec2 duvdx, in vec2 duvdy)
 {
     vec4 ret = vec4(1.0f);
-    if(isSamplerBound(sampler)) 
+    if(isSamplerBound(sampler))
     {
         ret = textureGrad(sampler, uv, duvdx, duvdy);
     }

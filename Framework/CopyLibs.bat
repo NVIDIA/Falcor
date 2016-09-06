@@ -17,6 +17,7 @@ copy /y %FALCOR_PROJECT_DIR%\Externals\FFMpeg\bin\%2\*.dll %3
 copy /y %FALCOR_PROJECT_DIR%\Externals\D3DCompiler\%2\D3Dcompiler_47.dll %3
 copy /y %FALCOR_PROJECT_DIR%\Externals\OptiX\bin64\*.dll %3
 copy /y %FALCOR_PROJECT_DIR%\Externals\openvr\bin\win64\openvr_api.dll %3
+copy /y %FALCOR_PROJECT_DIR%\Externals\crosscompiler.exe %3
 
 rem copy and overwrite internal files
 for /r %FALCOR_PROJECT_DIR%\..\..\Internals\ %%f in (*.dll) do @copy /y "%%f" %3
