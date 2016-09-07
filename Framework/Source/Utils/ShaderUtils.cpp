@@ -92,6 +92,7 @@ namespace Falcor
         std::stringstream ss;
         ss << i.rdbuf();
         shader = std::move(ss.str());
+        i.close();
 
         // delete the files
         std::remove("shader.hlsl");

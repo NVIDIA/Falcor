@@ -127,6 +127,32 @@ namespace Falcor
         mDirty = false;
     }
 
+    ShaderReflection::VariableDescMap::const_iterator getVariableIt(const std::string& name, const ShaderReflection::VariableDescMap& varMap, const std::string& bufName)
+    {
+        static const std::function<std::string(const std::string&, const std::string&)> funcList[] = 
+        {
+            [](const std::string& name, const std::string& bufName){return name; },
+#ifdef FALCOR_DX11
+            // More things to try for DX. Order matters
+            [](const std::string& name, const std::string& bufName){return name + ".t"; }, // Our internal expansion of textures to a struct
+            [](const std::string& name, const std::string& bufName){return bufName + '.' + name; }, // glslang generates an internal struct
+            [](const std::string& name, const std::string& bufName){return bufName + '.' + name + ".t"; }, // texture inside an internal struct
+#endif
+        };
+
+        for(auto f : funcList)
+        {
+            std::string varName = f(name, bufName);
+            auto var = varMap.find(varName);
+            if(var != varMap.end())
+            {
+                return var;
+            }
+        }
+
+        return varMap.end();
+    }
+
     template<bool ExpectArrayIndex>
     __forceinline const VariableDesc* UniformBuffer::getVariableData(const std::string& name, size_t& offset) const
     {
@@ -134,21 +160,13 @@ namespace Falcor
         uint32_t arrayIndex = 0;
 
         // Look for the uniform
-        auto& var = mVariables.find(name);
+        auto var = getVariableIt(name, mVariables, mName);
 
-#ifdef FALCOR_DX11
-        if(var == mVariables.end())
-        {
-            // Textures might come from our struct. Try again.
-            std::string texName = name + ".t";
-            var = mVariables.find(texName);
-        }
-#endif
         if(var == mVariables.end())
         {
             // The name might contain an array index. Remove the last array index and search again
             std::string nameV2 = removeLastArrayIndex(name);
-            var = mVariables.find(nameV2);
+            var = getVariableIt(nameV2, mVariables, mName);
 
             if(var == mVariables.end())
             {
