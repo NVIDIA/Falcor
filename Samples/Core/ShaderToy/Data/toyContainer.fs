@@ -26,8 +26,8 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 #version 420
-
-uniform ToyCB
+#include "hlslglslcommon.h"
+UNIFORM_BUFFER(ToyCB, 0)
 {
     vec2 iResolution;
     float iGlobalTime;
@@ -40,17 +40,20 @@ uniform ToyCB
     // ivec2 iChannelResolution[4];
 };
 
-in vec2 texC;
-out vec4 shaderOutput;
-
-vec3 iMouse = vec3(0.0);
+vec3 iMouse = vec3(0, 0, 0);
 
 // ------------------------------------
 // Shader toy code goes inside toy.fs
 // ------------------------------------
 #include "toy.fs"
 
+#ifdef FALCOR_HLSL
+void main(in vec2 texC : TEXCOORD, out float4 fragColor : SV_TARGET)
+#elif defined(FALCOR_GLSL)
+out vec4 fragColor;
+in vec2 texC;
 void main()
+#endif
 {
-    mainImage(shaderOutput, texC * iResolution);
+    fragColor = mainImage(texC * iResolution);   
 }

@@ -33,7 +33,7 @@
 #ifdef _MS_USER_NORMAL_MAPPING
 UNIFORM_BUFFER(LeanMapsCB, 1)
 {
-    Tex2D(gLeanMaps[_LEAN_MAP_COUNT]);
+    sampler2D gLeanMaps[_LEAN_MAP_COUNT];
 };
 
 void perturbNormal(in const MaterialData mat, inout ShadingAttribs shAttr, bool forceSample = false)

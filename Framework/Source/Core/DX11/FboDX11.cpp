@@ -40,7 +40,7 @@ namespace Falcor
         ID3D11DepthStencilViewPtr pDsv;
     };
 
-    Fbo::Fbo()
+    Fbo::Fbo(bool initApiHandle)
     {
         mColorAttachments.resize(getMaxColorTargetCount());
         FboData* pFboData = new FboData;
@@ -259,7 +259,7 @@ namespace Falcor
         UNSUPPORTED_IN_DX11("int version of ClearColorTarget()");
     }
 
-    void Fbo::captureToPng(uint32_t rtIndex, const std::string& filename)
+    void Fbo::captureToFile(uint32_t rtIndex, const std::string& filename, Bitmap::FileFormat fileFormat)
     {
         UNSUPPORTED_IN_DX11("captureToPng()");
     }

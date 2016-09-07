@@ -30,7 +30,7 @@
 
 UNIFORM_BUFFER(PerImageCB, 0)
 {
-	Tex2D(gTexture);
+	sampler2D gTexture;
 };
 
 static const vec3 gLuminance = vec3(0.2126, 0.7152, 0.0722);

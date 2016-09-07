@@ -144,7 +144,7 @@ namespace Falcor
             {
                 auto& data = initData[D3D11CalcSubresource(mip, array, mipLevels)];
                 data.pSysMem = pSrc;
-                data.SysMemPitch = getFormatBytesPerPixel(format) * (width >> mip);
+                data.SysMemPitch = getFormatBytesPerBlock(format) * (width >> mip);
                 data.SysMemSlicePitch = data.SysMemPitch * (height >> mip);
                 pSrc += data.SysMemSlicePitch * depth;
             }
@@ -255,7 +255,7 @@ namespace Falcor
         return pTexture;
     }
 
-    Texture::SharedPtr Texture::create3D(uint32_t width, uint32_t height, uint32_t depth, ResourceFormat format, uint32_t mipLevels, const void* pData)
+    Texture::SharedPtr Texture::create3D(uint32_t width, uint32_t height, uint32_t depth, ResourceFormat format, uint32_t mipLevels, const void* pData, bool isSparse)
     {
         bool isDepth = isDepthStencilFormat(format);
         if(isDepth && mipLevels)
@@ -376,5 +376,10 @@ namespace Falcor
 		UNSUPPORTED_IN_DX11("Texture::GenerateMips");
 	}
 
+    Texture::SharedPtr Texture::createView(uint32_t firstArraySlice, uint32_t arraySize, uint32_t mostDetailedMip, uint32_t mipCount) const
+    {
+        UNSUPPORTED_IN_DX11("createView");
+        return nullptr;
+    }
 }
 #endif //#ifdef FALCOR_DX11

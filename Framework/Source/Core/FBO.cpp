@@ -87,7 +87,17 @@ namespace Falcor
 
     Fbo::SharedPtr Fbo::create()
     {
-        return SharedPtr(new Fbo());
+        return SharedPtr(new Fbo(true));
+    }
+
+    Fbo::SharedPtr Fbo::getDefault()
+    {
+        static Fbo::SharedPtr pDefault;
+        if(pDefault == nullptr)
+        {
+            pDefault = Fbo::SharedPtr(new Fbo(false));
+        }
+        return pDefault;
     }
 
     void Fbo::attachDepthStencilTarget(const Texture::SharedConstPtr& pDepthStencil, uint32_t mipLevel, uint32_t arraySlice)

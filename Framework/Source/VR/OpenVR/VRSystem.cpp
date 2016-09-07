@@ -409,15 +409,15 @@ namespace Falcor
         // HACK!  This may only work for OpenGL renderers...  TBD.  (This code came from the OpenVR OpenGL sample app.)
         if(!mpHMD) return;
 
-        GLuint m_iLensGridSegmentCountH = 43;
-        GLuint m_iLensGridSegmentCountV = 43;
+        uint32_t m_iLensGridSegmentCountH = 43;
+        uint32_t m_iLensGridSegmentCountV = 43;
 
         float w = (float)(1.0 / float(m_iLensGridSegmentCountH - 1));
         float h = (float)(1.0 / float(m_iLensGridSegmentCountV - 1));
         float u, v = 0;
         std::vector<VertexDataLens> vVerts(0);
-        std::vector<GLuint> vIndices;
-        GLuint a, b, c, d;
+        std::vector<uint32_t> vIndices;
+        uint32_t a, b, c, d;
 
         // Distortion vertex positions
         for(int eye = 0; eye < 2; eye++)
@@ -433,10 +433,10 @@ namespace Falcor
                 }
             }
 
-            GLuint offset = (eye == 0) ? 0 : (m_iLensGridSegmentCountH)*(m_iLensGridSegmentCountV);
-            for(GLuint y = 0; y < m_iLensGridSegmentCountV - 1; y++)
+            uint32_t offset = (eye == 0) ? 0 : (m_iLensGridSegmentCountH)*(m_iLensGridSegmentCountV);
+            for(uint32_t y = 0; y < m_iLensGridSegmentCountV - 1; y++)
             {
-                for(GLuint x = 0; x < m_iLensGridSegmentCountH - 1; x++)
+                for(uint32_t x = 0; x < m_iLensGridSegmentCountH - 1; x++)
                 {
                     a = m_iLensGridSegmentCountH*y + x + offset;
                     b = m_iLensGridSegmentCountH*y + x + 1 + offset;
@@ -460,10 +460,10 @@ namespace Falcor
         vaoLayout.attribs.push_back({SimpleModelImporter::AttribType::User2, 2, AttribFormat::AttribFormat_F32});  // texcoord blue
         mpLensDistortModel[0] = SimpleModelImporter::create(vaoLayout,
             uint32_t(vVerts.size()*sizeof(VertexDataLens)), &vVerts[0],
-            uint32_t(vIndices.size()*sizeof(GLuint) / 2), &vIndices[0]);
+            uint32_t(vIndices.size()*sizeof(uint32_t) / 2), &vIndices[0]);
         mpLensDistortModel[1] = SimpleModelImporter::create(vaoLayout,
             uint32_t(vVerts.size()*sizeof(VertexDataLens)), &vVerts[0],
-            uint32_t(vIndices.size()*sizeof(GLuint) / 2), &vIndices[vIndices.size() / 2]);
+            uint32_t(vIndices.size()*sizeof(uint32_t) / 2), &vIndices[vIndices.size() / 2]);
 
     }
 

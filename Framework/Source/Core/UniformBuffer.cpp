@@ -140,7 +140,7 @@ namespace Falcor
         if(var == mVariables.end())
         {
             // Textures might come from our struct. Try again.
-            std::string texName = name + ".Texture";
+            std::string texName = name + ".t";
             var = mVariables.find(texName);
         }
 #endif
@@ -571,6 +571,19 @@ namespace Falcor
         return true;
     }
 
+    ShaderReflection::ShaderResourceDescMap::const_iterator getResourceDescIt(const std::string& name, const ShaderReflection::ShaderResourceDescMap& descMap)
+    {
+        auto& it = descMap.find(name);
+#ifdef FALCOR_DX11
+        // If it's not found and this is DX, search for out internal struct
+        if(it == descMap.end())
+        {
+            it = descMap.find(name + ".t");
+        }
+#endif
+        return it;
+    }
+
     void UniformBuffer::setTexture(size_t offset, const Texture* pTexture, const Sampler* pSampler, bool bindAsImage)
     {
         bool bOK = true;
@@ -601,7 +614,7 @@ namespace Falcor
 
                     if(bCheck)
                     {
-                        const auto& it = mResources.find(a.first);
+                        const auto& it = getResourceDescIt(a.first, mResources);
                         assert(it != mResources.end());
                         const auto& desc = it->second;                      
                         if(desc.type != ShaderResourceDesc::ResourceType::Sampler)
@@ -639,7 +652,7 @@ namespace Falcor
 #if _LOG_ENABLED == 1
             if(pTexture != nullptr)
             {
-                const auto& it = mResources.find(name);
+                const auto& it = getResourceDescIt(name, mResources);
                 bOK = (it != mResources.end()) && checkResourceDimension(pTexture, it->second, bindAsImage, name, mName);
             }
 #endif
@@ -669,8 +682,8 @@ namespace Falcor
 #if _LOG_ENABLED == 1
                 if(pTexture[i] != nullptr)
                 {
-                    const auto& It = mResources.find(name);
-                    bOK = (It != mResources.end()) && checkResourceDimension(pTexture[i], It->second, bindAsImage, name, mName);
+                    const auto& it = getResourceDescIt(name, mResources);
+                    bOK = (it != mResources.end()) && checkResourceDimension(pTexture[i], it->second, bindAsImage, name, mName);
                 }
 #endif
                 if(bOK)

@@ -47,7 +47,14 @@ namespace Falcor
         */
         static const uint32_t kAttachEntireMipLevel = uint32_t(-1);
 
+        /** Destructor. Releases the API object
+        */
         ~Fbo();
+
+        /** Get a FBO representing the default framebuffer object
+        */
+        static SharedPtr getDefault();
+
         /** create a new empty FBO.
         */
         static SharedPtr create();
@@ -132,8 +139,6 @@ namespace Falcor
 		*/
 		void setZeroAttachments(uint32_t width, uint32_t height, uint32_t layers=1, uint32_t samples=1, bool fixedSampleLocs=false);
 
-    protected:
-        friend class Window;
 #ifdef FALCOR_DX11
         ID3D11DepthStencilView* getDepthStencilView() const;
         ID3D11RenderTargetView* getRenderTargetView(uint32_t rtIndex) const;
@@ -152,7 +157,7 @@ namespace Falcor
         void applyColorAttachment(uint32_t rtIndex);
         void applyDepthAttachment();
 
-        Fbo();
+        Fbo(bool initApiHandle = true);
         std::vector<Attachment> mColorAttachments;
         Attachment mDepthStencil;
 
