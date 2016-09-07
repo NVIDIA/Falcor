@@ -60,6 +60,7 @@ namespace Falcor
 
     bool glslToHlslShader(std::string& shader)
     {
+#if _CONVERT_GLSL_TO_HLSL
         const char* compiler = "crosscompiler.exe";
         std::string cmdLine;
         if(findFileInDataDirectories(compiler, cmdLine) == false)
@@ -95,7 +96,7 @@ namespace Falcor
         // delete the files
         std::remove("shader.hlsl");
         std::remove("shader.glsl");
-
+#endif
         return true;
     }
 
