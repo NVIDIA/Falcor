@@ -45,7 +45,7 @@ namespace Falcor
     {
         if(mpDefaultFBO == nullptr)
         {
-            mpDefaultFBO = Fbo::create();
+            mpDefaultFBO = Fbo::getDefault();
         }
 
         mpDefaultFBO->attachColorTarget(pColorTex, 0, 0);

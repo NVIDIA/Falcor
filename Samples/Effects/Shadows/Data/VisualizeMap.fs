@@ -31,9 +31,9 @@
 UNIFORM_BUFFER(PerImageCB, 0)
 {
 #ifdef _USE_2D_ARRAY
-	Tex2DArray(gTexture);
+	sampler2DArray gTexture;
 #else
-   Tex2D(gTexture);
+   sampler2D gTexture;
 #endif
     int cascade;
 };

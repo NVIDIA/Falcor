@@ -42,11 +42,14 @@ namespace Falcor
         GL_COLOR_ATTACHMENT8, GL_COLOR_ATTACHMENT9, GL_COLOR_ATTACHMENT10, GL_COLOR_ATTACHMENT11,
         GL_COLOR_ATTACHMENT12, GL_COLOR_ATTACHMENT13, GL_COLOR_ATTACHMENT14, GL_COLOR_ATTACHMENT15};
 
-    Fbo::Fbo()
+    Fbo::Fbo(bool initApiHandle)
     {
         mColorAttachments.resize(getMaxColorTargetCount());
-        gl_call(glCreateFramebuffers(1, &mApiHandle));
-        gl_call(glNamedFramebufferDrawBuffers(mApiHandle, getMaxColorTargetCount(), kGlColorAttachments));
+        if(initApiHandle)
+        {
+            gl_call(glCreateFramebuffers(1, &mApiHandle));
+            gl_call(glNamedFramebufferDrawBuffers(mApiHandle, getMaxColorTargetCount(), kGlColorAttachments));
+        }
     }
 
     Fbo::~Fbo()

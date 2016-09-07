@@ -30,8 +30,8 @@
 
 UNIFORM_BUFFER(PerImageCB, 0)
 {
-    Tex2D(gColorTex);
-    Tex2D(gLuminanceTex);
+    sampler2D gColorTex;
+    sampler2D gLuminanceTex;
     float gMiddleGray;
     float gMaxWhiteLuminance;
     float gLuminanceLod;

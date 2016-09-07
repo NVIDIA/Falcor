@@ -47,7 +47,14 @@ namespace Falcor
         */
         static const uint32_t kAttachEntireMipLevel = uint32_t(-1);
 
+        /** Destructor. Releases the API object
+        */
         ~Fbo();
+
+        /** Get a FBO representing the default framebuffer object
+        */
+        static SharedPtr getDefault();
+
         /** create a new empty FBO.
         */
         static SharedPtr create();
@@ -150,7 +157,7 @@ namespace Falcor
         void applyColorAttachment(uint32_t rtIndex);
         void applyDepthAttachment();
 
-        Fbo();
+        Fbo(bool initApiHandle = true);
         std::vector<Attachment> mColorAttachments;
         Attachment mDepthStencil;
 

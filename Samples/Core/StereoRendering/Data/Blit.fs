@@ -30,7 +30,7 @@
 
 UNIFORM_BUFFER(PerImageCB, 0)
 {
-	Tex2DArray(gTexture);
+	sampler2DArray gTexture;
 };
 
 vec4 calcColor(vec2 texC)

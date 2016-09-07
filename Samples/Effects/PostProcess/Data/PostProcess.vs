@@ -33,7 +33,7 @@ UNIFORM_BUFFER (PerFrameCB, 0)
 {
     mat4 gWorldMat;
     mat4 gWvpMat;
-    Tex2D(gEnvMap);
+    sampler2D gEnvMap;
     vec3 gEyePosW;
     float gLightIntensity;
     float gSurfaceRoughness;

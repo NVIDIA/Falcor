@@ -36,7 +36,7 @@ namespace Falcor
 #endif
 
 #ifndef HOST_CODE
-    void applyLeanMap(in Tex2D(leanMap), inout ShadingAttribs shAttr)
+    void applyLeanMap(in sampler2D leanMap, inout ShadingAttribs shAttr)
     {
         vec4 t = sampleTexture(leanMap, shAttr);
         // Reconstruct B 
