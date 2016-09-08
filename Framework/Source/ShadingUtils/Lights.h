@@ -72,6 +72,10 @@ and the direction from the shading point towards the light source.
 */
 inline void _fn prepareLightAttribs(in const LightData Light, in const ShadingAttribs ShAttr, _ref(LightAttribs) LightAttr)
 {
+    /* force full initialization, since HLSL compiler requires it */
+    LightAttr.N = vec3(0.0f);
+    LightAttr.pdf = 0.0f;
+
     /* Evaluate direction to the light */
     LightAttr.P = getLightPos(Light, ShAttr.P);
     vec3 PosToLight = LightAttr.P - ShAttr.P;

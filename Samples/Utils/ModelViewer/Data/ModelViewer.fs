@@ -57,12 +57,13 @@ void main()
         prepareShadingAttribs(gMaterial, posW, gCam.position, normalW, tangentW, bitangentW, texC, shAttr);
 
         ShadingOutput result;
+        initializeShadingOutput(result);
 
         // Directional light
-        evalMaterial(shAttr, gDirLight, result, true);
+        evalMaterial(shAttr, gDirLight, result);
 
         // Point light
-        evalMaterial(shAttr, gPointLight, result, false);
+        evalMaterial(shAttr, gPointLight, result);
 
         fragColor = vec4(result.finalValue + gAmbient * result.diffuseAlbedo, 1.f);
     }

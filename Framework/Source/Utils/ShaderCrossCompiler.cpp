@@ -334,6 +334,8 @@ void initSharedEmitContext(SharedEmitContext* shared)
 
     allocateSpan(context);
     emit(context, "// automatically generated code, do not edit\n");
+    emit(context, "\n#pragma warning(disable: 3550)\n"); // TODO: this is a bit ugly to special-case here
+
     emit(context, "\n// type declarations\n");
     shared->structDeclSpan = allocateSpan(context);
 
@@ -2236,7 +2238,7 @@ void emitFuncDecl(EmitContext* context, glslang::TIntermAggregate* funcDecl)
         switch(paramType.getQualifier().storage)
         {
         case glslang::EvqInOut:
-            emit(context, "in out ");
+            emit(context, "inout ");
             break;
         case glslang::EvqOut:
             emit(context, "out ");

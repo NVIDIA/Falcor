@@ -379,6 +379,18 @@ void _fn evalMaterialLayer(in const int iLayer, in const ShadingAttribs attr, in
     result.value = blendLayer(data.albedo.constantColor, value, desc.blending, result.value);
 }
 
+    /* If it's the first pass, initialize all the aggregates to zero */
+void _fn initializeShadingOutput(_ref(ShadingOutput) result)
+{
+    result.diffuseAlbedo = v3(0.f);
+    result.diffuseIllumination = v3(0.f);
+    result.specularAlbedo = v3(0.f);
+    result.specularIllumination = v3(0.f);
+    result.finalValue = v3(0.f);
+    result.wi = v3(0.0f);
+    result.pdf = 0.0f;
+    result.thp = v3(0.f);
+}
 
 /**	The highest-level material evaluation function.
 This is the main routing for evaluating a complete PBR material, given a shading point and a light source.
@@ -387,19 +399,8 @@ Should be called once per light.
 void _fn evalMaterial(
     in const ShadingAttribs shAttr,
     in const LightAttribs lAttr,
-    _ref(ShadingOutput) result,
-    in const bool initializeShadingOut DEFVAL(false))
+    _ref(ShadingOutput) result)
 {
-    /* If it's the first pass, initialize all the aggregates to zero */
-    if(initializeShadingOut)
-    {
-        result.diffuseAlbedo = v3(0.f);
-        result.diffuseIllumination = v3(0.f);
-        result.specularAlbedo = v3(0.f);
-        result.specularIllumination = v3(0.f);
-        result.finalValue = v3(0.f);
-    }
-
     /* Ignore the layer if it's back-sided */
     if(dot(shAttr.E, shAttr.N) <= 0.f)
         return;
@@ -424,21 +425,46 @@ void _fn evalMaterial(
     result.specularAlbedo = passResult.specularAlbedo;
 }
 
+void _fn evalMaterial(
+    in const ShadingAttribs shAttr,
+    in const LightAttribs lAttr,
+    _ref(ShadingOutput) result,
+    in const bool initializeShadingOut)
+{
+    if(initializeShadingOut)
+    {
+        initializeShadingOutput(result);
+    }
+    evalMaterial(shAttr, lAttr, result);
+}
+
 /**
 Another overload of material evaluation function, which prepares light attributes internally.
 */
 void _fn evalMaterial(
     in const ShadingAttribs shAttr,
     in const LightData light,
-    _ref(ShadingOutput) result,
-    in const bool initializeShadingOut DEFVAL(false))
+    _ref(ShadingOutput) result)
 {
     /* Prepare lighting attributes */
     LightAttribs LAttr;
     prepareLightAttribs(light, shAttr, LAttr);
 
     /* Evaluate material with lighting attributes */
-    evalMaterial(shAttr, LAttr, result, initializeShadingOut);
+    evalMaterial(shAttr, LAttr, result);
+}
+
+void _fn evalMaterial(
+    in const ShadingAttribs shAttr,
+    in const LightData light,
+    _ref(ShadingOutput) result,
+    in const bool initializeShadingOut)
+{
+    if(initializeShadingOut)
+    {
+        initializeShadingOutput(result);
+    }
+    evalMaterial(shAttr, light, result);
 }
 
 /*******************************************************************

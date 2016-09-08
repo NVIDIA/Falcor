@@ -34,7 +34,15 @@
 Helper macro to iterate through layers
 */
 #ifndef _MS_NUM_LAYERS
-#define FOR_MAT_LAYERS(_iterator, _material) for(int _iterator = 0;_iterator<MatMaxLayers && _material.desc.layers[_iterator].type != MatNone;++_iterator)
+// Note: the way we'd been iterating through things in GLSL used the `&&` operator in the loop condition, which is totally valid.
+// Unfortunately, the `&&` in HLSL does not short-circuit, so this expression hides a potential out-of-bounds access.
+// This wouldn't normally be a big deal, but that out-of-bounds access causes the HLSL compiler to refuse to unroll certain loops
+// that (it thinks) it needs to.
+//
+//#define FOR_MAT_LAYERS(_iterator, _material) for(int _iterator = 0;_iterator<MatMaxLayers && _material.desc.layers[_iterator].type != MatNone;++_iterator)
+//
+// Instead, we nest the second condition inside the loop body, and `break` out when it fails. This seems to work fine in HLSL.
+#define FOR_MAT_LAYERS(_iterator, _material) for(int _iterator = 0;_iterator<MatMaxLayers;++_iterator) if(_material.desc.layers[_iterator].type == MatNone) break; else
 #else
 #define FOR_MAT_LAYERS(_iterator, _material) for(int _iterator = 0;_iterator<_MS_NUM_LAYERS;++_iterator)
 #endif

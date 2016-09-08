@@ -63,7 +63,12 @@ namespace Falcor
         ID3DBlob* pCode;
         ID3DBlobPtr pErrors;
 
-        UINT flags = D3DCOMPILE_WARNINGS_ARE_ERRORS;
+        UINT flags = 0;
+        // The HLSL warnings-as-errors flag is bugged (at least since 2013)
+        // in that you can't silence warnings with `#pragma warning(disbable: ...)`
+        // and so there is no way to compile certain shaders at all.
+        //
+        // flags |= D3DCOMPILE_WARNINGS_ARE_ERRORS;
 #ifdef _DEBUG
         flags |= D3DCOMPILE_DEBUG;
 #endif
