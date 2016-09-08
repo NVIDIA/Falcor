@@ -7,6 +7,10 @@ Its features include:
 * VR support using OpenVR.
 * Common rendering effects such as shadows and post-processing effects.
 
+There is a limited D3D11 support. The material system is implemented in GLSL so won't compile when using HLSL. We are working on a cross-compiler to solve this issue.
+
+D3D12 is coming soon.
+
 Prerequisites
 ------------------------
 * Visual Studio 2013.
