@@ -565,8 +565,6 @@ namespace Falcor
         // create the framebuffer.
         pWindow->updateDefaultFBO(desc.swapChainDesc.width, desc.swapChainDesc.height, desc.swapChainDesc.sampleCount, getSwapChainColorFormat(desc.swapChainDesc.isSrgb), getSwapChainDepthFormat());
        
-        // Show the window
-        ShowWindow(pWinData->hWnd, SW_SHOWNORMAL);
         return pWindow;
     }
 
@@ -639,6 +637,10 @@ namespace Falcor
 
     void Window::msgLoop()
     {
+        // Show the window
+        DxWindowData* pData = (DxWindowData*)mpPrivateData;
+        ShowWindow(pData->hWnd, SW_SHOWNORMAL);
+
         MSG msg;
         while(1) 
         {

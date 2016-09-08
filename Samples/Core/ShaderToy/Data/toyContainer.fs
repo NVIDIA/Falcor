@@ -51,6 +51,7 @@ vec3 iMouse = vec3(0, 0, 0);
 void main(in vec2 texC : TEXCOORD, out float4 fragColor : SV_TARGET)
 #elif defined(FALCOR_GLSL)
 out vec4 fragColor;
+in vec2 texC;
 void main()
 #endif
 {

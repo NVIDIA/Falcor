@@ -32,9 +32,9 @@
 UNIFORM_BUFFER(PerImageCB, 0)
 {
 #ifdef _USE_TEX2D_ARRAY
-    Tex2DArray(gSrcTex);
+    sampler2DArray gSrcTex;
 #else
-    Tex2D(gSrcTex);
+    sampler2D gSrcTex;
 #endif
 };
 

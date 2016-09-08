@@ -362,7 +362,6 @@ namespace Falcor
         Logger::log(level, s);
     }
 
-
     GLFWwindow* createWindowAndContext(const Window::Desc& desc)
     {
         GLFWmonitor* pMonitor = desc.fullScreen ? glfwGetPrimaryMonitor() : nullptr;
@@ -386,14 +385,6 @@ namespace Falcor
             {
                 glfwDestroyWindow(pWindow);
                 return nullptr;
-            }
-
-            int w, h;
-            glfwGetFramebufferSize(pWindow, &w, &h);
-            // Just making sure that the framebuffer size is correct. GLFW documentation is confusing - glfwCreateWindow() get window width/height, which is ambigous (is it entire window or client area?).
-            if((w != desc.swapChainDesc.width) || (h != desc.swapChainDesc.height))
-            {
-                Logger::log(Logger::Level::Error, "Size of glfw framebuffer does not match the requested one!"); 
             }
 
             if(desc.swapChainDesc.isSrgb)
@@ -527,8 +518,18 @@ namespace Falcor
             return nullptr;
         }
 
+        // Get the actual window size. Might be different if the requested size is larger than the screen size
+        uint32_t w, h;
+        glfwGetFramebufferSize((GLFWwindow*)pWindow->mpPrivateData, (int*)&w, (int*)&h);
+        // Just making sure that the framebuffer size is correct. GLFW documentation is confusing - glfwCreateWindow() get window width/height, which is ambigous (is it entire window or client area?).
+        if((w != desc.swapChainDesc.width) || (h != desc.swapChainDesc.height))
+        {
+            Logger::log(Logger::Level::Warning, "Size of glfw framebuffer does not match the requested one!");
+        }
+
+
         // create the framebuffer. Need to create the color texture here since Texture is a friend of CWindow
-        pWindow->updateDefaultFBO(desc.swapChainDesc.width, desc.swapChainDesc.height, desc.swapChainDesc.sampleCount, getSwapChainColorFormat(desc.swapChainDesc.isSrgb), getSwapChainDepthStencilFormat());
+        pWindow->updateDefaultFBO(w, h, desc.swapChainDesc.sampleCount, getSwapChainColorFormat(desc.swapChainDesc.isSrgb), getSwapChainDepthStencilFormat());
 
         // Set clip-controls to match DX
         gl_call(glClipControl(GL_LOWER_LEFT, GL_ZERO_TO_ONE));
@@ -561,7 +562,10 @@ namespace Falcor
             // We assume that the a screen-coordinate has a 1:1 mapping with pixels. The next assertion verifies it.
             int w, h;
             glfwGetFramebufferSize(pWindow, &w, &h);
-            assert((w == width) && (h == height));
+            if((w != width) || (h != height))
+            {
+                Logger::log(Logger::Level::Warning, "Size of glfw framebuffer does not match the requested one!");
+            }
         }
     }
 

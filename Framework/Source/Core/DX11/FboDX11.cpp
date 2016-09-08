@@ -40,7 +40,7 @@ namespace Falcor
         ID3D11DepthStencilViewPtr pDsv;
     };
 
-    Fbo::Fbo()
+    Fbo::Fbo(bool initApiHandle)
     {
         mColorAttachments.resize(getMaxColorTargetCount());
         FboData* pFboData = new FboData;

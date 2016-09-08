@@ -30,7 +30,7 @@
 
 UNIFORM_BUFFER(PerImageCB, 0)
 {
-   Tex2D(gInputTex);
+   sampler2D gInputTex;
 };
 
 #ifdef _FIRST_ITERATION

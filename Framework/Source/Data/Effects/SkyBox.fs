@@ -33,7 +33,7 @@
 UNIFORM_BUFFER(PerFrameCB, 0)
 {
     mat4 gWorld;
-    TexCube(gSkyTex);
+    samplerCube gSkyTex;
     float gScale;
 };
 
