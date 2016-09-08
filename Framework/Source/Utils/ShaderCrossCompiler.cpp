@@ -324,8 +324,9 @@ void initSharedEmitContext(SharedEmitContext* shared)
     shared->globalNames.parent = &shared->reservedNames;
 
     // reserve names that are keywords in HLSL, but not GLSL
-    markNameUsed(&shared->reservedNames, "texture");
     markNameUsed(&shared->reservedNames, "linear");
+    markNameUsed(&shared->reservedNames, "texture");
+    markNameUsed(&shared->reservedNames, "sampler");
 
     // create the sequence of spans we need
 
@@ -335,6 +336,88 @@ void initSharedEmitContext(SharedEmitContext* shared)
     allocateSpan(context);
     emit(context, "// automatically generated code, do not edit\n");
     emit(context, "\n#pragma warning(disable: 3550)\n"); // TODO: this is a bit ugly to special-case here
+
+    // TODO: should all of this go somewhere else?
+    emit(context, "#ifndef FALCOR_CROSS_COMPILER_HELPERS_INCLUDED\n");
+    emit(context, "#define FALCOR_CROSS_COMPILER_HELPERS_INCLUDED\n");
+
+    static const struct
+    {
+        char const* suffix;
+        bool ms;
+        bool array;
+        bool shadow;
+    } kTextureSamplerTypeInfos[] = {
+        // ordinary:
+        { "1D",          false,  true,   false },
+        { "2D",          true,   true,   false },
+        { "3D",          false,  false,  false },
+        { "Cube",        false,  true,   false },
+        // shadow:
+        { "1D",          false,  true,   true },
+        { "2D",          false,  true,   true },
+        { "Cube",        false,  true,   true },
+    };
+    for(int ms = 0; ms < 2; ++ms)
+    {
+        if(ms)
+        {
+            emit(context, "#ifdef FACLOR_MULTISAMPLE_COUNT\n");
+        }
+
+        for(int array = 0; array < 2; ++array)
+        {
+            static const char* kTypePrefixes[] = { "", "I", "U" };
+            static const char* kTypeGenericArgs[] = { "float4", "int4", "uint4" };
+            for(int type = 0; type < 3; ++type)
+            {
+                for(auto tt : kTextureSamplerTypeInfos)
+                {
+                    if(ms && !tt.ms) continue;
+                    if(array && !tt.array) continue;
+                    if(type && tt.shadow) continue;
+
+                    emit(context, "struct ");
+                    emit(context, kTypePrefixes[type]);
+                    emit(context, "Sampler");
+                    emit(context, tt.suffix);
+                    if(ms) emit(context, "MS");
+                    if(array) emit(context, "Array");
+                    if(tt.shadow)
+                    {
+                        emit(context, "Shadow");
+                    }
+                    emit(context, " { Texture");
+                    emit(context, tt.suffix);
+                    if(ms) emit(context, "MS");
+                    if(array) emit(context, "Array");
+                    if(type || ms)
+                    {
+                        emit(context, "<");
+                        emit(context, kTypeGenericArgs[type]);
+                        if(ms)
+                        {
+                            emit(context, ", FACLOR_MULTISAMPLE_COUNT");
+                        }
+                        emit(context, ">");
+                    }
+                    emit(context, " t; Sampler");
+                    if(tt.shadow)
+                    {
+                        emit(context, "Comparison");
+                    }
+                    emit(context, "State s; };\n");
+                }
+            }
+        }
+
+        if(ms)
+        {
+            emit(context, "#endif\n");
+        }
+    }
+
+    emit(context, "#endif\n");
 
     emit(context, "\n// type declarations\n");
     shared->structDeclSpan = allocateSpan(context);
@@ -443,13 +526,6 @@ void emitFloat(EmitContext* context, double val)
     sprintf(buffer, "%ff", val);
     emit(context, buffer);
 }
-
-static char const* const kReservedWords[] =
-{
-    "linear",
-    "texture",
-    NULL,
-};
 
 void emit(EmitContext* context, std::string const& name)
 {
@@ -601,6 +677,42 @@ void ensureStructDecl(EmitContext* context, glslang::TType const& type)
     }
 }
 
+void emitTextureSamplerTypedDecl(EmitContext* context, glslang::TType const& type, glslang::TSampler const& sampler, Declarator* declarator)
+{
+    switch (sampler.type) {
+    case glslang::EbtFloat:
+        break;
+    case glslang::EbtInt:   emit(context, "I");    break;
+    case glslang::EbtUint:  emit(context, "U");   break;
+    default:
+        internalError(context, "unhandled case in 'emitTextureSamplerTypedDecl'");
+        break;
+    }
+
+    switch(sampler.dim)
+    {
+    case glslang::Esd1D:      emit(context, "Sampler1D");   break;
+    case glslang::Esd2D:      emit(context, "Sampler2D");   break;
+    case glslang::Esd3D:      emit(context, "Sampler3D");   break;
+    case glslang::EsdCube:    emit(context, "SamplerCube"); break;
+    case glslang::EsdRect:    emit(context, "Sampler2D");   break; // TODO: is this correct?
+    case glslang::EsdBuffer:  emit(context, "SamplerBuffer"); break; // TODO: what should this map to?
+    case glslang::EsdSubpass:
+    default:
+        internalError(context, "unhandled case in 'emitTextureTypedDecl'");
+        break;
+    }
+
+    if(sampler.ms)
+    {
+        emit(context, "MS");
+    }
+    if(sampler.arrayed)
+    {
+        emit(context, "Array");
+    }
+}
+
 void emitTextureTypedDecl(EmitContext* context, glslang::TType const& type, glslang::TSampler const& sampler, Declarator* declarator)
 {
     switch(sampler.dim)
@@ -678,35 +790,17 @@ void emitSimpleTypedDecl(EmitContext* context, glslang::TType const& type, Decla
             // in various ways that will make that break down.
 
             glslang::TSampler const& sampler = type.getSampler();
-            if(sampler.sampler || sampler.combined)
+            if(sampler.combined)
             {
-                // TODO: sort out correct type...
-                
-                Declarator suffix = { kDeclaratorFlavor_Suffix, declarator };
-
-                suffix.suffix = "_tex";
-                emitTextureTypedDecl(context, type, sampler, &suffix);
-                emitDeclarator(context, &suffix);
-
-                // TODO: need to emit an appropriate separator here!
-                if(context->declSeparator)
-                {
-                    emit(context, context->declSeparator);
-                }
-                else
-                {
-                    emit(context, ";\n");
-                }
-
-                suffix.suffix = "_samp";
-                emitSamplerTypedDecl(context, type, sampler, &suffix);
-                emitDeclarator(context, &suffix);
-                return;
+                emitTextureSamplerTypedDecl(context, type, sampler, declarator);
+            }
+            else if(sampler.sampler)
+            {
+                emitSamplerTypedDecl(context, type, sampler, declarator);
             }
             else
             {
-                // actually an image
-                internalError(context, "uhandled case in 'emitTypeSpecifier'");
+                emitTextureTypedDecl(context, type, sampler, declarator);
             }
         }
         break;
@@ -775,6 +869,7 @@ void emitTypeName(EmitContext* context, glslang::TType const& type)
 
 void emitArg(EmitContext* context, TIntermNode* node)
 {
+#if 0
     if(auto typed = node->getAsTyped())
     {
         glslang::TType const& type = typed->getType();
@@ -792,6 +887,7 @@ void emitArg(EmitContext* context, TIntermNode* node)
             }
         }
     }
+#endif
 
     emitExp(context, node);
 }
@@ -873,11 +969,11 @@ void emitTextureCall(EmitContext* context, char const* format, glslang::TIntermA
         // "s" and "t" print the sampler and texture sides of the first argument
         case 's':
             emitExp(context, node->getSequence()[0]);
-            emit(context, "_samp");
+            emit(context, ".s");
             break;
         case 't':
             emitExp(context, node->getSequence()[0]);
-            emit(context, "_tex");
+            emit(context, ".t");
             break;
 
         // "$p0" through "$p9" are intended to take a GLSL argument for a projective
