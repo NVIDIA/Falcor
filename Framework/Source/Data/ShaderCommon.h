@@ -37,18 +37,18 @@ Common OGL bindings
 
 #include "HostDeviceData.h"
 
-layout(binding = 50) uniform InternalPerFrameCB
+layout(binding = 10) uniform InternalPerFrameCB
 {
     CameraData gCam;
 };
 
-layout(binding = 51)uniform InternalPerStaticMeshCB
+layout(binding = 11)uniform InternalPerStaticMeshCB
 {
     mat4 gWorldMat[64];
     uint32_t gMeshId;
 };
 
-layout(binding = 52)uniform InternalPerSkinnedMeshCB
+layout(binding = 12)uniform InternalPerSkinnedMeshCB
 {
     mat4 gBones[64];
 };
@@ -65,7 +65,7 @@ mat4 blendVertices(vec4 weights, uvec4 ids)
 }
 #endif
 
-layout(binding = 53) uniform InternalPerMaterialCB
+layout(binding = 13) uniform InternalPerMaterialCB
 {
     MaterialData gMaterial;
     MaterialData gTemporalMaterial;

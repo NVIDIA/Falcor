@@ -1306,6 +1306,12 @@ EmitSymbolInfo emitUniformBlockDecl(EmitContext* inContext, glslang::TIntermSymb
 
     emit(context, "cbuffer ");
     emit(context, info.name);
+    if(node->getType().getQualifier().hasBinding())
+    {
+        emit(context, " : register(b");
+        emitInt(context, node->getType().getQualifier().layoutBinding);
+        emit(context, ")");
+    }
     emit(context, "\n{\n");
 
     // Note: we declare the cbuffer as containing a single struct that
