@@ -92,7 +92,8 @@
     <ClCompile Include="Graphics\Model\ModelRenderer.cpp" />
     <ClCompile Include="Graphics\Paths\ObjectPath.cpp" />
     <ClCompile Include="Graphics\Paths\PathEditor.cpp" />
-    <ClCompile Include="Graphics\Program.cpp" />
+    <ClCompile Include="Graphics\Program\Program.cpp" />
+    <ClCompile Include="Graphics\Program\ProgramVars.cpp" />
     <ClCompile Include="Graphics\Scene\Scene.cpp" />
     <ClCompile Include="Graphics\Scene\SceneEditor.cpp" />
     <ClCompile Include="Graphics\Scene\SceneExporter.cpp" />
@@ -378,6 +379,7 @@
     <ClInclude Include="Core\OpenGL\FalcorGL.h" />
     <ClInclude Include="Core\OpenGL\GlEnum2Str.h" />
     <ClInclude Include="Core\OpenGL\ShaderReflectionGL.h" />
+    <ClInclude Include="Core\ProgramReflection.h" />
     <ClInclude Include="Core\ProgramVersion.h" />
     <ClInclude Include="Core\RasterizerState.h" />
     <ClInclude Include="Core\RenderContext.h" />
@@ -428,7 +430,8 @@
     <ClInclude Include="Graphics\Paths\MovableObject.h" />
     <ClInclude Include="Graphics\Paths\ObjectPath.h" />
     <ClInclude Include="Graphics\Paths\PathEditor.h" />
-    <ClInclude Include="Graphics\Program.h" />
+    <ClInclude Include="Graphics\Program\Program.h" />
+    <ClInclude Include="Graphics\Program\ProgramVars.h" />
     <ClInclude Include="Graphics\Scene\Scene.h" />
     <ClInclude Include="Graphics\Scene\SceneEditor.h" />
     <ClInclude Include="Graphics\Scene\SceneExporter.h" />

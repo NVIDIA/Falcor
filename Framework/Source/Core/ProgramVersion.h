@@ -70,25 +70,9 @@ namespace Falcor
         */
         ProgramHandle getApiHandle() const;
 
-        /** Get the location of an input attribute
-            \param[in] attribute The attribute name in the program
-            \return The index of the attribute if it is found, otherwise ProgramVersion#kInvalidLocation
-            */
-        int32_t getAttributeLocation(const std::string& attribute) const;
-
-        /** Get the uniform buffer binding index
-        \param[in] name The uniform buffer name
-        \return The index of the buffer if it is found, otherwise ProgramVersion#kInvalidLocation
-        */
-        uint32_t getUniformBufferBinding(const std::string& name) const;
-
         /** Get an attached shader object, or nullptr if no shader is attached to the slot.
         */
         const Shader* getShader(ShaderType Type) const { return mpShaders[(uint32_t)Type].get(); }
-
-        /** Invalid location of uniform and attributes
-        */
-        static const int32_t kInvalidLocation = -1;
 
         /** Get the program name
         */
@@ -97,6 +81,10 @@ namespace Falcor
         /** Write the shader assembly to file
         */
         void dumpProgramBinaryToFile(const std::string& filename) const;
+
+        /** Get the reflection object
+        */
+        ProgramReflection::SharedPtr getProgramReflection() const { return mpReflection; }
     private:
         ProgramVersion(const Shader::SharedPtr& pVS,
             const Shader::SharedPtr& pFS,
@@ -112,7 +100,7 @@ namespace Falcor
         static const uint32_t kShaderCount = (uint32_t)ShaderType::Count;
         Shader::SharedConstPtr mpShaders[kShaderCount];
 
-        ShaderReflection::BufferDescMap mBuffersDesc;
+        ProgramReflection::SharedPtr mpReflection;
         void* mpPrivateData;
     };
 }

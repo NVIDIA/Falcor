@@ -20,9 +20,6 @@
     <ClCompile Include="Graphics\Light.cpp">
       <Filter>Graphics</Filter>
     </ClCompile>
-    <ClCompile Include="Graphics\Program.cpp">
-      <Filter>Graphics</Filter>
-    </ClCompile>
     <ClCompile Include="Utils\Bitmap.cpp">
       <Filter>Utils</Filter>
     </ClCompile>
@@ -311,6 +308,12 @@
     </ClCompile>
     <ClCompile Include="Graphics\Model\Loaders\BinaryImage.cpp">
       <Filter>Graphics\Model\Loaders</Filter>
+    </ClCompile>
+    <ClCompile Include="Graphics\Program\Program.cpp">
+      <Filter>Graphics\Program</Filter>
+    </ClCompile>
+    <ClCompile Include="Graphics\Program\ProgramVars.cpp">
+      <Filter>Graphics\Program</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -795,9 +798,6 @@
       <Filter>Graphics</Filter>
     </ClInclude>
     <ClInclude Include="Graphics\Light.h">
-      <Filter>Graphics</Filter>
-    </ClInclude>
-    <ClInclude Include="Graphics\Program.h">
       <Filter>Graphics</Filter>
     </ClInclude>
     <ClInclude Include="Utils\Bitmap.h">
@@ -1348,6 +1348,15 @@
     <ClInclude Include="Graphics\Model\Loaders\BinaryImage.hpp">
       <Filter>Graphics\Model\Loaders</Filter>
     </ClInclude>
+    <ClInclude Include="Graphics\Program\Program.h">
+      <Filter>Graphics\Program</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\Program\ProgramVars.h">
+      <Filter>Graphics\Program</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\ProgramReflection.h">
+      <Filter>Core</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Externals">
@@ -1478,6 +1487,9 @@
     </Filter>
     <Filter Include="Effects\ToneMapping">
       <UniqueIdentifier>{93980430-1a93-4999-bd8a-2f0b46713318}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Graphics\Program">
+      <UniqueIdentifier>{e38cdd5a-7ff2-4ec6-ab78-3a6f43cae9a2}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
