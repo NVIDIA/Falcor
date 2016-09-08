@@ -246,13 +246,18 @@ struct SharedEmitContext
     glslang::TIntermAggregate* entryPointFunc = NULL;
     int inputCounter = 0;
     int outputCounter = 0;
+    glslang::TType const* systemInputsUsed[glslang::EbvLast];
+    glslang::TType const* systemOutputsUsed[glslang::EbvLast];
 
     EmitSpanList    spans;
 
     SharedEmitContext()
     {
         memset(&spans, 0, sizeof(spans));
+        memset(&systemInputsUsed, 0, sizeof(systemInputsUsed));
+        memset(&systemOutputsUsed, 0, sizeof(systemOutputsUsed));
     }
+
 };
 
 EmitSpan* allocateSpan()
@@ -337,10 +342,6 @@ void initSharedEmitContext(SharedEmitContext* shared)
     shared->cbufferDeclSpan = allocateSpan(context);
 
     allocateSpan(context);
-    emit(context, "\n// global variables\n");
-    shared->globalVarDeclSpan = allocateSpan(context);
-
-    allocateSpan(context);
     emit(context, "\n// stage input\n");
     emit(context, "struct STAGE_INPUT\n{\n");
     shared->inputDeclSpan           = allocateSpan(context);
@@ -354,7 +355,12 @@ void initSharedEmitContext(SharedEmitContext* shared)
     shared->systemOutputDeclSpan    = allocateSpan(context);
 
     allocateSpan(context);
-    emit(context, "};\n");
+    emit(context, "};\n// global variables\n");
+    shared->globalVarDeclSpan = allocateSpan(context);
+    emit(context, "static STAGE_INPUT stage_input;\n");
+    emit(context, "static STAGE_OUTPUT stage_output;\n");
+
+    allocateSpan(context);
     emit(context, "\n// functions\n");
     shared->mainSpan = allocateSpan(context);
 }
@@ -367,8 +373,7 @@ void emitTypedDecl(EmitContext* context, glslang::TType const& type, std::string
 
 void internalError(EmitContext* context, char const* message)
 {
-    fprintf(stderr, "internal error: %s\n", message);
-    exit(1);
+    Falcor::Logger::log(Falcor::Logger::Level::Error, std::string("shader cross-compiler internal error: ") + message);
 }
 
 void emitData(EmitSpan* span, char const* data, size_t size)
@@ -384,7 +389,7 @@ void emitData(EmitSpan* span, char const* data, size_t size)
         char* newBuffer = (char*)realloc(buffer, newSize);
         if(!newBuffer)
         {
-            fprintf(stderr, "out of memory\n");
+            internalError(NULL, "out of memory\n");
             exit(1);
         }
 
@@ -809,8 +814,134 @@ void emitBuiltinCall(EmitContext* context, char const* name, glslang::TIntermAgg
     emit(context, ")");
 }
 
-void emitTextureCall(EmitContext* context, char const* name, glslang::TIntermAggregate* node)
+void emitTextureCall(EmitContext* context, char const* format, glslang::TIntermAggregate* node)
 {
+    char const* cursor = format;
+
+    char const* beginSpan = cursor;
+    for(;;)
+    {
+        char const* endSpan = cursor;
+        int c = *cursor++;
+        if(!c)
+        {
+            emit(context, beginSpan, endSpan);
+            return;
+        }
+
+        if(c != '$')
+        {
+            continue;
+        }
+
+        emit(context, beginSpan, endSpan);
+
+        c = *cursor++;
+        switch(c)
+        {
+        default:
+            internalError(context, "invalid format string for texture call\n");
+            return;
+
+        // "$0" through "$9" just print the corresponding argument directly
+        case '0': case '1': case '2': case '3': case '4':
+        case '5': case '6': case '7': case '8': case '9':
+            {
+                int idx = c - '0';
+                if(idx < node->getSequence().size())
+                {
+                    emitExp(context, node->getSequence()[idx]);
+                }
+            }
+            break;
+
+        // "$,0" through "$,9" print the argument if present, with a leading comma
+        // if the argument isn't there, they print nothing
+        case ',':
+            {
+                int idx = *cursor++ - '0';
+                if(idx < node->getSequence().size())
+                {
+                    emit(context, ", ");
+                    emitExp(context, node->getSequence()[idx]);
+                }
+            }
+            break;
+
+        // "s" and "t" print the sampler and texture sides of the first argument
+        case 's':
+            emitExp(context, node->getSequence()[0]);
+            emit(context, "_samp");
+            break;
+        case 't':
+            emitExp(context, node->getSequence()[0]);
+            emit(context, "_tex");
+            break;
+
+        // "$p0" through "$p9" are intended to take a GLSL argument for a projective
+        // texture fetch, and turn it into HLSL, by calling a function (that must
+        // be provided by the application's shader library)
+        case 'p':
+            {
+                int idx = *cursor++ - '0';
+                if(idx < node->getSequence().size())
+                {
+                    emit(context, "projectTexCoord(");
+                    emitExp(context, node->getSequence()[idx]);
+                    emit(context, ")");
+                }
+            }
+            break;
+
+        // "$b0" through "$b9" adds the string "Bias" if the corresponding argument is present
+        case 'b':
+            {
+                int idx = *cursor++ - '0';
+                if(idx < node->getSequence().size())
+                {
+                    emit(context, "Bias");
+                }
+            }
+            break;
+
+        // "$L0" through "$L9" is used to take two consecutive arguments,
+        // and turn them into a single one for a "Load" operation
+        case 'L':
+            {
+                int idx = *cursor++ - '0';
+                if(idx+1 < node->getSequence().size())
+                {
+                    emit(context, "formTexCoordForLoad(");
+                    emitExp(context, node->getSequence()[idx]);
+                    emit(context, ", ");
+                    emitExp(context, node->getSequence()[idx+1]);
+                    emit(context, ")");
+                }
+            }
+            break;
+
+        case 'o':
+            {
+                int idx = *cursor++ - '0';
+                if(idx < node->getSequence().size())
+                {
+                    for(int ii = 0; ii < 4; ++ii)
+                    {
+                        if(ii != 0) emit(context, ", ");
+                        emitExp(context, node->getSequence()[idx]);
+                        emit(context, "[");
+                        emitInt(context, ii);
+                        emit(context, "]");
+                    }
+                }
+            }
+            break;
+        }
+
+        beginSpan = cursor;
+    }
+
+#if 0
     // TODO: is texture-sampler arg ever in another spot?
     emitExp(context, node->getSequence()[0]);
     emit(context, "_tex.");
@@ -828,6 +959,7 @@ void emitTextureCall(EmitContext* context, char const* name, glslang::TIntermAgg
         first = false;
     }
     emit(context, ")");
+#endif
 }
 
 void emitBuiltinCall(EmitContext* context, char const* name, glslang::TIntermUnary* node)
@@ -1162,6 +1294,169 @@ EmitSymbolInfo emitOutputDecl(EmitContext* inContext, glslang::TIntermSymbol* no
 }
 
 
+void ensureSystemInputOutputDecl(EmitContext* context, glslang::TType const* type)
+{
+    if(type->getQualifier().isParamInput())
+    {
+        context->shared->systemInputsUsed[type->getQualifier().builtIn] = type;
+    }
+    else if(type->getQualifier().isPipeOutput())
+    {
+        context->shared->systemOutputsUsed[type->getQualifier().builtIn] = type;
+    }
+    else
+    {
+        // error!
+    }
+}
+
+char const* mapSystemInputOutputSemantic(EmitContext* context, glslang::TType const& type)
+{
+    char const* dxName = "SV_Unknown";
+
+    switch(type.getQualifier().builtIn)
+    {
+    default:
+        break; // unhandled
+
+#define CASE(GL, DX) case glslang::GL: dxName = #DX; break
+
+    // The following aren't actually in D3D
+    CASE(EbvBaseVertex,         BaseVertex);        // GL_ARB_shader_draw_parameters
+    CASE(EbvBaseInstance,       BaseInstance);      // GL_ARB_shader_draw_parameters
+    CASE(EbvDrawId,             DrawID);            // GL_ARB_shader_draw_parameters
+
+    CASE(EbvSubGroupSize,       SubGroupSize);          // GL_ARB_shader_ballot
+    CASE(EbvSubGroupInvocation, SubGroupInvocation);    // GL_ARB_shader_ballot
+    CASE(EbvSubGroupEqMask,     SubGroupEqMask);        // GL_ARB_shader_ballot
+    CASE(EbvSubGroupGeMask,     SubGroupGeMask);        // GL_ARB_shader_ballot
+    CASE(EbvSubGroupGtMask,     SubGroupGtMask);        // GL_ARB_shader_ballot
+    CASE(EbvSubGroupLeMask,     SubGroupLeMask);        // GL_ARB_shader_ballot
+    CASE(EbvSubGroupLtMask,     SubGroupLtMask);        // GL_ARB_shader_ballot
+
+    // compatibility/legacy
+    CASE(EbvColor,                  Color);
+    CASE(EbvSecondaryColor,         SecondaryColor);
+    CASE(EbvNormal,                 Normal);
+    CASE(EbvVertex,                 Vertex);
+    CASE(EbvMultiTexCoord0,         MultiTexCoord0);
+    CASE(EbvMultiTexCoord1,         MultiTexCoord1);
+    CASE(EbvMultiTexCoord2,         MultiTexCoord2);
+    CASE(EbvMultiTexCoord3,         MultiTexCoord3);
+    CASE(EbvMultiTexCoord4,         MultiTexCoord4);
+    CASE(EbvMultiTexCoord5,         MultiTexCoord5);
+    CASE(EbvMultiTexCoord6,         MultiTexCoord6);
+    CASE(EbvMultiTexCoord7,         MultiTexCoord7);
+    CASE(EbvFogFragCoord,           FogFragCoord);
+    CASE(EbvClipVertex,             ClipVertex);
+    CASE(EbvFrontColor,             FrontColor);
+    CASE(EbvBackColor,              BackColor);
+    CASE(EbvFrontSecondaryColor,    FrontSecondaryColor);
+    CASE(EbvBackSecondaryColor,     BackSecondaryColor);
+    CASE(EbvTexCoord,               TexCoord);
+
+    // TODO: need to check on semantic difference between `ID` and `Index` here
+    CASE(EbvVertexId,       SV_VertexID);
+    CASE(EbvInstanceId,     SV_InstanceID);
+    CASE(EbvVertexIndex,    SV_VertexID);
+    CASE(EbvInstanceIndex,  SV_InstanceID);
+
+    CASE(EbvBoundingBox,    BoundingBox); // AEP_primitive_bounding_box
+
+    CASE(EbvPosition,   SV_Position);
+    CASE(EbvPointSize,  PointSize);
+
+    CASE(EbvClipDistance,           SV_ClipDistance);
+    CASE(EbvCullDistance,           SV_CullDistance);
+    CASE(EbvPrimitiveId,            SV_PrimitiveID);
+
+    CASE(EbvLayer,                  SV_RenderTargetArrayIndex);
+    CASE(EbvViewportIndex,          SV_ViewportArrayIndex);
+
+    CASE(EbvPatchVertices, PatchVertexCound); // not in D3D
+
+    CASE(EbvTessLevelOuter,     SV_TessFactor);
+    CASE(EbvTessLevelInner,     SV_InsideTessFactor);
+    CASE(EbvTessCoord,          SV_DomainLocation);
+
+
+    CASE(EbvFace,               SV_IsFrontFacing); // TODO: match?
+    CASE(EbvFragCoord,          SV_Position);
+    CASE(EbvPointCoord,       PointCoord);
+    CASE(EbvFragColor,        SV_Target);
+    CASE(EbvFragDepth,        SV_Depth);
+    CASE(EbvHelperInvocation, IsHelperInvocation);
+
+    CASE(EbvSampleId,           SV_SampleIndex);
+    CASE(EbvSamplePosition,     SamplePosition);
+    CASE(EbvSampleMask,         SampleMask);
+
+
+
+    CASE(EbvNumWorkGroups,          NumWorkGroups);
+    CASE(EbvWorkGroupSize,          WorkGroupSize);
+    CASE(EbvWorkGroupId,            SV_GroupID);
+    CASE(EbvLocalInvocationId,      SV_ThreadID);
+    CASE(EbvGlobalInvocationId,     SV_DispatchThreadID);
+    CASE(EbvLocalInvocationIndex,   SV_ThreadIndex);
+#undef CASE
+
+    // cases that need special handling:
+    case glslang::EbvInvocationId:
+        {
+            switch(context->shared->glslangShader->getStage())
+            {
+            case EShLangGeometry:       dxName = "SV_InstanceID";       break;
+            case EShLangTessControl:    dxName = "SV_ControlPointID";   break;
+            default:
+                break;
+            }
+        }
+        break;
+    }
+
+    return dxName;
+}
+
+void emitSystemInputOutputDecl(EmitContext* context, glslang::TType const& type)
+{
+    char const* semantic = mapSystemInputOutputSemantic(context, type);
+
+    Declarator nameDeclarator = { kDeclaratorFlavor_Name };
+    nameDeclarator.name = type.getFieldName().c_str();
+
+    Declarator semanticDeclarator = { kDeclaratorFlavor_Semantic, &nameDeclarator };
+    semanticDeclarator.semantic.name = semantic;
+    semanticDeclarator.semantic.index = 0;
+
+    emitTypedDecl(context, type, &semanticDeclarator);
+    emit(context, ";\n");
+}
+
+void emitSystemInputOutputDecls(EmitContext* inContext)
+{
+    EmitContext contextImpl = *inContext;
+    EmitContext* context = &contextImpl;
+
+
+    context->span = context->shared->systemInputDeclSpan;
+    for(auto tt : context->shared->systemInputsUsed)
+    {
+        if(!tt) continue;
+
+        emitSystemInputOutputDecl(context, *tt);
+    }
+
+    context->span = context->shared->systemOutputDeclSpan;
+    for(auto tt : context->shared->systemOutputsUsed)
+    {
+        if(!tt) continue;
+
+        emitSystemInputOutputDecl(context, *tt);
+    }
+}
+
+
 EmitSymbolInfo emitSymbolDecl(EmitContext* context, glslang::TIntermSymbol* node)
 {
     EmitSymbolInfo info;
@@ -1231,6 +1526,24 @@ void emitSymbolExp(EmitContext* context, glslang::TIntermSymbol* node)
     EmitSymbolInfo info = getSymbolInfo(context, node);
     emit(context, info.prefix);
     emit(context, info.name);
+}
+
+bool isBuiltinInputOutputBlock(EmitContext* context, glslang::TType const& type)
+{
+    if(type.getBasicType() == glslang::EbtBlock)
+    {
+        glslang::TString const& typeName = type.getTypeName();
+        if(strncmp(typeName.c_str(), "gl_", 3) == 0)
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool isBuiltinInputOutputBlock(EmitContext* context, glslang::TIntermTyped* node)
+{
+    return isBuiltinInputOutputBlock(context, node->getType());
 }
 
 void emitExp(EmitContext* context, TIntermNode* node)
@@ -1331,25 +1644,27 @@ void emitExp(EmitContext* context, TIntermNode* node)
             }
             break;
 
-#define CASE(Op, Func) case glslang::EOp##Op: emitTextureCall(context, #Func, nn); break
+#define CASE(Op, format) case glslang::EOp##Op: emitTextureCall(context, format, nn); break
+    CASE(Texture,               "$t.Sample$b2($s, $1 $,2)");            // texture(s, uv [, bias]) ->
+    CASE(TextureProj,           "$t.Sample$b2($s, $p1 $,2)");           // textureProj(s, uv, [, bias]) ->
+    CASE(TextureLod,            "$t.SampleLevel($s, $1, $2)");          // textureLod(s, uv, lod) ->
+    CASE(TextureOffset,         "$t.Sample$b3($s, $1 $,3, $2)");        // textureOffset(s, uv, offset [, bias]) ->
+    CASE(TextureFetch,          "$t.Load($L1)");                        // texelFetch(s, uv_int, lod/sample) -> 
+    CASE(TextureFetchOffset,    "$t.Load($L1, $3)");                    // texelFetchOffset(s, uv, lod, offset)
+    CASE(TextureProjOffset,     "$t.Sample$b3($s, $p1 $,3, $2)");       // textureProjOffset(s, uvw, offset [,bias])
+    CASE(TextureLodOffset,      "$t.SampleLevel($s, $1, $2, $3)");      // textureLodOffset(s, uv, lod, offset);
+    CASE(TextureProjLod,        "$t.SampleLevel($s, $p1, $2)");         // textureProjLod(s, uvw, lod);
+    CASE(TextureProjLodOffset,  "$t.Sample$b3($s, $p1 $,3, $2)");       // textureProjLodOffset(s, uvw, lod, offset);
+    CASE(TextureGrad,           "$t.SampleGrad($s, $1, $2, $3)");       // textureGrad(s, uv, dx, dy)
+    CASE(TextureGradOffset,     "$t.SampleGrad($s, $1, $2, $3, $4)");   // textureGradOffset(s, uv, dx, dy, offset)
+    CASE(TextureProjGrad,       "$t.SampleGrad($s, $p1, $2, $3)");      // textureProjGrad(s, uvw, dx, dy)
+    CASE(TextureProjGradOffset, "$t.SampleGrad($s, $p1, $2, $3, $4)");  // textureProjGradOfset(s, uv, dx, dy, offset)
+    CASE(TextureGather,         "$t.Gather$g2($s, $1, 0)");             // textureGather(s, uv [, comp])
+    CASE(TextureGatherOffset,   "$t.Gather$g3($s, $1, $2)");            // textureGatherOffset(s, uv, offset [, comp])
+    CASE(TextureGatherOffsets,  "$t.Gather$g3($s, $1, $o2)");           // textureGatherOffsets(s, uv, offsets[4] [, comp])
 
-    CASE(Texture, Sample);
-    CASE(TextureProj, SampleProj);
-    CASE(TextureLod, SampleLod);
-    CASE(TextureOffset, SampleOffset);
-    CASE(TextureFetch, Fetch);
-    CASE(TextureFetchOffset, FetchOffset);
-    CASE(TextureProjOffset, SampleProjOffset);
-    CASE(TextureLodOffset, SampleLodOffset);
-    CASE(TextureProjLod, SampleProjLod);
-    CASE(TextureProjLodOffset, SampleProjLodOffset);
-    CASE(TextureGrad, SampleGrad);
-    CASE(TextureGradOffset, SampleGradOffset);
-    CASE(TextureProjGrad, SampleProjGrad);
-    CASE(TextureProjGradOffset, SampleProjGradOffset);
-    CASE(TextureGather, Gather);
-    CASE(TextureGatherOffset, GatherOffset);
-    CASE(TextureGatherOffsets, GatherOffsets);
+    // TODO: it never ends!!!
+#if 0
     CASE(TextureClamp, SampleClamp);
     CASE(TextureOffsetClamp, SampleOffsetClamp);
     CASE(TextureGradClamp, SampleGradClamp);
@@ -1370,6 +1685,7 @@ void emitExp(EmitContext* context, TIntermNode* node)
     CASE(SparseTextureOffsetClamp, SampleOffsetClamp);
     CASE(SparseTextureGradClamp, SampleGradClamp);
     CASE(SparseTextureGradOffsetClamp, SampleGraOffsetClamp);
+#endif
 #undef CASE
 
         default:
@@ -1587,6 +1903,26 @@ void emitExp(EmitContext* context, TIntermNode* node)
         CASE(MatrixTimesMatrix, mul);
 #undef CASE
 
+        case glslang::EOpVectorSwizzle:
+            {
+                emitExp(context, nn->getLeft());
+                emit(context, ".");
+                if(auto seq = nn->getRight()->getAsAggregate())
+                {
+                    for(auto idx : seq->getSequence())
+                    {
+                        auto idxVal = idx->getAsConstantUnion()->getConstArray()[0].getIConst();
+                        static const char* kSwizzleStrs[] = { "x", "y", "z", "w" };
+                        emit(context, kSwizzleStrs[idxVal]);
+                    }
+                }
+                else
+                {
+                    internalError(context, "uhandled case in 'emitExp'");
+                }
+            }
+            break;
+
         case glslang::EOpIndexDirect:
         case glslang::EOpIndexIndirect:
             {
@@ -1600,11 +1936,31 @@ void emitExp(EmitContext* context, TIntermNode* node)
 
         case glslang::EOpIndexDirectStruct:
             {
-                int index = nn->getRight()->getAsConstantUnion()->getConstArray()[0].getIConst();
+                // in some special cases, we do not want to emit the base expression at all...
+                if(isBuiltinInputOutputBlock(context, nn->getLeft()))
+                {
+                    // TODO: ensure that the field we are accessing has been declared
+                    ensureSystemInputOutputDecl(context, &nn->getType());
 
-                emit(context, "(");
-                emitExp(context, nn->getLeft());
-                emit(context, ").");
+                    if(nn->getType().getQualifier().isPipeInput())
+                    {
+                        emit(context, "stage_input.");
+                    }
+                    else if(nn->getType().getQualifier().isPipeOutput())
+                    {
+                        emit(context, "stage_output.");
+                    }
+                    else
+                    {
+                        // unexpected
+                    }
+                }
+                else
+                {
+                    emit(context, "(");
+                    emitExp(context, nn->getLeft());
+                    emit(context, ").");
+                }
 
                 // TODO: this logic is duplicated with the declaration site for structs.
                 // A better approach would avoid this interaction by saving field names
@@ -1922,9 +2278,9 @@ void emitEntryPointDecl(EmitContext* context, glslang::TIntermAggregate* funcDec
     emit(context, "\n// entry point\n");
     emit(context, "STAGE_OUTPUT ");
     emitFuncName(context, funcDecl->getName());
-    emit(context, "( STAGE_INPUT stage_input )\n");
+    emit(context, "( STAGE_INPUT stage_input_ )\n");
     emit(context, "{\n");
-    emit(context, "STAGE_OUTPUT stage_output;\n");
+    emit(context, "stage_input = stage_input_;\n");
 
 
     EmitSpan* localSpan = allocateSpan(context);
@@ -2029,7 +2385,7 @@ StringSpan join(SharedEmitContext* context)
     char* buffer = (char*)malloc(size + 1);
     if(!buffer)
     {
-        fprintf(stderr, "out of memory\n");
+        internalError(NULL, "out of memory\n");
         exit(1);
     }
 
@@ -2103,6 +2459,7 @@ StringSpan crossCompile(Options* options, char const* inputPath, StringSpan inpu
     {
         emitEntryPointDecl(&emitContext, sharedEmitContext.entryPointFunc);
     }
+    emitSystemInputOutputDecls(&emitContext);
 
     StringSpan outputText = join(&sharedEmitContext);
 

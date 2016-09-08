@@ -59,12 +59,6 @@ namespace Falcor
         }
     }
 
-    void crossCompilerErrorCallback(char const* message, void* ignored)
-    {
-        Logger::log(Logger::Level::Fatal, message);
-        exit(1);
-    }
-
     const Shader::SharedPtr createShaderFromString(const std::string& shaderString, ShaderType shaderType, const Program::DefineList& shaderDefines)
     {
         std::string shader = shaderString;

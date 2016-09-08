@@ -98,3 +98,12 @@ vec4 texelFetch(sampler2D tex, ivec2 crd, int lod) { return tex.t.Load(ivec3(crd
 
 /*** Texture operations **/
 #endif
+
+float projectTexCoord(vec2 u) { return u.x   / u.y; }
+vec2  projectTexCoord(vec3 u) { return u.xy  / u.z; }
+vec3  projectTexCoord(vec4 u) { return u.xyz / u.w; }
+
+ivec2 formTexCoordForLoad(int   u, int lod) { return ivec2(u, lod); }
+ivec3 formTexCoordForLoad(ivec2 u, int lod) { return ivec3(u, lod); }
+ivec4 formTexCoordForLoad(ivec3 u, int lod) { return ivec4(u, lod); }
+
