@@ -97,17 +97,22 @@ int main(int argc, char* argv[])
 
     std::string Fullpath = std::string(C) + '\\' + ProjFile + "\\..\\";
 
+    // Get a relative path
+    char relPath[MAX_PATH];
+    PathRelativePathToA(relPath, C, FILE_ATTRIBUTE_DIRECTORY, Fullpath.c_str(), FILE_ATTRIBUTE_DIRECTORY);
+
+    Fullpath = std::string("$(SolutionDir)\\") + std::string(relPath);
     std::string PropSheet;
     if(ReadFileToString(argv[2], PropSheet) == false)
     {
         return 1;
     }
 
-    // I assume that there's already v FALCOR_PROJECT_DIR property value. If not, display an error
+    // I assume that there's already a FALCOR_PROJECT_DIR property value. If not, display an error
     if(PatchGroup(PropSheet, "FALCOR_PROJECT_DIR", Fullpath) == false)
         return -1;
     
-    // Path the backend
+    // Patch the backend
     std::string Backend(argv[3]);
     if(Backend != "FALCOR_DX11" && Backend != "FALCOR_GL")
     {
