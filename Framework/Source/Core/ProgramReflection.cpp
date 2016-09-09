@@ -40,7 +40,8 @@ namespace Falcor
 
     uint32_t ProgramReflection::getUniformBufferBinding(const std::string& name) const
     {
-        return kInvalidLocation;
+        auto& it = mUniformBuffers.nameMap.find(name);
+        return it == mUniformBuffers.nameMap.end() ? kInvalidLocation : it->second;
     }
 
     bool ProgramReflection::reflectFragmentOutputs(const ProgramVersion* pProgVer, std::string& log)

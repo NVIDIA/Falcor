@@ -71,8 +71,8 @@ void NormalMapFiltering::onLoad()
     pScene->getModel(0)->bindSamplerToMaterials(mpLinearSampler);
 
     setProgramDefines(mpProgram.get(), mUseLeanMap, pScene.get(), mpLeanMap->getRequiredLeanMapShaderArraySize());
-    mpLightBuffer = UniformBuffer::create(mpProgram->getActiveVersion().get(), "PerFrameCB");
-    mpLeanMapBuffer = UniformBuffer::create(mpProgram->getActiveVersion().get(), "LeanMapsCB");
+    mpLightBuffer = UniformBuffer::create(mpProgram, "PerFrameCB");
+    mpLeanMapBuffer = UniformBuffer::create(mpProgram, "LeanMapsCB");
     mpLeanMap->setIntoUniformBuffer(mpLeanMapBuffer.get(), 0, mpLinearSampler.get());
     mCameraController.attachCamera(pScene->getCamera(0));
     mCameraController.setModelParams(pScene->getModel(0)->getCenter(), pScene->getModel(0)->getRadius(), 4);

@@ -47,7 +47,7 @@ void PostProcess::onLoad()
 
     mSkybox.pProgram = Program::createFromFile("postprocess.vs", "postprocess.fs");
     mSkybox.pProgram->addDefine("_TEXTURE_ONLY");
-    mpPerFrameCB = UniformBuffer::create(mSkybox.pProgram->getActiveVersion().get(), "PerFrameCB");
+    mpPerFrameCB = UniformBuffer::create(mSkybox.pProgram, "PerFrameCB");
     mpEnvMapProgram = Program::createFromFile("postprocess.vs", "postprocess.fs");
 
     // Create the rasterizer state
