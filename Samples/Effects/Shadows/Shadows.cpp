@@ -94,7 +94,7 @@ void Shadows::createScene(const std::string& filename)
     mLightingPass.pProgram->addDefine("_LIGHT_SOURCES", lights);
     mLightingPass.pProgram->addDefine("_LIGHT_COUNT", std::to_string(mpScene->getLightCount()));
 
-    mLightingPass.pPerFrameCB = UniformBuffer::create(mLightingPass.pProgram->getActiveVersion().get(), "PerFrameCB");
+    mLightingPass.pPerFrameCB = UniformBuffer::create(mLightingPass.pProgram, "PerFrameCB");
 }
 
 void Shadows::onLoad()
@@ -194,7 +194,7 @@ void Shadows::createVisualizationProgram()
     {
         mShadowVisualizer.pProgram->getProgram()->addDefine("_USE_2D_ARRAY");
     }
-    mShadowVisualizer.pBuffer = UniformBuffer::create(mShadowVisualizer.pProgram->getProgram()->getActiveVersion().get(), "PerImageCB");
+    mShadowVisualizer.pBuffer = UniformBuffer::create(mShadowVisualizer.pProgram->getProgram(), "PerImageCB");
 }
 
 void Shadows::setCascadeCountCB(const void* pVal, void* pThis)

@@ -143,15 +143,15 @@ namespace Falcor
 
         /** Invalid location of uniform and attributes
         */
-        static const int32_t kInvalidLocation = -1;
+        static const uint32_t kInvalidLocation = -1;
 
         /** This class holds all of the data required to reflect a buffer, either uniform buffer or SSBO
         */
-        class BufferDesc
+        class BufferReflection
         {
         public:
-            using SharedPtr = std::shared_ptr<BufferDesc>;
-            using SharedConstPtr = std::shared_ptr<const BufferDesc>;
+            using SharedPtr = std::shared_ptr<BufferReflection>;
+            using SharedConstPtr = std::shared_ptr<const BufferReflection>;
 
             /** Buffer type
             */
@@ -211,7 +211,12 @@ namespace Falcor
             /** Get the buffer's name
             */
             const std::string& getName() const { return mName; }
+
+            /** Get the required buffer size
+            */
+            size_t getRequiredSize() const { return mSizeInBytes; }
         private:
+            BufferReflection(const std::string& name, Type type, size_t size, size_t varCount, const VariableMap& varMap, const ResourceMap& resourceMap);
             std::string mName;
             size_t mSizeInBytes = 0;
             size_t mVariableCount = 0;
@@ -230,7 +235,7 @@ namespace Falcor
         */
         uint32_t getUniformBufferBinding(const std::string& name) const;
 
-        using BufferMap = std::unordered_map<uint32_t, BufferDesc::SharedConstPtr>;
+        using BufferMap = std::unordered_map<uint32_t, BufferReflection::SharedConstPtr>;
 
         /** Get the uniform-buffer list
         */
@@ -240,15 +245,13 @@ namespace Falcor
             \param[in] bindLocation The bindLocation of the requested buffer
             \return The buffer descriptor or nullptr, if the bind location isn't used
         */
-        BufferDesc::SharedConstPtr getUniformBufferDesc(uint32_t bindLocation) const
-        {
-            auto& desc = mUniformBuffers.descMap.find(bindLocation);
-            if(desc == mUniformBuffers.descMap.end())
-            {
-                return nullptr;
-            }
-            return desc->second;
-        }
+        BufferReflection::SharedConstPtr getUniformBufferDesc(uint32_t bindLocation) const;
+
+        /** Get a uniform-buffer descriptor
+        \param[in] name The name of the requested buffer
+        \return The buffer descriptor or nullptr, if the name doesn't exist
+        */
+        BufferReflection::SharedConstPtr getUniformBufferDesc(const std::string& name) const;
 
         /** Get the location of an input attribute
             \param[in] attribute The attribute name in the program

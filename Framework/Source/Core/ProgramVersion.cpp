@@ -60,7 +60,7 @@ namespace Falcor
         {
             return nullptr;
         }
-        pProgram->mpReflection = ProgramReflection::create(pProgram.get());
+        pProgram->mpReflector = ProgramReflection::create(pProgram.get(), log);
         return pProgram;
     }
 

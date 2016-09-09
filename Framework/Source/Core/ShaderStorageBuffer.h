@@ -53,12 +53,11 @@ namespace Falcor
 
         /** create a new uniform buffer.\n
             Even though the buffer is created with a specific program, it can be used with other programs as long as the buffer declarations are the same across programs.
-            \param[in] pProgram A program object with the uniform buffer declared
-            \param[in] bufferName The name of the buffer in the program
+            \param[in] pBufferReflection A buffer-reflection object describing the buffer layout
             \param[in] overrideSize - if 0, will use the buffer size as declared in the shader. Otherwise, will use this value as the buffer size. Useful when using buffers with dynamic arrays.
             \return A new buffer object if the operation was successful, otherwise nullptr
         */
-        static SharedPtr create(const ProgramVersion* pProgram, const std::string& bufferName, size_t overrideSize = 0);
+        static SharedPtr create(const ProgramReflection::BufferReflection::SharedPtr& pReflection, size_t overrideSize = 0);
 
         ~ShaderStorageBuffer();
 
@@ -116,7 +115,7 @@ namespace Falcor
         void setGpuCopyDirty() const { mGpuCopyDirty = true; }
 
     private:
-        ShaderStorageBuffer(const std::string& bufferName);
+        ShaderStorageBuffer(const ProgramReflection::BufferReflection::SharedPtr& pReflector) : UniformBuffer(pReflector) {}
         mutable bool mGpuCopyDirty = false;
     };
 }

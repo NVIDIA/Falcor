@@ -60,10 +60,10 @@ void ShaderToy::onLoad()
     mpMainPass = FullScreenPass::create("toyContainer.fs");
 
     // Create Constant buffer
-    mpToyCB = UniformBuffer::create(mpMainPass->getProgram()->getActiveVersion().get(), "ToyCB");
+    mpToyCB = UniformBuffer::create(mpMainPass->getProgram(), "ToyCB");
 
     // Get buffer finding
-    mToyCBBinding = mpMainPass->getProgram()->getActiveVersion()->getReflection()->getUniformBufferBinding("ToyCB");
+    mToyCBBinding = mpMainPass->getProgram()->getActiveVersion()->getReflector()->getUniformBufferBinding("ToyCB");
 
     initUI();
 }

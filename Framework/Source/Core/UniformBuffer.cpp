@@ -31,13 +31,14 @@
 #include "buffer.h"
 #include "glm/glm.hpp"
 #include "texture.h"
+#include "Core/ProgramReflection.h"
 
 namespace Falcor
 {
-    UniformBuffer::SharedPtr UniformBuffer::create(const ProgramReflection::BufferDesc::SharedPtr& pReflection, size_t overrideSize)
+    UniformBuffer::SharedPtr UniformBuffer::create(const ProgramReflection::BufferReflection::SharedConstPtr& pReflector, size_t overrideSize)
     {
-        SharedPtr pBuffer = SharedPtr(new UniformBuffer());
-        if(pBuffer->init(pReflection, overrideSize, true) == false)
+        SharedPtr pBuffer = SharedPtr(new UniformBuffer(pReflector));
+        if(pBuffer->init(overrideSize, true) == false)
         {
             pBuffer = nullptr;
         }
@@ -45,12 +46,20 @@ namespace Falcor
         return pBuffer;
     }
 
-    bool UniformBuffer::init(const ProgramReflection::BufferDesc::SharedPtr& pReflection, size_t overrideSize, bool isUniformBuffer)
+    UniformBuffer::SharedPtr UniformBuffer::create(Program::SharedPtr& pProgram, const std::string& name, size_t overrideSize)
     {
-        if(apiInit(pReflection, isUniformBuffer) == false)
+        auto& pProgReflector = pProgram->getActiveVersion()->getReflector();
+        auto& pBufferReflector = pProgReflector->getUniformBufferDesc(name);
+        if(pBufferReflector)
         {
-            return false;
+            return create(pBufferReflector, overrideSize);
         }
+        return nullptr;
+    }
+
+    bool UniformBuffer::init(size_t overrideSize, bool isUniformBuffer)
+    {
+        mSize = mpReflector->getRequiredSize();
 
         // create the internal data
         if(overrideSize != 0)
@@ -67,6 +76,13 @@ namespace Falcor
         return true;
     }
     
+    size_t UniformBuffer::getVariableOffset(const std::string& varName) const
+    {
+        size_t offset;
+        mpReflector->getVariableData(varName, offset);
+        return offset;
+    }
+
     void UniformBuffer::uploadToGPU(size_t offset, size_t size) const
     {
         if(mDirty == false)
@@ -120,7 +136,7 @@ namespace Falcor
         return true;
     }
 
-    bool checkVariableByOffset(ProgramReflection::Variable::Type callType, size_t offset, size_t count, const ProgramReflection::BufferDesc* pBufferDesc)
+    bool checkVariableByOffset(ProgramReflection::Variable::Type callType, size_t offset, size_t count, const ProgramReflection::BufferReflection* pBufferDesc)
     {
 #if _LOG_ENABLED
         // Find the uniform
@@ -475,7 +491,7 @@ namespace Falcor
         return true;
     }
 
-    const ProgramReflection::Resource* getResourceDesc(const std::string& name, const ProgramReflection::BufferDesc* pReflector)
+    const ProgramReflection::Resource* getResourceDesc(const std::string& name, const ProgramReflection::BufferReflection* pReflector)
     {
         auto pResource = pReflector->getResourceData(name);
 #ifdef FALCOR_DX11

@@ -70,11 +70,11 @@ namespace Falcor
         // create uniform buffers if required
         if(sPerMaterialCB == nullptr)
         {
-            auto pProgVer = pProgram->getActiveVersion().get();
-            sPerMaterialCB = UniformBuffer::create(pProgVer, kPerMaterialCbName);
-            sPerFrameCB = UniformBuffer::create(pProgVer, kPerFrameCbName);
-            sPerStaticMeshCB = UniformBuffer::create(pProgVer, kPerStaticMeshCbName);
-            sPerSkinnedMeshCB = UniformBuffer::create(pProgVer, kPerSkinnedMeshCbName);
+            auto pReflector = pProgram->getActiveVersion()->getReflector();
+            sPerMaterialCB = UniformBuffer::create(pReflector->getUniformBufferDesc(kPerMaterialCbName));
+            sPerFrameCB = UniformBuffer::create(pReflector->getUniformBufferDesc(kPerFrameCbName));
+            sPerStaticMeshCB = UniformBuffer::create(pReflector->getUniformBufferDesc(kPerStaticMeshCbName));
+            sPerSkinnedMeshCB = UniformBuffer::create(pReflector->getUniformBufferDesc(kPerSkinnedMeshCbName));
 
             sBonesOffset = sPerSkinnedMeshCB->getVariableOffset("gBones");
             sWorldMatOffset = sPerStaticMeshCB->getVariableOffset("gWorldMat");
@@ -87,7 +87,7 @@ namespace Falcor
     {
         createUniformBuffers(pProgram);
 
-        ProgramReflection* pReflection = pProgram->getActiveVersion()->getReflection().get();
+        const ProgramReflection* pReflection = pProgram->getActiveVersion()->getReflector().get();
         // Per skinned mesh
         uint32_t bufferLoc = pReflection->getUniformBufferBinding(kPerSkinnedMeshCbName);
         pRenderContext->setUniformBuffer(bufferLoc, sPerSkinnedMeshCB);

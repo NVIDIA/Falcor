@@ -49,7 +49,7 @@ namespace Falcor
     using namespace ShaderReflection;
     UniformBuffer::~UniformBuffer() = default;
 
-    bool UniformBuffer::apiInit(const ProgramVersion* pProgram, const std::string& bufferName, bool isUniformBuffer)
+    bool UniformBuffer::apiInit(bool isUniformBuffer)
     {
         bool bufferFound = false;
         // We don't necessarily have this buffer. This can happen if the buffer only contains textures.

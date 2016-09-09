@@ -34,7 +34,6 @@
 #include "Utils/OS.h"
 #include "../UniformBuffer.h"
 #include "../Buffer.h"
-#include "ShaderReflectionGL.h"
 #include <fstream>
 
 namespace Falcor

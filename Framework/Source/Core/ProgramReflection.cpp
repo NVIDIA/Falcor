@@ -43,6 +43,21 @@ namespace Falcor
         return kInvalidLocation;
     }
 
+    bool ProgramReflection::reflectFragmentOutputs(const ProgramVersion* pProgVer, std::string& log)
+    {
+        return true;
+    }
+
+    bool ProgramReflection::reflectVertexAttributes(const ProgramVersion* pProgVer, std::string& log)
+    {
+        return true;
+    }
+  
+    bool ProgramReflection::reflectResources(const ProgramVersion* pProgVer, std::string& log)
+    {
+        return true;
+    }
+
     bool ProgramReflection::init(const ProgramVersion* pProgVer, std::string& log)
     {
         bool b = true;
@@ -53,7 +68,7 @@ namespace Falcor
         return b;
     }
 
-    const ProgramReflection::Variable* ProgramReflection::BufferDesc::getVariableData(const std::string& name, size_t& offset, bool allowNonIndexedArray) const
+    const ProgramReflection::Variable* ProgramReflection::BufferReflection::getVariableData(const std::string& name, size_t& offset, bool allowNonIndexedArray) const
     {
         const std::string msg = "Error when getting uniform data\"" + name + "\" from uniform buffer \"" + mName + "\".\n";
         uint32_t arrayIndex = 0;
@@ -117,10 +132,52 @@ namespace Falcor
         return pData;
     }
 
-    const ProgramReflection::Variable* ProgramReflection::BufferDesc::getVariableData(const std::string& name, bool allowNonIndexedArray) const
+    const ProgramReflection::Variable* ProgramReflection::BufferReflection::getVariableData(const std::string& name, bool allowNonIndexedArray) const
     {
         size_t t;
         return getVariableData(name, t, allowNonIndexedArray);
+    }
+
+    ProgramReflection::BufferReflection::SharedConstPtr ProgramReflection::getUniformBufferDesc(uint32_t bindLocation) const
+    {
+        auto& desc = mUniformBuffers.descMap.find(bindLocation);
+        if(desc == mUniformBuffers.descMap.end())
+        {
+            return nullptr;
+        }
+        return desc->second;
+    }
+
+    ProgramReflection::BufferReflection::SharedConstPtr ProgramReflection::getUniformBufferDesc(const std::string& name) const
+    {
+        uint32_t bindLoc = getUniformBufferBinding(name);
+        if(bindLoc != kInvalidLocation)
+        {
+            return getUniformBufferDesc(bindLoc);
+        }
+        return nullptr;
+    }
+
+    const ProgramReflection::Resource* ProgramReflection::BufferReflection::getResourceData(const std::string& name) const
+    {
+        auto& it = mResources.find(name);
+        return it == mResources.end() ? nullptr : &(it->second);
+    }
+
+    ProgramReflection::BufferReflection::BufferReflection(const std::string& name, Type type, size_t size, size_t varCount, const VariableMap& varMap, const ResourceMap& resourceMap) : 
+        mName(name),
+        mType(type),
+        mSizeInBytes(size),
+        mVariableCount(varCount),
+        mVariables(varMap),
+        mResources(resourceMap)
+    {
+
+    }
+
+    ProgramReflection::BufferReflection::SharedPtr ProgramReflection::BufferReflection::create(const std::string& name, Type type, size_t size, size_t varCount, const VariableMap& varMap, const ResourceMap& resourceMap)
+    {
+        return SharedPtr(new BufferReflection(name, type, size, varCount, varMap, resourceMap));
     }
 
     //         // Loop over all the shaders and initialize the uniform buffer bindings.

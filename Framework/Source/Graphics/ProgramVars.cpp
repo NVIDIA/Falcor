@@ -35,7 +35,7 @@ namespace Falcor
 {
     ProgramVars::ProgramVars(const ProgramVersion* pProgramVer, bool createBuffers)
     {
-        mpReflection = pProgramVer->getReflection();
+        mpReflection = pProgramVer->getReflector();
 
         // Initialize the UBO map. We always do it, to mark which slots are used in the shader.
         const auto& uboMap = mpReflection->getUniformBufferMap();
@@ -43,7 +43,7 @@ namespace Falcor
         {
             uint32_t index = ubo.first;
             // Only create the buffer if needed
-            mUniformBuffers[index] = createBuffers ? UniformBuffer::create(pProgramVer, ubo.second.name) : nullptr;
+            mUniformBuffers[index] = createBuffers ? UniformBuffer::create(ubo.second) : nullptr;
         }
     }
 
@@ -84,7 +84,7 @@ namespace Falcor
 
         // Just need to make sure the buffer is large enough
         const auto& desc = mpReflection->getUniformBufferDesc(index);
-        if(desc.sizeInBytes > pUbo->getBuffer()->getSize())
+        if(desc->getRequiredSize() > pUbo->getBuffer()->getSize())
         {
             Logger::log(Logger::Level::Error, "Can't bind uniform-buffer. Size mismatch.");
             return ErrorCode::SizeMismatch;

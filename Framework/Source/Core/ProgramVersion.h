@@ -85,7 +85,7 @@ namespace Falcor
 
         /** Get the reflection object
         */
-        ProgramReflection::SharedPtr getReflection() const { return mpReflection; }
+        ProgramReflection::SharedConstPtr getReflector() const { return mpReflector; }
     private:
         ProgramVersion(const Shader::SharedPtr& pVS,
             const Shader::SharedPtr& pFS,
@@ -102,7 +102,7 @@ namespace Falcor
         static const uint32_t kShaderCount = (uint32_t)ShaderType::Count;
         Shader::SharedConstPtr mpShaders[kShaderCount];
 
-        ProgramReflection::SharedPtr mpReflection;
+        ProgramReflection::SharedPtr mpReflector;
         void* mpPrivateData;
     };
 }

@@ -1249,9 +1249,6 @@
     <ClInclude Include="Core\DX11\ShaderReflectionDX11.h">
       <Filter>Core\DX11</Filter>
     </ClInclude>
-    <ClInclude Include="Core\OpenGL\ShaderReflectionGL.h">
-      <Filter>Core\OpenGL</Filter>
-    </ClInclude>
     <ClInclude Include="Core\OpenGL\GlEnum2Str.h">
       <Filter>Core\OpenGL</Filter>
     </ClInclude>

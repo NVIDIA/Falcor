@@ -128,11 +128,11 @@ namespace Falcor
 
         /** Get the program reflection interface
         */
-        ProgramReflection::SharedPtr getReflection() const { return mpReflection; }
+        ProgramReflection::SharedConstPtr getReflection() const { return mpReflection; }
 
     private:
         ProgramVars(const ProgramVersion* pProgramVer, bool createBuffers);
-        ProgramReflection::SharedPtr mpReflection;
+        ProgramReflection::SharedConstPtr mpReflection;
         std::unordered_map<uint32_t, UniformBuffer::SharedPtr> mUniformBuffers;
     };
 }

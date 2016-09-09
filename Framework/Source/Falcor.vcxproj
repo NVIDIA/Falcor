@@ -379,7 +379,6 @@
     <ClInclude Include="Core\GpuTimer.h" />
     <ClInclude Include="Core\OpenGL\FalcorGL.h" />
     <ClInclude Include="Core\OpenGL\GlEnum2Str.h" />
-    <ClInclude Include="Core\OpenGL\ShaderReflectionGL.h" />
     <ClInclude Include="Core\ProgramReflection.h" />
     <ClInclude Include="Core\ProgramVersion.h" />
     <ClInclude Include="Core\RasterizerState.h" />

@@ -297,16 +297,16 @@ namespace Falcor
     static bool reflectBuffersByType(uint32_t programID, GLenum bufferType, ProgramReflection::BufferMap& descMap, ProgramReflection::string_2_uint_map& bufferNameMap, std::string& log)
     {
         GLenum maxBlockType = GL_NONE;
-        ProgramReflection::BufferDesc::Type falcorType;
+        ProgramReflection::BufferReflection::Type falcorType;
         switch(bufferType)
         {
         case GL_UNIFORM_BLOCK:
             maxBlockType = GL_MAX_COMBINED_UNIFORM_BLOCKS;
-            falcorType = ProgramReflection::BufferDesc::Type::Uniform;
+            falcorType = ProgramReflection::BufferReflection::Type::Uniform;
             break;
         case GL_SHADER_STORAGE_BLOCK:
             maxBlockType = GL_MAX_COMBINED_SHADER_STORAGE_BLOCKS;
-            falcorType = ProgramReflection::BufferDesc::Type::ShaderStorage;
+            falcorType = ProgramReflection::BufferReflection::Type::ShaderStorage;
             break;
         default:
             should_not_get_here();
@@ -357,7 +357,7 @@ namespace Falcor
             reflectBufferVariables(programID, blockIndex, name, bufferType, values[1], varMap, resourceMap);
 
             // Initialize the maps
-            descMap[values[0]] = ProgramReflection::BufferDesc::create(name, falcorType, values[1], values[2], varMap, resourceMap);
+            descMap[values[0]] = ProgramReflection::BufferReflection::create(name, falcorType, values[1], values[2], varMap, resourceMap);
             bufferNameMap[name] = values[0];
         }
         return true;

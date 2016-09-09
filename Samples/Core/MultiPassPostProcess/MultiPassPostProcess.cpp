@@ -64,7 +64,7 @@ void MultiPassPostProcess::loadImage()
         mpFirstPassCB = UniformBuffer::create(mpBlit->getProgram()->getActiveVersion().get(), "PerImageCB");
         mpFirstPassCB->setTexture("gTexture", mpImage.get(), nullptr);
 
-        mpSecondPassCB = UniformBuffer::create(mpLuminance->getProgram()->getActiveVersion().get(), "PerImageCB");
+        mpSecondPassCB = UniformBuffer::create(mpLuminance->getProgram(), "PerImageCB");
         mpSecondPassCB->setTexture("gTexture", mpTempFB->getColorTexture(0).get(), nullptr);
     }
 }

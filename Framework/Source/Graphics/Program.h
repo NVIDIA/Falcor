@@ -31,7 +31,6 @@
 #include <map>
 #include <vector>
 #include "Core/ProgramVersion.h"
-#include "Core/UniformBuffer.h"
 
 namespace Falcor
 {

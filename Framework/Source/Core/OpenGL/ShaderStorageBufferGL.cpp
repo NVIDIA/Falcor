@@ -33,24 +33,18 @@
 
 namespace Falcor
 {
-    using namespace ShaderReflection;
-    bool checkVariableByOffset(VariableDesc::Type callType, size_t offset, size_t count, const ProgramReflection::BufferDesc* pBufferDesc);
-    bool checkVariableType(VariableDesc::Type callType, VariableDesc::Type shaderType, const std::string& name);
+    bool checkVariableByOffset(ProgramReflection::Variable::Type callType, size_t offset, size_t count, const ProgramReflection::BufferReflection* pBufferDesc);
+    bool checkVariableType(ProgramReflection::Variable::Type callType, ProgramReflection::Variable::Type shaderType, const std::string& name, const std::string& bufferName);
 
-    ShaderStorageBuffer::SharedPtr ShaderStorageBuffer::create(const ProgramVersion* pProgram, const std::string& bufferName, size_t overrideSize)
+    ShaderStorageBuffer::SharedPtr ShaderStorageBuffer::create(const ProgramReflection::BufferReflection::SharedPtr& pReflection, size_t overrideSize)
     {
-        auto pBuffer = SharedPtr(new ShaderStorageBuffer(bufferName));
-        if(pBuffer->init(pProgram, bufferName, overrideSize, false) == false)
+        auto pBuffer = SharedPtr(new ShaderStorageBuffer(pReflection));
+        if(pBuffer->init(overrideSize, false) == false)
         {
             return nullptr;
         }
 
         return pBuffer;
-    }
-
-    ShaderStorageBuffer::ShaderStorageBuffer(const std::string& bufferName) : UniformBuffer(bufferName)
-    {
-
     }
 
     void ShaderStorageBuffer::readFromGPU(size_t offset, size_t size) const
@@ -87,7 +81,7 @@ namespace Falcor
     #define get_uniform_offset(_var_type, _c_type) \
     template<> void ShaderStorageBuffer::getVariable(size_t offset, _c_type& value) const    \
     {                                                           \
-        if(checkVariableByOffset(VariableDesc::Type::_var_type, offset, 1, mVariables, mName)) \
+        if(checkVariableByOffset(ProgramReflection::Variable::Type::_var_type, offset, 1, mpReflector.get())) \
         {                                                       \
             readFromGPU();                                      \
             const uint8_t* pVar = mData.data() + offset;        \
@@ -135,8 +129,8 @@ namespace Falcor
     template<> void ShaderStorageBuffer::getVariable(const std::string& name, _c_type& value) const    \
         {                                                                   \
             size_t offset;                                                  \
-            const auto* pUniform = getVariableData<true>(name, offset);     \
-            if((_LOG_ENABLED == 0) || (pUniform && checkVariableType(VariableDesc::Type::_var_type, pUniform->type, name, mName))) \
+            const auto* pUniform = mpReflector->getVariableData(name, offset, false);     \
+            if((_LOG_ENABLED == 0) || (pUniform && checkVariableType(ProgramReflection::Variable::Type::_var_type, pUniform->type, name, mpReflector->getName()))) \
             {                                                               \
                 getVariable(offset, value);                                 \
             }                                                               \
@@ -180,7 +174,7 @@ namespace Falcor
 #define get_uniform_array_offset(_var_type, _c_type) \
     template<> void ShaderStorageBuffer::getVariableArray(size_t offset, size_t count, _c_type value[]) const   \
     {                                                               \
-        if(checkVariableByOffset(VariableDesc::Type::_var_type, offset, count, mVariables, mName))          \
+        if(checkVariableByOffset(ProgramReflection::Variable::Type::_var_type, offset, count, mpReflector.get()))          \
         {                                                           \
             readFromGPU();                                          \
             const uint8_t* pVar = mData.data() + offset;            \
@@ -232,8 +226,8 @@ namespace Falcor
     template<> void ShaderStorageBuffer::getVariableArray(const std::string& name, size_t count, _c_type value[]) const    \
     {                                                                                                       \
         size_t offset;                                                                                      \
-        const auto* pUniform = getVariableData<false>(name, offset);                                        \
-        if((_LOG_ENABLED == 0) || (pUniform && checkVariableType(VariableDesc::Type::_var_type, pUniform->type, name, mName))) \
+        const auto* pUniform = mpReflector->getVariableData(name, offset, true);                            \
+        if((_LOG_ENABLED == 0) || (pUniform && checkVariableType(ProgramReflection::Variable::Type::_var_type, pUniform->type, name, mpReflector->getName()))) \
         {                                                                                                   \
             getVariableArray(offset, count, value);                                                         \
         }                                                                                                   \
