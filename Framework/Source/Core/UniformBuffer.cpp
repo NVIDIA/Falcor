@@ -34,29 +34,10 @@
 
 namespace Falcor
 {
-    using namespace ShaderReflection;
-
-    inline const std::string removeLastArrayIndex(const std::string& name)
+    UniformBuffer::SharedPtr UniformBuffer::create(const ProgramReflection::BufferDesc::SharedPtr& pReflection, size_t overrideSize)
     {
-        size_t dot = name.find_last_of(".");
-        size_t bracket = name.find_last_of("[");
-
-        if(bracket != std::string::npos)
-        {
-            // Ignore cases where the last index is an array of struct index (SomeStruct[1].v should be ignored)
-            if((dot == std::string::npos) || (bracket > dot))
-            {
-                return name.substr(0, bracket);
-            }
-        }
-        
-        return name;
-    }
-
-    UniformBuffer::SharedPtr UniformBuffer::create(const ProgramVersion* pProgram, const std::string& bufferName, size_t overrideSize)
-    {
-        SharedPtr pBuffer = SharedPtr(new UniformBuffer(bufferName));
-        if(pBuffer->init(pProgram, bufferName, overrideSize, true) == false)
+        SharedPtr pBuffer = SharedPtr(new UniformBuffer());
+        if(pBuffer->init(pReflection, overrideSize, true) == false)
         {
             pBuffer = nullptr;
         }
@@ -64,9 +45,9 @@ namespace Falcor
         return pBuffer;
     }
 
-    bool UniformBuffer::init(const ProgramVersion* pProgram, const std::string& bufferName, size_t overrideSize, bool isUniformBuffer)
+    bool UniformBuffer::init(const ProgramReflection::BufferDesc::SharedPtr& pReflection, size_t overrideSize, bool isUniformBuffer)
     {
-        if(apiInit(pProgram, bufferName, isUniformBuffer) == false)
+        if(apiInit(pReflection, isUniformBuffer) == false)
         {
             return false;
         }
@@ -86,11 +67,6 @@ namespace Falcor
         return true;
     }
     
-    UniformBuffer::UniformBuffer(const std::string& bufferName) : mName(bufferName)
-    {
-
-    }
-
     void UniformBuffer::uploadToGPU(size_t offset, size_t size) const
     {
         if(mDirty == false)
@@ -127,72 +103,7 @@ namespace Falcor
         mDirty = false;
     }
 
-    template<bool ExpectArrayIndex>
-    __forceinline const VariableDesc* UniformBuffer::getVariableData(const std::string& name, size_t& offset) const
-    {
-        const std::string msg = "Error when getting uniform data\"" + name + "\" from uniform buffer \"" + mName + "\".\n";
-        uint32_t arrayIndex = 0;
-
-        // Look for the uniform
-        auto& var = mVariables.find(name);
-
-#ifdef FALCOR_DX11
-        if(var == mVariables.end())
-        {
-            // Textures might come from our struct. Try again.
-            std::string texName = name + ".t";
-            var = mVariables.find(texName);
-        }
-#endif
-        if(var == mVariables.end())
-        {
-            // The name might contain an array index. Remove the last array index and search again
-            std::string nameV2 = removeLastArrayIndex(name);
-            var = mVariables.find(nameV2);
-
-            if(var == mVariables.end())
-            {
-                Logger::log(Logger::Level::Error, msg + "Uniform not found.");
-                return nullptr;
-            }
-
-            const auto& data = var->second;
-            if(data.arraySize == 0)
-            {
-                // Not an array, so can't have an array index
-                Logger::log(Logger::Level::Error, msg + "Uniform is not an array, so name can't include an array index.");
-                return nullptr;
-            }
-
-            // We know we have an array index. Make sure it's in range
-            std::string indexStr = name.substr(nameV2.length() + 1);
-            char* pEndPtr;
-            arrayIndex = strtol(indexStr.c_str(), &pEndPtr, 0);
-            if(*pEndPtr != ']')
-            {
-                Logger::log(Logger::Level::Error, msg + "Array index must be a literal number (no whitespace are allowed)");
-                return nullptr;
-            }
-
-            if(arrayIndex >= data.arraySize)
-            {
-                Logger::log(Logger::Level::Error, msg + "Array index (" + std::to_string(arrayIndex) + ") out-of-range. Array size == " + std::to_string(data.arraySize) + ".");
-                return nullptr;
-            }
-        }
-        else if(ExpectArrayIndex && var->second.arraySize > 0)
-        {
-            // Variable name should contain an explicit array index (for N-dim arrays, N indices), but the index was missing
-            Logger::log(Logger::Level::Error, msg + "Expecting to find explicit array index in uniform name (for N-dimensional array, N indices must be specified).");
-            return nullptr;
-        }
-
-        const auto* pData = &var->second;
-        offset = pData->offset + pData->arrayStride * arrayIndex;
-        return pData;
-    }
-
-    bool checkVariableType(VariableDesc::Type callType, VariableDesc::Type shaderType, const std::string& name, const std::string& bufferName)
+    bool checkVariableType(ProgramReflection::Variable::Type callType, ProgramReflection::Variable::Type shaderType, const std::string& name, const std::string& bufferName)
     {
 #if _LOG_ENABLED
         // Check that the types match
@@ -209,49 +120,50 @@ namespace Falcor
         return true;
     }
 
-    bool checkVariableByOffset(VariableDesc::Type callType, size_t offset, size_t count, const VariableDescMap& uniforms, const std::string& bufferName)
+    bool checkVariableByOffset(ProgramReflection::Variable::Type callType, size_t offset, size_t count, const ProgramReflection::BufferDesc* pBufferDesc)
     {
 #if _LOG_ENABLED
         // Find the uniform
-        for(const auto& a : uniforms)
+        for(auto& a = pBufferDesc->varBegin() ; a != pBufferDesc->varEnd() ; a++)
         {
-            const auto& Data = a.second;
-            size_t ArrayIndex = 0;
-            bool bCheck = (Data.offset == offset);
+            const auto& varDesc = a->second;
+            const auto& varName = a->first;
+            size_t arrayIndex = 0;
+            bool checkThis = (varDesc.offset == offset);
 
             // If this is an array, check if we set an element inside it
-            if(Data.arrayStride > 0 && offset > Data.offset)
+            if(varDesc.arrayStride > 0 && offset > varDesc.offset)
             {
-                size_t Stride = offset - Data.offset;
-                if((Stride % Data.arrayStride) == 0)
+                size_t stride = offset - varDesc.offset;
+                if((stride % varDesc.arrayStride) == 0)
                 {
-                    ArrayIndex = Stride / Data.arrayStride;
-                    if(ArrayIndex < Data.arraySize)
+                    arrayIndex = stride / varDesc.arrayStride;
+                    if(arrayIndex < varDesc.arraySize)
                     {
-                        bCheck = true;
+                        checkThis = true;
                     }
                 }
             }
 
-            if(bCheck)
+            if(checkThis)
             {
-                if(Data.arraySize == 0)
+                if(varDesc.arraySize == 0)
                 {
                     if(count > 1)
                     {
-                        std::string Msg("Error when setting uniform by offset. Found uniform \"" + a.first + "\" which is not an array, but trying to set more than 1 element");
+                        std::string Msg("Error when setting uniform by offset. Found uniform \"" + varName + "\" which is not an array, but trying to set more than 1 element");
                         Logger::log(Logger::Level::Error, Msg);
                         return false;
                     }
                 }
-                else if(ArrayIndex + count > Data.arraySize)
+                else if(arrayIndex + count > varDesc.arraySize)
                 {
-                    std::string Msg("Error when setting uniform by offset. Found uniform \"" + a.first + "\" with array size " + std::to_string(a.second.arraySize));
-                    Msg += ". Trying to set " + std::to_string(count) + " elements, starting at index " + std::to_string(ArrayIndex) + ", which will cause out-of-bound access. Ignoring call.";
+                    std::string Msg("Error when setting uniform by offset. Found uniform \"" + varName + "\" with array size " + std::to_string(varDesc.arraySize));
+                    Msg += ". Trying to set " + std::to_string(count) + " elements, starting at index " + std::to_string(arrayIndex) + ", which will cause out-of-bound access. Ignoring call.";
                     Logger::log(Logger::Level::Error, Msg);
                     return false;
                 }
-                return checkVariableType(callType, a.second.type, a.first + "(Set by offset)", bufferName);
+                return checkVariableType(callType, varDesc.type, varName + "(Set by offset)", pBufferDesc->getName());
             }
         }
         std::string msg("Error when setting uniform by offset. No uniform found at offset ");
@@ -266,7 +178,7 @@ namespace Falcor
 #define set_uniform_offset(_var_type, _c_type) \
     template<> void UniformBuffer::setVariable(size_t offset, const _c_type& value)    \
     {                                                           \
-        if(checkVariableByOffset(VariableDesc::Type::_var_type, offset, 1, mVariables, mName)) \
+        if(checkVariableByOffset(ProgramReflection::Variable::Type::_var_type, offset, 1, mpReflector.get())) \
         {                                                       \
             const uint8_t* pVar = mData.data() + offset;        \
             *(_c_type*)pVar = value;                            \
@@ -313,10 +225,10 @@ namespace Falcor
 #define set_uniform_string(_var_type, _c_type) \
     template<> void UniformBuffer::setVariable(const std::string& name, const _c_type& value)    \
     {                                                           \
-        size_t offset;                                    \
-        const auto* pUniform = getVariableData<true>(name, offset);    \
-        assert(pUniform);                                       \
-        if((_LOG_ENABLED == 0) || (pUniform && checkVariableType(VariableDesc::Type::_var_type, pUniform->type, name, mName))) \
+        size_t offset;                                          \
+        const auto* pUniform = mpReflector->getVariableData(name, offset, false); \
+        bool valid = true;                                      \
+        if((_LOG_ENABLED == 0) || (offset != ProgramReflection::kInvalidLocation && checkVariableType(ProgramReflection::Variable::Type::_var_type, pUniform->type, name, mpReflector->getName()))) \
         {                                                       \
             setVariable(offset, value);                         \
         }                                                       \
@@ -360,7 +272,7 @@ namespace Falcor
 #define set_uniform_array_offset(_var_type, _c_type) \
     template<> void UniformBuffer::setVariableArray(size_t offset, const _c_type* pValue, size_t count)             \
     {                                                                                                               \
-        if(checkVariableByOffset(VariableDesc::Type::_var_type, offset, count, mVariables, mName))                  \
+        if(checkVariableByOffset(ProgramReflection::Variable::Type::_var_type, offset, count, mpReflector.get()))   \
         {                                                                                                           \
             const uint8_t* pVar = mData.data() + offset;                                                            \
             _c_type* pData = (_c_type*)pVar;                                                                        \
@@ -413,9 +325,8 @@ namespace Falcor
     void UniformBuffer::setVariableArray(const std::string& name, const _c_type* pValue, size_t count)            \
     {                                                                                                             \
         size_t offset;                                                                                            \
-        const auto pUniform = getVariableData<false>(name, offset);                                               \
-        assert(pUniform);                                                                                         \
-        if(pUniform && checkVariableType(VariableDesc::Type::_var_type, pUniform->type, name, mName))             \
+        const auto& pVarDesc = mpReflector->getVariableData(name, offset, true);                                  \
+        if( _LOG_ENABLED == 0 || (offset != ProgramReflection::kInvalidLocation && checkVariableType(ProgramReflection::Variable::Type::_var_type, pVarDesc->type, name, mpReflector->getName()))) \
         {                                                                                                         \
             setVariableArray(offset, pValue, count);                                                              \
         }                                                                                                         \
@@ -457,19 +368,12 @@ namespace Falcor
 
 #undef set_uniform_array_string
 
-    size_t UniformBuffer::getVariableOffset(const std::string& varName) const
-    {
-        size_t offset;
-        const auto* pData = getVariableData<false>(varName, offset);
-        return pData ? offset : kInvalidUniformOffset;
-    }
-
     void UniformBuffer::setBlob(const void* pSrc, size_t offset, size_t size)
     {
         if((_LOG_ENABLED != 0) && (offset + size > mSize))
         {
             std::string Msg("Error when setting blob to buffer\"");
-            Msg += mName + "\". Blob to large and will result in overflow. Ignoring call.";
+            Msg += mpReflector->getName() + "\". Blob to large and will result in overflow. Ignoring call.";
             Logger::log(Logger::Level::Error, Msg);
             return;
         }
@@ -477,48 +381,48 @@ namespace Falcor
         mDirty = true;
     }
 
-    bool checkResourceDimension(const Texture* pTexture, const ShaderResourceDesc& shaderDesc, bool bindAsImage, const std::string& name, const std::string& bufferName)
+    bool checkResourceDimension(const Texture* pTexture, const ProgramReflection::Resource* pResourceDesc, bool bindAsImage, const std::string& name, const std::string& bufferName)
     {
 #if _LOG_ENABLED
 
         bool dimsMatch = false;
         bool formatMatch = false;
-        bool imageMatch = bindAsImage ? (shaderDesc.type == ShaderResourceDesc::ResourceType::Image) : (shaderDesc.type == ShaderResourceDesc::ResourceType::Texture);
+        bool imageMatch = bindAsImage ? (pResourceDesc->type == ProgramReflection::Resource::ResourceType::Image) : (pResourceDesc->type == ProgramReflection::Resource::ResourceType::Texture);
 
         Texture::Type texDim = pTexture->getType();
         bool isArray = pTexture->getArraySize() > 1;
 
         // Check if the dimensions match
-        switch(shaderDesc.dims)
+        switch(pResourceDesc->dims)
         {
-        case ShaderResourceDesc::Dimensions::Texture1D:
+        case ProgramReflection::Resource::Dimensions::Texture1D:
             dimsMatch = (texDim == Texture::Type::Texture1D) && (isArray == false);
             break;
-        case ShaderResourceDesc::Dimensions::Texture2D:
+        case ProgramReflection::Resource::Dimensions::Texture2D:
             dimsMatch = (texDim == Texture::Type::Texture2D) && (isArray == false);
             break;
-        case ShaderResourceDesc::Dimensions::Texture3D:
+        case ProgramReflection::Resource::Dimensions::Texture3D:
             dimsMatch = (texDim == Texture::Type::Texture3D) && (isArray == false);
             break;
-        case ShaderResourceDesc::Dimensions::TextureCube:
+        case ProgramReflection::Resource::Dimensions::TextureCube:
             dimsMatch = (texDim == Texture::Type::TextureCube) && (isArray == false);
             break;
-        case ShaderResourceDesc::Dimensions::Texture1DArray:
+        case ProgramReflection::Resource::Dimensions::Texture1DArray:
             dimsMatch = (texDim == Texture::Type::Texture1D) && isArray;
             break;
-        case ShaderResourceDesc::Dimensions::Texture2DArray:
+        case ProgramReflection::Resource::Dimensions::Texture2DArray:
             dimsMatch = (texDim == Texture::Type::Texture2D);
             break;
-        case ShaderResourceDesc::Dimensions::Texture2DMS:
+        case ProgramReflection::Resource::Dimensions::Texture2DMS:
             dimsMatch = (texDim == Texture::Type::Texture2DMultisample) && (isArray == false);
             break;
-        case ShaderResourceDesc::Dimensions::Texture2DMSArray:
+        case ProgramReflection::Resource::Dimensions::Texture2DMSArray:
             dimsMatch = (texDim == Texture::Type::Texture2DMultisample);
             break;
-        case ShaderResourceDesc::Dimensions::TextureCubeArray:
+        case ProgramReflection::Resource::Dimensions::TextureCubeArray:
             dimsMatch = (texDim == Texture::Type::TextureCube) && isArray;
             break;
-        case ShaderResourceDesc::Dimensions::TextureBuffer:
+        case ProgramReflection::Resource::Dimensions::TextureBuffer:
             break;
         default:
             should_not_get_here();
@@ -527,15 +431,15 @@ namespace Falcor
         // Check if the resource Type match
         FormatType texFormatType = getFormatType(pTexture->getFormat());
 
-        switch(shaderDesc.retType)
+        switch(pResourceDesc->retType)
         {
-        case ShaderResourceDesc::ReturnType::Float:
+        case ProgramReflection::Resource::ReturnType::Float:
             formatMatch = (texFormatType == FormatType::Float) || (texFormatType == FormatType::Snorm) || (texFormatType == FormatType::Unorm) || (texFormatType == FormatType::UnormSrgb);
             break;
-        case ShaderResourceDesc::ReturnType::Int:
+        case ProgramReflection::Resource::ReturnType::Int:
             formatMatch = (texFormatType == FormatType::Sint);
             break;
-        case ShaderResourceDesc::ReturnType::Uint:
+        case ProgramReflection::Resource::ReturnType::Uint:
             formatMatch = (texFormatType == FormatType::Uint);
             break;
         default:
@@ -547,7 +451,7 @@ namespace Falcor
             msg += name + "\".\n";
             if(dimsMatch == false)
             {
-                msg += "Dimensions mismatch.\nTexture has Type " + to_string(texDim) + (isArray ? "Array" : "") + ".\nUniform has Type " + to_string(shaderDesc.dims) + ".\n";
+                msg += "Dimensions mismatch.\nTexture has Type " + to_string(texDim) + (isArray ? "Array" : "") + ".\nUniform has Type " + to_string(pResourceDesc->dims) + ".\n";
             }
 
             if(imageMatch == false)
@@ -560,7 +464,7 @@ namespace Falcor
 
             if(formatMatch == false)
             {
-                msg += "Format mismatch.\nTexture has format Type " + to_string(texFormatType) + ".\nUniform has Type " + to_string(shaderDesc.retType) + ".\n";
+                msg += "Format mismatch.\nTexture has format Type " + to_string(texFormatType) + ".\nUniform has Type " + to_string(pResourceDesc->retType) + ".\n";
             }
 
             msg += "\nError when setting resource to buffer " + bufferName;
@@ -571,17 +475,17 @@ namespace Falcor
         return true;
     }
 
-    ShaderReflection::ShaderResourceDescMap::const_iterator getResourceDescIt(const std::string& name, const ShaderReflection::ShaderResourceDescMap& descMap)
+    const ProgramReflection::Resource* getResourceDesc(const std::string& name, const ProgramReflection::BufferDesc* pReflector)
     {
-        auto& it = descMap.find(name);
+        auto pResource = pReflector->getResourceData(name);
 #ifdef FALCOR_DX11
         // If it's not found and this is DX, search for out internal struct
-        if(it == descMap.end())
+        if(pResource = nullptr)
         {
-            it = descMap.find(name + ".t");
+            pResource = pReflector->getResourceData(name + ".t");
         }
 #endif
-        return it;
+        return pResource;
     }
 
     void UniformBuffer::setTexture(size_t offset, const Texture* pTexture, const Sampler* pSampler, bool bindAsImage)
@@ -591,21 +495,23 @@ namespace Falcor
         // Debug checks
         if(pTexture)
         {
-            for(const auto& a : mVariables)
+            for(auto& a = mpReflector->varBegin() ; a != mpReflector->varEnd() ; a++)
             {
-                if(a.second.type == VariableDesc::Type::Resource)
+                const auto& varDesc = a->second;
+                const auto& varName = a->first;
+                if(varDesc.type == ProgramReflection::Variable::Type::Resource)
                 {
                     size_t ArrayIndex = 0;
-                    bool bCheck = (a.second.offset == offset);
+                    bool bCheck = (varDesc.offset == offset);
 
                     // Check arrays
-                    if(a.second.arrayStride > 0 && offset > a.second.offset)
+                    if(varDesc.arrayStride > 0 && offset > varDesc.offset)
                     {
-                        size_t Stride = offset - a.second.offset;
-                        if((Stride % a.second.arrayStride) == 0)
+                        size_t Stride = offset - varDesc.offset;
+                        if((Stride % varDesc.arrayStride) == 0)
                         {
-                            ArrayIndex = Stride / a.second.arrayStride;
-                            if(ArrayIndex < a.second.arraySize)
+                            ArrayIndex = Stride / varDesc.arrayStride;
+                            if(ArrayIndex < varDesc.arraySize)
                             {
                                 bCheck = true;
                             }
@@ -614,12 +520,11 @@ namespace Falcor
 
                     if(bCheck)
                     {
-                        const auto& it = getResourceDescIt(a.first, mResources);
-                        assert(it != mResources.end());
-                        const auto& desc = it->second;                      
-                        if(desc.type != ShaderResourceDesc::ResourceType::Sampler)
+                        const auto& pResource = getResourceDesc(varName, mpReflector.get());
+                        assert(pResource != nullptr);                
+                        if(pResource->type != ProgramReflection::Resource::ResourceType::Sampler)
                         {
-                            bOK = checkResourceDimension(pTexture, desc, bindAsImage, a.first, mName);
+                            bOK = checkResourceDimension(pTexture, pResource, bindAsImage, varName, mpReflector->getName());
                             break;
                         }
                     }
@@ -644,51 +549,51 @@ namespace Falcor
 
     void UniformBuffer::setTexture(const std::string& name, const Texture* pTexture, const Sampler* pSampler, bool bindAsImage)
     {
-        size_t Offset;
-        const auto pUniform = getVariableData<true>(name, Offset);
-        if(pUniform)
+        size_t offset;
+        const auto& pVarDesc = mpReflector->getVariableData(name, offset, false);
+        if(offset != ProgramReflection::kInvalidLocation)
         {
             bool bOK = true;
 #if _LOG_ENABLED == 1
             if(pTexture != nullptr)
             {
-                const auto& it = getResourceDescIt(name, mResources);
-                bOK = (it != mResources.end()) && checkResourceDimension(pTexture, it->second, bindAsImage, name, mName);
+                const auto& pDesc = getResourceDesc(name, mpReflector.get());
+                bOK = (pDesc != nullptr) && checkResourceDimension(pTexture, pDesc, bindAsImage, name, mpReflector->getName());
             }
 #endif
             if(bOK)
             {
-                setTexture(Offset, pTexture, pSampler, bindAsImage);
+                setTexture(offset, pTexture, pSampler, bindAsImage);
             }
         }
     }
 
     void UniformBuffer::setTextureArray(const std::string& name, const Texture* pTexture[], const Sampler* pSampler, size_t count, bool bindAsImage)
     {
-        size_t Offset;
-        const auto pUniform = getVariableData<false>(name, Offset);
+        size_t offset;
+        const auto& pVarDesc = mpReflector->getVariableData(name, offset, true);
 
-        if(pUniform->arraySize < count)
+        if(pVarDesc)
         {
-            Logger::log(Logger::Level::Warning, "Error when setting textures array. Count is larger than the array size. Ignoring out-of-bound elements");
-            count = pUniform->arraySize;
-        }
+            if(pVarDesc->arraySize < count)
+            {
+                Logger::log(Logger::Level::Warning, "Error when setting textures array. 'count' is larger than the array size. Ignoring out-of-bound elements");
+                count = pVarDesc->arraySize;
+            }
 
-        if(pUniform)
-        {
             for(uint32_t i = 0; i < count; i++)
             {
                 bool bOK = true;
 #if _LOG_ENABLED == 1
                 if(pTexture[i] != nullptr)
                 {
-                    const auto& it = getResourceDescIt(name, mResources);
-                    bOK = (it != mResources.end()) && checkResourceDimension(pTexture[i], it->second, bindAsImage, name, mName);
+                    const auto& pDesc = getResourceDesc(name, mpReflector.get());
+                    bOK = (pDesc) && checkResourceDimension(pTexture[i], pDesc, bindAsImage, name, mpReflector->getName());
                 }
 #endif
                 if(bOK)
                 {
-                    setTexture(Offset + i * sizeof(uint64_t), pTexture[i], pSampler, bindAsImage);
+                    setTexture(offset + i * sizeof(uint64_t), pTexture[i], pSampler, bindAsImage);
                 }
             }
         }

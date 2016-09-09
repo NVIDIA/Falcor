@@ -28,17 +28,99 @@
 #pragma once
 #include "Framework.h"
 #include "ProgramReflection.h"
+#include "Utils/StringUtils.h"
 
 namespace Falcor
 {
-    ProgramReflection::SharedPtr ProgramReflection::create(const ProgramVersion* pProgramVersion)
+    ProgramReflection::SharedPtr ProgramReflection::create(const ProgramVersion* pProgramVersion, std::string& log)
     {
-        return SharedPtr(new ProgramReflection);
+        SharedPtr pReflection = SharedPtr(new ProgramReflection);
+        return pReflection->init(pProgramVersion, log) ? pReflection : nullptr;
     }
 
     uint32_t ProgramReflection::getUniformBufferBinding(const std::string& name) const
     {
         return kInvalidLocation;
+    }
+
+    bool ProgramReflection::init(const ProgramVersion* pProgVer, std::string& log)
+    {
+        bool b = true;
+        b = b && reflectBuffers(pProgVer, log);
+        b = b && reflectVertexAttributes(pProgVer, log);
+        b = b && reflectFragmentOutputs(pProgVer, log);
+        b = b && reflectResources(pProgVer, log);
+        return b;
+    }
+
+    const ProgramReflection::Variable* ProgramReflection::BufferDesc::getVariableData(const std::string& name, size_t& offset, bool allowNonIndexedArray) const
+    {
+        const std::string msg = "Error when getting uniform data\"" + name + "\" from uniform buffer \"" + mName + "\".\n";
+        uint32_t arrayIndex = 0;
+
+        // Look for the uniform
+        auto& var = mVariables.find(name);
+
+#ifdef FALCOR_DX11
+        if(var == mVariables.end())
+        {
+            // Textures might come from our struct. Try again.
+            std::string texName = name + ".t";
+            var = mVariables.find(texName);
+        }
+#endif
+        if(var == mVariables.end())
+        {
+            // The name might contain an array index. Remove the last array index and search again
+            std::string nameV2 = removeLastArrayIndex(name);
+            var = mVariables.find(nameV2);
+
+            if(var == mVariables.end())
+            {
+                Logger::log(Logger::Level::Error, msg + "Uniform not found.");
+                return nullptr;
+            }
+
+            const auto& data = var->second;
+            if(data.arraySize == 0)
+            {
+                // Not an array, so can't have an array index
+                Logger::log(Logger::Level::Error, msg + "Uniform is not an array, so name can't include an array index.");
+                return nullptr;
+            }
+
+            // We know we have an array index. Make sure it's in range
+            std::string indexStr = name.substr(nameV2.length() + 1);
+            char* pEndPtr;
+            arrayIndex = strtol(indexStr.c_str(), &pEndPtr, 0);
+            if(*pEndPtr != ']')
+            {
+                Logger::log(Logger::Level::Error, msg + "Array index must be a literal number (no whitespace are allowed)");
+                return nullptr;
+            }
+
+            if(arrayIndex >= data.arraySize)
+            {
+                Logger::log(Logger::Level::Error, msg + "Array index (" + std::to_string(arrayIndex) + ") out-of-range. Array size == " + std::to_string(data.arraySize) + ".");
+                return nullptr;
+            }
+        }
+        else if((allowNonIndexedArray == false) && (var->second.arraySize > 0))
+        {
+            // Variable name should contain an explicit array index (for N-dim arrays, N indices), but the index was missing
+            Logger::log(Logger::Level::Error, msg + "Expecting to find explicit array index in uniform name (for N-dimensional array, N indices must be specified).");
+            return nullptr;
+        }
+
+        const auto* pData = &var->second;
+        offset = pData->offset + pData->arrayStride * arrayIndex;
+        return pData;
+    }
+
+    const ProgramReflection::Variable* ProgramReflection::BufferDesc::getVariableData(const std::string& name, bool allowNonIndexedArray) const
+    {
+        size_t t;
+        return getVariableData(name, t, allowNonIndexedArray);
     }
 
     //         // Loop over all the shaders and initialize the uniform buffer bindings.

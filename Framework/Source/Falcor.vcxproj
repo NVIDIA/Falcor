@@ -47,13 +47,13 @@
     <ClCompile Include="Core\OpenGL\FboGL.cpp" />
     <ClCompile Include="Core\OpenGL\FormatsGL.cpp" />
     <ClCompile Include="Core\OpenGL\GpuTimerGL.cpp" />
+    <ClCompile Include="Core\OpenGL\ProgramReflectionGL.cpp" />
     <ClCompile Include="Core\OpenGL\ProgramVersionGL.cpp" />
     <ClCompile Include="Core\OpenGL\RasterizerStateGL.cpp" />
     <ClCompile Include="Core\OpenGL\RenderContextGL.cpp" />
     <ClCompile Include="Core\OpenGL\SamplerGL.cpp" />
     <ClCompile Include="Core\OpenGL\ScreenCaptureGL.cpp" />
     <ClCompile Include="Core\OpenGL\ShaderGL.cpp" />
-    <ClCompile Include="Core\OpenGL\ShaderReflectionGL.cpp" />
     <ClCompile Include="Core\OpenGL\ShaderStorageBufferGL.cpp" />
     <ClCompile Include="Core\OpenGL\TextureGL.cpp" />
     <ClCompile Include="Core\OpenGL\UniformBufferGL.cpp" />
@@ -387,7 +387,6 @@
     <ClInclude Include="Core\Sampler.h" />
     <ClInclude Include="Core\ScreenCapture.h" />
     <ClInclude Include="Core\Shader.h" />
-    <ClInclude Include="Core\ShaderReflection.h" />
     <ClInclude Include="Core\ShaderStorageBuffer.h" />
     <ClInclude Include="Core\Texture.h" />
     <ClInclude Include="Core\UniformBuffer.h" />

@@ -215,9 +215,6 @@
     <ClCompile Include="Core\DX11\ShaderReflectionDX11.cpp">
       <Filter>Core\DX11</Filter>
     </ClCompile>
-    <ClCompile Include="Core\OpenGL\ShaderReflectionGL.cpp">
-      <Filter>Core\OpenGL</Filter>
-    </ClCompile>
     <ClCompile Include="Core\Texture.cpp">
       <Filter>Core</Filter>
     </ClCompile>
@@ -315,6 +312,9 @@
     </ClCompile>
     <ClCompile Include="Graphics\ProgramVars.cpp">
       <Filter>Graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\OpenGL\ProgramReflectionGL.cpp">
+      <Filter>Core\OpenGL</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -1241,9 +1241,6 @@
       <Filter>Core</Filter>
     </ClInclude>
     <ClInclude Include="Core\Shader.h">
-      <Filter>Core</Filter>
-    </ClInclude>
-    <ClInclude Include="Core\ShaderReflection.h">
       <Filter>Core</Filter>
     </ClInclude>
     <ClInclude Include="Utils\ShaderUtils.h">

@@ -158,5 +158,24 @@ namespace Falcor
         }
         return res;
     }
+
+    /** Remove the last array index from a string, if it exists
+    */
+    inline const std::string removeLastArrayIndex(const std::string& name)
+    {
+        size_t dot = name.find_last_of(".");
+        size_t bracket = name.find_last_of("[");
+
+        if(bracket != std::string::npos)
+        {
+            // Ignore cases where the last index is an array of struct index (SomeStruct[1].v should be ignored)
+            if((dot == std::string::npos) || (bracket > dot))
+            {
+                return name.substr(0, bracket);
+            }
+        }
+
+        return name;
+    }
     /*! @} */
 };

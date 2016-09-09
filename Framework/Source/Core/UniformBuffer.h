@@ -27,7 +27,7 @@
 ***************************************************************************/
 #pragma once
 #include <string>
-#include "ShaderReflection.h"
+#include "ProgramReflection.h"
 #include "Texture.h"
 #include "Buffer.h"
 
@@ -73,13 +73,12 @@ namespace Falcor
         using SharedConstPtr = std::shared_ptr<const UniformBuffer>;
 
         /** create a new uniform buffer.\n
-            Even though the buffer is created with a specific program, it can be used with other programs as long as the buffer declarations are the same across programs.
-            \param[in] pProgram A program object with the uniform buffer declared
-            \param[in] bufferName The name of the buffer in the program
+            Even though the buffer is created with a specific reflection object, it can be used with other programs as long as the buffer declarations are the same across programs.
+            \param[in] pBufferReflection A buffer-reflection object describing the buffer layout
             \param[in] overrideSize - if 0, will use the buffer size as declared in the shader. Otherwise, will use this value as the buffer size. Useful when using buffers with dynamic arrays.
             \return A new buffer object if the operation was successful, otherwise nullptr
         */
-        static SharedPtr create(const ProgramVersion* pProgram, const std::string& bufferName, size_t overrideSize = 0);
+        static SharedPtr create(const ProgramReflection::BufferDesc::SharedPtr& pReflection, size_t overrideSize = 0);
 
         ~UniformBuffer();
 
@@ -156,9 +155,9 @@ namespace Falcor
         */
         Buffer::SharedPtr getBuffer() const { return mpBuffer; }
 
-        /** Get uniform offset inside the buffer. See notes about naming in the UniformBuffer class description. Uniform name can be provided with an implicit array-index, similar to UniformBuffer#SetVariableArray.
+        /** Get the reflection object describing the UBO
         */
-        size_t getVariableOffset(const std::string& varName) const;
+        ProgramReflection::BufferDesc::SharedPtr getBufferReflector() const { return mpReflector; }
 
         /** Set a block of data into the uniform buffer.\n
             If Offset + Size will result in buffer overflow, the call will be ignored and log an error.
@@ -167,25 +166,17 @@ namespace Falcor
             \param[in] size Number of bytes in the source data.
         */
         void setBlob(const void* pSrc, size_t offset, size_t size);
-
-        static const size_t kInvalidUniformOffset = (size_t)-1;
     protected:
-        bool init(const ProgramVersion* pProgram, const std::string& bufferName, size_t overrideSize, bool isUniformBuffer);
-        bool apiInit(const ProgramVersion* pProgram, const std::string& bufferName, bool isUniformBuffer);
+        bool init(const ProgramReflection::BufferDesc::SharedPtr& pReflection, size_t overrideSize, bool isUniformBuffer);
+        bool apiInit(const ProgramReflection::BufferDesc::SharedPtr& pReflection, bool isUniformBuffer);
         void setTextureInternal(size_t offset, const Texture* pTexture, const Sampler* pSampler);
 
-        UniformBuffer(const std::string& bufferName);
-        Buffer::SharedPtr mpBuffer = nullptr;
-        const std::string mName;
+        UniformBuffer() = default;
+        ProgramReflection::BufferDesc::SharedPtr mpReflector;
+        Buffer::SharedPtr mpBuffer;
         std::vector<uint8_t> mData;
         size_t mSize = 0;
         mutable bool mDirty = true;
-
-        ShaderReflection::VariableDescMap mVariables;
-        ShaderReflection::ShaderResourceDescMap mResources;
-
-        template<bool ExpectArrayIndex>
-        const ShaderReflection::VariableDesc* getVariableData(const std::string& name, size_t& offset) const;
 
 #ifdef FALCOR_DX11
         friend class RenderContext;

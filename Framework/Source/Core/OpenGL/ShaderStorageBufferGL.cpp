@@ -34,8 +34,8 @@
 namespace Falcor
 {
     using namespace ShaderReflection;
-    bool checkVariableByOffset(VariableDesc::Type callType, size_t offset, size_t count, const VariableDescMap& uniforms, const std::string& bufferName);
-    bool checkVariableType(VariableDesc::Type callType, VariableDesc::Type shaderType, const std::string& name, const std::string& bufferName);
+    bool checkVariableByOffset(VariableDesc::Type callType, size_t offset, size_t count, const ProgramReflection::BufferDesc* pBufferDesc);
+    bool checkVariableType(VariableDesc::Type callType, VariableDesc::Type shaderType, const std::string& name);
 
     ShaderStorageBuffer::SharedPtr ShaderStorageBuffer::create(const ProgramVersion* pProgram, const std::string& bufferName, size_t overrideSize)
     {

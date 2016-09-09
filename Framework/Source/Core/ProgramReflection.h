@@ -41,20 +41,188 @@ namespace Falcor
         using SharedPtr = std::shared_ptr<ProgramReflection>;
         using SharedConstPtr = std::shared_ptr<const ProgramReflection>;
 
-        struct BufferDesc
+        /** Variable definition
+        */
+        struct Variable
         {
-            std::string name;
-            size_t sizeInBytes = 0;
-            size_t variableCount = 0;
+            enum class Type
+            {
+                Unknown,
+                Bool,
+                Bool2,
+                Bool3,
+                Bool4,
+                Uint,
+                Uint2,
+                Uint3,
+                Uint4,
+                Uint64,
+                Uint64_2,
+                Uint64_3,
+                Uint64_4,
+                Int,
+                Int2,
+                Int3,
+                Int4,
+                Int64,
+                Int64_2,
+                Int64_3,
+                Int64_4,
+                Float,
+                Float2,
+                Float3,
+                Float4,
+                Float2x2,
+                Float2x3,
+                Float2x4,
+                Float3x2,
+                Float3x3,
+                Float3x4,
+                Float4x2,
+                Float4x3,
+                Float4x4,
+                GpuPtr,
+                Resource
+            };
+
+            size_t offset = 0;          ///< The offset of the variable from the start of the buffer or the location in case this is a global variable
+            uint32_t arraySize = 0;     ///< Array size or 0 if not an array
+            uint32_t arrayStride = 0;   ///< Stride between elements in the array. 0 If not an array
+            bool isRowMajor = false;    ///< For matrices, tells if this is a row-major or column-major matrix
+            Type type = Type::Unknown;  ///< The data type
         };
+
+        /** Shader resource definition
+        */
+        struct Resource
+        {
+            enum class ReturnType
+            {
+                Unknown,
+                Float,
+                Double,
+                Int,
+                Uint
+            };
+
+            enum class Dimensions
+            {
+                Unknown,
+                Texture1D,
+                Texture2D,
+                Texture3D,
+                TextureCube,
+                Texture1DArray,
+                Texture2DArray,
+                Texture2DMS,
+                Texture2DMSArray,
+                TextureCubeArray,
+                TextureBuffer,
+            };
+
+            enum class ResourceType
+            {
+                Unknown,
+                Texture,        // Read-only
+                Image,          // Read-write
+                Sampler         // Sampler state
+            };
+
+            ResourceType type = ResourceType::Unknown;      ///< Resource type
+            Dimensions dims = Dimensions::Unknown;          ///< Resource dimensions
+            ReturnType retType = ReturnType::Unknown;       ///< Resource return type
+            size_t offset = -1;                             ///< In case the resource was defined as part of a UBO, the offset inside the UBO
+            uint32_t arraySize = 0;                         ///< Array size , or 0 if not an array
+            Resource(Dimensions d, ReturnType r, ResourceType t) : dims(d), retType(r), type(t) {}
+            Resource() {}
+        };
+
+        using VariableMap = std::unordered_map<std::string, Variable>;
+        using ResourceMap = std::map < std::string, Resource >;
+        using string_2_uint_map = std::unordered_map<std::string, uint32_t>;
 
         /** Invalid location of uniform and attributes
         */
         static const int32_t kInvalidLocation = -1;
 
+        /** This class holds all of the data required to reflect a buffer, either uniform buffer or SSBO
+        */
+        class BufferDesc
+        {
+        public:
+            using SharedPtr = std::shared_ptr<BufferDesc>;
+            using SharedConstPtr = std::shared_ptr<const BufferDesc>;
+
+            /** Buffer type
+            */
+            enum class Type
+            {
+                Uniform,
+                ShaderStorage
+            };
+
+            /** Create a new object
+                \param[in] name The name of the buffer as was declared in the program
+                \param[in] size The size of the buffer
+                \param[in] varCount The number of variables in the buffer
+                \param[in] varMap Map describing each variable in the buffer, excluding resources
+                \param[in] resourceMap Map describing the resources defined as part of the buffer. This map is only valid for APIs that support resource declarations nested inside buffers
+                \return A shared pointer for a new buffer object
+            */
+            static SharedPtr create(const std::string& name, Type type, size_t size, size_t varCount, const VariableMap& varMap, const ResourceMap& resourceMap);
+
+            /** Get variable data
+                \param[in] name The name of the requested variable
+                \param[out] offset The offset of the variable or kInvalidLocation if the variable wasn't found. This is useful in cases where the requested variable is an array element, since the returned result will be different than Variable::offset
+                \param[in] allowNonIndexedArray Optional. By default, getting the first element in an array requires explicit '[0]' at the end of the name. Set this to true to search for the start of an array when the name doesn't contain an index
+                \return Pointer to the variable data, or nullptr if the name wasn't found
+            */
+            const Variable* getVariableData(const std::string& name, size_t& offset, bool allowNonIndexedArray = false) const;
+
+            /** Get variable data
+            \param[in] name The name of the requested variable
+            \param[in] allowNonIndexedArray Optional. By default, getting the first element in an array requires explicit '[0]' at the end of the name. Set this to true to search for the start of an array without any index
+            \return Pointer to the variable data, or nullptr if the name wasn't found
+            */
+            const Variable* getVariableData(const std::string& name, bool allowNonIndexedArray = false) const;
+
+            /** Get resource data
+            \param[in] name The name of the requested resource
+            \return Pointer to the resource data, or nullptr if the name wasn't found or is not a resource
+            */
+            const Resource* getResourceData(const std::string& name) const;
+
+            /** Get an iterator to the first variable
+            */
+            VariableMap::const_iterator varBegin() const { return mVariables.begin(); }
+
+            /** Get an iterator to the end of the variable list
+            */
+            VariableMap::const_iterator varEnd() const {return mVariables.end(); }
+
+            /** Get an iterator to the first resource
+            */
+            ResourceMap::const_iterator resourceBegin() const { return mResources.begin(); }
+
+            /** Get an iterator to the end of the variable list
+            */
+            ResourceMap::const_iterator resourceEnd() const { return mResources.end(); }
+
+            /** Get the buffer's name
+            */
+            const std::string& getName() const { return mName; }
+        private:
+            std::string mName;
+            size_t mSizeInBytes = 0;
+            size_t mVariableCount = 0;
+            Type mType;
+            ResourceMap mResources;
+            VariableMap mVariables;
+        };
+
         /** Create a new object
         */
-        static SharedPtr create(const ProgramVersion* pProgramVersion);
+        static SharedPtr create(const ProgramVersion* pProgramVersion, std::string& log);
 
         /** Get a uniform buffer binding index
         \param[in] name The uniform buffer name in the program
@@ -62,23 +230,22 @@ namespace Falcor
         */
         uint32_t getUniformBufferBinding(const std::string& name) const;
 
-        using BufferDescMap = std::unordered_map<uint32_t, BufferDesc>;
+        using BufferMap = std::unordered_map<uint32_t, BufferDesc::SharedConstPtr>;
 
         /** Get the uniform-buffer list
         */
-        const BufferDescMap& getUniformBufferMap() const { return mUniformBuffer.descMap; }
+        const BufferMap& getUniformBufferMap() const { return mUniformBuffers.descMap; }
 
         /** Get a uniform-buffer descriptor
             \param[in] bindLocation The bindLocation of the requested buffer
-            \return Reference to the buffer descriptor. If the location is not used, returns the default BufferDesc
+            \return The buffer descriptor or nullptr, if the bind location isn't used
         */
-        const BufferDesc& getUniformBufferDesc(uint32_t bindLocation) const
+        BufferDesc::SharedConstPtr getUniformBufferDesc(uint32_t bindLocation) const
         {
-            auto& desc = mUniformBuffer.descMap.find(bindLocation);
-            if(desc == mUniformBuffer.descMap.end())
+            auto& desc = mUniformBuffers.descMap.find(bindLocation);
+            if(desc == mUniformBuffers.descMap.end())
             {
-                static BufferDesc defaultDesc;
-                return defaultDesc;
+                return nullptr;
             }
             return desc->second;
         }
@@ -89,12 +256,116 @@ namespace Falcor
         */
         uint32_t getAttributeLocation(const std::string& name) const;
 
-    private:
-        using string_2_uint_map = std::unordered_map<std::string, uint32_t>;
-        struct
+        /** Helper struct that holds buffer-data
+        */
+        struct BufferData
         {
-            BufferDescMap descMap;
+            BufferMap descMap;
             string_2_uint_map nameMap;
-        } mUniformBuffer;
+        };
+
+    private:
+        bool init(const ProgramVersion* pProgVer, std::string& log);
+        bool reflectBuffers(const ProgramVersion* pProgVer, std::string& log);                // UBOs and SSBOs
+        bool reflectVertexAttributes(const ProgramVersion* pProgVer, std::string& log);       // Input attributes
+        bool reflectFragmentOutputs(const ProgramVersion* pProgVer, std::string& log);        // FS output (if FS exists)
+        bool reflectResources(const ProgramVersion* pProgVer, std::string& log);              // SRV/UAV/ROV and samplers
+       
+        BufferData mUniformBuffers;
+        BufferData mShaderStorageBuffers;
     };
+
+
+    inline const std::string to_string(ProgramReflection::Variable::Type type)
+    {
+#define type_2_string(a) case ProgramReflection::Variable::Type::a: return #a;
+        switch(type)
+        {
+            type_2_string(Unknown);
+            type_2_string(Bool);
+            type_2_string(Bool2);
+            type_2_string(Bool3);
+            type_2_string(Bool4);
+            type_2_string(Uint);
+            type_2_string(Uint2);
+            type_2_string(Uint3);
+            type_2_string(Uint4);
+            type_2_string(Int);
+            type_2_string(Int2);
+            type_2_string(Int3);
+            type_2_string(Int4);
+            type_2_string(Float);
+            type_2_string(Float2);
+            type_2_string(Float3);
+            type_2_string(Float4);
+            type_2_string(Float2x2);
+            type_2_string(Float2x3);
+            type_2_string(Float2x4);
+            type_2_string(Float3x2);
+            type_2_string(Float3x3);
+            type_2_string(Float3x4);
+            type_2_string(Float4x2);
+            type_2_string(Float4x3);
+            type_2_string(Float4x4);
+            type_2_string(GpuPtr);
+        default:
+            should_not_get_here();
+            return "";
+        }
+#undef type_2_string
+    }
+
+    inline const std::string to_string(ProgramReflection::Resource::ResourceType access)
+    {
+#define type_2_string(a) case ProgramReflection::Resource::ResourceType::a: return #a;
+        switch(access)
+        {
+            type_2_string(Unknown);
+            type_2_string(Texture);
+            type_2_string(Image);
+        default:
+            should_not_get_here();
+            return "";
+        }
+#undef type_2_string
+    }
+
+    inline const std::string to_string(ProgramReflection::Resource::ReturnType retType)
+    {
+#define type_2_string(a) case ProgramReflection::Resource::ReturnType::a: return #a;
+        switch(retType)
+        {
+            type_2_string(Unknown);
+            type_2_string(Float);
+            type_2_string(Uint);
+            type_2_string(Int);
+        default:
+            should_not_get_here();
+            return "";
+        }
+#undef type_2_string
+    }
+
+    inline const std::string to_string(ProgramReflection::Resource::Dimensions resource)
+    {
+#define type_2_string(a) case ProgramReflection::Resource::Dimensions::a: return #a;
+        switch(resource)
+        {
+            type_2_string(Unknown);
+            type_2_string(Texture1D);
+            type_2_string(Texture2D);
+            type_2_string(Texture3D);
+            type_2_string(TextureCube);
+            type_2_string(Texture1DArray);
+            type_2_string(Texture2DArray);
+            type_2_string(Texture2DMS);
+            type_2_string(Texture2DMSArray);
+            type_2_string(TextureCubeArray);
+            type_2_string(TextureBuffer);
+        default:
+            should_not_get_here();
+            return "";
+        }
+#undef type_2_string
+    }
 }
