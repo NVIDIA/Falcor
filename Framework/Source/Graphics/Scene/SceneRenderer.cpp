@@ -70,7 +70,7 @@ namespace Falcor
         // create uniform buffers if required
         if(sPerMaterialCB == nullptr)
         {
-            auto pProgVer = pProgram->getActiveProgramVersion().get();
+            auto pProgVer = pProgram->getActiveVersion().get();
             sPerMaterialCB = UniformBuffer::create(pProgVer, kPerMaterialCbName);
             sPerFrameCB = UniformBuffer::create(pProgVer, kPerFrameCbName);
             sPerStaticMeshCB = UniformBuffer::create(pProgVer, kPerStaticMeshCbName);
@@ -87,20 +87,21 @@ namespace Falcor
     {
         createUniformBuffers(pProgram);
 
+        ProgramReflection* pReflection = pProgram->getActiveVersion()->getReflection().get();
         // Per skinned mesh
-        uint32_t bufferLoc = pProgram->getUniformBufferBinding(kPerSkinnedMeshCbName);
+        uint32_t bufferLoc = pReflection->getUniformBufferBinding(kPerSkinnedMeshCbName);
         pRenderContext->setUniformBuffer(bufferLoc, sPerSkinnedMeshCB);
 
         // Per static mesh
-        bufferLoc = pProgram->getUniformBufferBinding(kPerStaticMeshCbName);
+        bufferLoc = pReflection->getUniformBufferBinding(kPerStaticMeshCbName);
         pRenderContext->setUniformBuffer(bufferLoc, sPerStaticMeshCB);
 
         // Per material
-        bufferLoc = pProgram->getUniformBufferBinding(kPerMaterialCbName);
+        bufferLoc = pReflection->getUniformBufferBinding(kPerMaterialCbName);
         pRenderContext->setUniformBuffer(bufferLoc, sPerMaterialCB);
 
         // Per frame
-        bufferLoc = pProgram->getUniformBufferBinding(kPerFrameCbName);
+        bufferLoc = pReflection->getUniformBufferBinding(kPerFrameCbName);
         pRenderContext->setUniformBuffer(bufferLoc, sPerFrameCB);
     }
 
@@ -208,7 +209,7 @@ namespace Falcor
 						if (activeInstances == mMaxInstanceCount)
 						{
 
-							pContext->setProgram(currentData.pProgram->getActiveProgramVersion());
+							pContext->setProgram(currentData.pProgram->getActiveVersion());
 							flushDraw(pContext, pMesh, activeInstances, currentData);
 							activeInstances = 0;
 						}
@@ -217,7 +218,7 @@ namespace Falcor
 			}
 			if(activeInstances != 0)
 			{
-				pContext->setProgram(currentData.pProgram->getActiveProgramVersion());
+				pContext->setProgram(currentData.pProgram->getActiveVersion());
 				flushDraw(pContext, currentData.pMesh, activeInstances, currentData);
 			}
 		}

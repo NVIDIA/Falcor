@@ -256,7 +256,7 @@ void ModelViewer::onLoad()
     mpPointLight = PointLight::create();
     mpDirLight->setWorldDirection(glm::vec3(0.13f, 0.27f, -0.9f));
 
-    mpPerFrameCB = UniformBuffer::create(mpProgram->getActiveProgramVersion().get(), "PerFrameCB");
+    mpPerFrameCB = UniformBuffer::create(mpProgram->getActiveVersion().get(), "PerFrameCB");
 
     initUI();
 }

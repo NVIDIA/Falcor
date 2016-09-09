@@ -47,7 +47,7 @@ void PostProcess::onLoad()
 
     mSkybox.pProgram = Program::createFromFile("postprocess.vs", "postprocess.fs");
     mSkybox.pProgram->addDefine("_TEXTURE_ONLY");
-    mpPerFrameCB = UniformBuffer::create(mSkybox.pProgram->getActiveProgramVersion().get(), "PerFrameCB");
+    mpPerFrameCB = UniformBuffer::create(mSkybox.pProgram->getActiveVersion().get(), "PerFrameCB");
     mpEnvMapProgram = Program::createFromFile("postprocess.vs", "postprocess.fs");
 
     // Create the rasterizer state
@@ -123,7 +123,7 @@ void PostProcess::renderMesh(const Mesh* pMesh, const Program* pProgram, Rasteri
     mpPerFrameCB->setVariable("gSurfaceRoughness", mSurfaceRoughness);
 
     // Set uniform buffers
-    mpRenderContext->setProgram(pProgram->getActiveProgramVersion());
+    mpRenderContext->setProgram(pProgram->getActiveVersion());
 
     // Just for the sake of the example, we fetch the buffer location from the program here. We could have cached it, or better yet, just use "layout(binding = <someindex>" in the shader
     mpRenderContext->setUniformBuffer(0, mpPerFrameCB);

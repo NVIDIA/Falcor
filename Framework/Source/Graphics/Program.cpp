@@ -136,7 +136,7 @@ namespace Falcor
         }
     }
 
-    ProgramVersion::SharedConstPtr Program::getActiveProgramVersion() const
+    ProgramVersion::SharedConstPtr Program::getActiveVersion() const
     {
         if(mLinkRequired)
         {
@@ -228,11 +228,6 @@ namespace Falcor
 
     const Shader* Program::getShader(ShaderType Type) const
     {
-        return getActiveProgramVersion()->getShader(Type);
-    }
-    
-    int32_t Program::getAttributeLocation(const std::string& Attribute) const
-    {
-        return getActiveProgramVersion()->getAttributeLocation(Attribute);
+        return getActiveVersion()->getShader(Type);
     }
 }

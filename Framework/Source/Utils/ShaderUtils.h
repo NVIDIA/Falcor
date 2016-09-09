@@ -27,7 +27,7 @@
 ***************************************************************************/
 #pragma once
 #include <string>
-#include "Graphics/Program/Program.h"
+#include "Graphics/Program.h"
 
 namespace Falcor
 {

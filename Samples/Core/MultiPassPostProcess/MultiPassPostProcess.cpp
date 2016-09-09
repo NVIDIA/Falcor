@@ -61,10 +61,10 @@ void MultiPassPostProcess::loadImage()
 
         resizeSwapChain(mpImage->getWidth(), mpImage->getHeight());
 
-        mpFirstPassCB = UniformBuffer::create(mpBlit->getProgram()->getActiveProgramVersion().get(), "PerImageCB");
+        mpFirstPassCB = UniformBuffer::create(mpBlit->getProgram()->getActiveVersion().get(), "PerImageCB");
         mpFirstPassCB->setTexture("gTexture", mpImage.get(), nullptr);
 
-        mpSecondPassCB = UniformBuffer::create(mpLuminance->getProgram()->getActiveProgramVersion().get(), "PerImageCB");
+        mpSecondPassCB = UniformBuffer::create(mpLuminance->getProgram()->getActiveVersion().get(), "PerImageCB");
         mpSecondPassCB->setTexture("gTexture", mpTempFB->getColorTexture(0).get(), nullptr);
     }
 }

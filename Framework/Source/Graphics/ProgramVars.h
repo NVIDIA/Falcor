@@ -35,6 +35,7 @@
 namespace Falcor
 {
     class ProgramVersion;
+    class RenderContext;
 
     /** This class manages a program's reflection and variable assignment.
         It's a high-level abstraction of variables-related concepts such as UBOs, texture and sampler assignments, root-signature, descriptor tables, etc.
@@ -127,7 +128,7 @@ namespace Falcor
 
         /** Get the program reflection interface
         */
-        ProgramReflection::SharedPtr getProgramReflection() const { return mpReflection; }
+        ProgramReflection::SharedPtr getReflection() const { return mpReflection; }
 
     private:
         ProgramVars(const ProgramVersion* pProgramVer, bool createBuffers);

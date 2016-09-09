@@ -63,7 +63,7 @@ namespace Falcor
         mpFirstIterProg = FullScreenPass::create(fsFilename, defines);
         mpFirstIterProg->getProgram()->addDefine("_FIRST_ITERATION");
         mpRestIterProg = FullScreenPass::create(fsFilename, defines);
-        mpUbo = UniformBuffer::create(mpFirstIterProg->getProgram()->getActiveProgramVersion().get(), "PerImageCB");
+        mpUbo = UniformBuffer::create(mpFirstIterProg->getProgram()->getActiveVersion().get(), "PerImageCB");
 
         // Calculate the number of reduction passes
         if(width > kTileSize || height > kTileSize)

@@ -117,7 +117,7 @@ void StereoRendering::loadScene()
 
         mpProgram = Program::createFromFile("", "StereoRendering.fs");
         setRenderMode();
-        mpUniformBuffer = UniformBuffer::create(mpProgram->getActiveProgramVersion().get(), "PerFrameCB");
+        mpUniformBuffer = UniformBuffer::create(mpProgram->getActiveVersion().get(), "PerFrameCB");
     }
 }
 
@@ -127,7 +127,7 @@ void StereoRendering::onLoad()
     initVR();
 
     mpBlit = FullScreenPass::create("blit.fs");
-    mpBlitUbo = UniformBuffer::create(mpBlit->getProgram()->getActiveProgramVersion().get(), "PerImageCB");
+    mpBlitUbo = UniformBuffer::create(mpBlit->getProgram()->getActiveVersion().get(), "PerImageCB");
 }
 
 void StereoRendering::blitTexture(const Texture* pTexture, uint32_t xStart)

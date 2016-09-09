@@ -27,7 +27,6 @@
 ***************************************************************************/
 #include "Framework.h"
 #include "FullScreenPass.h"
-#include "Program.h"
 #include "Core/VAO.h"
 #include "glm/vec2.hpp"
 #include "Core/Buffer.h"
@@ -130,7 +129,7 @@ namespace Falcor
     void FullScreenPass::execute(RenderContext* pRenderContext, bool overrideDepthStencil) const
     {
         pRenderContext->setVao(spVao);
-        pRenderContext->setProgram(mpProgram->getActiveProgramVersion());
+        pRenderContext->setProgram(mpProgram->getActiveVersion());
         if (overrideDepthStencil) pRenderContext->setDepthStencilState(mpDepthStencilState, 0);
         pRenderContext->setTopology(RenderContext::Topology::TriangleStrip);
         pRenderContext->draw(arraysize(kVertices), 0);

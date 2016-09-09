@@ -82,7 +82,7 @@ namespace Falcor
         mpFont = Font::create();
 
         // Uniform buffer
-        mpPerFrameCB = UniformBuffer::create(mpProgram->getActiveProgramVersion().get(), "PerFrameCB");
+        mpPerFrameCB = UniformBuffer::create(mpProgram->getActiveVersion().get(), "PerFrameCB");
         mUniformOffsets.vpTransform = mpPerFrameCB->getVariableOffset("gvpTransform");
         mUniformOffsets.fontColor = mpPerFrameCB->getVariableOffset("gFontColor");
         mUniformOffsets.fontTex = mpPerFrameCB->getVariableOffset("gFontTex");
@@ -111,7 +111,7 @@ namespace Falcor
         pRenderContext->pushState();
 
         // Set shaders
-        pRenderContext->setProgram(mpProgram->getActiveProgramVersion());
+        pRenderContext->setProgram(mpProgram->getActiveVersion());
         pRenderContext->setVao(mpVAO);
 
         // Get the current viewport

@@ -35,7 +35,7 @@ namespace Falcor
 {
     ProgramVars::ProgramVars(const ProgramVersion* pProgramVer, bool createBuffers)
     {
-        mpReflection = pProgramVer->getProgramReflection();
+        mpReflection = pProgramVer->getReflection();
 
         // Initialize the UBO map. We always do it, to mark which slots are used in the shader.
         const auto& uboMap = mpReflection->getUniformBufferMap();

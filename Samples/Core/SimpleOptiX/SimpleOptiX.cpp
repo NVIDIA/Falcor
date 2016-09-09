@@ -145,7 +145,7 @@ void SimpleOptix::onLoad()
 
     // Load raster routines
     mpRasterShader = Program::createFromFile("", "Raster.fs");
-    mpPerFrameCB = UniformBuffer::create(mpRasterShader->getActiveProgramVersion().get(), "PerFrameCB");
+    mpPerFrameCB = UniformBuffer::create(mpRasterShader->getActiveVersion().get(), "PerFrameCB");
 
     // create rasterizer state
     RasterizerState::Desc solidDesc;

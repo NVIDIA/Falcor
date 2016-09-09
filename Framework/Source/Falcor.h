@@ -64,8 +64,8 @@
 #include "Graphics/FullScreenPass.h"
 #include "Graphics/TextureHelper.h"
 #include "Graphics/Light.h"
-#include "Graphics/Program/Program.h"
-#include "Graphics/Program/ProgramVars.h"
+#include "Graphics/Program.h"
+#include "Graphics/ProgramVars.h"
 #include "Graphics/FboHelper.h"
 
 // Material

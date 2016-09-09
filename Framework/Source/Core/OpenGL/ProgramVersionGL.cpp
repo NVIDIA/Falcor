@@ -44,60 +44,41 @@ namespace Falcor
         glDeleteProgram(mApiHandle);
     }
 
-    ProgramVersion::SharedConstPtr ProgramVersion::create(const Shader::SharedPtr& pVS, 
-        const Shader::SharedPtr& pFS, 
-        const Shader::SharedPtr& pGS, 
-        const Shader::SharedPtr& pHS, 
-        const Shader::SharedPtr& pDS, 
-        std::string& log, 
-        const std::string& name)
+    bool ProgramVersion::apiInit(std::string& log, const std::string& name)
     {
-        auto pProgram = SharedPtr(new ProgramVersion(pVS, pFS, pGS, pHS, pDS, name));
-
-        pProgram->mApiHandle = gl_call(glCreateProgram());
+        mApiHandle = gl_call(glCreateProgram());
 
         // Attach all shaders
-        for(uint32_t i = 0; i < arraysize(pProgram->mpShaders); i++)
+        for(uint32_t i = 0; i < arraysize(mpShaders); i++)
         {
-            const Shader* pShader = pProgram->mpShaders[i].get();
+            const Shader* pShader = mpShaders[i].get();
             if(pShader)
             {
-                gl_call(glAttachShader(pProgram->mApiHandle, pShader->getApiHandle<GLenum>()));
+                gl_call(glAttachShader(mApiHandle, pShader->getApiHandle<GLenum>()));
             }
         }
 
         // Link the program
-        gl_call(glLinkProgram(pProgram->mApiHandle));
-        GLint success;
+        gl_call(glLinkProgram(mApiHandle));
 
         // Check for errors
-        gl_call(glGetProgramiv(pProgram->mApiHandle, GL_LINK_STATUS, &success));
+        GLint success;
+        gl_call(glGetProgramiv(mApiHandle, GL_LINK_STATUS, &success));
         if(success == 0)
         {
             GLint logSize;
-            gl_call(glGetProgramiv(pProgram->mApiHandle, GL_INFO_LOG_LENGTH, &logSize));
+            gl_call(glGetProgramiv(mApiHandle, GL_INFO_LOG_LENGTH, &logSize));
             log.resize(logSize + 1);
-            gl_call(glGetProgramInfoLog(pProgram->mApiHandle, logSize + 1, nullptr, &log[0]));
-            return nullptr;
+            gl_call(glGetProgramInfoLog(mApiHandle, logSize + 1, nullptr, &log[0]));
+            return false;
         }
 
-        if(reflectBuffers(pProgram->mApiHandle, pProgram->mBuffersDesc, log) == false)
-        {
-            return nullptr;
-        }
-
-        return pProgram;
+        return true;
     }
 
     ProgramHandle ProgramVersion::getApiHandle() const
     {
         return mApiHandle;
-    }
-
-    int32_t ProgramVersion::getAttributeLocation(const std::string& attribute) const
-    {
-        int32_t loc = gl_call(glGetAttribLocation(mApiHandle, attribute.c_str()));
-        return loc;
     }
 
     void ProgramVersion::dumpProgramBinaryToFile(const std::string& filename) const

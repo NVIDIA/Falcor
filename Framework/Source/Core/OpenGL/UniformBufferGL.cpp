@@ -32,6 +32,7 @@
 #include "ShaderReflectionGL.h"
 #include "Core/Buffer.h"
 #include "Core/Texture.h"
+#include "Core/ProgramReflection.h"
 
 namespace Falcor
 {
@@ -40,7 +41,7 @@ namespace Falcor
 
     bool UniformBuffer::apiInit(const ProgramVersion* pProgram, const std::string& bufferName, bool isUniformBuffer)
     {
-        if(pProgram->getUniformBufferBinding(bufferName) == ProgramVersion::kInvalidLocation)
+        if(pProgram->getReflection()->getUniformBufferBinding(bufferName) == ProgramReflection::kInvalidLocation)
         {
             return false;
         }

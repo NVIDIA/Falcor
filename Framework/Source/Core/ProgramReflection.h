@@ -27,6 +27,7 @@
 ***************************************************************************/
 #pragma once
 #include "Framework.h"
+#include <unordered_map>
 
 namespace Falcor
 {
@@ -53,7 +54,7 @@ namespace Falcor
 
         /** Create a new object
         */
-        SharedPtr create(const ProgramVersion* pProgramVersion);
+        static SharedPtr create(const ProgramVersion* pProgramVersion);
 
         /** Get a uniform buffer binding index
         \param[in] name The uniform buffer name in the program
@@ -81,6 +82,13 @@ namespace Falcor
             }
             return desc->second;
         }
+
+        /** Get the location of an input attribute
+            \param[in] attribute The attribute name in the program
+            \return The index of the attribute if it is found, otherwise ProgramReflection#kInvalidLocation
+        */
+        uint32_t getAttributeLocation(const std::string& name) const;
+
     private:
         using string_2_uint_map = std::unordered_map<std::string, uint32_t>;
         struct

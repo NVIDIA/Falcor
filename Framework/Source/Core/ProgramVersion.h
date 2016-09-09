@@ -31,7 +31,7 @@
 #include <map>
 #include <vector>
 #include "Core/Shader.h"
-#include "Core/ShaderReflection.h"
+#include "Core/ProgramReflection.h"
 
 namespace Falcor
 {
@@ -79,12 +79,13 @@ namespace Falcor
         const std::string& getName() const {return mName;}
 
         /** Write the shader assembly to file
+            Not really. This dumps the binary, which on NVIDIA GPUs contains the assembly in text form.
         */
         void dumpProgramBinaryToFile(const std::string& filename) const;
 
         /** Get the reflection object
         */
-        ProgramReflection::SharedPtr getProgramReflection() const { return mpReflection; }
+        ProgramReflection::SharedPtr getReflection() const { return mpReflection; }
     private:
         ProgramVersion(const Shader::SharedPtr& pVS,
             const Shader::SharedPtr& pFS,
@@ -93,6 +94,7 @@ namespace Falcor
             const Shader::SharedPtr& pDS,
             const std::string& name = "");
 
+        bool apiInit(std::string& log, const std::string& name);
         void deleteApiHandle();
         ProgramHandle mApiHandle;
         const std::string mName;

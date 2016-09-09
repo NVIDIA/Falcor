@@ -77,7 +77,7 @@ void ShaderBuffersSample::onLoad()
     mCameraController.setModelParams(center, radius, radius * 10);
 
     // create the uniform buffers
-    mpPixelCountBuffer = ShaderStorageBuffer::create(mpProgram->getActiveProgramVersion().get(), "PixelCount");
+    mpPixelCountBuffer = ShaderStorageBuffer::create(mpProgram->getActiveVersion().get(), "PixelCount");
 
     // create rasterizer state
     RasterizerState::Desc rsDesc;
@@ -110,7 +110,7 @@ void ShaderBuffersSample::onFrameRender()
     mpProgram["LightCB"]["intensity"] = mLightData.intensity;
     
     // Set uniform buffers
-    mpRenderContext->setProgram(mpProgram->getActiveProgramVersion());
+    mpRenderContext->setProgram(mpProgram->getActiveVersion());
     mpRenderContext->setShaderStorageBuffer(0, mpPixelCountBuffer);
     mpProgram->setUniformBuffersIntoContext(mpRenderContext.get());
 

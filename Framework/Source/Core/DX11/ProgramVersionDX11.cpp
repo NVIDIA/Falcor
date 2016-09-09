@@ -171,97 +171,9 @@ namespace Falcor
         programMap.insert(shaderMap.begin(), shaderMap.end());
     }
 
-    ProgramVersion::SharedConstPtr ProgramVersion::create(const Shader::SharedPtr& pVS, 
-        const Shader::SharedPtr& pFS, 
-        const Shader::SharedPtr& pGS, 
-        const Shader::SharedPtr& pHS, 
-        const Shader::SharedPtr& pDS, 
-        std::string& log, 
-        const std::string& name)
+    bool ProgramVersion::apiInit(std::string& log, const std::string& name)
     {
-        // We must have at least a VS.
-        if(pVS == nullptr)
-        {
-            log = "Program " + name + " doesn't contain a vertex-shader. That is illegal.";
-            return nullptr;
-        }
-        SharedPtr pProgram = SharedPtr(new ProgramVersion(std::move(pVS), std::move(pFS), std::move(pGS), std::move(pHS), std::move(pDS), name));
-        log = std::string();
-
-
-        // Loop over all the shaders and initialize the uniform buffer bindings.
-        // This is actually where verify that the shader declarations match between shaders.
-        // Due to OpenGL support, Falcor assumes that CBs definition and binding points match between shader stages.
-
-        // A map storing the first shader we encountered a buffer in.
-        std::map<std::string, const Shader*> bufferFirstShaderMap;
-        std::map<std::string, const Shader*> resourceFirstShaderMap;
-
-        ShaderResourceDescMap programResources;
-        for(uint32_t i = 0 ; i < kShaderCount ; i++)
-        {
-            const Shader* pShader = pProgram->mpShaders[i].get();
-
-            if(pShader)
-            {
-                ShaderResourceDescMap shaderResources;
-                reflectResources(pShader->getReflectionInterface(), shaderResources);
-                if(validateResourceDeclarations(programResources, shaderResources, pShader, resourceFirstShaderMap, log) == false)
-                {
-                    pProgram = nullptr;
-                    return pProgram;
-                }
-
-                mergeResourceMaps(programResources, shaderResources, pShader, resourceFirstShaderMap);
-
-                // Initialize the buffer declaration
-                BufferDescMap bufferDesc;
-                reflectBuffers(pShader->getReflectionInterface(), bufferDesc);
-
-                // Loop over all the buffer we found
-                for(auto& buffer : bufferDesc)
-                {
-                    // Check if a buffer with the same name was already declared in a previous shader
-                    const std::string& bufferName = buffer.first;
-                    const auto& prevDesc = pProgram->mBuffersDesc.find(bufferName);
-                    if(prevDesc != pProgram->mBuffersDesc.end())
-                    {
-                        // Make sure the current buffer declaration matches the previous declaration
-                        const Shader* pPrevShader = bufferFirstShaderMap[bufferName];
-                        auto pPrevBuffer = pPrevShader->getReflectionInterface()->GetConstantBufferByName(bufferName.c_str());
-                        auto pCurrentBuffer = pShader->getReflectionInterface()->GetConstantBufferByName(bufferName.c_str());
-                        bool bMatch = validateBufferDeclaration(prevDesc->second, buffer.second, pPrevBuffer, pCurrentBuffer, log);
-
-                        if(bMatch == false)
-                        {
-                            return returnError(log, std::string("Buffer '") + buffer.first + "' declaration mismatch between shader.\n" + log, pPrevShader, pShader, pProgram);
-                        }
-                    }
-                    else
-                    {
-                        // Make sure the binding point is unique
-                        for(const auto& a : pProgram->mBuffersDesc)
-                        {
-                            if(a.second.bufferSlot == buffer.second.bufferSlot)
-                            {
-                                return returnError(log, std::string("Different uniform buffers use the same binding point ") + std::to_string(a.second.bufferSlot), bufferFirstShaderMap[a.first], pShader, pProgram);
-                            }
-                        }
-                        // New buffer
-                        pProgram->mBuffersDesc[bufferName] = buffer.second;
-                        bufferFirstShaderMap[bufferName] = pShader;
-                    }
-                }
-            }
-        }
-
-        return pProgram;
-    }
-
-    int32_t ProgramVersion::getAttributeLocation(const std::string& attribute) const
-    {
-        UNSUPPORTED_IN_DX11("CProgramVersion::GetAttributeLocation");
-        return 0;
+        return true;
     }
 }
 

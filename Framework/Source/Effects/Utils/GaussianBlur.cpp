@@ -84,7 +84,7 @@ namespace Falcor
         mpHorizontalBlur->getProgram()->addDefine("_HORIZONTAL_BLUR");
         mpVerticalBlur = FullScreenPass::create(kShaderFilename, defines, true, true, layerMask);
         mpVerticalBlur->getProgram()->addDefine("_VERTICAL_BLUR");
-        mpUbo = UniformBuffer::create(mpVerticalBlur->getProgram()->getActiveProgramVersion().get(), "PerImageCB");
+        mpUbo = UniformBuffer::create(mpVerticalBlur->getProgram()->getActiveVersion().get(), "PerImageCB");
     }
 
     void GaussianBlur::execute(RenderContext* pRenderContext, const Texture* pSrc, Fbo::SharedPtr pDst)

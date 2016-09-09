@@ -238,8 +238,8 @@ namespace Falcor
 
         // Create the program
         mShadowPass.pProg = Program::createFromFile(kDepthPassVSFile, kDepthPassFsFile, kDepthPassGsFile, "", "", progDef);
-        mShadowPass.pLightUbo = UniformBuffer::create(mShadowPass.pProg->getActiveProgramVersion().get(), "PerLightCB");
-        mShadowPass.pAlphaUbo = UniformBuffer::create(mShadowPass.pProg->getActiveProgramVersion().get(), "AlphaMapCB");
+        mShadowPass.pLightUbo = UniformBuffer::create(mShadowPass.pProg->getActiveVersion().get(), "PerLightCB");
+        mShadowPass.pAlphaUbo = UniformBuffer::create(mShadowPass.pProg->getActiveVersion().get(), "AlphaMapCB");
 
         mpSceneRenderer = CsmSceneRenderer::create(mpScene, mShadowPass.pAlphaUbo);
     }
