@@ -85,7 +85,7 @@ namespace Falcor
                 Resource
             };
 
-            size_t offset = 0;          ///< The offset of the variable from the start of the buffer or the location in case this is a global variable
+            size_t location = 0;        ///< The offset of the variable from the start of the buffer or the location in case this is a global variable (FragOut, VertexAttribute)
             uint32_t arraySize = 0;     ///< Array size or 0 if not an array
             uint32_t arrayStride = 0;   ///< Stride between elements in the array. 0 If not an array
             bool isRowMajor = false;    ///< For matrices, tells if this is a row-major or column-major matrix
@@ -131,7 +131,7 @@ namespace Falcor
             ResourceType type = ResourceType::Unknown;      ///< Resource type
             Dimensions dims = Dimensions::Unknown;          ///< Resource dimensions
             ReturnType retType = ReturnType::Unknown;       ///< Resource return type
-            size_t offset = -1;                             ///< In case the resource was defined as part of a UBO, the offset inside the UBO
+            size_t location = -1;                           ///< In case the resource was defined as part of a UBO, the offset inside the UBO, otherwise the resource index in the program
             uint32_t arraySize = 0;                         ///< Array size , or 0 if not an array
             Resource(Dimensions d, ReturnType r, ResourceType t) : dims(d), retType(r), type(t) {}
             Resource() {}
@@ -261,11 +261,23 @@ namespace Falcor
         */
         BufferReflection::SharedConstPtr getBufferDesc(const std::string& name, BufferReflection::Type bufferType) const;
 
-        /** Get the location of an input attribute
-            \param[in] attribute The attribute name in the program
-            \return The index of the attribute if it is found, otherwise ProgramReflection#kInvalidLocation
+        /** Get the descriptor for a vertex-attribute
+            \param[in] name The attribute name in the program
+            \return The variable desc of the attribute if it is found, otherwise nullptr
         */
-        uint32_t getAttributeLocation(const std::string& name) const;
+        const Variable* getVertexAttribute(const std::string& name) const;
+
+        /** Get the descriptor for a fragment shader output
+            \param[in] name The output variable name in the program
+            \return The variable desc of the output if it is found, otherwise nullptr
+        */
+        const Variable* getFragmentOutput(const std::string& name) const;
+
+        /** Get the descriptor for a shader resource
+        \param[in] name The resource name in the program
+        \return The resource desc of the output if it is found, otherwise nullptr
+        */
+        const Resource* getResourceDesc(const std::string& name) const;
 
         /** Helper struct that holds buffer-data
         */
@@ -283,6 +295,9 @@ namespace Falcor
         bool reflectResources(const ProgramVersion* pProgVer, std::string& log);              // SRV/UAV/ROV and samplers
        
         BufferData mBuffers[BufferReflection::kTypeCount];
+        VariableMap mFragOut;
+        VariableMap mVertAttr;
+        ResourceMap mResources;
     };
 
 

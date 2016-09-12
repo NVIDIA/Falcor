@@ -52,21 +52,6 @@ namespace Falcor
         return kInvalidLocation;
     }
 
-    bool ProgramReflection::reflectFragmentOutputs(const ProgramVersion* pProgVer, std::string& log)
-    {
-        return true;
-    }
-
-    bool ProgramReflection::reflectVertexAttributes(const ProgramVersion* pProgVer, std::string& log)
-    {
-        return true;
-    }
-  
-    bool ProgramReflection::reflectResources(const ProgramVersion* pProgVer, std::string& log)
-    {
-        return true;
-    }
-
     bool ProgramReflection::init(const ProgramVersion* pProgVer, std::string& log)
     {
         bool b = true;
@@ -137,7 +122,7 @@ namespace Falcor
         }
 
         const auto* pData = &var->second;
-        offset = pData->offset + pData->arrayStride * arrayIndex;
+        offset = pData->location + pData->arrayStride * arrayIndex;
         return pData;
     }
 
@@ -188,6 +173,24 @@ namespace Falcor
     ProgramReflection::BufferReflection::SharedPtr ProgramReflection::BufferReflection::create(const std::string& name, Type type, size_t size, size_t varCount, const VariableMap& varMap, const ResourceMap& resourceMap)
     {
         return SharedPtr(new BufferReflection(name, type, size, varCount, varMap, resourceMap));
+    }
+
+    const ProgramReflection::Variable* ProgramReflection::getVertexAttribute(const std::string& name) const
+    {
+        const auto& it = mVertAttr.find(name);
+        return (it == mVertAttr.end()) ? nullptr : &(it->second);
+    }
+
+    const ProgramReflection::Variable* ProgramReflection::getFragmentOutput(const std::string& name) const
+    {
+        const auto& it = mFragOut.find(name);
+        return (it == mFragOut.end()) ? nullptr : &(it->second);
+    }
+
+    const ProgramReflection::Resource* ProgramReflection::getResourceDesc(const std::string& name) const
+    {
+        const auto& it = mResources.find(name);
+        return (it == mResources.end()) ? nullptr : &(it->second);
     }
 
     //         // Loop over all the shaders and initialize the uniform buffer bindings.

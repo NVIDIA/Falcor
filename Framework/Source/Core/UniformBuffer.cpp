@@ -145,12 +145,12 @@ namespace Falcor
             const auto& varDesc = a->second;
             const auto& varName = a->first;
             size_t arrayIndex = 0;
-            bool checkThis = (varDesc.offset == offset);
+            bool checkThis = (varDesc.location == offset);
 
             // If this is an array, check if we set an element inside it
-            if(varDesc.arrayStride > 0 && offset > varDesc.offset)
+            if(varDesc.arrayStride > 0 && offset > varDesc.location)
             {
-                size_t stride = offset - varDesc.offset;
+                size_t stride = offset - varDesc.location;
                 if((stride % varDesc.arrayStride) == 0)
                 {
                     arrayIndex = stride / varDesc.arrayStride;
@@ -518,12 +518,12 @@ namespace Falcor
                 if(varDesc.type == ProgramReflection::Variable::Type::Resource)
                 {
                     size_t ArrayIndex = 0;
-                    bool bCheck = (varDesc.offset == offset);
+                    bool bCheck = (varDesc.location == offset);
 
                     // Check arrays
-                    if(varDesc.arrayStride > 0 && offset > varDesc.offset)
+                    if(varDesc.arrayStride > 0 && offset > varDesc.location)
                     {
-                        size_t Stride = offset - varDesc.offset;
+                        size_t Stride = offset - varDesc.location;
                         if((Stride % varDesc.arrayStride) == 0)
                         {
                             ArrayIndex = Stride / varDesc.arrayStride;

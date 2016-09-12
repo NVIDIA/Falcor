@@ -223,7 +223,7 @@ namespace Falcor
         {GL_UNSIGNED_INT_IMAGE_CUBE_MAP_ARRAY,      {ProgramReflection::Resource::Dimensions::TextureCubeArray,       ProgramReflection::Resource::ReturnType::Uint,  ProgramReflection::Resource::ResourceType::Image}},
     };
 
-    static const ProgramReflection::Resource& getResourceDesc(GLenum glType)
+    static const ProgramReflection::Resource& getResourceDescFromGl(GLenum glType)
     {
         static const ProgramReflection::Resource empty;
         const auto& it = kResourceDescMap.find(glType);
@@ -232,6 +232,42 @@ namespace Falcor
             return empty;
         }
         return it->second;
+    }
+
+    static ProgramReflection::Variable createVarDesc(uint32_t programID, GLenum interfaceEnum, uint32_t index, std::string& varName, GLenum locationType, bool queryArrayStride)
+    {
+        GLenum uniformDataEnum[] = {GL_NAME_LENGTH, GL_TYPE, GL_ARRAY_SIZE, locationType};
+        int32_t values[arraysize(uniformDataEnum)];
+        gl_call(glGetProgramResourceiv(programID, interfaceEnum, index, arraysize(uniformDataEnum), uniformDataEnum, arraysize(uniformDataEnum), nullptr, (int32_t*)&values));
+
+        ProgramReflection::Variable desc;
+        desc.type = getFalcorVariableType(values[1]);
+        desc.location = values[3];
+        desc.arrayStride = 0;
+        desc.arraySize = 0; // OpenGL reports array size of 1 for non-array variables, so set it to zero
+        std::vector<char> nameStorage(values[0]);
+
+        if(queryArrayStride)
+        {
+            GLenum strideEnum = GL_ARRAY_STRIDE;
+            gl_call(glGetProgramResourceiv(programID, interfaceEnum, index, 1, &strideEnum, 1, nullptr, (int32_t*)&desc.arrayStride));
+            if(desc.arrayStride)
+            {
+                desc.arraySize = values[2];
+            }
+        }
+
+        // Get the variable name
+        gl_call(glGetProgramResourceName(programID, interfaceEnum, index, values[0], nullptr, nameStorage.data()));
+        varName = std::string(nameStorage.data());
+        
+        if(desc.arrayStride > 0 && hasSuffix(varName, "[0]"))
+        {
+            // Some implementations report the name of the variable with [0]. We remove it.
+            varName = varName.erase(varName.length() - 3);
+        }
+
+        return desc;
     }
 
     static bool reflectBufferVariables(uint32_t programID, uint32_t blockIndex, const std::string& bufferName, GLenum bufferType, size_t bufferSize, ProgramReflection::VariableMap& variableMap, ProgramReflection::ResourceMap& resourceMap)
@@ -248,48 +284,36 @@ namespace Falcor
         {
             GLenum interfaceEnum = getVariableEnum(bufferType);
 
-            GLenum uniformDataEnum[] = {GL_NAME_LENGTH, GL_TYPE, GL_OFFSET, GL_ARRAY_SIZE, GL_ARRAY_STRIDE};
-            int32_t values[arraysize(uniformDataEnum)];
-            gl_call(glGetProgramResourceiv(programID, interfaceEnum, indices[i], arraysize(uniformDataEnum), uniformDataEnum, arraysize(uniformDataEnum), nullptr, (int32_t*)&values));
+            std::string varName;
+            ProgramReflection::Variable varDesc = createVarDesc(programID, interfaceEnum, indices[i], varName, GL_OFFSET, true);
 
-            ProgramReflection::Variable desc;
-            desc.type = getFalcorVariableType(values[1]);
-            desc.offset = values[2];
-            desc.arrayStride = values[4];
-            desc.arraySize = 0; // OpenGL reports array size of 1 for non-array variables, so set it to zero
-            if(desc.arrayStride)
+            // Remove the buffer name if it is part of the variable name
+            if(varName.find(bufferName + ".") == 0)
+            {
+                varName.erase(0, bufferName.length() + 1);
+            }
+
+            if(varDesc.arrayStride && (varDesc.arrayStride == 0))
             {
                 // For arrays with unspecified array size (Like 'SomeArray[]'), OpenGL reports array-size of zero.
                 // There can only be a single array like this for each buffer, it must be the last element in the buffer and the array uses the rest of the buffer space.
-                desc.arraySize = values[3] ? values[3] : ((uint32_t)(bufferSize - desc.offset) / desc.arrayStride);
-            }
-
-            std::vector<char> nameStorage(values[0]);
-
-            // Get the uniform name
-            gl_call(glGetProgramResourceName(programID, interfaceEnum, indices[i], values[0], nullptr, nameStorage.data()));
-            std::string uniformName(nameStorage.data());
-            if(uniformName.find(bufferName + ".") == 0)
-            {
-                uniformName.erase(0, bufferName.length() + 1);
-            }
-
-            if(desc.arrayStride > 0 && hasSuffix(uniformName, "[0]"))
-            {
-                // Some implementations report the name of the variable with [0]. We remove it.
-                uniformName = uniformName.erase(uniformName.length() - 3);
+                varDesc.arraySize = (uint32_t)(bufferSize - varDesc.location) / varDesc.arrayStride;
             }
 
             // If the var-Type is unknown, this is a resource
-            if(desc.type == ProgramReflection::Variable::Type::Unknown)
+            if(varDesc.type == ProgramReflection::Variable::Type::Unknown)
             {
-                resourceMap[uniformName] = getResourceDesc(values[1]);
-                assert(resourceMap[uniformName].type != ProgramReflection::Resource::ResourceType::Unknown);
-                resourceMap[uniformName].arraySize = desc.arraySize;
-                resourceMap[uniformName].offset = desc.offset;
-                desc.type = ProgramReflection::Variable::Type::Resource;
+                GLenum uniformDataEnum = GL_TYPE;
+                int32_t glType;
+                gl_call(glGetProgramResourceiv(programID, interfaceEnum, indices[i], 1, &uniformDataEnum, 1, nullptr, (int32_t*)&glType));
+
+                resourceMap[varName] = getResourceDescFromGl(glType);
+                assert(resourceMap[varName].type != ProgramReflection::Resource::ResourceType::Unknown);
+                resourceMap[varName].arraySize = varDesc.arraySize;
+                resourceMap[varName].location = varDesc.location;
+                varDesc.type = ProgramReflection::Variable::Type::Resource;
             }
-            variableMap[uniformName] = desc;
+            variableMap[varName] = varDesc;
         }
         return true;
     }
@@ -363,6 +387,55 @@ namespace Falcor
         return true;
     }
 
+    template<ShaderType shaderType, GLenum interfaceEnum>
+    bool reflectShaderIO(const ProgramVersion* pProgVer, std::string& log, ProgramReflection::VariableMap& varMap)
+    {
+        if(pProgVer->getShader(shaderType) == nullptr)
+        {
+            // Nothing to do
+            return true;
+        }
+
+        uint32_t programID = pProgVer->getApiHandle();
+
+        // Get the number of outputs
+        int32_t numVars;
+        gl_call(glGetProgramInterfaceiv(programID, interfaceEnum, GL_ACTIVE_RESOURCES, &numVars));
+
+        // Get the max length name and allocate space for it
+        int32_t maxLength;
+        gl_call(glGetProgramInterfaceiv(programID, interfaceEnum, GL_MAX_NAME_LENGTH, &maxLength));
+        std::vector<char> chars(maxLength + 1);
+
+        for(int i = 0; i < numVars; i++)
+        {
+            // Get the block name
+            gl_call(glGetProgramResourceName(programID, interfaceEnum, i, maxLength, nullptr, &chars[0]));
+            std::string name(&chars[0]);
+
+            // Get the index
+            uint32_t varIndex = gl_call(glGetProgramResourceIndex(programID, interfaceEnum, name.c_str()));
+
+            // Get the data type and array size
+            std::string varName;
+            ProgramReflection::Variable varDesc = createVarDesc(programID, interfaceEnum, varIndex, varName, GL_LOCATION, false);
+            varDesc.location = varIndex;
+            varMap[varName] = varDesc;
+        }
+
+        return true;
+    }
+
+    bool ProgramReflection::reflectFragmentOutputs(const ProgramVersion* pProgVer, std::string& log)
+    {
+        return reflectShaderIO<ShaderType::Fragment, GL_PROGRAM_OUTPUT>(pProgVer, log, mFragOut);
+    }
+
+    bool ProgramReflection::reflectVertexAttributes(const ProgramVersion* pProgVer, std::string& log)
+    {
+        return reflectShaderIO<ShaderType::Vertex, GL_PROGRAM_INPUT>(pProgVer, log, mVertAttr);
+    }
+
     bool ProgramReflection::reflectBuffers(const ProgramVersion* pProgVer, std::string& log)
     {        
         bool bOK = true;
@@ -371,6 +444,49 @@ namespace Falcor
             bOK = reflectBuffersByType(pProgVer->getApiHandle(), (BufferReflection::Type)i, mBuffers[i].descMap, mBuffers[i].nameMap, log);
         }
         return bOK;
+    }
+
+
+    bool ProgramReflection::reflectResources(const ProgramVersion* pProgVer, std::string& log)
+    {
+        uint32_t programID = pProgVer->getApiHandle();
+        // Get the number of uniforms.
+        int32_t numUniforms = 0;
+        gl_call(glGetProgramInterfaceiv(programID, GL_UNIFORM, GL_ACTIVE_RESOURCES, &numUniforms));
+
+        // Loop over all of the uniforms
+        for(int i = 0; i < numUniforms; i++)
+        {
+            const GLenum props[] = {GL_BLOCK_INDEX, GL_TYPE, GL_NAME_LENGTH, GL_LOCATION, GL_ARRAY_STRIDE, GL_ARRAY_SIZE};
+            uint32_t values[arraysize(props)];
+            gl_call(glGetProgramResourceiv(programID, GL_UNIFORM, i, arraysize(props), props, arraysize(props), nullptr, (int32_t*)values));
+
+            // Check if this variable is declared inside a uniform buffer
+            if(values[0] != -1)
+            {
+                continue;;
+            }
+
+            // Get the variable name
+            std::vector<char> nameChar(values[2] + 1);
+            gl_call(glGetProgramResourceName(programID, GL_UNIFORM, i, (GLsizei)nameChar.size(), NULL, nameChar.data()));
+            std::string name(nameChar.data());
+
+            // Make sure this is actually a resource. We do not allow normal variables in a global scope
+            Variable::Type type = getFalcorVariableType(props[1]);
+            if(type != Variable::Type::Unknown)
+            {
+                log += "Error. Variable '" + name + "' is defined in the global namespace but is not a resources.";
+                return false;
+            }
+
+            // OK, this is a resource. Create the resource desc
+            mResources[name] = getResourceDescFromGl(values[1]);
+            assert(mResources[name].type != ProgramReflection::Resource::ResourceType::Unknown);
+            mResources[name].arraySize = values[4] ? values[5] : 0;
+            mResources[name].location = values[3];
+        }
+        return true;
     }
 }
 #endif
