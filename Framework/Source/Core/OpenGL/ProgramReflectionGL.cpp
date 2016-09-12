@@ -294,19 +294,19 @@ namespace Falcor
         return true;
     }
 
-    static bool reflectBuffersByType(uint32_t programID, GLenum bufferType, ProgramReflection::BufferMap& descMap, ProgramReflection::string_2_uint_map& bufferNameMap, std::string& log)
+    static bool reflectBuffersByType(uint32_t programID, ProgramReflection::BufferReflection::Type type, ProgramReflection::BufferMap& descMap, ProgramReflection::string_2_uint_map& bufferNameMap, std::string& log)
     {
         GLenum maxBlockType = GL_NONE;
-        ProgramReflection::BufferReflection::Type falcorType;
-        switch(bufferType)
+        GLenum glType = GL_NONE;
+        switch(type)
         {
-        case GL_UNIFORM_BLOCK:
+        case ProgramReflection::BufferReflection::Type::Uniform:
             maxBlockType = GL_MAX_COMBINED_UNIFORM_BLOCKS;
-            falcorType = ProgramReflection::BufferReflection::Type::Uniform;
+            glType = GL_UNIFORM_BLOCK;
             break;
-        case GL_SHADER_STORAGE_BLOCK:
+        case ProgramReflection::BufferReflection::Type::ShaderStorage:
             maxBlockType = GL_MAX_COMBINED_SHADER_STORAGE_BLOCKS;
-            falcorType = ProgramReflection::BufferReflection::Type::ShaderStorage;
+            glType = GL_SHADER_STORAGE_BLOCK;
             break;
         default:
             should_not_get_here();
@@ -315,11 +315,11 @@ namespace Falcor
 
         // Find all uniform buffers
         int32_t numBlocks;
-        gl_call(glGetProgramInterfaceiv(programID, bufferType, GL_ACTIVE_RESOURCES, &numBlocks));
+        gl_call(glGetProgramInterfaceiv(programID, glType, GL_ACTIVE_RESOURCES, &numBlocks));
 
         // Get the max length name and allocate space for it
         int32_t maxLength;
-        gl_call(glGetProgramInterfaceiv(programID, bufferType, GL_MAX_NAME_LENGTH, &maxLength));
+        gl_call(glGetProgramInterfaceiv(programID, glType, GL_MAX_NAME_LENGTH, &maxLength));
         std::vector<char> chars(maxLength + 1);
 
         int uniformBlockCount;
@@ -328,11 +328,11 @@ namespace Falcor
         for(int i = 0; i < numBlocks; i++)
         {
             // Get the block name
-            gl_call(glGetProgramResourceName(programID, bufferType, i, maxLength, nullptr, &chars[0]));
+            gl_call(glGetProgramResourceName(programID, glType, i, maxLength, nullptr, &chars[0]));
             std::string name(&chars[0]);
 
             // Get the index
-            uint32_t blockIndex = gl_call(glGetProgramResourceIndex(programID, bufferType, name.c_str()));
+            uint32_t blockIndex = gl_call(glGetProgramResourceIndex(programID, glType, name.c_str()));
             if(blockIndex >= (uint32_t)uniformBlockCount)
             {
                 log = "Uniform buffer \"" + name + "\" - location is larger than available HW slots. Falcor can't function correctly";
@@ -342,7 +342,7 @@ namespace Falcor
             // Get the block size, bind location and variable count
             GLenum props[] = {GL_BUFFER_BINDING, GL_BUFFER_DATA_SIZE, GL_NUM_ACTIVE_VARIABLES};
             uint32_t values[arraysize(props)];
-            gl_call(glGetProgramResourceiv(programID, bufferType, blockIndex, arraysize(props), props, arraysize(props), nullptr, (int32_t*)values));
+            gl_call(glGetProgramResourceiv(programID, glType, blockIndex, arraysize(props), props, arraysize(props), nullptr, (int32_t*)values));
 
             // Check that the binding index is unique
             if(descMap.find(values[0]) != descMap.end())
@@ -354,10 +354,10 @@ namespace Falcor
             // Reflect the buffer
             ProgramReflection::VariableMap varMap;
             ProgramReflection::ResourceMap resourceMap;
-            reflectBufferVariables(programID, blockIndex, name, bufferType, values[1], varMap, resourceMap);
+            reflectBufferVariables(programID, blockIndex, name, glType, values[1], varMap, resourceMap);
 
             // Initialize the maps
-            descMap[values[0]] = ProgramReflection::BufferReflection::create(name, falcorType, values[1], values[2], varMap, resourceMap);
+            descMap[values[0]] = ProgramReflection::BufferReflection::create(name, type, values[1], values[2], varMap, resourceMap);
             bufferNameMap[name] = values[0];
         }
         return true;
@@ -365,13 +365,12 @@ namespace Falcor
 
     bool ProgramReflection::reflectBuffers(const ProgramVersion* pProgVer, std::string& log)
     {        
-        GLenum bufferTypes[] = {GL_UNIFORM_BLOCK, GL_SHADER_STORAGE_BLOCK};
         bool bOK = true;
-        for(auto t : bufferTypes)
+        for(uint32_t i = 0 ; i < BufferReflection::kTypeCount ; i++)
         {
-            bOK = reflectBuffersByType(pProgVer->getApiHandle(), t, mUniformBuffers.descMap, mUniformBuffers.nameMap, log);
+            bOK = reflectBuffersByType(pProgVer->getApiHandle(), (BufferReflection::Type)i, mBuffers[i].descMap, mBuffers[i].nameMap, log);
         }
-        return true;
+        return bOK;
     }
 }
 #endif

@@ -38,10 +38,18 @@ namespace Falcor
         return pReflection->init(pProgramVersion, log) ? pReflection : nullptr;
     }
 
-    uint32_t ProgramReflection::getUniformBufferBinding(const std::string& name) const
+    uint32_t ProgramReflection::getBufferBinding(const std::string& name) const
     {
-        auto& it = mUniformBuffers.nameMap.find(name);
-        return it == mUniformBuffers.nameMap.end() ? kInvalidLocation : it->second;
+        // Names are unique regardless of buffer type. Search in each map
+        for(const auto& desc : mBuffers)
+        {
+            auto& it = desc.nameMap.find(name);
+            if(it != desc.nameMap.end())
+            {
+                return it->second;
+            }
+        }
+        return kInvalidLocation;
     }
 
     bool ProgramReflection::reflectFragmentOutputs(const ProgramVersion* pProgVer, std::string& log)
@@ -139,22 +147,23 @@ namespace Falcor
         return getVariableData(name, t, allowNonIndexedArray);
     }
 
-    ProgramReflection::BufferReflection::SharedConstPtr ProgramReflection::getUniformBufferDesc(uint32_t bindLocation) const
+    ProgramReflection::BufferReflection::SharedConstPtr ProgramReflection::getBufferDesc(uint32_t bindLocation, BufferReflection::Type bufferType) const
     {
-        auto& desc = mUniformBuffers.descMap.find(bindLocation);
-        if(desc == mUniformBuffers.descMap.end())
+        const auto& descMap = mBuffers[uint32_t(bufferType)].descMap;
+        auto& desc = descMap.find(bindLocation);
+        if(desc == descMap.end())
         {
             return nullptr;
         }
         return desc->second;
     }
 
-    ProgramReflection::BufferReflection::SharedConstPtr ProgramReflection::getUniformBufferDesc(const std::string& name) const
+    ProgramReflection::BufferReflection::SharedConstPtr ProgramReflection::getBufferDesc(const std::string& name, BufferReflection::Type bufferType) const
     {
-        uint32_t bindLoc = getUniformBufferBinding(name);
+        uint32_t bindLoc = getBufferBinding(name);
         if(bindLoc != kInvalidLocation)
         {
-            return getUniformBufferDesc(bindLoc);
+            return getBufferDesc(bindLoc, bufferType);
         }
         return nullptr;
     }

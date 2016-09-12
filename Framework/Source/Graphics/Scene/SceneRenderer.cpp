@@ -71,10 +71,10 @@ namespace Falcor
         if(sPerMaterialCB == nullptr)
         {
             auto pReflector = pProgram->getActiveVersion()->getReflector();
-            sPerMaterialCB = UniformBuffer::create(pReflector->getUniformBufferDesc(kPerMaterialCbName));
-            sPerFrameCB = UniformBuffer::create(pReflector->getUniformBufferDesc(kPerFrameCbName));
-            sPerStaticMeshCB = UniformBuffer::create(pReflector->getUniformBufferDesc(kPerStaticMeshCbName));
-            sPerSkinnedMeshCB = UniformBuffer::create(pReflector->getUniformBufferDesc(kPerSkinnedMeshCbName));
+            sPerMaterialCB = UniformBuffer::create(pReflector->getBufferDesc(kPerMaterialCbName, ProgramReflection::BufferReflection::Type::Uniform));
+            sPerFrameCB = UniformBuffer::create(pReflector->getBufferDesc(kPerFrameCbName, ProgramReflection::BufferReflection::Type::Uniform));
+            sPerStaticMeshCB = UniformBuffer::create(pReflector->getBufferDesc(kPerStaticMeshCbName, ProgramReflection::BufferReflection::Type::Uniform));
+            sPerSkinnedMeshCB = UniformBuffer::create(pReflector->getBufferDesc(kPerSkinnedMeshCbName, ProgramReflection::BufferReflection::Type::Uniform));
 
             sBonesOffset = sPerSkinnedMeshCB->getVariableOffset("gBones");
             sWorldMatOffset = sPerStaticMeshCB->getVariableOffset("gWorldMat");
@@ -89,19 +89,19 @@ namespace Falcor
 
         const ProgramReflection* pReflection = pProgram->getActiveVersion()->getReflector().get();
         // Per skinned mesh
-        uint32_t bufferLoc = pReflection->getUniformBufferBinding(kPerSkinnedMeshCbName);
+        uint32_t bufferLoc = pReflection->getBufferBinding(kPerSkinnedMeshCbName);
         pRenderContext->setUniformBuffer(bufferLoc, sPerSkinnedMeshCB);
 
         // Per static mesh
-        bufferLoc = pReflection->getUniformBufferBinding(kPerStaticMeshCbName);
+        bufferLoc = pReflection->getBufferBinding(kPerStaticMeshCbName);
         pRenderContext->setUniformBuffer(bufferLoc, sPerStaticMeshCB);
 
         // Per material
-        bufferLoc = pReflection->getUniformBufferBinding(kPerMaterialCbName);
+        bufferLoc = pReflection->getBufferBinding(kPerMaterialCbName);
         pRenderContext->setUniformBuffer(bufferLoc, sPerMaterialCB);
 
         // Per frame
-        bufferLoc = pReflection->getUniformBufferBinding(kPerFrameCbName);
+        bufferLoc = pReflection->getBufferBinding(kPerFrameCbName);
         pRenderContext->setUniformBuffer(bufferLoc, sPerFrameCB);
     }
 

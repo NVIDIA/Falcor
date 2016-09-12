@@ -158,8 +158,12 @@ namespace Falcor
             enum class Type
             {
                 Uniform,
-                ShaderStorage
+                ShaderStorage,
+
+                Count
             };
+
+            static const uint32_t kTypeCount = (uint32_t)Type::Count;
 
             /** Create a new object
                 \param[in] name The name of the buffer as was declared in the program
@@ -215,6 +219,10 @@ namespace Falcor
             /** Get the required buffer size
             */
             size_t getRequiredSize() const { return mSizeInBytes; }
+            
+            /** Get the type of the buffer
+            */
+            Type getType() const { return mType; }
         private:
             BufferReflection(const std::string& name, Type type, size_t size, size_t varCount, const VariableMap& varMap, const ResourceMap& resourceMap);
             std::string mName;
@@ -229,29 +237,29 @@ namespace Falcor
         */
         static SharedPtr create(const ProgramVersion* pProgramVersion, std::string& log);
 
-        /** Get a uniform buffer binding index
-        \param[in] name The uniform buffer name in the program
-        \return The bind location of the UBO if it is found, otherwise ProgramVersion#kInvalidLocation
+        /** Get a buffer binding index
+        \param[in] name The buffer name in the program
+        \return The bind location of the buffer if it is found, otherwise ProgramVersion#kInvalidLocation
         */
-        uint32_t getUniformBufferBinding(const std::string& name) const;
+        uint32_t getBufferBinding(const std::string& name) const;
 
         using BufferMap = std::unordered_map<uint32_t, BufferReflection::SharedConstPtr>;
 
         /** Get the uniform-buffer list
         */
-        const BufferMap& getUniformBufferMap() const { return mUniformBuffers.descMap; }
+        const BufferMap& getBufferMap(BufferReflection::Type bufferType) const { return mBuffers[(uint32_t)bufferType].descMap; }
 
         /** Get a uniform-buffer descriptor
             \param[in] bindLocation The bindLocation of the requested buffer
             \return The buffer descriptor or nullptr, if the bind location isn't used
         */
-        BufferReflection::SharedConstPtr getUniformBufferDesc(uint32_t bindLocation) const;
+        BufferReflection::SharedConstPtr getBufferDesc(uint32_t bindLocation, BufferReflection::Type bufferType) const;
 
         /** Get a uniform-buffer descriptor
         \param[in] name The name of the requested buffer
         \return The buffer descriptor or nullptr, if the name doesn't exist
         */
-        BufferReflection::SharedConstPtr getUniformBufferDesc(const std::string& name) const;
+        BufferReflection::SharedConstPtr getBufferDesc(const std::string& name, BufferReflection::Type bufferType) const;
 
         /** Get the location of an input attribute
             \param[in] attribute The attribute name in the program
@@ -274,8 +282,7 @@ namespace Falcor
         bool reflectFragmentOutputs(const ProgramVersion* pProgVer, std::string& log);        // FS output (if FS exists)
         bool reflectResources(const ProgramVersion* pProgVer, std::string& log);              // SRV/UAV/ROV and samplers
        
-        BufferData mUniformBuffers;
-        BufferData mShaderStorageBuffers;
+        BufferData mBuffers[BufferReflection::kTypeCount];
     };
 
 
@@ -365,6 +372,20 @@ namespace Falcor
             type_2_string(Texture2DMSArray);
             type_2_string(TextureCubeArray);
             type_2_string(TextureBuffer);
+        default:
+            should_not_get_here();
+            return "";
+        }
+#undef type_2_string
+    }
+
+    inline const std::string to_string(ProgramReflection::BufferReflection::Type type)
+    {
+#define type_2_string(a) case ProgramReflection::BufferReflection::Type::a: return #a;
+        switch(type)
+        {
+            type_2_string(Uniform);
+            type_2_string(ShaderStorage);
         default:
             should_not_get_here();
             return "";

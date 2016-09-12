@@ -36,7 +36,7 @@ namespace Falcor
     bool checkVariableByOffset(ProgramReflection::Variable::Type callType, size_t offset, size_t count, const ProgramReflection::BufferReflection* pBufferDesc);
     bool checkVariableType(ProgramReflection::Variable::Type callType, ProgramReflection::Variable::Type shaderType, const std::string& name, const std::string& bufferName);
 
-    ShaderStorageBuffer::SharedPtr ShaderStorageBuffer::create(const ProgramReflection::BufferReflection::SharedPtr& pReflection, size_t overrideSize)
+    ShaderStorageBuffer::SharedPtr ShaderStorageBuffer::create(const ProgramReflection::BufferReflection::SharedConstPtr& pReflection, size_t overrideSize)
     {
         auto pBuffer = SharedPtr(new ShaderStorageBuffer(pReflection));
         if(pBuffer->init(overrideSize, false) == false)

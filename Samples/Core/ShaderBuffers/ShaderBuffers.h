@@ -45,11 +45,10 @@ private:
     void initUI();
 
     Program::SharedPtr mpProgram;
+    ProgramVars::SharedPtr mpProgramVars;
     Model::SharedPtr mpModel;
     Vao::SharedConstPtr mpVao;
     uint32_t mIndexCount = 0;
-
-    ShaderStorageBuffer::SharedPtr mpPixelCountBuffer = nullptr;
 
     bool mCountPixelShaderInvocations = false;
 

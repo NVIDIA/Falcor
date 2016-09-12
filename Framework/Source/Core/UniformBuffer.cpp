@@ -49,7 +49,7 @@ namespace Falcor
     UniformBuffer::SharedPtr UniformBuffer::create(Program::SharedPtr& pProgram, const std::string& name, size_t overrideSize)
     {
         auto& pProgReflector = pProgram->getActiveVersion()->getReflector();
-        auto& pBufferReflector = pProgReflector->getUniformBufferDesc(name);
+        auto& pBufferReflector = pProgReflector->getBufferDesc(name, ProgramReflection::BufferReflection::Type::Uniform);
         if(pBufferReflector)
         {
             return create(pBufferReflector, overrideSize);
@@ -79,7 +79,7 @@ namespace Falcor
     size_t UniformBuffer::getVariableOffset(const std::string& varName) const
     {
         size_t offset;
-        mpReflector->getVariableData(varName, offset);
+        mpReflector->getVariableData(varName, offset, true);
         return offset;
     }
 

@@ -82,7 +82,7 @@ namespace Falcor
 
         /** create a new uniform buffer from a program object.\n
             This function is purely syntactic sugar. It will fetch the requested buffer reflector from the active program version and create the buffer from it
-            \param[in] pProgram A program object which defins the buffer
+            \param[in] pProgram A program object which defines the buffer
             \param[in] name The buffer's name
             \param[in] overrideSize - if 0, will use the buffer size as declared in the shader. Otherwise, will use this value as the buffer size. Useful when using buffers with dynamic arrays.
             \return A new buffer object if the operation was successful, otherwise nullptr

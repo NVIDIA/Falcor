@@ -63,7 +63,7 @@ void ShaderToy::onLoad()
     mpToyCB = UniformBuffer::create(mpMainPass->getProgram(), "ToyCB");
 
     // Get buffer finding
-    mToyCBBinding = mpMainPass->getProgram()->getActiveVersion()->getReflector()->getUniformBufferBinding("ToyCB");
+    mToyCBBinding = mpMainPass->getProgram()->getActiveVersion()->getReflector()->getBufferBinding("ToyCB");
 
     initUI();
 }

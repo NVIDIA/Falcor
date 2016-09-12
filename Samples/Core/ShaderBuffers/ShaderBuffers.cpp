@@ -77,7 +77,7 @@ void ShaderBuffersSample::onLoad()
     mCameraController.setModelParams(center, radius, radius * 10);
 
     // create the uniform buffers
-    mpPixelCountBuffer = ShaderStorageBuffer::create(mpProgram->getActiveVersion().get(), "PixelCount");
+    mpProgramVars = ProgramVars::create(mpProgram->getActiveVersion().get());
 
     // create rasterizer state
     RasterizerState::Desc rsDesc;
@@ -102,17 +102,16 @@ void ShaderBuffersSample::onFrameRender()
     mCameraController.update();
 
     // Update uniform-buffers data
-    mpProgram["PerFrameCB"]["m.worldMat"] = glm::mat4();
-    mpProgram["PerFrameCB"]["m.wvpMat"] = mpCamera->getProjMatrix() * mpCamera->getViewMatrix();
-    mpProgram["PerFrameCB"]["surfaceColor"] = mSurfaceColor;
+    mpProgramVars["PerFrameCB"]["m.worldMat"] = glm::mat4();
+    mpProgramVars["PerFrameCB"]["m.wvpMat"] = mpCamera->getProjMatrix() * mpCamera->getViewMatrix();
+    mpProgramVars["PerFrameCB"]["surfaceColor"] = mSurfaceColor;
 
-    mpProgram["LightCB"]["worldDir"] = mLightData.worldDir;
-    mpProgram["LightCB"]["intensity"] = mLightData.intensity;
+    mpProgramVars["LightCB"]["worldDir"] = mLightData.worldDir;
+    mpProgramVars["LightCB"]["intensity"] = mLightData.intensity;
     
     // Set uniform buffers
     mpRenderContext->setProgram(mpProgram->getActiveVersion());
-    mpRenderContext->setShaderStorageBuffer(0, mpPixelCountBuffer);
-    mpProgram->setUniformBuffersIntoContext(mpRenderContext.get());
+    mpProgramVars->setIntoContext(mpRenderContext.get());
 
     mpRenderContext->setVao(mpVao);
     mpRenderContext->setTopology(RenderContext::Topology::TriangleList);
@@ -122,9 +121,9 @@ void ShaderBuffersSample::onFrameRender()
     if(mCountPixelShaderInvocations)
     {
 #ifndef FALCOR_DX11
-        uint32_t FsInvocations = mpPixelCountBuffer["count"];
+        uint32_t FsInvocations = mpProgramVars->getShaderStorageBuffer("PixelCount")["count"];
         Txt += "FS was invoked " + std::to_string(FsInvocations) + " times.";
-        mpPixelCountBuffer["count"] = 0U;
+        mpProgramVars->getShaderStorageBuffer("PixelCount")["count"] = 0U;
 #endif
     }
     renderText(Txt, glm::vec2(10, 10));

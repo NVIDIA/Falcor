@@ -202,8 +202,8 @@ void SimpleDeferred::onLoad()
     mpDirLight = DirectionalLight::create();
     mpDirLight->setWorldDirection(glm::vec3(-0.5f, -0.2f, -1.0f));
 
-    mpDeferredPerFrameCB = UniformBuffer::create(mpDeferredPassProgram->getActiveVersion().get(), "PerFrameCB");
-    mpLightingFrameCB = UniformBuffer::create(mpLightingPass->getProgram()->getActiveVersion().get(), "PerImageCB");
+    mpDeferredPerFrameCB = UniformBuffer::create(mpDeferredPassProgram, "PerFrameCB");
+    mpLightingFrameCB = UniformBuffer::create(mpLightingPass->getProgram(), "PerImageCB");
 
     // Load default model
     loadModelFromFile("Ogre/bs_rest.obj");

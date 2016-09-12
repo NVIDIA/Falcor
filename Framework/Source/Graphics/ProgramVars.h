@@ -30,7 +30,8 @@
 #include "Core/UniformBuffer.h"
 #include "Core/Sampler.h"
 #include <unordered_map>
-#include <Core/ProgramReflection.h>
+#include "Core/ProgramReflection.h"
+#include "Core/ShaderStorageBuffer.h"
 
 namespace Falcor
 {
@@ -90,6 +91,18 @@ namespace Falcor
         */
         UniformBuffer::SharedPtr getUniformBuffer(uint32_t index) const;
 
+        /** Get a shader-storage buffer object.
+        \param[in] name The name of the buffer
+        \return If the name is valid, a shared pointer to the SSBO. Otherwise returns nullptr
+        */
+        ShaderStorageBuffer::SharedPtr getShaderStorageBuffer(const std::string& name) const;
+
+        /** Get a shader-storage buffer object.
+        \param[in] index The index of the buffer
+        \return If the index is valid, a shared pointer to the SSBO. Otherwise returns nullptr
+        */
+        ShaderStorageBuffer::SharedPtr getShaderStorageBuffer(uint32_t index) const;
+
         /** Bind a texture to the program in the global namespace.
             If you are using bindless textures, than this is not the right call for you. You should use the UniformBuffer::setTexture() method instead.
             \param[in] name The name of the texture object in the shader
@@ -134,5 +147,6 @@ namespace Falcor
         ProgramVars(const ProgramVersion* pProgramVer, bool createBuffers);
         ProgramReflection::SharedConstPtr mpReflection;
         std::unordered_map<uint32_t, UniformBuffer::SharedPtr> mUniformBuffers;
+        std::unordered_map<uint32_t, ShaderStorageBuffer::SharedPtr> mSSBO;
     };
 }
