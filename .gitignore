@@ -3,3 +3,5 @@ Bin/*
 *.sdf
 *.opensdf
 *.suo
+Falcor.VC.VC.opendb
+Falcor.VC.db
