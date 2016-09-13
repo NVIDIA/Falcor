@@ -102,7 +102,7 @@ namespace Falcor
 
     VaoHandle Vao::getApiHandle() const
     {
-        UNSUPPORTED_IN_DX11("CVao doesn't have an API handle");
+        UNSUPPORTED_IN_D3D11("CVao doesn't have an API handle");
         return mApiHandle;
     }
 
@@ -117,7 +117,7 @@ namespace Falcor
         else
         { 
             ID3D11InputLayoutPtr pLayout;
-            dx11_call(getD3D11Device()->CreateInputLayout(pData->ElementDesc.data(), (uint32_t)pData->ElementDesc.size(), pVsBlob->GetBufferPointer(), pVsBlob->GetBufferSize(), &pLayout));
+            d3d11_call(getD3D11Device()->CreateInputLayout(pData->ElementDesc.data(), (uint32_t)pData->ElementDesc.size(), pVsBlob->GetBufferPointer(), pVsBlob->GetBufferSize(), &pLayout));
             pData->pLayouts[pVsBlob] = pLayout;
             return pLayout;
         }

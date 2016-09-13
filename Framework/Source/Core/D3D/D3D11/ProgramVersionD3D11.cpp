@@ -260,7 +260,7 @@ namespace Falcor
 
     int32_t ProgramVersion::getAttributeLocation(const std::string& attribute) const
     {
-        UNSUPPORTED_IN_DX11("CProgramVersion::GetAttributeLocation");
+        UNSUPPORTED_IN_D3D11("CProgramVersion::GetAttributeLocation");
         return 0;
     }
 }

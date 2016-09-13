@@ -143,7 +143,7 @@ namespace Falcor
 
     void RenderContext::blitFbo(const Fbo* pSource, const Fbo* pTarget, const glm::ivec4& srcRegion, const glm::ivec4& dstRegion, bool useLinearFiltering, FboAttachmentType copyFlags, uint32_t srcIdx, uint32_t dstIdx)
 	{
-        UNSUPPORTED_IN_DX11("BlitFbo");
+        UNSUPPORTED_IN_D3D11("BlitFbo");
 	}
 
     void RenderContext::applyUniformBuffer(uint32_t Index) const
@@ -164,7 +164,7 @@ namespace Falcor
 
     void RenderContext::applyShaderStorageBuffer(uint32_t index) const
     {
-        UNSUPPORTED_IN_DX11("RenderContext::ApplyShaderStorageBuffer()");
+        UNSUPPORTED_IN_D3D11("RenderContext::ApplyShaderStorageBuffer()");
     }
 
     void RenderContext::applyTopology() const

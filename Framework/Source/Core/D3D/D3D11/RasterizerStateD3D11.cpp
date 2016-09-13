@@ -80,7 +80,7 @@ namespace Falcor
         dxDesc.MultisampleEnable = dxBool(desc.mEnableLinesAA);
 
         SharedPtr pState = SharedPtr(new RasterizerState(desc));
-        dx11_call(getD3D11Device()->CreateRasterizerState(&dxDesc, &pState->mApiHandle));
+        d3d11_call(getD3D11Device()->CreateRasterizerState(&dxDesc, &pState->mApiHandle));
         return pState;
     }
 

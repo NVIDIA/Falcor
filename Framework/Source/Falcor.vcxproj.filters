@@ -312,6 +312,9 @@
     <ClCompile Include="Core\D3D\D3D11\WindowD3D11.cpp">
       <Filter>Core\D3D\D3D11</Filter>
     </ClCompile>
+    <ClCompile Include="Core\D3D\WindowD3D.cpp">
+      <Filter>Core\D3D</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Sample.h" />
@@ -1348,6 +1351,12 @@
     <ClInclude Include="Core\D3D\D3D11\ShaderReflectionD3D11.h">
       <Filter>Core\D3D\D3D11</Filter>
     </ClInclude>
+    <ClInclude Include="Core\D3D\D3D12\FalcorD3D12.h">
+      <Filter>Core\D3D\D3D12</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\D3D\FalcorD3D.h">
+      <Filter>Core\D3D</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Externals">
@@ -1481,6 +1490,9 @@
     </Filter>
     <Filter Include="Core\D3D\D3D11">
       <UniqueIdentifier>{d8f2c785-91ad-418a-a134-e69462d344b1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Core\D3D\D3D12">
+      <UniqueIdentifier>{0009ba29-e728-436e-87d2-12e18fe40ffb}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>

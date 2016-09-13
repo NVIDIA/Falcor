@@ -83,7 +83,7 @@ namespace Falcor
             subresource.pSysMem = pInitData;
         }
 
-        dx11_call(getD3D11Device()->CreateBuffer(&desc, pSubresource, &pBuffer->mApiHandle));
+        d3d11_call(getD3D11Device()->CreateBuffer(&desc, pSubresource, &pBuffer->mApiHandle));
 
         return pBuffer;
     }
@@ -139,12 +139,12 @@ namespace Falcor
 
     void Buffer::readData(void* pData, size_t offset, size_t size) const
     {
-        UNSUPPORTED_IN_DX11("Buffer::ReadData(). If you really need this, create the resource with CPU read flag, and use Buffer::Map()");
+        UNSUPPORTED_IN_D3D11("Buffer::ReadData(). If you really need this, create the resource with CPU read flag, and use Buffer::Map()");
     }
 
     uint64_t Buffer::getBindlessHandle()
     {
-        UNSUPPORTED_IN_DX11("DX11 buffers don't have bindless handles.");
+        UNSUPPORTED_IN_D3D11("DX11 buffers don't have bindless handles.");
         return 0;
     }
 
@@ -179,7 +179,7 @@ namespace Falcor
 
         mIsMapped = true;
         D3D11_MAPPED_SUBRESOURCE mapData;
-        dx11_call(getD3D11ImmediateContext()->Map(mApiHandle, 0, dxFlag, 0, &mapData));
+        d3d11_call(getD3D11ImmediateContext()->Map(mApiHandle, 0, dxFlag, 0, &mapData));
         return mapData.pData;
     }
 
@@ -196,13 +196,13 @@ namespace Falcor
 
     uint64_t Buffer::makeResident(Buffer::GpuAccessFlags flags/* = Buffer::GpuAccessFlags::ReadOnly*/) const
     {
-        UNSUPPORTED_IN_DX11("Buffer::makeResident()");
+        UNSUPPORTED_IN_D3D11("Buffer::makeResident()");
         return 0;
     }
 
     void Buffer::makeNonResident() const
     {
-        UNSUPPORTED_IN_DX11("Buffer::MakeNonResident()");
+        UNSUPPORTED_IN_D3D11("Buffer::MakeNonResident()");
     }
 }
 #endif // #ifdef FALCOR_D3D11

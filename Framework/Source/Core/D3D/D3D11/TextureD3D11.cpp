@@ -111,7 +111,7 @@ namespace Falcor
         }
         
         ID3D11ShaderResourceViewPtr pSrv;
-        dx11_call(getD3D11Device()->CreateShaderResourceView(pResource, &srvDesc, &pSrv));
+        d3d11_call(getD3D11Device()->CreateShaderResourceView(pResource, &srvDesc, &pSrv));
         return pSrv;
     }
 
@@ -121,13 +121,13 @@ namespace Falcor
 
     uint64_t Texture::makeResident(const Sampler* pSampler) const
     {
-        UNSUPPORTED_IN_DX11("Texture::makeResident()");
+        UNSUPPORTED_IN_D3D11("Texture::makeResident()");
         return 0;
     }
 
     void Texture::makeNonResident(const Sampler* pSampler) const
     {
-        UNSUPPORTED_IN_DX11("Texture::MakeNonResident()");
+        UNSUPPORTED_IN_D3D11("Texture::MakeNonResident()");
     }
 
     std::vector<D3D11_SUBRESOURCE_DATA> createInitDataVector(uint32_t width, uint32_t height, uint32_t depth, ResourceFormat format, uint32_t arraySize, uint32_t mipLevels, const void* pData)
@@ -156,21 +156,21 @@ namespace Falcor
     ID3D11ResourcePtr createTexture1D(const D3D11_TEXTURE1D_DESC& desc, const D3D11_SUBRESOURCE_DATA* pInitData)
     {
         ID3D11Texture1DPtr pDxTex;
-        dx11_call(getD3D11Device()->CreateTexture1D(&desc, pInitData, &pDxTex));
+        d3d11_call(getD3D11Device()->CreateTexture1D(&desc, pInitData, &pDxTex));
         return pDxTex;
     }
 
     ID3D11ResourcePtr createTexture2D(const D3D11_TEXTURE2D_DESC& desc, const D3D11_SUBRESOURCE_DATA* pInitData)
     {
         ID3D11Texture2DPtr pDxTex;
-        dx11_call(getD3D11Device()->CreateTexture2D(&desc, pInitData, &pDxTex));
+        d3d11_call(getD3D11Device()->CreateTexture2D(&desc, pInitData, &pDxTex));
         return pDxTex;
     }
 
     ID3D11ResourcePtr createTexture3D(const D3D11_TEXTURE3D_DESC& desc, const D3D11_SUBRESOURCE_DATA* pInitData)
     {
         ID3D11Texture3DPtr pDxTex;
-        dx11_call(getD3D11Device()->CreateTexture3D(&desc, pInitData, &pDxTex));
+        d3d11_call(getD3D11Device()->CreateTexture3D(&desc, pInitData, &pDxTex));
         return pDxTex;
     }
 
@@ -352,33 +352,33 @@ namespace Falcor
 
     uint32_t Texture::getMipLevelDataSize(uint32_t mipLevel) const
     {
-        UNSUPPORTED_IN_DX11("Texture::getMipLevelDataSize");
+        UNSUPPORTED_IN_D3D11("Texture::getMipLevelDataSize");
         return 0;
     }
 
     void Texture::readSubresourceData(void* pData, uint32_t dataSize, uint32_t mipLevel, uint32_t arraySlice) const
     {
-        UNSUPPORTED_IN_DX11("Texture::readSubresourceData");
+        UNSUPPORTED_IN_D3D11("Texture::readSubresourceData");
     }
 
     void Texture::uploadSubresourceData(const void* pData, uint32_t dataSize, uint32_t mipLevel, uint32_t arraySlice)
     {
-        UNSUPPORTED_IN_DX11("Texture::uploadSubresourceData()");
+        UNSUPPORTED_IN_D3D11("Texture::uploadSubresourceData()");
     }
 
     void Texture::compress2DTexture()
     {
-        UNSUPPORTED_IN_DX11("Texture::compress2DTexture");
+        UNSUPPORTED_IN_D3D11("Texture::compress2DTexture");
     }
 
 	void Texture::generateMips() const
 	{
-		UNSUPPORTED_IN_DX11("Texture::GenerateMips");
+		UNSUPPORTED_IN_D3D11("Texture::GenerateMips");
 	}
 
     Texture::SharedPtr Texture::createView(uint32_t firstArraySlice, uint32_t arraySize, uint32_t mostDetailedMip, uint32_t mipCount) const
     {
-        UNSUPPORTED_IN_DX11("createView");
+        UNSUPPORTED_IN_D3D11("createView");
         return nullptr;
     }
 }

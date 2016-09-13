@@ -27,10 +27,8 @@
 ***************************************************************************/
 #pragma once
 #define NOMINMAX
-#include <d3d11_2.h>
-#include <d3dcompiler.h>
-#include "Core/Formats.h"
-#include <comdef.h>
+#include "../FalcorD3D.h"
+#include <d3d11_1.h>
 
 namespace Falcor
 {
@@ -38,24 +36,6 @@ namespace Falcor
     *  \addtogroup Falcor
     *  @{
     */
-
-    struct DxgiFormatDesc
-    {
-        ResourceFormat falcorFormat;
-        DXGI_FORMAT dxgiFormat;
-    };
-
-    extern const DxgiFormatDesc kDxgiFormatDesc[];
-
-    /** Get the DXGI format
-    */
-    inline DXGI_FORMAT getDxgiFormat(ResourceFormat format)
-    {
-        assert(kDxgiFormatDesc[(uint32_t)format].falcorFormat == format);
-        return kDxgiFormatDesc[(uint32_t)format].dxgiFormat;
-    }
-
-#define MAKE_SMART_COM_PTR(_a) _COM_SMARTPTR_TYPEDEF(_a, __uuidof(_a))
 
     // Device
     MAKE_SMART_COM_PTR(ID3D11Device);
@@ -117,7 +97,6 @@ namespace Falcor
     using SamplerApiHandle          = ID3D11SamplerStatePtr;
     using ShaderResourceViewHandle  = ID3D11ShaderResourceViewPtr;
 
-    void dx11TraceHR(const std::string& Msg, HRESULT hr);
     /*! @} */
 }
 
@@ -127,11 +106,9 @@ namespace Falcor
 #define DEFAULT_API_MAJOR_VERSION 11
 #define DEFAULT_API_MINOR_VERSION 1
 
-#define UNSUPPORTED_IN_DX11(msg_) {Falcor::Logger::log(Falcor::Logger::Level::Warning, msg_ + std::string(" is not supported in DX11. Ignoring call."));}
+#define UNSUPPORTED_IN_D3D11(msg_) {Falcor::Logger::log(Falcor::Logger::Level::Warning, msg_ + std::string(" is not supported in D3D11. Ignoring call."));}
 #ifdef _LOG_ENABLED
-#define dx11_call(a) {HRESULT hr = a; if(FAILED(hr)) { dx11TraceHR( #a, hr); } }
+#define d3d11_call(a) {HRESULT hr = a; if(FAILED(hr)) { d3dTraceHR( #a, hr); } }
 #else
-#define dx11_call(a) a
+#define d3d11_call(a) a
 #endif
-
-__forceinline BOOL dxBool(bool b) {return b ? TRUE : FALSE;}

@@ -46,6 +46,7 @@
     <ClCompile Include="Core\D3D\D3D11\UniformBufferD3D11.cpp" />
     <ClCompile Include="Core\D3D\D3D11\VaoD3D11.cpp" />
     <ClCompile Include="Core\D3D\D3D11\WindowD3D11.cpp" />
+    <ClCompile Include="Core\D3D\WindowD3D.cpp" />
     <ClCompile Include="Core\DepthStencilState.cpp" />
     <ClCompile Include="Core\FBO.cpp" />
     <ClCompile Include="Core\Formats.cpp" />
@@ -378,6 +379,8 @@
     <ClInclude Include="Core\Buffer.h" />
     <ClInclude Include="Core\D3D\D3D11\FalcorD3D11.h" />
     <ClInclude Include="Core\D3D\D3D11\ShaderReflectionD3D11.h" />
+    <ClInclude Include="Core\D3D\D3D12\FalcorD3D12.h" />
+    <ClInclude Include="Core\D3D\FalcorD3D.h" />
     <ClInclude Include="Core\DDSHeader.h" />
     <ClInclude Include="Core\DepthStencilState.h" />
     <ClInclude Include="Core\FBO.h" />

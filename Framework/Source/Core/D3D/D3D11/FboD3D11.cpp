@@ -58,7 +58,7 @@ namespace Falcor
 
     uint32_t Fbo::getApiHandle() const
     {
-        UNSUPPORTED_IN_DX11("CFbo Api Handle");
+        UNSUPPORTED_IN_D3D11("CFbo Api Handle");
         return mApiHandle;
     }
 
@@ -202,7 +202,7 @@ namespace Falcor
             D3D11_RENDER_TARGET_VIEW_DESC rtvDesc;
             initializeRtvDesc(pTexture.get(), mColorAttachments[rtIndex].mipLevel, mColorAttachments[rtIndex].arraySlice, rtvDesc);
             ID3D11RenderTargetViewPtr pRTV;
-            dx11_call(getD3D11Device()->CreateRenderTargetView(pResource, &rtvDesc, &pData->pRtv[rtIndex]));
+            d3d11_call(getD3D11Device()->CreateRenderTargetView(pResource, &rtvDesc, &pData->pRtv[rtIndex]));
         }
     }
 
@@ -217,7 +217,7 @@ namespace Falcor
             ID3D11Resource* pResource = pDepth->getApiHandle();
             D3D11_DEPTH_STENCIL_VIEW_DESC DsvDesc;
             initializeDsvDesc(pDepth.get(), mDepthStencil.mipLevel, mDepthStencil.arraySlice, DsvDesc);
-            dx11_call(getD3D11Device()->CreateDepthStencilView(pResource, &DsvDesc, &pData->pDsv));
+            d3d11_call(getD3D11Device()->CreateDepthStencilView(pResource, &DsvDesc, &pData->pDsv));
         }
     }
 
@@ -251,17 +251,17 @@ namespace Falcor
 
     void Fbo::clearColorTarget(uint32_t rtIndex, const glm::uvec4& color) const
     {
-        UNSUPPORTED_IN_DX11("unsigned int version of ClearColorTarget()");
+        UNSUPPORTED_IN_D3D11("unsigned int version of ClearColorTarget()");
     }
 
     void Fbo::clearColorTarget(uint32_t rtIndex, const glm::ivec4& color) const
     {
-        UNSUPPORTED_IN_DX11("int version of ClearColorTarget()");
+        UNSUPPORTED_IN_D3D11("int version of ClearColorTarget()");
     }
 
     void Fbo::captureToFile(uint32_t rtIndex, const std::string& filename, Bitmap::FileFormat fileFormat)
     {
-        UNSUPPORTED_IN_DX11("captureToPng()");
+        UNSUPPORTED_IN_D3D11("captureToPng()");
     }
 
     void Fbo::clearDepthStencil(float depth, uint8_t stencil, bool clearDepth, bool clearStencil) const

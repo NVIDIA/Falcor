@@ -175,7 +175,7 @@ namespace Falcor
         }
 
         // Get the reflection object
-        dx11_call(D3DReflect(pData->pBlob->GetBufferPointer(), pData->pBlob->GetBufferSize(), __uuidof(ID3D11ShaderReflection), (void**)&pData->pReflector));
+        d3d11_call(D3DReflect(pData->pBlob->GetBufferPointer(), pData->pBlob->GetBufferSize(), __uuidof(ID3D11ShaderReflection), (void**)&pData->pReflector));
 
         return pShader;
     }

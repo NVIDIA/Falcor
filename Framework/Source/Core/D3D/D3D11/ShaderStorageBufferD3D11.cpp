@@ -34,7 +34,7 @@ namespace Falcor
 {
     ShaderStorageBuffer::SharedPtr ShaderStorageBuffer::create(const ProgramVersion* pProgram, const std::string& bufferName, size_t overrideSize)
     {
-        UNSUPPORTED_IN_DX11("ShaderStorageBuffer");
+        UNSUPPORTED_IN_D3D11("ShaderStorageBuffer");
         return nullptr;
     }
 
