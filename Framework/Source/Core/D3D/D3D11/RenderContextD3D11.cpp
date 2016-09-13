@@ -26,7 +26,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 #include "Framework.h"
-#ifdef FALCOR_DX11
+#ifdef FALCOR_D3D11
 #include "Core/RenderContext.h"
 #include "Core/RasterizerState.h"
 #include "Core/BlendState.h"
@@ -289,4 +289,4 @@ namespace Falcor
         getD3D11ImmediateContext()->RSSetScissorRects(D3D11_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE, scRects.data());
     }
 }
-#endif //#ifdef FALCOR_DX11
+#endif //#ifdef FALCOR_D3D11

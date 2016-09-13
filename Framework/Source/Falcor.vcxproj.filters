@@ -134,62 +134,11 @@
     <ClCompile Include="Core\OpenGL\WindowGL.cpp">
       <Filter>Core\OpenGL</Filter>
     </ClCompile>
-    <ClCompile Include="Core\DX11\BlendStateDX11.cpp">
-      <Filter>Core\DX11</Filter>
-    </ClCompile>
-    <ClCompile Include="Core\DX11\BufferDX11.cpp">
-      <Filter>Core\DX11</Filter>
-    </ClCompile>
-    <ClCompile Include="Core\DX11\DepthStencilStateDX11.cpp">
-      <Filter>Core\DX11</Filter>
-    </ClCompile>
-    <ClCompile Include="Core\DX11\FboDX11.cpp">
-      <Filter>Core\DX11</Filter>
-    </ClCompile>
-    <ClCompile Include="Core\DX11\FormatsDX11.cpp">
-      <Filter>Core\DX11</Filter>
-    </ClCompile>
-    <ClCompile Include="Core\DX11\GpuTimerDX11.cpp">
-      <Filter>Core\DX11</Filter>
-    </ClCompile>
-    <ClCompile Include="Core\DX11\RasterizerStateDX11.cpp">
-      <Filter>Core\DX11</Filter>
-    </ClCompile>
-    <ClCompile Include="Core\DX11\RenderContextDX11.cpp">
-      <Filter>Core\DX11</Filter>
-    </ClCompile>
-    <ClCompile Include="Core\DX11\SamplerDX11.cpp">
-      <Filter>Core\DX11</Filter>
-    </ClCompile>
-    <ClCompile Include="Core\DX11\ScreenCaptureDX11.cpp">
-      <Filter>Core\DX11</Filter>
-    </ClCompile>
-    <ClCompile Include="Core\DX11\ShaderStorageBufferDX11.cpp">
-      <Filter>Core\DX11</Filter>
-    </ClCompile>
-    <ClCompile Include="Core\DX11\TextureDX11.cpp">
-      <Filter>Core\DX11</Filter>
-    </ClCompile>
-    <ClCompile Include="Core\DX11\UniformBufferDX11.cpp">
-      <Filter>Core\DX11</Filter>
-    </ClCompile>
-    <ClCompile Include="Core\DX11\VaoDX11.cpp">
-      <Filter>Core\DX11</Filter>
-    </ClCompile>
-    <ClCompile Include="Core\DX11\WindowDX11.cpp">
-      <Filter>Core\DX11</Filter>
-    </ClCompile>
     <ClCompile Include="Core\Formats.cpp">
       <Filter>Core</Filter>
     </ClCompile>
     <ClCompile Include="Core\FBO.cpp">
       <Filter>Core</Filter>
-    </ClCompile>
-    <ClCompile Include="Core\DX11\ShaderDX11.cpp">
-      <Filter>Core\DX11</Filter>
-    </ClCompile>
-    <ClCompile Include="Core\DX11\ProgramVersionDX11.cpp">
-      <Filter>Core\DX11</Filter>
     </ClCompile>
     <ClCompile Include="Core\OpenGL\ProgramVersionGL.cpp">
       <Filter>Core\OpenGL</Filter>
@@ -214,9 +163,6 @@
     </ClCompile>
     <ClCompile Include="Utils\ShaderUtils.cpp">
       <Filter>Utils</Filter>
-    </ClCompile>
-    <ClCompile Include="Core\DX11\ShaderReflectionDX11.cpp">
-      <Filter>Core\DX11</Filter>
     </ClCompile>
     <ClCompile Include="Core\OpenGL\ShaderReflectionGL.cpp">
       <Filter>Core\OpenGL</Filter>
@@ -311,6 +257,60 @@
     </ClCompile>
     <ClCompile Include="Graphics\Model\Loaders\BinaryImage.cpp">
       <Filter>Graphics\Model\Loaders</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\D3D\D3D11\BlendStateD3D11.cpp">
+      <Filter>Core\D3D\D3D11</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\D3D\D3D11\BufferD3D11.cpp">
+      <Filter>Core\D3D\D3D11</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\D3D\D3D11\DepthStencilStateD3D11.cpp">
+      <Filter>Core\D3D\D3D11</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\D3D\D3D11\FboD3D11.cpp">
+      <Filter>Core\D3D\D3D11</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\D3D\D3D11\FormatsD3D11.cpp">
+      <Filter>Core\D3D\D3D11</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\D3D\D3D11\GpuTimerD3D11.cpp">
+      <Filter>Core\D3D\D3D11</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\D3D\D3D11\ProgramVersionD3D11.cpp">
+      <Filter>Core\D3D\D3D11</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\D3D\D3D11\RasterizerStateD3D11.cpp">
+      <Filter>Core\D3D\D3D11</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\D3D\D3D11\RenderContextD3D11.cpp">
+      <Filter>Core\D3D\D3D11</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\D3D\D3D11\SamplerD3D11.cpp">
+      <Filter>Core\D3D\D3D11</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\D3D\D3D11\ScreenCaptureD3D11.cpp">
+      <Filter>Core\D3D\D3D11</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\D3D\D3D11\ShaderD3D11.cpp">
+      <Filter>Core\D3D\D3D11</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\D3D\D3D11\ShaderReflectionD3D11.cpp">
+      <Filter>Core\D3D\D3D11</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\D3D\D3D11\ShaderStorageBufferD3D11.cpp">
+      <Filter>Core\D3D\D3D11</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\D3D\D3D11\TextureD3D11.cpp">
+      <Filter>Core\D3D\D3D11</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\D3D\D3D11\UniformBufferD3D11.cpp">
+      <Filter>Core\D3D\D3D11</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\D3D\D3D11\VaoD3D11.cpp">
+      <Filter>Core\D3D\D3D11</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\D3D\D3D11\WindowD3D11.cpp">
+      <Filter>Core\D3D\D3D11</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -1233,9 +1233,6 @@
     <ClInclude Include="Core\OpenGL\FalcorGL.h">
       <Filter>Core\OpenGL</Filter>
     </ClInclude>
-    <ClInclude Include="Core\DX11\FalcorDX11.h">
-      <Filter>Core\DX11</Filter>
-    </ClInclude>
     <ClInclude Include="Core\ProgramVersion.h">
       <Filter>Core</Filter>
     </ClInclude>
@@ -1247,9 +1244,6 @@
     </ClInclude>
     <ClInclude Include="Utils\ShaderUtils.h">
       <Filter>Utils</Filter>
-    </ClInclude>
-    <ClInclude Include="Core\DX11\ShaderReflectionDX11.h">
-      <Filter>Core\DX11</Filter>
     </ClInclude>
     <ClInclude Include="Core\OpenGL\ShaderReflectionGL.h">
       <Filter>Core\OpenGL</Filter>
@@ -1348,6 +1342,12 @@
     <ClInclude Include="Graphics\Model\Loaders\BinaryImage.hpp">
       <Filter>Graphics\Model\Loaders</Filter>
     </ClInclude>
+    <ClInclude Include="Core\D3D\D3D11\FalcorD3D11.h">
+      <Filter>Core\D3D\D3D11</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\D3D\D3D11\ShaderReflectionD3D11.h">
+      <Filter>Core\D3D\D3D11</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Externals">
@@ -1440,9 +1440,6 @@
     <Filter Include="ShadingUtils">
       <UniqueIdentifier>{aab19330-4eb2-405a-af5a-a4f65faa888a}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Core\DX11">
-      <UniqueIdentifier>{7d3ad1ac-f2a2-474f-9c0b-ec93fcd10fe2}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Graphics\Material">
       <UniqueIdentifier>{6019fee5-465d-409d-92c2-499985e4d084}</UniqueIdentifier>
     </Filter>
@@ -1478,6 +1475,12 @@
     </Filter>
     <Filter Include="Effects\ToneMapping">
       <UniqueIdentifier>{93980430-1a93-4999-bd8a-2f0b46713318}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Core\D3D">
+      <UniqueIdentifier>{7d3ad1ac-f2a2-474f-9c0b-ec93fcd10fe2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Core\D3D\D3D11">
+      <UniqueIdentifier>{d8f2c785-91ad-418a-a134-e69462d344b1}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>

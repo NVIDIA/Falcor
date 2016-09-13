@@ -389,4 +389,4 @@ namespace Falcor
         }
     }
 }
-#endif //#ifdef FALCOR_DX11
+#endif //#ifdef FALCOR_D3D11

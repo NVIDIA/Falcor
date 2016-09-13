@@ -200,7 +200,7 @@ namespace Falcor
             sInitialized = true;
 #ifdef FALCOR_GL
             TwInit(TW_OPENGL_CORE, nullptr);
-#elif defined FALCOR_DX11
+#elif defined FALCOR_D3D11
             TwInit(TW_DIRECT3D11, getD3D11Device());
 #endif
             TwDefine(" TW_HELP visible=false ");

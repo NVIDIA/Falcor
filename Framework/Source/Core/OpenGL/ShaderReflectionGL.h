@@ -43,4 +43,4 @@ namespace Falcor
 
     /*! @} */
 }
-#endif // FALCOR_DX11
+#endif // FALCOR_D3D11

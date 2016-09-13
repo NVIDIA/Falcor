@@ -26,9 +26,9 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 #include "Framework.h"
-#ifdef FALCOR_DX11
+#ifdef FALCOR_D3D11
 #include "Core/ProgramVersion.h"
-#include "ShaderReflectionDX11.h"
+#include "ShaderReflectionD3D11.h"
 #include <algorithm>
 
 namespace Falcor
@@ -265,4 +265,4 @@ namespace Falcor
     }
 }
 
-#endif //#ifdef FALCOR_DX11
+#endif //#ifdef FALCOR_D3D11

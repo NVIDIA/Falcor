@@ -44,8 +44,8 @@
 #include "Core/Texture.h"
 #include "Graphics/Model/Model.h"
 
-#if !defined( FALCOR_GL ) && !defined( FALCOR_DX11 )
-#error VRDisplay.h requires preprocessor definitions of *either* FALCOR_GL or FALCOR_DX11
+#if !defined( FALCOR_GL ) && !defined( FALCOR_D3D11 )
+#error VRDisplay.h requires preprocessor definitions of *either* FALCOR_GL or FALCOR_D3D11
 #endif
 
 // Forward declare OpenVR system class types to remove "openvr.h" dependencies from Falcor headers

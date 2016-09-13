@@ -81,7 +81,7 @@ namespace Falcor
 
 #if defined(FALCOR_GL)
         vr::GraphicsAPIConvention curRenderAPI = vr::GraphicsAPIConvention::API_OpenGL;
-#elif defined(FALCOR_DX11)
+#elif defined(FALCOR_D3D11)
         vr::GraphicsAPIConvention curRenderAPI = vr::GraphicsAPIConvention::API_DirectX;
 #endif
 
@@ -130,7 +130,7 @@ namespace Falcor
     {
 #if defined(FALCOR_GL)
         vr::GraphicsAPIConvention curRenderAPI = vr::GraphicsAPIConvention::API_OpenGL;
-#elif defined(FALCOR_DX11)
+#elif defined(FALCOR_D3D11)
         vr::GraphicsAPIConvention curRenderAPI = vr::GraphicsAPIConvention::API_DirectX;
 #endif
 

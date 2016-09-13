@@ -120,8 +120,8 @@ namespace Falcor
 
 #ifdef FALCOR_GL
 #include "Core/OpenGL/FalcorGL.h"
-#elif defined FALCOR_DX11
-#include "Core/DX11/FalcorDX11.h"
+#elif defined FALCOR_D3D11
+#include "Core/D3D//D3D11/FalcorD3D11.h"
 #else
 #error Undefined falcor backend. Make sure that a backend is selected in "FalcorConfig.h"
 #endif

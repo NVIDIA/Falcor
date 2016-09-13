@@ -25,23 +25,20 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#pragma once
-#ifdef FALCOR_DX11
-#include "Core/ShaderReflection.h"
+#include "Framework.h"
+#ifdef FALCOR_D3D11
+#include "Core/ScreenCapture.h"
 
 namespace Falcor
 {
-    /*!
-    *  \addtogroup Falcor
-    *  @{
-    */
-    namespace ShaderReflection
+    void ScreenCapture::captureToMemory(uint32_t screenWidth, uint32_t screenHeight, ResourceFormat format, uint8_t* pData)
     {
-        void reflectBuffers(ID3D11ShaderReflectionPtr pReflector, BufferDescMap& bufferVec);
-        void reflectBufferVariables(ID3D11ShaderReflectionConstantBuffer* pReflector, VariableDescMap& variableMap);
-        void reflectResources(ID3D11ShaderReflectionPtr pReflector, ShaderResourceDescMap& resourceMap);
+
     }
 
-    /*! @} */
+    void ScreenCapture::captureToPng(uint32_t screenWidth, uint32_t screenHeight, const std::string& filename)
+    {
+
+    }
 }
-#endif // FALCOR_DX11
+#endif //#ifdef FALCOR_D3D11

@@ -59,7 +59,7 @@ namespace Falcor
         ShaderType getType() const { return mType; }
 
     protected:
-#ifdef FALCOR_DX11
+#ifdef FALCOR_D3D11
         friend class RenderContext;
         friend class ProgramVersion;
         friend class UniformBuffer;

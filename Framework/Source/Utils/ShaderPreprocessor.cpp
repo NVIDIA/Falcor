@@ -895,7 +895,7 @@ namespace Falcor
         getLineInformation(code, verStart, line, currentFile, mShaderPathAbs);
 
 
-#ifdef FALCOR_DX11
+#ifdef FALCOR_D3D11
         static const std::string api = "FALCOR_HLSL";
         static const std::string extensions;
 #elif defined FALCOR_GL
@@ -920,7 +920,7 @@ namespace Falcor
         allDefines += getLinePragma(verEnd == 0 ? 0 : line, currentFile) + "\n";
         code.insert(verEnd, allDefines);
 
-#ifdef FALCOR_DX11
+#ifdef FALCOR_D3D11
         if(verEnd != verStart)
         {
             // Remove the version pragma

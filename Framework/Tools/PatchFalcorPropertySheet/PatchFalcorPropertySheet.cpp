@@ -114,11 +114,7 @@ int main(int argc, char* argv[])
     
     // Patch the backend
     std::string Backend(argv[3]);
-    if(Backend != "FALCOR_DX11" && Backend != "FALCOR_GL")
-    {
-        printf("Error. Unknown backend '%s'\n", Backend.c_str());
-        return -1;
-    }
+
     if(PatchGroup(PropSheet, "FALCOR_BACKEND", Backend) == false)
         return -1;
 

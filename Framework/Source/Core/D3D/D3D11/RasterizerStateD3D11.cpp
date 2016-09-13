@@ -26,7 +26,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 #include "Framework.h"
-#ifdef FALCOR_DX11
+#ifdef FALCOR_D3D11
 #include "Core/RasterizerState.h"
 
 namespace Falcor

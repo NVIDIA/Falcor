@@ -136,7 +136,7 @@ namespace Falcor
         // Look for the uniform
         auto& var = mVariables.find(name);
 
-#ifdef FALCOR_DX11
+#ifdef FALCOR_D3D11
         if(var == mVariables.end())
         {
             // Textures might come from our struct. Try again.
@@ -574,7 +574,7 @@ namespace Falcor
     ShaderReflection::ShaderResourceDescMap::const_iterator getResourceDescIt(const std::string& name, const ShaderReflection::ShaderResourceDescMap& descMap)
     {
         auto& it = descMap.find(name);
-#ifdef FALCOR_DX11
+#ifdef FALCOR_D3D11
         // If it's not found and this is DX, search for out internal struct
         if(it == descMap.end())
         {

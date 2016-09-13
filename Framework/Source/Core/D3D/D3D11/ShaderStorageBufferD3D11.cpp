@@ -26,8 +26,8 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 #include "Framework.h"
-#ifdef FALCOR_DX11
-#include "../ShaderStorageBuffer.h"
+#ifdef FALCOR_D3D11
+#include "../../ShaderStorageBuffer.h"
 #include "glm/glm.hpp"
 
 namespace Falcor
@@ -211,4 +211,4 @@ namespace Falcor
     get_uniform_array_string(uint64_t);
 #undef get_uniform_array_string
 }
-#endif //#ifdef FALCOR_DX11
+#endif //#ifdef FALCOR_D3D11

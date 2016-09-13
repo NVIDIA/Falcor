@@ -26,12 +26,12 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 #include "Framework.h"
-#ifdef FALCOR_DX11
+#ifdef FALCOR_D3D11
 #include "Core/UniformBuffer.h"
 #include "glm/glm.hpp"
 #include "Core/Buffer.h"
 #include "Core/ProgramVersion.h"
-#include "ShaderReflectionDX11.h"
+#include "ShaderReflectionD3D11.h"
 #include "Core/Texture.h"
 #include "utils/StringUtils.h"
 #include "Core/Sampler.h"
@@ -180,4 +180,4 @@ namespace Falcor
         (*mAssignedSamplersMap)[(uint32_t)offset] = pSampler ? pSampler->getApiHandle() : nullptr;
     }
 }
-#endif //#ifdef FALCOR_DX11
+#endif //#ifdef FALCOR_D3D11

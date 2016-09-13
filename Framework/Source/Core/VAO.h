@@ -97,7 +97,7 @@ namespace Falcor
 
     protected:
         friend class RenderContext;
-#ifdef FALCOR_DX11
+#ifdef FALCOR_D3D11
         ID3D11InputLayoutPtr getInputLayout(ID3DBlob* pVsBlob) const;
 #endif
     private:

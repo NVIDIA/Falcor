@@ -139,7 +139,7 @@ namespace Falcor
 		*/
 		void setZeroAttachments(uint32_t width, uint32_t height, uint32_t layers=1, uint32_t samples=1, bool fixedSampleLocs=false);
 
-#ifdef FALCOR_DX11
+#ifdef FALCOR_D3D11
         ID3D11DepthStencilView* getDepthStencilView() const;
         ID3D11RenderTargetView* getRenderTargetView(uint32_t rtIndex) const;
 #endif

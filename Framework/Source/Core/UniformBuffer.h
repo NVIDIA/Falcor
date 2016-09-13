@@ -187,7 +187,7 @@ namespace Falcor
         template<bool ExpectArrayIndex>
         const ShaderReflection::VariableDesc* getVariableData(const std::string& name, size_t& offset) const;
 
-#ifdef FALCOR_DX11
+#ifdef FALCOR_D3D11
         friend class RenderContext;
         std::map<uint32_t, ID3D11ShaderResourceViewPtr>* mAssignedResourcesMap;
         std::map<uint32_t, ID3D11SamplerStatePtr>* mAssignedSamplersMap;

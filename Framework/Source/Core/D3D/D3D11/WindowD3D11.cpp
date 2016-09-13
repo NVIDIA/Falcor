@@ -26,14 +26,14 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 #include "Framework.h"
-#ifdef FALCOR_DX11
-#include "..\Window.h"
+#ifdef FALCOR_D3D11
+#include "Core\Window.h"
 #include "Utils/UserInput.h"
 #include "Utils/OS.h"
 #include <codecvt>
 #include <algorithm>
-#include "../texture.h"
-#include "../FBO.h"
+#include "Core/texture.h"
+#include "Core/FBO.h"
 #include <Initguid.h>
 #include <Windowsx.h>
 
@@ -685,4 +685,4 @@ namespace Falcor
         return false;
     }
 }
-#endif //#ifdef FALCOR_DX11
+#endif //#ifdef FALCOR_D3D11
