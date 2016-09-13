@@ -65,7 +65,7 @@ void VROverlay::addOrUpdateOverlayTexture(const std::string& key, Texture::Share
     mpIVROverlay->CreateOverlay(key.c_str(), key.c_str(), &handle);
 
     vr::Texture_t subTex;
-    subTex.handle = (void *)pTex->getApiHandle();
+    subTex.handle = (void *)(size_t)pTex->getApiHandle();
     subTex.eColorSpace = isSrgbFormat(pTex->getFormat()) ? vr::EColorSpace::ColorSpace_Gamma : vr::EColorSpace::ColorSpace_Linear;
     subTex.eType = vr::GraphicsAPIConvention::API_OpenGL; //(vr::GraphicsAPIConvention)(API_OpenGL);
 

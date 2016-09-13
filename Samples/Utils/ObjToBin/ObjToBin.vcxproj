@@ -25,6 +25,7 @@
     <ProjectGuid>{011C1FED-E27F-4F0A-87B2-6FB60510D3B5}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>ObjToBin</RootNamespace>
+    <WindowsTargetPlatformVersion>10.0.14393.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">

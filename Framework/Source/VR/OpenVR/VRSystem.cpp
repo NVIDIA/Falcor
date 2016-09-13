@@ -367,7 +367,7 @@ namespace Falcor
         if(!mpCompositor) return false;
 
         vr::Texture_t subTex;
-        subTex.handle = (void *)displayTex->getApiHandle();
+        subTex.handle = (void *)(size_t)displayTex->getApiHandle();
         subTex.eColorSpace = isSrgbFormat(displayTex->getFormat()) ? vr::EColorSpace::ColorSpace_Gamma : vr::EColorSpace::ColorSpace_Linear;
         subTex.eType = (vr::GraphicsAPIConvention)(mRenderAPI);
 
@@ -381,7 +381,7 @@ namespace Falcor
         if(!mpCompositor) return false;
 
         vr::Texture_t subTex;
-        subTex.handle = (void *)displayFbo->getColorTexture(0)->getApiHandle();
+        subTex.handle = (void *)(size_t)displayFbo->getColorTexture(0)->getApiHandle();
         subTex.eColorSpace = isSrgbFormat(displayFbo->getColorTexture(0)->getFormat()) ? vr::EColorSpace::ColorSpace_Gamma : vr::EColorSpace::ColorSpace_Linear;
         subTex.eType = (vr::GraphicsAPIConvention)(mRenderAPI);
 
