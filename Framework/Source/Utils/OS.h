@@ -184,6 +184,10 @@ namespace Falcor
     */
     void setThreadAffinity(std::thread::native_handle_type thread, uint32_t affinityMask);
 
+    /** Get the last time a file was modified. If the file is not found will return 0
+    */
+    time_t getFileModifiedTime(const std::string& filename);
+
     enum class ThreadPriorityType : int32_t
     {
         BackgroundBegin     = -2,   //< Indicates I/O-intense thread

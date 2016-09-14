@@ -136,6 +136,42 @@ namespace Falcor
         }
     }
 
+    bool Program::checkIfFilesChanged()
+    {
+        if(mpActiveProgram == nullptr)
+        {
+            // We never linked, so nothing really changed
+            return false;
+        }
+
+        for(uint32_t i = 0; i < arraysize(mShaderStrings); i++)
+        {
+            const Shader* pShader = mpActiveProgram->getShader(ShaderType(i));
+            if(pShader)
+            {
+                if(mCreatedFromFile)
+                {
+                    std::string fullpath;
+                    findFileInDataDirectories(mShaderStrings[i], fullpath);
+                    if(mFileTimeMap[fullpath] != getFileModifiedTime(fullpath))
+                    {
+                        return true;
+                    }
+                }
+
+                // Loop over the shader's included files
+                for(const auto& include : pShader->getIncludeList())
+                {
+                    if(mFileTimeMap[include] != getFileModifiedTime(include))
+                    {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
     ProgramVersion::SharedConstPtr Program::getActiveProgramVersion() const
     {
         if(mLinkRequired)
@@ -144,17 +180,13 @@ namespace Falcor
             ProgramVersion::SharedConstPtr pVersion = nullptr;
             if(it == mProgramVersions.end())
             {
-                // New version
-                pVersion = link();
-
-                if(pVersion == nullptr)
+                if(link() == false)
                 {
                     return false;
                 }
                 else
                 {
-                    mProgramVersions[mDefineList] = pVersion;
-                    mpActiveProgram = pVersion;
+                    mProgramVersions[mDefineList] = mpActiveProgram;
                 }
             }
             else
@@ -166,9 +198,11 @@ namespace Falcor
         return mpActiveProgram;
     }
 
-    ProgramVersion::SharedConstPtr Program::link() const
+    bool Program::link() const
     {
         mUboMap.clear();
+        mFileTimeMap.clear();
+
         while(1)
         {
             Shader::SharedPtr pShaders[kShaderCount];
@@ -181,10 +215,24 @@ namespace Falcor
                     if(mCreatedFromFile)
                     {
                         pShaders[i] = createShaderFromFile(mShaderStrings[i], ShaderType(i), mDefineList);
+                        if(pShaders[i])
+                        {
+                            std::string fullpath;
+                            findFileInDataDirectories(mShaderStrings[i], fullpath);
+                            mFileTimeMap[fullpath] = getFileModifiedTime(fullpath);
+                        }
                     }
                     else
                     {
                         pShaders[i] = createShaderFromString(mShaderStrings[i], ShaderType(i), mDefineList);
+                    }
+
+                    if(pShaders[i])
+                    {
+                        for(const auto& include : pShaders[i]->getIncludeList())
+                        {
+                            mFileTimeMap[include] = getFileModifiedTime(include);
+                        }
                     }
                 }
             }
@@ -208,22 +256,33 @@ namespace Falcor
                 if(msgBox(error, MsgBoxType::RetryCancel) == MsgBoxButton::Cancel)
                 {
                     Logger::log(Logger::Level::Fatal, error);
-                    return nullptr;
+                    return false;
                 }
             }
             else
             {
-                return pProgram;
+                mpActiveProgram = pProgram;
+                return true;
             }
         }
+    }
+
+    void Program::reset()
+    {
+        mpActiveProgram = nullptr;
+        mProgramVersions.clear();
+        mFileTimeMap.clear();
+        mLinkRequired = true;
     }
 
     void Program::reloadAllPrograms()
     {
         for(auto& pProgram : sPrograms)
         {
-			pProgram->mProgramVersions.clear();
-            pProgram->mLinkRequired = true;
+            if(pProgram->checkIfFilesChanged())
+            {
+                pProgram->reset();
+            }
         }
     }
 

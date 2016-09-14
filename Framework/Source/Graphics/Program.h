@@ -181,7 +181,7 @@ namespace Falcor
 
         Program();
         static SharedPtr createInternal(const std::string& vs, const std::string& fs, const std::string& gs, const std::string& hs, const std::string& ds, const DefineList& programDefines, bool createdFromFile);
-        ProgramVersion::SharedConstPtr link() const;
+        bool link() const;
         std::string mShaderStrings[kShaderCount]; // Either a filename or a string, depending on the value of mCreatedFromFile
 
         DefineList mDefineList;
@@ -196,5 +196,10 @@ namespace Falcor
         static std::vector<Program*> sPrograms;
 
         bool mCreatedFromFile = false;
+        using string_time_map = std::unordered_map<std::string, time_t>;
+        mutable string_time_map mFileTimeMap;
+
+        bool checkIfFilesChanged();
+        void reset();
     };
 }

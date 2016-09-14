@@ -34,6 +34,8 @@
 #include "Utils/StringUtils.h"
 #include <Shlwapi.h>
 #include <shlobj.h>   
+#include <sys/types.h>
+#include <sys/stat.h>
 
 // Always run in Optimus mode on laptops
 extern "C"
@@ -433,5 +435,17 @@ namespace Falcor
             Logger::log(Logger::Level::Warning, "setThreadPriority failed with error: " + std::string(err.begin(), err.end()));
             LocalFree(lpMsgBuf);
         }
+    }
+
+    time_t getFileModifiedTime(const std::string& filename)
+    {
+        struct stat s;
+        if(stat(filename.c_str(), &s) != 0)
+        {
+            Logger::log(Logger::Level::Error, "Can't get file time for '" + filename + "'");
+            return 0;
+        }
+
+        return s.st_mtime;
     }
 }
