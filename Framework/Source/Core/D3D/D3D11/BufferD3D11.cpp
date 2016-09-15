@@ -83,7 +83,7 @@ namespace Falcor
             subresource.pSysMem = pInitData;
         }
 
-        d3d11_call(getD3D11Device()->CreateBuffer(&desc, pSubresource, &pBuffer->mApiHandle));
+        d3d_call(getD3D11Device()->CreateBuffer(&desc, pSubresource, &pBuffer->mApiHandle));
 
         return pBuffer;
     }
@@ -179,7 +179,7 @@ namespace Falcor
 
         mIsMapped = true;
         D3D11_MAPPED_SUBRESOURCE mapData;
-        d3d11_call(getD3D11ImmediateContext()->Map(mApiHandle, 0, dxFlag, 0, &mapData));
+        d3d_call(getD3D11ImmediateContext()->Map(mApiHandle, 0, dxFlag, 0, &mapData));
         return mapData.pData;
     }
 

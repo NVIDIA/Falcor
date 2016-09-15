@@ -50,7 +50,7 @@ namespace Falcor
                     if((bufferDesc.Type == D3D_CT_TBUFFER) || (bufferDesc.Type == D3D_CT_CBUFFER))
                     {
                         D3D11_SHADER_INPUT_BIND_DESC bindDesc;
-                        d3d11_call(pReflector->GetResourceBindingDescByName(bufferDesc.Name, &bindDesc));
+                        d3d_call(pReflector->GetResourceBindingDescByName(bufferDesc.Name, &bindDesc));
                         assert(bindDesc.BindCount == 1);
 
                         BufferDesc falcorDesc;
@@ -293,7 +293,7 @@ namespace Falcor
         void reflectBufferVariables(ID3D11ShaderReflectionConstantBuffer* pReflector, VariableDescMap& variableMap)
         {
             D3D11_SHADER_BUFFER_DESC bufferDesc;
-            d3d11_call(pReflector->GetDesc(&bufferDesc));
+            d3d_call(pReflector->GetDesc(&bufferDesc));
 
             for(uint32_t varID = 0; varID < bufferDesc.Variables; varID++)
             {
@@ -371,12 +371,12 @@ namespace Falcor
         void reflectResources(ID3D11ShaderReflectionPtr pReflector, ShaderResourceDescMap& resourceMap)
         {
             D3D11_SHADER_DESC shaderDesc;
-            d3d11_call(pReflector->GetDesc(&shaderDesc));
+            d3d_call(pReflector->GetDesc(&shaderDesc));
 
             for(uint32_t i = 0; i < shaderDesc.BoundResources; i++)
             {
                 D3D11_SHADER_INPUT_BIND_DESC InputDesc;
-                d3d11_call(pReflector->GetResourceBindingDesc(i, &InputDesc));
+                d3d_call(pReflector->GetResourceBindingDesc(i, &InputDesc));
 
                 // Ignore constant buffers
                 if(InputDesc.Type == D3D_SIT_CBUFFER)

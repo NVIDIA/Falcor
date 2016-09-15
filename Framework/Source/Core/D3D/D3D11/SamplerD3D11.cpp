@@ -144,7 +144,7 @@ namespace Falcor
         dxDesc.MinLOD = desc.mMinLod;
         dxDesc.MaxLOD = desc.mMaxLod;
 
-        d3d11_call(getD3D11Device()->CreateSamplerState(&dxDesc, &pSampler->mApiHandle));
+        d3d_call(getD3D11Device()->CreateSamplerState(&dxDesc, &pSampler->mApiHandle));
         return pSampler;
     }
 }

@@ -40,7 +40,8 @@ namespace Falcor
         uint32_t width = 1920;           ///< The width of the swap-chain.
         uint32_t height = 1080;          ///< The height of the swap-chain.
         uint32_t sampleCount = 0;        ///< Requested sample count. 
-        bool isSrgb = true;              ///< Use sRGB format for the swap-chain
+        ResourceFormat colorFormat = ResourceFormat::RGBA8UnormSrgb;    ///< The color buffer format
+        ResourceFormat depthFormat = ResourceFormat::D24UnormS8;        ///< The depth buffer format
     };
 
     class Window
@@ -77,7 +78,6 @@ namespace Falcor
         void setVSync(bool enable);
         void resize(uint32_t width, uint32_t height);
         void msgLoop();
-        void swapBuffers();
         void pollForEvents();
         void setWindowTitle(std::string title);
 

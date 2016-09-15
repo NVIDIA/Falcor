@@ -136,10 +136,6 @@ namespace Falcor
         */
         void pollForEvents();
         
-        /** Swap buffers
-        */
-        void swapBuffers();
-
         void setWindowTitle(std::string title);
         
         void toggleUI(bool showUI);

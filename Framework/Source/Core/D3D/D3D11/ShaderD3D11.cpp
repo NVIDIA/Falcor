@@ -118,7 +118,7 @@ namespace Falcor
     std::unique_ptr<ShaderHandle<handle_type_>> falcor_func(ID3DBlob* pBlob) \
     {                               \
         handle_type_ handle;        \
-        dx11_call(getD3D11Device()->dx_func_(pBlob->GetBufferPointer(), pBlob->GetBufferSize(), nullptr, &handle)); \
+        d3d_call(getD3D11Device()->dx_func_(pBlob->GetBufferPointer(), pBlob->GetBufferSize(), nullptr, &handle)); \
         if(handle == nullptr) return nullptr;                         \
         return std::make_unique<ShaderHandle<handle_type_>>(handle);  \
     }
@@ -175,7 +175,7 @@ namespace Falcor
         }
 
         // Get the reflection object
-        d3d11_call(D3DReflect(pData->pBlob->GetBufferPointer(), pData->pBlob->GetBufferSize(), __uuidof(ID3D11ShaderReflection), (void**)&pData->pReflector));
+        d3d_call(D3DReflect(pData->pBlob->GetBufferPointer(), pData->pBlob->GetBufferSize(), __uuidof(ID3D11ShaderReflection), (void**)&pData->pReflector));
 
         return pShader;
     }

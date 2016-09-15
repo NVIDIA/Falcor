@@ -475,11 +475,6 @@ namespace Falcor
         mpWindow->pollForEvents();
     }
 
-    void Sample::swapBuffers()
-    {
-        mpWindow->swapBuffers();
-    }
-
     void Sample::setWindowTitle(std::string title)
     {
         mpWindow->setWindowTitle(title);

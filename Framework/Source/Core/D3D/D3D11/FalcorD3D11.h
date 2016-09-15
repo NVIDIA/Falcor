@@ -27,7 +27,6 @@
 ***************************************************************************/
 #pragma once
 #define NOMINMAX
-#include "../FalcorD3D.h"
 #include <d3d11_1.h>
 
 namespace Falcor
@@ -43,10 +42,10 @@ namespace Falcor
     MAKE_SMART_COM_PTR(ID3D11InputLayout);
 
     // DXGI
-    MAKE_SMART_COM_PTR(IDXGISwapChain);
+    MAKE_SMART_COM_PTR(IDXGISwapChain1);
     MAKE_SMART_COM_PTR(IDXGIDevice);
     MAKE_SMART_COM_PTR(IDXGIAdapter);
-    MAKE_SMART_COM_PTR(IDXGIFactory);
+    MAKE_SMART_COM_PTR(IDXGIFactory2);
 
     // Resource
     MAKE_SMART_COM_PTR(ID3D11RenderTargetView);
@@ -101,14 +100,8 @@ namespace Falcor
 }
 
 #pragma comment(lib, "d3d11.lib")
-#pragma comment(lib, "d3dcompiler.lib")
 
 #define DEFAULT_API_MAJOR_VERSION 11
 #define DEFAULT_API_MINOR_VERSION 1
 
 #define UNSUPPORTED_IN_D3D11(msg_) {Falcor::Logger::log(Falcor::Logger::Level::Warning, msg_ + std::string(" is not supported in D3D11. Ignoring call."));}
-#ifdef _LOG_ENABLED
-#define d3d11_call(a) {HRESULT hr = a; if(FAILED(hr)) { d3dTraceHR( #a, hr); } }
-#else
-#define d3d11_call(a) a
-#endif

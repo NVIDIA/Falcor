@@ -111,7 +111,7 @@ namespace Falcor
         }
         
         ID3D11ShaderResourceViewPtr pSrv;
-        d3d11_call(getD3D11Device()->CreateShaderResourceView(pResource, &srvDesc, &pSrv));
+        d3d_call(getD3D11Device()->CreateShaderResourceView(pResource, &srvDesc, &pSrv));
         return pSrv;
     }
 
@@ -156,21 +156,21 @@ namespace Falcor
     ID3D11ResourcePtr createTexture1D(const D3D11_TEXTURE1D_DESC& desc, const D3D11_SUBRESOURCE_DATA* pInitData)
     {
         ID3D11Texture1DPtr pDxTex;
-        d3d11_call(getD3D11Device()->CreateTexture1D(&desc, pInitData, &pDxTex));
+        d3d_call(getD3D11Device()->CreateTexture1D(&desc, pInitData, &pDxTex));
         return pDxTex;
     }
 
     ID3D11ResourcePtr createTexture2D(const D3D11_TEXTURE2D_DESC& desc, const D3D11_SUBRESOURCE_DATA* pInitData)
     {
         ID3D11Texture2DPtr pDxTex;
-        d3d11_call(getD3D11Device()->CreateTexture2D(&desc, pInitData, &pDxTex));
+        d3d_call(getD3D11Device()->CreateTexture2D(&desc, pInitData, &pDxTex));
         return pDxTex;
     }
 
     ID3D11ResourcePtr createTexture3D(const D3D11_TEXTURE3D_DESC& desc, const D3D11_SUBRESOURCE_DATA* pInitData)
     {
         ID3D11Texture3DPtr pDxTex;
-        d3d11_call(getD3D11Device()->CreateTexture3D(&desc, pInitData, &pDxTex));
+        d3d_call(getD3D11Device()->CreateTexture3D(&desc, pInitData, &pDxTex));
         return pDxTex;
     }
 

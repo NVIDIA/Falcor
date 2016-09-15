@@ -364,9 +364,10 @@ namespace Falcor
 
     GLFWwindow* createWindowAndContext(const Window::Desc& desc)
     {
+        bool useSrgb = isSrgbFormat(desc.swapChainDesc.colorFormat);
         GLFWmonitor* pMonitor = desc.fullScreen ? glfwGetPrimaryMonitor() : nullptr;
         glfwWindowHint(GLFW_SAMPLES, desc.swapChainDesc.sampleCount);
-        glfwWindowHint(GLFW_SRGB_CAPABLE, desc.swapChainDesc.isSrgb);
+        glfwWindowHint(GLFW_SRGB_CAPABLE, useSrgb);
         glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, desc.apiMajorVersion);
         glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, desc.apiMinorVersion);
         glfwWindowHint(GLFW_RESIZABLE, desc.resizableWindow);
@@ -387,7 +388,7 @@ namespace Falcor
                 return nullptr;
             }
 
-            if(desc.swapChainDesc.isSrgb)
+            if(useSrgb)
             {
                 gl_call(glEnable(GL_FRAMEBUFFER_SRGB));
             }
@@ -458,17 +459,6 @@ namespace Falcor
         return true;
     }
 
-    ResourceFormat getSwapChainColorFormat(bool useSRGB)
-    {
-        // Make sure that we have the expected format
-        return useSRGB ? ResourceFormat::RGBA8UnormSrgb : ResourceFormat::RGBA8Unorm;
-    }
-
-    ResourceFormat getSwapChainDepthStencilFormat()
-    {
-        return ResourceFormat::D24UnormS8;
-    }
-
     Window::UniquePtr Window::create(const Desc& desc, ICallbacks* pCallbacks)
     {
         // Set error callback
@@ -529,7 +519,7 @@ namespace Falcor
 
 
         // create the framebuffer. Need to create the color texture here since Texture is a friend of CWindow
-        pWindow->updateDefaultFBO(w, h, desc.swapChainDesc.sampleCount, getSwapChainColorFormat(desc.swapChainDesc.isSrgb), getSwapChainDepthStencilFormat());
+        pWindow->updateDefaultFBO(w, h, desc.swapChainDesc.sampleCount,desc.swapChainDesc.colorFormat, desc.swapChainDesc.depthFormat);
 
         // Set clip-controls to match DX
         gl_call(glClipControl(GL_LOWER_LEFT, GL_ZERO_TO_ONE));
@@ -589,17 +579,12 @@ namespace Falcor
             mpCallbacks->renderFrame();
             {
                 PROFILE(present);
-                swapBuffers();
+                glfwSwapBuffers(pWindow);
             }
             glfwPollEvents();
         }
     }
-    void Window::swapBuffers()
-    {
-        GLFWwindow* pWindow = (GLFWwindow*)mpPrivateData;
-        glfwSwapBuffers(pWindow);
-    }
-
+    
     void Window::pollForEvents()
     {
         glfwPollEvents();

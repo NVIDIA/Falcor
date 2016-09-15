@@ -122,7 +122,7 @@ namespace Falcor
         }
 
         BlendState* pState = new BlendState(desc);
-        d3d11_call(getD3D11Device()->CreateBlendState(&dxDesc, &pState->mApiHandle));
+        d3d_call(getD3D11Device()->CreateBlendState(&dxDesc, &pState->mApiHandle));
         return SharedPtr(pState);
     }
 

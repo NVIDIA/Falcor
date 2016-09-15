@@ -202,7 +202,7 @@ namespace Falcor
             D3D11_RENDER_TARGET_VIEW_DESC rtvDesc;
             initializeRtvDesc(pTexture.get(), mColorAttachments[rtIndex].mipLevel, mColorAttachments[rtIndex].arraySlice, rtvDesc);
             ID3D11RenderTargetViewPtr pRTV;
-            d3d11_call(getD3D11Device()->CreateRenderTargetView(pResource, &rtvDesc, &pData->pRtv[rtIndex]));
+            d3d_call(getD3D11Device()->CreateRenderTargetView(pResource, &rtvDesc, &pData->pRtv[rtIndex]));
         }
     }
 
@@ -217,7 +217,7 @@ namespace Falcor
             ID3D11Resource* pResource = pDepth->getApiHandle();
             D3D11_DEPTH_STENCIL_VIEW_DESC DsvDesc;
             initializeDsvDesc(pDepth.get(), mDepthStencil.mipLevel, mDepthStencil.arraySlice, DsvDesc);
-            d3d11_call(getD3D11Device()->CreateDepthStencilView(pResource, &DsvDesc, &pData->pDsv));
+            d3d_call(getD3D11Device()->CreateDepthStencilView(pResource, &DsvDesc, &pData->pDsv));
         }
     }
 

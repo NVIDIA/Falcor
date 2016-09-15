@@ -110,7 +110,7 @@ namespace Falcor
         dxDesc.FrontFace = getD3DStencilOpDesc(desc.mStencilFront);
         dxDesc.BackFace = getD3DStencilOpDesc(desc.mStencilBack);
 
-        d3d11_call(getD3D11Device()->CreateDepthStencilState(&dxDesc, &pDsState->mApiHandle));
+        d3d_call(getD3D11Device()->CreateDepthStencilState(&dxDesc, &pDsState->mApiHandle));
 
         return pDsState;
     }

@@ -32,6 +32,10 @@
 #include <comdef.h>
 #include <dxgiformat.h>
 
+#ifndef FALCOR_D3D
+#define FALCOR_D3D
+#endif
+
 namespace Falcor
 {
     /*!
@@ -55,6 +59,12 @@ namespace Falcor
         return kDxgiFormatDesc[(uint32_t)format].dxgiFormat;
     }
 
+    /** Get D3D_FEATURE_LEVEL
+    */
+    D3D_FEATURE_LEVEL getD3DFeatureLevel(uint32_t majorVersion, uint32_t minorVersion);
+
+    /** Log a message if hr indicates an error
+    */
     void d3dTraceHR(const std::string& Msg, HRESULT hr);
     /*! @} */
 }
@@ -62,3 +72,21 @@ namespace Falcor
 #define MAKE_SMART_COM_PTR(_a) _COM_SMARTPTR_TYPEDEF(_a, __uuidof(_a))
 
 __forceinline BOOL dxBool(bool b) {return b ? TRUE : FALSE;}
+
+#ifdef _LOG_ENABLED
+#define d3d_call(a) {HRESULT hr = a; if(FAILED(hr)) { d3dTraceHR( #a, hr); } }
+#else
+#define d3d_call(a) a
+#endif
+
+#ifdef FALCOR_D3D11
+#include "D3D11/FalcorD3D11.h"
+#endif
+
+#ifdef FALCOR_D3D12
+#include "D3D12/FalcorD3D12.h"
+#endif
+
+#pragma comment(lib, "d3dcompiler.lib")
+
+#define UNSUPPORTED_IN_D3D(msg_) {Falcor::Logger::log(Falcor::Logger::Level::Warning, msg_ + std::string(" is not supported in D3D. Ignoring call."));}

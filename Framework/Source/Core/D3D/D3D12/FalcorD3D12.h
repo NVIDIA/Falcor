@@ -26,7 +26,6 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 #pragma once
-#include "../FalcorD3D.h"
 #include <d3d12.h>
 
 namespace Falcor
@@ -39,17 +38,9 @@ namespace Falcor
     /*! @} */
 }
 
-#pragma comment(lib, "d3d11.lib")
-#pragma comment(lib, "d3dcompiler.lib")
+#pragma comment(lib, "d3d12.lib")
 
-#define DEFAULT_API_MAJOR_VERSION 11
-#define DEFAULT_API_MINOR_VERSION 1
+#define DEFAULT_API_MAJOR_VERSION 12
+#define DEFAULT_API_MINOR_VERSION 0
 
-#define UNSUPPORTED_IN_D3D11(msg_) {Falcor::Logger::log(Falcor::Logger::Level::Warning, msg_ + std::string(" is not supported in DX11. Ignoring call."));}
-#ifdef _LOG_ENABLED
-#define d3d11_call(a) {HRESULT hr = a; if(FAILED(hr)) { dx11TraceHR( #a, hr); } }
-#else
-#define d3d11_call(a) a
-#endif
-
-__forceinline BOOL dxBool(bool b) {return b ? TRUE : FALSE;}
+#define UNSUPPORTED_IN_D3D12(msg_) {Falcor::Logger::log(Falcor::Logger::Level::Warning, msg_ + std::string(" is not supported in D3D11. Ignoring call."));}
