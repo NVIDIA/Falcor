@@ -41,12 +41,6 @@ namespace Falcor
     MAKE_SMART_COM_PTR(ID3D11DeviceContext);
     MAKE_SMART_COM_PTR(ID3D11InputLayout);
 
-    // DXGI
-    MAKE_SMART_COM_PTR(IDXGISwapChain1);
-    MAKE_SMART_COM_PTR(IDXGIDevice);
-    MAKE_SMART_COM_PTR(IDXGIAdapter);
-    MAKE_SMART_COM_PTR(IDXGIFactory2);
-
     // Resource
     MAKE_SMART_COM_PTR(ID3D11RenderTargetView);
     MAKE_SMART_COM_PTR(ID3D11DepthStencilView);

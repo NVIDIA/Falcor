@@ -25,20 +25,21 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#ifdef FALCOR_D3D11
+#ifdef FALCOR_D3D12
 #include "Framework.h"
-#include "Core/ScreenCapture.h"
+#include "Core/UniformBuffer.h"
 
 namespace Falcor
 {
-    void ScreenCapture::captureToMemory(uint32_t screenWidth, uint32_t screenHeight, ResourceFormat format, uint8_t* pData)
-    {
+    UniformBuffer::~UniformBuffer() = default;
 
+    bool UniformBuffer::apiInit(const ProgramVersion* pProgram, const std::string& bufferName, bool isUniformBuffer)
+    {
+        return true;
     }
 
-    void ScreenCapture::captureToPng(uint32_t screenWidth, uint32_t screenHeight, const std::string& filename)
+    void UniformBuffer::setTextureInternal(size_t offset, const Texture* pTexture, const Sampler* pSampler)
     {
-
     }
 }
-#endif //#ifdef FALCOR_D3D11
+#endif //#ifdef FALCOR_D3D12

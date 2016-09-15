@@ -25,20 +25,22 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#ifdef FALCOR_D3D11
+#ifdef FALCOR_D3D12
 #include "Framework.h"
-#include "Core/ScreenCapture.h"
+#include "Core/DepthStencilState.h"
 
 namespace Falcor
 {
-    void ScreenCapture::captureToMemory(uint32_t screenWidth, uint32_t screenHeight, ResourceFormat format, uint8_t* pData)
-    {
+    DepthStencilState::~DepthStencilState() = default;
 
+    DepthStencilState::SharedPtr DepthStencilState::create(const Desc& desc)
+    {
+        return nullptr;
     }
 
-    void ScreenCapture::captureToPng(uint32_t screenWidth, uint32_t screenHeight, const std::string& filename)
+    DepthStencilStateHandle DepthStencilState::getApiHandle() const
     {
-
+        return mApiHandle;
     }
 }
-#endif //#ifdef FALCOR_D3D11
+#endif //#ifdef FALCOR_D3D12

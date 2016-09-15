@@ -25,20 +25,26 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#ifdef FALCOR_D3D11
+#ifdef FALCOR_D3D12
 #include "Framework.h"
-#include "Core/ScreenCapture.h"
+#include "Core/VAO.h"
+#include <map>
 
 namespace Falcor
 {
-    void ScreenCapture::captureToMemory(uint32_t screenWidth, uint32_t screenHeight, ResourceFormat format, uint8_t* pData)
+    bool Vao::initialize()
     {
-
+        return true;
     }
 
-    void ScreenCapture::captureToPng(uint32_t screenWidth, uint32_t screenHeight, const std::string& filename)
+    Vao::~Vao()
     {
+    }
 
+    VaoHandle Vao::getApiHandle() const
+    {
+        UNSUPPORTED_IN_D3D12("VAO doesn't have an API handle");
+        return mApiHandle;
     }
 }
-#endif //#ifdef FALCOR_D3D11
+#endif //#ifdef FALCOR_D3D12

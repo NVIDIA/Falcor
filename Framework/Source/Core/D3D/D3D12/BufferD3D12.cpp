@@ -25,20 +25,61 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#ifdef FALCOR_D3D11
+#ifdef FALCOR_D3D12
 #include "Framework.h"
-#include "Core/ScreenCapture.h"
+#include "Core/Buffer.h"
 
 namespace Falcor
 {
-    void ScreenCapture::captureToMemory(uint32_t screenWidth, uint32_t screenHeight, ResourceFormat format, uint8_t* pData)
+    Buffer::SharedPtr Buffer::create(size_t size, BindFlags usage, AccessFlags access, const void* pInitData)
+    {
+        return nullptr;
+    }
+
+    Buffer::~Buffer() = default;
+
+    void Buffer::copy(Buffer* pDst) const
+    {
+    }
+
+    void Buffer::copy(Buffer* pDst, size_t srcOffset, size_t dstOffset, size_t count) const
+    {
+    }
+
+    void Buffer::updateData(const void* pData, size_t offset, size_t size, bool forceUpdate)
+    {
+    }
+
+    void Buffer::readData(void* pData, size_t offset, size_t size) const
+    {
+        UNSUPPORTED_IN_D3D12("Buffer::ReadData(). If you really need this, create the resource with CPU read flag, and use Buffer::Map()");
+    }
+
+    uint64_t Buffer::getBindlessHandle()
+    {
+        UNSUPPORTED_IN_D3D12("D3D12 buffers don't have bindless handles.");
+        return 0;
+    }
+
+    void* Buffer::map(MapType type)
+    {
+        return nullptr;
+    }
+
+    void Buffer::unmap()
     {
 
     }
 
-    void ScreenCapture::captureToPng(uint32_t screenWidth, uint32_t screenHeight, const std::string& filename)
+    uint64_t Buffer::makeResident(Buffer::GpuAccessFlags flags/* = Buffer::GpuAccessFlags::ReadOnly*/) const
     {
+        UNSUPPORTED_IN_D3D12("Buffer::makeResident()");
+        return 0;
+    }
 
+    void Buffer::makeNonResident() const
+    {
+        UNSUPPORTED_IN_D3D12("Buffer::MakeNonResident()");
     }
 }
-#endif //#ifdef FALCOR_D3D11
+#endif // #ifdef FALCOR_D3D12

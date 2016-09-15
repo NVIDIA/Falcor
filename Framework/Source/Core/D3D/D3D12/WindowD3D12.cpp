@@ -25,20 +25,28 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#ifdef FALCOR_D3D11
+#ifdef FALCOR_D3D12
 #include "Framework.h"
-#include "Core/ScreenCapture.h"
+#include "Sample.h"
 
 namespace Falcor
 {
-    void ScreenCapture::captureToMemory(uint32_t screenWidth, uint32_t screenHeight, ResourceFormat format, uint8_t* pData)
-    {
+    ID3D12DevicePtr gpD3D12Device = nullptr;
 
+    ID3D12DevicePtr getD3D12Device()
+    {
+        return gpD3D12Device;
     }
 
-    void ScreenCapture::captureToPng(uint32_t screenWidth, uint32_t screenHeight, const std::string& filename)
+    IUnknown* createDevice(uint32_t apiMajorVersion, uint32_t apiMinorVersion)
     {
-
+        if(gpD3D12Device)
+        {
+            Logger::log(Logger::Level::Error, "D3D12 backend doesn't support more than a single device.");
+            return nullptr;
+        }
+        return gpD3D12Device;
     }
 }
-#endif //#ifdef FALCOR_D3D11
+
+#endif //#ifdef FALCOR_D3D12

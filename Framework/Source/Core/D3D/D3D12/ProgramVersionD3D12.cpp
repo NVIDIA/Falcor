@@ -25,20 +25,32 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#ifdef FALCOR_D3D11
+#ifdef FALCOR_D3D12
 #include "Framework.h"
-#include "Core/ScreenCapture.h"
+#include "Core/ProgramVersion.h"
 
 namespace Falcor
 {
-    void ScreenCapture::captureToMemory(uint32_t screenWidth, uint32_t screenHeight, ResourceFormat format, uint8_t* pData)
+    void ProgramVersion::deleteApiHandle()
     {
 
     }
 
-    void ScreenCapture::captureToPng(uint32_t screenWidth, uint32_t screenHeight, const std::string& filename)
+    ProgramVersion::SharedConstPtr ProgramVersion::create(const Shader::SharedPtr& pVS, 
+        const Shader::SharedPtr& pFS, 
+        const Shader::SharedPtr& pGS, 
+        const Shader::SharedPtr& pHS, 
+        const Shader::SharedPtr& pDS, 
+        std::string& log, 
+        const std::string& name)
     {
+        return nullptr;
+    }
 
+    int32_t ProgramVersion::getAttributeLocation(const std::string& attribute) const
+    {
+        return 0;
     }
 }
-#endif //#ifdef FALCOR_D3D11
+
+#endif //#ifdef FALCOR_D3D12

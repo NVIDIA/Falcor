@@ -25,8 +25,8 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#include "Framework.h"
 #ifdef FALCOR_D3D11
+#include "Framework.h"
 #include "Core/UniformBuffer.h"
 #include "glm/glm.hpp"
 #include "Core/Buffer.h"

@@ -25,20 +25,22 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#ifdef FALCOR_D3D11
+#ifdef FALCOR_D3D12
 #include "Framework.h"
-#include "Core/ScreenCapture.h"
+#include "Core/Sampler.h"
 
 namespace Falcor
 {
-    void ScreenCapture::captureToMemory(uint32_t screenWidth, uint32_t screenHeight, ResourceFormat format, uint8_t* pData)
-    {
+    Sampler::~Sampler() = default;
 
+    uint32_t Sampler::getApiMaxAnisotropy()
+    {
+        return D3D12_MAX_MAXANISOTROPY;
     }
 
-    void ScreenCapture::captureToPng(uint32_t screenWidth, uint32_t screenHeight, const std::string& filename)
+    Sampler::SharedPtr Sampler::create(const Desc& desc)
     {
-
+        return nullptr;
     }
 }
-#endif //#ifdef FALCOR_D3D11
+#endif //#ifdef FALCOR_D3D12

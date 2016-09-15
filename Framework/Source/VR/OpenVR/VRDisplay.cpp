@@ -81,8 +81,10 @@ namespace Falcor
 
 #if defined(FALCOR_GL)
         vr::GraphicsAPIConvention curRenderAPI = vr::GraphicsAPIConvention::API_OpenGL;
-#elif defined(FALCOR_D3D11)
+#elif defined(FALCOR_D3D)
         vr::GraphicsAPIConvention curRenderAPI = vr::GraphicsAPIConvention::API_DirectX;
+#else
+#error Unknown API
 #endif
 
         // Grab guesses for projection matricies, so we have *something* in case the user asks for a matrix prior to specifying a near/far plane
@@ -130,8 +132,10 @@ namespace Falcor
     {
 #if defined(FALCOR_GL)
         vr::GraphicsAPIConvention curRenderAPI = vr::GraphicsAPIConvention::API_OpenGL;
-#elif defined(FALCOR_D3D11)
+#elif defined(FALCOR_D3D)
         vr::GraphicsAPIConvention curRenderAPI = vr::GraphicsAPIConvention::API_DirectX;
+#else
+#error Unknown API
 #endif
 
         mNearFarPlanes = glm::vec2(nearZ, farZ);

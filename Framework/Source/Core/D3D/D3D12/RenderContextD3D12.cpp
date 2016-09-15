@@ -25,36 +25,88 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#ifdef FALCOR_D3D11
+#ifdef FALCOR_D3D12
 #include "Framework.h"
-#include "Core/GpuTimer.h"
+#include "Core/RenderContext.h"
 
 namespace Falcor
 {
-    GpuTimer::SharedPtr GpuTimer::create()
+    RenderContext::~RenderContext() = default;
+
+    RenderContext::SharedPtr RenderContext::create()
     {
-        return SharedPtr(new GpuTimer());
+        return nullptr;
     }
 
-    GpuTimer::GpuTimer()
+    void RenderContext::applyDepthStencilState() const
     {
+        
     }
 
-    GpuTimer::~GpuTimer()
-    {
-    }
-
-    void GpuTimer::begin()
-    {
-    }
-
-    void GpuTimer::end()
+    void RenderContext::applyRasterizerState() const
     {
     }
 
-    bool GpuTimer::getElapsedTime(bool waitForResult, float& elapsedTime)
+    void RenderContext::applyBlendState() const
     {
-        return true;
+    }
+
+    void RenderContext::applyProgram() const
+    {
+    }
+
+    void RenderContext::applyVao() const
+    {
+    }
+
+    void RenderContext::applyFbo() const
+    {
+    }
+
+    void RenderContext::blitFbo(const Fbo* pSource, const Fbo* pTarget, const glm::ivec4& srcRegion, const glm::ivec4& dstRegion, bool useLinearFiltering, FboAttachmentType copyFlags, uint32_t srcIdx, uint32_t dstIdx)
+	{
+        UNSUPPORTED_IN_D3D12("BlitFbo");
+	}
+
+    void RenderContext::applyUniformBuffer(uint32_t Index) const
+    {
+    }
+
+    void RenderContext::applyShaderStorageBuffer(uint32_t index) const
+    {
+        UNSUPPORTED_IN_D3D12("RenderContext::ApplyShaderStorageBuffer()");
+    }
+
+    void RenderContext::applyTopology() const
+    {
+    }
+
+    void RenderContext::prepareForDrawApi() const
+    {
+
+    }
+
+    void RenderContext::draw(uint32_t vertexCount, uint32_t startVertexLocation)
+    {
+        prepareForDraw();
+    }
+
+    void RenderContext::drawIndexed(uint32_t indexCount, uint32_t startIndexLocation, int baseVertexLocation)
+    {
+        prepareForDraw();
+    }
+
+    void RenderContext::drawIndexedInstanced(uint32_t indexCount, uint32_t instanceCount, uint32_t startIndexLocation, int baseVertexLocation, uint32_t startInstanceLocation)
+    {
+        prepareForDraw();
+    }
+
+    void RenderContext::applyViewport(uint32_t index) const
+    {
+    }
+
+    void RenderContext::applyScissor(uint32_t index) const
+    {
     }
 }
-#endif //#ifdef FALCOR_D3D11
+#endif //#ifdef FALCOR_D3D12

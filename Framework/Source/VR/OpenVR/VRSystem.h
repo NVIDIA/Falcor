@@ -66,8 +66,8 @@
 #include "VRPlayArea.h"
 #include "VROverlay.h"
 
-#if !defined( FALCOR_GL ) && !defined( FALCOR_D3D11 )
-#error VRWrapper.h requires preprocessor definitions of *either* FALCOR_GL or FALCOR_D3D11
+#if !defined( FALCOR_GL ) && !defined( FALCOR_D3D )
+#error VRWrapper.h requires preprocessor definitions of *either* FALCOR_GL or FALCOR_D3D
 #endif
 
 #pragma comment(lib, "openvr_api.lib")

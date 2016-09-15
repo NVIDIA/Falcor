@@ -25,20 +25,63 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#ifdef FALCOR_D3D11
+#ifdef FALCOR_D3D12
 #include "Framework.h"
-#include "Core/ScreenCapture.h"
+#include "Core/FBO.h"
 
 namespace Falcor
 {
-    void ScreenCapture::captureToMemory(uint32_t screenWidth, uint32_t screenHeight, ResourceFormat format, uint8_t* pData)
+    Fbo::Fbo(bool initApiHandle)
     {
-
+        mApiHandle = -1;
     }
 
-    void ScreenCapture::captureToPng(uint32_t screenWidth, uint32_t screenHeight, const std::string& filename)
+    Fbo::~Fbo()
     {
+    }
 
+    uint32_t Fbo::getApiHandle() const
+    {
+        UNSUPPORTED_IN_D3D12("Fbo::getApiHandle()");
+        return mApiHandle;
+    }
+
+    uint32_t Fbo::getMaxColorTargetCount()
+    {
+        return D3D12_SIMULTANEOUS_RENDER_TARGET_COUNT;
+    }
+
+    void Fbo::applyColorAttachment(uint32_t rtIndex)
+    {
+    }
+
+    void Fbo::applyDepthAttachment()
+    {
+    }
+
+    bool Fbo::checkStatus() const
+    {
+        return true;
+    }
+    
+    void Fbo::clearColorTarget(uint32_t rtIndex, const glm::vec4& color) const
+    {
+    }
+
+    void Fbo::clearColorTarget(uint32_t rtIndex, const glm::uvec4& color) const
+    {
+    }
+
+    void Fbo::clearColorTarget(uint32_t rtIndex, const glm::ivec4& color) const
+    {
+    }
+
+    void Fbo::captureToFile(uint32_t rtIndex, const std::string& filename, Bitmap::FileFormat fileFormat)
+    {
+    }
+
+    void Fbo::clearDepthStencil(float depth, uint8_t stencil, bool clearDepth, bool clearStencil) const
+    {
     }
 }
-#endif //#ifdef FALCOR_D3D11
+#endif //#ifdef FALCOR_D3D12

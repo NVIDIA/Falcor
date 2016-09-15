@@ -26,6 +26,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 #pragma once
+#define NOMINMAX
 #include <d3d12.h>
 
 namespace Falcor
@@ -35,6 +36,27 @@ namespace Falcor
     *  @{
     */
 
+    // Device
+    MAKE_SMART_COM_PTR(ID3D12Device);
+
+    ID3D12DevicePtr getD3D11Device();
+
+    using TextureHandle = ID3D12Device*;
+    using BufferHandle = void*;
+    using VaoHandle = void*;
+    using VertexShaderHandle = void*;
+    using FragmentShaderHandle = void*;
+    using DomainShaderHandle = void*;
+    using HullShaderHandle = void*;
+    using GeometryShaderHandle = void*;
+    using ComputeShaderHandle = void*;
+    using ProgramHandle = void*;
+    using DepthStencilStateHandle = void*;
+    using RasterizerStateHandle = void*;
+    using BlendStateHandle = void*;
+    using SamplerApiHandle = void*;
+    using ShaderResourceViewHandle = void*;
+
     /*! @} */
 }
 
@@ -43,4 +65,4 @@ namespace Falcor
 #define DEFAULT_API_MAJOR_VERSION 12
 #define DEFAULT_API_MINOR_VERSION 0
 
-#define UNSUPPORTED_IN_D3D12(msg_) {Falcor::Logger::log(Falcor::Logger::Level::Warning, msg_ + std::string(" is not supported in D3D11. Ignoring call."));}
+#define UNSUPPORTED_IN_D3D12(msg_) {Falcor::Logger::log(Falcor::Logger::Level::Warning, msg_ + std::string(" is not supported in D3D12. Ignoring call."));}

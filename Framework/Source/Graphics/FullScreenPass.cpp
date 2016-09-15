@@ -42,7 +42,7 @@ namespace Falcor
     {
 #ifdef FALCOR_GL
         return checkExtensionSupport("GL_NV_viewport_array2");
-#elif defined FALCOR_D3D11
+#elif defined FALCOR_D3D
         return false;
 #else
 #error Unknown API
@@ -58,7 +58,7 @@ namespace Falcor
     Vao::SharedPtr FullScreenPass::spVao;
 
 
-#ifdef FALCOR_D3D11
+#ifdef FALCOR_D3D
 #define INVERT_Y(a) ((a == 1) ? 0 : 1)
 #elif defined FALCOR_GL
 #define INVERT_Y(a) (a)

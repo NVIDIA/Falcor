@@ -26,7 +26,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 #include "Framework.h"
-#ifdef FALCOR_D3D11
+#ifdef FALCOR_D3D
 
 namespace Falcor
 {
@@ -110,4 +110,4 @@ namespace Falcor
 
     static_assert(arraysize(kDxgiFormatDesc) == (uint32_t)ResourceFormat::BC5Snorm + 1, "DXGI format desc table has a wrong size");
 }
-#endif //#ifdef FALCOR_D3D11
+#endif //#ifdef FALCOR_D3D
