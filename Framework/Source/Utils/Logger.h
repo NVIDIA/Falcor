@@ -76,4 +76,9 @@ namespace Falcor
         Logger() = delete;
         static bool sShowErrorBox;
     };
+
+    inline void logInfo(const std::string& msg, const bool forceMsgBox = false) { Logger::log(Logger::Level::Info, msg, forceMsgBox); }
+    inline void logWarning(const std::string& msg, const bool forceMsgBox = false) { Logger::log(Logger::Level::Warning, msg, forceMsgBox); }
+    inline void logError(const std::string& msg, const bool forceMsgBox = false) { Logger::log(Logger::Level::Error, msg, forceMsgBox); }
+    inline void logFatal(const std::string& msg, const bool forceMsgBox = false) { Logger::log(Logger::Level::Fatal, msg, forceMsgBox); }
 }

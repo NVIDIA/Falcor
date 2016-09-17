@@ -30,7 +30,7 @@
 #include <d3dcompiler.h>
 #include "Core/Formats.h"
 #include <comdef.h>
-#include <dxgi1_2.h>
+#include <dxgi1_4.h>
 #include <dxgiformat.h>
 
 #ifndef FALCOR_D3D
@@ -42,7 +42,7 @@
 __forceinline BOOL dxBool(bool b) { return b ? TRUE : FALSE; }
 
 #ifdef _LOG_ENABLED
-#define d3d_call(a) {HRESULT hr = a; if(FAILED(hr)) { d3dTraceHR( #a, hr); } }
+#define d3d_call(a) {HRESULT hr = a; if(FAILED(hr)) { d3dTraceHR( #a, hr); }}
 #else
 #define d3d_call(a) a
 #endif
@@ -56,6 +56,7 @@ __forceinline BOOL dxBool(bool b) { return b ? TRUE : FALSE; }
 #endif
 
 #pragma comment(lib, "d3dcompiler.lib")
+#pragma comment(lib, "dxgi.lib")
 
 #define UNSUPPORTED_IN_D3D(msg_) {Falcor::Logger::log(Falcor::Logger::Level::Warning, msg_ + std::string(" is not supported in D3D. Ignoring call."));}
 
@@ -91,9 +92,9 @@ namespace Falcor
     void d3dTraceHR(const std::string& Msg, HRESULT hr);
 
     // DXGI
-    MAKE_SMART_COM_PTR(IDXGISwapChain1);
+    MAKE_SMART_COM_PTR(IDXGISwapChain3);
     MAKE_SMART_COM_PTR(IDXGIDevice);
-    MAKE_SMART_COM_PTR(IDXGIAdapter);
-    MAKE_SMART_COM_PTR(IDXGIFactory2);
+    MAKE_SMART_COM_PTR(IDXGIAdapter1);
+    MAKE_SMART_COM_PTR(IDXGIFactory4);
     /*! @} */
 }

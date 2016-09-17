@@ -44,14 +44,14 @@ namespace Falcor
     void Sample::handleFrameBufferSizeChange(const Fbo::SharedPtr& pFBO)
     {
         mpDefaultFBO = pFBO;
-
+        // DISABLED_FOR_D3D12
         // Always render UI at full resolution
-        mpGui->windowSizeCallback(mpDefaultFBO->getWidth(), mpDefaultFBO->getHeight());
+//        mpGui->windowSizeCallback(mpDefaultFBO->getWidth(), mpDefaultFBO->getHeight());
 
         // Reset the UI position
-        uint32_t barSize[2];
-        mpGui->getSize(barSize);
-        mpGui->setPosition(mpDefaultFBO->getWidth() - 10 - barSize[0] - 10, 10);
+//         uint32_t barSize[2];
+//         mpGui->getSize(barSize);
+//         mpGui->setPosition(mpDefaultFBO->getWidth() - 10 - barSize[0] - 10, 10);
 
         onResizeSwapChain();
 
@@ -69,12 +69,12 @@ namespace Falcor
         {
             mPressedKeys.erase(keyEvent.key);
         }
-
+        // DISABLED_FOR_D3D12
         // Check if the GUI consumes it
-        if(mpGui->keyboardCallback(keyEvent))
-        {
-            return;
-        }
+//         if(mpGui->keyboardCallback(keyEvent))
+//         {
+//             return;
+//         }
             
         // Consume system messages first
         if(keyEvent.type == KeyboardEvent::Type::KeyPressed)
@@ -133,15 +133,17 @@ namespace Falcor
     void Sample::toggleUI(bool showUI)
     {
         mShowUI = showUI;
-        mpGui->setVisibility(mShowUI);
+        // DISABLED_FOR_D3D12
+//        mpGui->setVisibility(mShowUI);
     }
 
     void Sample::handleMouseEvent(const MouseEvent& mouseEvent)
     {
-        if(mpGui->mouseCallback(mouseEvent))
-        {
-            return;
-        }
+        // DISABLED_FOR_D3D12
+//         if(mpGui->mouseCallback(mouseEvent))
+//         {
+//             return;
+//         }
         onMouseEvent(mouseEvent);
     }
 
@@ -183,7 +185,8 @@ namespace Falcor
 
         // Get the default FBO
         mpDefaultFBO = mpWindow->getDefaultFBO();
-        mpRenderContext->setFbo(mpDefaultFBO);
+        // DISABLED_FOR_D3D12
+//        mpRenderContext->setFbo(mpDefaultFBO);
 
         // Init the UI
         initUI();
@@ -192,12 +195,14 @@ namespace Falcor
         mVrEnabled = config.enableVR;
         if(mVrEnabled)
         {
-            VRSystem::start(mpRenderContext);
+            // DISABLED_FOR_D3D12
+//            VRSystem::start(mpRenderContext);
         }
 
         // Call the load callback
         onLoad();
-        handleFrameBufferSizeChange(mpWindow->getDefaultFBO());
+        // DISABLED_FOR_D3D12
+//        handleFrameBufferSizeChange(mpWindow->getDefaultFBO());
         
         mpWindow->msgLoop();
 
@@ -226,10 +231,11 @@ namespace Falcor
             PROFILE(onFrameRender);
             calculateTime();
             // Bind the default state
-             mpRenderContext->setFbo(mpDefaultFBO);
-             mpRenderContext->setDepthStencilState(nullptr, 0);
-             mpRenderContext->setBlendState(nullptr);
-             mpRenderContext->setRasterizerState(nullptr);
+            // DISABLED_FOR_D3D12
+//              mpRenderContext->setFbo(mpDefaultFBO);
+//              mpRenderContext->setDepthStencilState(nullptr, 0);
+//              mpRenderContext->setBlendState(nullptr);
+//              mpRenderContext->setRasterizerState(nullptr);
 
              onFrameRender();
         }
@@ -238,7 +244,8 @@ namespace Falcor
             PROFILE(DrawGUI);
             if(mShowUI)
             {
-                mpGui->drawAll();
+                // DISABLED_FOR_D3D12
+//                mpGui->drawAll();
             }
         }
         captureVideoFrame();
@@ -270,22 +277,23 @@ namespace Falcor
 
     void Sample::initUI()
     {
-        Gui::initialize(mpDefaultFBO->getWidth(), mpDefaultFBO->getHeight(), mpRenderContext);
-        mpGui = Gui::create("Sample UI");
-        const std::string sampleGroup = "Global Sample Controls";
-        mpGui->addDoubleVar("Global Time", &mCurrentTime, sampleGroup, 0, DBL_MAX);
-        mpGui->addFloatVar("Time Scale", &mTimeScale, sampleGroup, 0, FLT_MAX);
-        mpGui->addCheckBox("Freeze Time", &mFreezeTime, sampleGroup);
-        mpGui->addButton("Screen Capture", &Sample::captureScreenCB, this, sampleGroup);
-        mpGui->addButton("Video Capture", &Sample::initVideoCaptureCB, this, sampleGroup);
-        mpGui->addSeparator();
-
-        // Set the UI size
-        uint32_t BarSize[2];
-        mpGui->getSize(BarSize);
-        mpGui->setSize(BarSize[0] + 20, BarSize[1]);
-
-        mpTextRenderer = TextRenderer::create();
+// DISABLED_FOR_D3D12
+//         Gui::initialize(mpDefaultFBO->getWidth(), mpDefaultFBO->getHeight(), mpRenderContext);
+//         mpGui = Gui::create("Sample UI");
+//         const std::string sampleGroup = "Global Sample Controls";
+//         mpGui->addDoubleVar("Global Time", &mCurrentTime, sampleGroup, 0, DBL_MAX);
+//         mpGui->addFloatVar("Time Scale", &mTimeScale, sampleGroup, 0, FLT_MAX);
+//         mpGui->addCheckBox("Freeze Time", &mFreezeTime, sampleGroup);
+//         mpGui->addButton("Screen Capture", &Sample::captureScreenCB, this, sampleGroup);
+//         mpGui->addButton("Video Capture", &Sample::initVideoCaptureCB, this, sampleGroup);
+//         mpGui->addSeparator();
+// 
+//         // Set the UI size
+//         uint32_t BarSize[2];
+//         mpGui->getSize(BarSize);
+//         mpGui->setSize(BarSize[0] + 20, BarSize[1]);
+// 
+//         mpTextRenderer = TextRenderer::create();
     }
 
     const std::string Sample::getGlobalSampleMessage(bool includeHelpMsg) const
@@ -335,20 +343,21 @@ namespace Falcor
     {
         if(mTextMode != TextMode::NoText)
         {
-            PROFILE(renderText);
-            // Render outline first
-            if(shadowOffset.x != 0.f || shadowOffset.y != 0)
-            {
-                const glm::vec3 oldColor = mpTextRenderer->getTextColor();
-                mpTextRenderer->setTextColor(glm::vec3(0.f));   // Black outline 
-                mpTextRenderer->begin(mpRenderContext, position + shadowOffset);
-                mpTextRenderer->renderLine(msg);
-                mpTextRenderer->end();
-                mpTextRenderer->setTextColor(oldColor);
-            }
-            mpTextRenderer->begin(mpRenderContext, position);
-            mpTextRenderer->renderLine(msg);
-            mpTextRenderer->end();
+            // DISABLED_FOR_D3D12
+//             PROFILE(renderText);
+//             // Render outline first
+//             if(shadowOffset.x != 0.f || shadowOffset.y != 0)
+//             {
+//                 const glm::vec3 oldColor = mpTextRenderer->getTextColor();
+//                 mpTextRenderer->setTextColor(glm::vec3(0.f));   // Black outline 
+//                 mpTextRenderer->begin(mpRenderContext, position + shadowOffset);
+//                 mpTextRenderer->renderLine(msg);
+//                 mpTextRenderer->end();
+//                 mpTextRenderer->setTextColor(oldColor);
+//             }
+//             mpTextRenderer->begin(mpRenderContext, position);
+//             mpTextRenderer->renderLine(msg);
+//             mpTextRenderer->end();
         }
     }
 

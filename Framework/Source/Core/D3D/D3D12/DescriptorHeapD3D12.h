@@ -25,51 +25,39 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#pragma once
-#define NOMINMAX
-#include <d3d12.h>
+#ifdef FALCOR_D3D12
+#include "Framework.h"
 
 namespace Falcor
 {
-    /*!
-    *  \addtogroup Falcor
-    *  @{
-    */
+    class DescriptorHeap : public std::enable_shared_from_this<DescriptorHeap>
+    {
+    public:
+        using SharedPtr = std::shared_ptr<DescriptorHeap>;
+        using SharedConstPtr = std::shared_ptr<const DescriptorHeap>;
+        ~DescriptorHeap();
 
-    // Device
-    MAKE_SMART_COM_PTR(ID3D12Device);
-    MAKE_SMART_COM_PTR(ID3D12Debug);
-    MAKE_SMART_COM_PTR(ID3D12CommandQueue);
-    MAKE_SMART_COM_PTR(ID3D12CommandAllocator);
-    MAKE_SMART_COM_PTR(ID3D12GraphicsCommandList);
-    MAKE_SMART_COM_PTR(ID3D12DescriptorHeap);
-    MAKE_SMART_COM_PTR(ID3D12Resource);
+        enum class Type
+        {
+            ShaderResource,
+            Sampler,
+            RenderTargetView,
+            DepthStencilView,
+        };
 
-    ID3D12DevicePtr getD3D12Device();
+        static SharedPtr create(Type type, uint32_t descriptorsCount, bool shaderVisible = true);
+        using CpuHandle = D3D12_CPU_DESCRIPTOR_HANDLE;
+        CpuHandle getHandle(uint32_t index) const;
+        CpuHandle getFreeCpuHandle();
+    private:
+        DescriptorHeap(Type type, uint32_t descriptorsCount);
 
-    using TextureHandle = ID3D12Device*;
-    using BufferHandle = void*;
-    using VaoHandle = void*;
-    using VertexShaderHandle = void*;
-    using FragmentShaderHandle = void*;
-    using DomainShaderHandle = void*;
-    using HullShaderHandle = void*;
-    using GeometryShaderHandle = void*;
-    using ComputeShaderHandle = void*;
-    using ProgramHandle = void*;
-    using DepthStencilStateHandle = void*;
-    using RasterizerStateHandle = void*;
-    using BlendStateHandle = void*;
-    using SamplerApiHandle = void*;
-    using ShaderResourceViewHandle = void*;
-
-    static const uint32_t kSwapChainBuffers = 4;
-    /*! @} */
+        uint32_t mDescriptorSize;
+        uint32_t mCount;
+        uint32_t mCurDesc = 0;
+        ID3D12DescriptorHeapPtr mpHeap;
+        Type mType;
+    };
 }
 
-#pragma comment(lib, "d3d12.lib")
-
-#define DEFAULT_API_MAJOR_VERSION 11
-#define DEFAULT_API_MINOR_VERSION 1
-
-#define UNSUPPORTED_IN_D3D12(msg_) {Falcor::Logger::log(Falcor::Logger::Level::Warning, msg_ + std::string(" is not supported in D3D12. Ignoring call."));}
+#endif //#ifdef FALCOR_D3D12

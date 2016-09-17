@@ -39,13 +39,13 @@
 
 namespace Falcor
 {
-    IUnknown* createDevice(uint32_t apiMajorVersion, uint32_t apiMinorVersion);
+    IUnknown* createDevice(const Window::Desc& desc, HWND hWnd);
 
     struct DxWindowData
     {
         Window* pWindow = nullptr;
         HWND hWnd = nullptr;
-        IDXGISwapChain1Ptr pSwapChain = nullptr;
+        IDXGISwapChain3Ptr pSwapChain = nullptr;
         uint32_t syncInterval = 0;
         bool isWindowOccluded = false;
     };
@@ -171,18 +171,19 @@ namespace Falcor
             uint32_t height = r.bottom - r.top;
 
             Window* pWindow = pWinData->pWindow;
-            auto pDefaultFBO = pWindow->getDefaultFBO();
-
-            if(width != pDefaultFBO->getWidth() || height != pDefaultFBO->getHeight())
-            {
-                uint32_t sampleCount = pDefaultFBO->getSampleCount();
-                ResourceFormat colorFormat = pDefaultFBO->getColorTexture(0)->getFormat();
-                ResourceFormat depthFormat = pDefaultFBO->getDepthStencilTexture()->getFormat();
-                pWindow->updateDefaultFBO(width, height, sampleCount, colorFormat, depthFormat);
-
-                // Handle messages
-                pWindow->mpCallbacks->handleFrameBufferSizeChange(pDefaultFBO);
-            }
+            // DISABLED_FOR_D3D12
+//             auto pDefaultFBO = pWindow->getDefaultFBO();
+// 
+//             if(width != pDefaultFBO->getWidth() || height != pDefaultFBO->getHeight())
+//             {
+//                 uint32_t sampleCount = pDefaultFBO->getSampleCount();
+//                 ResourceFormat colorFormat = pDefaultFBO->getColorTexture(0)->getFormat();
+//                 ResourceFormat depthFormat = pDefaultFBO->getDepthStencilTexture()->getFormat();
+//                 pWindow->updateDefaultFBO(width, height, sampleCount, colorFormat, depthFormat);
+// 
+//                 // Handle messages
+//                 pWindow->mpCallbacks->handleFrameBufferSizeChange(pDefaultFBO);
+//             }
         }
 
         static KeyboardEvent::Key translateKeyCode(WPARAM keyCode)
@@ -365,10 +366,10 @@ namespace Falcor
     {
         IDXGIDevicePtr pDXGIDevice;
         d3d_call(pDevice->QueryInterface(__uuidof(IDXGIDevice), (void **)&pDXGIDevice));
-        IDXGIAdapterPtr pDXGIAdapter;
+        IDXGIAdapter1Ptr pDXGIAdapter;
         d3d_call(pDXGIDevice->GetParent(__uuidof(IDXGIAdapter), (void **)&pDXGIAdapter));
-        IDXGIFactory2Ptr pIDXGIFactory;
-        d3d_call(pDXGIAdapter->GetParent(__uuidof(IDXGIFactory2), (void **)&pIDXGIFactory));
+        IDXGIFactory4Ptr pIDXGIFactory;
+        d3d_call(pDXGIAdapter->GetParent(__uuidof(IDXGIFactory4), (void **)&pIDXGIFactory));
 
         DXGI_SWAP_CHAIN_DESC1 dxgiDesc;
         dxgiDesc.Width = swapChain.width;
@@ -379,8 +380,8 @@ namespace Falcor
         dxgiDesc.SampleDesc.Quality = 0;
         dxgiDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
         dxgiDesc.BufferCount = 1;
-        dxgiDesc.Scaling = DXGI_SCALING_STRETCH;
-        dxgiDesc.SwapEffect = DXGI_SWAP_EFFECT_DISCARD;
+        dxgiDesc.Scaling = DXGI_SCALING_NONE;
+        dxgiDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_SEQUENTIAL;
         dxgiDesc.AlphaMode = DXGI_ALPHA_MODE_UNSPECIFIED;
         dxgiDesc.Flags = 0;
 
@@ -483,19 +484,19 @@ namespace Falcor
         }
 
         // create the DX device
-        IUnknown* pDevice = createDevice(desc.apiMajorVersion, desc.apiMinorVersion);
+        IUnknown* pDevice = createDevice(desc, pWinData->hWnd);
         if(pDevice == nullptr)
         {
             return nullptr;
         }
-
-        if(createSwapChain(pDevice, pWinData->hWnd, desc.swapChainDesc, desc.fullScreen, &pWinData->pSwapChain) == false)
-        {
-            return nullptr;
-        }
+        // DISABLED_FOR_D3D12
+//         if(createSwapChain(pDevice, pWinData->hWnd, desc.swapChainDesc, desc.fullScreen, &pWinData->pSwapChain) == false)
+//         {
+//             return nullptr;
+//         }
 
         // create the framebuffer.
-        pWindow->updateDefaultFBO(desc.swapChainDesc.width, desc.swapChainDesc.height, desc.swapChainDesc.sampleCount, desc.swapChainDesc.colorFormat, desc.swapChainDesc.depthFormat);
+//        pWindow->updateDefaultFBO(desc.swapChainDesc.width, desc.swapChainDesc.height, desc.swapChainDesc.sampleCount, desc.swapChainDesc.colorFormat, desc.swapChainDesc.depthFormat);
        
         return pWindow;
     }
@@ -588,7 +589,8 @@ namespace Falcor
                 if(isWindowOccluded(pWinData) == false)
                 {
                     mpCallbacks->renderFrame();
-                    pWinData->isWindowOccluded = (pWinData->pSwapChain->Present(pWinData->syncInterval, 0) == DXGI_STATUS_OCCLUDED);
+// DISABLED_FOR_D3D12
+//                    pWinData->isWindowOccluded = (pWinData->pSwapChain->Present(pWinData->syncInterval, 0) == DXGI_STATUS_OCCLUDED);
                 }
             }
         }
