@@ -27,7 +27,8 @@
 ***************************************************************************/
 #ifdef FALCOR_D3D12
 #include "Framework.h"
-#include "CommandListD3D12.h"
+#include "D3D12CommandList.h"
+#include "Core/Device.h"
 
 namespace Falcor
 {
@@ -41,7 +42,7 @@ namespace Falcor
         cqDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
         cqDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
 
-        ID3D12DevicePtr pDevice = getD3D12Device();
+        ID3D12DevicePtr pDevice = Device::getApiHandle();
 
         if(FAILED(pDevice->CreateCommandQueue(&cqDesc, IID_PPV_ARGS(&pList->mpQueue))))
         {

@@ -27,23 +27,21 @@
 ***************************************************************************/
 #include "ProjectTemplate.h"
 #include "Core/D3D/FalcorD3D.h"
-#include "Core/D3D/D3D12/CommandListD3D12.h"
-#include "Core/D3D/D3D12/DescriptorHeapD3D12.h"
+#include "Core/D3D/D3D12/D3D12CommandList.h"
+#include "Core/D3D/D3D12/D3D12DescriptorHeap.h"
 
 namespace Falcor
 {
-    struct D3D12Data
-    {
-        ID3D12DevicePtr pDevice = nullptr;
-        IDXGISwapChain3Ptr pSwapChain = nullptr;
-        uint32_t currentBackBufferIndex;
-        CommandList::SharedPtr pCmdList;
-        DescriptorHeap::SharedPtr mRtvHeap;
-        ID3D12ResourcePtr mpRenderTargets[kSwapChainBuffers];
-    };
-
-    extern D3D12Data gD3D12Data;
-};
+	struct D3D12Data
+	{
+		IDXGISwapChain3Ptr pSwapChain = nullptr;
+		uint32_t currentBackBufferIndex;
+		CommandList::SharedPtr pCmdList;
+		DescriptorHeap::SharedPtr pRtvHeap;
+		ID3D12ResourcePtr pRenderTargets[kSwapChainBuffers];
+		uint32_t syncInterval = 0;
+	};
+}
 
 void ProjectTemplate::initUI()
 {
@@ -58,33 +56,36 @@ void ProjectTemplate::onLoad()
 
 void ProjectTemplate::onFrameRender()
 {
-    gD3D12Data.pCmdList->reset();
+	D3D12Data* pData = (D3D12Data*)Device::getPrivateData();
+	DeviceHandle pDevice = Device::getApiHandle();
+
+	pData->pCmdList->reset();
     const float clearColor[] = {0.0f, 0.2f, 0.4f, 1.0f};
 
     // Indicate that the back buffer will be used as a render target.
-    ID3D12GraphicsCommandList* pList = gD3D12Data.pCmdList->getList();
+    ID3D12GraphicsCommandList* pList = pData->pCmdList->getList();
     D3D12_RESOURCE_BARRIER barrier;
     barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
     barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
-    barrier.Transition.pResource = gD3D12Data.mpRenderTargets[gD3D12Data.currentBackBufferIndex];
+    barrier.Transition.pResource = pData->pRenderTargets[pData->currentBackBufferIndex];
     barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_PRESENT;
     barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
     barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
 
     pList->ResourceBarrier(1, &barrier);
 
-    DescriptorHeap::CpuHandle rtv = gD3D12Data.mRtvHeap->getHandle(gD3D12Data.currentBackBufferIndex);
+    DescriptorHeap::CpuHandle rtv = pData->pRtvHeap->getHandle(pData->currentBackBufferIndex);
     pList->ClearRenderTargetView(rtv, clearColor, 0, nullptr);
 
     barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
     barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_PRESENT;
     pList->ResourceBarrier(1, &barrier);
 
-    gD3D12Data.pCmdList->submit();
+	pData->pCmdList->submit();
 
-    gD3D12Data.pSwapChain->Present(1, 0);
+	pData->pSwapChain->Present(1, 0);
 
-    gD3D12Data.currentBackBufferIndex = (gD3D12Data.currentBackBufferIndex + 1) % kSwapChainBuffers;
+	pData->currentBackBufferIndex = (pData->currentBackBufferIndex + 1) % kSwapChainBuffers;
 
 //     const glm::vec4 clearColor(0.38f, 0.52f, 0.10f, 1);
 //     mpDefaultFBO->clear(clearColor, 1.0f, 0, FboAttachmentType::All);

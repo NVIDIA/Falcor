@@ -89,62 +89,11 @@
     <ClCompile Include="Graphics\Paths\PathEditor.cpp">
       <Filter>Graphics\Paths</Filter>
     </ClCompile>
-    <ClCompile Include="Core\OpenGL\BlendStateGL.cpp">
-      <Filter>Core\OpenGL</Filter>
-    </ClCompile>
-    <ClCompile Include="Core\OpenGL\BufferGL.cpp">
-      <Filter>Core\OpenGL</Filter>
-    </ClCompile>
-    <ClCompile Include="Core\OpenGL\DepthStencilStateGL.cpp">
-      <Filter>Core\OpenGL</Filter>
-    </ClCompile>
-    <ClCompile Include="Core\OpenGL\FboGL.cpp">
-      <Filter>Core\OpenGL</Filter>
-    </ClCompile>
-    <ClCompile Include="Core\OpenGL\FormatsGL.cpp">
-      <Filter>Core\OpenGL</Filter>
-    </ClCompile>
-    <ClCompile Include="Core\OpenGL\GpuTimerGL.cpp">
-      <Filter>Core\OpenGL</Filter>
-    </ClCompile>
-    <ClCompile Include="Core\OpenGL\RasterizerStateGL.cpp">
-      <Filter>Core\OpenGL</Filter>
-    </ClCompile>
-    <ClCompile Include="Core\OpenGL\RenderContextGL.cpp">
-      <Filter>Core\OpenGL</Filter>
-    </ClCompile>
-    <ClCompile Include="Core\OpenGL\SamplerGL.cpp">
-      <Filter>Core\OpenGL</Filter>
-    </ClCompile>
-    <ClCompile Include="Core\OpenGL\ScreenCaptureGL.cpp">
-      <Filter>Core\OpenGL</Filter>
-    </ClCompile>
-    <ClCompile Include="Core\OpenGL\ShaderStorageBufferGL.cpp">
-      <Filter>Core\OpenGL</Filter>
-    </ClCompile>
-    <ClCompile Include="Core\OpenGL\TextureGL.cpp">
-      <Filter>Core\OpenGL</Filter>
-    </ClCompile>
-    <ClCompile Include="Core\OpenGL\UniformBufferGL.cpp">
-      <Filter>Core\OpenGL</Filter>
-    </ClCompile>
-    <ClCompile Include="Core\OpenGL\VaoGL.cpp">
-      <Filter>Core\OpenGL</Filter>
-    </ClCompile>
-    <ClCompile Include="Core\OpenGL\WindowGL.cpp">
-      <Filter>Core\OpenGL</Filter>
-    </ClCompile>
     <ClCompile Include="Core\Formats.cpp">
       <Filter>Core</Filter>
     </ClCompile>
     <ClCompile Include="Core\FBO.cpp">
       <Filter>Core</Filter>
-    </ClCompile>
-    <ClCompile Include="Core\OpenGL\ProgramVersionGL.cpp">
-      <Filter>Core\OpenGL</Filter>
-    </ClCompile>
-    <ClCompile Include="Core\OpenGL\ShaderGL.cpp">
-      <Filter>Core\OpenGL</Filter>
     </ClCompile>
     <ClCompile Include="Core\ProgramVersion.cpp">
       <Filter>Core</Filter>
@@ -163,9 +112,6 @@
     </ClCompile>
     <ClCompile Include="Utils\ShaderUtils.cpp">
       <Filter>Utils</Filter>
-    </ClCompile>
-    <ClCompile Include="Core\OpenGL\ShaderReflectionGL.cpp">
-      <Filter>Core\OpenGL</Filter>
     </ClCompile>
     <ClCompile Include="Core\Texture.cpp">
       <Filter>Core</Filter>
@@ -190,9 +136,6 @@
     </ClCompile>
     <ClCompile Include="Utils\Video\VideoEncoderUI.cpp">
       <Filter>Utils\Video</Filter>
-    </ClCompile>
-    <ClCompile Include="Core\Window.cpp">
-      <Filter>Core</Filter>
     </ClCompile>
     <ClCompile Include="Graphics\FboHelper.cpp">
       <Filter>Graphics</Filter>
@@ -258,118 +201,172 @@
     <ClCompile Include="Graphics\Model\Loaders\BinaryImage.cpp">
       <Filter>Graphics\Model\Loaders</Filter>
     </ClCompile>
-    <ClCompile Include="Core\D3D\D3D11\BlendStateD3D11.cpp">
-      <Filter>Core\D3D\D3D11</Filter>
+    <ClCompile Include="Core\D3D\D3D12\D3D12BlendState.cpp">
+      <Filter>Core\D3D\D3D12</Filter>
     </ClCompile>
-    <ClCompile Include="Core\D3D\D3D11\BufferD3D11.cpp">
-      <Filter>Core\D3D\D3D11</Filter>
+    <ClCompile Include="Core\D3D\D3D12\D3D12Buffer.cpp">
+      <Filter>Core\D3D\D3D12</Filter>
     </ClCompile>
-    <ClCompile Include="Core\D3D\D3D11\DepthStencilStateD3D11.cpp">
-      <Filter>Core\D3D\D3D11</Filter>
+    <ClCompile Include="Core\D3D\D3D12\D3D12CommandList.cpp">
+      <Filter>Core\D3D\D3D12</Filter>
     </ClCompile>
-    <ClCompile Include="Core\D3D\D3D11\FboD3D11.cpp">
-      <Filter>Core\D3D\D3D11</Filter>
+    <ClCompile Include="Core\D3D\D3D12\D3D12DepthStencilState.cpp">
+      <Filter>Core\D3D\D3D12</Filter>
     </ClCompile>
-    <ClCompile Include="Core\D3D\D3D11\GpuTimerD3D11.cpp">
-      <Filter>Core\D3D\D3D11</Filter>
+    <ClCompile Include="Core\D3D\D3D12\D3D12DescriptorHeap.cpp">
+      <Filter>Core\D3D\D3D12</Filter>
     </ClCompile>
-    <ClCompile Include="Core\D3D\D3D11\ProgramVersionD3D11.cpp">
-      <Filter>Core\D3D\D3D11</Filter>
+    <ClCompile Include="Core\D3D\D3D12\D3D12Fbo.cpp">
+      <Filter>Core\D3D\D3D12</Filter>
     </ClCompile>
-    <ClCompile Include="Core\D3D\D3D11\RasterizerStateD3D11.cpp">
-      <Filter>Core\D3D\D3D11</Filter>
+    <ClCompile Include="Core\D3D\D3D12\D3D12GpuTimer.cpp">
+      <Filter>Core\D3D\D3D12</Filter>
     </ClCompile>
-    <ClCompile Include="Core\D3D\D3D11\RenderContextD3D11.cpp">
-      <Filter>Core\D3D\D3D11</Filter>
+    <ClCompile Include="Core\D3D\D3D12\D3D12ProgramVersioncpp">
+      <Filter>Core\D3D\D3D12</Filter>
     </ClCompile>
-    <ClCompile Include="Core\D3D\D3D11\SamplerD3D11.cpp">
-      <Filter>Core\D3D\D3D11</Filter>
+    <ClCompile Include="Core\D3D\D3D12\D3D12RasterizerState.cpp">
+      <Filter>Core\D3D\D3D12</Filter>
     </ClCompile>
-    <ClCompile Include="Core\D3D\D3D11\ScreenCaptureD3D11.cpp">
-      <Filter>Core\D3D\D3D11</Filter>
+    <ClCompile Include="Core\D3D\D3D12\D3D12RenderContext.cpp">
+      <Filter>Core\D3D\D3D12</Filter>
     </ClCompile>
-    <ClCompile Include="Core\D3D\D3D11\ShaderD3D11.cpp">
-      <Filter>Core\D3D\D3D11</Filter>
+    <ClCompile Include="Core\D3D\D3D12\D3D12Sampler.cpp">
+      <Filter>Core\D3D\D3D12</Filter>
     </ClCompile>
-    <ClCompile Include="Core\D3D\D3D11\ShaderStorageBufferD3D11.cpp">
-      <Filter>Core\D3D\D3D11</Filter>
+    <ClCompile Include="Core\D3D\D3D12\D3D12ScreenCapture.cpp">
+      <Filter>Core\D3D\D3D12</Filter>
     </ClCompile>
-    <ClCompile Include="Core\D3D\D3D11\TextureD3D11.cpp">
-      <Filter>Core\D3D\D3D11</Filter>
+    <ClCompile Include="Core\D3D\D3D12\D3D12Shader.cpp">
+      <Filter>Core\D3D\D3D12</Filter>
     </ClCompile>
-    <ClCompile Include="Core\D3D\D3D11\UniformBufferD3D11.cpp">
-      <Filter>Core\D3D\D3D11</Filter>
+    <ClCompile Include="Core\D3D\D3D12\D3D12ShaderStorageBuffer.cpp">
+      <Filter>Core\D3D\D3D12</Filter>
     </ClCompile>
-    <ClCompile Include="Core\D3D\D3D11\VaoD3D11.cpp">
-      <Filter>Core\D3D\D3D11</Filter>
+    <ClCompile Include="Core\D3D\D3D12\D3D12Texture.cpp">
+      <Filter>Core\D3D\D3D12</Filter>
     </ClCompile>
-    <ClCompile Include="Core\D3D\D3D11\WindowD3D11.cpp">
-      <Filter>Core\D3D\D3D11</Filter>
+    <ClCompile Include="Core\D3D\D3D12\D3D12UniformBuffer.cpp">
+      <Filter>Core\D3D\D3D12</Filter>
     </ClCompile>
-    <ClCompile Include="Core\D3D\WindowD3D.cpp">
+    <ClCompile Include="Core\D3D\D3D12\D3D12Vao.cpp">
+      <Filter>Core\D3D\D3D12</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\D3D\D3DFormats.cpp">
       <Filter>Core\D3D</Filter>
     </ClCompile>
-    <ClCompile Include="Core\D3D\D3D11\ShaderReflectionD3D11.cpp">
-      <Filter>Core\D3D\D3D11</Filter>
-    </ClCompile>
-    <ClCompile Include="Core\D3D\D3D12\BlendStateD3D12.cpp">
-      <Filter>Core\D3D\D3D12</Filter>
-    </ClCompile>
-    <ClCompile Include="Core\D3D\D3D12\BufferD3D12.cpp">
-      <Filter>Core\D3D\D3D12</Filter>
-    </ClCompile>
-    <ClCompile Include="Core\D3D\D3D12\DepthStencilStateD3D12.cpp">
-      <Filter>Core\D3D\D3D12</Filter>
-    </ClCompile>
-    <ClCompile Include="Core\D3D\D3D12\FboD3D12.cpp">
-      <Filter>Core\D3D\D3D12</Filter>
-    </ClCompile>
-    <ClCompile Include="Core\D3D\D3D12\GpuTimerD3D12.cpp">
-      <Filter>Core\D3D\D3D12</Filter>
-    </ClCompile>
-    <ClCompile Include="Core\D3D\D3D12\ProgramVersionD3D12.cpp">
-      <Filter>Core\D3D\D3D12</Filter>
-    </ClCompile>
-    <ClCompile Include="Core\D3D\D3D12\RasterizerStateD3D12.cpp">
-      <Filter>Core\D3D\D3D12</Filter>
-    </ClCompile>
-    <ClCompile Include="Core\D3D\D3D12\RenderContextD3D12.cpp">
-      <Filter>Core\D3D\D3D12</Filter>
-    </ClCompile>
-    <ClCompile Include="Core\D3D\D3D12\SamplerD3D12.cpp">
-      <Filter>Core\D3D\D3D12</Filter>
-    </ClCompile>
-    <ClCompile Include="Core\D3D\D3D12\ScreenCaptureD3D12.cpp">
-      <Filter>Core\D3D\D3D12</Filter>
-    </ClCompile>
-    <ClCompile Include="Core\D3D\D3D12\ShaderD3D12.cpp">
-      <Filter>Core\D3D\D3D12</Filter>
-    </ClCompile>
-    <ClCompile Include="Core\D3D\D3D12\ShaderReflectionD3D12.cpp">
-      <Filter>Core\D3D\D3D12</Filter>
-    </ClCompile>
-    <ClCompile Include="Core\D3D\D3D12\ShaderStorageBufferD3D12.cpp">
-      <Filter>Core\D3D\D3D12</Filter>
-    </ClCompile>
-    <ClCompile Include="Core\D3D\D3D12\TextureD3D12.cpp">
-      <Filter>Core\D3D\D3D12</Filter>
-    </ClCompile>
-    <ClCompile Include="Core\D3D\D3D12\UniformBufferD3D12.cpp">
-      <Filter>Core\D3D\D3D12</Filter>
-    </ClCompile>
-    <ClCompile Include="Core\D3D\D3D12\VaoD3D12.cpp">
-      <Filter>Core\D3D\D3D12</Filter>
-    </ClCompile>
-    <ClCompile Include="Core\D3D\D3D12\WindowD3D12.cpp">
-      <Filter>Core\D3D\D3D12</Filter>
-    </ClCompile>
-    <ClCompile Include="Core\D3D\FormatsD3D.cpp">
+    <ClCompile Include="Core\D3D\D3DWindow.cpp">
       <Filter>Core\D3D</Filter>
     </ClCompile>
-    <ClCompile Include="Core\D3D\D3D12\CommandListD3D12.cpp">
+    <ClCompile Include="Core\D3D\D3D11\D3D11BlendState.cpp">
+      <Filter>Core\D3D\D3D11</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\D3D\D3D11\D3D11Buffer.cpp">
+      <Filter>Core\D3D\D3D11</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\D3D\D3D11\D3D11DepthStencilState.cpp">
+      <Filter>Core\D3D\D3D11</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\D3D\D3D11\D3D11Fbo.cpp">
+      <Filter>Core\D3D\D3D11</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\D3D\D3D11\D3D11GpuTimer.cpp">
+      <Filter>Core\D3D\D3D11</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\D3D\D3D11\D3D11ProgramVersion.cpp">
+      <Filter>Core\D3D\D3D11</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\D3D\D3D11\D3D11RasterizerState.cpp">
+      <Filter>Core\D3D\D3D11</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\D3D\D3D11\D3D11RenderContext.cpp">
+      <Filter>Core\D3D\D3D11</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\D3D\D3D11\D3D11Sampler.cpp">
+      <Filter>Core\D3D\D3D11</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\D3D\D3D11\D3D11ScreenCapture.cpp">
+      <Filter>Core\D3D\D3D11</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\D3D\D3D11\D3D11Shader.cpp">
+      <Filter>Core\D3D\D3D11</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\D3D\D3D11\D3D11ShaderReflection.cpp">
+      <Filter>Core\D3D\D3D11</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\D3D\D3D11\D3D11ShaderStorageBuffer.cpp">
+      <Filter>Core\D3D\D3D11</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\D3D\D3D11\D3D11Texture.cpp">
+      <Filter>Core\D3D\D3D11</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\D3D\D3D11\D3D11UniformBuffer.cpp">
+      <Filter>Core\D3D\D3D11</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\D3D\D3D11\D3D11Vao.cpp">
+      <Filter>Core\D3D\D3D11</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\D3D\D3D11\D3D11Window.cpp">
+      <Filter>Core\D3D\D3D11</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\OpenGL\GLBlendState.cpp">
+      <Filter>Core\OpenGL</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\OpenGL\GLBuffer.cpp">
+      <Filter>Core\OpenGL</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\OpenGL\GLDepthStencilState.cpp">
+      <Filter>Core\OpenGL</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\OpenGL\GLFbo.cpp">
+      <Filter>Core\OpenGL</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\OpenGL\GLFormats.cpp">
+      <Filter>Core\OpenGL</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\OpenGL\GLGpuTimer.cpp">
+      <Filter>Core\OpenGL</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\OpenGL\GLProgramVersion.cpp">
+      <Filter>Core\OpenGL</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\OpenGL\GLRasterizerState.cpp">
+      <Filter>Core\OpenGL</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\OpenGL\GLRenderContext.cpp">
+      <Filter>Core\OpenGL</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\OpenGL\GLSampler.cpp">
+      <Filter>Core\OpenGL</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\OpenGL\GLScreenCapture.cpp">
+      <Filter>Core\OpenGL</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\OpenGL\GLShader.cpp">
+      <Filter>Core\OpenGL</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\OpenGL\GLShaderReflection.cpp">
+      <Filter>Core\OpenGL</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\OpenGL\GLShaderStorageBuffer.cpp">
+      <Filter>Core\OpenGL</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\OpenGL\GLTexture.cpp">
+      <Filter>Core\OpenGL</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\OpenGL\GLUniformBuffer.cpp">
+      <Filter>Core\OpenGL</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\OpenGL\GLVao.cpp">
+      <Filter>Core\OpenGL</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\OpenGL\GLWindow.cpp">
+      <Filter>Core\OpenGL</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\D3D\D3D12\D3D12Device.cpp">
       <Filter>Core\D3D\D3D12</Filter>
     </ClCompile>
-    <ClCompile Include="Core\D3D\D3D12\DescriptorHeapD3D12.cpp">
+    <ClCompile Include="Core\D3D\D3D12\D3D12ShaderReflection.cpp">
       <Filter>Core\D3D\D3D12</Filter>
     </ClCompile>
   </ItemGroup>
@@ -1305,12 +1302,6 @@
     <ClInclude Include="Utils\ShaderUtils.h">
       <Filter>Utils</Filter>
     </ClInclude>
-    <ClInclude Include="Core\OpenGL\ShaderReflectionGL.h">
-      <Filter>Core\OpenGL</Filter>
-    </ClInclude>
-    <ClInclude Include="Core\OpenGL\GlEnum2Str.h">
-      <Filter>Core\OpenGL</Filter>
-    </ClInclude>
     <ClInclude Include="Data\HlslGlslCommon.h">
       <Filter>Data</Filter>
     </ClInclude>
@@ -1411,17 +1402,26 @@
     <ClInclude Include="Core\D3D\FalcorD3D.h">
       <Filter>Core\D3D</Filter>
     </ClInclude>
-    <ClInclude Include="Core\D3D\D3D11\ShaderReflectionD3D11.h">
+    <ClInclude Include="Core\Device.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\D3D\D3D12\D3D12CommandList.h">
+      <Filter>Core\D3D\D3D12</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\D3D\D3D12\D3D12DescriptorHeap.h">
+      <Filter>Core\D3D\D3D12</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\D3D\D3D12\D3D12ShaderReflection.h">
+      <Filter>Core\D3D\D3D12</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\D3D\D3D11\D3D11ShaderReflection.h">
       <Filter>Core\D3D\D3D11</Filter>
     </ClInclude>
-    <ClInclude Include="Core\D3D\D3D12\ShaderReflectionD3D12.h">
-      <Filter>Core\D3D\D3D12</Filter>
+    <ClInclude Include="Core\OpenGL\GLEnum2Str.h">
+      <Filter>Core\OpenGL</Filter>
     </ClInclude>
-    <ClInclude Include="Core\D3D\D3D12\CommandListD3D12.h">
-      <Filter>Core\D3D\D3D12</Filter>
-    </ClInclude>
-    <ClInclude Include="Core\D3D\D3D12\DescriptorHeapD3D12.h">
-      <Filter>Core\D3D\D3D12</Filter>
+    <ClInclude Include="Core\OpenGL\GLShaderReflection.h">
+      <Filter>Core\OpenGL</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

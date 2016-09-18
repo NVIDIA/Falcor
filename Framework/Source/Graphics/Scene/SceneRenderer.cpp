@@ -34,7 +34,7 @@
 #include "Scene.h"
 #include "Utils/OS.h"
 #include "VR/OpenVR/VRSystem.h"
-#include "Core/Window.h"
+#include "Core/Device.h"
 #include "glm/matrix.hpp"
 #include "Graphics/Material/MaterialSystem.h"
 

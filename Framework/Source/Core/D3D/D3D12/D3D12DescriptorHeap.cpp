@@ -27,7 +27,8 @@
 ***************************************************************************/
 #ifdef FALCOR_D3D12
 #include "Framework.h"
-#include "DescriptorHeapD3D12.h"
+#include "D3D12DescriptorHeap.h"
+#include "Core/Device.h"
 
 namespace Falcor
 {
@@ -51,20 +52,23 @@ namespace Falcor
 
     DescriptorHeap::DescriptorHeap(Type type, uint32_t descriptorsCount) : mCount(descriptorsCount), mType (type)
     {
-        mDescriptorSize = getD3D12Device()->GetDescriptorHandleIncrementSize(getHeapType(type));
+		ID3D12DevicePtr pDevice = Device::getApiHandle();
+        mDescriptorSize = pDevice->GetDescriptorHandleIncrementSize(getHeapType(type));
     }
 
     DescriptorHeap::~DescriptorHeap() = default;
 
     DescriptorHeap::SharedPtr DescriptorHeap::create(Type type, uint32_t descriptorsCount, bool shaderVisible)
     {
+		ID3D12DevicePtr pDevice = Device::getApiHandle();
+
         DescriptorHeap::SharedPtr pHeap = SharedPtr(new DescriptorHeap(type, descriptorsCount));
         D3D12_DESCRIPTOR_HEAP_DESC desc = {};
 
         desc.Flags = shaderVisible ? D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE : D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
         desc.Type = getHeapType(type);
         desc.NumDescriptors = descriptorsCount;
-        if(FAILED(getD3D12Device()->CreateDescriptorHeap(&desc, IID_PPV_ARGS(&pHeap->mpHeap))))
+        if(FAILED(pDevice->CreateDescriptorHeap(&desc, IID_PPV_ARGS(&pHeap->mpHeap))))
         {
             logError("Can't create descriptor heap");
             return nullptr;

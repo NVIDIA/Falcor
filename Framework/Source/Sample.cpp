@@ -41,9 +41,9 @@ namespace Falcor
     {
     };
 
-    void Sample::handleFrameBufferSizeChange(const Fbo::SharedPtr& pFBO)
+    void Sample::handleWindowSizeChange()
     {
-        mpDefaultFBO = pFBO;
+//        mpDefaultFBO = pFBO;
         // DISABLED_FOR_D3D12
         // Always render UI at full resolution
 //        mpGui->windowSizeCallback(mpDefaultFBO->getWidth(), mpDefaultFBO->getHeight());
@@ -97,7 +97,7 @@ namespace Falcor
 #endif
                 case KeyboardEvent::Key::V:
                     mVsyncOn = !mVsyncOn;
-                    mpWindow->setVSync(mVsyncOn);
+                    mpDevice->setVSync(mVsyncOn);
                     mFrameRate.resetClock();
                     break;
                 case KeyboardEvent::Key::F1:
@@ -171,20 +171,27 @@ namespace Falcor
 
         if(mpWindow == nullptr)
         {
-            Logger::log(Logger::Level::Error, "Failed to create device and window");
+			logError("Failed to create device and window");
             return;
         }
 
+		mpDevice = Device::create(mpWindow, Device::Desc());
+		if (mpDevice == nullptr)
+		{
+			logError("Failed to create device");
+			return;
+		}
+
         // Set the icon
         setActiveWindowIcon("Framework\\Nvidia.ico");
-
-		mVsyncOn = config.enableVsync;
-		mpWindow->setVSync(mVsyncOn);
+		// DISABLED_FOR_D3D12
+//		mVsyncOn = config.enableVsync;
+//		mpWindow->setVSync(mVsyncOn);
         // create the rendering context
-        mpRenderContext = RenderContext::create();
+//        mpRenderContext = RenderContext::create();
 
         // Get the default FBO
-        mpDefaultFBO = mpWindow->getDefaultFBO();
+//        mpDefaultFBO = mpWindow->getDefaultFBO();
         // DISABLED_FOR_D3D12
 //        mpRenderContext->setFbo(mpDefaultFBO);
 

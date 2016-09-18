@@ -45,7 +45,8 @@ namespace Falcor
     MAKE_SMART_COM_PTR(ID3D12DescriptorHeap);
     MAKE_SMART_COM_PTR(ID3D12Resource);
 
-    ID3D12DevicePtr getD3D12Device();
+	using WindowHandle = HWND;
+	using DeviceHandle = ID3D12DevicePtr;
 
     using TextureHandle = ID3D12Device*;
     using BufferHandle = void*;

@@ -39,17 +39,6 @@
 
 namespace Falcor
 {
-    IUnknown* createDevice(const Window::Desc& desc, HWND hWnd);
-
-    struct DxWindowData
-    {
-        Window* pWindow = nullptr;
-        HWND hWnd = nullptr;
-        IDXGISwapChain3Ptr pSwapChain = nullptr;
-        uint32_t syncInterval = 0;
-        bool isWindowOccluded = false;
-    };
-    
     static std::wstring string_2_wstring(const std::string& s)
     {
         std::wstring_convert<std::codecvt_utf8<WCHAR>> cvt;
@@ -57,68 +46,12 @@ namespace Falcor
         return ws;
     }
 
-    void d3dTraceHR(const std::string& msg, HRESULT hr)
-    {
-        char hr_msg[512];
-        FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM, nullptr, hr, 0, hr_msg, ARRAYSIZE(hr_msg), nullptr);
-
-        std::string error_msg = msg + ". Error " + hr_msg;
-        Logger::log(Logger::Level::Fatal, error_msg);
-    }
-
-    D3D_FEATURE_LEVEL getD3DFeatureLevel(uint32_t majorVersion, uint32_t minorVersion)
-    {
-        if(majorVersion == 12)
-        {
-            switch(minorVersion)
-            {
-            case 0:
-                return D3D_FEATURE_LEVEL_12_0;
-            case 1:
-                return D3D_FEATURE_LEVEL_12_1;
-            }
-        }
-        else if(majorVersion == 11)
-        {
-            switch(minorVersion)
-            {
-            case 0:
-                return D3D_FEATURE_LEVEL_11_1;
-            case 1:
-                return D3D_FEATURE_LEVEL_11_0;
-            }
-        }
-        else if(majorVersion == 10)
-        {
-            switch(minorVersion)
-            {
-            case 0:
-                return D3D_FEATURE_LEVEL_10_0;
-            case 1:
-                return D3D_FEATURE_LEVEL_10_1;
-            }
-        }
-        else if(majorVersion == 9)
-        {
-            switch(minorVersion)
-            {
-            case 1:
-                return D3D_FEATURE_LEVEL_9_1;
-            case 2:
-                return D3D_FEATURE_LEVEL_9_2;
-            case 3:
-                return D3D_FEATURE_LEVEL_9_3;
-            }
-        }
-        return (D3D_FEATURE_LEVEL)0;
-    }
-
-    class ApiCallbacks
+	class ApiCallbacks
     {
     public:
         static LRESULT CALLBACK msgProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
         {
-            const DxWindowData* pWinData;
+            Window* pWindow;
 
             if(msg == WM_CREATE)
             {
@@ -128,7 +61,7 @@ namespace Falcor
             }
             else
             {
-                pWinData = (DxWindowData*)GetWindowLongPtr(hwnd, GWLP_USERDATA);
+				pWindow = (Window*)GetWindowLongPtr(hwnd, GWLP_USERDATA);
                 switch(msg)
                 {
                 case WM_CLOSE:
@@ -140,12 +73,12 @@ namespace Falcor
                 case WM_SIZE:
                     if(wParam != SIZE_MINIMIZED)
                     {
-                        resizeWindow(pWinData);
+                        resizeWindow(pWindow);
                     }
                     break;
                 case WM_KEYDOWN:
                 case WM_KEYUP:
-                    dispatchKeyboardEvent(pWinData, wParam, msg == WM_KEYDOWN);
+                    dispatchKeyboardEvent(pWindow, wParam, msg == WM_KEYDOWN);
                     return 0;
                 case WM_MOUSEMOVE:
                 case WM_LBUTTONDOWN:
@@ -155,7 +88,7 @@ namespace Falcor
                 case WM_RBUTTONDOWN:
                 case WM_RBUTTONUP:
                 case WM_MOUSEWHEEL:
-                    dispatchMouseEvent(pWinData, msg, wParam, lParam);
+                    dispatchMouseEvent(pWindow, msg, wParam, lParam);
                     return 0;
                 }
                 return DefWindowProc(hwnd, msg, wParam, lParam);
@@ -163,28 +96,15 @@ namespace Falcor
         }
 
     private:
-        static void resizeWindow(const DxWindowData* pWinData)
+
+        static void resizeWindow(Window* pWindow)
         {
             RECT r;
-            GetClientRect(pWinData->hWnd, &r);
+            GetClientRect(pWindow->getApiHandle(), &r);
             uint32_t width = r.right - r.left;
             uint32_t height = r.bottom - r.top;
-
-            Window* pWindow = pWinData->pWindow;
-            // DISABLED_FOR_D3D12
-//             auto pDefaultFBO = pWindow->getDefaultFBO();
-// 
-//             if(width != pDefaultFBO->getWidth() || height != pDefaultFBO->getHeight())
-//             {
-//                 uint32_t sampleCount = pDefaultFBO->getSampleCount();
-//                 ResourceFormat colorFormat = pDefaultFBO->getColorTexture(0)->getFormat();
-//                 ResourceFormat depthFormat = pDefaultFBO->getDepthStencilTexture()->getFormat();
-//                 pWindow->updateDefaultFBO(width, height, sampleCount, colorFormat, depthFormat);
-// 
-//                 // Handle messages
-//                 pWindow->mpCallbacks->handleFrameBufferSizeChange(pDefaultFBO);
-//             }
-        }
+			pWindow->resize(width, height);
+		}
 
         static KeyboardEvent::Key translateKeyCode(WPARAM keyCode)
         {
@@ -308,16 +228,16 @@ namespace Falcor
             return mods;
         }
 
-        static void dispatchKeyboardEvent(const DxWindowData* pWinData, WPARAM keyCode, bool isKeyDown)
+        static void dispatchKeyboardEvent(const Window* pWindow, WPARAM keyCode, bool isKeyDown)
         {
             KeyboardEvent keyEvent;
             keyEvent.type = isKeyDown ? KeyboardEvent::Type::KeyPressed : KeyboardEvent::Type::KeyReleased;
             keyEvent.key = translateKeyCode(keyCode);
             keyEvent.mods = getInputModifiers();
-            pWinData->pWindow->mpCallbacks->handleKeyboardEvent(keyEvent);
+            pWindow->mpCallbacks->handleKeyboardEvent(keyEvent);
         }
 
-        static void dispatchMouseEvent(const DxWindowData* pWinData, UINT Msg, WPARAM wParam, LPARAM lParam)
+        static void dispatchMouseEvent(const Window* pWindow, UINT Msg, WPARAM wParam, LPARAM lParam)
         {
             MouseEvent mouseEvent;
             switch(Msg)
@@ -355,48 +275,14 @@ namespace Falcor
             }
 
             mouseEvent.pos = glm::vec2(float(GET_X_LPARAM(lParam)), float(GET_Y_LPARAM(lParam)));
-            mouseEvent.pos *= pWinData->pWindow->getMouseScale();
+            mouseEvent.pos *= pWindow->getMouseScale();
             mouseEvent.mods = getInputModifiers();
 
-            pWinData->pWindow->mpCallbacks->handleMouseEvent(mouseEvent);
+            pWindow->mpCallbacks->handleMouseEvent(mouseEvent);
         }
     };
 
-    bool createSwapChain(IUnknown* pDevice, HWND hWnd, const SwapChainDesc& swapChain, bool isFullScreen, IDXGISwapChain1** ppSwapChain)
-    {
-        IDXGIDevicePtr pDXGIDevice;
-        d3d_call(pDevice->QueryInterface(__uuidof(IDXGIDevice), (void **)&pDXGIDevice));
-        IDXGIAdapter1Ptr pDXGIAdapter;
-        d3d_call(pDXGIDevice->GetParent(__uuidof(IDXGIAdapter), (void **)&pDXGIAdapter));
-        IDXGIFactory4Ptr pIDXGIFactory;
-        d3d_call(pDXGIAdapter->GetParent(__uuidof(IDXGIFactory4), (void **)&pIDXGIFactory));
-
-        DXGI_SWAP_CHAIN_DESC1 dxgiDesc;
-        dxgiDesc.Width = swapChain.width;
-        dxgiDesc.Height = swapChain.height;
-        dxgiDesc.Format = getDxgiFormat(swapChain.colorFormat);
-        dxgiDesc.Stereo = FALSE;
-        dxgiDesc.SampleDesc.Count = max(1U, swapChain.sampleCount);
-        dxgiDesc.SampleDesc.Quality = 0;
-        dxgiDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-        dxgiDesc.BufferCount = 1;
-        dxgiDesc.Scaling = DXGI_SCALING_NONE;
-        dxgiDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_SEQUENTIAL;
-        dxgiDesc.AlphaMode = DXGI_ALPHA_MODE_UNSPECIFIED;
-        dxgiDesc.Flags = 0;
-
-        DXGI_SWAP_CHAIN_FULLSCREEN_DESC fullscreenDesc;
-        fullscreenDesc.RefreshRate.Numerator = 60;
-        fullscreenDesc.RefreshRate.Denominator = 1;
-        fullscreenDesc.Scaling = DXGI_MODE_SCALING_UNSPECIFIED;
-        fullscreenDesc.ScanlineOrdering = DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED;
-        fullscreenDesc.Windowed = isFullScreen ? FALSE : TRUE;
-
-        d3d_call(pIDXGIFactory->CreateSwapChainForHwnd(pDevice, hWnd, &dxgiDesc, &fullscreenDesc, nullptr, ppSwapChain));
-        return true;
-    }
-
-    HWND createFalcorWindow(const Window::Desc& desc, void* pUserData)
+	static HWND createWindow(const Window::Desc& desc, void* pUserData)
     {
         const WCHAR* className = L"FalcorWindowClass";
         DWORD winStyle = WS_OVERLAPPED | WS_CAPTION |  WS_SYSMENU;
@@ -419,7 +305,7 @@ namespace Falcor
         }
 
         // Window size we have is for client area, calculate actual window size
-        RECT r{0, 0, (LONG)desc.swapChainDesc.width, (LONG)desc.swapChainDesc.height};
+        RECT r{0, 0, (LONG)desc.width, (LONG)desc.height};
         AdjustWindowRect(&r, winStyle, false);
 
         int windowWidth = r.right - r.left;
@@ -435,28 +321,21 @@ namespace Falcor
         }
 
         // It might be tempting to call ShowWindow() here, but this fires a WM_SIZE message, which if you look at our MsgProc()
-        // calls some device functions. That's a race condition, since the device isn't necessarily initialized yet. 
+        // calls some device functions. That's a race condition, since the device wasn't initialized yet 
         return hWnd;
     }
 
-    Window::Window(ICallbacks* pCallbacks) : mpCallbacks(pCallbacks)
+    Window::Window(ICallbacks* pCallbacks, uint32_t width, uint32_t height) : mpCallbacks(pCallbacks), mWidth(width), mHeight(height)
     {
 
     }
 
     Window::~Window()
     {
-        DxWindowData* pWinData = (DxWindowData*)mpPrivateData;
-        if(pWinData)
+        if(mApiHandle)
         {
-            pWinData->pSwapChain = nullptr;
-            if(pWinData->hWnd)
-            {
-                DestroyWindow(pWinData->hWnd);
-            }
-        }
-
-        safe_delete(mpPrivateData);        
+			DestroyWindow(mApiHandle);
+		}
     }
 
     void Window::shutdown()
@@ -464,32 +343,18 @@ namespace Falcor
         PostQuitMessage(0);
     }
 
-    Window::UniquePtr Window::create(const Desc& desc, ICallbacks* pCallbacks)
+    Window::SharedPtr Window::create(const Desc& desc, ICallbacks* pCallbacks)
     {
-        if(desc.requiredExtensions.size())
-        {
-            Logger::log(Logger::Level::Warning, "DX doesn't support API extensions. Ignoring requested extensions.");
-        }
-
-        UniquePtr pWindow = UniquePtr(new Window(pCallbacks));
-        DxWindowData* pWinData = new DxWindowData;
-        pWindow->mpPrivateData = pWinData;
-        pWinData->pWindow = pWindow.get();
+		SharedPtr pWindow = SharedPtr(new Window(pCallbacks, desc.width, desc.height));
         
         // create the window
-        pWinData->hWnd = createFalcorWindow(desc, pWinData);
-        if(pWinData->hWnd == nullptr)
+		pWindow->mApiHandle = createWindow(desc, pWindow.get());
+        if(pWindow->mApiHandle == nullptr)
         {
             return false;
         }
 
-        // create the DX device
-        IUnknown* pDevice = createDevice(desc, pWinData->hWnd);
-        if(pDevice == nullptr)
-        {
-            return nullptr;
-        }
-        // DISABLED_FOR_D3D12
+		// DISABLED_FOR_D3D12
 //         if(createSwapChain(pDevice, pWinData->hWnd, desc.swapChainDesc, desc.fullScreen, &pWinData->pSwapChain) == false)
 //         {
 //             return nullptr;
@@ -501,75 +366,65 @@ namespace Falcor
         return pWindow;
     }
 
-    void Window::setVSync(bool enable)
-    {
-        DxWindowData* pWinData = (DxWindowData*)mpPrivateData;
-        pWinData->syncInterval = enable ? 1 : 0;
-    }
-
     void Window::resize(uint32_t width, uint32_t height)
     {
-        // Resize the swap-chain
-        const Texture* pColor = mpDefaultFBO->getColorTexture(0).get();
-        if(pColor->getWidth() != width || pColor->getHeight() != height)
+        if(mWidth != width || mHeight != height)
         {
-            DxWindowData* pData = (DxWindowData*)mpPrivateData;
-
             // Resize the window
             RECT r = {0, 0, (LONG)width, (LONG)height};
-            DWORD style = GetWindowLong(pData->hWnd, GWL_STYLE);
+            DWORD style = GetWindowLong(mApiHandle, GWL_STYLE);
             AdjustWindowRect(&r, style, false);
-            int windowWidth = r.right - r.left;
-            int windowHeight = r.bottom - r.top;
+            mWidth = r.right - r.left;
+            mHeight = r.bottom - r.top;
 
             // The next call will dispatch a WM_SIZE message which will take care of the framebuffer size change
-            d3d_call(SetWindowPos(pData->hWnd, nullptr, 0, 0, windowWidth, windowHeight, SWP_NOACTIVATE | SWP_NOOWNERZORDER | SWP_NOMOVE | SWP_NOZORDER));
+            d3d_call(SetWindowPos(mApiHandle, nullptr, 0, 0, mWidth, mHeight, SWP_NOACTIVATE | SWP_NOOWNERZORDER | SWP_NOMOVE | SWP_NOZORDER));
+
+			mMouseScale.x = 1 / float(width);
+			mMouseScale.y = 1 / float(height);
         }
     }
+	// DISABLED_FOR_D3D12
+    //void Window::updateDefaultFBO(uint32_t width, uint32_t height, uint32_t sampleCount, ResourceFormat colorFormat, ResourceFormat depthFormat)
+    //{
+    //    // Resize the swap-chain
+    //    DxWindowData* pData = (DxWindowData*)mpPrivateData;
+    //    releaseDefaultFboResources();
+    //    d3d_call(pData->pSwapChain->ResizeBuffers(0, 0, 0, DXGI_FORMAT_UNKNOWN, DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH));
 
-    void Window::updateDefaultFBO(uint32_t width, uint32_t height, uint32_t sampleCount, ResourceFormat colorFormat, ResourceFormat depthFormat)
-    {
-        // Resize the swap-chain
-        DxWindowData* pData = (DxWindowData*)mpPrivateData;
-        releaseDefaultFboResources();
-        d3d_call(pData->pSwapChain->ResizeBuffers(0, 0, 0, DXGI_FORMAT_UNKNOWN, DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH));
+    //    sampleCount = max(1U, sampleCount);
 
-        sampleCount = max(1U, sampleCount);
+    //    // create the depth texture
+    //    Texture::SharedPtr pDepthTex = nullptr;
+    //    if(sampleCount > 1)
+    //    {
+    //        pDepthTex = Texture::create2DMS(width, height, depthFormat, sampleCount, 1);
+    //    }
+    //    else
+    //    {
+    //        pDepthTex = Texture::create2D(width, height, depthFormat, 1, 1, nullptr);
+    //    }
 
-        // create the depth texture
-        Texture::SharedPtr pDepthTex = nullptr;
-        if(sampleCount > 1)
-        {
-            pDepthTex = Texture::create2DMS(width, height, depthFormat, sampleCount, 1);
-        }
-        else
-        {
-            pDepthTex = Texture::create2D(width, height, depthFormat, 1, 1, nullptr);
-        }
+    //    // Need to re-create the color texture here since Texture is a friend of CWindow
+    //    Texture::SharedPtr pColorTex = Texture::SharedPtr(new Texture(width, height, 1, 1, 1, sampleCount, colorFormat, Texture::Type::Texture2D));
+    //    d3d_call(pData->pSwapChain->GetBuffer(0, __uuidof(pColorTex->mApiHandle), reinterpret_cast<void**>(&pColorTex->mApiHandle)));
 
-        // Need to re-create the color texture here since Texture is a friend of CWindow
-        Texture::SharedPtr pColorTex = Texture::SharedPtr(new Texture(width, height, 1, 1, 1, sampleCount, colorFormat, Texture::Type::Texture2D));
-        d3d_call(pData->pSwapChain->GetBuffer(0, __uuidof(pColorTex->mApiHandle), reinterpret_cast<void**>(&pColorTex->mApiHandle)));
+    //    attachDefaultFboResources(pColorTex, pDepthTex);
+    //}
 
-        attachDefaultFboResources(pColorTex, pDepthTex);
-        mMouseScale.x = 1 / float(width);
-        mMouseScale.y = 1 / float(height);
-    }
-
-    bool isWindowOccluded(DxWindowData* pWinData)
-    {
-        if(pWinData->isWindowOccluded)
-        {
-            pWinData->isWindowOccluded = (pWinData->pSwapChain->Present(0, DXGI_PRESENT_TEST) == DXGI_STATUS_OCCLUDED);
-        }
-        return pWinData->isWindowOccluded;
-    }
+    //bool isWindowOccluded(DxWindowData* pWinData)
+    //{
+    //    if(pWinData->isWindowOccluded)
+    //    {
+    //        pWinData->isWindowOccluded = (pWinData->pSwapChain->Present(0, DXGI_PRESENT_TEST) == DXGI_STATUS_OCCLUDED);
+    //    }
+    //    return pWinData->isWindowOccluded;
+    //}
 
     void Window::msgLoop()
     {
         // Show the window
-        DxWindowData* pData = (DxWindowData*)mpPrivateData;
-        ShowWindow(pData->hWnd, SW_SHOWNORMAL);
+        ShowWindow(mApiHandle, SW_SHOWNORMAL);
 
         MSG msg;
         while(1) 
@@ -585,21 +440,16 @@ namespace Falcor
             }
             else
             {
-                DxWindowData* pWinData = (DxWindowData*)mpPrivateData;
-                if(isWindowOccluded(pWinData) == false)
-                {
-                    mpCallbacks->renderFrame();
+				mpCallbacks->renderFrame();
 // DISABLED_FOR_D3D12
-//                    pWinData->isWindowOccluded = (pWinData->pSwapChain->Present(pWinData->syncInterval, 0) == DXGI_STATUS_OCCLUDED);
-                }
             }
         }
     }
 
     void Window::setWindowTitle(std::string title)
     {
+		    }
 
-    }
     void Window::pollForEvents()
     {
     }

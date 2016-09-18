@@ -36,6 +36,7 @@
 #include "utils/TextRenderer.h"
 #include "core/RenderContext.h"
 #include "Utils/Video/VideoEncoderUI.h"
+#include "Core/Device.h"
 
 namespace Falcor
 {
@@ -156,7 +157,7 @@ namespace Falcor
         };
 
         void renderFrame() override;
-        void handleFrameBufferSizeChange(const Fbo::SharedPtr& pFBO) override;
+        void handleWindowSizeChange() override;
         void handleKeyboardEvent(const KeyboardEvent& keyEvent) override;
         void handleMouseEvent(const MouseEvent& mouseEvent) override;
         virtual float getTimeScale() final { return mTimeScale; }
@@ -174,7 +175,9 @@ namespace Falcor
         void endVideoCapture();
         void captureVideoFrame();
 
-        Window::UniquePtr mpWindow;
+        Window::SharedPtr mpWindow;
+		Device::SharedPtr mpDevice;
+
         bool mVsyncOn = false;
 
         bool mCaptureScreen = false;
