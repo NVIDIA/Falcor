@@ -42,6 +42,7 @@ namespace Falcor
 		DescriptorHeap::SharedPtr pRtvHeap;
 		ID3D12ResourcePtr pRenderTargets[kSwapChainBuffers];
 		uint32_t syncInterval = 0;
+		bool isWindowOccluded = false;
 	};
 
 	DeviceHandle Device::sApiHandle;
@@ -52,7 +53,7 @@ namespace Falcor
 		char hr_msg[512];
 		FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM, nullptr, hr, 0, hr_msg, ARRAYSIZE(hr_msg), nullptr);
 
-		std::string error_msg = msg + ". Error " + hr_msg;
+		std::string error_msg = msg + ".\nError " + hr_msg;
 		Logger::log(Logger::Level::Fatal, error_msg);
 	}
 
@@ -103,13 +104,15 @@ namespace Falcor
         return (D3D_FEATURE_LEVEL)0;
     }
 
-	IDXGISwapChain3Ptr createSwapChain(IDXGIFactory4* pFactory, const Window* pWindow, ID3D12CommandQueue* pCommandQueue)
+	IDXGISwapChain3Ptr createSwapChain(IDXGIFactory4* pFactory, const Window* pWindow, ID3D12CommandQueue* pCommandQueue, ResourceFormat colorFormat)
 	{
 		DXGI_SWAP_CHAIN_DESC1 swapChainDesc = {};
 		swapChainDesc.BufferCount = kSwapChainBuffers;
 		swapChainDesc.Width = pWindow->getClientAreaWidth();
 		swapChainDesc.Height = pWindow->getClientAreaHeight();
-		swapChainDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;//getDxgiFormat(desc.swapChainDesc.colorFormat);
+		// Flip mode doesn't support SRGB formats, so we strip them down when creating the resource. We will create the RTV as SRGB instead.
+		// More details at the end of https://msdn.microsoft.com/en-us/library/windows/desktop/bb173064.aspx
+		swapChainDesc.Format = getDxgiFormat(srgbToLinearFormat(colorFormat));
 		swapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
 		swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
 		swapChainDesc.SampleDesc.Count = 1;
@@ -118,8 +121,10 @@ namespace Falcor
 		MAKE_SMART_COM_PTR(IDXGISwapChain1);
 		IDXGISwapChain1Ptr pSwapChain;
 
-		if (FAILED(pFactory->CreateSwapChainForHwnd(pCommandQueue, pWindow->getApiHandle(), &swapChainDesc, nullptr, nullptr, &pSwapChain)))
+		HRESULT hr = pFactory->CreateSwapChainForHwnd(pCommandQueue, pWindow->getApiHandle(), &swapChainDesc, nullptr, nullptr, &pSwapChain);
+		if (FAILED(hr))
 		{
+			d3dTraceHR("Failed to create the swap-chain", hr);
 			return false;
 		}
 
@@ -161,17 +166,23 @@ namespace Falcor
 		return DescriptorHeap::create(DescriptorHeap::Type::RenderTargetView, 256, false);
 	}
 
-	bool createRTVs(ID3D12Device* pDevice, DescriptorHeap* pHeap, IDXGISwapChain3* pSwapChain, ID3D12ResourcePtr pRenderTargets[], uint32_t count)
+	bool createRTVs(ID3D12Device* pDevice, DescriptorHeap* pHeap, IDXGISwapChain3* pSwapChain, ID3D12ResourcePtr pRenderTargets[], uint32_t count, ResourceFormat colorFormat)
 	{
 		for (uint32_t i = 0; i < count; i++)
 		{
 			DescriptorHeap::CpuHandle rtv = pHeap->getFreeCpuHandle();
-			if (FAILED(pSwapChain->GetBuffer(i, IID_PPV_ARGS(&pRenderTargets[i]))))
+			HRESULT hr = pSwapChain->GetBuffer(i, IID_PPV_ARGS(&pRenderTargets[i]));
+			if (FAILED(hr))
 			{
-				logError("Failed to get back-buffer " + std::to_string(i) + " from the swap-chain");
+				d3dTraceHR("Failed to get back-buffer " + std::to_string(i) + " from the swap-chain", hr);
 				return false;
 			}
-			pDevice->CreateRenderTargetView(pRenderTargets[i], nullptr, rtv);
+			D3D12_RENDER_TARGET_VIEW_DESC rtvDesc;
+			rtvDesc.Format = getDxgiFormat(colorFormat);
+			rtvDesc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D;
+			rtvDesc.Texture2D.MipSlice = 0;
+			rtvDesc.Texture2D.PlaneSlice = 0;
+			pDevice->CreateRenderTargetView(pRenderTargets[i], &rtvDesc, rtv);
 		}
 
 		return true;
@@ -183,6 +194,14 @@ namespace Falcor
 	{
 		SharedPtr pDevice = SharedPtr(new Device(pWindow));
 		return pDevice->init(desc) ? pDevice : nullptr;
+	}
+
+	void Device::present()
+	{
+		D3D12Data* pData = (D3D12Data*)mpPrivateData;
+		pData->pCmdList->submit();
+		pData->pSwapChain->Present(1, 0);
+		pData->currentBackBufferIndex = (pData->currentBackBufferIndex + 1) % kSwapChainBuffers;
 	}
 
 	bool Device::init(const Desc& desc)
@@ -231,7 +250,7 @@ namespace Falcor
 		}
 
 		// Create the swap-chain
-		pData->pSwapChain = createSwapChain(pDxgiFactory, mpWindow.get(), pData->pCmdList->getNativeCommandQueue());
+		pData->pSwapChain = createSwapChain(pDxgiFactory, mpWindow.get(), pData->pCmdList->getNativeCommandQueue(), desc.colorFormat);
 		if(pData->pSwapChain == nullptr)
 		{
 			return false;
@@ -240,10 +259,13 @@ namespace Falcor
 		pData->currentBackBufferIndex = pData->pSwapChain->GetCurrentBackBufferIndex();
 
 		// Create RTVs
-		if(createRTVs(sApiHandle.GetInterfacePtr(), pData->pRtvHeap.get(), pData->pSwapChain.GetInterfacePtr(), pData->pRenderTargets, arraysize(pData->pRenderTargets)) == false)
+		if(createRTVs(sApiHandle.GetInterfacePtr(), pData->pRtvHeap.get(), pData->pSwapChain.GetInterfacePtr(), pData->pRenderTargets, arraysize(pData->pRenderTargets), desc.colorFormat) == false)
 		{
 			return false;
 		}
+
+		mpRenderContext = RenderContext::create();
+		mVsyncOn = desc.enableVsync;
 
 		return true;
     }
@@ -254,110 +276,20 @@ namespace Falcor
 		pData->syncInterval = enable ? 1 : 0;
 	}
 
-#if 0
-
-    void Window::resize(uint32_t width, uint32_t height)
+	bool Device::isWindowOccluded() const
     {
-        // Resize the swap-chain
-        const Texture* pColor = mpDefaultFBO->getColorTexture(0).get();
-        if(pColor->getWidth() != width || pColor->getHeight() != height)
+		D3D12Data* pData = (D3D12Data*)mpPrivateData;
+        if(pData->isWindowOccluded)
         {
-            DxWindowData* pData = (DxWindowData*)mpPrivateData;
-
-            // Resize the window
-            RECT r = {0, 0, (LONG)width, (LONG)height};
-            DWORD style = GetWindowLong(pData->hWnd, GWL_STYLE);
-            AdjustWindowRect(&r, style, false);
-            int windowWidth = r.right - r.left;
-            int windowHeight = r.bottom - r.top;
-
-            // The next call will dispatch a WM_SIZE message which will take care of the framebuffer size change
-            d3d_call(SetWindowPos(pData->hWnd, nullptr, 0, 0, windowWidth, windowHeight, SWP_NOACTIVATE | SWP_NOOWNERZORDER | SWP_NOMOVE | SWP_NOZORDER));
+			pData->isWindowOccluded = (pData->pSwapChain->Present(0, DXGI_PRESENT_TEST) == DXGI_STATUS_OCCLUDED);
         }
+        return pData->isWindowOccluded;
     }
 
-    void Window::updateDefaultFBO(uint32_t width, uint32_t height, uint32_t sampleCount, ResourceFormat colorFormat, ResourceFormat depthFormat)
+    bool Device::isExtensionSupported(const std::string& name)
     {
-        // Resize the swap-chain
-        DxWindowData* pData = (DxWindowData*)mpPrivateData;
-        releaseDefaultFboResources();
-        d3d_call(pData->pSwapChain->ResizeBuffers(0, 0, 0, DXGI_FORMAT_UNKNOWN, DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH));
-
-        sampleCount = max(1U, sampleCount);
-
-        // create the depth texture
-        Texture::SharedPtr pDepthTex = nullptr;
-        if(sampleCount > 1)
-        {
-            pDepthTex = Texture::create2DMS(width, height, depthFormat, sampleCount, 1);
-        }
-        else
-        {
-            pDepthTex = Texture::create2D(width, height, depthFormat, 1, 1, nullptr);
-        }
-
-        // Need to re-create the color texture here since Texture is a friend of CWindow
-        Texture::SharedPtr pColorTex = Texture::SharedPtr(new Texture(width, height, 1, 1, 1, sampleCount, colorFormat, Texture::Type::Texture2D));
-        d3d_call(pData->pSwapChain->GetBuffer(0, __uuidof(pColorTex->mApiHandle), reinterpret_cast<void**>(&pColorTex->mApiHandle)));
-
-        attachDefaultFboResources(pColorTex, pDepthTex);
-        mMouseScale.x = 1 / float(width);
-        mMouseScale.y = 1 / float(height);
-    }
-
-    bool isWindowOccluded(DxWindowData* pWinData)
-    {
-        if(pWinData->isWindowOccluded)
-        {
-            pWinData->isWindowOccluded = (pWinData->pSwapChain->Present(0, DXGI_PRESENT_TEST) == DXGI_STATUS_OCCLUDED);
-        }
-        return pWinData->isWindowOccluded;
-    }
-
-    void Window::msgLoop()
-    {
-        // Show the window
-        DxWindowData* pData = (DxWindowData*)mpPrivateData;
-        ShowWindow(pData->hWnd, SW_SHOWNORMAL);
-
-        MSG msg;
-        while(1) 
-        {
-            if(PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
-            {
-                if(msg.message == WM_QUIT)
-                {
-                    break;
-                }
-                TranslateMessage(&msg);
-                DispatchMessage(&msg);
-            }
-            else
-            {
-                DxWindowData* pWinData = (DxWindowData*)mpPrivateData;
-                if(isWindowOccluded(pWinData) == false)
-                {
-                    mpCallbacks->renderFrame();
-// DISABLED_FOR_D3D12
-//                    pWinData->isWindowOccluded = (pWinData->pSwapChain->Present(pWinData->syncInterval, 0) == DXGI_STATUS_OCCLUDED);
-                }
-            }
-        }
-    }
-
-    void Window::setWindowTitle(std::string title)
-    {
-
-    }
-    void Window::pollForEvents()
-    {
-    }
-
-    bool checkExtensionSupport(const std::string& name)
-    {
-        UNSUPPORTED_IN_D3D("checkExtensionSupport");
+        UNSUPPORTED_IN_D3D("Device::isExtensionSupported()");
         return false;
     }
-#endif
 }
 #endif //#ifdef FALCOR_D3D

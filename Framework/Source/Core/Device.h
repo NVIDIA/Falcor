@@ -39,6 +39,8 @@ namespace Falcor
         using SharedPtr = std::shared_ptr<Device>;
         using SharedConstPtr = std::shared_ptr<const Device>;
 
+		/** Device configuration
+		*/
         struct Desc
         {
 			ResourceFormat colorFormat = ResourceFormat::RGBA8UnormSrgb;    ///< The color buffer format
@@ -47,28 +49,67 @@ namespace Falcor
             int apiMinorVersion = DEFAULT_API_MINOR_VERSION; ///< Requested API minor version. Context creation fails if this version is not supported.
             bool useDebugContext = false;             ///< create a debug context. NOTE: Debug configuration always creates a debug context
             std::vector<std::string> requiredExtensions; ///< Extensions required by the sample
+			bool enableVsync = false;           ///< Controls vertical-sync
         };
 
+		/** Create a new device.
+		\param[in] pWindow a previously-created window object
+		\param[in] desc Device configuration desctiptor.
+		\return nullptr if the function failed, otherwise a new device object
+		*/
 		static SharedPtr create(Window::SharedPtr& pWindow, const Desc& desc);
+
+		/** Destructor
+		*/
         ~Device();
 
-		void setVSync(bool enable);       
-        Fbo::SharedPtr getSwaoChainFbo() const { return mSwapChainFbo; }
+		/** Enable/disable vertical sync
+		*/
+		void setVSync(bool enable);
+
+		/** Check if the window is occluded
+		*/
+		bool isWindowOccluded() const;
+
+		/** Check if the device support an extension
+		*/
+		static bool isExtensionSupported(const std::string & name);
+
+		/** Get the FBO object associated with the swap-chain.
+			This can change each frame, depending on the API used
+		*/
+        Fbo::SharedPtr getSwapChainFbo() const { return mSwapChainFbo; }
+
+		/** Get the default render-context.
+			The default render-context is managed completly by the device. The user should just queue commands into it, the device will take care of allocation, submission and synchronization
+		*/
 		RenderContext::SharedPtr getRenderContext() const { return mpRenderContext; }
+
+		/** Get the native API handle
+		*/
 		static DeviceHandle getApiHandle() { return sApiHandle; }
+
+		/** DISABLED_FOR_D3D12 FIXME: Should not be here
+		*/
 		static void* getPrivateData() { return mpPrivateData; }
+
+		/** Present the back-buffer to the window
+		*/
+		void present();
+
+		/** Check if vertical sync is enabled
+		*/
+		bool isVsyncEnabled() const { return mVsyncOn; }
     private:
 		Device(Window::SharedPtr pWindow) : mpWindow(pWindow) {}
 		bool init(const Desc& desc);
-        void releaseDefaultFboResources();
-        void attachDefaultFboResources(const Texture::SharedPtr& pColorTexture, const Texture::SharedPtr& pDepthTexture);
-        void updateDefaultFBO(uint32_t width, uint32_t height, uint32_t sampleCount, ResourceFormat colorFormat, ResourceFormat depthFormat);
 
 		Window::SharedPtr mpWindow;
 		static DeviceHandle sApiHandle;
 		static void* mpPrivateData;
 		Fbo::SharedPtr mSwapChainFbo;
 		RenderContext::SharedPtr mpRenderContext;
+		bool mVsyncOn;
 	};
 
     bool checkExtensionSupport(const std::string& name);

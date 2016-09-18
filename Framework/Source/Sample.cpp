@@ -43,7 +43,6 @@ namespace Falcor
 
     void Sample::handleWindowSizeChange()
     {
-//        mpDefaultFBO = pFBO;
         // DISABLED_FOR_D3D12
         // Always render UI at full resolution
 //        mpGui->windowSizeCallback(mpDefaultFBO->getWidth(), mpDefaultFBO->getHeight());
@@ -184,16 +183,10 @@ namespace Falcor
 
         // Set the icon
         setActiveWindowIcon("Framework\\Nvidia.ico");
-		// DISABLED_FOR_D3D12
-//		mVsyncOn = config.enableVsync;
-//		mpWindow->setVSync(mVsyncOn);
-        // create the rendering context
-//        mpRenderContext = RenderContext::create();
 
-        // Get the default FBO
-//        mpDefaultFBO = mpWindow->getDefaultFBO();
-        // DISABLED_FOR_D3D12
-//        mpRenderContext->setFbo(mpDefaultFBO);
+		// Get the default objects
+		mpRenderContext = mpDevice->getRenderContext();
+		mpDefaultFBO = mpDevice->getSwapChainFbo();
 
         // Init the UI
         initUI();
@@ -202,14 +195,12 @@ namespace Falcor
         mVrEnabled = config.enableVR;
         if(mVrEnabled)
         {
-            // DISABLED_FOR_D3D12
-//            VRSystem::start(mpRenderContext);
+			VRSystem::start(mpRenderContext);
         }
 
         // Call the load callback
         onLoad();
-        // DISABLED_FOR_D3D12
-//        handleFrameBufferSizeChange(mpWindow->getDefaultFBO());
+		handleWindowSizeChange();
         
         mpWindow->msgLoop();
 
@@ -233,16 +224,22 @@ namespace Falcor
 
     void Sample::renderFrame()
     {
-        mFrameRate.newFrame();
+		if (mpDevice->isWindowOccluded())
+		{
+			return;
+		}
+
+		mFrameRate.newFrame();
         {
+			// The swap-chain FBO might have changed between frames, so get it
+			mpDefaultFBO = mpDevice->getSwapChainFbo();
             PROFILE(onFrameRender);
             calculateTime();
-            // Bind the default state
-            // DISABLED_FOR_D3D12
-//              mpRenderContext->setFbo(mpDefaultFBO);
-//              mpRenderContext->setDepthStencilState(nullptr, 0);
-//              mpRenderContext->setBlendState(nullptr);
-//              mpRenderContext->setRasterizerState(nullptr);
+			// Bind the default state
+			mpRenderContext->setFbo(mpDefaultFBO);
+			mpRenderContext->setDepthStencilState(nullptr, 0);
+			mpRenderContext->setBlendState(nullptr);
+			mpRenderContext->setRasterizerState(nullptr);
 
              onFrameRender();
         }
@@ -261,6 +258,7 @@ namespace Falcor
             captureScreen();
         }
         printProfileData();
+		mpDevice->present();
     }
 
     void Sample::captureScreen()

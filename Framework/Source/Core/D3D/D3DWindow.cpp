@@ -354,16 +354,7 @@ namespace Falcor
             return false;
         }
 
-		// DISABLED_FOR_D3D12
-//         if(createSwapChain(pDevice, pWinData->hWnd, desc.swapChainDesc, desc.fullScreen, &pWinData->pSwapChain) == false)
-//         {
-//             return nullptr;
-//         }
-
-        // create the framebuffer.
-//        pWindow->updateDefaultFBO(desc.swapChainDesc.width, desc.swapChainDesc.height, desc.swapChainDesc.sampleCount, desc.swapChainDesc.colorFormat, desc.swapChainDesc.depthFormat);
-       
-        return pWindow;
+		return pWindow;
     }
 
     void Window::resize(uint32_t width, uint32_t height)
@@ -384,44 +375,8 @@ namespace Falcor
 			mMouseScale.y = 1 / float(height);
         }
     }
-	// DISABLED_FOR_D3D12
-    //void Window::updateDefaultFBO(uint32_t width, uint32_t height, uint32_t sampleCount, ResourceFormat colorFormat, ResourceFormat depthFormat)
-    //{
-    //    // Resize the swap-chain
-    //    DxWindowData* pData = (DxWindowData*)mpPrivateData;
-    //    releaseDefaultFboResources();
-    //    d3d_call(pData->pSwapChain->ResizeBuffers(0, 0, 0, DXGI_FORMAT_UNKNOWN, DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH));
 
-    //    sampleCount = max(1U, sampleCount);
-
-    //    // create the depth texture
-    //    Texture::SharedPtr pDepthTex = nullptr;
-    //    if(sampleCount > 1)
-    //    {
-    //        pDepthTex = Texture::create2DMS(width, height, depthFormat, sampleCount, 1);
-    //    }
-    //    else
-    //    {
-    //        pDepthTex = Texture::create2D(width, height, depthFormat, 1, 1, nullptr);
-    //    }
-
-    //    // Need to re-create the color texture here since Texture is a friend of CWindow
-    //    Texture::SharedPtr pColorTex = Texture::SharedPtr(new Texture(width, height, 1, 1, 1, sampleCount, colorFormat, Texture::Type::Texture2D));
-    //    d3d_call(pData->pSwapChain->GetBuffer(0, __uuidof(pColorTex->mApiHandle), reinterpret_cast<void**>(&pColorTex->mApiHandle)));
-
-    //    attachDefaultFboResources(pColorTex, pDepthTex);
-    //}
-
-    //bool isWindowOccluded(DxWindowData* pWinData)
-    //{
-    //    if(pWinData->isWindowOccluded)
-    //    {
-    //        pWinData->isWindowOccluded = (pWinData->pSwapChain->Present(0, DXGI_PRESENT_TEST) == DXGI_STATUS_OCCLUDED);
-    //    }
-    //    return pWinData->isWindowOccluded;
-    //}
-
-    void Window::msgLoop()
+	void Window::msgLoop()
     {
         // Show the window
         ShowWindow(mApiHandle, SW_SHOWNORMAL);
@@ -441,7 +396,6 @@ namespace Falcor
             else
             {
 				mpCallbacks->renderFrame();
-// DISABLED_FOR_D3D12
             }
         }
     }
@@ -452,12 +406,6 @@ namespace Falcor
 
     void Window::pollForEvents()
     {
-    }
-
-    bool checkExtensionSupport(const std::string& name)
-    {
-        UNSUPPORTED_IN_D3D("checkExtensionSupport");
-        return false;
     }
 }
 #endif //#ifdef FALCOR_D3D

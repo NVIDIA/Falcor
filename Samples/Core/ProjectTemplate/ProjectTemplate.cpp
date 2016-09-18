@@ -81,12 +81,6 @@ void ProjectTemplate::onFrameRender()
     barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_PRESENT;
     pList->ResourceBarrier(1, &barrier);
 
-	pData->pCmdList->submit();
-
-	pData->pSwapChain->Present(1, 0);
-
-	pData->currentBackBufferIndex = (pData->currentBackBufferIndex + 1) % kSwapChainBuffers;
-
 //     const glm::vec4 clearColor(0.38f, 0.52f, 0.10f, 1);
 //     mpDefaultFBO->clear(clearColor, 1.0f, 0, FboAttachmentType::All);
 // 

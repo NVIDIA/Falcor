@@ -42,7 +42,7 @@
 __forceinline BOOL dxBool(bool b) { return b ? TRUE : FALSE; }
 
 #ifdef _LOG_ENABLED
-#define d3d_call(a) {HRESULT hr = a; if(FAILED(hr)) { d3dTraceHR( #a, hr); }}
+#define d3d_call(a) {HRESULT hr_ = a; if(FAILED(hr_)) { d3dTraceHR( #a, hr_); }}
 #else
 #define d3d_call(a) a
 #endif

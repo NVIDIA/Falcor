@@ -35,7 +35,7 @@ namespace Falcor
 
     RenderContext::SharedPtr RenderContext::create()
     {
-        return nullptr;
+        return SharedPtr(new RenderContext(D3D12_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE));
     }
 
     void RenderContext::applyDepthStencilState() const

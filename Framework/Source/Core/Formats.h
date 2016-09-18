@@ -240,6 +240,32 @@ namespace Falcor
         return (getFormatType(format) == FormatType::UnormSrgb);
     }
 
+	/** Convert an SRGB format to linear. If the format is alread linear, will return it
+	*/
+	inline ResourceFormat srgbToLinearFormat(ResourceFormat format)
+	{
+		switch (format)
+		{
+		case ResourceFormat::BC1UnormSrgb:
+			return ResourceFormat::BC1Unorm;
+		case ResourceFormat::BC2UnormSrgb:
+			return ResourceFormat::BC2Unorm;
+		case ResourceFormat::BC3UnormSrgb:
+			return ResourceFormat::BC3Unorm;
+		case ResourceFormat::BGRA8UnormSrgb:
+			return ResourceFormat::BGRA8Unorm;
+		case ResourceFormat::BGRX8UnormSrgb:
+			return ResourceFormat::BGRX8Unorm;
+		case ResourceFormat::RGBA8UnormSrgb:
+			return ResourceFormat::RGBA8Unorm;
+		case ResourceFormat::RGBX8UnormSrgb:
+			return ResourceFormat::RGBX8Unorm;
+		default:
+			assert(isSrgbFormat(format) == false);
+			return format;
+		}
+	}
+
     inline const std::string& to_string(ResourceFormat format)
     {
         assert(kFormatDesc[(uint32_t)format].format == format);

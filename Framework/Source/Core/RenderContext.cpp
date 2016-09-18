@@ -220,9 +220,10 @@ namespace Falcor
     {
         const auto& pTemp = (pFbo == nullptr) ? mpEmptyFBO : pFbo;
         mState.pFbo = pTemp;
-        if(pTemp->checkStatus())
+		// DISABLED_FOR_D3D12
+		//if(pTemp->checkStatus())
         {
-            applyFbo();
+//            applyFbo();
         }
     }
 

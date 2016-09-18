@@ -50,8 +50,8 @@ namespace Falcor
     */
     struct SampleConfig
     {
-        Window::Desc windowDesc;            ///< Controls window and graphics device creation
-        bool enableVsync = false;           ///< Controls vertical-sync
+        Window::Desc windowDesc;            ///< Controls window and creation
+		Device::Desc deviceDesc;			///< Controls device creation;
         bool showMessageBoxOnError = _SHOW_MB_BY_DEFAULT; ///< Show message box on framework/API errors.
         float timeScale = 1;                ///< A scaling factor for the time elapsed between frames.
         bool freezeTimeOnStartup = false;   ///< Control whether or not to start the clock when the sample start running.
