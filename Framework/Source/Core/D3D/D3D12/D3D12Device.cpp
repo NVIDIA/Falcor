@@ -34,13 +34,12 @@
 
 namespace Falcor
 {
-	struct D3D12Data
+	struct DeviceData
 	{
 		IDXGISwapChain3Ptr pSwapChain = nullptr;
 		uint32_t currentBackBufferIndex;
-		DescriptorHeap::SharedPtr pRtvHeap;
-		ID3D12ResourcePtr pRenderTargets[kSwapChainBuffers];
-		ID3D12CommandQueuePtr pCommandQueue;
+        Fbo::SharedPtr pDefaultFbos[kSwapChainBuffers];
+        ID3D12CommandQueuePtr pCommandQueue;
         Fence::SharedPtr pFence;
         uint64_t frameIndex = 0;
 		uint32_t syncInterval = 0;
@@ -163,28 +162,25 @@ namespace Falcor
 		return nullptr;
 	}
 
-	DescriptorHeap::SharedPtr createHeaps()
+	bool Device::updateDefaultFBO(uint32_t width, uint32_t height, uint32_t sampleCount, ResourceFormat colorFormat, ResourceFormat depthFormat)
 	{
-		return DescriptorHeap::create(DescriptorHeap::Type::RenderTargetView, 256, false);
-	}
+        DeviceData* pData = (DeviceData*)mpPrivateData;
 
-	bool createRTVs(ID3D12Device* pDevice, DescriptorHeap* pHeap, IDXGISwapChain3* pSwapChain, ID3D12ResourcePtr pRenderTargets[], uint32_t count, ResourceFormat colorFormat)
-	{
-		for (uint32_t i = 0; i < count; i++)
+		for (uint32_t i = 0; i < kSwapChainBuffers; i++)
 		{
-			DescriptorHeap::CpuHandle rtv = pHeap->getFreeCpuHandle();
-			HRESULT hr = pSwapChain->GetBuffer(i, IID_PPV_ARGS(&pRenderTargets[i]));
-			if (FAILED(hr))
-			{
-				d3dTraceHR("Failed to get back-buffer " + std::to_string(i) + " from the swap-chain", hr);
-				return false;
-			}
-			D3D12_RENDER_TARGET_VIEW_DESC rtvDesc;
-			rtvDesc.Format = getDxgiFormat(colorFormat);
-			rtvDesc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D;
-			rtvDesc.Texture2D.MipSlice = 0;
-			rtvDesc.Texture2D.PlaneSlice = 0;
-			pDevice->CreateRenderTargetView(pRenderTargets[i], &rtvDesc, rtv);
+            // Create a texture object
+            auto pColorTex = Texture::SharedPtr(new Texture(width, height, 1, 1, 1, sampleCount, colorFormat, sampleCount > 1 ? Texture::Type::Texture2DMultisample : Texture::Type::Texture2D));            
+            HRESULT hr = pData->pSwapChain->GetBuffer(i, IID_PPV_ARGS(&pColorTex->mApiHandle));
+            if(FAILED(hr))
+            {
+                d3dTraceHR("Failed to get back-buffer " + std::to_string(i) + " from the swap-chain", hr);
+                return false;
+            }
+
+            // Create the FBO
+            pData->pDefaultFbos[i] = Fbo::create();
+            pData->pDefaultFbos[i]->attachColorTarget(pColorTex, 0);
+            pData->currentBackBufferIndex = pData->pSwapChain->GetCurrentBackBufferIndex();
 		}
 
 		return true;
@@ -198,9 +194,16 @@ namespace Falcor
 		return pDevice->init(desc) ? pDevice : nullptr;
 	}
 
+    
+    Fbo::SharedPtr Device::getSwapChainFbo() const
+    {
+        DeviceData* pData = (DeviceData*)mpPrivateData;
+        return pData->pDefaultFbos[pData->currentBackBufferIndex];
+    }
+
 	void Device::present()
 	{
-		D3D12Data* pData = (D3D12Data*)mpPrivateData;
+		DeviceData* pData = (DeviceData*)mpPrivateData;
 
 		// Submit the command list
 		auto pGfxList = mpRenderContext->getCommandListApiHandle();
@@ -230,7 +233,7 @@ namespace Falcor
 			return false;
 		}
 
-		D3D12Data* pData = new D3D12Data;
+		DeviceData* pData = new DeviceData;
 		mpPrivateData = pData;
 
 #if defined(_DEBUG)
@@ -253,16 +256,6 @@ namespace Falcor
 			return false;
 		}
 
-		// Create Heaps
-		pData->pRtvHeap = createHeaps();
-		if (pData->pRtvHeap == nullptr)
-		{
-			return false;
-		}
-
-		mpRenderContext = RenderContext::create(kSwapChainBuffers);
-
-		// Create a command queue
 		// Create the command queue
 		D3D12_COMMAND_QUEUE_DESC cqDesc = {};
 		cqDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
@@ -283,13 +276,13 @@ namespace Falcor
 			return false;
 		}
 
-		pData->currentBackBufferIndex = pData->pSwapChain->GetCurrentBackBufferIndex();
+        // Update the FBOs
+        if(updateDefaultFBO(mpWindow->getClientAreaWidth(), mpWindow->getClientAreaHeight(), 1, desc.colorFormat, desc.depthFormat) == false)
+        {
+            return false;
+        }
 
-		// Create RTVs
-		if(createRTVs(sApiHandle.GetInterfacePtr(), pData->pRtvHeap.get(), pData->pSwapChain.GetInterfacePtr(), pData->pRenderTargets, arraysize(pData->pRenderTargets), desc.colorFormat) == false)
-		{
-			return false;
-		}
+        mpRenderContext = RenderContext::create(kSwapChainBuffers);
 
 		mVsyncOn = desc.enableVsync;
 
@@ -299,13 +292,13 @@ namespace Falcor
 
 	void Device::setVSync(bool enable)
 	{
-		D3D12Data* pData = (D3D12Data*)mpPrivateData;
+		DeviceData* pData = (DeviceData*)mpPrivateData;
 		pData->syncInterval = enable ? 1 : 0;
 	}
 
 	bool Device::isWindowOccluded() const
     {
-		D3D12Data* pData = (D3D12Data*)mpPrivateData;
+		DeviceData* pData = (DeviceData*)mpPrivateData;
         if(pData->isWindowOccluded)
         {
 			pData->isWindowOccluded = (pData->pSwapChain->Present(0, DXGI_PRESENT_TEST) == DXGI_STATUS_OCCLUDED);

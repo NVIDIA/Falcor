@@ -33,7 +33,7 @@
 namespace Falcor
 {
     class Sampler;
-    class Window;
+    class Device;
 
     /** Abstracts the API texture objects
     */
@@ -227,7 +227,7 @@ namespace Falcor
 		void setSparseResidencyPageIndex(bool isResident, uint32_t mipLevel,  uint32_t pageX, uint32_t pageY, uint32_t pageZ, uint32_t width=1, uint32_t height=1, uint32_t depth=1);
 
     protected:
-        friend class Window;
+        friend class Device;
         
 		static uint32_t tempDefaultUint;
 

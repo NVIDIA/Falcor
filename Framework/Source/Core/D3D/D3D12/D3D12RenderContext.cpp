@@ -34,16 +34,6 @@
 
 namespace Falcor
 {
-	struct D3D12Data
-	{
-		IDXGISwapChain3Ptr pSwapChain = nullptr;
-		uint32_t currentBackBufferIndex;
-		DescriptorHeap::SharedPtr pRtvHeap;
-		ID3D12ResourcePtr pRenderTargets[kSwapChainBuffers];
-		uint32_t syncInterval = 0;
-		bool isWindowOccluded = false;
-	};
-
 	struct ApiData
 	{
 		std::vector<ID3D12CommandAllocatorPtr> pAllocators;
@@ -108,27 +98,23 @@ namespace Falcor
 	void RenderContext::clearFbo(const Fbo* pFbo, const glm::vec4& color)
 	{
 		ApiData* pApiData = (ApiData*)mpApiData;
-		D3D12Data* pData = (D3D12Data*)Device::getPrivateData();
 
-		ID3D12GraphicsCommandList* pList = pApiData->pList.GetInterfacePtr();
-		D3D12_RESOURCE_BARRIER barrier;
+        D3D12_RESOURCE_BARRIER barrier;
 		barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
 		barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
-		barrier.Transition.pResource = pData->pRenderTargets[pData->currentBackBufferIndex];
+		barrier.Transition.pResource = pFbo->getColorTexture(0)->getApiHandle();
 		barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_PRESENT;
 		barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
 		barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
 
-		pList->ResourceBarrier(1, &barrier);
+		pApiData->pList->ResourceBarrier(1, &barrier);
 
-		DescriptorHeap::CpuHandle rtv = pData->pRtvHeap->getHandle(pData->currentBackBufferIndex);
-		pList->ClearRenderTargetView(rtv, glm::value_ptr(color), 0, nullptr);
+        RtvHandle rtv = pFbo->getRenderTargetView(0);
+        pApiData->pList->ClearRenderTargetView(rtv, glm::value_ptr(color), 0, nullptr);
 
 		barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
 		barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_PRESENT;
-		pList->ResourceBarrier(1, &barrier);
-
-
+        pApiData->pList->ResourceBarrier(1, &barrier);
 	}
 
     void RenderContext::applyDepthStencilState() const

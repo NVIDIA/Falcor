@@ -49,6 +49,7 @@ namespace Falcor
         using CpuHandle = D3D12_CPU_DESCRIPTOR_HANDLE;
         CpuHandle getHandle(uint32_t index) const;
         CpuHandle getFreeCpuHandle();
+        uint32_t getCurrentIndex() const { return mCurDesc; }
     private:
         DescriptorHeap(Type type, uint32_t descriptorsCount);
 

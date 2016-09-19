@@ -78,7 +78,7 @@ namespace Falcor
 		/** Get the FBO object associated with the swap-chain.
 			This can change each frame, depending on the API used
 		*/
-        Fbo::SharedPtr getSwapChainFbo() const { return mSwapChainFbo; }
+        Fbo::SharedPtr getSwapChainFbo() const;
 
 		/** Get the default render-context.
 			The default render-context is managed completly by the device. The user should just queue commands into it, the device will take care of allocation, submission and synchronization
@@ -103,11 +103,11 @@ namespace Falcor
     private:
 		Device(Window::SharedPtr pWindow) : mpWindow(pWindow) {}
 		bool init(const Desc& desc);
+        bool updateDefaultFBO(uint32_t width, uint32_t height, uint32_t sampleCount, ResourceFormat colorFormat, ResourceFormat depthFormat);
 
 		Window::SharedPtr mpWindow;
 		static DeviceHandle sApiHandle;
 		static void* mpPrivateData;
-		Fbo::SharedPtr mSwapChainFbo;
 		RenderContext::SharedPtr mpRenderContext;
 		bool mVsyncOn;
 	};

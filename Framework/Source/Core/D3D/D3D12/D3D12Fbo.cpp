@@ -28,12 +28,79 @@
 #ifdef FALCOR_D3D12
 #include "Framework.h"
 #include "Core/FBO.h"
+#include "D3D12DescriptorHeap.h"
+#include "Core/D3D/D3DFbo.h"
+#include "Core/Device.h"
 
 namespace Falcor
 {
+    struct FboData
+    {
+        static DescriptorHeap::SharedPtr spRtvHeap;
+        static DescriptorHeap::SharedPtr spDsvHeap;
+        static const uint32_t kMaxRenderTargetViews = 16;
+        static const uint32_t kMaxDepthStencilViews = 16;
+
+        std::map<ID3D12Resource*, uint32_t> rtvMap;
+        std::map<ID3D12Resource*, uint32_t> dsvMap;
+    };
+
+    DescriptorHeap::SharedPtr FboData::spRtvHeap;
+    DescriptorHeap::SharedPtr FboData::spDsvHeap;
+
+    template<>
+    D3D12_RTV_DIMENSION getViewDimension<D3D12_RTV_DIMENSION>(Texture::Type type, uint32_t arraySize)
+    {
+        switch(type)
+        {
+        case Texture::Type::Texture1D:
+            return (arraySize > 1) ? D3D12_RTV_DIMENSION_TEXTURE1DARRAY : D3D12_RTV_DIMENSION_TEXTURE1D;
+        case Texture::Type::Texture2D:
+            return (arraySize > 1) ? D3D12_RTV_DIMENSION_TEXTURE2DARRAY : D3D12_RTV_DIMENSION_TEXTURE2D;
+        case Texture::Type::Texture3D:
+            assert(arraySize == 1);
+            return D3D12_RTV_DIMENSION_TEXTURE3D;
+        case Texture::Type::Texture2DMultisample:
+            return (arraySize > 1) ? D3D12_RTV_DIMENSION_TEXTURE2DMSARRAY : D3D12_RTV_DIMENSION_TEXTURE2DMS;
+        case Texture::Type::TextureCube:
+            return D3D12_RTV_DIMENSION_TEXTURE2DARRAY;
+        default:
+            should_not_get_here();
+            return D3D12_RTV_DIMENSION_UNKNOWN;
+        }
+    }
+
+    template<>
+    D3D12_DSV_DIMENSION getViewDimension<D3D12_DSV_DIMENSION>(Texture::Type type, uint32_t arraySize)
+    {
+        switch(type)
+        {
+        case Texture::Type::Texture1D:
+            return (arraySize > 1) ? D3D12_DSV_DIMENSION_TEXTURE1DARRAY : D3D12_DSV_DIMENSION_TEXTURE1D;
+        case Texture::Type::Texture2D:                                  
+            return (arraySize > 1) ? D3D12_DSV_DIMENSION_TEXTURE2DARRAY : D3D12_DSV_DIMENSION_TEXTURE2D;
+        case Texture::Type::Texture2DMultisample:
+            return (arraySize > 1) ? D3D12_DSV_DIMENSION_TEXTURE2DMSARRAY : D3D12_DSV_DIMENSION_TEXTURE2DMS;
+        case Texture::Type::TextureCube:
+            return D3D12_DSV_DIMENSION_TEXTURE2DARRAY;
+        default:
+            should_not_get_here();
+            return D3D12_DSV_DIMENSION_UNKNOWN;
+        }
+    }
+
     Fbo::Fbo(bool initApiHandle)
     {
         mApiHandle = -1;
+        FboData* pData = new FboData;
+        mpPrivateData = pData;
+        if(pData->spRtvHeap == nullptr)
+        {
+            assert(pData->spDsvHeap == nullptr);
+            pData->spRtvHeap = DescriptorHeap::create(DescriptorHeap::Type::RenderTargetView, FboData::kMaxRenderTargetViews, false);
+            pData->spDsvHeap = DescriptorHeap::create(DescriptorHeap::Type::DepthStencilView, FboData::kMaxDepthStencilViews, false);
+        }
+        mColorAttachments.resize(getMaxColorTargetCount());
     }
 
     Fbo::~Fbo()
@@ -46,6 +113,16 @@ namespace Falcor
         return mApiHandle;
     }
 
+    RtvHandle Fbo::getRenderTargetView(uint32_t rtIndex) const
+    {
+        FboData* pData = (FboData*)mpPrivateData;
+        const auto& pTexture = getColorTexture(rtIndex);
+        assert(pTexture);
+        const auto& it = pData->rtvMap.find(pTexture->getApiHandle());
+        assert(it != pData->rtvMap.end());
+        return pData->spRtvHeap->getHandle(it->second);
+    }
+
     uint32_t Fbo::getMaxColorTargetCount()
     {
         return D3D12_SIMULTANEOUS_RENDER_TARGET_COUNT;
@@ -53,6 +130,23 @@ namespace Falcor
 
     void Fbo::applyColorAttachment(uint32_t rtIndex)
     {
+        FboData* pData = (FboData*)mpPrivateData;
+        const auto pTexture = mColorAttachments[rtIndex].pTexture;
+        if(pTexture)
+        {
+            // Check if already created an RTV for the texture
+            ID3D12ResourcePtr pResource = pTexture->getApiHandle();
+            if(pData->rtvMap.find(pResource) == pData->rtvMap.end())
+            {
+                // Create an RTV
+                D3D12_RENDER_TARGET_VIEW_DESC rtvDesc;
+                initializeRtvDesc<D3D12_RENDER_TARGET_VIEW_DESC>(pTexture.get(), mColorAttachments[rtIndex].mipLevel, mColorAttachments[rtIndex].arraySlice, rtvDesc);
+                uint32_t rtvIndedx = pData->spRtvHeap->getCurrentIndex();
+                DescriptorHeap::CpuHandle rtv = pData->spRtvHeap->getFreeCpuHandle();
+                Device::getApiHandle()->CreateRenderTargetView(pResource, &rtvDesc, rtv);
+                pData->rtvMap[pResource] = rtvIndedx;
+            }
+        }
     }
 
     void Fbo::applyDepthAttachment()

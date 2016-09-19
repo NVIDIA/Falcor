@@ -71,7 +71,7 @@ namespace Falcor
             \param mipLevel The selected mip-level to attach.
             \param arraySlice The selected array-slice to attach, or CFbo#k_attachEntireMipLevel to attach the all array-slices.
         */
-        void attachColorTarget(const Texture::SharedConstPtr& pColorTexture, uint32_t rtIndex, uint32_t mipLevel, uint32_t arraySlice = 0);
+        void attachColorTarget(const Texture::SharedConstPtr& pColorTexture, uint32_t rtIndex, uint32_t mipLevel = 0, uint32_t arraySlice = 0);
 
         /** Get the object's API handle.      
         */
@@ -139,9 +139,9 @@ namespace Falcor
 		*/
 		void setZeroAttachments(uint32_t width, uint32_t height, uint32_t layers=1, uint32_t samples=1, bool fixedSampleLocs=false);
 
-#ifdef FALCOR_D3D11
-        ID3D11DepthStencilView* getDepthStencilView() const;
-        ID3D11RenderTargetView* getRenderTargetView(uint32_t rtIndex) const;
+#ifdef FALCOR_D3D
+        DsvHandle getDepthStencilView() const;
+        RtvHandle getRenderTargetView(uint32_t rtIndex) const;
 #endif
     private:
         struct Attachment
