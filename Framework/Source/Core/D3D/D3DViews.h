@@ -33,6 +33,75 @@ namespace Falcor
     template<typename ViewType>
     ViewType getViewDimension(Texture::Type type, uint32_t arraySize);
 
+    template<typename ViewDesc>
+    void initializeSrvDesc(ResourceFormat format, Texture::Type type, uint32_t arraySize, ViewDesc& desc)
+    {
+        // create SRV
+        desc = {};
+        desc.Format = getDxgiFormat(format);
+        desc.ViewDimension = getViewDimension<decltype(desc.ViewDimension)>(type, arraySize);
+
+        switch(type)
+        {
+        case Texture::Type::Texture1D:
+            if(arraySize > 1)
+            {
+                desc.Texture1DArray.MipLevels = uint32_t(-1);
+                desc.Texture1DArray.MostDetailedMip = 0;
+                desc.Texture1DArray.ArraySize = arraySize;
+                desc.Texture1DArray.FirstArraySlice = 0;
+            }
+            else
+            {
+                desc.Texture1D.MipLevels = uint32_t(-1);
+                desc.Texture1D.MostDetailedMip = 0;
+            }
+            break;
+        case Texture::Type::Texture2D:
+            if(arraySize > 1)
+            {
+                desc.Texture2DArray.MipLevels = uint32_t(-1);
+                desc.Texture2DArray.MostDetailedMip = 0;
+                desc.Texture2DArray.ArraySize = arraySize;
+                desc.Texture2DArray.FirstArraySlice = 0;
+            }
+            else
+            {
+                desc.Texture2D.MipLevels = uint32_t(-1);
+                desc.Texture2D.MostDetailedMip = 0;
+            }
+            break;
+        case Texture::Type::Texture2DMultisample:
+            if(arraySize > 1)
+            {
+                desc.Texture2DMSArray.ArraySize = arraySize;
+                desc.Texture2DMSArray.FirstArraySlice = 0;
+            }
+            break;
+        case Texture::Type::Texture3D:
+            assert(arraySize == 1);
+            desc.Texture3D.MipLevels = (uint32_t)-1;
+            desc.Texture3D.MostDetailedMip = 0;
+            break;
+        case Texture::Type::TextureCube:
+            if(arraySize > 1)
+            {
+                desc.TextureCubeArray.First2DArrayFace = 0;
+                desc.TextureCubeArray.NumCubes = arraySize;
+                desc.TextureCubeArray.MipLevels = (uint32_t)-1;
+                desc.TextureCubeArray.MostDetailedMip = 0;
+            }
+            else
+            {
+                desc.TextureCube.MipLevels = (uint32_t)-1;
+                desc.TextureCube.MostDetailedMip = 0;
+            }
+            break;
+        default:
+            should_not_get_here();
+        }
+    }
+
     template<typename DescType>
     inline void initializeRtvDesc(const Texture* pTexture, uint32_t mipLevel, uint32_t arraySlice, DescType& desc)
     {
@@ -96,6 +165,7 @@ namespace Falcor
     template<typename DescType>
     inline void initializeDsvDesc(const Texture* pTexture, uint32_t mipLevel, uint32_t arraySlice, DescType& desc)
     {
+        desc = {};
         uint32_t arrayMultiplier = (pTexture->getType() == Texture::Type::TextureCube) ? 6 : 1;
         uint32_t arraySize = 1;
 
@@ -105,7 +175,7 @@ namespace Falcor
             arraySize = pTexture->getArraySize();
         }
 
-        desc.ViewDimension = getViewDimension(pTexture->getType());
+        desc.ViewDimension = getViewDimension<decltype(desc.ViewDimension)>(pTexture->getType(), pTexture->getArraySize());
 
         switch(pTexture->getType())
         {
@@ -145,7 +215,6 @@ namespace Falcor
             should_not_get_here();
         }
         desc.Format = getDxgiFormat(pTexture->getFormat());
-        desc.Flags = 0;
     }
 }
 #endif //#ifdef FALCOR_D3D

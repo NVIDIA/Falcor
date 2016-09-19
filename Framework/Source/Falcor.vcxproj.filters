@@ -1423,7 +1423,7 @@
     <ClInclude Include="Core\D3D\D3D12\D3D12Fence.h">
       <Filter>Core\D3D\D3D12</Filter>
     </ClInclude>
-    <ClInclude Include="Core\D3D\D3DFbo.h" />
+    <ClInclude Include="Core\D3D\D3DViews.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Externals">

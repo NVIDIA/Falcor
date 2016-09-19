@@ -95,26 +95,52 @@ namespace Falcor
 		d3d_call(pApiData->pList->Reset(pApiData->pAllocators[pApiData->activeAllocator], nullptr));
 	}
 
-	void RenderContext::clearFbo(const Fbo* pFbo, const glm::vec4& color)
+	void RenderContext::clearFbo(const Fbo* pFbo, const glm::vec4& color, float depth, uint8_t stencil, FboAttachmentType flags)
 	{
 		ApiData* pApiData = (ApiData*)mpApiData;
+        bool clearDepth = (flags & FboAttachmentType::Depth) != FboAttachmentType::None;
+        bool clearColor = (flags & FboAttachmentType::Color) != FboAttachmentType::None;
+        bool clearStencil = (flags & FboAttachmentType::Stencil) != FboAttachmentType::None;
 
-        D3D12_RESOURCE_BARRIER barrier;
-		barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-		barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
-		barrier.Transition.pResource = pFbo->getColorTexture(0)->getApiHandle();
-		barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_PRESENT;
-		barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
-		barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+        if(clearColor)
+        {
+            D3D12_RESOURCE_BARRIER barrier;
+            barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+            barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+            barrier.Transition.pResource = pFbo->getColorTexture(0)->getApiHandle();
+            barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_PRESENT;
+            barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
+            barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
 
-		pApiData->pList->ResourceBarrier(1, &barrier);
+            pApiData->pList->ResourceBarrier(1, &barrier);
 
-        RtvHandle rtv = pFbo->getRenderTargetView(0);
-        pApiData->pList->ClearRenderTargetView(rtv, glm::value_ptr(color), 0, nullptr);
+            RtvHandle rtv = pFbo->getRenderTargetView(0);
+            pApiData->pList->ClearRenderTargetView(rtv, glm::value_ptr(color), 0, nullptr);
 
-		barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
-		barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_PRESENT;
-        pApiData->pList->ResourceBarrier(1, &barrier);
+            barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
+            barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_PRESENT;
+            pApiData->pList->ResourceBarrier(1, &barrier);
+        }
+
+        if(clearDepth | clearStencil)
+        {
+            D3D12_RESOURCE_BARRIER barrier;
+            barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+            barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+            barrier.Transition.pResource = pFbo->getDepthStencilTexture()->getApiHandle();
+            barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_COMMON;
+            barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_DEPTH_WRITE;
+            barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+
+            pApiData->pList->ResourceBarrier(1, &barrier);
+
+            DsvHandle dsv = pFbo->getDepthStencilView();
+            pApiData->pList->ClearDepthStencilView(dsv, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, depth, stencil, 0, nullptr);
+
+            barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_DEPTH_WRITE;
+            barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_COMMON;
+            pApiData->pList->ResourceBarrier(1, &barrier);
+        }
 	}
 
     void RenderContext::applyDepthStencilState() const

@@ -28,88 +28,16 @@
 #ifdef FALCOR_D3D11
 #include "Framework.h"
 #include "Core/Texture.h"
+#include "Core/D3D/D3DViews.h"
 #include <vector>
 
 namespace Falcor
 {
     ID3D11ShaderResourceViewPtr createShaderResourceView(ID3D11ResourcePtr pResource, ResourceFormat format, uint32_t arraySize, Texture::Type type)
     {
-        // create SRV
         D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc;
-        srvDesc.Format = getDxgiFormat(format);
-        switch(type)
-        {
-        case Texture::Type::Texture1D:
-            if(arraySize > 1)
-            {
-                srvDesc.Texture1DArray.MipLevels = uint32_t(-1);
-                srvDesc.Texture1DArray.MostDetailedMip = 0;
-                srvDesc.Texture1DArray.ArraySize = arraySize;
-                srvDesc.Texture1DArray.FirstArraySlice = 0;
-                srvDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE1DARRAY;
-            }
-            else
-            {
-                srvDesc.Texture1D.MipLevels = uint32_t(-1);
-                srvDesc.Texture1D.MostDetailedMip = 0;
-                srvDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE1D;
-            }
-            break;
-        case Texture::Type::Texture2D:
-            if(arraySize > 1)
-            {
-                srvDesc.Texture2DArray.MipLevels = uint32_t(-1);
-                srvDesc.Texture2DArray.MostDetailedMip = 0;
-                srvDesc.Texture2DArray.ArraySize = arraySize;
-                srvDesc.Texture2DArray.FirstArraySlice = 0;
-                srvDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2DARRAY;
-            }
-            else
-            {
-                srvDesc.Texture2D.MipLevels = uint32_t(-1);
-                srvDesc.Texture2D.MostDetailedMip = 0;
-                srvDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
-            }
-            break;
-        case Texture::Type::Texture2DMultisample:
-            if(arraySize > 1)
-            {
-                srvDesc.Texture2DMSArray.ArraySize = arraySize;
-                srvDesc.Texture2DMSArray.FirstArraySlice = 0;
-                srvDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2DMSARRAY;
-            }
-            else
-            {
-                srvDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2DMS;
-            }
-            break;
-        case Texture::Type::Texture3D:
-            assert(arraySize == 1);
-            srvDesc.Texture3D.MipLevels = (uint32_t)-1;
-            srvDesc.Texture3D.MostDetailedMip = 0;
-            srvDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE3D;
-            break;
-        case Texture::Type::TextureCube:
-            if(arraySize > 1)
-            {
-                srvDesc.TextureCubeArray.First2DArrayFace = 0;
-                srvDesc.TextureCubeArray.NumCubes = arraySize;
-                srvDesc.TextureCubeArray.MipLevels = (uint32_t)-1;
-                srvDesc.TextureCubeArray.MostDetailedMip = 0;
-                srvDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURECUBEARRAY;
-            }
-            else
-            {
-                srvDesc.TextureCube.MipLevels = (uint32_t)-1;
-                srvDesc.TextureCube.MostDetailedMip = 0;
-                srvDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURECUBE;
-            }
-            break;
-        default:
-            should_not_get_here();
-            return nullptr;
-        }
-        
+        initializeSrvDesc(format, arraysize, type, srvDesc);
+
         ID3D11ShaderResourceViewPtr pSrv;
         d3d_call(getD3D11Device()->CreateShaderResourceView(pResource, &srvDesc, &pSrv));
         return pSrv;

@@ -401,7 +401,7 @@
     <ClInclude Include="Core\D3D\D3D12\FalcorD3D12.h" />
     <ClInclude Include="Core\D3D\D3D12\D3D12DescriptorHeap.h" />
     <ClInclude Include="Core\D3D\D3D12\D3D12ShaderReflection.h" />
-    <ClInclude Include="Core\D3D\D3DFbo.h" />
+    <ClInclude Include="Core\D3D\D3DViews.h" />
     <ClInclude Include="Core\D3D\FalcorD3D.h" />
     <ClInclude Include="Core\DDSHeader.h" />
     <ClInclude Include="Core\DepthStencilState.h" />

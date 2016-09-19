@@ -64,7 +64,7 @@ namespace Falcor
             \param mipLevel The selected mip-level to attach.
             \param arraySlice The selected array-slice to attach, or CFbo#AttachEntireMipLevel to attach the all array-slices.
         */
-        void attachDepthStencilTarget(const Texture::SharedConstPtr& pDepthStencil, uint32_t mipLevel, uint32_t arraySlice = 0);
+        void attachDepthStencilTarget(const Texture::SharedConstPtr& pDepthStencil, uint32_t mipLevel = 0, uint32_t arraySlice = 0);
         /** Attach a color texture.
             \param pColorTexture The depth-stencil texture.
             \param rtIndex The render-target index to attach the texture to.

@@ -28,10 +28,46 @@
 #ifdef FALCOR_D3D12
 #include "Framework.h"
 #include "Core/Texture.h"
+#include "Core/Device.h"
+#include "D3D12DescriptorHeap.h"
+#include "Core/D3D/D3DViews.h"
 #include <vector>
 
 namespace Falcor
 {
+    static DescriptorHeap::SharedPtr gSrvHeap;
+
+    template<>
+    D3D12_SRV_DIMENSION getViewDimension<D3D12_SRV_DIMENSION>(Texture::Type type, uint32_t arraySize)
+    {
+        switch(type)
+        {
+        case Texture::Type::Texture1D:
+            return (arraySize > 1) ? D3D12_SRV_DIMENSION_TEXTURE1DARRAY : D3D12_SRV_DIMENSION_TEXTURE1D;
+        case Texture::Type::Texture2D:
+            return (arraySize > 1) ? D3D12_SRV_DIMENSION_TEXTURE2DARRAY : D3D12_SRV_DIMENSION_TEXTURE2D;
+        case Texture::Type::Texture3D:
+            assert(arraySize == 1);
+            return D3D12_SRV_DIMENSION_TEXTURE3D;
+        case Texture::Type::Texture2DMultisample:
+            return (arraySize > 1) ? D3D12_SRV_DIMENSION_TEXTURE2DMSARRAY : D3D12_SRV_DIMENSION_TEXTURE2DMS;
+        case Texture::Type::TextureCube:
+            return D3D12_SRV_DIMENSION_TEXTURE2DARRAY;
+        default:
+            should_not_get_here();
+            return D3D12_SRV_DIMENSION_UNKNOWN;
+        }
+    }
+
+    static const D3D12_HEAP_PROPERTIES kDefaultHeapProps = 
+    {
+        D3D12_HEAP_TYPE_DEFAULT,
+        D3D12_CPU_PAGE_PROPERTY_UNKNOWN,
+        D3D12_MEMORY_POOL_UNKNOWN,
+        0,
+        0
+    };
+
     Texture::~Texture()
     {
     }
@@ -54,7 +90,50 @@ namespace Falcor
     
     Texture::SharedPtr Texture::create2D(uint32_t width, uint32_t height, ResourceFormat format, uint32_t arraySize, uint32_t mipLevels, const void* pData)
     {
-        return nullptr;
+        if(gSrvHeap == nullptr)
+        {
+            gSrvHeap = DescriptorHeap::create(DescriptorHeap::Type::ShaderResource, 16*1024);
+        }
+        Texture::SharedPtr pTexture = SharedPtr(new Texture(width, height, 1, 1, mipLevels, arraySize, format, Type::Texture2D));
+
+        D3D12_RESOURCE_DESC desc = {};
+        desc.MipLevels = uint16_t(mipLevels);
+        desc.Format = getDxgiFormat(format);
+        desc.Width = width;
+        desc.Height = height;
+        desc.Flags = isDepthStencilFormat(format) ? D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL : D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
+        desc.DepthOrArraySize = arraySize;
+        desc.SampleDesc.Count = 1;
+        desc.SampleDesc.Quality = 0;
+        desc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+        desc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
+        desc.Alignment = 0;
+
+        D3D12_CLEAR_VALUE defaultClear = {};
+        defaultClear.Format = desc.Format;
+        if(isDepthStencilFormat(format))
+        {
+            defaultClear.DepthStencil.Depth = 1.0f;
+        }
+
+        d3d_call(Device::getApiHandle()->CreateCommittedResource(&kDefaultHeapProps, D3D12_HEAP_FLAG_NONE, &desc, D3D12_RESOURCE_STATE_COMMON, &defaultClear, IID_PPV_ARGS(&pTexture->mApiHandle)));
+
+        return pTexture;
+    }
+
+    SrvHandle Texture::getShaderResourceView() const
+    {
+        if(mSrvIndex == -1)
+        {
+            // Create the shader-resource view
+            D3D12_SHADER_RESOURCE_VIEW_DESC desc;
+            initializeSrvDesc(mFormat, mType, mArraySize, desc);
+            mSrvIndex = gSrvHeap->getCurrentIndex();
+            DescriptorHeap::CpuHandle srv = gSrvHeap->getFreeCpuHandle();
+            Device::getApiHandle()->CreateShaderResourceView(mApiHandle, &desc, srv);
+        }
+
+        return gSrvHeap->getHandle(mSrvIndex);
     }
 
     Texture::SharedPtr Texture::create3D(uint32_t width, uint32_t height, uint32_t depth, ResourceFormat format, uint32_t mipLevels, const void* pData, bool isSparse)

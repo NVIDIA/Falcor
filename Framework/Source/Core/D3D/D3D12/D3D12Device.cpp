@@ -177,9 +177,13 @@ namespace Falcor
                 return false;
             }
 
+            // Create a depth texture
+            auto pDepth = Texture::create2D(width, height, depthFormat, 1, 1);
+
             // Create the FBO
             pData->pDefaultFbos[i] = Fbo::create();
             pData->pDefaultFbos[i]->attachColorTarget(pColorTex, 0);
+            pData->pDefaultFbos[i]->attachDepthStencilTarget(pDepth);
             pData->currentBackBufferIndex = pData->pSwapChain->GetCurrentBackBufferIndex();
 		}
 

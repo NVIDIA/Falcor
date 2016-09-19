@@ -54,6 +54,7 @@ namespace Falcor
     using TextureHandle = ID3D12ResourcePtr;
     using RtvHandle = D3D12_CPU_DESCRIPTOR_HANDLE;
     using DsvHandle = D3D12_CPU_DESCRIPTOR_HANDLE;
+    using SrvHandle = D3D12_CPU_DESCRIPTOR_HANDLE;
 
     using BufferHandle = void*;
     using VaoHandle = void*;
@@ -68,7 +69,6 @@ namespace Falcor
     using RasterizerStateHandle = void*;
     using BlendStateHandle = void*;
     using SamplerApiHandle = void*;
-    using ShaderResourceViewHandle = void*;
 
     static const uint32_t kSwapChainBuffers = 3;
     /*! @} */

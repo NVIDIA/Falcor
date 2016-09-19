@@ -200,7 +200,7 @@ namespace Falcor
         */
         void generateMips() const;
 
-        ShaderResourceViewHandle getShaderResourceView() const;
+        SrvHandle getShaderResourceView() const;
 
         /** Name the texture
         */
@@ -235,6 +235,7 @@ namespace Falcor
         std::string mSourceFilename;
 
         Texture(uint32_t width, uint32_t height, uint32_t depth, uint32_t arraySize, uint32_t mipLevels, uint32_t sampleCount, ResourceFormat format, Type Type);
+        
         TextureHandle mApiHandle = 0;
         uint32_t mWidth = 0;
         uint32_t mHeight = 0;
@@ -250,7 +251,7 @@ namespace Falcor
 		int32_t mSparsePageHeight = 0;
 		int32_t mSparsePageDepth = 0;
 
-        mutable ShaderResourceViewHandle mpSRV;
+        mutable uint32_t mSrvIndex = -1;
         mutable std::map<uint32_t, uint64_t> mBindlessTextureHandle;
     };
 

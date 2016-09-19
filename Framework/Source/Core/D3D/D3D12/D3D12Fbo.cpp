@@ -29,7 +29,7 @@
 #include "Framework.h"
 #include "Core/FBO.h"
 #include "D3D12DescriptorHeap.h"
-#include "Core/D3D/D3DFbo.h"
+#include "Core/D3D/D3DViews.h"
 #include "Core/Device.h"
 
 namespace Falcor
@@ -123,6 +123,16 @@ namespace Falcor
         return pData->spRtvHeap->getHandle(it->second);
     }
 
+    DsvHandle Fbo::getDepthStencilView() const
+    {
+        FboData* pData = (FboData*)mpPrivateData;
+        const auto& pTexture = getDepthStencilTexture();
+        assert(pTexture);
+        const auto& it = pData->dsvMap.find(pTexture->getApiHandle());
+        assert(it != pData->dsvMap.end());
+        return pData->spDsvHeap->getHandle(it->second);
+    }
+
     uint32_t Fbo::getMaxColorTargetCount()
     {
         return D3D12_SIMULTANEOUS_RENDER_TARGET_COUNT;
@@ -134,7 +144,7 @@ namespace Falcor
         const auto pTexture = mColorAttachments[rtIndex].pTexture;
         if(pTexture)
         {
-            // Check if already created an RTV for the texture
+            // Check if we already created an RTV for the texture
             ID3D12ResourcePtr pResource = pTexture->getApiHandle();
             if(pData->rtvMap.find(pResource) == pData->rtvMap.end())
             {
@@ -151,6 +161,22 @@ namespace Falcor
 
     void Fbo::applyDepthAttachment()
     {
+        FboData* pData = (FboData*)mpPrivateData;
+        if(mDepthStencil.pTexture)
+        {
+            // Check if we already created an DSV for the texture
+            ID3D12ResourcePtr pResource = mDepthStencil.pTexture->getApiHandle();
+            if(pData->dsvMap.find(pResource) == pData->dsvMap.end())
+            {
+                // Create an RTV
+                D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc;
+                initializeDsvDesc<D3D12_DEPTH_STENCIL_VIEW_DESC>(mDepthStencil.pTexture.get(), mDepthStencil.mipLevel, mDepthStencil.arraySlice, dsvDesc);
+                uint32_t dsvIndex = pData->spDsvHeap->getCurrentIndex();
+                DescriptorHeap::CpuHandle dsv = pData->spDsvHeap->getFreeCpuHandle();
+                Device::getApiHandle()->CreateDepthStencilView(pResource, &dsvDesc, dsv);
+                pData->dsvMap[pResource] = dsvIndex;
+            }
+        }
     }
 
     bool Fbo::checkStatus() const

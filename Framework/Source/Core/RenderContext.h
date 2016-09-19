@@ -93,7 +93,7 @@ namespace Falcor
 		*/
 		void reset();
 
-		void clearFbo(const Fbo* pFbo, const glm::vec4& color);
+		void clearFbo(const Fbo* pFbo, const glm::vec4& color, float depth, uint8_t stencil, FboAttachmentType flags);
 
         /** Destructor
         */
