@@ -219,9 +219,6 @@
     <ClCompile Include="Core\D3D\D3D12\D3D12GpuTimer.cpp">
       <Filter>Core\D3D\D3D12</Filter>
     </ClCompile>
-    <ClCompile Include="Core\D3D\D3D12\D3D12ProgramVersioncpp">
-      <Filter>Core\D3D\D3D12</Filter>
-    </ClCompile>
     <ClCompile Include="Core\D3D\D3D12\D3D12RasterizerState.cpp">
       <Filter>Core\D3D\D3D12</Filter>
     </ClCompile>
@@ -364,6 +361,12 @@
       <Filter>Core\D3D\D3D12</Filter>
     </ClCompile>
     <ClCompile Include="Core\D3D\D3D12\D3D12ShaderReflection.cpp">
+      <Filter>Core\D3D\D3D12</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\D3D\D3D12\D3D12ProgramVersion.cpp">
+      <Filter>Core\D3D\D3D12</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\D3D\D3D12\D3D12Fence.cpp">
       <Filter>Core\D3D\D3D12</Filter>
     </ClCompile>
   </ItemGroup>
@@ -1416,6 +1419,9 @@
     </ClInclude>
     <ClInclude Include="Core\OpenGL\GLShaderReflection.h">
       <Filter>Core\OpenGL</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\D3D\D3D12\D3D12Fence.h">
+      <Filter>Core\D3D\D3D12</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

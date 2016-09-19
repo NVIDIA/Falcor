@@ -44,11 +44,13 @@ namespace Falcor
     MAKE_SMART_COM_PTR(ID3D12GraphicsCommandList);
     MAKE_SMART_COM_PTR(ID3D12DescriptorHeap);
     MAKE_SMART_COM_PTR(ID3D12Resource);
+    MAKE_SMART_COM_PTR(ID3D12Fence);
 
 	using WindowHandle = HWND;
 	using DeviceHandle = ID3D12DevicePtr;
 	using RenderContextHandle = ID3D12CommandQueuePtr;
 	using CommandListHandle = ID3D12GraphicsCommandListPtr;
+    using FenceHandle = ID3D12FencePtr;
 
     using TextureHandle = ID3D12Device*;
     using BufferHandle = void*;
@@ -66,7 +68,7 @@ namespace Falcor
     using SamplerApiHandle = void*;
     using ShaderResourceViewHandle = void*;
 
-    static const uint32_t kSwapChainBuffers = 4;
+    static const uint32_t kSwapChainBuffers = 3;
     /*! @} */
 }
 

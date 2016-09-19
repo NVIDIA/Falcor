@@ -25,63 +25,57 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#include "ProjectTemplate.h"
-#include "Core/D3D/FalcorD3D.h"
+#ifdef FALCOR_D3D12
+#include "Framework.h"
+#include "D3D12Fence.h"
+#include "Core/Device.h"
 
-void ProjectTemplate::initUI()
+namespace Falcor
 {
-    Gui::setGlobalHelpMessage("Sample application to load and display a model.\nUse the UI to switch between wireframe and solid mode.");
+    Fence::~Fence()
+    {
+        CloseHandle(mEvent);
+    }
+
+    Fence::SharedPtr Fence::create(uint64_t initValue)
+    {
+        SharedPtr pFence = SharedPtr(new Fence());
+        pFence->mEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
+        ID3D12Device* pDevice = Device::getApiHandle().GetInterfacePtr();
+
+        HRESULT hr = pDevice->CreateFence(initValue, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&pFence->mApiHandle));
+        if(FAILED(hr))
+        {
+            d3dTraceHR("Failed to create a fence object", hr);
+            return nullptr;
+        }
+
+        return pFence;
+    }
+
+    void Fence::setValue(uint64_t value)
+    {
+        d3d_call(mApiHandle->Signal(value));
+    }
+
+    uint64_t Fence::getValue() const
+    {
+        return mApiHandle->GetCompletedValue();
+    }
+
+    void Fence::signal(ID3D12CommandQueue* pQueue, uint64_t value) const
+    {
+        d3d_call(pQueue->Signal(mApiHandle, value));
+    }
+
+    void Fence::wait(uint64_t value) const
+    {
+        if(getValue() < value)
+        {
+            d3d_call(mApiHandle->SetEventOnCompletion(value, mEvent));
+            WaitForSingleObject(mEvent, INFINITE);
+        }
+    }
 }
 
-void ProjectTemplate::onLoad()
-{
-//     mpCamera = Camera::create();
-//     initUI();
-}
-
-void ProjectTemplate::onFrameRender()
-{
-	const glm::vec4 clearColor(0.38f, 0.52f, 0.10f, 1);
- 	mpRenderContext->clearFbo(mpDefaultFBO.get(), clearColor);
-//     renderText(getGlobalSampleMessage(true), glm::vec2(10, 10));
-}
-
-void ProjectTemplate::onShutdown()
-{
-
-}
-
-bool ProjectTemplate::onKeyEvent(const KeyboardEvent& keyEvent)
-{
-    return false;
-}
-
-bool ProjectTemplate::onMouseEvent(const MouseEvent& mouseEvent)
-{
-    return false;
-}
-
-void ProjectTemplate::onDataReload()
-{
-
-}
-
-void ProjectTemplate::onResizeSwapChain()
-{
-//     RenderContext::Viewport vp;
-//     vp.height = (float)mpDefaultFBO->getHeight();
-//     vp.width = (float)mpDefaultFBO->getWidth();
-//     mpRenderContext->setViewport(0, vp);
-//     mpCamera->setFovY(float(M_PI / 8));
-//     mpCamera->setAspectRatio(vp.width / vp.height);
-//     mpCamera->setDepthRange(0, 1000);
-}
-
-int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ LPSTR lpCmdLine, _In_ int nShowCmd)
-{
-    ProjectTemplate sample;
-    SampleConfig config;
-    config.windowDesc.title = "Falcor Project Template";
-    config.windowDesc.resizableWindow = true;
-    sample.run(config);
-}
+#endif //#ifdef FALCOR_D3D12

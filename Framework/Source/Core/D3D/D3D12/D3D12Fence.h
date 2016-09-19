@@ -25,63 +25,29 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#include "ProjectTemplate.h"
-#include "Core/D3D/FalcorD3D.h"
+#ifdef FALCOR_D3D12
+#include "Framework.h"
 
-void ProjectTemplate::initUI()
+namespace Falcor
 {
-    Gui::setGlobalHelpMessage("Sample application to load and display a model.\nUse the UI to switch between wireframe and solid mode.");
+    class Fence : public std::enable_shared_from_this<Fence>
+    {
+    public:
+        using SharedPtr = std::shared_ptr<Fence>;
+        using SharedConstPtr = std::shared_ptr<const Fence>;
+
+        static SharedPtr create(uint64_t initValue = 0);
+        ~Fence();
+
+        void setValue(uint64_t value);
+        uint64_t getValue() const;
+        void signal(ID3D12CommandQueue* pQueue, uint64_t value) const;
+        void wait(uint64_t value) const;
+    private:
+        Fence() = default;
+        HANDLE mEvent = INVALID_HANDLE_VALUE;
+        FenceHandle mApiHandle;
+    };
 }
 
-void ProjectTemplate::onLoad()
-{
-//     mpCamera = Camera::create();
-//     initUI();
-}
-
-void ProjectTemplate::onFrameRender()
-{
-	const glm::vec4 clearColor(0.38f, 0.52f, 0.10f, 1);
- 	mpRenderContext->clearFbo(mpDefaultFBO.get(), clearColor);
-//     renderText(getGlobalSampleMessage(true), glm::vec2(10, 10));
-}
-
-void ProjectTemplate::onShutdown()
-{
-
-}
-
-bool ProjectTemplate::onKeyEvent(const KeyboardEvent& keyEvent)
-{
-    return false;
-}
-
-bool ProjectTemplate::onMouseEvent(const MouseEvent& mouseEvent)
-{
-    return false;
-}
-
-void ProjectTemplate::onDataReload()
-{
-
-}
-
-void ProjectTemplate::onResizeSwapChain()
-{
-//     RenderContext::Viewport vp;
-//     vp.height = (float)mpDefaultFBO->getHeight();
-//     vp.width = (float)mpDefaultFBO->getWidth();
-//     mpRenderContext->setViewport(0, vp);
-//     mpCamera->setFovY(float(M_PI / 8));
-//     mpCamera->setAspectRatio(vp.width / vp.height);
-//     mpCamera->setDepthRange(0, 1000);
-}
-
-int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ LPSTR lpCmdLine, _In_ int nShowCmd)
-{
-    ProjectTemplate sample;
-    SampleConfig config;
-    config.windowDesc.title = "Falcor Project Template";
-    config.windowDesc.resizableWindow = true;
-    sample.run(config);
-}
+#endif //#ifdef FALCOR_D3D12

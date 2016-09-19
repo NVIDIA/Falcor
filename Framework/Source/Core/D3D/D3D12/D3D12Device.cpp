@@ -30,6 +30,7 @@
 #include "Sample.h"
 #include "Core/Device.h"
 #include "D3D12DescriptorHeap.h"
+#include "D3D12Fence.h"
 
 namespace Falcor
 {
@@ -40,6 +41,8 @@ namespace Falcor
 		DescriptorHeap::SharedPtr pRtvHeap;
 		ID3D12ResourcePtr pRenderTargets[kSwapChainBuffers];
 		ID3D12CommandQueuePtr pCommandQueue;
+        Fence::SharedPtr pFence;
+        uint64_t frameIndex = 0;
 		uint32_t syncInterval = 0;
 		bool isWindowOccluded = false;
 	};
@@ -208,6 +211,15 @@ namespace Falcor
 		// Present
 		pData->pSwapChain->Present(1, 0);
 		pData->currentBackBufferIndex = (pData->currentBackBufferIndex + 1) % kSwapChainBuffers;
+
+        pData->frameIndex++;
+        pData->pFence->signal(pData->pCommandQueue, pData->frameIndex);
+
+        // Wait until the selected back-buffer is ready
+        if(pData->frameIndex > kSwapChainBuffers)
+        {
+            pData->pFence->wait(pData->frameIndex - kSwapChainBuffers);
+        }
 	}
 
 	bool Device::init(const Desc& desc)
@@ -281,6 +293,7 @@ namespace Falcor
 
 		mVsyncOn = desc.enableVsync;
 
+        pData->pFence = Fence::create();
 		return true;
     }
 
