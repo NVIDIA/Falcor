@@ -207,9 +207,6 @@
     <ClCompile Include="Core\D3D\D3D12\D3D12Buffer.cpp">
       <Filter>Core\D3D\D3D12</Filter>
     </ClCompile>
-    <ClCompile Include="Core\D3D\D3D12\D3D12CommandList.cpp">
-      <Filter>Core\D3D\D3D12</Filter>
-    </ClCompile>
     <ClCompile Include="Core\D3D\D3D12\D3D12DepthStencilState.cpp">
       <Filter>Core\D3D\D3D12</Filter>
     </ClCompile>
@@ -1404,9 +1401,6 @@
     </ClInclude>
     <ClInclude Include="Core\Device.h">
       <Filter>Core</Filter>
-    </ClInclude>
-    <ClInclude Include="Core\D3D\D3D12\D3D12CommandList.h">
-      <Filter>Core\D3D\D3D12</Filter>
     </ClInclude>
     <ClInclude Include="Core\D3D\D3D12\D3D12DescriptorHeap.h">
       <Filter>Core\D3D\D3D12</Filter>

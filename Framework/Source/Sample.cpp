@@ -235,6 +235,10 @@ namespace Falcor
 			mpDefaultFBO = mpDevice->getSwapChainFbo();
             PROFILE(onFrameRender);
             calculateTime();
+
+			// Reset the command list
+			mpRenderContext->reset();
+
 			// Bind the default state
 			mpRenderContext->setFbo(mpDefaultFBO);
 			mpRenderContext->setDepthStencilState(nullptr, 0);

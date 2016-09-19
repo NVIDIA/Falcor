@@ -83,7 +83,18 @@ namespace Falcor
 
         /** create a new object
         */
-        static SharedPtr create();
+        static SharedPtr create(uint32_t allocatorsCount = 1);
+
+		/** Get the list API handle
+		*/
+		CommandListHandle getCommandListApiHandle() const;
+
+		/** Reset
+		*/
+		void reset();
+
+		void clearFbo(const Fbo* pFbo, const glm::vec4& color);
+
         /** Destructor
         */
         ~RenderContext();
@@ -291,5 +302,7 @@ namespace Falcor
         void applyTopology() const;
         void prepareForDraw() const;
         void prepareForDrawApi() const;
+
+		void* mpApiData = nullptr;
     };
 }

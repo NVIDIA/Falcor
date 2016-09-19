@@ -47,6 +47,8 @@ namespace Falcor
 
 	using WindowHandle = HWND;
 	using DeviceHandle = ID3D12DevicePtr;
+	using RenderContextHandle = ID3D12CommandQueuePtr;
+	using CommandListHandle = ID3D12GraphicsCommandListPtr;
 
     using TextureHandle = ID3D12Device*;
     using BufferHandle = void*;

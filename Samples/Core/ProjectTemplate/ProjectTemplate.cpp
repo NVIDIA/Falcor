@@ -27,21 +27,6 @@
 ***************************************************************************/
 #include "ProjectTemplate.h"
 #include "Core/D3D/FalcorD3D.h"
-#include "Core/D3D/D3D12/D3D12CommandList.h"
-#include "Core/D3D/D3D12/D3D12DescriptorHeap.h"
-
-namespace Falcor
-{
-	struct D3D12Data
-	{
-		IDXGISwapChain3Ptr pSwapChain = nullptr;
-		uint32_t currentBackBufferIndex;
-		CommandList::SharedPtr pCmdList;
-		DescriptorHeap::SharedPtr pRtvHeap;
-		ID3D12ResourcePtr pRenderTargets[kSwapChainBuffers];
-		uint32_t syncInterval = 0;
-	};
-}
 
 void ProjectTemplate::initUI()
 {
@@ -56,34 +41,8 @@ void ProjectTemplate::onLoad()
 
 void ProjectTemplate::onFrameRender()
 {
-	D3D12Data* pData = (D3D12Data*)Device::getPrivateData();
-	DeviceHandle pDevice = Device::getApiHandle();
-
-	pData->pCmdList->reset();
-    const float clearColor[] = {0.0f, 0.2f, 0.4f, 1.0f};
-
-    // Indicate that the back buffer will be used as a render target.
-    ID3D12GraphicsCommandList* pList = pData->pCmdList->getList();
-    D3D12_RESOURCE_BARRIER barrier;
-    barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-    barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
-    barrier.Transition.pResource = pData->pRenderTargets[pData->currentBackBufferIndex];
-    barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_PRESENT;
-    barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
-    barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
-
-    pList->ResourceBarrier(1, &barrier);
-
-    DescriptorHeap::CpuHandle rtv = pData->pRtvHeap->getHandle(pData->currentBackBufferIndex);
-    pList->ClearRenderTargetView(rtv, clearColor, 0, nullptr);
-
-    barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
-    barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_PRESENT;
-    pList->ResourceBarrier(1, &barrier);
-
-//     const glm::vec4 clearColor(0.38f, 0.52f, 0.10f, 1);
-//     mpDefaultFBO->clear(clearColor, 1.0f, 0, FboAttachmentType::All);
-// 
+	const glm::vec4 clearColor(0.38f, 0.52f, 0.10f, 1);
+	mpRenderContext->clearFbo(mpDefaultFBO.get(), clearColor);
 //     renderText(getGlobalSampleMessage(true), glm::vec2(10, 10));
 }
 

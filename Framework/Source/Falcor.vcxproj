@@ -47,7 +47,6 @@
     <ClCompile Include="Core\D3D\D3D11\D3D11Window.cpp" />
     <ClCompile Include="Core\D3D\D3D12\D3D12BlendState.cpp" />
     <ClCompile Include="Core\D3D\D3D12\D3D12Buffer.cpp" />
-    <ClCompile Include="Core\D3D\D3D12\D3D12CommandList.cpp" />
     <ClCompile Include="Core\D3D\D3D12\D3D12DepthStencilState.cpp" />
     <ClCompile Include="Core\D3D\D3D12\D3D12Device.cpp" />
     <ClCompile Include="Core\D3D\D3D12\D3D12Fbo.cpp" />
@@ -397,7 +396,6 @@
     <ClInclude Include="Core\Buffer.h" />
     <ClInclude Include="Core\D3D\D3D11\FalcorD3D11.h" />
     <ClInclude Include="Core\D3D\D3D11\D3D11ShaderReflection.h" />
-    <ClInclude Include="Core\D3D\D3D12\D3D12CommandList.h" />
     <ClInclude Include="Core\D3D\D3D12\FalcorD3D12.h" />
     <ClInclude Include="Core\D3D\D3D12\D3D12DescriptorHeap.h" />
     <ClInclude Include="Core\D3D\D3D12\D3D12ShaderReflection.h" />

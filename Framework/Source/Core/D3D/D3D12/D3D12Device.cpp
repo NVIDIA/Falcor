@@ -29,7 +29,6 @@
 #include "Framework.h"
 #include "Sample.h"
 #include "Core/Device.h"
-#include "D3D12CommandList.h"
 #include "D3D12DescriptorHeap.h"
 
 namespace Falcor
@@ -38,9 +37,9 @@ namespace Falcor
 	{
 		IDXGISwapChain3Ptr pSwapChain = nullptr;
 		uint32_t currentBackBufferIndex;
-		CommandList::SharedPtr pCmdList;
 		DescriptorHeap::SharedPtr pRtvHeap;
 		ID3D12ResourcePtr pRenderTargets[kSwapChainBuffers];
+		ID3D12CommandQueuePtr pCommandQueue;
 		uint32_t syncInterval = 0;
 		bool isWindowOccluded = false;
 	};
@@ -199,7 +198,14 @@ namespace Falcor
 	void Device::present()
 	{
 		D3D12Data* pData = (D3D12Data*)mpPrivateData;
-		pData->pCmdList->submit();
+
+		// Submit the command list
+		auto pGfxList = mpRenderContext->getCommandListApiHandle();
+		d3d_call(pGfxList->Close());
+		ID3D12CommandList* pList = pGfxList.GetInterfacePtr();
+		pData->pCommandQueue->ExecuteCommandLists(1, &pList);
+
+		// Present
 		pData->pSwapChain->Present(1, 0);
 		pData->currentBackBufferIndex = (pData->currentBackBufferIndex + 1) % kSwapChainBuffers;
 	}
@@ -235,13 +241,6 @@ namespace Falcor
 			return false;
 		}
 
-		// Create command-queues
-		pData->pCmdList = CommandList::create(kSwapChainBuffers);
-		if (pData->pCmdList == nullptr)
-		{
-			return false;
-		}
-
 		// Create Heaps
 		pData->pRtvHeap = createHeaps();
 		if (pData->pRtvHeap == nullptr)
@@ -249,8 +248,24 @@ namespace Falcor
 			return false;
 		}
 
+		mpRenderContext = RenderContext::create(kSwapChainBuffers);
+
+		// Create a command queue
+		// Create the command queue
+		D3D12_COMMAND_QUEUE_DESC cqDesc = {};
+		cqDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
+		cqDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
+
+		ID3D12DevicePtr pDevice = Device::getApiHandle();
+
+		if (FAILED(pDevice->CreateCommandQueue(&cqDesc, IID_PPV_ARGS(&pData->pCommandQueue))))
+		{
+			Logger::log(Logger::Level::Error, "Failed to create command queue");
+			return nullptr;
+		}
+
 		// Create the swap-chain
-		pData->pSwapChain = createSwapChain(pDxgiFactory, mpWindow.get(), pData->pCmdList->getNativeCommandQueue(), desc.colorFormat);
+		pData->pSwapChain = createSwapChain(pDxgiFactory, mpWindow.get(), pData->pCommandQueue, desc.colorFormat);
 		if(pData->pSwapChain == nullptr)
 		{
 			return false;
@@ -264,7 +279,6 @@ namespace Falcor
 			return false;
 		}
 
-		mpRenderContext = RenderContext::create();
 		mVsyncOn = desc.enableVsync;
 
 		return true;
