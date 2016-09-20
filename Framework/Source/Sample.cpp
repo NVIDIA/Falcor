@@ -236,9 +236,6 @@ namespace Falcor
             PROFILE(onFrameRender);
             calculateTime();
 
-			// Reset the command list
-			mpRenderContext->reset();
-
 			// Bind the default state
 			mpRenderContext->setFbo(mpDefaultFBO);
 			mpRenderContext->setDepthStencilState(nullptr, 0);
@@ -263,6 +260,7 @@ namespace Falcor
         }
         printProfileData();
 		mpDevice->present();
+        mpRenderContext->reset();
     }
 
     void Sample::captureScreen()

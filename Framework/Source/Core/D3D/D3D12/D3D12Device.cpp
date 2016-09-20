@@ -209,6 +209,9 @@ namespace Falcor
 	{
 		DeviceData* pData = (DeviceData*)mpPrivateData;
 
+        // Transition the back-buffer to a presentable state
+        mpRenderContext->resourceBarrier(pData->pDefaultFbos[pData->currentBackBufferIndex]->getColorTexture(0).get(), D3D12_RESOURCE_STATE_PRESENT);
+
 		// Submit the command list
 		auto pGfxList = mpRenderContext->getCommandListApiHandle();
 		d3d_call(pGfxList->Close());
@@ -216,7 +219,7 @@ namespace Falcor
 		pData->pCommandQueue->ExecuteCommandLists(1, &pList);
 
 		// Present
-		pData->pSwapChain->Present(1, 0);
+		pData->pSwapChain->Present(pData->syncInterval, 0);
 		pData->currentBackBufferIndex = (pData->currentBackBufferIndex + 1) % kSwapChainBuffers;
 
         pData->frameIndex++;

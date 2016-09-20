@@ -94,6 +94,7 @@ namespace Falcor
 		void reset();
 
 		void clearFbo(const Fbo* pFbo, const glm::vec4& color, float depth, uint8_t stencil, FboAttachmentType flags);
+        void resourceBarrier(const Texture* pTexture, D3D12_RESOURCE_STATES state);
 
         /** Destructor
         */
@@ -257,7 +258,8 @@ namespace Falcor
         */
         void popScissor(uint32_t index);
     private:
-        RenderContext(uint32_t viewportCount);
+        RenderContext() = default;
+        void initCommon(uint32_t viewportCount);
 
         struct State
         {
@@ -296,7 +298,7 @@ namespace Falcor
         void applyBlendState() const;
         void applyProgram() const;
         void applyVao() const;
-        void applyFbo() const;
+        void applyFbo();
         void applyUniformBuffer(uint32_t Index) const;
         void applyShaderStorageBuffer(uint32_t Index) const;
         void applyTopology() const;

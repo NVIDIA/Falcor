@@ -34,7 +34,7 @@
 
 namespace Falcor
 {
-    RenderContext::RenderContext(uint32_t viewportCount)
+    void RenderContext::initCommon(uint32_t viewportCount)
     {
         // create the rasterizer state
         RasterizerState::Desc rsDesc;
@@ -220,10 +220,9 @@ namespace Falcor
     {
         const auto& pTemp = (pFbo == nullptr) ? mpEmptyFBO : pFbo;
         mState.pFbo = pTemp;
-		// DISABLED_FOR_D3D12
-		//if(pTemp->checkStatus())
+        if(pTemp->checkStatus())
         {
-//            applyFbo();
+            applyFbo();
         }
     }
 

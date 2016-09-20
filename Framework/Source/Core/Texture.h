@@ -226,6 +226,8 @@ namespace Falcor
         */
 		void setSparseResidencyPageIndex(bool isResident, uint32_t mipLevel,  uint32_t pageX, uint32_t pageY, uint32_t pageZ, uint32_t width=1, uint32_t height=1, uint32_t depth=1);
 
+        D3D12_RESOURCE_STATES getResourceState() const { return mResourceState; }
+        void setResourceState(D3D12_RESOURCE_STATES state) const { mResourceState = state; }
     protected:
         friend class Device;
         
@@ -253,6 +255,7 @@ namespace Falcor
 
         mutable uint32_t mSrvIndex = -1;
         mutable std::map<uint32_t, uint64_t> mBindlessTextureHandle;
+        mutable D3D12_RESOURCE_STATES mResourceState = D3D12_RESOURCE_STATE_COMMON;
     };
 
     inline const std::string to_string(Texture::Type Type)

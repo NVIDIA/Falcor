@@ -41,8 +41,8 @@ namespace Falcor
         static const uint32_t kMaxRenderTargetViews = 16;
         static const uint32_t kMaxDepthStencilViews = 16;
 
-        std::map<ID3D12Resource*, uint32_t> rtvMap;
-        std::map<ID3D12Resource*, uint32_t> dsvMap;
+        std::map<const Texture*, uint32_t> rtvMap;
+        std::map<const Texture*, uint32_t> dsvMap;
     };
 
     DescriptorHeap::SharedPtr FboData::spRtvHeap;
@@ -116,21 +116,69 @@ namespace Falcor
     RtvHandle Fbo::getRenderTargetView(uint32_t rtIndex) const
     {
         FboData* pData = (FboData*)mpPrivateData;
-        const auto& pTexture = getColorTexture(rtIndex);
-        assert(pTexture);
-        const auto& it = pData->rtvMap.find(pTexture->getApiHandle());
-        assert(it != pData->rtvMap.end());
-        return pData->spRtvHeap->getHandle(it->second);
+        const auto& pTexture = getColorTexture(rtIndex).get();
+        auto& it = pData->rtvMap.find(pTexture);
+        uint32_t rtvIndex;
+
+        if(it == pData->rtvMap.end())
+        {
+            // Create the render-target view
+            ID3D12ResourcePtr pResource = pTexture ? pTexture->getApiHandle() : nullptr;
+            D3D12_RENDER_TARGET_VIEW_DESC rtvDesc = {};
+            if(pTexture)
+            {
+                initializeRtvDesc<D3D12_RENDER_TARGET_VIEW_DESC>(pTexture, mColorAttachments[rtIndex].mipLevel, mColorAttachments[rtIndex].arraySlice, rtvDesc);
+            }
+            else
+            {
+                rtvDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+                rtvDesc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D;
+            }
+            rtvIndex = pData->spRtvHeap->getCurrentIndex();
+            DescriptorHeap::CpuHandle rtv = pData->spRtvHeap->getFreeCpuHandle();
+            Device::getApiHandle()->CreateRenderTargetView(pResource, &rtvDesc, rtv);
+            pData->rtvMap[pTexture] = rtvIndex;
+        }
+        else
+        {
+            rtvIndex = it->second;
+        }
+
+        return pData->spRtvHeap->getHandle(rtvIndex);
     }
 
     DsvHandle Fbo::getDepthStencilView() const
     {
         FboData* pData = (FboData*)mpPrivateData;
-        const auto& pTexture = getDepthStencilTexture();
-        assert(pTexture);
-        const auto& it = pData->dsvMap.find(pTexture->getApiHandle());
-        assert(it != pData->dsvMap.end());
-        return pData->spDsvHeap->getHandle(it->second);
+        const auto& pTexture = getDepthStencilTexture().get();
+        auto& it = pData->dsvMap.find(pTexture);
+        uint32_t dsvIndex;
+
+        if(it == pData->dsvMap.end())
+        {
+            // Create the render-target view
+            ID3D12ResourcePtr pResource = pTexture ? pTexture->getApiHandle() : nullptr;
+            D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc = {};
+            if(pTexture)
+            {
+                initializeDsvDesc<D3D12_DEPTH_STENCIL_VIEW_DESC>(pTexture, mDepthStencil.mipLevel, mDepthStencil.arraySlice, dsvDesc);
+            }
+            else
+            {
+                dsvDesc.Format = DXGI_FORMAT_D16_UNORM;
+                dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
+            }
+            dsvIndex = pData->spDsvHeap->getCurrentIndex();
+            DescriptorHeap::CpuHandle dsv = pData->spDsvHeap->getFreeCpuHandle();
+            Device::getApiHandle()->CreateDepthStencilView(pResource, &dsvDesc, dsv);
+            pData->dsvMap[pTexture] = dsvIndex;
+        }
+        else
+        {
+            dsvIndex = it->second;
+        }
+
+        return pData->spDsvHeap->getHandle(dsvIndex);
     }
 
     uint32_t Fbo::getMaxColorTargetCount()
@@ -140,43 +188,10 @@ namespace Falcor
 
     void Fbo::applyColorAttachment(uint32_t rtIndex)
     {
-        FboData* pData = (FboData*)mpPrivateData;
-        const auto pTexture = mColorAttachments[rtIndex].pTexture;
-        if(pTexture)
-        {
-            // Check if we already created an RTV for the texture
-            ID3D12ResourcePtr pResource = pTexture->getApiHandle();
-            if(pData->rtvMap.find(pResource) == pData->rtvMap.end())
-            {
-                // Create an RTV
-                D3D12_RENDER_TARGET_VIEW_DESC rtvDesc;
-                initializeRtvDesc<D3D12_RENDER_TARGET_VIEW_DESC>(pTexture.get(), mColorAttachments[rtIndex].mipLevel, mColorAttachments[rtIndex].arraySlice, rtvDesc);
-                uint32_t rtvIndedx = pData->spRtvHeap->getCurrentIndex();
-                DescriptorHeap::CpuHandle rtv = pData->spRtvHeap->getFreeCpuHandle();
-                Device::getApiHandle()->CreateRenderTargetView(pResource, &rtvDesc, rtv);
-                pData->rtvMap[pResource] = rtvIndedx;
-            }
-        }
     }
 
     void Fbo::applyDepthAttachment()
     {
-        FboData* pData = (FboData*)mpPrivateData;
-        if(mDepthStencil.pTexture)
-        {
-            // Check if we already created an DSV for the texture
-            ID3D12ResourcePtr pResource = mDepthStencil.pTexture->getApiHandle();
-            if(pData->dsvMap.find(pResource) == pData->dsvMap.end())
-            {
-                // Create an RTV
-                D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc;
-                initializeDsvDesc<D3D12_DEPTH_STENCIL_VIEW_DESC>(mDepthStencil.pTexture.get(), mDepthStencil.mipLevel, mDepthStencil.arraySlice, dsvDesc);
-                uint32_t dsvIndex = pData->spDsvHeap->getCurrentIndex();
-                DescriptorHeap::CpuHandle dsv = pData->spDsvHeap->getFreeCpuHandle();
-                Device::getApiHandle()->CreateDepthStencilView(pResource, &dsvDesc, dsv);
-                pData->dsvMap[pResource] = dsvIndex;
-            }
-        }
     }
 
     bool Fbo::checkStatus() const

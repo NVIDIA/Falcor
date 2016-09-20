@@ -362,7 +362,7 @@ namespace Falcor
         gl_call(glBindVertexArray(apiHandle));
     }
 
-    void RenderContext::applyFbo() const
+    void RenderContext::applyFbo()
     {
         auto pFbo = mState.pFbo;
         if(pFbo->checkStatus())
