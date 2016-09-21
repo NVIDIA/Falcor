@@ -30,6 +30,7 @@
 #include "core/Texture.h"
 #include "Core/FBO.h"
 #include "Core/RenderContext.h"
+#include "Core/GpuFence.h"
 
 namespace Falcor
 {
@@ -89,9 +90,10 @@ namespace Falcor
 		*/
 		static DeviceHandle getApiHandle() { return sApiHandle; }
 
-		/** DISABLED_FOR_D3D12 FIXME: Should not be here
+		/** Get the global frame fence object
+			DISABLED_FOR_D3D12 Device should be a singleton
 		*/
-		static void* getPrivateData() { return mpPrivateData; }
+		static GpuFence::SharedPtr getFrameGpuFence() { return sFrameFence; }
 
 		/** Present the back-buffer to the window
 		*/
@@ -107,6 +109,7 @@ namespace Falcor
 
 		Window::SharedPtr mpWindow;
 		static DeviceHandle sApiHandle;
+		static GpuFence::SharedPtr sFrameFence;
 		static void* mpPrivateData;
 		RenderContext::SharedPtr mpRenderContext;
 		bool mVsyncOn;

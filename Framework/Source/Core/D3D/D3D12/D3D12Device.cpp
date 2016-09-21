@@ -40,12 +40,12 @@ namespace Falcor
 		uint32_t currentBackBufferIndex;
         Fbo::SharedPtr pDefaultFbos[kSwapChainBuffers];
         ID3D12CommandQueuePtr pCommandQueue;
-        GpuFence::SharedPtr pFence;
 		uint32_t syncInterval = 0;
 		bool isWindowOccluded = false;
 	};
 
 	DeviceHandle Device::sApiHandle;
+	GpuFence::SharedPtr Device::sFrameFence;
 	void* Device::mpPrivateData = nullptr;
 
 	void d3dTraceHR(const std::string& msg, HRESULT hr)
@@ -221,13 +221,13 @@ namespace Falcor
 		pData->pSwapChain->Present(pData->syncInterval, 0);
 		pData->currentBackBufferIndex = (pData->currentBackBufferIndex + 1) % kSwapChainBuffers;
 
-		pData->pFence->incAndSignal(pData->pCommandQueue);
+		sFrameFence->incAndSignal(pData->pCommandQueue);
 
         // Wait until the selected back-buffer is ready
-		uint64_t frameId = pData->pFence->getCpuValue();
+		uint64_t frameId = sFrameFence->getCpuValue();
         if(frameId > kSwapChainBuffers)
         {
-            pData->pFence->wait(frameId - kSwapChainBuffers);
+			sFrameFence->wait(frameId - kSwapChainBuffers);
         }
 	}
 
@@ -288,11 +288,9 @@ namespace Falcor
             return false;
         }
 
+		sFrameFence = GpuFence::create();
         mpRenderContext = RenderContext::create(kSwapChainBuffers);
-
 		mVsyncOn = desc.enableVsync;
-
-        pData->pFence = GpuFence::create();
 		return true;
     }
 

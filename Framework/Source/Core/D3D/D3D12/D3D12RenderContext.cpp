@@ -31,16 +31,16 @@
 #include "D3D12DescriptorHeap.h"
 #include "Core/Device.h"
 #include "glm/gtc/type_ptr.hpp"
+#include "D3D12SmartPools.h"
 
 namespace Falcor
 {
 	struct ApiData
 	{
-		std::vector<ID3D12CommandAllocatorPtr> pAllocators;
+		CommandAllocatorPool::SharedPtr pAllocatorPool;
 		ID3D12GraphicsCommandListPtr pList;
-		uint32_t activeAllocator = 0;
 	};
-
+	
 	RenderContext::~RenderContext()
 	{
 		delete (ApiData*)mpApiData;
@@ -54,20 +54,11 @@ namespace Falcor
 		pCtx->mpApiData = pApiData;
 
         // Create a command allocator
-		pApiData->pAllocators.resize(allocatorsCount);
+		pApiData->pAllocatorPool = CommandAllocatorPool::create(Device::getFrameGpuFence());
 		auto pDevice = Device::getApiHandle();
-
-		for (uint32_t i = 0; i < allocatorsCount; i++)
-		{
-			if (FAILED(pDevice->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&pApiData->pAllocators[i]))))
-			{
-				Logger::log(Logger::Level::Error, "Failed to create command allocator");
-				return nullptr;
-			}
-		}
-
+		
 		// Create a command list
-		if (FAILED(pDevice->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, pApiData->pAllocators[0], nullptr, IID_PPV_ARGS(&pApiData->pList))))
+		if (FAILED(pDevice->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, pApiData->pAllocatorPool->allocate(), nullptr, IID_PPV_ARGS(&pApiData->pList))))
 		{
 			Logger::log(Logger::Level::Error, "Failed to create command list");
 			return nullptr;
@@ -89,9 +80,9 @@ namespace Falcor
 	{
 		ApiData* pApiData = (ApiData*)mpApiData;
 		// Skip to the next allocator
-		pApiData->activeAllocator = (pApiData->activeAllocator + 1) % pApiData->pAllocators.size();
-		d3d_call(pApiData->pAllocators[pApiData->activeAllocator]->Reset());
-		d3d_call(pApiData->pList->Reset(pApiData->pAllocators[pApiData->activeAllocator], nullptr));
+		ID3D12CommandAllocatorPtr pAllocator = pApiData->pAllocatorPool->allocate();
+		d3d_call(pAllocator->Reset());
+		d3d_call(pApiData->pList->Reset(pAllocator, nullptr));
 	}
 
     void RenderContext::resourceBarrier(const Texture* pTexture, D3D12_RESOURCE_STATES state)

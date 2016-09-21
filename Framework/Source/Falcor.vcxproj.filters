@@ -1424,6 +1424,12 @@
     <ClInclude Include="Core\GpuFence.h">
       <Filter>Core</Filter>
     </ClInclude>
+    <ClInclude Include="Core\SmartPool.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\D3D\D3D12\D3D12SmartPools.h">
+      <Filter>Core\D3D\D3D12</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Externals">
