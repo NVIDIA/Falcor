@@ -78,9 +78,9 @@ namespace Falcor
         return 0;
     }
 
-    void Texture::makeNonResident(const Sampler* pSampler) const
+    void Texture::evict(const Sampler* pSampler) const
     {
-        UNSUPPORTED_IN_D3D12("Texture::MakeNonResident()");
+        UNSUPPORTED_IN_D3D12("Texture::evict()");
     }
 
     Texture::SharedPtr Texture::create1D(uint32_t width, ResourceFormat format, uint32_t arraySize, uint32_t mipLevels, const void* pData)

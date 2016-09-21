@@ -200,9 +200,9 @@ namespace Falcor
         return 0;
     }
 
-    void Buffer::makeNonResident() const
+    void Buffer::evict() const
     {
-        UNSUPPORTED_IN_D3D11("Buffer::MakeNonResident()");
+        UNSUPPORTED_IN_D3D11("Buffer::evict()");
     }
 }
 #endif // #ifdef FALCOR_D3D11

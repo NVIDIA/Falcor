@@ -327,7 +327,7 @@ namespace Falcor
             TexPtr& GpuTex = getTexture(&mData.values, kTextureSlots[i]);
 			if(GpuTex.pTexture)
             {
-                GpuTex.pTexture->makeNonResident(mpSamplerOverride.get());
+                GpuTex.pTexture->evict(mpSamplerOverride.get());
                 GpuTex.ptr = 0;
             }
         }

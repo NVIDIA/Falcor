@@ -53,9 +53,9 @@ namespace Falcor
         return 0;
     }
 
-    void Texture::makeNonResident(const Sampler* pSampler) const
+    void Texture::evict(const Sampler* pSampler) const
     {
-        UNSUPPORTED_IN_D3D11("Texture::MakeNonResident()");
+        UNSUPPORTED_IN_D3D11("Texture::evict()");
     }
 
     std::vector<D3D11_SUBRESOURCE_DATA> createInitDataVector(uint32_t width, uint32_t height, uint32_t depth, ResourceFormat format, uint32_t arraySize, uint32_t mipLevels, const void* pData)

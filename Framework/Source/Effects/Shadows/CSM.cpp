@@ -488,7 +488,7 @@ namespace Falcor
             const auto pTexture = mShadowPass.pFbo->getColorTexture(0);
             if(pTexture)
             {
-                pTexture->makeNonResident(mShadowPass.pVSMTrilinearSampler.get());
+                pTexture->evict(mShadowPass.pVSMTrilinearSampler.get());
             }
         }
         Sampler::Desc samplerDesc;

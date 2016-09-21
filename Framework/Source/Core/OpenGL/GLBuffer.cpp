@@ -180,7 +180,7 @@ namespace Falcor
         return mGpuPtr;
     }
 
-    void Buffer::makeNonResident() const
+    void Buffer::evict() const
     {
         if(mGpuPtr)
         {

@@ -333,12 +333,12 @@ namespace Falcor
 
 	void AreaLight::unloadGPUData()
 	{
-	    // Unload GPU data by calling makeNonResident()
-		mIndexBuf->makeNonResident();
-		mVertexBuf->makeNonResident();
+	    // Unload GPU data by calling evict()
+		mIndexBuf->evict();
+		mVertexBuf->evict();
 		if (mTexCoordBuf)
-			mTexCoordBuf->makeNonResident();
-		mMeshCDFBuf->makeNonResident();
+			mTexCoordBuf->evict();
+		mMeshCDFBuf->evict();
 	}
 
 	void AreaLight::setMeshData(const Mesh::SharedPtr& pMesh, uint32_t instanceId)

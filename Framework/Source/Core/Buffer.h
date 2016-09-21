@@ -150,9 +150,9 @@ namespace Falcor
         */
         uint64_t makeResident(Buffer::GpuAccessFlags flags = Buffer::GpuAccessFlags::ReadOnly) const;
 
-        /** Unload the texture to the GPU memory. This function is only valid after makeResident() call was made with a matching sample. If makeResident() wasn't called, the MakeNonResident() will be silently ignored.
+        /** Unload the texture to the GPU memory. This function is only valid after makeResident() call was made with a matching sample. If makeResident() wasn't called, the evict() will be silently ignored.
         */
-        void makeNonResident() const;
+        void evict() const;
     protected:
         Buffer(size_t size, BindFlags bind, AccessFlags access) : mSize(size), mBindFlags(bind), mAccessFlags(access){}
         BufferHandle mApiHandle;

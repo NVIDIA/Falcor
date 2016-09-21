@@ -89,7 +89,7 @@ namespace Falcor
         return handleIt->second;
     }
 
-    void Texture::makeNonResident(const Sampler* pSampler) const
+    void Texture::evict(const Sampler* pSampler) const
     {
         uint32_t SamplerID = pSampler ? pSampler->getApiHandle() : 0;
 

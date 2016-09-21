@@ -64,10 +64,10 @@ namespace Falcor
         */
         uint64_t makeResident(const Sampler* pSampler) const;
 
-        /** Unload the texture to the GPU memory. This function is only valid after makeResident() call was made with a matching sample. If makeResident() wasn't called, the MakeNonResident() will be silently ignored.
+        /** Evict the texture from the GPU memory. This function is only valid after makeResident() call was made with a matching sample. If makeResident() wasn't called, the evict() will be silently ignored.
             \params[in] pSampler The sampler object used in a matching makeResident() call.
         */
-        void makeNonResident(const Sampler* pSampler) const;
+        void evict(const Sampler* pSampler) const;
 
         ~Texture();
 
