@@ -25,29 +25,31 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#ifdef FALCOR_D3D12
+#pragma once
 #include "Framework.h"
 
 namespace Falcor
 {
-    class Fence : public std::enable_shared_from_this<Fence>
+    class GpuFence : public std::enable_shared_from_this<GpuFence>
     {
     public:
-        using SharedPtr = std::shared_ptr<Fence>;
-        using SharedConstPtr = std::shared_ptr<const Fence>;
+		using SharedPtr = std::shared_ptr<GpuFence>;
+        using SharedConstPtr = std::shared_ptr<const GpuFence>;
 
         static SharedPtr create(uint64_t initValue = 0);
-        ~Fence();
+        ~GpuFence();
 
         void setValue(uint64_t value);
-        uint64_t getValue() const;
-        void signal(ID3D12CommandQueue* pQueue, uint64_t value) const;
+        uint64_t getGpuValue() const;
+		uint64_t getCpuValue() const { return mCpuValue; }
+		void incAndSignal(CommandQueueHandle pQueue) { mCpuValue++; signal(pQueue); }
         void wait(uint64_t value) const;
+		void flush() const { wait(mCpuValue); }
     private:
-        Fence() = default;
+		GpuFence(uint64_t initValue) : mCpuValue(initValue) {}
+		void signal(CommandQueueHandle pQueue);
+		uint64_t mCpuValue;
         HANDLE mEvent = INVALID_HANDLE_VALUE;
         FenceHandle mApiHandle;
     };
 }
-
-#endif //#ifdef FALCOR_D3D12

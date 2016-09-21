@@ -50,6 +50,7 @@ namespace Falcor
 	using DeviceHandle = ID3D12DevicePtr;
 	using RenderContextHandle = ID3D12CommandQueuePtr;
 	using CommandListHandle = ID3D12GraphicsCommandListPtr;
+	using CommandQueueHandle = ID3D12CommandQueuePtr;
     using FenceHandle = ID3D12FencePtr;
     using TextureHandle = ID3D12ResourcePtr;
     using RtvHandle = D3D12_CPU_DESCRIPTOR_HANDLE;

@@ -50,7 +50,7 @@
     <ClCompile Include="Core\D3D\D3D12\D3D12DepthStencilState.cpp" />
     <ClCompile Include="Core\D3D\D3D12\D3D12Device.cpp" />
     <ClCompile Include="Core\D3D\D3D12\D3D12Fbo.cpp" />
-    <ClCompile Include="Core\D3D\D3D12\D3D12Fence.cpp" />
+    <ClCompile Include="Core\D3D\D3D12\D3D12GpuFence.cpp" />
     <ClCompile Include="Core\D3D\D3D12\D3D12GpuTimer.cpp" />
     <ClCompile Include="Core\D3D\D3D12\D3D12ProgramVersion.cpp" />
     <ClCompile Include="Core\D3D\D3D12\D3D12RasterizerState.cpp" />
@@ -397,7 +397,6 @@
     <ClInclude Include="Core\Buffer.h" />
     <ClInclude Include="Core\D3D\D3D11\FalcorD3D11.h" />
     <ClInclude Include="Core\D3D\D3D11\D3D11ShaderReflection.h" />
-    <ClInclude Include="Core\D3D\D3D12\D3D12Fence.h" />
     <ClInclude Include="Core\D3D\D3D12\FalcorD3D12.h" />
     <ClInclude Include="Core\D3D\D3D12\D3D12DescriptorHeap.h" />
     <ClInclude Include="Core\D3D\D3D12\D3D12ShaderReflection.h" />
@@ -408,6 +407,7 @@
     <ClInclude Include="Core\Device.h" />
     <ClInclude Include="Core\FBO.h" />
     <ClInclude Include="Core\Formats.h" />
+    <ClInclude Include="Core\GpuFence.h" />
     <ClInclude Include="Core\GpuTimer.h" />
     <ClInclude Include="Core\OpenGL\FalcorGL.h" />
     <ClInclude Include="Core\OpenGL\GLEnum2Str.h" />

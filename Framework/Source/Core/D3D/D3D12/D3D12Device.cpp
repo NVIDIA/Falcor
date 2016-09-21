@@ -30,7 +30,7 @@
 #include "Sample.h"
 #include "Core/Device.h"
 #include "D3D12DescriptorHeap.h"
-#include "D3D12Fence.h"
+#include "Core/GpuFence.h"
 
 namespace Falcor
 {
@@ -40,8 +40,7 @@ namespace Falcor
 		uint32_t currentBackBufferIndex;
         Fbo::SharedPtr pDefaultFbos[kSwapChainBuffers];
         ID3D12CommandQueuePtr pCommandQueue;
-        Fence::SharedPtr pFence;
-        uint64_t frameIndex = 0;
+        GpuFence::SharedPtr pFence;
 		uint32_t syncInterval = 0;
 		bool isWindowOccluded = false;
 	};
@@ -222,13 +221,13 @@ namespace Falcor
 		pData->pSwapChain->Present(pData->syncInterval, 0);
 		pData->currentBackBufferIndex = (pData->currentBackBufferIndex + 1) % kSwapChainBuffers;
 
-        pData->frameIndex++;
-        pData->pFence->signal(pData->pCommandQueue, pData->frameIndex);
+		pData->pFence->incAndSignal(pData->pCommandQueue);
 
         // Wait until the selected back-buffer is ready
-        if(pData->frameIndex > kSwapChainBuffers)
+		uint64_t frameId = pData->pFence->getCpuValue();
+        if(frameId > kSwapChainBuffers)
         {
-            pData->pFence->wait(pData->frameIndex - kSwapChainBuffers);
+            pData->pFence->wait(frameId - kSwapChainBuffers);
         }
 	}
 
@@ -293,7 +292,7 @@ namespace Falcor
 
 		mVsyncOn = desc.enableVsync;
 
-        pData->pFence = Fence::create();
+        pData->pFence = GpuFence::create();
 		return true;
     }
 

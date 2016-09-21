@@ -27,19 +27,19 @@
 ***************************************************************************/
 #ifdef FALCOR_D3D12
 #include "Framework.h"
-#include "D3D12Fence.h"
+#include "Core/GpuFence.h"
 #include "Core/Device.h"
 
 namespace Falcor
 {
-    Fence::~Fence()
+    GpuFence::~GpuFence()
     {
         CloseHandle(mEvent);
     }
 
-    Fence::SharedPtr Fence::create(uint64_t initValue)
+    GpuFence::SharedPtr GpuFence::create(uint64_t initValue)
     {
-        SharedPtr pFence = SharedPtr(new Fence());
+        SharedPtr pFence = SharedPtr(new GpuFence(initValue));
         pFence->mEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
         ID3D12Device* pDevice = Device::getApiHandle().GetInterfacePtr();
 
@@ -53,24 +53,25 @@ namespace Falcor
         return pFence;
     }
 
-    void Fence::setValue(uint64_t value)
+    void GpuFence::setValue(uint64_t value)
     {
+		mCpuValue = value;
         d3d_call(mApiHandle->Signal(value));
     }
 
-    uint64_t Fence::getValue() const
+    uint64_t GpuFence::getGpuValue() const
     {
         return mApiHandle->GetCompletedValue();
     }
 
-    void Fence::signal(ID3D12CommandQueue* pQueue, uint64_t value) const
+    void GpuFence::signal(CommandQueueHandle pQueue)
     {
-        d3d_call(pQueue->Signal(mApiHandle, value));
+        d3d_call(pQueue->Signal(mApiHandle, mCpuValue));
     }
 
-    void Fence::wait(uint64_t value) const
+    void GpuFence::wait(uint64_t value) const
     {
-        if(getValue() < value)
+        if(getGpuValue() < value)
         {
             d3d_call(mApiHandle->SetEventOnCompletion(value, mEvent));
             WaitForSingleObject(mEvent, INFINITE);
