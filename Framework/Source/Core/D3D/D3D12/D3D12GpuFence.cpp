@@ -41,7 +41,7 @@ namespace Falcor
     {
         SharedPtr pFence = SharedPtr(new GpuFence(initValue));
         pFence->mEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
-        ID3D12Device* pDevice = Device::getApiHandle().GetInterfacePtr();
+        ID3D12Device* pDevice = gpDevice->getApiHandle().GetInterfacePtr();
 
         HRESULT hr = pDevice->CreateFence(initValue, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&pFence->mApiHandle));
         if(FAILED(hr))

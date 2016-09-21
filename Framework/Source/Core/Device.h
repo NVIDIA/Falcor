@@ -39,6 +39,7 @@ namespace Falcor
     public:
         using SharedPtr = std::shared_ptr<Device>;
         using SharedConstPtr = std::shared_ptr<const Device>;
+        using ApiHandle = DeviceHandle;
 
 		/** Device configuration
 		*/
@@ -88,12 +89,12 @@ namespace Falcor
 
 		/** Get the native API handle
 		*/
-		static DeviceHandle getApiHandle() { return sApiHandle; }
+		DeviceHandle getApiHandle() { return mApiHandle; }
 
 		/** Get the global frame fence object
 			DISABLED_FOR_D3D12 Device should be a singleton
 		*/
-		static GpuFence::SharedPtr getFrameGpuFence() { return sFrameFence; }
+		GpuFence::SharedPtr getFrameGpuFence() { return mpFrameFence; }
 
 		/** Present the back-buffer to the window
 		*/
@@ -108,12 +109,13 @@ namespace Falcor
         bool updateDefaultFBO(uint32_t width, uint32_t height, uint32_t sampleCount, ResourceFormat colorFormat, ResourceFormat depthFormat);
 
 		Window::SharedPtr mpWindow;
-		static DeviceHandle sApiHandle;
-		static GpuFence::SharedPtr sFrameFence;
-		static void* mpPrivateData;
+		ApiHandle mApiHandle;
+		GpuFence::SharedPtr mpFrameFence;
+		void* mpPrivateData;
 		RenderContext::SharedPtr mpRenderContext;
 		bool mVsyncOn;
 	};
 
+    extern Device::SharedPtr gpDevice;
     bool checkExtensionSupport(const std::string& name);
 }

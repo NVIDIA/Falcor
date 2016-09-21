@@ -52,7 +52,7 @@ namespace Falcor
 
     DescriptorHeap::DescriptorHeap(Type type, uint32_t descriptorsCount) : mCount(descriptorsCount), mType (type)
     {
-		ID3D12DevicePtr pDevice = Device::getApiHandle();
+		ID3D12DevicePtr pDevice = gpDevice->getApiHandle();
         mDescriptorSize = pDevice->GetDescriptorHandleIncrementSize(getHeapType(type));
     }
 
@@ -60,7 +60,7 @@ namespace Falcor
 
     DescriptorHeap::SharedPtr DescriptorHeap::create(Type type, uint32_t descriptorsCount, bool shaderVisible)
     {
-		ID3D12DevicePtr pDevice = Device::getApiHandle();
+		ID3D12DevicePtr pDevice = gpDevice->getApiHandle();
 
         DescriptorHeap::SharedPtr pHeap = SharedPtr(new DescriptorHeap(type, descriptorsCount));
         D3D12_DESCRIPTOR_HEAP_DESC desc = {};

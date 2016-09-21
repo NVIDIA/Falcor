@@ -153,6 +153,7 @@
     <ClCompile Include="VR\VrFbo.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\..\Falcor\Framework\Source\Core\CopyContext.h" />
     <ClInclude Include="..\..\Externals\AntTweakBar\include\AntTweakBar.h" />
     <ClInclude Include="..\..\Externals\FreeImage\FreeImage.h" />
     <ClInclude Include="..\..\Externals\GLFW\include\glfw3.h" />

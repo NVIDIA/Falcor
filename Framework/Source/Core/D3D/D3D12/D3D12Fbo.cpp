@@ -136,7 +136,7 @@ namespace Falcor
             }
             rtvIndex = pData->spRtvHeap->getCurrentIndex();
             DescriptorHeap::CpuHandle rtv = pData->spRtvHeap->getFreeCpuHandle();
-            Device::getApiHandle()->CreateRenderTargetView(pResource, &rtvDesc, rtv);
+            gpDevice->getApiHandle()->CreateRenderTargetView(pResource, &rtvDesc, rtv);
             pData->rtvMap[pTexture] = rtvIndex;
         }
         else
@@ -170,7 +170,7 @@ namespace Falcor
             }
             dsvIndex = pData->spDsvHeap->getCurrentIndex();
             DescriptorHeap::CpuHandle dsv = pData->spDsvHeap->getFreeCpuHandle();
-            Device::getApiHandle()->CreateDepthStencilView(pResource, &dsvDesc, dsv);
+            gpDevice->getApiHandle()->CreateDepthStencilView(pResource, &dsvDesc, dsv);
             pData->dsvMap[pTexture] = dsvIndex;
         }
         else

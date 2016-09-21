@@ -1430,6 +1430,7 @@
     <ClInclude Include="Core\D3D\D3D12\D3D12FencedPool.h">
       <Filter>Core\D3D\D3D12</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\Falcor\Framework\Source\Core\CopyContext.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Externals">

@@ -176,8 +176,6 @@ namespace Falcor
         void captureVideoFrame();
 
         Window::SharedPtr mpWindow;
-		Device::SharedPtr mpDevice;
-
         bool mVsyncOn = false;
 
         bool mCaptureScreen = false;

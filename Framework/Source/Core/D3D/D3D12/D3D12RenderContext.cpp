@@ -54,8 +54,8 @@ namespace Falcor
 		pCtx->mpApiData = pApiData;
 
         // Create a command allocator
-		pApiData->pAllocatorPool = CommandAllocatorPool::create(Device::getFrameGpuFence());
-		auto pDevice = Device::getApiHandle();
+		pApiData->pAllocatorPool = CommandAllocatorPool::create(gpDevice->getFrameGpuFence());
+		auto pDevice = gpDevice->getApiHandle();
 		
 		// Create a command list
 		if (FAILED(pDevice->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, pApiData->pAllocatorPool->getObject(), nullptr, IID_PPV_ARGS(&pApiData->pList))))

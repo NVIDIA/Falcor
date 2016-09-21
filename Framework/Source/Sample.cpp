@@ -96,7 +96,7 @@ namespace Falcor
 #endif
                 case KeyboardEvent::Key::V:
                     mVsyncOn = !mVsyncOn;
-                    mpDevice->setVSync(mVsyncOn);
+                    gpDevice->setVSync(mVsyncOn);
                     mFrameRate.resetClock();
                     break;
                 case KeyboardEvent::Key::F1:
@@ -174,8 +174,8 @@ namespace Falcor
             return;
         }
 
-		mpDevice = Device::create(mpWindow, Device::Desc());
-		if (mpDevice == nullptr)
+        gpDevice = Device::create(mpWindow, Device::Desc());
+		if (gpDevice == nullptr)
 		{
 			logError("Failed to create device");
 			return;
@@ -183,10 +183,6 @@ namespace Falcor
 
         // Set the icon
         setActiveWindowIcon("Framework\\Nvidia.ico");
-
-		// Get the default objects
-		mpRenderContext = mpDevice->getRenderContext();
-		mpDefaultFBO = mpDevice->getSwapChainFbo();
 
         // Init the UI
         initUI();
@@ -224,7 +220,7 @@ namespace Falcor
 
     void Sample::renderFrame()
     {
-		if (mpDevice->isWindowOccluded())
+		if (gpDevice->isWindowOccluded())
 		{
 			return;
 		}
@@ -232,7 +228,8 @@ namespace Falcor
 		mFrameRate.newFrame();
         {
 			// The swap-chain FBO might have changed between frames, so get it
-			mpDefaultFBO = mpDevice->getSwapChainFbo();
+			mpDefaultFBO = gpDevice->getSwapChainFbo();
+            mpRenderContext = gpDevice->getRenderContext();
             PROFILE(onFrameRender);
             calculateTime();
 
@@ -259,7 +256,7 @@ namespace Falcor
             captureScreen();
         }
         printProfileData();
-		mpDevice->present();
+        gpDevice->present();
         mpRenderContext->reset();
     }
 

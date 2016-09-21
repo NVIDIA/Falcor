@@ -116,8 +116,12 @@ namespace Falcor
             defaultClear.DepthStencil.Depth = 1.0f;
         }
 
-        d3d_call(Device::getApiHandle()->CreateCommittedResource(&kDefaultHeapProps, D3D12_HEAP_FLAG_NONE, &desc, D3D12_RESOURCE_STATE_COMMON, &defaultClear, IID_PPV_ARGS(&pTexture->mApiHandle)));
+        d3d_call(gpDevice->getApiHandle()->CreateCommittedResource(&kDefaultHeapProps, D3D12_HEAP_FLAG_NONE, &desc, D3D12_RESOURCE_STATE_COMMON, &defaultClear, IID_PPV_ARGS(&pTexture->mApiHandle)));
 
+        if(pData)
+        {
+            uint32_t subresourceSize = width * height * getFormatBytesPerBlock(format);
+        }
         return pTexture;
     }
 
@@ -130,7 +134,7 @@ namespace Falcor
             initializeSrvDesc(mFormat, mType, mArraySize, desc);
             mSrvIndex = gSrvHeap->getCurrentIndex();
             DescriptorHeap::CpuHandle srv = gSrvHeap->getFreeCpuHandle();
-            Device::getApiHandle()->CreateShaderResourceView(mApiHandle, &desc, srv);
+            gpDevice->getApiHandle()->CreateShaderResourceView(mApiHandle, &desc, srv);
         }
 
         return gSrvHeap->getHandle(mSrvIndex);

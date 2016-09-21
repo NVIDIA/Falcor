@@ -34,6 +34,8 @@
 
 namespace Falcor
 {
+    Device::SharedPtr gpDevice;
+
 	struct DeviceData
 	{
 		IDXGISwapChain3Ptr pSwapChain = nullptr;
@@ -44,11 +46,7 @@ namespace Falcor
 		bool isWindowOccluded = false;
 	};
 
-	DeviceHandle Device::sApiHandle;
-	GpuFence::SharedPtr Device::sFrameFence;
-	void* Device::mpPrivateData = nullptr;
-
-	void d3dTraceHR(const std::string& msg, HRESULT hr)
+    void d3dTraceHR(const std::string& msg, HRESULT hr)
 	{
 		char hr_msg[512];
 		FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM, nullptr, hr, 0, hr_msg, ARRAYSIZE(hr_msg), nullptr);
@@ -193,8 +191,17 @@ namespace Falcor
 
 	Device::SharedPtr Device::create(Window::SharedPtr& pWindow, const Device::Desc& desc)
 	{
-		SharedPtr pDevice = SharedPtr(new Device(pWindow));
-		return pDevice->init(desc) ? pDevice : nullptr;
+        if(gpDevice)
+        {
+            logError("D3D12 backend only supports a single device");
+            return false;
+        }
+        gpDevice = SharedPtr(new Device(pWindow));
+        if(gpDevice->init(desc) == false)
+        {
+            gpDevice = nullptr;
+        }
+		return gpDevice;
 	}
 
     
@@ -221,24 +228,18 @@ namespace Falcor
 		pData->pSwapChain->Present(pData->syncInterval, 0);
 		pData->currentBackBufferIndex = (pData->currentBackBufferIndex + 1) % kSwapChainBuffers;
 
-		sFrameFence->incAndSignal(pData->pCommandQueue);
+		mpFrameFence->incAndSignal(pData->pCommandQueue);
 
         // Wait until the selected back-buffer is ready
-		uint64_t frameId = sFrameFence->getCpuValue();
+		uint64_t frameId = mpFrameFence->getCpuValue();
         if(frameId > kSwapChainBuffers)
         {
-			sFrameFence->wait(frameId - kSwapChainBuffers);
+            mpFrameFence->wait(frameId - kSwapChainBuffers);
         }
 	}
 
 	bool Device::init(const Desc& desc)
-	{
-		if (sApiHandle)
-		{
-			logError("D3D12 backend only supports a single device");
-			return false;
-		}
-
+    {
 		DeviceData* pData = new DeviceData;
 		mpPrivateData = pData;
 
@@ -256,8 +257,8 @@ namespace Falcor
 		d3d_call(CreateDXGIFactory1(IID_PPV_ARGS(&pDxgiFactory)));
 
 		// Create the device
-		sApiHandle = createDevice(pDxgiFactory, getD3DFeatureLevel(desc.apiMajorVersion, desc.apiMinorVersion));
-		if (sApiHandle == nullptr)
+        mApiHandle = createDevice(pDxgiFactory, getD3DFeatureLevel(desc.apiMajorVersion, desc.apiMinorVersion));
+		if (mApiHandle == nullptr)
 		{
 			return false;
 		}
@@ -288,7 +289,7 @@ namespace Falcor
             return false;
         }
 
-		sFrameFence = GpuFence::create();
+		mpFrameFence = GpuFence::create();
         mpRenderContext = RenderContext::create(kSwapChainBuffers);
 		mVsyncOn = desc.enableVsync;
 		return true;

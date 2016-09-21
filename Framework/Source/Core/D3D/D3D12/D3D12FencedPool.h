@@ -37,7 +37,7 @@ namespace Falcor
 	ID3D12CommandAllocatorPtr CommandAllocatorPool::newObject()
 	{
 		ID3D12CommandAllocatorPtr pAllocator;
-		if (FAILED(Device::getApiHandle()->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&pAllocator))))
+		if (FAILED(gpDevice->getApiHandle()->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&pAllocator))))
 		{
 			logError("Failed to create command allocator");
 			return nullptr;
