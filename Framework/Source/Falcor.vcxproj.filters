@@ -1424,10 +1424,10 @@
     <ClInclude Include="Core\GpuFence.h">
       <Filter>Core</Filter>
     </ClInclude>
-    <ClInclude Include="Core\SmartPool.h">
+    <ClInclude Include="Core\FencedPool.h">
       <Filter>Core</Filter>
     </ClInclude>
-    <ClInclude Include="Core\D3D\D3D12\D3D12SmartPools.h">
+    <ClInclude Include="Core\D3D\D3D12\D3D12FencedPool.h">
       <Filter>Core\D3D\D3D12</Filter>
     </ClInclude>
   </ItemGroup>

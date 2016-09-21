@@ -26,22 +26,48 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 #pragma once
-#include "Core/SmartPool.h"
-#include "Core/Device.h"
+#include <queue>
+#include "GpuFence.h"
 
 namespace Falcor
 {
-	using CommandAllocatorPool = SmartPool<ID3D12CommandAllocatorPtr>;
-
-	template<>
-	ID3D12CommandAllocatorPtr CommandAllocatorPool::newObject()
+	template<typename ObjectType>
+	class FencedPool : public std::enable_shared_from_this<FencedPool<ObjectType>>
 	{
-		ID3D12CommandAllocatorPtr pAllocator;
-		if (FAILED(Device::getApiHandle()->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&pAllocator))))
+	public:
+		using SharedPtr = std::shared_ptr<FencedPool<ObjectType>>;
+		using SharedConstPtr = std::shared_ptr<const FencedPool<ObjectType>>;
+		
+		static SharedPtr create(GpuFence::SharedPtr& pFence) { return SharedPtr(new FencedPool(pFence)); }
+		ObjectType getObject()
 		{
-			logError("Failed to create command allocator");
-			return nullptr;
+			// The queue is sorted based on time. Check if the first object is free
+			Data data = mQueue.front();
+			if (data.timestamp < mpFence->getGpuValue())
+			{
+				mQueue.pop();
+			}
+			else
+			{
+				data.alloc = newObject();
+			}
+
+			data.timestamp = mpFence->getCpuValue();
+			mQueue.push(data);
+			return data.alloc;
 		}
-		return pAllocator;
-	}
+
+	private:
+		FencedPool(GpuFence::SharedPtr& pFence) : mpFence(pFence) { mQueue.push({ newObject(), mpFence->getCpuValue()}); }
+		GpuFence::SharedPtr mpFence;
+		ObjectType newObject();
+
+		struct Data
+		{
+			ObjectType alloc;
+			uint64_t timestamp;
+		};
+
+		std::queue<Data> mQueue;
+	};
 }

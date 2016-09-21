@@ -397,7 +397,7 @@
     <ClInclude Include="Core\Buffer.h" />
     <ClInclude Include="Core\D3D\D3D11\FalcorD3D11.h" />
     <ClInclude Include="Core\D3D\D3D11\D3D11ShaderReflection.h" />
-    <ClInclude Include="Core\D3D\D3D12\D3D12SmartPools.h" />
+    <ClInclude Include="Core\D3D\D3D12\D3D12FencedPool.h" />
     <ClInclude Include="Core\D3D\D3D12\FalcorD3D12.h" />
     <ClInclude Include="Core\D3D\D3D12\D3D12DescriptorHeap.h" />
     <ClInclude Include="Core\D3D\D3D12\D3D12ShaderReflection.h" />
@@ -421,7 +421,7 @@
     <ClInclude Include="Core\Shader.h" />
     <ClInclude Include="Core\ShaderReflection.h" />
     <ClInclude Include="Core\ShaderStorageBuffer.h" />
-    <ClInclude Include="Core\SmartPool.h" />
+    <ClInclude Include="Core\FencedPool.h" />
     <ClInclude Include="Core\Texture.h" />
     <ClInclude Include="Core\UniformBuffer.h" />
     <ClInclude Include="Core\VAO.h" />

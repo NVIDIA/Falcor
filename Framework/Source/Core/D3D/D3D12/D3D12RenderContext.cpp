@@ -31,7 +31,7 @@
 #include "D3D12DescriptorHeap.h"
 #include "Core/Device.h"
 #include "glm/gtc/type_ptr.hpp"
-#include "D3D12SmartPools.h"
+#include "D3D12FencedPool.h"
 
 namespace Falcor
 {
@@ -58,7 +58,7 @@ namespace Falcor
 		auto pDevice = Device::getApiHandle();
 		
 		// Create a command list
-		if (FAILED(pDevice->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, pApiData->pAllocatorPool->allocate(), nullptr, IID_PPV_ARGS(&pApiData->pList))))
+		if (FAILED(pDevice->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, pApiData->pAllocatorPool->getObject(), nullptr, IID_PPV_ARGS(&pApiData->pList))))
 		{
 			Logger::log(Logger::Level::Error, "Failed to create command list");
 			return nullptr;
@@ -80,7 +80,7 @@ namespace Falcor
 	{
 		ApiData* pApiData = (ApiData*)mpApiData;
 		// Skip to the next allocator
-		ID3D12CommandAllocatorPtr pAllocator = pApiData->pAllocatorPool->allocate();
+		ID3D12CommandAllocatorPtr pAllocator = pApiData->pAllocatorPool->getObject();
 		d3d_call(pAllocator->Reset());
 		d3d_call(pApiData->pList->Reset(pAllocator, nullptr));
 	}
