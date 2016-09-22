@@ -64,7 +64,6 @@ namespace Falcor
 			return nullptr;
 		}
 
-		// We expect the list to be closed before we start using it
         pCtx->initCommon(D3D12_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE);
         
 		return pCtx;
