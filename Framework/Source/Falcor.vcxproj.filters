@@ -369,6 +369,12 @@
     <ClCompile Include="Core\D3D\D3D12\D3D12GpuFence.cpp">
       <Filter>Core\D3D\D3D12</Filter>
     </ClCompile>
+    <ClCompile Include="Core\D3D\D3D12\D3D12CopyContext.cpp">
+      <Filter>Core\D3D\D3D12</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\CopyContext.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Sample.h" />
@@ -1430,7 +1436,9 @@
     <ClInclude Include="Core\D3D\D3D12\D3D12FencedPool.h">
       <Filter>Core\D3D\D3D12</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\Falcor\Framework\Source\Core\CopyContext.h" />
+    <ClInclude Include="Core\CopyContext.h">
+      <Filter>Core</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Externals">

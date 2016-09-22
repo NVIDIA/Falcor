@@ -120,7 +120,9 @@ namespace Falcor
 
         if(pData)
         {
-            uint32_t subresourceSize = width * height * getFormatBytesPerBlock(format);
+            auto& pCopyCtx = gpDevice->getCopyContext();
+            pCopyCtx->updateTexture(pTexture.get(), pData);
+            pCopyCtx->flush();
         }
         return pTexture;
     }

@@ -28,6 +28,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Core\BlendState.cpp" />
+    <ClCompile Include="Core\CopyContext.cpp" />
     <ClCompile Include="Core\D3D\D3D11\D3D11BlendState.cpp" />
     <ClCompile Include="Core\D3D\D3D11\D3D11Buffer.cpp" />
     <ClCompile Include="Core\D3D\D3D11\D3D11DepthStencilState.cpp" />
@@ -47,6 +48,7 @@
     <ClCompile Include="Core\D3D\D3D11\D3D11Window.cpp" />
     <ClCompile Include="Core\D3D\D3D12\D3D12BlendState.cpp" />
     <ClCompile Include="Core\D3D\D3D12\D3D12Buffer.cpp" />
+    <ClCompile Include="Core\D3D\D3D12\D3D12CopyContext.cpp" />
     <ClCompile Include="Core\D3D\D3D12\D3D12DepthStencilState.cpp" />
     <ClCompile Include="Core\D3D\D3D12\D3D12Device.cpp" />
     <ClCompile Include="Core\D3D\D3D12\D3D12Fbo.cpp" />
@@ -153,7 +155,6 @@
     <ClCompile Include="VR\VrFbo.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\..\Falcor\Framework\Source\Core\CopyContext.h" />
     <ClInclude Include="..\..\Externals\AntTweakBar\include\AntTweakBar.h" />
     <ClInclude Include="..\..\Externals\FreeImage\FreeImage.h" />
     <ClInclude Include="..\..\Externals\GLFW\include\glfw3.h" />
@@ -396,6 +397,7 @@
     <ClInclude Include="..\Externals\FFMpeg\include\libswscale\version.h" />
     <ClInclude Include="Core\BlendState.h" />
     <ClInclude Include="Core\Buffer.h" />
+    <ClInclude Include="Core\CopyContext.h" />
     <ClInclude Include="Core\D3D\D3D11\FalcorD3D11.h" />
     <ClInclude Include="Core\D3D\D3D11\D3D11ShaderReflection.h" />
     <ClInclude Include="Core\D3D\D3D12\D3D12FencedPool.h" />

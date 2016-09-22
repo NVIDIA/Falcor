@@ -35,32 +35,32 @@
 
 namespace Falcor
 {
-	struct ApiData
+	struct RenderContextData
 	{
-		CommandAllocatorPool::SharedPtr pAllocatorPool;
+		GraphicsCommandAllocatorPool::SharedPtr pAllocatorPool;
 		ID3D12GraphicsCommandListPtr pList;
 	};
 	
 	RenderContext::~RenderContext()
 	{
-		delete (ApiData*)mpApiData;
+		delete (RenderContextData*)mpApiData;
 		mpApiData = nullptr;
 	}
 
     RenderContext::SharedPtr RenderContext::create(uint32_t allocatorsCount)
     {
         SharedPtr pCtx = SharedPtr(new RenderContext());
-		ApiData* pApiData = new ApiData;
+        RenderContextData* pApiData = new RenderContextData;
 		pCtx->mpApiData = pApiData;
 
         // Create a command allocator
-		pApiData->pAllocatorPool = CommandAllocatorPool::create(gpDevice->getFrameGpuFence());
+		pApiData->pAllocatorPool = GraphicsCommandAllocatorPool::create(gpDevice->getFrameGpuFence());
 		auto pDevice = gpDevice->getApiHandle();
 		
 		// Create a command list
 		if (FAILED(pDevice->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, pApiData->pAllocatorPool->getObject(), nullptr, IID_PPV_ARGS(&pApiData->pList))))
 		{
-			Logger::log(Logger::Level::Error, "Failed to create command list");
+			Logger::log(Logger::Level::Error, "Failed to create command list for RenderContext");
 			return nullptr;
 		}
 
@@ -72,13 +72,13 @@ namespace Falcor
 
 	CommandListHandle RenderContext::getCommandListApiHandle() const
 	{
-		const ApiData* pApiData = (ApiData*)mpApiData;
+		const RenderContextData* pApiData = (RenderContextData*)mpApiData;
 		return pApiData->pList;
 	}
 
 	void RenderContext::reset()
 	{
-		ApiData* pApiData = (ApiData*)mpApiData;
+		RenderContextData* pApiData = (RenderContextData*)mpApiData;
 		// Skip to the next allocator
 		ID3D12CommandAllocatorPtr pAllocator = pApiData->pAllocatorPool->getObject();
 		d3d_call(pAllocator->Reset());
@@ -87,7 +87,7 @@ namespace Falcor
 
     void RenderContext::resourceBarrier(const Texture* pTexture, D3D12_RESOURCE_STATES state)
     {
-        ApiData* pApiData = (ApiData*)mpApiData;
+        RenderContextData* pApiData = (RenderContextData*)mpApiData;
         if(pTexture->getResourceState() != state)
         {
             D3D12_RESOURCE_BARRIER barrier;
@@ -105,7 +105,7 @@ namespace Falcor
 
 	void RenderContext::clearFbo(const Fbo* pFbo, const glm::vec4& color, float depth, uint8_t stencil, FboAttachmentType flags)
 	{
-		ApiData* pApiData = (ApiData*)mpApiData;
+		RenderContextData* pApiData = (RenderContextData*)mpApiData;
         bool clearDepth = (flags & FboAttachmentType::Depth) != FboAttachmentType::None;
         bool clearColor = (flags & FboAttachmentType::Color) != FboAttachmentType::None;
         bool clearStencil = (flags & FboAttachmentType::Stencil) != FboAttachmentType::None;
@@ -150,7 +150,7 @@ namespace Falcor
 
     void RenderContext::applyFbo()
     {
-        ApiData* pApiData = (ApiData*)mpApiData;
+        RenderContextData* pApiData = (RenderContextData*)mpApiData;
         uint32_t colorTargets = Fbo::getMaxColorTargetCount();
         std::vector<RtvHandle> pRTV(colorTargets);
         DsvHandle pDSV;

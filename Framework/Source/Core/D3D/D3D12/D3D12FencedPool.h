@@ -31,17 +31,18 @@
 
 namespace Falcor
 {
-	using CommandAllocatorPool = FencedPool<ID3D12CommandAllocatorPtr>;
+    template<D3D12_COMMAND_LIST_TYPE type>
+    ID3D12CommandAllocatorPtr newCommandAllocator()
+    {
+        ID3D12CommandAllocatorPtr pAllocator;
+        if(FAILED(gpDevice->getApiHandle()->CreateCommandAllocator(type, IID_PPV_ARGS(&pAllocator))))
+        {
+            logError("Failed to create command allocator");
+            return nullptr;
+        }
+        return pAllocator;
+    }
 
-	template<>
-	ID3D12CommandAllocatorPtr CommandAllocatorPool::newObject()
-	{
-		ID3D12CommandAllocatorPtr pAllocator;
-		if (FAILED(gpDevice->getApiHandle()->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&pAllocator))))
-		{
-			logError("Failed to create command allocator");
-			return nullptr;
-		}
-		return pAllocator;
-	}
+	using GraphicsCommandAllocatorPool = FencedPool<ID3D12CommandAllocatorPtr, newCommandAllocator<D3D12_COMMAND_LIST_TYPE_DIRECT>>;
+    using CopyCommandAllocatorPool = FencedPool<ID3D12CommandAllocatorPtr, newCommandAllocator<D3D12_COMMAND_LIST_TYPE_COPY>>;
 }

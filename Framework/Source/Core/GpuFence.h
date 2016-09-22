@@ -42,12 +42,13 @@ namespace Falcor
         void setValue(uint64_t value);
         uint64_t getGpuValue() const;
 		uint64_t getCpuValue() const { return mCpuValue; }
-		void incAndSignal(CommandQueueHandle pQueue) { mCpuValue++; signal(pQueue); }
+        uint64_t inc() { return ++mCpuValue; }
+        void signal(CommandQueueHandle pQueue);
+
         void wait(uint64_t value) const;
 		void flush() const { wait(mCpuValue); }
     private:
 		GpuFence(uint64_t initValue) : mCpuValue(initValue) {}
-		void signal(CommandQueueHandle pQueue);
 		uint64_t mCpuValue;
         HANDLE mEvent = INVALID_HANDLE_VALUE;
         FenceHandle mApiHandle;

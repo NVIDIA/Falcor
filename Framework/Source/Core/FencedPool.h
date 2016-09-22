@@ -31,14 +31,14 @@
 
 namespace Falcor
 {
-	template<typename ObjectType>
-	class FencedPool : public std::enable_shared_from_this<FencedPool<ObjectType>>
+    template<typename ObjectType, ObjectType (*newObjectFunc)()>
+	class FencedPool : public std::enable_shared_from_this<FencedPool<ObjectType, newObjectFunc>>
 	{
 	public:
-		using SharedPtr = std::shared_ptr<FencedPool<ObjectType>>;
-		using SharedConstPtr = std::shared_ptr<const FencedPool<ObjectType>>;
+		using SharedPtr = std::shared_ptr<FencedPool<ObjectType, newObjectFunc>>;
+		using SharedConstPtr = std::shared_ptr<const FencedPool<ObjectType, newObjectFunc>>;
 		
-		static SharedPtr create(GpuFence::SharedPtr& pFence) { return SharedPtr(new FencedPool(pFence)); }
+		static SharedPtr create(GpuFence::SharedConstPtr pFence) { return SharedPtr(new FencedPool(pFence)); }
 		ObjectType getObject()
 		{
 			// The queue is sorted based on time. Check if the first object is free
@@ -49,7 +49,7 @@ namespace Falcor
 			}
 			else
 			{
-				data.alloc = newObject();
+				data.alloc = newObjectFunc();
 			}
 
 			data.timestamp = mpFence->getCpuValue();
@@ -58,10 +58,9 @@ namespace Falcor
 		}
 
 	private:
-		FencedPool(GpuFence::SharedPtr& pFence) : mpFence(pFence) { mQueue.push({ newObject(), mpFence->getCpuValue()}); }
-		GpuFence::SharedPtr mpFence;
-		ObjectType newObject();
-
+		FencedPool(GpuFence::SharedConstPtr pFence) : mpFence(pFence) { mQueue.push({newObjectFunc(), mpFence->getCpuValue()}); }
+		GpuFence::SharedConstPtr mpFence;
+		
 		struct Data
 		{
 			ObjectType alloc;

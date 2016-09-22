@@ -31,6 +31,7 @@
 #include "Core/FBO.h"
 #include "Core/RenderContext.h"
 #include "Core/GpuFence.h"
+#include "Core/CopyContext.h"
 
 namespace Falcor
 {
@@ -87,6 +88,10 @@ namespace Falcor
 		*/
 		RenderContext::SharedPtr getRenderContext() const { return mpRenderContext; }
 
+        /** Get the copy context
+        */
+        CopyContext::SharedPtr getCopyContext() const { return mpCopyContext; }
+
 		/** Get the native API handle
 		*/
 		DeviceHandle getApiHandle() { return mApiHandle; }
@@ -113,6 +118,7 @@ namespace Falcor
 		GpuFence::SharedPtr mpFrameFence;
 		void* mpPrivateData;
 		RenderContext::SharedPtr mpRenderContext;
+        CopyContext::SharedPtr mpCopyContext;
 		bool mVsyncOn;
 	};
 

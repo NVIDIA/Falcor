@@ -228,10 +228,10 @@ namespace Falcor
 		pData->pSwapChain->Present(pData->syncInterval, 0);
 		pData->currentBackBufferIndex = (pData->currentBackBufferIndex + 1) % kSwapChainBuffers;
 
-		mpFrameFence->incAndSignal(pData->pCommandQueue);
+        uint64_t frameId = mpFrameFence->inc();
+        mpFrameFence->signal(pData->pCommandQueue);
 
         // Wait until the selected back-buffer is ready
-		uint64_t frameId = mpFrameFence->getCpuValue();
         if(frameId > kSwapChainBuffers)
         {
             mpFrameFence->wait(frameId - kSwapChainBuffers);
@@ -291,6 +291,8 @@ namespace Falcor
 
 		mpFrameFence = GpuFence::create();
         mpRenderContext = RenderContext::create(kSwapChainBuffers);
+        mpCopyContext = CopyContext::create();
+
 		mVsyncOn = desc.enableVsync;
 		return true;
     }
