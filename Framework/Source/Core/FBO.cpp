@@ -39,7 +39,7 @@ namespace Falcor
             return true;
         }
 
-        if(mipLevel >= pTexture->getMipLevels())
+        if(mipLevel >= pTexture->getMipCount())
         {
             Logger::log(Logger::Level::Error, "Error when attaching texture to FBO. Requested mip-level is out-of-bound.");
             return false;

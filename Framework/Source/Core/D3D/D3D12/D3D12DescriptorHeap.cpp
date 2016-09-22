@@ -74,13 +74,14 @@ namespace Falcor
             return nullptr;
         }
 
+        pHeap->mCpuStartHandle = pHeap->mpHeap->GetCPUDescriptorHandleForHeapStart();
         return pHeap;
     }
 
     DescriptorHeap::CpuHandle DescriptorHeap::getHandle(uint32_t index) const
     {
         assert(index < mCurDesc);
-        CpuHandle handle = mpHeap->GetCPUDescriptorHandleForHeapStart();
+        CpuHandle handle = mCpuStartHandle;
         handle.ptr += mDescriptorSize * index;
         return handle;
     }

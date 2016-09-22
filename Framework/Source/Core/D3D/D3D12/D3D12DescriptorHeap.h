@@ -57,6 +57,7 @@ namespace Falcor
         uint32_t mCount;
         uint32_t mCurDesc = 0;
         ID3D12DescriptorHeapPtr mpHeap;
+        CpuHandle mCpuStartHandle;
         Type mType;
     };
 }

@@ -82,13 +82,25 @@ namespace Falcor
         uint32_t getDepth() const { return mDepth; }
         /** Get the number of mip-levels
         */
-        uint32_t getMipLevels() const {return mMipLevels;}
+        uint32_t getMipCount() const {return mMipLevels;}
         /** Get the sample count
         */
         uint32_t getSampleCount() const { return mSampleCount; }
         /** Get the array size
         */
         uint32_t getArraySize() const { return mArraySize; }
+
+        /** Get the array index of a subresource
+        */
+        uint32_t getSubresourceArraySlice(uint32_t subresource) const { return subresource / mMipLevels; }
+
+        /** Get the mip-level of a subresource
+        */
+        uint32_t getSubresourceMipLevel(uint32_t subresource) const { return subresource % mMipLevels; }
+
+        /** Get the subresource index
+        */
+        uint32_t getSubresourceIndex(uint32_t arraySlice, uint32_t mipLevel) { return mipLevel + arraySlice * mMipLevels; }
 
         /** Get the resource format
         */

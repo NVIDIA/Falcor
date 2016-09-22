@@ -655,7 +655,7 @@ namespace Falcor
 
 	void Texture::generateMips() const
 	{
-		if(getMipLevels() <= 1)
+		if(getMipCount() <= 1)
 		{
 			Logger::log(Logger::Level::Error, "Texture::generateMips() - no mip levels to generate.");
 			return;

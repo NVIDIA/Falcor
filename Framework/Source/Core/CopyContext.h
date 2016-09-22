@@ -40,9 +40,12 @@ namespace Falcor
         ~CopyContext();
 
         static SharedPtr create();
-        uint64_t updateTexture(const Texture* pTexture, const void* pSrc);
-        void flush(uint64_t copyId = 0);
+        uint64_t updateTexture(const Texture* pTexture, const void* pData, bool submit = true);
+        uint64_t updateTextureSubresource(const Texture* pTexture, uint32_t subresourceIndex, const void* pData, bool submit = true);
+        uint64_t updateTextureSubresources(const Texture* pTexture, uint32_t firstSubresource, uint32_t subresourceCount, const void* pData, bool submit = true);
 
+        void flush(uint64_t copyId = 0);
+        void submit(bool flush = false);
     private:
         bool initApiData();
         CopyContext() = default;
