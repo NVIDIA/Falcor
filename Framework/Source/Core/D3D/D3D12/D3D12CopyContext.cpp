@@ -196,13 +196,13 @@ namespace Falcor
         for (uint32_t s = 0; s < subresourceCount; s++)
         {
             uint32_t subresource = s + firstSubresource;
-            uint32_t width = footprint[subresource].Footprint.Width / getFormatWidthCompressionRatio(pTexture->getFormat());
-            uint32_t height = footprint[subresource].Footprint.Height / getFormatHeightCompressionRatio(pTexture->getFormat());
+            uint32_t physicalWidth = footprint[subresource].Footprint.Width / getFormatWidthCompressionRatio(pTexture->getFormat());
+            uint32_t physicalHeight = footprint[subresource].Footprint.Height / getFormatHeightCompressionRatio(pTexture->getFormat());
 
             D3D12_SUBRESOURCE_DATA src;
             src.pData = pSrc;
-            src.RowPitch = width * getFormatBytesPerBlock(pTexture->getFormat());
-            src.SlicePitch = src.RowPitch * footprint[subresource].Footprint.Height;
+            src.RowPitch = physicalWidth * getFormatBytesPerBlock(pTexture->getFormat());
+            src.SlicePitch = src.RowPitch * physicalHeight;
             copySubresourceData(src, footprint[subresource], pDst, rowSize[subresource], rowCount[subresource]);
             pSrc = (uint8_t*)pSrc + footprint[subresource].Footprint.Depth * src.SlicePitch;
 

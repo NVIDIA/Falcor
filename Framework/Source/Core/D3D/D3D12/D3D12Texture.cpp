@@ -99,9 +99,9 @@ namespace Falcor
         D3D12_RESOURCE_DESC desc = {};
         desc.MipLevels = uint16_t(mipLevels);
         desc.Format = getDxgiFormat(format);
-        desc.Width = width;
-        desc.Height = height;
-        desc.Flags = isDepthStencilFormat(format) ? D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL : D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
+        desc.Width = align_to(getFormatWidthCompressionRatio(format), width);
+        desc.Height = align_to(getFormatHeightCompressionRatio(format), height);
+        desc.Flags = D3D12_RESOURCE_FLAG_NONE;
         desc.DepthOrArraySize = arraySize;
         desc.SampleDesc.Count = 1;
         desc.SampleDesc.Quality = 0;
@@ -109,14 +109,20 @@ namespace Falcor
         desc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
         desc.Alignment = 0;
 
-        D3D12_CLEAR_VALUE defaultClear = {};
-        defaultClear.Format = desc.Format;
-        if(isDepthStencilFormat(format))
+        D3D12_CLEAR_VALUE clearValue = {};
+        D3D12_CLEAR_VALUE* pClearVal = nullptr;
+        if (isCompressedFormat(format) == false)
         {
-            defaultClear.DepthStencil.Depth = 1.0f;
+            desc.Flags = isDepthStencilFormat(format) ? D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL : D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
+            clearValue.Format = desc.Format;
+            if (isDepthStencilFormat(format))
+            {
+                clearValue.DepthStencil.Depth = 1.0f;
+            }
+            pClearVal = &clearValue;
         }
-
-        d3d_call(gpDevice->getApiHandle()->CreateCommittedResource(&kDefaultHeapProps, D3D12_HEAP_FLAG_NONE, &desc, D3D12_RESOURCE_STATE_COMMON, &defaultClear, IID_PPV_ARGS(&pTexture->mApiHandle)));
+        
+        d3d_call(gpDevice->getApiHandle()->CreateCommittedResource(&kDefaultHeapProps, D3D12_HEAP_FLAG_NONE, &desc, D3D12_RESOURCE_STATE_COMMON, pClearVal, IID_PPV_ARGS(&pTexture->mApiHandle)));
 
         if(pData)
         {
