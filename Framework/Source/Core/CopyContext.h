@@ -31,6 +31,7 @@
 namespace Falcor
 {
     class Texture;
+    class Buffer;
 
     class CopyContext : public std::enable_shared_from_this<CopyContext>
     {
@@ -40,6 +41,7 @@ namespace Falcor
         ~CopyContext();
 
         static SharedPtr create();
+        uint64_t updateBuffer(const Buffer* pBuffer, const void* pData, size_t offset = 0, size_t size = 0, bool submit = true);
         uint64_t updateTexture(const Texture* pTexture, const void* pData, bool submit = true);
         uint64_t updateTextureSubresource(const Texture* pTexture, uint32_t subresourceIndex, const void* pData, bool submit = true);
         uint64_t updateTextureSubresources(const Texture* pTexture, uint32_t firstSubresource, uint32_t subresourceCount, const void* pData, bool submit = true);

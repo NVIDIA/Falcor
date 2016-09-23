@@ -59,7 +59,7 @@ namespace Falcor
         }
     }
 
-    static const D3D12_HEAP_PROPERTIES kDefaultHeapProps = 
+    static const D3D12_HEAP_PROPERTIES kDefaultHeapProps =
     {
         D3D12_HEAP_TYPE_DEFAULT,
         D3D12_CPU_PAGE_PROPERTY_UNKNOWN,

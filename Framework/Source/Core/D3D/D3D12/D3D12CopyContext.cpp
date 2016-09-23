@@ -29,7 +29,10 @@
 #include "Core/CopyContext.h"
 #include "Core/Device.h"
 #include "Core/D3D/D3D12/D3D12FencedPool.h"
+#include "Core/Buffer.h"
 #include <queue>
+#include "Core/Buffer.h"
+
 namespace Falcor
 {
     struct CopyContextData
@@ -45,15 +48,6 @@ namespace Falcor
         };
 
         std::queue<UploadDesc> uploadQueue;
-    };
-
-    static D3D12_HEAP_PROPERTIES kUploadHeapProps[] =
-    {
-        D3D12_HEAP_TYPE_UPLOAD,
-        D3D12_CPU_PAGE_PROPERTY_UNKNOWN,
-        D3D12_MEMORY_POOL_UNKNOWN,
-        0,
-        0,
     };
 
     void releaseUnusedResources(std::queue<CopyContextData::UploadDesc>& uploadQueue, uint64_t id)
@@ -125,26 +119,6 @@ namespace Falcor
         }
     }
 
-    ID3D12ResourcePtr createUploadBuffer(ID3D12Device* pDevice, uint64_t size)
-    {
-        D3D12_RESOURCE_DESC bufDesc = {};
-        bufDesc.Alignment = 0;
-        bufDesc.DepthOrArraySize = 1;
-        bufDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
-        bufDesc.Flags = D3D12_RESOURCE_FLAG_NONE;
-        bufDesc.Format = DXGI_FORMAT_UNKNOWN;
-        bufDesc.Height = 1;
-        bufDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
-        bufDesc.MipLevels = 1;
-        bufDesc.SampleDesc.Count = 1;
-        bufDesc.SampleDesc.Quality = 0;
-        bufDesc.Width = size;
-
-        ID3D12ResourcePtr pResource;
-        d3d_call(pDevice->CreateCommittedResource(kUploadHeapProps, D3D12_HEAP_FLAG_NONE, &bufDesc, D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(&pResource)));
-        return pResource;
-    }
-
     void CopyContext::submit(bool flush)
     {
         CopyContextData* pApiData = (CopyContextData*)mpApiData;
@@ -166,6 +140,43 @@ namespace Falcor
         }
     }
 
+    uint64_t CopyContext::updateBuffer(const Buffer* pBuffer, const void* pData, size_t offset, size_t size, bool submit)
+    {
+        CopyContextData* pApiData = (CopyContextData*)mpApiData;
+        ID3D12Resource* pResource = pBuffer->getApiHandle();
+        if (size == 0)
+        {
+            size = pBuffer->getSize() - offset;
+        }
+
+        if (pBuffer->adjustSizeOffsetParams(size, offset) == false)
+        {
+            logWarning("CopyContext::updateBuffer() - size and offset are invalid. Nothing to update.");
+            return mpFence->getCpuValue();
+        }
+
+        // Allocate a buffer on the upload heap
+        Buffer::SharedPtr pUploadBuffer = Buffer::create(size, Buffer::HeapType::Upload, nullptr);
+        pUploadBuffer->updateData(pData, offset, size);
+
+        // Dispatch a command
+        CopyContextData::UploadDesc uploadDesc;
+        uploadDesc.pResource = pBuffer->getApiHandle();
+        uploadDesc.id = mpFence->inc();
+        pApiData->uploadQueue.push(uploadDesc);
+
+        D3D12_TEXTURE_COPY_LOCATION dstLoc = { pBuffer->getApiHandle(), D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX, 0 };
+        D3D12_TEXTURE_COPY_LOCATION srcLoc = { pBuffer->getApiHandle(), D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX, 0 };
+        pApiData->pCmdList->CopyTextureRegion(&dstLoc, 0, 0, 0, &srcLoc, nullptr);
+
+        if (submit)
+        {
+            this->submit();
+        }
+
+        return uploadDesc.id;
+    }
+
     uint64_t CopyContext::updateTextureSubresources(const Texture* pTexture, uint32_t firstSubresource, uint32_t subresourceCount, const void* pData, bool submit)
     {
         assert(firstSubresource + subresourceCount <= pTexture->getArraySize() * pTexture->getMipCount());
@@ -182,15 +193,15 @@ namespace Falcor
         pDevice->GetCopyableFootprints(&texDesc, firstSubresource, subresourceCount, 0, footprint.data(), rowCount.data(), rowSize.data(), &size);
 
         // Allocate a buffer on the upload heap
+        Buffer::SharedPtr pBuffer = Buffer::create(size, Buffer::HeapType::Upload, nullptr);
+
         CopyContextData::UploadDesc uploadDesc;
-        uploadDesc.pResource = createUploadBuffer(pDevice, size);
+        uploadDesc.pResource = pBuffer->getApiHandle();
         uploadDesc.id = mpFence->inc();
         pApiData->uploadQueue.push(uploadDesc);
 
         // Map the buffer
-        D3D12_RANGE readRange = { 0 };
-        uint8_t* pDst;
-        d3d_call(uploadDesc.pResource->Map(0, &readRange, (void**)&pDst));
+        uint8_t* pDst = (uint8_t*)pBuffer->map(Buffer::MapType::Write);
 
         const uint8_t* pSrc = (uint8_t*)pData;
         for (uint32_t s = 0; s < subresourceCount; s++)
@@ -219,7 +230,7 @@ namespace Falcor
             this->submit();
         }
 
-        return true;
+        return uploadDesc.id;
     }
 
     uint64_t CopyContext::updateTextureSubresource(const Texture* pTexture, uint32_t subresourceIndex, const void* pData, bool submit)

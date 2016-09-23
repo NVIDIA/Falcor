@@ -85,6 +85,13 @@ namespace Falcor
             WriteNoOverwrite    ///< Map the buffer for write access. Using this flag indicates that the user guarentees not to overwrite parts of the data that are in use by the GPU. Buffer had to be created with AccessFlags#MapWrite flag.
         };
 
+        enum class HeapType
+        {
+            Default,
+            Upload,
+            Readback
+        };
+
         ~Buffer();
 
         /** create a new buffer.
@@ -95,6 +102,8 @@ namespace Falcor
             \return A pointer to a new buffer object, or nullptr if creation failed.
         */
         static SharedPtr create(size_t size, BindFlags bind, AccessFlags access, const void* pInitData);
+
+        static SharedPtr create(size_t size, HeapType heapType, const void* pInitData);
 
         /** Copy the contents of this buffer to the given buffer.\nThe entire buffer will be copied, so the destination buffer must have the *same* size as the source buffer.
             \param pDst The destination buffer.
@@ -153,15 +162,36 @@ namespace Falcor
         /** Unload the texture to the GPU memory. This function is only valid after makeResident() call was made with a matching sample. If makeResident() wasn't called, the evict() will be silently ignored.
         */
         void evict() const;
+
+        /** Get safe offset and size values
+        */
+        bool adjustSizeOffsetParams(size_t& size, size_t& offset) const
+        {
+            if (offset >= mSize)
+            {
+                logWarning("Buffer::adjustSizeOffsetParams() - offset is larger than the buffer size.");
+                return false;
+            }
+
+            if (offset + size > mSize)
+            {
+                logWarning("Buffer::adjustSizeOffsetParams() - offset + size will cause an OOB access. Clamping size");
+                size = mSize - offset;
+            }
+            return true;
+        }
+
     protected:
-        Buffer(size_t size, BindFlags bind, AccessFlags access) : mSize(size), mBindFlags(bind), mAccessFlags(access){}
+        Buffer(size_t size, BindFlags bind, AccessFlags access, HeapType heapType) : mSize(size), mBindFlags(bind), mAccessFlags(access), mHeapType(heapType){}
         BufferHandle mApiHandle;
+        HeapType mHeapType;
         uint64_t mBindlessHandle = 0;
         size_t mSize = 0;
         bool mIsMapped = false;
         mutable uint64_t mGpuPtr = 0;
         BindFlags mBindFlags;
         AccessFlags mAccessFlags;
+        void* mpMappedData = nullptr;
     };
 
     inline Buffer::AccessFlags operator& (Buffer::AccessFlags a, Buffer::AccessFlags b)
