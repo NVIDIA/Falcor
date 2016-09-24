@@ -87,7 +87,7 @@ namespace Falcor
         }
 
         set_shader(VertexShaderHandle,   ShaderType::Vertex,   VSSetShader);
-        set_shader(FragmentShaderHandle, ShaderType::Fragment, PSSetShader);
+        set_shader(FragmentShaderHandle, ShaderType::Pixel, PSSetShader);
         set_shader(HullShaderHandle,     ShaderType::Hull,     HSSetShader);
         set_shader(DomainShaderHandle,   ShaderType::Domain,   DSSetShader);
         set_shader(GeometryShaderHandle, ShaderType::Geometry, GSSetShader);
@@ -170,7 +170,7 @@ namespace Falcor
     void RenderContext::applyTopology() const
     {
         D3D11_PRIMITIVE_TOPOLOGY topology;
-        switch(mState.topology)
+        switch (mState.topology)
         {
         case Topology::PointList:
             topology = D3D11_PRIMITIVE_TOPOLOGY_POINTLIST;

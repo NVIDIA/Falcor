@@ -50,7 +50,7 @@ namespace Falcor
         Model::SharedPtr        pModel = Model::SharedPtr( new Model() );
 
         // Need to create our vertex layout
-        VertexLayout::SharedPtr pVertexLayout = VertexLayout::create();
+        VertexBufferLayout::SharedPtr pVertexLayout = VertexBufferLayout::create();
         uint32_t vertexStride = 0;
         uint32_t positionOffset = 0;
         for ( int i = 0; i < vertLayout.attribs.size(); i++ )

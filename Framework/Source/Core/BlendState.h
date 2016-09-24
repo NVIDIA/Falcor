@@ -112,7 +112,7 @@ namespace Falcor
             /** Set color write-mask
             */
             Desc& setRenderTargetWriteMask(uint32_t rtIndex, bool writeRed, bool writeGreen, bool writeBlue, bool writeAlpha);
-        protected:
+
             struct RenderTargetDesc
             {
                 bool blendEnabled = false;
@@ -132,6 +132,7 @@ namespace Falcor
                 WriteMask writeMask;
             };
 
+        protected:
             std::vector<RenderTargetDesc> mRtDesc;
             bool mEnableIndependentBlend = false;
             bool mAlphaToCoverageEnabled = false;
@@ -175,12 +176,18 @@ namespace Falcor
         /** Check if independent blending is enabled
         */
         bool isIndependentBlendEnabled() const {return mDesc.mEnableIndependentBlend;}
-        /** Get a render-target write mask
+        /** Get a render-target descriptor
         */
-        const Desc::RenderTargetDesc::WriteMask& getRtWriteMask(uint32_t rtIndex) const { return mDesc.mRtDesc[rtIndex].writeMask; }
+        const Desc::RenderTargetDesc& getRtDesc(size_t rtIndex) const { return mDesc.mRtDesc[rtIndex]; }
+
+        /** Get the render-target array size
+        */
+        size_t getRtCount() const { return mDesc.mRtDesc.size(); }
+
         /** Get the API handle
         */
         BlendStateHandle getApiHandle() const;
+
     private:
         BlendState(const Desc& Desc) : mDesc(Desc) {}
         const Desc mDesc;

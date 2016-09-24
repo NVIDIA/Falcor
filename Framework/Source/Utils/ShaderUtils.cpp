@@ -39,7 +39,7 @@ namespace Falcor
         {
         case ShaderType::Vertex:
             return "Vertex";
-        case ShaderType::Fragment:
+        case ShaderType::Pixel:
             return "Pixel";
         case ShaderType::Hull:
             return "Hull";

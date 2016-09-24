@@ -45,7 +45,8 @@ namespace Falcor
     MAKE_SMART_COM_PTR(ID3D12DescriptorHeap);
     MAKE_SMART_COM_PTR(ID3D12Resource);
     MAKE_SMART_COM_PTR(ID3D12Fence);
-    
+    MAKE_SMART_COM_PTR(ID3D12PipelineState);
+
 	using WindowHandle = HWND;
 	using DeviceHandle = ID3D12DevicePtr;
 	using RenderContextHandle = ID3D12CommandQueuePtr;
@@ -57,6 +58,8 @@ namespace Falcor
     using DsvHandle = D3D12_CPU_DESCRIPTOR_HANDLE;
     using SrvHandle = D3D12_CPU_DESCRIPTOR_HANDLE;
     using BufferHandle = ID3D12ResourcePtr;
+    using RenderStateHandle = ID3D12PipelineStatePtr;
+    using ShaderHandle = D3D12_SHADER_BYTECODE;
 
     using VaoHandle = void*;
     using VertexShaderHandle = void*;
@@ -81,3 +84,4 @@ namespace Falcor
 #define DEFAULT_API_MINOR_VERSION 1
 
 #define UNSUPPORTED_IN_D3D12(msg_) {Falcor::Logger::log(Falcor::Logger::Level::Warning, msg_ + std::string(" is not supported in D3D12. Ignoring call."));}
+#define D3Dx(a) D3D12_##a

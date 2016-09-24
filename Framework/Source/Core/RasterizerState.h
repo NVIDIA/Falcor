@@ -89,6 +89,12 @@ namespace Falcor
             /** Enable/disable scissor test
             */
             Desc& setScissorTest(bool enabled) {mScissorEnabled = enabled ; return *this;}
+            /** Enable/disable conservative rasterization
+            */
+            Desc& setConservativeRasterization(bool enabled) { mConservativeRaster = enabled; return *this; }
+            /** Set the forced sample count. Useful when using UAV
+            */
+            Desc& setForcedSampleCount(uint32_t samples) { mForcedSampleCount = samples; return *this; }
         protected:
             CullMode mCullMode = CullMode::Back;
             FillMode mFillMode = FillMode::Solid;
@@ -98,6 +104,8 @@ namespace Falcor
             bool     mClampDepth = false;
             bool     mScissorEnabled = false;
             bool     mEnableLinesAA = true;
+            uint32_t mForcedSampleCount = 0;
+            bool     mConservativeRaster = false;
         };
 
         /** create a new rasterizer state object
@@ -131,9 +139,13 @@ namespace Falcor
         */
         bool isLineAntiAliasingEnabled() const { return mDesc.mEnableLinesAA; }
 
-        /** Ge the description
+        /** Check if conservative rasterization is enabled
         */
-        Desc getDescription() const {return mDesc;}
+        bool isConservativeRasterizationEnabled() const { return mDesc.mConservativeRaster; }
+
+        /** Get the forced sample count
+        */
+        uint32_t getForcedSampleCount() const { return mDesc.mForcedSampleCount; }
 
         /** Get the API handle
         */

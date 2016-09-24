@@ -264,7 +264,7 @@ namespace Falcor
 
 		for (uint32_t i = 0; i < vertexBufferCount; i++)
         {
-			const VertexLayout* pLayout = pVao->getVertexBufferLayout(i).get();
+			const VertexBufferLayout* pLayout = pVao->getVertexBufferLayout(i).get();
             assert(pLayout->getElementCount() == 1);
             AttribType type = getBinaryAttribType(pLayout->getElementName(0));
             AttribFormat format = GetBinaryAttribFormat(pLayout->getElementFormat(0));

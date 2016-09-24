@@ -46,9 +46,9 @@ namespace Falcor
         {
           Buffer::SharedPtr pBuffer;           ///< The buffer object
           uint32_t stride        = 0;           ///< Vertex stride
-          VertexLayout::SharedPtr pLayout;     ///< Vertex layout object describing the vertex elements in the buffer
+          VertexBufferLayout::SharedPtr pLayout;     ///< Vertex layout object describing the vertex elements in the buffer
 
-          VertexBufferDesc() { pLayout = VertexLayout::create(); }
+          VertexBufferDesc() { pLayout = VertexBufferLayout::create(); }
         };
 
         struct ElementDesc
@@ -80,7 +80,7 @@ namespace Falcor
 
         /** Get a vertex buffer layout
         */
-        VertexLayout::SharedConstPtr getVertexBufferLayout(uint32_t index) const { return mpVBs[index].pLayout; }
+        VertexBufferLayout::SharedConstPtr getVertexBufferLayout(uint32_t index) const { return mpVBs[index].pLayout; }
 
         /** Return the vertex buffer index and the element index by its location.
             If the element is not found, returns the default ElementDesc

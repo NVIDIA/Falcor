@@ -42,7 +42,7 @@ namespace Falcor
 {
     class Animation;
     class Buffer;
-    class VertexLayout;
+    class VertexBufferLayout;
     class Texture;
 
     class AssimpModelImporter
@@ -75,7 +75,7 @@ namespace Falcor
         Mesh::SharedPtr createMesh(const aiMesh* pAiMesh);
         bool createVertexLayouts(const aiMesh* pAiMesh, Vao::VertexBufferDescVector& layouts);
         Buffer::SharedPtr createIndexBuffer(const aiMesh* pAiMesh);
-        Buffer::SharedPtr createVertexBuffer(const aiMesh* pAiMesh, uint32_t vertexCount, BoundingBox& boundingBox, const VertexLayout* pLayout);
+        Buffer::SharedPtr createVertexBuffer(const aiMesh* pAiMesh, uint32_t vertexCount, BoundingBox& boundingBox, const VertexBufferLayout* pLayout);
         void loadBones(const aiMesh* pAiMesh, uint8_t* pVertexData, uint32_t vertexCount, uint32_t vertexStride);
         void loadTextures(const aiMaterial* pAiMaterial, const std::string& folder, BasicMaterial* pMaterial, bool isObjFile, bool useSrgb);
         Material::SharedPtr createMaterial(const aiMaterial* pAiMaterial, const std::string& folder, bool isObjFile, bool useSrgb);

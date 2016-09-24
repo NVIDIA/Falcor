@@ -39,19 +39,6 @@ namespace Falcor
         std::map<ID3DBlobPtr, ID3D11InputLayoutPtr> pLayouts;
     };
 
-    D3D11_INPUT_CLASSIFICATION getDxInputClass(VertexLayout::InputClass inClass)
-    {
-        switch(inClass)
-        {
-        case VertexLayout::InputClass::PerVertexData:
-            return D3D11_INPUT_PER_VERTEX_DATA;
-        case VertexLayout::InputClass::PerInstanceData:
-            return D3D11_INPUT_PER_INSTANCE_DATA;
-        default:
-            should_not_get_here();
-            return (D3D11_INPUT_CLASSIFICATION)-1;
-        }
-    }
 
     bool Vao::initialize()
     {

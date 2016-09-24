@@ -102,7 +102,7 @@ namespace Falcor
     {
         SharedPtr pProgram = SharedPtr(new Program);
         pProgram->mShaderStrings[(uint32_t)ShaderType::Vertex] = VS.size() ? VS : "DefaultVS.vs";
-        pProgram->mShaderStrings[(uint32_t)ShaderType::Fragment] = FS;
+        pProgram->mShaderStrings[(uint32_t)ShaderType::Pixel] = FS;
         pProgram->mShaderStrings[(uint32_t)ShaderType::Geometry] = GS;
         pProgram->mShaderStrings[(uint32_t)ShaderType::Hull] = HS;
         pProgram->mShaderStrings[(uint32_t)ShaderType::Domain] = DS;
@@ -192,7 +192,7 @@ namespace Falcor
             // create the program
             std::string log;
             ProgramVersion::SharedConstPtr pProgram = ProgramVersion::create(pShaders[(uint32_t)ShaderType::Vertex],
-                pShaders[(uint32_t)ShaderType::Fragment],
+                pShaders[(uint32_t)ShaderType::Pixel],
                 pShaders[(uint32_t)ShaderType::Geometry],
                 pShaders[(uint32_t)ShaderType::Hull],
                 pShaders[(uint32_t)ShaderType::Domain],

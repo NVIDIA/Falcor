@@ -375,6 +375,15 @@
     <ClCompile Include="Core\CopyContext.cpp">
       <Filter>Core</Filter>
     </ClCompile>
+    <ClCompile Include="Core\RenderState.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\D3D\D3D12\D3D12RenderState.cpp">
+      <Filter>Core\D3D\D3D12</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\D3D\D3DState.cpp">
+      <Filter>Core\D3D</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Sample.h" />
@@ -1438,6 +1447,12 @@
     </ClInclude>
     <ClInclude Include="Core\CopyContext.h">
       <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\RenderState.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\D3D\D3DState.h">
+      <Filter>Core\D3D</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

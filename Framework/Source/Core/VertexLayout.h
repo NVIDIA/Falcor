@@ -31,11 +31,11 @@
 
 namespace Falcor
 {
-    class VertexLayout : public std::enable_shared_from_this<VertexLayout>
+    class VertexBufferLayout : public std::enable_shared_from_this<VertexBufferLayout>
     {
     public:
-        using SharedPtr = std::shared_ptr<VertexLayout>;
-        using SharedConstPtr = std::shared_ptr<const VertexLayout>;
+        using SharedPtr = std::shared_ptr<VertexBufferLayout>;
+        using SharedConstPtr = std::shared_ptr<const VertexBufferLayout>;
 
         enum class InputClass
         {
@@ -45,7 +45,7 @@ namespace Falcor
         
         static SharedPtr create()
         {
-            return SharedPtr(new VertexLayout());
+            return SharedPtr(new VertexBufferLayout());
         }
 
         /** Add a new element to the object.
@@ -141,7 +141,7 @@ namespace Falcor
 
         static const uint32_t kInvalidShaderLocation = uint32_t(-1);
     private:
-        VertexLayout() = default;
+        VertexBufferLayout() = default;
 
         struct Element
         {
@@ -150,10 +150,35 @@ namespace Falcor
             uint32_t shaderLocation = kInvalidShaderLocation;
             std::string name;
             uint32_t arraySize;
+            uint32_t vbIndex;
         };
 
         std::vector<Element> mElements;
         InputClass mClass = InputClass::PerVertexData;
         uint32_t mInstanceStepRate = 0;
+    };
+
+    class VertexLayout : public std::enable_shared_from_this<VertexLayout>
+    {
+    public:
+        using SharedPtr = std::shared_ptr<VertexLayout>;
+        using SharedConstPtr = std::shared_ptr<const VertexLayout>;
+
+        static SharedPtr create() { return SharedPtr(new VertexLayout()); }
+
+        void addBufferLayout(uint32_t index, VertexBufferLayout::SharedConstPtr pLayout)
+        {
+            mpBufferLayouts[index] = pLayout;
+        }
+
+        const VertexBufferLayout::SharedConstPtr& getBufferLayout(size_t index) const
+        {
+            return mpBufferLayouts[index];
+        }
+
+        size_t getLayoutCount() const { return mpBufferLayouts.size(); }
+    private:
+        VertexLayout() { mpBufferLayouts.resize(16); }
+        std::vector<VertexBufferLayout::SharedConstPtr> mpBufferLayouts;
     };
 }

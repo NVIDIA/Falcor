@@ -41,7 +41,7 @@ namespace Falcor
     class Model;
     class Buffer;
     class Vao;
-    class VertexLayout;
+    class VertexBufferLayout;
     class Camera;
 
     class AssimpModelImporter;

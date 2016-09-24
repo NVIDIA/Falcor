@@ -55,7 +55,7 @@ namespace Falcor
         {   
             auto pVB = mpVBs[vbID].pBuffer;
             uint32_t stride = mpVBs[vbID].stride;
-            const VertexLayout* pLayout = mpVBs[vbID].pLayout.get();
+            const VertexBufferLayout* pLayout = mpVBs[vbID].pLayout.get();
 
             if(pVB == nullptr)
             {
@@ -71,7 +71,7 @@ namespace Falcor
             {
                 // Bind the buffer
                 uint32_t shaderLocation = pLayout->getElementShaderLocation(elem);
-                if (shaderLocation != VertexLayout::kInvalidShaderLocation) 
+                if (shaderLocation != VertexBufferLayout::kInvalidShaderLocation) 
                 {
                     gl_call(glEnableVertexArrayAttrib(mApiHandle, shaderLocation));
                     gl_call(glVertexArrayAttribBinding(mApiHandle, shaderLocation, vbID));

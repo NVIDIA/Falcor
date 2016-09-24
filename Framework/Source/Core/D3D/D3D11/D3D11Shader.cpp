@@ -98,7 +98,7 @@ namespace Falcor
         {
         case ShaderType::Vertex:
             return "vs_5_0";
-        case ShaderType::Fragment:
+        case ShaderType::Pixel:
             return "ps_5_0";
         case ShaderType::Hull:
             return "hs_5_0";
@@ -149,7 +149,7 @@ namespace Falcor
         case ShaderType::Vertex:
             pData->pHandle = createVertexShader(pData->pBlob);
             break;
-        case ShaderType::Fragment:
+        case ShaderType::Pixel:
             pData->pHandle = createPixelShader(pData->pBlob);
             break;
         case ShaderType::Hull:
@@ -204,7 +204,7 @@ namespace Falcor
     }
 
     get_api_handle(VertexShaderHandle, ShaderType::Vertex);
-    get_api_handle(FragmentShaderHandle, ShaderType::Fragment);
+    get_api_handle(FragmentShaderHandle, ShaderType::Pixel);
     get_api_handle(GeometryShaderHandle, ShaderType::Geometry);
     get_api_handle(DomainShaderHandle, ShaderType::Domain);
     get_api_handle(HullShaderHandle, ShaderType::Hull);

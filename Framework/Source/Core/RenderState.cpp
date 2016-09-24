@@ -25,37 +25,34 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
+#pragma once
 #include "Framework.h"
-#include "Core/ProgramVersion.h"
-#include "Graphics/Material/MaterialSystem.h"
+#include "RenderState.h"
+#include "BlendState.h"
 
 namespace Falcor
 {
-    ProgramVersion::ProgramVersion(const Shader::SharedPtr& pVS, const Shader::SharedPtr& pFS, const Shader::SharedPtr& pGS, const Shader::SharedPtr& pHS, const Shader::SharedPtr& pDS, const std::string& name) : mName(name)
+    RenderState::SharedPtr RenderState::create(const Desc& desc)
     {
-        mpShaders[(uint32_t)ShaderType::Vertex] = pVS;
-        mpShaders[(uint32_t)ShaderType::Pixel] = pFS;
-        mpShaders[(uint32_t)ShaderType::Geometry] = pGS;
-        mpShaders[(uint32_t)ShaderType::Domain] = pDS;
-        mpShaders[(uint32_t)ShaderType::Hull] = pHS;
-    }
-
-    ProgramVersion::~ProgramVersion()
-    {
-        MaterialSystem::removeProgramVersion(this);
-        deleteApiHandle();
-    }
-
-    uint32_t ProgramVersion::getUniformBufferBinding(const std::string& name) const
-    {
-        const auto& it = mBuffersDesc.find(name);
-        if(it == mBuffersDesc.end())
+        if (spDefaultBlendState == nullptr)
         {
-            std::string Msg("Error when getting uniform block binding index.\n");
-            Msg += "Block \"" + name + "\" not found in program \"" + mName + "\".\n";
-            Logger::log(Logger::Level::Error, Msg);
-            return kInvalidLocation;
+            // Create default objects
+            spDefaultBlendState = BlendState::create(BlendState::Desc());
+            spDefaultDepthStencilState = DepthStencilState::create(DepthStencilState::Desc());
+            spDefaultRasterizerState = RasterizerState::create(RasterizerState::Desc());
         }
-        return it->second.bufferSlot;
+
+        SharedPtr pState = SharedPtr(new RenderState(desc));
+
+        // Initialize default objects
+        if (!pState->mDesc.mpBlendState)            pState->mDesc.mpBlendState              = spDefaultBlendState;
+        if (!pState->mDesc.mpRasterizerState)       pState->mDesc.mpRasterizerState         = spDefaultRasterizerState;
+        if (!pState->mDesc.mpDepthStencilState)     pState->mDesc.mpDepthStencilState       = spDefaultDepthStencilState;
+
+        if (pState->apiInit() == false)
+        {
+            pState = nullptr;
+        }
+        return pState;
     }
 }

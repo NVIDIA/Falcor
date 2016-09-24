@@ -712,7 +712,7 @@ namespace Falcor
             for(int i = 0; i < numAttribs; i++)
             {
                 auto& pLayout = vbDescs[i].pLayout;
-				pLayout = VertexLayout::create();
+				pLayout = VertexBufferLayout::create();
                 int32_t type, format, length;
                 mStream >> type >> format >> length;
                 if(type < 0 || type >= numAttributesType || format < 0 || format >= AttribFormat::AttribFormat_Max || length < 1 || length > 4)
@@ -782,14 +782,14 @@ namespace Falcor
                    
                     Vao::VertexBufferDesc& vbTangentDesc = vbDescs[tangentBufferIndex];
 					auto& pTangentLayout = vbTangentDesc.pLayout;
-					pTangentLayout = VertexLayout::create();
+					pTangentLayout = VertexBufferLayout::create();
                     vbDescs[tangentBufferIndex].stride = sizeof(glm::vec3);
 					pTangentLayout->addElement(VERTEX_TANGENT_NAME, 0, ResourceFormat::RGB32Float, 1, VERTEX_TANGENT_LOC);
 					buffers[tangentBufferIndex].resize(sizeof(glm::vec3) * numVertices);
 
                     Vao::VertexBufferDesc& vbBitangentDesc = vbDescs[bitangentBufferIndex];
 					auto& pBitangentLayout = vbBitangentDesc.pLayout;
-					pBitangentLayout = VertexLayout::create();
+					pBitangentLayout = VertexBufferLayout::create();
                     vbDescs[tangentBufferIndex].stride = sizeof(glm::vec3);
 					pBitangentLayout->addElement(VERTEX_BITANGENT_NAME, 0, ResourceFormat::RGB32Float, 1, VERTEX_BITANGENT_LOC);
 					buffers[bitangentBufferIndex].resize(sizeof(glm::vec3) * numVertices);

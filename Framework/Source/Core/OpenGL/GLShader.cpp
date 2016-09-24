@@ -38,7 +38,7 @@ namespace Falcor
         {
         case ShaderType::Vertex:
             return GL_VERTEX_SHADER;
-        case ShaderType::Fragment:
+        case ShaderType::Pixel:
             return GL_FRAGMENT_SHADER;
         case ShaderType::Hull:
             return GL_TESS_CONTROL_SHADER;

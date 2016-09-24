@@ -70,7 +70,7 @@ namespace Falcor
     enum class ShaderType
     {
         Vertex,         ///< Vertex shader
-        Fragment,       ///< Fragment shader
+        Pixel,          ///< Pixel shader
         Hull,           ///< Hull shader (AKA Tessellation control shader)
         Domain,         ///< Domain shader (AKA Tessellation evaluation shader)
         Geometry,       ///< Geometry shader
@@ -135,7 +135,7 @@ namespace Falcor
         {
         case ShaderType::Vertex:
             return "vertex";
-        case ShaderType::Fragment:
+        case ShaderType::Pixel:
             return "pixel";
         case ShaderType::Hull:
             return "hull";

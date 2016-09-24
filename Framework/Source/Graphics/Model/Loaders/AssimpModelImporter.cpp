@@ -762,7 +762,7 @@ namespace Falcor
             {
                 Vao::VertexBufferDesc vbDesc;
                 auto& pLayout = vbDesc.pLayout;
-                pLayout = VertexLayout::create();
+                pLayout = VertexBufferLayout::create();
                 pLayout->addElement(kLayoutData[location].name, 0, kLayoutData[location].format, 1, location);
                 layouts.push_back(vbDesc);
             }
@@ -771,7 +771,7 @@ namespace Falcor
         return true;
     }
 
-    Buffer::SharedPtr AssimpModelImporter::createVertexBuffer(const aiMesh* pAiMesh, uint32_t vertexCount, BoundingBox& boundingBox, const VertexLayout* pLayout)
+    Buffer::SharedPtr AssimpModelImporter::createVertexBuffer(const aiMesh* pAiMesh, uint32_t vertexCount, BoundingBox& boundingBox, const VertexBufferLayout* pLayout)
     {
         const uint32_t vertexStride = pLayout->getTotalStride();
         auto initData = std::unique_ptr<uint8_t[]>(new uint8_t[vertexStride * vertexCount]);

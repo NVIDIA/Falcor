@@ -39,6 +39,7 @@ namespace Falcor
     public:
         using SharedPtr = std::shared_ptr<Shader>;
         using SharedConstPtr = std::shared_ptr<const Shader>;
+        using ApiHandle = ShaderHandle;
 
         /** create a shader object
             \param[in] shaderString String containing the shader code.
@@ -51,14 +52,13 @@ namespace Falcor
 
         /** Get the API handle.
         */
-        template<typename HandleType>
-        HandleType getApiHandle() const;
+        ApiHandle getApiHandle() const { return mApiHandle; }
 
         /** Get the shader Type
         */
         ShaderType getType() const { return mType; }
 
-    protected:
+    private:
 #ifdef FALCOR_D3D11
         friend class RenderContext;
         friend class ProgramVersion;
@@ -66,10 +66,10 @@ namespace Falcor
         ID3D11ShaderReflectionPtr getReflectionInterface() const;
         ID3DBlobPtr getCodeBlob() const;
 #endif
-    private:
         // API handle depends on the shader Type, so it stored be stored as part of the private data
         Shader(ShaderType Type);
         ShaderType mType;
+        ApiHandle mApiHandle;
         void* mpPrivateData = nullptr;
     };
 }
