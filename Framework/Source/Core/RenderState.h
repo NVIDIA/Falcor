@@ -44,6 +44,8 @@ namespace Falcor
         using SharedConstPtr = std::shared_ptr<const RenderState>;
         using ApiHandle = RenderStateHandle;
 
+        static const uint32_t kSampleMaskAll = -1;
+
         /** Primitive topology
         */
         enum class PrimitiveType
@@ -59,7 +61,7 @@ namespace Falcor
         {
         public:
             Desc& setVertexLayout(VertexLayout::SharedConstPtr pLayout) { mpLayout = pLayout; return *this; }
-            Desc& setFbo(Fbo::SharedConstPtr pFbo) { mpFbo = pFbo; return *this; }
+            Desc& setFboFormats(const Fbo::Desc& fboFormats) { mFboDesc = fboFormats; return *this; }
             Desc& setProgramVersion(ProgramVersion::SharedConstPtr pProgram) { mpProgram = pProgram; return *this; }
             Desc& setBlendState(BlendState::SharedConstPtr pBlendState) { mpBlendState = pBlendState; return *this; }
             Desc& setRasterizerState(RasterizerState::SharedConstPtr pRasterizerState) { mpRasterizerState = pRasterizerState; return *this; }
@@ -69,12 +71,12 @@ namespace Falcor
         private:
             friend class RenderState;
             VertexLayout::SharedConstPtr mpLayout;
-            Fbo::SharedConstPtr mpFbo;
+            Fbo::Desc mFboDesc;
             ProgramVersion::SharedConstPtr mpProgram;
             RasterizerState::SharedConstPtr mpRasterizerState;
             DepthStencilState::SharedConstPtr mpDepthStencilState;
             BlendState::SharedConstPtr mpBlendState;
-            uint32_t mSampleMask = uint32_t(-1);
+            uint32_t mSampleMask = kSampleMaskAll;
             PrimitiveType mPrimType = PrimitiveType::Undefined;
         };
 
@@ -83,8 +85,6 @@ namespace Falcor
         ApiHandle getApiHandle() { return mApiHandle; }
 
         const Desc& getDesc() const { return mDesc; }
-
-        bool bindToContext(RenderContext* pContext);
     private:
         RenderState(const Desc& desc) : mDesc(desc) {}
         Desc mDesc;

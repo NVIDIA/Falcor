@@ -33,7 +33,7 @@
 namespace Falcor
 {
     enum class FboAttachmentType;
-    
+   
     /** Low level framebuffer object.
         This class abstracts the API's framebuffer creation and management.
     */
@@ -42,6 +42,23 @@ namespace Falcor
     public:
         using SharedPtr = std::shared_ptr<Fbo>;
         using SharedConstPtr = std::shared_ptr<const Fbo>;
+
+        class Desc
+        {
+        public:
+            Desc();
+            Desc& setColorFormat(uint32_t rtIndex, ResourceFormat format) { mColorFormats[rtIndex] = format; return *this; };
+            Desc& setDepthStencilFormat(ResourceFormat format) { mDepthStencilFormat = format; return *this; }
+            Desc& setSampleCount(uint32_t sampleCount) { mSampleCount = sampleCount; return *this; }
+
+            ResourceFormat getColorFormat(uint32_t rtIndex) const { return mColorFormats[rtIndex]; }
+            ResourceFormat getDepthStencilFormat() const { return mDepthStencilFormat; }
+            uint32_t getSampleCount() const { return mSampleCount; }
+        private:
+            std::vector<ResourceFormat> mColorFormats;
+            ResourceFormat mDepthStencilFormat;
+            uint32_t mSampleCount = 0;
+        };
 
         /** Used to tell some functions to attach all array slices of a specific mip-level.
         */
@@ -133,12 +150,15 @@ namespace Falcor
         uint32_t getHeight() const { checkStatus(); return mHeight; }
         /** Get the sample-count of the FBO
         */
-        uint32_t getSampleCount() const { checkStatus(); return mSampleCount; }
+        uint32_t getSampleCount() const { checkStatus(); return mDesc.getSampleCount(); }
 
 		/** Force the FBO to have zero attachment (no texture attached) and use a virtual resolution.
 		*/
 		void setZeroAttachments(uint32_t width, uint32_t height, uint32_t layers=1, uint32_t samples=1, bool fixedSampleLocs=false);
 
+        /** Get the FBO format descriptor
+        */
+        const Desc& getDesc() const { checkStatus();  return mDesc; }
 #ifdef FALCOR_D3D
         DsvHandle getDepthStencilView() const;
         RtvHandle getRenderTargetView(uint32_t rtIndex) const;
@@ -161,11 +181,11 @@ namespace Falcor
         std::vector<Attachment> mColorAttachments;
         Attachment mDepthStencil;
 
+        mutable Desc mDesc;
         mutable bool mIsDirty = false;
         mutable uint32_t mWidth  = (uint32_t)-1;
         mutable uint32_t mHeight = (uint32_t)-1;
         mutable uint32_t mDepth = (uint32_t)-1;
-        mutable uint32_t mSampleCount = (uint32_t)-1;
         mutable bool mHasDepthAttachment = false;
         mutable bool mIsLayered = false;
 		mutable bool mIsZeroAttachment = false;

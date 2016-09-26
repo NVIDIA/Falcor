@@ -63,18 +63,14 @@ namespace Falcor
         }
         desc.SampleMask = mDesc.mSampleMask;
 
-        if (mDesc.mpFbo)
+        for (uint32_t rt = 0; rt < Fbo::getMaxColorTargetCount(); rt++)
         {
-            for(uint32_t rt = 0 ; rt < Fbo::getMaxColorTargetCount() ; rt++)
-            {
-                desc.RTVFormats[rt] = mDesc.mpFbo->getColorTexture(rt) ? getDxgiFormat(mDesc.mpFbo->getColorTexture(rt)->getFormat()) : DXGI_FORMAT_UNKNOWN;
-            }
-            desc.NumRenderTargets = Fbo::getMaxColorTargetCount();
-            desc.DSVFormat = mDesc.mpFbo->getDepthStencilTexture() ? getDxgiFormat(mDesc.mpFbo->getDepthStencilTexture()->getFormat()) : DXGI_FORMAT_UNKNOWN;
-
-            desc.SampleDesc.Count = mDesc.mpFbo->getSampleCount();
+            desc.RTVFormats[rt] = getDxgiFormat(mDesc.mFboDesc.getColorFormat(rt));
         }
-        
+        desc.NumRenderTargets = Fbo::getMaxColorTargetCount();
+        desc.DSVFormat = getDxgiFormat(mDesc.mFboDesc.getDepthStencilFormat());
+        desc.SampleDesc.Count = mDesc.mFboDesc.getSampleCount();
+
         desc.PrimitiveTopologyType = getD3DPrimitiveType(mDesc.mPrimType);
 
         d3d_call(gpDevice->getApiHandle()->CreateGraphicsPipelineState(&desc, IID_PPV_ARGS(&mApiHandle)));

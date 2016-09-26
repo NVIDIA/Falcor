@@ -32,6 +32,11 @@
 
 namespace Falcor
 {
+    Fbo::Desc::Desc()
+    {
+        mColorFormats.resize(Fbo::getMaxColorTargetCount(), ResourceFormat::Unknown);
+    }
+
     static bool checkAttachmentParams(const Texture* pTexture, uint32_t mipLevel, uint32_t arraySlice, bool isDepthAttachment)
     {
         if(pTexture == nullptr)
@@ -108,6 +113,7 @@ namespace Falcor
             mDepthStencil.pTexture = pDepthStencil;
             mDepthStencil.mipLevel = mipLevel;
             mDepthStencil.arraySlice = arraySlice;
+            mDesc.setDepthStencilFormat(pDepthStencil ? pDepthStencil->getFormat() : ResourceFormat::Unknown);
             applyDepthAttachment();
         }
     }
@@ -126,6 +132,8 @@ namespace Falcor
             mColorAttachments[rtIndex].pTexture = pTexture;
             mColorAttachments[rtIndex].mipLevel = mipLevel;
             mColorAttachments[rtIndex].arraySlice = arraySlice;
+
+            mDesc.setColorFormat(rtIndex, pTexture ? pTexture->getFormat() : ResourceFormat::Unknown);
             applyColorAttachment(rtIndex);
         }
     }
@@ -139,7 +147,7 @@ namespace Falcor
             if(mWidth == uint32_t(-1))
             {
                 // First attachment in the FBO
-                mSampleCount = pTexture->getSampleCount();
+                mDesc.setSampleCount(pTexture->getSampleCount());
                 mIsLayered = (attachment.arraySlice == kAttachEntireMipLevel);
             }
 
@@ -148,14 +156,14 @@ namespace Falcor
             mDepth = min(mDepth, pTexture->getDepth());
 
             {
-				if ( (pTexture->getSampleCount() > mSampleCount) && isDepthStencilFormat(pTexture->getFormat()) )
+				if ( (pTexture->getSampleCount() > mDesc.getSampleCount()) && isDepthStencilFormat(pTexture->getFormat()) )
 				{
 					// We're using target-independent raster (more depth samples than color samples).  This is OK.
-					mSampleCount = pTexture->getSampleCount();
+					mDesc.setSampleCount(pTexture->getSampleCount());
 					return true;
 				}
 
-				if (mSampleCount != pTexture->getSampleCount())
+				if (mDesc.getSampleCount() != pTexture->getSampleCount())
 				{
 					Logger::log(Logger::Level::Error, "Error when validating FBO. Sifferent sample counts in attachments\n");
 					return false;
@@ -177,7 +185,7 @@ namespace Falcor
         mWidth = (uint32_t)-1;
         mHeight = (uint32_t)-1;
         mDepth = (uint32_t)-1;
-        mSampleCount = (uint32_t)-1;
+        mDesc.setSampleCount(uint32_t(-1));
         mIsLayered = false;
 
         // Check color
