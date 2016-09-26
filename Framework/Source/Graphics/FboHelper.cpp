@@ -35,7 +35,7 @@ namespace Falcor
 {
     namespace FboHelper
     {
-        bool CheckParams(const std::string& Func, uint32_t width, uint32_t height, uint32_t arraySize, uint32_t renderTargetCount, uint32_t mipLevels, uint32_t sampleCount)
+        bool CheckParams(const std::string& Func, uint32_t width, uint32_t height, uint32_t arraySize, uint32_t mipLevels, uint32_t sampleCount)
         {
             std::string msg = "CFramebuffer::" + Func + "() - ";
             std::string Param;
@@ -48,8 +48,6 @@ namespace Falcor
                 Param = "height";
             else if(arraySize == 0)
                 Param = "arraySize";
-            else if(renderTargetCount == 0)
-                Param = "renderTargetCount";
             else
             {
                 if(sampleCount > 0 && mipLevels > 1)
@@ -64,61 +62,30 @@ namespace Falcor
             return false;
         }
 
-        Fbo::SharedPtr create2D(uint32_t width, uint32_t height, const ResourceFormat formats[], uint32_t arraySize, uint32_t renderTargetCount, uint32_t sampleCount, uint32_t mipLevels)
+        static Texture::SharedPtr createTexture2D(uint32_t w, uint32_t h, ResourceFormat format, uint32_t sampleCount, uint32_t arraySize, uint32_t mipLevels)
         {
-            if(CheckParams("Create2D", width, height, arraySize, renderTargetCount, mipLevels, sampleCount) == false)
+            if (format == ResourceFormat::Unknown)
             {
-                return false;
+                return nullptr;
             }
 
-            Fbo::SharedPtr pFbo = Fbo::create();
-
-            // create the color targets
-            for(uint32_t i = 0; i < renderTargetCount; i++)
+            Texture::SharedPtr pTex;
+            if (sampleCount > 0)
             {
-                Texture::SharedPtr pTex;
-                if(sampleCount > 0)
-                {
-                    pTex = Texture::create2DMS(width, height, formats[i], sampleCount, arraySize);
-                }
-                else
-                {
-                    pTex = Texture::create2D(width, height, formats[i], arraySize, mipLevels);
-                }
-
-                pFbo->attachColorTarget(pTex, i, 0, Fbo::kAttachEntireMipLevel);
-            }
-
-            return pFbo;
-        }
-
-        Fbo::SharedPtr create2DWithDepth(uint32_t width, uint32_t height, const ResourceFormat colorFormats[], ResourceFormat depthFormat, uint32_t arraySize, uint32_t renderTargetCount, uint32_t sampleCount, uint32_t mipLevels)
-        {
-            if(CheckParams("Create2DWithDepth", width, height, arraySize, renderTargetCount, mipLevels, sampleCount) == false)
-            {
-                return false;
-            }
-
-            Fbo::SharedPtr pFbo = create2D(width, height, colorFormats, arraySize, renderTargetCount, sampleCount, mipLevels);
-            Texture::SharedPtr pDepth;
-
-            if(sampleCount > 0)
-            {
-                pDepth = Texture::create2DMS(width, height, depthFormat, sampleCount, arraySize);
+                pTex = Texture::create2DMS(w, h, format, sampleCount, arraySize);
             }
             else
             {
-                pDepth = Texture::create2D(width, height, depthFormat, arraySize, mipLevels);
+                pTex = Texture::create2D(w, h, format, arraySize, mipLevels);
             }
 
-            pFbo->attachDepthStencilTarget(pDepth, 0, Fbo::kAttachEntireMipLevel);
-
-            return pFbo;
+            return pTex;
         }
 
-        Fbo::SharedPtr createCubemap(uint32_t width, uint32_t height, const ResourceFormat formats[], uint32_t arraySize, uint32_t renderTargetCount, uint32_t mipLevels)
+        Fbo::SharedPtr create2D(uint32_t width, uint32_t height, const Fbo::Desc& fboDesc, uint32_t arraySize, uint32_t mipLevels)
         {
-            if(CheckParams("CreateCubemap", width, height, arraySize, renderTargetCount, mipLevels, 0) == false)
+            uint32_t sampleCount = fboDesc.getSampleCount();
+            if(CheckParams("Create2D", width, height, arraySize, mipLevels, sampleCount) == false)
             {
                 return false;
             }
@@ -126,38 +93,40 @@ namespace Falcor
             Fbo::SharedPtr pFbo = Fbo::create();
 
             // create the color targets
-            for(uint32_t i = 0; i < renderTargetCount; i++)
+            for(uint32_t i = 0; i < Fbo::getMaxColorTargetCount(); i++)
             {
-                auto pTex = Texture::createCube(width, height, formats[i], arraySize, mipLevels);
+                Texture::SharedPtr pTex = createTexture2D(width, height, fboDesc.getColorFormat(i), sampleCount, arraySize, mipLevels);
                 pFbo->attachColorTarget(pTex, i, 0, Fbo::kAttachEntireMipLevel);
             }
 
-            return pFbo;
-        }
-
-        Fbo::SharedPtr createCubemapWithDepth(uint32_t width, uint32_t height, const ResourceFormat colorFormats[], ResourceFormat depthFormat, uint32_t arraySize, uint32_t renderTargetCount, uint32_t mipLevels)
-        {
-            if(CheckParams("CreateCubemapWithDepth", width, height, arraySize, renderTargetCount, mipLevels, 0) == false)
-            {
-                return false;
-            }
-
-            Fbo::SharedPtr pFbo = createCubemap(width, height, colorFormats, arraySize, renderTargetCount, mipLevels);
-            auto pDepth = Texture::createCube(width, height, depthFormat, arraySize, mipLevels);
+            Texture::SharedPtr pDepth = createTexture2D(width, height, fboDesc.getDepthStencilFormat(), sampleCount, arraySize, mipLevels);
             pFbo->attachDepthStencilTarget(pDepth, 0, Fbo::kAttachEntireMipLevel);
 
             return pFbo;
         }
 
-        Fbo::SharedPtr createDepthOnly(uint32_t width, uint32_t height, ResourceFormat depthFormat, uint32_t arraySize, uint32_t mipLevels)
+        Fbo::SharedPtr createCubemap(uint32_t width, uint32_t height, const Fbo::Desc& fboDesc, uint32_t arraySize, uint32_t mipLevels)
         {
-            if(CheckParams("CreateDepthOnly", width, height, arraySize, 1, mipLevels, 0) == false)
+            if (fboDesc.getSampleCount() > 1)
             {
-                return false;
+                logError("creatceCubemap() - can't create a multisampled FBO");
+                return nullptr;
+            }
+            if(CheckParams("CreateCubemap", width, height, arraySize, mipLevels, 0) == false)
+            {
+                return nullptr;
             }
 
             Fbo::SharedPtr pFbo = Fbo::create();
-            auto pDepth = Texture::create2D(width, height, depthFormat, arraySize, mipLevels);
+
+            // create the color targets
+            for(uint32_t i = 0; i < Fbo::getMaxColorTargetCount(); i++)
+            {
+                auto pTex = Texture::createCube(width, height, fboDesc.getColorFormat(i), arraySize, mipLevels);
+                pFbo->attachColorTarget(pTex, i, 0, Fbo::kAttachEntireMipLevel);
+            }
+
+            auto pDepth = Texture::createCube(width, height, fboDesc.getDepthStencilFormat(), arraySize, mipLevels);
             pFbo->attachDepthStencilTarget(pDepth, 0, Fbo::kAttachEntireMipLevel);
 
             return pFbo;

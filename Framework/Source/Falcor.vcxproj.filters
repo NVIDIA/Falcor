@@ -384,6 +384,9 @@
     <ClCompile Include="Core\D3D\D3DState.cpp">
       <Filter>Core\D3D</Filter>
     </ClCompile>
+    <ClCompile Include="Graphics\RenderStateCache.cpp">
+      <Filter>Graphics</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Sample.h" />
@@ -1453,6 +1456,9 @@
     </ClInclude>
     <ClInclude Include="Core\D3D\D3DState.h">
       <Filter>Core\D3D</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\RenderStateCache.h">
+      <Filter>Graphics</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

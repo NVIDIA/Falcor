@@ -72,15 +72,15 @@ namespace Falcor
 
         /** Get the vertex buffer count
         */
-        uint32_t getVertexBuffersCount() const { return (uint32_t)mpVBs.size(); }
+//        uint32_t getVertexBuffersCount() const { return (uint32_t)mpVBs.size(); }
 
         /** Get a vertex buffer
         */
-        Buffer::SharedConstPtr getVertexBuffer(uint32_t index) const { return mpVBs[index].pBuffer; }
+//        Buffer::SharedConstPtr getVertexBuffer(uint32_t index) const { return mpVBs[index].pBuffer; }
 
         /** Get a vertex buffer layout
         */
-        VertexBufferLayout::SharedConstPtr getVertexBufferLayout(uint32_t index) const { return mpVBs[index].pLayout; }
+        VertexLayout::SharedConstPtr getVertexLayout() const { return mpVertexLayout; }
 
         /** Return the vertex buffer index and the element index by its location.
             If the element is not found, returns the default ElementDesc
@@ -89,7 +89,7 @@ namespace Falcor
 
         /** Get a vertex buffer layout
         */
-        uint32_t getVertexBufferStride(uint32_t index) const { return mpVBs[index].stride; }
+        //uint32_t getVertexBufferStride(uint32_t index) const { return mpVBs[index].stride; }
 
         /** Get the index buffer
         */
@@ -104,7 +104,7 @@ namespace Falcor
         Vao(const VertexBufferDescVector& vbDesc, const Buffer::SharedPtr& pIB);
         bool initialize();
         VaoHandle mApiHandle;
-        VertexBufferDescVector mpVBs;
+        VertexLayout::SharedPtr mpVertexLayout;
         Buffer::SharedConstPtr mpIB = nullptr;
         void* mpPrivateData = nullptr;
     };
