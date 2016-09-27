@@ -211,7 +211,7 @@ namespace Falcor
     {
         elemDesc.clear();
 
-        for (size_t vb = 0; vb < pLayout->getLayoutCount(); vb++)
+        for (size_t vb = 0; vb < pLayout->getBufferCount(); vb++)
         {
             auto& pVB = pLayout->getBufferLayout(vb);
             if (pVB)

@@ -58,7 +58,9 @@ namespace Falcor
         mpResultFbo.resize(readbackLatency + 1);
         for(auto& pFbo : mpResultFbo)
         {
-            pFbo = FboHelper::create2D(1, 1, &texFormat);
+            Fbo::Desc fboDesc;
+            fboDesc.setColorFormat(0, texFormat);
+            pFbo = FboHelper::create2D(1, 1, fboDesc);
         }
         mpFirstIterProg = FullScreenPass::create(fsFilename, defines);
         mpFirstIterProg->getProgram()->addDefine("_FIRST_ITERATION");
@@ -76,7 +78,9 @@ namespace Falcor
                 width = max(width, 1u);
                 height = max(height, 1u);
 
-                mpTmpResultFbo.push_back(FboHelper::create2D(width, height, &texFormat));
+                Fbo::Desc fboDesc;
+                fboDesc.setColorFormat(0, texFormat);
+                mpTmpResultFbo.push_back(FboHelper::create2D(width, height, fboDesc));
             }
         }
     }

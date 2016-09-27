@@ -40,17 +40,6 @@ namespace Falcor
         using SharedPtr = std::shared_ptr<Vao>;
         using SharedConstPtr = std::shared_ptr<const Vao>;
 
-        /** Vertex buffer descriptor
-        */
-        struct VertexBufferDesc
-        {
-          Buffer::SharedPtr pBuffer;           ///< The buffer object
-          uint32_t stride        = 0;           ///< Vertex stride
-          VertexBufferLayout::SharedPtr pLayout;     ///< Vertex layout object describing the vertex elements in the buffer
-
-          VertexBufferDesc() { pLayout = VertexBufferLayout::create(); }
-        };
-
         struct ElementDesc
         {
             static const uint32_t kInvalidIndex = -1;
@@ -58,12 +47,12 @@ namespace Falcor
             uint32_t elementIndex = kInvalidIndex;
         };
 
-        using VertexBufferDescVector = std::vector<VertexBufferDesc>;
+        using BufferVec = std::vector<Buffer::SharedPtr>;
         /** create a new object
             \param vbDesc Array of pointers to vertex buffer descriptor. Must have at least 1 element
             \param pIB Pointer to the index-buffer. Can be nullptr, in which case no index-buffer will be bound.
         */
-        static SharedPtr create(const VertexBufferDescVector& vbDesc, const Buffer::SharedPtr& pIB);
+        static SharedPtr create(const BufferVec& pVBs, const Buffer::SharedPtr& pIB, const VertexLayout::SharedPtr& pLayout);
         ~Vao();
 
         /** Get the API handle
@@ -72,11 +61,11 @@ namespace Falcor
 
         /** Get the vertex buffer count
         */
-//        uint32_t getVertexBuffersCount() const { return (uint32_t)mpVBs.size(); }
+        uint32_t getVertexBuffersCount() const { return (uint32_t)mpVBs.size(); }
 
         /** Get a vertex buffer
         */
-//        Buffer::SharedConstPtr getVertexBuffer(uint32_t index) const { return mpVBs[index].pBuffer; }
+        Buffer::SharedConstPtr getVertexBuffer(uint32_t index) const { return mpVBs[index]; }
 
         /** Get a vertex buffer layout
         */
@@ -86,10 +75,6 @@ namespace Falcor
             If the element is not found, returns the default ElementDesc
         */
         ElementDesc getElementIndexByLocation(uint32_t elementLocation) const;
-
-        /** Get a vertex buffer layout
-        */
-        //uint32_t getVertexBufferStride(uint32_t index) const { return mpVBs[index].stride; }
 
         /** Get the index buffer
         */
@@ -101,11 +86,12 @@ namespace Falcor
         ID3D11InputLayoutPtr getInputLayout(ID3DBlob* pVsBlob) const;
 #endif
     private:
-        Vao(const VertexBufferDescVector& vbDesc, const Buffer::SharedPtr& pIB);
+        Vao(const BufferVec& pVBs, const Buffer::SharedPtr& pIB, const VertexLayout::SharedPtr& pLayout);
         bool initialize();
         VaoHandle mApiHandle;
         VertexLayout::SharedPtr mpVertexLayout;
-        Buffer::SharedConstPtr mpIB = nullptr;
+        BufferVec mpVBs;
+        Buffer::SharedConstPtr mpIB;
         void* mpPrivateData = nullptr;
     };
 }

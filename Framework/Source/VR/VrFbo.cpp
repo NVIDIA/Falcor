@@ -42,15 +42,17 @@ namespace Falcor
         return renderSize;
     }
 
-    VrFbo::UniquePtr VrFbo::create(ResourceFormat colorFormat[], uint32_t rtCount, ResourceFormat depthFormat, uint32_t sampleCount, const glm::ivec2& rtSize)
+    VrFbo::UniquePtr VrFbo::create(const Fbo::Desc& desc, uint32_t width, uint32_t height)
     {
-        glm::ivec2 renderSize = (rtSize.x == 0 && rtSize.y == 0) ? getHmdRenderSize() : rtSize;
+        width = (width == 0) ? getHmdRenderSize().x : width;
+        height = (height == 0) ? getHmdRenderSize().y : height;
 
         // Create the FBO
         VrFbo::UniquePtr pVrFbo = std::make_unique<VrFbo>();
-        pVrFbo->mpFbo = FboHelper::create2DWithDepth(renderSize.x, renderSize.y, colorFormat, depthFormat, 2, rtCount, sampleCount);
+        pVrFbo->mpFbo = FboHelper::create2D(width, height, desc, 2);
 
         // Get the left and right eye views
+        uint32_t rtCount = desc.getColorFormatCount();
         pVrFbo->mpLeftView.resize(rtCount);
         pVrFbo->mpRightView.resize(rtCount);
         for(uint32_t rt = 0 ; rt < rtCount ; rt++)

@@ -37,6 +37,28 @@ namespace Falcor
         mColorFormats.resize(Fbo::getMaxColorTargetCount(), ResourceFormat::Unknown);
     }
 
+    Fbo::Desc& Fbo::Desc::setColorFormat(uint32_t rtIndex, ResourceFormat format)
+    {
+        mColorFormats[rtIndex] = format;
+        if (format == ResourceFormat::Unknown)
+        {
+            // Find the new RT count
+            mRtCount = 0;
+            for(uint32_t rt = 0 ; rt < mColorFormats.size() ; rt++)
+            {
+                if (mColorFormats[rt] != ResourceFormat::Unknown)
+                {
+                    mRtCount = rt + 1;
+                }
+            }
+        }
+        else
+        {
+            mRtCount = max(mRtCount, rtIndex + 1);
+        }
+        return *this;
+    }
+
     static bool checkAttachmentParams(const Texture* pTexture, uint32_t mipLevel, uint32_t arraySlice, bool isDepthAttachment)
     {
         if(pTexture == nullptr)
@@ -133,7 +155,7 @@ namespace Falcor
             mColorAttachments[rtIndex].mipLevel = mipLevel;
             mColorAttachments[rtIndex].arraySlice = arraySlice;
 
-            mDesc.setColorFormat(rtIndex, pTexture ? pTexture->getFormat() : ResourceFormat::Unknown);
+           mDesc.setColorFormat(rtIndex, pTexture ? pTexture->getFormat() : ResourceFormat::Unknown);
             applyColorAttachment(rtIndex);
         }
     }

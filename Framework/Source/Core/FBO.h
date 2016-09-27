@@ -47,10 +47,11 @@ namespace Falcor
         {
         public:
             Desc();
-            Desc& setColorFormat(uint32_t rtIndex, ResourceFormat format) { mColorFormats[rtIndex] = format; return *this; };
+            Desc& setColorFormat(uint32_t rtIndex, ResourceFormat format);
             Desc& setDepthStencilFormat(ResourceFormat format) { mDepthStencilFormat = format; return *this; }
             Desc& setSampleCount(uint32_t sampleCount) { mSampleCount = sampleCount; return *this; }
 
+            uint32_t getColorFormatCount() const { return mRtCount; }
             ResourceFormat getColorFormat(uint32_t rtIndex) const { return mColorFormats[rtIndex]; }
             ResourceFormat getDepthStencilFormat() const { return mDepthStencilFormat; }
             uint32_t getSampleCount() const { return mSampleCount; }
@@ -58,6 +59,7 @@ namespace Falcor
             std::vector<ResourceFormat> mColorFormats;
             ResourceFormat mDepthStencilFormat;
             uint32_t mSampleCount = 0;
+            uint32_t mRtCount = 0;
         };
 
         /** Used to tell some functions to attach all array slices of a specific mip-level.

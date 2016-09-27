@@ -80,12 +80,10 @@ namespace Falcor
         }
 
         // Create vertex buffer and add to the model
-        Vao::VertexBufferDescVector vbDescVec( 1 );
-        Vao::VertexBufferDesc& vbDesc = vbDescVec[0];
-        vbDesc.pLayout = pVertexLayout;
-        vbDesc.stride = vertexStride;
-        vbDesc.pBuffer = Buffer::create( vboSz, Buffer::BindFlags::Vertex, Buffer::AccessFlags::None, vboData );
-        pModel->addBuffer( vbDesc.pBuffer );
+        VertexLayout::SharedPtr pLayout = VertexLayout::create();
+        pLayout->addBufferLayout(0, pVertexLayout);
+        Buffer::SharedPtr pBuffer = Buffer::create( vboSz, Buffer::BindFlags::Vertex, Buffer::AccessFlags::None, vboData );
+        pModel->addBuffer(pBuffer);
 
         // Create index buffer and add to the model
         Buffer::SharedPtr pIB = Buffer::create( idxBufSz, Buffer::BindFlags::Index, Buffer::AccessFlags::MapRead, idxBufData );
@@ -122,7 +120,7 @@ namespace Falcor
         BoundingBox box = BoundingBox::fromMinMax( posMin, posMax );
 
         // create a mesh containing this index & vertex data.
-        Mesh::SharedPtr pMesh = Mesh::create( vbDescVec, numVertices, pIB, numIndicies, geomTopology, pSimpleMaterial, box, false );
+        Mesh::SharedPtr pMesh = Mesh::create({ pBuffer }, numVertices, pIB, numIndicies, pLayout, geomTopology, pSimpleMaterial, box, false);
         pMesh->addInstance( glm::mat4() );      // Add one instance of this mesh, with no transform matrix
         pModel->addMesh( std::move( pMesh ) );  // Add this mesh to the model
 

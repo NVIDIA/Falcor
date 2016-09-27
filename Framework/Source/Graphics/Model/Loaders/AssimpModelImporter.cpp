@@ -653,17 +653,19 @@ namespace Falcor
             genTangentSpace(pAiMesh);
         }
 
-        Vao::VertexBufferDescVector vbDescVec;
-        if(false == createVertexLayouts(pAiMesh, vbDescVec))
+        VertexLayout::SharedPtr pLayout = createVertexLayout(pAiMesh);
+        if(pLayout)
         {
             return nullptr;
         }
 
+        std::vector<Buffer::SharedPtr> pVBs(pLayout->getBufferCount());
+
         // Create corresponding vertex buffers
-        for(auto& vbDesc : vbDescVec)
+        for(uint32_t i = 0 ; i < pLayout->getBufferCount() ; i++)
         {
-            vbDesc.pBuffer = createVertexBuffer(pAiMesh, vertexCount, boundingBox, vbDesc.pLayout.get());
-            vbDesc.stride = vbDesc.pLayout->getTotalStride();
+            const VertexBufferLayout* pVbLayout = pLayout->getBufferLayout(i).get();
+            pVBs[i] = createVertexBuffer(pAiMesh, vertexCount, boundingBox, pVbLayout);
         }
 
         RenderContext::Topology topology;
@@ -686,7 +688,7 @@ namespace Falcor
         auto pMaterial = mAiMaterialToFalcor[pAiMesh->mMaterialIndex];
         assert(pMaterial);
 
-        Mesh::SharedPtr pMesh = Mesh::create(vbDescVec, vertexCount, pIB, indexCount, topology, pMaterial, boundingBox, pAiMesh->HasBones());
+        Mesh::SharedPtr pMesh = Mesh::create(pVBs, vertexCount, pIB, indexCount, pLayout, topology, pMaterial, boundingBox, pAiMesh->HasBones());
 
         if(manualTangentGen)
         {
@@ -731,49 +733,47 @@ namespace Falcor
         }
 	}
 	
-	bool AssimpModelImporter::createVertexLayouts(const aiMesh* pAiMesh, Vao::VertexBufferDescVector& layouts)
+	VertexLayout::SharedPtr AssimpModelImporter::createVertexLayout(const aiMesh* pAiMesh)
     {
-        layouts.clear();
-
         // Must have position!!!
         if(pAiMesh->HasPositions() == false)
         {
             Logger::log(Logger::Level::Error, "Loaded mesh with no positions!");
-            return false;
+            return nullptr;
         }
 
         if(pAiMesh->GetNumUVChannels() > 1)
         {
             Logger::log(Logger::Level::Error, "Too many texture-coordinate sets when creating model");
-            return false;
+            return nullptr;
         }		
 
         if((pAiMesh->GetNumUVChannels()) == 1 && (pAiMesh->HasTextureCoords(0) == false))
         {
             Logger::log(Logger::Level::Error, "AssimpModelImporter: Unsupported texture coordinate set used in model.");
-            return false;
+            return nullptr;
         }
 
-        layouts.reserve(VERTEX_LOCATION_COUNT);
+        VertexLayout::SharedPtr pLayout = VertexLayout::create();
 
+        uint32_t bufferCount = 0;
         for (uint32_t location = 0; location < VERTEX_LOCATION_COUNT; ++location)
 		{
             if(isElementUsed(pAiMesh, location))
             {
-                Vao::VertexBufferDesc vbDesc;
-                auto& pLayout = vbDesc.pLayout;
-                pLayout = VertexBufferLayout::create();
-                pLayout->addElement(kLayoutData[location].name, 0, kLayoutData[location].format, 1, location);
-                layouts.push_back(vbDesc);
+                VertexBufferLayout::SharedPtr pVbLayout = VertexBufferLayout::create();
+                pVbLayout->addElement(kLayoutData[location].name, 0, kLayoutData[location].format, 1, location);
+                pLayout->addBufferLayout(bufferCount, pVbLayout);
+                bufferCount++;
             }
 		}
 
-        return true;
+        return pLayout;
     }
 
     Buffer::SharedPtr AssimpModelImporter::createVertexBuffer(const aiMesh* pAiMesh, uint32_t vertexCount, BoundingBox& boundingBox, const VertexBufferLayout* pLayout)
     {
-        const uint32_t vertexStride = pLayout->getTotalStride();
+        const uint32_t vertexStride = pLayout->getStride();
         auto initData = std::unique_ptr<uint8_t[]>(new uint8_t[vertexStride * vertexCount]);
         memset(initData.get(), 0, vertexStride * vertexCount);
 

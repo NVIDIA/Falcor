@@ -73,7 +73,7 @@ namespace Falcor
         Animation::UniquePtr createAnimation(const aiAnimation* pAiAnim);
 
         Mesh::SharedPtr createMesh(const aiMesh* pAiMesh);
-        bool createVertexLayouts(const aiMesh* pAiMesh, Vao::VertexBufferDescVector& layouts);
+        VertexLayout::SharedPtr createVertexLayout(const aiMesh* pAiMesh);
         Buffer::SharedPtr createIndexBuffer(const aiMesh* pAiMesh);
         Buffer::SharedPtr createVertexBuffer(const aiMesh* pAiMesh, uint32_t vertexCount, BoundingBox& boundingBox, const VertexBufferLayout* pLayout);
         void loadBones(const aiMesh* pAiMesh, uint8_t* pVertexData, uint32_t vertexCount, uint32_t vertexStride);

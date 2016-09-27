@@ -30,31 +30,36 @@
 
 namespace Falcor
 {
-    bool checkVaoParams(const Vao::VertexBufferDescVector& vbDesc, Buffer* pIB)
+    bool checkVaoParams(const Vao::BufferVec& vbDesc, Buffer* pIB, const VertexLayout* pLayout)
     {
         // Must have at least 1 VB
         if(vbDesc.size() == 0)
         {
-            Logger::log(Logger::Level::Error, "Error when creating VAO. Must have at least 1 vertex buffer");
+            logError("Error when creating VAO. Must have at least 1 vertex buffer");
             return false;
+        }
+
+        if (pLayout->getBufferCount() != vbDesc.size())
+        {
+            logError("Error when creating VAO. Number of buffers in the BufferVec is different then the number of buffers in the vertex layout object");
+            return false;
+
         }
 
         return true;
     }
 
-    Vao::Vao(const VertexBufferDescVector& vbDesc, const Buffer::SharedPtr& pIB) : mpIB(pIB)
-    {
-        mpVBs = vbDesc;
-    }
+    Vao::Vao(const BufferVec& pVBs, const Buffer::SharedPtr& pIB, const VertexLayout::SharedPtr& pLayout) : mpVBs(pVBs), mpIB(pIB), mpVertexLayout(pLayout) {}
 
-    Vao::SharedPtr Vao::create(const VertexBufferDescVector& vbDesc, const Buffer::SharedPtr& pIB)
+
+    Vao::SharedPtr Vao::create(const BufferVec& pVBs, const Buffer::SharedPtr& pIB, const VertexLayout::SharedPtr& pLayout)
     {
-        if(checkVaoParams(vbDesc, pIB.get()) == false)
+        if(checkVaoParams(pVBs, pIB.get(), pLayout.get()) == false)
         {
             return nullptr;
         }
 
-        SharedPtr pVao = SharedPtr(new Vao(vbDesc, pIB));
+        SharedPtr pVao = SharedPtr(new Vao(pVBs, pIB, pLayout));
         if(pVao->initialize() == false)
         {
             pVao = nullptr;
@@ -71,9 +76,12 @@ namespace Falcor
         for(uint32_t bufId = 0; bufId < getVertexBuffersCount(); ++bufId)
         {
             const auto& buffer = mpVBs[bufId];
-            for(uint32_t i = 0; i < buffer.pLayout->getElementCount(); ++i)
+            const VertexBufferLayout* pVbLayout = mpVertexLayout->getBufferLayout(bufId).get();
+            assert(pVbLayout);
+
+            for(uint32_t i = 0; i < pVbLayout->getElementCount(); ++i)
             {
-                if(buffer.pLayout->getElementShaderLocation(i) == elementLocaion)
+                if(pVbLayout->getElementShaderLocation(i) == elementLocaion)
                 {
                     desc.vbIndex = bufId;
                     desc.elementIndex = i;

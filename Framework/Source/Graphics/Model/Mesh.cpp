@@ -42,22 +42,24 @@ namespace Falcor
 	uint32_t Mesh::sMeshCounter = 0;
     Mesh::~Mesh() = default;
 
-    Mesh::SharedPtr Mesh::create(const Vao::VertexBufferDescVector& vertexBuffers,
+    Mesh::SharedPtr Mesh::create(const Vao::BufferVec& vertexBuffers,
         uint32_t vertexCount,
         const Buffer::SharedPtr& pIndexBuffer,
         uint32_t indexCount,
+        const VertexLayout::SharedPtr& pLayout,
         RenderContext::Topology topology,
         const Material::SharedPtr& pMaterial,
         const BoundingBox& boundingBox,
         bool hasBones)
     {
-        return SharedPtr(new Mesh(vertexBuffers, vertexCount, pIndexBuffer, indexCount, topology, pMaterial, boundingBox, hasBones));
+        return SharedPtr(new Mesh(vertexBuffers, vertexCount, pIndexBuffer, indexCount, pLayout, topology, pMaterial, boundingBox, hasBones));
     }
 
-    Mesh::Mesh(const Vao::VertexBufferDescVector& vertexBuffers,
+    Mesh::Mesh(const Vao::BufferVec& vertexBuffers,
         uint32_t vertexCount,
         const Buffer::SharedPtr& pIndexBuffer,
         uint32_t indexCount,
+        const VertexLayout::SharedPtr& pLayout,
         RenderContext::Topology topology,
         const Material::SharedPtr& pMaterial,
         const BoundingBox& boundingBox,
@@ -87,7 +89,7 @@ namespace Falcor
         mBoundingBox = boundingBox;
         mHasBones = hasBones;
 
-        mpVao = Vao::create(vertexBuffers, pIndexBuffer);
+        mpVao = Vao::create(vertexBuffers, pIndexBuffer, pLayout);
     }
 
     void Mesh::applyTransform(const glm::mat4& Transform) 
@@ -97,8 +99,8 @@ namespace Falcor
         glm::vec3 posMax(std::numeric_limits<float>::min(),std::numeric_limits<float>::min(),std::numeric_limits<float>::min());
         for(uint32_t i=0u; i<mpVao->getVertexBuffersCount(); ++i)
         {
-            const auto& pLayout = mpVao->getVertexBufferLayout(i);
-            const uint32_t stride = mpVao->getVertexBufferStride(i);
+            const auto& pLayout = mpVao->getVertexLayout()->getBufferLayout(i);
+            const uint32_t stride = pLayout->getStride();
             Buffer* pBuffer = const_cast<Buffer*>(mpVao->getVertexBuffer(i).get());
             size_t numVerts = pBuffer->getSize() / stride;
 

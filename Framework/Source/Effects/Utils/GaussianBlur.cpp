@@ -64,7 +64,9 @@ namespace Falcor
 
         if(createFbo)
         {
-            mpTmpFbo = FboHelper::create2D(pSrc->getWidth(), pSrc->getHeight(), &srcFormat, pSrc->getArraySize());
+            Fbo::Desc fboDesc;
+            fboDesc.setColorFormat(0, srcFormat);
+            mpTmpFbo = FboHelper::create2D(pSrc->getWidth(), pSrc->getHeight(), fboDesc, pSrc->getArraySize());
             createProgram();
         }
     }

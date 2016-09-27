@@ -264,7 +264,7 @@ namespace Falcor
 
 		for (uint32_t i = 0; i < vertexBufferCount; i++)
         {
-			const VertexBufferLayout* pLayout = pVao->getVertexBufferLayout(i).get();
+			const VertexBufferLayout* pLayout = pVao->getVertexLayout()->getBufferLayout(i).get();
             assert(pLayout->getElementCount() == 1);
             AttribType type = getBinaryAttribType(pLayout->getElementName(0));
             AttribFormat format = GetBinaryAttribFormat(pLayout->getElementFormat(0));
@@ -292,7 +292,7 @@ namespace Falcor
             vbInfo[i].pData = (size_t)vbInfo[i].pBuffer->map(Buffer::MapType::Read);
 
 
-            vbInfo[i].stride = pLayout->getTotalStride();
+            vbInfo[i].stride = pLayout->getStride();
         }
 
         // Write the vertex buffer

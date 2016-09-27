@@ -64,6 +64,7 @@ namespace Falcor
             Elem.name = name;
             Elem.arraySize = arraySize;
             mElements.push_back(Elem);
+            mVertexStride += getFormatBytesPerBlock(Elem.format) * Elem.arraySize;
         }
 
         /** Return the element offset pointed to by Index
@@ -110,15 +111,7 @@ namespace Falcor
         
         /** Return the total stride of all elements in bytes
         */
-        uint32_t getTotalStride() const
-        {
-            uint32_t sz = 0;
-            for (uint32_t i = 0;i<getElementCount();++i)
-			{
-                sz += getFormatBytesPerBlock(mElements[i].format) * mElements[i].arraySize;
-			}
-            return sz;
-        }
+        uint32_t getStride() const { return mVertexStride; }
 
         /** Return the input classification
         */
@@ -156,6 +149,7 @@ namespace Falcor
         std::vector<Element> mElements;
         InputClass mClass = InputClass::PerVertexData;
         uint32_t mInstanceStepRate = 0;
+        uint32_t mVertexStride = 0;
     };
 
     class VertexLayout : public std::enable_shared_from_this<VertexLayout>
@@ -176,7 +170,7 @@ namespace Falcor
             return mpBufferLayouts[index];
         }
 
-        size_t getLayoutCount() const { return mpBufferLayouts.size(); }
+        size_t getBufferCount() const { return mpBufferLayouts.size(); }
     private:
         VertexLayout() { mpBufferLayouts.resize(16); }
         std::vector<VertexBufferLayout::SharedConstPtr> mpBufferLayouts;

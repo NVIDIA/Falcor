@@ -92,13 +92,14 @@ namespace Falcor
 
     void TextRenderer::createVAO()
     {
-        Vao::VertexBufferDescVector VbDesc(1);
-        VbDesc[0].pLayout->addElement("POSITION", 0, ResourceFormat::RG32Float, 1, 0);
-        VbDesc[0].pLayout->addElement("TEXCOORD", 8, ResourceFormat::RG32Float, 1, 1);
-        VbDesc[0].stride = sizeof(Vertex);
-        VbDesc[0].pBuffer = mpVertexBuffer;
+        VertexLayout::SharedPtr pLayout = VertexLayout::create();
+        VertexBufferLayout::SharedPtr pBufLayout = VertexBufferLayout::create();
+        pBufLayout->addElement("POSITION", 0, ResourceFormat::RG32Float, 1, 0);
+        pBufLayout->addElement("TEXCOORD", 8, ResourceFormat::RG32Float, 1, 1);
+        pLayout->addBufferLayout(0, pBufLayout);
+        Vao::BufferVec buffers{ mpVertexBuffer };
 
-        mpVAO = Vao::create(VbDesc, nullptr);
+        mpVAO = Vao::create(buffers, nullptr, pLayout);
     }
 
     void TextRenderer::begin(const RenderContext::SharedPtr& pRenderContext, const glm::vec2& startPos)

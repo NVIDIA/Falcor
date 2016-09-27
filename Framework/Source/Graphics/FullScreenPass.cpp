@@ -117,13 +117,14 @@ namespace Falcor
             FullScreenPass::spVertexBuffer = Buffer::create(vbSize, Buffer::BindFlags::Vertex, Buffer::AccessFlags::Dynamic, (void*)kVertices);
 
             // create VAO
-            Vao::VertexBufferDescVector vbDesc(1);
-            vbDesc[0].pLayout->addElement("POSITION", 0, ResourceFormat::RG32Float, 1, 0);
-            vbDesc[0].pLayout->addElement("TEXCOORD", 8, ResourceFormat::RG32Float, 1, 1);
-            vbDesc[0].stride = sizeof(Vertex);
-            vbDesc[0].pBuffer = spVertexBuffer;
+            VertexLayout::SharedPtr pLayout = VertexLayout::create();
+            VertexBufferLayout::SharedPtr pBufLayout = VertexBufferLayout::create();
+            pBufLayout->addElement("POSITION", 0, ResourceFormat::RG32Float, 1, 0);
+            pBufLayout->addElement("TEXCOORD", 8, ResourceFormat::RG32Float, 1, 1);
+            pLayout->addBufferLayout(0, pBufLayout);
 
-            FullScreenPass::spVao = Vao::create(vbDesc, nullptr);
+            Vao::BufferVec buffers{ spVertexBuffer };
+            FullScreenPass::spVao = Vao::create(buffers, nullptr, pLayout);
         }
     }
 

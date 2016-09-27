@@ -41,10 +41,11 @@ namespace Falcor
     public:
         using UniquePtr = std::unique_ptr<VrFbo>;
         /** Create a new VrFbo. It will create array resources for color and depth. It will also create views into each array-slice
-            \param[in] colorFormat Valid resource format for the color texture
-            \param[in] depthFormat Either a valid depth format or ResourceFormat::Unknown if depth is not required
+            \param[in] desc FBO description
+            \param[in] width The width of the FBO. Optional, by default will use the HMD render-target size
+            \param[in] height The height of the FBO. Optional, by default will use the HMD render-target size
         */
-        static UniquePtr create(ResourceFormat colorFormat[], uint32_t rtCount, ResourceFormat depthFormat, uint32_t sampleCount = 0, const glm::ivec2& rtSize = glm::ivec2(0, 0));
+        static UniquePtr create(const Fbo::Desc& desc, uint32_t width = 0, uint32_t height = 0);
 
         /** Submit the color target into the HMD
         */

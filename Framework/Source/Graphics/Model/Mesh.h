@@ -66,10 +66,11 @@ namespace Falcor
             \param[in] BoundingBox The mesh's axis-aligned bounding-box
             \param[in] bHasBones Indicates the the mesh uses bones for animation
         */
-        static SharedPtr create(const Vao::VertexBufferDescVector& vertexBuffers,
+        static SharedPtr create(const Vao::BufferVec& vertexBuffers,
             uint32_t vertexCount,
             const Buffer::SharedPtr& pIndexBuffer,
             uint32_t indexCount,
+            const VertexLayout::SharedPtr& pLayout,
             RenderContext::Topology topology,
             const Material::SharedPtr& pMaterial,
             const BoundingBox& boundingBox,
@@ -158,10 +159,11 @@ namespace Falcor
         static const uint32_t kMaxBonesPerVertex = 4;              ///> Max supported bones per vertex
 
     private:
-        Mesh(const Vao::VertexBufferDescVector& vertexBuffers,
+        Mesh(const Vao::BufferVec& vertexBuffers,
             uint32_t vertexCount,
             const Buffer::SharedPtr& pIndexBuffer,
             uint32_t indexCount,
+            const VertexLayout::SharedPtr& pLayout,
             RenderContext::Topology topology,
             const Material::SharedPtr& pMaterial,
             const BoundingBox& boundingBox,

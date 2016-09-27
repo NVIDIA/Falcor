@@ -697,9 +697,10 @@ namespace Falcor
                 return nullptr;
             }
 
-			Vao::VertexBufferDescVector vbDescs;
+			Vao::BufferVec pVBs;
+            VertexLayout::SharedPtr pLayout = VertexLayout::create();
 			std::vector<std::vector<uint8_t> > buffers;
-            vbDescs.resize(numAttribs);
+            pVBs.resize(numAttribs);
 			buffers.resize(numAttribs);
 
             const uint32_t kInvalidBufferIndex = (uint32_t)-1;
@@ -711,8 +712,8 @@ namespace Falcor
 
             for(int i = 0; i < numAttribs; i++)
             {
-                auto& pLayout = vbDescs[i].pLayout;
-				pLayout = VertexBufferLayout::create();
+                VertexBufferLayout::SharedPtr pBufferLayout = VertexBufferLayout::create();
+                pLayout->addBufferLayout(i, pBufferLayout);
                 int32_t type, format, length;
                 mStream >> type >> format >> length;
                 if(type < 0 || type >= numAttributesType || format < 0 || format >= AttribFormat::AttribFormat_Max || length < 1 || length > 4)
@@ -726,8 +727,6 @@ namespace Falcor
                     const std::string falcorName = getSemanticName(AttribType(type));
                     ResourceFormat falcorFormat = getFalcorFormat(AttribFormat(format), length);
                     uint32_t shaderLocation = getShaderLocation(AttribType(type));
-
-                    vbDescs[i].stride = getFormatByteSize(AttribFormat(format)) * length;
 
 					switch (shaderLocation)
 					{
@@ -752,8 +751,8 @@ namespace Falcor
 						break;
 					}
 
-					pLayout->addElement(falcorName, 0, falcorFormat, 1, shaderLocation);
-                    buffers[i].resize(vbDescs[i].stride * numVertices);
+                    pBufferLayout->addElement(falcorName, 0, falcorFormat, 1, shaderLocation);
+                    buffers[i].resize(pBufferLayout->getStride() * numVertices);
                 }
             }
 
@@ -775,22 +774,18 @@ namespace Falcor
 					}
                     // Set the offsets
                     genTangentForMesh = true;
-                    tangentBufferIndex = (uint32_t)vbDescs.size();
-                    bitangentBufferIndex = (uint32_t)vbDescs.size() + 1;
-                    vbDescs.resize(bitangentBufferIndex + 1);
+                    tangentBufferIndex = (uint32_t)pVBs.size();
+                    bitangentBufferIndex = (uint32_t)pVBs.size() + 1;
+                    pVBs.resize(bitangentBufferIndex + 1);
 					buffers.resize(bitangentBufferIndex + 1);
                    
-                    Vao::VertexBufferDesc& vbTangentDesc = vbDescs[tangentBufferIndex];
-					auto& pTangentLayout = vbTangentDesc.pLayout;
-					pTangentLayout = VertexBufferLayout::create();
-                    vbDescs[tangentBufferIndex].stride = sizeof(glm::vec3);
+                    auto pTangentLayout = VertexBufferLayout::create();
+                    pLayout->addBufferLayout(tangentBufferIndex, pTangentLayout);
 					pTangentLayout->addElement(VERTEX_TANGENT_NAME, 0, ResourceFormat::RGB32Float, 1, VERTEX_TANGENT_LOC);
 					buffers[tangentBufferIndex].resize(sizeof(glm::vec3) * numVertices);
 
-                    Vao::VertexBufferDesc& vbBitangentDesc = vbDescs[bitangentBufferIndex];
-					auto& pBitangentLayout = vbBitangentDesc.pLayout;
-					pBitangentLayout = VertexBufferLayout::create();
-                    vbDescs[tangentBufferIndex].stride = sizeof(glm::vec3);
+					auto pBitangentLayout = VertexBufferLayout::create();
+                    pLayout->addBufferLayout(bitangentBufferIndex, pBitangentLayout);
 					pBitangentLayout->addElement(VERTEX_BITANGENT_NAME, 0, ResourceFormat::RGB32Float, 1, VERTEX_BITANGENT_LOC);
 					buffers[bitangentBufferIndex].resize(sizeof(glm::vec3) * numVertices);
                 }
@@ -803,7 +798,7 @@ namespace Falcor
             {
 				for (int32_t attributes = 0; attributes < numAttribs; ++attributes)
 				{
-                    uint32_t stride = vbDescs[attributes].stride;
+                    uint32_t stride = pLayout->getBufferLayout(attributes)->getStride();
 					uint8_t* pDest = buffers[attributes].data() + stride * i;
 					mStream.read(pDest, stride);
 				}
@@ -811,8 +806,8 @@ namespace Falcor
 
 			for (int32_t i = 0; i < numAttribs; ++i)
 			{
-                vbDescs[i].pBuffer = Buffer::create(buffers[i].size(), Buffer::BindFlags::Vertex, Buffer::AccessFlags::None, buffers[i].data());
-                pModel->addBuffer(vbDescs[i].pBuffer);
+                pVBs[i] = Buffer::create(buffers[i].size(), Buffer::BindFlags::Vertex, Buffer::AccessFlags::None, buffers[i].data());
+                pModel->addBuffer(pVBs[i]);
 			}
 
             if(version <= 5)
@@ -927,24 +922,26 @@ namespace Falcor
                     glm::vec2* texCrd = nullptr;
                     if(texCoordBufferIndex != kInvalidBufferIndex)
                     {
-                        texCrdCount = vbDescs[texCoordBufferIndex].stride / sizeof(glm::vec2);
+                        texCrdCount = pLayout->getBufferLayout(texCoordBufferIndex)->getStride() / sizeof(glm::vec2);
                         texCrd = (glm::vec2*)buffers[texCoordBufferIndex].data();
                     }
 
-                    if (vbDescs[positionBufferIndex].pLayout->getElementFormat(0) == ResourceFormat::RGB32Float)
+                    ResourceFormat posFormat = pLayout->getBufferLayout(positionBufferIndex)->getElementFormat(0);
+
+                    if (posFormat == ResourceFormat::RGB32Float)
                     {
                         generateSubmeshTangentData<glm::vec3>(indices, (glm::vec3*)buffers[positionBufferIndex].data(), (glm::vec3*)buffers[normalBufferIndex].data(), texCrd, texCrdCount, (glm::vec3*)buffers[tangentBufferIndex].data(), (glm::vec3*)buffers[bitangentBufferIndex].data());
                     }
-                    else if (vbDescs[positionBufferIndex].pLayout->getElementFormat(0) == ResourceFormat::RGBA32Float)
+                    else if (posFormat == ResourceFormat::RGBA32Float)
                     {
                         generateSubmeshTangentData<glm::vec4>(indices, (glm::vec4*)buffers[positionBufferIndex].data(), (glm::vec3*)buffers[normalBufferIndex].data(), texCrd, texCrdCount, (glm::vec3*)buffers[tangentBufferIndex].data(), (glm::vec3*)buffers[bitangentBufferIndex].data());
                     }
 
-                    vbDescs[tangentBufferIndex].pBuffer = Buffer::create(buffers[tangentBufferIndex].size(), Buffer::BindFlags::Vertex, Buffer::AccessFlags::None, buffers[tangentBufferIndex].data());
-                    pModel->addBuffer(vbDescs[tangentBufferIndex].pBuffer);
+                    pVBs[tangentBufferIndex] = Buffer::create(buffers[tangentBufferIndex].size(), Buffer::BindFlags::Vertex, Buffer::AccessFlags::None, buffers[tangentBufferIndex].data());
+                    pModel->addBuffer(pVBs[tangentBufferIndex]);
 
-                    vbDescs[bitangentBufferIndex].pBuffer = Buffer::create(buffers[bitangentBufferIndex].size(), Buffer::BindFlags::Vertex, Buffer::AccessFlags::None, buffers[bitangentBufferIndex].data());
-                    pModel->addBuffer(vbDescs[bitangentBufferIndex].pBuffer);
+                    pVBs[bitangentBufferIndex] = Buffer::create(buffers[bitangentBufferIndex].size(), Buffer::BindFlags::Vertex, Buffer::AccessFlags::None, buffers[bitangentBufferIndex].data());
+                    pModel->addBuffer(pVBs[bitangentBufferIndex]);
                 }
 				
 
@@ -953,7 +950,7 @@ namespace Falcor
                 for(uint32_t i = 0; i < numIndices; i++)
                 {
                     uint32_t vertexID = indices[i];
-                    uint8_t* pVertex = (vbDescs[positionBufferIndex].stride * vertexID) + buffers[positionBufferIndex].data();
+                    uint8_t* pVertex = (pLayout->getBufferLayout(positionBufferIndex)->getStride() * vertexID) + buffers[positionBufferIndex].data();
 
                     float* pPosition = (float*)pVertex;
 
@@ -965,7 +962,7 @@ namespace Falcor
                 BoundingBox box = BoundingBox::fromMinMax(min, max);
 
                 // create the mesh                
-                auto pMesh = Mesh::create(vbDescs, numVertices, pIB, numIndices, RenderContext::Topology::TriangleList, pMaterial, box, false);
+                auto pMesh = Mesh::create(pVBs, numVertices, pIB, numIndices, pLayout, RenderContext::Topology::TriangleList, pMaterial, box, false);
                 pModel->addMesh(std::move(pMesh));
                 meshToSubmeshesID[meshIdx].push_back(pModel->getMeshCount() - 1);
             }
