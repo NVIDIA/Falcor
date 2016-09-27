@@ -96,7 +96,7 @@ namespace Falcor
 
         bool apiInit(std::string& log, const std::string& name);
         void deleteApiHandle();
-        ProgramHandle mApiHandle;
+        ProgramHandle mApiHandle = ProgramHandle();
         const std::string mName;
 
         static const uint32_t kShaderCount = (uint32_t)ShaderType::Count;

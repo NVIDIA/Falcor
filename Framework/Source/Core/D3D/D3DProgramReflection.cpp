@@ -43,6 +43,8 @@ namespace Falcor
     using D3D_SHADER_TYPE_DESC = D3D12_SHADER_TYPE_DESC;
     using D3D_SHADER_VARIABLE_DESC = D3D12_SHADER_VARIABLE_DESC;
     using D3D_SHADER_INPUT_BIND_DESC = D3D12_SHADER_INPUT_BIND_DESC;
+    using D3D_SIGNATURE_PARAMETER_DESC = D3D12_SIGNATURE_PARAMETER_DESC;
+
 #endif
 
     ProgramReflection::Variable::Type getVariableType(D3D_SHADER_VARIABLE_TYPE dxType, uint32_t rows, uint32_t columns)
@@ -385,6 +387,16 @@ namespace Falcor
 
     bool ProgramReflection::reflectVertexAttributes(const ProgramVersion* pProgVer, std::string& log)
     {
+        // Get the VS. We must have one
+        ShaderReflectionHandle pReflector = pProgVer->getShader(ShaderType::Vertex)->getReflectionInterface();
+        assert(pReflector);
+        D3D_SHADER_DESC shaderDesc;
+        d3d_call(pReflector->GetDesc(&shaderDesc));
+        for (uint32_t i = 0; i < shaderDesc.InputParameters; i++)
+        {
+            D3D_SIGNATURE_PARAMETER_DESC inputDesc;
+            d3d_call(pReflector->GetInputParameterDesc(i, &inputDesc));
+        }
         return true;
     }
 
@@ -393,8 +405,143 @@ namespace Falcor
         return true;
     }
 
+    static bool verifyResourceDefinition(const ProgramReflection::Resource& prev, ProgramReflection::Resource& current, std::string& log)
+    {
+        bool match = true;
+#define error_msg(msg_) std::string(msg_) + " mismatch.\n";
+#define test_field(field_)                                           \
+            if(prev.field_ != current.field_)                        \
+            {                                                        \
+                log += error_msg(#field_)                            \
+                match = false;                                       \
+            }
+
+        test_field(type);
+        test_field(dims);
+        test_field(retType);
+        test_field(location);
+        test_field(arraySize);
+#undef test_field
+#undef error_msg
+
+        return match;
+    }
+
+    static ProgramReflection::Resource::Dimensions getResourceDimensions(D3D_SRV_DIMENSION dims)
+    {
+        switch (dims)
+        {
+        case D3D_SRV_DIMENSION_BUFFER:
+            return ProgramReflection::Resource::Dimensions::TextureBuffer;
+        case D3D_SRV_DIMENSION_TEXTURE1D:
+            return ProgramReflection::Resource::Dimensions::Texture1D;
+        case D3D_SRV_DIMENSION_TEXTURE1DARRAY:
+            return ProgramReflection::Resource::Dimensions::Texture1DArray;
+        case D3D_SRV_DIMENSION_TEXTURE2D:
+            return ProgramReflection::Resource::Dimensions::Texture2D;
+        case D3D_SRV_DIMENSION_TEXTURE2DARRAY:
+            return ProgramReflection::Resource::Dimensions::Texture2DArray;
+        case D3D_SRV_DIMENSION_TEXTURE2DMS:
+            return ProgramReflection::Resource::Dimensions::Texture2DMS;
+        case D3D_SRV_DIMENSION_TEXTURE2DMSARRAY:
+            return ProgramReflection::Resource::Dimensions::Texture2DMSArray;
+        case D3D_SRV_DIMENSION_TEXTURE3D:
+            return ProgramReflection::Resource::Dimensions::Texture3D;
+        case D3D_SRV_DIMENSION_TEXTURECUBE:
+            return ProgramReflection::Resource::Dimensions::TextureCube;
+        case D3D_SRV_DIMENSION_TEXTURECUBEARRAY:
+            return ProgramReflection::Resource::Dimensions::TextureCubeArray;
+        default:
+            should_not_get_here();
+            return ProgramReflection::Resource::Dimensions::Unknown;
+        }
+    }
+
+    static ProgramReflection::Resource::ResourceType getResourceType(D3D_SHADER_INPUT_TYPE type)
+    {
+        switch (type)
+        {
+        case D3D_SIT_TEXTURE:
+            return ProgramReflection::Resource::ResourceType::Texture;
+        case D3D_SIT_SAMPLER:
+            return ProgramReflection::Resource::ResourceType::Sampler;
+        default:
+            should_not_get_here();
+            return ProgramReflection::Resource::ResourceType::Unknown;
+        }
+    }
+
+    static ProgramReflection::Resource::ReturnType getReturnType(D3D_RESOURCE_RETURN_TYPE type)
+    {
+        switch (type)
+        {
+        case D3D_RETURN_TYPE_UNORM:
+        case D3D_RETURN_TYPE_SNORM:
+        case D3D_RETURN_TYPE_FLOAT:
+            return ProgramReflection::Resource::ReturnType::Float;
+        case D3D_RETURN_TYPE_SINT:
+            return ProgramReflection::Resource::ReturnType::Int;
+        case D3D_RETURN_TYPE_UINT:
+            return ProgramReflection::Resource::ReturnType::Uint;
+        case D3D_RETURN_TYPE_DOUBLE:
+            return ProgramReflection::Resource::ReturnType::Double;
+        default:
+            should_not_get_here();
+            return ProgramReflection::Resource::ReturnType::Unknown;
+        }
+    }
+
     bool ProgramReflection::reflectResources(const ProgramVersion* pProgVer, std::string& log)
     {
+        for (uint32_t shader = 0; shader < (uint32_t)ShaderType::Count; shader++)
+        {
+            ShaderReflectionHandle pReflection = pProgVer->getShader((ShaderType)shader) ? pProgVer->getShader(ShaderType(shader))->getReflectionInterface() : nullptr;
+            if (pReflection)
+            {
+                D3D_SHADER_DESC shaderDesc;
+                d3d_call(pReflection->GetDesc(&shaderDesc));
+
+                for (uint32_t i = 0; i < shaderDesc.BoundResources; i++)
+                {
+                    D3D_SHADER_INPUT_BIND_DESC InputDesc;
+                    d3d_call(pReflection->GetResourceBindingDesc(i, &InputDesc));
+
+                    // Ignore constant buffers
+                    if (InputDesc.Type == D3D_SIT_CBUFFER)
+                    {
+                        continue;
+                    }
+                    ProgramReflection::Resource falcorDesc;
+                    std::string name(InputDesc.Name);
+                    falcorDesc.type = getResourceType(InputDesc.Type);
+                    if (falcorDesc.type != ProgramReflection::Resource::ResourceType::Sampler)
+                    {
+                        falcorDesc.retType = getReturnType(InputDesc.ReturnType);
+                        falcorDesc.dims = getResourceDimensions(InputDesc.Dimension);
+                    }
+                    bool isArray = name[name.length() - 1] == ']';
+                    falcorDesc.location = InputDesc.BindPoint;
+                    falcorDesc.arraySize = isArray ? InputDesc.BindCount : 0;
+
+                    // If this already exists, definitions should match
+                    const auto& prevDef = mResources.find(name);
+                    if (prevDef == mResources.end())
+                    {
+                        // New resource
+                        mResources[name] = falcorDesc;
+                    }
+                    else
+                    {
+                        std::string varLog;
+                        if (verifyResourceDefinition(prevDef->second, falcorDesc, varLog) == false)
+                        {
+                            log += "Shader resource '" + std::string(name) + "' has different definitions between different shader stages. " + varLog;
+                            return false;
+                        }
+                    }
+                }
+            }
+        }
         return true;
     }
 }

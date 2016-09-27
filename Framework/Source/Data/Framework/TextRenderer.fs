@@ -32,12 +32,13 @@ UNIFORM_BUFFER(PerFrameCB, 0)
 {
 	mat4 gvpTransform;
 	vec3 gFontColor;
-	sampler2D gFontTex;
 };
+
+Texture2D gFontTex;
 
 vec4 calcColor(vec2 texC)
 {
-	vec4 color = texelFetch(gFontTex, ivec2(texC), 0);
+	vec4 color = gFontTex.Load(ivec3(texC, 0));
 	color.rgb = gFontColor;
 	return color;
 }

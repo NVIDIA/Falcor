@@ -32,7 +32,6 @@ UNIFORM_BUFFER(PerFrameCB, 0)
 {
 	mat4 gvpTransform;
 	vec3 gFontColor;
-	sampler2D gFontTex;
 };
 
 vec4 transform(vec2 posS)

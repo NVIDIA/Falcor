@@ -102,7 +102,7 @@ namespace Falcor
         mpPerFrameCB = UniformBuffer::create(pProgram, "PerFrameCB");
         mUniformOffsets.vpTransform = mpPerFrameCB->getVariableOffset("gvpTransform");
         mUniformOffsets.fontColor = mpPerFrameCB->getVariableOffset("gFontColor");
-        mUniformOffsets.fontTex = mpPerFrameCB->getVariableOffset("gFontTex");
+        mUniformOffsets.fontTex = pProgram->getActiveVersion()->getReflector()->getResourceDesc("gFontTex")->location;
     }
 
     TextRenderer::~TextRenderer() = default;

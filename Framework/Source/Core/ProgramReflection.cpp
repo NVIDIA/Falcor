@@ -190,6 +190,12 @@ namespace Falcor
     const ProgramReflection::Resource* ProgramReflection::getResourceDesc(const std::string& name) const
     {
         const auto& it = mResources.find(name);
-        return (it == mResources.end()) ? nullptr : &(it->second);
+        const ProgramReflection::Resource* pRes = (it == mResources.end()) ? nullptr : &(it->second);
+
+        if (pRes == nullptr)
+        {
+            logError("Can't find resource '" + name + "in program");
+        }
+        return pRes;
     }
 }
