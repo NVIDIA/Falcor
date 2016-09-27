@@ -235,9 +235,8 @@ namespace Falcor
 
 			// Bind the default state
 			mpRenderContext->setFbo(mpDefaultFBO);
-			mpRenderContext->setDepthStencilState(nullptr, 0);
-			mpRenderContext->setBlendState(nullptr);
-			mpRenderContext->setRasterizerState(nullptr);
+            // DISABLED_FOR_D3D12
+//            mpRenderContext->setRenderState(nullptr);
 
              onFrameRender();
         }
@@ -297,7 +296,7 @@ namespace Falcor
 //         mpGui->getSize(BarSize);
 //         mpGui->setSize(BarSize[0] + 20, BarSize[1]);
 // 
-//         mpTextRenderer = TextRenderer::create();
+        mpTextRenderer = TextRenderer::create();
     }
 
     const std::string Sample::getGlobalSampleMessage(bool includeHelpMsg) const

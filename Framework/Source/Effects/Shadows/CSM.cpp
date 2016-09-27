@@ -563,13 +563,14 @@ namespace Falcor
         VP.width = mShadowPass.mapSize.y;
         pRenderCtx->pushViewport(0, VP);
 
-        const auto& pOldRS = pRenderCtx->getRasterizerState();
-        if(mControls.depthClamp)
-        {
-            pRenderCtx->setRasterizerState(mShadowPass.pDepthClampRS);
-        }
-        pRenderCtx->pushFbo(mShadowPass.pFbo);
-        pRenderCtx->setDepthStencilState(nullptr, 0);
+        // DISABLED_FOR_D3D12
+//        const auto& pOldRS = pRenderCtx->getRasterizerState();
+//         if(mControls.depthClamp)
+//         {
+//             pRenderCtx->setRasterizerState(mShadowPass.pDepthClampRS);
+//         }
+//         pRenderCtx->pushFbo(mShadowPass.pFbo);
+//         pRenderCtx->setDepthStencilState(nullptr, 0);
 
         partitionCascades(pCamera, distanceRange);
         renderScene(pRenderCtx);
@@ -580,9 +581,10 @@ namespace Falcor
             mShadowPass.pFbo->getColorTexture(0)->generateMips();
         }
 
-        pRenderCtx->popViewport(0);
-        pRenderCtx->setRasterizerState(pOldRS);
-        pRenderCtx->popFbo();
+        // DISABLED_FOR_D3D12
+//         pRenderCtx->popViewport(0);
+//         pRenderCtx->setRasterizerState(pOldRS);
+//         pRenderCtx->popFbo();
     }
 
     void CascadedShadowMaps::setDataIntoUniformBuffer(UniformBuffer* pUbo, const std::string& varName)

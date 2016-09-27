@@ -29,16 +29,13 @@
 #include <stack>
 #include <vector>
 #include "Core/Sampler.h"
-#include "Core/DepthStencilState.h"
 #include "Core/FBO.h"
-#include "Core/ProgramVersion.h"
-#include "Core/RasterizerState.h"
-#include "Core/BlendState.h"
 #include "Core/VAO.h"
 #include "Core/UniformBuffer.h"
 #include "Core/ShaderStorageBuffer.h"
 #include "Core/Texture.h"
 #include "Framework.h"
+#include "Core/RenderState.h"
 
 namespace Falcor
 {
@@ -158,50 +155,21 @@ namespace Falcor
         void popState();
 
         /** Set a new vertex array object. By default, no VAO is bound.
-            \param[in] pVao The CVao object to bind. If this is nullptr, will unbind the current VAO.
+            \param[in] pVao The Vao object to bind. If this is nullptr, will unbind the current VAO.
         */
         void setVao(const Vao::SharedConstPtr& pVao);
+
         /** Set the active primitive topology. Be default, this is set to Topology#TriangleList.
             \param[in] Topology The primitive topology
         */
         void setTopology(Topology topology);
-        /** Set a new rasterizer state. The default rasterizer state is solid with backface culling enabled.
-            \param[in] pRastState The rasterizer state to set. If this is nullptr, will set the default rasterizer state.
-        */
-        void setRasterizerState(const RasterizerState::SharedConstPtr& pRastState);
 
-        /** Get the current rasterizer state
+        /** Set the stencil reference value
         */
-        const RasterizerState::SharedConstPtr& getRasterizerState() const { return mState.pRastState; }
-
-        /** Set a depth stencil state. The default depth stencil state is depth enabled, stencil disabled and depth function is less.
-            \param[in] pDepthStencil The depth stencil state to set. If this is nullptr, will set the default depth stencil state.
-            \param[in] stencilRef The reference value to use when performing stencil test.
-        */
-        void setDepthStencilState(const DepthStencilState::SharedConstPtr& pDepthStencil, uint32_t stencilRef);
-
-        /** Get the current depth-stencil state
-        */
-        const DepthStencilState::SharedConstPtr& getDepthStencilState() const { return mState.pDsState; }
-
+        uint8_t setStencilRef(uint8_t refValue) { mState.stencilRef = refValue; applyStencilRef(); }
         /** Get the current stencil ref
         */
-        const uint32_t getStencilRef() const { return mState.stencilRef; }
-
-        static const uint32_t kSampleMaskAll = -1;
-        /** Set a blend state. By default, blending is disabled for all render-targets.
-            \param[in] pBlendState The blend state. If this is nullptr, will use the default blend-state.
-            \param[in] sampleMask Sample coverage write mask. Use SampleMaskAll to enable output of all samples.
-        */
-        void setBlendState(const BlendState::SharedConstPtr& pBlendState, uint32_t sampleMask = kSampleMaskAll);
-
-        /** Get the current blend state
-        */
-        const BlendState::SharedConstPtr& getBlendState() const { return mState.pBlendState; }
-
-        /** Get the current sample mask
-        */
-        uint32_t getSampleMask() const { return mState.sampleMask; }
+        uint8_t getStencilRef() const { return mState.stencilRef; }
 
         /** Set a uniform-buffer into the state. By default no buffers are set.
             \param[in] index The uniform-buffer slot index to set the buffer into.
@@ -214,11 +182,6 @@ namespace Falcor
         \param[in] pBuffer The shader storage buffer to set. nullptr can be used to unbind a buffer from a slot.
         */
         void setShaderStorageBuffer(uint32_t index, const ShaderStorageBuffer::SharedConstPtr& pBuffer);
-
-        /** Set a program object. By default, no program is bound.
-            \param[in] pProgram The program object. nullptr can be used to unbind a program.
-        */
-        void setProgram(const ProgramVersion::SharedConstPtr& pProgram);
 
         /** Set a viewport.
         \param[in] index Viewport index
@@ -257,6 +220,15 @@ namespace Falcor
         /** Pops the last Scissor from the stack and sets it
         */
         void popScissor(uint32_t index);
+
+        /** Set the render state
+        */
+        void setRenderState(const RenderState::SharedPtr& pState);
+
+        /** Get the bound render state
+        */
+        RenderState::SharedConstPtr getRenderState() const { return mState.pRenderState; }
+
     private:
         RenderContext() = default;
         void initCommon(uint32_t viewportCount);
@@ -266,16 +238,12 @@ namespace Falcor
             Fbo::SharedPtr pFbo;
             Vao::SharedConstPtr pVao = nullptr;
             Topology topology = Topology::TriangleList;
-            RasterizerState::SharedConstPtr pRastState = nullptr;
-            DepthStencilState::SharedConstPtr pDsState = nullptr;
-            uint32_t stencilRef = 0;
-            BlendState::SharedConstPtr pBlendState = nullptr;
-            uint32_t sampleMask = -1;
+            uint8_t stencilRef = 0;
             std::vector<UniformBuffer::SharedConstPtr> pUniformBuffers;
             std::vector<ShaderStorageBuffer::SharedConstPtr> pShaderStorageBuffers;
             std::vector<Viewport> viewports;
             std::vector<Scissor> scissors;
-            ProgramVersion::SharedConstPtr pProgram = nullptr;
+            RenderState::SharedPtr pRenderState;
         };
 
         State mState;
@@ -285,18 +253,13 @@ namespace Falcor
         std::vector<std::stack<Scissor>> mScStack;
 
         // Default state objects
-        RasterizerState::SharedConstPtr mpDefaultRastState;
-        BlendState::SharedConstPtr mpDefaultBlendState;
-        DepthStencilState::SharedConstPtr mpDefaultDepthStencilState;
         Fbo::SharedPtr mpEmptyFBO;
 
         // Internal functions used by the API layers
         void applyViewport(uint32_t index) const;
         void applyScissor(uint32_t index) const;
-        void applyRasterizerState() const;
-        void applyDepthStencilState() const;
-        void applyBlendState() const;
-        void applyProgram() const;
+        void applyRenderState() const;
+        void applyStencilRef() const;
         void applyVao() const;
         void applyFbo();
         void applyUniformBuffer(uint32_t Index) const;

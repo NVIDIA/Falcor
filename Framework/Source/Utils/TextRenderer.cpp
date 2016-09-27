@@ -49,25 +49,42 @@ namespace Falcor
         return UniquePtr(new TextRenderer());
     }
 
+    Vao::SharedPtr createVAO(const Buffer::SharedPtr& pVB)
+    {
+        VertexLayout::SharedPtr pLayout = VertexLayout::create();
+        VertexBufferLayout::SharedPtr pBufLayout = VertexBufferLayout::create();
+        pBufLayout->addElement("POSITION", 0, ResourceFormat::RG32Float, 1, 0);
+        pBufLayout->addElement("TEXCOORD", 8, ResourceFormat::RG32Float, 1, 1);
+        pLayout->addBufferLayout(0, pBufLayout);
+        Vao::BufferVec buffers{ pVB };
+
+        return Vao::create(buffers, nullptr, pLayout);
+    }
+
     TextRenderer::TextRenderer()
     {
         static const std::string kVsFile("Framework\\TextRenderer.vs");
         static const std::string kFsFile("Framework\\TextRenderer.fs");
 
-        mpProgram = Program::createFromFile(kVsFile, kFsFile);
+        // Create a vertex buffer
         const uint32_t vbSize = (uint32_t)(sizeof(Vertex)*kMaxBatchSize*arraysize(kVertexPos));
         mpVertexBuffer = Buffer::create(vbSize, Buffer::BindFlags::Vertex, Buffer::AccessFlags::MapWrite, nullptr);
-        
-        createVAO();
+
+        // Create the RenderState
+        mpStateCache = RenderStateCache::create();
+        Program::SharedPtr pProgram = Program::createFromFile(kVsFile, kFsFile);
+        mpStateCache->setProgram(pProgram);
+        mpStateCache->SetVao(createVAO(mpVertexBuffer));
+
         // create the depth-state
         DepthStencilState::Desc dsDesc;
         dsDesc.setDepthTest(false).setStencilTest(false);
-        mpDepthStencilState = DepthStencilState::create(dsDesc);
+        mpStateCache->setDepthStencilState(DepthStencilState::create(dsDesc));
         
         // Rasterizer state
         RasterizerState::Desc rsState;
         rsState.setCullMode(RasterizerState::CullMode::None);
-        mpRasterizerState = RasterizerState::create(rsState);
+        mpStateCache->setRasterizerState(RasterizerState::create(rsState));
 
         // Blend state
         BlendState::Desc blendDesc;
@@ -78,29 +95,17 @@ namespace Falcor
             BlendState::BlendFunc::One,
             BlendState::BlendFunc::One);
 
-        mpBlendState = BlendState::create(blendDesc);
+        mpStateCache->setBlendState(BlendState::create(blendDesc));
         mpFont = Font::create();
 
         // Uniform buffer
-        mpPerFrameCB = UniformBuffer::create(mpProgram->getActiveProgramVersion().get(), "PerFrameCB");
+        mpPerFrameCB = UniformBuffer::create(pProgram->getActiveProgramVersion().get(), "PerFrameCB");
         mUniformOffsets.vpTransform = mpPerFrameCB->getVariableOffset("gvpTransform");
         mUniformOffsets.fontColor = mpPerFrameCB->getVariableOffset("gFontColor");
         mUniformOffsets.fontTex = mpPerFrameCB->getVariableOffset("gFontTex");
     }
 
     TextRenderer::~TextRenderer() = default;
-
-    void TextRenderer::createVAO()
-    {
-        VertexLayout::SharedPtr pLayout = VertexLayout::create();
-        VertexBufferLayout::SharedPtr pBufLayout = VertexBufferLayout::create();
-        pBufLayout->addElement("POSITION", 0, ResourceFormat::RG32Float, 1, 0);
-        pBufLayout->addElement("TEXCOORD", 8, ResourceFormat::RG32Float, 1, 1);
-        pLayout->addBufferLayout(0, pBufLayout);
-        Vao::BufferVec buffers{ mpVertexBuffer };
-
-        mpVAO = Vao::create(buffers, nullptr, pLayout);
-    }
 
     void TextRenderer::begin(const RenderContext::SharedPtr& pRenderContext, const glm::vec2& startPos)
     {
@@ -111,9 +116,11 @@ namespace Falcor
         // Save state
         pRenderContext->pushState();
 
-        // Set shaders
-        pRenderContext->setProgram(mpProgram->getActiveProgramVersion());
-        pRenderContext->setVao(mpVAO);
+        // Set the current FBO into the render state
+        mpStateCache->setFbo(pRenderContext->getFbo());
+        mpRenderContext->setRenderState(mpStateCache->getRenderState());
+        pRenderContext->setVao(mpStateCache->getVao());
+        pRenderContext->setTopology(RenderContext::Topology::TriangleList);
 
         // Get the current viewport
         const auto& VP = pRenderContext->getViewport(0);
@@ -131,14 +138,8 @@ namespace Falcor
         // Set the font texture
         const Texture* pFontTex = mpFont->getTexture();
         mpPerFrameCB->setTexture(mUniformOffsets.fontTex, pFontTex, nullptr);
-
         pRenderContext->setUniformBuffer(0, mpPerFrameCB);
 
-        // Set state
-        pRenderContext->setRasterizerState(mpRasterizerState);
-        pRenderContext->setDepthStencilState(mpDepthStencilState, 0);
-        pRenderContext->setBlendState(mpBlendState);
-        pRenderContext->setTopology(RenderContext::Topology::TriangleList);
 
         // Map the buffer
         mpBufferData = (Vertex*)mpVertexBuffer->map(Buffer::MapType::WriteDiscard);
@@ -191,7 +192,7 @@ namespace Falcor
             {
                 // Regular character
                 const Font::CharTexCrdDesc& desc = mpFont->getCharDesc(c);
-                for(uint32_t i = 0; i < arraysize(kVertexPos); i++, mCurrentVertexID++)
+                for (uint32_t i = 0; i < arraysize(kVertexPos); i++, mCurrentVertexID++)
                 {
                     glm::vec2 posScale = kVertexPos[i];
 #ifdef FALCOR_GL

@@ -131,8 +131,9 @@ namespace Falcor
     void FullScreenPass::execute(RenderContext* pRenderContext, bool overrideDepthStencil) const
     {
         pRenderContext->setVao(spVao);
-        pRenderContext->setProgram(mpProgram->getActiveProgramVersion());
-        if (overrideDepthStencil) pRenderContext->setDepthStencilState(mpDepthStencilState, 0);
+        // DISABLED_FOR_D3D12
+//         pRenderContext->setProgram(mpProgram->getActiveProgramVersion());
+//         if (overrideDepthStencil) pRenderContext->setDepthStencilState(mpDepthStencilState, 0);
         pRenderContext->setTopology(RenderContext::Topology::TriangleStrip);
         pRenderContext->draw(arraysize(kVertices), 0);
     }

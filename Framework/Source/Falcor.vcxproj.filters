@@ -387,6 +387,8 @@
     <ClCompile Include="Graphics\RenderStateCache.cpp">
       <Filter>Graphics</Filter>
     </ClCompile>
+    <ClCompile Include="Core\D3D\D3DShader.cpp" />
+    <ClCompile Include="Core\D3D\D3DProgram.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Sample.h" />

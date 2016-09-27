@@ -32,78 +32,15 @@
 namespace Falcor
 {
     BlendState::~BlendState() = default;
-    
-    D3D12_BLEND getD3DBlendFunc(BlendState::BlendFunc func)
-    {
-        switch(func)
-        {
-        case BlendState::BlendFunc::Zero:
-            return D3D12_BLEND_ZERO;
-        case BlendState::BlendFunc::One:
-            return D3D12_BLEND_ONE;
-        case BlendState::BlendFunc::SrcColor:
-            return D3D12_BLEND_SRC_COLOR;
-        case BlendState::BlendFunc::OneMinusSrcColor:
-            return D3D12_BLEND_INV_SRC_COLOR;
-        case BlendState::BlendFunc::DstColor:
-            return D3D12_BLEND_DEST_COLOR;
-        case BlendState::BlendFunc::OneMinusDstColor:
-            return D3D12_BLEND_INV_DEST_COLOR;
-        case BlendState::BlendFunc::SrcAlpha:
-            return D3D12_BLEND_SRC_ALPHA;
-        case BlendState::BlendFunc::OneMinusSrcAlpha:
-            return D3D12_BLEND_INV_SRC_ALPHA;
-        case BlendState::BlendFunc::DstAlpha:
-            return D3D12_BLEND_DEST_ALPHA;
-        case BlendState::BlendFunc::OneMinusDstAlpha:
-            return D3D12_BLEND_INV_DEST_ALPHA;
-        case BlendState::BlendFunc::RgbaFactor:
-            return D3D12_BLEND_BLEND_FACTOR;
-        case BlendState::BlendFunc::OneMinusRgbaFactor:
-            return D3D12_BLEND_INV_BLEND_FACTOR;
-        case BlendState::BlendFunc::SrcAlphaSaturate:
-            return D3D12_BLEND_SRC_ALPHA_SAT;
-        case BlendState::BlendFunc::Src1Color:
-            return D3D12_BLEND_INV_SRC1_COLOR;
-        case BlendState::BlendFunc::OneMinusSrc1Color:
-            return D3D12_BLEND_INV_SRC1_COLOR;
-        case BlendState::BlendFunc::Src1Alpha:
-            return D3D12_BLEND_SRC1_ALPHA;
-        case BlendState::BlendFunc::OneMinusSrc1Alpha:
-            return D3D12_BLEND_INV_SRC1_ALPHA;
-        default:
-            should_not_get_here();
-            return (D3D12_BLEND)0;
-        }
-
-    }
-
-    D3D12_BLEND_OP getD3DBlendOp(BlendState::BlendOp op)
-    {
-        switch(op)
-        {
-        case BlendState::BlendOp::Add:
-            return D3D12_BLEND_OP_ADD;
-        case BlendState::BlendOp::Subtract:
-            return D3D12_BLEND_OP_SUBTRACT;
-        case BlendState::BlendOp::ReverseSubtract:
-            return D3D12_BLEND_OP_REV_SUBTRACT;
-        case BlendState::BlendOp::Min:
-            return D3D12_BLEND_OP_MIN;
-        case BlendState::BlendOp::Max:
-            return D3D12_BLEND_OP_MAX;
-        default:
-            return (D3D12_BLEND_OP)0;
-        }
-    }
 
     BlendState::SharedPtr BlendState::create(const Desc& desc)
     {
-        return nullptr;
+        return SharedPtr(new BlendState(desc));
     }
 
     BlendStateHandle BlendState::getApiHandle() const
     {
+        UNSUPPORTED_IN_D3D12("BlendState::getApiHandle()");
         return mApiHandle;
     }
 }

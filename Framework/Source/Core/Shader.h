@@ -63,7 +63,7 @@ namespace Falcor
         friend class RenderContext;
         friend class ProgramVersion;
         friend class UniformBuffer;
-        ID3D11ShaderReflectionPtr getReflectionInterface() const;
+        ShaderReflectionHandle getReflectionInterface() const;
         ID3DBlobPtr getCodeBlob() const;
 #endif
         // API handle depends on the shader Type, so it stored be stored as part of the private data

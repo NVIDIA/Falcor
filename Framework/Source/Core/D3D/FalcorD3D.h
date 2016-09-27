@@ -96,5 +96,6 @@ namespace Falcor
     MAKE_SMART_COM_PTR(IDXGIDevice);
     MAKE_SMART_COM_PTR(IDXGIAdapter1);
     MAKE_SMART_COM_PTR(IDXGIFactory4);
+    MAKE_SMART_COM_PTR(ID3DBlob);
     /*! @} */
 }

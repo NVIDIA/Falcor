@@ -32,6 +32,10 @@
 
 namespace Falcor
 {
+    BlendState::SharedPtr RenderState::spDefaultBlendState;
+    RasterizerState::SharedPtr RenderState::spDefaultRasterizerState;
+    DepthStencilState::SharedPtr RenderState::spDefaultDepthStencilState;
+
     RenderState::SharedPtr RenderState::create(const Desc& desc)
     {
         if (spDefaultBlendState == nullptr)

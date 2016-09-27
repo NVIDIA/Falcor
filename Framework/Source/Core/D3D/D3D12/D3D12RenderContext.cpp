@@ -126,21 +126,11 @@ namespace Falcor
         }
 	}
 
-    void RenderContext::applyDepthStencilState() const
+    void RenderContext::applyRenderState() const
     {
-        
-    }
-
-    void RenderContext::applyRasterizerState() const
-    {
-    }
-
-    void RenderContext::applyBlendState() const
-    {
-    }
-
-    void RenderContext::applyProgram() const
-    {
+        RenderContextData* pApiData = (RenderContextData*)mpApiData;
+        ID3D12PipelineState* pPso = mState.pRenderState ? mState.pRenderState->getApiHandle() : nullptr;
+        pApiData->pList->SetPipelineState(pPso);
     }
 
     void RenderContext::applyVao() const

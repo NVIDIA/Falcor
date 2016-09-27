@@ -162,6 +162,10 @@ namespace Falcor
 
         void addBufferLayout(uint32_t index, VertexBufferLayout::SharedConstPtr pLayout)
         {
+            if (mpBufferLayouts.size() <= index)
+            {
+                mpBufferLayouts.resize(index + 1);
+            }
             mpBufferLayouts[index] = pLayout;
         }
 
@@ -172,7 +176,7 @@ namespace Falcor
 
         size_t getBufferCount() const { return mpBufferLayouts.size(); }
     private:
-        VertexLayout() { mpBufferLayouts.resize(16); }
+        VertexLayout() { mpBufferLayouts.reserve(16); }
         std::vector<VertexBufferLayout::SharedConstPtr> mpBufferLayouts;
     };
 }

@@ -39,9 +39,10 @@ namespace Falcor
     class RenderStateCache
     {
     public:
-        using SharedPtr = std::shared_ptr<RenderState>;
-        using SharedConstPtr = std::shared_ptr<const RenderState>;
+        using SharedPtr = std::shared_ptr<RenderStateCache>;
+        using SharedConstPtr = std::shared_ptr<const RenderStateCache>;
         
+        static SharedPtr create() { return SharedPtr(new RenderStateCache); }
         RenderStateCache& SetVao(const Vao::SharedConstPtr& pVao) { mpVao = pVao; return *this; }
         RenderStateCache& setFbo(const Fbo::SharedConstPtr& pFbo) { mpFbo = pFbo; return *this; }
         RenderStateCache& setProgram(const Program::SharedConstPtr& pProgram) { mpProgram = pProgram; return *this; }
@@ -52,6 +53,15 @@ namespace Falcor
         RenderStateCache& setPrimitiveType(RenderState::PrimitiveType type) { mDesc.setPrimitiveType(type); return *this; }
 
         RenderState::SharedPtr getRenderState();
+
+        Vao::SharedConstPtr getVao() const { return mpVao; }
+        Fbo::SharedConstPtr getFbo() const { return mpFbo; }
+        Program::SharedConstPtr getProgram() const { return mpProgram; }
+        BlendState::SharedConstPtr getBlendState() const { return mDesc.getBlendState(); }
+        RasterizerState::SharedConstPtr getRasterizerState() const { return mDesc.getRasterizerState(); }
+        DepthStencilState::SharedConstPtr getDepthStencilState() const { return mDesc.getDepthStencilState(); }
+        uint32_t getSampleMask() const { return mDesc.getSampleMask(); }
+        RenderState::PrimitiveType getPrimitiveType() const { return mDesc.getPrimitiveType(); }
     private:
         RenderStateCache() = default;
         Vao::SharedConstPtr mpVao;

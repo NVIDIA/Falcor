@@ -33,82 +33,13 @@ namespace Falcor
 {
     DepthStencilState::~DepthStencilState() = default;
 
-    D3D11_COMPARISON_FUNC getD3DComparisonFunc(DepthStencilState::Func func)
-    {
-        switch(func)
-        {
-        case DepthStencilState::Func::Never:
-            return D3D11_COMPARISON_NEVER;
-        case DepthStencilState::Func::Always:
-            return D3D11_COMPARISON_ALWAYS;
-        case DepthStencilState::Func::Less:
-            return D3D11_COMPARISON_LESS;
-        case DepthStencilState::Func::Equal:
-            return D3D11_COMPARISON_EQUAL;
-        case DepthStencilState::Func::NotEqual:
-            return D3D11_COMPARISON_NOT_EQUAL;
-        case DepthStencilState::Func::LessEqual:
-            return D3D11_COMPARISON_LESS_EQUAL;
-        case DepthStencilState::Func::Greater:
-            return D3D11_COMPARISON_GREATER;
-        case DepthStencilState::Func::GreaterEqual:
-            return D3D11_COMPARISON_GREATER_EQUAL;
-        default:
-            should_not_get_here();
-            return (D3D11_COMPARISON_FUNC)0;
-        }
-    }
 
-    D3D11_STENCIL_OP getD3DStencilOp(DepthStencilState::StencilOp op)
-    {
-        switch(op)
-        {
-        case DepthStencilState::StencilOp::Keep:
-            return D3D11_STENCIL_OP_KEEP;
-        case DepthStencilState::StencilOp::Zero:
-            return D3D11_STENCIL_OP_ZERO;
-        case DepthStencilState::StencilOp::Replace:
-            return D3D11_STENCIL_OP_REPLACE;
-        case DepthStencilState::StencilOp::Increase:
-            return D3D11_STENCIL_OP_INCR;
-        case DepthStencilState::StencilOp::IncreaseSaturate:
-            return D3D11_STENCIL_OP_INCR_SAT;
-        case DepthStencilState::StencilOp::Decrease:
-            return D3D11_STENCIL_OP_DECR;
-        case DepthStencilState::StencilOp::DecreaseSaturate:
-            return D3D11_STENCIL_OP_DECR_SAT;
-        case DepthStencilState::StencilOp::Invert:
-            return D3D11_STENCIL_OP_INVERT;
-        default:
-            should_not_get_here();
-            return (D3D11_STENCIL_OP)0;
-        }
-    }
-
-    D3D11_DEPTH_STENCILOP_DESC getD3DStencilOpDesc(const DepthStencilState::StencilDesc& desc)
-    {
-        D3D11_DEPTH_STENCILOP_DESC dxDesc;
-        dxDesc.StencilFunc = getD3DComparisonFunc(desc.func);
-        dxDesc.StencilDepthFailOp = getD3DStencilOp(desc.depthFailOp);
-        dxDesc.StencilFailOp = getD3DStencilOp(desc.stencilFailOp);
-        dxDesc.StencilPassOp = getD3DStencilOp(desc.depthStencilPassOp);
-
-        return dxDesc;
-    }
 
     DepthStencilState::SharedPtr DepthStencilState::create(const Desc& desc)
     {
         auto pDsState = SharedPtr(new DepthStencilState(desc));
         D3D11_DEPTH_STENCIL_DESC dxDesc;
-
-        dxDesc.DepthEnable = dxBool(desc.mDepthEnabled);
-        dxDesc.DepthFunc = getD3DComparisonFunc(desc.mDepthFunc);
-        dxDesc.DepthWriteMask = desc.mWriteDepth ? D3D11_DEPTH_WRITE_MASK_ALL : D3D11_DEPTH_WRITE_MASK_ZERO;
-        dxDesc.StencilEnable = dxBool(desc.mStencilEnabled);
-        dxDesc.StencilReadMask = desc.mStencilReadMask;
-        dxDesc.StencilWriteMask = desc.mStencilWriteMask;
-        dxDesc.FrontFace = getD3DStencilOpDesc(desc.mStencilFront);
-        dxDesc.BackFace = getD3DStencilOpDesc(desc.mStencilBack);
+        initD3DDepthStencilDesc(pDsState, dxDesc);
 
         d3d_call(getD3D11Device()->CreateDepthStencilState(&dxDesc, &pDsState->mApiHandle));
 

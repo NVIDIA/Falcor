@@ -35,11 +35,12 @@ namespace Falcor
 
     DepthStencilState::SharedPtr DepthStencilState::create(const Desc& desc)
     {
-        return nullptr;
+        return SharedPtr(new DepthStencilState(desc));
     }
 
     DepthStencilStateHandle DepthStencilState::getApiHandle() const
     {
+        UNSUPPORTED_IN_D3D12("DepthStencilState::getApiHandle()");
         return mApiHandle;
     }
 }

@@ -36,21 +36,6 @@ namespace Falcor
 {
     void RenderContext::initCommon(uint32_t viewportCount)
     {
-        // create the rasterizer state
-        RasterizerState::Desc rsDesc;
-        mpDefaultRastState = RasterizerState::create(rsDesc);
-        setRasterizerState(mpDefaultRastState);
-
-        // create the blend state
-        BlendState::Desc blendDesc;
-        mpDefaultBlendState = BlendState::create(blendDesc);
-        setBlendState(mpDefaultBlendState);
-
-        // create the depth-stencil state
-        DepthStencilState::Desc depthDesc;
-        mpDefaultDepthStencilState = DepthStencilState::create(depthDesc);
-        setDepthStencilState(mpDefaultDepthStencilState, 0);
-
         // create an empty FBO
         mpEmptyFBO = Fbo::create();
         setFbo(mpEmptyFBO);
@@ -105,10 +90,7 @@ namespace Falcor
         applyFbo();
         applyVao();
         applyTopology();
-        applyRasterizerState();
-        applyDepthStencilState();
-        applyBlendState();
-        applyProgram();
+        applyRenderState();
 
         for(uint32_t i = 0; i < mState.pUniformBuffers.size(); i++)
         {
@@ -177,32 +159,10 @@ namespace Falcor
         mScStack[index].pop();
     }
 
-    void RenderContext::setDepthStencilState(const DepthStencilState::SharedConstPtr& pDepthStencil, uint32_t stencilRef)
+    void RenderContext::setRenderState(const RenderState::SharedPtr& pState)
     {
-        // Not checking if the state actually changed. Some of the externals libraries we use make raw API calls, bypassing the render-context, so checking if the state actually changed might lead to unexpected behavior.
-        mState.pDsState = (pDepthStencil == nullptr) ? mpDefaultDepthStencilState : pDepthStencil;
-        mState.stencilRef = stencilRef;
-
-        applyDepthStencilState();
-    }
-
-    void RenderContext::setRasterizerState(const RasterizerState::SharedConstPtr& pRastState)
-    {
-        mState.pRastState = (pRastState == nullptr) ? mpDefaultRastState : pRastState;
-        applyRasterizerState();
-    }
-
-    void RenderContext::setBlendState(const BlendState::SharedConstPtr& pBlendState, uint32_t sampleMask)
-    {
-        mState.pBlendState = (pBlendState == nullptr) ? mpDefaultBlendState : pBlendState;
-        mState.sampleMask = sampleMask;
-        applyBlendState();
-    }
-
-    void RenderContext::setProgram(const ProgramVersion::SharedConstPtr& pProgram)
-    {
-        mState.pProgram = pProgram;
-        applyProgram();
+        mState.pRenderState = pState;
+        applyRenderState();
     }
 
     void RenderContext::setVao(const Vao::SharedConstPtr& pVao)

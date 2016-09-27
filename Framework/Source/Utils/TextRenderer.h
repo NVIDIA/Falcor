@@ -30,13 +30,10 @@
 #include "glm/vec3.hpp"
 #include <string>
 #include "Font.h"
-#include "Graphics/Program.h"
 #include "Core/VAO.h"
 #include "Core/Buffer.h"
-#include "Core/DepthStencilState.h"
-#include "Core/RasterizerState.h"
-#include "Core/BlendState.h"
 #include "Core/UniformBuffer.h"
+#include "Graphics/RenderStateCache.h"
 #include "Core/RenderContext.h"
 
 namespace Falcor
@@ -97,17 +94,12 @@ namespace Falcor
 
         Font::UniquePtr mpFont;
         Buffer::SharedPtr mpVertexBuffer;
-        Vao::SharedPtr mpVAO;
 
-        Program::SharedPtr mpProgram;
-        DepthStencilState::SharedConstPtr mpDepthStencilState;
-        RasterizerState::SharedConstPtr mpRasterizerState;
-        BlendState::SharedConstPtr mpBlendState;
+        RenderStateCache::SharedPtr mpStateCache;
         UniformBuffer::SharedPtr mpPerFrameCB;
 
         uint32_t mCurrentVertexID = 0;
 
-        void createVAO();
         void createVertexBuffer();
         static const auto kMaxBatchSize = 1000;
 

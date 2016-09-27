@@ -68,6 +68,15 @@ namespace Falcor
             Desc& setDepthStencilState(DepthStencilState::SharedConstPtr pDepthStencilState) { mpDepthStencilState = pDepthStencilState; return *this; }
             Desc& setSampleMask(uint32_t sampleMask) { mSampleMask = sampleMask; return *this; }
             Desc& setPrimitiveType(PrimitiveType type) { mPrimType = type; return *this; }
+
+            BlendState::SharedConstPtr getBlendState() const { return mpBlendState; }
+            RasterizerState::SharedConstPtr getRasterizerState() const { return mpRasterizerState; }
+            DepthStencilState::SharedConstPtr getDepthStencilState() const { return mpDepthStencilState; }
+            uint32_t getSampleMask() const { return mSampleMask; }
+            RenderState::PrimitiveType getPrimitiveType() const { return mPrimType; }
+            VertexLayout::SharedConstPtr getVertexLayout() const { return mpLayout; }
+            const Fbo::Desc& getFboDesc() const { return mFboDesc; }
+            ProgramVersion::SharedConstPtr getProgramVersion() const { return mpProgram; }
         private:
             friend class RenderState;
             VertexLayout::SharedConstPtr mpLayout;

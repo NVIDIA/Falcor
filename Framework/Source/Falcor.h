@@ -55,11 +55,13 @@
 #include "Core/VertexLayout.h"
 #include "Core/ShaderStorageBuffer.h"
 #include "Core/Window.h"
+#include "Core/RenderState.h"
 
-#include "Graphics/Camera/Camera.h"
-#include "Graphics/Camera/CameraController.h"
 
 // Graphics
+#include "Graphics/Camera/Camera.h"
+#include "Graphics/Camera/CameraController.h"
+#include "Graphics/RenderStateCache.h"
 #include "Graphics/FullScreenPass.h"
 #include "Graphics/TextureHelper.h"
 #include "Graphics/Light.h"

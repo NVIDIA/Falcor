@@ -165,8 +165,9 @@ namespace Falcor
 
             if(mCompileMaterialWithProgram)
             {
-                ProgramVersion::SharedConstPtr pPatchedProgram = MaterialSystem::patchActiveProgramVersion(currentData.pProgram, mpLastMaterial);
-                pContext->setProgram(pPatchedProgram);
+                // DISABLED_FOR_D3D12
+//                 ProgramVersion::SharedConstPtr pPatchedProgram = MaterialSystem::patchActiveProgramVersion(currentData.pProgram, mpLastMaterial);
+//                 pContext->setProgram(pPatchedProgram);
             }
         }
 
@@ -208,7 +209,8 @@ namespace Falcor
 						if (activeInstances == mMaxInstanceCount)
 						{
 
-							pContext->setProgram(currentData.pProgram->getActiveProgramVersion());
+                            // DISABLED_FOR_D3D12
+                            //pContext->setProgram(currentData.pProgram->getActiveProgramVersion());
 							flushDraw(pContext, pMesh, activeInstances, currentData);
 							activeInstances = 0;
 						}
@@ -217,7 +219,8 @@ namespace Falcor
 			}
 			if(activeInstances != 0)
 			{
-				pContext->setProgram(currentData.pProgram->getActiveProgramVersion());
+                // DISABLED_FOR_D3D12
+//				pContext->setProgram(currentData.pProgram->getActiveProgramVersion());
 				flushDraw(pContext, currentData.pMesh, activeInstances, currentData);
 			}
 		}

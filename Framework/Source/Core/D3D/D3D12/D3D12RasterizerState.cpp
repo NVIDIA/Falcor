@@ -35,11 +35,12 @@ namespace Falcor
     
     RasterizerState::SharedPtr RasterizerState::create(const Desc& desc)
     {
-        return nullptr;
+        return SharedPtr(new RasterizerState(desc));
     }
 
     RasterizerStateHandle RasterizerState::getApiHandle() const
     {
+        UNSUPPORTED_IN_D3D12("RasterizerState::getApiHandle()");
         return mApiHandle;
     }
 }

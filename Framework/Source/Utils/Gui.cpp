@@ -272,7 +272,8 @@ namespace Falcor
     void Gui::drawAll()
     {
         spRenderContext->pushState();
-        spRenderContext->setRasterizerState(nullptr);
+        // DISABLED_FOR_D3D12
+//        spRenderContext->setRasterizerState(nullptr);
         TwDraw();
         spRenderContext->popState();
     }

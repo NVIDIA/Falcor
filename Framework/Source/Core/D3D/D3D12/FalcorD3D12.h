@@ -46,6 +46,7 @@ namespace Falcor
     MAKE_SMART_COM_PTR(ID3D12Resource);
     MAKE_SMART_COM_PTR(ID3D12Fence);
     MAKE_SMART_COM_PTR(ID3D12PipelineState);
+    MAKE_SMART_COM_PTR(ID3D12ShaderReflection);
 
 	using WindowHandle = HWND;
 	using DeviceHandle = ID3D12DevicePtr;
@@ -60,6 +61,7 @@ namespace Falcor
     using BufferHandle = ID3D12ResourcePtr;
     using RenderStateHandle = ID3D12PipelineStatePtr;
     using ShaderHandle = D3D12_SHADER_BYTECODE;
+    using ShaderReflectionHandle = ID3D12ShaderReflectionPtr;
 
     using VaoHandle = void*;
     using VertexShaderHandle = void*;

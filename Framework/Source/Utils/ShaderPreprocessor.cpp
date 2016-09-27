@@ -920,7 +920,7 @@ namespace Falcor
         allDefines += getLinePragma(verEnd == 0 ? 0 : line, currentFile) + "\n";
         code.insert(verEnd, allDefines);
 
-#ifdef FALCOR_D3D11
+#ifdef FALCOR_D3D
         if(verEnd != verStart)
         {
             // Remove the version pragma

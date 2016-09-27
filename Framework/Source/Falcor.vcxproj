@@ -68,6 +68,8 @@
     <ClCompile Include="Core\D3D\D3D12\D3D12UniformBuffer.cpp" />
     <ClCompile Include="Core\D3D\D3D12\D3D12Vao.cpp" />
     <ClCompile Include="Core\D3D\D3DFormats.cpp" />
+    <ClCompile Include="Core\D3D\D3DProgram.cpp" />
+    <ClCompile Include="Core\D3D\D3DShader.cpp" />
     <ClCompile Include="Core\D3D\D3DState.cpp" />
     <ClCompile Include="Core\D3D\D3DWindow.cpp" />
     <ClCompile Include="Core\DepthStencilState.cpp" />

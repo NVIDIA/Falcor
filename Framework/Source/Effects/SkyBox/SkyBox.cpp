@@ -115,21 +115,22 @@ namespace Falcor
         pRenderCtx->setUniformBuffer(0, mpUbo);
 
         // Store the state
-        auto pOldRsState = pRenderCtx->getRasterizerState();
-        auto pOldDsState = pRenderCtx->getDepthStencilState();
-        uint32_t stencilRef = pRenderCtx->getStencilRef();
-        auto pOldBlendState = pRenderCtx->getBlendState();
-        uint32_t sampleMask = pRenderCtx->getSampleMask();
-
-        pRenderCtx->setRasterizerState(mpNoCullRsState);
-        pRenderCtx->setDepthStencilState(mpDepthStencilState, 0);
-        pRenderCtx->setBlendState(mpBlendState, sampleMask);
-
-        ModelRenderer::render(pRenderCtx, mpProgram.get(), mpCubeModel, pCamera, false);
-
-        // Restore the state
-        pRenderCtx->setDepthStencilState(pOldDsState, stencilRef);
-        pRenderCtx->setRasterizerState(pOldRsState);
-        pRenderCtx->setBlendState(pOldBlendState, sampleMask);
+        // DISABLED_FOR_D3D12
+//         auto pOldRsState = pRenderCtx->getRasterizerState();
+//         auto pOldDsState = pRenderCtx->getDepthStencilState();
+//         uint32_t stencilRef = pRenderCtx->getStencilRef();
+//         auto pOldBlendState = pRenderCtx->getBlendState();
+//         uint32_t sampleMask = pRenderCtx->getSampleMask();
+// 
+//         pRenderCtx->setRasterizerState(mpNoCullRsState);
+//         pRenderCtx->setDepthStencilState(mpDepthStencilState, 0);
+//         pRenderCtx->setBlendState(mpBlendState, sampleMask);
+// 
+//         ModelRenderer::render(pRenderCtx, mpProgram.get(), mpCubeModel, pCamera, false);
+// 
+//         // Restore the state
+//         pRenderCtx->setDepthStencilState(pOldDsState, stencilRef);
+//         pRenderCtx->setRasterizerState(pOldRsState);
+//         pRenderCtx->setBlendState(pOldBlendState, sampleMask);
     }
 }
