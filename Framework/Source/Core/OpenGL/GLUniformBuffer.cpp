@@ -29,36 +29,13 @@
 #ifdef FALCOR_GL
 #include "Core/UniformBuffer.h"
 #include "Core/ProgramVersion.h"
-#include "ShaderReflectionGL.h"
 #include "Core/Buffer.h"
 #include "Core/Texture.h"
+#include "Core/ProgramReflection.h"
 
 namespace Falcor
 {
-    using namespace ShaderReflection;
     UniformBuffer::~UniformBuffer() = default;
-
-    bool UniformBuffer::apiInit(const ProgramVersion* pProgram, const std::string& bufferName, bool isUniformBuffer)
-    {
-        if(pProgram->getUniformBufferBinding(bufferName) == ProgramVersion::kInvalidLocation)
-        {
-            return false;
-        }
-
-        int32_t programID = pProgram->getApiHandle();
-        GLenum bufferType = isUniformBuffer ? GL_UNIFORM_BLOCK : GL_SHADER_STORAGE_BLOCK;
-
-        // Get the buffer size
-        uint32_t blockIndex = gl_call(glGetProgramResourceIndex(programID, bufferType, bufferName.c_str()));
-        assert(blockIndex != GL_INVALID_INDEX); // This has to be true
-        GLenum bufferSizeEnum = GL_BUFFER_DATA_SIZE;
-        int32_t size;
-        gl_call(glGetProgramResourceiv(programID, bufferType, blockIndex, 1, &bufferSizeEnum, 1, nullptr, &size));
-        mSize = (size_t)size;
-
-        // Initialize the uniform map
-        return reflectBufferVariables(programID, bufferName, bufferType, mSize, mVariables, mResources);
-    }
 
     void UniformBuffer::setTextureInternal(size_t offset, const Texture* pTexture, const Sampler* pSampler)
     {

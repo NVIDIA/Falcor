@@ -40,22 +40,33 @@ namespace Falcor
         mpShaders[(uint32_t)ShaderType::Hull] = pHS;
     }
 
+    ProgramVersion::SharedConstPtr ProgramVersion::create(const Shader::SharedPtr& pVS,
+        const Shader::SharedPtr& pFS,
+        const Shader::SharedPtr& pGS,
+        const Shader::SharedPtr& pHS,
+        const Shader::SharedPtr& pDS,
+        std::string& log,
+        const std::string& name)
+    {
+        // We must have at least a VS.
+        if(pVS == nullptr)
+        {
+            log = "Program " + name + " doesn't contain a vertex-shader. This is illegal.";
+            return nullptr;
+        }
+        SharedPtr pProgram = SharedPtr(new ProgramVersion(pVS, pFS, pGS, pHS, pDS, name));
+
+        if(pProgram->apiInit(log, name) == false)
+        {
+            return nullptr;
+        }
+        pProgram->mpReflector = ProgramReflection::create(pProgram.get(), log);
+        return pProgram;
+    }
+
     ProgramVersion::~ProgramVersion()
     {
         MaterialSystem::removeProgramVersion(this);
         deleteApiHandle();
-    }
-
-    uint32_t ProgramVersion::getUniformBufferBinding(const std::string& name) const
-    {
-        const auto& it = mBuffersDesc.find(name);
-        if(it == mBuffersDesc.end())
-        {
-            std::string Msg("Error when getting uniform block binding index.\n");
-            Msg += "Block \"" + name + "\" not found in program \"" + mName + "\".\n";
-            Logger::log(Logger::Level::Error, Msg);
-            return kInvalidLocation;
-        }
-        return it->second.bufferSlot;
     }
 }

@@ -20,9 +20,6 @@
     <ClCompile Include="Graphics\Light.cpp">
       <Filter>Graphics</Filter>
     </ClCompile>
-    <ClCompile Include="Graphics\Program.cpp">
-      <Filter>Graphics</Filter>
-    </ClCompile>
     <ClCompile Include="Utils\Bitmap.cpp">
       <Filter>Utils</Filter>
     </ClCompile>
@@ -339,7 +336,16 @@
     <ClCompile Include="Core\OpenGL\GLShader.cpp">
       <Filter>Core\OpenGL</Filter>
     </ClCompile>
-    <ClCompile Include="Core\OpenGL\GLShaderReflection.cpp">
+    <ClCompile Include="Core\ProgramReflection.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="Graphics\Program.cpp">
+      <Filter>Graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="Graphics\ProgramVars.cpp">
+      <Filter>Graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\OpenGL\ProgramReflectionGL.cpp">
       <Filter>Core\OpenGL</Filter>
     </ClCompile>
     <ClCompile Include="Core\OpenGL\GLShaderStorageBuffer.cpp">
@@ -388,7 +394,8 @@
       <Filter>Graphics</Filter>
     </ClCompile>
     <ClCompile Include="Core\D3D\D3DShader.cpp" />
-    <ClCompile Include="Core\D3D\D3DProgram.cpp" />
+    <ClCompile Include="Core\D3D\D3DProgramVersion.cpp" />
+    <ClCompile Include="Core\D3D\D3DProgramReflection.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Sample.h" />
@@ -874,9 +881,6 @@
     <ClInclude Include="Graphics\Light.h">
       <Filter>Graphics</Filter>
     </ClInclude>
-    <ClInclude Include="Graphics\Program.h">
-      <Filter>Graphics</Filter>
-    </ClInclude>
     <ClInclude Include="Utils\Bitmap.h">
       <Filter>Utils</Filter>
     </ClInclude>
@@ -1316,9 +1320,6 @@
     <ClInclude Include="Core\Shader.h">
       <Filter>Core</Filter>
     </ClInclude>
-    <ClInclude Include="Core\ShaderReflection.h">
-      <Filter>Core</Filter>
-    </ClInclude>
     <ClInclude Include="Utils\ShaderUtils.h">
       <Filter>Utils</Filter>
     </ClInclude>
@@ -1422,6 +1423,12 @@
     <ClInclude Include="Core\D3D\FalcorD3D.h">
       <Filter>Core\D3D</Filter>
     </ClInclude>
+    <ClInclude Include="Core\ProgramReflection.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\Program.h">
+      <Filter>Graphics</Filter>
+    </ClInclude>
     <ClInclude Include="Core\Device.h">
       <Filter>Core</Filter>
     </ClInclude>
@@ -1435,9 +1442,6 @@
       <Filter>Core\D3D\D3D11</Filter>
     </ClInclude>
     <ClInclude Include="Core\OpenGL\GLEnum2Str.h">
-      <Filter>Core\OpenGL</Filter>
-    </ClInclude>
-    <ClInclude Include="Core\OpenGL\GLShaderReflection.h">
       <Filter>Core\OpenGL</Filter>
     </ClInclude>
     <ClInclude Include="Core\D3D\D3DViews.h" />
@@ -1462,6 +1466,7 @@
     <ClInclude Include="Graphics\RenderStateCache.h">
       <Filter>Graphics</Filter>
     </ClInclude>
+    <ClInclude Include="Graphics\ProgramVars.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Externals">

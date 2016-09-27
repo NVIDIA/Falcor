@@ -62,8 +62,8 @@ namespace Falcor
 
         /** Get the program.
         */
-        const Program* getProgram() const { return mpProgram.get(); }
-        Program* getProgram() { return mpProgram.get(); }
+        const Program::SharedConstPtr getProgram() const { return mpProgram; }
+        Program::SharedPtr getProgram() { return mpProgram; }
 
     protected:
         FullScreenPass() = default;

@@ -68,7 +68,8 @@
     <ClCompile Include="Core\D3D\D3D12\D3D12UniformBuffer.cpp" />
     <ClCompile Include="Core\D3D\D3D12\D3D12Vao.cpp" />
     <ClCompile Include="Core\D3D\D3DFormats.cpp" />
-    <ClCompile Include="Core\D3D\D3DProgram.cpp" />
+    <ClCompile Include="Core\D3D\D3DProgramReflection.cpp" />
+    <ClCompile Include="Core\D3D\D3DProgramVersion.cpp" />
     <ClCompile Include="Core\D3D\D3DShader.cpp" />
     <ClCompile Include="Core\D3D\D3DState.cpp" />
     <ClCompile Include="Core\D3D\D3DWindow.cpp" />
@@ -81,18 +82,19 @@
     <ClCompile Include="Core\OpenGL\GLFbo.cpp" />
     <ClCompile Include="Core\OpenGL\GLFormats.cpp" />
     <ClCompile Include="Core\OpenGL\GLGpuTimer.cpp" />
+    <ClCompile Include="Core\OpenGL\ProgramReflectionGL.cpp" />
     <ClCompile Include="Core\OpenGL\GLProgramVersion.cpp" />
     <ClCompile Include="Core\OpenGL\GLRasterizerState.cpp" />
     <ClCompile Include="Core\OpenGL\GLRenderContext.cpp" />
     <ClCompile Include="Core\OpenGL\GLSampler.cpp" />
     <ClCompile Include="Core\OpenGL\GLScreenCapture.cpp" />
     <ClCompile Include="Core\OpenGL\GLShader.cpp" />
-    <ClCompile Include="Core\OpenGL\GLShaderReflection.cpp" />
     <ClCompile Include="Core\OpenGL\GLShaderStorageBuffer.cpp" />
     <ClCompile Include="Core\OpenGL\GLTexture.cpp" />
     <ClCompile Include="Core\OpenGL\GLUniformBuffer.cpp" />
     <ClCompile Include="Core\OpenGL\GLVao.cpp" />
     <ClCompile Include="Core\OpenGL\GLWindow.cpp" />
+    <ClCompile Include="Core\ProgramReflection.cpp" />
     <ClCompile Include="Core\ProgramVersion.cpp" />
     <ClCompile Include="Core\RenderContext.cpp" />
     <ClCompile Include="Core\RenderState.cpp" />
@@ -128,6 +130,7 @@
     <ClCompile Include="Graphics\Paths\PathEditor.cpp" />
     <ClCompile Include="Graphics\Program.cpp" />
     <ClCompile Include="Graphics\RenderStateCache.cpp" />
+    <ClCompile Include="Graphics\ProgramVars.cpp" />
     <ClCompile Include="Graphics\Scene\Scene.cpp" />
     <ClCompile Include="Graphics\Scene\SceneEditor.cpp" />
     <ClCompile Include="Graphics\Scene\SceneExporter.cpp" />
@@ -422,7 +425,7 @@
     <ClInclude Include="Core\GpuTimer.h" />
     <ClInclude Include="Core\OpenGL\FalcorGL.h" />
     <ClInclude Include="Core\OpenGL\GLEnum2Str.h" />
-    <ClInclude Include="Core\OpenGL\GLShaderReflection.h" />
+    <ClInclude Include="Core\ProgramReflection.h" />
     <ClInclude Include="Core\ProgramVersion.h" />
     <ClInclude Include="Core\RasterizerState.h" />
     <ClInclude Include="Core\RenderContext.h" />
@@ -430,7 +433,6 @@
     <ClInclude Include="Core\Sampler.h" />
     <ClInclude Include="Core\ScreenCapture.h" />
     <ClInclude Include="Core\Shader.h" />
-    <ClInclude Include="Core\ShaderReflection.h" />
     <ClInclude Include="Core\ShaderStorageBuffer.h" />
     <ClInclude Include="Core\FencedPool.h" />
     <ClInclude Include="Core\Texture.h" />
@@ -476,6 +478,7 @@
     <ClInclude Include="Graphics\Paths\ObjectPath.h" />
     <ClInclude Include="Graphics\Paths\PathEditor.h" />
     <ClInclude Include="Graphics\Program.h" />
+    <ClInclude Include="Graphics\ProgramVars.h" />
     <ClInclude Include="Graphics\RenderStateCache.h" />
     <ClInclude Include="Graphics\Scene\Scene.h" />
     <ClInclude Include="Graphics\Scene\SceneEditor.h" />

@@ -68,7 +68,7 @@ void SceneEditorSample::initNewScene()
         std::string lights;
         getSceneLightString(mpScene.get(), lights);
         mpProgram->addDefine("_LIGHT_SOURCES", lights);
-        mpLightBuffer = UniformBuffer::create(mpProgram->getActiveProgramVersion().get(), "PerFrameCB");
+        mpLightBuffer = UniformBuffer::create(mpProgram, "PerFrameCB");
     }
 }
 

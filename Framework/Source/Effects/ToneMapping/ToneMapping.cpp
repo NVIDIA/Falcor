@@ -133,7 +133,7 @@ namespace Falcor
         }
 
         // Initialize the UBO offsets
-        mpUbo = UniformBuffer::create(mpLuminancePass->getProgram()->getActiveProgramVersion().get(), "PerImageCB");
+        mpUbo = UniformBuffer::create(mpLuminancePass->getProgram(), "PerImageCB");
         mUboOffsets.luminanceTex = mpUbo->getVariableOffset("gLuminanceTex");
         mUboOffsets.colorTex = mpUbo->getVariableOffset("gColorTex");
         mUboOffsets.middleGray = mpUbo->getVariableOffset("gMiddleGray");

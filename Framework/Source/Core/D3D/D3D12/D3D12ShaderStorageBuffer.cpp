@@ -32,15 +32,10 @@
 
 namespace Falcor
 {
-    ShaderStorageBuffer::SharedPtr ShaderStorageBuffer::create(const ProgramVersion* pProgram, const std::string& bufferName, size_t overrideSize)
+    ShaderStorageBuffer::SharedPtr ShaderStorageBuffer::create(const ProgramReflection::BufferReflection::SharedConstPtr& pReflector, size_t overrideSize)
     {
         UNSUPPORTED_IN_D3D12("ShaderStorageBuffer");
         return nullptr;
-    }
-
-    ShaderStorageBuffer::ShaderStorageBuffer(const std::string& bufferName) : UniformBuffer(bufferName)
-    {
-
     }
 
     void ShaderStorageBuffer::readFromGPU(size_t offset, size_t size) const

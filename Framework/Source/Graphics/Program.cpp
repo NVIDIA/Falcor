@@ -136,7 +136,7 @@ namespace Falcor
         }
     }
 
-    ProgramVersion::SharedConstPtr Program::getActiveProgramVersion() const
+    ProgramVersion::SharedConstPtr Program::getActiveVersion() const
     {
         if(mLinkRequired)
         {
@@ -168,7 +168,6 @@ namespace Falcor
 
     ProgramVersion::SharedConstPtr Program::link() const
     {
-        mUboMap.clear();
         while(1)
         {
             Shader::SharedPtr pShaders[kShaderCount];
@@ -229,50 +228,6 @@ namespace Falcor
 
     const Shader* Program::getShader(ShaderType Type) const
     {
-        return getActiveProgramVersion()->getShader(Type);
-    }
-    
-    int32_t Program::getAttributeLocation(const std::string& Attribute) const
-    {
-        return getActiveProgramVersion()->getAttributeLocation(Attribute);
-    }
-
-    uint32_t Program::getUniformBufferBinding(const std::string& Name) const
-    {
-        return getActiveProgramVersion()->getUniformBufferBinding(Name);
-    }
-
-    UniformBuffer::SharedPtr Program::getUniformBuffer(const std::string& bufName)
-    {
-        // Check to see if this UBO has previously been accessed
-        UniformBuffer::SharedPtr pUbo = mUboMap[bufName];
-        if(pUbo == nullptr)
-        {
-            pUbo = UniformBuffer::create(getActiveProgramVersion().get(), bufName);
-            mUboMap[bufName] = pUbo;
-        }
-        return pUbo;
-    }
-
-    void Program::bindUniformBuffer(const std::string& bufName, UniformBuffer::SharedPtr& pUbo)
-    {
-        if(getUniformBufferBinding(bufName) != ProgramVersion::kInvalidLocation)
-        {
-            mUboMap[bufName] = pUbo;
-        }
-        else
-        {
-            Logger::log(Logger::Level::Error, "Can't bind UBO to program. UBO " + bufName + " wasn't found.");
-        }
-    }
-
-    void Program::setUniformBuffersIntoContext(RenderContext* pContext)
-    {
-        for(auto& i = mUboMap.begin(); i != mUboMap.end(); i++)
-        {
-            uint32_t loc = getUniformBufferBinding(i->first);
-            assert(loc != ProgramVersion::kInvalidLocation);
-            pContext->setUniformBuffer(loc, i->second);
-        }
+        return getActiveVersion()->getShader(Type);
     }
 }

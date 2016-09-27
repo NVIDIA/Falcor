@@ -25,22 +25,24 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#pragma once
-#ifdef FALCOR_GL
-#include "Core/ShaderReflection.h"
+#include "Framework.h"
+#ifdef FALCOR_D3D
+#include "Core/ProgramVersion.h"
+#include "Core/ProgramReflection.h"
+#include <algorithm>
+#include <iterator>
 
 namespace Falcor
 {
-    /*!
-    *  \addtogroup Falcor
-    *  @{
-    */
-    namespace ShaderReflection
+    void ProgramVersion::deleteApiHandle()
     {
-        bool reflectBuffers(uint32_t programID, ShaderReflection::BufferDescMap& descMap, std::string& log);
-        bool reflectBufferVariables(uint32_t programID, const std::string& bufferName, GLenum bufferType, size_t bufferSize, ShaderReflection::VariableDescMap& variableMap, ShaderReflection::ShaderResourceDescMap& resourceMap);
+
     }
 
-    /*! @} */
+    bool ProgramVersion::apiInit(std::string& log, const std::string& name)
+    {
+        return true;
+    }
 }
-#endif // FALCOR_D3D11
+
+#endif //#ifdef FALCOR_D3D

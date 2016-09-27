@@ -33,11 +33,6 @@ namespace Falcor
 {
     UniformBuffer::~UniformBuffer() = default;
 
-    bool UniformBuffer::apiInit(const ProgramVersion* pProgram, const std::string& bufferName, bool isUniformBuffer)
-    {
-        return true;
-    }
-
     void UniformBuffer::setTextureInternal(size_t offset, const Texture* pTexture, const Sampler* pSampler)
     {
     }

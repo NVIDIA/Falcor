@@ -27,7 +27,6 @@
 ***************************************************************************/
 #include "Framework.h"
 #include "FullScreenPass.h"
-#include "Program.h"
 #include "Core/VAO.h"
 #include "glm/vec2.hpp"
 #include "Core/Buffer.h"

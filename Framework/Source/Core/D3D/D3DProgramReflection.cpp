@@ -25,16 +25,30 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#ifdef FALCOR_D3D12
 #include "Framework.h"
-#include "Core/ProgramVersion.h"
+#ifdef FALCOR_D3D
+#include "Core/ProgramReflection.h"
 
 namespace Falcor
 {
-    void ProgramVersion::deleteApiHandle()
+    bool ProgramReflection::reflectBuffers(const ProgramVersion* pProgVer, std::string& log)
     {
+        return true;
+    }
 
+    bool ProgramReflection::reflectVertexAttributes(const ProgramVersion* pProgVer, std::string& log)
+    {
+        return true;
+    }
+
+    bool ProgramReflection::reflectFragmentOutputs(const ProgramVersion* pProgVer, std::string& log)
+    {
+        return true;
+    }
+
+    bool ProgramReflection::reflectResources(const ProgramVersion* pProgVer, std::string& log)
+    {
+        return true;
     }
 }
-
-#endif //#ifdef FALCOR_D3D12
+#endif //#ifdef FALCOR_D3D

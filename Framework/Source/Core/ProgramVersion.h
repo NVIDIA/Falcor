@@ -31,7 +31,7 @@
 #include <map>
 #include <vector>
 #include "Core/Shader.h"
-#include "Core/ShaderReflection.h"
+#include "Core/ProgramReflection.h"
 
 namespace Falcor
 {
@@ -70,33 +70,22 @@ namespace Falcor
         */
         ProgramHandle getApiHandle() const;
 
-        /** Get the location of an input attribute
-            \param[in] attribute The attribute name in the program
-            \return The index of the attribute if it is found, otherwise ProgramVersion#kInvalidLocation
-            */
-        int32_t getAttributeLocation(const std::string& attribute) const;
-
-        /** Get the uniform buffer binding index
-        \param[in] name The uniform buffer name
-        \return The index of the buffer if it is found, otherwise ProgramVersion#kInvalidLocation
-        */
-        uint32_t getUniformBufferBinding(const std::string& name) const;
-
         /** Get an attached shader object, or nullptr if no shader is attached to the slot.
         */
         const Shader* getShader(ShaderType Type) const { return mpShaders[(uint32_t)Type].get(); }
-
-        /** Invalid location of uniform and attributes
-        */
-        static const int32_t kInvalidLocation = -1;
 
         /** Get the program name
         */
         const std::string& getName() const {return mName;}
 
         /** Write the shader assembly to file
+            Not really. This dumps the binary, which on NVIDIA GPUs contains the assembly in text form.
         */
         void dumpProgramBinaryToFile(const std::string& filename) const;
+
+        /** Get the reflection object
+        */
+        ProgramReflection::SharedConstPtr getReflector() const { return mpReflector; }
     private:
         ProgramVersion(const Shader::SharedPtr& pVS,
             const Shader::SharedPtr& pFS,
@@ -105,6 +94,7 @@ namespace Falcor
             const Shader::SharedPtr& pDS,
             const std::string& name = "");
 
+        bool apiInit(std::string& log, const std::string& name);
         void deleteApiHandle();
         ProgramHandle mApiHandle;
         const std::string mName;
@@ -112,7 +102,7 @@ namespace Falcor
         static const uint32_t kShaderCount = (uint32_t)ShaderType::Count;
         Shader::SharedConstPtr mpShaders[kShaderCount];
 
-        ShaderReflection::BufferDescMap mBuffersDesc;
+        ProgramReflection::SharedPtr mpReflector;
         void* mpPrivateData;
     };
 }

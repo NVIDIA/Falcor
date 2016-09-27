@@ -45,6 +45,7 @@
 #include "Core/DepthStencilState.h"
 #include "Core/Formats.h"
 #include "Core/RasterizerState.h"
+#include "Core/ProgramReflection.h"
 #include "Core/Texture.h"
 #include "Core/Sampler.h"
 #include "Core/ScreenCapture.h"
@@ -66,7 +67,7 @@
 #include "Graphics/TextureHelper.h"
 #include "Graphics/Light.h"
 #include "Graphics/Program.h"
-#include "Graphics/Program.h"
+#include "Graphics/ProgramVars.h"
 #include "Graphics/FboHelper.h"
 
 // Material

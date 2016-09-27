@@ -33,7 +33,7 @@ namespace Falcor
 {
     RenderState::SharedPtr RenderStateCache::getRenderState()
     {
-        mDesc.setProgramVersion(mpProgram ? mpProgram->getActiveProgramVersion() : nullptr);
+        mDesc.setProgramVersion(mpProgram ? mpProgram->getActiveVersion() : nullptr);
         mDesc.setFboFormats(mpFbo ? mpFbo->getDesc() : Fbo::Desc());
         mDesc.setVertexLayout(mpVao ? mpVao->getVertexLayout() : nullptr);
 

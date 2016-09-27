@@ -31,7 +31,6 @@
 #include <map>
 #include <vector>
 #include "Core/ProgramVersion.h"
-#include "Core/UniformBuffer.h"
 
 namespace Falcor
 {
@@ -46,14 +45,7 @@ namespace Falcor
     class Program : public std::enable_shared_from_this<Program>
     {
     public:
-        class SharedPtr : public std::shared_ptr<Program>
-        {
-        public:
-            SharedPtr() : std::shared_ptr<Program>() {}
-            SharedPtr(Program* pProg) : std::shared_ptr<Program>(pProg) {}
-            UniformBuffer::SharedPtr operator[](const std::string& uboName) { return get()->getUniformBuffer(uboName); }
-        };
-
+        using SharedPtr = std::shared_ptr<Program>;
         using SharedConstPtr = std::shared_ptr<const Program>;
 
         class DefineList : public std::map<std::string, std::string>
@@ -69,7 +61,7 @@ namespace Falcor
             \param[in] programDefines A list of macro definitions to set into the shaders. The macro definitions will be assigned to all the shaders.
             \return A new object, or nullptr if creation failed.
 
-            Note that this call merely creates a program object. The actual compilation and link happens when calling Program#getActiveProgramVersion().
+            Note that this call merely creates a program object. The actual compilation and link happens when calling Program#getActiveVersion().
         */
         static SharedPtr createFromFile(const std::string& vertexFile, const std::string& fragmentFile, const DefineList& programDefines = DefineList());
 
@@ -79,7 +71,7 @@ namespace Falcor
         \param[in] programDefines A list of macro definitions to set into the shaders. The macro definitions will be assigned to all the shaders.
 
         \return A new object, or nullptr if creation failed.
-        Note that this call merely creates a program object. The actual compilation and link happens when calling Program#getActiveProgramVersion().
+        Note that this call merely creates a program object. The actual compilation and link happens when calling Program#getActiveVersion().
         */
         static SharedPtr createFromString(const std::string& vertexShader, const std::string& fragmentShader, const DefineList& programDefines = DefineList());
 
@@ -93,7 +85,7 @@ namespace Falcor
 
             \return A new object, or nullptr if creation failed.
 
-            Note that this call merely creates a program object. The actual compilation and link happens when calling Program#getActiveProgramVersion().
+            Note that this call merely creates a program object. The actual compilation and link happens when calling Program#getActiveVersion().
         */
         static SharedPtr createFromFile(const std::string& vertexFile, const std::string& fragmentFile, const std::string& geometryFile, const std::string& hullFile, const std::string& domainFile, const DefineList& programDefines = DefineList());
 
@@ -106,7 +98,7 @@ namespace Falcor
         \param[in] programDefines A list of macro definitions to set into the shaders.
         \return A new object, or nullptr if creation failed.
 
-        Note that this call merely creates a program object. The actual compilation and link happens when calling Program#getActiveProgramVersion().
+        Note that this call merely creates a program object. The actual compilation and link happens when calling Program#getActiveVersion().
         */
         static SharedPtr createFromString(const std::string& vertexShader, const std::string& fragmentShader, const std::string& geometryShader, const std::string& hullShader, const std::string& domainShader, const DefineList& programDefines = DefineList());
 
@@ -119,7 +111,7 @@ namespace Falcor
 
         /** Get the API handle of the active program
         */
-        ProgramVersion::SharedConstPtr getActiveProgramVersion() const;
+        ProgramVersion::SharedConstPtr getActiveVersion() const;
 
         /** Adds a macro definition to the program. If the macro already exists, its will be replaced.
 
@@ -137,45 +129,13 @@ namespace Falcor
         */
         void clearDefines() { mDefineList.clear(); }
     
-        /** Get the location of an input attribute for the active program version. Note that different versions might return different locations.
-            \param[in] Attribute The attribute name in the program
-            \return The index of the attribute if it is found, otherwise CApiProgram#InvalidLocation
-        */
-        int32_t getAttributeLocation(const std::string& attribute) const;
-
-        /** Get the location of a uniform buffer for the active program version. Note that different versions might return different locations.
-            \param[in] Attribute The attribute name in the program
-            \return The index of the attribute if it is found, otherwise CApiProgram#InvalidLocation
-        */
-        uint32_t getUniformBufferBinding(const std::string& name) const;
-
         /** Get the macro definition string of the active program version
         */
         const DefineList& getActiveDefinesList() const { return mDefineList; }
 
-        std::string getActiveDefinesString() const;
-
         /** Reload and relink all programs.
         */
         static void reloadAllPrograms();
-
-        /** Get a uniform-buffer object associated with this program. the function will return one of the following:
-            - A new UniformBuffer object if no buffer was associated with bufName
-            - An already existing buffer associated with bufName. The existing buffer might have been created using a previous getUniformBuffer() call or bindUniformBuffer() call
-            - nullptr if bufName is not a name of a buffer declared in the program
-            Note that setting a new define string will force the creation of a new UniformBuffer object
-        */
-        UniformBuffer::SharedPtr getUniformBuffer(const std::string& bufName);
-
-        /** Binds a uniform buffer into the program. This is useful in cases when we want to share UBOs between programs.
-            The first program will call getUniformBuffer() to generate a buffer, then bind it to other programs that we'd like to share it with.
-            Note that there is not data layout check here. It's your responsibility to make sure that the layouts match,
-        */
-        void bindUniformBuffer(const std::string& bufName, UniformBuffer::SharedPtr& pUbo);
-
-        /** Set all uniform-buffers into the render-context            
-        */
-        void setUniformBuffersIntoContext(RenderContext* pContext);
     private:
         static const uint32_t kShaderCount = (uint32_t)ShaderType::Count;
 
@@ -190,7 +150,6 @@ namespace Falcor
         mutable bool mLinkRequired = true;
         mutable std::map<const DefineList, ProgramVersion::SharedConstPtr> mProgramVersions;
         mutable ProgramVersion::SharedConstPtr mpActiveProgram = nullptr;
-        mutable std::map<const std::string, UniformBuffer::SharedPtr> mUboMap;
 
         std::string getProgramDescString() const;
         static std::vector<Program*> sPrograms;
