@@ -41,10 +41,10 @@ namespace Falcor
     uint32_t ProgramReflection::getBufferBinding(const std::string& name) const
     {
         // Names are unique regardless of buffer type. Search in each map
-        for(const auto& desc : mBuffers)
+        for (const auto& desc : mBuffers)
         {
             auto& it = desc.nameMap.find(name);
-            if(it != desc.nameMap.end())
+            if (it != desc.nameMap.end())
             {
                 return it->second;
             }
@@ -71,27 +71,27 @@ namespace Falcor
         auto& var = mVariables.find(name);
 
 #ifdef FALCOR_DX11
-        if(var == mVariables.end())
+        if (var == mVariables.end())
         {
             // Textures might come from our struct. Try again.
             std::string texName = name + ".t";
             var = mVariables.find(texName);
         }
 #endif
-        if(var == mVariables.end())
+        if (var == mVariables.end())
         {
             // The name might contain an array index. Remove the last array index and search again
             std::string nameV2 = removeLastArrayIndex(name);
             var = mVariables.find(nameV2);
 
-            if(var == mVariables.end())
+            if (var == mVariables.end())
             {
                 Logger::log(Logger::Level::Error, msg + "Uniform not found.");
                 return nullptr;
             }
 
             const auto& data = var->second;
-            if(data.arraySize == 0)
+            if (data.arraySize == 0)
             {
                 // Not an array, so can't have an array index
                 Logger::log(Logger::Level::Error, msg + "Uniform is not an array, so name can't include an array index.");
@@ -102,19 +102,19 @@ namespace Falcor
             std::string indexStr = name.substr(nameV2.length() + 1);
             char* pEndPtr;
             arrayIndex = strtol(indexStr.c_str(), &pEndPtr, 0);
-            if(*pEndPtr != ']')
+            if (*pEndPtr != ']')
             {
                 Logger::log(Logger::Level::Error, msg + "Array index must be a literal number (no whitespace are allowed)");
                 return nullptr;
             }
 
-            if(arrayIndex >= data.arraySize)
+            if (arrayIndex >= data.arraySize)
             {
                 Logger::log(Logger::Level::Error, msg + "Array index (" + std::to_string(arrayIndex) + ") out-of-range. Array size == " + std::to_string(data.arraySize) + ".");
                 return nullptr;
             }
         }
-        else if((allowNonIndexedArray == false) && (var->second.arraySize > 0))
+        else if ((allowNonIndexedArray == false) && (var->second.arraySize > 0))
         {
             // Variable name should contain an explicit array index (for N-dim arrays, N indices), but the index was missing
             Logger::log(Logger::Level::Error, msg + "Expecting to find explicit array index in uniform name (for N-dimensional array, N indices must be specified).");
@@ -136,7 +136,7 @@ namespace Falcor
     {
         const auto& descMap = mBuffers[uint32_t(bufferType)].descMap;
         auto& desc = descMap.find(bindLocation);
-        if(desc == descMap.end())
+        if (desc == descMap.end())
         {
             return nullptr;
         }
@@ -146,7 +146,7 @@ namespace Falcor
     ProgramReflection::BufferReflection::SharedConstPtr ProgramReflection::getBufferDesc(const std::string& name, BufferReflection::Type bufferType) const
     {
         uint32_t bindLoc = getBufferBinding(name);
-        if(bindLoc != kInvalidLocation)
+        if (bindLoc != kInvalidLocation)
         {
             return getBufferDesc(bindLoc, bufferType);
         }
@@ -159,7 +159,7 @@ namespace Falcor
         return it == mResources.end() ? nullptr : &(it->second);
     }
 
-    ProgramReflection::BufferReflection::BufferReflection(const std::string& name, Type type, size_t size, size_t varCount, const VariableMap& varMap, const ResourceMap& resourceMap) : 
+    ProgramReflection::BufferReflection::BufferReflection(const std::string& name, Type type, size_t size, size_t varCount, const VariableMap& varMap, const ResourceMap& resourceMap) :
         mName(name),
         mType(type),
         mSizeInBytes(size),
@@ -192,70 +192,4 @@ namespace Falcor
         const auto& it = mResources.find(name);
         return (it == mResources.end()) ? nullptr : &(it->second);
     }
-
-    //         // Loop over all the shaders and initialize the uniform buffer bindings.
-//         // This is actually where verify that the shader declarations match between shaders.
-//         // Due to OpenGL support, Falcor assumes that CBs definition and binding points match between shader stages.
-// 
-//         // A map storing the first shader we encountered a buffer in.
-//         std::map<std::string, const Shader*> bufferFirstShaderMap;
-//         std::map<std::string, const Shader*> resourceFirstShaderMap;
-// 
-//         ShaderResourceDescMap programResources;
-//         for(uint32_t i = 0 ; i < kShaderCount ; i++)
-//         {
-//             const Shader* pShader = pProgram->mpShaders[i].get();
-// 
-//             if(pShader)
-//             {
-//                 ShaderResourceDescMap shaderResources;
-//                 reflectResources(pShader->getReflectionInterface(), shaderResources);
-//                 if(validateResourceDeclarations(programResources, shaderResources, pShader, resourceFirstShaderMap, log) == false)
-//                 {
-//                     pProgram = nullptr;
-//                     return pProgram;
-//                 }
-// 
-//                 mergeResourceMaps(programResources, shaderResources, pShader, resourceFirstShaderMap);
-// 
-//                 // Initialize the buffer declaration
-//                 BufferDescMap bufferDesc;
-//                 reflectBuffers(pShader->getReflectionInterface(), bufferDesc);
-// 
-//                 // Loop over all the buffer we found
-//                 for(auto& buffer : bufferDesc)
-//                 {
-//                     // Check if a buffer with the same name was already declared in a previous shader
-//                     const std::string& bufferName = buffer.first;
-//                     const auto& prevDesc = pProgram->mBuffersDesc.find(bufferName);
-//                     if(prevDesc != pProgram->mBuffersDesc.end())
-//                     {
-//                         // Make sure the current buffer declaration matches the previous declaration
-//                         const Shader* pPrevShader = bufferFirstShaderMap[bufferName];
-//                         auto pPrevBuffer = pPrevShader->getReflectionInterface()->GetConstantBufferByName(bufferName.c_str());
-//                         auto pCurrentBuffer = pShader->getReflectionInterface()->GetConstantBufferByName(bufferName.c_str());
-//                         bool bMatch = validateBufferDeclaration(prevDesc->second, buffer.second, pPrevBuffer, pCurrentBuffer, log);
-// 
-//                         if(bMatch == false)
-//                         {
-//                             return returnError(log, std::string("Buffer '") + buffer.first + "' declaration mismatch between shader.\n" + log, pPrevShader, pShader, pProgram);
-//                         }
-//                     }
-//                     else
-//                     {
-//                         // Make sure the binding point is unique
-//                         for(const auto& a : pProgram->mBuffersDesc)
-//                         {
-//                             if(a.second.bufferSlot == buffer.second.bufferSlot)
-//                             {
-//                                 return returnError(log, std::string("Different uniform buffers use the same binding point ") + std::to_string(a.second.bufferSlot), bufferFirstShaderMap[a.first], pShader, pProgram);
-//                             }
-//                         }
-//                         // New buffer
-//                         pProgram->mBuffersDesc[bufferName] = buffer.second;
-//                         bufferFirstShaderMap[bufferName] = pShader;
-//                     }
-//                 }
-//             }
-//         }
 }

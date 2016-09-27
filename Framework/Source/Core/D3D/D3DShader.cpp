@@ -144,9 +144,21 @@ namespace Falcor
         pShader->mApiHandle = { pData->pBlob->GetBufferPointer(), pData->pBlob->GetBufferSize() };
 #endif
         // Get the reflection object
-        d3d_call(D3DReflect(pData->pBlob->GetBufferPointer(), pData->pBlob->GetBufferSize(), __uuidof(ID3D11ShaderReflection), (void**)&pData->pReflector));
+        d3d_call(D3DReflect(pData->pBlob->GetBufferPointer(), pData->pBlob->GetBufferSize(), IID_PPV_ARGS(&pData->pReflector)));
 
         return pShader;
+    }
+
+    ShaderReflectionHandle Shader::getReflectionInterface() const
+    {
+        ShaderData* pData = (ShaderData*)mpPrivateData;
+        return pData->pReflector;
+    }
+
+    ID3DBlobPtr Shader::getCodeBlob() const
+    {
+        const ShaderData* pData = (ShaderData*)mpPrivateData;
+        return pData->pBlob;
     }
 }
 #endif //#ifdef FALCOR_D3D

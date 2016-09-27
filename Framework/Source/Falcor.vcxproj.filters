@@ -336,17 +336,11 @@
     <ClCompile Include="Core\OpenGL\GLShader.cpp">
       <Filter>Core\OpenGL</Filter>
     </ClCompile>
-    <ClCompile Include="Core\ProgramReflection.cpp">
-      <Filter>Core</Filter>
-    </ClCompile>
     <ClCompile Include="Graphics\Program.cpp">
       <Filter>Graphics</Filter>
     </ClCompile>
     <ClCompile Include="Graphics\ProgramVars.cpp">
       <Filter>Graphics</Filter>
-    </ClCompile>
-    <ClCompile Include="Core\OpenGL\ProgramReflectionGL.cpp">
-      <Filter>Core\OpenGL</Filter>
     </ClCompile>
     <ClCompile Include="Core\OpenGL\GLShaderStorageBuffer.cpp">
       <Filter>Core\OpenGL</Filter>
@@ -396,6 +390,12 @@
     <ClCompile Include="Core\D3D\D3DShader.cpp" />
     <ClCompile Include="Core\D3D\D3DProgramVersion.cpp" />
     <ClCompile Include="Core\D3D\D3DProgramReflection.cpp" />
+    <ClCompile Include="Core\ProgramReflection.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\OpenGL\GLProgramReflection.cpp">
+      <Filter>Core\OpenGL</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Sample.h" />

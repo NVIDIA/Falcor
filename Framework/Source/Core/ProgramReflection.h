@@ -223,6 +223,10 @@ namespace Falcor
             /** Get the type of the buffer
             */
             Type getType() const { return mType; }
+
+            /** Get the variable count
+            */
+            size_t getVariableCount() const { return mVariableCount; }
         private:
             BufferReflection(const std::string& name, Type type, size_t size, size_t varCount, const VariableMap& varMap, const ResourceMap& resourceMap);
             std::string mName;

@@ -58,14 +58,11 @@ namespace Falcor
         */
         ShaderType getType() const { return mType; }
 
-    private:
-#ifdef FALCOR_D3D11
-        friend class RenderContext;
-        friend class ProgramVersion;
-        friend class UniformBuffer;
+#ifdef FALCOR_D3D
         ShaderReflectionHandle getReflectionInterface() const;
         ID3DBlobPtr getCodeBlob() const;
 #endif
+    private:
         // API handle depends on the shader Type, so it stored be stored as part of the private data
         Shader(ShaderType Type);
         ShaderType mType;

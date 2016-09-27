@@ -82,7 +82,7 @@
     <ClCompile Include="Core\OpenGL\GLFbo.cpp" />
     <ClCompile Include="Core\OpenGL\GLFormats.cpp" />
     <ClCompile Include="Core\OpenGL\GLGpuTimer.cpp" />
-    <ClCompile Include="Core\OpenGL\ProgramReflectionGL.cpp" />
+    <ClCompile Include="Core\OpenGL\GLProgramReflection.cpp" />
     <ClCompile Include="Core\OpenGL\GLProgramVersion.cpp" />
     <ClCompile Include="Core\OpenGL\GLRasterizerState.cpp" />
     <ClCompile Include="Core\OpenGL\GLRenderContext.cpp" />

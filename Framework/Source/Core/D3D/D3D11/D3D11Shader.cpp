@@ -210,17 +210,5 @@ namespace Falcor
     get_api_handle(HullShaderHandle, ShaderType::Hull);
     get_api_handle(ComputeShaderHandle, ShaderType::Compute);
 #undef get_api_handle
-
-    ID3D11ShaderReflectionPtr Shader::getReflectionInterface() const
-    {
-        DxShaderData* pData = (DxShaderData*)mpPrivateData;
-        return pData->pReflector;
-    }
-
-    ID3DBlobPtr Shader::getCodeBlob() const
-    {
-        const DxShaderData* pData = (DxShaderData*)mpPrivateData;
-        return pData->pBlob;
-    }
 }
 #endif //#ifdef FALCOR_D3D11
