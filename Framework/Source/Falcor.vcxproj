@@ -62,7 +62,6 @@
     <ClCompile Include="Core\D3D\D3D12\D3D12Sampler.cpp" />
     <ClCompile Include="Core\D3D\D3D12\D3D12ScreenCapture.cpp" />
     <ClCompile Include="Core\D3D\D3D12\D3D12Shader.cpp" />
-    <ClCompile Include="Core\D3D\D3D12\D3D12ShaderReflection.cpp" />
     <ClCompile Include="Core\D3D\D3D12\D3D12ShaderStorageBuffer.cpp" />
     <ClCompile Include="Core\D3D\D3D12\D3D12Texture.cpp" />
     <ClCompile Include="Core\D3D\D3D12\D3D12UniformBuffer.cpp" />
@@ -412,7 +411,6 @@
     <ClInclude Include="Core\D3D\D3D12\D3D12FencedPool.h" />
     <ClInclude Include="Core\D3D\D3D12\FalcorD3D12.h" />
     <ClInclude Include="Core\D3D\D3D12\D3D12DescriptorHeap.h" />
-    <ClInclude Include="Core\D3D\D3D12\D3D12ShaderReflection.h" />
     <ClInclude Include="Core\D3D\D3DState.h" />
     <ClInclude Include="Core\D3D\D3DViews.h" />
     <ClInclude Include="Core\D3D\FalcorD3D.h" />

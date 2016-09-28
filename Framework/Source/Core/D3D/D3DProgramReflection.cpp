@@ -354,7 +354,7 @@ namespace Falcor
                         initializeBufferVariables(pBuffer, d3dBufDesc, varMap);
 
                         // If the buffer already exists in the program, make sure the definitions match
-                        auto& bufferDesc = mBuffers[(uint32_t)bufferType];
+                        BufferData& bufferDesc = mBuffers[(uint32_t)bufferType];
                         const auto& prevDef = bufferDesc.nameMap.find(d3dBufDesc.Name);
                         if (prevDef != bufferDesc.nameMap.end())
                         {
@@ -363,7 +363,7 @@ namespace Falcor
                                 log += "Uniform buffer '" + std::string(d3dBufDesc.Name) + "' has different bind locations between different shader stages. Falcor do not support that. Use explicit bind locations to avoid this error";
                                 return false;
                             }
-                            const ProgramReflection::BufferReflection* pPrevBuffer = bufferDesc.descMap[bindDesc.BindPoint].get();
+                            ProgramReflection::BufferReflection* pPrevBuffer = bufferDesc.descMap[bindDesc.BindPoint].get();
                             std::string bufLog;
                             if (validateBufferDeclaration(pPrevBuffer, varMap, bufLog) == false)
                             {
@@ -377,6 +377,10 @@ namespace Falcor
                             bufferDesc.nameMap[d3dBufDesc.Name] = bindDesc.BindPoint;
                             bufferDesc.descMap[bindDesc.BindPoint] = ProgramReflection::BufferReflection::create(d3dBufDesc.Name, BufferReflection::Type::Uniform, d3dBufDesc.Size, d3dBufDesc.Variables, varMap, ProgramReflection::ResourceMap());
                         }
+
+                        // Update the shader mask
+                        uint32_t mask = bufferDesc.descMap[bindDesc.BindPoint]->getShaderMask() | (1 << shader);
+                        bufferDesc.descMap[bindDesc.BindPoint]->setShaderMask(mask);
                         found++;
                     }
                 }
@@ -539,6 +543,8 @@ namespace Falcor
                             return false;
                         }
                     }
+                    // Update the mask
+                    mResources[name].shaderMask |= (1 << shader);
                 }
             }
         }

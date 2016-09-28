@@ -133,6 +133,7 @@ namespace Falcor
             ReturnType retType = ReturnType::Unknown;       ///< Resource return type
             size_t location = -1;                           ///< In case the resource was defined as part of a UBO, the offset inside the UBO, otherwise the resource index in the program
             uint32_t arraySize = 0;                         ///< Array size , or 0 if not an array
+            uint32_t shaderMask = 0;                        ///< A mask indicating in which shader stages the buffer is used
             Resource(Dimensions d, ReturnType r, ResourceType t) : dims(d), retType(r), type(t) {}
             Resource() {}
         };
@@ -228,6 +229,13 @@ namespace Falcor
             */
             size_t getVariableCount() const { return mVariableCount; }
 
+            /** Set a mask indicating in which shader stages the buffer is used
+            */
+            void setShaderMask(uint32_t mask) { mShaderMask = mask; }
+
+            /** get a mask indicating in which shader stages the buffer is used
+            */
+            uint32_t getShaderMask() const { return mShaderMask; }
         private:
             BufferReflection(const std::string& name, Type type, size_t size, size_t varCount, const VariableMap& varMap, const ResourceMap& resourceMap);
             std::string mName;
@@ -236,6 +244,7 @@ namespace Falcor
             Type mType;
             ResourceMap mResources;
             VariableMap mVariables;
+            uint32_t mShaderMask = 0;
         };
 
         /** Create a new object
@@ -248,7 +257,7 @@ namespace Falcor
         */
         uint32_t getBufferBinding(const std::string& name) const;
 
-        using BufferMap = std::unordered_map<uint32_t, BufferReflection::SharedConstPtr>;
+        using BufferMap = std::unordered_map<uint32_t, BufferReflection::SharedPtr>;
 
         /** Get the uniform-buffer list
         */
