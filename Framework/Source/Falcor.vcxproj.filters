@@ -393,6 +393,8 @@
     <ClCompile Include="Core\OpenGL\GLProgramReflection.cpp">
       <Filter>Core\OpenGL</Filter>
     </ClCompile>
+    <ClCompile Include="Core\D3D\D3D12\D3D12RootSignature.cpp" />
+    <ClCompile Include="Core\RootSignature.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Sample.h" />
@@ -1461,6 +1463,7 @@
       <Filter>Graphics</Filter>
     </ClInclude>
     <ClInclude Include="Graphics\ProgramVars.h" />
+    <ClInclude Include="Core\RootSignature.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Externals">

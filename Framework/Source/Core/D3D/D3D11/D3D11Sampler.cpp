@@ -28,92 +28,10 @@
 #ifdef FALCOR_D3D11
 #include "Framework.h"
 #include "Core/Sampler.h"
-#include "glm/gtc/type_ptr.hpp"
 
 namespace Falcor
 {
     Sampler::~Sampler() = default;
-
-    D3D11_FILTER_TYPE getFilterType(Sampler::Filter filter)
-    {
-        switch(filter)
-        {
-        case Sampler::Filter::Point:
-            return D3D11_FILTER_TYPE_POINT;
-        case Sampler::Filter::Linear:
-            return D3D11_FILTER_TYPE_LINEAR;
-        default:
-            should_not_get_here();
-            return (D3D11_FILTER_TYPE)0;
-        }
-    }
-
-    D3D11_FILTER getD3DFilter(Sampler::Filter minFilter, Sampler::Filter magFilter, Sampler::Filter mipFilter, bool isComparison, bool isAnisotropic)
-    {
-        D3D11_FILTER filter;
-        D3D11_FILTER_REDUCTION_TYPE reduction = isComparison ? D3D11_FILTER_REDUCTION_TYPE_COMPARISON : D3D11_FILTER_REDUCTION_TYPE_STANDARD;
-
-        if(isAnisotropic)
-        {
-            filter = D3D11_ENCODE_ANISOTROPIC_FILTER(reduction);
-        }
-        else
-        {
-            D3D11_FILTER_TYPE dxMin = getFilterType(minFilter);
-            D3D11_FILTER_TYPE dxMag = getFilterType(magFilter);
-            D3D11_FILTER_TYPE dxMip = getFilterType(mipFilter);
-            filter = D3D11_ENCODE_BASIC_FILTER(dxMin, dxMag, dxMip, reduction);
-        }
-
-        return filter;
-    };
-
-    D3D11_TEXTURE_ADDRESS_MODE getD3DAddressMode(Sampler::AddressMode mode)
-    {
-        switch(mode)
-        {
-        case Sampler::AddressMode::Wrap:
-            return D3D11_TEXTURE_ADDRESS_WRAP;
-        case Sampler::AddressMode::Mirror:
-            return D3D11_TEXTURE_ADDRESS_MIRROR;
-        case Sampler::AddressMode::Clamp:
-            return D3D11_TEXTURE_ADDRESS_CLAMP;
-        case Sampler::AddressMode::Border:
-            return D3D11_TEXTURE_ADDRESS_BORDER;
-        case Sampler::AddressMode::MirrorOnce:
-            return D3D11_TEXTURE_ADDRESS_MIRROR_ONCE;
-        default:
-            should_not_get_here();
-            return (D3D11_TEXTURE_ADDRESS_MODE)0;
-        }
-    }
-
-    D3D11_COMPARISON_FUNC getD3DComparisonFunc(Sampler::ComparisonMode mode)
-    {
-        switch(mode)
-        {
-        case Falcor::Sampler::ComparisonMode::NoComparison:
-        case Falcor::Sampler::ComparisonMode::Always:
-            return D3D11_COMPARISON_ALWAYS;
-        case Falcor::Sampler::ComparisonMode::Never:
-            return D3D11_COMPARISON_NEVER;
-        case Falcor::Sampler::ComparisonMode::LessEqual:
-            return D3D11_COMPARISON_LESS_EQUAL;
-        case Falcor::Sampler::ComparisonMode::GreaterEqual:
-            return D3D11_COMPARISON_GREATER_EQUAL;
-        case Falcor::Sampler::ComparisonMode::Less:
-            return D3D11_COMPARISON_LESS;
-        case Falcor::Sampler::ComparisonMode::Greater:
-            return D3D11_COMPARISON_GREATER;
-        case Falcor::Sampler::ComparisonMode::Equal:
-            return D3D11_COMPARISON_EQUAL;
-        case Falcor::Sampler::ComparisonMode::NotEqual:
-            return D3D11_COMPARISON_NOT_EQUAL;
-        default:
-            should_not_get_here();
-            return (D3D11_COMPARISON_FUNC)0;
-        }
-    }
 
     uint32_t Sampler::getApiMaxAnisotropy()
     {
@@ -133,17 +51,7 @@ namespace Falcor
         }
 
         D3D11_SAMPLER_DESC dxDesc;
-        dxDesc.Filter = getD3DFilter(desc.mMinFilter, desc.mMagFilter, desc.mMipFilter, (desc.mComparisonMode != ComparisonMode::NoComparison), (desc.mMaxAnisotropy > 1));
-        dxDesc.AddressU = getD3DAddressMode(desc.mModeU);
-        dxDesc.AddressV = getD3DAddressMode(desc.mModeV);
-        dxDesc.AddressW = getD3DAddressMode(desc.mModeW);
-        dxDesc.MipLODBias = desc.mLodBias;
-        dxDesc.MaxAnisotropy = desc.mMaxAnisotropy;
-        dxDesc.ComparisonFunc = getD3DComparisonFunc(desc.mComparisonMode);
-        memcpy(dxDesc.BorderColor, glm::value_ptr(desc.mBorderColor), sizeof(dxDesc.BorderColor));
-        dxDesc.MinLOD = desc.mMinLod;
-        dxDesc.MaxLOD = desc.mMaxLod;
-
+        initD3DSamplerDesc(this, dxDesc);
         d3d_call(getD3D11Device()->CreateSamplerState(&dxDesc, &pSampler->mApiHandle));
         return pSampler;
     }

@@ -31,7 +31,7 @@
 #include "Core/BlendState.h"
 #include "Core/RasterizerState.h"
 #include "Core/VertexLayout.h"
-
+#include "glm/gtc/type_ptr.hpp"
 
 namespace Falcor
 {
@@ -249,25 +249,26 @@ namespace Falcor
 #define D3D_CMP_FUNC(a) D3D12_COMPARISON_FUNC_##a
 #endif
 
-    D3Dx(COMPARISON_FUNC) getD3DComparisonFunc(DepthStencilState::Func func)
+    template<typename FalcorType>
+    D3Dx(COMPARISON_FUNC) getD3DComparisonFunc(FalcorType func)
     {
         switch (func)
         {
-        case DepthStencilState::Func::Never:
+        case FalcorType::Never:
             return D3D_CMP_FUNC(NEVER);
-        case DepthStencilState::Func::Always:
+        case FalcorType::Always:
             return D3D_CMP_FUNC(ALWAYS);
-        case DepthStencilState::Func::Less:
+        case FalcorType::Less:
             return D3D_CMP_FUNC(LESS);
-        case DepthStencilState::Func::Equal:
+        case FalcorType::Equal:
             return D3D_CMP_FUNC(EQUAL);
-        case DepthStencilState::Func::NotEqual:
+        case FalcorType::NotEqual:
             return D3D_CMP_FUNC(NOT_EQUAL);
-        case DepthStencilState::Func::LessEqual:
+        case FalcorType::LessEqual:
             return D3D_CMP_FUNC(LESS_EQUAL);
-        case DepthStencilState::Func::Greater:
+        case FalcorType::Greater:
             return D3D_CMP_FUNC(GREATER);
-        case DepthStencilState::Func::GreaterEqual:
+        case FalcorType::GreaterEqual:
             return D3D_CMP_FUNC(GREATER_EQUAL);
         default:
             should_not_get_here();
@@ -323,5 +324,107 @@ namespace Falcor
         desc.FrontFace = getD3DStencilOpDesc(pState->getStencilDesc(DepthStencilState::Face::Front));
         desc.BackFace = getD3DStencilOpDesc(pState->getStencilDesc(DepthStencilState::Face::Back));
     }
+
+    D3Dx(FILTER_TYPE) getFilterType(Sampler::Filter filter)
+    {
+        switch (filter)
+        {
+        case Sampler::Filter::Point:
+            return D3Dx(FILTER_TYPE_POINT);
+        case Sampler::Filter::Linear:
+            return D3Dx(FILTER_TYPE_LINEAR);
+        default:
+            should_not_get_here();
+            return (D3Dx(FILTER_TYPE))-1;
+        }
+    }
+
+    D3Dx(FILTER) getD3DFilter(Sampler::Filter minFilter, Sampler::Filter magFilter, Sampler::Filter mipFilter, bool isComparison, bool isAnisotropic)
+    {
+        D3Dx(FILTER) filter;
+        D3Dx(FILTER_REDUCTION_TYPE) reduction = isComparison ? D3Dx(FILTER_REDUCTION_TYPE_COMPARISON) : D3Dx(FILTER_REDUCTION_TYPE_STANDARD);
+
+        if (isAnisotropic)
+        {
+            filter = D3Dx(ENCODE_ANISOTROPIC_FILTER)(reduction);
+        }
+        else
+        {
+            D3Dx(FILTER_TYPE) dxMin = getFilterType(minFilter);
+            D3Dx(FILTER_TYPE) dxMag = getFilterType(magFilter);
+            D3Dx(FILTER_TYPE) dxMip = getFilterType(mipFilter);
+            filter = D3Dx(ENCODE_BASIC_FILTER)(dxMin, dxMag, dxMip, reduction);
+        }
+
+        return filter;
+    };
+
+#ifdef FALCOR_D3D11
+#define D3D_TEXTURE_ADDRESS(a) D3D12_TEXTURE_ADDRESS_##a
+#elif defined FALCOR_D3D12
+#define D3D_TEXTURE_ADDRESS(a) D3D12_TEXTURE_ADDRESS_MODE_##a
+#endif
+    D3Dx(TEXTURE_ADDRESS_MODE) getD3DAddressMode(Sampler::AddressMode mode)
+    {
+        switch (mode)
+        {
+        case Sampler::AddressMode::Wrap:
+            return D3D_TEXTURE_ADDRESS(WRAP);
+        case Sampler::AddressMode::Mirror:
+            return D3D_TEXTURE_ADDRESS(MIRROR);
+        case Sampler::AddressMode::Clamp:
+            return D3D_TEXTURE_ADDRESS(CLAMP);
+        case Sampler::AddressMode::Border:
+            return D3D_TEXTURE_ADDRESS(BORDER);
+        case Sampler::AddressMode::MirrorOnce:
+            return D3D_TEXTURE_ADDRESS(MIRROR_ONCE);
+        default:
+            should_not_get_here();
+            return (D3Dx(TEXTURE_ADDRESS_MODE))-1;
+        }
+    }
+
+    template<typename D3DType>
+    static void initD3DSamplerDescCommon(const Sampler* pSampler, D3DType& desc)
+    {
+        desc.Filter = getD3DFilter(pSampler->getMinFilter(), pSampler->getMagFilter(), pSampler->getMipFilter(), (pSampler->getComparisonMode() != Sampler::ComparisonMode::NoComparison), (pSampler->getMaxAnisotropy() > 1));
+        desc.AddressU = getD3DAddressMode(pSampler->getAddressModeU());
+        desc.AddressV = getD3DAddressMode(pSampler->getAddressModeV());
+        desc.AddressW = getD3DAddressMode(pSampler->getAddressModeW());
+        desc.MipLODBias = pSampler->getLodBias();;
+        desc.MaxAnisotropy = pSampler->getMaxAnisotropy();
+        desc.ComparisonFunc = getD3DComparisonFunc(pSampler->getComparisonMode());
+        desc.MinLOD = pSampler->getMinLod();
+        desc.MaxLOD = pSampler->getMaxLod();
+    }
+
+    void initD3DSamplerDesc(const Sampler* pSampler, D3Dx(SAMPLER_DESC)& desc)
+    {
+        initD3DSamplerDescCommon(pSampler, desc);
+        const glm::vec4& borderColor = pSampler->getBorderColor();
+        memcpy(desc.BorderColor, glm::value_ptr(borderColor), sizeof(borderColor));
+    }
+
+#ifdef FALCOR_D3D12
+    void initD3DSamplerDesc(const Sampler* pSampler, RootSignature::BorderColor borderColor, D3D12_STATIC_SAMPLER_DESC& desc)
+    {
+        initD3DSamplerDescCommon(pSampler, desc);
+        switch (borderColor)
+        {
+        case RootSignature::BorderColor::OpaqueBlack:
+            desc.BorderColor = D3D12_STATIC_BORDER_COLOR_OPAQUE_BLACK;
+            break;
+        case RootSignature::BorderColor::OpaqueWhite:
+            desc.BorderColor = D3D12_STATIC_BORDER_COLOR_OPAQUE_WHITE;
+            break;
+        case RootSignature::BorderColor::TransparentBlack:
+            desc.BorderColor = D3D12_STATIC_BORDER_COLOR_TRANSPARENT_BLACK;
+            break;
+        default:
+            should_not_get_here();
+            desc.BorderColor = (D3D12_STATIC_BORDER_COLOR)-1;
+        }
+    }
+#endif
 }
 #endif

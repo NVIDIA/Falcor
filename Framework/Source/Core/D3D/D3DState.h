@@ -29,6 +29,7 @@
 #include <vector>
 #include "Core/RenderContext.h"
 #include "Core/RenderState.h"
+#include "Core/RootSignature.h"
 
 namespace Falcor
 {
@@ -42,6 +43,11 @@ namespace Falcor
     void initD3DRasterizerDesc(const RasterizerState* pState, D3Dx(RASTERIZER_DESC)& desc);
     void initD3DDepthStencilDesc(const DepthStencilState* pState, D3Dx(DEPTH_STENCIL_DESC)& desc);
     void initD3DVertexLayout(const VertexLayout* pLayout, InputElementDescVec& elemDesc);
+    void initD3DSamplerDesc(const Sampler* pSampler, D3Dx(SAMPLER_DESC)& desc);
+
+#ifdef FALCOR_D3D12
+    void initD3DSamplerDesc(const Sampler* pSampler, RootSignature::BorderColor borderColor, D3D12_STATIC_SAMPLER_DESC& desc);
+#endif
 
     inline D3D_PRIMITIVE_TOPOLOGY getD3DPrimitiveTopology(RenderContext::Topology topology)
     {

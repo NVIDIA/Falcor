@@ -31,7 +31,7 @@
 #include "../ProgramReflection.h"
 #include "../ProgramVersion.h"
 #include "Utils/StringUtils.h"
-
+#error Shader usage flags
 namespace Falcor
 {
     static GLenum getVariableEnum(GLenum bufferType)

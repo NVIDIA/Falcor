@@ -91,16 +91,10 @@ namespace Falcor
         All = Color | Depth | Stencil ///< Operate on all targets
     };
 
-    inline FboAttachmentType operator& (FboAttachmentType a, FboAttachmentType b)
-    {
-        return static_cast<FboAttachmentType>(static_cast<int>(a)& static_cast<int>(b));
-    }
+#define gen_bitwise_for_enum_class(e_) inline e_ operator& (e_ a, e_ b){return static_cast<e_>(static_cast<int>(a)& static_cast<int>(b));}  \
+    inline e_ operator| (e_ a, e_ b){return static_cast<e_>(static_cast<int>(a)| static_cast<int>(b));}
 
-
-    inline FboAttachmentType operator| (FboAttachmentType a, FboAttachmentType b)
-    {
-        return static_cast<FboAttachmentType>(static_cast<int>(a)| static_cast<int>(b));
-    }
+    gen_bitwise_for_enum_class(FboAttachmentType);
 
     template<typename T>
     inline T min(T a, T b)
@@ -112,6 +106,13 @@ namespace Falcor
     inline T max(T a, T b)
     {
         return (a > b) ? a : b;
+    }
+
+    template<typename T>
+    inline bool isPowerOf2(T a)
+    {
+        uint64_t t = (uint64_t)a;
+        return (t & (t - 1)) == 0;
     }
     /*! @} */
 }
