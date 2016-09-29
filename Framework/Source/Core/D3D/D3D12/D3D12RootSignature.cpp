@@ -29,6 +29,7 @@
 #include "Framework.h"
 #include "Core/RootSignature.h"
 #include "Core/D3D/D3DState.h"
+#include "Core/Device.h"
 
 namespace Falcor
 {
@@ -74,12 +75,133 @@ namespace Falcor
         desc.ShaderVisibility = getShaderVisibility(falcorDesc.visibility);
     }
 
+    void convertRootConstant(const RootSignature::ConstantDesc& falcorDesc, D3D12_ROOT_PARAMETER& desc)
+    {
+        desc.ParameterType = D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS;
+        desc.Constants.Num32BitValues = falcorDesc.dwordCount;
+        desc.Constants.RegisterSpace = falcorDesc.regSpace;
+        desc.Constants.ShaderRegister = falcorDesc.regIndex;
+        desc.ShaderVisibility = getShaderVisibility(falcorDesc.visibility);
+    }
+
+    void convertRootDescriptor(const RootSignature::DescriptorDesc& falcorDesc, D3D12_ROOT_PARAMETER& desc)
+    {
+        switch (falcorDesc.type)
+        {
+        case RootSignature::DescType::CBV:
+            desc.ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
+            break;
+        case RootSignature::DescType::SRV:
+            desc.ParameterType = D3D12_ROOT_PARAMETER_TYPE_SRV;
+            break;
+        case RootSignature::DescType::UAV:
+            desc.ParameterType = D3D12_ROOT_PARAMETER_TYPE_UAV;
+            break;
+        default:
+            should_not_get_here();
+            return;
+        }
+
+        desc.Descriptor.RegisterSpace = falcorDesc.regSpace;
+        desc.Descriptor.ShaderRegister = falcorDesc.regIndex;
+        desc.ShaderVisibility = getShaderVisibility(falcorDesc.visibility);
+    }
+
+    D3D12_DESCRIPTOR_RANGE_TYPE getDescRangeType(RootSignature::DescType type)
+    {
+        switch (type)
+        {
+        case RootSignature::DescType::SRV:
+            return D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
+        case RootSignature::DescType::UAV:
+            return D3D12_DESCRIPTOR_RANGE_TYPE_UAV;
+        case RootSignature::DescType::CBV:
+            return D3D12_DESCRIPTOR_RANGE_TYPE_CBV;
+        case RootSignature::DescType::Sampler:
+            return D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER;
+        default:
+            should_not_get_here();
+            return (D3D12_DESCRIPTOR_RANGE_TYPE)-1;
+        }
+    }
+
+    void convertDescTable(const RootSignature::DescriptorTable& falcorTable, D3D12_ROOT_PARAMETER& desc, std::vector<D3D12_DESCRIPTOR_RANGE>& d3dRange)
+    {
+        desc.ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
+        desc.ShaderVisibility = getShaderVisibility(falcorTable.getVisibility());
+        d3dRange.resize(falcorTable.getRangeCount());
+        desc.DescriptorTable.NumDescriptorRanges = (uint32_t)falcorTable.getRangeCount();
+        desc.DescriptorTable.pDescriptorRanges = d3dRange.data();
+
+        for (size_t i = 0; i < falcorTable.getRangeCount(); i++)
+        {
+            const auto& falcorRange = falcorTable.getRange(i);
+            d3dRange[i].BaseShaderRegister = falcorRange.firstRegIndex;
+            d3dRange[i].NumDescriptors = falcorRange.descCount;
+            d3dRange[i].OffsetInDescriptorsFromTableStart = falcorRange.offsetFromTableStart;
+            d3dRange[i].RangeType = getDescRangeType(falcorRange.type);
+            d3dRange[i].RegisterSpace = falcorRange.regSpace;
+        }
+    }
+
     bool RootSignature::apiInit()
     {
         StaticSamplerVec samplerVec(mDesc.mSamplers.size());
         for (size_t i = 0 ; i < samplerVec.size() ; i++)
         {
             convertSamplerDesc(mDesc.mSamplers[i], samplerVec[i]);
+        }
+        size_t rootParamsCount = mDesc.mConstants.size() + mDesc.mDescriptorTables.size() + mDesc.mRootDescriptors.size();
+        RootParameterVec rootParams(rootParamsCount);
+        auto& paramIt = rootParams.begin();
+
+        // Constants
+        for (const auto& constIt : mDesc.mConstants)
+        {
+            convertRootConstant(constIt, *paramIt);
+            paramIt++;
+        }
+
+        // Root descriptors
+        for (const auto& descIt : mDesc.mRootDescriptors)
+        {
+            convertRootDescriptor(descIt, *paramIt);
+            paramIt++;
+
+        }
+
+        // Descriptor tables. Need to allocate some space for the D3D12 tables
+        std::vector<std::vector<D3D12_DESCRIPTOR_RANGE>> d3dRanges(mDesc.mDescriptorTables.size());
+        for (size_t i = 0 ; i < mDesc.mDescriptorTables.size() ; i++)
+        {
+            convertDescTable(mDesc.mDescriptorTables[i], *paramIt, d3dRanges[i]);
+            paramIt++;
+        }
+
+        // Create the root signature
+        D3D12_ROOT_SIGNATURE_DESC desc;
+        desc.Flags = D3D12_ROOT_SIGNATURE_FLAG_NONE;
+        desc.pParameters = rootParams.data();
+        desc.NumParameters = (uint32_t)rootParams.size();
+        desc.pStaticSamplers = samplerVec.data();
+        desc.NumStaticSamplers = (uint32_t)samplerVec.size();
+
+        ID3DBlobPtr pSigBlob;
+        ID3DBlobPtr pErrorBlob;
+        HRESULT hr = D3D12SerializeRootSignature(&desc, D3D_ROOT_SIGNATURE_VERSION_1_0, &pSigBlob, &pErrorBlob);
+        if (FAILED(hr))
+        {
+            std::string msg;
+            convertBlobToString(pErrorBlob, msg);
+            logError(msg);
+            return false;
+        }
+
+        Device::ApiHandle pDevice = gpDevice->getApiHandle();
+        hr = pDevice->CreateRootSignature(0, pSigBlob->GetBufferPointer(), pSigBlob->GetBufferSize(), IID_PPV_ARGS(&mApiHandle));
+        if (FAILED(hr))
+        {
+            return false;
         }
         return true;
     }

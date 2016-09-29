@@ -31,33 +31,36 @@
 
 namespace Falcor
 {
-    RootSignature::Desc& RootSignature::Desc::addSampler(uint32_t regIndex, Sampler::SharedConstPtr pSampler, ShaderVisibility shaderMask, BorderColor borderColor, uint32_t regSpace)
+    RootSignature::Desc& RootSignature::Desc::addSampler(uint32_t regIndex, Sampler::SharedConstPtr pSampler, ShaderVisibility visiblityMask, BorderColor borderColor, uint32_t regSpace)
     {
         SamplerDesc sd;
         sd.pSampler = pSampler;
         sd.regIndex = regIndex;
         sd.regSpace = regSpace;
-        sd.visibility = shaderMask;
+        sd.visibility = visiblityMask;
         sd.borderColor = borderColor;
         mSamplers.push_back(sd);
         return *this;
     }
 
-    RootSignature::Desc& RootSignature::Desc::addConstant(uint32_t regIndex, uint32_t dwordCount, uint32_t regSpace)
+    RootSignature::Desc& RootSignature::Desc::addConstant(uint32_t regIndex, uint32_t dwordCount, ShaderVisibility visiblityMask, uint32_t regSpace)
     {
         ConstantDesc cd;
         cd.dwordCount = dwordCount;
         cd.regIndex = regIndex;
         cd.regSpace = regSpace;
+        cd.visibility = visiblityMask;
         mConstants.push_back(cd);
         return *this;
     }
 
-    RootSignature::Desc& RootSignature::Desc::addDescriptor(uint32_t regIndex, uint32_t regSpace)
+    RootSignature::Desc& RootSignature::Desc::addDescriptor(uint32_t regIndex, DescType type, ShaderVisibility visiblityMask, uint32_t regSpace)
     {
-        RegisterDesc rd;
+        DescriptorDesc rd;
         rd.regIndex = regIndex;
         rd.regSpace = regSpace;
+        rd.visibility = visiblityMask;
+        rd.type = type;
         mRootDescriptors.push_back(rd);
         return *this;
     }

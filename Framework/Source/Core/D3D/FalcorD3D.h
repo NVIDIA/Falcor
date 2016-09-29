@@ -98,4 +98,12 @@ namespace Falcor
     MAKE_SMART_COM_PTR(IDXGIFactory4);
     MAKE_SMART_COM_PTR(ID3DBlob);
     /*! @} */
+
+    inline void convertBlobToString(ID3DBlob* pBlob, std::string& str)
+    {
+        std::vector<char> infoLog(pBlob->GetBufferSize() + 1);
+        memcpy(infoLog.data(), pBlob->GetBufferPointer(), pBlob->GetBufferSize());
+        infoLog[pBlob->GetBufferSize()] = 0;
+        str = std::string(infoLog.data());
+    }
 }

@@ -53,10 +53,7 @@ namespace Falcor
         HRESULT hr = D3DCompile(source.c_str(), source.size(), nullptr, nullptr, nullptr, kEntryPoint, target.c_str(), flags, 0, &pCode, &pErrors);
         if(FAILED(hr))
         {
-            std::vector<char> infoLog(pErrors->GetBufferSize() + 1);
-            memcpy(infoLog.data(), pErrors->GetBufferPointer(), pErrors->GetBufferSize());
-            infoLog[pErrors->GetBufferSize()] = 0;
-            errorLog = std::string(infoLog.data());
+            convertBlobToString(pErrors, errorLog);
             return nullptr;
         }
 
