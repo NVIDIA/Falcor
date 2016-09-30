@@ -71,10 +71,10 @@ namespace Falcor
         if(sPerMaterialCB == nullptr)
         {
             auto pReflector = pProgram->getActiveVersion()->getReflector();
-            sPerMaterialCB = UniformBuffer::create(pReflector->getBufferDesc(kPerMaterialCbName, ProgramReflection::BufferReflection::Type::Uniform));
-            sPerFrameCB = UniformBuffer::create(pReflector->getBufferDesc(kPerFrameCbName, ProgramReflection::BufferReflection::Type::Uniform));
-            sPerStaticMeshCB = UniformBuffer::create(pReflector->getBufferDesc(kPerStaticMeshCbName, ProgramReflection::BufferReflection::Type::Uniform));
-            sPerSkinnedMeshCB = UniformBuffer::create(pReflector->getBufferDesc(kPerSkinnedMeshCbName, ProgramReflection::BufferReflection::Type::Uniform));
+            sPerMaterialCB = UniformBuffer::create(pReflector->getBufferDesc(kPerMaterialCbName, ProgramReflection::BufferReflection::Type::Constant));
+            sPerFrameCB = UniformBuffer::create(pReflector->getBufferDesc(kPerFrameCbName, ProgramReflection::BufferReflection::Type::Constant));
+            sPerStaticMeshCB = UniformBuffer::create(pReflector->getBufferDesc(kPerStaticMeshCbName, ProgramReflection::BufferReflection::Type::Constant));
+            sPerSkinnedMeshCB = UniformBuffer::create(pReflector->getBufferDesc(kPerSkinnedMeshCbName, ProgramReflection::BufferReflection::Type::Constant));
 
             sBonesOffset = sPerSkinnedMeshCB->getVariableOffset("gBones");
             sWorldMatOffset = sPerStaticMeshCB->getVariableOffset("gWorldMat");

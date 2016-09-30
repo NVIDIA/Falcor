@@ -62,7 +62,7 @@ namespace Falcor
             desc.InputLayout.pInputElementDescs = inputElements.data();
         }
         desc.SampleMask = mDesc.mSampleMask;
-
+        desc.pRootSignature = mDesc.mpRootSignature ? mDesc.mpRootSignature->getApiHandle() : nullptr;
         for (uint32_t rt = 0; rt < Fbo::getMaxColorTargetCount(); rt++)
         {
             desc.RTVFormats[rt] = getDxgiFormat(mDesc.mFboDesc.getColorFormat(rt));

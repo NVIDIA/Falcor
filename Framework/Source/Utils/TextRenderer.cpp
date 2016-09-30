@@ -96,13 +96,14 @@ namespace Falcor
             BlendState::BlendFunc::One);
 
         mpStateCache->setBlendState(BlendState::create(blendDesc));
+        mpStateCache->setPrimitiveType(RenderState::PrimitiveType::Triangle);
         mpFont = Font::create();
 
         // Uniform buffer
         mpPerFrameCB = UniformBuffer::create(pProgram, "PerFrameCB");
         mUniformOffsets.vpTransform = mpPerFrameCB->getVariableOffset("gvpTransform");
         mUniformOffsets.fontColor = mpPerFrameCB->getVariableOffset("gFontColor");
-        mUniformOffsets.fontTex = pProgram->getActiveVersion()->getReflector()->getResourceDesc("gFontTex")->location;
+        mUniformOffsets.fontTex = pProgram->getActiveVersion()->getReflector()->getResourceDesc("gFontTex")->regIndex;
     }
 
     TextRenderer::~TextRenderer() = default;

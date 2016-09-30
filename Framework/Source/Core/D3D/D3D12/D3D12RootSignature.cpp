@@ -39,7 +39,7 @@ namespace Falcor
     D3D12_SHADER_VISIBILITY getShaderVisibility(ShaderVisibility visibility)
     {
         // D3D12 doesn't support a combination of flags, it's either ALL or a single stage
-        if (isPowerOf2(visibility))
+        if (isPowerOf2(visibility) == false)
         {
             return D3D12_SHADER_VISIBILITY_ALL;
         }
@@ -138,7 +138,7 @@ namespace Falcor
             const auto& falcorRange = falcorTable.getRange(i);
             d3dRange[i].BaseShaderRegister = falcorRange.firstRegIndex;
             d3dRange[i].NumDescriptors = falcorRange.descCount;
-            d3dRange[i].OffsetInDescriptorsFromTableStart = falcorRange.offsetFromTableStart;
+            d3dRange[i].OffsetInDescriptorsFromTableStart = (falcorRange.offsetFromTableStart == RootSignature::DescriptorTable::kAppendOffset) ? D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND : falcorRange.offsetFromTableStart;
             d3dRange[i].RangeType = getDescRangeType(falcorRange.type);
             d3dRange[i].RegisterSpace = falcorRange.regSpace;
         }
@@ -180,7 +180,7 @@ namespace Falcor
 
         // Create the root signature
         D3D12_ROOT_SIGNATURE_DESC desc;
-        desc.Flags = D3D12_ROOT_SIGNATURE_FLAG_NONE;
+        desc.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
         desc.pParameters = rootParams.data();
         desc.NumParameters = (uint32_t)rootParams.size();
         desc.pStaticSamplers = samplerVec.data();

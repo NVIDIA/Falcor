@@ -49,7 +49,7 @@ namespace Falcor
     UniformBuffer::SharedPtr UniformBuffer::create(Program::SharedPtr& pProgram, const std::string& name, size_t overrideSize)
     {
         auto& pProgReflector = pProgram->getActiveVersion()->getReflector();
-        auto& pBufferReflector = pProgReflector->getBufferDesc(name, ProgramReflection::BufferReflection::Type::Uniform);
+        auto& pBufferReflector = pProgReflector->getBufferDesc(name, ProgramReflection::BufferReflection::Type::Constant);
         if(pBufferReflector)
         {
             return create(pBufferReflector, overrideSize);
@@ -403,7 +403,7 @@ namespace Falcor
 
         bool dimsMatch = false;
         bool formatMatch = false;
-        bool imageMatch = bindAsImage ? (pResourceDesc->type == ProgramReflection::Resource::ResourceType::Image) : (pResourceDesc->type == ProgramReflection::Resource::ResourceType::Texture);
+        bool imageMatch = bindAsImage ? (pResourceDesc->type == ProgramReflection::Resource::ResourceType::UAV) : (pResourceDesc->type == ProgramReflection::Resource::ResourceType::Texture);
 
         Texture::Type texDim = pTexture->getType();
         bool isArray = pTexture->getArraySize() > 1;

@@ -49,8 +49,8 @@ namespace Falcor
         mpReflection = pProgramVer->getReflector();
 
         // Initialize the UBO and SSBO maps. We always do it, to mark which slots are used in the shader.
-        initializeBuffersMap<UniformBuffer>(mUniformBuffers, createBuffers, mpReflection->getBufferMap(ProgramReflection::BufferReflection::Type::Uniform));
-        initializeBuffersMap<ShaderStorageBuffer>(mSSBO, createBuffers, mpReflection->getBufferMap(ProgramReflection::BufferReflection::Type::ShaderStorage));
+        initializeBuffersMap<UniformBuffer>(mUniformBuffers, createBuffers, mpReflection->getBufferMap(ProgramReflection::BufferReflection::Type::Constant));
+        initializeBuffersMap<ShaderStorageBuffer>(mSSBO, createBuffers, mpReflection->getBufferMap(ProgramReflection::BufferReflection::Type::UnorderedAccess));
     }
 
     ProgramVars::SharedPtr ProgramVars::create(const ProgramVersion* pProgramVer, bool createBuffers)
@@ -94,7 +94,7 @@ namespace Falcor
 
     UniformBuffer::SharedPtr ProgramVars::getUniformBuffer(const std::string& name) const
     {
-        return getBufferCommon<UniformBuffer, ProgramReflection::BufferReflection::Type::Uniform>(name, mpReflection.get(), mUniformBuffers);
+        return getBufferCommon<UniformBuffer, ProgramReflection::BufferReflection::Type::Constant>(name, mpReflection.get(), mUniformBuffers);
     }
 
     UniformBuffer::SharedPtr ProgramVars::getUniformBuffer(uint32_t index) const
@@ -104,7 +104,7 @@ namespace Falcor
 
     ShaderStorageBuffer::SharedPtr ProgramVars::getShaderStorageBuffer(const std::string& name) const
     {
-        return getBufferCommon<ShaderStorageBuffer, ProgramReflection::BufferReflection::Type::ShaderStorage>(name, mpReflection.get(), mSSBO);
+        return getBufferCommon<ShaderStorageBuffer, ProgramReflection::BufferReflection::Type::UnorderedAccess>(name, mpReflection.get(), mSSBO);
     }
 
     ShaderStorageBuffer::SharedPtr ProgramVars::getShaderStorageBuffer(uint32_t index) const
@@ -122,7 +122,7 @@ namespace Falcor
         }
 
         // Just need to make sure the buffer is large enough
-        const auto& desc = mpReflection->getBufferDesc(index, ProgramReflection::BufferReflection::Type::Uniform);
+        const auto& desc = mpReflection->getBufferDesc(index, ProgramReflection::BufferReflection::Type::Constant);
         if(desc->getRequiredSize() > pUbo->getBuffer()->getSize())
         {
             Logger::log(Logger::Level::Error, "Can't bind uniform-buffer. Size mismatch.");

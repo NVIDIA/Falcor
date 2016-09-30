@@ -142,7 +142,6 @@ namespace Falcor
         /** Get the program reflection interface
         */
         ProgramReflection::SharedConstPtr getReflection() const { return mpReflection; }
-
     private:
         ProgramVars(const ProgramVersion* pProgramVer, bool createBuffers);
         ProgramReflection::SharedConstPtr mpReflection;

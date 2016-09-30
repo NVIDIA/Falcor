@@ -49,7 +49,7 @@ namespace Falcor
             Desc();
             Desc& setColorFormat(uint32_t rtIndex, ResourceFormat format);
             Desc& setDepthStencilFormat(ResourceFormat format) { mDepthStencilFormat = format; return *this; }
-            Desc& setSampleCount(uint32_t sampleCount) { mSampleCount = sampleCount; return *this; }
+            Desc& setSampleCount(uint32_t sampleCount) { mSampleCount = sampleCount ? sampleCount : 1; return *this; }
 
             uint32_t getColorFormatCount() const { return mRtCount; }
             ResourceFormat getColorFormat(uint32_t rtIndex) const { return mColorFormats[rtIndex]; }
@@ -58,7 +58,7 @@ namespace Falcor
         private:
             std::vector<ResourceFormat> mColorFormats;
             ResourceFormat mDepthStencilFormat;
-            uint32_t mSampleCount = 0;
+            uint32_t mSampleCount = 1;
             uint32_t mRtCount = 0;
         };
 

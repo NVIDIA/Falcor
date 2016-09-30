@@ -30,6 +30,8 @@
 
 namespace Falcor
 {
+    class ProgramReflection;
+
     enum class ShaderVisibility
     {
         None = 0,
@@ -104,14 +106,14 @@ namespace Falcor
                 uint32_t offsetFromTableStart;
             };
 
+            DescriptorTable(ShaderVisibility visibility = ShaderVisibility::All) : mVisibility(visibility) {}
             static uint32_t const kAppendOffset = uint32_t(-1);
             DescriptorTable& addRange(DescType type, uint32_t firstRegIndex, uint32_t descriptorCount, uint32_t regSpace = 0, uint32_t offsetFromTableStart = kAppendOffset);
             size_t getRangeCount() const { return mRanges.size(); }
             const Range& getRange(size_t index) const { return mRanges[index]; }
             ShaderVisibility getVisibility() const { return mVisibility; }
         private:
-            friend class RootSignature::Desc;           
-            DescriptorTable(ShaderVisibility visibility) : mVisibility(visibility) {}
+            friend class RootSignature::Desc;
             std::vector<Range> mRanges;
             ShaderVisibility mVisibility;
         };
@@ -122,7 +124,7 @@ namespace Falcor
             Desc& addConstant(uint32_t regIndex, uint32_t dwordCount, ShaderVisibility visiblityMask, uint32_t regSpace = 0);
             Desc& addSampler(uint32_t regIndex, Sampler::SharedConstPtr pSampler, ShaderVisibility visiblityMask, BorderColor borderColor = BorderColor::OpaqueBlack, uint32_t regSpace = 0);
             Desc& addDescriptor(uint32_t regIndex, DescType type, ShaderVisibility visiblityMask, uint32_t regSpace = 0);
-            DescriptorTable& addDescriptorTable(ShaderVisibility visibility) { mDescriptorTables.push_back(DescriptorTable(visibility)); return mDescriptorTables.back(); }
+            Desc& addDescriptorTable(const DescriptorTable& table) { if (table.getRangeCount()) { mDescriptorTables.push_back(table); } return *this; }
         private:
             friend class RootSignature;
             std::vector<ConstantDesc> mConstants;
@@ -132,6 +134,8 @@ namespace Falcor
         };
 
         static SharedPtr create(const Desc& desc);
+        static SharedPtr createFromReflection(const ProgramReflection* pReflector);
+
         ApiHandle getApiHandle() const { return mApiHandle; }
     private:
         RootSignature(const Desc& desc);

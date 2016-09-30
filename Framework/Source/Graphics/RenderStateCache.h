@@ -51,9 +51,11 @@ namespace Falcor
         RenderStateCache& setDepthStencilState(DepthStencilState::SharedConstPtr pDepthStencilState) { mDesc.setDepthStencilState(pDepthStencilState); return *this; }
         RenderStateCache& setSampleMask(uint32_t sampleMask) { mDesc.setSampleMask(sampleMask); return *this; }
         RenderStateCache& setPrimitiveType(RenderState::PrimitiveType type) { mDesc.setPrimitiveType(type); return *this; }
+        RenderStateCache& setRootSignature(RootSignature::SharedConstPtr pSignature) { mpRootSignature = pSignature; }
 
         RenderState::SharedPtr getRenderState();
 
+        RootSignature::SharedConstPtr getRootSignature() const { return mpRootSignature; }
         Vao::SharedConstPtr getVao() const { return mpVao; }
         Fbo::SharedConstPtr getFbo() const { return mpFbo; }
         Program::SharedConstPtr getProgram() const { return mpProgram; }
@@ -67,7 +69,7 @@ namespace Falcor
         Vao::SharedConstPtr mpVao;
         Fbo::SharedConstPtr mpFbo;
         Program::SharedConstPtr mpProgram;
-
+        RootSignature::SharedConstPtr mpRootSignature;
         RenderState::Desc mDesc;
     };
 }

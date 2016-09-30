@@ -36,7 +36,14 @@ namespace Falcor
         mDesc.setProgramVersion(mpProgram ? mpProgram->getActiveVersion() : nullptr);
         mDesc.setFboFormats(mpFbo ? mpFbo->getDesc() : Fbo::Desc());
         mDesc.setVertexLayout(mpVao ? mpVao->getVertexLayout() : nullptr);
-
+        if (mpRootSignature)
+        {
+            mDesc.setRootSignature(mpRootSignature);
+        }
+        else if(mpProgram)
+        {
+            mDesc.setRootSignature(RootSignature::createFromReflection(mpProgram->getActiveVersion()->getReflector().get()));
+        }
         return RenderState::create(mDesc);
     }
 }

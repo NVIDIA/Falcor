@@ -349,7 +349,7 @@ namespace Falcor
                         d3d_call(pReflection->GetResourceBindingDescByName(d3dBufDesc.Name, &bindDesc));
                         assert(bindDesc.BindCount == 1);
                         assert(d3dBufDesc.Type == D3D_CT_CBUFFER);  // Not sure how to handle texture buffers
-                        BufferReflection::Type bufferType = (d3dBufDesc.Type == D3D_CT_CBUFFER) ? BufferReflection::Type::Uniform : BufferReflection::Type::ShaderStorage;
+                        BufferReflection::Type bufferType = (d3dBufDesc.Type == D3D_CT_CBUFFER) ? BufferReflection::Type::Constant : BufferReflection::Type::UnorderedAccess;
                         ProgramReflection::VariableMap varMap;
                         initializeBufferVariables(pBuffer, d3dBufDesc, varMap);
 
@@ -375,7 +375,7 @@ namespace Falcor
                         {
                             // Create the buffer reflection
                             bufferDesc.nameMap[d3dBufDesc.Name] = bindDesc.BindPoint;
-                            bufferDesc.descMap[bindDesc.BindPoint] = ProgramReflection::BufferReflection::create(d3dBufDesc.Name, BufferReflection::Type::Uniform, d3dBufDesc.Size, d3dBufDesc.Variables, varMap, ProgramReflection::ResourceMap());
+                            bufferDesc.descMap[bindDesc.BindPoint] = ProgramReflection::BufferReflection::create(d3dBufDesc.Name, bindDesc.BindPoint, BufferReflection::Type::Constant, d3dBufDesc.Size, d3dBufDesc.Variables, varMap, ProgramReflection::ResourceMap());
                         }
 
                         // Update the shader mask
@@ -423,7 +423,8 @@ namespace Falcor
         test_field(type);
         test_field(dims);
         test_field(retType);
-        test_field(location);
+        test_field(regIndex);
+        test_field(registerSpace);
         test_field(arraySize);
 #undef test_field
 #undef error_msg
@@ -524,7 +525,7 @@ namespace Falcor
                         falcorDesc.dims = getResourceDimensions(InputDesc.Dimension);
                     }
                     bool isArray = name[name.length() - 1] == ']';
-                    falcorDesc.location = InputDesc.BindPoint;
+                    falcorDesc.regIndex = InputDesc.BindPoint;
                     falcorDesc.arraySize = isArray ? InputDesc.BindCount : 0;
 
                     // If this already exists, definitions should match

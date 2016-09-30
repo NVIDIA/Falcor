@@ -124,16 +124,17 @@ namespace Falcor
             {
                 Unknown,
                 Texture,        // Read-only
-                Image,          // Read-write
+                UAV,          // Read-write
                 Sampler         // Sampler state
             };
 
             ResourceType type = ResourceType::Unknown;      ///< Resource type
             Dimensions dims = Dimensions::Unknown;          ///< Resource dimensions
             ReturnType retType = ReturnType::Unknown;       ///< Resource return type
-            size_t location = -1;                           ///< In case the resource was defined as part of a UBO, the offset inside the UBO, otherwise the resource index in the program
+            uint32_t regIndex = -1;                         ///< In case the resource was defined as part of a UBO, the offset inside the UBO, otherwise the resource index in the program
             uint32_t arraySize = 0;                         ///< Array size , or 0 if not an array
             uint32_t shaderMask = 0;                        ///< A mask indicating in which shader stages the buffer is used
+            uint32_t registerSpace = 0;                     ///< The register space
             Resource(Dimensions d, ReturnType r, ResourceType t) : dims(d), retType(r), type(t) {}
             Resource() {}
         };
@@ -158,8 +159,8 @@ namespace Falcor
             */
             enum class Type
             {
-                Uniform,
-                ShaderStorage,
+                Constant,
+                UnorderedAccess,
 
                 Count
             };
@@ -168,13 +169,14 @@ namespace Falcor
 
             /** Create a new object
                 \param[in] name The name of the buffer as was declared in the program
+                \param[in] registerIndex The register index allocated for the buffer inside the program
                 \param[in] size The size of the buffer
                 \param[in] varCount The number of variables in the buffer
                 \param[in] varMap Map describing each variable in the buffer, excluding resources
                 \param[in] resourceMap Map describing the resources defined as part of the buffer. This map is only valid for APIs that support resource declarations nested inside buffers
                 \return A shared pointer for a new buffer object
             */
-            static SharedPtr create(const std::string& name, Type type, size_t size, size_t varCount, const VariableMap& varMap, const ResourceMap& resourceMap);
+            static SharedPtr create(const std::string& name, uint32_t registerIndex, Type type, size_t size, size_t varCount, const VariableMap& varMap, const ResourceMap& resourceMap);
 
             /** Get variable data
                 \param[in] name The name of the requested variable
@@ -236,8 +238,16 @@ namespace Falcor
             /** get a mask indicating in which shader stages the buffer is used
             */
             uint32_t getShaderMask() const { return mShaderMask; }
+
+            /** Get the register index
+            */
+            uint32_t getRegisterIndex() const { return mRegIndex; }
+
+            /** Get the register space
+            */
+            uint32_t getRegisterSpace() const { return mRegSpace; }
         private:
-            BufferReflection(const std::string& name, Type type, size_t size, size_t varCount, const VariableMap& varMap, const ResourceMap& resourceMap);
+            BufferReflection(const std::string& name, uint32_t registerIndex, Type type, size_t size, size_t varCount, const VariableMap& varMap, const ResourceMap& resourceMap);
             std::string mName;
             size_t mSizeInBytes = 0;
             size_t mVariableCount = 0;
@@ -245,6 +255,8 @@ namespace Falcor
             ResourceMap mResources;
             VariableMap mVariables;
             uint32_t mShaderMask = 0;
+            uint32_t mRegIndex;
+            uint32_t mRegSpace = 0;
         };
 
         /** Create a new object
@@ -293,6 +305,10 @@ namespace Falcor
         */
         const Resource* getResourceDesc(const std::string& name) const;
 
+        /** Get the resources map
+        */
+
+        const ResourceMap& getResourceMap() const { return mResources; }
         /** Helper struct that holds buffer-data
         */
         struct BufferData
@@ -361,7 +377,7 @@ namespace Falcor
         {
             type_2_string(Unknown);
             type_2_string(Texture);
-            type_2_string(Image);
+            type_2_string(UAV);
         default:
             should_not_get_here();
             return "";
@@ -413,8 +429,8 @@ namespace Falcor
 #define type_2_string(a) case ProgramReflection::BufferReflection::Type::a: return #a;
         switch(type)
         {
-            type_2_string(Uniform);
-            type_2_string(ShaderStorage);
+            type_2_string(Constant);
+            type_2_string(UnorderedAccess);
         default:
             should_not_get_here();
             return "";

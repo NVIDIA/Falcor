@@ -188,39 +188,39 @@ namespace Falcor
         {GL_INT_SAMPLER_2D_RECT,                    {ProgramReflection::Resource::Dimensions::Texture2D,              ProgramReflection::Resource::ReturnType::Int,   ProgramReflection::Resource::ResourceType::Texture}},
         {GL_UNSIGNED_INT_SAMPLER_2D_RECT,           {ProgramReflection::Resource::Dimensions::Texture2D,              ProgramReflection::Resource::ReturnType::Uint,  ProgramReflection::Resource::ResourceType::Texture}},
             
-        {GL_IMAGE_1D,                               {ProgramReflection::Resource::Dimensions::Texture1D,              ProgramReflection::Resource::ReturnType::Float, ProgramReflection::Resource::ResourceType::Image}},
-        {GL_INT_IMAGE_1D,                           {ProgramReflection::Resource::Dimensions::Texture1D,              ProgramReflection::Resource::ReturnType::Int,   ProgramReflection::Resource::ResourceType::Image}},
-        {GL_UNSIGNED_INT_IMAGE_1D,                  {ProgramReflection::Resource::Dimensions::Texture1D,              ProgramReflection::Resource::ReturnType::Uint,  ProgramReflection::Resource::ResourceType::Image}},
-        {GL_IMAGE_2D,                               {ProgramReflection::Resource::Dimensions::Texture2D,              ProgramReflection::Resource::ReturnType::Float, ProgramReflection::Resource::ResourceType::Image}},
-        {GL_INT_IMAGE_2D,                           {ProgramReflection::Resource::Dimensions::Texture2D,              ProgramReflection::Resource::ReturnType::Int,   ProgramReflection::Resource::ResourceType::Image}},
-        {GL_UNSIGNED_INT_IMAGE_2D,                  {ProgramReflection::Resource::Dimensions::Texture2D,              ProgramReflection::Resource::ReturnType::Uint,  ProgramReflection::Resource::ResourceType::Image}},
-        {GL_IMAGE_3D,                               {ProgramReflection::Resource::Dimensions::Texture3D,              ProgramReflection::Resource::ReturnType::Float, ProgramReflection::Resource::ResourceType::Image}},
-        {GL_INT_IMAGE_3D,                           {ProgramReflection::Resource::Dimensions::Texture3D,              ProgramReflection::Resource::ReturnType::Int,   ProgramReflection::Resource::ResourceType::Image}},
-        {GL_UNSIGNED_INT_IMAGE_3D,                  {ProgramReflection::Resource::Dimensions::Texture3D,              ProgramReflection::Resource::ReturnType::Uint,  ProgramReflection::Resource::ResourceType::Image}},
-        {GL_IMAGE_2D_RECT,                          {ProgramReflection::Resource::Dimensions::Texture2D,              ProgramReflection::Resource::ReturnType::Float, ProgramReflection::Resource::ResourceType::Image}},
-        {GL_INT_IMAGE_2D_RECT,                      {ProgramReflection::Resource::Dimensions::Texture2D,              ProgramReflection::Resource::ReturnType::Int,   ProgramReflection::Resource::ResourceType::Image}},
-        {GL_UNSIGNED_INT_IMAGE_2D_RECT,             {ProgramReflection::Resource::Dimensions::Texture2D,              ProgramReflection::Resource::ReturnType::Uint,  ProgramReflection::Resource::ResourceType::Image}},
-        {GL_IMAGE_CUBE,                             {ProgramReflection::Resource::Dimensions::TextureCube,            ProgramReflection::Resource::ReturnType::Float, ProgramReflection::Resource::ResourceType::Image}},
-        {GL_INT_IMAGE_CUBE,                         {ProgramReflection::Resource::Dimensions::TextureCube,            ProgramReflection::Resource::ReturnType::Int,   ProgramReflection::Resource::ResourceType::Image}},
-        {GL_UNSIGNED_INT_IMAGE_CUBE,                {ProgramReflection::Resource::Dimensions::TextureCube,            ProgramReflection::Resource::ReturnType::Uint,  ProgramReflection::Resource::ResourceType::Image}},
-        {GL_IMAGE_BUFFER,                           {ProgramReflection::Resource::Dimensions::TextureBuffer,          ProgramReflection::Resource::ReturnType::Float, ProgramReflection::Resource::ResourceType::Image}},
-        {GL_INT_IMAGE_BUFFER,                       {ProgramReflection::Resource::Dimensions::TextureBuffer,          ProgramReflection::Resource::ReturnType::Int,   ProgramReflection::Resource::ResourceType::Image}},
-        {GL_UNSIGNED_INT_IMAGE_BUFFER,              {ProgramReflection::Resource::Dimensions::TextureBuffer,          ProgramReflection::Resource::ReturnType::Uint,  ProgramReflection::Resource::ResourceType::Image}},
-        {GL_IMAGE_1D_ARRAY,                         {ProgramReflection::Resource::Dimensions::Texture1DArray,         ProgramReflection::Resource::ReturnType::Float, ProgramReflection::Resource::ResourceType::Image}},
-        {GL_INT_IMAGE_1D_ARRAY,                     {ProgramReflection::Resource::Dimensions::Texture1DArray,         ProgramReflection::Resource::ReturnType::Int,   ProgramReflection::Resource::ResourceType::Image}},
-        {GL_UNSIGNED_INT_IMAGE_1D_ARRAY,            {ProgramReflection::Resource::Dimensions::Texture1DArray,         ProgramReflection::Resource::ReturnType::Uint,  ProgramReflection::Resource::ResourceType::Image}},
-        {GL_IMAGE_2D_ARRAY,                         {ProgramReflection::Resource::Dimensions::Texture2DArray,         ProgramReflection::Resource::ReturnType::Float, ProgramReflection::Resource::ResourceType::Image}},
-        {GL_INT_IMAGE_2D_ARRAY,                     {ProgramReflection::Resource::Dimensions::Texture2DArray,         ProgramReflection::Resource::ReturnType::Int,   ProgramReflection::Resource::ResourceType::Image}},
-        {GL_UNSIGNED_INT_IMAGE_2D_ARRAY,            {ProgramReflection::Resource::Dimensions::Texture2DArray,         ProgramReflection::Resource::ReturnType::Uint,  ProgramReflection::Resource::ResourceType::Image}},
-        {GL_IMAGE_2D_MULTISAMPLE,                   {ProgramReflection::Resource::Dimensions::Texture2DMS,            ProgramReflection::Resource::ReturnType::Float, ProgramReflection::Resource::ResourceType::Image}},
-        {GL_INT_IMAGE_2D_MULTISAMPLE,               {ProgramReflection::Resource::Dimensions::Texture2DMS,            ProgramReflection::Resource::ReturnType::Int,   ProgramReflection::Resource::ResourceType::Image}},
-        {GL_UNSIGNED_INT_IMAGE_2D_MULTISAMPLE,      {ProgramReflection::Resource::Dimensions::Texture2DMS,            ProgramReflection::Resource::ReturnType::Uint,  ProgramReflection::Resource::ResourceType::Image}},
-        {GL_IMAGE_2D_MULTISAMPLE_ARRAY,             {ProgramReflection::Resource::Dimensions::Texture2DMSArray,       ProgramReflection::Resource::ReturnType::Float, ProgramReflection::Resource::ResourceType::Image}},
-        {GL_INT_IMAGE_2D_MULTISAMPLE_ARRAY,         {ProgramReflection::Resource::Dimensions::Texture2DMSArray,       ProgramReflection::Resource::ReturnType::Int,   ProgramReflection::Resource::ResourceType::Image}},
-        {GL_UNSIGNED_INT_IMAGE_2D_MULTISAMPLE_ARRAY, {ProgramReflection::Resource::Dimensions::Texture2DMSArray,      ProgramReflection::Resource::ReturnType::Uint,  ProgramReflection::Resource::ResourceType::Image}},
-        {GL_IMAGE_CUBE_MAP_ARRAY,                   {ProgramReflection::Resource::Dimensions::TextureCubeArray,       ProgramReflection::Resource::ReturnType::Float, ProgramReflection::Resource::ResourceType::Image}},
-        {GL_INT_IMAGE_CUBE_MAP_ARRAY,               {ProgramReflection::Resource::Dimensions::TextureCubeArray,       ProgramReflection::Resource::ReturnType::Int,   ProgramReflection::Resource::ResourceType::Image}},
-        {GL_UNSIGNED_INT_IMAGE_CUBE_MAP_ARRAY,      {ProgramReflection::Resource::Dimensions::TextureCubeArray,       ProgramReflection::Resource::ReturnType::Uint,  ProgramReflection::Resource::ResourceType::Image}},
+        {GL_IMAGE_1D,                               {ProgramReflection::Resource::Dimensions::Texture1D,              ProgramReflection::Resource::ReturnType::Float, ProgramReflection::Resource::ResourceType::UAV}},
+        {GL_INT_IMAGE_1D,                           {ProgramReflection::Resource::Dimensions::Texture1D,              ProgramReflection::Resource::ReturnType::Int,   ProgramReflection::Resource::ResourceType::UAV}},
+        {GL_UNSIGNED_INT_IMAGE_1D,                  {ProgramReflection::Resource::Dimensions::Texture1D,              ProgramReflection::Resource::ReturnType::Uint,  ProgramReflection::Resource::ResourceType::UAV}},
+        {GL_IMAGE_2D,                               {ProgramReflection::Resource::Dimensions::Texture2D,              ProgramReflection::Resource::ReturnType::Float, ProgramReflection::Resource::ResourceType::UAV}},
+        {GL_INT_IMAGE_2D,                           {ProgramReflection::Resource::Dimensions::Texture2D,              ProgramReflection::Resource::ReturnType::Int,   ProgramReflection::Resource::ResourceType::UAV}},
+        {GL_UNSIGNED_INT_IMAGE_2D,                  {ProgramReflection::Resource::Dimensions::Texture2D,              ProgramReflection::Resource::ReturnType::Uint,  ProgramReflection::Resource::ResourceType::UAV}},
+        {GL_IMAGE_3D,                               {ProgramReflection::Resource::Dimensions::Texture3D,              ProgramReflection::Resource::ReturnType::Float, ProgramReflection::Resource::ResourceType::UAV}},
+        {GL_INT_IMAGE_3D,                           {ProgramReflection::Resource::Dimensions::Texture3D,              ProgramReflection::Resource::ReturnType::Int,   ProgramReflection::Resource::ResourceType::UAV}},
+        {GL_UNSIGNED_INT_IMAGE_3D,                  {ProgramReflection::Resource::Dimensions::Texture3D,              ProgramReflection::Resource::ReturnType::Uint,  ProgramReflection::Resource::ResourceType::UAV}},
+        {GL_IMAGE_2D_RECT,                          {ProgramReflection::Resource::Dimensions::Texture2D,              ProgramReflection::Resource::ReturnType::Float, ProgramReflection::Resource::ResourceType::UAV}},
+        {GL_INT_IMAGE_2D_RECT,                      {ProgramReflection::Resource::Dimensions::Texture2D,              ProgramReflection::Resource::ReturnType::Int,   ProgramReflection::Resource::ResourceType::UAV}},
+        {GL_UNSIGNED_INT_IMAGE_2D_RECT,             {ProgramReflection::Resource::Dimensions::Texture2D,              ProgramReflection::Resource::ReturnType::Uint,  ProgramReflection::Resource::ResourceType::UAV}},
+        {GL_IMAGE_CUBE,                             {ProgramReflection::Resource::Dimensions::TextureCube,            ProgramReflection::Resource::ReturnType::Float, ProgramReflection::Resource::ResourceType::UAV}},
+        {GL_INT_IMAGE_CUBE,                         {ProgramReflection::Resource::Dimensions::TextureCube,            ProgramReflection::Resource::ReturnType::Int,   ProgramReflection::Resource::ResourceType::UAV}},
+        {GL_UNSIGNED_INT_IMAGE_CUBE,                {ProgramReflection::Resource::Dimensions::TextureCube,            ProgramReflection::Resource::ReturnType::Uint,  ProgramReflection::Resource::ResourceType::UAV}},
+        {GL_IMAGE_BUFFER,                           {ProgramReflection::Resource::Dimensions::TextureBuffer,          ProgramReflection::Resource::ReturnType::Float, ProgramReflection::Resource::ResourceType::UAV}},
+        {GL_INT_IMAGE_BUFFER,                       {ProgramReflection::Resource::Dimensions::TextureBuffer,          ProgramReflection::Resource::ReturnType::Int,   ProgramReflection::Resource::ResourceType::UAV}},
+        {GL_UNSIGNED_INT_IMAGE_BUFFER,              {ProgramReflection::Resource::Dimensions::TextureBuffer,          ProgramReflection::Resource::ReturnType::Uint,  ProgramReflection::Resource::ResourceType::UAV}},
+        {GL_IMAGE_1D_ARRAY,                         {ProgramReflection::Resource::Dimensions::Texture1DArray,         ProgramReflection::Resource::ReturnType::Float, ProgramReflection::Resource::ResourceType::UAV}},
+        {GL_INT_IMAGE_1D_ARRAY,                     {ProgramReflection::Resource::Dimensions::Texture1DArray,         ProgramReflection::Resource::ReturnType::Int,   ProgramReflection::Resource::ResourceType::UAV}},
+        {GL_UNSIGNED_INT_IMAGE_1D_ARRAY,            {ProgramReflection::Resource::Dimensions::Texture1DArray,         ProgramReflection::Resource::ReturnType::Uint,  ProgramReflection::Resource::ResourceType::UAV}},
+        {GL_IMAGE_2D_ARRAY,                         {ProgramReflection::Resource::Dimensions::Texture2DArray,         ProgramReflection::Resource::ReturnType::Float, ProgramReflection::Resource::ResourceType::UAV}},
+        {GL_INT_IMAGE_2D_ARRAY,                     {ProgramReflection::Resource::Dimensions::Texture2DArray,         ProgramReflection::Resource::ReturnType::Int,   ProgramReflection::Resource::ResourceType::UAV}},
+        {GL_UNSIGNED_INT_IMAGE_2D_ARRAY,            {ProgramReflection::Resource::Dimensions::Texture2DArray,         ProgramReflection::Resource::ReturnType::Uint,  ProgramReflection::Resource::ResourceType::UAV}},
+        {GL_IMAGE_2D_MULTISAMPLE,                   {ProgramReflection::Resource::Dimensions::Texture2DMS,            ProgramReflection::Resource::ReturnType::Float, ProgramReflection::Resource::ResourceType::UAV}},
+        {GL_INT_IMAGE_2D_MULTISAMPLE,               {ProgramReflection::Resource::Dimensions::Texture2DMS,            ProgramReflection::Resource::ReturnType::Int,   ProgramReflection::Resource::ResourceType::UAV}},
+        {GL_UNSIGNED_INT_IMAGE_2D_MULTISAMPLE,      {ProgramReflection::Resource::Dimensions::Texture2DMS,            ProgramReflection::Resource::ReturnType::Uint,  ProgramReflection::Resource::ResourceType::UAV}},
+        {GL_IMAGE_2D_MULTISAMPLE_ARRAY,             {ProgramReflection::Resource::Dimensions::Texture2DMSArray,       ProgramReflection::Resource::ReturnType::Float, ProgramReflection::Resource::ResourceType::UAV}},
+        {GL_INT_IMAGE_2D_MULTISAMPLE_ARRAY,         {ProgramReflection::Resource::Dimensions::Texture2DMSArray,       ProgramReflection::Resource::ReturnType::Int,   ProgramReflection::Resource::ResourceType::UAV}},
+        {GL_UNSIGNED_INT_IMAGE_2D_MULTISAMPLE_ARRAY, {ProgramReflection::Resource::Dimensions::Texture2DMSArray,      ProgramReflection::Resource::ReturnType::Uint,  ProgramReflection::Resource::ResourceType::UAV}},
+        {GL_IMAGE_CUBE_MAP_ARRAY,                   {ProgramReflection::Resource::Dimensions::TextureCubeArray,       ProgramReflection::Resource::ReturnType::Float, ProgramReflection::Resource::ResourceType::UAV}},
+        {GL_INT_IMAGE_CUBE_MAP_ARRAY,               {ProgramReflection::Resource::Dimensions::TextureCubeArray,       ProgramReflection::Resource::ReturnType::Int,   ProgramReflection::Resource::ResourceType::UAV}},
+        {GL_UNSIGNED_INT_IMAGE_CUBE_MAP_ARRAY,      {ProgramReflection::Resource::Dimensions::TextureCubeArray,       ProgramReflection::Resource::ReturnType::Uint,  ProgramReflection::Resource::ResourceType::UAV}},
     };
 
     static const ProgramReflection::Resource& getResourceDescFromGl(GLenum glType)
@@ -324,11 +324,11 @@ namespace Falcor
         GLenum glType = GL_NONE;
         switch(type)
         {
-        case ProgramReflection::BufferReflection::Type::Uniform:
+        case ProgramReflection::BufferReflection::Type::Constant:
             maxBlockType = GL_MAX_COMBINED_UNIFORM_BLOCKS;
             glType = GL_UNIFORM_BLOCK;
             break;
-        case ProgramReflection::BufferReflection::Type::ShaderStorage:
+        case ProgramReflection::BufferReflection::Type::UnorderedAccess:
             maxBlockType = GL_MAX_COMBINED_SHADER_STORAGE_BLOCKS;
             glType = GL_SHADER_STORAGE_BLOCK;
             break;

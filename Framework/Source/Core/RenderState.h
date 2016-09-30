@@ -32,6 +32,7 @@
 #include "Core/RasterizerState.h"
 #include "Core/DepthStencilState.h"
 #include "Core/BlendState.h"
+#include "Core/RootSignature.h"
 
 namespace Falcor
 {
@@ -60,6 +61,7 @@ namespace Falcor
         class Desc
         {
         public:
+            Desc& setRootSignature(RootSignature::SharedConstPtr pSignature) { mpRootSignature = pSignature; return *this; }
             Desc& setVertexLayout(VertexLayout::SharedConstPtr pLayout) { mpLayout = pLayout; return *this; }
             Desc& setFboFormats(const Fbo::Desc& fboFormats) { mFboDesc = fboFormats; return *this; }
             Desc& setProgramVersion(ProgramVersion::SharedConstPtr pProgram) { mpProgram = pProgram; return *this; }
@@ -86,6 +88,7 @@ namespace Falcor
             DepthStencilState::SharedConstPtr mpDepthStencilState;
             BlendState::SharedConstPtr mpBlendState;
             uint32_t mSampleMask = kSampleMaskAll;
+            RootSignature::SharedConstPtr mpRootSignature;
             PrimitiveType mPrimType = PrimitiveType::Undefined;
         };
 
