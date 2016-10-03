@@ -31,11 +31,11 @@
 #include "Core/Sampler.h"
 #include "Core/FBO.h"
 #include "Core/VAO.h"
-#include "Core/UniformBuffer.h"
 #include "Core/ShaderStorageBuffer.h"
 #include "Core/Texture.h"
 #include "Framework.h"
-#include "Core/RenderState.h"
+#include "Core/PipelineState.h"
+#include "Core/ProgramVars.h"
 
 namespace Falcor
 {
@@ -171,18 +171,6 @@ namespace Falcor
         */
         uint8_t getStencilRef() const { return mState.stencilRef; }
 
-        /** Set a uniform-buffer into the state. By default no buffers are set.
-            \param[in] index The uniform-buffer slot index to set the buffer into.
-            \param[in] pBuffer The uniform-buffer to set. nullptr can be used to unbind a buffer from a slot.
-        */
-        void setUniformBuffer(uint32_t index, const UniformBuffer::SharedConstPtr& pBuffer);
-
-        /** Set a shader storage buffer into the state. By default no buffers are set.
-        \param[in] index The shader storage buffer slot index to set the buffer into.
-        \param[in] pBuffer The shader storage buffer to set. nullptr can be used to unbind a buffer from a slot.
-        */
-        void setShaderStorageBuffer(uint32_t index, const ShaderStorageBuffer::SharedConstPtr& pBuffer);
-
         /** Set a viewport.
         \param[in] index Viewport index
         \param[in] vp Viewport to set
@@ -223,12 +211,19 @@ namespace Falcor
 
         /** Set the render state
         */
-        void setRenderState(const RenderState::SharedPtr& pState);
+        void setPipelineState(const PipelineState::SharedPtr& pState);
 
         /** Get the bound render state
         */
-        RenderState::SharedConstPtr getRenderState() const { return mState.pRenderState; }
+        PipelineState::SharedConstPtr getRenderState() const { return mState.pRenderState; }
 
+        /** Set the program variables
+        */
+        void setProgramVariables(const ProgramVars::SharedConstPtr& pVars) { mState.pProgramVars = pVars; applyProgramVars(); }
+        
+        /** Get the bound program variables object
+        */
+        ProgramVars::SharedConstPtr getProgramVars() const { return mState.pProgramVars; }
     private:
         RenderContext() = default;
         void initCommon(uint32_t viewportCount);
@@ -239,11 +234,11 @@ namespace Falcor
             Vao::SharedConstPtr pVao = nullptr;
             Topology topology = Topology::TriangleList;
             uint8_t stencilRef = 0;
-            std::vector<UniformBuffer::SharedConstPtr> pUniformBuffers;
+            ProgramVars::SharedConstPtr pProgramVars;
             std::vector<ShaderStorageBuffer::SharedConstPtr> pShaderStorageBuffers;
             std::vector<Viewport> viewports;
             std::vector<Scissor> scissors;
-            RenderState::SharedPtr pRenderState;
+            PipelineState::SharedPtr pRenderState;
         };
 
         State mState;
@@ -258,12 +253,11 @@ namespace Falcor
         // Internal functions used by the API layers
         void applyViewport(uint32_t index) const;
         void applyScissor(uint32_t index) const;
-        void applyRenderState() const;
+        void applyPipelineState() const;
         void applyStencilRef() const;
         void applyVao() const;
         void applyFbo();
-        void applyUniformBuffer(uint32_t Index) const;
-        void applyShaderStorageBuffer(uint32_t Index) const;
+        void applyProgramVars();
         void applyTopology() const;
         void prepareForDraw() const;
         void prepareForDrawApi() const;

@@ -96,14 +96,14 @@ namespace Falcor
             BlendState::BlendFunc::One);
 
         mpStateCache->setBlendState(BlendState::create(blendDesc));
-        mpStateCache->setPrimitiveType(RenderState::PrimitiveType::Triangle);
+        mpStateCache->setPrimitiveType(PipelineState::PrimitiveType::Triangle);
         mpFont = Font::create();
 
         // Uniform buffer
-        mpPerFrameCB = UniformBuffer::create(pProgram, "PerFrameCB");
-        mUniformOffsets.vpTransform = mpPerFrameCB->getVariableOffset("gvpTransform");
-        mUniformOffsets.fontColor = mpPerFrameCB->getVariableOffset("gFontColor");
-        mUniformOffsets.fontTex = pProgram->getActiveVersion()->getReflector()->getResourceDesc("gFontTex")->regIndex;
+        mpProgramVars = ProgramVars::create(pProgram->getActiveVersion()->getReflector(), true);
+        mUniformLocations.vpTransform = mpProgramVars["PerFrameCB"]->getVariableOffset("gvpTransform");
+        mUniformLocations.fontColor = mpProgramVars["PerFrameCB"]->getVariableOffset("gFontColor");
+        mUniformLocations.fontTex = pProgram->getActiveVersion()->getReflector()->getResourceDesc("gFontTex")->regIndex;
     }
 
     TextRenderer::~TextRenderer() = default;
@@ -119,7 +119,7 @@ namespace Falcor
 
         // Set the current FBO into the render state
         mpStateCache->setFbo(pRenderContext->getFbo());
-        mpRenderContext->setRenderState(mpStateCache->getRenderState());
+        mpRenderContext->setPipelineState(mpStateCache->getRenderState());
         pRenderContext->setVao(mpStateCache->getVao());
         pRenderContext->setTopology(RenderContext::Topology::TriangleList);
 
@@ -133,13 +133,12 @@ namespace Falcor
         vpTransform[3][0] = -(VP.originX + VP.width) / VP.width;
         vpTransform[3][1] = (VP.originX + VP.height) / VP.height;
 
-        mpPerFrameCB->setVariable(mUniformOffsets.vpTransform, vpTransform);
-        mpPerFrameCB->setVariable(mUniformOffsets.fontColor, mTextColor);
+        mpProgramVars["PerFrameCB"]->setVariable(mUniformLocations.vpTransform, vpTransform);
+        mpProgramVars["PerFrameCB"]->setVariable(mUniformLocations.fontColor, mTextColor);
         
         // Set the font texture
-        const Texture* pFontTex = mpFont->getTexture();
-        mpPerFrameCB->setTexture(mUniformOffsets.fontTex, pFontTex, nullptr);
-        pRenderContext->setUniformBuffer(0, mpPerFrameCB);
+        mpProgramVars->setTexture(mUniformLocations.fontTex, mpFont->getTexture());
+        pRenderContext->setProgramVariables(mpProgramVars);
 
 
         // Map the buffer

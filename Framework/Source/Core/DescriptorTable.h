@@ -26,37 +26,18 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 #pragma once
-#include "Framework.h"
-#include "RenderState.h"
-#include "BlendState.h"
 
 namespace Falcor
 {
-    BlendState::SharedPtr RenderState::spDefaultBlendState;
-    RasterizerState::SharedPtr RenderState::spDefaultRasterizerState;
-    DepthStencilState::SharedPtr RenderState::spDefaultDepthStencilState;
-
-    RenderState::SharedPtr RenderState::create(const Desc& desc)
+    class DescriptorTable
     {
-        if (spDefaultBlendState == nullptr)
-        {
-            // Create default objects
-            spDefaultBlendState = BlendState::create(BlendState::Desc());
-            spDefaultDepthStencilState = DepthStencilState::create(DepthStencilState::Desc());
-            spDefaultRasterizerState = RasterizerState::create(RasterizerState::Desc());
-        }
+    public:
+        using SharedPtr = std::shared_ptr<DescriptorTable>;
+        using SharedConstPtr = std::shared_ptr<const DescriptorTable>;
 
-        SharedPtr pState = SharedPtr(new RenderState(desc));
+        static SharedPtr create();
 
-        // Initialize default objects
-        if (!pState->mDesc.mpBlendState)            pState->mDesc.mpBlendState              = spDefaultBlendState;
-        if (!pState->mDesc.mpRasterizerState)       pState->mDesc.mpRasterizerState         = spDefaultRasterizerState;
-        if (!pState->mDesc.mpDepthStencilState)     pState->mDesc.mpDepthStencilState       = spDefaultDepthStencilState;
-
-        if (pState->apiInit() == false)
-        {
-            pState = nullptr;
-        }
-        return pState;
-    }
+    private:
+        DescriptorTable();
+    };
 }

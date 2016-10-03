@@ -28,7 +28,7 @@
 #ifdef FALCOR_D3D
 #include <vector>
 #include "Core/RenderContext.h"
-#include "Core/RenderState.h"
+#include "Core/PipelineState.h"
 #include "Core/RootSignature.h"
 
 namespace Falcor
@@ -67,17 +67,17 @@ namespace Falcor
         }
     }
 
-    inline D3Dx(PRIMITIVE_TOPOLOGY_TYPE) getD3DPrimitiveType(RenderState::PrimitiveType type)
+    inline D3Dx(PRIMITIVE_TOPOLOGY_TYPE) getD3DPrimitiveType(PipelineState::PrimitiveType type)
     {
         switch (type)
         {
-        case RenderState::PrimitiveType::Point:
+        case PipelineState::PrimitiveType::Point:
             return D3Dx(PRIMITIVE_TOPOLOGY_TYPE_POINT);
-        case RenderState::PrimitiveType::Line:
+        case PipelineState::PrimitiveType::Line:
             return D3Dx(PRIMITIVE_TOPOLOGY_TYPE_LINE);
-        case RenderState::PrimitiveType::Triangle:
+        case PipelineState::PrimitiveType::Triangle:
             return D3Dx(PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE);
-        case RenderState::PrimitiveType::Patch:
+        case PipelineState::PrimitiveType::Patch:
             return D3Dx(PRIMITIVE_TOPOLOGY_TYPE_PATCH);
         default:
             should_not_get_here();

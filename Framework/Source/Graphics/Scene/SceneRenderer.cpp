@@ -90,19 +90,23 @@ namespace Falcor
         const ProgramReflection* pReflection = pProgram->getActiveVersion()->getReflector().get();
         // Per skinned mesh
         uint32_t bufferLoc = pReflection->getBufferBinding(kPerSkinnedMeshCbName);
-        pRenderContext->setUniformBuffer(bufferLoc, sPerSkinnedMeshCB);
+        // DISABLED_FOR_D3D12
+//        pRenderContext->setUniformBuffer(bufferLoc, sPerSkinnedMeshCB);
 
         // Per static mesh
         bufferLoc = pReflection->getBufferBinding(kPerStaticMeshCbName);
-        pRenderContext->setUniformBuffer(bufferLoc, sPerStaticMeshCB);
+        // DISABLED_FOR_D3D12
+//        pRenderContext->setUniformBuffer(bufferLoc, sPerStaticMeshCB);
 
         // Per material
         bufferLoc = pReflection->getBufferBinding(kPerMaterialCbName);
-        pRenderContext->setUniformBuffer(bufferLoc, sPerMaterialCB);
+        // DISABLED_FOR_D3D12
+//        pRenderContext->setUniformBuffer(bufferLoc, sPerMaterialCB);
 
         // Per frame
         bufferLoc = pReflection->getBufferBinding(kPerFrameCbName);
-        pRenderContext->setUniformBuffer(bufferLoc, sPerFrameCB);
+        // DISABLED_FOR_D3D12
+//        pRenderContext->setUniformBuffer(bufferLoc, sPerFrameCB);
     }
 
     void SceneRenderer::setPerFrameData(RenderContext* pContext, const CurrentWorkingData& currentData)

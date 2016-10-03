@@ -126,7 +126,7 @@ namespace Falcor
         }
 	}
 
-    void RenderContext::applyRenderState() const
+    void RenderContext::applyPipelineState() const
     {
         RenderContextData* pApiData = (RenderContextData*)mpApiData;
         ID3D12PipelineState* pPso = mState.pRenderState ? mState.pRenderState->getApiHandle() : nullptr;
@@ -172,15 +172,6 @@ namespace Falcor
         UNSUPPORTED_IN_D3D12("BlitFbo");
 	}
 
-    void RenderContext::applyUniformBuffer(uint32_t Index) const
-    {
-    }
-
-    void RenderContext::applyShaderStorageBuffer(uint32_t index) const
-    {
-        UNSUPPORTED_IN_D3D12("RenderContext::ApplyShaderStorageBuffer()");
-    }
-
     void RenderContext::applyTopology() const
     {
     }
@@ -211,6 +202,11 @@ namespace Falcor
 
     void RenderContext::applyScissor(uint32_t index) const
     {
+    }
+
+    void RenderContext::applyProgramVars()
+    {
+
     }
 }
 #endif //#ifdef FALCOR_D3D12

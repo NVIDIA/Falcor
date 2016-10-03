@@ -112,7 +112,8 @@ namespace Falcor
         mpUbo->setTexture(mTexOffset, mpTexture.get(), mpSampler.get());
         mpUbo->setVariable(mScaleOffset, mScale);
 
-        pRenderCtx->setUniformBuffer(0, mpUbo);
+        // DISABLED_FOR_D3D12
+//        pRenderCtx->setUniformBuffer(0, mpUbo);
 
         // Store the state
         // DISABLED_FOR_D3D12

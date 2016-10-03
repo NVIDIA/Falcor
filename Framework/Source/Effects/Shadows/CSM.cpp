@@ -461,8 +461,9 @@ namespace Falcor
     void CascadedShadowMaps::renderScene(RenderContext* pCtx)
     {
         mShadowPass.pLightUbo->setBlob(&mCsmData, 0, sizeof(mCsmData));
-        pCtx->setUniformBuffer(0, mShadowPass.pLightUbo);
-        pCtx->setUniformBuffer(1, mShadowPass.pAlphaUbo);
+        // DISABLED_FOR_D3D12
+//         pCtx->setUniformBuffer(0, mShadowPass.pLightUbo);
+//         pCtx->setUniformBuffer(1, mShadowPass.pAlphaUbo);
         mShadowPass.pAlphaUbo->setVariable("evsmExp", mCsmData.evsmExponents);
         mpSceneRenderer->renderScene(pCtx, mShadowPass.pProg.get(), mpLightCamera.get());
     }

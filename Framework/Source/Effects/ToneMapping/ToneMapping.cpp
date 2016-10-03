@@ -89,7 +89,8 @@ namespace Falcor
         mpUbo->setVariable(mUboOffsets.luminanceLod, mLuminanceLod);
         mpUbo->setVariable(mUboOffsets.whiteScale, mWhiteScale);
 
-        pRenderContext->setUniformBuffer(0, mpUbo);
+        // DISABLED_FOR_D3D12
+//        pRenderContext->setUniformBuffer(0, mpUbo);
 
         // Calculate luminance
         pRenderContext->setFbo(mpLuminanceFbo);

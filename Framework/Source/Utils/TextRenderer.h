@@ -32,8 +32,8 @@
 #include "Font.h"
 #include "Core/VAO.h"
 #include "Core/Buffer.h"
-#include "Core/UniformBuffer.h"
 #include "Graphics/RenderStateCache.h"
+#include "Core/ProgramVars.h"
 #include "Core/RenderContext.h"
 
 namespace Falcor
@@ -96,7 +96,7 @@ namespace Falcor
         Buffer::SharedPtr mpVertexBuffer;
 
         RenderStateCache::SharedPtr mpStateCache;
-        UniformBuffer::SharedPtr mpPerFrameCB;
+        ProgramVars::SharedPtr mpProgramVars;
 
         uint32_t mCurrentVertexID = 0;
 
@@ -108,9 +108,9 @@ namespace Falcor
 
         struct  
         {
-            size_t fontTex;
+            uint32_t fontTex;
             size_t vpTransform;
             size_t fontColor;
-        } mUniformOffsets;
+        } mUniformLocations;
     };
 }

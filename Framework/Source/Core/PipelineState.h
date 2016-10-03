@@ -38,11 +38,11 @@ namespace Falcor
 {
     class RenderContext;
 
-    class RenderState
+    class PipelineState
     {
     public:
-        using SharedPtr = std::shared_ptr<RenderState>;
-        using SharedConstPtr = std::shared_ptr<const RenderState>;
+        using SharedPtr = std::shared_ptr<PipelineState>;
+        using SharedConstPtr = std::shared_ptr<const PipelineState>;
         using ApiHandle = RenderStateHandle;
 
         static const uint32_t kSampleMaskAll = -1;
@@ -75,12 +75,12 @@ namespace Falcor
             RasterizerState::SharedConstPtr getRasterizerState() const { return mpRasterizerState; }
             DepthStencilState::SharedConstPtr getDepthStencilState() const { return mpDepthStencilState; }
             uint32_t getSampleMask() const { return mSampleMask; }
-            RenderState::PrimitiveType getPrimitiveType() const { return mPrimType; }
+            PipelineState::PrimitiveType getPrimitiveType() const { return mPrimType; }
             VertexLayout::SharedConstPtr getVertexLayout() const { return mpLayout; }
             const Fbo::Desc& getFboDesc() const { return mFboDesc; }
             ProgramVersion::SharedConstPtr getProgramVersion() const { return mpProgram; }
         private:
-            friend class RenderState;
+            friend class PipelineState;
             VertexLayout::SharedConstPtr mpLayout;
             Fbo::Desc mFboDesc;
             ProgramVersion::SharedConstPtr mpProgram;
@@ -98,7 +98,7 @@ namespace Falcor
 
         const Desc& getDesc() const { return mDesc; }
     private:
-        RenderState(const Desc& desc) : mDesc(desc) {}
+        PipelineState(const Desc& desc) : mDesc(desc) {}
         Desc mDesc;
         ApiHandle mApiHandle;
 

@@ -25,25 +25,17 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#pragma once
 #include "Framework.h"
-#include "RenderStateCache.h"
+#include "RootData.h"
 
 namespace Falcor
 {
-    PipelineState::SharedPtr RenderStateCache::getRenderState()
+    RootData::SharedPtr RootData::create(const RootSignature::SharedConstPtr& pRootSig)
     {
-        mDesc.setProgramVersion(mpProgram ? mpProgram->getActiveVersion() : nullptr);
-        mDesc.setFboFormats(mpFbo ? mpFbo->getDesc() : Fbo::Desc());
-        mDesc.setVertexLayout(mpVao ? mpVao->getVertexLayout() : nullptr);
-        if (mpRootSignature)
-        {
-            mDesc.setRootSignature(mpRootSignature);
-        }
-        else if(mpProgram)
-        {
-            mDesc.setRootSignature(RootSignature::createFromReflection(mpProgram->getActiveVersion()->getReflector().get()));
-        }
-        return PipelineState::create(mDesc);
+        return SharedPtr(new RootData(pRootSig));
+    }
+
+    RootData::RootData(const RootSignature::SharedConstPtr& pRootSig) : mpRootSig(pRootSig), mDescTables(pRootSig->getDescriptorTableCount())
+    {
     }
 }

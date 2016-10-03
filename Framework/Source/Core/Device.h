@@ -97,7 +97,6 @@ namespace Falcor
 		DeviceHandle getApiHandle() { return mApiHandle; }
 
 		/** Get the global frame fence object
-			DISABLED_FOR_D3D12 Device should be a singleton
 		*/
 		GpuFence::SharedPtr getFrameGpuFence() { return mpFrameFence; }
 

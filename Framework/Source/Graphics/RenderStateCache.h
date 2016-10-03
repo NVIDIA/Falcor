@@ -26,7 +26,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 #pragma once
-#include "Core/RenderState.h"
+#include "Core/PipelineState.h"
 #include "Graphics/Program.h"
 #include "Core/VAO.h"
 #include "Core/FBO.h"
@@ -50,10 +50,10 @@ namespace Falcor
         RenderStateCache& setRasterizerState(RasterizerState::SharedConstPtr pRasterizerState) { mDesc.setRasterizerState(pRasterizerState); return *this; }
         RenderStateCache& setDepthStencilState(DepthStencilState::SharedConstPtr pDepthStencilState) { mDesc.setDepthStencilState(pDepthStencilState); return *this; }
         RenderStateCache& setSampleMask(uint32_t sampleMask) { mDesc.setSampleMask(sampleMask); return *this; }
-        RenderStateCache& setPrimitiveType(RenderState::PrimitiveType type) { mDesc.setPrimitiveType(type); return *this; }
+        RenderStateCache& setPrimitiveType(PipelineState::PrimitiveType type) { mDesc.setPrimitiveType(type); return *this; }
         RenderStateCache& setRootSignature(RootSignature::SharedConstPtr pSignature) { mpRootSignature = pSignature; }
 
-        RenderState::SharedPtr getRenderState();
+        PipelineState::SharedPtr getRenderState();
 
         RootSignature::SharedConstPtr getRootSignature() const { return mpRootSignature; }
         Vao::SharedConstPtr getVao() const { return mpVao; }
@@ -63,13 +63,13 @@ namespace Falcor
         RasterizerState::SharedConstPtr getRasterizerState() const { return mDesc.getRasterizerState(); }
         DepthStencilState::SharedConstPtr getDepthStencilState() const { return mDesc.getDepthStencilState(); }
         uint32_t getSampleMask() const { return mDesc.getSampleMask(); }
-        RenderState::PrimitiveType getPrimitiveType() const { return mDesc.getPrimitiveType(); }
+        PipelineState::PrimitiveType getPrimitiveType() const { return mDesc.getPrimitiveType(); }
     private:
         RenderStateCache() = default;
         Vao::SharedConstPtr mpVao;
         Fbo::SharedConstPtr mpFbo;
         Program::SharedConstPtr mpProgram;
         RootSignature::SharedConstPtr mpRootSignature;
-        RenderState::Desc mDesc;
+        PipelineState::Desc mDesc;
     };
 }

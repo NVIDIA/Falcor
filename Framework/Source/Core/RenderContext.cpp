@@ -90,12 +90,8 @@ namespace Falcor
         applyFbo();
         applyVao();
         applyTopology();
-        applyRenderState();
-
-        for(uint32_t i = 0; i < mState.pUniformBuffers.size(); i++)
-        {
-            applyUniformBuffer(i);
-        }
+        applyPipelineState();
+        applyProgramVars();
 
         for(uint32_t i = 0; i < mState.viewports.size(); i++)
         {
@@ -159,10 +155,10 @@ namespace Falcor
         mScStack[index].pop();
     }
 
-    void RenderContext::setRenderState(const RenderState::SharedPtr& pState)
+    void RenderContext::setPipelineState(const PipelineState::SharedPtr& pState)
     {
         mState.pRenderState = pState;
-        applyRenderState();
+        applyPipelineState();
     }
 
     void RenderContext::setVao(const Vao::SharedConstPtr& pVao)
@@ -183,25 +179,6 @@ namespace Falcor
         if(pTemp->checkStatus())
         {
             applyFbo();
-        }
-    }
-
-    void RenderContext::setUniformBuffer(uint32_t index, const UniformBuffer::SharedConstPtr& pBuffer)
-    {
-        if ( index != 0xFFFFFFFFu )  // check that index isn't -1 (i.e., an invalid return from GL calls)
-        {
-            mState.pUniformBuffers[index] = pBuffer;
-            applyUniformBuffer( index );
-        }
-    }
-
-    void RenderContext::setShaderStorageBuffer(uint32_t index, const ShaderStorageBuffer::SharedConstPtr& pBuffer)
-    {
-        if ( index != 0xFFFFFFFFu )
-        {
-            // Not checking if the state actually changed. Some of the externals libraries we use make raw API calls, bypassing the render-context, so checking if the state actually changed might lead to unexpected behavior.
-            mState.pShaderStorageBuffers[index] = pBuffer;
-            applyShaderStorageBuffer( index );
         }
     }
 
@@ -238,22 +215,23 @@ namespace Falcor
 
     void RenderContext::prepareForDraw() const
     {
-        for(auto& pUBO : mState.pUniformBuffers)
-        {
-            if(pUBO)
-            {
-                pUBO->uploadToGPU();
-            }
-        }
-
-        for(auto& pSSBO : mState.pShaderStorageBuffers)
-        {
-            if(pSSBO)
-            {
-                pSSBO->uploadToGPU();
-                pSSBO->setGpuCopyDirty();
-            }
-        }
+        // DISABLED_FOR_D3D12
+//         for(auto& pUBO : mState.pUniformBuffers)
+//         {
+//             if(pUBO)
+//             {
+//                 pUBO->uploadToGPU();
+//             }
+//         }
+// 
+//         for(auto& pSSBO : mState.pShaderStorageBuffers)
+//         {
+//             if(pSSBO)
+//             {
+//                 pSSBO->uploadToGPU();
+//                 pSSBO->setGpuCopyDirty();
+//             }
+//         }
         prepareForDrawApi();
     }
 }

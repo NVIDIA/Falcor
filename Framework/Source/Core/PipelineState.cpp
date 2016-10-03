@@ -27,23 +27,36 @@
 ***************************************************************************/
 #pragma once
 #include "Framework.h"
-#include "RenderStateCache.h"
+#include "PipelineState.h"
+#include "BlendState.h"
 
 namespace Falcor
 {
-    PipelineState::SharedPtr RenderStateCache::getRenderState()
+    BlendState::SharedPtr PipelineState::spDefaultBlendState;
+    RasterizerState::SharedPtr PipelineState::spDefaultRasterizerState;
+    DepthStencilState::SharedPtr PipelineState::spDefaultDepthStencilState;
+
+    PipelineState::SharedPtr PipelineState::create(const Desc& desc)
     {
-        mDesc.setProgramVersion(mpProgram ? mpProgram->getActiveVersion() : nullptr);
-        mDesc.setFboFormats(mpFbo ? mpFbo->getDesc() : Fbo::Desc());
-        mDesc.setVertexLayout(mpVao ? mpVao->getVertexLayout() : nullptr);
-        if (mpRootSignature)
+        if (spDefaultBlendState == nullptr)
         {
-            mDesc.setRootSignature(mpRootSignature);
+            // Create default objects
+            spDefaultBlendState = BlendState::create(BlendState::Desc());
+            spDefaultDepthStencilState = DepthStencilState::create(DepthStencilState::Desc());
+            spDefaultRasterizerState = RasterizerState::create(RasterizerState::Desc());
         }
-        else if(mpProgram)
+
+        SharedPtr pState = SharedPtr(new PipelineState(desc));
+
+        // Initialize default objects
+        if (!pState->mDesc.mpBlendState)            pState->mDesc.mpBlendState              = spDefaultBlendState;
+        if (!pState->mDesc.mpRasterizerState)       pState->mDesc.mpRasterizerState         = spDefaultRasterizerState;
+        if (!pState->mDesc.mpDepthStencilState)     pState->mDesc.mpDepthStencilState       = spDefaultDepthStencilState;
+
+        if (pState->apiInit() == false)
         {
-            mDesc.setRootSignature(RootSignature::createFromReflection(mpProgram->getActiveVersion()->getReflector().get()));
+            pState = nullptr;
         }
-        return PipelineState::create(mDesc);
+        return pState;
     }
 }

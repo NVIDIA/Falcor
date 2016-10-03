@@ -26,12 +26,13 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 #pragma once
-#include "Framework.h"
 #include "Core/UniformBuffer.h"
 #include "Core/Sampler.h"
 #include <unordered_map>
 #include "Core/ProgramReflection.h"
 #include "Core/ShaderStorageBuffer.h"
+#include "Core/RootSignature.h"
+#include "Core/RootData.h"
 
 namespace Falcor
 {
@@ -56,10 +57,11 @@ namespace Falcor
         using SharedConstPtr = std::shared_ptr<const ProgramVars>;
 
         /** Create a new object
-            \param[in] pProgramVer The program containing the variable definitions
+            \param[in] pReflector A program reflection object containing the requested declarations
             \param[in] createBuffers If true, will create the UniformBuffer objects. Otherwise, the user will have to bind the UBOs himself
+            \param[in] pRootSignature A root-signature describing how to bind resources into the shader. If this paramter is nullptr, a root-signature object will be created from the program reflection object
         */
-        static SharedPtr create(const ProgramVersion* pProgramVer, bool createBuffers = true);
+        static SharedPtr create(const ProgramReflection::SharedConstPtr& pReflector, bool createBuffers = true, const RootSignature::SharedConstPtr& pRootSig = nullptr);
 
         /** Bind a uniform buffer object by name.
             If the name doesn't exists or the UBOs size doesn't match the required size, the call will fail with the appropriate error code.
@@ -125,7 +127,7 @@ namespace Falcor
         \param[in] pTexture The texture object to bind
         \return Error code. This actually depends on the build type. In release build we do minimal validation. In debug build there's more extensive verification the texture object matches the shader declaration.
         */
-        ErrorCode setTexture(uint32_t index, const Texture::SharedPtr& pTexture);
+        ErrorCode setTexture(uint32_t index, const Texture::SharedConstPtr& pTexture);
 
         /** Bind a sampler to the program in the global namespace.
             If you are using bindless textures, than this is not the right call for you. You should use the UniformBuffer::setTexture() method instead.
@@ -134,17 +136,18 @@ namespace Falcor
             \return Error code. The function fails if the specified slot is not used
         */
         ErrorCode setSampler(uint32_t index, const Sampler::SharedPtr& pSampler);
-
-        /** Set all uniform-buffers into the render-context
-        */
-        void setIntoContext(RenderContext* pContext) const;
-
+        
         /** Get the program reflection interface
         */
-        ProgramReflection::SharedConstPtr getReflection() const { return mpReflection; }
+        ProgramReflection::SharedConstPtr getReflection() const { return mpReflector; }
+
+        /** Get the root-data object
+        */
+        RootData::SharedPtr getRootData() const { return mpRootData; }
     private:
-        ProgramVars(const ProgramVersion* pProgramVer, bool createBuffers);
-        ProgramReflection::SharedConstPtr mpReflection;
+        ProgramVars(const ProgramReflection::SharedConstPtr& pReflector, bool createBuffers, const RootSignature::SharedConstPtr& pRootSig);
+        ProgramReflection::SharedConstPtr mpReflector;
+        RootData::SharedPtr mpRootData;
         std::unordered_map<uint32_t, UniformBuffer::SharedPtr> mUniformBuffers;
         std::unordered_map<uint32_t, ShaderStorageBuffer::SharedPtr> mSSBO;
     };

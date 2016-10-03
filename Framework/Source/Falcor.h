@@ -56,8 +56,10 @@
 #include "Core/VertexLayout.h"
 #include "Core/ShaderStorageBuffer.h"
 #include "Core/Window.h"
-#include "Core/RenderState.h"
-
+#include "Core/PipelineState.h"
+#include "Core/ProgramVars.h"
+#include "Core/RootData.h"
+#include "Core/RootSignature.h"
 
 // Graphics
 #include "Graphics/Camera/Camera.h"
@@ -67,7 +69,6 @@
 #include "Graphics/TextureHelper.h"
 #include "Graphics/Light.h"
 #include "Graphics/Program.h"
-#include "Graphics/ProgramVars.h"
 #include "Graphics/FboHelper.h"
 
 // Material

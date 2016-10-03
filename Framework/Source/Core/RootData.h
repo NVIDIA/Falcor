@@ -26,24 +26,23 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 #pragma once
-#include "Framework.h"
-#include "RenderStateCache.h"
+#include "Core/RootSignature.h"
+#include "Core/DescriptorTable.h"
+#include <vector>
 
 namespace Falcor
 {
-    PipelineState::SharedPtr RenderStateCache::getRenderState()
+    class RootData
     {
-        mDesc.setProgramVersion(mpProgram ? mpProgram->getActiveVersion() : nullptr);
-        mDesc.setFboFormats(mpFbo ? mpFbo->getDesc() : Fbo::Desc());
-        mDesc.setVertexLayout(mpVao ? mpVao->getVertexLayout() : nullptr);
-        if (mpRootSignature)
-        {
-            mDesc.setRootSignature(mpRootSignature);
-        }
-        else if(mpProgram)
-        {
-            mDesc.setRootSignature(RootSignature::createFromReflection(mpProgram->getActiveVersion()->getReflector().get()));
-        }
-        return PipelineState::create(mDesc);
-    }
+    public:
+        using SharedPtr = std::shared_ptr<RootData>;
+        using SharedConstPtr = std::shared_ptr<const RootData>;
+
+        static SharedPtr create(const RootSignature::SharedConstPtr& pRootSig);
+        
+    private:
+        RootData(const RootSignature::SharedConstPtr& pRootSig);
+        std::vector<DescriptorTable::SharedPtr> mDescTables;
+        RootSignature::SharedConstPtr mpRootSig;
+    };
 }

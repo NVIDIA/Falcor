@@ -27,7 +27,6 @@
 ***************************************************************************/
 #include "Framework.h"
 #include "ProgramVars.h"
-#include "Core/ProgramVersion.h"
 #include "Core/Buffer.h"
 #include "Core/RenderContext.h"
 
@@ -44,18 +43,19 @@ namespace Falcor
         }
     }
 
-    ProgramVars::ProgramVars(const ProgramVersion* pProgramVer, bool createBuffers)
+    ProgramVars::ProgramVars(const ProgramReflection::SharedConstPtr& pReflector, bool createBuffers, const RootSignature::SharedConstPtr& pRootSig)
     {
-        mpReflection = pProgramVer->getReflector();
+        mpReflector = pReflector;
 
         // Initialize the UBO and SSBO maps. We always do it, to mark which slots are used in the shader.
-        initializeBuffersMap<UniformBuffer>(mUniformBuffers, createBuffers, mpReflection->getBufferMap(ProgramReflection::BufferReflection::Type::Constant));
-        initializeBuffersMap<ShaderStorageBuffer>(mSSBO, createBuffers, mpReflection->getBufferMap(ProgramReflection::BufferReflection::Type::UnorderedAccess));
+        initializeBuffersMap<UniformBuffer>(mUniformBuffers, createBuffers, mpReflector->getBufferMap(ProgramReflection::BufferReflection::Type::Constant));
+        initializeBuffersMap<ShaderStorageBuffer>(mSSBO, createBuffers, mpReflector->getBufferMap(ProgramReflection::BufferReflection::Type::UnorderedAccess));
+        mpRootData = RootData::create(pRootSig ? pRootSig : RootSignature::createFromReflection(pReflector.get()));
     }
 
-    ProgramVars::SharedPtr ProgramVars::create(const ProgramVersion* pProgramVer, bool createBuffers)
+    ProgramVars::SharedPtr ProgramVars::create(const ProgramReflection::SharedConstPtr& pReflector, bool createBuffers, const RootSignature::SharedConstPtr& pRootSig)
     {
-        return SharedPtr(new ProgramVars(pProgramVer, createBuffers));
+        return SharedPtr(new ProgramVars(pReflector, createBuffers, pRootSig));
     }
 
     template<typename BufferClass>
@@ -70,9 +70,9 @@ namespace Falcor
     }
 
     template<typename BufferClass, ProgramReflection::BufferReflection::Type bufferType>
-    typename BufferClass::SharedPtr getBufferCommon(const std::string& name, const ProgramReflection* pReflection, const std::unordered_map<uint32_t, typename BufferClass::SharedPtr>& bufferMap)
+    typename BufferClass::SharedPtr getBufferCommon(const std::string& name, const ProgramReflection* pReflector, const std::unordered_map<uint32_t, typename BufferClass::SharedPtr>& bufferMap)
     {
-        uint32_t bindLocation = pReflection->getBufferBinding(name);
+        uint32_t bindLocation = pReflector->getBufferBinding(name);
 
         if(bindLocation == ProgramReflection::kInvalidLocation)
         {
@@ -80,7 +80,7 @@ namespace Falcor
             return nullptr;
         }
 
-        auto& pDesc = pReflection->getBufferDesc(name, bufferType);
+        auto& pDesc = pReflector->getBufferDesc(name, bufferType);
 
         if(pDesc->getType() != bufferType)
         {
@@ -94,7 +94,7 @@ namespace Falcor
 
     UniformBuffer::SharedPtr ProgramVars::getUniformBuffer(const std::string& name) const
     {
-        return getBufferCommon<UniformBuffer, ProgramReflection::BufferReflection::Type::Constant>(name, mpReflection.get(), mUniformBuffers);
+        return getBufferCommon<UniformBuffer, ProgramReflection::BufferReflection::Type::Constant>(name, mpReflector.get(), mUniformBuffers);
     }
 
     UniformBuffer::SharedPtr ProgramVars::getUniformBuffer(uint32_t index) const
@@ -104,7 +104,7 @@ namespace Falcor
 
     ShaderStorageBuffer::SharedPtr ProgramVars::getShaderStorageBuffer(const std::string& name) const
     {
-        return getBufferCommon<ShaderStorageBuffer, ProgramReflection::BufferReflection::Type::UnorderedAccess>(name, mpReflection.get(), mSSBO);
+        return getBufferCommon<ShaderStorageBuffer, ProgramReflection::BufferReflection::Type::UnorderedAccess>(name, mpReflector.get(), mSSBO);
     }
 
     ShaderStorageBuffer::SharedPtr ProgramVars::getShaderStorageBuffer(uint32_t index) const
@@ -122,7 +122,7 @@ namespace Falcor
         }
 
         // Just need to make sure the buffer is large enough
-        const auto& desc = mpReflection->getBufferDesc(index, ProgramReflection::BufferReflection::Type::Constant);
+        const auto& desc = mpReflector->getBufferDesc(index, ProgramReflection::BufferReflection::Type::Constant);
         if(desc->getRequiredSize() > pUbo->getBuffer()->getSize())
         {
             Logger::log(Logger::Level::Error, "Can't bind uniform-buffer. Size mismatch.");
@@ -136,7 +136,7 @@ namespace Falcor
     ErrorCode ProgramVars::bindUniformBuffer(const std::string& name, const UniformBuffer::SharedPtr& pUbo)
     {
         // Find the buffer
-        uint32_t loc = mpReflection->getBufferBinding(name);
+        uint32_t loc = mpReflector->getBufferBinding(name);
         if(loc == ProgramReflection::kInvalidLocation)
         {
             Logger::log(Logger::Level::Warning, "Uniform buffer \"" + name + "\" was not found. Ignoring bindUniformBuffer() call.");
@@ -146,16 +146,8 @@ namespace Falcor
         return bindUniformBuffer(loc, pUbo);
     }
 
-    void ProgramVars::setIntoContext(RenderContext* pContext) const
+    ErrorCode ProgramVars::setTexture(uint32_t index, const Texture::SharedConstPtr& pTexture)
     {
-        for(auto& buf : mUniformBuffers)
-        {
-            pContext->setUniformBuffer(buf.first, buf.second);
-        }
-
-        for(auto& buf : mSSBO)
-        {
-            pContext->setShaderStorageBuffer(buf.first, buf.second);
-        }
+        return ErrorCode::None;
     }
 }

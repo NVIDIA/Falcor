@@ -109,7 +109,8 @@ namespace Falcor
         // Horizontal pass
         mpUbo->setTexture(0, pSrc, mpSampler.get(), false);
         pRenderContext->pushFbo(mpTmpFbo);
-        pRenderContext->setUniformBuffer(0, mpUbo);
+        // DISABLED_FOR_D3D12
+//        pRenderContext->setUniformBuffer(0, mpUbo);
         mpHorizontalBlur->execute(pRenderContext);
 
         // Vertical pass

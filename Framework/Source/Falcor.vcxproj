@@ -95,9 +95,11 @@
     <ClCompile Include="Core\OpenGL\GLVao.cpp" />
     <ClCompile Include="Core\OpenGL\GLWindow.cpp" />
     <ClCompile Include="Core\ProgramReflection.cpp" />
+    <ClCompile Include="Core\ProgramVars.cpp" />
     <ClCompile Include="Core\ProgramVersion.cpp" />
     <ClCompile Include="Core\RenderContext.cpp" />
-    <ClCompile Include="Core\RenderState.cpp" />
+    <ClCompile Include="Core\PipelineState.cpp" />
+    <ClCompile Include="Core\RootData.cpp" />
     <ClCompile Include="Core\RootSignature.cpp" />
     <ClCompile Include="Core\Sampler.cpp" />
     <ClCompile Include="Core\Texture.cpp" />
@@ -131,7 +133,6 @@
     <ClCompile Include="Graphics\Paths\PathEditor.cpp" />
     <ClCompile Include="Graphics\Program.cpp" />
     <ClCompile Include="Graphics\RenderStateCache.cpp" />
-    <ClCompile Include="Graphics\ProgramVars.cpp" />
     <ClCompile Include="Graphics\Scene\Scene.cpp" />
     <ClCompile Include="Graphics\Scene\SceneEditor.cpp" />
     <ClCompile Include="Graphics\Scene\SceneExporter.cpp" />
@@ -418,6 +419,7 @@
     <ClInclude Include="Core\D3D\FalcorD3D.h" />
     <ClInclude Include="Core\DDSHeader.h" />
     <ClInclude Include="Core\DepthStencilState.h" />
+    <ClInclude Include="Core\DescriptorTable.h" />
     <ClInclude Include="Core\Device.h" />
     <ClInclude Include="Core\FBO.h" />
     <ClInclude Include="Core\Formats.h" />
@@ -426,10 +428,12 @@
     <ClInclude Include="Core\OpenGL\FalcorGL.h" />
     <ClInclude Include="Core\OpenGL\GLEnum2Str.h" />
     <ClInclude Include="Core\ProgramReflection.h" />
+    <ClInclude Include="Core\ProgramVars.h" />
     <ClInclude Include="Core\ProgramVersion.h" />
     <ClInclude Include="Core\RasterizerState.h" />
     <ClInclude Include="Core\RenderContext.h" />
-    <ClInclude Include="Core\RenderState.h" />
+    <ClInclude Include="Core\PipelineState.h" />
+    <ClInclude Include="Core\RootData.h" />
     <ClInclude Include="Core\RootSignature.h" />
     <ClInclude Include="Core\Sampler.h" />
     <ClInclude Include="Core\ScreenCapture.h" />
@@ -479,7 +483,6 @@
     <ClInclude Include="Graphics\Paths\ObjectPath.h" />
     <ClInclude Include="Graphics\Paths\PathEditor.h" />
     <ClInclude Include="Graphics\Program.h" />
-    <ClInclude Include="Graphics\ProgramVars.h" />
     <ClInclude Include="Graphics\RenderStateCache.h" />
     <ClInclude Include="Graphics\Scene\Scene.h" />
     <ClInclude Include="Graphics\Scene\SceneEditor.h" />

@@ -137,6 +137,8 @@ namespace Falcor
         static SharedPtr createFromReflection(const ProgramReflection* pReflector);
 
         ApiHandle getApiHandle() const { return mApiHandle; }
+
+        size_t getDescriptorTableCount() const { return mDesc.mDescriptorTables.size(); }
     private:
         RootSignature(const Desc& desc);
         bool apiInit();

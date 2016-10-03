@@ -94,7 +94,8 @@ namespace Falcor
     {
         // Bind the input texture
         pUbo->setTexture(0, pInput, pPointSampler.get());
-        pRenderCtx->setUniformBuffer(0, pUbo);
+        // DISABLED_FOR_D3D12
+//        pRenderCtx->setUniformBuffer(0, pUbo);
 
         // Set draw params
         pRenderCtx->pushFbo(pDst);
