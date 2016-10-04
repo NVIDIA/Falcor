@@ -95,56 +95,60 @@ namespace Falcor
     }
 
 
-    void initializeBufferDescTable(const ProgramReflection* pReflector, RootSignature::Desc& desc, ProgramReflection::BufferReflection::Type bufferType, RootSignature::DescType descType)
+    uint32_t initializeBufferDescTable(const ProgramReflection* pReflector, RootSignature::Desc& desc, ProgramReflection::BufferReflection::Type bufferType, RootSignature::DescType descType)
     {
+        uint32_t cost = 0;
         const auto& bufMap = pReflector->getBufferMap(bufferType);
-        RootSignature::DescriptorTable descTable;
         for (const auto& buf : bufMap)
         {
             const ProgramReflection::BufferReflection* pBuffer = buf.second.get();
-            descTable.addRange(descType, pBuffer->getRegisterIndex(), 1, pBuffer->getRegisterSpace());
+            desc.addDescriptor(pBuffer->getRegisterIndex(), descType, ShaderVisibility::All, pBuffer->getRegisterSpace());
+            cost += 2;
         }
-        desc.addDescriptorTable(descTable);
+        return cost;
     }
 
     RootSignature::SharedPtr RootSignature::createFromReflection(const ProgramReflection* pReflector)
     {
+        uint32_t cost = 0;
         Desc d;
-        // There are no static samplers or root constants. Only CBVs, UAVs and SRVs. Need to initialize 2 tables
-        // OPTME:
-        //      - For now we ignore shader-visibility flags and create everything with full visibility
-        //      - We also don't pack ranges. We create an entry for each CBV instead of a range
-
-        initializeBufferDescTable(pReflector, d, ProgramReflection::BufferReflection::Type::Constant, RootSignature::DescType::CBV);
-        initializeBufferDescTable(pReflector, d, ProgramReflection::BufferReflection::Type::UnorderedAccess, RootSignature::DescType::UAV);
+        // FIXME:
+        // For now we just put everything in the root. No descriptor tables because I don't feel like implementing a dynamic descriptor table class yet
+        // We also create everything visible to all the shader stages
+        cost += initializeBufferDescTable(pReflector, d, ProgramReflection::BufferReflection::Type::Constant, RootSignature::DescType::CBV);
+        cost += initializeBufferDescTable(pReflector, d, ProgramReflection::BufferReflection::Type::UnorderedAccess, RootSignature::DescType::UAV);
 
         const ProgramReflection::ResourceMap& resMap = pReflector->getResourceMap();
-        RootSignature::DescriptorTable srvTable;
-        RootSignature::DescriptorTable uavTable;
-        RootSignature::DescriptorTable samplerTable;
         for (auto& resIt : resMap)
         {
             const ProgramReflection::Resource& resource = resIt.second;
+            DescType descType;
             switch (resource.type)
             {
             case ProgramReflection::Resource::ResourceType::UAV:
-                uavTable.addRange(DescType::UAV, resource.regIndex, 1, resource.registerSpace);
+                descType = DescType::UAV;
                 break;
             case ProgramReflection::Resource::ResourceType::Texture:
-                srvTable.addRange(DescType::SRV, resource.regIndex, 1, resource.registerSpace);
+                descType = DescType::SRV;
                 break;
             case ProgramReflection::Resource::ResourceType::Sampler:
-                samplerTable.addRange(DescType::Sampler, resource.regIndex, 1, resource.registerSpace);
+                descType = DescType::Sampler;
                 break;
             default:
                 should_not_get_here();
             }
+
+            RootSignature::DescriptorTable descTable;
+            descTable.addRange(descType, resource.regIndex, 1, resource.registerSpace);
+            d.addDescriptorTable(descTable);
+            cost += 1;
         }
 
-        d.addDescriptorTable(srvTable);
-        d.addDescriptorTable(uavTable);
-        d.addDescriptorTable(samplerTable);
-
+        if (cost <= 64)
+        {
+            logError("RootSignature::createFromReflection(): The required storage cost is " + std::to_string(cost) + " DWORDS, which is larger then the max allowed cost of 64 DWORDS");
+            return nullptr;
+        }
         return create(d);
     }
 }

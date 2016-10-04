@@ -25,13 +25,13 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#pragma once
-#ifdef FALCOR_D3D12
 #include "Framework.h"
-#include "API/LowLevel/DescriptorTable.h"
-#include "API/LowLevel/DescriptorHeap.h"
+#include "DescriptorTable.h"
 
 namespace Falcor
 {
+    DescriptorTable::SharedPtr DescriptorTable::create(uint32_t descriptorCount)
+    {
+        return nullptr;
+    }
 }
-#endif // FALCOR_D3D12

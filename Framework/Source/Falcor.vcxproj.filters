@@ -404,14 +404,14 @@
     <ClCompile Include="API\D3D\D3D12\LowLevel\D3D12DescriptorHeap.cpp">
       <Filter>API\D3D\D3D12\LowLevel</Filter>
     </ClCompile>
-    <ClCompile Include="API\D3D\D3D12\LowLevel\D3D12DescriptorTable.cpp">
-      <Filter>API\D3D\D3D12\LowLevel</Filter>
-    </ClCompile>
     <ClCompile Include="API\D3D\D3D12\LowLevel\D3D12GpuFence.cpp">
       <Filter>API\D3D\D3D12\LowLevel</Filter>
     </ClCompile>
     <ClCompile Include="API\D3D\D3D12\LowLevel\D3D12RootSignature.cpp">
       <Filter>API\D3D\D3D12\LowLevel</Filter>
+    </ClCompile>
+    <ClCompile Include="API\LowLevel\DescriptorTable.cpp">
+      <Filter>API\LowLevel</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

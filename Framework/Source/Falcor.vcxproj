@@ -65,7 +65,6 @@
     <ClCompile Include="API\D3D\D3D12\D3D12Vao.cpp" />
     <ClCompile Include="API\D3D\D3D12\LowLevel\D3D12CopyContext.cpp" />
     <ClCompile Include="API\D3D\D3D12\LowLevel\D3D12DescriptorHeap.cpp" />
-    <ClCompile Include="API\D3D\D3D12\LowLevel\D3D12DescriptorTable.cpp" />
     <ClCompile Include="API\D3D\D3D12\LowLevel\D3D12GpuFence.cpp" />
     <ClCompile Include="API\D3D\D3D12\LowLevel\D3D12RootSignature.cpp" />
     <ClCompile Include="API\D3D\D3DFormats.cpp" />
@@ -78,6 +77,7 @@
     <ClCompile Include="API\FBO.cpp" />
     <ClCompile Include="API\Formats.cpp" />
     <ClCompile Include="API\LowLevel\CopyContext.cpp" />
+    <ClCompile Include="API\LowLevel\DescriptorTable.cpp" />
     <ClCompile Include="API\LowLevel\RootSignature.cpp" />
     <ClCompile Include="API\OpenGL\GLBlendState.cpp" />
     <ClCompile Include="API\OpenGL\GLBuffer.cpp" />

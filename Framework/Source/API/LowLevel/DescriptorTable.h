@@ -27,6 +27,7 @@
 ***************************************************************************/
 #pragma once
 #include "DescriptorHeap.h"
+#include "FencedPool.h"
 
 namespace Falcor
 {
@@ -40,6 +41,8 @@ namespace Falcor
 
     private:
         DescriptorTable();
-        
+        uint32_t mDescCount;
+        DescriptorHeap::Type mType;
+        bool mShaderVisible = true;
     };
 }
