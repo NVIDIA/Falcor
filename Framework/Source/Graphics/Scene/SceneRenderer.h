@@ -32,7 +32,7 @@
 #include "Graphics/Scene/Scene.h"
 #include "SceneEditor.h"
 #include "utils/CpuTimer.h"
-#include "Core/UniformBuffer.h"
+#include "API/UniformBuffer.h"
 
 namespace Falcor
 {

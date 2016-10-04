@@ -28,8 +28,8 @@
 #include "Framework.h"
 #include "light.h"
 #include "Utils/Gui.h"
-#include "Core/UniformBuffer.h"
-#include "Core/Buffer.h"
+#include "API/UniformBuffer.h"
+#include "API/Buffer.h"
 #define _USE_MATH_DEFINES
 #include <math.h>
 #include "Data/VertexAttrib.h"

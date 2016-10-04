@@ -31,9 +31,9 @@
 #include "Externals/Assimp/Include/mesh.h"
 #include "glm/common.hpp"
 #include "glm/glm.hpp"
-#include "Core/Buffer.h"
+#include "API/Buffer.h"
 #include "AnimationController.h"
-#include "Core/VertexLayout.h"
+#include "API/VertexLayout.h"
 #include "Graphics/Camera/Camera.h"
 #include "Data/VertexAttrib.h"
 

@@ -27,13 +27,13 @@
 ***************************************************************************/
 #include "Framework.h"
 #include "FullScreenPass.h"
-#include "Core/VAO.h"
+#include "API/VAO.h"
 #include "glm/vec2.hpp"
-#include "Core/Buffer.h"
-#include "Core/DepthStencilState.h"
-#include "Core/RenderContext.h"
-#include "Core/VertexLayout.h"
-#include "Core/Window.h"
+#include "API/Buffer.h"
+#include "API/DepthStencilState.h"
+#include "API/RenderContext.h"
+#include "API/VertexLayout.h"
+#include "API/Window.h"
 
 namespace Falcor
 {

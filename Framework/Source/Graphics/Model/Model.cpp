@@ -35,12 +35,12 @@
 #include "glm/geometric.hpp"
 #include "AnimationController.h"
 #include "Animation.h"
-#include "Core/Buffer.h"
-#include "Core/Texture.h"
+#include "API/Buffer.h"
+#include "API/Texture.h"
 #include "Graphics/TextureHelper.h"
 #include "Utils/StringUtils.h"
 #include "Graphics/Camera/Camera.h"
-#include "core/VAO.h"
+#include "API/VAO.h"
 
 namespace Falcor
 {

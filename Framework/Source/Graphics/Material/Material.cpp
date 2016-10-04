@@ -27,9 +27,9 @@
 ***************************************************************************/
 #include "Framework.h"
 #include "Material.h"
-#include "core/UniformBuffer.h"
-#include "Core/Texture.h"
-#include "Core/Buffer.h"
+#include "API/UniformBuffer.h"
+#include "API/Texture.h"
+#include "API/Buffer.h"
 #include "Utils/os.h"
 #include "Utils/Math/FalcorMath.h"
 #include "MaterialSystem.h"

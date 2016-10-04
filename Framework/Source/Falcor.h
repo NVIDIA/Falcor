@@ -38,28 +38,38 @@
 #include <math.h>
 
 // Core
-#include "Core/ProgramVersion.h"
-#include "Core/Shader.h"
-#include "Core/BlendState.h"
-#include "Core/Buffer.h"
-#include "Core/DepthStencilState.h"
-#include "Core/Formats.h"
-#include "Core/RasterizerState.h"
-#include "Core/ProgramReflection.h"
-#include "Core/Texture.h"
-#include "Core/Sampler.h"
-#include "Core/ScreenCapture.h"
-#include "Core/VAO.h"
-#include "Core/FBO.h"
-#include "Core/GpuTimer.h"
-#include "Core/UniformBuffer.h"
-#include "Core/VertexLayout.h"
-#include "Core/ShaderStorageBuffer.h"
-#include "Core/Window.h"
-#include "Core/PipelineState.h"
-#include "Core/ProgramVars.h"
-#include "Core/RootData.h"
-#include "Core/RootSignature.h"
+#include "API/BlendState.h"
+#include "API/Buffer.h"
+#include "API/DepthStencilState.h"
+#include "API/Device.h"
+#include "API/FBO.h"
+#include "API/Formats.h"
+#include "API/GpuTimer.h"
+#include "API/PipelineState.h"
+#include "API/ProgramReflection.h"
+#include "API/ProgramVars.h"
+#include "API/ProgramVersion.h"
+#include "API/RasterizerState.h"
+#include "API/RenderContext.h"
+#include "API/Sampler.h"
+#include "API/ScreenCapture.h"
+#include "API/Shader.h"
+#include "API/ShaderStorageBuffer.h"
+#include "API/Texture.h"
+#include "API/UniformBuffer.h"
+#include "API/VAO.h"
+#include "API/VertexLayout.h"
+#include "API/Window.h"
+
+
+#if defined FALCOR_D3D12 || defined FALCOR_VULKAN
+#include "API/LowLevel/CopyContext.h"
+#include "API/LowLevel/DescriptorHeap.h"
+#include "API/LowLevel/DescriptorTable.h"
+#include "API/LowLevel/FencedPool.h"
+#include "API/LowLevel/GpuFence.h"
+#include "API/LowLevel/RootSignature.h"
+#endif //FALCOR_D3D12 || defined FALCOR_VULKAN
 
 // Graphics
 #include "Graphics/Camera/Camera.h"
@@ -96,6 +106,7 @@
 
 // Utils
 #include "Utils/Bitmap.h"
+#include "Utils/DDSHeader.h"
 #include "Utils/Font.h"
 #include "Utils/Gui.h"
 #include "Utils/Logger.h"

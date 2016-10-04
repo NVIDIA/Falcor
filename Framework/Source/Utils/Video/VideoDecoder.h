@@ -28,7 +28,7 @@
 #pragma once
 #include <string>
 #include <future>
-#include "Core/Texture.h"
+#include "API/Texture.h"
 
 struct AVFormatContext;
 struct AVStream;

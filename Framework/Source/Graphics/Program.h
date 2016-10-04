@@ -30,7 +30,7 @@
 #include <string>
 #include <map>
 #include <vector>
-#include "Core/ProgramVersion.h"
+#include "API/ProgramVersion.h"
 
 namespace Falcor
 {

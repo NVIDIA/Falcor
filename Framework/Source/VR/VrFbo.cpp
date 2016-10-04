@@ -30,7 +30,7 @@
 #include "OpenVR/VRSystem.h"
 #include "OpenVR/VRDisplay.h"
 #include "Graphics/FboHelper.h"
-#include "Core/Texture.h"
+#include "API/Texture.h"
 
 namespace Falcor
 {

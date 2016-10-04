@@ -32,12 +32,12 @@
 #include "glm/gtc/type_ptr.hpp"
 #include "Graphics/TextureHelper.h"
 #include "Utils/OS.h"
-#include "Core/Shader.h"
-#include "Core/ProgramVersion.h"
-#include "Core/Texture.h"
-#include "Core/Sampler.h"
+#include "API/Shader.h"
+#include "API/ProgramVersion.h"
+#include "API/Texture.h"
+#include "API/Sampler.h"
 #include "Utils/ShaderUtils.h"
-#include "Core/RenderContext.h"
+#include "API/RenderContext.h"
 #include "Utils/StringUtils.h"
 
 namespace Falcor

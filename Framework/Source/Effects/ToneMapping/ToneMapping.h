@@ -27,9 +27,9 @@
 ***************************************************************************/
 #pragma once
 #include "Graphics/FullScreenPass.h"
-#include "Core/UniformBuffer.h"
-#include "Core/FBO.h"
-#include "Core/Sampler.h"
+#include "API/UniformBuffer.h"
+#include "API/FBO.h"
+#include "API/Sampler.h"
 #include "Utils/Gui.h"
 
 namespace Falcor

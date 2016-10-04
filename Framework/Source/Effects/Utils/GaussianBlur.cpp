@@ -27,7 +27,7 @@
 ***************************************************************************/
 #include "Framework.h"
 #include "GaussianBlur.h"
-#include "Core/RenderContext.h"
+#include "API/RenderContext.h"
 #include "Graphics/FboHelper.h"
 
 namespace Falcor

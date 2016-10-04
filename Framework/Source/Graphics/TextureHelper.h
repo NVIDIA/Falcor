@@ -27,7 +27,7 @@
 ***************************************************************************/
 #pragma once
 #include <string>
-#include "Core/Texture.h"
+#include "API/Texture.h"
 namespace Falcor
 {
     /*!

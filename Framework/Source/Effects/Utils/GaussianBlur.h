@@ -26,10 +26,10 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 #pragma once
-#include "Core/FBO.h"
+#include "API/FBO.h"
 #include "Graphics/FullScreenPass.h"
-#include "Core/Sampler.h"
-#include "Core/UniformBuffer.h"
+#include "API/Sampler.h"
+#include "API/UniformBuffer.h"
 #include <memory>
 
 namespace Falcor

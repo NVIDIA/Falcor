@@ -30,7 +30,7 @@
 #include "OS.h"
 #include <fstream>
 #include "Graphics/TextureHelper.h"
-#include "Core/Texture.h"
+#include "API/Texture.h"
 
 namespace Falcor
 {

@@ -28,7 +28,7 @@
 #pragma once
 #include <map>
 #include <memory>
-#include "Core/Texture.h"
+#include "API/Texture.h"
 
 namespace Falcor
 {

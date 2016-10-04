@@ -29,10 +29,10 @@
 #include "BinaryModelExporter.h"
 #include "../Model.h"
 #include "../Mesh.h"
-#include "Core/VAO.h"
+#include "API/VAO.h"
 #include "BinaryModelSpec.h"
-#include "Core/Buffer.h"
-#include "core/Texture.h"
+#include "API/Buffer.h"
+#include "API/Texture.h"
 #include "BinaryImage.hpp"
 #include "Data/VertexAttrib.h"
 

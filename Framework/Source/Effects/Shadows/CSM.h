@@ -26,7 +26,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 #pragma once
-#include "Core/Texture.h"
+#include "API/Texture.h"
 #include "Data/Effects/CsmData.h"
 #include "../Utils/GaussianBlur.h"
 #include "Graphics/Light.h"

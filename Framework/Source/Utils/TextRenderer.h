@@ -30,11 +30,11 @@
 #include "glm/vec3.hpp"
 #include <string>
 #include "Font.h"
-#include "Core/VAO.h"
-#include "Core/Buffer.h"
+#include "API/VAO.h"
+#include "API/Buffer.h"
 #include "Graphics/RenderStateCache.h"
-#include "Core/ProgramVars.h"
-#include "Core/RenderContext.h"
+#include "API/ProgramVars.h"
+#include "API/RenderContext.h"
 
 namespace Falcor
 {

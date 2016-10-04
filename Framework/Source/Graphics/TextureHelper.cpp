@@ -27,9 +27,9 @@
 ***************************************************************************/
 #include "Framework.h"
 #include "TextureHelper.h"
-#include "Core/Texture.h"
+#include "API/Texture.h"
 #include "Utils/Bitmap.h"
-#include "Core/DDSHeader.h"
+#include "Utils/DDSHeader.h"
 #include "Utils/BinaryFileStream.h"
 #include "Utils/StringUtils.h"
 

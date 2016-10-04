@@ -27,7 +27,7 @@
 ***************************************************************************/
 #include "Framework.h"
 #include "Profiler.h"
-#include "Core/GpuTimer.h"
+#include "API/GpuTimer.h"
 
 #include <iostream>
 #include <fstream>

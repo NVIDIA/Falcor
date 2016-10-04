@@ -30,7 +30,7 @@
 #include "glm/gtx/quaternion.hpp"
 #include "utils/AABB.h"
 #include "Utils/math/FalcorMath.h"
-#include "Core/UniformBuffer.h"
+#include "API/UniformBuffer.h"
 
 namespace Falcor
 {

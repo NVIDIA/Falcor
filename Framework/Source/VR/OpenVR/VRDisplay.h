@@ -38,10 +38,10 @@
 #include "glm/mat4x4.hpp"
 #include "glm/vec2.hpp"
 #include "glm/vec3.hpp"
-#include "Core/FBO.h"
-#include "Core/RenderContext.h"
+#include "API/FBO.h"
+#include "API/RenderContext.h"
 #include "Graphics/Program.h"
-#include "Core/Texture.h"
+#include "API/Texture.h"
 #include "Graphics/Model/Model.h"
 
 #if !defined( FALCOR_GL ) && !defined( FALCOR_D3D )

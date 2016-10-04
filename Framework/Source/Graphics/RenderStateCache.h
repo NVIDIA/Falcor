@@ -26,13 +26,13 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 #pragma once
-#include "Core/PipelineState.h"
+#include "API/PipelineState.h"
 #include "Graphics/Program.h"
-#include "Core/VAO.h"
-#include "Core/FBO.h"
-#include "Core/RasterizerState.h"
-#include "Core/DepthStencilState.h"
-#include "Core/BlendState.h"
+#include "API/VAO.h"
+#include "API/FBO.h"
+#include "API/RasterizerState.h"
+#include "API/DepthStencilState.h"
+#include "API/BlendState.h"
 
 namespace Falcor
 {

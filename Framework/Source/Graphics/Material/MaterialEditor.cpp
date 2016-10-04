@@ -30,7 +30,7 @@
 #include "Utils/Gui.h"
 #include "Utils/OS.h"
 #include "Graphics/TextureHelper.h"
-#include "Core/Texture.h"
+#include "API/Texture.h"
 #include "Graphics/Scene/Scene.h"
 #include "Graphics/Scene/SceneExporter.h"
 #if 0

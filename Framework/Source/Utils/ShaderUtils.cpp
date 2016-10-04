@@ -28,7 +28,7 @@
 #include "Framework.h"
 #include <vector>
 #include "Utils/ShaderPreprocessor.h"
-#include "Core/Shader.h"
+#include "API/Shader.h"
 #include "Utils/OS.h"
 
 namespace Falcor

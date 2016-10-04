@@ -30,13 +30,13 @@
 #include <set>
 #include <string>
 #include <stdint.h>
-#include "Core/Window.h"
+#include "API/Window.h"
 #include "utils/FrameRate.h"
 #include "utils/Gui.h"
 #include "utils/TextRenderer.h"
-#include "core/RenderContext.h"
+#include "API/RenderContext.h"
 #include "Utils/Video/VideoEncoderUI.h"
-#include "Core/Device.h"
+#include "API/Device.h"
 
 namespace Falcor
 {

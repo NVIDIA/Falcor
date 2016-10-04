@@ -29,10 +29,10 @@
 #include <map>
 #include <string>
 #include "Graphics/Program.h"
-#include "Core/VAO.h"
-#include "Core/DepthStencilState.h"
-#include "Core/Buffer.h"
-#include "core/ProgramVersion.h"
+#include "API/VAO.h"
+#include "API/DepthStencilState.h"
+#include "API/Buffer.h"
+#include "API/ProgramVersion.h"
 
 namespace Falcor
 {

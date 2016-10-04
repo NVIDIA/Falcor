@@ -26,10 +26,10 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 #include "Framework.h"
-#include "Core/Formats.h"
+#include "API/Formats.h"
 #include "FboHelper.h"
-#include "Core/FBO.h"
-#include "Core/Texture.h"
+#include "API/FBO.h"
+#include "API/Texture.h"
 
 namespace Falcor
 {

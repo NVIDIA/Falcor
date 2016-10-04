@@ -32,7 +32,7 @@
 #include "glm/vec3.hpp"
 #include "Graphics/Material/BasicMaterial.h"
 #include "Graphics/Model/Mesh.h"
-#include "Core/Sampler.h"
+#include "API/Sampler.h"
 #include "Graphics/Model/AnimationController.h"
 
 namespace Falcor

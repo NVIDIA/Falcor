@@ -28,7 +28,7 @@
 #include "Framework.h"
 #include "ParallelReduction.h"
 #include "Graphics/FboHelper.h"
-#include "Core/RenderContext.h"
+#include "API/RenderContext.h"
 #include "glm/vec2.hpp"
 
 namespace Falcor

@@ -28,7 +28,7 @@
 #include "Framework.h"
 #include "SceneUtils.h"
 #include "Scene.h"
-#include "Core/UniformBuffer.h"
+#include "API/UniformBuffer.h"
 
 namespace Falcor
 {

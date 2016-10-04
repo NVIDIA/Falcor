@@ -28,11 +28,11 @@
 #include "Framework.h"
 #include "Sample.h"
 #include <map>
-#include "Core/ScreenCapture.h"
-#include "Core/Window.h"
+#include "API/ScreenCapture.h"
+#include "API/Window.h"
 #include "Graphics/Program.h"
 #include "Utils/OS.h"
-#include "Core/FBO.h"
+#include "API/FBO.h"
 #include "VR\OpenVR\VRSystem.h"
 
 namespace Falcor

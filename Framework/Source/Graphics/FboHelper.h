@@ -29,8 +29,8 @@
 #include <string>
 #include <vector>
 #include "glm/vec4.hpp"
-#include "Core/FBO.h"
-#include "Core/Texture.h"
+#include "API/FBO.h"
+#include "API/Texture.h"
 
 namespace Falcor
 {

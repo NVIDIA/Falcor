@@ -31,7 +31,7 @@
 #include "AntTweakBar.h"
 #include "OS.h"
 #include "Utils/UserInput.h"
-#include "Core/RenderContext.h"
+#include "API/RenderContext.h"
 
 namespace Falcor
 {

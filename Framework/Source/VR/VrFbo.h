@@ -28,8 +28,8 @@
 
 #pragma once
 #include <memory>
-#include "Core/FBO.h"
-#include "Core/Texture.h"
+#include "API/FBO.h"
+#include "API/Texture.h"
 #include "glm/vec2.hpp"
 #include <vector>
 #include "OpenVR/VRDisplay.h"

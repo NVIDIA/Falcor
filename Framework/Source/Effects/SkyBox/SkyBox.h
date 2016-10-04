@@ -27,14 +27,14 @@
 ***************************************************************************/
 #pragma once
 #include <memory>
-#include "Core/Sampler.h"
-#include "Core/Texture.h"
+#include "API/Sampler.h"
+#include "API/Texture.h"
 #include "graphics/Model/Model.h"
 #include "Graphics/Program.h"
-#include "Core/UniformBuffer.h"
-#include "Core/DepthStencilState.h"
-#include "Core/RasterizerState.h"
-#include "Core/BlendState.h"
+#include "API/UniformBuffer.h"
+#include "API/DepthStencilState.h"
+#include "API/RasterizerState.h"
+#include "API/BlendState.h"
 
 namespace Falcor
 {

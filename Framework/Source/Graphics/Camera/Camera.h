@@ -28,7 +28,7 @@
 #pragma once
 #include <glm/common.hpp>
 #include "glm/geometric.hpp"
-#include "Core/Texture.h"
+#include "API/Texture.h"
 #include "glm/mat4x4.hpp"
 #include "Data/HostDeviceData.h"
 #include <vector>
