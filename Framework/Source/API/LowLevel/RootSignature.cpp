@@ -95,7 +95,7 @@ namespace Falcor
     }
 
 
-    uint32_t initializeBufferDescTable(const ProgramReflection* pReflector, RootSignature::Desc& desc, ProgramReflection::BufferReflection::Type bufferType, RootSignature::DescType descType)
+    uint32_t initializeBufferDescriptors(const ProgramReflection* pReflector, RootSignature::Desc& desc, ProgramReflection::BufferReflection::Type bufferType, RootSignature::DescType descType)
     {
         uint32_t cost = 0;
         const auto& bufMap = pReflector->getBufferMap(bufferType);
@@ -108,31 +108,32 @@ namespace Falcor
         return cost;
     }
 
-    RootSignature::SharedPtr RootSignature::createFromReflection(const ProgramReflection* pReflector)
+    RootSignature::SharedPtr RootSignature::create(const ProgramReflection* pReflector)
     {
         uint32_t cost = 0;
-        Desc d;
+        RootSignature::Desc d;
+
         // FIXME:
         // For now we just put everything in the root. No descriptor tables because I don't feel like implementing a dynamic descriptor table class yet
         // We also create everything visible to all the shader stages
-        cost += initializeBufferDescTable(pReflector, d, ProgramReflection::BufferReflection::Type::Constant, RootSignature::DescType::CBV);
-        cost += initializeBufferDescTable(pReflector, d, ProgramReflection::BufferReflection::Type::UnorderedAccess, RootSignature::DescType::UAV);
+        cost += initializeBufferDescriptors(pReflector, d, ProgramReflection::BufferReflection::Type::Constant, RootSignature::DescType::CBV);
+        cost += initializeBufferDescriptors(pReflector, d, ProgramReflection::BufferReflection::Type::UnorderedAccess, RootSignature::DescType::UAV);
 
         const ProgramReflection::ResourceMap& resMap = pReflector->getResourceMap();
         for (auto& resIt : resMap)
         {
             const ProgramReflection::Resource& resource = resIt.second;
-            DescType descType;
+            RootSignature::DescType descType;
             switch (resource.type)
             {
             case ProgramReflection::Resource::ResourceType::UAV:
-                descType = DescType::UAV;
+                descType = RootSignature::DescType::UAV;
                 break;
             case ProgramReflection::Resource::ResourceType::Texture:
-                descType = DescType::SRV;
+                descType = RootSignature::DescType::SRV;
                 break;
             case ProgramReflection::Resource::ResourceType::Sampler:
-                descType = DescType::Sampler;
+                descType = RootSignature::DescType::Sampler;
                 break;
             default:
                 should_not_get_here();
@@ -144,11 +145,11 @@ namespace Falcor
             cost += 1;
         }
 
-        if (cost <= 64)
+        if (cost > 64)
         {
-            logError("RootSignature::createFromReflection(): The required storage cost is " + std::to_string(cost) + " DWORDS, which is larger then the max allowed cost of 64 DWORDS");
+            logError("RootSignature::create(): The required storage cost is " + std::to_string(cost) + " DWORDS, which is larger then the max allowed cost of 64 DWORDS");
             return nullptr;
         }
-        return create(d);
+        return RootSignature::create(d);
     }
 }

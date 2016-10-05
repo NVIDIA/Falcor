@@ -155,25 +155,33 @@ namespace Falcor
         RootParameterVec rootParams(rootParamsCount);
         auto& paramIt = rootParams.begin();
 
+        mConstantOffset.resize(mDesc.mConstants.size());
+
+        uint32_t rootOffset = 0;
         // Constants
-        for (const auto& constIt : mDesc.mConstants)
+        for(size_t i = 0 ; i < mDesc.mConstants.size() ; i++)
         {
-            convertRootConstant(constIt, *paramIt);
+            mConstantOffset[i] = rootOffset++;
+            convertRootConstant(mDesc.mConstants[i], *paramIt);
             paramIt++;
         }
 
         // Root descriptors
-        for (const auto& descIt : mDesc.mRootDescriptors)
+        mDescriptorOffset.resize(mDesc.mRootDescriptors.size());
+        for (size_t i = 0 ; i < mDesc.mRootDescriptors.size() ; i++)
         {
-            convertRootDescriptor(descIt, *paramIt);
+            mDescriptorOffset[i] = rootOffset++;
+            convertRootDescriptor(mDesc.mRootDescriptors[i], *paramIt);
             paramIt++;
 
         }
 
         // Descriptor tables. Need to allocate some space for the D3D12 tables
         std::vector<std::vector<D3D12_DESCRIPTOR_RANGE>> d3dRanges(mDesc.mDescriptorTables.size());
+        mDescTableOffset.resize(mDesc.mDescriptorTables.size());
         for (size_t i = 0 ; i < mDesc.mDescriptorTables.size() ; i++)
         {
+            mDescTableOffset[i] = rootOffset++;
             convertDescTable(mDesc.mDescriptorTables[i], *paramIt, d3dRanges[i]);
             paramIt++;
         }

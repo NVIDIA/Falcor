@@ -143,11 +143,22 @@ namespace Falcor
         /** Get the root signature object
         */
         RootSignature::SharedConstPtr getRootSignature() const { return mpRootSignature; }
+
+        template<typename T>
+        struct ResourceData
+        {
+            typename T::SharedPtr pBuffer;
+            uint32_t rootSigOffset = 0;
+        };
+
+        // FIXME: This doesn't work with multiple register spaces
+        template<typename T> using ResourceDataMap = std::unordered_map<uint32_t, ResourceData<T>>;
+        
     private:
         RootSignature::SharedConstPtr mpRootSignature;
         ProgramVars(const ProgramReflection::SharedConstPtr& pReflector, bool createBuffers, const RootSignature::SharedConstPtr& pRootSig);
         ProgramReflection::SharedConstPtr mpReflector;
-        std::unordered_map<uint32_t, UniformBuffer::SharedPtr> mUniformBuffers;
-        std::unordered_map<uint32_t, ShaderStorageBuffer::SharedPtr> mSSBO;
+        ResourceDataMap<UniformBuffer> mUniformBuffers;
+        ResourceDataMap<ShaderStorageBuffer> mSSBO;
     };
 }

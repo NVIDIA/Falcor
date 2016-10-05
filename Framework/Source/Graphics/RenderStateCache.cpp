@@ -42,7 +42,7 @@ namespace Falcor
         }
         else if(mpProgram)
         {
-            mDesc.setRootSignature(RootSignature::createFromReflection(mpProgram->getActiveVersion()->getReflector().get()));
+            mDesc.setRootSignature(RootSignature::create(mpProgram->getActiveVersion()->getReflector().get()));
         }
         return PipelineState::create(mDesc);
     }

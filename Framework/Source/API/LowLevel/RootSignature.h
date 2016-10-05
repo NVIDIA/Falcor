@@ -134,15 +134,31 @@ namespace Falcor
         };
 
         static SharedPtr create(const Desc& desc);
-        static SharedPtr createFromReflection(const ProgramReflection* pReflector);
+        static SharedPtr create(const ProgramReflection* pReflection);
 
         ApiHandle getApiHandle() const { return mApiHandle; }
 
         size_t getDescriptorTableCount() const { return mDesc.mDescriptorTables.size(); }
+        const DescriptorTable& getDescriptorTable(size_t index) const { return mDesc.mDescriptorTables[index]; }
+        uint32_t getDescriptorTableRootOffset(size_t index) const { return mDescTableOffset[index]; }
+
+        size_t getRootDescriptorCount() const { return mDesc.mRootDescriptors.size(); }
+        const DescriptorDesc& getRootDescriptor(size_t index) const { return mDesc.mRootDescriptors[index]; }
+        uint32_t getDescriptorRootOffset(size_t index) const { return mDescriptorOffset[index]; }
+
+        size_t getRootConstantCount() const { return mDesc.mConstants.size(); }
+        const ConstantDesc& getRootConstantDesc(size_t index) const { return mDesc.mConstants[index]; }
+        uint32_t getConstantRootOffset(size_t index) const { return mConstantOffset[index]; }
+
+        size_t getStaticSamplersCount() const { return mDesc.mSamplers.size(); }
+        const SamplerDesc& getStaticSamplerDesc(size_t index) const { return mDesc.mSamplers[index]; }
     private:
         RootSignature(const Desc& desc);
         bool apiInit();
         ApiHandle mApiHandle;
         Desc mDesc;
+        std::vector<uint32_t> mDescriptorOffset;
+        std::vector<uint32_t> mDescTableOffset;
+        std::vector<uint32_t> mConstantOffset;
     };
 }

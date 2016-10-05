@@ -32,25 +32,51 @@
 
 namespace Falcor
 {
-    template<typename BufferType>
-    static void initializeBuffersMap(std::unordered_map<uint32_t, typename BufferType::SharedPtr>& bufferMap, bool createBuffers, const ProgramReflection::BufferMap& reflectionMap)
+    template<typename BufferType, RootSignature::DescType descType>
+    bool initializeBuffersMap(ProgramVars::ResourceDataMap<typename BufferType>& bufferMap, bool createBuffers, const ProgramReflection::BufferMap& reflectionMap, const RootSignature* pRootSig)
     {
-        for(auto& buf : reflectionMap)
+        for (auto& buf : reflectionMap)
         {
-            uint32_t index = buf.first;
+            const ProgramReflection::BufferReflection* pReflector = buf.second.get();
+            uint32_t regIndex = pReflector->getRegisterIndex();
+            uint32_t regSpace = pReflector->getRegisterSpace();
+
             // Only create the buffer if needed
-            bufferMap[index] = createBuffers ? BufferType::create(buf.second) : nullptr;
+            bufferMap[regIndex].pBuffer = createBuffers ? BufferType::create(buf.second) : nullptr;
+
+            // Find the bind-index in the root descriptor. Views
+            // FIXME: Add support for descriptor tables
+            // OPTME: This can be more efficient
+
+            bool found = false;
+
+            // First search the root-descriptors
+            for (size_t i = 0; i < pRootSig->getRootDescriptorCount(); i++)
+            {
+                const RootSignature::DescriptorDesc& desc = pRootSig->getRootDescriptor(i);
+                found = (desc.type == descType) && (desc.regIndex == regIndex) && (desc.regSpace == regSpace);
+                if (found)
+                {
+                    bufferMap[regIndex].rootSigOffset = pRootSig->getDescriptorRootOffset(i);
+                    break;
+                }
+            }
+
+            if (!found)
+            {
+                logError("Can't find a root-signature information matching buffer '" + pReflector->getName() + " when creating ProgramVars");
+                return false;
+            }
         }
+        return true;
     }
-
-    ProgramVars::ProgramVars(const ProgramReflection::SharedConstPtr& pReflector, bool createBuffers, const RootSignature::SharedConstPtr& pRootSig)
+    
+    ProgramVars::ProgramVars(const ProgramReflection::SharedConstPtr& pReflector, bool createBuffers, const RootSignature::SharedConstPtr& pRootSig) : mpReflector(pReflector)
     {
-        mpReflector = pReflector;
-
         // Initialize the UBO and SSBO maps. We always do it, to mark which slots are used in the shader.
-        initializeBuffersMap<UniformBuffer>(mUniformBuffers, createBuffers, mpReflector->getBufferMap(ProgramReflection::BufferReflection::Type::Constant));
-        initializeBuffersMap<ShaderStorageBuffer>(mSSBO, createBuffers, mpReflector->getBufferMap(ProgramReflection::BufferReflection::Type::UnorderedAccess));
-        mpRootSignature = pRootSig ? pRootSig : RootSignature::createFromReflection(pReflector.get());
+        mpRootSignature = pRootSig ? pRootSig : RootSignature::create(pReflector.get());
+        initializeBuffersMap<UniformBuffer, RootSignature::DescType::CBV>(mUniformBuffers, createBuffers, mpReflector->getBufferMap(ProgramReflection::BufferReflection::Type::Constant), mpRootSignature.get());
+        initializeBuffersMap<ShaderStorageBuffer, RootSignature::DescType::UAV>(mSSBO, createBuffers, mpReflector->getBufferMap(ProgramReflection::BufferReflection::Type::UnorderedAccess), mpRootSignature.get());
     }
 
     ProgramVars::SharedPtr ProgramVars::create(const ProgramReflection::SharedConstPtr& pReflector, bool createBuffers, const RootSignature::SharedConstPtr& pRootSig)
@@ -59,18 +85,18 @@ namespace Falcor
     }
 
     template<typename BufferClass>
-    typename BufferClass::SharedPtr getBufferCommon(uint32_t index, const std::unordered_map<uint32_t, typename BufferClass::SharedPtr>& bufferMap)
+    typename BufferClass::SharedPtr getBufferCommon(uint32_t index, const ProgramVars::ResourceDataMap<BufferClass>& bufferMap)
     {
         auto& it = bufferMap.find(index);
         if(it == bufferMap.end())
         {
             return nullptr;
         }
-        return it->second;
+        return it->second.pBuffer;
     }
 
     template<typename BufferClass, ProgramReflection::BufferReflection::Type bufferType>
-    typename BufferClass::SharedPtr getBufferCommon(const std::string& name, const ProgramReflection* pReflector, const std::unordered_map<uint32_t, typename BufferClass::SharedPtr>& bufferMap)
+    typename BufferClass::SharedPtr getBufferCommon(const std::string& name, const ProgramReflection* pReflector, const ProgramVars::ResourceDataMap<BufferClass>& bufferMap)
     {
         uint32_t bindLocation = pReflector->getBufferBinding(name);
 
@@ -129,7 +155,7 @@ namespace Falcor
             return ErrorCode::SizeMismatch;
         }
 
-        mUniformBuffers[index] = pUbo;
+        mUniformBuffers[index].pBuffer = pUbo;
         return ErrorCode::None;
     }
 
