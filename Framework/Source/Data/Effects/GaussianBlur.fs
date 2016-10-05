@@ -29,7 +29,7 @@
 #include "HlslGlslCommon.h"
 #expect _KERNEL_WIDTH
 
-UNIFORM_BUFFER(PerImageCB, 0)
+CONSTANT_BUFFER(PerImageCB, 0)
 {
 #ifdef _USE_TEX2D_ARRAY
     sampler2DArray gSrcTex;

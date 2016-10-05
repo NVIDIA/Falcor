@@ -37,7 +37,7 @@
 namespace Falcor
 {
     struct BoundingBox;
-    class UniformBuffer;
+    class ConstantBuffer;
 
    /** Camera class
     */
@@ -154,8 +154,8 @@ namespace Falcor
         */
         bool isObjectCulled(const BoundingBox& box) const;
 
-        void setIntoUniformBuffer(UniformBuffer* pBuffer, const std::string& varName) const;
-        void setIntoUniformBuffer(UniformBuffer* pBuffer, const std::size_t& offset) const;
+        void setIntoConstantBuffer(ConstantBuffer* pBuffer, const std::string& varName) const;
+        void setIntoConstantBuffer(ConstantBuffer* pBuffer, const std::size_t& offset) const;
 
         /** Returns the raw camera data
         */

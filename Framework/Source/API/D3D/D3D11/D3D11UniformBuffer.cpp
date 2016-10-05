@@ -27,7 +27,7 @@
 ***************************************************************************/
 #ifdef FALCOR_D3D11
 #include "Framework.h"
-#include "API/UniformBuffer.h"
+#include "API/ConstantBuffer.h"
 #include "glm/glm.hpp"
 #include "API/Buffer.h"
 #include "API/ProgramVersion.h"
@@ -47,13 +47,13 @@ namespace Falcor
     std::map<const ProgramVersion*, AssignedResources> gAssignedResourcesMap;
 
     using namespace ShaderReflection;
-    UniformBuffer::~UniformBuffer() = default;
+    ConstantBuffer::~ConstantBuffer() = default;
 
-    bool UniformBuffer::apiInit(bool isUniformBuffer)
+    bool ConstantBuffer::apiInit(bool isConstantBuffer)
     {
         bool bufferFound = false;
         // We don't necessarily have this buffer. This can happen if the buffer only contains textures.
-        assert(isUniformBuffer);
+        assert(isConstantBuffer);
         for(uint32_t i = 0; i < (uint32_t)ShaderType::Count; i++)
         {
             const Shader* pShader = pProgram->getShader((ShaderType)i);
@@ -110,18 +110,18 @@ namespace Falcor
         if(mVariables.size() == 0)
         {
             assert(bufferFound == false);
-            Logger::log(Logger::Level::Error, "UniformBuffer::ApiInit() - Buffer '" + bufferName + "' not found in program " + pProgram->getName() + " and no resources were declared in the program.");
+            Logger::log(Logger::Level::Error, "ConstantBuffer::ApiInit() - Buffer '" + bufferName + "' not found in program " + pProgram->getName() + " and no resources were declared in the program.");
             return false;
         }
         else if(bufferFound == false)
         {
-            Logger::log(Logger::Level::Warning, "UniformBuffer::ApiInit() - Buffer '" + bufferName + "' not found in program " + pProgram->getName() + ".\nThis can happen if the buffer only contains textures.");
+            Logger::log(Logger::Level::Warning, "ConstantBuffer::ApiInit() - Buffer '" + bufferName + "' not found in program " + pProgram->getName() + ".\nThis can happen if the buffer only contains textures.");
         }
 
         return true;
     }
 
-    void UniformBuffer::setTextureInternal(size_t offset, const Texture* pTexture, const Sampler* pSampler)
+    void ConstantBuffer::setTextureInternal(size_t offset, const Texture* pTexture, const Sampler* pSampler)
     {
 #ifdef _LOG_ENABLED
         if(pSampler)
@@ -171,7 +171,7 @@ namespace Falcor
             }
             if(bOK == false)
             {
-                Logger::log(Logger::Level::Error, "Error when trying to bind sampler to uniform buffer " + mName + ".\n" + error);
+                Logger::log(Logger::Level::Error, "Error when trying to bind sampler to constant buffer " + mName + ".\n" + error);
                 return;
             }            
         }

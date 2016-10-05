@@ -81,13 +81,13 @@ namespace Falcor
 
         createLuminanceFbo(pSrc);
 
-        // Bind the UBO
-        mpUbo->setTexture(mUboOffsets.colorTex, pSrc->getColorTexture(0).get(), mpPointSampler.get());
-        mpUbo->setTexture(mUboOffsets.luminanceTex, mpLuminanceFbo->getColorTexture(0).get(), mpLinearSampler.get());
-        mpUbo->setVariable(mUboOffsets.middleGray, mMiddleGray);
-        mpUbo->setVariable(mUboOffsets.maxWhiteLuminance, mWhiteMaxLuminance);
-        mpUbo->setVariable(mUboOffsets.luminanceLod, mLuminanceLod);
-        mpUbo->setVariable(mUboOffsets.whiteScale, mWhiteScale);
+        // Bind the CB
+        mpCb->setTexture(mCbOffsets.colorTex, pSrc->getColorTexture(0).get(), mpPointSampler.get());
+        mpCb->setTexture(mCbOffsets.luminanceTex, mpLuminanceFbo->getColorTexture(0).get(), mpLinearSampler.get());
+        mpCb->setVariable(mCbOffsets.middleGray, mMiddleGray);
+        mpCb->setVariable(mCbOffsets.maxWhiteLuminance, mWhiteMaxLuminance);
+        mpCb->setVariable(mCbOffsets.luminanceLod, mLuminanceLod);
+        mpCb->setVariable(mCbOffsets.whiteScale, mWhiteScale);
 
         // DISABLED_FOR_D3D12
 //        pRenderContext->setUniformBuffer(0, mpUbo);
@@ -133,14 +133,14 @@ namespace Falcor
             should_not_get_here();
         }
 
-        // Initialize the UBO offsets
-        mpUbo = UniformBuffer::create(mpLuminancePass->getProgram(), "PerImageCB");
-        mUboOffsets.luminanceTex = mpUbo->getVariableOffset("gLuminanceTex");
-        mUboOffsets.colorTex = mpUbo->getVariableOffset("gColorTex");
-        mUboOffsets.middleGray = mpUbo->getVariableOffset("gMiddleGray");
-        mUboOffsets.maxWhiteLuminance = mpUbo->getVariableOffset("gMaxWhiteLuminance");
-        mUboOffsets.luminanceLod = mpUbo->getVariableOffset("gLuminanceLod");
-        mUboOffsets.whiteScale = mpUbo->getVariableOffset("gWhiteScale");
+        // Initialize the CB offsets
+        mpCb = ConstantBuffer::create(mpLuminancePass->getProgram(), "PerImageCB");
+        mCbOffsets.luminanceTex = mpCb->getVariableOffset("gLuminanceTex");
+        mCbOffsets.colorTex = mpCb->getVariableOffset("gColorTex");
+        mCbOffsets.middleGray = mpCb->getVariableOffset("gMiddleGray");
+        mCbOffsets.maxWhiteLuminance = mpCb->getVariableOffset("gMaxWhiteLuminance");
+        mCbOffsets.luminanceLod = mpCb->getVariableOffset("gLuminanceLod");
+        mCbOffsets.whiteScale = mpCb->getVariableOffset("gWhiteScale");
     }
 
     void ToneMapping::createLuminancePass()

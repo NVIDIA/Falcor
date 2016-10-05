@@ -44,166 +44,166 @@ namespace Falcor
 
     ShaderStorageBuffer::~ShaderStorageBuffer() = default;
 
-    #define get_uniform_offset(c_type_) \
+    #define get_constant_offset(c_type_) \
     template<> void ShaderStorageBuffer::getVariable(size_t Offset, c_type_& value) const    \
     {                                                           \
     }
 
-    get_uniform_offset(bool);
-    get_uniform_offset(glm::bvec2);
-    get_uniform_offset(glm::bvec3);
-    get_uniform_offset(glm::bvec4);
+    get_constant_offset(bool);
+    get_constant_offset(glm::bvec2);
+    get_constant_offset(glm::bvec3);
+    get_constant_offset(glm::bvec4);
 
-    get_uniform_offset(uint32_t);
-    get_uniform_offset(glm::uvec2);
-    get_uniform_offset(glm::uvec3);
-    get_uniform_offset(glm::uvec4);
+    get_constant_offset(uint32_t);
+    get_constant_offset(glm::uvec2);
+    get_constant_offset(glm::uvec3);
+    get_constant_offset(glm::uvec4);
 
-    get_uniform_offset(int32_t);
-    get_uniform_offset(glm::ivec2);
-    get_uniform_offset(glm::ivec3);
-    get_uniform_offset(glm::ivec4);
+    get_constant_offset(int32_t);
+    get_constant_offset(glm::ivec2);
+    get_constant_offset(glm::ivec3);
+    get_constant_offset(glm::ivec4);
 
-    get_uniform_offset(float);
-    get_uniform_offset(glm::vec2);
-    get_uniform_offset(glm::vec3);
-    get_uniform_offset(glm::vec4);
+    get_constant_offset(float);
+    get_constant_offset(glm::vec2);
+    get_constant_offset(glm::vec3);
+    get_constant_offset(glm::vec4);
 
-    get_uniform_offset(glm::mat2);
-    get_uniform_offset(glm::mat2x3);
-    get_uniform_offset(glm::mat2x4);
+    get_constant_offset(glm::mat2);
+    get_constant_offset(glm::mat2x3);
+    get_constant_offset(glm::mat2x4);
 
-    get_uniform_offset(glm::mat3);
-    get_uniform_offset(glm::mat3x2);
-    get_uniform_offset(glm::mat3x4);
+    get_constant_offset(glm::mat3);
+    get_constant_offset(glm::mat3x2);
+    get_constant_offset(glm::mat3x4);
 
-    get_uniform_offset(glm::mat4);
-    get_uniform_offset(glm::mat4x2);
-    get_uniform_offset(glm::mat4x3);
+    get_constant_offset(glm::mat4);
+    get_constant_offset(glm::mat4x2);
+    get_constant_offset(glm::mat4x3);
 
-    get_uniform_offset(uint64_t);
+    get_constant_offset(uint64_t);
 
-#undef get_uniform_offset
+#undef get_constant_offset
 
-#define get_uniform_string(c_type_) \
+#define get_constant_string(c_type_) \
     template<> void ShaderStorageBuffer::getVariable(const std::string& Name, c_type_& value) const    \
         {                                                           \
         }
 
-    get_uniform_string(bool);
-    get_uniform_string(glm::bvec2);
-    get_uniform_string(glm::bvec3);
-    get_uniform_string(glm::bvec4);
+    get_constant_string(bool);
+    get_constant_string(glm::bvec2);
+    get_constant_string(glm::bvec3);
+    get_constant_string(glm::bvec4);
 
-    get_uniform_string(uint32_t);
-    get_uniform_string(glm::uvec2);
-    get_uniform_string(glm::uvec3);
-    get_uniform_string(glm::uvec4);
+    get_constant_string(uint32_t);
+    get_constant_string(glm::uvec2);
+    get_constant_string(glm::uvec3);
+    get_constant_string(glm::uvec4);
 
-    get_uniform_string(int32_t);
-    get_uniform_string(glm::ivec2);
-    get_uniform_string(glm::ivec3);
-    get_uniform_string(glm::ivec4);
+    get_constant_string(int32_t);
+    get_constant_string(glm::ivec2);
+    get_constant_string(glm::ivec3);
+    get_constant_string(glm::ivec4);
 
-    get_uniform_string(float);
-    get_uniform_string(glm::vec2);
-    get_uniform_string(glm::vec3);
-    get_uniform_string(glm::vec4);
+    get_constant_string(float);
+    get_constant_string(glm::vec2);
+    get_constant_string(glm::vec3);
+    get_constant_string(glm::vec4);
 
-    get_uniform_string(glm::mat2);
-    get_uniform_string(glm::mat2x3);
-    get_uniform_string(glm::mat2x4);
+    get_constant_string(glm::mat2);
+    get_constant_string(glm::mat2x3);
+    get_constant_string(glm::mat2x4);
 
-    get_uniform_string(glm::mat3);
-    get_uniform_string(glm::mat3x2);
-    get_uniform_string(glm::mat3x4);
+    get_constant_string(glm::mat3);
+    get_constant_string(glm::mat3x2);
+    get_constant_string(glm::mat3x4);
 
-    get_uniform_string(glm::mat4);
-    get_uniform_string(glm::mat4x2);
-    get_uniform_string(glm::mat4x3);
+    get_constant_string(glm::mat4);
+    get_constant_string(glm::mat4x2);
+    get_constant_string(glm::mat4x3);
 
-    get_uniform_string(uint64_t);
-#undef get_uniform_string
+    get_constant_string(uint64_t);
+#undef get_constant_string
 
-#define get_uniform_array_offset(c_type_) \
+#define get_constant_array_offset(c_type_) \
     template<> void ShaderStorageBuffer::getVariableArray(size_t offset, size_t count, c_type_ value[]) const   \
     {                                                               \
     }
 
-    get_uniform_array_offset(bool);
-    get_uniform_array_offset(glm::bvec2);
-    get_uniform_array_offset(glm::bvec3);
-    get_uniform_array_offset(glm::bvec4);
+    get_constant_array_offset(bool);
+    get_constant_array_offset(glm::bvec2);
+    get_constant_array_offset(glm::bvec3);
+    get_constant_array_offset(glm::bvec4);
 
-    get_uniform_array_offset(uint32_t);
-    get_uniform_array_offset(glm::uvec2);
-    get_uniform_array_offset(glm::uvec3);
-    get_uniform_array_offset(glm::uvec4);
+    get_constant_array_offset(uint32_t);
+    get_constant_array_offset(glm::uvec2);
+    get_constant_array_offset(glm::uvec3);
+    get_constant_array_offset(glm::uvec4);
 
-    get_uniform_array_offset(int32_t);
-    get_uniform_array_offset(glm::ivec2);
-    get_uniform_array_offset(glm::ivec3);
-    get_uniform_array_offset(glm::ivec4);
+    get_constant_array_offset(int32_t);
+    get_constant_array_offset(glm::ivec2);
+    get_constant_array_offset(glm::ivec3);
+    get_constant_array_offset(glm::ivec4);
 
-    get_uniform_array_offset(float);
-    get_uniform_array_offset(glm::vec2);
-    get_uniform_array_offset(glm::vec3);
-    get_uniform_array_offset(glm::vec4);
+    get_constant_array_offset(float);
+    get_constant_array_offset(glm::vec2);
+    get_constant_array_offset(glm::vec3);
+    get_constant_array_offset(glm::vec4);
 
-    get_uniform_array_offset(glm::mat2);
-    get_uniform_array_offset(glm::mat2x3);
-    get_uniform_array_offset(glm::mat2x4);
+    get_constant_array_offset(glm::mat2);
+    get_constant_array_offset(glm::mat2x3);
+    get_constant_array_offset(glm::mat2x4);
 
-    get_uniform_array_offset(glm::mat3);
-    get_uniform_array_offset(glm::mat3x2);
-    get_uniform_array_offset(glm::mat3x4);
+    get_constant_array_offset(glm::mat3);
+    get_constant_array_offset(glm::mat3x2);
+    get_constant_array_offset(glm::mat3x4);
 
-    get_uniform_array_offset(glm::mat4);
-    get_uniform_array_offset(glm::mat4x2);
-    get_uniform_array_offset(glm::mat4x3);
+    get_constant_array_offset(glm::mat4);
+    get_constant_array_offset(glm::mat4x2);
+    get_constant_array_offset(glm::mat4x3);
 
-    get_uniform_array_offset(uint64_t);
+    get_constant_array_offset(uint64_t);
 
-#undef get_uniform_array_offset
+#undef get_constant_array_offset
 
-#define get_uniform_array_string(c_type_) \
+#define get_constant_array_string(c_type_) \
     template<> void ShaderStorageBuffer::getVariableArray(const std::string& name, size_t count, c_type_ value[]) const    \
     {                                                                                                       \
     }
 
-    get_uniform_array_string(bool);
-    get_uniform_array_string(glm::bvec2);
-    get_uniform_array_string(glm::bvec3);
-    get_uniform_array_string(glm::bvec4);
+    get_constant_array_string(bool);
+    get_constant_array_string(glm::bvec2);
+    get_constant_array_string(glm::bvec3);
+    get_constant_array_string(glm::bvec4);
 
-    get_uniform_array_string(uint32_t);
-    get_uniform_array_string(glm::uvec2);
-    get_uniform_array_string(glm::uvec3);
-    get_uniform_array_string(glm::uvec4);
+    get_constant_array_string(uint32_t);
+    get_constant_array_string(glm::uvec2);
+    get_constant_array_string(glm::uvec3);
+    get_constant_array_string(glm::uvec4);
 
-    get_uniform_array_string(int32_t);
-    get_uniform_array_string(glm::ivec2);
-    get_uniform_array_string(glm::ivec3);
-    get_uniform_array_string(glm::ivec4);
+    get_constant_array_string(int32_t);
+    get_constant_array_string(glm::ivec2);
+    get_constant_array_string(glm::ivec3);
+    get_constant_array_string(glm::ivec4);
 
-    get_uniform_array_string(float);
-    get_uniform_array_string(glm::vec2);
-    get_uniform_array_string(glm::vec3);
-    get_uniform_array_string(glm::vec4);
+    get_constant_array_string(float);
+    get_constant_array_string(glm::vec2);
+    get_constant_array_string(glm::vec3);
+    get_constant_array_string(glm::vec4);
 
-    get_uniform_array_string(glm::mat2);
-    get_uniform_array_string(glm::mat2x3);
-    get_uniform_array_string(glm::mat2x4);
+    get_constant_array_string(glm::mat2);
+    get_constant_array_string(glm::mat2x3);
+    get_constant_array_string(glm::mat2x4);
 
-    get_uniform_array_string(glm::mat3);
-    get_uniform_array_string(glm::mat3x2);
-    get_uniform_array_string(glm::mat3x4);
+    get_constant_array_string(glm::mat3);
+    get_constant_array_string(glm::mat3x2);
+    get_constant_array_string(glm::mat3x4);
 
-    get_uniform_array_string(glm::mat4);
-    get_uniform_array_string(glm::mat4x2);
-    get_uniform_array_string(glm::mat4x3);
+    get_constant_array_string(glm::mat4);
+    get_constant_array_string(glm::mat4x2);
+    get_constant_array_string(glm::mat4x3);
 
-    get_uniform_array_string(uint64_t);
-#undef get_uniform_array_string
+    get_constant_array_string(uint64_t);
+#undef get_constant_array_string
 }
 #endif //#ifdef FALCOR_D3D12

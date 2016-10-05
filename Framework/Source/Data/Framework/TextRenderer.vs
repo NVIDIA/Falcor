@@ -28,7 +28,7 @@
 #version 440
 #include "../HlslGlslCommon.h"
 
-UNIFORM_BUFFER(PerFrameCB, 0)
+CONSTANT_BUFFER(PerFrameCB, 0)
 {
 	mat4 gvpTransform;
 	vec3 gFontColor;

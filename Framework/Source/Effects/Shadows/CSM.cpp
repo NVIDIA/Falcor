@@ -44,11 +44,11 @@ namespace Falcor
     {
     public:
         using UniquePtr = std::unique_ptr<CsmSceneRenderer>;
-        static UniquePtr create(const Scene::SharedPtr& pScene, UniformBuffer::SharedPtr pAlphaMapUbo) { return UniquePtr(new CsmSceneRenderer(pScene, pAlphaMapUbo)); }
+        static UniquePtr create(const Scene::SharedPtr& pScene, ConstantBuffer::SharedPtr pAlphaMapCb) { return UniquePtr(new CsmSceneRenderer(pScene, pAlphaMapCb)); }
 
     protected:
-        CsmSceneRenderer(const Scene::SharedPtr& pScene, UniformBuffer::SharedPtr pAlphaMapUbo) : SceneRenderer(pScene), mpAlphaMapUbo(pAlphaMapUbo) { setObjectCullState(false); }
-        UniformBuffer::SharedPtr mpAlphaMapUbo;
+        CsmSceneRenderer(const Scene::SharedPtr& pScene, ConstantBuffer::SharedPtr pAlphaMapCb) : SceneRenderer(pScene), mpAlphaMapCb(pAlphaMapCb) { setObjectCullState(false); }
+        ConstantBuffer::SharedPtr mpAlphaMapCb;
         bool mMaterialChanged = false;
         bool setPerMaterialData(RenderContext* pContext, const CurrentWorkingData& currentData) override
         {
@@ -71,7 +71,7 @@ namespace Falcor
                 a.map = mpLastMaterial->getAlphaValue().texture.ptr;
                 a.val = mpLastMaterial->getAlphaValue().constantColor.x;
 #endif
-                mpAlphaMapUbo->setBlob(&a, 0, sizeof(a));
+                mpAlphaMapCb->setBlob(&a, 0, sizeof(a));
             }
             return true;
         };
@@ -244,10 +244,10 @@ namespace Falcor
 
         // Create the program
         mShadowPass.pProg = Program::createFromFile(kDepthPassVSFile, kDepthPassFsFile, kDepthPassGsFile, "", "", progDef);
-        mShadowPass.pLightUbo = UniformBuffer::create(mShadowPass.pProg, "PerLightCB");
-        mShadowPass.pAlphaUbo = UniformBuffer::create(mShadowPass.pProg, "AlphaMapCB");
+        mShadowPass.pLightCB = ConstantBuffer::create(mShadowPass.pProg, "PerLightCB");
+        mShadowPass.pAlphaCB = ConstantBuffer::create(mShadowPass.pProg, "AlphaMapCB");
 
-        mpSceneRenderer = CsmSceneRenderer::create(mpScene, mShadowPass.pAlphaUbo);
+        mpSceneRenderer = CsmSceneRenderer::create(mpScene, mShadowPass.pAlphaCB);
     }
 
     void CascadedShadowMaps::setCascadeCount(uint32_t cascadeCount)
@@ -460,11 +460,11 @@ namespace Falcor
 
     void CascadedShadowMaps::renderScene(RenderContext* pCtx)
     {
-        mShadowPass.pLightUbo->setBlob(&mCsmData, 0, sizeof(mCsmData));
+        mShadowPass.pLightCB->setBlob(&mCsmData, 0, sizeof(mCsmData));
         // DISABLED_FOR_D3D12
 //         pCtx->setUniformBuffer(0, mShadowPass.pLightUbo);
 //         pCtx->setUniformBuffer(1, mShadowPass.pAlphaUbo);
-        mShadowPass.pAlphaUbo->setVariable("evsmExp", mCsmData.evsmExponents);
+        mShadowPass.pAlphaCB->setVariable("evsmExp", mCsmData.evsmExponents);
         mpSceneRenderer->renderScene(pCtx, mShadowPass.pProg.get(), mpLightCamera.get());
     }
 
@@ -588,9 +588,9 @@ namespace Falcor
 //         pRenderCtx->popFbo();
     }
 
-    void CascadedShadowMaps::setDataIntoUniformBuffer(UniformBuffer* pUbo, const std::string& varName)
+    void CascadedShadowMaps::setDataIntoConstantBuffer(ConstantBuffer* pCB, const std::string& varName)
     {
-        size_t offset = pUbo->getVariableOffset(varName + ".globalMat");
+        size_t offset = pCB->getVariableOffset(varName + ".globalMat");
         Sampler* pSampler = nullptr;
         const Texture* pTexture = nullptr;
         uint64_t* pMap = nullptr;
@@ -620,7 +620,7 @@ namespace Falcor
 
         *pMap = pTexture->makeResident(pSampler);
         mCsmData.lightDir = glm::normalize(((DirectionalLight*)mpLight.get())->getWorldDirection());
-        pUbo->setBlob(&mCsmData, offset, sizeof(mCsmData));
+        pCB->setBlob(&mCsmData, offset, sizeof(mCsmData));
     }
 
     Texture::SharedConstPtr CascadedShadowMaps::getShadowMap() const

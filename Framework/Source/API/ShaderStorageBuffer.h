@@ -28,7 +28,7 @@
 #pragma once
 #include <string>
 #include <unordered_map>
-#include "UniformBuffer.h"
+#include "ConstantBuffer.h"
 
 namespace Falcor
 {
@@ -37,18 +37,18 @@ namespace Falcor
     class Texture;
     class Sampler;
 
-    class ShaderStorageBuffer : public UniformBuffer, std::enable_shared_from_this<ShaderStorageBuffer>
+    class ShaderStorageBuffer : public ConstantBuffer, std::enable_shared_from_this<ShaderStorageBuffer>
     {
     public:
-        class SsboVar : public UboVar<ShaderStorageBuffer>
+        class SsboVar : public CbVar<ShaderStorageBuffer>
         {
         public:
-            SsboVar(ShaderStorageBuffer* pBuf, size_t offset) : UboVar(pBuf, offset) {}
-            using UboVar::operator=;
+            SsboVar(ShaderStorageBuffer* pBuf, size_t offset) : CbVar(pBuf, offset) {}
+            using CbVar::operator=;
             template <typename T> operator T() { T val; mpBuf->getVariable(mOffset, val) ; return val; }
         };
 
-        using SharedPtr = UniformBuffer::SharedPtrT<SsboVar>;
+        using SharedPtr = ConstantBuffer::SharedPtrT<SsboVar>;
         using SharedConstPtr = std::shared_ptr<const ShaderStorageBuffer>;
 
         /** create a new shader storage buffer.\n
@@ -71,7 +71,7 @@ namespace Falcor
 
         /** Read a variable from the buffer.
             The function will validate that the value Type matches the declaration in the shader. If there's a mismatch, an error will be logged and the call will be ignored.
-            \param[in] name The variable name. See notes about naming in the UniformBuffer class description.
+            \param[in] name The variable name. See notes about naming in the ConstantBuffer class description.
             \param[out] value The value read from the buffer
         */
         template<typename T>
@@ -96,7 +96,7 @@ namespace Falcor
 
         /** Read an array of variables from the buffer.
             The function will validate that the value Type matches the declaration in the shader. If there's a mismatch, an error will be logged and the call will be ignored.
-            \param[in] name The variable name. See notes about naming in the UniformBuffer class description.
+            \param[in] name The variable name. See notes about naming in the ConstantBuffer class description.
             \param[in] count Number of elements to read
             \param[out] value Pointer to an array of values to read into
         */
@@ -123,7 +123,7 @@ namespace Falcor
         void setGpuCopyDirty() const { mGpuCopyDirty = true; }
 
     private:
-        ShaderStorageBuffer(const ProgramReflection::BufferReflection::SharedConstPtr& pReflector) : UniformBuffer(pReflector) {}
+        ShaderStorageBuffer(const ProgramReflection::BufferReflection::SharedConstPtr& pReflector) : ConstantBuffer(pReflector) {}
         mutable bool mGpuCopyDirty = false;
     };
 }

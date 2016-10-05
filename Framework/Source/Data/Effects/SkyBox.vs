@@ -40,7 +40,7 @@ layout(secondary_view_offset=1) out int gl_Layer;
 layout(location = VERTEX_POSITION_LOC) in vec4 vPos;
 out vec3 texC;
 
-UNIFORM_BUFFER(PerFrameCB, 0)
+CONSTANT_BUFFER(PerFrameCB, 0)
 {
     mat4 gWorld;
     samplerCube gSkyTex;

@@ -34,7 +34,7 @@
 #include "API/ProgramVersion.h"
 #include "API/VAO.h"
 #include "API/Texture.h"
-#include "API/UniformBuffer.h"
+#include "API/ConstantBuffer.h"
 #include "API/Buffer.h"
 #include "API/ShaderStorageBuffer.h"
 
@@ -49,7 +49,7 @@ namespace Falcor
 
         auto pCtx = SharedPtr(new RenderContext(vpCount));
 
-        // Allocate space for the uniform buffers and shader storage blocks
+        // Allocate space for the constant buffers and shader storage blocks
         int uniformBlockCount;
         gl_call(glGetIntegerv(GL_MAX_COMBINED_UNIFORM_BLOCKS, &uniformBlockCount));
         pCtx->mState.pUniformBuffers.assign(uniformBlockCount, nullptr);
@@ -447,7 +447,7 @@ namespace Falcor
         }
 	}
 
-    void RenderContext::applyUniformBuffer(uint32_t index) const
+    void RenderContext::applyConstantBuffer(uint32_t index) const
     {
         const auto pBuffer = mState.pUniformBuffers[index];
         uint32_t apiHandle = pBuffer ? pBuffer->getBuffer()->getApiHandle() : 0;

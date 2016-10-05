@@ -68,7 +68,7 @@ namespace Falcor
             None            = 0x0,
             Vertex          = 0x1,
             Index           = 0x2,
-            Uniform         = 0x4,
+            Constant        = 0x4,
             ShaderResource  = 0x8, 
             StreamOutput    = 0x10,
             RenderTarget    = 0x20,

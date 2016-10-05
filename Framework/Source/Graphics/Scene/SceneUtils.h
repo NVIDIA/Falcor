@@ -32,15 +32,15 @@
 namespace Falcor
 {
     class Scene;
-    class UniformBuffer;
+    class ConstantBuffer;
 
     /*!
     *  \addtogroup Falcor
     *  @{
     */
 
-    void getSceneLightString(const Scene* pScene, std::string& uniformString);
-    void setSceneLightsIntoUniformBuffer(const Scene* pScene, UniformBuffer* pBuffer);
+    void getSceneLightString(const Scene* pScene, std::string& lights);
+    void setSceneLightsIntoConstantBuffer(const Scene* pScene, ConstantBuffer* pBuffer);
 
     /*! @} */
 }

@@ -30,7 +30,7 @@
 #include "glm/gtx/quaternion.hpp"
 #include "utils/AABB.h"
 #include "Utils/math/FalcorMath.h"
-#include "API/UniformBuffer.h"
+#include "API/ConstantBuffer.h"
 
 namespace Falcor
 {
@@ -202,26 +202,26 @@ namespace Falcor
         mData.rightEyeViewProjMat = proj * view;
     }
 
-    void Camera::setIntoUniformBuffer(UniformBuffer* pBuffer, const std::string& varName) const
+    void Camera::setIntoConstantBuffer(ConstantBuffer* pCB, const std::string& varName) const
     {
         calculateCameraParameters();
         static const size_t dataSize = sizeof(CameraData);
         static_assert(dataSize % sizeof(float) * 4 == 0, "Camera::CameraData size should be a multiple of 16");
 
-        size_t offset = pBuffer->getVariableOffset(varName + ".viewMat");
+        size_t offset = pCB->getVariableOffset(varName + ".viewMat");
 
-        if (offset == UniformBuffer::kInvalidUniformOffset)
+        if (offset == ConstantBuffer::kInvalidOffset)
         {
-            Logger::log(Logger::Level::Warning, "Camera::setIntoUniformBuffer() - variable \"" + varName + "\"not found in uniform buffer\n");
+            Logger::log(Logger::Level::Warning, "Camera::setIntoConstantBuffer() - variable \"" + varName + "\"not found in constant buffer\n");
             return;
         }
 
-        assert(offset + dataSize <= pBuffer->getBuffer()->getSize());
+        assert(offset + dataSize <= pCB->getBuffer()->getSize());
 
-        pBuffer->setBlob(&mData, offset, dataSize);
+        pCB->setBlob(&mData, offset, dataSize);
     }
 
-    void Camera::setIntoUniformBuffer(UniformBuffer* pBuffer, const std::size_t& offset) const
+    void Camera::setIntoConstantBuffer(ConstantBuffer* pBuffer, const std::size_t& offset) const
     {
         calculateCameraParameters();
         static const size_t dataSize = sizeof(CameraData);

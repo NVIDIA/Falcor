@@ -56,7 +56,7 @@
 #include "API/Shader.h"
 #include "API/ShaderStorageBuffer.h"
 #include "API/Texture.h"
-#include "API/UniformBuffer.h"
+#include "API/ConstantBuffer.h"
 #include "API/VAO.h"
 #include "API/VertexLayout.h"
 #include "API/Window.h"

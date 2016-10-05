@@ -38,7 +38,7 @@ out int gl_Layer;
 in vec2 texCin[3];
 out vec2 texC;
 
-UNIFORM_BUFFER(PerLightCB, 0)
+CONSTANT_BUFFER(PerLightCB, 0)
 {
     CsmData gCsmData;
 };

@@ -31,7 +31,7 @@
 namespace Falcor
 {
     class Texture;
-    class UniformBuffer;
+    class ConstantBuffer;
 
     struct BasicMaterial
     {

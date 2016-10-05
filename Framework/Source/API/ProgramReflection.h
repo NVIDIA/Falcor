@@ -33,7 +33,7 @@ namespace Falcor
 {
     class ProgramVersion;
 
-    /** This class holds all of the data required to reflect a program, including inputs, outputs, uniforms, textures and samplers declarations
+    /** This class holds all of the data required to reflect a program, including inputs, outputs, constants, textures and samplers declarations
     */
     class ProgramReflection
     {
@@ -131,7 +131,7 @@ namespace Falcor
             ResourceType type = ResourceType::Unknown;      ///< Resource type
             Dimensions dims = Dimensions::Unknown;          ///< Resource dimensions
             ReturnType retType = ReturnType::Unknown;       ///< Resource return type
-            uint32_t regIndex = -1;                         ///< In case the resource was defined as part of a UBO, the offset inside the UBO, otherwise the resource index in the program
+            uint32_t regIndex = -1;                         ///< In case the resource was defined as part of a CB, the offset inside the CB, otherwise the resource index in the program
             uint32_t arraySize = 0;                         ///< Array size , or 0 if not an array
             uint32_t shaderMask = 0;                        ///< A mask indicating in which shader stages the buffer is used
             uint32_t registerSpace = 0;                     ///< The register space
@@ -143,11 +143,11 @@ namespace Falcor
         using ResourceMap = std::map < std::string, Resource >;
         using string_2_uint_map = std::unordered_map<std::string, uint32_t>;
 
-        /** Invalid location of uniform and attributes
+        /** Invalid location of buffers and attributes
         */
         static const uint32_t kInvalidLocation = -1;
 
-        /** This class holds all of the data required to reflect a buffer, either uniform buffer or SSBO
+        /** This class holds all of the data required to reflect a buffer, either constant buffer or SSBO
         */
         class BufferReflection
         {
@@ -271,17 +271,17 @@ namespace Falcor
 
         using BufferMap = std::unordered_map<uint32_t, BufferReflection::SharedPtr>;
 
-        /** Get the uniform-buffer list
+        /** Get a buffer list
         */
         const BufferMap& getBufferMap(BufferReflection::Type bufferType) const { return mBuffers[(uint32_t)bufferType].descMap; }
 
-        /** Get a uniform-buffer descriptor
+        /** Get a buffer descriptor
             \param[in] bindLocation The bindLocation of the requested buffer
             \return The buffer descriptor or nullptr, if the bind location isn't used
         */
         BufferReflection::SharedConstPtr getBufferDesc(uint32_t bindLocation, BufferReflection::Type bufferType) const;
 
-        /** Get a uniform-buffer descriptor
+        /** Get a buffer descriptor
         \param[in] name The name of the requested buffer
         \return The buffer descriptor or nullptr, if the name doesn't exist
         */
@@ -319,7 +319,7 @@ namespace Falcor
 
     private:
         bool init(const ProgramVersion* pProgVer, std::string& log);
-        bool reflectBuffers(const ProgramVersion* pProgVer, std::string& log);                // UBOs and SSBOs
+        bool reflectBuffers(const ProgramVersion* pProgVer, std::string& log);                // CBs and SSBOs
         bool reflectVertexAttributes(const ProgramVersion* pProgVer, std::string& log);       // Input attributes
         bool reflectFragmentOutputs(const ProgramVersion* pProgVer, std::string& log);        // FS output (if FS exists)
         bool reflectResources(const ProgramVersion* pProgVer, std::string& log);              // SRV/UAV/ROV and samplers

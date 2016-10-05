@@ -32,7 +32,7 @@
 #include "Graphics/Scene/Scene.h"
 #include "SceneEditor.h"
 #include "utils/CpuTimer.h"
-#include "API/UniformBuffer.h"
+#include "API/ConstantBuffer.h"
 
 namespace Falcor
 {
@@ -117,18 +117,18 @@ namespace Falcor
         SceneRenderer(const Scene::SharedPtr& pScene);
         Scene::SharedPtr mpScene;
         
-        static UniformBuffer::SharedPtr sPerMaterialCB;
-        static UniformBuffer::SharedPtr sPerFrameCB;
-        static UniformBuffer::SharedPtr sPerStaticMeshCB;
-        static UniformBuffer::SharedPtr sPerSkinnedMeshCB;
+        static ConstantBuffer::SharedPtr sPerMaterialCB;
+        static ConstantBuffer::SharedPtr sPerFrameCB;
+        static ConstantBuffer::SharedPtr sPerStaticMeshCB;
+        static ConstantBuffer::SharedPtr sPerSkinnedMeshCB;
         static size_t sBonesOffset;
         static size_t sCameraDataOffset;
         static size_t sWorldMatOffset;
         static size_t sMeshIdOffset;
 
     private:
-        void createUniformBuffers(Program* pProgram);
-        void bindUniformBuffers(RenderContext* pRenderContext, Program* pProgram);
+        void createConstantBuffers(Program* pProgram);
+        void bindConstantBuffers(RenderContext* pRenderContext, Program* pProgram);
 
         virtual void setPerFrameData(RenderContext* pContext, const CurrentWorkingData& currentData);
         virtual bool setPerModelData(RenderContext* pContext, const CurrentWorkingData& currentData);

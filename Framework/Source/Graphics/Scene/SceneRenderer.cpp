@@ -29,7 +29,7 @@
 #include "SceneRenderer.h"
 #include "Graphics/Program.h"
 #include "Utils/Gui.h"
-#include "API/UniformBuffer.h"
+#include "API/ConstantBuffer.h"
 #include "API/RenderContext.h"
 #include "Scene.h"
 #include "Utils/OS.h"
@@ -40,10 +40,10 @@
 
 namespace Falcor
 {
-    UniformBuffer::SharedPtr SceneRenderer::sPerMaterialCB;
-    UniformBuffer::SharedPtr SceneRenderer::sPerFrameCB;
-    UniformBuffer::SharedPtr SceneRenderer::sPerStaticMeshCB;
-    UniformBuffer::SharedPtr SceneRenderer::sPerSkinnedMeshCB;
+    ConstantBuffer::SharedPtr SceneRenderer::sPerMaterialCB;
+    ConstantBuffer::SharedPtr SceneRenderer::sPerFrameCB;
+    ConstantBuffer::SharedPtr SceneRenderer::sPerStaticMeshCB;
+    ConstantBuffer::SharedPtr SceneRenderer::sPerSkinnedMeshCB;
     size_t SceneRenderer::sBonesOffset = 0;
     size_t SceneRenderer::sCameraDataOffset = 0;
     size_t SceneRenderer::sWorldMatOffset = 0;
@@ -65,16 +65,16 @@ namespace Falcor
         setCameraControllerType(CameraControllerType::SixDof);
     }
 
-    void SceneRenderer::createUniformBuffers(Program* pProgram)
+    void SceneRenderer::createConstantBuffers(Program* pProgram)
     {
-        // create uniform buffers if required
+        // create constant buffers if required
         if(sPerMaterialCB == nullptr)
         {
             auto pReflector = pProgram->getActiveVersion()->getReflector();
-            sPerMaterialCB = UniformBuffer::create(pReflector->getBufferDesc(kPerMaterialCbName, ProgramReflection::BufferReflection::Type::Constant));
-            sPerFrameCB = UniformBuffer::create(pReflector->getBufferDesc(kPerFrameCbName, ProgramReflection::BufferReflection::Type::Constant));
-            sPerStaticMeshCB = UniformBuffer::create(pReflector->getBufferDesc(kPerStaticMeshCbName, ProgramReflection::BufferReflection::Type::Constant));
-            sPerSkinnedMeshCB = UniformBuffer::create(pReflector->getBufferDesc(kPerSkinnedMeshCbName, ProgramReflection::BufferReflection::Type::Constant));
+            sPerMaterialCB = ConstantBuffer::create(pReflector->getBufferDesc(kPerMaterialCbName, ProgramReflection::BufferReflection::Type::Constant));
+            sPerFrameCB = ConstantBuffer::create(pReflector->getBufferDesc(kPerFrameCbName, ProgramReflection::BufferReflection::Type::Constant));
+            sPerStaticMeshCB = ConstantBuffer::create(pReflector->getBufferDesc(kPerStaticMeshCbName, ProgramReflection::BufferReflection::Type::Constant));
+            sPerSkinnedMeshCB = ConstantBuffer::create(pReflector->getBufferDesc(kPerSkinnedMeshCbName, ProgramReflection::BufferReflection::Type::Constant));
 
             sBonesOffset = sPerSkinnedMeshCB->getVariableOffset("gBones");
             sWorldMatOffset = sPerStaticMeshCB->getVariableOffset("gWorldMat");
@@ -83,9 +83,9 @@ namespace Falcor
         }
     }
 
-    void SceneRenderer::bindUniformBuffers(RenderContext* pRenderContext, Program* pProgram)
+    void SceneRenderer::bindConstantBuffers(RenderContext* pRenderContext, Program* pProgram)
     {
-        createUniformBuffers(pProgram);
+        createConstantBuffers(pProgram);
 
         const ProgramReflection* pReflection = pProgram->getActiveVersion()->getReflector().get();
         // Per skinned mesh
@@ -115,7 +115,7 @@ namespace Falcor
         //auto pCamera = mpScene->getActiveCamera();
         if (currentData.pCamera)
         {
-            currentData.pCamera->setIntoUniformBuffer(sPerFrameCB.get(), sCameraDataOffset);
+            currentData.pCamera->setIntoConstantBuffer(sPerFrameCB.get(), sCameraDataOffset);
         }
     }
 
@@ -151,7 +151,7 @@ namespace Falcor
 
     bool SceneRenderer::setPerMaterialData(RenderContext* pContext, const CurrentWorkingData& currentData)
     {
-        currentData.pMaterial->setIntoUniformBuffer(sPerMaterialCB.get(), "gMaterial");
+        currentData.pMaterial->setIntoConstantBuffer(sPerMaterialCB.get(), "gMaterial");
 		return true;
     }
 
@@ -292,7 +292,7 @@ namespace Falcor
 
     void SceneRenderer::renderScene(RenderContext* pContext, Program* pProgram, Camera* pCamera)
     {
-        bindUniformBuffers(pContext, pProgram);
+        bindConstantBuffers(pContext, pProgram);
 		CurrentWorkingData currentData;
 		currentData.pProgram = pProgram;
 		currentData.pCamera = pCamera;

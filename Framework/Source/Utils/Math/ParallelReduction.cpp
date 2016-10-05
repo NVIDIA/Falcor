@@ -65,7 +65,7 @@ namespace Falcor
         mpFirstIterProg = FullScreenPass::create(fsFilename, defines);
         mpFirstIterProg->getProgram()->addDefine("_FIRST_ITERATION");
         mpRestIterProg = FullScreenPass::create(fsFilename, defines);
-        mpUbo = UniformBuffer::create(mpFirstIterProg->getProgram(), "PerImageCB");
+        mpCb = ConstantBuffer::create(mpFirstIterProg->getProgram(), "PerImageCB");
 
         // Calculate the number of reduction passes
         if(width > kTileSize || height > kTileSize)
@@ -90,10 +90,10 @@ namespace Falcor
         return ParallelReduction::UniquePtr(new ParallelReduction(reductionType, readbackLatency, width, height));
     }
 
-    void runProgram(RenderContext* pRenderCtx, const Texture* pInput, const FullScreenPass* pProgram, Fbo::SharedPtr pDst, UniformBuffer::SharedPtr pUbo, Sampler::SharedPtr pPointSampler)
+    void runProgram(RenderContext* pRenderCtx, const Texture* pInput, const FullScreenPass* pProgram, Fbo::SharedPtr pDst, ConstantBuffer::SharedPtr pCB, Sampler::SharedPtr pPointSampler)
     {
         // Bind the input texture
-        pUbo->setTexture(0, pInput, pPointSampler.get());
+        pCB->setTexture(0, pInput, pPointSampler.get());
         // DISABLED_FOR_D3D12
 //        pRenderCtx->setUniformBuffer(0, pUbo);
 
@@ -118,12 +118,12 @@ namespace Falcor
 
         for(size_t i = 0; i < mpTmpResultFbo.size(); i++)
         {
-            runProgram(pRenderCtx, pInput, pProgram, mpTmpResultFbo[i], mpUbo, mpPointSampler);
+            runProgram(pRenderCtx, pInput, pProgram, mpTmpResultFbo[i], mpCb, mpPointSampler);
             pProgram = mpRestIterProg.get();
             pInput = mpTmpResultFbo[i]->getColorTexture(0).get();
         }
 
-        runProgram(pRenderCtx, pInput, pProgram, mpResultFbo[mCurFbo], mpUbo, mpPointSampler);
+        runProgram(pRenderCtx, pInput, pProgram, mpResultFbo[mCurFbo], mpCb, mpPointSampler);
 
         // Read back the results
         mCurFbo = (mCurFbo + 1) % mpResultFbo.size();

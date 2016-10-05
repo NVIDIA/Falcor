@@ -28,7 +28,7 @@
 #version 440
 #include "hlslglslcommon.h"
 
-UNIFORM_BUFFER(PerImageCB, 0)
+CONSTANT_BUFFER(PerImageCB, 0)
 {
    sampler2D gInputTex;
 };

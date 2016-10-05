@@ -360,14 +360,14 @@ namespace Falcor
                         {
                             if (bindDesc.BindPoint != prevDef->second)
                             {
-                                log += "Uniform buffer '" + std::string(d3dBufDesc.Name) + "' has different bind locations between different shader stages. Falcor do not support that. Use explicit bind locations to avoid this error";
+                                log += "Constant buffer '" + std::string(d3dBufDesc.Name) + "' has different bind locations between different shader stages. Falcor do not support that. Use explicit bind locations to avoid this error";
                                 return false;
                             }
                             ProgramReflection::BufferReflection* pPrevBuffer = bufferDesc.descMap[bindDesc.BindPoint].get();
                             std::string bufLog;
                             if (validateBufferDeclaration(pPrevBuffer, varMap, bufLog) == false)
                             {
-                                log += "Uniform buffer '" + std::string(d3dBufDesc.Name) + "' has different definitions between different shader stages. " + bufLog;
+                                log += "Constant buffer '" + std::string(d3dBufDesc.Name) + "' has different definitions between different shader stages. " + bufLog;
                                 return false;
                             }
                         }

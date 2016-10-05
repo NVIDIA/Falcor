@@ -154,6 +154,7 @@ namespace Falcor
     {
         None,
         SizeMismatch,
+        TypeMismatch,
         NotFound,
     };
 }

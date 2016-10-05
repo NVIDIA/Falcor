@@ -28,7 +28,7 @@
 #pragma once
 #include "Framework.h"
 #include "Graphics/FullScreenPass.h"
-#include "API/UniformBuffer.h"
+#include "API/ConstantBuffer.h"
 #include "API/FBO.h"
 #include "API/Sampler.h"
 
@@ -52,7 +52,7 @@ namespace Falcor
         ParallelReduction(Type reductionType, uint32_t readbackLatency, uint32_t width, uint32_t height);
         FullScreenPass::UniquePtr mpFirstIterProg;
         FullScreenPass::UniquePtr mpRestIterProg;
-        UniformBuffer::SharedPtr mpUbo;
+        ConstantBuffer::SharedPtr mpCb;
         std::vector<Fbo::SharedPtr> mpResultFbo;
         uint32_t mCurFbo = 0;
         Type mReductionType;

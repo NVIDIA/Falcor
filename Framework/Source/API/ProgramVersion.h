@@ -35,7 +35,7 @@
 
 namespace Falcor
 {
-    class UniformBuffer;
+    class ConstantBuffer;
 
     /** Low-level program object
         This class abstracts the API's program creation and management

@@ -26,7 +26,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 #include "Framework.h"
-#include "UniformBuffer.h"
+#include "ConstantBuffer.h"
 #include "ProgramVersion.h"
 #include "buffer.h"
 #include "glm/glm.hpp"
@@ -35,9 +35,9 @@
 
 namespace Falcor
 {
-    UniformBuffer::SharedPtr UniformBuffer::create(const ProgramReflection::BufferReflection::SharedConstPtr& pReflector, size_t overrideSize)
+    ConstantBuffer::SharedPtr ConstantBuffer::create(const ProgramReflection::BufferReflection::SharedConstPtr& pReflector, size_t overrideSize)
     {
-        SharedPtr pBuffer = SharedPtr(new UniformBuffer(pReflector));
+        SharedPtr pBuffer = SharedPtr(new ConstantBuffer(pReflector));
         if(pBuffer->init(overrideSize, true) == false)
         {
             pBuffer = nullptr;
@@ -46,7 +46,7 @@ namespace Falcor
         return pBuffer;
     }
 
-    UniformBuffer::SharedPtr UniformBuffer::create(Program::SharedPtr& pProgram, const std::string& name, size_t overrideSize)
+    ConstantBuffer::SharedPtr ConstantBuffer::create(Program::SharedPtr& pProgram, const std::string& name, size_t overrideSize)
     {
         auto& pProgReflector = pProgram->getActiveVersion()->getReflector();
         auto& pBufferReflector = pProgReflector->getBufferDesc(name, ProgramReflection::BufferReflection::Type::Constant);
@@ -57,7 +57,7 @@ namespace Falcor
         return nullptr;
     }
 
-    bool UniformBuffer::init(size_t overrideSize, bool isUniformBuffer)
+    bool ConstantBuffer::init(size_t overrideSize, bool isConstantBuffer)
     {
         mSize = mpReflector->getRequiredSize();
 
@@ -70,20 +70,20 @@ namespace Falcor
         if(mSize)
         {
             mData.assign(mSize, 0);
-            mpBuffer = Buffer::create(mSize, Buffer::BindFlags::Uniform, Buffer::AccessFlags::MapWrite, mData.data());
+            mpBuffer = Buffer::create(mSize, Buffer::BindFlags::Constant, Buffer::AccessFlags::MapWrite, mData.data());
         }
         
         return true;
     }
     
-    size_t UniformBuffer::getVariableOffset(const std::string& varName) const
+    size_t ConstantBuffer::getVariableOffset(const std::string& varName) const
     {
         size_t offset;
         mpReflector->getVariableData(varName, offset, true);
         return offset;
     }
 
-    void UniformBuffer::uploadToGPU(size_t offset, size_t size) const
+    void ConstantBuffer::uploadToGPU(size_t offset, size_t size) const
     {
         if(mDirty == false)
         {
@@ -102,7 +102,7 @@ namespace Falcor
 
         if(size + offset > mSize)
         {
-            Logger::log(Logger::Level::Warning, "UniformBuffer::uploadToGPU() - trying to upload more data than what the buffer contains. Call is ignored.");
+            Logger::log(Logger::Level::Warning, "ConstantBuffer::uploadToGPU() - trying to upload more data than what the buffer contains. Call is ignored.");
             return;
         }
 
@@ -125,9 +125,9 @@ namespace Falcor
         // Check that the types match
         if(callType != shaderType)
         {
-            std::string msg("Error when setting uniform \"");
+            std::string msg("Error when setting variable \"");
             msg += name + "\" to buffer \"" + bufferName + "\".\n";
-            msg += "Type mismatch.\nsetUniform() was called with Type " + to_string(callType) + ".\nVariable was declared with Type " + to_string(shaderType) + ".\n\n";
+            msg += "Type mismatch.\nsetVariable() was called with Type " + to_string(callType) + ".\nVariable was declared with Type " + to_string(shaderType) + ".\n\n";
             Logger::log(Logger::Level::Error, msg);
             assert(0);
             return false;
@@ -139,7 +139,7 @@ namespace Falcor
     bool checkVariableByOffset(ProgramReflection::Variable::Type callType, size_t offset, size_t count, const ProgramReflection::BufferReflection* pBufferDesc)
     {
 #if _LOG_ENABLED
-        // Find the uniform
+        // Find the variable
         for(auto& a = pBufferDesc->varBegin() ; a != pBufferDesc->varEnd() ; a++)
         {
             const auto& varDesc = a->second;
@@ -167,14 +167,14 @@ namespace Falcor
                 {
                     if(count > 1)
                     {
-                        std::string Msg("Error when setting uniform by offset. Found uniform \"" + varName + "\" which is not an array, but trying to set more than 1 element");
+                        std::string Msg("Error when setting constant by offset. Found constant \"" + varName + "\" which is not an array, but trying to set more than 1 element");
                         Logger::log(Logger::Level::Error, Msg);
                         return false;
                     }
                 }
                 else if(arrayIndex + count > varDesc.arraySize)
                 {
-                    std::string Msg("Error when setting uniform by offset. Found uniform \"" + varName + "\" with array size " + std::to_string(varDesc.arraySize));
+                    std::string Msg("Error when setting constant by offset. Found constant \"" + varName + "\" with array size " + std::to_string(varDesc.arraySize));
                     Msg += ". Trying to set " + std::to_string(count) + " elements, starting at index " + std::to_string(arrayIndex) + ", which will cause out-of-bound access. Ignoring call.";
                     Logger::log(Logger::Level::Error, Msg);
                     return false;
@@ -182,7 +182,7 @@ namespace Falcor
                 return checkVariableType(callType, varDesc.type, varName + "(Set by offset)", pBufferDesc->getName());
             }
         }
-        std::string msg("Error when setting uniform by offset. No uniform found at offset ");
+        std::string msg("Error when setting constant by offset. No constant found at offset ");
         msg += std::to_string(offset) + ". Ignoring call";
         Logger::log(Logger::Level::Error, msg);
         return false;
@@ -191,8 +191,8 @@ namespace Falcor
 #endif
     }
 
-#define set_uniform_offset(_var_type, _c_type) \
-    template<> void UniformBuffer::setVariable(size_t offset, const _c_type& value)    \
+#define set_constant_by_offset(_var_type, _c_type) \
+    template<> void ConstantBuffer::setVariable(size_t offset, const _c_type& value)    \
     {                                                           \
         if(checkVariableByOffset(ProgramReflection::Variable::Type::_var_type, offset, 1, mpReflector.get())) \
         {                                                       \
@@ -202,91 +202,91 @@ namespace Falcor
         }                                                       \
     }
 
-    set_uniform_offset(Bool, bool);
-    set_uniform_offset(Bool2, glm::bvec2);
-    set_uniform_offset(Bool3, glm::bvec3);
-    set_uniform_offset(Bool4, glm::bvec4);
+    set_constant_by_offset(Bool, bool);
+    set_constant_by_offset(Bool2, glm::bvec2);
+    set_constant_by_offset(Bool3, glm::bvec3);
+    set_constant_by_offset(Bool4, glm::bvec4);
 
-    set_uniform_offset(Uint, uint32_t);
-    set_uniform_offset(Uint2, glm::uvec2);
-    set_uniform_offset(Uint3, glm::uvec3);
-    set_uniform_offset(Uint4, glm::uvec4);
+    set_constant_by_offset(Uint, uint32_t);
+    set_constant_by_offset(Uint2, glm::uvec2);
+    set_constant_by_offset(Uint3, glm::uvec3);
+    set_constant_by_offset(Uint4, glm::uvec4);
 
-    set_uniform_offset(Int, int32_t);
-    set_uniform_offset(Int2, glm::ivec2);
-    set_uniform_offset(Int3, glm::ivec3);
-    set_uniform_offset(Int4, glm::ivec4);
+    set_constant_by_offset(Int, int32_t);
+    set_constant_by_offset(Int2, glm::ivec2);
+    set_constant_by_offset(Int3, glm::ivec3);
+    set_constant_by_offset(Int4, glm::ivec4);
 
-    set_uniform_offset(Float, float);
-    set_uniform_offset(Float2, glm::vec2);
-    set_uniform_offset(Float3, glm::vec3);
-    set_uniform_offset(Float4, glm::vec4);
+    set_constant_by_offset(Float, float);
+    set_constant_by_offset(Float2, glm::vec2);
+    set_constant_by_offset(Float3, glm::vec3);
+    set_constant_by_offset(Float4, glm::vec4);
 
-    set_uniform_offset(Float2x2, glm::mat2);
-    set_uniform_offset(Float2x3, glm::mat2x3);
-    set_uniform_offset(Float2x4, glm::mat2x4);
+    set_constant_by_offset(Float2x2, glm::mat2);
+    set_constant_by_offset(Float2x3, glm::mat2x3);
+    set_constant_by_offset(Float2x4, glm::mat2x4);
 
-    set_uniform_offset(Float3x3, glm::mat3);
-    set_uniform_offset(Float3x2, glm::mat3x2);
-    set_uniform_offset(Float3x4, glm::mat3x4);
+    set_constant_by_offset(Float3x3, glm::mat3);
+    set_constant_by_offset(Float3x2, glm::mat3x2);
+    set_constant_by_offset(Float3x4, glm::mat3x4);
 
-    set_uniform_offset(Float4x4, glm::mat4);
-    set_uniform_offset(Float4x2, glm::mat4x2);
-    set_uniform_offset(Float4x3, glm::mat4x3);
+    set_constant_by_offset(Float4x4, glm::mat4);
+    set_constant_by_offset(Float4x2, glm::mat4x2);
+    set_constant_by_offset(Float4x3, glm::mat4x3);
 
-    set_uniform_offset(GpuPtr, uint64_t);
+    set_constant_by_offset(GpuPtr, uint64_t);
 
-#undef set_uniform_offset
+#undef set_constant_by_offset
 
-#define set_uniform_string(_var_type, _c_type) \
-    template<> void UniformBuffer::setVariable(const std::string& name, const _c_type& value)    \
+#define set_constant_by_name(_var_type, _c_type) \
+    template<> void ConstantBuffer::setVariable(const std::string& name, const _c_type& value)    \
     {                                                           \
         size_t offset;                                          \
-        const auto* pUniform = mpReflector->getVariableData(name, offset, false); \
+        const auto* pVar = mpReflector->getVariableData(name, offset, false); \
         bool valid = true;                                      \
-        if((_LOG_ENABLED == 0) || (offset != ProgramReflection::kInvalidLocation && checkVariableType(ProgramReflection::Variable::Type::_var_type, pUniform->type, name, mpReflector->getName()))) \
+        if((_LOG_ENABLED == 0) || (offset != ProgramReflection::kInvalidLocation && checkVariableType(ProgramReflection::Variable::Type::_var_type, pVar->type, name, mpReflector->getName()))) \
         {                                                       \
             setVariable(offset, value);                         \
         }                                                       \
     }
 
-    set_uniform_string(Bool, bool);
-    set_uniform_string(Bool2, glm::bvec2);
-    set_uniform_string(Bool3, glm::bvec3);
-    set_uniform_string(Bool4, glm::bvec4);
+    set_constant_by_name(Bool, bool);
+    set_constant_by_name(Bool2, glm::bvec2);
+    set_constant_by_name(Bool3, glm::bvec3);
+    set_constant_by_name(Bool4, glm::bvec4);
 
-    set_uniform_string(Uint, uint32_t);
-    set_uniform_string(Uint2, glm::uvec2);
-    set_uniform_string(Uint3, glm::uvec3);
-    set_uniform_string(Uint4, glm::uvec4);
+    set_constant_by_name(Uint, uint32_t);
+    set_constant_by_name(Uint2, glm::uvec2);
+    set_constant_by_name(Uint3, glm::uvec3);
+    set_constant_by_name(Uint4, glm::uvec4);
 
-    set_uniform_string(Int, int32_t);
-    set_uniform_string(Int2, glm::ivec2);
-    set_uniform_string(Int3, glm::ivec3);
-    set_uniform_string(Int4, glm::ivec4);
+    set_constant_by_name(Int, int32_t);
+    set_constant_by_name(Int2, glm::ivec2);
+    set_constant_by_name(Int3, glm::ivec3);
+    set_constant_by_name(Int4, glm::ivec4);
 
-    set_uniform_string(Float, float);
-    set_uniform_string(Float2, glm::vec2);
-    set_uniform_string(Float3, glm::vec3);
-    set_uniform_string(Float4, glm::vec4);
+    set_constant_by_name(Float, float);
+    set_constant_by_name(Float2, glm::vec2);
+    set_constant_by_name(Float3, glm::vec3);
+    set_constant_by_name(Float4, glm::vec4);
 
-    set_uniform_string(Float2x2, glm::mat2);
-    set_uniform_string(Float2x3, glm::mat2x3);
-    set_uniform_string(Float2x4, glm::mat2x4);
+    set_constant_by_name(Float2x2, glm::mat2);
+    set_constant_by_name(Float2x3, glm::mat2x3);
+    set_constant_by_name(Float2x4, glm::mat2x4);
 
-    set_uniform_string(Float3x3, glm::mat3);
-    set_uniform_string(Float3x2, glm::mat3x2);
-    set_uniform_string(Float3x4, glm::mat3x4);
+    set_constant_by_name(Float3x3, glm::mat3);
+    set_constant_by_name(Float3x2, glm::mat3x2);
+    set_constant_by_name(Float3x4, glm::mat3x4);
 
-    set_uniform_string(Float4x4, glm::mat4);
-    set_uniform_string(Float4x2, glm::mat4x2);
-    set_uniform_string(Float4x3, glm::mat4x3);
+    set_constant_by_name(Float4x4, glm::mat4);
+    set_constant_by_name(Float4x2, glm::mat4x2);
+    set_constant_by_name(Float4x3, glm::mat4x3);
 
-    set_uniform_string(GpuPtr, uint64_t);
-#undef set_uniform_string
+    set_constant_by_name(GpuPtr, uint64_t);
+#undef set_constant_by_name
 
-#define set_uniform_array_offset(_var_type, _c_type) \
-    template<> void UniformBuffer::setVariableArray(size_t offset, const _c_type* pValue, size_t count)             \
+#define set_constant_array_by_offset(_var_type, _c_type) \
+    template<> void ConstantBuffer::setVariableArray(size_t offset, const _c_type* pValue, size_t count)             \
     {                                                                                                               \
         if(checkVariableByOffset(ProgramReflection::Variable::Type::_var_type, offset, count, mpReflector.get()))   \
         {                                                                                                           \
@@ -300,45 +300,45 @@ namespace Falcor
         }                                                                                                           \
     }
 
-    set_uniform_array_offset(Bool, bool);
-    set_uniform_array_offset(Bool2, glm::bvec2);
-    set_uniform_array_offset(Bool3, glm::bvec3);
-    set_uniform_array_offset(Bool4, glm::bvec4);
+    set_constant_array_by_offset(Bool, bool);
+    set_constant_array_by_offset(Bool2, glm::bvec2);
+    set_constant_array_by_offset(Bool3, glm::bvec3);
+    set_constant_array_by_offset(Bool4, glm::bvec4);
 
-    set_uniform_array_offset(Uint, uint32_t);
-    set_uniform_array_offset(Uint2, glm::uvec2);
-    set_uniform_array_offset(Uint3, glm::uvec3);
-    set_uniform_array_offset(Uint4, glm::uvec4);
+    set_constant_array_by_offset(Uint, uint32_t);
+    set_constant_array_by_offset(Uint2, glm::uvec2);
+    set_constant_array_by_offset(Uint3, glm::uvec3);
+    set_constant_array_by_offset(Uint4, glm::uvec4);
 
-    set_uniform_array_offset(Int, int32_t);
-    set_uniform_array_offset(Int2, glm::ivec2);
-    set_uniform_array_offset(Int3, glm::ivec3);
-    set_uniform_array_offset(Int4, glm::ivec4);
+    set_constant_array_by_offset(Int, int32_t);
+    set_constant_array_by_offset(Int2, glm::ivec2);
+    set_constant_array_by_offset(Int3, glm::ivec3);
+    set_constant_array_by_offset(Int4, glm::ivec4);
 
-    set_uniform_array_offset(Float, float);
-    set_uniform_array_offset(Float2, glm::vec2);
-    set_uniform_array_offset(Float3, glm::vec3);
-    set_uniform_array_offset(Float4, glm::vec4);
+    set_constant_array_by_offset(Float, float);
+    set_constant_array_by_offset(Float2, glm::vec2);
+    set_constant_array_by_offset(Float3, glm::vec3);
+    set_constant_array_by_offset(Float4, glm::vec4);
 
-    set_uniform_array_offset(Float2x2, glm::mat2);
-    set_uniform_array_offset(Float2x3, glm::mat2x3);
-    set_uniform_array_offset(Float2x4, glm::mat2x4);
+    set_constant_array_by_offset(Float2x2, glm::mat2);
+    set_constant_array_by_offset(Float2x3, glm::mat2x3);
+    set_constant_array_by_offset(Float2x4, glm::mat2x4);
 
-    set_uniform_array_offset(Float3x3, glm::mat3);
-    set_uniform_array_offset(Float3x2, glm::mat3x2);
-    set_uniform_array_offset(Float3x4, glm::mat3x4);
+    set_constant_array_by_offset(Float3x3, glm::mat3);
+    set_constant_array_by_offset(Float3x2, glm::mat3x2);
+    set_constant_array_by_offset(Float3x4, glm::mat3x4);
 
-    set_uniform_array_offset(Float4x4, glm::mat4);
-    set_uniform_array_offset(Float4x2, glm::mat4x2);
-    set_uniform_array_offset(Float4x3, glm::mat4x3);
+    set_constant_array_by_offset(Float4x4, glm::mat4);
+    set_constant_array_by_offset(Float4x2, glm::mat4x2);
+    set_constant_array_by_offset(Float4x3, glm::mat4x3);
 
-    set_uniform_array_offset(GpuPtr, uint64_t);
+    set_constant_array_by_offset(GpuPtr, uint64_t);
 
-#undef set_uniform_array_offset
+#undef set_constant_array_by_offset
 
-#define set_uniform_array_string(_var_type, _c_type) \
+#define set_constant_array_by_string(_var_type, _c_type) \
     template<>                                      \
-    void UniformBuffer::setVariableArray(const std::string& name, const _c_type* pValue, size_t count)            \
+    void ConstantBuffer::setVariableArray(const std::string& name, const _c_type* pValue, size_t count)           \
     {                                                                                                             \
         size_t offset;                                                                                            \
         const auto& pVarDesc = mpReflector->getVariableData(name, offset, true);                                  \
@@ -348,43 +348,43 @@ namespace Falcor
         }                                                                                                         \
     }
     
-    set_uniform_array_string(Bool, bool);
-    set_uniform_array_string(Bool2, glm::bvec2);
-    set_uniform_array_string(Bool3, glm::bvec3);
-    set_uniform_array_string(Bool4, glm::bvec4);
+    set_constant_array_by_string(Bool, bool);
+    set_constant_array_by_string(Bool2, glm::bvec2);
+    set_constant_array_by_string(Bool3, glm::bvec3);
+    set_constant_array_by_string(Bool4, glm::bvec4);
 
-    set_uniform_array_string(Uint, uint32_t);
-    set_uniform_array_string(Uint2, glm::uvec2);
-    set_uniform_array_string(Uint3, glm::uvec3);
-    set_uniform_array_string(Uint4, glm::uvec4);
+    set_constant_array_by_string(Uint, uint32_t);
+    set_constant_array_by_string(Uint2, glm::uvec2);
+    set_constant_array_by_string(Uint3, glm::uvec3);
+    set_constant_array_by_string(Uint4, glm::uvec4);
 
-    set_uniform_array_string(Int, int32_t);
-    set_uniform_array_string(Int2, glm::ivec2);
-    set_uniform_array_string(Int3, glm::ivec3);
-    set_uniform_array_string(Int4, glm::ivec4);
+    set_constant_array_by_string(Int, int32_t);
+    set_constant_array_by_string(Int2, glm::ivec2);
+    set_constant_array_by_string(Int3, glm::ivec3);
+    set_constant_array_by_string(Int4, glm::ivec4);
 
-    set_uniform_array_string(Float, float);
-    set_uniform_array_string(Float2, glm::vec2);
-    set_uniform_array_string(Float3, glm::vec3);
-    set_uniform_array_string(Float4, glm::vec4);
+    set_constant_array_by_string(Float, float);
+    set_constant_array_by_string(Float2, glm::vec2);
+    set_constant_array_by_string(Float3, glm::vec3);
+    set_constant_array_by_string(Float4, glm::vec4);
 
-    set_uniform_array_string(Float2x2, glm::mat2);
-    set_uniform_array_string(Float2x3, glm::mat2x3);
-    set_uniform_array_string(Float2x4, glm::mat2x4);
+    set_constant_array_by_string(Float2x2, glm::mat2);
+    set_constant_array_by_string(Float2x3, glm::mat2x3);
+    set_constant_array_by_string(Float2x4, glm::mat2x4);
 
-    set_uniform_array_string(Float3x3, glm::mat3);
-    set_uniform_array_string(Float3x2, glm::mat3x2);
-    set_uniform_array_string(Float3x4, glm::mat3x4);
+    set_constant_array_by_string(Float3x3, glm::mat3);
+    set_constant_array_by_string(Float3x2, glm::mat3x2);
+    set_constant_array_by_string(Float3x4, glm::mat3x4);
 
-    set_uniform_array_string(Float4x4, glm::mat4);
-    set_uniform_array_string(Float4x2, glm::mat4x2);
-    set_uniform_array_string(Float4x3, glm::mat4x3);
+    set_constant_array_by_string(Float4x4, glm::mat4);
+    set_constant_array_by_string(Float4x2, glm::mat4x2);
+    set_constant_array_by_string(Float4x3, glm::mat4x3);
 
-    set_uniform_array_string(GpuPtr, uint64_t);
+    set_constant_array_by_string(GpuPtr, uint64_t);
 
-#undef set_uniform_array_string
+#undef set_constant_array_by_string
 
-    void UniformBuffer::setBlob(const void* pSrc, size_t offset, size_t size)
+    void ConstantBuffer::setBlob(const void* pSrc, size_t offset, size_t size)
     {
         if((_LOG_ENABLED != 0) && (offset + size > mSize))
         {
@@ -467,7 +467,7 @@ namespace Falcor
             msg += name + "\".\n";
             if(dimsMatch == false)
             {
-                msg += "Dimensions mismatch.\nTexture has Type " + to_string(texDim) + (isArray ? "Array" : "") + ".\nUniform has Type " + to_string(pResourceDesc->dims) + ".\n";
+                msg += "Dimensions mismatch.\nTexture has Type " + to_string(texDim) + (isArray ? "Array" : "") + ".\nVariable has Type " + to_string(pResourceDesc->dims) + ".\n";
             }
 
             if(imageMatch == false)
@@ -480,7 +480,7 @@ namespace Falcor
 
             if(formatMatch == false)
             {
-                msg += "Format mismatch.\nTexture has format Type " + to_string(texFormatType) + ".\nUniform has Type " + to_string(pResourceDesc->retType) + ".\n";
+                msg += "Format mismatch.\nTexture has format Type " + to_string(texFormatType) + ".\nVariable has Type " + to_string(pResourceDesc->retType) + ".\n";
             }
 
             msg += "\nError when setting resource to buffer " + bufferName;
@@ -504,7 +504,7 @@ namespace Falcor
         return pResource;
     }
 
-    void UniformBuffer::setTexture(size_t offset, const Texture* pTexture, const Sampler* pSampler, bool bindAsImage)
+    void ConstantBuffer::setTexture(size_t offset, const Texture* pTexture, const Sampler* pSampler, bool bindAsImage)
     {
         bool bOK = true;
 #if _LOG_ENABLED
@@ -549,7 +549,7 @@ namespace Falcor
 
             if(bOK == false)
             {
-                std::string msg("Error when setting texture by offset. No uniform found at offset ");
+                std::string msg("Error when setting texture by offset. No varialbe found at offset ");
                 msg += std::to_string(offset) + ". Ignoring call";
                 Logger::log(Logger::Level::Error, msg);
             }
@@ -563,7 +563,7 @@ namespace Falcor
         }
     }
 
-    void UniformBuffer::setTexture(const std::string& name, const Texture* pTexture, const Sampler* pSampler, bool bindAsImage)
+    void ConstantBuffer::setTexture(const std::string& name, const Texture* pTexture, const Sampler* pSampler, bool bindAsImage)
     {
         size_t offset;
         const auto& pVarDesc = mpReflector->getVariableData(name, offset, false);
@@ -584,7 +584,7 @@ namespace Falcor
         }
     }
 
-    void UniformBuffer::setTextureArray(const std::string& name, const Texture* pTexture[], const Sampler* pSampler, size_t count, bool bindAsImage)
+    void ConstantBuffer::setTextureArray(const std::string& name, const Texture* pTexture[], const Sampler* pSampler, size_t count, bool bindAsImage)
     {
         size_t offset;
         const auto& pVarDesc = mpReflector->getVariableData(name, offset, true);

@@ -52,7 +52,7 @@ namespace Falcor
             }
         }
 
-        static inline const std::string uniformType(GLenum type)
+        static inline const std::string variableType(GLenum type)
         {
             switch(type)
             {
@@ -162,7 +162,7 @@ namespace Falcor
                 enum_case(GL_UNSIGNED_INT_IMAGE_2D_MULTISAMPLE_ARRAY);
                 enum_case(GL_UNSIGNED_INT_ATOMIC_COUNTER);
             default:
-                return "Unknown GL uniform Type " + std::to_string(type);
+                return "Unknown GL variable Type " + std::to_string(type);
             }
         }
 

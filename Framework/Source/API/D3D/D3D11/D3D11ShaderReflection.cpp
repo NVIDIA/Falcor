@@ -58,7 +58,7 @@ namespace Falcor
                         falcorDesc.sizeInBytes = bufferDesc.Size;
                         falcorDesc.variableCount = bufferDesc.Variables;
                         assert(bufferDesc.Type == D3D_CT_CBUFFER);  // Not sure how to handle texture buffers
-                        falcorDesc.type = BufferDesc::Type::Uniform;
+                        falcorDesc.type = BufferDesc::Type::Constant;
                         bufferVec[std::string(bufferDesc.Name)] = falcorDesc;
                     }
                     found++;

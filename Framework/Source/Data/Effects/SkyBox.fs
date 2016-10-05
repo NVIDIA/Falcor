@@ -30,7 +30,7 @@
 #include "ShaderCommon.h"
 #include "HlslGlslCommon.h"
 
-UNIFORM_BUFFER(PerFrameCB, 0)
+CONSTANT_BUFFER(PerFrameCB, 0)
 {
     mat4 gWorld;
     samplerCube gSkyTex;

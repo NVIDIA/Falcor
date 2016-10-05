@@ -32,7 +32,7 @@
 #include "glm/glm.hpp"
 #include "glm/gtc/type_ptr.hpp"
 #include "Utils/OS.h"
-#include "../UniformBuffer.h"
+#include "../ConstantBuffer.h"
 #include "../Buffer.h"
 #include <fstream>
 

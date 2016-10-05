@@ -27,7 +27,7 @@
 ***************************************************************************/
 #include "Framework.h"
 #ifdef FALCOR_GL
-#include "API/UniformBuffer.h"
+#include "API/ConstantBuffer.h"
 #include "API/ProgramVersion.h"
 #include "API/Buffer.h"
 #include "API/Texture.h"
@@ -35,9 +35,9 @@
 
 namespace Falcor
 {
-    UniformBuffer::~UniformBuffer() = default;
+    ConstantBuffer::~ConstantBuffer() = default;
 
-    void UniformBuffer::setTextureInternal(size_t offset, const Texture* pTexture, const Sampler* pSampler)
+    void ConstantBuffer::setTextureInternal(size_t offset, const Texture* pTexture, const Sampler* pSampler)
     {
         const uint8_t* pVar = mData.data() + offset;
         if(pTexture)

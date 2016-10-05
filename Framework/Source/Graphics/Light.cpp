@@ -28,7 +28,7 @@
 #include "Framework.h"
 #include "light.h"
 #include "Utils/Gui.h"
-#include "API/UniformBuffer.h"
+#include "API/ConstantBuffer.h"
 #include "API/Buffer.h"
 #define _USE_MATH_DEFINES
 #include <math.h>
@@ -53,15 +53,15 @@ namespace Falcor
         sCount++;
     }
 
-	void Light::setIntoUniformBuffer(UniformBuffer* pBuffer, const std::string& varName)
+	void Light::setIntoConstantBuffer(ConstantBuffer* pBuffer, const std::string& varName)
 	{
 		static const size_t dataSize = sizeof(LightData);
 		static_assert(dataSize % sizeof(float) * 4 == 0, "LightData size should be a multiple of 16");
 
 		size_t offset = pBuffer->getVariableOffset(varName + ".worldPos");
-		if (offset == UniformBuffer::kInvalidUniformOffset)
+		if (offset == ConstantBuffer::kInvalidOffset)
 		{
-			Logger::log(Logger::Level::Warning, "AreaLight::setIntoUniformBuffer() - variable \"" + varName + "\"not found in uniform buffer\n");
+			Logger::log(Logger::Level::Warning, "AreaLight::setIntoConstantBuffer() - variable \"" + varName + "\"not found in constant buffer\n");
 			return;
 		}
 
@@ -296,13 +296,13 @@ namespace Falcor
 		Logger::log(Logger::Level::Error, "AreaLight::setUiElements() is not used and thus not implemented for now.");
 	}
 
-	void AreaLight::setIntoUniformBuffer(UniformBuffer* pBuffer, const std::string& varName)
+	void AreaLight::setIntoConstantBuffer(ConstantBuffer* pBuffer, const std::string& varName)
 	{
 		// Upload data to GPU
 		prepareGPUData();
 
 		// Call base class method;
-		Light::setIntoUniformBuffer(pBuffer, varName);
+		Light::setIntoConstantBuffer(pBuffer, varName);
 	}
 
 	void AreaLight::prepareGPUData()

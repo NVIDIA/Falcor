@@ -33,7 +33,7 @@
 #include "API/FBO.h"
 #include "API/ProgramVersion.h"
 #include "API/VAO.h"
-#include "API/UniformBuffer.h"
+#include "API/ConstantBuffer.h"
 #include "API/Buffer.h"
 #include "API/ShaderStorageBuffer.h"
 #include "glm/gtc/type_ptr.hpp"
@@ -146,7 +146,7 @@ namespace Falcor
         UNSUPPORTED_IN_D3D11("BlitFbo");
 	}
 
-    void RenderContext::applyUniformBuffer(uint32_t Index) const
+    void RenderContext::applyConstantBuffer(uint32_t Index) const
     {
         ID3D11Buffer* pBuffer = nullptr;
         if(mState.pUniformBuffers[Index] && mState.pUniformBuffers[Index]->getBuffer())
@@ -230,8 +230,8 @@ namespace Falcor
         pCtx->IASetInputLayout(pLayout);
 
         // Set the shader resources
-        // All uniform buffers for the current program holds the entire resource information, so just need to find the first uniform buffer and use it
-        UniformBuffer::SharedConstPtr pBuffer;
+        // All constant buffers for the current program holds the entire resource information, so just need to find the first uniform buffer and use it
+        ConstantBuffer::SharedConstPtr pBuffer;
         for(size_t i = 0; i < mState.pUniformBuffers.size(); i++)
         {
             pBuffer = mState.pUniformBuffers[i];

@@ -38,7 +38,7 @@
 
 namespace Falcor
 {
-    class UniformBuffer;
+    class ConstantBuffer;
     class Gui;
 
     /** Base class for light sources. All light sources should inherit from this.
@@ -52,10 +52,10 @@ namespace Falcor
         Light();
         virtual ~Light() = default;
         /** Set the light parameters into a program. To use this you need to include 'Falcor.h' inside your shader.
-            \param[in] pBuffer The uniform buffer to set the parameters into.
+            \param[in] pBuffer The constant buffer to set the parameters into.
             \param[in] varName The name of the light variable in the program.
         */
-        virtual void setIntoUniformBuffer(UniformBuffer* pBuffer, const std::string& varName);
+        virtual void setIntoConstantBuffer(ConstantBuffer* pBuffer, const std::string& varName);
         /** create UI elements for this light.
             \param[in] pGui The GUI to create the elements with
             \param[in] uiGroup Optional. Group the light's UI elements under this name.
@@ -293,10 +293,10 @@ namespace Falcor
 		    Set the light parameters into a program. To use this you need to
 		    include 'Falcor.h' inside your shader.
 
-		    \param[in] pBuffer The uniform buffer to set the parameters into.
+		    \param[in] pBuffer The constant buffer to set the parameters into.
 		    \param[in] varName The name of the light variable in the program.
 		*/
-		void setIntoUniformBuffer(UniformBuffer* pBuffer, const std::string& varName) override;
+		void setIntoConstantBuffer(ConstantBuffer* pBuffer, const std::string& varName) override;
 
 		/**
 		    Create UI elements for this light.

@@ -73,7 +73,7 @@ namespace Falcor
 
         Texture::SharedConstPtr getShadowMap() const;
 
-        void setDataIntoUniformBuffer(UniformBuffer* pUbo, const std::string& varName);
+        void setDataIntoConstantBuffer(ConstantBuffer* pCB, const std::string& varName);
         void setCascadeCount(uint32_t cascadeCount);
         uint32_t getCascadeCount() { return mCsmData.cascadeCount; }
         void toggleMinMaxSdsm(bool enable) { mControls.useMinMaxSdsm = enable; }
@@ -106,8 +106,8 @@ namespace Falcor
             Sampler::SharedPtr pLinearCmpSampler;
             Sampler::SharedPtr pVSMTrilinearSampler;
             Program::SharedPtr pProg;
-            UniformBuffer::SharedPtr pLightUbo;
-            UniformBuffer::SharedPtr pAlphaUbo;
+            ConstantBuffer::SharedPtr pLightCB;
+            ConstantBuffer::SharedPtr pAlphaCB;
             RasterizerState::SharedPtr pDepthClampRS;
             glm::vec2 mapSize;
         } mShadowPass;

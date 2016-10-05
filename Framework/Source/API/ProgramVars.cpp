@@ -73,10 +73,30 @@ namespace Falcor
     
     ProgramVars::ProgramVars(const ProgramReflection::SharedConstPtr& pReflector, bool createBuffers, const RootSignature::SharedConstPtr& pRootSig) : mpReflector(pReflector)
     {
-        // Initialize the UBO and SSBO maps. We always do it, to mark which slots are used in the shader.
+        // Initialize the CB and SSBO maps. We always do it, to mark which slots are used in the shader.
         mpRootSignature = pRootSig ? pRootSig : RootSignature::create(pReflector.get());
-        initializeBuffersMap<UniformBuffer, RootSignature::DescType::CBV>(mUniformBuffers, createBuffers, mpReflector->getBufferMap(ProgramReflection::BufferReflection::Type::Constant), mpRootSignature.get());
+        initializeBuffersMap<ConstantBuffer, RootSignature::DescType::CBV>(mConstantBuffers, createBuffers, mpReflector->getBufferMap(ProgramReflection::BufferReflection::Type::Constant), mpRootSignature.get());
         initializeBuffersMap<ShaderStorageBuffer, RootSignature::DescType::UAV>(mSSBO, createBuffers, mpReflector->getBufferMap(ProgramReflection::BufferReflection::Type::UnorderedAccess), mpRootSignature.get());
+
+        // Initialize the textures and samplers map
+        for (const auto& res : pReflector->getResourceMap())
+        {
+            const auto& desc = res.second;
+            switch (desc.type)
+            {
+            case ProgramReflection::Resource::ResourceType::Sampler:
+                mAssignedSamplers[desc.regIndex] = nullptr;
+                break;
+            case ProgramReflection::Resource::ResourceType::Texture:
+                mAssignedSrvs[desc.regIndex] = nullptr;
+                break;
+            case ProgramReflection::Resource::ResourceType::UAV:
+                mAssignedUavs[desc.regIndex] = nullptr;
+                break;
+            default:
+                break;
+            }
+        }
     }
 
     ProgramVars::SharedPtr ProgramVars::create(const ProgramReflection::SharedConstPtr& pReflector, bool createBuffers, const RootSignature::SharedConstPtr& pRootSig)
@@ -118,14 +138,14 @@ namespace Falcor
         return getBufferCommon<BufferClass>(bindLocation, bufferMap);
     }
 
-    UniformBuffer::SharedPtr ProgramVars::getUniformBuffer(const std::string& name) const
+    ConstantBuffer::SharedPtr ProgramVars::getConstantBuffer(const std::string& name) const
     {
-        return getBufferCommon<UniformBuffer, ProgramReflection::BufferReflection::Type::Constant>(name, mpReflector.get(), mUniformBuffers);
+        return getBufferCommon<ConstantBuffer, ProgramReflection::BufferReflection::Type::Constant>(name, mpReflector.get(), mConstantBuffers);
     }
 
-    UniformBuffer::SharedPtr ProgramVars::getUniformBuffer(uint32_t index) const
+    ConstantBuffer::SharedPtr ProgramVars::getConstantBuffer(uint32_t index) const
     {
-        return getBufferCommon<UniformBuffer>(index, mUniformBuffers);
+        return getBufferCommon<ConstantBuffer>(index, mConstantBuffers);
     }
 
     ShaderStorageBuffer::SharedPtr ProgramVars::getShaderStorageBuffer(const std::string& name) const
@@ -138,42 +158,61 @@ namespace Falcor
         return getBufferCommon<ShaderStorageBuffer>(index, mSSBO);
     }
 
-    ErrorCode ProgramVars::bindUniformBuffer(uint32_t index, const UniformBuffer::SharedPtr& pUbo)
+    ErrorCode ProgramVars::attachConstantBuffer(uint32_t index, const ConstantBuffer::SharedPtr& pCB)
     {
         // Check that the index is valid
-        if(mUniformBuffers.find(index) == mUniformBuffers.end())
+        if(mConstantBuffers.find(index) == mConstantBuffers.end())
         {
-            Logger::log(Logger::Level::Warning, "No uniform buffer was found at index " + std::to_string(index) + ". Ignoring bindUniformBuffer() call.");
+            Logger::log(Logger::Level::Warning, "No constant buffer was found at index " + std::to_string(index) + ". Ignoring attachConstantBuffer() call.");
             return ErrorCode::NotFound;
         }
 
         // Just need to make sure the buffer is large enough
         const auto& desc = mpReflector->getBufferDesc(index, ProgramReflection::BufferReflection::Type::Constant);
-        if(desc->getRequiredSize() > pUbo->getBuffer()->getSize())
+        if(desc->getRequiredSize() > pCB->getBuffer()->getSize())
         {
-            Logger::log(Logger::Level::Error, "Can't bind uniform-buffer. Size mismatch.");
+            Logger::log(Logger::Level::Error, "Can't attach the constant-buffer. Size mismatch.");
             return ErrorCode::SizeMismatch;
         }
 
-        mUniformBuffers[index].pBuffer = pUbo;
+        mConstantBuffers[index].pBuffer = pCB;
         return ErrorCode::None;
     }
 
-    ErrorCode ProgramVars::bindUniformBuffer(const std::string& name, const UniformBuffer::SharedPtr& pUbo)
+    ErrorCode ProgramVars::attachConstantBuffer(const std::string& name, const ConstantBuffer::SharedPtr& pCB)
     {
         // Find the buffer
         uint32_t loc = mpReflector->getBufferBinding(name);
         if(loc == ProgramReflection::kInvalidLocation)
         {
-            Logger::log(Logger::Level::Warning, "Uniform buffer \"" + name + "\" was not found. Ignoring bindUniformBuffer() call.");
+            Logger::log(Logger::Level::Warning, "Constant buffer \"" + name + "\" was not found. Ignoring attachConstantBuffer() call.");
             return ErrorCode::NotFound;
         }
 
-        return bindUniformBuffer(loc, pUbo);
+        return attachConstantBuffer(loc, pCB);
     }
 
     ErrorCode ProgramVars::setTexture(uint32_t index, const Texture::SharedConstPtr& pTexture)
     {
+        mAssignedSrvs[index] = pTexture;
         return ErrorCode::None;
+    }
+
+    ErrorCode ProgramVars::setTexture(const std::string& name, const Texture::SharedConstPtr& pTexture)
+    {
+        const ProgramReflection::Resource* pDesc = mpReflector->getResourceDesc(name);
+        if (pDesc == nullptr)
+        {
+            Logger::log(Logger::Level::Warning, "Texture \"" + name + "\" was not found. Ignoring setTexture() call.");
+            return ErrorCode::NotFound;
+        }
+
+        if (pDesc->type != ProgramReflection::Resource::ResourceType::Texture)
+        {
+            Logger::log(Logger::Level::Warning, "ProgramVars::setTexture() was called, but variable \"" + name + "\" is not a texture. Ignoring call.");
+            return ErrorCode::TypeMismatch;
+        }
+
+        return setTexture(pDesc->regIndex, pTexture);
     }
 }

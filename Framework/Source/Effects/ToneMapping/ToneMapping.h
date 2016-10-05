@@ -27,7 +27,7 @@
 ***************************************************************************/
 #pragma once
 #include "Graphics/FullScreenPass.h"
-#include "API/UniformBuffer.h"
+#include "API/ConstantBuffer.h"
 #include "API/FBO.h"
 #include "API/Sampler.h"
 #include "Utils/Gui.h"
@@ -105,7 +105,7 @@ namespace Falcor
         FullScreenPass::UniquePtr mpLuminancePass;
         Fbo::SharedPtr mpLuminanceFbo;
 
-        UniformBuffer::SharedPtr mpUbo;
+        ConstantBuffer::SharedPtr mpCb;
         Sampler::SharedPtr mpPointSampler;
         Sampler::SharedPtr mpLinearSampler;
 
@@ -117,7 +117,7 @@ namespace Falcor
             size_t maxWhiteLuminance;
             size_t luminanceLod;
             size_t whiteScale;
-        } mUboOffsets;
+        } mCbOffsets;
 
         void createToneMapPass(Operator op);
         void createLuminancePass();

@@ -35,7 +35,7 @@ namespace Falcor
     class Texture;
     class Scene;
     class Material;
-    class UniformBuffer;
+    class ConstantBuffer;
     class Sampler;
 
     class LeanMap
@@ -46,8 +46,8 @@ namespace Falcor
         static Falcor::Texture::SharedPtr createFromNormalMap(const Falcor::Texture* pNormalMap);
 
         Falcor::Texture* getLeanMap(uint32_t sceneMaterialID) { return mpLeanMaps[sceneMaterialID].get(); }
-        void setIntoUniformBuffer(Falcor::UniformBuffer* pUB, size_t offset, Falcor::Sampler* pSampler = nullptr) const;
-        void setIntoUniformBuffer(Falcor::UniformBuffer* pUB, const std::string& varName, Falcor::Sampler* pSampler = nullptr) const;
+        void setIntoConstantBuffer(Falcor::ConstantBuffer* pUB, size_t offset, Falcor::Sampler* pSampler = nullptr) const;
+        void setIntoConstantBuffer(Falcor::ConstantBuffer* pUB, const std::string& varName, Falcor::Sampler* pSampler = nullptr) const;
         uint32_t getRequiredLeanMapShaderArraySize() const { return mShaderArraySize; }
     private:
         LeanMap() = default;

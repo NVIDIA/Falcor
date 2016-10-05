@@ -108,9 +108,8 @@ namespace Falcor
 
         struct  
         {
-            uint32_t fontTex;
             size_t vpTransform;
             size_t fontColor;
-        } mUniformLocations;
+        } mVarOffsets;
     };
 }

@@ -159,7 +159,7 @@ namespace Falcor
         return pLeanMaps;
     }
 
-    void LeanMap::setIntoUniformBuffer(UniformBuffer* pUB, size_t offset, Sampler* pSampler) const
+    void LeanMap::setIntoConstantBuffer(ConstantBuffer* pUB, size_t offset, Sampler* pSampler) const
     {
         for(const auto& pMap : mpLeanMaps)
         {
@@ -170,9 +170,9 @@ namespace Falcor
         }
     }
 
-    void LeanMap::setIntoUniformBuffer(UniformBuffer* pUB, const std::string& varName, Sampler* pSampler) const
+    void LeanMap::setIntoConstantBuffer(ConstantBuffer* pUB, const std::string& varName, Sampler* pSampler) const
     {
         size_t offset = pUB->getVariableOffset(varName + "[0]");
-        setIntoUniformBuffer(pUB, offset, pSampler);
+        setIntoConstantBuffer(pUB, offset, pSampler);
     }
 }

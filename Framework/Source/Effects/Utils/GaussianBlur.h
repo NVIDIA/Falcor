@@ -29,7 +29,7 @@
 #include "API/FBO.h"
 #include "Graphics/FullScreenPass.h"
 #include "API/Sampler.h"
-#include "API/UniformBuffer.h"
+#include "API/ConstantBuffer.h"
 #include <memory>
 
 namespace Falcor
@@ -74,6 +74,6 @@ namespace Falcor
         Fbo::SharedPtr mpTmpFbo;
         Sampler::SharedPtr mpSampler;
 
-        UniformBuffer::SharedPtr mpUbo;
+        ConstantBuffer::SharedPtr mpCb;
     };
 }

@@ -27,7 +27,7 @@
 ***************************************************************************/
 #include "Framework.h"
 #include "Material.h"
-#include "API/UniformBuffer.h"
+#include "API/ConstantBuffer.h"
 #include "API/Texture.h"
 #include "API/Buffer.h"
 #include "Utils/os.h"
@@ -258,32 +258,32 @@ namespace Falcor
 	}
 
 #if _LOG_ENABLED
-#define check_offset(_a) assert(pBuffer->getVariableOffset(varName + "." + #_a) == (offsetof(MaterialData, _a) + offset))
+#define check_offset(_a) assert(pCB->getVariableOffset(varName + "." + #_a) == (offsetof(MaterialData, _a) + offset))
 #else
 #define check_offset(_a)
 #endif
 
-    void Material::setIntoUniformBuffer(UniformBuffer* pBuffer, const std::string& varName) const
+    void Material::setIntoConstantBuffer(ConstantBuffer* pCB, const std::string& varName) const
     {
         finalize();
         static const size_t dataSize = sizeof(MaterialData);
         static_assert(dataSize % sizeof(glm::vec4) == 0, "Material::MaterialData size should be a multiple of 16");
 
-        size_t offset = pBuffer->getVariableOffset(varName + ".desc.layers[0].type");
+        size_t offset = pCB->getVariableOffset(varName + ".desc.layers[0].type");
 
-        if(offset == UniformBuffer::kInvalidUniformOffset)
+        if(offset == ConstantBuffer::kInvalidOffset)
         {
-            Logger::log(Logger::Level::Warning, "Material::setIntoUniformBuffer() - variable \"" + varName + "\"not found in uniform buffer\n");
+            Logger::log(Logger::Level::Warning, "Material::setIntoConstantBuffer() - variable \"" + varName + "\"not found in constant buffer\n");
             return;
         }
 
         check_offset(values.layers[0].albedo.texture.ptr);
         check_offset(values.ambientMap.texture.ptr);
         check_offset(values.id);
-        assert(offset + dataSize <= pBuffer->getBuffer()->getSize());
+        assert(offset + dataSize <= pCB->getBuffer()->getSize());
 
         bindTextures();
-        pBuffer->setBlob(&mData, offset, dataSize);
+        pCB->setBlob(&mData, offset, dataSize);
     }
 
     static TexPtr& getTexture(const MaterialValues* mat, size_t Offset)

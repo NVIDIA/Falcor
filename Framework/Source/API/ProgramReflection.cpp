@@ -64,10 +64,10 @@ namespace Falcor
 
     const ProgramReflection::Variable* ProgramReflection::BufferReflection::getVariableData(const std::string& name, size_t& offset, bool allowNonIndexedArray) const
     {
-        const std::string msg = "Error when getting uniform data\"" + name + "\" from uniform buffer \"" + mName + "\".\n";
+        const std::string msg = "Error when getting variable data\"" + name + "\" from buffer \"" + mName + "\".\n";
         uint32_t arrayIndex = 0;
 
-        // Look for the uniform
+        // Look for the variable
         auto& var = mVariables.find(name);
 
 #ifdef FALCOR_DX11
@@ -86,7 +86,7 @@ namespace Falcor
 
             if (var == mVariables.end())
             {
-                Logger::log(Logger::Level::Error, msg + "Uniform not found.");
+                Logger::log(Logger::Level::Error, msg + "Variable not found.");
                 return nullptr;
             }
 
@@ -94,7 +94,7 @@ namespace Falcor
             if (data.arraySize == 0)
             {
                 // Not an array, so can't have an array index
-                Logger::log(Logger::Level::Error, msg + "Uniform is not an array, so name can't include an array index.");
+                Logger::log(Logger::Level::Error, msg + "Variable is not an array, so name can't include an array index.");
                 return nullptr;
             }
 
@@ -117,7 +117,7 @@ namespace Falcor
         else if ((allowNonIndexedArray == false) && (var->second.arraySize > 0))
         {
             // Variable name should contain an explicit array index (for N-dim arrays, N indices), but the index was missing
-            Logger::log(Logger::Level::Error, msg + "Expecting to find explicit array index in uniform name (for N-dimensional array, N indices must be specified).");
+            Logger::log(Logger::Level::Error, msg + "Expecting to find explicit array index in variable name (for N-dimensional array, N indices must be specified).");
             return nullptr;
         }
 

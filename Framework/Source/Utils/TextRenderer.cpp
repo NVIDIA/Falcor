@@ -99,11 +99,13 @@ namespace Falcor
         mpStateCache->setPrimitiveType(PipelineState::PrimitiveType::Triangle);
         mpFont = Font::create();
 
-        // Uniform buffer
+        // Create and initialize the program variables
         mpProgramVars = ProgramVars::create(pProgram->getActiveVersion()->getReflector(), true);
-        mUniformLocations.vpTransform = mpProgramVars["PerFrameCB"]->getVariableOffset("gvpTransform");
-        mUniformLocations.fontColor = mpProgramVars["PerFrameCB"]->getVariableOffset("gFontColor");
-        mUniformLocations.fontTex = pProgram->getActiveVersion()->getReflector()->getResourceDesc("gFontTex")->regIndex;
+        // Initialize the buffer
+        auto& pCB = mpProgramVars["PerFrameCB"];
+        mVarOffsets.vpTransform = mpProgramVars["PerFrameCB"]->getVariableOffset("gvpTransform");
+        mVarOffsets.fontColor = mpProgramVars["PerFrameCB"]->getVariableOffset("gFontColor");
+        mpProgramVars->setTexture("gFontTex", mpFont->getTexture());
     }
 
     TextRenderer::~TextRenderer() = default;
@@ -133,11 +135,9 @@ namespace Falcor
         vpTransform[3][0] = -(VP.originX + VP.width) / VP.width;
         vpTransform[3][1] = (VP.originX + VP.height) / VP.height;
 
-        mpProgramVars["PerFrameCB"]->setVariable(mUniformLocations.vpTransform, vpTransform);
-        mpProgramVars["PerFrameCB"]->setVariable(mUniformLocations.fontColor, mTextColor);
-        
-        // Set the font texture
-        mpProgramVars->setTexture(mUniformLocations.fontTex, mpFont->getTexture());
+        // Update the program variables
+        mpProgramVars["PerFrameCB"]->setVariable(mVarOffsets.vpTransform, vpTransform);
+        mpProgramVars["PerFrameCB"]->setVariable(mVarOffsets.fontColor, mTextColor);
         pRenderContext->setProgramVariables(mpProgramVars);
 
 

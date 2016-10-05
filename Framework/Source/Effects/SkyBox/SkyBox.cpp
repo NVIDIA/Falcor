@@ -78,10 +78,10 @@ namespace Falcor
             defines.add("_SINGLE_PASS_STEREO");
         }
         mpProgram = Program::createFromFile("Effects\\SkyBox.vs", "Effects\\Skybox.fs", defines);
-        mpUbo = UniformBuffer::create(mpProgram, "PerFrameCB");
-        mScaleOffset = mpUbo->getVariableOffset("gScale");
-        mTexOffset = mpUbo->getVariableOffset("gSkyTex");
-        mMatOffset = mpUbo->getVariableOffset("gWorld");
+        mpCB = ConstantBuffer::create(mpProgram, "PerFrameCB");
+        mScaleOffset = mpCB->getVariableOffset("gScale");
+        mTexOffset = mpCB->getVariableOffset("gSkyTex");
+        mMatOffset = mpCB->getVariableOffset("gWorld");
 
         // Create blend state
         BlendState::Desc blendDesc;
@@ -108,9 +108,9 @@ namespace Falcor
     void SkyBox::render(Falcor::RenderContext* pRenderCtx, Falcor::Camera* pCamera)
     {
         glm::mat4 world = glm::translate(pCamera->getPosition());
-        mpUbo->setVariable(mMatOffset, world);
-        mpUbo->setTexture(mTexOffset, mpTexture.get(), mpSampler.get());
-        mpUbo->setVariable(mScaleOffset, mScale);
+        mpCB->setVariable(mMatOffset, world);
+        mpCB->setTexture(mTexOffset, mpTexture.get(), mpSampler.get());
+        mpCB->setVariable(mScaleOffset, mScale);
 
         // DISABLED_FOR_D3D12
 //        pRenderCtx->setUniformBuffer(0, mpUbo);

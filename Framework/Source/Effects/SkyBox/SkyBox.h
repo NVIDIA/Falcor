@@ -31,7 +31,7 @@
 #include "API/Texture.h"
 #include "graphics/Model/Model.h"
 #include "Graphics/Program.h"
-#include "API/UniformBuffer.h"
+#include "API/ConstantBuffer.h"
 #include "API/DepthStencilState.h"
 #include "API/RasterizerState.h"
 #include "API/BlendState.h"
@@ -66,7 +66,7 @@ namespace Falcor
         Falcor::Texture::SharedPtr mpTexture;
         Falcor::Model::SharedPtr mpCubeModel;
         Falcor::Program::SharedPtr mpProgram;
-        Falcor::UniformBuffer::SharedPtr mpUbo;
+        Falcor::ConstantBuffer::SharedPtr mpCB;
         Falcor::Sampler::SharedPtr mpSampler;
         Falcor::RasterizerState::SharedPtr mpNoCullRsState;
         Falcor::DepthStencilState::SharedPtr mpDepthStencilState;

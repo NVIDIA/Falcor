@@ -36,7 +36,7 @@ namespace Falcor
         uint32_t d3dFlags = 0;
         if((flags & Buffer::BindFlags::Vertex)          != Buffer::BindFlags::None) d3dFlags |= D3D11_BIND_VERTEX_BUFFER;
         if((flags & Buffer::BindFlags::Index)           != Buffer::BindFlags::None) d3dFlags |= D3D11_BIND_INDEX_BUFFER;
-        if((flags & Buffer::BindFlags::Uniform)         != Buffer::BindFlags::None) d3dFlags |= D3D11_BIND_CONSTANT_BUFFER;
+        if((flags & Buffer::BindFlags::Constant)        != Buffer::BindFlags::None) d3dFlags |= D3D11_BIND_CONSTANT_BUFFER;
         if((flags & Buffer::BindFlags::ShaderResource)  != Buffer::BindFlags::None) d3dFlags |= D3D11_BIND_SHADER_RESOURCE;
         if((flags & Buffer::BindFlags::StreamOutput)    != Buffer::BindFlags::None) d3dFlags |= D3D11_BIND_STREAM_OUTPUT;
         if((flags & Buffer::BindFlags::RenderTarget)    != Buffer::BindFlags::None) d3dFlags |= D3D11_BIND_RENDER_TARGET;

@@ -39,7 +39,7 @@
 namespace Falcor
 {
     class Texture;
-    class UniformBuffer;
+    class ConstantBuffer;
 
     /** A surface material object
         The core part of material is the 'SMaterial	m_Material' data structure. It consists of multiple layers and modifiers.
@@ -194,11 +194,11 @@ namespace Falcor
         */
         void setDoubleSided(bool doubleSided) { mDoubleSided = doubleSided; mDescDirty = true; }
 
-        /** Set the material parameters into a uniform buffer. To use this you need to include 'Falcor.h' inside your shader.
-            \param[in] pBuffer The uniform buffer to set the parameters into.
+        /** Set the material parameters into a constant buffer. To use this you need to include 'Falcor.h' inside your shader.
+            \param[in] pCB The constant buffer to set the parameters into.
             \param[in] VarName The name of the material variable in the program.
         */
-        void setIntoUniformBuffer(UniformBuffer* pBuffer, const std::string& varName) const;
+        void setIntoConstantBuffer(ConstantBuffer* pCB, const std::string& varName) const;
         
         /** Returns the raw material data
         */

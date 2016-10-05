@@ -27,13 +27,13 @@
 ***************************************************************************/
 #ifdef FALCOR_D3D12
 #include "Framework.h"
-#include "API/UniformBuffer.h"
+#include "API/ConstantBuffer.h"
 
 namespace Falcor
 {
-    UniformBuffer::~UniformBuffer() = default;
+    ConstantBuffer::~ConstantBuffer() = default;
 
-    void UniformBuffer::setTextureInternal(size_t offset, const Texture* pTexture, const Sampler* pSampler)
+    void ConstantBuffer::setTextureInternal(size_t offset, const Texture* pTexture, const Sampler* pSampler)
     {
     }
 }
