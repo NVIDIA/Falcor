@@ -35,6 +35,7 @@ namespace Falcor
     public:
         using SharedPtr = std::shared_ptr<DescriptorHeap>;
         using SharedConstPtr = std::shared_ptr<const DescriptorHeap>;
+        using ApiHandle = DescriptorHeapHandle;
         ~DescriptorHeap();
 
         enum class Type
@@ -50,13 +51,15 @@ namespace Falcor
         CpuHandle getHandle(uint32_t index) const;
         CpuHandle getFreeCpuHandle();
         uint32_t getCurrentIndex() const { return mCurDesc; }
+
+        ApiHandle getApiHandle() const { return mApiHandle; }
     private:
         DescriptorHeap(Type type, uint32_t descriptorsCount);
 
         uint32_t mDescriptorSize;
         uint32_t mCount;
         uint32_t mCurDesc = 0;
-        ID3D12DescriptorHeapPtr mpHeap;
+        ApiHandle mApiHandle;
         CpuHandle mCpuStartHandle;
         Type mType;
     };

@@ -236,6 +236,7 @@ namespace Falcor
         {
             mpFrameFence->wait(frameId - kSwapChainBuffers);
         }
+        bindDescriptorHeaps();
 	}
 
 	bool Device::init(const Desc& desc)
@@ -289,11 +290,18 @@ namespace Falcor
             return false;
         }
 
+        mpSrvHeap = DescriptorHeap::create(DescriptorHeap::Type::ShaderResource, 16 * 1024);
+        mpSamplerHeap = DescriptorHeap::create(DescriptorHeap::Type::Sampler, 2048);
+        mpRtvHeap = DescriptorHeap::create(DescriptorHeap::Type::RenderTargetView, 1024, false);
+        mpDsvHeap = DescriptorHeap::create(DescriptorHeap::Type::DepthStencilView, 1024, false);
+
 		mpFrameFence = GpuFence::create();
         mpRenderContext = RenderContext::create(kSwapChainBuffers);
         mpCopyContext = CopyContext::create();
 
 		mVsyncOn = desc.enableVsync;
+        bindDescriptorHeaps();
+
 		return true;
     }
 
@@ -317,6 +325,13 @@ namespace Falcor
     {
         UNSUPPORTED_IN_D3D("Device::isExtensionSupported()");
         return false;
+    }
+
+    void Device::bindDescriptorHeaps()
+    {
+        auto& pList = mpRenderContext->getCommandListApiHandle();
+        ID3D12DescriptorHeap* pHeaps[] = { mpSamplerHeap->getApiHandle(), mpSrvHeap->getApiHandle() };
+        pList->SetDescriptorHeaps(arraysize(pHeaps), pHeaps);
     }
 }
 #endif //#ifdef FALCOR_D3D

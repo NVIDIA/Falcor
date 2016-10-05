@@ -29,14 +29,11 @@
 #include "Framework.h"
 #include "API/Texture.h"
 #include "API/Device.h"
-#include "API/LowLevel/DescriptorHeap.h"
 #include "API/D3D/D3DViews.h"
 #include <vector>
 
 namespace Falcor
 {
-    static DescriptorHeap::SharedPtr gSrvHeap;
-
     template<>
     D3D12_SRV_DIMENSION getViewDimension<D3D12_SRV_DIMENSION>(Texture::Type type, uint32_t arraySize)
     {
@@ -90,10 +87,6 @@ namespace Falcor
     
     Texture::SharedPtr Texture::create2D(uint32_t width, uint32_t height, ResourceFormat format, uint32_t arraySize, uint32_t mipLevels, const void* pData)
     {
-        if(gSrvHeap == nullptr)
-        {
-            gSrvHeap = DescriptorHeap::create(DescriptorHeap::Type::ShaderResource, 16*1024);
-        }
         Texture::SharedPtr pTexture = SharedPtr(new Texture(width, height, 1, 1, mipLevels, arraySize, format, Type::Texture2D));
 
         D3D12_RESOURCE_DESC desc = {};
@@ -135,17 +128,18 @@ namespace Falcor
 
     SrvHandle Texture::getShaderResourceView() const
     {
+        DescriptorHeap::SharedPtr&& pHeap = gpDevice->getSrvDescriptorHeap();
         if(mSrvIndex == -1)
         {
             // Create the shader-resource view
             D3D12_SHADER_RESOURCE_VIEW_DESC desc;
             initializeSrvDesc(mFormat, mType, mArraySize, desc);
-            mSrvIndex = gSrvHeap->getCurrentIndex();
-            DescriptorHeap::CpuHandle srv = gSrvHeap->getFreeCpuHandle();
+            mSrvIndex = pHeap->getCurrentIndex();
+            DescriptorHeap::CpuHandle srv = pHeap->getFreeCpuHandle();
             gpDevice->getApiHandle()->CreateShaderResourceView(mApiHandle, &desc, srv);
         }
 
-        return gSrvHeap->getHandle(mSrvIndex);
+        return pHeap->getHandle(mSrvIndex);
     }
 
     Texture::SharedPtr Texture::create3D(uint32_t width, uint32_t height, uint32_t depth, ResourceFormat format, uint32_t mipLevels, const void* pData, bool isSparse)

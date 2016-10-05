@@ -36,17 +36,9 @@ namespace Falcor
 {
     struct FboData
     {
-        static DescriptorHeap::SharedPtr spRtvHeap;
-        static DescriptorHeap::SharedPtr spDsvHeap;
-        static const uint32_t kMaxRenderTargetViews = 16;
-        static const uint32_t kMaxDepthStencilViews = 16;
-
         std::map<const Texture*, uint32_t> rtvMap;
         std::map<const Texture*, uint32_t> dsvMap;
     };
-
-    DescriptorHeap::SharedPtr FboData::spRtvHeap;
-    DescriptorHeap::SharedPtr FboData::spDsvHeap;
 
     template<>
     D3D12_RTV_DIMENSION getViewDimension<D3D12_RTV_DIMENSION>(Texture::Type type, uint32_t arraySize)
@@ -94,12 +86,6 @@ namespace Falcor
         mApiHandle = -1;
         FboData* pData = new FboData;
         mpPrivateData = pData;
-        if(pData->spRtvHeap == nullptr)
-        {
-            assert(pData->spDsvHeap == nullptr);
-            pData->spRtvHeap = DescriptorHeap::create(DescriptorHeap::Type::RenderTargetView, FboData::kMaxRenderTargetViews, false);
-            pData->spDsvHeap = DescriptorHeap::create(DescriptorHeap::Type::DepthStencilView, FboData::kMaxDepthStencilViews, false);
-        }
         mColorAttachments.resize(getMaxColorTargetCount());
     }
 
@@ -120,6 +106,8 @@ namespace Falcor
         auto& it = pData->rtvMap.find(pTexture);
         uint32_t rtvIndex;
 
+        DescriptorHeap::SharedPtr&& pHeap = gpDevice->getRtvDescriptorHeap();
+
         if(it == pData->rtvMap.end())
         {
             // Create the render-target view
@@ -134,8 +122,8 @@ namespace Falcor
                 rtvDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
                 rtvDesc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D;
             }
-            rtvIndex = pData->spRtvHeap->getCurrentIndex();
-            DescriptorHeap::CpuHandle rtv = pData->spRtvHeap->getFreeCpuHandle();
+            rtvIndex = pHeap->getCurrentIndex();
+            DescriptorHeap::CpuHandle rtv = pHeap->getFreeCpuHandle();
             gpDevice->getApiHandle()->CreateRenderTargetView(pResource, &rtvDesc, rtv);
             pData->rtvMap[pTexture] = rtvIndex;
         }
@@ -144,7 +132,7 @@ namespace Falcor
             rtvIndex = it->second;
         }
 
-        return pData->spRtvHeap->getHandle(rtvIndex);
+        return pHeap->getHandle(rtvIndex);
     }
 
     DsvHandle Fbo::getDepthStencilView() const
@@ -153,6 +141,8 @@ namespace Falcor
         const auto& pTexture = getDepthStencilTexture().get();
         auto& it = pData->dsvMap.find(pTexture);
         uint32_t dsvIndex;
+
+        DescriptorHeap::SharedPtr&& pHeap = gpDevice->getDsvDescriptorHeap();
 
         if(it == pData->dsvMap.end())
         {
@@ -168,8 +158,8 @@ namespace Falcor
                 dsvDesc.Format = DXGI_FORMAT_D16_UNORM;
                 dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
             }
-            dsvIndex = pData->spDsvHeap->getCurrentIndex();
-            DescriptorHeap::CpuHandle dsv = pData->spDsvHeap->getFreeCpuHandle();
+            dsvIndex = pHeap->getCurrentIndex();
+            DescriptorHeap::CpuHandle dsv = pHeap->getFreeCpuHandle();
             gpDevice->getApiHandle()->CreateDepthStencilView(pResource, &dsvDesc, dsv);
             pData->dsvMap[pTexture] = dsvIndex;
         }
@@ -178,7 +168,7 @@ namespace Falcor
             dsvIndex = it->second;
         }
 
-        return pData->spDsvHeap->getHandle(dsvIndex);
+        return pHeap->getHandle(dsvIndex);
     }
 
     uint32_t Fbo::getMaxColorTargetCount()

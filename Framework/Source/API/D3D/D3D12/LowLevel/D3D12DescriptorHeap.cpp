@@ -68,13 +68,13 @@ namespace Falcor
         desc.Flags = shaderVisible ? D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE : D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
         desc.Type = getHeapType(type);
         desc.NumDescriptors = descriptorsCount;
-        if(FAILED(pDevice->CreateDescriptorHeap(&desc, IID_PPV_ARGS(&pHeap->mpHeap))))
+        if(FAILED(pDevice->CreateDescriptorHeap(&desc, IID_PPV_ARGS(&pHeap->mApiHandle))))
         {
             logError("Can't create descriptor heap");
             return nullptr;
         }
 
-        pHeap->mCpuStartHandle = pHeap->mpHeap->GetCPUDescriptorHandleForHeapStart();
+        pHeap->mCpuStartHandle = pHeap->mApiHandle->GetCPUDescriptorHandleForHeapStart();
         return pHeap;
     }
 

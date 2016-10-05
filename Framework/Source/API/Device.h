@@ -32,6 +32,7 @@
 #include "API/RenderContext.h"
 #include "API/LowLevel/GpuFence.h"
 #include "API/LowLevel/CopyContext.h"
+#include "Api/LowLevel/DescriptorHeap.h"
 
 namespace Falcor
 {
@@ -107,10 +108,16 @@ namespace Falcor
 		/** Check if vertical sync is enabled
 		*/
 		bool isVsyncEnabled() const { return mVsyncOn; }
+
+        DescriptorHeap::SharedPtr getSrvDescriptorHeap() const { return mpSrvHeap; }
+        DescriptorHeap::SharedPtr getDsvDescriptorHeap() const { return mpDsvHeap; }
+        DescriptorHeap::SharedPtr getRtvDescriptorHeap() const { return mpRtvHeap; }
+        DescriptorHeap::SharedPtr getSamplerDescriptorHeap() const { return mpSamplerHeap; }
     private:
 		Device(Window::SharedPtr pWindow) : mpWindow(pWindow) {}
 		bool init(const Desc& desc);
         bool updateDefaultFBO(uint32_t width, uint32_t height, uint32_t sampleCount, ResourceFormat colorFormat, ResourceFormat depthFormat);
+        void bindDescriptorHeaps();
 
 		Window::SharedPtr mpWindow;
 		ApiHandle mApiHandle;
@@ -119,6 +126,11 @@ namespace Falcor
 		RenderContext::SharedPtr mpRenderContext;
         CopyContext::SharedPtr mpCopyContext;
 		bool mVsyncOn;
+
+        DescriptorHeap::SharedPtr mpRtvHeap;
+        DescriptorHeap::SharedPtr mpDsvHeap;
+        DescriptorHeap::SharedPtr mpSamplerHeap;
+        DescriptorHeap::SharedPtr mpSrvHeap;
 	};
 
     extern Device::SharedPtr gpDevice;

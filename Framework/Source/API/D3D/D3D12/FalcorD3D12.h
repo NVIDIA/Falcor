@@ -65,6 +65,7 @@ namespace Falcor
     using ShaderHandle = D3D12_SHADER_BYTECODE;
     using ShaderReflectionHandle = ID3D12ShaderReflectionPtr;
     using RootSignatureHandle = ID3D12RootSignaturePtr;
+    using DescriptorHeapHandle = ID3D12DescriptorHeapPtr;
 
     using VaoHandle = void*;
     using VertexShaderHandle = void*;
