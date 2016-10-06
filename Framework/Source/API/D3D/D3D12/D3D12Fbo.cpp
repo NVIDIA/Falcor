@@ -122,8 +122,8 @@ namespace Falcor
                 rtvDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
                 rtvDesc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D;
             }
-            rtvIndex = pHeap->getCurrentIndex();
-            DescriptorHeap::CpuHandle rtv = pHeap->getFreeCpuHandle();
+            rtvIndex = pHeap->allocateHandle();
+            DescriptorHeap::CpuHandle rtv = pHeap->getCpuHandle(rtvIndex);
             gpDevice->getApiHandle()->CreateRenderTargetView(pResource, &rtvDesc, rtv);
             pData->rtvMap[pTexture] = rtvIndex;
         }
@@ -132,7 +132,7 @@ namespace Falcor
             rtvIndex = it->second;
         }
 
-        return pHeap->getHandle(rtvIndex);
+        return pHeap->getCpuHandle(rtvIndex);
     }
 
     DsvHandle Fbo::getDepthStencilView() const
@@ -158,8 +158,8 @@ namespace Falcor
                 dsvDesc.Format = DXGI_FORMAT_D16_UNORM;
                 dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
             }
-            dsvIndex = pHeap->getCurrentIndex();
-            DescriptorHeap::CpuHandle dsv = pHeap->getFreeCpuHandle();
+            dsvIndex = pHeap->allocateHandle();
+            DescriptorHeap::CpuHandle dsv = pHeap->getCpuHandle(dsvIndex);
             gpDevice->getApiHandle()->CreateDepthStencilView(pResource, &dsvDesc, dsv);
             pData->dsvMap[pTexture] = dsvIndex;
         }
@@ -168,7 +168,7 @@ namespace Falcor
             dsvIndex = it->second;
         }
 
-        return pHeap->getHandle(dsvIndex);
+        return pHeap->getCpuHandle(dsvIndex);
     }
 
     uint32_t Fbo::getMaxColorTargetCount()
@@ -186,6 +186,11 @@ namespace Falcor
 
     bool Fbo::checkStatus() const
     {
+        if (mIsDirty)
+        {
+            mIsDirty = false;
+            return calcAndValidateProperties();
+        }
         return true;
     }
     

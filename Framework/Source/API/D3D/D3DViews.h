@@ -100,6 +100,9 @@ namespace Falcor
         default:
             should_not_get_here();
         }
+#ifdef FALCOR_D3D12
+        desc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+#endif
     }
 
     template<typename DescType>

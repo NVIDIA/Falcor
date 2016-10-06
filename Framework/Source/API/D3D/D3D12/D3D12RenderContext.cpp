@@ -32,9 +32,11 @@
 #include "API/Device.h"
 #include "glm/gtc/type_ptr.hpp"
 #include "LowLevel/D3D12FencedPool.h"
+#include "API/D3D/D3DState.h"
 
 namespace Falcor
 {
+    // TODO: A lot of the calls to pList->set*() looks very similar to D3D11 calls. We can share some code
 	struct RenderContextData
 	{
 		GraphicsCommandAllocatorPool::SharedPtr pAllocatorPool;
@@ -135,6 +137,26 @@ namespace Falcor
 
     void RenderContext::applyVao() const
     {
+        RenderContextData* pApiData = (RenderContextData*)mpApiData;
+        D3D12_VERTEX_BUFFER_VIEW vb[D3D12_IA_VERTEX_INPUT_RESOURCE_SLOT_COUNT] = { };
+
+        const auto pVao = mState.pVao;
+        if (pVao)
+        {
+            // Get the vertex buffers
+            for (uint32_t i = 0; i < pVao->getVertexBuffersCount(); i++)
+            {
+                const Buffer* pVB = pVao->getVertexBuffer(i).get();
+                if(pVB)
+                {
+                    vb[i].BufferLocation = pVB->getApiHandle()->GetGPUVirtualAddress();
+                    vb[i].SizeInBytes = (uint32_t)pVB->getSize();
+                    vb[i].StrideInBytes = pVao->getVertexLayout()->getBufferLayout(i)->getStride();
+                }
+            }
+        }
+
+        pApiData->pList->IASetVertexBuffers(0, arraysize(vb), vb);
     }
 
     void RenderContext::applyFbo()
@@ -174,16 +196,27 @@ namespace Falcor
 
     void RenderContext::applyTopology() const
     {
+        RenderContextData* pApiData = (RenderContextData*)mpApiData;
+        D3D_PRIMITIVE_TOPOLOGY topology = getD3DPrimitiveTopology(mState.topology);
+        pApiData->pList->IASetPrimitiveTopology(topology);
     }
 
     void RenderContext::prepareForDrawApi() const
     {
-
+       // Bind the root signature and the root signature data
+       // D3D12_CODE what to do if there are no vars?
+        if (mState.pProgramVars)
+        {
+            mState.pProgramVars->setIntoRenderContext(const_cast<RenderContext*>(this));
+        }
     }
 
     void RenderContext::draw(uint32_t vertexCount, uint32_t startVertexLocation)
     {
+        // D3D12 CODE Just call drawInstanced()
         prepareForDraw();
+        RenderContextData* pApiData = (RenderContextData*)mpApiData;
+        pApiData->pList->DrawInstanced(vertexCount, 1, startVertexLocation, 0);
     }
 
     void RenderContext::drawIndexed(uint32_t indexCount, uint32_t startIndexLocation, int baseVertexLocation)
@@ -198,6 +231,24 @@ namespace Falcor
 
     void RenderContext::applyViewport(uint32_t index) const
     {
+        static_assert(offsetof(Viewport, originX) == offsetof(D3D12_VIEWPORT, TopLeftX), "VP TopLeftX offset");
+        static_assert(offsetof(Viewport, originY) == offsetof(D3D12_VIEWPORT, TopLeftY), "VP TopLeftY offset");
+        static_assert(offsetof(Viewport, width) == offsetof(D3D12_VIEWPORT, Width), "VP Width offset");
+        static_assert(offsetof(Viewport, height) == offsetof(D3D12_VIEWPORT, Height), "VP Height offset");
+        static_assert(offsetof(Viewport, minDepth) == offsetof(D3D12_VIEWPORT, MinDepth), "VP MinDepth offset");
+        static_assert(offsetof(Viewport, maxDepth) == offsetof(D3D12_VIEWPORT, MaxDepth), "VP TopLeftX offset");
+
+        RenderContextData* pApiData = (RenderContextData*)mpApiData;
+        pApiData->pList->RSSetViewports(D3D12_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE, (D3D12_VIEWPORT*)mState.viewports.data());
+
+        // D3D12 Code: what to do with this? Scissors do not get updated automatically when the VP changes
+        D3D12_RECT r;
+        r.top = (LONG)mState.viewports[0].originX;
+        r.left = (LONG)mState.viewports[0].originY;
+        r.bottom = (LONG)mState.viewports[0].height;
+        r.right = (LONG)mState.viewports[0].width;
+
+        pApiData->pList->RSSetScissorRects(1, &r);
     }
 
     void RenderContext::applyScissor(uint32_t index) const

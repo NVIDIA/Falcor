@@ -116,9 +116,6 @@ namespace Falcor
         mStartPos = startPos;
         mpRenderContext = pRenderContext;
 
-        // Save state
-        pRenderContext->pushState();
-
         // Set the current FBO into the render state
         mpStateCache->setFbo(pRenderContext->getFbo());
         mpRenderContext->setPipelineState(mpStateCache->getRenderState());
@@ -138,6 +135,7 @@ namespace Falcor
         // Update the program variables
         mpProgramVars["PerFrameCB"]->setVariable(mVarOffsets.vpTransform, vpTransform);
         mpProgramVars["PerFrameCB"]->setVariable(mVarOffsets.fontColor, mTextColor);
+        mpProgramVars["PerFrameCB"]->uploadToGPU();
         pRenderContext->setProgramVariables(mpProgramVars);
 
 
@@ -148,7 +146,6 @@ namespace Falcor
     void TextRenderer::end()
     {
         flush();
-        mpRenderContext->popState();
         mpRenderContext = nullptr;
         mpVertexBuffer->unmap();
     }

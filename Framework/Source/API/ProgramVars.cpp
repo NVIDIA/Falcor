@@ -32,8 +32,44 @@
 
 namespace Falcor
 {
+    // D3D12 CODE. Need to correctly abstract the class so that it doesn't depend on the low-level objects
+    template<RootSignature::DescType descType>
+    uint32_t findRootSignatureOffset(const RootSignature* pRootSig, uint32_t regIndex, uint32_t regSpace)
+    {
+        // Find the bind-index in the root descriptor. Views
+        // FIXME: Add support for descriptor tables
+        // OPTME: This can be more efficient
+
+        bool found = false;
+
+        // First search the root-descriptors
+        for (size_t i = 0; i < pRootSig->getRootDescriptorCount(); i++)
+        {
+            const RootSignature::DescriptorDesc& desc = pRootSig->getRootDescriptor(i);
+            found = (desc.type == descType) && (desc.regIndex == regIndex) && (desc.regSpace == regSpace);
+            if (found)
+            {
+                return pRootSig->getDescriptorRootOffset(i);
+            }
+        }
+
+        // Search the desciptor-tables
+        for (size_t i = 0; i < pRootSig->getDescriptorTableCount(); i++)
+        {
+            const RootSignature::DescriptorTable& table = pRootSig->getDescriptorTable(i);
+            assert(table.getRangeCount() == 1);
+            const RootSignature::DescriptorTable::Range& range = table.getRange(0);
+            assert(range.descCount == 1);
+            if (range.type == descType && range.firstRegIndex == regIndex && range.regSpace == regSpace)
+            {
+                return pRootSig->getDescriptorTableRootOffset(i);
+            }
+        }
+        return -1;
+    }
+
     template<typename BufferType, RootSignature::DescType descType>
-    bool initializeBuffersMap(ProgramVars::ResourceDataMap<typename BufferType>& bufferMap, bool createBuffers, const ProgramReflection::BufferMap& reflectionMap, const RootSignature* pRootSig)
+    bool initializeBuffersMap(ProgramVars::ResourceDataMap<typename BufferType::SharedPtr>& bufferMap, bool createBuffers, const ProgramReflection::BufferMap& reflectionMap, const RootSignature* pRootSig)
     {
         for (auto& buf : reflectionMap)
         {
@@ -42,31 +78,14 @@ namespace Falcor
             uint32_t regSpace = pReflector->getRegisterSpace();
 
             // Only create the buffer if needed
-            bufferMap[regIndex].pBuffer = createBuffers ? BufferType::create(buf.second) : nullptr;
-
-            // Find the bind-index in the root descriptor. Views
-            // FIXME: Add support for descriptor tables
-            // OPTME: This can be more efficient
-
-            bool found = false;
-
-            // First search the root-descriptors
-            for (size_t i = 0; i < pRootSig->getRootDescriptorCount(); i++)
-            {
-                const RootSignature::DescriptorDesc& desc = pRootSig->getRootDescriptor(i);
-                found = (desc.type == descType) && (desc.regIndex == regIndex) && (desc.regSpace == regSpace);
-                if (found)
-                {
-                    bufferMap[regIndex].rootSigOffset = pRootSig->getDescriptorRootOffset(i);
-                    break;
-                }
-            }
-
-            if (!found)
+            bufferMap[regIndex].pResource = createBuffers ? BufferType::create(buf.second) : nullptr;
+            bufferMap[regIndex].rootSigOffset = findRootSignatureOffset<RootSignature::DescType::CBV>(pRootSig, regIndex, regSpace);
+            if(bufferMap[regIndex].rootSigOffset == -1)
             {
                 logError("Can't find a root-signature information matching buffer '" + pReflector->getName() + " when creating ProgramVars");
                 return false;
             }
+
         }
         return true;
     }
@@ -85,13 +104,16 @@ namespace Falcor
             switch (desc.type)
             {
             case ProgramReflection::Resource::ResourceType::Sampler:
-                mAssignedSamplers[desc.regIndex] = nullptr;
+                mAssignedSamplers[desc.regIndex].pResource = nullptr;
+                mAssignedSamplers[desc.regIndex].rootSigOffset = findRootSignatureOffset<RootSignature::DescType::Sampler>(mpRootSignature.get(), desc.regIndex, desc.registerSpace);
                 break;
             case ProgramReflection::Resource::ResourceType::Texture:
-                mAssignedSrvs[desc.regIndex] = nullptr;
+                mAssignedSrvs[desc.regIndex].pResource = nullptr;
+                mAssignedSrvs[desc.regIndex].rootSigOffset = findRootSignatureOffset<RootSignature::DescType::SRV>(mpRootSignature.get(), desc.regIndex, desc.registerSpace);
                 break;
             case ProgramReflection::Resource::ResourceType::UAV:
-                mAssignedUavs[desc.regIndex] = nullptr;
+                mAssignedUavs[desc.regIndex].pResource = nullptr;
+                mAssignedUavs[desc.regIndex].rootSigOffset = findRootSignatureOffset<RootSignature::DescType::UAV>(mpRootSignature.get(), desc.regIndex, desc.registerSpace);
                 break;
             default:
                 break;
@@ -105,18 +127,18 @@ namespace Falcor
     }
 
     template<typename BufferClass>
-    typename BufferClass::SharedPtr getBufferCommon(uint32_t index, const ProgramVars::ResourceDataMap<BufferClass>& bufferMap)
+    typename BufferClass::SharedPtr getBufferCommon(uint32_t index, const ProgramVars::ResourceDataMap<typename BufferClass::SharedPtr>& bufferMap)
     {
         auto& it = bufferMap.find(index);
         if(it == bufferMap.end())
         {
             return nullptr;
         }
-        return it->second.pBuffer;
+        return it->second.pResource;
     }
 
     template<typename BufferClass, ProgramReflection::BufferReflection::Type bufferType>
-    typename BufferClass::SharedPtr getBufferCommon(const std::string& name, const ProgramReflection* pReflector, const ProgramVars::ResourceDataMap<BufferClass>& bufferMap)
+    typename BufferClass::SharedPtr getBufferCommon(const std::string& name, const ProgramReflection* pReflector, const ProgramVars::ResourceDataMap<typename BufferClass::SharedPtr>& bufferMap)
     {
         uint32_t bindLocation = pReflector->getBufferBinding(name);
 
@@ -175,7 +197,7 @@ namespace Falcor
             return ErrorCode::SizeMismatch;
         }
 
-        mConstantBuffers[index].pBuffer = pCB;
+        mConstantBuffers[index].pResource = pCB;
         return ErrorCode::None;
     }
 
@@ -194,7 +216,7 @@ namespace Falcor
 
     ErrorCode ProgramVars::setTexture(uint32_t index, const Texture::SharedConstPtr& pTexture)
     {
-        mAssignedSrvs[index] = pTexture;
+        mAssignedSrvs[index].pResource = pTexture;
         return ErrorCode::None;
     }
 
@@ -214,5 +236,28 @@ namespace Falcor
         }
 
         return setTexture(pDesc->regIndex, pTexture);
+    }
+
+    void ProgramVars::setIntoRenderContext(RenderContext* pContext) const
+    {
+        // Get the command list
+        ID3D12GraphicsCommandList* pList = pContext->getCommandListApiHandle();
+        pList->SetGraphicsRootSignature(mpRootSignature->getApiHandle());
+
+        // Bind the constant-buffers
+        for (auto& bufIt : mConstantBuffers)
+        {
+            uint32_t rootOffset = bufIt.second.rootSigOffset;
+            const ConstantBuffer* pCB = bufIt.second.pResource.get();
+            pList->SetGraphicsRootConstantBufferView(rootOffset, pCB->getBuffer()->getApiHandle()->GetGPUVirtualAddress());
+        }
+
+        // Bind the SRVs
+        for (auto& resIt : mAssignedSrvs)
+        {
+            uint32_t rootOffset = resIt.second.rootSigOffset;
+            const Texture* pTex = resIt.second.pResource.get();
+            pList->SetGraphicsRootDescriptorTable(rootOffset, pTex->getShaderResourceView());
+        }
     }
 }

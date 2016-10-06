@@ -134,12 +134,12 @@ namespace Falcor
             // Create the shader-resource view
             D3D12_SHADER_RESOURCE_VIEW_DESC desc;
             initializeSrvDesc(mFormat, mType, mArraySize, desc);
-            mSrvIndex = pHeap->getCurrentIndex();
-            DescriptorHeap::CpuHandle srv = pHeap->getFreeCpuHandle();
+            mSrvIndex = pHeap->allocateHandle();
+            DescriptorHeap::CpuHandle srv = pHeap->getCpuHandle(mSrvIndex);
             gpDevice->getApiHandle()->CreateShaderResourceView(mApiHandle, &desc, srv);
         }
 
-        return pHeap->getHandle(mSrvIndex);
+        return pHeap->getGpuHandle(mSrvIndex);
     }
 
     Texture::SharedPtr Texture::create3D(uint32_t width, uint32_t height, uint32_t depth, ResourceFormat format, uint32_t mipLevels, const void* pData, bool isSparse)

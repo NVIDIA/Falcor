@@ -82,7 +82,7 @@ namespace Falcor
             Write,              ///< Map the buffer for write access. Buffer had to be created with AccessFlags#MapWrite flag.
             ReadWrite,          ///< Map the buffer for read and write access. Buffer had to be created with AccessFlags#MapWrite and AccessFlags#MapRead flags.
             WriteDiscard,       ///< Map the buffer for write access, discarding the previous content of the entire buffer. Buffer had to be created with AccessFlags#MapWrite flag.
-            WriteNoOverwrite    ///< Map the buffer for write access. Using this flag indicates that the user guarentees not to overwrite parts of the data that are in use by the GPU. Buffer had to be created with AccessFlags#MapWrite flag.
+            WriteNoOverwrite    ///< Map the buffer for write access. Using this flag indicates that the user guarantees not to overwrite parts of the data that are in use by the GPU. Buffer had to be created with AccessFlags#MapWrite flag.
         };
 
         enum class HeapType

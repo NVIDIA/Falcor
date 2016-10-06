@@ -74,28 +74,38 @@ namespace Falcor
             return nullptr;
         }
 
-        pHeap->mCpuStartHandle = pHeap->mApiHandle->GetCPUDescriptorHandleForHeapStart();
         return pHeap;
     }
 
-    DescriptorHeap::CpuHandle DescriptorHeap::getHandle(uint32_t index) const
+    template<typename HandleType>
+    HandleType getHandleCommon(HandleType base, uint32_t index, uint32_t descSize)
     {
-        assert(index < mCurDesc);
-        CpuHandle handle = mCpuStartHandle;
-        handle.ptr += mDescriptorSize * index;
-        return handle;
+        base.ptr += descSize * index;
+        return base;
     }
 
-    DescriptorHeap::CpuHandle DescriptorHeap::getFreeCpuHandle()
+    DescriptorHeap::CpuHandle DescriptorHeap::getCpuHandle(uint32_t index) const
+    {
+        assert(index < mCurDesc);
+        return getHandleCommon(mApiHandle->GetCPUDescriptorHandleForHeapStart(), index, mDescriptorSize);
+    }
+
+    DescriptorHeap::GpuHandle DescriptorHeap::getGpuHandle(uint32_t index) const
+    {
+        assert(index < mCurDesc);
+        return getHandleCommon(mApiHandle->GetGPUDescriptorHandleForHeapStart(), index, mDescriptorSize);
+    }
+
+    uint32_t DescriptorHeap::allocateHandle()
     {
         if(mCurDesc >= mCount)
         {
             logError("Can't find free CPU handle in descriptor heap");
-            return CpuHandle();
+            return kInvalidHandleIndex;
         }
 
         mCurDesc++;
-        return getHandle(mCurDesc - 1);
+        return mCurDesc - 1;
     }
 }
 

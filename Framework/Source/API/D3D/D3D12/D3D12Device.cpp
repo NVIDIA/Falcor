@@ -236,6 +236,7 @@ namespace Falcor
         {
             mpFrameFence->wait(frameId - kSwapChainBuffers);
         }
+        mpRenderContext->reset();
         bindDescriptorHeaps();
 	}
 

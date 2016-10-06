@@ -95,6 +95,10 @@ namespace Falcor
 
     Buffer::SharedPtr Buffer::create(size_t size, BindFlags usage, AccessFlags access, const void* pInitData)
     {
+        if (usage == BindFlags::Constant)
+        {
+            size = align_to(D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT, size);
+        }
         return create(size, HeapType::Upload, pInitData);
     }
 

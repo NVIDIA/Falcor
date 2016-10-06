@@ -147,22 +147,24 @@ namespace Falcor
         template<typename T>
         struct ResourceData
         {
-            typename T::SharedPtr pBuffer;
+            T pResource;
             uint32_t rootSigOffset = 0;
         };
 
         // FIXME: This doesn't work with multiple register spaces
         template<typename T> using ResourceDataMap = std::unordered_map<uint32_t, ResourceData<T>>;
+
+        void setIntoRenderContext(RenderContext* pContext) const;
     private:
         ProgramVars(const ProgramReflection::SharedConstPtr& pReflector, bool createBuffers, const RootSignature::SharedConstPtr& pRootSig);
 
         RootSignature::SharedConstPtr mpRootSignature;
         ProgramReflection::SharedConstPtr mpReflector;
-        ResourceDataMap<ConstantBuffer> mConstantBuffers;
-        ResourceDataMap<ShaderStorageBuffer> mSSBO;
+        ResourceDataMap<ConstantBuffer::SharedPtr> mConstantBuffers;
+        ResourceDataMap<ShaderStorageBuffer::SharedPtr> mSSBO;
 
-        std::map<uint32_t, Texture::SharedConstPtr> mAssignedSrvs;
-        std::map<uint32_t, Texture::SharedConstPtr> mAssignedUavs;
-        std::map<uint32_t, Sampler::SharedConstPtr> mAssignedSamplers;
+        std::map<uint32_t, ResourceData<Texture::SharedConstPtr>> mAssignedSrvs;
+        std::map<uint32_t, ResourceData<Texture::SharedConstPtr>> mAssignedUavs;
+        std::map<uint32_t, ResourceData<Sampler::SharedConstPtr>> mAssignedSamplers;
     };
 }

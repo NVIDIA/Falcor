@@ -58,7 +58,7 @@ namespace Falcor
     using TextureHandle = ID3D12ResourcePtr;
     using RtvHandle = D3D12_CPU_DESCRIPTOR_HANDLE;
     using DsvHandle = D3D12_CPU_DESCRIPTOR_HANDLE;
-    using SrvHandle = D3D12_CPU_DESCRIPTOR_HANDLE;
+    using SrvHandle = D3D12_GPU_DESCRIPTOR_HANDLE;
     using UavHandle = D3D12_CPU_DESCRIPTOR_HANDLE;
     using BufferHandle = ID3D12ResourcePtr;
     using RenderStateHandle = ID3D12PipelineStatePtr;

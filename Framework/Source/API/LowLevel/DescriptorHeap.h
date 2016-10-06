@@ -45,14 +45,17 @@ namespace Falcor
             RenderTargetView,
             DepthStencilView,
         };
-
+        // D3D12 CODE
         static SharedPtr create(Type type, uint32_t descriptorsCount, bool shaderVisible = true);
         using CpuHandle = D3D12_CPU_DESCRIPTOR_HANDLE;
-        CpuHandle getHandle(uint32_t index) const;
-        CpuHandle getFreeCpuHandle();
-        uint32_t getCurrentIndex() const { return mCurDesc; }
+        using GpuHandle = D3D12_GPU_DESCRIPTOR_HANDLE;
 
+        CpuHandle getCpuHandle(uint32_t index) const;
+        GpuHandle getGpuHandle(uint32_t index) const;
+        uint32_t allocateHandle();
         ApiHandle getApiHandle() const { return mApiHandle; }
+
+        static const uint32_t kInvalidHandleIndex = -1;
     private:
         DescriptorHeap(Type type, uint32_t descriptorsCount);
 
@@ -60,7 +63,6 @@ namespace Falcor
         uint32_t mCount;
         uint32_t mCurDesc = 0;
         ApiHandle mApiHandle;
-        CpuHandle mCpuStartHandle;
         Type mType;
     };
 }

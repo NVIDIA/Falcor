@@ -194,6 +194,10 @@ namespace Falcor
 			VRSystem::start(mpRenderContext);
         }
 
+        // Get the default objects before calling onLoad()
+        mpDefaultFBO = gpDevice->getSwapChainFbo();
+        mpRenderContext = gpDevice->getRenderContext();
+
         // Call the load callback
         onLoad();
 		handleWindowSizeChange();
@@ -235,6 +239,15 @@ namespace Falcor
 
 			// Bind the default state
 			mpRenderContext->setFbo(mpDefaultFBO);
+            
+            // Set the viewport
+            // D3D12 Code - This should actually be done inside RenderContext api specific code
+            //              We need to record the new state from the previous frame into the command list
+            RenderContext::Viewport vp;
+            vp.height = (float)mpDefaultFBO->getHeight();
+            vp.width = (float)mpDefaultFBO->getWidth();
+            mpRenderContext->setViewport(0, vp);
+
             // DISABLED_FOR_D3D12
 //            mpRenderContext->setRenderState(nullptr);
 
@@ -256,7 +269,6 @@ namespace Falcor
         }
         printProfileData();
         gpDevice->present();
-        mpRenderContext->reset();
     }
 
     void Sample::captureScreen()

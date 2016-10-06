@@ -32,6 +32,7 @@
 #include "glm/glm.hpp"
 #include "texture.h"
 #include "API/ProgramReflection.h"
+#include "API/Device.h"
 
 namespace Falcor
 {
@@ -613,5 +614,20 @@ namespace Falcor
                 }
             }
         }
+    }
+
+    // D3D12_CODE
+    DescriptorHeap::GpuHandle ConstantBuffer::getCbViewHandle() const
+    {
+        DescriptorHeap* pHeap = gpDevice->getSrvDescriptorHeap().get();
+        if (mCbvHandleIndex == DescriptorHeap::kInvalidHandleIndex)
+        {
+            mCbvHandleIndex = pHeap->allocateHandle();
+            D3D12_CONSTANT_BUFFER_VIEW_DESC viewDesc = {};
+            viewDesc.BufferLocation = mpBuffer->getApiHandle()->GetGPUVirtualAddress();
+            viewDesc.SizeInBytes = (uint32_t)mpBuffer->getSize();
+            gpDevice->getApiHandle()->CreateConstantBufferView(&viewDesc, pHeap->getCpuHandle(mCbvHandleIndex));
+        }
+        return pHeap->getGpuHandle(mCbvHandleIndex);
     }
 }

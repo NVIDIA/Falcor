@@ -31,6 +31,7 @@
 
 namespace Falcor
 {
+    std::vector<PipelineState::SharedPtr> gStates;
     PipelineState::SharedPtr RenderStateCache::getRenderState()
     {
         mDesc.setProgramVersion(mpProgram ? mpProgram->getActiveVersion() : nullptr);
@@ -44,6 +45,10 @@ namespace Falcor
         {
             mDesc.setRootSignature(RootSignature::create(mpProgram->getActiveVersion()->getReflector().get()));
         }
-        return PipelineState::create(mDesc);
+
+        // D3D12 CODE Need real cache
+        auto p = PipelineState::create(mDesc);
+        gStates.push_back(p);
+        return p;
     }
 }
