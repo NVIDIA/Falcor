@@ -113,7 +113,7 @@ namespace Falcor
         {
             // First time we got here. create VB and VAO
             const uint32_t vbSize = (uint32_t)(sizeof(Vertex)*arraysize(kVertices));
-            FullScreenPass::spVertexBuffer = Buffer::create(vbSize, Buffer::BindFlags::Vertex, Buffer::AccessFlags::Dynamic, (void*)kVertices);
+            FullScreenPass::spVertexBuffer = Buffer::create(vbSize, Buffer::BindFlags::Vertex, Buffer::CpuAccess::Write, (void*)kVertices);
 
             // create VAO
             VertexLayout::SharedPtr pLayout = VertexLayout::create();

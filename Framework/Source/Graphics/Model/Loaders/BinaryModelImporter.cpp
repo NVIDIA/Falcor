@@ -806,7 +806,7 @@ namespace Falcor
 
 			for (int32_t i = 0; i < numAttribs; ++i)
 			{
-                pVBs[i] = Buffer::create(buffers[i].size(), Buffer::BindFlags::Vertex, Buffer::AccessFlags::None, buffers[i].data());
+                pVBs[i] = Buffer::create(buffers[i].size(), Buffer::BindFlags::Vertex, Buffer::CpuAccess::None, buffers[i].data());
                 pModel->addBuffer(pVBs[i]);
 			}
 
@@ -907,7 +907,7 @@ namespace Falcor
                 uint32_t ibSize = 3 * numTriangles * sizeof(uint32_t);
                 mStream.read(&indices[0], ibSize);
 
-                auto pIB = Buffer::create(ibSize, Buffer::BindFlags::Index, Buffer::AccessFlags::MapRead, indices.data());
+                auto pIB = Buffer::create(ibSize, Buffer::BindFlags::Index, Buffer::CpuAccess::None, indices.data());
                 pModel->addBuffer(pIB);
 
                 
@@ -937,10 +937,10 @@ namespace Falcor
                         generateSubmeshTangentData<glm::vec4>(indices, (glm::vec4*)buffers[positionBufferIndex].data(), (glm::vec3*)buffers[normalBufferIndex].data(), texCrd, texCrdCount, (glm::vec3*)buffers[tangentBufferIndex].data(), (glm::vec3*)buffers[bitangentBufferIndex].data());
                     }
 
-                    pVBs[tangentBufferIndex] = Buffer::create(buffers[tangentBufferIndex].size(), Buffer::BindFlags::Vertex, Buffer::AccessFlags::None, buffers[tangentBufferIndex].data());
+                    pVBs[tangentBufferIndex] = Buffer::create(buffers[tangentBufferIndex].size(), Buffer::BindFlags::Vertex, Buffer::CpuAccess::None, buffers[tangentBufferIndex].data());
                     pModel->addBuffer(pVBs[tangentBufferIndex]);
 
-                    pVBs[bitangentBufferIndex] = Buffer::create(buffers[bitangentBufferIndex].size(), Buffer::BindFlags::Vertex, Buffer::AccessFlags::None, buffers[bitangentBufferIndex].data());
+                    pVBs[bitangentBufferIndex] = Buffer::create(buffers[bitangentBufferIndex].size(), Buffer::BindFlags::Vertex, Buffer::CpuAccess::None, buffers[bitangentBufferIndex].data());
                     pModel->addBuffer(pVBs[bitangentBufferIndex]);
                 }
 				

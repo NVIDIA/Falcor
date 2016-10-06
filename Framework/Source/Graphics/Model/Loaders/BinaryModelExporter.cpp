@@ -285,12 +285,11 @@ namespace Falcor
 
             // Most of the buffers we use were created without any access flags, so can't be mapped.
             // We create a temporary staging buffer to overcome this.
+            // DISABLED_FOR_D3D12
 			const Buffer* pVB = pVao->getVertexBuffer(i).get();
-			vbInfo[i].pBuffer = Buffer::create(pVB->getSize(), Buffer::BindFlags::None, Buffer::AccessFlags::MapRead, nullptr);
+ 			vbInfo[i].pBuffer = Buffer::create(pVB->getSize(), Buffer::BindFlags::None, Buffer::CpuAccess::Read, nullptr);
             pVB->copy(vbInfo[i].pBuffer.get());
-
             vbInfo[i].pData = (size_t)vbInfo[i].pBuffer->map(Buffer::MapType::Read);
-
 
             vbInfo[i].stride = pLayout->getStride();
         }
@@ -353,12 +352,11 @@ namespace Falcor
         // Output the index buffer
         // Most of the buffers we use were created without any access flags, so can't be mapped.
         // We create a temporary staging buffer to overcome this.
-        auto pStaging = Buffer::create(pMesh->getVao()->getIndexBuffer()->getSize(), Buffer::BindFlags::None, Buffer::AccessFlags::MapRead, nullptr);
+        
+        auto pStaging = Buffer::create(pMesh->getVao()->getIndexBuffer()->getSize(), Buffer::BindFlags::None, Buffer::CpuAccess::Read, nullptr);
         pMesh->getVao()->getIndexBuffer()->copy(pStaging.get());
-
         const void* pIndices = pStaging->map(Buffer::MapType::Read);
         mStream.write(pIndices, indexCount * sizeof(uint32_t));
-
         pStaging->unmap();
 
         return true;

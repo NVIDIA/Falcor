@@ -71,7 +71,7 @@ namespace Falcor
         if(mSize)
         {
             mData.assign(mSize, 0);
-            mpBuffer = Buffer::create(mSize, Buffer::BindFlags::Constant, Buffer::AccessFlags::MapWrite, mData.data());
+            mpBuffer = Buffer::create(mSize, Buffer::BindFlags::Constant, Buffer::CpuAccess::Write, mData.data());
         }
         
         return true;
@@ -107,13 +107,7 @@ namespace Falcor
             return;
         }
 
-        Buffer::MapType mapType = Buffer::MapType::Write;
-        if((offset == 0) && (size = mSize))
-        {
-            mapType = Buffer::MapType::WriteDiscard; // Updating the entire buffer
-        }
-
-        uint8_t* pData = (uint8_t*)mpBuffer->map(mapType);
+        uint8_t* pData = (uint8_t*)mpBuffer->map(Buffer::MapType::WriteDiscard);
         assert(pData);
         memcpy(pData + offset, mData.data() + offset, size);
         mpBuffer->unmap();

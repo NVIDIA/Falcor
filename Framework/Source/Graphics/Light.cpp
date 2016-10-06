@@ -420,7 +420,7 @@ namespace Falcor
 			}
 
             // Create a CDF buffer
-            auto pCDFBuffer = Buffer::create(sizeof(mMeshCDF[0])*mMeshCDF.size(), Buffer::BindFlags::ShaderResource, Buffer::AccessFlags::None, mMeshCDF.data());
+            auto pCDFBuffer = Buffer::create(sizeof(mMeshCDF[0])*mMeshCDF.size(), Buffer::BindFlags::ShaderResource, Buffer::CpuAccess::None, mMeshCDF.data());
             setMeshCDFBuffer(pCDFBuffer);
 
 			// Set the world position and world direction of this light

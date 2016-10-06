@@ -703,7 +703,7 @@ namespace Falcor
     Buffer::SharedPtr AssimpModelImporter::createIndexBuffer(const aiMesh* pAiMesh)
     {
         std::vector<uint32_t> indices = createIndexBufferData(pAiMesh);
-        auto pBuffer = Buffer::create(uint32_t(sizeof(uint32_t)*indices.size()), Buffer::BindFlags::Index, Buffer::AccessFlags::None, indices.data());
+        auto pBuffer = Buffer::create(uint32_t(sizeof(uint32_t)*indices.size()), Buffer::BindFlags::Index, Buffer::CpuAccess::None, indices.data());
         mpModel->addBuffer(pBuffer);
         return pBuffer;
     }
@@ -840,7 +840,7 @@ namespace Falcor
             loadBones(pAiMesh, initData.get(), vertexCount, vertexStride);
         }
 
-        auto pBuffer = Buffer::create(vertexStride * vertexCount, Buffer::BindFlags::Vertex, Buffer::AccessFlags::None, initData.get());
+        auto pBuffer = Buffer::create(vertexStride * vertexCount, Buffer::BindFlags::Vertex, Buffer::CpuAccess::None, initData.get());
         mpModel->addBuffer(pBuffer);
         return pBuffer;
     }

@@ -155,7 +155,7 @@ namespace Falcor
         }
 
         // Allocate a buffer on the upload heap
-        Buffer::SharedPtr pUploadBuffer = Buffer::create(size, Buffer::HeapType::Upload, nullptr);
+        Buffer::SharedPtr pUploadBuffer = Buffer::create(size, Buffer::BindFlags::None, Buffer::CpuAccess::Write, nullptr);
         pUploadBuffer->updateData(pData, offset, size);
 
         // Dispatch a command
@@ -192,7 +192,7 @@ namespace Falcor
         pDevice->GetCopyableFootprints(&texDesc, firstSubresource, subresourceCount, 0, footprint.data(), rowCount.data(), rowSize.data(), &size);
 
         // Allocate a buffer on the upload heap
-        Buffer::SharedPtr pBuffer = Buffer::create(size, Buffer::HeapType::Upload, nullptr);
+        Buffer::SharedPtr pBuffer = Buffer::create(size, Buffer::BindFlags::None, Buffer::CpuAccess::Write, nullptr);
 
         CopyContextData::UploadDesc uploadDesc;
         uploadDesc.pResource = pBuffer->getApiHandle();
@@ -200,7 +200,7 @@ namespace Falcor
         pApiData->uploadQueue.push(uploadDesc);
 
         // Map the buffer
-        uint8_t* pDst = (uint8_t*)pBuffer->map(Buffer::MapType::Write);
+        uint8_t* pDst = (uint8_t*)pBuffer->map(Buffer::MapType::WriteDiscard);
 
         const uint8_t* pSrc = (uint8_t*)pData;
         for (uint32_t s = 0; s < subresourceCount; s++)

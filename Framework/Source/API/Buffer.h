@@ -41,12 +41,11 @@ namespace Falcor
         /** Buffer access flags.
             These flags are hints the driver how the buffer will be used.
         */
-        enum class AccessFlags
+        enum class CpuAccess
         {
-            None        = 0,
-            Dynamic     = 1, ///< Buffer will be updated using Buffer#updateData().
-            MapRead     = 2, ///< Buffer will mapped for CPU read.
-            MapWrite    = 4, ///< Buffer will mapped for CPU Write.
+            None,    ///< The CPU can't access the buffer's content. The buffer can be updated using Buffer#updateData()
+            Write,   ///< The buffer can be mapped for CPU writes
+            Read,    ///< The buffer can be mapped for CPU reads. This type of buffer can't be bound to the pipeline, it can only be used as a staging resource
         };
 
         /** Buffer GPU access flags.
@@ -78,33 +77,21 @@ namespace Falcor
 
         enum class MapType
         {
-            Read,               ///< Map the buffer for read access. Buffer had to be created with AccessFlags#MapRead flag.
-            Write,              ///< Map the buffer for write access. Buffer had to be created with AccessFlags#MapWrite flag.
-            ReadWrite,          ///< Map the buffer for read and write access. Buffer had to be created with AccessFlags#MapWrite and AccessFlags#MapRead flags.
+            Read,               ///< Map the buffer for read access. Buffer had to be created with AccessFlags#MapWrite flag.
             WriteDiscard,       ///< Map the buffer for write access, discarding the previous content of the entire buffer. Buffer had to be created with AccessFlags#MapWrite flag.
-            WriteNoOverwrite    ///< Map the buffer for write access. Using this flag indicates that the user guarantees not to overwrite parts of the data that are in use by the GPU. Buffer had to be created with AccessFlags#MapWrite flag.
         };
-
-        enum class HeapType
-        {
-            Default,
-            Upload,
-            Readback
-        };
-
+        
         ~Buffer();
 
         /** create a new buffer.
             \param[in] size The size in bytes of the buffer.
             \param[in] bind Buffer bind flags
-            \param[in] access Access usage hints
+            \param[in] update Flags indicating how the buffer can be updated
             \param[in] pInitData Optional parameter. Initial buffer data. Pointed buffer size should be at least Size bytes.
             \return A pointer to a new buffer object, or nullptr if creation failed.
         */
-        static SharedPtr create(size_t size, BindFlags bind, AccessFlags access, const void* pInitData);
-
-        static SharedPtr create(size_t size, HeapType heapType, const void* pInitData);
-
+        static SharedPtr create(size_t size, BindFlags bind, CpuAccess cpuAccess, const void* pInitData);
+        
         /** Copy the contents of this buffer to the given buffer.\nThe entire buffer will be copied, so the destination buffer must have the *same* size as the source buffer.
             \param pDst The destination buffer.
         */
@@ -121,10 +108,9 @@ namespace Falcor
             \param[in] pData Pointer to the source data.
             \param[in] offset Byte offset into the destination buffer, indicating where to start copy into.
             \param[in] size Number of bytes to copy.
-            \param[in] forceUpdate - If true and the buffer wasn't created with the AccessFlags::Dynamic flag, a staging resource will be used. This has performance implications, so make sure you know what you are doing.
             If offset and size will cause an out-of-bound access to the buffer, an error will be logged and the update will fail.
         */
-        void updateData(const void* pData, size_t offset, size_t size, bool forceUpdate = false);
+        void updateData(const void* pData, size_t offset, size_t size);
 
         /** Read the buffer's data to a user supplied buffer
             \param[in] pData Pointer to the destination buffer.
@@ -182,28 +168,15 @@ namespace Falcor
         }
 
     protected:
-        Buffer(size_t size, BindFlags bind, AccessFlags access, HeapType heapType) : mSize(size), mBindFlags(bind), mAccessFlags(access), mHeapType(heapType){}
+        Buffer(size_t size, BindFlags bind, CpuAccess update) : mSize(size), mBindFlags(bind), mUpdateFlags(update){}
         BufferHandle mApiHandle;
-        HeapType mHeapType;
         uint64_t mBindlessHandle = 0;
         size_t mSize = 0;
-        bool mIsMapped = false;
         mutable uint64_t mGpuPtr = 0;
         BindFlags mBindFlags;
-        AccessFlags mAccessFlags;
+        CpuAccess mUpdateFlags;
         void* mpMappedData = nullptr;
     };
-
-    inline Buffer::AccessFlags operator& (Buffer::AccessFlags a, Buffer::AccessFlags b)
-    {
-        return static_cast<Buffer::AccessFlags>(static_cast<int>(a)& static_cast<int>(b));
-    }
-
-
-    inline Buffer::AccessFlags operator| (Buffer::AccessFlags a, Buffer::AccessFlags b)
-    {
-        return static_cast<Buffer::AccessFlags>(static_cast<int>(a) | static_cast<int>(b));
-    }
 
     inline Buffer::BindFlags operator& (Buffer::BindFlags a, Buffer::BindFlags b)
     {

@@ -172,7 +172,7 @@ namespace Falcor
                 }
             }
 
-            pBuffer->updateData(tempData, 0, pBuffer->getSize(), true);
+            pBuffer->updateData(tempData, 0, pBuffer->getSize());
             delete [] tempData;
         }
 

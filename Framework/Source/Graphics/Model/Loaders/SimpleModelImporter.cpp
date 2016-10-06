@@ -82,11 +82,11 @@ namespace Falcor
         // Create vertex buffer and add to the model
         VertexLayout::SharedPtr pLayout = VertexLayout::create();
         pLayout->addBufferLayout(0, pVertexLayout);
-        Buffer::SharedPtr pBuffer = Buffer::create( vboSz, Buffer::BindFlags::Vertex, Buffer::AccessFlags::None, vboData );
+        Buffer::SharedPtr pBuffer = Buffer::create( vboSz, Buffer::BindFlags::Vertex, Buffer::CpuAccess::None, vboData );
         pModel->addBuffer(pBuffer);
 
         // Create index buffer and add to the model
-        Buffer::SharedPtr pIB = Buffer::create( idxBufSz, Buffer::BindFlags::Index, Buffer::AccessFlags::MapRead, idxBufData );
+        Buffer::SharedPtr pIB = Buffer::create( idxBufSz, Buffer::BindFlags::Index, Buffer::CpuAccess::None, idxBufData );
         pModel->addBuffer( pIB );
 
         // Compute more explicit / traditional counts needed internally

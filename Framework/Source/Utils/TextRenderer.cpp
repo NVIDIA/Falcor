@@ -68,7 +68,7 @@ namespace Falcor
 
         // Create a vertex buffer
         const uint32_t vbSize = (uint32_t)(sizeof(Vertex)*kMaxBatchSize*arraysize(kVertexPos));
-        mpVertexBuffer = Buffer::create(vbSize, Buffer::BindFlags::Vertex, Buffer::AccessFlags::MapWrite, nullptr);
+        mpVertexBuffer = Buffer::create(vbSize, Buffer::BindFlags::Vertex, Buffer::CpuAccess::Write, nullptr);
 
         // Create the RenderState
         mpStateCache = RenderStateCache::create();

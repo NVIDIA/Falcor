@@ -59,52 +59,9 @@ namespace Falcor
         0,
         0
     };
-
-    D3D12_HEAP_TYPE getHeapType(Buffer::HeapType type)
+    
+    ID3D12ResourcePtr createBuffer(size_t size, const D3D12_HEAP_PROPERTIES& heapProps)
     {
-        switch (type)
-        {
-        case Buffer::HeapType::Default:
-            return D3D12_HEAP_TYPE_DEFAULT;
-        case Buffer::HeapType::Upload:
-            return D3D12_HEAP_TYPE_UPLOAD;
-        case Buffer::HeapType::Readback:
-            return D3D12_HEAP_TYPE_READBACK;
-        default:
-            should_not_get_here();
-            return D3D12_HEAP_TYPE(-1);
-        }
-    }
-
-    const D3D12_HEAP_PROPERTIES& getHeapProps(Buffer::HeapType type)
-    {
-        static const D3D12_HEAP_PROPERTIES kEmptyDesc = {};
-        switch (type)
-        {
-        case Buffer::HeapType::Default:
-            return kDefaultHeapProps;
-        case Buffer::HeapType::Upload:
-            return kUploadHeapProps;
-        case Buffer::HeapType::Readback:
-            return kReadbackHeapProps;
-        default:
-            should_not_get_here();
-            return kEmptyDesc;
-        }
-    }
-
-    Buffer::SharedPtr Buffer::create(size_t size, BindFlags usage, AccessFlags access, const void* pInitData)
-    {
-        if (usage == BindFlags::Constant)
-        {
-            size = align_to(D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT, size);
-        }
-        return create(size, HeapType::Upload, pInitData);
-    }
-
-    Buffer::SharedPtr Buffer::create(size_t size, HeapType heapType, const void* pInitData)
-    {
-        Buffer::SharedPtr pBuffer = SharedPtr(new Buffer(size, BindFlags::None, AccessFlags::None, heapType));
         ID3D12Device* pDevice = gpDevice->getApiHandle();
 
         // Create the buffer
@@ -121,24 +78,46 @@ namespace Falcor
         bufDesc.SampleDesc.Quality = 0;
         bufDesc.Width = size;
 
-        const auto& heapProps = getHeapProps(heapType);
         D3D12_RESOURCE_STATES initState = D3D12_RESOURCE_STATE_COMMON;
-        switch (heapType)
+        switch (heapProps.Type)
         {
-        case Buffer::HeapType::Upload:
+        case D3D12_HEAP_TYPE_UPLOAD:
             initState = D3D12_RESOURCE_STATE_GENERIC_READ;
             break;
-        case Buffer::HeapType::Readback:
+        case D3D12_HEAP_TYPE_READBACK:
             initState = D3D12_RESOURCE_STATE_COPY_DEST;
             break;
         }
-        d3d_call(pDevice->CreateCommittedResource(&heapProps, D3D12_HEAP_FLAG_NONE, &bufDesc, initState, nullptr, IID_PPV_ARGS(&pBuffer->mApiHandle)));
+        ID3D12ResourcePtr pApiHandle;
+        d3d_call(pDevice->CreateCommittedResource(&heapProps, D3D12_HEAP_FLAG_NONE, &bufDesc, initState, nullptr, IID_PPV_ARGS(&pApiHandle)));
 
         // Map and upload data if needed
-        if (heapType != HeapType::Default)
+        return pApiHandle;
+    }
+
+    Buffer::SharedPtr Buffer::create(size_t size, BindFlags usage, CpuAccess cpuAccess, const void* pInitData)
+    {
+        if (usage == BindFlags::Constant)
         {
-            D3D12_RANGE readRange = (heapType == HeapType::Readback) ? D3D12_RANGE{ 0, size } : D3D12_RANGE{};
-            d3d_call(pBuffer->mApiHandle->Map(0, &readRange, &pBuffer->mpMappedData));
+            size = align_to(D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT, size);
+        }
+
+        Buffer::SharedPtr pBuffer = SharedPtr(new Buffer(size, usage, cpuAccess));
+
+        if (cpuAccess == CpuAccess::Write)
+        {
+            pBuffer->mApiHandle = createBuffer(size, kUploadHeapProps);
+            pBuffer->map(MapType::WriteDiscard);
+        }
+        else if (cpuAccess == CpuAccess::Read)
+        {
+            pBuffer->mApiHandle = createBuffer(size, kReadbackHeapProps);
+            pBuffer->map(MapType::Read);
+        }
+        else
+        {
+            assert(cpuAccess == CpuAccess::None);
+            pBuffer->mApiHandle = createBuffer(size, kDefaultHeapProps);
         }
 
         if (pInitData)
@@ -159,7 +138,7 @@ namespace Falcor
     {
     }
 
-    void Buffer::updateData(const void* pData, size_t offset, size_t size, bool forceUpdate)
+    void Buffer::updateData(const void* pData, size_t offset, size_t size)
     {
         // Clamp the offset and size
         if (adjustSizeOffsetParams(size, offset) == false)
@@ -168,17 +147,19 @@ namespace Falcor
             return;
         }
 
-
-        if (mHeapType == HeapType::Default)
+        if (mUpdateFlags == CpuAccess::Write)
         {
-            gpDevice->getCopyContext()->updateBuffer(this, pData, offset, size);
-        }
-        else
-        {
-            assert(mHeapType == HeapType::Upload);
             assert(mpMappedData);
             uint8_t* pDst = (uint8_t*)mpMappedData + offset;
             memcpy(pDst, pData, size);
+        }
+        else
+        {
+            if ((mUpdateFlags == CpuAccess::Read) && mpMappedData)
+            {
+                logWarning("Updating buffer data while it is mapped for CPU read");
+            }
+            gpDevice->getCopyContext()->updateBuffer(this, pData, offset, size);
         }
     }
 
@@ -195,6 +176,30 @@ namespace Falcor
 
     void* Buffer::map(MapType type)
     {
+        if (mpMappedData == nullptr)
+        {
+            D3D12_RANGE readRange = {};
+            if (type == MapType::Read)
+            {
+                if (mUpdateFlags != CpuAccess::Read)
+                {
+                    logError("Trying to map a buffer for read, but it wasn't created with the read access type");
+                    return nullptr;
+                }
+                readRange = { 0, mSize };
+            }
+            else
+            {
+                assert(type == MapType::WriteDiscard);
+                if (mUpdateFlags != CpuAccess::Write)
+                {
+                    logError("Trying to map a buffer for write, but it wasn't created with the write access type");
+                    return nullptr;
+                }
+            }
+
+            d3d_call(mApiHandle->Map(0, &readRange, &mpMappedData));
+        }
         return mpMappedData;
     }
 
