@@ -109,6 +109,11 @@ namespace Falcor
 		*/
 		bool isVsyncEnabled() const { return mVsyncOn; }
 
+        /** Resize the swap-chain
+            \return A new FBO object
+        */
+        Fbo::SharedPtr resizeSwapChain(uint32_t width, uint32_t height);
+
         DescriptorHeap::SharedPtr getSrvDescriptorHeap() const { return mpSrvHeap; }
         DescriptorHeap::SharedPtr getDsvDescriptorHeap() const { return mpDsvHeap; }
         DescriptorHeap::SharedPtr getRtvDescriptorHeap() const { return mpRtvHeap; }

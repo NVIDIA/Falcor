@@ -91,6 +91,8 @@ namespace Falcor
 
     Fbo::~Fbo()
     {
+        FboData* pData = (FboData*)mpPrivateData;
+        safe_delete(pData);
     }
 
     uint32_t Fbo::getApiHandle() const
@@ -182,6 +184,13 @@ namespace Falcor
 
     void Fbo::applyDepthAttachment()
     {
+    }
+
+    void Fbo::resetViews()
+    {
+        FboData* pData = (FboData*)mpPrivateData;
+        pData->dsvMap.clear();
+        pData->rtvMap.clear();
     }
 
     bool Fbo::checkStatus() const

@@ -224,6 +224,7 @@ namespace Falcor
         /** Get the bound program variables object
         */
         ProgramVars::SharedConstPtr getProgramVars() const { return mState.pProgramVars; }
+
     private:
         RenderContext() = default;
         void initCommon(uint32_t viewportCount);

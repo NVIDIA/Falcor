@@ -177,8 +177,12 @@ namespace Falcor
             // Create a depth texture
             auto pDepth = Texture::create2D(width, height, depthFormat, 1, 1);
 
-            // Create the FBO
-            pData->pDefaultFbos[i] = Fbo::create();
+            // Create the FBO if it's required
+            if(pData->pDefaultFbos[i] == nullptr)
+            {
+                pData->pDefaultFbos[i] = Fbo::create();
+            }
+            pData->pDefaultFbos[i]->resetViews();
             pData->pDefaultFbos[i]->attachColorTarget(pColorTex, 0);
             pData->pDefaultFbos[i]->attachDepthStencilTarget(pDepth);
             pData->currentBackBufferIndex = pData->pSwapChain->GetCurrentBackBufferIndex();
@@ -304,6 +308,32 @@ namespace Falcor
         bindDescriptorHeaps();
 
 		return true;
+    }
+
+    Fbo::SharedPtr Device::resizeSwapChain(uint32_t width, uint32_t height)
+    {
+        DeviceData* pData = (DeviceData*)mpPrivateData;
+
+        mpFrameFence->wait(mpFrameFence->getCpuValue());
+
+        // Store the FBO parameters
+        ResourceFormat colorFormat = pData->pDefaultFbos[0]->getColorTexture(0)->getFormat();
+        ResourceFormat depthFormat = pData->pDefaultFbos[0]->getDepthStencilTexture()->getFormat();
+        uint32_t sampleCount = pData->pDefaultFbos[0]->getSampleCount();
+
+        // Delete all the FBOs
+        for (uint32_t i = 0; i < arraysize(pData->pDefaultFbos); i++)
+        {
+            pData->pDefaultFbos[i]->attachColorTarget(nullptr, 0);
+            pData->pDefaultFbos[i]->attachDepthStencilTarget(nullptr);
+        }
+
+        DXGI_SWAP_CHAIN_DESC desc;
+        d3d_call(pData->pSwapChain->GetDesc(&desc));
+        d3d_call(pData->pSwapChain->ResizeBuffers(kSwapChainBuffers, width, height, desc.BufferDesc.Format, desc.Flags));
+        updateDefaultFBO(width, height, sampleCount, colorFormat, depthFormat);
+
+        return getSwapChainFbo();
     }
 
 	void Device::setVSync(bool enable)

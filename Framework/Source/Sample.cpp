@@ -52,6 +52,7 @@ namespace Falcor
 //         mpGui->getSize(barSize);
 //         mpGui->setPosition(mpDefaultFBO->getWidth() - 10 - barSize[0] - 10, 10);
 
+        mpDefaultFBO = gpDevice->resizeSwapChain(mpWindow->getClientAreaWidth(), mpWindow->getClientAreaHeight());
         onResizeSwapChain();
 
         // Reset the clock before, so that the first frame duration will be correct

@@ -373,6 +373,8 @@ namespace Falcor
 
 			mMouseScale.x = 1 / float(width);
 			mMouseScale.y = 1 / float(height);
+
+            mpCallbacks->handleWindowSizeChange();
         }
     }
 

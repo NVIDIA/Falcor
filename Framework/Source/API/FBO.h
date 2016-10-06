@@ -164,6 +164,7 @@ namespace Falcor
 #ifdef FALCOR_D3D
         DsvHandle getDepthStencilView() const;
         RtvHandle getRenderTargetView(uint32_t rtIndex) const;
+        void resetViews();
 #endif
     private:
         struct Attachment
