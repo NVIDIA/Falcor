@@ -160,13 +160,12 @@ namespace Falcor
 
         // Dispatch a command
         CopyContextData::UploadDesc uploadDesc;
-        uploadDesc.pResource = pBuffer->getApiHandle();
+        uploadDesc.pResource = pUploadBuffer->getApiHandle();
         uploadDesc.id = mpFence->inc();
         pApiData->uploadQueue.push(uploadDesc);
-
-        D3D12_TEXTURE_COPY_LOCATION dstLoc = { pBuffer->getApiHandle(), D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX, 0 };
-        D3D12_TEXTURE_COPY_LOCATION srcLoc = { pBuffer->getApiHandle(), D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX, 0 };
-        pApiData->pCmdList->CopyTextureRegion(&dstLoc, 0, 0, 0, &srcLoc, nullptr);
+        
+        offset = pUploadBuffer->getGpuAddress() - uploadDesc.pResource->GetGPUVirtualAddress();
+        pApiData->pCmdList->CopyBufferRegion(pBuffer->getApiHandle(), 0, uploadDesc.pResource, offset, size);
 
         if (submit)
         {
