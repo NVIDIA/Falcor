@@ -299,6 +299,7 @@ namespace Falcor
         mpSamplerHeap = DescriptorHeap::create(DescriptorHeap::Type::Sampler, 2048);
         mpRtvHeap = DescriptorHeap::create(DescriptorHeap::Type::RenderTargetView, 1024, false);
         mpDsvHeap = DescriptorHeap::create(DescriptorHeap::Type::DepthStencilView, 1024, false);
+        mpResourceAllocator = ResourceAllocator::create(1024 * 1024 * 2);
 
 		mpFrameFence = GpuFence::create();
         mpRenderContext = RenderContext::create(kSwapChainBuffers);

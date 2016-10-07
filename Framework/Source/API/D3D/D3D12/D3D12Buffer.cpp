@@ -33,15 +33,12 @@
 
 namespace Falcor
 {
-    ResourceAllocator::SharedPtr gpResourceAllocator;
     struct BufferData
     {
         ResourceAllocator::AllocationData dynamicData;
     };
 
-//    ResourceAllocator::SharedPtr BufferData::pResourceAllocator;
-
-    // D3D12TODO - this in in texture
+    // D3D12 CODE - this in in texture
     static const D3D12_HEAP_PROPERTIES kDefaultHeapProps =
     {
         D3D12_HEAP_TYPE_DEFAULT,
@@ -100,7 +97,7 @@ namespace Falcor
         if (mUpdateFlags == CpuAccess::Write)
         {
             BufferData* pApiData = (BufferData*)mpApiData;
-            gpResourceAllocator->release(pApiData->dynamicData);
+            gpDevice->getResourceAllocator()->release(pApiData->dynamicData);
         }
     }
 
@@ -119,11 +116,6 @@ namespace Falcor
 
     Buffer::SharedPtr Buffer::create(size_t size, BindFlags usage, CpuAccess cpuAccess, const void* pInitData)
     {
-        if (gpResourceAllocator == nullptr)
-        {
-            gpResourceAllocator = ResourceAllocator::create(1024 * 1024 * 4);
-        }
-
         if (usage == BindFlags::Constant)
         {
             size = align_to(D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT, size);
@@ -135,7 +127,7 @@ namespace Falcor
         {
             BufferData* pApiData = new BufferData;
             pBuffer->mpApiData = pApiData;
-            pApiData->dynamicData = gpResourceAllocator->allocate(size, getDataAlignmentFromUsage(usage));
+            pApiData->dynamicData = gpDevice->getResourceAllocator()->allocate(size, getDataAlignmentFromUsage(usage));
             pBuffer->mApiHandle = pApiData->dynamicData.pResourceHandle;
         }
         else if (cpuAccess == CpuAccess::Read)
@@ -201,8 +193,8 @@ namespace Falcor
         }
 
         BufferData* pApiData = (BufferData*)mpApiData;
-        gpResourceAllocator->release(pApiData->dynamicData);
-        pApiData->dynamicData = gpResourceAllocator->allocate(mSize, getDataAlignmentFromUsage(mBindFlags));
+        gpDevice->getResourceAllocator()->release(pApiData->dynamicData);
+        pApiData->dynamicData = gpDevice->getResourceAllocator()->allocate(mSize, getDataAlignmentFromUsage(mBindFlags));
         mApiHandle = pApiData->dynamicData.pResourceHandle;
         return pApiData->dynamicData.pData;
     }

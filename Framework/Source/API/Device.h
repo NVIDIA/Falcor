@@ -33,6 +33,7 @@
 #include "API/LowLevel/GpuFence.h"
 #include "API/LowLevel/CopyContext.h"
 #include "Api/LowLevel/DescriptorHeap.h"
+#include "API/LowLevel/ResourceAllocator.h"
 
 namespace Falcor
 {
@@ -118,24 +119,27 @@ namespace Falcor
         DescriptorHeap::SharedPtr getDsvDescriptorHeap() const { return mpDsvHeap; }
         DescriptorHeap::SharedPtr getRtvDescriptorHeap() const { return mpRtvHeap; }
         DescriptorHeap::SharedPtr getSamplerDescriptorHeap() const { return mpSamplerHeap; }
+        ResourceAllocator::SharedPtr getResourceAllocator() const { return mpResourceAllocator; }
     private:
 		Device(Window::SharedPtr pWindow) : mpWindow(pWindow) {}
 		bool init(const Desc& desc);
         bool updateDefaultFBO(uint32_t width, uint32_t height, uint32_t sampleCount, ResourceFormat colorFormat, ResourceFormat depthFormat);
         void bindDescriptorHeaps();
 
+        ApiHandle mApiHandle;
+        ResourceAllocator::SharedPtr mpResourceAllocator;
+        DescriptorHeap::SharedPtr mpRtvHeap;
+        DescriptorHeap::SharedPtr mpDsvHeap;
+        DescriptorHeap::SharedPtr mpSamplerHeap;
+        DescriptorHeap::SharedPtr mpSrvHeap;
+
 		Window::SharedPtr mpWindow;
-		ApiHandle mApiHandle;
 		GpuFence::SharedPtr mpFrameFence;
 		void* mpPrivateData;
 		RenderContext::SharedPtr mpRenderContext;
         CopyContext::SharedPtr mpCopyContext;
 		bool mVsyncOn;
 
-        DescriptorHeap::SharedPtr mpRtvHeap;
-        DescriptorHeap::SharedPtr mpDsvHeap;
-        DescriptorHeap::SharedPtr mpSamplerHeap;
-        DescriptorHeap::SharedPtr mpSrvHeap;
 	};
 
     extern Device::SharedPtr gpDevice;
