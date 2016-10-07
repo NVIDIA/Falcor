@@ -413,6 +413,9 @@
     <ClCompile Include="API\ConstantBuffer.cpp">
       <Filter>API</Filter>
     </ClCompile>
+    <ClCompile Include="API\D3D\D3D12\LowLevel\D3D12ResourceAllocator.cpp">
+      <Filter>API\D3D\D3D12\LowLevel</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Sample.h" />
@@ -1493,6 +1496,12 @@
     </ClInclude>
     <ClInclude Include="API\ConstantBuffer.h">
       <Filter>API</Filter>
+    </ClInclude>
+    <ClInclude Include="API\D3D\D3D12\D3D12ResourceAllocator.h">
+      <Filter>API\D3D\D3D12</Filter>
+    </ClInclude>
+    <ClInclude Include="API\LowLevel\ResourceAllocator.h">
+      <Filter>API\LowLevel</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

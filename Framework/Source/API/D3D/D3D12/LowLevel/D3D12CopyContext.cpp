@@ -195,12 +195,13 @@ namespace Falcor
         Buffer::SharedPtr pBuffer = Buffer::create(size, Buffer::BindFlags::None, Buffer::CpuAccess::Write, nullptr);
 
         CopyContextData::UploadDesc uploadDesc;
-        uploadDesc.pResource = pBuffer->getApiHandle();
-        uploadDesc.id = mpFence->inc();
-        pApiData->uploadQueue.push(uploadDesc);
 
         // Map the buffer
         uint8_t* pDst = (uint8_t*)pBuffer->map(Buffer::MapType::WriteDiscard);
+
+        uploadDesc.pResource = pBuffer->getApiHandle();
+        uploadDesc.id = mpFence->inc();
+        pApiData->uploadQueue.push(uploadDesc);
 
         const uint8_t* pSrc = (uint8_t*)pData;
         for (uint32_t s = 0; s < subresourceCount; s++)

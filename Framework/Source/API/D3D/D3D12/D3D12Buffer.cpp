@@ -29,17 +29,17 @@
 #include "Framework.h"
 #include "API/Buffer.h"
 #include "API/Device.h"
+#include "Api/LowLevel/ResourceAllocator.h"
 
 namespace Falcor
 {
-    static D3D12_HEAP_PROPERTIES kUploadHeapProps =
+    struct BufferData
     {
-        D3D12_HEAP_TYPE_UPLOAD,
-        D3D12_CPU_PAGE_PROPERTY_UNKNOWN,
-        D3D12_MEMORY_POOL_UNKNOWN,
-        0,
-        0,
+        static ResourceAllocator::SharedPtr pResourceAllocator;
+        ResourceAllocator::AllocationData dynamicData;
     };
+
+    ResourceAllocator::SharedPtr BufferData::pResourceAllocator;
 
     // D3D12TODO - this in in texture
     static const D3D12_HEAP_PROPERTIES kDefaultHeapProps =
@@ -59,7 +59,7 @@ namespace Falcor
         0,
         0
     };
-    
+
     ID3D12ResourcePtr createBuffer(size_t size, const D3D12_HEAP_PROPERTIES& heapProps)
     {
         ID3D12Device* pDevice = gpDevice->getApiHandle();
@@ -97,6 +97,11 @@ namespace Falcor
 
     Buffer::SharedPtr Buffer::create(size_t size, BindFlags usage, CpuAccess cpuAccess, const void* pInitData)
     {
+        if (BufferData::pResourceAllocator == nullptr)
+        {
+            BufferData::pResourceAllocator = ResourceAllocator::create(1024 * 1024 * 4);
+        }
+
         if (usage == BindFlags::Constant)
         {
             size = align_to(D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT, size);
@@ -106,8 +111,10 @@ namespace Falcor
 
         if (cpuAccess == CpuAccess::Write)
         {
-            pBuffer->mApiHandle = createBuffer(size, kUploadHeapProps);
-            pBuffer->map(MapType::WriteDiscard);
+            BufferData* pApiData = new BufferData;
+            pBuffer->mpApiData = pApiData;
+            pApiData->dynamicData = pApiData->pResourceAllocator->allocate(size);
+            pBuffer->mApiHandle = pApiData->dynamicData.pResourceHandle;
         }
         else if (cpuAccess == CpuAccess::Read)
         {
@@ -149,16 +156,12 @@ namespace Falcor
 
         if (mUpdateFlags == CpuAccess::Write)
         {
-            assert(mpMappedData);
-            uint8_t* pDst = (uint8_t*)mpMappedData + offset;
+            uint8_t* pDst = (uint8_t*)map(MapType::WriteDiscard) + offset;
             memcpy(pDst, pData, size);
         }
         else
         {
-            if ((mUpdateFlags == CpuAccess::Read) && mpMappedData)
-            {
-                logWarning("Updating buffer data while it is mapped for CPU read");
-            }
+            // D3D12_CODE handle case where buffer is mapped for read
             gpDevice->getCopyContext()->updateBuffer(this, pData, offset, size);
         }
     }
@@ -176,31 +179,18 @@ namespace Falcor
 
     void* Buffer::map(MapType type)
     {
-        if (mpMappedData == nullptr)
+        assert(type == MapType::WriteDiscard);
+        if (mUpdateFlags != CpuAccess::Write)
         {
-            D3D12_RANGE readRange = {};
-            if (type == MapType::Read)
-            {
-                if (mUpdateFlags != CpuAccess::Read)
-                {
-                    logError("Trying to map a buffer for read, but it wasn't created with the read access type");
-                    return nullptr;
-                }
-                readRange = { 0, mSize };
-            }
-            else
-            {
-                assert(type == MapType::WriteDiscard);
-                if (mUpdateFlags != CpuAccess::Write)
-                {
-                    logError("Trying to map a buffer for write, but it wasn't created with the write access type");
-                    return nullptr;
-                }
-            }
-
-            d3d_call(mApiHandle->Map(0, &readRange, &mpMappedData));
+            logError("Trying to map a buffer for write, but it wasn't created with the write access type");
+            return nullptr;
         }
-        return mpMappedData;
+
+        BufferData* pApiData = (BufferData*)mpApiData;
+        pApiData->pResourceAllocator->release(pApiData->dynamicData);
+        pApiData->dynamicData = pApiData->pResourceAllocator->allocate(mSize);
+        mApiHandle = pApiData->dynamicData.pResourceHandle;
+        return pApiData->dynamicData.pData;
     }
 
     void Buffer::unmap()

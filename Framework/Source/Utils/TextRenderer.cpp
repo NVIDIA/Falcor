@@ -119,7 +119,6 @@ namespace Falcor
         // Set the current FBO into the render state
         mpStateCache->setFbo(pRenderContext->getFbo());
         mpRenderContext->setPipelineState(mpStateCache->getRenderState());
-        pRenderContext->setVao(mpStateCache->getVao());
         pRenderContext->setTopology(RenderContext::Topology::TriangleList);
 
         // Get the current viewport
@@ -155,6 +154,7 @@ namespace Falcor
         if(mCurrentVertexID != 0)
         {
             mpVertexBuffer->unmap();
+            mpRenderContext->setVao(mpStateCache->getVao());
             mpRenderContext->draw(mCurrentVertexID, 0);
             mCurrentVertexID = 0;
             mpVertexBuffer->map(Buffer::MapType::WriteDiscard);

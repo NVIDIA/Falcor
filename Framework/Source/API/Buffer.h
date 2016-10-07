@@ -175,7 +175,7 @@ namespace Falcor
         mutable uint64_t mGpuPtr = 0;
         BindFlags mBindFlags;
         CpuAccess mUpdateFlags;
-        void* mpMappedData = nullptr;
+        void* mpApiData = nullptr;
     };
 
     inline Buffer::BindFlags operator& (Buffer::BindFlags a, Buffer::BindFlags b)

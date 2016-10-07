@@ -66,6 +66,7 @@
     <ClCompile Include="API\D3D\D3D12\LowLevel\D3D12CopyContext.cpp" />
     <ClCompile Include="API\D3D\D3D12\LowLevel\D3D12DescriptorHeap.cpp" />
     <ClCompile Include="API\D3D\D3D12\LowLevel\D3D12GpuFence.cpp" />
+    <ClCompile Include="API\D3D\D3D12\LowLevel\D3D12ResourceAllocator.cpp" />
     <ClCompile Include="API\D3D\D3D12\LowLevel\D3D12RootSignature.cpp" />
     <ClCompile Include="API\D3D\D3DFormats.cpp" />
     <ClCompile Include="API\D3D\D3DProgramReflection.cpp" />
@@ -411,6 +412,7 @@
     <ClInclude Include="API\Buffer.h" />
     <ClInclude Include="API\D3D\D3D11\D3D11ShaderReflection.h" />
     <ClInclude Include="API\D3D\D3D11\FalcorD3D11.h" />
+    <ClInclude Include="API\D3D\D3D12\D3D12ResourceAllocator.h" />
     <ClInclude Include="API\D3D\D3D12\FalcorD3D12.h" />
     <ClInclude Include="API\D3D\D3D12\LowLevel\D3D12FencedPool.h" />
     <ClInclude Include="API\D3D\D3DState.h" />
@@ -426,6 +428,7 @@
     <ClInclude Include="API\LowLevel\DescriptorTable.h" />
     <ClInclude Include="API\LowLevel\FencedPool.h" />
     <ClInclude Include="API\LowLevel\GpuFence.h" />
+    <ClInclude Include="API\LowLevel\ResourceAllocator.h" />
     <ClInclude Include="API\LowLevel\RootSignature.h" />
     <ClInclude Include="API\OpenGL\FalcorGL.h" />
     <ClInclude Include="API\OpenGL\GlEnum2Str.h" />
