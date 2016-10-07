@@ -614,11 +614,12 @@ namespace Falcor
     DescriptorHeap::GpuHandle ConstantBuffer::getCbViewHandle() const
     {
         DescriptorHeap* pHeap = gpDevice->getSrvDescriptorHeap().get();
-        if (mCbvHandleIndex == DescriptorHeap::kInvalidHandleIndex)
+//        if (mCbvHandleIndex == DescriptorHeap::kInvalidHandleIndex)
         {
+            // D3D12 CODE we are going to exhaust the heap. Need to cache or something
             mCbvHandleIndex = pHeap->allocateHandle();
             D3D12_CONSTANT_BUFFER_VIEW_DESC viewDesc = {};
-            viewDesc.BufferLocation = mpBuffer->getApiHandle()->GetGPUVirtualAddress();
+            viewDesc.BufferLocation = mpBuffer->getGpuAddress();
             viewDesc.SizeInBytes = (uint32_t)mpBuffer->getSize();
             gpDevice->getApiHandle()->CreateConstantBufferView(&viewDesc, pHeap->getCpuHandle(mCbvHandleIndex));
         }

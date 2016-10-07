@@ -249,7 +249,7 @@ namespace Falcor
         {
             uint32_t rootOffset = bufIt.second.rootSigOffset;
             const ConstantBuffer* pCB = bufIt.second.pResource.get();
-            pList->SetGraphicsRootConstantBufferView(rootOffset, pCB->getBuffer()->getApiHandle()->GetGPUVirtualAddress());
+            pList->SetGraphicsRootConstantBufferView(rootOffset, pCB->getBuffer()->getGpuAddress());
         }
 
         // Bind the SRVs

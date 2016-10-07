@@ -72,7 +72,8 @@ namespace Falcor
             StreamOutput    = 0x10,
             RenderTarget    = 0x20,
             DepthStencil    = 0x40,
-            UnorderedAccess = 0x80
+            UnorderedAccess = 0x80,
+            Staging         = 0x100,
         };
 
         enum class MapType
@@ -124,9 +125,9 @@ namespace Falcor
         */
         BufferHandle getApiHandle() const { return mApiHandle; }
 
-        /** Get the bindless API handle of the buffer object
+        /** Get the GPU address
         */
-        uint64_t getBindlessHandle();
+        uint64_t getGpuAddress() const;
 
         /** Get the size of the buffer
         */

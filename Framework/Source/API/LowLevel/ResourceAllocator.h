@@ -48,7 +48,7 @@ namespace Falcor
             uint64_t allocationID;
         };
 
-        AllocationData allocate(size_t size);
+        AllocationData allocate(size_t size, size_t alignment = 1);
         void release(const AllocationData& data);
 
     private:

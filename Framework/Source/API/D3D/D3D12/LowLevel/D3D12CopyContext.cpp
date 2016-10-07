@@ -155,7 +155,7 @@ namespace Falcor
         }
 
         // Allocate a buffer on the upload heap
-        Buffer::SharedPtr pUploadBuffer = Buffer::create(size, Buffer::BindFlags::None, Buffer::CpuAccess::Write, nullptr);
+        Buffer::SharedPtr pUploadBuffer = Buffer::create(size, Buffer::BindFlags::Staging, Buffer::CpuAccess::Write, nullptr);
         pUploadBuffer->updateData(pData, offset, size);
 
         // Dispatch a command
@@ -192,7 +192,7 @@ namespace Falcor
         pDevice->GetCopyableFootprints(&texDesc, firstSubresource, subresourceCount, 0, footprint.data(), rowCount.data(), rowSize.data(), &size);
 
         // Allocate a buffer on the upload heap
-        Buffer::SharedPtr pBuffer = Buffer::create(size, Buffer::BindFlags::None, Buffer::CpuAccess::Write, nullptr);
+        Buffer::SharedPtr pBuffer = Buffer::create(size, Buffer::BindFlags::Staging, Buffer::CpuAccess::Write, nullptr);
 
         CopyContextData::UploadDesc uploadDesc;
 
@@ -202,6 +202,9 @@ namespace Falcor
         uploadDesc.pResource = pBuffer->getApiHandle();
         uploadDesc.id = mpFence->inc();
         pApiData->uploadQueue.push(uploadDesc);
+
+        // Get the offset from the beginning of the resource
+        uint64_t offset = pBuffer->getGpuAddress() - uploadDesc.pResource->GetGPUVirtualAddress();
 
         const uint8_t* pSrc = (uint8_t*)pData;
         for (uint32_t s = 0; s < subresourceCount; s++)
@@ -218,6 +221,7 @@ namespace Falcor
             pSrc = (uint8_t*)pSrc + footprint[subresource].Footprint.Depth * src.SlicePitch;
 
             // Dispatch a command
+            footprint[subresource].Offset += offset;
             D3D12_TEXTURE_COPY_LOCATION dstLoc = { pTexture->getApiHandle(), D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX, subresource };
             D3D12_TEXTURE_COPY_LOCATION srcLoc = { uploadDesc.pResource, D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT, footprint[subresource] };
             pApiData->pCmdList->CopyTextureRegion(&dstLoc, 0, 0, 0, &srcLoc, nullptr);

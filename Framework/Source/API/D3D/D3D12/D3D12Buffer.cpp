@@ -33,13 +33,13 @@
 
 namespace Falcor
 {
+    ResourceAllocator::SharedPtr gpResourceAllocator;
     struct BufferData
     {
-        static ResourceAllocator::SharedPtr pResourceAllocator;
         ResourceAllocator::AllocationData dynamicData;
     };
 
-    ResourceAllocator::SharedPtr BufferData::pResourceAllocator;
+//    ResourceAllocator::SharedPtr BufferData::pResourceAllocator;
 
     // D3D12TODO - this in in texture
     static const D3D12_HEAP_PROPERTIES kDefaultHeapProps =
@@ -95,11 +95,33 @@ namespace Falcor
         return pApiHandle;
     }
 
+    Buffer::~Buffer()
+    {
+        if (mUpdateFlags == CpuAccess::Write)
+        {
+            BufferData* pApiData = (BufferData*)mpApiData;
+            gpResourceAllocator->release(pApiData->dynamicData);
+        }
+    }
+
+    size_t getDataAlignmentFromUsage(Buffer::BindFlags flags)
+    {
+        switch (flags)
+        {
+        case Buffer::BindFlags::Constant:
+            return D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT;
+        case Buffer::BindFlags::Staging:
+            return D3D12_TEXTURE_DATA_PLACEMENT_ALIGNMENT;
+        default:
+            return 1;
+        }
+    }
+
     Buffer::SharedPtr Buffer::create(size_t size, BindFlags usage, CpuAccess cpuAccess, const void* pInitData)
     {
-        if (BufferData::pResourceAllocator == nullptr)
+        if (gpResourceAllocator == nullptr)
         {
-            BufferData::pResourceAllocator = ResourceAllocator::create(1024 * 1024 * 4);
+            gpResourceAllocator = ResourceAllocator::create(1024 * 1024 * 4);
         }
 
         if (usage == BindFlags::Constant)
@@ -113,7 +135,7 @@ namespace Falcor
         {
             BufferData* pApiData = new BufferData;
             pBuffer->mpApiData = pApiData;
-            pApiData->dynamicData = pApiData->pResourceAllocator->allocate(size);
+            pApiData->dynamicData = gpResourceAllocator->allocate(size, getDataAlignmentFromUsage(usage));
             pBuffer->mApiHandle = pApiData->dynamicData.pResourceHandle;
         }
         else if (cpuAccess == CpuAccess::Read)
@@ -134,8 +156,6 @@ namespace Falcor
 
         return pBuffer;
     }
-
-    Buffer::~Buffer() = default;
 
     void Buffer::copy(Buffer* pDst) const
     {
@@ -171,12 +191,6 @@ namespace Falcor
         UNSUPPORTED_IN_D3D12("Buffer::ReadData(). If you really need this, create the resource with CPU read flag, and use Buffer::Map()");
     }
 
-    uint64_t Buffer::getBindlessHandle()
-    {
-        UNSUPPORTED_IN_D3D12("D3D12 buffers don't have bindless handles.");
-        return 0;
-    }
-
     void* Buffer::map(MapType type)
     {
         assert(type == MapType::WriteDiscard);
@@ -187,10 +201,23 @@ namespace Falcor
         }
 
         BufferData* pApiData = (BufferData*)mpApiData;
-        pApiData->pResourceAllocator->release(pApiData->dynamicData);
-        pApiData->dynamicData = pApiData->pResourceAllocator->allocate(mSize);
+        gpResourceAllocator->release(pApiData->dynamicData);
+        pApiData->dynamicData = gpResourceAllocator->allocate(mSize, getDataAlignmentFromUsage(mBindFlags));
         mApiHandle = pApiData->dynamicData.pResourceHandle;
         return pApiData->dynamicData.pData;
+    }
+
+    uint64_t Buffer::getGpuAddress() const
+    {
+        if (mUpdateFlags == CpuAccess::Write)
+        {
+            BufferData* pApiData = (BufferData*)mpApiData;
+            return pApiData->dynamicData.gpuAddress;
+        }
+        else
+        {
+            return mApiHandle->GetGPUVirtualAddress();
+        }
     }
 
     void Buffer::unmap()

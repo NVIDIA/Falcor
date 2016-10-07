@@ -56,14 +56,14 @@ namespace Falcor
             mUsedPages[mCurrentAllocationId] = std::move(mpActivePage);
         }
 
-//         if (mAvailablePages.size())
-//         {
-//             mpActivePage = std::move(mAvailablePages.front());
-//             mAvailablePages.pop();
-//             mpActivePage->allocationsCount = 0;
-//             mpActivePage->currentOffset = 0;
-//         }
-//         else
+        if (mAvailablePages.size())
+        {
+            mpActivePage = std::move(mAvailablePages.front());
+            mAvailablePages.pop();
+            mpActivePage->allocationsCount = 0;
+            mpActivePage->currentOffset = 0;
+        }
+        else
         {
             mpActivePage = std::make_unique<PageData>();
             mpActivePage->pResourceHandle = createBuffer(mPageSize, kUploadHeapProps);
@@ -76,34 +76,29 @@ namespace Falcor
         mCurrentAllocationId++;
     }
 
-    ResourceAllocator::AllocationData ResourceAllocator::allocate(size_t size)
+    ResourceAllocator::AllocationData ResourceAllocator::allocate(size_t size, size_t alignment)
     {
-        allocateNewPage();
-        AllocationData data;
-        data.allocationID = mCurrentAllocationId;
-        data.gpuAddress = mpActivePage->gpuAddress;// +mpActivePage->currentOffset;
-        data.pData = mpActivePage->pData;// +mpActivePage->currentOffset;
-        data.pResourceHandle = mpActivePage->pResourceHandle;
-        return data;
-
-        if (mpActivePage->currentOffset + size > mPageSize)
+        // Calculate the start
+        size_t currentOffset = align_to(alignment, mpActivePage->currentOffset);
+        if (currentOffset + size > mPageSize)
         {
+            currentOffset = 0;
             allocateNewPage();
         }
 
-//        AllocationData data;
+        AllocationData data;
         data.allocationID = mCurrentAllocationId;
-        data.gpuAddress = mpActivePage->gpuAddress + mpActivePage->currentOffset;
-        data.pData = mpActivePage->pData + mpActivePage->currentOffset;
+        data.gpuAddress = mpActivePage->gpuAddress + currentOffset;
+        data.pData = mpActivePage->pData + currentOffset;
         data.pResourceHandle = mpActivePage->pResourceHandle;
-        mpActivePage->currentOffset += size;
+        mpActivePage->currentOffset = currentOffset + size;
+        mpActivePage->allocationsCount++;
 
         return data;
     }
 
     void ResourceAllocator::release(const AllocationData& data)
     {
-        return;
         if (data.allocationID == mCurrentAllocationId)
         {
             mpActivePage->allocationsCount--;

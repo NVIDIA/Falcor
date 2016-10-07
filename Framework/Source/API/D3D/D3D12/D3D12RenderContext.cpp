@@ -149,7 +149,7 @@ namespace Falcor
                 const Buffer* pVB = pVao->getVertexBuffer(i).get();
                 if(pVB)
                 {
-                    vb[i].BufferLocation = pVB->getApiHandle()->GetGPUVirtualAddress();
+                    vb[i].BufferLocation = pVB->getGpuAddress();
                     vb[i].SizeInBytes = (uint32_t)pVB->getSize();
                     vb[i].StrideInBytes = pVao->getVertexLayout()->getBufferLayout(i)->getStride();
                 }
