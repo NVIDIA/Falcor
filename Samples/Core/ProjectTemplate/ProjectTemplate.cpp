@@ -35,8 +35,8 @@ void ProjectTemplate::initUI()
 
 void ProjectTemplate::onLoad()
 {
-//     mpCamera = Camera::create();
-//     initUI();
+    mpCamera = Camera::create();
+    initUI();
 }
 
 void ProjectTemplate::onFrameRender()
@@ -72,9 +72,9 @@ void ProjectTemplate::onResizeSwapChain()
     vp.height = (float)mpDefaultFBO->getHeight();
     vp.width = (float)mpDefaultFBO->getWidth();
     mpRenderContext->setViewport(0, vp);
-//     mpCamera->setFovY(float(M_PI / 8));
-//     mpCamera->setAspectRatio(vp.width / vp.height);
-//     mpCamera->setDepthRange(0, 1000);
+    mpCamera->setFovY(float(M_PI / 8));
+    mpCamera->setAspectRatio(vp.width / vp.height);
+    mpCamera->setDepthRange(0, 1000);
 }
 
 int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ LPSTR lpCmdLine, _In_ int nShowCmd)
