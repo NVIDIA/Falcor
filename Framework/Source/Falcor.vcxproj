@@ -52,13 +52,11 @@
     <ClCompile Include="API\D3D\D3D12\D3D12Fbo.cpp" />
     <ClCompile Include="API\D3D\D3D12\D3D12GpuTimer.cpp" />
     <ClCompile Include="API\D3D\D3D12\D3D12ProgramVars.cpp" />
-    <ClCompile Include="API\D3D\D3D12\D3D12ProgramVersion.cpp" />
     <ClCompile Include="API\D3D\D3D12\D3D12RasterizerState.cpp" />
     <ClCompile Include="API\D3D\D3D12\D3D12RenderContext.cpp" />
     <ClCompile Include="API\D3D\D3D12\D3D12RenderState.cpp" />
     <ClCompile Include="API\D3D\D3D12\D3D12Sampler.cpp" />
     <ClCompile Include="API\D3D\D3D12\D3D12ScreenCapture.cpp" />
-    <ClCompile Include="API\D3D\D3D12\D3D12Shader.cpp" />
     <ClCompile Include="API\D3D\D3D12\D3D12ShaderStorageBuffer.cpp" />
     <ClCompile Include="API\D3D\D3D12\D3D12Texture.cpp" />
     <ClCompile Include="API\D3D\D3D12\D3D12UniformBuffer.cpp" />

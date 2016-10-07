@@ -344,9 +344,6 @@
     <ClCompile Include="API\D3D\D3D12\D3D12ProgramVars.cpp">
       <Filter>API\D3D\D3D12</Filter>
     </ClCompile>
-    <ClCompile Include="API\D3D\D3D12\D3D12ProgramVersion.cpp">
-      <Filter>API\D3D\D3D12</Filter>
-    </ClCompile>
     <ClCompile Include="API\D3D\D3D12\D3D12RasterizerState.cpp">
       <Filter>API\D3D\D3D12</Filter>
     </ClCompile>
@@ -360,9 +357,6 @@
       <Filter>API\D3D\D3D12</Filter>
     </ClCompile>
     <ClCompile Include="API\D3D\D3D12\D3D12ScreenCapture.cpp">
-      <Filter>API\D3D\D3D12</Filter>
-    </ClCompile>
-    <ClCompile Include="API\D3D\D3D12\D3D12Shader.cpp">
       <Filter>API\D3D\D3D12</Filter>
     </ClCompile>
     <ClCompile Include="API\D3D\D3D12\D3D12ShaderStorageBuffer.cpp">
