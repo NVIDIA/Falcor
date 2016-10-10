@@ -42,6 +42,7 @@ namespace Falcor
     public:
         using SharedPtr = std::shared_ptr<Texture>;
         using SharedConstPtr = std::shared_ptr<const Texture>;
+        using ApiHandle = TextureHandle;
 
         /** Texture types. Notice there are no array types. Array are controlled using the array size parameter on texture creation.
         */

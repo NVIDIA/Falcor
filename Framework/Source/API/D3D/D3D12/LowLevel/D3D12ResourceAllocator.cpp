@@ -78,6 +78,8 @@ namespace Falcor
 
     ResourceAllocator::AllocationData ResourceAllocator::allocate(size_t size, size_t alignment)
     {
+        assert(size < mPageSize);
+
         // Calculate the start
         size_t currentOffset = align_to(alignment, mpActivePage->currentOffset);
         if (currentOffset + size > mPageSize)

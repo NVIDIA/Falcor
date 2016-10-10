@@ -177,7 +177,8 @@ namespace Falcor
 
     uint64_t CopyContext::updateTextureSubresources(const Texture* pTexture, uint32_t firstSubresource, uint32_t subresourceCount, const void* pData, bool submit)
     {
-        assert(firstSubresource + subresourceCount <= pTexture->getArraySize() * pTexture->getMipCount());
+        uint32_t arraySize = (pTexture->getType() == Texture::Type::TextureCube) ? pTexture->getArraySize() * 6 : pTexture->getArraySize();
+        assert(firstSubresource + subresourceCount <= arraySize * pTexture->getMipCount());
         CopyContextData* pApiData = (CopyContextData*)mpApiData;
 
         ID3D12Device* pDevice = gpDevice->getApiHandle();
@@ -244,6 +245,10 @@ namespace Falcor
     uint64_t CopyContext::updateTexture(const Texture* pTexture, const void* pData, bool submit)
     {
         uint32_t subresourceCount = pTexture->getArraySize() * pTexture->getMipCount();
+        if (pTexture->getType() == Texture::Type::TextureCube)
+        {
+            subresourceCount *= 6;
+        }
         return updateTextureSubresources(pTexture, 0, subresourceCount, pData, submit);
     }
 }

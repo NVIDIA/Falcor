@@ -100,7 +100,7 @@ void ShaderBuffersSample::onFrameRender()
     const glm::vec4 clearColor(0.38f, 0.52f, 0.10f, 1);
     mpRenderContext->clearFbo(mpDefaultFBO.get(), clearColor, 1.0f, 0, FboAttachmentType::All);
 
-    mpRenderContext->setPipelineState(mpPsoCache->getRenderState());
+    mpRenderContext->setPipelineState(mpPsoCache->getPSO());
 
     mCameraController.update();
 
