@@ -51,7 +51,7 @@ private:
     DepthStencilState::SharedPtr    mpNoDepthDS;
     BlendState::SharedPtr           mpOpaqueBS;
     FullScreenPass::UniquePtr       mpMainPass;
-    UniformBuffer::SharedPtr        mpToyCB;
+    ProgramVars::SharedPtr          mpToyVars;
     uint32_t                        mToyCBBinding;
 
 };

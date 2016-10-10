@@ -208,6 +208,7 @@ namespace Falcor
         if (maxOffset > 0)
         {
             maxOffset += getRowCountFromType(type) * 16;
+            maxOffset = maxOffset & ~0xF;   // Is this true for all APIs? I encountered it while working on D3D12
         }
         return maxOffset;
     }

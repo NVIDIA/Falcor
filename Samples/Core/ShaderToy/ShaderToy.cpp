@@ -60,7 +60,7 @@ void ShaderToy::onLoad()
     mpMainPass = FullScreenPass::create("toyContainer.fs");
 
     // Create Constant buffer
-    mpToyCB = UniformBuffer::create(mpMainPass->getProgram(), "ToyCB");
+    mpToyVars = ProgramVars::create(mpMainPass->getProgram()->getActiveVersion()->getReflector());
 
     // Get buffer finding
     mToyCBBinding = mpMainPass->getProgram()->getActiveVersion()->getReflector()->getBufferBinding("ToyCB");
@@ -83,14 +83,14 @@ void ShaderToy::onFrameRender()
 
     // iResolution
     glm::vec2 iResolution = glm::vec2((float)width, (float)height);
-    mpToyCB->setVariable("iResolution", iResolution);
+    mpToyVars[mToyCBBinding]["iResolution"] = iResolution;
 
     // iGlobalTime
     float iGlobalTime = (float)mCurrentTime;  
-    mpToyCB->setVariable("iGlobalTime", iGlobalTime);
+    mpToyVars[mToyCBBinding]["iGlobalTime"] = iGlobalTime;
 
     // run final pass
-    mpRenderContext->setUniformBuffer(mToyCBBinding, mpToyCB);
+    mpRenderContext->setProgramVariables(mpToyVars);
     mpMainPass->execute(mpRenderContext.get());
 
     renderText(getGlobalSampleMessage(true), glm::vec2(10, 10));
@@ -134,10 +134,10 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 {
     ShaderToy sample;
     SampleConfig config;
-    config.windowDesc.swapChainDesc.width = 1280;
-    config.windowDesc.swapChainDesc.height = 720;
-    config.windowDesc.swapChainDesc.colorFormat = ResourceFormat::RGBA8Unorm;
-    config.enableVsync = true;
+    config.windowDesc.width = 1280;
+    config.windowDesc.height = 720;
+    config.deviceDesc.colorFormat = ResourceFormat::RGBA8UnormSrgb;
+    config.deviceDesc.enableVsync = true;
     config.windowDesc.resizableWindow = true;
     config.windowDesc.title = "Falcor Shader Toy";
     sample.run(config);
