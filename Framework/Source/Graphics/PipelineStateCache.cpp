@@ -34,17 +34,22 @@ namespace Falcor
     std::vector<PipelineState::SharedPtr> gStates;
     PipelineState::SharedPtr PipelineStateCache::getRenderState()
     {
+        // Check if we need to create a root-signature
+        // FIXME Is this the correct place for this?
+        const ProgramVersion* pProgVersion = mpProgram ? mpProgram->getActiveVersion().get() : nullptr;
+        if (pProgVersion != mCachedData.pProgramVersion)
+        {
+            mCachedData.pProgramVersion = pProgVersion;
+            if (mCachedData.isUserRootSignature == false)
+            {
+                mpRootSignature = RootSignature::create(pProgVersion->getReflector().get());
+            }
+        }
+
         mDesc.setProgramVersion(mpProgram ? mpProgram->getActiveVersion() : nullptr);
         mDesc.setFboFormats(mpFbo ? mpFbo->getDesc() : Fbo::Desc());
         mDesc.setVertexLayout(mpVao ? mpVao->getVertexLayout() : nullptr);
-        if (mpRootSignature)
-        {
-            mDesc.setRootSignature(mpRootSignature);
-        }
-        else if(mpProgram)
-        {
-            mDesc.setRootSignature(RootSignature::create(mpProgram->getActiveVersion()->getReflector().get()));
-        }
+        mDesc.setRootSignature(mpRootSignature);
 
         // D3D12 CODE Need real cache
         auto p = PipelineState::create(mDesc);

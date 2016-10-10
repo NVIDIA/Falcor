@@ -51,7 +51,7 @@ namespace Falcor
         PipelineStateCache& setDepthStencilState(DepthStencilState::SharedConstPtr pDepthStencilState) { mDesc.setDepthStencilState(pDepthStencilState); return *this; }
         PipelineStateCache& setSampleMask(uint32_t sampleMask) { mDesc.setSampleMask(sampleMask); return *this; }
         PipelineStateCache& setPrimitiveType(PipelineState::PrimitiveType type) { mDesc.setPrimitiveType(type); return *this; }
-        PipelineStateCache& setRootSignature(RootSignature::SharedConstPtr pSignature) { mpRootSignature = pSignature; }
+        PipelineStateCache& setRootSignature(RootSignature::SharedConstPtr pSignature) { mpRootSignature = pSignature; mCachedData.isUserRootSignature = (mpRootSignature == nullptr); }
 
         PipelineState::SharedPtr getRenderState();
 
@@ -71,5 +71,12 @@ namespace Falcor
         Program::SharedConstPtr mpProgram;
         RootSignature::SharedConstPtr mpRootSignature;
         PipelineState::Desc mDesc;
+
+        struct CachedData
+        {
+            const ProgramVersion* pProgramVersion = nullptr;
+            bool isUserRootSignature = false;
+        };
+        CachedData mCachedData;
     };
 }
