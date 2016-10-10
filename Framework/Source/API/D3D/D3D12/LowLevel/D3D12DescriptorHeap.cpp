@@ -74,6 +74,8 @@ namespace Falcor
             return nullptr;
         }
 
+        pHeap->mCpuHeapStart = pHeap->mApiHandle->GetCPUDescriptorHandleForHeapStart();
+        pHeap->mGpuHeapStart = pHeap->mApiHandle->GetGPUDescriptorHandleForHeapStart();
         return pHeap;
     }
 
@@ -87,13 +89,13 @@ namespace Falcor
     DescriptorHeap::CpuHandle DescriptorHeap::getCpuHandle(uint32_t index) const
     {
         assert(index < mCurDesc);
-        return getHandleCommon(mApiHandle->GetCPUDescriptorHandleForHeapStart(), index, mDescriptorSize);
+        return getHandleCommon(mCpuHeapStart, index, mDescriptorSize);
     }
 
     DescriptorHeap::GpuHandle DescriptorHeap::getGpuHandle(uint32_t index) const
     {
         assert(index < mCurDesc);
-        return getHandleCommon(mApiHandle->GetGPUDescriptorHandleForHeapStart(), index, mDescriptorSize);
+        return getHandleCommon(mGpuHeapStart, index, mDescriptorSize);
     }
 
     uint32_t DescriptorHeap::allocateHandle()

@@ -74,7 +74,7 @@
 // Graphics
 #include "Graphics/Camera/Camera.h"
 #include "Graphics/Camera/CameraController.h"
-#include "Graphics/RenderStateCache.h"
+#include "Graphics/PipelineStateCache.h"
 #include "Graphics/FullScreenPass.h"
 #include "Graphics/TextureHelper.h"
 #include "Graphics/Light.h"

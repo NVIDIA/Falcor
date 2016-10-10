@@ -132,7 +132,7 @@
     <ClCompile Include="Graphics\Paths\ObjectPath.cpp" />
     <ClCompile Include="Graphics\Paths\PathEditor.cpp" />
     <ClCompile Include="Graphics\Program.cpp" />
-    <ClCompile Include="Graphics\RenderStateCache.cpp" />
+    <ClCompile Include="Graphics\PipelineStateCache.cpp" />
     <ClCompile Include="Graphics\Scene\Scene.cpp" />
     <ClCompile Include="Graphics\Scene\SceneEditor.cpp" />
     <ClCompile Include="Graphics\Scene\SceneExporter.cpp" />
@@ -484,7 +484,7 @@
     <ClInclude Include="Graphics\Paths\ObjectPath.h" />
     <ClInclude Include="Graphics\Paths\PathEditor.h" />
     <ClInclude Include="Graphics\Program.h" />
-    <ClInclude Include="Graphics\RenderStateCache.h" />
+    <ClInclude Include="Graphics\PipelineStateCache.h" />
     <ClInclude Include="Graphics\Scene\Scene.h" />
     <ClInclude Include="Graphics\Scene\SceneEditor.h" />
     <ClInclude Include="Graphics\Scene\SceneExporter.h" />

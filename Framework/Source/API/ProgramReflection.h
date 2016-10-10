@@ -171,12 +171,11 @@ namespace Falcor
                 \param[in] name The name of the buffer as was declared in the program
                 \param[in] registerIndex The register index allocated for the buffer inside the program
                 \param[in] size The size of the buffer
-                \param[in] varCount The number of variables in the buffer
                 \param[in] varMap Map describing each variable in the buffer, excluding resources
                 \param[in] resourceMap Map describing the resources defined as part of the buffer. This map is only valid for APIs that support resource declarations nested inside buffers
                 \return A shared pointer for a new buffer object
             */
-            static SharedPtr create(const std::string& name, uint32_t registerIndex, Type type, size_t size, size_t varCount, const VariableMap& varMap, const ResourceMap& resourceMap);
+            static SharedPtr create(const std::string& name, uint32_t registerIndex, Type type, size_t size, const VariableMap& varMap, const ResourceMap& resourceMap);
 
             /** Get variable data
                 \param[in] name The name of the requested variable
@@ -229,7 +228,7 @@ namespace Falcor
 
             /** Get the variable count
             */
-            size_t getVariableCount() const { return mVariableCount; }
+            size_t getVariableCount() const { return mVariables.size(); }
 
             /** Set a mask indicating in which shader stages the buffer is used
             */
@@ -247,10 +246,9 @@ namespace Falcor
             */
             uint32_t getRegisterSpace() const { return mRegSpace; }
         private:
-            BufferReflection(const std::string& name, uint32_t registerIndex, Type type, size_t size, size_t varCount, const VariableMap& varMap, const ResourceMap& resourceMap);
+            BufferReflection(const std::string& name, uint32_t registerIndex, Type type, size_t size, const VariableMap& varMap, const ResourceMap& resourceMap);
             std::string mName;
             size_t mSizeInBytes = 0;
-            size_t mVariableCount = 0;
             Type mType;
             ResourceMap mResources;
             VariableMap mVariables;

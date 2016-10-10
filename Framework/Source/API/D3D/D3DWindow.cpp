@@ -359,23 +359,20 @@ namespace Falcor
 
     void Window::resize(uint32_t width, uint32_t height)
     {
-        if(mWidth != width || mHeight != height)
-        {
-            // Resize the window
-            RECT r = {0, 0, (LONG)width, (LONG)height};
-            DWORD style = GetWindowLong(mApiHandle, GWL_STYLE);
-            AdjustWindowRect(&r, style, false);
-            mWidth = r.right - r.left;
-            mHeight = r.bottom - r.top;
+        // Resize the window
+        RECT r = { 0, 0, (LONG)width, (LONG)height };
+        DWORD style = GetWindowLong(mApiHandle, GWL_STYLE);
+        AdjustWindowRect(&r, style, false);
+        mWidth = r.right - r.left;
+        mHeight = r.bottom - r.top;
 
-            // The next call will dispatch a WM_SIZE message which will take care of the framebuffer size change
-            d3d_call(SetWindowPos(mApiHandle, nullptr, 0, 0, mWidth, mHeight, SWP_NOACTIVATE | SWP_NOOWNERZORDER | SWP_NOMOVE | SWP_NOZORDER));
+        // The next call will dispatch a WM_SIZE message which will take care of the framebuffer size change
+        d3d_call(SetWindowPos(mApiHandle, nullptr, 0, 0, mWidth, mHeight, SWP_NOACTIVATE | SWP_NOOWNERZORDER | SWP_NOMOVE | SWP_NOZORDER));
 
-			mMouseScale.x = 1 / float(width);
-			mMouseScale.y = 1 / float(height);
+        mMouseScale.x = 1 / float(width);
+        mMouseScale.y = 1 / float(height);
 
-            mpCallbacks->handleWindowSizeChange();
-        }
+        mpCallbacks->handleWindowSizeChange();
     }
 
 	void Window::msgLoop()

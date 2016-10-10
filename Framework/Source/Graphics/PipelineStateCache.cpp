@@ -27,12 +27,12 @@
 ***************************************************************************/
 #pragma once
 #include "Framework.h"
-#include "RenderStateCache.h"
+#include "PipelineStateCache.h"
 
 namespace Falcor
 {
     std::vector<PipelineState::SharedPtr> gStates;
-    PipelineState::SharedPtr RenderStateCache::getRenderState()
+    PipelineState::SharedPtr PipelineStateCache::getRenderState()
     {
         mDesc.setProgramVersion(mpProgram ? mpProgram->getActiveVersion() : nullptr);
         mDesc.setFboFormats(mpFbo ? mpFbo->getDesc() : Fbo::Desc());

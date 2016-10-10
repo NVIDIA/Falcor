@@ -96,31 +96,6 @@ namespace Falcor
         */
         uint32_t getApiHandle() const;
 
-        /** Clear the FBO.\n
-            The function assumes all the color targets are either floating-point or normalized formats, and will ignore any integer targets. If you want to clear an integer-target, use CFramebuffer#ClearColorTarget()
-            \param color Color clear value.
-            \param depth Depth clear value.
-            \param stencil Stencil clear value.
-            \param flags Selects the targets to clear.
-        */
-        void clear(const glm::vec4& color, float depth, int32_t stencil, FboAttachmentType flags) const;
-
-        /** Clear the textures owned by this object.
-            \param[in] rtIndex The render-target index to clear.
-            \param[in] color Clear value.\nUse the vec4 version for floating-point and normalized textures.\nUse the ivec4 version for signed integer textures.\nUse the uvec4 version for unsigned integer textures.
-        */
-        void clearColorTarget(uint32_t rtIndex, const glm::vec4& color) const;
-        void clearColorTarget(uint32_t rtIndex, const glm::ivec4& color) const;
-        void clearColorTarget(uint32_t rtIndex, const glm::uvec4& color) const;
-
-        /** Clear the depth-stencil buffer.\n
-        \param[in] depth Depth clear value
-        \param[in] stencil Stencil clear value
-        \param[in] clearDepth Should the depth component be cleared
-        \param[in] clearStencil Should the stencil component be cleared
-        */
-        void clearDepthStencil(float depth, uint8_t stencil, bool clearDepth, bool clearStencil) const;
-
         /** Capture a buffer in the FBO to a PNG image.\n
         \param[in] rtIndex The render-target index to capture.
         \param[in] filename Name of the PNG file to save.

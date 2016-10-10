@@ -59,6 +59,8 @@ namespace Falcor
     private:
         DescriptorHeap(Type type, uint32_t descriptorsCount);
 
+        CpuHandle mCpuHeapStart = {};
+        GpuHandle mGpuHeapStart = {};
         uint32_t mDescriptorSize;
         uint32_t mCount;
         uint32_t mCurDesc = 0;

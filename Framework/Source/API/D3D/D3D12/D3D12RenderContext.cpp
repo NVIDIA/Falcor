@@ -139,6 +139,7 @@ namespace Falcor
     {
         RenderContextData* pApiData = (RenderContextData*)mpApiData;
         D3D12_VERTEX_BUFFER_VIEW vb[D3D12_IA_VERTEX_INPUT_RESOURCE_SLOT_COUNT] = { };
+        D3D12_INDEX_BUFFER_VIEW ib = {};
 
         const auto pVao = mState.pVao;
         if (pVao)
@@ -154,9 +155,18 @@ namespace Falcor
                     vb[i].StrideInBytes = pVao->getVertexLayout()->getBufferLayout(i)->getStride();
                 }
             }
+
+            const Buffer* pIB = pVao->getIndexBuffer().get();
+            if (pIB)
+            {
+                ib.BufferLocation = pIB->getGpuAddress();
+                ib.SizeInBytes = (uint32_t)pIB->getSize();
+                ib.Format = DXGI_FORMAT_R32_UINT;
+            }
         }
 
         pApiData->pList->IASetVertexBuffers(0, arraysize(vb), vb);
+        pApiData->pList->IASetIndexBuffer(&ib);
     }
 
     void RenderContext::applyFbo()
@@ -211,22 +221,28 @@ namespace Falcor
         }
     }
 
-    void RenderContext::draw(uint32_t vertexCount, uint32_t startVertexLocation)
+    void RenderContext::drawInstanced(uint32_t vertexCount, uint32_t instanceCount, uint32_t startVertexLocation, uint32_t startInstanceLocation)
     {
-        // D3D12 CODE Just call drawInstanced()
         prepareForDraw();
         RenderContextData* pApiData = (RenderContextData*)mpApiData;
-        pApiData->pList->DrawInstanced(vertexCount, 1, startVertexLocation, 0);
+        pApiData->pList->DrawInstanced(vertexCount, instanceCount, startVertexLocation, startInstanceLocation);
     }
 
-    void RenderContext::drawIndexed(uint32_t indexCount, uint32_t startIndexLocation, int baseVertexLocation)
+    void RenderContext::draw(uint32_t vertexCount, uint32_t startVertexLocation)
     {
-        prepareForDraw();
+        drawInstanced(vertexCount, 1, startVertexLocation, 0);
     }
 
     void RenderContext::drawIndexedInstanced(uint32_t indexCount, uint32_t instanceCount, uint32_t startIndexLocation, int baseVertexLocation, uint32_t startInstanceLocation)
     {
         prepareForDraw();
+        RenderContextData* pApiData = (RenderContextData*)mpApiData;
+        pApiData->pList->DrawIndexedInstanced(indexCount, instanceCount, startIndexLocation, baseVertexLocation, startInstanceLocation);
+    }
+
+    void RenderContext::drawIndexed(uint32_t indexCount, uint32_t startIndexLocation, int baseVertexLocation)
+    {
+        drawIndexedInstanced(indexCount, 1, startIndexLocation, baseVertexLocation, 0);
     }
 
     void RenderContext::applyViewport(uint32_t index) const

@@ -55,8 +55,7 @@ private:
     Camera::SharedPtr mpCamera;
     ModelViewCameraController mCameraController;
 
-    DepthStencilState::SharedConstPtr mpDepthTestDS = nullptr;
-    RasterizerState::SharedConstPtr mpBackFaceCullRS = nullptr;
+    PipelineStateCache::SharedPtr mpPsoCache;
     
     struct Light
     {

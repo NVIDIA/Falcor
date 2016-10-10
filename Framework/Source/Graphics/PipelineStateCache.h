@@ -36,22 +36,22 @@
 
 namespace Falcor
 {
-    class RenderStateCache
+    class PipelineStateCache
     {
     public:
-        using SharedPtr = std::shared_ptr<RenderStateCache>;
-        using SharedConstPtr = std::shared_ptr<const RenderStateCache>;
+        using SharedPtr = std::shared_ptr<PipelineStateCache>;
+        using SharedConstPtr = std::shared_ptr<const PipelineStateCache>;
         
-        static SharedPtr create() { return SharedPtr(new RenderStateCache); }
-        RenderStateCache& SetVao(const Vao::SharedConstPtr& pVao) { mpVao = pVao; return *this; }
-        RenderStateCache& setFbo(const Fbo::SharedConstPtr& pFbo) { mpFbo = pFbo; return *this; }
-        RenderStateCache& setProgram(const Program::SharedConstPtr& pProgram) { mpProgram = pProgram; return *this; }
-        RenderStateCache& setBlendState(BlendState::SharedConstPtr pBlendState) { mDesc.setBlendState(pBlendState); return *this; }
-        RenderStateCache& setRasterizerState(RasterizerState::SharedConstPtr pRasterizerState) { mDesc.setRasterizerState(pRasterizerState); return *this; }
-        RenderStateCache& setDepthStencilState(DepthStencilState::SharedConstPtr pDepthStencilState) { mDesc.setDepthStencilState(pDepthStencilState); return *this; }
-        RenderStateCache& setSampleMask(uint32_t sampleMask) { mDesc.setSampleMask(sampleMask); return *this; }
-        RenderStateCache& setPrimitiveType(PipelineState::PrimitiveType type) { mDesc.setPrimitiveType(type); return *this; }
-        RenderStateCache& setRootSignature(RootSignature::SharedConstPtr pSignature) { mpRootSignature = pSignature; }
+        static SharedPtr create() { return SharedPtr(new PipelineStateCache); }
+        PipelineStateCache& SetVao(const Vao::SharedConstPtr& pVao) { mpVao = pVao; return *this; }
+        PipelineStateCache& setFbo(const Fbo::SharedConstPtr& pFbo) { mpFbo = pFbo; return *this; }
+        PipelineStateCache& setProgram(const Program::SharedConstPtr& pProgram) { mpProgram = pProgram; return *this; }
+        PipelineStateCache& setBlendState(BlendState::SharedConstPtr pBlendState) { mDesc.setBlendState(pBlendState); return *this; }
+        PipelineStateCache& setRasterizerState(RasterizerState::SharedConstPtr pRasterizerState) { mDesc.setRasterizerState(pRasterizerState); return *this; }
+        PipelineStateCache& setDepthStencilState(DepthStencilState::SharedConstPtr pDepthStencilState) { mDesc.setDepthStencilState(pDepthStencilState); return *this; }
+        PipelineStateCache& setSampleMask(uint32_t sampleMask) { mDesc.setSampleMask(sampleMask); return *this; }
+        PipelineStateCache& setPrimitiveType(PipelineState::PrimitiveType type) { mDesc.setPrimitiveType(type); return *this; }
+        PipelineStateCache& setRootSignature(RootSignature::SharedConstPtr pSignature) { mpRootSignature = pSignature; }
 
         PipelineState::SharedPtr getRenderState();
 
@@ -65,7 +65,7 @@ namespace Falcor
         uint32_t getSampleMask() const { return mDesc.getSampleMask(); }
         PipelineState::PrimitiveType getPrimitiveType() const { return mDesc.getPrimitiveType(); }
     private:
-        RenderStateCache() = default;
+        PipelineStateCache() = default;
         Vao::SharedConstPtr mpVao;
         Fbo::SharedConstPtr mpFbo;
         Program::SharedConstPtr mpProgram;

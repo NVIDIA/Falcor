@@ -71,7 +71,7 @@ namespace Falcor
         mpVertexBuffer = Buffer::create(vbSize, Buffer::BindFlags::Vertex, Buffer::CpuAccess::Write, nullptr);
 
         // Create the RenderState
-        mpStateCache = RenderStateCache::create();
+        mpStateCache = PipelineStateCache::create();
         Program::SharedPtr pProgram = Program::createFromFile(kVsFile, kFsFile);
         mpStateCache->setProgram(pProgram);
         mpStateCache->SetVao(createVAO(mpVertexBuffer));
@@ -134,7 +134,6 @@ namespace Falcor
         // Update the program variables
         mpProgramVars["PerFrameCB"]->setVariable(mVarOffsets.vpTransform, vpTransform);
         mpProgramVars["PerFrameCB"]->setVariable(mVarOffsets.fontColor, mTextColor);
-        mpProgramVars["PerFrameCB"]->uploadToGPU();
         pRenderContext->setProgramVariables(mpProgramVars);
 
 

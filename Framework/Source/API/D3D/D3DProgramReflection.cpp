@@ -375,7 +375,7 @@ namespace Falcor
                         {
                             // Create the buffer reflection
                             bufferDesc.nameMap[d3dBufDesc.Name] = bindDesc.BindPoint;
-                            bufferDesc.descMap[bindDesc.BindPoint] = ProgramReflection::BufferReflection::create(d3dBufDesc.Name, bindDesc.BindPoint, BufferReflection::Type::Constant, d3dBufDesc.Size, d3dBufDesc.Variables, varMap, ProgramReflection::ResourceMap());
+                            bufferDesc.descMap[bindDesc.BindPoint] = ProgramReflection::BufferReflection::create(d3dBufDesc.Name, bindDesc.BindPoint, BufferReflection::Type::Constant, d3dBufDesc.Size, varMap, ProgramReflection::ResourceMap());
                         }
 
                         // Update the shader mask

@@ -102,6 +102,15 @@ namespace Falcor
             \param[in] startVertexLocation The location of the first vertex to read from the vertex buffers (offset in vertices)
         */
         void draw(uint32_t vertexCount, uint32_t startVertexLocation);
+
+        /** Ordered instanced draw call
+        \param[in] vertexCount Number of vertices to draw
+        \param[in] instanceCount Number of instances to draw
+        \param[in] startVertexLocation The location of the first vertex to read from the vertex buffers (offset in vertices)
+        \param[in] startInstanceLocation A value which is added to each index before reading per-instance data from the vertex buffer
+        */
+        void drawInstanced(uint32_t vertexCount, uint32_t instanceCount, uint32_t startVertexLocation, uint32_t startInstanceLocation);
+
         /** Indexed draw call
             \param[in] indexCount Number of indices to draw
             \param[in] startIndexLocation The location of the first index to read from the index buffer (offset in indices)

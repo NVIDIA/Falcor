@@ -654,8 +654,9 @@ namespace Falcor
         }
 
         VertexLayout::SharedPtr pLayout = createVertexLayout(pAiMesh);
-        if(pLayout)
+        if(pLayout == nullptr)
         {
+            assert(0);
             return nullptr;
         }
 

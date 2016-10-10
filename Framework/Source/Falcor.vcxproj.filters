@@ -170,9 +170,6 @@
     <ClCompile Include="Graphics\Program.cpp">
       <Filter>Graphics</Filter>
     </ClCompile>
-    <ClCompile Include="Graphics\RenderStateCache.cpp">
-      <Filter>Graphics</Filter>
-    </ClCompile>
     <ClCompile Include="VR\VrFbo.cpp">
       <Filter>VR</Filter>
     </ClCompile>
@@ -409,6 +406,9 @@
     </ClCompile>
     <ClCompile Include="API\D3D\D3D12\LowLevel\D3D12ResourceAllocator.cpp">
       <Filter>API\D3D\D3D12\LowLevel</Filter>
+    </ClCompile>
+    <ClCompile Include="Graphics\PipelineStateCache.cpp">
+      <Filter>Graphics</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -1370,9 +1370,6 @@
     <ClInclude Include="Graphics\Program.h">
       <Filter>Graphics</Filter>
     </ClInclude>
-    <ClInclude Include="Graphics\RenderStateCache.h">
-      <Filter>Graphics</Filter>
-    </ClInclude>
     <ClInclude Include="Core\DescriptorTable.h" />
     <ClInclude Include="VR\VrFbo.h">
       <Filter>VR</Filter>
@@ -1496,6 +1493,9 @@
     </ClInclude>
     <ClInclude Include="API\LowLevel\ResourceAllocator.h">
       <Filter>API\LowLevel</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\PipelineStateCache.h">
+      <Filter>Graphics</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

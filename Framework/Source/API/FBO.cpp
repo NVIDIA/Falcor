@@ -223,45 +223,6 @@ namespace Falcor
         return verifyAttachment(mDepthStencil);
     }
 
-    void Fbo::clear(const glm::vec4& color, float depth, int32_t stencil, FboAttachmentType flags) const
-    {
-        if(flags == FboAttachmentType::None)
-        {
-            Logger::log(Logger::Level::Warning, "Hmmmm... you called CFbo::clear() with flags set to zero... Why would you do that?");
-            return;
-        }
-
-        if(!checkStatus())
-            return;
-
-        bool clearDepth = (flags & FboAttachmentType::Depth) != FboAttachmentType::None;
-        bool clearColor = (flags & FboAttachmentType::Color) != FboAttachmentType::None;
-        bool clearStencil = (flags & FboAttachmentType::Stencil) != FboAttachmentType::None;
-
-        if(clearDepth || clearStencil)
-        {
-            if(mDepthStencil.pTexture || mApiHandle == 0)
-            {
-                clearDepthStencil(depth, stencil, clearDepth, clearStencil);
-            }
-            else
-            {
-                Logger::log(Logger::Level::Warning, "CFbo::clear(). Requesting to clear depth-stencil buffer, but the buffer doesn't exist in the FBO. Ignoring call.");
-            }
-        }
-
-        if(clearColor)
-        {
-            for(uint32_t rtIndex = 0; rtIndex < mColorAttachments.size(); rtIndex++)
-            {
-                if(mColorAttachments[rtIndex].pTexture || mApiHandle == 0)
-                {
-                    clearColorTarget(rtIndex, color);
-                }
-            }
-        }
-    }
-
     Texture::SharedConstPtr Fbo::getColorTexture(uint32_t index) const
     {
         if(index >= mColorAttachments.size())

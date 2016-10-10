@@ -481,7 +481,7 @@ namespace Falcor
             mDepthPass.pFbo = FboHelper::create2D(width, height, desc);
         }
 
-        mDepthPass.pFbo->clearDepthStencil(1, 0, true, false);
+        pCtx->clearFbo(mDepthPass.pFbo.get(), glm::vec4(), 1, 0, FboAttachmentType::Depth);
         pCtx->pushFbo(mDepthPass.pFbo);
 
         mpSceneRenderer->setObjectCullState(true);
@@ -549,7 +549,7 @@ namespace Falcor
     void CascadedShadowMaps::setup(RenderContext* pRenderCtx, const Camera* pCamera, const Texture* pDepthBuffer)
     {
         const glm::vec4 clearColor(1);
-        mShadowPass.pFbo->clear(clearColor, 1.0f, 0, FboAttachmentType::All);
+        pRenderCtx->clearFbo(mDepthPass.pFbo.get(), clearColor, 1, 0, FboAttachmentType::All);
 
         // Calc the bounds
         glm::vec2 distanceRange;

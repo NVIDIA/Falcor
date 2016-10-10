@@ -202,24 +202,8 @@ namespace Falcor
         }
         return true;
     }
-    
-    void Fbo::clearColorTarget(uint32_t rtIndex, const glm::vec4& color) const
-    {
-    }
-
-    void Fbo::clearColorTarget(uint32_t rtIndex, const glm::uvec4& color) const
-    {
-    }
-
-    void Fbo::clearColorTarget(uint32_t rtIndex, const glm::ivec4& color) const
-    {
-    }
 
     void Fbo::captureToFile(uint32_t rtIndex, const std::string& filename, Bitmap::FileFormat fileFormat)
-    {
-    }
-
-    void Fbo::clearDepthStencil(float depth, uint8_t stencil, bool clearDepth, bool clearStencil) const
     {
     }
 }

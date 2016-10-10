@@ -31,10 +31,10 @@ void ShaderBuffersSample::initUI()
 {
     Gui::setGlobalHelpMessage("Sample application that shows how to use uniform-buffers");
 
-    mpGui->addDir3FVar("Light Direction", &mLightData.worldDir);
-    mpGui->addRgbColor("Light intensity", &mLightData.intensity);
-    mpGui->addRgbColor("Surface Color", &mSurfaceColor);
-    mpGui->addCheckBox("Count FS invocations", &mCountPixelShaderInvocations);
+//     mpGui->addDir3FVar("Light Direction", &mLightData.worldDir);
+//     mpGui->addRgbColor("Light intensity", &mLightData.intensity);
+//     mpGui->addRgbColor("Surface Color", &mSurfaceColor);
+//     mpGui->addCheckBox("Count FS invocations", &mCountPixelShaderInvocations);
 }
 
 Vao::SharedConstPtr ShaderBuffersSample::getVao()
@@ -77,56 +77,59 @@ void ShaderBuffersSample::onLoad()
     mCameraController.setModelParams(center, radius, radius * 10);
 
     // create the uniform buffers
-    mpProgramVars = ProgramVars::create(mpProgram->getActiveVersion().get());
+    mpProgramVars = ProgramVars::create(mpProgram->getActiveVersion()->getReflector());
 
-    // create rasterizer state
+    // create pipeline cache
+    mpPsoCache = PipelineStateCache::create();
     RasterizerState::Desc rsDesc;
     rsDesc.setCullMode(RasterizerState::CullMode::Back);
-    mpBackFaceCullRS = RasterizerState::create(rsDesc);
+    mpPsoCache->setRasterizerState(RasterizerState::create(rsDesc));
 
     // Depth test
     DepthStencilState::Desc dsDesc;
     dsDesc.setDepthTest(true);
-    mpDepthTestDS = DepthStencilState::create(dsDesc);
-
+    mpPsoCache->setDepthStencilState(DepthStencilState::create(dsDesc));
+    mpPsoCache->setFbo(mpDefaultFBO);
+    mpPsoCache->SetVao(mpVao);
+    mpPsoCache->setPrimitiveType(PipelineState::PrimitiveType::Triangle);
+    mpPsoCache->setProgram(mpProgram);
 }
 
 void ShaderBuffersSample::onFrameRender()
 {
     const glm::vec4 clearColor(0.38f, 0.52f, 0.10f, 1);
-    mpDefaultFBO->clear(clearColor, 1.0f, 0, FboAttachmentType::All);
+    mpRenderContext->clearFbo(mpDefaultFBO.get(), clearColor, 1.0f, 0, FboAttachmentType::All);
 
-    mpRenderContext->setDepthStencilState(mpDepthTestDS, 0);
-    mpRenderContext->setRasterizerState(mpBackFaceCullRS);
+    mpRenderContext->setPipelineState(mpPsoCache->getRenderState());
 
     mCameraController.update();
 
     // Update uniform-buffers data
     mpProgramVars["PerFrameCB"]["m.worldMat"] = glm::mat4();
-    mpProgramVars["PerFrameCB"]["m.wvpMat"] = mpCamera->getProjMatrix() * mpCamera->getViewMatrix();
+    glm::mat4 wvp = mpCamera->getViewProjMatrix();
+    mpProgramVars["PerFrameCB"]["m.wvpMat"] = wvp;
     mpProgramVars["PerFrameCB"]["surfaceColor"] = mSurfaceColor;
 
     mpProgramVars["LightCB"]["worldDir"] = mLightData.worldDir;
     mpProgramVars["LightCB"]["intensity"] = mLightData.intensity;
     
     // Set uniform buffers
-    mpRenderContext->setProgram(mpProgram->getActiveVersion());
-    mpProgramVars->setIntoContext(mpRenderContext.get());
+    mpRenderContext->setProgramVariables(mpProgramVars);
 
     mpRenderContext->setVao(mpVao);
     mpRenderContext->setTopology(RenderContext::Topology::TriangleList);
     mpRenderContext->drawIndexed(mIndexCount, 0, 0);
 
-    std::string Txt = getGlobalSampleMessage(true) + '\n';
+     std::string msg = getGlobalSampleMessage(true) + '\n';
     if(mCountPixelShaderInvocations)
     {
-#ifndef FALCOR_D3D11
+#ifndef FALCOR_D3D
         uint32_t FsInvocations = mpProgramVars->getShaderStorageBuffer("PixelCount")["count"];
         Txt += "FS was invoked " + std::to_string(FsInvocations) + " times.";
         mpProgramVars->getShaderStorageBuffer("PixelCount")["count"] = 0U;
 #endif
     }
-    renderText(Txt, glm::vec2(10, 10));
+    renderText(msg, glm::vec2(10, 10));
 }
 
 void ShaderBuffersSample::onShutdown()
