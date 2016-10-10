@@ -57,7 +57,7 @@ namespace Falcor
             uint32_t getSampleCount() const { return mSampleCount; }
         private:
             std::vector<ResourceFormat> mColorFormats;
-            ResourceFormat mDepthStencilFormat;
+            ResourceFormat mDepthStencilFormat = ResourceFormat::Unknown;
             uint32_t mSampleCount = 1;
             uint32_t mRtCount = 0;
         };

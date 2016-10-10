@@ -194,7 +194,15 @@ namespace Falcor
 
         if (pRes == nullptr)
         {
-            logError("Can't find resource '" + name + "in program");
+            // Check if this is the internal struct
+#ifdef FALCOR_D3D
+            const auto& it = mResources.find(name + ".t");
+            pRes = (it == mResources.end()) ? nullptr : &(it->second);
+#endif
+            if(pRes == nullptr)
+            {
+                logError("Can't find resource '" + name + "' in program");
+            }
         }
         return pRes;
     }

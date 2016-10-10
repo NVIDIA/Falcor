@@ -35,10 +35,10 @@ void GUI_CALL MultiPassPostProcess::loadImageCallback(void* pUserData)
 
 void MultiPassPostProcess::initUI()
 {
-    Gui::setGlobalHelpMessage("Sample application to load and display a model.\nUse the UI to switch between wireframe and solid mode.");
-    mpGui->addButton("Load Image", &MultiPassPostProcess::loadImageCallback, this);
-    mpGui->addCheckBox("Radial Blur", &mEnableRadialBlur);
-    mpGui->addCheckBox("Grayscale", &mEnableGrayscale);
+//     Gui::setGlobalHelpMessage("Sample application to load and display a model.\nUse the UI to switch between wireframe and solid mode.");
+//     mpGui->addButton("Load Image", &MultiPassPostProcess::loadImageCallback, this);
+//     mpGui->addCheckBox("Radial Blur", &mEnableRadialBlur);
+//     mpGui->addCheckBox("Grayscale", &mEnableGrayscale);
 }
 
 void MultiPassPostProcess::onLoad()
@@ -57,30 +57,30 @@ void MultiPassPostProcess::loadImage()
         auto fboFormat = mpDefaultFBO->getColorTexture(0)->getFormat();
         mpImage = createTextureFromFile(filename, false, isSrgbFormat(fboFormat));
         ResourceFormat imageFormat = mpImage->getFormat();
-        mpTempFB = FboHelper::create2D(mpImage->getWidth(), mpImage->getHeight(), &imageFormat);
+        Fbo::Desc fboDesc;
+        fboDesc.setColorFormat(0, mpImage->getFormat());
+        mpTempFB = FboHelper::create2D(mpImage->getWidth(), mpImage->getHeight(), fboDesc);
 
         resizeSwapChain(mpImage->getWidth(), mpImage->getHeight());
+        mpProgVars[0] = ProgramVars::create(mpBlit->getProgram()->getActiveVersion()->getReflector());
+        mpProgVars[0]->setTexture("gTexture", mpImage);
 
-        mpFirstPassCB = UniformBuffer::create(mpBlit->getProgram(), "PerImageCB");
-        mpFirstPassCB->setTexture("gTexture", mpImage.get(), nullptr);
-
-        mpSecondPassCB = UniformBuffer::create(mpLuminance->getProgram(), "PerImageCB");
-        mpSecondPassCB->setTexture("gTexture", mpTempFB->getColorTexture(0).get(), nullptr);
+        mpProgVars[1] = ProgramVars::create(mpLuminance->getProgram()->getActiveVersion()->getReflector());
+        mpProgVars[1]->setTexture("gTexture", mpTempFB->getColorTexture(0));
     }
 }
 
 void MultiPassPostProcess::onFrameRender()
 {
     const glm::vec4 clearColor(0.38f, 0.52f, 0.10f, 1);
-
-    mpDefaultFBO->clear(clearColor, 1.0f, 0, FboAttachmentType::Color);
+    mpRenderContext->clearFbo(mpDefaultFBO.get(), clearColor, 0, 0, FboAttachmentType::Color);
 
     if(mpImage)
     {
         // Grayscale is only with radial blur
         mEnableGrayscale = mEnableRadialBlur && mEnableGrayscale;
 
-        mpRenderContext->setUniformBuffer(0, mpFirstPassCB);
+        mpRenderContext->setProgramVariables(mpProgVars[0]);
 
         if(mEnableRadialBlur)
         {
@@ -88,7 +88,7 @@ void MultiPassPostProcess::onFrameRender()
             mpRadialBlur->execute(mpRenderContext.get());
             mpRenderContext->popFbo();
 
-            mpRenderContext->setUniformBuffer(0, mpSecondPassCB);
+            mpRenderContext->setProgramVariables(mpProgVars[1]);
             const FullScreenPass* pFinalPass = mEnableGrayscale ? mpLuminance.get() : mpBlit.get();
             pFinalPass->execute(mpRenderContext.get());
         }
@@ -103,6 +103,26 @@ void MultiPassPostProcess::onFrameRender()
 
 void MultiPassPostProcess::onShutdown()
 {
+}
+
+bool MultiPassPostProcess::onKeyEvent(const KeyboardEvent& keyEvent)
+{
+    if (keyEvent.type == KeyboardEvent::Type::KeyPressed)
+    {
+        switch (keyEvent.key)
+        {
+        case KeyboardEvent::Key::L:
+            loadImage();
+            return true;
+        case KeyboardEvent::Key::G:
+            mEnableGrayscale = true;
+            return true;
+        case KeyboardEvent::Key::R:
+            mEnableRadialBlur = true;
+            return true;
+        }
+    }
+    return false;
 }
 
 void MultiPassPostProcess::onResizeSwapChain()

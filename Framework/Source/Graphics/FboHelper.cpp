@@ -66,11 +66,12 @@ namespace Falcor
         {
             if (format == ResourceFormat::Unknown)
             {
+                logError("Can't create Texture2D with an unknown resource format");
                 return nullptr;
             }
 
             Texture::SharedPtr pTex;
-            if (sampleCount > 0)
+            if (sampleCount > 1)
             {
                 pTex = Texture::create2DMS(w, h, format, sampleCount, arraySize);
             }
@@ -95,12 +96,18 @@ namespace Falcor
             // create the color targets
             for(uint32_t i = 0; i < Fbo::getMaxColorTargetCount(); i++)
             {
-                Texture::SharedPtr pTex = createTexture2D(width, height, fboDesc.getColorFormat(i), sampleCount, arraySize, mipLevels);
-                pFbo->attachColorTarget(pTex, i, 0, Fbo::kAttachEntireMipLevel);
+                if(fboDesc.getColorFormat(i) != ResourceFormat::Unknown)
+                {
+                    Texture::SharedPtr pTex = createTexture2D(width, height, fboDesc.getColorFormat(i), sampleCount, arraySize, mipLevels);
+                    pFbo->attachColorTarget(pTex, i, 0, Fbo::kAttachEntireMipLevel);
+                }
             }
 
-            Texture::SharedPtr pDepth = createTexture2D(width, height, fboDesc.getDepthStencilFormat(), sampleCount, arraySize, mipLevels);
-            pFbo->attachDepthStencilTarget(pDepth, 0, Fbo::kAttachEntireMipLevel);
+            if(fboDesc.getDepthStencilFormat() != ResourceFormat::Unknown)
+            {
+                Texture::SharedPtr pDepth = createTexture2D(width, height, fboDesc.getDepthStencilFormat(), sampleCount, arraySize, mipLevels);
+                pFbo->attachDepthStencilTarget(pDepth, 0, Fbo::kAttachEntireMipLevel);
+            }
 
             return pFbo;
         }

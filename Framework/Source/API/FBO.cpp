@@ -155,7 +155,7 @@ namespace Falcor
             mColorAttachments[rtIndex].mipLevel = mipLevel;
             mColorAttachments[rtIndex].arraySlice = arraySlice;
 
-           mDesc.setColorFormat(rtIndex, pTexture ? pTexture->getFormat() : ResourceFormat::Unknown);
+            mDesc.setColorFormat(rtIndex, pTexture ? pTexture->getFormat() : ResourceFormat::Unknown);
             applyColorAttachment(rtIndex);
         }
     }

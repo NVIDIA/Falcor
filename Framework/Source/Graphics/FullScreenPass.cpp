@@ -80,6 +80,8 @@ namespace Falcor
 
     void FullScreenPass::init(const std::string& fragmentShaderFile, const Program::DefineList& programDefines, bool disableDepth, bool disableStencil, uint32_t viewportMask)
     {
+        mpPipelineStateCache = PipelineStateCache::create();
+
         // create depth stencil state
         DepthStencilState::Desc dsDesc;
         dsDesc.setDepthTest(!disableDepth);
@@ -87,7 +89,7 @@ namespace Falcor
         dsDesc.setDepthFunc(DepthStencilState::Func::LessEqual);    // Equal is needed to allow overdraw when z is enabled (e.g., background pass etc.)
         dsDesc.setStencilTest(!disableStencil);
         dsDesc.setStencilWriteMask(!disableStencil);
-        mpDepthStencilState = DepthStencilState::create(dsDesc);
+        mpPipelineStateCache->setDepthStencilState(DepthStencilState::create(dsDesc));
 
         Program::DefineList defs = programDefines;
         std::string gs;
@@ -108,6 +110,7 @@ namespace Falcor
 
         const std::string vs("Framework\\FullScreenPass.vs");
         mpProgram = Program::createFromFile(vs, fragmentShaderFile, gs, "", "", defs);
+        mpPipelineStateCache->setProgram(mpProgram);
 
         if (FullScreenPass::spVertexBuffer == nullptr)
         {
@@ -125,14 +128,18 @@ namespace Falcor
             Vao::BufferVec buffers{ spVertexBuffer };
             FullScreenPass::spVao = Vao::create(buffers, nullptr, pLayout);
         }
+        mpPipelineStateCache->SetVao(FullScreenPass::spVao);
+        mpPipelineStateCache->setPrimitiveType(PipelineState::PrimitiveType::Triangle);
     }
 
     void FullScreenPass::execute(RenderContext* pRenderContext, bool overrideDepthStencil) const
     {
+        mpPipelineStateCache->setFbo(pRenderContext->getFbo());
+        pRenderContext->setPipelineState(mpPipelineStateCache->getPSO());
         pRenderContext->setVao(spVao);
+
         // DISABLED_FOR_D3D12
-//         pRenderContext->setProgram(mpProgram->getActiveProgramVersion());
-//         if (overrideDepthStencil) pRenderContext->setDepthStencilState(mpDepthStencilState, 0);
+//        if (overrideDepthStencil) pRenderContext->setDepthStencilState(mpDepthStencilState, 0);
         pRenderContext->setTopology(RenderContext::Topology::TriangleStrip);
         pRenderContext->draw(arraysize(kVertices), 0);
     }

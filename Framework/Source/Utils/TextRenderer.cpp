@@ -118,7 +118,7 @@ namespace Falcor
 
         // Set the current FBO into the render state
         mpStateCache->setFbo(pRenderContext->getFbo());
-        mpRenderContext->setPipelineState(mpStateCache->getRenderState());
+        mpRenderContext->setPipelineState(mpStateCache->getPSO());
         pRenderContext->setTopology(RenderContext::Topology::TriangleList);
 
         // Get the current viewport

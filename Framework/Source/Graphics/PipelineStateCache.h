@@ -53,7 +53,7 @@ namespace Falcor
         PipelineStateCache& setPrimitiveType(PipelineState::PrimitiveType type) { mDesc.setPrimitiveType(type); return *this; }
         PipelineStateCache& setRootSignature(RootSignature::SharedConstPtr pSignature) { mpRootSignature = pSignature; mCachedData.isUserRootSignature = (mpRootSignature == nullptr); }
 
-        PipelineState::SharedPtr getRenderState();
+        PipelineState::SharedPtr getPSO();
 
         RootSignature::SharedConstPtr getRootSignature() const { return mpRootSignature; }
         Vao::SharedConstPtr getVao() const { return mpVao; }

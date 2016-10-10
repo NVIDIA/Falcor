@@ -33,6 +33,7 @@
 #include "API/DepthStencilState.h"
 #include "API/Buffer.h"
 #include "API/ProgramVersion.h"
+#include "Graphics/PipelineStateCache.h"
 
 namespace Falcor
 {
@@ -72,8 +73,7 @@ namespace Falcor
 
     private:
         Program::SharedPtr mpProgram;
-        DepthStencilState::SharedPtr mpDepthStencilState;
-
+        PipelineStateCache::SharedPtr mpPipelineStateCache;
         // Static
         static Buffer::SharedPtr spVertexBuffer;
         static Vao::SharedPtr    spVao;

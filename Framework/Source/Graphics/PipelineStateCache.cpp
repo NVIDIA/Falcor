@@ -32,7 +32,7 @@
 namespace Falcor
 {
     std::vector<PipelineState::SharedPtr> gStates;
-    PipelineState::SharedPtr PipelineStateCache::getRenderState()
+    PipelineState::SharedPtr PipelineStateCache::getPSO()
     {
         // Check if we need to create a root-signature
         // FIXME Is this the correct place for this?

@@ -37,6 +37,7 @@ public:
     void onFrameRender() override;
     void onShutdown() override;
     void onResizeSwapChain() override;
+    bool onKeyEvent(const KeyboardEvent& keyEvent) override;
 
 private:
     void initUI();
@@ -47,8 +48,7 @@ private:
     FullScreenPass::UniquePtr mpLuminance;
     FullScreenPass::UniquePtr mpRadialBlur;
     FullScreenPass::UniquePtr mpBlit;
-    UniformBuffer::SharedPtr mpFirstPassCB;
-    UniformBuffer::SharedPtr mpSecondPassCB;
+    ProgramVars::SharedPtr mpProgVars[2];
 
     bool mEnableRadialBlur = false;
     bool mEnableGrayscale = false;
