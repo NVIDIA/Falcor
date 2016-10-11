@@ -27,6 +27,9 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\Externals\dear_imgui\imgui.cpp" />
+    <ClCompile Include="..\Externals\dear_imgui\imgui_demo.cpp" />
+    <ClCompile Include="..\Externals\dear_imgui\imgui_draw.cpp" />
     <ClCompile Include="API\BlendState.cpp" />
     <ClCompile Include="API\D3D\D3D11\D3D11BlendState.cpp" />
     <ClCompile Include="API\D3D\D3D11\D3D11Buffer.cpp" />
@@ -166,7 +169,6 @@
     <ClCompile Include="VR\VrFbo.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\Externals\AntTweakBar\include\AntTweakBar.h" />
     <ClInclude Include="..\..\Externals\FreeImage\FreeImage.h" />
     <ClInclude Include="..\..\Externals\GLFW\include\glfw3.h" />
     <ClInclude Include="..\..\Externals\GLFW\include\glfw3native.h" />
@@ -312,6 +314,12 @@
     <ClInclude Include="..\..\Externals\GLM\glm\vec3.hpp" />
     <ClInclude Include="..\..\Externals\GLM\glm\vec4.hpp" />
     <ClInclude Include="..\..\Externals\GLM\glm\vector_relational.hpp" />
+    <ClInclude Include="..\Externals\dear_imgui\imconfig.h" />
+    <ClInclude Include="..\Externals\dear_imgui\imgui.h" />
+    <ClInclude Include="..\Externals\dear_imgui\imgui_internal.h" />
+    <ClInclude Include="..\Externals\dear_imgui\stb_rect_pack.h" />
+    <ClInclude Include="..\Externals\dear_imgui\stb_textedit.h" />
+    <ClInclude Include="..\Externals\dear_imgui\stb_truetype.h" />
     <ClInclude Include="..\Externals\FFMpeg\include\libavcodec\avcodec.h" />
     <ClInclude Include="..\Externals\FFMpeg\include\libavcodec\avfft.h" />
     <ClInclude Include="..\Externals\FFMpeg\include\libavcodec\dv_profile.h" />

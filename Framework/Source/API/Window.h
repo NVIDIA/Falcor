@@ -36,6 +36,7 @@ namespace Falcor
     public:
         using SharedPtr = std::shared_ptr<Window>;
         using SharedConstPtr = std::shared_ptr<const Window>;
+        using ApiHandle = WindowHandle;
 
 		/** Window configuration configuration
 		*/
@@ -95,7 +96,7 @@ namespace Falcor
 
 		/** Get the native window handle
 		*/
-		WindowHandle getApiHandle() const { return mApiHandle; }
+        ApiHandle getApiHandle() const { return mApiHandle; }
 
 		/** Get the width of the window's client area
 		*/
@@ -108,7 +109,7 @@ namespace Falcor
         friend class ApiCallbacks;
 		Window(ICallbacks * pCallbacks, uint32_t width, uint32_t height);        
 
-		WindowHandle mApiHandle;
+        ApiHandle mApiHandle;
 		uint32_t mWidth;
 		uint32_t mHeight;
         glm::vec2 mMouseScale;

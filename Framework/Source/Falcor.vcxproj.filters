@@ -410,12 +410,18 @@
     <ClCompile Include="Graphics\PipelineStateCache.cpp">
       <Filter>Graphics</Filter>
     </ClCompile>
+    <ClCompile Include="..\Externals\dear_imgui\imgui.cpp">
+      <Filter>Externals\dear_imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Externals\dear_imgui\imgui_demo.cpp">
+      <Filter>Externals\dear_imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Externals\dear_imgui\imgui_draw.cpp">
+      <Filter>Externals\dear_imgui</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Sample.h" />
-    <ClInclude Include="..\..\Externals\AntTweakBar\include\AntTweakBar.h">
-      <Filter>Externals\AntTweakBar</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\Externals\GLFW\include\glfw3.h">
       <Filter>Externals\GLFW</Filter>
     </ClInclude>
@@ -1497,13 +1503,28 @@
     <ClInclude Include="Graphics\PipelineStateCache.h">
       <Filter>Graphics</Filter>
     </ClInclude>
+    <ClInclude Include="..\Externals\dear_imgui\stb_truetype.h">
+      <Filter>Externals\dear_imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Externals\dear_imgui\imconfig.h">
+      <Filter>Externals\dear_imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Externals\dear_imgui\imgui.h">
+      <Filter>Externals\dear_imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Externals\dear_imgui\imgui_internal.h">
+      <Filter>Externals\dear_imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Externals\dear_imgui\stb_rect_pack.h">
+      <Filter>Externals\dear_imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Externals\dear_imgui\stb_textedit.h">
+      <Filter>Externals\dear_imgui</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Externals">
       <UniqueIdentifier>{91055aa0-2e25-4507-816e-5b43817cef35}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Externals\AntTweakBar">
-      <UniqueIdentifier>{1a398732-6e00-4f0d-87af-d424744952c1}</UniqueIdentifier>
     </Filter>
     <Filter Include="Externals\GLFW">
       <UniqueIdentifier>{be02830e-afa2-487f-9c2e-5d8096bbba61}</UniqueIdentifier>
@@ -1639,6 +1660,9 @@
     </Filter>
     <Filter Include="API\D3D\D3D12\LowLevel">
       <UniqueIdentifier>{95cd469b-4af1-4e96-b133-8d553ad215a8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Externals\dear_imgui">
+      <UniqueIdentifier>{fd48defe-6e2a-4ea0-a9e0-b7a8b7cbe222}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>

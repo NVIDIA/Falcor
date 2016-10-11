@@ -76,7 +76,7 @@ namespace Falcor
         
         /** Use this enum to find out which key was pressed. Alpha-numeric keys use their uppercase ASCII code, so you can use that as well.
         */
-        enum class Key
+        enum class Key : uint32_t
         {
             // ASCII values. Do not change them.
             Space           = ' ',
