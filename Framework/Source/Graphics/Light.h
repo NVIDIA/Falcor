@@ -355,7 +355,7 @@ namespace Falcor
 
 			\param[in] indexId buffer id for indices
 		*/
-		void setIndexBuffer(Buffer::SharedConstPtr& indexBuf) { mIndexBuf = indexBuf; }
+		void setIndexBuffer(const Buffer::SharedConstPtr& indexBuf) { mIndexBuf = indexBuf; }
 
 		/**
 		    Get buffer id for indices

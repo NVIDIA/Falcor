@@ -30,7 +30,6 @@
 
 void ProjectTemplate::initUI()
 {
-    Gui::setGlobalHelpMessage("Sample application to load and display a model.\nUse the UI to switch between wireframe and solid mode.");
 }
 
 void ProjectTemplate::onLoad()
@@ -43,7 +42,7 @@ void ProjectTemplate::onFrameRender()
 {
 	const glm::vec4 clearColor(0.38f, 0.52f, 0.10f, 1);
  	mpRenderContext->clearFbo(mpDefaultFBO.get(), clearColor, 1.0f, 0, FboAttachmentType::All);
-    renderText(getGlobalSampleMessage(true), glm::vec2(10, 10));
+//    renderText(getGlobalSampleMessage(true), glm::vec2(10, 10));
 }
 
 void ProjectTemplate::onShutdown()

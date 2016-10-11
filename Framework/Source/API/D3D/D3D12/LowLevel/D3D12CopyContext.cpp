@@ -227,7 +227,7 @@ namespace Falcor
             pApiData->pCmdList->CopyTextureRegion(&dstLoc, 0, 0, 0, &srcLoc, nullptr);
         }
 
-        uploadDesc.pResource->Unmap(0, nullptr);
+        pBuffer->unmap();
 
         if (submit)
         {

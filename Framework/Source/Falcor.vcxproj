@@ -662,6 +662,8 @@
     <None Include="Data\Effects\ToneMapping.fs" />
     <None Include="Data\Framework\FullScreenPass.gs" />
     <None Include="Data\Framework\FullScreenPass.vs" />
+    <None Include="Data\Framework\Gui.ps" />
+    <None Include="Data\Framework\Gui.vs" />
     <None Include="Data\Framework\ParallelReduction.fs" />
     <None Include="Data\Framework\TextRenderer.fs" />
     <None Include="Data\Framework\TextRenderer.vs" />

@@ -49,10 +49,12 @@ namespace Falcor
 
         using BufferVec = std::vector<Buffer::SharedPtr>;
         /** create a new object
-            \param vbDesc Array of pointers to vertex buffer descriptor. Must have at least 1 element
+            \param pVBs Array of pointers to vertex buffers. Must have at least 1 element
+            \param pLayout The vertex layout description
             \param pIB Pointer to the index-buffer. Can be nullptr, in which case no index-buffer will be bound.
+            \param ibFormat The resource format of the index buffer. Can be either R16Uint or R32Uint
         */
-        static SharedPtr create(const BufferVec& pVBs, const Buffer::SharedPtr& pIB, const VertexLayout::SharedPtr& pLayout);
+        static SharedPtr create(const BufferVec& pVBs, const VertexLayout::SharedPtr& pLayout, const Buffer::SharedPtr& pIB, ResourceFormat ibFormat);
         ~Vao();
 
         /** Get the API handle
@@ -65,7 +67,7 @@ namespace Falcor
 
         /** Get a vertex buffer
         */
-        Buffer::SharedConstPtr getVertexBuffer(uint32_t index) const { return mpVBs[index]; }
+        Buffer::SharedPtr getVertexBuffer(uint32_t index) const { return mpVBs[index]; }
 
         /** Get a vertex buffer layout
         */
@@ -78,20 +80,24 @@ namespace Falcor
 
         /** Get the index buffer
         */
-        Buffer::SharedConstPtr getIndexBuffer() const { return mpIB; }
+        Buffer::SharedPtr getIndexBuffer() const { return mpIB; }
 
+        /** Get the index buffer format
+        */
+        ResourceFormat getIndexBufferFormat() const { return mIbFormat; }
     protected:
         friend class RenderContext;
 #ifdef FALCOR_D3D11
         ID3D11InputLayoutPtr getInputLayout(ID3DBlob* pVsBlob) const;
 #endif
     private:
-        Vao(const BufferVec& pVBs, const Buffer::SharedPtr& pIB, const VertexLayout::SharedPtr& pLayout);
+        Vao(const BufferVec& pVBs, const VertexLayout::SharedPtr& pLayout, const Buffer::SharedPtr& pIB, ResourceFormat ibFormat);
         bool initialize();
         VaoHandle mApiHandle;
         VertexLayout::SharedPtr mpVertexLayout;
         BufferVec mpVBs;
-        Buffer::SharedConstPtr mpIB;
+        Buffer::SharedPtr mpIB;
         void* mpPrivateData = nullptr;
+        ResourceFormat mIbFormat;
     };
 }

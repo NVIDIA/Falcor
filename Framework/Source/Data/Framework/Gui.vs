@@ -25,52 +25,32 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#include "Framework.h"
-#include "API/ProgramVersion.h"
-#include "Graphics/Material/MaterialSystem.h"
 
-namespace Falcor
+cbuffer PerFrameCB : register(b0)
 {
-    ProgramVersion::ProgramVersion(const Shader::SharedPtr& pVS, const Shader::SharedPtr& pFS, const Shader::SharedPtr& pGS, const Shader::SharedPtr& pHS, const Shader::SharedPtr& pDS, const std::string& name) : mName(name)
-    {
-        mpShaders[(uint32_t)ShaderType::Vertex] = pVS;
-        mpShaders[(uint32_t)ShaderType::Pixel] = pFS;
-        mpShaders[(uint32_t)ShaderType::Geometry] = pGS;
-        mpShaders[(uint32_t)ShaderType::Domain] = pDS;
-        mpShaders[(uint32_t)ShaderType::Hull] = pHS;
-    }
+    float4x4 projMat;
+    float3 textColor;
+};
 
-    ProgramVersion::SharedConstPtr ProgramVersion::create(const Shader::SharedPtr& pVS,
-        const Shader::SharedPtr& pFS,
-        const Shader::SharedPtr& pGS,
-        const Shader::SharedPtr& pHS,
-        const Shader::SharedPtr& pDS,
-        std::string& log,
-        const std::string& name)
-    {
-        // We must have at least a VS.
-        if(pVS == nullptr)
-        {
-            log = "Program " + name + " doesn't contain a vertex-shader. This is illegal.";
-            return nullptr;
-        }
-        SharedPtr pProgram = SharedPtr(new ProgramVersion(pVS, pFS, pGS, pHS, pDS, name));
+struct VsIn
+{
+    float2 pos : POSITION;
+    float4 color : COLOR;
+    float2 texC : TEXCOORD0;
+};
 
-        if(pProgram->apiInit(log, name) == false)
-        {
-            return nullptr;
-        }
-        pProgram->mpReflector = ProgramReflection::create(pProgram.get(), log);
-        if (pProgram->mpReflector == nullptr)
-        {
-            return nullptr;
-        }
-        return pProgram;
-    }
+struct VsOut
+{
+    float4 color : COLOR;
+    float2 texC : TEXCOORD0;
+    float4 pos : SV_POSITION;
+};
 
-    ProgramVersion::~ProgramVersion()
-    {
-        MaterialSystem::removeProgramVersion(this);
-        deleteApiHandle();
-    }
+VsOut main(VsIn vIn)
+{
+    VsOut vOut;
+    vOut.color = vIn.color;
+    vOut.texC = vIn.texC;
+    vOut.pos = mul(projMat, float4(vIn.pos, 0, 1));
+    return vOut;
 }

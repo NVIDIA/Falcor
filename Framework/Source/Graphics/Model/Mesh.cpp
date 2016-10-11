@@ -89,7 +89,7 @@ namespace Falcor
         mBoundingBox = boundingBox;
         mHasBones = hasBones;
 
-        mpVao = Vao::create(vertexBuffers, pIndexBuffer, pLayout);
+        mpVao = Vao::create(vertexBuffers, pLayout, pIndexBuffer, ResourceFormat::R32Uint);
     }
 
     void Mesh::applyTransform(const glm::mat4& Transform) 

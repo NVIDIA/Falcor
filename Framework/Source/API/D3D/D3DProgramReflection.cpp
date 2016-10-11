@@ -194,6 +194,10 @@ namespace Falcor
 
     size_t calcStructSize(const ProgramReflection::VariableMap& varMap)
     {
+        if (varMap.size() == 0)
+        {
+            return 0;
+        }
         size_t maxOffset = 0;
         ProgramReflection::Variable::Type type = varMap.begin()->second.type;
 
@@ -205,11 +209,8 @@ namespace Falcor
                 type = a.second.type;
             }
         }
-        if (maxOffset > 0)
-        {
-            maxOffset += getRowCountFromType(type) * 16;
-            maxOffset = maxOffset & ~0xF;   // Is this true for all APIs? I encountered it while working on D3D12
-        }
+        maxOffset += getRowCountFromType(type) * 16;
+        maxOffset = maxOffset & ~0xF;   // Is this true for all APIs? I encountered it while working on D3D12
         return maxOffset;
     }
 

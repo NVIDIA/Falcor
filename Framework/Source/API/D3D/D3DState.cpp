@@ -254,6 +254,8 @@ namespace Falcor
     {
         switch (func)
         {
+        case FalcorType::Disabled:
+            return D3D_CMP_FUNC(ALWAYS);
         case FalcorType::Never:
             return D3D_CMP_FUNC(NEVER);
         case FalcorType::Always:
@@ -387,7 +389,7 @@ namespace Falcor
     template<typename D3DType>
     static void initD3DSamplerDescCommon(const Sampler* pSampler, D3DType& desc)
     {
-        desc.Filter = getD3DFilter(pSampler->getMinFilter(), pSampler->getMagFilter(), pSampler->getMipFilter(), (pSampler->getComparisonMode() != Sampler::ComparisonMode::NoComparison), (pSampler->getMaxAnisotropy() > 1));
+        desc.Filter = getD3DFilter(pSampler->getMinFilter(), pSampler->getMagFilter(), pSampler->getMipFilter(), (pSampler->getComparisonMode() != Sampler::ComparisonMode::Disabled), (pSampler->getMaxAnisotropy() > 1));
         desc.AddressU = getD3DAddressMode(pSampler->getAddressModeU());
         desc.AddressV = getD3DAddressMode(pSampler->getAddressModeV());
         desc.AddressW = getD3DAddressMode(pSampler->getAddressModeW());

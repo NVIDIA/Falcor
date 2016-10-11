@@ -161,7 +161,7 @@ namespace Falcor
             {
                 ib.BufferLocation = pIB->getGpuAddress();
                 ib.SizeInBytes = (uint32_t)pIB->getSize();
-                ib.Format = DXGI_FORMAT_R32_UINT;
+                ib.Format = getDxgiFormat(pVao->getIndexBufferFormat());
             }
         }
 

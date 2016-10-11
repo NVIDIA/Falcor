@@ -164,9 +164,10 @@ namespace Falcor
 
     void DirectionalLight::setUiElements(Gui* pGui, const std::string& uiGroup)
     {
-        pGui->addDir3FVarWithCallback("Direction", &DirectionalLight::setDirectionCB, &DirectionalLight::getDirectionCB, this, uiGroup);
-        pGui->addRgbColorWithCallback("Color",     SetColorCB,     GetColorCB,     this, uiGroup);
-        pGui->addFloatVarWithCallback("Intensity", SetIntensityCB, GetIntensityCB, this, uiGroup, 0.0f, 1e15f, 0.1f);
+        // FIX_GUI
+//         pGui->addDir3FVarWithCallback("Direction", &DirectionalLight::setDirectionCB, &DirectionalLight::getDirectionCB, this, uiGroup);
+//         pGui->addRgbColorWithCallback("Color",     SetColorCB,     GetColorCB,     this, uiGroup);
+//         pGui->addFloatVarWithCallback("Intensity", SetIntensityCB, GetIntensityCB, this, uiGroup, 0.0f, 1e15f, 0.1f);
     }
 
     void DirectionalLight::setWorldDirection(const glm::vec3& dir)
@@ -241,18 +242,19 @@ namespace Falcor
 
     void PointLight::setUiElements(Gui* pGui, const std::string& uiGroup)
     {
-        std::string posGroup = "worldPos" + std::to_string(mIndex);
-        pGui->addFloatVar("x", &mData.worldPos.x, posGroup, -FLT_MAX, FLT_MAX);
-        pGui->addFloatVar("y", &mData.worldPos.y, posGroup, -FLT_MAX, FLT_MAX);
-        pGui->addFloatVar("z", &mData.worldPos.z, posGroup, -FLT_MAX, FLT_MAX);
-        pGui->nestGroups(uiGroup, posGroup);
-        pGui->setVarTitle(posGroup, "World Position");
-
-		pGui->addDir3FVar("Direction", &mData.worldDir, uiGroup);
-		pGui->addFloatVarWithCallback("Opening Angle", &PointLight::setOpeningAngleCB, &PointLight::getOpeningAngleCB, this, uiGroup, 0.f, (float)M_PI);
-		pGui->addFloatVarWithCallback("Penumbra Width", &PointLight::setPenumbraAngleCB, &PointLight::getPenumbraAngleCB, this, uiGroup, 0.f, (float)M_PI);
-        pGui->addRgbColorWithCallback("Color", SetColorCB, GetColorCB, this, uiGroup);
-        pGui->addFloatVarWithCallback("Intensity", SetIntensityCB, GetIntensityCB, this, uiGroup, 0.0f, 1000000.0f, 0.1f);
+        // FIX_GUI
+//         std::string posGroup = "worldPos" + std::to_string(mIndex);
+//         pGui->addFloatVar("x", &mData.worldPos.x, posGroup, -FLT_MAX, FLT_MAX);
+//         pGui->addFloatVar("y", &mData.worldPos.y, posGroup, -FLT_MAX, FLT_MAX);
+//         pGui->addFloatVar("z", &mData.worldPos.z, posGroup, -FLT_MAX, FLT_MAX);
+//         pGui->nestGroups(uiGroup, posGroup);
+//         pGui->setVarTitle(posGroup, "World Position");
+// 
+// 		pGui->addDir3FVar("Direction", &mData.worldDir, uiGroup);
+// 		pGui->addFloatVarWithCallback("Opening Angle", &PointLight::setOpeningAngleCB, &PointLight::getOpeningAngleCB, this, uiGroup, 0.f, (float)M_PI);
+// 		pGui->addFloatVarWithCallback("Penumbra Width", &PointLight::setPenumbraAngleCB, &PointLight::getPenumbraAngleCB, this, uiGroup, 0.f, (float)M_PI);
+//         pGui->addRgbColorWithCallback("Color", SetColorCB, GetColorCB, this, uiGroup);
+//         pGui->addFloatVarWithCallback("Intensity", SetIntensityCB, GetIntensityCB, this, uiGroup, 0.0f, 1000000.0f, 0.1f);
 	}
 
     void PointLight::setOpeningAngle(float openingAngle)

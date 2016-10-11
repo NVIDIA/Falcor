@@ -72,6 +72,8 @@ namespace Falcor
 
         struct Scissor
         {
+            Scissor() = default;
+            Scissor(int32_t x, int32_t y, int32_t w, int32_t h) : originX(x), originY(y), width(w), height(h) {}
             int32_t originX = 0;
             int32_t originY = 0;
             int32_t width = 0;

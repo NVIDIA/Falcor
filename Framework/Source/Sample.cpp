@@ -43,11 +43,11 @@ namespace Falcor
 
     void Sample::handleWindowSizeChange()
     {
-        // DISABLED_FOR_D3D12
         // Always render UI at full resolution
-//        mpGui->windowSizeCallback(mpDefaultFBO->getWidth(), mpDefaultFBO->getHeight());
+        mpGui->onWindowResize(mpDefaultFBO->getWidth(), mpDefaultFBO->getHeight());
 
         // Reset the UI position
+        // FIX_GUI
 //         uint32_t barSize[2];
 //         mpGui->getSize(barSize);
 //         mpGui->setPosition(mpDefaultFBO->getWidth() - 10 - barSize[0] - 10, 10);
@@ -185,19 +185,19 @@ namespace Falcor
         // Set the icon
         setActiveWindowIcon("Framework\\Nvidia.ico");
 
+        // Get the default objects before calling onLoad()
+        mpDefaultFBO = gpDevice->getSwapChainFbo();
+        mpRenderContext = gpDevice->getRenderContext();
+
         // Init the UI
         initUI();
 
         // Init VR
         mVrEnabled = config.enableVR;
-        if(mVrEnabled)
+        if (mVrEnabled)
         {
-			VRSystem::start(mpRenderContext);
+            VRSystem::start(mpRenderContext);
         }
-
-        // Get the default objects before calling onLoad()
-        mpDefaultFBO = gpDevice->getSwapChainFbo();
-        mpRenderContext = gpDevice->getRenderContext();
 
         // Call the load callback
         onLoad();
@@ -251,7 +251,6 @@ namespace Falcor
 
             // DISABLED_FOR_D3D12
 //            mpRenderContext->setRenderState(nullptr);
-
              onFrameRender();
         }
 
@@ -259,8 +258,7 @@ namespace Falcor
             PROFILE(DrawGUI);
             if(mShowUI)
             {
-                // DISABLED_FOR_D3D12
-//                mpGui->drawAll();
+                mpGui->render(mpRenderContext.get());
             }
         }
         captureVideoFrame();
@@ -293,9 +291,8 @@ namespace Falcor
 
     void Sample::initUI()
     {
-// DISABLED_FOR_D3D12
-//         Gui::initialize(mpDefaultFBO->getWidth(), mpDefaultFBO->getHeight(), mpRenderContext);
-//         mpGui = Gui::create("Sample UI");
+        mpGui = Gui::create(mpDefaultFBO->getWidth(), mpDefaultFBO->getHeight());
+        // FIX_GUI
 //         const std::string sampleGroup = "Global Sample Controls";
 //         mpGui->addDoubleVar("Global Time", &mCurrentTime, sampleGroup, 0, DBL_MAX);
 //         mpGui->addFloatVar("Time Scale", &mTimeScale, sampleGroup, 0, FLT_MAX);
@@ -416,7 +413,8 @@ namespace Falcor
     {
         if(mVideoCapture.pUI == nullptr)
         {
-            mVideoCapture.pUI = VideoEncoderUI::create(20, 300, 240, 220, &Sample::startVideoCaptureCB, &Sample::endVideoCaptureCB, this);
+        // FIX_GUI
+//            mVideoCapture.pUI = VideoEncoderUI::create(20, 300, 240, 220, &Sample::startVideoCaptureCB, &Sample::endVideoCaptureCB, this);
         }
     }
 

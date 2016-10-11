@@ -126,7 +126,7 @@ namespace Falcor
             pLayout->addBufferLayout(0, pBufLayout);
 
             Vao::BufferVec buffers{ spVertexBuffer };
-            FullScreenPass::spVao = Vao::create(buffers, nullptr, pLayout);
+            FullScreenPass::spVao = Vao::create(buffers, pLayout, nullptr, ResourceFormat::Unknown);
         }
         mpPipelineStateCache->SetVao(FullScreenPass::spVao);
         mpPipelineStateCache->setPrimitiveType(PipelineState::PrimitiveType::Triangle);

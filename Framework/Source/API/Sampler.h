@@ -61,7 +61,7 @@ namespace Falcor
         */
         enum class ComparisonMode
         {
-            NoComparison,       ///< No comparison. Regular filtering.
+            Disabled,           ///< No comparison. Regular filtering.
             LessEqual,          ///< Passes if source is less than or equal to the destination
             GreaterEqual,       ///< Passes if source is greater than or equal to the destination
             Less,               ///< Passes if source is less than the destination
@@ -114,7 +114,7 @@ namespace Falcor
             float mMaxLod = 1000;
             float mMinLod = -1000;
             float mLodBias = 0;
-            ComparisonMode mComparisonMode = ComparisonMode::NoComparison;
+            ComparisonMode mComparisonMode = ComparisonMode::Disabled;
             AddressMode mModeU = AddressMode::Wrap;
             AddressMode mModeV = AddressMode::Wrap;
             AddressMode mModeW = AddressMode::Wrap;

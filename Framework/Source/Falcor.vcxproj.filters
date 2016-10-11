@@ -2034,5 +2034,11 @@
     <None Include="Data\DefaultVS.vs">
       <Filter>Data</Filter>
     </None>
+    <None Include="Data\Framework\Gui.ps">
+      <Filter>Data\Framework</Filter>
+    </None>
+    <None Include="Data\Framework\Gui.vs">
+      <Filter>Data\Framework</Filter>
+    </None>
   </ItemGroup>
 </Project>

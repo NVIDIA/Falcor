@@ -37,7 +37,8 @@ namespace Falcor
         using UniquePtr = std::unique_ptr<VideoEncoderUI>;
         using UniqueConstPtr = std::unique_ptr<const VideoEncoderUI>;
 
-        static UniquePtr create(uint32_t topLeftX, uint32_t topLeftY, uint32_t width, uint32_t height, Gui::ButtonCallback startCaptureCB, Gui::ButtonCallback endCaptureCB, void* pUserData);
+        // FIX_GUI
+//        static UniquePtr create(uint32_t topLeftX, uint32_t topLeftY, uint32_t width, uint32_t height, Gui::ButtonCallback startCaptureCB, Gui::ButtonCallback endCaptureCB, void* pUserData);
         ~VideoEncoderUI();
 
         VideoEncoder::CodecID getCodec() const { return mCodec; }
@@ -51,15 +52,16 @@ namespace Falcor
         uint32_t getGopSize() const {return mGopSize; }
 
     private:
-        VideoEncoderUI(uint32_t topLeftX, uint32_t topLeftY, uint32_t width, uint32_t height, Gui::ButtonCallback startCaptureCB, Gui::ButtonCallback endCaptureCB, void* pUserData);
+//        VideoEncoderUI(uint32_t topLeftX, uint32_t topLeftY, uint32_t width, uint32_t height, Gui::ButtonCallback startCaptureCB, Gui::ButtonCallback endCaptureCB, void* pUserData);
         static void GUI_CALL startCaptureCB(void* pUserData);
         static void GUI_CALL endCaptureCB(void* pUserData);
 
         void startCapture();
         void endCapture();
 
-        Gui::ButtonCallback mStartCB = nullptr;
-        Gui::ButtonCallback mEndCB = nullptr;
+        // FIX_GUI
+//         Gui::ButtonCallback mStartCB = nullptr;
+//         Gui::ButtonCallback mEndCB = nullptr;
         void* mpUserData = nullptr;
 
         Gui::UniquePtr mpUI;

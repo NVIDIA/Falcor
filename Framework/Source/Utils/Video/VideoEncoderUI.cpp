@@ -31,57 +31,46 @@
 
 namespace Falcor
 {
-    VideoEncoderUI::UniquePtr VideoEncoderUI::create(uint32_t topLeftX, uint32_t topLeftY, uint32_t width, uint32_t height, Gui::ButtonCallback startCaptureCB, Gui::ButtonCallback endCaptureCB, void* pUserData)
-    {
-        return UniquePtr(new VideoEncoderUI(topLeftX, topLeftY, width, height, startCaptureCB, endCaptureCB, pUserData));
-    }
+    // DISABLED_FOR_D3D12
+//     VideoEncoderUI::UniquePtr VideoEncoderUI::create(uint32_t topLeftX, uint32_t topLeftY, uint32_t width, uint32_t height, Gui::ButtonCallback startCaptureCB, Gui::ButtonCallback endCaptureCB, void* pUserData)
+//     {
+//         return UniquePtr(new VideoEncoderUI(topLeftX, topLeftY, width, height, startCaptureCB, endCaptureCB, pUserData));
+//     }
 
-    VideoEncoderUI::VideoEncoderUI(uint32_t topLeftX, uint32_t topLeftY, uint32_t width, uint32_t height, Gui::ButtonCallback startCaptureCB, Gui::ButtonCallback endCaptureCB, void* pUserData)
-    {
-        mpUI = Gui::create("Video Capture");
-        mpUI->addIntVar("FPS", (int32_t*)&mFPS, "", 0, 240, 1);
-
-        Gui::dropdown_list CodecID;
-        CodecID.push_back({(int32_t)VideoEncoder::CodecID::RawVideo, std::string("Uncompressed")});
-        CodecID.push_back({(int32_t)VideoEncoder::CodecID::H264, std::string("H.264")});
-        CodecID.push_back({(int32_t)VideoEncoder::CodecID::HEVC, std::string("HEVC(H.265)")});
-        CodecID.push_back({(int32_t)VideoEncoder::CodecID::MPEG2, std::string("MPEG2")});
-        CodecID.push_back({(int32_t)VideoEncoder::CodecID::MPEG4, std::string("MPEG4")});
-
-        mpUI->addDropdown("Codec", CodecID, &mCodec);
-        mpUI->addFloatVar("Bitrate (Mbps)", &mBitrate, "Codec Options", 0, FLT_MAX, 0.01f);
-        mpUI->addIntVar("GOP Size", (int32_t*)&mGopSize, "Codec Options", 0, 100000, 1);
-
-        mpUI->addCheckBox("Capture UI", &mCaptureUI);
-        
-        mpUI->addCheckBox("Use Time-Range", &mUseTimeRange);
-        mpUI->addFloatVar("Start Time", &mStartTime, "Time Range", 0, FLT_MAX, 0.001f);
-        mpUI->addFloatVar("End Time", &mEndTime, "Time Range", 0, FLT_MAX, 0.001f);
-        mpUI->addSeparator();
-        mpUI->addButton("Start Recording", &VideoEncoderUI::startCaptureCB, this);
-        mpUI->addButton("Cancel", &VideoEncoderUI::endCaptureCB, this);
-
-        mpUI->setPosition(topLeftX, topLeftY);
-        mpUI->setSize(width, height);
-
-        mStartCB = startCaptureCB;
-        mEndCB = endCaptureCB;
-        mpUserData = pUserData;
-    }
+//     VideoEncoderUI::VideoEncoderUI(uint32_t topLeftX, uint32_t topLeftY, uint32_t width, uint32_t height, Gui::ButtonCallback startCaptureCB, Gui::ButtonCallback endCaptureCB, void* pUserData)
+//     {
+//         mpUI = Gui::create("Video Capture");
+//         mpUI->addIntVar("FPS", (int32_t*)&mFPS, "", 0, 240, 1);
+// 
+//         Gui::dropdown_list CodecID;
+//         CodecID.push_back({(int32_t)VideoEncoder::CodecID::RawVideo, std::string("Uncompressed")});
+//         CodecID.push_back({(int32_t)VideoEncoder::CodecID::H264, std::string("H.264")});
+//         CodecID.push_back({(int32_t)VideoEncoder::CodecID::HEVC, std::string("HEVC(H.265)")});
+//         CodecID.push_back({(int32_t)VideoEncoder::CodecID::MPEG2, std::string("MPEG2")});
+//         CodecID.push_back({(int32_t)VideoEncoder::CodecID::MPEG4, std::string("MPEG4")});
+// 
+//         mpUI->addDropdown("Codec", CodecID, &mCodec);
+//         mpUI->addFloatVar("Bitrate (Mbps)", &mBitrate, "Codec Options", 0, FLT_MAX, 0.01f);
+//         mpUI->addIntVar("GOP Size", (int32_t*)&mGopSize, "Codec Options", 0, 100000, 1);
+// 
+//         mpUI->addCheckBox("Capture UI", &mCaptureUI);
+//         
+//         mpUI->addCheckBox("Use Time-Range", &mUseTimeRange);
+//         mpUI->addFloatVar("Start Time", &mStartTime, "Time Range", 0, FLT_MAX, 0.001f);
+//         mpUI->addFloatVar("End Time", &mEndTime, "Time Range", 0, FLT_MAX, 0.001f);
+//         mpUI->addSeparator();
+//         mpUI->addButton("Start Recording", &VideoEncoderUI::startCaptureCB, this);
+//         mpUI->addButton("Cancel", &VideoEncoderUI::endCaptureCB, this);
+// 
+//         mpUI->setPosition(topLeftX, topLeftY);
+//         mpUI->setSize(width, height);
+// 
+//         mStartCB = startCaptureCB;
+//         mEndCB = endCaptureCB;
+//         mpUserData = pUserData;
+//     }
 
     VideoEncoderUI::~VideoEncoderUI() = default;
-
-    void VideoEncoderUI::startCaptureCB(void* pUserData)
-    {
-        VideoEncoderUI* pUI = (VideoEncoderUI*)pUserData;
-        pUI->startCapture();
-    }
-
-    void VideoEncoderUI::endCaptureCB(void* pUserData)
-    {
-        VideoEncoderUI* pUI = (VideoEncoderUI*)pUserData;
-        pUI->endCapture();
-    }
 
     void VideoEncoderUI::startCapture()
     {
@@ -92,24 +81,24 @@ namespace Falcor
             // Initialize the UI
             if(mCaptureUI)
             {
-                uint32_t pos[2];
-                mpUI->getPosition(pos);
-                uint32_t size[2];
-                mpUI->getSize(size);
-                mpUI = nullptr;
-                mpUI = Gui::create("Video Capture");
-                mpUI->setPosition(pos[0], pos[1]);
-                mpUI->setSize(size[0], size[1]);
-                mpUI->addButton("End Recording", &VideoEncoderUI::endCaptureCB, this);
+//                 uint32_t pos[2];
+//                 mpUI->getPosition(pos);
+//                 uint32_t size[2];
+//                 mpUI->getSize(size);
+//                 mpUI = nullptr;
+//                 mpUI = Gui::create("Video Capture");
+//                 mpUI->setPosition(pos[0], pos[1]);
+//                 mpUI->setSize(size[0], size[1]);
+//                 mpUI->addButton("End Recording", &VideoEncoderUI::endCaptureCB, this);
             }
 
             // Call the users callback
-            mStartCB(mpUserData);
+//            mStartCB(mpUserData);
         }
     }
 
     void VideoEncoderUI::endCapture()
     {
-        mEndCB(mpUserData);
+//        mEndCB(mpUserData);
     }
 }

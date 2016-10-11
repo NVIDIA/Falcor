@@ -29,8 +29,6 @@
 
 void ShaderBuffersSample::initUI()
 {
-    Gui::setGlobalHelpMessage("Sample application that shows how to use uniform-buffers");
-
 //     mpGui->addDir3FVar("Light Direction", &mLightData.worldDir);
 //     mpGui->addRgbColor("Light intensity", &mLightData.intensity);
 //     mpGui->addRgbColor("Surface Color", &mSurfaceColor);

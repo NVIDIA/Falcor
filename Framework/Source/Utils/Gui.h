@@ -29,7 +29,11 @@
 #include <vector>
 #include "glm/vec3.hpp"
 #include "UserInput.h"
+#include "API/ProgramVars.h"
+#include "Graphics/Program.h"
+#include "Graphics/PipelineStateCache.h"
 
+#define GUI_CALL _cdecl
 namespace Falcor
 {
     class RenderContext;
@@ -56,11 +60,13 @@ namespace Falcor
 
         /** Create a new GUI object. Each object is essentially a container for a GUI window
         */
-        static UniquePtr create();
+        static UniquePtr create(uint32_t width, uint32_t height);
 
         /** Render the GUI
         */
-        static void render(RenderContext* pContext);
+        void render(RenderContext* pContext);
+
+        void onWindowResize(uint32_t width, uint32_t height);
 
     protected:
         bool keyboardCallback(const KeyboardEvent& keyEvent);
@@ -69,7 +75,13 @@ namespace Falcor
 
     private:
         Gui() = default;
-        static void initialize();
-        static bool sInitialized;
+        void init();
+        void createVao(uint32_t vertexCount, uint32_t indexCount);
+
+        Vao::SharedPtr mpVao;
+        VertexLayout::SharedPtr mpLayout;
+        ProgramVars::SharedPtr mpProgramVars;
+        Program::SharedPtr mpProgram;
+        PipelineStateCache::SharedPtr mpPipelineStateCache;
     };
 }

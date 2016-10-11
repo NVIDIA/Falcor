@@ -58,7 +58,7 @@ namespace Falcor
         pLayout->addBufferLayout(0, pBufLayout);
         Vao::BufferVec buffers{ pVB };
 
-        return Vao::create(buffers, nullptr, pLayout);
+        return Vao::create(buffers, pLayout, nullptr, ResourceFormat::Unknown);
     }
 
     TextRenderer::TextRenderer()

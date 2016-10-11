@@ -152,7 +152,7 @@ namespace Falcor
         mShadowPass.pPointCmpSampler = Sampler::create(samplerDesc);
         samplerDesc.setFilterMode(Sampler::Filter::Linear, Sampler::Filter::Linear, Sampler::Filter::Linear);
         mShadowPass.pLinearCmpSampler = Sampler::create(samplerDesc);
-        samplerDesc.setComparisonMode(Sampler::ComparisonMode::NoComparison);
+        samplerDesc.setComparisonMode(Sampler::ComparisonMode::Disabled);
         samplerDesc.setAddressingMode(Sampler::AddressMode::Clamp, Sampler::AddressMode::Clamp, Sampler::AddressMode::Clamp);
         samplerDesc.setLodParams(-100.f, 100.f, 0.f);
 
@@ -262,55 +262,59 @@ namespace Falcor
 
     void CascadedShadowMaps::setUiElements(Gui* pGui, const std::string& uiGroup)
     {
-        Gui::dropdown_list filterMode;
-        filterMode.push_back({(uint32_t)CsmFilterPoint, "Point"});
-        filterMode.push_back({(uint32_t)CsmFilterHwPcf, "2x2 HW PCF"});
-        filterMode.push_back({(uint32_t)CsmFilterFixedPcf, "Fixed-Size PCF"});
-        filterMode.push_back({(uint32_t)CsmFilterVsm, "VSM"});
-        filterMode.push_back({(uint32_t)CsmFilterEvsm2, "EVSM2"});
-        filterMode.push_back({(uint32_t)CsmFilterEvsm4, "EVSM4"});
-        filterMode.push_back({(uint32_t)CsmFilterStochasticPcf, "Stochastic Poisson PSF"});
-        pGui->addDropdownWithCallback("Filter Mode", filterMode, setFilterModeCB, getFilterModeCB, this, uiGroup);
-        pGui->addIntVarWithCallback("Max Kernel Size", &CascadedShadowMaps::setFilterKernelSizeCB, &CascadedShadowMaps::getFilterKernelSizeCB, this, uiGroup);
+        // FIX_GUI
 
-        Gui::dropdown_list partitionMode;
-        partitionMode.push_back({(uint32_t)PartitionMode::Linear, "Linear"});
-        partitionMode.push_back({(uint32_t)PartitionMode::Logarithmic, "Logarithmic"});
-        partitionMode.push_back({(uint32_t)PartitionMode::PSSM, "PSSM"});
-        pGui->addDropdown("Partition Mode", partitionMode, &mControls.partitionMode, uiGroup);
-        pGui->addFloatVar("PSSM Lambda", &mControls.pssmLambda, uiGroup, 0, 1.0f);
+//         Gui::dropdown_list filterMode;
+//         filterMode.push_back({(uint32_t)CsmFilterPoint, "Point"});
+//         filterMode.push_back({(uint32_t)CsmFilterHwPcf, "2x2 HW PCF"});
+//         filterMode.push_back({(uint32_t)CsmFilterFixedPcf, "Fixed-Size PCF"});
+//         filterMode.push_back({(uint32_t)CsmFilterVsm, "VSM"});
+//         filterMode.push_back({(uint32_t)CsmFilterEvsm2, "EVSM2"});
+//         filterMode.push_back({(uint32_t)CsmFilterEvsm4, "EVSM4"});
+//         filterMode.push_back({(uint32_t)CsmFilterStochasticPcf, "Stochastic Poisson PSF"});
+//         pGui->addDropdownWithCallback("Filter Mode", filterMode, setFilterModeCB, getFilterModeCB, this, uiGroup);
+//         pGui->addIntVarWithCallback("Max Kernel Size", &CascadedShadowMaps::setFilterKernelSizeCB, &CascadedShadowMaps::getFilterKernelSizeCB, this, uiGroup);
+// 
+//         Gui::dropdown_list partitionMode;
+//         partitionMode.push_back({(uint32_t)PartitionMode::Linear, "Linear"});
+//         partitionMode.push_back({(uint32_t)PartitionMode::Logarithmic, "Logarithmic"});
+//         partitionMode.push_back({(uint32_t)PartitionMode::PSSM, "PSSM"});
+//         pGui->addDropdown("Partition Mode", partitionMode, &mControls.partitionMode, uiGroup);
+//         pGui->addFloatVar("PSSM Lambda", &mControls.pssmLambda, uiGroup, 0, 1.0f);
+// 
+//         // SDSM data
+//         const char* sdsmGroup = "SDSM MinMax";
+//         pGui->addCheckBox("Enable", &mControls.useMinMaxSdsm, sdsmGroup);
+//         pGui->addIntVarWithCallback("Readback Latency", setSdsmReadbackLatency, getSdsmReadbackLatency, this, sdsmGroup, 0);
+//         pGui->nestGroups(uiGroup, sdsmGroup);
+// 
+//         // Controls
+//         const char* manualSettingsGroup = "Manual Settings";
+//         pGui->addFloatVar("Min Distance", &mControls.distanceRange.x, manualSettingsGroup, 0, 1);
+//         pGui->addFloatVar("Max Distance", &mControls.distanceRange.y, manualSettingsGroup, 0, 1);
+//         pGui->addFloatVar("Depth Bias", &mCsmData.depthBias, manualSettingsGroup, 0, FLT_MAX, 0.0001f);
+//         pGui->addCheckBox("Depth Clamp", &mControls.depthClamp, manualSettingsGroup);
+//         pGui->addCheckBox("Stabilize Cascades", &mControls.stabilizeCascades, manualSettingsGroup);
+//         pGui->addCheckBox("Concentric Cascades", &mControls.concentricCascades, manualSettingsGroup);
+//         pGui->addFloatVar("Cascade Blend Threshold", &mCsmData.cascadeBlendThreshold, manualSettingsGroup, 0, 1.0f);
+//         pGui->nestGroups(uiGroup, manualSettingsGroup);
+// 
+//         const char* vsmGroup = "VSM/EVSM";
+//         Gui::dropdown_list vsmMaxAniso;
+//         vsmMaxAniso.push_back({(uint32_t)1, "1"});
+//         vsmMaxAniso.push_back({(uint32_t)2, "2"});
+//         vsmMaxAniso.push_back({(uint32_t)4, "4"});
+//         vsmMaxAniso.push_back({(uint32_t)8, "8"});
+//         vsmMaxAniso.push_back({(uint32_t)16, "16"});
+        // FIX_GUI
 
-        // SDSM data
-        const char* sdsmGroup = "SDSM MinMax";
-        pGui->addCheckBox("Enable", &mControls.useMinMaxSdsm, sdsmGroup);
-        pGui->addIntVarWithCallback("Readback Latency", setSdsmReadbackLatency, getSdsmReadbackLatency, this, sdsmGroup, 0);
-        pGui->nestGroups(uiGroup, sdsmGroup);
-
-        // Controls
-        const char* manualSettingsGroup = "Manual Settings";
-        pGui->addFloatVar("Min Distance", &mControls.distanceRange.x, manualSettingsGroup, 0, 1);
-        pGui->addFloatVar("Max Distance", &mControls.distanceRange.y, manualSettingsGroup, 0, 1);
-        pGui->addFloatVar("Depth Bias", &mCsmData.depthBias, manualSettingsGroup, 0, FLT_MAX, 0.0001f);
-        pGui->addCheckBox("Depth Clamp", &mControls.depthClamp, manualSettingsGroup);
-        pGui->addCheckBox("Stabilize Cascades", &mControls.stabilizeCascades, manualSettingsGroup);
-        pGui->addCheckBox("Concentric Cascades", &mControls.concentricCascades, manualSettingsGroup);
-        pGui->addFloatVar("Cascade Blend Threshold", &mCsmData.cascadeBlendThreshold, manualSettingsGroup, 0, 1.0f);
-        pGui->nestGroups(uiGroup, manualSettingsGroup);
-
-        const char* vsmGroup = "VSM/EVSM";
-        Gui::dropdown_list vsmMaxAniso;
-        vsmMaxAniso.push_back({(uint32_t)1, "1"});
-        vsmMaxAniso.push_back({(uint32_t)2, "2"});
-        vsmMaxAniso.push_back({(uint32_t)4, "4"});
-        vsmMaxAniso.push_back({(uint32_t)8, "8"});
-        vsmMaxAniso.push_back({(uint32_t)16, "16"});
-        pGui->addDropdownWithCallback("Max Aniso", vsmMaxAniso, &CascadedShadowMaps::setVsmAnisotropyCB, &CascadedShadowMaps::getVsmAnisotropyCB, this, vsmGroup);
-        pGui->addFloatVar("Light Bleed Reduction", &mCsmData.lightBleedingReduction, vsmGroup, 0, 1.0f, 0.01f);
-        const char* evsmExpGroup = "EVSM Exp";
-        pGui->addFloatVar("Positive", &mCsmData.evsmExponents.x, evsmExpGroup, 0.0f, 42.0f, 0.01f);
-        pGui->addFloatVar("Negative", &mCsmData.evsmExponents.y, evsmExpGroup, 0.0f, 42.0f, 0.01f);
-        pGui->nestGroups(vsmGroup, evsmExpGroup);
-        pGui->nestGroups(uiGroup, vsmGroup);
+//         pGui->addDropdownWithCallback("Max Aniso", vsmMaxAniso, &CascadedShadowMaps::setVsmAnisotropyCB, &CascadedShadowMaps::getVsmAnisotropyCB, this, vsmGroup);
+//         pGui->addFloatVar("Light Bleed Reduction", &mCsmData.lightBleedingReduction, vsmGroup, 0, 1.0f, 0.01f);
+//         const char* evsmExpGroup = "EVSM Exp";
+//         pGui->addFloatVar("Positive", &mCsmData.evsmExponents.x, evsmExpGroup, 0.0f, 42.0f, 0.01f);
+//         pGui->addFloatVar("Negative", &mCsmData.evsmExponents.y, evsmExpGroup, 0.0f, 42.0f, 0.01f);
+//         pGui->nestGroups(vsmGroup, evsmExpGroup);
+//         pGui->nestGroups(uiGroup, vsmGroup);
     }
 
     void camClipSpaceToWorldSpace(const Camera* pCamera, glm::vec3 viewFrustum[8], glm::vec3& center, float& radius)

@@ -37,6 +37,8 @@
 
 namespace Falcor
 {
+    // FIX_GUI
+#if 0
     namespace
     {
         const std::string kActiveModelStr("Active Model");
@@ -866,4 +868,5 @@ namespace Falcor
         mSceneDirty = true;
         mpScene->setActivePath(Scene::kFreeCameraMovement);
     }
+#endif
 }

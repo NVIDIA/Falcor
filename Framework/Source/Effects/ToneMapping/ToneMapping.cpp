@@ -27,6 +27,7 @@
 ***************************************************************************/
 #include "Framework.h"
 #include "ToneMapping.h"
+#include "API/RenderContext.h"
 #include "Graphics/FboHelper.h"
 
 namespace Falcor
@@ -175,11 +176,12 @@ namespace Falcor
         opList.push_back({(uint32_t)Operator::HejiHableAlu, "Heji's approximation"});
         opList.push_back({(uint32_t)Operator::HableUc2, "Uncharted 2"});
 
-        pGui->addDropdownWithCallback("Operator", opList, setToneMapOperator, getToneMapOperator, this, uiGroup);
-        pGui->addFloatVar("Exposure Key", &mMiddleGray, uiGroup, 0.0001f, 2.0f);
-        pGui->addFloatVar("White Luminance", &mWhiteMaxLuminance, uiGroup, 0.1f, FLT_MAX, 0.2f);
-        pGui->addFloatVar("Luminance LOD", &mLuminanceLod, uiGroup, 0, 16, 0.025f);
-        pGui->addFloatVar("Linear White", &mWhiteScale, uiGroup, 0, 100, 0.01f);
+        // FIX_GUI
+//         pGui->addDropdownWithCallback("Operator", opList, setToneMapOperator, getToneMapOperator, this, uiGroup);
+//         pGui->addFloatVar("Exposure Key", &mMiddleGray, uiGroup, 0.0001f, 2.0f);
+//         pGui->addFloatVar("White Luminance", &mWhiteMaxLuminance, uiGroup, 0.1f, FLT_MAX, 0.2f);
+//         pGui->addFloatVar("Luminance LOD", &mLuminanceLod, uiGroup, 0, 16, 0.025f);
+//         pGui->addFloatVar("Linear White", &mWhiteScale, uiGroup, 0, 100, 0.01f);
     }
 
     void ToneMapping::setOperator(Operator op)

@@ -30,7 +30,7 @@
 
 namespace Falcor
 {
-    bool checkVaoParams(const Vao::BufferVec& vbDesc, Buffer* pIB, const VertexLayout* pLayout)
+    bool checkVaoParams(const Vao::BufferVec& vbDesc, const VertexLayout* pLayout, Buffer* pIB, ResourceFormat ibFormat)
     {
         // Must have at least 1 VB
         if(vbDesc.size() == 0)
@@ -46,20 +46,29 @@ namespace Falcor
 
         }
 
+        if(pIB)
+        {
+            if (ibFormat != ResourceFormat::R16Uint && ibFormat != ResourceFormat::R32Uint)
+            {
+                logError("Failed to create VAO. Invalid IB format (" + to_string(ibFormat) + ")");
+                return false;
+            }
+        }
+
         return true;
     }
 
-    Vao::Vao(const BufferVec& pVBs, const Buffer::SharedPtr& pIB, const VertexLayout::SharedPtr& pLayout) : mpVBs(pVBs), mpIB(pIB), mpVertexLayout(pLayout) {}
+    Vao::Vao(const BufferVec& pVBs, const VertexLayout::SharedPtr& pLayout, const Buffer::SharedPtr& pIB, ResourceFormat ibFormat) : mIbFormat(ibFormat), mpVBs(pVBs), mpIB(pIB), mpVertexLayout(pLayout) {}
 
 
-    Vao::SharedPtr Vao::create(const BufferVec& pVBs, const Buffer::SharedPtr& pIB, const VertexLayout::SharedPtr& pLayout)
+    Vao::SharedPtr Vao::create(const BufferVec& pVBs, const VertexLayout::SharedPtr& pLayout, const Buffer::SharedPtr& pIB, ResourceFormat ibFormat)
     {
-        if(checkVaoParams(pVBs, pIB.get(), pLayout.get()) == false)
+        if(checkVaoParams(pVBs, pLayout.get(), pIB.get(), ibFormat) == false)
         {
             return nullptr;
         }
 
-        SharedPtr pVao = SharedPtr(new Vao(pVBs, pIB, pLayout));
+        SharedPtr pVao = SharedPtr(new Vao(pVBs, pLayout, pIB, ibFormat));
         if(pVao->initialize() == false)
         {
             pVao = nullptr;
