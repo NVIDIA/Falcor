@@ -213,7 +213,7 @@ namespace Falcor
         applyScissor(index);
     }
 
-    void RenderContext::prepareForDraw() const
+    void RenderContext::prepareForDraw()
     {
         // DISABLED_FOR_D3D12
 //         for(auto& pUBO : mState.pUniformBuffers)

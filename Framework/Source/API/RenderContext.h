@@ -263,16 +263,16 @@ namespace Falcor
         Fbo::SharedPtr mpEmptyFBO;
 
         // Internal functions used by the API layers
-        void applyViewport(uint32_t index) const;
-        void applyScissor(uint32_t index) const;
-        void applyPipelineState() const;
-        void applyStencilRef() const;
-        void applyVao() const;
+        void applyViewport(uint32_t index);
+        void applyScissor(uint32_t index);
+        void applyPipelineState();
+        void applyStencilRef();
+        void applyVao();
         void applyFbo();
         void applyProgramVars();
-        void applyTopology() const;
-        void prepareForDraw() const;
-        void prepareForDrawApi() const;
+        void applyTopology();
+        void prepareForDraw();
+        void prepareForDrawApi();
 
 		void* mpApiData = nullptr;
     };

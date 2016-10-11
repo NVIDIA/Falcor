@@ -41,6 +41,8 @@ namespace Falcor
 	{
 		GraphicsCommandAllocatorPool::SharedPtr pAllocatorPool;
 		ID3D12GraphicsCommandListPtr pList;
+        bool vaoDirty = false;
+        bool fboDirty = false;
 	};
 	
 	RenderContext::~RenderContext()
@@ -128,27 +130,49 @@ namespace Falcor
         }
 	}
 
-    void RenderContext::applyPipelineState() const
+    void RenderContext::applyPipelineState()
     {
         RenderContextData* pApiData = (RenderContextData*)mpApiData;
         ID3D12PipelineState* pPso = mState.pRenderState ? mState.pRenderState->getApiHandle() : nullptr;
         pApiData->pList->SetPipelineState(pPso);
     }
 
-    void RenderContext::applyVao() const
+    void RenderContext::applyVao()
     {
         RenderContextData* pApiData = (RenderContextData*)mpApiData;
-        D3D12_VERTEX_BUFFER_VIEW vb[D3D12_IA_VERTEX_INPUT_RESOURCE_SLOT_COUNT] = { };
+        pApiData->vaoDirty = true;
+    }
+
+    void RenderContext::applyFbo()
+    {
+        RenderContextData* pApiData = (RenderContextData*)mpApiData;
+        pApiData->fboDirty = true;
+    }
+
+    void RenderContext::blitFbo(const Fbo* pSource, const Fbo* pTarget, const glm::ivec4& srcRegion, const glm::ivec4& dstRegion, bool useLinearFiltering, FboAttachmentType copyFlags, uint32_t srcIdx, uint32_t dstIdx)
+	{
+        UNSUPPORTED_IN_D3D12("BlitFbo");
+	}
+
+    void RenderContext::applyTopology()
+    {
+        RenderContextData* pApiData = (RenderContextData*)mpApiData;
+        D3D_PRIMITIVE_TOPOLOGY topology = getD3DPrimitiveTopology(mState.topology);
+        pApiData->pList->IASetPrimitiveTopology(topology);
+    }
+
+    static void D3D12SetVao(const RenderContextData* pApiData, const Vao* pVao)
+    {
+        D3D12_VERTEX_BUFFER_VIEW vb[D3D12_IA_VERTEX_INPUT_RESOURCE_SLOT_COUNT] = {};
         D3D12_INDEX_BUFFER_VIEW ib = {};
 
-        const auto pVao = mState.pVao;
         if (pVao)
         {
             // Get the vertex buffers
             for (uint32_t i = 0; i < pVao->getVertexBuffersCount(); i++)
             {
                 const Buffer* pVB = pVao->getVertexBuffer(i).get();
-                if(pVB)
+                if (pVB)
                 {
                     vb[i].BufferLocation = pVB->getGpuAddress();
                     vb[i].SizeInBytes = (uint32_t)pVB->getSize();
@@ -169,55 +193,56 @@ namespace Falcor
         pApiData->pList->IASetIndexBuffer(&ib);
     }
 
-    void RenderContext::applyFbo()
+    static void D3D12SetFbo(RenderContext* pCtx, const RenderContextData* pApiData, const Fbo* pFbo)
     {
-        RenderContextData* pApiData = (RenderContextData*)mpApiData;
         uint32_t colorTargets = Fbo::getMaxColorTargetCount();
         std::vector<RtvHandle> pRTV(colorTargets);
         DsvHandle pDSV;
 
-        if(mState.pFbo)
+        if (pFbo)
         {
-            for(uint32_t i = 0; i < colorTargets; i++)
+            for (uint32_t i = 0; i < colorTargets; i++)
             {
-                pRTV[i] = mState.pFbo->getRenderTargetView(i);
-                auto& pTexture = mState.pFbo->getColorTexture(i);
-                if(pTexture)
+                pRTV[i] = pFbo->getRenderTargetView(i);
+                auto& pTexture = pFbo->getColorTexture(i);
+                if (pTexture)
                 {
-                    resourceBarrier(pTexture.get(), D3D12_RESOURCE_STATE_RENDER_TARGET);
+                    pCtx->resourceBarrier(pTexture.get(), D3D12_RESOURCE_STATE_RENDER_TARGET);
                 }
             }
 
-            pDSV = mState.pFbo->getDepthStencilView();
-            auto& pTexture = mState.pFbo->getDepthStencilTexture();
-            if(pTexture)
+            pDSV = pFbo->getDepthStencilView();
+            auto& pTexture = pFbo->getDepthStencilTexture();
+            if (pTexture)
             {
-                resourceBarrier(pTexture.get(), D3D12_RESOURCE_STATE_DEPTH_WRITE);
+                pCtx->resourceBarrier(pTexture.get(), D3D12_RESOURCE_STATE_DEPTH_WRITE);
             }
         }
 
         pApiData->pList->OMSetRenderTargets(colorTargets, pRTV.data(), FALSE, &pDSV);
     }
 
-    void RenderContext::blitFbo(const Fbo* pSource, const Fbo* pTarget, const glm::ivec4& srcRegion, const glm::ivec4& dstRegion, bool useLinearFiltering, FboAttachmentType copyFlags, uint32_t srcIdx, uint32_t dstIdx)
-	{
-        UNSUPPORTED_IN_D3D12("BlitFbo");
-	}
-
-    void RenderContext::applyTopology() const
+    void RenderContext::prepareForDrawApi()
     {
         RenderContextData* pApiData = (RenderContextData*)mpApiData;
-        D3D_PRIMITIVE_TOPOLOGY topology = getD3DPrimitiveTopology(mState.topology);
-        pApiData->pList->IASetPrimitiveTopology(topology);
-    }
 
-    void RenderContext::prepareForDrawApi() const
-    {
        // Bind the root signature and the root signature data
        // D3D12_CODE what to do if there are no vars?
         if (mState.pProgramVars)
         {
             mState.pProgramVars->setIntoRenderContext(const_cast<RenderContext*>(this));
+        }
+
+        if (pApiData->vaoDirty)
+        {
+            pApiData->vaoDirty = false;
+            D3D12SetVao(pApiData, mState.pVao.get());
+        }
+
+        if (pApiData->fboDirty)
+        {
+            pApiData->fboDirty = false;
+            D3D12SetFbo(this, pApiData, mState.pFbo.get());
         }
     }
 
@@ -245,7 +270,7 @@ namespace Falcor
         drawIndexedInstanced(indexCount, 1, startIndexLocation, baseVertexLocation, 0);
     }
 
-    void RenderContext::applyViewport(uint32_t index) const
+    void RenderContext::applyViewport(uint32_t index)
     {
         static_assert(offsetof(Viewport, originX) == offsetof(D3D12_VIEWPORT, TopLeftX), "VP TopLeftX offset");
         static_assert(offsetof(Viewport, originY) == offsetof(D3D12_VIEWPORT, TopLeftY), "VP TopLeftY offset");
@@ -267,8 +292,15 @@ namespace Falcor
         pApiData->pList->RSSetScissorRects(1, &r);
     }
 
-    void RenderContext::applyScissor(uint32_t index) const
+    void RenderContext::applyScissor(uint32_t index)
     {
+        RenderContextData* pApiData = (RenderContextData*)mpApiData;
+        D3D12_RECT r;
+        r.left = mState.scissors[index].originX;
+        r.top = mState.scissors[index].originY;
+        r.bottom = mState.scissors[index].height;
+        r.right = mState.scissors[index].width;
+        pApiData->pList->RSSetScissorRects(1, &r);
     }
 
     void RenderContext::applyProgramVars()
