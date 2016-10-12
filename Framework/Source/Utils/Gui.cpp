@@ -58,6 +58,7 @@ namespace Falcor
         io.KeyMap[ImGuiKey_X] = (uint32_t)KeyboardEvent::Key::X;
         io.KeyMap[ImGuiKey_Y] = (uint32_t)KeyboardEvent::Key::Y;
         io.KeyMap[ImGuiKey_Z] = (uint32_t)KeyboardEvent::Key::Z;
+        io.IniFilename = nullptr;
 
         // Create the pipeline state cache
         mpPipelineStateCache = PipelineStateCache::create();
