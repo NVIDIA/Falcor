@@ -297,7 +297,8 @@ namespace Falcor
         wc.hInstance = GetModuleHandle(nullptr);
         wc.lpszClassName = className;
         wc.hIcon = nullptr;
-        
+        wc.hCursor = LoadCursor(NULL, IDC_ARROW);
+
         if(RegisterClass(&wc) == 0)
         {
             Logger::log(Logger::Level::Fatal, "RegisterClass() failed");
