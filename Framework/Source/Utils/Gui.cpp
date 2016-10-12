@@ -244,14 +244,24 @@ namespace Falcor
             io.MouseDown[2] = false;
             break;
         case MouseEvent::Type::Move:
-            io.MousePos.x = event.pos.x *io.DisplaySize.x;
-            io.MousePos.y = event.pos.y *io.DisplaySize.y;
+            io.MousePos.x = event.pos.x * io.DisplaySize.x;
+            io.MousePos.y = event.pos.y * io.DisplaySize.y;
             break;
         case MouseEvent::Type::Wheel:
             io.MouseWheel += event.wheelDelta.x;
             break;
         }
 
+        // Check if we are hovering over the GUI
+        ImVec2 winPos = ImGui::GetWindowPos();
+        ImVec2 winSize = ImGui::GetWindowSize();
+        if (io.MousePos.x >= winPos.x && io.MousePos.x <= (winSize.x + winPos.x))
+        {
+            if(io.MousePos.y >= winPos.y && io.MousePos.y <= (winSize.y + winPos.y))
+            {
+                return true;
+            }
+        }
         return false;
     }
 }
