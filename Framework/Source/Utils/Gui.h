@@ -66,7 +66,21 @@ namespace Falcor
         */
         void render(RenderContext* pContext);
 
+        /** Handle window resize events
+        */
         void onWindowResize(uint32_t width, uint32_t height);
+
+        /** Handle mouse events
+        */
+        bool onMouseEvent(const MouseEvent& event);
+
+        /** Handle keyboard events
+        */
+        bool onKeyboardEvent(const KeyboardEvent& event);
+
+        /** Static text
+        */
+        void text(const std::string& str);
 
     protected:
         bool keyboardCallback(const KeyboardEvent& keyEvent);

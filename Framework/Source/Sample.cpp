@@ -43,19 +43,16 @@ namespace Falcor
 
     void Sample::handleWindowSizeChange()
     {
-        // Always render UI at full resolution
+        // Tell the device to resize the swap chain
+        mpDefaultFBO = gpDevice->resizeSwapChain(mpWindow->getClientAreaWidth(), mpWindow->getClientAreaHeight());
+
+        // Tell the GUI the swap-chain size changed
         mpGui->onWindowResize(mpDefaultFBO->getWidth(), mpDefaultFBO->getHeight());
 
-        // Reset the UI position
-        // FIX_GUI
-//         uint32_t barSize[2];
-//         mpGui->getSize(barSize);
-//         mpGui->setPosition(mpDefaultFBO->getWidth() - 10 - barSize[0] - 10, 10);
-
-        mpDefaultFBO = gpDevice->resizeSwapChain(mpWindow->getClientAreaWidth(), mpWindow->getClientAreaHeight());
+        // Call the user callback
         onResizeSwapChain();
 
-        // Reset the clock before, so that the first frame duration will be correct
+        // Reset the clock, so that the first frame duration will be correct
         mFrameRate.resetClock();
     }
 
@@ -69,12 +66,12 @@ namespace Falcor
         {
             mPressedKeys.erase(keyEvent.key);
         }
-        // DISABLED_FOR_D3D12
+
         // Check if the GUI consumes it
-//         if(mpGui->keyboardCallback(keyEvent))
-//         {
-//             return;
-//         }
+        if(mpGui->onKeyboardEvent(keyEvent))
+        {
+            return;
+        }
             
         // Consume system messages first
         if(keyEvent.type == KeyboardEvent::Type::KeyPressed)
@@ -139,11 +136,10 @@ namespace Falcor
 
     void Sample::handleMouseEvent(const MouseEvent& mouseEvent)
     {
-        // DISABLED_FOR_D3D12
-//         if(mpGui->mouseCallback(mouseEvent))
-//         {
-//             return;
-//         }
+        if(mpGui->onMouseEvent(mouseEvent))
+        {
+            return;
+        }
         onMouseEvent(mouseEvent);
     }
 
@@ -223,6 +219,13 @@ namespace Falcor
         }
     }
 
+    void Sample::renderGUI()
+    {
+        mpGui->text("Hello");
+        onGuiRender();
+        mpGui->render(mpRenderContext.get());
+    }
+
     void Sample::renderFrame()
     {
 		if (gpDevice->isWindowOccluded())
@@ -258,7 +261,7 @@ namespace Falcor
             PROFILE(DrawGUI);
             if(mShowUI)
             {
-                mpGui->render(mpRenderContext.get());
+                renderGUI();
             }
         }
         captureVideoFrame();

@@ -144,8 +144,6 @@ namespace Falcor
 
     void Gui::render(RenderContext* pContext)
     {
-        ImGui::Text("hello");
-
         pContext->setProgramVariables(mpProgramVars);
         pContext->setTopology(RenderContext::Topology::TriangleList);
         ImGui::Render();
@@ -205,5 +203,54 @@ namespace Falcor
         pContext->popViewport(0);
 
         ImGui::NewFrame();
+    }
+
+    void Gui::text(const std::string& str)
+    {
+        ImGui::Text(str.c_str());
+        if (ImGui::Button("click"))
+        {
+            msgBox("Click");
+        }
+    }
+
+    bool Gui::onKeyboardEvent(const KeyboardEvent& event)
+    {
+        return false;
+    }
+
+    bool Gui::onMouseEvent(const MouseEvent& event)
+    {
+        ImGuiIO& io = ImGui::GetIO();
+        switch (event.type)
+        {
+        case MouseEvent::Type::LeftButtonDown:
+            io.MouseDown[0] = true;
+            break;
+        case MouseEvent::Type::LeftButtonUp:
+            io.MouseDown[0] = false;
+            break;
+        case MouseEvent::Type::RightButtonDown:
+            io.MouseDown[1] = true;
+            break;
+        case MouseEvent::Type::RightButtonUp:
+            io.MouseDown[1] = false;
+            break;
+        case MouseEvent::Type::MiddleButtonDown:
+            io.MouseDown[2] = true;
+            break;
+        case MouseEvent::Type::MiddleButtonUp:
+            io.MouseDown[2] = false;
+            break;
+        case MouseEvent::Type::Move:
+            io.MousePos.x = event.pos.x *io.DisplaySize.x;
+            io.MousePos.y = event.pos.y *io.DisplaySize.y;
+            break;
+        case MouseEvent::Type::Wheel:
+            io.MouseWheel += event.wheelDelta.x;
+            break;
+        }
+
+        return false;
     }
 }

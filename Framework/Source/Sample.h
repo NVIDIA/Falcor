@@ -104,6 +104,12 @@ namespace Falcor
         */
         virtual bool onMouseEvent(const MouseEvent& mouseEvent) { return false; }
         
+        /** Called after onFrameRender() 
+        It is highly recommended to use onGuiRender() exclusicly for GUI handling. onGuiRender() will not be called when the GUI is hidden, which should help reduce CPU overhead.
+        You could also ignore this and render the GUI directly in your onFrameRender() function, but that is discouraged.
+        */
+        virtual void onGuiRender() {};
+
         /** Resize the swap-chain buffers
             \param width Requested width
             \param height Requested height
@@ -174,6 +180,7 @@ namespace Falcor
         void startVideoCapture();
         void endVideoCapture();
         void captureVideoFrame();
+        void renderGUI();
 
         Window::SharedPtr mpWindow;
         bool mVsyncOn = false;
