@@ -40,9 +40,9 @@ public:
     bool onKeyEvent(const KeyboardEvent& keyEvent) override;
     bool onMouseEvent(const MouseEvent& mouseEvent) override;
     void onDataReload() override;
+    void onGuiRender() override;
 
 private:
-    void initUI();
 
     Camera::SharedPtr mpCamera;
 };

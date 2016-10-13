@@ -28,14 +28,18 @@
 #include "ProjectTemplate.h"
 #include "API/D3D/FalcorD3D.h"
 
-void ProjectTemplate::initUI()
+void ProjectTemplate::onGuiRender()
 {
+    mpGui->addText("Hello from ProjectTemplate");
+    if (mpGui->addButton("Click Here"))
+    {
+        msgBox("Now why would you do that?");
+    }
 }
 
 void ProjectTemplate::onLoad()
 {
     mpCamera = Camera::create();
-    initUI();
 }
 
 void ProjectTemplate::onFrameRender()

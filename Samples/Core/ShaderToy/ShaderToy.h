@@ -43,8 +43,6 @@ public:
     bool onMouseEvent(const MouseEvent& mouseEvent) override;
 
 private:
-    void initUI();
-
     Sampler::SharedPtr              mpLinearSampler;
     float                           mAspectRatio = 0;
     RasterizerState::SharedPtr      mpNoCullRastState;

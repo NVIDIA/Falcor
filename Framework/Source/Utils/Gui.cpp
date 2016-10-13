@@ -259,6 +259,16 @@ namespace Falcor
         *pVar = min(max(*pVar, minVal), maxVal);
     }
 
+    void Gui::addRgbColor(const std::string& name, glm::vec3* pVar)
+    {
+        ImGui::ColorEdit3(name.c_str(), &pVar->r);
+    }
+
+    void Gui::addRgbaColor(const std::string& name, glm::vec4* pVar)
+    {
+        ImGui::ColorEdit4(name.c_str(), &pVar->r);
+    }
+
     bool Gui::onKeyboardEvent(const KeyboardEvent& event)
     {
         ImGuiIO& io = ImGui::GetIO();

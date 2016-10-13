@@ -27,12 +27,12 @@
 ***************************************************************************/
 #include "ShaderBuffers.h"
 
-void ShaderBuffersSample::initUI()
+void ShaderBuffersSample::onGuiRender()
 {
 //     mpGui->addDir3FVar("Light Direction", &mLightData.worldDir);
-//     mpGui->addRgbColor("Light intensity", &mLightData.intensity);
-//     mpGui->addRgbColor("Surface Color", &mSurfaceColor);
-//     mpGui->addCheckBox("Count FS invocations", &mCountPixelShaderInvocations);
+     mpGui->addRgbColor("Light intensity", &mLightData.intensity);
+     mpGui->addRgbColor("Surface Color", &mSurfaceColor);
+     mpGui->addCheckBox("Count FS invocations", &mCountPixelShaderInvocations);
 }
 
 Vao::SharedConstPtr ShaderBuffersSample::getVao()
@@ -46,7 +46,6 @@ void ShaderBuffersSample::onLoad()
 {
     mpCamera = Camera::create();
 
-    initUI();
     // create the program
     mpProgram = Program::createFromFile("ShaderBuffers.vs", "ShaderBuffers.fs");
 
@@ -128,10 +127,6 @@ void ShaderBuffersSample::onFrameRender()
 #endif
     }
     renderText(msg, glm::vec2(10, 10));
-}
-
-void ShaderBuffersSample::onShutdown()
-{
 }
 
 void ShaderBuffersSample::onDataReload()

@@ -31,11 +31,6 @@ ShaderToy::~ShaderToy()
 {
 }
 
-void ShaderToy::initUI()
-{
-    Gui::setGlobalHelpMessage("Sample application to load ShaderToys.");
-}
-
 void ShaderToy::onLoad()
 {
     // create rasterizer state
@@ -64,8 +59,6 @@ void ShaderToy::onLoad()
 
     // Get buffer finding
     mToyCBBinding = mpMainPass->getProgram()->getActiveVersion()->getReflector()->getBufferBinding("ToyCB");
-
-    initUI();
 }
 
 void ShaderToy::onFrameRender()

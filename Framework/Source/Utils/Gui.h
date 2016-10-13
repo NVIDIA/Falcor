@@ -110,6 +110,18 @@ namespace Falcor
         */
         void addCheckBox(const std::string& label, bool* pVar);
 
+        /** Adds an RGB color UI widget.
+        \param[in] name The name of the widget.
+        \param[in] pVar A pointer to a vector that will be updated directly when the widget state changes.
+        */
+        void addRgbColor(const std::string& name, glm::vec3* pVar);
+
+        /** Adds an RGBA color UI widget.
+        \param[in] name The name of the widget.
+        \param[in] pVar A pointer to a vector that will be updated directly when the widget state changes.
+        */
+        void addRgbaColor(const std::string& name, glm::vec4* pVar);
+
         void sameLine();
     protected:
         bool keyboardCallback(const KeyboardEvent& keyEvent);
