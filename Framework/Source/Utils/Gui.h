@@ -64,7 +64,7 @@ namespace Falcor
 
         /** Render the GUI
         */
-        void render(RenderContext* pContext);
+        void render(RenderContext* pContext, float elapsedTime);
 
         /** Handle window resize events
         */
@@ -80,8 +80,37 @@ namespace Falcor
 
         /** Static text
         */
-        void text(const std::string& str);
+        void addText(const std::string& str);
 
+        /** Button. Will return true if the button was pressed
+        */
+        bool addButton(const std::string& label);
+
+        /** Begin a collapsible group block
+            returns true if the group is expanded, otherwise false. Use it to avoid making unnecessary calls
+        */
+        bool pushGroup(const std::string& label);
+
+        /** End a collapsible group block
+        */
+        void popGroup();
+
+        /** Adds a floating-point UI element.
+            \param[in] label The name of the widget.
+            \param[in] pVar A pointer to a float that will be updated directly when the widget state changes.
+            \param[in] minVal Optional. The minimum allowed value for the float.
+            \param[in] maxVal Optional. The maximum allowed value for the float.
+            \param[in] step Optional. The step rate for the float.
+        */
+        void addFloatVar(const std::string& label, float* pVar, float minVal = -FLT_MAX, float maxVal = FLT_MAX, float step = 0.001f);
+
+        /** Adds a checkbox.
+        \param[in] label The name of the checkbox.
+        \param[in] pVar A pointer to a boolean that will be updated directly when the checkbox state changes.
+        */
+        void addCheckBox(const std::string& label, bool* pVar);
+
+        void sameLine();
     protected:
         bool keyboardCallback(const KeyboardEvent& keyEvent);
         bool mouseCallback(const MouseEvent& mouseEvent);
@@ -97,5 +126,6 @@ namespace Falcor
         ProgramVars::SharedPtr mpProgramVars;
         Program::SharedPtr mpProgram;
         PipelineStateCache::SharedPtr mpPipelineStateCache;
+        uint32_t mGroupStackSize = 0;
     };
 }

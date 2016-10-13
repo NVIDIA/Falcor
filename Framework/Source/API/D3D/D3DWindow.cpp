@@ -233,6 +233,7 @@ namespace Falcor
             KeyboardEvent keyEvent;
             keyEvent.type = isKeyDown ? KeyboardEvent::Type::KeyPressed : KeyboardEvent::Type::KeyReleased;
             keyEvent.key = translateKeyCode(keyCode);
+            keyEvent.isChar = keyEvent.key < KeyboardEvent::Key::CharsEnd;
             keyEvent.mods = getInputModifiers();
             pWindow->mpCallbacks->handleKeyboardEvent(keyEvent);
         }

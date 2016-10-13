@@ -127,13 +127,6 @@ namespace Falcor
         onKeyEvent(keyEvent);
     }
 
-    void Sample::toggleUI(bool showUI)
-    {
-        mShowUI = showUI;
-        // DISABLED_FOR_D3D12
-//        mpGui->setVisibility(mShowUI);
-    }
-
     void Sample::handleMouseEvent(const MouseEvent& mouseEvent)
     {
         if(mpGui->onMouseEvent(mouseEvent))
@@ -210,20 +203,35 @@ namespace Falcor
         if(mVideoCapture.pVideoCapture)
         {
             // We are capturing video at a constant FPS
-            mCurrentTime += mVideoCapture.timeDelta * mTimeScale;
+            mElapsedTime = mVideoCapture.timeDelta * mTimeScale;
         }
         else if(mFreezeTime == false)
         {
-            float ElapsedTime = mFrameRate.getLastFrameTime() * mTimeScale;
-            mCurrentTime += ElapsedTime;
+            mElapsedTime = mFrameRate.getLastFrameTime() * mTimeScale;
         }
+        mCurrentTime += mElapsedTime;
     }
 
     void Sample::renderGUI()
     {
-        mpGui->text("Hello");
+        const std::string sampleGroup = "Global Controls";
+        if(mpGui->pushGroup(sampleGroup))
+        {
+            mpGui->addFloatVar("Global Time", &mCurrentTime, 0, FLT_MAX);
+            mpGui->addFloatVar("Time Scale", &mTimeScale, 0, FLT_MAX);
+            mpGui->addCheckBox("Freeze Time", &mFreezeTime);
+            mpGui->sameLine();
+            mCaptureScreen = mpGui->addButton("Screen Capture");
+            mpGui->sameLine();
+            if (mpGui->addButton("Video Capture"))
+            {
+                initVideoCapture();
+            }
+            mpGui->popGroup();
+        }
+
         onGuiRender();
-        mpGui->render(mpRenderContext.get());
+        mpGui->render(mpRenderContext.get(), mElapsedTime);
     }
 
     void Sample::renderFrame()
@@ -295,20 +303,6 @@ namespace Falcor
     void Sample::initUI()
     {
         mpGui = Gui::create(mpDefaultFBO->getWidth(), mpDefaultFBO->getHeight());
-        // FIX_GUI
-//         const std::string sampleGroup = "Global Sample Controls";
-//         mpGui->addDoubleVar("Global Time", &mCurrentTime, sampleGroup, 0, DBL_MAX);
-//         mpGui->addFloatVar("Time Scale", &mTimeScale, sampleGroup, 0, FLT_MAX);
-//         mpGui->addCheckBox("Freeze Time", &mFreezeTime, sampleGroup);
-//         mpGui->addButton("Screen Capture", &Sample::captureScreenCB, this, sampleGroup);
-//         mpGui->addButton("Video Capture", &Sample::initVideoCaptureCB, this, sampleGroup);
-//         mpGui->addSeparator();
-// 
-//         // Set the UI size
-//         uint32_t BarSize[2];
-//         mpGui->getSize(BarSize);
-//         mpGui->setSize(BarSize[0] + 20, BarSize[1]);
-// 
         mpTextRenderer = TextRenderer::create();
     }
 
@@ -386,30 +380,6 @@ namespace Falcor
             renderText(profileMsg, glm::vec2(10, 300));
         }
 #endif
-    }
-
-    void Sample::captureScreenCB(void* pUserData)
-    {
-        Sample* pSample = (Sample*)pUserData;
-        pSample->mCaptureScreen = true;
-    }
-
-    void Sample::initVideoCaptureCB(void* pUserData)
-    {
-        Sample* pSample = (Sample*)pUserData;
-        pSample->initVideoCapture();
-    }
-
-    void Sample::startVideoCaptureCB(void* pUserData)
-    {
-        Sample* pSample = (Sample*)pUserData;
-        pSample->startVideoCapture();
-    }
-
-    void Sample::endVideoCaptureCB(void* pUserData)
-    {
-        Sample* pSample = (Sample*)pUserData;
-        pSample->endVideoCapture();
     }
 
     void Sample::initVideoCapture()
@@ -500,7 +470,7 @@ namespace Falcor
         mpWindow->pollForEvents();
     }
 
-    void Sample::setWindowTitle(std::string title)
+    void Sample::setWindowTitle(const std::string& title)
     {
         mpWindow->setWindowTitle(title);
     }

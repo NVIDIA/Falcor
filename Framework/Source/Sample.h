@@ -143,14 +143,16 @@ namespace Falcor
         */
         void pollForEvents();
         
-        void setWindowTitle(std::string title);
+        void setWindowTitle(const std::string& title);
         
-        void toggleUI(bool showUI);
+        void toggleUI(bool showUI) { mShowUI = showUI; }
+            ;
         Gui::UniquePtr mpGui;                             ///< Main sample GUI
         RenderContext::SharedPtr mpRenderContext;         ///< The rendering context
         Fbo::SharedPtr mpDefaultFBO;                      ///< The default FBO object
         bool mFreezeTime;                                 ///< Whether global time is frozen
-        double mCurrentTime = 0;                          ///< Global time
+        float mCurrentTime = 0;                           ///< Global time
+        float mElapsedTime = 0;                           ///< Elapsed time since the last frame
 
     protected:
         enum class TextMode
@@ -205,11 +207,5 @@ namespace Falcor
 
         TextRenderer::UniquePtr mpTextRenderer;
         std::set<KeyboardEvent::Key> mPressedKeys;
-
-        // GUI callbacks
-        static void GUI_CALL captureScreenCB(void* pUserData);
-        static void GUI_CALL initVideoCaptureCB(void* pUserData);
-        static void GUI_CALL startVideoCaptureCB(void* pUserData);
-        static void GUI_CALL endVideoCaptureCB(void* pUserData);
     };
 };

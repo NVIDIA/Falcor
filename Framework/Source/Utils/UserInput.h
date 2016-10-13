@@ -128,9 +128,9 @@ namespace Falcor
             RightBracket    = ']',
             GraveAccent     = '`',
 
+            CharsEnd = GraveAccent,
             // Special keys
-            SpecialKeys = 256,
-            Escape = SpecialKeys,
+            Escape          ,
             Tab             ,
             Enter           ,          
             Backspace       ,
@@ -192,5 +192,6 @@ namespace Falcor
         Type type; ///< The event Type;
         Key  key;  ///< The last key that was pressed/released;
         InputModifiers mods; ///< Keyboard modifiers;
+        bool isChar = false; ///< Helper field to tell if this is a character or not
     };
 }

@@ -143,7 +143,7 @@ namespace Falcor
         mpProgramVars[0][0] = orthographicMatrix(0, float(width), float(height), 0, 0, 1);
     }
 
-    void Gui::render(RenderContext* pContext)
+    void Gui::render(RenderContext* pContext, float elapsedTime)
     {
         pContext->setProgramVariables(mpProgramVars);
         pContext->setTopology(RenderContext::Topology::TriangleList);
@@ -202,22 +202,87 @@ namespace Falcor
         }
 
         pContext->popViewport(0);
-
+ 
+        // Prepare for the next frame
+        ImGuiIO& io = ImGui::GetIO();
+        io.DeltaTime = elapsedTime;
         ImGui::NewFrame();
+        mGroupStackSize = 0;
     }
 
-    void Gui::text(const std::string& str)
+    void Gui::addCheckBox(const std::string& label, bool* pVar)
+    {
+        ImGui::Checkbox(label.c_str(), pVar);
+    }
+
+    void Gui::addText(const std::string& str)
     {
         ImGui::Text(str.c_str());
-        if (ImGui::Button("click"))
+    }
+
+    bool Gui::addButton(const std::string& label)
+    {
+        return ImGui::Button(label.c_str());
+    }
+
+    void Gui::sameLine()
+    {
+        ImGui::SameLine();
+    }
+
+    bool Gui::pushGroup(const std::string& name)
+    {
+        mGroupStackSize++;
+        if(mGroupStackSize == 1)
         {
-            msgBox("Click");
+            return ImGui::CollapsingHeader(name.c_str());
         }
+        else
+        {
+            return ImGui::TreeNode(name.c_str());
+        }
+    }
+
+    void Gui::popGroup()
+    {
+        assert(mGroupStackSize >= 1);
+        mGroupStackSize--;
+        if (mGroupStackSize)
+        {
+            ImGui::TreePop();
+        }
+    }
+
+    void Gui::addFloatVar(const std::string& label, float* pVar, float minVal, float maxVal, float step)
+    {
+        ImGui::InputFloat(label.c_str(), pVar, step);
+        *pVar = min(max(*pVar, minVal), maxVal);
     }
 
     bool Gui::onKeyboardEvent(const KeyboardEvent& event)
     {
-        return false;
+        ImGuiIO& io = ImGui::GetIO();
+        switch (event.type)
+        {
+        case KeyboardEvent::Type::KeyPressed:
+            io.KeysDown[(uint32_t)event.key] = true;
+            if (event.isChar)
+            {
+                io.AddInputCharacter((uint32_t)event.key);
+            }
+            break;
+        case KeyboardEvent::Type::KeyReleased:
+            io.KeysDown[(uint32_t)event.key] = false;
+            break;
+        default:
+            should_not_get_here();
+        }
+
+        io.KeyCtrl = event.mods.isCtrlDown;
+        io.KeyAlt = event.mods.isAltDown;
+        io.KeyShift = event.mods.isShiftDown;
+        io.KeySuper = false;
+        return io.WantCaptureKeyboard;
     }
 
     bool Gui::onMouseEvent(const MouseEvent& event)
@@ -252,16 +317,6 @@ namespace Falcor
             break;
         }
 
-        // Check if we are hovering over the GUI
-        ImVec2 winPos = ImGui::GetWindowPos();
-        ImVec2 winSize = ImGui::GetWindowSize();
-        if (io.MousePos.x >= winPos.x && io.MousePos.x <= (winSize.x + winPos.x))
-        {
-            if(io.MousePos.y >= winPos.y && io.MousePos.y <= (winSize.y + winPos.y))
-            {
-                return true;
-            }
-        }
-        return false;
+        return io.WantCaptureMouse;
     }
 }
