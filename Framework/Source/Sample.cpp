@@ -200,16 +200,16 @@ namespace Falcor
 
     void Sample::calculateTime()
     {
-        if(mVideoCapture.pVideoCapture)
+        if (mVideoCapture.pVideoCapture)
         {
             // We are capturing video at a constant FPS
-            mElapsedTime = mVideoCapture.timeDelta * mTimeScale;
+            mCurrentTime += mVideoCapture.timeDelta * mTimeScale;
         }
-        else if(mFreezeTime == false)
+        else if (mFreezeTime == false)
         {
-            mElapsedTime = mFrameRate.getLastFrameTime() * mTimeScale;
+            float elapsedTime = mFrameRate.getLastFrameTime() * mTimeScale;
+            mCurrentTime += elapsedTime;
         }
-        mCurrentTime += mElapsedTime;
     }
 
     void Sample::renderGUI()
@@ -217,7 +217,7 @@ namespace Falcor
         const std::string sampleGroup = "Global Controls";
         if(mpGui->pushGroup(sampleGroup))
         {
-            mpGui->addFloatVar("Global Time", &mCurrentTime, 0, FLT_MAX);
+            mpGui->addFloatVar("Time", &mCurrentTime, 0, FLT_MAX);
             mpGui->addFloatVar("Time Scale", &mTimeScale, 0, FLT_MAX);
             mpGui->addCheckBox("Freeze Time", &mFreezeTime);
             mpGui->sameLine();
@@ -231,7 +231,7 @@ namespace Falcor
         }
 
         onGuiRender();
-        mpGui->render(mpRenderContext.get(), mElapsedTime);
+        mpGui->render(mpRenderContext.get(), mFrameRate.getLastFrameTime());
     }
 
     void Sample::renderFrame()

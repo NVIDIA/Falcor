@@ -143,16 +143,19 @@ namespace Falcor
         */
         void pollForEvents();
         
+        /** Change the title of the window
+        */
         void setWindowTitle(const std::string& title);
         
+        /** Turn UI on and off. Settting this to false will disable UI rendering and will avoid calling the onGuiRender() callback
+        */
         void toggleUI(bool showUI) { mShowUI = showUI; }
-            ;
+
         Gui::UniquePtr mpGui;                             ///< Main sample GUI
         RenderContext::SharedPtr mpRenderContext;         ///< The rendering context
         Fbo::SharedPtr mpDefaultFBO;                      ///< The default FBO object
         bool mFreezeTime;                                 ///< Whether global time is frozen
         float mCurrentTime = 0;                           ///< Global time
-        float mElapsedTime = 0;                           ///< Elapsed time since the last frame
 
     protected:
         enum class TextMode
