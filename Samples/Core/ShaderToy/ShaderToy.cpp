@@ -86,7 +86,7 @@ void ShaderToy::onFrameRender()
     mpRenderContext->setProgramVariables(mpToyVars);
     mpMainPass->execute(mpRenderContext.get());
 
-    renderText(getGlobalSampleMessage(true), glm::vec2(10, 10));
+    renderText(getFpsMsg(), glm::vec2(10, 10));
 }
 
 void ShaderToy::onShutdown()

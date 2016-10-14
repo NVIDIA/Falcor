@@ -145,6 +145,11 @@ namespace Falcor
 
     void Gui::render(RenderContext* pContext, float elapsedTime)
     {
+        while (mGroupStackSize)
+        {
+            popGroup();
+        }
+
         pContext->setProgramVariables(mpProgramVars);
         pContext->setTopology(RenderContext::Topology::TriangleList);
         ImGui::Render();
@@ -210,24 +215,22 @@ namespace Falcor
         mGroupStackSize = 0;
     }
 
-    void Gui::addCheckBox(const std::string& label, bool* pVar)
+    void Gui::addCheckBox(const std::string& label, bool* pVar, bool sameLine)
     {
+        if (sameLine) ImGui::SameLine();
         ImGui::Checkbox(label.c_str(), pVar);
     }
 
-    void Gui::addText(const std::string& str)
+    void Gui::addText(const std::string& str, bool sameLine)
     {
+        if (sameLine) ImGui::SameLine();
         ImGui::Text(str.c_str());
     }
 
-    bool Gui::addButton(const std::string& label)
+    bool Gui::addButton(const std::string& label, bool sameLine)
     {
+        if (sameLine) ImGui::SameLine();
         return ImGui::Button(label.c_str());
-    }
-
-    void Gui::sameLine()
-    {
-        ImGui::SameLine();
     }
 
     bool Gui::pushGroup(const std::string& name)
@@ -253,19 +256,29 @@ namespace Falcor
         }
     }
 
-    void Gui::addFloatVar(const std::string& label, float* pVar, float minVal, float maxVal, float step)
+    void Gui::addFloatVar(const std::string& label, float* pVar, float minVal, float maxVal, float step, bool sameLine)
     {
+        if (sameLine) ImGui::SameLine();
         ImGui::InputFloat(label.c_str(), pVar, step);
         *pVar = min(max(*pVar, minVal), maxVal);
     }
 
-    void Gui::addRgbColor(const std::string& name, glm::vec3* pVar)
+    void Gui::addIntVar(const std::string& name, int32_t* pVar, int minVal, int maxVal, int step, bool sameLine)
     {
+        if (sameLine) ImGui::SameLine();
+        ImGui::InputInt(name.c_str(), pVar, step);
+        *pVar = min(max(*pVar, minVal), maxVal);
+    }
+
+    void Gui::addRgbColor(const std::string& name, glm::vec3* pVar, bool sameLine)
+    {
+        if (sameLine) ImGui::SameLine();
         ImGui::ColorEdit3(name.c_str(), &pVar->r);
     }
 
-    void Gui::addRgbaColor(const std::string& name, glm::vec4* pVar)
+    void Gui::addRgbaColor(const std::string& name, glm::vec4* pVar, bool sameLine)
     {
+        if (sameLine) ImGui::SameLine();
         ImGui::ColorEdit4(name.c_str(), &pVar->r);
     }
 
@@ -328,5 +341,29 @@ namespace Falcor
         }
 
         return io.WantCaptureMouse;
+    }
+
+    void Gui::pushWindow(const std::string& label, uint32_t width, uint32_t height, uint32_t x, uint32_t y)
+    {
+        ImVec2 pos{ float(x), float(y) };
+        ImVec2 size{ float(width), float(height) };
+        ImGui::SetNextWindowSize(size, ImGuiSetCond_FirstUseEver);
+        ImGui::SetNextWindowPos(pos, ImGuiSetCond_FirstUseEver);
+        ImGui::Begin(label.c_str());
+    }
+
+    void Gui::popWindow()
+    {
+        ImGui::End();
+    }
+
+    void Gui::addSeparator()
+    {
+        ImGui::Separator();
+    }
+
+    void Gui::addDropdown(const std::string& name, const dropdown_list& values, int32_t* pVar, bool sameLine)
+    {
+        if (sameLine) ImGui::SameLine();
     }
 }

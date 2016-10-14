@@ -130,10 +130,9 @@ namespace Falcor
         */
         void renderText(const std::string& str, const glm::vec2& position, const glm::vec2 shadowOffset = glm::vec2(1.f, 1.f)) const;
 
-        /** Get the global sample message, which includes the FPS and potentially help message
-            \param includeHelpMsg If true, the returned message will contain the help message, otherwise will only contain the FPS.
+        /** Get the FPS message string
         */
-        const std::string getGlobalSampleMessage(bool includeHelpMsg) const;
+        const std::string getFpsMsg() const;
 
         /** Close the window and exit the application
         */
@@ -158,15 +157,6 @@ namespace Falcor
         float mCurrentTime = 0;                           ///< Global time
 
     protected:
-        enum class TextMode
-        {
-            All,
-            FpsOnly,
-            NoText,
-
-            Count
-        };
-
         void renderFrame() override;
         void handleWindowSizeChange() override;
         void handleKeyboardEvent(const KeyboardEvent& keyEvent) override;
@@ -174,7 +164,7 @@ namespace Falcor
         virtual float getTimeScale() final { return mTimeScale; }
         void initVideoCapture();
         void captureScreen();
-        void setTextMode(TextMode mode);
+        void toggleText(bool enabled);
 
     private:
         // Private functions
@@ -189,7 +179,7 @@ namespace Falcor
 
         Window::SharedPtr mpWindow;
         bool mVsyncOn = false;
-
+        bool mShowText = true;
         bool mCaptureScreen = false;
         bool mShowUI = true;
         bool mVrEnabled = false;
@@ -206,7 +196,6 @@ namespace Falcor
 
         FrameRate mFrameRate;
         float mTimeScale;
-        TextMode mTextMode = TextMode::All;
 
         TextRenderer::UniquePtr mpTextRenderer;
         std::set<KeyboardEvent::Key> mPressedKeys;

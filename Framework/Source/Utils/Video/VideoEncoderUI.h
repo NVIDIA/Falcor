@@ -27,19 +27,23 @@
 ***************************************************************************/
 #pragma once
 #include "VideoEncoder.h"
-#include "Utils/Gui.h"
+#include <functional>
 
 namespace Falcor
 {
+    class Gui;
+
     class VideoEncoderUI
     {
     public:
         using UniquePtr = std::unique_ptr<VideoEncoderUI>;
         using UniqueConstPtr = std::unique_ptr<const VideoEncoderUI>;
+        using Callback = std::function<void(void)>;
 
-        // FIX_GUI
-//        static UniquePtr create(uint32_t topLeftX, uint32_t topLeftY, uint32_t width, uint32_t height, Gui::ButtonCallback startCaptureCB, Gui::ButtonCallback endCaptureCB, void* pUserData);
+        static UniquePtr create(uint32_t topLeftX, uint32_t topLeftY, uint32_t width, uint32_t height, Callback startCaptureCB, Callback endCaptureCB);
         ~VideoEncoderUI();
+
+        void render(Gui* pGui);
 
         VideoEncoder::CodecID getCodec() const { return mCodec; }
         uint32_t getFPS() const { return mFPS; }
@@ -52,19 +56,16 @@ namespace Falcor
         uint32_t getGopSize() const {return mGopSize; }
 
     private:
-//        VideoEncoderUI(uint32_t topLeftX, uint32_t topLeftY, uint32_t width, uint32_t height, Gui::ButtonCallback startCaptureCB, Gui::ButtonCallback endCaptureCB, void* pUserData);
-        static void GUI_CALL startCaptureCB(void* pUserData);
-        static void GUI_CALL endCaptureCB(void* pUserData);
+        VideoEncoderUI(uint32_t topLeftX, uint32_t topLeftY, uint32_t width, uint32_t height, Callback startCaptureCB, Callback endCaptureCB);
 
         void startCapture();
-        void endCapture();
+        void startCaptureUI(Gui* pGui);
+        void endCaptureUI(Gui* pGui);
 
-        // FIX_GUI
-//         Gui::ButtonCallback mStartCB = nullptr;
-//         Gui::ButtonCallback mEndCB = nullptr;
-        void* mpUserData = nullptr;
+        bool mCapturing = false;
+        Callback mStartCB = nullptr;
+        Callback mEndCB = nullptr;
 
-        Gui::UniquePtr mpUI;
         uint32_t mFPS = 60;
         VideoEncoder::CodecID mCodec = VideoEncoder::CodecID::RawVideo;
 
@@ -72,6 +73,10 @@ namespace Falcor
         bool mCaptureUI = false;
         float mStartTime = 0;
         float mEndTime = FLT_MAX;
+        struct
+        {
+            uint32_t x, y, width, height;
+        } mWindowDims;
 
         std::string mFilename;
         float mBitrate = 4;

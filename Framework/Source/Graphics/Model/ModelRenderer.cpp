@@ -30,6 +30,7 @@
 
 namespace Falcor
 {
+    // FIXME Memory leak. This map keeps a reference to Model objects and keeps them alive when the user deletes them
 	std::map<Model::SharedPtr, SceneRenderer::UniquePtr> ModelRenderer::sceneMap;
 	
 	void ModelRenderer::render(RenderContext* pRenderContext, Program* pProgram, Model::SharedPtr pModel, Camera* pCamera, bool frustumCulling)

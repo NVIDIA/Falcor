@@ -28,47 +28,80 @@
 #include "Framework.h"
 #include "VideoEncoderUI.h"
 #include "Utils/OS.h"
+#include "Utils/Gui.h"
 
 namespace Falcor
 {
-    // DISABLED_FOR_D3D12
-//     VideoEncoderUI::UniquePtr VideoEncoderUI::create(uint32_t topLeftX, uint32_t topLeftY, uint32_t width, uint32_t height, Gui::ButtonCallback startCaptureCB, Gui::ButtonCallback endCaptureCB, void* pUserData)
-//     {
-//         return UniquePtr(new VideoEncoderUI(topLeftX, topLeftY, width, height, startCaptureCB, endCaptureCB, pUserData));
-//     }
+    static const Gui::dropdown_list kCodecID = 
+    {
+        { (int32_t)VideoEncoder::CodecID::RawVideo, std::string("Uncompressed") },
+        { (int32_t)VideoEncoder::CodecID::H264, std::string("H.264") },
+        { (int32_t)VideoEncoder::CodecID::HEVC, std::string("HEVC(H.265)") },
+        { (int32_t)VideoEncoder::CodecID::MPEG2, std::string("MPEG2") },
+        { (int32_t)VideoEncoder::CodecID::MPEG4, std::string("MPEG4") }
+    };
 
-//     VideoEncoderUI::VideoEncoderUI(uint32_t topLeftX, uint32_t topLeftY, uint32_t width, uint32_t height, Gui::ButtonCallback startCaptureCB, Gui::ButtonCallback endCaptureCB, void* pUserData)
-//     {
-//         mpUI = Gui::create("Video Capture");
-//         mpUI->addIntVar("FPS", (int32_t*)&mFPS, "", 0, 240, 1);
-// 
-//         Gui::dropdown_list CodecID;
-//         CodecID.push_back({(int32_t)VideoEncoder::CodecID::RawVideo, std::string("Uncompressed")});
-//         CodecID.push_back({(int32_t)VideoEncoder::CodecID::H264, std::string("H.264")});
-//         CodecID.push_back({(int32_t)VideoEncoder::CodecID::HEVC, std::string("HEVC(H.265)")});
-//         CodecID.push_back({(int32_t)VideoEncoder::CodecID::MPEG2, std::string("MPEG2")});
-//         CodecID.push_back({(int32_t)VideoEncoder::CodecID::MPEG4, std::string("MPEG4")});
-// 
-//         mpUI->addDropdown("Codec", CodecID, &mCodec);
-//         mpUI->addFloatVar("Bitrate (Mbps)", &mBitrate, "Codec Options", 0, FLT_MAX, 0.01f);
-//         mpUI->addIntVar("GOP Size", (int32_t*)&mGopSize, "Codec Options", 0, 100000, 1);
-// 
-//         mpUI->addCheckBox("Capture UI", &mCaptureUI);
-//         
-//         mpUI->addCheckBox("Use Time-Range", &mUseTimeRange);
-//         mpUI->addFloatVar("Start Time", &mStartTime, "Time Range", 0, FLT_MAX, 0.001f);
-//         mpUI->addFloatVar("End Time", &mEndTime, "Time Range", 0, FLT_MAX, 0.001f);
-//         mpUI->addSeparator();
-//         mpUI->addButton("Start Recording", &VideoEncoderUI::startCaptureCB, this);
-//         mpUI->addButton("Cancel", &VideoEncoderUI::endCaptureCB, this);
-// 
-//         mpUI->setPosition(topLeftX, topLeftY);
-//         mpUI->setSize(width, height);
-// 
-//         mStartCB = startCaptureCB;
-//         mEndCB = endCaptureCB;
-//         mpUserData = pUserData;
-//     }
+    VideoEncoderUI::UniquePtr VideoEncoderUI::create(uint32_t topLeftX, uint32_t topLeftY, uint32_t width, uint32_t height, Callback startCaptureCB, Callback endCaptureCB)
+    {
+        return UniquePtr(new VideoEncoderUI(topLeftX, topLeftY, width, height, startCaptureCB, endCaptureCB));
+    }
+
+    VideoEncoderUI::VideoEncoderUI(uint32_t topLeftX, uint32_t topLeftY, uint32_t width, uint32_t height, Callback startCaptureCB, Callback endCaptureCB) : mStartCB(startCaptureCB), mEndCB(endCaptureCB)
+    {
+        mWindowDims.x = topLeftX;
+        mWindowDims.y = topLeftY;
+        mWindowDims.width = width;
+        mWindowDims.height = height;
+    }
+
+    void VideoEncoderUI::render(Gui* pGui)
+    {
+        if (mCapturing)
+        {
+            endCaptureUI(pGui);
+        }
+        else
+        {
+            startCaptureUI(pGui);
+        }
+    }
+
+    void VideoEncoderUI::startCaptureUI(Gui* pGui)
+    {
+        pGui->pushWindow("Video Capture", mWindowDims.width, mWindowDims.height, mWindowDims.x, mWindowDims.y);
+        pGui->addIntVar("FPS", (int32_t*)&mFPS, 0, 240, 1);
+        pGui->addDropdown("Codec", kCodecID, (int32_t*)&mCodec);
+
+        if(pGui->pushGroup("Codec Options"))
+        {
+            pGui->addFloatVar("Bitrate (Mbps)", &mBitrate, 0, FLT_MAX, 0.01f);
+            pGui->addIntVar("GOP Size", (int32_t*)&mGopSize, 0, 100000, 1);
+        }
+        pGui->popGroup();
+
+        pGui->addCheckBox("Capture UI", &mCaptureUI);
+        
+        pGui->addCheckBox("Use Time-Range", &mUseTimeRange);
+        if(mUseTimeRange)
+        {
+            if (pGui->pushGroup("Time Range"))
+            {
+                pGui->addFloatVar("Start Time", &mStartTime, 0, FLT_MAX, 0.001f);
+                pGui->addFloatVar("End Time", &mEndTime, 0, FLT_MAX, 0.001f);
+            }
+            pGui->popGroup();
+        }
+
+        if (pGui->addButton("Start Recording"))
+        {
+            startCapture();
+        }
+        if (pGui->addButton("Cancel", true))
+        {
+            mEndCB();
+        }
+        pGui->popWindow();
+    }
 
     VideoEncoderUI::~VideoEncoderUI() = default;
 
@@ -77,28 +110,25 @@ namespace Falcor
         if(saveFileDialog(VideoEncoder::getSupportedContainerForCodec(mCodec).c_str(), mFilename))
         {
             if(!mUseTimeRange)
-                mCaptureUI = true;
-            // Initialize the UI
-            if(mCaptureUI)
             {
-//                 uint32_t pos[2];
-//                 mpUI->getPosition(pos);
-//                 uint32_t size[2];
-//                 mpUI->getSize(size);
-//                 mpUI = nullptr;
-//                 mpUI = Gui::create("Video Capture");
-//                 mpUI->setPosition(pos[0], pos[1]);
-//                 mpUI->setSize(size[0], size[1]);
-//                 mpUI->addButton("End Recording", &VideoEncoderUI::endCaptureCB, this);
+                mCaptureUI = true;
             }
 
             // Call the users callback
-//            mStartCB(mpUserData);
+            mStartCB();
         }
     }
 
-    void VideoEncoderUI::endCapture()
+    void VideoEncoderUI::endCaptureUI(Gui* pGui)
     {
-//        mEndCB(mpUserData);
+        if (mCaptureUI)
+        {
+            pGui->pushWindow("Video Capture");
+            if (pGui->addButton("End Recording"))
+            {
+                mEndCB();
+            }
+        }
+
     }
 }

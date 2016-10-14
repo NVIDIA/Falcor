@@ -27,6 +27,7 @@
 ***************************************************************************/
 #pragma once
 #include <vector>
+#include <unordered_map>
 #include "glm/vec3.hpp"
 #include "UserInput.h"
 #include "API/ProgramVars.h"
@@ -53,7 +54,7 @@ namespace Falcor
         */
         struct DropdownValue
         {
-            int value;              ///< User defined index. Should be unique between different options.
+            int32_t value;          ///< User defined index. Should be unique between different options.
             std::string label;      ///< Label of the dropdown option.
         };
         using dropdown_list = std::vector < DropdownValue > ;
@@ -79,12 +80,15 @@ namespace Falcor
         bool onKeyboardEvent(const KeyboardEvent& event);
 
         /** Static text
+            \param[in] str The string to display
+            \param[in] sameLine Optional. If set to true, the widget will appear on the same line as the previous widget
         */
-        void addText(const std::string& str);
+        void addText(const std::string& str, bool sameLine = false);
 
         /** Button. Will return true if the button was pressed
+            \param[in] sameLine Optional. If set to true, the widget will appear on the same line as the previous widget
         */
-        bool addButton(const std::string& label);
+        bool addButton(const std::string& label, bool sameLine = false);
 
         /** Begin a collapsible group block
             returns true if the group is expanded, otherwise false. Use it to avoid making unnecessary calls
@@ -101,28 +105,58 @@ namespace Falcor
             \param[in] minVal Optional. The minimum allowed value for the float.
             \param[in] maxVal Optional. The maximum allowed value for the float.
             \param[in] step Optional. The step rate for the float.
+            \param[in] sameLine Optional. If set to true, the widget will appear on the same line as the previous widget
         */
-        void addFloatVar(const std::string& label, float* pVar, float minVal = -FLT_MAX, float maxVal = FLT_MAX, float step = 0.001f);
+        void addFloatVar(const std::string& label, float* pVar, float minVal = -FLT_MAX, float maxVal = FLT_MAX, float step = 0.001f, bool sameLine = false);
 
         /** Adds a checkbox.
-        \param[in] label The name of the checkbox.
-        \param[in] pVar A pointer to a boolean that will be updated directly when the checkbox state changes.
+            \param[in] label The name of the checkbox.
+            \param[in] pVar A pointer to a boolean that will be updated directly when the checkbox state changes.
+            \param[in] sameLine Optional. If set to true, the widget will appear on the same line as the previous widget
         */
-        void addCheckBox(const std::string& label, bool* pVar);
+        void addCheckBox(const std::string& label, bool* pVar, bool sameLine = false);
 
         /** Adds an RGB color UI widget.
-        \param[in] name The name of the widget.
-        \param[in] pVar A pointer to a vector that will be updated directly when the widget state changes.
+            \param[in] name The name of the widget.
+            \param[in] pVar A pointer to a vector that will be updated directly when the widget state changes.
+            \param[in] sameLine Optional. If set to true, the widget will appear on the same line as the previous widget
         */
-        void addRgbColor(const std::string& name, glm::vec3* pVar);
+        void addRgbColor(const std::string& name, glm::vec3* pVar, bool sameLine = false);
 
         /** Adds an RGBA color UI widget.
-        \param[in] name The name of the widget.
-        \param[in] pVar A pointer to a vector that will be updated directly when the widget state changes.
+            \param[in] name The name of the widget.
+            \param[in] pVar A pointer to a vector that will be updated directly when the widget state changes.
+            \param[in] sameLine Optional. If set to true, the widget will appear on the same line as the previous widget
         */
-        void addRgbaColor(const std::string& name, glm::vec4* pVar);
+        void addRgbaColor(const std::string& name, glm::vec4* pVar, bool sameLine = false);
 
-        void sameLine();
+        /** Adds an integer UI element.
+            \param[in] name The name of the widget.
+            \param[in] pVar A pointer to an integer that will be updated directly when the widget state changes.
+            \param[in] minVal Optional. The minimum allowed value for the variable.
+            \param[in] maxVal Optional. The maximum allowed value for the variable.
+            \param[in] step Optional. The step rate.
+            \param[in] sameLine Optional. If set to true, the widget will appear on the same line as the previous widget
+        */
+        void addIntVar(const std::string& name, int32_t* pVar, int minVal = -INT32_MAX, int maxVal = INT32_MAX, int step = 1, bool sameLine = false);
+
+        /** Add a separator
+        */
+        void addSeparator();
+
+        /** Adds a dropdown menu. This will update a user variable directly, so the user has to keep track of that for changes.
+            If you want notifications whenever the select option changed, use Gui#addDropdownWithCallback().
+            \param[in] name The name of the dropdown menu.
+            \param[in] values A list of options to show in the dropdown menu.
+            \param[in] pVar A pointer to a user variable that will be updated directly when a dropdown option changes. This correlates to the 'pValue' field in Gui#SDropdownValue struct.
+            \param[in] sameLine Optional. If set to true, the widget will appear on the same line as the previous widget
+        */
+        void addDropdown(const std::string& name, const dropdown_list& values, int32_t* pVar, bool sameLine = false);
+
+        /** Create a new window
+        */
+        void pushWindow(const std::string& label, uint32_t width = 0, uint32_t height = 0, uint32_t x = 0, uint32_t y = 0);
+        void popWindow();
     protected:
         bool keyboardCallback(const KeyboardEvent& keyEvent);
         bool mouseCallback(const MouseEvent& mouseEvent);

@@ -98,11 +98,8 @@ namespace Falcor
                     mFrameRate.resetClock();
                     break;
                 case KeyboardEvent::Key::F1:
-                {
-                    uint32_t textMode = ((uint32_t)mTextMode + 1) % (uint32_t)TextMode::Count;
-                    setTextMode((TextMode)textMode);
-                }
-                break;
+                    toggleText(!mShowText);
+                    break;
                 case KeyboardEvent::Key::F2:
                     toggleUI(!mShowUI);
                     break;
@@ -214,23 +211,46 @@ namespace Falcor
 
     void Sample::renderGUI()
     {
-        const std::string sampleGroup = "Global Controls";
-        if(mpGui->pushGroup(sampleGroup))
+        constexpr char help[] = 
+            "  'F1'      - Show\\Hide text\n"
+            "  'F2'      - Show\\Hide GUI\n"
+            "  'F5'      - Reload shaders\n"
+            "  'ESC'     - Quit\n"
+            "  'V'       - Toggle VSync\n"
+            "  'PrtScr'  - Capture screenshot\n"
+            "  'Shift+PrtScr' - Video capture\n"
+#if _PROFILING_ENABLED
+            "  'P'       - Enable profiling\n";
+#else
+            ;
+#endif
+
+        mpGui->pushWindow("Falcor", 250, 0, 20, 40);
+        if (mpGui->pushGroup("Help"))
+        {
+            mpGui->addText(help);
+        }
+        mpGui->popGroup();
+        if(mpGui->pushGroup("Global Controls"))
         {
             mpGui->addFloatVar("Time", &mCurrentTime, 0, FLT_MAX);
             mpGui->addFloatVar("Time Scale", &mTimeScale, 0, FLT_MAX);
             mpGui->addCheckBox("Freeze Time", &mFreezeTime);
-            mpGui->sameLine();
             mCaptureScreen = mpGui->addButton("Screen Capture");
-            mpGui->sameLine();
-            if (mpGui->addButton("Video Capture"))
+            if (mpGui->addButton("Video Capture", true))
             {
                 initVideoCapture();
             }
-            mpGui->popGroup();
         }
+        mpGui->popGroup();
 
         onGuiRender();
+        mpGui->popWindow();
+
+        if (mVideoCapture.pUI)
+        {
+            mVideoCapture.pUI->render(mpGui.get());
+        }
         mpGui->render(mpRenderContext.get(), mFrameRate.getLastFrameTime());
     }
 
@@ -266,7 +286,7 @@ namespace Falcor
         }
 
         {
-            PROFILE(DrawGUI);
+            PROFILE(renderGUI);
             if(mShowUI)
             {
                 renderGUI();
@@ -306,37 +326,21 @@ namespace Falcor
         mpTextRenderer = TextRenderer::create();
     }
 
-    const std::string Sample::getGlobalSampleMessage(bool includeHelpMsg) const
+    const std::string Sample::getFpsMsg() const
     {
         std::string s;
-        if(mTextMode != TextMode::NoText)
+        if(mShowText)
         {
             float msPerFrame = mFrameRate.getAverageFrameTime();
             s = std::to_string(int(ceil(1000 / msPerFrame))) + " FPS (" + std::to_string(msPerFrame) + " ms/frame)";
             if(mVsyncOn) s += std::string(", VSync");
-            if(mTextMode != TextMode::FpsOnly)
-            {
-                s += "\n";
-                if(includeHelpMsg)
-                {
-                    s += "  'F2'      - Show GUI\n";
-                    s += "  'F5'      - Reload shaders\n";
-                    s += "  'ESC'     - Quit\n";
-                    s += "  'V'       - Toggle VSync\n";
-                    s += "  'PrtScr'  - Capture screenshot\n";
-                    s += "  'Shift+PrtScr' - Video capture\n";
-#if _PROFILING_ENABLED
-                    s += "  'P'       - Enable profiling\n";
-#endif
-                }
-            }
         }
         return s;
     }
 
-    void Sample::setTextMode(Sample::TextMode mode)
+    void Sample::toggleText(bool enabled)
     {
-        mTextMode = mode;
+        mShowText = enabled;
     }
 
     void Sample::resizeSwapChain(uint32_t width, uint32_t height)
@@ -351,9 +355,8 @@ namespace Falcor
 
     void Sample::renderText(const std::string& msg, const glm::vec2& position, const glm::vec2 shadowOffset) const
     {
-        if(mTextMode != TextMode::NoText)
+        if(mShowText)
         {
-            PROFILE(renderText);
             // Render outline first
             if(shadowOffset.x != 0.f || shadowOffset.y != 0)
             {
@@ -386,8 +389,7 @@ namespace Falcor
     {
         if(mVideoCapture.pUI == nullptr)
         {
-        // FIX_GUI
-//            mVideoCapture.pUI = VideoEncoderUI::create(20, 300, 240, 220, &Sample::startVideoCaptureCB, &Sample::endVideoCaptureCB, this);
+            mVideoCapture.pUI = VideoEncoderUI::create(20, 300, 240, 220, [this]() {startVideoCapture(); }, [this]() {endVideoCapture(); });
         }
     }
 
@@ -420,7 +422,9 @@ namespace Falcor
             }
             mCurrentTime = mVideoCapture.pUI->getStartTime();
             if(!mVideoCapture.pUI->captureUI())
+            {
                 mShowUI = false;
+            }
         }
     }
 
@@ -438,6 +442,7 @@ namespace Falcor
 
     void Sample::captureVideoFrame()
     {
+        return;
         if(mVideoCapture.pVideoCapture)
         {
             ScreenCapture::captureToMemory(mpDefaultFBO->getWidth(), mpDefaultFBO->getHeight(), ResourceFormat::RGBA8Unorm, mVideoCapture.pFrame);

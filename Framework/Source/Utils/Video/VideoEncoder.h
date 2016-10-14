@@ -42,7 +42,7 @@ namespace Falcor
         using UniquePtr = std::unique_ptr<VideoEncoder>;
         using UniqueConstPtr = std::unique_ptr<const VideoEncoder>;
 
-        enum class CodecID
+        enum class CodecID : int32_t
         {
             RawVideo,
             H264,
