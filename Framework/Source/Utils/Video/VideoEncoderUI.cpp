@@ -69,7 +69,7 @@ namespace Falcor
     void VideoEncoderUI::startCaptureUI(Gui* pGui)
     {
         pGui->pushWindow("Video Capture", mWindowDims.width, mWindowDims.height, mWindowDims.x, mWindowDims.y);
-        pGui->addDropdown("Codec", kCodecID, (int32_t*)&mCodec);
+        pGui->addDropdown("Codec", kCodecID, (uint32_t*)&mCodec);
         pGui->addIntVar("Video FPS", (int32_t*)&mFPS, 0, 240, 1);
 
         if(pGui->pushGroup("Codec Options"))

@@ -370,9 +370,40 @@ namespace Falcor
         ImGui::Separator();
     }
 
-    void Gui::addDropdown(const std::string& name, const dropdown_list& values, int32_t* pVar, bool sameLine)
+    void Gui::addDropdown(const std::string& name, const dropdown_list& values, uint32_t* pVar, bool sameLine)
     {
         if (sameLine) ImGui::SameLine();
+        // Check if we need to update the currentItem
+        const auto& iter = mDropDownValues.find(pVar);
+        int curItem;
+        if ((iter == mDropDownValues.end()) || (iter->second.lastVal != *pVar))
+        {
+            // Search the current val
+            for (uint32_t i = 0 ; i < values.size() ; i++)
+            {
+                if (values[i].value == *pVar)
+                {
+                    curItem = i;
+                    mDropDownValues[pVar].currentItem = i;
+                    break;
+                }
+            }
+        }
+        else
+        {
+            curItem = mDropDownValues[pVar].currentItem;
+        }
+
+        std::string comboStr;
+        for (const auto& v : values)
+        {
+            comboStr += v.label + '\0';
+        }
+        comboStr += '\0';
+        ImGui::Combo(name.c_str(), &curItem, comboStr.c_str());
+        mDropDownValues[pVar].currentItem = curItem;
+        mDropDownValues[pVar].lastVal = values[curItem].value;
+        *pVar = values[curItem].value;
     }
 
     void Gui::addTooltip(const std::string& tip, bool sameLine)

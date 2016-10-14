@@ -151,7 +151,7 @@ namespace Falcor
             \param[in] pVar A pointer to a user variable that will be updated directly when a dropdown option changes. This correlates to the 'pValue' field in Gui#SDropdownValue struct.
             \param[in] sameLine Optional. If set to true, the widget will appear on the same line as the previous widget
         */
-        void addDropdown(const std::string& name, const dropdown_list& values, int32_t* pVar, bool sameLine = false);
+        void addDropdown(const std::string& name, const dropdown_list& values, uint32_t* pVar, bool sameLine = false);
 
         /** Render a tooltip. This will display a small question mark next to the last label item rendered and will display the tooltip if the user hover over it
             \param[in] tip The tooltip's text
@@ -172,6 +172,13 @@ namespace Falcor
         Gui() = default;
         void init();
         void createVao(uint32_t vertexCount, uint32_t indexCount);
+
+        struct ComboData
+        {
+            uint32_t lastVal = -1;
+            int32_t currentItem = -1;
+        };
+        std::map<uint32_t*, ComboData> mDropDownValues;
 
         Vao::SharedPtr mpVao;
         VertexLayout::SharedPtr mpLayout;
