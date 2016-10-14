@@ -69,8 +69,8 @@ namespace Falcor
     void VideoEncoderUI::startCaptureUI(Gui* pGui)
     {
         pGui->pushWindow("Video Capture", mWindowDims.width, mWindowDims.height, mWindowDims.x, mWindowDims.y);
-        pGui->addIntVar("FPS", (int32_t*)&mFPS, 0, 240, 1);
         pGui->addDropdown("Codec", kCodecID, (int32_t*)&mCodec);
+        pGui->addIntVar("Video FPS", (int32_t*)&mFPS, 0, 240, 1);
 
         if(pGui->pushGroup("Codec Options"))
         {
@@ -80,7 +80,7 @@ namespace Falcor
         pGui->popGroup();
 
         pGui->addCheckBox("Capture UI", &mCaptureUI);
-        
+        pGui->addTooltip("Check this box if you want the GUI recorded");
         pGui->addCheckBox("Use Time-Range", &mUseTimeRange);
         if(mUseTimeRange)
         {

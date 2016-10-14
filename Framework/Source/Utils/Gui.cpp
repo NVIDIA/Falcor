@@ -60,6 +60,9 @@ namespace Falcor
         io.KeyMap[ImGuiKey_Z] = (uint32_t)KeyboardEvent::Key::Z;
         io.IniFilename = nullptr;
 
+        ImGuiStyle& style = ImGui::GetStyle();
+        style.Colors[ImGuiCol_WindowBg].w = 0.95f;
+
         // Create the pipeline state cache
         mpPipelineStateCache = PipelineStateCache::create();
 
@@ -71,6 +74,11 @@ namespace Falcor
         // Create and set the texture
         uint8_t* pFontData;
         int32_t width, height;
+        std::string fontFile;
+        if(findFileInDataDirectories("Framework//trebucbd.ttf", fontFile))
+        {
+            io.Fonts->AddFontFromFileTTF(fontFile.c_str(), 16);
+        }
         io.Fonts->GetTexDataAsAlpha8(&pFontData, &width, &height);
         Texture::SharedPtr pTexture = Texture::create2D(width, height, ResourceFormat::Alpha8Unorm, 1, 1, pFontData);
         mpProgramVars->setTexture("gFont", pTexture);
@@ -365,5 +373,19 @@ namespace Falcor
     void Gui::addDropdown(const std::string& name, const dropdown_list& values, int32_t* pVar, bool sameLine)
     {
         if (sameLine) ImGui::SameLine();
+    }
+
+    void Gui::addTooltip(const std::string& tip, bool sameLine)
+    {
+        if (sameLine) ImGui::SameLine();
+        ImGui::TextDisabled("(?)");
+        if (ImGui::IsItemHovered())
+        {
+            ImGui::BeginTooltip();
+            ImGui::PushTextWrapPos(450.0f);
+            ImGui::TextUnformatted(tip.c_str());
+            ImGui::PopTextWrapPos();
+            ImGui::EndTooltip();
+        }
     }
 }

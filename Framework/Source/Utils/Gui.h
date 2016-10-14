@@ -153,6 +153,12 @@ namespace Falcor
         */
         void addDropdown(const std::string& name, const dropdown_list& values, int32_t* pVar, bool sameLine = false);
 
+        /** Render a tooltip. This will display a small question mark next to the last label item rendered and will display the tooltip if the user hover over it
+            \param[in] tip The tooltip's text
+            \param[in] sameLine Optional. If set to true, the widget will appear on the same line as the previous widget
+            */
+        void addTooltip(const std::string& tip, bool sameLine = true);
+
         /** Create a new window
         */
         void pushWindow(const std::string& label, uint32_t width = 0, uint32_t height = 0, uint32_t x = 0, uint32_t y = 0);

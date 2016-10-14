@@ -117,7 +117,7 @@ void ShaderBuffersSample::onFrameRender()
     mpRenderContext->setTopology(RenderContext::Topology::TriangleList);
     mpRenderContext->drawIndexed(mIndexCount, 0, 0);
 
-     std::string msg = getGlobalSampleMessage(true) + '\n';
+     std::string msg = getFpsMsg() + '\n';
     if(mCountPixelShaderInvocations)
     {
 #ifndef FALCOR_D3D
