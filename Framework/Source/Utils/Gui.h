@@ -159,6 +159,20 @@ namespace Falcor
             */
         void addTooltip(const std::string& tip, bool sameLine = true);
 
+        using GraphCallback = float(*)(void*, int32_t index);
+        /** Adds a graph based on a function
+        \param[in] label The name of the widget.
+        \param[in] func A function pointer to calculate the values in the graph
+        \param[in] pUserData A user-data pointer to pass to the callback function
+        \param[in] sampleCount Number of sample-points in the graph
+        \param[in] sampleOffset Optional. Determines the value for the center of the x-axis
+        \param[in] yMin Optional. The minimum value of the y-axis. Use FLT_MAX to auto-detect the range based on the function and the provided x-range
+        \param[in] yMax Optional. The maximum value of the y-axis. Use FLT_MAX to auto-detect the range based on the function and the provided x-range
+        \param[in] width Optional. The width of the graph widget. 0 means auto-detect (fits the widget to the GUI width)
+        \param[in] height Optional. The height of the graph widget. 0 means auto-detect (no idea what's the logic. Too short.)
+        */
+        void addGraph(const std::string& label, GraphCallback func, void* pUserData, uint32_t sampleCount, int32_t sampleOffset, float yMin = FLT_MAX, float yMax = FLT_MAX, uint32_t width = 0, uint32_t height = 100);
+
         /** Create a new window
         */
         void pushWindow(const std::string& label, uint32_t width = 0, uint32_t height = 0, uint32_t x = 0, uint32_t y = 0);

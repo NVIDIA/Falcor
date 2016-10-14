@@ -419,4 +419,10 @@ namespace Falcor
             ImGui::EndTooltip();
         }
     }
+
+    void Gui::addGraph(const std::string& label, GraphCallback func, void* pUserData, uint32_t sampleCount, int32_t sampleOffset, float yMin, float yMax, uint32_t width, uint32_t height)
+    {
+        ImVec2 imSize{ (float)width, (float)height };
+        ImGui::PlotLines(label.c_str(), func, pUserData, (int32_t)sampleCount, sampleOffset, nullptr, yMin, yMax, imSize);
+    }
 }
