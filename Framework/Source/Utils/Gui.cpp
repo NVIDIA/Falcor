@@ -406,6 +406,24 @@ namespace Falcor
         *pVar = values[curItem].value;
     }
 
+    void Gui::setGlobalFontScaling(float scale)
+    {
+        ImGuiIO& io = ImGui::GetIO();
+        io.FontGlobalScale = scale;
+    }
+
+    void Gui::addTextBox(const std::string& name, char buf[], size_t bufSize, uint32_t lineCount)
+    {
+        if (lineCount > 1)
+        {
+            ImGui::InputTextMultiline(name.c_str(), buf, bufSize, ImVec2(-1.0f, ImGui::GetTextLineHeight() * lineCount));
+        }
+        else
+        {
+            ImGui::InputText(name.c_str(), buf, bufSize);
+        }
+    }
+
     void Gui::addTooltip(const std::string& tip, bool sameLine)
     {
         if (sameLine) ImGui::SameLine();

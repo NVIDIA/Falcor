@@ -159,7 +159,16 @@ namespace Falcor
             */
         void addTooltip(const std::string& tip, bool sameLine = true);
 
+        /** Adds a text box.
+            \param[in] name The name of the variable.
+            \param[in] buf A character buffer with the initialize text. The buffer will be updated if a text is entered.
+            \param[in] bufSize The size of the text buffer
+            \param[in] lineCount Number of lines in the text-box. If larger then 1 will create a multi-line box
+        */
+        void addTextBox(const std::string& name, char buf[], size_t bufSize, uint32_t lineCount = 1);
+
         using GraphCallback = float(*)(void*, int32_t index);
+
         /** Adds a graph based on a function
         \param[in] label The name of the widget.
         \param[in] func A function pointer to calculate the values in the graph
@@ -173,7 +182,11 @@ namespace Falcor
         */
         void addGraph(const std::string& label, GraphCallback func, void* pUserData, uint32_t sampleCount, int32_t sampleOffset, float yMin = FLT_MAX, float yMax = FLT_MAX, uint32_t width = 0, uint32_t height = 100);
 
-        /** Create a new window
+        /** Set global font size scaling. Has to be called BEFORE twInit()!
+        */
+        static void setGlobalFontScaling(float scale);
+
+        /** Create a new window on the stack
         */
         void pushWindow(const std::string& label, uint32_t width = 0, uint32_t height = 0, uint32_t x = 0, uint32_t y = 0);
         void popWindow();
@@ -200,5 +213,6 @@ namespace Falcor
         Program::SharedPtr mpProgram;
         PipelineStateCache::SharedPtr mpPipelineStateCache;
         uint32_t mGroupStackSize = 0;
+        float mFontScale = 1;
     };
 }
