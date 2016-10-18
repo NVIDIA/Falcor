@@ -31,5 +31,9 @@
 
 namespace Falcor
 {
-    bool glslToHlslShader(std::string& shader, ShaderType shaderType);
+    bool tryCrossCompileShader(
+        std::string&    ioShader,
+        ShaderType      shaderType,
+        ShadingLanguage fromShadingLanguage,
+        ShadingLanguage toShadingLanguage);
 }

@@ -88,8 +88,42 @@ namespace Falcor
         return pShader;
     }
 
+    bool endsWith(char const* str, char const* suffix)
+    {
+        size_t strLen = strlen(str);
+        size_t suffixLen = strlen(suffix);
+        if(strLen < suffixLen) return false;
+
+        return strcmp(str + strLen - suffixLen, suffix) == 0;
+    }
+
+    ShadingLanguage guessShadingLanguageFromFileName(const std::string& filename)
+    {
+        static const struct
+        {
+            char const*         extension;
+            ShadingLanguage     language;
+        } kKnownExtensions[] = 
+        {
+            { ".glsl",  ShadingLanguage::GLSL },
+            { ".vs",    ShadingLanguage::GLSL },
+            { ".fs",    ShadingLanguage::GLSL },
+            { ".hlsl",  ShadingLanguage::HLSL },
+            { ".fx",    ShadingLanguage::HLSL },
+            { nullptr,  ShadingLanguage::Unknown },
+        };
+        for(auto item = kKnownExtensions; item->extension != nullptr; ++item )
+        {
+            if(endsWith(filename.c_str(), item->extension))
+                return item->language;
+        }
+        return ShadingLanguage::Unknown;
+    }
+
     const Shader::SharedPtr createShaderFromFile(const std::string& filename, ShaderType shaderType, const Program::DefineList& shaderDefines)
     {
+
+
         // New shader, look for the file
         std::string fullpath;
         if(findFileInDataDirectories(filename, fullpath) == false)
@@ -119,6 +153,8 @@ namespace Falcor
             else
             {
                 // Preprocessing is good
+
+#if 0
 #ifdef FALCOR_DX11
                 if(glslToHlslShader(shader, shaderType) == false)
                 {
@@ -129,6 +165,28 @@ namespace Falcor
                     continue;
                 }
 #endif
+#endif
+
+#ifdef FALCOR_DX11
+                auto targetLanguage = ShadingLanguage::HLSL;
+#else
+                auto targetLanguage = ShadingLanguage::GLSL;
+#endif
+                auto haveLanguage = guessShadingLanguageFromFileName(filename);
+                if(haveLanguage != ShadingLanguage::Unknown
+                    && haveLanguage != targetLanguage)
+                {
+                    //
+                    if(tryCrossCompileShader(shader, shaderType, haveLanguage, targetLanguage) == false)
+                    {
+                        if(msgBox("retry cross-compilation?", MsgBoxType::RetryCancel) == MsgBoxButton::Cancel)
+                        {
+                            return nullptr;
+                        }
+                        continue;
+                    }
+                }
+
                 std::string errorLog;
                 auto pShader = Shader::create(shader, shaderType, errorLog);
 

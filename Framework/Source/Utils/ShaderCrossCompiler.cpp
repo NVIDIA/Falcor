@@ -82,6 +82,10 @@ struct Options
     char const* outputPath;
     char const* entryPointName;
 
+    Falcor::ShaderType      shaderType;
+    Falcor::ShadingLanguage fromShadingLanguage;
+    Falcor::ShadingLanguage toShadingLanguage;
+
     std::vector<char const*> includePaths;
 };
 
@@ -170,6 +174,9 @@ public:
     }
 };
 
+// Note: we use this hacky sub-class as a workaround to get public
+// access to a member that was declared `protected` for no clear reason.
+//
 class HackShader : public glslang::TShader
 {
 public:
@@ -228,6 +235,7 @@ void markNameUsed(EmitNameScope* scope, std::string const& name)
 
 struct SharedEmitContext
 {
+    Options* options;
     glslang::TShader* glslangShader;
     char const* entryPointName;
     EmitSpan* mainSpan;
@@ -318,11 +326,19 @@ EmitSpan* allocateSpan(EmitContext* context)
     return span;
 }
 
-void initSharedEmitContext(SharedEmitContext* shared)
+void internalError(SharedEmitContext* context, char const* message)
 {
-    // set up global name scopes
-    shared->globalNames.parent = &shared->reservedNames;
+    Falcor::Logger::log(Falcor::Logger::Level::Error, std::string("shader cross-compiler internal error: ") + message);
+}
 
+
+void internalError(EmitContext* context, char const* message)
+{
+    internalError(context->shared, message);
+}
+
+void initSharedEmitContext_HLSL(SharedEmitContext* shared)
+{
     // reserve names that are keywords in HLSL, but not GLSL
     markNameUsed(&shared->reservedNames, "linear");
     markNameUsed(&shared->reservedNames, "texture");
@@ -362,7 +378,7 @@ void initSharedEmitContext(SharedEmitContext* shared)
     {
         if(ms)
         {
-            emit(context, "#ifdef FACLOR_MULTISAMPLE_COUNT\n");
+            emit(context, "#ifdef FALCOR_MULTISAMPLE_COUNT\n");
         }
 
         for(int array = 0; array < 2; ++array)
@@ -397,7 +413,7 @@ void initSharedEmitContext(SharedEmitContext* shared)
                         emit(context, kTypeGenericArgs[type]);
                         if(ms)
                         {
-                            emit(context, ", FACLOR_MULTISAMPLE_COUNT");
+                            emit(context, ", FALCOR_MULTISAMPLE_COUNT");
                         }
                         emit(context, ">");
                     }
@@ -450,16 +466,95 @@ void initSharedEmitContext(SharedEmitContext* shared)
     shared->mainSpan = allocateSpan(context);
 }
 
+void initSharedEmitContext_GLSL(SharedEmitContext* shared)
+{
+    // create the sequence of spans we need
+
+    EmitContext contextImpl = {shared};
+    EmitContext* context = &contextImpl;
+
+    markNameUsed(&shared->reservedNames, "main");
+
+    allocateSpan(context);
+    emit(context, "// automatically generated code, do not edit\n");
+    emit(context, "#version 420\n"); // TODO: how to derive the right value?
+    emit(context, "#extension GL_ARB_bindless_texture : enable\n"); // TODO: how to derive the right value?
+    emit(context, "#extension GL_NV_shader_buffer_load : enable\n"); // TODO: how to derive the right value?
+
+    // Helpers needed in the HLSL->GLSL direction
+    emit(context, "#ifndef FALCOR_CROSS_COMPILER_HELPERS_INCLUDED\n");
+    emit(context, "#define FALCOR_CROSS_COMPILER_HELPERS_INCLUDED\n");
+
+    switch(context->shared->options->toShadingLanguage)
+    {
+    case Falcor::ShadingLanguage::GLSL:
+        emit(context, "struct sampler { int _; };\n");
+        break;
+
+    // Note: Vulkan doesn't need `sampler` to be defined.
+
+    default:
+        break;
+    }
+    emit(context, "#endif\n");
+
+
+
+    emit(context, "\n// type declarations\n");
+    shared->structDeclSpan = allocateSpan(context);
+
+    allocateSpan(context);
+    emit(context, "\n// uniform buffers\n");
+    shared->cbufferDeclSpan = allocateSpan(context);
+
+    allocateSpan(context);
+    emit(context, "\n// stage input\n");
+    shared->inputDeclSpan           = allocateSpan(context);
+    shared->systemInputDeclSpan     = allocateSpan(context);
+
+    allocateSpan(context);
+    emit(context, "\n// stage output\n");
+    shared->outputDeclSpan          = allocateSpan(context);
+    shared->systemOutputDeclSpan    = allocateSpan(context);
+
+    allocateSpan(context);
+    emit(context, "\n// global variables\n");
+    shared->globalVarDeclSpan = allocateSpan(context);
+
+    allocateSpan(context);
+    emit(context, "\n// functions\n");
+    shared->mainSpan = allocateSpan(context);
+}
+
+
+void initSharedEmitContext(SharedEmitContext* shared)
+{
+    // set up global name scopes
+    shared->globalNames.parent = &shared->reservedNames;
+
+    switch(shared->options->toShadingLanguage)
+    {
+    case Falcor::ShadingLanguage::GLSL:
+    case Falcor::ShadingLanguage::VulkanGLSL:
+        initSharedEmitContext_GLSL(shared);
+        break;
+
+    case Falcor::ShadingLanguage::HLSL:
+        initSharedEmitContext_HLSL(shared);
+        break;
+
+    default:
+        internalError(shared, "unknown shading language target");
+        break;
+    }
+
+}
+
 
 
 void emitExp(EmitContext* context, TIntermNode* node);
 void emitTypedDecl(EmitContext* context, glslang::TType const& type, glslang::TString const& name);
 void emitTypedDecl(EmitContext* context, glslang::TType const& type, std::string const& name);
-
-void internalError(EmitContext* context, char const* message)
-{
-    Falcor::Logger::log(Falcor::Logger::Level::Error, std::string("shader cross-compiler internal error: ") + message);
-}
 
 void emitData(EmitSpan* span, char const* data, size_t size)
 {
@@ -474,7 +569,7 @@ void emitData(EmitSpan* span, char const* data, size_t size)
         char* newBuffer = (char*)realloc(buffer, newSize);
         if(!newBuffer)
         {
-            internalError(NULL, "out of memory\n");
+            internalError((EmitContext*) nullptr, "out of memory\n");
             exit(1);
         }
 
@@ -497,6 +592,25 @@ void emit(EmitContext* context, char const* begin, char const* end)
 void emit(EmitContext* context, char const* text)
 {
     emit(context, text, text + strlen(text));
+}
+
+void emitEither(EmitContext* context, char const* hlslText, char const* glslText)
+{
+    switch(context->shared->options->toShadingLanguage)
+    {
+    case Falcor::ShadingLanguage::HLSL:
+        emit(context, hlslText);
+        break;
+
+    case Falcor::ShadingLanguage::VulkanGLSL:
+    case Falcor::ShadingLanguage::GLSL:
+        emit(context, glslText);
+        break;
+
+    default:
+        internalError(context, "unhandled target shading language");
+        break;
+    }
 }
 
 void emitInt(EmitContext* context, int val)
@@ -547,7 +661,15 @@ void emitFuncName(EmitContext* context, glslang::TString const& name)
     {
         end = text + name.length();
     }
-    emit(context, text, end);
+    // HACK:
+    if((end == text + 4) && strncmp(text, "main", 4) == 0)
+    {
+        emit(context, "main_1");
+    }
+    else
+    {
+        emit(context, text, end);
+    }
 }
 
 enum DeclaratorFlavor
@@ -677,7 +799,7 @@ void ensureStructDecl(EmitContext* context, glslang::TType const& type)
     }
 }
 
-void emitTextureSamplerTypedDecl(EmitContext* context, glslang::TType const& type, glslang::TSampler const& sampler, Declarator* declarator)
+void emitTextureSamplerType_HLSL(EmitContext* context, glslang::TType const& type, glslang::TSampler const& sampler)
 {
     switch (sampler.type) {
     case glslang::EbtFloat:
@@ -713,7 +835,47 @@ void emitTextureSamplerTypedDecl(EmitContext* context, glslang::TType const& typ
     }
 }
 
-void emitTextureTypedDecl(EmitContext* context, glslang::TType const& type, glslang::TSampler const& sampler, Declarator* declarator)
+void emitTextureSamplerType_GLSL(EmitContext* context, glslang::TType const& type, glslang::TSampler const& sampler, char const* prefix = "sampler")
+{
+    // TODO: properly handle Vulkan GLSL separate sampler/texture types
+
+    switch (sampler.type) {
+    case glslang::EbtFloat:
+        break;
+    case glslang::EbtInt:   emit(context, "i");    break;
+    case glslang::EbtUint:  emit(context, "u");   break;
+    default:
+        internalError(context, "unhandled case in 'emitTextureType_GLSL'");
+        break;
+    }
+
+    emit(context, prefix);
+
+    switch(sampler.dim)
+    {
+    case glslang::Esd1D:      emit(context, "1D");       break;
+    case glslang::Esd2D:      emit(context, "2D");       break;
+    case glslang::Esd3D:      emit(context, "3D");       break;
+    case glslang::EsdCube:    emit(context, "Cube");     break;
+    case glslang::EsdRect:    emit(context, "Rect");     break;
+    case glslang::EsdBuffer:  emit(context, "Buffer");   break;
+    case glslang::EsdSubpass:
+    default:
+        internalError(context, "unhandled case in 'emitTextureTypedDecl'");
+        break;
+    }
+
+    if(sampler.ms)
+    {
+        emit(context, "MS");
+    }
+    if(sampler.arrayed)
+    {
+        emit(context, "Array");
+    }
+}
+
+void emitTextureType_HLSL(EmitContext* context, glslang::TType const& type, glslang::TSampler const& sampler)
 {
     switch(sampler.dim)
     {
@@ -744,13 +906,33 @@ void emitTextureTypedDecl(EmitContext* context, glslang::TType const& type, glsl
     case glslang::EbtInt:   emit(context, "<int4>");    break;
     case glslang::EbtUint:  emit(context, "<uint4>");   break;
     default:
-        internalError(context, "unhandled case in 'emitTextureTypedDecl'");
+        internalError(context, "unhandled case in 'emitTextureType_HLSL'");
+        break;
+    }
+}
+
+void emitTextureType_GLSL(EmitContext* context, glslang::TType const& type, glslang::TSampler const& sampler)
+{
+    switch(context->shared->options->toShadingLanguage)
+    {
+    case Falcor::ShadingLanguage::GLSL:
+        // If a variable was declared as just a texture, declare it as a texture-sampler.
+        emitTextureSamplerType_GLSL(context, type, sampler);
+        break;
+
+    case Falcor::ShadingLanguage::VulkanGLSL:
+        emitTextureSamplerType_GLSL(context, type, sampler, "texture");
+        break;
+
+    default:
+        internalError(context, "unhandled target shading language");
         break;
     }
 
 }
 
-void emitSamplerTypedDecl(EmitContext* context, glslang::TType const& type, glslang::TSampler const& sampler, Declarator* declarator)
+
+void emitSamplerType_HLSL(EmitContext* context, glslang::TType const& type, glslang::TSampler const& sampler)
 {
     if(sampler.shadow)
     {
@@ -762,12 +944,21 @@ void emitSamplerTypedDecl(EmitContext* context, glslang::TType const& type, glsl
     }
 }
 
-void emitSimpleTypedDecl(EmitContext* context, glslang::TType const& type, Declarator* declarator)
+void emitSamplerType_GLSL(EmitContext* context, glslang::TType const& type, glslang::TSampler const& sampler)
+{
+    // Note: This is the correct  type for Vulkan GLSL.
+    // Targets using OpenGL GLSL will need to define a dummy type with this name.
+    emit(context, "sampler");
+}
+
+
+void emitSimpleType_HLSL(EmitContext* context, glslang::TType const& type)
 {
     // only dealing with HLSL for now
     switch(type.getBasicType())
     {
-#define CASE(N,T) case glslang::Ebt##N: emit(context, #T); break
+#define CASE(N, hlslName) case glslang::Ebt##N: emit(context, #hlslName); break
+    // TODO: do any of these actually need to vary between HLSL/GLSL?
     CASE(Void, void);
     CASE(Float, float);
     CASE(Double, double);
@@ -781,39 +972,19 @@ void emitSimpleTypedDecl(EmitContext* context, glslang::TType const& type, Decla
 
     case glslang::EbtSampler:
         {
-            // TODO: the tricky part here is that things that are a single type
-            // in GLSL, like `sampler2d` are actually a pair of types in HLSL:
-            // `Texture2D` and `SamplerState`.
-            //
-            // The obvious solution is to create an HLSL struct with two fields
-            // and use *that*, but there are rules against using opaque types
-            // in various ways that will make that break down.
-
             glslang::TSampler const& sampler = type.getSampler();
             if(sampler.combined)
             {
-                emitTextureSamplerTypedDecl(context, type, sampler, declarator);
+                emitTextureSamplerType_HLSL(context, type, sampler);
             }
             else if(sampler.sampler)
             {
-                emitSamplerTypedDecl(context, type, sampler, declarator);
+                emitSamplerType_HLSL(context, type, sampler);
             }
             else
             {
-                emitTextureTypedDecl(context, type, sampler, declarator);
+                emitTextureType_HLSL(context, type, sampler);
             }
-        }
-        break;
-
-    case glslang::EbtStruct:
-    case glslang::EbtBlock:
-        {
-            ensureStructDecl(context, type);
-
-            // TODO: this assumes `struct` declarations will
-            // always be encountered before references, and
-            // that we have no scoping issues...
-            emit(context, type.getTypeName());
         }
         break;
 
@@ -831,6 +1002,112 @@ void emitSimpleTypedDecl(EmitContext* context, glslang::TType const& type, Decla
     else if(type.getVectorSize() > 1)
     {
         emitInt(context, type.getVectorSize());
+    }
+}
+
+void emitSimpleType_GLSL(EmitContext* context, glslang::TType const& type)
+{
+    int kindIndex = 0;
+    if( type.isMatrix() )
+    {
+        kindIndex = 2;
+    }
+    else if(type.getVectorSize() > 1)
+    {
+        kindIndex = 1;
+    }
+
+    switch(type.getBasicType())
+    {
+#define CASE(N, glslName) case glslang::Ebt##N: emit(context, #glslName); break
+    CASE(Void, void);
+    CASE(AtomicUint, atomic_uint);
+#undef CASE
+
+#define CASE(N, scalarName, vecName, matName) case glslang::Ebt##N: {   \
+    static const char* kNames[] = {#scalarName, #vecName, #matName};    \
+    emit(context, kNames[kindIndex]);                                   \
+    } break
+
+    CASE(Float, float, vec, mat);
+    CASE(Double, double, dvec, dmat);
+    CASE(Int, int, ivec, imat);
+    CASE(Uint, uint, uvec, umat);
+    CASE(Int64, int64_t, i64vec, i64mat);
+    CASE(Uint64, uint64_t, u64vec, u64mat);
+    CASE(Bool, bool, bvec, bmat);
+#undef CASE
+
+    case glslang::EbtSampler:
+        {
+            glslang::TSampler const& sampler = type.getSampler();
+            if(sampler.combined)
+            {
+                emitTextureSamplerType_GLSL(context, type, sampler);
+            }
+            else if(sampler.sampler)
+            {
+                emitSamplerType_GLSL(context, type, sampler);
+            }
+            else
+            {
+                emitTextureType_GLSL(context, type, sampler);
+            }
+        }
+        break;
+
+    default:
+        internalError(context, "uhandled case in 'emitTypeSpecifier'");
+        break;
+    }
+
+    if(type.isMatrix())
+    {
+        emitInt(context, type.getMatrixRows());
+        emit(context, "x");
+        emitInt(context, type.getMatrixCols());
+    }
+    else if(type.getVectorSize() > 1)
+    {
+        emitInt(context, type.getVectorSize());
+    }
+}
+
+
+void emitSimpleTypedDecl(EmitContext* context, glslang::TType const& type, Declarator* declarator)
+{
+    // only dealing with HLSL for now
+    switch(type.getBasicType())
+    {
+    case glslang::EbtStruct:
+    case glslang::EbtBlock:
+        {
+            ensureStructDecl(context, type);
+
+            // TODO: this assumes `struct` declarations will
+            // always be encountered before references, and
+            // that we have no scoping issues...
+            emit(context, type.getTypeName());
+        }
+        break;
+
+    default:
+        switch(context->shared->options->toShadingLanguage)
+        {
+        case Falcor::ShadingLanguage::HLSL:
+            emitSimpleType_HLSL(context, type);
+            break;
+
+        case Falcor::ShadingLanguage::GLSL:
+        case Falcor::ShadingLanguage::VulkanGLSL:
+            emitSimpleType_GLSL(context, type);
+            break;
+
+        default:
+            internalError(context, "unhandled target shading language");
+            break;
+        }
+        break;
     }
 
     emitDeclarator(context, declarator);
@@ -910,6 +1187,27 @@ void emitBuiltinCall(EmitContext* context, char const* name, glslang::TIntermAgg
     emit(context, "(");
     emitArgList(context, node);
     emit(context, ")");
+}
+
+char const* pickNameForTarget(EmitContext* context, char const* hlslName, char const* glslName)
+{
+    switch(context->shared->options->toShadingLanguage)
+    {
+    case Falcor::ShadingLanguage::HLSL:
+        return hlslName;
+    case Falcor::ShadingLanguage::GLSL:
+    case Falcor::ShadingLanguage::VulkanGLSL:
+        return glslName;
+
+    default:
+        internalError(context, "unhandled target shading language");
+        return hlslName;
+    }
+}
+
+void emitBuiltinCallForTarget(EmitContext* context, char const* hlslName, char const* glslName, glslang::TIntermAggregate* node)
+{
+    emitBuiltinCall(context, pickNameForTarget(context, hlslName, glslName), node);
 }
 
 void emitTextureCall(EmitContext* context, char const* format, glslang::TIntermAggregate* node)
@@ -1191,21 +1489,45 @@ void emitConstantExp(EmitContext* context, glslang::TType const& type, glslang::
 
 void emitConstructorCall(EmitContext* context, glslang::TIntermAggregate* node)
 {
-    // HLSL uses cast syntax for single-argument case
-    if(node->getSequence().size() == 1)
+    switch(context->shared->options->toShadingLanguage)
     {
-        emit(context, "((");
-        emitTypeName(context, node->getType());
-        emit(context, ") ");
-        emitArgList(context, node);
-        emit(context, ")");
-        return;
+    default:
+        break;
+
+    case Falcor::ShadingLanguage::HLSL:
+        // HLSL uses cast syntax for single-argument case
+        if(node->getSequence().size() == 1)
+        {
+            emit(context, "((");
+            emitTypeName(context, node->getType());
+            emit(context, ") ");
+            emitArgList(context, node);
+            emit(context, ")");
+            return;
+        }
+        break;
     }
 
     emitTypeName(context, node->getType());
     emit(context, "(");
     emitArgList(context, node);
     emit(context, ")");
+}
+
+void emitTextureSamplerConstructorCall(EmitContext* context, glslang::TIntermAggregate* node)
+{
+    switch(context->shared->options->toShadingLanguage)
+    {
+    default:
+        emitConstructorCall(context, node);
+        break;
+
+    // OpenGL GLSL doesn't have separate textures/samplers, so any code that appears to use
+    // them should already be passing the combined texture-sampler in the first operand
+    case Falcor::ShadingLanguage::GLSL:
+        emitExp(context, node->getSequence()[0]);
+        break;
+    }
 }
 
 void emitConversion(EmitContext* context, glslang::TIntermUnary* node)
@@ -1289,6 +1611,40 @@ EmitSymbolInfo emitUniformDecl(EmitContext* context, glslang::TIntermSymbol* nod
     return info;
 }
 
+void emitUniformBlockDeclImpl_HLSL(EmitContext* context, EmitSymbolInfo const& info, glslang::TIntermSymbol* node)
+{
+    emit(context, "cbuffer ");
+    emit(context, info.name);
+    if(node->getType().getQualifier().hasBinding())
+    {
+        emit(context, " : register(b");
+        emitInt(context, node->getType().getQualifier().layoutBinding);
+        emit(context, ")");
+    }
+    emit(context, "\n{\n");
+
+    emitAggTypeMemberDecls(context, node->getType().getStruct());
+
+    emit(context, "};\n");
+}
+
+void emitUniformBlockDeclImpl_GLSL(EmitContext* context, EmitSymbolInfo const& info, glslang::TIntermSymbol* node)
+{
+    if(node->getType().getQualifier().hasBinding())
+    {
+        emit(context, "layout(binding =");
+        emitInt(context, node->getType().getQualifier().layoutBinding);
+        emit(context, ")");
+    }
+    emit(context, "uniform ");
+    emit(context, info.name);
+    emit(context, "\n{\n");
+
+    emitAggTypeMemberDecls(context, node->getType().getStruct());
+
+    emit(context, "};\n");
+}
+
 EmitSymbolInfo emitUniformBlockDecl(EmitContext* inContext, glslang::TIntermSymbol* node)
 {
     EmitSpan* span = allocateSpan();
@@ -1304,31 +1660,17 @@ EmitSymbolInfo emitUniformBlockDecl(EmitContext* inContext, glslang::TIntermSymb
     // TODO: maybe don't discover uniform blocks on the fly like this,
     // and instead use the reflection interface to walk them more directly
 
-    emit(context, "cbuffer ");
-    emit(context, info.name);
-    if(node->getType().getQualifier().hasBinding())
+    switch(context->shared->options->toShadingLanguage)
     {
-        emit(context, " : register(b");
-        emitInt(context, node->getType().getQualifier().layoutBinding);
-        emit(context, ")");
+    case Falcor::ShadingLanguage::HLSL:
+        emitUniformBlockDeclImpl_HLSL(context, info, node);
+        break;
+
+    case Falcor::ShadingLanguage::GLSL:
+    case Falcor::ShadingLanguage::VulkanGLSL:
+        emitUniformBlockDeclImpl_GLSL(context, info, node);
+        break;
     }
-    emit(context, "\n{\n");
-
-    // Note: we declare the cbuffer as containing a single struct that
-    // uses the same name as the cbuffer itself, so that use sites can
-    // refer to it as `block.member`, whereas HLSL defaults to just using `member`
-    //
-    // TODO: evaluate whether this is a good idea or not.
-    emit(context, "struct\n{\n");
-
-    emitAggTypeMemberDecls(context, node->getType().getStruct());
-
-    emit(context, "} ");
-    emit(context, info.name);
-    emit(context, ";\n");
-
-    // TODO: enumerate the members here!!!
-    emit(context, "};\n");
 
     appendSpan(&subContext.shared->cbufferDeclSpan->children, span);
 
@@ -1400,7 +1742,7 @@ EmitSymbolInfo emitOutputDecl(EmitContext* inContext, glslang::TIntermSymbol* no
 
 void ensureSystemInputOutputDecl(EmitContext* context, glslang::TType const* type)
 {
-    if(type->getQualifier().isParamInput())
+    if(type->getQualifier().isPipeInput())
     {
         context->shared->systemInputsUsed[type->getQualifier().builtIn] = type;
     }
@@ -1650,12 +1992,30 @@ bool isBuiltinInputOutputBlock(EmitContext* context, glslang::TIntermTyped* node
     return isBuiltinInputOutputBlock(context, node->getType());
 }
 
+bool isUniformBlockRef(EmitContext* context, glslang::TType const& type)
+{
+    if(type.getBasicType() == glslang::EbtBlock)
+    {
+        if(type.getQualifier().storage == glslang::EvqUniform)
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool isUniformBlockRef(EmitContext* context, glslang::TIntermTyped* node)
+{
+    return isUniformBlockRef(context, node->getType());
+}
+
 void emitExp(EmitContext* context, TIntermNode* node)
 {
     if(auto nn = node->getAsAggregate())
     {
         switch(nn->getOp())
         {
+        // functions with the same name/semantics in HLSL and GLSL:
 #define CASE(Op, Func) case glslang::EOp##Op: emitBuiltinCall(context, #Func, nn); break
         CASE(Min, min);
         CASE(Max, max);
@@ -1664,7 +2024,6 @@ void emitExp(EmitContext* context, TIntermNode* node)
         CASE(Dot, dot);
         CASE(Atan, atan);
         CASE(Clamp, clamp);
-        CASE(Mix, lerp);
         CASE(Step, step);
         CASE(SmoothStep, smoothstep);
         CASE(Distance, distance);
@@ -1684,7 +2043,11 @@ void emitExp(EmitContext* context, TIntermNode* node)
         CASE(Frexp, frexp);
         CASE(Ldexp, ldexp);
         CASE(ReadInvocation, readInvocation);
-        // Note: constructors may need special-case work if language rules differ
+#undef CASE
+
+        // functions with the same semantics, but different names
+#define CASE(Op, hlslFunc, glslFunc) case glslang::EOp##Op: emitBuiltinCallForTarget(context, #hlslFunc, #glslFunc, nn); break
+        CASE(Mix, lerp, mix);
 #undef CASE
 
 
@@ -1735,8 +2098,11 @@ void emitExp(EmitContext* context, TIntermNode* node)
         case glslang::EOpConstructU64Vec3:
         case glslang::EOpConstructU64Vec4:
         case glslang::EOpConstructStruct:
-        case glslang::EOpConstructTextureSampler:
             emitConstructorCall(context, nn);
+            break;
+
+        case glslang::EOpConstructTextureSampler:
+            emitTextureSamplerConstructorCall(context, nn);
             break;
 
         case glslang::EOpFunctionCall:
@@ -1748,24 +2114,28 @@ void emitExp(EmitContext* context, TIntermNode* node)
             }
             break;
 
-#define CASE(Op, format) case glslang::EOp##Op: emitTextureCall(context, format, nn); break
-    CASE(Texture,               "$t.Sample$b2($s, $1 $,2)");            // texture(s, uv [, bias]) ->
-    CASE(TextureProj,           "$t.Sample$b2($s, $p1 $,2)");           // textureProj(s, uv, [, bias]) ->
-    CASE(TextureLod,            "$t.SampleLevel($s, $1, $2)");          // textureLod(s, uv, lod) ->
-    CASE(TextureOffset,         "$t.Sample$b3($s, $1 $,3, $2)");        // textureOffset(s, uv, offset [, bias]) ->
-    CASE(TextureFetch,          "$t.Load($L1)");                        // texelFetch(s, uv_int, lod/sample) -> 
-    CASE(TextureFetchOffset,    "$t.Load($L1, $3)");                    // texelFetchOffset(s, uv, lod, offset)
-    CASE(TextureProjOffset,     "$t.Sample$b3($s, $p1 $,3, $2)");       // textureProjOffset(s, uvw, offset [,bias])
-    CASE(TextureLodOffset,      "$t.SampleLevel($s, $1, $2, $3)");      // textureLodOffset(s, uv, lod, offset);
-    CASE(TextureProjLod,        "$t.SampleLevel($s, $p1, $2)");         // textureProjLod(s, uvw, lod);
-    CASE(TextureProjLodOffset,  "$t.Sample$b3($s, $p1 $,3, $2)");       // textureProjLodOffset(s, uvw, lod, offset);
-    CASE(TextureGrad,           "$t.SampleGrad($s, $1, $2, $3)");       // textureGrad(s, uv, dx, dy)
-    CASE(TextureGradOffset,     "$t.SampleGrad($s, $1, $2, $3, $4)");   // textureGradOffset(s, uv, dx, dy, offset)
-    CASE(TextureProjGrad,       "$t.SampleGrad($s, $p1, $2, $3)");      // textureProjGrad(s, uvw, dx, dy)
-    CASE(TextureProjGradOffset, "$t.SampleGrad($s, $p1, $2, $3, $4)");  // textureProjGradOfset(s, uv, dx, dy, offset)
-    CASE(TextureGather,         "$t.Gather$g2($s, $1, 0)");             // textureGather(s, uv [, comp])
-    CASE(TextureGatherOffset,   "$t.Gather$g3($s, $1, $2)");            // textureGatherOffset(s, uv, offset [, comp])
-    CASE(TextureGatherOffsets,  "$t.Gather$g3($s, $1, $o2)");           // textureGatherOffsets(s, uv, offsets[4] [, comp])
+#define CASE(Op, hlslFormat, glslName) case glslang::EOp##Op: \
+        if(context->shared->options->toShadingLanguage == Falcor::ShadingLanguage::HLSL) {  \
+            emitTextureCall(context, hlslFormat, nn);                                           \
+                } else { emitBuiltinCall(context, #glslName, nn); } break
+
+    CASE(Texture,               "$t.Sample$b2($s, $1 $,2)",             texture);               // texture(s, uv [, bias]) ->
+    CASE(TextureProj,           "$t.Sample$b2($s, $p1 $,2)",            textureProj);           // textureProj(s, uv, [, bias]) ->
+    CASE(TextureLod,            "$t.SampleLevel($s, $1, $2)",           textureLod);            // textureLod(s, uv, lod) ->
+    CASE(TextureOffset,         "$t.Sample$b3($s, $1 $,3, $2)",         textureOffset);         // textureOffset(s, uv, offset [, bias]) ->
+    CASE(TextureFetch,          "$t.Load($L1)",                         texelFetch);            // texelFetch(s, uv_int, lod/sample) -> 
+    CASE(TextureFetchOffset,    "$t.Load($L1, $3)",                     texelFetchOffset);      // texelFetchOffset(s, uv, lod, offset)
+    CASE(TextureProjOffset,     "$t.Sample$b3($s, $p1 $,3, $2)",        textireProjOffset);     // textureProjOffset(s, uvw, offset [,bias])
+    CASE(TextureLodOffset,      "$t.SampleLevel($s, $1, $2, $3)",       textureLodOffset);      // textureLodOffset(s, uv, lod, offset);
+    CASE(TextureProjLod,        "$t.SampleLevel($s, $p1, $2)",          textureProjLod);        // textureProjLod(s, uvw, lod);
+    CASE(TextureProjLodOffset,  "$t.Sample$b3($s, $p1 $,3, $2)",        textureProjLodOffset);  // textureProjLodOffset(s, uvw, lod, offset);
+    CASE(TextureGrad,           "$t.SampleGrad($s, $1, $2, $3)",        textureGrad);           // textureGrad(s, uv, dx, dy)
+    CASE(TextureGradOffset,     "$t.SampleGrad($s, $1, $2, $3, $4)",    textureGradOffset);     // textureGradOffset(s, uv, dx, dy, offset)
+    CASE(TextureProjGrad,       "$t.SampleGrad($s, $p1, $2, $3)",       textureProjGrad);       // textureProjGrad(s, uvw, dx, dy)
+    CASE(TextureProjGradOffset, "$t.SampleGrad($s, $p1, $2, $3, $4)",   textureProjGradOffset); // textureProjGradOfset(s, uv, dx, dy, offset)
+    CASE(TextureGather,         "$t.Gather$g2($s, $1, 0)",              textureGather);         // textureGather(s, uv [, comp])
+    CASE(TextureGatherOffset,   "$t.Gather$g3($s, $1, $2)",             textureGatherOffset);   // textureGatherOffset(s, uv, offset [, comp])
+    CASE(TextureGatherOffsets,  "$t.Gather$g3($s, $1, $o2)",            textureGatherOffsets);  // textureGatherOffsets(s, uv, offsets[4] [, comp])
 
     // TODO: it never ends!!!
 #if 0
@@ -2001,7 +2371,13 @@ void emitExp(EmitContext* context, TIntermNode* node)
         CASE(MatrixTimesMatrixAssign, "*="); // TODO: should map to use of `mul()`
 #undef CASE
 
-#define CASE(Op, Func) case glslang::EOp##Op: emitBuiltinCall(context, #Func, nn); break
+        // TODO: need to determine if glslang will do the argument swap for us,
+        // as is required when converting from HLSL<->GLSL
+#define CASE(Op, Func) case glslang::EOp##Op:                                               \
+        if(context->shared->options->toShadingLanguage == Falcor::ShadingLanguage::HLSL) {  \
+            emitBuiltinCall(context, "mul", nn);                                            \
+        } else { emitBuiltinOp(context, "*", nn); } break
+
         CASE(VectorTimesMatrix, mul);
         CASE(MatrixTimesVector, mul);
         CASE(MatrixTimesMatrix, mul);
@@ -2058,6 +2434,9 @@ void emitExp(EmitContext* context, TIntermNode* node)
                     {
                         // unexpected
                     }
+                }
+                else if(isUniformBlockRef(context, nn->getLeft()))
+                {
                 }
                 else
                 {
@@ -2308,7 +2687,16 @@ void emitFuncDecl(EmitContext* context, glslang::TIntermAggregate* funcDecl)
     if(isEntryPoint(context, funcDecl))
     {
         context->shared->entryPointFunc = funcDecl;
-        return;
+
+        switch(context->shared->options->toShadingLanguage)
+        {
+        // don't emit entry point as ordinary function if generating HLSL
+        case Falcor::ShadingLanguage::HLSL:
+            return;
+
+        default:
+            break;
+        }
     }
     // TODO: maybe skip the entry-point function during this part...
 
@@ -2373,10 +2761,8 @@ void emitFuncDecl(EmitContext* context, glslang::TIntermAggregate* funcDecl)
     emit(context, "}\n");
 }
 
-void emitEntryPointDecl(EmitContext* context, glslang::TIntermAggregate* funcDecl)
+void emitEntryPointDecl_HLSL(EmitContext* context, glslang::TIntermAggregate* funcDecl)
 {
-
-    // push a scope for locally-declared names
     WithNameScope funcScope(context);
 
     emit(context, "\n// entry point\n");
@@ -2385,7 +2771,6 @@ void emitEntryPointDecl(EmitContext* context, glslang::TIntermAggregate* funcDec
     emit(context, "( STAGE_INPUT stage_input_ )\n");
     emit(context, "{\n");
     emit(context, "stage_input = stage_input_;\n");
-
 
     EmitSpan* localSpan = allocateSpan(context);
     EmitSpan* restSpan = allocateSpan(context);
@@ -2404,6 +2789,285 @@ void emitEntryPointDecl(EmitContext* context, glslang::TIntermAggregate* funcDec
     emit(context, "};\n");
 }
 
+enum MarshallDirection
+{
+    kMarshallDirection_In,
+    kMarshallDirection_Out,
+};
+
+std::string getInputOutputDeclName(EmitContext* context, glslang::TType const& type, std::string const& name, MarshallDirection dir)
+{
+    switch(type.getQualifier().builtIn)
+    {
+    default:
+    case glslang::TBuiltInVariable::EbvNone:
+        {
+            std::string declName = name;
+            size_t declNameLen = declName.size();
+            for(size_t ii = 0; ii < declNameLen; ++ii)
+            {
+                switch(declName[ii])
+                {
+                default:
+                    break;
+
+                case '.':
+                    declName[ii] = '_';
+                    break;
+                }
+            }
+            return declName;
+        }
+        break;
+    }
+}
+
+
+
+void marshallSimpleEntryPointParam(EmitContext* context, glslang::TType const& type, std::string const& name, MarshallDirection dir)
+{
+    EmitContext declContextImpl = *context;
+    EmitContext* declContext = &declContextImpl;
+
+    switch(dir)
+    {
+    case kMarshallDirection_In:
+        declContext->span = context->shared->inputDeclSpan;
+        break;
+
+    case kMarshallDirection_Out:
+        declContext->span = context->shared->outputDeclSpan;
+        break;
+    }
+
+
+    std::string declName = getInputOutputDeclName(context, type, name, dir);
+    switch(type.getQualifier().builtIn)
+    {
+    default:
+        break;
+
+    case glslang::TBuiltInVariable::EbvNone:
+        switch(dir)
+        {
+        case kMarshallDirection_In:
+            emit(declContext, "in ");
+            break;
+
+        case kMarshallDirection_Out:
+            emit(declContext, "out ");
+            break;
+        }
+
+
+        emitTypedDecl(declContext, type, declName);
+        emit(declContext, ";\n");
+        break;
+    }
+
+    switch(dir)
+    {
+    case kMarshallDirection_In:
+        emit(context, name);
+        emit(context, " = ");
+        emit(context, declName);
+        emit(context, ";\n");
+        break;
+
+    case kMarshallDirection_Out:
+        emit(context, declName);
+        emit(context, " = ");
+        emit(context, name);
+        emit(context, ";\n");
+        break;
+    }
+}
+
+void marshallEntryPointParamRec(EmitContext* context, glslang::TType const& type, std::string const& name, MarshallDirection dir)
+{
+    // TODO: implement!
+    switch(type.getBasicType())
+    {
+    default:
+        marshallSimpleEntryPointParam(context, type, name, dir);
+        break;
+
+    case glslang::EbtStruct:
+    case glslang::EbtBlock:
+        {
+            glslang::TTypeList const* fields = type.getStruct();
+            assert(fields);
+
+            for(auto field : *fields)
+            {
+                // Here we check if the field name is a reserved word, and rename it if needed.
+                // TODO: need a more robust handling here, since all the use sites need
+                // to deal with this as well...
+                std::string fieldName = field.type->getFieldName().c_str();
+                if(isNameUsed(&context->shared->reservedNames, fieldName))
+                {
+                    fieldName += "_1";
+                }
+
+                marshallEntryPointParamRec(context, *field.type, name + "." + fieldName, dir);
+            }
+        }
+        break;
+    }
+}
+
+void emitEntryPointDecl_GLSL(EmitContext* context, glslang::TIntermAggregate* funcDecl)
+{
+    // TODO: probably need better handling of local names (to avoid clashes)
+
+    emit(context, "\n// entry point\n");
+    emit(context, "void main()\n");
+    emit(context, "{\n");
+
+    // declare locals to set up all the required parameters
+    glslang::TIntermSequence& params = funcDecl->getSequence()[0]->getAsAggregate()->getSequence();
+    for(auto pp : params)
+    {
+        // TODO: probably need to special-case opaque types here...
+
+        glslang::TIntermSymbol* param = pp->getAsSymbolNode();
+        glslang::TType const& paramType = param->getType();
+
+        auto paramName = param->getName();
+
+        emitTypedDecl(context, paramType, param->getName());
+        emit(context, ";\n");
+
+        switch(paramType.getQualifier().storage)
+        {
+        case glslang::EvqOut:
+            continue;
+
+        default:
+            break;
+        }
+
+        // TODO: initialize the declaration as needed
+        marshallEntryPointParamRec(context, paramType, param->getName().c_str(), kMarshallDirection_In);
+    }
+
+    std::string resultName;
+    if(funcDecl->getType().getBasicType() != glslang::EbtVoid)
+    {
+        // need to declare a result variable too
+        resultName = "_result";
+        emitTypedDecl(context, funcDecl->getType(), resultName);
+
+        emit(context, " = ");
+    }
+
+    emitFuncName(context, funcDecl->getName());
+    emit(context, "(");
+
+    bool first = true;
+    for(auto pp : params)
+    {
+        if(!first) emit(context, ", ");
+        first = false;
+        // TODO: probably need to special-case opaque types here...
+
+        glslang::TIntermSymbol* param = pp->getAsSymbolNode();
+        glslang::TType const& paramType = param->getType();
+
+        auto paramName = param->getName();
+
+        emit(context, paramName);
+    }
+
+
+    emit(context, ");\n");
+
+    // TODO: now copy to output as needed
+    if(funcDecl->getType().getBasicType() != glslang::EbtVoid)
+    {
+        marshallEntryPointParamRec(context, funcDecl->getType(), resultName, kMarshallDirection_Out);
+    }
+    for(auto pp : params)
+    {
+        glslang::TIntermSymbol* param = pp->getAsSymbolNode();
+        glslang::TType const& paramType = param->getType();
+
+        auto paramName = param->getName();
+
+        switch(paramType.getQualifier().storage)
+        {
+        case glslang::EvqIn: // skip input-only params
+            continue;
+
+        default:
+            break;
+        }
+
+        // TODO: initialize the declaration as needed
+        marshallEntryPointParamRec(context, paramType, param->getName().c_str(), kMarshallDirection_Out);
+    }
+
+    emit(context, "};\n");
+}
+
+void emitEntryPointDecl(EmitContext* context, glslang::TIntermAggregate* funcDecl)
+{
+
+    // push a scope for locally-declared names
+
+    switch(context->shared->options->toShadingLanguage)
+    {
+    case Falcor::ShadingLanguage::GLSL:
+    case Falcor::ShadingLanguage::VulkanGLSL:
+        emitEntryPointDecl_GLSL(context, funcDecl);
+        break;
+
+    case Falcor::ShadingLanguage::HLSL:
+        emitEntryPointDecl_HLSL(context, funcDecl);
+        break;
+
+    default:
+        internalError(context, "unhandled target shading language");
+        break;
+    }
+}
+
+void emitLinkageDecl(EmitContext* context, TIntermNode* node)
+{
+    if(auto nn = node->getAsAggregate())
+    {
+        switch(nn->getOp())
+        {
+        case glslang::EOpFunction:
+            // shouldn't need to handle this here...
+            break;
+
+        default:
+            // TODO: other cases at global scope are logically initializers that go
+            // at the start of the entry point...
+            internalError(context, "uhandled case in 'emitLinkageDecl'");
+            break;
+        }
+    }
+    else if(auto nn = node->getAsSymbolNode())
+    {
+        // TODO: is this overly simplistic?
+        getSymbolInfo(context, nn);
+    }
+    else
+    {
+        internalError(context, "uhandled case in 'emitLinkageDecl'");
+    }
+}
+
+void emitLinkageDecls(EmitContext* context, glslang::TIntermAggregate* node)
+{
+    for( auto child : node->getSequence() )
+    {
+        emitLinkageDecl(context, child);
+    }
+}
+
 void emitDecl(EmitContext* context, TIntermNode* node)
 {
     if(auto nn = node->getAsAggregate())
@@ -2415,6 +3079,7 @@ void emitDecl(EmitContext* context, TIntermNode* node)
             break;
 
         case glslang::EOpLinkerObjects:
+            emitLinkageDecls(context, nn);
             break;
 
         default:
@@ -2489,7 +3154,7 @@ StringSpan join(SharedEmitContext* context)
     char* buffer = (char*)malloc(size + 1);
     if(!buffer)
     {
-        internalError(NULL, "out of memory\n");
+        internalError(context, "out of memory\n");
         exit(1);
     }
 
@@ -2501,12 +3166,12 @@ StringSpan join(SharedEmitContext* context)
     return result;
 }
 
-StringSpan crossCompile(Options* options, char const* inputPath, StringSpan inputText, Falcor::ShaderType shaderType)
+StringSpan crossCompile(Options* options, char const* inputPath, StringSpan inputText)
 {
     glslang::InitializeProcess();
 
     EShLanguage stage = EShLangCount;
-    switch(shaderType)
+    switch(options->shaderType)
     {
     case Falcor::ShaderType::Vertex:    stage = EShLangVertex; break;
     case Falcor::ShaderType::Hull:      stage = EShLangTessControl; break;
@@ -2521,18 +3186,43 @@ StringSpan crossCompile(Options* options, char const* inputPath, StringSpan inpu
 
     glslang::TShader* shader = new glslang::TShader(stage);
 
-    char const* preamble =
+    char const* glslPreamble =
         "#extension GL_GOOGLE_include_directive : require\n" // TODO: shouldn't actually be required
         "#extension GL_ARB_bindless_texture : require\n" // TODO: shouldn't actually be required
         "#define FALCOR_GLSL 1\n"
         "#define FALCOR_GLSL_CROSS 1\n"
         "";
 
+    char const* hlslPreamble =
+        "#define FALCOR_HLSL 1\n"
+        "#define FALCOR_HLSL_CROSS 1\n"
+        "";
+
+    char const* preamble = nullptr;
+
+    switch(options->fromShadingLanguage)
+    {
+    case Falcor::ShadingLanguage::GLSL:
+    case Falcor::ShadingLanguage::VulkanGLSL:
+        preamble = glslPreamble;
+        break;
+
+    case Falcor::ShadingLanguage::HLSL:
+        preamble = hlslPreamble;
+        break;
+
+    default:
+        break;
+    }
+
     char const* sources[] = { inputText.begin };
     int sourceLengths[] = { (int) (inputText.end - inputText.begin) };
     char const* paths[] = { inputPath };
 
-    shader->setPreamble(preamble);
+    if(preamble)
+    {
+        shader->setPreamble(preamble);
+    }
 
     shader->setStringsWithLengthsAndNames(&sources[0], &sourceLengths[0], &paths[0], 1);
 
@@ -2543,7 +3233,19 @@ StringSpan crossCompile(Options* options, char const* inputPath, StringSpan inpu
 
     IncluderImpl includer(options);
 
-    if(!shader->parse(&kResourceLimits, version, ECoreProfile, false, false, EShMsgDefault, includer))
+    EShMessages messageFlags = EShMsgDefault;
+    switch(options->fromShadingLanguage)
+    {
+    case Falcor::ShadingLanguage::GLSL:
+        break;
+
+    case Falcor::ShadingLanguage::HLSL:
+        // Note: glslang fails to parse HLSL unless you ask it for the "Vulkan rules"
+        messageFlags = (EShMessages) (EShMsgReadHlsl | EShMsgVulkanRules);
+        break;
+    }
+
+    if(!shader->parse(&kResourceLimits, version, ECoreProfile, false, false, messageFlags, includer))
     {
         Falcor::Logger::log( Falcor::Logger::Level::Error, shader->getInfoLog());
         StringSpan result = { 0, 0 };
@@ -2553,12 +3255,15 @@ StringSpan crossCompile(Options* options, char const* inputPath, StringSpan inpu
     glslang::TIntermediate* intermediate = ((HackShader*) shader)->getIntermediate();
 
     SharedEmitContext sharedEmitContext;
+    sharedEmitContext.options = options;
     sharedEmitContext.glslangShader = shader;
     sharedEmitContext.entryPointName = options->entryPointName ? options->entryPointName : "main";
     initSharedEmitContext(&sharedEmitContext);
     EmitContext emitContext = { &sharedEmitContext, sharedEmitContext.mainSpan };
     emitContext.nameScope = &sharedEmitContext.globalNames;
     emitDecls(&emitContext, intermediate->getTreeRoot());
+
+
     if(sharedEmitContext.entryPointFunc)
     {
         emitEntryPointDecl(&emitContext, sharedEmitContext.entryPointFunc);
@@ -2576,22 +3281,32 @@ StringSpan crossCompile(Options* options, char const* inputPath, StringSpan inpu
 
 namespace Falcor
 {
-    bool glslToHlslShader(std::string& shader, ShaderType shaderType)
+    bool tryCrossCompileShader(
+        std::string&    ioShader,
+        ShaderType      shaderType,
+        ShadingLanguage fromShadingLanguage,
+        ShadingLanguage toShadingLanguage)
     {
         StringSpan inputText;
-        inputText.begin = shader.c_str();
-        inputText.end = inputText.begin + shader.size();
+        inputText.begin = ioShader.c_str();
+        inputText.end = inputText.begin + ioShader.size();
 
         Options options = { 0 };
-        StringSpan outputText = crossCompile(&options, "shader_source", inputText, shaderType);
+        options.shaderType = shaderType;
+        options.fromShadingLanguage = fromShadingLanguage;
+        options.toShadingLanguage = toShadingLanguage;
+
+        StringSpan outputText = crossCompile(&options, "shader_source", inputText);
 
         if(!outputText.begin)
         {
             return false;
         }
 
-        shader = std::string(outputText.begin, outputText.end);
+        ioShader = std::string(outputText.begin, outputText.end);
         free((void*) outputText.begin);
         return true;
     }
+
+
 }
