@@ -263,10 +263,10 @@ namespace Falcor
 
 		mFrameRate.newFrame();
         {
-			// The swap-chain FBO might have changed between frames, so get it
+            PROFILE(onFrameRender);
+            // The swap-chain FBO might have changed between frames, so get it
 			mpDefaultFBO = gpDevice->getSwapChainFbo();
             mpRenderContext = gpDevice->getRenderContext();
-            PROFILE(onFrameRender);
             calculateTime();
 
 			// Bind the default state
@@ -292,6 +292,9 @@ namespace Falcor
                 renderGUI();
             }
         }
+
+        renderText(getFpsMsg(), glm::vec2(10, 10));
+
         captureVideoFrame();
         if(mCaptureScreen)
         {

@@ -97,8 +97,6 @@ void MultiPassPostProcess::onFrameRender()
             mpBlit->execute(mpRenderContext.get());
         }
     }
-
-    renderText(getGlobalSampleMessage(true), glm::vec2(10, 10));
 }
 
 void MultiPassPostProcess::onShutdown()

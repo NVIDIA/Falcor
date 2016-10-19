@@ -126,7 +126,6 @@ void ShaderBuffersSample::onFrameRender()
         mpProgramVars->getShaderStorageBuffer("PixelCount")["count"] = 0U;
 #endif
     }
-    renderText(msg, glm::vec2(10, 10));
 }
 
 void ShaderBuffersSample::onDataReload()
