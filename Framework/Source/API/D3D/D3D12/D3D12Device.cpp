@@ -44,6 +44,7 @@ namespace Falcor
         ID3D12CommandQueuePtr pCommandQueue;
 		uint32_t syncInterval = 0;
 		bool isWindowOccluded = false;
+        bool resizeOccured = false;
 	};
 
     bool checkExtensionSupport(const std::string& name)
@@ -230,8 +231,14 @@ namespace Falcor
 		// Submit the command list
 		auto pGfxList = mpRenderContext->getCommandListApiHandle();
 		d3d_call(pGfxList->Close());
-		ID3D12CommandList* pList = pGfxList.GetInterfacePtr();
-		pData->pCommandQueue->ExecuteCommandLists(1, &pList);
+
+        // We need to skip this frame if resize happened. The render-targets might be invalid
+        if(pData->resizeOccured == false)
+        {
+            ID3D12CommandList* pList = pGfxList.GetInterfacePtr();
+            pData->pCommandQueue->ExecuteCommandLists(1, &pList);
+        }
+        pData->resizeOccured = false;
 
 		// Present
 		pData->pSwapChain->Present(pData->syncInterval, 0);
@@ -319,6 +326,7 @@ namespace Falcor
     Fbo::SharedPtr Device::resizeSwapChain(uint32_t width, uint32_t height)
     {
         DeviceData* pData = (DeviceData*)mpPrivateData;
+        pData->resizeOccured = true;
 
         mpFrameFence->wait(mpFrameFence->getCpuValue());
 
