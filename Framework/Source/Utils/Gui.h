@@ -33,7 +33,6 @@
 #include "API/ProgramVars.h"
 #include "Graphics/Program.h"
 #include "Graphics/PipelineStateCache.h"
-
 #define GUI_CALL _cdecl
 namespace Falcor
 {
@@ -80,20 +79,20 @@ namespace Falcor
         bool onKeyboardEvent(const KeyboardEvent& event);
 
         /** Static text
-            \param[in] str The string to display
+            \param[in] text The string to display
             \param[in] sameLine Optional. If set to true, the widget will appear on the same line as the previous widget
         */
-        void addText(const std::string& str, bool sameLine = false);
+        void addText(const char text[], bool sameLine = false);
 
         /** Button. Will return true if the button was pressed
             \param[in] sameLine Optional. If set to true, the widget will appear on the same line as the previous widget
         */
-        bool addButton(const std::string& label, bool sameLine = false);
+        bool addButton(const char label[], bool sameLine = false);
 
         /** Begin a collapsible group block
             returns true if the group is expanded, otherwise false. Use it to avoid making unnecessary calls
         */
-        bool pushGroup(const std::string& label);
+        bool pushGroup(const char label[]);
 
         /** End a collapsible group block
         */
@@ -101,44 +100,84 @@ namespace Falcor
 
         /** Adds a floating-point UI element.
             \param[in] label The name of the widget.
-            \param[in] pVar A pointer to a float that will be updated directly when the widget state changes.
+            \param[in] var A reference to a float that will be updated directly when the widget state changes.
             \param[in] minVal Optional. The minimum allowed value for the float.
             \param[in] maxVal Optional. The maximum allowed value for the float.
             \param[in] step Optional. The step rate for the float.
             \param[in] sameLine Optional. If set to true, the widget will appear on the same line as the previous widget
+
+            \return true if the value changed, otherwise false
         */
-        void addFloatVar(const std::string& label, float* pVar, float minVal = -FLT_MAX, float maxVal = FLT_MAX, float step = 0.001f, bool sameLine = false);
+        bool addFloatVar(const char label[], float& var, float minVal = -FLT_MAX, float maxVal = FLT_MAX, float step = 0.001f, bool sameLine = false);
+
+        /** Adds a 2-elements floating-point vector UI element.
+        \param[in] label The name of the widget.
+        \param[in] var A reference to a float2 that will be updated directly when the widget state changes.
+        \param[in] minVal Optional. The minimum allowed value for each element of the vector.
+        \param[in] maxVal Optional. The maximum allowed value for each element ofthe vector.
+        \param[in] sameLine Optional. If set to true, the widget will appear on the same line as the previous widget
+
+        \return true if the value changed, otherwise false
+        */
+        bool addFloat2Var(const char label[], glm::vec2& var, float minVal = -1, float maxVal = 1, bool sameLine = false);
+
+        /** Adds a 3-elements floating-point vector UI element.
+        \param[in] label The name of the widget.
+        \param[in] var A reference to a float3 that will be updated directly when the widget state changes.
+        \param[in] minVal Optional. The minimum allowed value for each element of the vector.
+        \param[in] maxVal Optional. The maximum allowed value for each element of the vector.
+        \param[in] sameLine Optional. If set to true, the widget will appear on the same line as the previous widget
+
+        \return true if the value changed, otherwise false
+        */
+        bool addFloat3Var(const char label[], glm::vec3& var, float minVal = -1, float maxVal = 1, bool sameLine = false);
+
+        /** Adds a 4-elements floating-point vector UI element.
+        \param[in] label The name of the widget.
+        \param[in] var A reference to a float4 that will be updated directly when the widget state changes.
+        \param[in] minVal Optional. The minimum allowed value for each element of the vector.
+        \param[in] maxVal Optional. The maximum allowed value for each element of the vector.
+        \param[in] sameLine Optional. If set to true, the widget will appear on the same line as the previous widget
+
+        \return true if the value changed, otherwise false
+        */
+        bool addFloat4Var(const char label[], glm::vec4& var, float minVal = -1, float maxVal = 1, bool sameLine = false);
 
         /** Adds a checkbox.
             \param[in] label The name of the checkbox.
-            \param[in] pVar A pointer to a boolean that will be updated directly when the checkbox state changes.
+            \param[in] var A reference to a boolean that will be updated directly when the checkbox state changes.
             \param[in] sameLine Optional. If set to true, the widget will appear on the same line as the previous widget
+
+            \return true if the value changed, otherwise false
         */
-        void addCheckBox(const std::string& label, bool* pVar, bool sameLine = false);
+        bool addCheckBox(const char label[], bool& pVar, bool sameLine = false);
 
         /** Adds an RGB color UI widget.
-            \param[in] name The name of the widget.
-            \param[in] pVar A pointer to a vector that will be updated directly when the widget state changes.
+            \param[in] label The name of the widget.
+            \param[in] var A reference to a vector that will be updated directly when the widget state changes.
             \param[in] sameLine Optional. If set to true, the widget will appear on the same line as the previous widget
+            \return true if the value changed, otherwise false
         */
-        void addRgbColor(const std::string& name, glm::vec3* pVar, bool sameLine = false);
+        bool addRgbColor(const char label[], glm::vec3& var, bool sameLine = false);
 
         /** Adds an RGBA color UI widget.
-            \param[in] name The name of the widget.
-            \param[in] pVar A pointer to a vector that will be updated directly when the widget state changes.
+            \param[in] label The name of the widget.
+            \param[in] var A reference to a vector that will be updated directly when the widget state changes.
             \param[in] sameLine Optional. If set to true, the widget will appear on the same line as the previous widget
+            \return true if the value changed, otherwise false
         */
-        void addRgbaColor(const std::string& name, glm::vec4* pVar, bool sameLine = false);
+        bool addRgbaColor(const char label[], glm::vec4& var, bool sameLine = false);
 
         /** Adds an integer UI element.
-            \param[in] name The name of the widget.
-            \param[in] pVar A pointer to an integer that will be updated directly when the widget state changes.
+            \param[in] label The name of the widget.
+            \param[in] var A reference to an integer that will be updated directly when the widget state changes.
             \param[in] minVal Optional. The minimum allowed value for the variable.
             \param[in] maxVal Optional. The maximum allowed value for the variable.
             \param[in] step Optional. The step rate.
             \param[in] sameLine Optional. If set to true, the widget will appear on the same line as the previous widget
+            \return true if the value changed, otherwise false
         */
-        void addIntVar(const std::string& name, int32_t* pVar, int minVal = -INT32_MAX, int maxVal = INT32_MAX, int step = 1, bool sameLine = false);
+        bool addIntVar(const char label[], int32_t& var, int minVal = -INT32_MAX, int maxVal = INT32_MAX, int step = 1, bool sameLine = false);
 
         /** Add a separator
         */
@@ -146,26 +185,28 @@ namespace Falcor
 
         /** Adds a dropdown menu. This will update a user variable directly, so the user has to keep track of that for changes.
             If you want notifications whenever the select option changed, use Gui#addDropdownWithCallback().
-            \param[in] name The name of the dropdown menu.
+            \param[in] label The name of the dropdown menu.
             \param[in] values A list of options to show in the dropdown menu.
-            \param[in] pVar A pointer to a user variable that will be updated directly when a dropdown option changes. This correlates to the 'pValue' field in Gui#SDropdownValue struct.
+            \param[in] var A reference to a user variable that will be updated directly when a dropdown option changes. This correlates to the 'pValue' field in Gui#SDropdownValue struct.
             \param[in] sameLine Optional. If set to true, the widget will appear on the same line as the previous widget
+            \return true if the value changed, otherwise false
         */
-        void addDropdown(const std::string& name, const dropdown_list& values, uint32_t* pVar, bool sameLine = false);
+        bool addDropdown(const char label[], const dropdown_list& values, uint32_t& var, bool sameLine = false);
 
         /** Render a tooltip. This will display a small question mark next to the last label item rendered and will display the tooltip if the user hover over it
             \param[in] tip The tooltip's text
             \param[in] sameLine Optional. If set to true, the widget will appear on the same line as the previous widget
-            */
-        void addTooltip(const std::string& tip, bool sameLine = true);
+        */
+        void addTooltip(const char tip[], bool sameLine = true);
 
         /** Adds a text box.
-            \param[in] name The name of the variable.
+            \param[in] label The name of the variable.
             \param[in] buf A character buffer with the initialize text. The buffer will be updated if a text is entered.
             \param[in] bufSize The size of the text buffer
             \param[in] lineCount Number of lines in the text-box. If larger then 1 will create a multi-line box
+            \return true if the value changed, otherwise false
         */
-        void addTextBox(const std::string& name, char buf[], size_t bufSize, uint32_t lineCount = 1);
+        bool addTextBox(const char label[], char buf[], size_t bufSize, uint32_t lineCount = 1);
 
         using GraphCallback = float(*)(void*, int32_t index);
 
@@ -180,15 +221,22 @@ namespace Falcor
         \param[in] width Optional. The width of the graph widget. 0 means auto-detect (fits the widget to the GUI width)
         \param[in] height Optional. The height of the graph widget. 0 means auto-detect (no idea what's the logic. Too short.)
         */
-        void addGraph(const std::string& label, GraphCallback func, void* pUserData, uint32_t sampleCount, int32_t sampleOffset, float yMin = FLT_MAX, float yMax = FLT_MAX, uint32_t width = 0, uint32_t height = 100);
+        void addGraph(const char label[], GraphCallback func, void* pUserData, uint32_t sampleCount, int32_t sampleOffset, float yMin = FLT_MAX, float yMax = FLT_MAX, uint32_t width = 0, uint32_t height = 100);
 
-        /** Set global font size scaling. Has to be called BEFORE twInit()!
+        /** Adds a direction widget
+        \param[in] label The name of the widget.
+        \param[in] direction A reference for the direction variable
+        \return true if the value changed, otherwise false
+        */
+        bool addDirectionWidget(const char label[], glm::vec3& direction);
+
+        /** Set global font size scaling
         */
         static void setGlobalFontScaling(float scale);
 
         /** Create a new window on the stack
         */
-        void pushWindow(const std::string& label, uint32_t width = 0, uint32_t height = 0, uint32_t x = 0, uint32_t y = 0);
+        void pushWindow(const char label[], uint32_t width = 0, uint32_t height = 0, uint32_t x = 0, uint32_t y = 0);
         void popWindow();
     protected:
         bool keyboardCallback(const KeyboardEvent& keyEvent);

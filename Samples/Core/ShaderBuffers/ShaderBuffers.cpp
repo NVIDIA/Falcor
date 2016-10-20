@@ -29,10 +29,10 @@
 
 void ShaderBuffersSample::onGuiRender()
 {
-//     mpGui->addDir3FVar("Light Direction", &mLightData.worldDir);
-     mpGui->addRgbColor("Light intensity", &mLightData.intensity);
-     mpGui->addRgbColor("Surface Color", &mSurfaceColor);
-     mpGui->addCheckBox("Count FS invocations", &mCountPixelShaderInvocations);
+     mpGui->addDirectionWidget("Light Direction", mLightData.worldDir);
+     mpGui->addRgbColor("Light intensity", mLightData.intensity);
+     mpGui->addRgbColor("Surface Color", mSurfaceColor);
+     mpGui->addCheckBox("Count FS invocations", mCountPixelShaderInvocations);
 }
 
 Vao::SharedConstPtr ShaderBuffersSample::getVao()

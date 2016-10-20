@@ -35,7 +35,6 @@
 #include "Data/VertexAttrib.h"
 #include "Graphics/Model/Model.h"
 
-using glm::ivec3;
 
 namespace Falcor
 {
@@ -85,67 +84,70 @@ namespace Falcor
         sCount = 0;
     }
 
-    void GUI_CALL Light::GetColorCB(void* pVal, void* pUserData)
+    glm::vec3 Light::getColorForUI()
     {
-        Light* light = (Light*)pUserData;
-
-        if ((light->mUiLightIntensityColor * light->mUiLightIntensityScale) != light->mData.intensity)
+        if ((mUiLightIntensityColor * mUiLightIntensityScale) != mData.intensity)
         {
-            float mag = max(light->mData.intensity.x, max(light->mData.intensity.y, light->mData.intensity.z));
+            float mag = max(mData.intensity.x, max(mData.intensity.y, mData.intensity.z));
             if (mag <= 1.f)
             {
-                light->mUiLightIntensityColor = light->mData.intensity;
-                light->mUiLightIntensityScale = 1.0f;
+                mUiLightIntensityColor = mData.intensity;
+                mUiLightIntensityScale = 1.0f;
             }
             else
             {
-                light->mUiLightIntensityColor = light->mData.intensity / mag;
-                light->mUiLightIntensityScale = mag;
+                mUiLightIntensityColor = mData.intensity / mag;
+                mUiLightIntensityScale = mag;
             }
         }
 
-        *(glm::vec3*)pVal = light->mUiLightIntensityColor;
+        return mUiLightIntensityColor;
     }
 
-    void GUI_CALL Light::SetColorCB(const void* pVal, void* pUserData)
+    void Light::setColorFromUI(const glm::vec3& uiColor)
     {
-        Light* light = (Light*)pUserData; 
-        glm::vec3 color = *(glm::vec3*)pVal;
-
-        light->mUiLightIntensityColor = color;
-        light->mData.intensity = (light->mUiLightIntensityColor * light->mUiLightIntensityScale);
+        mUiLightIntensityColor = uiColor;
+        mData.intensity = (mUiLightIntensityColor * mUiLightIntensityScale);
     }
 
-
-    void GUI_CALL Light::GetIntensityCB(void* pVal, void* pUserData)
+    float Light::getIntensityForUI()
     {
-        Light* light = (Light*)pUserData; 
-
-        if ((light->mUiLightIntensityColor * light->mUiLightIntensityScale) != light->mData.intensity)
+        if ((mUiLightIntensityColor * mUiLightIntensityScale) != mData.intensity)
         {
-            float mag = max(light->mData.intensity.x, max(light->mData.intensity.y, light->mData.intensity.z));
+            float mag = max(mData.intensity.x, max(mData.intensity.y, mData.intensity.z));
             if (mag <= 1.f)
             {
-                light->mUiLightIntensityColor = light->mData.intensity;
-                light->mUiLightIntensityScale = 1.0f;
+                mUiLightIntensityColor = mData.intensity;
+                mUiLightIntensityScale = 1.0f;
             }
             else
             {
-                light->mUiLightIntensityColor = light->mData.intensity / mag;
-                light->mUiLightIntensityScale = mag;
+                mUiLightIntensityColor = mData.intensity / mag;
+                mUiLightIntensityScale = mag;
             }
         }
 
-        *(float*)pVal = light->mUiLightIntensityScale;
+        return mUiLightIntensityScale;
     }
 
-    void GUI_CALL Light::SetIntensityCB(const void* pVal, void* pUserData)
+    void Light::setIntensityFromUI(float intensity)
     {
-        Light* light = (Light*)pUserData;
-        float intensityScale = *(float*)pVal;
+        mUiLightIntensityScale = intensity;
+        mData.intensity = (mUiLightIntensityColor * mUiLightIntensityScale);
+    }
 
-        light->mUiLightIntensityScale = intensityScale;
-        light->mData.intensity = (light->mUiLightIntensityColor * light->mUiLightIntensityScale);
+    void Light::setUiElements(Gui* pGui)
+    {
+        glm::vec3 color = getColorForUI();
+        if(pGui->addRgbColor("Color", color))
+        {
+            setColorFromUI(color);
+        }
+        float intensity = getIntensityForUI();
+        if(pGui->addFloatVar("Intensity", intensity))
+        {
+            setIntensityFromUI(intensity);
+        }
     }
 
 	DirectionalLight::DirectionalLight()
@@ -162,12 +164,13 @@ namespace Falcor
 
     DirectionalLight::~DirectionalLight() = default;
 
-    void DirectionalLight::setUiElements(Gui* pGui, const std::string& uiGroup)
+    void DirectionalLight::setUiElements(Gui* pGui)
     {
-        // FIX_GUI
-//         pGui->addDir3FVarWithCallback("Direction", &DirectionalLight::setDirectionCB, &DirectionalLight::getDirectionCB, this, uiGroup);
-//         pGui->addRgbColorWithCallback("Color",     SetColorCB,     GetColorCB,     this, uiGroup);
-//         pGui->addFloatVarWithCallback("Intensity", SetIntensityCB, GetIntensityCB, this, uiGroup, 0.0f, 1e15f, 0.1f);
+        if (pGui->addDirectionWidget("Direction", mData.worldDir))
+        {
+            setWorldDirection(mData.worldDir);
+        }
+        Light::setUiElements(pGui);
     }
 
     void DirectionalLight::setWorldDirection(const glm::vec3& dir)
@@ -189,19 +192,6 @@ namespace Falcor
 		Logger::log(Logger::Level::Error, "DirectionalLight::move() is not used and thus not implemented for now.");
 	}
 
-
-    void GUI_CALL DirectionalLight::setDirectionCB(const void* pVal, void* pUserData)
-    {
-        DirectionalLight* pLight = (DirectionalLight*)pUserData;
-        pLight->setWorldDirection(*(glm::vec3*)pVal);
-    }
-
-    void GUI_CALL DirectionalLight::getDirectionCB(void* pVal, void* pUserData)
-    {
-        const DirectionalLight* pLight = (DirectionalLight*)pUserData;
-        *(glm::vec3*)pVal = pLight->mData.worldDir;
-    }
-
     PointLight::SharedPtr PointLight::create()
     {
         PointLight* pLight = new PointLight;
@@ -216,45 +206,20 @@ namespace Falcor
 
     PointLight::~PointLight() = default;
 
-	void GUI_CALL PointLight::setOpeningAngleCB(const void* pVal, void* pUserData)
-	{
-		PointLight* pLight = (PointLight*)pUserData;
-		pLight->setOpeningAngle(*(float*)pVal);
-	}
-
-	void GUI_CALL PointLight::getOpeningAngleCB(void* pVal, void* pUserData)
-	{
-		const PointLight* pLight = (PointLight*)pUserData;
-		*(float*)pVal = pLight->getOpeningAngle();
-	}
-
-	void GUI_CALL PointLight::setPenumbraAngleCB(const void* pVal, void* pUserData)
-	{
-		PointLight* pLight = (PointLight*)pUserData;
-        pLight->setPenumbraAngle(*(float*)pVal);
-	}
-
-	void GUI_CALL PointLight::getPenumbraAngleCB(void* pVal, void* pUserData)
-	{
-		const PointLight* pLight = (PointLight*)pUserData;
-		*(float*)pVal = pLight->getPenumbraAngle();
-	}
-
-    void PointLight::setUiElements(Gui* pGui, const std::string& uiGroup)
+    void PointLight::setUiElements(Gui* pGui)
     {
-        // FIX_GUI
-//         std::string posGroup = "worldPos" + std::to_string(mIndex);
-//         pGui->addFloatVar("x", &mData.worldPos.x, posGroup, -FLT_MAX, FLT_MAX);
-//         pGui->addFloatVar("y", &mData.worldPos.y, posGroup, -FLT_MAX, FLT_MAX);
-//         pGui->addFloatVar("z", &mData.worldPos.z, posGroup, -FLT_MAX, FLT_MAX);
-//         pGui->nestGroups(uiGroup, posGroup);
-//         pGui->setVarTitle(posGroup, "World Position");
-// 
-// 		pGui->addDir3FVar("Direction", &mData.worldDir, uiGroup);
-// 		pGui->addFloatVarWithCallback("Opening Angle", &PointLight::setOpeningAngleCB, &PointLight::getOpeningAngleCB, this, uiGroup, 0.f, (float)M_PI);
-// 		pGui->addFloatVarWithCallback("Penumbra Width", &PointLight::setPenumbraAngleCB, &PointLight::getPenumbraAngleCB, this, uiGroup, 0.f, (float)M_PI);
-//         pGui->addRgbColorWithCallback("Color", SetColorCB, GetColorCB, this, uiGroup);
-//         pGui->addFloatVarWithCallback("Intensity", SetIntensityCB, GetIntensityCB, this, uiGroup, 0.0f, 1000000.0f, 0.1f);
+        pGui->addFloat3Var("World Position", mData.worldPos);
+        pGui->addDirectionWidget("Direction", mData.worldDir);
+
+        if(pGui->addFloatVar("Opening Angle", mData.openingAngle, 0.f, (float)M_PI))
+        {
+            setOpeningAngle(mData.openingAngle);
+        }
+        if(pGui->addFloatVar("Penumbra Width", mData.penumbraAngle, 0.f, (float)M_PI))
+        {
+            setPenumbraAngle(mData.penumbraAngle);
+        }
+        Light::setUiElements(pGui);
 	}
 
     void PointLight::setOpeningAngle(float openingAngle)
@@ -293,9 +258,9 @@ namespace Falcor
 
 	AreaLight::~AreaLight() = default;
 
-	void AreaLight::setUiElements(Gui* pGui, const std::string& uiGroup)
+	void AreaLight::setUiElements(Gui* pGui)
 	{
-		Logger::log(Logger::Level::Error, "AreaLight::setUiElements() is not used and thus not implemented for now.");
+		logError("AreaLight::setUiElements() is not used and thus not implemented for now.");
 	}
 
 	void AreaLight::setIntoConstantBuffer(ConstantBuffer* pBuffer, const std::string& varName)
@@ -390,7 +355,7 @@ namespace Falcor
 		if(mVertexBuf && mIndexBuf)
         {
 			// Read data from the buffers
-			std::vector<ivec3> indices(mMeshData.pMesh->getPrimitiveCount());
+			std::vector<glm::ivec3> indices(mMeshData.pMesh->getPrimitiveCount());
 			mIndexBuf->readData(indices.data(), 0, mIndexBuf->getSize());
 			std::vector<vec3> vertices(mVertexBuf->getSize() / sizeof(vec3));
 			mVertexBuf->readData(vertices.data(), 0, mVertexBuf->getSize());
@@ -400,7 +365,7 @@ namespace Falcor
 			mMeshCDF.push_back(0.f);
 			for (uint32_t i = 0; i < mMeshData.pMesh->getPrimitiveCount(); ++i)
 			{
-				ivec3 pId = indices[i];
+				glm::ivec3 pId = indices[i];
 				const vec3 p0(vertices[pId.x]), p1(vertices[pId.y]),  p2(vertices[pId.z]);
 
 				mSurfaceArea += 0.5f * glm::length(glm::cross(p1 - p0, p2 - p0));

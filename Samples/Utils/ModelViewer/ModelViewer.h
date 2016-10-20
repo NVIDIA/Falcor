@@ -39,15 +39,12 @@ public:
     void onResizeSwapChain() override;
     bool onKeyEvent(const KeyboardEvent& keyEvent) override;
     bool onMouseEvent(const MouseEvent& mouseEvent) override;
+    void onGuiRender() override;
 
 private:
-    static void GUI_CALL loadModelCallback(void* pUserData);
-    static void GUI_CALL saveModelCallback(void* pUserData);
-    static void GUI_CALL deleteCulledMeshesCallback(void* pUserData);
-
-    void initUI();
     void loadModel();
     void saveModel();
+    void deleteCulledMeshes();
 
     void loadModelFromFile(const std::string& Filename);
     void resetCamera();
@@ -59,13 +56,13 @@ private:
     FirstPersonCameraController mFirstPersonCameraController;
     SixDoFCameraController m6DoFCameraController;
 
+    bool mUseTriLinearFiltering = true;
     Sampler::SharedPtr mpPointSampler = nullptr;
     Sampler::SharedPtr mpLinearSampler = nullptr;
 
     Program::SharedPtr mpProgram = nullptr;
-    UniformBuffer::SharedPtr mpPerFrameCB = nullptr;
-
-    bool mUseTriLinearFiltering = true;
+    ProgramVars::SharedPtr mpProgramVars = nullptr;
+    PipelineStateCache::SharedPtr mpPipelineStateCache = nullptr;
 
     enum
     {
@@ -96,10 +93,6 @@ private:
 
     DirectionalLight::SharedPtr mpDirLight;
     PointLight::SharedPtr mpPointLight;
-
-    // GUI callbacks
-    static void GUI_CALL SetActiveAnimationCB(const void* pVal, void* pUserData);
-    static void GUI_CALL GetActiveAnimationCB(void* pVal, void* pUserData);
 
     std::string mModelString;
 

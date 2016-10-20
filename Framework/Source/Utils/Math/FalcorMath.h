@@ -49,7 +49,7 @@ namespace Falcor
         glm::vec3 nTo = glm::normalize(to);
 
         float dot = glm::dot(nFrom, nTo);
-        dot = max(min(dot, 1.0f), -1.0f);
+        dot = clamp(dot, -1.0f, 1.0f);
         if(dot != 1)
         {
             float angle = acosf(dot);

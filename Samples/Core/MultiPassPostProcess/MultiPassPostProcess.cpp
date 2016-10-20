@@ -27,23 +27,18 @@
 ***************************************************************************/
 #include "MultiPassPostProcess.h"
 
-void GUI_CALL MultiPassPostProcess::loadImageCallback(void* pUserData)
+void MultiPassPostProcess::onGuiRender()
 {
-    MultiPassPostProcess* pViewer = reinterpret_cast<MultiPassPostProcess*>(pUserData);
-    pViewer->loadImage();
-}
-
-void MultiPassPostProcess::initUI()
-{
-//     Gui::setGlobalHelpMessage("Sample application to load and display a model.\nUse the UI to switch between wireframe and solid mode.");
-//     mpGui->addButton("Load Image", &MultiPassPostProcess::loadImageCallback, this);
-//     mpGui->addCheckBox("Radial Blur", &mEnableRadialBlur);
-//     mpGui->addCheckBox("Grayscale", &mEnableGrayscale);
+    if (mpGui->addButton("Load Image"))
+    {
+        loadImage();
+    }
+    mpGui->addCheckBox("Radial Blur", mEnableRadialBlur);
+    mpGui->addCheckBox("Grayscale", mEnableGrayscale);
 }
 
 void MultiPassPostProcess::onLoad()
 {
-    initUI();
     mpLuminance = FullScreenPass::create("Luminance.fs");
     mpRadialBlur = FullScreenPass::create("RadialBlur.fs");
     mpBlit = FullScreenPass::create("Blit.fs");

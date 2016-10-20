@@ -204,7 +204,7 @@ namespace Falcor
 
     void ToneMapping::setLuminanceLod(float lod)
     {
-        mLuminanceLod = max(min(16.0f, lod), 0.0f);
+        mLuminanceLod = clamp(lod, 0.0f, 16.0f);
     }
 
     void ToneMapping::setWhiteScale(float whiteScale)

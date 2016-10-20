@@ -46,6 +46,11 @@ namespace Falcor
 		bool isWindowOccluded = false;
 	};
 
+    bool checkExtensionSupport(const std::string& name)
+    {
+        return false;
+    }
+
     void d3dTraceHR(const std::string& msg, HRESULT hr)
 	{
 		char hr_msg[512];

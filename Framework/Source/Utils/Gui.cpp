@@ -33,6 +33,7 @@
 #include "API/RenderContext.h"
 #include "Externals/dear_imgui/imgui.h"
 #include "Utils/Math/FalcorMath.h"
+#include "glm/gtc/type_ptr.hpp"
 
 namespace Falcor
 {
@@ -223,34 +224,34 @@ namespace Falcor
         mGroupStackSize = 0;
     }
 
-    void Gui::addCheckBox(const std::string& label, bool* pVar, bool sameLine)
+    bool Gui::addCheckBox(const char label[], bool& var, bool sameLine)
     {
         if (sameLine) ImGui::SameLine();
-        ImGui::Checkbox(label.c_str(), pVar);
+        return ImGui::Checkbox(label, &var);
     }
 
-    void Gui::addText(const std::string& str, bool sameLine)
+    void Gui::addText(const char text[], bool sameLine)
     {
         if (sameLine) ImGui::SameLine();
-        ImGui::Text(str.c_str());
+        ImGui::Text(text);
     }
 
-    bool Gui::addButton(const std::string& label, bool sameLine)
+    bool Gui::addButton(const char label[], bool sameLine)
     {
         if (sameLine) ImGui::SameLine();
-        return ImGui::Button(label.c_str());
+        return ImGui::Button(label);
     }
 
-    bool Gui::pushGroup(const std::string& name)
+    bool Gui::pushGroup(const char name[])
     {
         mGroupStackSize++;
         if(mGroupStackSize == 1)
         {
-            return ImGui::CollapsingHeader(name.c_str());
+            return ImGui::CollapsingHeader(name);
         }
         else
         {
-            return ImGui::TreeNode(name.c_str());
+            return ImGui::TreeNode(name);
         }
     }
 
@@ -264,30 +265,56 @@ namespace Falcor
         }
     }
 
-    void Gui::addFloatVar(const std::string& label, float* pVar, float minVal, float maxVal, float step, bool sameLine)
+    bool Gui::addFloatVar(const char label[], float& var, float minVal, float maxVal, float step, bool sameLine)
     {
         if (sameLine) ImGui::SameLine();
-        ImGui::InputFloat(label.c_str(), pVar, step);
-        *pVar = min(max(*pVar, minVal), maxVal);
+        bool b = ImGui::InputFloat(label, &var, step);
+        var = clamp(var, minVal, maxVal);
+        return b;
     }
 
-    void Gui::addIntVar(const std::string& name, int32_t* pVar, int minVal, int maxVal, int step, bool sameLine)
+    bool Gui::addFloat2Var(const char label[], glm::vec2& var, float minVal, float maxVal, bool sameLine)
     {
         if (sameLine) ImGui::SameLine();
-        ImGui::InputInt(name.c_str(), pVar, step);
-        *pVar = min(max(*pVar, minVal), maxVal);
+        bool b = ImGui::SliderFloat2(label, glm::value_ptr(var), minVal, maxVal);
+        var = clamp(var, minVal, maxVal);
+        return b;
     }
 
-    void Gui::addRgbColor(const std::string& name, glm::vec3* pVar, bool sameLine)
+    bool Gui::addFloat3Var(const char label[], glm::vec3& var, float minVal, float maxVal, bool sameLine)
     {
         if (sameLine) ImGui::SameLine();
-        ImGui::ColorEdit3(name.c_str(), &pVar->r);
+        bool b = ImGui::SliderFloat3(label, glm::value_ptr(var), minVal, maxVal);
+        var = clamp(var, minVal, maxVal);
+        return b;
     }
 
-    void Gui::addRgbaColor(const std::string& name, glm::vec4* pVar, bool sameLine)
+    bool Gui::addFloat4Var(const char label[], glm::vec4& var, float minVal, float maxVal, bool sameLine)
     {
         if (sameLine) ImGui::SameLine();
-        ImGui::ColorEdit4(name.c_str(), &pVar->r);
+        bool b = ImGui::SliderFloat4(label, glm::value_ptr(var), maxVal, minVal);
+        var = clamp(var, minVal, maxVal);
+        return b;
+    }
+
+    bool Gui::addIntVar(const char label[], int32_t& var, int minVal, int maxVal, int step, bool sameLine)
+    {
+        if (sameLine) ImGui::SameLine();
+        bool b = ImGui::InputInt(label, &var, step);
+        var = clamp(var, minVal, maxVal);
+        return b;
+    }
+
+    bool Gui::addRgbColor(const char label[], glm::vec3& var, bool sameLine)
+    {
+        if (sameLine) ImGui::SameLine();
+        return ImGui::ColorEdit3(label, glm::value_ptr(var));
+    }
+
+    bool Gui::addRgbaColor(const char label[], glm::vec4& var, bool sameLine)
+    {
+        if (sameLine) ImGui::SameLine();
+        return ImGui::ColorEdit4(label, glm::value_ptr(var));
     }
 
     bool Gui::onKeyboardEvent(const KeyboardEvent& event)
@@ -351,13 +378,13 @@ namespace Falcor
         return io.WantCaptureMouse;
     }
 
-    void Gui::pushWindow(const std::string& label, uint32_t width, uint32_t height, uint32_t x, uint32_t y)
+    void Gui::pushWindow(const char label[], uint32_t width, uint32_t height, uint32_t x, uint32_t y)
     {
         ImVec2 pos{ float(x), float(y) };
         ImVec2 size{ float(width), float(height) };
         ImGui::SetNextWindowSize(size, ImGuiSetCond_FirstUseEver);
         ImGui::SetNextWindowPos(pos, ImGuiSetCond_FirstUseEver);
-        ImGui::Begin(label.c_str());
+        ImGui::Begin(label);
     }
 
     void Gui::popWindow()
@@ -370,28 +397,28 @@ namespace Falcor
         ImGui::Separator();
     }
 
-    void Gui::addDropdown(const std::string& name, const dropdown_list& values, uint32_t* pVar, bool sameLine)
+    bool Gui::addDropdown(const char label[], const dropdown_list& values, uint32_t& var, bool sameLine)
     {
         if (sameLine) ImGui::SameLine();
         // Check if we need to update the currentItem
-        const auto& iter = mDropDownValues.find(pVar);
+        const auto& iter = mDropDownValues.find(&var);
         int curItem;
-        if ((iter == mDropDownValues.end()) || (iter->second.lastVal != *pVar))
+        if ((iter == mDropDownValues.end()) || (iter->second.lastVal != var))
         {
             // Search the current val
             for (uint32_t i = 0 ; i < values.size() ; i++)
             {
-                if (values[i].value == *pVar)
+                if (values[i].value == var)
                 {
                     curItem = i;
-                    mDropDownValues[pVar].currentItem = i;
+                    mDropDownValues[&var].currentItem = i;
                     break;
                 }
             }
         }
         else
         {
-            curItem = mDropDownValues[pVar].currentItem;
+            curItem = mDropDownValues[&var].currentItem;
         }
 
         std::string comboStr;
@@ -400,10 +427,11 @@ namespace Falcor
             comboStr += v.label + '\0';
         }
         comboStr += '\0';
-        ImGui::Combo(name.c_str(), &curItem, comboStr.c_str());
-        mDropDownValues[pVar].currentItem = curItem;
-        mDropDownValues[pVar].lastVal = values[curItem].value;
-        *pVar = values[curItem].value;
+        bool b = ImGui::Combo(label, &curItem, comboStr.c_str());
+        mDropDownValues[&var].currentItem = curItem;
+        mDropDownValues[&var].lastVal = values[curItem].value;
+        var = values[curItem].value;
+        return b;
     }
 
     void Gui::setGlobalFontScaling(float scale)
@@ -412,19 +440,19 @@ namespace Falcor
         io.FontGlobalScale = scale;
     }
 
-    void Gui::addTextBox(const std::string& name, char buf[], size_t bufSize, uint32_t lineCount)
+    bool Gui::addTextBox(const char label[], char buf[], size_t bufSize, uint32_t lineCount)
     {
         if (lineCount > 1)
         {
-            ImGui::InputTextMultiline(name.c_str(), buf, bufSize, ImVec2(-1.0f, ImGui::GetTextLineHeight() * lineCount));
+            return ImGui::InputTextMultiline(label, buf, bufSize, ImVec2(-1.0f, ImGui::GetTextLineHeight() * lineCount));
         }
         else
         {
-            ImGui::InputText(name.c_str(), buf, bufSize);
+            return ImGui::InputText(label, buf, bufSize);
         }
     }
 
-    void Gui::addTooltip(const std::string& tip, bool sameLine)
+    void Gui::addTooltip(const char tip[], bool sameLine)
     {
         if (sameLine) ImGui::SameLine();
         ImGui::TextDisabled("(?)");
@@ -432,15 +460,23 @@ namespace Falcor
         {
             ImGui::BeginTooltip();
             ImGui::PushTextWrapPos(450.0f);
-            ImGui::TextUnformatted(tip.c_str());
+            ImGui::TextUnformatted(tip);
             ImGui::PopTextWrapPos();
             ImGui::EndTooltip();
         }
     }
 
-    void Gui::addGraph(const std::string& label, GraphCallback func, void* pUserData, uint32_t sampleCount, int32_t sampleOffset, float yMin, float yMax, uint32_t width, uint32_t height)
+    void Gui::addGraph(const char label[], GraphCallback func, void* pUserData, uint32_t sampleCount, int32_t sampleOffset, float yMin, float yMax, uint32_t width, uint32_t height)
     {
         ImVec2 imSize{ (float)width, (float)height };
-        ImGui::PlotLines(label.c_str(), func, pUserData, (int32_t)sampleCount, sampleOffset, nullptr, yMin, yMax, imSize);
+        ImGui::PlotLines(label, func, pUserData, (int32_t)sampleCount, sampleOffset, nullptr, yMin, yMax, imSize);
+    }
+
+    bool Gui::addDirectionWidget(const char label[], glm::vec3& direction)
+    {
+        glm::vec3 dir = direction;
+        bool b = addFloat3Var(label, dir, -1, 1);
+        direction = glm::normalize(dir);
+        return b;
     }
 }

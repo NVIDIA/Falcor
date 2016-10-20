@@ -38,10 +38,8 @@ public:
     void onShutdown() override;
     void onResizeSwapChain() override;
     bool onKeyEvent(const KeyboardEvent& keyEvent) override;
-
+    void onGuiRender() override;
 private:
-    void initUI();
-
     Texture::SharedPtr mpImage;
     Fbo::SharedPtr mpTempFB;
 
@@ -52,7 +50,5 @@ private:
 
     bool mEnableRadialBlur = false;
     bool mEnableGrayscale = false;
-
-    static void GUI_CALL loadImageCallback(void* pUserData);
     void loadImage();
 };

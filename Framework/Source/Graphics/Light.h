@@ -58,9 +58,8 @@ namespace Falcor
         virtual void setIntoConstantBuffer(ConstantBuffer* pBuffer, const std::string& varName);
         /** create UI elements for this light.
             \param[in] pGui The GUI to create the elements with
-            \param[in] uiGroup Optional. Group the light's UI elements under this name.
         */
-        virtual void setUiElements(Gui* pGui, const std::string& uiGroup= "") = 0;
+        virtual void setUiElements(Gui* pGui);
 
 		/**
 		    Prepare GPU data
@@ -95,10 +94,10 @@ namespace Falcor
         uint32_t getIndex() const { return mIndex; }
     protected:
         /* UI callbacks for keeping the intensity in-sync */
-        static void GUI_CALL GetColorCB(void* pVal, void* pUserData);
-        static void GUI_CALL SetColorCB(const void* pVal, void* pUserData);
-        static void GUI_CALL GetIntensityCB(void* pVal, void* pUserData);
-        static void GUI_CALL SetIntensityCB(const void* pVal, void* pUserData);
+        glm::vec3 getColorForUI();
+        void setColorFromUI(const glm::vec3& uiColor);
+        float getIntensityForUI();
+        void setIntensityFromUI(float intensity);
 
         static uint32_t sCount;
         std::string mName;
@@ -129,9 +128,8 @@ namespace Falcor
 
         /** create UI elements for this light.
             \param[in] pGui The GUI to create the elements with
-            \param[in] uiGroup Optional. Group the light's UI elements under this name.
         */
-        void setUiElements(Gui* pGui, const std::string& uiGroup = "") override;
+        void setUiElements(Gui* pGui) override;
 
 		/**
 		    Prepare GPU data
@@ -163,9 +161,6 @@ namespace Falcor
         void move(const glm::vec3& position, const glm::vec3& target, const glm::vec3& up) override;
 
     private:
-        /* UI callbacks for keeping the direction and position in-sync */
-        static void GUI_CALL setDirectionCB(const void* pVal, void* pUserData);
-        static void GUI_CALL getDirectionCB(void* pVal, void* pUserData);		
     };
 
     /** Simple infinitely-small point light with quadratic attenuation
@@ -187,9 +182,8 @@ namespace Falcor
 
         /** create UI elements for this light.
             \param[in] pGui The GUI to create the elements with
-            \param[in] uiGroup Optional. Group the light's UI elements under this name.
         */
-        void setUiElements(Gui* pGui, const std::string& uiGroup = "") override;
+        void setUiElements(Gui* pGui) override;
 
 		/**
 		    Prepare GPU data
@@ -247,15 +241,7 @@ namespace Falcor
         void move(const glm::vec3& position, const glm::vec3& target, const glm::vec3& up) override;
 
     private:
-		/* UI callbacks for keeping the opening angle in-sync */
-		static void GUI_CALL setOpeningAngleCB(const void* pVal, void* pUserData);
-		static void GUI_CALL getOpeningAngleCB(void* pVal, void* pUserData);
-
-		/* UI callbacks for keeping the penumbra width opening angle in-sync */
-		static void GUI_CALL setPenumbraAngleCB(const void* pVal, void* pUserData);
-		static void GUI_CALL getPenumbraAngleCB(void* pVal, void* pUserData);
     };
-
 	/**
 	    Area light source
 
@@ -302,9 +288,8 @@ namespace Falcor
 		    Create UI elements for this light.
 
 		    \param[in] pGui The GUI to create the elements with
-		    \param[in] uiGroup Optional. Group the light's UI elements under this name.
 		*/
-		void setUiElements(Gui* pGui, const std::string& uiGroup = "") override;
+		void setUiElements(Gui* pGui) override;
 
 		/**
 		    Prepare GPU data

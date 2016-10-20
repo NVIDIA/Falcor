@@ -233,9 +233,9 @@ namespace Falcor
         mpGui->popGroup();
         if(mpGui->pushGroup("Global Controls"))
         {
-            mpGui->addFloatVar("Time", &mCurrentTime, 0, FLT_MAX);
-            mpGui->addFloatVar("Time Scale", &mTimeScale, 0, FLT_MAX);
-            mpGui->addCheckBox("Freeze Time", &mFreezeTime);
+            mpGui->addFloatVar("Time", mCurrentTime, 0, FLT_MAX);
+            mpGui->addFloatVar("Time Scale", mTimeScale, 0, FLT_MAX);
+            mpGui->addCheckBox("Freeze Time", mFreezeTime);
             mCaptureScreen = mpGui->addButton("Screen Capture");
             if (mpGui->addButton("Video Capture", true))
             {
