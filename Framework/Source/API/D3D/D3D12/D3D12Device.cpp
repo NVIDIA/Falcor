@@ -237,21 +237,23 @@ namespace Falcor
         {
             ID3D12CommandList* pList = pGfxList.GetInterfacePtr();
             pData->pCommandQueue->ExecuteCommandLists(1, &pList);
+
+            // Present
+            pData->pSwapChain->Present(pData->syncInterval, 0);
+            pData->currentBackBufferIndex = (pData->currentBackBufferIndex + 1) % kSwapChainBuffers;
+
+            uint64_t frameId = mpFrameFence->inc();
+            mpFrameFence->signal(pData->pCommandQueue);
+
+            // Wait until the selected back-buffer is ready
+            if (frameId > kSwapChainBuffers)
+            {
+                mpFrameFence->wait(frameId - kSwapChainBuffers);
+            }
         }
+
         pData->resizeOccured = false;
 
-		// Present
-		pData->pSwapChain->Present(pData->syncInterval, 0);
-		pData->currentBackBufferIndex = (pData->currentBackBufferIndex + 1) % kSwapChainBuffers;
-
-        uint64_t frameId = mpFrameFence->inc();
-        mpFrameFence->signal(pData->pCommandQueue);
-
-        // Wait until the selected back-buffer is ready
-        if(frameId > kSwapChainBuffers)
-        {
-            mpFrameFence->wait(frameId - kSwapChainBuffers);
-        }
         mpRenderContext->reset();
         bindDescriptorHeaps();
 	}
