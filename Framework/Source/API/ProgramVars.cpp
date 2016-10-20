@@ -32,7 +32,7 @@
 
 namespace Falcor
 {
-    // D3D12 CODE. Need to correctly abstract the class so that it doesn't depend on the low-level objects
+    // D3D12_FIX. Need to correctly abstract the class so that it doesn't depend on the low-level objects
     template<RootSignature::DescType descType>
     uint32_t findRootSignatureOffset(const RootSignature* pRootSig, uint32_t regIndex, uint32_t regSpace)
     {

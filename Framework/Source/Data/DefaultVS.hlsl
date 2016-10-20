@@ -25,11 +25,10 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#version 420
 #define _COMPILE_DEFAULT_VS
 #include "VertexAttrib.h"
 
-void main()
+VS_OUT main(VS_IN vIn)
 {
-    defaultVS();
+    return defaultVS(vIn);
 }

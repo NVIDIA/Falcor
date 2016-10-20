@@ -43,11 +43,11 @@
 #elif defined(__CUDACC__)
 #   define CUDA_CODE
 #else
-#   define GLSL_CODE
+#   define HLSL_CODE
 #endif
 
-#ifdef GLSL_CODE
-#extension GL_NV_shader_buffer_load : enable
+#ifdef HLSL_CODE
+//#extension GL_NV_shader_buffer_load : enable
 #endif
 
 #ifdef HOST_CODE
@@ -146,28 +146,37 @@ typedef TexPtr BufPtr;
 *******************************************************************/
 #define _fn 
 #define __device__ 
-#define int32_t int
-#define v2 vec2
-#define v3 vec3
-#define v4 vec4
-#define uint32_t uint
+typedef float2 vec2;
+typedef float3 vec3;
+typedef float4 vec4;
+typedef float3x3 mat3;
+typedef float4x4 mat4;
+typedef uint uint32_t;
+typedef int int32_t;
+typedef vec2 v2;
+typedef vec3 v3;
+typedef vec4 v4;
+// #define v2 vec2
+// #define v3 vec3
+// #define v4 vec4
+// #define uint32_t uint
 #define inline 
-#define fmaxf max
-#define fminf min
+// #define fmaxf max
+// #define fminf min
 #define _ref(__x) inout __x
 #define DEFAULTS(x_)
 #define DEFVAL(x_)
-struct TexPtr
-{
-    sampler2D    ptr;
-    uint         pad[6];
-};
-
-struct BufPtr
-{
-    uintptr_t    ptr;
-    uint         pad[6];
-};
+// struct TexPtr
+// {
+//     sampler2D    ptr;
+//     uint         pad[6];
+// };
+// 
+// // struct BufPtr
+// // {
+// //     uintptr_t    ptr;
+// //     uint         pad[6];
+// // };
 #endif
 
 /*******************************************************************
@@ -256,7 +265,7 @@ struct CameraData
 */
 struct MaterialValue
 {
-    TexPtr      texture;
+//    TexPtr      texture;
     vec4        constantColor DEFAULTS(v4(1,1,1,1));
 };
 
@@ -370,11 +379,11 @@ struct LightData
 	mat4            transMat           DEFAULTS(mat4());          ///< Transformation matrix of the model instance for area lights
 
 	// For area light
-	BufPtr          indexPtr;                                     ///< Buffer id for indices
-	BufPtr          vertexPtr;                                    ///< Buffer id for vertices
-	BufPtr          texCoordPtr;                                  ///< Buffer id for texcoord
-
-	BufPtr          meshCDFPtr;                                   ///< Pointer to probability distributions of triangle meshes
+// 	BufPtr          indexPtr;                                     ///< Buffer id for indices
+// 	BufPtr          vertexPtr;                                    ///< Buffer id for vertices
+// 	BufPtr          texCoordPtr;                                  ///< Buffer id for texcoord
+// 
+// 	BufPtr          meshCDFPtr;                                   ///< Pointer to probability distributions of triangle meshes
 
 	MaterialData    material;                                     ///< Emissive material of the geometry mesh
 
@@ -400,7 +409,7 @@ inline float _fn convertShininessToRoughness(const float shininess)
 
 inline vec2 _fn convertShininessToRoughness(const vec2 shininess)
 {
-    return clamp(sqrt(v2(2.0f) / (shininess + v2(2.0f))), v2(0.f), v2(1.f));
+    return clamp(sqrt(2.0f / (shininess + 2.0f)), 0.f, 1.f);
 }
 
 inline float _fn convertRoughnessToShininess(const float a)
@@ -410,7 +419,7 @@ inline float _fn convertRoughnessToShininess(const float a)
 
 inline vec2 _fn convertRoughnessToShininess(const vec2 a)
 {
-    return v2(2.0f) / clamp(a*a, v2(1e-8f), v2(1.f)) - v2(2.0f);
+    return 2.0f / clamp(a*a, 1e-8f, 1.f) - 2.0f;
 }
 
 /*******************************************************************
@@ -508,27 +517,27 @@ inline vec3 _fn SRGBToLinear(const vec3 srgb)
 /** Returns a sRGB version of an input linear RGB channel value in the ITU-R BT.709 color space
 \param LinearColor linear input channel value
 */
-inline float _fn LinearToSRGB(const float linear)
+inline float _fn LinearToSRGB(const float lin)
 {
-        if (linear <= 0.0031308f)
+        if (lin <= 0.0031308f)
         {
-            return linear * 12.92f;
+            return lin * 12.92f;
         }
         else 
         {
-            return pow(linear, (1.0f / 2.4f)) * (1.055f) - 0.055f;
+            return pow(lin, (1.0f / 2.4f)) * (1.055f) - 0.055f;
         }
 }
 
 /** Returns a sRGB version of an input linear RGB color in the ITU-R BT.709 color space
 \param LinearColor linear input color
 */
-inline vec3 _fn LinearToSRGB(const vec3 linear)
+inline vec3 _fn LinearToSRGB(const vec3 lin)
 {
     return v3(
-        LinearToSRGB(linear.x), 
-        LinearToSRGB(linear.y), 
-        LinearToSRGB(linear.z));
+        LinearToSRGB(lin.x),
+        LinearToSRGB(lin.y),
+        LinearToSRGB(lin.z));
 }
 
 /** Returns Michelson contrast given minimum and maximum intensities of an image region

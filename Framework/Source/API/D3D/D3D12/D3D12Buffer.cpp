@@ -38,7 +38,7 @@ namespace Falcor
         ResourceAllocator::AllocationData dynamicData;
     };
 
-    // D3D12 CODE - this in in texture
+    // D3D12_FIX - this in in texture
     static const D3D12_HEAP_PROPERTIES kDefaultHeapProps =
     {
         D3D12_HEAP_TYPE_DEFAULT,

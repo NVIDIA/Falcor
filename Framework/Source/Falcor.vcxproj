@@ -652,7 +652,6 @@
     <None Include="..\..\Externals\GLM\glm\gtx\wrap.inl" />
     <None Include="..\CopyData.bat" />
     <None Include="..\CopyLibs.bat" />
-    <None Include="Data\DefaultVS.vs" />
     <None Include="Data\Effects\GaussianBlur.fs" />
     <None Include="Data\Effects\ShadowPass.fs" />
     <None Include="Data\Effects\ShadowPass.gs" />
@@ -667,6 +666,9 @@
     <None Include="Data\Framework\ParallelReduction.fs" />
     <None Include="Data\Framework\TextRenderer.fs" />
     <None Include="Data\Framework\TextRenderer.vs" />
+  </ItemGroup>
+  <ItemGroup>
+    <FxCompile Include="Data\DefaultVS.hlsl" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{3B602F0E-3834-4F73-B97D-7DFC91597A98}</ProjectGuid>

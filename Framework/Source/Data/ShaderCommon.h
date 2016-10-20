@@ -33,28 +33,26 @@
 #ifndef _FALCOR_SHADER_COMMON_H_
 #define _FALCOR_SHADER_COMMON_H_
 
-#extension GL_ARB_bindless_texture : enable
-
 #include "HostDeviceData.h"
 
-layout(binding = 50) uniform InternalPerFrameCB
+cbuffer InternalPerFrameCB : register(b10)
 {
     CameraData gCam;
 };
 
-layout(binding = 51)uniform InternalPerStaticMeshCB
+cbuffer InternalPerStaticMeshCB : register(b11)
 {
     mat4 gWorldMat[64];
     uint32_t gMeshId;
 };
 
-layout(binding = 52)uniform InternalPerSkinnedMeshCB
+cbuffer InternalPerSkinnedMeshCB : register(b12)
 {
     mat4 gBones[64];
 };
 
 #ifdef _VERTEX_BLENDING
-mat4 blendVertices(vec4 weights, uvec4 ids)
+mat4 blendVertices(vec4 weights, uint4 ids)
 {
     mat4 worldMat = gBones[ids.x] * weights.x;
     worldMat += gBones[ids.y] * weights.y;
@@ -65,7 +63,7 @@ mat4 blendVertices(vec4 weights, uvec4 ids)
 }
 #endif
 
-layout(binding = 53) uniform InternalPerMaterialCB
+cbuffer InternalPerMaterialCB : register(b13)
 {
     MaterialData gMaterial;
     MaterialData gTemporalMaterial;
@@ -77,20 +75,20 @@ layout(binding = 53) uniform InternalPerMaterialCB
 /*******************************************************************
                     GLSL Evaluation routines
 *******************************************************************/
-
-bool isSamplerBound(in sampler2D sampler)
-{
-    return any(uvec2(sampler) != 0);
-}
-
-vec4 fetchTextureIfFound(in sampler2D sampler, in vec2 uv, in vec2 duvdx, in vec2 duvdy)
-{
-    vec4 ret = vec4(1.0f);
-    if(isSamplerBound(sampler)) 
-    {
-        ret = textureGrad(sampler, uv, duvdx, duvdy);
-    }
-    return ret;
-}
+// DISABLED_FOR_D3D12
+// bool isSamplerBound(in sampler2D sampler)
+// {
+//     return any(uvec2(sampler) != 0);
+// }
+// 
+// vec4 fetchTextureIfFound(in sampler2D sampler, in vec2 uv, in vec2 duvdx, in vec2 duvdy)
+// {
+//     vec4 ret = vec4(1.0f);
+//     if(isSamplerBound(sampler)) 
+//     {
+//         ret = textureGrad(sampler, uv, duvdx, duvdy);
+//     }
+//     return ret;
+// }
 
 #endif  // _FALCOR_SHADER_COMMON_H_

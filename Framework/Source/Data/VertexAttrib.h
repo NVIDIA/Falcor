@@ -52,18 +52,31 @@
 #ifdef _COMPILE_DEFAULT_VS
 #include "ShaderCommon.h"
 
-layout(location = VERTEX_POSITION_LOC)  in vec4 vPos;
-layout(location = VERTEX_NORMAL_LOC)    in vec3 vNormal;
-layout(location = VERTEX_TANGENT_LOC)   in vec3 vTangent;
-layout(location = VERTEX_BITANGENT_LOC) in vec3 vBitangent;
-layout(location = VERTEX_TEXCOORD_LOC)  in vec2 vTexC;
-layout(location = VERTEX_DIFFUSE_COLOR_LOC)  in vec3 vColor;
-
-
+struct VS_IN
+{
+    float4 pos         : POSITION;
+    float3 normal      : NORMAL;
+    float3 tangent     : TANGENT;
+    float3 bitangent   : BITANGENT;
+    float2 texC        : TEXCOORD;
+    float3 color       : DIFFUSE_COLOR;
 #ifdef _VERTEX_BLENDING
-layout(location = VERTEX_BONE_WEIGHT_LOC)  in vec4 vBoneWeights;
-layout(location = VERTEX_BONE_ID_LOC)      in uvec4 vBoneIds;
+    float4 boneWeights : BONE_WEIGHTS;
+    uint4  boneIds     : BONE_IDS;
 #endif
+    uint instanceID : SV_INSTANCEID;
+};
+
+struct VS_OUT
+{
+    float3 normalW    : NORMAL;
+    float3 tangentW   : TANGENT;
+    float3 bitangentW : BITANGENT;
+    float2 texC       : TEXCRD;
+    float3 posW       : POSW;
+    float3 colorV     : COLOR;
+    float4 posH       : SV_POSITION;
+};
 
 #ifdef _SINGLE_PASS_STEREO
 #extension GL_NV_viewport_array2: require
@@ -71,38 +84,33 @@ layout(location = VERTEX_BONE_ID_LOC)      in uvec4 vBoneIds;
 layout(secondary_view_offset=1) out int gl_Layer;
 #endif
 
-out vec3 normalW;
-out vec3 tangentW;
-out vec3 bitangentW;
-out vec2 texC;
-out vec3 posW;
-out vec3 colorV;
-
-mat4 getWorldMat()
+float4x4 getWorldMat(VS_IN vIn)
 {
 #ifdef _VERTEX_BLENDING
-    mat4 worldMat = blendVertices(vBoneWeights, vBoneIds);
+    float4x4 worldMat = blendVertices(vIn.boneWeights, vIn.boneIds);
 #else
-    mat4 worldMat = gWorldMat[gl_InstanceID];
+    float4x4 worldMat = gWorldMat[vIn.instanceID];
 #endif
     return worldMat;
 }
 
-void defaultVS()
+VS_OUT defaultVS(VS_IN vIn)
 {
-    mat4 worldMat = getWorldMat();
-    posW = (worldMat * vPos).xyz;
-    gl_Position = gCam.viewProjMat * worldMat * vPos;
-    texC = vTexC;
-    colorV = vColor;
-    normalW = (mat3x3(worldMat) * vNormal).xyz;
-    tangentW = (mat3x3(worldMat) * vTangent).xyz;
-    bitangentW = (mat3x3(worldMat) * vBitangent).xyz;
+    VS_OUT vOut;
+    float4x4 worldMat = getWorldMat(vIn);
+    vOut.posW = mul(worldMat, vIn.pos).xyz;
+    vOut.posH = mul(gCam.viewProjMat * worldMat, vIn.pos);
+    vOut.texC = vIn.texC;
+    vOut.colorV = vIn.color;
+    vOut.normalW = mul((float3x3)worldMat, vIn.normal).xyz;
+    vOut.tangentW = mul((float3x3)worldMat, vIn.tangent).xyz;
+    vOut.bitangentW = mul((float3x3)worldMat, vIn.bitangent).xyz;
 
 #ifdef _SINGLE_PASS_STEREO
   gl_SecondaryPositionNV.x = (gCam.rightEyeViewProjMat * vec4(posW, 1)).x;
   gl_SecondaryPositionNV.yzw = gl_Position.yzw;
   gl_Layer = 0;
 #endif
+  return vOut;
 }
 #endif

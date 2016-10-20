@@ -616,7 +616,7 @@ namespace Falcor
         DescriptorHeap* pHeap = gpDevice->getSrvDescriptorHeap().get();
 //        if (mCbvHandleIndex == DescriptorHeap::kInvalidHandleIndex)
         {
-            // D3D12 CODE we are going to exhaust the heap. Need to cache or something
+            // D3D12_FIX we are going to exhaust the heap. Need to cache or something
             mCbvHandleIndex = pHeap->allocateHandle();
             D3D12_CONSTANT_BUFFER_VIEW_DESC viewDesc = {};
             viewDesc.BufferLocation = mpBuffer->getGpuAddress();
