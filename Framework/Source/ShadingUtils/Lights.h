@@ -40,7 +40,9 @@ inline vec3 _fn getLightPos(in const LightData Light, in const vec3 shadingPosit
 {
     vec3 lightPos = Light.worldPos;
     if(Light.type == LightArea)
-        lightPos = v3(mul(Light.transMat, v4(lightPos, 1.0)));
+    {
+        lightPos = mul(Light.transMat, v4(lightPos, 1.0)).rrr;
+    }    
     else if(Light.type == LightDirectional)
     {
         float dist = length(shadingPosition - lightPos);
@@ -74,14 +76,23 @@ inline void _fn prepareLightAttribs(in const LightData Light, in const ShadingAt
 {
 	/* Evaluate direction to the light */
     LightAttr.P = getLightPos(Light, ShAttr.P);
+    LightAttr.pdf = 0;
+    LightAttr.N = 0;
+
     vec3 PosToLight = LightAttr.P - ShAttr.P;
     if(dot(PosToLight, PosToLight) > 1e-3f)
+    {
 	    LightAttr.L = normalize(PosToLight);
+    }
     else
-        LightAttr.L = v3(0.f);
+    {
+        LightAttr.L = 0;
+    }
 	LightAttr.lightIntensity = Light.intensity;
     if(Light.type == LightDirectional)
+    {
 		LightAttr.L = -Light.worldDir;
+    }
     else if(Light.type == LightArea || Light.type == LightPoint)
 	{
 		/* Evaluate various attenuation factors: cosine, 1/r^2, etc. */
@@ -152,6 +163,7 @@ void _fn sampleLight(in const vec3 shadingHitPos, in const LightData lData, cons
 		}
 		break;
 
+#if defined(CUDA_CODE) || defined(FALCOR_GLSL)
 		case LightArea:
 		{
 			if (lData.numIndices != 0)
@@ -170,7 +182,7 @@ void _fn sampleLight(in const vec3 shadingHitPos, in const LightData lData, cons
 				vec3 p0 = vertices[pId.x];
 				vec3 p1 = vertices[pId.y];
 				vec3 p2 = vertices[pId.z];
-#else
+#elif
 				int* indices = (int*)(lData.indexPtr.ptr);
 				float* vertices = (float*)(lData.vertexPtr.ptr);
 				// Retrieve indices
@@ -211,6 +223,7 @@ void _fn sampleLight(in const vec3 shadingHitPos, in const LightData lData, cons
 				lAttr.lightIntensity = v3(0.f);
 		}
 		break;
+#endif
 	}
 }
 #endif	// _FALCOR_LIGHTS_H_

@@ -25,12 +25,10 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#version 420
-
 #include "ShaderCommon.h"
 #include "Shading.h"
 
-layout(binding = 0) uniform PerFrameCB
+cbuffer PerFrameCB : register(b0)
 {
     LightData gDirLight;
     LightData gPointLight;
