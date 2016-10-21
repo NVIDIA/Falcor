@@ -117,7 +117,6 @@ namespace Falcor
                 // Preprocessing is good
                 std::string errorLog;
                 auto pShader = Shader::create(shader, shaderType, errorLog);
-                pShader->setIncludeList(includeList);
 
                 if(pShader == nullptr)
                 {
@@ -132,6 +131,7 @@ namespace Falcor
                 }
                 else
                 {
+                    pShader->setIncludeList(includeList);
                     return pShader;
                 }
             }
