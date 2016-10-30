@@ -163,7 +163,7 @@ namespace Falcor
         {
             if(mUnloadTexturesOnMaterialChange && mpLastMaterial)
             {
-                mpLastMaterial->unloadTextures();
+                mpLastMaterial->evictTextures();
             }
             mpLastMaterial = pMesh->getMaterial().get();
             setPerMaterialData(pContext, currentData);

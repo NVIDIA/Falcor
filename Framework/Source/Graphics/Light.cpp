@@ -338,7 +338,7 @@ namespace Falcor
             const Material::SharedPtr& pMaterial = pMesh->getMaterial();
             if(pMaterial)
             {
-                for(uint32_t layerId = 0; layerId < pMaterial->getNumActiveLayers(); ++layerId)
+                for(uint32_t layerId = 0; layerId < pMaterial->getNumLayers(); ++layerId)
                 {
                     if(pMaterial->getLayerDesc(layerId)->type == MatEmissive)
                     {
@@ -447,7 +447,7 @@ namespace Falcor
 				const Material::SharedPtr& pMaterial = pMesh->getMaterial();
 				if (pMaterial)
 				{
-					size_t numLayers = pMaterial->getNumActiveLayers();
+					size_t numLayers = pMaterial->getNumLayers();
 					const MaterialLayerDesc* pLayerDesc = nullptr;
 
 					for (uint32_t layerId = 0; layerId < numLayers; ++layerId)

@@ -51,37 +51,28 @@ namespace Falcor {
 #endif
 
 #ifdef HOST_CODE
+#include "API/Sampler.h"
+#include "API/Texture.h"
+
 /*******************************************************************
                     CPU declarations
 *******************************************************************/
-using glm::vec2;
-using glm::vec3;
-using glm::vec4;
-using glm::mat4;
-using glm::ivec2;
-using glm::clamp;
-using glm::dot;
-using std::abs;
+#define vec2 glm::vec2
+#define vec3 glm::vec3
+#define vec4 glm::vec4
+#define mat4 glm::mat4
+#define ivec2 glm::ivec2
+#define clamp glm::clamp
+#define dot glm::dot
+#define abs glm::abs
 #define v2 vec2
 #define v3 vec3
 #define v4 vec4
 #define _fn
 #define DEFAULTS(x_) = ##x_
 #define DEFVAL(x_) = ##x_
-
-struct TexPtr
-{
-    union
-    {
-        uint64_t ptr = 0;
-        int32_t  ptrLoHi[2];
-    };
-    Falcor::Texture::SharedPtr pTexture;
-    uint64_t pad;
-};
-
-static_assert(sizeof(TexPtr) == 4 * sizeof(uint64_t), "TexPtr has a wrong size");
-typedef TexPtr BufPtr;
+#define SamplerState Sampler::SharedPtr
+#define Texture2D Texture::SharedPtr
 #elif defined(CUDA_CODE)
 /*******************************************************************
                     CUDA declarations
@@ -249,22 +240,22 @@ struct CameraData
 */
 struct MaterialLayerDesc
 {
-    uint        type            DEFAULTS(MatNone);             ///< Specifies a material Type: diffuse/conductor/dielectric/etc. None means there is no material
-    uint        ndf             DEFAULTS(NDFGGX);              ///< Specifies a model for normal distribution function (NDF): Beckmann, GGX, etc.
-    uint        blending        DEFAULTS(BlendAdd);            ///< Specifies how this layer should be combined with previous layers. E.g., blended based on Fresnel (useful for dielectric coatings), or just added on top, etc.
-    uint        hasAlbedoTexture        DEFAULTS(0);
+    uint32_t    type            DEFAULTS(MatNone);             ///< Specifies a material Type: diffuse/conductor/dielectric/etc. None means there is no material
+    uint32_t    ndf             DEFAULTS(NDFGGX);              ///< Specifies a model for normal distribution function (NDF): Beckmann, GGX, etc.
+    uint32_t    blending        DEFAULTS(BlendAdd);            ///< Specifies how this layer should be combined with previous layers. E.g., blended based on Fresnel (useful for dielectric coatings), or just added on top, etc.
+    uint32_t    hasAlbedoTexture        DEFAULTS(0);
 
-    uint        hasRoughnessTexture     DEFAULTS(0);
-    uint        hasExtraParamTexture    DEFAULTS(0);
-    float2      pad                     DEFAULTS(vec2(0, 0));
+    uint32_t    hasRoughnessTexture     DEFAULTS(0);
+    uint32_t    hasExtraParamTexture    DEFAULTS(0);
+    vec2        pad                     DEFAULTS(vec2(0, 0));
 };
 
 struct MaterialLayerValues
 {
-    float4   albedo;                                       ///< Material albedo/specular color/emitted color
-    float4   roughness;                                    ///< Material roughness parameter [0;1] for NDF
-    float4   extraParam;                                   ///< Additional user parameter, can be IoR for conductor and dielectric
-    float3   pad             DEFAULTS(float3(0, 0, 0));
+    vec4     albedo;                                       ///< Material albedo/specular color/emitted color
+    vec4     roughness;                                    ///< Material roughness parameter [0;1] for NDF
+    vec4     extraParam;                                   ///< Additional user parameter, can be IoR for conductor and dielectric
+    vec3     pad             DEFAULTS(vec3(0, 0, 0));
     float    pmf             DEFAULTS(0.f);                 ///< Specifies the current value of the PMF of all layers. E.g., first layer just contains a probability of being selected, others accumulate further
 };
 
@@ -284,11 +275,9 @@ struct MaterialDesc
 struct MaterialValues
 {
     MaterialLayerValues layers[MatMaxLayers];
-    float3 normal;                       // Normal map modifier, if texture is non-null, shading normal is perturbed
-    float alphaThreshold DEFAULTS(1.0f); // Alpha test threshold, in cast alpha-test is enabled (alphaMap is not nullptr)
-    float2 height;                       // Height (displacement) map modifier (scale, offset). If texture is non-null, one can apply a displacement or parallax mapping
-    int32_t id      DEFAULTS(-1);        // Scene-unique material id, -1 is a wrong material
-    int32_t pad;
+    vec2  height;                       // Height (displacement) map modifier (scale, offset). If texture is non-null, one can apply a displacement or parallax mapping
+	float alphaThreshold DEFAULTS(1.0f); // Alpha test threshold, in cast alpha-test is enabled (alphaMap is not nullptr)
+	int32_t id      DEFAULTS(-1);        // Scene-unique material id, -1 is a wrong material
 };
 
 struct MaterialLayerTextures
@@ -539,13 +528,30 @@ inline float _fn computeMichelsonContrast(const float iMin, const float iMax)
 }
 
 #ifdef HOST_CODE
-static_assert(sizeof(TexPtr) == 4 * sizeof(uint64_t), "TexPtr has a wrong size");
-static_assert((sizeof(MaterialValue) % sizeof(vec4)) == 0, "MaterialValue has a wrong size");
+static_assert((sizeof(MaterialValues) % sizeof(vec4)) == 0, "MaterialValue has a wrong size");
 static_assert((sizeof(MaterialLayerDesc) % sizeof(vec4)) == 0, "MaterialLayerDesc has a wrong size");
 static_assert((sizeof(MaterialLayerValues) % sizeof(vec4)) == 0, "MaterialLayerValues has a wrong size");
 static_assert((sizeof(MaterialDesc) % sizeof(vec4)) == 0, "MaterialDesc has a wrong size");
 static_assert((sizeof(MaterialValues) % sizeof(vec4)) == 0, "MaterialValues has a wrong size");
 static_assert((sizeof(MaterialData) % sizeof(vec4)) == 0, "MaterialData has a wrong size");
+
+
+#undef vec2
+#undef vec3
+#undef vec4
+#undef mat4
+#undef ivec2
+#undef clamp
+#undef dot
+#undef abs
+#undef v2
+#undef v3
+#undef v4
+#undef _fn
+#undef DEFAULTS
+#undef DEFVAL
+#undef SamplerState
+#undef Texture2D
 } // namespace Falcor
 #endif // HOST_CODE
 #endif //_HOST_DEVICE_DATA_H

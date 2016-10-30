@@ -488,19 +488,19 @@ namespace Falcor
 
         // Normal
         rapidjson::Value jsonNormal;
-        createMaterialValue(pMaterial->getNormalValue(), jsonNormal, allocator);
+        createMaterialValue(pMaterial->getNormalMap(), jsonNormal, allocator);
         addJsonValue(jsonMaterial, allocator, SceneKeys::kMaterialNormal, jsonNormal);
 
         // Height
         rapidjson::Value jsonHeight;
-        createMaterialValue(pMaterial->getHeightValue(), jsonHeight, allocator);
+        createMaterialValue(pMaterial->getHeightMap(), jsonHeight, allocator);
         addJsonValue(jsonMaterial, allocator, SceneKeys::kMaterialHeight, jsonHeight);
 
         // Loop over the layers
-        if(pMaterial->getNumActiveLayers() > 0)
+        if(pMaterial->getNumLayers() > 0)
         {
             rapidjson::Value jsonLayerArray(rapidjson::kArrayType);
-            for(uint32_t i = 0; i < pMaterial->getNumActiveLayers(); i++)
+            for(uint32_t i = 0; i < pMaterial->getNumLayers(); i++)
             {
                 const MaterialLayerDesc* pDesc = pMaterial->getLayerDesc(i);
                 const MaterialLayerValues* pData = pMaterial->getLayerValues(i);

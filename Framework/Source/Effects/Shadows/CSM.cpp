@@ -80,7 +80,7 @@ namespace Falcor
         {
             if(mUnloadTexturesOnMaterialChange && mMaterialChanged)
             {
-                mpLastMaterial->unloadTextures();
+                mpLastMaterial->evictTextures();
                 mMaterialChanged = false;
             }
         }

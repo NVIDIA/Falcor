@@ -42,129 +42,102 @@ namespace Falcor
         /* Parse diffuse layer */
         if(luminance(diffuseColor) > 0.f || pTextures[MapType::DiffuseMap] != nullptr)
         {
-            MaterialLayerDesc desc;
-            MaterialLayerValues data;
+            Material::Layer layer;
+            layer.type = Material::Layer::Type::Lambert;
+            layer.blend = Material::Layer::Blend::Additive;
 
-            desc.type = MatLambert;
-            desc.blending = BlendAdd;
-
-            vec3 albedo = diffuseColor;
+            glm::vec3 albedo = diffuseColor;
             /* Special case: if albedo color is zero but texture is not, ignore the color */
             if(luminance(albedo) == 0.f)
             {
-                albedo = vec3(1.f);
+                albedo = glm::vec3(1.f);
             }
 
-            data.albedo.constantColor = vec4(albedo, 1.f);
-            data.albedo.texture.pTexture = pTextures[MapType::DiffuseMap];
-            desc.hasAlbedoTexture = (data.albedo.texture.pTexture != nullptr);
-            pMaterial->addLayer(desc, data);
+            layer.albedo.constantValue = glm::vec4(albedo, 1.f);
+            layer.albedo.pTexture = pTextures[MapType::DiffuseMap];
+            pMaterial->addLayer(layer);
         }
 
         /* Parse conductor layer */
         if(luminance(specularColor) > 0.f || pTextures[MapType::SpecularMap] != nullptr)
         {
-            MaterialLayerDesc desc;
-            MaterialLayerValues data;
+            Material::Layer layer;
+            layer.type = Material::Layer::Type::Conductor;
+            layer.blend = Material::Layer::Blend::Additive;
 
-            desc.type = MatConductor;
-            /* Uniform mixture blending */
-            desc.blending = BlendAdd;
-
-            vec3 specular = specularColor;
+            glm::vec3 specular = specularColor;
             /* Special case: if albedo color is zero but texture is not, ignore the color */
-            if(luminance(specularColor) == 0.f)
+            if (luminance(specular) == 0.f)
             {
-                specular = vec3(1.f);
+                specular = glm::vec3(1.f);
             }
 
-            data.albedo.constantColor = vec4(specular, 1.f);
-            data.albedo.texture.pTexture = pTextures[MapType::SpecularMap];
-            desc.hasAlbedoTexture = (data.albedo.texture.pTexture != nullptr);
+            layer.albedo.constantValue = glm::vec4(specular, 1.f);
+            layer.albedo.pTexture = pTextures[MapType::SpecularMap];
 
-            data.roughness.constantColor = vec4(convertShininessToRoughness(shininess));
-            data.roughness.texture.pTexture = pTextures[MapType::ShininessMap];
-            desc.hasRoughnessTexture = (data.roughness.texture.pTexture != nullptr);
+            layer.roughness.constantValue = glm::vec4(convertShininessToRoughness(shininess));
+            layer.roughness.pTexture = pTextures[MapType::ShininessMap];
 
             /* Average chrome IoR and kappa */
-            data.extraParam.constantColor = vec4(3.f, 4.2f, 0.f, 0.f);
-            pMaterial->addLayer(desc, data);
+            layer.extraParam.constantValue = glm::vec4(3.f, 4.2f, 0.f, 0.f);
+            pMaterial->addLayer(layer);
         }
 
         /* Parse dielectric layer */
         if((luminance(transparentColor) * (1.f - opacity) > 0.f) && currentLayer < MatMaxLayers)
         {
-            MaterialLayerDesc desc;
-            MaterialLayerValues data;
+            Material::Layer layer;
+            layer.type = Material::Layer::Type::Dielectric;
+            layer.blend = Material::Layer::Blend::Fresnel;
 
-            desc.type = MatDielectric;
-            desc.blending = BlendFresnel;
-
-            data.albedo.constantColor = vec4(transparentColor * (1.f - opacity), 1.f);
+            layer.albedo.constantValue = glm::vec4(transparentColor * (1.f - opacity), 1.f);
 
             /* Always assume a smooth dielectric */
-            data.roughness.constantColor = vec4(0.f);
-            data.extraParam.constantColor = vec4(IoR, 0.f, 0.f, 0.f);
+            layer.roughness.constantValue = glm::vec4(0.f);
+            layer.extraParam.constantValue = glm::vec4(IoR, 0.f, 0.f, 0.f);
 
-            pMaterial->addLayer(desc, data);
+            pMaterial->addLayer(layer);
         }
 
         /* Parse emissive layer */
         if(luminance(emissiveColor) > 0.f || pTextures[MapType::EmissiveMap] != nullptr)
         {
-            MaterialLayerDesc desc;
-            MaterialLayerValues data;
+            Material::Layer layer;
+            layer.type = Material::Layer::Type::Emissive;
+            layer.blend = Material::Layer::Blend::Additive;
 
-            desc.type = MatEmissive;
-            desc.blending = BlendAdd;
-
-            vec3 albedo = emissiveColor;
+            glm::vec3 albedo = emissiveColor;
             /* Special case: if albedo color is zero but texture is not, ignore the color */
             if(luminance(albedo) == 0.f)
             {
-                albedo = vec3(1.f);
+                albedo = glm::vec3(1.f);
             }
 
-            data.albedo.constantColor = vec4(albedo, 1.f);
-            data.albedo.texture.pTexture = pTextures[MapType::EmissiveMap];
-            desc.hasAlbedoTexture = (data.albedo.texture.pTexture != nullptr);
-            pMaterial->addLayer(desc, data);
+            layer.albedo.constantValue = glm::vec4(albedo, 1.f);
+            layer.albedo.pTexture = pTextures[MapType::EmissiveMap];
+            pMaterial->addLayer(layer);
         }
 
         /* Initialize modifiers */
-        MaterialValue normalVal;
-        normalVal.texture.pTexture = pTextures[MapType::NormalMap];
-        pMaterial->setNormalValue(normalVal);
-
-        MaterialValue alphaVal;
-        alphaVal.texture.pTexture = pTextures[MapType::AlphaMap];
-        alphaVal.constantColor = glm::vec4(0.5f);
-        pMaterial->setAlphaValue(alphaVal);
-
-        MaterialValue ambientVal;
-        ambientVal.texture.pTexture = pTextures[MapType::AmbientMap];
-        ambientVal.constantColor = glm::vec4(0.5f);
-        pMaterial->setAmbientValue(ambientVal);
-
-        MaterialValue heightVal;
-        heightVal.constantColor.x = bumpScale;
-        heightVal.constantColor.y = bumpOffset;
-        heightVal.texture.pTexture = pTextures[MapType::HeightMap];
-        pMaterial->setHeightValue(heightVal);
-
+        pMaterial->setNormalMap(pTextures[MapType::NormalMap]);
+        pMaterial->setAlphaMap(pTextures[MapType::AlphaMap]);
+        pMaterial->setAlphaThreshold(0.5f);
+        pMaterial->setAmbientOcclusionMap(pTextures[MapType::AmbientMap]);
+        pMaterial->setHeightModifiers(glm::vec2(bumpScale, bumpOffset));
+        pMaterial->setHeightMap(pTextures[MapType::HeightMap]);
         pMaterial->finalize();
 
         return pMaterial;
     }
 
-    static inline uint32_t getLayersCountByType(const Material* pMaterial, uint32_t matType)
+    static inline uint32_t getLayersCountByType(const Material* pMaterial, Material::Layer::Type layerType)
     {
         uint32_t numLayers = 0;
-        int32_t layerId = MatMaxLayers;
+        int32_t layerId = pMaterial->getNumLayers();
         while(--layerId >= 0)
         {
-            const MaterialLayerDesc* pDesc = pMaterial->getLayerDesc(layerId);
-            if(pDesc->type == matType)
+            Material::Layer layer = pMaterial->getLayer(layerId);
+            if(layer.type == layerType)
             {
                 numLayers++;
             }
@@ -173,106 +146,84 @@ namespace Falcor
         return numLayers;
     }
 
-    static inline const MaterialLayerValues* getLayerDataFromType(const Material* pMaterial, uint32_t matType)
+    static bool getLayerFromType(const Material* pMaterial, Material::Layer::Type layerType, Material::Layer& layer)
     {
-        int32_t layerId = MatMaxLayers;
+        int32_t layerId = pMaterial->getNumLayers();;
         while(--layerId >= 0)
         {
-            const MaterialLayerDesc* pDesc = pMaterial->getLayerDesc(layerId);
-
-            if(pDesc->type == matType)
+            layer = pMaterial->getLayer(layerId);
+            if(layer.type == layerType)
             {
-                return pMaterial->getLayerValues(layerId);
+                return true;
             }
         }
 
-        return nullptr;
+        return false;
     }
 
     void BasicMaterial::initializeFromMaterial(const Material* pMaterial)
     {
-        if(getLayersCountByType(pMaterial, MatLambert) > 1 ||
-            getLayersCountByType(pMaterial, MatConductor) > 1 ||
-            getLayersCountByType(pMaterial, MatDielectric) > 1)
+        if(getLayersCountByType(pMaterial, Material::Layer::Type::Lambert) > 1 ||
+            getLayersCountByType(pMaterial, Material::Layer::Type::Conductor) > 1 ||
+            getLayersCountByType(pMaterial, Material::Layer::Type::Dielectric) > 1)
         {
             Logger::log(Logger::Level::Warning, "BasicMaterial::initializeFromMaterial(): Material " + pMaterial->getName() + " was exported with loss of data");
         }
 
+        Material::Layer layer;
         /* Parse diffuse layer */
-        const MaterialLayerValues* pDiffuseData = pMaterial->getLayerValues(MatLambert);
-        if(pDiffuseData)
+        if(getLayerFromType(pMaterial, Material::Layer::Type::Lambert, layer))
         {
-            pTextures[MapType::DiffuseMap] = pDiffuseData->albedo.texture.pTexture;
-            diffuseColor = vec3(pDiffuseData->albedo.constantColor);
-            if(pDiffuseData->roughness.texture.pTexture)
+            pTextures[MapType::DiffuseMap] = layer.albedo.pTexture;
+            diffuseColor = glm::vec3(layer.albedo.constantValue);
+            if(layer.roughness.pTexture)
             {
                 Logger::log(Logger::Level::Warning, "BasicMaterial::initializeFromMaterial(): Material " + pMaterial->getName() + " has an unsupported diffuse roughness texture");
             }
         }
 
         /* Parse emissive layer */
-        const MaterialLayerValues* pEmissiveData = pMaterial->getLayerValues(MatEmissive);
-        if(pEmissiveData)
+        if(getLayerFromType(pMaterial, Material::Layer::Type::Emissive, layer))
         {
-            pTextures[MapType::EmissiveMap] = pEmissiveData->albedo.texture.pTexture;
-            emissiveColor = vec3(pEmissiveData->albedo.constantColor);
-            if(pEmissiveData->roughness.texture.pTexture)
+            pTextures[MapType::EmissiveMap] = layer.albedo.pTexture;
+            emissiveColor = glm::vec3(layer.albedo.constantValue);
+            if(layer.roughness.pTexture)
             {
                 Logger::log(Logger::Level::Warning, "BasicMaterial::initializeFromMaterial(): Material " + pMaterial->getName() + " has an unsupported emissive roughness texture");
             }
         }
 
         /* Parse specular layer */
-        const MaterialLayerValues* pSpecData = pMaterial->getLayerValues(MatConductor);
-        if(pSpecData)
+        if(getLayerFromType(pMaterial, Material::Layer::Type::Conductor, layer))
         {
-            pTextures[MapType::SpecularMap] = pSpecData->albedo.texture.pTexture;
-            specularColor = vec3(pSpecData->albedo.constantColor);
-            pTextures[MapType::ShininessMap] = pSpecData->roughness.texture.pTexture;
-            shininess = convertRoughnessToShininess(pSpecData->roughness.constantColor.x);
+            pTextures[MapType::SpecularMap] = layer.albedo.pTexture;
+            specularColor = glm::vec3(layer.albedo.constantValue);
+            pTextures[MapType::ShininessMap] = layer.roughness.pTexture;
+            shininess = convertRoughnessToShininess(layer.roughness.constantValue.x);
         }
 
         /* Parse transparent layer */
-        const MaterialLayerValues* pTransData = pMaterial->getLayerValues(MatDielectric);
-        if(pTransData)
+        if(getLayerFromType(pMaterial, Material::Layer::Type::Dielectric, layer))
         {
-            transparentColor = vec3(pTransData->albedo.constantColor);
-            IoR = pTransData->extraParam.constantColor.x;
-            if(pTransData->albedo.texture.pTexture)
+            transparentColor = glm::vec3(layer.albedo.constantValue);
+            IoR = layer.extraParam.constantValue.x;
+            if(layer.albedo.pTexture)
             {
                 Logger::log(Logger::Level::Warning, "Material::GetObsoleteMaterial: Material " + pMaterial->getName() + " has an unsupported transparency roughness texture");
             }
-            if(pTransData->roughness.texture.pTexture)
+            if(layer.roughness.pTexture)
             {
                 Logger::log(Logger::Level::Warning, "Material::GetObsoleteMaterial: Material " + pMaterial->getName() + " has an unsupported transparency roughness texture");
             }
         }
 
         /* Parse modifiers */
-        const MaterialValue& alphaMap = pMaterial->getAlphaValue();
-        if(alphaMap.texture.pTexture)
-        {
-            pTextures[MapType::AlphaMap] = alphaMap.texture.pTexture;
-            opacity = alphaMap.constantColor.x;
-        }
-
-        const MaterialValue& ambientMap = pMaterial->getAmbientValue();
-        if(ambientMap.texture.pTexture)
-        {
-            pTextures[MapType::AmbientMap] = ambientMap.texture.pTexture;
-        }
-        const MaterialValue& normalMap = pMaterial->getNormalValue();
-        if(normalMap.texture.pTexture)
-        {
-            pTextures[MapType::NormalMap] = normalMap.texture.pTexture;
-        }
-
-        const MaterialValue& heightMap = pMaterial->getHeightValue();
-        if(heightMap.texture.pTexture)
-        {
-            pTextures[MapType::HeightMap] = heightMap.texture.pTexture;
-            bumpScale = heightMap.constantColor.x;
-            bumpOffset = heightMap.constantColor.y;
-        }
+        pTextures[MapType::AlphaMap] = pMaterial->getAlphaMap();
+        opacity = pMaterial->getAlphaThreshold();
+        pTextures[MapType::AmbientMap] = pMaterial->getAmbientOcclusionMap();
+        pTextures[MapType::NormalMap] = pMaterial->getNormalMap();
+        pTextures[MapType::HeightMap] = pMaterial->getHeightMap();
+        bumpScale = pMaterial->getHeightModifiers().x;
+        bumpOffset = pMaterial->getHeightModifiers().y;
     }
 }

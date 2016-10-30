@@ -329,7 +329,7 @@ namespace Falcor
             {
                 // Material is used. Mark its textures
                 std::vector<Texture::SharedConstPtr> activeTextures;
-                material->getActiveTextures(activeTextures);
+                material->getTexturesList(activeTextures);
                 for(const auto& tex : activeTextures)
                 {
                     usedTextures[tex.get()] = true;
@@ -362,7 +362,7 @@ namespace Falcor
         
         for(const auto& m : mpMaterials)
         {
-            const auto& pNormalMap = m->getNormalValue().texture.pTexture;
+            const auto& pNormalMap = m->getNormalMap().texture.pTexture;
             if(pNormalMap)
             {
                 uint32_t Id = texturesIndex[pNormalMap.get()];

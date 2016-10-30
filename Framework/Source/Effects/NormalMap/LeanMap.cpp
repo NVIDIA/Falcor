@@ -114,7 +114,7 @@ namespace Falcor
             return false;
         }
 
-        const Texture* pNormalMap = pMaterial->getNormalValue().texture.pTexture.get();
+        const Texture* pNormalMap = pMaterial->getNormalMap().texture.pTexture.get();
         if(pNormalMap)
         {
             mpLeanMaps[materialID] = createFromNormalMap(pNormalMap);
