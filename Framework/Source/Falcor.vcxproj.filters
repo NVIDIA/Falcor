@@ -2039,6 +2039,8 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <FxCompile Include="Data\DefaultVS.hlsl" />
+    <FxCompile Include="Data\DefaultVS.hlsl">
+      <Filter>Data\Framework</Filter>
+    </FxCompile>
   </ItemGroup>
 </Project>
