@@ -70,7 +70,6 @@ namespace Falcor {
 #define v4 vec4
 #define _fn
 #define DEFAULTS(x_) = ##x_
-#define DEFVAL(x_) = ##x_
 #define SamplerState Sampler::SharedPtr
 #define Texture2D Texture::SharedPtr
 #elif defined(CUDA_CODE)
@@ -79,7 +78,6 @@ namespace Falcor {
 *******************************************************************/
 // Modifiers
 #define DEFAULTS(x_)
-#define DEFVAL(x_) = ##x_
 #define in
 #define out &
 #define _ref(__x) __x&
@@ -150,7 +148,6 @@ typedef vec4 v4;
 #define inline 
 #define _ref(__x) inout __x
 #define DEFAULTS(x_)
-#define DEFVAL(x_)
 #endif
 
 /*******************************************************************
@@ -549,7 +546,6 @@ static_assert((sizeof(MaterialData) % sizeof(vec4)) == 0, "MaterialData has a wr
 #undef v4
 #undef _fn
 #undef DEFAULTS
-#undef DEFVAL
 #undef SamplerState
 #undef Texture2D
 } // namespace Falcor
