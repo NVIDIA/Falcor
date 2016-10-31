@@ -32,7 +32,7 @@
 
 namespace Falcor
 {
-    // D3D12_FIX. Need to correctly abstract the class so that it doesn't depend on the low-level objects
+    // FIXME D3D12. Need to correctly abstract the class so that it doesn't depend on the low-level objects
     template<RootSignature::DescType descType>
     uint32_t findRootSignatureOffset(const RootSignature* pRootSig, uint32_t regIndex, uint32_t regSpace)
     {
@@ -180,13 +180,13 @@ namespace Falcor
         return getBufferCommon<ShaderStorageBuffer>(index, mSSBO);
     }
 
-    ErrorCode ProgramVars::attachConstantBuffer(uint32_t index, const ConstantBuffer::SharedPtr& pCB)
+    bool ProgramVars::attachConstantBuffer(uint32_t index, const ConstantBuffer::SharedPtr& pCB)
     {
         // Check that the index is valid
         if(mConstantBuffers.find(index) == mConstantBuffers.end())
         {
             Logger::log(Logger::Level::Warning, "No constant buffer was found at index " + std::to_string(index) + ". Ignoring attachConstantBuffer() call.");
-            return ErrorCode::NotFound;
+            return false;
         }
 
         // Just need to make sure the buffer is large enough
@@ -194,45 +194,45 @@ namespace Falcor
         if(desc->getRequiredSize() > pCB->getBuffer()->getSize())
         {
             Logger::log(Logger::Level::Error, "Can't attach the constant-buffer. Size mismatch.");
-            return ErrorCode::SizeMismatch;
+            return false;
         }
 
         mConstantBuffers[index].pResource = pCB;
-        return ErrorCode::None;
+        return true;
     }
 
-    ErrorCode ProgramVars::attachConstantBuffer(const std::string& name, const ConstantBuffer::SharedPtr& pCB)
+    bool ProgramVars::attachConstantBuffer(const std::string& name, const ConstantBuffer::SharedPtr& pCB)
     {
         // Find the buffer
         uint32_t loc = mpReflector->getBufferBinding(name);
         if(loc == ProgramReflection::kInvalidLocation)
         {
             Logger::log(Logger::Level::Warning, "Constant buffer \"" + name + "\" was not found. Ignoring attachConstantBuffer() call.");
-            return ErrorCode::NotFound;
+            return false;
         }
 
         return attachConstantBuffer(loc, pCB);
     }
 
-    ErrorCode ProgramVars::setTexture(uint32_t index, const Texture::SharedConstPtr& pTexture)
+    bool ProgramVars::setTexture(uint32_t index, const Texture::SharedConstPtr& pTexture)
     {
         mAssignedSrvs[index].pResource = pTexture;
-        return ErrorCode::None;
+        return true;
     }
 
-    ErrorCode ProgramVars::setTexture(const std::string& name, const Texture::SharedConstPtr& pTexture)
+    bool ProgramVars::setTexture(const std::string& name, const Texture::SharedConstPtr& pTexture)
     {
         const ProgramReflection::Resource* pDesc = mpReflector->getResourceDesc(name);
         if (pDesc == nullptr)
         {
             Logger::log(Logger::Level::Warning, "Texture \"" + name + "\" was not found. Ignoring setTexture() call.");
-            return ErrorCode::NotFound;
+            return false;
         }
 
         if (pDesc->type != ProgramReflection::Resource::ResourceType::Texture)
         {
             Logger::log(Logger::Level::Warning, "ProgramVars::setTexture() was called, but variable \"" + name + "\" is not a texture. Ignoring call.");
-            return ErrorCode::TypeMismatch;
+            return false;
         }
 
         return setTexture(pDesc->regIndex, pTexture);

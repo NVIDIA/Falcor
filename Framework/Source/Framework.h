@@ -159,12 +159,4 @@ namespace Falcor
             return "";
         }
     }
-
-    enum class ErrorCode
-    {
-        None,
-        SizeMismatch,
-        TypeMismatch,
-        NotFound,
-    };
 }

@@ -227,7 +227,7 @@ namespace Falcor
         RenderContextData* pApiData = (RenderContextData*)mpApiData;
 
        // Bind the root signature and the root signature data
-       // D3D12_CODE what to do if there are no vars?
+       // FIXME D3D12 what to do if there are no vars?
         if (mState.pProgramVars)
         {
             mState.pProgramVars->setIntoRenderContext(const_cast<RenderContext*>(this));
@@ -282,7 +282,7 @@ namespace Falcor
         RenderContextData* pApiData = (RenderContextData*)mpApiData;
         pApiData->pList->RSSetViewports(D3D12_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE, (D3D12_VIEWPORT*)mState.viewports.data());
 
-        // D3D12_FIX: what to do with this? Scissors do not get updated automatically when the VP changes
+        // FIXME D3D12: what to do with this? Scissors do not get updated automatically when the VP changes
         D3D12_RECT r;
         r.top = (LONG)mState.viewports[0].originX;
         r.left = (LONG)mState.viewports[0].originY;

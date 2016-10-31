@@ -310,7 +310,7 @@ namespace Falcor
             Logger::log(Logger::Level::Error, std::string("Material::setIntoConstantBuffer() - can't find the first texture object"));
             return;
         }
-        pVars->setTextureArray(pResourceDesc->regIndex, (Texture::SharedConstPtr*)&mData.textures, kTexCount);
+        pVars->setTextureRange(pResourceDesc->regIndex, kTexCount, (Texture::SharedConstPtr*)&mData.textures);
     }
 
     bool Material::operator==(const Material& other) const

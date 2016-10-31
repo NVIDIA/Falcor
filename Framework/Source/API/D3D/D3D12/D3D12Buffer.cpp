@@ -38,7 +38,7 @@ namespace Falcor
         ResourceAllocator::AllocationData dynamicData;
     };
 
-    // D3D12_FIX - this in in texture
+    // FIXME D3D12 - this in in texture
     static const D3D12_HEAP_PROPERTIES kDefaultHeapProps =
     {
         D3D12_HEAP_TYPE_DEFAULT,
@@ -173,7 +173,7 @@ namespace Falcor
         }
         else
         {
-            // D3D12_CODE handle case where buffer is mapped for read
+            // FIXME D3D12 handle case where buffer is mapped for read
             gpDevice->getCopyContext()->updateBuffer(this, pData, offset, size);
         }
     }
