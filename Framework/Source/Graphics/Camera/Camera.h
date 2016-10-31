@@ -185,9 +185,9 @@ namespace Falcor
 
         struct 
         {
-            vec3        xyz;    ///< Camera frustum plane position
+            glm::vec3   xyz;    ///< Camera frustum plane position
             float       negW;                ///< Camera frustum plane, sign of the coordinates
-            vec3        sign;    ///< Camera frustum plane position
+            glm::vec3   sign;    ///< Camera frustum plane position
         } mutable mFrustumPlanes[6];
     };
 }

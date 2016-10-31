@@ -39,7 +39,7 @@
 namespace Falcor
 {
     class Texture;
-    class ConstantBuffer;
+    class ProgramVars;
 
     /** A surface material object
         The core part of material is the 'SMaterial	m_Material' data structure. It consists of multiple layers and modifiers.
@@ -190,7 +190,7 @@ namespace Falcor
     
 		/** Returns the normal map
 		*/
-		Texture::SharedPtr getNormalMap() const { return mData.textures.normalMap; }
+        Texture::SharedPtr getNormalMap() const { return mData.textures.normalMap; }
 
         /** Set the alpha map
         */
@@ -240,18 +240,19 @@ namespace Falcor
         void setDoubleSided(bool doubleSided) { mDoubleSided = doubleSided; mDescDirty = true; }
 
         /** Set the material parameters into a constant buffer. To use this you need to include 'Falcor.h' inside your shader.
-            \param[in] pCB The constant buffer to set the parameters into.
-            \param[in] VarName The name of the material variable in the program.
+            \param[in] pVars The constant buffer to set the parameters into.
+            \param[in] bufferName The name of the constant buffer the material was defined in
+            \param[in] varName The name of the material variable in the buffer
         */
-        void setIntoConstantBuffer(ConstantBuffer* pCB, const std::string& varName) const;
+        void setIntoProgramVars(ProgramVars* pVars, const char bufferName[], const char varName[]) const;
         
         /** Override all sampling types of materials
         */
-        void setSampler(const Sampler::SharedPtr& pSampler) { mData.textures.samplerState = pSampler; }
+        void setSampler(const Sampler::SharedPtr& pSampler) { mData.samplerState = pSampler; }
                 
         /** Return global sampler override 
         */
-        Sampler::SharedPtr getSampler() const { return mData.textures.samplerState; }
+        Sampler::SharedPtr getSampler() const { return mData.samplerState; }
 
         /** Evict all the textures from the GPU memory.
         */
@@ -269,41 +270,31 @@ namespace Falcor
         */
         uint64_t getDescIdentifier() const;
 
-        /** Validates the layers of the material, making sure that it is energy conserving.
-        */
-        void finalize() const;
     private:
-        mutable bool mDescDirty   = false;
-        mutable size_t mDescIdentifier;
-        void updateDescIdentifier() const;
-        void removeDescIdentifier() const;
+        void finalize() const;
+        void normalize() const;
+        static const uint32_t kTexCount = (MatMaxLayers * 3) + 4;
+        static_assert(sizeof(MaterialTextures) == (sizeof(Texture::SharedPtr) * kTexCount), "Wrong number of textures in Material::mTextures");
 
-        void normalize();
-        Texture::SharedPtr mTextures[10];
+		Material(const std::string& name);		
+        mutable MaterialData mData;				///< Material data shared between host and device
+		bool				mDoubleSided = false;	///< Used for culling 
+		Sampler::SharedPtr mpSamplerOverride = nullptr;
+        std::string			mName;
 
-		static uint32_t sMaterialCounter;
-
+        // The next functions and fields are used for material compilation into shaders.
+        // We only compile based on the material descriptor, so as an optimization we minimize the number of shader permutations based on the desc
         struct DescId
         {
             MaterialDesc desc;
             uint64_t id;
             uint32_t refCount;
         };
-        // Can't use map directly, since it requires a 'less' operator for the MaterialDesc.
-        // vector is slower, but materials are usually not dirty, so shouldn't really affect performance
-        static std::vector<DescId> sDescIdentifier;
-
-		/** create a new material
-            \param[in] Name The material name
-        */
-		Material(const std::string& name);
-		
-        mutable MaterialData mData;				///< Material data shared between host and device
-
-		bool				mDoubleSided = false;	///< Used for culling 
-
-		Sampler::SharedPtr mpSamplerOverride = nullptr;
-
-        std::string			mName;
+        mutable bool mDescDirty = false;
+        mutable size_t mDescIdentifier;
+        void updateDescIdentifier() const;
+        void removeDescIdentifier() const;
+        static uint32_t sMaterialCounter;
+        static std::vector<DescId> sDescIdentifier; // vector is slower then map, but map requires 'less' operator. This vector is only being used when the material is dirty, which shouldn't happen often
     };
 }

@@ -26,7 +26,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 #pragma once
-#include "Data/HostDeviceData.h"
+#include "Data/HostDevic eData.h"
 #ifndef HOST_CODE
 #include "HlslGlslCommon.h"
 #endif

@@ -112,6 +112,15 @@ namespace Falcor
         */
         ErrorCode setTexture(const std::string& name, const Texture::SharedConstPtr& pTexture);
 
+        /** Bind an array of texture to the program in the global namespace.
+        This can be used to bind a texture declared an array or a number of different variables which are known to be continues in the register space (such as for structure fields)
+        If you are using bindless textures, than this is not the right call for you. You should use the ConstantBuffer::setTexture() method instead.
+        \param[in] name The name of the first texture object in the shader.
+        \param[in] pTextures An array of textures to bind
+        \return Error code. This actually depends on the build type. In release build we do minimal validation. In debug build there's more extensive verification the texture object matches the shader declaration.
+        */
+//        ErrorCode setTextureArray(const std::string& name, const Texture::SharedConstPtr pTextures[], uint32_t count);
+
         /** Bind a sampler to the program in the global namespace.
         If you are using bindless textures, than this is not the right call for you. You should use the ConstantBuffer::setTexture() method instead.
         \param[in] name The name of the sampler object in the shader
@@ -127,6 +136,15 @@ namespace Falcor
         \return Error code. This actually depends on the build type. In release build we do minimal validation. In debug build there's more extensive verification the texture object matches the shader declaration.
         */
         ErrorCode setTexture(uint32_t index, const Texture::SharedConstPtr& pTexture);
+
+        /** Bind an array of texture to the program in the global namespace.
+        This can be used to bind a texture declared an array or a number of different variables which are known to be continues in the register space (such as for structure fields)
+        If you are using bindless textures, than this is not the right call for you. You should use the ConstantBuffer::setTexture() method instead.
+        \param[in] index The index of the first texture object in the shader
+        \param[in] pTextures An array of textures to bind
+        \return Error code. This actually depends on the build type. In release build we do minimal validation. In debug build there's more extensive verification the texture object matches the shader declaration.
+        */
+        ErrorCode setTextureArray(uint32_t index, const Texture::SharedConstPtr pTextures[], uint32_t count);
 
         /** Bind a sampler to the program in the global namespace.
             If you are using bindless textures, than this is not the right call for you. You should use the ConstantBuffer::setTexture() method instead.

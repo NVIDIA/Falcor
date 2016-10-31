@@ -39,7 +39,6 @@
 
 #if (defined(__STDC_HOSTED__) || defined(__cplusplus)) && !defined(__CUDACC__)    // we're in C-compliant compiler, probably host
 #    define HOST_CODE 1
-namespace Falcor {
 #elif defined(__CUDACC__)
 #   define CUDA_CODE
 #else
@@ -54,6 +53,7 @@ namespace Falcor {
 #include "API/Sampler.h"
 #include "API/Texture.h"
 
+namespace Falcor {
 /*******************************************************************
                     CPU declarations
 *******************************************************************/
@@ -291,7 +291,6 @@ struct MaterialTextures
     Texture2D normalMap;        // Normal map modifier, if texture is non-null, shading normal is perturbed
     Texture2D heightMap;        // Height (displacement) map modifier, if texture is non-null, one can apply a displacement or parallax mapping
     Texture2D ambientMap;       // Ambient occlusion map
-    SamplerState samplerState;  // The sampler state to use when sampling the object
 };
 
 struct MaterialData
@@ -299,6 +298,7 @@ struct MaterialData
     MaterialDesc desc;
     MaterialValues values;
     MaterialTextures textures;
+    SamplerState samplerState;  // The sampler state to use when sampling the object
 };
 
 /**

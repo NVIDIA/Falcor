@@ -125,7 +125,6 @@ namespace Falcor
         pMaterial->setAmbientOcclusionMap(pTextures[MapType::AmbientMap]);
         pMaterial->setHeightModifiers(glm::vec2(bumpScale, bumpOffset));
         pMaterial->setHeightMap(pTextures[MapType::HeightMap]);
-        pMaterial->finalize();
 
         return pMaterial;
     }

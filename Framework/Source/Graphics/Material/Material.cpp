@@ -33,6 +33,7 @@
 #include "Utils/os.h"
 #include "Utils/Math/FalcorMath.h"
 #include "MaterialSystem.h"
+#include "API/ProgramVars.h"
 
 namespace Falcor
 {
@@ -63,6 +64,7 @@ namespace Falcor
 
     uint32_t Material::getNumLayers() const
 	{
+        finalize();
         uint32_t i = 0;
         for(; i < MatMaxLayers; ++i)
         {
@@ -76,6 +78,7 @@ namespace Falcor
 
     Material::Layer Material::getLayer(uint32_t layerIdx) const
 	{
+        finalize();
 		Layer layer;
 		if(layerIdx >= getNumLayers())
         {
@@ -167,7 +170,7 @@ namespace Falcor
         mDescDirty = true;
     }
 
-	void Material::normalize()
+	void Material::normalize() const
 	{
 		float totalAlbedo = 0.f;
 
@@ -256,31 +259,58 @@ namespace Falcor
 	}
 
 #if _LOG_ENABLED
-#define check_offset(_a) assert(pCB->getVariableOffset(varName + "." + #_a) == (offsetof(MaterialData, _a) + offset))
+#define check_offset(_a) assert(pCB->getVariableOffset(std::string(varName) + "." + #_a) == (offsetof(MaterialData, _a) + offset))
 #else
 #define check_offset(_a)
 #endif
 
-    void Material::setIntoConstantBuffer(ConstantBuffer* pCB, const std::string& varName) const
+    void Material::setIntoProgramVars(ProgramVars* pVars, const char bufferName[], const char varName[]) const
     {
+        // OPTME:
+        // We can specialize this function based on the API we are using. This might be worth the extra maintenance cost:
+        // - DX12 - we could create a descriptor-table with all of the SRVs. This will reduce the API overhead to a single call. Pitfall - the textures might be dirty, so we will need to verify it
+        // - Bindless GL - just copy a blob with the GPU pointers. This is actually similar to DX12, but instead of SRVs we store uint64_t
+        // - DX11 - Single call at a time.
+        // Actually, looks like if we will be smart in the way we design ProgramVars::setTextureArray(), we could get away with a unified code
+
+        // First set the desc and the values
         finalize();
-        static const size_t dataSize = sizeof(MaterialData);
+        static const size_t dataSize = sizeof(MaterialDesc) + sizeof(MaterialValues);
         static_assert(dataSize % sizeof(glm::vec4) == 0, "Material::MaterialData size should be a multiple of 16");
 
-        size_t offset = pCB->getVariableOffset(varName + ".desc.layers[0].type");
-
-        if(offset == ConstantBuffer::kInvalidOffset)
+        // Get the CB
+        ConstantBuffer* pCB = pVars->getConstantBuffer(bufferName).get();
+        if (pCB == nullptr)
         {
-            Logger::log(Logger::Level::Warning, "Material::setIntoConstantBuffer() - variable \"" + varName + "\"not found in constant buffer\n");
+            Logger::log(Logger::Level::Error, std::string("Material::setIntoProgramVars() - CB \"") + bufferName + "\" is not part of the program\n");
             return;
         }
 
-        check_offset(values.layers[0].albedo.texture.ptr);
-        check_offset(values.ambientMap.texture.ptr);
+        size_t offset = pCB->getVariableOffset(std::string(varName) + ".desc.layers[0].type");
+
+        if(offset == ConstantBuffer::kInvalidOffset)
+        {
+            Logger::log(Logger::Level::Error, std::string("Material::setIntoConstantBuffer() - variable \"") + varName + "\"not found in constant buffer\n");
+            return;
+        }
+
         check_offset(values.id);
         assert(offset + dataSize <= pCB->getBuffer()->getSize());
 
         pCB->setBlob(&mData, offset, dataSize);
+
+#ifdef FALCOR_GL
+#pragma error Fix material texture bindings for OpenGL
+#endif
+        // Now set the textures
+        std::string resourceName = std::string(varName) + ".textures.layers[0].albedo";
+        const auto pResourceDesc = pVars->getReflection()->getResourceDesc(resourceName);
+        if (pResourceDesc == nullptr)
+        {
+            Logger::log(Logger::Level::Error, std::string("Material::setIntoConstantBuffer() - can't find the first texture object"));
+            return;
+        }
+        pVars->setTextureArray(pResourceDesc->regIndex, (Texture::SharedConstPtr*)&mData.textures, kTexCount);
     }
 
     bool Material::operator==(const Material& other) const
@@ -290,11 +320,12 @@ namespace Falcor
 
     void Material::evictTextures() const
     {
-        for(uint32_t i = 0; i < arraysize(mTextures) ; i++)
+        Texture::SharedPtr* pTextures = (Texture::SharedPtr*)&mData.textures;
+        for(uint32_t i = 0; i < kTexCount ; i++)
         {
-			if(mTextures[i])
+			if(pTextures[i])
             {
-                mTextures[i]->evict(mpSamplerOverride.get());
+                pTextures[i]->evict(mpSamplerOverride.get());
             }
         }
     }
@@ -376,7 +407,7 @@ namespace Falcor
         if(mDescDirty)
         {
             updateDescIdentifier();
-            const_cast<Material*>(this)->normalize();
+            normalize();
             mDescDirty = false;
         }
     }
