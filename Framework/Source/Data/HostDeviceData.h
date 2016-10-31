@@ -57,14 +57,6 @@ namespace Falcor {
 /*******************************************************************
                     CPU declarations
 *******************************************************************/
-#define vec2 glm::vec2
-#define vec3 glm::vec3
-#define vec4 glm::vec4
-#define mat4 glm::mat4
-#define ivec2 glm::ivec2
-#define clamp glm::clamp
-#define dot glm::dot
-#define abs glm::abs
 #define v2 vec2
 #define v3 vec3
 #define v4 vec4
@@ -531,21 +523,6 @@ static_assert((sizeof(MaterialLayerValues) % sizeof(vec4)) == 0, "MaterialLayerV
 static_assert((sizeof(MaterialDesc) % sizeof(vec4)) == 0, "MaterialDesc has a wrong size");
 static_assert((sizeof(MaterialValues) % sizeof(vec4)) == 0, "MaterialValues has a wrong size");
 static_assert((sizeof(MaterialData) % sizeof(vec4)) == 0, "MaterialData has a wrong size");
-
-
-#undef vec2
-#undef vec3
-#undef vec4
-#undef mat4
-#undef ivec2
-#undef clamp
-#undef dot
-#undef abs
-#undef v2
-#undef v3
-#undef v4
-#undef _fn
-#undef DEFAULTS
 #undef SamplerState
 #undef Texture2D
 } // namespace Falcor

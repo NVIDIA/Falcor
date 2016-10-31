@@ -27,6 +27,8 @@
 ***************************************************************************/
 #include "ShaderCommon.h"
 #include "Shading.h"
+#define _COMPILE_DEFAULT_VS
+#include "VertexAttrib.h"
 
 cbuffer PerFrameCB : register(b0)
 {
@@ -36,23 +38,16 @@ cbuffer PerFrameCB : register(b0)
     vec3 gAmbient;
 };
 
-in vec2 texC;
-in vec3 normalW;
-in vec3 tangentW;
-in vec3 bitangentW;
-in vec3 posW;
-out vec4 fragColor;
-
-void main()
+vec4 main(VS_OUT vOut) : SV_TARGET
 {
     if(gConstColor)
     {
-        fragColor = vec4(0, 1, 0, 1);
+        return vec4(0, 1, 0, 1);
     }
     else
     {
         ShadingAttribs shAttr;
-        prepareShadingAttribs(gMaterial, posW, gCam.position, normalW, tangentW, bitangentW, texC, shAttr);
+        prepareShadingAttribs(gMaterial, vOut.posW, gCam.position, vOut.normalW, vOut.tangentW, vOut.bitangentW, vOut.texC, shAttr);
 
         ShadingOutput result;
 
@@ -62,6 +57,7 @@ void main()
         // Point light
         evalMaterial(shAttr, gPointLight, result, false);
 
-        fragColor = vec4(result.finalValue + gAmbient * result.diffuseAlbedo, 1.f);
+        vec4 finalColor = vec4(result.finalValue + gAmbient * result.diffuseAlbedo, 1.f);
+        return finalColor;
     }
 }

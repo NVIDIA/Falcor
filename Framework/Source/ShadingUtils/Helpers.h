@@ -180,7 +180,7 @@ void _fn reflectFrame(vec3 n, vec3 reflect, _ref(vec3) t, _ref(vec3) b)
 					Texturing routines
 *******************************************************************/
 
-vec4 _fn sampleTexture(Texture2D t, SamplerState s,  const ShadingAttribs attr)
+vec4 _fn sampleTexture(Texture2D t, SamplerState s, const ShadingAttribs attr)
 {
 #ifndef _MS_USER_DERIVATIVES
     return t.SampleBias(s, attr.UV, attr.lodBias);
@@ -258,7 +258,7 @@ void _fn perturbNormal(in const MaterialData mat, _ref(ShadingAttribs) attr, boo
 {
 	if(forceSample || mat.desc.hasNormalMap != 0)
 	{
-		vec3 texValue = sampleTexture(mat.textures.normalMap, mat.textures.samplerState, attr).rrr;
+		vec3 texValue = sampleTexture(mat.textures.normalMap, mat.samplerState, attr).rrr;
         applyNormalMap(RGBToNormal(texValue), attr.N, attr.T, attr.B);
 	}
 }
@@ -276,7 +276,7 @@ bool _fn alphaTestEnabled(in const MaterialData mat)
 bool _fn alphaTestPassed(in const MaterialData mat, in const ShadingAttribs attr)
 {
 #ifndef _MS_DISABLE_ALPHA_TEST
-    if(sampleTexture(mat.textures.alphaMap, mat.textures.samplerState, attr).x < mat.values.alphaThreshold)
+    if(sampleTexture(mat.textures.alphaMap, mat.samplerState, attr).x < mat.values.alphaThreshold)
         return false;
 #endif
     return true;

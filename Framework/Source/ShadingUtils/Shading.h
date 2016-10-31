@@ -157,6 +157,7 @@ void _fn prepareShadingAttribs(in const MaterialData material, in vec3 P, in vec
     shAttr.preparedMat.values = material.values;
     shAttr.preparedMat.desc = desc;
     shAttr.preparedMat.textures = material.textures;
+    shAttr.preparedMat.samplerState = material.samplerState;
 
     /* Evaluate alpha test material modifier */
     applyAlphaTest(shAttr.preparedMat, shAttr);
@@ -167,8 +168,8 @@ void _fn prepareShadingAttribs(in const MaterialData material, in vec3 P, in vec
     {
         if(shAttr.preparedMat.desc.layers[iLayer].type == MatNone) break;
 
-        shAttr.preparedMat.values.layers[iLayer].albedo =
-            evalWithColor(desc.layers[iLayer].hasAlbedoTexture, material.textures.layers[iLayer].albedo, material.textures.samplerState, material.values.layers[iLayer].albedo, shAttr);
+        shAttr.preparedMat.values.layers[iLayer].albedo = vec4(0,0,0,0);
+            evalWithColor(desc.layers[iLayer].hasAlbedoTexture, material.textures.layers[iLayer].albedo, material.samplerState, material.values.layers[iLayer].albedo, shAttr);
         //ShAttr.PreparedMat.Layers[iLayer].Roughness = EvalWithColor(Material.Layers[iLayer].Roughness, ShAttr);
         //ShAttr.PreparedMat.Layers[iLayer].ExtraParam = EvalWithColor(Material.Layers[iLayer].ExtraParam, ShAttr);
     }
@@ -393,7 +394,7 @@ void _fn evalMaterial(
     in const ShadingAttribs shAttr,
     in const LightAttribs lAttr,
     _ref(ShadingOutput) result,
-    in const bool initializeShadingOut DEFVAL(false))
+    in const bool initializeShadingOut DEFAULTS(false))
 {
     /* If it's the first pass, initialize all the aggregates to zero */
     if(initializeShadingOut)
@@ -442,7 +443,7 @@ void _fn evalMaterial(
     in const ShadingAttribs shAttr,
     in const LightData light,
     _ref(ShadingOutput) result,
-    in const bool initializeShadingOut DEFVAL(false))
+    in const bool initializeShadingOut DEFAULTS(false))
 {
     /* Prepare lighting attributes */
     LightAttribs LAttr;

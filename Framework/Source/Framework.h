@@ -31,6 +31,8 @@
 #include <memory>
 #include "glm/glm.hpp"
 
+using namespace glm;
+
 #ifndef arraysize
 	#define arraysize(a) (sizeof(a)/sizeof(a[0]))
 #endif
