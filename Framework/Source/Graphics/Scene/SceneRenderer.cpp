@@ -40,20 +40,16 @@
 
 namespace Falcor
 {
-    ConstantBuffer::SharedPtr SceneRenderer::sPerMaterialCB;
-    ConstantBuffer::SharedPtr SceneRenderer::sPerFrameCB;
-    ConstantBuffer::SharedPtr SceneRenderer::sPerStaticMeshCB;
-    ConstantBuffer::SharedPtr SceneRenderer::sPerSkinnedMeshCB;
-    size_t SceneRenderer::sBonesOffset = 0;
-    size_t SceneRenderer::sCameraDataOffset = 0;
-    size_t SceneRenderer::sWorldMatOffset = 0;
-    size_t SceneRenderer::sMeshIdOffset = 0;
+    size_t SceneRenderer::sBonesOffset = ConstantBuffer::kInvalidOffset;
+    size_t SceneRenderer::sCameraDataOffset = ConstantBuffer::kInvalidOffset;
+    size_t SceneRenderer::sWorldMatOffset = ConstantBuffer::kInvalidOffset;
+    size_t SceneRenderer::sMeshIdOffset = ConstantBuffer::kInvalidOffset;
     
 
-    static const std::string kPerMaterialCbName = "InternalPerMaterialCB";
-    static const std::string kPerFrameCbName = "InternalPerFrameCB";
-    static const std::string kPerStaticMeshCbName = "InternalPerStaticMeshCB";
-    static const std::string kPerSkinnedMeshCbName = "InternalPerSkinnedMeshCB";
+    static const char* kPerMaterialCbName = "InternalPerMaterialCB";
+    static const char* kPerFrameCbName = "InternalPerFrameCB";
+    static const char* kPerStaticMeshCbName = "InternalPerStaticMeshCB";
+    static const char* kPerSkinnedMeshCbName = "InternalPerSkinnedMeshCB";
 
     SceneRenderer::UniquePtr SceneRenderer::create(const Scene::SharedPtr& pScene)
     {
@@ -65,57 +61,30 @@ namespace Falcor
         setCameraControllerType(CameraControllerType::SixDof);
     }
 
-    void SceneRenderer::createConstantBuffers(Program* pProgram)
+    void SceneRenderer::updateVariableOffsets(const ProgramReflection* pReflector)
     {
         // create constant buffers if required
-        if(sPerMaterialCB == nullptr)
+        if(sBonesOffset == ConstantBuffer::kInvalidOffset)
         {
-            auto pReflector = pProgram->getActiveVersion()->getReflector();
-            sPerMaterialCB = ConstantBuffer::create(pReflector->getBufferDesc(kPerMaterialCbName, ProgramReflection::BufferReflection::Type::Constant));
-            sPerFrameCB = ConstantBuffer::create(pReflector->getBufferDesc(kPerFrameCbName, ProgramReflection::BufferReflection::Type::Constant));
-            sPerStaticMeshCB = ConstantBuffer::create(pReflector->getBufferDesc(kPerStaticMeshCbName, ProgramReflection::BufferReflection::Type::Constant));
-            sPerSkinnedMeshCB = ConstantBuffer::create(pReflector->getBufferDesc(kPerSkinnedMeshCbName, ProgramReflection::BufferReflection::Type::Constant));
+            const auto pPerMeshCbData = pReflector->getBufferDesc(kPerStaticMeshCbName, ProgramReflection::BufferReflection::Type::Constant);
+            const auto pPerFrameCbData = pReflector->getBufferDesc(kPerStaticMeshCbName, ProgramReflection::BufferReflection::Type::Constant);
+            assert(pPerMeshCbData);
+            assert(pPerFrameCbData);
 
-            sBonesOffset = sPerSkinnedMeshCB->getVariableOffset("gBones");
-            sWorldMatOffset = sPerStaticMeshCB->getVariableOffset("gWorldMat");
-            sMeshIdOffset = sPerStaticMeshCB->getVariableOffset("gMeshId");
-            sCameraDataOffset = sPerFrameCB->getVariableOffset("gCam.viewMat");
+            sBonesOffset = pPerMeshCbData->getVariableData("gBones")->location;
+            sWorldMatOffset = pPerMeshCbData->getVariableData("gWorldMat")->location;
+            sMeshIdOffset = pPerMeshCbData->getVariableData("gMeshId")->location;
+            sCameraDataOffset = pPerFrameCbData->getVariableData("gCam.viewMat")->location;
         }
-    }
-
-    void SceneRenderer::bindConstantBuffers(RenderContext* pRenderContext, Program* pProgram)
-    {
-        createConstantBuffers(pProgram);
-
-        const ProgramReflection* pReflection = pProgram->getActiveVersion()->getReflector().get();
-        // Per skinned mesh
-        uint32_t bufferLoc = pReflection->getBufferBinding(kPerSkinnedMeshCbName);
-        // DISABLED_FOR_D3D12
-//        pRenderContext->setUniformBuffer(bufferLoc, sPerSkinnedMeshCB);
-
-        // Per static mesh
-        bufferLoc = pReflection->getBufferBinding(kPerStaticMeshCbName);
-        // DISABLED_FOR_D3D12
-//        pRenderContext->setUniformBuffer(bufferLoc, sPerStaticMeshCB);
-
-        // Per material
-        bufferLoc = pReflection->getBufferBinding(kPerMaterialCbName);
-        // DISABLED_FOR_D3D12
-//        pRenderContext->setUniformBuffer(bufferLoc, sPerMaterialCB);
-
-        // Per frame
-        bufferLoc = pReflection->getBufferBinding(kPerFrameCbName);
-        // DISABLED_FOR_D3D12
-//        pRenderContext->setUniformBuffer(bufferLoc, sPerFrameCB);
     }
 
     void SceneRenderer::setPerFrameData(RenderContext* pContext, const CurrentWorkingData& currentData)
     {
         // Set VPMat
-        //auto pCamera = mpScene->getActiveCamera();
         if (currentData.pCamera)
         {
-            currentData.pCamera->setIntoConstantBuffer(sPerFrameCB.get(), sCameraDataOffset);
+            ConstantBuffer* pCB = pContext->getProgramVars()->getConstantBuffer(kPerFrameCbName).get();
+            currentData.pCamera->setIntoConstantBuffer(pCB, sCameraDataOffset);
         }
     }
 
@@ -124,7 +93,8 @@ namespace Falcor
         // Set bones
         if(currentData.pModel->hasBones())
         {
-            sPerSkinnedMeshCB->setVariableArray(sBonesOffset, currentData.pModel->getBonesMatrices(), currentData.pModel->getBonesCount());
+            ConstantBuffer* pCB = pContext->getProgramVars()->getConstantBuffer(kPerSkinnedMeshCbName).get();
+            pCB->setVariableArray(sBonesOffset, currentData.pModel->getBonesMatrices(), currentData.pModel->getBonesCount());
         }
 		return true;
     }
@@ -141,17 +111,18 @@ namespace Falcor
         {
             worldMat = worldMat * currentData.pMesh->getInstanceMatrix(meshInstanceID);
         }
-        sPerStaticMeshCB->setBlob(&worldMat, sWorldMatOffset + drawInstanceID*sizeof(glm::mat4), sizeof(glm::mat4));
+        ConstantBuffer* pCB = pContext->getProgramVars()->getConstantBuffer(kPerStaticMeshCbName).get();
+        pCB->setBlob(&worldMat, sWorldMatOffset + drawInstanceID*sizeof(glm::mat4), sizeof(glm::mat4));
 
         // Set mesh id
-        sPerStaticMeshCB->setVariable(sMeshIdOffset, currentData.pMesh->getId());
+        pCB->setVariable(sMeshIdOffset, currentData.pMesh->getId());
 
 		return true;
     }
 
     bool SceneRenderer::setPerMaterialData(RenderContext* pContext, const CurrentWorkingData& currentData)
     {
-        currentData.pMaterial->setIntoConstantBuffer(sPerMaterialCB.get(), "gMaterial");
+        currentData.pMaterial->setIntoProgramVars(pContext->getProgramVars().get(), kPerMaterialCbName, "gMaterial");
 		return true;
     }
 
@@ -224,18 +195,17 @@ namespace Falcor
 			}
 			if(activeInstances != 0)
 			{
-                // DISABLED_FOR_D3D12
-//				pContext->setProgram(currentData.pProgram->getActiveProgramVersion());
 				flushDraw(pContext, currentData.pMesh, activeInstances, currentData);
 			}
 		}
     }
 
-    void SceneRenderer::renderModel(RenderContext* pContext, Program* pProgram, const Model* pModel, const glm::mat4& instanceMatrix, Camera* pCamera, CurrentWorkingData& currentData)
+    void SceneRenderer::renderModel(RenderContext* pContext, const Model* pModel, const glm::mat4& instanceMatrix, Camera* pCamera, CurrentWorkingData& currentData)
     {        
 		currentData.pModel = pModel;
 		if (setPerModelData(pContext, currentData))
 		{
+            Program* pProgram = currentData.pPsoCache->getProgram().get();
 			// Bind the program
 			if(pModel->hasBones())
 			{
@@ -270,9 +240,9 @@ namespace Falcor
         }
     }
 
-    void SceneRenderer::renderScene(RenderContext* pContext, Program* pProgram)
+    void SceneRenderer::renderScene(RenderContext* pContext)
     {
-        renderScene(pContext, pProgram, mpScene->getActiveCamera().get());
+        renderScene(pContext, mpScene->getActiveCamera().get());
     }
 
     void SceneRenderer::setupVR()
@@ -290,11 +260,11 @@ namespace Falcor
         }
     }
 
-    void SceneRenderer::renderScene(RenderContext* pContext, Program* pProgram, Camera* pCamera)
+    void SceneRenderer::renderScene(RenderContext* pContext, Camera* pCamera)
     {
-        bindConstantBuffers(pContext, pProgram);
+        updateVariableOffsets(pContext->getProgramVars()->getReflection().get());
 		CurrentWorkingData currentData;
-		currentData.pProgram = pProgram;
+		currentData.pPsoCache = pContext->getPipelineStateCache().get();
 		currentData.pCamera = pCamera;
 		currentData.pMaterial = nullptr;
 		currentData.pMesh = nullptr;
@@ -309,7 +279,7 @@ namespace Falcor
                 auto& Instance = mpScene->getModelInstance(modelID, InstanceID);
                 if (Instance.isVisible)
                 {
-                    renderModel(pContext, pProgram, mpScene->getModel(modelID).get(), Instance.transformMatrix, pCamera, currentData);
+                    renderModel(pContext, mpScene->getModel(modelID).get(), Instance.transformMatrix, pCamera, currentData);
                 }
             }
         }
