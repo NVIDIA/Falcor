@@ -36,6 +36,7 @@
 #include "Framework.h"
 #include "API/PipelineState.h"
 #include "API/ProgramVars.h"
+#include "Graphics/PipelineStateCache.h"
 
 namespace Falcor
 {

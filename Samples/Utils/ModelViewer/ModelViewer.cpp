@@ -89,7 +89,7 @@ void ModelViewer::loadModelFromFile(const std::string& filename)
     resetCamera();
 
     float radius = mpModel->getRadius();
-    float lightHeight = Falcor::max(1.0f + radius, radius*1.25f);
+    float lightHeight = max(1.0f + radius, radius*1.25f);
     mpPointLight->setWorldPosition(glm::vec3(0, lightHeight, 0));
     timer.update();
 
@@ -220,7 +220,7 @@ void ModelViewer::setModelUIElements()
 void ModelViewer::onLoad()
 {
     mpCamera = Camera::create();
-    mpProgram = Program::createFromFile("", "ModelViewer.fs");
+    mpProgram = Program::createFromFile("", "ModelViewer.ps.hlsl");
 
     // create rasterizer state
     RasterizerState::Desc wireframeDesc;
@@ -308,9 +308,10 @@ void ModelViewer::onFrameRender()
         }
 
         mpProgramVars["PerFrameCB"]["gAmbient"] = mAmbientIntensity;
-        mpRenderContext->setPipelineState(mpPipelineStateCache->getPSO());
+        mpPipelineStateCache->setProgram(mpProgram);
+        mpRenderContext->setPipelineStateCache(mpPipelineStateCache);
         mpRenderContext->setProgramVariables(mpProgramVars);
-        ModelRenderer::render(mpRenderContext.get(), mpProgram.get(), mpModel, mpCamera.get());
+        ModelRenderer::render(mpRenderContext.get(), mpModel, mpCamera.get());
     }
 
     renderText(mModelString, glm::vec2(10, 30));

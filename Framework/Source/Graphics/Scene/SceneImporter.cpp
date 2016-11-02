@@ -410,7 +410,7 @@ namespace Falcor
         return true;
     }
 
-    bool SceneImporter::createMaterialValue(const rapidjson::Value& jsonValue, MaterialValue& matValue)
+    bool SceneImporter::createMaterialValue(const rapidjson::Value& jsonValue, MaterialValues& matValue)
     {
         if(jsonValue.IsObject() == false)
         {
@@ -426,11 +426,13 @@ namespace Falcor
             
             if(key == SceneKeys::kMaterialTexture)
             {
-                bOK = createMaterialTexture(value, matValue.texture.pTexture->shared_from_this());
+                // DISABLED_FOR_D3D12
+//                 bOK = createMaterialTexture(value, matValue.texture.pTexture->shared_from_this());
             }
             else if(key == SceneKeys::kMaterialColor)
             {
-                bOK = createMaterialValueColor(value, matValue.constantColor);
+                // DISABLED_FOR_D3D12
+//                bOK = createMaterialValueColor(value, matValue.constantColor);
             }
             else
             {
@@ -455,38 +457,40 @@ namespace Falcor
             std::string key(it->name.GetString());
             const auto& value = it->value;
 
-            if(key == SceneKeys::kMaterialLayerType)
-            {
-                bOK = createMaterialLayerType(value, layerDesc);
-            }
-            else if(key == SceneKeys::kMaterialNDF)
-            {
-                bOK = createMaterialLayerNDF(value, layerDesc);
-            }
-            else if(key == SceneKeys::kMaterialBlend)
-            {
-                bOK = createMaterialLayerBlend(value, layerDesc);
-            }
-            else if(key == SceneKeys::kMaterialAlbedo)
-            {
-                bOK = createMaterialValue(value, layerData.albedo);
-                layerDesc.hasAlbedoTexture = layerData.albedo.texture.pTexture != nullptr;
-            }
-            else if(key == SceneKeys::kMaterialRoughness)
-            {
-                bOK = createMaterialValue(value, layerData.roughness);
-                layerDesc.hasRoughnessTexture = layerData.roughness.texture.pTexture != nullptr;
-            }
-            else if(key == SceneKeys::kMaterialExtraParam)
-            {
-                bOK = createMaterialValue(value, layerData.extraParam);
-                layerDesc.hasExtraParamTexture = layerData.extraParam.texture.pTexture != nullptr;
-            }
-            else
-            {
-                bOK = false;
-                error("Invalid key found in material layers section. Key == " + key + ".");
-            }
+            // DISABLED_FOR_D3D12
+//             if(key == SceneKeys::kMaterialLayerType)
+//             {
+//                 bOK = createMaterialLayerType(value, layerDesc);
+//             }
+//             else if(key == SceneKeys::kMaterialNDF)
+//             {
+//                 bOK = createMaterialLayerNDF(value, layerDesc);
+//             }
+//             else if(key == SceneKeys::kMaterialBlend)
+//             {
+//                 bOK = createMaterialLayerBlend(value, layerDesc);
+//             }
+//             else if(key == SceneKeys::kMaterialAlbedo)
+//             {
+// 
+//                 bOK = createMaterialValue(value, layerData.albedo);
+//                 layerDesc.hasAlbedoTexture = layerData.albedo.texture.pTexture != nullptr;
+//             }
+//             else if(key == SceneKeys::kMaterialRoughness)
+//             {
+//                 bOK = createMaterialValue(value, layerData.roughness);
+//                 layerDesc.hasRoughnessTexture = layerData.roughness.texture.pTexture != nullptr;
+//             }
+//             else if(key == SceneKeys::kMaterialExtraParam)
+//             {
+//                 bOK = createMaterialValue(value, layerData.extraParam);
+//                 layerDesc.hasExtraParamTexture = layerData.extraParam.texture.pTexture != nullptr;
+//             }
+//             else
+//             {
+//                 bOK = false;
+//                 error("Invalid key found in material layers section. Key == " + key + ".");
+//             }
         }
 
         return bOK;
@@ -514,7 +518,8 @@ namespace Falcor
             {
                 return false;
             }
-            pMaterial->addLayer(desc, data);
+            // DISABLED_FOR_D3D12
+//            pMaterial->addLayer(desc, data);
         }
         return true;
     }
@@ -551,40 +556,41 @@ namespace Falcor
                 }
                 pMaterial->setID(value.GetUint());
             }
-            else if(key == SceneKeys::kMaterialAlpha)
-            {
-                MaterialValue alpha;
-                if(createMaterialValue(value, alpha) == false)
-                {
-                    return false;
-                }
-                pMaterial->setAlphaValue(alpha);
-            }
-            else if(key == SceneKeys::kMaterialNormal)
-            {
-                MaterialValue normal;
-                if(createMaterialValue(value, normal) == false)
-                {
-                    return false;
-                }
-                pMaterial->setNormalValue(normal);
-            }
-            else if(key == SceneKeys::kMaterialHeight)
-            {
-                MaterialValue height;
-                if(createMaterialValue(value, height) == false)
-                {
-                    return false;
-                }
-                pMaterial->setHeightValue(height);
-            }
-            else if(key == SceneKeys::kMaterialLayers)
-            {
-                if(createAllMaterialLayers(value, pMaterial.get()) == false)
-                {
-                    return false;
-                }
-            }
+            // DISABLED_FOR_D3D12
+//             else if(key == SceneKeys::kMaterialAlpha)
+//             {
+//                 MaterialValue alpha;
+//                 if(createMaterialValue(value, alpha) == false)
+//                 {
+//                     return false;
+//                 }
+//                 pMaterial->setAlphaValue(alpha);
+//             }
+//             else if(key == SceneKeys::kMaterialNormal)
+//             {
+//                 MaterialValue normal;
+//                 if(createMaterialValue(value, normal) == false)
+//                 {
+//                     return false;
+//                 }
+//                 pMaterial->setNormalValue(normal);
+//             }
+//             else if(key == SceneKeys::kMaterialHeight)
+//             {
+//                 MaterialValue height;
+//                 if(createMaterialValue(value, height) == false)
+//                 {
+//                     return false;
+//                 }
+//                 pMaterial->setHeightValue(height);
+//             }
+//             else if(key == SceneKeys::kMaterialLayers)
+//             {
+//                 if(createAllMaterialLayers(value, pMaterial.get()) == false)
+//                 {
+//                     return false;
+//                 }
+//             }
             else
             {
                 error("Invalid key found in materials section. Key == " + key + ".");

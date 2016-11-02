@@ -62,9 +62,9 @@ namespace Falcor
         {
         public:
             Desc& setRootSignature(RootSignature::SharedPtr pSignature) { mpRootSignature = pSignature; return *this; }
-            Desc& setVertexLayout(VertexLayout::SharedPtr pLayout) { mpLayout = pLayout; return *this; }
+            Desc& setVertexLayout(VertexLayout::SharedConstPtr pLayout) { mpLayout = pLayout; return *this; }
             Desc& setFboFormats(const Fbo::Desc& fboFormats) { mFboDesc = fboFormats; return *this; }
-            Desc& setProgramVersion(ProgramVersion::SharedPtr pProgram) { mpProgram = pProgram; return *this; }
+            Desc& setProgramVersion(ProgramVersion::SharedConstPtr pProgram) { mpProgram = pProgram; return *this; }
             Desc& setBlendState(BlendState::SharedPtr pBlendState) { mpBlendState = pBlendState; return *this; }
             Desc& setRasterizerState(RasterizerState::SharedPtr pRasterizerState) { mpRasterizerState = pRasterizerState; return *this; }
             Desc& setDepthStencilState(DepthStencilState::SharedPtr pDepthStencilState) { mpDepthStencilState = pDepthStencilState; return *this; }
@@ -76,14 +76,14 @@ namespace Falcor
             DepthStencilState::SharedPtr getDepthStencilState() const { return mpDepthStencilState; }
             uint32_t getSampleMask() const { return mSampleMask; }
             PipelineState::PrimitiveType getPrimitiveType() const { return mPrimType; }
-            VertexLayout::SharedPtr getVertexLayout() const { return mpLayout; }
+            VertexLayout::SharedConstPtr getVertexLayout() const { return mpLayout; }
             const Fbo::Desc& getFboDesc() const { return mFboDesc; }
-            ProgramVersion::SharedPtr getProgramVersion() const { return mpProgram; }
+            ProgramVersion::SharedConstPtr getProgramVersion() const { return mpProgram; }
         private:
             friend class PipelineState;
-            VertexLayout::SharedPtr mpLayout;
+            VertexLayout::SharedConstPtr mpLayout;
             Fbo::Desc mFboDesc;
-            ProgramVersion::SharedPtr mpProgram;
+            ProgramVersion::SharedConstPtr mpProgram;
             RasterizerState::SharedPtr mpRasterizerState;
             DepthStencilState::SharedPtr mpDepthStencilState;
             BlendState::SharedPtr mpBlendState;

@@ -213,7 +213,7 @@ namespace Falcor
 		// Go over all materials and bind the sampler
 		for(auto& m : mpMaterials)
 		{
-			m->overrideAllSamplers(pSampler);
+			m->setSampler(pSampler);
 		}
 	}
 
@@ -329,7 +329,8 @@ namespace Falcor
             {
                 // Material is used. Mark its textures
                 std::vector<Texture::SharedConstPtr> activeTextures;
-                material->getTexturesList(activeTextures);
+                // DISABLED_FOR_D3D12
+//                material->getTexturesList(activeTextures);
                 for(const auto& tex : activeTextures)
                 {
                     usedTextures[tex.get()] = true;
@@ -362,11 +363,11 @@ namespace Falcor
         
         for(const auto& m : mpMaterials)
         {
-            const auto& pNormalMap = m->getNormalMap().texture.pTexture;
+            const auto& pNormalMap = m->getNormalMap();
             if(pNormalMap)
             {
-                uint32_t Id = texturesIndex[pNormalMap.get()];
-                isNormalMap[Id] = true;
+                uint32_t id = texturesIndex[pNormalMap.get()];
+                isNormalMap[id] = true;
             }
         }
 

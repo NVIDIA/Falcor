@@ -43,8 +43,8 @@ namespace Falcor
         using SharedConstPtr = std::shared_ptr<const PipelineStateCache>;
         
         static SharedPtr create() { return SharedPtr(new PipelineStateCache); }
-        PipelineStateCache& SetVao(const Vao::SharedPtr& pVao) { mpVao = pVao; return *this; }
-        PipelineStateCache& setFbo(const Fbo::SharedPtr& pFbo) { mpFbo = pFbo; return *this; }
+        PipelineStateCache& SetVao(const Vao::SharedConstPtr& pVao) { mpVao = pVao; return *this; }
+        PipelineStateCache& setFbo(const Fbo::SharedConstPtr& pFbo) { mpFbo = pFbo; return *this; }
         PipelineStateCache& setProgram(const Program::SharedPtr& pProgram) { mpProgram = pProgram; return *this; }
         PipelineStateCache& setBlendState(BlendState::SharedPtr pBlendState) { mDesc.setBlendState(pBlendState); return *this; }
         PipelineStateCache& setRasterizerState(RasterizerState::SharedPtr pRasterizerState) { mDesc.setRasterizerState(pRasterizerState); return *this; }
@@ -56,8 +56,8 @@ namespace Falcor
         PipelineState::SharedPtr getPSO();
 
         RootSignature::SharedPtr getRootSignature() const { return mpRootSignature; }
-        Vao::SharedPtr getVao() const { return mpVao; }
-        Fbo::SharedPtr getFbo() const { return mpFbo; }
+        Vao::SharedConstPtr getVao() const { return mpVao; }
+        Fbo::SharedConstPtr getFbo() const { return mpFbo; }
         Program::SharedPtr getProgram() const { return mpProgram; }
         BlendState::SharedPtr getBlendState() const { return mDesc.getBlendState(); }
         RasterizerState::SharedPtr getRasterizerState() const { return mDesc.getRasterizerState(); }
@@ -66,8 +66,8 @@ namespace Falcor
         PipelineState::PrimitiveType getPrimitiveType() const { return mDesc.getPrimitiveType(); }
     private:
         PipelineStateCache() = default;
-        Vao::SharedPtr mpVao;
-        Fbo::SharedPtr mpFbo;
+        Vao::SharedConstPtr mpVao;
+        Fbo::SharedConstPtr mpFbo;
         Program::SharedPtr mpProgram;
         RootSignature::SharedPtr mpRootSignature;
         PipelineState::Desc mDesc;

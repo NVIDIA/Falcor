@@ -74,7 +74,7 @@ namespace Falcor
 
         bool createMaterial(const rapidjson::Value& jsonMaterial);
         bool createMaterialLayer(const rapidjson::Value& jsonLayer, MaterialLayerValues& layerData, MaterialLayerDesc& layerDesc);
-        bool createMaterialValue(const rapidjson::Value& jsonValue, MaterialValue& matValue);
+        bool createMaterialValue(const rapidjson::Value& jsonValue, MaterialValues& matValue);
         bool createAllMaterialLayers(const rapidjson::Value& jsonLayerArray, Material* pMaterial);
 
         bool createMaterialLayerType(const rapidjson::Value& jsonValue, MaterialLayerDesc& matLayer);

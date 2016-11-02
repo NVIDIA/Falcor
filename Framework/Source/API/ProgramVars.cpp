@@ -261,4 +261,14 @@ namespace Falcor
             pList->SetGraphicsRootDescriptorTable(rootOffset, pTex->getShaderResourceView());
         }
     }
+
+    bool ProgramVars::setTextureRange(uint32_t startIndex, uint32_t count, const Texture::SharedConstPtr pTextures[])
+    {
+        return true;
+    }
+
+    bool ProgramVars::setTextureRange(const std::string& name, uint32_t count, const Texture::SharedConstPtr pTextures[])
+    {
+        return true;
+    }
 }

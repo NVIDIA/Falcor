@@ -98,17 +98,17 @@ namespace Falcor
 
     gen_bitwise_for_enum_class(FboAttachmentType);
 
-    template<typename T>
-    inline T min(const T& a, const T& b)
-    {
-        return (a < b) ? a : b;
-    }
-
-    template<typename T>
-    inline T max(const T& a, const T& b)
-    {
-        return (a > b) ? a : b;
-    }
+//     template<typename T>
+//     inline T min(const T& a, const T& b)
+//     {
+//         return (a < b) ? a : b;
+//     }
+// 
+//     template<typename T>
+//     inline T max(const T& a, const T& b)
+//     {
+//         return (a > b) ? a : b;
+//     }
 
     template<typename T>
     inline T clamp(const T& val, const T& minVal, const T& maxVal)

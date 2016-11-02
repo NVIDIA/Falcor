@@ -101,7 +101,7 @@ namespace Falcor
     Program::SharedPtr Program::createInternal(const std::string& VS, const std::string& FS, const std::string& GS, const std::string& HS, const std::string& DS, const DefineList& programDefines, bool createdFromFile)
     {
         SharedPtr pProgram = SharedPtr(new Program);
-        pProgram->mShaderStrings[(uint32_t)ShaderType::Vertex] = VS.size() ? VS : "DefaultVS.vs";
+        pProgram->mShaderStrings[(uint32_t)ShaderType::Vertex] = VS.size() ? VS : "DefaultVS.hlsl";
         pProgram->mShaderStrings[(uint32_t)ShaderType::Pixel] = FS;
         pProgram->mShaderStrings[(uint32_t)ShaderType::Geometry] = GS;
         pProgram->mShaderStrings[(uint32_t)ShaderType::Hull] = HS;

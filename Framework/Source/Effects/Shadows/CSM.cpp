@@ -62,14 +62,14 @@ namespace Falcor
                     float val;
                 } a;
 
-                mpLastMaterial->bindTextures();
 #ifdef _ALPHA_FROM_ALBEDO_MAP
                 const auto& pLayer = mpLastMaterial->getLayer(0);
                 a.map = pLayer ? pLayer->albedo.texture.gpuAddress : 0;
                 a.val = 0.5f;
 #else
-                a.map = mpLastMaterial->getAlphaValue().texture.ptr;
-                a.val = mpLastMaterial->getAlphaValue().constantColor.x;
+                // DISABLED_FOR_D3D12
+//                 a.map = mpLastMaterial->getAlphaMap().texture.ptr;
+//                 a.val = mpLastMaterial->getAlphaValue().constantColor.x;
 #endif
                 mpAlphaMapCb->setBlob(&a, 0, sizeof(a));
             }
@@ -469,7 +469,7 @@ namespace Falcor
 //         pCtx->setUniformBuffer(0, mShadowPass.pLightUbo);
 //         pCtx->setUniformBuffer(1, mShadowPass.pAlphaUbo);
         mShadowPass.pAlphaCB->setVariable("evsmExp", mCsmData.evsmExponents);
-        mpSceneRenderer->renderScene(pCtx, mShadowPass.pProg.get(), mpLightCamera.get());
+//        mpSceneRenderer->renderScene(pCtx, mShadowPass.pProg.get(), mpLightCamera.get());
     }
 
     void CascadedShadowMaps::executeDepthPass(RenderContext* pCtx, const Camera* pCamera)
@@ -488,9 +488,10 @@ namespace Falcor
         pCtx->clearFbo(mDepthPass.pFbo.get(), glm::vec4(), 1, 0, FboAttachmentType::Depth);
         pCtx->pushFbo(mDepthPass.pFbo);
 
-        mpSceneRenderer->setObjectCullState(true);
-        mpSceneRenderer->renderScene(pCtx, mDepthPass.pProg.get(), const_cast<Camera*>(pCamera));
-        mpSceneRenderer->setObjectCullState(false);
+        // DISABLED_FOR_D3D12
+//         mpSceneRenderer->setObjectCullState(true);
+//         mpSceneRenderer->renderScene(pCtx, mDepthPass.pProg.get(), const_cast<Camera*>(pCamera));
+//         mpSceneRenderer->setObjectCullState(false);
         pCtx->popFbo();
     }
 
