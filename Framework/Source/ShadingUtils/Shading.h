@@ -164,6 +164,7 @@ void _fn prepareShadingAttribs(in const MaterialData material, in vec3 P, in vec
     shAttr.aoFactor = 1;
 
     /* Prefetch textures */
+    loop_unroll
     for(uint iLayer = 0 ; iLayer < MatMaxLayers ; iLayer++)
     {
         if(shAttr.preparedMat.desc.layers[iLayer].type == MatNone) break;

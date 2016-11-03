@@ -57,6 +57,7 @@ namespace Falcor {
 *******************************************************************/
 	class Sampler;
 	class Texture;
+#define loop_unroll
 #define v2 vec2
 #define v3 vec3
 #define v4 vec4
@@ -125,6 +126,7 @@ typedef TexPtr BufPtr;
 /*******************************************************************
                     HLSL declarations
 *******************************************************************/
+#define loop_unroll [unroll]
 #define _fn 
 #define __device__ 
 typedef float2 vec2;
