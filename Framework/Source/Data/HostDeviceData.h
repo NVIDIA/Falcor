@@ -50,20 +50,20 @@
 #endif
 
 #ifdef HOST_CODE
-#include "API/Sampler.h"
-#include "API/Texture.h"
 
 namespace Falcor {
 /*******************************************************************
                     CPU declarations
 *******************************************************************/
+	class Sampler;
+	class Texture;
 #define v2 vec2
 #define v3 vec3
 #define v4 vec4
 #define _fn
 #define DEFAULTS(x_) = ##x_
-#define SamplerState Sampler::SharedPtr
-#define Texture2D Texture::SharedPtr
+#define SamplerState std::shared_ptr<Sampler>
+#define Texture2D std::shared_ptr<Texture>
 #elif defined(CUDA_CODE)
 /*******************************************************************
                     CUDA declarations
