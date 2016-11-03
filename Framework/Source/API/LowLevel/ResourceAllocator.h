@@ -39,7 +39,6 @@ namespace Falcor
         using SharedConstPtr = std::shared_ptr<const ResourceAllocator>;
 
         static SharedPtr create(size_t pageSize);
-
         struct AllocationData
         {
             BufferHandle pResourceHandle;
@@ -49,7 +48,8 @@ namespace Falcor
         };
 
         AllocationData allocate(size_t size, size_t alignment = 1);
-        void release(const AllocationData& data);
+        void release(AllocationData& data);
+        size_t getPageSize() const { return mPageSize; }
 
     private:
         ResourceAllocator(size_t pageSize) : mPageSize(pageSize) {}
