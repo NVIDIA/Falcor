@@ -87,7 +87,7 @@ void ShaderBuffersSample::onLoad()
     dsDesc.setDepthTest(true);
     mpPsoCache->setDepthStencilState(DepthStencilState::create(dsDesc));
     mpPsoCache->setFbo(mpDefaultFBO);
-    mpPsoCache->SetVao(mpVao);
+    mpPsoCache->setVao(mpVao);
     mpPsoCache->setPrimitiveType(PipelineState::PrimitiveType::Triangle);
     mpPsoCache->setProgram(mpProgram);
 }

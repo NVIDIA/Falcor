@@ -43,7 +43,7 @@ namespace Falcor
         using SharedConstPtr = std::shared_ptr<const PipelineStateCache>;
         
         static SharedPtr create() { return SharedPtr(new PipelineStateCache); }
-        PipelineStateCache& SetVao(const Vao::SharedConstPtr& pVao) { mpVao = pVao; return *this; }
+        PipelineStateCache& setVao(const Vao::SharedConstPtr& pVao) { mpVao = pVao; return *this; }
         PipelineStateCache& setFbo(const Fbo::SharedConstPtr& pFbo) { mpFbo = pFbo; return *this; }
         PipelineStateCache& setProgram(const Program::SharedPtr& pProgram) { mpProgram = pProgram; return *this; }
         PipelineStateCache& setBlendState(BlendState::SharedPtr pBlendState) { mDesc.setBlendState(pBlendState); return *this; }

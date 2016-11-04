@@ -63,15 +63,13 @@ namespace Falcor
 
     void SceneRenderer::updateVariableOffsets(const ProgramReflection* pReflector)
     {
-        // create constant buffers if required
-        if(sBonesOffset == ConstantBuffer::kInvalidOffset)
+        if(sWorldMatOffset == ConstantBuffer::kInvalidOffset)
         {
             const auto pPerMeshCbData = pReflector->getBufferDesc(kPerStaticMeshCbName, ProgramReflection::BufferReflection::Type::Constant);
             const auto pPerFrameCbData = pReflector->getBufferDesc(kPerFrameCbName, ProgramReflection::BufferReflection::Type::Constant);
             assert(pPerMeshCbData);
             assert(pPerFrameCbData);
 
-//            sBonesOffset = pPerMeshCbData->getVariableData("gBones")->location;
             sWorldMatOffset = pPerMeshCbData->getVariableData("gWorldMat[0]")->location;
             sMeshIdOffset = pPerMeshCbData->getVariableData("gMeshId")->location;
             sCameraDataOffset = pPerFrameCbData->getVariableData("gCam.viewMat")->location;
@@ -109,6 +107,11 @@ namespace Falcor
         glm::mat4 worldMat = translation;
         if(currentData.pMesh->hasBones() == false)
         {
+            if (sBonesOffset == ConstantBuffer::kInvalidOffset)
+            {
+                sBonesOffset = pContext->getProgramVars()->getReflection()->getBufferDesc(kPerSkinnedMeshCbName, ProgramReflection::BufferReflection::Type::Constant)->getVariableData("gBones")->location;
+            }
+
             worldMat = worldMat * currentData.pMesh->getInstanceMatrix(meshInstanceID);
         }
         ConstantBuffer* pCB = pContext->getProgramVars()->getConstantBuffer(kPerStaticMeshCbName).get();
@@ -164,7 +167,8 @@ namespace Falcor
 		if (setPerMeshData(pContext, currentData))
 		{
 			// Bind VAO and set topology
-			pContext->setVao(pMesh->getVao());
+			pContext->getPipelineStateCache()->setVao(pMesh->getVao());
+            pContext->getPipelineStateCache()->setPrimitiveType(PipelineState::PrimitiveType::Triangle);
 			pContext->setTopology(pMesh->getTopology());
 
 			uint32_t InstanceCount = pMesh->getInstanceCount();

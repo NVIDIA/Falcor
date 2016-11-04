@@ -153,7 +153,7 @@ namespace Falcor
 
     SrvHandle Texture::getShaderResourceView() const
     {
-        DescriptorHeap::SharedPtr&& pHeap = gpDevice->getSrvDescriptorHeap();
+        DescriptorHeap::SharedPtr& pHeap = gpDevice->getSrvDescriptorHeap();
         if(mSrvIndex == -1)
         {
             // Create the shader-resource view

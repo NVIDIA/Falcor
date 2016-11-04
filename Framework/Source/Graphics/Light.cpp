@@ -38,8 +38,18 @@
 
 namespace Falcor
 {
+    bool checkOffset(size_t cbOffset, size_t cppOffset, const char* field)
+    {
+        if (cbOffset != cppOffset)
+        {
+            logError("Light::LightData::" + std::string(field) + " CB offset mismatch. CB offset is " + std::to_string(cbOffset) + ", C++ data offset is " + std::to_string(cppOffset));
+            return false;
+        }
+        return true;
+    }
+
 #if _LOG_ENABLED
-#define check_offset(_a) assert(pBuffer->getVariableOffset(varName + "." + #_a) == (offsetof(LightData, _a) + offset))
+#define check_offset(_a) {static bool b = true; if(b) {assert(checkOffset(pBuffer->getVariableOffset(varName + "." + #_a) - offset, offsetof(LightData, _a), #_a));} b = false;}
 #else
 #define check_offset(_a)
 #endif

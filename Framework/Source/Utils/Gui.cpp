@@ -166,7 +166,7 @@ namespace Falcor
 
         // Update the VAO
         createVao(pDrawData->TotalVtxCount, pDrawData->TotalIdxCount);
-        mpPipelineStateCache->SetVao(mpVao);
+        mpPipelineStateCache->setVao(mpVao);
         pContext->setVao(mpVao);
 
         // Upload the data

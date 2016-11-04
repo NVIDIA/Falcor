@@ -74,7 +74,7 @@ namespace Falcor
         mpStateCache = PipelineStateCache::create();
         Program::SharedPtr pProgram = Program::createFromFile(kVsFile, kFsFile);
         mpStateCache->setProgram(pProgram);
-        mpStateCache->SetVao(createVAO(mpVertexBuffer));
+        mpStateCache->setVao(createVAO(mpVertexBuffer));
 
         // create the depth-state
         DepthStencilState::Desc dsDesc;

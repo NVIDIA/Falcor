@@ -258,7 +258,11 @@ namespace Falcor
         {
             uint32_t rootOffset = resIt.second.rootSigOffset;
             const Texture* pTex = resIt.second.pResource.get();
-            pList->SetGraphicsRootDescriptorTable(rootOffset, pTex->getShaderResourceView());
+            if(pTex)
+            {
+                // FIXME D3D12: Handle null textures (should bind a small black texture)
+                pList->SetGraphicsRootDescriptorTable(rootOffset, pTex->getShaderResourceView());
+            }
         }
     }
 

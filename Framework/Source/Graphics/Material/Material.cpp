@@ -291,7 +291,7 @@ namespace Falcor
 #pragma error Fix material texture bindings for OpenGL
 #endif
         // Now set the textures
-        std::string resourceName = std::string(varName) + ".textures.layers[0].albedo";
+        std::string resourceName = std::string(varName) + ".textures.layers[0]";
         const auto pResourceDesc = pVars->getReflection()->getResourceDesc(resourceName);
         if (pResourceDesc == nullptr)
         {
