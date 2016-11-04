@@ -33,37 +33,15 @@
 #include "Utils/os.h"
 #include "Utils/Math/FalcorMath.h"
 #include "MaterialSystem.h"
+#include "API/ProgramVars.h"
 
 namespace Falcor
 {
 	uint32_t Material::sMaterialCounter = 0;
     std::vector<Material::DescId> Material::sDescIdentifier;
 
-    // Please add your texture here every time you add another texture slot into material
-    static const size_t kTextureSlots[] = {
-        // layers
-        offsetof(MaterialValues, layers[0]) + offsetof(MaterialLayerValues, albedo),
-        offsetof(MaterialValues, layers[0]) + offsetof(MaterialLayerValues, roughness),
-        offsetof(MaterialValues, layers[0]) + offsetof(MaterialLayerValues, extraParam),
-        offsetof(MaterialValues, layers[1]) + offsetof(MaterialLayerValues, albedo),
-        offsetof(MaterialValues, layers[1]) + offsetof(MaterialLayerValues, roughness),
-        offsetof(MaterialValues, layers[1]) + offsetof(MaterialLayerValues, extraParam),
-        offsetof(MaterialValues, layers[2]) + offsetof(MaterialLayerValues, albedo),
-        offsetof(MaterialValues, layers[2]) + offsetof(MaterialLayerValues, roughness),
-        offsetof(MaterialValues, layers[2]) + offsetof(MaterialLayerValues, extraParam),
-
-        // modifiers
-        offsetof(MaterialValues, alphaMap),
-        offsetof(MaterialValues, normalMap),
-        offsetof(MaterialValues, heightMap),
-        offsetof(MaterialValues, ambientMap),
-    };
-
 	Material::Material(const std::string& name) : mName(name)
 	{
-        static_assert((sizeof(MaterialLayerValues) - sizeof(glm::vec4)) == sizeof(MaterialValue) * 3, "Please register your texture offset in kTextureSlots every time you add another texture slot into material");
-        static_assert((sizeof(MaterialValues) - sizeof(glm::vec4)) == sizeof(MaterialValue) * 4 + sizeof(MaterialLayerValues) * 3, "Please register your texture offset in kTextureSlots every time you add another texture slot into material");
-
 		mData.values.id = sMaterialCounter;
 		sMaterialCounter++;
 	}
@@ -84,9 +62,10 @@ namespace Falcor
         sMaterialCounter = 0;
     }
 
-    size_t Material::getNumActiveLayers() const
+    uint32_t Material::getNumLayers() const
 	{
-		size_t i = 0;
+        finalize();
+        uint32_t i = 0;
         for(; i < MatMaxLayers; ++i)
         {
             if(mData.desc.layers[i].type == MatNone)
@@ -97,42 +76,64 @@ namespace Falcor
 		return i;
 	}
 
-    const MaterialLayerValues* Material::getLayerValues(uint32_t layerIdx) const
+    Material::Layer Material::getLayer(uint32_t layerIdx) const
 	{
-		if(layerIdx >= getNumActiveLayers())
+        finalize();
+		Layer layer;
+		if(layerIdx >= getNumLayers())
         {
-            return nullptr;
+			const auto& desc = mData.desc.layers[layerIdx];
+			const auto& vals = mData.values.layers[layerIdx];
+			const auto& textures = mData.textures.layers[layerIdx];
+
+			// Albedo
+			layer.albedo.constantValue = vals.albedo;
+			layer.albedo.pTexture = textures.albedo;
+
+			// Roughness
+			layer.roughness.constantValue = vals.roughness;
+			layer.roughness.pTexture = textures.roughness;
+
+			// Extra param
+			layer.extraParam.constantValue = vals.extraParam;
+			layer.extraParam.pTexture = textures.extraParam;
+
+			layer.type = (Layer::Type)desc.type;
+			layer.ndf = (Layer::NDF)desc.ndf;
+			layer.blend = (Layer::Blend)desc.blending;
+			layer.pmf = vals.pmf;
         }
 
-		return &mData.values.layers[layerIdx];
+		return layer;
 	}
 
-    const MaterialLayerDesc* Material::getLayerDesc(uint32_t layerIdx) const
-    {
-        if(layerIdx >= getNumActiveLayers())
-        {
-            return nullptr;
-        }
-
-        return &mData.desc.layers[layerIdx];
-    }
-
-	bool Material::addLayer(const MaterialLayerDesc& desc, const MaterialLayerValues& values)
+	bool Material::addLayer(const Layer& layer)
 	{
-		size_t numLayers = getNumActiveLayers();
+		size_t numLayers = getNumLayers();
 		if(numLayers >= MatMaxLayers)
 		{
 			Logger::log(Logger::Level::Error, "Exceeded maximum number of layers in a material");
 			return false;
 		}
 
-		mData.desc.layers[numLayers] = desc;		
-        mData.values.layers[numLayers] = values;
+		auto& desc = mData.desc.layers[numLayers];
+		auto& vals = mData.values.layers[numLayers];
+        auto& textures = mData.textures.layers[numLayers];
 
-        // Update the textures flag
-        mData.desc.layers[numLayers].hasAlbedoTexture = values.albedo.texture.pTexture ? true : false;
-        mData.desc.layers[numLayers].hasRoughnessTexture = values.roughness.texture.pTexture ? true : false;
-        mData.desc.layers[numLayers].hasExtraParamTexture = values.extraParam.texture.pTexture ? true : false;
+#define set_value(_f, _hasTex)		      \
+		vals._f = layer._f.constantValue; \
+        textures._f = layer._f.pTexture;  \
+        desc._hasTex = (textures._f != nullptr);
+					  
+        set_value(albedo, hasAlbedoTexture);
+        set_value(roughness, hasAlbedoTexture);
+        set_value(extraParam, hasAlbedoTexture);
+#undef set_value
+
+        desc.type = (uint32_t)layer.type;
+        desc.ndf = (uint32_t)layer.ndf;
+        desc.blending = (uint32_t)layer.blend;
+        vals.pmf = layer.pmf;
         mDescDirty = true;
 
 		return true;
@@ -140,12 +141,12 @@ namespace Falcor
 
     void Material::removeLayer(uint32_t layerIdx)
     {
-        if(layerIdx >= getNumActiveLayers())
+        if(layerIdx >= getNumLayers())
         {
             assert(false);
             return;
         }
-        const bool needCompaction = layerIdx + 1 < getNumActiveLayers();
+        const bool needCompaction = layerIdx + 1 < getNumLayers();
         mData.desc.layers[layerIdx].type = MatNone;
         mData.values.layers[layerIdx] = MaterialLayerValues();
 
@@ -169,7 +170,7 @@ namespace Falcor
         mDescDirty = true;
     }
 
-	void Material::normalize()
+	void Material::normalize() const
 	{
 		float totalAlbedo = 0.f;
 
@@ -185,7 +186,7 @@ namespace Falcor
             }
 
 			// TODO: compute maximum texture albedo once there is an interface for it in the future
-			float albedo = luminance(glm::vec3(values.albedo.constantColor));
+			float albedo = luminance(glm::vec3(values.albedo));
 
 			if(desc.blending == BlendAdd || desc.blending == BlendFresnel)
             {
@@ -193,7 +194,7 @@ namespace Falcor
             }
 			else
             {
-                totalAlbedo += glm::mix(totalAlbedo, albedo, values.albedo.constantColor.w);
+                totalAlbedo += glm::mix(totalAlbedo, albedo, values.albedo.w);
             }
 		}
 
@@ -216,9 +217,9 @@ namespace Falcor
                     break;
                 }
 
-				vec3 newAlbedo = glm::vec3(values.albedo.constantColor);
+				glm::vec3 newAlbedo = glm::vec3(values.albedo);
 				newAlbedo /= totalAlbedo;
-				values.albedo.constantColor = glm::vec4(newAlbedo, values.albedo.constantColor.w);
+				values.albedo = glm::vec4(newAlbedo, values.albedo.w);
 			}
             totalAlbedo = 1.f;
         }
@@ -234,11 +235,11 @@ namespace Falcor
                 continue;
             }
 
-            float albedo = luminance(glm::vec3(values.albedo.constantColor));
+            float albedo = luminance(glm::vec3(values.albedo));
             /* Embed the expected probability that is based on the constant blending */
             if(desc.blending == BlendConstant)
             {
-                albedo *= values.albedo.constantColor.w;
+                albedo *= values.albedo.w;
             }
             albedo *= currentWeight;
 
@@ -258,106 +259,102 @@ namespace Falcor
 	}
 
 #if _LOG_ENABLED
-#define check_offset(_a) assert(pCB->getVariableOffset(varName + "." + #_a) == (offsetof(MaterialData, _a) + offset))
+#define check_offset(_a) assert(pCB->getVariableOffset(std::string(varName) + "." + #_a) == (offsetof(MaterialData, _a) + offset))
 #else
 #define check_offset(_a)
 #endif
 
-    void Material::setIntoConstantBuffer(ConstantBuffer* pCB, const std::string& varName) const
+    void Material::setIntoProgramVars(ProgramVars* pVars, const char bufferName[], const char varName[]) const
     {
+        // OPTME:
+        // We can specialize this function based on the API we are using. This might be worth the extra maintenance cost:
+        // - DX12 - we could create a descriptor-table with all of the SRVs. This will reduce the API overhead to a single call. Pitfall - the textures might be dirty, so we will need to verify it
+        // - Bindless GL - just copy a blob with the GPU pointers. This is actually similar to DX12, but instead of SRVs we store uint64_t
+        // - DX11 - Single call at a time.
+        // Actually, looks like if we will be smart in the way we design ProgramVars::setTextureArray(), we could get away with a unified code
+
+        // First set the desc and the values
         finalize();
-        static const size_t dataSize = sizeof(MaterialData);
+        static const size_t dataSize = sizeof(MaterialDesc) + sizeof(MaterialValues);
         static_assert(dataSize % sizeof(glm::vec4) == 0, "Material::MaterialData size should be a multiple of 16");
 
-        size_t offset = pCB->getVariableOffset(varName + ".desc.layers[0].type");
-
-        if(offset == ConstantBuffer::kInvalidOffset)
+        // Get the CB
+        ConstantBuffer* pCB = pVars->getConstantBuffer(bufferName).get();
+        if (pCB == nullptr)
         {
-            Logger::log(Logger::Level::Warning, "Material::setIntoConstantBuffer() - variable \"" + varName + "\"not found in constant buffer\n");
+            Logger::log(Logger::Level::Error, std::string("Material::setIntoProgramVars() - CB \"") + bufferName + "\" is not part of the program\n");
             return;
         }
 
-        check_offset(values.layers[0].albedo.texture.ptr);
-        check_offset(values.ambientMap.texture.ptr);
+        size_t offset = pCB->getVariableOffset(std::string(varName) + ".desc.layers[0].type");
+
+        if(offset == ConstantBuffer::kInvalidOffset)
+        {
+            Logger::log(Logger::Level::Error, std::string("Material::setIntoConstantBuffer() - variable \"") + varName + "\"not found in constant buffer\n");
+            return;
+        }
+
         check_offset(values.id);
         assert(offset + dataSize <= pCB->getBuffer()->getSize());
 
-        bindTextures();
         pCB->setBlob(&mData, offset, dataSize);
-    }
 
-    static TexPtr& getTexture(const MaterialValues* mat, size_t Offset)
-    {
-        MaterialValue& matValue = *((MaterialValue*)((char*)mat + Offset));
-        return matValue.texture;
-    }
-
-    void Material::getActiveTextures(std::vector<Texture::SharedConstPtr>& textures) const
-    {
-        textures.clear();
-        textures.reserve(arraysize(kTextureSlots));
-        for(uint32_t i = 0; i < arraysize(kTextureSlots); i++)
+#ifdef FALCOR_GL
+#pragma error Fix material texture bindings for OpenGL
+#endif
+        // Now set the textures
+        std::string resourceName = std::string(varName) + ".textures.layers[0].albedo";
+        const auto pResourceDesc = pVars->getReflection()->getResourceDesc(resourceName);
+        if (pResourceDesc == nullptr)
         {
-            TexPtr& gpuTex = getTexture(&mData.values, kTextureSlots[i]);
-            if(gpuTex.pTexture)
-            {
-                textures.push_back(gpuTex.pTexture->shared_from_this());
-            }
+            Logger::log(Logger::Level::Error, std::string("Material::setIntoConstantBuffer() - can't find the first texture object"));
+            return;
         }
+        pVars->setTextureRange(pResourceDesc->regIndex, kTexCount, (Texture::SharedConstPtr*)&mData.textures);
     }
 
-	void Material::bindTextures() const
-    {
-        for(uint32_t i = 0; i < arraysize(kTextureSlots); i++)
-        {
-            TexPtr& gpuTex = getTexture(&mData.values, kTextureSlots[i]);
-			gpuTex.ptr = gpuTex.pTexture ? gpuTex.pTexture->makeResident(mpSamplerOverride.get()) : 0;
-        }
-    }
-   
     bool Material::operator==(const Material& other) const
     {
 		return memcmp(&mData, &other.mData, sizeof(mData)) == 0 && mpSamplerOverride == other.mpSamplerOverride;
     }
 
-    void Material::unloadTextures() const
+    void Material::evictTextures() const
     {
-        for(uint32_t i = 0; i < arraysize(kTextureSlots) ; i++)
+        Texture::SharedPtr* pTextures = (Texture::SharedPtr*)&mData.textures;
+        for(uint32_t i = 0; i < kTexCount ; i++)
         {
-            TexPtr& GpuTex = getTexture(&mData.values, kTextureSlots[i]);
-			if(GpuTex.pTexture)
+			if(pTextures[i])
             {
-                GpuTex.pTexture->evict(mpSamplerOverride.get());
-                GpuTex.ptr = 0;
+                pTextures[i]->evict(mpSamplerOverride.get());
             }
         }
     }
 
-    void Material::setNormalValue(const MaterialValue& normal)
+    void Material::setNormalMap(Texture::SharedPtr& pNormalMap)
     {
-        mData.values.normalMap = normal; 
-        mData.desc.hasNormalMap = normal.texture.pTexture ? true : false; 
+        mData.textures.normalMap = pNormalMap; 
+        mData.desc.hasNormalMap = (pNormalMap != nullptr);
         mDescDirty = true;
     }
 
-    void Material::setAlphaValue(const MaterialValue& alpha) 
+    void Material::setAlphaMap(const Texture::SharedPtr& pAlphaMap)
     { 
-        mData.values.alphaMap = alpha; 
-        mData.desc.hasAlphaMap = alpha.texture.pTexture ? true : false; 
+        mData.textures.alphaMap = pAlphaMap;
+        mData.desc.hasAlphaMap = (pAlphaMap != nullptr);
         mDescDirty = true;
     }
 
-    void Material::setAmbientValue(const MaterialValue& ambient)
+    void Material::setAmbientOcclusionMap(const Texture::SharedPtr& pAoMap)
     {
-        mData.values.ambientMap = ambient;
-        mData.desc.hasAmbientMap = ambient.texture.pTexture ? true : false;
+        mData.textures.ambientMap = pAoMap;
+        mData.desc.hasAmbientMap = (pAoMap != nullptr);
         mDescDirty = true;
     }
 
-    void Material::setHeightValue(const MaterialValue& height) 
+    void Material::setHeightMap(const Texture::SharedPtr& pHeightMap)
     { 
-        mData.values.heightMap = height; 
-        mData.desc.hasHeightMap = height.texture.pTexture ? true : false; 
+        mData.textures.heightMap = pHeightMap;
+        mData.desc.hasHeightMap = (pHeightMap != nullptr);
         mDescDirty = true;
     }
 
@@ -410,7 +407,7 @@ namespace Falcor
         if(mDescDirty)
         {
             updateDescIdentifier();
-            const_cast<Material*>(this)->normalize();
+            normalize();
             mDescDirty = false;
         }
     }

@@ -33,13 +33,13 @@
 #include "glm/geometric.hpp"
 #include "API/Texture.h"
 #include "glm/mat4x4.hpp"
-#include "Data/HostDeviceData.h"
 #include "API/Sampler.h"
+#include "Data/HostDeviceData.h"
 
 namespace Falcor
 {
     class Texture;
-    class ConstantBuffer;
+    class ProgramVars;
 
     /** A surface material object
         The core part of material is the 'SMaterial	m_Material' data structure. It consists of multiple layers and modifiers.
@@ -97,6 +97,45 @@ namespace Falcor
         using SharedPtr = std::shared_ptr<Material>;
         using SharedConstPtr = std::shared_ptr<const Material>;
 
+		struct Layer
+		{
+			enum class Type
+			{
+                Lambert = MatLambert,
+				Conductor = MatConductor,
+				Dielectric = MatDielectric,
+				Emissive = MatEmissive,
+				User = MatUser
+			};
+
+			enum class NDF
+			{
+				Beckmann = NDFBeckmann,
+				GGX		 = NDFGGX,
+				User	 = NDFUser
+			};
+
+			enum class Blend
+			{
+				Fresnel = BlendFresnel,
+				Additive = BlendAdd,
+				Constant = BlendConstant
+			};
+
+			struct Data
+			{
+				Texture::SharedPtr pTexture;
+				glm::vec4 constantValue;
+			};
+			Type type = Type::Lambert;
+			NDF ndf = NDF::Beckmann;
+			Blend blend = Blend::Fresnel;
+			Data albedo;
+			Data roughness;
+			Data extraParam;
+			float pmf = 0;
+		};
+		
 		/** create a new material
             \param[in] name the material name
         */
@@ -128,65 +167,71 @@ namespace Falcor
 
 		/** Returns the number of active layers in the material
 		*/
-		size_t getNumActiveLayers() const;
+		uint32_t getNumLayers() const;
 
-		/** Returns a material layer descriptor, or null if there is no layer with this index
+		/** Returns a material layer descriptor. If the index is out-of-bound, will return a default layer
             \param[in] layerIdx The index of the material layer
 		*/
-		const MaterialLayerDesc* getLayerDesc(uint32_t layerIdx) const;
-
-        /** Returns a material layer values, or null if there is no layer with this index
-        \param[in] layerIdx The index of the material layer
-        */
-        const MaterialLayerValues* getLayerValues(uint32_t layerIdx) const;
+		Layer getLayer(uint32_t layerIdx) const;
 
 		/** Adds a layer to the material. Returns true if succeeded
 			\param[in] layer The material layer to add
 		*/
-		bool addLayer(const MaterialLayerDesc& desc, const MaterialLayerValues& values);
+		bool addLayer(const Layer& layer);
 
 		/** Removes a layer of the material.
             \param[in] layerIdx The index of the material layer
 		*/
 		void removeLayer(uint32_t layerIdx);
         
-        /** Set the normal map value
+        /** Set the normal map
         */
-        void setNormalValue(const MaterialValue& normal);
+        void setNormalMap(Texture::SharedPtr& pNormalMap);
     
-		/** Returns the normal map value
+		/** Returns the normal map
 		*/
-		const MaterialValue& getNormalValue() const { return mData.values.normalMap; }
+        Texture::SharedPtr getNormalMap() const { return mData.textures.normalMap; }
 
-        /** Set the alpha test value
+        /** Set the alpha map
         */
-        void setAlphaValue(const MaterialValue& alpha);
+        void setAlphaMap(const Texture::SharedPtr& pAlphaMap);
+
+		/** Get the alpha map
+		*/
+		Texture::SharedPtr getAlphaMap() const { return mData.textures.alphaMap; }
+
+		/** Set the alpha threshold value
+		*/
+        void setAlphaThreshold(float threshold) { mData.values.alphaThreshold = threshold; }
+        
+		/** Get the alpha threshold value
+		*/
+		float getAlphaThreshold() const { return mData.values.alphaThreshold; }
 
         /** Set the ambient occlusion value
         */
-        void setAmbientValue(const MaterialValue& ambient);
-
-        /** Returns the alpha test value
-        */
-        const MaterialValue& getAlphaValue() const { return mData.values.alphaMap; }
+        void setAmbientOcclusionMap(const Texture::SharedPtr& pAoMap);
 
         /** Returns the ambient value
         */
-        const MaterialValue& getAmbientValue() const { return mData.values.ambientMap; }
+        Texture::SharedPtr getAmbientOcclusionMap() const { return mData.textures.ambientMap; }
 
         /** Set the height map value
         */
-        void setHeightValue(const MaterialValue& height);
+        void setHeightMap(const Texture::SharedPtr& pHeightMap);
 
         /** Returns the height map value
         */
-        const MaterialValue& getHeightValue() const { return mData.values.heightMap; }
+        Texture::SharedPtr getHeightMap() const { return mData.textures.heightMap; }
 
-		/** Helper method, returns all active textures
-            \param[out] Textures The list of active textures
+		/** Set the height scale values
 		*/
-        void getActiveTextures(std::vector<Texture::SharedConstPtr>& textures) const;
+        void setHeightModifiers(const glm::vec2& mod) { mData.values.height = mod; }
 
+		/** Get the height scale value
+		*/
+		glm::vec2 getHeightModifiers() const { return mData.values.height; }
+		
 		/** Check if this is a double-sided material. Meshes with double sided materials should be drawn without culling, and for backfacing polygons, the normal has to be inverted.
         */
         bool isDoubleSided() const      { return mDoubleSided; }
@@ -195,30 +240,23 @@ namespace Falcor
         void setDoubleSided(bool doubleSided) { mDoubleSided = doubleSided; mDescDirty = true; }
 
         /** Set the material parameters into a constant buffer. To use this you need to include 'Falcor.h' inside your shader.
-            \param[in] pCB The constant buffer to set the parameters into.
-            \param[in] VarName The name of the material variable in the program.
+            \param[in] pVars The constant buffer to set the parameters into.
+            \param[in] bufferName The name of the constant buffer the material was defined in
+            \param[in] varName The name of the material variable in the buffer
         */
-        void setIntoConstantBuffer(ConstantBuffer* pCB, const std::string& varName) const;
-        
-        /** Returns the raw material data
-        */
-        const MaterialData& getData() const     { return mData; }
+        void setIntoProgramVars(ProgramVars* pVars, const char bufferName[], const char varName[]) const;
         
         /** Override all sampling types of materials
         */
-        void overrideAllSamplers(const Sampler::SharedPtr& pSampler) { mpSamplerOverride = pSampler; }
+        void setSampler(const Sampler::SharedPtr& pSampler) { mData.samplerState = pSampler; }
                 
         /** Return global sampler override 
         */
-        const Sampler::SharedPtr& getSamplerOverride() const { return mpSamplerOverride; }
+        Sampler::SharedPtr getSampler() const { return mData.samplerState; }
 
-        /** Binds all the textures to the GPU
+        /** Evict all the textures from the GPU memory.
         */
-        void bindTextures() const;
-
-        /** Unload all the textures from the GPU memory.
-        */
-        void unloadTextures() const;
+        void evictTextures() const;
 
         /** Comparison operator
         */
@@ -232,39 +270,31 @@ namespace Falcor
         */
         uint64_t getDescIdentifier() const;
 
-        /** Validates the layers of the material, making sure that it is energy conserving.
-        */
-        void finalize() const;
     private:
-        mutable bool mDescDirty   = false;
-        mutable size_t mDescIdentifier;
-        void updateDescIdentifier() const;
-        void removeDescIdentifier() const;
+        void finalize() const;
+        void normalize() const;
+        static const uint32_t kTexCount = (MatMaxLayers * 3) + 4;
+        static_assert(sizeof(MaterialTextures) == (sizeof(Texture::SharedPtr) * kTexCount), "Wrong number of textures in Material::mTextures");
 
-        void normalize();
+		Material(const std::string& name);		
+        mutable MaterialData mData;				///< Material data shared between host and device
+		bool				mDoubleSided = false;	///< Used for culling 
+		Sampler::SharedPtr mpSamplerOverride = nullptr;
+        std::string			mName;
 
-		static uint32_t sMaterialCounter;
+        // The next functions and fields are used for material compilation into shaders.
+        // We only compile based on the material descriptor, so as an optimization we minimize the number of shader permutations based on the desc
         struct DescId
         {
             MaterialDesc desc;
             uint64_t id;
             uint32_t refCount;
         };
-        // Can't use map directly, since it requires a 'less' operator for the MaterialDesc.
-        // vector is slower, but materials are usually not dirty, so shouldn't really affect performance
-        static std::vector<DescId> sDescIdentifier;
-
-		/** create a new material
-            \param[in] Name The material name
-        */
-		Material(const std::string& name);
-		
-        mutable MaterialData mData;				///< Material data shared between host and device
-
-		bool				mDoubleSided = false;	///< Used for culling 
-
-		Sampler::SharedPtr mpSamplerOverride = nullptr;
-
-        std::string			mName;
+        mutable bool mDescDirty = false;
+        mutable size_t mDescIdentifier;
+        void updateDescIdentifier() const;
+        void removeDescIdentifier() const;
+        static uint32_t sMaterialCounter;
+        static std::vector<DescId> sDescIdentifier; // vector is slower then map, but map requires 'less' operator. This vector is only being used when the material is dirty, which shouldn't happen often
     };
 }

@@ -25,11 +25,39 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#version 420
+#include "ShaderCommon.h"
+#include "Shading.h"
 #define _COMPILE_DEFAULT_VS
 #include "VertexAttrib.h"
 
-void main()
+cbuffer PerFrameCB : register(b0)
 {
-    defaultVS();
+    LightData gDirLight;
+    LightData gPointLight;
+    bool gConstColor;
+    vec3 gAmbient;
+};
+
+vec4 main(VS_OUT vOut) : SV_TARGET
+{
+    if(gConstColor)
+    {
+        return vec4(0, 1, 0, 1);
+    }
+    else
+    {
+        ShadingAttribs shAttr;
+        prepareShadingAttribs(gMaterial, vOut.posW, gCam.position, vOut.normalW, vOut.tangentW, vOut.bitangentW, vOut.texC, shAttr);
+
+        ShadingOutput result;
+
+        // Directional light
+        evalMaterial(shAttr, gDirLight, result, true);
+
+        // Point light
+        evalMaterial(shAttr, gPointLight, result, false);
+
+        vec4 finalColor = vec4(result.finalValue + gAmbient * result.diffuseAlbedo, 1.f);
+        return finalColor;
+    }
 }

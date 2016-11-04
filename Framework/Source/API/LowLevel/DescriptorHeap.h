@@ -45,7 +45,7 @@ namespace Falcor
             RenderTargetView,
             DepthStencilView,
         };
-        // D3D12 CODE
+        // FIXME D3D12
         static SharedPtr create(Type type, uint32_t descriptorsCount, bool shaderVisible = true);
         using CpuHandle = D3D12_CPU_DESCRIPTOR_HANDLE;
         using GpuHandle = D3D12_GPU_DESCRIPTOR_HANDLE;

@@ -28,7 +28,6 @@
 #pragma once
 #include <glm/common.hpp>
 #include "glm/geometric.hpp"
-#include "API/Texture.h"
 #include "glm/mat4x4.hpp"
 #include "Data/HostDeviceData.h"
 #include <vector>
@@ -185,9 +184,9 @@ namespace Falcor
 
         struct 
         {
-            vec3        xyz;    ///< Camera frustum plane position
+            glm::vec3   xyz;    ///< Camera frustum plane position
             float       negW;                ///< Camera frustum plane, sign of the coordinates
-            vec3        sign;    ///< Camera frustum plane position
+            glm::vec3   sign;    ///< Camera frustum plane position
         } mutable mFrustumPlanes[6];
     };
 }

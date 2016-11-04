@@ -61,19 +61,19 @@ namespace Falcor
         class Desc
         {
         public:
-            Desc& setRootSignature(RootSignature::SharedConstPtr pSignature) { mpRootSignature = pSignature; return *this; }
+            Desc& setRootSignature(RootSignature::SharedPtr pSignature) { mpRootSignature = pSignature; return *this; }
             Desc& setVertexLayout(VertexLayout::SharedConstPtr pLayout) { mpLayout = pLayout; return *this; }
             Desc& setFboFormats(const Fbo::Desc& fboFormats) { mFboDesc = fboFormats; return *this; }
             Desc& setProgramVersion(ProgramVersion::SharedConstPtr pProgram) { mpProgram = pProgram; return *this; }
-            Desc& setBlendState(BlendState::SharedConstPtr pBlendState) { mpBlendState = pBlendState; return *this; }
-            Desc& setRasterizerState(RasterizerState::SharedConstPtr pRasterizerState) { mpRasterizerState = pRasterizerState; return *this; }
-            Desc& setDepthStencilState(DepthStencilState::SharedConstPtr pDepthStencilState) { mpDepthStencilState = pDepthStencilState; return *this; }
+            Desc& setBlendState(BlendState::SharedPtr pBlendState) { mpBlendState = pBlendState; return *this; }
+            Desc& setRasterizerState(RasterizerState::SharedPtr pRasterizerState) { mpRasterizerState = pRasterizerState; return *this; }
+            Desc& setDepthStencilState(DepthStencilState::SharedPtr pDepthStencilState) { mpDepthStencilState = pDepthStencilState; return *this; }
             Desc& setSampleMask(uint32_t sampleMask) { mSampleMask = sampleMask; return *this; }
             Desc& setPrimitiveType(PrimitiveType type) { mPrimType = type; return *this; }
 
-            BlendState::SharedConstPtr getBlendState() const { return mpBlendState; }
-            RasterizerState::SharedConstPtr getRasterizerState() const { return mpRasterizerState; }
-            DepthStencilState::SharedConstPtr getDepthStencilState() const { return mpDepthStencilState; }
+            BlendState::SharedPtr getBlendState() const { return mpBlendState; }
+            RasterizerState::SharedPtr getRasterizerState() const { return mpRasterizerState; }
+            DepthStencilState::SharedPtr getDepthStencilState() const { return mpDepthStencilState; }
             uint32_t getSampleMask() const { return mSampleMask; }
             PipelineState::PrimitiveType getPrimitiveType() const { return mPrimType; }
             VertexLayout::SharedConstPtr getVertexLayout() const { return mpLayout; }
@@ -84,11 +84,11 @@ namespace Falcor
             VertexLayout::SharedConstPtr mpLayout;
             Fbo::Desc mFboDesc;
             ProgramVersion::SharedConstPtr mpProgram;
-            RasterizerState::SharedConstPtr mpRasterizerState;
-            DepthStencilState::SharedConstPtr mpDepthStencilState;
-            BlendState::SharedConstPtr mpBlendState;
+            RasterizerState::SharedPtr mpRasterizerState;
+            DepthStencilState::SharedPtr mpDepthStencilState;
+            BlendState::SharedPtr mpBlendState;
             uint32_t mSampleMask = kSampleMaskAll;
-            RootSignature::SharedConstPtr mpRootSignature;
+            RootSignature::SharedPtr mpRootSignature;
             PrimitiveType mPrimType = PrimitiveType::Undefined;
         };
 

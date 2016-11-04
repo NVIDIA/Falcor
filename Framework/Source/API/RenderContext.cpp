@@ -215,6 +215,10 @@ namespace Falcor
 
     void RenderContext::prepareForDraw()
     {
+        if (mState.pPsoCache)
+        {
+            setPipelineState(mState.pPsoCache->getPSO());
+        }
         // DISABLED_FOR_D3D12
 //         for(auto& pUBO : mState.pUniformBuffers)
 //         {

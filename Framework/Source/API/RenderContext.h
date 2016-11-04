@@ -36,6 +36,7 @@
 #include "Framework.h"
 #include "API/PipelineState.h"
 #include "API/ProgramVars.h"
+#include "Graphics/PipelineStateCache.h"
 
 namespace Falcor
 {
@@ -230,12 +231,14 @@ namespace Falcor
 
         /** Set the program variables
         */
-        void setProgramVariables(const ProgramVars::SharedConstPtr& pVars) { mState.pProgramVars = pVars; applyProgramVars(); }
+        void setProgramVariables(const ProgramVars::SharedPtr& pVars) { mState.pProgramVars = pVars; applyProgramVars(); }
         
         /** Get the bound program variables object
         */
-        ProgramVars::SharedConstPtr getProgramVars() const { return mState.pProgramVars; }
+        ProgramVars::SharedPtr getProgramVars() const { return mState.pProgramVars; }
 
+        void setPipelineStateCache(const PipelineStateCache::SharedPtr& pPsoCache) { mState.pPsoCache = pPsoCache; }
+        PipelineStateCache::SharedPtr getPipelineStateCache() const { return mState.pPsoCache; }
     private:
         RenderContext() = default;
         void initCommon(uint32_t viewportCount);
@@ -246,11 +249,12 @@ namespace Falcor
             Vao::SharedConstPtr pVao = nullptr;
             Topology topology = Topology::TriangleList;
             uint8_t stencilRef = 0;
-            ProgramVars::SharedConstPtr pProgramVars;
+            ProgramVars::SharedPtr pProgramVars;
             std::vector<ShaderStorageBuffer::SharedConstPtr> pShaderStorageBuffers;
             std::vector<Viewport> viewports;
             std::vector<Scissor> scissors;
             PipelineState::SharedPtr pRenderState;
+            PipelineStateCache::SharedPtr pPsoCache;
         };
 
         State mState;

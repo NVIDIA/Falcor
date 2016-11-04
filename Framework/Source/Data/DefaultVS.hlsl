@@ -25,45 +25,10 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#version 420
+#define _COMPILE_DEFAULT_VS
+#include "VertexAttrib.h"
 
-#include "ShaderCommon.h"
-#include "Shading.h"
-
-layout(binding = 0) uniform PerFrameCB
+VS_OUT main(VS_IN vIn)
 {
-    LightData gDirLight;
-    LightData gPointLight;
-    bool gConstColor;
-    vec3 gAmbient;
-};
-
-in vec2 texC;
-in vec3 normalW;
-in vec3 tangentW;
-in vec3 bitangentW;
-in vec3 posW;
-out vec4 fragColor;
-
-void main()
-{
-    if(gConstColor)
-    {
-        fragColor = vec4(0, 1, 0, 1);
-    }
-    else
-    {
-        ShadingAttribs shAttr;
-        prepareShadingAttribs(gMaterial, posW, gCam.position, normalW, tangentW, bitangentW, texC, shAttr);
-
-        ShadingOutput result;
-
-        // Directional light
-        evalMaterial(shAttr, gDirLight, result, true);
-
-        // Point light
-        evalMaterial(shAttr, gPointLight, result, false);
-
-        fragColor = vec4(result.finalValue + gAmbient * result.diffuseAlbedo, 1.f);
-    }
+    return defaultVS(vIn);
 }

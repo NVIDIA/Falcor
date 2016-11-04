@@ -2031,14 +2031,16 @@
     <None Include="Data\Effects\SkyBox.vs">
       <Filter>Data\Effects</Filter>
     </None>
-    <None Include="Data\DefaultVS.vs">
-      <Filter>Data</Filter>
-    </None>
     <None Include="Data\Framework\Gui.ps">
       <Filter>Data\Framework</Filter>
     </None>
     <None Include="Data\Framework\Gui.vs">
       <Filter>Data\Framework</Filter>
     </None>
+  </ItemGroup>
+  <ItemGroup>
+    <FxCompile Include="Data\DefaultVS.hlsl">
+      <Filter>Data\Framework</Filter>
+    </FxCompile>
   </ItemGroup>
 </Project>

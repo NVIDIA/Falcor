@@ -70,8 +70,6 @@ namespace Falcor
 		check_offset(aabbMax);
 		check_offset(transMat);
         check_offset(material.desc.layers[0].type);
-        check_offset(material.values.layers[0].albedo.texture.ptr);
-        check_offset(material.values.ambientMap.texture.ptr);
         check_offset(material.values.id);
 		check_offset(numIndices);
 		assert(offset + dataSize <= pBuffer->getBuffer()->getSize());
@@ -274,28 +272,29 @@ namespace Falcor
 
 	void AreaLight::prepareGPUData()
 	{
+        // DISABLED_FOR_D3D12
 		// Set OGL buffer pointers for indices, vertices, and texcoord
-		if (mData.indexPtr.ptr == 0ull)
-		{
-			mData.indexPtr.ptr = mIndexBuf->makeResident();
-			mData.vertexPtr.ptr = mVertexBuf->makeResident();
-			if (mTexCoordBuf)
-				mData.texCoordPtr.ptr = mTexCoordBuf->makeResident();
-			// Store the mesh CDF buffer id
-			mData.meshCDFPtr.ptr = mMeshCDFBuf->makeResident();
-		}
-		mData.numIndices = uint32_t(mIndexBuf->getSize() / sizeof(glm::ivec3));
-
-		// Get the surface area of the geometry mesh
-		mData.surfaceArea = mSurfaceArea;
-
-		// Fetch the mesh instance transformation
-		mData.transMat = mMeshData.pMesh->getInstanceMatrix(mMeshData.instanceId);
-
-		// Copy the material data
-		const Material::SharedPtr& pMaterial = mMeshData.pMesh->getMaterial();
-		if (pMaterial)
-			memcpy(&mData.material, &pMaterial->getData(), sizeof(MaterialData));
+// 		if (mData.indexPtr.ptr == 0ull)
+// 		{
+// 			mData.indexPtr.ptr = mIndexBuf->makeResident();
+// 			mData.vertexPtr.ptr = mVertexBuf->makeResident();
+// 			if (mTexCoordBuf)
+// 				mData.texCoordPtr.ptr = mTexCoordBuf->makeResident();
+// 			// Store the mesh CDF buffer id
+// 			mData.meshCDFPtr.ptr = mMeshCDFBuf->makeResident();
+// 		}
+// 		mData.numIndices = uint32_t(mIndexBuf->getSize() / sizeof(glm::ivec3));
+// 
+// 		// Get the surface area of the geometry mesh
+// 		mData.surfaceArea = mSurfaceArea;
+// 
+// 		// Fetch the mesh instance transformation
+// 		mData.transMat = mMeshData.pMesh->getInstanceMatrix(mMeshData.instanceId);
+// 
+// 		// Copy the material data
+// 		const Material::SharedPtr& pMaterial = mMeshData.pMesh->getMaterial();
+// 		if (pMaterial)
+// 			memcpy(&mData.material, &pMaterial->getData(), sizeof(MaterialData));
 	}
 
 	void AreaLight::unloadGPUData()
@@ -338,11 +337,12 @@ namespace Falcor
             const Material::SharedPtr& pMaterial = pMesh->getMaterial();
             if(pMaterial)
             {
-                for(uint32_t layerId = 0; layerId < pMaterial->getNumActiveLayers(); ++layerId)
+                for(uint32_t layerId = 0; layerId < pMaterial->getNumLayers(); ++layerId)
                 {
-                    if(pMaterial->getLayerDesc(layerId)->type == MatEmissive)
+                    const Material::Layer l = pMaterial->getLayer(layerId);
+                    if(l.type == Material::Layer::Type::Emissive)
                     {
-                        mData.intensity = v3(pMaterial->getLayerValues(layerId)->albedo.constantColor);
+                        mData.intensity = vec3(l.albedo.constantValue);
                         break;
                     }
                 }
@@ -447,13 +447,13 @@ namespace Falcor
 				const Material::SharedPtr& pMaterial = pMesh->getMaterial();
 				if (pMaterial)
 				{
-					size_t numLayers = pMaterial->getNumActiveLayers();
+					size_t numLayers = pMaterial->getNumLayers();
 					const MaterialLayerDesc* pLayerDesc = nullptr;
 
 					for (uint32_t layerId = 0; layerId < numLayers; ++layerId)
 					{
-						pLayerDesc = pMaterial->getLayerDesc(layerId);
-						if (pLayerDesc->type == MatEmissive)
+                        const Material::Layer l = pMaterial->getLayer(layerId);
+						if (l.type == Material::Layer::Type::Emissive)
 						{
 							// Create an area light for an emissive material
 							areaLights.push_back(createAreaLight(pMesh, meshInstanceId));

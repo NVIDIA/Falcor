@@ -28,16 +28,7 @@
 
 #ifndef _FALCOR_SHADING_HELPERS_H_
 #define _FALCOR_SHADING_HELPERS_H_
-#include "HlslGlslCommon.h"
-
-/**
-	Helper macro to iterate through layers
-*/
-#ifndef _MS_NUM_LAYERS
-#define FOR_MAT_LAYERS(_iterator, _material) for(int _iterator = 0;_iterator<MatMaxLayers && _material.desc.layers[_iterator].type != MatNone;++_iterator)
-#else
-#define FOR_MAT_LAYERS(_iterator, _material) for(int _iterator = 0;_iterator<_MS_NUM_LAYERS;++_iterator)
-#endif
+#include "HostDeviceData.h"
 
 /*******************************************************************
 					Math functions
@@ -49,13 +40,6 @@
 
 #ifndef M_1_PIf
 #define M_1_PIf 0.31830988618379f
-#endif
-
-#ifndef __CUDACC__
-float _fn saturate(float f)
-{
-	return clamp(f, 0.0f, 1.0f);
-}
 #endif
 
 _fn vec3 sample_disk(float rnd1, float rnd2, float minR = 0.0f)
@@ -196,40 +180,41 @@ void _fn reflectFrame(vec3 n, vec3 reflect, _ref(vec3) t, _ref(vec3) b)
 					Texturing routines
 *******************************************************************/
 
-vec4 _fn sampleTexture(in sampler2D sampler, in const ShadingAttribs ShAttr)
+vec4 _fn sampleTexture(Texture2D t, SamplerState s, const ShadingAttribs attr)
 {
 #ifndef _MS_USER_DERIVATIVES
-    return textureBias(sampler, ShAttr.UV, ShAttr.lodBias);
+    return t.SampleBias(s, attr.UV, attr.lodBias);
 #else
-	return textureGrad(sampler, ShAttr.UV, ShAttr.DPDX, ShAttr.DPDY);
+	return t.SampleGrad(s, attr.UV, attr.DPDX, attr.DPDY);
 #endif
 }
 
 #ifndef CUDA_CODE
-vec4 _fn sampleTexture(in sampler2DArray sampler, in const ShadingAttribs ShAttr, in int arrayIndex)
+vec4 _fn sampleTexture(Texture2DArray t, SamplerState s, const ShadingAttribs attr, int arrayIndex)
 {
 #ifndef _MS_USER_DERIVATIVES
-    return textureBias(sampler, vec3(ShAttr.UV, arrayIndex), ShAttr.lodBias);
+    return t.SampleBias(s, vec3(attr.UV, arrayIndex), attr.lodBias);
 #else
-    return textureGrad(sampler, vec3(ShAttr.UV, arrayIndex), ShAttr.DPDX, ShAttr.DPDY);
+    return t.SampleGrad(s, vec3(attr.UV, arrayIndex), attr.DPDX, attr.DPDY);
 #endif
 }
 #endif
 
-vec4 _fn evalTex(in uint32_t hasTexture, in const MaterialValue val, in const ShadingAttribs ShAttr, in vec4 defaultValue)
+vec4 _fn evalTex(in uint32_t hasTexture, in const Texture2D tex, SamplerState s, in const ShadingAttribs attr, in vec4 defaultValue)
 {
 #ifndef _MS_DISABLE_TEXTURES
 	if(hasTexture != 0)
     {
-        defaultValue = sampleTexture(val.texture.ptr, ShAttr);
+        // MAT_CODE
+        defaultValue = sampleTexture(tex, s, attr);
     }
 #endif
 	return defaultValue;
 }
 
-vec4 _fn evalWithColor(in uint32_t hasTexture, in const MaterialValue val, in const ShadingAttribs ShAttr)
+vec4 _fn evalWithColor(in uint32_t hasTexture, in const Texture2D tex, SamplerState s, float4 color, in const ShadingAttribs attr)
 {
-	return evalTex(hasTexture, val, ShAttr, val.constantColor);
+	return evalTex(hasTexture, tex, s, attr, color);
 }
 
 /*******************************************************************
@@ -238,12 +223,12 @@ vec4 _fn evalWithColor(in uint32_t hasTexture, in const MaterialValue val, in co
 
 vec3 _fn normalToRGB(in const vec3 normal)
 {
-	return normal * 0.5f + v3(0.5f);
+	return normal * 0.5f + 0.5f;
 }
 
 vec3 _fn RGBToNormal(in const vec3 rgbval)
 {
-    return rgbval * 2.f - v3(1.f);
+    return rgbval * 2.f - 1.f;
 }
 
 vec3 _fn fromLocal(in vec3 v, in vec3 t, in vec3 b, in vec3 n)
@@ -266,19 +251,15 @@ void _fn applyNormalMap(in vec3 texValue, _ref(vec3) n, _ref(vec3) t, _ref(vec3)
 }
 
 // Forward declare it, just in case someone overrides it later
-void _fn perturbNormal(in const MaterialData mat, _ref(ShadingAttribs) shAttr, bool forceSample = false);
+void _fn perturbNormal(in const MaterialData mat, _ref(ShadingAttribs) attr, bool forceSample = false);
 
 #ifndef _MS_USER_NORMAL_MAPPING
-void _fn perturbNormal(in const MaterialData mat, _ref(ShadingAttribs) shAttr, bool forceSample
-#ifndef CUDA_CODE
-    = false
-#endif
-    )
+void _fn perturbNormal(in const MaterialData mat, _ref(ShadingAttribs) attr, bool forceSample)
 {
 	if(forceSample || mat.desc.hasNormalMap != 0)
 	{
-		vec3 texValue = v3(sampleTexture(mat.values.normalMap.texture.ptr, shAttr));
-        applyNormalMap(RGBToNormal(texValue), shAttr.N, shAttr.T, shAttr.B);
+		vec3 texValue = sampleTexture(mat.textures.normalMap, mat.samplerState, attr).rrr;
+        applyNormalMap(RGBToNormal(texValue), attr.N, attr.T, attr.B);
 	}
 }
 #endif
@@ -292,21 +273,21 @@ bool _fn alphaTestEnabled(in const MaterialData mat)
     return mat.desc.hasAlphaMap != 0;
 }
 
-bool _fn alphaTestPassed(in const MaterialData mat, in const ShadingAttribs ShAttr)
+bool _fn alphaTestPassed(in const MaterialData mat, in const ShadingAttribs attr)
 {
 #ifndef _MS_DISABLE_ALPHA_TEST
-    if(sampleTexture(mat.values.alphaMap.texture.ptr, ShAttr).x < mat.values.alphaMap.constantColor.x)
+    if(sampleTexture(mat.textures.alphaMap, mat.samplerState, attr).x < mat.values.alphaThreshold)
         return false;
 #endif
     return true;
 }
 
-void _fn applyAlphaTest(in const MaterialData mat, in const ShadingAttribs ShAttr)
+void _fn applyAlphaTest(in const MaterialData mat, in const ShadingAttribs attr)
 {
 #ifndef _MS_DISABLE_ALPHA_TEST
     if(alphaTestEnabled(mat))
     {
-        if(!alphaTestPassed(mat, ShAttr))
+        if(!alphaTestPassed(mat, attr))
             discard;
     }
 #endif

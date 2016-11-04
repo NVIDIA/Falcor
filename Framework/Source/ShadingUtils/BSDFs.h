@@ -162,7 +162,7 @@ vec3 _fn getBeckmannDominantDir(in const vec3 N, in const vec3 R,
     const float smoothness = clamp(1.f - roughness, 0.0f, 1.0f);
     const float lerpFactor = smoothness * (sqrt(smoothness) + roughness);
     // The result is not normalized as we fetch in a cubemap
-    return mix(N, R, lerpFactor);
+    return lerp(N, R, lerpFactor);
 }
 
 

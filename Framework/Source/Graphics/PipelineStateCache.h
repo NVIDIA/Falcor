@@ -45,31 +45,31 @@ namespace Falcor
         static SharedPtr create() { return SharedPtr(new PipelineStateCache); }
         PipelineStateCache& SetVao(const Vao::SharedConstPtr& pVao) { mpVao = pVao; return *this; }
         PipelineStateCache& setFbo(const Fbo::SharedConstPtr& pFbo) { mpFbo = pFbo; return *this; }
-        PipelineStateCache& setProgram(const Program::SharedConstPtr& pProgram) { mpProgram = pProgram; return *this; }
-        PipelineStateCache& setBlendState(BlendState::SharedConstPtr pBlendState) { mDesc.setBlendState(pBlendState); return *this; }
-        PipelineStateCache& setRasterizerState(RasterizerState::SharedConstPtr pRasterizerState) { mDesc.setRasterizerState(pRasterizerState); return *this; }
-        PipelineStateCache& setDepthStencilState(DepthStencilState::SharedConstPtr pDepthStencilState) { mDesc.setDepthStencilState(pDepthStencilState); return *this; }
+        PipelineStateCache& setProgram(const Program::SharedPtr& pProgram) { mpProgram = pProgram; return *this; }
+        PipelineStateCache& setBlendState(BlendState::SharedPtr pBlendState) { mDesc.setBlendState(pBlendState); return *this; }
+        PipelineStateCache& setRasterizerState(RasterizerState::SharedPtr pRasterizerState) { mDesc.setRasterizerState(pRasterizerState); return *this; }
+        PipelineStateCache& setDepthStencilState(DepthStencilState::SharedPtr pDepthStencilState) { mDesc.setDepthStencilState(pDepthStencilState); return *this; }
         PipelineStateCache& setSampleMask(uint32_t sampleMask) { mDesc.setSampleMask(sampleMask); return *this; }
         PipelineStateCache& setPrimitiveType(PipelineState::PrimitiveType type) { mDesc.setPrimitiveType(type); return *this; }
-        PipelineStateCache& setRootSignature(RootSignature::SharedConstPtr pSignature) { mpRootSignature = pSignature; mCachedData.isUserRootSignature = (mpRootSignature == nullptr); }
+        PipelineStateCache& setRootSignature(RootSignature::SharedPtr pSignature) { mpRootSignature = pSignature; mCachedData.isUserRootSignature = (mpRootSignature == nullptr); }
 
         PipelineState::SharedPtr getPSO();
 
-        RootSignature::SharedConstPtr getRootSignature() const { return mpRootSignature; }
+        RootSignature::SharedPtr getRootSignature() const { return mpRootSignature; }
         Vao::SharedConstPtr getVao() const { return mpVao; }
         Fbo::SharedConstPtr getFbo() const { return mpFbo; }
-        Program::SharedConstPtr getProgram() const { return mpProgram; }
-        BlendState::SharedConstPtr getBlendState() const { return mDesc.getBlendState(); }
-        RasterizerState::SharedConstPtr getRasterizerState() const { return mDesc.getRasterizerState(); }
-        DepthStencilState::SharedConstPtr getDepthStencilState() const { return mDesc.getDepthStencilState(); }
+        Program::SharedPtr getProgram() const { return mpProgram; }
+        BlendState::SharedPtr getBlendState() const { return mDesc.getBlendState(); }
+        RasterizerState::SharedPtr getRasterizerState() const { return mDesc.getRasterizerState(); }
+        DepthStencilState::SharedPtr getDepthStencilState() const { return mDesc.getDepthStencilState(); }
         uint32_t getSampleMask() const { return mDesc.getSampleMask(); }
         PipelineState::PrimitiveType getPrimitiveType() const { return mDesc.getPrimitiveType(); }
     private:
         PipelineStateCache() = default;
         Vao::SharedConstPtr mpVao;
         Fbo::SharedConstPtr mpFbo;
-        Program::SharedConstPtr mpProgram;
-        RootSignature::SharedConstPtr mpRootSignature;
+        Program::SharedPtr mpProgram;
+        RootSignature::SharedPtr mpRootSignature;
         PipelineState::Desc mDesc;
 
         struct CachedData

@@ -76,30 +76,45 @@ namespace Falcor
         mCurrentAllocationId++;
     }
 
+    void allocateMegaPage(size_t size, size_t allocationId, ResourceAllocator::AllocationData& data)
+    {
+        data.allocationID = allocationId;
+        data.pResourceHandle = createBuffer(size, kUploadHeapProps);
+        data.gpuAddress = data.pResourceHandle->GetGPUVirtualAddress();
+        D3D12_RANGE readRange = {};
+        d3d_call(data.pResourceHandle->Map(0, &readRange, (void**)&data.pData));
+    }
+
     ResourceAllocator::AllocationData ResourceAllocator::allocate(size_t size, size_t alignment)
     {
-        assert(size < mPageSize);
-
-        // Calculate the start
-        size_t currentOffset = align_to(alignment, mpActivePage->currentOffset);
-        if (currentOffset + size > mPageSize)
-        {
-            currentOffset = 0;
-            allocateNewPage();
-        }
-
         AllocationData data;
-        data.allocationID = mCurrentAllocationId;
-        data.gpuAddress = mpActivePage->gpuAddress + currentOffset;
-        data.pData = mpActivePage->pData + currentOffset;
-        data.pResourceHandle = mpActivePage->pResourceHandle;
-        mpActivePage->currentOffset = currentOffset + size;
-        mpActivePage->allocationsCount++;
+        if (size > mPageSize)
+        {
+            allocateMegaPage(size, mCurrentAllocationId, data);
+            mCurrentAllocationId++;            
+        }
+        else
+        {
+            // Calculate the start
+            size_t currentOffset = align_to(alignment, mpActivePage->currentOffset);
+            if (currentOffset + size > mPageSize)
+            {
+                currentOffset = 0;
+                allocateNewPage();
+            }
+
+            data.allocationID = mCurrentAllocationId;
+            data.gpuAddress = mpActivePage->gpuAddress + currentOffset;
+            data.pData = mpActivePage->pData + currentOffset;
+            data.pResourceHandle = mpActivePage->pResourceHandle;
+            mpActivePage->currentOffset = currentOffset + size;
+            mpActivePage->allocationsCount++;
+        }
 
         return data;
     }
 
-    void ResourceAllocator::release(const AllocationData& data)
+    void ResourceAllocator::release(AllocationData& data)
     {
         if (data.allocationID == mCurrentAllocationId)
         {
@@ -111,14 +126,20 @@ namespace Falcor
         }
         else
         {
-            auto& pData = mUsedPages[data.allocationID];
-            pData->allocationsCount--;
-            if (pData->allocationsCount == 0)
+            auto it = mUsedPages.find(data.allocationID);
+            if(it != mUsedPages.end())
             {
-                mAvailablePages.push(std::move(pData));
-                mUsedPages.erase(data.allocationID);
+                auto& pData = it->second;
+                pData->allocationsCount--;
+                if (pData->allocationsCount == 0)
+                {
+                    mAvailablePages.push(std::move(pData));
+                    mUsedPages.erase(data.allocationID);
+                }
             }
+            // else it has to be a mega-page
         }
+        data = { 0 };
     }
 }
 #endif

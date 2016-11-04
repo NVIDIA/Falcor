@@ -80,7 +80,7 @@ namespace Falcor
         UNSUPPORTED_IN_D3D12("Texture::evict()");
     }
 
-    void createTextureCommon(const Texture* pTexture, Texture::ApiHandle& apiHandle, const void* pData, D3D12_RESOURCE_DIMENSION dim)
+    void createTextureCommon(const Texture* pTexture, Texture::ApiHandle& apiHandle, const void* pData, D3D12_RESOURCE_DIMENSION dim, bool autoGenMips)
     {
         ResourceFormat texFormat = pTexture->getFormat();
 
@@ -115,22 +115,39 @@ namespace Falcor
         if (pData)
         {
             auto& pCopyCtx = gpDevice->getCopyContext();
-            pCopyCtx->updateTexture(pTexture, pData);
-            pCopyCtx->flush();
+            if (autoGenMips)
+            {
+                size_t arraySliceSize = pTexture->getWidth() * pTexture->getHeight() * getFormatBytesPerBlock(pTexture->getFormat());
+                const uint8_t* pSrc = (uint8_t*)pData;
+                for (uint32_t i = 0; i < pTexture->getArraySize(); i++)
+                {
+                    uint32_t subresource = pTexture->getSubresourceIndex(i, 0);
+                    pCopyCtx->updateTextureSubresource(pTexture, subresource, pSrc, false);
+                    pSrc += arraySliceSize;
+                }
+
+                // FIXME D3D12
+                // Generate the mip-levels
+            }
+            else
+            {
+                pCopyCtx->updateTexture(pTexture, pData, false);
+            }
+            pCopyCtx->submit(true);
         }
     }
 
     Texture::SharedPtr Texture::create1D(uint32_t width, ResourceFormat format, uint32_t arraySize, uint32_t mipLevels, const void* pData)
     {
         Texture::SharedPtr pTexture = SharedPtr(new Texture(width, 1, 1, 1, mipLevels, arraySize, format, Type::Texture1D));
-        createTextureCommon(pTexture.get(), pTexture->mApiHandle, pData, D3D12_RESOURCE_DIMENSION_TEXTURE1D);
+        createTextureCommon(pTexture.get(), pTexture->mApiHandle, pData, D3D12_RESOURCE_DIMENSION_TEXTURE1D, (mipLevels == kEntireMipChain));
         return pTexture->mApiHandle ? pTexture : nullptr;
     }
     
     Texture::SharedPtr Texture::create2D(uint32_t width, uint32_t height, ResourceFormat format, uint32_t arraySize, uint32_t mipLevels, const void* pData)
     {
         Texture::SharedPtr pTexture = SharedPtr(new Texture(width, height, 1, 1, mipLevels, arraySize, format, Type::Texture2D));
-        createTextureCommon(pTexture.get(), pTexture->mApiHandle, pData, D3D12_RESOURCE_DIMENSION_TEXTURE2D);
+        createTextureCommon(pTexture.get(), pTexture->mApiHandle, pData, D3D12_RESOURCE_DIMENSION_TEXTURE2D, (mipLevels == kEntireMipChain));
         return pTexture->mApiHandle ? pTexture : nullptr;
     }
 
@@ -153,7 +170,7 @@ namespace Falcor
     Texture::SharedPtr Texture::create3D(uint32_t width, uint32_t height, uint32_t depth, ResourceFormat format, uint32_t mipLevels, const void* pData, bool isSparse)
     {
         Texture::SharedPtr pTexture = SharedPtr(new Texture(width, height, depth, 1, mipLevels, 1, format, Type::Texture3D));
-        createTextureCommon(pTexture.get(), pTexture->mApiHandle, pData, D3D12_RESOURCE_DIMENSION_TEXTURE3D);
+        createTextureCommon(pTexture.get(), pTexture->mApiHandle, pData, D3D12_RESOURCE_DIMENSION_TEXTURE3D, (mipLevels == kEntireMipChain));
         return pTexture->mApiHandle ? pTexture : nullptr;
         return nullptr;
     }
@@ -162,7 +179,7 @@ namespace Falcor
     Texture::SharedPtr Texture::createCube(uint32_t width, uint32_t height, ResourceFormat format, uint32_t arraySize, uint32_t mipLevels, const void* pData)
     {
         Texture::SharedPtr pTexture = SharedPtr(new Texture(width, height, 1, 1, mipLevels, arraySize, format, Type::TextureCube));
-        createTextureCommon(pTexture.get(), pTexture->mApiHandle, pData, D3D12_RESOURCE_DIMENSION_TEXTURE2D);
+        createTextureCommon(pTexture.get(), pTexture->mApiHandle, pData, D3D12_RESOURCE_DIMENSION_TEXTURE2D, (mipLevels == kEntireMipChain));
         return pTexture->mApiHandle ? pTexture : nullptr;
     }
 
@@ -170,7 +187,7 @@ namespace Falcor
     {
         assert(useFixedSampleLocations == true);
         Texture::SharedPtr pTexture = SharedPtr(new Texture(width, height, 1, 1, 1, arraySize, format, Type::Texture2DMultisample));
-        createTextureCommon(pTexture.get(), pTexture->mApiHandle, nullptr, D3D12_RESOURCE_DIMENSION_TEXTURE2D);
+        createTextureCommon(pTexture.get(), pTexture->mApiHandle, nullptr, D3D12_RESOURCE_DIMENSION_TEXTURE2D, false);
         return pTexture->mApiHandle ? pTexture : nullptr;
     }
 

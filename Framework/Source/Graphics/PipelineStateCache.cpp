@@ -51,7 +51,7 @@ namespace Falcor
         mDesc.setVertexLayout(mpVao ? mpVao->getVertexLayout() : nullptr);
         mDesc.setRootSignature(mpRootSignature);
 
-        // D3D12 CODE Need real cache
+        // FIXME D3D12 Need real cache
         auto p = PipelineState::create(mDesc);
         gStates.push_back(p);
         return p;

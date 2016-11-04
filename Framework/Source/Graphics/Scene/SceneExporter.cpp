@@ -385,16 +385,17 @@ namespace Falcor
         addJsonValue(mJDoc, allocator, SceneKeys::kUserDefined, jsonUserValues);
     }
 
-    void createMaterialValue(const MaterialValue& matValue, rapidjson::Value& jsonVal, rapidjson::Document::AllocatorType& allocator)
+    void createMaterialValue(const MaterialValues& matValue, rapidjson::Value& jsonVal, rapidjson::Document::AllocatorType& allocator)
     {
-        jsonVal.SetObject();
-        // Constant color
-        addVector(jsonVal, allocator, SceneKeys::kMaterialColor, matValue.constantColor);
-        if(matValue.texture.pTexture)
-        {
-            std::string filename = stripDataDirectories(matValue.texture.pTexture->getSourceFilename());            
-            addString(jsonVal, allocator, SceneKeys::kMaterialTexture, filename);
-        }
+        // DISABLED_FOR_D3D12
+//         jsonVal.SetObject();
+//         // Constant color
+//         addVector(jsonVal, allocator, SceneKeys::kMaterialColor, matValue.constantColor);
+//         if(matValue.texture.pTexture)
+//         {
+//             std::string filename = stripDataDirectories(matValue.texture.pTexture->getSourceFilename());            
+//             addString(jsonVal, allocator, SceneKeys::kMaterialTexture, filename);
+//         }
     }
 
     const char* getMaterialLayerType(uint32_t type)
@@ -457,16 +458,17 @@ namespace Falcor
         addString(jsonVal, allocator, SceneKeys::kMaterialBlend, getMaterialLayerBlending(pDesc->blending));
 
         rapidjson::Value jsonAlbedo;
-        createMaterialValue(pData->albedo, jsonAlbedo, allocator);
-        addJsonValue(jsonVal, allocator, SceneKeys::kMaterialAlbedo, jsonAlbedo);
-
-        rapidjson::Value jsonRoughness;
-        createMaterialValue(pData->roughness, jsonRoughness, allocator);
-        addJsonValue(jsonVal, allocator, SceneKeys::kMaterialRoughness, jsonRoughness);
-
-        rapidjson::Value jsonExtra;
-        createMaterialValue(pData->extraParam, jsonExtra, allocator);
-        addJsonValue(jsonVal, allocator, SceneKeys::kMaterialExtraParam, jsonExtra);
+        // DISABLED_FOR_D3D12
+//         createMaterialValue(pData->albedo, jsonAlbedo, allocator);
+//         addJsonValue(jsonVal, allocator, SceneKeys::kMaterialAlbedo, jsonAlbedo);
+// 
+//         rapidjson::Value jsonRoughness;
+//         createMaterialValue(pData->roughness, jsonRoughness, allocator);
+//         addJsonValue(jsonVal, allocator, SceneKeys::kMaterialRoughness, jsonRoughness);
+// 
+//         rapidjson::Value jsonExtra;
+//         createMaterialValue(pData->extraParam, jsonExtra, allocator);
+//         addJsonValue(jsonVal, allocator, SceneKeys::kMaterialExtraParam, jsonExtra);
     }
 
     void createMaterialValue(const Material* pMaterial, rapidjson::Value& jsonMaterial, rapidjson::Document::AllocatorType& allocator)
@@ -483,30 +485,32 @@ namespace Falcor
 
         // Alpha layer
         rapidjson::Value jsonAlpha;
-        createMaterialValue(pMaterial->getAlphaValue(), jsonAlpha, allocator);
-        addJsonValue(jsonMaterial, allocator, SceneKeys::kMaterialAlpha, jsonAlpha);
-
-        // Normal
-        rapidjson::Value jsonNormal;
-        createMaterialValue(pMaterial->getNormalValue(), jsonNormal, allocator);
-        addJsonValue(jsonMaterial, allocator, SceneKeys::kMaterialNormal, jsonNormal);
-
-        // Height
-        rapidjson::Value jsonHeight;
-        createMaterialValue(pMaterial->getHeightValue(), jsonHeight, allocator);
-        addJsonValue(jsonMaterial, allocator, SceneKeys::kMaterialHeight, jsonHeight);
+        // DISABLED_FOR_D3D12
+//         createMaterialValue(pMaterial->getAlphaValue(), jsonAlpha, allocator);
+//         addJsonValue(jsonMaterial, allocator, SceneKeys::kMaterialAlpha, jsonAlpha);
+// 
+//         // Normal
+//         rapidjson::Value jsonNormal;
+//         createMaterialValue(pMaterial->getNormalMap(), jsonNormal, allocator);
+//         addJsonValue(jsonMaterial, allocator, SceneKeys::kMaterialNormal, jsonNormal);
+// 
+//         // Height
+//         rapidjson::Value jsonHeight;
+//         createMaterialValue(pMaterial->getHeightMap(), jsonHeight, allocator);
+//         addJsonValue(jsonMaterial, allocator, SceneKeys::kMaterialHeight, jsonHeight);
 
         // Loop over the layers
-        if(pMaterial->getNumActiveLayers() > 0)
+        if(pMaterial->getNumLayers() > 0)
         {
             rapidjson::Value jsonLayerArray(rapidjson::kArrayType);
-            for(uint32_t i = 0; i < pMaterial->getNumActiveLayers(); i++)
+            for(uint32_t i = 0; i < pMaterial->getNumLayers(); i++)
             {
-                const MaterialLayerDesc* pDesc = pMaterial->getLayerDesc(i);
-                const MaterialLayerValues* pData = pMaterial->getLayerValues(i);
-                rapidjson::Value jsonLayer;
-                createMaterialLayer(pData, pDesc, jsonLayer, allocator);
-                jsonLayerArray.PushBack(jsonLayer, allocator);
+                // DISABLED_FOR_D3D12
+//                 const MaterialLayerDesc* pDesc = pMaterial->getLayerDesc(i);
+//                 const MaterialLayerValues* pData = pMaterial->getLayerValues(i);
+//                 rapidjson::Value jsonLayer;
+//                 createMaterialLayer(pData, pDesc, jsonLayer, allocator);
+//                 jsonLayerArray.PushBack(jsonLayer, allocator);
             }
 
             addJsonValue(jsonMaterial, allocator, SceneKeys::kMaterialLayers, jsonLayerArray);

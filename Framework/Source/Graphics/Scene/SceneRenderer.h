@@ -37,7 +37,7 @@
 namespace Falcor
 {
     class Model;
-    class Program;
+    class PipelineStateCache;
     class RenderContext;
     class Material;
     class Mesh;
@@ -61,12 +61,12 @@ namespace Falcor
         /** Renders the full scene, does update of the camera internally
             Call update() before using this function, otherwise camera will not move and models will not be animated
         */
-        void renderScene(RenderContext* pContext, Program* pProgram);
+        void renderScene(RenderContext* pContext);
 
         /** Renders the full scene, overriding the internal camera
             Call update() before using this function otherwise model animation will not work
         */
-        void renderScene(RenderContext* pContext, Program* pProgram, Camera* pCamera);
+        void renderScene(RenderContext* pContext, Camera* pCamera);
         
         /** Update the camera and model animation.
             Should be called before renderScene(), unless not animations are used and you update the camera manualy
@@ -108,7 +108,7 @@ namespace Falcor
 		struct CurrentWorkingData
 		{
 			const Camera* pCamera;
-			mutable Program* pProgram;
+			mutable PipelineStateCache* pPsoCache;
 			const Model* pModel;
 			const Mesh* pMesh;
 			const Material* pMaterial;
@@ -117,18 +117,13 @@ namespace Falcor
         SceneRenderer(const Scene::SharedPtr& pScene);
         Scene::SharedPtr mpScene;
         
-        static ConstantBuffer::SharedPtr sPerMaterialCB;
-        static ConstantBuffer::SharedPtr sPerFrameCB;
-        static ConstantBuffer::SharedPtr sPerStaticMeshCB;
-        static ConstantBuffer::SharedPtr sPerSkinnedMeshCB;
         static size_t sBonesOffset;
         static size_t sCameraDataOffset;
         static size_t sWorldMatOffset;
         static size_t sMeshIdOffset;
 
     private:
-        void createConstantBuffers(Program* pProgram);
-        void bindConstantBuffers(RenderContext* pRenderContext, Program* pProgram);
+        static void updateVariableOffsets(const ProgramReflection* pReflector);
 
         virtual void setPerFrameData(RenderContext* pContext, const CurrentWorkingData& currentData);
         virtual bool setPerModelData(RenderContext* pContext, const CurrentWorkingData& currentData);
@@ -137,7 +132,7 @@ namespace Falcor
         virtual bool setPerMaterialData(RenderContext* pContext, const CurrentWorkingData& currentData);
         virtual void postFlushDraw(RenderContext* pContext, const CurrentWorkingData& currentData);
 
-        void renderModel(RenderContext* pContext, Program* pProgram, const Model* pModel, const glm::mat4& instanceMatrix, Camera* pCamera, CurrentWorkingData& currentData);
+        void renderModel(RenderContext* pContext, const Model* pModel, const glm::mat4& instanceMatrix, Camera* pCamera, CurrentWorkingData& currentData);
         void renderMesh(RenderContext* pContext, const Mesh* pMesh, const glm::mat4& translation, Camera* pCamera, CurrentWorkingData& currentData);
         void flushDraw(RenderContext* pContext, const Mesh* pMesh, uint32_t instanceCount, CurrentWorkingData& currentData);
 
