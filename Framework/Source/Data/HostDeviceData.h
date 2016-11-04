@@ -234,11 +234,7 @@ struct MaterialLayerDesc
     uint32_t    type            DEFAULTS(MatNone);             ///< Specifies a material Type: diffuse/conductor/dielectric/etc. None means there is no material
     uint32_t    ndf             DEFAULTS(NDFGGX);              ///< Specifies a model for normal distribution function (NDF): Beckmann, GGX, etc.
     uint32_t    blending        DEFAULTS(BlendAdd);            ///< Specifies how this layer should be combined with previous layers. E.g., blended based on Fresnel (useful for dielectric coatings), or just added on top, etc.
-    uint32_t    hasAlbedoTexture        DEFAULTS(0);
-
-    uint32_t    hasRoughnessTexture     DEFAULTS(0);
-    uint32_t    hasExtraParamTexture    DEFAULTS(0);
-    vec2        pad                     DEFAULTS(vec2(0, 0));
+    uint32_t    hasTexture      DEFAULTS(0);
 };
 
 struct MaterialLayerValues
@@ -271,16 +267,9 @@ struct MaterialValues
 	int32_t id      DEFAULTS(-1);        // Scene-unique material id, -1 is a wrong material
 };
 
-struct MaterialLayerTextures
-{
-    Texture2D albedo;
-    Texture2D roughness; 
-    Texture2D extraParam;
-};
-
 struct MaterialTextures
 {
-    MaterialLayerTextures layers[3];
+    Texture2D layers[3];        // A single texture per layer
     Texture2D alphaMap;         // Alpha test parameter, if texture is non-null, alpha test is enabled, alpha threshold is stored in the constant color
     Texture2D normalMap;        // Normal map modifier, if texture is non-null, shading normal is perturbed
     Texture2D heightMap;        // Height (displacement) map modifier, if texture is non-null, one can apply a displacement or parallax mapping

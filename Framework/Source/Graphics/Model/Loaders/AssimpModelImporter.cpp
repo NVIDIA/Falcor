@@ -141,8 +141,6 @@ namespace Falcor
                 return isObjFile ? BasicMaterial::MapType::NormalMap : BasicMaterial::MapType::HeightMap;
             case aiTextureType_NORMALS:
                 return BasicMaterial::MapType::NormalMap;
-            case aiTextureType_SHININESS:
-                return BasicMaterial::MapType::ShininessMap;
             case aiTextureType_OPACITY:
                 return BasicMaterial::MapType::AlphaMap;
             case aiTextureType_AMBIENT:

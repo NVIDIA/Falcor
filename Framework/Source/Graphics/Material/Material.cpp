@@ -84,19 +84,11 @@ namespace Falcor
         {
 			const auto& desc = mData.desc.layers[layerIdx];
 			const auto& vals = mData.values.layers[layerIdx];
-			const auto& textures = mData.textures.layers[layerIdx];
 
-			// Albedo
-			layer.albedo.constantValue = vals.albedo;
-			layer.albedo.pTexture = textures.albedo;
-
-			// Roughness
-			layer.roughness.constantValue = vals.roughness;
-			layer.roughness.pTexture = textures.roughness;
-
-			// Extra param
-			layer.extraParam.constantValue = vals.extraParam;
-			layer.extraParam.pTexture = textures.extraParam;
+			layer.albedo = vals.albedo;
+			layer.roughness = vals.roughness;			
+			layer.extraParam = vals.extraParam;
+            layer.pTexture = mData.textures.layers[layerIdx];
 
 			layer.type = (Layer::Type)desc.type;
 			layer.ndf = (Layer::NDF)desc.ndf;
@@ -118,17 +110,13 @@ namespace Falcor
 
 		auto& desc = mData.desc.layers[numLayers];
 		auto& vals = mData.values.layers[numLayers];
-        auto& textures = mData.textures.layers[numLayers];
+        
+        vals.albedo = layer.albedo;
+        vals.roughness = layer.roughness;
+        vals.extraParam = layer.extraParam;
 
-#define set_value(_f, _hasTex)		      \
-		vals._f = layer._f.constantValue; \
-        textures._f = layer._f.pTexture;  \
-        desc._hasTex = (textures._f != nullptr);
-					  
-        set_value(albedo, hasAlbedoTexture);
-        set_value(roughness, hasAlbedoTexture);
-        set_value(extraParam, hasAlbedoTexture);
-#undef set_value
+        mData.textures.layers[numLayers] = layer.pTexture;
+        desc.hasTexture = (layer.pTexture != nullptr);
 
         desc.type = (uint32_t)layer.type;
         desc.ndf = (uint32_t)layer.ndf;
@@ -460,23 +448,23 @@ namespace Falcor
     {
         finalize();
 
-        shaderDcl = "{{";
-        for(uint32_t layerId = 0; layerId < arraysize(mData.desc.layers); layerId++)
-        {
-            const MaterialLayerDesc& layer = mData.desc.layers[layerId];
-            shaderDcl += '{' + getLayerTypeStr(layer.type) + ',';
-            shaderDcl += getLayerNdfStr(layer.ndf) + ',';
-            shaderDcl += getLayerBlendStr(layer.blending) + ',';
-            shaderDcl += std::to_string(layer.hasAlbedoTexture) + ',' + std::to_string(layer.hasRoughnessTexture) + ',' + std::to_string(layer.hasExtraParamTexture) + ",{" + std::to_string(layer.pad.x) + "," + std::to_string(layer.pad.y) + '}';
-            shaderDcl += '}';
-            if(layerId != arraysize(mData.desc.layers) - 1)
-            {
-                shaderDcl += ',';
-            }
-        }
-        shaderDcl += "},";
-        shaderDcl += std::to_string(mData.desc.hasAlphaMap) + ',' + std::to_string(mData.desc.hasNormalMap) + ',' + std::to_string(mData.desc.hasHeightMap) + ',' + std::to_string(mData.desc.hasAmbientMap);
-        shaderDcl += '}';
+//         shaderDcl = "{{";
+//         for(uint32_t layerId = 0; layerId < arraysize(mData.desc.layers); layerId++)
+//         {
+//             const MaterialLayerDesc& layer = mData.desc.layers[layerId];
+//             shaderDcl += '{' + getLayerTypeStr(layer.type) + ',';
+//             shaderDcl += getLayerNdfStr(layer.ndf) + ',';
+//             shaderDcl += getLayerBlendStr(layer.blending) + ',';
+//             shaderDcl += std::to_string(layer.hasAlbedoTexture) + ',' + std::to_string(layer.hasRoughnessTexture) + ',' + std::to_string(layer.hasExtraParamTexture) + ",{" + std::to_string(layer.pad.x) + "," + std::to_string(layer.pad.y) + '}';
+//             shaderDcl += '}';
+//             if(layerId != arraysize(mData.desc.layers) - 1)
+//             {
+//                 shaderDcl += ',';
+//             }
+//         }
+//         shaderDcl += "},";
+//         shaderDcl += std::to_string(mData.desc.hasAlphaMap) + ',' + std::to_string(mData.desc.hasNormalMap) + ',' + std::to_string(mData.desc.hasHeightMap) + ',' + std::to_string(mData.desc.hasAmbientMap);
+//         shaderDcl += '}';
     }
 
 }

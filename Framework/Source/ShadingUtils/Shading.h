@@ -169,10 +169,8 @@ void _fn prepareShadingAttribs(in const MaterialData material, in vec3 P, in vec
     {
         if(shAttr.preparedMat.desc.layers[iLayer].type == MatNone) break;
 
-        shAttr.preparedMat.values.layers[iLayer].albedo = vec4(0,0,0,0);
-            evalWithColor(desc.layers[iLayer].hasAlbedoTexture, material.textures.layers[iLayer].albedo, material.samplerState, material.values.layers[iLayer].albedo, shAttr);
-        //ShAttr.PreparedMat.Layers[iLayer].Roughness = EvalWithColor(Material.Layers[iLayer].Roughness, ShAttr);
-        //ShAttr.PreparedMat.Layers[iLayer].ExtraParam = EvalWithColor(Material.Layers[iLayer].ExtraParam, ShAttr);
+        shAttr.preparedMat.values.layers[iLayer].albedo = 
+            evalWithColor(desc.layers[iLayer].hasTexture, material.textures.layers[iLayer], material.samplerState, material.values.layers[iLayer].albedo, shAttr);
     }
 
     /* Perturb shading normal is needed */

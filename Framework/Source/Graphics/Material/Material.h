@@ -122,17 +122,13 @@ namespace Falcor
 				Constant = BlendConstant
 			};
 
-			struct Data
-			{
-				Texture::SharedPtr pTexture;
-				glm::vec4 constantValue;
-			};
 			Type type = Type::Lambert;
 			NDF ndf = NDF::Beckmann;
 			Blend blend = Blend::Fresnel;
-			Data albedo;
-			Data roughness;
-			Data extraParam;
+            glm::vec4 albedo;
+            glm::vec4 roughness;
+			glm::vec4 extraParam;
+            Texture::SharedPtr pTexture;
 			float pmf = 0;
 		};
 		
@@ -273,7 +269,7 @@ namespace Falcor
     private:
         void finalize() const;
         void normalize() const;
-        static const uint32_t kTexCount = (MatMaxLayers * 3) + 4;
+        static const uint32_t kTexCount = MatMaxLayers + 4;
         static_assert(sizeof(MaterialTextures) == (sizeof(Texture::SharedPtr) * kTexCount), "Wrong number of textures in Material::mTextures");
 
 		Material(const std::string& name);		

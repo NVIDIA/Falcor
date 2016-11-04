@@ -342,7 +342,7 @@ namespace Falcor
                     const Material::Layer l = pMaterial->getLayer(layerId);
                     if(l.type == Material::Layer::Type::Emissive)
                     {
-                        mData.intensity = vec3(l.albedo.constantValue);
+                        mData.intensity = vec3(l.albedo);
                         break;
                     }
                 }

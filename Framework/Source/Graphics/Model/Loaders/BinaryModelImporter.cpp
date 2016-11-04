@@ -179,8 +179,6 @@ namespace Falcor
             return BasicMaterial::MapType::NormalMap;
         case TextureType_Specular:
             return BasicMaterial::MapType::SpecularMap;
-        case TextureType_Glossiness:
-            return BasicMaterial::MapType::ShininessMap;
 		case TextureType_Displacement:
 			return BasicMaterial::MapType::HeightMap;
         default:
@@ -566,7 +564,6 @@ namespace Falcor
         case Falcor::BasicMaterial::EmissiveMap:
             return convertFormatToSrgb(originalFormat);
         case Falcor::BasicMaterial::NormalMap:
-        case Falcor::BasicMaterial::ShininessMap:
         case Falcor::BasicMaterial::AlphaMap:
         case Falcor::BasicMaterial::HeightMap:
             return originalFormat;

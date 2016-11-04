@@ -67,12 +67,12 @@ namespace Falcor
         if(sBonesOffset == ConstantBuffer::kInvalidOffset)
         {
             const auto pPerMeshCbData = pReflector->getBufferDesc(kPerStaticMeshCbName, ProgramReflection::BufferReflection::Type::Constant);
-            const auto pPerFrameCbData = pReflector->getBufferDesc(kPerStaticMeshCbName, ProgramReflection::BufferReflection::Type::Constant);
+            const auto pPerFrameCbData = pReflector->getBufferDesc(kPerFrameCbName, ProgramReflection::BufferReflection::Type::Constant);
             assert(pPerMeshCbData);
             assert(pPerFrameCbData);
 
-            sBonesOffset = pPerMeshCbData->getVariableData("gBones")->location;
-            sWorldMatOffset = pPerMeshCbData->getVariableData("gWorldMat")->location;
+//            sBonesOffset = pPerMeshCbData->getVariableData("gBones")->location;
+            sWorldMatOffset = pPerMeshCbData->getVariableData("gWorldMat[0]")->location;
             sMeshIdOffset = pPerMeshCbData->getVariableData("gMeshId")->location;
             sCameraDataOffset = pPerFrameCbData->getVariableData("gCam.viewMat")->location;
         }
