@@ -92,6 +92,11 @@ namespace Falcor
         if(currentData.pModel->hasBones())
         {
             ConstantBuffer* pCB = pContext->getProgramVars()->getConstantBuffer(kPerSkinnedMeshCbName).get();
+            if (sBonesOffset == ConstantBuffer::kInvalidOffset)
+            {
+                sBonesOffset = pCB->getVariableOffset("gBones");
+            }
+
             pCB->setVariableArray(sBonesOffset, currentData.pModel->getBonesMatrices(), currentData.pModel->getBonesCount());
         }
 		return true;
@@ -107,11 +112,6 @@ namespace Falcor
         glm::mat4 worldMat = translation;
         if(currentData.pMesh->hasBones() == false)
         {
-            if (sBonesOffset == ConstantBuffer::kInvalidOffset)
-            {
-                sBonesOffset = pContext->getProgramVars()->getReflection()->getBufferDesc(kPerSkinnedMeshCbName, ProgramReflection::BufferReflection::Type::Constant)->getVariableData("gBones")->location;
-            }
-
             worldMat = worldMat * currentData.pMesh->getInstanceMatrix(meshInstanceID);
         }
         ConstantBuffer* pCB = pContext->getProgramVars()->getConstantBuffer(kPerStaticMeshCbName).get();

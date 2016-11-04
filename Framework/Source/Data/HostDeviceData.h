@@ -341,13 +341,13 @@ struct LightData
 // 	BufPtr          texCoordPtr;                                  ///< Buffer id for texcoord
 // 
 // 	BufPtr          meshCDFPtr;                                   ///< Pointer to probability distributions of triangle meshes
-
-    MaterialData    material;                                     ///< Emissive material of the geometry mesh
-
     uint32_t        numIndices         DEFAULTS(0);               ///< Number of triangle indices in a polygonal area light
     uint32_t        pad1               DEFAULTS(0);
     uint32_t        pad2               DEFAULTS(0);
     uint32_t        pad3               DEFAULTS(0);
+
+    // Keep that last
+    MaterialData    material;                                     ///< Emissive material of the geometry mesh
 };
 
 /*******************************************************************

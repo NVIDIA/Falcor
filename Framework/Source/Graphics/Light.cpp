@@ -66,6 +66,7 @@ namespace Falcor
 	{
 		static const size_t dataSize = sizeof(LightData);
 		static_assert(dataSize % sizeof(float) * 4 == 0, "LightData size should be a multiple of 16");
+        static_assert(sizeof(LightData) - sizeof(MaterialData) == offsetof(LightData, material), "'material' must be the last field in LightData");
 
 		size_t offset = pBuffer->getVariableOffset(varName + ".worldPos");
 		if (offset == ConstantBuffer::kInvalidOffset)
@@ -79,12 +80,15 @@ namespace Falcor
 		check_offset(aabbMin);
 		check_offset(aabbMax);
 		check_offset(transMat);
-        check_offset(material.desc.layers[0].type);
-        check_offset(material.values.id);
 		check_offset(numIndices);
 		assert(offset + dataSize <= pBuffer->getBuffer()->getSize());
 
-		pBuffer->setBlob(&mData, offset, dataSize);
+        // Set everything except for the material
+		pBuffer->setBlob(&mData, offset, dataSize - sizeof(MaterialData));
+        if (mData.type == LightArea)
+        {
+            assert(0); // FIXME D3D12
+        }
 	}
 
     void Light::resetGlobalIdCounter()
