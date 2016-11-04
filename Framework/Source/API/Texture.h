@@ -101,7 +101,7 @@ namespace Falcor
 
         /** Get the subresource index
         */
-        uint32_t getSubresourceIndex(uint32_t arraySlice, uint32_t mipLevel) { return mipLevel + arraySlice * mMipLevels; }
+        uint32_t getSubresourceIndex(uint32_t arraySlice, uint32_t mipLevel) const { return mipLevel + arraySlice * mMipLevels; }
 
         /** Get the resource format
         */
