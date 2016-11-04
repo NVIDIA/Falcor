@@ -59,7 +59,6 @@ struct VS_IN
     float3 tangent     : TANGENT;
     float3 bitangent   : BITANGENT;
     float2 texC        : TEXCOORD;
-    float3 color       : DIFFUSE_COLOR;
 #ifdef _VERTEX_BLENDING
     float4 boneWeights : BONE_WEIGHTS;
     uint4  boneIds     : BONE_IDS;
@@ -74,7 +73,6 @@ struct VS_OUT
     float3 bitangentW : BITANGENT;
     float2 texC       : TEXCRD;
     float3 posW       : POSW;
-    float3 colorV     : COLOR;
     float4 posH       : SV_POSITION;
 };
 
@@ -101,7 +99,6 @@ VS_OUT defaultVS(VS_IN vIn)
     vOut.posW = mul(worldMat, vIn.pos).xyz;
     vOut.posH = mul(gCam.viewProjMat * worldMat, vIn.pos);
     vOut.texC = vIn.texC;
-    vOut.colorV = vIn.color;
     vOut.normalW = mul((float3x3)worldMat, vIn.normal).xyz;
     vOut.tangentW = mul((float3x3)worldMat, vIn.tangent).xyz;
     vOut.bitangentW = mul((float3x3)worldMat, vIn.bitangent).xyz;
