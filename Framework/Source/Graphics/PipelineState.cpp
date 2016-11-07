@@ -27,12 +27,31 @@
 ***************************************************************************/
 #pragma once
 #include "Framework.h"
-#include "PipelineStateCache.h"
+#include "PipelineState.h"
 
 namespace Falcor
 {
-    std::vector<PipelineState::SharedPtr> gStates;
-    PipelineState::SharedPtr PipelineStateCache::getPSO()
+    std::vector<PipelineStateObject::SharedPtr> gStates;
+
+    static PipelineStateObject::PrimitiveType topology2Type(Vao::Topology t)
+    {
+        switch (t)
+        {
+        case Vao::Topology::PointList:
+            return PipelineStateObject::PrimitiveType::Point;
+        case Vao::Topology::LineList:
+        case Vao::Topology::LineStrip:
+            return PipelineStateObject::PrimitiveType::Line;
+        case Vao::Topology::TriangleList:
+        case Vao::Topology::TriangleStrip:
+            return PipelineStateObject::PrimitiveType::Triangle;
+        default:
+            should_not_get_here();
+            return PipelineStateObject::PrimitiveType::Undefined;
+        }
+    }
+
+    PipelineStateObject::SharedPtr PipelineState::getPSO()
     {
         // Check if we need to create a root-signature
         // FIXME Is this the correct place for this?
@@ -48,11 +67,12 @@ namespace Falcor
 
         mDesc.setProgramVersion(mpProgram ? mpProgram->getActiveVersion() : nullptr);
         mDesc.setFboFormats(mpFbo ? mpFbo->getDesc() : Fbo::Desc());
-        mDesc.setVertexLayout(mpVao ? mpVao->getVertexLayout() : nullptr);
+        mDesc.setVertexLayout(mpVao->getVertexLayout());
+        mDesc.setPrimitiveType(topology2Type(mpVao->getPrimitiveTopology()));
         mDesc.setRootSignature(mpRootSignature);
 
         // FIXME D3D12 Need real cache
-        auto p = PipelineState::create(mDesc);
+        auto p = PipelineStateObject::create(mDesc);
         gStates.push_back(p);
         return p;
     }

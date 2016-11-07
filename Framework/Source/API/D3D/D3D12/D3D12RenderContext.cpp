@@ -40,8 +40,6 @@ namespace Falcor
 	{
 		GraphicsCommandAllocatorPool::SharedPtr pAllocatorPool;
 		ID3D12GraphicsCommandListPtr pList;
-        bool vaoDirty = false;
-        bool fboDirty = false;
 	};
 	
 	RenderContext::~RenderContext()
@@ -67,9 +65,7 @@ namespace Falcor
 			return nullptr;
 		}
 
-        pCtx->initCommon(D3D12_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE);
-        
-		return pCtx;
+        return pCtx;
     }
 
 	CommandListHandle RenderContext::getCommandListApiHandle() const
@@ -129,36 +125,11 @@ namespace Falcor
         }
 	}
 
-    void RenderContext::applyPipelineState()
-    {
-        RenderContextData* pApiData = (RenderContextData*)mpApiData;
-        ID3D12PipelineState* pPso = mState.pRenderState ? mState.pRenderState->getApiHandle() : nullptr;
-        pApiData->pList->SetPipelineState(pPso);
-    }
-
-    void RenderContext::applyVao()
-    {
-        RenderContextData* pApiData = (RenderContextData*)mpApiData;
-        pApiData->vaoDirty = true;
-    }
-
-    void RenderContext::applyFbo()
-    {
-        RenderContextData* pApiData = (RenderContextData*)mpApiData;
-        pApiData->fboDirty = true;
-    }
-
     void RenderContext::blitFbo(const Fbo* pSource, const Fbo* pTarget, const glm::ivec4& srcRegion, const glm::ivec4& dstRegion, bool useLinearFiltering, FboAttachmentType copyFlags, uint32_t srcIdx, uint32_t dstIdx)
 	{
         UNSUPPORTED_IN_D3D12("BlitFbo");
 	}
 
-    void RenderContext::applyTopology()
-    {
-        RenderContextData* pApiData = (RenderContextData*)mpApiData;
-        D3D_PRIMITIVE_TOPOLOGY topology = getD3DPrimitiveTopology(mState.topology);
-        pApiData->pList->IASetPrimitiveTopology(topology);
-    }
 
     static void D3D12SetVao(const RenderContextData* pApiData, const Vao* pVao)
     {
@@ -221,28 +192,56 @@ namespace Falcor
         pApiData->pList->OMSetRenderTargets(colorTargets, pRTV.data(), FALSE, &pDSV);
     }
 
+    static void D3D12SetViewports(const RenderContextData* pApiData, const PipelineState::Viewport* vp)
+    {
+        static_assert(offsetof(PipelineState::Viewport, originX) == offsetof(D3D12_VIEWPORT, TopLeftX), "VP TopLeftX offset");
+        static_assert(offsetof(PipelineState::Viewport, originY) == offsetof(D3D12_VIEWPORT, TopLeftY), "VP TopLeftY offset");
+        static_assert(offsetof(PipelineState::Viewport, width) == offsetof(D3D12_VIEWPORT, Width), "VP Width offset");
+        static_assert(offsetof(PipelineState::Viewport, height) == offsetof(D3D12_VIEWPORT, Height), "VP Height offset");
+        static_assert(offsetof(PipelineState::Viewport, minDepth) == offsetof(D3D12_VIEWPORT, MinDepth), "VP MinDepth offset");
+        static_assert(offsetof(PipelineState::Viewport, maxDepth) == offsetof(D3D12_VIEWPORT, MaxDepth), "VP TopLeftX offset");
+
+        pApiData->pList->RSSetViewports(D3D12_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE, (D3D12_VIEWPORT*)vp);
+
+        // FIXME D3D12: what to do with this? Scissors do not get updated automatically when the VP changes
+        D3D12_RECT r;
+        r.top = (LONG)vp[0].originX;
+        r.left = (LONG)vp[0].originY;
+        r.bottom = (LONG)vp[0].height;
+        r.right = (LONG)vp[0].width;
+
+        pApiData->pList->RSSetScissorRects(1, &r);
+    }
+
+    static void D3D12SetScissors(uint32_t index)
+    {
+        // FIXME D3D12
+//         D3D12_RECT r;
+//         r.left = mState.scissors[index].originX;
+//         r.top = mState.scissors[index].originY;
+//         r.bottom = mState.scissors[index].height;
+//         r.right = mState.scissors[index].width;
+//         pApiData->pList->RSSetScissorRects(1, &r);
+    }
+
     void RenderContext::prepareForDrawApi()
     {
         RenderContextData* pApiData = (RenderContextData*)mpApiData;
+        assert(mpPipelineState);
 
-       // Bind the root signature and the root signature data
-       // FIXME D3D12 what to do if there are no vars?
-        if (mState.pProgramVars)
+        // Bind the root signature and the root signature data
+        // FIXME D3D12 what to do if there are no vars?
+        if (mpProgramVars)
         {
-            mState.pProgramVars->setIntoRenderContext(const_cast<RenderContext*>(this));
+            mpProgramVars->setIntoRenderContext(const_cast<RenderContext*>(this));
         }
 
-        if (pApiData->vaoDirty)
-        {
-            pApiData->vaoDirty = false;
-            D3D12SetVao(pApiData, mState.pVao.get());
-        }
+        pApiData->pList->IASetPrimitiveTopology(getD3DPrimitiveTopology(mpPipelineState->getVao()->getPrimitiveTopology()));
+        D3D12SetVao(pApiData, mpPipelineState->getVao().get());
+        D3D12SetFbo(this, pApiData, mpPipelineState->getFbo().get());
+        D3D12SetViewports(pApiData, &mpPipelineState->getViewport(0));
+        pApiData->pList->SetPipelineState(mpPipelineState->getPSO()->getApiHandle());
 
-        if (pApiData->fboDirty)
-        {
-            pApiData->fboDirty = false;
-            D3D12SetFbo(this, pApiData, mState.pFbo.get());
-        }
     }
 
     void RenderContext::drawInstanced(uint32_t vertexCount, uint32_t instanceCount, uint32_t startVertexLocation, uint32_t startInstanceLocation)
@@ -267,39 +266,6 @@ namespace Falcor
     void RenderContext::drawIndexed(uint32_t indexCount, uint32_t startIndexLocation, int baseVertexLocation)
     {
         drawIndexedInstanced(indexCount, 1, startIndexLocation, baseVertexLocation, 0);
-    }
-
-    void RenderContext::applyViewport(uint32_t index)
-    {
-        static_assert(offsetof(Viewport, originX) == offsetof(D3D12_VIEWPORT, TopLeftX), "VP TopLeftX offset");
-        static_assert(offsetof(Viewport, originY) == offsetof(D3D12_VIEWPORT, TopLeftY), "VP TopLeftY offset");
-        static_assert(offsetof(Viewport, width) == offsetof(D3D12_VIEWPORT, Width), "VP Width offset");
-        static_assert(offsetof(Viewport, height) == offsetof(D3D12_VIEWPORT, Height), "VP Height offset");
-        static_assert(offsetof(Viewport, minDepth) == offsetof(D3D12_VIEWPORT, MinDepth), "VP MinDepth offset");
-        static_assert(offsetof(Viewport, maxDepth) == offsetof(D3D12_VIEWPORT, MaxDepth), "VP TopLeftX offset");
-
-        RenderContextData* pApiData = (RenderContextData*)mpApiData;
-        pApiData->pList->RSSetViewports(D3D12_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE, (D3D12_VIEWPORT*)mState.viewports.data());
-
-        // FIXME D3D12: what to do with this? Scissors do not get updated automatically when the VP changes
-        D3D12_RECT r;
-        r.top = (LONG)mState.viewports[0].originX;
-        r.left = (LONG)mState.viewports[0].originY;
-        r.bottom = (LONG)mState.viewports[0].height;
-        r.right = (LONG)mState.viewports[0].width;
-
-        pApiData->pList->RSSetScissorRects(1, &r);
-    }
-
-    void RenderContext::applyScissor(uint32_t index)
-    {
-        RenderContextData* pApiData = (RenderContextData*)mpApiData;
-        D3D12_RECT r;
-        r.left = mState.scissors[index].originX;
-        r.top = mState.scissors[index].originY;
-        r.bottom = mState.scissors[index].height;
-        r.right = mState.scissors[index].width;
-        pApiData->pList->RSSetScissorRects(1, &r);
     }
 
     void RenderContext::applyProgramVars()

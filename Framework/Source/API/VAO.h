@@ -39,6 +39,16 @@ namespace Falcor
     public:
         using SharedPtr = std::shared_ptr<Vao>;
         using SharedConstPtr = std::shared_ptr<const Vao>;
+        /** Primitive topology
+        */
+        enum class Topology
+        {
+            PointList,
+            LineList,
+            LineStrip,
+            TriangleList,
+            TriangleStrip
+        };
 
         struct ElementDesc
         {
@@ -53,8 +63,9 @@ namespace Falcor
             \param pLayout The vertex layout description
             \param pIB Pointer to the index-buffer. Can be nullptr, in which case no index-buffer will be bound.
             \param ibFormat The resource format of the index buffer. Can be either R16Uint or R32Uint
+            \parm primTopology The primitive topology
         */
-        static SharedPtr create(const BufferVec& pVBs, const VertexLayout::SharedPtr& pLayout, const Buffer::SharedPtr& pIB, ResourceFormat ibFormat);
+        static SharedPtr create(const BufferVec& pVBs, const VertexLayout::SharedPtr& pLayout, const Buffer::SharedPtr& pIB, ResourceFormat ibFormat, Topology primTopology);
         ~Vao();
 
         /** Get the API handle
@@ -85,13 +96,18 @@ namespace Falcor
         /** Get the index buffer format
         */
         ResourceFormat getIndexBufferFormat() const { return mIbFormat; }
+
+        /** Get the primitive topology
+        */
+        Topology getPrimitiveTopology() const { return mTopology; }
+
     protected:
         friend class RenderContext;
 #ifdef FALCOR_D3D11
         ID3D11InputLayoutPtr getInputLayout(ID3DBlob* pVsBlob) const;
 #endif
     private:
-        Vao(const BufferVec& pVBs, const VertexLayout::SharedPtr& pLayout, const Buffer::SharedPtr& pIB, ResourceFormat ibFormat);
+        Vao(const BufferVec& pVBs, const VertexLayout::SharedPtr& pLayout, const Buffer::SharedPtr& pIB, ResourceFormat ibFormat, Topology primTopology);
         bool initialize();
         VaoHandle mApiHandle;
         VertexLayout::SharedPtr mpVertexLayout;
@@ -99,5 +115,6 @@ namespace Falcor
         Buffer::SharedPtr mpIB;
         void* mpPrivateData = nullptr;
         ResourceFormat mIbFormat;
+        Topology mTopology;
     };
 }

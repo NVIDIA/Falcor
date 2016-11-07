@@ -203,9 +203,6 @@
     <ClCompile Include="API\Formats.cpp">
       <Filter>API</Filter>
     </ClCompile>
-    <ClCompile Include="API\PipelineState.cpp">
-      <Filter>API</Filter>
-    </ClCompile>
     <ClCompile Include="API\ProgramReflection.cpp">
       <Filter>API</Filter>
     </ClCompile>
@@ -347,9 +344,6 @@
     <ClCompile Include="API\D3D\D3D12\D3D12RenderContext.cpp">
       <Filter>API\D3D\D3D12</Filter>
     </ClCompile>
-    <ClCompile Include="API\D3D\D3D12\D3D12RenderState.cpp">
-      <Filter>API\D3D\D3D12</Filter>
-    </ClCompile>
     <ClCompile Include="API\D3D\D3D12\D3D12Sampler.cpp">
       <Filter>API\D3D\D3D12</Filter>
     </ClCompile>
@@ -407,9 +401,6 @@
     <ClCompile Include="API\D3D\D3D12\LowLevel\D3D12ResourceAllocator.cpp">
       <Filter>API\D3D\D3D12\LowLevel</Filter>
     </ClCompile>
-    <ClCompile Include="Graphics\PipelineStateCache.cpp">
-      <Filter>Graphics</Filter>
-    </ClCompile>
     <ClCompile Include="..\Externals\dear_imgui\imgui.cpp">
       <Filter>Externals\dear_imgui</Filter>
     </ClCompile>
@@ -418,6 +409,15 @@
     </ClCompile>
     <ClCompile Include="..\Externals\dear_imgui\imgui_draw.cpp">
       <Filter>Externals\dear_imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="API\PipelineStateObject.cpp">
+      <Filter>API</Filter>
+    </ClCompile>
+    <ClCompile Include="Graphics\PipelineState.cpp">
+      <Filter>Graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="API\D3D\D3D12\D3D12PipelineStateObject.cpp">
+      <Filter>API\D3D\D3D12</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -1437,9 +1437,6 @@
     <ClInclude Include="API\GpuTimer.h">
       <Filter>API</Filter>
     </ClInclude>
-    <ClInclude Include="API\PipelineState.h">
-      <Filter>API</Filter>
-    </ClInclude>
     <ClInclude Include="API\ProgramReflection.h">
       <Filter>API</Filter>
     </ClInclude>
@@ -1500,9 +1497,6 @@
     <ClInclude Include="API\LowLevel\ResourceAllocator.h">
       <Filter>API\LowLevel</Filter>
     </ClInclude>
-    <ClInclude Include="Graphics\PipelineStateCache.h">
-      <Filter>Graphics</Filter>
-    </ClInclude>
     <ClInclude Include="..\Externals\dear_imgui\stb_truetype.h">
       <Filter>Externals\dear_imgui</Filter>
     </ClInclude>
@@ -1520,6 +1514,12 @@
     </ClInclude>
     <ClInclude Include="..\Externals\dear_imgui\stb_textedit.h">
       <Filter>Externals\dear_imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="API\PipelineStateObject.h">
+      <Filter>API</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\PipelineState.h">
+      <Filter>Graphics</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

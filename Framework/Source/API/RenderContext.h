@@ -34,53 +34,21 @@
 #include "API/ShaderStorageBuffer.h"
 #include "API/Texture.h"
 #include "Framework.h"
-#include "API/PipelineState.h"
+#include "API/PipelineStateObject.h"
 #include "API/ProgramVars.h"
-#include "Graphics/PipelineStateCache.h"
+#include "Graphics/PipelineState.h"
 
 namespace Falcor
 {
 
-    /** The rendering context. State object binding and drawing commands are issued through the rendering context. \n
-        This class also helps with state management. Unlike the default API state objects, it is initialized with a renderable state. See state objects assigments functions for the defaults.
+    /** The rendering context. Use it to bind state and dispatch calls to the GPU
     */
     class RenderContext : public std::enable_shared_from_this<RenderContext>
     {
     public:
         using SharedPtr = std::shared_ptr<RenderContext>;
         using SharedConstPtr = std::shared_ptr<const RenderContext>;
-
-        /** Primitive topology
-        */
-        enum class Topology
-        {
-            PointList,
-            LineList,
-            LineStrip,
-            TriangleList,
-            TriangleStrip
-        };
-        
-        struct Viewport
-        {
-            float originX  = 0;
-            float originY  = 0;
-            float width    = 0;
-            float height   = 0;
-            float minDepth = 0;
-            float maxDepth = 1;
-        };
-
-        struct Scissor
-        {
-            Scissor() = default;
-            Scissor(int32_t x, int32_t y, int32_t w, int32_t h) : originX(x), originY(y), width(w), height(h) {}
-            int32_t originX = 0;
-            int32_t originY = 0;
-            int32_t width = 0;
-            int32_t height = 0;
-        };
-
+      
         /** create a new object
         */
         static SharedPtr create(uint32_t allocatorsCount = 1);
@@ -130,22 +98,6 @@ namespace Falcor
         */
         void drawIndexedInstanced(uint32_t indexCount, uint32_t instanceCount, uint32_t startIndexLocation, int baseVertexLocation, uint32_t startInstanceLocation);
 
-        /** Get current FBO.
-        */
-        Fbo::SharedConstPtr getFbo() const;
-
-        /** Set a new FBO. This function doesn't store the current FBO state.
-            \param[in] pFbo - a new FBO object. If nullptr is used, will detach the current FBO
-        */
-        void setFbo(const Fbo::SharedPtr& pFbo);
-        /** Set a new FBO and store the current FBO into a stack. Useful for multi-pass effects.
-            \param[in] pFbo - a new FBO object. If nullptr is used, will bind an empty framebuffer object
-        */
-        void pushFbo(const Fbo::SharedPtr& pFbo);
-        /** Restore the last FBO pushed into the FBO stack. If the stack is empty, will log an error.
-        */
-        void popFbo();
-
         /** Blits (low-level copy) a source region of one FBO into the target region of another FBO. Supports only one-RT FBOs, only near and linear filtering.
             \param[in] pSource Source FBO to copy from
             \param[in] pTarget Target FBO to copy to
@@ -166,115 +118,34 @@ namespace Falcor
         */
         void popState();
 
-        /** Set a new vertex array object. By default, no VAO is bound.
-            \param[in] pVao The Vao object to bind. If this is nullptr, will unbind the current VAO.
-        */
-        void setVao(const Vao::SharedConstPtr& pVao);
-
-        /** Set the active primitive topology. Be default, this is set to Topology#TriangleList.
-            \param[in] Topology The primitive topology
-        */
-        void setTopology(Topology topology);
-
-        /** Set the stencil reference value
-        */
-        uint8_t setStencilRef(uint8_t refValue) { mState.stencilRef = refValue; applyStencilRef(); }
-        /** Get the current stencil ref
-        */
-        uint8_t getStencilRef() const { return mState.stencilRef; }
-
-        /** Set a viewport.
-        \param[in] index Viewport index
-        \param[in] vp Viewport to set
-        */
-        void setViewport(uint32_t index, const Viewport& vp);
-
-        /** Get a viewport.
-        \param[in] index Viewport index
-        */
-        const Viewport& getViewport(uint32_t index) const;
-
-        /** Push the current viewport and sets a new one
-        */
-        void pushViewport(uint32_t index, const Viewport& vp);
-
-        /** Pops the last viewport from the stack and sets it
-        */
-        void popViewport(uint32_t index);
-
-        /** Set a scissor.
-        \param[in] index Scissor index
-        \param[in] sc Scissor to set
-        */
-        void setScissor(uint32_t index, const Scissor& sc);
-
-        /** Get a Scissor.
-        \param[in] index scissor index
-        */
-        const Scissor& getScissor(uint32_t index) const;
-
-        /** Push the current Scissor and sets a new one
-        */
-        void pushScissor(uint32_t index, const Scissor& sc);
-
-        /** Pops the last Scissor from the stack and sets it
-        */
-        void popScissor(uint32_t index);
-
         /** Set the render state
         */
-        void setPipelineState(const PipelineState::SharedPtr& pState);
-
-        /** Get the bound render state
-        */
-        PipelineState::SharedConstPtr getRenderState() const { return mState.pRenderState; }
+        void setPipelineState(const PipelineStateObject::SharedPtr& pState);
 
         /** Set the program variables
         */
-        void setProgramVariables(const ProgramVars::SharedPtr& pVars) { mState.pProgramVars = pVars; applyProgramVars(); }
+        void setProgramVariables(const ProgramVars::SharedPtr& pVars) { mpProgramVars = pVars; applyProgramVars(); }
         
         /** Get the bound program variables object
         */
-        ProgramVars::SharedPtr getProgramVars() const { return mState.pProgramVars; }
+        ProgramVars::SharedPtr getProgramVars() const { return mpProgramVars; }
 
-        void setPipelineStateCache(const PipelineStateCache::SharedPtr& pPsoCache) { mState.pPsoCache = pPsoCache; }
-        PipelineStateCache::SharedPtr getPipelineStateCache() const { return mState.pPsoCache; }
+        /** Set a pipeline state
+        */
+        void set(const PipelineState::SharedPtr& pState) { mpPipelineState = pState; applyPipelineState(); }
+        
+        /** Get the currently bound pipeline state
+        */
+        PipelineState::SharedPtr getPipelineStateCache() const { return mpPipelineState; }
     private:
         RenderContext() = default;
-        void initCommon(uint32_t viewportCount);
 
-        struct State
-        {
-            Fbo::SharedPtr pFbo;
-            Vao::SharedConstPtr pVao = nullptr;
-            Topology topology = Topology::TriangleList;
-            uint8_t stencilRef = 0;
-            ProgramVars::SharedPtr pProgramVars;
-            std::vector<ShaderStorageBuffer::SharedConstPtr> pShaderStorageBuffers;
-            std::vector<Viewport> viewports;
-            std::vector<Scissor> scissors;
-            PipelineState::SharedPtr pRenderState;
-            PipelineStateCache::SharedPtr pPsoCache;
-        };
-
-        State mState;
-        std::stack<State> mStateStack;
-        std::stack<Fbo::SharedPtr> mFboStack;
-        std::vector<std::stack<Viewport>> mVpStack;
-        std::vector<std::stack<Scissor>> mScStack;
-
-        // Default state objects
-        Fbo::SharedPtr mpEmptyFBO;
+        ProgramVars::SharedPtr mpProgramVars;
+        PipelineState::SharedPtr mpPipelineState;
 
         // Internal functions used by the API layers
-        void applyViewport(uint32_t index);
-        void applyScissor(uint32_t index);
-        void applyPipelineState();
-        void applyStencilRef();
-        void applyVao();
-        void applyFbo();
         void applyProgramVars();
-        void applyTopology();
+        void applyPipelineState();
         void prepareForDraw();
         void prepareForDrawApi();
 

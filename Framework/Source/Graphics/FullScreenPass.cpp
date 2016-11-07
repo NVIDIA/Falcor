@@ -80,7 +80,7 @@ namespace Falcor
 
     void FullScreenPass::init(const std::string& fragmentShaderFile, const Program::DefineList& programDefines, bool disableDepth, bool disableStencil, uint32_t viewportMask)
     {
-        mpPipelineStateCache = PipelineStateCache::create();
+        mpPipelineStateCache = PipelineState::create();
 
         // create depth stencil state
         DepthStencilState::Desc dsDesc;
@@ -129,7 +129,7 @@ namespace Falcor
             FullScreenPass::spVao = Vao::create(buffers, pLayout, nullptr, ResourceFormat::Unknown);
         }
         mpPipelineStateCache->setVao(FullScreenPass::spVao);
-        mpPipelineStateCache->setPrimitiveType(PipelineState::PrimitiveType::Triangle);
+        mpPipelineStateCache->setPrimitiveType(PipelineStateObject::PrimitiveType::Triangle);
     }
 
     void FullScreenPass::execute(RenderContext* pRenderContext, bool overrideDepthStencil) const

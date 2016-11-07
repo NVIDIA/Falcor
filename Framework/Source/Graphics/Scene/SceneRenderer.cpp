@@ -168,7 +168,7 @@ namespace Falcor
 		{
 			// Bind VAO and set topology
 			pContext->getPipelineStateCache()->setVao(pMesh->getVao());
-            pContext->getPipelineStateCache()->setPrimitiveType(PipelineState::PrimitiveType::Triangle);
+            pContext->getPipelineStateCache()->setPrimitiveType(PipelineStateObject::PrimitiveType::Triangle);
 			pContext->setTopology(pMesh->getTopology());
 
 			uint32_t InstanceCount = pMesh->getInstanceCount();

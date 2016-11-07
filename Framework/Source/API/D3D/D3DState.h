@@ -27,7 +27,7 @@
 ***************************************************************************/
 #include <vector>
 #include "API/RenderContext.h"
-#include "API/PipelineState.h"
+#include "API/PipelineStateObject.h"
 #include "API/LowLevel/RootSignature.h"
 
 namespace Falcor
@@ -48,17 +48,17 @@ namespace Falcor
     void initD3DSamplerDesc(const Sampler* pSampler, RootSignature::BorderColor borderColor, D3D12_STATIC_SAMPLER_DESC& desc);
 #endif
 
-    inline D3D_PRIMITIVE_TOPOLOGY getD3DPrimitiveTopology(RenderContext::Topology topology)
+    inline D3D_PRIMITIVE_TOPOLOGY getD3DPrimitiveTopology(Vao::Topology topology)
     {
         switch (topology)
         {
-        case RenderContext::Topology::PointList:
+        case Vao::Topology::PointList:
             return D3D_PRIMITIVE_TOPOLOGY_POINTLIST;
-        case RenderContext::Topology::LineList:
+        case Vao::Topology::LineList:
             return D3D_PRIMITIVE_TOPOLOGY_LINELIST;
-        case RenderContext::Topology::TriangleList:
+        case Vao::Topology::TriangleList:
             return D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-        case RenderContext::Topology::TriangleStrip:
+        case Vao::Topology::TriangleStrip:
             return D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP;
         default:
             should_not_get_here();
@@ -66,17 +66,17 @@ namespace Falcor
         }
     }
 
-    inline D3Dx(PRIMITIVE_TOPOLOGY_TYPE) getD3DPrimitiveType(PipelineState::PrimitiveType type)
+    inline D3Dx(PRIMITIVE_TOPOLOGY_TYPE) getD3DPrimitiveType(PipelineStateObject::PrimitiveType type)
     {
         switch (type)
         {
-        case PipelineState::PrimitiveType::Point:
+        case PipelineStateObject::PrimitiveType::Point:
             return D3Dx(PRIMITIVE_TOPOLOGY_TYPE_POINT);
-        case PipelineState::PrimitiveType::Line:
+        case PipelineStateObject::PrimitiveType::Line:
             return D3Dx(PRIMITIVE_TOPOLOGY_TYPE_LINE);
-        case PipelineState::PrimitiveType::Triangle:
+        case PipelineStateObject::PrimitiveType::Triangle:
             return D3Dx(PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE);
-        case PipelineState::PrimitiveType::Patch:
+        case PipelineStateObject::PrimitiveType::Patch:
             return D3Dx(PRIMITIVE_TOPOLOGY_TYPE_PATCH);
         default:
             should_not_get_here();

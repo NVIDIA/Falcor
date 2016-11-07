@@ -27,7 +27,7 @@
 ***************************************************************************/
 #pragma once
 #include "Framework.h"
-#include "API/PipelineState.h"
+#include "API/PipelineStateObject.h"
 #include "API/D3D/D3DState.h"
 #include "API/FBO.h"
 #include "API/Texture.h"
@@ -35,7 +35,7 @@
 
 namespace Falcor
 {
-    bool PipelineState::apiInit()
+    bool PipelineStateObject::apiInit()
     {
         D3D12_GRAPHICS_PIPELINE_STATE_DESC desc = {};
         if (mDesc.mpProgram)

@@ -71,7 +71,7 @@ namespace Falcor
         mpVertexBuffer = Buffer::create(vbSize, Buffer::BindFlags::Vertex, Buffer::CpuAccess::Write, nullptr);
 
         // Create the RenderState
-        mpStateCache = PipelineStateCache::create();
+        mpStateCache = PipelineState::create();
         Program::SharedPtr pProgram = Program::createFromFile(kVsFile, kFsFile);
         mpStateCache->setProgram(pProgram);
         mpStateCache->setVao(createVAO(mpVertexBuffer));
@@ -96,7 +96,7 @@ namespace Falcor
             BlendState::BlendFunc::One);
 
         mpStateCache->setBlendState(BlendState::create(blendDesc));
-        mpStateCache->setPrimitiveType(PipelineState::PrimitiveType::Triangle);
+        mpStateCache->setPrimitiveType(PipelineStateObject::PrimitiveType::Triangle);
         mpFont = Font::create();
 
         // Create and initialize the program variables

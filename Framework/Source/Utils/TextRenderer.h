@@ -32,7 +32,7 @@
 #include "Font.h"
 #include "API/VAO.h"
 #include "API/Buffer.h"
-#include "Graphics/PipelineStateCache.h"
+#include "Graphics/PipelineState.h"
 #include "API/ProgramVars.h"
 #include "API/RenderContext.h"
 
@@ -95,7 +95,7 @@ namespace Falcor
         Font::UniquePtr mpFont;
         Buffer::SharedPtr mpVertexBuffer;
 
-        PipelineStateCache::SharedPtr mpStateCache;
+        PipelineState::SharedPtr mpStateCache;
         ProgramVars::SharedPtr mpProgramVars;
 
         uint32_t mCurrentVertexID = 0;

@@ -65,7 +65,7 @@ namespace Falcor
         style.Colors[ImGuiCol_WindowBg].w = 0.95f;
 
         // Create the pipeline state cache
-        mpPipelineStateCache = PipelineStateCache::create();
+        mpPipelineStateCache = PipelineState::create();
 
         // Create the program
         mpProgram = Program::createFromFile("Framework//Gui.vs", "Framework//Gui.ps");
@@ -107,7 +107,7 @@ namespace Falcor
         mpLayout = VertexLayout::create();
         mpLayout->addBufferLayout(0, pBufLayout);
         
-        mpPipelineStateCache->setPrimitiveType(PipelineState::PrimitiveType::Triangle);
+        mpPipelineStateCache->setPrimitiveType(PipelineStateObject::PrimitiveType::Triangle);
     }
 
     Gui::UniquePtr Gui::create(uint32_t width, uint32_t height)
