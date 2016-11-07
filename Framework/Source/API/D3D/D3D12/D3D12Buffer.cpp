@@ -25,7 +25,6 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#ifdef FALCOR_D3D12
 #include "Framework.h"
 #include "API/Buffer.h"
 #include "API/Device.h"
@@ -228,4 +227,3 @@ namespace Falcor
         UNSUPPORTED_IN_D3D12("Buffer::evict()");
     }
 }
-#endif // #ifdef FALCOR_D3D12

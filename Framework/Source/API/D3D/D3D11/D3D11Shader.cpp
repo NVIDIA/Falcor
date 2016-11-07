@@ -25,7 +25,6 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#ifdef FALCOR_D3D11
 #include "Framework.h"
 #include <vector>
 #include "API/Shader.h"
@@ -211,4 +210,3 @@ namespace Falcor
     get_api_handle(ComputeShaderHandle, ShaderType::Compute);
 #undef get_api_handle
 }
-#endif //#ifdef FALCOR_D3D11

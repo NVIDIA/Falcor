@@ -25,7 +25,6 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#ifdef FALCOR_D3D12
 #include "Framework.h"
 #include "API/LowLevel/DescriptorHeap.h"
 #include "API/Device.h"
@@ -110,5 +109,3 @@ namespace Falcor
         return mCurDesc - 1;
     }
 }
-
-#endif //#ifdef FALCOR_D3D12

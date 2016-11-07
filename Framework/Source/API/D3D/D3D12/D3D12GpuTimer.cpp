@@ -25,7 +25,6 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#ifdef FALCOR_D3D12
 #include "Framework.h"
 #include "API/GpuTimer.h"
 
@@ -57,4 +56,3 @@ namespace Falcor
         return true;
     }
 }
-#endif //#ifdef FALCOR_D3D12

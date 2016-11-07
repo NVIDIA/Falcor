@@ -26,7 +26,6 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 #include "Framework.h"
-#ifdef FALCOR_D3D
 #include "D3DState.h"
 #include "API/BlendState.h"
 #include "API/RasterizerState.h"
@@ -429,4 +428,3 @@ namespace Falcor
     }
 #endif
 }
-#endif
