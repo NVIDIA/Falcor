@@ -65,12 +65,12 @@ namespace Falcor
         style.Colors[ImGuiCol_WindowBg].w = 0.95f;
 
         // Create the pipeline state cache
-        mpPipelineStateCache = PipelineState::create();
+        mpPipelineState = PipelineState::create();
 
         // Create the program
         mpProgram = Program::createFromFile("Framework//Gui.vs", "Framework//Gui.ps");
         mpProgramVars = ProgramVars::create(mpProgram->getActiveVersion()->getReflector());
-        mpPipelineStateCache->setProgram(mpProgram);
+        mpPipelineState->setProgram(mpProgram);
 
         // Create and set the texture
         uint8_t* pFontData;
@@ -87,17 +87,17 @@ namespace Falcor
         // Create the blend state
         BlendState::Desc blendDesc;
         blendDesc.setRtBlend(0, true).setRtParams(0, BlendState::BlendOp::Add, BlendState::BlendOp::Add, BlendState::BlendFunc::SrcAlpha, BlendState::BlendFunc::OneMinusSrcAlpha, BlendState::BlendFunc::OneMinusSrcAlpha, BlendState::BlendFunc::Zero);
-        mpPipelineStateCache->setBlendState(BlendState::create(blendDesc));
+        mpPipelineState->setBlendState(BlendState::create(blendDesc));
 
         // Create the rasterizer state
         RasterizerState::Desc rsDesc;
         rsDesc.setFillMode(RasterizerState::FillMode::Solid).setCullMode(RasterizerState::CullMode::None).setScissorTest(true).setDepthClamp(false);
-        mpPipelineStateCache->setRasterizerState(RasterizerState::create(rsDesc));
+        mpPipelineState->setRasterizerState(RasterizerState::create(rsDesc));
 
         // Create the depth-stencil state
         DepthStencilState::Desc dsDesc;
         dsDesc.setDepthFunc(DepthStencilState::Func::Disabled);
-        mpPipelineStateCache->setDepthStencilState(DepthStencilState::create(dsDesc));
+        mpPipelineState->setDepthStencilState(DepthStencilState::create(dsDesc));
 
         // Create the VAO
         VertexBufferLayout::SharedPtr pBufLayout = VertexBufferLayout::create();
@@ -106,8 +106,6 @@ namespace Falcor
         pBufLayout->addElement("COLOR", offsetof(ImDrawVert, col), ResourceFormat::RGBA8Unorm, 1, 2);
         mpLayout = VertexLayout::create();
         mpLayout->addBufferLayout(0, pBufLayout);
-        
-        mpPipelineStateCache->setPrimitiveType(PipelineStateObject::PrimitiveType::Triangle);
     }
 
     Gui::UniquePtr Gui::create(uint32_t width, uint32_t height)
@@ -141,7 +139,7 @@ namespace Falcor
         std::vector<Buffer::SharedPtr> pVB(1);
         pVB[0] = Buffer::create(requiredVbSize + sizeof(ImDrawVert) * 1000, Buffer::BindFlags::Vertex, Buffer::CpuAccess::Write, nullptr);
         Buffer::SharedPtr pIB = Buffer::create(requiredIbSize, Buffer::BindFlags::Index, Buffer::CpuAccess::Write, nullptr);
-        mpVao = Vao::create(pVB, mpLayout, pIB, ResourceFormat::R16Uint);
+        mpVao = Vao::create(pVB, mpLayout, pIB, ResourceFormat::R16Uint, Vao::Topology::TriangleList);
     }
 
     void Gui::onWindowResize(uint32_t width, uint32_t height)
@@ -160,14 +158,12 @@ namespace Falcor
         }
 
         pContext->setProgramVariables(mpProgramVars);
-        pContext->setTopology(RenderContext::Topology::TriangleList);
         ImGui::Render();
         ImDrawData* pDrawData = ImGui::GetDrawData();
 
         // Update the VAO
         createVao(pDrawData->TotalVtxCount, pDrawData->TotalIdxCount);
-        mpPipelineStateCache->setVao(mpVao);
-        pContext->setVao(mpVao);
+        mpPipelineState->setVao(mpVao);
 
         // Upload the data
         ImDrawVert* pVerts = (ImDrawVert*)mpVao->getVertexBuffer(0)->map(Buffer::MapType::WriteDiscard);
@@ -183,18 +179,18 @@ namespace Falcor
         }
         mpVao->getVertexBuffer(0)->unmap();
         mpVao->getIndexBuffer()->unmap();
-        mpPipelineStateCache->setFbo(pContext->getFbo());
-        pContext->setPipelineState(mpPipelineStateCache->getPSO());
+        mpPipelineState->setFbo(pContext->getPipelineState()->getFbo());
+        pContext->setPipelineState(mpPipelineState);
 
         // Setup viewport
-        RenderContext::Viewport vp;
+        PipelineState::Viewport vp;
         vp.originX = 0;
         vp.originY = 0;
         vp.width = ImGui::GetIO().DisplaySize.x;
         vp.height = ImGui::GetIO().DisplaySize.y;
         vp.minDepth = 0;
         vp.maxDepth = 1;
-        pContext->pushViewport(0, vp);
+        mpPipelineState->setViewport(0, vp);
 
         // Render command lists
         uint32_t vtxOffset = 0;
@@ -206,16 +202,13 @@ namespace Falcor
             for (int32_t cmd = 0; cmd < pCmdList->CmdBuffer.Size; cmd++)
             {
                 const ImDrawCmd* pCmd = &pCmdList->CmdBuffer[cmd];
-                RenderContext::Scissor scissor((int32_t)pCmd->ClipRect.x, (int32_t)pCmd->ClipRect.y, (int32_t)pCmd->ClipRect.z, (int32_t)pCmd->ClipRect.w);
-                pContext->pushScissor(0, scissor);
+                PipelineState::Scissor scissor((int32_t)pCmd->ClipRect.x, (int32_t)pCmd->ClipRect.y, (int32_t)pCmd->ClipRect.z, (int32_t)pCmd->ClipRect.w);
+                mpPipelineState->setScissors(0, scissor);
                 pContext->drawIndexed(pCmd->ElemCount, idxOffset, vtxOffset);
-                pContext->popScissor(0);
                 idxOffset += pCmd->ElemCount;
             }
             vtxOffset += pCmdList->VtxBuffer.Size;
         }
-
-        pContext->popViewport(0);
  
         // Prepare for the next frame
         ImGuiIO& io = ImGui::GetIO();

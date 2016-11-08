@@ -78,7 +78,8 @@ namespace Falcor
 
     void ToneMapping::execute(RenderContext* pRenderContext, Fbo::SharedPtr pSrc, Fbo::SharedPtr pDst)
     {
-        pRenderContext->pushFbo(pDst);
+        PipelineState* pState = pRenderContext->getPipelineState().get();
+        pState->pushFbo(pDst);
 
         createLuminanceFbo(pSrc);
 
@@ -94,15 +95,15 @@ namespace Falcor
 //        pRenderContext->setUniformBuffer(0, mpUbo);
 
         // Calculate luminance
-        pRenderContext->setFbo(mpLuminanceFbo);
+        pState->setFbo(mpLuminanceFbo);
         mpLuminancePass->execute(pRenderContext);
         mpLuminanceFbo->getColorTexture(0)->generateMips();
 
         // Tone map
-        pRenderContext->setFbo(pDst);
+        pState->setFbo(pDst);
         
         mpToneMapPass->execute(pRenderContext);
-        pRenderContext->popFbo();
+        pState->popFbo();
     }
 
     void ToneMapping::createToneMapPass(ToneMapping::Operator op)

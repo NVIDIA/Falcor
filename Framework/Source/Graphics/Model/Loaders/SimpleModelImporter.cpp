@@ -44,7 +44,7 @@ namespace Falcor
 
     Model::SharedPtr SimpleModelImporter::create( VertexFormat vertLayout, uint32_t vboSz, const void *vboData,
                                                   uint32_t idxBufSz, const uint32_t *idxBufData, Texture::SharedPtr diffuseTexture,
-                                                  RenderContext::Topology geomTopology )
+                                                  Vao::Topology geomTopology )
     {
         // Create our model container
         Model::SharedPtr        pModel = Model::SharedPtr( new Model() );
@@ -130,9 +130,6 @@ namespace Falcor
         // Done
         return pModel;
     }
-
-
-
 
     ResourceFormat SimpleModelImporter::getResourceFormat( AttribFormat format, uint32_t components )
     {    

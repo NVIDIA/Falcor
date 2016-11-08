@@ -95,7 +95,7 @@ namespace Falcor
         Font::UniquePtr mpFont;
         Buffer::SharedPtr mpVertexBuffer;
 
-        PipelineState::SharedPtr mpStateCache;
+        PipelineState::SharedPtr mpPipelineState;
         ProgramVars::SharedPtr mpProgramVars;
 
         uint32_t mCurrentVertexID = 0;

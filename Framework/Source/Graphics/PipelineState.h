@@ -33,6 +33,7 @@
 #include "API/RasterizerState.h"
 #include "API/DepthStencilState.h"
 #include "API/BlendState.h"
+#include <stack>
 
 namespace Falcor
 {
@@ -48,6 +49,8 @@ namespace Falcor
         
         struct Viewport
         {
+            Viewport() = default;
+            Viewport(float x, float y, float w, float h, float minZ, float maxZ) : originX(x), originY(y), width(w), height(h), minDepth(minZ), maxDepth(maxZ) {}
             float originX = 0;
             float originY = 0;
             float width = 0;
@@ -68,7 +71,7 @@ namespace Falcor
 
         /** Create a new object
         */
-        static SharedPtr create() { return SharedPtr(new PipelineState); }
+        static SharedPtr create() { return SharedPtr(new PipelineState()); }
 
         /** Copy constructor. Useful if you need to make minor changes to an already existing object
         */
@@ -83,6 +86,15 @@ namespace Falcor
         */
         PipelineState& setFbo(const Fbo::SharedConstPtr& pFbo) { mpFbo = pFbo; return *this; }
         
+        /** Set a new FBO and store the current FBO into a stack. Useful for multi-pass effects.
+            \param[in] pFbo - a new FBO object. If nullptr is used, will bind an empty framebuffer object
+        */
+        void pushFbo(const Fbo::SharedPtr& pFbo);
+        
+        /** Restore the last FBO pushed into the FBO stack. If the stack is empty, will log an error.
+        */
+        void popFbo();
+
         /** Set a new vertex array object. By default, no VAO is bound.
         \param[in] pVao The Vao object to bind. If this is nullptr, will unbind the current VAO.
         */
@@ -109,18 +121,34 @@ namespace Falcor
         /** Get a viewport.
         \param[in] index Viewport index
         */
-        const Viewport& getViewport(uint32_t index) const;
+        const Viewport& getViewport(uint32_t index) const { return mViewports[index]; }
+
+        /** Push the current viewport and sets a new one
+        */
+        void pushViewport(uint32_t index, const Viewport& vp);
+
+        /** Pops the last viewport from the stack and sets it
+        */
+        void popViewport(uint32_t index);
 
         /** Set a scissor.
         \param[in] index Scissor index
         \param[in] sc Scissor to set
         */
-        void setScissor(uint32_t index, const Scissor& sc);
+        void setScissors(uint32_t index, const Scissor& sc);
 
         /** Get a Scissor.
         \param[in] index scissor index
         */
-        const Scissor& getScissor(uint32_t index) const;
+        const Scissor& getScissors(uint32_t index) const { return mScissors[index]; }
+
+        /** Push the current Scissor and sets a new one
+        */
+        void pushScissors(uint32_t index, const Scissor& sc);
+
+        /** Pops the last Scissor from the stack and sets it
+        */
+        void popScissors(uint32_t index);
 
         /** Bind a program to the pipeline
         */
@@ -182,6 +210,12 @@ namespace Falcor
         RootSignature::SharedPtr mpRootSignature;
         PipelineStateObject::Desc mDesc;
         uint8_t mStencilRef = 0;
+        std::vector<Viewport> mViewports;
+        std::vector<Scissor> mScissors;
+
+        std::stack<Fbo::SharedPtr> mFboStack;
+        std::vector<std::stack<Viewport>> mVpStack;
+        std::vector<std::stack<Scissor>> mScStack;
 
         struct CachedData
         {

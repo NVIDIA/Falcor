@@ -80,7 +80,7 @@ namespace Falcor
 
     void FullScreenPass::init(const std::string& fragmentShaderFile, const Program::DefineList& programDefines, bool disableDepth, bool disableStencil, uint32_t viewportMask)
     {
-        mpPipelineStateCache = PipelineState::create();
+        mpPipelineState = PipelineState::create();
 
         // create depth stencil state
         DepthStencilState::Desc dsDesc;
@@ -89,7 +89,7 @@ namespace Falcor
         dsDesc.setDepthFunc(DepthStencilState::Func::LessEqual);    // Equal is needed to allow overdraw when z is enabled (e.g., background pass etc.)
         dsDesc.setStencilTest(!disableStencil);
         dsDesc.setStencilWriteMask(!disableStencil);
-        mpPipelineStateCache->setDepthStencilState(DepthStencilState::create(dsDesc));
+        mpPipelineState->setDepthStencilState(DepthStencilState::create(dsDesc));
 
         Program::DefineList defs = programDefines;
         std::string gs;
@@ -110,7 +110,7 @@ namespace Falcor
 
         const std::string vs("Framework\\FullScreenPass.vs");
         mpProgram = Program::createFromFile(vs, fragmentShaderFile, gs, "", "", defs);
-        mpPipelineStateCache->setProgram(mpProgram);
+        mpPipelineState->setProgram(mpProgram);
 
         if (FullScreenPass::spVertexBuffer == nullptr)
         {
@@ -128,14 +128,14 @@ namespace Falcor
             Vao::BufferVec buffers{ spVertexBuffer };
             FullScreenPass::spVao = Vao::create(buffers, pLayout, nullptr, ResourceFormat::Unknown, Vao::Topology::TriangleStrip);
         }
-        mpPipelineStateCache->setVao(FullScreenPass::spVao);
+        mpPipelineState->setVao(FullScreenPass::spVao);
     }
 
     void FullScreenPass::execute(RenderContext* pRenderContext, bool overrideDepthStencil) const
     {
-        mpPipelineStateCache->setFbo(pRenderContext->getPipelineStateCache()->getFbo());
-        mpPipelineStateCache->setVao(spVao);
-        pRenderContext->setPipelineState(mpPipelineStateCache->getPSO());
+        mpPipelineState->setFbo(pRenderContext->getPipelineState()->getFbo());
+        mpPipelineState->setVao(spVao);
+        pRenderContext->setPipelineState(mpPipelineState);
 
         // DISABLED_FOR_D3D12
 //        if (overrideDepthStencil) pRenderContext->setDepthStencilState(mpDepthStencilState, 0);

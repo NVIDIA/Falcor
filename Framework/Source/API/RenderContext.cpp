@@ -34,8 +34,50 @@
 
 namespace Falcor
 {
+    RenderContext::RenderContext()
+    {
+        mpDefaultPipelineState = PipelineState::create();
+        setPipelineState(mpDefaultPipelineState);
+    }
+
     void RenderContext::prepareForDraw()
     {
         prepareForDrawApi();
+    }
+
+    void RenderContext::pushPipelineState(const PipelineState::SharedPtr& pState)
+    {
+        mPipelineStateStack.push(mpPipelineState);
+        setPipelineState(pState);
+    }
+
+    void RenderContext::popPipelineState()
+    {
+        if (mPipelineStateStack.empty())
+        {
+            logWarning("Can't pop from the PipelineState stack. The stack is empty");
+            return;
+        }
+
+        setPipelineState(mPipelineStateStack.top());
+        mPipelineStateStack.pop();
+    }
+
+    void RenderContext::pushProgramVars(const ProgramVars::SharedPtr& pVars)
+    {
+        mProgramVarsStack.push(mpProgramVars);
+        setProgramVariables(pVars);
+    }
+
+    void RenderContext::popProgramVars()
+    {
+        if (mProgramVarsStack.empty())
+        {
+            logWarning("Can't pop from the ProgramVars stack. The stack is empty");
+            return;
+        }
+
+        setProgramVariables(mProgramVarsStack.top());
+        mProgramVarsStack.pop();
     }
 }

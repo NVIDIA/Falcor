@@ -259,7 +259,7 @@ namespace Falcor
         VertexLayout::SharedPtr mpLayout;
         ProgramVars::SharedPtr mpProgramVars;
         Program::SharedPtr mpProgram;
-        PipelineState::SharedPtr mpPipelineStateCache;
+        PipelineState::SharedPtr mpPipelineState;
         uint32_t mGroupStackSize = 0;
         float mFontScale = 1;
     };

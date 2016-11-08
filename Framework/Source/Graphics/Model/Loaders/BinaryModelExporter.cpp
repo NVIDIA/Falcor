@@ -202,7 +202,7 @@ namespace Falcor
         for(uint32_t i = 0; i < mpModel->getMeshCount(); i++)
         {
             auto pMesh = mpModel->getMesh(i);
-            if(pMesh->getTopology() != RenderContext::Topology::TriangleList)
+            if(pMesh->getVao()->getPrimitiveTopology() != Vao::Topology::TriangleList)
             {
                 warning("Binary format doesn't support topologies other than triangles.");
                 continue;

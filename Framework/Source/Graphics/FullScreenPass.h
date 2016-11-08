@@ -73,7 +73,7 @@ namespace Falcor
 
     private:
         Program::SharedPtr mpProgram;
-        PipelineState::SharedPtr mpPipelineStateCache;
+        PipelineState::SharedPtr mpPipelineState;
         // Static
         static Buffer::SharedPtr spVertexBuffer;
         static Vao::SharedPtr    spVao;

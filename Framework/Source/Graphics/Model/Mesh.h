@@ -71,7 +71,7 @@ namespace Falcor
             const Buffer::SharedPtr& pIndexBuffer,
             uint32_t indexCount,
             const VertexLayout::SharedPtr& pLayout,
-            RenderContext::Topology topology,
+            Vao::Topology topology,
             const Material::SharedPtr& pMaterial,
             const BoundingBox& boundingBox,
             bool hasBones);
@@ -102,10 +102,6 @@ namespace Falcor
         */
         const Material::SharedPtr& getMaterial() const { return mpMaterial; }
         
-        /** Get a the mesh's topology
-        */
-        const RenderContext::Topology getTopology() const { return mTopology; }
-
         /** Does the mesh have bones?
         */
         bool hasBones() const { return mHasBones; }
@@ -164,7 +160,7 @@ namespace Falcor
             const Buffer::SharedPtr& pIndexBuffer,
             uint32_t indexCount,
             const VertexLayout::SharedPtr& pLayout,
-            RenderContext::Topology topology,
+            Vao::Topology topology,
             const Material::SharedPtr& pMaterial,
             const BoundingBox& boundingBox,
             bool hasBones);
@@ -177,7 +173,6 @@ namespace Falcor
         uint32_t mPrimitiveCount = 0;
         bool mHasBones = false;
         Material::SharedPtr mpMaterial;
-        RenderContext::Topology mTopology;
         BoundingBox mBoundingBox;
 
         Vao::SharedPtr mpVao;

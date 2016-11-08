@@ -47,7 +47,7 @@ namespace Falcor
         const Buffer::SharedPtr& pIndexBuffer,
         uint32_t indexCount,
         const VertexLayout::SharedPtr& pLayout,
-        RenderContext::Topology topology,
+        Vao::Topology topology,
         const Material::SharedPtr& pMaterial,
         const BoundingBox& boundingBox,
         bool hasBones)
@@ -60,7 +60,7 @@ namespace Falcor
         const Buffer::SharedPtr& pIndexBuffer,
         uint32_t indexCount,
         const VertexLayout::SharedPtr& pLayout,
-        RenderContext::Topology topology,
+        Vao::Topology topology,
         const Material::SharedPtr& pMaterial,
         const BoundingBox& boundingBox,
 		bool hasBones) : mId(sMeshCounter++)
@@ -69,13 +69,13 @@ namespace Falcor
         uint32_t VertsPerPrim;
         switch(topology)
         {
-        case Falcor::RenderContext::Topology::PointList:
+        case Vao::Topology::PointList:
             VertsPerPrim = 1;
             break;
-        case Falcor::RenderContext::Topology::LineList:
+        case Vao::Topology::LineList:
             VertsPerPrim = 2;
             break;
-        case Falcor::RenderContext::Topology::TriangleList:
+        case Vao::Topology::TriangleList:
             VertsPerPrim = 3;
             break;
         default:
@@ -84,12 +84,11 @@ namespace Falcor
 
         mIndexCount = indexCount;
         mPrimitiveCount = mIndexCount / VertsPerPrim;
-        mTopology = topology;
         mpMaterial = pMaterial;
         mBoundingBox = boundingBox;
         mHasBones = hasBones;
 
-        mpVao = Vao::create(vertexBuffers, pLayout, pIndexBuffer, ResourceFormat::R32Uint);
+        mpVao = Vao::create(vertexBuffers, pLayout, pIndexBuffer, ResourceFormat::R32Uint, topology);
     }
 
     void Mesh::applyTransform(const glm::mat4& Transform) 

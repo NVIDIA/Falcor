@@ -167,9 +167,7 @@ namespace Falcor
 		if (setPerMeshData(pContext, currentData))
 		{
 			// Bind VAO and set topology
-			pContext->getPipelineStateCache()->setVao(pMesh->getVao());
-            pContext->getPipelineStateCache()->setPrimitiveType(PipelineStateObject::PrimitiveType::Triangle);
-			pContext->setTopology(pMesh->getTopology());
+			pContext->getPipelineState()->setVao(pMesh->getVao());
 
 			uint32_t InstanceCount = pMesh->getInstanceCount();
 
@@ -268,7 +266,7 @@ namespace Falcor
     {
         updateVariableOffsets(pContext->getProgramVars()->getReflection().get());
 		CurrentWorkingData currentData;
-		currentData.pPsoCache = pContext->getPipelineStateCache().get();
+		currentData.pPsoCache = pContext->getPipelineState().get();
 		currentData.pCamera = pCamera;
 		currentData.pMaterial = nullptr;
 		currentData.pMesh = nullptr;

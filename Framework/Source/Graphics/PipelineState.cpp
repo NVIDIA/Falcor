@@ -31,6 +31,14 @@
 
 namespace Falcor
 {
+    // FIXME this breaks our convention that API code doesn't appear in common files
+#ifdef FALCOR_D3D11
+    static const uint32_t kViewportCount = D3D11_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE;
+#else if defined FALCOR_D3D12
+    static const uint32_t kViewportCount = D3D12_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE;
+#endif
+
+
     std::vector<PipelineStateObject::SharedPtr> gStates;
 
     static PipelineStateObject::PrimitiveType topology2Type(Vao::Topology t)
@@ -48,6 +56,24 @@ namespace Falcor
         default:
             should_not_get_here();
             return PipelineStateObject::PrimitiveType::Undefined;
+        }
+    }
+
+    PipelineState::PipelineState()
+    {
+#ifdef FALCOR_GL
+        uint32_t kViewportCount;
+        gl_call(glGetIntegerv(GL_MAX_VIEWPORTS, (int32_t*)&kViewportCount));
+#endif
+        // create the viewports
+        mViewports.resize(kViewportCount);
+        mScissors.resize(kViewportCount);
+        mVpStack.resize(kViewportCount);
+        mScStack.resize(kViewportCount);
+        for (uint32_t i = 0; i < kViewportCount; i++)
+        {
+            setViewport(i, mViewports[i]);
+            setScissors(i, mScissors[i]);
         }
     }
 
@@ -75,5 +101,51 @@ namespace Falcor
         auto p = PipelineStateObject::create(mDesc);
         gStates.push_back(p);
         return p;
+    }
+
+    void PipelineState::pushViewport(uint32_t index, const Viewport& vp)
+    {
+        mVpStack[index].push(mViewports[index]);
+        setViewport(index, vp);
+    }
+
+    void PipelineState::popViewport(uint32_t index)
+    {
+        if (mVpStack[index].empty())
+        {
+            Logger::log(Logger::Level::Error, "PipelineState::popViewport() - can't pop viewport since the viewport stack is empty.");
+            return;
+        }
+        const auto& VP = mVpStack[index].top();
+        setViewport(index, VP);
+        mVpStack[index].pop();
+    }
+
+    void PipelineState::pushScissors(uint32_t index, const Scissor& sc)
+    {
+        mScStack[index].push(mScissors[index]);
+        setScissors(index, sc);
+    }
+
+    void PipelineState::popScissors(uint32_t index)
+    {
+        if (mScStack[index].empty())
+        {
+            Logger::log(Logger::Level::Error, "PipelineState::popScissors() - can't pop scissors since the scissors stack is empty.");
+            return;
+        }
+        const auto& sc = mScStack[index].top();
+        setScissors(index, sc);
+        mScStack[index].pop();
+    }
+
+    void PipelineState::setViewport(uint32_t index, const Viewport& vp)
+    {
+        mViewports[index] = vp;        
+    }
+
+    void PipelineState::setScissors(uint32_t index, const Scissor& sc)
+    {
+        mScissors[index] = sc;
     }
 }

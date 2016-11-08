@@ -110,18 +110,6 @@ namespace Falcor
         */
         void blitFbo(const Fbo* pSource, const Fbo* pTarget, const glm::ivec4& srcRegion, const glm::ivec4& dstRegion, bool useLinearFiltering = false, FboAttachmentType copyFlags = FboAttachmentType::Color, uint32_t srcIdx = 0, uint32_t dstIdx = 0);
 
-        /** Store the entire rendering-state, including the FBO, into a stack.
-        */
-        void pushState();
-        /** Restore the last state saved into the stack. If the stack is empty will log an error.\n
-            Using this function might lead to undesirable performance degradation. Use with care.
-        */
-        void popState();
-
-        /** Set the render state
-        */
-        void setPipelineState(const PipelineStateObject::SharedPtr& pState);
-
         /** Set the program variables
         */
         void setProgramVariables(const ProgramVars::SharedPtr& pVars) { mpProgramVars = pVars; applyProgramVars(); }
@@ -130,19 +118,39 @@ namespace Falcor
         */
         ProgramVars::SharedPtr getProgramVars() const { return mpProgramVars; }
 
+        /** Push the current ProgramVars and sets a new one
+        */
+        void pushProgramVars(const ProgramVars::SharedPtr& pVars);
+
+        /** Pops the last ProgramVars from the stack and sets it
+        */
+        void popProgramVars();
+
         /** Set a pipeline state
         */
-        void set(const PipelineState::SharedPtr& pState) { mpPipelineState = pState; applyPipelineState(); }
+        void setPipelineState(const PipelineState::SharedPtr& pState) { mpPipelineState = pState ? pState : mpDefaultPipelineState; applyPipelineState(); }
         
         /** Get the currently bound pipeline state
         */
-        PipelineState::SharedPtr getPipelineStateCache() const { return mpPipelineState; }
+        PipelineState::SharedPtr getPipelineState() const { return mpPipelineState; }
+
+        /** Push the current PipelineState and sets a new one
+        */
+        void pushPipelineState(const PipelineState::SharedPtr& pState);
+
+        /** Pops the last PipelineState from the stack and sets it
+        */
+        void popPipelineState();
     private:
-        RenderContext() = default;
+        RenderContext();
 
         ProgramVars::SharedPtr mpProgramVars;
         PipelineState::SharedPtr mpPipelineState;
 
+        std::stack<PipelineState::SharedPtr> mPipelineStateStack;
+        std::stack<ProgramVars::SharedPtr> mProgramVarsStack;
+
+        PipelineState::SharedPtr mpDefaultPipelineState;
         // Internal functions used by the API layers
         void applyProgramVars();
         void applyPipelineState();

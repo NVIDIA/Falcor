@@ -272,4 +272,9 @@ namespace Falcor
     {
 
     }
+
+    void RenderContext::applyPipelineState()
+    {
+
+    }
 }

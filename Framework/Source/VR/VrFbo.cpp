@@ -64,14 +64,15 @@ namespace Falcor
         return pVrFbo;
     }
 
+    // FIXME D3D12
     void VrFbo::pushViewport(RenderContext* pContext, uint32_t vpIndex)
     {
-        RenderContext::Viewport vp = pContext->getViewport(vpIndex);
-        vp.originX = 0;
-        vp.originY = 0;
-        vp.width = (float)mpFbo->getWidth();
-        vp.height = (float)mpFbo->getHeight();
-        pContext->pushViewport(vpIndex, vp);
+//         RenderContext::Viewport vp = pContext->getViewport(vpIndex);
+//         vp.originX = 0;
+//         vp.originY = 0;
+//         vp.width = (float)mpFbo->getWidth();
+//         vp.height = (float)mpFbo->getHeight();
+//         pContext->pushViewport(vpIndex, vp);
     }
 
     void VrFbo::submitToHmd(uint32_t rtIndex) const
