@@ -93,7 +93,7 @@ namespace Falcor
     {
         createTmpFbo(pSrc);
         uint32_t arraySize = pSrc->getArraySize();
-        RenderContext::Viewport vp;
+        PipelineState::Viewport vp;
         vp.originX = 0;
         vp.originY = 0;
         vp.height = (float)mpTmpFbo->getHeight();

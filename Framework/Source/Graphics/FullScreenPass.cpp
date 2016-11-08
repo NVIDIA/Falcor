@@ -126,21 +126,19 @@ namespace Falcor
             pLayout->addBufferLayout(0, pBufLayout);
 
             Vao::BufferVec buffers{ spVertexBuffer };
-            FullScreenPass::spVao = Vao::create(buffers, pLayout, nullptr, ResourceFormat::Unknown);
+            FullScreenPass::spVao = Vao::create(buffers, pLayout, nullptr, ResourceFormat::Unknown, Vao::Topology::TriangleStrip);
         }
         mpPipelineStateCache->setVao(FullScreenPass::spVao);
-        mpPipelineStateCache->setPrimitiveType(PipelineStateObject::PrimitiveType::Triangle);
     }
 
     void FullScreenPass::execute(RenderContext* pRenderContext, bool overrideDepthStencil) const
     {
-        mpPipelineStateCache->setFbo(pRenderContext->getFbo());
+        mpPipelineStateCache->setFbo(pRenderContext->getPipelineStateCache()->getFbo());
+        mpPipelineStateCache->setVao(spVao);
         pRenderContext->setPipelineState(mpPipelineStateCache->getPSO());
-        pRenderContext->setVao(spVao);
 
         // DISABLED_FOR_D3D12
 //        if (overrideDepthStencil) pRenderContext->setDepthStencilState(mpDepthStencilState, 0);
-        pRenderContext->setTopology(RenderContext::Topology::TriangleStrip);
         pRenderContext->draw(arraysize(kVertices), 0);
     }
 }

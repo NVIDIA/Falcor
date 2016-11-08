@@ -36,23 +36,6 @@ namespace Falcor
 {
     void RenderContext::prepareForDraw()
     {
-        // DISABLED_FOR_D3D12
-//         for(auto& pUBO : mState.pUniformBuffers)
-//         {
-//             if(pUBO)
-//             {
-//                 pUBO->uploadToGPU();
-//             }
-//         }
-// 
-//         for(auto& pSSBO : mState.pShaderStorageBuffers)
-//         {
-//             if(pSSBO)
-//             {
-//                 pSSBO->uploadToGPU();
-//                 pSSBO->setGpuCopyDirty();
-//             }
-//         }
         prepareForDrawApi();
     }
 }
