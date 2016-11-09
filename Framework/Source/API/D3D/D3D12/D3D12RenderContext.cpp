@@ -194,34 +194,24 @@ namespace Falcor
 
     static void D3D12SetViewports(const RenderContextData* pApiData, const PipelineState::Viewport* vp)
     {
-        static_assert(offsetof(PipelineState::Viewport, originX) == offsetof(D3D12_VIEWPORT, TopLeftX), "VP TopLeftX offset");
-        static_assert(offsetof(PipelineState::Viewport, originY) == offsetof(D3D12_VIEWPORT, TopLeftY), "VP TopLeftY offset");
+        static_assert(offsetof(PipelineState::Viewport, originX) == offsetof(D3D12_VIEWPORT, TopLeftX), "VP originX offset");
+        static_assert(offsetof(PipelineState::Viewport, originY) == offsetof(D3D12_VIEWPORT, TopLeftY), "VP originY offset");
         static_assert(offsetof(PipelineState::Viewport, width) == offsetof(D3D12_VIEWPORT, Width), "VP Width offset");
         static_assert(offsetof(PipelineState::Viewport, height) == offsetof(D3D12_VIEWPORT, Height), "VP Height offset");
         static_assert(offsetof(PipelineState::Viewport, minDepth) == offsetof(D3D12_VIEWPORT, MinDepth), "VP MinDepth offset");
         static_assert(offsetof(PipelineState::Viewport, maxDepth) == offsetof(D3D12_VIEWPORT, MaxDepth), "VP TopLeftX offset");
 
         pApiData->pList->RSSetViewports(D3D12_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE, (D3D12_VIEWPORT*)vp);
-
-        // FIXME D3D12: what to do with this? Scissors do not get updated automatically when the VP changes
-        D3D12_RECT r;
-        r.top = (LONG)vp[0].originX;
-        r.left = (LONG)vp[0].originY;
-        r.bottom = (LONG)vp[0].height;
-        r.right = (LONG)vp[0].width;
-
-        pApiData->pList->RSSetScissorRects(1, &r);
     }
 
-    static void D3D12SetScissors(uint32_t index)
+    static void D3D12SetScissors(const RenderContextData* pApiData, const PipelineState::Scissor* sc)
     {
-        // FIXME D3D12
-//         D3D12_RECT r;
-//         r.left = mState.scissors[index].originX;
-//         r.top = mState.scissors[index].originY;
-//         r.bottom = mState.scissors[index].height;
-//         r.right = mState.scissors[index].width;
-//         pApiData->pList->RSSetScissorRects(1, &r);
+        static_assert(offsetof(PipelineState::Scissor, originX) == offsetof(D3D12_RECT, left), "Scissor originX offset");
+        static_assert(offsetof(PipelineState::Scissor, originY) == offsetof(D3D12_RECT, top), "Scissor originY offset");
+        static_assert(offsetof(PipelineState::Scissor, width) == offsetof(D3D12_RECT, right), "Scissor Width offset");
+        static_assert(offsetof(PipelineState::Scissor, height) == offsetof(D3D12_RECT, bottom), "Scissor Height offset");
+
+        pApiData->pList->RSSetScissorRects(D3D12_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE, (D3D12_RECT*)sc);
     }
 
     void RenderContext::prepareForDrawApi()
@@ -240,6 +230,7 @@ namespace Falcor
         D3D12SetVao(pApiData, mpPipelineState->getVao().get());
         D3D12SetFbo(this, pApiData, mpPipelineState->getFbo().get());
         D3D12SetViewports(pApiData, &mpPipelineState->getViewport(0));
+        D3D12SetScissors(pApiData, &mpPipelineState->getScissors(0));
         pApiData->pList->SetPipelineState(mpPipelineState->getPSO()->getApiHandle());
 
     }

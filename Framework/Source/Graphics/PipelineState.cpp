@@ -72,8 +72,7 @@ namespace Falcor
         mScStack.resize(kViewportCount);
         for (uint32_t i = 0; i < kViewportCount; i++)
         {
-            setViewport(i, mViewports[i]);
-            setScissors(i, mScissors[i]);
+            setViewport(i, mViewports[i], true);
         }
     }
 
@@ -103,13 +102,47 @@ namespace Falcor
         return p;
     }
 
-    void PipelineState::pushViewport(uint32_t index, const Viewport& vp)
+    PipelineState& PipelineState::setFbo(const Fbo::SharedConstPtr& pFbo, bool setViewportScissors)
     {
-        mVpStack[index].push(mViewports[index]);
-        setViewport(index, vp);
+        mpFbo = pFbo;
+        if (setViewportScissors && pFbo)
+        {
+            // OPTME: do we really need to run on the entire VP array?
+            uint32_t w = pFbo->getWidth();
+            uint32_t h = pFbo->getHeight();
+            Viewport vp(0, 0, float(w), float(h), 0, 1);
+            for (uint32_t i = 0; i < kViewportCount; i++)
+            {
+                setViewport(i, vp, true);
+            }
+        }
+        return *this;
     }
 
-    void PipelineState::popViewport(uint32_t index)
+    void PipelineState::pushFbo(const Fbo::SharedPtr& pFbo, bool setViewportScissors)
+    {
+        mFboStack.push(mpFbo);
+        setFbo(pFbo, setViewportScissors);
+    }
+
+    void PipelineState::popFbo(bool setViewportScissors)
+    {
+        if (mFboStack.empty())
+        {
+            Logger::log(Logger::Level::Error, "PipelineState::popFbo() - can't pop FBO since the viewport stack is empty.");
+            return;
+        }
+        setFbo(mFboStack.top(), setViewportScissors);
+        mFboStack.pop();
+    }
+
+    void PipelineState::pushViewport(uint32_t index, const Viewport& vp, bool setScissors)
+    {
+        mVpStack[index].push(mViewports[index]);
+        setViewport(index, vp, setScissors);
+    }
+
+    void PipelineState::popViewport(uint32_t index, bool setScissors)
     {
         if (mVpStack[index].empty())
         {
@@ -117,7 +150,7 @@ namespace Falcor
             return;
         }
         const auto& VP = mVpStack[index].top();
-        setViewport(index, VP);
+        setViewport(index, VP, setScissors);
         mVpStack[index].pop();
     }
 
@@ -139,9 +172,14 @@ namespace Falcor
         mScStack[index].pop();
     }
 
-    void PipelineState::setViewport(uint32_t index, const Viewport& vp)
+    void PipelineState::setViewport(uint32_t index, const Viewport& vp, bool setScissors)
     {
-        mViewports[index] = vp;        
+        mViewports[index] = vp;
+        if (setScissors)
+        {
+            Scissor sc(0, 0, (int32_t)vp.width, (int32_t)vp.height);
+            this->setScissors(index, sc);
+        }
     }
 
     void PipelineState::setScissors(uint32_t index, const Scissor& sc)

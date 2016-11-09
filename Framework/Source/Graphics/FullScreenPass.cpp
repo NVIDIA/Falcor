@@ -135,10 +135,11 @@ namespace Falcor
     {
         mpPipelineState->setFbo(pRenderContext->getPipelineState()->getFbo());
         mpPipelineState->setVao(spVao);
-        pRenderContext->setPipelineState(mpPipelineState);
+        pRenderContext->pushPipelineState(mpPipelineState);
 
         // DISABLED_FOR_D3D12
 //        if (overrideDepthStencil) pRenderContext->setDepthStencilState(mpDepthStencilState, 0);
         pRenderContext->draw(arraysize(kVertices), 0);
+        pRenderContext->popPipelineState();
     }
 }

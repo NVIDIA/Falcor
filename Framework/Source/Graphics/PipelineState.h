@@ -83,17 +83,20 @@ namespace Falcor
 
         /** Set a new FBO. This function doesn't store the current FBO state.
         \param[in] pFbo - a new FBO object. If nullptr is used, will detach the current FBO
+        \param[in] setViewportScissors If true, will set the viewport and scissor to match the FBO
         */
-        PipelineState& setFbo(const Fbo::SharedConstPtr& pFbo) { mpFbo = pFbo; return *this; }
+        PipelineState& setFbo(const Fbo::SharedConstPtr& pFbo, bool setViewportScissors = true);
         
         /** Set a new FBO and store the current FBO into a stack. Useful for multi-pass effects.
             \param[in] pFbo - a new FBO object. If nullptr is used, will bind an empty framebuffer object
-        */
-        void pushFbo(const Fbo::SharedPtr& pFbo);
+            \param[in] setViewportScissors If true, will set the viewport and scissor to match the FBO
+            */
+        void pushFbo(const Fbo::SharedPtr& pFbo, bool setViewportScissors = true);
         
         /** Restore the last FBO pushed into the FBO stack. If the stack is empty, will log an error.
+            \param[in] setViewportScissors If true, will set the viewport and scissor to match the FBO
         */
-        void popFbo();
+        void popFbo(bool setViewportScissors = true);
 
         /** Set a new vertex array object. By default, no VAO is bound.
         \param[in] pVao The Vao object to bind. If this is nullptr, will unbind the current VAO.
@@ -115,8 +118,9 @@ namespace Falcor
         /** Set a viewport.
         \param[in] index Viewport index
         \param[in] vp Viewport to set
+        \param[in] setScissors If true, will set the corresponding scissors entry
         */
-        void setViewport(uint32_t index, const Viewport& vp);
+        void setViewport(uint32_t index, const Viewport& vp, bool setScissors = true);
 
         /** Get a viewport.
         \param[in] index Viewport index
@@ -124,12 +128,17 @@ namespace Falcor
         const Viewport& getViewport(uint32_t index) const { return mViewports[index]; }
 
         /** Push the current viewport and sets a new one
+        \param[in] index Viewport index
+        \param[in] vp Viewport to set
+        \param[in] setScissors If true, will set the corresponding scissors entry
         */
-        void pushViewport(uint32_t index, const Viewport& vp);
+        void pushViewport(uint32_t index, const Viewport& vp, bool setScissors = true);
 
         /** Pops the last viewport from the stack and sets it
+        \param[in] index Viewport index
+        \param[in] setScissors If true, will set the corresponding scissors entry
         */
-        void popViewport(uint32_t index);
+        void popViewport(uint32_t index, bool setScissors = true);
 
         /** Set a scissor.
         \param[in] index Scissor index
@@ -213,7 +222,7 @@ namespace Falcor
         std::vector<Viewport> mViewports;
         std::vector<Scissor> mScissors;
 
-        std::stack<Fbo::SharedPtr> mFboStack;
+        std::stack<Fbo::SharedConstPtr> mFboStack;
         std::vector<std::stack<Viewport>> mVpStack;
         std::vector<std::stack<Scissor>> mScStack;
 

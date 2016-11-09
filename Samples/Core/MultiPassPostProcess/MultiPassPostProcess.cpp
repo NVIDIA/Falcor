@@ -79,9 +79,9 @@ void MultiPassPostProcess::onFrameRender()
 
         if(mEnableRadialBlur)
         {
-            mpRenderContext->pushFbo(mpTempFB);
+            mpRenderContext->getPipelineState()->pushFbo(mpTempFB);
             mpRadialBlur->execute(mpRenderContext.get());
-            mpRenderContext->popFbo();
+            mpRenderContext->getPipelineState()->popFbo();
 
             mpRenderContext->setProgramVariables(mpProgVars[1]);
             const FullScreenPass* pFinalPass = mEnableGrayscale ? mpLuminance.get() : mpBlit.get();
@@ -120,10 +120,10 @@ bool MultiPassPostProcess::onKeyEvent(const KeyboardEvent& keyEvent)
 
 void MultiPassPostProcess::onResizeSwapChain()
 {
-    RenderContext::Viewport vp;
+    PipelineState::Viewport vp;
     vp.height = (float)mpDefaultFBO->getHeight();
     vp.width = (float)mpDefaultFBO->getWidth();
-    mpRenderContext->setViewport(0, vp);
+    mpRenderContext->getPipelineState()->setViewport(0, vp);
 }
 
 int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ LPSTR lpCmdLine, _In_ int nShowCmd)
