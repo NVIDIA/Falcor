@@ -258,16 +258,15 @@ void ModelViewer::onLoad()
     mpDirLight->setWorldDirection(glm::vec3(0.13f, 0.27f, -0.9f));
 
     mpProgramVars = ProgramVars::create(mpProgram->getActiveVersion()->getReflector());
-    mpPipelineStateCache = PipelineStateCache::create();
-    mpPipelineStateCache->setFbo(mpDefaultFBO);
-    mpPipelineStateCache->setProgram(mpProgram);
-    mpPipelineStateCache->setPrimitiveType(PipelineState::PrimitiveType::Triangle);
+    mpPipelineState = PipelineState::create();
+    mpPipelineState->setProgram(mpProgram);
 }
 
 void ModelViewer::onFrameRender()
 {
     const glm::vec4 clearColor(0.38f, 0.52f, 0.10f, 1);
     mpRenderContext->clearFbo(mpDefaultFBO.get(), clearColor, 1.0f, 0, FboAttachmentType::All);
+    mpPipelineState->setFbo(mpDefaultFBO);
 
     if(mpModel)
     {
@@ -284,14 +283,14 @@ void ModelViewer::onFrameRender()
         // Set render state
         if(mDrawWireframe)
         {
-            mpPipelineStateCache->setRasterizerState(mpWireframeRS);
-            mpPipelineStateCache->setDepthStencilState(mpNoDepthDS);
+            mpPipelineState->setRasterizerState(mpWireframeRS);
+            mpPipelineState->setDepthStencilState(mpNoDepthDS);
             mpProgramVars["PerFrameCB"]["gConstColor"] = true;
         }
         else
         {
-            mpPipelineStateCache->setRasterizerState(mpCullRastState[mCullMode]);
-            mpPipelineStateCache->setDepthStencilState(mpDepthTestDS);
+            mpPipelineState->setRasterizerState(mpCullRastState[mCullMode]);
+            mpPipelineState->setDepthStencilState(mpDepthTestDS);
             mpProgramVars["PerFrameCB"]["gConstColor"] = false;
 
             mpDirLight->setIntoConstantBuffer(mpProgramVars["PerFrameCB"].get(), "gDirLight");
@@ -308,8 +307,8 @@ void ModelViewer::onFrameRender()
         }
 
         mpProgramVars["PerFrameCB"]["gAmbient"] = mAmbientIntensity;
-        mpPipelineStateCache->setProgram(mpProgram);
-        mpRenderContext->setPipelineStateCache(mpPipelineStateCache);
+        mpPipelineState->setProgram(mpProgram);
+        mpRenderContext->setPipelineState(mpPipelineState);
         mpRenderContext->setProgramVariables(mpProgramVars);
         ModelRenderer::render(mpRenderContext.get(), mpModel, mpCamera.get());
     }
@@ -348,13 +347,11 @@ bool ModelViewer::onMouseEvent(const MouseEvent& mouseEvent)
 
 void ModelViewer::onResizeSwapChain()
 {
-    RenderContext::Viewport vp;
-    vp.height = (float)mpDefaultFBO->getHeight();
-    vp.width = (float)mpDefaultFBO->getWidth();
-    mpRenderContext->setViewport(0, vp);
+    float height = (float)mpDefaultFBO->getHeight();
+    float width = (float)mpDefaultFBO->getWidth();
 
     mpCamera->setFovY(float(M_PI / 3));
-    float aspectRatio = (vp.width / vp.height);
+    float aspectRatio = (width / height);
     mpCamera->setAspectRatio(aspectRatio);
 }
 

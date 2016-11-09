@@ -96,8 +96,9 @@ VS_OUT defaultVS(VS_IN vIn)
 {
     VS_OUT vOut;
     float4x4 worldMat = getWorldMat(vIn);
-    vOut.posW = mul(worldMat, vIn.pos).xyz;
-    vOut.posH = mul(gCam.viewProjMat * worldMat, vIn.pos);
+    float4 posW = mul(worldMat, vIn.pos);
+    vOut.posW = posW.xyz;
+    vOut.posH = mul(gCam.viewProjMat, posW);
     vOut.texC = vIn.texC;
     vOut.normalW = mul((float3x3)worldMat, vIn.normal).xyz;
     vOut.tangentW = mul((float3x3)worldMat, vIn.tangent).xyz;
