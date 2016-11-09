@@ -36,7 +36,6 @@ public:
     void onLoad() override;
     void onFrameRender() override;
     void onShutdown() override;
-    void onResizeSwapChain() override;
     bool onKeyEvent(const KeyboardEvent& keyEvent) override;
     void onGuiRender() override;
 private:

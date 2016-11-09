@@ -45,6 +45,7 @@ namespace Falcor
     {
         // Tell the device to resize the swap chain
         mpDefaultFBO = gpDevice->resizeSwapChain(mpWindow->getClientAreaWidth(), mpWindow->getClientAreaHeight());
+        mpDefaultPipelineState->setFbo(mpDefaultFBO);
 
         // Tell the GUI the swap-chain size changed
         mpGui->onWindowResize(mpDefaultFBO->getWidth(), mpDefaultFBO->getHeight());
@@ -173,7 +174,10 @@ namespace Falcor
 
         // Get the default objects before calling onLoad()
         mpDefaultFBO = gpDevice->getSwapChainFbo();
+        mpDefaultPipelineState = PipelineState::create();
+        mpDefaultPipelineState->setFbo(mpDefaultFBO);
         mpRenderContext = gpDevice->getRenderContext();
+        mpRenderContext->setPipelineState(mpDefaultPipelineState);
 
         // Init the UI
         initUI();

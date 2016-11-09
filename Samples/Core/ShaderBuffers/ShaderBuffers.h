@@ -54,8 +54,6 @@ private:
     Camera::SharedPtr mpCamera;
     ModelViewCameraController mCameraController;
 
-    PipelineStateCache::SharedPtr mpPsoCache;
-    
     struct Light
     {
         glm::vec3 worldDir;

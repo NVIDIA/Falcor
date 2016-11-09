@@ -128,7 +128,7 @@ namespace Falcor
 
         /** Set a pipeline state
         */
-        void setPipelineState(const PipelineState::SharedPtr& pState) { mpPipelineState = pState ? pState : mpDefaultPipelineState; applyPipelineState(); }
+        void setPipelineState(const PipelineState::SharedPtr& pState) { mpPipelineState = pState; applyPipelineState(); }
         
         /** Get the currently bound pipeline state
         */
@@ -150,7 +150,6 @@ namespace Falcor
         std::stack<PipelineState::SharedPtr> mPipelineStateStack;
         std::stack<ProgramVars::SharedPtr> mProgramVarsStack;
 
-        PipelineState::SharedPtr mpDefaultPipelineState;
         // Internal functions used by the API layers
         void applyProgramVars();
         void applyPipelineState();

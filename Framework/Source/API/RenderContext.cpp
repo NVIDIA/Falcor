@@ -36,8 +36,6 @@ namespace Falcor
 {
     RenderContext::RenderContext()
     {
-        mpDefaultPipelineState = PipelineState::create();
-        setPipelineState(mpDefaultPipelineState);
     }
 
     void RenderContext::prepareForDraw()
