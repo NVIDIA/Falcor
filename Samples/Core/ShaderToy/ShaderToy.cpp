@@ -63,20 +63,10 @@ void ShaderToy::onLoad()
 
 void ShaderToy::onFrameRender()
 {
-    // set up framebuffer and viewport
-    auto width = mpDefaultFBO->getWidth();
-    auto height = mpDefaultFBO->getHeight();
-    mpRenderContext->setFbo(mpDefaultFBO);
-    RenderContext::Viewport vp;
-    vp.width = float(width);
-    vp.height = float(height);
-    mpRenderContext->setViewport(0, vp);
-
-    // set up per-frame constants
-
     // iResolution
-    glm::vec2 iResolution = glm::vec2((float)width, (float)height);
-    mpToyVars[mToyCBBinding]["iResolution"] = iResolution;
+    float width = (float)mpDefaultFBO->getWidth();
+    float height = (float)mpDefaultFBO->getHeight();
+    mpToyVars[mToyCBBinding]["iResolution"] = glm::vec2(width, height);;
 
     // iGlobalTime
     float iGlobalTime = (float)mCurrentTime;  
