@@ -274,19 +274,9 @@ namespace Falcor
             calculateTime();
 
 			// Bind the default state
-			mpRenderContext->getPipelineState()->setFbo(mpDefaultFBO);
-            
-            // Set the viewport
-            // FIXME D3D12 - This should actually be done inside RenderContext api specific code
-            //              We need to record the new state from the previous frame into the command list
-            PipelineState::Viewport vp;
-            vp.height = (float)mpDefaultFBO->getHeight();
-            vp.width = (float)mpDefaultFBO->getWidth();
-            mpRenderContext->getPipelineState()->setViewport(0, vp);
-
-            // DISABLED_FOR_D3D12
-//            mpRenderContext->setRenderState(nullptr);
-             onFrameRender();
+            mpRenderContext->setPipelineState(mpDefaultPipelineState);
+            mpDefaultPipelineState->setFbo(mpDefaultFBO);
+            onFrameRender();
         }
 
         {

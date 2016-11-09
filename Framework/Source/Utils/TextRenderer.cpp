@@ -119,7 +119,7 @@ namespace Falcor
 
         // Set the current FBO into the render state
         mpPipelineState->setFbo(pState->getFbo());
-        mpRenderContext->setPipelineState(mpPipelineState);
+        mpRenderContext->pushPipelineState(mpPipelineState);
 
         PipelineState::Viewport VP(0, 0, (float)pState->getFbo()->getWidth(), (float)pState->getFbo()->getHeight(), 0, 1);
         mpPipelineState->setViewport(0, VP);
@@ -144,8 +144,9 @@ namespace Falcor
     void TextRenderer::end()
     {
         flush();
-        mpRenderContext = nullptr;
         mpVertexBuffer->unmap();
+        mpRenderContext->popPipelineState();
+        mpRenderContext = nullptr;
     }
 
     void TextRenderer::flush()

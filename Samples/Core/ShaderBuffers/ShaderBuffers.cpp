@@ -107,7 +107,6 @@ void ShaderBuffersSample::onFrameRender()
     
     // Set uniform buffers
     mpRenderContext->setProgramVariables(mpProgramVars);
-
     mpRenderContext->drawIndexed(mIndexCount, 0, 0);
 
      std::string msg = getFpsMsg() + '\n';

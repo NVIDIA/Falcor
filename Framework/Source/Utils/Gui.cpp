@@ -180,7 +180,7 @@ namespace Falcor
         mpVao->getVertexBuffer(0)->unmap();
         mpVao->getIndexBuffer()->unmap();
         mpPipelineState->setFbo(pContext->getPipelineState()->getFbo());
-        pContext->setPipelineState(mpPipelineState);
+        pContext->pushPipelineState(mpPipelineState);
 
         // Setup viewport
         PipelineState::Viewport vp;
@@ -215,6 +215,7 @@ namespace Falcor
         io.DeltaTime = elapsedTime;
         ImGui::NewFrame();
         mGroupStackSize = 0;
+        pContext->popPipelineState();
     }
 
     bool Gui::addCheckBox(const char label[], bool& var, bool sameLine)
