@@ -26,6 +26,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 #pragma once
+#include "API/Texture.h"
 #include "API/ConstantBuffer.h"
 #include "API/Sampler.h"
 #include <unordered_map>

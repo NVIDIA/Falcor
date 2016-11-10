@@ -2042,5 +2042,6 @@
     <FxCompile Include="Data\DefaultVS.hlsl">
       <Filter>Data\Framework</Filter>
     </FxCompile>
+    <FxCompile Include="Data\Framework\GenerateMips.hlsl" />
   </ItemGroup>
 </Project>

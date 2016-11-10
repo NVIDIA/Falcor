@@ -30,9 +30,20 @@
 #include "API/Device.h"
 #include "API/D3D/D3DViews.h"
 #include <vector>
+#include "API/Device.h"
+#include "API/ProgramVars.h"
+#include "Graphics/FullScreenPass.h"
+#include "Graphics/PipelineState.h"
 
 namespace Falcor
 {
+    struct
+    {
+        std::unique_ptr<FullScreenPass> pFullScreenPass;
+        ProgramVars::SharedPtr pVars;
+        std::shared_ptr<PipelineState> pState;
+    } static gGenMips;
+
     template<>
     D3D12_SRV_DIMENSION getViewDimension<D3D12_SRV_DIMENSION>(Texture::Type type, uint32_t arraySize)
     {
@@ -66,6 +77,12 @@ namespace Falcor
 
     Texture::~Texture()
     {
+        if (gGenMips.pFullScreenPass)
+        {
+            gGenMips.pFullScreenPass = nullptr;
+            gGenMips.pVars = nullptr;
+            gGenMips.pState = nullptr;
+        }
     }
 
     uint64_t Texture::makeResident(const Sampler* pSampler) const
@@ -84,7 +101,7 @@ namespace Falcor
         ResourceFormat texFormat = pTexture->getFormat();
 
         D3D12_RESOURCE_DESC desc = {};
-        desc.MipLevels = uint16_t(pTexture->getMipCount());
+        desc.MipLevels = 1;// uint16_t(pTexture->getMipCount());
         desc.Format = getDxgiFormat(texFormat);
         desc.Width = align_to(getFormatWidthCompressionRatio(texFormat), pTexture->getWidth());
         desc.Height = align_to(getFormatHeightCompressionRatio(texFormat), pTexture->getHeight());
@@ -124,15 +141,17 @@ namespace Falcor
                     pCopyCtx->updateTextureSubresource(pTexture, subresource, pSrc, false);
                     pSrc += arraySliceSize;
                 }
-
-                // FIXME D3D12
-                // Generate the mip-levels
             }
             else
             {
                 pCopyCtx->updateTexture(pTexture, pData, false);
             }
             pCopyCtx->submit(true);
+
+            if (autoGenMips)
+            {
+                pTexture->generateMips();
+            }
         }
     }
 
@@ -216,14 +235,36 @@ namespace Falcor
         UNSUPPORTED_IN_D3D12("Texture::compress2DTexture");
     }
 
-	void Texture::generateMips() const
-	{
-		UNSUPPORTED_IN_D3D12("Texture::GenerateMips");
-	}
-
     Texture::SharedPtr Texture::createView(uint32_t firstArraySlice, uint32_t arraySize, uint32_t mostDetailedMip, uint32_t mipCount) const
     {
         UNSUPPORTED_IN_D3D12("createView");
         return nullptr;
+    }
+
+    void Texture::generateMips() const
+    {
+        //         if (gGenMips.pFullScreenPass == nullptr)
+        //         {
+        //             gGenMips.pFullScreenPass = FullScreenPass::create("GenerateMips.hlsl");
+        //             gGenMips.pVars = ProgramVars::create(gGenMips.pFullScreenPass->getProgram()->getActiveVersion()->getReflector());
+        //             gGenMips.pState = PipelineState::create();
+        //         }
+        // 
+        //         RenderContext* pContext = gpDevice->getRenderContext().get();
+        //         pContext->pushPipelineState(gGenMips.pState);
+        //         pContext->pushProgramVars(gGenMips.pVars);
+        // 
+        //         for (uint32_t i = 0; i < mMipLevels; i++)
+        //         {
+        //             // Create an FBO for the next mip level
+        //             Fbo::SharedPtr pFbo = Fbo::create();
+        //             pFbo->attachColorTarget(this->shared_from_this(), 0, 1, Fbo::kAttachEntireMipLevel);
+        // 
+        //             // Set the pass input and output
+        //             gGenMips.pState->setFbo(pFbo);
+        //             // Run the program
+        // 
+        //             // 
+        //         }
     }
 }

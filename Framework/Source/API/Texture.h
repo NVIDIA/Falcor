@@ -28,7 +28,6 @@
 #pragma once
 #include <map>
 #include "API/Formats.h"
-#include "../Framework.h" //For should_not_get_here
 
 namespace Falcor
 {
@@ -271,20 +270,5 @@ namespace Falcor
         mutable D3D12_RESOURCE_STATES mResourceState = D3D12_RESOURCE_STATE_COMMON;
     };
 
-    inline const std::string to_string(Texture::Type Type)
-    {
-#define type_2_string(a) case Texture::Type::a: return #a;
-        switch(Type)
-        {
-        type_2_string(Texture1D);
-        type_2_string(Texture2D);
-        type_2_string(Texture3D);
-        type_2_string(TextureCube);
-        type_2_string(Texture2DMultisample);
-        default:
-            should_not_get_here();
-            return "";
-        }
-#undef type_2_string
-    }
+    const std::string to_string(Texture::Type Type);
 }

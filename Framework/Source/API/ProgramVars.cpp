@@ -296,8 +296,7 @@ namespace Falcor
             const Sampler* pSampler = samplerIt.second.pResource.get();
             if (pSampler)
             {
-                // FIXME D3D12: Handle null samplers (should bind a small black texture)
-//                pList->SetGraphicsRootDescriptorTable(rootOffset, pSampler->getApiHandle());
+                pList->SetGraphicsRootDescriptorTable(rootOffset, pSampler->getApiHandle());
             }
         }
     }

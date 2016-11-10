@@ -25,31 +25,34 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#include "Framework.h"
-#include "API/Sampler.h"
-#include "API/D3D/D3DState.h"
-#include "API/Device.h"
+#version 440
+#include "../HlslGlslCommon.h"
 
-namespace Falcor
+CONSTANT_BUFFER(PerFrameCB, 0)
 {
-    Sampler::~Sampler() = default;
+	mat4 gvpTransform;
+	vec3 gFontColor;
+};
 
-    uint32_t Sampler::getApiMaxAnisotropy()
-    {
-        return D3D12_MAX_MAXANISOTROPY;
-    }
-
-    Sampler::SharedPtr Sampler::create(const Desc& desc)
-    {
-        SharedPtr pSampler = SharedPtr(new Sampler(desc));
-        D3D12_SAMPLER_DESC d3dDesc;
-        initD3DSamplerDesc(pSampler.get(), d3dDesc);
-        DescriptorHeap* pHeap = gpDevice->getSamplerDescriptorHeap().get();
-        uint32_t index = pHeap->allocateHandle();
-
-        gpDevice->getApiHandle()->CreateSampler(&d3dDesc, pHeap->getCpuHandle(index));
-        pSampler->mApiHandle = pHeap->getGpuHandle(index);
-
-        return pSampler;
-    }
+vec4 transform(vec2 posS)
+{
+	return mul(gvpTransform, vec4(posS, 0.5f, 1));
 }
+
+#ifdef FALCOR_HLSL
+void main(float2 posS : POSITION, inout float2 texC : TEXCOORD, out float4 posSV : SV_POSITION)
+{
+	posSV = transform(posS);
+}
+
+#elif defined FALCOR_GLSL
+layout (location = 0) in vec2 posS;
+layout (location = 1) in vec2 texCIn;
+out vec2 texC;
+
+void main()
+{
+	gl_Position = transform(posS);
+	texC = texCIn;
+}
+#endif
