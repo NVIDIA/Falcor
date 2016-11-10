@@ -37,6 +37,7 @@ namespace Falcor
     public:
         using SharedPtr = std::shared_ptr<Sampler>;
         using SharedConstPtr = std::shared_ptr<const Sampler>;
+        using ApiHandle = SamplerHandle;
 
         /** Filter mode
         */
@@ -129,7 +130,8 @@ namespace Falcor
 
         /** Get the API handle
         */
-        SamplerApiHandle getApiHandle() const { return mApiHandle; }
+        ApiHandle getApiHandle() const { return mApiHandle; }
+
         /** Get the magnification filter
         */
         Filter getMagFilter() const { return mDesc.mMagFilter; }
@@ -176,7 +178,7 @@ namespace Falcor
     private:
         Sampler(const Desc& desc);
         Desc mDesc;
-        SamplerApiHandle mApiHandle = 0;
+        ApiHandle mApiHandle = { 0 };
         static uint32_t getApiMaxAnisotropy();
     };
 }
