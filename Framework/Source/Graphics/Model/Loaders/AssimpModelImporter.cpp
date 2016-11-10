@@ -421,6 +421,7 @@ namespace Falcor
 
         uint32_t AssimpFlags = aiProcessPreset_TargetRealtime_MaxQuality |
             aiProcess_OptimizeGraph |
+            aiProcess_FlipUVs |
            // aiProcess_FixInfacingNormals | // causes incorrect facing normals for crytek-sponza
             0;
 

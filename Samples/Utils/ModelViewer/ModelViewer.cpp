@@ -139,8 +139,8 @@ void ModelViewer::onGuiRender()
         {
             deleteCulledMeshes();
         }
+        mpGui->popGroup();
     }
-    mpGui->popGroup();
 
     mpGui->addSeparator();
     mpGui->addCheckBox("Wireframe", mDrawWireframe);
@@ -158,15 +158,15 @@ void ModelViewer::onGuiRender()
         if (mpGui->pushGroup("Directional Light"))
         {
             mpDirLight->setUiElements(mpGui.get());
+            mpGui->popGroup();
         }
-        mpGui->popGroup();
         if (mpGui->pushGroup("Point Light"))
         {
             mpPointLight->setUiElements(mpGui.get());
+            mpGui->popGroup();
         }
         mpGui->popGroup();
     }
-    mpGui->popGroup();
 
     Gui::dropdown_list cameraDropdown;
     cameraDropdown.push_back({ ModelViewCamera, "Model-View" });
@@ -213,8 +213,8 @@ void ModelViewer::setModelUIElements()
     {
         mpGui->addFloatVar("Near Plane", mNearZ, minDepth, mpModel->getRadius() * 15, minDepth * 5);
         mpGui->addFloatVar("Far Plane", mFarZ, minDepth, mpModel->getRadius() * 15, minDepth * 5);
+        mpGui->popGroup();
     }
-    mpGui->popGroup();
 }
 
 void ModelViewer::onLoad()

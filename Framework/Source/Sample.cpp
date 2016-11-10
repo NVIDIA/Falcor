@@ -233,8 +233,9 @@ namespace Falcor
         if (mpGui->pushGroup("Help"))
         {
             mpGui->addText(help);
+            mpGui->popGroup();
         }
-        mpGui->popGroup();
+
         if(mpGui->pushGroup("Global Controls"))
         {
             mpGui->addFloatVar("Time", mCurrentTime, 0, FLT_MAX);
@@ -245,8 +246,8 @@ namespace Falcor
             {
                 initVideoCapture();
             }
+            mpGui->popGroup();
         }
-        mpGui->popGroup();
 
         onGuiRender();
         mpGui->popWindow();

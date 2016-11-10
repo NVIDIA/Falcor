@@ -238,15 +238,12 @@ namespace Falcor
 
     bool Gui::pushGroup(const char name[])
     {
-        mGroupStackSize++;
-        if(mGroupStackSize == 1)
+        bool visible = mGroupStackSize ? ImGui::TreeNode(name) : ImGui::CollapsingHeader(name);
+        if (visible)
         {
-            return ImGui::CollapsingHeader(name);
+            mGroupStackSize++;
         }
-        else
-        {
-            return ImGui::TreeNode(name);
-        }
+        return visible;
     }
 
     void Gui::popGroup()
