@@ -25,7 +25,6 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#ifdef FALCOR_D3D11
 #include "Framework.h"
 #include "ShaderReflectionD3D11.h"
 
@@ -400,4 +399,3 @@ namespace Falcor
         }
     }
 }
-#endif //#ifdef FALCOR_D3D11

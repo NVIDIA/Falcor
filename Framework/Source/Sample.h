@@ -152,6 +152,7 @@ namespace Falcor
 
         Gui::UniquePtr mpGui;                             ///< Main sample GUI
         RenderContext::SharedPtr mpRenderContext;         ///< The rendering context
+        PipelineState::SharedPtr mpDefaultPipelineState;  ///< The default pipeline state 
         Fbo::SharedPtr mpDefaultFBO;                      ///< The default FBO object
         bool mFreezeTime;                                 ///< Whether global time is frozen
         float mCurrentTime = 0;                           ///< Global time

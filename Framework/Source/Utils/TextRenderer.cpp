@@ -58,7 +58,7 @@ namespace Falcor
         pLayout->addBufferLayout(0, pBufLayout);
         Vao::BufferVec buffers{ pVB };
 
-        return Vao::create(buffers, pLayout, nullptr, ResourceFormat::Unknown);
+        return Vao::create(buffers, pLayout, nullptr, ResourceFormat::Unknown, Vao::Topology::TriangleList);
     }
 
     TextRenderer::TextRenderer()
@@ -71,20 +71,20 @@ namespace Falcor
         mpVertexBuffer = Buffer::create(vbSize, Buffer::BindFlags::Vertex, Buffer::CpuAccess::Write, nullptr);
 
         // Create the RenderState
-        mpStateCache = PipelineStateCache::create();
+        mpPipelineState = PipelineState::create();
         Program::SharedPtr pProgram = Program::createFromFile(kVsFile, kFsFile);
-        mpStateCache->setProgram(pProgram);
-        mpStateCache->setVao(createVAO(mpVertexBuffer));
+        mpPipelineState->setProgram(pProgram);
+        mpPipelineState->setVao(createVAO(mpVertexBuffer));
 
         // create the depth-state
         DepthStencilState::Desc dsDesc;
         dsDesc.setDepthTest(false).setStencilTest(false);
-        mpStateCache->setDepthStencilState(DepthStencilState::create(dsDesc));
+        mpPipelineState->setDepthStencilState(DepthStencilState::create(dsDesc));
         
         // Rasterizer state
         RasterizerState::Desc rsState;
         rsState.setCullMode(RasterizerState::CullMode::None);
-        mpStateCache->setRasterizerState(RasterizerState::create(rsState));
+        mpPipelineState->setRasterizerState(RasterizerState::create(rsState));
 
         // Blend state
         BlendState::Desc blendDesc;
@@ -95,8 +95,7 @@ namespace Falcor
             BlendState::BlendFunc::One,
             BlendState::BlendFunc::One);
 
-        mpStateCache->setBlendState(BlendState::create(blendDesc));
-        mpStateCache->setPrimitiveType(PipelineState::PrimitiveType::Triangle);
+        mpPipelineState->setBlendState(BlendState::create(blendDesc));
         mpFont = Font::create();
 
         // Create and initialize the program variables
@@ -116,13 +115,14 @@ namespace Falcor
         mStartPos = startPos;
         mpRenderContext = pRenderContext;
 
-        // Set the current FBO into the render state
-        mpStateCache->setFbo(pRenderContext->getFbo());
-        mpRenderContext->setPipelineState(mpStateCache->getPSO());
-        pRenderContext->setTopology(RenderContext::Topology::TriangleList);
+        const PipelineState* pState = pRenderContext->getPipelineState().get();
 
-        // Get the current viewport
-        const auto& VP = pRenderContext->getViewport(0);
+        // Set the current FBO into the render state
+        mpPipelineState->setFbo(pState->getFbo());
+        mpRenderContext->pushPipelineState(mpPipelineState);
+
+        PipelineState::Viewport VP(0, 0, (float)pState->getFbo()->getWidth(), (float)pState->getFbo()->getHeight(), 0, 1);
+        mpPipelineState->setViewport(0, VP);
 
         // Set the matrix
         glm::mat4 vpTransform;
@@ -144,8 +144,9 @@ namespace Falcor
     void TextRenderer::end()
     {
         flush();
-        mpRenderContext = nullptr;
         mpVertexBuffer->unmap();
+        mpRenderContext->popPipelineState();
+        mpRenderContext = nullptr;
     }
 
     void TextRenderer::flush()
@@ -153,7 +154,6 @@ namespace Falcor
         if(mCurrentVertexID != 0)
         {
             mpVertexBuffer->unmap();
-            mpRenderContext->setVao(mpStateCache->getVao());
             mpRenderContext->draw(mCurrentVertexID, 0);
             mCurrentVertexID = 0;
             mpVertexBuffer->map(Buffer::MapType::WriteDiscard);

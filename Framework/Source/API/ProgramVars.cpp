@@ -214,6 +214,30 @@ namespace Falcor
         return attachConstantBuffer(loc, pCB);
     }
 
+    bool ProgramVars::setSampler(uint32_t index, const Sampler::SharedConstPtr& pSampler)
+    {
+        mAssignedSamplers[index].pResource = pSampler;
+        return true;
+    }
+
+    bool ProgramVars::setSampler(const std::string& name, const Sampler::SharedConstPtr& pSampler)
+    {
+        const ProgramReflection::Resource* pDesc = mpReflector->getResourceDesc(name);
+        if (pDesc == nullptr)
+        {
+            Logger::log(Logger::Level::Warning, "Texture \"" + name + "\" was not found. Ignoring setSampler() call.");
+            return false;
+        }
+
+        if (pDesc->type != ProgramReflection::Resource::ResourceType::Sampler)
+        {
+            Logger::log(Logger::Level::Warning, "ProgramVars::setSampler() was called, but variable \"" + name + "\" is not a sampler. Ignoring call.");
+            return false;
+        }
+
+        return setSampler(pDesc->regIndex, pSampler);
+    }
+
     bool ProgramVars::setTexture(uint32_t index, const Texture::SharedConstPtr& pTexture)
     {
         mAssignedSrvs[index].pResource = pTexture;
@@ -264,10 +288,25 @@ namespace Falcor
                 pList->SetGraphicsRootDescriptorTable(rootOffset, pTex->getShaderResourceView());
             }
         }
+
+        // Bind the samplers
+        for (auto& samplerIt : mAssignedSamplers)
+        {
+            uint32_t rootOffset = samplerIt.second.rootSigOffset;
+            const Sampler* pSampler = samplerIt.second.pResource.get();
+            if (pSampler)
+            {
+                pList->SetGraphicsRootDescriptorTable(rootOffset, pSampler->getApiHandle());
+            }
+        }
     }
 
     bool ProgramVars::setTextureRange(uint32_t startIndex, uint32_t count, const Texture::SharedConstPtr pTextures[])
     {
+        for (uint32_t i = startIndex; i < startIndex + count; i++)
+        {
+            setTexture(i, pTextures[i]);
+        }
         return true;
     }
 

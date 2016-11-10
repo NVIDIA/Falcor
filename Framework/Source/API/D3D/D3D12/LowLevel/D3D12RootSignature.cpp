@@ -25,7 +25,6 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#ifdef FALCOR_D3D12
 #include "Framework.h"
 #include "API/LowLevel/RootSignature.h"
 #include "API/D3D/D3DState.h"
@@ -214,4 +213,3 @@ namespace Falcor
         return true;
     }
 }
-#endif //FALCOR_D3D12

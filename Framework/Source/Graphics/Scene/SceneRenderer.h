@@ -37,7 +37,7 @@
 namespace Falcor
 {
     class Model;
-    class PipelineStateCache;
+    class PipelineState;
     class RenderContext;
     class Material;
     class Mesh;
@@ -108,7 +108,7 @@ namespace Falcor
 		struct CurrentWorkingData
 		{
 			const Camera* pCamera;
-			mutable PipelineStateCache* pPsoCache;
+			mutable PipelineState* pPsoCache;
 			const Model* pModel;
 			const Mesh* pMesh;
 			const Material* pMaterial;

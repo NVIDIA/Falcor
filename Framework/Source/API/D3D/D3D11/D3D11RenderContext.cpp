@@ -25,7 +25,6 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#ifdef FALCOR_D3D11
 #include "Framework.h"
 #include "API/RenderContext.h"
 #include "API/RasterizerState.h"
@@ -289,4 +288,3 @@ namespace Falcor
         getD3D11ImmediateContext()->RSSetScissorRects(D3D11_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE, scRects.data());
     }
 }
-#endif //#ifdef FALCOR_D3D11

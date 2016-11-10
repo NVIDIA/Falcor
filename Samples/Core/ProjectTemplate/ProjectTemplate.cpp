@@ -70,10 +70,10 @@ void ProjectTemplate::onDataReload()
 
 void ProjectTemplate::onResizeSwapChain()
 {
-    RenderContext::Viewport vp;
+    PipelineState::Viewport vp;
     vp.height = (float)mpDefaultFBO->getHeight();
     vp.width = (float)mpDefaultFBO->getWidth();
-    mpRenderContext->setViewport(0, vp);
+    mpRenderContext->getPipelineState()->setViewport(0, vp);
     mpCamera->setFovY(float(M_PI / 8));
     mpCamera->setAspectRatio(vp.width / vp.height);
     mpCamera->setDepthRange(0, 1000);

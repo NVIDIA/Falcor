@@ -26,7 +26,6 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 #include "Framework.h"
-#ifdef FALCOR_D3D
 #include <vector>
 #include "API/Shader.h"
 
@@ -158,4 +157,3 @@ namespace Falcor
         return pData->pBlob;
     }
 }
-#endif //#ifdef FALCOR_D3D

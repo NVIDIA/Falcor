@@ -475,8 +475,8 @@ namespace Falcor
     void CascadedShadowMaps::executeDepthPass(RenderContext* pCtx, const Camera* pCamera)
     {
         // Must have an FBO attached, otherwise don't know the size of the depth map
-        uint32_t width = pCtx->getFbo()->getWidth();
-        uint32_t height = pCtx->getFbo()->getHeight();
+        uint32_t width = pCtx->getPipelineState()->getFbo()->getWidth();
+        uint32_t height = pCtx->getPipelineState()->getFbo()->getHeight();
 
         if((mDepthPass.pFbo == nullptr) || (mDepthPass.pFbo->getWidth() != width) || (mDepthPass.pFbo->getHeight() != height))
         {
@@ -486,13 +486,15 @@ namespace Falcor
         }
 
         pCtx->clearFbo(mDepthPass.pFbo.get(), glm::vec4(), 1, 0, FboAttachmentType::Depth);
-        pCtx->pushFbo(mDepthPass.pFbo);
+        // DISABLED_FOR_D3D12
+//        pCtx->pushFbo(mDepthPass.pFbo);
 
         // DISABLED_FOR_D3D12
 //         mpSceneRenderer->setObjectCullState(true);
 //         mpSceneRenderer->renderScene(pCtx, mDepthPass.pProg.get(), const_cast<Camera*>(pCamera));
 //         mpSceneRenderer->setObjectCullState(false);
-        pCtx->popFbo();
+// DISABLED_FOR_D3D12
+//        pCtx->popFbo();
     }
 
     void CascadedShadowMaps::createVsmSampleState(uint32_t maxAnisotropy)
@@ -560,14 +562,15 @@ namespace Falcor
         glm::vec2 distanceRange;
         calcDistanceRange(pRenderCtx, pCamera, pDepthBuffer, distanceRange);
 
-        RenderContext::Viewport VP;
+        PipelineState::Viewport VP;
         VP.originX = 0;
         VP.originY = 0;
         VP.minDepth = 0;
         VP.maxDepth = 1;
         VP.height = mShadowPass.mapSize.x;
         VP.width = mShadowPass.mapSize.y;
-        pRenderCtx->pushViewport(0, VP);
+        // DISABLED_FOR_D3D12
+//        pRenderCtx->pushViewport(0, VP);
 
         // DISABLED_FOR_D3D12
 //        const auto& pOldRS = pRenderCtx->getRasterizerState();

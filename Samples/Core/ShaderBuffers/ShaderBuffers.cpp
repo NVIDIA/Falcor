@@ -77,28 +77,23 @@ void ShaderBuffersSample::onLoad()
     mpProgramVars = ProgramVars::create(mpProgram->getActiveVersion()->getReflector());
 
     // create pipeline cache
-    mpPsoCache = PipelineStateCache::create();
     RasterizerState::Desc rsDesc;
     rsDesc.setCullMode(RasterizerState::CullMode::Back);
-    mpPsoCache->setRasterizerState(RasterizerState::create(rsDesc));
+    mpDefaultPipelineState->setRasterizerState(RasterizerState::create(rsDesc));
 
     // Depth test
     DepthStencilState::Desc dsDesc;
     dsDesc.setDepthTest(true);
-    mpPsoCache->setDepthStencilState(DepthStencilState::create(dsDesc));
-    mpPsoCache->setFbo(mpDefaultFBO);
-    mpPsoCache->setVao(mpVao);
-    mpPsoCache->setPrimitiveType(PipelineState::PrimitiveType::Triangle);
-    mpPsoCache->setProgram(mpProgram);
+    mpDefaultPipelineState->setDepthStencilState(DepthStencilState::create(dsDesc));
+    mpDefaultPipelineState->setFbo(mpDefaultFBO);
+    mpDefaultPipelineState->setVao(mpVao);
+    mpDefaultPipelineState->setProgram(mpProgram);
 }
 
 void ShaderBuffersSample::onFrameRender()
 {
     const glm::vec4 clearColor(0.38f, 0.52f, 0.10f, 1);
     mpRenderContext->clearFbo(mpDefaultFBO.get(), clearColor, 1.0f, 0, FboAttachmentType::All);
-
-    mpRenderContext->setPipelineState(mpPsoCache->getPSO());
-
     mCameraController.update();
 
     // Update uniform-buffers data
@@ -112,9 +107,6 @@ void ShaderBuffersSample::onFrameRender()
     
     // Set uniform buffers
     mpRenderContext->setProgramVariables(mpProgramVars);
-
-    mpRenderContext->setVao(mpVao);
-    mpRenderContext->setTopology(RenderContext::Topology::TriangleList);
     mpRenderContext->drawIndexed(mIndexCount, 0, 0);
 
      std::string msg = getFpsMsg() + '\n';
@@ -145,13 +137,11 @@ bool ShaderBuffersSample::onMouseEvent(const MouseEvent& mouseEvent)
 
 void ShaderBuffersSample::onResizeSwapChain()
 {
-    RenderContext::Viewport VP;
-    VP.height = (float)mpDefaultFBO->getHeight();
-    VP.width = (float)mpDefaultFBO->getWidth();
-    mpRenderContext->setViewport(0, VP);
+    float height = (float)mpDefaultFBO->getHeight();
+    float width = (float)mpDefaultFBO->getWidth();
 
     mpCamera->setFovY(float(M_PI / 8));
-    mpCamera->setAspectRatio(VP.width / VP.height);
+    mpCamera->setAspectRatio(width / height);
 }
 
 int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ LPSTR lpCmdLine, _In_ int nShowCmd)

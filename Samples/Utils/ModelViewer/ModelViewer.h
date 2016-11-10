@@ -62,7 +62,7 @@ private:
 
     Program::SharedPtr mpProgram = nullptr;
     ProgramVars::SharedPtr mpProgramVars = nullptr;
-    PipelineStateCache::SharedPtr mpPipelineStateCache = nullptr;
+    PipelineState::SharedPtr mpPipelineState = nullptr;
 
     enum
     {

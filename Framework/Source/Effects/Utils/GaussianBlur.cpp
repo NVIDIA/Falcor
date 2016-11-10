@@ -93,7 +93,7 @@ namespace Falcor
     {
         createTmpFbo(pSrc);
         uint32_t arraySize = pSrc->getArraySize();
-        RenderContext::Viewport vp;
+        PipelineState::Viewport vp;
         vp.originX = 0;
         vp.originY = 0;
         vp.height = (float)mpTmpFbo->getHeight();
@@ -101,27 +101,28 @@ namespace Falcor
         vp.minDepth = 0;
         vp.maxDepth = 1;
 
+        PipelineState* pState = pRenderContext->getPipelineState().get();
         for(uint32_t i = 0; i < arraySize; i++)
         {
-            pRenderContext->pushViewport(i, vp);
+            pState->pushViewport(i, vp);
         }
 
         // Horizontal pass
         mpCb->setTexture(0, pSrc, mpSampler.get(), false);
-        pRenderContext->pushFbo(mpTmpFbo);
+        pState->pushFbo(mpTmpFbo);
         // DISABLED_FOR_D3D12
 //        pRenderContext->setUniformBuffer(0, mpUbo);
         mpHorizontalBlur->execute(pRenderContext);
 
         // Vertical pass
         mpCb->setTexture(0, mpTmpFbo->getColorTexture(0).get(), mpSampler.get(), false);
-        pRenderContext->setFbo(pDst);
+        pState->setFbo(pDst);
         mpVerticalBlur->execute(pRenderContext);
 
-        pRenderContext->popFbo();
+        pState->popFbo();
         for(uint32_t i = 0; i < arraySize; i++)
         {
-            pRenderContext->popViewport(i);
+            pState->popViewport(i);
         }
     }   
 }

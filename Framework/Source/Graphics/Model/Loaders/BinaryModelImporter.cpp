@@ -959,7 +959,7 @@ namespace Falcor
                 BoundingBox box = BoundingBox::fromMinMax(min, max);
 
                 // create the mesh                
-                auto pMesh = Mesh::create(pVBs, numVertices, pIB, numIndices, pLayout, RenderContext::Topology::TriangleList, pMaterial, box, false);
+                auto pMesh = Mesh::create(pVBs, numVertices, pIB, numIndices, pLayout, Vao::Topology::TriangleList, pMaterial, box, false);
                 pModel->addMesh(std::move(pMesh));
                 meshToSubmeshesID[meshIdx].push_back(pModel->getMeshCount() - 1);
             }

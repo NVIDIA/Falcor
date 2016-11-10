@@ -299,6 +299,8 @@ namespace Falcor
             return;
         }
         pVars->setTextureRange(pResourceDesc->regIndex, kTexCount, (Texture::SharedConstPtr*)&mData.textures);
+
+        pVars->setSampler("gMaterial.samplerState", mpSamplerOverride);
     }
 
     bool Material::operator==(const Material& other) const

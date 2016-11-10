@@ -260,7 +260,7 @@ Model::SharedPtr   VRController::getRenderableAxes( void )
                                                     sizeof( idxData ),
                                                     idxData,
                                                     nullptr,
-                                                    RenderContext::Topology::LineList );
+                                                    Vao::Topology::LineList );
 
     return mpRenderableAxes;
 }

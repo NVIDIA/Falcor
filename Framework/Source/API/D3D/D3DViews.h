@@ -25,7 +25,6 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#ifdef FALCOR_D3D
 #include "Framework.h"
 
 namespace Falcor
@@ -220,4 +219,3 @@ namespace Falcor
         desc.Format = getDxgiFormat(pTexture->getFormat());
     }
 }
-#endif //#ifdef FALCOR_D3D

@@ -81,7 +81,7 @@ namespace Falcor
         static Model::SharedPtr create( VertexFormat vertLayout, uint32_t vboSz, const void *vboData, 
                                         uint32_t idxBufSz, const uint32_t *idxData, 
                                         Texture::SharedPtr diffuseTexture = nullptr,
-                                        RenderContext::Topology geomTopology = RenderContext::Topology::TriangleList );
+                                        Vao::Topology geomTopology = Vao::Topology::TriangleList );
 
     private:
         static ResourceFormat    getResourceFormat( AttribFormat format, uint32_t components );

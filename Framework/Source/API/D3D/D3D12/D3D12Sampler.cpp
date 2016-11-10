@@ -25,9 +25,10 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#ifdef FALCOR_D3D12
 #include "Framework.h"
 #include "API/Sampler.h"
+#include "API/D3D/D3DState.h"
+#include "API/Device.h"
 
 namespace Falcor
 {
@@ -40,7 +41,15 @@ namespace Falcor
 
     Sampler::SharedPtr Sampler::create(const Desc& desc)
     {
-        return nullptr;
+        SharedPtr pSampler = SharedPtr(new Sampler(desc));
+        D3D12_SAMPLER_DESC d3dDesc;
+        initD3DSamplerDesc(pSampler.get(), d3dDesc);
+        DescriptorHeap* pHeap = gpDevice->getSamplerDescriptorHeap().get();
+        uint32_t index = pHeap->allocateHandle();
+
+        gpDevice->getApiHandle()->CreateSampler(&d3dDesc, pHeap->getCpuHandle(index));
+        pSampler->mApiHandle = pHeap->getGpuHandle(index);
+
+        return pSampler;
     }
 }
-#endif //#ifdef FALCOR_D3D12

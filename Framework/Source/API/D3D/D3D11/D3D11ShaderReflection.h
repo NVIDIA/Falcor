@@ -26,7 +26,6 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 #pragma once
-#ifdef FALCOR_D3D11
 #include "API/ShaderReflection.h"
 
 namespace Falcor
@@ -44,4 +43,3 @@ namespace Falcor
 
     /*! @} */
 }
-#endif // FALCOR_D3D11

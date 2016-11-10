@@ -27,16 +27,17 @@
 ***************************************************************************/
 #pragma once
 #include "Framework.h"
-#include "PipelineState.h"
+#include "PipelineStateObject.h"
 #include "BlendState.h"
+#include "Vao.h"
 
 namespace Falcor
 {
-    BlendState::SharedPtr PipelineState::spDefaultBlendState;
-    RasterizerState::SharedPtr PipelineState::spDefaultRasterizerState;
-    DepthStencilState::SharedPtr PipelineState::spDefaultDepthStencilState;
+    BlendState::SharedPtr PipelineStateObject::spDefaultBlendState;
+    RasterizerState::SharedPtr PipelineStateObject::spDefaultRasterizerState;
+    DepthStencilState::SharedPtr PipelineStateObject::spDefaultDepthStencilState;
 
-    PipelineState::SharedPtr PipelineState::create(const Desc& desc)
+    PipelineStateObject::SharedPtr PipelineStateObject::create(const Desc& desc)
     {
         if (spDefaultBlendState == nullptr)
         {
@@ -46,7 +47,7 @@ namespace Falcor
             spDefaultRasterizerState = RasterizerState::create(RasterizerState::Desc());
         }
 
-        SharedPtr pState = SharedPtr(new PipelineState(desc));
+        SharedPtr pState = SharedPtr(new PipelineStateObject(desc));
 
         // Initialize default objects
         if (!pState->mDesc.mpBlendState)            pState->mDesc.mpBlendState              = spDefaultBlendState;

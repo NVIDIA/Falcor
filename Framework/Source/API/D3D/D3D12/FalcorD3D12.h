@@ -59,6 +59,7 @@ namespace Falcor
     using RtvHandle = D3D12_CPU_DESCRIPTOR_HANDLE;
     using DsvHandle = D3D12_CPU_DESCRIPTOR_HANDLE;
     using SrvHandle = D3D12_GPU_DESCRIPTOR_HANDLE;
+    using SamplerHandle = D3D12_GPU_DESCRIPTOR_HANDLE;
     using UavHandle = D3D12_GPU_DESCRIPTOR_HANDLE;
     using GpuAddress = D3D12_GPU_VIRTUAL_ADDRESS;
 
@@ -80,7 +81,6 @@ namespace Falcor
     using DepthStencilStateHandle = void*;
     using RasterizerStateHandle = void*;
     using BlendStateHandle = void*;
-    using SamplerApiHandle = void*;
 
     static const uint32_t kSwapChainBuffers = 3;
     /*! @} */

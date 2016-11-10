@@ -34,208 +34,48 @@
 
 namespace Falcor
 {
-    void RenderContext::initCommon(uint32_t viewportCount)
+    RenderContext::RenderContext()
     {
-        // create an empty FBO
-        mpEmptyFBO = Fbo::create();
-        setFbo(mpEmptyFBO);
-
-        // create the viewports
-        mState.viewports.resize(viewportCount);
-        mState.scissors.resize(viewportCount);
-        mVpStack.resize(viewportCount);
-        mScStack.resize(viewportCount);
-        for(uint32_t i = 0; i < viewportCount; i++)
-        {
-            applyViewport(i);
-            applyScissor(i);
-        }
-    }
-
-    const RenderContext::Viewport& RenderContext::getViewport(uint32_t index) const
-    {
-        if(index >= mState.viewports.size())
-        {
-            Logger::log(Logger::Level::Error, "RenderContext::getViewport() - Viewport index out of range. Max possible index is " + std::to_string(mState.viewports.size()) + ", got " + std::to_string(index));
-            return mState.viewports[0];
-        }
-        return mState.viewports[index];
-    }
-
-    const RenderContext::Scissor& RenderContext::getScissor(uint32_t index) const
-    {
-        if (index >= mState.scissors.size())
-        {
-            Logger::log(Logger::Level::Error, "RenderContext::getScissor() - Scissor index out of range. Max possible index is " + std::to_string(mState.scissors.size()) + ", got " + std::to_string(index));
-            return mState.scissors[0];
-        }
-        return mState.scissors[index];
-    }
-
-    void RenderContext::pushState()
-    {
-        mStateStack.push(mState);
-    }
-
-    void RenderContext::popState()
-    {
-        if(mStateStack.empty())
-        {
-            Logger::log(Logger::Level::Error, "RenderContext::popState() - can't pop state since the state stack is empty.");
-            return;
-        }
-        mState = mStateStack.top();
-
-        // And set all state objects
-        applyFbo();
-        applyVao();
-        applyTopology();
-        applyPipelineState();
-        applyProgramVars();
-
-        for(uint32_t i = 0; i < mState.viewports.size(); i++)
-        {
-            applyViewport(i);
-        }
-
-        mStateStack.pop();
-    }
-
-    void RenderContext::pushFbo(const Fbo::SharedPtr& pFbo)
-    {
-        mFboStack.push(mState.pFbo);
-        setFbo(pFbo);
-    }
-
-    void RenderContext::popFbo()
-    {
-        if(mFboStack.empty())
-        {
-            Logger::log(Logger::Level::Error, "RenderContext::popFbo() - can't pop FBO since the FBO stack is empty.");
-            return;
-        }
-        const auto& pFbo = mFboStack.top();
-        setFbo(pFbo);
-        mFboStack.pop();
-    }
-
-    void RenderContext::pushViewport(uint32_t index, const Viewport& vp)
-    {
-        mVpStack[index].push(mState.viewports[index]);
-        setViewport(index, vp);
-    }
-
-    void RenderContext::popViewport(uint32_t index)
-    {
-        if(mVpStack[index].empty())
-        {
-            Logger::log(Logger::Level::Error, "RenderContext::popViewport() - can't pop viewport since the viewport stack is empty.");
-            return;
-        }
-        const auto& VP = mVpStack[index].top();
-        setViewport(index, VP);
-        mVpStack[index].pop();
-    }
-
-    void RenderContext::pushScissor(uint32_t index, const Scissor& sc)
-    {
-        mScStack[index].push(mState.scissors[index]);
-        setScissor(index, sc);
-    }
-
-    void RenderContext::popScissor(uint32_t index)
-    {
-        if(mScStack[index].empty())
-        {
-            Logger::log(Logger::Level::Error, "RenderContext::popScissor() - can't pop scissor since the scissor stack is empty.");
-            return;
-        }
-        const auto& sc = mScStack[index].top();
-        setScissor(index, sc);
-        mScStack[index].pop();
-    }
-
-    void RenderContext::setPipelineState(const PipelineState::SharedPtr& pState)
-    {
-        mState.pRenderState = pState;
-        applyPipelineState();
-    }
-
-    void RenderContext::setVao(const Vao::SharedConstPtr& pVao)
-    {
-        mState.pVao = pVao;
-        applyVao();
-    }
-
-    Fbo::SharedConstPtr RenderContext::getFbo() const
-    {
-        return mState.pFbo;
-    }
-
-    void RenderContext::setFbo(const Fbo::SharedPtr& pFbo)
-    {
-        const auto& pTemp = (pFbo == nullptr) ? mpEmptyFBO : pFbo;
-        mState.pFbo = pTemp;
-        if(pTemp->checkStatus())
-        {
-            applyFbo();
-        }
-    }
-
-    void RenderContext::setTopology(Topology topology)
-    {
-        mState.topology = topology;
-        applyTopology();
-    }
-
-    void RenderContext::setViewport(uint32_t index, const Viewport& vp)
-    {
-        if(index >= mState.viewports.size())
-        {
-            Logger::log(Logger::Level::Error, "RenderContext::setViewport() - Viewport index out of range. Max possible index is " + std::to_string(mState.viewports.size()) + ", got " + std::to_string(index));
-            return;
-        }
-
-        mState.viewports[index] = vp;
-        applyViewport(index);
-    }
-
-
-    void RenderContext::setScissor(uint32_t index, const Scissor& sc)
-    {
-        if (index >= mState.scissors.size())
-        {
-            Logger::log(Logger::Level::Error, "RenderContext::setScissor() - Scissor index out of range. Max possible index is " + std::to_string(mState.scissors.size()) + ", got " + std::to_string(index));
-            return;
-        }
-
-        mState.scissors[index] = sc;
-        applyScissor(index);
     }
 
     void RenderContext::prepareForDraw()
     {
-        if (mState.pPsoCache)
-        {
-            setPipelineState(mState.pPsoCache->getPSO());
-        }
-        // DISABLED_FOR_D3D12
-//         for(auto& pUBO : mState.pUniformBuffers)
-//         {
-//             if(pUBO)
-//             {
-//                 pUBO->uploadToGPU();
-//             }
-//         }
-// 
-//         for(auto& pSSBO : mState.pShaderStorageBuffers)
-//         {
-//             if(pSSBO)
-//             {
-//                 pSSBO->uploadToGPU();
-//                 pSSBO->setGpuCopyDirty();
-//             }
-//         }
         prepareForDrawApi();
+    }
+
+    void RenderContext::pushPipelineState(const PipelineState::SharedPtr& pState)
+    {
+        mPipelineStateStack.push(mpPipelineState);
+        setPipelineState(pState);
+    }
+
+    void RenderContext::popPipelineState()
+    {
+        if (mPipelineStateStack.empty())
+        {
+            logWarning("Can't pop from the PipelineState stack. The stack is empty");
+            return;
+        }
+
+        setPipelineState(mPipelineStateStack.top());
+        mPipelineStateStack.pop();
+    }
+
+    void RenderContext::pushProgramVars(const ProgramVars::SharedPtr& pVars)
+    {
+        mProgramVarsStack.push(mpProgramVars);
+        setProgramVariables(pVars);
+    }
+
+    void RenderContext::popProgramVars()
+    {
+        if (mProgramVarsStack.empty())
+        {
+            logWarning("Can't pop from the ProgramVars stack. The stack is empty");
+            return;
+        }
+
+        setProgramVariables(mProgramVarsStack.top());
+        mProgramVarsStack.pop();
     }
 }

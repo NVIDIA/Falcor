@@ -76,8 +76,8 @@ namespace Falcor
         {
             pGui->addFloatVar("Bitrate (Mbps)", mBitrate, 0, FLT_MAX, 0.01f);
             pGui->addIntVar("GOP Size", (int32_t&)mGopSize, 0, 100000, 1);
+            pGui->popGroup();
         }
-        pGui->popGroup();
 
         pGui->addCheckBox("Capture UI", mCaptureUI);
         pGui->addTooltip("Check this box if you want the GUI recorded");
@@ -88,8 +88,8 @@ namespace Falcor
             {
                 pGui->addFloatVar("Start Time", mStartTime, 0, FLT_MAX, 0.001f);
                 pGui->addFloatVar("End Time", mEndTime, 0, FLT_MAX, 0.001f);
+                pGui->popGroup();
             }
-            pGui->popGroup();
         }
 
         if (pGui->addButton("Start Recording"))

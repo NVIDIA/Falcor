@@ -45,6 +45,7 @@ namespace Falcor
     {
         // Tell the device to resize the swap chain
         mpDefaultFBO = gpDevice->resizeSwapChain(mpWindow->getClientAreaWidth(), mpWindow->getClientAreaHeight());
+        mpDefaultPipelineState->setFbo(mpDefaultFBO);
 
         // Tell the GUI the swap-chain size changed
         mpGui->onWindowResize(mpDefaultFBO->getWidth(), mpDefaultFBO->getHeight());
@@ -173,7 +174,10 @@ namespace Falcor
 
         // Get the default objects before calling onLoad()
         mpDefaultFBO = gpDevice->getSwapChainFbo();
+        mpDefaultPipelineState = PipelineState::create();
+        mpDefaultPipelineState->setFbo(mpDefaultFBO);
         mpRenderContext = gpDevice->getRenderContext();
+        mpRenderContext->setPipelineState(mpDefaultPipelineState);
 
         // Init the UI
         initUI();
@@ -229,8 +233,9 @@ namespace Falcor
         if (mpGui->pushGroup("Help"))
         {
             mpGui->addText(help);
+            mpGui->popGroup();
         }
-        mpGui->popGroup();
+
         if(mpGui->pushGroup("Global Controls"))
         {
             mpGui->addFloatVar("Time", mCurrentTime, 0, FLT_MAX);
@@ -241,8 +246,8 @@ namespace Falcor
             {
                 initVideoCapture();
             }
+            mpGui->popGroup();
         }
-        mpGui->popGroup();
 
         onGuiRender();
         mpGui->popWindow();
@@ -270,19 +275,9 @@ namespace Falcor
             calculateTime();
 
 			// Bind the default state
-			mpRenderContext->setFbo(mpDefaultFBO);
-            
-            // Set the viewport
-            // FIXME D3D12 - This should actually be done inside RenderContext api specific code
-            //              We need to record the new state from the previous frame into the command list
-            RenderContext::Viewport vp;
-            vp.height = (float)mpDefaultFBO->getHeight();
-            vp.width = (float)mpDefaultFBO->getWidth();
-            mpRenderContext->setViewport(0, vp);
-
-            // DISABLED_FOR_D3D12
-//            mpRenderContext->setRenderState(nullptr);
-             onFrameRender();
+            mpRenderContext->setPipelineState(mpDefaultPipelineState);
+            mpDefaultPipelineState->setFbo(mpDefaultFBO);
+            onFrameRender();
         }
 
         {

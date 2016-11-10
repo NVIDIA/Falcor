@@ -26,7 +26,6 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 #include "Framework.h"
-#ifdef FALCOR_D3D
 #include "API/ProgramVersion.h"
 #include "API/ProgramReflection.h"
 #include <algorithm>
@@ -44,5 +43,3 @@ namespace Falcor
         return true;
     }
 }
-
-#endif //#ifdef FALCOR_D3D

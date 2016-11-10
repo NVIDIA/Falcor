@@ -25,35 +25,3 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#pragma once
-#include "Framework.h"
-#include "PipelineStateCache.h"
-
-namespace Falcor
-{
-    std::vector<PipelineState::SharedPtr> gStates;
-    PipelineState::SharedPtr PipelineStateCache::getPSO()
-    {
-        // Check if we need to create a root-signature
-        // FIXME Is this the correct place for this?
-        const ProgramVersion* pProgVersion = mpProgram ? mpProgram->getActiveVersion().get() : nullptr;
-        if (pProgVersion != mCachedData.pProgramVersion)
-        {
-            mCachedData.pProgramVersion = pProgVersion;
-            if (mCachedData.isUserRootSignature == false)
-            {
-                mpRootSignature = RootSignature::create(pProgVersion->getReflector().get());
-            }
-        }
-
-        mDesc.setProgramVersion(mpProgram ? mpProgram->getActiveVersion() : nullptr);
-        mDesc.setFboFormats(mpFbo ? mpFbo->getDesc() : Fbo::Desc());
-        mDesc.setVertexLayout(mpVao ? mpVao->getVertexLayout() : nullptr);
-        mDesc.setRootSignature(mpRootSignature);
-
-        // FIXME D3D12 Need real cache
-        auto p = PipelineState::create(mDesc);
-        gStates.push_back(p);
-        return p;
-    }
-}

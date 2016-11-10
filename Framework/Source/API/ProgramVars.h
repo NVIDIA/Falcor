@@ -26,6 +26,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 #pragma once
+#include "API/Texture.h"
 #include "API/ConstantBuffer.h"
 #include "API/Sampler.h"
 #include <unordered_map>
@@ -152,7 +153,7 @@ namespace Falcor
             \param[in] pSampler The sampler object to bind
             \return Error code. The function fails if the specified slot is not used
         */
-        bool setSampler(uint32_t index, const Sampler::SharedPtr& pSampler);
+        bool setSampler(uint32_t index, const Sampler::SharedConstPtr& pSampler);
         
         /** Get the program reflection interface
         */

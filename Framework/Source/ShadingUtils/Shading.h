@@ -232,7 +232,7 @@ vec4 _fn evalDiffuseLayer(in const MaterialLayerValues layer, in const vec3 ligh
     value *= evalDiffuseBSDF(normal, lightDir);
     weight = albedo.w;
     /* Implement Oren-Nayar and/or Eric's diffuse GGX here if required */
-    result.diffuseAlbedo += albedo.rrr;
+    result.diffuseAlbedo += albedo.rgb;
     result.diffuseIllumination += value;
 #else
     value = 0;

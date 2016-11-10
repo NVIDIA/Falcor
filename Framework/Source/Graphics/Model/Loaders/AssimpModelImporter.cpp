@@ -421,6 +421,7 @@ namespace Falcor
 
         uint32_t AssimpFlags = aiProcessPreset_TargetRealtime_MaxQuality |
             aiProcess_OptimizeGraph |
+            aiProcess_FlipUVs |
            // aiProcess_FixInfacingNormals | // causes incorrect facing normals for crytek-sponza
             0;
 
@@ -667,17 +668,17 @@ namespace Falcor
             pVBs[i] = createVertexBuffer(pAiMesh, vertexCount, boundingBox, pVbLayout);
         }
 
-        RenderContext::Topology topology;
+        Vao::Topology topology;
         switch(pAiMesh->mFaces[0].mNumIndices)
         {
         case 1:
-            topology = RenderContext::Topology::PointList;
+            topology = Vao::Topology::PointList;
             break;
         case 2:
-            topology = RenderContext::Topology::LineList;
+            topology = Vao::Topology::LineList;
             break;
         case 3:
-            topology = RenderContext::Topology::TriangleList;
+            topology = Vao::Topology::TriangleList;
             break;
         default:
             Logger::log(Logger::Level::Fatal, std::string("Error when creating mesh. Unknown topology with " + std::to_string(pAiMesh->mFaces[0].mNumIndices) + " indices."));
