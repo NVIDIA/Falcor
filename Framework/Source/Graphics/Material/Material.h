@@ -275,7 +275,6 @@ namespace Falcor
 		Material(const std::string& name);		
         mutable MaterialData mData;				///< Material data shared between host and device
 		bool				mDoubleSided = false;	///< Used for culling 
-		Sampler::SharedPtr mpSamplerOverride = nullptr;
         std::string			mName;
 
         // The next functions and fields are used for material compilation into shaders.

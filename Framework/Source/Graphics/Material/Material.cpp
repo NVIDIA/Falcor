@@ -300,12 +300,12 @@ namespace Falcor
         }
         pVars->setTextureRange(pResourceDesc->regIndex, kTexCount, (Texture::SharedConstPtr*)&mData.textures);
 
-        pVars->setSampler("gMaterial.samplerState", mpSamplerOverride);
+        pVars->setSampler("gMaterial.samplerState", mData.samplerState);
     }
 
     bool Material::operator==(const Material& other) const
     {
-		return memcmp(&mData, &other.mData, sizeof(mData)) == 0 && mpSamplerOverride == other.mpSamplerOverride;
+		return memcmp(&mData, &other.mData, sizeof(mData)) == 0 && mData.samplerState == other.mData.samplerState;
     }
 
     void Material::evictTextures() const
@@ -315,7 +315,7 @@ namespace Falcor
         {
 			if(pTextures[i])
             {
-                pTextures[i]->evict(mpSamplerOverride.get());
+                pTextures[i]->evict(mData.samplerState.get());
             }
         }
     }
