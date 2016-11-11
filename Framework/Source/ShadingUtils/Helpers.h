@@ -258,7 +258,7 @@ void _fn perturbNormal(in const MaterialData mat, _ref(ShadingAttribs) attr, boo
 {
 	if(forceSample || mat.desc.hasNormalMap != 0)
 	{
-		vec3 texValue = sampleTexture(mat.textures.normalMap, mat.samplerState, attr).rrr;
+		vec3 texValue = sampleTexture(mat.textures.normalMap, mat.samplerState, attr).rgb;
         applyNormalMap(RGBToNormal(texValue), attr.N, attr.T, attr.B);
 	}
 }
