@@ -240,7 +240,11 @@ namespace Falcor
 
     bool ProgramVars::setTexture(uint32_t index, const Texture::SharedConstPtr& pTexture)
     {
-        mAssignedSrvs[index].pResource = pTexture;
+        // FIXME D3D12
+        if(mAssignedSrvs.find(index) != mAssignedSrvs.end())
+        {
+            mAssignedSrvs[index].pResource = pTexture;
+        }
         return true;
     }
 

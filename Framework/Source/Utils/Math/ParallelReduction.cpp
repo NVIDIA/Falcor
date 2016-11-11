@@ -98,18 +98,18 @@ namespace Falcor
 //        pRenderCtx->setUniformBuffer(0, pUbo);
 
         // Set draw params
-        pRenderCtx->pushFbo(pDst);
-        RenderContext::Viewport vp;
-        vp.height = (float)pDst->getHeight();
-        vp.width = (float)pDst->getWidth();
-        pRenderCtx->pushViewport(0, vp);
-
-        // Launch the program
-        pProgram->execute(pRenderCtx);
-
-        // Restore state
-        pRenderCtx->popViewport(0);
-        pRenderCtx->popFbo();
+//         pRenderCtx->pushFbo(pDst);
+//         RenderContext::Viewport vp;
+//         vp.height = (float)pDst->getHeight();
+//         vp.width = (float)pDst->getWidth();
+//         pRenderCtx->pushViewport(0, vp);
+// 
+//         // Launch the program
+//         pProgram->execute(pRenderCtx);
+// 
+//         // Restore state
+//         pRenderCtx->popViewport(0);
+//         pRenderCtx->popFbo();
     }
 
     glm::vec4 ParallelReduction::reduce(RenderContext* pRenderCtx, const Texture* pInput)
