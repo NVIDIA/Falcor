@@ -28,6 +28,7 @@
 #pragma once
 #include <map>
 #include "API/Formats.h"
+#include <unordered_map>
 
 namespace Falcor
 {
@@ -212,8 +213,6 @@ namespace Falcor
         */
         void generateMips() const;
 
-        SrvHandle getShaderResourceView() const;
-
         /** Name the texture
         */
         void setName(const std::string& name) { mName = name; }
@@ -240,9 +239,39 @@ namespace Falcor
 
         D3D12_RESOURCE_STATES getResourceState() const { return mResourceState; }
         void setResourceState(D3D12_RESOURCE_STATES state) const { mResourceState = state; }
+
+        SrvHandle getResourceView(uint32_t firstArraySlice, uint32_t arraySize, uint32_t mostDetailedMip, uint32_t mipCount) const;
+        SrvHandle getWholeResourceView() const;
     protected:
         friend class Device;
         
+        struct ViewInfo
+        {
+            uint32_t firstArraySlice;
+            uint32_t arraySize;
+            uint32_t mostDetailedMip;
+            uint32_t mipCount;
+
+            bool operator==(const ViewInfo& other) const
+            {
+                return (firstArraySlice == other.firstArraySlice) && (arraySize == other.arraySize) && (mipCount == other.mipCount) && (mostDetailedMip == other.mostDetailedMip);
+            }
+        };
+
+        struct ViewInfoHasher
+        {
+            std::size_t operator()(const ViewInfo& v) const
+            {
+                return ((std::hash<uint32_t>()(v.firstArraySlice)
+                    ^ (std::hash<uint32_t>()(v.arraySize) << 1)) >> 1)
+                    ^ (std::hash<uint32_t>()(v.mipCount) << 1)
+                    ^ (std::hash<uint32_t>()(v.mostDetailedMip) << 3);
+            }
+        };
+
+        mutable std::unordered_map<ViewInfo, SrvHandle, ViewInfoHasher> mSrvs;
+        mutable SrvHandle mWholeResourceView = { 0 };
+
 		static uint32_t tempDefaultUint;
 
         std::string mName;
@@ -265,7 +294,6 @@ namespace Falcor
 		int32_t mSparsePageHeight = 0;
 		int32_t mSparsePageDepth = 0;
 
-        mutable uint32_t mSrvIndex = -1;
         mutable std::map<uint32_t, uint64_t> mBindlessTextureHandle;
         mutable D3D12_RESOURCE_STATES mResourceState = D3D12_RESOURCE_STATE_COMMON;
     };

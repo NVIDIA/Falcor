@@ -40,19 +40,19 @@ namespace Falcor
     };
 
     template<>
-    D3D12_RTV_DIMENSION getViewDimension<D3D12_RTV_DIMENSION>(Texture::Type type, uint32_t arraySize)
+    D3D12_RTV_DIMENSION getViewDimension<D3D12_RTV_DIMENSION>(Texture::Type type, bool isTextureArray)
     {
         switch(type)
         {
         case Texture::Type::Texture1D:
-            return (arraySize > 1) ? D3D12_RTV_DIMENSION_TEXTURE1DARRAY : D3D12_RTV_DIMENSION_TEXTURE1D;
+            return (isTextureArray) ? D3D12_RTV_DIMENSION_TEXTURE1DARRAY : D3D12_RTV_DIMENSION_TEXTURE1D;
         case Texture::Type::Texture2D:
-            return (arraySize > 1) ? D3D12_RTV_DIMENSION_TEXTURE2DARRAY : D3D12_RTV_DIMENSION_TEXTURE2D;
+            return (isTextureArray) ? D3D12_RTV_DIMENSION_TEXTURE2DARRAY : D3D12_RTV_DIMENSION_TEXTURE2D;
         case Texture::Type::Texture3D:
-            assert(arraySize == 1);
+            assert(isTextureArray == false);
             return D3D12_RTV_DIMENSION_TEXTURE3D;
         case Texture::Type::Texture2DMultisample:
-            return (arraySize > 1) ? D3D12_RTV_DIMENSION_TEXTURE2DMSARRAY : D3D12_RTV_DIMENSION_TEXTURE2DMS;
+            return (isTextureArray) ? D3D12_RTV_DIMENSION_TEXTURE2DMSARRAY : D3D12_RTV_DIMENSION_TEXTURE2DMS;
         case Texture::Type::TextureCube:
             return D3D12_RTV_DIMENSION_TEXTURE2DARRAY;
         default:
@@ -62,16 +62,16 @@ namespace Falcor
     }
 
     template<>
-    D3D12_DSV_DIMENSION getViewDimension<D3D12_DSV_DIMENSION>(Texture::Type type, uint32_t arraySize)
+    D3D12_DSV_DIMENSION getViewDimension<D3D12_DSV_DIMENSION>(Texture::Type type, bool isTextureArray)
     {
         switch(type)
         {
         case Texture::Type::Texture1D:
-            return (arraySize > 1) ? D3D12_DSV_DIMENSION_TEXTURE1DARRAY : D3D12_DSV_DIMENSION_TEXTURE1D;
+            return (isTextureArray) ? D3D12_DSV_DIMENSION_TEXTURE1DARRAY : D3D12_DSV_DIMENSION_TEXTURE1D;
         case Texture::Type::Texture2D:                                  
-            return (arraySize > 1) ? D3D12_DSV_DIMENSION_TEXTURE2DARRAY : D3D12_DSV_DIMENSION_TEXTURE2D;
+            return (isTextureArray) ? D3D12_DSV_DIMENSION_TEXTURE2DARRAY : D3D12_DSV_DIMENSION_TEXTURE2D;
         case Texture::Type::Texture2DMultisample:
-            return (arraySize > 1) ? D3D12_DSV_DIMENSION_TEXTURE2DMSARRAY : D3D12_DSV_DIMENSION_TEXTURE2DMS;
+            return (isTextureArray) ? D3D12_DSV_DIMENSION_TEXTURE2DMSARRAY : D3D12_DSV_DIMENSION_TEXTURE2DMS;
         case Texture::Type::TextureCube:
             return D3D12_DSV_DIMENSION_TEXTURE2DARRAY;
         default:

@@ -30,15 +30,15 @@
 namespace Falcor
 {
     template<typename ViewType>
-    ViewType getViewDimension(Texture::Type type, uint32_t arraySize);
+    ViewType getViewDimension(Texture::Type type, bool isArray);
 
     template<typename ViewDesc>
-    void initializeSrvDesc(ResourceFormat format, Texture::Type type, uint32_t arraySize, ViewDesc& desc)
+    void initializeSrvDesc(ResourceFormat format, Texture::Type type, uint32_t firstArraySlice, uint32_t arraySize, uint32_t mostDetailedMip, uint32_t mipCount, bool isTextureArray, ViewDesc& desc)
     {
         // create SRV
         desc = {};
         desc.Format = getDxgiFormat(format);
-        desc.ViewDimension = getViewDimension<decltype(desc.ViewDimension)>(type, arraySize);
+        desc.ViewDimension = getViewDimension<decltype(desc.ViewDimension)>(type, isTextureArray);
 
         switch(type)
         {
@@ -57,16 +57,16 @@ namespace Falcor
             }
             break;
         case Texture::Type::Texture2D:
-            if(arraySize > 1)
+            if(isTextureArray)
             {
-                desc.Texture2DArray.MipLevels = uint32_t(-1);
+                desc.Texture2DArray.MipLevels = mipCount;
                 desc.Texture2DArray.MostDetailedMip = 0;
                 desc.Texture2DArray.ArraySize = arraySize;
                 desc.Texture2DArray.FirstArraySlice = 0;
             }
             else
             {
-                desc.Texture2D.MipLevels = uint32_t(-1);
+                desc.Texture2D.MipLevels = mipCount;
                 desc.Texture2D.MostDetailedMip = 0;
             }
             break;
@@ -117,7 +117,7 @@ namespace Falcor
             arraySize = pTexture->getArraySize();
         }
 
-        desc.ViewDimension = getViewDimension<decltype(desc.ViewDimension)>(pTexture->getType(), arraySize);
+        desc.ViewDimension = getViewDimension<decltype(desc.ViewDimension)>(pTexture->getType(), arraySize > 1);
 
         switch(pTexture->getType())
         {
@@ -177,7 +177,7 @@ namespace Falcor
             arraySize = pTexture->getArraySize();
         }
 
-        desc.ViewDimension = getViewDimension<decltype(desc.ViewDimension)>(pTexture->getType(), pTexture->getArraySize());
+        desc.ViewDimension = getViewDimension<decltype(desc.ViewDimension)>(pTexture->getType(), pTexture->getArraySize() > 1);
 
         switch(pTexture->getType())
         {

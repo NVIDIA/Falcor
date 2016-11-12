@@ -35,6 +35,8 @@ namespace Falcor
     Texture::Texture(uint32_t width, uint32_t height, uint32_t depth, uint32_t arraySize, uint32_t mipLevels, uint32_t sampleCount, ResourceFormat format, Type Type) :
         mWidth(width), mHeight(height), mDepth(depth), mMipLevels(mipLevels), mSampleCount(sampleCount), mArraySize(arraySize), mFormat(format), mType(Type)
     {
+        // FIXME D3D12
+        mMipLevels = 1;
         if(mMipLevels == kEntireMipChain)
         {
             uint32_t dims = width | height | depth;

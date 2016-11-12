@@ -45,19 +45,19 @@ namespace Falcor
     } static gGenMips;
 
     template<>
-    D3D12_SRV_DIMENSION getViewDimension<D3D12_SRV_DIMENSION>(Texture::Type type, uint32_t arraySize)
+    D3D12_SRV_DIMENSION getViewDimension<D3D12_SRV_DIMENSION>(Texture::Type type, bool isTextureArray)
     {
         switch(type)
         {
         case Texture::Type::Texture1D:
-            return (arraySize > 1) ? D3D12_SRV_DIMENSION_TEXTURE1DARRAY : D3D12_SRV_DIMENSION_TEXTURE1D;
+            return (isTextureArray) ? D3D12_SRV_DIMENSION_TEXTURE1DARRAY : D3D12_SRV_DIMENSION_TEXTURE1D;
         case Texture::Type::Texture2D:
-            return (arraySize > 1) ? D3D12_SRV_DIMENSION_TEXTURE2DARRAY : D3D12_SRV_DIMENSION_TEXTURE2D;
+            return (isTextureArray) ? D3D12_SRV_DIMENSION_TEXTURE2DARRAY : D3D12_SRV_DIMENSION_TEXTURE2D;
         case Texture::Type::Texture3D:
-            assert(arraySize == 1);
+            assert(isTextureArray == false);
             return D3D12_SRV_DIMENSION_TEXTURE3D;
         case Texture::Type::Texture2DMultisample:
-            return (arraySize > 1) ? D3D12_SRV_DIMENSION_TEXTURE2DMSARRAY : D3D12_SRV_DIMENSION_TEXTURE2DMS;
+            return (isTextureArray) ? D3D12_SRV_DIMENSION_TEXTURE2DMSARRAY : D3D12_SRV_DIMENSION_TEXTURE2DMS;
         case Texture::Type::TextureCube:
             return D3D12_SRV_DIMENSION_TEXTURE2DARRAY;
         default:
@@ -101,8 +101,8 @@ namespace Falcor
         ResourceFormat texFormat = pTexture->getFormat();
 
         D3D12_RESOURCE_DESC desc = {};
-        // FIXME D3D12
-        desc.MipLevels = 1;// uint16_t(pTexture->getMipCount());
+
+        desc.MipLevels = pTexture->getMipCount();
         desc.Format = getDxgiFormat(texFormat);
         desc.Width = align_to(getFormatWidthCompressionRatio(texFormat), pTexture->getWidth());
         desc.Height = align_to(getFormatHeightCompressionRatio(texFormat), pTexture->getHeight());
@@ -170,20 +170,33 @@ namespace Falcor
         return pTexture->mApiHandle ? pTexture : nullptr;
     }
 
-    SrvHandle Texture::getShaderResourceView() const
+    SrvHandle Texture::getResourceView(uint32_t firstArraySlice, uint32_t arraySize, uint32_t mostDetailedMip, uint32_t mipCount) const
     {
-        DescriptorHeap::SharedPtr& pHeap = gpDevice->getSrvDescriptorHeap();
-        if(mSrvIndex == -1)
+        ViewInfo view{ firstArraySlice, arraySize, mostDetailedMip, mipCount };
+        if (mSrvs.find(view) == mSrvs.end())
         {
+            DescriptorHeap::SharedPtr& pHeap = gpDevice->getSrvDescriptorHeap();
+
             // Create the shader-resource view
             D3D12_SHADER_RESOURCE_VIEW_DESC desc;
-            initializeSrvDesc(mFormat, mType, mArraySize, desc);
-            mSrvIndex = pHeap->allocateHandle();
-            DescriptorHeap::CpuHandle srv = pHeap->getCpuHandle(mSrvIndex);
+            initializeSrvDesc(mFormat, mType, firstArraySlice, arraySize, mostDetailedMip, mipCount, mArraySize > 1, desc);
+            uint32_t srvHandle = pHeap->allocateHandle();
+            DescriptorHeap::CpuHandle srv = pHeap->getCpuHandle(srvHandle);
             gpDevice->getApiHandle()->CreateShaderResourceView(mApiHandle, &desc, srv);
+            mSrvs[view] = pHeap->getGpuHandle(srvHandle);
         }
 
-        return pHeap->getGpuHandle(mSrvIndex);
+        return mSrvs[view];
+    }
+
+    SrvHandle Texture::getWholeResourceView() const
+    {
+        if (mWholeResourceView.ptr == 0)
+        {
+            mWholeResourceView = getResourceView(0, mArraySize, 0, mMipLevels);
+        }
+
+        return mWholeResourceView;
     }
 
     Texture::SharedPtr Texture::create3D(uint32_t width, uint32_t height, uint32_t depth, ResourceFormat format, uint32_t mipLevels, const void* pData, bool isSparse)

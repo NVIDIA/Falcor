@@ -289,7 +289,7 @@ namespace Falcor
             if(pTex)
             {
                 // FIXME D3D12: Handle null textures (should bind a small black texture)
-                pList->SetGraphicsRootDescriptorTable(rootOffset, pTex->getShaderResourceView());
+                pList->SetGraphicsRootDescriptorTable(rootOffset, pTex->getWholeResourceView());
             }
         }
 
