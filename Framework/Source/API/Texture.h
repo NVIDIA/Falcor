@@ -72,13 +72,13 @@ namespace Falcor
 
         ~Texture();
 
-        /** Get the texture width
+        /** Get a mip-level width
         */
         uint32_t getWidth(uint32_t mipLevel = 0) const {return (mipLevel < mMipLevels) ? max(1U, mWidth >> mipLevel) : 0;}
-        /** Get the texture height
+        /** Get a mip-level height
         */
         uint32_t getHeight(uint32_t mipLevel = 0) const { return (mipLevel < mMipLevels) ? max(1U, mHeight >> mipLevel) : 0; }
-        /** Get the texture depth
+        /** Get a mip-level depth
         */
         uint32_t getDepth(uint32_t mipLevel = 0) const { return (mipLevel < mMipLevels) ? max(1U, mDepth >> mipLevel) : 0; }
         /** Get the number of mip-levels
@@ -116,6 +116,10 @@ namespace Falcor
         /** Value used in create*() methods to signal an entire mip-chain is required
         */
         static const uint32_t kEntireMipChain = uint32_t(-1);
+
+        /** Value used in create*() methods to signal an entire array-slice is required
+        */
+        static const uint32_t kEntireArraySlice = uint32_t(-1);
 
         /** create a 1D texture
             \param Width The width of the texture.
@@ -240,8 +244,13 @@ namespace Falcor
         D3D12_RESOURCE_STATES getResourceState() const { return mResourceState; }
         void setResourceState(D3D12_RESOURCE_STATES state) const { mResourceState = state; }
 
-        SrvHandle getResourceView(uint32_t firstArraySlice, uint32_t arraySize, uint32_t mostDetailedMip, uint32_t mipCount) const;
-        SrvHandle getWholeResourceView() const;
+        /** Get a shader-resource view.
+            \param[in] firstArraySlice The first array slice of the view
+            \param[in] arraySize The array size. If this is equal to Texture#kEntireArraySlice, will create a view ranging from firstArraySlice to the texture's array size
+            \param[in] mostDetailedMip The most detailed mip level of the view
+            \param[in] mipCount The number of mip-levels to bind. If this is equal to Texture#kEntireMipChain, will create a view ranging from mostDetailedMip to the texture's mip levels count
+        */
+        SrvHandle getSRV(uint32_t firstArraySlice = 0, uint32_t arraySize = kEntireArraySlice, uint32_t mostDetailedMip = 0, uint32_t mipCount = kEntireMipChain) const;
     protected:
         friend class Device;
         
@@ -270,7 +279,6 @@ namespace Falcor
         };
 
         mutable std::unordered_map<ViewInfo, SrvHandle, ViewInfoHasher> mSrvs;
-        mutable SrvHandle mWholeResourceView = { 0 };
 
 		static uint32_t tempDefaultUint;
 

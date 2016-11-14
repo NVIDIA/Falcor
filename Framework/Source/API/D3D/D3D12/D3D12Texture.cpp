@@ -170,9 +170,23 @@ namespace Falcor
         return pTexture->mApiHandle ? pTexture : nullptr;
     }
 
-    SrvHandle Texture::getResourceView(uint32_t firstArraySlice, uint32_t arraySize, uint32_t mostDetailedMip, uint32_t mipCount) const
+    SrvHandle Texture::getSRV(uint32_t firstArraySlice, uint32_t arraySize, uint32_t mostDetailedMip, uint32_t mipCount) const
     {
+        assert(firstArraySlice < mArraySize);
+        assert(mostDetailedMip < mMipLevels);
+        if (mipCount == kEntireMipChain)
+        {
+            mipCount = mMipLevels - mostDetailedMip;
+        }
+        if (arraySize == kEntireArraySlice)
+        {
+            arraySize = mArraySize - firstArraySlice;
+        }
+        assert(mipCount + mostDetailedMip <= mMipLevels);
+        assert(arraySize + firstArraySlice <= mArraySize);
+
         ViewInfo view{ firstArraySlice, arraySize, mostDetailedMip, mipCount };
+
         if (mSrvs.find(view) == mSrvs.end())
         {
             DescriptorHeap::SharedPtr& pHeap = gpDevice->getSrvDescriptorHeap();
@@ -187,16 +201,6 @@ namespace Falcor
         }
 
         return mSrvs[view];
-    }
-
-    SrvHandle Texture::getWholeResourceView() const
-    {
-        if (mWholeResourceView.ptr == 0)
-        {
-            mWholeResourceView = getResourceView(0, mArraySize, 0, mMipLevels);
-        }
-
-        return mWholeResourceView;
     }
 
     Texture::SharedPtr Texture::create3D(uint32_t width, uint32_t height, uint32_t depth, ResourceFormat format, uint32_t mipLevels, const void* pData, bool isSparse)

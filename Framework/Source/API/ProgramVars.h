@@ -64,20 +64,20 @@ namespace Falcor
         static SharedPtr create(const ProgramReflection::SharedConstPtr& pReflector, bool createBuffers = true, const RootSignature::SharedConstPtr& pRootSig = nullptr);
 
         /** Bind a constant buffer object by name.
-            If the name doesn't exists or the CBs size doesn't match the required size, the call will fail with the appropriate error code.
+            If the name doesn't exists or the CBs size doesn't match the required size, the call will fail.
             If a buffer was previously bound it will be released.
             \param[in] name The name of the constant buffer in the program
             \param[in] pCB The constant buffer object
-            \return error code.
+            \return false is the call failed, otherwise true
         */
         bool attachConstantBuffer(const std::string& name, const ConstantBuffer::SharedPtr& pCB);
 
         /** Bind a constant buffer object by index.
-            If the no CB exists in the specified index or the CB size doesn't match the required size, the call will fail with the appropriate error code.
+            If the no CB exists in the specified index or the CB size doesn't match the required size, the call will fail.
             If a buffer was previously bound it will be released.
             \param[in] name The name of the constant buffer in the program
             \param[in] pCB The constant buffer object
-            \return error code.
+            \return false is the call failed, otherwise true
         */
         bool attachConstantBuffer(uint32_t index, const ConstantBuffer::SharedPtr& pCB);
 
@@ -109,16 +109,20 @@ namespace Falcor
             If you are using bindless textures, than this is not the right call for you. You should use the ConstantBuffer::setTexture() method instead.
             \param[in] name The name of the texture object in the shader
             \param[in] pTexture The texture object to bind
-            \return Error code. This actually depends on the build type. In release build we do minimal validation. In debug build there's more extensive verification the texture object matches the shader declaration.
+            \param[in] firstArraySlice The first array slice to bind
+            \param[in] arraySize The array size. If this is equal to Texture#kEntireArraySlice, will bind the range [firstArraySlice, pTexture->getArraySize()]
+            \param[in] mostDetailedMip The most detailed-mip level
+            \param[in] mipCount The number of mip-levels to bind. If this is equal to Texture#kEntireMipChain, will bind the range [mostDetailedMip, pTexture->getMipCount()]
+            \return false if the texture was not found in the program, otherwise true
         */
-        bool setTexture(const std::string& name, const Texture::SharedConstPtr& pTexture);
+        bool setTexture(const std::string& name, const Texture::SharedConstPtr& pTexture, uint32_t firstArraySlice = 0, uint32_t arraySize = Texture::kEntireArraySlice, uint32_t mostDetailedMip = 0, uint32_t mipCount = Texture::kEntireMipChain);
 
         /** Bind an array of texture to the program in the global namespace.
         This can be used to bind a texture declared an array or a number of different variables which are known to be continues in the register space (such as for structure fields)
         If you are using bindless textures, than this is not the right call for you. You should use the ConstantBuffer::setTexture() method instead.
         \param[in] name The name of the first texture object in the shader.
         \param[in] pTextures An array of textures to bind
-        \return Error code. This actually depends on the build type. In release build we do minimal validation. In debug build there's more extensive verification the texture object matches the shader declaration.
+        \return false if any of the textures was not found in the program, otherwise true
         */
         bool setTextureRange(const std::string& name, uint32_t count, const Texture::SharedConstPtr pTextures[]);
 
@@ -126,25 +130,27 @@ namespace Falcor
         If you are using bindless textures, than this is not the right call for you. You should use the ConstantBuffer::setTexture() method instead.
         \param[in] name The name of the sampler object in the shader
         \param[in] pSampler The sampler object to bind
-        \return Error code. The function fails if the name doesn't exists
+        \return false if the sampler was not found in the program, otherwise true
         */
         bool setSampler(const std::string& name, const Sampler::SharedConstPtr& pSampler);
 
         /** Bind a texture to the program in the global namespace.
         If you are using bindless textures, than this is not the right call for you. You should use the ConstantBuffer::setTexture() method instead.
         \param[in] index The index of the texture object in the shader
-        \param[in] pTexture The texture object to bind
-        \return Error code. This actually depends on the build type. In release build we do minimal validation. In debug build there's more extensive verification the texture object matches the shader declaration.
+        \param[in] firstArraySlice The first array slice to bind
+        \param[in] arraySize The array size. If this is equal to Texture#kEntireArraySlice, will bind the range [firstArraySlice, pTexture->getArraySize()]
+        \param[in] mostDetailedMip The most detailed-mip level
+        \param[in] mipCount The number of mip-levels to bind. If this is equal to Texture#kEntireMipChain, will bind the range [mostDetailedMip, pTexture->getMipCount()]
+        \return false if the texture was not found in the program, otherwise true
         */
-        bool setTexture(uint32_t index, const Texture::SharedConstPtr& pTexture);
-        bool setTexture(uint32_t index, const Texture::SharedConstPtr& pTexture, uint32_t firstArraySlice, uint32_t arraySize, uint32_t mostDetailedMip, uint32_t mipCount);
+        bool setTexture(uint32_t index, const Texture::SharedConstPtr& pTexture, uint32_t firstArraySlice = 0, uint32_t arraySize = Texture::kEntireArraySlice, uint32_t mostDetailedMip = 0, uint32_t mipCount = Texture::kEntireMipChain);
 
         /** Bind an array of texture to the program in the global namespace.
         This can be used to bind a texture declared an array or a number of different variables which are known to be continues in the register space (such as for structure fields)
         If you are using bindless textures, than this is not the right call for you. You should use the ConstantBuffer::setTexture() method instead.
         \param[in] startIndex The index of the first texture object in the shader
         \param[in] pTextures An array of textures to bind
-        \return Error code. This actually depends on the build type. In release build we do minimal validation. In debug build there's more extensive verification the texture object matches the shader declaration.
+        \return false if any of the textures was not found in the program, otherwise true
         */
         bool setTextureRange(uint32_t startIndex, uint32_t count, const Texture::SharedConstPtr pTextures[]);
 
@@ -152,8 +158,8 @@ namespace Falcor
             If you are using bindless textures, than this is not the right call for you. You should use the ConstantBuffer::setTexture() method instead.
             \param[in] name The name of the sampler object in the shader
             \param[in] pSampler The sampler object to bind
-            \return Error code. The function fails if the specified slot is not used
-        */
+            \return false if the sampler was not found in the program, otherwise true
+            */
         bool setSampler(uint32_t index, const Sampler::SharedConstPtr& pSampler);
         
         /** Get the program reflection interface

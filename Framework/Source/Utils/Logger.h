@@ -72,6 +72,9 @@ namespace Falcor
         */
         static void log(Level L, const std::string& msg, const bool forceMsgBox = false);
 
+        /** Check if the logger is enabled
+        */
+        static constexpr bool enabled() { return _LOG_ENABLED != 0; }
     private:
         Logger() = delete;
         static bool sShowErrorBox;
