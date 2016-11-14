@@ -173,9 +173,9 @@ namespace Falcor
                 mIsLayered = (attachment.arraySlice == kAttachEntireMipLevel);
             }
 
-            mWidth = min(mWidth, pTexture->getWidth());
-            mHeight = min(mHeight, pTexture->getHeight());
-            mDepth = min(mDepth, pTexture->getDepth());
+            mWidth = min(mWidth, pTexture->getWidth(attachment.mipLevel));
+            mHeight = min(mHeight, pTexture->getHeight(attachment.mipLevel));
+            mDepth = min(mDepth, pTexture->getDepth(attachment.mipLevel));
 
             {
 				if ( (pTexture->getSampleCount() > mDesc.getSampleCount()) && isDepthStencilFormat(pTexture->getFormat()) )

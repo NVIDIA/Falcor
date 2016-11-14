@@ -137,6 +137,7 @@ namespace Falcor
         \return Error code. This actually depends on the build type. In release build we do minimal validation. In debug build there's more extensive verification the texture object matches the shader declaration.
         */
         bool setTexture(uint32_t index, const Texture::SharedConstPtr& pTexture);
+        bool setTexture(uint32_t index, const Texture::SharedConstPtr& pTexture, uint32_t firstArraySlice, uint32_t arraySize, uint32_t mostDetailedMip, uint32_t mipCount);
 
         /** Bind an array of texture to the program in the global namespace.
         This can be used to bind a texture declared an array or a number of different variables which are known to be continues in the register space (such as for structure fields)
@@ -167,6 +168,10 @@ namespace Falcor
         struct ResourceData
         {
             T pResource;
+            uint32_t firstArraySlice = 0;
+            uint32_t arraySize = -1;
+            uint32_t mostDetailedMip = 0;
+            uint32_t mipCount = -1;
             uint32_t rootSigOffset = 0;
         };
 

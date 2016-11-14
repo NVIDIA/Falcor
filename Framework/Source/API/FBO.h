@@ -141,13 +141,18 @@ namespace Falcor
         RtvHandle getRenderTargetView(uint32_t rtIndex) const;
         void resetViews();
 #endif
-    private:
         struct Attachment
         {
             Texture::SharedConstPtr pTexture = nullptr;
             uint32_t mipLevel = 0;
             uint32_t arraySlice = 0;
+
+            bool operator==(const Attachment& other) const
+            {
+                return (pTexture == other.pTexture) && (mipLevel == other.mipLevel) && (arraySlice == other.arraySlice);
+            }
         };
+    private:
 
         bool verifyAttachment(const Attachment& attachment) const;
         bool calcAndValidateProperties() const;

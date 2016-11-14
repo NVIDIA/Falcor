@@ -39,9 +39,9 @@ namespace Falcor
 {
     struct
     {
-        std::unique_ptr<FullScreenPass> pFullScreenPass;
+        FullScreenPass::UniquePtr pFullScreenPass;
         ProgramVars::SharedPtr pVars;
-        std::shared_ptr<PipelineState> pState;
+        PipelineState::SharedPtr pState;
     } static gGenMips;
 
     template<>
@@ -257,28 +257,34 @@ namespace Falcor
 
     void Texture::generateMips() const
     {
-        //         if (gGenMips.pFullScreenPass == nullptr)
-        //         {
-        //             gGenMips.pFullScreenPass = FullScreenPass::create("GenerateMips.hlsl");
-        //             gGenMips.pVars = ProgramVars::create(gGenMips.pFullScreenPass->getProgram()->getActiveVersion()->getReflector());
-        //             gGenMips.pState = PipelineState::create();
-        //         }
-        // 
-        //         RenderContext* pContext = gpDevice->getRenderContext().get();
-        //         pContext->pushPipelineState(gGenMips.pState);
-        //         pContext->pushProgramVars(gGenMips.pVars);
-        // 
-        //         for (uint32_t i = 0; i < mMipLevels; i++)
-        //         {
-        //             // Create an FBO for the next mip level
-        //             Fbo::SharedPtr pFbo = Fbo::create();
-        //             pFbo->attachColorTarget(this->shared_from_this(), 0, 1, Fbo::kAttachEntireMipLevel);
-        // 
-        //             // Set the pass input and output
-        //             gGenMips.pState->setFbo(pFbo);
-        //             // Run the program
-        // 
-        //             // 
-        //         }
+        if (gGenMips.pFullScreenPass == nullptr)
+        {
+            gGenMips.pFullScreenPass = FullScreenPass::create("Framework\\GenerateMips.hlsl");
+            gGenMips.pVars = ProgramVars::create(gGenMips.pFullScreenPass->getProgram()->getActiveVersion()->getReflector());
+            gGenMips.pState = PipelineState::create();
+            Sampler::Desc desc;
+            desc.setFilterMode(Sampler::Filter::Linear, Sampler::Filter::Linear, Sampler::Filter::Linear).setAddressingMode(Sampler::AddressMode::Clamp, Sampler::AddressMode::Clamp, Sampler::AddressMode::Clamp);
+            gGenMips.pVars->setSampler("gSampler", Sampler::create(desc));
+        }
+
+        RenderContext* pContext = gpDevice->getRenderContext().get();
+        pContext->pushPipelineState(gGenMips.pState);
+        pContext->pushProgramVars(gGenMips.pVars);
+
+        for (uint32_t i = 0; i < mMipLevels - 1; i++)
+        {
+            // Create an FBO for the next mip level
+            Fbo::SharedPtr pFbo = Fbo::create();
+            pFbo->attachColorTarget(shared_from_this(), 0, i + 1, 0);
+            gGenMips.pState->setFbo(pFbo);
+
+            // Create the resource view
+            gGenMips.pVars->setTexture(0, shared_from_this(), 0, mArraySize, i, 1);
+
+            // Run the program
+            gGenMips.pFullScreenPass->execute(pContext);
+        }
+        pContext->popPipelineState();
+        pContext->popProgramVars();
     }
 }

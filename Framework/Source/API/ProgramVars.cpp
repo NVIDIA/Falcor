@@ -238,6 +238,20 @@ namespace Falcor
         return setSampler(pDesc->regIndex, pSampler);
     }
 
+    bool ProgramVars::setTexture(uint32_t index, const Texture::SharedConstPtr& pTexture, uint32_t firstArraySlice, uint32_t arraySize, uint32_t mostDetailedMip, uint32_t mipCount)
+    {
+        // FIXME D3D12
+        if (mAssignedSrvs.find(index) != mAssignedSrvs.end())
+        {
+            mAssignedSrvs[index].pResource = pTexture;
+            mAssignedSrvs[index].arraySize = arraySize;
+            mAssignedSrvs[index].firstArraySlice = firstArraySlice;
+            mAssignedSrvs[index].mipCount = mipCount;
+            mAssignedSrvs[index].mostDetailedMip = mostDetailedMip;
+        }
+        return true;
+    }
+
     bool ProgramVars::setTexture(uint32_t index, const Texture::SharedConstPtr& pTexture)
     {
         // FIXME D3D12
@@ -284,12 +298,23 @@ namespace Falcor
         // Bind the SRVs
         for (auto& resIt : mAssignedSrvs)
         {
-            uint32_t rootOffset = resIt.second.rootSigOffset;
-            const Texture* pTex = resIt.second.pResource.get();
+            const auto& resDesc = resIt.second;
+            uint32_t rootOffset = resDesc.rootSigOffset;
+            const Texture* pTex = resDesc.pResource.get();
             if(pTex)
             {
                 // FIXME D3D12: Handle null textures (should bind a small black texture)
-                pList->SetGraphicsRootDescriptorTable(rootOffset, pTex->getWholeResourceView());
+                SrvHandle handle;
+                if (resDesc.arraySize == -1 && resDesc.mipCount == -1)
+                {
+                    handle = pTex->getWholeResourceView();
+                }
+                else
+                {
+                    handle = pTex->getResourceView(resDesc.firstArraySlice, resDesc.arraySize, resDesc.mostDetailedMip, resDesc.mipCount);  
+                }
+                pContext->resourceBarrier(resDesc.pResource.get(), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+                pList->SetGraphicsRootDescriptorTable(rootOffset, handle);
             }
         }
 

@@ -33,10 +33,20 @@
 
 namespace Falcor
 {
+    struct FboHash
+    {
+        std::size_t operator()(const Fbo::Attachment& a) const
+        {
+            return ((std::hash<void*>()((void*)a.pTexture.get())
+                ^ (std::hash<uint32_t>()(a.arraySlice) << 1)) >> 1)
+                ^ (std::hash<uint32_t>()(a.mipLevel) << 1);
+        }
+    };
+
     struct FboData
     {
-        std::map<const Texture*, uint32_t> rtvMap;
-        std::map<const Texture*, uint32_t> dsvMap;
+        std::unordered_map<Fbo::Attachment, uint32_t, FboHash> rtvMap;
+        std::unordered_map<Fbo::Attachment, uint32_t, FboHash> dsvMap;
     };
 
     template<>
@@ -103,14 +113,15 @@ namespace Falcor
     RtvHandle Fbo::getRenderTargetView(uint32_t rtIndex) const
     {
         FboData* pData = (FboData*)mpPrivateData;
-        const auto& pTexture = getColorTexture(rtIndex).get();
-        auto& it = pData->rtvMap.find(pTexture);
+        auto& it = pData->rtvMap.find(mColorAttachments[rtIndex]);
         uint32_t rtvIndex;
 
         DescriptorHeap::SharedPtr&& pHeap = gpDevice->getRtvDescriptorHeap();
 
         if(it == pData->rtvMap.end())
         {
+            const Texture* pTexture = getColorTexture(rtIndex).get();
+
             // Create the render-target view
             ID3D12ResourcePtr pResource = pTexture ? pTexture->getApiHandle() : nullptr;
             D3D12_RENDER_TARGET_VIEW_DESC rtvDesc = {};
@@ -126,7 +137,7 @@ namespace Falcor
             rtvIndex = pHeap->allocateHandle();
             DescriptorHeap::CpuHandle rtv = pHeap->getCpuHandle(rtvIndex);
             gpDevice->getApiHandle()->CreateRenderTargetView(pResource, &rtvDesc, rtv);
-            pData->rtvMap[pTexture] = rtvIndex;
+            pData->rtvMap[mColorAttachments[rtIndex]] = rtvIndex;
         }
         else
         {
@@ -139,8 +150,7 @@ namespace Falcor
     DsvHandle Fbo::getDepthStencilView() const
     {
         FboData* pData = (FboData*)mpPrivateData;
-        const auto& pTexture = getDepthStencilTexture().get();
-        auto& it = pData->dsvMap.find(pTexture);
+        auto& it = pData->dsvMap.find(mDepthStencil);
         uint32_t dsvIndex;
 
         DescriptorHeap::SharedPtr&& pHeap = gpDevice->getDsvDescriptorHeap();
@@ -148,7 +158,7 @@ namespace Falcor
         if(it == pData->dsvMap.end())
         {
             // Create the render-target view
-            ID3D12ResourcePtr pResource = pTexture ? pTexture->getApiHandle() : nullptr;
+            const auto& pTexture = getDepthStencilTexture().get();
             D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc = {};
             if(pTexture)
             {
@@ -161,8 +171,9 @@ namespace Falcor
             }
             dsvIndex = pHeap->allocateHandle();
             DescriptorHeap::CpuHandle dsv = pHeap->getCpuHandle(dsvIndex);
+            ID3D12ResourcePtr pResource = pTexture ? pTexture->getApiHandle() : nullptr;
             gpDevice->getApiHandle()->CreateDepthStencilView(pResource, &dsvDesc, dsv);
-            pData->dsvMap[pTexture] = dsvIndex;
+            pData->dsvMap[mDepthStencil] = dsvIndex;
         }
         else
         {

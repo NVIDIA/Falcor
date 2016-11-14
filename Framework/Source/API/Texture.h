@@ -74,13 +74,13 @@ namespace Falcor
 
         /** Get the texture width
         */
-        uint32_t getWidth() const {return mWidth;}
+        uint32_t getWidth(uint32_t mipLevel = 0) const {return (mipLevel < mMipLevels) ? max(1U, mWidth >> mipLevel) : 0;}
         /** Get the texture height
         */
-        uint32_t getHeight() const { return mHeight; }
+        uint32_t getHeight(uint32_t mipLevel = 0) const { return (mipLevel < mMipLevels) ? max(1U, mHeight >> mipLevel) : 0; }
         /** Get the texture depth
         */
-        uint32_t getDepth() const { return mDepth; }
+        uint32_t getDepth(uint32_t mipLevel = 0) const { return (mipLevel < mMipLevels) ? max(1U, mDepth >> mipLevel) : 0; }
         /** Get the number of mip-levels
         */
         uint32_t getMipCount() const {return mMipLevels;}

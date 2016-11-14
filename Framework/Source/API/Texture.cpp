@@ -36,7 +36,6 @@ namespace Falcor
         mWidth(width), mHeight(height), mDepth(depth), mMipLevels(mipLevels), mSampleCount(sampleCount), mArraySize(arraySize), mFormat(format), mType(Type)
     {
         // FIXME D3D12
-        mMipLevels = 1;
         if(mMipLevels == kEntireMipChain)
         {
             uint32_t dims = width | height | depth;

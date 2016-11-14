@@ -45,55 +45,55 @@ namespace Falcor
         case Texture::Type::Texture1D:
             if(arraySize > 1)
             {
-                desc.Texture1DArray.MipLevels = uint32_t(-1);
-                desc.Texture1DArray.MostDetailedMip = 0;
+                desc.Texture1DArray.MipLevels = mipCount;
+                desc.Texture1DArray.MostDetailedMip = mostDetailedMip;
                 desc.Texture1DArray.ArraySize = arraySize;
-                desc.Texture1DArray.FirstArraySlice = 0;
+                desc.Texture1DArray.FirstArraySlice = firstArraySlice;
             }
             else
             {
-                desc.Texture1D.MipLevels = uint32_t(-1);
-                desc.Texture1D.MostDetailedMip = 0;
+                desc.Texture1D.MipLevels = mipCount;
+                desc.Texture1D.MostDetailedMip = mostDetailedMip;
             }
             break;
         case Texture::Type::Texture2D:
             if(isTextureArray)
             {
                 desc.Texture2DArray.MipLevels = mipCount;
-                desc.Texture2DArray.MostDetailedMip = 0;
+                desc.Texture2DArray.MostDetailedMip = mostDetailedMip;
                 desc.Texture2DArray.ArraySize = arraySize;
-                desc.Texture2DArray.FirstArraySlice = 0;
+                desc.Texture2DArray.FirstArraySlice = firstArraySlice;
             }
             else
             {
                 desc.Texture2D.MipLevels = mipCount;
-                desc.Texture2D.MostDetailedMip = 0;
+                desc.Texture2D.MostDetailedMip = mostDetailedMip;
             }
             break;
         case Texture::Type::Texture2DMultisample:
             if(arraySize > 1)
             {
                 desc.Texture2DMSArray.ArraySize = arraySize;
-                desc.Texture2DMSArray.FirstArraySlice = 0;
+                desc.Texture2DMSArray.FirstArraySlice = firstArraySlice;
             }
             break;
         case Texture::Type::Texture3D:
             assert(arraySize == 1);
-            desc.Texture3D.MipLevels = (uint32_t)-1;
-            desc.Texture3D.MostDetailedMip = 0;
+            desc.Texture3D.MipLevels = mipCount;
+            desc.Texture3D.MostDetailedMip = mostDetailedMip;
             break;
         case Texture::Type::TextureCube:
             if(arraySize > 1)
             {
                 desc.TextureCubeArray.First2DArrayFace = 0;
                 desc.TextureCubeArray.NumCubes = arraySize;
-                desc.TextureCubeArray.MipLevels = (uint32_t)-1;
-                desc.TextureCubeArray.MostDetailedMip = 0;
+                desc.TextureCubeArray.MipLevels = mipCount;
+                desc.TextureCubeArray.MostDetailedMip = mostDetailedMip;
             }
             else
             {
-                desc.TextureCube.MipLevels = (uint32_t)-1;
-                desc.TextureCube.MostDetailedMip = 0;
+                desc.TextureCube.MipLevels = mipCount;
+                desc.TextureCube.MostDetailedMip = mostDetailedMip;
             }
             break;
         default:
