@@ -301,12 +301,6 @@ namespace Falcor
 			return false;
 		}
 
-        // Update the FBOs
-        if(updateDefaultFBO(mpWindow->getClientAreaWidth(), mpWindow->getClientAreaHeight(), 1, desc.colorFormat, desc.depthFormat) == false)
-        {
-            return false;
-        }
-
         mpSrvHeap = DescriptorHeap::create(DescriptorHeap::Type::ShaderResource, 16 * 1024);
         mpSamplerHeap = DescriptorHeap::create(DescriptorHeap::Type::Sampler, 2048);
         mpRtvHeap = DescriptorHeap::create(DescriptorHeap::Type::RenderTargetView, 1024, false);
@@ -319,6 +313,12 @@ namespace Falcor
 
 		mVsyncOn = desc.enableVsync;
         bindDescriptorHeaps();
+
+        // Update the FBOs
+        if (updateDefaultFBO(mpWindow->getClientAreaWidth(), mpWindow->getClientAreaHeight(), 1, desc.colorFormat, desc.depthFormat) == false)
+        {
+            return false;
+        }
 
 		return true;
     }

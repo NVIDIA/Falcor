@@ -267,8 +267,8 @@ namespace Falcor
         */
         DsvHandle getDSV(uint32_t mipLevel = 0, uint32_t firstArraySlice = 0, uint32_t arraySize = kEntireArraySlice) const;
 
-        static RtvHandle getNullRtv();
-        static DsvHandle getNullDsv();
+        static RtvHandle getNullRtv() { return sNullRTV; }
+        static DsvHandle getNullDsv() { return sNullDSV; }
     protected:
         friend class Device;
         
@@ -327,6 +327,8 @@ namespace Falcor
 
         mutable std::map<uint32_t, uint64_t> mBindlessTextureHandle;
         mutable D3D12_RESOURCE_STATES mResourceState = D3D12_RESOURCE_STATE_COMMON;
+
+        static void createNullViews();
     };
 
     const std::string to_string(Texture::Type Type);
