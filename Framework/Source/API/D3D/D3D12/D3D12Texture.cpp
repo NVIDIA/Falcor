@@ -322,6 +322,8 @@ namespace Falcor
 
     void Texture::generateMips() const
     {
+        // OPTME D3D12 We are generating SRVs and RTVs for every mip-level of every resource we generate mips for. This is inefficient, especially since we can't release views
+        // We should either reword our descriptor heap to allow us to release views, or optimize genMips() to use pre-allocated views
         if (gGenMips.pFullScreenPass == nullptr)
         {
             gGenMips.pFullScreenPass = FullScreenPass::create("Framework\\GenerateMips.hlsl");
