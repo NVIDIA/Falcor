@@ -99,14 +99,14 @@ namespace Falcor
                 if(fboDesc.getColorFormat(i) != ResourceFormat::Unknown)
                 {
                     Texture::SharedPtr pTex = createTexture2D(width, height, fboDesc.getColorFormat(i), sampleCount, arraySize, mipLevels);
-                    pFbo->attachColorTarget(pTex, i, 0, Fbo::kAttachEntireMipLevel);
+                    pFbo->attachColorTarget(pTex, i, 0, 0, Fbo::kAttachEntireMipLevel);
                 }
             }
 
             if(fboDesc.getDepthStencilFormat() != ResourceFormat::Unknown)
             {
                 Texture::SharedPtr pDepth = createTexture2D(width, height, fboDesc.getDepthStencilFormat(), sampleCount, arraySize, mipLevels);
-                pFbo->attachDepthStencilTarget(pDepth, 0, Fbo::kAttachEntireMipLevel);
+                pFbo->attachDepthStencilTarget(pDepth, 0, 0, Fbo::kAttachEntireMipLevel);
             }
 
             return pFbo;

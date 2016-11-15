@@ -421,6 +421,7 @@ void _fn evalMaterial(
     passResult.diffuseIllumination = 0;
     passResult.specularAlbedo = 0;
     passResult.specularIllumination = 0;
+    [unroll]
     for(uint iLayer = 0 ; iLayer < MatMaxLayers ; iLayer++)
     {
         if(shAttr.preparedMat.desc.layers[iLayer].type == MatNone) break;
@@ -462,6 +463,9 @@ Initializes a material layer with an empty layer
 void _fn initNullLayer(_ref(MaterialLayerDesc) layer)
 {
     layer.type = MatNone;
+    layer.blending = BlendAdd;
+    layer.hasTexture = false;
+    layer.ndf = NDFUser;
 }
 
 /**
@@ -471,7 +475,13 @@ void _fn initDiffuseLayer(_ref(MaterialLayerDesc) desc, _ref(MaterialLayerValues
 {
     desc.type = MatLambert;
     desc.blending = BlendAdd;
+    desc.hasTexture = false;
+    desc.ndf = NDFGGX;
     data.albedo = v4(albedo, 1.f);
+    data.extraParam = v4(0,0,0,0);
+    data.roughness = v4(0,0,0,0);
+    data.pad = v3(0,0,0);
+    data.pmf = 0;
 }
 
 /**

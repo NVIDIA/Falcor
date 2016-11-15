@@ -110,11 +110,16 @@ namespace Falcor
 
         if(clearColor)
         {
-            const Texture* pTexture = pFbo->getColorTexture(0).get();
-            // FIXME D3D12 - clear entire FBO
-            RtvHandle rtv = pFbo->getRenderTargetView(0);
-            resourceBarrier(pTexture, D3D12_RESOURCE_STATE_RENDER_TARGET);
-            pApiData->pList->ClearRenderTargetView(rtv, glm::value_ptr(color), 0, nullptr);
+            for(uint32_t i = 0 ; i < Fbo::getMaxColorTargetCount() ; i++)
+            {
+                const Texture* pTexture = pFbo->getColorTexture(i).get();
+                if(pTexture)
+                {
+                    RtvHandle rtv = pFbo->getRenderTargetView(i);
+                    resourceBarrier(pTexture, D3D12_RESOURCE_STATE_RENDER_TARGET);
+                    pApiData->pList->ClearRenderTargetView(rtv, glm::value_ptr(color), 0, nullptr);
+                }
+            }
         }
 
         if(clearDepth | clearStencil)

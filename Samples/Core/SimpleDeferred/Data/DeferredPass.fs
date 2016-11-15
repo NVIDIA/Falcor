@@ -26,30 +26,29 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 #version 420
-
+#define _COMPILE_DEFAULT_VS
+#include "VertexAttrib.h"
 #include "ShaderCommon.h"
 #include "Shading.h"
 
-layout(binding = 0) uniform PerFrameCB
+
+struct PS_OUT
 {
-	float dummy;
+    float4 fragColor0 : SV_TARGET0;
+    float4 fragColor1 : SV_TARGET1;
+    float4 fragColor2 : SV_TARGET2;    
 };
 
-in vec2 texC;
-in vec3 normalW;
-in vec3 posW;
 
-layout(location = 0) out vec4 fragColor0;
-layout(location = 1) out vec4 fragColor1;
-layout(location = 2) out vec4 fragColor2;
-
-
-void main()
+PS_OUT main(VS_OUT vOut)
 {
-	ShadingAttribs shAttr;
-	prepareShadingAttribs(gMaterial, posW, gCam.position, normalW, texC, shAttr);
+    ShadingAttribs shAttr;
+    prepareShadingAttribs(gMaterial, vOut.posW, gCam.position, vOut.normalW, vOut.texC, shAttr);
 
-	fragColor0 = vec4(shAttr.P, 1);
-	fragColor1 = vec4(shAttr.N, 1);
-	fragColor2 = shAttr.preparedMat.values.layers[0].albedo.constantColor;
+    PS_OUT psOut;
+    psOut.fragColor0 = vec4(shAttr.P, 1);
+    psOut.fragColor1 = vec4(shAttr.N, 1);
+    psOut.fragColor2 = shAttr.preparedMat.values.layers[0].albedo;
+
+    return psOut;
 }

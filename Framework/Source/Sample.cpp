@@ -191,6 +191,8 @@ namespace Falcor
 
         // Call the load callback
         onLoad();
+        // Flush once
+        gpDevice->present();
 		handleWindowSizeChange();
         
         mpWindow->msgLoop();

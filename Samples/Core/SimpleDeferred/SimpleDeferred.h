@@ -41,16 +41,12 @@ public:
     void onResizeSwapChain() override;
     bool onKeyEvent(const KeyboardEvent& keyEvent) override;
     bool onMouseEvent(const MouseEvent& mouseEvent) override;
-
+    void onGuiRender() override;
 private:
-    static void GUI_CALL loadModelCallback(void* pUserData);
-
-    void initUI();
     void loadModel();
-
     void loadModelFromFile(const std::string& filename);
     void resetCamera();
-    void setModelUIElements();
+    void renderModelUiElements();
 
     Model::SharedPtr mpModel = nullptr;
     ModelViewCameraController mModelViewCameraController;
@@ -58,9 +54,9 @@ private:
     Sampler::SharedPtr mpLinearSampler;
 
     Program::SharedPtr mpDeferredPassProgram;
-    UniformBuffer::SharedPtr mpDeferredPerFrameCB;
+    ProgramVars::SharedPtr mpDeferredVars;
 
-    UniformBuffer::SharedPtr mpLightingFrameCB;
+    ProgramVars::SharedPtr mpLightingVars;
     FullScreenPass::UniquePtr mpLightingPass;
 
     float mAspectRatio = 0;
@@ -69,7 +65,7 @@ private:
     {
         ModelViewCamera,
         FirstPersonCamera
-    } mCameraType = FirstPersonCamera;
+    } mCameraType = ModelViewCamera;
 
     CameraController& getActiveCameraController();
 
@@ -77,7 +73,7 @@ private:
 
     bool mAnimate = false;
     bool mCompressTextures = false;
-    bool mGenerateTangentSpace = false;
+    bool mGenerateTangentSpace = true;
     glm::vec3 mAmbientIntensity = glm::vec3(0.1f, 0.1f, 0.1f);
 
     uint32_t mActiveAnimationID = sBindPoseAnimationID;
@@ -107,10 +103,6 @@ private:
 
 	// Upscaling support for high-density displays
 	Fbo::SharedPtr mpDisplayFBO;										///< The FBO object of the actual window. Coincides with default FBO if there is no display scaling
-
-    // GUI callbacks
-    static void GUI_CALL setActiveAnimationCB(const void* pVal, void* pUserData);
-    static void GUI_CALL getActiveAnimationCB(void* pVal, void* pUserData);
 
 	uint32_t mDisplayScaling = 1;	///< used for high-dpi scaling example
 
