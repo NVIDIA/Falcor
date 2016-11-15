@@ -111,6 +111,7 @@ namespace Falcor
         if(clearColor)
         {
             const Texture* pTexture = pFbo->getColorTexture(0).get();
+            // FIXME D3D12 - clear entire FBO
             RtvHandle rtv = pFbo->getRenderTargetView(0);
             resourceBarrier(pTexture, D3D12_RESOURCE_STATE_RENDER_TARGET);
             pApiData->pList->ClearRenderTargetView(rtv, glm::value_ptr(color), 0, nullptr);
@@ -165,6 +166,7 @@ namespace Falcor
 
     static void D3D12SetFbo(RenderContext* pCtx, const RenderContextData* pApiData, const Fbo* pFbo)
     {
+        // FIXME D3D12
         uint32_t colorTargets = Fbo::getMaxColorTargetCount();
         std::vector<RtvHandle> pRTV(colorTargets);
         DsvHandle pDSV;

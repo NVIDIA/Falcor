@@ -119,6 +119,7 @@ namespace Falcor
 
         /** Value used in create*() methods to signal an entire array-slice is required
         */
+        // FIXME D3D12 this name is wrong. 
         static const uint32_t kEntireArraySlice = uint32_t(-1);
 
         /** create a 1D texture
@@ -251,6 +252,23 @@ namespace Falcor
             \param[in] mipCount The number of mip-levels to bind. If this is equal to Texture#kEntireMipChain, will create a view ranging from mostDetailedMip to the texture's mip levels count
         */
         SrvHandle getSRV(uint32_t firstArraySlice = 0, uint32_t arraySize = kEntireArraySlice, uint32_t mostDetailedMip = 0, uint32_t mipCount = kEntireMipChain) const;
+
+        /** Get a render-target view.
+        \param[in] mipLevel The requested mip-level
+        \param[in] firstArraySlice The first array slice of the view
+        \param[in] arraySize The array size. If this is equal to Texture#kEntireArraySlice, will create a view ranging from firstArraySlice to the texture's array size
+        */
+        RtvHandle getRTV(uint32_t mipLevel = 0, uint32_t firstArraySlice = 0, uint32_t arraySize = kEntireArraySlice) const;
+
+        /** Get a depth stencil view.
+        \param[in] mipLevel The requested mip-level
+        \param[in] firstArraySlice The first array slice of the view
+        \param[in] arraySize The array size. If this is equal to Texture#kEntireArraySlice, will create a view ranging from firstArraySlice to the texture's array size
+        */
+        DsvHandle getDSV(uint32_t mipLevel = 0, uint32_t firstArraySlice = 0, uint32_t arraySize = kEntireArraySlice) const;
+
+        static RtvHandle getNullRtv();
+        static DsvHandle getNullDsv();
     protected:
         friend class Device;
         
@@ -277,8 +295,13 @@ namespace Falcor
                     ^ (std::hash<uint32_t>()(v.mostDetailedMip) << 3);
             }
         };
-
+        
         mutable std::unordered_map<ViewInfo, SrvHandle, ViewInfoHasher> mSrvs;
+        mutable std::unordered_map<ViewInfo, RtvHandle, ViewInfoHasher> mRtvs;
+        mutable std::unordered_map<ViewInfo, DsvHandle, ViewInfoHasher> mDsvs;
+
+        static RtvHandle sNullRTV;
+        static DsvHandle sNullDSV;
 
 		static uint32_t tempDefaultUint;
 

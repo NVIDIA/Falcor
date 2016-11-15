@@ -187,7 +187,6 @@ namespace Falcor
             {
                 pData->pDefaultFbos[i] = Fbo::create();
             }
-            pData->pDefaultFbos[i]->resetViews();
             pData->pDefaultFbos[i]->attachColorTarget(pColorTex, 0);
             pData->pDefaultFbos[i]->attachDepthStencilTarget(pDepth);
             pData->currentBackBufferIndex = pData->pSwapChain->GetCurrentBackBufferIndex();

@@ -163,18 +163,5 @@ namespace Falcor
             getD3D11ImmediateContext()->ClearDepthStencilView(pFboData->pDsv, clearFlags, depth, stencil);
         }
     }
-
-    ID3D11DepthStencilView* Fbo::getDepthStencilView() const
-    {
-        FboData* pFboData = (FboData*)mpPrivateData;
-        return pFboData->pDsv;
-    }
-
-    ID3D11RenderTargetView* Fbo::getRenderTargetView(uint32_t RtIndex) const
-    {
-        FboData* pFboData = (FboData*)mpPrivateData;
-        return pFboData->pRtv[RtIndex];
-    }
-
 }
 

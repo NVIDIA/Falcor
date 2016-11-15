@@ -37,6 +37,9 @@
 
 namespace Falcor
 {
+    RtvHandle Texture::sNullRTV;
+    DsvHandle Texture::sNullDSV;
+
     struct
     {
         FullScreenPass::UniquePtr pFullScreenPass;
@@ -170,6 +173,64 @@ namespace Falcor
         return pTexture->mApiHandle ? pTexture : nullptr;
     }
 
+    DsvHandle Texture::getDSV(uint32_t mipLevel, uint32_t firstArraySlice, uint32_t arraySize) const
+    {
+        // FIXME D3D12 this code is almost identical to getRTV and getSRV
+        assert(mipLevel < mMipLevels);
+        assert(firstArraySlice < mArraySize);
+        if (arraySize == kEntireArraySlice)
+        {
+            arraySize = mArraySize - firstArraySlice;
+        }
+        assert(firstArraySlice + arraySize <= mArraySize);
+
+        ViewInfo view{ firstArraySlice, arraySize, mipLevel, 1 };
+
+        if (mDsvs.find(view) == mDsvs.end())
+        {
+            DescriptorHeap::SharedPtr& pHeap = gpDevice->getDsvDescriptorHeap();
+
+            // Create the render-target view
+            D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc = {};
+            initializeDsvDesc<D3D12_DEPTH_STENCIL_VIEW_DESC>(this, mipLevel, firstArraySlice, arraySize, dsvDesc);
+            uint32_t dsvIndex = pHeap->allocateHandle();
+            DescriptorHeap::CpuHandle dsv = pHeap->getCpuHandle(dsvIndex);
+            gpDevice->getApiHandle()->CreateDepthStencilView(mApiHandle, &dsvDesc, dsv);
+            mDsvs[view] = dsv;
+        }
+
+        return mDsvs[view];
+    }
+
+    RtvHandle Texture::getRTV(uint32_t mipLevel, uint32_t firstArraySlice, uint32_t arraySize) const
+    {
+        assert(mipLevel < mMipLevels);
+        assert(firstArraySlice < mArraySize);
+        if (arraySize == kEntireArraySlice)
+        {
+            arraySize = mArraySize - firstArraySlice;
+        }
+        assert(firstArraySlice + arraySize <= mArraySize);
+
+        ViewInfo view{ firstArraySlice, arraySize, mipLevel, 1};
+
+        if (mRtvs.find(view) == mRtvs.end())
+        {
+            DescriptorHeap::SharedPtr& pHeap = gpDevice->getRtvDescriptorHeap();
+
+            // Create the render-target view
+            D3D12_RENDER_TARGET_VIEW_DESC rtvDesc = {};
+            initializeRtvDesc<D3D12_RENDER_TARGET_VIEW_DESC>(this, mipLevel, firstArraySlice, arraySize, rtvDesc);
+            uint32_t rtvIndex = pHeap->allocateHandle();
+            DescriptorHeap::CpuHandle rtv = pHeap->getCpuHandle(rtvIndex);
+            gpDevice->getApiHandle()->CreateRenderTargetView(mApiHandle, &rtvDesc, rtv);
+            mRtvs[view] = rtv;
+        }
+
+        return mRtvs[view];
+    }
+
+
     SrvHandle Texture::getSRV(uint32_t firstArraySlice, uint32_t arraySize, uint32_t mostDetailedMip, uint32_t mipCount) const
     {
         assert(firstArraySlice < mArraySize);
@@ -290,5 +351,45 @@ namespace Falcor
         }
         pContext->popPipelineState();
         pContext->popProgramVars();
+    }
+
+    RtvHandle Texture::getNullRtv()
+    {
+        // OPTME We should that once when the C'tor is called
+        if (sNullRTV.ptr == 0)
+        {
+            DescriptorHeap::SharedPtr& pHeap = gpDevice->getRtvDescriptorHeap();
+
+            // Create the render-target view
+            D3D12_RENDER_TARGET_VIEW_DESC rtvDesc = {};
+            rtvDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+            rtvDesc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D;
+
+            uint32_t rtvIndex = pHeap->allocateHandle();
+            DescriptorHeap::CpuHandle rtv = pHeap->getCpuHandle(rtvIndex);
+            gpDevice->getApiHandle()->CreateRenderTargetView(nullptr, &rtvDesc, rtv);
+            sNullRTV = rtv;
+        }
+        return sNullRTV;
+    }
+
+    DsvHandle Texture::getNullDsv()
+    {
+        // OPTME We should that once when the C'tor is called
+        if (sNullDSV.ptr == 0)
+        {
+            DescriptorHeap::SharedPtr& pHeap = gpDevice->getDsvDescriptorHeap();
+
+            // Create the render-target view
+            D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc = {};
+            dsvDesc.Format = DXGI_FORMAT_D16_UNORM;
+            dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
+
+            uint32_t rtvIndex = pHeap->allocateHandle();
+            DescriptorHeap::CpuHandle dsv = pHeap->getCpuHandle(rtvIndex);
+            gpDevice->getApiHandle()->CreateDepthStencilView(nullptr, &dsvDesc, dsv);
+            sNullDSV = dsv;
+        }
+        return sNullDSV;
     }
 }

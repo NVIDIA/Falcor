@@ -105,76 +105,14 @@ namespace Falcor
     }
 
     template<typename DescType>
-    inline void initializeRtvDesc(const Texture* pTexture, uint32_t mipLevel, uint32_t arraySlice, DescType& desc)
+    inline void initializeRtvDesc(const Texture* pTexture, uint32_t mipLevel, uint32_t firstArraySlice, uint32_t arraySize, DescType& desc)
     {
         desc = {};
         uint32_t arrayMultiplier = (pTexture->getType() == Texture::Type::TextureCube) ? 6 : 1;
-        uint32_t arraySize = 1;
 
-        if(arraySlice == Fbo::kAttachEntireMipLevel)
+        if(arraySize == Texture::kEntireArraySlice)
         {
-            arraySlice = 0;
-            arraySize = pTexture->getArraySize();
-        }
-
-        desc.ViewDimension = getViewDimension<decltype(desc.ViewDimension)>(pTexture->getType(), arraySize > 1);
-
-        switch(pTexture->getType())
-        {
-        case Texture::Type::Texture1D:
-            if(pTexture->getArraySize() > 1)
-            {
-                desc.Texture1DArray.ArraySize = arraySize;
-                desc.Texture1DArray.FirstArraySlice = arraySlice;
-                desc.Texture1DArray.MipSlice = mipLevel;
-            }
-            else
-            {
-                desc.Texture1D.MipSlice = mipLevel;
-            }
-            break;
-        case Texture::Type::Texture2D:
-        case Texture::Type::TextureCube:
-            if(pTexture->getArraySize() * arrayMultiplier > 1)
-            {
-                desc.Texture2DArray.ArraySize = arraySize * arrayMultiplier;
-                desc.Texture2DArray.FirstArraySlice = arraySlice * arrayMultiplier;
-                desc.Texture2DArray.MipSlice = mipLevel;
-            }
-            else
-            {
-                desc.Texture2D.MipSlice = mipLevel;
-            }
-            break;
-        case Texture::Type::Texture3D:
-            desc.Texture3D.FirstWSlice = arraySlice;
-            desc.Texture3D.MipSlice = mipLevel;
-            desc.Texture3D.WSize = arraySize;
-            break;
-        case Texture::Type::Texture2DMultisample:
-            if(pTexture->getArraySize() > 1)
-            {
-                desc.Texture2DMSArray.ArraySize = arraySize;
-                desc.Texture2DMSArray.FirstArraySlice = arraySlice;
-            }
-            break;
-        default:
-            should_not_get_here();
-        }
-        desc.Format = getDxgiFormat(pTexture->getFormat());
-    }
-
-    template<typename DescType>
-    inline void initializeDsvDesc(const Texture* pTexture, uint32_t mipLevel, uint32_t arraySlice, DescType& desc)
-    {
-        desc = {};
-        uint32_t arrayMultiplier = (pTexture->getType() == Texture::Type::TextureCube) ? 6 : 1;
-        uint32_t arraySize = 1;
-
-        if(arraySlice == Fbo::kAttachEntireMipLevel)
-        {
-            arraySlice = 0;
-            arraySize = pTexture->getArraySize();
+            arraySize = pTexture->getArraySize() - firstArraySlice;
         }
 
         desc.ViewDimension = getViewDimension<decltype(desc.ViewDimension)>(pTexture->getType(), pTexture->getArraySize() > 1);
@@ -185,7 +123,7 @@ namespace Falcor
             if(pTexture->getArraySize() > 1)
             {
                 desc.Texture1DArray.ArraySize = arraySize;
-                desc.Texture1DArray.FirstArraySlice = arraySlice;
+                desc.Texture1DArray.FirstArraySlice = firstArraySlice;
                 desc.Texture1DArray.MipSlice = mipLevel;
             }
             else
@@ -198,7 +136,65 @@ namespace Falcor
             if(pTexture->getArraySize() * arrayMultiplier > 1)
             {
                 desc.Texture2DArray.ArraySize = arraySize * arrayMultiplier;
-                desc.Texture2DArray.FirstArraySlice = arraySlice * arrayMultiplier;
+                desc.Texture2DArray.FirstArraySlice = firstArraySlice * arrayMultiplier;
+                desc.Texture2DArray.MipSlice = mipLevel;
+            }
+            else
+            {
+                desc.Texture2D.MipSlice = mipLevel;
+            }
+            break;
+        case Texture::Type::Texture3D:
+            desc.Texture3D.FirstWSlice = firstArraySlice;
+            desc.Texture3D.MipSlice = mipLevel;
+            desc.Texture3D.WSize = arraySize;
+            break;
+        case Texture::Type::Texture2DMultisample:
+            if(pTexture->getArraySize() > 1)
+            {
+                desc.Texture2DMSArray.ArraySize = arraySize;
+                desc.Texture2DMSArray.FirstArraySlice = firstArraySlice;
+            }
+            break;
+        default:
+            should_not_get_here();
+        }
+        desc.Format = getDxgiFormat(pTexture->getFormat());
+    }
+
+    template<typename DescType>
+    inline void initializeDsvDesc(const Texture* pTexture, uint32_t mipLevel, uint32_t firstArraySlice, uint32_t arraySize, DescType& desc)
+    {
+        desc = {};
+        uint32_t arrayMultiplier = (pTexture->getType() == Texture::Type::TextureCube) ? 6 : 1;
+
+        if(arraySize == Fbo::kAttachEntireMipLevel)
+        {
+            arraySize = pTexture->getArraySize() - firstArraySlice;
+        }
+
+        desc.ViewDimension = getViewDimension<decltype(desc.ViewDimension)>(pTexture->getType(), pTexture->getArraySize() > 1);
+
+        switch(pTexture->getType())
+        {
+        case Texture::Type::Texture1D:
+            if(pTexture->getArraySize() > 1)
+            {
+                desc.Texture1DArray.ArraySize = arraySize;
+                desc.Texture1DArray.FirstArraySlice = firstArraySlice;
+                desc.Texture1DArray.MipSlice = mipLevel;
+            }
+            else
+            {
+                desc.Texture1D.MipSlice = mipLevel;
+            }
+            break;
+        case Texture::Type::Texture2D:
+        case Texture::Type::TextureCube:
+            if(pTexture->getArraySize() * arrayMultiplier > 1)
+            {
+                desc.Texture2DArray.ArraySize = arraySize * arrayMultiplier;
+                desc.Texture2DArray.FirstArraySlice = firstArraySlice * arrayMultiplier;
                 desc.Texture2DArray.MipSlice = mipLevel;
             }
             else
@@ -210,7 +206,7 @@ namespace Falcor
             if(pTexture->getArraySize() > 1)
             {
                 desc.Texture2DMSArray.ArraySize = arraySize;
-                desc.Texture2DMSArray.FirstArraySlice = arraySlice;
+                desc.Texture2DMSArray.FirstArraySlice = firstArraySlice;
             }
             break;
         default:

@@ -81,16 +81,18 @@ namespace Falcor
         /** Attach a depth-stencil texture.
             \param pDepthStencil The depth-stencil texture.
             \param mipLevel The selected mip-level to attach.
-            \param arraySlice The selected array-slice to attach, or CFbo#AttachEntireMipLevel to attach the all array-slices.
+            \param firstArraySlice The first array-slice to bind
+            \param arraySize The number of array sliced to bind, or Fbo#kAttachEntireMipLevel to attach the range [firstArraySlice, pTexture->getArraySize()]
         */
-        void attachDepthStencilTarget(const Texture::SharedConstPtr& pDepthStencil, uint32_t mipLevel = 0, uint32_t arraySlice = 0);
+        void attachDepthStencilTarget(const Texture::SharedConstPtr& pDepthStencil, uint32_t mipLevel = 0, uint32_t firstArraySlice = 0, uint32_t arraySize = kAttachEntireMipLevel);
         /** Attach a color texture.
             \param pColorTexture The depth-stencil texture.
             \param rtIndex The render-target index to attach the texture to.
             \param mipLevel The selected mip-level to attach.
-            \param arraySlice The selected array-slice to attach, or CFbo#k_attachEntireMipLevel to attach the all array-slices.
+            \param firstArraySlice The first array-slice to bind
+            \param arraySize The number of array sliced to bind, or Fbo#kAttachEntireMipLevel to attach the range [firstArraySlice, pTexture->getArraySize()]
         */
-        void attachColorTarget(const Texture::SharedConstPtr& pColorTexture, uint32_t rtIndex, uint32_t mipLevel = 0, uint32_t arraySlice = 0);
+        void attachColorTarget(const Texture::SharedConstPtr& pColorTexture, uint32_t rtIndex, uint32_t mipLevel = 0, uint32_t firstArraySlice = 0, uint32_t arraySize = kAttachEntireMipLevel);
 
         /** Get the object's API handle.      
         */
@@ -139,18 +141,13 @@ namespace Falcor
 #ifdef FALCOR_D3D
         DsvHandle getDepthStencilView() const;
         RtvHandle getRenderTargetView(uint32_t rtIndex) const;
-        void resetViews();
 #endif
         struct Attachment
         {
             Texture::SharedConstPtr pTexture = nullptr;
             uint32_t mipLevel = 0;
-            uint32_t arraySlice = 0;
-
-            bool operator==(const Attachment& other) const
-            {
-                return (pTexture == other.pTexture) && (mipLevel == other.mipLevel) && (arraySlice == other.arraySlice);
-            }
+            uint32_t arraySize = 1;
+            uint32_t firstArraySlice = 0;
         };
     private:
 

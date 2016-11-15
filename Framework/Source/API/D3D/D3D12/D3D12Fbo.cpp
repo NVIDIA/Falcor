@@ -33,22 +33,6 @@
 
 namespace Falcor
 {
-    struct FboHash
-    {
-        std::size_t operator()(const Fbo::Attachment& a) const
-        {
-            return ((std::hash<void*>()((void*)a.pTexture.get())
-                ^ (std::hash<uint32_t>()(a.arraySlice) << 1)) >> 1)
-                ^ (std::hash<uint32_t>()(a.mipLevel) << 1);
-        }
-    };
-
-    struct FboData
-    {
-        std::unordered_map<Fbo::Attachment, uint32_t, FboHash> rtvMap;
-        std::unordered_map<Fbo::Attachment, uint32_t, FboHash> dsvMap;
-    };
-
     template<>
     D3D12_RTV_DIMENSION getViewDimension<D3D12_RTV_DIMENSION>(Texture::Type type, bool isTextureArray)
     {
@@ -93,96 +77,17 @@ namespace Falcor
     Fbo::Fbo(bool initApiHandle)
     {
         mApiHandle = -1;
-        FboData* pData = new FboData;
-        mpPrivateData = pData;
         mColorAttachments.resize(getMaxColorTargetCount());
     }
 
-    Fbo::~Fbo()
-    {
-        FboData* pData = (FboData*)mpPrivateData;
-        safe_delete(pData);
-    }
+    Fbo::~Fbo() = default;
 
     uint32_t Fbo::getApiHandle() const
     {
         UNSUPPORTED_IN_D3D12("Fbo::getApiHandle()");
         return mApiHandle;
     }
-
-    RtvHandle Fbo::getRenderTargetView(uint32_t rtIndex) const
-    {
-        FboData* pData = (FboData*)mpPrivateData;
-        auto& it = pData->rtvMap.find(mColorAttachments[rtIndex]);
-        uint32_t rtvIndex;
-
-        DescriptorHeap::SharedPtr&& pHeap = gpDevice->getRtvDescriptorHeap();
-
-        if(it == pData->rtvMap.end())
-        {
-            const Texture* pTexture = getColorTexture(rtIndex).get();
-
-            // Create the render-target view
-            ID3D12ResourcePtr pResource = pTexture ? pTexture->getApiHandle() : nullptr;
-            D3D12_RENDER_TARGET_VIEW_DESC rtvDesc = {};
-            if(pTexture)
-            {
-                initializeRtvDesc<D3D12_RENDER_TARGET_VIEW_DESC>(pTexture, mColorAttachments[rtIndex].mipLevel, mColorAttachments[rtIndex].arraySlice, rtvDesc);
-            }
-            else
-            {
-                rtvDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-                rtvDesc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D;
-            }
-            rtvIndex = pHeap->allocateHandle();
-            DescriptorHeap::CpuHandle rtv = pHeap->getCpuHandle(rtvIndex);
-            gpDevice->getApiHandle()->CreateRenderTargetView(pResource, &rtvDesc, rtv);
-            pData->rtvMap[mColorAttachments[rtIndex]] = rtvIndex;
-        }
-        else
-        {
-            rtvIndex = it->second;
-        }
-
-        return pHeap->getCpuHandle(rtvIndex);
-    }
-
-    DsvHandle Fbo::getDepthStencilView() const
-    {
-        FboData* pData = (FboData*)mpPrivateData;
-        auto& it = pData->dsvMap.find(mDepthStencil);
-        uint32_t dsvIndex;
-
-        DescriptorHeap::SharedPtr&& pHeap = gpDevice->getDsvDescriptorHeap();
-
-        if(it == pData->dsvMap.end())
-        {
-            // Create the render-target view
-            const auto& pTexture = getDepthStencilTexture().get();
-            D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc = {};
-            if(pTexture)
-            {
-                initializeDsvDesc<D3D12_DEPTH_STENCIL_VIEW_DESC>(pTexture, mDepthStencil.mipLevel, mDepthStencil.arraySlice, dsvDesc);
-            }
-            else
-            {
-                dsvDesc.Format = DXGI_FORMAT_D16_UNORM;
-                dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
-            }
-            dsvIndex = pHeap->allocateHandle();
-            DescriptorHeap::CpuHandle dsv = pHeap->getCpuHandle(dsvIndex);
-            ID3D12ResourcePtr pResource = pTexture ? pTexture->getApiHandle() : nullptr;
-            gpDevice->getApiHandle()->CreateDepthStencilView(pResource, &dsvDesc, dsv);
-            pData->dsvMap[mDepthStencil] = dsvIndex;
-        }
-        else
-        {
-            dsvIndex = it->second;
-        }
-
-        return pHeap->getCpuHandle(dsvIndex);
-    }
-
+    
     uint32_t Fbo::getMaxColorTargetCount()
     {
         return D3D12_SIMULTANEOUS_RENDER_TARGET_COUNT;
@@ -194,13 +99,6 @@ namespace Falcor
 
     void Fbo::applyDepthAttachment()
     {
-    }
-
-    void Fbo::resetViews()
-    {
-        FboData* pData = (FboData*)mpPrivateData;
-        pData->dsvMap.clear();
-        pData->rtvMap.clear();
     }
 
     bool Fbo::checkStatus() const
@@ -215,5 +113,30 @@ namespace Falcor
 
     void Fbo::captureToFile(uint32_t rtIndex, const std::string& filename, Bitmap::FileFormat fileFormat)
     {
+    }
+
+    RtvHandle Fbo::getRenderTargetView(uint32_t rtIndex) const
+    {
+        const auto& rt = mColorAttachments[rtIndex];
+        if(rt.pTexture)
+        {
+            return rt.pTexture->getRTV(rt.mipLevel, rt.firstArraySlice, rt.arraySize);
+        }
+        else
+        {
+            return Texture::getNullRtv();
+        }
+    }
+
+    DsvHandle Fbo::getDepthStencilView() const
+    {
+        if(mDepthStencil.pTexture)
+        {
+            return mDepthStencil.pTexture->getDSV(mDepthStencil.mipLevel, mDepthStencil.firstArraySlice, mDepthStencil.arraySize);
+        }
+        else
+        {
+            return Texture::getNullDsv();
+        }
     }
 }

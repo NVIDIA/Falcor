@@ -59,7 +59,7 @@ namespace Falcor
         return *this;
     }
 
-    static bool checkAttachmentParams(const Texture* pTexture, uint32_t mipLevel, uint32_t arraySlice, bool isDepthAttachment)
+    static bool checkAttachmentParams(const Texture* pTexture, uint32_t mipLevel, uint32_t firstArraySlice, uint32_t arraySize, bool isDepthAttachment)
     {
         if(pTexture == nullptr)
         {
@@ -72,11 +72,11 @@ namespace Falcor
             return false;
         }
 
-        if(arraySlice != Fbo::kAttachEntireMipLevel)
+        if(arraySize != Fbo::kAttachEntireMipLevel)
         {
             if(pTexture->getType() == Texture::Type::Texture3D)
             {
-                if(arraySlice >= pTexture->getDepth())
+                if(arraySize + firstArraySlice >= pTexture->getDepth())
                 {
                     Logger::log(Logger::Level::Error, "Error when attaching texture to FBO. Requested depth-index is out-of-bound.");
                     return false;
@@ -84,7 +84,7 @@ namespace Falcor
             }
             else
             {
-                if(arraySlice >= pTexture->getArraySize())
+                if(arraySize + firstArraySlice >= pTexture->getArraySize())
                 {
                     Logger::log(Logger::Level::Error, "Error when attaching texture to FBO. Requested array index is out-of-bound.");
                     return false;
@@ -127,20 +127,21 @@ namespace Falcor
         return pDefault;
     }
 
-    void Fbo::attachDepthStencilTarget(const Texture::SharedConstPtr& pDepthStencil, uint32_t mipLevel, uint32_t arraySlice)
+    void Fbo::attachDepthStencilTarget(const Texture::SharedConstPtr& pDepthStencil, uint32_t mipLevel, uint32_t firstArraySlice, uint32_t arraySize)
     {
-        if(checkAttachmentParams(pDepthStencil.get(), mipLevel, arraySlice, true))
+        if(checkAttachmentParams(pDepthStencil.get(), mipLevel, firstArraySlice, arraySize, true))
         {
             mIsDirty = true;
             mDepthStencil.pTexture = pDepthStencil;
             mDepthStencil.mipLevel = mipLevel;
-            mDepthStencil.arraySlice = arraySlice;
+            mDepthStencil.firstArraySlice = firstArraySlice;
+            mDepthStencil.arraySize = arraySize;
             mDesc.setDepthStencilFormat(pDepthStencil ? pDepthStencil->getFormat() : ResourceFormat::Unknown);
             applyDepthAttachment();
         }
     }
 
-    void Fbo::attachColorTarget(const Texture::SharedConstPtr& pTexture, uint32_t rtIndex, uint32_t mipLevel, uint32_t arraySlice)
+    void Fbo::attachColorTarget(const Texture::SharedConstPtr& pTexture, uint32_t rtIndex, uint32_t mipLevel, uint32_t firstArraySlice, uint32_t arraySize)
     {
         if(rtIndex >= mColorAttachments.size())
         {
@@ -148,12 +149,13 @@ namespace Falcor
             return;
         }
 
-        if(checkAttachmentParams(pTexture.get(), mipLevel, arraySlice, false))
+        if(checkAttachmentParams(pTexture.get(), mipLevel, firstArraySlice, arraySize, false))
         {
             mIsDirty = true;
             mColorAttachments[rtIndex].pTexture = pTexture;
             mColorAttachments[rtIndex].mipLevel = mipLevel;
-            mColorAttachments[rtIndex].arraySlice = arraySlice;
+            mColorAttachments[rtIndex].firstArraySlice = firstArraySlice;
+            mColorAttachments[rtIndex].arraySize = arraySize;
 
             mDesc.setColorFormat(rtIndex, pTexture ? pTexture->getFormat() : ResourceFormat::Unknown);
             applyColorAttachment(rtIndex);
@@ -170,7 +172,7 @@ namespace Falcor
             {
                 // First attachment in the FBO
                 mDesc.setSampleCount(pTexture->getSampleCount());
-                mIsLayered = (attachment.arraySlice == kAttachEntireMipLevel);
+                mIsLayered = (attachment.arraySize > 1);
             }
 
             mWidth = min(mWidth, pTexture->getWidth(attachment.mipLevel));
@@ -192,7 +194,7 @@ namespace Falcor
 				}
 
 	
-                if(mIsLayered != (attachment.arraySlice == kAttachEntireMipLevel))
+                if(mIsLayered != (attachment.arraySize > 1))
                 {
                     Logger::log(Logger::Level::Error, "Error when validating FBO. Can't bind both layered and non-layered textures\n");
                     return false;
