@@ -41,135 +41,73 @@ namespace Falcor
         using UniqueConstPtr = std::unique_ptr<const SceneEditor>;
 
         static UniquePtr create(const Scene::SharedPtr& pScene, const uint32_t modelLoadFlags = 0);
+        void render(Gui* pGui);
         ~SceneEditor();
 
-        void setUiVisible(bool visible);
     private:
         SceneEditor(const Scene::SharedPtr& pScene, const uint32_t modelLoadFlags);
         Scene::SharedPtr mpScene;
         uint32_t mActiveModel = 0;
         int32_t mActiveModelInstance = 0;
-        Gui::UniquePtr mpGui = nullptr;
 
         struct
         {
             uint32_t ActivePath = 0;
-            PathEditor::UniquePtr pEditor = nullptr;
+            PathEditor::UniquePtr pEditor;
         } mPathEditor;
 
         bool mSceneDirty = false;
 
-        void initializeUI();
-        void setModelElements();
-        void setCameraElements();
-        void setLightElements();
-        void setGlobalElements();
-        void setPathElements();
+        // Main GUI functions
+        void renderModelElements(Gui* pGui);
+        void renderCameraElements(Gui* pGui);
+        void renderLightElements(Gui* pGui);
+        void renderGlobalElements(Gui* pGui);
+        void renderPathElements(Gui* pGui);
 
-        void refreshModelElements();
-
-        static void GUI_CALL addModelCB(void* pUserData);
-        static void GUI_CALL deleteModelCB(void* pUserData);
-
-        static void GUI_CALL addModelInstanceCB(void* pUserData);
-        static void GUI_CALL deleteModelInstanceCB(void* pUserData);
-
-        static void GUI_CALL setModelNameCB(const void* pVal, void* pUserData);
-        static void GUI_CALL getModelNameCB(void* pVal, void* pUserData);
-
-        static void GUI_CALL setActiveModelCB(const void* pVal, void* pUserData);
-        static void GUI_CALL getActiveModelCB(void* pVal, void* pUserData);
-
-        static void GUI_CALL setModelVisibleCB(const void* pVal, void* pUserData);
-        static void GUI_CALL getModelVisibleCB(void* pVal, void* pUserData);
-
-        static void GUI_CALL setModelActiveAnimationCB(const void* pVal, void* pUserData);
-        static void GUI_CALL getModelActiveAnimationCB(void* pVal, void* pUserData);
-
-        static void GUI_CALL setCameraFOVCB(const void* pVal, void* pUserData);
-        static void GUI_CALL getCameraFOVCB(void* pVal, void* pUserData);
-
-        static void GUI_CALL setCameraNearPlaneCB(const void* pVal, void* pUserData);
-        static void GUI_CALL getCameraNearPlaneCB(void* pVal, void* pUserData);
-
-        static void GUI_CALL setCameraFarPlaneCB(const void* pVal, void* pUserData);
-        static void GUI_CALL getCameraFarPlaneCB(void* pVal, void* pUserData);
-
-        static void GUI_CALL setCameraAspectRatioCB(const void* pVal, void* pUserData);
-        static void GUI_CALL getCameraAspectRatioCB(void* pVal, void* pUserData);
-
-        static void GUI_CALL setAmbientIntensityCB(const void* pVal, void* pUserData);
-        static void GUI_CALL getAmbientIntensityCB(void* pVal, void* pUserData);
-
-        static void GUI_CALL addCameraCB(void* pUserData);
-        static void GUI_CALL deleteCameraCB(void* pUserData);
-
-        static void GUI_CALL setCameraNameCB(const void* pVal, void* pUserData);
-        static void GUI_CALL getCameraNameCB(void* pVal, void* pUserData);
-
-        static void GUI_CALL addPathCB(void* pUserData);
-        static void GUI_CALL deletePathCB(void* pUserData);
-        static void GUI_CALL editPathCB(void* pUserData);
-
-        static void GUI_CALL setActivePathCB(const void* pVal, void* pUserData);
-        static void GUI_CALL getActivePathCB(void* pVal, void* pUserData);
-
-        static void GUI_CALL setActiveCameraCB(const void* pVal, void* pUserData);
-        static void GUI_CALL getActiveCameraCB(void* pVal, void* pUserData);
-
-        static void GUI_CALL setCameraSpeedCB(const void* pVal, void* pUserData);
-        static void GUI_CALL getCameraSpeedCB(void* pVal, void* pUserData);
-
-        template<uint32_t Channel>
-        static void GUI_CALL setInstanceTranslationCB(const void* pVal, void* pUserData);
-        template<uint32_t Channel>
-        static void GUI_CALL getInstanceTranslationCB(void* pVal, void* pUserData);
-
-        template<uint32_t Channel>
-        static void GUI_CALL setInstanceScalingCB(const void* pVal, void* pUserData);
-        template<uint32_t Channel>
-        static void GUI_CALL getInstanceScalingCB(void* pVal, void* pUserData);
-
-        template<uint32_t Channel>
-        static void GUI_CALL setInstanceRotationCB(const void* pVal, void* pUserData);
-        template<uint32_t Channel>
-        static void GUI_CALL getInstanceRotationCB(void* pVal, void* pUserData);
-
-        template<uint32_t Channel>
-        static void GUI_CALL setCameraPositionCB(const void* pVal, void* pUserData);
-        template<uint32_t Channel>
-        static void GUI_CALL getCameraPositionCB(void* pVal, void* pUserData);
-
-        template<uint32_t Channel>
-        static void GUI_CALL setCameraTargetCB(const void* pVal, void* pUserData);
-        template<uint32_t Channel>
-        static void GUI_CALL getCameraTargetCB(void* pVal, void* pUserData);
-
-        template<uint32_t Channel>
-        static void GUI_CALL setCameraUpCB(const void* pVal, void* pUserData);
-        template<uint32_t Channel>
-        static void GUI_CALL getCameraUpCB(void* pVal, void* pUserData);
-
-        static void GUI_CALL saveSceneCB(void* pUserData);
-
-        static void pathEditorFinishedCB(void* pUserData);
-
-        void addModel();
+        // Model functions
+        void addModel(Gui* pGui);
+        void deleteModel(Gui* pGui);
         void deleteModel();
-        void addModelInstance();
-        void deleteModelInstance();
+        void setModelName(Gui* pGui);
+        void setModelVisible(Gui* pGui);
+        void selectActiveModel(Gui* pGui);
 
-        void addCamera();
-        void deleteCamera();
+        // Model instance
+        void addModelInstance(Gui* pGui);
+        void addModelInstanceRange(Gui* pGui);
+        void deleteModelInstance(Gui* pGui);
+        void setInstanceTranslation(Gui* pGui);
+        void setInstanceScaling(Gui* pGui);
+        void setInstanceRotation(Gui* pGui);
 
-        void addPath();
-        void deletePath();
-        void editPath();
 
-        void setModelAnimationUI();
+        // Camera functions
+        void setCameraFOV(Gui* pGui);
+        void setCameraDepthRange(Gui* pGui);
+        void setCameraAspectRatio(Gui* pGui);
+        void setCameraName(Gui* pGui);
+        void setCameraSpeed(Gui* pGui);
+        void addCamera(Gui* pGui);
+        void deleteCamera(Gui* pGui);
+        void setActiveCamera(Gui* pGui);
+        void setCameraPosition(Gui* pGui);
+        void setCameraTarget(Gui* pGui);
+        void setCameraUp(Gui* pGui);
 
-        void detachPath();
-        void attachPath();
+        // Paths
+        void pathEditorFinishedCB();
+        void addPath(Gui* pGui);
+        void selectActivePath(Gui* pGui);
+        void deletePath(Gui* pGui);
+        void startPathEditor(Gui* pGui);
+        void startPathEditor();
+
+        // Global functions
+        void setAmbientIntensity(Gui* pGui);
+        void saveScene();
+
+        void renderModelAnimation(Gui* pGui);
 
         uint32_t mModelLoadFlags = 0;
 		uint32_t mSceneLoadFlags = 0;

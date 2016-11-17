@@ -36,11 +36,11 @@ namespace Falcor
     class PathEditor
     {
     public:
-        using pfnEditComplete = void(*)(void*);
+        using pfnEditComplete = std::function<void(void)>;
         using UniquePtr = std::unique_ptr<PathEditor>;
         using UniqueConstPtr = std::unique_ptr<const PathEditor>;
 
-        static UniquePtr create(const ObjectPath::SharedPtr& pPath, const Camera::SharedPtr& pCamera, pfnEditComplete editCompleteCB, void* pUserData);
+        static UniquePtr create(const ObjectPath::SharedPtr& pPath, const Camera::SharedPtr& pCamera, pfnEditComplete editCompleteCB);
         ~PathEditor();
 
         void setCamera(const Camera::SharedPtr& pCamera);
@@ -75,7 +75,7 @@ namespace Falcor
         static void GUI_CALL getCameraUpCB(void* pVal, void* pUserData);
 
     private:
-        PathEditor(const ObjectPath::SharedPtr& pPath, const Camera::SharedPtr& pCamera, pfnEditComplete editCompleteCB, void* pUserData);
+        PathEditor(const ObjectPath::SharedPtr& pPath, const Camera::SharedPtr& pCamera, pfnEditComplete editCompleteCB);
 
         void initUI();
         void addFrame();
@@ -87,7 +87,6 @@ namespace Falcor
         ObjectPath::SharedPtr mpPath;
         Camera::SharedPtr mpCamera;
         pfnEditComplete mEditCompleteCB = nullptr;
-        void* mpUserData = nullptr;
 
         int32_t mActiveFrame = 0;
         float mFrameTime = 0;

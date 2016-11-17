@@ -83,7 +83,7 @@ namespace Falcor
         const glm::vec3& getUpVector() const {return mData.up;}
         /** Get the camera's world space target position
         */
-        const glm::vec3& getTargetPosition() const { return mData.target; }
+        const glm::vec3& getTarget() const { return mData.target; }
 
         /** Set the camera's world space position
         */

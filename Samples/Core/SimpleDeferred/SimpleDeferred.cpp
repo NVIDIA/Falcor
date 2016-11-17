@@ -82,11 +82,11 @@ void SimpleDeferred::onGuiRender()
         loadModel();
     }
 
-    if(mpGui->pushGroup("Load Options"))
+    if(mpGui->beginGroup("Load Options"))
     {
         mpGui->addCheckBox("Compress Textures", mCompressTextures);
         mpGui->addCheckBox("Generate Tangent Space", mGenerateTangentSpace);
-        mpGui->popGroup();
+        mpGui->endGroup();
     }
 
     Gui::dropdown_list debugModeList;
@@ -103,20 +103,20 @@ void SimpleDeferred::onGuiRender()
     cullList.push_back({2, "Frontface Culling"});
     mpGui->addDropdown("Cull Mode", cullList, (uint32_t&)mCullMode);
 
-    if(mpGui->pushGroup("Lights"))
+    if(mpGui->beginGroup("Lights"))
     {
         mpGui->addRgbColor("Ambient intensity", mAmbientIntensity);
-        if(mpGui->pushGroup("Directional Light"))
+        if(mpGui->beginGroup("Directional Light"))
         {
             mpDirLight->setUiElements(mpGui.get());
-            mpGui->popGroup();
+            mpGui->endGroup();
         }
-        if (mpGui->pushGroup("Point Light"))
+        if (mpGui->beginGroup("Point Light"))
         {
             mpPointLight->setUiElements(mpGui.get());
-            mpGui->popGroup();
+            mpGui->endGroup();
         }
-        mpGui->popGroup();
+        mpGui->endGroup();
     }
 
     Gui::dropdown_list cameraList;
@@ -160,12 +160,12 @@ void SimpleDeferred::renderModelUiElements()
             mpModel->setActiveAnimation(mActiveAnimationID);
         }
     }
-    if(mpGui->pushGroup("Depth Range"))
+    if(mpGui->beginGroup("Depth Range"))
     {
         const float minDepth = mpModel->getRadius() * 1 / 1000;
         mpGui->addFloatVar("Near Plane", mNearZ, minDepth, mpModel->getRadius() * 15, minDepth * 5);
         mpGui->addFloatVar("Far Plane", mFarZ, minDepth, mpModel->getRadius() * 15, minDepth * 5);
-        mpGui->popGroup();
+        mpGui->endGroup();
     }
 }
 

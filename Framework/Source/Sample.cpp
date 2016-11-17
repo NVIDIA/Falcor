@@ -232,13 +232,13 @@ namespace Falcor
 #endif
 
         mpGui->pushWindow("Falcor", 250, 0, 20, 40);
-        if (mpGui->pushGroup("Help"))
+        if (mpGui->beginGroup("Help"))
         {
             mpGui->addText(help);
-            mpGui->popGroup();
+            mpGui->endGroup();
         }
 
-        if(mpGui->pushGroup("Global Controls"))
+        if(mpGui->beginGroup("Global Controls"))
         {
             mpGui->addFloatVar("Time", mCurrentTime, 0, FLT_MAX);
             mpGui->addFloatVar("Time Scale", mTimeScale, 0, FLT_MAX);
@@ -248,7 +248,7 @@ namespace Falcor
             {
                 initVideoCapture();
             }
-            mpGui->popGroup();
+            mpGui->endGroup();
         }
 
         onGuiRender();

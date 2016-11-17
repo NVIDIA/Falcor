@@ -27,33 +27,26 @@
 ***************************************************************************/
 #include "SceneEditorSample.h"
 
-void SceneEditorSample::createSceneCallback(void* pUserData)
+void SceneEditorSample::onGuiRender()
 {
-    SceneEditorSample* pEditor = (SceneEditorSample*)pUserData;
-    pEditor->createScene();
-}
-
-void SceneEditorSample::loadSceneCallback(void* pUserData)
-{
-    SceneEditorSample* pEditor = (SceneEditorSample*)pUserData;
-    pEditor->loadScene();
-}
-
-void SceneEditorSample::initUI()
-{
-    mpGui->addButton("Create New Scene", &SceneEditorSample::createSceneCallback, this);
-    mpGui->addButton("Load Scene", &SceneEditorSample::loadSceneCallback, this);
+    if (mpGui->addButton("Create New Scene"))
+    {
+        createScene();
+    }
+    if (mpGui->addButton("Load Scene"))
+    {
+        loadScene();
+    }
 }
 
 void SceneEditorSample::onLoad()
 {
-    initUI();
 }
 
 void SceneEditorSample::reset()
 {
     mpProgram = nullptr;
-    mpLightBuffer = nullptr;
+    mpVars = nullptr;
 }
 
 void SceneEditorSample::initNewScene()
@@ -68,7 +61,7 @@ void SceneEditorSample::initNewScene()
         std::string lights;
         getSceneLightString(mpScene.get(), lights);
         mpProgram->addDefine("_LIGHT_SOURCES", lights);
-        mpLightBuffer = UniformBuffer::create(mpProgram, "PerFrameCB");
+        mpVars = ProgramVars::create(mpProgram->getActiveVersion()->getReflector());
     }
 }
 
@@ -100,19 +93,18 @@ std::string PrintVec3(const glm::vec3& v)
 void SceneEditorSample::onFrameRender()
 {
     const glm::vec4 clearColor(0.38f, 0.52f, 0.10f, 1);
-    mpDefaultFBO->clear(clearColor, 1.0f, 0, FboAttachmentType::All);
+    mpRenderContext->clearFbo(mpDefaultFBO.get(), clearColor, 1.0f, 0, FboAttachmentType::All);
 
     if(mpScene)
     {
-        mpRenderContext->setBlendState(nullptr);
-        mpRenderContext->setDepthStencilState(nullptr, 0);
-        setSceneLightsIntoUniformBuffer(mpScene.get(), mpLightBuffer.get());
-        mpRenderContext->setUniformBuffer(0, mpLightBuffer);
+        mpDefaultPipelineState->setBlendState(nullptr);
+        mpDefaultPipelineState->setDepthStencilState(nullptr);
+        setSceneLightsIntoConstantBuffer(mpScene.get(), mpVars["PerFrameCB"].get());
+        mpRenderContext->setProgramVariables(mpVars);
+        mpDefaultPipelineState->setProgram(mpProgram);
         mpRenderer->update(mCurrentTime);
-        mpRenderer->renderScene(mpRenderContext.get(), mpProgram.get());
+        mpRenderer->renderScene(mpRenderContext.get());
     }
-
-    renderText(getGlobalSampleMessage(true), glm::vec2(10, 10));
 }
 
 void SceneEditorSample::onShutdown()
@@ -128,19 +120,6 @@ bool SceneEditorSample::onKeyEvent(const KeyboardEvent& keyEvent)
 bool SceneEditorSample::onMouseEvent(const MouseEvent& mouseEvent)
 {
     return mpRenderer ? mpRenderer->onMouseEvent(mouseEvent) : false;
-}
-
-void SceneEditorSample::onDataReload()
-{
-
-}
-
-void SceneEditorSample::onResizeSwapChain()
-{
-    RenderContext::Viewport vp;
-    vp.height = (float)mpDefaultFBO->getHeight();
-    vp.width = (float)mpDefaultFBO->getWidth();
-    mpRenderContext->setViewport(0, vp);
 }
 
 int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ LPSTR lpCmdLine, _In_ int nShowCmd)

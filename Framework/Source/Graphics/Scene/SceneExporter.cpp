@@ -262,7 +262,7 @@ namespace Falcor
         const auto pCamera = pScene->getCamera(cameraID);
         addString(jsonCamera, allocator, SceneKeys::kName, pCamera->getName());
         addVector(jsonCamera, allocator, SceneKeys::kCamPosition, pCamera->getPosition());
-        addVector(jsonCamera, allocator, SceneKeys::kCamTarget, pCamera->getTargetPosition());
+        addVector(jsonCamera, allocator, SceneKeys::kCamTarget, pCamera->getTarget());
         addVector(jsonCamera, allocator, SceneKeys::kCamUp, pCamera->getUpVector());
         addLiteral(jsonCamera, allocator, SceneKeys::kCamFovY, glm::degrees(pCamera->getFovY()));
         glm::vec2 depthRange;

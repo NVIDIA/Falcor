@@ -43,7 +43,7 @@ namespace Falcor
 
         if(pEditor->mEditCompleteCB)
         {
-            pEditor->mEditCompleteCB(pEditor->mpUserData);
+            pEditor->mEditCompleteCB();
         }
     }
 
@@ -163,13 +163,13 @@ namespace Falcor
     //////////////////////////////////////////////////////////////////////////
     // Callbacks end
     //////////////////////////////////////////////////////////////////////////
-    PathEditor::UniquePtr PathEditor::create(const ObjectPath::SharedPtr& pPath, const Camera::SharedPtr& pCamera, pfnEditComplete editCompleteCB, void* pUserData)
+    PathEditor::UniquePtr PathEditor::create(const ObjectPath::SharedPtr& pPath, const Camera::SharedPtr& pCamera, pfnEditComplete editCompleteCB)
     {
-        return UniquePtr(new PathEditor(pPath, pCamera, editCompleteCB, pUserData));
+        return UniquePtr(new PathEditor(pPath, pCamera, editCompleteCB));
     }
 
-    PathEditor::PathEditor(const ObjectPath::SharedPtr& pPath, const Camera::SharedPtr& pCamera, pfnEditComplete editCompleteCB, void* pUserData) : 
-        mEditCompleteCB(editCompleteCB), mpUserData(pUserData), mpPath(pPath), mpCamera(pCamera)
+    PathEditor::PathEditor(const ObjectPath::SharedPtr& pPath, const Camera::SharedPtr& pCamera, pfnEditComplete editCompleteCB) : 
+        mEditCompleteCB(editCompleteCB), mpPath(pPath), mpCamera(pCamera)
     {
         initUI();
         if(mpPath->getKeyFrameCount())
@@ -248,7 +248,7 @@ namespace Falcor
     void PathEditor::addFrame()
     {
         const auto& pos = mpCamera->getPosition();
-        const auto& target = mpCamera->getTargetPosition();
+        const auto& target = mpCamera->getTarget();
         const auto& up = mpCamera->getUpVector();
         mActiveFrame = mpPath->addKeyFrame(mFrameTime, pos, target, up);
         setActiveFrameID(&mActiveFrame, this);
@@ -269,7 +269,7 @@ namespace Falcor
     void PathEditor::updateFrame()
     {
         const auto& pos = mpCamera->getPosition();
-        const auto& target = mpCamera->getTargetPosition();
+        const auto& target = mpCamera->getTarget();
         const auto& up = mpCamera->getUpVector();
         mpPath->setFramePosition(mActiveFrame, pos);
         mpPath->setFrameTarget(mActiveFrame, target);

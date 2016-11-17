@@ -92,11 +92,11 @@ namespace Falcor
         /** Begin a collapsible group block
             returns true if the group is expanded, otherwise false. Use it to avoid making unnecessary calls
         */
-        bool pushGroup(const char label[]);
+        bool beginGroup(const char label[]);
 
         /** End a collapsible group block
         */
-        void popGroup();
+        void endGroup();
 
         /** Adds a floating-point UI element.
             \param[in] label The name of the widget.

@@ -72,11 +72,11 @@ namespace Falcor
         pGui->addDropdown("Codec", kCodecID, (uint32_t&)mCodec);
         pGui->addIntVar("Video FPS", (int32_t&)mFPS, 0, 240, 1);
 
-        if(pGui->pushGroup("Codec Options"))
+        if(pGui->beginGroup("Codec Options"))
         {
             pGui->addFloatVar("Bitrate (Mbps)", mBitrate, 0, FLT_MAX, 0.01f);
             pGui->addIntVar("GOP Size", (int32_t&)mGopSize, 0, 100000, 1);
-            pGui->popGroup();
+            pGui->endGroup();
         }
 
         pGui->addCheckBox("Capture UI", mCaptureUI);
@@ -84,11 +84,11 @@ namespace Falcor
         pGui->addCheckBox("Use Time-Range", mUseTimeRange);
         if(mUseTimeRange)
         {
-            if (pGui->pushGroup("Time Range"))
+            if (pGui->beginGroup("Time Range"))
             {
                 pGui->addFloatVar("Start Time", mStartTime, 0, FLT_MAX, 0.001f);
                 pGui->addFloatVar("End Time", mEndTime, 0, FLT_MAX, 0.001f);
-                pGui->popGroup();
+                pGui->endGroup();
             }
         }
 

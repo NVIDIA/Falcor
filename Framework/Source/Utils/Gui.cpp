@@ -154,7 +154,7 @@ namespace Falcor
     {
         while (mGroupStackSize)
         {
-            popGroup();
+            endGroup();
         }
 
         pContext->setProgramVariables(mpProgramVars);
@@ -236,7 +236,7 @@ namespace Falcor
         return ImGui::Button(label);
     }
 
-    bool Gui::pushGroup(const char name[])
+    bool Gui::beginGroup(const char name[])
     {
         bool visible = mGroupStackSize ? ImGui::TreeNode(name) : ImGui::CollapsingHeader(name);
         if (visible)
@@ -246,7 +246,7 @@ namespace Falcor
         return visible;
     }
 
-    void Gui::popGroup()
+    void Gui::endGroup()
     {
         assert(mGroupStackSize >= 1);
         mGroupStackSize--;

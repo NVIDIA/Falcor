@@ -168,7 +168,6 @@ namespace Falcor
         void setActiveCamera(uint32_t camID);
         float getCameraSpeed() const { return mCameraSpeed; }
         void setCameraSpeed(float speed) { mCameraSpeed = speed; }
-        float& getCameraSpeedRef() { return mCameraSpeed; }
 
         // Camera update
         bool updateCamera(double currentTime, CameraController* cameraController = nullptr);

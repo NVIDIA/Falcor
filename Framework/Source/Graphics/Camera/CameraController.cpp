@@ -175,7 +175,7 @@ namespace Falcor
             if(mShouldRotate)
             {
                 glm::vec3 camPos = mpCamera->getPosition();
-                glm::vec3 camTarget = mpCamera->getTargetPosition();
+                glm::vec3 camTarget = mpCamera->getTarget();
                 glm::vec3 camUp = b6DoF ? mpCamera->getUpVector() : glm::vec3(0, 1, 0);;
 
                 glm::vec3 viewDir = glm::normalize(camTarget - camPos);
@@ -223,7 +223,7 @@ namespace Falcor
                 movement.y += mMovement.down ? -1 : 0;
 
                 glm::vec3 camPos = mpCamera->getPosition();
-                glm::vec3 camTarget = mpCamera->getTargetPosition();
+                glm::vec3 camTarget = mpCamera->getTarget();
                 glm::vec3 camUp = mpCamera->getUpVector();
 
                 glm::vec3 viewDir = normalize(camTarget - camPos);
