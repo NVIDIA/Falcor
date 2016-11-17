@@ -80,6 +80,10 @@ namespace Falcor
     {
         // Check if we need to create a root-signature
         // FIXME Is this the correct place for this?
+        if (mpProgram && mpVao)
+        {
+            mpVao->getVertexLayout()->addVertexAttribDclToProg(mpProgram.get());
+        }
         const ProgramVersion* pProgVersion = mpProgram ? mpProgram->getActiveVersion().get() : nullptr;
         if (pProgVersion != mCachedData.pProgramVersion)
         {

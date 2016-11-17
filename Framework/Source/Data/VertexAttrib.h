@@ -58,8 +58,12 @@ struct VS_IN
     float3 normal      : NORMAL;
     float3 tangent     : TANGENT;
     float3 bitangent   : BITANGENT;
+#ifdef HAS_TEXCRD
     float2 texC        : TEXCOORD;
-//    float3 color       : DIFFUSE_COLOR; FIXME D3D12
+#endif
+#ifdef HAS_COLORS
+    float3 color       : DIFFUSE_COLOR; FIXME D3D12
+#endif
 #ifdef _VERTEX_BLENDING
     float4 boneWeights : BONE_WEIGHTS;
     uint4  boneIds     : BONE_IDS;
@@ -74,7 +78,7 @@ struct VS_OUT
     float3 bitangentW : BITANGENT;
     float2 texC       : TEXCRD;
     float3 posW       : POSW;
-//    float3 colorV     : COLOR; FIXME D3D12
+    float3 colorV     : COLOR;
     float4 posH       : SV_POSITION;
 };
 
@@ -101,8 +105,16 @@ VS_OUT defaultVS(VS_IN vIn)
     float4 posW = mul(worldMat, vIn.pos);
     vOut.posW = posW.xyz;
     vOut.posH = mul(gCam.viewProjMat, posW);
+#ifdef HAS_TEXCRD
     vOut.texC = vIn.texC;
-//    vOut.colorV = vIn.color;    // FIXME D3D12
+#else
+    vOut.texC = 0;
+#endif
+#ifdef HAS_COLORS
+    vOut.colorV = vIn.color;    // FIXME D3D12
+#else
+    vOut.colorV = 0;
+#endif
     vOut.normalW = mul((float3x3)worldMat, vIn.normal).xyz;
     vOut.tangentW = mul((float3x3)worldMat, vIn.tangent).xyz;
     vOut.bitangentW = mul((float3x3)worldMat, vIn.bitangent).xyz;

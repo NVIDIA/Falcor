@@ -243,7 +243,7 @@ namespace Falcor
     void SceneEditor::setInstanceScaling(Gui* pGui)
     {
         vec3 s = mpScene->getModelInstance(mActiveModel, mActiveModelInstance).scaling;
-        if (pGui->addFloat3Var("Scaling", s))
+        if (pGui->addFloat3Var("Scaling", s, -FLT_MAX, FLT_MAX))
         {
             mpScene->setModelInstanceScaling(mActiveModel, mActiveModelInstance, s);
             mSceneDirty = true;
@@ -403,27 +403,28 @@ namespace Falcor
 
     void SceneEditor::renderLightElements(Gui* pGui)
     {
-        for(uint32_t i = 0; i < mpScene->getLightCount(); i++)
+        if(pGui->beginGroup("Lights"))
         {
-            std::string name = mpScene->getLight(i)->getName();
-            if(name.size() == 0)
+            for (uint32_t i = 0; i < mpScene->getLightCount(); i++)
             {
-                name = std::string("Light ") + std::to_string(i);
+                std::string name = mpScene->getLight(i)->getName();
+                if (name.size() == 0)
+                {
+                    name = std::string("Light ") + std::to_string(i);
+                }
+                if (pGui->beginGroup(name.c_str()))
+                {
+                    mpScene->getLight(i)->setUiElements(pGui);
+                    pGui->endGroup();
+                }
             }
-            if(pGui->beginGroup(name.c_str()))
-            {
-                mpScene->getLight(i)->setUiElements(pGui);
-                pGui->endGroup();
-            }
+            pGui->endGroup();
         }
-
-        pGui->addSeparator();
     }
 
     void SceneEditor::render(Gui* pGui)
     {
-        pGui->pushWindow("Scene Editor");
-
+        pGui->pushWindow("Scene Editor", 300, 300, 100, 250);
         if (pGui->addButton("Export Scene"))
         {
             saveScene();

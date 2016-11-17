@@ -37,6 +37,10 @@ void SceneEditorSample::onGuiRender()
     {
         loadScene();
     }
+    if(mpEditor)
+    {
+        mpEditor->render(mpGui.get());
+    }
 }
 
 void SceneEditorSample::onLoad()
@@ -54,7 +58,6 @@ void SceneEditorSample::initNewScene()
     if(mpScene)
     {
         mpRenderer = SceneRenderer::create(mpScene);
-        mpEditor = nullptr;    // Need to do that for the UI to work correctly
         mpEditor = SceneEditor::create(mpScene);
 
         mpProgram = Program::createFromFile("", "SceneEditorSample.fs");

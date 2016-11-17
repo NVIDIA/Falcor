@@ -28,9 +28,12 @@
 #pragma once
 #include <vector>
 #include "Formats.h"
+#include "Data/VertexAttrib.h"
+#include "Graphics/Program.h"
 
 namespace Falcor
 {
+    class Program;
     class VertexBufferLayout : public std::enable_shared_from_this<VertexBufferLayout>
     {
     public:
@@ -175,6 +178,28 @@ namespace Falcor
         }
 
         size_t getBufferCount() const { return mpBufferLayouts.size(); }
+
+        // FIXME: This is a hack. A required one, but still a hack. We need to do that more efficiently
+        void addVertexAttribDclToProg(Program* pProg) const
+        {
+            pProg->removeDefine("HAS_TEXCRD");
+            pProg->removeDefine("HAS_COLORS");
+            for (const auto& l : mpBufferLayouts)
+            {
+                for (uint32_t i = 0; i < l->getElementCount(); i++)
+                {
+                    if (l->getElementShaderLocation(i) == VERTEX_TEXCOORD_LOC)
+                    {
+                        pProg->addDefine("HAS_TEXCRD");
+                    }
+                    if (l->getElementShaderLocation(i) == VERTEX_DIFFUSE_COLOR_LOC)
+                    {
+                        pProg->addDefine("HAS_COLORS");
+                    }
+                }
+            }
+        }
+
     private:
         VertexLayout() { mpBufferLayouts.reserve(16); }
         std::vector<VertexBufferLayout::SharedConstPtr> mpBufferLayouts;
