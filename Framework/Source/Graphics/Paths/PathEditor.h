@@ -43,47 +43,24 @@ namespace Falcor
         static UniquePtr create(const ObjectPath::SharedPtr& pPath, const Camera::SharedPtr& pCamera, pfnEditComplete editCompleteCB);
         ~PathEditor();
 
+        void render(Gui* pGui);
         void setCamera(const Camera::SharedPtr& pCamera);
-
-        static void GUI_CALL closeEditorCB(void* pUserData);
-        static void GUI_CALL addFrameCB(void* pUserData);
-        static void GUI_CALL updateFrameCB(void* pUserData);
-        static void GUI_CALL deleteFrameCB(void* pUserData);
-
-        static void GUI_CALL getActiveFrameID(void* pVar, void* pUserData);
-        static void GUI_CALL setActiveFrameID(const void* pVar, void* pUserData);
-
-        static void GUI_CALL getPathLoop(void* pVar, void* pUserData);
-        static void GUI_CALL setPathLoop(const void* pVar, void* pUserData);
-
-        static void GUI_CALL getPathName(void* pVar, void* pUserData);
-        static void GUI_CALL setPathName(const void* pVar, void* pUserData);
-
-        template<uint32_t channel>
-        static void GUI_CALL setCameraPositionCB(const void* pVal, void* pUserData);
-        template<uint32_t channel>
-        static void GUI_CALL getCameraPositionCB(void* pVal, void* pUserData);
-
-        template<uint32_t channel>
-        static void GUI_CALL setCameraTargetCB(const void* pVal, void* pUserData);
-        template<uint32_t channel>
-        static void GUI_CALL getCameraTargetCB(void* pVal, void* pUserData);
-
-        template<uint32_t channel>
-        static void GUI_CALL setCameraUpCB(const void* pVal, void* pUserData);
-        template<uint32_t channel>
-        static void GUI_CALL getCameraUpCB(void* pVal, void* pUserData);
 
     private:
         PathEditor(const ObjectPath::SharedPtr& pPath, const Camera::SharedPtr& pCamera, pfnEditComplete editCompleteCB);
 
-        void initUI();
-        void addFrame();
-        void updateFrame();
-        void deleteFrame();
+        bool closeEditor(Gui* pGui);
+        void editPathName(Gui* pGui);
+        void editPathLoop(Gui* pGui);
+        void editActiveFrameID(Gui* pGui);
+        void addFrame(Gui* pGui);
+        void editFrameTime(Gui* pGui);
+        void editCameraProperties(Gui* pGui);
 
-        void updateFrameCountUI();
-        Gui::UniquePtr mpGui;
+        void updateFrame(Gui* pGui);
+        void deleteFrame(Gui* pGui);
+        void setActiveFrameID(uint32_t id);
+
         ObjectPath::SharedPtr mpPath;
         Camera::SharedPtr mpCamera;
         pfnEditComplete mEditCompleteCB = nullptr;

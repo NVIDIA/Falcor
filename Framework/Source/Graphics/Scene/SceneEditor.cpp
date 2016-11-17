@@ -437,6 +437,11 @@ namespace Falcor
         renderLightElements(pGui);
 
         pGui->popWindow();
+
+        if (mPathEditor.pEditor)
+        {
+            mPathEditor.pEditor->render(pGui);
+        }
     }
 
     void SceneEditor::renderModelAnimation(Gui* pGui)
