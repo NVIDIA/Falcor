@@ -58,6 +58,22 @@ namespace Falcor
         bool resizeOccured = false;
 	};
 
+    void releaseFboData(DeviceData* pData)
+    {
+        // First, delete all FBOs
+        for (uint32_t i = 0; i < arraysize(pData->frameData); i++)
+        {
+            pData->frameData[i].pFbo->attachColorTarget(nullptr, 0);
+            pData->frameData[i].pFbo->attachDepthStencilTarget(nullptr);
+        }
+
+        // Now execute all deferred releases
+        for (uint32_t i = 0; i < arraysize(pData->frameData); i++)
+        {
+            pData->frameData[i].deferredReleases.clear();
+        }
+    }
+
     bool checkExtensionSupport(const std::string& name)
     {
         return false;
@@ -209,7 +225,9 @@ namespace Falcor
 
     Device::~Device()
     {
+        mpRenderContext.reset();
         DeviceData* pData = (DeviceData*)mpPrivateData;
+        releaseFboData(pData);
         safe_delete(pData);
     }
 
@@ -364,15 +382,7 @@ namespace Falcor
         uint32_t sampleCount = pData->frameData[0].pFbo->getSampleCount();
 
         // Delete all the FBOs
-        for (uint32_t i = 0; i < arraysize(pData->frameData); i++)
-        {
-            pData->frameData[i].pFbo->attachColorTarget(nullptr, 0);
-            pData->frameData[i].pFbo->attachDepthStencilTarget(nullptr);
-            pData->frameData[i].deferredReleases.clear();
-        }
-
-        // Make sure we release all the resources
-        pData->frameData[pData->currentBackBufferIndex].deferredReleases.clear();
+        releaseFboData(pData);
 
         DXGI_SWAP_CHAIN_DESC desc;
         d3d_call(pData->pSwapChain->GetDesc(&desc));
