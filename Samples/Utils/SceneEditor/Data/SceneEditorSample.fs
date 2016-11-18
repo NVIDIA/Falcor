@@ -45,6 +45,7 @@ vec4 main(VS_OUT vOut) : SV_TARGET
     prepareShadingAttribs(gMaterial, vOut.posW, gCam.position, vOut.normalW, vOut.tangentW, vOut.bitangentW, vOut.texC, shAttr);
 
     ShadingOutput result;
+    result.finalValue = 0;
     float4 finalColor = 0;
 
 #foreach p in _LIGHT_SOURCES

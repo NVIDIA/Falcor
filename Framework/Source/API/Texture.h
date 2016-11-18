@@ -269,6 +269,7 @@ namespace Falcor
 
         static RtvHandle getNullRtv() { return sNullRTV; }
         static DsvHandle getNullDsv() { return sNullDSV; }
+
     protected:
         friend class Device;
         

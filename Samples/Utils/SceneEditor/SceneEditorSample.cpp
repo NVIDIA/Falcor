@@ -58,7 +58,7 @@ void SceneEditorSample::initNewScene()
     if(mpScene)
     {
         mpRenderer = SceneRenderer::create(mpScene);
-        mpEditor = SceneEditor::create(mpScene);
+        mpEditor = SceneEditor::create(mpScene, Model::GenerateTangentSpace);
 
         mpProgram = Program::createFromFile("", "SceneEditorSample.fs");
         std::string lights;

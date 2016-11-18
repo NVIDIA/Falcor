@@ -98,6 +98,7 @@ namespace Falcor
             BufferData* pApiData = (BufferData*)mpApiData;
             gpDevice->getResourceAllocator()->release(pApiData->dynamicData);
         }
+        gpDevice->releaseResource(mApiHandle);
     }
 
     size_t getDataAlignmentFromUsage(Buffer::BindFlags flags)

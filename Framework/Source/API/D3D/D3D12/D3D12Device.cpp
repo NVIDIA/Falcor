@@ -39,7 +39,19 @@ namespace Falcor
 	{
 		IDXGISwapChain3Ptr pSwapChain = nullptr;
 		uint32_t currentBackBufferIndex;
-        Fbo::SharedPtr pDefaultFbos[kSwapChainBuffers];
+
+        struct ResourceRelease
+        {
+            size_t frameId;
+            ID3D12ResourcePtr pResource;
+        };
+
+        struct
+        {
+            Fbo::SharedPtr pFbo;
+            std::vector<ResourceRelease> deferredReleases;
+        } frameData[kSwapChainBuffers];
+
         ID3D12CommandQueuePtr pCommandQueue;
 		uint32_t syncInterval = 0;
 		bool isWindowOccluded = false;
@@ -183,19 +195,23 @@ namespace Falcor
             auto pDepth = Texture::create2D(width, height, depthFormat, 1, 1);
 
             // Create the FBO if it's required
-            if(pData->pDefaultFbos[i] == nullptr)
+            if(pData->frameData[i].pFbo == nullptr)
             {
-                pData->pDefaultFbos[i] = Fbo::create();
+                pData->frameData[i].pFbo = Fbo::create();
             }
-            pData->pDefaultFbos[i]->attachColorTarget(pColorTex, 0);
-            pData->pDefaultFbos[i]->attachDepthStencilTarget(pDepth);
+            pData->frameData[i].pFbo->attachColorTarget(pColorTex, 0);
+            pData->frameData[i].pFbo->attachDepthStencilTarget(pDepth);
             pData->currentBackBufferIndex = pData->pSwapChain->GetCurrentBackBufferIndex();
 		}
 
 		return true;
 	}
 
-	Device::~Device() = default;
+    Device::~Device()
+    {
+        DeviceData* pData = (DeviceData*)mpPrivateData;
+        safe_delete(pData);
+    }
 
 	Device::SharedPtr Device::create(Window::SharedPtr& pWindow, const Device::Desc& desc)
 	{
@@ -216,7 +232,7 @@ namespace Falcor
     Fbo::SharedPtr Device::getSwapChainFbo() const
     {
         DeviceData* pData = (DeviceData*)mpPrivateData;
-        return pData->pDefaultFbos[pData->currentBackBufferIndex];
+        return pData->frameData[pData->currentBackBufferIndex].pFbo;
     }
 
 	void Device::present()
@@ -224,7 +240,7 @@ namespace Falcor
 		DeviceData* pData = (DeviceData*)mpPrivateData;
 
         // Transition the back-buffer to a presentable state
-        mpRenderContext->resourceBarrier(pData->pDefaultFbos[pData->currentBackBufferIndex]->getColorTexture(0).get(), D3D12_RESOURCE_STATE_PRESENT);
+        mpRenderContext->resourceBarrier(pData->frameData[pData->currentBackBufferIndex].pFbo->getColorTexture(0).get(), D3D12_RESOURCE_STATE_PRESENT);
 
 		// Submit the command list
 		auto pGfxList = mpRenderContext->getCommandListApiHandle();
@@ -248,13 +264,19 @@ namespace Falcor
             {
                 mpFrameFence->wait(frameId - kSwapChainBuffers);
             }
+
+            // Execute deferred releases for the selected FBO
+            pData->frameData[pData->currentBackBufferIndex].deferredReleases.clear();
         }
 
         pData->resizeOccured = false;
 
         mpRenderContext->reset();
         bindDescriptorHeaps();
-	}
+
+        // Release all resources that were deleted
+        mFrameID++;
+    }
 
 	bool Device::init(const Desc& desc)
     {
@@ -323,6 +345,12 @@ namespace Falcor
 		return true;
     }
 
+    void Device::releaseResource(ID3D12ResourcePtr pResource)
+    {
+        DeviceData* pData = (DeviceData*)mpPrivateData;
+        pData->frameData[pData->currentBackBufferIndex].deferredReleases.push_back({ mFrameID, pResource });
+    }
+
     Fbo::SharedPtr Device::resizeSwapChain(uint32_t width, uint32_t height)
     {
         DeviceData* pData = (DeviceData*)mpPrivateData;
@@ -331,16 +359,20 @@ namespace Falcor
         mpFrameFence->wait(mpFrameFence->getCpuValue());
 
         // Store the FBO parameters
-        ResourceFormat colorFormat = pData->pDefaultFbos[0]->getColorTexture(0)->getFormat();
-        ResourceFormat depthFormat = pData->pDefaultFbos[0]->getDepthStencilTexture()->getFormat();
-        uint32_t sampleCount = pData->pDefaultFbos[0]->getSampleCount();
+        ResourceFormat colorFormat = pData->frameData[0].pFbo->getColorTexture(0)->getFormat();
+        ResourceFormat depthFormat = pData->frameData[0].pFbo->getDepthStencilTexture()->getFormat();
+        uint32_t sampleCount = pData->frameData[0].pFbo->getSampleCount();
 
         // Delete all the FBOs
-        for (uint32_t i = 0; i < arraysize(pData->pDefaultFbos); i++)
+        for (uint32_t i = 0; i < arraysize(pData->frameData); i++)
         {
-            pData->pDefaultFbos[i]->attachColorTarget(nullptr, 0);
-            pData->pDefaultFbos[i]->attachDepthStencilTarget(nullptr);
+            pData->frameData[i].pFbo->attachColorTarget(nullptr, 0);
+            pData->frameData[i].pFbo->attachDepthStencilTarget(nullptr);
+            pData->frameData[i].deferredReleases.clear();
         }
+
+        // Make sure we release all the resources
+        pData->frameData[pData->currentBackBufferIndex].deferredReleases.clear();
 
         DXGI_SWAP_CHAIN_DESC desc;
         d3d_call(pData->pSwapChain->GetDesc(&desc));

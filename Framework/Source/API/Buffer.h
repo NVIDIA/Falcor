@@ -37,6 +37,7 @@ namespace Falcor
     public:
         using SharedPtr = std::shared_ptr<Buffer>;
         using SharedConstPtr = std::shared_ptr<const Buffer>;
+        using ApiHandle = BufferHandle;
 
         /** Buffer access flags.
             These flags are hints the driver how the buffer will be used.
@@ -167,10 +168,9 @@ namespace Falcor
             }
             return true;
         }
-
     protected:
         Buffer(size_t size, BindFlags bind, CpuAccess update) : mSize(size), mBindFlags(bind), mUpdateFlags(update){}
-        BufferHandle mApiHandle;
+        ApiHandle mApiHandle;
         uint64_t mBindlessHandle = 0;
         size_t mSize = 0;
         mutable uint64_t mGpuPtr = 0;

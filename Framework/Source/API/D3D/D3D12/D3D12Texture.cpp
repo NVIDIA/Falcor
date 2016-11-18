@@ -40,6 +40,7 @@ namespace Falcor
     RtvHandle Texture::sNullRTV;
     DsvHandle Texture::sNullDSV;
 
+    // FIXME I don't like globals
     struct
     {
         FullScreenPass::UniquePtr pFullScreenPass;
@@ -86,6 +87,7 @@ namespace Falcor
             gGenMips.pVars = nullptr;
             gGenMips.pState = nullptr;
         }
+        gpDevice->releaseResource(mApiHandle);
     }
 
     uint64_t Texture::makeResident(const Sampler* pSampler) const

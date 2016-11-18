@@ -120,6 +120,7 @@ namespace Falcor
         DescriptorHeap::SharedPtr getRtvDescriptorHeap() const { return mpRtvHeap; }
         DescriptorHeap::SharedPtr getSamplerDescriptorHeap() const { return mpSamplerHeap; }
         ResourceAllocator::SharedPtr getResourceAllocator() const { return mpResourceAllocator; }
+        void releaseResource(ID3D12ResourcePtr pResource);
     private:
 		Device(Window::SharedPtr pWindow) : mpWindow(pWindow) {}
 		bool init(const Desc& desc);
@@ -139,7 +140,7 @@ namespace Falcor
 		RenderContext::SharedPtr mpRenderContext;
         CopyContext::SharedPtr mpCopyContext;
 		bool mVsyncOn;
-
+        size_t mFrameID = 0;
 	};
 
     extern Device::SharedPtr gpDevice;

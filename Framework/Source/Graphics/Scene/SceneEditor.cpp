@@ -221,7 +221,7 @@ namespace Falcor
     void SceneEditor::setInstanceTranslation(Gui* pGui)
     {
         vec3 t = mpScene->getModelInstance(mActiveModel, mActiveModelInstance).translation;
-        if (pGui->addFloat3Var("Translation", t))
+        if (pGui->addFloat3Var("Translation", t, -10000, 10000))
         {
             mpScene->setModelInstanceTranslation(mActiveModel, mActiveModelInstance, t);
             mSceneDirty = true;
@@ -243,7 +243,7 @@ namespace Falcor
     void SceneEditor::setInstanceScaling(Gui* pGui)
     {
         vec3 s = mpScene->getModelInstance(mActiveModel, mActiveModelInstance).scaling;
-        if (pGui->addFloat3Var("Scaling", s, -FLT_MAX, FLT_MAX))
+        if (pGui->addFloat3Var("Scaling", s, -10000, 10000))
         {
             mpScene->setModelInstanceScaling(mActiveModel, mActiveModelInstance, s);
             mSceneDirty = true;
@@ -303,12 +303,12 @@ namespace Falcor
     //// End callbacks
     //////////////////////////////////////////////////////////////////////////
 
-    SceneEditor::UniquePtr SceneEditor::create(const Scene::SharedPtr& pScene, const uint32_t ModelLoadFlags)
+    SceneEditor::UniquePtr SceneEditor::create(const Scene::SharedPtr& pScene, const uint32_t modelLoadFlags)
     {
-        return UniquePtr(new SceneEditor(pScene, ModelLoadFlags));
+        return UniquePtr(new SceneEditor(pScene, modelLoadFlags));
     }
 
-    SceneEditor::SceneEditor(const Scene::SharedPtr& pScene, uint32_t ModelLoadFlags) : mpScene(pScene), mModelLoadFlags(mModelLoadFlags) {}
+    SceneEditor::SceneEditor(const Scene::SharedPtr& pScene, uint32_t modelLoadFlags) : mpScene(pScene), mModelLoadFlags(modelLoadFlags) {}
 
     SceneEditor::~SceneEditor()
     {
@@ -323,17 +323,18 @@ namespace Falcor
 
     void SceneEditor::renderModelElements(Gui* pGui)
     {
-        if (mpScene->getModelCount() == 0)
-        {
-            return;
-        }
-
         if(pGui->beginGroup(kModelsStr))
         {
             addModel(pGui);
             if (mpScene->getModelCount())
             {
                 deleteModel(pGui);
+                if (mpScene->getModelCount() == 0)
+                {
+                    pGui->endGroup();
+                    return;
+                }
+
                 pGui->addSeparator();
                 selectActiveModel(pGui);
                 setModelName(pGui);
