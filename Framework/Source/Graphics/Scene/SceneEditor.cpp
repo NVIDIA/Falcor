@@ -221,7 +221,7 @@ namespace Falcor
     void SceneEditor::setInstanceTranslation(Gui* pGui)
     {
         vec3 t = mpScene->getModelInstance(mActiveModel, mActiveModelInstance).translation;
-        if (pGui->addFloat3Var("Translation", t, -10000, 10000))
+        if (pGui->addFloat3Var("Translation", t, -FLT_MAX, FLT_MAX))
         {
             mpScene->setModelInstanceTranslation(mActiveModel, mActiveModelInstance, t);
             mSceneDirty = true;
@@ -232,7 +232,7 @@ namespace Falcor
     {
         vec3 r = mpScene->getModelInstance(mActiveModel, mActiveModelInstance).rotation;
         r = degrees(r);
-        if (pGui->addFloat3Var("Rotation", r, 0, 360))
+        if (pGui->addFloat3Var("Rotation", r, -360, 360))
         {
             r = radians(r);
             mpScene->setModelInstanceRotation(mActiveModel, mActiveModelInstance, r);
@@ -243,7 +243,7 @@ namespace Falcor
     void SceneEditor::setInstanceScaling(Gui* pGui)
     {
         vec3 s = mpScene->getModelInstance(mActiveModel, mActiveModelInstance).scaling;
-        if (pGui->addFloat3Var("Scaling", s, -10000, 10000))
+        if (pGui->addFloat3Var("Scaling", s, 0, FLT_MAX))
         {
             mpScene->setModelInstanceScaling(mActiveModel, mActiveModelInstance, s);
             mSceneDirty = true;
