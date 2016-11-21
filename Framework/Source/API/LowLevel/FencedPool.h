@@ -39,7 +39,7 @@ namespace Falcor
 		using SharedConstPtr = std::shared_ptr<const FencedPool<ObjectType, newObjectFunc>>;
 		
 		static SharedPtr create(GpuFence::SharedConstPtr pFence) { return SharedPtr(new FencedPool(pFence)); }
-		ObjectType getObject()
+		ObjectType newObject()
 		{
 			// The queue is sorted based on time. Check if the first object is free
 			Data data = mQueue.front();

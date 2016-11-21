@@ -39,7 +39,10 @@ namespace Falcor
 	struct RenderContextData
 	{
 		GraphicsCommandAllocatorPool::SharedPtr pAllocatorPool;
+        ID3D12CommandAllocatorPtr pAllocator;
 		ID3D12GraphicsCommandListPtr pList;
+        ID3D12CommandQueuePtr pCommandQueue;
+        GpuFence::SharedPtr pFence;
 	};
 	
 	RenderContext::~RenderContext()
@@ -52,14 +55,27 @@ namespace Falcor
     {
         SharedPtr pCtx = SharedPtr(new RenderContext());
         RenderContextData* pApiData = new RenderContextData;
+        pApiData->pFence = GpuFence::create();
 		pCtx->mpApiData = pApiData;
 
         // Create a command allocator
-		pApiData->pAllocatorPool = GraphicsCommandAllocatorPool::create(gpDevice->getFrameGpuFence());
+		pApiData->pAllocatorPool = GraphicsCommandAllocatorPool::create(pApiData->pFence);
+        pApiData->pAllocator = pApiData->pAllocatorPool->newObject();
 		auto pDevice = gpDevice->getApiHandle();
 		
+        // Create the command queue
+        D3D12_COMMAND_QUEUE_DESC cqDesc = {};
+        cqDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
+        cqDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
+
+        if (FAILED(pDevice->CreateCommandQueue(&cqDesc, IID_PPV_ARGS(&pApiData->pCommandQueue))))
+        {
+            Logger::log(Logger::Level::Error, "Failed to create command queue");
+            return nullptr;
+        }
+
 		// Create a command list
-		if (FAILED(pDevice->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, pApiData->pAllocatorPool->getObject(), nullptr, IID_PPV_ARGS(&pApiData->pList))))
+		if (FAILED(pDevice->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, pApiData->pAllocator, nullptr, IID_PPV_ARGS(&pApiData->pList))))
 		{
 			Logger::log(Logger::Level::Error, "Failed to create command list for RenderContext");
 			return nullptr;
@@ -74,13 +90,21 @@ namespace Falcor
 		return pApiData->pList;
 	}
 
+    CommandQueueHandle RenderContext::getCommandQueue() const
+    {
+        const RenderContextData* pApiData = (RenderContextData*)mpApiData;
+        return pApiData->pCommandQueue.GetInterfacePtr();
+    }
+
 	void RenderContext::reset()
 	{
 		RenderContextData* pApiData = (RenderContextData*)mpApiData;
-		// Skip to the next allocator
-		ID3D12CommandAllocatorPtr pAllocator = pApiData->pAllocatorPool->getObject();
-		d3d_call(pAllocator->Reset());
-		d3d_call(pApiData->pList->Reset(pAllocator, nullptr));
+		// Skip to the next allocator        
+		pApiData->pAllocator = pApiData->pAllocatorPool->newObject();
+        d3d_call(pApiData->pList->Close());
+        d3d_call(pApiData->pAllocator->Reset());
+		d3d_call(pApiData->pList->Reset(pApiData->pAllocator, nullptr));
+        bindDescriptorHeaps();
 	}
 
     void RenderContext::resourceBarrier(const Texture* pTexture, D3D12_RESOURCE_STATES state)
@@ -275,4 +299,28 @@ namespace Falcor
     {
 
     }
+
+    void RenderContext::flush()
+    {
+        RenderContextData* pApiData = (RenderContextData*)mpApiData;
+        d3d_call(pApiData->pList->Close());
+        ID3D12CommandList* pList = pApiData->pList.GetInterfacePtr();
+        pApiData->pCommandQueue->ExecuteCommandLists(1, &pList);
+        pApiData->pList->Reset(pApiData->pAllocator, nullptr);
+        bindDescriptorHeaps();
+    }
+
+    void RenderContext::waitForCompletion()
+    {
+        RenderContextData* pApiData = (RenderContextData*)mpApiData;
+        pApiData->pFence->wait(pApiData->pFence->getCpuValue());
+    }
+
+    void RenderContext::bindDescriptorHeaps()
+    {
+        auto& pList = getCommandListApiHandle();
+        ID3D12DescriptorHeap* pHeaps[] = { gpDevice->getSamplerDescriptorHeap()->getApiHandle(), gpDevice->getSrvDescriptorHeap()->getApiHandle() };
+        pList->SetDescriptorHeaps(arraysize(pHeaps), pHeaps);
+    }
+
 }

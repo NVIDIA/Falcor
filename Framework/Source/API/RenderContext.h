@@ -57,6 +57,8 @@ namespace Falcor
 		*/
 		CommandListHandle getCommandListApiHandle() const;
 
+        CommandQueueHandle getCommandQueue() const;
+
 		/** Reset
 		*/
 		void reset();
@@ -141,6 +143,11 @@ namespace Falcor
         /** Pops the last PipelineState from the stack and sets it
         */
         void popPipelineState();
+
+        void flush();
+
+        uint64_t kInfinity = -1;
+        void waitForCompletion();
     private:
         RenderContext();
 
@@ -155,7 +162,7 @@ namespace Falcor
         void applyPipelineState();
         void prepareForDraw();
         void prepareForDrawApi();
-
+        void bindDescriptorHeaps();
 		void* mpApiData = nullptr;
     };
 }

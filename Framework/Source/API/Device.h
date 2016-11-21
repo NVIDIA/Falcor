@@ -98,10 +98,6 @@ namespace Falcor
 		*/
 		DeviceHandle getApiHandle() { return mApiHandle; }
 
-		/** Get the global frame fence object
-		*/
-		GpuFence::SharedPtr getFrameGpuFence() { return mpFrameFence; }
-
 		/** Present the back-buffer to the window
 		*/
 		void present();
@@ -125,7 +121,6 @@ namespace Falcor
 		Device(Window::SharedPtr pWindow) : mpWindow(pWindow) {}
 		bool init(const Desc& desc);
         bool updateDefaultFBO(uint32_t width, uint32_t height, uint32_t sampleCount, ResourceFormat colorFormat, ResourceFormat depthFormat);
-        void bindDescriptorHeaps();
 
         ApiHandle mApiHandle;
         ResourceAllocator::SharedPtr mpResourceAllocator;
@@ -135,7 +130,6 @@ namespace Falcor
         DescriptorHeap::SharedPtr mpSrvHeap;
 
 		Window::SharedPtr mpWindow;
-		GpuFence::SharedPtr mpFrameFence;
 		void* mpPrivateData;
 		RenderContext::SharedPtr mpRenderContext;
         CopyContext::SharedPtr mpCopyContext;

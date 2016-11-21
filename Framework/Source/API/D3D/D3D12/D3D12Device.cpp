@@ -52,7 +52,6 @@ namespace Falcor
             std::vector<ResourceRelease> deferredReleases;
         } frameData[kSwapChainBuffers];
 
-        ID3D12CommandQueuePtr pCommandQueue;
 		uint32_t syncInterval = 0;
 		bool isWindowOccluded = false;
         bool resizeOccured = false;
@@ -260,28 +259,14 @@ namespace Falcor
         // Transition the back-buffer to a presentable state
         mpRenderContext->resourceBarrier(pData->frameData[pData->currentBackBufferIndex].pFbo->getColorTexture(0).get(), D3D12_RESOURCE_STATE_PRESENT);
 
-		// Submit the command list
-		auto pGfxList = mpRenderContext->getCommandListApiHandle();
-		d3d_call(pGfxList->Close());
-
         // We need to skip this frame if resize happened. The render-targets might be invalid
         if(pData->resizeOccured == false)
         {
-            ID3D12CommandList* pList = pGfxList.GetInterfacePtr();
-            pData->pCommandQueue->ExecuteCommandLists(1, &pList);
+            mpRenderContext->flush();
 
             // Present
             pData->pSwapChain->Present(pData->syncInterval, 0);
             pData->currentBackBufferIndex = (pData->currentBackBufferIndex + 1) % kSwapChainBuffers;
-
-            uint64_t frameId = mpFrameFence->inc();
-            mpFrameFence->signal(pData->pCommandQueue);
-
-            // Wait until the selected back-buffer is ready
-            if (frameId > kSwapChainBuffers)
-            {
-                mpFrameFence->wait(frameId - kSwapChainBuffers);
-            }
 
             // Execute deferred releases for the selected FBO
             pData->frameData[pData->currentBackBufferIndex].deferredReleases.clear();
@@ -290,7 +275,6 @@ namespace Falcor
         pData->resizeOccured = false;
 
         mpRenderContext->reset();
-        bindDescriptorHeaps();
 
         // Release all resources that were deleted
         mFrameID++;
@@ -321,21 +305,9 @@ namespace Falcor
 			return false;
 		}
 
-		// Create the command queue
-		D3D12_COMMAND_QUEUE_DESC cqDesc = {};
-		cqDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
-		cqDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
-
-		ID3D12DevicePtr pDevice = Device::getApiHandle();
-
-		if (FAILED(pDevice->CreateCommandQueue(&cqDesc, IID_PPV_ARGS(&pData->pCommandQueue))))
-		{
-			Logger::log(Logger::Level::Error, "Failed to create command queue");
-			return nullptr;
-		}
-
 		// Create the swap-chain
-		pData->pSwapChain = createSwapChain(pDxgiFactory, mpWindow.get(), pData->pCommandQueue, desc.colorFormat);
+        mpRenderContext = RenderContext::create(kSwapChainBuffers);
+		pData->pSwapChain = createSwapChain(pDxgiFactory, mpWindow.get(), mpRenderContext->getCommandQueue(), desc.colorFormat);
 		if(pData->pSwapChain == nullptr)
 		{
 			return false;
@@ -347,12 +319,9 @@ namespace Falcor
         mpDsvHeap = DescriptorHeap::create(DescriptorHeap::Type::DepthStencilView, 1024, false);
         mpResourceAllocator = ResourceAllocator::create(1024 * 1024 * 2);
 
-		mpFrameFence = GpuFence::create();
-        mpRenderContext = RenderContext::create(kSwapChainBuffers);
         mpCopyContext = CopyContext::create();
 
 		mVsyncOn = desc.enableVsync;
-        bindDescriptorHeaps();
 
         // Update the FBOs
         if (updateDefaultFBO(mpWindow->getClientAreaWidth(), mpWindow->getClientAreaHeight(), 1, desc.colorFormat, desc.depthFormat) == false)
@@ -374,7 +343,8 @@ namespace Falcor
         DeviceData* pData = (DeviceData*)mpPrivateData;
         pData->resizeOccured = true;
 
-        mpFrameFence->wait(mpFrameFence->getCpuValue());
+        mpRenderContext->flush();
+        mpRenderContext->waitForCompletion();
 
         // Store the FBO parameters
         ResourceFormat colorFormat = pData->frameData[0].pFbo->getColorTexture(0)->getFormat();
@@ -412,12 +382,5 @@ namespace Falcor
     {
         UNSUPPORTED_IN_D3D("Device::isExtensionSupported()");
         return false;
-    }
-
-    void Device::bindDescriptorHeaps()
-    {
-        auto& pList = mpRenderContext->getCommandListApiHandle();
-        ID3D12DescriptorHeap* pHeaps[] = { mpSamplerHeap->getApiHandle(), mpSrvHeap->getApiHandle() };
-        pList->SetDescriptorHeaps(arraysize(pHeaps), pHeaps);
     }
 }

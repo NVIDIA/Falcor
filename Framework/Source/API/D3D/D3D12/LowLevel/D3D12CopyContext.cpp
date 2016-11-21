@@ -70,7 +70,7 @@ namespace Falcor
         pApiData->pAllocatorPool = CopyCommandAllocatorPool::create(mpFence);
 
         // Create a command list
-        if (FAILED(gpDevice->getApiHandle()->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_COPY, pApiData->pAllocatorPool->getObject(), nullptr, IID_PPV_ARGS(&pApiData->pCmdList))))
+        if (FAILED(gpDevice->getApiHandle()->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_COPY, pApiData->pAllocatorPool->newObject(), nullptr, IID_PPV_ARGS(&pApiData->pCmdList))))
         {
             Logger::log(Logger::Level::Error, "Failed to create command list for CopyContext");
             return false;
@@ -129,7 +129,7 @@ namespace Falcor
         mpFence->signal(pApiData->pQueue);
 
         // Reset the allocator and list
-        ID3D12CommandAllocator* pAllocator = pApiData->pAllocatorPool->getObject();
+        ID3D12CommandAllocator* pAllocator = pApiData->pAllocatorPool->newObject();
         d3d_call(pAllocator->Reset());
         d3d_call(pApiData->pCmdList->Reset(pAllocator, nullptr));
 
