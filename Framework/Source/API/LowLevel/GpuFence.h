@@ -30,6 +30,9 @@
 
 namespace Falcor
 {
+    /** This class can be used to synchronize GPU and CPU execution
+        It's value monotonically increasing - every time a signal is sent, it will change the value first
+    */
     class GpuFence : public std::enable_shared_from_this<GpuFence>
     {
     public:
@@ -37,19 +40,39 @@ namespace Falcor
         using SharedConstPtr = std::shared_ptr<const GpuFence>;
         using ApiHandle = FenceHandle;
 
+        /** Create a new object
+            \param[in] The initial value of the fence
+        */
         static SharedPtr create(uint64_t initValue = 0);
         ~GpuFence();
 
+        /** Get the internal API handle
+        */
         ApiHandle getApiHandle() const { return mApiHandle; }
 
-        void setValue(uint64_t value);
+        /** Get the last value the GPU has signaled
+        */
         uint64_t getGpuValue() const;
-		uint64_t getCpuValue() const { return mCpuValue; }
-        uint64_t inc() { return ++mCpuValue; }
-        void signal(CommandQueueHandle pQueue);
 
-        void wait(uint64_t value) const;
-		void flush() const { wait(mCpuValue); }
+        /** Get the current CPU value
+        */
+		uint64_t getCpuValue() const { return mCpuValue; }
+
+        /** Tell the GPU to wait until the fence reaches the current value
+        */
+        void syncGpu(CommandQueueHandle pQueue);
+
+        /** Tell the CPU to wait until the fence reaches the current value
+        */
+        void syncCpu();
+
+        /** Insert a signal command into the command queue. This will increase the internal value
+        */
+        uint64_t gpuSignal(CommandQueueHandle pQueue);
+
+        /** Send a CPU signal, increasing the internal fence value
+        */
+        uint64_t cpuSignal();
     private:
 		GpuFence(uint64_t initValue) : mCpuValue(initValue) {}
 		uint64_t mCpuValue;

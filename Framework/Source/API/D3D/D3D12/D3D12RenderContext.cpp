@@ -107,7 +107,7 @@ namespace Falcor
         d3d_call(pApiData->pAllocator->Reset());
 		d3d_call(pApiData->pList->Reset(pApiData->pAllocator, nullptr));
         bindDescriptorHeaps();
-//        pApiData->pCopyContext->reset();
+        pApiData->pCopyContext->reset();
 	}
 
     void RenderContext::resourceBarrier(const Texture* pTexture, D3D12_RESOURCE_STATES state)
@@ -306,7 +306,13 @@ namespace Falcor
     void RenderContext::flush()
     {
         RenderContextData* pApiData = (RenderContextData*)mpApiData;
-        
+
+        if (pApiData->pCopyContext->isDirty())
+        {
+            pApiData->pCopyContext->flush(pApiData->pFence.get());
+            pApiData->pFence->syncGpu(pApiData->pCommandQueue);
+        }
+
         d3d_call(pApiData->pList->Close());
         ID3D12CommandList* pList = pApiData->pList.GetInterfacePtr();
         pApiData->pCommandQueue->ExecuteCommandLists(1, &pList);
@@ -317,7 +323,7 @@ namespace Falcor
     void RenderContext::waitForCompletion()
     {
         RenderContextData* pApiData = (RenderContextData*)mpApiData;
-        pApiData->pFence->wait(pApiData->pFence->getCpuValue());
+        pApiData->pFence->syncCpu();
     }
 
     void RenderContext::bindDescriptorHeaps()

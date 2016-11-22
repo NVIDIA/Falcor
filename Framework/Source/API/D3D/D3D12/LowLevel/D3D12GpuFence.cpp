@@ -52,34 +52,36 @@ namespace Falcor
         return pFence;
     }
 
-    void GpuFence::setValue(uint64_t value)
+    uint64_t GpuFence::gpuSignal(CommandQueueHandle pQueue)
     {
-		mCpuValue = value;
-        d3d_call(mApiHandle->Signal(value));
+        mCpuValue++;
+        d3d_call(pQueue->Signal(mApiHandle, mCpuValue));
+        return mCpuValue;
+    }
+
+    uint64_t GpuFence::cpuSignal()
+    {
+        mCpuValue++;
+        d3d_call(mApiHandle->Signal(mCpuValue));
+        return mCpuValue;
+    }
+
+    void GpuFence::syncGpu(CommandQueueHandle pQueue)
+    {
+        d3d_call(pQueue->Wait(mApiHandle, mCpuValue));
+    }
+
+    void GpuFence::syncCpu()
+    {
+        if (getGpuValue() < mCpuValue)
+        {
+            d3d_call(mApiHandle->SetEventOnCompletion(mCpuValue, mEvent));
+            WaitForSingleObject(mEvent, INFINITE);
+        }
     }
 
     uint64_t GpuFence::getGpuValue() const
     {
         return mApiHandle->GetCompletedValue();
-    }
-
-    void GpuFence::signal(CommandQueueHandle pQueue)
-    {
-        d3d_call(pQueue->Signal(mApiHandle, mCpuValue));
-    }
-
-    void GpuFence::wait(uint64_t value) const
-    {
-        if(value > mCpuValue)
-        {
-            assert(0);
-            value = mCpuValue;
-        }
-
-        if(getGpuValue() < value)
-        {
-            d3d_call(mApiHandle->SetEventOnCompletion(value, mEvent));
-            WaitForSingleObject(mEvent, INFINITE);
-        }
     }
 }
