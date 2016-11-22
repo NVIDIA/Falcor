@@ -174,7 +174,7 @@ namespace Falcor
         else
         {
             // FIXME D3D12 handle case where buffer is mapped for read
-            gpDevice->getCopyContext()->updateBuffer(this, pData, offset, size);
+            gpDevice->getRenderContext()->updateBuffer(this, pData, offset, size);
         }
     }
 

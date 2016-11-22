@@ -35,9 +35,12 @@ namespace Falcor
     public:
 		using SharedPtr = std::shared_ptr<GpuFence>;
         using SharedConstPtr = std::shared_ptr<const GpuFence>;
+        using ApiHandle = FenceHandle;
 
         static SharedPtr create(uint64_t initValue = 0);
         ~GpuFence();
+
+        ApiHandle getApiHandle() const { return mApiHandle; }
 
         void setValue(uint64_t value);
         uint64_t getGpuValue() const;
@@ -51,6 +54,6 @@ namespace Falcor
 		GpuFence(uint64_t initValue) : mCpuValue(initValue) {}
 		uint64_t mCpuValue;
         HANDLE mEvent = INVALID_HANDLE_VALUE;
-        FenceHandle mApiHandle;
+        ApiHandle mApiHandle;
     };
 }

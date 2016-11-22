@@ -30,8 +30,6 @@
 #include "API/Texture.h"
 #include "API/FBO.h"
 #include "API/RenderContext.h"
-#include "API/LowLevel/GpuFence.h"
-#include "API/LowLevel/CopyContext.h"
 #include "Api/LowLevel/DescriptorHeap.h"
 #include "API/LowLevel/ResourceAllocator.h"
 
@@ -89,10 +87,6 @@ namespace Falcor
 			The default render-context is managed completly by the device. The user should just queue commands into it, the device will take care of allocation, submission and synchronization
 		*/
 		RenderContext::SharedPtr getRenderContext() const { return mpRenderContext; }
-
-        /** Get the copy context
-        */
-        CopyContext::SharedPtr getCopyContext() const { return mpCopyContext; }
 
 		/** Get the native API handle
 		*/

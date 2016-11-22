@@ -37,6 +37,7 @@
 #include "API/PipelineStateObject.h"
 #include "API/ProgramVars.h"
 #include "Graphics/PipelineState.h"
+#include "API/LowLevel/CopyContext.h"
 
 namespace Falcor
 {
@@ -144,10 +145,19 @@ namespace Falcor
         */
         void popPipelineState();
 
+        /** Flush the command list. This doesn't reset the command allocator, just submits the commands
+        */
         void flush();
 
-        uint64_t kInfinity = -1;
+        /** Wait for the GPU to finish execution. Blocking until the GPU is done
+        */
         void waitForCompletion();
+        
+        uint64_t updateBuffer(const Buffer* pBuffer, const void* pData, size_t offset = 0, size_t size = 0) const;
+        uint64_t updateTexture(const Texture* pTexture, const void* pData) const;
+        uint64_t updateTextureSubresource(const Texture* pTexture, uint32_t subresourceIndex, const void* pData) const;
+        uint64_t updateTextureSubresources(const Texture* pTexture, uint32_t firstSubresource, uint32_t subresourceCount, const void* pData) const;
+
     private:
         RenderContext();
 

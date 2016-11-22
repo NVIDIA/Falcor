@@ -43,6 +43,7 @@ namespace Falcor
 		ID3D12GraphicsCommandListPtr pList;
         ID3D12CommandQueuePtr pCommandQueue;
         GpuFence::SharedPtr pFence;
+        CopyContext::SharedPtr pCopyContext;
 	};
 	
 	RenderContext::~RenderContext()
@@ -55,6 +56,7 @@ namespace Falcor
     {
         SharedPtr pCtx = SharedPtr(new RenderContext());
         RenderContextData* pApiData = new RenderContextData;
+        pApiData->pCopyContext = CopyContext::create();
         pApiData->pFence = GpuFence::create();
 		pCtx->mpApiData = pApiData;
 
@@ -105,6 +107,7 @@ namespace Falcor
         d3d_call(pApiData->pAllocator->Reset());
 		d3d_call(pApiData->pList->Reset(pApiData->pAllocator, nullptr));
         bindDescriptorHeaps();
+//        pApiData->pCopyContext->reset();
 	}
 
     void RenderContext::resourceBarrier(const Texture* pTexture, D3D12_RESOURCE_STATES state)
@@ -303,6 +306,7 @@ namespace Falcor
     void RenderContext::flush()
     {
         RenderContextData* pApiData = (RenderContextData*)mpApiData;
+        
         d3d_call(pApiData->pList->Close());
         ID3D12CommandList* pList = pApiData->pList.GetInterfacePtr();
         pApiData->pCommandQueue->ExecuteCommandLists(1, &pList);
@@ -323,4 +327,27 @@ namespace Falcor
         pList->SetDescriptorHeaps(arraysize(pHeaps), pHeaps);
     }
 
+    uint64_t RenderContext::updateBuffer(const Buffer* pBuffer, const void* pData, size_t offset, size_t size) const
+    {
+        RenderContextData* pApiData = (RenderContextData*)mpApiData;
+        return pApiData->pCopyContext->updateBuffer(pBuffer, pData, offset, size);
+    }
+
+    uint64_t RenderContext::updateTexture(const Texture* pTexture, const void* pData) const
+    {
+        RenderContextData* pApiData = (RenderContextData*)mpApiData;
+        return pApiData->pCopyContext->updateTexture(pTexture, pData);
+    }
+
+    uint64_t RenderContext::updateTextureSubresource(const Texture* pTexture, uint32_t subresourceIndex, const void* pData) const
+    {
+        RenderContextData* pApiData = (RenderContextData*)mpApiData;
+        return pApiData->pCopyContext->updateTextureSubresource(pTexture, subresourceIndex, pData);
+    }
+
+    uint64_t RenderContext::updateTextureSubresources(const Texture* pTexture, uint32_t firstSubresource, uint32_t subresourceCount, const void* pData) const
+    {
+        RenderContextData* pApiData = (RenderContextData*)mpApiData;
+        return pApiData->pCopyContext->updateTextureSubresources(pTexture, firstSubresource, subresourceCount, pData);
+    }
 }

@@ -136,7 +136,7 @@ namespace Falcor
 
         if (pData)
         {
-            auto& pCopyCtx = gpDevice->getCopyContext();
+            auto& pRenderContext = gpDevice->getRenderContext();
             if (autoGenMips)
             {
                 size_t arraySliceSize = pTexture->getWidth() * pTexture->getHeight() * getFormatBytesPerBlock(pTexture->getFormat());
@@ -144,15 +144,14 @@ namespace Falcor
                 for (uint32_t i = 0; i < pTexture->getArraySize(); i++)
                 {
                     uint32_t subresource = pTexture->getSubresourceIndex(i, 0);
-                    pCopyCtx->updateTextureSubresource(pTexture, subresource, pSrc, false);
+                    pRenderContext->updateTextureSubresource(pTexture, subresource, pSrc);
                     pSrc += arraySliceSize;
                 }
             }
             else
             {
-                pCopyCtx->updateTexture(pTexture, pData, false);
+                pRenderContext->updateTexture(pTexture, pData);
             }
-            pCopyCtx->submit(true);
 
             if (autoGenMips)
             {
