@@ -29,20 +29,13 @@
 #include "ModelRenderer.h"
 
 namespace Falcor
-{
-    // FIXME Memory leak. This map keeps a reference to Model objects and keeps them alive when the user deletes them
-	std::map<Model::SharedPtr, SceneRenderer::UniquePtr> ModelRenderer::sceneMap;
-	
+{	
 	void ModelRenderer::render(RenderContext* pRenderContext, Model::SharedPtr pModel, Camera* pCamera, bool frustumCulling)
     {
-		auto it = sceneMap.find(pModel);
-		if (it == sceneMap.end())
-		{
-			Scene::SharedPtr pScene = Scene::create();
-			uint32_t modelID = pScene->addModel(pModel, "", true);
-			it = sceneMap.emplace(pModel, SceneRenderer::create(pScene)).first;
-		}
-        SceneRenderer* pSceneRenderer = it->second.get();
+        Scene::SharedPtr pScene = Scene::create();
+        uint32_t modelID = pScene->addModel(pModel, "", true);
+
+        SceneRenderer::UniquePtr pSceneRenderer = SceneRenderer::create(pScene);
         pSceneRenderer->setObjectCullState(frustumCulling);
         pSceneRenderer->renderScene(pRenderContext, pCamera);
     }
