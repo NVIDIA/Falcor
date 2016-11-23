@@ -128,7 +128,8 @@ namespace Falcor
 
     void ResourceAllocator::executeDeferredReleases()
     {
-        while (mDeferredReleases.size() && mDeferredReleases.top().fenceValue < mpFence->getGpuValue())
+        uint64_t gpuVal = mpFence->getGpuValue();
+        while (mDeferredReleases.size() && mDeferredReleases.top().fenceValue < gpuVal)
         {
             const AllocationData& data = mDeferredReleases.top();
             if (data.allocationID == mCurrentAllocationId)

@@ -342,7 +342,8 @@ namespace Falcor
     {
         DeviceData* pData = (DeviceData*)mpPrivateData;
         GpuFence* pFence = mpRenderContext->getFence().get();
-        while (pData->deferredReleases.size() && pData->deferredReleases.front().fenceValue < pFence->getGpuValue())
+        uint64_t gpuVal = pFence->getGpuValue();
+        while (pData->deferredReleases.size() && pData->deferredReleases.front().fenceValue < gpuVal)
         {
             pData->deferredReleases.pop();
         }
