@@ -42,7 +42,7 @@ namespace Falcor
 
         struct ResourceRelease
         {
-            size_t fenceValue;
+            size_t frameID;
             ID3D12ResourcePtr pResource;
         };
 
@@ -55,6 +55,7 @@ namespace Falcor
         uint32_t syncInterval = 0;
 		bool isWindowOccluded = false;
         bool resizeOccured = false;
+        GpuFence::SharedPtr pFrameFence;
 	};
 
     void releaseFboData(DeviceData* pData)
@@ -269,6 +270,8 @@ namespace Falcor
             pData->pSwapChain->Present(pData->syncInterval, 0);
             pData->currentBackBufferIndex = (pData->currentBackBufferIndex + 1) % kSwapChainBuffers;
 
+            pData->pFrameFence->gpuSignal(mpRenderContext->getCommandQueue().GetInterfacePtr());
+
             // Execute deferred releases for the selected FBO
             executeDeferredReleases();
         }
@@ -329,21 +332,21 @@ namespace Falcor
             return false;
         }
 
+        pData->pFrameFence = GpuFence::create();
 		return true;
     }
 
     void Device::releaseResource(ID3D12ResourcePtr pResource)
     {
         DeviceData* pData = (DeviceData*)mpPrivateData;
-        pData->deferredReleases.push({ mpRenderContext->getFence()->getCpuValue(), pResource });
+        pData->deferredReleases.push({ pData->pFrameFence->getCpuValue(), pResource });
     }
 
     void Device::executeDeferredReleases()
     {
         DeviceData* pData = (DeviceData*)mpPrivateData;
-        GpuFence* pFence = mpRenderContext->getFence().get();
-        uint64_t gpuVal = pFence->getGpuValue();
-        while (pData->deferredReleases.size() && pData->deferredReleases.front().fenceValue < gpuVal)
+        uint64_t gpuVal = pData->pFrameFence->getGpuValue();
+        while (pData->deferredReleases.size() && pData->deferredReleases.front().frameID < gpuVal)
         {
             pData->deferredReleases.pop();
         }
