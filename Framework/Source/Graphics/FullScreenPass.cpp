@@ -55,7 +55,7 @@ namespace Falcor
 
     Buffer::SharedPtr FullScreenPass::spVertexBuffer;
     Vao::SharedPtr FullScreenPass::spVao;
-
+    uint64_t FullScreenPass::sObjectCount = 0;
 
 #ifdef FALCOR_D3D
 #define INVERT_Y(a) ((a == 1) ? 0 : 1)
@@ -70,6 +70,34 @@ namespace Falcor
         {glm::vec2( 1, -1), glm::vec2(1, INVERT_Y(0))},
     };
 #undef INVERT_Y
+
+    static void initStaticObjects(Buffer::SharedPtr& pVB, Vao::SharedPtr& pVao)
+    {
+        // First time we got here. create VB and VAO
+        const uint32_t vbSize = (uint32_t)(sizeof(Vertex)*arraysize(kVertices));
+        pVB = Buffer::create(vbSize, Buffer::BindFlags::Vertex, Buffer::CpuAccess::Write, (void*)kVertices);
+
+        // create VAO
+        VertexLayout::SharedPtr pLayout = VertexLayout::create();
+        VertexBufferLayout::SharedPtr pBufLayout = VertexBufferLayout::create();
+        pBufLayout->addElement("POSITION", 0, ResourceFormat::RG32Float, 1, 0);
+        pBufLayout->addElement("TEXCOORD", 8, ResourceFormat::RG32Float, 1, 1);
+        pLayout->addBufferLayout(0, pBufLayout);
+
+        Vao::BufferVec buffers{ pVB };
+        pVao = Vao::create(buffers, pLayout, nullptr, ResourceFormat::Unknown, Vao::Topology::TriangleStrip);
+    }
+
+    FullScreenPass::~FullScreenPass()
+    {
+        assert(sObjectCount > 0);
+        sObjectCount--;
+        if (sObjectCount == 0)
+        {
+            spVao = nullptr;
+            spVertexBuffer = nullptr;
+        }
+    }
 
     FullScreenPass::UniquePtr FullScreenPass::create(const std::string& fragmentShaderFile, const Program::DefineList& programDefines, bool disableDepth, bool disableStencil, uint32_t viewportMask)
     {
@@ -114,19 +142,7 @@ namespace Falcor
 
         if (FullScreenPass::spVertexBuffer == nullptr)
         {
-            // First time we got here. create VB and VAO
-            const uint32_t vbSize = (uint32_t)(sizeof(Vertex)*arraysize(kVertices));
-            FullScreenPass::spVertexBuffer = Buffer::create(vbSize, Buffer::BindFlags::Vertex, Buffer::CpuAccess::Write, (void*)kVertices);
-
-            // create VAO
-            VertexLayout::SharedPtr pLayout = VertexLayout::create();
-            VertexBufferLayout::SharedPtr pBufLayout = VertexBufferLayout::create();
-            pBufLayout->addElement("POSITION", 0, ResourceFormat::RG32Float, 1, 0);
-            pBufLayout->addElement("TEXCOORD", 8, ResourceFormat::RG32Float, 1, 1);
-            pLayout->addBufferLayout(0, pBufLayout);
-
-            Vao::BufferVec buffers{ spVertexBuffer };
-            FullScreenPass::spVao = Vao::create(buffers, pLayout, nullptr, ResourceFormat::Unknown, Vao::Topology::TriangleStrip);
+            initStaticObjects(spVertexBuffer, spVao);
         }
         mpPipelineState->setVao(FullScreenPass::spVao);
     }

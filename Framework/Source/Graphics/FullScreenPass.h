@@ -47,6 +47,8 @@ namespace Falcor
         using UniquePtr = std::unique_ptr<FullScreenPass>;
         using UniqueConstPtr = std::unique_ptr<const FullScreenPass>;
 
+        ~FullScreenPass();
+
         /** create a new object
             \param[in] fragmentShaderFile Fragment shader filename
             \param[in] shaderDefines Optional. A list of macro definitions to be patched into the shaders.
@@ -67,7 +69,7 @@ namespace Falcor
         Program::SharedPtr getProgram() { return mpProgram; }
 
     protected:
-        FullScreenPass() = default;
+        FullScreenPass() { sObjectCount++; }
 
         void init(const std::string & fragmentShaderFile, const Program::DefineList& programDefines, bool disableDepth, bool disableStencil, uint32_t viewportMask);
 
@@ -77,5 +79,6 @@ namespace Falcor
         // Static
         static Buffer::SharedPtr spVertexBuffer;
         static Vao::SharedPtr    spVao;
+        static uint64_t sObjectCount;
     };
 }
