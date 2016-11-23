@@ -153,11 +153,12 @@ namespace Falcor
         */
         void waitForCompletion();
         
-        uint64_t updateBuffer(const Buffer* pBuffer, const void* pData, size_t offset = 0, size_t size = 0) const;
-        uint64_t updateTexture(const Texture* pTexture, const void* pData) const;
-        uint64_t updateTextureSubresource(const Texture* pTexture, uint32_t subresourceIndex, const void* pData) const;
-        uint64_t updateTextureSubresources(const Texture* pTexture, uint32_t firstSubresource, uint32_t subresourceCount, const void* pData) const;
+        void updateBuffer(const Buffer* pBuffer, const void* pData, size_t offset = 0, size_t size = 0) const;
+        void updateTexture(const Texture* pTexture, const void* pData) const;
+        void updateTextureSubresource(const Texture* pTexture, uint32_t subresourceIndex, const void* pData) const;
+        void updateTextureSubresources(const Texture* pTexture, uint32_t firstSubresource, uint32_t subresourceCount, const void* pData) const;
 
+        GpuFence::SharedPtr getFence() const;
     private:
         RenderContext();
 

@@ -41,10 +41,10 @@ namespace Falcor
         ~CopyContext();
 
         static SharedPtr create();
-        uint64_t updateBuffer(const Buffer* pBuffer, const void* pData, size_t offset = 0, size_t size = 0);
-        uint64_t updateTexture(const Texture* pTexture, const void* pData);
-        uint64_t updateTextureSubresource(const Texture* pTexture, uint32_t subresourceIndex, const void* pData);
-        uint64_t updateTextureSubresources(const Texture* pTexture, uint32_t firstSubresource, uint32_t subresourceCount, const void* pData);
+        void updateBuffer(const Buffer* pBuffer, const void* pData, size_t offset = 0, size_t size = 0);
+        void updateTexture(const Texture* pTexture, const void* pData);
+        void updateTextureSubresource(const Texture* pTexture, uint32_t subresourceIndex, const void* pData);
+        void updateTextureSubresources(const Texture* pTexture, uint32_t firstSubresource, uint32_t subresourceCount, const void* pData);
 
         void reset();
         void flush(GpuFence* pFence = nullptr);

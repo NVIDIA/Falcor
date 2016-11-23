@@ -43,16 +43,24 @@ namespace Falcor
         struct UploadDesc
         {
             uint64_t id;
-            ID3D12ResourcePtr pResource;
+            Buffer::SharedPtr pBuffer;
         };
 
         std::queue<UploadDesc> uploadQueue;
     };
-    
+
     CopyContext::~CopyContext()
     {
         delete (CopyContextData*)mpApiData;
         mpApiData = nullptr;
+    }
+
+    void releaseUnusedResources(std::queue<CopyContextData::UploadDesc>& pQueue, uint64_t fenceValue)
+    {
+        while (pQueue.empty() == false && pQueue.front().id < fenceValue)
+        {
+            pQueue.pop();
+        }
     }
 
     bool CopyContext::initApiData()
@@ -84,8 +92,9 @@ namespace Falcor
 
     void CopyContext::reset()
     {
+        assert(mDirty == false);
         CopyContextData* pApiData = (CopyContextData*)mpApiData;
-        decltype(pApiData->uploadQueue)().swap(pApiData->uploadQueue);
+        releaseUnusedResources(pApiData->uploadQueue, mpFence->getGpuValue());
         pApiData->pAllocator = pApiData->pAllocatorPool->newObject();
         d3d_call(pApiData->pCmdList->Close());
         d3d_call(pApiData->pAllocator->Reset());
@@ -114,7 +123,7 @@ namespace Falcor
 
     void CopyContext::flush(GpuFence* pFence)
     {
-        if(mDirty)
+        if (mDirty)
         {
             CopyContextData* pApiData = (CopyContextData*)mpApiData;
 
@@ -141,10 +150,9 @@ namespace Falcor
         }
     }
 
-    uint64_t CopyContext::updateBuffer(const Buffer* pBuffer, const void* pData, size_t offset, size_t size)
+    void CopyContext::updateBuffer(const Buffer* pBuffer, const void* pData, size_t offset, size_t size)
     {
         CopyContextData* pApiData = (CopyContextData*)mpApiData;
-        ID3D12Resource* pResource = pBuffer->getApiHandle();
         if (size == 0)
         {
             size = pBuffer->getSize() - offset;
@@ -153,27 +161,25 @@ namespace Falcor
         if (pBuffer->adjustSizeOffsetParams(size, offset) == false)
         {
             logWarning("CopyContext::updateBuffer() - size and offset are invalid. Nothing to update.");
-            return mpFence->getCpuValue();
+            return;
         }
 
         mDirty = true;
         // Allocate a buffer on the upload heap
-        Buffer::SharedPtr pUploadBuffer = Buffer::create(size, Buffer::BindFlags::Staging, Buffer::CpuAccess::Write, nullptr);
-        pUploadBuffer->updateData(pData, offset, size);
+        CopyContextData::UploadDesc uploadDesc;
+        uploadDesc.pBuffer = Buffer::create(size, Buffer::BindFlags::Staging, Buffer::CpuAccess::Write, nullptr);
+        uploadDesc.pBuffer->updateData(pData, offset, size);
+        ID3D12Resource* pResource = uploadDesc.pBuffer->getApiHandle();
 
         // Dispatch a command
-        CopyContextData::UploadDesc uploadDesc;
-        uploadDesc.pResource = pUploadBuffer->getApiHandle();
-//         mpFence->cpuSignal();
-//         uploadDesc.id = mpFence->getCpuValue();
-//         pApiData->uploadQueue.push(uploadDesc);
-        
-        offset = pUploadBuffer->getGpuAddress() - uploadDesc.pResource->GetGPUVirtualAddress();
-        pApiData->pCmdList->CopyBufferRegion(pBuffer->getApiHandle(), 0, uploadDesc.pResource, offset, size);
-        return uploadDesc.id;
+        uploadDesc.id = mpFence->getCpuValue();
+        pApiData->uploadQueue.push(uploadDesc);
+
+        offset = uploadDesc.pBuffer->getGpuAddress() - pResource->GetGPUVirtualAddress();
+        pApiData->pCmdList->CopyBufferRegion(pBuffer->getApiHandle(), 0, pResource, offset, size);
     }
 
-    uint64_t CopyContext::updateTextureSubresources(const Texture* pTexture, uint32_t firstSubresource, uint32_t subresourceCount, const void* pData)
+    void CopyContext::updateTextureSubresources(const Texture* pTexture, uint32_t firstSubresource, uint32_t subresourceCount, const void* pData)
     {
         mDirty = true;
 
@@ -182,7 +188,7 @@ namespace Falcor
         CopyContextData* pApiData = (CopyContextData*)mpApiData;
 
         ID3D12Device* pDevice = gpDevice->getApiHandle();
-        
+
         // Get the footprint
         D3D12_RESOURCE_DESC texDesc = pTexture->getApiHandle()->GetDesc();
         std::vector<D3D12_PLACED_SUBRESOURCE_FOOTPRINT> footprint(subresourceCount);
@@ -192,17 +198,14 @@ namespace Falcor
         pDevice->GetCopyableFootprints(&texDesc, firstSubresource, subresourceCount, 0, footprint.data(), rowCount.data(), rowSize.data(), &size);
 
         // Allocate a buffer on the upload heap
-        Buffer::SharedPtr pBuffer = Buffer::create(size, Buffer::BindFlags::Staging, Buffer::CpuAccess::Write, nullptr);
-
         CopyContextData::UploadDesc uploadDesc;
-
+        uploadDesc.pBuffer = Buffer::create(size, Buffer::BindFlags::Staging, Buffer::CpuAccess::Write, nullptr);
         // Map the buffer
-        uint8_t* pDst = (uint8_t*)pBuffer->map(Buffer::MapType::WriteDiscard);
-
-        uploadDesc.pResource = pBuffer->getApiHandle();
+        uint8_t* pDst = (uint8_t*)uploadDesc.pBuffer->map(Buffer::MapType::WriteDiscard);
+        ID3D12Resource* pResource = uploadDesc.pBuffer->getApiHandle();
 
         // Get the offset from the beginning of the resource
-        uint64_t offset = pBuffer->getGpuAddress() - uploadDesc.pResource->GetGPUVirtualAddress();
+        uint64_t offset = uploadDesc.pBuffer->getGpuAddress() - pResource->GetGPUVirtualAddress();
 
         const uint8_t* pSrc = (uint8_t*)pData;
         for (uint32_t s = 0; s < subresourceCount; s++)
@@ -221,27 +224,22 @@ namespace Falcor
             // Dispatch a command
             footprint[subresource].Offset += offset;
             D3D12_TEXTURE_COPY_LOCATION dstLoc = { pTexture->getApiHandle(), D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX, subresource };
-            D3D12_TEXTURE_COPY_LOCATION srcLoc = { uploadDesc.pResource, D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT, footprint[subresource] };
+            D3D12_TEXTURE_COPY_LOCATION srcLoc = { pResource, D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT, footprint[subresource] };
             pApiData->pCmdList->CopyTextureRegion(&dstLoc, 0, 0, 0, &srcLoc, nullptr);
         }
 
-        pBuffer->unmap();
-//         flush();
-// 
-//         mpFence->gpuSignal(pApiData->pCmdList);
-//         uploadDesc.id = mpFence->getCpuValue();
-//         pApiData->uploadQueue.push(uploadDesc);
-
-        return uploadDesc.id;
+        uploadDesc.pBuffer->unmap();
+        uploadDesc.id = mpFence->getCpuValue();
+        pApiData->uploadQueue.push(uploadDesc);
     }
 
-    uint64_t CopyContext::updateTextureSubresource(const Texture* pTexture, uint32_t subresourceIndex, const void* pData)
+    void CopyContext::updateTextureSubresource(const Texture* pTexture, uint32_t subresourceIndex, const void* pData)
     {
         mDirty = true;
-        return updateTextureSubresources(pTexture, subresourceIndex, 1, pData);
+        updateTextureSubresources(pTexture, subresourceIndex, 1, pData);
     }
 
-    uint64_t CopyContext::updateTexture(const Texture* pTexture, const void* pData)
+    void CopyContext::updateTexture(const Texture* pTexture, const void* pData)
     {
         mDirty = true;
         uint32_t subresourceCount = pTexture->getArraySize() * pTexture->getMipCount();
@@ -249,6 +247,6 @@ namespace Falcor
         {
             subresourceCount *= 6;
         }
-        return updateTextureSubresources(pTexture, 0, subresourceCount, pData);
+        updateTextureSubresources(pTexture, 0, subresourceCount, pData);
     }
 }

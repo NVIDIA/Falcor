@@ -48,6 +48,8 @@ namespace Falcor
 	
 	RenderContext::~RenderContext()
 	{
+        mpPipelineState = nullptr;
+        mpProgramVars = nullptr;
 		delete (RenderContextData*)mpApiData;
 		mpApiData = nullptr;
 	}
@@ -82,6 +84,8 @@ namespace Falcor
 			Logger::log(Logger::Level::Error, "Failed to create command list for RenderContext");
 			return nullptr;
 		}
+
+        pCtx->bindDescriptorHeaps();
 
         return pCtx;
     }
@@ -316,6 +320,7 @@ namespace Falcor
         d3d_call(pApiData->pList->Close());
         ID3D12CommandList* pList = pApiData->pList.GetInterfacePtr();
         pApiData->pCommandQueue->ExecuteCommandLists(1, &pList);
+        pApiData->pFence->gpuSignal(pApiData->pCommandQueue);
         pApiData->pList->Reset(pApiData->pAllocator, nullptr);
         bindDescriptorHeaps();
     }
@@ -333,27 +338,33 @@ namespace Falcor
         pList->SetDescriptorHeaps(arraysize(pHeaps), pHeaps);
     }
 
-    uint64_t RenderContext::updateBuffer(const Buffer* pBuffer, const void* pData, size_t offset, size_t size) const
+    void RenderContext::updateBuffer(const Buffer* pBuffer, const void* pData, size_t offset, size_t size) const
     {
         RenderContextData* pApiData = (RenderContextData*)mpApiData;
-        return pApiData->pCopyContext->updateBuffer(pBuffer, pData, offset, size);
+        pApiData->pCopyContext->updateBuffer(pBuffer, pData, offset, size);
     }
 
-    uint64_t RenderContext::updateTexture(const Texture* pTexture, const void* pData) const
+    void RenderContext::updateTexture(const Texture* pTexture, const void* pData) const
     {
         RenderContextData* pApiData = (RenderContextData*)mpApiData;
-        return pApiData->pCopyContext->updateTexture(pTexture, pData);
+        pApiData->pCopyContext->updateTexture(pTexture, pData);
     }
 
-    uint64_t RenderContext::updateTextureSubresource(const Texture* pTexture, uint32_t subresourceIndex, const void* pData) const
+    void RenderContext::updateTextureSubresource(const Texture* pTexture, uint32_t subresourceIndex, const void* pData) const
     {
         RenderContextData* pApiData = (RenderContextData*)mpApiData;
-        return pApiData->pCopyContext->updateTextureSubresource(pTexture, subresourceIndex, pData);
+        pApiData->pCopyContext->updateTextureSubresource(pTexture, subresourceIndex, pData);
     }
 
-    uint64_t RenderContext::updateTextureSubresources(const Texture* pTexture, uint32_t firstSubresource, uint32_t subresourceCount, const void* pData) const
+    void RenderContext::updateTextureSubresources(const Texture* pTexture, uint32_t firstSubresource, uint32_t subresourceCount, const void* pData) const
     {
         RenderContextData* pApiData = (RenderContextData*)mpApiData;
-        return pApiData->pCopyContext->updateTextureSubresources(pTexture, firstSubresource, subresourceCount, pData);
+        pApiData->pCopyContext->updateTextureSubresources(pTexture, firstSubresource, subresourceCount, pData);
+    }
+
+    GpuFence::SharedPtr RenderContext::getFence() const
+    {
+        RenderContextData* pApiData = (RenderContextData*)mpApiData;
+        return pApiData->pFence;
     }
 }

@@ -42,17 +42,17 @@ namespace Falcor
 
         struct ResourceRelease
         {
-            size_t frameId;
+            size_t fenceValue;
             ID3D12ResourcePtr pResource;
         };
 
         struct
         {
             Fbo::SharedPtr pFbo;
-            std::vector<ResourceRelease> deferredReleases;
         } frameData[kSwapChainBuffers];
 
-		uint32_t syncInterval = 0;
+        std::queue<ResourceRelease> deferredReleases;
+        uint32_t syncInterval = 0;
 		bool isWindowOccluded = false;
         bool resizeOccured = false;
 	};
@@ -67,10 +67,7 @@ namespace Falcor
         }
 
         // Now execute all deferred releases
-        for (uint32_t i = 0; i < arraysize(pData->frameData); i++)
-        {
-            pData->frameData[i].deferredReleases.clear();
-        }
+        decltype(pData->deferredReleases)().swap(pData->deferredReleases);
     }
 
     bool checkExtensionSupport(const std::string& name)
@@ -224,10 +221,14 @@ namespace Falcor
 
     Device::~Device()
     {
-        mpRenderContext.reset();
+        // Release all the bound resources. Need to do that before deleting the RenderContext
+        mpRenderContext->setPipelineState(nullptr);
+        mpRenderContext->setProgramVariables(nullptr);
         DeviceData* pData = (DeviceData*)mpPrivateData;
         releaseFboData(pData);
         safe_delete(pData);
+        mpResourceAllocator.reset();
+        mpRenderContext.reset();
     }
 
 	Device::SharedPtr Device::create(Window::SharedPtr& pWindow, const Device::Desc& desc)
@@ -269,7 +270,7 @@ namespace Falcor
             pData->currentBackBufferIndex = (pData->currentBackBufferIndex + 1) % kSwapChainBuffers;
 
             // Execute deferred releases for the selected FBO
-            pData->frameData[pData->currentBackBufferIndex].deferredReleases.clear();
+            executeDeferredReleases();
         }
 
         pData->resizeOccured = false;
@@ -305,23 +306,22 @@ namespace Falcor
 			return false;
 		}
 
+        // Create the descriptor heaps
+        mpSrvHeap = DescriptorHeap::create(DescriptorHeap::Type::ShaderResource, 16 * 1024);
+        mpSamplerHeap = DescriptorHeap::create(DescriptorHeap::Type::Sampler, 2048);
+        mpRtvHeap = DescriptorHeap::create(DescriptorHeap::Type::RenderTargetView, 1024, false);
+        mpDsvHeap = DescriptorHeap::create(DescriptorHeap::Type::DepthStencilView, 1024, false);
+
 		// Create the swap-chain
         mpRenderContext = RenderContext::create(kSwapChainBuffers);
-		pData->pSwapChain = createSwapChain(pDxgiFactory, mpWindow.get(), mpRenderContext->getCommandQueue(), desc.colorFormat);
+        mpResourceAllocator = ResourceAllocator::create(1024 * 1024 * 2, mpRenderContext->getFence());
+        pData->pSwapChain = createSwapChain(pDxgiFactory, mpWindow.get(), mpRenderContext->getCommandQueue(), desc.colorFormat);
 		if(pData->pSwapChain == nullptr)
 		{
 			return false;
 		}
 
-        mpSrvHeap = DescriptorHeap::create(DescriptorHeap::Type::ShaderResource, 16 * 1024);
-        mpSamplerHeap = DescriptorHeap::create(DescriptorHeap::Type::Sampler, 2048);
-        mpRtvHeap = DescriptorHeap::create(DescriptorHeap::Type::RenderTargetView, 1024, false);
-        mpDsvHeap = DescriptorHeap::create(DescriptorHeap::Type::DepthStencilView, 1024, false);
-        mpResourceAllocator = ResourceAllocator::create(1024 * 1024 * 2);
-
-        mpCopyContext = CopyContext::create();
-
-		mVsyncOn = desc.enableVsync;
+        mVsyncOn = desc.enableVsync;
 
         // Update the FBOs
         if (updateDefaultFBO(mpWindow->getClientAreaWidth(), mpWindow->getClientAreaHeight(), 1, desc.colorFormat, desc.depthFormat) == false)
@@ -335,7 +335,17 @@ namespace Falcor
     void Device::releaseResource(ID3D12ResourcePtr pResource)
     {
         DeviceData* pData = (DeviceData*)mpPrivateData;
-        pData->frameData[pData->currentBackBufferIndex].deferredReleases.push_back({ mFrameID, pResource });
+        pData->deferredReleases.push({ mpRenderContext->getFence()->getCpuValue(), pResource });
+    }
+
+    void Device::executeDeferredReleases()
+    {
+        DeviceData* pData = (DeviceData*)mpPrivateData;
+        GpuFence* pFence = mpRenderContext->getFence().get();
+        while (pData->deferredReleases.size() && pData->deferredReleases.front().fenceValue < pFence->getGpuValue())
+        {
+            pData->deferredReleases.pop();
+        }
     }
 
     Fbo::SharedPtr Device::resizeSwapChain(uint32_t width, uint32_t height)
