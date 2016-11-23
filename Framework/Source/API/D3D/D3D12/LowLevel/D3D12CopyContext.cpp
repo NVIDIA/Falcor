@@ -105,6 +105,12 @@ namespace Falcor
         }
     }
 
+    CommandQueueHandle CopyContext::getCommandQueue() const
+    {
+        CopyContextData* pApiData = (CopyContextData*)mpApiData;
+        return pApiData->pQueue;
+    }
+
     void CopyContext::flush(GpuFence* pFence)
     {
         if (mDirty)

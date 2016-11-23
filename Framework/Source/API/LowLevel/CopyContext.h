@@ -50,6 +50,7 @@ namespace Falcor
         void flush(GpuFence* pFence = nullptr);
 
         bool isDirty() const {return mDirty;}
+        CommandQueueHandle getCommandQueue() const;
     private:
         bool initApiData();
         CopyContext() = default;
