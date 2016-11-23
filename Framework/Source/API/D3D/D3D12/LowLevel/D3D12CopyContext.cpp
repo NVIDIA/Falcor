@@ -115,17 +115,17 @@ namespace Falcor
             {
                 pFence = mpFence.get();
             }
-            else
-            {
-                // Need to signal the internal fence. The command allocator uses it to check if it can reuse an allocator or create a new one
-                mpFence->gpuSignal(pApiData->pQueue);
-            }
 
             // Execute the list
             pApiData->pCmdList->Close();
             ID3D12CommandList* pList = pApiData->pCmdList;
             pApiData->pQueue->ExecuteCommandLists(1, &pList);
             pFence->gpuSignal(pApiData->pQueue);
+            if (pFence != mpFence.get())
+            {
+                // Need to signal the internal fence. The command allocator uses it to check if it can reuse an allocator or create a new one
+                mpFence->gpuSignal(pApiData->pQueue);
+            }
 
             // Reset the list
             d3d_call(pApiData->pCmdList->Reset(pApiData->pAllocator, nullptr));
