@@ -58,10 +58,11 @@ namespace Falcor
         */
         static UniquePtr create(const std::string& fragmentShaderFile, const Program::DefineList& programDefines = Program::DefineList(), bool disableDepth = true, bool disableStencil = true, uint32_t viewportMask = 0);
 
-        /** Execute the pass\n.The function will change the state of the rendering context. You can wrap this call with RenderContext#PushState() and RenderContext#PopState() to save and restore the render state.
+        /** Execute the pass.
             \param[in] pRenderContext The render context.
+            \param[in] pDsState Optional. Use it to make the pass use a different DS state then the one created during initialization
         */
-        void execute(RenderContext* pRenderContext, bool overrideDepthStencil = true) const;
+        void execute(RenderContext* pRenderContext, DepthStencilState::SharedPtr pDsState = nullptr) const;
 
         /** Get the program.
         */
@@ -70,12 +71,12 @@ namespace Falcor
 
     protected:
         FullScreenPass() { sObjectCount++; }
-
         void init(const std::string & fragmentShaderFile, const Program::DefineList& programDefines, bool disableDepth, bool disableStencil, uint32_t viewportMask);
 
     private:
         Program::SharedPtr mpProgram;
         PipelineState::SharedPtr mpPipelineState;
+        DepthStencilState::SharedPtr mpDepthStencilState;
         // Static
         static Buffer::SharedPtr spVertexBuffer;
         static Vao::SharedPtr    spVao;

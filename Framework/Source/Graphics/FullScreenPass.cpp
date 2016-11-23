@@ -117,7 +117,7 @@ namespace Falcor
         dsDesc.setDepthFunc(DepthStencilState::Func::LessEqual);    // Equal is needed to allow overdraw when z is enabled (e.g., background pass etc.)
         dsDesc.setStencilTest(!disableStencil);
         dsDesc.setStencilWriteMask(!disableStencil);
-        mpPipelineState->setDepthStencilState(DepthStencilState::create(dsDesc));
+        mpDepthStencilState = DepthStencilState::create(dsDesc);
 
         Program::DefineList defs = programDefines;
         std::string gs;
@@ -147,14 +147,12 @@ namespace Falcor
         mpPipelineState->setVao(FullScreenPass::spVao);
     }
 
-    void FullScreenPass::execute(RenderContext* pRenderContext, bool overrideDepthStencil) const
+    void FullScreenPass::execute(RenderContext* pRenderContext, DepthStencilState::SharedPtr pDsState) const
     {
         mpPipelineState->setFbo(pRenderContext->getPipelineState()->getFbo());
         mpPipelineState->setVao(spVao);
+        mpPipelineState->setDepthStencilState(pDsState ? pDsState : mpDepthStencilState);
         pRenderContext->pushPipelineState(mpPipelineState);
-
-        // DISABLED_FOR_D3D12
-//        if (overrideDepthStencil) pRenderContext->setDepthStencilState(mpDepthStencilState, 0);
         pRenderContext->draw(arraysize(kVertices), 0);
         pRenderContext->popPipelineState();
     }
