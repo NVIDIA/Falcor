@@ -44,13 +44,36 @@ namespace Falcor
         ID3D12CommandQueuePtr pCommandQueue;
         GpuFence::SharedPtr pFence;
         CopyContext::SharedPtr pCopyContext;
+        bool commandsPending = false;
 	};
 	
 	RenderContext::~RenderContext()
 	{
+        mpPipelineState = nullptr;
+        mpProgramVars = nullptr;
 		delete (RenderContextData*)mpApiData;
 		mpApiData = nullptr;
 	}
+
+    void flushCopyCommands(const RenderContextData* pApiData)
+    {
+        if (pApiData->pCopyContext->hasPendingCommands())
+        {
+            assert(pApiData->commandsPending == false);
+            pApiData->pCopyContext->flush(pApiData->pFence.get());
+            pApiData->pFence->syncGpu(pApiData->pCommandQueue);
+        }
+    }
+
+    void flushGraphicsCommands(RenderContext* pContext, const RenderContextData* pApiData)
+    {
+        if (pApiData->commandsPending)
+        {
+            assert(pApiData->pCopyContext->hasPendingCommands() == false);
+            pContext->flush();
+            pApiData->pFence->syncGpu(pApiData->pCopyContext->getCommandQueue().GetInterfacePtr());
+        }
+    }
 
     RenderContext::SharedPtr RenderContext::create(uint32_t allocatorsCount)
     {
@@ -83,6 +106,8 @@ namespace Falcor
 			return nullptr;
 		}
 
+        pCtx->bindDescriptorHeaps();
+
         return pCtx;
     }
 
@@ -101,13 +126,14 @@ namespace Falcor
 	void RenderContext::reset()
 	{
 		RenderContextData* pApiData = (RenderContextData*)mpApiData;
+        assert(pApiData->commandsPending == false);
 		// Skip to the next allocator        
 		pApiData->pAllocator = pApiData->pAllocatorPool->newObject();
         d3d_call(pApiData->pList->Close());
         d3d_call(pApiData->pAllocator->Reset());
 		d3d_call(pApiData->pList->Reset(pApiData->pAllocator, nullptr));
         bindDescriptorHeaps();
-//        pApiData->pCopyContext->reset();
+        pApiData->pCopyContext->reset();
 	}
 
     void RenderContext::resourceBarrier(const Texture* pTexture, D3D12_RESOURCE_STATES state)
@@ -252,6 +278,7 @@ namespace Falcor
     {
         RenderContextData* pApiData = (RenderContextData*)mpApiData;
         assert(mpPipelineState);
+        flushCopyCommands(pApiData);
 
         // Bind the root signature and the root signature data
         // FIXME D3D12 what to do if there are no vars?
@@ -266,7 +293,6 @@ namespace Falcor
         D3D12SetViewports(pApiData, &mpPipelineState->getViewport(0));
         D3D12SetScissors(pApiData, &mpPipelineState->getScissors(0));
         pApiData->pList->SetPipelineState(mpPipelineState->getPSO()->getApiHandle());
-
     }
 
     void RenderContext::drawInstanced(uint32_t vertexCount, uint32_t instanceCount, uint32_t startVertexLocation, uint32_t startInstanceLocation)
@@ -274,6 +300,7 @@ namespace Falcor
         prepareForDraw();
         RenderContextData* pApiData = (RenderContextData*)mpApiData;
         pApiData->pList->DrawInstanced(vertexCount, instanceCount, startVertexLocation, startInstanceLocation);
+        pApiData->commandsPending = true;
     }
 
     void RenderContext::draw(uint32_t vertexCount, uint32_t startVertexLocation)
@@ -286,6 +313,7 @@ namespace Falcor
         prepareForDraw();
         RenderContextData* pApiData = (RenderContextData*)mpApiData;
         pApiData->pList->DrawIndexedInstanced(indexCount, instanceCount, startIndexLocation, baseVertexLocation, startInstanceLocation);
+        pApiData->commandsPending = true;
     }
 
     void RenderContext::drawIndexed(uint32_t indexCount, uint32_t startIndexLocation, int baseVertexLocation)
@@ -306,18 +334,21 @@ namespace Falcor
     void RenderContext::flush()
     {
         RenderContextData* pApiData = (RenderContextData*)mpApiData;
-        
+        flushCopyCommands(pApiData);
+
         d3d_call(pApiData->pList->Close());
         ID3D12CommandList* pList = pApiData->pList.GetInterfacePtr();
         pApiData->pCommandQueue->ExecuteCommandLists(1, &pList);
+        pApiData->pFence->gpuSignal(pApiData->pCommandQueue);
         pApiData->pList->Reset(pApiData->pAllocator, nullptr);
         bindDescriptorHeaps();
+        pApiData->commandsPending = false;
     }
 
     void RenderContext::waitForCompletion()
     {
         RenderContextData* pApiData = (RenderContextData*)mpApiData;
-        pApiData->pFence->wait(pApiData->pFence->getCpuValue());
+        pApiData->pFence->syncCpu();
     }
 
     void RenderContext::bindDescriptorHeaps()
@@ -327,27 +358,37 @@ namespace Falcor
         pList->SetDescriptorHeaps(arraysize(pHeaps), pHeaps);
     }
 
-    uint64_t RenderContext::updateBuffer(const Buffer* pBuffer, const void* pData, size_t offset, size_t size) const
+    void RenderContext::updateBuffer(const Buffer* pBuffer, const void* pData, size_t offset, size_t size)
     {
         RenderContextData* pApiData = (RenderContextData*)mpApiData;
-        return pApiData->pCopyContext->updateBuffer(pBuffer, pData, offset, size);
+        flushGraphicsCommands(this, pApiData);
+        pApiData->pCopyContext->updateBuffer(pBuffer, pData, offset, size);
     }
 
-    uint64_t RenderContext::updateTexture(const Texture* pTexture, const void* pData) const
+    void RenderContext::updateTexture(const Texture* pTexture, const void* pData)
     {
         RenderContextData* pApiData = (RenderContextData*)mpApiData;
-        return pApiData->pCopyContext->updateTexture(pTexture, pData);
+        flushGraphicsCommands(this, pApiData);
+        pApiData->pCopyContext->updateTexture(pTexture, pData);
     }
 
-    uint64_t RenderContext::updateTextureSubresource(const Texture* pTexture, uint32_t subresourceIndex, const void* pData) const
+    void RenderContext::updateTextureSubresource(const Texture* pTexture, uint32_t subresourceIndex, const void* pData)
     {
         RenderContextData* pApiData = (RenderContextData*)mpApiData;
-        return pApiData->pCopyContext->updateTextureSubresource(pTexture, subresourceIndex, pData);
+        flushGraphicsCommands(this, pApiData);
+        pApiData->pCopyContext->updateTextureSubresource(pTexture, subresourceIndex, pData);
     }
 
-    uint64_t RenderContext::updateTextureSubresources(const Texture* pTexture, uint32_t firstSubresource, uint32_t subresourceCount, const void* pData) const
+    void RenderContext::updateTextureSubresources(const Texture* pTexture, uint32_t firstSubresource, uint32_t subresourceCount, const void* pData)
     {
         RenderContextData* pApiData = (RenderContextData*)mpApiData;
-        return pApiData->pCopyContext->updateTextureSubresources(pTexture, firstSubresource, subresourceCount, pData);
+        flushGraphicsCommands(this, pApiData);
+        pApiData->pCopyContext->updateTextureSubresources(pTexture, firstSubresource, subresourceCount, pData);
+    }
+
+    GpuFence::SharedPtr RenderContext::getFence() const
+    {
+        RenderContextData* pApiData = (RenderContextData*)mpApiData;
+        return pApiData->pFence;
     }
 }

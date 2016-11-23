@@ -41,9 +41,14 @@ namespace Falcor
         0,
     };
 
-    ResourceAllocator::SharedPtr ResourceAllocator::create(size_t pageSize)
+    ResourceAllocator::~ResourceAllocator()
     {
-        SharedPtr pAllocator = SharedPtr(new ResourceAllocator(pageSize));
+        executeDeferredReleases();
+    }
+
+    ResourceAllocator::SharedPtr ResourceAllocator::create(size_t pageSize, GpuFence::SharedPtr pFence)
+    {
+        SharedPtr pAllocator = SharedPtr(new ResourceAllocator(pageSize, pFence));
         pAllocator->allocateNewPage();
         return pAllocator;
     }
@@ -86,6 +91,8 @@ namespace Falcor
 
     ResourceAllocator::AllocationData ResourceAllocator::allocate(size_t size, size_t alignment)
     {
+        executeDeferredReleases();
+
         AllocationData data;
         if (size > mPageSize)
         {
@@ -110,34 +117,45 @@ namespace Falcor
             mpActivePage->allocationsCount++;
         }
 
+        data.fenceValue = mpFence->getCpuValue();
         return data;
     }
 
     void ResourceAllocator::release(AllocationData& data)
     {
-        if (data.allocationID == mCurrentAllocationId)
+        mDeferredReleases.push(data);    
+    }
+
+    void ResourceAllocator::executeDeferredReleases()
+    {
+        uint64_t gpuVal = mpFence->getGpuValue();
+        while (mDeferredReleases.size() && mDeferredReleases.top().fenceValue < gpuVal)
         {
-            mpActivePage->allocationsCount--;
-            if (mpActivePage->allocationsCount == 0)
+            const AllocationData& data = mDeferredReleases.top();
+            if (data.allocationID == mCurrentAllocationId)
             {
-                mpActivePage->currentOffset = 0;
-            }
-        }
-        else
-        {
-            auto it = mUsedPages.find(data.allocationID);
-            if(it != mUsedPages.end())
-            {
-                auto& pData = it->second;
-                pData->allocationsCount--;
-                if (pData->allocationsCount == 0)
+                mpActivePage->allocationsCount--;
+                if (mpActivePage->allocationsCount == 0)
                 {
-                    mAvailablePages.push(std::move(pData));
-                    mUsedPages.erase(data.allocationID);
+                    mpActivePage->currentOffset = 0;
                 }
             }
-            // else it has to be a mega-page
+            else
+            {
+                auto it = mUsedPages.find(data.allocationID);
+                if (it != mUsedPages.end())
+                {
+                    auto& pData = it->second;
+                    pData->allocationsCount--;
+                    if (pData->allocationsCount == 0)
+                    {
+                        mAvailablePages.push(std::move(pData));
+                        mUsedPages.erase(data.allocationID);
+                    }
+                }
+                // else it has to be a mega-page
+            }
+            mDeferredReleases.pop();
         }
-        data = { 0 };
     }
 }

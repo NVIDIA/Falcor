@@ -39,23 +39,8 @@ namespace Falcor
         CopyCommandAllocatorPool::SharedPtr pAllocatorPool;
         ID3D12GraphicsCommandListPtr pCmdList;
         ID3D12CommandQueuePtr pQueue;
-
-        struct UploadDesc
-        {
-            uint64_t id;
-            ID3D12ResourcePtr pResource;
-        };
-
-        std::queue<UploadDesc> uploadQueue;
+        ID3D12CommandAllocatorPtr pAllocator;
     };
-
-    void releaseUnusedResources(std::queue<CopyContextData::UploadDesc>& uploadQueue, uint64_t id)
-    {
-        while (uploadQueue.size() && uploadQueue.front().id <= id)
-        {
-            uploadQueue.pop();
-        }
-    }
 
     CopyContext::~CopyContext()
     {
@@ -68,9 +53,10 @@ namespace Falcor
         CopyContextData* pApiData = new CopyContextData;
         mpApiData = pApiData;
         pApiData->pAllocatorPool = CopyCommandAllocatorPool::create(mpFence);
+        pApiData->pAllocator = pApiData->pAllocatorPool->newObject();
 
         // Create a command list
-        if (FAILED(gpDevice->getApiHandle()->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_COPY, pApiData->pAllocatorPool->newObject(), nullptr, IID_PPV_ARGS(&pApiData->pCmdList))))
+        if (FAILED(gpDevice->getApiHandle()->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_COPY, pApiData->pAllocator, nullptr, IID_PPV_ARGS(&pApiData->pCmdList))))
         {
             Logger::log(Logger::Level::Error, "Failed to create command list for CopyContext");
             return false;
@@ -89,13 +75,14 @@ namespace Falcor
         return true;
     }
 
-    void CopyContext::flush(uint64_t copyId)
+    void CopyContext::reset()
     {
+        assert(mCommandsPending == false);
         CopyContextData* pApiData = (CopyContextData*)mpApiData;
-        copyId = (copyId == 0) ? mpFence->getCpuValue() : copyId;
-        assert(copyId <= mpFence->getCpuValue());
-        mpFence->wait(copyId);
-        releaseUnusedResources(pApiData->uploadQueue, copyId);
+        pApiData->pAllocator = pApiData->pAllocatorPool->newObject();
+        d3d_call(pApiData->pCmdList->Close());
+        d3d_call(pApiData->pAllocator->Reset());
+        d3d_call(pApiData->pCmdList->Reset(pApiData->pAllocator, nullptr));
     }
 
     void copySubresourceData(const D3D12_SUBRESOURCE_DATA& srcData, const D3D12_PLACED_SUBRESOURCE_FOOTPRINT& dstFootprint, uint8_t* pDstStart, uint64_t rowSize, uint64_t rowsToCopy)
@@ -118,31 +105,44 @@ namespace Falcor
         }
     }
 
-    void CopyContext::submit(bool flush)
+    CommandQueueHandle CopyContext::getCommandQueue() const
     {
         CopyContextData* pApiData = (CopyContextData*)mpApiData;
+        return pApiData->pQueue;
+    }
 
-        // Execute the list
-        pApiData->pCmdList->Close();
-        ID3D12CommandList* pList = pApiData->pCmdList;
-        pApiData->pQueue->ExecuteCommandLists(1, &pList);
-        mpFence->signal(pApiData->pQueue);
-
-        // Reset the allocator and list
-        ID3D12CommandAllocator* pAllocator = pApiData->pAllocatorPool->newObject();
-        d3d_call(pAllocator->Reset());
-        d3d_call(pApiData->pCmdList->Reset(pAllocator, nullptr));
-
-        if (flush)
+    void CopyContext::flush(GpuFence* pFence)
+    {
+        if (mCommandsPending)
         {
-            this->flush();
+            CopyContextData* pApiData = (CopyContextData*)mpApiData;
+
+            if (pFence == nullptr)
+            {
+                pFence = mpFence.get();
+            }
+
+            // Execute the list
+            pApiData->pCmdList->Close();
+            ID3D12CommandList* pList = pApiData->pCmdList;
+            pApiData->pQueue->ExecuteCommandLists(1, &pList);
+            pFence->gpuSignal(pApiData->pQueue);
+            if (pFence != mpFence.get())
+            {
+                // Need to signal the internal fence. The command allocator uses it to check if it can reuse an allocator or create a new one
+                mpFence->gpuSignal(pApiData->pQueue);
+            }
+
+            // Reset the list
+            d3d_call(pApiData->pCmdList->Reset(pApiData->pAllocator, nullptr));
+
+            mCommandsPending = false;
         }
     }
 
-    uint64_t CopyContext::updateBuffer(const Buffer* pBuffer, const void* pData, size_t offset, size_t size, bool submit)
+    void CopyContext::updateBuffer(const Buffer* pBuffer, const void* pData, size_t offset, size_t size)
     {
         CopyContextData* pApiData = (CopyContextData*)mpApiData;
-        ID3D12Resource* pResource = pBuffer->getApiHandle();
         if (size == 0)
         {
             size = pBuffer->getSize() - offset;
@@ -151,38 +151,29 @@ namespace Falcor
         if (pBuffer->adjustSizeOffsetParams(size, offset) == false)
         {
             logWarning("CopyContext::updateBuffer() - size and offset are invalid. Nothing to update.");
-            return mpFence->getCpuValue();
+            return;
         }
 
+        mCommandsPending = true;
         // Allocate a buffer on the upload heap
         Buffer::SharedPtr pUploadBuffer = Buffer::create(size, Buffer::BindFlags::Staging, Buffer::CpuAccess::Write, nullptr);
         pUploadBuffer->updateData(pData, offset, size);
+        ID3D12ResourcePtr pResource = pUploadBuffer->getApiHandle();
 
-        // Dispatch a command
-        CopyContextData::UploadDesc uploadDesc;
-        uploadDesc.pResource = pUploadBuffer->getApiHandle();
-        uploadDesc.id = mpFence->inc();
-        pApiData->uploadQueue.push(uploadDesc);
-        
-        offset = pUploadBuffer->getGpuAddress() - uploadDesc.pResource->GetGPUVirtualAddress();
-        pApiData->pCmdList->CopyBufferRegion(pBuffer->getApiHandle(), 0, uploadDesc.pResource, offset, size);
-
-        if (submit)
-        {
-            this->submit();
-        }
-
-        return uploadDesc.id;
+        offset = pUploadBuffer->getGpuAddress() - pResource->GetGPUVirtualAddress();
+        pApiData->pCmdList->CopyBufferRegion(pBuffer->getApiHandle(), 0, pResource, offset, size);
     }
 
-    uint64_t CopyContext::updateTextureSubresources(const Texture* pTexture, uint32_t firstSubresource, uint32_t subresourceCount, const void* pData, bool submit)
+    void CopyContext::updateTextureSubresources(const Texture* pTexture, uint32_t firstSubresource, uint32_t subresourceCount, const void* pData)
     {
+        mCommandsPending = true;
+
         uint32_t arraySize = (pTexture->getType() == Texture::Type::TextureCube) ? pTexture->getArraySize() * 6 : pTexture->getArraySize();
         assert(firstSubresource + subresourceCount <= arraySize * pTexture->getMipCount());
         CopyContextData* pApiData = (CopyContextData*)mpApiData;
 
         ID3D12Device* pDevice = gpDevice->getApiHandle();
-        
+
         // Get the footprint
         D3D12_RESOURCE_DESC texDesc = pTexture->getApiHandle()->GetDesc();
         std::vector<D3D12_PLACED_SUBRESOURCE_FOOTPRINT> footprint(subresourceCount);
@@ -193,18 +184,12 @@ namespace Falcor
 
         // Allocate a buffer on the upload heap
         Buffer::SharedPtr pBuffer = Buffer::create(size, Buffer::BindFlags::Staging, Buffer::CpuAccess::Write, nullptr);
-
-        CopyContextData::UploadDesc uploadDesc;
-
         // Map the buffer
         uint8_t* pDst = (uint8_t*)pBuffer->map(Buffer::MapType::WriteDiscard);
-
-        uploadDesc.pResource = pBuffer->getApiHandle();
-        uploadDesc.id = mpFence->inc();
-        pApiData->uploadQueue.push(uploadDesc);
+        ID3D12ResourcePtr pResource = pBuffer->getApiHandle();
 
         // Get the offset from the beginning of the resource
-        uint64_t offset = pBuffer->getGpuAddress() - uploadDesc.pResource->GetGPUVirtualAddress();
+        uint64_t offset = pBuffer->getGpuAddress() - pResource->GetGPUVirtualAddress();
 
         const uint8_t* pSrc = (uint8_t*)pData;
         for (uint32_t s = 0; s < subresourceCount; s++)
@@ -223,32 +208,27 @@ namespace Falcor
             // Dispatch a command
             footprint[subresource].Offset += offset;
             D3D12_TEXTURE_COPY_LOCATION dstLoc = { pTexture->getApiHandle(), D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX, subresource };
-            D3D12_TEXTURE_COPY_LOCATION srcLoc = { uploadDesc.pResource, D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT, footprint[subresource] };
+            D3D12_TEXTURE_COPY_LOCATION srcLoc = { pResource, D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT, footprint[subresource] };
             pApiData->pCmdList->CopyTextureRegion(&dstLoc, 0, 0, 0, &srcLoc, nullptr);
         }
 
         pBuffer->unmap();
-
-        if (submit)
-        {
-            this->submit();
-        }
-
-        return uploadDesc.id;
     }
 
-    uint64_t CopyContext::updateTextureSubresource(const Texture* pTexture, uint32_t subresourceIndex, const void* pData, bool submit)
+    void CopyContext::updateTextureSubresource(const Texture* pTexture, uint32_t subresourceIndex, const void* pData)
     {
-        return updateTextureSubresources(pTexture, subresourceIndex, 1, pData, submit);
+        mCommandsPending = true;
+        updateTextureSubresources(pTexture, subresourceIndex, 1, pData);
     }
 
-    uint64_t CopyContext::updateTexture(const Texture* pTexture, const void* pData, bool submit)
+    void CopyContext::updateTexture(const Texture* pTexture, const void* pData)
     {
+        mCommandsPending = true;
         uint32_t subresourceCount = pTexture->getArraySize() * pTexture->getMipCount();
         if (pTexture->getType() == Texture::Type::TextureCube)
         {
             subresourceCount *= 6;
         }
-        return updateTextureSubresources(pTexture, 0, subresourceCount, pData, submit);
+        updateTextureSubresources(pTexture, 0, subresourceCount, pData);
     }
 }

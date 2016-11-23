@@ -41,17 +41,21 @@ namespace Falcor
         ~CopyContext();
 
         static SharedPtr create();
-        uint64_t updateBuffer(const Buffer* pBuffer, const void* pData, size_t offset = 0, size_t size = 0, bool submit = true);
-        uint64_t updateTexture(const Texture* pTexture, const void* pData, bool submit = true);
-        uint64_t updateTextureSubresource(const Texture* pTexture, uint32_t subresourceIndex, const void* pData, bool submit = true);
-        uint64_t updateTextureSubresources(const Texture* pTexture, uint32_t firstSubresource, uint32_t subresourceCount, const void* pData, bool submit = true);
+        void updateBuffer(const Buffer* pBuffer, const void* pData, size_t offset = 0, size_t size = 0);
+        void updateTexture(const Texture* pTexture, const void* pData);
+        void updateTextureSubresource(const Texture* pTexture, uint32_t subresourceIndex, const void* pData);
+        void updateTextureSubresources(const Texture* pTexture, uint32_t firstSubresource, uint32_t subresourceCount, const void* pData);
 
-        void flush(uint64_t copyId = 0);
-        void submit(bool flush = false);
+        void reset();
+        void flush(GpuFence* pFence = nullptr);
+
+        bool hasPendingCommands() const {return mCommandsPending;}
+        CommandQueueHandle getCommandQueue() const;
     private:
         bool initApiData();
         CopyContext() = default;
         void* mpApiData = nullptr;
         GpuFence::SharedPtr mpFence;
+        bool mCommandsPending = false;
     };
 }

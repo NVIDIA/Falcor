@@ -42,19 +42,19 @@ namespace Falcor
 
         struct ResourceRelease
         {
-            size_t frameId;
+            size_t frameID;
             ID3D12ResourcePtr pResource;
         };
 
         struct
         {
             Fbo::SharedPtr pFbo;
-            std::vector<ResourceRelease> deferredReleases;
         } frameData[kSwapChainBuffers];
 
-		uint32_t syncInterval = 0;
+        std::queue<ResourceRelease> deferredReleases;
+        uint32_t syncInterval = 0;
 		bool isWindowOccluded = false;
-        bool resizeOccured = false;
+        GpuFence::SharedPtr pFrameFence;
 	};
 
     void releaseFboData(DeviceData* pData)
@@ -67,10 +67,7 @@ namespace Falcor
         }
 
         // Now execute all deferred releases
-        for (uint32_t i = 0; i < arraysize(pData->frameData); i++)
-        {
-            pData->frameData[i].deferredReleases.clear();
-        }
+        decltype(pData->deferredReleases)().swap(pData->deferredReleases);
     }
 
     bool checkExtensionSupport(const std::string& name)
@@ -224,10 +221,16 @@ namespace Falcor
 
     Device::~Device()
     {
-        mpRenderContext.reset();
+        mpRenderContext->flush();
+        mpRenderContext->waitForCompletion();
+        // Release all the bound resources. Need to do that before deleting the RenderContext
+        mpRenderContext->setPipelineState(nullptr);
+        mpRenderContext->setProgramVariables(nullptr);
         DeviceData* pData = (DeviceData*)mpPrivateData;
         releaseFboData(pData);
         safe_delete(pData);
+        mpResourceAllocator.reset();
+        mpRenderContext.reset();
     }
 
 	Device::SharedPtr Device::create(Window::SharedPtr& pWindow, const Device::Desc& desc)
@@ -256,27 +259,13 @@ namespace Falcor
 	{
 		DeviceData* pData = (DeviceData*)mpPrivateData;
 
-        // Transition the back-buffer to a presentable state
         mpRenderContext->resourceBarrier(pData->frameData[pData->currentBackBufferIndex].pFbo->getColorTexture(0).get(), D3D12_RESOURCE_STATE_PRESENT);
-
-        // We need to skip this frame if resize happened. The render-targets might be invalid
-        if(pData->resizeOccured == false)
-        {
-            mpRenderContext->flush();
-
-            // Present
-            pData->pSwapChain->Present(pData->syncInterval, 0);
-            pData->currentBackBufferIndex = (pData->currentBackBufferIndex + 1) % kSwapChainBuffers;
-
-            // Execute deferred releases for the selected FBO
-            pData->frameData[pData->currentBackBufferIndex].deferredReleases.clear();
-        }
-
-        pData->resizeOccured = false;
-
+        mpRenderContext->flush();
+        pData->pSwapChain->Present(pData->syncInterval, 0);
+        pData->pFrameFence->gpuSignal(mpRenderContext->getCommandQueue().GetInterfacePtr());
+        executeDeferredReleases();
         mpRenderContext->reset();
-
-        // Release all resources that were deleted
+        pData->currentBackBufferIndex = (pData->currentBackBufferIndex + 1) % kSwapChainBuffers;
         mFrameID++;
     }
 
@@ -305,23 +294,22 @@ namespace Falcor
 			return false;
 		}
 
+        // Create the descriptor heaps
+        mpSrvHeap = DescriptorHeap::create(DescriptorHeap::Type::ShaderResource, 16 * 1024);
+        mpSamplerHeap = DescriptorHeap::create(DescriptorHeap::Type::Sampler, 2048);
+        mpRtvHeap = DescriptorHeap::create(DescriptorHeap::Type::RenderTargetView, 1024, false);
+        mpDsvHeap = DescriptorHeap::create(DescriptorHeap::Type::DepthStencilView, 1024, false);
+
 		// Create the swap-chain
         mpRenderContext = RenderContext::create(kSwapChainBuffers);
-		pData->pSwapChain = createSwapChain(pDxgiFactory, mpWindow.get(), mpRenderContext->getCommandQueue(), desc.colorFormat);
+        mpResourceAllocator = ResourceAllocator::create(1024 * 1024 * 2, mpRenderContext->getFence());
+        pData->pSwapChain = createSwapChain(pDxgiFactory, mpWindow.get(), mpRenderContext->getCommandQueue(), desc.colorFormat);
 		if(pData->pSwapChain == nullptr)
 		{
 			return false;
 		}
 
-        mpSrvHeap = DescriptorHeap::create(DescriptorHeap::Type::ShaderResource, 16 * 1024);
-        mpSamplerHeap = DescriptorHeap::create(DescriptorHeap::Type::Sampler, 2048);
-        mpRtvHeap = DescriptorHeap::create(DescriptorHeap::Type::RenderTargetView, 1024, false);
-        mpDsvHeap = DescriptorHeap::create(DescriptorHeap::Type::DepthStencilView, 1024, false);
-        mpResourceAllocator = ResourceAllocator::create(1024 * 1024 * 2);
-
-        mpCopyContext = CopyContext::create();
-
-		mVsyncOn = desc.enableVsync;
+        mVsyncOn = desc.enableVsync;
 
         // Update the FBOs
         if (updateDefaultFBO(mpWindow->getClientAreaWidth(), mpWindow->getClientAreaHeight(), 1, desc.colorFormat, desc.depthFormat) == false)
@@ -329,22 +317,32 @@ namespace Falcor
             return false;
         }
 
+        pData->pFrameFence = GpuFence::create();
 		return true;
     }
 
     void Device::releaseResource(ID3D12ResourcePtr pResource)
     {
         DeviceData* pData = (DeviceData*)mpPrivateData;
-        pData->frameData[pData->currentBackBufferIndex].deferredReleases.push_back({ mFrameID, pResource });
+        pData->deferredReleases.push({ pData->pFrameFence->getCpuValue(), pResource });
+    }
+
+    void Device::executeDeferredReleases()
+    {
+        DeviceData* pData = (DeviceData*)mpPrivateData;
+        uint64_t gpuVal = pData->pFrameFence->getGpuValue();
+        while (pData->deferredReleases.size() && pData->deferredReleases.front().frameID < gpuVal)
+        {
+            pData->deferredReleases.pop();
+        }
     }
 
     Fbo::SharedPtr Device::resizeSwapChain(uint32_t width, uint32_t height)
     {
-        DeviceData* pData = (DeviceData*)mpPrivateData;
-        pData->resizeOccured = true;
-
         mpRenderContext->flush();
         mpRenderContext->waitForCompletion();
+
+        DeviceData* pData = (DeviceData*)mpPrivateData;
 
         // Store the FBO parameters
         ResourceFormat colorFormat = pData->frameData[0].pFbo->getColorTexture(0)->getFormat();

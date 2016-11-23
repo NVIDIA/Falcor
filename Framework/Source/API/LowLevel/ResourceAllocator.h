@@ -29,6 +29,7 @@
 #ifdef FALCOR_LOW_LEVEL_API
 #include <unordered_map>
 #include <queue>
+#include "GpuFence.h"
 
 namespace Falcor
 {
@@ -38,21 +39,25 @@ namespace Falcor
         using SharedPtr = std::shared_ptr<ResourceAllocator>;
         using SharedConstPtr = std::shared_ptr<const ResourceAllocator>;
 
-        static SharedPtr create(size_t pageSize);
+        static SharedPtr create(size_t pageSize, GpuFence::SharedPtr pFence);
         struct AllocationData
         {
             BufferHandle pResourceHandle;
             GpuAddress gpuAddress;
             uint8_t* pData;
             uint64_t allocationID;
+            uint64_t fenceValue;
+
+            bool operator<(const AllocationData& other)  const { return fenceValue < other.fenceValue; }
         };
+        ~ResourceAllocator();
 
         AllocationData allocate(size_t size, size_t alignment = 1);
         void release(AllocationData& data);
         size_t getPageSize() const { return mPageSize; }
 
     private:
-        ResourceAllocator(size_t pageSize) : mPageSize(pageSize) {}
+        ResourceAllocator(size_t pageSize, GpuFence::SharedPtr pFence) : mPageSize(pageSize), mpFence(pFence) {}
         struct PageData
         {
             uint32_t allocationsCount = 0;
@@ -64,13 +69,17 @@ namespace Falcor
             using UniquePtr = std::unique_ptr<PageData>;
         };
         
+        GpuFence::SharedPtr mpFence;
         size_t mPageSize = 0;
         size_t mCurrentAllocationId = 0;
         PageData::UniquePtr mpActivePage;
+
+        std::priority_queue<AllocationData> mDeferredReleases;
         std::unordered_map<size_t, PageData::UniquePtr> mUsedPages;
         std::queue<PageData::UniquePtr> mAvailablePages;
 
         void allocateNewPage();
+        void executeDeferredReleases();
     };
 }
 #endif // FALCOR_LOW_LEVEL_API

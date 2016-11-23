@@ -115,6 +115,7 @@ namespace Falcor
 		Device(Window::SharedPtr pWindow) : mpWindow(pWindow) {}
 		bool init(const Desc& desc);
         bool updateDefaultFBO(uint32_t width, uint32_t height, uint32_t sampleCount, ResourceFormat colorFormat, ResourceFormat depthFormat);
+        void executeDeferredReleases();
 
         ApiHandle mApiHandle;
         ResourceAllocator::SharedPtr mpResourceAllocator;
@@ -126,7 +127,6 @@ namespace Falcor
 		Window::SharedPtr mpWindow;
 		void* mpPrivateData;
 		RenderContext::SharedPtr mpRenderContext;
-        CopyContext::SharedPtr mpCopyContext;
 		bool mVsyncOn;
         size_t mFrameID = 0;
 	};
