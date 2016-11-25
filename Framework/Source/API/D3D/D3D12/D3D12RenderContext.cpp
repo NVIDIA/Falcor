@@ -156,7 +156,6 @@ namespace Falcor
 
 	void RenderContext::clearFbo(const Fbo* pFbo, const glm::vec4& color, float depth, uint8_t stencil, FboAttachmentType flags)
 	{
-		RenderContextData* pApiData = (RenderContextData*)mpApiData;
         bool clearDepth = (flags & FboAttachmentType::Depth) != FboAttachmentType::None;
         bool clearColor = (flags & FboAttachmentType::Color) != FboAttachmentType::None;
         bool clearStencil = (flags & FboAttachmentType::Stencil) != FboAttachmentType::None;
@@ -165,24 +164,53 @@ namespace Falcor
         {
             for(uint32_t i = 0 ; i < Fbo::getMaxColorTargetCount() ; i++)
             {
-                const Texture* pTexture = pFbo->getColorTexture(i).get();
-                if(pTexture)
-                {
-                    RtvHandle rtv = pFbo->getRenderTargetView(i);
-                    resourceBarrier(pTexture, D3D12_RESOURCE_STATE_RENDER_TARGET);
-                    pApiData->pList->ClearRenderTargetView(rtv, glm::value_ptr(color), 0, nullptr);
-                }
+                clearFboColorTarget(pFbo, i, color);
             }
         }
 
         if(clearDepth | clearStencil)
         {
-            const Texture* pTexture = pFbo->getDepthStencilTexture().get();
-            resourceBarrier(pTexture, D3D12_RESOURCE_STATE_DEPTH_WRITE);
-            DsvHandle dsv = pFbo->getDepthStencilView();
-            pApiData->pList->ClearDepthStencilView(dsv, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, depth, stencil, 0, nullptr);
+            clearFboDepthStencil(pFbo, depth, stencil, clearDepth, clearStencil);
         }
 	}
+
+    void RenderContext::clearFboColorTarget(const Fbo* pFbo, uint32_t rtIndex, const glm::vec4& color)
+    {
+        assert(rtIndex < Fbo::getMaxColorTargetCount());
+        RenderContextData* pApiData = (RenderContextData*)mpApiData;
+        const Texture* pTexture = pFbo->getColorTexture(rtIndex).get();
+        if (pTexture)
+        {
+            RtvHandle rtv = pFbo->getRenderTargetView(rtIndex);
+            resourceBarrier(pTexture, D3D12_RESOURCE_STATE_RENDER_TARGET);
+            pApiData->pList->ClearRenderTargetView(rtv, glm::value_ptr(color), 0, nullptr);
+        }
+        else
+        {
+            std::string msg = "clearFboColorTarget() with rtIndex = ";
+            msg += std::to_string(rtIndex) + "but no texture was bound to that slot.";
+            logWarning(msg);
+        }
+    }
+
+    void RenderContext::clearFboDepthStencil(const Fbo* pFbo, float depth, uint8_t stencil, bool clearDepth, bool clearStencil)
+    {
+        RenderContextData* pApiData = (RenderContextData*)mpApiData;
+        uint32_t flags = clearDepth ? D3D12_CLEAR_FLAG_DEPTH : 0;
+        flags |= clearStencil ? D3D12_CLEAR_FLAG_STENCIL : 0;
+
+        const Texture* pTexture = pFbo->getDepthStencilTexture().get();
+        if(pTexture)
+        {
+            resourceBarrier(pTexture, D3D12_RESOURCE_STATE_DEPTH_WRITE);
+            DsvHandle dsv = pFbo->getDepthStencilView();
+            pApiData->pList->ClearDepthStencilView(dsv, D3D12_CLEAR_FLAGS(flags), depth, stencil, 0, nullptr);
+        }
+        else
+        {
+            logWarning("clearFboDepthStencil() but no depth-stencil buffer was bound to the FBO.");
+        }
+    }
 
     void RenderContext::blitFbo(const Fbo* pSource, const Fbo* pTarget, const glm::ivec4& srcRegion, const glm::ivec4& dstRegion, bool useLinearFiltering, FboAttachmentType copyFlags, uint32_t srcIdx, uint32_t dstIdx)
 	{
