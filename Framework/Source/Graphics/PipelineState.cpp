@@ -106,37 +106,33 @@ namespace Falcor
         return p;
     }
 
-    PipelineState& PipelineState::setFbo(const Fbo::SharedConstPtr& pFbo, bool setViewportScissors)
+    PipelineState& PipelineState::setFbo(const Fbo::SharedConstPtr& pFbo, bool setVp0Sc0)
     {
         mpFbo = pFbo;
-        if (setViewportScissors && pFbo)
+        if (setVp0Sc0 && pFbo)
         {
-            // OPTME: do we really need to run on the entire VP array?
             uint32_t w = pFbo->getWidth();
             uint32_t h = pFbo->getHeight();
             Viewport vp(0, 0, float(w), float(h), 0, 1);
-            for (uint32_t i = 0; i < kViewportCount; i++)
-            {
-                setViewport(i, vp, true);
-            }
+            setViewport(0, vp, true);
         }
         return *this;
     }
 
-    void PipelineState::pushFbo(const Fbo::SharedPtr& pFbo, bool setViewportScissors)
+    void PipelineState::pushFbo(const Fbo::SharedPtr& pFbo, bool setVp0Sc0)
     {
         mFboStack.push(mpFbo);
-        setFbo(pFbo, setViewportScissors);
+        setFbo(pFbo, setVp0Sc0);
     }
 
-    void PipelineState::popFbo(bool setViewportScissors)
+    void PipelineState::popFbo(bool setVp0Sc0)
     {
         if (mFboStack.empty())
         {
             Logger::log(Logger::Level::Error, "PipelineState::popFbo() - can't pop FBO since the viewport stack is empty.");
             return;
         }
-        setFbo(mFboStack.top(), setViewportScissors);
+        setFbo(mFboStack.top(), setVp0Sc0);
         mFboStack.pop();
     }
 

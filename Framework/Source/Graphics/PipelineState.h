@@ -83,20 +83,20 @@ namespace Falcor
 
         /** Set a new FBO. This function doesn't store the current FBO state.
         \param[in] pFbo - a new FBO object. If nullptr is used, will detach the current FBO
-        \param[in] setViewportScissors If true, will set the viewport and scissor to match the FBO
+        \param[in] setVp0Sc0 If true, will set the viewport 0 and scissor 0 to match the FBO dimensions
         */
-        PipelineState& setFbo(const Fbo::SharedConstPtr& pFbo, bool setViewportScissors = true);
+        PipelineState& setFbo(const Fbo::SharedConstPtr& pFbo, bool setVp0Sc0 = true);
         
         /** Set a new FBO and store the current FBO into a stack. Useful for multi-pass effects.
             \param[in] pFbo - a new FBO object. If nullptr is used, will bind an empty framebuffer object
-            \param[in] setViewportScissors If true, will set the viewport and scissor to match the FBO
+            \param[in] setVp0Sc0 If true, will set the viewport 0 and scissor 0 to match the FBO dimensions
             */
-        void pushFbo(const Fbo::SharedPtr& pFbo, bool setViewportScissors = true);
+        void pushFbo(const Fbo::SharedPtr& pFbo, bool setVp0Sc0 = true);
         
         /** Restore the last FBO pushed into the FBO stack. If the stack is empty, will log an error.
-            \param[in] setViewportScissors If true, will set the viewport and scissor to match the FBO
+        \param[in] setVp0Sc0 If true, will set the viewport 0 and scissor 0 to match the FBO dimensions
         */
-        void popFbo(bool setViewportScissors = true);
+        void popFbo(bool setVp0Sc0 = true);
 
         /** Set a new vertex array object. By default, no VAO is bound.
         \param[in] pVao The Vao object to bind. If this is nullptr, will unbind the current VAO.

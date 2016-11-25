@@ -248,6 +248,11 @@ namespace Falcor
                 pCtx->resourceBarrier(pTexture.get(), D3D12_RESOURCE_STATE_DEPTH_WRITE);
             }
         }
+        else
+        {
+            pRTV.assign(colorTargets, Texture::getNullRtv());
+            pDSV = Texture::getNullDsv();
+        }
 
         pApiData->pList->OMSetRenderTargets(colorTargets, pRTV.data(), FALSE, &pDSV);
     }
