@@ -298,7 +298,10 @@ namespace Falcor
             captureScreen();
         }
         printProfileData();
-        gpDevice->present();
+        {
+            PROFILE(present);
+            gpDevice->present();
+        }
     }
 
     void Sample::captureScreen()

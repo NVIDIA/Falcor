@@ -123,9 +123,9 @@ namespace Falcor
 
         Buffer::SharedPtr pBuffer = SharedPtr(new Buffer(size, usage, cpuAccess));
 
+        BufferData* pApiData = new BufferData;
         if (cpuAccess == CpuAccess::Write)
         {
-            BufferData* pApiData = new BufferData;
             pBuffer->mpApiData = pApiData;
             pApiData->dynamicData = gpDevice->getResourceAllocator()->allocate(size, getDataAlignmentFromUsage(usage));
             pBuffer->mApiHandle = pApiData->dynamicData.pResourceHandle;
@@ -133,7 +133,6 @@ namespace Falcor
         else if (cpuAccess == CpuAccess::Read)
         {
             pBuffer->mApiHandle = createBuffer(size, kReadbackHeapProps);
-            pBuffer->map(MapType::Read);
         }
         else
         {
@@ -185,18 +184,30 @@ namespace Falcor
 
     void* Buffer::map(MapType type)
     {
-        assert(type == MapType::WriteDiscard);
-        if (mUpdateFlags != CpuAccess::Write)
-        {
-            logError("Trying to map a buffer for write, but it wasn't created with the write access type");
-            return nullptr;
-        }
-
         BufferData* pApiData = (BufferData*)mpApiData;
-        gpDevice->getResourceAllocator()->release(pApiData->dynamicData);
-        pApiData->dynamicData = gpDevice->getResourceAllocator()->allocate(mSize, getDataAlignmentFromUsage(mBindFlags));
-        mApiHandle = pApiData->dynamicData.pResourceHandle;
-        return pApiData->dynamicData.pData;
+
+        if(type == MapType::WriteDiscard)
+        {
+            if (mUpdateFlags != CpuAccess::Write)
+            {
+                logError("Trying to map a buffer for write, but it wasn't created with the write access type");
+                return nullptr;
+            }
+
+            // Allocate a new buffer
+            gpDevice->getResourceAllocator()->release(pApiData->dynamicData);
+            pApiData->dynamicData = gpDevice->getResourceAllocator()->allocate(mSize, getDataAlignmentFromUsage(mBindFlags));
+            mApiHandle = pApiData->dynamicData.pResourceHandle;
+            return pApiData->dynamicData.pData;
+        }
+        else
+        {
+            assert(type == MapType::Read);
+            D3D12_RANGE r{ 0, mSize };
+            void* pData;
+            d3d_call(mApiHandle->Map(0, &r, &pData));
+            return pData;
+        }        
     }
 
     uint64_t Buffer::getGpuAddress() const
@@ -214,7 +225,12 @@ namespace Falcor
 
     void Buffer::unmap()
     {
-
+        // Only unmap a readback resource
+        if(mUpdateFlags == CpuAccess::Read)
+        {
+            D3D12_RANGE r{};
+            mApiHandle->Unmap(0, &r);
+        }
     }
 
     uint64_t Buffer::makeResident(Buffer::GpuAccessFlags flags/* = Buffer::GpuAccessFlags::ReadOnly*/) const

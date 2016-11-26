@@ -116,7 +116,7 @@ namespace Falcor
 
 		for (EventData* pData : sProfilerVector)
 		{
-			float gpuTime = pData->gpuTotal;
+            double gpuTime;
 			pData->pGpuTimer[1 - sGpuTimerIndex]->getElapsedTime(true, gpuTime);
 
 			char event[1000];
