@@ -34,8 +34,9 @@ namespace Falcor
     class RenderContext;
     class Material;
     class Camera;
+
 	/**
-	* This is deprecated and has memory leaks
+	* This is deprecated and has performance issues
 	**/
     class ModelRenderer
     {
