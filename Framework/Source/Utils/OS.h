@@ -32,6 +32,8 @@
 
 namespace Falcor
 {
+    class Window;
+
     /*!
     *  \addtogroup Falcor
     *  @{
@@ -39,8 +41,9 @@ namespace Falcor
 
     /** Adds an icon to the foreground window.
         \param[in] iconFile Icon file name
+        \param[in] pWindow The window for which we need to set the icon to
     */
-    void setActiveWindowIcon(const std::string& iconFile);
+    void setWindowIcon(const std::string& iconFile, const Window* pWindow);
 
     /** Retrieves estimated/user-set pixel density of a display.
         \return integer value of number of pixels per inch.

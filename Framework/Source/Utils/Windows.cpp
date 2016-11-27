@@ -33,7 +33,8 @@
 #include <stdint.h>
 #include "Utils/StringUtils.h"
 #include <Shlwapi.h>
-#include <shlobj.h>   
+#include <shlobj.h>
+#include "API/Window.h"
 
 // Always run in Optimus mode on laptops
 extern "C"
@@ -275,13 +276,13 @@ namespace Falcor
         return false;
     }
 
-    void setActiveWindowIcon(const std::string& iconFile)
+    void setWindowIcon(const std::string& iconFile, const Window* pWindow)
     {
         std::string fullpath;
         if(findFileInDataDirectories(iconFile, fullpath))
         {
             HANDLE hIcon = LoadImageA(GetModuleHandle(NULL), fullpath.c_str(), IMAGE_ICON, 0, 0, LR_DEFAULTSIZE | LR_LOADFROMFILE);
-            HWND hWnd = GetActiveWindow();
+            HWND hWnd = pWindow ? pWindow->getApiHandle() : GetActiveWindow();
             SendMessage(hWnd, WM_SETICON, ICON_BIG, (LPARAM)hIcon);
         }
         else

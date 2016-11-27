@@ -170,7 +170,7 @@ namespace Falcor
 		}
 
         // Set the icon
-        setActiveWindowIcon("Framework\\Nvidia.ico");
+        setWindowIcon("Framework\\Nvidia.ico", mpWindow.get());
 
         // Get the default objects before calling onLoad()
         mpDefaultFBO = gpDevice->getSwapChainFbo();
