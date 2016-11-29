@@ -34,29 +34,7 @@ namespace Falcor
 {
     Fbo::Desc::Desc()
     {
-        mColorFormats.resize(Fbo::getMaxColorTargetCount(), ResourceFormat::Unknown);
-    }
-
-    Fbo::Desc& Fbo::Desc::setColorFormat(uint32_t rtIndex, ResourceFormat format)
-    {
-        mColorFormats[rtIndex] = format;
-        if (format == ResourceFormat::Unknown)
-        {
-            // Find the new RT count
-            mRtCount = 0;
-            for(uint32_t rt = 0 ; rt < mColorFormats.size() ; rt++)
-            {
-                if (mColorFormats[rt] != ResourceFormat::Unknown)
-                {
-                    mRtCount = rt + 1;
-                }
-            }
-        }
-        else
-        {
-            mRtCount = max(mRtCount, rtIndex + 1);
-        }
-        return *this;
+        mColorTargets.resize(Fbo::getMaxColorTargetCount());
     }
 
     static bool checkAttachmentParams(const Texture* pTexture, uint32_t mipLevel, uint32_t firstArraySlice, uint32_t arraySize, bool isDepthAttachment)
@@ -99,6 +77,13 @@ namespace Falcor
                 Logger::log(Logger::Level::Error, "Error when attaching texture to FBO. Attaching to depth-stencil target, but resource has color format.");
                 return false;
             }
+
+            if ((pTexture->getBindFlags() & Texture::BindFlags::DepthStencil) == Texture::BindFlags::None)
+            {
+                Logger::log(Logger::Level::Error, "Error when attaching texture to FBO. Attaching to depth-stencil target, the texture wasn't create with the DepthStencil bind flag");
+                return false;
+
+            }
         }
         else
         {
@@ -106,6 +91,13 @@ namespace Falcor
             {
                 Logger::log(Logger::Level::Error, "Error when attaching texture to FBO. Attaching to color target, but resource has depth-stencil format.");
                 return false;
+            }
+
+            if ((pTexture->getBindFlags() & Texture::BindFlags::RenderTarget) == Texture::BindFlags::None)
+            {
+                Logger::log(Logger::Level::Error, "Error when attaching texture to FBO. Attaching to color target, the texture wasn't create with the RenderTarget bind flag");
+                return false;
+
             }
         }
 
@@ -136,7 +128,13 @@ namespace Falcor
             mDepthStencil.mipLevel = mipLevel;
             mDepthStencil.firstArraySlice = firstArraySlice;
             mDepthStencil.arraySize = arraySize;
-            mDesc.setDepthStencilFormat(pDepthStencil ? pDepthStencil->getFormat() : ResourceFormat::Unknown);
+            bool allowUav = false;
+            if (pDepthStencil)
+            {
+                allowUav = ((pDepthStencil->getBindFlags() & Texture::BindFlags::UnorderedAccess) != Texture::BindFlags::None);
+            }
+
+            mDesc.setDepthStencilTarget(pDepthStencil ? pDepthStencil->getFormat() : ResourceFormat::Unknown, allowUav);
             applyDepthAttachment();
         }
     }
@@ -156,8 +154,13 @@ namespace Falcor
             mColorAttachments[rtIndex].mipLevel = mipLevel;
             mColorAttachments[rtIndex].firstArraySlice = firstArraySlice;
             mColorAttachments[rtIndex].arraySize = arraySize;
+            bool allowUav = false;
+            if(pTexture)
+            {
+                allowUav = ((pTexture->getBindFlags() & Texture::BindFlags::UnorderedAccess) != Texture::BindFlags::None);
+            }
 
-            mDesc.setColorFormat(rtIndex, pTexture ? pTexture->getFormat() : ResourceFormat::Unknown);
+            mDesc.setColorTarget(rtIndex, pTexture ? pTexture->getFormat() : ResourceFormat::Unknown, allowUav);
             applyColorAttachment(rtIndex);
         }
     }
@@ -189,7 +192,7 @@ namespace Falcor
 
 				if (mDesc.getSampleCount() != pTexture->getSampleCount())
 				{
-					Logger::log(Logger::Level::Error, "Error when validating FBO. Sifferent sample counts in attachments\n");
+					Logger::log(Logger::Level::Error, "Error when validating FBO. Different sample counts in attachments\n");
 					return false;
 				}
 

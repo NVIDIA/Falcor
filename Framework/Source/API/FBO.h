@@ -47,19 +47,27 @@ namespace Falcor
         {
         public:
             Desc();
-            Desc& setColorFormat(uint32_t rtIndex, ResourceFormat format);
-            Desc& setDepthStencilFormat(ResourceFormat format) { mDepthStencilFormat = format; return *this; }
+            Desc& setColorTarget(uint32_t rtIndex, ResourceFormat format, bool allowUav = false) { mColorTargets[rtIndex] = TargetDesc(format, allowUav); return *this; }
+            Desc& setDepthStencilTarget(ResourceFormat format, bool allowUav = false) { mDepthStencilTarget = TargetDesc(format, allowUav); return *this; }
             Desc& setSampleCount(uint32_t sampleCount) { mSampleCount = sampleCount ? sampleCount : 1; return *this; }
 
-            uint32_t getColorFormatCount() const { return mRtCount; }
-            ResourceFormat getColorFormat(uint32_t rtIndex) const { return mColorFormats[rtIndex]; }
-            ResourceFormat getDepthStencilFormat() const { return mDepthStencilFormat; }
+            ResourceFormat getColorTargetFormat(uint32_t rtIndex) const { return mColorTargets[rtIndex].format; }
+            bool isColorTargetUav(uint32_t rtIndex) const { return mColorTargets[rtIndex].allowUav; }
+            ResourceFormat getDepthStencilFormat() const { return mDepthStencilTarget.format; }
+            bool isDepthStencilUav() const { return mDepthStencilTarget.allowUav; }
             uint32_t getSampleCount() const { return mSampleCount; }
         private:
-            std::vector<ResourceFormat> mColorFormats;
-            ResourceFormat mDepthStencilFormat = ResourceFormat::Unknown;
+            struct TargetDesc
+            {
+                TargetDesc() = default;
+                TargetDesc(ResourceFormat f, bool uav) : format(f), allowUav(uav) {}
+                ResourceFormat format = ResourceFormat::Unknown;
+                bool allowUav = false;
+            };
+
+            std::vector<TargetDesc> mColorTargets;
+            TargetDesc mDepthStencilTarget;
             uint32_t mSampleCount = 1;
-            uint32_t mRtCount = 0;
         };
 
         /** Used to tell some functions to attach all array slices of a specific mip-level.

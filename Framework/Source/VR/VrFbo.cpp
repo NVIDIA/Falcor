@@ -52,14 +52,15 @@ namespace Falcor
         pVrFbo->mpFbo = FboHelper::create2D(width, height, desc, 2);
 
         // Get the left and right eye views
-        uint32_t rtCount = desc.getColorFormatCount();
-        pVrFbo->mpLeftView.resize(rtCount);
-        pVrFbo->mpRightView.resize(rtCount);
-        for(uint32_t rt = 0 ; rt < rtCount ; rt++)
-        {
-            pVrFbo->mpLeftView[rt] = pVrFbo->mpFbo->getColorTexture(rt)->createView(0, 1, 0, 1);
-            pVrFbo->mpRightView[rt] = pVrFbo->mpFbo->getColorTexture(rt)->createView(1, 1, 0, 1);
-        }
+        // FIXME D3D12
+//         uint32_t rtCount = desc.getColorFormatCount();
+//         pVrFbo->mpLeftView.resize(rtCount);
+//         pVrFbo->mpRightView.resize(rtCount);
+//         for(uint32_t rt = 0 ; rt < rtCount ; rt++)
+//         {
+//             pVrFbo->mpLeftView[rt] = pVrFbo->mpFbo->getColorTexture(rt)->createView(0, 1, 0, 1);
+//             pVrFbo->mpRightView[rt] = pVrFbo->mpFbo->getColorTexture(rt)->createView(1, 1, 0, 1);
+//         }
 
         return pVrFbo;
     }

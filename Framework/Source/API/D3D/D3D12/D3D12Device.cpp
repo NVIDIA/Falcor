@@ -195,7 +195,7 @@ namespace Falcor
 		for (uint32_t i = 0; i < kSwapChainBuffers; i++)
 		{
             // Create a texture object
-            auto pColorTex = Texture::SharedPtr(new Texture(width, height, 1, 1, 1, sampleCount, colorFormat, sampleCount > 1 ? Texture::Type::Texture2DMultisample : Texture::Type::Texture2D));            
+            auto pColorTex = Texture::SharedPtr(new Texture(width, height, 1, 1, 1, sampleCount, colorFormat, sampleCount > 1 ? Texture::Type::Texture2DMultisample : Texture::Type::Texture2D, Texture::BindFlags::RenderTarget));            
             HRESULT hr = pData->pSwapChain->GetBuffer(i, IID_PPV_ARGS(&pColorTex->mApiHandle));
             if(FAILED(hr))
             {
@@ -204,7 +204,7 @@ namespace Falcor
             }
 
             // Create a depth texture
-            auto pDepth = Texture::create2D(width, height, depthFormat, 1, 1);
+            auto pDepth = Texture::create2D(width, height, depthFormat, 1, 1, nullptr, Texture::BindFlags::DepthStencil);
 
             // Create the FBO if it's required
             if(pData->frameData[i].pFbo == nullptr)

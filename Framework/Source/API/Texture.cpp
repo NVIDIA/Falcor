@@ -32,11 +32,10 @@ namespace Falcor
 {
 	uint32_t Texture::tempDefaultUint = 0;
 
-    Texture::Texture(uint32_t width, uint32_t height, uint32_t depth, uint32_t arraySize, uint32_t mipLevels, uint32_t sampleCount, ResourceFormat format, Type Type) :
-        mWidth(width), mHeight(height), mDepth(depth), mMipLevels(mipLevels), mSampleCount(sampleCount), mArraySize(arraySize), mFormat(format), mType(Type)
+    Texture::Texture(uint32_t width, uint32_t height, uint32_t depth, uint32_t arraySize, uint32_t mipLevels, uint32_t sampleCount, ResourceFormat format, Type Type, BindFlags bindFlags) :
+        mWidth(width), mHeight(height), mDepth(depth), mMipLevels(mipLevels), mSampleCount(sampleCount), mArraySize(arraySize), mFormat(format), mType(Type), mBindFlags(bindFlags)
     {
         createNullViews();
-        // FIXME D3D12
         if(mMipLevels == kEntireMipChain)
         {
             uint32_t dims = width | height | depth;

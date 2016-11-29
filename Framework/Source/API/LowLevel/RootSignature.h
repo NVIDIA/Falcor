@@ -45,7 +45,7 @@ namespace Falcor
 
     };
 
-    gen_bitwise_for_enum_class(ShaderVisibility);
+    enum_class_operators(ShaderVisibility);
 
     class RootSignature
     {

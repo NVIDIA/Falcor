@@ -59,7 +59,7 @@ namespace Falcor
         for(auto& pFbo : mpResultFbo)
         {
             Fbo::Desc fboDesc;
-            fboDesc.setColorFormat(0, texFormat);
+            fboDesc.setColorTarget(0, texFormat);
             pFbo = FboHelper::create2D(1, 1, fboDesc);
         }
         mpFirstIterProg = FullScreenPass::create(fsFilename, defines);
@@ -79,7 +79,7 @@ namespace Falcor
                 height = max(height, 1u);
 
                 Fbo::Desc fboDesc;
-                fboDesc.setColorFormat(0, texFormat);
+                fboDesc.setColorTarget(0, texFormat);
                 mpTmpResultFbo.push_back(FboHelper::create2D(width, height, fboDesc));
             }
         }

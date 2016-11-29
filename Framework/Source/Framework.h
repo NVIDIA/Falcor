@@ -62,6 +62,11 @@ using namespace glm;
 
 namespace Falcor
 {
+#define enum_class_operators(e_) inline e_ operator& (e_ a, e_ b){return static_cast<e_>(static_cast<int>(a)& static_cast<int>(b));}  \
+    inline e_ operator| (e_ a, e_ b){return static_cast<e_>(static_cast<int>(a)| static_cast<int>(b));} \
+    inline e_& operator|= (e_& a, e_ b){a = a | b; return a;};  \
+    inline e_& operator&= (e_& a, e_ b) { a = a & b; return a; };
+
     /*!
     *  \addtogroup Falcor
     *  @{
@@ -93,22 +98,7 @@ namespace Falcor
         All = Color | Depth | Stencil ///< Operate on all targets
     };
 
-#define gen_bitwise_for_enum_class(e_) inline e_ operator& (e_ a, e_ b){return static_cast<e_>(static_cast<int>(a)& static_cast<int>(b));}  \
-    inline e_ operator| (e_ a, e_ b){return static_cast<e_>(static_cast<int>(a)| static_cast<int>(b));}
-
-    gen_bitwise_for_enum_class(FboAttachmentType);
-
-//     template<typename T>
-//     inline T min(const T& a, const T& b)
-//     {
-//         return (a < b) ? a : b;
-//     }
-// 
-//     template<typename T>
-//     inline T max(const T& a, const T& b)
-//     {
-//         return (a > b) ? a : b;
-//     }
+    enum_class_operators(FboAttachmentType);
 
     template<typename T>
     inline T clamp(const T& val, const T& minVal, const T& maxVal)

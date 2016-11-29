@@ -101,7 +101,37 @@ namespace Falcor
         UNSUPPORTED_IN_D3D12("Texture::evict()");
     }
 
-    void createTextureCommon(const Texture* pTexture, Texture::ApiHandle& apiHandle, const void* pData, D3D12_RESOURCE_DIMENSION dim, bool autoGenMips)
+
+    D3D12_RESOURCE_FLAGS getResourceFlags(Texture::BindFlags bindFlags)
+    {
+        D3D12_RESOURCE_FLAGS d3d = D3D12_RESOURCE_FLAG_NONE;
+#define is_set(_a) ((bindFlags & _a) != Texture::BindFlags::None)
+        if(is_set(Texture::BindFlags::DepthStencil))
+        {
+            d3d |= D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
+        }
+
+        if (is_set(Texture::BindFlags::RenderTarget))
+        {
+            d3d |= D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
+        }
+        
+        if (is_set(Texture::BindFlags::UnorderedAccess))
+        {
+            d3d |= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
+        }
+
+        // SRV is different, it's on by default
+        if ((bindFlags & Texture::BindFlags::ShaderResource) == Texture::BindFlags::None)
+        {
+            d3d |= D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE;
+        }
+
+#undef is_set
+        return d3d;
+    }
+
+    void createTextureCommon(const Texture* pTexture, Texture::ApiHandle& apiHandle, const void* pData, D3D12_RESOURCE_DIMENSION dim, bool autoGenMips, Texture::BindFlags bindFlags)
     {
         ResourceFormat texFormat = pTexture->getFormat();
 
@@ -111,7 +141,7 @@ namespace Falcor
         desc.Format = getDxgiFormat(texFormat);
         desc.Width = align_to(getFormatWidthCompressionRatio(texFormat), pTexture->getWidth());
         desc.Height = align_to(getFormatHeightCompressionRatio(texFormat), pTexture->getHeight());
-        desc.Flags = D3D12_RESOURCE_FLAG_NONE;
+        desc.Flags = getResourceFlags(bindFlags);
         desc.DepthOrArraySize = (pTexture->getType() == Texture::Type::TextureCube) ? pTexture->getArraySize() * 6 : pTexture->getArraySize();
         desc.SampleDesc.Count = pTexture->getSampleCount();
         desc.SampleDesc.Quality = 0;
@@ -121,11 +151,10 @@ namespace Falcor
 
         D3D12_CLEAR_VALUE clearValue = {};
         D3D12_CLEAR_VALUE* pClearVal = nullptr;
-        if (isCompressedFormat(texFormat) == false)
+        if ((bindFlags & (Texture::BindFlags::RenderTarget | Texture::BindFlags::DepthStencil)) != Texture::BindFlags::None)
         {
-            desc.Flags = isDepthStencilFormat(texFormat) ? D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL : D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
             clearValue.Format = desc.Format;
-            if (isDepthStencilFormat(texFormat))
+            if ((bindFlags & Texture::BindFlags::DepthStencil) != Texture::BindFlags::None)
             {
                 clearValue.DepthStencil.Depth = 1.0f;
             }
@@ -160,17 +189,30 @@ namespace Falcor
         }
     }
 
-    Texture::SharedPtr Texture::create1D(uint32_t width, ResourceFormat format, uint32_t arraySize, uint32_t mipLevels, const void* pData)
+    Texture::BindFlags updateBindFlags(Texture::BindFlags flags, bool hasInitData, uint32_t mipLevels)
     {
-        Texture::SharedPtr pTexture = SharedPtr(new Texture(width, 1, 1, 1, mipLevels, arraySize, format, Type::Texture1D));
-        createTextureCommon(pTexture.get(), pTexture->mApiHandle, pData, D3D12_RESOURCE_DIMENSION_TEXTURE1D, (mipLevels == kEntireMipChain));
+        if ((mipLevels != Texture::kEntireMipChain) || (hasInitData == false))
+        {
+            return flags;
+        }
+
+        flags |= Texture::BindFlags::RenderTarget;
+        return flags;
+    }
+
+    Texture::SharedPtr Texture::create1D(uint32_t width, ResourceFormat format, uint32_t arraySize, uint32_t mipLevels, const void* pData, BindFlags bindFlags)
+    {
+        bindFlags = updateBindFlags(bindFlags, pData != nullptr, mipLevels);
+        Texture::SharedPtr pTexture = SharedPtr(new Texture(width, 1, 1, 1, mipLevels, arraySize, format, Type::Texture1D, bindFlags));
+        createTextureCommon(pTexture.get(), pTexture->mApiHandle, pData, D3D12_RESOURCE_DIMENSION_TEXTURE1D, (mipLevels == kEntireMipChain), bindFlags);
         return pTexture->mApiHandle ? pTexture : nullptr;
     }
     
-    Texture::SharedPtr Texture::create2D(uint32_t width, uint32_t height, ResourceFormat format, uint32_t arraySize, uint32_t mipLevels, const void* pData)
+    Texture::SharedPtr Texture::create2D(uint32_t width, uint32_t height, ResourceFormat format, uint32_t arraySize, uint32_t mipLevels, const void* pData, BindFlags bindFlags)
     {
-        Texture::SharedPtr pTexture = SharedPtr(new Texture(width, height, 1, 1, mipLevels, arraySize, format, Type::Texture2D));
-        createTextureCommon(pTexture.get(), pTexture->mApiHandle, pData, D3D12_RESOURCE_DIMENSION_TEXTURE2D, (mipLevels == kEntireMipChain));
+        bindFlags = updateBindFlags(bindFlags, pData != nullptr, mipLevels);
+        Texture::SharedPtr pTexture = SharedPtr(new Texture(width, height, 1, 1, mipLevels, arraySize, format, Type::Texture2D, bindFlags));
+        createTextureCommon(pTexture.get(), pTexture->mApiHandle, pData, D3D12_RESOURCE_DIMENSION_TEXTURE2D, (mipLevels == kEntireMipChain), bindFlags);
         return pTexture->mApiHandle ? pTexture : nullptr;
     }
 
@@ -265,33 +307,29 @@ namespace Falcor
         return mSrvs[view];
     }
 
-    Texture::SharedPtr Texture::create3D(uint32_t width, uint32_t height, uint32_t depth, ResourceFormat format, uint32_t mipLevels, const void* pData, bool isSparse)
+    Texture::SharedPtr Texture::create3D(uint32_t width, uint32_t height, uint32_t depth, ResourceFormat format, uint32_t mipLevels, const void* pData, BindFlags bindFlags, bool isSparse)
     {
-        Texture::SharedPtr pTexture = SharedPtr(new Texture(width, height, depth, 1, mipLevels, 1, format, Type::Texture3D));
-        createTextureCommon(pTexture.get(), pTexture->mApiHandle, pData, D3D12_RESOURCE_DIMENSION_TEXTURE3D, (mipLevels == kEntireMipChain));
+        bindFlags = updateBindFlags(bindFlags, pData != nullptr, mipLevels);
+        Texture::SharedPtr pTexture = SharedPtr(new Texture(width, height, depth, 1, mipLevels, 1, format, Type::Texture3D, bindFlags));
+        createTextureCommon(pTexture.get(), pTexture->mApiHandle, pData, D3D12_RESOURCE_DIMENSION_TEXTURE3D, (mipLevels == kEntireMipChain), bindFlags);
         return pTexture->mApiHandle ? pTexture : nullptr;
         return nullptr;
     }
 
     // Texture Cube
-    Texture::SharedPtr Texture::createCube(uint32_t width, uint32_t height, ResourceFormat format, uint32_t arraySize, uint32_t mipLevels, const void* pData)
+    Texture::SharedPtr Texture::createCube(uint32_t width, uint32_t height, ResourceFormat format, uint32_t arraySize, uint32_t mipLevels, const void* pData, BindFlags bindFlags)
     {
-        Texture::SharedPtr pTexture = SharedPtr(new Texture(width, height, 1, 1, mipLevels, arraySize, format, Type::TextureCube));
-        createTextureCommon(pTexture.get(), pTexture->mApiHandle, pData, D3D12_RESOURCE_DIMENSION_TEXTURE2D, (mipLevels == kEntireMipChain));
+        bindFlags = updateBindFlags(bindFlags, pData != nullptr, mipLevels);
+        Texture::SharedPtr pTexture = SharedPtr(new Texture(width, height, 1, 1, mipLevels, arraySize, format, Type::TextureCube, bindFlags));
+        createTextureCommon(pTexture.get(), pTexture->mApiHandle, pData, D3D12_RESOURCE_DIMENSION_TEXTURE2D, (mipLevels == kEntireMipChain), bindFlags);
         return pTexture->mApiHandle ? pTexture : nullptr;
     }
 
-    Texture::SharedPtr Texture::create2DMS(uint32_t width, uint32_t height, ResourceFormat format, uint32_t sampleCount, uint32_t arraySize, bool useFixedSampleLocations)
+    Texture::SharedPtr Texture::create2DMS(uint32_t width, uint32_t height, ResourceFormat format, uint32_t sampleCount, uint32_t arraySize, BindFlags bindFlags)
     {
-        assert(useFixedSampleLocations == true);
-        Texture::SharedPtr pTexture = SharedPtr(new Texture(width, height, 1, 1, 1, arraySize, format, Type::Texture2DMultisample));
-        createTextureCommon(pTexture.get(), pTexture->mApiHandle, nullptr, D3D12_RESOURCE_DIMENSION_TEXTURE2D, false);
+        Texture::SharedPtr pTexture = SharedPtr(new Texture(width, height, 1, 1, 1, arraySize, format, Type::Texture2DMultisample, bindFlags));
+        createTextureCommon(pTexture.get(), pTexture->mApiHandle, nullptr, D3D12_RESOURCE_DIMENSION_TEXTURE2D, false, bindFlags);
         return pTexture->mApiHandle ? pTexture : nullptr;
-    }
-
-    Texture::SharedPtr Texture::create2DFromView(uint32_t apiHandle, uint32_t width, uint32_t height, ResourceFormat format)
-    {
-        return nullptr;
     }
 
     uint32_t Texture::getMipLevelDataSize(uint32_t mipLevel) const

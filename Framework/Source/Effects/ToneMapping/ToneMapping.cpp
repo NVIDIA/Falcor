@@ -71,7 +71,7 @@ namespace Falcor
         if(createFbo)
         {
             Fbo::Desc desc;
-            desc.setColorFormat(0, luminanceFormat);
+            desc.setColorTarget(0, luminanceFormat);
             mpLuminanceFbo = FboHelper::create2D(pSrcFbo->getWidth(), pSrcFbo->getHeight(), desc, 1, Fbo::kAttachEntireMipLevel);
         }
     }

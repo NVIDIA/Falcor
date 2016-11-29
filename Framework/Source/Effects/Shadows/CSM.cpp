@@ -228,7 +228,7 @@ namespace Falcor
         default:            
         {
             Fbo::Desc fboDesc;
-            fboDesc.setDepthStencilFormat(depthFormat);
+            fboDesc.setDepthStencilTarget(depthFormat);
             mShadowPass.pFbo = FboHelper::create2D(mapWidth, mapHeight, fboDesc, mCsmData.cascadeCount);
         }
         }
@@ -236,7 +236,7 @@ namespace Falcor
         if(colorFormat != ResourceFormat::Unknown)
         {
             Fbo::Desc fboDesc;
-            fboDesc.setDepthStencilFormat(depthFormat).setColorFormat(0, colorFormat);
+            fboDesc.setDepthStencilTarget(depthFormat).setColorTarget(0, colorFormat);
             mShadowPass.pFbo = FboHelper::create2D(mapWidth, mapHeight, fboDesc, mCsmData.cascadeCount, Texture::kEntireMipChain);
         }
 
@@ -481,7 +481,7 @@ namespace Falcor
         if((mDepthPass.pFbo == nullptr) || (mDepthPass.pFbo->getWidth() != width) || (mDepthPass.pFbo->getHeight() != height))
         {
             Fbo::Desc desc;
-            desc.setDepthStencilFormat(mShadowPass.pFbo->getDepthStencilTexture()->getFormat());
+            desc.setDepthStencilTarget(mShadowPass.pFbo->getDepthStencilTexture()->getFormat());
             mDepthPass.pFbo = FboHelper::create2D(width, height, desc);
         }
 

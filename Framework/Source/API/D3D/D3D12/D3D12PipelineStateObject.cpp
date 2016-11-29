@@ -65,7 +65,7 @@ namespace Falcor
         desc.pRootSignature = mDesc.mpRootSignature ? mDesc.mpRootSignature->getApiHandle() : nullptr;
         for (uint32_t rt = 0; rt < Fbo::getMaxColorTargetCount(); rt++)
         {
-            desc.RTVFormats[rt] = getDxgiFormat(mDesc.mFboDesc.getColorFormat(rt));
+            desc.RTVFormats[rt] = getDxgiFormat(mDesc.mFboDesc.getColorTargetFormat(rt));
         }
         desc.NumRenderTargets = Fbo::getMaxColorTargetCount();
         desc.DSVFormat = getDxgiFormat(mDesc.mFboDesc.getDepthStencilFormat());

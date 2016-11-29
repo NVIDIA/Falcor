@@ -53,7 +53,7 @@ void MultiPassPostProcess::loadImage()
         mpImage = createTextureFromFile(filename, false, isSrgbFormat(fboFormat));
         ResourceFormat imageFormat = mpImage->getFormat();
         Fbo::Desc fboDesc;
-        fboDesc.setColorFormat(0, mpImage->getFormat());
+        fboDesc.setColorTarget(0, mpImage->getFormat());
         mpTempFB = FboHelper::create2D(mpImage->getWidth(), mpImage->getHeight(), fboDesc);
 
         resizeSwapChain(mpImage->getWidth(), mpImage->getHeight());

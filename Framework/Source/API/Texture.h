@@ -55,6 +55,17 @@ namespace Falcor
             Texture2DMultisample,       ///< 2D multi-sampled texture. Can be bound as render-target, shader-resource and image
         };
 
+        /** BindFlags flags
+        */
+        enum class BindFlags
+        {
+            None                =   0x0,    ///< Here for completion. Trying to create a resource with this flag will result in an error
+            ShaderResource      =   0x1,    ///< Shader resource view
+            UnorderedAccess     =   0x2,    ///< Unrodered access view
+            RenderTarget        =   0x4,    ///< Render-target view
+            DepthStencil        =   0x8,    ///< Depth-stencil view
+        };
+
         /** Get the API handle
         */
         TextureHandle getApiHandle() const { return mApiHandle; }
@@ -127,59 +138,54 @@ namespace Falcor
             \param Format The format of the texture.
             \param ArraySize The array size of the texture.
             \param mipLevels if equal to kEntireMipChain then an entire mip chain will be generated from mip level 0. If any other value is given then the data for at least that number of miplevels must be provided.
-            \param pInitData Optional. If different than nullptr, pointer to a buffer containing data to initialize the texture with.
+            \param pInitData If different than nullptr, pointer to a buffer containing data to initialize the texture with.
+            \param bindFlags The requested bind flags for the resource
             \return A pointer to a new texture, or nullptr if creation failed
         */
-        static SharedPtr create1D(uint32_t width, ResourceFormat format, uint32_t arraySize = 1, uint32_t mipLevels = kEntireMipChain, const void* pInitData = nullptr);
+        static SharedPtr create1D(uint32_t width, ResourceFormat format, uint32_t arraySize = 1, uint32_t mipLevels = kEntireMipChain, const void* pInitData = nullptr, BindFlags bindFlags = BindFlags::ShaderResource);
         /** create a 2D texture
             \param width The width of the texture.
             \param height The height of the texture.
             \param Format The format of the texture.
             \param arraySize The array size of the texture.
 			\param mipLevels if equal to kEntireMipChain then an entire mip chain will be generated from mip level 0. If any other value is given then the data for at least that number of miplevels must be provided.
-			\param pInitData Optional. If different than nullptr, pointer to a buffer containing data to initialize the texture with.
+            \param pInitData If different than nullptr, pointer to a buffer containing data to initialize the texture with.
+            \param bindFlags The requested bind flags for the resource
             \return A pointer to a new texture, or nullptr if creation failed
         */
-        static SharedPtr create2D(uint32_t width, uint32_t height, ResourceFormat format, uint32_t arraySize = 1, uint32_t mipLevels = kEntireMipChain, const void* pInitData = nullptr);
+        static SharedPtr create2D(uint32_t width, uint32_t height, ResourceFormat format, uint32_t arraySize = 1, uint32_t mipLevels = kEntireMipChain, const void* pInitData = nullptr, BindFlags bindFlags = BindFlags::ShaderResource);
         /** create a 3D texture
             \param width The width of the texture.
             \param height The height of the texture.
             \param depth The depth of the texture.
             \param format The format of the texture.
 			\param mipLevels if equal to kEntireMipChain then an entire mip chain will be generated from mip level 0. If any other value is given then the data for at least that number of miplevels must be provided.
-			\param pInitData Optional. If different than nullptr, pointer to a buffer containing data to initialize the texture with.
+            \param pInitData If different than nullptr, pointer to a buffer containing data to initialize the texture with.
+            \param bindFlags The requested bind flags for the resource
+            \param isSparse If true, the texture is created as a sparse texture (GL_ARB_sparse_texture) without any physical memory allocated. pInitData must be null in this case.
             \return A pointer to a new texture, or nullptr if creation failed
         */
-        static SharedPtr create3D(uint32_t width, uint32_t height, uint32_t depth, ResourceFormat format, uint32_t mipLevels = kEntireMipChain, const void* pInitData = nullptr, bool isSparse=false);
+        static SharedPtr create3D(uint32_t width, uint32_t height, uint32_t depth, ResourceFormat format, uint32_t mipLevels = kEntireMipChain, const void* pInitData = nullptr, BindFlags bindFlags = BindFlags::ShaderResource, bool isSparse=false);
         /** create a texture-cube
             \param width The width of the texture.
             \param height The height of the texture.
             \param format The format of the texture.
             \param arraySize The array size of the texture.
 			\param mipLevels if equal to kEntireMipChain then an entire mip chain will be generated from mip level 0. If any other value is given then the data for at least that number of miplevels must be provided.
-			\param pInitData Optional. If different than nullptr, pointer to a buffer containing data to initialize the texture with.
-			\param isSparse Optional. If true, the texture is created as a sparse texture (GL_ARB_sparse_texture) without any physical memory allocated. pInitData must be null in this case.
+			\param pInitData If different than nullptr, pointer to a buffer containing data to initialize the texture with.
+            \param bindFlags The requested bind flags for the resource
             \return A pointer to a new texture, or nullptr if creation failed
         */
-        static SharedPtr createCube(uint32_t width, uint32_t height, ResourceFormat format, uint32_t arraySize = 1, uint32_t mipLevels = kEntireMipChain, const void* pInitData = nullptr);
+        static SharedPtr createCube(uint32_t width, uint32_t height, ResourceFormat format, uint32_t arraySize = 1, uint32_t mipLevels = kEntireMipChain, const void* pInitData = nullptr, BindFlags bindFlags = BindFlags::ShaderResource);
         /** create a multi-sampled 2D texture
             \param width The width of the texture.
             \param height The height of the texture.
             \param format The format of the texture.
             \param sampleCount Requested sample count of the texture.
-            \param useFixedSampleLocations Controls weather or not the texture uses fixed or variable sample locations
+            \param bindFlags The requested bind flags for the resource
             \return A pointer to a new texture, or nullptr if creation failed
         */
-        static SharedPtr create2DMS(uint32_t width, uint32_t height, ResourceFormat format, uint32_t sampleCount, uint32_t arraySize = 1, bool useFixedSampleLocations = true);
-        /** create from existing 2D texture view; this is necessary to interface with some lower-level APIs.  TODO: maybe factor this
-            functionality out into a separate CTextureView class?
-            \param apiHandle The ID of the pre-existing texture view object.
-            \param width The width of the texture.
-            \param height The height of the texture.
-            \param format The format of the texture.
-            \return A pointer to a new texture, or nullptr if creation failed
-        */
-        static SharedPtr create2DFromView(uint32_t apiHandle, uint32_t width, uint32_t height, ResourceFormat format);
+        static SharedPtr create2DMS(uint32_t width, uint32_t height, ResourceFormat format, uint32_t sampleCount, uint32_t arraySize = 1, BindFlags bindFlags = BindFlags::ShaderResource);
 
         /** Get the image size for a single array slice in a mip-level
         */
@@ -267,6 +273,9 @@ namespace Falcor
         */
         DsvHandle getDSV(uint32_t mipLevel = 0, uint32_t firstArraySlice = 0, uint32_t arraySize = kEntireArraySlice) const;
 
+        /** Get the bind flags
+        */
+        BindFlags getBindFlags() const { return mBindFlags; }
         static RtvHandle getNullRtv() { return sNullRTV; }
         static DsvHandle getNullDsv() { return sNullDSV; }
 
@@ -309,9 +318,10 @@ namespace Falcor
         std::string mName;
         std::string mSourceFilename;
 
-        Texture(uint32_t width, uint32_t height, uint32_t depth, uint32_t arraySize, uint32_t mipLevels, uint32_t sampleCount, ResourceFormat format, Type Type);
+        Texture(uint32_t width, uint32_t height, uint32_t depth, uint32_t arraySize, uint32_t mipLevels, uint32_t sampleCount, ResourceFormat format, Type Type, BindFlags bindFlags);
         
         TextureHandle mApiHandle = 0;
+        BindFlags mBindFlags = BindFlags::None;
         uint32_t mWidth = 0;
         uint32_t mHeight = 0;
         uint32_t mDepth = 0;
@@ -332,5 +342,6 @@ namespace Falcor
         static void createNullViews();
     };
 
+    enum_class_operators(Texture::BindFlags);
     const std::string to_string(Texture::Type Type);
 }

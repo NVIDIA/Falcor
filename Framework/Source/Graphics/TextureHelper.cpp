@@ -578,7 +578,7 @@ namespace Falcor
         stream.read(ddsData.data.data(), dataSize);
 	}
 
-    Texture::SharedPtr createTextureFromDx10Dds(DdsData& ddsData, const std::string& filename, ResourceFormat format, uint32_t mipLevels)
+    Texture::SharedPtr createTextureFromDx10Dds(DdsData& ddsData, const std::string& filename, ResourceFormat format, uint32_t mipLevels, Texture::BindFlags bindFlags)
     {
         uint32_t arraySize = ddsData.dx10Header.arraySize;
         assert(arraySize > 0);
@@ -586,72 +586,64 @@ namespace Falcor
         switch(ddsData.dx10Header.resourceDimension)
         {
         case D3D10_RESOURCE_DIMENSION::D3D10_RESOURCE_DIMENSION_TEXTURE1D:
-            return Texture::create1D(ddsData.header.width, format, arraySize, mipLevels, ddsData.data.data());
+            return Texture::create1D(ddsData.header.width, format, arraySize, mipLevels, ddsData.data.data(), bindFlags);
         case D3D10_RESOURCE_DIMENSION::D3D10_RESOURCE_DIMENSION_TEXTURE2D:
             if(ddsData.dx10Header.miscFlag & DdsHeaderDX10::kCubeMapMask)
             {
                 flipData(ddsData, format, ddsData.header.width, ddsData.header.height, 6 * arraySize, mipLevels == Texture::kEntireMipChain ? 1 : mipLevels, true);
-                return Texture::createCube(ddsData.header.width, ddsData.header.height, format, arraySize, mipLevels, ddsData.data.data());
+                return Texture::createCube(ddsData.header.width, ddsData.header.height, format, arraySize, mipLevels, ddsData.data.data(), bindFlags);
             }
             else
             {
                 flipData(ddsData, format, ddsData.header.width, ddsData.header.height, arraySize, mipLevels == Texture::kEntireMipChain ? 1 : mipLevels);
-                return Texture::create2D(ddsData.header.width, ddsData.header.height, format, arraySize, mipLevels, ddsData.data.data());
+                return Texture::create2D(ddsData.header.width, ddsData.header.height, format, arraySize, mipLevels, ddsData.data.data(), bindFlags);
             }
         case D3D10_RESOURCE_DIMENSION::D3D10_RESOURCE_DIMENSION_TEXTURE3D:
             flipData(ddsData, format, ddsData.header.width, ddsData.header.height, ddsData.header.depth, mipLevels == Texture::kEntireMipChain ? 1 : mipLevels);
-            return Texture::create3D(ddsData.header.width, ddsData.header.height, ddsData.header.depth, format, mipLevels, ddsData.data.data());
+            return Texture::create3D(ddsData.header.width, ddsData.header.height, ddsData.header.depth, format, mipLevels, ddsData.data.data(), bindFlags);
         case D3D10_RESOURCE_DIMENSION::D3D10_RESOURCE_DIMENSION_BUFFER:
         case D3D10_RESOURCE_DIMENSION::D3D10_RESOURCE_DIMENSION_UNKNOWN:
             //these file formats are not supported 
-            Logger::log(Logger::Level::Error, std::string("the resource dimension specified in ") + filename + std::string(" is not supported by Falcor"));
+            logError(std::string("the resource dimension specified in ") + filename + std::string(" is not supported by Falcor"));
         default:
             should_not_get_here();
             return nullptr;
         }
     }
 
-    Texture::SharedPtr createTextureFromLegacyDds(DdsData& ddsData, const std::string& filename, ResourceFormat format, uint32_t mipLevels)
+    Texture::SharedPtr createTextureFromLegacyDds(DdsData& ddsData, const std::string& filename, ResourceFormat format, uint32_t mipLevels, Texture::BindFlags bindFlags)
     {
         //load the volume or 3D texture
         if(ddsData.header.flags & DdsHeader::kDepthMask)
         {
             flipData(ddsData, format, ddsData.header.width, ddsData.header.height, ddsData.header.depth, mipLevels == Texture::kEntireMipChain ? 1 : mipLevels);
-            return Texture::create3D(ddsData.header.width, ddsData.header.height, ddsData.header.depth, format, mipLevels, ddsData.data.data());
+            return Texture::create3D(ddsData.header.width, ddsData.header.height, ddsData.header.depth, format, mipLevels, ddsData.data.data(), bindFlags);
         }
         //load the cubemap texture
         else if(ddsData.header.caps[1] & DdsHeader::kCaps2CubeMapMask)
         {
-            //				flipData(data, fmt, data.header.width, data.header.height, 6, mipLevels == Texture::kEntireMipChain ? 1 : mipLevels, true);
-            return Texture::createCube(ddsData.header.width, ddsData.header.height, format, 1, mipLevels, ddsData.data.data());
+            return Texture::createCube(ddsData.header.width, ddsData.header.height, format, 1, mipLevels, ddsData.data.data(), bindFlags);
         }
         //This is a 2D Texture
         else
         {
             flipData(ddsData, format, ddsData.header.width, ddsData.header.height, 1, mipLevels == Texture::kEntireMipChain ? 1 : mipLevels);
-            return Texture::create2D(ddsData.header.width, ddsData.header.height, format, 1, mipLevels, ddsData.data.data());
+            return Texture::create2D(ddsData.header.width, ddsData.header.height, format, 1, mipLevels, ddsData.data.data(), bindFlags);
         }
 
         should_not_get_here();
         return nullptr;
     }
 
-	Texture::SharedPtr createTextureFromDDSFile(const std::string filename, bool generateMips)
+	Texture::SharedPtr createTextureFromDDSFile(const std::string filename, bool generateMips, Texture::BindFlags bindFlags)
 	{
 		DdsData ddsData;
 		loadDDSDataFromFile(filename, ddsData);
 		
 		ResourceFormat format = getDdsResourceFormat(ddsData);
-
-        // One reason to hit this assertion is files that use an old header with R10G10B10A2 format.
-        // Older exporters used to swap the R and B channels. Newer exporter probably don't do that or they specify the format using the DX10 header.
-        // Our loader compiles with the older behavior. If you have an R10G10B10A2 texture, try one of the following:
-        //  - Re-export the texture with an exporter that supports DX10 header
-        //  - Switch the r and g masks in the 'checkDdsChannelMask()' call
 		assert(format != ResourceFormat::Unknown);
 
 		uint32_t mipLevels;
-
 		if (generateMips)
 		{
 			mipLevels = Texture::kEntireMipChain;
@@ -663,17 +655,17 @@ namespace Falcor
 	
 		if (ddsData.hasDX10Header)
 		{
-            return createTextureFromDx10Dds(ddsData, filename, format, mipLevels);
+            return createTextureFromDx10Dds(ddsData, filename, format, mipLevels, bindFlags);
 		}
 		else
 		{
-            return createTextureFromLegacyDds(ddsData, filename, format, mipLevels);
+            return createTextureFromLegacyDds(ddsData, filename, format, mipLevels, bindFlags);
 		}
 		
 		return nullptr;
 	}
 
-	Texture::SharedPtr createTextureFromFile(const std::string& filename, bool generateMipLevels, bool loadAsSrgb)
+	Texture::SharedPtr createTextureFromFile(const std::string& filename, bool generateMipLevels, bool loadAsSrgb, Texture::BindFlags bindFlags)
     {
 #define no_srgb()   \
     if(loadAsSrgb)  \
@@ -683,7 +675,7 @@ namespace Falcor
 			
 		if (hasSuffix(filename, ".dds"))
 		{
-			return createTextureFromDDSFile(filename, generateMipLevels);
+			return createTextureFromDDSFile(filename, generateMipLevels, bindFlags);
 		}
 
         Bitmap::UniqueConstPtr pBitmap = Bitmap::createFromFile(filename, kTopDown);
@@ -725,7 +717,7 @@ namespace Falcor
                 break;
             }
 
-            pTex = Texture::create2D(pBitmap->getWidth(), pBitmap->getHeight(), texFormat, 1, generateMipLevels ? Texture::kEntireMipChain : 1, pBitmap->getData());
+            pTex = Texture::create2D(pBitmap->getWidth(), pBitmap->getHeight(), texFormat, 1, generateMipLevels ? Texture::kEntireMipChain : 1, pBitmap->getData(), bindFlags);
             pTex->setSourceFilename(filename);
         }
         return pTex;
