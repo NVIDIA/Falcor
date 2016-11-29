@@ -38,17 +38,18 @@ namespace Falcor
         using ApiHandle = DescriptorHeapHandle;
         ~DescriptorHeap();
 
+        using CpuHandle = HeapCpuHandle;
+        using GpuHandle = HeapGpuHandle;
+
         enum class Type
         {
             ShaderResource,
             Sampler,
             RenderTargetView,
             DepthStencilView,
+            UnorderedAccessView
         };
-        // FIXME D3D12
         static SharedPtr create(Type type, uint32_t descriptorsCount, bool shaderVisible = true);
-        using CpuHandle = D3D12_CPU_DESCRIPTOR_HANDLE;
-        using GpuHandle = D3D12_GPU_DESCRIPTOR_HANDLE;
 
         CpuHandle getCpuHandle(uint32_t index) const;
         GpuHandle getGpuHandle(uint32_t index) const;

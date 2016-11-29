@@ -48,6 +48,24 @@ namespace Falcor
         PipelineState::SharedPtr pState;
     } static gGenMips;
 
+
+    template<>
+    D3D12_UAV_DIMENSION getViewDimension<D3D12_UAV_DIMENSION>(Texture::Type type, bool isTextureArray)
+    {
+        switch (type)
+        {
+        case Texture::Type::Texture1D:
+            return (isTextureArray) ? D3D12_UAV_DIMENSION_TEXTURE1DARRAY : D3D12_UAV_DIMENSION_TEXTURE1D;
+        case Texture::Type::Texture2D:
+            return (isTextureArray) ? D3D12_UAV_DIMENSION_TEXTURE2DARRAY : D3D12_UAV_DIMENSION_TEXTURE2D;
+        case Texture::Type::TextureCube:
+            return D3D12_UAV_DIMENSION_TEXTURE2DARRAY;
+        default:
+            should_not_get_here();
+            return D3D12_UAV_DIMENSION_UNKNOWN;
+        }
+    }
+
     template<>
     D3D12_SRV_DIMENSION getViewDimension<D3D12_SRV_DIMENSION>(Texture::Type type, bool isTextureArray)
     {
@@ -257,6 +275,19 @@ namespace Falcor
         };
 
         return createViewCommon<DsvHandle>(this, mipLevel, 1, firstArraySlice, arraySize, mDsvs, gpDevice->getDsvDescriptorHeap().get(), createFunc);
+    }
+
+    UavHandle Texture::getUAV(uint32_t mipLevel, uint32_t firstArraySlice, uint32_t arraySize) const
+    {
+        auto createFunc = [](const Texture* pTexture, const Texture::ViewInfo& viewInfo, DescriptorHeap::CpuHandle cpuHandle, DescriptorHeap::GpuHandle gpuHandle)
+        {
+            D3D12_UNORDERED_ACCESS_VIEW_DESC desc = {};
+            initializeUavDesc<D3D12_UNORDERED_ACCESS_VIEW_DESC>(pTexture, viewInfo.mostDetailedMip, viewInfo.firstArraySlice, viewInfo.arraySize, desc);
+            gpDevice->getApiHandle()->CreateUnorderedAccessView(pTexture->getApiHandle(), nullptr, &desc, cpuHandle);
+            return gpuHandle;
+        };
+
+        return createViewCommon<UavHandle>(this, mipLevel, 1, firstArraySlice, arraySize, mUavs, gpDevice->getUavDescriptorHeap().get(), createFunc);
     }
 
     RtvHandle Texture::getRTV(uint32_t mipLevel, uint32_t firstArraySlice, uint32_t arraySize) const

@@ -43,6 +43,8 @@ namespace Falcor
             return D3D12_DESCRIPTOR_HEAP_TYPE_DSV;
         case DescriptorHeap::Type::RenderTargetView:
             return D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
+        case DescriptorHeap::Type::UnorderedAccessView:
+            return D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
         default:
             should_not_get_here();
             return D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES;
