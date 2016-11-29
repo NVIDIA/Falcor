@@ -279,8 +279,6 @@ namespace Falcor
         static RtvHandle getNullRtv() { return sNullRTV; }
         static DsvHandle getNullDsv() { return sNullDSV; }
 
-    protected:
-        friend class Device;
         
         struct ViewInfo
         {
@@ -306,6 +304,8 @@ namespace Falcor
             }
         };
         
+    protected:
+        friend class Device;
         mutable std::unordered_map<ViewInfo, SrvHandle, ViewInfoHasher> mSrvs;
         mutable std::unordered_map<ViewInfo, RtvHandle, ViewInfoHasher> mRtvs;
         mutable std::unordered_map<ViewInfo, DsvHandle, ViewInfoHasher> mDsvs;

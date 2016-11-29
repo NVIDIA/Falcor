@@ -216,95 +216,74 @@ namespace Falcor
         return pTexture->mApiHandle ? pTexture : nullptr;
     }
 
+    template<typename RetType>
+    using CreateViewFuncType = std::function < RetType(const Texture*, const Texture::ViewInfo&, DescriptorHeap::CpuHandle, DescriptorHeap::GpuHandle) >;
+
+    template<typename ViewHandle, typename ViewMapType>
+    ViewHandle createViewCommon(const Texture* pTexture, uint32_t mostDetailedMip, uint32_t mipCount, uint32_t firstArraySlice, uint32_t arraySize, ViewMapType& viewMap, DescriptorHeap* pHeap, CreateViewFuncType<ViewHandle> createFunc)
+    {
+        assert(firstArraySlice < pTexture->getArraySize());
+        assert(mostDetailedMip < pTexture->getMipCount());
+        if (mipCount == Texture::kEntireMipChain)
+        {
+            mipCount = pTexture->getMipCount() - mostDetailedMip;
+        }
+        if (arraySize == Texture::kEntireArraySlice)
+        {
+            arraySize = pTexture->getArraySize() - firstArraySlice;
+        }
+        assert(mipCount + mostDetailedMip <= pTexture->getMipCount());
+        assert(arraySize + firstArraySlice <= pTexture->getArraySize());
+
+        Texture::ViewInfo view{ firstArraySlice, arraySize, mostDetailedMip, mipCount };
+
+        if (viewMap.find(view) == viewMap.end())
+        {
+            uint32_t handleIndex = pHeap->allocateHandle();
+            viewMap[view] = createFunc(pTexture, view, pHeap->getCpuHandle(handleIndex), pHeap->getGpuHandle(handleIndex));
+        }
+
+        return viewMap[view];
+    }
+
     DsvHandle Texture::getDSV(uint32_t mipLevel, uint32_t firstArraySlice, uint32_t arraySize) const
     {
-        // FIXME D3D12 this code is almost identical to getRTV and getSRV
-        assert(mipLevel < mMipLevels);
-        assert(firstArraySlice < mArraySize);
-        if (arraySize == kEntireArraySlice)
+        auto createFunc = [](const Texture* pTexture, const Texture::ViewInfo& viewInfo, DescriptorHeap::CpuHandle cpuHandle, DescriptorHeap::GpuHandle gpuHandle)
         {
-            arraySize = mArraySize - firstArraySlice;
-        }
-        assert(firstArraySlice + arraySize <= mArraySize);
-
-        ViewInfo view{ firstArraySlice, arraySize, mipLevel, 1 };
-
-        if (mDsvs.find(view) == mDsvs.end())
-        {
-            DescriptorHeap::SharedPtr& pHeap = gpDevice->getDsvDescriptorHeap();
-
-            // Create the render-target view
             D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc = {};
-            initializeDsvDesc<D3D12_DEPTH_STENCIL_VIEW_DESC>(this, mipLevel, firstArraySlice, arraySize, dsvDesc);
-            uint32_t dsvIndex = pHeap->allocateHandle();
-            DescriptorHeap::CpuHandle dsv = pHeap->getCpuHandle(dsvIndex);
-            gpDevice->getApiHandle()->CreateDepthStencilView(mApiHandle, &dsvDesc, dsv);
-            mDsvs[view] = dsv;
-        }
+            initializeDsvDesc<D3D12_DEPTH_STENCIL_VIEW_DESC>(pTexture, viewInfo.mostDetailedMip, viewInfo.firstArraySlice, viewInfo.arraySize, dsvDesc);
+            gpDevice->getApiHandle()->CreateDepthStencilView(pTexture->getApiHandle(), &dsvDesc, cpuHandle);
+            return cpuHandle;
+        };
 
-        return mDsvs[view];
+        return createViewCommon<DsvHandle>(this, mipLevel, 1, firstArraySlice, arraySize, mDsvs, gpDevice->getDsvDescriptorHeap().get(), createFunc);
     }
 
     RtvHandle Texture::getRTV(uint32_t mipLevel, uint32_t firstArraySlice, uint32_t arraySize) const
     {
-        assert(mipLevel < mMipLevels);
-        assert(firstArraySlice < mArraySize);
-        if (arraySize == kEntireArraySlice)
+        auto createFunc = [](const Texture* pTexture, const Texture::ViewInfo& viewInfo, DescriptorHeap::CpuHandle cpuHandle , DescriptorHeap::GpuHandle gpuHandle)
         {
-            arraySize = mArraySize - firstArraySlice;
-        }
-        assert(firstArraySlice + arraySize <= mArraySize);
-
-        ViewInfo view{ firstArraySlice, arraySize, mipLevel, 1};
-
-        if (mRtvs.find(view) == mRtvs.end())
-        {
-            DescriptorHeap::SharedPtr& pHeap = gpDevice->getRtvDescriptorHeap();
-
-            // Create the render-target view
             D3D12_RENDER_TARGET_VIEW_DESC rtvDesc = {};
-            initializeRtvDesc<D3D12_RENDER_TARGET_VIEW_DESC>(this, mipLevel, firstArraySlice, arraySize, rtvDesc);
-            uint32_t rtvIndex = pHeap->allocateHandle();
-            DescriptorHeap::CpuHandle rtv = pHeap->getCpuHandle(rtvIndex);
-            gpDevice->getApiHandle()->CreateRenderTargetView(mApiHandle, &rtvDesc, rtv);
-            mRtvs[view] = rtv;
-        }
+            initializeRtvDesc<D3D12_RENDER_TARGET_VIEW_DESC>(pTexture, viewInfo.mostDetailedMip, viewInfo.firstArraySlice, viewInfo.arraySize, rtvDesc);
+            gpDevice->getApiHandle()->CreateRenderTargetView(pTexture->getApiHandle(), &rtvDesc, cpuHandle);
+            return cpuHandle;
+        };
 
-        return mRtvs[view];
+        return createViewCommon<RtvHandle>(this, mipLevel, 1, firstArraySlice, arraySize, mRtvs, gpDevice->getRtvDescriptorHeap().get(), createFunc);
     }
 
 
     SrvHandle Texture::getSRV(uint32_t firstArraySlice, uint32_t arraySize, uint32_t mostDetailedMip, uint32_t mipCount) const
     {
-        assert(firstArraySlice < mArraySize);
-        assert(mostDetailedMip < mMipLevels);
-        if (mipCount == kEntireMipChain)
+        auto createFunc = [](const Texture* pTexture, const Texture::ViewInfo& viewInfo, DescriptorHeap::CpuHandle cpuHandle, DescriptorHeap::GpuHandle gpuHandle)
         {
-            mipCount = mMipLevels - mostDetailedMip;
-        }
-        if (arraySize == kEntireArraySlice)
-        {
-            arraySize = mArraySize - firstArraySlice;
-        }
-        assert(mipCount + mostDetailedMip <= mMipLevels);
-        assert(arraySize + firstArraySlice <= mArraySize);
-
-        ViewInfo view{ firstArraySlice, arraySize, mostDetailedMip, mipCount };
-
-        if (mSrvs.find(view) == mSrvs.end())
-        {
-            DescriptorHeap::SharedPtr& pHeap = gpDevice->getSrvDescriptorHeap();
-
-            // Create the shader-resource view
             D3D12_SHADER_RESOURCE_VIEW_DESC desc;
-            initializeSrvDesc(mFormat, mType, firstArraySlice, arraySize, mostDetailedMip, mipCount, mArraySize > 1, desc);
-            uint32_t srvHandle = pHeap->allocateHandle();
-            DescriptorHeap::CpuHandle srv = pHeap->getCpuHandle(srvHandle);
-            gpDevice->getApiHandle()->CreateShaderResourceView(mApiHandle, &desc, srv);
-            mSrvs[view] = pHeap->getGpuHandle(srvHandle);
-        }
+            initializeSrvDesc(pTexture->getFormat(), pTexture->getType(), viewInfo.firstArraySlice, viewInfo.arraySize, viewInfo.mostDetailedMip, viewInfo.mipCount, pTexture->getArraySize() > 1, desc);
+            gpDevice->getApiHandle()->CreateShaderResourceView(pTexture->getApiHandle(), &desc, cpuHandle);
+            return gpuHandle;
+        };
 
-        return mSrvs[view];
+        return createViewCommon<SrvHandle>(this, mostDetailedMip, mipCount, firstArraySlice, arraySize, mSrvs, gpDevice->getSrvDescriptorHeap().get(), createFunc);
     }
 
     Texture::SharedPtr Texture::create3D(uint32_t width, uint32_t height, uint32_t depth, ResourceFormat format, uint32_t mipLevels, const void* pData, BindFlags bindFlags, bool isSparse)
