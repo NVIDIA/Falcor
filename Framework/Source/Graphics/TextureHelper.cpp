@@ -590,16 +590,16 @@ namespace Falcor
         case D3D10_RESOURCE_DIMENSION::D3D10_RESOURCE_DIMENSION_TEXTURE2D:
             if(ddsData.dx10Header.miscFlag & DdsHeaderDX10::kCubeMapMask)
             {
-                flipData(ddsData, format, ddsData.header.width, ddsData.header.height, 6 * arraySize, mipLevels == Texture::kEntireMipChain ? 1 : mipLevels, true);
+                flipData(ddsData, format, ddsData.header.width, ddsData.header.height, 6 * arraySize, mipLevels == Texture::kMaxPossible ? 1 : mipLevels, true);
                 return Texture::createCube(ddsData.header.width, ddsData.header.height, format, arraySize, mipLevels, ddsData.data.data(), bindFlags);
             }
             else
             {
-                flipData(ddsData, format, ddsData.header.width, ddsData.header.height, arraySize, mipLevels == Texture::kEntireMipChain ? 1 : mipLevels);
+                flipData(ddsData, format, ddsData.header.width, ddsData.header.height, arraySize, mipLevels == Texture::kMaxPossible ? 1 : mipLevels);
                 return Texture::create2D(ddsData.header.width, ddsData.header.height, format, arraySize, mipLevels, ddsData.data.data(), bindFlags);
             }
         case D3D10_RESOURCE_DIMENSION::D3D10_RESOURCE_DIMENSION_TEXTURE3D:
-            flipData(ddsData, format, ddsData.header.width, ddsData.header.height, ddsData.header.depth, mipLevels == Texture::kEntireMipChain ? 1 : mipLevels);
+            flipData(ddsData, format, ddsData.header.width, ddsData.header.height, ddsData.header.depth, mipLevels == Texture::kMaxPossible ? 1 : mipLevels);
             return Texture::create3D(ddsData.header.width, ddsData.header.height, ddsData.header.depth, format, mipLevels, ddsData.data.data(), bindFlags);
         case D3D10_RESOURCE_DIMENSION::D3D10_RESOURCE_DIMENSION_BUFFER:
         case D3D10_RESOURCE_DIMENSION::D3D10_RESOURCE_DIMENSION_UNKNOWN:
@@ -616,7 +616,7 @@ namespace Falcor
         //load the volume or 3D texture
         if(ddsData.header.flags & DdsHeader::kDepthMask)
         {
-            flipData(ddsData, format, ddsData.header.width, ddsData.header.height, ddsData.header.depth, mipLevels == Texture::kEntireMipChain ? 1 : mipLevels);
+            flipData(ddsData, format, ddsData.header.width, ddsData.header.height, ddsData.header.depth, mipLevels == Texture::kMaxPossible ? 1 : mipLevels);
             return Texture::create3D(ddsData.header.width, ddsData.header.height, ddsData.header.depth, format, mipLevels, ddsData.data.data(), bindFlags);
         }
         //load the cubemap texture
@@ -627,7 +627,7 @@ namespace Falcor
         //This is a 2D Texture
         else
         {
-            flipData(ddsData, format, ddsData.header.width, ddsData.header.height, 1, mipLevels == Texture::kEntireMipChain ? 1 : mipLevels);
+            flipData(ddsData, format, ddsData.header.width, ddsData.header.height, 1, mipLevels == Texture::kMaxPossible ? 1 : mipLevels);
             return Texture::create2D(ddsData.header.width, ddsData.header.height, format, 1, mipLevels, ddsData.data.data(), bindFlags);
         }
 
@@ -646,7 +646,7 @@ namespace Falcor
 		uint32_t mipLevels;
 		if (generateMips)
 		{
-			mipLevels = Texture::kEntireMipChain;
+			mipLevels = Texture::kMaxPossible;
 		} 
 		else
 		{
@@ -717,7 +717,7 @@ namespace Falcor
                 break;
             }
 
-            pTex = Texture::create2D(pBitmap->getWidth(), pBitmap->getHeight(), texFormat, 1, generateMipLevels ? Texture::kEntireMipChain : 1, pBitmap->getData(), bindFlags);
+            pTex = Texture::create2D(pBitmap->getWidth(), pBitmap->getHeight(), texFormat, 1, generateMipLevels ? Texture::kMaxPossible : 1, pBitmap->getData(), bindFlags);
             pTex->setSourceFilename(filename);
         }
         return pTex;

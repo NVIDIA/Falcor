@@ -237,7 +237,7 @@ namespace Falcor
         {
             Fbo::Desc fboDesc;
             fboDesc.setDepthStencilTarget(depthFormat).setColorTarget(0, colorFormat);
-            mShadowPass.pFbo = FboHelper::create2D(mapWidth, mapHeight, fboDesc, mCsmData.cascadeCount, Texture::kEntireMipChain);
+            mShadowPass.pFbo = FboHelper::create2D(mapWidth, mapHeight, fboDesc, mCsmData.cascadeCount, Texture::kMaxPossible);
         }
 
         mShadowPass.fboAspectRatio = (float)mapWidth / (float)mapHeight;

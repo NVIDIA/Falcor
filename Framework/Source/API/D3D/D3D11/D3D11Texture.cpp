@@ -115,7 +115,7 @@ namespace Falcor
         desc.CPUAccessFlags = 0;
         desc.Format = getDxgiFormat(format);
         desc.BindFlags |= isDepth ? D3D11_BIND_DEPTH_STENCIL : D3D11_BIND_RENDER_TARGET;
-        desc.MipLevels = (mipLevels == kEntireMipChain) ? 1 : mipLevels;
+        desc.MipLevels = (mipLevels == kMaxPossible) ? 1 : mipLevels;
         desc.MiscFlags = isDepth ? 0 : D3D11_RESOURCE_MISC_GENERATE_MIPS;
         desc.Usage = D3D11_USAGE_DEFAULT;
         desc.Width = width;
@@ -150,7 +150,7 @@ namespace Falcor
         desc.BindFlags = isDepth ? D3D11_BIND_DEPTH_STENCIL : (D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_RENDER_TARGET);
         desc.CPUAccessFlags = 0;
         desc.Format = getDxgiFormat(format);
-        desc.MipLevels = (mipLevels == Texture::kEntireMipChain) ? 1 : mipLevels;
+        desc.MipLevels = (mipLevels == Texture::kMaxPossible) ? 1 : mipLevels;
         desc.MiscFlags = isDepth ? 0 : D3D11_RESOURCE_MISC_GENERATE_MIPS;
         desc.Usage = D3D11_USAGE_DEFAULT;
         desc.Width = width;
@@ -195,7 +195,7 @@ namespace Falcor
         desc.BindFlags |= isDepthStencilFormat(format) ? D3D11_BIND_DEPTH_STENCIL : D3D11_BIND_RENDER_TARGET;
         desc.CPUAccessFlags = 0;
         desc.Format = getDxgiFormat(format);
-        desc.MipLevels = (mipLevels == kEntireMipChain) ? 1 : mipLevels;
+        desc.MipLevels = (mipLevels == kMaxPossible) ? 1 : mipLevels;
         desc.MiscFlags = isDepth ? 0 : D3D11_RESOURCE_MISC_GENERATE_MIPS;
         desc.Usage = D3D11_USAGE_DEFAULT;
         desc.Width = width;

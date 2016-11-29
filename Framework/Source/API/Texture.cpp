@@ -36,7 +36,7 @@ namespace Falcor
         mWidth(width), mHeight(height), mDepth(depth), mMipLevels(mipLevels), mSampleCount(sampleCount), mArraySize(arraySize), mFormat(format), mType(Type), mBindFlags(bindFlags)
     {
         createNullViews();
-        if(mMipLevels == kEntireMipChain)
+        if(mMipLevels == kMaxPossible)
         {
             uint32_t dims = width | height | depth;
             unsigned long bits;

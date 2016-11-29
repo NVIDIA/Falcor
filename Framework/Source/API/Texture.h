@@ -126,57 +126,52 @@ namespace Falcor
 
         /** Value used in create*() methods to signal an entire mip-chain is required
         */
-        static const uint32_t kEntireMipChain = uint32_t(-1);
-
-        /** Value used in create*() methods to signal an entire array-slice is required
-        */
-        // FIXME D3D12 this name is wrong. 
-        static const uint32_t kEntireArraySlice = uint32_t(-1);
+        static const uint32_t kMaxPossible = uint32_t(-1);
 
         /** create a 1D texture
             \param Width The width of the texture.
             \param Format The format of the texture.
             \param ArraySize The array size of the texture.
-            \param mipLevels if equal to kEntireMipChain then an entire mip chain will be generated from mip level 0. If any other value is given then the data for at least that number of miplevels must be provided.
+            \param mipLevels if equal to kMaxPossible then an entire mip chain will be generated from mip level 0. If any other value is given then the data for at least that number of miplevels must be provided.
             \param pInitData If different than nullptr, pointer to a buffer containing data to initialize the texture with.
             \param bindFlags The requested bind flags for the resource
             \return A pointer to a new texture, or nullptr if creation failed
         */
-        static SharedPtr create1D(uint32_t width, ResourceFormat format, uint32_t arraySize = 1, uint32_t mipLevels = kEntireMipChain, const void* pInitData = nullptr, BindFlags bindFlags = BindFlags::ShaderResource);
+        static SharedPtr create1D(uint32_t width, ResourceFormat format, uint32_t arraySize = 1, uint32_t mipLevels = kMaxPossible, const void* pInitData = nullptr, BindFlags bindFlags = BindFlags::ShaderResource);
         /** create a 2D texture
             \param width The width of the texture.
             \param height The height of the texture.
             \param Format The format of the texture.
             \param arraySize The array size of the texture.
-			\param mipLevels if equal to kEntireMipChain then an entire mip chain will be generated from mip level 0. If any other value is given then the data for at least that number of miplevels must be provided.
+			\param mipLevels if equal to kMaxPossible then an entire mip chain will be generated from mip level 0. If any other value is given then the data for at least that number of miplevels must be provided.
             \param pInitData If different than nullptr, pointer to a buffer containing data to initialize the texture with.
             \param bindFlags The requested bind flags for the resource
             \return A pointer to a new texture, or nullptr if creation failed
         */
-        static SharedPtr create2D(uint32_t width, uint32_t height, ResourceFormat format, uint32_t arraySize = 1, uint32_t mipLevels = kEntireMipChain, const void* pInitData = nullptr, BindFlags bindFlags = BindFlags::ShaderResource);
+        static SharedPtr create2D(uint32_t width, uint32_t height, ResourceFormat format, uint32_t arraySize = 1, uint32_t mipLevels = kMaxPossible, const void* pInitData = nullptr, BindFlags bindFlags = BindFlags::ShaderResource);
         /** create a 3D texture
             \param width The width of the texture.
             \param height The height of the texture.
             \param depth The depth of the texture.
             \param format The format of the texture.
-			\param mipLevels if equal to kEntireMipChain then an entire mip chain will be generated from mip level 0. If any other value is given then the data for at least that number of miplevels must be provided.
+			\param mipLevels if equal to kMaxPossible then an entire mip chain will be generated from mip level 0. If any other value is given then the data for at least that number of miplevels must be provided.
             \param pInitData If different than nullptr, pointer to a buffer containing data to initialize the texture with.
             \param bindFlags The requested bind flags for the resource
             \param isSparse If true, the texture is created as a sparse texture (GL_ARB_sparse_texture) without any physical memory allocated. pInitData must be null in this case.
             \return A pointer to a new texture, or nullptr if creation failed
         */
-        static SharedPtr create3D(uint32_t width, uint32_t height, uint32_t depth, ResourceFormat format, uint32_t mipLevels = kEntireMipChain, const void* pInitData = nullptr, BindFlags bindFlags = BindFlags::ShaderResource, bool isSparse=false);
+        static SharedPtr create3D(uint32_t width, uint32_t height, uint32_t depth, ResourceFormat format, uint32_t mipLevels = kMaxPossible, const void* pInitData = nullptr, BindFlags bindFlags = BindFlags::ShaderResource, bool isSparse=false);
         /** create a texture-cube
             \param width The width of the texture.
             \param height The height of the texture.
             \param format The format of the texture.
             \param arraySize The array size of the texture.
-			\param mipLevels if equal to kEntireMipChain then an entire mip chain will be generated from mip level 0. If any other value is given then the data for at least that number of miplevels must be provided.
+			\param mipLevels if equal to kMaxPossible then an entire mip chain will be generated from mip level 0. If any other value is given then the data for at least that number of miplevels must be provided.
 			\param pInitData If different than nullptr, pointer to a buffer containing data to initialize the texture with.
             \param bindFlags The requested bind flags for the resource
             \return A pointer to a new texture, or nullptr if creation failed
         */
-        static SharedPtr createCube(uint32_t width, uint32_t height, ResourceFormat format, uint32_t arraySize = 1, uint32_t mipLevels = kEntireMipChain, const void* pInitData = nullptr, BindFlags bindFlags = BindFlags::ShaderResource);
+        static SharedPtr createCube(uint32_t width, uint32_t height, ResourceFormat format, uint32_t arraySize = 1, uint32_t mipLevels = kMaxPossible, const void* pInitData = nullptr, BindFlags bindFlags = BindFlags::ShaderResource);
         /** create a multi-sampled 2D texture
             \param width The width of the texture.
             \param height The height of the texture.
@@ -253,25 +248,25 @@ namespace Falcor
 
         /** Get a shader-resource view.
             \param[in] firstArraySlice The first array slice of the view
-            \param[in] arraySize The array size. If this is equal to Texture#kEntireArraySlice, will create a view ranging from firstArraySlice to the texture's array size
+            \param[in] arraySize The array size. If this is equal to Texture#kMaxPossible, will create a view ranging from firstArraySlice to the texture's array size
             \param[in] mostDetailedMip The most detailed mip level of the view
-            \param[in] mipCount The number of mip-levels to bind. If this is equal to Texture#kEntireMipChain, will create a view ranging from mostDetailedMip to the texture's mip levels count
+            \param[in] mipCount The number of mip-levels to bind. If this is equal to Texture#kMaxPossible, will create a view ranging from mostDetailedMip to the texture's mip levels count
         */
-        SrvHandle getSRV(uint32_t firstArraySlice = 0, uint32_t arraySize = kEntireArraySlice, uint32_t mostDetailedMip = 0, uint32_t mipCount = kEntireMipChain) const;
+        SrvHandle getSRV(uint32_t firstArraySlice = 0, uint32_t arraySize = kMaxPossible, uint32_t mostDetailedMip = 0, uint32_t mipCount = kMaxPossible) const;
 
         /** Get a render-target view.
         \param[in] mipLevel The requested mip-level
         \param[in] firstArraySlice The first array slice of the view
-        \param[in] arraySize The array size. If this is equal to Texture#kEntireArraySlice, will create a view ranging from firstArraySlice to the texture's array size
+        \param[in] arraySize The array size. If this is equal to Texture#kMaxPossible, will create a view ranging from firstArraySlice to the texture's array size
         */
-        RtvHandle getRTV(uint32_t mipLevel = 0, uint32_t firstArraySlice = 0, uint32_t arraySize = kEntireArraySlice) const;
+        RtvHandle getRTV(uint32_t mipLevel = 0, uint32_t firstArraySlice = 0, uint32_t arraySize = kMaxPossible) const;
 
         /** Get a depth stencil view.
         \param[in] mipLevel The requested mip-level
         \param[in] firstArraySlice The first array slice of the view
-        \param[in] arraySize The array size. If this is equal to Texture#kEntireArraySlice, will create a view ranging from firstArraySlice to the texture's array size
+        \param[in] arraySize The array size. If this is equal to Texture#kMaxPossible, will create a view ranging from firstArraySlice to the texture's array size
         */
-        DsvHandle getDSV(uint32_t mipLevel = 0, uint32_t firstArraySlice = 0, uint32_t arraySize = kEntireArraySlice) const;
+        DsvHandle getDSV(uint32_t mipLevel = 0, uint32_t firstArraySlice = 0, uint32_t arraySize = kMaxPossible) const;
 
         /** Get the bind flags
         */

@@ -110,7 +110,7 @@ namespace Falcor
         desc = {};
         uint32_t arrayMultiplier = (pTexture->getType() == Texture::Type::TextureCube) ? 6 : 1;
 
-        if(arraySize == Texture::kEntireArraySlice)
+        if(arraySize == Texture::kMaxPossible)
         {
             arraySize = pTexture->getArraySize() - firstArraySlice;
         }

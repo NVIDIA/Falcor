@@ -100,7 +100,7 @@ namespace Falcor
             }
         }
 
-        Texture::SharedPtr pTex = Texture::create2D(texW, texH, ResourceFormat::RGBA32Float, 1, Texture::kEntireMipChain, leanData.data());
+        Texture::SharedPtr pTex = Texture::create2D(texW, texH, ResourceFormat::RGBA32Float, 1, Texture::kMaxPossible, leanData.data());
         return pTex;
     }
 

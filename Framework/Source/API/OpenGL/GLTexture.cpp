@@ -292,11 +292,11 @@ namespace Falcor
         auto pResource = SharedPtr(new Texture(width, 1, 1, arraySize, mipLevels, 1, format, Texture::Type::Texture1D));
         if(pResource->mArraySize > 1)
         {
-            pResource->mApiHandle = init2DTexture(GL_TEXTURE_1D_ARRAY, pResource->mWidth, pResource->mArraySize, pResource->mFormat, pResource->mMipLevels, pData, format, mipLevels == kEntireMipChain);
+            pResource->mApiHandle = init2DTexture(GL_TEXTURE_1D_ARRAY, pResource->mWidth, pResource->mArraySize, pResource->mFormat, pResource->mMipLevels, pData, format, mipLevels == kMaxPossible);
         }
         else
         {
-            pResource->mApiHandle = init1DTexture(GL_TEXTURE_1D, pResource->mWidth, pResource->mFormat, pResource->mMipLevels, pData, mipLevels == kEntireMipChain);
+            pResource->mApiHandle = init1DTexture(GL_TEXTURE_1D, pResource->mWidth, pResource->mFormat, pResource->mMipLevels, pData, mipLevels == kMaxPossible);
         }
     
         return pResource;
@@ -308,11 +308,11 @@ namespace Falcor
 
         if(pResource->mArraySize > 1)
         {
-            pResource->mApiHandle = init3DTexture(GL_TEXTURE_2D_ARRAY, pResource->mWidth, pResource->mHeight, pResource->mArraySize, pResource->mFormat, pResource->mMipLevels, pData, mipLevels == kEntireMipChain);
+            pResource->mApiHandle = init3DTexture(GL_TEXTURE_2D_ARRAY, pResource->mWidth, pResource->mHeight, pResource->mArraySize, pResource->mFormat, pResource->mMipLevels, pData, mipLevels == kMaxPossible);
         }
         else
         {
-            pResource->mApiHandle = init2DTexture(GL_TEXTURE_2D, pResource->mWidth, pResource->mHeight, pResource->mFormat, pResource->mMipLevels, pData, format, mipLevels == kEntireMipChain);
+            pResource->mApiHandle = init2DTexture(GL_TEXTURE_2D, pResource->mWidth, pResource->mHeight, pResource->mFormat, pResource->mMipLevels, pData, format, mipLevels == kMaxPossible);
         }
 
         return pResource;
@@ -323,7 +323,7 @@ namespace Falcor
         auto pResource = SharedPtr(new Texture(width, height, depth, 1, mipLevels, 1, format, Texture::Type::Texture3D));
 
 		pResource->mIsSparse = isSparse;
-        pResource->mApiHandle = init3DTexture(GL_TEXTURE_3D, pResource->mWidth, pResource->mHeight, pResource->mDepth, pResource->mFormat, pResource->mMipLevels, pData, mipLevels == kEntireMipChain, isSparse);
+        pResource->mApiHandle = init3DTexture(GL_TEXTURE_3D, pResource->mWidth, pResource->mHeight, pResource->mDepth, pResource->mFormat, pResource->mMipLevels, pData, mipLevels == kMaxPossible, isSparse);
     
         return pResource;
     }
@@ -355,7 +355,7 @@ namespace Falcor
             pResource->mFormat,
             pResource->mMipLevels, 
             pData,
-			mipLevels == kEntireMipChain);
+			mipLevels == kMaxPossible);
 
         return pResource;
     }

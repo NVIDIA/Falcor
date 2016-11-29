@@ -110,12 +110,12 @@ namespace Falcor
             \param[in] name The name of the texture object in the shader
             \param[in] pTexture The texture object to bind
             \param[in] firstArraySlice The first array slice to bind
-            \param[in] arraySize The array size. If this is equal to Texture#kEntireArraySlice, will bind the range [firstArraySlice, pTexture->getArraySize()]
+            \param[in] arraySize The array size. If this is equal to Texture#kMaxPossible, will bind the range [firstArraySlice, pTexture->getArraySize()]
             \param[in] mostDetailedMip The most detailed-mip level
-            \param[in] mipCount The number of mip-levels to bind. If this is equal to Texture#kEntireMipChain, will bind the range [mostDetailedMip, pTexture->getMipCount()]
+            \param[in] mipCount The number of mip-levels to bind. If this is equal to Texture#kMaxPossible, will bind the range [mostDetailedMip, pTexture->getMipCount()]
             \return false if the texture was not found in the program, otherwise true
         */
-        bool setTexture(const std::string& name, const Texture::SharedConstPtr& pTexture, uint32_t firstArraySlice = 0, uint32_t arraySize = Texture::kEntireArraySlice, uint32_t mostDetailedMip = 0, uint32_t mipCount = Texture::kEntireMipChain);
+        bool setTexture(const std::string& name, const Texture::SharedConstPtr& pTexture, uint32_t firstArraySlice = 0, uint32_t arraySize = Texture::kMaxPossible, uint32_t mostDetailedMip = 0, uint32_t mipCount = Texture::kMaxPossible);
 
         /** Bind an array of texture to the program in the global namespace.
         This can be used to bind a texture declared an array or a number of different variables which are known to be continues in the register space (such as for structure fields)
@@ -138,12 +138,12 @@ namespace Falcor
         If you are using bindless textures, than this is not the right call for you. You should use the ConstantBuffer::setTexture() method instead.
         \param[in] index The index of the texture object in the shader
         \param[in] firstArraySlice The first array slice to bind
-        \param[in] arraySize The array size. If this is equal to Texture#kEntireArraySlice, will bind the range [firstArraySlice, pTexture->getArraySize()]
+        \param[in] arraySize The array size. If this is equal to Texture#kMaxPossible, will bind the range [firstArraySlice, pTexture->getArraySize()]
         \param[in] mostDetailedMip The most detailed-mip level
-        \param[in] mipCount The number of mip-levels to bind. If this is equal to Texture#kEntireMipChain, will bind the range [mostDetailedMip, pTexture->getMipCount()]
+        \param[in] mipCount The number of mip-levels to bind. If this is equal to Texture#kMaxPossible, will bind the range [mostDetailedMip, pTexture->getMipCount()]
         \return false if the texture was not found in the program, otherwise true
         */
-        bool setTexture(uint32_t index, const Texture::SharedConstPtr& pTexture, uint32_t firstArraySlice = 0, uint32_t arraySize = Texture::kEntireArraySlice, uint32_t mostDetailedMip = 0, uint32_t mipCount = Texture::kEntireMipChain);
+        bool setTexture(uint32_t index, const Texture::SharedConstPtr& pTexture, uint32_t firstArraySlice = 0, uint32_t arraySize = Texture::kMaxPossible, uint32_t mostDetailedMip = 0, uint32_t mipCount = Texture::kMaxPossible);
 
         /** Bind an array of texture to the program in the global namespace.
         This can be used to bind a texture declared an array or a number of different variables which are known to be continues in the register space (such as for structure fields)

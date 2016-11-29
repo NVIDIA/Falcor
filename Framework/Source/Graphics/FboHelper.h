@@ -50,7 +50,7 @@ namespace Falcor
         \param[in] arraySize The number of array slices in the texture.
         \param[in] renderTargetCount Optional. Specify how many color textures to create (to be used as MRT).
         \param[in] sampleCount Optional. Specify number of samples in the buffers.
-        \param[in] mipLevels Optional. The number of mip levels to create. You can use Fbo#kEntireMipChain to create the entire chain
+        \param[in] mipLevels Optional. The number of mip levels to create. You can use Texture#kMaxPossible to create the entire chain
         */
         Fbo::SharedPtr create2D(uint32_t width, uint32_t height, const Fbo::Desc& fboDesc, uint32_t arraySize = 1, uint32_t mipLevels = 1);
 
@@ -60,7 +60,7 @@ namespace Falcor
         \param[in] formats Array containing the formats of the render-targets (to be used as MRT). The array size should match the value passed in renderTargetCount.
         \param[in] arraySize The number of cubes in the texture.
         \param[in] renderTargetCount Optional. Specify how many color textures to create (to be used as MRT).
-        \param[in] mipLevels Optional. The number of mip levels to create. You can use Fbo#kEntireMipChain to create the entire chain
+        \param[in] mipLevels Optional. The number of mip levels to create. You can use Texture#kMaxPossible to create the entire chain
         */
         Fbo::SharedPtr createCubemap(uint32_t width, uint32_t height, const Fbo::Desc& fboDesc, uint32_t arraySize = 1, uint32_t mipLevels = 1);
     }

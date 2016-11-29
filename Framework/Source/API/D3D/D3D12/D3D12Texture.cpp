@@ -191,7 +191,7 @@ namespace Falcor
 
     Texture::BindFlags updateBindFlags(Texture::BindFlags flags, bool hasInitData, uint32_t mipLevels)
     {
-        if ((mipLevels != Texture::kEntireMipChain) || (hasInitData == false))
+        if ((mipLevels != Texture::kMaxPossible) || (hasInitData == false))
         {
             return flags;
         }
@@ -204,7 +204,7 @@ namespace Falcor
     {
         bindFlags = updateBindFlags(bindFlags, pData != nullptr, mipLevels);
         Texture::SharedPtr pTexture = SharedPtr(new Texture(width, 1, 1, 1, mipLevels, arraySize, format, Type::Texture1D, bindFlags));
-        createTextureCommon(pTexture.get(), pTexture->mApiHandle, pData, D3D12_RESOURCE_DIMENSION_TEXTURE1D, (mipLevels == kEntireMipChain), bindFlags);
+        createTextureCommon(pTexture.get(), pTexture->mApiHandle, pData, D3D12_RESOURCE_DIMENSION_TEXTURE1D, (mipLevels == kMaxPossible), bindFlags);
         return pTexture->mApiHandle ? pTexture : nullptr;
     }
     
@@ -212,7 +212,7 @@ namespace Falcor
     {
         bindFlags = updateBindFlags(bindFlags, pData != nullptr, mipLevels);
         Texture::SharedPtr pTexture = SharedPtr(new Texture(width, height, 1, 1, mipLevels, arraySize, format, Type::Texture2D, bindFlags));
-        createTextureCommon(pTexture.get(), pTexture->mApiHandle, pData, D3D12_RESOURCE_DIMENSION_TEXTURE2D, (mipLevels == kEntireMipChain), bindFlags);
+        createTextureCommon(pTexture.get(), pTexture->mApiHandle, pData, D3D12_RESOURCE_DIMENSION_TEXTURE2D, (mipLevels == kMaxPossible), bindFlags);
         return pTexture->mApiHandle ? pTexture : nullptr;
     }
 
@@ -224,11 +224,11 @@ namespace Falcor
     {
         assert(firstArraySlice < pTexture->getArraySize());
         assert(mostDetailedMip < pTexture->getMipCount());
-        if (mipCount == Texture::kEntireMipChain)
+        if (mipCount == Texture::kMaxPossible)
         {
             mipCount = pTexture->getMipCount() - mostDetailedMip;
         }
-        if (arraySize == Texture::kEntireArraySlice)
+        if (arraySize == Texture::kMaxPossible)
         {
             arraySize = pTexture->getArraySize() - firstArraySlice;
         }
@@ -290,7 +290,7 @@ namespace Falcor
     {
         bindFlags = updateBindFlags(bindFlags, pData != nullptr, mipLevels);
         Texture::SharedPtr pTexture = SharedPtr(new Texture(width, height, depth, 1, mipLevels, 1, format, Type::Texture3D, bindFlags));
-        createTextureCommon(pTexture.get(), pTexture->mApiHandle, pData, D3D12_RESOURCE_DIMENSION_TEXTURE3D, (mipLevels == kEntireMipChain), bindFlags);
+        createTextureCommon(pTexture.get(), pTexture->mApiHandle, pData, D3D12_RESOURCE_DIMENSION_TEXTURE3D, (mipLevels == kMaxPossible), bindFlags);
         return pTexture->mApiHandle ? pTexture : nullptr;
         return nullptr;
     }
@@ -300,7 +300,7 @@ namespace Falcor
     {
         bindFlags = updateBindFlags(bindFlags, pData != nullptr, mipLevels);
         Texture::SharedPtr pTexture = SharedPtr(new Texture(width, height, 1, 1, mipLevels, arraySize, format, Type::TextureCube, bindFlags));
-        createTextureCommon(pTexture.get(), pTexture->mApiHandle, pData, D3D12_RESOURCE_DIMENSION_TEXTURE2D, (mipLevels == kEntireMipChain), bindFlags);
+        createTextureCommon(pTexture.get(), pTexture->mApiHandle, pData, D3D12_RESOURCE_DIMENSION_TEXTURE2D, (mipLevels == kMaxPossible), bindFlags);
         return pTexture->mApiHandle ? pTexture : nullptr;
     }
 

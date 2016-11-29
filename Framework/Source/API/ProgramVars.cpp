@@ -247,12 +247,12 @@ namespace Falcor
             if(pTexture)
             {
                 assert(firstArraySlice < pTexture->getArraySize());
-                if (arraySize == Texture::kEntireArraySlice)
+                if (arraySize == Texture::kMaxPossible)
                 {
                     arraySize = pTexture->getArraySize() - firstArraySlice;
                 }
                 assert(mostDetailedMip < pTexture->getMipCount());
-                if (mipCount == Texture::kEntireMipChain)
+                if (mipCount == Texture::kMaxPossible)
                 {
                     mipCount = pTexture->getMipCount() - mostDetailedMip;
                 }
