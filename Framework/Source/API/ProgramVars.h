@@ -117,6 +117,26 @@ namespace Falcor
         */
         bool setTexture(const std::string& name, const Texture::SharedConstPtr& pTexture, uint32_t firstArraySlice = 0, uint32_t arraySize = Texture::kMaxPossible, uint32_t mostDetailedMip = 0, uint32_t mipCount = Texture::kMaxPossible);
 
+        /** Bind a texture as a UAV
+            \param[in] index The index of the UAV object in the shader
+            \param[in] pTexture The texture object to bind
+            \param[in] mipLevel The requested mip-level
+            \param[in] firstArraySlice The first array slice to bind
+            \param[in] arraySize The array size. If this is equal to Texture#kMaxPossible, will bind the range [firstArraySlice, pTexture->getArraySize()]
+            \return false if the UAV was not found in the program, otherwise true
+        */
+        bool setUav(uint32_t index, const Texture::SharedConstPtr& pTexture, uint32_t mipLevel = 0, uint32_t firstArraySlice = 0, uint32_t arraySize = Texture::kMaxPossible);
+
+        /** Bind a texture as a UAV
+            \param[in] name The name of the UAV object in the shader
+            \param[in] pTexture The texture object to bind
+            \param[in] mipLevel The requested mip-level
+            \param[in] firstArraySlice The first array slice to bind
+            \param[in] arraySize The array size. If this is equal to Texture#kMaxPossible, will bind the range [firstArraySlice, pTexture->getArraySize()]
+            \return false if the UAV was not found in the program, otherwise true
+        */
+        bool setUav(const std::string& name, const Texture::SharedConstPtr& pTexture, uint32_t mipLevel = 0, uint32_t firstArraySlice = 0, uint32_t arraySize = Texture::kMaxPossible);
+
         /** Bind an array of texture to the program in the global namespace.
         This can be used to bind a texture declared an array or a number of different variables which are known to be continues in the register space (such as for structure fields)
         If you are using bindless textures, than this is not the right call for you. You should use the ConstantBuffer::setTexture() method instead.

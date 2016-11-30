@@ -80,7 +80,7 @@ namespace Falcor
             // Only create the buffer if needed
             bufferMap[regIndex].pResource = createBuffers ? BufferType::create(buf.second) : nullptr;
             bufferMap[regIndex].rootSigOffset = findRootSignatureOffset<RootSignature::DescType::CBV>(pRootSig, regIndex, regSpace);
-            if(bufferMap[regIndex].rootSigOffset == -1)
+            if (bufferMap[regIndex].rootSigOffset == -1)
             {
                 logError("Can't find a root-signature information matching buffer '" + pReflector->getName() + " when creating ProgramVars");
                 return false;
@@ -89,7 +89,7 @@ namespace Falcor
         }
         return true;
     }
-    
+
     ProgramVars::ProgramVars(const ProgramReflection::SharedConstPtr& pReflector, bool createBuffers, const RootSignature::SharedConstPtr& pRootSig) : mpReflector(pReflector)
     {
         // Initialize the CB and SSBO maps. We always do it, to mark which slots are used in the shader.
@@ -130,7 +130,7 @@ namespace Falcor
     typename BufferClass::SharedPtr getBufferCommon(uint32_t index, const ProgramVars::ResourceDataMap<typename BufferClass::SharedPtr>& bufferMap)
     {
         auto& it = bufferMap.find(index);
-        if(it == bufferMap.end())
+        if (it == bufferMap.end())
         {
             return nullptr;
         }
@@ -142,7 +142,7 @@ namespace Falcor
     {
         uint32_t bindLocation = pReflector->getBufferBinding(name);
 
-        if(bindLocation == ProgramReflection::kInvalidLocation)
+        if (bindLocation == ProgramReflection::kInvalidLocation)
         {
             Logger::log(Logger::Level::Error, "Can't find buffer named \"" + name + "\"");
             return nullptr;
@@ -150,7 +150,7 @@ namespace Falcor
 
         auto& pDesc = pReflector->getBufferDesc(name, bufferType);
 
-        if(pDesc->getType() != bufferType)
+        if (pDesc->getType() != bufferType)
         {
             Logger::log(Logger::Level::Error, "Buffer \"" + name + "\" is a " + to_string(pDesc->getType()) + " buffer, while requesting for " + to_string(bufferType) + " buffer");
             return nullptr;
@@ -183,7 +183,7 @@ namespace Falcor
     bool ProgramVars::attachConstantBuffer(uint32_t index, const ConstantBuffer::SharedPtr& pCB)
     {
         // Check that the index is valid
-        if(mConstantBuffers.find(index) == mConstantBuffers.end())
+        if (mConstantBuffers.find(index) == mConstantBuffers.end())
         {
             Logger::log(Logger::Level::Warning, "No constant buffer was found at index " + std::to_string(index) + ". Ignoring attachConstantBuffer() call.");
             return false;
@@ -191,7 +191,7 @@ namespace Falcor
 
         // Just need to make sure the buffer is large enough
         const auto& desc = mpReflector->getBufferDesc(index, ProgramReflection::BufferReflection::Type::Constant);
-        if(desc->getRequiredSize() > pCB->getBuffer()->getSize())
+        if (desc->getRequiredSize() > pCB->getBuffer()->getSize())
         {
             Logger::log(Logger::Level::Error, "Can't attach the constant-buffer. Size mismatch.");
             return false;
@@ -205,13 +205,30 @@ namespace Falcor
     {
         // Find the buffer
         uint32_t loc = mpReflector->getBufferBinding(name);
-        if(loc == ProgramReflection::kInvalidLocation)
+        if (loc == ProgramReflection::kInvalidLocation)
         {
             Logger::log(Logger::Level::Warning, "Constant buffer \"" + name + "\" was not found. Ignoring attachConstantBuffer() call.");
             return false;
         }
 
         return attachConstantBuffer(loc, pCB);
+    }
+
+    bool verifyResourceDesc(const ProgramReflection::Resource* pDesc, ProgramReflection::Resource::ResourceType type, const std::string& varName, const std::string& typeName, const std::string& funcName)
+    {
+        if (pDesc == nullptr)
+        {
+            logWarning(typeName + " \"" + varName + "\" was not found. Ignoring " + funcName + " call.");
+            return false;
+        }
+
+        if (pDesc->type != type)
+        {
+            logWarning("ProgramVars::" + funcName + " was called, but variable \"" + varName + "\" is not a " + typeName + ". Ignoring call.");
+            return false;
+        }
+
+        return true;
     }
 
     bool ProgramVars::setSampler(uint32_t index, const Sampler::SharedConstPtr& pSampler)
@@ -223,28 +240,29 @@ namespace Falcor
     bool ProgramVars::setSampler(const std::string& name, const Sampler::SharedConstPtr& pSampler)
     {
         const ProgramReflection::Resource* pDesc = mpReflector->getResourceDesc(name);
-        if (pDesc == nullptr)
+        if (verifyResourceDesc(pDesc, ProgramReflection::Resource::ResourceType::Sampler, name, "Sampler", "setSampler") == false)
         {
-            Logger::log(Logger::Level::Warning, "Texture \"" + name + "\" was not found. Ignoring setSampler() call.");
-            return false;
-        }
-
-        if (pDesc->type != ProgramReflection::Resource::ResourceType::Sampler)
-        {
-            Logger::log(Logger::Level::Warning, "ProgramVars::setSampler() was called, but variable \"" + name + "\" is not a sampler. Ignoring call.");
             return false;
         }
 
         return setSampler(pDesc->regIndex, pSampler);
     }
 
-    bool ProgramVars::setTexture(uint32_t index, const Texture::SharedConstPtr& pTexture, uint32_t firstArraySlice, uint32_t arraySize, uint32_t mostDetailedMip, uint32_t mipCount)
+    bool setUavSrvCommon(const Texture::SharedConstPtr& pTexture,
+        std::map<uint32_t, ProgramVars::ResourceData<Texture::SharedConstPtr>>& resMap,
+        uint32_t index,
+        uint32_t firstArraySlice,
+        uint32_t arraySize,
+        uint32_t mostDetailedMip,
+        uint32_t mipCount,
+        const std::string& typeName)
     {
-        if(mAssignedSrvs.find(index) != mAssignedSrvs.end())
+        if (resMap.find(index) != resMap.end())
         {
-            mAssignedSrvs[index].pResource = pTexture;
-            
-            if(pTexture)
+            auto& resData = resMap[index];
+            resData.pResource = pTexture;
+
+            if (pTexture)
             {
                 assert(firstArraySlice < pTexture->getArraySize());
                 if (arraySize == Texture::kMaxPossible)
@@ -259,36 +277,69 @@ namespace Falcor
                 assert(mostDetailedMip + mipCount <= pTexture->getMipCount());
                 assert(firstArraySlice + arraySize <= pTexture->getArraySize());
 
-                mAssignedSrvs[index].arraySize = arraySize;
-                mAssignedSrvs[index].firstArraySlice = firstArraySlice;
-                mAssignedSrvs[index].mipCount = mipCount;
-                mAssignedSrvs[index].mostDetailedMip = mostDetailedMip;
+                resData.arraySize = arraySize;
+                resData.firstArraySlice = firstArraySlice;
+                resData.mipCount = mipCount;
+                resData.mostDetailedMip = mostDetailedMip;
             }
             return true;
         }
         else
         {
-            logWarning("Can't find texture with index " + std::to_string(index) + ". Ignoring call to ProgramVars::setTexture()");
+            logWarning("Can't find " + typeName + " with index " + std::to_string(index) + ". Ignoring call to ProgramVars::set" + typeName + "()");
             return false;
         }
+    }
+
+    bool ProgramVars::setTexture(uint32_t index, const Texture::SharedConstPtr& pTexture, uint32_t firstArraySlice, uint32_t arraySize, uint32_t mostDetailedMip, uint32_t mipCount)
+    {
+        return setUavSrvCommon(pTexture, mAssignedSrvs, index, firstArraySlice, arraySize, mostDetailedMip, mipCount, "Texture");
     }
 
     bool ProgramVars::setTexture(const std::string& name, const Texture::SharedConstPtr& pTexture, uint32_t firstArraySlice, uint32_t arraySize, uint32_t mostDetailedMip, uint32_t mipCount)
     {
         const ProgramReflection::Resource* pDesc = mpReflector->getResourceDesc(name);
-        if (pDesc == nullptr)
+        if (verifyResourceDesc(pDesc, ProgramReflection::Resource::ResourceType::Texture, name, "Texture", "setTexture") == false)
         {
-            Logger::log(Logger::Level::Warning, "Texture \"" + name + "\" was not found. Ignoring setTexture() call.");
-            return false;
-        }
-
-        if (pDesc->type != ProgramReflection::Resource::ResourceType::Texture)
-        {
-            Logger::log(Logger::Level::Warning, "ProgramVars::setTexture() was called, but variable \"" + name + "\" is not a texture. Ignoring call.");
             return false;
         }
 
         return setTexture(pDesc->regIndex, pTexture, firstArraySlice, arraySize, mostDetailedMip, mipCount);
+    }
+
+    bool ProgramVars::setUav(uint32_t index, const Texture::SharedConstPtr& pTexture, uint32_t mipLevel, uint32_t firstArraySlice, uint32_t arraySize)
+    {
+        return setUavSrvCommon(pTexture, mAssignedUavs, index, firstArraySlice, arraySize, mipLevel, 1, "UAV");
+    }
+
+    bool ProgramVars::setUav(const std::string& name, const Texture::SharedConstPtr& pTexture, uint32_t mipLevel, uint32_t firstArraySlice, uint32_t arraySize)
+    {
+        const ProgramReflection::Resource* pDesc = mpReflector->getResourceDesc(name);
+
+        if (verifyResourceDesc(pDesc, ProgramReflection::Resource::ResourceType::UAV, name, "UAV", "setUav") == false)
+        {
+            return false;
+        }
+        return setUav(pDesc->regIndex, pTexture, mipLevel, firstArraySlice, arraySize);
+    }
+
+    void bindUavSrvCommon(RenderContext* pContext, const std::map<uint32_t, ProgramVars::ResourceData<Texture::SharedConstPtr>>& resMap, D3D12_RESOURCE_STATES state)
+    {
+        ID3D12GraphicsCommandList* pList = pContext->getCommandListApiHandle();
+        for (auto& resIt : resMap)
+        {
+            const auto& resDesc = resIt.second;
+            uint32_t rootOffset = resDesc.rootSigOffset;
+            const Texture* pTex = resDesc.pResource.get();
+            if (pTex)
+            {
+                // FIXME D3D12: Handle null textures (should bind a small black texture)
+                SrvHandle handle;
+                handle = pTex->getSRV(resDesc.firstArraySlice, resDesc.arraySize, resDesc.mostDetailedMip, resDesc.mipCount);
+                pContext->resourceBarrier(resDesc.pResource.get(), state);
+                pList->SetGraphicsRootDescriptorTable(rootOffset, handle);
+            }
+        }
     }
 
     void ProgramVars::setIntoRenderContext(RenderContext* pContext) const
@@ -306,21 +357,9 @@ namespace Falcor
             pList->SetGraphicsRootConstantBufferView(rootOffset, pCB->getBuffer()->getGpuAddress());
         }
 
-        // Bind the SRVs
-        for (auto& resIt : mAssignedSrvs)
-        {
-            const auto& resDesc = resIt.second;
-            uint32_t rootOffset = resDesc.rootSigOffset;
-            const Texture* pTex = resDesc.pResource.get();
-            if(pTex)
-            {
-                // FIXME D3D12: Handle null textures (should bind a small black texture)
-                SrvHandle handle;
-                handle = pTex->getSRV(resDesc.firstArraySlice, resDesc.arraySize, resDesc.mostDetailedMip, resDesc.mipCount);
-                pContext->resourceBarrier(resDesc.pResource.get(), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
-                pList->SetGraphicsRootDescriptorTable(rootOffset, handle);
-            }
-        }
+        // Bind the SRVs and UAVs
+        bindUavSrvCommon(pContext, mAssignedSrvs, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+        bindUavSrvCommon(pContext, mAssignedUavs, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
 
         // Bind the samplers
         for (auto& samplerIt : mAssignedSamplers)

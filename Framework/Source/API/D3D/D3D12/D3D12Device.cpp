@@ -299,7 +299,7 @@ namespace Falcor
         mpSamplerHeap = DescriptorHeap::create(DescriptorHeap::Type::Sampler, 2048);
         mpRtvHeap = DescriptorHeap::create(DescriptorHeap::Type::RenderTargetView, 1024, false);
         mpDsvHeap = DescriptorHeap::create(DescriptorHeap::Type::DepthStencilView, 1024, false);
-        mpUavHeap = DescriptorHeap::create(DescriptorHeap::Type::UnorderedAccessView, 16*1024, false);
+        mpUavHeap = mpSrvHeap;
 
 		// Create the swap-chain
         mpRenderContext = RenderContext::create(kSwapChainBuffers);

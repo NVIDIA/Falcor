@@ -471,6 +471,8 @@ namespace Falcor
             return ProgramReflection::Resource::ResourceType::Texture;
         case D3D_SIT_SAMPLER:
             return ProgramReflection::Resource::ResourceType::Sampler;
+        case D3D_SIT_UAV_RWTYPED:
+            return ProgramReflection::Resource::ResourceType::UAV;
         default:
             should_not_get_here();
             return ProgramReflection::Resource::ResourceType::Unknown;
