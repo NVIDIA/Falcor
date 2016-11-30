@@ -62,3 +62,17 @@ To search for a data file, call `findFileInDataDirectories()`.
 Deployment
 ----------
 The best practice is to create a directory called "Data/" next to your **project** file and place all your data files there (shaders/models).  If that directory exists, Falcor will copy it to the output directory, making the output directory self-contained (you can zip only the output directory and it should work).  If not, you will have to copy the data files yourself.
+
+Citation
+--------
+If you use Falcor in a research project leading to a publication, please cite the project.
+The BibTex entry is
+
+@Misc{Benty16,
+   author =      {Nir Benty},
+   title =       {The {Falcor} Rendering Framework},
+   year =        {2016},
+   month =       {08},
+   url =         {https://github.com/NVIDIA/Falcor},
+   note=         {\url{https://github.com/NVIDIA/Falcor}}
+}
