@@ -55,10 +55,9 @@ namespace Falcor
     bool ProgramReflection::init(const ProgramVersion* pProgVer, std::string& log)
     {
         bool b = true;
-        b = b && reflectBuffers(pProgVer, log);
+        b = b && reflectResources(pProgVer, log);
         b = b && reflectVertexAttributes(pProgVer, log);
         b = b && reflectFragmentOutputs(pProgVer, log);
-        b = b && reflectResources(pProgVer, log);
         return b;
     }
 

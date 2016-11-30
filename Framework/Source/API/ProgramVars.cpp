@@ -95,7 +95,7 @@ namespace Falcor
         // Initialize the CB and SSBO maps. We always do it, to mark which slots are used in the shader.
         mpRootSignature = pRootSig ? pRootSig : RootSignature::create(pReflector.get());
         initializeBuffersMap<ConstantBuffer, RootSignature::DescType::CBV>(mConstantBuffers, createBuffers, mpReflector->getBufferMap(ProgramReflection::BufferReflection::Type::Constant), mpRootSignature.get());
-        initializeBuffersMap<ShaderStorageBuffer, RootSignature::DescType::UAV>(mSSBO, createBuffers, mpReflector->getBufferMap(ProgramReflection::BufferReflection::Type::UnorderedAccess), mpRootSignature.get());
+        initializeBuffersMap<ShaderStorageBuffer, RootSignature::DescType::UAV>(mStructuredBuffers, createBuffers, mpReflector->getBufferMap(ProgramReflection::BufferReflection::Type::Structured), mpRootSignature.get());
 
         // Initialize the textures and samplers map
         for (const auto& res : pReflector->getResourceMap())
@@ -107,11 +107,11 @@ namespace Falcor
                 mAssignedSamplers[desc.regIndex].pResource = nullptr;
                 mAssignedSamplers[desc.regIndex].rootSigOffset = findRootSignatureOffset<RootSignature::DescType::Sampler>(mpRootSignature.get(), desc.regIndex, desc.registerSpace);
                 break;
-            case ProgramReflection::Resource::ResourceType::Texture:
+            case ProgramReflection::Resource::ResourceType::TextureSrv:
                 mAssignedSrvs[desc.regIndex].pResource = nullptr;
                 mAssignedSrvs[desc.regIndex].rootSigOffset = findRootSignatureOffset<RootSignature::DescType::SRV>(mpRootSignature.get(), desc.regIndex, desc.registerSpace);
                 break;
-            case ProgramReflection::Resource::ResourceType::UAV:
+            case ProgramReflection::Resource::ResourceType::TextureUav:
                 mAssignedUavs[desc.regIndex].pResource = nullptr;
                 mAssignedUavs[desc.regIndex].rootSigOffset = findRootSignatureOffset<RootSignature::DescType::UAV>(mpRootSignature.get(), desc.regIndex, desc.registerSpace);
                 break;
@@ -170,14 +170,14 @@ namespace Falcor
         return getBufferCommon<ConstantBuffer>(index, mConstantBuffers);
     }
 
-    ShaderStorageBuffer::SharedPtr ProgramVars::getShaderStorageBuffer(const std::string& name) const
+    ShaderStorageBuffer::SharedPtr ProgramVars::getStructuredBuffer(const std::string& name) const
     {
-        return getBufferCommon<ShaderStorageBuffer, ProgramReflection::BufferReflection::Type::UnorderedAccess>(name, mpReflector.get(), mSSBO);
+        return getBufferCommon<ShaderStorageBuffer, ProgramReflection::BufferReflection::Type::Structured>(name, mpReflector.get(), mStructuredBuffers);
     }
 
-    ShaderStorageBuffer::SharedPtr ProgramVars::getShaderStorageBuffer(uint32_t index) const
+    ShaderStorageBuffer::SharedPtr ProgramVars::getStructuredBuffer(uint32_t index) const
     {
-        return getBufferCommon<ShaderStorageBuffer>(index, mSSBO);
+        return getBufferCommon<ShaderStorageBuffer>(index, mStructuredBuffers);
     }
 
     bool ProgramVars::attachConstantBuffer(uint32_t index, const ConstantBuffer::SharedPtr& pCB)
@@ -299,7 +299,7 @@ namespace Falcor
     bool ProgramVars::setTexture(const std::string& name, const Texture::SharedConstPtr& pTexture, uint32_t firstArraySlice, uint32_t arraySize, uint32_t mostDetailedMip, uint32_t mipCount)
     {
         const ProgramReflection::Resource* pDesc = mpReflector->getResourceDesc(name);
-        if (verifyResourceDesc(pDesc, ProgramReflection::Resource::ResourceType::Texture, name, "Texture", "setTexture") == false)
+        if (verifyResourceDesc(pDesc, ProgramReflection::Resource::ResourceType::TextureSrv, name, "Texture", "setTexture") == false)
         {
             return false;
         }
@@ -316,7 +316,7 @@ namespace Falcor
     {
         const ProgramReflection::Resource* pDesc = mpReflector->getResourceDesc(name);
 
-        if (verifyResourceDesc(pDesc, ProgramReflection::Resource::ResourceType::UAV, name, "UAV", "setUav") == false)
+        if (verifyResourceDesc(pDesc, ProgramReflection::Resource::ResourceType::TextureUav, name, "UAV", "setUav") == false)
         {
             return false;
         }

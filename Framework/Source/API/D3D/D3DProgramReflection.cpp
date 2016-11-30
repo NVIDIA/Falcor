@@ -326,67 +326,46 @@ namespace Falcor
         return match;
     }
 
-    bool ProgramReflection::reflectBuffers(const ProgramVersion* pProgVer, std::string& log)
+    bool reflectBuffer(ShaderReflectionHandle pReflection, const char* bufName, ProgramReflection::BufferData& bufferDesc, uint32_t shaderIndex, std::string& log)
     {
-        for (uint32_t shader = 0; shader < (uint32_t)ShaderType::Count; shader++)
+        D3D_SHADER_BUFFER_DESC d3dBufDesc;
+        ID3DShaderReflectionConstantBuffer* pBuffer = pReflection->GetConstantBufferByName(bufName);
+        d3d_call(pBuffer->GetDesc(&d3dBufDesc));
+
+        D3D_SHADER_INPUT_BIND_DESC bindDesc;
+        d3d_call(pReflection->GetResourceBindingDescByName(d3dBufDesc.Name, &bindDesc));
+        assert(bindDesc.BindCount == 1);
+        ProgramReflection::VariableMap varMap;
+        initializeBufferVariables(pBuffer, d3dBufDesc, varMap);
+
+        // If the buffer already exists in the program, make sure the definitions match
+        const auto& prevDef = bufferDesc.nameMap.find(d3dBufDesc.Name);
+        if (prevDef != bufferDesc.nameMap.end())
         {
-            ShaderReflectionHandle pReflection = pProgVer->getShader((ShaderType)shader) ? pProgVer->getShader(ShaderType(shader))->getReflectionInterface() : nullptr;
-            if (pReflection)
+            if (bindDesc.BindPoint != prevDef->second)
             {
-                // Find all the buffers
-                D3D_SHADER_DESC shaderDesc;
-                d3d_call(pReflection->GetDesc(&shaderDesc));
-
-                // CBs doesn't have to be continuous, we loop until we find all available buffers
-                for (uint32_t found = 0, cbIndex = 0; found < shaderDesc.ConstantBuffers; cbIndex++)
-                {
-                    D3D_SHADER_BUFFER_DESC d3dBufDesc;
-                    ID3DShaderReflectionConstantBuffer* pBuffer = pReflection->GetConstantBufferByIndex(cbIndex);
-                    d3d_call(pBuffer->GetDesc(&d3dBufDesc));
-
-                    if ((d3dBufDesc.Type == D3D_CT_TBUFFER) || (d3dBufDesc.Type == D3D_CT_CBUFFER))
-                    {
-                        D3D_SHADER_INPUT_BIND_DESC bindDesc;
-                        d3d_call(pReflection->GetResourceBindingDescByName(d3dBufDesc.Name, &bindDesc));
-                        assert(bindDesc.BindCount == 1);
-                        assert(d3dBufDesc.Type == D3D_CT_CBUFFER);  // Not sure how to handle texture buffers
-                        BufferReflection::Type bufferType = (d3dBufDesc.Type == D3D_CT_CBUFFER) ? BufferReflection::Type::Constant : BufferReflection::Type::UnorderedAccess;
-                        ProgramReflection::VariableMap varMap;
-                        initializeBufferVariables(pBuffer, d3dBufDesc, varMap);
-
-                        // If the buffer already exists in the program, make sure the definitions match
-                        BufferData& bufferDesc = mBuffers[(uint32_t)bufferType];
-                        const auto& prevDef = bufferDesc.nameMap.find(d3dBufDesc.Name);
-                        if (prevDef != bufferDesc.nameMap.end())
-                        {
-                            if (bindDesc.BindPoint != prevDef->second)
-                            {
-                                log += "Constant buffer '" + std::string(d3dBufDesc.Name) + "' has different bind locations between different shader stages. Falcor do not support that. Use explicit bind locations to avoid this error";
-                                return false;
-                            }
-                            ProgramReflection::BufferReflection* pPrevBuffer = bufferDesc.descMap[bindDesc.BindPoint].get();
-                            std::string bufLog;
-                            if (validateBufferDeclaration(pPrevBuffer, varMap, bufLog) == false)
-                            {
-                                log += "Constant buffer '" + std::string(d3dBufDesc.Name) + "' has different definitions between different shader stages. " + bufLog;
-                                return false;
-                            }
-                        }
-                        else
-                        {
-                            // Create the buffer reflection
-                            bufferDesc.nameMap[d3dBufDesc.Name] = bindDesc.BindPoint;
-                            bufferDesc.descMap[bindDesc.BindPoint] = ProgramReflection::BufferReflection::create(d3dBufDesc.Name, bindDesc.BindPoint, BufferReflection::Type::Constant, d3dBufDesc.Size, varMap, ProgramReflection::ResourceMap());
-                        }
-
-                        // Update the shader mask
-                        uint32_t mask = bufferDesc.descMap[bindDesc.BindPoint]->getShaderMask() | (1 << shader);
-                        bufferDesc.descMap[bindDesc.BindPoint]->setShaderMask(mask);
-                        found++;
-                    }
-                }
+                log += "Constant buffer '" + std::string(d3dBufDesc.Name) + "' has different bind locations between different shader stages. Falcor do not support that. Use explicit bind locations to avoid this error";
+                return false;
+            }
+            ProgramReflection::BufferReflection* pPrevBuffer = bufferDesc.descMap[bindDesc.BindPoint].get();
+            std::string bufLog;
+            if (validateBufferDeclaration(pPrevBuffer, varMap, bufLog) == false)
+            {
+                log += "Constant buffer '" + std::string(d3dBufDesc.Name) + "' has different definitions between different shader stages. " + bufLog;
+                return false;
             }
         }
+        else
+        {
+            // Create the buffer reflection
+            bufferDesc.nameMap[d3dBufDesc.Name] = bindDesc.BindPoint;
+            bufferDesc.descMap[bindDesc.BindPoint] = ProgramReflection::BufferReflection::create(d3dBufDesc.Name, bindDesc.BindPoint, ProgramReflection::BufferReflection::Type::Constant, d3dBufDesc.Size, varMap, ProgramReflection::ResourceMap());
+        }
+
+        // Update the shader mask
+        uint32_t mask = bufferDesc.descMap[bindDesc.BindPoint]->getShaderMask() | (1 << shaderIndex);
+        bufferDesc.descMap[bindDesc.BindPoint]->setShaderMask(mask);
+
         return true;
     }
 
@@ -468,11 +447,19 @@ namespace Falcor
         switch (type)
         {
         case D3D_SIT_TEXTURE:
-            return ProgramReflection::Resource::ResourceType::Texture;
+            return ProgramReflection::Resource::ResourceType::TextureSrv;
         case D3D_SIT_SAMPLER:
             return ProgramReflection::Resource::ResourceType::Sampler;
         case D3D_SIT_UAV_RWTYPED:
-            return ProgramReflection::Resource::ResourceType::UAV;
+            return ProgramReflection::Resource::ResourceType::TextureUav;
+        case D3D_SIT_STRUCTURED:
+            return ProgramReflection::Resource::ResourceType::StructuredBufferSrv;
+        case D3D_SIT_UAV_RWSTRUCTURED:
+            return ProgramReflection::Resource::ResourceType::StructuredBufferUav;
+        case D3D_SIT_BYTEADDRESS:
+            return ProgramReflection::Resource::ResourceType::RawBufferSrv;
+        case D3D_SIT_UAV_RWBYTEADDRESS:
+            return ProgramReflection::Resource::ResourceType::RawBufferUav;
         default:
             should_not_get_here();
             return ProgramReflection::Resource::ResourceType::Unknown;
@@ -499,9 +486,47 @@ namespace Falcor
         }
     }
 
+    bool reflectResource(ShaderReflectionHandle pReflection, const D3D_SHADER_INPUT_BIND_DESC& desc, ProgramReflection::ResourceMap& resourceMap, uint32_t shaderIndex, std::string& log)
+    {
+        ProgramReflection::Resource falcorDesc;
+        std::string name(desc.Name);
+        falcorDesc.type = getResourceType(desc.Type);
+        if (falcorDesc.type == ProgramReflection::Resource::ResourceType::TextureSrv || falcorDesc.type == ProgramReflection::Resource::ResourceType::TextureUav)
+        {
+            falcorDesc.retType = getReturnType(desc.ReturnType);
+            falcorDesc.dims = getResourceDimensions(desc.Dimension);
+        }
+        bool isArray = name[name.length() - 1] == ']';
+        falcorDesc.regIndex = desc.BindPoint;
+        falcorDesc.arraySize = isArray ? desc.BindCount : 0;
+
+        // If this already exists, definitions should match
+        const auto& prevDef = resourceMap.find(name);
+        if (prevDef == resourceMap.end())
+        {
+            // New resource
+            resourceMap[name] = falcorDesc;
+        }
+        else
+        {
+            std::string varLog;
+            if (verifyResourceDefinition(prevDef->second, falcorDesc, varLog) == false)
+            {
+                log += "Shader resource '" + std::string(name) + "' has different definitions between different shader stages. " + varLog;
+                return false;
+            }
+        }
+
+        // Update the mask
+        resourceMap[name].shaderMask |= (1 << shaderIndex);
+
+        return true;
+    }
+
     bool ProgramReflection::reflectResources(const ProgramVersion* pProgVer, std::string& log)
     {
-        for (uint32_t shader = 0; shader < (uint32_t)ShaderType::Count; shader++)
+        bool res = true;
+        for (uint32_t shader = 0; (shader < (uint32_t)ShaderType::Count) && res; shader++)
         {
             ShaderReflectionHandle pReflection = pProgVer->getShader((ShaderType)shader) ? pProgVer->getShader(ShaderType(shader))->getReflectionInterface() : nullptr;
             if (pReflection)
@@ -511,47 +536,22 @@ namespace Falcor
 
                 for (uint32_t i = 0; i < shaderDesc.BoundResources; i++)
                 {
-                    D3D_SHADER_INPUT_BIND_DESC InputDesc;
-                    d3d_call(pReflection->GetResourceBindingDesc(i, &InputDesc));
-
-                    // Ignore constant buffers
-                    if (InputDesc.Type == D3D_SIT_CBUFFER)
+                    D3D_SHADER_INPUT_BIND_DESC inputDesc;
+                    d3d_call(pReflection->GetResourceBindingDesc(i, &inputDesc));
+                    switch (inputDesc.Type)
                     {
-                        continue;
+                    case D3D_SIT_CBUFFER:
+                        res = reflectBuffer(pReflection, inputDesc.Name, mBuffers[(uint32_t)BufferReflection::Type::Constant], shader, log);
+                        break;
+                    case D3D_SIT_STRUCTURED:
+                        res = reflectBuffer(pReflection, inputDesc.Name, mBuffers[(uint32_t)BufferReflection::Type::Structured], shader, log);
+                        break;
+                    default:
+                        res = reflectResource(pReflection, inputDesc, mResources, i, log);
                     }
-                    ProgramReflection::Resource falcorDesc;
-                    std::string name(InputDesc.Name);
-                    falcorDesc.type = getResourceType(InputDesc.Type);
-                    if (falcorDesc.type != ProgramReflection::Resource::ResourceType::Sampler)
-                    {
-                        falcorDesc.retType = getReturnType(InputDesc.ReturnType);
-                        falcorDesc.dims = getResourceDimensions(InputDesc.Dimension);
-                    }
-                    bool isArray = name[name.length() - 1] == ']';
-                    falcorDesc.regIndex = InputDesc.BindPoint;
-                    falcorDesc.arraySize = isArray ? InputDesc.BindCount : 0;
-
-                    // If this already exists, definitions should match
-                    const auto& prevDef = mResources.find(name);
-                    if (prevDef == mResources.end())
-                    {
-                        // New resource
-                        mResources[name] = falcorDesc;
-                    }
-                    else
-                    {
-                        std::string varLog;
-                        if (verifyResourceDefinition(prevDef->second, falcorDesc, varLog) == false)
-                        {
-                            log += "Shader resource '" + std::string(name) + "' has different definitions between different shader stages. " + varLog;
-                            return false;
-                        }
-                    }
-                    // Update the mask
-                    mResources[name].shaderMask |= (1 << shader);
                 }
             }
         }
-        return true;
+        return res;
     }
 }

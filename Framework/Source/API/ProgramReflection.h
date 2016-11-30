@@ -123,9 +123,13 @@ namespace Falcor
             enum class ResourceType
             {
                 Unknown,
-                Texture,        // Read-only
-                UAV,          // Read-write
-                Sampler         // Sampler state
+                TextureSrv,            // Read-only
+                TextureUav,                // Read-write
+                StructuredBufferSrv, 
+                StructuredBufferUav,
+                RawBufferSrv,
+                RawBufferUav,
+                Sampler             // Sampler state
             };
 
             ResourceType type = ResourceType::Unknown;      ///< Resource type
@@ -160,7 +164,7 @@ namespace Falcor
             enum class Type
             {
                 Constant,
-                UnorderedAccess,
+                Structured,
 
                 Count
             };
@@ -317,10 +321,9 @@ namespace Falcor
 
     private:
         bool init(const ProgramVersion* pProgVer, std::string& log);
-        bool reflectBuffers(const ProgramVersion* pProgVer, std::string& log);                // CBs and SSBOs
         bool reflectVertexAttributes(const ProgramVersion* pProgVer, std::string& log);       // Input attributes
         bool reflectFragmentOutputs(const ProgramVersion* pProgVer, std::string& log);        // FS output (if FS exists)
-        bool reflectResources(const ProgramVersion* pProgVer, std::string& log);              // SRV/UAV/ROV and samplers
+        bool reflectResources(const ProgramVersion* pProgVer, std::string& log);              // SRV/UAV/ROV/Buffers and samplers
        
         BufferData mBuffers[BufferReflection::kTypeCount];
         VariableMap mFragOut;
@@ -374,8 +377,13 @@ namespace Falcor
         switch(access)
         {
             type_2_string(Unknown);
-            type_2_string(Texture);
-            type_2_string(UAV);
+            type_2_string(TextureSrv);
+            type_2_string(TextureUav);
+            type_2_string(StructuredBufferSrv);
+            type_2_string(StructuredBufferUav);
+            type_2_string(RawBufferSrv);
+            type_2_string(RawBufferUav);
+            type_2_string(Sampler);
         default:
             should_not_get_here();
             return "";
@@ -428,7 +436,7 @@ namespace Falcor
         switch(type)
         {
             type_2_string(Constant);
-            type_2_string(UnorderedAccess);
+            type_2_string(Structured);
         default:
             should_not_get_here();
             return "";

@@ -398,7 +398,7 @@ namespace Falcor
 
         bool dimsMatch = false;
         bool formatMatch = false;
-        bool imageMatch = bindAsImage ? (pResourceDesc->type == ProgramReflection::Resource::ResourceType::UAV) : (pResourceDesc->type == ProgramReflection::Resource::ResourceType::Texture);
+        bool imageMatch = bindAsImage ? (pResourceDesc->type == ProgramReflection::Resource::ResourceType::TextureUav) : (pResourceDesc->type == ProgramReflection::Resource::ResourceType::TextureSrv);
 
         Texture::Type texDim = pTexture->getType();
         bool isArray = pTexture->getArraySize() > 1;

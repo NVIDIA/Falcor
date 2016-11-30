@@ -117,7 +117,7 @@ namespace Falcor
         // For now we just put everything in the root. No descriptor tables because I don't feel like implementing a dynamic descriptor table class yet
         // We also create everything visible to all the shader stages
         cost += initializeBufferDescriptors(pReflector, d, ProgramReflection::BufferReflection::Type::Constant, RootSignature::DescType::CBV);
-        cost += initializeBufferDescriptors(pReflector, d, ProgramReflection::BufferReflection::Type::UnorderedAccess, RootSignature::DescType::UAV);
+        cost += initializeBufferDescriptors(pReflector, d, ProgramReflection::BufferReflection::Type::Structured, RootSignature::DescType::UAV);
 
         const ProgramReflection::ResourceMap& resMap = pReflector->getResourceMap();
         for (auto& resIt : resMap)
@@ -126,10 +126,14 @@ namespace Falcor
             RootSignature::DescType descType;
             switch (resource.type)
             {
-            case ProgramReflection::Resource::ResourceType::UAV:
+            case ProgramReflection::Resource::ResourceType::TextureUav:
+            case ProgramReflection::Resource::ResourceType::StructuredBufferUav:
+            case ProgramReflection::Resource::ResourceType::RawBufferUav:
                 descType = RootSignature::DescType::UAV;
                 break;
-            case ProgramReflection::Resource::ResourceType::Texture:
+            case ProgramReflection::Resource::ResourceType::TextureSrv:
+            case ProgramReflection::Resource::ResourceType::StructuredBufferSrv:
+            case ProgramReflection::Resource::ResourceType::RawBufferSrv:
                 descType = RootSignature::DescType::SRV;
                 break;
             case ProgramReflection::Resource::ResourceType::Sampler:

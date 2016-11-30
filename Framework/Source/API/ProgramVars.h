@@ -97,13 +97,13 @@ namespace Falcor
         \param[in] name The name of the buffer
         \return If the name is valid, a shared pointer to the SSBO. Otherwise returns nullptr
         */
-        ShaderStorageBuffer::SharedPtr getShaderStorageBuffer(const std::string& name) const;
+        ShaderStorageBuffer::SharedPtr getStructuredBuffer(const std::string& name) const;
 
         /** Get a shader-storage buffer object.
         \param[in] index The index of the buffer
         \return If the index is valid, a shared pointer to the SSBO. Otherwise returns nullptr
         */
-        ShaderStorageBuffer::SharedPtr getShaderStorageBuffer(uint32_t index) const;
+        ShaderStorageBuffer::SharedPtr getStructuredBuffer(uint32_t index) const;
 
         /** Bind a texture to the program in the global namespace.
             If you are using bindless textures, than this is not the right call for you. You should use the ConstantBuffer::setTexture() method instead.
@@ -211,7 +211,7 @@ namespace Falcor
         RootSignature::SharedConstPtr mpRootSignature;
         ProgramReflection::SharedConstPtr mpReflector;
         ResourceDataMap<ConstantBuffer::SharedPtr> mConstantBuffers;
-        ResourceDataMap<ShaderStorageBuffer::SharedPtr> mSSBO;
+        ResourceDataMap<ShaderStorageBuffer::SharedPtr> mStructuredBuffers;
 
         std::map<uint32_t, ResourceData<Texture::SharedConstPtr>> mAssignedSrvs;
         std::map<uint32_t, ResourceData<Texture::SharedConstPtr>> mAssignedUavs;
