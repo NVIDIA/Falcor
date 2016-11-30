@@ -774,14 +774,16 @@ namespace Falcor
     Buffer::SharedPtr AssimpModelImporter::createVertexBuffer(const aiMesh* pAiMesh, uint32_t vertexCount, BoundingBox& boundingBox, const VertexBufferLayout* pLayout)
     {
         const uint32_t vertexStride = pLayout->getStride();
-        auto initData = std::unique_ptr<uint8_t[]>(new uint8_t[vertexStride * vertexCount]);
-        memset(initData.get(), 0, vertexStride * vertexCount);
+        std::vector<uint8_t> initData(vertexStride * vertexCount, 0);
 
         glm::vec3 boxMin, boxMax;
 
+        uint32_t weightOffset = -1;
+        uint32_t boneOffset = -1;
+
         for(uint32_t vertexID = 0; vertexID < vertexCount; vertexID++)
         {
-            uint8_t* pVertex = initData.get() + (vertexStride * vertexID);
+            uint8_t* pVertex = &initData[vertexStride * vertexID];
 
             for(uint32_t elementID = 0; elementID < pLayout->getElementCount(); elementID++)
             {
@@ -818,8 +820,11 @@ namespace Falcor
                     size = sizeof(pAiMesh->mTextureCoords[0][vertexID]);
                     break; 
                 case VERTEX_BONE_WEIGHT_LOC:
+                    weightOffset = offset;
+                    break;
                 case VERTEX_BONE_ID_LOC:
-                    continue;   // Ignore it for now, since aiMesh handle them differently
+                    boneOffset = offset;
+                    break;
                 default:
                     should_not_get_here();
                     continue;
@@ -835,17 +840,17 @@ namespace Falcor
         }
         boundingBox = BoundingBox::fromMinMax(boxMin, boxMax);
 
-        if(pAiMesh->HasBones())
+        if(pAiMesh->HasBones() && boneOffset != -1 && weightOffset != -1)
         {
-            loadBones(pAiMesh, initData.get(), vertexCount, vertexStride);
+            loadBones(pAiMesh, initData.data(), vertexCount, vertexStride, boneOffset, weightOffset);
         }
 
-        auto pBuffer = Buffer::create(vertexStride * vertexCount, Buffer::BindFlags::Vertex, Buffer::CpuAccess::None, initData.get());
+        auto pBuffer = Buffer::create(vertexStride * vertexCount, Buffer::BindFlags::Vertex, Buffer::CpuAccess::None, initData.data());
         mpModel->addBuffer(pBuffer);
         return pBuffer;
     }
 
-    void AssimpModelImporter::loadBones(const aiMesh* pAiMesh, uint8_t* pVertexData, uint32_t vertexCount, uint32_t vertexStride)
+    void AssimpModelImporter::loadBones(const aiMesh* pAiMesh, uint8_t* pVertexData, uint32_t vertexCount, uint32_t vertexStride, uint32_t idOffset, uint32_t weightOffset)
     {
         if(pAiMesh->mNumBones > 0xff)
         {
@@ -866,8 +871,8 @@ namespace Falcor
                 uint8_t* pVertex = pVertexData + (aiWeight.mVertexId * vertexStride);
 
                 // Get the address of the Bone ID and weight for the current vertex
-                uint8_t* pBoneIDs = (uint8_t*)(pVertex + mBoneIDOffset);
-                float* pVertexWeights = (float*)(pVertex + mBoneWeightOffset);
+                uint8_t* pBoneIDs = (uint8_t*)(pVertex + idOffset);
+                float* pVertexWeights = (float*)(pVertex + weightOffset);
 
                 // Find the next unused slot in the bone array of the vertex, and initialize it with the current value
                 bool bFoundEmptySlot = false;
@@ -893,7 +898,7 @@ namespace Falcor
         for(uint32_t i = 0; i < vertexCount; i++)
         {
             uint8_t* pVertex = pVertexData + (i * vertexStride);
-            float* pVertexWeights = (float*)(pVertex + mBoneWeightOffset);
+            float* pVertexWeights = (float*)(pVertex + weightOffset);
 
             float f = 0;
             // Sum the weights

@@ -76,7 +76,7 @@ namespace Falcor
         VertexLayout::SharedPtr createVertexLayout(const aiMesh* pAiMesh);
         Buffer::SharedPtr createIndexBuffer(const aiMesh* pAiMesh);
         Buffer::SharedPtr createVertexBuffer(const aiMesh* pAiMesh, uint32_t vertexCount, BoundingBox& boundingBox, const VertexBufferLayout* pLayout);
-        void loadBones(const aiMesh* pAiMesh, uint8_t* pVertexData, uint32_t vertexCount, uint32_t vertexStride);
+        void loadBones(const aiMesh* pAiMesh, uint8_t* pVertexData, uint32_t vertexCount, uint32_t vertexStride, uint32_t idOffset, uint32_t weightOffset);
         void loadTextures(const aiMaterial* pAiMaterial, const std::string& folder, BasicMaterial* pMaterial, bool isObjFile, bool useSrgb);
         Material::SharedPtr createMaterial(const aiMaterial* pAiMaterial, const std::string& folder, bool isObjFile, bool useSrgb);
 
@@ -87,9 +87,6 @@ namespace Falcor
 
         std::vector<Bone> mBones;
         uint32_t mFlags;
-
-        uint32_t mBoneIDOffset = 0;
-        uint32_t mBoneWeightOffset = 0;
         std::map<const std::string, Texture::SharedPtr> mTextureCache;
     };
 }
