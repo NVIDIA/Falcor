@@ -49,6 +49,11 @@ namespace Falcor
     MAKE_SMART_COM_PTR(ID3D12ShaderReflection);
     MAKE_SMART_COM_PTR(ID3D12RootSignature);
     MAKE_SMART_COM_PTR(ID3D12QueryHeap);
+    
+    using HeapCpuHandle = D3D12_CPU_DESCRIPTOR_HANDLE;
+    using HeapGpuHandle = D3D12_GPU_DESCRIPTOR_HANDLE;
+
+    class DescriptorHeapEntry;
 
 	using WindowHandle = HWND;
 	using DeviceHandle = ID3D12DevicePtr;
@@ -57,17 +62,13 @@ namespace Falcor
 	using CommandQueueHandle = ID3D12CommandQueuePtr;
     using FenceHandle = ID3D12FencePtr;
     using TextureHandle = ID3D12ResourcePtr;
-    using RtvHandle = D3D12_CPU_DESCRIPTOR_HANDLE;
-    using DsvHandle = D3D12_CPU_DESCRIPTOR_HANDLE;
-    using SrvHandle = D3D12_GPU_DESCRIPTOR_HANDLE;
-    using SamplerHandle = D3D12_GPU_DESCRIPTOR_HANDLE;
-    using UavHandle = D3D12_GPU_DESCRIPTOR_HANDLE;
+    using RtvHandle = std::shared_ptr<DescriptorHeapEntry>;
+    using DsvHandle = std::shared_ptr<DescriptorHeapEntry>;
+    using SrvHandle = std::shared_ptr<DescriptorHeapEntry>;
+    using SamplerHandle = std::shared_ptr<DescriptorHeapEntry>;
+    using UavHandle = std::shared_ptr<DescriptorHeapEntry>;
     using GpuAddress = D3D12_GPU_VIRTUAL_ADDRESS;
     
-    using HeapCpuHandle = D3D12_CPU_DESCRIPTOR_HANDLE;
-    using HeapGpuHandle = D3D12_GPU_DESCRIPTOR_HANDLE;
-
-
     using BufferHandle = ID3D12ResourcePtr;
     using RenderStateHandle = ID3D12PipelineStatePtr;
     using ShaderHandle = D3D12_SHADER_BYTECODE;

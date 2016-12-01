@@ -378,7 +378,7 @@ namespace Falcor
                     handle = pTex->getSRV(resDesc.firstArraySlice, resDesc.arraySize, resDesc.mostDetailedMip, resDesc.mipCount);
                 }
                 pContext->resourceBarrier(resDesc.pResource.get(), isUav ? D3D12_RESOURCE_STATE_UNORDERED_ACCESS : D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
-                pList->SetGraphicsRootDescriptorTable(rootOffset, handle);
+                pList->SetGraphicsRootDescriptorTable(rootOffset, handle->getGpuHandle());
             }
         }
     }
@@ -401,7 +401,7 @@ namespace Falcor
             {
                 handle = pBuffer->getSRV();
             }
-            pList->SetGraphicsRootDescriptorTable(rootOffset, handle);
+            pList->SetGraphicsRootDescriptorTable(rootOffset, handle->getGpuHandle());
         }
     }
 
@@ -433,7 +433,7 @@ namespace Falcor
             const Sampler* pSampler = samplerIt.second.pResource.get();
             if (pSampler)
             {
-                pList->SetGraphicsRootDescriptorTable(rootOffset, pSampler->getApiHandle());
+                pList->SetGraphicsRootDescriptorTable(rootOffset, pSampler->getApiHandle()->getGpuHandle());
             }
         }
     }

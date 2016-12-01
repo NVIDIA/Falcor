@@ -27,19 +27,23 @@
 ***************************************************************************/
 #pragma once
 #include "Framework.h"
+#include <queue>
 
 namespace Falcor
 {
+    class DescriptorHeapEntry;
+
     class DescriptorHeap : public std::enable_shared_from_this<DescriptorHeap>
     {
     public:
         using SharedPtr = std::shared_ptr<DescriptorHeap>;
         using SharedConstPtr = std::shared_ptr<const DescriptorHeap>;
         using ApiHandle = DescriptorHeapHandle;
-        ~DescriptorHeap();
-
+        using Entry = std::shared_ptr<DescriptorHeapEntry>;
         using CpuHandle = HeapCpuHandle;
         using GpuHandle = HeapGpuHandle;
+
+        ~DescriptorHeap();
 
         enum class Type
         {
@@ -51,14 +55,19 @@ namespace Falcor
         };
         static SharedPtr create(Type type, uint32_t descriptorsCount, bool shaderVisible = true);
 
+        Entry allocateEntry();
+        ApiHandle getApiHandle() const { return mApiHandle; }
+        Type getType() const { return mType; }
+    private:
+        friend DescriptorHeapEntry;
+        DescriptorHeap(Type type, uint32_t descriptorsCount);
+
         CpuHandle getCpuHandle(uint32_t index) const;
         GpuHandle getGpuHandle(uint32_t index) const;
-        uint32_t allocateHandle();
-        ApiHandle getApiHandle() const { return mApiHandle; }
-
-        static const uint32_t kInvalidHandleIndex = -1;
-    private:
-        DescriptorHeap(Type type, uint32_t descriptorsCount);
+        void releaseEntry(uint32_t handle)
+        {
+            mFreeEntries.push(handle);
+        }
 
         CpuHandle mCpuHeapStart = {};
         GpuHandle mGpuHeapStart = {};
@@ -67,5 +76,38 @@ namespace Falcor
         uint32_t mCurDesc = 0;
         ApiHandle mApiHandle;
         Type mType;
+
+        std::queue<uint32_t> mFreeEntries;
+    };
+
+    // Ideally this would be nested inside the Descriptor heap. Unfortunately, we need to forward declare it in FalcorD3D12.h, which is impossible with nesting
+    class DescriptorHeapEntry
+    {
+    public:
+        using SharedPtr = std::shared_ptr<DescriptorHeapEntry>;
+        using WeakPtr = std::weak_ptr<DescriptorHeapEntry>;
+        using CpuHandle = DescriptorHeap::CpuHandle;
+        using GpuHandle = DescriptorHeap::GpuHandle;
+
+        static SharedPtr create(DescriptorHeap::SharedPtr pHeap, uint32_t heapEntry)
+        {
+            SharedPtr pEntry = SharedPtr(new DescriptorHeapEntry(pHeap));
+            pEntry->mHeapEntry = heapEntry;
+            return pEntry;
+        }
+
+        ~DescriptorHeapEntry()
+        {
+            mpHeap->releaseEntry(mHeapEntry);
+        }
+
+        // OPTME we could store the handles in the class to avoid the additional indirection at the expense of memory
+        CpuHandle getCpuHandle() const { return mpHeap->getCpuHandle(mHeapEntry); }
+        GpuHandle getGpuHandle() const { return mpHeap->getGpuHandle(mHeapEntry); }
+        DescriptorHeap::SharedPtr getHeap() const { return mpHeap; }
+    private:
+        DescriptorHeapEntry(DescriptorHeap::SharedPtr pHeap) : mpHeap(pHeap) {}
+        uint32_t mHeapEntry = -1;
+        DescriptorHeap::SharedPtr mpHeap;
     };
 }

@@ -181,8 +181,8 @@ namespace Falcor
         BindFlags mBindFlags;
         CpuAccess mUpdateFlags;
         void* mpApiData = nullptr;
-        SrvHandle mSrvHandle = {};
-        UavHandle mUavHandle = {};
+        SrvHandle mSrv;
+        UavHandle mUav;
     };
 
     inline Buffer::BindFlags operator& (Buffer::BindFlags a, Buffer::BindFlags b)

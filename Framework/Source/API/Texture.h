@@ -278,8 +278,8 @@ namespace Falcor
         /** Get the bind flags
         */
         BindFlags getBindFlags() const { return mBindFlags; }
-        static RtvHandle getNullRtv() { return sNullRTV; }
-        static DsvHandle getNullDsv() { return sNullDSV; }
+        static RtvHandle getNullRtv() { return spNullRTV; }
+        static DsvHandle getNullDsv() { return spNullDSV; }
 
         struct ViewInfo
         {
@@ -312,8 +312,8 @@ namespace Falcor
         mutable std::unordered_map<ViewInfo, DsvHandle, ViewInfoHasher> mDsvs;
         mutable std::unordered_map<ViewInfo, UavHandle, ViewInfoHasher> mUavs;
 
-        static RtvHandle sNullRTV;
-        static DsvHandle sNullDSV;
+        static RtvHandle spNullRTV;
+        static DsvHandle spNullDSV;
 
 		static uint32_t tempDefaultUint;
 

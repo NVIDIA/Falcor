@@ -218,6 +218,10 @@ namespace Falcor
             gpDevice->getResourceAllocator()->release(pApiData->dynamicData);
             pApiData->dynamicData = gpDevice->getResourceAllocator()->allocate(mSize, getDataAlignmentFromUsage(mBindFlags));
             mApiHandle = pApiData->dynamicData.pResourceHandle;
+            
+            // Invalidate the views
+            mSrv = nullptr;
+            mUav = nullptr;
             return pApiData->dynamicData.pData;
         }
         else
@@ -266,7 +270,7 @@ namespace Falcor
 
     SrvHandle Buffer::getSRV()
     {
-        if(mSrvHandle.ptr == 0)
+        if(mSrv == 0)
         {
             D3D12_SHADER_RESOURCE_VIEW_DESC desc = {};
             desc.ViewDimension = D3D12_SRV_DIMENSION_BUFFER;
@@ -276,17 +280,16 @@ namespace Falcor
             desc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
             desc.Format = DXGI_FORMAT_R32_TYPELESS;
 
-            uint32_t viewId = gpDevice->getSrvDescriptorHeap()->allocateHandle();
-            mSrvHandle = gpDevice->getSrvDescriptorHeap()->getGpuHandle(viewId);
-            gpDevice->getApiHandle()->CreateShaderResourceView(mApiHandle, &desc, gpDevice->getSrvDescriptorHeap()->getCpuHandle(viewId));
+            mSrv = gpDevice->getSrvDescriptorHeap()->allocateEntry();
+            gpDevice->getApiHandle()->CreateShaderResourceView(mApiHandle, &desc, mSrv->getCpuHandle());
         }
 
-        return mSrvHandle;
+        return mSrv;
     }
 
     UavHandle Buffer::getUAV()
     {
-        if (mUavHandle.ptr == 0)
+        if (mUav == 0)
         {
             D3D12_UNORDERED_ACCESS_VIEW_DESC desc = {};
             desc.ViewDimension = D3D12_UAV_DIMENSION_BUFFER;
@@ -295,11 +298,10 @@ namespace Falcor
             desc.Buffer.Flags = D3D12_BUFFER_UAV_FLAG_RAW;
             desc.Buffer.NumElements = (uint32_t)mSize / sizeof(float);
 
-            uint32_t viewId = gpDevice->getUavDescriptorHeap()->allocateHandle();
-            mUavHandle = gpDevice->getUavDescriptorHeap()->getGpuHandle(viewId);
-            gpDevice->getApiHandle()->CreateUnorderedAccessView(mApiHandle, nullptr, &desc, gpDevice->getUavDescriptorHeap()->getCpuHandle(viewId));
+            mUav = gpDevice->getUavDescriptorHeap()->allocateEntry();
+            gpDevice->getApiHandle()->CreateUnorderedAccessView(mApiHandle, nullptr, &desc, mUav->getCpuHandle());
         }
 
-        return mUavHandle;
+        return mUav;
     }
 }

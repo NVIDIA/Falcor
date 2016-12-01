@@ -45,10 +45,8 @@ namespace Falcor
         D3D12_SAMPLER_DESC d3dDesc;
         initD3DSamplerDesc(pSampler.get(), d3dDesc);
         DescriptorHeap* pHeap = gpDevice->getSamplerDescriptorHeap().get();
-        uint32_t index = pHeap->allocateHandle();
-
-        gpDevice->getApiHandle()->CreateSampler(&d3dDesc, pHeap->getCpuHandle(index));
-        pSampler->mApiHandle = pHeap->getGpuHandle(index);
+        pSampler->mApiHandle = pHeap->allocateEntry();
+        gpDevice->getApiHandle()->CreateSampler(&d3dDesc, pSampler->mApiHandle->getCpuHandle());
 
         return pSampler;
     }

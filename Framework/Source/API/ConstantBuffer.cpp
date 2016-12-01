@@ -112,6 +112,9 @@ namespace Falcor
         memcpy(pData + offset, mData.data() + offset, size);
         mpBuffer->unmap();
         mDirty = false;
+
+        // Invalidate the view
+        mResourceView = nullptr;
     }
 
     bool checkVariableType(ProgramReflection::Variable::Type callType, ProgramReflection::Variable::Type shaderType, const std::string& name, const std::string& bufferName)
@@ -610,19 +613,19 @@ namespace Falcor
         }
     }
 
-    // FIXME D3D12
-    DescriptorHeap::GpuHandle ConstantBuffer::getCbViewHandle() const
+    DescriptorHeap::Entry ConstantBuffer::getResourceView() const
     {
-        DescriptorHeap* pHeap = gpDevice->getSrvDescriptorHeap().get();
-//        if (mCbvHandleIndex == DescriptorHeap::kInvalidHandleIndex)
+        if(mResourceView == nullptr)
         {
-            // FIXME D3D12 we are going to exhaust the heap. Need to cache or something
-            mCbvHandleIndex = pHeap->allocateHandle();
+            DescriptorHeap* pHeap = gpDevice->getSrvDescriptorHeap().get();
+
+            mResourceView = pHeap->allocateEntry();
             D3D12_CONSTANT_BUFFER_VIEW_DESC viewDesc = {};
             viewDesc.BufferLocation = mpBuffer->getGpuAddress();
             viewDesc.SizeInBytes = (uint32_t)mpBuffer->getSize();
-            gpDevice->getApiHandle()->CreateConstantBufferView(&viewDesc, pHeap->getCpuHandle(mCbvHandleIndex));
+            gpDevice->getApiHandle()->CreateConstantBufferView(&viewDesc, mResourceView->getCpuHandle());
         }
-        return pHeap->getGpuHandle(mCbvHandleIndex);
+
+        return mResourceView;
     }
 }

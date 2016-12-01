@@ -183,7 +183,7 @@ namespace Falcor
 
         static const size_t ConstantBuffer::kInvalidOffset = ProgramReflection::kInvalidLocation;
 
-        DescriptorHeap::GpuHandle getCbViewHandle() const;
+        DescriptorHeap::Entry getResourceView() const;
     protected:
         bool init(size_t overrideSize, bool isConstantBuffer);
         void setTextureInternal(size_t offset, const Texture* pTexture, const Sampler* pSampler);
@@ -195,7 +195,7 @@ namespace Falcor
         std::vector<uint8_t> mData;
         size_t mSize = 0;
         mutable bool mDirty = true;
-        mutable uint32_t mCbvHandleIndex = DescriptorHeap::kInvalidHandleIndex;
+        mutable DescriptorHeap::Entry mResourceView;
 #ifdef FALCOR_D3D11
         friend class RenderContext;
         std::map<uint32_t, ID3D11ShaderResourceViewPtr>* mAssignedResourcesMap;

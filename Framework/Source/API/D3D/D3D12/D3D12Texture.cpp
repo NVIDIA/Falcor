@@ -37,8 +37,8 @@
 
 namespace Falcor
 {
-    RtvHandle Texture::sNullRTV;
-    DsvHandle Texture::sNullDSV;
+    RtvHandle Texture::spNullRTV;
+    DsvHandle Texture::spNullDSV;
 
     // FIXME I don't like globals
     struct
@@ -234,11 +234,10 @@ namespace Falcor
         return pTexture->mApiHandle ? pTexture : nullptr;
     }
 
-    template<typename RetType>
-    using CreateViewFuncType = std::function < RetType(const Texture*, const Texture::ViewInfo&, DescriptorHeap::CpuHandle, DescriptorHeap::GpuHandle) >;
+    using CreateViewFuncType = std::function < void(const Texture*, const Texture::ViewInfo&, DescriptorHeapEntry::CpuHandle) >;
 
     template<typename ViewHandle, typename ViewMapType>
-    ViewHandle createViewCommon(const Texture* pTexture, uint32_t mostDetailedMip, uint32_t mipCount, uint32_t firstArraySlice, uint32_t arraySize, ViewMapType& viewMap, DescriptorHeap* pHeap, CreateViewFuncType<ViewHandle> createFunc)
+    ViewHandle createViewCommon(const Texture* pTexture, uint32_t mostDetailedMip, uint32_t mipCount, uint32_t firstArraySlice, uint32_t arraySize, ViewMapType& viewMap, DescriptorHeap* pHeap, CreateViewFuncType createFunc)
     {
         assert(firstArraySlice < pTexture->getArraySize());
         assert(mostDetailedMip < pTexture->getMipCount());
@@ -257,8 +256,8 @@ namespace Falcor
 
         if (viewMap.find(view) == viewMap.end())
         {
-            uint32_t handleIndex = pHeap->allocateHandle();
-            viewMap[view] = createFunc(pTexture, view, pHeap->getCpuHandle(handleIndex), pHeap->getGpuHandle(handleIndex));
+            viewMap[view] = pHeap->allocateEntry();
+            createFunc(pTexture, view, viewMap[view]->getCpuHandle());
         }
 
         return viewMap[view];
@@ -266,12 +265,11 @@ namespace Falcor
 
     DsvHandle Texture::getDSV(uint32_t mipLevel, uint32_t firstArraySlice, uint32_t arraySize) const
     {
-        auto createFunc = [](const Texture* pTexture, const Texture::ViewInfo& viewInfo, DescriptorHeap::CpuHandle cpuHandle, DescriptorHeap::GpuHandle gpuHandle)
+        auto createFunc = [](const Texture* pTexture, const Texture::ViewInfo& viewInfo, DescriptorHeapEntry::CpuHandle cpuHandle)
         {
             D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc = {};
             initializeDsvDesc<D3D12_DEPTH_STENCIL_VIEW_DESC>(pTexture, viewInfo.mostDetailedMip, viewInfo.firstArraySlice, viewInfo.arraySize, dsvDesc);
             gpDevice->getApiHandle()->CreateDepthStencilView(pTexture->getApiHandle(), &dsvDesc, cpuHandle);
-            return cpuHandle;
         };
 
         return createViewCommon<DsvHandle>(this, mipLevel, 1, firstArraySlice, arraySize, mDsvs, gpDevice->getDsvDescriptorHeap().get(), createFunc);
@@ -279,12 +277,11 @@ namespace Falcor
 
     UavHandle Texture::getUAV(uint32_t mipLevel, uint32_t firstArraySlice, uint32_t arraySize) const
     {
-        auto createFunc = [](const Texture* pTexture, const Texture::ViewInfo& viewInfo, DescriptorHeap::CpuHandle cpuHandle, DescriptorHeap::GpuHandle gpuHandle)
+        auto createFunc = [](const Texture* pTexture, const Texture::ViewInfo& viewInfo, DescriptorHeapEntry::CpuHandle cpuHandle)
         {
             D3D12_UNORDERED_ACCESS_VIEW_DESC desc = {};
             initializeUavDesc<D3D12_UNORDERED_ACCESS_VIEW_DESC>(pTexture, viewInfo.mostDetailedMip, viewInfo.firstArraySlice, viewInfo.arraySize, desc);
             gpDevice->getApiHandle()->CreateUnorderedAccessView(pTexture->getApiHandle(), nullptr, &desc, cpuHandle);
-            return gpuHandle;
         };
 
         return createViewCommon<UavHandle>(this, mipLevel, 1, firstArraySlice, arraySize, mUavs, gpDevice->getUavDescriptorHeap().get(), createFunc);
@@ -292,12 +289,11 @@ namespace Falcor
 
     RtvHandle Texture::getRTV(uint32_t mipLevel, uint32_t firstArraySlice, uint32_t arraySize) const
     {
-        auto createFunc = [](const Texture* pTexture, const Texture::ViewInfo& viewInfo, DescriptorHeap::CpuHandle cpuHandle , DescriptorHeap::GpuHandle gpuHandle)
+        auto createFunc = [](const Texture* pTexture, const Texture::ViewInfo& viewInfo, DescriptorHeapEntry::CpuHandle cpuHandle)
         {
             D3D12_RENDER_TARGET_VIEW_DESC rtvDesc = {};
             initializeRtvDesc<D3D12_RENDER_TARGET_VIEW_DESC>(pTexture, viewInfo.mostDetailedMip, viewInfo.firstArraySlice, viewInfo.arraySize, rtvDesc);
             gpDevice->getApiHandle()->CreateRenderTargetView(pTexture->getApiHandle(), &rtvDesc, cpuHandle);
-            return cpuHandle;
         };
 
         return createViewCommon<RtvHandle>(this, mipLevel, 1, firstArraySlice, arraySize, mRtvs, gpDevice->getRtvDescriptorHeap().get(), createFunc);
@@ -306,12 +302,11 @@ namespace Falcor
 
     SrvHandle Texture::getSRV(uint32_t firstArraySlice, uint32_t arraySize, uint32_t mostDetailedMip, uint32_t mipCount) const
     {
-        auto createFunc = [](const Texture* pTexture, const Texture::ViewInfo& viewInfo, DescriptorHeap::CpuHandle cpuHandle, DescriptorHeap::GpuHandle gpuHandle)
+        auto createFunc = [](const Texture* pTexture, const Texture::ViewInfo& viewInfo, DescriptorHeapEntry::CpuHandle cpuHandle)
         {
             D3D12_SHADER_RESOURCE_VIEW_DESC desc;
             initializeSrvDesc(pTexture->getFormat(), pTexture->getType(), viewInfo.firstArraySlice, viewInfo.arraySize, viewInfo.mostDetailedMip, viewInfo.mipCount, pTexture->getArraySize() > 1, desc);
             gpDevice->getApiHandle()->CreateShaderResourceView(pTexture->getApiHandle(), &desc, cpuHandle);
-            return gpuHandle;
         };
 
         return createViewCommon<SrvHandle>(this, mostDetailedMip, mipCount, firstArraySlice, arraySize, mSrvs, gpDevice->getSrvDescriptorHeap().get(), createFunc);
@@ -406,7 +401,7 @@ namespace Falcor
 
     void Texture::createNullViews()
     {
-        if (sNullRTV.ptr != 0)
+        if (spNullRTV)
         {
             return;
         }
@@ -419,9 +414,8 @@ namespace Falcor
         rtvDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
         rtvDesc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D;
 
-        uint32_t rtvIndex = pRtvHeap->allocateHandle();
-        sNullRTV = pRtvHeap->getCpuHandle(rtvIndex);
-        gpDevice->getApiHandle()->CreateRenderTargetView(nullptr, &rtvDesc, sNullRTV);
+        spNullRTV = pRtvHeap->allocateEntry();
+        gpDevice->getApiHandle()->CreateRenderTargetView(nullptr, &rtvDesc, spNullRTV->getCpuHandle());
 
         // Create the DSV
         DescriptorHeap::SharedPtr& pDsvHeap = gpDevice->getDsvDescriptorHeap();
@@ -431,8 +425,7 @@ namespace Falcor
         dsvDesc.Format = DXGI_FORMAT_D16_UNORM;
         dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
 
-        uint32_t dsvIndex = pDsvHeap->allocateHandle();
-        sNullDSV = pDsvHeap->getCpuHandle(dsvIndex);
-        gpDevice->getApiHandle()->CreateDepthStencilView(nullptr, &dsvDesc, sNullDSV);
+        spNullDSV = pDsvHeap->allocateEntry();
+        gpDevice->getApiHandle()->CreateDepthStencilView(nullptr, &dsvDesc, spNullDSV->getCpuHandle());
     }
 }

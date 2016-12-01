@@ -183,7 +183,7 @@ namespace Falcor
         {
             RtvHandle rtv = pFbo->getRenderTargetView(rtIndex);
             resourceBarrier(pTexture, D3D12_RESOURCE_STATE_RENDER_TARGET);
-            pApiData->pList->ClearRenderTargetView(rtv, glm::value_ptr(color), 0, nullptr);
+            pApiData->pList->ClearRenderTargetView(rtv->getCpuHandle(), glm::value_ptr(color), 0, nullptr);
         }
         else
         {
@@ -204,7 +204,7 @@ namespace Falcor
         {
             resourceBarrier(pTexture, D3D12_RESOURCE_STATE_DEPTH_WRITE);
             DsvHandle dsv = pFbo->getDepthStencilView();
-            pApiData->pList->ClearDepthStencilView(dsv, D3D12_CLEAR_FLAGS(flags), depth, stencil, 0, nullptr);
+            pApiData->pList->ClearDepthStencilView(dsv->getCpuHandle(), D3D12_CLEAR_FLAGS(flags), depth, stencil, 0, nullptr);
         }
         else
         {
@@ -254,14 +254,14 @@ namespace Falcor
     {
         // FIXME D3D12
         uint32_t colorTargets = Fbo::getMaxColorTargetCount();
-        std::vector<RtvHandle> pRTV(colorTargets);
-        DsvHandle pDSV;
+        std::vector<DescriptorHeap::CpuHandle> pRTV(colorTargets);
+        DescriptorHeap::CpuHandle pDSV;
 
         if (pFbo)
         {
             for (uint32_t i = 0; i < colorTargets; i++)
             {
-                pRTV[i] = pFbo->getRenderTargetView(i);
+                pRTV[i] = pFbo->getRenderTargetView(i)->getCpuHandle();
                 auto& pTexture = pFbo->getColorTexture(i);
                 if (pTexture)
                 {
@@ -269,7 +269,7 @@ namespace Falcor
                 }
             }
 
-            pDSV = pFbo->getDepthStencilView();
+            pDSV = pFbo->getDepthStencilView()->getCpuHandle();
             auto& pTexture = pFbo->getDepthStencilTexture();
             if (pTexture)
             {
@@ -278,8 +278,8 @@ namespace Falcor
         }
         else
         {
-            pRTV.assign(colorTargets, Texture::getNullRtv());
-            pDSV = Texture::getNullDsv();
+            pRTV.assign(colorTargets, Texture::getNullRtv()->getCpuHandle());
+            pDSV = Texture::getNullDsv()->getCpuHandle();
         }
 
         pApiData->pList->OMSetRenderTargets(colorTargets, pRTV.data(), FALSE, &pDSV);
