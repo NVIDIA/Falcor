@@ -46,7 +46,7 @@ namespace Falcor
         {
             None,    ///< The CPU can't access the buffer's content. The buffer can be updated using Buffer#updateData()
             Write,   ///< The buffer can be mapped for CPU writes
-            Read,    ///< The buffer can be mapped for CPU reads. This type of buffer can't be bound to the pipeline, it can only be used as a staging resource
+            Read,    ///< The buffer can be mapped for CPU reads
         };
 
         /** Buffer GPU access flags.
@@ -173,13 +173,13 @@ namespace Falcor
         UavHandle getUAV();
 
     protected:
-        Buffer(size_t size, BindFlags bind, CpuAccess update) : mSize(size), mBindFlags(bind), mUpdateFlags(update){}
+        Buffer(size_t size, BindFlags bind, CpuAccess update) : mSize(size), mBindFlags(bind), mCpuAccess(update){}
         ApiHandle mApiHandle;
         uint64_t mBindlessHandle = 0;
         size_t mSize = 0;
         mutable uint64_t mGpuPtr = 0;
         BindFlags mBindFlags;
-        CpuAccess mUpdateFlags;
+        CpuAccess mCpuAccess;
         void* mpApiData = nullptr;
         SrvHandle mSrv;
         UavHandle mUav;

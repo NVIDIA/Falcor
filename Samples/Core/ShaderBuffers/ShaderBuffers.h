@@ -48,6 +48,7 @@ private:
     Model::SharedPtr mpModel;
     Vao::SharedConstPtr mpVao;
     uint32_t mIndexCount = 0;
+    Buffer::SharedPtr mpInvocationsBuffer;
 
     bool mCountPixelShaderInvocations = false;
 

@@ -171,13 +171,10 @@ namespace Falcor
         void popPipelineState();
 
         /** Flush the command list. This doesn't reset the command allocator, just submits the commands
+            \param[in] wait If true, will block execution until the GPU finished processing the commands
         */
-        void flush();
-
-        /** Wait for the GPU to finish execution. Blocking until the GPU is done
-        */
-        void waitForCompletion();
-        
+        void flush(bool wait = false);
+                
         void updateBuffer(const Buffer* pBuffer, const void* pData, size_t offset = 0, size_t size = 0);
         void updateTexture(const Texture* pTexture, const void* pData);
         void updateTextureSubresource(const Texture* pTexture, uint32_t subresourceIndex, const void* pData);

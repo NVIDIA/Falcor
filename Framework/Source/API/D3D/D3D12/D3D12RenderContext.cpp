@@ -364,7 +364,7 @@ namespace Falcor
 
     }
 
-    void RenderContext::flush()
+    void RenderContext::flush(bool wait)
     {
         RenderContextData* pApiData = (RenderContextData*)mpApiData;
         flushCopyCommands(pApiData);
@@ -376,12 +376,11 @@ namespace Falcor
         pApiData->pList->Reset(pApiData->pAllocator, nullptr);
         bindDescriptorHeaps();
         pApiData->commandsPending = false;
-    }
 
-    void RenderContext::waitForCompletion()
-    {
-        RenderContextData* pApiData = (RenderContextData*)mpApiData;
-        pApiData->pFence->syncCpu();
+        if(wait)
+        {
+            pApiData->pFence->syncCpu();
+        }
     }
 
     void RenderContext::bindDescriptorHeaps()

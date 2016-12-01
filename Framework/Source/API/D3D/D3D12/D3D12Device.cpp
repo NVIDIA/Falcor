@@ -221,8 +221,7 @@ namespace Falcor
 
     Device::~Device()
     {
-        mpRenderContext->flush();
-        mpRenderContext->waitForCompletion();
+        mpRenderContext->flush(true);
         // Release all the bound resources. Need to do that before deleting the RenderContext
         mpRenderContext->setPipelineState(nullptr);
         mpRenderContext->setProgramVariables(nullptr);
@@ -340,8 +339,7 @@ namespace Falcor
 
     Fbo::SharedPtr Device::resizeSwapChain(uint32_t width, uint32_t height)
     {
-        mpRenderContext->flush();
-        mpRenderContext->waitForCompletion();
+        mpRenderContext->flush(true);
 
         DeviceData* pData = (DeviceData*)mpPrivateData;
 

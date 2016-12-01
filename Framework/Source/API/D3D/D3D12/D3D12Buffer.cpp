@@ -35,6 +35,7 @@ namespace Falcor
     struct BufferData
     {
         ResourceAllocator::AllocationData dynamicData;
+        Buffer::SharedPtr pStagingResource; // For buffers that have both CPU read flag and can be used by the GPU
     };
 
     // FIXME D3D12 - this in in texture
@@ -113,11 +114,9 @@ namespace Falcor
 
     Buffer::~Buffer()
     {
-        if (mUpdateFlags == CpuAccess::Write)
-        {
-            BufferData* pApiData = (BufferData*)mpApiData;
-            gpDevice->getResourceAllocator()->release(pApiData->dynamicData);
-        }
+        BufferData* pApiData = (BufferData*)mpApiData;
+        gpDevice->getResourceAllocator()->release(pApiData->dynamicData);
+        safe_delete(pApiData);
         gpDevice->releaseResource(mApiHandle);
     }
 
@@ -144,19 +143,18 @@ namespace Falcor
         Buffer::SharedPtr pBuffer = SharedPtr(new Buffer(size, usage, cpuAccess));
 
         BufferData* pApiData = new BufferData;
+        pBuffer->mpApiData = pApiData;
         if (cpuAccess == CpuAccess::Write)
         {
-            pBuffer->mpApiData = pApiData;
             pApiData->dynamicData = gpDevice->getResourceAllocator()->allocate(size, getDataAlignmentFromUsage(usage));
             pBuffer->mApiHandle = pApiData->dynamicData.pResourceHandle;
         }
-        else if (cpuAccess == CpuAccess::Read)
+        else if (cpuAccess == CpuAccess::Read && usage == BindFlags::None)
         {
             pBuffer->mApiHandle = createBuffer(size, kReadbackHeapProps, usage);
         }
         else
         {
-            assert(cpuAccess == CpuAccess::None);
             pBuffer->mApiHandle = createBuffer(size, kDefaultHeapProps, usage);
         }
 
@@ -185,7 +183,7 @@ namespace Falcor
             return;
         }
 
-        if (mUpdateFlags == CpuAccess::Write)
+        if (mCpuAccess == CpuAccess::Write)
         {
             uint8_t* pDst = (uint8_t*)map(MapType::WriteDiscard) + offset;
             memcpy(pDst, pData, size);
@@ -208,7 +206,7 @@ namespace Falcor
 
         if(type == MapType::WriteDiscard)
         {
-            if (mUpdateFlags != CpuAccess::Write)
+            if (mCpuAccess != CpuAccess::Write)
             {
                 logError("Trying to map a buffer for write, but it wasn't created with the write access type");
                 return nullptr;
@@ -227,16 +225,33 @@ namespace Falcor
         else
         {
             assert(type == MapType::Read);
-            D3D12_RANGE r{ 0, mSize };
-            void* pData;
-            d3d_call(mApiHandle->Map(0, &r, &pData));
-            return pData;
+
+            if (mBindFlags == BindFlags::None)
+            {
+                D3D12_RANGE r{ 0, mSize };
+                void* pData;
+                d3d_call(mApiHandle->Map(0, &r, &pData));
+                return pData;
+            }
+            else
+            {
+                if (pApiData->pStagingResource == nullptr)
+                {
+                    pApiData->pStagingResource = Buffer::create(mSize, Buffer::BindFlags::None, Buffer::CpuAccess::Read, nullptr);
+
+                    // Copy the buffer and flush the pipeline
+                    RenderContext* pContext = gpDevice->getRenderContext().get();
+                    pContext->getCommandListApiHandle()->CopyResource(pApiData->pStagingResource->getApiHandle(), mApiHandle);
+                    pContext->flush(true);
+                }
+                return pApiData->pStagingResource->map(MapType::Read);
+            }
         }        
     }
 
     uint64_t Buffer::getGpuAddress() const
     {
-        if (mUpdateFlags == CpuAccess::Write)
+        if (mCpuAccess == CpuAccess::Write)
         {
             BufferData* pApiData = (BufferData*)mpApiData;
             return pApiData->dynamicData.gpuAddress;
@@ -249,11 +264,20 @@ namespace Falcor
 
     void Buffer::unmap()
     {
-        // Only unmap a readback resource
-        if(mUpdateFlags == CpuAccess::Read)
+        // Only unmap read buffers
+        if (mCpuAccess == CpuAccess::Read)
         {
+            BufferData* pApiData = (BufferData*)mpApiData;
             D3D12_RANGE r{};
-            mApiHandle->Unmap(0, &r);
+            if (pApiData->pStagingResource)
+            {
+                pApiData->pStagingResource->mApiHandle->Unmap(0, &r);
+                pApiData->pStagingResource = nullptr;
+            }
+            else
+            {
+                mApiHandle->Unmap(0, &r);
+            }
         }
     }
 
