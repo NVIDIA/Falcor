@@ -68,11 +68,11 @@ Citation
 If you use Falcor in a research project leading to a publication, please cite the project.
 The BibTex entry is
 
-@Misc{Benty16,
-   author =      {Nir Benty},
-   title =       {The {Falcor} Rendering Framework},
-   year =        {2016},
-   month =       {08},
-   url =         {https://github.com/NVIDIA/Falcor},
-   note=         {\url{https://github.com/NVIDIA/Falcor}}
+@Misc{Benty16,  
+   author =      {Nir Benty},  
+   title =       {The {Falcor} Rendering Framework},  
+   year =        {2016},  
+   month =       {08},  
+   url =         {https://github.com/NVIDIA/Falcor},  
+   note=         {\url{https://github.com/NVIDIA/Falcor}}  
 }
