@@ -120,6 +120,10 @@ namespace Falcor
                 mAssignedBufferSrvs[desc.regIndex].pBuffer = nullptr;
                 mAssignedBufferSrvs[desc.regIndex].rootSigOffset = findRootSignatureOffset<RootSignature::DescType::SRV>(mpRootSignature.get(), desc.regIndex, desc.registerSpace);
                 break;
+            case ProgramReflection::Resource::ResourceType::RawBufferUav:
+                mAssignedBufferUavs[desc.regIndex].pBuffer = nullptr;
+                mAssignedBufferUavs[desc.regIndex].rootSigOffset = findRootSignatureOffset<RootSignature::DescType::UAV>(mpRootSignature.get(), desc.regIndex, desc.registerSpace);
+                break;
             default:
                 should_not_get_here();
             }
@@ -391,7 +395,7 @@ namespace Falcor
             HandleType handle;
             if (isUav)
             {
-//                handle = pBuffer->getUAV(resDesc.mostDetailedMip, resDesc.firstArraySlice, resDesc.arraySize);
+                handle = pBuffer->getUAV();
             }
             else
             {
@@ -418,6 +422,7 @@ namespace Falcor
 
         // Bind the SRVs and UAVs
         bindBufferUavSrvCommon<SrvHandle, false>(pContext, mAssignedBufferSrvs);
+        bindBufferUavSrvCommon<UavHandle, true>(pContext, mAssignedBufferUavs);
         bindTextureUavSrvCommon<SrvHandle, false>(pContext, mAssignedSrvs);
         bindTextureUavSrvCommon<UavHandle, true>(pContext, mAssignedUavs);
 

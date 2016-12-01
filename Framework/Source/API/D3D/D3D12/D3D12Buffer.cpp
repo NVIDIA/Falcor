@@ -56,7 +56,27 @@ namespace Falcor
         0
     };
 
-    ID3D12ResourcePtr createBuffer(size_t size, const D3D12_HEAP_PROPERTIES& heapProps)
+    D3D12_RESOURCE_FLAGS getResourceFlags(Buffer::BindFlags bindFlags)
+    {
+#define is_set(_a) ((bindFlags & _a) != Buffer::BindFlags::None)
+
+        D3D12_RESOURCE_FLAGS flags = D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE;
+
+        if (is_set(Buffer::BindFlags::UnorderedAccess))
+        {
+            flags |= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
+        }
+
+        if (is_set(Buffer::BindFlags::ShaderResource))
+        {
+            flags &= ~D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE;
+        }
+
+        return flags;
+#undef is_set
+    }
+
+    ID3D12ResourcePtr createBuffer(size_t size, const D3D12_HEAP_PROPERTIES& heapProps, Buffer::BindFlags bindFlags)
     {
         ID3D12Device* pDevice = gpDevice->getApiHandle();
 
@@ -65,7 +85,7 @@ namespace Falcor
         bufDesc.Alignment = 0;
         bufDesc.DepthOrArraySize = 1;
         bufDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
-        bufDesc.Flags = D3D12_RESOURCE_FLAG_NONE;
+        bufDesc.Flags = getResourceFlags(bindFlags);
         bufDesc.Format = DXGI_FORMAT_UNKNOWN;
         bufDesc.Height = 1;
         bufDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
@@ -132,12 +152,12 @@ namespace Falcor
         }
         else if (cpuAccess == CpuAccess::Read)
         {
-            pBuffer->mApiHandle = createBuffer(size, kReadbackHeapProps);
+            pBuffer->mApiHandle = createBuffer(size, kReadbackHeapProps, usage);
         }
         else
         {
             assert(cpuAccess == CpuAccess::None);
-            pBuffer->mApiHandle = createBuffer(size, kDefaultHeapProps);
+            pBuffer->mApiHandle = createBuffer(size, kDefaultHeapProps, usage);
         }
 
         if (pInitData)
@@ -262,5 +282,24 @@ namespace Falcor
         }
 
         return mSrvHandle;
+    }
+
+    UavHandle Buffer::getUAV()
+    {
+        if (mUavHandle.ptr == 0)
+        {
+            D3D12_UNORDERED_ACCESS_VIEW_DESC desc = {};
+            desc.ViewDimension = D3D12_UAV_DIMENSION_BUFFER;
+            desc.Format = DXGI_FORMAT_R32_TYPELESS;
+            desc.Buffer.FirstElement = 0;
+            desc.Buffer.Flags = D3D12_BUFFER_UAV_FLAG_RAW;
+            desc.Buffer.NumElements = (uint32_t)mSize / sizeof(float);
+
+            uint32_t viewId = gpDevice->getUavDescriptorHeap()->allocateHandle();
+            mUavHandle = gpDevice->getUavDescriptorHeap()->getGpuHandle(viewId);
+            gpDevice->getApiHandle()->CreateUnorderedAccessView(mApiHandle, nullptr, &desc, gpDevice->getUavDescriptorHeap()->getCpuHandle(viewId));
+        }
+
+        return mUavHandle;
     }
 }

@@ -46,12 +46,15 @@ CONSTANT_BUFFER (LightCB, 1)
 	vec3 intensity;
 };
 
+RWByteAddressBuffer gInvocationBuffer;
+
 vec4 calcColor(vec3 normalW)
 {
     vec3 n = normalize(normalW);
     float nDotL = dot(n, -worldDir);
     nDotL = clamp(nDotL, 0, 1);
     vec4 color = vec4(nDotL * intensity * surfaceColor, 1);
+    gInvocationBuffer.InterlockedAdd(0, 1);
     return color;
 }
 

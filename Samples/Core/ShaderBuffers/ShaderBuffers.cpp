@@ -27,6 +27,8 @@
 ***************************************************************************/
 #include "ShaderBuffers.h"
 
+Buffer* gpBuf;
+
 void ShaderBuffersSample::onGuiRender()
 {
      mpGui->addDirectionWidget("Light Direction", mLightData.worldDir);
@@ -75,6 +77,10 @@ void ShaderBuffersSample::onLoad()
 
     // create the uniform buffers
     mpProgramVars = ProgramVars::create(mpProgram->getActiveVersion()->getReflector());
+    uint32_t z = 0;
+    auto pBuf = Buffer::create(sizeof(uint32_t), Buffer::BindFlags::UnorderedAccess, Buffer::CpuAccess::None, &z);
+    gpBuf = pBuf.get();
+    mpProgramVars->attachBuffer("gInvocationBuffer", pBuf);
 
     // create pipeline cache
     RasterizerState::Desc rsDesc;
@@ -112,11 +118,26 @@ void ShaderBuffersSample::onFrameRender()
      std::string msg = getFpsMsg() + '\n';
     if(mCountPixelShaderInvocations)
     {
-#ifndef FALCOR_D3D
-        uint32_t FsInvocations = mpProgramVars->getShaderStorageBuffer("PixelCount")["count"];
-        Txt += "FS was invoked " + std::to_string(FsInvocations) + " times.";
-        mpProgramVars->getShaderStorageBuffer("PixelCount")["count"] = 0U;
-#endif
+        // FIXME. Seriously, please FIXME!!!
+
+        // Create a readback buffer
+        auto pBuf = Buffer::create(sizeof(uint32_t), Buffer::BindFlags::None, Buffer::CpuAccess::Read, nullptr);
+
+        // Copy the buffer
+        mpRenderContext->getCommandListApiHandle()->CopyResource(pBuf->getApiHandle(), gpBuf->getApiHandle());
+
+        // Flush the pipeline and make sure the commands have been executed
+        mpRenderContext->flush();
+        mpRenderContext->waitForCompletion();
+
+        // Read the data
+        uint32_t* pData = (uint32_t*)pBuf->map(Buffer::MapType::Read);
+        std::string msg = "PS was invoked " + std::to_string(*pData) + " times";
+        renderText(msg, vec2(600, 100));
+
+        // Reset
+        uint32_t z = 0;
+        gpBuf->updateData(&z, 0, sizeof(uint32_t));
     }
 }
 

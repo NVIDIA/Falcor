@@ -170,6 +170,8 @@ namespace Falcor
         }
 
         SrvHandle getSRV();
+        UavHandle getUAV();
+
     protected:
         Buffer(size_t size, BindFlags bind, CpuAccess update) : mSize(size), mBindFlags(bind), mUpdateFlags(update){}
         ApiHandle mApiHandle;
@@ -180,6 +182,7 @@ namespace Falcor
         CpuAccess mUpdateFlags;
         void* mpApiData = nullptr;
         SrvHandle mSrvHandle = {};
+        UavHandle mUavHandle = {};
     };
 
     inline Buffer::BindFlags operator& (Buffer::BindFlags a, Buffer::BindFlags b)
