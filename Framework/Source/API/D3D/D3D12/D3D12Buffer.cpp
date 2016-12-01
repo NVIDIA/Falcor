@@ -243,4 +243,24 @@ namespace Falcor
     {
         UNSUPPORTED_IN_D3D12("Buffer::evict()");
     }
+
+    SrvHandle Buffer::getSRV()
+    {
+        if(mSrvHandle.ptr == 0)
+        {
+            D3D12_SHADER_RESOURCE_VIEW_DESC desc = {};
+            desc.ViewDimension = D3D12_SRV_DIMENSION_BUFFER;
+            desc.Buffer.FirstElement = 0;
+            desc.Buffer.NumElements = (uint32_t)mSize / sizeof(float);
+            desc.Buffer.Flags = D3D12_BUFFER_SRV_FLAG_RAW;
+            desc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+            desc.Format = DXGI_FORMAT_R32_TYPELESS;
+
+            uint32_t viewId = gpDevice->getSrvDescriptorHeap()->allocateHandle();
+            mSrvHandle = gpDevice->getSrvDescriptorHeap()->getGpuHandle(viewId);
+            gpDevice->getApiHandle()->CreateShaderResourceView(mApiHandle, &desc, gpDevice->getSrvDescriptorHeap()->getCpuHandle(viewId));
+        }
+
+        return mSrvHandle;
+    }
 }

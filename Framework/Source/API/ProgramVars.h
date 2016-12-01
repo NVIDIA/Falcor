@@ -72,6 +72,8 @@ namespace Falcor
         */
         bool attachConstantBuffer(const std::string& name, const ConstantBuffer::SharedPtr& pCB);
 
+        bool attachBuffer(const std::string& name, Buffer::SharedPtr pBuf);
+
         /** Bind a constant buffer object by index.
             If the no CB exists in the specified index or the CB size doesn't match the required size, the call will fail.
             If a buffer was previously bound it will be released.
@@ -201,6 +203,12 @@ namespace Falcor
             uint32_t rootSigOffset = 0;
         };
 
+        struct BufferData
+        {
+            uint32_t rootSigOffset = 0;
+            Buffer::SharedPtr pBuffer;
+        };
+
         // FIXME: This doesn't work with multiple register spaces
         template<typename T> using ResourceDataMap = std::unordered_map<uint32_t, ResourceData<T>>;
 
@@ -216,5 +224,8 @@ namespace Falcor
         std::map<uint32_t, ResourceData<Texture::SharedConstPtr>> mAssignedSrvs;
         std::map<uint32_t, ResourceData<Texture::SharedConstPtr>> mAssignedUavs;
         std::map<uint32_t, ResourceData<Sampler::SharedConstPtr>> mAssignedSamplers;
+
+        std::map<uint32_t, BufferData> mAssignedBufferSrvs;
+        std::map<uint32_t, BufferData> mAssignedBufferUavs;
     };
 }

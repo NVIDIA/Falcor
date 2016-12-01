@@ -168,6 +168,8 @@ namespace Falcor
             }
             return true;
         }
+
+        SrvHandle getSRV();
     protected:
         Buffer(size_t size, BindFlags bind, CpuAccess update) : mSize(size), mBindFlags(bind), mUpdateFlags(update){}
         ApiHandle mApiHandle;
@@ -177,6 +179,7 @@ namespace Falcor
         BindFlags mBindFlags;
         CpuAccess mUpdateFlags;
         void* mpApiData = nullptr;
+        SrvHandle mSrvHandle = {};
     };
 
     inline Buffer::BindFlags operator& (Buffer::BindFlags a, Buffer::BindFlags b)
