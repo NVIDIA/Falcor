@@ -126,7 +126,7 @@ namespace Falcor
         {
         case Buffer::BindFlags::Constant:
             return D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT;
-        case Buffer::BindFlags::Staging:
+        case Buffer::BindFlags::None:
             return D3D12_TEXTURE_DATA_PLACEMENT_ALIGNMENT;
         default:
             return 1;
@@ -235,6 +235,7 @@ namespace Falcor
             }
             else
             {
+                logWarning("Buffer::map() performance warning - using staging resource which require us to flush the pipeline and wait for the GPU to finish its work");
                 if (pApiData->pStagingResource == nullptr)
                 {
                     pApiData->pStagingResource = Buffer::create(mSize, Buffer::BindFlags::None, Buffer::CpuAccess::Read, nullptr);
@@ -281,7 +282,7 @@ namespace Falcor
         }
     }
 
-    uint64_t Buffer::makeResident(Buffer::GpuAccessFlags flags/* = Buffer::GpuAccessFlags::ReadOnly*/) const
+    uint64_t Buffer::makeResident(Buffer::GpuAccessFlags flags) const
     {
         UNSUPPORTED_IN_D3D12("Buffer::makeResident()");
         return 0;

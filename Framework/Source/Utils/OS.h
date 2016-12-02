@@ -163,6 +163,10 @@ namespace Falcor
     */
     void debugBreak();
 
+    /** Print a message into the debug window
+    */
+    void printToDebugWindow(const std::string& s);
+
     /** Get directory from filename.
     */
     std::string getDirectoryFromFile(const std::string& filename);

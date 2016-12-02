@@ -109,12 +109,15 @@ namespace Falcor
     void Logger::log(Level L, const std::string& msg, const bool forceMsgBox /* = false*/)
     {
 #if _LOG_ENABLED
+        std::string s = getLogLevelString(L) + std::string("\t") + msg + "\n";
         if(gInit)
         {
-            fprintf_s(gLogFile, "%-12s", getLogLevelString(L));
-            fprintf_s(gLogFile, msg.c_str());
-            fprintf_s(gLogFile, "\n");
+            fprintf_s(gLogFile, "%s", s.c_str());
             fflush(gLogFile);   // Slows down execution, but ensures that the message will be printed in case of a crash
+            if (isDebuggerPresent())
+            {
+                printToDebugWindow(s);
+            }
         }
 #endif
 

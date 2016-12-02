@@ -65,16 +65,13 @@ namespace Falcor
         */
         enum class BindFlags
         {
-            None            = 0x0,
-            Vertex          = 0x1,
-            Index           = 0x2,
-            Constant        = 0x4,
-            ShaderResource  = 0x8, 
-            StreamOutput    = 0x10,
-            RenderTarget    = 0x20,
-            DepthStencil    = 0x40,
-            UnorderedAccess = 0x80,
-            Staging         = 0x100,
+            None            = 0x0,      ///< The buffer will not be bound the pipeline. Use this to create a staging resource
+            Vertex          = 0x1,      ///< The buffer will be bound as a vertex-buffer
+            Index           = 0x2,      ///< The buffer will be bound as a index-buffer
+            Constant        = 0x4,      ///< The buffer will be bound as a constant-buffer
+            ShaderResource  = 0x8,      ///< The buffer will be bound as a shader-resource
+            StreamOutput    = 0x10,     ///< The buffer will be bound to the stream-output stage as an output buffer
+            UnorderedAccess = 0x20,     ///< The buffer will be bound as an UAV
         };
 
         enum class MapType

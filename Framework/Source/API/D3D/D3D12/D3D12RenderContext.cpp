@@ -204,7 +204,10 @@ namespace Falcor
         {
             for(uint32_t i = 0 ; i < Fbo::getMaxColorTargetCount() ; i++)
             {
-                clearFboColorTarget(pFbo, i, color);
+                if(pFbo->getColorTexture(i))
+                {
+                    clearFboColorTarget(pFbo, i, color);
+                }
             }
         }
 

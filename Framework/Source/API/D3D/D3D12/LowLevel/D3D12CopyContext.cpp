@@ -156,7 +156,7 @@ namespace Falcor
 
         mCommandsPending = true;
         // Allocate a buffer on the upload heap
-        Buffer::SharedPtr pUploadBuffer = Buffer::create(size, Buffer::BindFlags::Staging, Buffer::CpuAccess::Write, nullptr);
+        Buffer::SharedPtr pUploadBuffer = Buffer::create(size, Buffer::BindFlags::None, Buffer::CpuAccess::Write, nullptr);
         pUploadBuffer->updateData(pData, offset, size);
         ID3D12ResourcePtr pResource = pUploadBuffer->getApiHandle();
 
@@ -183,7 +183,7 @@ namespace Falcor
         pDevice->GetCopyableFootprints(&texDesc, firstSubresource, subresourceCount, 0, footprint.data(), rowCount.data(), rowSize.data(), &size);
 
         // Allocate a buffer on the upload heap
-        Buffer::SharedPtr pBuffer = Buffer::create(size, Buffer::BindFlags::Staging, Buffer::CpuAccess::Write, nullptr);
+        Buffer::SharedPtr pBuffer = Buffer::create(size, Buffer::BindFlags::None, Buffer::CpuAccess::Write, nullptr);
         // Map the buffer
         uint8_t* pDst = (uint8_t*)pBuffer->map(Buffer::MapType::WriteDiscard);
         ID3D12ResourcePtr pResource = pBuffer->getApiHandle();

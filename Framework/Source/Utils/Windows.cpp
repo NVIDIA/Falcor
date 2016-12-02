@@ -310,6 +310,11 @@ namespace Falcor
 #endif
     }
 
+    void printToDebugWindow(const std::string& s)
+    {
+        OutputDebugStringA(s.c_str());
+    }
+
     void debugBreak()
     {
         __debugbreak();
