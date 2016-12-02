@@ -29,6 +29,7 @@
 #include <map>
 #include "API/Formats.h"
 #include <unordered_map>
+#include "Resource.h"
 
 namespace Falcor
 {
@@ -37,38 +38,11 @@ namespace Falcor
 
     /** Abstracts the API texture objects
     */
-    class Texture : public std::enable_shared_from_this<Texture>
+    class Texture : public std::enable_shared_from_this<Texture>, public Resource
     {
     public:
         using SharedPtr = std::shared_ptr<Texture>;
         using SharedConstPtr = std::shared_ptr<const Texture>;
-        using ApiHandle = TextureHandle;
-
-        /** Texture types. Notice there are no array types. Array are controlled using the array size parameter on texture creation.
-        */
-        enum class Type
-        {
-            Texture1D,                  ///< 1D texture. Can be bound as render-target, shader-resource and image
-            Texture2D,                  ///< 2D texture. Can be bound as render-target, shader-resource and image
-            Texture3D,                  ///< 3D texture. Can be bound as render-target, shader-resource and image
-            TextureCube,                ///< Texture-cube. Can be bound as render-target, shader-resource and image
-            Texture2DMultisample,       ///< 2D multi-sampled texture. Can be bound as render-target, shader-resource and image
-        };
-
-        /** BindFlags flags
-        */
-        enum class BindFlags
-        {
-            None                =   0x0,    ///< Here for completion. Trying to create a resource with this flag will result in an error
-            ShaderResource      =   0x1,    ///< Shader resource view
-            UnorderedAccess     =   0x2,    ///< Unrodered access view
-            RenderTarget        =   0x4,    ///< Render-target view
-            DepthStencil        =   0x8,    ///< Depth-stencil view
-        };
-
-        /** Get the API handle
-        */
-        TextureHandle getApiHandle() const { return mApiHandle; }
 
         /** Load the texture to the GPU memory.
             \params[in] pSampler If not null, will get a pointer to the combination of the texture/sampler.
@@ -117,12 +91,6 @@ namespace Falcor
         /** Get the resource format
         */
         ResourceFormat getFormat() const { return mFormat; }
-        /** Get the resource Type
-        */
-        Type getType() const { return mType; }
-        /** For multi-sampled resources, check if the texture uses fixed sample locations
-        */
-        bool hasFixedSampleLocations() const { return mHasFixedSampleLocations; }
 
         /** Value used in create*() methods to signal an entire mip-chain is required
         */
@@ -236,15 +204,11 @@ namespace Falcor
         const std::string& getSourceFilename() const { return mSourceFilename; }
 
         void copySubresource(const Texture* pDst, uint32_t srcMipLevel, uint32_t srcArraySlice, uint32_t dstMipLevel, uint32_t dstArraySlice) const;
-        Texture::SharedPtr createView(uint32_t firstArraySlice, uint32_t arraySize, uint32_t mostDetailedMip, uint32_t mipCount) const;
 
 		/** If the texture has been created as using sparse storage, makes individual physically pages resident and non-resident.
 		  * Use page index.
         */
 		void setSparseResidencyPageIndex(bool isResident, uint32_t mipLevel,  uint32_t pageX, uint32_t pageY, uint32_t pageZ, uint32_t width=1, uint32_t height=1, uint32_t depth=1);
-
-        D3D12_RESOURCE_STATES getResourceState() const { return mResourceState; }
-        void setResourceState(D3D12_RESOURCE_STATES state) const { mResourceState = state; }
 
         /** Get a shader-resource view.
             \param[in] firstArraySlice The first array slice of the view
@@ -282,9 +246,6 @@ namespace Falcor
         */
         UavHandle getUAVForClear(uint32_t mipLevel = 0, uint32_t firstArraySlice = 0, uint32_t arraySize = kMaxPossible) const;
 
-        /** Get the bind flags
-        */
-        BindFlags getBindFlags() const { return mBindFlags; }
         static RtvHandle getNullRtv() { return spNullRTV; }
         static DsvHandle getNullDsv() { return spNullDSV; }
 
@@ -330,28 +291,18 @@ namespace Falcor
 
         Texture(uint32_t width, uint32_t height, uint32_t depth, uint32_t arraySize, uint32_t mipLevels, uint32_t sampleCount, ResourceFormat format, Type Type, BindFlags bindFlags);
         
-        TextureHandle mApiHandle = 0;
-        BindFlags mBindFlags = BindFlags::None;
         uint32_t mWidth = 0;
         uint32_t mHeight = 0;
         uint32_t mDepth = 0;
         uint32_t mMipLevels = 0;
         uint32_t mSampleCount = 0;
         uint32_t mArraySize = 0;
-        Type mType;
         ResourceFormat mFormat = ResourceFormat::Unknown;
-        bool mHasFixedSampleLocations = true;
 		bool mIsSparse = false;
 		int32_t mSparsePageWidth = 0;
 		int32_t mSparsePageHeight = 0;
 		int32_t mSparsePageDepth = 0;
 
-        mutable std::map<uint32_t, uint64_t> mBindlessTextureHandle;
-        mutable D3D12_RESOURCE_STATES mResourceState = D3D12_RESOURCE_STATE_COMMON;
-
         static void createNullViews();
     };
-
-    enum_class_operators(Texture::BindFlags);
-    const std::string to_string(Texture::Type Type);
 }

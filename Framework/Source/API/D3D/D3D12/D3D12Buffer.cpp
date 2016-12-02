@@ -29,6 +29,7 @@
 #include "API/Buffer.h"
 #include "API/Device.h"
 #include "Api/LowLevel/ResourceAllocator.h"
+#include "D3D12Resource.h"
 
 namespace Falcor
 {
@@ -57,26 +58,6 @@ namespace Falcor
         0
     };
 
-    D3D12_RESOURCE_FLAGS getResourceFlags(Buffer::BindFlags bindFlags)
-    {
-#define is_set(_a) ((bindFlags & _a) != Buffer::BindFlags::None)
-
-        D3D12_RESOURCE_FLAGS flags = D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE;
-
-        if (is_set(Buffer::BindFlags::UnorderedAccess))
-        {
-            flags |= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
-        }
-
-        if (is_set(Buffer::BindFlags::ShaderResource))
-        {
-            flags &= ~D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE;
-        }
-
-        return flags;
-#undef is_set
-    }
-
     ID3D12ResourcePtr createBuffer(size_t size, const D3D12_HEAP_PROPERTIES& heapProps, Buffer::BindFlags bindFlags)
     {
         ID3D12Device* pDevice = gpDevice->getApiHandle();
@@ -86,7 +67,7 @@ namespace Falcor
         bufDesc.Alignment = 0;
         bufDesc.DepthOrArraySize = 1;
         bufDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
-        bufDesc.Flags = getResourceFlags(bindFlags);
+        bufDesc.Flags = getD3D12ResourceFlags(bindFlags);
         bufDesc.Format = DXGI_FORMAT_UNKNOWN;
         bufDesc.Height = 1;
         bufDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;

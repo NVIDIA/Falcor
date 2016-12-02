@@ -61,7 +61,7 @@ namespace Falcor
 	using CommandListHandle = ID3D12GraphicsCommandListPtr;
 	using CommandQueueHandle = ID3D12CommandQueuePtr;
     using FenceHandle = ID3D12FencePtr;
-    using TextureHandle = ID3D12ResourcePtr;
+    using ResourceHandle = ID3D12ResourcePtr;
     using RtvHandle = std::shared_ptr<DescriptorHeapEntry>;
     using DsvHandle = std::shared_ptr<DescriptorHeapEntry>;
     using SrvHandle = std::shared_ptr<DescriptorHeapEntry>;
@@ -69,7 +69,6 @@ namespace Falcor
     using UavHandle = std::shared_ptr<DescriptorHeapEntry>;
     using GpuAddress = D3D12_GPU_VIRTUAL_ADDRESS;
     
-    using BufferHandle = ID3D12ResourcePtr;
     using RenderStateHandle = ID3D12PipelineStatePtr;
     using ShaderHandle = D3D12_SHADER_BYTECODE;
     using ShaderReflectionHandle = ID3D12ShaderReflectionPtr;

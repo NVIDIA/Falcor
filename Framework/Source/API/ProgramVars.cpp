@@ -377,7 +377,7 @@ namespace Falcor
                 {
                     handle = pTex->getSRV(resDesc.firstArraySlice, resDesc.arraySize, resDesc.mostDetailedMip, resDesc.mipCount);
                 }
-                pContext->resourceBarrier(resDesc.pResource.get(), isUav ? D3D12_RESOURCE_STATE_UNORDERED_ACCESS : D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+                pContext->resourceBarrier(resDesc.pResource.get(), isUav ? Resource::State::UnorderedAccess : Resource::State::ShaderResource);
                 pList->SetGraphicsRootDescriptorTable(rootOffset, handle->getGpuHandle());
             }
         }

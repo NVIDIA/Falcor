@@ -34,6 +34,7 @@
 #include "API/ProgramVars.h"
 #include "Graphics/FullScreenPass.h"
 #include "Graphics/PipelineState.h"
+#include "D3D12Resource.h"
 
 namespace Falcor
 {
@@ -119,36 +120,6 @@ namespace Falcor
         UNSUPPORTED_IN_D3D12("Texture::evict()");
     }
 
-
-    D3D12_RESOURCE_FLAGS getResourceFlags(Texture::BindFlags bindFlags)
-    {
-        D3D12_RESOURCE_FLAGS d3d = D3D12_RESOURCE_FLAG_NONE;
-#define is_set(_a) ((bindFlags & _a) != Texture::BindFlags::None)
-        if(is_set(Texture::BindFlags::DepthStencil))
-        {
-            d3d |= D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
-        }
-
-        if (is_set(Texture::BindFlags::RenderTarget))
-        {
-            d3d |= D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
-        }
-        
-        if (is_set(Texture::BindFlags::UnorderedAccess))
-        {
-            d3d |= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
-        }
-
-        // SRV is different, it's on by default
-        if ((bindFlags & Texture::BindFlags::ShaderResource) == Texture::BindFlags::None)
-        {
-            d3d |= D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE;
-        }
-
-#undef is_set
-        return d3d;
-    }
-
     void createTextureCommon(const Texture* pTexture, Texture::ApiHandle& apiHandle, const void* pData, D3D12_RESOURCE_DIMENSION dim, bool autoGenMips, Texture::BindFlags bindFlags)
     {
         ResourceFormat texFormat = pTexture->getFormat();
@@ -159,7 +130,7 @@ namespace Falcor
         desc.Format = getDxgiFormat(texFormat);
         desc.Width = align_to(getFormatWidthCompressionRatio(texFormat), pTexture->getWidth());
         desc.Height = align_to(getFormatHeightCompressionRatio(texFormat), pTexture->getHeight());
-        desc.Flags = getResourceFlags(bindFlags);
+        desc.Flags = getD3D12ResourceFlags(bindFlags);
         desc.DepthOrArraySize = (pTexture->getType() == Texture::Type::TextureCube) ? pTexture->getArraySize() * 6 : pTexture->getArraySize();
         desc.SampleDesc.Count = pTexture->getSampleCount();
         desc.SampleDesc.Quality = 0;
@@ -367,12 +338,6 @@ namespace Falcor
     void Texture::compress2DTexture()
     {
         UNSUPPORTED_IN_D3D12("Texture::compress2DTexture");
-    }
-
-    Texture::SharedPtr Texture::createView(uint32_t firstArraySlice, uint32_t arraySize, uint32_t mostDetailedMip, uint32_t mipCount) const
-    {
-        UNSUPPORTED_IN_D3D12("createView");
-        return nullptr;
     }
 
     void Texture::generateMips() const

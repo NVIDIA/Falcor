@@ -26,18 +26,18 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 #pragma once
+#include "Resource.h"
 
 namespace Falcor
 {
     /** Low-level buffer object
         This class abstracts the API's buffer creation and management
     */
-    class Buffer : public std::enable_shared_from_this<Buffer>
+    class Buffer : public std::enable_shared_from_this<Buffer>, public Resource
     {
     public:
         using SharedPtr = std::shared_ptr<Buffer>;
         using SharedConstPtr = std::shared_ptr<const Buffer>;
-        using ApiHandle = BufferHandle;
 
         /** Buffer access flags.
             These flags are hints the driver how the buffer will be used.
@@ -60,20 +60,6 @@ namespace Falcor
             WriteOnly = 2, ///< Buffer will mapped for GPU write only.
         };
 
-        /** Buffer usage flags.
-        These flags are hints the driver to what pipeline stages the buffer will be bound to.
-        */
-        enum class BindFlags
-        {
-            None            = 0x0,      ///< The buffer will not be bound the pipeline. Use this to create a staging resource
-            Vertex          = 0x1,      ///< The buffer will be bound as a vertex-buffer
-            Index           = 0x2,      ///< The buffer will be bound as a index-buffer
-            Constant        = 0x4,      ///< The buffer will be bound as a constant-buffer
-            ShaderResource  = 0x8,      ///< The buffer will be bound as a shader-resource
-            StreamOutput    = 0x10,     ///< The buffer will be bound to the stream-output stage as an output buffer
-            UnorderedAccess = 0x20,     ///< The buffer will be bound as an UAV
-        };
-
         enum class MapType
         {
             Read,               ///< Map the buffer for read access. Buffer had to be created with AccessFlags#MapWrite flag.
@@ -89,7 +75,7 @@ namespace Falcor
             \param[in] pInitData Optional parameter. Initial buffer data. Pointed buffer size should be at least Size bytes.
             \return A pointer to a new buffer object, or nullptr if creation failed.
         */
-        static SharedPtr create(size_t size, BindFlags bind, CpuAccess cpuAccess, const void* pInitData);
+        static SharedPtr create(size_t size, Resource::BindFlags bind, CpuAccess cpuAccess, const void* pInitData);
         
         /** Copy the contents of this buffer to the given buffer.\nThe entire buffer will be copied, so the destination buffer must have the *same* size as the source buffer.
             \param pDst The destination buffer.
@@ -118,10 +104,6 @@ namespace Falcor
             If offset and size will cause an out-of-bound access to the buffer, an error will be logged and the read will fail.
         */
         void readData(void* pData, size_t offset, size_t size) const;
-
-        /** Get the API handle of the buffer object
-        */
-        BufferHandle getApiHandle() const { return mApiHandle; }
 
         /** Get the GPU address
         */
@@ -170,26 +152,14 @@ namespace Falcor
         UavHandle getUAV();
         UavHandle getUAVForClear();
     protected:
-        Buffer(size_t size, BindFlags bind, CpuAccess update) : mSize(size), mBindFlags(bind), mCpuAccess(update){}
-        ApiHandle mApiHandle;
+        Buffer(size_t size, BindFlags bind, CpuAccess update) : Resource(Type::Buffer, bind), mSize(size), mCpuAccess(update){}
         uint64_t mBindlessHandle = 0;
         size_t mSize = 0;
         mutable uint64_t mGpuPtr = 0;
-        BindFlags mBindFlags;
         CpuAccess mCpuAccess;
         void* mpApiData = nullptr;
         SrvHandle mSrv;
         UavHandle mUav;
         UavHandle mUavForClear;
     };
-
-    inline Buffer::BindFlags operator& (Buffer::BindFlags a, Buffer::BindFlags b)
-    {
-        return static_cast<Buffer::BindFlags>(static_cast<int>(a)& static_cast<int>(b));
-    }
-
-    inline Buffer::BindFlags operator| (Buffer::BindFlags a, Buffer::BindFlags b)
-    {
-        return static_cast<Buffer::BindFlags>(static_cast<int>(a) | static_cast<int>(b));
-    }
 }

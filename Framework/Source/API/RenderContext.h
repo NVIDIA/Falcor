@@ -95,7 +95,7 @@ namespace Falcor
         void clearUAV(Texture::SharedPtr pBuffer, const vec4& clear);
         void clearUAV(Texture::SharedPtr pBuffer, const uvec4& clear);
 
-        void resourceBarrier(const Texture* pTexture, D3D12_RESOURCE_STATES state);
+        void resourceBarrier(const Resource* pResource, Resource::State newState);
 
         /** Destructor
         */

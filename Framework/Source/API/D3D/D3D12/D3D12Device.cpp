@@ -258,7 +258,7 @@ namespace Falcor
 	{
 		DeviceData* pData = (DeviceData*)mpPrivateData;
 
-        mpRenderContext->resourceBarrier(pData->frameData[pData->currentBackBufferIndex].pFbo->getColorTexture(0).get(), D3D12_RESOURCE_STATE_PRESENT);
+        mpRenderContext->resourceBarrier(pData->frameData[pData->currentBackBufferIndex].pFbo->getColorTexture(0).get(), Resource::State::Present);
         mpRenderContext->flush();
         pData->pSwapChain->Present(pData->syncInterval, 0);
         pData->pFrameFence->gpuSignal(mpRenderContext->getCommandQueue().GetInterfacePtr());

@@ -31,6 +31,7 @@
 #include "API/Device.h"
 #include "glm/gtc/type_ptr.hpp"
 #include "LowLevel/D3D12FencedPool.h"
+#include "D3D12Resource.h"
 #include "API/D3D/D3DState.h"
 
 namespace Falcor
@@ -136,21 +137,21 @@ namespace Falcor
         pApiData->pCopyContext->reset();
 	}
 
-    void RenderContext::resourceBarrier(const Texture* pTexture, D3D12_RESOURCE_STATES state)
+    void RenderContext::resourceBarrier(const Resource* pResource, Resource::State newState)
     {
         RenderContextData* pApiData = (RenderContextData*)mpApiData;
-        if(pTexture->getResourceState() != state)
+        if(pResource->getState() != newState)
         {
             D3D12_RESOURCE_BARRIER barrier;
             barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
             barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
-            barrier.Transition.pResource = pTexture->getApiHandle();
-            barrier.Transition.StateBefore = pTexture->getResourceState();
-            barrier.Transition.StateAfter = state;
-            barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+            barrier.Transition.pResource = pResource->getApiHandle();
+            barrier.Transition.StateBefore =  getD3D12ResourceState(pResource->getState());
+            barrier.Transition.StateAfter = getD3D12ResourceState(newState);
+            barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;   // OPTME: Need to do that only for the subresources we will actually use
 
             pApiData->pList->ResourceBarrier(1, &barrier);
-            pTexture->setResourceState(state);
+            pResource->mState = newState;
         }
     }
 
@@ -225,7 +226,7 @@ namespace Falcor
         if (pTexture)
         {
             RtvHandle rtv = pFbo->getRenderTargetView(rtIndex);
-            resourceBarrier(pTexture, D3D12_RESOURCE_STATE_RENDER_TARGET);
+            resourceBarrier(pTexture, Resource::State::RenderTarget);
             pApiData->pList->ClearRenderTargetView(rtv->getCpuHandle(), glm::value_ptr(color), 0, nullptr);
         }
         else
@@ -245,7 +246,7 @@ namespace Falcor
         const Texture* pTexture = pFbo->getDepthStencilTexture().get();
         if(pTexture)
         {
-            resourceBarrier(pTexture, D3D12_RESOURCE_STATE_DEPTH_WRITE);
+            resourceBarrier(pTexture, Resource::State::DepthStencil);
             DsvHandle dsv = pFbo->getDepthStencilView();
             pApiData->pList->ClearDepthStencilView(dsv->getCpuHandle(), D3D12_CLEAR_FLAGS(flags), depth, stencil, 0, nullptr);
         }
@@ -308,7 +309,7 @@ namespace Falcor
                 auto& pTexture = pFbo->getColorTexture(i);
                 if (pTexture)
                 {
-                    pCtx->resourceBarrier(pTexture.get(), D3D12_RESOURCE_STATE_RENDER_TARGET);
+                    pCtx->resourceBarrier(pTexture.get(), Resource::State::RenderTarget);
                 }
             }
 
@@ -316,7 +317,7 @@ namespace Falcor
             auto& pTexture = pFbo->getDepthStencilTexture();
             if (pTexture)
             {
-                pCtx->resourceBarrier(pTexture.get(), D3D12_RESOURCE_STATE_DEPTH_WRITE);
+                pCtx->resourceBarrier(pTexture.get(), Resource::State::DepthStencil);
             }
         }
         else

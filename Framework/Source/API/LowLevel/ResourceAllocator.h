@@ -42,7 +42,7 @@ namespace Falcor
         static SharedPtr create(size_t pageSize, GpuFence::SharedPtr pFence);
         struct AllocationData
         {
-            BufferHandle pResourceHandle;
+            ResourceHandle pResourceHandle;
             GpuAddress gpuAddress;
             uint8_t* pData;
             uint64_t allocationID;
@@ -62,7 +62,7 @@ namespace Falcor
         {
             uint32_t allocationsCount = 0;
             size_t currentOffset = 0;
-            BufferHandle pResourceHandle = nullptr;
+            ResourceHandle pResourceHandle = nullptr;
             GpuAddress gpuAddress = 0;
             uint8_t* pData = nullptr;
 

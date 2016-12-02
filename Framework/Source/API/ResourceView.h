@@ -25,23 +25,10 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#include "Framework.h"
-#include "API/Texture.h"
+#pragma once
+#include <vector>
 
 namespace Falcor
 {
-	uint32_t Texture::tempDefaultUint = 0;
 
-    Texture::Texture(uint32_t width, uint32_t height, uint32_t depth, uint32_t arraySize, uint32_t mipLevels, uint32_t sampleCount, ResourceFormat format, Type type, BindFlags bindFlags) :
-        Resource(type, bindFlags), mWidth(width), mHeight(height), mDepth(depth), mMipLevels(mipLevels), mSampleCount(sampleCount), mArraySize(arraySize), mFormat(format)
-    {
-        createNullViews();
-        if(mMipLevels == kMaxPossible)
-        {
-            uint32_t dims = width | height | depth;
-            unsigned long bits;
-            _BitScanReverse(&bits, dims);
-            mMipLevels = (uint32_t)bits + 1;
-        }
-    }
 }
