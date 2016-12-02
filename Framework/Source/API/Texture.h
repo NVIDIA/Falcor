@@ -275,6 +275,13 @@ namespace Falcor
         */
         UavHandle getUAV(uint32_t mipLevel = 0, uint32_t firstArraySlice = 0, uint32_t arraySize = kMaxPossible) const;
 
+        /** Get an unordered access view that can be used for clearing the resource
+        \param[in] mipLevel The requested mip-level
+        \param[in] firstArraySlice The first array slice of the view
+        \param[in] arraySize The array size. If this is equal to Texture#kMaxPossible, will create a view ranging from firstArraySlice to the texture's array size
+        */
+        UavHandle getUAVForClear(uint32_t mipLevel = 0, uint32_t firstArraySlice = 0, uint32_t arraySize = kMaxPossible) const;
+
         /** Get the bind flags
         */
         BindFlags getBindFlags() const { return mBindFlags; }
@@ -311,6 +318,7 @@ namespace Falcor
         mutable std::unordered_map<ViewInfo, RtvHandle, ViewInfoHasher> mRtvs;
         mutable std::unordered_map<ViewInfo, DsvHandle, ViewInfoHasher> mDsvs;
         mutable std::unordered_map<ViewInfo, UavHandle, ViewInfoHasher> mUavs;
+        mutable std::unordered_map<ViewInfo, UavHandle, ViewInfoHasher> mClearUavs;
 
         static RtvHandle spNullRTV;
         static DsvHandle spNullDSV;

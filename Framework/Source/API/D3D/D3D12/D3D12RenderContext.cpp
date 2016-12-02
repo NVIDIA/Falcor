@@ -154,20 +154,44 @@ namespace Falcor
         }
     }
 
+    template<typename ResourceType, typename ClearType>
+    void clearUavCommon(ResourceType pResource, const ClearType& clear, void* pData)
+    {
+        RenderContextData* pApiData = (RenderContextData*)pData;
+        UavHandle clearHandle = pResource->getUAVForClear();
+        UavHandle uav = pResource->getUAV();
+        if (typeid(ClearType) == typeid(vec4))
+        {
+            pApiData->pList->ClearUnorderedAccessViewFloat(uav->getGpuHandle(), clearHandle->getCpuHandle(), pResource->getApiHandle(), (float*)value_ptr(clear), 0, nullptr);
+        }
+        else if(typeid(ClearType) == typeid(uvec4))
+        {
+            pApiData->pList->ClearUnorderedAccessViewUint(uav->getGpuHandle(), clearHandle->getCpuHandle(), pResource->getApiHandle(), (uint32_t*)value_ptr(clear), 0, nullptr);
+        }
+        else
+        {
+            should_not_get_here();
+        }
+    }
+
     void RenderContext::clearUAV(Buffer::SharedPtr pBuffer, const vec4& clear)
     {
-        RenderContextData* pApiData = (RenderContextData*)mpApiData;
-        UavHandle clearHandle = pBuffer->getUAV<true>();
-        UavHandle uav = pBuffer->getUAV();
-        pApiData->pList->ClearUnorderedAccessViewFloat(uav->getGpuHandle(), clearHandle->getCpuHandle(), pBuffer->getApiHandle(), value_ptr(clear), 0, nullptr);
+        clearUavCommon(pBuffer, clear, mpApiData);
     }
 
     void RenderContext::clearUAV(Buffer::SharedPtr pBuffer, const uvec4& clear)
     {
-        RenderContextData* pApiData = (RenderContextData*)mpApiData;
-        UavHandle clearHandle = pBuffer->getUAV<true>();
-        UavHandle uav = pBuffer->getUAV();
-        pApiData->pList->ClearUnorderedAccessViewUint(uav->getGpuHandle(), clearHandle->getCpuHandle(), pBuffer->getApiHandle(), value_ptr(clear), 0, nullptr);
+        clearUavCommon(pBuffer, clear, mpApiData);
+    }
+
+    void RenderContext::clearUAV(Texture::SharedPtr pTexture, const vec4& clear)
+    {
+        clearUavCommon(pTexture, clear, mpApiData);
+    }
+
+    void RenderContext::clearUAV(Texture::SharedPtr pTexture, const uvec4& clear)
+    {
+        clearUavCommon(pTexture, clear, mpApiData);
     }
 
 	void RenderContext::clearFbo(const Fbo* pFbo, const glm::vec4& color, float depth, uint8_t stencil, FboAttachmentType flags)

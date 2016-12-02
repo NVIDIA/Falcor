@@ -170,9 +170,8 @@ namespace Falcor
         }
 
         SrvHandle getSRV();
-        template<bool forClear = false>
         UavHandle getUAV();
-
+        UavHandle getUAVForClear();
     protected:
         Buffer(size_t size, BindFlags bind, CpuAccess update) : mSize(size), mBindFlags(bind), mCpuAccess(update){}
         ApiHandle mApiHandle;

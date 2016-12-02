@@ -311,28 +311,34 @@ namespace Falcor
         return mSrv;
     }
 
-    template<bool forClear>
-    UavHandle Buffer::getUAV()
-    {
-        UavHandle& handle = forClear ? mUavForClear : mUav;
 
-        if (handle == 0)
+    template<bool forClear>
+    UavHandle getUavCommon(UavHandle& handle, size_t bufSize, Buffer::ApiHandle apiHandle)
+    {
+        if (handle == nullptr)
         {
             D3D12_UNORDERED_ACCESS_VIEW_DESC desc = {};
             desc.ViewDimension = D3D12_UAV_DIMENSION_BUFFER;
             desc.Format = DXGI_FORMAT_R32_TYPELESS;
             desc.Buffer.FirstElement = 0;
             desc.Buffer.Flags = D3D12_BUFFER_UAV_FLAG_RAW;
-            desc.Buffer.NumElements = (uint32_t)mSize / sizeof(float);
+            desc.Buffer.NumElements = (uint32_t)bufSize / sizeof(float);
 
             DescriptorHeap* pHeap = forClear ? gpDevice->getCpuUavDescriptorHeap().get() : gpDevice->getUavDescriptorHeap().get();
             handle = pHeap->allocateEntry();
-            gpDevice->getApiHandle()->CreateUnorderedAccessView(mApiHandle, nullptr, &desc, handle->getCpuHandle());
+            gpDevice->getApiHandle()->CreateUnorderedAccessView(apiHandle, nullptr, &desc, handle->getCpuHandle());
         }
 
         return handle;
     }
 
-    template UavHandle Buffer::getUAV<true>();
-    template UavHandle Buffer::getUAV<false>();
+    UavHandle Buffer::getUAV()
+    {
+        return getUavCommon<false>(mUav, mSize, mApiHandle);
+    }
+
+    UavHandle Buffer::getUAVForClear()
+    {
+        return getUavCommon<true>(mUavForClear, mSize, mApiHandle);
+    }
 }

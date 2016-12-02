@@ -275,7 +275,8 @@ namespace Falcor
         return createViewCommon<DsvHandle>(this, mipLevel, 1, firstArraySlice, arraySize, mDsvs, gpDevice->getDsvDescriptorHeap().get(), createFunc);
     }
 
-    UavHandle Texture::getUAV(uint32_t mipLevel, uint32_t firstArraySlice, uint32_t arraySize) const
+    template<bool forClear, typename ViewMapType>
+    UavHandle getUavCommon(const Texture* pTexture, uint32_t mipLevel, uint32_t firstArraySlice, uint32_t arraySize, ViewMapType viewMap)
     {
         auto createFunc = [](const Texture* pTexture, const Texture::ViewInfo& viewInfo, DescriptorHeapEntry::CpuHandle cpuHandle)
         {
@@ -283,8 +284,18 @@ namespace Falcor
             initializeUavDesc<D3D12_UNORDERED_ACCESS_VIEW_DESC>(pTexture, viewInfo.mostDetailedMip, viewInfo.firstArraySlice, viewInfo.arraySize, desc);
             gpDevice->getApiHandle()->CreateUnorderedAccessView(pTexture->getApiHandle(), nullptr, &desc, cpuHandle);
         };
+        DescriptorHeap* pHeap = forClear ? gpDevice->getCpuUavDescriptorHeap().get() : gpDevice->getUavDescriptorHeap().get();
+        return createViewCommon<UavHandle>(pTexture, mipLevel, 1, firstArraySlice, arraySize, viewMap, pHeap, createFunc);
+    }
 
-        return createViewCommon<UavHandle>(this, mipLevel, 1, firstArraySlice, arraySize, mUavs, gpDevice->getUavDescriptorHeap().get(), createFunc);
+    UavHandle Texture::getUAV(uint32_t mipLevel, uint32_t firstArraySlice, uint32_t arraySize) const
+    {
+        return getUavCommon<false>(this, mipLevel, firstArraySlice, arraySize, mUavs);
+    }
+
+    UavHandle Texture::getUAVForClear(uint32_t mipLevel, uint32_t firstArraySlice, uint32_t arraySize) const
+    {
+        return getUavCommon<true>(this, mipLevel, firstArraySlice, arraySize, mClearUavs);
     }
 
     RtvHandle Texture::getRTV(uint32_t mipLevel, uint32_t firstArraySlice, uint32_t arraySize) const
