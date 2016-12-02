@@ -108,6 +108,7 @@ namespace Falcor
         DescriptorHeap::SharedPtr getSrvDescriptorHeap() const { return mpSrvHeap; }
         DescriptorHeap::SharedPtr getDsvDescriptorHeap() const { return mpDsvHeap; }
         DescriptorHeap::SharedPtr getUavDescriptorHeap() const { return mpUavHeap; }
+        DescriptorHeap::SharedPtr getCpuUavDescriptorHeap() const { return mpCpuUavHeap; }
         DescriptorHeap::SharedPtr getRtvDescriptorHeap() const { return mpRtvHeap; }
         DescriptorHeap::SharedPtr getSamplerDescriptorHeap() const { return mpSamplerHeap; }
         ResourceAllocator::SharedPtr getResourceAllocator() const { return mpResourceAllocator; }
@@ -125,6 +126,7 @@ namespace Falcor
         DescriptorHeap::SharedPtr mpSamplerHeap;
         DescriptorHeap::SharedPtr mpSrvHeap;
         DescriptorHeap::SharedPtr mpUavHeap;
+        DescriptorHeap::SharedPtr mpCpuUavHeap; // We need it for clearing UAVs
 
 		Window::SharedPtr mpWindow;
 		void* mpPrivateData;

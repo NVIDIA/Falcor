@@ -154,6 +154,22 @@ namespace Falcor
         }
     }
 
+    void RenderContext::clearUAV(Buffer::SharedPtr pBuffer, const vec4& clear)
+    {
+        RenderContextData* pApiData = (RenderContextData*)mpApiData;
+        UavHandle clearHandle = pBuffer->getUAV<true>();
+        UavHandle uav = pBuffer->getUAV();
+        pApiData->pList->ClearUnorderedAccessViewFloat(uav->getGpuHandle(), clearHandle->getCpuHandle(), pBuffer->getApiHandle(), value_ptr(clear), 0, nullptr);
+    }
+
+    void RenderContext::clearUAV(Buffer::SharedPtr pBuffer, const uvec4& clear)
+    {
+        RenderContextData* pApiData = (RenderContextData*)mpApiData;
+        UavHandle clearHandle = pBuffer->getUAV<true>();
+        UavHandle uav = pBuffer->getUAV();
+        pApiData->pList->ClearUnorderedAccessViewUint(uav->getGpuHandle(), clearHandle->getCpuHandle(), pBuffer->getApiHandle(), value_ptr(clear), 0, nullptr);
+    }
+
 	void RenderContext::clearFbo(const Fbo* pFbo, const glm::vec4& color, float depth, uint8_t stencil, FboAttachmentType flags)
 	{
         bool clearDepth = (flags & FboAttachmentType::Depth) != FboAttachmentType::None;

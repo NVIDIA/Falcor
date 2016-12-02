@@ -170,6 +170,7 @@ namespace Falcor
         }
 
         SrvHandle getSRV();
+        template<bool forClear = false>
         UavHandle getUAV();
 
     protected:
@@ -183,6 +184,7 @@ namespace Falcor
         void* mpApiData = nullptr;
         SrvHandle mSrv;
         UavHandle mUav;
+        UavHandle mUavForClear;
     };
 
     inline Buffer::BindFlags operator& (Buffer::BindFlags a, Buffer::BindFlags b)

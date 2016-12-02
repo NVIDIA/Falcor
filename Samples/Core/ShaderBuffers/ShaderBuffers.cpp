@@ -120,8 +120,7 @@ void ShaderBuffersSample::onFrameRender()
         mpInvocationsBuffer->unmap();
         renderText(msg, vec2(600, 100));
 
-        uint32_t z = 0;
-        mpInvocationsBuffer->updateData(&z, 0, sizeof(uint32_t));
+        mpRenderContext->clearUAV(mpInvocationsBuffer, uvec4(0));
     }
 }
 
