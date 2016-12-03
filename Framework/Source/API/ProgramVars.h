@@ -70,9 +70,7 @@ namespace Falcor
             \param[in] pCB The constant buffer object
             \return false is the call failed, otherwise true
         */
-        bool attachConstantBuffer(const std::string& name, const ConstantBuffer::SharedPtr& pCB);
-
-        bool attachBuffer(const std::string& name, Buffer::SharedPtr pBuf);
+        bool setConstantBuffer(const std::string& name, const ConstantBuffer::SharedPtr& pCB);
 
         /** Bind a constant buffer object by index.
             If the no CB exists in the specified index or the CB size doesn't match the required size, the call will fail.
@@ -81,7 +79,7 @@ namespace Falcor
             \param[in] pCB The constant buffer object
             \return false is the call failed, otherwise true
         */
-        bool attachConstantBuffer(uint32_t index, const ConstantBuffer::SharedPtr& pCB);
+        bool setConstantBuffer(uint32_t index, const ConstantBuffer::SharedPtr& pCB);
 
         /** Get a constant buffer object.
             \param[in] name The name of the buffer
@@ -103,9 +101,15 @@ namespace Falcor
 
         /** Get a shader-storage buffer object.
         \param[in] index The index of the buffer
-        \return If the index is valid, a shared pointer to the SSBO. Otherwise returns nullptr
+        \return If the index is valid, a shared pointer to the StructuredBuffer. Otherwise returns nullptr
         */
         ShaderStorageBuffer::SharedPtr getStructuredBuffer(uint32_t index) const;
+
+        /** Set a raw-buffer. Based on the shader reflection, it will be bound as either an SRV or a UAV
+            \param[in] name The name of the buffer
+            \param[in] pBuf The buffer object
+        */
+        bool setRawBuffer(const std::string& name, Buffer::SharedPtr pBuf);
 
         /** Bind a texture to the program in the global namespace.
             If you are using bindless textures, than this is not the right call for you. You should use the ConstantBuffer::setTexture() method instead.

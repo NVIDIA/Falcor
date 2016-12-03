@@ -77,7 +77,7 @@ void ShaderBuffersSample::onLoad()
     mpProgramVars = ProgramVars::create(mpProgram->getActiveVersion()->getReflector());
     uint32_t z = 0;
     mpInvocationsBuffer = Buffer::create(sizeof(uint32_t), Buffer::BindFlags::UnorderedAccess, Buffer::CpuAccess::Read, &z);
-    mpProgramVars->attachBuffer("gInvocationBuffer", mpInvocationsBuffer);
+    mpProgramVars->setRawBuffer("gInvocationBuffer", mpInvocationsBuffer);
 
     // create pipeline cache
     RasterizerState::Desc rsDesc;

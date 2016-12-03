@@ -156,11 +156,12 @@ namespace Falcor
     }
 
     template<typename ClearType>
-    void clearUavCommon(const UnorderedAccessView* pUav, const ClearType& clear, void* pData)
+    void clearUavCommon(RenderContext* pContext, const UnorderedAccessView* pUav, const ClearType& clear, void* pData)
     {
+        pContext->resourceBarrier(pUav->getResource().get(), Resource::State::UnorderedAccess);
         RenderContextData* pApiData = (RenderContextData*)pData;
         UavHandle clearHandle = pUav->getHandleForClear();
-        UavHandle uav = pUav->getApiHandle();
+        UavHandle uav = pUav->getApiHandle();        
         if (typeid(ClearType) == typeid(vec4))
         {
             pApiData->pList->ClearUnorderedAccessViewFloat(uav->getGpuHandle(), clearHandle->getCpuHandle(), pUav->getResource()->getApiHandle(), (float*)value_ptr(clear), 0, nullptr);
@@ -177,12 +178,12 @@ namespace Falcor
 
     void RenderContext::clearUAV(const UnorderedAccessView* pUav, const vec4& value)
     {
-        clearUavCommon(pUav, value, mpApiData);
+        clearUavCommon(this, pUav, value, mpApiData);
     }
 
     void RenderContext::clearUAV(const UnorderedAccessView* pUav, const uvec4& value)
     {
-        clearUavCommon(pUav, value, mpApiData);
+        clearUavCommon(this, pUav, value, mpApiData);
     }
 
 	void RenderContext::clearFbo(const Fbo* pFbo, const glm::vec4& color, float depth, uint8_t stencil, FboAttachmentType flags)

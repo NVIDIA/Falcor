@@ -189,7 +189,7 @@ namespace Falcor
         return getBufferCommon<ShaderStorageBuffer>(index, mStructuredBuffers);
     }
 
-    bool ProgramVars::attachConstantBuffer(uint32_t index, const ConstantBuffer::SharedPtr& pCB)
+    bool ProgramVars::setConstantBuffer(uint32_t index, const ConstantBuffer::SharedPtr& pCB)
     {
         // Check that the index is valid
         if (mConstantBuffers.find(index) == mConstantBuffers.end())
@@ -210,7 +210,7 @@ namespace Falcor
         return true;
     }
 
-    bool ProgramVars::attachConstantBuffer(const std::string& name, const ConstantBuffer::SharedPtr& pCB)
+    bool ProgramVars::setConstantBuffer(const std::string& name, const ConstantBuffer::SharedPtr& pCB)
     {
         // Find the buffer
         uint32_t loc = mpReflector->getBufferBinding(name);
@@ -220,16 +220,16 @@ namespace Falcor
             return false;
         }
 
-        return attachConstantBuffer(loc, pCB);
+        return setConstantBuffer(loc, pCB);
     }
 
-    bool ProgramVars::attachBuffer(const std::string& name, Buffer::SharedPtr pBuf)
+    bool ProgramVars::setRawBuffer(const std::string& name, Buffer::SharedPtr pBuf)
     {
         // Find the buffer
         const ProgramReflection::Resource* pDesc = mpReflector->getResourceDesc(name);
         if (pDesc == nullptr)
         {
-            Logger::log(Logger::Level::Warning, "Constant buffer \"" + name + "\" was not found. Ignoring attachConstantBuffer() call.");
+            Logger::log(Logger::Level::Warning, "Raw buffer \"" + name + "\" was not found. Ignoring setRawBuffer() call.");
             return false;
         }
         switch (pDesc->type)

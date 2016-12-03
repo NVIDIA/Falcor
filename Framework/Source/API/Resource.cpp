@@ -172,8 +172,7 @@ namespace Falcor
             return RenderTargetView::create(pResource->shared_from_this(), mostDetailedMip, firstArraySlice, arraySize);
         };
 
-        return RenderTargetView::create(shared_from_this(), mipLevel, firstArraySlice, arraySize);
-//        return findViewCommon<RenderTargetView>(this, mipLevel, 1, firstArraySlice, arraySize, mRtvs, createFunc);
+        return findViewCommon<RenderTargetView>(this, mipLevel, 1, firstArraySlice, arraySize, mRtvs, createFunc);
     }
 
     ShaderResourceView::SharedPtr Resource::getSRV(uint32_t firstArraySlice, uint32_t arraySize, uint32_t mostDetailedMip, uint32_t mipCount) const
