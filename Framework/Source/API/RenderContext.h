@@ -90,10 +90,8 @@ namespace Falcor
             */
         void clearFboDepthStencil(const Fbo* pFbo, float depth, uint8_t stencil, bool clearDepth = true, bool clearStencil = true);
 
-        void clearUAV(Buffer::SharedPtr pBuffer, const vec4& clear);
-        void clearUAV(Buffer::SharedPtr pBuffer, const uvec4& clear);
-        void clearUAV(Texture::SharedPtr pBuffer, const vec4& clear);
-        void clearUAV(Texture::SharedPtr pBuffer, const uvec4& clear);
+        void clearUAV(Resource::SharedPtr pBuffer, const vec4& clear);
+        void clearUAV(Resource::SharedPtr pBuffer, const uvec4& clear);
 
         void resourceBarrier(const Resource* pResource, Resource::State newState);
 

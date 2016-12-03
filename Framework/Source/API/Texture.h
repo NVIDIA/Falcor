@@ -28,7 +28,6 @@
 #pragma once
 #include <map>
 #include "API/Formats.h"
-#include <unordered_map>
 #include "Resource.h"
 
 namespace Falcor
@@ -38,7 +37,7 @@ namespace Falcor
 
     /** Abstracts the API texture objects
     */
-    class Texture : public std::enable_shared_from_this<Texture>, public Resource
+    class Texture : public Resource
     {
     public:
         using SharedPtr = std::shared_ptr<Texture>;
@@ -91,10 +90,6 @@ namespace Falcor
         /** Get the resource format
         */
         ResourceFormat getFormat() const { return mFormat; }
-
-        /** Value used in create*() methods to signal an entire mip-chain is required
-        */
-        static const uint32_t kMaxPossible = uint32_t(-1);
 
         /** create a 1D texture
             \param Width The width of the texture.
@@ -210,76 +205,19 @@ namespace Falcor
         */
 		void setSparseResidencyPageIndex(bool isResident, uint32_t mipLevel,  uint32_t pageX, uint32_t pageY, uint32_t pageZ, uint32_t width=1, uint32_t height=1, uint32_t depth=1);
 
-        /** Get a shader-resource view.
-            \param[in] firstArraySlice The first array slice of the view
-            \param[in] arraySize The array size. If this is equal to Texture#kMaxPossible, will create a view ranging from firstArraySlice to the texture's array size
-            \param[in] mostDetailedMip The most detailed mip level of the view
-            \param[in] mipCount The number of mip-levels to bind. If this is equal to Texture#kMaxPossible, will create a view ranging from mostDetailedMip to the texture's mip levels count
-        */
-        SrvHandle getSRV(uint32_t firstArraySlice = 0, uint32_t arraySize = kMaxPossible, uint32_t mostDetailedMip = 0, uint32_t mipCount = kMaxPossible) const;
-
-        /** Get a render-target view.
-        \param[in] mipLevel The requested mip-level
-        \param[in] firstArraySlice The first array slice of the view
-        \param[in] arraySize The array size. If this is equal to Texture#kMaxPossible, will create a view ranging from firstArraySlice to the texture's array size
-        */
-        RtvHandle getRTV(uint32_t mipLevel = 0, uint32_t firstArraySlice = 0, uint32_t arraySize = kMaxPossible) const;
-
-        /** Get a depth stencil view.
-        \param[in] mipLevel The requested mip-level
-        \param[in] firstArraySlice The first array slice of the view
-        \param[in] arraySize The array size. If this is equal to Texture#kMaxPossible, will create a view ranging from firstArraySlice to the texture's array size
-        */
-        DsvHandle getDSV(uint32_t mipLevel = 0, uint32_t firstArraySlice = 0, uint32_t arraySize = kMaxPossible) const;
-
-        /** Get an unordered access view.
-        \param[in] mipLevel The requested mip-level
-        \param[in] firstArraySlice The first array slice of the view
-        \param[in] arraySize The array size. If this is equal to Texture#kMaxPossible, will create a view ranging from firstArraySlice to the texture's array size
-        */
-        UavHandle getUAV(uint32_t mipLevel = 0, uint32_t firstArraySlice = 0, uint32_t arraySize = kMaxPossible) const;
-
-        /** Get an unordered access view that can be used for clearing the resource
-        \param[in] mipLevel The requested mip-level
-        \param[in] firstArraySlice The first array slice of the view
-        \param[in] arraySize The array size. If this is equal to Texture#kMaxPossible, will create a view ranging from firstArraySlice to the texture's array size
-        */
-        UavHandle getUAVForClear(uint32_t mipLevel = 0, uint32_t firstArraySlice = 0, uint32_t arraySize = kMaxPossible) const;
-
-        static RtvHandle getNullRtv() { return spNullRTV; }
-        static DsvHandle getNullDsv() { return spNullDSV; }
-
-        struct ViewInfo
+        // Texture inherits Resource which inherits enable_shared_from_this.
+        // If Texture will also inherit enable_shared_from_this, which is a problem (virtual inheritance doesn't help). To solve this, we define the following functions.
+        SharedPtr shared_from_this()
         {
-            uint32_t firstArraySlice;
-            uint32_t arraySize;
-            uint32_t mostDetailedMip;
-            uint32_t mipCount;
+            return std::static_pointer_cast<Texture>(std::enable_shared_from_this<Resource>::shared_from_this());
+        }
 
-            bool operator==(const ViewInfo& other) const
-            {
-                return (firstArraySlice == other.firstArraySlice) && (arraySize == other.arraySize) && (mipCount == other.mipCount) && (mostDetailedMip == other.mostDetailedMip);
-            }
-        };
-
-        struct ViewInfoHasher
+        SharedConstPtr shared_from_this() const
         {
-            std::size_t operator()(const ViewInfo& v) const
-            {
-                return ((std::hash<uint32_t>()(v.firstArraySlice)
-                    ^ (std::hash<uint32_t>()(v.arraySize) << 1)) >> 1)
-                    ^ (std::hash<uint32_t>()(v.mipCount) << 1)
-                    ^ (std::hash<uint32_t>()(v.mostDetailedMip) << 3);
-            }
-        };
-        
+            return std::static_pointer_cast<const Texture>(std::enable_shared_from_this<Resource>::shared_from_this());
+        }
     protected:
         friend class Device;
-        mutable std::unordered_map<ViewInfo, SrvHandle, ViewInfoHasher> mSrvs;
-        mutable std::unordered_map<ViewInfo, RtvHandle, ViewInfoHasher> mRtvs;
-        mutable std::unordered_map<ViewInfo, DsvHandle, ViewInfoHasher> mDsvs;
-        mutable std::unordered_map<ViewInfo, UavHandle, ViewInfoHasher> mUavs;
-        mutable std::unordered_map<ViewInfo, UavHandle, ViewInfoHasher> mClearUavs;
 
         static RtvHandle spNullRTV;
         static DsvHandle spNullDSV;
@@ -302,7 +240,5 @@ namespace Falcor
 		int32_t mSparsePageWidth = 0;
 		int32_t mSparsePageHeight = 0;
 		int32_t mSparsePageDepth = 0;
-
-        static void createNullViews();
     };
 }

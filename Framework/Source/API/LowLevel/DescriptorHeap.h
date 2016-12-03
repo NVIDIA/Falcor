@@ -47,11 +47,11 @@ namespace Falcor
 
         enum class Type
         {
-            ShaderResource,
+            SRV,
             Sampler,
-            RenderTargetView,
-            DepthStencilView,
-            UnorderedAccessView
+            RTV,
+            DSV,
+            UAV
         };
         static SharedPtr create(Type type, uint32_t descriptorsCount, bool shaderVisible = true);
 

@@ -30,6 +30,7 @@
 #include "Api/LowLevel/DescriptorHeap.h"
 #include "API/D3D/D3DViews.h"
 #include "API/Device.h"
+#include "API/ResourceViews.h"
 
 namespace Falcor
 {
@@ -115,7 +116,7 @@ namespace Falcor
     {
     }
 
-    RtvHandle Fbo::getRenderTargetView(uint32_t rtIndex) const
+    RenderTargetView::SharedPtr Fbo::getRenderTargetView(uint32_t rtIndex) const
     {
         const auto& rt = mColorAttachments[rtIndex];
         if(rt.pTexture)
@@ -124,11 +125,11 @@ namespace Falcor
         }
         else
         {
-            return Texture::getNullRtv();
+            return RenderTargetView::getNullView();
         }
     }
 
-    DsvHandle Fbo::getDepthStencilView() const
+    DepthStencilView::SharedPtr Fbo::getDepthStencilView() const
     {
         if(mDepthStencil.pTexture)
         {
@@ -136,7 +137,7 @@ namespace Falcor
         }
         else
         {
-            return Texture::getNullDsv();
+            return DepthStencilView::getNullView();
         }
     }
 }

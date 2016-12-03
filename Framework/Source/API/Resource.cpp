@@ -28,6 +28,7 @@
 #pragma once
 #include "Framework.h"
 #include "Resource.h"
+#include "Texture.h"
 
 namespace Falcor
 {
@@ -100,5 +101,96 @@ namespace Falcor
         state_to_str(Predication);
 #undef state_to_str
         return s;
+    }
+
+    template<typename ViewClass>
+    using CreateFuncType = std::function<typename ViewClass::SharedPtr(const Resource* pResource, uint32_t mostDetailedMip, uint32_t mipCount, uint32_t firstArraySlice, uint32_t arraySize)>;
+    
+    template<typename ViewClass, typename ViewMapType>
+    typename ViewClass::SharedPtr findViewCommon(const Resource* pResource, uint32_t mostDetailedMip, uint32_t mipCount, uint32_t firstArraySlice, uint32_t arraySize, ViewMapType& viewMap, CreateFuncType<ViewClass> createFunc)
+    {
+        const Texture* pTexture = dynamic_cast<const Texture*>(pResource);
+        if(pTexture)
+        {
+            assert(firstArraySlice < pTexture->getArraySize());
+            assert(mostDetailedMip < pTexture->getMipCount());
+            if (mipCount == Resource::kMaxPossible)
+            {
+                mipCount = pTexture->getMipCount() - mostDetailedMip;
+            }
+            if (arraySize == Resource::kMaxPossible)
+            {
+                arraySize = pTexture->getArraySize() - firstArraySlice;
+            }
+            assert(mipCount + mostDetailedMip <= pTexture->getMipCount());
+            assert(arraySize + firstArraySlice <= pTexture->getArraySize());
+
+        }
+        else
+        {
+            assert(pResource->getType() == Resource::Type::Buffer);
+            assert(mostDetailedMip == 0);
+            assert(mipCount == 1);
+            assert(firstArraySlice == 0);
+            assert(arraySize == Resource::kMaxPossible);
+        }
+
+        ViewClass::ViewInfo view = ViewClass::ViewInfo(mostDetailedMip, mipCount, firstArraySlice, arraySize);
+
+        if (viewMap.find(view) == viewMap.end())
+        {
+            viewMap[view] = createFunc(pResource, mostDetailedMip, mipCount, firstArraySlice, arraySize);
+        }
+
+        return viewMap[view];
+    }
+
+    DepthStencilView::SharedPtr Resource::getDSV(uint32_t mipLevel, uint32_t firstArraySlice, uint32_t arraySize) const
+    {
+        auto createFunc = [](const Resource* pResource, uint32_t mostDetailedMip, uint32_t mipCount, uint32_t firstArraySlice, uint32_t arraySize)
+        {
+            return DepthStencilView::create(pResource->shared_from_this(), mostDetailedMip, firstArraySlice, arraySize);
+        };
+
+        return findViewCommon<DepthStencilView>(this, mipLevel, 1, firstArraySlice, arraySize, mDsvs, createFunc);
+    }
+
+    UnorderedAccessView::SharedPtr Resource::getUAV(uint32_t mipLevel, uint32_t firstArraySlice, uint32_t arraySize) const
+    {
+        auto createFunc = [](const Resource* pResource, uint32_t mostDetailedMip, uint32_t mipCount, uint32_t firstArraySlice, uint32_t arraySize)
+        {
+            return UnorderedAccessView::create(pResource->shared_from_this(), mostDetailedMip, firstArraySlice, arraySize);
+        };
+
+        return findViewCommon<UnorderedAccessView>(this, mipLevel, 1, firstArraySlice, arraySize, mUavs, createFunc);
+    }
+
+    RenderTargetView::SharedPtr Resource::getRTV(uint32_t mipLevel, uint32_t firstArraySlice, uint32_t arraySize) const
+    {
+        auto createFunc = [](const Resource* pResource, uint32_t mostDetailedMip, uint32_t mipCount, uint32_t firstArraySlice, uint32_t arraySize)
+        {
+            return RenderTargetView::create(pResource->shared_from_this(), mostDetailedMip, firstArraySlice, arraySize);
+        };
+
+        return RenderTargetView::create(shared_from_this(), mipLevel, firstArraySlice, arraySize);
+//        return findViewCommon<RenderTargetView>(this, mipLevel, 1, firstArraySlice, arraySize, mRtvs, createFunc);
+    }
+
+    ShaderResourceView::SharedPtr Resource::getSRV(uint32_t firstArraySlice, uint32_t arraySize, uint32_t mostDetailedMip, uint32_t mipCount) const
+    {
+        auto createFunc = [](const Resource* pResource, uint32_t mostDetailedMip, uint32_t mipCount, uint32_t firstArraySlice, uint32_t arraySize)
+        {
+            return ShaderResourceView::create(pResource->shared_from_this(), mostDetailedMip, mipCount, firstArraySlice, arraySize);
+        };
+
+        return findViewCommon<ShaderResourceView>(this, mostDetailedMip, mipCount, firstArraySlice, arraySize, mSrvs, createFunc);
+    }
+
+    void Resource::invalidateViews()
+    {
+        mSrvs.clear();
+        mUavs.clear();
+        mRtvs.clear();
+        mDsvs.clear();
     }
 }

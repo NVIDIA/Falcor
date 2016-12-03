@@ -33,7 +33,7 @@ namespace Falcor
     /** Low-level buffer object
         This class abstracts the API's buffer creation and management
     */
-    class Buffer : public std::enable_shared_from_this<Buffer>, public Resource
+    class Buffer : public Resource
     {
     public:
         using SharedPtr = std::shared_ptr<Buffer>;
@@ -148,9 +148,18 @@ namespace Falcor
             return true;
         }
 
-        SrvHandle getSRV();
-        UavHandle getUAV();
-        UavHandle getUAVForClear();
+        // Buffer inherits Resource which inherits enable_shared_from_this.
+        // If Buffer will also inherit enable_shared_from_this, which is a problem (virtual inheritance doesn't help). To solve this, we define the following functions.
+        SharedPtr shared_from_this()
+        {
+            return std::static_pointer_cast<Buffer>(std::enable_shared_from_this<Resource>::shared_from_this());
+        }
+
+        SharedConstPtr shared_from_this() const
+        {
+            return std::static_pointer_cast<const Buffer>(std::enable_shared_from_this<Resource>::shared_from_this());
+        }
+
     protected:
         Buffer(size_t size, BindFlags bind, CpuAccess update) : Resource(Type::Buffer, bind), mSize(size), mCpuAccess(update){}
         uint64_t mBindlessHandle = 0;
@@ -158,8 +167,5 @@ namespace Falcor
         mutable uint64_t mGpuPtr = 0;
         CpuAccess mCpuAccess;
         void* mpApiData = nullptr;
-        SrvHandle mSrv;
-        UavHandle mUav;
-        UavHandle mUavForClear;
     };
 }

@@ -26,12 +26,14 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 #pragma once
+#include "ResourceViews.h"
+#include <unordered_map>
 
 namespace Falcor
 {
     class RenderContext;
 
-    class Resource
+    class Resource : public std::enable_shared_from_this<Resource>
     {
     public:
         using ApiHandle = ResourceHandle;
@@ -84,24 +86,86 @@ namespace Falcor
             Predication,
         };
 
+        using SharedPtr = std::shared_ptr<Resource>;
+        using SharedConstPtr = std::shared_ptr<const Resource>;
+
+        /** Value used in create*() methods
+        */
+        static const uint32_t kMaxPossible = RenderTargetView::kMaxPossible;
+
         virtual ~Resource() = 0;
 
+        /** Get the bind flags
+        */
         BindFlags getBindFlags() const { return mBindFlags; }
+
+        /** Get the current state
+        */
         State getState() const { return mState; }
+
+        /** Get the resource type
+        */
         Type getType() const { return mType; }
-
-
+        
         /** Get the API handle
         */
         ApiHandle getApiHandle() const { return mApiHandle; }
+
+        /** Get a shader-resource view.
+        \param[in] firstArraySlice The first array slice of the view
+        \param[in] arraySize The array size. If this is equal to Texture#kMaxPossible, will create a view ranging from firstArraySlice to the texture's array size
+        \param[in] mostDetailedMip The most detailed mip level of the view
+        \param[in] mipCount The number of mip-levels to bind. If this is equal to Texture#kMaxPossible, will create a view ranging from mostDetailedMip to the texture's mip levels count
+        */
+        ShaderResourceView::SharedPtr getSRV(uint32_t firstArraySlice = 0, uint32_t arraySize = kMaxPossible, uint32_t mostDetailedMip = 0, uint32_t mipCount = kMaxPossible) const;
+
+        /** Get a render-target view.
+        \param[in] mipLevel The requested mip-level
+        \param[in] firstArraySlice The first array slice of the view
+        \param[in] arraySize The array size. If this is equal to Texture#kMaxPossible, will create a view ranging from firstArraySlice to the texture's array size
+        */
+        RenderTargetView::SharedPtr getRTV(uint32_t mipLevel = 0, uint32_t firstArraySlice = 0, uint32_t arraySize = kMaxPossible) const;
+
+        /** Get a depth stencil view.
+        \param[in] mipLevel The requested mip-level
+        \param[in] firstArraySlice The first array slice of the view
+        \param[in] arraySize The array size. If this is equal to Texture#kMaxPossible, will create a view ranging from firstArraySlice to the texture's array size
+        */
+        DepthStencilView::SharedPtr getDSV(uint32_t mipLevel = 0, uint32_t firstArraySlice = 0, uint32_t arraySize = kMaxPossible) const;
+
+        /** Get an unordered access view.
+        \param[in] mipLevel The requested mip-level
+        \param[in] firstArraySlice The first array slice of the view
+        \param[in] arraySize The array size. If this is equal to Texture#kMaxPossible, will create a view ranging from firstArraySlice to the texture's array size
+        */
+        UnorderedAccessView::SharedPtr getUAV(uint32_t mipLevel = 0, uint32_t firstArraySlice = 0, uint32_t arraySize = kMaxPossible) const;
+
+        struct ViewInfoHashFunc
+        {
+            std::size_t operator()(const ShaderResourceView::ViewInfo& v) const
+            {
+                return ((std::hash<uint32_t>()(v.firstArraySlice)
+                    ^ (std::hash<uint32_t>()(v.arraySize) << 1)) >> 1)
+                    ^ (std::hash<uint32_t>()(v.mipCount) << 1)
+                    ^ (std::hash<uint32_t>()(v.mostDetailedMip) << 3);
+            }
+        };
+
     protected:
         friend class RenderContext;
 
         Resource(Type type, BindFlags bindFlags) : mType(type), mBindFlags(bindFlags) {}
+        void invalidateViews();
+
         Type mType;
         BindFlags mBindFlags;
         mutable State mState = State::Common;
         ApiHandle mApiHandle;
+
+        mutable std::unordered_map<ShaderResourceView::ViewInfo, ShaderResourceView::SharedPtr, ViewInfoHashFunc> mSrvs;
+        mutable std::unordered_map<RenderTargetView::ViewInfo, RenderTargetView::SharedPtr, ViewInfoHashFunc> mRtvs;
+        mutable std::unordered_map<DepthStencilView::ViewInfo, DepthStencilView::SharedPtr, ViewInfoHashFunc> mDsvs;
+        mutable std::unordered_map<UnorderedAccessView::ViewInfo, UnorderedAccessView::SharedPtr, ViewInfoHashFunc> mUavs;
     };
 
     enum_class_operators(Resource::BindFlags);

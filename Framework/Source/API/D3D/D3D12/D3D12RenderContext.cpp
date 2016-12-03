@@ -155,12 +155,13 @@ namespace Falcor
         }
     }
 
-    template<typename ResourceType, typename ClearType>
-    void clearUavCommon(ResourceType pResource, const ClearType& clear, void* pData)
+    template<typename ClearType>
+    void clearUavCommon(Resource::SharedPtr pResource, const ClearType& clear, void* pData)
     {
         RenderContextData* pApiData = (RenderContextData*)pData;
-        UavHandle clearHandle = pResource->getUAVForClear();
-        UavHandle uav = pResource->getUAV();
+        const auto& pUav = pResource->getUAV();
+        UavHandle clearHandle = pUav->getHandleForClear();
+        UavHandle uav = pUav->getApiHandle();
         if (typeid(ClearType) == typeid(vec4))
         {
             pApiData->pList->ClearUnorderedAccessViewFloat(uav->getGpuHandle(), clearHandle->getCpuHandle(), pResource->getApiHandle(), (float*)value_ptr(clear), 0, nullptr);
@@ -175,24 +176,14 @@ namespace Falcor
         }
     }
 
-    void RenderContext::clearUAV(Buffer::SharedPtr pBuffer, const vec4& clear)
+    void RenderContext::clearUAV(Resource::SharedPtr pResource, const vec4& clear)
     {
-        clearUavCommon(pBuffer, clear, mpApiData);
+        clearUavCommon(pResource, clear, mpApiData);
     }
 
-    void RenderContext::clearUAV(Buffer::SharedPtr pBuffer, const uvec4& clear)
+    void RenderContext::clearUAV(Resource::SharedPtr pResource, const uvec4& clear)
     {
-        clearUavCommon(pBuffer, clear, mpApiData);
-    }
-
-    void RenderContext::clearUAV(Texture::SharedPtr pTexture, const vec4& clear)
-    {
-        clearUavCommon(pTexture, clear, mpApiData);
-    }
-
-    void RenderContext::clearUAV(Texture::SharedPtr pTexture, const uvec4& clear)
-    {
-        clearUavCommon(pTexture, clear, mpApiData);
+        clearUavCommon(pResource, clear, mpApiData);
     }
 
 	void RenderContext::clearFbo(const Fbo* pFbo, const glm::vec4& color, float depth, uint8_t stencil, FboAttachmentType flags)
@@ -225,9 +216,9 @@ namespace Falcor
         const Texture* pTexture = pFbo->getColorTexture(rtIndex).get();
         if (pTexture)
         {
-            RtvHandle rtv = pFbo->getRenderTargetView(rtIndex);
+            RenderTargetView::SharedPtr pRtv = pFbo->getRenderTargetView(rtIndex);
             resourceBarrier(pTexture, Resource::State::RenderTarget);
-            pApiData->pList->ClearRenderTargetView(rtv->getCpuHandle(), glm::value_ptr(color), 0, nullptr);
+            pApiData->pList->ClearRenderTargetView(pRtv->getApiHandle()->getCpuHandle(), glm::value_ptr(color), 0, nullptr);
         }
         else
         {
@@ -247,8 +238,8 @@ namespace Falcor
         if(pTexture)
         {
             resourceBarrier(pTexture, Resource::State::DepthStencil);
-            DsvHandle dsv = pFbo->getDepthStencilView();
-            pApiData->pList->ClearDepthStencilView(dsv->getCpuHandle(), D3D12_CLEAR_FLAGS(flags), depth, stencil, 0, nullptr);
+            DepthStencilView::SharedPtr pDsv = pFbo->getDepthStencilView();
+            pApiData->pList->ClearDepthStencilView(pDsv->getApiHandle()->getCpuHandle(), D3D12_CLEAR_FLAGS(flags), depth, stencil, 0, nullptr);
         }
         else
         {
@@ -298,32 +289,30 @@ namespace Falcor
     {
         // FIXME D3D12
         uint32_t colorTargets = Fbo::getMaxColorTargetCount();
-        std::vector<DescriptorHeap::CpuHandle> pRTV(colorTargets);
-        DescriptorHeap::CpuHandle pDSV;
+        std::vector<DescriptorHeap::CpuHandle> pRTV(colorTargets, RenderTargetView::getNullView()->getApiHandle()->getCpuHandle());
+        DescriptorHeap::CpuHandle pDSV = DepthStencilView::getNullView()->getApiHandle()->getCpuHandle();
 
         if (pFbo)
         {
             for (uint32_t i = 0; i < colorTargets; i++)
             {
-                pRTV[i] = pFbo->getRenderTargetView(i)->getCpuHandle();
                 auto& pTexture = pFbo->getColorTexture(i);
                 if (pTexture)
                 {
+                    pRTV[i] = pFbo->getRenderTargetView(i)->getApiHandle()->getCpuHandle();
                     pCtx->resourceBarrier(pTexture.get(), Resource::State::RenderTarget);
                 }
             }
 
-            pDSV = pFbo->getDepthStencilView()->getCpuHandle();
             auto& pTexture = pFbo->getDepthStencilTexture();
-            if (pTexture)
+            if(pTexture)
             {
-                pCtx->resourceBarrier(pTexture.get(), Resource::State::DepthStencil);
+                pDSV = pFbo->getDepthStencilView()->getApiHandle()->getCpuHandle();
+                if (pTexture)
+                {
+                    pCtx->resourceBarrier(pTexture.get(), Resource::State::DepthStencil);
+                }
             }
-        }
-        else
-        {
-            pRTV.assign(colorTargets, Texture::getNullRtv()->getCpuHandle());
-            pDSV = Texture::getNullDsv()->getCpuHandle();
         }
 
         pApiData->pList->OMSetRenderTargets(colorTargets, pRTV.data(), FALSE, &pDSV);

@@ -26,24 +26,37 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 #include "Framework.h"
+#include "API/Resource.h"
+#include "API/Buffer.h"
+#include "API/Texture.h"
 
 namespace Falcor
 {
     template<typename ViewType>
-    ViewType getViewDimension(Texture::Type type, bool isArray);
+    ViewType getViewDimension(Resource::Type type, bool isArray);
 
     template<typename ViewDesc>
-    void initializeSrvDesc(ResourceFormat format, Texture::Type type, uint32_t firstArraySlice, uint32_t arraySize, uint32_t mostDetailedMip, uint32_t mipCount, bool isTextureArray, ViewDesc& desc)
+    void initializeSrvDesc(const Resource* pResource, uint32_t firstArraySlice, uint32_t arraySize, uint32_t mostDetailedMip, uint32_t mipCount, ViewDesc& desc)
     {
-        // create SRV
-        desc = {};
-        desc.Format = getDxgiFormat(format);
-        desc.ViewDimension = getViewDimension<decltype(desc.ViewDimension)>(type, isTextureArray);
+        const Texture* pTexture = dynamic_cast<const Texture*>(pResource);
+        const Buffer* pBuffer = dynamic_cast<const Buffer*>(pResource);
 
-        switch(type)
+        desc = {};
+        desc.Format = getDxgiFormat(pTexture->getFormat());
+        bool isTextureArray = pTexture->getArraySize() > 1;
+        desc.ViewDimension = getViewDimension<decltype(desc.ViewDimension)>(pResource->getType(), isTextureArray);
+
+        switch(pResource->getType())
         {
-        case Texture::Type::Texture1D:
-            if(arraySize > 1)
+        case Resource::Type::Buffer:
+            desc.Buffer.FirstElement = 0;
+            desc.Buffer.NumElements = (uint32_t)pBuffer->getSize() / sizeof(float);
+            desc.Buffer.Flags = D3D12_BUFFER_SRV_FLAG_RAW;
+            desc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+            desc.Format = DXGI_FORMAT_R32_TYPELESS;
+            break;
+        case Resource::Type::Texture1D:
+            if (isTextureArray)
             {
                 desc.Texture1DArray.MipLevels = mipCount;
                 desc.Texture1DArray.MostDetailedMip = mostDetailedMip;
@@ -56,7 +69,7 @@ namespace Falcor
                 desc.Texture1D.MostDetailedMip = mostDetailedMip;
             }
             break;
-        case Texture::Type::Texture2D:
+        case Resource::Type::Texture2D:
             if(isTextureArray)
             {
                 desc.Texture2DArray.MipLevels = mipCount;
@@ -70,19 +83,19 @@ namespace Falcor
                 desc.Texture2D.MostDetailedMip = mostDetailedMip;
             }
             break;
-        case Texture::Type::Texture2DMultisample:
+        case Resource::Type::Texture2DMultisample:
             if(arraySize > 1)
             {
                 desc.Texture2DMSArray.ArraySize = arraySize;
                 desc.Texture2DMSArray.FirstArraySlice = firstArraySlice;
             }
             break;
-        case Texture::Type::Texture3D:
+        case Resource::Type::Texture3D:
             assert(arraySize == 1);
             desc.Texture3D.MipLevels = mipCount;
             desc.Texture3D.MostDetailedMip = mostDetailedMip;
             break;
-        case Texture::Type::TextureCube:
+        case Resource::Type::TextureCube:
             if(arraySize > 1)
             {
                 desc.TextureCubeArray.First2DArrayFace = 0;
@@ -105,21 +118,24 @@ namespace Falcor
     }
 
     template<typename DescType, bool finalCall>
-    inline void initializeDsvRtvUavDescCommon(const Texture* pTexture, uint32_t mipLevel, uint32_t firstArraySlice, uint32_t arraySize, DescType& desc)
+    inline void initializeDsvRtvUavDescCommon(const Resource* pResource, uint32_t mipLevel, uint32_t firstArraySlice, uint32_t arraySize, DescType& desc)
     {
-        desc = {};
-        uint32_t arrayMultiplier = (pTexture->getType() == Texture::Type::TextureCube) ? 6 : 1;
+        const Texture* pTexture = dynamic_cast<const Texture*>(pResource);
+        assert(pTexture);   // Buffers should not get here
 
-        if(arraySize == Texture::kMaxPossible)
+        desc = {};
+        uint32_t arrayMultiplier = (pResource->getType() == Resource::Type::TextureCube) ? 6 : 1;
+
+        if(arraySize == Resource::kMaxPossible)
         {
             arraySize = pTexture->getArraySize() - firstArraySlice;
         }
 
         desc.ViewDimension = getViewDimension<decltype(desc.ViewDimension)>(pTexture->getType(), pTexture->getArraySize() > 1);
 
-        switch(pTexture->getType())
+        switch(pResource->getType())
         {
-        case Texture::Type::Texture1D:
+        case Resource::Type::Texture1D:
             if(pTexture->getArraySize() > 1)
             {
                 desc.Texture1DArray.ArraySize = arraySize;
@@ -131,8 +147,8 @@ namespace Falcor
                 desc.Texture1D.MipSlice = mipLevel;
             }
             break;
-        case Texture::Type::Texture2D:
-        case Texture::Type::TextureCube:
+        case Resource::Type::Texture2D:
+        case Resource::Type::TextureCube:
             if(pTexture->getArraySize() * arrayMultiplier > 1)
             {
                 desc.Texture2DArray.ArraySize = arraySize * arrayMultiplier;
@@ -154,11 +170,13 @@ namespace Falcor
     }
 
     template<typename DescType>
-    inline void initializeDsvRtvDesc(const Texture* pTexture, uint32_t mipLevel, uint32_t firstArraySlice, uint32_t arraySize, DescType& desc)
+    inline void initializeDsvRtvDesc(const Resource* pResource, uint32_t mipLevel, uint32_t firstArraySlice, uint32_t arraySize, DescType& desc)
     {
-        initializeDsvRtvUavDescCommon<DescType, false>(pTexture, mipLevel, firstArraySlice, arraySize, desc);
-        if(pTexture->getType() == Texture::Type::Texture2DMultisample)
+        initializeDsvRtvUavDescCommon<DescType, false>(pResource, mipLevel, firstArraySlice, arraySize, desc);
+        
+        if(pResource->getType() == Resource::Type::Texture2DMultisample)
         {
+            const Texture* pTexture = dynamic_cast<const Texture*>(pResource);
             if (pTexture->getArraySize() > 1)
             {
                 desc.Texture2DMSArray.ArraySize = arraySize;
@@ -168,20 +186,34 @@ namespace Falcor
     }
 
     template<typename DescType>
-    inline void initializeDsvDesc(const Texture* pTexture, uint32_t mipLevel, uint32_t firstArraySlice, uint32_t arraySize, DescType& desc)
+    inline void initializeDsvDesc(const Resource* pResource, uint32_t mipLevel, uint32_t firstArraySlice, uint32_t arraySize, DescType& desc)
     {
-        return initializeDsvRtvDesc<DescType>(pTexture, mipLevel, firstArraySlice, arraySize, desc);
+        return initializeDsvRtvDesc<DescType>(pResource, mipLevel, firstArraySlice, arraySize, desc);
     }
 
     template<typename DescType>
-    inline void initializeRtvDesc(const Texture* pTexture, uint32_t mipLevel, uint32_t firstArraySlice, uint32_t arraySize, DescType& desc)
+    inline void initializeRtvDesc(const Resource* pResource, uint32_t mipLevel, uint32_t firstArraySlice, uint32_t arraySize, DescType& desc)
     {
-        return initializeDsvRtvDesc<DescType>(pTexture, mipLevel, firstArraySlice, arraySize, desc);
+        return initializeDsvRtvDesc<DescType>(pResource, mipLevel, firstArraySlice, arraySize, desc);
     }
 
     template<typename DescType>
-    inline void initializeUavDesc(const Texture* pTexture, uint32_t mipLevel, uint32_t firstArraySlice, uint32_t arraySize, DescType& desc)
+    inline void initializeUavDesc(const Resource* pResource, uint32_t mipLevel, uint32_t firstArraySlice, uint32_t arraySize, DescType& desc)
     {
-        return initializeDsvRtvUavDescCommon<DescType, true>(pTexture, mipLevel, firstArraySlice, arraySize, desc);
+        if (pResource->getType() == Resource::Type::Buffer)
+        {
+            const Buffer* pBuffer = dynamic_cast<const Buffer*>(pResource);
+            desc = {};
+            desc.ViewDimension = D3D12_UAV_DIMENSION_BUFFER;
+            desc.Format = DXGI_FORMAT_R32_TYPELESS;
+            desc.Buffer.FirstElement = 0;
+            desc.Buffer.Flags = D3D12_BUFFER_UAV_FLAG_RAW;
+            desc.Buffer.NumElements = (uint32_t)pBuffer->getSize() / sizeof(float);
+            desc.Buffer.Flags = D3D12_BUFFER_UAV_FLAG_RAW;
+        }
+        else
+        {
+            initializeDsvRtvUavDescCommon<DescType, true>(pResource, mipLevel, firstArraySlice, arraySize, desc);
+        }
     }
 }

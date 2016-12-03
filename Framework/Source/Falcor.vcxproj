@@ -196,6 +196,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugD3D11|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="API\D3D\D3D12\D3D12Resource.cpp" />
+    <ClCompile Include="API\D3D\D3D12\D3D12ResourceViews.cpp" />
     <ClCompile Include="API\D3D\D3D12\D3D12Sampler.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseD3D11|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugGL|x64'">true</ExcludedFromBuild>
@@ -764,7 +765,7 @@
     <ClInclude Include="API\RasterizerState.h" />
     <ClInclude Include="API\RenderContext.h" />
     <ClInclude Include="API\Resource.h" />
-    <ClInclude Include="API\ResourceView.h" />
+    <ClInclude Include="API\ResourceViews.h" />
     <ClInclude Include="API\Sampler.h" />
     <ClInclude Include="API\ScreenCapture.h" />
     <ClInclude Include="API\Shader.h" />

@@ -431,6 +431,9 @@
     <ClCompile Include="API\D3D\D3D12\D3D12Resource.cpp">
       <Filter>API\D3D\D3D12</Filter>
     </ClCompile>
+    <ClCompile Include="API\D3D\D3D12\D3D12ResourceViews.cpp">
+      <Filter>API\D3D\D3D12</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Graphics\Model\Animation.h">
@@ -1466,11 +1469,11 @@
     <ClInclude Include="API\Resource.h">
       <Filter>API</Filter>
     </ClInclude>
-    <ClInclude Include="API\ResourceView.h">
-      <Filter>API</Filter>
-    </ClInclude>
     <ClInclude Include="API\D3D\D3D12\D3D12Resource.h">
       <Filter>API\D3D\D3D12</Filter>
+    </ClInclude>
+    <ClInclude Include="API\ResourceViews.h">
+      <Filter>API</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

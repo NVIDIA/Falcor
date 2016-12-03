@@ -147,8 +147,8 @@ namespace Falcor
         */
         const Desc& getDesc() const { checkStatus();  return mDesc; }
 #ifdef FALCOR_D3D
-        DsvHandle getDepthStencilView() const;
-        RtvHandle getRenderTargetView(uint32_t rtIndex) const;
+        DepthStencilView::SharedPtr getDepthStencilView() const;
+        RenderTargetView::SharedPtr getRenderTargetView(uint32_t rtIndex) const;
 #endif
         struct Attachment
         {

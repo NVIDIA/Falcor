@@ -372,8 +372,8 @@ namespace Falcor
         uint32_t adjHeight = r.bottom - r.top;
         d3d_call(SetWindowPos(mApiHandle, nullptr, 0, 0, adjWidth , adjHeight, SWP_NOACTIVATE | SWP_NOOWNERZORDER | SWP_NOMOVE | SWP_NOZORDER));
 
-        mMouseScale.x = 1 / float(adjWidth);
-        mMouseScale.y = 1 / float(adjHeight);
+        mMouseScale.x = 1 / float(width);
+        mMouseScale.y = 1 / float(height);
 
         mpCallbacks->handleWindowSizeChange();
     }
