@@ -74,24 +74,32 @@ namespace Falcor
         */
 		void clearFbo(const Fbo* pFbo, const glm::vec4& color, float depth, uint8_t stencil, FboAttachmentType flags = FboAttachmentType::All);
 
-        /** Clear a specific color buffer in an FBO
-            \param[in] pFbo The FBO to clear
-            \param[in] rtIndex The render-target index we need to clear
-            \param[in] color The clear color for the bound render-targets
+        /** Clear a render-target view
+            \param[in] pRtv The RTV to clear
+            \param[in] color The clear color
         */
-        void clearFboColorTarget(const Fbo* pFbo, uint32_t rtIndex, const glm::vec4& color);
+        void clearRtv(const RenderTargetView* pRtv, const glm::vec4& color);
 
-        /** Clear an FBO's attached depth-stencil buffer
-            \param[in] pFbo The FBO to clear
+        /** Clear a depth-stencil view
+            \param[in] pDsv The DSV to clear
             \param[in] depth The depth clear value
             \param[in] stencil The stencil clear value
             \param[in] clearDepth Optional. Controls whether or not to clear the depth channel
             \param[in] clearStencil Optional. Controls whether or not to clear the stencil channel
             */
-        void clearFboDepthStencil(const Fbo* pFbo, float depth, uint8_t stencil, bool clearDepth = true, bool clearStencil = true);
+        void clearDsv(const DepthStencilView* pDsv, float depth, uint8_t stencil, bool clearDepth = true, bool clearStencil = true);
 
-        void clearUAV(Resource::SharedPtr pBuffer, const vec4& clear);
-        void clearUAV(Resource::SharedPtr pBuffer, const uvec4& clear);
+        /** Clear an unordered-access view
+            \param[in] pUav The UAV to clear
+            \param[in] value The clear value
+        */
+        void clearUAV(const UnorderedAccessView* pUav, const vec4& value);
+
+        /** Clear an unordered-access view
+            \param[in] pUav The UAV to clear
+            \param[in] value The clear value
+        */
+        void clearUAV(const UnorderedAccessView* pUav, const uvec4& value);
 
         void resourceBarrier(const Resource* pResource, Resource::State newState);
 

@@ -395,7 +395,7 @@ namespace Falcor
             HandleType handle;
             if (isUav)
             {
-                handle = pBuffer->getUAV()->getApiHandle();
+                handle = pBuffer->getUAV(0)->getApiHandle();
             }
             else
             {

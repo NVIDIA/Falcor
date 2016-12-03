@@ -120,7 +120,7 @@ void ShaderBuffersSample::onFrameRender()
         mpInvocationsBuffer->unmap();
         renderText(msg, vec2(600, 100));
 
-        mpRenderContext->clearUAV(mpInvocationsBuffer, uvec4(0));
+        mpRenderContext->clearUAV(mpInvocationsBuffer->getUAV(0).get(), uvec4(0));
     }
 }
 

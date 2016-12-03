@@ -156,19 +156,18 @@ namespace Falcor
     }
 
     template<typename ClearType>
-    void clearUavCommon(Resource::SharedPtr pResource, const ClearType& clear, void* pData)
+    void clearUavCommon(const UnorderedAccessView* pUav, const ClearType& clear, void* pData)
     {
         RenderContextData* pApiData = (RenderContextData*)pData;
-        const auto& pUav = pResource->getUAV();
         UavHandle clearHandle = pUav->getHandleForClear();
         UavHandle uav = pUav->getApiHandle();
         if (typeid(ClearType) == typeid(vec4))
         {
-            pApiData->pList->ClearUnorderedAccessViewFloat(uav->getGpuHandle(), clearHandle->getCpuHandle(), pResource->getApiHandle(), (float*)value_ptr(clear), 0, nullptr);
+            pApiData->pList->ClearUnorderedAccessViewFloat(uav->getGpuHandle(), clearHandle->getCpuHandle(), pUav->getResource()->getApiHandle(), (float*)value_ptr(clear), 0, nullptr);
         }
         else if(typeid(ClearType) == typeid(uvec4))
         {
-            pApiData->pList->ClearUnorderedAccessViewUint(uav->getGpuHandle(), clearHandle->getCpuHandle(), pResource->getApiHandle(), (uint32_t*)value_ptr(clear), 0, nullptr);
+            pApiData->pList->ClearUnorderedAccessViewUint(uav->getGpuHandle(), clearHandle->getCpuHandle(), pUav->getResource()->getApiHandle(), (uint32_t*)value_ptr(clear), 0, nullptr);
         }
         else
         {
@@ -176,14 +175,14 @@ namespace Falcor
         }
     }
 
-    void RenderContext::clearUAV(Resource::SharedPtr pResource, const vec4& clear)
+    void RenderContext::clearUAV(const UnorderedAccessView* pUav, const vec4& value)
     {
-        clearUavCommon(pResource, clear, mpApiData);
+        clearUavCommon(pUav, value, mpApiData);
     }
 
-    void RenderContext::clearUAV(Resource::SharedPtr pResource, const uvec4& clear)
+    void RenderContext::clearUAV(const UnorderedAccessView* pUav, const uvec4& value)
     {
-        clearUavCommon(pResource, clear, mpApiData);
+        clearUavCommon(pUav, value, mpApiData);
     }
 
 	void RenderContext::clearFbo(const Fbo* pFbo, const glm::vec4& color, float depth, uint8_t stencil, FboAttachmentType flags)
@@ -198,53 +197,32 @@ namespace Falcor
             {
                 if(pFbo->getColorTexture(i))
                 {
-                    clearFboColorTarget(pFbo, i, color);
+                    clearRtv(pFbo->getRenderTargetView(i).get(), color);
                 }
             }
         }
 
         if(clearDepth | clearStencil)
         {
-            clearFboDepthStencil(pFbo, depth, stencil, clearDepth, clearStencil);
+            clearDsv(pFbo->getDepthStencilView().get(), depth, stencil, clearDepth, clearStencil);
         }
 	}
 
-    void RenderContext::clearFboColorTarget(const Fbo* pFbo, uint32_t rtIndex, const glm::vec4& color)
+    void RenderContext::clearRtv(const RenderTargetView* pRtv, const glm::vec4& color)
     {
-        assert(rtIndex < Fbo::getMaxColorTargetCount());
         RenderContextData* pApiData = (RenderContextData*)mpApiData;
-        const Texture* pTexture = pFbo->getColorTexture(rtIndex).get();
-        if (pTexture)
-        {
-            RenderTargetView::SharedPtr pRtv = pFbo->getRenderTargetView(rtIndex);
-            resourceBarrier(pTexture, Resource::State::RenderTarget);
-            pApiData->pList->ClearRenderTargetView(pRtv->getApiHandle()->getCpuHandle(), glm::value_ptr(color), 0, nullptr);
-        }
-        else
-        {
-            std::string msg = "clearFboColorTarget() with rtIndex = ";
-            msg += std::to_string(rtIndex) + "but no texture was bound to that slot.";
-            logWarning(msg);
-        }
+        resourceBarrier(pRtv->getResource().get(), Resource::State::RenderTarget);
+        pApiData->pList->ClearRenderTargetView(pRtv->getApiHandle()->getCpuHandle(), glm::value_ptr(color), 0, nullptr);
     }
 
-    void RenderContext::clearFboDepthStencil(const Fbo* pFbo, float depth, uint8_t stencil, bool clearDepth, bool clearStencil)
+    void RenderContext::clearDsv(const DepthStencilView* pDsv, float depth, uint8_t stencil, bool clearDepth, bool clearStencil)
     {
         RenderContextData* pApiData = (RenderContextData*)mpApiData;
         uint32_t flags = clearDepth ? D3D12_CLEAR_FLAG_DEPTH : 0;
         flags |= clearStencil ? D3D12_CLEAR_FLAG_STENCIL : 0;
 
-        const Texture* pTexture = pFbo->getDepthStencilTexture().get();
-        if(pTexture)
-        {
-            resourceBarrier(pTexture, Resource::State::DepthStencil);
-            DepthStencilView::SharedPtr pDsv = pFbo->getDepthStencilView();
-            pApiData->pList->ClearDepthStencilView(pDsv->getApiHandle()->getCpuHandle(), D3D12_CLEAR_FLAGS(flags), depth, stencil, 0, nullptr);
-        }
-        else
-        {
-            logWarning("clearFboDepthStencil() but no depth-stencil buffer was bound to the FBO.");
-        }
+        resourceBarrier(pDsv->getResource().get(), Resource::State::DepthStencil);
+        pApiData->pList->ClearDepthStencilView(pDsv->getApiHandle()->getCpuHandle(), D3D12_CLEAR_FLAGS(flags), depth, stencil, 0, nullptr);
     }
 
     void RenderContext::blitFbo(const Fbo* pSource, const Fbo* pTarget, const glm::ivec4& srcRegion, const glm::ivec4& dstRegion, bool useLinearFiltering, FboAttachmentType copyFlags, uint32_t srcIdx, uint32_t dstIdx)
