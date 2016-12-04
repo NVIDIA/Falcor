@@ -375,7 +375,7 @@ namespace Falcor
                 }
                 else
                 {
-                    handle = pTex->getSRV(resDesc.firstArraySlice, resDesc.arraySize, resDesc.mostDetailedMip, resDesc.mipCount)->getApiHandle();
+                    handle = pTex->getSRV(resDesc.mostDetailedMip, resDesc.mipCount, resDesc.firstArraySlice, resDesc.arraySize)->getApiHandle();
                 }
                 pContext->resourceBarrier(resDesc.pResource.get(), isUav ? Resource::State::UnorderedAccess : Resource::State::ShaderResource);
                 pList->SetGraphicsRootDescriptorTable(rootOffset, handle->getGpuHandle());
@@ -395,7 +395,7 @@ namespace Falcor
             HandleType handle;
             if (isUav)
             {
-                handle = pBuffer->getUAV(0)->getApiHandle();
+                handle = pBuffer->getUAV()->getApiHandle();
             }
             else
             {
