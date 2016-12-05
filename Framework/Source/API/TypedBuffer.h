@@ -28,6 +28,7 @@
 #pragma once
 #include "Buffer.h"
 #include "ResourceViews.h"
+#include <typeindex>
 
 namespace Falcor
 {
@@ -40,15 +41,16 @@ namespace Falcor
         void uploadToGPU() const;
         uint32_t getElementCount() const { return mElementCount; }
         void setGpuDirty() const { mGpuDirty = true; }
-        ResourceFormat getResourceFormat() const { return ResourceFormat::RGB32Float; }
+        ResourceFormat getResourceFormat() const { return mFormat; }
     protected:
+        TypedBufferBase(uint32_t elementCount, ResourceFormat format);
         void readFromGpu();
         uint32_t mElementCount = 0;
-        TypedBufferBase(uint32_t size, uint32_t elementCount);
         std::vector<uint8_t> mData;
         mutable ShaderResourceView::SharedPtr mpSrv;
         mutable bool mCpuDirty = false;
         mutable bool mGpuDirty = false;
+        ResourceFormat mFormat;
     };
 
     template<typename BufferType>
@@ -96,8 +98,31 @@ namespace Falcor
             const BufferType* pData = (BufferType*)mData.data();
             return pData[index];
         }
+
+        static ResourceFormat type2format()
+        {
+#define t2f(_type, _format) if(typeid(BufferType) == typeid(_type)) return ResourceFormat::_format;
+            t2f(float,      R32Float);
+            t2f(vec2,       RG32Float);
+            t2f(vec3,       RGB32Float);
+            t2f(vec4,       RGBA32Float);
+
+            t2f(uint32_t,   R32Uint);
+            t2f(uvec2,      RG32Uint);
+            t2f(uvec3,      RGB32Uint);
+            t2f(uvec3,      RGBA32Uint);
+
+            t2f(int32_t,    R32Int);
+            t2f(ivec2,      RG32Int);
+            t2f(ivec3,      RGB32Int);
+            t2f(ivec3,      RGBA32Int);
+
+            should_not_get_here();
+            return ResourceFormat::Unknown;
+#undef t2f
+        }
     private:
         friend SharedPtr;
-        TypedBuffer(uint32_t elementCount) : TypedBufferBase(sizeof(BufferType) * elementCount, elementCount) {}
+        TypedBuffer(uint32_t elementCount) : TypedBufferBase(elementCount, type2format()) {}
     };
 }
