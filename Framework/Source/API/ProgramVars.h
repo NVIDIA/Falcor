@@ -207,12 +207,6 @@ namespace Falcor
             uint32_t rootSigOffset = 0;
         };
 
-        struct BufferData
-        {
-            uint32_t rootSigOffset = 0;
-            Buffer::SharedPtr pBuffer;
-        };
-
         // FIXME: This doesn't work with multiple register spaces
         template<typename T> using ResourceDataMap = std::unordered_map<uint32_t, ResourceData<T>>;
 
@@ -225,11 +219,8 @@ namespace Falcor
         ResourceDataMap<ConstantBuffer::SharedPtr> mConstantBuffers;
         ResourceDataMap<ShaderStorageBuffer::SharedPtr> mStructuredBuffers;
 
-        std::map<uint32_t, ResourceData<Texture::SharedConstPtr>> mAssignedSrvs;
-        std::map<uint32_t, ResourceData<Texture::SharedConstPtr>> mAssignedUavs;
-        std::map<uint32_t, ResourceData<Sampler::SharedConstPtr>> mAssignedSamplers;
-
-        std::map<uint32_t, BufferData> mAssignedBufferSrvs;
-        std::map<uint32_t, BufferData> mAssignedBufferUavs;
+        std::map<uint32_t, ResourceData<Resource::SharedConstPtr>> mAssignedSrvs;       // HLSL 't' registers
+        std::map<uint32_t, ResourceData<Resource::SharedConstPtr>> mAssignedUavs;       // HLSL 'u' registers
+        std::map<uint32_t, ResourceData<Sampler::SharedConstPtr>> mAssignedSamplers;    // HLSL 's' registers
     };
 }

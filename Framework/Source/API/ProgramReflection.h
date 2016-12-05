@@ -117,7 +117,7 @@ namespace Falcor
                 Texture2DMS,
                 Texture2DMSArray,
                 TextureCubeArray,
-                TextureBuffer,
+                Buffer,
             };
 
             enum class ResourceType
@@ -126,7 +126,6 @@ namespace Falcor
                 Texture,
                 StructuredBuffer,
                 RawBuffer,
-                TypedBuffer,
                 Sampler
             };
 
@@ -386,7 +385,6 @@ namespace Falcor
             type_2_string(Texture);
             type_2_string(StructuredBuffer);
             type_2_string(RawBuffer);
-            type_2_string(TypedBuffer);
             type_2_string(Sampler);
         default:
             should_not_get_here();
@@ -441,7 +439,7 @@ namespace Falcor
             type_2_string(Texture2DMS);
             type_2_string(Texture2DMSArray);
             type_2_string(TextureCubeArray);
-            type_2_string(TextureBuffer);
+            type_2_string(Buffer);
         default:
             should_not_get_here();
             return "";

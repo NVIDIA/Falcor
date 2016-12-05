@@ -435,7 +435,7 @@ namespace Falcor
         case ProgramReflection::Resource::Dimensions::TextureCubeArray:
             dimsMatch = (texDim == Texture::Type::TextureCube) && isArray;
             break;
-        case ProgramReflection::Resource::Dimensions::TextureBuffer:
+        case ProgramReflection::Resource::Dimensions::Buffer:
             break;
         default:
             should_not_get_here();

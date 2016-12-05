@@ -109,25 +109,17 @@ namespace Falcor
                 mAssignedSamplers[desc.regIndex].rootSigOffset = findRootSignatureOffset<RootSignature::DescType::Sampler>(mpRootSignature.get(), desc.regIndex, desc.registerSpace);
                 break;
             case ProgramReflection::Resource::ResourceType::Texture:
+            case ProgramReflection::Resource::ResourceType::RawBuffer:
                 if (desc.shaderAccess == ProgramReflection::Resource::ShaderAccess::Read)
                 {
+                    assert(mAssignedSrvs.find(desc.regIndex) == mAssignedSrvs.end());
                     mAssignedSrvs[desc.regIndex].rootSigOffset = findRootSignatureOffset<RootSignature::DescType::SRV>(mpRootSignature.get(), desc.regIndex, desc.registerSpace);
                 }
                 else
                 {
+                    assert(mAssignedUavs.find(desc.regIndex) == mAssignedUavs.end());
                     assert(desc.shaderAccess == ProgramReflection::Resource::ShaderAccess::ReadWrite);
                     mAssignedUavs[desc.regIndex].rootSigOffset = findRootSignatureOffset<RootSignature::DescType::UAV>(mpRootSignature.get(), desc.regIndex, desc.registerSpace);
-                }
-                break;
-            case ProgramReflection::Resource::ResourceType::RawBuffer:
-                if (desc.shaderAccess == ProgramReflection::Resource::ShaderAccess::Read)
-                {
-                    mAssignedBufferSrvs[desc.regIndex].rootSigOffset = findRootSignatureOffset<RootSignature::DescType::SRV>(mpRootSignature.get(), desc.regIndex, desc.registerSpace);
-                }
-                else
-                {
-                    assert(desc.shaderAccess == ProgramReflection::Resource::ShaderAccess::ReadWrite);
-                    mAssignedBufferUavs[desc.regIndex].rootSigOffset = findRootSignatureOffset<RootSignature::DescType::UAV>(mpRootSignature.get(), desc.regIndex, desc.registerSpace);
                 }
                 break;
             default:
@@ -241,10 +233,10 @@ namespace Falcor
         switch (pDesc->shaderAccess)
         {
         case ProgramReflection::Resource::ShaderAccess::ReadWrite:
-            mAssignedBufferUavs[pDesc->regIndex].pBuffer = pBuf;
+            mAssignedUavs[pDesc->regIndex].pResource = pBuf;
             break;
         case ProgramReflection::Resource::ShaderAccess::Read:
-            mAssignedBufferSrvs[pDesc->regIndex].pBuffer = pBuf;
+            mAssignedSrvs[pDesc->regIndex].pResource = pBuf;
             break;
         default:
             should_not_get_here();
@@ -294,7 +286,7 @@ namespace Falcor
     }
 
     bool setUavSrvCommon(const Texture::SharedConstPtr& pTexture,
-        std::map<uint32_t, ProgramVars::ResourceData<Texture::SharedConstPtr>>& resMap,
+        std::map<uint32_t, ProgramVars::ResourceData<Resource::SharedConstPtr>>& resMap,
         uint32_t index,
         uint32_t firstArraySlice,
         uint32_t arraySize,
@@ -369,50 +361,27 @@ namespace Falcor
     }
 
     template<typename HandleType, bool isUav>
-    void bindTextureUavSrvCommon(RenderContext* pContext, const std::map<uint32_t, ProgramVars::ResourceData<Texture::SharedConstPtr>>& resMap)
+    void bindUavSrvCommon(RenderContext* pContext, const std::map<uint32_t, ProgramVars::ResourceData<Resource::SharedConstPtr>>& resMap)
     {
         ID3D12GraphicsCommandList* pList = pContext->getCommandListApiHandle();
         for (auto& resIt : resMap)
         {
             const auto& resDesc = resIt.second;
             uint32_t rootOffset = resDesc.rootSigOffset;
-            const Texture* pTex = resDesc.pResource.get();
-            if (pTex)
-            {
-                // FIXME D3D12: Handle null textures (should bind a small black texture)
-                HandleType handle;
-                if (isUav)
-                {
-                    handle = pTex->getUAV(resDesc.mostDetailedMip, resDesc.firstArraySlice, resDesc.arraySize)->getApiHandle();
-                }
-                else
-                {
-                    handle = pTex->getSRV(resDesc.mostDetailedMip, resDesc.mipCount, resDesc.firstArraySlice, resDesc.arraySize)->getApiHandle();
-                }
-                pContext->resourceBarrier(resDesc.pResource.get(), isUav ? Resource::State::UnorderedAccess : Resource::State::ShaderResource);
-                pList->SetGraphicsRootDescriptorTable(rootOffset, handle->getGpuHandle());
-            }
-        }
-    }
-
-    template<typename HandleType, bool isUav>
-    void bindBufferUavSrvCommon(RenderContext* pContext, const std::map<uint32_t, ProgramVars::BufferData>& bufMap)
-    {
-        ID3D12GraphicsCommandList* pList = pContext->getCommandListApiHandle();
-        for (auto& bufIt : bufMap)
-        {
-            uint32_t rootOffset = bufIt.second.rootSigOffset;
-            Buffer* pBuffer = bufIt.second.pBuffer.get();
-
+            const Resource* pResource = resDesc.pResource.get();
+            // FIXME D3D12: Handle null textures (should bind a small black texture)
             HandleType handle;
             if (isUav)
             {
-                handle = pBuffer ? pBuffer->getUAV()->getApiHandle() : UnorderedAccessView::getNullView()->getApiHandle();
+                auto& uav = pResource ? pResource->getUAV(resDesc.mostDetailedMip, resDesc.firstArraySlice, resDesc.arraySize) : UnorderedAccessView::getNullView();
+                handle = uav->getApiHandle();
             }
             else
             {
-                handle = pBuffer ? pBuffer->getSRV()->getApiHandle() : ShaderResourceView::getNullView()->getApiHandle();
+                auto& srv = pResource ? pResource->getSRV(resDesc.mostDetailedMip, resDesc.mipCount, resDesc.firstArraySlice, resDesc.arraySize) : ShaderResourceView::getNullView();
+                handle = srv->getApiHandle();
             }
+            pContext->resourceBarrier(resDesc.pResource.get(), isUav ? Resource::State::UnorderedAccess : Resource::State::ShaderResource);
             pList->SetGraphicsRootDescriptorTable(rootOffset, handle->getGpuHandle());
         }
     }
@@ -433,10 +402,8 @@ namespace Falcor
         }
 
         // Bind the SRVs and UAVs
-        bindBufferUavSrvCommon<SrvHandle, false>(pContext, mAssignedBufferSrvs);
-        bindBufferUavSrvCommon<UavHandle, true>(pContext, mAssignedBufferUavs);
-        bindTextureUavSrvCommon<SrvHandle, false>(pContext, mAssignedSrvs);
-        bindTextureUavSrvCommon<UavHandle, true>(pContext, mAssignedUavs);
+        bindUavSrvCommon<SrvHandle, false>(pContext, mAssignedSrvs);
+        bindUavSrvCommon<UavHandle, true>(pContext, mAssignedUavs);
 
         // Bind the samplers
         for (auto& samplerIt : mAssignedSamplers)

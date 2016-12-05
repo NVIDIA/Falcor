@@ -417,7 +417,7 @@ namespace Falcor
         switch (dims)
         {
         case D3D_SRV_DIMENSION_BUFFER:
-            return ProgramReflection::Resource::Dimensions::TextureBuffer;
+            return ProgramReflection::Resource::Dimensions::Buffer;
         case D3D_SRV_DIMENSION_TEXTURE1D:
             return ProgramReflection::Resource::Dimensions::Texture1D;
         case D3D_SRV_DIMENSION_TEXTURE1DARRAY:
@@ -503,6 +503,7 @@ namespace Falcor
     {
         ProgramReflection::Resource falcorDesc;
         std::string name(desc.Name);
+
         falcorDesc.type = getResourceType(desc.Type);
         falcorDesc.shaderAccess = getShaderAccess(desc.Type);
         if (falcorDesc.type == ProgramReflection::Resource::ResourceType::Texture)
@@ -518,7 +519,6 @@ namespace Falcor
         const auto& prevDef = resourceMap.find(name);
         if (prevDef == resourceMap.end())
         {
-            // New resource
             resourceMap[name] = falcorDesc;
         }
         else
