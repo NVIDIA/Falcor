@@ -57,13 +57,14 @@ namespace Falcor
             desc = {};
             desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
             desc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+            desc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
         }
         SharedPtr pNewObj;
         SharedPtr& pObj = pResource ? pNewObj : sNullView;
 
         DescriptorHeap* pHeap = gpDevice->getSrvDescriptorHeap().get();
         ApiHandle handle = pHeap->allocateEntry();
-        gpDevice->getApiHandle()->CreateShaderResourceView(pResource->getApiHandle(), &desc, handle->getCpuHandle());
+        gpDevice->getApiHandle()->CreateShaderResourceView(pResource ? pResource->getApiHandle() : nullptr, &desc, handle->getCpuHandle());
 
         pObj = SharedPtr(new ShaderResourceView(pResource, handle, mostDetailedMip, mipCount, firstArraySlice, arraySize));
         return pObj;

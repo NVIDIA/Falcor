@@ -166,7 +166,7 @@ namespace Falcor
             uint32_t id = pMap.first;
             size_t mapOffset = id * sizeof(uint64_t) + offset;
             Texture::SharedPtr pTex = pMap.second;
-            pUB->setTexture(mapOffset, pTex.get(), pSampler, false);
+            pUB->setTexture(mapOffset, pTex.get(), pSampler);
         }
     }
 

@@ -395,13 +395,12 @@ namespace Falcor
         mDirty = true;
     }
 
-    bool checkResourceDimension(const Texture* pTexture, const ProgramReflection::Resource* pResourceDesc, bool bindAsImage, const std::string& name, const std::string& bufferName)
+    bool checkResourceDimension(const Texture* pTexture, const ProgramReflection::Resource* pResourceDesc, const std::string& name, const std::string& bufferName)
     {
 #if _LOG_ENABLED
 
         bool dimsMatch = false;
         bool formatMatch = false;
-        bool imageMatch = bindAsImage ? (pResourceDesc->type == ProgramReflection::Resource::ResourceType::TextureUav) : (pResourceDesc->type == ProgramReflection::Resource::ResourceType::TextureSrv);
 
         Texture::Type texDim = pTexture->getType();
         bool isArray = pTexture->getArraySize() > 1;
@@ -459,21 +458,13 @@ namespace Falcor
         default:
             should_not_get_here();
         }
-        if((imageMatch && dimsMatch && formatMatch) == false)
+        if((dimsMatch && formatMatch) == false)
         {
             std::string msg("Error when setting texture \"");
             msg += name + "\".\n";
             if(dimsMatch == false)
             {
                 msg += "Dimensions mismatch.\nTexture has Type " + to_string(texDim) + (isArray ? "Array" : "") + ".\nVariable has Type " + to_string(pResourceDesc->dims) + ".\n";
-            }
-
-            if(imageMatch == false)
-            {
-                msg += "Using ";
-                msg += (bindAsImage ? "Image" : "Texture");
-                msg += " method to bind ";
-                msg += ((!bindAsImage) ? "Image" : "Texture") + std::string(".\n");
             }
 
             if(formatMatch == false)
@@ -502,7 +493,7 @@ namespace Falcor
         return pResource;
     }
 
-    void ConstantBuffer::setTexture(size_t offset, const Texture* pTexture, const Sampler* pSampler, bool bindAsImage)
+    void ConstantBuffer::setTexture(size_t offset, const Texture* pTexture, const Sampler* pSampler)
     {
         bool bOK = true;
 #if _LOG_ENABLED
@@ -538,7 +529,7 @@ namespace Falcor
                         assert(pResource != nullptr);                
                         if(pResource->type != ProgramReflection::Resource::ResourceType::Sampler)
                         {
-                            bOK = checkResourceDimension(pTexture, pResource, bindAsImage, varName, mpReflector->getName());
+                            bOK = checkResourceDimension(pTexture, pResource, varName, mpReflector->getName());
                             break;
                         }
                     }
@@ -547,7 +538,7 @@ namespace Falcor
 
             if(bOK == false)
             {
-                std::string msg("Error when setting texture by offset. No varialbe found at offset ");
+                std::string msg("Error when setting texture by offset. No variable found at offset ");
                 msg += std::to_string(offset) + ". Ignoring call";
                 Logger::log(Logger::Level::Error, msg);
             }
@@ -561,7 +552,7 @@ namespace Falcor
         }
     }
 
-    void ConstantBuffer::setTexture(const std::string& name, const Texture* pTexture, const Sampler* pSampler, bool bindAsImage)
+    void ConstantBuffer::setTexture(const std::string& name, const Texture* pTexture, const Sampler* pSampler)
     {
         size_t offset;
         const auto& pVarDesc = mpReflector->getVariableData(name, offset, false);
@@ -572,17 +563,17 @@ namespace Falcor
             if(pTexture != nullptr)
             {
                 const auto& pDesc = getResourceDesc(name, mpReflector.get());
-                bOK = (pDesc != nullptr) && checkResourceDimension(pTexture, pDesc, bindAsImage, name, mpReflector->getName());
+                bOK = (pDesc != nullptr) && checkResourceDimension(pTexture, pDesc, name, mpReflector->getName());
             }
 #endif
             if(bOK)
             {
-                setTexture(offset, pTexture, pSampler, bindAsImage);
+                setTexture(offset, pTexture, pSampler);
             }
         }
     }
 
-    void ConstantBuffer::setTextureArray(const std::string& name, const Texture* pTexture[], const Sampler* pSampler, size_t count, bool bindAsImage)
+    void ConstantBuffer::setTextureArray(const std::string& name, const Texture* pTexture[], const Sampler* pSampler, size_t count)
     {
         size_t offset;
         const auto& pVarDesc = mpReflector->getVariableData(name, offset, true);
@@ -602,18 +593,18 @@ namespace Falcor
                 if(pTexture[i] != nullptr)
                 {
                     const auto& pDesc = getResourceDesc(name, mpReflector.get());
-                    bOK = (pDesc) && checkResourceDimension(pTexture[i], pDesc, bindAsImage, name, mpReflector->getName());
+                    bOK = (pDesc) && checkResourceDimension(pTexture[i], pDesc, name, mpReflector->getName());
                 }
 #endif
                 if(bOK)
                 {
-                    setTexture(offset + i * sizeof(uint64_t), pTexture[i], pSampler, bindAsImage);
+                    setTexture(offset + i * sizeof(uint64_t), pTexture[i], pSampler);
                 }
             }
         }
     }
 
-    DescriptorHeap::Entry ConstantBuffer::getResourceView() const
+    DescriptorHeap::Entry ConstantBuffer::getSrv() const
     {
         if(mResourceView == nullptr)
         {

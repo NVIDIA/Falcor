@@ -447,22 +447,35 @@ namespace Falcor
         switch (type)
         {
         case D3D_SIT_TEXTURE:
-            return ProgramReflection::Resource::ResourceType::TextureSrv;
+        case D3D_SIT_UAV_RWTYPED:
+            return ProgramReflection::Resource::ResourceType::Texture;
         case D3D_SIT_SAMPLER:
             return ProgramReflection::Resource::ResourceType::Sampler;
-        case D3D_SIT_UAV_RWTYPED:
-            return ProgramReflection::Resource::ResourceType::TextureUav;
-        case D3D_SIT_STRUCTURED:
-            return ProgramReflection::Resource::ResourceType::StructuredBufferSrv;
-        case D3D_SIT_UAV_RWSTRUCTURED:
-            return ProgramReflection::Resource::ResourceType::StructuredBufferUav;
         case D3D_SIT_BYTEADDRESS:
-            return ProgramReflection::Resource::ResourceType::RawBufferSrv;
         case D3D_SIT_UAV_RWBYTEADDRESS:
-            return ProgramReflection::Resource::ResourceType::RawBufferUav;
+            return ProgramReflection::Resource::ResourceType::RawBuffer;
         default:
             should_not_get_here();
             return ProgramReflection::Resource::ResourceType::Unknown;
+        }
+    }
+
+    static ProgramReflection::Resource::ShaderAccess getShaderAccess(D3D_SHADER_INPUT_TYPE type)
+    {
+        switch (type)
+        {
+        case D3D_SIT_TEXTURE:
+        case D3D_SIT_SAMPLER:
+        case D3D_SIT_STRUCTURED:
+        case D3D_SIT_BYTEADDRESS:
+            return ProgramReflection::Resource::ShaderAccess::Read;
+        case D3D_SIT_UAV_RWTYPED:
+        case D3D_SIT_UAV_RWSTRUCTURED:
+        case D3D_SIT_UAV_RWBYTEADDRESS:
+            return ProgramReflection::Resource::ShaderAccess::ReadWrite;
+        default:
+            should_not_get_here();
+            return ProgramReflection::Resource::ShaderAccess::Undefined;
         }
     }
 
@@ -491,7 +504,8 @@ namespace Falcor
         ProgramReflection::Resource falcorDesc;
         std::string name(desc.Name);
         falcorDesc.type = getResourceType(desc.Type);
-        if (falcorDesc.type == ProgramReflection::Resource::ResourceType::TextureSrv || falcorDesc.type == ProgramReflection::Resource::ResourceType::TextureUav)
+        falcorDesc.shaderAccess = getShaderAccess(desc.Type);
+        if (falcorDesc.type == ProgramReflection::Resource::ResourceType::Texture)
         {
             falcorDesc.retType = getReturnType(desc.ReturnType);
             falcorDesc.dims = getResourceDimensions(desc.Dimension);

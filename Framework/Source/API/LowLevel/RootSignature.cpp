@@ -124,23 +124,23 @@ namespace Falcor
         {
             const ProgramReflection::Resource& resource = resIt.second;
             RootSignature::DescType descType;
-            switch (resource.type)
+            if (resource.type == ProgramReflection::Resource::ResourceType::Sampler)
             {
-            case ProgramReflection::Resource::ResourceType::TextureUav:
-            case ProgramReflection::Resource::ResourceType::StructuredBufferUav:
-            case ProgramReflection::Resource::ResourceType::RawBufferUav:
-                descType = RootSignature::DescType::UAV;
-                break;
-            case ProgramReflection::Resource::ResourceType::TextureSrv:
-            case ProgramReflection::Resource::ResourceType::StructuredBufferSrv:
-            case ProgramReflection::Resource::ResourceType::RawBufferSrv:
-                descType = RootSignature::DescType::SRV;
-                break;
-            case ProgramReflection::Resource::ResourceType::Sampler:
                 descType = RootSignature::DescType::Sampler;
-                break;
-            default:
-                should_not_get_here();
+            }
+            else
+            {
+                switch (resource.shaderAccess)
+                {
+                case ProgramReflection::Resource::ShaderAccess::ReadWrite:
+                    descType = RootSignature::DescType::UAV;
+                    break;
+                case ProgramReflection::Resource::ShaderAccess::Read:
+                    descType = RootSignature::DescType::SRV;
+                    break;
+                default:
+                    should_not_get_here();
+                }
             }
 
             RootSignature::DescriptorTable descTable;

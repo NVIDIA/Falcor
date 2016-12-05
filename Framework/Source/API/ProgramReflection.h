@@ -123,15 +123,21 @@ namespace Falcor
             enum class ResourceType
             {
                 Unknown,
-                TextureSrv,            // Read-only
-                TextureUav,                // Read-write
-                StructuredBufferSrv, 
-                StructuredBufferUav,
-                RawBufferSrv,
-                RawBufferUav,
-                Sampler             // Sampler state
+                Texture,
+                StructuredBuffer,
+                RawBuffer,
+                TypedBuffer,
+                Sampler
             };
 
+            enum class ShaderAccess
+            {
+                Undefined,
+                Read,
+                ReadWrite
+            };
+
+            ShaderAccess shaderAccess = ShaderAccess::Undefined;
             ResourceType type = ResourceType::Unknown;      ///< Resource type
             Dimensions dims = Dimensions::Unknown;          ///< Resource dimensions
             ReturnType retType = ReturnType::Unknown;       ///< Resource return type
@@ -139,7 +145,7 @@ namespace Falcor
             uint32_t arraySize = 0;                         ///< Array size , or 0 if not an array
             uint32_t shaderMask = 0;                        ///< A mask indicating in which shader stages the buffer is used
             uint32_t registerSpace = 0;                     ///< The register space
-            Resource(Dimensions d, ReturnType r, ResourceType t) : dims(d), retType(r), type(t) {}
+            Resource(Dimensions d, ReturnType r, ResourceType t, ShaderAccess s) : dims(d), retType(r), type(t), shaderAccess(s) {}
             Resource() {}
         };
 
@@ -371,24 +377,37 @@ namespace Falcor
 #undef type_2_string
     }
 
-    inline const std::string to_string(ProgramReflection::Resource::ResourceType access)
+    inline const std::string to_string(ProgramReflection::Resource::ResourceType type)
     {
 #define type_2_string(a) case ProgramReflection::Resource::ResourceType::a: return #a;
-        switch(access)
+        switch(type)
         {
             type_2_string(Unknown);
-            type_2_string(TextureSrv);
-            type_2_string(TextureUav);
-            type_2_string(StructuredBufferSrv);
-            type_2_string(StructuredBufferUav);
-            type_2_string(RawBufferSrv);
-            type_2_string(RawBufferUav);
+            type_2_string(Texture);
+            type_2_string(StructuredBuffer);
+            type_2_string(RawBuffer);
+            type_2_string(TypedBuffer);
             type_2_string(Sampler);
         default:
             should_not_get_here();
             return "";
         }
 #undef type_2_string
+    }
+
+    inline const std::string to_string(ProgramReflection::Resource::ShaderAccess access)
+    {
+#define access_2_string(a) case ProgramReflection::Resource::ShaderAccess::a: return #a;
+        switch (access)
+        {
+            access_2_string(Undefined);
+            access_2_string(Read);
+            access_2_string(ReadWrite);
+        default:
+            should_not_get_here();
+            return "";
+        }
+#undef access_2_string
     }
 
     inline const std::string to_string(ProgramReflection::Resource::ReturnType retType)

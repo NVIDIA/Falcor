@@ -131,9 +131,8 @@ namespace Falcor
         \param[in] name The variable name in the program. See notes about naming in the ConstantBuffer class description.
         \param[in] pTexture The resource to bind. If bBindAsImage is set, binds as image.
         \param[in] pSampler The sampler to use for filtering. If this is nullptr, the default sampler will be used
-        \param[in] BindAsImage Whether pTexture should be bound as an image
         */
-        void setTexture(const std::string& name, const Texture* pTexture, const Sampler* pSampler, bool bindAsImage = false);
+        void setTexture(const std::string& name, const Texture* pTexture, const Sampler* pSampler);
 
         /** Set a texture or image.
         The function will validate that the resource Type matches the declaration in the shader. If there's a mismatch, an error will be logged and the call will be ignored.
@@ -141,18 +140,16 @@ namespace Falcor
         \param[in] pTexture The resource to bind
         \param[in] pSampler The sampler to use for filtering. If this is nullptr, the default sampler will be used
         \param[in] count Number of textures to bind
-        \param[in] BindAsImage Whether pTexture should be bound as an image
         */
-        void setTextureArray(const std::string& name, const Texture* pTexture[], const Sampler* pSampler, size_t count, bool bindAsImage = false);
+        void setTextureArray(const std::string& name, const Texture* pTexture[], const Sampler* pSampler, size_t count);
 
         /** Set a texture or image.
         The function will validate that the resource Type matches the declaration in the shader. If there's a mismatch, an error will be logged and the call will be ignored.
         \param[in] offset The variable byte offset inside the buffer
         \param[in] pTexture The resource to bind. If bBindAsImage is set, binds as image.
         \param[in] pSampler The sampler to use for filtering. If this is nullptr, the default sampler will be used
-        \param[in] BindAsImage Whether pTexture should be bound as an image
         */
-        void setTexture(size_t Offset, const Texture* pTexture, const Sampler* pSampler, bool bindAsImage = false);
+        void setTexture(size_t Offset, const Texture* pTexture, const Sampler* pSampler);
 
         /** Apply the changes to the actual GPU buffer.
             Note that it is possible to use this function to update only part of the GPU copy of the buffer. This might lead to inconsistencies between the GPU and CPU buffer, so make sure you know what you are doing.
@@ -183,7 +180,7 @@ namespace Falcor
 
         static const size_t ConstantBuffer::kInvalidOffset = ProgramReflection::kInvalidLocation;
 
-        DescriptorHeap::Entry getResourceView() const;
+        DescriptorHeap::Entry getSrv() const;
     protected:
         bool init(size_t overrideSize, bool isConstantBuffer);
         void setTextureInternal(size_t offset, const Texture* pTexture, const Sampler* pSampler);

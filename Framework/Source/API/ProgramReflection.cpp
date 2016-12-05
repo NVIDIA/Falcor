@@ -63,7 +63,7 @@ namespace Falcor
 
     const ProgramReflection::Variable* ProgramReflection::BufferReflection::getVariableData(const std::string& name, size_t& offset, bool allowNonIndexedArray) const
     {
-        const std::string msg = "Error when getting variable data\"" + name + "\" from buffer \"" + mName + "\".\n";
+        const std::string msg = "Error when getting variable data \"" + name + "\" from buffer \"" + mName + "\".\n";
         uint32_t arrayIndex = 0;
 
         // Look for the variable

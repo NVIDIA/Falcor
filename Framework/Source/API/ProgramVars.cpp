@@ -108,21 +108,27 @@ namespace Falcor
                 mAssignedSamplers[desc.regIndex].pResource = nullptr;
                 mAssignedSamplers[desc.regIndex].rootSigOffset = findRootSignatureOffset<RootSignature::DescType::Sampler>(mpRootSignature.get(), desc.regIndex, desc.registerSpace);
                 break;
-            case ProgramReflection::Resource::ResourceType::TextureSrv:
-                mAssignedSrvs[desc.regIndex].pResource = nullptr;
-                mAssignedSrvs[desc.regIndex].rootSigOffset = findRootSignatureOffset<RootSignature::DescType::SRV>(mpRootSignature.get(), desc.regIndex, desc.registerSpace);
+            case ProgramReflection::Resource::ResourceType::Texture:
+                if (desc.shaderAccess == ProgramReflection::Resource::ShaderAccess::Read)
+                {
+                    mAssignedSrvs[desc.regIndex].rootSigOffset = findRootSignatureOffset<RootSignature::DescType::SRV>(mpRootSignature.get(), desc.regIndex, desc.registerSpace);
+                }
+                else
+                {
+                    assert(desc.shaderAccess == ProgramReflection::Resource::ShaderAccess::ReadWrite);
+                    mAssignedUavs[desc.regIndex].rootSigOffset = findRootSignatureOffset<RootSignature::DescType::UAV>(mpRootSignature.get(), desc.regIndex, desc.registerSpace);
+                }
                 break;
-            case ProgramReflection::Resource::ResourceType::TextureUav:
-                mAssignedUavs[desc.regIndex].pResource = nullptr;
-                mAssignedUavs[desc.regIndex].rootSigOffset = findRootSignatureOffset<RootSignature::DescType::UAV>(mpRootSignature.get(), desc.regIndex, desc.registerSpace);
-                break;
-            case ProgramReflection::Resource::ResourceType::RawBufferSrv:
-                mAssignedBufferSrvs[desc.regIndex].pBuffer = nullptr;
-                mAssignedBufferSrvs[desc.regIndex].rootSigOffset = findRootSignatureOffset<RootSignature::DescType::SRV>(mpRootSignature.get(), desc.regIndex, desc.registerSpace);
-                break;
-            case ProgramReflection::Resource::ResourceType::RawBufferUav:
-                mAssignedBufferUavs[desc.regIndex].pBuffer = nullptr;
-                mAssignedBufferUavs[desc.regIndex].rootSigOffset = findRootSignatureOffset<RootSignature::DescType::UAV>(mpRootSignature.get(), desc.regIndex, desc.registerSpace);
+            case ProgramReflection::Resource::ResourceType::RawBuffer:
+                if (desc.shaderAccess == ProgramReflection::Resource::ShaderAccess::Read)
+                {
+                    mAssignedBufferSrvs[desc.regIndex].rootSigOffset = findRootSignatureOffset<RootSignature::DescType::SRV>(mpRootSignature.get(), desc.regIndex, desc.registerSpace);
+                }
+                else
+                {
+                    assert(desc.shaderAccess == ProgramReflection::Resource::ShaderAccess::ReadWrite);
+                    mAssignedBufferUavs[desc.regIndex].rootSigOffset = findRootSignatureOffset<RootSignature::DescType::UAV>(mpRootSignature.get(), desc.regIndex, desc.registerSpace);
+                }
                 break;
             default:
                 should_not_get_here();
@@ -232,12 +238,12 @@ namespace Falcor
             Logger::log(Logger::Level::Warning, "Raw buffer \"" + name + "\" was not found. Ignoring setRawBuffer() call.");
             return false;
         }
-        switch (pDesc->type)
+        switch (pDesc->shaderAccess)
         {
-        case ProgramReflection::Resource::ResourceType::RawBufferUav:
+        case ProgramReflection::Resource::ShaderAccess::ReadWrite:
             mAssignedBufferUavs[pDesc->regIndex].pBuffer = pBuf;
             break;
-        case ProgramReflection::Resource::ResourceType::RawBufferSrv:
+        case ProgramReflection::Resource::ShaderAccess::Read:
             mAssignedBufferSrvs[pDesc->regIndex].pBuffer = pBuf;
             break;
         default:
@@ -247,17 +253,23 @@ namespace Falcor
         return true;
     }
 
-    bool verifyResourceDesc(const ProgramReflection::Resource* pDesc, ProgramReflection::Resource::ResourceType type, const std::string& varName, const std::string& typeName, const std::string& funcName)
+    bool verifyResourceDesc(const ProgramReflection::Resource* pDesc, ProgramReflection::Resource::ResourceType type, ProgramReflection::Resource::ShaderAccess access, const std::string& varName, const std::string& funcName)
     {
         if (pDesc == nullptr)
         {
-            logWarning(typeName + " \"" + varName + "\" was not found. Ignoring " + funcName + " call.");
+            logWarning(to_string(type) + " \"" + varName + "\" was not found. Ignoring " + funcName + " call.");
             return false;
         }
 
         if (pDesc->type != type)
         {
-            logWarning("ProgramVars::" + funcName + " was called, but variable \"" + varName + "\" is not a " + typeName + ". Ignoring call.");
+            logWarning("ProgramVars::" + funcName + " was called, but variable \"" + varName + "\" has different resource type. Expecting + " + to_string(pDesc->type) + " but provided resource is " + to_string(type) + ". Ignoring call");
+            return false;
+        }
+
+        if (pDesc->shaderAccess != access)
+        {
+            logWarning("ProgramVars::" + funcName + " was called, but variable \"" + varName + "\" has different shader access type. Expecting + " + to_string(pDesc->shaderAccess) + " but provided resource is " + to_string(access) + ". Ignoring call");
             return false;
         }
 
@@ -273,7 +285,7 @@ namespace Falcor
     bool ProgramVars::setSampler(const std::string& name, const Sampler::SharedConstPtr& pSampler)
     {
         const ProgramReflection::Resource* pDesc = mpReflector->getResourceDesc(name);
-        if (verifyResourceDesc(pDesc, ProgramReflection::Resource::ResourceType::Sampler, name, "Sampler", "setSampler") == false)
+        if (verifyResourceDesc(pDesc, ProgramReflection::Resource::ResourceType::Sampler, ProgramReflection::Resource::ShaderAccess::Read, name, "setSampler") == false)
         {
             return false;
         }
@@ -332,7 +344,7 @@ namespace Falcor
     bool ProgramVars::setTexture(const std::string& name, const Texture::SharedConstPtr& pTexture, uint32_t firstArraySlice, uint32_t arraySize, uint32_t mostDetailedMip, uint32_t mipCount)
     {
         const ProgramReflection::Resource* pDesc = mpReflector->getResourceDesc(name);
-        if (verifyResourceDesc(pDesc, ProgramReflection::Resource::ResourceType::TextureSrv, name, "Texture", "setTexture") == false)
+        if (verifyResourceDesc(pDesc, ProgramReflection::Resource::ResourceType::Texture, ProgramReflection::Resource::ShaderAccess::Read, name, "setTexture") == false)
         {
             return false;
         }
@@ -349,7 +361,7 @@ namespace Falcor
     {
         const ProgramReflection::Resource* pDesc = mpReflector->getResourceDesc(name);
 
-        if (verifyResourceDesc(pDesc, ProgramReflection::Resource::ResourceType::TextureUav, name, "UAV", "setUav") == false)
+        if (verifyResourceDesc(pDesc, ProgramReflection::Resource::ResourceType::Texture, ProgramReflection::Resource::ShaderAccess::ReadWrite, name, "setUav") == false)
         {
             return false;
         }
@@ -391,15 +403,15 @@ namespace Falcor
         {
             uint32_t rootOffset = bufIt.second.rootSigOffset;
             Buffer* pBuffer = bufIt.second.pBuffer.get();
-            // FIXME D3D12: Handle null textures (should bind a small black texture)
+
             HandleType handle;
             if (isUav)
             {
-                handle = pBuffer->getUAV()->getApiHandle();
+                handle = pBuffer ? pBuffer->getUAV()->getApiHandle() : UnorderedAccessView::getNullView()->getApiHandle();
             }
             else
             {
-                handle = pBuffer->getSRV()->getApiHandle();
+                handle = pBuffer ? pBuffer->getSRV()->getApiHandle() : ShaderResourceView::getNullView()->getApiHandle();
             }
             pList->SetGraphicsRootDescriptorTable(rootOffset, handle->getGpuHandle());
         }
