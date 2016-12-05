@@ -159,7 +159,7 @@ namespace Falcor
     {
     }
 
-    void Buffer::updateData(const void* pData, size_t offset, size_t size)
+    void Buffer::updateData(const void* pData, size_t offset, size_t size) const
     {
         // Clamp the offset and size
         if (adjustSizeOffsetParams(size, offset) == false)
@@ -185,7 +185,7 @@ namespace Falcor
         UNSUPPORTED_IN_D3D12("Buffer::ReadData(). If you really need this, create the resource with CPU read flag, and use Buffer::Map()");
     }
 
-    void* Buffer::map(MapType type)
+    void* Buffer::map(MapType type) const
     {
         BufferData* pApiData = (BufferData*)mpApiData;
 
@@ -200,7 +200,9 @@ namespace Falcor
             // Allocate a new buffer
             gpDevice->getResourceAllocator()->release(pApiData->dynamicData);
             pApiData->dynamicData = gpDevice->getResourceAllocator()->allocate(mSize, getDataAlignmentFromUsage(mBindFlags));
-            mApiHandle = pApiData->dynamicData.pResourceHandle;
+
+            // I don't want to make mApiHandle mutable, so let's just const_cast here. This is D3D12 specific case
+            const_cast<Buffer*>(this)->mApiHandle = pApiData->dynamicData.pResourceHandle;
             
             invalidateViews();
             return pApiData->dynamicData.pData;
@@ -246,7 +248,7 @@ namespace Falcor
         }
     }
 
-    void Buffer::unmap()
+    void Buffer::unmap() const
     {
         // Only unmap read buffers
         if (mCpuAccess == CpuAccess::Read)

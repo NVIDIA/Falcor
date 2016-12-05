@@ -36,7 +36,7 @@ namespace Falcor
         init(nullptr);
     }
 
-    void TypedBufferBase::uploadToGPU()
+    void TypedBufferBase::uploadToGPU() const
     {
         if (mDirty == false)
         {

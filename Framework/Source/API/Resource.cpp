@@ -185,7 +185,7 @@ namespace Falcor
         return findViewCommon<ShaderResourceView>(this, mostDetailedMip, mipCount, firstArraySlice, arraySize, mSrvs, createFunc);
     }
 
-    void Resource::invalidateViews()
+    void Resource::invalidateViews() const
     {
         mSrvs.clear();
         mUavs.clear();

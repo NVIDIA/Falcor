@@ -155,7 +155,7 @@ namespace Falcor
         friend class RenderContext;
 
         Resource(Type type, BindFlags bindFlags) : mType(type), mBindFlags(bindFlags) {}
-        void invalidateViews();
+        void invalidateViews() const;
 
         Type mType;
         BindFlags mBindFlags;

@@ -416,7 +416,7 @@ namespace Falcor
                 const TypedBufferBase* pTypedBuffer = dynamic_cast<const TypedBufferBase*>(pResource);
                 if (pTypedBuffer)
                 {
-                    const_cast<TypedBufferBase*>(pTypedBuffer)->uploadToGPU();
+                    pTypedBuffer->uploadToGPU();
                 }
 
                 pContext->resourceBarrier(resDesc.pResource.get(), isUav ? Resource::State::UnorderedAccess : Resource::State::ShaderResource);
