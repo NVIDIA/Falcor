@@ -371,17 +371,23 @@ namespace Falcor
             const Resource* pResource = resDesc.pResource.get();
             // FIXME D3D12: Handle null textures (should bind a small black texture)
             HandleType handle;
-            if (isUav)
+            if (pResource)
             {
-                auto& uav = pResource ? pResource->getUAV(resDesc.mostDetailedMip, resDesc.firstArraySlice, resDesc.arraySize) : UnorderedAccessView::getNullView();
-                handle = uav->getApiHandle();
+                pContext->resourceBarrier(resDesc.pResource.get(), isUav ? Resource::State::UnorderedAccess : Resource::State::ShaderResource);
+                if (isUav)
+                {
+                    handle = pResource->getUAV(resDesc.mostDetailedMip, resDesc.firstArraySlice, resDesc.arraySize)->getApiHandle();
+                }
+                else
+                {
+                    handle = pResource->getSRV(resDesc.mostDetailedMip, resDesc.mipCount, resDesc.firstArraySlice, resDesc.arraySize)->getApiHandle();
+                }
             }
             else
             {
-                auto& srv = pResource ? pResource->getSRV(resDesc.mostDetailedMip, resDesc.mipCount, resDesc.firstArraySlice, resDesc.arraySize) : ShaderResourceView::getNullView();
-                handle = srv->getApiHandle();
+                handle = isUav ? UnorderedAccessView::getNullView()->getApiHandle() : ShaderResourceView::getNullView()->getApiHandle();
             }
-            pContext->resourceBarrier(resDesc.pResource.get(), isUav ? Resource::State::UnorderedAccess : Resource::State::ShaderResource);
+
             pList->SetGraphicsRootDescriptorTable(rootOffset, handle->getGpuHandle());
         }
     }
