@@ -39,12 +39,16 @@ namespace Falcor
 
         void uploadToGPU() const;
         uint32_t getElementCount() const { return mElementCount; }
+        void setGpuDirty() const { mGpuDirty = true; }
+        ResourceFormat getResourceFormat() const { return ResourceFormat::RGB32Float; }
     protected:
+        void readFromGpu();
         uint32_t mElementCount = 0;
         TypedBufferBase(uint32_t size, uint32_t elementCount);
         std::vector<uint8_t> mData;
         mutable ShaderResourceView::SharedPtr mpSrv;
-        mutable bool mDirty = false;
+        mutable bool mCpuDirty = false;
+        mutable bool mGpuDirty = false;
     };
 
     template<typename BufferType>
@@ -62,6 +66,8 @@ namespace Falcor
             public:
                 TypedElement(TypedBuffer* pBuf, uint32_t elemIdx) : mpBuffer(pBuf), mElemIdx(elemIdx)  {}
                 void operator=(const BufferType& val) { mpBuffer->setElement(mElemIdx, val); }
+
+                operator BufferType() const { return mpBuffer->getElement(mElemIdx); }
             private:
                 uint32_t mElemIdx;
                 TypedBuffer* mpBuffer;
@@ -81,9 +87,15 @@ namespace Falcor
             assert(index < mElementCount);
             BufferType* pVar = (BufferType*)(mData.data() + (index * sizeof(BufferType)));
             *pVar = value;
-            mDirty = true;
+            mCpuDirty = true;
         }
 
+        const BufferType& getElement(uint32_t index)
+        {
+            readFromGpu();
+            const BufferType* pData = (BufferType*)mData.data();
+            return pData[index];
+        }
     private:
         friend SharedPtr;
         TypedBuffer(uint32_t elementCount) : TypedBufferBase(sizeof(BufferType) * elementCount, elementCount) {}

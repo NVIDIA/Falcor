@@ -50,7 +50,7 @@ namespace Falcor
             desc.Buffer.FirstElement = 0;
             if (pTypedBuffer)
             {
-                desc.Format = DXGI_FORMAT_R32G32B32_FLOAT;
+                desc.Format = getDxgiFormat(pTypedBuffer->getResourceFormat());
                 desc.Buffer.Flags = D3D12_BUFFER_SRV_FLAG_NONE;
                 desc.Buffer.NumElements = pTypedBuffer->getElementCount();
             }
@@ -220,13 +220,21 @@ namespace Falcor
         if (pResource->getType() == Resource::Type::Buffer)
         {
             const Buffer* pBuffer = dynamic_cast<const Buffer*>(pResource);
+            const TypedBufferBase* pTypedBuffer = dynamic_cast<const TypedBufferBase*>(pBuffer);
             desc = {};
             desc.ViewDimension = D3D12_UAV_DIMENSION_BUFFER;
-            desc.Format = DXGI_FORMAT_R32_TYPELESS;
-            desc.Buffer.FirstElement = 0;
-            desc.Buffer.Flags = D3D12_BUFFER_UAV_FLAG_RAW;
-            desc.Buffer.NumElements = (uint32_t)pBuffer->getSize() / sizeof(float);
-            desc.Buffer.Flags = D3D12_BUFFER_UAV_FLAG_RAW;
+
+            if (pTypedBuffer != nullptr)
+            {
+                desc.Format = getDxgiFormat(pTypedBuffer->getResourceFormat());
+                desc.Buffer.NumElements = pTypedBuffer->getElementCount();
+            }
+            else
+            {
+                desc.Format = DXGI_FORMAT_R32_TYPELESS;
+                desc.Buffer.Flags = D3D12_BUFFER_UAV_FLAG_RAW;
+                desc.Buffer.NumElements = (uint32_t)pBuffer->getSize() / sizeof(float);
+            }
         }
         else
         {

@@ -31,18 +31,29 @@
 
 namespace Falcor
 {
-    TypedBufferBase::TypedBufferBase(uint32_t size, uint32_t elementCount) : Buffer(size, Resource::BindFlags::ShaderResource, Buffer::CpuAccess::None), mData(size, 0), mElementCount(elementCount)
+    TypedBufferBase::TypedBufferBase(uint32_t size, uint32_t elementCount) : Buffer(size, Resource::BindFlags::ShaderResource | Resource::BindFlags::UnorderedAccess, Buffer::CpuAccess::None), mData(size, 0), mElementCount(elementCount)
     {
         init(nullptr);
     }
 
     void TypedBufferBase::uploadToGPU() const
     {
-        if (mDirty == false)
+        if (mCpuDirty == false)
         {
             return;
         }
         updateData(mData.data(), 0, mSize);
-        mDirty = false;
+        mCpuDirty = false;
+    }
+
+    void TypedBufferBase::readFromGpu()
+    {
+        if (mGpuDirty)
+        {
+            const uint8_t* pData = (uint8_t*)map(Buffer::MapType::Read);
+            memcpy(mData.data(), pData, mData.size());
+            unmap();
+            mGpuDirty = false;
+        }
     }
 }

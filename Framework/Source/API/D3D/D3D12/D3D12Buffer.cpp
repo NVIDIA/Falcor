@@ -224,12 +224,11 @@ namespace Falcor
                 if (pApiData->pStagingResource == nullptr)
                 {
                     pApiData->pStagingResource = Buffer::create(mSize, Buffer::BindFlags::None, Buffer::CpuAccess::Read, nullptr);
-
-                    // Copy the buffer and flush the pipeline
-                    RenderContext* pContext = gpDevice->getRenderContext().get();
-                    pContext->getCommandListApiHandle()->CopyResource(pApiData->pStagingResource->getApiHandle(), mApiHandle);
-                    pContext->flush(true);
                 }
+                // Copy the buffer and flush the pipeline
+                RenderContext* pContext = gpDevice->getRenderContext().get();
+                pContext->getCommandListApiHandle()->CopyResource(pApiData->pStagingResource->getApiHandle(), mApiHandle);
+                pContext->flush(true);
                 return pApiData->pStagingResource->map(MapType::Read);
             }
         }        
@@ -251,19 +250,15 @@ namespace Falcor
     void Buffer::unmap() const
     {
         // Only unmap read buffers
-        if (mCpuAccess == CpuAccess::Read)
+        BufferData* pApiData = (BufferData*)mpApiData;
+        D3D12_RANGE r{};
+        if (pApiData->pStagingResource)
         {
-            BufferData* pApiData = (BufferData*)mpApiData;
-            D3D12_RANGE r{};
-            if (pApiData->pStagingResource)
-            {
-                pApiData->pStagingResource->mApiHandle->Unmap(0, &r);
-                pApiData->pStagingResource = nullptr;
-            }
-            else
-            {
-                mApiHandle->Unmap(0, &r);
-            }
+            pApiData->pStagingResource->mApiHandle->Unmap(0, &r);
+        }
+        else if (mCpuAccess == CpuAccess::Read)
+        {
+            mApiHandle->Unmap(0, &r);
         }
     }
 

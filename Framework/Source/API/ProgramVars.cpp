@@ -422,6 +422,10 @@ namespace Falcor
                 pContext->resourceBarrier(resDesc.pResource.get(), isUav ? Resource::State::UnorderedAccess : Resource::State::ShaderResource);
                 if (isUav)
                 {
+                    if (pTypedBuffer)
+                    {
+                        pTypedBuffer->setGpuDirty();
+                    }
                     handle = pResource->getUAV(resDesc.mostDetailedMip, resDesc.firstArraySlice, resDesc.arraySize)->getApiHandle();
                 }
                 else
