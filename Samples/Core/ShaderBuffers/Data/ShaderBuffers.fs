@@ -27,18 +27,6 @@
 ***************************************************************************/
 #version 430
 #include "hlslglslcommon.h"
-// This is just to show how nesting works
-struct Matrices
-{
-    mat4 worldMat;
-    mat4 wvpMat;
-};
-
-CONSTANT_BUFFER (PerFrameCB, 0)
-{
-	Matrices m;
-    vec3 surfaceColor;
-};
 
 CONSTANT_BUFFER (LightCB, 1)
 {
@@ -47,13 +35,14 @@ CONSTANT_BUFFER (LightCB, 1)
 };
 
 RWByteAddressBuffer gInvocationBuffer;
+Buffer<vec3> surfaceColor;
 
 vec4 calcColor(vec3 normalW)
 {
     vec3 n = normalize(normalW);
     float nDotL = dot(n, -worldDir);
     nDotL = clamp(nDotL, 0, 1);
-    vec4 color = vec4(nDotL * intensity * surfaceColor, 1);
+    vec4 color = vec4(nDotL * intensity * surfaceColor[0], 1);
     gInvocationBuffer.InterlockedAdd(0, 1);
     return color;
 }

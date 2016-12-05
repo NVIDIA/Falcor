@@ -26,44 +26,23 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 #pragma once
-#include "Falcor.h"
+#include "Framework.h"
+#include "TypedBuffer.h"
 
-using namespace Falcor;
-
-class ShaderBuffersSample : public Sample
+namespace Falcor
 {
-public:
-    void onLoad() override;
-    void onFrameRender() override;
-    void onResizeSwapChain() override;
-    bool onKeyEvent(const KeyboardEvent& keyEvent) override;
-    bool onMouseEvent(const MouseEvent& mouseEvent) override;
-    void onGuiRender() override;
-    void onDataReload() override;
-
-private:
-
-    Program::SharedPtr mpProgram;
-    ProgramVars::SharedPtr mpProgramVars;
-    Model::SharedPtr mpModel;
-    Vao::SharedConstPtr mpVao;
-    uint32_t mIndexCount = 0;
-    Buffer::SharedPtr mpInvocationsBuffer;
-    TypedBuffer<vec3>::SharedPtr mpSurfaceColorBuffer;
-
-    bool mCountPixelShaderInvocations = false;
-
-    Camera::SharedPtr mpCamera;
-    ModelViewCameraController mCameraController;
-
-    struct Light
+    TypedBufferBase::TypedBufferBase(uint32_t size, uint32_t elementCount) : Buffer(size, Resource::BindFlags::ShaderResource, Buffer::CpuAccess::None), mData(size, 0), mElementCount(elementCount)
     {
-        glm::vec3 worldDir;
-        glm::vec3 intensity;
-    };
+        init(nullptr);
+    }
 
-    Light mLightData;
-
-    glm::vec3 mSurfaceColor = glm::vec3(1,1,1);
-    Vao::SharedConstPtr getVao();
-};
+    void TypedBufferBase::uploadToGPU()
+    {
+        if (mDirty == false)
+        {
+            return;
+        }
+        updateData(mData.data(), 0, mSize);
+        mDirty = false;
+    }
+}

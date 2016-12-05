@@ -116,35 +116,39 @@ namespace Falcor
 
     Buffer::SharedPtr Buffer::create(size_t size, BindFlags usage, CpuAccess cpuAccess, const void* pInitData)
     {
-        if (usage == BindFlags::Constant)
-        {
-            size = align_to(D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT, size);
-        }
-
         Buffer::SharedPtr pBuffer = SharedPtr(new Buffer(size, usage, cpuAccess));
+        return pBuffer->init(pInitData) ? pBuffer : nullptr;
+    }
+
+    bool Buffer::init(const void* pInitData)
+    {
+        if (mBindFlags == BindFlags::Constant)
+        {
+            mSize = align_to(D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT, mSize);
+        }
 
         BufferData* pApiData = new BufferData;
-        pBuffer->mpApiData = pApiData;
-        if (cpuAccess == CpuAccess::Write)
+        mpApiData = pApiData;
+        if (mCpuAccess == CpuAccess::Write)
         {
-            pApiData->dynamicData = gpDevice->getResourceAllocator()->allocate(size, getDataAlignmentFromUsage(usage));
-            pBuffer->mApiHandle = pApiData->dynamicData.pResourceHandle;
+            pApiData->dynamicData = gpDevice->getResourceAllocator()->allocate(mSize, getDataAlignmentFromUsage(mBindFlags));
+            mApiHandle = pApiData->dynamicData.pResourceHandle;
         }
-        else if (cpuAccess == CpuAccess::Read && usage == BindFlags::None)
+        else if (mCpuAccess == CpuAccess::Read && mBindFlags == BindFlags::None)
         {
-            pBuffer->mApiHandle = createBuffer(size, kReadbackHeapProps, usage);
+            mApiHandle = createBuffer(mSize, kReadbackHeapProps, mBindFlags);
         }
         else
         {
-            pBuffer->mApiHandle = createBuffer(size, kDefaultHeapProps, usage);
+            mApiHandle = createBuffer(mSize, kDefaultHeapProps, mBindFlags);
         }
 
         if (pInitData)
         {
-            pBuffer->updateData(pInitData, 0, size);
+            updateData(pInitData, 0, mSize);
         }
 
-        return pBuffer;
+        return true;
     }
 
     void Buffer::copy(Buffer* pDst) const

@@ -132,7 +132,7 @@ namespace Falcor
             assert(mostDetailedMip == 0);
             assert(mipCount == 1);
             assert(firstArraySlice == 0);
-            assert(arraySize == Resource::kMaxPossible);
+            assert(arraySize == 1);
         }
 
         ViewClass::ViewInfo view = ViewClass::ViewInfo(mostDetailedMip, mipCount, firstArraySlice, arraySize);

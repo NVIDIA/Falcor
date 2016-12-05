@@ -75,9 +75,11 @@ void ShaderBuffersSample::onLoad()
 
     // create the uniform buffers
     mpProgramVars = ProgramVars::create(mpProgram->getActiveVersion()->getReflector());
+    mpSurfaceColorBuffer = TypedBuffer<vec3>::create(1);
     uint32_t z = 0;
     mpInvocationsBuffer = Buffer::create(sizeof(uint32_t), Buffer::BindFlags::UnorderedAccess, Buffer::CpuAccess::Read, &z);
     mpProgramVars->setRawBuffer("gInvocationBuffer", mpInvocationsBuffer);
+    mpProgramVars->setTypedBuffer("surfaceColor", mpSurfaceColorBuffer);
 
     // create pipeline cache
     RasterizerState::Desc rsDesc;
@@ -103,11 +105,13 @@ void ShaderBuffersSample::onFrameRender()
     mpProgramVars["PerFrameCB"]["m.worldMat"] = glm::mat4();
     glm::mat4 wvp = mpCamera->getViewProjMatrix();
     mpProgramVars["PerFrameCB"]["m.wvpMat"] = wvp;
-    mpProgramVars["PerFrameCB"]["surfaceColor"] = mSurfaceColor;
 
     mpProgramVars["LightCB"]["worldDir"] = mLightData.worldDir;
     mpProgramVars["LightCB"]["intensity"] = mLightData.intensity;
     
+    mpSurfaceColorBuffer[0] = mSurfaceColor;
+    mpSurfaceColorBuffer->uploadToGPU();
+
     // Set uniform buffers
     mpRenderContext->setProgramVariables(mpProgramVars);
     mpRenderContext->drawIndexed(mIndexCount, 0, 0);
@@ -120,7 +124,7 @@ void ShaderBuffersSample::onFrameRender()
         mpInvocationsBuffer->unmap();
         renderText(msg, vec2(600, 100));
 
-        mpRenderContext->clearUAV(mpInvocationsBuffer->getUAV(0).get(), uvec4(0));
+        mpRenderContext->clearUAV(mpInvocationsBuffer->getUAV().get(), uvec4(0));
     }
 }
 

@@ -38,7 +38,6 @@ struct Matrices
 CONSTANT_BUFFER (PerFrameCB, 0)
 {
 	Matrices m;
-    vec3 surfaceColor;
 };
 
 #ifdef FALCOR_GLSL

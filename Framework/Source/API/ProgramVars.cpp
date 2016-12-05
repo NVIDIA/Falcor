@@ -245,6 +245,32 @@ namespace Falcor
         return true;
     }
 
+    bool ProgramVars::setTypedBuffer(const std::string& name, TypedBufferBase::SharedPtr pBuf)
+    {
+        // Find the buffer
+        const ProgramReflection::Resource* pDesc = mpReflector->getResourceDesc(name);
+        if (pDesc == nullptr)
+        {
+            Logger::log(Logger::Level::Warning, "Typed buffer \"" + name + "\" was not found. Ignoring setTypedBuffer() call.");
+            return false;
+        }
+
+        // A note about what happens here. We don't need any additional information about the TypedBuffer. We just store is as a resource, since in effect it's just a wrapper around the buffer (the views are the same)
+        switch (pDesc->shaderAccess)
+        {
+        case ProgramReflection::Resource::ShaderAccess::ReadWrite:
+            mAssignedUavs[pDesc->regIndex].pResource = pBuf;
+            break;
+        case ProgramReflection::Resource::ShaderAccess::Read:
+            mAssignedSrvs[pDesc->regIndex].pResource = pBuf;
+            break;
+        default:
+            should_not_get_here();
+        }
+
+        return true;
+    }
+
     bool verifyResourceDesc(const ProgramReflection::Resource* pDesc, ProgramReflection::Resource::ResourceType type, ProgramReflection::Resource::ShaderAccess access, const std::string& varName, const std::string& funcName)
     {
         if (pDesc == nullptr)
@@ -371,8 +397,16 @@ namespace Falcor
             const Resource* pResource = resDesc.pResource.get();
             // FIXME D3D12: Handle null textures (should bind a small black texture)
             HandleType handle;
+
             if (pResource)
             {
+                // If it's a typed buffer, upload it to the GPU
+                const TypedBufferBase* pTypedBuffer = dynamic_cast<const TypedBufferBase*>(pResource);
+                if (pTypedBuffer)
+                {
+                    const_cast<TypedBufferBase*>(pTypedBuffer)->uploadToGPU();
+                }
+
                 pContext->resourceBarrier(resDesc.pResource.get(), isUav ? Resource::State::UnorderedAccess : Resource::State::ShaderResource);
                 if (isUav)
                 {
