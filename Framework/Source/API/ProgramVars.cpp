@@ -230,6 +230,13 @@ namespace Falcor
             Logger::log(Logger::Level::Warning, "Raw buffer \"" + name + "\" was not found. Ignoring setRawBuffer() call.");
             return false;
         }
+
+        if (pDesc->type != ProgramReflection::Resource::ResourceType::RawBuffer)
+        {
+            logWarning("ProgramVars::setTypedBuffer() - variable '" + name + "' is not a raw buffer. VarType = " + to_string(pDesc->type) + ". Ignoring call");
+            return false;
+        }
+
         switch (pDesc->shaderAccess)
         {
         case ProgramReflection::Resource::ShaderAccess::ReadWrite:
@@ -251,7 +258,13 @@ namespace Falcor
         const ProgramReflection::Resource* pDesc = mpReflector->getResourceDesc(name);
         if (pDesc == nullptr)
         {
-            Logger::log(Logger::Level::Warning, "Typed buffer \"" + name + "\" was not found. Ignoring setTypedBuffer() call.");
+            logWarning("Typed buffer \"" + name + "\" was not found. Ignoring setTypedBuffer() call.");
+            return false;
+        }
+
+        if (pDesc->type != ProgramReflection::Resource::ResourceType::Texture || pDesc->dims != ProgramReflection::Resource::Dimensions::Buffer)
+        {
+            logWarning("ProgramVars::setTypedBuffer() - variable '" + name + "' is not a typed buffer. VarType = " + to_string(pDesc->type) + ", VarDims = " + to_string(pDesc->dims) + ". Ignoring call");
             return false;
         }
 
@@ -395,9 +408,8 @@ namespace Falcor
             const auto& resDesc = resIt.second;
             uint32_t rootOffset = resDesc.rootSigOffset;
             const Resource* pResource = resDesc.pResource.get();
-            // FIXME D3D12: Handle null textures (should bind a small black texture)
-            HandleType handle;
 
+            HandleType handle;
             if (pResource)
             {
                 // If it's a typed buffer, upload it to the GPU
@@ -419,6 +431,7 @@ namespace Falcor
             }
             else
             {
+                // FIXME D3D12: I was under the assumption I'll need to bind a black texture to get the default values. Need to verify it
                 handle = isUav ? UnorderedAccessView::getNullView()->getApiHandle() : ShaderResourceView::getNullView()->getApiHandle();
             }
 
