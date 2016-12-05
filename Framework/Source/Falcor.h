@@ -60,7 +60,7 @@
 #include "API/VAO.h"
 #include "API/VertexLayout.h"
 #include "API/Window.h"
-
+#include "API/TypedBuffer.h"
 
 #if defined FALCOR_D3D12 || defined FALCOR_VULKAN
 #include "API/LowLevel/CopyContext.h"

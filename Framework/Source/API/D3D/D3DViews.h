@@ -29,6 +29,7 @@
 #include "API/Resource.h"
 #include "API/Buffer.h"
 #include "API/Texture.h"
+#include "API/TypedBuffer.h"
 
 namespace Falcor
 {
@@ -40,22 +41,38 @@ namespace Falcor
     {
         const Texture* pTexture = dynamic_cast<const Texture*>(pResource);
         const Buffer* pBuffer = dynamic_cast<const Buffer*>(pResource);
-
         desc = {};
+
+        if (pBuffer)
+        {
+            const TypedBufferBase* pTypedBuffer = dynamic_cast<const TypedBufferBase*>(pResource);
+
+            desc.Buffer.FirstElement = 0;
+            if (pTypedBuffer)
+            {
+                desc.Format = getDxgiFormat(pTypedBuffer->getResourceFormat());
+                desc.Buffer.Flags = D3D12_BUFFER_SRV_FLAG_NONE;
+                desc.Buffer.NumElements = pTypedBuffer->getElementCount();
+            }
+            else
+            {
+                desc.Format = DXGI_FORMAT_R32_TYPELESS;
+                desc.Buffer.Flags = D3D12_BUFFER_SRV_FLAG_RAW;
+                desc.Buffer.NumElements = (uint32_t)pBuffer->getSize() / sizeof(float);
+            }
+            desc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+            desc.ViewDimension = D3D12_SRV_DIMENSION_BUFFER;
+            return;
+        }
+
+        assert(pTexture);
         desc.Format = getDxgiFormat(pTexture->getFormat());
         bool isTextureArray = pTexture->getArraySize() > 1;
         desc.ViewDimension = getViewDimension<decltype(desc.ViewDimension)>(pResource->getType(), isTextureArray);
 
         switch(pResource->getType())
         {
-        case Resource::Type::Buffer:
-            desc.Buffer.FirstElement = 0;
-            desc.Buffer.NumElements = (uint32_t)pBuffer->getSize() / sizeof(float);
-            desc.Buffer.Flags = D3D12_BUFFER_SRV_FLAG_RAW;
-            desc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-            desc.Format = DXGI_FORMAT_R32_TYPELESS;
-            break;
-        case Resource::Type::Texture1D:
+       case Resource::Type::Texture1D:
             if (isTextureArray)
             {
                 desc.Texture1DArray.MipLevels = mipCount;
@@ -203,13 +220,21 @@ namespace Falcor
         if (pResource->getType() == Resource::Type::Buffer)
         {
             const Buffer* pBuffer = dynamic_cast<const Buffer*>(pResource);
+            const TypedBufferBase* pTypedBuffer = dynamic_cast<const TypedBufferBase*>(pBuffer);
             desc = {};
             desc.ViewDimension = D3D12_UAV_DIMENSION_BUFFER;
-            desc.Format = DXGI_FORMAT_R32_TYPELESS;
-            desc.Buffer.FirstElement = 0;
-            desc.Buffer.Flags = D3D12_BUFFER_UAV_FLAG_RAW;
-            desc.Buffer.NumElements = (uint32_t)pBuffer->getSize() / sizeof(float);
-            desc.Buffer.Flags = D3D12_BUFFER_UAV_FLAG_RAW;
+
+            if (pTypedBuffer != nullptr)
+            {
+                desc.Format = getDxgiFormat(pTypedBuffer->getResourceFormat());
+                desc.Buffer.NumElements = pTypedBuffer->getElementCount();
+            }
+            else
+            {
+                desc.Format = DXGI_FORMAT_R32_TYPELESS;
+                desc.Buffer.Flags = D3D12_BUFFER_UAV_FLAG_RAW;
+                desc.Buffer.NumElements = (uint32_t)pBuffer->getSize() / sizeof(float);
+            }
         }
         else
         {

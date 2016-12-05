@@ -26,44 +26,37 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 #pragma once
-#include "Falcor.h"
+#include "Framework.h"
+#include "TypedBuffer.h"
 
-using namespace Falcor;
-
-class ShaderBuffersSample : public Sample
+namespace Falcor
 {
-public:
-    void onLoad() override;
-    void onFrameRender() override;
-    void onResizeSwapChain() override;
-    bool onKeyEvent(const KeyboardEvent& keyEvent) override;
-    bool onMouseEvent(const MouseEvent& mouseEvent) override;
-    void onGuiRender() override;
-    void onDataReload() override;
-
-private:
-
-    Program::SharedPtr mpProgram;
-    ProgramVars::SharedPtr mpProgramVars;
-    Model::SharedPtr mpModel;
-    Vao::SharedConstPtr mpVao;
-    uint32_t mIndexCount = 0;
-    Buffer::SharedPtr mpInvocationsBuffer;
-    TypedBuffer<vec3>::SharedPtr mpSurfaceColorBuffer;
-
-    bool mCountPixelShaderInvocations = false;
-
-    Camera::SharedPtr mpCamera;
-    ModelViewCameraController mCameraController;
-
-    struct Light
+    TypedBufferBase::TypedBufferBase(uint32_t elementCount, ResourceFormat format) : 
+        Buffer(elementCount * getFormatBytesPerBlock(format), Resource::BindFlags::ShaderResource | Resource::BindFlags::UnorderedAccess, Buffer::CpuAccess::None), mData(mSize, 0), 
+        mElementCount(elementCount), 
+        mFormat(format)
     {
-        glm::vec3 worldDir;
-        glm::vec3 intensity;
-    };
+        init(nullptr);
+    }
 
-    Light mLightData;
+    void TypedBufferBase::uploadToGPU() const
+    {
+        if (mCpuDirty == false)
+        {
+            return;
+        }
+        updateData(mData.data(), 0, mSize);
+        mCpuDirty = false;
+    }
 
-    glm::vec3 mSurfaceColor = glm::vec3(1,1,1);
-    Vao::SharedConstPtr getVao();
-};
+    void TypedBufferBase::readFromGpu()
+    {
+        if (mGpuDirty)
+        {
+            const uint8_t* pData = (uint8_t*)map(Buffer::MapType::Read);
+            memcpy(mData.data(), pData, mData.size());
+            unmap();
+            mGpuDirty = false;
+        }
+    }
+}

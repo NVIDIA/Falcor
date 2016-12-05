@@ -410,6 +410,7 @@
     <ClCompile Include="API\Sampler.cpp" />
     <ClCompile Include="API\Texture.cpp" />
     <ClCompile Include="API\ConstantBuffer.cpp" />
+    <ClCompile Include="API\TypedBuffer.cpp" />
     <ClCompile Include="API\VAO.cpp" />
     <ClCompile Include="Effects\NormalMap\LeanMap.cpp" />
     <ClCompile Include="Effects\Shadows\CSM.cpp" />
@@ -772,6 +773,7 @@
     <ClInclude Include="API\ShaderStorageBuffer.h" />
     <ClInclude Include="API\Texture.h" />
     <ClInclude Include="API\ConstantBuffer.h" />
+    <ClInclude Include="API\TypedBuffer.h" />
     <ClInclude Include="API\VAO.h" />
     <ClInclude Include="API\VertexLayout.h" />
     <ClInclude Include="API\Window.h" />

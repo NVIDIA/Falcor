@@ -32,6 +32,7 @@
 #include <unordered_map>
 #include "API/ProgramReflection.h"
 #include "API/ShaderStorageBuffer.h"
+#include "API/TypedBuffer.h"
 #include "API/LowLevel/RootSignature.h"
 
 namespace Falcor
@@ -110,6 +111,12 @@ namespace Falcor
             \param[in] pBuf The buffer object
         */
         bool setRawBuffer(const std::string& name, Buffer::SharedPtr pBuf);
+        
+        /** Set a typed buffer. Based on the shader reflection, it will be bound as either an SRV or a UAV
+        \param[in] name The name of the buffer
+        \param[in] pBuf The buffer object
+        */
+        bool setTypedBuffer(const std::string& name, TypedBufferBase::SharedPtr pBuf);
 
         /** Bind a texture to the program in the global namespace.
             If you are using bindless textures, than this is not the right call for you. You should use the ConstantBuffer::setTexture() method instead.
@@ -201,9 +208,9 @@ namespace Falcor
         {
             T pResource;
             uint32_t firstArraySlice = 0;
-            uint32_t arraySize = -1;
+            uint32_t arraySize = 1;
             uint32_t mostDetailedMip = 0;
-            uint32_t mipCount = -1;
+            uint32_t mipCount = 1;
             uint32_t rootSigOffset = 0;
         };
 

@@ -116,35 +116,39 @@ namespace Falcor
 
     Buffer::SharedPtr Buffer::create(size_t size, BindFlags usage, CpuAccess cpuAccess, const void* pInitData)
     {
-        if (usage == BindFlags::Constant)
-        {
-            size = align_to(D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT, size);
-        }
-
         Buffer::SharedPtr pBuffer = SharedPtr(new Buffer(size, usage, cpuAccess));
+        return pBuffer->init(pInitData) ? pBuffer : nullptr;
+    }
+
+    bool Buffer::init(const void* pInitData)
+    {
+        if (mBindFlags == BindFlags::Constant)
+        {
+            mSize = align_to(D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT, mSize);
+        }
 
         BufferData* pApiData = new BufferData;
-        pBuffer->mpApiData = pApiData;
-        if (cpuAccess == CpuAccess::Write)
+        mpApiData = pApiData;
+        if (mCpuAccess == CpuAccess::Write)
         {
-            pApiData->dynamicData = gpDevice->getResourceAllocator()->allocate(size, getDataAlignmentFromUsage(usage));
-            pBuffer->mApiHandle = pApiData->dynamicData.pResourceHandle;
+            pApiData->dynamicData = gpDevice->getResourceAllocator()->allocate(mSize, getDataAlignmentFromUsage(mBindFlags));
+            mApiHandle = pApiData->dynamicData.pResourceHandle;
         }
-        else if (cpuAccess == CpuAccess::Read && usage == BindFlags::None)
+        else if (mCpuAccess == CpuAccess::Read && mBindFlags == BindFlags::None)
         {
-            pBuffer->mApiHandle = createBuffer(size, kReadbackHeapProps, usage);
+            mApiHandle = createBuffer(mSize, kReadbackHeapProps, mBindFlags);
         }
         else
         {
-            pBuffer->mApiHandle = createBuffer(size, kDefaultHeapProps, usage);
+            mApiHandle = createBuffer(mSize, kDefaultHeapProps, mBindFlags);
         }
 
         if (pInitData)
         {
-            pBuffer->updateData(pInitData, 0, size);
+            updateData(pInitData, 0, mSize);
         }
 
-        return pBuffer;
+        return true;
     }
 
     void Buffer::copy(Buffer* pDst) const
@@ -155,7 +159,7 @@ namespace Falcor
     {
     }
 
-    void Buffer::updateData(const void* pData, size_t offset, size_t size)
+    void Buffer::updateData(const void* pData, size_t offset, size_t size) const
     {
         // Clamp the offset and size
         if (adjustSizeOffsetParams(size, offset) == false)
@@ -181,7 +185,7 @@ namespace Falcor
         UNSUPPORTED_IN_D3D12("Buffer::ReadData(). If you really need this, create the resource with CPU read flag, and use Buffer::Map()");
     }
 
-    void* Buffer::map(MapType type)
+    void* Buffer::map(MapType type) const
     {
         BufferData* pApiData = (BufferData*)mpApiData;
 
@@ -196,7 +200,9 @@ namespace Falcor
             // Allocate a new buffer
             gpDevice->getResourceAllocator()->release(pApiData->dynamicData);
             pApiData->dynamicData = gpDevice->getResourceAllocator()->allocate(mSize, getDataAlignmentFromUsage(mBindFlags));
-            mApiHandle = pApiData->dynamicData.pResourceHandle;
+
+            // I don't want to make mApiHandle mutable, so let's just const_cast here. This is D3D12 specific case
+            const_cast<Buffer*>(this)->mApiHandle = pApiData->dynamicData.pResourceHandle;
             
             invalidateViews();
             return pApiData->dynamicData.pData;
@@ -218,12 +224,11 @@ namespace Falcor
                 if (pApiData->pStagingResource == nullptr)
                 {
                     pApiData->pStagingResource = Buffer::create(mSize, Buffer::BindFlags::None, Buffer::CpuAccess::Read, nullptr);
-
-                    // Copy the buffer and flush the pipeline
-                    RenderContext* pContext = gpDevice->getRenderContext().get();
-                    pContext->getCommandListApiHandle()->CopyResource(pApiData->pStagingResource->getApiHandle(), mApiHandle);
-                    pContext->flush(true);
                 }
+                // Copy the buffer and flush the pipeline
+                RenderContext* pContext = gpDevice->getRenderContext().get();
+                pContext->getCommandListApiHandle()->CopyResource(pApiData->pStagingResource->getApiHandle(), mApiHandle);
+                pContext->flush(true);
                 return pApiData->pStagingResource->map(MapType::Read);
             }
         }        
@@ -242,22 +247,18 @@ namespace Falcor
         }
     }
 
-    void Buffer::unmap()
+    void Buffer::unmap() const
     {
         // Only unmap read buffers
-        if (mCpuAccess == CpuAccess::Read)
+        BufferData* pApiData = (BufferData*)mpApiData;
+        D3D12_RANGE r{};
+        if (pApiData->pStagingResource)
         {
-            BufferData* pApiData = (BufferData*)mpApiData;
-            D3D12_RANGE r{};
-            if (pApiData->pStagingResource)
-            {
-                pApiData->pStagingResource->mApiHandle->Unmap(0, &r);
-                pApiData->pStagingResource = nullptr;
-            }
-            else
-            {
-                mApiHandle->Unmap(0, &r);
-            }
+            pApiData->pStagingResource->mApiHandle->Unmap(0, &r);
+        }
+        else if (mCpuAccess == CpuAccess::Read)
+        {
+            mApiHandle->Unmap(0, &r);
         }
     }
 

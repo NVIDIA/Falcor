@@ -95,7 +95,7 @@ namespace Falcor
             \param[in] size Number of bytes to copy.
             If offset and size will cause an out-of-bound access to the buffer, an error will be logged and the update will fail.
         */
-        void updateData(const void* pData, size_t offset, size_t size);
+        void updateData(const void* pData, size_t offset, size_t size) const;
 
         /** Read the buffer's data to a user supplied buffer
             \param[in] pData Pointer to the destination buffer.
@@ -115,11 +115,11 @@ namespace Falcor
 
         /** Map the buffer
         */
-        void* map(MapType Type);
+        void* map(MapType Type) const;
 
         /** Unmap the buffer
         */
-        void unmap();
+        void unmap() const;
 
         /** Load the buffer to the GPU memory.
             \return The GPU address, which can be used as a pointer in shaders.
@@ -129,6 +129,14 @@ namespace Falcor
         /** Unload the texture to the GPU memory. This function is only valid after makeResident() call was made with a matching sample. If makeResident() wasn't called, the evict() will be silently ignored.
         */
         void evict() const;
+
+        /** Get an unordered access view.
+        */
+        UnorderedAccessView::SharedPtr getUAV() const { return Resource::getUAV(0, 0, 1); }
+
+        /** Get a shader resource view
+        */
+        ShaderResourceView::SharedPtr getSRV() const { return Resource::getSRV(0, 1, 0, 1); }
 
         /** Get safe offset and size values
         */
@@ -161,10 +169,10 @@ namespace Falcor
         }
 
     protected:
+        bool init(const void* pInitData);
         Buffer(size_t size, BindFlags bind, CpuAccess update) : Resource(Type::Buffer, bind), mSize(size), mCpuAccess(update){}
         uint64_t mBindlessHandle = 0;
         size_t mSize = 0;
-        mutable uint64_t mGpuPtr = 0;
         CpuAccess mCpuAccess;
         void* mpApiData = nullptr;
     };

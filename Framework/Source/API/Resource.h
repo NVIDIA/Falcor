@@ -138,7 +138,7 @@ namespace Falcor
         \param[in] firstArraySlice The first array slice of the view
         \param[in] arraySize The array size. If this is equal to Texture#kMaxPossible, will create a view ranging from firstArraySlice to the texture's array size
         */
-        UnorderedAccessView::SharedPtr getUAV(uint32_t mipLevel = 0, uint32_t firstArraySlice = 0, uint32_t arraySize = kMaxPossible) const;
+        virtual UnorderedAccessView::SharedPtr getUAV(uint32_t mipLevel = 0, uint32_t firstArraySlice = 0, uint32_t arraySize = kMaxPossible) const;
 
         struct ViewInfoHashFunc
         {
@@ -155,7 +155,7 @@ namespace Falcor
         friend class RenderContext;
 
         Resource(Type type, BindFlags bindFlags) : mType(type), mBindFlags(bindFlags) {}
-        void invalidateViews();
+        void invalidateViews() const;
 
         Type mType;
         BindFlags mBindFlags;
