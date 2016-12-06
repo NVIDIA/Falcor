@@ -327,7 +327,7 @@ namespace Falcor
 
         // Reflect the Type
         ID3DShaderReflectionType* pType = pVar->GetType();
-        if (isStructured && name == "$Element.")
+        if (isStructured && name == "$Element")
         {
             name = "";
         }
@@ -389,7 +389,7 @@ namespace Falcor
         return match;
     }
 
-    bool reflectBuffer(ShaderReflectionHandle pReflection, const char* bufName, ProgramReflection::BufferData& bufferDesc, uint32_t shaderIndex, std::string& log)
+    bool reflectBuffer(ShaderReflectionHandle pReflection, const char* bufName, ProgramReflection::BufferData& bufferDesc, ProgramReflection::BufferReflection::Type bufferType, uint32_t shaderIndex, std::string& log)
     {
         D3D_SHADER_BUFFER_DESC d3dBufDesc;
         ID3DShaderReflectionConstantBuffer* pBuffer = pReflection->GetConstantBufferByName(bufName);
@@ -407,14 +407,14 @@ namespace Falcor
         {
             if (bindDesc.BindPoint != prevDef->second)
             {
-                log += "Constant buffer '" + std::string(d3dBufDesc.Name) + "' has different bind locations between different shader stages. Falcor do not support that. Use explicit bind locations to avoid this error";
+                log += to_string(bufferType) + " buffer '" + std::string(d3dBufDesc.Name) + "' has different bind locations between different shader stages. Falcor do not support that. Use explicit bind locations to avoid this error";
                 return false;
             }
             ProgramReflection::BufferReflection* pPrevBuffer = bufferDesc.descMap[bindDesc.BindPoint].get();
             std::string bufLog;
             if (validateBufferDeclaration(pPrevBuffer, varMap, bufLog) == false)
             {
-                log += "Constant buffer '" + std::string(d3dBufDesc.Name) + "' has different definitions between different shader stages. " + bufLog;
+                log += to_string(bufferType) + " buffer '" + std::string(d3dBufDesc.Name) + "' has different definitions between different shader stages. " + bufLog;
                 return false;
             }
         }
@@ -422,7 +422,7 @@ namespace Falcor
         {
             // Create the buffer reflection
             bufferDesc.nameMap[d3dBufDesc.Name] = bindDesc.BindPoint;
-            bufferDesc.descMap[bindDesc.BindPoint] = ProgramReflection::BufferReflection::create(d3dBufDesc.Name, bindDesc.BindPoint, ProgramReflection::BufferReflection::Type::Constant, d3dBufDesc.Size, varMap, ProgramReflection::ResourceMap());
+            bufferDesc.descMap[bindDesc.BindPoint] = ProgramReflection::BufferReflection::create(d3dBufDesc.Name, bindDesc.BindPoint, bufferType, d3dBufDesc.Size, varMap, ProgramReflection::ResourceMap());
         }
 
         // Update the shader mask
@@ -618,10 +618,10 @@ namespace Falcor
                     switch (inputDesc.Type)
                     {
                     case D3D_SIT_CBUFFER:
-                        res = reflectBuffer(pReflection, inputDesc.Name, mBuffers[(uint32_t)BufferReflection::Type::Constant], shader, log);
+                        res = reflectBuffer(pReflection, inputDesc.Name, mBuffers[(uint32_t)BufferReflection::Type::Constant], BufferReflection::Type::Constant, shader, log);
                         break;
                     case D3D_SIT_STRUCTURED:
-                        res = reflectBuffer(pReflection, inputDesc.Name, mBuffers[(uint32_t)BufferReflection::Type::Structured], shader, log);
+                        res = reflectBuffer(pReflection, inputDesc.Name, mBuffers[(uint32_t)BufferReflection::Type::Structured], BufferReflection::Type::Structured, shader, log);
                         break;
                     default:
                         res = reflectResource(pReflection, inputDesc, mResources, i, log);

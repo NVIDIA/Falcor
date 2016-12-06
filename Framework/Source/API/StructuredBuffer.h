@@ -37,20 +37,20 @@ namespace Falcor
     class Texture;
     class Sampler;
 
-    class ShaderStorageBuffer : public ConstantBuffer
+    class StructuredBuffer : public ConstantBuffer, public inherit_shared_from_this<ConstantBuffer, StructuredBuffer>
+
     {
     public:
-        class SsboVar : public CbVar<ShaderStorageBuffer>
+        class SsboVar : public CbVar<StructuredBuffer>
         {
         public:
-            SsboVar(ShaderStorageBuffer* pBuf, size_t offset) : CbVar(pBuf, offset) {}
+            SsboVar(StructuredBuffer* pBuf, size_t offset) : CbVar(pBuf, offset) {}
             using CbVar::operator=;
             template <typename T> operator T() { T val; mpBuf->getVariable(mOffset, val) ; return val; }
         };
 
         using SharedPtr = ConstantBuffer::SharedPtrT<SsboVar>;
-        using SharedConstPtr = std::shared_ptr<const ShaderStorageBuffer>;
-//FIXME        inherit_shared_from_this(ConstantBuffer, ShaderStorageBuffer);
+        using SharedConstPtr = std::shared_ptr<const StructuredBuffer>;
 
         /** create a new shader storage buffer.\n
             Even though the buffer is created with a specific reflection object, it can be used with other programs as long as the buffer declarations are the same across programs.
@@ -68,7 +68,7 @@ namespace Falcor
         */
         static SharedPtr create(Program::SharedPtr& pProgram, const std::string& name, size_t overrideSize = 0);
 
-        ~ShaderStorageBuffer();
+        ~StructuredBuffer();
 
         /** Read a variable from the buffer.
             The function will validate that the value Type matches the declaration in the shader. If there's a mismatch, an error will be logged and the call will be ignored.
@@ -123,8 +123,15 @@ namespace Falcor
         */
         void setGpuCopyDirty() const { mGpuCopyDirty = true; }
 
+        /** Get the size of a single element
+        */
+        size_t getStride() const { return mSize; }
+        
+        /** Get the number of elements
+        */
+        size_t getElementCount() const { return 1; }
     private:
-        ShaderStorageBuffer(const ProgramReflection::BufferReflection::SharedConstPtr& pReflector) : ConstantBuffer(pReflector) {}
+        StructuredBuffer(const ProgramReflection::BufferReflection::SharedConstPtr& pReflector, size_t size);
         mutable bool mGpuCopyDirty = false;
     };
 }

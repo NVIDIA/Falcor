@@ -36,7 +36,7 @@
 #include "API/Texture.h"
 #include "API/ConstantBuffer.h"
 #include "API/Buffer.h"
-#include "API/ShaderStorageBuffer.h"
+#include "API/StructuredBuffer.h"
 
 namespace Falcor
 {

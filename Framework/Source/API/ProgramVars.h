@@ -98,13 +98,13 @@ namespace Falcor
         \param[in] name The name of the buffer
         \return If the name is valid, a shared pointer to the SSBO. Otherwise returns nullptr
         */
-        ShaderStorageBuffer::SharedPtr getStructuredBuffer(const std::string& name) const;
+        StructuredBuffer::SharedPtr getStructuredBuffer(const std::string& name) const;
 
         /** Get a shader-storage buffer object.
         \param[in] index The index of the buffer
         \return If the index is valid, a shared pointer to the StructuredBuffer. Otherwise returns nullptr
         */
-        ShaderStorageBuffer::SharedPtr getStructuredBuffer(uint32_t index) const;
+        StructuredBuffer::SharedPtr getStructuredBuffer(uint32_t index) const;
 
         /** Set a raw-buffer. Based on the shader reflection, it will be bound as either an SRV or a UAV
             \param[in] name The name of the buffer
@@ -224,7 +224,7 @@ namespace Falcor
         RootSignature::SharedConstPtr mpRootSignature;
         ProgramReflection::SharedConstPtr mpReflector;
         ResourceDataMap<ConstantBuffer::SharedPtr> mConstantBuffers;
-        ResourceDataMap<ShaderStorageBuffer::SharedPtr> mStructuredBuffers;
+        ResourceDataMap<StructuredBuffer::SharedPtr> mStructuredBuffers;
 
         std::map<uint32_t, ResourceData<Resource::SharedConstPtr>> mAssignedSrvs;       // HLSL 't' registers
         std::map<uint32_t, ResourceData<Resource::SharedConstPtr>> mAssignedUavs;       // HLSL 'u' registers

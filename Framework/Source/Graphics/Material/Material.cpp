@@ -283,7 +283,7 @@ namespace Falcor
         }
 
         check_offset(values.id);
-        assert(offset + dataSize <= pCB->getBuffer()->getSize());
+        assert(offset + dataSize <= pCB->getSize());
 
         pCB->setBlob(&mData, offset, dataSize);
 

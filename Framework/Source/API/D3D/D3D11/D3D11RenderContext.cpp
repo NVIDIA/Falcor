@@ -34,7 +34,7 @@
 #include "API/VAO.h"
 #include "API/ConstantBuffer.h"
 #include "API/Buffer.h"
-#include "API/ShaderStorageBuffer.h"
+#include "API/StructuredBuffer.h"
 #include "glm/gtc/type_ptr.hpp"
 
 namespace Falcor

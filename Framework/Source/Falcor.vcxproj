@@ -105,12 +105,6 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseGL|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugD3D12|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="API\D3D\D3D11\D3D11ShaderStorageBuffer.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseD3D12|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugGL|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseGL|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugD3D12|x64'">true</ExcludedFromBuild>
-    </ClCompile>
     <ClCompile Include="API\D3D\D3D11\D3D11Texture.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseD3D12|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugGL|x64'">true</ExcludedFromBuild>

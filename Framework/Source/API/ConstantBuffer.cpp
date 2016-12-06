@@ -36,14 +36,17 @@
 
 namespace Falcor
 {
+    ConstantBuffer::ConstantBuffer(const ProgramReflection::BufferReflection::SharedConstPtr& pReflector, size_t size, BindFlags bindFlags, CpuAccess cpuAccess) :
+        mpReflector(pReflector), Buffer(size, bindFlags, cpuAccess)
+    {
+        Buffer::init(nullptr);
+        mData.assign(mSize, 0);
+    }
+
     ConstantBuffer::SharedPtr ConstantBuffer::create(const ProgramReflection::BufferReflection::SharedConstPtr& pReflector, size_t overrideSize)
     {
-        SharedPtr pBuffer = SharedPtr(new ConstantBuffer(pReflector));
-        if(pBuffer->init(overrideSize, true) == false)
-        {
-            pBuffer = nullptr;
-        }
-
+        size_t size = (overrideSize == 0) ? pReflector->getRequiredSize() : overrideSize;        
+        SharedPtr pBuffer = SharedPtr(new ConstantBuffer(pReflector, size, Buffer::BindFlags::Constant, Buffer::CpuAccess::Write));
         return pBuffer;
     }
 
@@ -56,25 +59,6 @@ namespace Falcor
             return create(pBufferReflector, overrideSize);
         }
         return nullptr;
-    }
-
-    bool ConstantBuffer::init(size_t overrideSize, bool isConstantBuffer)
-    {
-        mSize = mpReflector->getRequiredSize();
-
-        // create the internal data
-        if(overrideSize != 0)
-        {
-            mSize = overrideSize;
-        }
-
-        if(mSize)
-        {
-            mData.assign(mSize, 0);
-            mpBuffer = Buffer::create(mSize, Buffer::BindFlags::Constant, Buffer::CpuAccess::Write, mData.data());
-        }
-        
-        return true;
     }
     
     size_t ConstantBuffer::getVariableOffset(const std::string& varName) const
@@ -91,11 +75,6 @@ namespace Falcor
             return;
         }
 
-        if(mpBuffer == nullptr)
-        {
-            return;     // Can happen in DX11, if the buffer only contained textures
-        }
-
         if(size == -1)
         {
             size = mSize - offset;
@@ -107,10 +86,7 @@ namespace Falcor
             return;
         }
 
-        uint8_t* pData = (uint8_t*)mpBuffer->map(Buffer::MapType::WriteDiscard);
-        assert(pData);
-        memcpy(pData + offset, mData.data() + offset, size);
-        mpBuffer->unmap();
+        updateData(mData.data(), offset, size);
         mDirty = false;
 
         // Invalidate the view
@@ -604,7 +580,7 @@ namespace Falcor
         }
     }
 
-    DescriptorHeap::Entry ConstantBuffer::getSrv() const
+    DescriptorHeap::Entry ConstantBuffer::getCBV() const
     {
         if(mResourceView == nullptr)
         {
@@ -612,8 +588,8 @@ namespace Falcor
 
             mResourceView = pHeap->allocateEntry();
             D3D12_CONSTANT_BUFFER_VIEW_DESC viewDesc = {};
-            viewDesc.BufferLocation = mpBuffer->getGpuAddress();
-            viewDesc.SizeInBytes = (uint32_t)mpBuffer->getSize();
+            viewDesc.BufferLocation = getGpuAddress();
+            viewDesc.SizeInBytes = (uint32_t)getSize();
             gpDevice->getApiHandle()->CreateConstantBufferView(&viewDesc, mResourceView->getCpuHandle());
         }
 

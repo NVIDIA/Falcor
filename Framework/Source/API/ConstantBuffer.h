@@ -42,7 +42,7 @@ namespace Falcor
         Note that Falcor has 2 flavors of setting variable by names - SetVariable() and SetVariableArray(). Naming rules for N-dimensional arrays of a basic Type are a little different between the two.\n
         SetVariable() must include N indices. SetVariableArray() can include N indices, or N-1 indices (implicit [0] as last index).\n\n
     */
-    class ConstantBuffer : public std::enable_shared_from_this<ConstantBuffer>  //FIXME This enbaled_shared_from_this doesn't return SharedPtr, so it's wrong. We need to implement our own version
+    class ConstantBuffer : public Buffer, public inherit_shared_from_this<Buffer, ConstantBuffer> //FIXME This enbaled_shared_from_this doesn't return SharedPtr, so it's wrong. We need to implement our own version
     {
     public:
         template<typename T>
@@ -158,10 +158,6 @@ namespace Falcor
         */
         void uploadToGPU(size_t offset = 0, size_t size = -1) const;
 
-        /** Get the internal buffer object
-        */
-        Buffer::SharedPtr getBuffer() const { return mpBuffer; }
-
         /** Get the reflection object describing the CB
         */
         ProgramReflection::BufferReflection::SharedConstPtr getBufferReflector() const { return mpReflector; }
@@ -180,17 +176,13 @@ namespace Falcor
 
         static const size_t ConstantBuffer::kInvalidOffset = ProgramReflection::kInvalidLocation;
 
-        DescriptorHeap::Entry getSrv() const;
+        DescriptorHeap::Entry getCBV() const;
     protected:
-        bool init(size_t overrideSize, bool isConstantBuffer);
+        ConstantBuffer(const ProgramReflection::BufferReflection::SharedConstPtr& pReflector, size_t size, BindFlags bind, CpuAccess update);
         void setTextureInternal(size_t offset, const Texture* pTexture, const Sampler* pSampler);
 
-        ConstantBuffer(const ProgramReflection::BufferReflection::SharedConstPtr& pReflector) : mpReflector(pReflector) {}
-
         ProgramReflection::BufferReflection::SharedConstPtr mpReflector;
-        Buffer::SharedPtr mpBuffer;
         std::vector<uint8_t> mData;
-        size_t mSize = 0;
         mutable bool mDirty = true;
         mutable DescriptorHeap::Entry mResourceView;
 #ifdef FALCOR_D3D11

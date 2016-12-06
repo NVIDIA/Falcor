@@ -316,9 +316,6 @@
     <ClCompile Include="API\D3D\D3D11\D3D11ShaderReflection.cpp">
       <Filter>API\D3D\D3D11</Filter>
     </ClCompile>
-    <ClCompile Include="API\D3D\D3D11\D3D11ShaderStorageBuffer.cpp">
-      <Filter>API\D3D\D3D11</Filter>
-    </ClCompile>
     <ClCompile Include="API\D3D\D3D11\D3D11Texture.cpp">
       <Filter>API\D3D\D3D11</Filter>
     </ClCompile>

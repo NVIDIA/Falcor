@@ -80,7 +80,7 @@ namespace Falcor
 
             // Only create the buffer if needed
             bufferMap[regIndex].pResource = createBuffers ? BufferType::create(buf.second) : nullptr;
-            bufferMap[regIndex].rootSigOffset = findRootSignatureOffset<RootSignature::DescType::CBV>(pRootSig, regIndex, regSpace);
+            bufferMap[regIndex].rootSigOffset = findRootSignatureOffset<descType>(pRootSig, regIndex, regSpace);
             if (bufferMap[regIndex].rootSigOffset == -1)
             {
                 logError("Can't find a root-signature information matching buffer '" + pReflector->getName() + " when creating ProgramVars");
@@ -96,7 +96,7 @@ namespace Falcor
         // Initialize the CB and SSBO maps. We always do it, to mark which slots are used in the shader.
         mpRootSignature = pRootSig ? pRootSig : RootSignature::create(pReflector.get());
         initializeBuffersMap<ConstantBuffer, RootSignature::DescType::CBV>(mConstantBuffers, createBuffers, mpReflector->getBufferMap(ProgramReflection::BufferReflection::Type::Constant), mpRootSignature.get());
-        initializeBuffersMap<ShaderStorageBuffer, RootSignature::DescType::UAV>(mStructuredBuffers, createBuffers, mpReflector->getBufferMap(ProgramReflection::BufferReflection::Type::Structured), mpRootSignature.get());
+        initializeBuffersMap<StructuredBuffer, RootSignature::DescType::SRV>(mStructuredBuffers, createBuffers, mpReflector->getBufferMap(ProgramReflection::BufferReflection::Type::Structured), mpRootSignature.get());
 
         // Initialize the textures and samplers map
         for (const auto& res : pReflector->getResourceMap())
@@ -177,14 +177,14 @@ namespace Falcor
         return getBufferCommon<ConstantBuffer>(index, mConstantBuffers);
     }
 
-    ShaderStorageBuffer::SharedPtr ProgramVars::getStructuredBuffer(const std::string& name) const
+    StructuredBuffer::SharedPtr ProgramVars::getStructuredBuffer(const std::string& name) const
     {
-        return getBufferCommon<ShaderStorageBuffer, ProgramReflection::BufferReflection::Type::Structured>(name, mpReflector.get(), mStructuredBuffers);
+        return getBufferCommon<StructuredBuffer, ProgramReflection::BufferReflection::Type::Structured>(name, mpReflector.get(), mStructuredBuffers);
     }
 
-    ShaderStorageBuffer::SharedPtr ProgramVars::getStructuredBuffer(uint32_t index) const
+    StructuredBuffer::SharedPtr ProgramVars::getStructuredBuffer(uint32_t index) const
     {
-        return getBufferCommon<ShaderStorageBuffer>(index, mStructuredBuffers);
+        return getBufferCommon<StructuredBuffer>(index, mStructuredBuffers);
     }
 
     bool ProgramVars::setConstantBuffer(uint32_t index, const ConstantBuffer::SharedPtr& pCB)
@@ -198,7 +198,7 @@ namespace Falcor
 
         // Just need to make sure the buffer is large enough
         const auto& desc = mpReflector->getBufferDesc(index, ProgramReflection::BufferReflection::Type::Constant);
-        if (desc->getRequiredSize() > pCB->getBuffer()->getSize())
+        if (desc->getRequiredSize() > pCB->getSize())
         {
             Logger::log(Logger::Level::Error, "Can't attach the constant-buffer. Size mismatch.");
             return false;
@@ -455,7 +455,17 @@ namespace Falcor
             uint32_t rootOffset = bufIt.second.rootSigOffset;
             const ConstantBuffer* pCB = bufIt.second.pResource.get();
             pCB->uploadToGPU();
-            pList->SetGraphicsRootConstantBufferView(rootOffset, pCB->getBuffer()->getGpuAddress());
+            pList->SetGraphicsRootConstantBufferView(rootOffset, pCB->getGpuAddress());
+        }
+
+        // Bind the structured buffers
+        for (auto& bufIt : mStructuredBuffers)
+        {
+            uint32_t rootOffset = bufIt.second.rootSigOffset;
+            const StructuredBuffer* pBuf = bufIt.second.pResource.get();
+            pBuf->uploadToGPU();
+            pContext->resourceBarrier(pBuf, Resource::State::ShaderResource);
+            pList->SetGraphicsRootDescriptorTable(rootOffset, pBuf->getSRV()->getApiHandle()->getGpuHandle());
         }
 
         // Bind the SRVs and UAVs

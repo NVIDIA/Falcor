@@ -106,8 +106,8 @@ void ShaderBuffersSample::onFrameRender()
     glm::mat4 wvp = mpCamera->getViewProjMatrix();
     mpProgramVars["PerFrameCB"]["m.wvpMat"] = wvp;
 
-    mpProgramVars["LightCB"]["worldDir"] = mLightData.worldDir;
-    mpProgramVars["LightCB"]["intensity"] = mLightData.intensity;
+    mpProgramVars->getStructuredBuffer("gLight")["worldDir"] = mLightData.worldDir;
+    mpProgramVars->getStructuredBuffer("gLight")["intensity"] = mLightData.intensity;
     
     mpSurfaceColorBuffer[0] = mSurfaceColor;
     mpSurfaceColorBuffer->uploadToGPU();

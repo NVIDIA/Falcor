@@ -216,7 +216,7 @@ namespace Falcor
             return;
         }
 
-        assert(offset + dataSize <= pCB->getBuffer()->getSize());
+        assert(offset + dataSize <= pCB->getSize());
 
         pCB->setBlob(&mData, offset, dataSize);
     }
@@ -227,7 +227,7 @@ namespace Falcor
         static const size_t dataSize = sizeof(CameraData);
         static_assert(dataSize % sizeof(float) * 4 == 0, "Camera::CameraData size should be a multiple of 16");
 
-        assert(offset + dataSize <= pBuffer->getBuffer()->getSize());
+        assert(offset + dataSize <= pBuffer->getSize());
 
         pBuffer->setBlob(&mData, offset, dataSize);
     }
