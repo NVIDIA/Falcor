@@ -38,6 +38,7 @@ namespace Falcor
     public:
         using SharedPtr = std::shared_ptr<Buffer>;
         using SharedConstPtr = std::shared_ptr<const Buffer>;
+        inherit_shared_from_this(Resource, Buffer);
 
         /** Buffer access flags.
             These flags are hints the driver how the buffer will be used.
@@ -154,18 +155,6 @@ namespace Falcor
                 size = mSize - offset;
             }
             return true;
-        }
-
-        // Buffer inherits Resource which inherits enable_shared_from_this.
-        // If Buffer will also inherit enable_shared_from_this, which is a problem (virtual inheritance doesn't help). To solve this, we define the following functions.
-        SharedPtr shared_from_this()
-        {
-            return std::static_pointer_cast<Buffer>(std::enable_shared_from_this<Resource>::shared_from_this());
-        }
-
-        SharedConstPtr shared_from_this() const
-        {
-            return std::static_pointer_cast<const Buffer>(std::enable_shared_from_this<Resource>::shared_from_this());
         }
 
     protected:

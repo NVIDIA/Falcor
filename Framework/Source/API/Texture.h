@@ -42,6 +42,7 @@ namespace Falcor
     public:
         using SharedPtr = std::shared_ptr<Texture>;
         using SharedConstPtr = std::shared_ptr<const Texture>;
+        inherit_shared_from_this(Resource, Texture);
 
         /** Load the texture to the GPU memory.
             \params[in] pSampler If not null, will get a pointer to the combination of the texture/sampler.
@@ -205,17 +206,6 @@ namespace Falcor
         */
 		void setSparseResidencyPageIndex(bool isResident, uint32_t mipLevel,  uint32_t pageX, uint32_t pageY, uint32_t pageZ, uint32_t width=1, uint32_t height=1, uint32_t depth=1);
 
-        // Texture inherits Resource which inherits enable_shared_from_this.
-        // If Texture will also inherit enable_shared_from_this, which is a problem (virtual inheritance doesn't help). To solve this, we define the following functions.
-        SharedPtr shared_from_this()
-        {
-            return std::static_pointer_cast<Texture>(std::enable_shared_from_this<Resource>::shared_from_this());
-        }
-
-        SharedConstPtr shared_from_this() const
-        {
-            return std::static_pointer_cast<const Texture>(std::enable_shared_from_this<Resource>::shared_from_this());
-        }
     protected:
         friend class Device;
 

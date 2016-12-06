@@ -42,7 +42,7 @@ namespace Falcor
         Note that Falcor has 2 flavors of setting variable by names - SetVariable() and SetVariableArray(). Naming rules for N-dimensional arrays of a basic Type are a little different between the two.\n
         SetVariable() must include N indices. SetVariableArray() can include N indices, or N-1 indices (implicit [0] as last index).\n\n
     */
-    class ConstantBuffer : public std::enable_shared_from_this<ConstantBuffer>
+    class ConstantBuffer : public std::enable_shared_from_this<ConstantBuffer>  //FIXME This enbaled_shared_from_this doesn't return SharedPtr, so it's wrong. We need to implement our own version
     {
     public:
         template<typename T>

@@ -37,7 +37,7 @@ namespace Falcor
     class Texture;
     class Sampler;
 
-    class ShaderStorageBuffer : public ConstantBuffer, std::enable_shared_from_this<ShaderStorageBuffer>
+    class ShaderStorageBuffer : public ConstantBuffer
     {
     public:
         class SsboVar : public CbVar<ShaderStorageBuffer>
@@ -50,6 +50,7 @@ namespace Falcor
 
         using SharedPtr = ConstantBuffer::SharedPtrT<SsboVar>;
         using SharedConstPtr = std::shared_ptr<const ShaderStorageBuffer>;
+//FIXME        inherit_shared_from_this(ConstantBuffer, ShaderStorageBuffer);
 
         /** create a new shader storage buffer.\n
             Even though the buffer is created with a specific reflection object, it can be used with other programs as long as the buffer declarations are the same across programs.

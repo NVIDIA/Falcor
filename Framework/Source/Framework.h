@@ -152,4 +152,16 @@ namespace Falcor
             return "";
         }
     }
+
+    // This is a helper macro which should be used in case a class derives from a base class which derives from enable_shared_from_this
+    // If Derived will also inherit enable_shared_from_this, it will cause multiple inheritance from enable_shared_from_this, which results in a runtime errors because we have 2 copies of the WeakPtr inside shared_ptr
+    #define inherit_shared_from_this(Base, Derived) \
+        SharedPtr shared_from_this()    \
+        {                               \
+            return std::static_pointer_cast<Derived>(std::enable_shared_from_this<Base>::shared_from_this());   \
+        }   \
+        SharedConstPtr shared_from_this() const   \
+        {                                                                   \
+            return std::static_pointer_cast<const Derived>(std::enable_shared_from_this<Base>::shared_from_this());   \
+        }
 }
