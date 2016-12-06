@@ -33,12 +33,12 @@ namespace Falcor
     /** Low-level buffer object
         This class abstracts the API's buffer creation and management
     */
-    class Buffer : public Resource
+    class Buffer : public Resource, public inherit_shared_from_this<Resource, Buffer>
     {
     public:
         using SharedPtr = std::shared_ptr<Buffer>;
         using SharedConstPtr = std::shared_ptr<const Buffer>;
-        inherit_shared_from_this(Resource, Buffer);
+        using inherit_shared_from_this<Resource, Buffer>::shared_from_this;
 
         /** Buffer access flags.
             These flags are hints the driver how the buffer will be used.

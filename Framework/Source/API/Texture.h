@@ -37,12 +37,12 @@ namespace Falcor
 
     /** Abstracts the API texture objects
     */
-    class Texture : public Resource
+    class Texture : public Resource, public inherit_shared_from_this<Resource, Texture>
     {
     public:
         using SharedPtr = std::shared_ptr<Texture>;
         using SharedConstPtr = std::shared_ptr<const Texture>;
-        inherit_shared_from_this(Resource, Texture);
+        using inherit_shared_from_this<Resource, Texture>::shared_from_this;
 
         /** Load the texture to the GPU memory.
             \params[in] pSampler If not null, will get a pointer to the combination of the texture/sampler.
