@@ -31,7 +31,7 @@
 #include "API/Sampler.h"
 #include <unordered_map>
 #include "API/ProgramReflection.h"
-#include "API/ShaderStorageBuffer.h"
+#include "API/StructuredBuffer.h"
 #include "API/TypedBuffer.h"
 #include "API/LowLevel/RootSignature.h"
 

@@ -31,7 +31,7 @@
 #include "API/Sampler.h"
 #include "API/FBO.h"
 #include "API/VAO.h"
-#include "API/ShaderStorageBuffer.h"
+#include "API/StructuredBuffer.h"
 #include "API/Texture.h"
 #include "Framework.h"
 #include "API/PipelineStateObject.h"

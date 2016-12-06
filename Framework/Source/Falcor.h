@@ -54,7 +54,7 @@
 #include "API/Sampler.h"
 #include "API/ScreenCapture.h"
 #include "API/Shader.h"
-#include "API/ShaderStorageBuffer.h"
+#include "API/StructuredBuffer.h"
 #include "API/Texture.h"
 #include "API/ConstantBuffer.h"
 #include "API/VAO.h"

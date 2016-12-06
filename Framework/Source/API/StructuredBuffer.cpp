@@ -26,10 +26,8 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 #include "Framework.h"
-#ifdef FALCOR_GL
-#include "../ShaderStorageBuffer.h"
-#include "glm/glm.hpp"
-#include "../Buffer.h"
+#include "StructuredBuffer.h"
+#include "Buffer.h"
 
 namespace Falcor
 {
@@ -268,4 +266,3 @@ namespace Falcor
     get_constant_array_string(GpuPtr, uint64_t);
 #undef get_constant_array_string
 }
-#endif //#ifdef FALCOR_GL
