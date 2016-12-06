@@ -227,6 +227,7 @@ namespace Falcor
                 }
                 // Copy the buffer and flush the pipeline
                 RenderContext* pContext = gpDevice->getRenderContext().get();
+                pContext->resourceBarrier(this, Resource::State::CopySource);
                 pContext->getCommandListApiHandle()->CopyResource(pApiData->pStagingResource->getApiHandle(), mApiHandle);
                 pContext->flush(true);
                 return pApiData->pStagingResource->map(MapType::Read);
