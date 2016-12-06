@@ -148,7 +148,7 @@ namespace Falcor
 
         pHeap = gpDevice->getCpuUavDescriptorHeap().get();
         pObj->mViewForClear = pHeap->allocateEntry();
-        gpDevice->getApiHandle()->CreateUnorderedAccessView(pSharedPtr->getApiHandle(), nullptr, &desc, pObj->mViewForClear->getCpuHandle());
+        gpDevice->getApiHandle()->CreateUnorderedAccessView(resHandle, nullptr, &desc, pObj->mViewForClear->getCpuHandle());
 
         return pObj;
     }
