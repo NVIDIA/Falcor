@@ -116,7 +116,7 @@ void ShaderBuffersSample::onFrameRender()
     mpRenderContext->setProgramVariables(mpProgramVars);
     mpRenderContext->drawIndexed(mIndexCount, 0, 0);
 
-     std::string msg = getFpsMsg() + '\n';
+    std::string msg = getFpsMsg() + '\n';
     if(mCountPixelShaderInvocations)
     {
         uint32_t* pData = (uint32_t*)mpInvocationsBuffer->map(Buffer::MapType::Read);

@@ -267,7 +267,8 @@ namespace Falcor
     bool Gui::addFloat2Var(const char label[], glm::vec2& var, float minVal, float maxVal, bool sameLine)
     {
         if (sameLine) ImGui::SameLine();
-        bool b = ImGui::DragFloat2(label, glm::value_ptr(var), 1, minVal, maxVal);
+        float speed = min(1.0f, (maxVal - minVal) * 0.01f);
+        bool b = ImGui::DragFloat2(label, glm::value_ptr(var), speed, minVal, maxVal);
         var = clamp(var, minVal, maxVal);
         return b;
     }
@@ -275,7 +276,8 @@ namespace Falcor
     bool Gui::addFloat3Var(const char label[], glm::vec3& var, float minVal, float maxVal, bool sameLine)
     {
         if (sameLine) ImGui::SameLine();
-        bool b = ImGui::DragFloat3(label, glm::value_ptr(var), 1.0f, minVal, maxVal);
+        float speed = min(1.0f, (maxVal - minVal) * 0.01f);
+        bool b = ImGui::DragFloat3(label, glm::value_ptr(var), speed, minVal, maxVal);
         var = clamp(var, minVal, maxVal);
         return b;
     }
@@ -283,7 +285,8 @@ namespace Falcor
     bool Gui::addFloat4Var(const char label[], glm::vec4& var, float minVal, float maxVal, bool sameLine)
     {
         if (sameLine) ImGui::SameLine();
-        bool b = ImGui::DragFloat4(label, glm::value_ptr(var), 1, maxVal, minVal);
+        float speed = min(1.0f, (maxVal - minVal) * 0.01f);
+        bool b = ImGui::DragFloat4(label, glm::value_ptr(var), speed, maxVal, minVal);
         var = clamp(var, minVal, maxVal);
         return b;
     }
