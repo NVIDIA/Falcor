@@ -31,7 +31,7 @@
 namespace Falcor
 {
     class Resource;
-    using ResourceSharedPtr = std::shared_ptr<const Resource>;
+    using ResourceWeakPtr = std::weak_ptr<const Resource>;
 
     template<typename ApiHandleType>
     class ResourceView
@@ -53,16 +53,16 @@ namespace Falcor
             }
         };
 
-        ResourceView(ResourceSharedPtr& pResource, ApiHandle handle, uint32_t mostDetailedMip_, uint32_t mipCount_, uint32_t firstArraySlice_, uint32_t arraySize_) 
+        ResourceView(ResourceWeakPtr& pResource, ApiHandle handle, uint32_t mostDetailedMip_, uint32_t mipCount_, uint32_t firstArraySlice_, uint32_t arraySize_)
             : mApiHandle(handle), mpResource(pResource), mViewInfo(mostDetailedMip_, mipCount_, firstArraySlice_, arraySize_) {}
 
         ApiHandle getApiHandle() const { return mApiHandle; }
         const ViewInfo& getViewInfo() const { return mViewInfo; }
-        const ResourceSharedPtr& getResource() const { return mpResource; }
+        const Resource* getResource() const { return mpResource.lock().get(); }
     private:
         ApiHandle mApiHandle;
         ViewInfo mViewInfo;
-        ResourceSharedPtr mpResource;
+        ResourceWeakPtr mpResource;
     };
 
     class ShaderResourceView : public ResourceView<SrvHandle>
@@ -71,10 +71,10 @@ namespace Falcor
         using SharedPtr = std::shared_ptr<ShaderResourceView>;
         using SharedConstPtr = std::shared_ptr<const ShaderResourceView>;
         
-        static SharedPtr create(ResourceSharedPtr pResource, uint32_t mostDetailedMip = 0, uint32_t mipCount = kMaxPossible, uint32_t firstArraySlice = 0, uint32_t arraySize = kMaxPossible);
+        static SharedPtr create(ResourceWeakPtr pResource, uint32_t mostDetailedMip = 0, uint32_t mipCount = kMaxPossible, uint32_t firstArraySlice = 0, uint32_t arraySize = kMaxPossible);
         static SharedPtr getNullView();
     private:
-        ShaderResourceView(ResourceSharedPtr& pResource, ApiHandle handle, uint32_t mostDetailedMip_, uint32_t mipCount_, uint32_t firstArraySlice_, uint32_t arraySize_) :
+        ShaderResourceView(ResourceWeakPtr& pResource, ApiHandle handle, uint32_t mostDetailedMip_, uint32_t mipCount_, uint32_t firstArraySlice_, uint32_t arraySize_) :
             ResourceView(pResource, handle, mostDetailedMip_, mipCount_, firstArraySlice_, arraySize_) {}
         static SharedPtr sNullView;
     };
@@ -85,10 +85,10 @@ namespace Falcor
         using SharedPtr = std::shared_ptr<DepthStencilView>;
         using SharedConstPtr = std::shared_ptr<const DepthStencilView>;
 
-        static SharedPtr create(ResourceSharedPtr pResource, uint32_t mipLevel, uint32_t firstArraySlice = 0, uint32_t arraySize = kMaxPossible);
+        static SharedPtr create(ResourceWeakPtr pResource, uint32_t mipLevel, uint32_t firstArraySlice = 0, uint32_t arraySize = kMaxPossible);
         static SharedPtr getNullView();
     private:
-        DepthStencilView(ResourceSharedPtr& pResource, ApiHandle handle, uint32_t mipLevel, uint32_t firstArraySlice, uint32_t arraySize) :
+        DepthStencilView(ResourceWeakPtr& pResource, ApiHandle handle, uint32_t mipLevel, uint32_t firstArraySlice, uint32_t arraySize) :
             ResourceView(pResource, handle, mipLevel, 1, firstArraySlice, arraySize) {}
         static SharedPtr sNullView;
     };
@@ -98,7 +98,7 @@ namespace Falcor
     public:
         using SharedPtr = std::shared_ptr<UnorderedAccessView>;
         using SharedConstPtr = std::shared_ptr<const UnorderedAccessView>;
-        static SharedPtr create(ResourceSharedPtr pResource, uint32_t mipLevel, uint32_t firstArraySlice = 0, uint32_t arraySize = kMaxPossible);
+        static SharedPtr create(ResourceWeakPtr pResource, uint32_t mipLevel, uint32_t firstArraySlice = 0, uint32_t arraySize = kMaxPossible);
         static SharedPtr getNullView();
 #ifdef FALCOR_D3D12
         UavHandle getHandleForClear() const { return mViewForClear; }
@@ -106,7 +106,7 @@ namespace Falcor
         UavHandle mViewForClear;
 #endif
     private:
-        UnorderedAccessView(ResourceSharedPtr& pResource, ApiHandle handle, uint32_t mipLevel, uint32_t firstArraySlice, uint32_t arraySize) :
+        UnorderedAccessView(ResourceWeakPtr& pResource, ApiHandle handle, uint32_t mipLevel, uint32_t firstArraySlice, uint32_t arraySize) :
             ResourceView(pResource, handle, mipLevel, 1, firstArraySlice, arraySize) {}
 
         static SharedPtr sNullView;
@@ -117,10 +117,10 @@ namespace Falcor
     public:
         using SharedPtr = std::shared_ptr<RenderTargetView>;
         using SharedConstPtr = std::shared_ptr<const RenderTargetView>;
-        static SharedPtr create(ResourceSharedPtr pResource, uint32_t mipLevel, uint32_t firstArraySlice = 0, uint32_t arraySize = kMaxPossible);
+        static SharedPtr create(ResourceWeakPtr pResource, uint32_t mipLevel, uint32_t firstArraySlice = 0, uint32_t arraySize = kMaxPossible);
         static SharedPtr getNullView();
     private:
-        RenderTargetView(ResourceSharedPtr& pResource, ApiHandle handle, uint32_t mipLevel, uint32_t firstArraySlice, uint32_t arraySize) :
+        RenderTargetView(ResourceWeakPtr& pResource, ApiHandle handle, uint32_t mipLevel, uint32_t firstArraySlice, uint32_t arraySize) :
             ResourceView(pResource, handle, mipLevel, 1, firstArraySlice, arraySize) {}
 
         static SharedPtr sNullView;

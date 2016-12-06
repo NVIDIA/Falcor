@@ -158,7 +158,7 @@ namespace Falcor
     template<typename ClearType>
     void clearUavCommon(RenderContext* pContext, const UnorderedAccessView* pUav, const ClearType& clear, void* pData)
     {
-        pContext->resourceBarrier(pUav->getResource().get(), Resource::State::UnorderedAccess);
+        pContext->resourceBarrier(pUav->getResource(), Resource::State::UnorderedAccess);
         RenderContextData* pApiData = (RenderContextData*)pData;
         UavHandle clearHandle = pUav->getHandleForClear();
         UavHandle uav = pUav->getApiHandle();        
@@ -212,7 +212,7 @@ namespace Falcor
     void RenderContext::clearRtv(const RenderTargetView* pRtv, const glm::vec4& color)
     {
         RenderContextData* pApiData = (RenderContextData*)mpApiData;
-        resourceBarrier(pRtv->getResource().get(), Resource::State::RenderTarget);
+        resourceBarrier(pRtv->getResource(), Resource::State::RenderTarget);
         pApiData->pList->ClearRenderTargetView(pRtv->getApiHandle()->getCpuHandle(), glm::value_ptr(color), 0, nullptr);
     }
 
@@ -222,7 +222,7 @@ namespace Falcor
         uint32_t flags = clearDepth ? D3D12_CLEAR_FLAG_DEPTH : 0;
         flags |= clearStencil ? D3D12_CLEAR_FLAG_STENCIL : 0;
 
-        resourceBarrier(pDsv->getResource().get(), Resource::State::DepthStencil);
+        resourceBarrier(pDsv->getResource(), Resource::State::DepthStencil);
         pApiData->pList->ClearDepthStencilView(pDsv->getApiHandle()->getCpuHandle(), D3D12_CLEAR_FLAGS(flags), depth, stencil, 0, nullptr);
     }
 

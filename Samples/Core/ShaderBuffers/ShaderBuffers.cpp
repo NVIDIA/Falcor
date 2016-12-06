@@ -157,5 +157,6 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
     ShaderBuffersSample buffersSample;
     SampleConfig config;
     config.windowDesc.title = "Shader Buffers";
+    config.windowDesc.resizableWindow = true;
     buffersSample.run(config);
 }

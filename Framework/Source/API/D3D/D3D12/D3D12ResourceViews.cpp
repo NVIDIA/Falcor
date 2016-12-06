@@ -38,19 +38,20 @@ namespace Falcor
     UnorderedAccessView::SharedPtr UnorderedAccessView::sNullView;
     ShaderResourceView::SharedPtr ShaderResourceView::sNullView;
 
-    ShaderResourceView::SharedPtr ShaderResourceView::create(ResourceSharedPtr pResource, uint32_t mostDetailedMip, uint32_t mipCount, uint32_t firstArraySlice, uint32_t arraySize)
+    ShaderResourceView::SharedPtr ShaderResourceView::create(ResourceWeakPtr pResource, uint32_t mostDetailedMip, uint32_t mipCount, uint32_t firstArraySlice, uint32_t arraySize)
     {
-        if (!pResource && sNullView)
+        Resource::SharedConstPtr pSharedPtr = pResource.lock();
+        if (!pSharedPtr && sNullView)
         {
             return sNullView;
         }
 
         D3D12_SHADER_RESOURCE_VIEW_DESC desc;
         Resource::ApiHandle resHandle = nullptr;
-        if(pResource)
+        if(pSharedPtr)
         {
-            initializeSrvDesc(pResource.get(), firstArraySlice, arraySize, mostDetailedMip, mipCount, desc);
-            resHandle = pResource->getApiHandle();
+            initializeSrvDesc(pSharedPtr.get(), firstArraySlice, arraySize, mostDetailedMip, mipCount, desc);
+            resHandle = pSharedPtr->getApiHandle();
         }
         else
         {
@@ -60,11 +61,11 @@ namespace Falcor
             desc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
         }
         SharedPtr pNewObj;
-        SharedPtr& pObj = pResource ? pNewObj : sNullView;
+        SharedPtr& pObj = pSharedPtr ? pNewObj : sNullView;
 
         DescriptorHeap* pHeap = gpDevice->getSrvDescriptorHeap().get();
         ApiHandle handle = pHeap->allocateEntry();
-        gpDevice->getApiHandle()->CreateShaderResourceView(pResource ? pResource->getApiHandle() : nullptr, &desc, handle->getCpuHandle());
+        gpDevice->getApiHandle()->CreateShaderResourceView(pSharedPtr ? pSharedPtr->getApiHandle() : nullptr, &desc, handle->getCpuHandle());
 
         pObj = SharedPtr(new ShaderResourceView(pResource, handle, mostDetailedMip, mipCount, firstArraySlice, arraySize));
         return pObj;
@@ -72,22 +73,23 @@ namespace Falcor
 
     ShaderResourceView::SharedPtr ShaderResourceView::getNullView()
     {
-        return create(nullptr, 0, 0, 0, 0);
+        return create(ResourceWeakPtr(), 0, 0, 0, 0);
     }
     
-    DepthStencilView::SharedPtr DepthStencilView::create(ResourceSharedPtr pResource, uint32_t mipLevel, uint32_t firstArraySlice, uint32_t arraySize)
+    DepthStencilView::SharedPtr DepthStencilView::create(ResourceWeakPtr pResource, uint32_t mipLevel, uint32_t firstArraySlice, uint32_t arraySize)
     {
-        if (!pResource && sNullView)
+        Resource::SharedConstPtr pSharedPtr = pResource.lock();
+        if (!pSharedPtr && sNullView)
         {
             return sNullView;
         }
 
         D3D12_DEPTH_STENCIL_VIEW_DESC desc;
         Resource::ApiHandle resHandle = nullptr;
-        if(pResource)
+        if(pSharedPtr)
         {
-            initializeDsvDesc(pResource.get(), mipLevel, firstArraySlice, arraySize, desc);
-            resHandle = pResource->getApiHandle();
+            initializeDsvDesc(pSharedPtr.get(), mipLevel, firstArraySlice, arraySize, desc);
+            resHandle = pSharedPtr->getApiHandle();
         }
         else
         {
@@ -96,7 +98,7 @@ namespace Falcor
             desc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
         }
         SharedPtr pNewObj;
-        SharedPtr& pObj = pResource ? pNewObj : sNullView;
+        SharedPtr& pObj = pSharedPtr ? pNewObj : sNullView;
 
         DescriptorHeap* pHeap = gpDevice->getDsvDescriptorHeap().get();
         ApiHandle handle = pHeap->allocateEntry();
@@ -108,12 +110,14 @@ namespace Falcor
 
     DepthStencilView::SharedPtr DepthStencilView::getNullView()
     {
-        return create(nullptr, 0, 0, 0);
+        return create(ResourceWeakPtr(), 0, 0, 0);
     }
 
-    UnorderedAccessView::SharedPtr UnorderedAccessView::create(ResourceSharedPtr pResource, uint32_t mipLevel, uint32_t firstArraySlice, uint32_t arraySize)
+    UnorderedAccessView::SharedPtr UnorderedAccessView::create(ResourceWeakPtr pResource, uint32_t mipLevel, uint32_t firstArraySlice, uint32_t arraySize)
     {
-        if (!pResource && sNullView)
+        Resource::SharedConstPtr pSharedPtr = pResource.lock();
+
+        if (!pSharedPtr && sNullView)
         {
             return sNullView;
         }
@@ -121,10 +125,10 @@ namespace Falcor
         D3D12_UNORDERED_ACCESS_VIEW_DESC desc;
         Resource::ApiHandle resHandle = nullptr;
 
-        if(pResource)
+        if(pSharedPtr)
         {
-            initializeUavDesc(pResource.get(), mipLevel, firstArraySlice, arraySize, desc);
-            resHandle = pResource->getApiHandle();
+            initializeUavDesc(pSharedPtr.get(), mipLevel, firstArraySlice, arraySize, desc);
+            resHandle = pSharedPtr->getApiHandle();
         }
         else
         {
@@ -133,7 +137,7 @@ namespace Falcor
             desc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE2D;
         }
         SharedPtr pNewObj;
-        SharedPtr& pObj = pResource ? pNewObj : sNullView;
+        SharedPtr& pObj = pSharedPtr ? pNewObj : sNullView;
 
         DescriptorHeap* pHeap = gpDevice->getUavDescriptorHeap().get();
         ApiHandle handle = pHeap->allocateEntry();
@@ -144,30 +148,32 @@ namespace Falcor
 
         pHeap = gpDevice->getCpuUavDescriptorHeap().get();
         pObj->mViewForClear = pHeap->allocateEntry();
-        gpDevice->getApiHandle()->CreateUnorderedAccessView(pResource->getApiHandle(), nullptr, &desc, pObj->mViewForClear->getCpuHandle());
+        gpDevice->getApiHandle()->CreateUnorderedAccessView(pSharedPtr->getApiHandle(), nullptr, &desc, pObj->mViewForClear->getCpuHandle());
 
         return pObj;
     }
 
     UnorderedAccessView::SharedPtr UnorderedAccessView::getNullView()
     {
-        return create(nullptr, 0, 0, 0);
+        return create(ResourceWeakPtr(), 0, 0, 0);
     }
 
 
-    RenderTargetView::SharedPtr RenderTargetView::create(ResourceSharedPtr pResource, uint32_t mipLevel, uint32_t firstArraySlice, uint32_t arraySize)
+    RenderTargetView::SharedPtr RenderTargetView::create(ResourceWeakPtr pResource, uint32_t mipLevel, uint32_t firstArraySlice, uint32_t arraySize)
     {
-        if (!pResource && sNullView)
+        Resource::SharedConstPtr pSharedPtr = pResource.lock();
+
+        if (!pSharedPtr && sNullView)
         {
             return sNullView;
         }
 
         D3D12_RENDER_TARGET_VIEW_DESC desc;
         Resource::ApiHandle resHandle = nullptr;
-        if(pResource)
+        if(pSharedPtr)
         {
-            initializeRtvDesc(pResource.get(), mipLevel, firstArraySlice, arraySize, desc);
-            resHandle = pResource->getApiHandle();
+            initializeRtvDesc(pSharedPtr.get(), mipLevel, firstArraySlice, arraySize, desc);
+            resHandle = pSharedPtr->getApiHandle();
         }
         else
         {
@@ -181,7 +187,7 @@ namespace Falcor
         gpDevice->getApiHandle()->CreateRenderTargetView(resHandle, &desc, handle->getCpuHandle());
 
         SharedPtr pNewObj;
-        SharedPtr& pObj = pResource ? pNewObj : sNullView;
+        SharedPtr& pObj = pSharedPtr ? pNewObj : sNullView;
 
         pObj = SharedPtr(new RenderTargetView(pResource, handle, mipLevel, firstArraySlice, arraySize));
         return pObj;
@@ -189,7 +195,7 @@ namespace Falcor
 
     RenderTargetView::SharedPtr RenderTargetView::getNullView()
     {
-        return create(nullptr, 0, 0, 0);
+        return create(ResourceWeakPtr(), 0, 0, 0);
     }
 }
 
