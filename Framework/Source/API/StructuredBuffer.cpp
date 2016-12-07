@@ -36,6 +36,8 @@ namespace Falcor
     template<typename VarType>
     bool checkVariableType(ProgramReflection::Variable::Type shaderType, const std::string& name, const std::string& bufferName);
 
+#define verify_element_index() if(elementIndex >= mElementCount) {logWarning(std::string(__FUNCTION__) + ": elementIndex is out-of-bound. Ignoring call."); return;}
+
     StructuredBuffer::StructuredBuffer(const ProgramReflection::BufferReflection::SharedConstPtr& pReflector, size_t elementCount) :
         VariablesBuffer(pReflector, pReflector->getRequiredSize(), elementCount, Buffer::BindFlags::ShaderResource, Buffer::CpuAccess::None)
         {}
@@ -93,10 +95,11 @@ namespace Falcor
     template<typename VarType> 
     void StructuredBuffer::getVariable(size_t offset, size_t elementIndex, VarType& value) const
     {
+        verify_element_index();
         if(checkVariableByOffset<VarType>(offset, 1, mpReflector.get()))
         {
             readFromGPU();
-            const uint8_t* pVar = mData.data() + offset;
+            const uint8_t* pVar = mData.data() + offset + elementIndex * mElementSize;
             value = *(const VarType*)pVar;
         }
     }
@@ -189,11 +192,13 @@ namespace Falcor
     template<typename VarType>
     void StructuredBuffer::getVariableArray(size_t offset, size_t count, size_t elementIndex, VarType value[]) const
     {
+        verify_element_index();
+
         if (checkVariableByOffset<VarType>(offset, count, mpReflector.get()))
         {
             readFromGPU();
             const uint8_t* pVar = mData.data() + offset;
-            const VarType* pMat = (VarType*)pVar;
+            const VarType* pMat = (VarType*)(pVar + elementIndex * mElementSize);
             for (size_t i = 0; i < count; i++)
             {
                 value[i] = pMat[i];

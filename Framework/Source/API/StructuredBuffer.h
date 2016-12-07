@@ -44,24 +44,35 @@ namespace Falcor
         class SharedPtr : public std::shared_ptr<StructuredBuffer>
         {
         public:
-            class Var
+            class Element
             {
             public:
-                Var(StructuredBuffer* pBuf, size_t offset) : mpBuf(pBuf), mOffset(offset) {}
-                template<typename T> void operator=(const T& val) { mpBuf->setVariable(mOffset, val); }
-                template<typename T> operator T() const { T val;  mpBuf->getVariable(mOffset, val); return val; }
-                size_t getOffset() const { return mOffset; }
-            protected:
+                class Var
+                {
+                public:
+                    Var(StructuredBuffer* pBuf, size_t offset, size_t element) : mpBuf(pBuf), mElement(element), mOffset(offset) {}
+                    template<typename T> void operator=(const T& val) { mpBuf->setVariable(mOffset, mElement, val); }
+                    template<typename T> operator T() const { T val;  mpBuf->getVariable(mOffset, mElement, val); return val; }
+                protected:
+                    size_t mElement;
+                    size_t mOffset;
+                    StructuredBuffer* mpBuf;
+                };
+
+                Element(StructuredBuffer* pBuf, size_t element) : mpBuf(pBuf), mElement(element) {}
+                Var operator[](size_t offset) { return Var(mpBuf, offset, mElement); }
+                Var operator[](const std::string& var) { return Var(mpBuf, mpBuf->getVariableOffset(var), mElement); }
+                size_t getElement() const { return mElement; }
+            private:
                 StructuredBuffer* mpBuf;
-                size_t mOffset;
+                size_t mElement;
             };
 
             SharedPtr() = default;
             SharedPtr(std::shared_ptr<StructuredBuffer> pBuf) : std::shared_ptr<StructuredBuffer>(pBuf) {}
             SharedPtr(StructuredBuffer* pBuf) : std::shared_ptr<StructuredBuffer>(pBuf) {}
 
-            Var operator[](size_t offset) { return Var(get(), offset); }
-            Var operator[](const std::string& var) { return Var(get(), get()->getVariableOffset(var)); }
+            Element operator[](size_t elemIndex) { return Element(get(), elemIndex); }
         };
 
         using SharedConstPtr = std::shared_ptr<const StructuredBuffer>;

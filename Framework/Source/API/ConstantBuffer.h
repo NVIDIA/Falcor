@@ -109,7 +109,7 @@ namespace Falcor
         template<typename T>
         void setVariableArray(size_t offset, const T* pValue, size_t count)
         {
-            return VariablesBuffer::setVariableArray(offset, pValue, count);
+            return VariablesBuffer::setVariableArray(offset, 0, pValue, count);
         }
 
         /** Set a variable into the buffer.
@@ -120,7 +120,7 @@ namespace Falcor
         template<typename T>
         void setVariable(size_t offset, const T& value)
         {
-            return VariablesBuffer::setVariable(offset, value);
+            return VariablesBuffer::setVariable(offset, 0, value);
         }
 
         /** Set a variable array in the buffer.

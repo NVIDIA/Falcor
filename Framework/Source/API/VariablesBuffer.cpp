@@ -192,18 +192,21 @@ namespace Falcor
 #endif
     }
 
+#define verify_element_index() if(elementIndex >= mElementCount) {logWarning(std::string(__FUNCTION__) + ": elementIndex is out-of-bound. Ignoring call."); return;}
+
     template<typename VarType> 
-    void VariablesBuffer::setVariable(size_t offset, const VarType& value)
+    void VariablesBuffer::setVariable(size_t offset, size_t elementIndex, const VarType& value)
     {
+        verify_element_index();
         if(checkVariableByOffset<VarType>(offset, 1, mpReflector.get()))
         {
-            const uint8_t* pVar = mData.data() + offset;
+            const uint8_t* pVar = mData.data() + offset + elementIndex * mElementSize;
             *(VarType*)pVar = value;
             mDirty = true;
         }
     }
 
-#define set_constant_by_offset(_t) template void VariablesBuffer::setVariable(size_t offset, const _t& value)
+#define set_constant_by_offset(_t) template void VariablesBuffer::setVariable(size_t offset, size_t elementIndex, const _t& value)
     set_constant_by_offset(bool);
     set_constant_by_offset(glm::bvec2);
     set_constant_by_offset(glm::bvec3);
@@ -248,7 +251,7 @@ namespace Falcor
         bool valid = true;
         if((_LOG_ENABLED == 0) || (offset != ProgramReflection::kInvalidLocation && checkVariableType<VarType>(pVar->type, name, mpReflector->getName())))
         {
-            setVariable<VarType>(offset, value);
+            setVariable<VarType>(offset, element, value);
         }
     }
 
@@ -290,12 +293,13 @@ namespace Falcor
 #undef set_constant_by_name
 
     template<typename VarType> 
-    void VariablesBuffer::setVariableArray(size_t offset, const VarType* pValue, size_t count)
+    void VariablesBuffer::setVariableArray(size_t offset, size_t elementIndex, const VarType* pValue, size_t count)
     {
+        verify_element_index();
         if(checkVariableByOffset<VarType>(offset, count, mpReflector.get()))
         {
             const uint8_t* pVar = mData.data() + offset;
-            VarType* pData = (VarType*)pVar;
+            VarType* pData = (VarType*)pVar + elementIndex * mElementSize;
             for(size_t i = 0; i < count; i++)
             {
                 pData[i] = pValue[i];
@@ -304,7 +308,7 @@ namespace Falcor
         }
     }
 
-#define set_constant_array_by_offset(_t) template void VariablesBuffer::setVariableArray(size_t offset, const _t* pValue, size_t count)
+#define set_constant_array_by_offset(_t) template void VariablesBuffer::setVariableArray(size_t offset, size_t elementIndex, const _t* pValue, size_t count)
 
     set_constant_array_by_offset(bool);
     set_constant_array_by_offset(glm::bvec2);
@@ -349,7 +353,7 @@ namespace Falcor
         const auto& pVarDesc = mpReflector->getVariableData(name, offset, true);
         if( _LOG_ENABLED == 0 || (offset != ProgramReflection::kInvalidLocation && checkVariableType<VarType>(pVarDesc->type, name, mpReflector->getName())))
         {
-            setVariableArray(offset, pValue, count);
+            setVariableArray(offset, elementIndex, pValue, count);
         }
     }
     

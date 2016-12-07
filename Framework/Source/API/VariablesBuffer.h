@@ -82,16 +82,16 @@ namespace Falcor
         size_t getElementSize() const { return mElementSize; }
     protected:
         template<typename T>
-        void setVariable(const std::string& name, size_t element, const T& value);
+        void setVariable(const std::string& name, size_t elementIndex, const T& value);
 
         template<typename T>
-        void setVariableArray(size_t offset, const T* pValue, size_t count);
+        void setVariableArray(size_t offset, size_t elementIndex, const T* pValue, size_t count);
 
         template<typename T>
-        void setVariable(size_t offset, const T& value);
+        void setVariable(size_t offset, size_t elementIndex, const T& value);
 
         template<typename T>
-        void setVariableArray(const std::string& name, size_t element, const T* pValue, size_t count);
+        void setVariableArray(const std::string& name, size_t elementIndex, const T* pValue, size_t count);
 
         void setTexture(const std::string& name, const Texture* pTexture, const Sampler* pSampler);
 
