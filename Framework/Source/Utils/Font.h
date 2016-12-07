@@ -54,7 +54,7 @@ namespace Falcor
 
         /** Get the texture containing the characters
         */
-        Texture::SharedConstPtr getTexture() const { return mpTexture; }
+        Texture::SharedPtr getTexture() const { return mpTexture; }
         /** Get the character descriptor
         */
         const CharTexCrdDesc& getCharDesc(char c) const

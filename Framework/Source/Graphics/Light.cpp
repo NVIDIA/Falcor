@@ -81,7 +81,7 @@ namespace Falcor
 		check_offset(aabbMax);
 		check_offset(transMat);
 		check_offset(numIndices);
-		assert(offset + dataSize <= pBuffer->getBuffer()->getSize());
+		assert(offset + dataSize <= pBuffer->getSize());
 
         // Set everything except for the material
 		pBuffer->setBlob(&mData, offset, dataSize - sizeof(MaterialData));

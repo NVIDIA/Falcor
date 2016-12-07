@@ -323,7 +323,6 @@ namespace Falcor
     {
         RenderContextData* pApiData = (RenderContextData*)mpApiData;
         assert(mpPipelineState);
-        flushCopyCommands(pApiData);
 
         // Bind the root signature and the root signature data
         // FIXME D3D12 what to do if there are no vars?
@@ -338,6 +337,8 @@ namespace Falcor
         D3D12SetViewports(pApiData, &mpPipelineState->getViewport(0));
         D3D12SetScissors(pApiData, &mpPipelineState->getScissors(0));
         pApiData->pList->SetPipelineState(mpPipelineState->getPSO()->getApiHandle());
+
+        flushCopyCommands(pApiData);
     }
 
     void RenderContext::drawInstanced(uint32_t vertexCount, uint32_t instanceCount, uint32_t startVertexLocation, uint32_t startInstanceLocation)

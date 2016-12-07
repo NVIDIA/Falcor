@@ -26,27 +26,84 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 #include "Framework.h"
-#include "API/ShaderStorageBuffer.h"
-#include "glm/glm.hpp"
+#include "StructuredBuffer.h"
+#include "Buffer.h"
 
 namespace Falcor
 {
-    ShaderStorageBuffer::SharedPtr ShaderStorageBuffer::create(const ProgramReflection::BufferReflection::SharedConstPtr& pReflector, size_t overrideSize)
+    template<typename VarType>
+    bool checkVariableByOffset(size_t offset, size_t count, const ProgramReflection::BufferReflection* pBufferDesc);
+    template<typename VarType>
+    bool checkVariableType(ProgramReflection::Variable::Type shaderType, const std::string& name, const std::string& bufferName);
+
+#define verify_element_index() if(elementIndex >= mElementCount) {logWarning(std::string(__FUNCTION__) + ": elementIndex is out-of-bound. Ignoring call."); return;}
+
+    StructuredBuffer::StructuredBuffer(const ProgramReflection::BufferReflection::SharedConstPtr& pReflector, size_t elementCount) :
+        VariablesBuffer(pReflector, pReflector->getRequiredSize(), elementCount, Buffer::BindFlags::ShaderResource, Buffer::CpuAccess::None)
+        {}
+
+    StructuredBuffer::SharedPtr StructuredBuffer::create(const ProgramReflection::BufferReflection::SharedConstPtr& pReflection, size_t elementCount)
     {
-        UNSUPPORTED_IN_D3D12("ShaderStorageBuffer");
+        assert(elementCount > 0);
+        auto pBuffer = SharedPtr(new StructuredBuffer(pReflection, elementCount));
+        return pBuffer;
+    }
+
+    StructuredBuffer::SharedPtr StructuredBuffer::create(Program::SharedPtr& pProgram, const std::string& name, size_t elementCount)
+    {
+        auto& pProgReflector = pProgram->getActiveVersion()->getReflector();
+        auto& pBufferReflector = pProgReflector->getBufferDesc(name, ProgramReflection::BufferReflection::Type::Structured);
+        if (pBufferReflector)
+        {
+            return create(pBufferReflector, elementCount);
+        }
         return nullptr;
     }
 
-    void ShaderStorageBuffer::readFromGPU(size_t offset, size_t size) const
+
+    void StructuredBuffer::readFromGPU(size_t offset, size_t size) const
     {
+        if(size == -1)
+        {
+            size = mSize - offset;
+        }
+        if(size + offset > mSize)
+        {
+            Logger::log(Logger::Level::Warning, "StructuredBuffer::readFromGPU() - trying to read more data than what the buffer contains. Call is ignored.");
+            return;
+        }
+        if(mGpuCopyDirty)
+        {
+            mGpuCopyDirty = false;
+            readData((void*)mData.data(), offset, size);
+        }
     }
 
-    ShaderStorageBuffer::~ShaderStorageBuffer() = default;
+    StructuredBuffer::~StructuredBuffer() = default;
 
-    #define get_constant_offset(c_type_) \
-    template<> void ShaderStorageBuffer::getVariable(size_t Offset, c_type_& value) const    \
-    {                                                           \
+    void StructuredBuffer::readBlob(void* pDest, size_t offset, size_t size) const   
+    {    
+        if(size + offset > mSize)
+        {
+            Logger::log(Logger::Level::Warning, "StructuredBuffer::readBlob() - trying to read more data than what the buffer contains. Call is ignored.");
+            return;
+        }
+        readFromGPU();
+        memcpy(pDest, mData.data() + offset, size);
     }
+
+    template<typename VarType> 
+    void StructuredBuffer::getVariable(size_t offset, size_t elementIndex, VarType& value) const
+    {
+        verify_element_index();
+        if(checkVariableByOffset<VarType>(offset, 1, mpReflector.get()))
+        {
+            readFromGPU();
+            const uint8_t* pVar = mData.data() + offset + elementIndex * mElementSize;
+            value = *(const VarType*)pVar;
+        }
+    }
+#define get_constant_offset(_t) template void StructuredBuffer::getVariable(size_t offset, size_t elementIndex, _t& value) const
 
     get_constant_offset(bool);
     get_constant_offset(glm::bvec2);
@@ -84,10 +141,18 @@ namespace Falcor
 
 #undef get_constant_offset
 
-#define get_constant_string(c_type_) \
-    template<> void ShaderStorageBuffer::getVariable(const std::string& Name, c_type_& value) const    \
-        {                                                           \
+    template<typename VarType>
+    void StructuredBuffer::getVariable(const std::string& name, size_t elementIndex, VarType& value) const
+    {
+        size_t offset;
+        const auto* pData = mpReflector->getVariableData(name, offset, false);
+        if ((_LOG_ENABLED == 0) || (pData && checkVariableType<VarType>(pData->type, name, mpReflector->getName())))
+        {
+            getVariable(offset, elementIndex, value);
         }
+    }
+
+#define get_constant_string(_t) template void StructuredBuffer::getVariable(const std::string& name, size_t elementIndex, _t& value) const
 
     get_constant_string(bool);
     get_constant_string(glm::bvec2);
@@ -124,10 +189,24 @@ namespace Falcor
     get_constant_string(uint64_t);
 #undef get_constant_string
 
-#define get_constant_array_offset(c_type_) \
-    template<> void ShaderStorageBuffer::getVariableArray(size_t offset, size_t count, c_type_ value[]) const   \
-    {                                                               \
+    template<typename VarType>
+    void StructuredBuffer::getVariableArray(size_t offset, size_t count, size_t elementIndex, VarType value[]) const
+    {
+        verify_element_index();
+
+        if (checkVariableByOffset<VarType>(offset, count, mpReflector.get()))
+        {
+            readFromGPU();
+            const uint8_t* pVar = mData.data() + offset;
+            const VarType* pMat = (VarType*)(pVar + elementIndex * mElementSize);
+            for (size_t i = 0; i < count; i++)
+            {
+                value[i] = pMat[i];
+            }
+        }
     }
+
+#define get_constant_array_offset(_t) template void StructuredBuffer::getVariableArray(size_t offset, size_t count, size_t elementIndex, _t value[]) const
 
     get_constant_array_offset(bool);
     get_constant_array_offset(glm::bvec2);
@@ -165,10 +244,18 @@ namespace Falcor
 
 #undef get_constant_array_offset
 
-#define get_constant_array_string(c_type_) \
-    template<> void ShaderStorageBuffer::getVariableArray(const std::string& name, size_t count, c_type_ value[]) const    \
-    {                                                                                                       \
+    template<typename VarType>
+    void StructuredBuffer::getVariableArray(const std::string& name, size_t count, size_t elementIndex, VarType value[]) const
+    {
+        size_t offset;
+        const auto* pData = mpReflector->getVariableData(name, offset, true);
+        if ((_LOG_ENABLED == 0) || (pData && checkVariableType<VarType>(pData->type, name, mpReflector->getName())))
+        {
+            getVariableArray(offset, count, elementIndex, value);
+        }
     }
+
+#define get_constant_array_string(_t) template void StructuredBuffer::getVariableArray(const std::string& name, size_t count, size_t elementIndex, _t value[]) const
 
     get_constant_array_string(bool);
     get_constant_array_string(glm::bvec2);

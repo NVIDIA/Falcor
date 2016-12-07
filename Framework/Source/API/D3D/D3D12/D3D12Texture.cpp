@@ -273,11 +273,12 @@ namespace Falcor
         {
             // Create an FBO for the next mip level
             Fbo::SharedPtr pFbo = Fbo::create();
-            pFbo->attachColorTarget(shared_from_this(), 0, i + 1, 0);
+            SharedPtr pNonConst = const_cast<Texture*>(this)->shared_from_this();
+            pFbo->attachColorTarget(pNonConst, 0, i + 1, 0);
             gGenMips.pState->setFbo(pFbo);
 
             // Create the resource view
-            gGenMips.pVars->setTexture(0, shared_from_this(), 0, mArraySize, i, 1);
+            gGenMips.pVars->setTexture(0, pNonConst, 0, mArraySize, i, 1);
 
             // Run the program
             gGenMips.pFullScreenPass->execute(pContext);

@@ -174,6 +174,12 @@ namespace Falcor
                 Count
             };
 
+            enum class ShaderAccess
+            {
+                Read,
+                ReadWrite
+            };
+
             static const uint32_t kTypeCount = (uint32_t)Type::Count;
 
             /** Create a new object
@@ -182,9 +188,10 @@ namespace Falcor
                 \param[in] size The size of the buffer
                 \param[in] varMap Map describing each variable in the buffer, excluding resources
                 \param[in] resourceMap Map describing the resources defined as part of the buffer. This map is only valid for APIs that support resource declarations nested inside buffers
+                \param[in] shaderAccess How the buffer will be access by the shader
                 \return A shared pointer for a new buffer object
             */
-            static SharedPtr create(const std::string& name, uint32_t registerIndex, Type type, size_t size, const VariableMap& varMap, const ResourceMap& resourceMap);
+            static SharedPtr create(const std::string& name, uint32_t registerIndex, Type type, size_t size, const VariableMap& varMap, const ResourceMap& resourceMap, ShaderAccess shaderAccess);
 
             /** Get variable data
                 \param[in] name The name of the requested variable
@@ -254,8 +261,13 @@ namespace Falcor
             /** Get the register space
             */
             uint32_t getRegisterSpace() const { return mRegSpace; }
+
+            /** Get the shader access
+            */
+            ShaderAccess getShaderAccess() const { return mShaderAccess; }
         private:
-            BufferReflection(const std::string& name, uint32_t registerIndex, Type type, size_t size, const VariableMap& varMap, const ResourceMap& resourceMap);
+
+            BufferReflection(const std::string& name, uint32_t registerIndex, Type type, size_t size, const VariableMap& varMap, const ResourceMap& resourceMap, ShaderAccess shaderAccess);
             std::string mName;
             size_t mSizeInBytes = 0;
             Type mType;
@@ -264,6 +276,7 @@ namespace Falcor
             uint32_t mShaderMask = 0;
             uint32_t mRegIndex;
             uint32_t mRegSpace = 0;
+            ShaderAccess mShaderAccess;
         };
 
         /** Create a new object

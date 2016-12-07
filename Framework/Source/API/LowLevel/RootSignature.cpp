@@ -102,8 +102,18 @@ namespace Falcor
         for (const auto& buf : bufMap)
         {
             const ProgramReflection::BufferReflection* pBuffer = buf.second.get();
-            desc.addDescriptor(pBuffer->getRegisterIndex(), descType, ShaderVisibility::All, pBuffer->getRegisterSpace());
-            cost += 2;
+            if (descType == RootSignature::DescType::CBV)
+            {
+                desc.addDescriptor(pBuffer->getRegisterIndex(), descType, ShaderVisibility::All, pBuffer->getRegisterSpace());
+                cost += 2;
+            }
+            else
+            {
+                RootSignature::DescriptorTable descTable;
+                descTable.addRange(descType, pBuffer->getRegisterIndex(), 1, pBuffer->getRegisterSpace());
+                cost += 1;
+                desc.addDescriptorTable(descTable);
+            }
         }
         return cost;
     }
@@ -117,7 +127,7 @@ namespace Falcor
         // For now we just put everything in the root. No descriptor tables because I don't feel like implementing a dynamic descriptor table class yet
         // We also create everything visible to all the shader stages
         cost += initializeBufferDescriptors(pReflector, d, ProgramReflection::BufferReflection::Type::Constant, RootSignature::DescType::CBV);
-        cost += initializeBufferDescriptors(pReflector, d, ProgramReflection::BufferReflection::Type::Structured, RootSignature::DescType::UAV);
+        cost += initializeBufferDescriptors(pReflector, d, ProgramReflection::BufferReflection::Type::Structured, RootSignature::DescType::SRV);
 
         const ProgramReflection::ResourceMap& resMap = pReflector->getResourceMap();
         for (auto& resIt : resMap)

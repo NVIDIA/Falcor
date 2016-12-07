@@ -58,12 +58,12 @@ private:
 
     struct Light
     {
-        glm::vec3 worldDir;
-        glm::vec3 intensity;
+        glm::vec3 worldDir = glm::vec3(0, -1, 0);
+        glm::vec3 intensity = glm::vec3(0.6f, 0.8f, 0.8f);
     };
 
     Light mLightData;
 
-    glm::vec3 mSurfaceColor = glm::vec3(1,1,1);
+    glm::vec3 mSurfaceColor = glm::vec3(0.36f,0.87f,0.52f);
     Vao::SharedConstPtr getVao();
 };

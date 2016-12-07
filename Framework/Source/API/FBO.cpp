@@ -119,7 +119,7 @@ namespace Falcor
         return pDefault;
     }
 
-    void Fbo::attachDepthStencilTarget(const Texture::SharedConstPtr& pDepthStencil, uint32_t mipLevel, uint32_t firstArraySlice, uint32_t arraySize)
+    void Fbo::attachDepthStencilTarget(const Texture::SharedPtr& pDepthStencil, uint32_t mipLevel, uint32_t firstArraySlice, uint32_t arraySize)
     {
         if(checkAttachmentParams(pDepthStencil.get(), mipLevel, firstArraySlice, arraySize, true))
         {
@@ -139,7 +139,7 @@ namespace Falcor
         }
     }
 
-    void Fbo::attachColorTarget(const Texture::SharedConstPtr& pTexture, uint32_t rtIndex, uint32_t mipLevel, uint32_t firstArraySlice, uint32_t arraySize)
+    void Fbo::attachColorTarget(const Texture::SharedPtr& pTexture, uint32_t rtIndex, uint32_t mipLevel, uint32_t firstArraySlice, uint32_t arraySize)
     {
         if(rtIndex >= mColorAttachments.size())
         {
@@ -228,7 +228,7 @@ namespace Falcor
         return verifyAttachment(mDepthStencil);
     }
 
-    Texture::SharedConstPtr Fbo::getColorTexture(uint32_t index) const
+    Texture::SharedPtr Fbo::getColorTexture(uint32_t index) const
     {
         if(index >= mColorAttachments.size())
         {
@@ -238,7 +238,7 @@ namespace Falcor
         return mColorAttachments[index].pTexture;
     }
 
-    Texture::SharedConstPtr Fbo::getDepthStencilTexture() const
+    Texture::SharedPtr Fbo::getDepthStencilTexture() const
     {
         return mDepthStencil.pTexture;
     }

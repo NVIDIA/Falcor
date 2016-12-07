@@ -250,9 +250,6 @@
     <ClCompile Include="API\OpenGL\GLShader.cpp">
       <Filter>API\OpenGL</Filter>
     </ClCompile>
-    <ClCompile Include="API\OpenGL\GLShaderStorageBuffer.cpp">
-      <Filter>API\OpenGL</Filter>
-    </ClCompile>
     <ClCompile Include="API\OpenGL\GLTexture.cpp">
       <Filter>API\OpenGL</Filter>
     </ClCompile>
@@ -319,9 +316,6 @@
     <ClCompile Include="API\D3D\D3D11\D3D11ShaderReflection.cpp">
       <Filter>API\D3D\D3D11</Filter>
     </ClCompile>
-    <ClCompile Include="API\D3D\D3D11\D3D11ShaderStorageBuffer.cpp">
-      <Filter>API\D3D\D3D11</Filter>
-    </ClCompile>
     <ClCompile Include="API\D3D\D3D11\D3D11Texture.cpp">
       <Filter>API\D3D\D3D11</Filter>
     </ClCompile>
@@ -347,9 +341,6 @@
       <Filter>API\D3D\D3D12</Filter>
     </ClCompile>
     <ClCompile Include="API\D3D\D3D12\D3D12ScreenCapture.cpp">
-      <Filter>API\D3D\D3D12</Filter>
-    </ClCompile>
-    <ClCompile Include="API\D3D\D3D12\D3D12ShaderStorageBuffer.cpp">
       <Filter>API\D3D\D3D12</Filter>
     </ClCompile>
     <ClCompile Include="API\D3D\D3D12\D3D12Texture.cpp">
@@ -435,6 +426,12 @@
       <Filter>API\D3D\D3D12</Filter>
     </ClCompile>
     <ClCompile Include="API\TypedBuffer.cpp">
+      <Filter>API</Filter>
+    </ClCompile>
+    <ClCompile Include="API\StructuredBuffer.cpp">
+      <Filter>API</Filter>
+    </ClCompile>
+    <ClCompile Include="API\VariablesBuffer.cpp">
       <Filter>API</Filter>
     </ClCompile>
   </ItemGroup>
@@ -695,9 +692,6 @@
       <Filter>API</Filter>
     </ClInclude>
     <ClInclude Include="API\Shader.h">
-      <Filter>API</Filter>
-    </ClInclude>
-    <ClInclude Include="API\ShaderStorageBuffer.h">
       <Filter>API</Filter>
     </ClInclude>
     <ClInclude Include="API\Texture.h">
@@ -1479,6 +1473,12 @@
       <Filter>API</Filter>
     </ClInclude>
     <ClInclude Include="API\TypedBuffer.h">
+      <Filter>API</Filter>
+    </ClInclude>
+    <ClInclude Include="API\StructuredBuffer.h">
+      <Filter>API</Filter>
+    </ClInclude>
+    <ClInclude Include="API\VariablesBuffer.h">
       <Filter>API</Filter>
     </ClInclude>
   </ItemGroup>

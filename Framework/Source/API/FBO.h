@@ -92,7 +92,7 @@ namespace Falcor
             \param firstArraySlice The first array-slice to bind
             \param arraySize The number of array sliced to bind, or Fbo#kAttachEntireMipLevel to attach the range [firstArraySlice, pTexture->getArraySize()]
         */
-        void attachDepthStencilTarget(const Texture::SharedConstPtr& pDepthStencil, uint32_t mipLevel = 0, uint32_t firstArraySlice = 0, uint32_t arraySize = kAttachEntireMipLevel);
+        void attachDepthStencilTarget(const Texture::SharedPtr& pDepthStencil, uint32_t mipLevel = 0, uint32_t firstArraySlice = 0, uint32_t arraySize = kAttachEntireMipLevel);
         /** Attach a color texture.
             \param pColorTexture The depth-stencil texture.
             \param rtIndex The render-target index to attach the texture to.
@@ -100,7 +100,7 @@ namespace Falcor
             \param firstArraySlice The first array-slice to bind
             \param arraySize The number of array sliced to bind, or Fbo#kAttachEntireMipLevel to attach the range [firstArraySlice, pTexture->getArraySize()]
         */
-        void attachColorTarget(const Texture::SharedConstPtr& pColorTexture, uint32_t rtIndex, uint32_t mipLevel = 0, uint32_t firstArraySlice = 0, uint32_t arraySize = kAttachEntireMipLevel);
+        void attachColorTarget(const Texture::SharedPtr& pColorTexture, uint32_t rtIndex, uint32_t mipLevel = 0, uint32_t firstArraySlice = 0, uint32_t arraySize = kAttachEntireMipLevel);
 
         /** Get the object's API handle.      
         */
@@ -119,11 +119,11 @@ namespace Falcor
 
         /** Get an attached color texture. If no texture is attached will return nullptr.
         */
-        Texture::SharedConstPtr getColorTexture(uint32_t index) const;
+        Texture::SharedPtr getColorTexture(uint32_t index) const;
 
         /** Get the attached depth-stencil texture, or nullptr if no texture is attached.
         */
-        Texture::SharedConstPtr getDepthStencilTexture() const;
+        Texture::SharedPtr getDepthStencilTexture() const;
 
         /** Validates that the framebuffer attachments are OK. This function causes the actual HW resources to be generated (RTV/DSV in DX, FBO attachment calls in GL).
         */
@@ -152,7 +152,7 @@ namespace Falcor
 #endif
         struct Attachment
         {
-            Texture::SharedConstPtr pTexture = nullptr;
+            Texture::SharedPtr pTexture = nullptr;
             uint32_t mipLevel = 0;
             uint32_t arraySize = 1;
             uint32_t firstArraySlice = 0;

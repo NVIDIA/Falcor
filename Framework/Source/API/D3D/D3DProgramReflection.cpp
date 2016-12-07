@@ -29,6 +29,7 @@
 #include "API/ProgramReflection.h"
 #include "API/ProgramVersion.h"
 #include "API/Shader.h"
+#include "Utils/StringUtils.h"
 
 namespace Falcor
 {
@@ -191,7 +192,53 @@ namespace Falcor
         }
     }
 
-    size_t calcStructSize(const ProgramReflection::VariableMap& varMap)
+    size_t getBytesPerVarType(ProgramReflection::Variable::Type type)
+    {
+        switch (type)
+        {
+        case ProgramReflection::Variable::Type::Unknown:
+            return 0;
+        case ProgramReflection::Variable::Type::Bool:
+        case ProgramReflection::Variable::Type::Uint:
+        case ProgramReflection::Variable::Type::Int:
+        case ProgramReflection::Variable::Type::Float:
+            return 4;
+        case ProgramReflection::Variable::Type::Bool2:
+        case ProgramReflection::Variable::Type::Uint2:
+        case ProgramReflection::Variable::Type::Int2:
+        case ProgramReflection::Variable::Type::Float2:
+            return 8;
+        case ProgramReflection::Variable::Type::Bool3:
+        case ProgramReflection::Variable::Type::Uint3:
+        case ProgramReflection::Variable::Type::Int3:
+        case ProgramReflection::Variable::Type::Float3:
+            return 12;
+        case ProgramReflection::Variable::Type::Bool4:
+        case ProgramReflection::Variable::Type::Uint4:
+        case ProgramReflection::Variable::Type::Int4:
+        case ProgramReflection::Variable::Type::Float4:
+        case ProgramReflection::Variable::Type::Float2x2:
+            return 16;
+        case ProgramReflection::Variable::Type::Float2x3:
+        case ProgramReflection::Variable::Type::Float3x2:
+            return 24;
+        case ProgramReflection::Variable::Type::Float2x4:
+        case ProgramReflection::Variable::Type::Float4x2:
+            return 32;
+        case ProgramReflection::Variable::Type::Float3x3:
+            return 36;
+        case ProgramReflection::Variable::Type::Float3x4:
+        case ProgramReflection::Variable::Type::Float4x3:
+            return 48;
+        case ProgramReflection::Variable::Type::Float4x4:
+            return 64;
+        default:
+            should_not_get_here();
+            return 0;
+        }
+
+    }
+    size_t calcStructSize(const ProgramReflection::VariableMap& varMap, bool isStructured)
     {
         if (varMap.size() == 0)
         {
@@ -208,12 +255,19 @@ namespace Falcor
                 type = a.second.type;
             }
         }
-        maxOffset += getRowCountFromType(type) * 16;
-        maxOffset = maxOffset & ~0xF;   // Is this true for all APIs? I encountered it while working on D3D12
+        if(isStructured)
+        {
+            maxOffset += getBytesPerVarType(type);
+        }
+        else
+        {
+            maxOffset += getRowCountFromType(type) * 16;
+            maxOffset = maxOffset & ~0xF;   // Is this true for all APIs? I encountered it while working on D3D12
+        }
         return maxOffset;
     }
 
-    static void reflectType(ID3DShaderReflectionType* pType, ProgramReflection::VariableMap& varMap, const std::string& name, size_t offset)
+    static void reflectType(ID3DShaderReflectionType* pType, ProgramReflection::VariableMap& varMap, const std::string& name, size_t offset, bool isStructured)
     {
         D3D_SHADER_TYPE_DESC typeDesc;
         pType->GetDesc(&typeDesc);
@@ -228,9 +282,9 @@ namespace Falcor
             {
                 ID3DShaderReflectionType* pMember = pType->GetMemberTypeByIndex(memberID);
                 std::string memberName(pType->GetMemberTypeName(memberID));
-                reflectType(pMember, structVarMap, memberName, 0);
+                reflectType(pMember, structVarMap, memberName, 0, isStructured);
             }
-            size_t structSize = calcStructSize(structVarMap);
+            size_t structSize = calcStructSize(structVarMap, isStructured);
 
             // Parse the internal variables
             for (uint32_t memberID = 0; memberID < typeDesc.Members; memberID++)
@@ -240,14 +294,16 @@ namespace Falcor
 
                 if (typeDesc.Elements > 0)
                 {
+                    assert(name.size());
                     for (uint32_t i = 0; i < typeDesc.Elements; i++)
                     {
-                        reflectType(pMember, varMap, name + '[' + std::to_string(i) + "]." + memberName, offset + structSize * i);
+                        reflectType(pMember, varMap, name + '[' + std::to_string(i) + "]." + memberName, offset + structSize * i, isStructured);
                     }
                 }
                 else
                 {
-                    reflectType(pMember, varMap, name + "." + memberName, offset);
+                    std::string fullName = name.size() ? name + '.' + memberName : memberName;
+                    reflectType(pMember, varMap, fullName, offset, isStructured);
                 }
             }
         }
@@ -262,7 +318,7 @@ namespace Falcor
         }
     }
 
-    static void reflectVariable(ID3DShaderReflectionConstantBuffer* pReflector, ID3D12ShaderReflectionVariable* pVar, ProgramReflection::VariableMap& varMap)
+    static void reflectVariable(ID3DShaderReflectionConstantBuffer* pReflector, ID3D12ShaderReflectionVariable* pVar, ProgramReflection::VariableMap& varMap, bool isStructured)
     {
         // Get the variable name
         D3D_SHADER_VARIABLE_DESC varDesc;
@@ -271,18 +327,25 @@ namespace Falcor
 
         // Reflect the Type
         ID3DShaderReflectionType* pType = pVar->GetType();
-        reflectType(pType, varMap, name, varDesc.StartOffset);
+        if (isStructured && name == "$Element")
+        {
+            name = "";
+        }
+        reflectType(pType, varMap, name, varDesc.StartOffset, isStructured);
     }
 
-    static void initializeBufferVariables(ID3DShaderReflectionConstantBuffer* pReflector, const D3D_SHADER_BUFFER_DESC& desc, ProgramReflection::VariableMap& varMap)
+    static void initializeBufferVariables(ID3DShaderReflectionConstantBuffer* pReflector, const D3D_SHADER_BUFFER_DESC& desc, D3D_SHADER_INPUT_TYPE inputType, ProgramReflection::VariableMap& varMap)
     {
+        assert(inputType == D3D_SIT_CBUFFER || inputType == D3D_SIT_STRUCTURED || inputType == D3D_SIT_UAV_RWSTRUCTURED);
+        bool isStructured = inputType != D3D_SIT_CBUFFER;   // Otherwise it's a constant buffer
+
         for (uint32_t varID = 0; varID < desc.Variables; varID++)
         {
             ID3DShaderReflectionVariable* pVar = pReflector->GetVariableByIndex(varID);
-            reflectVariable(pReflector, pVar, varMap);
+            reflectVariable(pReflector, pVar, varMap, isStructured);
         }
 
-        assert(calcStructSize(varMap) == desc.Size);
+        assert(calcStructSize(varMap, isStructured) == desc.Size);
     }
 
     bool validateBufferDeclaration(const ProgramReflection::BufferReflection* pPrevDesc, const ProgramReflection::VariableMap& varMap, std::string& log)
@@ -326,7 +389,7 @@ namespace Falcor
         return match;
     }
 
-    bool reflectBuffer(ShaderReflectionHandle pReflection, const char* bufName, ProgramReflection::BufferData& bufferDesc, uint32_t shaderIndex, std::string& log)
+    bool reflectBuffer(ShaderReflectionHandle pReflection, const char* bufName, ProgramReflection::BufferData& bufferDesc, ProgramReflection::BufferReflection::Type bufferType, ProgramReflection::BufferReflection::ShaderAccess shaderAccess, uint32_t shaderIndex, std::string& log)
     {
         D3D_SHADER_BUFFER_DESC d3dBufDesc;
         ID3DShaderReflectionConstantBuffer* pBuffer = pReflection->GetConstantBufferByName(bufName);
@@ -336,7 +399,7 @@ namespace Falcor
         d3d_call(pReflection->GetResourceBindingDescByName(d3dBufDesc.Name, &bindDesc));
         assert(bindDesc.BindCount == 1);
         ProgramReflection::VariableMap varMap;
-        initializeBufferVariables(pBuffer, d3dBufDesc, varMap);
+        initializeBufferVariables(pBuffer, d3dBufDesc, bindDesc.Type, varMap);
 
         // If the buffer already exists in the program, make sure the definitions match
         const auto& prevDef = bufferDesc.nameMap.find(d3dBufDesc.Name);
@@ -344,14 +407,14 @@ namespace Falcor
         {
             if (bindDesc.BindPoint != prevDef->second)
             {
-                log += "Constant buffer '" + std::string(d3dBufDesc.Name) + "' has different bind locations between different shader stages. Falcor do not support that. Use explicit bind locations to avoid this error";
+                log += to_string(bufferType) + " buffer '" + std::string(d3dBufDesc.Name) + "' has different bind locations between different shader stages. Falcor do not support that. Use explicit bind locations to avoid this error";
                 return false;
             }
             ProgramReflection::BufferReflection* pPrevBuffer = bufferDesc.descMap[bindDesc.BindPoint].get();
             std::string bufLog;
             if (validateBufferDeclaration(pPrevBuffer, varMap, bufLog) == false)
             {
-                log += "Constant buffer '" + std::string(d3dBufDesc.Name) + "' has different definitions between different shader stages. " + bufLog;
+                log += to_string(bufferType) + " buffer '" + std::string(d3dBufDesc.Name) + "' has different definitions between different shader stages. " + bufLog;
                 return false;
             }
         }
@@ -359,7 +422,7 @@ namespace Falcor
         {
             // Create the buffer reflection
             bufferDesc.nameMap[d3dBufDesc.Name] = bindDesc.BindPoint;
-            bufferDesc.descMap[bindDesc.BindPoint] = ProgramReflection::BufferReflection::create(d3dBufDesc.Name, bindDesc.BindPoint, ProgramReflection::BufferReflection::Type::Constant, d3dBufDesc.Size, varMap, ProgramReflection::ResourceMap());
+            bufferDesc.descMap[bindDesc.BindPoint] = ProgramReflection::BufferReflection::create(d3dBufDesc.Name, bindDesc.BindPoint, bufferType, d3dBufDesc.Size, varMap, ProgramReflection::ResourceMap(), shaderAccess);
         }
 
         // Update the shader mask
@@ -555,10 +618,13 @@ namespace Falcor
                     switch (inputDesc.Type)
                     {
                     case D3D_SIT_CBUFFER:
-                        res = reflectBuffer(pReflection, inputDesc.Name, mBuffers[(uint32_t)BufferReflection::Type::Constant], shader, log);
+                        res = reflectBuffer(pReflection, inputDesc.Name, mBuffers[(uint32_t)BufferReflection::Type::Constant], BufferReflection::Type::Constant, BufferReflection::ShaderAccess::Read, shader, log);
                         break;
                     case D3D_SIT_STRUCTURED:
-                        res = reflectBuffer(pReflection, inputDesc.Name, mBuffers[(uint32_t)BufferReflection::Type::Structured], shader, log);
+                        res = reflectBuffer(pReflection, inputDesc.Name, mBuffers[(uint32_t)BufferReflection::Type::Structured], BufferReflection::Type::Structured, BufferReflection::ShaderAccess::Read, shader, log);
+                        break;
+                    case D3D_SIT_UAV_RWSTRUCTURED:
+                        res = reflectBuffer(pReflection, inputDesc.Name, mBuffers[(uint32_t)BufferReflection::Type::Structured], BufferReflection::Type::Structured, BufferReflection::ShaderAccess::ReadWrite, shader, log);
                         break;
                     default:
                         res = reflectResource(pReflection, inputDesc, mResources, i, log);

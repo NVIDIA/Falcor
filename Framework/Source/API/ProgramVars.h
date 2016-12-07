@@ -31,7 +31,7 @@
 #include "API/Sampler.h"
 #include <unordered_map>
 #include "API/ProgramReflection.h"
-#include "API/ShaderStorageBuffer.h"
+#include "API/StructuredBuffer.h"
 #include "API/TypedBuffer.h"
 #include "API/LowLevel/RootSignature.h"
 
@@ -98,13 +98,13 @@ namespace Falcor
         \param[in] name The name of the buffer
         \return If the name is valid, a shared pointer to the SSBO. Otherwise returns nullptr
         */
-        ShaderStorageBuffer::SharedPtr getStructuredBuffer(const std::string& name) const;
+        StructuredBuffer::SharedPtr getStructuredBuffer(const std::string& name) const;
 
         /** Get a shader-storage buffer object.
         \param[in] index The index of the buffer
         \return If the index is valid, a shared pointer to the StructuredBuffer. Otherwise returns nullptr
         */
-        ShaderStorageBuffer::SharedPtr getStructuredBuffer(uint32_t index) const;
+        StructuredBuffer::SharedPtr getStructuredBuffer(uint32_t index) const;
 
         /** Set a raw-buffer. Based on the shader reflection, it will be bound as either an SRV or a UAV
             \param[in] name The name of the buffer
@@ -118,6 +118,12 @@ namespace Falcor
         */
         bool setTypedBuffer(const std::string& name, TypedBufferBase::SharedPtr pBuf);
 
+        /** Set a structured buffer. Based on the shader reflection, it will be bound as either an SRV or a UAV
+        \param[in] name The name of the buffer
+        \param[in] pBuf The buffer object
+        */
+        bool setStructuredBuffer(const std::string& name, StructuredBuffer::SharedPtr pBuf);
+
         /** Bind a texture to the program in the global namespace.
             If you are using bindless textures, than this is not the right call for you. You should use the ConstantBuffer::setTexture() method instead.
             \param[in] name The name of the texture object in the shader
@@ -128,7 +134,7 @@ namespace Falcor
             \param[in] mipCount The number of mip-levels to bind. If this is equal to Texture#kMaxPossible, will bind the range [mostDetailedMip, pTexture->getMipCount()]
             \return false if the texture was not found in the program, otherwise true
         */
-        bool setTexture(const std::string& name, const Texture::SharedConstPtr& pTexture, uint32_t firstArraySlice = 0, uint32_t arraySize = Texture::kMaxPossible, uint32_t mostDetailedMip = 0, uint32_t mipCount = Texture::kMaxPossible);
+        bool setTexture(const std::string& name, const Texture::SharedPtr& pTexture, uint32_t firstArraySlice = 0, uint32_t arraySize = Texture::kMaxPossible, uint32_t mostDetailedMip = 0, uint32_t mipCount = Texture::kMaxPossible);
 
         /** Bind a texture as a UAV
             \param[in] index The index of the UAV object in the shader
@@ -138,7 +144,7 @@ namespace Falcor
             \param[in] arraySize The array size. If this is equal to Texture#kMaxPossible, will bind the range [firstArraySlice, pTexture->getArraySize()]
             \return false if the UAV was not found in the program, otherwise true
         */
-        bool setUav(uint32_t index, const Texture::SharedConstPtr& pTexture, uint32_t mipLevel = 0, uint32_t firstArraySlice = 0, uint32_t arraySize = Texture::kMaxPossible);
+        bool setUav(uint32_t index, const Texture::SharedPtr& pTexture, uint32_t mipLevel = 0, uint32_t firstArraySlice = 0, uint32_t arraySize = Texture::kMaxPossible);
 
         /** Bind a texture as a UAV
             \param[in] name The name of the UAV object in the shader
@@ -148,7 +154,7 @@ namespace Falcor
             \param[in] arraySize The array size. If this is equal to Texture#kMaxPossible, will bind the range [firstArraySlice, pTexture->getArraySize()]
             \return false if the UAV was not found in the program, otherwise true
         */
-        bool setUav(const std::string& name, const Texture::SharedConstPtr& pTexture, uint32_t mipLevel = 0, uint32_t firstArraySlice = 0, uint32_t arraySize = Texture::kMaxPossible);
+        bool setUav(const std::string& name, const Texture::SharedPtr& pTexture, uint32_t mipLevel = 0, uint32_t firstArraySlice = 0, uint32_t arraySize = Texture::kMaxPossible);
 
         /** Bind an array of texture to the program in the global namespace.
         This can be used to bind a texture declared an array or a number of different variables which are known to be continues in the register space (such as for structure fields)
@@ -157,7 +163,7 @@ namespace Falcor
         \param[in] pTextures An array of textures to bind
         \return false if any of the textures was not found in the program, otherwise true
         */
-        bool setTextureRange(const std::string& name, uint32_t count, const Texture::SharedConstPtr pTextures[]);
+        bool setTextureRange(const std::string& name, uint32_t count, const Texture::SharedPtr pTextures[]);
 
         /** Bind a sampler to the program in the global namespace.
         If you are using bindless textures, than this is not the right call for you. You should use the ConstantBuffer::setTexture() method instead.
@@ -165,7 +171,7 @@ namespace Falcor
         \param[in] pSampler The sampler object to bind
         \return false if the sampler was not found in the program, otherwise true
         */
-        bool setSampler(const std::string& name, const Sampler::SharedConstPtr& pSampler);
+        bool setSampler(const std::string& name, const Sampler::SharedPtr& pSampler);
 
         /** Bind a texture to the program in the global namespace.
         If you are using bindless textures, than this is not the right call for you. You should use the ConstantBuffer::setTexture() method instead.
@@ -176,7 +182,7 @@ namespace Falcor
         \param[in] mipCount The number of mip-levels to bind. If this is equal to Texture#kMaxPossible, will bind the range [mostDetailedMip, pTexture->getMipCount()]
         \return false if the texture was not found in the program, otherwise true
         */
-        bool setTexture(uint32_t index, const Texture::SharedConstPtr& pTexture, uint32_t firstArraySlice = 0, uint32_t arraySize = Texture::kMaxPossible, uint32_t mostDetailedMip = 0, uint32_t mipCount = Texture::kMaxPossible);
+        bool setTexture(uint32_t index, const Texture::SharedPtr& pTexture, uint32_t firstArraySlice = 0, uint32_t arraySize = Texture::kMaxPossible, uint32_t mostDetailedMip = 0, uint32_t mipCount = Texture::kMaxPossible);
 
         /** Bind an array of texture to the program in the global namespace.
         This can be used to bind a texture declared an array or a number of different variables which are known to be continues in the register space (such as for structure fields)
@@ -185,7 +191,7 @@ namespace Falcor
         \param[in] pTextures An array of textures to bind
         \return false if any of the textures was not found in the program, otherwise true
         */
-        bool setTextureRange(uint32_t startIndex, uint32_t count, const Texture::SharedConstPtr pTextures[]);
+        bool setTextureRange(uint32_t startIndex, uint32_t count, const Texture::SharedPtr pTextures[]);
 
         /** Bind a sampler to the program in the global namespace.
             If you are using bindless textures, than this is not the right call for you. You should use the ConstantBuffer::setTexture() method instead.
@@ -193,7 +199,7 @@ namespace Falcor
             \param[in] pSampler The sampler object to bind
             \return false if the sampler was not found in the program, otherwise true
             */
-        bool setSampler(uint32_t index, const Sampler::SharedConstPtr& pSampler);
+        bool setSampler(uint32_t index, const Sampler::SharedPtr& pSampler);
         
         /** Get the program reflection interface
         */
@@ -215,7 +221,7 @@ namespace Falcor
         };
 
         // FIXME: This doesn't work with multiple register spaces
-        template<typename T> using ResourceDataMap = std::unordered_map<uint32_t, ResourceData<T>>;
+        using ResourceDataMap = std::unordered_map<uint32_t, ResourceData<Resource::SharedPtr>>;
 
         void setIntoRenderContext(RenderContext* pContext) const;
     private:
@@ -223,11 +229,10 @@ namespace Falcor
 
         RootSignature::SharedConstPtr mpRootSignature;
         ProgramReflection::SharedConstPtr mpReflector;
-        ResourceDataMap<ConstantBuffer::SharedPtr> mConstantBuffers;
-        ResourceDataMap<ShaderStorageBuffer::SharedPtr> mStructuredBuffers;
 
-        std::map<uint32_t, ResourceData<Resource::SharedConstPtr>> mAssignedSrvs;       // HLSL 't' registers
-        std::map<uint32_t, ResourceData<Resource::SharedConstPtr>> mAssignedUavs;       // HLSL 'u' registers
+        ResourceDataMap mAssignedCbs;        // HLSL 'b' registers
+        ResourceDataMap mAssignedSrvs;       // HLSL 't' registers
+        ResourceDataMap mAssignedUavs;       // HLSL 'u' registers
         std::map<uint32_t, ResourceData<Sampler::SharedConstPtr>> mAssignedSamplers;    // HLSL 's' registers
     };
 }

@@ -28,7 +28,7 @@
 #pragma once
 #include <string>
 #include <unordered_map>
-#include "ConstantBuffer.h"
+#include "VariablesBuffer.h"
 
 namespace Falcor
 {
@@ -37,38 +37,63 @@ namespace Falcor
     class Texture;
     class Sampler;
 
-    class ShaderStorageBuffer : public ConstantBuffer
+    class StructuredBuffer : public VariablesBuffer, public inherit_shared_from_this<VariablesBuffer, StructuredBuffer>
+
     {
     public:
-        class SsboVar : public CbVar<ShaderStorageBuffer>
+        class SharedPtr : public std::shared_ptr<StructuredBuffer>
         {
         public:
-            SsboVar(ShaderStorageBuffer* pBuf, size_t offset) : CbVar(pBuf, offset) {}
-            using CbVar::operator=;
-            template <typename T> operator T() { T val; mpBuf->getVariable(mOffset, val) ; return val; }
+            class Element
+            {
+            public:
+                class Var
+                {
+                public:
+                    Var(StructuredBuffer* pBuf, size_t offset, size_t element) : mpBuf(pBuf), mElement(element), mOffset(offset) {}
+                    template<typename T> void operator=(const T& val) { mpBuf->setVariable(mOffset, mElement, val); }
+                    template<typename T> operator T() const { T val;  mpBuf->getVariable(mOffset, mElement, val); return val; }
+                protected:
+                    size_t mElement;
+                    size_t mOffset;
+                    StructuredBuffer* mpBuf;
+                };
+
+                Element(StructuredBuffer* pBuf, size_t element) : mpBuf(pBuf), mElement(element) {}
+                Var operator[](size_t offset) { return Var(mpBuf, offset, mElement); }
+                Var operator[](const std::string& var) { return Var(mpBuf, mpBuf->getVariableOffset(var), mElement); }
+                size_t getElement() const { return mElement; }
+            private:
+                StructuredBuffer* mpBuf;
+                size_t mElement;
+            };
+
+            SharedPtr() = default;
+            SharedPtr(std::shared_ptr<StructuredBuffer> pBuf) : std::shared_ptr<StructuredBuffer>(pBuf) {}
+            SharedPtr(StructuredBuffer* pBuf) : std::shared_ptr<StructuredBuffer>(pBuf) {}
+
+            Element operator[](size_t elemIndex) { return Element(get(), elemIndex); }
         };
 
-        using SharedPtr = ConstantBuffer::SharedPtrT<SsboVar>;
-        using SharedConstPtr = std::shared_ptr<const ShaderStorageBuffer>;
-//FIXME        inherit_shared_from_this(ConstantBuffer, ShaderStorageBuffer);
+        using SharedConstPtr = std::shared_ptr<const StructuredBuffer>;
 
         /** create a new shader storage buffer.\n
             Even though the buffer is created with a specific reflection object, it can be used with other programs as long as the buffer declarations are the same across programs.
             \param[in] pReflector A buffer-reflection object describing the buffer layout
-            \param[in] overrideSize - if 0, will use the buffer size as declared in the shader. Otherwise, will use this value as the buffer size. Useful when using buffers with dynamic arrays.
+            \param[in] elementCount - the number of struct elements in the buffer
             \return A new buffer object if the operation was successful, otherwise nullptr
         */
-        static SharedPtr create(const ProgramReflection::BufferReflection::SharedConstPtr& pReflector, size_t overrideSize = 0);
-
+        static SharedPtr create(const ProgramReflection::BufferReflection::SharedConstPtr& pReflector, size_t elementCount = 1);
+        
         /** create a new shader storage buffer.\n
         This function is purely syntactic sugar. It will fetch the requested buffer reflector from the active program version and create the buffer from it
         \param[in] pProgram A program object which defines the buffer
         \param[in] overrideSize - if 0, will use the buffer size as declared in the shader. Otherwise, will use this value as the buffer size. Useful when using buffers with dynamic arrays.
         \return A new buffer object if the operation was successful, otherwise nullptr
         */
-        static SharedPtr create(Program::SharedPtr& pProgram, const std::string& name, size_t overrideSize = 0);
+        static SharedPtr create(Program::SharedPtr& pProgram, const std::string& name, size_t elementCount = 1);
 
-        ~ShaderStorageBuffer();
+        ~StructuredBuffer();
 
         /** Read a variable from the buffer.
             The function will validate that the value Type matches the declaration in the shader. If there's a mismatch, an error will be logged and the call will be ignored.
@@ -76,7 +101,7 @@ namespace Falcor
             \param[out] value The value read from the buffer
         */
         template<typename T>
-        void getVariable(const std::string& name, T& value) const;
+        void getVariable(const std::string& name, size_t elementIndex, T& value) const;
 
         /** Read an array of variables from the buffer.
             The function will validate that the value Type matches the declaration in the shader. If there's a mismatch, an error will be logged and the call will be ignored.
@@ -85,7 +110,7 @@ namespace Falcor
             \param[out] value Pointer to an array of values to read into
         */
         template<typename T>
-        void getVariableArray(size_t offset, size_t count, T value[]) const;
+        void getVariableArray(size_t offset, size_t count, size_t elementIndex, T value[]) const;
 
         /** Read a variable from the buffer.
         The function will validate that the value Type matches the declaration in the shader. If there's a mismatch, an error will be logged and the call will be ignored.
@@ -93,7 +118,7 @@ namespace Falcor
         \param[out] value The value read from the buffer
         */
         template<typename T>
-        void getVariable(size_t offset, T& value) const;
+        void getVariable(size_t offset, size_t elementIndex, T& value) const;
 
         /** Read an array of variables from the buffer.
             The function will validate that the value Type matches the declaration in the shader. If there's a mismatch, an error will be logged and the call will be ignored.
@@ -102,7 +127,7 @@ namespace Falcor
             \param[out] value Pointer to an array of values to read into
         */
         template<typename T>
-        void getVariableArray(const std::string& name, size_t count, T value[]) const;
+        void getVariableArray(const std::string& name, size_t count, size_t elementIndex, T value[]) const;
 
         /** Read a block of data from the buffer.\n
             If Offset + Size will result in buffer overflow, the call will be ignored and log an error.
@@ -122,9 +147,9 @@ namespace Falcor
         /** Set the GPUCopyDirty flag
         */
         void setGpuCopyDirty() const { mGpuCopyDirty = true; }
-
+                
     private:
-        ShaderStorageBuffer(const ProgramReflection::BufferReflection::SharedConstPtr& pReflector) : ConstantBuffer(pReflector) {}
+        StructuredBuffer(const ProgramReflection::BufferReflection::SharedConstPtr& pReflector, size_t elementCount);
         mutable bool mGpuCopyDirty = false;
     };
 }

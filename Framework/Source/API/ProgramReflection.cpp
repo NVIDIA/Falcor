@@ -158,20 +158,21 @@ namespace Falcor
         return it == mResources.end() ? nullptr : &(it->second);
     }
 
-    ProgramReflection::BufferReflection::BufferReflection(const std::string& name, uint32_t registerIndex, Type type, size_t size, const VariableMap& varMap, const ResourceMap& resourceMap) :
+    ProgramReflection::BufferReflection::BufferReflection(const std::string& name, uint32_t registerIndex, Type type, size_t size, const VariableMap& varMap, const ResourceMap& resourceMap, ShaderAccess shaderAccess) :
         mName(name),
         mType(type),
         mSizeInBytes(size),
         mVariables(varMap),
         mResources(resourceMap),
-        mRegIndex(registerIndex)
+        mRegIndex(registerIndex),
+        mShaderAccess(shaderAccess)
     {
 
     }
 
-    ProgramReflection::BufferReflection::SharedPtr ProgramReflection::BufferReflection::create(const std::string& name, uint32_t registerIndex, Type type, size_t size, const VariableMap& varMap, const ResourceMap& resourceMap)
+    ProgramReflection::BufferReflection::SharedPtr ProgramReflection::BufferReflection::create(const std::string& name, uint32_t registerIndex, Type type, size_t size, const VariableMap& varMap, const ResourceMap& resourceMap, ShaderAccess shaderAccess)
     {
-        return SharedPtr(new BufferReflection(name, registerIndex, type, size, varMap, resourceMap));
+        return SharedPtr(new BufferReflection(name, registerIndex, type, size, varMap, resourceMap, shaderAccess));
     }
 
     const ProgramReflection::Variable* ProgramReflection::getVertexAttribute(const std::string& name) const

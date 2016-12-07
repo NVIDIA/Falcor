@@ -41,11 +41,13 @@ namespace Falcor
     {
         const Texture* pTexture = dynamic_cast<const Texture*>(pResource);
         const Buffer* pBuffer = dynamic_cast<const Buffer*>(pResource);
+
         desc = {};
 
         if (pBuffer)
         {
             const TypedBufferBase* pTypedBuffer = dynamic_cast<const TypedBufferBase*>(pResource);
+            const StructuredBuffer* pStructuredBuffer = dynamic_cast<const StructuredBuffer*>(pResource);
 
             desc.Buffer.FirstElement = 0;
             if (pTypedBuffer)
@@ -53,6 +55,12 @@ namespace Falcor
                 desc.Format = getDxgiFormat(pTypedBuffer->getResourceFormat());
                 desc.Buffer.Flags = D3D12_BUFFER_SRV_FLAG_NONE;
                 desc.Buffer.NumElements = pTypedBuffer->getElementCount();
+            }
+            else if (pStructuredBuffer)
+            {
+                desc.Format = DXGI_FORMAT_UNKNOWN;
+                desc.Buffer.NumElements = (uint32_t)pStructuredBuffer->getElementCount();
+                desc.Buffer.StructureByteStride = (uint32_t)pStructuredBuffer->getElementSize();
             }
             else
             {

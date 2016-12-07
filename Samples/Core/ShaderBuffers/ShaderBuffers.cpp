@@ -57,10 +57,6 @@ void ShaderBuffersSample::onLoad()
     auto pMesh = mpModel->getMesh(0);
     mIndexCount = pMesh->getIndexCount();
 
-    // Initialize uniform-buffers data
-    mLightData.intensity = glm::vec3(1, 1, 1);
-    mLightData.worldDir = glm::vec3(0, -1, 0);
-
     // Set camera parameters
     glm::vec3 center = mpModel->getCenter();
     float radius = mpModel->getRadius();
@@ -80,6 +76,7 @@ void ShaderBuffersSample::onLoad()
     mpInvocationsBuffer = Buffer::create(sizeof(uint32_t), Buffer::BindFlags::UnorderedAccess, Buffer::CpuAccess::Read, &z);
     mpProgramVars->setRawBuffer("gInvocationBuffer", mpInvocationsBuffer);
     mpProgramVars->setTypedBuffer("surfaceColor", mpSurfaceColorBuffer);
+    mpProgramVars->setStructuredBuffer("gLight", StructuredBuffer::create(mpProgram, "gLight" , 2));
 
     // create pipeline cache
     RasterizerState::Desc rsDesc;
@@ -106,8 +103,8 @@ void ShaderBuffersSample::onFrameRender()
     glm::mat4 wvp = mpCamera->getViewProjMatrix();
     mpProgramVars["PerFrameCB"]["m.wvpMat"] = wvp;
 
-    mpProgramVars["LightCB"]["worldDir"] = mLightData.worldDir;
-    mpProgramVars["LightCB"]["intensity"] = mLightData.intensity;
+    mpProgramVars->getStructuredBuffer("gLight")[0]["vec3Val"] = mLightData.worldDir;
+    mpProgramVars->getStructuredBuffer("gLight")[1]["vec3Val"] = mLightData.intensity;
     
     mpSurfaceColorBuffer[0] = mSurfaceColor;
     mpSurfaceColorBuffer->uploadToGPU();
@@ -116,7 +113,7 @@ void ShaderBuffersSample::onFrameRender()
     mpRenderContext->setProgramVariables(mpProgramVars);
     mpRenderContext->drawIndexed(mIndexCount, 0, 0);
 
-     std::string msg = getFpsMsg() + '\n';
+    std::string msg = getFpsMsg() + '\n';
     if(mCountPixelShaderInvocations)
     {
         uint32_t* pData = (uint32_t*)mpInvocationsBuffer->map(Buffer::MapType::Read);
