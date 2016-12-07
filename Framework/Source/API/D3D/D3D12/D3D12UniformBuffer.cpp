@@ -31,8 +31,4 @@
 namespace Falcor
 {
     ConstantBuffer::~ConstantBuffer() = default;
-
-    void ConstantBuffer::setTextureInternal(size_t offset, const Texture* pTexture, const Sampler* pSampler)
-    {
-    }
 }

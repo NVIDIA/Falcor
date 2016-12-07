@@ -395,6 +395,7 @@
     <ClCompile Include="API\ConstantBuffer.cpp" />
     <ClCompile Include="API\TypedBuffer.cpp" />
     <ClCompile Include="API\VAO.cpp" />
+    <ClCompile Include="API\VariablesBuffer.cpp" />
     <ClCompile Include="Effects\NormalMap\LeanMap.cpp" />
     <ClCompile Include="Effects\Shadows\CSM.cpp" />
     <ClCompile Include="Effects\SkyBox\SkyBox.cpp" />
@@ -758,6 +759,7 @@
     <ClInclude Include="API\ConstantBuffer.h" />
     <ClInclude Include="API\TypedBuffer.h" />
     <ClInclude Include="API\VAO.h" />
+    <ClInclude Include="API\VariablesBuffer.h" />
     <ClInclude Include="API\VertexLayout.h" />
     <ClInclude Include="API\Window.h" />
     <ClInclude Include="Data\Effects\CsmData.h" />

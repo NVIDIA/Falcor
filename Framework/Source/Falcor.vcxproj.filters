@@ -431,6 +431,9 @@
     <ClCompile Include="API\StructuredBuffer.cpp">
       <Filter>API</Filter>
     </ClCompile>
+    <ClCompile Include="API\VariablesBuffer.cpp">
+      <Filter>API</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Graphics\Model\Animation.h">
@@ -1473,6 +1476,9 @@
       <Filter>API</Filter>
     </ClInclude>
     <ClInclude Include="API\StructuredBuffer.h">
+      <Filter>API</Filter>
+    </ClInclude>
+    <ClInclude Include="API\VariablesBuffer.h">
       <Filter>API</Filter>
     </ClInclude>
   </ItemGroup>

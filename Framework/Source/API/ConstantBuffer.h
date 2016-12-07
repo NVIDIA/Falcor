@@ -29,7 +29,7 @@
 #include <string>
 #include "ProgramReflection.h"
 #include "Texture.h"
-#include "Buffer.h"
+#include "VariablesBuffer.h"
 #include "Graphics/Program.h"
 #include "API/LowLevel/DescriptorHeap.h"
 
@@ -42,35 +42,31 @@ namespace Falcor
         Note that Falcor has 2 flavors of setting variable by names - SetVariable() and SetVariableArray(). Naming rules for N-dimensional arrays of a basic Type are a little different between the two.\n
         SetVariable() must include N indices. SetVariableArray() can include N indices, or N-1 indices (implicit [0] as last index).\n\n
     */
-    class ConstantBuffer : public Buffer, public inherit_shared_from_this<Buffer, ConstantBuffer> //FIXME This enbaled_shared_from_this doesn't return SharedPtr, so it's wrong. We need to implement our own version
+    class ConstantBuffer : public VariablesBuffer, public inherit_shared_from_this<VariablesBuffer, ConstantBuffer> //FIXME This enbaled_shared_from_this doesn't return SharedPtr, so it's wrong. We need to implement our own version
     {
     public:
-        template<typename T>
-        class CbVar
+        class SharedPtr : public std::shared_ptr<ConstantBuffer>
         {
         public:
-            using BufType = T;
-            CbVar(BufType* pBuf, size_t offset) : mpBuf(pBuf), mOffset(offset) {}
-            template<typename T> void operator=(const T& val) { mpBuf->setVariable(mOffset, val); }
+            class Var
+            {
+            public:
+                Var(ConstantBuffer* pBuf, size_t offset) : mpBuf(pBuf), mOffset(offset) {}
+                template<typename T> void operator=(const T& val) { mpBuf->setVariable(mOffset, val); }
 
-            size_t getOffset() const { return mOffset; }
-        protected:
-            BufType* mpBuf;
-            size_t mOffset;
+                size_t getOffset() const { return mOffset; }
+            protected:
+                ConstantBuffer* mpBuf;
+                size_t mOffset;
+            };
+
+            SharedPtr() = default;
+            SharedPtr(ConstantBuffer* pBuf) : std::shared_ptr<ConstantBuffer>(pBuf) {}
+
+            Var operator[](size_t offset) { return Var(get(), offset); }
+            Var operator[](const std::string& var) { return Var(get(), get()->getVariableOffset(var)); }
         };
 
-        template<typename CbVarType>
-        class SharedPtrT : public std::shared_ptr<typename CbVarType::BufType>
-        {
-        public:
-            SharedPtrT() = default;
-            SharedPtrT(typename CbVarType::BufType* pBuf) : std::shared_ptr<typename CbVarType::BufType>(pBuf) {}
-
-            CbVarType operator[](size_t offset) { return CbVarType(get(), offset); }
-            CbVarType operator[](const std::string& var) { return CbVarType(get(), get()->getVariableOffset(var)); }
-        };
-
-        using SharedPtr = SharedPtrT<CbVar<ConstantBuffer>>;
         using SharedConstPtr = std::shared_ptr<const ConstantBuffer>;
 
         /** create a new constant buffer.\n
@@ -82,11 +78,11 @@ namespace Falcor
         static SharedPtr create(const ProgramReflection::BufferReflection::SharedConstPtr& pReflector, size_t overrideSize = 0);
 
         /** create a new constant buffer from a program object.\n
-            This function is purely syntactic sugar. It will fetch the requested buffer reflector from the active program version and create the buffer from it
-            \param[in] pProgram A program object which defines the buffer
-            \param[in] name The buffer's name
-            \param[in] overrideSize - if 0, will use the buffer size as declared in the shader. Otherwise, will use this value as the buffer size. Useful when using buffers with dynamic arrays.
-            \return A new buffer object if the operation was successful, otherwise nullptr
+        This function is purely syntactic sugar. It will fetch the requested buffer reflector from the active program version and create the buffer from it
+        \param[in] pProgram A program object which defines the buffer
+        \param[in] name The buffer's name
+        \param[in] overrideSize - if 0, will use the buffer size as declared in the shader. Otherwise, will use this value as the buffer size. Useful when using buffers with dynamic arrays.
+        \return A new buffer object if the operation was successful, otherwise nullptr
         */
         static SharedPtr create(Program::SharedPtr& pProgram, const std::string& name, size_t overrideSize = 0);
 
@@ -98,7 +94,10 @@ namespace Falcor
         \param[in] value Value to set
         */
         template<typename T>
-        void setVariable(const std::string& name, const T& value);
+        void setVariable(const std::string& name, const T& value)
+        {
+            return VariablesBuffer::setVariable(name, 0, value);
+        }
 
         /** Set a variable array in the buffer.
         The function will validate that the value Type matches the declaration in the shader. If there's a mismatch, an error will be logged and the call will be ignored.
@@ -107,7 +106,10 @@ namespace Falcor
         \param[in] count pValue array size
         */
         template<typename T>
-        void setVariableArray(size_t offset, const T* pValue, size_t count);
+        void setVariableArray(size_t offset, const T* pValue, size_t count)
+        {
+            return VariablesBuffer::setVariableArray(offset, pValue, count);
+        }
 
         /** Set a variable into the buffer.
         The function will validate that the value Type matches the declaration in the shader. If there's a mismatch, an error will be logged and the call will be ignored.
@@ -115,7 +117,10 @@ namespace Falcor
         \param[in] value Value to set
         */
         template<typename T>
-        void setVariable(size_t offset, const T& value);
+        void setVariable(size_t offset, const T& value)
+        {
+            return VariablesBuffer::setVariable(offset, value);
+        }
 
         /** Set a variable array in the buffer.
         The function will validate that the value Type matches the declaration in the shader. If there's a mismatch, an error will be logged and the call will be ignored.
@@ -124,7 +129,10 @@ namespace Falcor
         \param[in] count pValue array size
         */
         template<typename T>
-        void setVariableArray(const std::string& name, const T* pValue, size_t count);
+        void setVariableArray(const std::string& name, const T* pValue, size_t count)
+        {
+            return VariablesBuffer::setVariableArray(name, 0, pValue, count);
+        }
 
         /** Set a texture or image.
         The function will validate that the resource Type matches the declaration in the shader. If there's a mismatch, an error will be logged and the call will be ignored.
@@ -132,7 +140,10 @@ namespace Falcor
         \param[in] pTexture The resource to bind. If bBindAsImage is set, binds as image.
         \param[in] pSampler The sampler to use for filtering. If this is nullptr, the default sampler will be used
         */
-        void setTexture(const std::string& name, const Texture* pTexture, const Sampler* pSampler);
+        void setTexture(const std::string& name, const Texture* pTexture, const Sampler* pSampler)
+        {
+            return VariablesBuffer::setTexture(name, pTexture, pSampler);
+        }
 
         /** Set a texture or image.
         The function will validate that the resource Type matches the declaration in the shader. If there's a mismatch, an error will be logged and the call will be ignored.
@@ -141,7 +152,10 @@ namespace Falcor
         \param[in] pSampler The sampler to use for filtering. If this is nullptr, the default sampler will be used
         \param[in] count Number of textures to bind
         */
-        void setTextureArray(const std::string& name, const Texture* pTexture[], const Sampler* pSampler, size_t count);
+        void setTextureArray(const std::string& name, const Texture* pTexture[], const Sampler* pSampler, size_t count)
+        {
+            return VariablesBuffer::setTextureArray(name, pTexture, pSampler, count);
+        }
 
         /** Set a texture or image.
         The function will validate that the resource Type matches the declaration in the shader. If there's a mismatch, an error will be logged and the call will be ignored.
@@ -149,42 +163,17 @@ namespace Falcor
         \param[in] pTexture The resource to bind. If bBindAsImage is set, binds as image.
         \param[in] pSampler The sampler to use for filtering. If this is nullptr, the default sampler will be used
         */
-        void setTexture(size_t Offset, const Texture* pTexture, const Sampler* pSampler);
+        void setTexture(size_t Offset, const Texture* pTexture, const Sampler* pSampler)
+        {
+            return VariablesBuffer::setTexture(Offset, pTexture, pSampler);
+        }
 
-        /** Apply the changes to the actual GPU buffer.
-            Note that it is possible to use this function to update only part of the GPU copy of the buffer. This might lead to inconsistencies between the GPU and CPU buffer, so make sure you know what you are doing.
-            \param[in] offset Offset into the buffer to write to
-            \param[in] size   Number of bytes to upload. If this value is -1, will update the [Offset, EndOfBuffer] range.
-        */
-        void uploadToGPU(size_t offset = 0, size_t size = -1) const;
-
-        /** Get the reflection object describing the CB
-        */
-        ProgramReflection::BufferReflection::SharedConstPtr getBufferReflector() const { return mpReflector; }
-
-        /** Set a block of data into the constant buffer.\n
-            If Offset + Size will result in buffer overflow, the call will be ignored and log an error.
-            \param[in] pSrc Pointer to the source data.
-            \param[in] offset Destination offset inside the buffer.
-            \param[in] size Number of bytes in the source data.
-        */
-        void setBlob(const void* pSrc, size_t offset, size_t size);
-
-        /** Get a variable offset inside the buffer. See notes about naming in the ConstantBuffer class description. Constant name can be provided with an implicit array-index, similar to ConstantBuffer#SetVariableArray.
-        */
-        size_t getVariableOffset(const std::string& varName) const;
-
-        static const size_t ConstantBuffer::kInvalidOffset = ProgramReflection::kInvalidLocation;
+        virtual void uploadToGPU(size_t offset = 0, size_t size = -1) const override;
 
         DescriptorHeap::Entry getCBV() const;
     protected:
-        ConstantBuffer(const ProgramReflection::BufferReflection::SharedConstPtr& pReflector, size_t size, BindFlags bind, CpuAccess update);
-        void setTextureInternal(size_t offset, const Texture* pTexture, const Sampler* pSampler);
-
-        ProgramReflection::BufferReflection::SharedConstPtr mpReflector;
-        std::vector<uint8_t> mData;
-        mutable bool mDirty = true;
-        mutable DescriptorHeap::Entry mResourceView;
+        ConstantBuffer(const ProgramReflection::BufferReflection::SharedConstPtr& pReflector, size_t size);
+        mutable DescriptorHeap::Entry mCBV;
 #ifdef FALCOR_D3D11
         friend class RenderContext;
         std::map<uint32_t, ID3D11ShaderResourceViewPtr>* mAssignedResourcesMap;

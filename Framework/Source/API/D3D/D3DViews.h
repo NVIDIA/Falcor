@@ -60,7 +60,7 @@ namespace Falcor
             {
                 desc.Format = DXGI_FORMAT_UNKNOWN;
                 desc.Buffer.NumElements = (uint32_t)pStructuredBuffer->getElementCount();
-                desc.Buffer.StructureByteStride = (uint32_t)pStructuredBuffer->getStride();
+                desc.Buffer.StructureByteStride = (uint32_t)pStructuredBuffer->getElementSize();
             }
             else
             {

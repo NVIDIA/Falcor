@@ -31,16 +31,19 @@
 
 namespace Falcor
 {
-    bool checkVariableByOffset(ProgramReflection::Variable::Type callType, size_t offset, size_t count, const ProgramReflection::BufferReflection* pBufferDesc);
-    bool checkVariableType(ProgramReflection::Variable::Type callType, ProgramReflection::Variable::Type shaderType, const std::string& name, const std::string& bufferName);
+    template<typename VarType>
+    bool checkVariableByOffset(size_t offset, size_t count, const ProgramReflection::BufferReflection* pBufferDesc);
+    template<typename VarType>
+    bool checkVariableType(ProgramReflection::Variable::Type shaderType, const std::string& name, const std::string& bufferName);
 
-    StructuredBuffer::StructuredBuffer(const ProgramReflection::BufferReflection::SharedConstPtr& pReflector, size_t size) :
-        ConstantBuffer(pReflector, size, Buffer::BindFlags::ShaderResource, Buffer::CpuAccess::None) {}
+    StructuredBuffer::StructuredBuffer(const ProgramReflection::BufferReflection::SharedConstPtr& pReflector, size_t elementCount) :
+        VariablesBuffer(pReflector, pReflector->getRequiredSize(), elementCount, Buffer::BindFlags::ShaderResource, Buffer::CpuAccess::None)
+        {}
 
-    StructuredBuffer::SharedPtr StructuredBuffer::create(const ProgramReflection::BufferReflection::SharedConstPtr& pReflection, size_t overrideSize)
+    StructuredBuffer::SharedPtr StructuredBuffer::create(const ProgramReflection::BufferReflection::SharedConstPtr& pReflection, size_t elementCount)
     {
-        size_t size = overrideSize ? overrideSize : pReflection->getRequiredSize();
-        auto pBuffer = SharedPtr(new StructuredBuffer(pReflection, size));
+        assert(elementCount > 0);
+        auto pBuffer = SharedPtr(new StructuredBuffer(pReflection, elementCount));
         return pBuffer;
     }
 
@@ -75,193 +78,200 @@ namespace Falcor
         memcpy(pDest, mData.data() + offset, size);
     }
 
-    #define get_constant_offset(_var_type, _c_type) \
-    template<> void StructuredBuffer::getVariable(size_t offset, _c_type& value) const    \
-    {                                                           \
-        if(checkVariableByOffset(ProgramReflection::Variable::Type::_var_type, offset, 1, mpReflector.get())) \
-        {                                                       \
-            readFromGPU();                                      \
-            const uint8_t* pVar = mData.data() + offset;        \
-            value = *(const _c_type*)pVar;                      \
-        }                                                       \
+    template<typename VarType> 
+    void StructuredBuffer::getVariable(size_t offset, size_t elementIndex, VarType& value) const
+    {
+        if(checkVariableByOffset<VarType>(offset, 1, mpReflector.get()))
+        {
+            readFromGPU();
+            const uint8_t* pVar = mData.data() + offset;
+            value = *(const VarType*)pVar;
+        }
     }
+#define get_constant_offset(_t) template void StructuredBuffer::getVariable(size_t offset, size_t elementIndex, _t& value) const
 
-    get_constant_offset(Bool, bool);
-    get_constant_offset(Bool2, glm::bvec2);
-    get_constant_offset(Bool3, glm::bvec3);
-    get_constant_offset(Bool4, glm::bvec4);
+    get_constant_offset(bool);
+    get_constant_offset(glm::bvec2);
+    get_constant_offset(glm::bvec3);
+    get_constant_offset(glm::bvec4);
 
-    get_constant_offset(Uint, uint32_t);
-    get_constant_offset(Uint2, glm::uvec2);
-    get_constant_offset(Uint3, glm::uvec3);
-    get_constant_offset(Uint4, glm::uvec4);
+    get_constant_offset(uint32_t);
+    get_constant_offset(glm::uvec2);
+    get_constant_offset(glm::uvec3);
+    get_constant_offset(glm::uvec4);
 
-    get_constant_offset(Int, int32_t);
-    get_constant_offset(Int2, glm::ivec2);
-    get_constant_offset(Int3, glm::ivec3);
-    get_constant_offset(Int4, glm::ivec4);
+    get_constant_offset(int32_t);
+    get_constant_offset(glm::ivec2);
+    get_constant_offset(glm::ivec3);
+    get_constant_offset(glm::ivec4);
 
-    get_constant_offset(Float, float);
-    get_constant_offset(Float2, glm::vec2);
-    get_constant_offset(Float3, glm::vec3);
-    get_constant_offset(Float4, glm::vec4);
+    get_constant_offset(float);
+    get_constant_offset(glm::vec2);
+    get_constant_offset(glm::vec3);
+    get_constant_offset(glm::vec4);
 
-    get_constant_offset(Float2x2, glm::mat2);
-    get_constant_offset(Float2x3, glm::mat2x3);
-    get_constant_offset(Float2x4, glm::mat2x4);
+    get_constant_offset(glm::mat2);
+    get_constant_offset(glm::mat2x3);
+    get_constant_offset(glm::mat2x4);
 
-    get_constant_offset(Float3x3, glm::mat3);
-    get_constant_offset(Float3x2, glm::mat3x2);
-    get_constant_offset(Float3x4, glm::mat3x4);
+    get_constant_offset(glm::mat3);
+    get_constant_offset(glm::mat3x2);
+    get_constant_offset(glm::mat3x4);
 
-    get_constant_offset(Float4x4, glm::mat4);
-    get_constant_offset(Float4x2, glm::mat4x2);
-    get_constant_offset(Float4x3, glm::mat4x3);
+    get_constant_offset(glm::mat4);
+    get_constant_offset(glm::mat4x2);
+    get_constant_offset(glm::mat4x3);
 
-    get_constant_offset(GpuPtr, uint64_t);
+    get_constant_offset(uint64_t);
 
 #undef get_constant_offset
 
-#define get_constant_string(_var_type, _c_type) \
-    template<> void StructuredBuffer::getVariable(const std::string& name, _c_type& value) const    \
-        {                                                                   \
-            size_t offset;                                                  \
-            const auto* pData = mpReflector->getVariableData(name, offset, false);     \
-            if((_LOG_ENABLED == 0) || (pData && checkVariableType(ProgramReflection::Variable::Type::_var_type, pData->type, name, mpReflector->getName()))) \
-            {                                                               \
-                getVariable(offset, value);                                 \
-            }                                                               \
+    template<typename VarType>
+    void StructuredBuffer::getVariable(const std::string& name, size_t elementIndex, VarType& value) const
+    {
+        size_t offset;
+        const auto* pData = mpReflector->getVariableData(name, offset, false);
+        if ((_LOG_ENABLED == 0) || (pData && checkVariableType<VarType>(pData->type, name, mpReflector->getName())))
+        {
+            getVariable(offset, elementIndex, value);
         }
-
-    get_constant_string(Bool, bool);
-    get_constant_string(Bool2, glm::bvec2);
-    get_constant_string(Bool3, glm::bvec3);
-    get_constant_string(Bool4, glm::bvec4);
-
-    get_constant_string(Uint, uint32_t);
-    get_constant_string(Uint2, glm::uvec2);
-    get_constant_string(Uint3, glm::uvec3);
-    get_constant_string(Uint4, glm::uvec4);
-
-    get_constant_string(Int, int32_t);
-    get_constant_string(Int2, glm::ivec2);
-    get_constant_string(Int3, glm::ivec3);
-    get_constant_string(Int4, glm::ivec4);
-
-    get_constant_string(Float, float);
-    get_constant_string(Float2, glm::vec2);
-    get_constant_string(Float3, glm::vec3);
-    get_constant_string(Float4, glm::vec4);
-
-    get_constant_string(Float2x2, glm::mat2);
-    get_constant_string(Float2x3, glm::mat2x3);
-    get_constant_string(Float2x4, glm::mat2x4);
-
-    get_constant_string(Float3x3, glm::mat3);
-    get_constant_string(Float3x2, glm::mat3x2);
-    get_constant_string(Float3x4, glm::mat3x4);
-
-    get_constant_string(Float4x4, glm::mat4);
-    get_constant_string(Float4x2, glm::mat4x2);
-    get_constant_string(Float4x3, glm::mat4x3);
-
-    get_constant_string(GpuPtr, uint64_t);
-#undef get_constant_string
-
-#define get_constant_array_offset(_var_type, _c_type) \
-    template<> void StructuredBuffer::getVariableArray(size_t offset, size_t count, _c_type value[]) const   \
-    {                                                               \
-        if(checkVariableByOffset(ProgramReflection::Variable::Type::_var_type, offset, count, mpReflector.get()))          \
-        {                                                           \
-            readFromGPU();                                          \
-            const uint8_t* pVar = mData.data() + offset;            \
-            const _c_type* pMat = (_c_type*)pVar;                   \
-            for(size_t i = 0; i < count; i++)                       \
-            {                                                       \
-                value[i] = pMat[i];                                 \
-            }                                                       \
-        }                                                           \
     }
 
-    get_constant_array_offset(Bool, bool);
-    get_constant_array_offset(Bool2, glm::bvec2);
-    get_constant_array_offset(Bool3, glm::bvec3);
-    get_constant_array_offset(Bool4, glm::bvec4);
+#define get_constant_string(_t) template void StructuredBuffer::getVariable(const std::string& name, size_t elementIndex, _t& value) const
 
-    get_constant_array_offset(Uint, uint32_t);
-    get_constant_array_offset(Uint2, glm::uvec2);
-    get_constant_array_offset(Uint3, glm::uvec3);
-    get_constant_array_offset(Uint4, glm::uvec4);
+    get_constant_string(bool);
+    get_constant_string(glm::bvec2);
+    get_constant_string(glm::bvec3);
+    get_constant_string(glm::bvec4);
 
-    get_constant_array_offset(Int, int32_t);
-    get_constant_array_offset(Int2, glm::ivec2);
-    get_constant_array_offset(Int3, glm::ivec3);
-    get_constant_array_offset(Int4, glm::ivec4);
+    get_constant_string(uint32_t);
+    get_constant_string(glm::uvec2);
+    get_constant_string(glm::uvec3);
+    get_constant_string(glm::uvec4);
 
-    get_constant_array_offset(Float, float);
-    get_constant_array_offset(Float2, glm::vec2);
-    get_constant_array_offset(Float3, glm::vec3);
-    get_constant_array_offset(Float4, glm::vec4);
+    get_constant_string(int32_t);
+    get_constant_string(glm::ivec2);
+    get_constant_string(glm::ivec3);
+    get_constant_string(glm::ivec4);
 
-    get_constant_array_offset(Float2x2, glm::mat2);
-    get_constant_array_offset(Float2x3, glm::mat2x3);
-    get_constant_array_offset(Float2x4, glm::mat2x4);
+    get_constant_string(float);
+    get_constant_string(glm::vec2);
+    get_constant_string(glm::vec3);
+    get_constant_string(glm::vec4);
 
-    get_constant_array_offset(Float3x3, glm::mat3);
-    get_constant_array_offset(Float3x2, glm::mat3x2);
-    get_constant_array_offset(Float3x4, glm::mat3x4);
+    get_constant_string(glm::mat2);
+    get_constant_string(glm::mat2x3);
+    get_constant_string(glm::mat2x4);
 
-    get_constant_array_offset(Float4x4, glm::mat4);
-    get_constant_array_offset(Float4x2, glm::mat4x2);
-    get_constant_array_offset(Float4x3, glm::mat4x3);
+    get_constant_string(glm::mat3);
+    get_constant_string(glm::mat3x2);
+    get_constant_string(glm::mat3x4);
 
-    get_constant_array_offset(GpuPtr, uint64_t);
+    get_constant_string(glm::mat4);
+    get_constant_string(glm::mat4x2);
+    get_constant_string(glm::mat4x3);
+
+    get_constant_string(uint64_t);
+#undef get_constant_string
+
+    template<typename VarType>
+    void StructuredBuffer::getVariableArray(size_t offset, size_t count, size_t elementIndex, VarType value[]) const
+    {
+        if (checkVariableByOffset<VarType>(offset, count, mpReflector.get()))
+        {
+            readFromGPU();
+            const uint8_t* pVar = mData.data() + offset;
+            const VarType* pMat = (VarType*)pVar;
+            for (size_t i = 0; i < count; i++)
+            {
+                value[i] = pMat[i];
+            }
+        }
+    }
+
+#define get_constant_array_offset(_t) template void StructuredBuffer::getVariableArray(size_t offset, size_t count, size_t elementIndex, _t value[]) const
+
+    get_constant_array_offset(bool);
+    get_constant_array_offset(glm::bvec2);
+    get_constant_array_offset(glm::bvec3);
+    get_constant_array_offset(glm::bvec4);
+
+    get_constant_array_offset(uint32_t);
+    get_constant_array_offset(glm::uvec2);
+    get_constant_array_offset(glm::uvec3);
+    get_constant_array_offset(glm::uvec4);
+
+    get_constant_array_offset(int32_t);
+    get_constant_array_offset(glm::ivec2);
+    get_constant_array_offset(glm::ivec3);
+    get_constant_array_offset(glm::ivec4);
+
+    get_constant_array_offset(float);
+    get_constant_array_offset(glm::vec2);
+    get_constant_array_offset(glm::vec3);
+    get_constant_array_offset(glm::vec4);
+
+    get_constant_array_offset(glm::mat2);
+    get_constant_array_offset(glm::mat2x3);
+    get_constant_array_offset(glm::mat2x4);
+
+    get_constant_array_offset(glm::mat3);
+    get_constant_array_offset(glm::mat3x2);
+    get_constant_array_offset(glm::mat3x4);
+
+    get_constant_array_offset(glm::mat4);
+    get_constant_array_offset(glm::mat4x2);
+    get_constant_array_offset(glm::mat4x3);
+
+    get_constant_array_offset(uint64_t);
 
 #undef get_constant_array_offset
 
-#define get_constant_array_string(_var_type, _c_type) \
-    template<> void StructuredBuffer::getVariableArray(const std::string& name, size_t count, _c_type value[]) const    \
-    {                                                                                                       \
-        size_t offset;                                                                                      \
-        const auto* pData = mpReflector->getVariableData(name, offset, true);                            \
-        if((_LOG_ENABLED == 0) || (pData && checkVariableType(ProgramReflection::Variable::Type::_var_type, pData->type, name, mpReflector->getName()))) \
-        {                                                                                                   \
-            getVariableArray(offset, count, value);                                                         \
-        }                                                                                                   \
+    template<typename VarType>
+    void StructuredBuffer::getVariableArray(const std::string& name, size_t count, size_t elementIndex, VarType value[]) const
+    {
+        size_t offset;
+        const auto* pData = mpReflector->getVariableData(name, offset, true);
+        if ((_LOG_ENABLED == 0) || (pData && checkVariableType<VarType>(pData->type, name, mpReflector->getName())))
+        {
+            getVariableArray(offset, count, elementIndex, value);
+        }
     }
 
-    get_constant_array_string(Bool, bool);
-    get_constant_array_string(Bool2, glm::bvec2);
-    get_constant_array_string(Bool3, glm::bvec3);
-    get_constant_array_string(Bool4, glm::bvec4);
+#define get_constant_array_string(_t) template void StructuredBuffer::getVariableArray(const std::string& name, size_t count, size_t elementIndex, _t value[]) const
 
-    get_constant_array_string(Uint, uint32_t);
-    get_constant_array_string(Uint2, glm::uvec2);
-    get_constant_array_string(Uint3, glm::uvec3);
-    get_constant_array_string(Uint4, glm::uvec4);
+    get_constant_array_string(bool);
+    get_constant_array_string(glm::bvec2);
+    get_constant_array_string(glm::bvec3);
+    get_constant_array_string(glm::bvec4);
 
-    get_constant_array_string(Int, int32_t);
-    get_constant_array_string(Int2, glm::ivec2);
-    get_constant_array_string(Int3, glm::ivec3);
-    get_constant_array_string(Int4, glm::ivec4);
+    get_constant_array_string(uint32_t);
+    get_constant_array_string(glm::uvec2);
+    get_constant_array_string(glm::uvec3);
+    get_constant_array_string(glm::uvec4);
 
-    get_constant_array_string(Float, float);
-    get_constant_array_string(Float2, glm::vec2);
-    get_constant_array_string(Float3, glm::vec3);
-    get_constant_array_string(Float4, glm::vec4);
+    get_constant_array_string(int32_t);
+    get_constant_array_string(glm::ivec2);
+    get_constant_array_string(glm::ivec3);
+    get_constant_array_string(glm::ivec4);
 
-    get_constant_array_string(Float2x2, glm::mat2);
-    get_constant_array_string(Float2x3, glm::mat2x3);
-    get_constant_array_string(Float2x4, glm::mat2x4);
+    get_constant_array_string(float);
+    get_constant_array_string(glm::vec2);
+    get_constant_array_string(glm::vec3);
+    get_constant_array_string(glm::vec4);
 
-    get_constant_array_string(Float3x3, glm::mat3);
-    get_constant_array_string(Float3x2, glm::mat3x2);
-    get_constant_array_string(Float3x4, glm::mat3x4);
+    get_constant_array_string(glm::mat2);
+    get_constant_array_string(glm::mat2x3);
+    get_constant_array_string(glm::mat2x4);
 
-    get_constant_array_string(Float4x4, glm::mat4);
-    get_constant_array_string(Float4x2, glm::mat4x2);
-    get_constant_array_string(Float4x3, glm::mat4x3);
+    get_constant_array_string(glm::mat3);
+    get_constant_array_string(glm::mat3x2);
+    get_constant_array_string(glm::mat3x4);
 
-    get_constant_array_string(GpuPtr, uint64_t);
+    get_constant_array_string(glm::mat4);
+    get_constant_array_string(glm::mat4x2);
+    get_constant_array_string(glm::mat4x3);
+
+    get_constant_array_string(uint64_t);
 #undef get_constant_array_string
 }
