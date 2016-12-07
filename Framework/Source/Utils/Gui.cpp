@@ -35,6 +35,7 @@
 #include "Utils/Math/FalcorMath.h"
 #include "glm/gtc/type_ptr.hpp"
 
+#pragma warning (disable : 4756) // overflow in constant arithmetic caused by calculating the setFloat*() functions (when calculating the step and min/max are +/- INF)
 namespace Falcor
 {
     void Gui::init()
