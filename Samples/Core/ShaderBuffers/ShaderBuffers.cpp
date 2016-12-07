@@ -57,10 +57,6 @@ void ShaderBuffersSample::onLoad()
     auto pMesh = mpModel->getMesh(0);
     mIndexCount = pMesh->getIndexCount();
 
-    // Initialize uniform-buffers data
-    mLightData.intensity = glm::vec3(1, 1, 1);
-    mLightData.worldDir = glm::vec3(0, -1, 0);
-
     // Set camera parameters
     glm::vec3 center = mpModel->getCenter();
     float radius = mpModel->getRadius();
@@ -80,6 +76,7 @@ void ShaderBuffersSample::onLoad()
     mpInvocationsBuffer = Buffer::create(sizeof(uint32_t), Buffer::BindFlags::UnorderedAccess, Buffer::CpuAccess::Read, &z);
     mpProgramVars->setRawBuffer("gInvocationBuffer", mpInvocationsBuffer);
     mpProgramVars->setTypedBuffer("surfaceColor", mpSurfaceColorBuffer);
+    mpProgramVars->setStructuredBuffer("gLight", StructuredBuffer::create(mpProgram, "gLight" , 2));
 
     // create pipeline cache
     RasterizerState::Desc rsDesc;

@@ -62,6 +62,7 @@ namespace Falcor
 
             SharedPtr() = default;
             SharedPtr(ConstantBuffer* pBuf) : std::shared_ptr<ConstantBuffer>(pBuf) {}
+            SharedPtr(std::shared_ptr<ConstantBuffer> pBuf) : std::shared_ptr<ConstantBuffer>(pBuf) {}
 
             Var operator[](size_t offset) { return Var(get(), offset); }
             Var operator[](const std::string& var) { return Var(get(), get()->getVariableOffset(var)); }

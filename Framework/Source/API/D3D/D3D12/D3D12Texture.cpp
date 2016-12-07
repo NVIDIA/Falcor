@@ -277,7 +277,8 @@ namespace Falcor
             gGenMips.pState->setFbo(pFbo);
 
             // Create the resource view
-            gGenMips.pVars->setTexture(0, shared_from_this(), 0, mArraySize, i, 1);
+            Texture* pNonConst = const_cast<Texture*>(this);
+            gGenMips.pVars->setTexture(0, pNonConst->shared_from_this(), 0, mArraySize, i, 1);
 
             // Run the program
             gGenMips.pFullScreenPass->execute(pContext);

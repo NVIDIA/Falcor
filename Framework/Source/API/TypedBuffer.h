@@ -40,7 +40,7 @@ namespace Falcor
 
         void uploadToGPU() const;
         uint32_t getElementCount() const { return mElementCount; }
-        void setGpuDirty() const { mGpuDirty = true; }
+        void setGpuCopyDirty() const { mGpuDirty = true; }
         ResourceFormat getResourceFormat() const { return mFormat; }
     protected:
         TypedBufferBase(uint32_t elementCount, ResourceFormat format);

@@ -298,7 +298,7 @@ namespace Falcor
             Logger::log(Logger::Level::Error, std::string("Material::setIntoConstantBuffer() - can't find the first texture object"));
             return;
         }
-        pVars->setTextureRange(pResourceDesc->regIndex, kTexCount, (Texture::SharedConstPtr*)&mData.textures);
+        pVars->setTextureRange(pResourceDesc->regIndex, kTexCount, (Texture::SharedPtr*)&mData.textures);
 
         pVars->setSampler("gMaterial.samplerState", mData.samplerState);
     }

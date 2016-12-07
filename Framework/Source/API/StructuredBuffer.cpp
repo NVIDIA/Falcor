@@ -47,6 +47,18 @@ namespace Falcor
         return pBuffer;
     }
 
+    StructuredBuffer::SharedPtr StructuredBuffer::create(Program::SharedPtr& pProgram, const std::string& name, size_t elementCount)
+    {
+        auto& pProgReflector = pProgram->getActiveVersion()->getReflector();
+        auto& pBufferReflector = pProgReflector->getBufferDesc(name, ProgramReflection::BufferReflection::Type::Structured);
+        if (pBufferReflector)
+        {
+            return create(pBufferReflector, elementCount);
+        }
+        return nullptr;
+    }
+
+
     void StructuredBuffer::readFromGPU(size_t offset, size_t size) const
     {
         if(size == -1)
