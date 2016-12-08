@@ -403,6 +403,7 @@
     <ClCompile Include="Effects\Utils\GaussianBlur.cpp" />
     <ClCompile Include="Graphics\Camera\Camera.cpp" />
     <ClCompile Include="Graphics\Camera\CameraController.cpp" />
+    <ClCompile Include="Graphics\ComputeProgram.cpp" />
     <ClCompile Include="Graphics\FboHelper.cpp" />
     <ClCompile Include="Graphics\FullScreenPass.cpp" />
     <ClCompile Include="Graphics\GraphicsProgram.cpp" />
@@ -779,6 +780,7 @@
     <ClInclude Include="Framework.h" />
     <ClInclude Include="Graphics\Camera\Camera.h" />
     <ClInclude Include="Graphics\Camera\CameraController.h" />
+    <ClInclude Include="Graphics\ComputeProgram.h" />
     <ClInclude Include="Graphics\FboHelper.h" />
     <ClInclude Include="Graphics\FullScreenPass.h" />
     <ClInclude Include="Graphics\GraphicsProgram.h" />

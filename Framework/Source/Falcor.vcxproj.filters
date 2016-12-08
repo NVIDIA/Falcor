@@ -437,6 +437,9 @@
     <ClCompile Include="Graphics\GraphicsProgram.cpp">
       <Filter>Graphics</Filter>
     </ClCompile>
+    <ClCompile Include="Graphics\ComputeProgram.cpp">
+      <Filter>Graphics</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Graphics\Model\Animation.h">
@@ -1485,6 +1488,9 @@
       <Filter>API</Filter>
     </ClInclude>
     <ClInclude Include="Graphics\GraphicsProgram.h">
+      <Filter>Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\ComputeProgram.h">
       <Filter>Graphics</Filter>
     </ClInclude>
   </ItemGroup>
