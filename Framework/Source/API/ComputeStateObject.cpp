@@ -27,38 +27,19 @@
 ***************************************************************************/
 #pragma once
 #include "Framework.h"
-#include "PipelineStateObject.h"
-#include "BlendState.h"
-#include "Vao.h"
+#include "ComputeStateObject.h"
 #include "Device.h"
 
 namespace Falcor
 {
-    BlendState::SharedPtr PipelineStateObject::spDefaultBlendState;
-    RasterizerState::SharedPtr PipelineStateObject::spDefaultRasterizerState;
-    DepthStencilState::SharedPtr PipelineStateObject::spDefaultDepthStencilState;
-
-    PipelineStateObject::~PipelineStateObject()
+    ComputeStateObject::~ComputeStateObject()
     {
         gpDevice->releaseResource(mApiHandle);
     }
 
-    PipelineStateObject::SharedPtr PipelineStateObject::create(const Desc& desc)
+    ComputeStateObject::SharedPtr ComputeStateObject::create(const Desc& desc)
     {
-        if (spDefaultBlendState == nullptr)
-        {
-            // Create default objects
-            spDefaultBlendState = BlendState::create(BlendState::Desc());
-            spDefaultDepthStencilState = DepthStencilState::create(DepthStencilState::Desc());
-            spDefaultRasterizerState = RasterizerState::create(RasterizerState::Desc());
-        }
-
-        SharedPtr pState = SharedPtr(new PipelineStateObject(desc));
-
-        // Initialize default objects
-        if (!pState->mDesc.mpBlendState)            pState->mDesc.mpBlendState              = spDefaultBlendState;
-        if (!pState->mDesc.mpRasterizerState)       pState->mDesc.mpRasterizerState         = spDefaultRasterizerState;
-        if (!pState->mDesc.mpDepthStencilState)     pState->mDesc.mpDepthStencilState       = spDefaultDepthStencilState;
+        SharedPtr pState = SharedPtr(new ComputeStateObject(desc));
 
         if (pState->apiInit() == false)
         {

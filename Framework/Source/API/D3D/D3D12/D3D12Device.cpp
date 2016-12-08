@@ -43,7 +43,7 @@ namespace Falcor
         struct ResourceRelease
         {
             size_t frameID;
-            ID3D12ResourcePtr pResource;
+            ApiObjectHandle pApiObject;
         };
 
         struct
@@ -322,10 +322,13 @@ namespace Falcor
 		return true;
     }
 
-    void Device::releaseResource(ID3D12ResourcePtr pResource)
+    void Device::releaseResource(ApiObjectHandle pResource)
     {
-        DeviceData* pData = (DeviceData*)mpPrivateData;
-        pData->deferredReleases.push({ pData->pFrameFence->getCpuValue(), pResource });
+        if(pResource)
+        {
+            DeviceData* pData = (DeviceData*)mpPrivateData;
+            pData->deferredReleases.push({ pData->pFrameFence->getCpuValue(), pResource });
+        }
     }
 
     void Device::executeDeferredReleases()

@@ -38,9 +38,6 @@ namespace Falcor
     static const uint32_t kViewportCount = D3D12_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE;
 #endif
 
-
-    std::vector<PipelineStateObject::SharedPtr> gStates;
-
     static PipelineStateObject::PrimitiveType topology2Type(Vao::Topology t)
     {
         switch (t)
@@ -101,9 +98,8 @@ namespace Falcor
         mDesc.setRootSignature(mpRootSignature);
 
         // FIXME D3D12 Need real cache
-        auto p = PipelineStateObject::create(mDesc);
-        gStates.push_back(p);
-        return p;
+        mpCurrentPso = PipelineStateObject::create(mDesc);
+        return mpCurrentPso;
     }
 
     PipelineState& PipelineState::setFbo(const Fbo::SharedConstPtr& pFbo, bool setVp0Sc0)

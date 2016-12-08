@@ -26,44 +26,41 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 #pragma once
-#include "Framework.h"
-#include "PipelineStateObject.h"
-#include "BlendState.h"
-#include "Vao.h"
-#include "Device.h"
+#include "API/ProgramVersion.h"
+#include "API/LowLevel/RootSignature.h"
 
 namespace Falcor
 {
-    BlendState::SharedPtr PipelineStateObject::spDefaultBlendState;
-    RasterizerState::SharedPtr PipelineStateObject::spDefaultRasterizerState;
-    DepthStencilState::SharedPtr PipelineStateObject::spDefaultDepthStencilState;
+    class RenderContext;
 
-    PipelineStateObject::~PipelineStateObject()
+    class ComputeStateObject
     {
-        gpDevice->releaseResource(mApiHandle);
-    }
+    public:
+        using SharedPtr = std::shared_ptr<ComputeStateObject>;
+        using SharedConstPtr = std::shared_ptr<const ComputeStateObject>;
+        using ApiHandle = ComputeStateHandle;
 
-    PipelineStateObject::SharedPtr PipelineStateObject::create(const Desc& desc)
-    {
-        if (spDefaultBlendState == nullptr)
+        ~ComputeStateObject();
+
+        class Desc
         {
-            // Create default objects
-            spDefaultBlendState = BlendState::create(BlendState::Desc());
-            spDefaultDepthStencilState = DepthStencilState::create(DepthStencilState::Desc());
-            spDefaultRasterizerState = RasterizerState::create(RasterizerState::Desc());
-        }
+        public:
+            Desc& setRootSignature(RootSignature::SharedPtr pSignature) { mpRootSignature = pSignature; return *this; }
+            Desc& setProgramVersion(ProgramVersion::SharedConstPtr pProgram) { mpProgram = pProgram; return *this; }
+            ProgramVersion::SharedConstPtr getProgramVersion() const { return mpProgram; }
+        private:
+            friend class ComputeStateObject;
+            ProgramVersion::SharedConstPtr mpProgram;
+            RootSignature::SharedPtr mpRootSignature;
+        };
 
-        SharedPtr pState = SharedPtr(new PipelineStateObject(desc));
-
-        // Initialize default objects
-        if (!pState->mDesc.mpBlendState)            pState->mDesc.mpBlendState              = spDefaultBlendState;
-        if (!pState->mDesc.mpRasterizerState)       pState->mDesc.mpRasterizerState         = spDefaultRasterizerState;
-        if (!pState->mDesc.mpDepthStencilState)     pState->mDesc.mpDepthStencilState       = spDefaultDepthStencilState;
-
-        if (pState->apiInit() == false)
-        {
-            pState = nullptr;
-        }
-        return pState;
-    }
+        static SharedPtr create(const Desc& desc);
+        ApiHandle getApiHandle() { return mApiHandle; }
+        const Desc& getDesc() const { return mDesc; }
+    private:
+        ComputeStateObject(const Desc& desc) : mDesc(desc) {}
+        Desc mDesc;
+        ApiHandle mApiHandle;
+        bool apiInit();
+    };
 }

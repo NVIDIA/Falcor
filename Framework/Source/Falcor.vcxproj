@@ -33,6 +33,7 @@
     <ClCompile Include="..\Externals\GLM\glm\detail\dummy.cpp" />
     <ClCompile Include="..\Externals\GLM\glm\detail\glm.cpp" />
     <ClCompile Include="API\BlendState.cpp" />
+    <ClCompile Include="API\ComputeStateObject.cpp" />
     <ClCompile Include="API\D3D\D3D11\D3D11BlendState.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseD3D12|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugGL|x64'">true</ExcludedFromBuild>
@@ -141,6 +142,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseGL|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugD3D11|x64'">true</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="API\D3D\D3D12\D3D12ComputeStateObject.cpp" />
     <ClCompile Include="API\D3D\D3D12\D3D12DepthStencilState.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseD3D11|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugGL|x64'">true</ExcludedFromBuild>
@@ -404,6 +406,7 @@
     <ClCompile Include="Graphics\Camera\Camera.cpp" />
     <ClCompile Include="Graphics\Camera\CameraController.cpp" />
     <ClCompile Include="Graphics\ComputeProgram.cpp" />
+    <ClCompile Include="Graphics\ComputeState.cpp" />
     <ClCompile Include="Graphics\FboHelper.cpp" />
     <ClCompile Include="Graphics\FullScreenPass.cpp" />
     <ClCompile Include="Graphics\GraphicsProgram.cpp" />
@@ -683,6 +686,7 @@
     <ClInclude Include="..\Externals\GLM\glm\gtx\wrap.hpp" />
     <ClInclude Include="API\BlendState.h" />
     <ClInclude Include="API\Buffer.h" />
+    <ClInclude Include="API\ComputeStateObject.h" />
     <ClInclude Include="API\D3D\D3D11\D3D11ShaderReflection.h">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseD3D12|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugGL|x64'">true</ExcludedFromBuild>
@@ -781,6 +785,7 @@
     <ClInclude Include="Graphics\Camera\Camera.h" />
     <ClInclude Include="Graphics\Camera\CameraController.h" />
     <ClInclude Include="Graphics\ComputeProgram.h" />
+    <ClInclude Include="Graphics\ComputeState.h" />
     <ClInclude Include="Graphics\FboHelper.h" />
     <ClInclude Include="Graphics\FullScreenPass.h" />
     <ClInclude Include="Graphics\GraphicsProgram.h" />

@@ -43,7 +43,9 @@ namespace Falcor
     public:
         using SharedPtr = std::shared_ptr<PipelineStateObject>;
         using SharedConstPtr = std::shared_ptr<const PipelineStateObject>;
-        using ApiHandle = RenderStateHandle;
+        using ApiHandle = PsoHandle;
+
+        ~PipelineStateObject();
 
         static const uint32_t kSampleMaskAll = -1;
 

@@ -27,43 +27,22 @@
 ***************************************************************************/
 #pragma once
 #include "Framework.h"
-#include "PipelineStateObject.h"
-#include "BlendState.h"
-#include "Vao.h"
-#include "Device.h"
+#include "API/ComputeStateObject.h"
+#include "API/Device.h"
 
 namespace Falcor
 {
-    BlendState::SharedPtr PipelineStateObject::spDefaultBlendState;
-    RasterizerState::SharedPtr PipelineStateObject::spDefaultRasterizerState;
-    DepthStencilState::SharedPtr PipelineStateObject::spDefaultDepthStencilState;
-
-    PipelineStateObject::~PipelineStateObject()
+    bool ComputeStateObject::apiInit()
     {
-        gpDevice->releaseResource(mApiHandle);
-    }
-
-    PipelineStateObject::SharedPtr PipelineStateObject::create(const Desc& desc)
-    {
-        if (spDefaultBlendState == nullptr)
+        D3D12_COMPUTE_PIPELINE_STATE_DESC desc = {};
+        if (mDesc.mpProgram)
         {
-            // Create default objects
-            spDefaultBlendState = BlendState::create(BlendState::Desc());
-            spDefaultDepthStencilState = DepthStencilState::create(DepthStencilState::Desc());
-            spDefaultRasterizerState = RasterizerState::create(RasterizerState::Desc());
+            desc.CS = mDesc.mpProgram->getShader(ShaderType::Compute)->getApiHandle();
         }
 
-        SharedPtr pState = SharedPtr(new PipelineStateObject(desc));
+        desc.pRootSignature = mDesc.mpRootSignature ? mDesc.mpRootSignature->getApiHandle() : nullptr;
 
-        // Initialize default objects
-        if (!pState->mDesc.mpBlendState)            pState->mDesc.mpBlendState              = spDefaultBlendState;
-        if (!pState->mDesc.mpRasterizerState)       pState->mDesc.mpRasterizerState         = spDefaultRasterizerState;
-        if (!pState->mDesc.mpDepthStencilState)     pState->mDesc.mpDepthStencilState       = spDefaultDepthStencilState;
-
-        if (pState->apiInit() == false)
-        {
-            pState = nullptr;
-        }
-        return pState;
+        d3d_call(gpDevice->getApiHandle()->CreateComputePipelineState(&desc, IID_PPV_ARGS(&mApiHandle)));
+        return true;
     }
 }

@@ -27,43 +27,27 @@
 ***************************************************************************/
 #pragma once
 #include "Framework.h"
-#include "PipelineStateObject.h"
-#include "BlendState.h"
-#include "Vao.h"
-#include "Device.h"
+#include "ComputeState.h"
 
 namespace Falcor
 {
-    BlendState::SharedPtr PipelineStateObject::spDefaultBlendState;
-    RasterizerState::SharedPtr PipelineStateObject::spDefaultRasterizerState;
-    DepthStencilState::SharedPtr PipelineStateObject::spDefaultDepthStencilState;
-
-    PipelineStateObject::~PipelineStateObject()
+    ComputeStateObject::SharedPtr ComputeState::getCSO()
     {
-        gpDevice->releaseResource(mApiHandle);
-    }
-
-    PipelineStateObject::SharedPtr PipelineStateObject::create(const Desc& desc)
-    {
-        if (spDefaultBlendState == nullptr)
+        const ProgramVersion* pProgVersion = mpProgram ? mpProgram->getActiveVersion().get() : nullptr;
+        if (pProgVersion != mCachedData.pProgramVersion)
         {
-            // Create default objects
-            spDefaultBlendState = BlendState::create(BlendState::Desc());
-            spDefaultDepthStencilState = DepthStencilState::create(DepthStencilState::Desc());
-            spDefaultRasterizerState = RasterizerState::create(RasterizerState::Desc());
+            mCachedData.pProgramVersion = pProgVersion;
+            if (mCachedData.isUserRootSignature == false)
+            {
+                mpRootSignature = RootSignature::create(pProgVersion->getReflector().get());
+            }
         }
 
-        SharedPtr pState = SharedPtr(new PipelineStateObject(desc));
+        mDesc.setProgramVersion(mpProgram ? mpProgram->getActiveVersion() : nullptr);
+        mDesc.setRootSignature(mpRootSignature);
 
-        // Initialize default objects
-        if (!pState->mDesc.mpBlendState)            pState->mDesc.mpBlendState              = spDefaultBlendState;
-        if (!pState->mDesc.mpRasterizerState)       pState->mDesc.mpRasterizerState         = spDefaultRasterizerState;
-        if (!pState->mDesc.mpDepthStencilState)     pState->mDesc.mpDepthStencilState       = spDefaultDepthStencilState;
-
-        if (pState->apiInit() == false)
-        {
-            pState = nullptr;
-        }
-        return pState;
+        // FIXME D3D12 Need real cache
+        mpCurrentCso = ComputeStateObject::create(mDesc);
+        return mpCurrentCso;
     }
 }

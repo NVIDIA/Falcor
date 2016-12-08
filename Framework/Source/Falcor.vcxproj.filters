@@ -440,6 +440,15 @@
     <ClCompile Include="Graphics\ComputeProgram.cpp">
       <Filter>Graphics</Filter>
     </ClCompile>
+    <ClCompile Include="API\ComputeStateObject.cpp">
+      <Filter>API</Filter>
+    </ClCompile>
+    <ClCompile Include="API\D3D\D3D12\D3D12ComputeStateObject.cpp">
+      <Filter>API\D3D\D3D12</Filter>
+    </ClCompile>
+    <ClCompile Include="Graphics\ComputeState.cpp">
+      <Filter>Graphics</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Graphics\Model\Animation.h">
@@ -1491,6 +1500,12 @@
       <Filter>Graphics</Filter>
     </ClInclude>
     <ClInclude Include="Graphics\ComputeProgram.h">
+      <Filter>Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="API\ComputeStateObject.h">
+      <Filter>API</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\ComputeState.h">
       <Filter>Graphics</Filter>
     </ClInclude>
   </ItemGroup>

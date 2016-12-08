@@ -232,5 +232,6 @@ namespace Falcor
             bool isUserRootSignature = false;
         };
         CachedData mCachedData;
+        PipelineStateObject::SharedPtr mpCurrentPso;
     };
 }
