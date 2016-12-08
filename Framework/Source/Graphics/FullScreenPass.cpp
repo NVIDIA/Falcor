@@ -137,7 +137,7 @@ namespace Falcor
         }
 
         const std::string vs("Framework\\FullScreenPass.vs");
-        mpProgram = Program::createFromFile(vs, fragmentShaderFile, gs, "", "", defs);
+        mpProgram = GraphicsProgram::createFromFile(vs, fragmentShaderFile, gs, "", "", defs);
         mpPipelineState->setProgram(mpProgram);
 
         if (FullScreenPass::spVertexBuffer == nullptr)

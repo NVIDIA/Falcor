@@ -137,7 +137,7 @@ namespace Falcor
         }
         mCsmData.cascadeCount = cascadeCount;
         createShadowPassResources(mapWidth, mapHeight);
-        mDepthPass.pProg = Program::createFromFile(kDepthPassVSFile, "");
+        mDepthPass.pProg = GraphicsProgram::createFromFile(kDepthPassVSFile, "");
         mDepthPass.pProg->addDefine("_APPLY_PROJECTION");
 
         mpLightCamera = Camera::create();
@@ -243,7 +243,7 @@ namespace Falcor
         mShadowPass.fboAspectRatio = (float)mapWidth / (float)mapHeight;
 
         // Create the program
-        mShadowPass.pProg = Program::createFromFile(kDepthPassVSFile, kDepthPassFsFile, kDepthPassGsFile, "", "", progDef);
+        mShadowPass.pProg = GraphicsProgram::createFromFile(kDepthPassVSFile, kDepthPassFsFile, kDepthPassGsFile, "", "", progDef);
         mShadowPass.pLightCB = ConstantBuffer::create(mShadowPass.pProg, "PerLightCB");
         mShadowPass.pAlphaCB = ConstantBuffer::create(mShadowPass.pProg, "AlphaMapCB");
 

@@ -60,7 +60,7 @@ private:
     Sampler::SharedPtr mpPointSampler = nullptr;
     Sampler::SharedPtr mpLinearSampler = nullptr;
 
-    Program::SharedPtr mpProgram = nullptr;
+    GraphicsProgram::SharedPtr mpProgram = nullptr;
     ProgramVars::SharedPtr mpProgramVars = nullptr;
     PipelineState::SharedPtr mpPipelineState = nullptr;
 

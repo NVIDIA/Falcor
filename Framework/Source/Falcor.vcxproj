@@ -405,6 +405,7 @@
     <ClCompile Include="Graphics\Camera\CameraController.cpp" />
     <ClCompile Include="Graphics\FboHelper.cpp" />
     <ClCompile Include="Graphics\FullScreenPass.cpp" />
+    <ClCompile Include="Graphics\GraphicsProgram.cpp" />
     <ClCompile Include="Graphics\Light.cpp" />
     <ClCompile Include="Graphics\Material\BasicMaterial.cpp" />
     <ClCompile Include="Graphics\Material\Material.cpp" />
@@ -780,6 +781,7 @@
     <ClInclude Include="Graphics\Camera\CameraController.h" />
     <ClInclude Include="Graphics\FboHelper.h" />
     <ClInclude Include="Graphics\FullScreenPass.h" />
+    <ClInclude Include="Graphics\GraphicsProgram.h" />
     <ClInclude Include="Graphics\Light.h" />
     <ClInclude Include="Graphics\Material\BasicMaterial.h" />
     <ClInclude Include="Graphics\Material\Material.h" />

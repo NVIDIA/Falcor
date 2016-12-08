@@ -72,7 +72,7 @@ namespace Falcor
 
         // Create the RenderState
         mpPipelineState = PipelineState::create();
-        Program::SharedPtr pProgram = Program::createFromFile(kVsFile, kFsFile);
+        GraphicsProgram::SharedPtr pProgram = GraphicsProgram::createFromFile(kVsFile, kFsFile);
         mpPipelineState->setProgram(pProgram);
         mpPipelineState->setVao(createVAO(mpVertexBuffer));
 

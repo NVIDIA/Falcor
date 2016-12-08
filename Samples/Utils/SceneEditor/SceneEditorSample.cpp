@@ -60,7 +60,7 @@ void SceneEditorSample::initNewScene()
         mpRenderer = SceneRenderer::create(mpScene);
         mpEditor = SceneEditor::create(mpScene, Model::GenerateTangentSpace);
 
-        mpProgram = Program::createFromFile("", "SceneEditorSample.fs");
+        mpProgram = GraphicsProgram::createFromFile("", "SceneEditorSample.fs");
         std::string lights;
         getSceneLightString(mpScene.get(), lights);
         mpProgram->addDefine("_LIGHT_SOURCES", lights);

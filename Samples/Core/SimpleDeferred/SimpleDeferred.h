@@ -53,7 +53,7 @@ private:
     FirstPersonCameraController mFirstPersonCameraController;
     Sampler::SharedPtr mpLinearSampler;
 
-    Program::SharedPtr mpDeferredPassProgram;
+    GraphicsProgram::SharedPtr mpDeferredPassProgram;
     ProgramVars::SharedPtr mpDeferredVars;
 
     ProgramVars::SharedPtr mpLightingVars;

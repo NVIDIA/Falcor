@@ -47,7 +47,7 @@ void ShaderBuffersSample::onLoad()
     mpCamera = Camera::create();
 
     // create the program
-    mpProgram = Program::createFromFile("ShaderBuffers.vs", "ShaderBuffers.fs");
+    mpProgram = GraphicsProgram::createFromFile("ShaderBuffers.vs", "ShaderBuffers.fs");
 
     // Load the model
     mpModel = Model::createFromFile("teapot.obj", 0);

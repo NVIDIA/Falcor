@@ -26,29 +26,32 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 #pragma once
-#include "Falcor.h"
+#include "Framework.h"
+#include "GraphicsProgram.h"
 
-using namespace Falcor;
-
-class SceneEditorSample : public Sample
+namespace Falcor
 {
-public:
-    void onLoad() override;
-    void onFrameRender() override;
-    void onShutdown() override;
-    bool onKeyEvent(const KeyboardEvent& keyEvent) override;
-    bool onMouseEvent(const MouseEvent& mouseEvent) override;
-    void onGuiRender() override;
+    GraphicsProgram::SharedPtr GraphicsProgram::createFromFile(const std::string& vertexFile, const std::string& fragmentFile, const Program::DefineList& programDefines)
+    {
+        return createFromFile(vertexFile, fragmentFile, "", "", "", programDefines);
+    }
 
-private:    
-    void loadScene();
-    void createScene();
-    void reset();
-    void initNewScene();
+    GraphicsProgram::SharedPtr GraphicsProgram::createFromFile(const std::string& vertexFile, const std::string& fragmentFile, const std::string& geometryFile, const std::string& hullFile, const std::string& domainFile, const DefineList& programDefines)
+    {
+        SharedPtr pProg = SharedPtr(new GraphicsProgram);
+        pProg->init(vertexFile, fragmentFile, geometryFile, hullFile, domainFile, programDefines, true);
+        return pProg;
+    }
 
-    Scene::SharedPtr mpScene = nullptr;
-    GraphicsProgram::SharedPtr mpProgram = nullptr;
-    SceneRenderer::UniquePtr mpRenderer = nullptr;
-    SceneEditor::UniquePtr mpEditor = nullptr;
-    ProgramVars::SharedPtr mpVars = nullptr;
-};
+    GraphicsProgram::SharedPtr GraphicsProgram::createFromString(const std::string& vertexShader, const std::string& fragmentShader, const DefineList& programDefines)
+    {
+        return createFromString(vertexShader, fragmentShader, "", "", "", programDefines);
+    }
+
+    GraphicsProgram::SharedPtr GraphicsProgram::createFromString(const std::string& vertexShader, const std::string& fragmentShader, const std::string& geometryShader, const std::string& hullShader, const std::string& domainShader, const DefineList& programDefines)
+    {
+        SharedPtr pProg = SharedPtr(new GraphicsProgram);
+        pProg->init(vertexShader, fragmentShader, geometryShader, hullShader, domainShader, programDefines, false);
+        return pProg;
+    }
+}

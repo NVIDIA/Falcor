@@ -173,7 +173,7 @@ void SimpleDeferred::onLoad()
 {
     mpCamera = Camera::create();
 
-	mpDeferredPassProgram = Program::createFromFile("", "DeferredPass.fs");
+	mpDeferredPassProgram = GraphicsProgram::createFromFile("", "DeferredPass.fs");
 
     mpLightingPass = FullScreenPass::create("LightingPass.fs");
 

@@ -79,6 +79,7 @@
 #include "Graphics/TextureHelper.h"
 #include "Graphics/Light.h"
 #include "Graphics/Program.h"
+#include "Graphics/GraphicsProgram.h"
 #include "Graphics/FboHelper.h"
 
 // Material

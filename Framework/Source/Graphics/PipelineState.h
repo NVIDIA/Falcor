@@ -27,7 +27,7 @@
 ***************************************************************************/
 #pragma once
 #include "API/PipelineStateObject.h"
-#include "Graphics/Program.h"
+#include "Graphics/GraphicsProgram.h"
 #include "API/VAO.h"
 #include "API/FBO.h"
 #include "API/RasterizerState.h"
@@ -161,11 +161,11 @@ namespace Falcor
 
         /** Bind a program to the pipeline
         */
-        PipelineState& setProgram(const Program::SharedPtr& pProgram) { mpProgram = pProgram; return *this; }
+        PipelineState& setProgram(const GraphicsProgram::SharedPtr& pProgram) { mpProgram = pProgram; return *this; }
 
         /** Get the currently bound program
         */
-        Program::SharedPtr getProgram() const { return mpProgram; }
+        GraphicsProgram::SharedPtr getProgram() const { return mpProgram; }
 
         /** Set a blend-state
         */
@@ -215,7 +215,7 @@ namespace Falcor
         PipelineState();
         Vao::SharedConstPtr mpVao;
         Fbo::SharedConstPtr mpFbo;
-        Program::SharedPtr mpProgram;
+        GraphicsProgram::SharedPtr mpProgram;
         RootSignature::SharedPtr mpRootSignature;
         PipelineStateObject::Desc mDesc;
         uint8_t mStencilRef = 0;

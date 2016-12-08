@@ -43,7 +43,7 @@ public:
 
 private:
 
-    Program::SharedPtr mpProgram;
+    GraphicsProgram::SharedPtr mpProgram;
     ProgramVars::SharedPtr mpProgramVars;
     Model::SharedPtr mpModel;
     Vao::SharedConstPtr mpVao;

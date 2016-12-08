@@ -258,7 +258,7 @@ namespace Falcor
         Vao::SharedPtr mpVao;
         VertexLayout::SharedPtr mpLayout;
         ProgramVars::SharedPtr mpProgramVars;
-        Program::SharedPtr mpProgram;
+        GraphicsProgram::SharedPtr mpProgram;
         PipelineState::SharedPtr mpPipelineState;
         uint32_t mGroupStackSize = 0;
         float mFontScale = 1;
