@@ -449,6 +449,16 @@ namespace Falcor
         pApiData->pCopyContext->updateTextureSubresources(pTexture, firstSubresource, subresourceCount, pData);
     }
 
+    void RenderContext::copyResource(const Resource* pDst, const Resource* pSrc)
+    {
+        // FIXEM: I'd like that to be part of the CopyContext. The problem is that the CopyContext is not allowed to copy into the default FBO.
+        // I can either leave it here or restrict the usage for the default FBO
+        RenderContextData* pApiData = (RenderContextData*)mpApiData;
+        resourceBarrier(pDst, Resource::State::CopyDest);
+        resourceBarrier(pSrc, Resource::State::CopySource);
+        pApiData->pList->CopyResource(pDst->getApiHandle(), pSrc->getApiHandle());
+    }
+
     GpuFence::SharedPtr RenderContext::getFence() const
     {
         RenderContextData* pApiData = (RenderContextData*)mpApiData;

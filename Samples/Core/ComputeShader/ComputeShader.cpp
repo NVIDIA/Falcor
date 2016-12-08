@@ -54,11 +54,11 @@ void ComputeShader::loadImage()
     std::string filename;
     if(openFileDialog("Supported Formats\0*.jpg;*.bmp;*.dds;*.png;*.tiff;*.tif;*.tga\0\0", filename))
     {
-        auto fboFormat = mpDefaultFBO->getColorTexture(0)->getFormat();
-        mpImage = createTextureFromFile(filename, false, isSrgbFormat(fboFormat));
+        mpImage = createTextureFromFile(filename, false, false);
  
         resizeSwapChain(mpImage->getWidth(), mpImage->getHeight());
-        mpTmpTexture = Texture::create2D(mpImage->getWidth(), mpImage->getHeight(), ResourceFormat::RGBA8Unorm, 1, 1, nullptr, Resource::BindFlags::UnorderedAccess | Resource::BindFlags::RenderTarget);
+        auto fboFormat = mpDefaultFBO->getColorTexture(0)->getFormat();
+        mpTmpTexture = Texture::create2D(mpImage->getWidth(), mpImage->getHeight(), srgbToLinearFormat(fboFormat), 1, 1, nullptr, Resource::BindFlags::UnorderedAccess | Resource::BindFlags::RenderTarget);
         mpProgVars->setTexture("gInput", mpImage);
     }
 }
@@ -88,10 +88,7 @@ void ComputeShader::onFrameRender()
         mpRenderContext->dispatch(w, h, 1);
     }
 
-    // FIXME: should be part of the render-context
-    mpBlitVars->setTexture("gTexture", mpTmpTexture);
-    mpRenderContext->setProgramVariables(mpBlitVars);
-    mpBlitPass->execute(mpRenderContext.get());
+    mpRenderContext->copyResource(mpDefaultFBO->getColorTexture(0).get(), mpTmpTexture.get());
 }
 
 int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ LPSTR lpCmdLine, _In_ int nShowCmd)

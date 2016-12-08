@@ -196,6 +196,7 @@ namespace Falcor
         void updateTexture(const Texture* pTexture, const void* pData);
         void updateTextureSubresource(const Texture* pTexture, uint32_t subresourceIndex, const void* pData);
         void updateTextureSubresources(const Texture* pTexture, uint32_t firstSubresource, uint32_t subresourceCount, const void* pData);
+        void copyResource(const Resource* pDst, const Resource* pSrc);
 
         GpuFence::SharedPtr getFence() const;
     private:
