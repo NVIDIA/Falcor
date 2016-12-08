@@ -43,7 +43,7 @@ namespace Falcor
         void setGpuCopyDirty() const { mGpuDirty = true; }
         ResourceFormat getResourceFormat() const { return mFormat; }
     protected:
-        TypedBufferBase(uint32_t elementCount, ResourceFormat format);
+        TypedBufferBase(uint32_t elementCount, ResourceFormat format, Resource::BindFlags bindFlags);
         void readFromGpu();
         uint32_t mElementCount = 0;
         std::vector<uint8_t> mData;
@@ -79,9 +79,9 @@ namespace Falcor
         };
 
         using SharedConstPtr = std::shared_ptr<const TypedBuffer>;
-        static SharedPtr create(uint32_t elementCount)
+        static SharedPtr create(uint32_t elementCount, Resource::BindFlags bindFlags = Resource::BindFlags::ShaderResource | Resource::BindFlags::UnorderedAccess)
         {
-            return SharedPtr(new TypedBuffer(elementCount));
+            return SharedPtr(new TypedBuffer(elementCount, bindFlags));
         }
 
         void setElement(uint32_t index, const BufferType& value)
@@ -123,6 +123,6 @@ namespace Falcor
         }
     private:
         friend SharedPtr;
-        TypedBuffer(uint32_t elementCount) : TypedBufferBase(elementCount, type2format()) {}
+        TypedBuffer(uint32_t elementCount, Resource::BindFlags bindFlags) : TypedBufferBase(elementCount, type2format(), bindFlags) {}
     };
 }

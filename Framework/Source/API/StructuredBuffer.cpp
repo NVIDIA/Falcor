@@ -38,24 +38,24 @@ namespace Falcor
 
 #define verify_element_index() if(elementIndex >= mElementCount) {logWarning(std::string(__FUNCTION__) + ": elementIndex is out-of-bound. Ignoring call."); return;}
 
-    StructuredBuffer::StructuredBuffer(const ProgramReflection::BufferReflection::SharedConstPtr& pReflector, size_t elementCount) :
-        VariablesBuffer(pReflector, pReflector->getRequiredSize(), elementCount, Buffer::BindFlags::ShaderResource, Buffer::CpuAccess::None)
+    StructuredBuffer::StructuredBuffer(const ProgramReflection::BufferReflection::SharedConstPtr& pReflector, size_t elementCount, Resource::BindFlags bindFlags) :
+        VariablesBuffer(pReflector, pReflector->getRequiredSize(), elementCount, bindFlags, Buffer::CpuAccess::None)
         {}
 
-    StructuredBuffer::SharedPtr StructuredBuffer::create(const ProgramReflection::BufferReflection::SharedConstPtr& pReflection, size_t elementCount)
+    StructuredBuffer::SharedPtr StructuredBuffer::create(const ProgramReflection::BufferReflection::SharedConstPtr& pReflection, size_t elementCount, Resource::BindFlags bindFlags)
     {
         assert(elementCount > 0);
-        auto pBuffer = SharedPtr(new StructuredBuffer(pReflection, elementCount));
+        auto pBuffer = SharedPtr(new StructuredBuffer(pReflection, elementCount, bindFlags));
         return pBuffer;
     }
 
-    StructuredBuffer::SharedPtr StructuredBuffer::create(Program::SharedPtr& pProgram, const std::string& name, size_t elementCount)
+    StructuredBuffer::SharedPtr StructuredBuffer::create(Program::SharedPtr& pProgram, const std::string& name, size_t elementCount, Resource::BindFlags bindFlags)
     {
         auto& pProgReflector = pProgram->getActiveVersion()->getReflector();
         auto& pBufferReflector = pProgReflector->getBufferDesc(name, ProgramReflection::BufferReflection::Type::Structured);
         if (pBufferReflector)
         {
-            return create(pBufferReflector, elementCount);
+            return create(pBufferReflector, elementCount, bindFlags);
         }
         return nullptr;
     }

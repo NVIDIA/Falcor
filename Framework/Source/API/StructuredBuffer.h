@@ -81,17 +81,19 @@ namespace Falcor
             Even though the buffer is created with a specific reflection object, it can be used with other programs as long as the buffer declarations are the same across programs.
             \param[in] pReflector A buffer-reflection object describing the buffer layout
             \param[in] elementCount - the number of struct elements in the buffer
+            \param[in] bindFlags The bind flags for the resource
             \return A new buffer object if the operation was successful, otherwise nullptr
         */
-        static SharedPtr create(const ProgramReflection::BufferReflection::SharedConstPtr& pReflector, size_t elementCount = 1);
+        static SharedPtr create(const ProgramReflection::BufferReflection::SharedConstPtr& pReflector, size_t elementCount = 1, Resource::BindFlags bindFlags = Resource::BindFlags::ShaderResource | Resource::BindFlags::UnorderedAccess);
         
         /** create a new shader storage buffer.\n
         This function is purely syntactic sugar. It will fetch the requested buffer reflector from the active program version and create the buffer from it
         \param[in] pProgram A program object which defines the buffer
-        \param[in] overrideSize - if 0, will use the buffer size as declared in the shader. Otherwise, will use this value as the buffer size. Useful when using buffers with dynamic arrays.
+        \param[in] elementCount - the number of struct elements in the buffer
+        \param[in] bindFlags The bind flags for the resource
         \return A new buffer object if the operation was successful, otherwise nullptr
         */
-        static SharedPtr create(Program::SharedPtr& pProgram, const std::string& name, size_t elementCount = 1);
+        static SharedPtr create(Program::SharedPtr& pProgram, const std::string& name, size_t elementCount = 1, Resource::BindFlags bindFlags = Resource::BindFlags::ShaderResource | Resource::BindFlags::UnorderedAccess);
 
         ~StructuredBuffer();
 
@@ -149,7 +151,7 @@ namespace Falcor
         void setGpuCopyDirty() const { mGpuCopyDirty = true; }
                 
     private:
-        StructuredBuffer(const ProgramReflection::BufferReflection::SharedConstPtr& pReflector, size_t elementCount);
+        StructuredBuffer(const ProgramReflection::BufferReflection::SharedConstPtr& pReflector, size_t elementCount, Resource::BindFlags bindFlags);
         mutable bool mGpuCopyDirty = false;
     };
 }

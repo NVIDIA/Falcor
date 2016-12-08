@@ -31,8 +31,8 @@
 
 namespace Falcor
 {
-    TypedBufferBase::TypedBufferBase(uint32_t elementCount, ResourceFormat format) : 
-        Buffer(elementCount * getFormatBytesPerBlock(format), Resource::BindFlags::ShaderResource | Resource::BindFlags::UnorderedAccess, Buffer::CpuAccess::None), mData(mSize, 0), 
+    TypedBufferBase::TypedBufferBase(uint32_t elementCount, ResourceFormat format, Resource::BindFlags bindFlags) :
+        Buffer(elementCount * getFormatBytesPerBlock(format), bindFlags, Buffer::CpuAccess::None), mData(mSize, 0),
         mElementCount(elementCount), 
         mFormat(format)
     {
