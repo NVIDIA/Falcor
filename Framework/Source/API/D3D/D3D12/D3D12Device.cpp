@@ -203,16 +203,20 @@ namespace Falcor
                 return false;
             }
 
-            // Create a depth texture
-            auto pDepth = Texture::create2D(width, height, depthFormat, 1, 1, nullptr, Texture::BindFlags::DepthStencil);
-
             // Create the FBO if it's required
-            if(pData->frameData[i].pFbo == nullptr)
+            if (pData->frameData[i].pFbo == nullptr)
             {
                 pData->frameData[i].pFbo = Fbo::create();
             }
             pData->frameData[i].pFbo->attachColorTarget(pColorTex, 0);
-            pData->frameData[i].pFbo->attachDepthStencilTarget(pDepth);
+
+            // Create a depth texture
+            if(depthFormat != ResourceFormat::Unknown)
+            {
+                auto pDepth = Texture::create2D(width, height, depthFormat, 1, 1, nullptr, Texture::BindFlags::DepthStencil);
+                pData->frameData[i].pFbo->attachDepthStencilTarget(pDepth);
+            }
+
             pData->currentBackBufferIndex = pData->pSwapChain->GetCurrentBackBufferIndex();
 		}
 

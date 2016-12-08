@@ -172,13 +172,21 @@ namespace Falcor
 
             // create the program
             std::string log;
-            ProgramVersion::SharedConstPtr pProgram = ProgramVersion::create(pShaders[(uint32_t)ShaderType::Vertex],
-                pShaders[(uint32_t)ShaderType::Pixel],
-                pShaders[(uint32_t)ShaderType::Geometry],
-                pShaders[(uint32_t)ShaderType::Hull],
-                pShaders[(uint32_t)ShaderType::Domain],
-                log, 
-                getProgramDescString());
+            ProgramVersion::SharedConstPtr pProgram;
+            if (pShaders[(uint32_t)ShaderType::Compute])
+            {
+                pProgram = ProgramVersion::create(pShaders[(uint32_t)ShaderType::Compute], log, getProgramDescString());
+            }
+            else
+            {
+                pProgram = ProgramVersion::create(pShaders[(uint32_t)ShaderType::Vertex],
+                    pShaders[(uint32_t)ShaderType::Pixel],
+                    pShaders[(uint32_t)ShaderType::Geometry],
+                    pShaders[(uint32_t)ShaderType::Hull],
+                    pShaders[(uint32_t)ShaderType::Domain],
+                    log,
+                    getProgramDescString());
+            }
 
             if(pProgram == nullptr)
             {

@@ -31,13 +31,14 @@
 
 namespace Falcor
 {
-    ProgramVersion::ProgramVersion(const Shader::SharedPtr& pVS, const Shader::SharedPtr& pFS, const Shader::SharedPtr& pGS, const Shader::SharedPtr& pHS, const Shader::SharedPtr& pDS, const std::string& name) : mName(name)
+    ProgramVersion::ProgramVersion(const Shader::SharedPtr& pVS, const Shader::SharedPtr& pFS, const Shader::SharedPtr& pGS, const Shader::SharedPtr& pHS, const Shader::SharedPtr& pDS, const Shader::SharedPtr& pCS, const std::string& name) : mName(name)
     {
         mpShaders[(uint32_t)ShaderType::Vertex] = pVS;
         mpShaders[(uint32_t)ShaderType::Pixel] = pFS;
         mpShaders[(uint32_t)ShaderType::Geometry] = pGS;
         mpShaders[(uint32_t)ShaderType::Domain] = pDS;
         mpShaders[(uint32_t)ShaderType::Hull] = pHS;
+        mpShaders[(uint32_t)ShaderType::Compute] = pCS;
     }
 
     ProgramVersion::SharedConstPtr ProgramVersion::create(const Shader::SharedPtr& pVS,
@@ -54,9 +55,31 @@ namespace Falcor
             log = "Program " + name + " doesn't contain a vertex-shader. This is illegal.";
             return nullptr;
         }
-        SharedPtr pProgram = SharedPtr(new ProgramVersion(pVS, pFS, pGS, pHS, pDS, name));
+        SharedPtr pProgram = SharedPtr(new ProgramVersion(pVS, pFS, pGS, pHS, pDS, nullptr, name));
 
         if(pProgram->apiInit(log, name) == false)
+        {
+            return nullptr;
+        }
+        pProgram->mpReflector = ProgramReflection::create(pProgram.get(), log);
+        if (pProgram->mpReflector == nullptr)
+        {
+            return nullptr;
+        }
+        return pProgram;
+    }
+
+    ProgramVersion::SharedConstPtr ProgramVersion::create(const Shader::SharedPtr& pCS, std::string& log, const std::string& name)
+    {
+        // We must have at least a CS
+        if (pCS == nullptr)
+        {
+            log = "Program " + name + " doesn't contain a compute-shader. This is illegal.";
+            return nullptr;
+        }
+        SharedPtr pProgram = SharedPtr(new ProgramVersion(nullptr, nullptr, nullptr, nullptr, nullptr, pCS, name));
+
+        if (pProgram->apiInit(log, name) == false)
         {
             return nullptr;
         }

@@ -25,52 +25,27 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#include "Framework.h"
-#include "RenderContext.h"
-#include "RasterizerState.h"
-#include "DepthStencilState.h"
-#include "BlendState.h"
-#include "FBO.h"
+#pragma once
+#include "Falcor.h"
 
-namespace Falcor
+using namespace Falcor;
+
+class ComputeShader : public Sample
 {
-    RenderContext::RenderContext()
-    {
-    }
+public:
+    void onLoad() override;
+    void onFrameRender() override;
+    void onGuiRender() override;
 
-    void RenderContext::pushPipelineState(const PipelineState::SharedPtr& pState)
-    {
-        mPipelineStateStack.push(mpPipelineState);
-        setPipelineState(pState);
-    }
+private:
+    ComputeProgram::SharedPtr mpProg;
+    ComputeState::SharedPtr mpState;
+    bool mbPixelate = false;
+    ProgramVars::SharedPtr mpProgVars;
+    ProgramVars::SharedPtr mpBlitVars;
+    Texture::SharedPtr mpImage;
 
-    void RenderContext::popPipelineState()
-    {
-        if (mPipelineStateStack.empty())
-        {
-            logWarning("Can't pop from the PipelineState stack. The stack is empty");
-            return;
-        }
-
-        setPipelineState(mPipelineStateStack.top());
-        mPipelineStateStack.pop();
-    }
-
-    void RenderContext::pushProgramVars(const ProgramVars::SharedPtr& pVars)
-    {
-        mProgramVarsStack.push(mpProgramVars);
-        setProgramVariables(pVars);
-    }
-
-    void RenderContext::popProgramVars()
-    {
-        if (mProgramVarsStack.empty())
-        {
-            logWarning("Can't pop from the ProgramVars stack. The stack is empty");
-            return;
-        }
-
-        setProgramVariables(mProgramVarsStack.top());
-        mProgramVarsStack.pop();
-    }
-}
+    FullScreenPass::UniquePtr mpBlitPass;
+    Texture::SharedPtr mpTmpTexture;
+    void loadImage();
+};

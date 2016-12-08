@@ -443,7 +443,7 @@ namespace Falcor
         return setUav(pDesc->regIndex, pTexture, mipLevel, firstArraySlice, arraySize);
     }
 
-    template<typename HandleType, bool isUav>
+    template<typename HandleType, bool isUav, bool forGraphics>
     void bindUavSrvCommon(RenderContext* pContext, const ProgramVars::ResourceDataMap& resMap)
     {
         ID3D12GraphicsCommandList* pList = pContext->getCommandListApiHandle();
@@ -492,15 +492,30 @@ namespace Falcor
                 handle = isUav ? UnorderedAccessView::getNullView()->getApiHandle() : ShaderResourceView::getNullView()->getApiHandle();
             }
 
-            pList->SetGraphicsRootDescriptorTable(rootOffset, handle->getGpuHandle());
+            if(forGraphics)
+            {
+                pList->SetGraphicsRootDescriptorTable(rootOffset, handle->getGpuHandle());
+            }
+            else
+            {
+                pList->SetComputeRootDescriptorTable(rootOffset, handle->getGpuHandle());
+            }
         }
     }
 
-    void ProgramVars::setIntoRenderContext(RenderContext* pContext) const
+    template<bool forGraphics>
+    void ProgramVars::apply(RenderContext* pContext) const
     {
         // Get the command list
         ID3D12GraphicsCommandList* pList = pContext->getCommandListApiHandle();
-        pList->SetGraphicsRootSignature(mpRootSignature->getApiHandle());
+        if(forGraphics)
+        {
+            pList->SetGraphicsRootSignature(mpRootSignature->getApiHandle());
+        }
+        else
+        {
+            pList->SetComputeRootSignature(mpRootSignature->getApiHandle());
+        }
 
         // Bind the constant-buffers
         for (auto& bufIt : mAssignedCbs)
@@ -508,12 +523,19 @@ namespace Falcor
             uint32_t rootOffset = bufIt.second.rootSigOffset;
             const ConstantBuffer* pCB = dynamic_cast<const ConstantBuffer*>(bufIt.second.pResource.get());
             pCB->uploadToGPU();
-            pList->SetGraphicsRootConstantBufferView(rootOffset, pCB->getGpuAddress());
+            if(forGraphics)
+            {
+                pList->SetGraphicsRootConstantBufferView(rootOffset, pCB->getGpuAddress());
+            }
+            else
+            {
+                pList->SetComputeRootConstantBufferView(rootOffset, pCB->getGpuAddress());
+            }
         }
 
         // Bind the SRVs and UAVs
-        bindUavSrvCommon<SrvHandle, false>(pContext, mAssignedSrvs);
-        bindUavSrvCommon<UavHandle, true>(pContext, mAssignedUavs);
+        bindUavSrvCommon<SrvHandle, false, forGraphics>(pContext, mAssignedSrvs);
+        bindUavSrvCommon<UavHandle, true, forGraphics>(pContext, mAssignedUavs);
 
         // Bind the samplers
         for (auto& samplerIt : mAssignedSamplers)
@@ -522,9 +544,26 @@ namespace Falcor
             const Sampler* pSampler = samplerIt.second.pResource.get();
             if (pSampler)
             {
-                pList->SetGraphicsRootDescriptorTable(rootOffset, pSampler->getApiHandle()->getGpuHandle());
+                if(forGraphics)
+                {
+                    pList->SetGraphicsRootDescriptorTable(rootOffset, pSampler->getApiHandle()->getGpuHandle());
+                }
+                else
+                {
+                    pList->SetComputeRootDescriptorTable(rootOffset, pSampler->getApiHandle()->getGpuHandle());
+                }
             }
         }
+    }
+
+    void ProgramVars::applyForCompute(RenderContext* pContext) const
+    {
+        apply<false>(pContext);
+    }
+
+    void ProgramVars::applyForGraphics(RenderContext* pContext) const
+    {
+        apply<true>(pContext);
     }
 
     bool ProgramVars::setTextureRange(uint32_t startIndex, uint32_t count, const Texture::SharedPtr pTextures[])

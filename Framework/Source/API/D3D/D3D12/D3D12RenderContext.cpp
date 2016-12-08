@@ -319,7 +319,7 @@ namespace Falcor
         pApiData->pList->RSSetScissorRects(D3D12_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE, (D3D12_RECT*)sc);
     }
 
-    void RenderContext::prepareForDrawApi()
+    void RenderContext::prepareForDraw()
     {
         RenderContextData* pApiData = (RenderContextData*)mpApiData;
         assert(mpPipelineState);
@@ -328,7 +328,7 @@ namespace Falcor
         // FIXME D3D12 what to do if there are no vars?
         if (mpProgramVars)
         {
-            mpProgramVars->setIntoRenderContext(const_cast<RenderContext*>(this));
+            mpProgramVars->applyForGraphics(const_cast<RenderContext*>(this));
         }
 
         pApiData->pList->IASetPrimitiveTopology(getD3DPrimitiveTopology(mpPipelineState->getVao()->getPrimitiveTopology()));
@@ -339,6 +339,31 @@ namespace Falcor
         pApiData->pList->SetPipelineState(mpPipelineState->getPSO()->getApiHandle());
 
         flushCopyCommands(pApiData);
+    }
+
+    void RenderContext::prepareForDispatch()
+    {
+        RenderContextData* pApiData = (RenderContextData*)mpApiData;
+        assert(mpComputeState);
+
+        // Bind the root signature and the root signature data
+        // FIXME D3D12 what to do if there are no vars?
+        if (mpComputeVars)
+        {
+            mpComputeVars->applyForCompute(const_cast<RenderContext*>(this));
+        }
+
+        pApiData->pList->SetPipelineState(mpComputeState->getCSO()->getApiHandle());
+
+        flushCopyCommands(pApiData);
+    }
+
+    void RenderContext::dispatch(uint32_t xSize, uint32_t ySize, uint32_t zSize)
+    {
+        prepareForDispatch();
+        RenderContextData* pApiData = (RenderContextData*)mpApiData;
+        pApiData->pList->Dispatch(xSize, ySize, zSize);
+        pApiData->commandsPending = true;
     }
 
     void RenderContext::drawInstanced(uint32_t vertexCount, uint32_t instanceCount, uint32_t startVertexLocation, uint32_t startInstanceLocation)
@@ -367,15 +392,10 @@ namespace Falcor
         drawIndexedInstanced(indexCount, 1, startIndexLocation, baseVertexLocation, 0);
     }
 
-    void RenderContext::applyProgramVars()
-    {
-
-    }
-
-    void RenderContext::applyPipelineState()
-    {
-
-    }
+    void RenderContext::applyProgramVars() {}
+    void RenderContext::applyPipelineState() {}
+    void RenderContext::applyComputeVars() {}
+    void RenderContext::applyComputeState() {}
 
     void RenderContext::flush(bool wait)
     {

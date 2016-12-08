@@ -46,7 +46,7 @@ namespace Falcor
         using SharedPtr = std::shared_ptr<ProgramVersion>;
         using SharedConstPtr = std::shared_ptr<const ProgramVersion>;
 
-        /** create a new program object
+        /** create a new program object for graphics
             \param[in] pVS Vertex shader object
             \param[in] pFS Fragment shader object
             \param[in] pGS Geometry shader object
@@ -62,6 +62,16 @@ namespace Falcor
             const Shader::SharedPtr& pHS,
             const Shader::SharedPtr& pDS,
             std::string& log, 
+            const std::string& name = "");
+
+        /** create a new program object for compute
+        \param[in] pCs Compute shader object
+        \param[out] Log In case of error, this will contain the error log string
+        \param[in] DebugName Optional. A meaningful name to use with log messages
+        \return New object in case of success, otherwise nullptr
+        */
+        static SharedConstPtr create(const Shader::SharedPtr& pCS,
+            std::string& log,
             const std::string& name = "");
 
         ~ProgramVersion();
@@ -92,6 +102,7 @@ namespace Falcor
             const Shader::SharedPtr& pGS,
             const Shader::SharedPtr& pHS,
             const Shader::SharedPtr& pDS,
+            const Shader::SharedPtr& pCS,
             const std::string& name = "");
 
         bool apiInit(std::string& log, const std::string& name);

@@ -223,8 +223,12 @@ namespace Falcor
         // FIXME: This doesn't work with multiple register spaces
         using ResourceDataMap = std::unordered_map<uint32_t, ResourceData<Resource::SharedPtr>>;
 
-        void setIntoRenderContext(RenderContext* pContext) const;
+        void applyForGraphics(RenderContext* pContext) const;
+        void applyForCompute(RenderContext* pContext) const;
     private:
+        template<bool forGraphics>
+        void apply(RenderContext* pContext) const;
+
         ProgramVars(const ProgramReflection::SharedConstPtr& pReflector, bool createBuffers, const RootSignature::SharedConstPtr& pRootSig);
 
         RootSignature::SharedConstPtr mpRootSignature;

@@ -38,6 +38,7 @@
 #include "API/ProgramVars.h"
 #include "Graphics/PipelineState.h"
 #include "API/LowLevel/CopyContext.h"
+#include "Graphics/ComputeState.h"
 
 namespace Falcor
 {
@@ -185,7 +186,12 @@ namespace Falcor
             \param[in] wait If true, will block execution until the GPU finished processing the commands
         */
         void flush(bool wait = false);
-                
+
+        void setComputeState(const ComputeState::SharedPtr& pComputeState) { mpComputeState = pComputeState; applyComputeState(); }
+        void setComputeVars(const ProgramVars::SharedPtr& pComputeVars) { mpComputeVars = pComputeVars; applyComputeVars(); }
+        
+        void dispatch(uint32_t xSize, uint32_t ySize, uint32_t zSize);
+
         void updateBuffer(const Buffer* pBuffer, const void* pData, size_t offset = 0, size_t size = 0);
         void updateTexture(const Texture* pTexture, const void* pData);
         void updateTextureSubresource(const Texture* pTexture, uint32_t subresourceIndex, const void* pData);
@@ -198,14 +204,19 @@ namespace Falcor
         ProgramVars::SharedPtr mpProgramVars;
         PipelineState::SharedPtr mpPipelineState;
 
+        ProgramVars::SharedPtr mpComputeVars;
+        ComputeState::SharedPtr mpComputeState;
+
         std::stack<PipelineState::SharedPtr> mPipelineStateStack;
         std::stack<ProgramVars::SharedPtr> mProgramVarsStack;
 
         // Internal functions used by the API layers
         void applyProgramVars();
         void applyPipelineState();
+        void applyComputeState();
+        void applyComputeVars();
         void prepareForDraw();
-        void prepareForDrawApi();
+        void prepareForDispatch();
         void bindDescriptorHeaps();
 		void* mpApiData = nullptr;
     };

@@ -434,15 +434,18 @@ namespace Falcor
 
     bool ProgramReflection::reflectVertexAttributes(const ProgramVersion* pProgVer, std::string& log)
     {
-        // Get the VS. We must have one
-        ShaderReflectionHandle pReflector = pProgVer->getShader(ShaderType::Vertex)->getReflectionInterface();
-        assert(pReflector);
-        D3D_SHADER_DESC shaderDesc;
-        d3d_call(pReflector->GetDesc(&shaderDesc));
-        for (uint32_t i = 0; i < shaderDesc.InputParameters; i++)
+        const Shader* pVS = pProgVer->getShader(ShaderType::Vertex);
+        if(pVS)
         {
-            D3D_SIGNATURE_PARAMETER_DESC inputDesc;
-            d3d_call(pReflector->GetInputParameterDesc(i, &inputDesc));
+            ShaderReflectionHandle pReflector = pProgVer->getShader(ShaderType::Vertex)->getReflectionInterface();
+            assert(pReflector);
+            D3D_SHADER_DESC shaderDesc;
+            d3d_call(pReflector->GetDesc(&shaderDesc));
+            for (uint32_t i = 0; i < shaderDesc.InputParameters; i++)
+            {
+                D3D_SIGNATURE_PARAMETER_DESC inputDesc;
+                d3d_call(pReflector->GetInputParameterDesc(i, &inputDesc));
+            }
         }
         return true;
     }

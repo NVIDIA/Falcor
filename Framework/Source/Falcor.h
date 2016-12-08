@@ -81,6 +81,8 @@
 #include "Graphics/Program.h"
 #include "Graphics/GraphicsProgram.h"
 #include "Graphics/FboHelper.h"
+#include "Graphics/ComputeProgram.h"
+#include "Graphics/ComputeState.h"
 
 // Material
 #include "Graphics/Material/Material.h"
