@@ -63,11 +63,17 @@ namespace Falcor
         }
         desc.SampleMask = mDesc.mSampleMask;
         desc.pRootSignature = mDesc.mpRootSignature ? mDesc.mpRootSignature->getApiHandle() : nullptr;
+
+        uint32_t numRtvs = 0;
         for (uint32_t rt = 0; rt < Fbo::getMaxColorTargetCount(); rt++)
         {
             desc.RTVFormats[rt] = getDxgiFormat(mDesc.mFboDesc.getColorTargetFormat(rt));
+            if (desc.RTVFormats[rt] != DXGI_FORMAT_UNKNOWN)
+            {
+                numRtvs = rt + 1;
+            }
         }
-        desc.NumRenderTargets = Fbo::getMaxColorTargetCount();
+        desc.NumRenderTargets = numRtvs;
         desc.DSVFormat = getDxgiFormat(mDesc.mFboDesc.getDepthStencilFormat());
         desc.SampleDesc.Count = mDesc.mFboDesc.getSampleCount();
 
