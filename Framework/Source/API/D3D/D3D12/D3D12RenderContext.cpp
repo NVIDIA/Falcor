@@ -50,8 +50,6 @@ namespace Falcor
 	
 	RenderContext::~RenderContext()
 	{
-        mpPipelineState = nullptr;
-        mpProgramVars = nullptr;
 		delete (RenderContextData*)mpApiData;
 		mpApiData = nullptr;
 	}

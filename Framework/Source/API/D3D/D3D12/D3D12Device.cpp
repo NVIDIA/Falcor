@@ -229,6 +229,8 @@ namespace Falcor
         // Release all the bound resources. Need to do that before deleting the RenderContext
         mpRenderContext->setPipelineState(nullptr);
         mpRenderContext->setProgramVariables(nullptr);
+        mpRenderContext->setComputeState(nullptr);
+        mpRenderContext->setComputeVars(nullptr);
         DeviceData* pData = (DeviceData*)mpPrivateData;
         releaseFboData(pData);
         safe_delete(pData);
