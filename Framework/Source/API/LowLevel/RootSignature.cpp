@@ -32,6 +32,9 @@
 
 namespace Falcor
 {
+    RootSignature::SharedPtr RootSignature::spEmptySig;
+    uint64_t RootSignature::sObjCount = 0;
+
     RootSignature::Desc& RootSignature::Desc::addSampler(uint32_t regIndex, Sampler::SharedConstPtr pSampler, ShaderVisibility visiblityMask, BorderColor borderColor, uint32_t regSpace)
     {
         SamplerDesc sd;
@@ -81,7 +84,25 @@ namespace Falcor
 
     RootSignature::RootSignature(const Desc& desc) : mDesc(desc)
     {
+        sObjCount++;
+    }
 
+    RootSignature::~RootSignature()
+    {
+        sObjCount--;        
+        if (spEmptySig && sObjCount == 1) // That's right, 1. It means spEmptySig is the only object
+        {
+            spEmptySig = nullptr;
+        }
+    }
+
+    RootSignature::SharedPtr RootSignature::getEmpty()
+    {
+        if (spEmptySig == nullptr)
+        {
+            spEmptySig = create(Desc());
+        }
+        return spEmptySig;
     }
 
     RootSignature::SharedPtr RootSignature::create(const Desc& desc)
@@ -123,9 +144,6 @@ namespace Falcor
         uint32_t cost = 0;
         RootSignature::Desc d;
 
-        // FIXME:
-        // For now we just put everything in the root. No descriptor tables because I don't feel like implementing a dynamic descriptor table class yet
-        // We also create everything visible to all the shader stages
         cost += initializeBufferDescriptors(pReflector, d, ProgramReflection::BufferReflection::Type::Constant, RootSignature::DescType::CBV);
         cost += initializeBufferDescriptors(pReflector, d, ProgramReflection::BufferReflection::Type::Structured, RootSignature::DescType::SRV);
 
@@ -164,6 +182,6 @@ namespace Falcor
             logError("RootSignature::create(): The required storage cost is " + std::to_string(cost) + " DWORDS, which is larger then the max allowed cost of 64 DWORDS");
             return nullptr;
         }
-        return RootSignature::create(d);
+        return (cost != 0) ? RootSignature::create(d) : RootSignature::getEmpty();
     }
 }

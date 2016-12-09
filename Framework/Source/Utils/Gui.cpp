@@ -124,13 +124,15 @@ namespace Falcor
         static_assert(sizeof(ImDrawIdx) == sizeof(uint16_t), "ImDrawIdx expected size is a word");
         uint32_t requiredVbSize = vertexCount * sizeof(ImDrawVert);
         uint32_t requiredIbSize = indexCount * sizeof(uint16_t);
+        bool createVB = true;
+        bool createIB = true;
 
-        // OPTME: Can check if only a single buffer changed and just create it
         if (mpVao)
         {
-            bool vbSizeOK = mpVao->getVertexBuffer(0)->getSize() <= requiredVbSize;
-            bool ibSizeOK = mpVao->getIndexBuffer()->getSize() <= requiredIbSize;
-            if (vbSizeOK && ibSizeOK)
+            createVB = mpVao->getVertexBuffer(0)->getSize() <= requiredVbSize;
+            createIB = mpVao->getIndexBuffer()->getSize() <= requiredIbSize;
+
+            if (!createIB && !createVB)
             {
                 return;
             }
@@ -138,8 +140,8 @@ namespace Falcor
 
         // Need to create a new VAO
         std::vector<Buffer::SharedPtr> pVB(1);
-        pVB[0] = Buffer::create(requiredVbSize + sizeof(ImDrawVert) * 1000, Buffer::BindFlags::Vertex, Buffer::CpuAccess::Write, nullptr);
-        Buffer::SharedPtr pIB = Buffer::create(requiredIbSize, Buffer::BindFlags::Index, Buffer::CpuAccess::Write, nullptr);
+        pVB[0] = createVB ? Buffer::create(requiredVbSize + sizeof(ImDrawVert) * 1000, Buffer::BindFlags::Vertex, Buffer::CpuAccess::Write, nullptr) : mpVao->getVertexBuffer(0);
+        Buffer::SharedPtr pIB = createIB ? Buffer::create(requiredIbSize, Buffer::BindFlags::Index, Buffer::CpuAccess::Write, nullptr): mpVao->getIndexBuffer();
         mpVao = Vao::create(pVB, mpLayout, pIB, ResourceFormat::R16Uint, Vao::Topology::TriangleList);
     }
 

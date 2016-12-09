@@ -86,7 +86,7 @@ namespace Falcor
 
 
 	extern const GLenum kGlTextureTarget[];
-	/** Return GL target namne for a given texture Type.
+	/** Return GL target name for a given texture Type.
 	*/
 	inline GLenum getGlTextureTarget(int texType)
 	{
@@ -110,6 +110,13 @@ namespace Falcor
     using BlendStateHandle          = GLuint;
     using SamplerApiHandle          = GLuint;
     using ShaderResourceViewHandle  = GLuint;
+
+    inline uint32_t getMaxViewportCount()
+    {
+        uint32_t vpCount;
+        gl_call(glGetIntegerv(GL_MAX_VIEWPORTS, (int32_t*)&vpCount));
+        return vpCount;
+    }
 }
 
 #pragma comment(lib, "glew32.lib")

@@ -42,5 +42,6 @@ namespace Falcor
             _BitScanReverse(&bits, dims);
             mMipLevels = (uint32_t)bits + 1;
         }
+        apiInit();
     }
 }

@@ -87,7 +87,7 @@ namespace Falcor
 		pBuffer->setBlob(&mData, offset, dataSize - sizeof(MaterialData));
         if (mData.type == LightArea)
         {
-            assert(0); // FIXME D3D12
+            assert(0);
         }
 	}
 

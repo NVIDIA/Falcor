@@ -264,7 +264,7 @@ namespace Falcor
 
     static void D3D12SetFbo(RenderContext* pCtx, const RenderContextData* pApiData, const Fbo* pFbo)
     {
-        // FIXME D3D12
+        // We are setting the entire RTV array to make sure everything that was previously bound is detached
         uint32_t colorTargets = Fbo::getMaxColorTargetCount();
         std::vector<DescriptorHeap::CpuHandle> pRTV(colorTargets, RenderTargetView::getNullView()->getApiHandle()->getCpuHandle());
         DescriptorHeap::CpuHandle pDSV = DepthStencilView::getNullView()->getApiHandle()->getCpuHandle();
@@ -323,10 +323,13 @@ namespace Falcor
         assert(mpGraphicsState);
 
         // Bind the root signature and the root signature data
-        // FIXME D3D12 what to do if there are no vars?
         if (mpGraphicsVars)
         {
             mpGraphicsVars->apply(const_cast<RenderContext*>(this));
+        }
+        else
+        {
+            pApiData->pList->SetGraphicsRootSignature(RootSignature::getEmpty()->getApiHandle());
         }
 
         pApiData->pList->IASetPrimitiveTopology(getD3DPrimitiveTopology(mpGraphicsState->getVao()->getPrimitiveTopology()));
@@ -345,10 +348,13 @@ namespace Falcor
         assert(mpComputeState);
 
         // Bind the root signature and the root signature data
-        // FIXME D3D12 what to do if there are no vars?
         if (mpComputeVars)
         {
             mpComputeVars->apply(const_cast<RenderContext*>(this));
+        }
+        else
+        {
+            pApiData->pList->SetComputeRootSignature(RootSignature::getEmpty()->getApiHandle());
         }
 
         pApiData->pList->SetPipelineState(mpComputeState->getCSO()->getApiHandle());

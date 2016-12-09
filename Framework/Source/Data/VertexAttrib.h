@@ -62,7 +62,7 @@ struct VS_IN
     float2 texC        : TEXCOORD;
 #endif
 #ifdef HAS_COLORS
-    float3 color       : DIFFUSE_COLOR; FIXME D3D12
+    float3 color       : DIFFUSE_COLOR;
 #endif
 #ifdef _VERTEX_BLENDING
     float4 boneWeights : BONE_WEIGHTS;
@@ -111,7 +111,7 @@ VS_OUT defaultVS(VS_IN vIn)
     vOut.texC = 0;
 #endif
 #ifdef HAS_COLORS
-    vOut.colorV = vIn.color;    // FIXME D3D12
+    vOut.colorV = vIn.color;
 #else
     vOut.colorV = 0;
 #endif

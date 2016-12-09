@@ -391,9 +391,6 @@
     <ClCompile Include="API\D3D\D3D12\LowLevel\D3D12ResourceAllocator.cpp">
       <Filter>API\D3D\D3D12\LowLevel</Filter>
     </ClCompile>
-    <ClCompile Include="API\D3D\D3D12\D3D12PipelineStateObject.cpp">
-      <Filter>API\D3D\D3D12</Filter>
-    </ClCompile>
     <ClCompile Include="..\Externals\dear_imgui\imgui.cpp">
       <Filter>Externals\dear_imgui</Filter>
     </ClCompile>
@@ -448,6 +445,9 @@
     </ClCompile>
     <ClCompile Include="API\GraphicsStateObject.cpp">
       <Filter>API</Filter>
+    </ClCompile>
+    <ClCompile Include="API\D3D\D3D12\D3D12GraphicsStateObject.cpp">
+      <Filter>API\D3D\D3D12</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

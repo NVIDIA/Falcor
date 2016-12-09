@@ -179,7 +179,6 @@ namespace Falcor
 
         size_t getBufferCount() const { return mpBufferLayouts.size(); }
 
-        // FIXME: This is a hack. A required one, but still a hack. We need to do that more efficiently
         void addVertexAttribDclToProg(Program* pProg) const
         {
             pProg->removeDefine("HAS_TEXCRD");

@@ -41,14 +41,24 @@ namespace Falcor
     RtvHandle Texture::spNullRTV;
     DsvHandle Texture::spNullDSV;
 
-    // FIXME I don't like globals
-    struct
+    struct GenMipsData
     {
         FullScreenPass::UniquePtr pFullScreenPass;
         GraphicsVars::SharedPtr pVars;
         GraphicsState::SharedPtr pState;
-    } static gGenMips;
+    };
 
+    struct TextureApiData
+    {
+        TextureApiData() { sObjCount++; }
+        ~TextureApiData() { sObjCount--; if (sObjCount == 0) spGenMips = nullptr; }
+
+        static std::unique_ptr<GenMipsData> spGenMips;
+    private:
+        uint64_t sObjCount = 0;
+    };
+
+    std::unique_ptr<GenMipsData> TextureApiData::spGenMips;
 
     template<>
     D3D12_UAV_DIMENSION getViewDimension<D3D12_UAV_DIMENSION>(Texture::Type type, bool isTextureArray)
@@ -89,14 +99,14 @@ namespace Falcor
         }
     }
 
+    void Texture::apiInit()
+    {
+        mpApiData = new TextureApiData();
+    }
+
     Texture::~Texture()
     {
-        if (gGenMips.pFullScreenPass)
-        {
-            gGenMips.pFullScreenPass = nullptr;
-            gGenMips.pVars = nullptr;
-            gGenMips.pState = nullptr;
-        }
+        safe_delete(mpApiData);
         gpDevice->releaseResource(mApiHandle);
     }
 
@@ -244,21 +254,20 @@ namespace Falcor
 
     void Texture::generateMips() const
     {
-        // OPTME D3D12 We are generating SRVs and RTVs for every mip-level of every resource we generate mips for. This is inefficient, especially since we can't release views
-        // We should either reword our descriptor heap to allow us to release views, or optimize genMips() to use pre-allocated views
-        if (gGenMips.pFullScreenPass == nullptr)
+        if (mpApiData->spGenMips == nullptr)
         {
-            gGenMips.pFullScreenPass = FullScreenPass::create("Framework\\GenerateMips.hlsl");
-            gGenMips.pVars = GraphicsVars::create(gGenMips.pFullScreenPass->getProgram()->getActiveVersion()->getReflector());
-            gGenMips.pState = GraphicsState::create();
+            mpApiData->spGenMips = std::make_unique<GenMipsData>();
+            mpApiData->spGenMips->pFullScreenPass = FullScreenPass::create("Framework\\GenerateMips.hlsl");
+            mpApiData->spGenMips->pVars = GraphicsVars::create(mpApiData->spGenMips->pFullScreenPass->getProgram()->getActiveVersion()->getReflector());
+            mpApiData->spGenMips->pState = GraphicsState::create();
             Sampler::Desc desc;
             desc.setFilterMode(Sampler::Filter::Linear, Sampler::Filter::Linear, Sampler::Filter::Linear).setAddressingMode(Sampler::AddressMode::Clamp, Sampler::AddressMode::Clamp, Sampler::AddressMode::Clamp);
-            gGenMips.pVars->setSampler("gSampler", Sampler::create(desc));
+            mpApiData->spGenMips->pVars->setSampler("gSampler", Sampler::create(desc));
         }
 
         RenderContext* pContext = gpDevice->getRenderContext().get();
-        pContext->pushGraphicsState(gGenMips.pState);
-        pContext->pushGraphicsVars(gGenMips.pVars);
+        pContext->pushGraphicsState(mpApiData->spGenMips->pState);
+        pContext->pushGraphicsVars(mpApiData->spGenMips->pVars);
 
         for (uint32_t i = 0; i < mMipLevels - 1; i++)
         {
@@ -266,13 +275,13 @@ namespace Falcor
             Fbo::SharedPtr pFbo = Fbo::create();
             SharedPtr pNonConst = const_cast<Texture*>(this)->shared_from_this();
             pFbo->attachColorTarget(pNonConst, 0, i + 1, 0);
-            gGenMips.pState->setFbo(pFbo);
+            mpApiData->spGenMips->pState->setFbo(pFbo);
 
             // Create the resource view
-            gGenMips.pVars->setTexture(0, pNonConst, 0, mArraySize, i, 1);
+            mpApiData->spGenMips->pVars->setTexture(0, pNonConst, 0, mArraySize, i, 1);
 
             // Run the program
-            gGenMips.pFullScreenPass->execute(pContext);
+            mpApiData->spGenMips->pFullScreenPass->execute(pContext);
         }
         pContext->popGraphicsState();
         pContext->popGraphicsVars();

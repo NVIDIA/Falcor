@@ -31,13 +31,6 @@
 
 namespace Falcor
 {
-    // FIXME this breaks our convention that API code doesn't appear in common files
-#ifdef FALCOR_D3D11
-    static const uint32_t kViewportCount = D3D11_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE;
-#else if defined FALCOR_D3D12
-    static const uint32_t kViewportCount = D3D12_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE;
-#endif
-
     static GraphicsStateObject::PrimitiveType topology2Type(Vao::Topology t)
     {
         switch (t)
@@ -58,16 +51,13 @@ namespace Falcor
 
     GraphicsState::GraphicsState()
     {
-#ifdef FALCOR_GL
-        uint32_t kViewportCount;
-        gl_call(glGetIntegerv(GL_MAX_VIEWPORTS, (int32_t*)&kViewportCount));
-#endif
+        uint32_t vpCount = getMaxViewportCount();
         // create the viewports
-        mViewports.resize(kViewportCount);
-        mScissors.resize(kViewportCount);
-        mVpStack.resize(kViewportCount);
-        mScStack.resize(kViewportCount);
-        for (uint32_t i = 0; i < kViewportCount; i++)
+        mViewports.resize(vpCount);
+        mScissors.resize(vpCount);
+        mVpStack.resize(vpCount);
+        mScStack.resize(vpCount);
+        for (uint32_t i = 0; i < vpCount; i++)
         {
             setViewport(i, mViewports[i], true);
         }
@@ -75,8 +65,6 @@ namespace Falcor
 
     GraphicsStateObject::SharedPtr GraphicsState::getGSO()
     {
-        // Check if we need to create a root-signature
-        // FIXME Is this the correct place for this?
         if (mpProgram && mpVao)
         {
             mpVao->getVertexLayout()->addVertexAttribDclToProg(mpProgram.get());
@@ -97,7 +85,6 @@ namespace Falcor
         mDesc.setPrimitiveType(topology2Type(mpVao->getPrimitiveTopology()));
         mDesc.setRootSignature(mpRootSignature);
 
-        // FIXME D3D12 Need real cache
         mpCurrentGso = GraphicsStateObject::create(mDesc);
         return mpCurrentGso;
     }

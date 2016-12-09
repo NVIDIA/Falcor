@@ -212,7 +212,6 @@ namespace Falcor
             uint32_t rootSigOffset = 0;
         };
 
-        // FIXME: This doesn't work with multiple register spaces
         using ResourceDataMap = std::unordered_map<uint32_t, ResourceData<Resource::SharedPtr>>;
 
         virtual void apply(RenderContext* pContext) const = 0;
