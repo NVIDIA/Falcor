@@ -32,20 +32,19 @@ namespace Falcor
 {
     D3D12_RESOURCE_FLAGS getD3D12ResourceFlags(Resource::BindFlags flags)
     {
-        D3D12_RESOURCE_FLAGS d3d = D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE;
+        D3D12_RESOURCE_FLAGS d3d = D3D12_RESOURCE_FLAG_NONE;
 
         if (is_set(flags, Resource::BindFlags::UnorderedAccess))
         {
             d3d |= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
         }
 
-        if (is_set(flags, Resource::BindFlags::ShaderResource))
-        {
-            d3d &= ~D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE;
-        }
-
         if (is_set(flags, Resource::BindFlags::DepthStencil))
         {
+            if (is_set(flags, Resource::BindFlags::ShaderResource) == false)
+            {
+                d3d |= D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE;
+            }
             d3d |= D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
         }
 

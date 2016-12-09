@@ -43,6 +43,4 @@ public:
     void onGuiRender() override;
 
 private:
-
-    Camera::SharedPtr mpCamera;
 };

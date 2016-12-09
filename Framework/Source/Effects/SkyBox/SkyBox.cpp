@@ -77,7 +77,7 @@ namespace Falcor
         {
             defines.add("_SINGLE_PASS_STEREO");
         }
-        mpProgram = Program::createFromFile("Effects\\SkyBox.vs", "Effects\\Skybox.fs", defines);
+        mpProgram = GraphicsProgram::createFromFile("Effects\\SkyBox.vs", "Effects\\Skybox.fs", defines);
         mpCB = ConstantBuffer::create(mpProgram, "PerFrameCB");
         mScaleOffset = mpCB->getVariableOffset("gScale");
         mTexOffset = mpCB->getVariableOffset("gSkyTex");

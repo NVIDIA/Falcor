@@ -26,29 +26,28 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 #pragma once
-#include "Falcor.h"
+#include "Framework.h"
+#include "ComputeState.h"
 
-using namespace Falcor;
-
-class SceneEditorSample : public Sample
+namespace Falcor
 {
-public:
-    void onLoad() override;
-    void onFrameRender() override;
-    void onShutdown() override;
-    bool onKeyEvent(const KeyboardEvent& keyEvent) override;
-    bool onMouseEvent(const MouseEvent& mouseEvent) override;
-    void onGuiRender() override;
+    ComputeStateObject::SharedPtr ComputeState::getCSO()
+    {
+        const ProgramVersion* pProgVersion = mpProgram ? mpProgram->getActiveVersion().get() : nullptr;
+        if (pProgVersion != mCachedData.pProgramVersion)
+        {
+            mCachedData.pProgramVersion = pProgVersion;
+            if (mCachedData.isUserRootSignature == false)
+            {
+                mpRootSignature = RootSignature::create(pProgVersion->getReflector().get());
+            }
+        }
 
-private:    
-    void loadScene();
-    void createScene();
-    void reset();
-    void initNewScene();
+        mDesc.setProgramVersion(mpProgram ? mpProgram->getActiveVersion() : nullptr);
+        mDesc.setRootSignature(mpRootSignature);
 
-    Scene::SharedPtr mpScene = nullptr;
-    GraphicsProgram::SharedPtr mpProgram = nullptr;
-    SceneRenderer::UniquePtr mpRenderer = nullptr;
-    SceneEditor::UniquePtr mpEditor = nullptr;
-    GraphicsVars::SharedPtr mpVars = nullptr;
-};
+        // FIXME D3D12 Need real cache
+        mpCurrentCso = ComputeStateObject::create(mDesc);
+        return mpCurrentCso;
+    }
+}

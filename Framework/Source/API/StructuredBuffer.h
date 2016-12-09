@@ -93,7 +93,7 @@ namespace Falcor
         \param[in] bindFlags The bind flags for the resource
         \return A new buffer object if the operation was successful, otherwise nullptr
         */
-        static SharedPtr create(Program::SharedPtr& pProgram, const std::string& name, size_t elementCount = 1, Resource::BindFlags bindFlags = Resource::BindFlags::ShaderResource | Resource::BindFlags::UnorderedAccess);
+        static SharedPtr create(const Program::SharedPtr& pProgram, const std::string& name, size_t elementCount = 1, Resource::BindFlags bindFlags = Resource::BindFlags::ShaderResource | Resource::BindFlags::UnorderedAccess);
 
         ~StructuredBuffer();
 

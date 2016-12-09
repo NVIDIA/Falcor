@@ -43,7 +43,7 @@ namespace Falcor
         struct ResourceRelease
         {
             size_t frameID;
-            ID3D12ResourcePtr pResource;
+            ApiObjectHandle pApiObject;
         };
 
         struct
@@ -203,16 +203,20 @@ namespace Falcor
                 return false;
             }
 
-            // Create a depth texture
-            auto pDepth = Texture::create2D(width, height, depthFormat, 1, 1, nullptr, Texture::BindFlags::DepthStencil);
-
             // Create the FBO if it's required
-            if(pData->frameData[i].pFbo == nullptr)
+            if (pData->frameData[i].pFbo == nullptr)
             {
                 pData->frameData[i].pFbo = Fbo::create();
             }
             pData->frameData[i].pFbo->attachColorTarget(pColorTex, 0);
-            pData->frameData[i].pFbo->attachDepthStencilTarget(pDepth);
+
+            // Create a depth texture
+            if(depthFormat != ResourceFormat::Unknown)
+            {
+                auto pDepth = Texture::create2D(width, height, depthFormat, 1, 1, nullptr, Texture::BindFlags::DepthStencil);
+                pData->frameData[i].pFbo->attachDepthStencilTarget(pDepth);
+            }
+
             pData->currentBackBufferIndex = pData->pSwapChain->GetCurrentBackBufferIndex();
 		}
 
@@ -223,8 +227,10 @@ namespace Falcor
     {
         mpRenderContext->flush(true);
         // Release all the bound resources. Need to do that before deleting the RenderContext
-        mpRenderContext->setPipelineState(nullptr);
-        mpRenderContext->setProgramVariables(nullptr);
+        mpRenderContext->setGraphicsState(nullptr);
+        mpRenderContext->setGraphicsVars(nullptr);
+        mpRenderContext->setComputeState(nullptr);
+        mpRenderContext->setComputeVars(nullptr);
         DeviceData* pData = (DeviceData*)mpPrivateData;
         releaseFboData(pData);
         safe_delete(pData);
@@ -322,10 +328,13 @@ namespace Falcor
 		return true;
     }
 
-    void Device::releaseResource(ID3D12ResourcePtr pResource)
+    void Device::releaseResource(ApiObjectHandle pResource)
     {
-        DeviceData* pData = (DeviceData*)mpPrivateData;
-        pData->deferredReleases.push({ pData->pFrameFence->getCpuValue(), pResource });
+        if(pResource)
+        {
+            DeviceData* pData = (DeviceData*)mpPrivateData;
+            pData->deferredReleases.push({ pData->pFrameFence->getCpuValue(), pResource });
+        }
     }
 
     void Device::executeDeferredReleases()

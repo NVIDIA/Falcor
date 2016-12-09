@@ -32,7 +32,7 @@
 #include "UserInput.h"
 #include "API/ProgramVars.h"
 #include "Graphics/Program.h"
-#include "Graphics/PipelineState.h"
+#include "Graphics/GraphicsState.h"
 #define GUI_CALL _cdecl
 namespace Falcor
 {
@@ -257,9 +257,9 @@ namespace Falcor
 
         Vao::SharedPtr mpVao;
         VertexLayout::SharedPtr mpLayout;
-        ProgramVars::SharedPtr mpProgramVars;
-        Program::SharedPtr mpProgram;
-        PipelineState::SharedPtr mpPipelineState;
+        GraphicsVars::SharedPtr mpProgramVars;
+        GraphicsProgram::SharedPtr mpProgram;
+        GraphicsState::SharedPtr mpPipelineState;
         uint32_t mGroupStackSize = 0;
         float mFontScale = 1;
     };

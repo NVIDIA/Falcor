@@ -93,7 +93,7 @@ namespace Falcor
     {
         createTmpFbo(pSrc);
         uint32_t arraySize = pSrc->getArraySize();
-        PipelineState::Viewport vp;
+        GraphicsState::Viewport vp;
         vp.originX = 0;
         vp.originY = 0;
         vp.height = (float)mpTmpFbo->getHeight();
@@ -101,7 +101,7 @@ namespace Falcor
         vp.minDepth = 0;
         vp.maxDepth = 1;
 
-        PipelineState* pState = pRenderContext->getPipelineState().get();
+        GraphicsState* pState = pRenderContext->getGraphicsState().get();
         for(uint32_t i = 0; i < arraySize; i++)
         {
             pState->pushViewport(i, vp);

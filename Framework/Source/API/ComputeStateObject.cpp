@@ -26,29 +26,25 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 #pragma once
-#include "Falcor.h"
+#include "Framework.h"
+#include "ComputeStateObject.h"
+#include "Device.h"
 
-using namespace Falcor;
-
-class SceneEditorSample : public Sample
+namespace Falcor
 {
-public:
-    void onLoad() override;
-    void onFrameRender() override;
-    void onShutdown() override;
-    bool onKeyEvent(const KeyboardEvent& keyEvent) override;
-    bool onMouseEvent(const MouseEvent& mouseEvent) override;
-    void onGuiRender() override;
+    ComputeStateObject::~ComputeStateObject()
+    {
+        gpDevice->releaseResource(mApiHandle);
+    }
 
-private:    
-    void loadScene();
-    void createScene();
-    void reset();
-    void initNewScene();
+    ComputeStateObject::SharedPtr ComputeStateObject::create(const Desc& desc)
+    {
+        SharedPtr pState = SharedPtr(new ComputeStateObject(desc));
 
-    Scene::SharedPtr mpScene = nullptr;
-    GraphicsProgram::SharedPtr mpProgram = nullptr;
-    SceneRenderer::UniquePtr mpRenderer = nullptr;
-    SceneEditor::UniquePtr mpEditor = nullptr;
-    GraphicsVars::SharedPtr mpVars = nullptr;
-};
+        if (pState->apiInit() == false)
+        {
+            pState = nullptr;
+        }
+        return pState;
+    }
+}

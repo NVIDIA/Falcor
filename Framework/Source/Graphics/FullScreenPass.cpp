@@ -108,7 +108,7 @@ namespace Falcor
 
     void FullScreenPass::init(const std::string& fragmentShaderFile, const Program::DefineList& programDefines, bool disableDepth, bool disableStencil, uint32_t viewportMask)
     {
-        mpPipelineState = PipelineState::create();
+        mpPipelineState = GraphicsState::create();
 
         // create depth stencil state
         DepthStencilState::Desc dsDesc;
@@ -137,7 +137,7 @@ namespace Falcor
         }
 
         const std::string vs("Framework\\FullScreenPass.vs");
-        mpProgram = Program::createFromFile(vs, fragmentShaderFile, gs, "", "", defs);
+        mpProgram = GraphicsProgram::createFromFile(vs, fragmentShaderFile, gs, "", "", defs);
         mpPipelineState->setProgram(mpProgram);
 
         if (FullScreenPass::spVertexBuffer == nullptr)
@@ -149,14 +149,14 @@ namespace Falcor
 
     void FullScreenPass::execute(RenderContext* pRenderContext, DepthStencilState::SharedPtr pDsState) const
     {
-        mpPipelineState->setFbo(pRenderContext->getPipelineState()->getFbo(), false);
-        mpPipelineState->setViewport(0, pRenderContext->getPipelineState()->getViewport(0), false);
-        mpPipelineState->setScissors(0, pRenderContext->getPipelineState()->getScissors(0));
+        mpPipelineState->setFbo(pRenderContext->getGraphicsState()->getFbo(), false);
+        mpPipelineState->setViewport(0, pRenderContext->getGraphicsState()->getViewport(0), false);
+        mpPipelineState->setScissors(0, pRenderContext->getGraphicsState()->getScissors(0));
 
         mpPipelineState->setVao(spVao);
         mpPipelineState->setDepthStencilState(pDsState ? pDsState : mpDepthStencilState);
-        pRenderContext->pushPipelineState(mpPipelineState);
+        pRenderContext->pushGraphicsState(mpPipelineState);
         pRenderContext->draw(arraysize(kVertices), 0);
-        pRenderContext->popPipelineState();
+        pRenderContext->popGraphicsState();
     }
 }

@@ -26,29 +26,23 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 #pragma once
-#include "Falcor.h"
+#include "Framework.h"
+#include "API/ComputeStateObject.h"
+#include "API/Device.h"
 
-using namespace Falcor;
-
-class SceneEditorSample : public Sample
+namespace Falcor
 {
-public:
-    void onLoad() override;
-    void onFrameRender() override;
-    void onShutdown() override;
-    bool onKeyEvent(const KeyboardEvent& keyEvent) override;
-    bool onMouseEvent(const MouseEvent& mouseEvent) override;
-    void onGuiRender() override;
+    bool ComputeStateObject::apiInit()
+    {
+        D3D12_COMPUTE_PIPELINE_STATE_DESC desc = {};
+        if (mDesc.mpProgram)
+        {
+            desc.CS = mDesc.mpProgram->getShader(ShaderType::Compute)->getApiHandle();
+        }
 
-private:    
-    void loadScene();
-    void createScene();
-    void reset();
-    void initNewScene();
+        desc.pRootSignature = mDesc.mpRootSignature ? mDesc.mpRootSignature->getApiHandle() : nullptr;
 
-    Scene::SharedPtr mpScene = nullptr;
-    GraphicsProgram::SharedPtr mpProgram = nullptr;
-    SceneRenderer::UniquePtr mpRenderer = nullptr;
-    SceneEditor::UniquePtr mpEditor = nullptr;
-    GraphicsVars::SharedPtr mpVars = nullptr;
-};
+        d3d_call(gpDevice->getApiHandle()->CreateComputePipelineState(&desc, IID_PPV_ARGS(&mApiHandle)));
+        return true;
+    }
+}

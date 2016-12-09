@@ -45,7 +45,7 @@
 #include "API/FBO.h"
 #include "API/Formats.h"
 #include "API/GpuTimer.h"
-#include "API/PipelineStateObject.h"
+#include "API/GraphicsStateObject.h"
 #include "API/ProgramReflection.h"
 #include "API/ProgramVars.h"
 #include "API/ProgramVersion.h"
@@ -74,12 +74,15 @@
 // Graphics
 #include "Graphics/Camera/Camera.h"
 #include "Graphics/Camera/CameraController.h"
-#include "Graphics/PipelineState.h"
+#include "Graphics/GraphicsState.h"
 #include "Graphics/FullScreenPass.h"
 #include "Graphics/TextureHelper.h"
 #include "Graphics/Light.h"
 #include "Graphics/Program.h"
+#include "Graphics/GraphicsProgram.h"
 #include "Graphics/FboHelper.h"
+#include "Graphics/ComputeProgram.h"
+#include "Graphics/ComputeState.h"
 
 // Material
 #include "Graphics/Material/Material.h"

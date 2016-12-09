@@ -47,7 +47,7 @@ void ShaderBuffersSample::onLoad()
     mpCamera = Camera::create();
 
     // create the program
-    mpProgram = Program::createFromFile("ShaderBuffers.vs", "ShaderBuffers.fs");
+    mpProgram = GraphicsProgram::createFromFile("ShaderBuffers.vs", "ShaderBuffers.fs");
 
     // Load the model
     mpModel = Model::createFromFile("teapot.obj", 0);
@@ -70,7 +70,7 @@ void ShaderBuffersSample::onLoad()
     mCameraController.setModelParams(center, radius, radius * 10);
 
     // create the uniform buffers
-    mpProgramVars = ProgramVars::create(mpProgram->getActiveVersion()->getReflector());
+    mpProgramVars = GraphicsVars::create(mpProgram->getActiveVersion()->getReflector());
     mpSurfaceColorBuffer = TypedBuffer<vec3>::create(1);
     uint32_t z = 0;
     mpInvocationsBuffer = Buffer::create(sizeof(uint32_t), Buffer::BindFlags::UnorderedAccess, Buffer::CpuAccess::Read, &z);
@@ -110,7 +110,7 @@ void ShaderBuffersSample::onFrameRender()
     mpSurfaceColorBuffer->uploadToGPU();
 
     // Set uniform buffers
-    mpRenderContext->setProgramVariables(mpProgramVars);
+    mpRenderContext->setGraphicsVars(mpProgramVars);
     mpRenderContext->drawIndexed(mIndexCount, 0, 0);
 
     std::string msg = getFpsMsg() + '\n';

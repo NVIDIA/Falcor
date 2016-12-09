@@ -112,7 +112,7 @@ namespace Falcor
         DescriptorHeap::SharedPtr getRtvDescriptorHeap() const { return mpRtvHeap; }
         DescriptorHeap::SharedPtr getSamplerDescriptorHeap() const { return mpSamplerHeap; }
         ResourceAllocator::SharedPtr getResourceAllocator() const { return mpResourceAllocator; }
-        void releaseResource(ID3D12ResourcePtr pResource);
+        void releaseResource(ApiObjectHandle pResource);
     private:
 		Device(Window::SharedPtr pWindow) : mpWindow(pWindow) {}
 		bool init(const Desc& desc);

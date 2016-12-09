@@ -27,7 +27,7 @@
 ***************************************************************************/
 #include <vector>
 #include "API/RenderContext.h"
-#include "API/PipelineStateObject.h"
+#include "API/GraphicsStateObject.h"
 #include "API/LowLevel/RootSignature.h"
 
 namespace Falcor
@@ -66,17 +66,17 @@ namespace Falcor
         }
     }
 
-    inline D3Dx(PRIMITIVE_TOPOLOGY_TYPE) getD3DPrimitiveType(PipelineStateObject::PrimitiveType type)
+    inline D3Dx(PRIMITIVE_TOPOLOGY_TYPE) getD3DPrimitiveType(GraphicsStateObject::PrimitiveType type)
     {
         switch (type)
         {
-        case PipelineStateObject::PrimitiveType::Point:
+        case GraphicsStateObject::PrimitiveType::Point:
             return D3Dx(PRIMITIVE_TOPOLOGY_TYPE_POINT);
-        case PipelineStateObject::PrimitiveType::Line:
+        case GraphicsStateObject::PrimitiveType::Line:
             return D3Dx(PRIMITIVE_TOPOLOGY_TYPE_LINE);
-        case PipelineStateObject::PrimitiveType::Triangle:
+        case GraphicsStateObject::PrimitiveType::Triangle:
             return D3Dx(PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE);
-        case PipelineStateObject::PrimitiveType::Patch:
+        case GraphicsStateObject::PrimitiveType::Patch:
             return D3Dx(PRIMITIVE_TOPOLOGY_TYPE_PATCH);
         default:
             should_not_get_here();

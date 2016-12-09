@@ -39,7 +39,6 @@ void ProjectTemplate::onGuiRender()
 
 void ProjectTemplate::onLoad()
 {
-    mpCamera = Camera::create();
 }
 
 void ProjectTemplate::onFrameRender()
@@ -70,13 +69,6 @@ void ProjectTemplate::onDataReload()
 
 void ProjectTemplate::onResizeSwapChain()
 {
-    PipelineState::Viewport vp;
-    vp.height = (float)mpDefaultFBO->getHeight();
-    vp.width = (float)mpDefaultFBO->getWidth();
-    mpRenderContext->getPipelineState()->setViewport(0, vp);
-    mpCamera->setFovY(float(M_PI / 8));
-    mpCamera->setAspectRatio(vp.width / vp.height);
-    mpCamera->setDepthRange(0, 1000);
 }
 
 int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ LPSTR lpCmdLine, _In_ int nShowCmd)

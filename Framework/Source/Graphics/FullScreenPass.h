@@ -33,7 +33,7 @@
 #include "API/DepthStencilState.h"
 #include "API/Buffer.h"
 #include "API/ProgramVersion.h"
-#include "Graphics/PipelineState.h"
+#include "Graphics/GraphicsState.h"
 
 namespace Falcor
 {
@@ -74,8 +74,8 @@ namespace Falcor
         void init(const std::string & fragmentShaderFile, const Program::DefineList& programDefines, bool disableDepth, bool disableStencil, uint32_t viewportMask);
 
     private:
-        Program::SharedPtr mpProgram;
-        PipelineState::SharedPtr mpPipelineState;
+        GraphicsProgram::SharedPtr mpProgram;
+        GraphicsState::SharedPtr mpPipelineState;
         DepthStencilState::SharedPtr mpDepthStencilState;
         // Static
         static Buffer::SharedPtr spVertexBuffer;

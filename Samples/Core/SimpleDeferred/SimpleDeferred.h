@@ -53,10 +53,10 @@ private:
     FirstPersonCameraController mFirstPersonCameraController;
     Sampler::SharedPtr mpLinearSampler;
 
-    Program::SharedPtr mpDeferredPassProgram;
-    ProgramVars::SharedPtr mpDeferredVars;
+    GraphicsProgram::SharedPtr mpDeferredPassProgram;
+    GraphicsVars::SharedPtr mpDeferredVars;
 
-    ProgramVars::SharedPtr mpLightingVars;
+    GraphicsVars::SharedPtr mpLightingVars;
     FullScreenPass::UniquePtr mpLightingPass;
 
     float mAspectRatio = 0;

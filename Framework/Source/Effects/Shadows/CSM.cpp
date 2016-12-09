@@ -137,7 +137,7 @@ namespace Falcor
         }
         mCsmData.cascadeCount = cascadeCount;
         createShadowPassResources(mapWidth, mapHeight);
-        mDepthPass.pProg = Program::createFromFile(kDepthPassVSFile, "");
+        mDepthPass.pProg = GraphicsProgram::createFromFile(kDepthPassVSFile, "");
         mDepthPass.pProg->addDefine("_APPLY_PROJECTION");
 
         mpLightCamera = Camera::create();
@@ -243,7 +243,7 @@ namespace Falcor
         mShadowPass.fboAspectRatio = (float)mapWidth / (float)mapHeight;
 
         // Create the program
-        mShadowPass.pProg = Program::createFromFile(kDepthPassVSFile, kDepthPassFsFile, kDepthPassGsFile, "", "", progDef);
+        mShadowPass.pProg = GraphicsProgram::createFromFile(kDepthPassVSFile, kDepthPassFsFile, kDepthPassGsFile, "", "", progDef);
         mShadowPass.pLightCB = ConstantBuffer::create(mShadowPass.pProg, "PerLightCB");
         mShadowPass.pAlphaCB = ConstantBuffer::create(mShadowPass.pProg, "AlphaMapCB");
 
@@ -475,8 +475,8 @@ namespace Falcor
     void CascadedShadowMaps::executeDepthPass(RenderContext* pCtx, const Camera* pCamera)
     {
         // Must have an FBO attached, otherwise don't know the size of the depth map
-        uint32_t width = pCtx->getPipelineState()->getFbo()->getWidth();
-        uint32_t height = pCtx->getPipelineState()->getFbo()->getHeight();
+        uint32_t width = pCtx->getGraphicsState()->getFbo()->getWidth();
+        uint32_t height = pCtx->getGraphicsState()->getFbo()->getHeight();
 
         if((mDepthPass.pFbo == nullptr) || (mDepthPass.pFbo->getWidth() != width) || (mDepthPass.pFbo->getHeight() != height))
         {
@@ -562,7 +562,7 @@ namespace Falcor
         glm::vec2 distanceRange;
         calcDistanceRange(pRenderCtx, pCamera, pDepthBuffer, distanceRange);
 
-        PipelineState::Viewport VP;
+        GraphicsState::Viewport VP;
         VP.originX = 0;
         VP.originY = 0;
         VP.minDepth = 0;

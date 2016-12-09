@@ -30,25 +30,22 @@
 
 using namespace Falcor;
 
-class SceneEditorSample : public Sample
+class ComputeShader : public Sample
 {
 public:
     void onLoad() override;
     void onFrameRender() override;
-    void onShutdown() override;
-    bool onKeyEvent(const KeyboardEvent& keyEvent) override;
-    bool onMouseEvent(const MouseEvent& mouseEvent) override;
     void onGuiRender() override;
 
-private:    
-    void loadScene();
-    void createScene();
-    void reset();
-    void initNewScene();
+private:
+    ComputeProgram::SharedPtr mpProg;
+    ComputeState::SharedPtr mpState;
+    bool mbPixelate = false;
+    ComputeVars::SharedPtr mpProgVars;
+    GraphicsVars::SharedPtr mpBlitVars;
+    Texture::SharedPtr mpImage;
 
-    Scene::SharedPtr mpScene = nullptr;
-    GraphicsProgram::SharedPtr mpProgram = nullptr;
-    SceneRenderer::UniquePtr mpRenderer = nullptr;
-    SceneEditor::UniquePtr mpEditor = nullptr;
-    GraphicsVars::SharedPtr mpVars = nullptr;
+    FullScreenPass::UniquePtr mpBlitPass;
+    Texture::SharedPtr mpTmpTexture;
+    void loadImage();
 };

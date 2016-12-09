@@ -26,29 +26,38 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 #pragma once
-#include "Falcor.h"
+#include "Program.h"
 
-using namespace Falcor;
-
-class SceneEditorSample : public Sample
+namespace Falcor
 {
-public:
-    void onLoad() override;
-    void onFrameRender() override;
-    void onShutdown() override;
-    bool onKeyEvent(const KeyboardEvent& keyEvent) override;
-    bool onMouseEvent(const MouseEvent& mouseEvent) override;
-    void onGuiRender() override;
+    /** Compute program.
+    */
+    class ComputeProgram : public Program, inherit_shared_from_this<Program, ComputeProgram>
+    {
+    public:
+        using SharedPtr = std::shared_ptr<ComputeProgram>;
+        using SharedConstPtr = std::shared_ptr<const ComputeProgram>;
+        ~ComputeProgram() = default;
 
-private:    
-    void loadScene();
-    void createScene();
-    void reset();
-    void initNewScene();
+        /** create a new program object.
+            \param[in] filename Compute shader filename
+            \param[in] programDefines A list of macro definitions to set into the shader
+            \return A new object, or nullptr if creation failed.
 
-    Scene::SharedPtr mpScene = nullptr;
-    GraphicsProgram::SharedPtr mpProgram = nullptr;
-    SceneRenderer::UniquePtr mpRenderer = nullptr;
-    SceneEditor::UniquePtr mpEditor = nullptr;
-    GraphicsVars::SharedPtr mpVars = nullptr;
-};
+            Note that this call merely creates a program object. The actual compilation and link happens when calling Program#getActiveVersion().
+        */
+        static SharedPtr createFromFile(const std::string& filename, const DefineList& programDefines = DefineList());
+
+        /** create a new program object.
+        \param[in] filename Compute shader string.
+        \param[in] programDefines A list of macro definitions to set into the shader
+
+        \return A new object, or nullptr if creation failed.
+        Note that this call merely creates a program object. The actual compilation and link happens when calling Program#getActiveVersion().
+        */
+        static SharedPtr createFromString(const std::string& filename, const DefineList& programDefines = DefineList());
+
+    private:
+        ComputeProgram() = default;
+    };
+}

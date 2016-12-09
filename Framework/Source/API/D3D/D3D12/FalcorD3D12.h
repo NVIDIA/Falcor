@@ -49,7 +49,10 @@ namespace Falcor
     MAKE_SMART_COM_PTR(ID3D12ShaderReflection);
     MAKE_SMART_COM_PTR(ID3D12RootSignature);
     MAKE_SMART_COM_PTR(ID3D12QueryHeap);
+    MAKE_SMART_COM_PTR(IUnknown);
     
+    using ApiObjectHandle = IUnknownPtr;
+
     using HeapCpuHandle = D3D12_CPU_DESCRIPTOR_HANDLE;
     using HeapGpuHandle = D3D12_GPU_DESCRIPTOR_HANDLE;
 
@@ -69,7 +72,8 @@ namespace Falcor
     using UavHandle = std::shared_ptr<DescriptorHeapEntry>;
     using GpuAddress = D3D12_GPU_VIRTUAL_ADDRESS;
     
-    using RenderStateHandle = ID3D12PipelineStatePtr;
+    using PsoHandle = ID3D12PipelineStatePtr;
+    using ComputeStateHandle = ID3D12PipelineStatePtr;
     using ShaderHandle = D3D12_SHADER_BYTECODE;
     using ShaderReflectionHandle = ID3D12ShaderReflectionPtr;
     using RootSignatureHandle = ID3D12RootSignaturePtr;

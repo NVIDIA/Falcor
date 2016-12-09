@@ -26,29 +26,41 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 #pragma once
-#include "Falcor.h"
+#include "API/ProgramVersion.h"
+#include "API/LowLevel/RootSignature.h"
 
-using namespace Falcor;
-
-class SceneEditorSample : public Sample
+namespace Falcor
 {
-public:
-    void onLoad() override;
-    void onFrameRender() override;
-    void onShutdown() override;
-    bool onKeyEvent(const KeyboardEvent& keyEvent) override;
-    bool onMouseEvent(const MouseEvent& mouseEvent) override;
-    void onGuiRender() override;
+    class RenderContext;
 
-private:    
-    void loadScene();
-    void createScene();
-    void reset();
-    void initNewScene();
+    class ComputeStateObject
+    {
+    public:
+        using SharedPtr = std::shared_ptr<ComputeStateObject>;
+        using SharedConstPtr = std::shared_ptr<const ComputeStateObject>;
+        using ApiHandle = ComputeStateHandle;
 
-    Scene::SharedPtr mpScene = nullptr;
-    GraphicsProgram::SharedPtr mpProgram = nullptr;
-    SceneRenderer::UniquePtr mpRenderer = nullptr;
-    SceneEditor::UniquePtr mpEditor = nullptr;
-    GraphicsVars::SharedPtr mpVars = nullptr;
-};
+        ~ComputeStateObject();
+
+        class Desc
+        {
+        public:
+            Desc& setRootSignature(RootSignature::SharedPtr pSignature) { mpRootSignature = pSignature; return *this; }
+            Desc& setProgramVersion(ProgramVersion::SharedConstPtr pProgram) { mpProgram = pProgram; return *this; }
+            ProgramVersion::SharedConstPtr getProgramVersion() const { return mpProgram; }
+        private:
+            friend class ComputeStateObject;
+            ProgramVersion::SharedConstPtr mpProgram;
+            RootSignature::SharedPtr mpRootSignature;
+        };
+
+        static SharedPtr create(const Desc& desc);
+        ApiHandle getApiHandle() { return mApiHandle; }
+        const Desc& getDesc() const { return mDesc; }
+    private:
+        ComputeStateObject(const Desc& desc) : mDesc(desc) {}
+        Desc mDesc;
+        ApiHandle mApiHandle;
+        bool apiInit();
+    };
+}

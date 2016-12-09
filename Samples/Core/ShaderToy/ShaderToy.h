@@ -49,7 +49,7 @@ private:
     DepthStencilState::SharedPtr    mpNoDepthDS;
     BlendState::SharedPtr           mpOpaqueBS;
     FullScreenPass::UniquePtr       mpMainPass;
-    ProgramVars::SharedPtr          mpToyVars;
+    GraphicsVars::SharedPtr         mpToyVars;
     uint32_t                        mToyCBBinding;
 
 };

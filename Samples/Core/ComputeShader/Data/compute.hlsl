@@ -25,30 +25,44 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#pragma once
-#include "Falcor.h"
 
-using namespace Falcor;
+Texture2D gInput;
+RWTexture2D<float4> gOutput;
 
-class SceneEditorSample : public Sample
+groupshared float4 colors[16][16];
+groupshared float4 pixelated;
+
+[numthreads(16, 16, 1)]
+void main(uint3 groupId : SV_GroupID, uint3 groupThreadId : SV_GroupThreadId)
 {
-public:
-    void onLoad() override;
-    void onFrameRender() override;
-    void onShutdown() override;
-    bool onKeyEvent(const KeyboardEvent& keyEvent) override;
-    bool onMouseEvent(const MouseEvent& mouseEvent) override;
-    void onGuiRender() override;
+    // Calculate the start position of the block    
+    uint3 resDim;
+    gOutput.GetDimensions(resDim.x, resDim.y);
 
-private:    
-    void loadScene();
-    void createScene();
-    void reset();
-    void initNewScene();
+    uint2 posStart = groupId.xy * 16;
+    uint2 crd = posStart + groupThreadId.xy;
 
-    Scene::SharedPtr mpScene = nullptr;
-    GraphicsProgram::SharedPtr mpProgram = nullptr;
-    SceneRenderer::UniquePtr mpRenderer = nullptr;
-    SceneEditor::UniquePtr mpEditor = nullptr;
-    GraphicsVars::SharedPtr mpVars = nullptr;
-};
+    // Fetch all of the data into the shared local memory
+    colors[groupThreadId.x][groupThreadId.y] = gInput[crd];
+
+#ifdef _PIXELATE
+    GroupMemoryBarrierWithGroupSync();
+    if(any(groupThreadId) == false)
+    {
+        pixelated = 0;
+        for(int i = 0 ; i < 16 ; i++)
+        {
+            for(int j = 0 ; j < 16 ; j++)
+            {
+                pixelated += colors[i][j];
+            }
+        }
+        pixelated /= 16*16;
+    }
+
+    GroupMemoryBarrierWithGroupSync();
+    gOutput[crd] = pixelated;
+#else
+    gOutput[crd] = colors[groupThreadId.x][groupThreadId.y];
+#endif
+}
