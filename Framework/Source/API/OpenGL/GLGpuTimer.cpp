@@ -50,7 +50,7 @@ namespace Falcor
     {
         if(mBeginCalled)
         {
-            Logger::log(Logger::Level::Warning, "CGpuTimer::begin() was called before CGpuTimer::End(). Ignoring call");
+            logWarning("CGpuTimer::begin() was called before CGpuTimer::End(). Ignoring call");
             return;
         }
         mBeginCalled = true;
@@ -62,7 +62,7 @@ namespace Falcor
     {
         if(mBeginCalled == false)
         {
-            Logger::log(Logger::Level::Warning, "CGpuTimer::end() was called without a prior call to CGpuTimer::Begin(). Ignoring call");
+            logWarning("CGpuTimer::end() was called without a prior call to CGpuTimer::Begin(). Ignoring call");
             return;
         }
         mEndCalled = true;
@@ -74,7 +74,7 @@ namespace Falcor
     {
         if(mEndCalled == false)
         {
-            Logger::log(Logger::Level::Error, "CGpuTimer::getElapsedTime() was called before CGpuTimer::End(). Ignoring call");
+            logError("CGpuTimer::getElapsedTime() was called before CGpuTimer::End(). Ignoring call");
             return false;
         }
 

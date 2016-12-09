@@ -294,7 +294,7 @@ namespace Falcor
     {
         if(VRSystem::instance() == nullptr)
         {
-            Logger::log(Logger::Level::Error, "Can't attach camera to HmdCameraController. VRSystem not initialized", true);
+            logError("Can't attach camera to HmdCameraController. VRSystem not initialized", true);
             return;
         }
 

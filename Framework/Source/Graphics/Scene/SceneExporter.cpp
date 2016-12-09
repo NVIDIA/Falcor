@@ -120,7 +120,7 @@ namespace Falcor
         std::ofstream outputStream(mFilename.c_str());
         if(outputStream.fail())
         {
-            Logger::log(Logger::Level::Error, "Can't open output scene file " + mFilename + ".\nExporting failed.");
+            logError("Can't open output scene file " + mFilename + ".\nExporting failed.");
             return false;
         }
         outputStream << str;

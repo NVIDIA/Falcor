@@ -108,7 +108,7 @@ namespace Falcor
 
         if(size + offset > mSize)
         {
-            Logger::log(Logger::Level::Warning, "VariablesBuffer::uploadToGPU() - trying to upload more data than what the buffer contains. Call is ignored.");
+            logWarning("VariablesBuffer::uploadToGPU() - trying to upload more data than what the buffer contains. Call is ignored.");
             return;
         }
 
@@ -127,7 +127,7 @@ namespace Falcor
             std::string msg("Error when setting variable \"");
             msg += name + "\" to buffer \"" + bufferName + "\".\n";
             msg += "Type mismatch.\nsetVariable() was called with Type " + to_string(callType) + ".\nVariable was declared with Type " + to_string(shaderType) + ".\n\n";
-            Logger::log(Logger::Level::Error, msg);
+            logError(msg);
             assert(0);
             return false;
         }
@@ -169,7 +169,7 @@ namespace Falcor
                     if(count > 1)
                     {
                         std::string Msg("Error when setting constant by offset. Found constant \"" + varName + "\" which is not an array, but trying to set more than 1 element");
-                        Logger::log(Logger::Level::Error, Msg);
+                        logError(Msg);
                         return false;
                     }
                 }
@@ -177,7 +177,7 @@ namespace Falcor
                 {
                     std::string Msg("Error when setting constant by offset. Found constant \"" + varName + "\" with array size " + std::to_string(varDesc.arraySize));
                     Msg += ". Trying to set " + std::to_string(count) + " elements, starting at index " + std::to_string(arrayIndex) + ", which will cause out-of-bound access. Ignoring call.";
-                    Logger::log(Logger::Level::Error, Msg);
+                    logError(Msg);
                     return false;
                 }
                 return checkVariableType<VarType>(varDesc.type, varName + "(Set by offset)", pBufferDesc->getName());
@@ -185,7 +185,7 @@ namespace Falcor
         }
         std::string msg("Error when setting constant by offset. No constant found at offset ");
         msg += std::to_string(offset) + ". Ignoring call";
-        Logger::log(Logger::Level::Error, msg);
+        logError(msg);
         return false;
 #else
         return true;
@@ -401,7 +401,7 @@ namespace Falcor
         {
             std::string Msg("Error when setting blob to buffer\"");
             Msg += mpReflector->getName() + "\". Blob to large and will result in overflow. Ignoring call.";
-            Logger::log(Logger::Level::Error, Msg);
+            logError(Msg);
             return;
         }
         memcpy(mData.data() + offset, pSrc, size);
@@ -486,7 +486,7 @@ namespace Falcor
             }
 
             msg += "\nError when setting resource to buffer " + bufferName;
-            Logger::log(Logger::Level::Error, msg);
+            logError(msg);
             return false;
         }
 #endif
@@ -553,7 +553,7 @@ namespace Falcor
             {
                 std::string msg("Error when setting texture by offset. No variable found at offset ");
                 msg += std::to_string(offset) + ". Ignoring call";
-                Logger::log(Logger::Level::Error, msg);
+                logError(msg);
             }
         }
 #endif
@@ -595,7 +595,7 @@ namespace Falcor
         {
             if(pVarDesc->arraySize < count)
             {
-                Logger::log(Logger::Level::Warning, "Error when setting textures array. 'count' is larger than the array size. Ignoring out-of-bound elements");
+                logWarning("Error when setting textures array. 'count' is larger than the array size. Ignoring out-of-bound elements");
                 count = pVarDesc->arraySize;
             }
 

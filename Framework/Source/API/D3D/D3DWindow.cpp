@@ -301,7 +301,7 @@ namespace Falcor
 
         if(RegisterClass(&wc) == 0)
         {
-            Logger::log(Logger::Level::Fatal, "RegisterClass() failed");
+            logErrorAndExit("RegisterClass() failed");
             return nullptr;
         }
 
@@ -317,7 +317,7 @@ namespace Falcor
         HWND hWnd = CreateWindowEx(0, className, wTitle.c_str(), winStyle, CW_USEDEFAULT, CW_USEDEFAULT, windowWidth, windowHeight, nullptr, nullptr, wc.hInstance, pUserData);
         if(hWnd == nullptr)
         {
-            Logger::log(Logger::Level::Fatal, "CreateWindowEx() failed");
+            logErrorAndExit("CreateWindowEx() failed");
             return nullptr;
         }
 

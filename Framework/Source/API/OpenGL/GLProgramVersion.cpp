@@ -85,7 +85,7 @@ namespace Falcor
         std::ofstream outfile(filename);
         if(outfile.good() == false)
         {
-            Logger::log(Logger::Level::Error, "ProgramVersion::dumpShaderAssembly() - can't open output file \"" + filename + "\"\n");
+            logError("ProgramVersion::dumpShaderAssembly() - can't open output file \"" + filename + "\"\n");
             return;
         }
         int32_t progSize;

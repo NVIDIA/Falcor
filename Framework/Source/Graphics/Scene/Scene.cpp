@@ -116,7 +116,7 @@ namespace Falcor
         const auto& a = mUserVars.find(name);
         if(a == mUserVars.end())
         {
-            Logger::log(Logger::Level::Warning, "Can't find user variable " + name + " in scene.");
+            logWarning("Can't find user variable " + name + " in scene.");
             return kInvalidVar;
         }
         else

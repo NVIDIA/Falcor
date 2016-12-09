@@ -46,7 +46,7 @@ namespace Falcor
 
         if(mipLevel >= pTexture->getMipCount())
         {
-            Logger::log(Logger::Level::Error, "Error when attaching texture to FBO. Requested mip-level is out-of-bound.");
+            logError("Error when attaching texture to FBO. Requested mip-level is out-of-bound.");
             return false;
         }
 
@@ -56,7 +56,7 @@ namespace Falcor
             {
                 if(arraySize + firstArraySlice >= pTexture->getDepth())
                 {
-                    Logger::log(Logger::Level::Error, "Error when attaching texture to FBO. Requested depth-index is out-of-bound.");
+                    logError("Error when attaching texture to FBO. Requested depth-index is out-of-bound.");
                     return false;
                 }
             }
@@ -64,7 +64,7 @@ namespace Falcor
             {
                 if(arraySize + firstArraySlice >= pTexture->getArraySize())
                 {
-                    Logger::log(Logger::Level::Error, "Error when attaching texture to FBO. Requested array index is out-of-bound.");
+                    logError("Error when attaching texture to FBO. Requested array index is out-of-bound.");
                     return false;
                 }
             }
@@ -74,13 +74,13 @@ namespace Falcor
         {
             if(isDepthStencilFormat(pTexture->getFormat()) == false)
             {
-                Logger::log(Logger::Level::Error, "Error when attaching texture to FBO. Attaching to depth-stencil target, but resource has color format.");
+                logError("Error when attaching texture to FBO. Attaching to depth-stencil target, but resource has color format.");
                 return false;
             }
 
             if ((pTexture->getBindFlags() & Texture::BindFlags::DepthStencil) == Texture::BindFlags::None)
             {
-                Logger::log(Logger::Level::Error, "Error when attaching texture to FBO. Attaching to depth-stencil target, the texture wasn't create with the DepthStencil bind flag");
+                logError("Error when attaching texture to FBO. Attaching to depth-stencil target, the texture wasn't create with the DepthStencil bind flag");
                 return false;
 
             }
@@ -89,13 +89,13 @@ namespace Falcor
         {
             if(isDepthStencilFormat(pTexture->getFormat()))
             {
-                Logger::log(Logger::Level::Error, "Error when attaching texture to FBO. Attaching to color target, but resource has depth-stencil format.");
+                logError("Error when attaching texture to FBO. Attaching to color target, but resource has depth-stencil format.");
                 return false;
             }
 
             if ((pTexture->getBindFlags() & Texture::BindFlags::RenderTarget) == Texture::BindFlags::None)
             {
-                Logger::log(Logger::Level::Error, "Error when attaching texture to FBO. Attaching to color target, the texture wasn't create with the RenderTarget bind flag");
+                logError("Error when attaching texture to FBO. Attaching to color target, the texture wasn't create with the RenderTarget bind flag");
                 return false;
 
             }
@@ -143,7 +143,7 @@ namespace Falcor
     {
         if(rtIndex >= mColorAttachments.size())
         {
-            Logger::log(Logger::Level::Error, "Error when attaching texture to FBO. Requested color index " + std::to_string(rtIndex) + ", but context only supports " + std::to_string(mColorAttachments.size()) + " targets");
+            logError("Error when attaching texture to FBO. Requested color index " + std::to_string(rtIndex) + ", but context only supports " + std::to_string(mColorAttachments.size()) + " targets");
             return;
         }
 
@@ -192,14 +192,14 @@ namespace Falcor
 
 				if (mDesc.getSampleCount() != pTexture->getSampleCount())
 				{
-					Logger::log(Logger::Level::Error, "Error when validating FBO. Different sample counts in attachments\n");
+                    logError("Error when validating FBO. Different sample counts in attachments\n");
 					return false;
 				}
 
 	
                 if(mIsLayered != (attachment.arraySize > 1))
                 {
-                    Logger::log(Logger::Level::Error, "Error when validating FBO. Can't bind both layered and non-layered textures\n");
+                    logError("Error when validating FBO. Can't bind both layered and non-layered textures\n");
                     return false;
                 }
             }
@@ -232,7 +232,7 @@ namespace Falcor
     {
         if(index >= mColorAttachments.size())
         {
-            Logger::log(Logger::Level::Error, "CFbo::getColorTexture(): Index is out of range. Requested " + std::to_string(index) + " but only " + std::to_string(mColorAttachments.size()) + " color slots are available.");
+            logError("CFbo::getColorTexture(): Index is out of range. Requested " + std::to_string(index) + " but only " + std::to_string(mColorAttachments.size()) + " color slots are available.");
             return nullptr;
         }
         return mColorAttachments[index].pTexture;

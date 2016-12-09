@@ -69,7 +69,7 @@ namespace Falcor
         }
         if(size + offset > mSize)
         {
-            Logger::log(Logger::Level::Warning, "StructuredBuffer::readFromGPU() - trying to read more data than what the buffer contains. Call is ignored.");
+            logWarning("StructuredBuffer::readFromGPU() - trying to read more data than what the buffer contains. Call is ignored.");
             return;
         }
         if(mGpuCopyDirty)
@@ -85,7 +85,7 @@ namespace Falcor
     {    
         if(size + offset > mSize)
         {
-            Logger::log(Logger::Level::Warning, "StructuredBuffer::readBlob() - trying to read more data than what the buffer contains. Call is ignored.");
+            logWarning("StructuredBuffer::readBlob() - trying to read more data than what the buffer contains. Call is ignored.");
             return;
         }
         readFromGPU();

@@ -49,14 +49,14 @@ namespace Falcor
         mpTexture = pSkyTexture;
         if(mpTexture == nullptr)
         {
-            Logger::log(Logger::Level::Error, "Trying to create a skybox with null texture");
+            logError("Trying to create a skybox with null texture");
             return false;
         }
 
         mpCubeModel = Model::createFromFile("Effects/cube.obj", 0);
         if(mpCubeModel == nullptr)
         {
-            Logger::log(Logger::Level::Error, "Failed to load cube model for SkyBox");
+            logError("Failed to load cube model for SkyBox");
             return false;
         }
 

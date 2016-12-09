@@ -479,7 +479,7 @@ namespace Falcor
                 auto pModel = Model::createFromFile(filename, mModelLoadFlags);
                 if (pModel == nullptr)
                 {
-                    Logger::log(Logger::Level::Error, "Error when trying to load model " + filename);
+                    logError("Error when trying to load model " + filename);
                     return;
                 }
 

@@ -104,7 +104,7 @@ namespace Falcor
     {
         if(hasSuffix(filename, ".bin", false) == false)
         {
-            Logger::log(Logger::Level::Warning, "Exporting model to binary file, but extension is not '.bin'. This will cause error when loading the file");
+            logWarning("Exporting model to binary file, but extension is not '.bin'. This will cause error when loading the file");
         }
 
         BinaryModelExporter::exportToFile(filename, this);

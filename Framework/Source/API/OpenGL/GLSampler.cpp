@@ -143,7 +143,7 @@ namespace Falcor
         if((desc.mMagFilter != Filter::Linear) && (desc.mMagFilter != Filter::Point))
         {
             std::string Err = "Error in Sampler::create() - MagFilter should be either Nearest_NoMipmap or Linear_NoMipmap\n";
-            Logger::log(Logger::Level::Error, Err);
+            logError(Err);
             return nullptr;
         }
         GLenum glMag = getGlMagFilterMode(desc.mMagFilter);
@@ -156,7 +156,7 @@ namespace Falcor
         if(desc.mMaxAnisotropy < 1 || getApiMaxAnisotropy() < desc.mMaxAnisotropy)
         {
             std::string err = "Error in Sampler::create() - MaxAnisotropy should be in range [1, " + std::to_string(getApiMaxAnisotropy()) + "]. " + std::to_string(desc.mMaxAnisotropy) + " provided)\n";
-            Logger::log(Logger::Level::Error, err);
+            logError(err);
             return nullptr;
         }
         gl_call(glSamplerParameterf(ApiHandle, GL_TEXTURE_MAX_ANISOTROPY_EXT, (float)desc.mMaxAnisotropy));

@@ -46,7 +46,7 @@ namespace Falcor
         bool b = pFont->loadFromFile("DejaVu Sans Mono", 14);
         if(b == false)
         {
-            Logger::log(Logger::Level::Error, "Failed to create font resource");
+            logError("Failed to create font resource");
             pFont = nullptr;
         }
 

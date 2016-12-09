@@ -59,7 +59,7 @@ namespace Falcor
     {
         if(mSize != pDst->mSize)
         {
-            Logger::log(Logger::Level::Error, "Error in Buffer::copy().\nSource buffer size is " + std::to_string(mSize) + ", Destination buffer size is " + std::to_string(pDst->mSize) + ".\nBuffers should have the same size.");
+            logError("Error in Buffer::copy().\nSource buffer size is " + std::to_string(mSize) + ", Destination buffer size is " + std::to_string(pDst->mSize) + ".\nBuffers should have the same size.");
             return;
         }
         gl_call(glCopyNamedBufferSubData(mApiHandle, pDst->mApiHandle, 0, 0, mSize));
@@ -69,7 +69,7 @@ namespace Falcor
     {
         if(mSize < srcOffset+count || pDst->mSize < dstOffset+count)
         {
-            Logger::log(Logger::Level::Error, "Error in Buffer::copy().\nSource buffer size is " + std::to_string(mSize) + ", Destination buffer size is " + std::to_string(pDst->mSize) + ", Copy offsets are " + std::to_string(srcOffset) + ", " + std::to_string(dstOffset) + ", Copy size is " + std::to_string(count) + ".\nBuffers are too small to perform copy.");
+            logError("Error in Buffer::copy().\nSource buffer size is " + std::to_string(mSize) + ", Destination buffer size is " + std::to_string(pDst->mSize) + ", Copy offsets are " + std::to_string(srcOffset) + ", " + std::to_string(dstOffset) + ", Copy size is " + std::to_string(count) + ".\nBuffers are too small to perform copy.");
             return;
         }
         gl_call(glCopyNamedBufferSubData(mApiHandle, pDst->mApiHandle, srcOffset, dstOffset, count));
@@ -80,7 +80,7 @@ namespace Falcor
         if((size + offset) > mSize)
         {
             std::string Error = "Buffer::updateData() called with data larger then the buffer size. Buffer size = " + std::to_string(mSize) + " , Data size = " + std::to_string(size) + ".";
-            Logger::log(Logger::Level::Error, Error);
+            logError(Error);
         }
 
         if((mAccessFlags & Buffer::AccessFlags::Dynamic) != Buffer::AccessFlags::None)
@@ -95,7 +95,7 @@ namespace Falcor
         }
         else
         {
-            Logger::log(Logger::Level::Error, "Buffer::updateData() - The buffer wasn't created with AccessFlags::Dynamic flag. Can't update the buffer.");
+            logError("Buffer::updateData() - The buffer wasn't created with AccessFlags::Dynamic flag. Can't update the buffer.");
         }
     }
 
@@ -104,7 +104,7 @@ namespace Falcor
         if((size + offset) > mSize)
         {
             std::string Error = "Buffer::readData called with data larger then the buffer size. Buffer size = " + std::to_string(mSize) + " , Data size = " + std::to_string(size) + ".";
-            Logger::log(Logger::Level::Error, Error);
+            logError(Error);
         }
         gl_call(glGetNamedBufferSubData(mApiHandle, offset, size, pData));
     }

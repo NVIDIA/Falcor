@@ -45,7 +45,7 @@ namespace Falcor
         if(desc.mMaxAnisotropy < 1 || getApiMaxAnisotropy() < desc.mMaxAnisotropy)
         {
             std::string err = "Error in Sampler::Sampler() - MaxAnisotropy should be in range [1, " + std::to_string(getApiMaxAnisotropy()) + "]. " + std::to_string(desc.mMaxAnisotropy) + " provided)\n";
-            Logger::log(Logger::Level::Error, err);
+            logError(err);
             return nullptr;
         }
 

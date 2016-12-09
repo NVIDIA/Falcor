@@ -104,7 +104,7 @@ namespace Falcor
 		size_t numLayers = getNumLayers();
 		if(numLayers >= MatMaxLayers)
 		{
-			Logger::log(Logger::Level::Error, "Exceeded maximum number of layers in a material");
+			logError("Exceeded maximum number of layers in a material");
 			return false;
 		}
 
@@ -188,12 +188,12 @@ namespace Falcor
 
 		if(totalAlbedo == 0.f)
         {
-            Logger::log(Logger::Level::Warning, "Material " + mName + " is pitch black");
+            logWarning("Material " + mName + " is pitch black");
             totalAlbedo = 1.f;
         }
 		else if(totalAlbedo > 1.f)
 		{
-			Logger::log(Logger::Level::Warning, "Material " + mName + " is not energy conserving. Renormalizing...");
+			logWarning("Material " + mName + " is not energy conserving. Renormalizing...");
 
 			/* Renormalize all albedos assuming linear blending between layers */
 			for(size_t i = 0;i < MatMaxLayers;++i)
@@ -270,7 +270,7 @@ namespace Falcor
         ConstantBuffer* pCB = pVars->getConstantBuffer(bufferName).get();
         if (pCB == nullptr)
         {
-            Logger::log(Logger::Level::Error, std::string("Material::setIntoProgramVars() - CB \"") + bufferName + "\" is not part of the program\n");
+            logError(std::string("Material::setIntoProgramVars() - CB \"") + bufferName + "\" is not part of the program\n");
             return;
         }
 
@@ -278,7 +278,7 @@ namespace Falcor
 
         if(offset == ConstantBuffer::kInvalidOffset)
         {
-            Logger::log(Logger::Level::Error, std::string("Material::setIntoConstantBuffer() - variable \"") + varName + "\"not found in constant buffer\n");
+            logError(std::string("Material::setIntoConstantBuffer() - variable \"") + varName + "\"not found in constant buffer\n");
             return;
         }
 
@@ -295,7 +295,7 @@ namespace Falcor
         const auto pResourceDesc = pVars->getReflection()->getResourceDesc(resourceName);
         if (pResourceDesc == nullptr)
         {
-            Logger::log(Logger::Level::Error, std::string("Material::setIntoConstantBuffer() - can't find the first texture object"));
+            logError(std::string("Material::setIntoConstantBuffer() - can't find the first texture object"));
             return;
         }
         pVars->setTextureRange(pResourceDesc->regIndex, kTexCount, (Texture::SharedPtr*)&mData.textures);

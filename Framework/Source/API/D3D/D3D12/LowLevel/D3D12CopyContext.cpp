@@ -58,7 +58,7 @@ namespace Falcor
         // Create a command list
         if (FAILED(gpDevice->getApiHandle()->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_COPY, pApiData->pAllocator, nullptr, IID_PPV_ARGS(&pApiData->pCmdList))))
         {
-            Logger::log(Logger::Level::Error, "Failed to create command list for CopyContext");
+            logError("Failed to create command list for CopyContext");
             return false;
         }
 
@@ -69,7 +69,7 @@ namespace Falcor
 
         if (FAILED(gpDevice->getApiHandle()->CreateCommandQueue(&cqDesc, IID_PPV_ARGS(&pApiData->pQueue))))
         {
-            Logger::log(Logger::Level::Error, "Failed to create command queue for CopyContext");
+            logError("Failed to create command queue for CopyContext");
             return false;
         }
         return true;

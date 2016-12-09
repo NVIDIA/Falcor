@@ -185,7 +185,7 @@ namespace Falcor
 #ifdef _LOG_ENABLED
         if(expectedType != actualType)
         {
-            Logger::log(Logger::Level::Error, "Can't retrieve shader API handle. Requested handle Type doesn't match actual shader Type");
+            logError("Can't retrieve shader API handle. Requested handle Type doesn't match actual shader Type");
             return nullptr;
         }
 #endif

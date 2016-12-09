@@ -106,7 +106,7 @@ namespace Falcor
         bool isDepth = isDepthStencilFormat(format);
         if(isDepth && mipLevels)
         {
-            Logger::log(Logger::Level::Warning, "Texture::create1D() - can't automatically generate mip levels for depth texture");
+            logWarning("Texture::create1D() - can't automatically generate mip levels for depth texture");
         }
 
         D3D11_TEXTURE1D_DESC desc;
@@ -142,7 +142,7 @@ namespace Falcor
         bool isDepth = isDepthStencilFormat(format);
         if(isDepth && mipLevels)
         {
-            Logger::log(Logger::Level::Warning, "Texture::CreateTexture2DDesc() - can't automatically generate mip levels for depth texture");
+            logWarning("Texture::CreateTexture2DDesc() - can't automatically generate mip levels for depth texture");
         }
         D3D11_TEXTURE2D_DESC desc;
         desc.ArraySize = arraySize;
@@ -187,7 +187,7 @@ namespace Falcor
         bool isDepth = isDepthStencilFormat(format);
         if(isDepth && mipLevels)
         {
-            Logger::log(Logger::Level::Warning, "Texture::create3D() - can't automatically generate mip levels for depth texture");
+            logWarning("Texture::create3D() - can't automatically generate mip levels for depth texture");
         }
 
         D3D11_TEXTURE3D_DESC desc;
@@ -247,7 +247,7 @@ namespace Falcor
     {
         if(useFixedSampleLocations == false)
         {
-            Logger::log(Logger::Level::Warning, "DX11 multisampled textures only support fixed sample locations.");
+            logWarning("DX11 multisampled textures only support fixed sample locations.");
         }
 
         D3D11_TEXTURE2D_DESC desc = CreateTexture2DDesc(width, width, format, arraySize, 1);

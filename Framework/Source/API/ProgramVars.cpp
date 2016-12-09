@@ -156,7 +156,7 @@ namespace Falcor
 
         if (bindLocation == ProgramReflection::kInvalidLocation)
         {
-            Logger::log(Logger::Level::Error, "Can't find buffer named \"" + name + "\"");
+            logError("Can't find buffer named \"" + name + "\"");
             return nullptr;
         }
 
@@ -164,7 +164,7 @@ namespace Falcor
 
         if (pDesc->getType() != bufferType)
         {
-            Logger::log(Logger::Level::Error, "Buffer \"" + name + "\" is a " + to_string(pDesc->getType()) + " buffer, while requesting for " + to_string(bufferType) + " buffer");
+            logError("Buffer \"" + name + "\" is a " + to_string(pDesc->getType()) + " buffer, while requesting for " + to_string(bufferType) + " buffer");
             return nullptr;
         }
 
@@ -208,7 +208,7 @@ namespace Falcor
         // Check that the index is valid
         if (mAssignedCbs.find(index) == mAssignedCbs.end())
         {
-            Logger::log(Logger::Level::Warning, "No constant buffer was found at index " + std::to_string(index) + ". Ignoring attachConstantBuffer() call.");
+            logWarning("No constant buffer was found at index " + std::to_string(index) + ". Ignoring attachConstantBuffer() call.");
             return false;
         }
 
@@ -216,7 +216,7 @@ namespace Falcor
         const auto& desc = mpReflector->getBufferDesc(index, ProgramReflection::BufferReflection::Type::Constant);
         if (desc->getRequiredSize() > pCB->getSize())
         {
-            Logger::log(Logger::Level::Error, "Can't attach the constant-buffer. Size mismatch.");
+            logError("Can't attach the constant-buffer. Size mismatch.");
             return false;
         }
 
@@ -231,7 +231,7 @@ namespace Falcor
         uint32_t loc = mpReflector->getBufferBinding(name);
         if (loc == ProgramReflection::kInvalidLocation)
         {
-            Logger::log(Logger::Level::Warning, "Constant buffer \"" + name + "\" was not found. Ignoring attachConstantBuffer() call.");
+            logWarning("Constant buffer \"" + name + "\" was not found. Ignoring attachConstantBuffer() call.");
             return false;
         }
 
@@ -244,7 +244,7 @@ namespace Falcor
         const ProgramReflection::Resource* pDesc = mpReflector->getResourceDesc(name);
         if (pDesc == nullptr)
         {
-            Logger::log(Logger::Level::Warning, "Raw buffer \"" + name + "\" was not found. Ignoring setRawBuffer() call.");
+            logWarning("Raw buffer \"" + name + "\" was not found. Ignoring setRawBuffer() call.");
             return false;
         }
 

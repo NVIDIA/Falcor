@@ -544,7 +544,7 @@ namespace Falcor
         std::string fullpath;
 		if (findFileInDataDirectories(filename, fullpath) == false)
 		{
-			Logger::log(Logger::Level::Error, std::string("Can't find texture file ") + filename);
+			logError(std::string("Can't find texture file ") + filename);
 			//could not find file
 			return;
 		}
@@ -557,7 +557,7 @@ namespace Falcor
 		if (ddsIdentifier != kDdsMagicNumber)
 		{
 			//not valid dds file apparently
-			Logger::log(Logger::Level::Error, std::string("The dds file ") + filename + std::string(" is not a valid dds file"));
+			logError(std::string("The dds file ") + filename + std::string(" is not a valid dds file"));
 			return;
 		}
 
@@ -670,7 +670,7 @@ namespace Falcor
 #define no_srgb()   \
     if(loadAsSrgb)  \
     {               \
-        Logger::log(Logger::Level::Warning, "createTexture2DFromFile() warning. " + std::to_string(pBitmap->getBytesPerPixel()) + " channel images doesn't have a matching sRGB format. Loading in linear space.");  \
+        logWarning("createTexture2DFromFile() warning. " + std::to_string(pBitmap->getBytesPerPixel()) + " channel images doesn't have a matching sRGB format. Loading in linear space.");  \
     }
 			
 		if (hasSuffix(filename, ".dds"))

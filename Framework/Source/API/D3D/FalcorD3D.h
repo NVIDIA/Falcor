@@ -58,7 +58,7 @@ __forceinline BOOL dxBool(bool b) { return b ? TRUE : FALSE; }
 #pragma comment(lib, "d3dcompiler.lib")
 #pragma comment(lib, "dxgi.lib")
 
-#define UNSUPPORTED_IN_D3D(msg_) {Falcor::Logger::log(Falcor::Logger::Level::Warning, msg_ + std::string(" is not supported in D3D. Ignoring call."));}
+#define UNSUPPORTED_IN_D3D(msg_) {logWarning(msg_ + std::string(" is not supported in D3D. Ignoring call."));}
 
 namespace Falcor
 {

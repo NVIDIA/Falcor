@@ -172,7 +172,7 @@ namespace Falcor
     {
         if(isDepthFormat(shadowMapFormat) == false)
         {
-            Logger::log(Logger::Level::Error, std::string("Can't create CascadedShadowMaps effect. Requested resource format ") + to_string(shadowMapFormat) + " is not a depth format", true);
+            logError(std::string("Can't create CascadedShadowMaps effect. Requested resource format ") + to_string(shadowMapFormat) + " is not a depth format", true);
         }
 
         CascadedShadowMaps* pCsm = new CascadedShadowMaps(mapWidth, mapHeight, pLight, pScene, cascadeCount, shadowMapFormat);

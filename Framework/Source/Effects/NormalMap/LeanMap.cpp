@@ -82,7 +82,7 @@ namespace Falcor
                     tn.x = clamp(SRGBToLinear(oneBy255 * (float)(normalMapData[texIdx * 4 + 2])), 0.0f, 1.0f);
                 } break;
                 default: 
-                    Logger::log(Logger::Level::Error, "Can't generate LEAN map. Unsupported normal map format.");
+                    logError("Can't generate LEAN map. Unsupported normal map format.");
                     return nullptr;
                 };
 
@@ -110,7 +110,7 @@ namespace Falcor
 
         if(mpLeanMaps.find(materialID) != mpLeanMaps.end())
         {
-            Logger::log(Logger::Level::Error, "Error when creating SceneLeanMaps. Scene material IDs should be unique for scene materials.");
+            logError("Error when creating SceneLeanMaps. Scene material IDs should be unique for scene materials.");
             return false;
         }
 
@@ -153,7 +153,7 @@ namespace Falcor
 
         if(pLeanMaps->mpLeanMaps.size() == 0)
         {
-            Logger::log(Logger::Level::Warning, "Trying to create SceneLeanMaps for a scene without materials.");
+            logWarning("Trying to create SceneLeanMaps for a scene without materials.");
         }
 
         return pLeanMaps;

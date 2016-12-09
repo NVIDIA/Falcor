@@ -189,7 +189,7 @@ namespace Falcor
             {
                 if(textureCount != 1)
                 {
-                    Logger::log(Logger::Level::Error, "Can't create material with more then one texture per Type");
+                    logError("Can't create material with more then one texture per Type");
                     return;
                 }
 
@@ -201,7 +201,7 @@ namespace Falcor
 
                 if(s.empty())
                 {
-                    Logger::log(Logger::Level::Warning, "Texture has empty file name, ignoring.");
+                    logWarning("Texture has empty file name, ignoring.");
                     continue;
                 }
 
@@ -231,7 +231,7 @@ namespace Falcor
                 }
 				else
                 {
-                    Logger::log(Logger::Level::Warning, "Texture '" + s + "' is not supported by the material system\n");
+                    logWarning("Texture '" + s + "' is not supported by the material system\n");
                 }
             }
         }
@@ -323,7 +323,7 @@ namespace Falcor
         // No internal textures
         if(pScene->mTextures != 0)
         {
-            Logger::log(Logger::Level::Error, "Model has internal textures");
+            logError("Model has internal textures");
             b = false;
         }
         return b;
@@ -342,7 +342,7 @@ namespace Falcor
             auto pMaterial = createMaterial(pAiMaterial, modelFolder, isObjFile, useSrgb);
             if(pMaterial == nullptr)
             {
-                Logger::log(Logger::Level::Error, "Can't allocate memory for material");
+                logError("Can't allocate memory for material");
                 return false;
             }
             auto pAdded = mpModel->getOrAddMaterial(pMaterial);
@@ -415,7 +415,7 @@ namespace Falcor
         std::string fullpath;
         if(findFileInDataDirectories(filename, fullpath) == false)
         {
-            Logger::log(Logger::Level::Error, std::string("Can't find model file ") + filename, true);
+            logError(std::string("Can't find model file ") + filename, true);
             return nullptr;
         }
 
@@ -447,7 +447,7 @@ namespace Falcor
         {
             std::string str("Can't open model file '");
             str = str + std::string(filename) + "'\n" + importer.GetErrorString();
-            Logger::log(Logger::Level::Error, str, true);
+            logError(str, true);
             return false;
         }
 
@@ -460,13 +460,13 @@ namespace Falcor
         bool useSrgbTextures = (mFlags & Model::AssumeLinearSpaceTextures) == 0;
         if(createAllMaterials(pScene, modelFolder, isObjFile, useSrgbTextures) == false)
         {
-            Logger::log(Logger::Level::Error, std::string("Can't create materials for model ") + filename, true);
+            logError(std::string("Can't create materials for model ") + filename, true);
             return false;
         }
 
         if(createDrawList(pScene) == false)
         {
-            Logger::log(Logger::Level::Error, std::string("Can't create draw lists for model ") + filename, true);
+            logError(std::string("Can't create draw lists for model ") + filename, true);
             return false;
         }
 
@@ -681,7 +681,7 @@ namespace Falcor
             topology = Vao::Topology::TriangleList;
             break;
         default:
-            Logger::log(Logger::Level::Fatal, std::string("Error when creating mesh. Unknown topology with " + std::to_string(pAiMesh->mFaces[0].mNumIndices) + " indices."));
+            logError(std::string("Error when creating mesh. Unknown topology with " + std::to_string(pAiMesh->mFaces[0].mNumIndices) + " indices."));
             assert(0);
         }
 
@@ -738,19 +738,19 @@ namespace Falcor
         // Must have position!!!
         if(pAiMesh->HasPositions() == false)
         {
-            Logger::log(Logger::Level::Error, "Loaded mesh with no positions!");
+            logError("Loaded mesh with no positions!");
             return nullptr;
         }
 
         if(pAiMesh->GetNumUVChannels() > 1)
         {
-            Logger::log(Logger::Level::Error, "Too many texture-coordinate sets when creating model");
+            logError("Too many texture-coordinate sets when creating model");
             return nullptr;
         }		
 
         if((pAiMesh->GetNumUVChannels()) == 1 && (pAiMesh->HasTextureCoords(0) == false))
         {
-            Logger::log(Logger::Level::Error, "AssimpModelImporter: Unsupported texture coordinate set used in model.");
+            logError("AssimpModelImporter: Unsupported texture coordinate set used in model.");
             return nullptr;
         }
 
@@ -854,7 +854,7 @@ namespace Falcor
     {
         if(pAiMesh->mNumBones > 0xff)
         {
-            Logger::log(Logger::Level::Error, "Too many bones");
+            logError("Too many bones");
         }
 
         for(uint32_t bone = 0; bone < pAiMesh->mNumBones; bone++)
@@ -889,7 +889,7 @@ namespace Falcor
 
                 if(bFoundEmptySlot == false)
                 {
-                    Logger::log(Logger::Level::Error, "Too many bones");
+                    logError("Too many bones");
                 }
             }
         }

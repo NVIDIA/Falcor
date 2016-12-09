@@ -48,7 +48,7 @@ using namespace glm;
 #define assert(a)\
 	if (!(a)) {\
 		std::string str = "assertion failed(" + std::string(#a) + ")\nFile " + __FILE__ + ", line " + std::to_string(__LINE__);\
-		Falcor::Logger::log(Falcor::Logger::Level::Fatal, str);\
+		Falcor::logError(str);\
 	}
 #define should_not_get_here() assert(false);
 #else

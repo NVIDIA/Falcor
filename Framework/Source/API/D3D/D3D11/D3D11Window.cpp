@@ -69,7 +69,7 @@ namespace Falcor
     {
         if(gpD3D11Device)
         {
-            Logger::log(Logger::Level::Error, "DX11 backend doesn't support more than a single device.");
+            logError("DX11 backend doesn't support more than a single device.");
             return nullptr;
         }
 

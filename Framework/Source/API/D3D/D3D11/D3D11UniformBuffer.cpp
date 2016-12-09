@@ -109,7 +109,7 @@ namespace Falcor
         if(mVariables.size() == 0)
         {
             assert(bufferFound == false);
-            Logger::log(Logger::Level::Error, "ConstantBuffer::ApiInit() - Buffer '" + bufferName + "' not found in program " + pProgram->getName() + " and no resources were declared in the program.");
+            logError("ConstantBuffer::ApiInit() - Buffer '" + bufferName + "' not found in program " + pProgram->getName() + " and no resources were declared in the program.");
             return false;
         }
         else if(bufferFound == false)
@@ -170,7 +170,7 @@ namespace Falcor
             }
             if(bOK == false)
             {
-                Logger::log(Logger::Level::Error, "Error when trying to bind sampler to constant buffer " + mName + ".\n" + error);
+                logError("Error when trying to bind sampler to constant buffer " + mName + ".\n" + error);
                 return;
             }            
         }

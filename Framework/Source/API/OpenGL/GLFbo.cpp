@@ -120,7 +120,7 @@ namespace Falcor
         }
         else if(mColorAttachments[rtIndex].pTexture && mColorAttachments[rtIndex].pTexture->getApiHandle() != 0)
         {
-            Logger::log(Logger::Level::Error, "Can't attach a texture to the default FBO. Ignoring call");
+            logError("Can't attach a texture to the default FBO. Ignoring call");
         }
     }
 
@@ -139,7 +139,7 @@ namespace Falcor
         }
         else if(mDepthStencil.pTexture && mDepthStencil.pTexture->getApiHandle() != 0)
         {
-            Logger::log(Logger::Level::Error, "Can't attach a texture to the default FBO. Ignoring call");
+            logError("Can't attach a texture to the default FBO. Ignoring call");
         }
         mHasDepthAttachment = (mDepthStencil.pTexture != nullptr);
     }
@@ -160,7 +160,7 @@ namespace Falcor
             gl_call(FbStatus = glCheckNamedFramebufferStatus(mApiHandle, GL_DRAW_FRAMEBUFFER));
             if((mApiHandle != 0) && FbStatus != GL_FRAMEBUFFER_COMPLETE)
             {
-                Logger::log(Logger::Level::Error, "Incomplete framebuffer object");
+                logError("Incomplete framebuffer object");
                 return false;
             }
         }
@@ -181,13 +181,13 @@ namespace Falcor
             bool isValidType = (Type == FormatType::Float) || (Type == FormatType::Snorm) || (Type == FormatType::Unorm) || (Type == FormatType::UnormSrgb);
             if(isValidType == false)
             {
-                Logger::log(Logger::Level::Warning, "CFbo::clearColorTarget() - Trying to clear a non-normalized, non-floating-point render-target with a floating point value. This is undefined and so the call is ignored");
+                logWarning("CFbo::clearColorTarget() - Trying to clear a non-normalized, non-floating-point render-target with a floating point value. This is undefined and so the call is ignored");
                 return;
             }
         }
         else if(mApiHandle != 0)
         {
-            Logger::log(Logger::Level::Warning, "Trying to clear a color render-target, but the texture does not exist in CFbo.");
+            logWarning("Trying to clear a color render-target, but the texture does not exist in CFbo.");
             return;
         }
 
@@ -206,13 +206,13 @@ namespace Falcor
             FormatType Type = getFormatType(mColorAttachments[rtIndex].pTexture->getFormat());
             if(Type != FormatType::Uint)
             {
-                Logger::log(Logger::Level::Warning, "CFbo::clearColorTarget() - Trying to clear a non-unsigned-integer render-target with a uint value. This is undefined and so the call is ignored");
+                logWarning("CFbo::clearColorTarget() - Trying to clear a non-unsigned-integer render-target with a uint value. This is undefined and so the call is ignored");
                 return;
             }
         }
         else if(mApiHandle != 0)
         {
-            Logger::log(Logger::Level::Warning, "Trying to clear a color render-target, but the texture does not exist in CFbo.");
+            logWarning("Trying to clear a color render-target, but the texture does not exist in CFbo.");
             return;
         }
 
@@ -231,13 +231,13 @@ namespace Falcor
             FormatType Type = getFormatType(mColorAttachments[rtIndex].pTexture->getFormat());
             if(Type == FormatType::Sint)
             {
-                Logger::log(Logger::Level::Warning, "CFbo::clearColorTarget() - Trying to clear a non-signed-integer render-target with an int value. This is undefined and so the call is ignored");
+                logWarning("CFbo::clearColorTarget() - Trying to clear a non-signed-integer render-target with an int value. This is undefined and so the call is ignored");
                 return;
             }
         }
         else if(mApiHandle != 0)
         {
-            Logger::log(Logger::Level::Warning, "Trying to clear a color render-target, but the texture does not exist in CFbo.");
+            logWarning("Trying to clear a color render-target, but the texture does not exist in CFbo.");
             return;
         }
 
@@ -337,7 +337,7 @@ namespace Falcor
 		}
 		else
 		{
-			Logger::log(Logger::Level::Error, "Can't create zero-attachment with the default FBO. Ignoring call");
+			logError("Can't create zero-attachment with the default FBO. Ignoring call");
 		}
 
 	}

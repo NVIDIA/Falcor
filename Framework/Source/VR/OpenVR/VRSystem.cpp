@@ -46,7 +46,7 @@ namespace Falcor
     {
         if(spVrSystem)
         {
-            Logger::log(Logger::Level::Warning, "Trying to reinitialize the VR system. Call is ignored");
+            logWarning("Trying to reinitialize the VR system. Call is ignored");
             return spVrSystem;
         }
 
@@ -477,7 +477,7 @@ namespace Falcor
     {
         if(spVrSystem == nullptr)
         {
-            Logger::log(Logger::Level::Warning, "VR system not initialized");
+            logWarning("VR system not initialized");
         }
     }
 #endif

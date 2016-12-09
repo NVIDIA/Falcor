@@ -35,7 +35,7 @@ namespace Falcor
     const Bitmap* genError(const std::string& errMsg, const std::string& filename)
     {
         std::string err = "Error when loading image file " + filename + '\n' + errMsg + '.';
-        Logger::log(Logger::Level::Error, err);
+        logError(err);
         return nullptr;
     }
 
@@ -178,7 +178,7 @@ namespace Falcor
             else
             {
                 if(format != Bitmap::FileFormat::PfmFile || (bytesPerPixel != 16 && bytesPerPixel != 12))
-                    Logger::log(Logger::Level::Error, "Bitmap::saveImage supports only 32-bit/channel RGB/RGBA images as HDR source.");
+                    logError("Bitmap::saveImage supports only 32-bit/channel RGB/RGBA images as HDR source.");
                 // Upload the image manually
                 pImage = FreeImage_AllocateT(getImageType(bytesPerPixel), width, height);
                 BYTE* head = (BYTE*)pData;

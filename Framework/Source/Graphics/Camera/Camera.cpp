@@ -212,7 +212,7 @@ namespace Falcor
 
         if (offset == ConstantBuffer::kInvalidOffset)
         {
-            Logger::log(Logger::Level::Warning, "Camera::setIntoConstantBuffer() - variable \"" + varName + "\"not found in constant buffer\n");
+            logWarning("Camera::setIntoConstantBuffer() - variable \"" + varName + "\"not found in constant buffer\n");
             return;
         }
 

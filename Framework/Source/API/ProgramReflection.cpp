@@ -85,7 +85,7 @@ namespace Falcor
 
             if (var == mVariables.end())
             {
-                Logger::log(Logger::Level::Error, msg + "Variable not found.");
+                logError(msg + "Variable not found.");
                 return nullptr;
             }
 
@@ -93,7 +93,7 @@ namespace Falcor
             if (data.arraySize == 0)
             {
                 // Not an array, so can't have an array index
-                Logger::log(Logger::Level::Error, msg + "Variable is not an array, so name can't include an array index.");
+                logError(msg + "Variable is not an array, so name can't include an array index.");
                 return nullptr;
             }
 
@@ -103,20 +103,20 @@ namespace Falcor
             arrayIndex = strtol(indexStr.c_str(), &pEndPtr, 0);
             if (*pEndPtr != ']')
             {
-                Logger::log(Logger::Level::Error, msg + "Array index must be a literal number (no whitespace are allowed)");
+                logError(msg + "Array index must be a literal number (no whitespace are allowed)");
                 return nullptr;
             }
 
             if (arrayIndex >= data.arraySize)
             {
-                Logger::log(Logger::Level::Error, msg + "Array index (" + std::to_string(arrayIndex) + ") out-of-range. Array size == " + std::to_string(data.arraySize) + ".");
+                logError(msg + "Array index (" + std::to_string(arrayIndex) + ") out-of-range. Array size == " + std::to_string(data.arraySize) + ".");
                 return nullptr;
             }
         }
         else if ((allowNonIndexedArray == false) && (var->second.arraySize > 0))
         {
             // Variable name should contain an explicit array index (for N-dim arrays, N indices), but the index was missing
-            Logger::log(Logger::Level::Error, msg + "Expecting to find explicit array index in variable name (for N-dimensional array, N indices must be specified).");
+            logError(msg + "Expecting to find explicit array index in variable name (for N-dimensional array, N indices must be specified).");
             return nullptr;
         }
 

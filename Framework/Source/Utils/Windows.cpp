@@ -287,7 +287,7 @@ namespace Falcor
         }
         else
         {
-            Logger::log(Logger::Level::Error, "Error when loading icon. Can't find the file " + iconFile + ".");
+            logError("Error when loading icon. Can't find the file " + iconFile + ".");
         }
     }
 
@@ -414,7 +414,7 @@ namespace Falcor
             FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
                             NULL, dwError, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPTSTR)&lpMsgBuf, 0, NULL);
             std::wstring err((LPTSTR)lpMsgBuf);
-            Logger::log(Logger::Level::Warning, "setThreadAffinity failed with error: " + std::string(err.begin(), err.end()));
+            logWarning("setThreadAffinity failed with error: " + std::string(err.begin(), err.end()));
             LocalFree(lpMsgBuf);
         }
     }
@@ -436,7 +436,7 @@ namespace Falcor
             FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
                 NULL, dwError, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPTSTR)&lpMsgBuf, 0, NULL);
             std::wstring err((LPTSTR)lpMsgBuf);
-            Logger::log(Logger::Level::Warning, "setThreadPriority failed with error: " + std::string(err.begin(), err.end()));
+            logWarning("setThreadPriority failed with error: " + std::string(err.begin(), err.end()));
             LocalFree(lpMsgBuf);
         }
     }

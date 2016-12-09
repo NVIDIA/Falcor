@@ -165,7 +165,7 @@ namespace Falcor
             getLayersCountByType(pMaterial, Material::Layer::Type::Conductor) > 1 ||
             getLayersCountByType(pMaterial, Material::Layer::Type::Dielectric) > 1)
         {
-            Logger::log(Logger::Level::Warning, "BasicMaterial::initializeFromMaterial(): Material " + pMaterial->getName() + " was exported with loss of data");
+            logWarning("BasicMaterial::initializeFromMaterial(): Material " + pMaterial->getName() + " was exported with loss of data");
         }
 
         Material::Layer layer;
@@ -198,7 +198,7 @@ namespace Falcor
             IoR = layer.extraParam.x;
             if(layer.pTexture)
             {
-                Logger::log(Logger::Level::Warning, "Material::GetObsoleteMaterial: Material " + pMaterial->getName() + " has an unsupported transparency texture");
+                logWarning("Material::GetObsoleteMaterial: Material " + pMaterial->getName() + " has an unsupported transparency texture");
             }
         }
 

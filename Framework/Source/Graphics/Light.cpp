@@ -71,7 +71,7 @@ namespace Falcor
 		size_t offset = pBuffer->getVariableOffset(varName + ".worldPos");
 		if (offset == ConstantBuffer::kInvalidOffset)
 		{
-			Logger::log(Logger::Level::Warning, "AreaLight::setIntoConstantBuffer() - variable \"" + varName + "\"not found in constant buffer\n");
+			logWarning("AreaLight::setIntoConstantBuffer() - variable \"" + varName + "\"not found in constant buffer\n");
 			return;
 		}
 
@@ -201,7 +201,7 @@ namespace Falcor
 
     void DirectionalLight::move(const glm::vec3& position, const glm::vec3& target, const glm::vec3& up)
 	{
-		Logger::log(Logger::Level::Error, "DirectionalLight::move() is not used and thus not implemented for now.");
+        logError("DirectionalLight::move() is not used and thus not implemented for now.");
 	}
 
     PointLight::SharedPtr PointLight::create()

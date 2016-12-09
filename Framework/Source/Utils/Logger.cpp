@@ -96,7 +96,6 @@ namespace Falcor
         {
             create_level_case(Logger::Level::Info);
             create_level_case(Logger::Level::Warning);
-            create_level_case(Logger::Level::Fatal);
             create_level_case(Logger::Level::Error);
         default:
             should_not_get_here();
@@ -122,7 +121,7 @@ namespace Falcor
 
         if(L >= Level::Error)
         {
-            if(L >= Level::Fatal && isDebuggerPresent())
+            if(isDebuggerPresent())
             {
                 debugBreak();
             }

@@ -63,7 +63,7 @@ namespace Falcor
         if(ShaderPreprocessor::parseShader("", shader, errorMsg, shaderDefines) == false)
         {
             std::string msg = std::string("Error when parsing shader from string. Code:\n") + shaderString + "\nError:\n" + errorMsg;
-            Logger::log(Logger::Level::Fatal, msg);
+            logError(msg);
             return nullptr;
         }
 
@@ -74,7 +74,7 @@ namespace Falcor
             std::string msg = "Error when creating " + getShaderNameFromType(shaderType) + " shader from string\nError log:\n";
             msg += log;
             msg += "\nShader string:\n" + shaderString + "\n";
-            Logger::log(Logger::Level::Fatal, msg);
+            logError(msg);
         }
         return pShader;
     }
@@ -86,7 +86,7 @@ namespace Falcor
         if(findFileInDataDirectories(filename, fullpath) == false)
         {
             std::string err = std::string("Can't find shader file ") + filename;
-            Logger::log(Logger::Level::Fatal, err);
+            logError(err);
             return nullptr;
         }
 
@@ -103,7 +103,7 @@ namespace Falcor
                 std::string msg = std::string("Error when pre-processing shader ") + filename + "\n" + errorMsg;
                 if(msgBox(msg, MsgBoxType::RetryCancel) == MsgBoxButton::Cancel)
                 {
-                    Logger::log(Logger::Level::Fatal, msg);
+                    logError(msg);
                     return nullptr;
                 }
             }
@@ -120,7 +120,7 @@ namespace Falcor
                     MsgBoxButton mbButton = msgBox(error, MsgBoxType::RetryCancel);
                     if(mbButton == MsgBoxButton::Cancel)
                     {
-                        Logger::log(Logger::Level::Fatal, error);
+                        logError(error);
                         exit(1);
                     }
                 }

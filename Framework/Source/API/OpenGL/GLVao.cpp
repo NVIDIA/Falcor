@@ -59,7 +59,7 @@ namespace Falcor
 
             if(pVB == nullptr)
             {
-                Logger::log(Logger::Level::Error, "Error when creating VAO. One of the vertex-buffers is null. Ignoring elements related to that buffer.");
+                logError("Error when creating VAO. One of the vertex-buffers is null. Ignoring elements related to that buffer.");
                 continue;
             }
 

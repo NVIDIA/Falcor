@@ -162,13 +162,13 @@ namespace Falcor
 
     void BinaryModelExporter::error(const std::string& msg)
     {
-        Logger::log(Logger::Level::Error, "Error when exporting model \"" + mFilename + "\".\n" + msg);
+        logError("Error when exporting model \"" + mFilename + "\".\n" + msg);
         mStream.remove();
     }
 
     void BinaryModelExporter::warning(const std::string& Msg)
     {
-        Logger::log(Logger::Level::Error, "Warning when exporting model \"" + mFilename + "\".\n" + Msg);
+        logError("Warning when exporting model \"" + mFilename + "\".\n" + Msg);
     }
 
     BinaryModelExporter::BinaryModelExporter(const std::string& filename, const Model* pModel) : mFilename(filename)

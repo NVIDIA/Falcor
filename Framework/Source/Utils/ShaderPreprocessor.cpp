@@ -943,7 +943,7 @@ namespace Falcor
         // Make sure no macro-redefinition
         if(mDefineMap.find(macroName) != mDefineMap.end())
         {
-            Logger::log(Logger::Level::Error, mShaderPathAbs + ":\"" + macroName + "\" Macro redefinition.");
+            logError(mShaderPathAbs + ":\"" + macroName + "\" Macro redefinition.");
             return false;
         }
 

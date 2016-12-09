@@ -115,7 +115,7 @@ namespace Falcor
         const auto pTexture = mColorAttachments[rtIndex].pTexture;
         if(pTexture == nullptr)
         {
-            Logger::log(Logger::Level::Warning, "Trying to clear a color render-target, but the texture does not exist in CFbo.");
+            logWarning("Trying to clear a color render-target, but the texture does not exist in CFbo.");
             return;
         }
         if(checkStatus())
@@ -145,13 +145,13 @@ namespace Falcor
         const auto pTexture = mDepthStencil.pTexture;
         if(pTexture == nullptr)
         {
-            Logger::log(Logger::Level::Warning, "Trying to clear a depth buffer, but the texture does not exist in CFbo.");
+            logWarning("Trying to clear a depth buffer, but the texture does not exist in CFbo.");
             return;
         }
 
         if(!clearDepth && !clearStencil)
         {
-            Logger::log(Logger::Level::Warning, "Trying to clear a depth buffer, but both bClearDepth and bClearStencil are false.");
+            logWarning("Trying to clear a depth buffer, but both bClearDepth and bClearStencil are false.");
             return;
         }
 

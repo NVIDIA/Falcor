@@ -76,7 +76,7 @@ namespace Falcor
     {
         std::string err = "Error when parsing scene file \"" + mFilename + "\".\n" + msg;
 #if _LOG_ENABLED
-        Logger::log(Logger::Level::Error, err);
+        logError(err);
 #else
         msgBox(err);
 #endif
@@ -210,7 +210,7 @@ namespace Falcor
                 {
                     std::string msg = "Warning when parsing scene file \"" + mFilename + "\".\nModel " + pModel->getName() + " was specified with active animation " + std::to_string(activeAnimation);
                     msg += ", but model only has " + std::to_string(pModel->getAnimationsCount()) + " animations. Ignoring field";
-                    Logger::log(Logger::Level::Warning, msg);
+                    logWarning(msg);
                 }
                 else
                 {

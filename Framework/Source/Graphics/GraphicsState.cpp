@@ -112,7 +112,7 @@ namespace Falcor
     {
         if (mFboStack.empty())
         {
-            Logger::log(Logger::Level::Error, "PipelineState::popFbo() - can't pop FBO since the viewport stack is empty.");
+            logError("PipelineState::popFbo() - can't pop FBO since the viewport stack is empty.");
             return;
         }
         setFbo(mFboStack.top(), setVp0Sc0);
@@ -129,7 +129,7 @@ namespace Falcor
     {
         if (mVpStack[index].empty())
         {
-            Logger::log(Logger::Level::Error, "PipelineState::popViewport() - can't pop viewport since the viewport stack is empty.");
+            logError("PipelineState::popViewport() - can't pop viewport since the viewport stack is empty.");
             return;
         }
         const auto& VP = mVpStack[index].top();
@@ -147,7 +147,7 @@ namespace Falcor
     {
         if (mScStack[index].empty())
         {
-            Logger::log(Logger::Level::Error, "PipelineState::popScissors() - can't pop scissors since the scissors stack is empty.");
+            logError("PipelineState::popScissors() - can't pop scissors since the scissors stack is empty.");
             return;
         }
         const auto& sc = mScStack[index].top();

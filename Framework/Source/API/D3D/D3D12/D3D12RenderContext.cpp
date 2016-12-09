@@ -94,14 +94,14 @@ namespace Falcor
 
         if (FAILED(pDevice->CreateCommandQueue(&cqDesc, IID_PPV_ARGS(&pApiData->pCommandQueue))))
         {
-            Logger::log(Logger::Level::Error, "Failed to create command queue");
+            logError("Failed to create command queue");
             return nullptr;
         }
 
 		// Create a command list
 		if (FAILED(pDevice->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, pApiData->pAllocator, nullptr, IID_PPV_ARGS(&pApiData->pList))))
 		{
-			Logger::log(Logger::Level::Error, "Failed to create command list for RenderContext");
+            logError("Failed to create command list for RenderContext");
 			return nullptr;
 		}
 

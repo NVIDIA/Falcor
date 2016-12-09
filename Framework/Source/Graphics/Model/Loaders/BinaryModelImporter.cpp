@@ -364,7 +364,7 @@ namespace Falcor
         if(std::string(tag) != "BinImage")
         {
             std::string msg = "Error when loading model " + modelName + ".\nBinary image header corrupted.";
-            Logger::log(Logger::Level::Error, msg);
+            logError(msg);
             return false;
         }
 
@@ -374,7 +374,7 @@ namespace Falcor
         if(version < 1 || version > 2)        
         {
             std::string msg = "Error when loading model " + modelName + ".\nUnsupported binary image version.";
-            Logger::log(Logger::Level::Error, msg);
+            logError(msg);
             return false;
         }
 
@@ -383,7 +383,7 @@ namespace Falcor
         if(data.width < 0 || data.height < 0 || bpp < 0 || numChannels < 0)
         {
             std::string msg = "Error when loading model " + modelName + ".\nCorrupt binary image version.";
-            Logger::log(Logger::Level::Error, msg);
+            logError(msg);
             return false;
         }
 
@@ -396,7 +396,7 @@ namespace Falcor
             if(formatId < 0 || formatId >= FW::ImageFormat::ID_Generic || dataSize < 0)
             {
                 std::string msg = "Error when loading model " + modelName + ".\nCorrupt binary image data (unsupported image format).";
-                Logger::log(Logger::Level::Error, msg);
+                logError(msg);
                 return false;
             }
             format = FW::ImageFormat(FW::ImageFormat::ID(formatId));
@@ -414,7 +414,7 @@ namespace Falcor
                 (cformat == FW::ImageFormat::ChannelFormat_Float && c.fieldSize != 32))
             {
                 std::string msg = "Error when loading model " + modelName + ".\nCorrupt binary image data (unsupported floating point format).";
-                Logger::log(Logger::Level::Error, msg);
+                logError(msg);
                 return false;
             }
 
@@ -426,7 +426,7 @@ namespace Falcor
         if(bpp != format.getBPP())
         {
             std::string msg = "Error when loading model " + modelName + ".\nCorrupt binary image data (bits/pixel do not match with format).";
-            Logger::log(Logger::Level::Error, msg);
+            logError(msg);
             return false;
         }
 
@@ -488,7 +488,7 @@ namespace Falcor
         std::string fullpath;
         if(findFileInDataDirectories(filename, fullpath) == false)
         {
-            Logger::log(Logger::Level::Error, std::string("Can't find model file ") + filename);
+            logError(std::string("Can't find model file ") + filename);
             return nullptr;
         }
 
@@ -504,7 +504,7 @@ namespace Falcor
             if(version < 6 || version > 8)
             {
                 std::string Msg = "Error when loading model " + modelName + ".\nUnsupported binary scene version " + std::to_string(version);
-                Logger::log(Logger::Level::Error, Msg);
+                logError(Msg);
                 return false;
             }
         }
@@ -513,14 +513,14 @@ namespace Falcor
             if(version < 1 || version > 5)
             {
                 std::string Msg = "Error when loading model " + modelName + ".\nUnsupported binary scene version " + std::to_string(version);
-                Logger::log(Logger::Level::Error, Msg);
+                logError(Msg);
                 return false;
             }
         }
         else
         {
             std::string Msg = "Error when loading model " + modelName + ".\nNot a binary scene file!";
-            Logger::log(Logger::Level::Error, Msg);
+            logError(Msg);
             return false;
         }
         return true;
@@ -545,7 +545,7 @@ namespace Falcor
         case ResourceFormat::BC3Unorm:
             return ResourceFormat::BC3UnormSrgb;
         default:
-            Logger::log(Logger::Level::Warning, "BinaryModelImporter::ConvertFormatToSrgb() warning. Provided format doesn't have a matching sRGB format");
+            logWarning("BinaryModelImporter::ConvertFormatToSrgb() warning. Provided format doesn't have a matching sRGB format");
             return format;
         }
     }
@@ -634,7 +634,7 @@ namespace Falcor
         if(numTextures < 0 || numMeshes < 0 || numInstances < 0)
         {
             std::string msg = "Error when loading model " + mModelName + ".\nFile is corrupted.";
-            Logger::log(Logger::Level::Error, msg);
+            logError(msg);
             return nullptr;
         }
 
@@ -690,7 +690,7 @@ namespace Falcor
             if(numAttribs < 0 || numVertices < 0 || numSubmeshes < 0)
             {
                 std::string Msg = "Error when loading model " + mModelName + ".\nCorrupted data.!";
-                Logger::log(Logger::Level::Error, Msg);
+                logError(Msg);
                 return nullptr;
             }
 
@@ -716,7 +716,7 @@ namespace Falcor
                 if(type < 0 || type >= numAttributesType || format < 0 || format >= AttribFormat::AttribFormat_Max || length < 1 || length > 4)
                 {
                     std::string msg = "Error when loading model " + mModelName + ".\nCorrupted data.!";
-                    Logger::log(Logger::Level::Error, msg);
+                    logError(msg);
                     return nullptr;
                 }
                 else
@@ -760,14 +760,14 @@ namespace Falcor
             {
                 if(normalBufferIndex == kInvalidBufferIndex)
                 {
-                    Logger::log(Logger::Level::Warning, "Can't generate tangent space for mesh " + std::to_string(meshIdx) + " when loading model " + mModelName + ".\nMesh doesn't contain normals or texture coordinates\n");
+                    logWarning("Can't generate tangent space for mesh " + std::to_string(meshIdx) + " when loading model " + mModelName + ".\nMesh doesn't contain normals or texture coordinates\n");
                     genTangentForMesh = false;
                 }
                 else
                 {
                     if(texCoordBufferIndex == kInvalidBufferIndex)
 					{
-						Logger::log(Logger::Level::Warning, "No uv mapping is provided to generate tangent space for mesh " + std::to_string(meshIdx) + " when loading model " + mModelName + ".\nMesh doesn't contain normals or texture coordinates\n");
+						logWarning("No uv mapping is provided to generate tangent space for mesh " + std::to_string(meshIdx) + " when loading model " + mModelName + ".\nMesh doesn't contain normals or texture coordinates\n");
 					}
                     // Set the offsets
                     genTangentForMesh = true;
@@ -847,7 +847,7 @@ namespace Falcor
                     if(texID < -1 || texID >= numTextures)
                     {
                         std::string msg = "Error when loading model " + mModelName + ".\nCorrupt binary mesh data!";
-                        Logger::log(Logger::Level::Error, msg);
+                        logError(msg);
                         return nullptr;
                     }
                     else if(texID != -1)
@@ -855,7 +855,7 @@ namespace Falcor
                         BasicMaterial::MapType falcorType = getFalcorMapType(TextureType(i));
 						if(BasicMaterial::MapType::Count == falcorType)
 						{
-							Logger::log(Logger::Level::Warning, "Texture of Type " + std::to_string(i) + " is not supported by the material system (model " + mModelName + ")");
+							logWarning("Texture of Type " + std::to_string(i) + " is not supported by the material system (model " + mModelName + ")");
 							continue;
 						}
 
@@ -894,7 +894,7 @@ namespace Falcor
                 if(numTriangles < 0)
                 {
                     std::string Msg = "Error when loading model " + mModelName + ".\nMesh has negative number of triangles!";
-                    Logger::log(Logger::Level::Error, Msg);
+                    logError(Msg);
                     return nullptr;
                 }
 
@@ -913,7 +913,7 @@ namespace Falcor
                 {
                     if(texCoordBufferIndex != kInvalidBufferIndex)
                     {
-                        Logger::log(Logger::Level::Error, "Model " + mModelName + " asked to generate tangents w/o texture coordinates");
+                        logError("Model " + mModelName + " asked to generate tangents w/o texture coordinates");
                     }
                     uint32_t texCrdCount = 0;
                     glm::vec2* texCrd = nullptr;

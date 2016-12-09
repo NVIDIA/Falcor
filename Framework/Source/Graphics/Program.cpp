@@ -196,7 +196,7 @@ namespace Falcor
 
                 if(msgBox(error, MsgBoxType::RetryCancel) == MsgBoxButton::Cancel)
                 {
-                    Logger::log(Logger::Level::Fatal, error);
+                    logError(error);
                     return nullptr;
                 }
             }

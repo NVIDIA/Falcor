@@ -93,7 +93,7 @@ namespace Falcor
     {
         if(mSize != pDst->mSize)
         {
-            Logger::log(Logger::Level::Error, "Error in Buffer::Copy().\nSource buffer size is " + std::to_string(mSize) + ", Destination buffer size is " + std::to_string(pDst->mSize) + ".\nBuffers should have the same size.");
+            logError("Error in Buffer::Copy().\nSource buffer size is " + std::to_string(mSize) + ", Destination buffer size is " + std::to_string(pDst->mSize) + ".\nBuffers should have the same size.");
             return;
         }
         getD3D11ImmediateContext()->CopyResource(pDst->mApiHandle, mApiHandle);
@@ -103,7 +103,7 @@ namespace Falcor
     {
         if(mSize < srcOffset + count || pDst->mSize < dstOffset + count)
         {
-            Logger::log(Logger::Level::Error, "Error in Buffer::Copy().\nSource buffer size is " + std::to_string(mSize) + ", Destination buffer size is " + std::to_string(pDst->mSize) + ", Copy offsets are " + std::to_string(srcOffset) + ", " + std::to_string(dstOffset) + ", Copy size is " + std::to_string(count) + ".\nBuffers are too small to perform copy.");
+            logError("Error in Buffer::Copy().\nSource buffer size is " + std::to_string(mSize) + ", Destination buffer size is " + std::to_string(pDst->mSize) + ", Copy offsets are " + std::to_string(srcOffset) + ", " + std::to_string(dstOffset) + ", Copy size is " + std::to_string(count) + ".\nBuffers are too small to perform copy.");
             return;
         }
 
@@ -123,7 +123,7 @@ namespace Falcor
         if((size + offset) > mSize)
         {
             std::string Error = "Buffer::updateData called with data larger then the buffer size. Buffer size = " + std::to_string(mSize) + " , Data size = " + std::to_string(size) + ".";
-            Logger::log(Logger::Level::Error, Error);
+            logError(Error);
         }
         D3D11_BOX box;
         box.left = (uint32_t)offset;
@@ -151,7 +151,7 @@ namespace Falcor
     {
         if(mIsMapped)
         {
-            Logger::log(Logger::Level::Error, "Buffer::Map() error. Buffer is already mapped");
+            logError("Buffer::Map() error. Buffer is already mapped");
             return nullptr;
         }
 
@@ -186,7 +186,7 @@ namespace Falcor
     {
         if(mIsMapped == false)
         {
-            Logger::log(Logger::Level::Error, "Buffer::Unmap() error. Buffer is not mapped");
+            logError("Buffer::Unmap() error. Buffer is not mapped");
             return;
         }
         mIsMapped = false;

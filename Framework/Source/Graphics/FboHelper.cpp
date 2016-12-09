@@ -52,13 +52,13 @@ namespace Falcor
             {
                 if(sampleCount > 0 && mipLevels > 1)
                 {
-                    Logger::log(Logger::Level::Error, msg + "can't create multi-sampled texture with more than one mip-level. sampleCount = " + std::to_string(sampleCount) + ", mipLevels = " + std::to_string(mipLevels) + ".");
+                    logError(msg + "can't create multi-sampled texture with more than one mip-level. sampleCount = " + std::to_string(sampleCount) + ", mipLevels = " + std::to_string(mipLevels) + ".");
                     return false;
                 }
                 return true;
             }
 
-            Logger::log(Logger::Level::Error, msg + param + " can't be zero.");
+            logError(msg + param + " can't be zero.");
             return false;
         }
 

@@ -318,7 +318,7 @@ namespace Falcor
         }
         else
         {
-            Logger::log(Logger::Level::Error, "Could not find available filename when capturing screen");
+            logError("Could not find available filename when capturing screen");
         }
         mCaptureScreen = false;
     }

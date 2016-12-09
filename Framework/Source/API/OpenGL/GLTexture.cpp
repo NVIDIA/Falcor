@@ -364,7 +364,7 @@ namespace Falcor
     {
         if(sampleCount <= 1)
         {
-            Logger::log(Logger::Level::Warning, "Creating Texture2DMS with a single sample. Are you sure that's what you meant? Why not create a Texture2D?");
+            logWarning("Creating Texture2DMS with a single sample. Are you sure that's what you meant? Why not create a Texture2D?");
         }
         auto pResource = SharedPtr(new Texture(width, height, 1, arraySize, 1, sampleCount, format, Texture::Type::Texture2DMultisample));
         pResource->mHasFixedSampleLocations = useFixedSampleLocations;
@@ -392,7 +392,7 @@ namespace Falcor
     {
         if (mipLevel >= mMipLevels)
         {
-            Logger::log(Logger::Level::Error, "Texture::getMipLevelImageSize() - Requested mip level " + std::to_string(mipLevel) + " is out-of-bound. Texture has " + std::to_string(mMipLevels) + " mip-levels.");
+            logError("Texture::getMipLevelImageSize() - Requested mip level " + std::to_string(mipLevel) + " is out-of-bound. Texture has " + std::to_string(mMipLevels) + " mip-levels.");
         }
 
         width = mWidth;
@@ -411,7 +411,7 @@ namespace Falcor
     {
         if(mipLevel >= mMipLevels)
         {
-            Logger::log(Logger::Level::Error, "Texture::getMipLevelDataSize() - Requested mip level " + std::to_string(mipLevel) + " is out-of-bound. Texture has " + std::to_string(mMipLevels) + " mip-levels.");
+            logError("Texture::getMipLevelDataSize() - Requested mip level " + std::to_string(mipLevel) + " is out-of-bound. Texture has " + std::to_string(mMipLevels) + " mip-levels.");
             return 0;
         }
 
@@ -446,13 +446,13 @@ namespace Falcor
     {
         if(mipLevel >= mMipLevels)
         {
-            Logger::log(Logger::Level::Error, "Texture::readSubresourceData() - Requested mip level " + std::to_string(mipLevel) + " is out-of-bound. Texture has " + std::to_string(mMipLevels) + "mip-levels. Ignoring call.");
+            logError("Texture::readSubresourceData() - Requested mip level " + std::to_string(mipLevel) + " is out-of-bound. Texture has " + std::to_string(mMipLevels) + "mip-levels. Ignoring call.");
             return;
         }
 
         if(arraySlice >= mArraySize)
         {
-            Logger::log(Logger::Level::Error, "Texture::readSubresourceData() - Requested array slice " + std::to_string(arraySlice) + " is out-of-bound. Texture has " + std::to_string(mArraySize) + "array slices. Ignoring call.");
+            logError("Texture::readSubresourceData() - Requested array slice " + std::to_string(arraySlice) + " is out-of-bound. Texture has " + std::to_string(mArraySize) + "array slices. Ignoring call.");
             return;
         }
 
@@ -461,7 +461,7 @@ namespace Falcor
 #if _LOG_ENABLED
         if(dataSize != getMipLevelDataSize(mipLevel))
         {
-            Logger::log(Logger::Level::Error, "Error when reading texture data. Buffer size should be equal to Texture::getMipLevelDataSize(). Ignoring call.");
+            logError("Error when reading texture data. Buffer size should be equal to Texture::getMipLevelDataSize(). Ignoring call.");
             return;
         }
 #endif
@@ -503,13 +503,13 @@ namespace Falcor
     {
         if(mipLevel >= mMipLevels)
         {
-            Logger::log(Logger::Level::Error, "Texture::uploadSubresourceData() - Requested mip level " + std::to_string(mipLevel) + " is out-of-bound. Texture has " + std::to_string(mMipLevels) + "mip-levels. Ignoring call.");
+            logError("Texture::uploadSubresourceData() - Requested mip level " + std::to_string(mipLevel) + " is out-of-bound. Texture has " + std::to_string(mMipLevels) + "mip-levels. Ignoring call.");
             return;
         }
 
         if(arraySlice >= mArraySize)
         {
-            Logger::log(Logger::Level::Error, "Texture::uploadSubresourceData() - Requested array slice " + std::to_string(arraySlice) + " is out-of-bound. Texture has " + std::to_string(mArraySize) + "array slices. Ignoring call.");
+            logError("Texture::uploadSubresourceData() - Requested array slice " + std::to_string(arraySlice) + " is out-of-bound. Texture has " + std::to_string(mArraySize) + "array slices. Ignoring call.");
             return;
         }
 
@@ -518,20 +518,20 @@ namespace Falcor
 #if _LOG_ENABLED
         if(dataSize != getMipLevelDataSize(mipLevel))
         {
-            Logger::log(Logger::Level::Error, "Error when uploading texture data. Buffer size should be equal to Texture::getMipLevelDataSize(). Ignoring call.");
+            logError("Error when uploading texture data. Buffer size should be equal to Texture::getMipLevelDataSize(). Ignoring call.");
             return;
         }
 #endif
 
         if( (mType != Type::Texture2D) && (mType != Type::Texture3D) )
         {
-            Logger::log(Logger::Level::Error, "Texture::uploadSubresourceData() - Only 2D textures are supported for now.");
+            logError("Texture::uploadSubresourceData() - Only 2D textures are supported for now.");
             return;
         }
 
         if(!pData)
         {
-            Logger::log(Logger::Level::Error, "Texture::uploadSubresourceData() - Data is not provided.");
+            logError("Texture::uploadSubresourceData() - Data is not provided.");
             return;
         }
 
@@ -592,19 +592,19 @@ namespace Falcor
     {
         if(mType != Type::Texture2D)
         {
-            Logger::log(Logger::Level::Error, "Texture::compress2DTexture() only supports 2D texture compression\n");
+            logError("Texture::compress2DTexture() only supports 2D texture compression\n");
             return;
         }
 
         if(mArraySize > 1)
         {
-            Logger::log(Logger::Level::Error, "Texture::compress2DTexture() only supports 2D texture compression with a single array slice\n");
+            logError("Texture::compress2DTexture() only supports 2D texture compression with a single array slice\n");
             return;
         }
 
         if(isDepthStencilFormat(mFormat))
         {
-            Logger::log(Logger::Level::Error, "Texture::compress2DTexture(): Can't compress depth-stencil resource\n");
+            logError("Texture::compress2DTexture(): Can't compress depth-stencil resource\n");
             return;
         }
 
@@ -657,7 +657,7 @@ namespace Falcor
 	{
 		if(getMipCount() <= 1)
 		{
-			Logger::log(Logger::Level::Error, "Texture::generateMips() - no mip levels to generate.");
+			logError("Texture::generateMips() - no mip levels to generate.");
 			return;
 		}
 		gl_call(glGenerateTextureMipmap(getApiHandle()));
@@ -667,25 +667,25 @@ namespace Falcor
     {
         if(firstArraySlice >= mArraySize)
         {
-            Logger::log(Logger::Level::Error, "Texture::createView() - firstArraySlice larger than texture array size");
+            logError("Texture::createView() - firstArraySlice larger than texture array size");
             return nullptr;
         }
 
         if(firstArraySlice + arraySize > mArraySize)
         {
-            Logger::log(Logger::Level::Error, "Texture::createView() - (firstArraySlice + arraySize) larger than texture array size");
+            logError("Texture::createView() - (firstArraySlice + arraySize) larger than texture array size");
             return nullptr;
         }
 
         if(mostDetailedMip >= mMipLevels)
         {
-            Logger::log(Logger::Level::Error, "Texture::createView() - mostDetailedMip larger than texture mip levels");
+            logError("Texture::createView() - mostDetailedMip larger than texture mip levels");
             return nullptr;
         }
 
         if(mostDetailedMip + mipCount > mMipLevels)
         {
-            Logger::log(Logger::Level::Error, "Texture::createView() - (mostDetailedMip + mpiCount) larger than texture mip levels");
+            logError("Texture::createView() - (mostDetailedMip + mpiCount) larger than texture mip levels");
             return nullptr;
         }
 

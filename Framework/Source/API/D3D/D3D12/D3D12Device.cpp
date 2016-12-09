@@ -81,7 +81,7 @@ namespace Falcor
 		FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM, nullptr, hr, 0, hr_msg, ARRAYSIZE(hr_msg), nullptr);
 
 		std::string error_msg = msg + ".\nError " + hr_msg;
-		Logger::log(Logger::Level::Fatal, error_msg);
+		logError(error_msg);
 	}
 
     D3D_FEATURE_LEVEL getD3DFeatureLevel(uint32_t majorVersion, uint32_t minorVersion)
@@ -184,7 +184,7 @@ namespace Falcor
 			}
 		}
 
-		Logger::log(Logger::Level::Fatal, "Could not find a GPU that supports D3D12 device");
+		logErrorAndExit("Could not find a GPU that supports D3D12 device");
 		return nullptr;
 	}
 

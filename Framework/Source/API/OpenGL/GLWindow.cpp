@@ -423,7 +423,7 @@ namespace Falcor
     gl_call(glGetNamedFramebufferAttachmentParameteriv(0, attachment, channel, &bits)); \
     if(bits != expected) \
     {             \
-        Logger::log(Logger::Level::Error, std::string("Deafult framebuffer ") + name + " channel has " + std::to_string(bits) + " bits. Expecting " + std::to_string(expected) + " bits.");  \
+        logError(std::string("Deafult framebuffer ") + name + " channel has " + std::to_string(bits) + " bits. Expecting " + std::to_string(expected) + " bits.");  \
         return false;   \
     }
 
@@ -441,7 +441,7 @@ namespace Falcor
         gl_call(glGetIntegerv(GL_SAMPLES, (GLint*)&sampleCount));
         if(sampleCount != windowDesc.swapChainDesc.sampleCount)
         {
-            Logger::log(Logger::Level::Error, "Can't find a framebuffer configuation which supports " + std::to_string(windowDesc.swapChainDesc.sampleCount) + " samples");
+            logError("Can't find a framebuffer configuation which supports " + std::to_string(windowDesc.swapChainDesc.sampleCount) + " samples");
             return false;
         }
 
@@ -452,7 +452,7 @@ namespace Falcor
 //         bool bSrgb = (Encoding == GL_SRGB);
 //         if(bSrgb != WindowDesc.SwapChainDesc.bSrgb)
 //         {
-//            Logger::log(Logger::Level::Error, std::string("Can't create a ") + (WindowDesc.SwapChainDesc.bSrgb ? "sRGB" : "linear") + " framebuffer.");
+//            logError(std::string("Can't create a ") + (WindowDesc.SwapChainDesc.bSrgb ? "sRGB" : "linear") + " framebuffer.");
 //            return false;
 //         }
 
@@ -466,7 +466,7 @@ namespace Falcor
         // Init GLFW
         if(!glfwInit())
         {
-            Logger::log(Logger::Level::Error, "GLFW initialization failed");
+            logError("GLFW initialization failed");
             return nullptr;
         }
 
@@ -478,7 +478,7 @@ namespace Falcor
 
         if(pWindow->mpPrivateData == nullptr)
         {
-            Logger::log(Logger::Level::Error, "Failed to create a window");
+            logError("Failed to create a window");
             return nullptr;
         }
 
@@ -488,7 +488,7 @@ namespace Falcor
         glewExperimental = true;
         if(glewInit() != GLEW_OK)
         {
-            Logger::log(Logger::Level::Error, "GLEW initialization failed");
+            logError("GLEW initialization failed");
             return nullptr;
         }
 
@@ -514,7 +514,7 @@ namespace Falcor
         // Just making sure that the framebuffer size is correct. GLFW documentation is confusing - glfwCreateWindow() get window width/height, which is ambigous (is it entire window or client area?).
         if((w != desc.swapChainDesc.width) || (h != desc.swapChainDesc.height))
         {
-            Logger::log(Logger::Level::Warning, "Size of glfw framebuffer does not match the requested one!");
+            logWarning("Size of glfw framebuffer does not match the requested one!");
         }
 
 
@@ -554,7 +554,7 @@ namespace Falcor
             glfwGetFramebufferSize(pWindow, &w, &h);
             if((w != width) || (h != height))
             {
-                Logger::log(Logger::Level::Warning, "Size of glfw framebuffer does not match the requested one!");
+                logWarning("Size of glfw framebuffer does not match the requested one!");
             }
         }
     }

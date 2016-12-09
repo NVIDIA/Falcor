@@ -104,7 +104,7 @@ namespace Falcor
     {
         std::string s("Error when creating video capture file ");
         s += filename + ".\n" + msg;
-        Logger::log(Logger::Level::Error, msg);
+        logError(msg);
         return false;
     }
 
