@@ -385,7 +385,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugD3D11|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugD3D12|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="API\PipelineStateObject.cpp" />
+    <ClCompile Include="API\GraphicsStateObject.cpp" />
     <ClCompile Include="API\ProgramReflection.cpp" />
     <ClCompile Include="API\ProgramVars.cpp" />
     <ClCompile Include="API\ProgramVersion.cpp" />
@@ -428,7 +428,7 @@
     <ClCompile Include="Graphics\Paths\ObjectPath.cpp" />
     <ClCompile Include="Graphics\Paths\PathEditor.cpp" />
     <ClCompile Include="Graphics\Program.cpp" />
-    <ClCompile Include="Graphics\PipelineState.cpp" />
+    <ClCompile Include="Graphics\GraphicsState.cpp" />
     <ClCompile Include="Graphics\Scene\Scene.cpp" />
     <ClCompile Include="Graphics\Scene\SceneEditor.cpp" />
     <ClCompile Include="Graphics\Scene\SceneExporter.cpp" />
@@ -749,7 +749,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugD3D11|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugD3D12|x64'">true</ExcludedFromBuild>
     </ClInclude>
-    <ClInclude Include="API\PipelineStateObject.h" />
+    <ClInclude Include="API\GraphicsStateObject.h" />
     <ClInclude Include="API\ProgramReflection.h" />
     <ClInclude Include="API\ProgramVars.h" />
     <ClInclude Include="API\ProgramVersion.h" />
@@ -809,7 +809,7 @@
     <ClInclude Include="Graphics\Paths\ObjectPath.h" />
     <ClInclude Include="Graphics\Paths\PathEditor.h" />
     <ClInclude Include="Graphics\Program.h" />
-    <ClInclude Include="Graphics\PipelineState.h" />
+    <ClInclude Include="Graphics\GraphicsState.h" />
     <ClInclude Include="Graphics\Scene\Scene.h" />
     <ClInclude Include="Graphics\Scene\SceneEditor.h" />
     <ClInclude Include="Graphics\Scene\SceneExporter.h" />

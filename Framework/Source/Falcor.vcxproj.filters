@@ -391,12 +391,6 @@
     <ClCompile Include="API\D3D\D3D12\LowLevel\D3D12ResourceAllocator.cpp">
       <Filter>API\D3D\D3D12\LowLevel</Filter>
     </ClCompile>
-    <ClCompile Include="API\PipelineStateObject.cpp">
-      <Filter>API</Filter>
-    </ClCompile>
-    <ClCompile Include="Graphics\PipelineState.cpp">
-      <Filter>Graphics</Filter>
-    </ClCompile>
     <ClCompile Include="API\D3D\D3D12\D3D12PipelineStateObject.cpp">
       <Filter>API\D3D\D3D12</Filter>
     </ClCompile>
@@ -448,6 +442,12 @@
     </ClCompile>
     <ClCompile Include="Graphics\ComputeState.cpp">
       <Filter>Graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="Graphics\GraphicsState.cpp">
+      <Filter>Graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="API\GraphicsStateObject.cpp">
+      <Filter>API</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -801,12 +801,6 @@
     </ClInclude>
     <ClInclude Include="API\LowLevel\ResourceAllocator.h">
       <Filter>API\LowLevel</Filter>
-    </ClInclude>
-    <ClInclude Include="API\PipelineStateObject.h">
-      <Filter>API</Filter>
-    </ClInclude>
-    <ClInclude Include="Graphics\PipelineState.h">
-      <Filter>Graphics</Filter>
     </ClInclude>
     <ClInclude Include="..\Externals\dear_imgui\imconfig.h">
       <Filter>Externals\dear_imgui</Filter>
@@ -1507,6 +1501,12 @@
     </ClInclude>
     <ClInclude Include="Graphics\ComputeState.h">
       <Filter>Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\GraphicsState.h">
+      <Filter>Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="API\GraphicsStateObject.h">
+      <Filter>API</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

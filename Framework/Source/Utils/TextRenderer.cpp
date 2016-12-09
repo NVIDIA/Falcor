@@ -71,7 +71,7 @@ namespace Falcor
         mpVertexBuffer = Buffer::create(vbSize, Buffer::BindFlags::Vertex, Buffer::CpuAccess::Write, nullptr);
 
         // Create the RenderState
-        mpPipelineState = PipelineState::create();
+        mpPipelineState = GraphicsState::create();
         GraphicsProgram::SharedPtr pProgram = GraphicsProgram::createFromFile(kVsFile, kFsFile);
         mpPipelineState->setProgram(pProgram);
         mpPipelineState->setVao(createVAO(mpVertexBuffer));
@@ -99,7 +99,7 @@ namespace Falcor
         mpFont = Font::create();
 
         // Create and initialize the program variables
-        mpProgramVars = ProgramVars::create(pProgram->getActiveVersion()->getReflector(), true);
+        mpProgramVars = GraphicsVars::create(pProgram->getActiveVersion()->getReflector(), true);
         // Initialize the buffer
         auto& pCB = mpProgramVars["PerFrameCB"];
         mVarOffsets.vpTransform = mpProgramVars["PerFrameCB"]->getVariableOffset("gvpTransform");
@@ -115,13 +115,13 @@ namespace Falcor
         mStartPos = startPos;
         mpRenderContext = pRenderContext;
 
-        const PipelineState* pState = pRenderContext->getPipelineState().get();
+        const GraphicsState* pState = pRenderContext->getGraphicsState().get();
 
         // Set the current FBO into the render state
         mpPipelineState->setFbo(pState->getFbo());
-        mpRenderContext->pushPipelineState(mpPipelineState);
+        mpRenderContext->pushGraphicsState(mpPipelineState);
 
-        PipelineState::Viewport VP(0, 0, (float)pState->getFbo()->getWidth(), (float)pState->getFbo()->getHeight(), 0, 1);
+        GraphicsState::Viewport VP(0, 0, (float)pState->getFbo()->getWidth(), (float)pState->getFbo()->getHeight(), 0, 1);
         mpPipelineState->setViewport(0, VP);
 
         // Set the matrix
@@ -134,7 +134,7 @@ namespace Falcor
         // Update the program variables
         mpProgramVars["PerFrameCB"]->setVariable(mVarOffsets.vpTransform, vpTransform);
         mpProgramVars["PerFrameCB"]->setVariable(mVarOffsets.fontColor, mTextColor);
-        pRenderContext->setProgramVariables(mpProgramVars);
+        pRenderContext->setGraphicsVars(mpProgramVars);
 
 
         // Map the buffer
@@ -145,7 +145,7 @@ namespace Falcor
     {
         flush();
         mpVertexBuffer->unmap();
-        mpRenderContext->popPipelineState();
+        mpRenderContext->popGraphicsState();
         mpRenderContext = nullptr;
     }
 

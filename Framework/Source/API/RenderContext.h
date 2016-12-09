@@ -34,9 +34,9 @@
 #include "API/StructuredBuffer.h"
 #include "API/Texture.h"
 #include "Framework.h"
-#include "API/PipelineStateObject.h"
+#include "API/GraphicsStateObject.h"
 #include "API/ProgramVars.h"
-#include "Graphics/PipelineState.h"
+#include "Graphics/GraphicsState.h"
 #include "API/LowLevel/CopyContext.h"
 #include "Graphics/ComputeState.h"
 
@@ -150,47 +150,78 @@ namespace Falcor
         */
         void blitFbo(const Fbo* pSource, const Fbo* pTarget, const glm::ivec4& srcRegion, const glm::ivec4& dstRegion, bool useLinearFiltering = false, FboAttachmentType copyFlags = FboAttachmentType::Color, uint32_t srcIdx = 0, uint32_t dstIdx = 0);
 
-        /** Set the program variables
+        /** Set the program variables for graphics
         */
-        void setProgramVariables(const ProgramVars::SharedPtr& pVars) { mpProgramVars = pVars; applyProgramVars(); }
+        void setGraphicsVars(const GraphicsVars::SharedPtr& pVars) { mpGraphicsVars = pVars; applyProgramVars(); }
         
-        /** Get the bound program variables object
+        /** Get the bound graphics program variables object
         */
-        ProgramVars::SharedPtr getProgramVars() const { return mpProgramVars; }
+        GraphicsVars::SharedPtr getGraphicsVars() const { return mpGraphicsVars; }
 
-        /** Push the current ProgramVars and sets a new one
+        /** Push the current graphics vars and sets a new one
         */
-        void pushProgramVars(const ProgramVars::SharedPtr& pVars);
+        void pushGraphicsVars(const GraphicsVars::SharedPtr& pVars);
 
         /** Pops the last ProgramVars from the stack and sets it
         */
-        void popProgramVars();
+        void popGraphicsVars();
 
-        /** Set a pipeline state
+        /** Set a graphics state
         */
-        void setPipelineState(const PipelineState::SharedPtr& pState) { mpPipelineState = pState; applyPipelineState(); }
+        void setGraphicsState(const GraphicsState::SharedPtr& pState) { mpGraphicsState = pState; applyGraphicsState(); }
         
-        /** Get the currently bound pipeline state
+        /** Get the currently bound graphics state
         */
-        PipelineState::SharedPtr getPipelineState() const { return mpPipelineState; }
+        GraphicsState::SharedPtr getGraphicsState() const { return mpGraphicsState; }
 
-        /** Push the current PipelineState and sets a new one
+        /** Push the current graphics state and sets a new one
         */
-        void pushPipelineState(const PipelineState::SharedPtr& pState);
+        void pushGraphicsState(const GraphicsState::SharedPtr& pState);
 
-        /** Pops the last PipelineState from the stack and sets it
+        /** Pops the last graphics state from the stack and sets it
         */
-        void popPipelineState();
+        void popGraphicsState();
 
         /** Flush the command list. This doesn't reset the command allocator, just submits the commands
             \param[in] wait If true, will block execution until the GPU finished processing the commands
         */
         void flush(bool wait = false);
 
-        void setComputeState(const ComputeState::SharedPtr& pComputeState) { mpComputeState = pComputeState; applyComputeState(); }
-        void setComputeVars(const ProgramVars::SharedPtr& pComputeVars) { mpComputeVars = pComputeVars; applyComputeVars(); }
+        /** Set the compute variables
+        */
+        void setComputeVars(const ComputeVars::SharedPtr& pVars) { mpComputeVars = pVars; applyComputeVars(); }
+
+        /** Get the bound program variables object
+        */
+        ComputeVars::SharedPtr getComputeVars() const { return mpComputeVars; }
+
+        /** Push the current compute vars and sets a new one
+        */
+        void pushComputeVars(const ComputeVars::SharedPtr& pVars);
+
+        /** Pops the last ProgramVars from the stack and sets it
+        */
+        void popComputeVars();
+
+        /** Set a compute state
+        */
+        void setComputeState(const ComputeState::SharedPtr& pState) { mpComputeState = pState; applyComputeState(); }
+
+        /** Get the currently bound compute state
+        */
+        ComputeState::SharedPtr getComputeState() const { return mpComputeState; }
+
+        /** Push the current compute state and sets a new one
+        */
+        void pushComputeState(const ComputeState::SharedPtr& pState);
+
+        /** Pops the last PipelineState from the stack and sets it
+        */
+        void popComputeState();
         
-        void dispatch(uint32_t xSize, uint32_t ySize, uint32_t zSize);
+        /** Dispatch a compute task
+        */
+        void dispatch(uint32_t groupSizeX, uint32_t groupSizeY, uint32_t groupSizeZ);
 
         void updateBuffer(const Buffer* pBuffer, const void* pData, size_t offset = 0, size_t size = 0);
         void updateTexture(const Texture* pTexture, const void* pData);
@@ -202,18 +233,20 @@ namespace Falcor
     private:
         RenderContext();
 
-        ProgramVars::SharedPtr mpProgramVars;
-        PipelineState::SharedPtr mpPipelineState;
+        GraphicsVars::SharedPtr mpGraphicsVars;
+        GraphicsState::SharedPtr mpGraphicsState;
 
-        ProgramVars::SharedPtr mpComputeVars;
+        ComputeVars::SharedPtr mpComputeVars;
         ComputeState::SharedPtr mpComputeState;
 
-        std::stack<PipelineState::SharedPtr> mPipelineStateStack;
-        std::stack<ProgramVars::SharedPtr> mProgramVarsStack;
+        std::stack<GraphicsState::SharedPtr> mPipelineStateStack;
+        std::stack<GraphicsVars::SharedPtr> mpGraphicsVarsStack;
+        std::stack<ComputeState::SharedPtr> mpComputeStateStack;
+        std::stack<ComputeVars::SharedPtr> mpComputeVarsStack;
 
         // Internal functions used by the API layers
         void applyProgramVars();
-        void applyPipelineState();
+        void applyGraphicsState();
         void applyComputeState();
         void applyComputeVars();
         void prepareForDraw();

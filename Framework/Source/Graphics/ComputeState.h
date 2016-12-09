@@ -62,7 +62,7 @@ namespace Falcor
         */
         ComputeState& setRootSignature(RootSignature::SharedPtr pSignature) { mpRootSignature = pSignature; mCachedData.isUserRootSignature = (mpRootSignature == nullptr); }
 
-        /** Get the active PSO
+        /** Get the active compute state object
         */
         ComputeStateObject::SharedPtr getCSO();
 

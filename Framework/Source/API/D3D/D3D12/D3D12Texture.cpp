@@ -33,7 +33,7 @@
 #include "API/Device.h"
 #include "API/ProgramVars.h"
 #include "Graphics/FullScreenPass.h"
-#include "Graphics/PipelineState.h"
+#include "Graphics/GraphicsState.h"
 #include "D3D12Resource.h"
 
 namespace Falcor
@@ -45,8 +45,8 @@ namespace Falcor
     struct
     {
         FullScreenPass::UniquePtr pFullScreenPass;
-        ProgramVars::SharedPtr pVars;
-        PipelineState::SharedPtr pState;
+        GraphicsVars::SharedPtr pVars;
+        GraphicsState::SharedPtr pState;
     } static gGenMips;
 
 
@@ -258,16 +258,16 @@ namespace Falcor
         if (gGenMips.pFullScreenPass == nullptr)
         {
             gGenMips.pFullScreenPass = FullScreenPass::create("Framework\\GenerateMips.hlsl");
-            gGenMips.pVars = ProgramVars::create(gGenMips.pFullScreenPass->getProgram()->getActiveVersion()->getReflector());
-            gGenMips.pState = PipelineState::create();
+            gGenMips.pVars = GraphicsVars::create(gGenMips.pFullScreenPass->getProgram()->getActiveVersion()->getReflector());
+            gGenMips.pState = GraphicsState::create();
             Sampler::Desc desc;
             desc.setFilterMode(Sampler::Filter::Linear, Sampler::Filter::Linear, Sampler::Filter::Linear).setAddressingMode(Sampler::AddressMode::Clamp, Sampler::AddressMode::Clamp, Sampler::AddressMode::Clamp);
             gGenMips.pVars->setSampler("gSampler", Sampler::create(desc));
         }
 
         RenderContext* pContext = gpDevice->getRenderContext().get();
-        pContext->pushPipelineState(gGenMips.pState);
-        pContext->pushProgramVars(gGenMips.pVars);
+        pContext->pushGraphicsState(gGenMips.pState);
+        pContext->pushGraphicsVars(gGenMips.pVars);
 
         for (uint32_t i = 0; i < mMipLevels - 1; i++)
         {
@@ -283,7 +283,7 @@ namespace Falcor
             // Run the program
             gGenMips.pFullScreenPass->execute(pContext);
         }
-        pContext->popPipelineState();
-        pContext->popProgramVars();
+        pContext->popGraphicsState();
+        pContext->popGraphicsVars();
     }
 }

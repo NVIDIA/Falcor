@@ -131,9 +131,14 @@ namespace Falcor
         }
     }
 
-    ProgramVars::SharedPtr ProgramVars::create(const ProgramReflection::SharedConstPtr& pReflector, bool createBuffers, const RootSignature::SharedConstPtr& pRootSig)
+    GraphicsVars::SharedPtr GraphicsVars::create(const ProgramReflection::SharedConstPtr& pReflector, bool createBuffers, const RootSignature::SharedConstPtr& pRootSig)
     {
-        return SharedPtr(new ProgramVars(pReflector, createBuffers, pRootSig));
+        return SharedPtr(new GraphicsVars(pReflector, createBuffers, pRootSig));
+    }
+
+    ComputeVars::SharedPtr ComputeVars::create(const ProgramReflection::SharedConstPtr& pReflector, bool createBuffers, const RootSignature::SharedConstPtr& pRootSig)
+    {
+        return SharedPtr(new ComputeVars(pReflector, createBuffers, pRootSig));
     }
 
     template<typename BufferClass>
@@ -504,7 +509,7 @@ namespace Falcor
     }
 
     template<bool forGraphics>
-    void ProgramVars::apply(RenderContext* pContext) const
+    void ProgramVars::applyCommon(RenderContext* pContext) const
     {
         // Get the command list
         ID3D12GraphicsCommandList* pList = pContext->getCommandListApiHandle();
@@ -556,14 +561,14 @@ namespace Falcor
         }
     }
 
-    void ProgramVars::applyForCompute(RenderContext* pContext) const
+    void ComputeVars::apply(RenderContext* pContext) const
     {
-        apply<false>(pContext);
+        applyCommon<false>(pContext);
     }
 
-    void ProgramVars::applyForGraphics(RenderContext* pContext) const
+    void GraphicsVars::apply(RenderContext* pContext) const
     {
-        apply<true>(pContext);
+        applyCommon<true>(pContext);
     }
 
     bool ProgramVars::setTextureRange(uint32_t startIndex, uint32_t count, const Texture::SharedPtr pTextures[])

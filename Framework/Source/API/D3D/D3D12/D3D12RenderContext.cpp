@@ -295,24 +295,24 @@ namespace Falcor
         pApiData->pList->OMSetRenderTargets(colorTargets, pRTV.data(), FALSE, &pDSV);
     }
 
-    static void D3D12SetViewports(const RenderContextData* pApiData, const PipelineState::Viewport* vp)
+    static void D3D12SetViewports(const RenderContextData* pApiData, const GraphicsState::Viewport* vp)
     {
-        static_assert(offsetof(PipelineState::Viewport, originX) == offsetof(D3D12_VIEWPORT, TopLeftX), "VP originX offset");
-        static_assert(offsetof(PipelineState::Viewport, originY) == offsetof(D3D12_VIEWPORT, TopLeftY), "VP originY offset");
-        static_assert(offsetof(PipelineState::Viewport, width) == offsetof(D3D12_VIEWPORT, Width), "VP Width offset");
-        static_assert(offsetof(PipelineState::Viewport, height) == offsetof(D3D12_VIEWPORT, Height), "VP Height offset");
-        static_assert(offsetof(PipelineState::Viewport, minDepth) == offsetof(D3D12_VIEWPORT, MinDepth), "VP MinDepth offset");
-        static_assert(offsetof(PipelineState::Viewport, maxDepth) == offsetof(D3D12_VIEWPORT, MaxDepth), "VP TopLeftX offset");
+        static_assert(offsetof(GraphicsState::Viewport, originX) == offsetof(D3D12_VIEWPORT, TopLeftX), "VP originX offset");
+        static_assert(offsetof(GraphicsState::Viewport, originY) == offsetof(D3D12_VIEWPORT, TopLeftY), "VP originY offset");
+        static_assert(offsetof(GraphicsState::Viewport, width) == offsetof(D3D12_VIEWPORT, Width), "VP Width offset");
+        static_assert(offsetof(GraphicsState::Viewport, height) == offsetof(D3D12_VIEWPORT, Height), "VP Height offset");
+        static_assert(offsetof(GraphicsState::Viewport, minDepth) == offsetof(D3D12_VIEWPORT, MinDepth), "VP MinDepth offset");
+        static_assert(offsetof(GraphicsState::Viewport, maxDepth) == offsetof(D3D12_VIEWPORT, MaxDepth), "VP TopLeftX offset");
 
         pApiData->pList->RSSetViewports(D3D12_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE, (D3D12_VIEWPORT*)vp);
     }
 
-    static void D3D12SetScissors(const RenderContextData* pApiData, const PipelineState::Scissor* sc)
+    static void D3D12SetScissors(const RenderContextData* pApiData, const GraphicsState::Scissor* sc)
     {
-        static_assert(offsetof(PipelineState::Scissor, originX) == offsetof(D3D12_RECT, left), "Scissor originX offset");
-        static_assert(offsetof(PipelineState::Scissor, originY) == offsetof(D3D12_RECT, top), "Scissor originY offset");
-        static_assert(offsetof(PipelineState::Scissor, width) == offsetof(D3D12_RECT, right), "Scissor Width offset");
-        static_assert(offsetof(PipelineState::Scissor, height) == offsetof(D3D12_RECT, bottom), "Scissor Height offset");
+        static_assert(offsetof(GraphicsState::Scissor, originX) == offsetof(D3D12_RECT, left), "Scissor originX offset");
+        static_assert(offsetof(GraphicsState::Scissor, originY) == offsetof(D3D12_RECT, top), "Scissor originY offset");
+        static_assert(offsetof(GraphicsState::Scissor, width) == offsetof(D3D12_RECT, right), "Scissor Width offset");
+        static_assert(offsetof(GraphicsState::Scissor, height) == offsetof(D3D12_RECT, bottom), "Scissor Height offset");
 
         pApiData->pList->RSSetScissorRects(D3D12_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE, (D3D12_RECT*)sc);
     }
@@ -320,21 +320,21 @@ namespace Falcor
     void RenderContext::prepareForDraw()
     {
         RenderContextData* pApiData = (RenderContextData*)mpApiData;
-        assert(mpPipelineState);
+        assert(mpGraphicsState);
 
         // Bind the root signature and the root signature data
         // FIXME D3D12 what to do if there are no vars?
-        if (mpProgramVars)
+        if (mpGraphicsVars)
         {
-            mpProgramVars->applyForGraphics(const_cast<RenderContext*>(this));
+            mpGraphicsVars->apply(const_cast<RenderContext*>(this));
         }
 
-        pApiData->pList->IASetPrimitiveTopology(getD3DPrimitiveTopology(mpPipelineState->getVao()->getPrimitiveTopology()));
-        D3D12SetVao(pApiData, mpPipelineState->getVao().get());
-        D3D12SetFbo(this, pApiData, mpPipelineState->getFbo().get());
-        D3D12SetViewports(pApiData, &mpPipelineState->getViewport(0));
-        D3D12SetScissors(pApiData, &mpPipelineState->getScissors(0));
-        pApiData->pList->SetPipelineState(mpPipelineState->getPSO()->getApiHandle());
+        pApiData->pList->IASetPrimitiveTopology(getD3DPrimitiveTopology(mpGraphicsState->getVao()->getPrimitiveTopology()));
+        D3D12SetVao(pApiData, mpGraphicsState->getVao().get());
+        D3D12SetFbo(this, pApiData, mpGraphicsState->getFbo().get());
+        D3D12SetViewports(pApiData, &mpGraphicsState->getViewport(0));
+        D3D12SetScissors(pApiData, &mpGraphicsState->getScissors(0));
+        pApiData->pList->SetPipelineState(mpGraphicsState->getGSO()->getApiHandle());
 
         flushCopyCommands(pApiData);
     }
@@ -348,7 +348,7 @@ namespace Falcor
         // FIXME D3D12 what to do if there are no vars?
         if (mpComputeVars)
         {
-            mpComputeVars->applyForCompute(const_cast<RenderContext*>(this));
+            mpComputeVars->apply(const_cast<RenderContext*>(this));
         }
 
         pApiData->pList->SetPipelineState(mpComputeState->getCSO()->getApiHandle());
@@ -356,11 +356,11 @@ namespace Falcor
         flushCopyCommands(pApiData);
     }
 
-    void RenderContext::dispatch(uint32_t xSize, uint32_t ySize, uint32_t zSize)
+    void RenderContext::dispatch(uint32_t groupSizeX, uint32_t groupSizeY, uint32_t groupSizeZ)
     {
         prepareForDispatch();
         RenderContextData* pApiData = (RenderContextData*)mpApiData;
-        pApiData->pList->Dispatch(xSize, ySize, zSize);
+        pApiData->pList->Dispatch(groupSizeX, groupSizeY, groupSizeZ);
         pApiData->commandsPending = true;
     }
 
@@ -391,7 +391,7 @@ namespace Falcor
     }
 
     void RenderContext::applyProgramVars() {}
-    void RenderContext::applyPipelineState() {}
+    void RenderContext::applyGraphicsState() {}
     void RenderContext::applyComputeVars() {}
     void RenderContext::applyComputeState() {}
 

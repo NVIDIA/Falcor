@@ -174,10 +174,10 @@ namespace Falcor
 
         // Get the default objects before calling onLoad()
         mpDefaultFBO = gpDevice->getSwapChainFbo();
-        mpDefaultPipelineState = PipelineState::create();
+        mpDefaultPipelineState = GraphicsState::create();
         mpDefaultPipelineState->setFbo(mpDefaultFBO);
         mpRenderContext = gpDevice->getRenderContext();
-        mpRenderContext->setPipelineState(mpDefaultPipelineState);
+        mpRenderContext->setGraphicsState(mpDefaultPipelineState);
 
         // Init the UI
         initUI();
@@ -277,7 +277,7 @@ namespace Falcor
             calculateTime();
 
 			// Bind the default state
-            mpRenderContext->setPipelineState(mpDefaultPipelineState);
+            mpRenderContext->setGraphicsState(mpDefaultPipelineState);
             mpDefaultPipelineState->setFbo(mpDefaultFBO);
             onFrameRender();
         }

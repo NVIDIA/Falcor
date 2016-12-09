@@ -66,11 +66,11 @@ namespace Falcor
         style.Colors[ImGuiCol_WindowBg].w = 0.95f;
 
         // Create the pipeline state cache
-        mpPipelineState = PipelineState::create();
+        mpPipelineState = GraphicsState::create();
 
         // Create the program
         mpProgram = GraphicsProgram::createFromFile("Framework//Gui.vs", "Framework//Gui.ps");
-        mpProgramVars = ProgramVars::create(mpProgram->getActiveVersion()->getReflector());
+        mpProgramVars = GraphicsVars::create(mpProgram->getActiveVersion()->getReflector());
         mpPipelineState->setProgram(mpProgram);
 
         // Create and set the texture
@@ -158,7 +158,7 @@ namespace Falcor
             endGroup();
         }
 
-        pContext->setProgramVariables(mpProgramVars);
+        pContext->setGraphicsVars(mpProgramVars);
         ImGui::Render();
         ImDrawData* pDrawData = ImGui::GetDrawData();
 
@@ -180,11 +180,11 @@ namespace Falcor
         }
         mpVao->getVertexBuffer(0)->unmap();
         mpVao->getIndexBuffer()->unmap();
-        mpPipelineState->setFbo(pContext->getPipelineState()->getFbo());
-        pContext->pushPipelineState(mpPipelineState);
+        mpPipelineState->setFbo(pContext->getGraphicsState()->getFbo());
+        pContext->pushGraphicsState(mpPipelineState);
 
         // Setup viewport
-        PipelineState::Viewport vp;
+        GraphicsState::Viewport vp;
         vp.originX = 0;
         vp.originY = 0;
         vp.width = ImGui::GetIO().DisplaySize.x;
@@ -203,7 +203,7 @@ namespace Falcor
             for (int32_t cmd = 0; cmd < pCmdList->CmdBuffer.Size; cmd++)
             {
                 const ImDrawCmd* pCmd = &pCmdList->CmdBuffer[cmd];
-                PipelineState::Scissor scissor((int32_t)pCmd->ClipRect.x, (int32_t)pCmd->ClipRect.y, (int32_t)pCmd->ClipRect.z, (int32_t)pCmd->ClipRect.w);
+                GraphicsState::Scissor scissor((int32_t)pCmd->ClipRect.x, (int32_t)pCmd->ClipRect.y, (int32_t)pCmd->ClipRect.z, (int32_t)pCmd->ClipRect.w);
                 mpPipelineState->setScissors(0, scissor);
                 pContext->drawIndexed(pCmd->ElemCount, idxOffset, vtxOffset);
                 idxOffset += pCmd->ElemCount;
@@ -216,7 +216,7 @@ namespace Falcor
         io.DeltaTime = elapsedTime;
         ImGui::NewFrame();
         mGroupStackSize = 0;
-        pContext->popPipelineState();
+        pContext->popGraphicsState();
     }
 
     bool Gui::addCheckBox(const char label[], bool& var, bool sameLine)

@@ -27,23 +27,23 @@
 ***************************************************************************/
 #pragma once
 #include "Framework.h"
-#include "PipelineStateObject.h"
+#include "GraphicsStateObject.h"
 #include "BlendState.h"
 #include "Vao.h"
 #include "Device.h"
 
 namespace Falcor
 {
-    BlendState::SharedPtr PipelineStateObject::spDefaultBlendState;
-    RasterizerState::SharedPtr PipelineStateObject::spDefaultRasterizerState;
-    DepthStencilState::SharedPtr PipelineStateObject::spDefaultDepthStencilState;
+    BlendState::SharedPtr GraphicsStateObject::spDefaultBlendState;
+    RasterizerState::SharedPtr GraphicsStateObject::spDefaultRasterizerState;
+    DepthStencilState::SharedPtr GraphicsStateObject::spDefaultDepthStencilState;
 
-    PipelineStateObject::~PipelineStateObject()
+    GraphicsStateObject::~GraphicsStateObject()
     {
         gpDevice->releaseResource(mApiHandle);
     }
 
-    PipelineStateObject::SharedPtr PipelineStateObject::create(const Desc& desc)
+    GraphicsStateObject::SharedPtr GraphicsStateObject::create(const Desc& desc)
     {
         if (spDefaultBlendState == nullptr)
         {
@@ -53,7 +53,7 @@ namespace Falcor
             spDefaultRasterizerState = RasterizerState::create(RasterizerState::Desc());
         }
 
-        SharedPtr pState = SharedPtr(new PipelineStateObject(desc));
+        SharedPtr pState = SharedPtr(new GraphicsStateObject(desc));
 
         // Initialize default objects
         if (!pState->mDesc.mpBlendState)            pState->mDesc.mpBlendState              = spDefaultBlendState;

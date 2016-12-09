@@ -37,16 +37,22 @@ void ComputeShader::onGuiRender()
     mpGui->addCheckBox("Pixelate", mbPixelate);
 }
 
+Texture::SharedPtr createTmpTex(const Fbo* pFbo)
+{
+    auto fboFormat = pFbo->getColorTexture(0)->getFormat();
+    return Texture::create2D(pFbo->getWidth(), pFbo->getHeight(), srgbToLinearFormat(fboFormat), 1, 1, nullptr, Resource::BindFlags::UnorderedAccess | Resource::BindFlags::UnorderedAccess);
+}
+
 void ComputeShader::onLoad()
 {
     mpProg = ComputeProgram::createFromFile("compute.hlsl");
     mpState = ComputeState::create();
     mpState->setProgram(mpProg);
-    mpProgVars = ProgramVars::create(mpProg->getActiveVersion()->getReflector());
+    mpProgVars = ComputeVars::create(mpProg->getActiveVersion()->getReflector());
     mpBlitPass = FullScreenPass::create("blit.fs");
-    mpBlitVars = ProgramVars::create(mpBlitPass->getProgram()->getActiveVersion()->getReflector());
+    mpBlitVars = GraphicsVars::create(mpBlitPass->getProgram()->getActiveVersion()->getReflector());
 
-    mpTmpTexture = Texture::create2D(mpDefaultFBO->getWidth(), mpDefaultFBO->getHeight(), mpDefaultFBO->getColorTexture(0)->getFormat(), 1, 1, nullptr, Resource::BindFlags::UnorderedAccess | Resource::BindFlags::RenderTarget);
+    mpTmpTexture = createTmpTex(mpDefaultFBO.get());
 }
 
 void ComputeShader::loadImage()
@@ -57,16 +63,15 @@ void ComputeShader::loadImage()
         mpImage = createTextureFromFile(filename, false, false);
  
         resizeSwapChain(mpImage->getWidth(), mpImage->getHeight());
-        auto fboFormat = mpDefaultFBO->getColorTexture(0)->getFormat();
-        mpTmpTexture = Texture::create2D(mpImage->getWidth(), mpImage->getHeight(), srgbToLinearFormat(fboFormat), 1, 1, nullptr, Resource::BindFlags::UnorderedAccess | Resource::BindFlags::RenderTarget);
         mpProgVars->setTexture("gInput", mpImage);
+        mpTmpTexture = createTmpTex(mpDefaultFBO.get());
     }
 }
 
 void ComputeShader::onFrameRender()
 {
 	const glm::vec4 clearColor(0.38f, 0.52f, 0.10f, 1);
-    mpRenderContext->clearRtv(mpTmpTexture->getRTV().get(), clearColor);
+    mpRenderContext->clearUAV(mpTmpTexture->getUAV().get(), clearColor);
 
     if(mpImage)
     {

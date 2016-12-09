@@ -41,8 +41,8 @@ private:
     ComputeProgram::SharedPtr mpProg;
     ComputeState::SharedPtr mpState;
     bool mbPixelate = false;
-    ProgramVars::SharedPtr mpProgVars;
-    ProgramVars::SharedPtr mpBlitVars;
+    ComputeVars::SharedPtr mpProgVars;
+    GraphicsVars::SharedPtr mpBlitVars;
     Texture::SharedPtr mpImage;
 
     FullScreenPass::UniquePtr mpBlitPass;

@@ -27,7 +27,7 @@
 ***************************************************************************/
 #pragma once
 #include "Framework.h"
-#include "PipelineState.h"
+#include "GraphicsState.h"
 
 namespace Falcor
 {
@@ -38,25 +38,25 @@ namespace Falcor
     static const uint32_t kViewportCount = D3D12_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE;
 #endif
 
-    static PipelineStateObject::PrimitiveType topology2Type(Vao::Topology t)
+    static GraphicsStateObject::PrimitiveType topology2Type(Vao::Topology t)
     {
         switch (t)
         {
         case Vao::Topology::PointList:
-            return PipelineStateObject::PrimitiveType::Point;
+            return GraphicsStateObject::PrimitiveType::Point;
         case Vao::Topology::LineList:
         case Vao::Topology::LineStrip:
-            return PipelineStateObject::PrimitiveType::Line;
+            return GraphicsStateObject::PrimitiveType::Line;
         case Vao::Topology::TriangleList:
         case Vao::Topology::TriangleStrip:
-            return PipelineStateObject::PrimitiveType::Triangle;
+            return GraphicsStateObject::PrimitiveType::Triangle;
         default:
             should_not_get_here();
-            return PipelineStateObject::PrimitiveType::Undefined;
+            return GraphicsStateObject::PrimitiveType::Undefined;
         }
     }
 
-    PipelineState::PipelineState()
+    GraphicsState::GraphicsState()
     {
 #ifdef FALCOR_GL
         uint32_t kViewportCount;
@@ -73,7 +73,7 @@ namespace Falcor
         }
     }
 
-    PipelineStateObject::SharedPtr PipelineState::getPSO()
+    GraphicsStateObject::SharedPtr GraphicsState::getGSO()
     {
         // Check if we need to create a root-signature
         // FIXME Is this the correct place for this?
@@ -98,11 +98,11 @@ namespace Falcor
         mDesc.setRootSignature(mpRootSignature);
 
         // FIXME D3D12 Need real cache
-        mpCurrentPso = PipelineStateObject::create(mDesc);
-        return mpCurrentPso;
+        mpCurrentGso = GraphicsStateObject::create(mDesc);
+        return mpCurrentGso;
     }
 
-    PipelineState& PipelineState::setFbo(const Fbo::SharedConstPtr& pFbo, bool setVp0Sc0)
+    GraphicsState& GraphicsState::setFbo(const Fbo::SharedConstPtr& pFbo, bool setVp0Sc0)
     {
         mpFbo = pFbo;
         if (setVp0Sc0 && pFbo)
@@ -115,13 +115,13 @@ namespace Falcor
         return *this;
     }
 
-    void PipelineState::pushFbo(const Fbo::SharedPtr& pFbo, bool setVp0Sc0)
+    void GraphicsState::pushFbo(const Fbo::SharedPtr& pFbo, bool setVp0Sc0)
     {
         mFboStack.push(mpFbo);
         setFbo(pFbo, setVp0Sc0);
     }
 
-    void PipelineState::popFbo(bool setVp0Sc0)
+    void GraphicsState::popFbo(bool setVp0Sc0)
     {
         if (mFboStack.empty())
         {
@@ -132,13 +132,13 @@ namespace Falcor
         mFboStack.pop();
     }
 
-    void PipelineState::pushViewport(uint32_t index, const Viewport& vp, bool setScissors)
+    void GraphicsState::pushViewport(uint32_t index, const Viewport& vp, bool setScissors)
     {
         mVpStack[index].push(mViewports[index]);
         setViewport(index, vp, setScissors);
     }
 
-    void PipelineState::popViewport(uint32_t index, bool setScissors)
+    void GraphicsState::popViewport(uint32_t index, bool setScissors)
     {
         if (mVpStack[index].empty())
         {
@@ -150,13 +150,13 @@ namespace Falcor
         mVpStack[index].pop();
     }
 
-    void PipelineState::pushScissors(uint32_t index, const Scissor& sc)
+    void GraphicsState::pushScissors(uint32_t index, const Scissor& sc)
     {
         mScStack[index].push(mScissors[index]);
         setScissors(index, sc);
     }
 
-    void PipelineState::popScissors(uint32_t index)
+    void GraphicsState::popScissors(uint32_t index)
     {
         if (mScStack[index].empty())
         {
@@ -168,7 +168,7 @@ namespace Falcor
         mScStack[index].pop();
     }
 
-    void PipelineState::setViewport(uint32_t index, const Viewport& vp, bool setScissors)
+    void GraphicsState::setViewport(uint32_t index, const Viewport& vp, bool setScissors)
     {
         mViewports[index] = vp;
         if (setScissors)
@@ -178,7 +178,7 @@ namespace Falcor
         }
     }
 
-    void PipelineState::setScissors(uint32_t index, const Scissor& sc)
+    void GraphicsState::setScissors(uint32_t index, const Scissor& sc)
     {
         mScissors[index] = sc;
     }

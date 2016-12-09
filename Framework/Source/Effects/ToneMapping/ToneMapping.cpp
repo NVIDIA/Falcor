@@ -78,7 +78,7 @@ namespace Falcor
 
     void ToneMapping::execute(RenderContext* pRenderContext, Fbo::SharedPtr pSrc, Fbo::SharedPtr pDst)
     {
-        PipelineState* pState = pRenderContext->getPipelineState().get();
+        GraphicsState* pState = pRenderContext->getGraphicsState().get();
         pState->pushFbo(pDst);
 
         createLuminanceFbo(pSrc);

@@ -26,7 +26,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 #pragma once
-#include "API/PipelineStateObject.h"
+#include "API/GraphicsStateObject.h"
 #include "Graphics/GraphicsProgram.h"
 #include "API/VAO.h"
 #include "API/FBO.h"
@@ -41,11 +41,11 @@ namespace Falcor
         This class contains the entire state required by a single draw-call. It's not an immutable object - you can change it dynamically during rendering.
         The recommended way to use it is to create multiple PipelineState objects (ideally, a single object per render-pass)
     */
-    class PipelineState
+    class GraphicsState
     {
     public:
-        using SharedPtr = std::shared_ptr<PipelineState>;
-        using SharedConstPtr = std::shared_ptr<const PipelineState>;
+        using SharedPtr = std::shared_ptr<GraphicsState>;
+        using SharedConstPtr = std::shared_ptr<const GraphicsState>;
         
         struct Viewport
         {
@@ -71,7 +71,7 @@ namespace Falcor
 
         /** Create a new object
         */
-        static SharedPtr create() { return SharedPtr(new PipelineState()); }
+        static SharedPtr create() { return SharedPtr(new GraphicsState()); }
 
         /** Copy constructor. Useful if you need to make minor changes to an already existing object
         */
@@ -85,7 +85,7 @@ namespace Falcor
         \param[in] pFbo - a new FBO object. If nullptr is used, will detach the current FBO
         \param[in] setVp0Sc0 If true, will set the viewport 0 and scissor 0 to match the FBO dimensions
         */
-        PipelineState& setFbo(const Fbo::SharedConstPtr& pFbo, bool setVp0Sc0 = true);
+        GraphicsState& setFbo(const Fbo::SharedConstPtr& pFbo, bool setVp0Sc0 = true);
         
         /** Set a new FBO and store the current FBO into a stack. Useful for multi-pass effects.
             \param[in] pFbo - a new FBO object. If nullptr is used, will bind an empty framebuffer object
@@ -101,7 +101,7 @@ namespace Falcor
         /** Set a new vertex array object. By default, no VAO is bound.
         \param[in] pVao The Vao object to bind. If this is nullptr, will unbind the current VAO.
         */
-        PipelineState& setVao(const Vao::SharedConstPtr& pVao) { mpVao = pVao; return *this; }
+        GraphicsState& setVao(const Vao::SharedConstPtr& pVao) { mpVao = pVao; return *this; }
 
         /** Get the currently bound VAO
         */
@@ -109,7 +109,7 @@ namespace Falcor
 
         /** Set the stencil reference value
         */
-        PipelineState& setStencilRef(uint8_t refValue) { mStencilRef = refValue;}
+        GraphicsState& setStencilRef(uint8_t refValue) { mStencilRef = refValue;}
 
         /** Get the current stencil ref
         */
@@ -161,7 +161,7 @@ namespace Falcor
 
         /** Bind a program to the pipeline
         */
-        PipelineState& setProgram(const GraphicsProgram::SharedPtr& pProgram) { mpProgram = pProgram; return *this; }
+        GraphicsState& setProgram(const GraphicsProgram::SharedPtr& pProgram) { mpProgram = pProgram; return *this; }
 
         /** Get the currently bound program
         */
@@ -169,7 +169,7 @@ namespace Falcor
 
         /** Set a blend-state
         */
-        PipelineState& setBlendState(BlendState::SharedPtr pBlendState) { mDesc.setBlendState(pBlendState); return *this; }
+        GraphicsState& setBlendState(BlendState::SharedPtr pBlendState) { mDesc.setBlendState(pBlendState); return *this; }
 
         /** Get the currently bound blend-state
         */
@@ -177,7 +177,7 @@ namespace Falcor
 
         /** Set a rasterizer-state
         */
-        PipelineState& setRasterizerState(RasterizerState::SharedPtr pRasterizerState) { mDesc.setRasterizerState(pRasterizerState); return *this; }
+        GraphicsState& setRasterizerState(RasterizerState::SharedPtr pRasterizerState) { mDesc.setRasterizerState(pRasterizerState); return *this; }
 
         /** Get the currently bound rasterizer-state
         */
@@ -185,7 +185,7 @@ namespace Falcor
 
         /** Set a depth-stencil state
         */
-        PipelineState& setDepthStencilState(DepthStencilState::SharedPtr pDepthStencilState) { mDesc.setDepthStencilState(pDepthStencilState); return *this; }
+        GraphicsState& setDepthStencilState(DepthStencilState::SharedPtr pDepthStencilState) { mDesc.setDepthStencilState(pDepthStencilState); return *this; }
 
         /** Get the currently bound depth-stencil state
         */
@@ -193,7 +193,7 @@ namespace Falcor
 
         /** Set the sample mask
         */
-        PipelineState& setSampleMask(uint32_t sampleMask) { mDesc.setSampleMask(sampleMask); return *this; }
+        GraphicsState& setSampleMask(uint32_t sampleMask) { mDesc.setSampleMask(sampleMask); return *this; }
 
         /** Get the current sample mask
         */
@@ -201,23 +201,23 @@ namespace Falcor
 
         /** Set the primitive topology
         */
-        PipelineState& setRootSignature(RootSignature::SharedPtr pSignature) { mpRootSignature = pSignature; mCachedData.isUserRootSignature = (mpRootSignature == nullptr); }
+        GraphicsState& setRootSignature(RootSignature::SharedPtr pSignature) { mpRootSignature = pSignature; mCachedData.isUserRootSignature = (mpRootSignature == nullptr); }
 
-        /** Get the active PSO
+        /** Get the active graphics state object
         */
-        PipelineStateObject::SharedPtr getPSO();
+        GraphicsStateObject::SharedPtr getGSO();
 
         /** Get the current root-signature object
         */
         RootSignature::SharedPtr getRootSignature() const { return mpRootSignature; }
         
     private:
-        PipelineState();
+        GraphicsState();
         Vao::SharedConstPtr mpVao;
         Fbo::SharedConstPtr mpFbo;
         GraphicsProgram::SharedPtr mpProgram;
         RootSignature::SharedPtr mpRootSignature;
-        PipelineStateObject::Desc mDesc;
+        GraphicsStateObject::Desc mDesc;
         uint8_t mStencilRef = 0;
         std::vector<Viewport> mViewports;
         std::vector<Scissor> mScissors;
@@ -232,6 +232,6 @@ namespace Falcor
             bool isUserRootSignature = false;
         };
         CachedData mCachedData;
-        PipelineStateObject::SharedPtr mpCurrentPso;
+        GraphicsStateObject::SharedPtr mpCurrentGso;
     };
 }

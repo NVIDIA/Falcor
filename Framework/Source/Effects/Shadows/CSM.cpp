@@ -475,8 +475,8 @@ namespace Falcor
     void CascadedShadowMaps::executeDepthPass(RenderContext* pCtx, const Camera* pCamera)
     {
         // Must have an FBO attached, otherwise don't know the size of the depth map
-        uint32_t width = pCtx->getPipelineState()->getFbo()->getWidth();
-        uint32_t height = pCtx->getPipelineState()->getFbo()->getHeight();
+        uint32_t width = pCtx->getGraphicsState()->getFbo()->getWidth();
+        uint32_t height = pCtx->getGraphicsState()->getFbo()->getHeight();
 
         if((mDepthPass.pFbo == nullptr) || (mDepthPass.pFbo->getWidth() != width) || (mDepthPass.pFbo->getHeight() != height))
         {
@@ -562,7 +562,7 @@ namespace Falcor
         glm::vec2 distanceRange;
         calcDistanceRange(pRenderCtx, pCamera, pDepthBuffer, distanceRange);
 
-        PipelineState::Viewport VP;
+        GraphicsState::Viewport VP;
         VP.originX = 0;
         VP.originY = 0;
         VP.minDepth = 0;

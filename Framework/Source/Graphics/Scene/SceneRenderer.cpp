@@ -81,7 +81,7 @@ namespace Falcor
         // Set VPMat
         if (currentData.pCamera)
         {
-            ConstantBuffer* pCB = pContext->getProgramVars()->getConstantBuffer(kPerFrameCbName).get();
+            ConstantBuffer* pCB = pContext->getGraphicsVars()->getConstantBuffer(kPerFrameCbName).get();
             currentData.pCamera->setIntoConstantBuffer(pCB, sCameraDataOffset);
         }
     }
@@ -91,7 +91,7 @@ namespace Falcor
         // Set bones
         if(currentData.pModel->hasBones())
         {
-            ConstantBuffer* pCB = pContext->getProgramVars()->getConstantBuffer(kPerSkinnedMeshCbName).get();
+            ConstantBuffer* pCB = pContext->getGraphicsVars()->getConstantBuffer(kPerSkinnedMeshCbName).get();
             if (sBonesOffset == ConstantBuffer::kInvalidOffset)
             {
                 sBonesOffset = pCB->getVariableOffset("gBones");
@@ -114,7 +114,7 @@ namespace Falcor
         {
             worldMat = worldMat * currentData.pMesh->getInstanceMatrix(meshInstanceID);
         }
-        ConstantBuffer* pCB = pContext->getProgramVars()->getConstantBuffer(kPerStaticMeshCbName).get();
+        ConstantBuffer* pCB = pContext->getGraphicsVars()->getConstantBuffer(kPerStaticMeshCbName).get();
         pCB->setBlob(&worldMat, sWorldMatOffset + drawInstanceID*sizeof(glm::mat4), sizeof(glm::mat4));
 
         // Set mesh id
@@ -125,7 +125,7 @@ namespace Falcor
 
     bool SceneRenderer::setPerMaterialData(RenderContext* pContext, const CurrentWorkingData& currentData)
     {
-        currentData.pMaterial->setIntoProgramVars(pContext->getProgramVars().get(), kPerMaterialCbName, "gMaterial");
+        currentData.pMaterial->setIntoProgramVars(pContext->getGraphicsVars().get(), kPerMaterialCbName, "gMaterial");
 		return true;
     }
 
@@ -167,7 +167,7 @@ namespace Falcor
 		if (setPerMeshData(pContext, currentData))
 		{
 			// Bind VAO and set topology
-			pContext->getPipelineState()->setVao(pMesh->getVao());
+			pContext->getGraphicsState()->setVao(pMesh->getVao());
 
 			uint32_t InstanceCount = pMesh->getInstanceCount();
 
@@ -207,7 +207,7 @@ namespace Falcor
 		currentData.pModel = pModel;
 		if (setPerModelData(pContext, currentData))
 		{
-            Program* pProgram = currentData.pPsoCache->getProgram().get();
+            Program* pProgram = currentData.pGsoCache->getProgram().get();
 			// Bind the program
 			if(pModel->hasBones())
 			{
@@ -264,9 +264,9 @@ namespace Falcor
 
     void SceneRenderer::renderScene(RenderContext* pContext, Camera* pCamera)
     {
-        updateVariableOffsets(pContext->getProgramVars()->getReflection().get());
+        updateVariableOffsets(pContext->getGraphicsVars()->getReflection().get());
 		CurrentWorkingData currentData;
-		currentData.pPsoCache = pContext->getPipelineState().get();
+		currentData.pGsoCache = pContext->getGraphicsState().get();
 		currentData.pCamera = pCamera;
 		currentData.pMaterial = nullptr;
 		currentData.pMesh = nullptr;

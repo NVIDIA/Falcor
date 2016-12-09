@@ -46,23 +46,18 @@ namespace Falcor
     class ProgramVars : public std::enable_shared_from_this<ProgramVars>
     {
     public:
-        class SharedPtr : public std::shared_ptr<ProgramVars>
+        template<typename T>
+        class SharedPtrT : public std::shared_ptr<T>
         {
         public:
-            SharedPtr() : std::shared_ptr<ProgramVars>() {}
-            SharedPtr(ProgramVars* pProgVars) : std::shared_ptr<ProgramVars>(pProgVars) {}
+            SharedPtrT() : std::shared_ptr<T>() {}
+            SharedPtrT(T* pProgVars) : std::shared_ptr<T>(pProgVars) {}
             ConstantBuffer::SharedPtr operator[](const std::string& cbName) { return get()->getConstantBuffer(cbName); }
             ConstantBuffer::SharedPtr operator[](uint32_t index) { return get()->getConstantBuffer(index); }
         };
 
+        using SharedPtr = SharedPtrT<ProgramVars>;
         using SharedConstPtr = std::shared_ptr<const ProgramVars>;
-
-        /** Create a new object
-            \param[in] pReflector A program reflection object containing the requested declarations
-            \param[in] createBuffers If true, will create the ConstantBuffer objects. Otherwise, the user will have to bind the CBs himself
-            \param[in] pRootSignature A root-signature describing how to bind resources into the shader. If this paramter is nullptr, a root-signature object will be created from the program reflection object
-        */
-        static SharedPtr create(const ProgramReflection::SharedConstPtr& pReflector, bool createBuffers = true, const RootSignature::SharedConstPtr& pRootSig = nullptr);
 
         /** Bind a constant buffer object by name.
             If the name doesn't exists or the CBs size doesn't match the required size, the call will fail.
@@ -223,11 +218,11 @@ namespace Falcor
         // FIXME: This doesn't work with multiple register spaces
         using ResourceDataMap = std::unordered_map<uint32_t, ResourceData<Resource::SharedPtr>>;
 
-        void applyForGraphics(RenderContext* pContext) const;
-        void applyForCompute(RenderContext* pContext) const;
-    private:
+        virtual void apply(RenderContext* pContext) const = 0;
+
+    protected:
         template<bool forGraphics>
-        void apply(RenderContext* pContext) const;
+        void applyCommon(RenderContext* pContext) const;
 
         ProgramVars(const ProgramReflection::SharedConstPtr& pReflector, bool createBuffers, const RootSignature::SharedConstPtr& pRootSig);
 
@@ -238,5 +233,40 @@ namespace Falcor
         ResourceDataMap mAssignedSrvs;       // HLSL 't' registers
         ResourceDataMap mAssignedUavs;       // HLSL 'u' registers
         std::map<uint32_t, ResourceData<Sampler::SharedConstPtr>> mAssignedSamplers;    // HLSL 's' registers
+    };
+
+    class GraphicsVars : public ProgramVars, public inherit_shared_from_this<GraphicsVars, ProgramVars>
+    {
+    public:
+        using SharedPtr = SharedPtrT<GraphicsVars>;
+        using SharedConstPtr = std::shared_ptr<const GraphicsVars>;
+        /** Create a new object
+            \param[in] pReflector A program reflection object containing the requested declarations
+            \param[in] createBuffers If true, will create the ConstantBuffer objects. Otherwise, the user will have to bind the CBs himself
+            \param[in] pRootSignature A root-signature describing how to bind resources into the shader. If this paramter is nullptr, a root-signature object will be created from the program reflection object
+        */
+        static SharedPtr create(const ProgramReflection::SharedConstPtr& pReflector, bool createBuffers = true, const RootSignature::SharedConstPtr& pRootSig = nullptr);
+        void apply(RenderContext* pContext) const;
+    private:
+        GraphicsVars(const ProgramReflection::SharedConstPtr& pReflector, bool createBuffers, const RootSignature::SharedConstPtr& pRootSig) :
+            ProgramVars(pReflector, createBuffers, pRootSig) {}
+    };
+
+    class ComputeVars : public ProgramVars, public inherit_shared_from_this<GraphicsVars, ComputeVars>
+    {
+    public:
+        using SharedPtr = SharedPtrT<ComputeVars>;
+        using SharedConstPtr = std::shared_ptr<const ComputeVars>;
+
+        /** Create a new object
+        \param[in] pReflector A program reflection object containing the requested declarations
+        \param[in] createBuffers If true, will create the ConstantBuffer objects. Otherwise, the user will have to bind the CBs himself
+        \param[in] pRootSignature A root-signature describing how to bind resources into the shader. If this paramter is nullptr, a root-signature object will be created from the program reflection object
+        */
+        static SharedPtr create(const ProgramReflection::SharedConstPtr& pReflector, bool createBuffers = true, const RootSignature::SharedConstPtr& pRootSig = nullptr);
+        void apply(RenderContext* pContext) const;
+    private:
+        ComputeVars(const ProgramReflection::SharedConstPtr& pReflector, bool createBuffers, const RootSignature::SharedConstPtr& pRootSig) :
+            ProgramVars(pReflector, createBuffers, pRootSig) {}
     };
 }
