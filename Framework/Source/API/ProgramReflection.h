@@ -184,14 +184,15 @@ namespace Falcor
 
             /** Create a new object
                 \param[in] name The name of the buffer as was declared in the program
-                \param[in] registerIndex The register index allocated for the buffer inside the program
+                \param[in] regIndex The register index allocated for the buffer inside the program
+                \param[in] regSpace The register space allocated for the buffer inside the program
                 \param[in] size The size of the buffer
                 \param[in] varMap Map describing each variable in the buffer, excluding resources
                 \param[in] resourceMap Map describing the resources defined as part of the buffer. This map is only valid for APIs that support resource declarations nested inside buffers
                 \param[in] shaderAccess How the buffer will be access by the shader
                 \return A shared pointer for a new buffer object
             */
-            static SharedPtr create(const std::string& name, uint32_t registerIndex, Type type, size_t size, const VariableMap& varMap, const ResourceMap& resourceMap, ShaderAccess shaderAccess);
+            static SharedPtr create(const std::string& name, uint32_t regIndex, uint32_t regSpace, Type type, size_t size, const VariableMap& varMap, const ResourceMap& resourceMap, ShaderAccess shaderAccess);
 
             /** Get variable data
                 \param[in] name The name of the requested variable
@@ -267,7 +268,7 @@ namespace Falcor
             ShaderAccess getShaderAccess() const { return mShaderAccess; }
         private:
 
-            BufferReflection(const std::string& name, uint32_t registerIndex, Type type, size_t size, const VariableMap& varMap, const ResourceMap& resourceMap, ShaderAccess shaderAccess);
+            BufferReflection(const std::string& name, uint32_t registerIndex, uint32_t regSpace, Type type, size_t size, const VariableMap& varMap, const ResourceMap& resourceMap, ShaderAccess shaderAccess);
             std::string mName;
             size_t mSizeInBytes = 0;
             Type mType;

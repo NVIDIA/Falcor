@@ -112,11 +112,9 @@ namespace Falcor
         mpCB->setTexture(mTexOffset, mpTexture.get(), mpSampler.get());
         mpCB->setVariable(mScaleOffset, mScale);
 
-        // DISABLED_FOR_D3D12
 //        pRenderCtx->setUniformBuffer(0, mpUbo);
 
         // Store the state
-        // DISABLED_FOR_D3D12
 //         auto pOldRsState = pRenderCtx->getRasterizerState();
 //         auto pOldDsState = pRenderCtx->getDepthStencilState();
 //         uint32_t stencilRef = pRenderCtx->getStencilRef();

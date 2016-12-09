@@ -32,14 +32,10 @@
 
 namespace Falcor
 {
-    // FIXME D3D12. Need to correctly abstract the class so that it doesn't depend on the low-level objects
     template<RootSignature::DescType descType>
     uint32_t findRootSignatureOffset(const RootSignature* pRootSig, uint32_t regIndex, uint32_t regSpace)
     {
-        // Find the bind-index in the root descriptor. Views
-        // FIXME: Add support for descriptor tables
-        // OPTME: This can be more efficient
-
+        // Find the bind-index in the root descriptor
         bool found = false;
 
         // First search the root-descriptors
@@ -53,7 +49,7 @@ namespace Falcor
             }
         }
 
-        // Search the desciptor-tables
+        // Search the descriptor-tables
         for (size_t i = 0; i < pRootSig->getDescriptorTableCount(); i++)
         {
             const RootSignature::DescriptorTable& table = pRootSig->getDescriptorTable(i);
@@ -95,11 +91,11 @@ namespace Falcor
 
     ProgramVars::ProgramVars(const ProgramReflection::SharedConstPtr& pReflector, bool createBuffers, const RootSignature::SharedConstPtr& pRootSig) : mpReflector(pReflector)
     {
-        // Initialize the CB and SSBO maps. We always do it, to mark which slots are used in the shader.
+        // Initialize the CB and StructuredBuffer maps. We always do it, to mark which slots are used in the shader.
         mpRootSignature = pRootSig ? pRootSig : RootSignature::create(pReflector.get());
         initializeBuffersMap<ConstantBuffer, RootSignature::DescType::CBV>(mAssignedCbs, createBuffers, mpReflector->getBufferMap(ProgramReflection::BufferReflection::Type::Constant), ProgramReflection::BufferReflection::ShaderAccess::Read, mpRootSignature.get());
         initializeBuffersMap<StructuredBuffer, RootSignature::DescType::SRV>(mAssignedSrvs, createBuffers, mpReflector->getBufferMap(ProgramReflection::BufferReflection::Type::Structured), ProgramReflection::BufferReflection::ShaderAccess::Read, mpRootSignature.get());
-        initializeBuffersMap<StructuredBuffer, RootSignature::DescType::SRV>(mAssignedSrvs, createBuffers, mpReflector->getBufferMap(ProgramReflection::BufferReflection::Type::Structured), ProgramReflection::BufferReflection::ShaderAccess::ReadWrite, mpRootSignature.get());
+        initializeBuffersMap<StructuredBuffer, RootSignature::DescType::UAV>(mAssignedSrvs, createBuffers, mpReflector->getBufferMap(ProgramReflection::BufferReflection::Type::Structured), ProgramReflection::BufferReflection::ShaderAccess::ReadWrite, mpRootSignature.get());
 
         // Initialize the textures and samplers map
         for (const auto& res : pReflector->getResourceMap())
@@ -493,7 +489,6 @@ namespace Falcor
             }
             else
             {
-                // FIXME D3D12: I was under the assumption I'll need to bind a black texture to get the default values. Need to verify it
                 handle = isUav ? UnorderedAccessView::getNullView()->getApiHandle() : ShaderResourceView::getNullView()->getApiHandle();
             }
 

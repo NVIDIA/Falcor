@@ -422,7 +422,7 @@ namespace Falcor
         {
             // Create the buffer reflection
             bufferDesc.nameMap[d3dBufDesc.Name] = bindDesc.BindPoint;
-            bufferDesc.descMap[bindDesc.BindPoint] = ProgramReflection::BufferReflection::create(d3dBufDesc.Name, bindDesc.BindPoint, bufferType, d3dBufDesc.Size, varMap, ProgramReflection::ResourceMap(), shaderAccess);
+            bufferDesc.descMap[bindDesc.BindPoint] = ProgramReflection::BufferReflection::create(d3dBufDesc.Name, bindDesc.BindPoint, bindDesc.Space, bufferType, d3dBufDesc.Size, varMap, ProgramReflection::ResourceMap(), shaderAccess);
         }
 
         // Update the shader mask
@@ -579,6 +579,8 @@ namespace Falcor
         }
         bool isArray = name[name.length() - 1] == ']';
         falcorDesc.regIndex = desc.BindPoint;
+        falcorDesc.registerSpace = desc.Space;
+        assert(falcorDesc.registerSpace == 0);
         falcorDesc.arraySize = isArray ? desc.BindCount : 0;
 
         // If this already exists, definitions should match

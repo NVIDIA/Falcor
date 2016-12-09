@@ -110,6 +110,13 @@ namespace Falcor
     using BlendStateHandle          = GLuint;
     using SamplerApiHandle          = GLuint;
     using ShaderResourceViewHandle  = GLuint;
+
+    inline uint32_t getViewportCount()
+    {
+        uint32_t vpCount;
+        gl_call(glGetIntegerv(GL_MAX_VIEWPORTS, (int32_t*)&vpCount));
+        return vpCount;
+    }
 }
 
 #pragma comment(lib, "glew32.lib")

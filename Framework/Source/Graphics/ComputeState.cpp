@@ -46,7 +46,6 @@ namespace Falcor
         mDesc.setProgramVersion(mpProgram ? mpProgram->getActiveVersion() : nullptr);
         mDesc.setRootSignature(mpRootSignature);
 
-        // FIXME D3D12 Need real cache
         mpCurrentCso = ComputeStateObject::create(mDesc);
         return mpCurrentCso;
     }

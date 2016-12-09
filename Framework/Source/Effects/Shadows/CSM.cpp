@@ -107,7 +107,7 @@ namespace Falcor
         float distFromCenter = glm::length(lightPos - center);
         float nearZ = max(0.01f, distFromCenter - radius);
         float maxZ = min(radius * 2, distFromCenter + radius);
-        float angle = pLight->getOpeningAngle() * 2; // FIXME: Why 3? In theory, 2 should be the right number
+        float angle = pLight->getOpeningAngle() * 2;
         glm::mat4 proj = perspectiveMatrix(angle, fboAspectRatio, 0.1f, 10);
 
         shadowVP = proj * view;
@@ -130,9 +130,12 @@ namespace Falcor
 
     CascadedShadowMaps::CascadedShadowMaps(uint32_t mapWidth, uint32_t mapHeight, Light::SharedConstPtr pLight, Scene::SharedPtr pScene, uint32_t cascadeCount, ResourceFormat shadowMapFormat) : mpLight(pLight), mpScene(pScene)
     {
-        // FIXME: CSM and point lights don't work together, got some issues between cascades
         if(mpLight->getType() != LightDirectional)
         {
+            if (cascadeCount != 1)
+            {
+                logWarning("CSM with point-light only supports a single cascade (the user requested " + std::to_string(cascadeCount) + ")");
+            }
             cascadeCount = 1;
         }
         mCsmData.cascadeCount = cascadeCount;

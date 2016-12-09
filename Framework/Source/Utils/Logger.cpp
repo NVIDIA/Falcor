@@ -37,9 +37,8 @@ namespace Falcor
     bool Logger::sShowErrorBox = false;
 #endif
 
-    // FIXME: global variables...
-    static bool gInit = false;
-    static FILE* gLogFile = nullptr;
+    bool Logger::sInit = false;
+    FILE* Logger::sLogFile = nullptr;
 
     static FILE* openLogFile()
     {
@@ -68,11 +67,11 @@ namespace Falcor
     void Logger::init()
     {
 #if _LOG_ENABLED
-        if(gInit == false)
+        if(sInit == false)
         {
-            gLogFile = openLogFile();
-            gInit = gLogFile != nullptr;
-            assert(gInit);
+            sLogFile = openLogFile();
+            sInit = sLogFile != nullptr;
+            assert(sInit);
         }
 #endif
     }
@@ -80,11 +79,11 @@ namespace Falcor
     void Logger::shutdown()
     {
 #if _LOG_ENABLED
-        if(gLogFile)
+        if(sLogFile)
         {
-            fclose(gLogFile);
-            gLogFile = nullptr;
-            gInit = false;
+            fclose(sLogFile);
+            sLogFile = nullptr;
+            sInit = false;
         }
 #endif
     }
@@ -110,10 +109,10 @@ namespace Falcor
     {
 #if _LOG_ENABLED
         std::string s = getLogLevelString(L) + std::string("\t") + msg + "\n";
-        if(gInit)
+        if(sInit)
         {
-            fprintf_s(gLogFile, "%s", s.c_str());
-            fflush(gLogFile);   // Slows down execution, but ensures that the message will be printed in case of a crash
+            fprintf_s(sLogFile, "%s", s.c_str());
+            fflush(sLogFile);   // Slows down execution, but ensures that the message will be printed in case of a crash
             if (isDebuggerPresent())
             {
                 printToDebugWindow(s);

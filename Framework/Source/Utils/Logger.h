@@ -78,6 +78,8 @@ namespace Falcor
     private:
         Logger() = delete;
         static bool sShowErrorBox;
+        static FILE* sLogFile;
+        static bool sInit;
     };
 
     inline void logInfo(const std::string& msg, const bool forceMsgBox = false) { Logger::log(Logger::Level::Info, msg, forceMsgBox); }

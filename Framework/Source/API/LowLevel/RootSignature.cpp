@@ -144,9 +144,6 @@ namespace Falcor
         uint32_t cost = 0;
         RootSignature::Desc d;
 
-        // FIXME:
-        // For now we just put everything in the root. No descriptor tables because I don't feel like implementing a dynamic descriptor table class yet
-        // We also create everything visible to all the shader stages
         cost += initializeBufferDescriptors(pReflector, d, ProgramReflection::BufferReflection::Type::Constant, RootSignature::DescType::CBV);
         cost += initializeBufferDescriptors(pReflector, d, ProgramReflection::BufferReflection::Type::Structured, RootSignature::DescType::SRV);
 

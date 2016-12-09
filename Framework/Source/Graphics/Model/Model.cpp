@@ -329,7 +329,6 @@ namespace Falcor
             {
                 // Material is used. Mark its textures
                 std::vector<Texture::SharedConstPtr> activeTextures;
-                // DISABLED_FOR_D3D12
 //                material->getTexturesList(activeTextures);
                 for(const auto& tex : activeTextures)
                 {

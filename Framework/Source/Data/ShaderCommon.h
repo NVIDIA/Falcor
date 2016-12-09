@@ -75,20 +75,20 @@ cbuffer InternalPerMaterialCB : register(b13)
 /*******************************************************************
                     GLSL Evaluation routines
 *******************************************************************/
-// DISABLED_FOR_D3D12
-// bool isSamplerBound(in sampler2D sampler)
-// {
-//     return any(uvec2(sampler) != 0);
-// }
-// 
-// vec4 fetchTextureIfFound(in sampler2D sampler, in vec2 uv, in vec2 duvdx, in vec2 duvdy)
-// {
-//     vec4 ret = vec4(1.0f);
-//     if(isSamplerBound(sampler)) 
-//     {
-//         ret = textureGrad(sampler, uv, duvdx, duvdy);
-//     }
-//     return ret;
-// }
+#if defined(FALCOR_GL) || defined(FALCOR_GLSL)
+bool isSamplerBound(in sampler2D sampler)
+{
+    return any(uvec2(sampler) != 0);
+}
 
+vec4 fetchTextureIfFound(in sampler2D sampler, in vec2 uv, in vec2 duvdx, in vec2 duvdy)
+{
+    vec4 ret = vec4(1.0f);
+    if(isSamplerBound(sampler)) 
+    {
+        ret = textureGrad(sampler, uv, duvdx, duvdy);
+    }
+    return ret;
+}
+#endif // defined(FALCOR_GL) || defined(FALCOR_GLSL)
 #endif  // _FALCOR_SHADER_COMMON_H_

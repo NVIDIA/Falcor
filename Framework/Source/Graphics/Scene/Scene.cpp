@@ -288,7 +288,6 @@ namespace Falcor
 				// Retrieve model instances for this model
 				for (uint32_t modelInstanceId = 0; modelInstanceId < getModelInstanceCount(modelId); ++modelInstanceId)
 				{
-					// FIXME
 					const Scene::ModelInstance& modelInstance = getModelInstance(modelId, modelInstanceId);
 					Falcor::createAreaLightsForModel(pModel.get(), mpLights);
 				}

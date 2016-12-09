@@ -90,6 +90,8 @@ namespace Falcor
     using SamplerApiHandle          = ID3D11SamplerStatePtr;
     using ShaderResourceViewHandle  = ID3D11ShaderResourceViewPtr;
 
+    inline uint32_t getViewportCount() { return D3D11_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE; }
+
     /*! @} */
 }
 
