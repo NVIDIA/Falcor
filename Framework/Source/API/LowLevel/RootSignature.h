@@ -133,6 +133,8 @@ namespace Falcor
             std::vector<SamplerDesc> mSamplers;
         };
 
+        ~RootSignature();
+        static SharedPtr getEmpty();
         static SharedPtr create(const Desc& desc);
         static SharedPtr create(const ProgramReflection* pReflection);
 
@@ -160,5 +162,7 @@ namespace Falcor
         std::vector<uint32_t> mDescriptorOffset;
         std::vector<uint32_t> mDescTableOffset;
         std::vector<uint32_t> mConstantOffset;
+        static SharedPtr spEmptySig;
+        static uint64_t sObjCount;
     };
 }

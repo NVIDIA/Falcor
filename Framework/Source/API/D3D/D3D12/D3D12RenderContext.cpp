@@ -328,6 +328,10 @@ namespace Falcor
         {
             mpGraphicsVars->apply(const_cast<RenderContext*>(this));
         }
+        else
+        {
+            pApiData->pList->SetGraphicsRootSignature(RootSignature::getEmpty()->getApiHandle());
+        }
 
         pApiData->pList->IASetPrimitiveTopology(getD3DPrimitiveTopology(mpGraphicsState->getVao()->getPrimitiveTopology()));
         D3D12SetVao(pApiData, mpGraphicsState->getVao().get());
@@ -349,6 +353,10 @@ namespace Falcor
         if (mpComputeVars)
         {
             mpComputeVars->apply(const_cast<RenderContext*>(this));
+        }
+        else
+        {
+            pApiData->pList->SetComputeRootSignature(RootSignature::getEmpty()->getApiHandle());
         }
 
         pApiData->pList->SetPipelineState(mpComputeState->getCSO()->getApiHandle());
