@@ -156,7 +156,6 @@ namespace Falcor
         }
         else
         {
-            // FIXME D3D12 handle case where buffer is mapped for read
             gpDevice->getRenderContext()->updateBuffer(this, pData, offset, size);
         }
     }
@@ -174,7 +173,7 @@ namespace Falcor
         {
             if (mCpuAccess != CpuAccess::Write)
             {
-                logError("Trying to map a buffer for write, but it wasn't created with the write access type");
+                logError("Trying to map a buffer for write, but it wasn't created with the write permissions");
                 return nullptr;
             }
 

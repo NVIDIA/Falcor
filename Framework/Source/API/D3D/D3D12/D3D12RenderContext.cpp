@@ -264,7 +264,7 @@ namespace Falcor
 
     static void D3D12SetFbo(RenderContext* pCtx, const RenderContextData* pApiData, const Fbo* pFbo)
     {
-        // FIXME D3D12
+        // We are setting the entire RTV array to make sure everything that was previously bound is detached
         uint32_t colorTargets = Fbo::getMaxColorTargetCount();
         std::vector<DescriptorHeap::CpuHandle> pRTV(colorTargets, RenderTargetView::getNullView()->getApiHandle()->getCpuHandle());
         DescriptorHeap::CpuHandle pDSV = DepthStencilView::getNullView()->getApiHandle()->getCpuHandle();
