@@ -257,16 +257,16 @@ void ModelViewer::onLoad()
     mpPointLight = PointLight::create();
     mpDirLight->setWorldDirection(glm::vec3(0.13f, 0.27f, -0.9f));
 
-    mpProgramVars = ProgramVars::create(mpProgram->getActiveVersion()->getReflector());
-    mpPipelineState = PipelineState::create();
-    mpPipelineState->setProgram(mpProgram);
+    mpProgramVars = GraphicsVars::create(mpProgram->getActiveVersion()->getReflector());
+    mpGraphicsState = GraphicsState::create();
+    mpGraphicsState->setProgram(mpProgram);
 }
 
 void ModelViewer::onFrameRender()
 {
     const glm::vec4 clearColor(0.38f, 0.52f, 0.10f, 1);
     mpRenderContext->clearFbo(mpDefaultFBO.get(), clearColor, 1.0f, 0, FboAttachmentType::All);
-    mpPipelineState->setFbo(mpDefaultFBO);
+    mpGraphicsState->setFbo(mpDefaultFBO);
 
     if(mpModel)
     {
@@ -283,14 +283,14 @@ void ModelViewer::onFrameRender()
         // Set render state
         if(mDrawWireframe)
         {
-            mpPipelineState->setRasterizerState(mpWireframeRS);
-            mpPipelineState->setDepthStencilState(mpNoDepthDS);
+            mpGraphicsState->setRasterizerState(mpWireframeRS);
+            mpGraphicsState->setDepthStencilState(mpNoDepthDS);
             mpProgramVars["PerFrameCB"]["gConstColor"] = true;
         }
         else
         {
-            mpPipelineState->setRasterizerState(mpCullRastState[mCullMode]);
-            mpPipelineState->setDepthStencilState(mpDepthTestDS);
+            mpGraphicsState->setRasterizerState(mpCullRastState[mCullMode]);
+            mpGraphicsState->setDepthStencilState(mpDepthTestDS);
             mpProgramVars["PerFrameCB"]["gConstColor"] = false;
 
             mpDirLight->setIntoConstantBuffer(mpProgramVars["PerFrameCB"].get(), "gDirLight");
@@ -307,9 +307,9 @@ void ModelViewer::onFrameRender()
         }
 
         mpProgramVars["PerFrameCB"]["gAmbient"] = mAmbientIntensity;
-        mpPipelineState->setProgram(mpProgram);
-        mpRenderContext->setPipelineState(mpPipelineState);
-        mpRenderContext->setProgramVariables(mpProgramVars);
+        mpGraphicsState->setProgram(mpProgram);
+        mpRenderContext->setGraphicsState(mpGraphicsState);
+        mpRenderContext->setGraphicsVars(mpProgramVars);
         ModelRenderer::render(mpRenderContext.get(), mpModel, mpCamera.get());
     }
 

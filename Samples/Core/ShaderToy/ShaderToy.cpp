@@ -55,7 +55,7 @@ void ShaderToy::onLoad()
     mpMainPass = FullScreenPass::create("toyContainer.fs");
 
     // Create Constant buffer
-    mpToyVars = ProgramVars::create(mpMainPass->getProgram()->getActiveVersion()->getReflector());
+    mpToyVars = GraphicsVars::create(mpMainPass->getProgram()->getActiveVersion()->getReflector());
 
     // Get buffer finding
     mToyCBBinding = mpMainPass->getProgram()->getActiveVersion()->getReflector()->getBufferBinding("ToyCB");
@@ -73,7 +73,7 @@ void ShaderToy::onFrameRender()
     mpToyVars[mToyCBBinding]["iGlobalTime"] = iGlobalTime;
 
     // run final pass
-    mpRenderContext->setProgramVariables(mpToyVars);
+    mpRenderContext->setGraphicsVars(mpToyVars);
     mpMainPass->execute(mpRenderContext.get());
 }
 

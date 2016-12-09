@@ -50,5 +50,5 @@ private:
     GraphicsProgram::SharedPtr mpProgram = nullptr;
     SceneRenderer::UniquePtr mpRenderer = nullptr;
     SceneEditor::UniquePtr mpEditor = nullptr;
-    ProgramVars::SharedPtr mpVars = nullptr;
+    GraphicsVars::SharedPtr mpVars = nullptr;
 };

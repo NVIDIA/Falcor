@@ -45,7 +45,7 @@ private:
     FullScreenPass::UniquePtr mpLuminance;
     FullScreenPass::UniquePtr mpRadialBlur;
     FullScreenPass::UniquePtr mpBlit;
-    ProgramVars::SharedPtr mpProgVars[2];
+    GraphicsVars::SharedPtr mpProgVars[2];
 
     bool mEnableRadialBlur = false;
     bool mEnableGrayscale = false;

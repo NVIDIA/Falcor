@@ -207,8 +207,8 @@ void SimpleDeferred::onLoad()
     mpDirLight = DirectionalLight::create();
     mpDirLight->setWorldDirection(glm::vec3(-0.5f, -0.2f, -1.0f));
 
-    mpDeferredVars = ProgramVars::create(mpDeferredPassProgram->getActiveVersion()->getReflector());
-    mpLightingVars = ProgramVars::create(mpLightingPass->getProgram()->getActiveVersion()->getReflector(), "PerImageCB");
+    mpDeferredVars = GraphicsVars::create(mpDeferredPassProgram->getActiveVersion()->getReflector());
+    mpLightingVars = GraphicsVars::create(mpLightingPass->getProgram()->getActiveVersion()->getReflector(), "PerImageCB");
 
     // Load default model
     loadModelFromFile("Ogre/bs_rest.obj");
@@ -219,7 +219,7 @@ void SimpleDeferred::onFrameRender()
     uint32_t width = mpDefaultFBO->getWidth();
     uint32_t height = mpDefaultFBO->getHeight();
 
-    PipelineState* pState = mpRenderContext->getPipelineState().get();
+    GraphicsState* pState = mpRenderContext->getGraphicsState().get();
     Fbo::SharedPtr& pCurrentFbo = mpDisplayFBO ? mpDisplayFBO : mpDefaultFBO;
 
     const glm::vec4 clearColor(0.38f, 0.52f, 0.10f, 1);
@@ -247,7 +247,7 @@ void SimpleDeferred::onFrameRender()
 
         // Render model
         mpModel->bindSamplerToMaterials(mpLinearSampler);
-        mpRenderContext->setProgramVariables(mpDeferredVars);
+        mpRenderContext->setGraphicsVars(mpDeferredVars);
         pState->setProgram(mpDeferredPassProgram);
         ModelRenderer::render(mpRenderContext.get(), mpModel, mpCamera.get());
     }
@@ -277,7 +277,7 @@ void SimpleDeferred::onFrameRender()
 
 
         // Kick it off
-        mpRenderContext->setProgramVariables(mpLightingVars);
+        mpRenderContext->setGraphicsVars(mpLightingVars);
         mpLightingPass->execute(mpRenderContext.get());
     }
 

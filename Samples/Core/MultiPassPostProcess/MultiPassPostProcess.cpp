@@ -57,10 +57,10 @@ void MultiPassPostProcess::loadImage()
         mpTempFB = FboHelper::create2D(mpImage->getWidth(), mpImage->getHeight(), fboDesc);
 
         resizeSwapChain(mpImage->getWidth(), mpImage->getHeight());
-        mpProgVars[0] = ProgramVars::create(mpBlit->getProgram()->getActiveVersion()->getReflector());
+        mpProgVars[0] = GraphicsVars::create(mpBlit->getProgram()->getActiveVersion()->getReflector());
         mpProgVars[0]->setTexture("gTexture", mpImage);
 
-        mpProgVars[1] = ProgramVars::create(mpLuminance->getProgram()->getActiveVersion()->getReflector());
+        mpProgVars[1] = GraphicsVars::create(mpLuminance->getProgram()->getActiveVersion()->getReflector());
         mpProgVars[1]->setTexture("gTexture", mpTempFB->getColorTexture(0));
     }
 }
@@ -75,15 +75,15 @@ void MultiPassPostProcess::onFrameRender()
         // Grayscale is only with radial blur
         mEnableGrayscale = mEnableRadialBlur && mEnableGrayscale;
 
-        mpRenderContext->setProgramVariables(mpProgVars[0]);
+        mpRenderContext->setGraphicsVars(mpProgVars[0]);
 
         if(mEnableRadialBlur)
         {
-            mpRenderContext->getPipelineState()->pushFbo(mpTempFB);
+            mpRenderContext->getGraphicsState()->pushFbo(mpTempFB);
             mpRadialBlur->execute(mpRenderContext.get());
-            mpRenderContext->getPipelineState()->popFbo();
+            mpRenderContext->getGraphicsState()->popFbo();
 
-            mpRenderContext->setProgramVariables(mpProgVars[1]);
+            mpRenderContext->setGraphicsVars(mpProgVars[1]);
             const FullScreenPass* pFinalPass = mEnableGrayscale ? mpLuminance.get() : mpBlit.get();
             pFinalPass->execute(mpRenderContext.get());
         }

@@ -54,9 +54,9 @@ private:
     Sampler::SharedPtr mpLinearSampler;
 
     GraphicsProgram::SharedPtr mpDeferredPassProgram;
-    ProgramVars::SharedPtr mpDeferredVars;
+    GraphicsVars::SharedPtr mpDeferredVars;
 
-    ProgramVars::SharedPtr mpLightingVars;
+    GraphicsVars::SharedPtr mpLightingVars;
     FullScreenPass::UniquePtr mpLightingPass;
 
     float mAspectRatio = 0;

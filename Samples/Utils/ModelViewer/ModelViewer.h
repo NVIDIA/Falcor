@@ -61,8 +61,8 @@ private:
     Sampler::SharedPtr mpLinearSampler = nullptr;
 
     GraphicsProgram::SharedPtr mpProgram = nullptr;
-    ProgramVars::SharedPtr mpProgramVars = nullptr;
-    PipelineState::SharedPtr mpPipelineState = nullptr;
+    GraphicsVars::SharedPtr mpProgramVars = nullptr;
+    GraphicsState::SharedPtr mpGraphicsState = nullptr;
 
     enum
     {

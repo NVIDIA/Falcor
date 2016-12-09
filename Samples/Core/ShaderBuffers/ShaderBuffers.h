@@ -44,7 +44,7 @@ public:
 private:
 
     GraphicsProgram::SharedPtr mpProgram;
-    ProgramVars::SharedPtr mpProgramVars;
+    GraphicsVars::SharedPtr mpProgramVars;
     Model::SharedPtr mpModel;
     Vao::SharedConstPtr mpVao;
     uint32_t mIndexCount = 0;

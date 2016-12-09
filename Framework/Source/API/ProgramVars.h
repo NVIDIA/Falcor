@@ -43,7 +43,7 @@ namespace Falcor
     /** This class manages a program's reflection and variable assignment.
         It's a high-level abstraction of variables-related concepts such as CBs, texture and sampler assignments, root-signature, descriptor tables, etc.
     */
-    class ProgramVars : public std::enable_shared_from_this<ProgramVars>
+    class ProgramVars
     {
     public:
         template<typename T>
@@ -55,9 +55,6 @@ namespace Falcor
             ConstantBuffer::SharedPtr operator[](const std::string& cbName) { return get()->getConstantBuffer(cbName); }
             ConstantBuffer::SharedPtr operator[](uint32_t index) { return get()->getConstantBuffer(index); }
         };
-
-        using SharedPtr = SharedPtrT<ProgramVars>;
-        using SharedConstPtr = std::shared_ptr<const ProgramVars>;
 
         /** Bind a constant buffer object by name.
             If the name doesn't exists or the CBs size doesn't match the required size, the call will fail.
@@ -235,7 +232,7 @@ namespace Falcor
         std::map<uint32_t, ResourceData<Sampler::SharedConstPtr>> mAssignedSamplers;    // HLSL 's' registers
     };
 
-    class GraphicsVars : public ProgramVars, public inherit_shared_from_this<GraphicsVars, ProgramVars>
+    class GraphicsVars : public ProgramVars, public std::enable_shared_from_this<ProgramVars>
     {
     public:
         using SharedPtr = SharedPtrT<GraphicsVars>;
@@ -252,7 +249,7 @@ namespace Falcor
             ProgramVars(pReflector, createBuffers, pRootSig) {}
     };
 
-    class ComputeVars : public ProgramVars, public inherit_shared_from_this<GraphicsVars, ComputeVars>
+    class ComputeVars : public ProgramVars, public std::enable_shared_from_this<ProgramVars>
     {
     public:
         using SharedPtr = SharedPtrT<ComputeVars>;

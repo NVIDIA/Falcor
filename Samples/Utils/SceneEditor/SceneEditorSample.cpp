@@ -64,7 +64,7 @@ void SceneEditorSample::initNewScene()
         std::string lights;
         getSceneLightString(mpScene.get(), lights);
         mpProgram->addDefine("_LIGHT_SOURCES", lights);
-        mpVars = ProgramVars::create(mpProgram->getActiveVersion()->getReflector());
+        mpVars = GraphicsVars::create(mpProgram->getActiveVersion()->getReflector());
     }
 }
 
@@ -103,7 +103,7 @@ void SceneEditorSample::onFrameRender()
         mpDefaultPipelineState->setBlendState(nullptr);
         mpDefaultPipelineState->setDepthStencilState(nullptr);
         setSceneLightsIntoConstantBuffer(mpScene.get(), mpVars["PerFrameCB"].get());
-        mpRenderContext->setProgramVariables(mpVars);
+        mpRenderContext->setGraphicsVars(mpVars);
         mpDefaultPipelineState->setProgram(mpProgram);
         mpRenderer->update(mCurrentTime);
         mpRenderer->renderScene(mpRenderContext.get());
