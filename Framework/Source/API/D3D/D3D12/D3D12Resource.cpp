@@ -30,6 +30,33 @@
 
 namespace Falcor
 {
+    const D3D12_HEAP_PROPERTIES kDefaultHeapProps =
+    {
+        D3D12_HEAP_TYPE_DEFAULT,
+        D3D12_CPU_PAGE_PROPERTY_UNKNOWN,
+        D3D12_MEMORY_POOL_UNKNOWN,
+        0,
+        0
+    };
+
+    const D3D12_HEAP_PROPERTIES kUploadHeapProps =
+    {
+        D3D12_HEAP_TYPE_UPLOAD,
+        D3D12_CPU_PAGE_PROPERTY_UNKNOWN,
+        D3D12_MEMORY_POOL_UNKNOWN,
+        0,
+        0,
+    };
+
+    const D3D12_HEAP_PROPERTIES kReadbackHeapProps =
+    {
+        D3D12_HEAP_TYPE_READBACK,
+        D3D12_CPU_PAGE_PROPERTY_UNKNOWN,
+        D3D12_MEMORY_POOL_UNKNOWN,
+        0,
+        0
+    };
+
     D3D12_RESOURCE_FLAGS getD3D12ResourceFlags(Resource::BindFlags flags)
     {
         D3D12_RESOURCE_FLAGS d3d = D3D12_RESOURCE_FLAG_NONE;

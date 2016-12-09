@@ -28,19 +28,11 @@
 #include "Framework.h"
 #include "API/LowLevel/ResourceAllocator.h"
 #include "API/Buffer.h"
+#include "API/D3D/D3D12/D3D12Resource.h"
 
 namespace Falcor
 {
     ID3D12ResourcePtr createBuffer(size_t size, const D3D12_HEAP_PROPERTIES& heapProps, Buffer::BindFlags bindFlags);
-
-    static D3D12_HEAP_PROPERTIES kUploadHeapProps =
-    {
-        D3D12_HEAP_TYPE_UPLOAD,
-        D3D12_CPU_PAGE_PROPERTY_UNKNOWN,
-        D3D12_MEMORY_POOL_UNKNOWN,
-        0,
-        0,
-    };
 
     ResourceAllocator::~ResourceAllocator()
     {

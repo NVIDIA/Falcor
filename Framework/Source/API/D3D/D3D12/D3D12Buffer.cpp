@@ -39,25 +39,6 @@ namespace Falcor
         Buffer::SharedPtr pStagingResource; // For buffers that have both CPU read flag and can be used by the GPU
     };
 
-    // FIXME D3D12 - this in in texture
-    static const D3D12_HEAP_PROPERTIES kDefaultHeapProps =
-    {
-        D3D12_HEAP_TYPE_DEFAULT,
-        D3D12_CPU_PAGE_PROPERTY_UNKNOWN,
-        D3D12_MEMORY_POOL_UNKNOWN,
-        0,
-        0
-    };
-
-    static const D3D12_HEAP_PROPERTIES kReadbackHeapProps =
-    {
-        D3D12_HEAP_TYPE_READBACK,
-        D3D12_CPU_PAGE_PROPERTY_UNKNOWN,
-        D3D12_MEMORY_POOL_UNKNOWN,
-        0,
-        0
-    };
-
     ID3D12ResourcePtr createBuffer(size_t size, const D3D12_HEAP_PROPERTIES& heapProps, Buffer::BindFlags bindFlags)
     {
         ID3D12Device* pDevice = gpDevice->getApiHandle();
