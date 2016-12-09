@@ -97,7 +97,7 @@ namespace Falcor
         case Resource::State::CopySource:
             return D3D12_RESOURCE_STATE_COPY_SOURCE;
         case Resource::State::DepthStencil:
-            return D3D12_RESOURCE_STATE_DEPTH_WRITE; // OPTME: If depth-writes are disabled, set only the read-bit (D3D12_RESOURCE_STATE_DEPTH_READ)
+            return D3D12_RESOURCE_STATE_DEPTH_WRITE; // If depth-writes are disabled, return D3D12_RESOURCE_STATE_DEPTH_WRITE
         case Resource::State::IndexBuffer:
             return D3D12_RESOURCE_STATE_INDEX_BUFFER;
         case Resource::State::IndirectArg:
@@ -113,7 +113,7 @@ namespace Falcor
         case Resource::State::ResolveSource:
             return D3D12_RESOURCE_STATE_RESOLVE_SOURCE;
         case Resource::State::ShaderResource:
-            return D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE; // FIXME: Need the shader usage mask in case the SRV is used by non-PS
+            return D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE; // Need the shader usage mask in case the SRV is used by non-PS
         case Resource::State::StreamOut:
             return D3D12_RESOURCE_STATE_STREAM_OUT;
         case Resource::State::UnorderedAccess:

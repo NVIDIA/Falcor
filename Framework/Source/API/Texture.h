@@ -35,6 +35,8 @@ namespace Falcor
     class Sampler;
     class Device;
 
+    struct TextureApiData;
+
     /** Abstracts the API texture objects
     */
     class Texture : public Resource, public inherit_shared_from_this<Resource, Texture>
@@ -208,7 +210,8 @@ namespace Falcor
 
     protected:
         friend class Device;
-
+        TextureApiData* mpApiData = nullptr;
+        void apiInit();
         static RtvHandle spNullRTV;
         static DsvHandle spNullDSV;
 

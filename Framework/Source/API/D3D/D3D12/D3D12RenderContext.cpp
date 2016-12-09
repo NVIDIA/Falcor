@@ -323,7 +323,6 @@ namespace Falcor
         assert(mpGraphicsState);
 
         // Bind the root signature and the root signature data
-        // FIXME D3D12 what to do if there are no vars?
         if (mpGraphicsVars)
         {
             mpGraphicsVars->apply(const_cast<RenderContext*>(this));
@@ -349,7 +348,6 @@ namespace Falcor
         assert(mpComputeState);
 
         // Bind the root signature and the root signature data
-        // FIXME D3D12 what to do if there are no vars?
         if (mpComputeVars)
         {
             mpComputeVars->apply(const_cast<RenderContext*>(this));
