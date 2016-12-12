@@ -41,9 +41,8 @@ namespace Falcor
         using ApiHandle = FenceHandle;
 
         /** Create a new object
-            \param[in] The initial value of the fence
         */
-        static SharedPtr create(uint64_t initValue = 0);
+        static SharedPtr create();
         ~GpuFence();
 
         /** Get the internal API handle
@@ -74,7 +73,7 @@ namespace Falcor
         */
         uint64_t cpuSignal();
     private:
-		GpuFence(uint64_t initValue) : mCpuValue(initValue) {}
+		GpuFence() : mCpuValue(0) {}
 		uint64_t mCpuValue;
         HANDLE mEvent = INVALID_HANDLE_VALUE;
         ApiHandle mApiHandle;

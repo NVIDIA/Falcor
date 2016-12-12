@@ -52,15 +52,6 @@ namespace Falcor
     {
         CopyContextData* pApiData = new CopyContextData;
         mpApiData = pApiData;
-        pApiData->pAllocatorPool = CopyCommandAllocatorPool::create(mpFence);
-        pApiData->pAllocator = pApiData->pAllocatorPool->newObject();
-
-        // Create a command list
-        if (FAILED(gpDevice->getApiHandle()->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_COPY, pApiData->pAllocator, nullptr, IID_PPV_ARGS(&pApiData->pCmdList))))
-        {
-            logError("Failed to create command list for CopyContext");
-            return false;
-        }
 
         // Create the command queue
         D3D12_COMMAND_QUEUE_DESC cqDesc = {};
@@ -72,13 +63,25 @@ namespace Falcor
             logError("Failed to create command queue for CopyContext");
             return false;
         }
+
+        pApiData->pAllocatorPool = CopyCommandAllocatorPool::create(mpFence);
+        pApiData->pAllocator = pApiData->pAllocatorPool->newObject();
+
+        // Create a command list
+        if (FAILED(gpDevice->getApiHandle()->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_COPY, pApiData->pAllocator, nullptr, IID_PPV_ARGS(&pApiData->pCmdList))))
+        {
+            logError("Failed to create command list for CopyContext");
+            return false;
+        }
+
         return true;
     }
 
     void CopyContext::reset()
     {
-        assert(mCommandsPending == false);
+        flush();
         CopyContextData* pApiData = (CopyContextData*)mpApiData;
+        mpFence->gpuSignal(pApiData->pQueue);
         pApiData->pAllocator = pApiData->pAllocatorPool->newObject();
         d3d_call(pApiData->pCmdList->Close());
         d3d_call(pApiData->pAllocator->Reset());
@@ -117,20 +120,14 @@ namespace Falcor
         {
             CopyContextData* pApiData = (CopyContextData*)mpApiData;
 
-            if (pFence == nullptr)
-            {
-                pFence = mpFence.get();
-            }
-
             // Execute the list
             pApiData->pCmdList->Close();
             ID3D12CommandList* pList = pApiData->pCmdList;
             pApiData->pQueue->ExecuteCommandLists(1, &pList);
-            pFence->gpuSignal(pApiData->pQueue);
-            if (pFence != mpFence.get())
+
+            if (pFence)
             {
-                // Need to signal the internal fence. The command allocator uses it to check if it can reuse an allocator or create a new one
-                mpFence->gpuSignal(pApiData->pQueue);
+                pFence->gpuSignal(pApiData->pQueue);
             }
 
             // Reset the list

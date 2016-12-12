@@ -43,7 +43,8 @@ namespace Falcor
         ID3D12CommandAllocatorPtr pAllocator;
 		ID3D12GraphicsCommandListPtr pList;
         ID3D12CommandQueuePtr pCommandQueue;
-        GpuFence::SharedPtr pFence;
+        GpuFence::SharedPtr pCopyCtxFence;
+        GpuFence::SharedPtr pCmdAllocatorFence;
         CopyContext::SharedPtr pCopyContext;
         bool commandsPending = false;
 	};
@@ -59,8 +60,8 @@ namespace Falcor
         if (pApiData->pCopyContext->hasPendingCommands())
         {
             assert(pApiData->commandsPending == false);
-            pApiData->pCopyContext->flush(pApiData->pFence.get());
-            pApiData->pFence->syncGpu(pApiData->pCommandQueue);
+            pApiData->pCopyContext->flush(pApiData->pCopyCtxFence.get());
+            pApiData->pCopyCtxFence->syncGpu(pApiData->pCommandQueue);
         }
     }
 
@@ -70,7 +71,7 @@ namespace Falcor
         {
             assert(pApiData->pCopyContext->hasPendingCommands() == false);
             pContext->flush();
-            pApiData->pFence->syncGpu(pApiData->pCopyContext->getCommandQueue().GetInterfacePtr());
+            pApiData->pCopyCtxFence->syncGpu(pApiData->pCopyContext->getCommandQueue().GetInterfacePtr());
         }
     }
 
@@ -79,12 +80,10 @@ namespace Falcor
         SharedPtr pCtx = SharedPtr(new RenderContext());
         RenderContextData* pApiData = new RenderContextData;
         pApiData->pCopyContext = CopyContext::create();
-        pApiData->pFence = GpuFence::create();
+        pApiData->pCopyCtxFence = GpuFence::create();
+        pApiData->pCmdAllocatorFence = GpuFence::create();
 		pCtx->mpApiData = pApiData;
 
-        // Create a command allocator
-		pApiData->pAllocatorPool = GraphicsCommandAllocatorPool::create(pApiData->pFence);
-        pApiData->pAllocator = pApiData->pAllocatorPool->newObject();
 		auto pDevice = gpDevice->getApiHandle();
 		
         // Create the command queue
@@ -97,6 +96,10 @@ namespace Falcor
             logError("Failed to create command queue");
             return nullptr;
         }
+
+        // Create a command allocator
+        pApiData->pAllocatorPool = GraphicsCommandAllocatorPool::create(pApiData->pCmdAllocatorFence);
+        pApiData->pAllocator = pApiData->pAllocatorPool->newObject();
 
 		// Create a command list
 		if (FAILED(pDevice->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, pApiData->pAllocator, nullptr, IID_PPV_ARGS(&pApiData->pList))))
@@ -124,9 +127,11 @@ namespace Falcor
 
 	void RenderContext::reset()
 	{
+        flush();
 		RenderContextData* pApiData = (RenderContextData*)mpApiData;
-        assert(pApiData->commandsPending == false);
-		// Skip to the next allocator        
+        pApiData->pCmdAllocatorFence->gpuSignal(pApiData->pCommandQueue);
+
+        // Skip to the next allocator        
 		pApiData->pAllocator = pApiData->pAllocatorPool->newObject();
         d3d_call(pApiData->pList->Close());
         d3d_call(pApiData->pAllocator->Reset());
@@ -406,17 +411,20 @@ namespace Falcor
         RenderContextData* pApiData = (RenderContextData*)mpApiData;
         flushCopyCommands(pApiData);
 
-        d3d_call(pApiData->pList->Close());
-        ID3D12CommandList* pList = pApiData->pList.GetInterfacePtr();
-        pApiData->pCommandQueue->ExecuteCommandLists(1, &pList);
-        pApiData->pFence->gpuSignal(pApiData->pCommandQueue);
-        pApiData->pList->Reset(pApiData->pAllocator, nullptr);
-        bindDescriptorHeaps();
-        pApiData->commandsPending = false;
-
-        if(wait)
+        if(pApiData->commandsPending)
         {
-            pApiData->pFence->syncCpu();
+            d3d_call(pApiData->pList->Close());
+            ID3D12CommandList* pList = pApiData->pList.GetInterfacePtr();
+            pApiData->pCommandQueue->ExecuteCommandLists(1, &pList);
+            pApiData->pCopyCtxFence->gpuSignal(pApiData->pCommandQueue);
+            pApiData->pList->Reset(pApiData->pAllocator, nullptr);
+            bindDescriptorHeaps();
+            pApiData->commandsPending = false;
+
+            if (wait)
+            {
+                pApiData->pCopyCtxFence->syncCpu();
+            }
         }
     }
 
@@ -468,6 +476,6 @@ namespace Falcor
     GpuFence::SharedPtr RenderContext::getFence() const
     {
         RenderContextData* pApiData = (RenderContextData*)mpApiData;
-        return pApiData->pFence;
+        return pApiData->pCopyCtxFence;
     }
 }

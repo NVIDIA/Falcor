@@ -339,6 +339,7 @@ namespace Falcor
 
     void Device::executeDeferredReleases()
     {
+        mpResourceAllocator->executeDeferredReleases();
         DeviceData* pData = (DeviceData*)mpPrivateData;
         uint64_t gpuVal = pData->pFrameFence->getGpuValue();
         while (pData->deferredReleases.size() && pData->deferredReleases.front().frameID < gpuVal)

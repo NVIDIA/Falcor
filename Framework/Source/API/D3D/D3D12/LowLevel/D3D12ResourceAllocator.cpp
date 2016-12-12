@@ -50,7 +50,7 @@ namespace Falcor
     {
         if (mpActivePage)
         {
-            mUsedPages[mCurrentAllocationId] = std::move(mpActivePage);
+            mUsedPages[mCurrentPageId] = std::move(mpActivePage);
         }
 
         if (mAvailablePages.size())
@@ -70,12 +70,13 @@ namespace Falcor
         }
 
         mpActivePage->currentOffset = 0;
-        mCurrentAllocationId++;
+        mCurrentPageId++;
     }
 
-    void allocateMegaPage(size_t size, size_t allocationId, ResourceAllocator::AllocationData& data)
+    void allocateMegaPage(size_t size, ResourceAllocator::AllocationData& data)
     {
-        data.allocationID = allocationId;
+        data.pageID = ResourceAllocator::AllocationData::kMegaPageId;
+
         data.pResourceHandle = createBuffer(size, kUploadHeapProps, Buffer::BindFlags::None);
         data.gpuAddress = data.pResourceHandle->GetGPUVirtualAddress();
         D3D12_RANGE readRange = {};
@@ -84,13 +85,10 @@ namespace Falcor
 
     ResourceAllocator::AllocationData ResourceAllocator::allocate(size_t size, size_t alignment)
     {
-        executeDeferredReleases();
-
         AllocationData data;
         if (size > mPageSize)
         {
-            allocateMegaPage(size, mCurrentAllocationId, data);
-            mCurrentAllocationId++;            
+            allocateMegaPage(size, data);
         }
         else
         {
@@ -102,7 +100,7 @@ namespace Falcor
                 allocateNewPage();
             }
 
-            data.allocationID = mCurrentAllocationId;
+            data.pageID = mCurrentPageId;
             data.gpuAddress = mpActivePage->gpuAddress + currentOffset;
             data.pData = mpActivePage->pData + currentOffset;
             data.pResourceHandle = mpActivePage->pResourceHandle;
@@ -116,16 +114,19 @@ namespace Falcor
 
     void ResourceAllocator::release(AllocationData& data)
     {
-        mDeferredReleases.push(data);    
+        if(data.pResourceHandle)
+        {
+            mDeferredReleases.push(data);
+        }
     }
 
     void ResourceAllocator::executeDeferredReleases()
     {
         uint64_t gpuVal = mpFence->getGpuValue();
-        while (mDeferredReleases.size() && mDeferredReleases.top().fenceValue < gpuVal)
+        while (mDeferredReleases.size() && mDeferredReleases.top().fenceValue <= gpuVal)
         {
             const AllocationData& data = mDeferredReleases.top();
-            if (data.allocationID == mCurrentAllocationId)
+            if (data.pageID == mCurrentPageId)
             {
                 mpActivePage->allocationsCount--;
                 if (mpActivePage->allocationsCount == 0)
@@ -135,18 +136,17 @@ namespace Falcor
             }
             else
             {
-                auto it = mUsedPages.find(data.allocationID);
-                if (it != mUsedPages.end())
+                if(data.pageID != AllocationData::kMegaPageId)
                 {
-                    auto& pData = it->second;
+                    auto& pData = mUsedPages[data.pageID];
                     pData->allocationsCount--;
                     if (pData->allocationsCount == 0)
                     {
                         mAvailablePages.push(std::move(pData));
-                        mUsedPages.erase(data.allocationID);
+                        mUsedPages.erase(data.pageID);
                     }
                 }
-                // else it has to be a mega-page
+                // else it's a mega-page. Popping it will release the resource
             }
             mDeferredReleases.pop();
         }

@@ -36,13 +36,13 @@ namespace Falcor
         CloseHandle(mEvent);
     }
 
-    GpuFence::SharedPtr GpuFence::create(uint64_t initValue)
+    GpuFence::SharedPtr GpuFence::create()
     {
-        SharedPtr pFence = SharedPtr(new GpuFence(initValue));
+        SharedPtr pFence = SharedPtr(new GpuFence());
         pFence->mEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
         ID3D12Device* pDevice = gpDevice->getApiHandle().GetInterfacePtr();
 
-        HRESULT hr = pDevice->CreateFence(initValue, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&pFence->mApiHandle));
+        HRESULT hr = pDevice->CreateFence(pFence->mCpuValue, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&pFence->mApiHandle));
         if(FAILED(hr))
         {
             d3dTraceHR("Failed to create a fence object", hr);
@@ -68,12 +68,15 @@ namespace Falcor
 
     void GpuFence::syncGpu(CommandQueueHandle pQueue)
     {
+        assert(mCpuValue);
         d3d_call(pQueue->Wait(mApiHandle, mCpuValue));
     }
 
     void GpuFence::syncCpu()
     {
-        if (getGpuValue() < mCpuValue)
+        assert(mCpuValue);
+        uint64_t gpuVal = getGpuValue();
+        if (gpuVal < mCpuValue)
         {
             d3d_call(mApiHandle->SetEventOnCompletion(mCpuValue, mEvent));
             WaitForSingleObject(mEvent, INFINITE);

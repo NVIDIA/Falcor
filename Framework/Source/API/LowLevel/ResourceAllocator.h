@@ -42,19 +42,21 @@ namespace Falcor
         static SharedPtr create(size_t pageSize, GpuFence::SharedPtr pFence);
         struct AllocationData
         {
-            ResourceHandle pResourceHandle;
-            GpuAddress gpuAddress;
-            uint8_t* pData;
-            uint64_t allocationID;
-            uint64_t fenceValue;
+            ResourceHandle pResourceHandle = nullptr;
+            GpuAddress gpuAddress = 0;
+            uint8_t* pData = nullptr;
+            uint64_t pageID = 0;
+            uint64_t fenceValue = 0;
 
-            bool operator<(const AllocationData& other)  const { return fenceValue < other.fenceValue; }
+            static const uint64_t kMegaPageId = -1;
+            bool operator<(const AllocationData& other)  const { return fenceValue > other.fenceValue; }
         };
         ~ResourceAllocator();
 
         AllocationData allocate(size_t size, size_t alignment = 1);
         void release(AllocationData& data);
         size_t getPageSize() const { return mPageSize; }
+        void executeDeferredReleases();
 
     private:
         ResourceAllocator(size_t pageSize, GpuFence::SharedPtr pFence) : mPageSize(pageSize), mpFence(pFence) {}
@@ -71,7 +73,7 @@ namespace Falcor
         
         GpuFence::SharedPtr mpFence;
         size_t mPageSize = 0;
-        size_t mCurrentAllocationId = 0;
+        size_t mCurrentPageId = 0;
         PageData::UniquePtr mpActivePage;
 
         std::priority_queue<AllocationData> mDeferredReleases;
@@ -79,7 +81,6 @@ namespace Falcor
         std::queue<PageData::UniquePtr> mAvailablePages;
 
         void allocateNewPage();
-        void executeDeferredReleases();
     };
 }
 #endif // FALCOR_LOW_LEVEL_API
