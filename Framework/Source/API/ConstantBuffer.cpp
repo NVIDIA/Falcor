@@ -56,6 +56,10 @@ namespace Falcor
         {
             return create(pBufferReflector, overrideSize);
         }
+        else
+        {
+            logError("Can't find a constant buffer named \"" + name + "\" in the program");
+        }
         return nullptr;
     }
 

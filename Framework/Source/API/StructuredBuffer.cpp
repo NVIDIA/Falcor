@@ -57,6 +57,10 @@ namespace Falcor
         {
             return create(pBufferReflector, elementCount, bindFlags);
         }
+        else
+        {
+            logError("Can't find a structured buffer named \"" + name + "\" in the program");
+        }
         return nullptr;
     }
 
