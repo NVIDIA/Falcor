@@ -95,7 +95,7 @@ namespace Falcor
         mpRootSignature = pRootSig ? pRootSig : RootSignature::create(pReflector.get());
         initializeBuffersMap<ConstantBuffer, RootSignature::DescType::CBV>(mAssignedCbs, createBuffers, mpReflector->getBufferMap(ProgramReflection::BufferReflection::Type::Constant), ProgramReflection::BufferReflection::ShaderAccess::Read, mpRootSignature.get());
         initializeBuffersMap<StructuredBuffer, RootSignature::DescType::SRV>(mAssignedSrvs, createBuffers, mpReflector->getBufferMap(ProgramReflection::BufferReflection::Type::Structured), ProgramReflection::BufferReflection::ShaderAccess::Read, mpRootSignature.get());
-        initializeBuffersMap<StructuredBuffer, RootSignature::DescType::UAV>(mAssignedSrvs, createBuffers, mpReflector->getBufferMap(ProgramReflection::BufferReflection::Type::Structured), ProgramReflection::BufferReflection::ShaderAccess::ReadWrite, mpRootSignature.get());
+        initializeBuffersMap<StructuredBuffer, RootSignature::DescType::UAV>(mAssignedUavs, createBuffers, mpReflector->getBufferMap(ProgramReflection::BufferReflection::Type::Structured), ProgramReflection::BufferReflection::ShaderAccess::ReadWrite, mpRootSignature.get());
 
         // Initialize the textures and samplers map
         for (const auto& res : pReflector->getResourceMap())
