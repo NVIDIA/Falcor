@@ -118,6 +118,8 @@ namespace Falcor
             return D3D12_RESOURCE_STATE_STREAM_OUT;
         case Resource::State::UnorderedAccess:
             return D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
+        case Resource::State::GenericRead:
+            return D3D12_RESOURCE_STATE_GENERIC_READ;
         default:
             should_not_get_here();
             return D3D12_RESOURCE_STATE_GENERIC_READ;

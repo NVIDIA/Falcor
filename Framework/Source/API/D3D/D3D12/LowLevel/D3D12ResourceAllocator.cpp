@@ -32,7 +32,7 @@
 
 namespace Falcor
 {
-    ID3D12ResourcePtr createBuffer(size_t size, const D3D12_HEAP_PROPERTIES& heapProps, Buffer::BindFlags bindFlags);
+    ID3D12ResourcePtr createBuffer(Buffer::State initState, size_t size, const D3D12_HEAP_PROPERTIES& heapProps, Buffer::BindFlags bindFlags);
 
     ResourceAllocator::~ResourceAllocator()
     {
@@ -63,7 +63,7 @@ namespace Falcor
         else
         {
             mpActivePage = std::make_unique<PageData>();
-            mpActivePage->pResourceHandle = createBuffer(mPageSize, kUploadHeapProps, Buffer::BindFlags::None);
+            mpActivePage->pResourceHandle = createBuffer(Buffer::State::GenericRead, mPageSize, kUploadHeapProps, Buffer::BindFlags::None);
             mpActivePage->gpuAddress = mpActivePage->pResourceHandle->GetGPUVirtualAddress();
             D3D12_RANGE readRange = {};
             d3d_call(mpActivePage->pResourceHandle->Map(0, &readRange, (void**)&mpActivePage->pData));
@@ -77,7 +77,7 @@ namespace Falcor
     {
         data.pageID = ResourceAllocator::AllocationData::kMegaPageId;
 
-        data.pResourceHandle = createBuffer(size, kUploadHeapProps, Buffer::BindFlags::None);
+        data.pResourceHandle = createBuffer(Buffer::State::GenericRead, size, kUploadHeapProps, Buffer::BindFlags::None);
         data.gpuAddress = data.pResourceHandle->GetGPUVirtualAddress();
         D3D12_RANGE readRange = {};
         d3d_call(data.pResourceHandle->Map(0, &readRange, (void**)&data.pData));

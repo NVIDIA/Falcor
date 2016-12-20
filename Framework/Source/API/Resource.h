@@ -83,6 +83,7 @@ namespace Falcor
             ResolveDest,
             ResolveSource,
             Present,
+            GenericRead,
             Predication,
         };
 

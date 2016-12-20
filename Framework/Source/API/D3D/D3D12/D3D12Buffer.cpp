@@ -39,7 +39,7 @@ namespace Falcor
         Buffer::SharedPtr pStagingResource; // For buffers that have both CPU read flag and can be used by the GPU
     };
 
-    ID3D12ResourcePtr createBuffer(size_t size, const D3D12_HEAP_PROPERTIES& heapProps, Buffer::BindFlags bindFlags)
+    ID3D12ResourcePtr createBuffer(Buffer::State initState, size_t size, const D3D12_HEAP_PROPERTIES& heapProps, Buffer::BindFlags bindFlags)
     {
         ID3D12Device* pDevice = gpDevice->getApiHandle();
 
@@ -57,18 +57,9 @@ namespace Falcor
         bufDesc.SampleDesc.Quality = 0;
         bufDesc.Width = size;
 
-        D3D12_RESOURCE_STATES initState = D3D12_RESOURCE_STATE_COMMON;
-        switch (heapProps.Type)
-        {
-        case D3D12_HEAP_TYPE_UPLOAD:
-            initState = D3D12_RESOURCE_STATE_GENERIC_READ;
-            break;
-        case D3D12_HEAP_TYPE_READBACK:
-            initState = D3D12_RESOURCE_STATE_COPY_DEST;
-            break;
-        }
+        D3D12_RESOURCE_STATES d3dState = getD3D12ResourceState(initState);
         ID3D12ResourcePtr pApiHandle;
-        d3d_call(pDevice->CreateCommittedResource(&heapProps, D3D12_HEAP_FLAG_NONE, &bufDesc, initState, nullptr, IID_PPV_ARGS(&pApiHandle)));
+        d3d_call(pDevice->CreateCommittedResource(&heapProps, D3D12_HEAP_FLAG_NONE, &bufDesc, d3dState, nullptr, IID_PPV_ARGS(&pApiHandle)));
 
         // Map and upload data if needed
         return pApiHandle;
@@ -112,16 +103,19 @@ namespace Falcor
         mpApiData = pApiData;
         if (mCpuAccess == CpuAccess::Write)
         {
+            mState = Resource::State::GenericRead;
             pApiData->dynamicData = gpDevice->getResourceAllocator()->allocate(mSize, getDataAlignmentFromUsage(mBindFlags));
             mApiHandle = pApiData->dynamicData.pResourceHandle;
         }
         else if (mCpuAccess == CpuAccess::Read && mBindFlags == BindFlags::None)
         {
-            mApiHandle = createBuffer(mSize, kReadbackHeapProps, mBindFlags);
+            mState = Resource::State::CopyDest;
+            mApiHandle = createBuffer(mState, mSize, kReadbackHeapProps, mBindFlags);
         }
         else
         {
-            mApiHandle = createBuffer(mSize, kDefaultHeapProps, mBindFlags);
+            mState = Resource::State::Common;
+            mApiHandle = createBuffer(mState, mSize, kDefaultHeapProps, mBindFlags);
         }
 
         if (pInitData)
