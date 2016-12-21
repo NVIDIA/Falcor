@@ -152,11 +152,14 @@ namespace Falcor
             }
         };
 
+        /** Invalidate and release all of the resource views
+        */
+        void invalidateViews() const;
+
     protected:
         friend class RenderContext;
 
         Resource(Type type, BindFlags bindFlags) : mType(type), mBindFlags(bindFlags) {}
-        void invalidateViews() const;
 
         Type mType;
         BindFlags mBindFlags;

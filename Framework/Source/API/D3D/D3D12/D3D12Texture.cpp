@@ -175,6 +175,7 @@ namespace Falcor
             if (autoGenMips)
             {
                 pTexture->generateMips();
+                pTexture->invalidateViews();
             }
         }
     }
@@ -285,5 +286,7 @@ namespace Falcor
         }
         pContext->popGraphicsState();
         pContext->popGraphicsVars();
+        logInfo("Releasing RTVs after Texture::generateMips()");
+        mRtvs.clear();
     }
 }

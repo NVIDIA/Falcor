@@ -41,7 +41,7 @@ namespace Falcor
         static const uint32_t kMaxPossible = -1;
         struct ViewInfo
         {
-            ViewInfo(uint32_t mostDetailedMip_, uint32_t mipCount_, uint32_t firstArraySlice_, uint32_t arraySize_) : mostDetailedMip(mostDetailedMip_), mipCount(mipCount), firstArraySlice(firstArraySlice_), arraySize(arraySize_) {}
+            ViewInfo(uint32_t mostDetailedMip_, uint32_t mipCount_, uint32_t firstArraySlice_, uint32_t arraySize_) : mostDetailedMip(mostDetailedMip_), mipCount(mipCount_), firstArraySlice(firstArraySlice_), arraySize(arraySize_) {}
             uint32_t mostDetailedMip;
             uint32_t mipCount;
             uint32_t firstArraySlice;
