@@ -420,11 +420,11 @@ namespace Falcor
             pApiData->pList->Reset(pApiData->pAllocator, nullptr);
             bindDescriptorHeaps();
             pApiData->commandsPending = false;
+        }
 
-            if (wait)
-            {
-                pApiData->pCopyCtxFence->syncCpu();
-            }
+        if (wait)
+        {
+            pApiData->pCopyCtxFence->syncCpu();
         }
     }
 
