@@ -193,7 +193,6 @@ namespace Falcor
         onLoad();
         // Flush once
         mpRenderContext->flush();
-		handleWindowSizeChange();
         
         mpWindow->msgLoop();
 
