@@ -35,6 +35,12 @@
 
 namespace Falcor
 {
+#ifdef _DEBUG
+#define ENABLE_DEBUG_LAYER true
+#else
+#define ENABLE_DEBUG_LAYER false
+#endif
+
     class Device
     {
     public:
@@ -53,6 +59,7 @@ namespace Falcor
             bool useDebugContext = false;             ///< create a debug context. NOTE: Debug configuration always creates a debug context
             std::vector<std::string> requiredExtensions; ///< Extensions required by the sample
 			bool enableVsync = false;           ///< Controls vertical-sync
+            bool enableDebugLayer = ENABLE_DEBUG_LAYER;    ///< Enable the debug layer. The default for release build is false, for debug build it's true.
         };
 
 		/** Create a new device.

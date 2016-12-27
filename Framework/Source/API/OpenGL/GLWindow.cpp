@@ -493,11 +493,12 @@ namespace Falcor
         }
 
         // Set the debug callback
-#ifdef _DEBUG
-        glDebugMessageCallback(glDebugCallback, pWindow.get());
-        glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, GL_TRUE);
-        glEnable(GL_DEBUG_OUTPUT);
-#endif
+        if(desc.enableDebugLayer)
+        {
+            glDebugMessageCallback(glDebugCallback, pWindow.get());
+            glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, GL_TRUE);
+            glEnable(GL_DEBUG_OUTPUT);
+        }
 
         // Clear the GL error flag
         glGetError();

@@ -279,7 +279,7 @@ namespace Falcor
 		DeviceData* pData = new DeviceData;
 		mpPrivateData = pData;
 
-#if defined(_DEBUG)
+        if(desc.enableDebugLayer)
 		{
 			ID3D12DebugPtr pDebug;
 			if (SUCCEEDED(D3D12GetDebugInterface(IID_PPV_ARGS(&pDebug))))
@@ -287,8 +287,8 @@ namespace Falcor
 				pDebug->EnableDebugLayer();
 			}
 		}
-#endif
-		// Create the DXGI factory
+
+        // Create the DXGI factory
 		IDXGIFactory4Ptr pDxgiFactory;
 		d3d_call(CreateDXGIFactory1(IID_PPV_ARGS(&pDxgiFactory)));
 

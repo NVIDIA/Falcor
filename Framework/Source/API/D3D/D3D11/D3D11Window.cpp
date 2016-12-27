@@ -74,9 +74,10 @@ namespace Falcor
         }
 
         UINT flags = 0;
-#ifdef _DEBUG
-        flags |= D3D11_CREATE_DEVICE_DEBUG;
-#endif
+        if(desc.enableDebugLayer)
+        {
+            flags |= D3D11_CREATE_DEVICE_DEBUG;
+        }
 
         D3D_FEATURE_LEVEL level = getD3DFeatureLevel(apiMajorVersion, apiMinorVersion);
         if(level == 0)
