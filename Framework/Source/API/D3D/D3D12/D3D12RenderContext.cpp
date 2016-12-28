@@ -154,6 +154,7 @@ namespace Falcor
             barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;   // OPTME: Need to do that only for the subresources we will actually use
 
             pApiData->pList->ResourceBarrier(1, &barrier);
+            pApiData->commandsPending = true;
             pResource->mState = newState;
         }
     }
@@ -177,6 +178,7 @@ namespace Falcor
         {
             should_not_get_here();
         }
+        pApiData->commandsPending = true;
     }
 
     void RenderContext::clearUAV(const UnorderedAccessView* pUav, const vec4& value)
@@ -217,6 +219,7 @@ namespace Falcor
         RenderContextData* pApiData = (RenderContextData*)mpApiData;
         resourceBarrier(pRtv->getResource(), Resource::State::RenderTarget);
         pApiData->pList->ClearRenderTargetView(pRtv->getApiHandle()->getCpuHandle(), glm::value_ptr(color), 0, nullptr);
+        pApiData->commandsPending = true;
     }
 
     void RenderContext::clearDsv(const DepthStencilView* pDsv, float depth, uint8_t stencil, bool clearDepth, bool clearStencil)
@@ -227,6 +230,7 @@ namespace Falcor
 
         resourceBarrier(pDsv->getResource(), Resource::State::DepthStencil);
         pApiData->pList->ClearDepthStencilView(pDsv->getApiHandle()->getCpuHandle(), D3D12_CLEAR_FLAGS(flags), depth, stencil, 0, nullptr);
+        pApiData->commandsPending = true;
     }
 
     void RenderContext::blitFbo(const Fbo* pSource, const Fbo* pTarget, const glm::ivec4& srcRegion, const glm::ivec4& dstRegion, bool useLinearFiltering, FboAttachmentType copyFlags, uint32_t srcIdx, uint32_t dstIdx)
@@ -343,7 +347,7 @@ namespace Falcor
         D3D12SetViewports(pApiData, &mpGraphicsState->getViewport(0));
         D3D12SetScissors(pApiData, &mpGraphicsState->getScissors(0));
         pApiData->pList->SetPipelineState(mpGraphicsState->getGSO()->getApiHandle());
-
+        pApiData->commandsPending = true;
         flushCopyCommands(pApiData);
     }
 
@@ -363,7 +367,7 @@ namespace Falcor
         }
 
         pApiData->pList->SetPipelineState(mpComputeState->getCSO()->getApiHandle());
-
+        pApiData->commandsPending = true;
         flushCopyCommands(pApiData);
     }
 
@@ -372,7 +376,6 @@ namespace Falcor
         prepareForDispatch();
         RenderContextData* pApiData = (RenderContextData*)mpApiData;
         pApiData->pList->Dispatch(groupSizeX, groupSizeY, groupSizeZ);
-        pApiData->commandsPending = true;
     }
 
     void RenderContext::drawInstanced(uint32_t vertexCount, uint32_t instanceCount, uint32_t startVertexLocation, uint32_t startInstanceLocation)
@@ -380,7 +383,6 @@ namespace Falcor
         prepareForDraw();
         RenderContextData* pApiData = (RenderContextData*)mpApiData;
         pApiData->pList->DrawInstanced(vertexCount, instanceCount, startVertexLocation, startInstanceLocation);
-        pApiData->commandsPending = true;
     }
 
     void RenderContext::draw(uint32_t vertexCount, uint32_t startVertexLocation)
@@ -393,7 +395,6 @@ namespace Falcor
         prepareForDraw();
         RenderContextData* pApiData = (RenderContextData*)mpApiData;
         pApiData->pList->DrawIndexedInstanced(indexCount, instanceCount, startIndexLocation, baseVertexLocation, startInstanceLocation);
-        pApiData->commandsPending = true;
     }
 
     void RenderContext::drawIndexed(uint32_t indexCount, uint32_t startIndexLocation, int baseVertexLocation)
@@ -417,9 +418,9 @@ namespace Falcor
             ID3D12CommandList* pList = pApiData->pList.GetInterfacePtr();
             pApiData->pCommandQueue->ExecuteCommandLists(1, &pList);
             pApiData->pCopyCtxFence->gpuSignal(pApiData->pCommandQueue);
+            pApiData->commandsPending = false;
             pApiData->pList->Reset(pApiData->pAllocator, nullptr);
             bindDescriptorHeaps();
-            pApiData->commandsPending = false;
         }
 
         if (wait)
@@ -471,6 +472,7 @@ namespace Falcor
         resourceBarrier(pDst, Resource::State::CopyDest);
         resourceBarrier(pSrc, Resource::State::CopySource);
         pApiData->pList->CopyResource(pDst->getApiHandle(), pSrc->getApiHandle());
+        pApiData->commandsPending = true;
     }
 
     GpuFence::SharedPtr RenderContext::getFence() const
