@@ -189,10 +189,9 @@ namespace Falcor
             VRSystem::start(mpRenderContext);
         }
 
-        // Call the load callback
+        // Call the load callback and flush
         onLoad();
-        // Flush once
-        mpRenderContext->flush();
+        mpRenderContext->flush(true);   // We should be able to flush without waiting, but this causes some textures to load incorrectly. There's a bug open for it.
         
         mpWindow->msgLoop();
 
