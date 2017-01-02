@@ -36,52 +36,17 @@
 
 namespace Falcor
 {
-    // TODO: A lot of the calls to pList->set*() looks very similar to D3D11 calls. We can share some code
-	struct RenderContextData
-	{
-		GraphicsCommandAllocatorPool::SharedPtr pAllocatorPool;
-        ID3D12CommandAllocatorPtr pAllocator;
-		ID3D12GraphicsCommandListPtr pList;
-        ID3D12CommandQueuePtr pCommandQueue;
-        GpuFence::SharedPtr pCopyCtxFence;
-        GpuFence::SharedPtr pCmdAllocatorFence;
-        CopyContext::SharedPtr pCopyContext;
-        bool commandsPending = false;
-	};
-	
 	RenderContext::~RenderContext()
 	{
 		delete (RenderContextData*)mpApiData;
 		mpApiData = nullptr;
 	}
-
-    void flushCopyCommands(const RenderContextData* pApiData)
-    {
-        if (pApiData->pCopyContext->hasPendingCommands())
-        {
-            assert(pApiData->commandsPending == false);
-            pApiData->pCopyContext->flush(pApiData->pCopyCtxFence.get());
-            pApiData->pCopyCtxFence->syncGpu(pApiData->pCommandQueue);
-        }
-    }
-
-    void flushGraphicsCommands(RenderContext* pContext, const RenderContextData* pApiData)
-    {
-        if (pApiData->commandsPending)
-        {
-            assert(pApiData->pCopyContext->hasPendingCommands() == false);
-            pContext->flush();
-            pApiData->pCopyCtxFence->syncGpu(pApiData->pCopyContext->getCommandQueue().GetInterfacePtr());
-        }
-    }
-
+    
     RenderContext::SharedPtr RenderContext::create(uint32_t allocatorsCount)
     {
         SharedPtr pCtx = SharedPtr(new RenderContext());
         RenderContextData* pApiData = new RenderContextData;
-        pApiData->pCopyContext = CopyContext::create();
-        pApiData->pCopyCtxFence = GpuFence::create();
-        pApiData->pCmdAllocatorFence = GpuFence::create();
+        pApiData->pFence = GpuFence::create();
 		pCtx->mpApiData = pApiData;
 
 		auto pDevice = gpDevice->getApiHandle();
@@ -91,14 +56,14 @@ namespace Falcor
         cqDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
         cqDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
 
-        if (FAILED(pDevice->CreateCommandQueue(&cqDesc, IID_PPV_ARGS(&pApiData->pCommandQueue))))
+        if (FAILED(pDevice->CreateCommandQueue(&cqDesc, IID_PPV_ARGS(&pApiData->pQueue))))
         {
             logError("Failed to create command queue");
             return nullptr;
         }
 
         // Create a command allocator
-        pApiData->pAllocatorPool = GraphicsCommandAllocatorPool::create(pApiData->pCmdAllocatorFence);
+        pApiData->pAllocatorPool = GraphicsCommandAllocatorPool::create(pApiData->pFence);
         pApiData->pAllocator = pApiData->pAllocatorPool->newObject();
 
 		// Create a command list
@@ -122,14 +87,14 @@ namespace Falcor
     CommandQueueHandle RenderContext::getCommandQueue() const
     {
         const RenderContextData* pApiData = (RenderContextData*)mpApiData;
-        return pApiData->pCommandQueue.GetInterfacePtr();
+        return pApiData->pQueue.GetInterfacePtr();
     }
 
 	void RenderContext::reset()
 	{
         flush();
 		RenderContextData* pApiData = (RenderContextData*)mpApiData;
-        pApiData->pCmdAllocatorFence->gpuSignal(pApiData->pCommandQueue);
+        pApiData->pFence->gpuSignal(pApiData->pQueue);
 
         // Skip to the next allocator        
 		pApiData->pAllocator = pApiData->pAllocatorPool->newObject();
@@ -137,7 +102,6 @@ namespace Falcor
         d3d_call(pApiData->pAllocator->Reset());
 		d3d_call(pApiData->pList->Reset(pApiData->pAllocator, nullptr));
         bindDescriptorHeaps();
-        pApiData->pCopyContext->reset();
 	}
 
     void RenderContext::resourceBarrier(const Resource* pResource, Resource::State newState)
@@ -154,41 +118,43 @@ namespace Falcor
             barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;   // OPTME: Need to do that only for the subresources we will actually use
 
             pApiData->pList->ResourceBarrier(1, &barrier);
-            pApiData->commandsPending = true;
+            mCommandsPending = true;
             pResource->mState = newState;
         }
     }
 
     template<typename ClearType>
-    void clearUavCommon(RenderContext* pContext, const UnorderedAccessView* pUav, const ClearType& clear, void* pData)
+    void clearUavCommon(RenderContext* pContext, const UnorderedAccessView* pUav, const ClearType& clear, ID3D12GraphicsCommandList* pList)
     {
         pContext->resourceBarrier(pUav->getResource(), Resource::State::UnorderedAccess);
-        RenderContextData* pApiData = (RenderContextData*)pData;
         UavHandle clearHandle = pUav->getHandleForClear();
         UavHandle uav = pUav->getApiHandle();        
         if (typeid(ClearType) == typeid(vec4))
         {
-            pApiData->pList->ClearUnorderedAccessViewFloat(uav->getGpuHandle(), clearHandle->getCpuHandle(), pUav->getResource()->getApiHandle(), (float*)value_ptr(clear), 0, nullptr);
+            pList->ClearUnorderedAccessViewFloat(uav->getGpuHandle(), clearHandle->getCpuHandle(), pUav->getResource()->getApiHandle(), (float*)value_ptr(clear), 0, nullptr);
         }
         else if(typeid(ClearType) == typeid(uvec4))
         {
-            pApiData->pList->ClearUnorderedAccessViewUint(uav->getGpuHandle(), clearHandle->getCpuHandle(), pUav->getResource()->getApiHandle(), (uint32_t*)value_ptr(clear), 0, nullptr);
+            pList->ClearUnorderedAccessViewUint(uav->getGpuHandle(), clearHandle->getCpuHandle(), pUav->getResource()->getApiHandle(), (uint32_t*)value_ptr(clear), 0, nullptr);
         }
         else
         {
             should_not_get_here();
         }
-        pApiData->commandsPending = true;
     }
 
     void RenderContext::clearUAV(const UnorderedAccessView* pUav, const vec4& value)
     {
-        clearUavCommon(this, pUav, value, mpApiData);
+        RenderContextData* pApiData = (RenderContextData*)mpApiData;
+        clearUavCommon(this, pUav, value, pApiData->pList.GetInterfacePtr());
+        mCommandsPending = true;
     }
 
     void RenderContext::clearUAV(const UnorderedAccessView* pUav, const uvec4& value)
     {
-        clearUavCommon(this, pUav, value, mpApiData);
+        RenderContextData* pApiData = (RenderContextData*)mpApiData;
+        clearUavCommon(this, pUav, value, pApiData->pList.GetInterfacePtr());
+        mCommandsPending = true;
     }
 
 	void RenderContext::clearFbo(const Fbo* pFbo, const glm::vec4& color, float depth, uint8_t stencil, FboAttachmentType flags)
@@ -219,7 +185,7 @@ namespace Falcor
         RenderContextData* pApiData = (RenderContextData*)mpApiData;
         resourceBarrier(pRtv->getResource(), Resource::State::RenderTarget);
         pApiData->pList->ClearRenderTargetView(pRtv->getApiHandle()->getCpuHandle(), glm::value_ptr(color), 0, nullptr);
-        pApiData->commandsPending = true;
+        mCommandsPending = true;
     }
 
     void RenderContext::clearDsv(const DepthStencilView* pDsv, float depth, uint8_t stencil, bool clearDepth, bool clearStencil)
@@ -230,7 +196,7 @@ namespace Falcor
 
         resourceBarrier(pDsv->getResource(), Resource::State::DepthStencil);
         pApiData->pList->ClearDepthStencilView(pDsv->getApiHandle()->getCpuHandle(), D3D12_CLEAR_FLAGS(flags), depth, stencil, 0, nullptr);
-        pApiData->commandsPending = true;
+        mCommandsPending = true;
     }
 
     void RenderContext::blitFbo(const Fbo* pSource, const Fbo* pTarget, const glm::ivec4& srcRegion, const glm::ivec4& dstRegion, bool useLinearFiltering, FboAttachmentType copyFlags, uint32_t srcIdx, uint32_t dstIdx)
@@ -347,8 +313,7 @@ namespace Falcor
         D3D12SetViewports(pApiData, &mpGraphicsState->getViewport(0));
         D3D12SetScissors(pApiData, &mpGraphicsState->getScissors(0));
         pApiData->pList->SetPipelineState(mpGraphicsState->getGSO()->getApiHandle());
-        pApiData->commandsPending = true;
-        flushCopyCommands(pApiData);
+        mCommandsPending = true;
     }
 
     void RenderContext::prepareForDispatch()
@@ -367,8 +332,7 @@ namespace Falcor
         }
 
         pApiData->pList->SetPipelineState(mpComputeState->getCSO()->getApiHandle());
-        pApiData->commandsPending = true;
-        flushCopyCommands(pApiData);
+        mCommandsPending = true;
     }
 
     void RenderContext::dispatch(uint32_t groupSizeX, uint32_t groupSizeY, uint32_t groupSizeZ)
@@ -410,22 +374,21 @@ namespace Falcor
     void RenderContext::flush(bool wait)
     {
         RenderContextData* pApiData = (RenderContextData*)mpApiData;
-        flushCopyCommands(pApiData);
 
-        if(pApiData->commandsPending)
+        if(mCommandsPending)
         {
             d3d_call(pApiData->pList->Close());
             ID3D12CommandList* pList = pApiData->pList.GetInterfacePtr();
-            pApiData->pCommandQueue->ExecuteCommandLists(1, &pList);
-            pApiData->pCopyCtxFence->gpuSignal(pApiData->pCommandQueue);
-            pApiData->commandsPending = false;
+            pApiData->pQueue->ExecuteCommandLists(1, &pList);
+            pApiData->pFence->gpuSignal(pApiData->pQueue);
+            mCommandsPending = false;
             pApiData->pList->Reset(pApiData->pAllocator, nullptr);
             bindDescriptorHeaps();
         }
 
         if (wait)
         {
-            pApiData->pCopyCtxFence->syncCpu();
+            pApiData->pFence->syncCpu();
         }
     }
 
@@ -436,48 +399,44 @@ namespace Falcor
         pList->SetDescriptorHeaps(arraysize(pHeaps), pHeaps);
     }
 
+    void updateBufferCommon(ID3D12GraphicsCommandList* pList, const Buffer* pBuffer, const void* pData, size_t offset, size_t size, const char* className);
+
     void RenderContext::updateBuffer(const Buffer* pBuffer, const void* pData, size_t offset, size_t size)
     {
         RenderContextData* pApiData = (RenderContextData*)mpApiData;
-        flushGraphicsCommands(this, pApiData);
-        pApiData->pCopyContext->updateBuffer(pBuffer, pData, offset, size);
+        updateBufferCommon(pApiData->pList.GetInterfacePtr(), pBuffer, pData, offset, size, "RenderContext");
+        mCommandsPending = true;
     }
 
     void RenderContext::updateTexture(const Texture* pTexture, const void* pData)
     {
         RenderContextData* pApiData = (RenderContextData*)mpApiData;
-        flushGraphicsCommands(this, pApiData);
-        pApiData->pCopyContext->updateTexture(pTexture, pData);
+        mCommandsPending = true;
+        updateTextureSubresources(pTexture, subresourceIndex, 1, pData);
     }
 
     void RenderContext::updateTextureSubresource(const Texture* pTexture, uint32_t subresourceIndex, const void* pData)
     {
         RenderContextData* pApiData = (RenderContextData*)mpApiData;
-        flushGraphicsCommands(this, pApiData);
-        pApiData->pCopyContext->updateTextureSubresource(pTexture, subresourceIndex, pData);
     }
 
     void RenderContext::updateTextureSubresources(const Texture* pTexture, uint32_t firstSubresource, uint32_t subresourceCount, const void* pData)
     {
         RenderContextData* pApiData = (RenderContextData*)mpApiData;
-        flushGraphicsCommands(this, pApiData);
-        pApiData->pCopyContext->updateTextureSubresources(pTexture, firstSubresource, subresourceCount, pData);
     }
 
     void RenderContext::copyResource(const Resource* pDst, const Resource* pSrc)
     {
-        // FIXEM: I'd like that to be part of the CopyContext. The problem is that the CopyContext is not allowed to copy into the default FBO.
-        // I can either leave it here or restrict the usage for the default FBO
         RenderContextData* pApiData = (RenderContextData*)mpApiData;
         resourceBarrier(pDst, Resource::State::CopyDest);
         resourceBarrier(pSrc, Resource::State::CopySource);
         pApiData->pList->CopyResource(pDst->getApiHandle(), pSrc->getApiHandle());
-        pApiData->commandsPending = true;
+        mCommandsPending = true;
     }
 
     GpuFence::SharedPtr RenderContext::getFence() const
     {
         RenderContextData* pApiData = (RenderContextData*)mpApiData;
-        return pApiData->pCopyCtxFence;
+        return pApiData->pFence;
     }
 }

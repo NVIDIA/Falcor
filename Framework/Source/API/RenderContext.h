@@ -223,6 +223,14 @@ namespace Falcor
         */
         void dispatch(uint32_t groupSizeX, uint32_t groupSizeY, uint32_t groupSizeZ);
 
+        /** Check if we have pending commands
+        */
+        bool hasPendingCommands() const { return mCommandsPending; }
+
+        /** Signal the context that we have pending commands. Useful in case you make raw API calls
+        */
+        void setPendingCommands(bool commandsPending) { mCommandsPending = commandsPending; }
+
         void updateBuffer(const Buffer* pBuffer, const void* pData, size_t offset = 0, size_t size = 0);
         void updateTexture(const Texture* pTexture, const void* pData);
         void updateTextureSubresource(const Texture* pTexture, uint32_t subresourceIndex, const void* pData);
@@ -232,6 +240,7 @@ namespace Falcor
         GpuFence::SharedPtr getFence() const;
     private:
         RenderContext();
+        bool mCommandsPending = false;
 
         GraphicsVars::SharedPtr mpGraphicsVars;
         GraphicsState::SharedPtr mpGraphicsState;
