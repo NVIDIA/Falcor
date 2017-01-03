@@ -37,8 +37,9 @@
 #include "API/GraphicsStateObject.h"
 #include "API/ProgramVars.h"
 #include "Graphics/GraphicsState.h"
-#include "API/LowLevel/CopyContext.h"
+#include "API/CopyContext.h"
 #include "Graphics/ComputeState.h"
+#include "LowLevel/GpuFence.h"
 
 namespace Falcor
 {
@@ -211,8 +212,6 @@ namespace Falcor
         /** Dispatch a compute task
         */
         void dispatch(uint32_t groupSizeX, uint32_t groupSizeY, uint32_t groupSizeZ);
-
-        void copyResource(const Resource* pDst, const Resource* pSrc);
 
         GpuFence::SharedPtr getFence() const;
     private:

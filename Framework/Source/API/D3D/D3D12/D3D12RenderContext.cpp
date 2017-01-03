@@ -312,18 +312,7 @@ namespace Falcor
     void RenderContext::applyGraphicsState() {}
     void RenderContext::applyComputeVars() {}
     void RenderContext::applyComputeState() {}
-
-    void updateBufferCommon(ID3D12GraphicsCommandList* pList, const Buffer* pBuffer, const void* pData, size_t offset, size_t size, const char* className);
-
-    void RenderContext::copyResource(const Resource* pDst, const Resource* pSrc)
-    {
-        D3D12ContextData* pApiData = (D3D12ContextData*)mpApiData;
-        resourceBarrier(pDst, Resource::State::CopyDest);
-        resourceBarrier(pSrc, Resource::State::CopySource);
-        pApiData->getCommandList()->CopyResource(pDst->getApiHandle(), pSrc->getApiHandle());
-        mCommandsPending = true;
-    }
-
+    
     GpuFence::SharedPtr RenderContext::getFence() const
     {
         D3D12ContextData* pApiData = (D3D12ContextData*)mpApiData;

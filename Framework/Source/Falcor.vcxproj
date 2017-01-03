@@ -34,6 +34,7 @@
     <ClCompile Include="..\Externals\GLM\glm\detail\glm.cpp" />
     <ClCompile Include="API\BlendState.cpp" />
     <ClCompile Include="API\ComputeStateObject.cpp" />
+    <ClCompile Include="API\CopyContext.cpp" />
     <ClCompile Include="API\D3D\D3D11\D3D11BlendState.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseD3D12|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugGL|x64'">true</ExcludedFromBuild>
@@ -143,6 +144,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugD3D11|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="API\D3D\D3D12\D3D12ComputeStateObject.cpp" />
+    <ClCompile Include="API\D3D\D3D12\D3D12CopyContext.cpp" />
     <ClCompile Include="API\D3D\D3D12\D3D12DepthStencilState.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseD3D11|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugGL|x64'">true</ExcludedFromBuild>
@@ -223,12 +225,6 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseGL|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugD3D11|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="API\D3D\D3D12\LowLevel\D3D12CopyContext.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseD3D11|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugGL|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseGL|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugD3D11|x64'">true</ExcludedFromBuild>
-    </ClCompile>
     <ClCompile Include="API\D3D\D3D12\LowLevel\D3D12DescriptorHeap.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseD3D11|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugGL|x64'">true</ExcludedFromBuild>
@@ -280,7 +276,6 @@
     <ClCompile Include="API\DepthStencilState.cpp" />
     <ClCompile Include="API\FBO.cpp" />
     <ClCompile Include="API\Formats.cpp" />
-    <ClCompile Include="API\LowLevel\CopyContext.cpp" />
     <ClCompile Include="API\LowLevel\DescriptorTable.cpp" />
     <ClCompile Include="API\LowLevel\RootSignature.cpp" />
     <ClCompile Include="API\OpenGL\GLBlendState.cpp">
@@ -687,6 +682,7 @@
     <ClInclude Include="API\BlendState.h" />
     <ClInclude Include="API\Buffer.h" />
     <ClInclude Include="API\ComputeStateObject.h" />
+    <ClInclude Include="API\CopyContext.h" />
     <ClInclude Include="API\D3D\D3D11\D3D11ShaderReflection.h">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseD3D12|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugGL|x64'">true</ExcludedFromBuild>
@@ -725,7 +721,6 @@
     <ClInclude Include="API\FBO.h" />
     <ClInclude Include="API\Formats.h" />
     <ClInclude Include="API\GpuTimer.h" />
-    <ClInclude Include="API\LowLevel\CopyContext.h" />
     <ClInclude Include="API\LowLevel\DescriptorHeap.h" />
     <ClInclude Include="API\LowLevel\DescriptorTable.h" />
     <ClInclude Include="API\LowLevel\FencedPool.h" />

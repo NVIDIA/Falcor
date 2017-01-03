@@ -26,12 +26,12 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 #include "Framework.h"
-#include "API/LowLevel/CopyContext.h"
+#include "API/CopyContext.h"
 #include "API/Device.h"
 #include "API/Buffer.h"
 #include <queue>
-#include "..\D3D12Context.h"
-#include "..\D3D12Resource.h"
+#include "D3D12Context.h"
+#include "D3D12Resource.h"
 
 namespace Falcor
 {
@@ -221,5 +221,14 @@ namespace Falcor
             mCommandsPending = true;
             pResource->mState = newState;
         }
+    }
+
+    void CopyContext::copyResource(const Resource* pDst, const Resource* pSrc)
+    {
+        D3D12ContextData* pApiData = (D3D12ContextData*)mpApiData;
+        resourceBarrier(pDst, Resource::State::CopyDest);
+        resourceBarrier(pSrc, Resource::State::CopySource);
+        pApiData->getCommandList()->CopyResource(pDst->getApiHandle(), pSrc->getApiHandle());
+        mCommandsPending = true;
     }
 }

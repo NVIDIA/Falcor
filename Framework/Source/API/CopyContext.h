@@ -26,7 +26,6 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 #pragma once
-#include "GpuFence.h"
 #include "API/Resource.h"
 
 namespace Falcor
@@ -66,6 +65,8 @@ namespace Falcor
         void setPendingCommands(bool commandsPending) { mCommandsPending = commandsPending; }
 
         void resourceBarrier(const Resource* pResource, Resource::State newState);
+
+        void copyResource(const Resource* pDst, const Resource* pSrc);
 
     protected:
         bool initApiData();
