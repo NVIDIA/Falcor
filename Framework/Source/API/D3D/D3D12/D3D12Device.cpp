@@ -267,7 +267,7 @@ namespace Falcor
         mpRenderContext->resourceBarrier(pData->frameData[pData->currentBackBufferIndex].pFbo->getColorTexture(0).get(), Resource::State::Present);
         mpRenderContext->flush();
         pData->pSwapChain->Present(pData->syncInterval, 0);
-        pData->pFrameFence->gpuSignal(mpRenderContext->getCommandQueue().GetInterfacePtr());
+        pData->pFrameFence->gpuSignal(mpRenderContext->getLowLevelData()->getCommandQueue().GetInterfacePtr());
         executeDeferredReleases();
         mpRenderContext->reset();
         pData->currentBackBufferIndex = (pData->currentBackBufferIndex + 1) % kSwapChainBuffers;
@@ -308,9 +308,9 @@ namespace Falcor
         mpCpuUavHeap = DescriptorHeap::create(DescriptorHeap::Type::SRV, 2*1024, false);
 
 		// Create the swap-chain
-        mpRenderContext = RenderContext::create(kSwapChainBuffers);
-        mpResourceAllocator = ResourceAllocator::create(1024 * 1024 * 2, mpRenderContext->getFence());
-        pData->pSwapChain = createSwapChain(pDxgiFactory, mpWindow.get(), mpRenderContext->getCommandQueue(), desc.colorFormat);
+        mpRenderContext = RenderContext::create();
+        mpResourceAllocator = ResourceAllocator::create(1024 * 1024 * 2, mpRenderContext->getLowLevelData()->getFence());
+        pData->pSwapChain = createSwapChain(pDxgiFactory, mpWindow.get(), mpRenderContext->getLowLevelData()->getCommandQueue(), desc.colorFormat);
 		if(pData->pSwapChain == nullptr)
 		{
 			return false;

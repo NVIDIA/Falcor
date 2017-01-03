@@ -37,33 +37,22 @@
 #include "API/GraphicsStateObject.h"
 #include "API/ProgramVars.h"
 #include "Graphics/GraphicsState.h"
-#include "API/LowLevel/CopyContext.h"
-#include "Graphics/ComputeState.h"
+#include "API/ComputeContext.h"
 
 namespace Falcor
 {
 
     /** The rendering context. Use it to bind state and dispatch calls to the GPU
     */
-    class RenderContext : public std::enable_shared_from_this<RenderContext>
+    class RenderContext : public ComputeContext, public inherit_shared_from_this<ComputeContext, RenderContext>
     {
     public:
         using SharedPtr = std::shared_ptr<RenderContext>;
         using SharedConstPtr = std::shared_ptr<const RenderContext>;
-      
+
         /** create a new object
         */
-        static SharedPtr create(uint32_t allocatorsCount = 1);
-
-		/** Get the list API handle
-		*/
-		CommandListHandle getCommandListApiHandle() const;
-
-        CommandQueueHandle getCommandQueue() const;
-
-		/** Reset
-		*/
-		void reset();
+        static SharedPtr create();
 
         /** Clear an FBO
             \param[in] pFbo The FBO to clear
@@ -101,8 +90,6 @@ namespace Falcor
             \param[in] value The clear value
         */
         void clearUAV(const UnorderedAccessView* pUav, const uvec4& value);
-
-        void resourceBarrier(const Resource* pResource, Resource::State newState);
 
         /** Destructor
         */
@@ -181,77 +168,18 @@ namespace Falcor
         /** Pops the last graphics state from the stack and sets it
         */
         void popGraphicsState();
-
-        /** Flush the command list. This doesn't reset the command allocator, just submits the commands
-            \param[in] wait If true, will block execution until the GPU finished processing the commands
-        */
-        void flush(bool wait = false);
-
-        /** Set the compute variables
-        */
-        void setComputeVars(const ComputeVars::SharedPtr& pVars) { mpComputeVars = pVars; applyComputeVars(); }
-
-        /** Get the bound program variables object
-        */
-        ComputeVars::SharedPtr getComputeVars() const { return mpComputeVars; }
-
-        /** Push the current compute vars and sets a new one
-        */
-        void pushComputeVars(const ComputeVars::SharedPtr& pVars);
-
-        /** Pops the last ProgramVars from the stack and sets it
-        */
-        void popComputeVars();
-
-        /** Set a compute state
-        */
-        void setComputeState(const ComputeState::SharedPtr& pState) { mpComputeState = pState; applyComputeState(); }
-
-        /** Get the currently bound compute state
-        */
-        ComputeState::SharedPtr getComputeState() const { return mpComputeState; }
-
-        /** Push the current compute state and sets a new one
-        */
-        void pushComputeState(const ComputeState::SharedPtr& pState);
-
-        /** Pops the last PipelineState from the stack and sets it
-        */
-        void popComputeState();
         
-        /** Dispatch a compute task
-        */
-        void dispatch(uint32_t groupSizeX, uint32_t groupSizeY, uint32_t groupSizeZ);
-
-        void updateBuffer(const Buffer* pBuffer, const void* pData, size_t offset = 0, size_t size = 0);
-        void updateTexture(const Texture* pTexture, const void* pData);
-        void updateTextureSubresource(const Texture* pTexture, uint32_t subresourceIndex, const void* pData);
-        void updateTextureSubresources(const Texture* pTexture, uint32_t firstSubresource, uint32_t subresourceCount, const void* pData);
-        void copyResource(const Resource* pDst, const Resource* pSrc);
-
-        GpuFence::SharedPtr getFence() const;
     private:
         RenderContext();
-
         GraphicsVars::SharedPtr mpGraphicsVars;
         GraphicsState::SharedPtr mpGraphicsState;
 
-        ComputeVars::SharedPtr mpComputeVars;
-        ComputeState::SharedPtr mpComputeState;
-
         std::stack<GraphicsState::SharedPtr> mPipelineStateStack;
         std::stack<GraphicsVars::SharedPtr> mpGraphicsVarsStack;
-        std::stack<ComputeState::SharedPtr> mpComputeStateStack;
-        std::stack<ComputeVars::SharedPtr> mpComputeVarsStack;
 
         // Internal functions used by the API layers
         void applyProgramVars();
         void applyGraphicsState();
-        void applyComputeState();
-        void applyComputeVars();
         void prepareForDraw();
-        void prepareForDispatch();
-        void bindDescriptorHeaps();
-		void* mpApiData = nullptr;
     };
 }

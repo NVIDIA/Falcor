@@ -205,9 +205,6 @@
     <ClCompile Include="API\ProgramReflection.cpp">
       <Filter>API</Filter>
     </ClCompile>
-    <ClCompile Include="API\LowLevel\CopyContext.cpp">
-      <Filter>API\LowLevel</Filter>
-    </ClCompile>
     <ClCompile Include="API\LowLevel\RootSignature.cpp">
       <Filter>API\LowLevel</Filter>
     </ClCompile>
@@ -370,9 +367,6 @@
     <ClCompile Include="API\D3D\D3D12\D3D12GpuTimer.cpp">
       <Filter>API\D3D\D3D12</Filter>
     </ClCompile>
-    <ClCompile Include="API\D3D\D3D12\LowLevel\D3D12CopyContext.cpp">
-      <Filter>API\D3D\D3D12\LowLevel</Filter>
-    </ClCompile>
     <ClCompile Include="API\D3D\D3D12\LowLevel\D3D12DescriptorHeap.cpp">
       <Filter>API\D3D\D3D12\LowLevel</Filter>
     </ClCompile>
@@ -448,6 +442,15 @@
     </ClCompile>
     <ClCompile Include="API\D3D\D3D12\D3D12GraphicsStateObject.cpp">
       <Filter>API\D3D\D3D12</Filter>
+    </ClCompile>
+    <ClCompile Include="API\D3D\D3D12\D3D12CopyContext.cpp">
+      <Filter>API\D3D\D3D12</Filter>
+    </ClCompile>
+    <ClCompile Include="API\D3D\D3D12\D3D12ComputeContext.cpp">
+      <Filter>API\D3D\D3D12</Filter>
+    </ClCompile>
+    <ClCompile Include="API\D3D\D3D12\LowLevel\D3D12LowLevelContextData.cpp">
+      <Filter>API\D3D\D3D12\LowLevel</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -745,9 +748,6 @@
     <ClInclude Include="API\ProgramReflection.h">
       <Filter>API</Filter>
     </ClInclude>
-    <ClInclude Include="API\LowLevel\CopyContext.h">
-      <Filter>API\LowLevel</Filter>
-    </ClInclude>
     <ClInclude Include="API\LowLevel\DescriptorHeap.h">
       <Filter>API\LowLevel</Filter>
     </ClInclude>
@@ -786,9 +786,6 @@
     </ClInclude>
     <ClInclude Include="API\D3D\D3D12\FalcorD3D12.h">
       <Filter>API\D3D\D3D12</Filter>
-    </ClInclude>
-    <ClInclude Include="API\D3D\D3D12\LowLevel\D3D12FencedPool.h">
-      <Filter>API\D3D\D3D12\LowLevel</Filter>
     </ClInclude>
     <ClInclude Include="Utils\DDSHeader.h">
       <Filter>Utils</Filter>
@@ -1507,6 +1504,15 @@
     </ClInclude>
     <ClInclude Include="API\GraphicsStateObject.h">
       <Filter>API</Filter>
+    </ClInclude>
+    <ClInclude Include="API\CopyContext.h">
+      <Filter>API</Filter>
+    </ClInclude>
+    <ClInclude Include="API\ComputeContext.h">
+      <Filter>API</Filter>
+    </ClInclude>
+    <ClInclude Include="API\LowLevel\LowLevelContextData.h">
+      <Filter>API\LowLevel</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

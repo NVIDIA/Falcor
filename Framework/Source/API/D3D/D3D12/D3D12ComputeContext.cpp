@@ -25,24 +25,50 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#pragma once
-#include "API/LowLevel/FencedPool.h"
-#include "API/Device.h"
+#include "Framework.h"
+#include "API/ComputeContext.h"
 
 namespace Falcor
 {
-    template<D3D12_COMMAND_LIST_TYPE type>
-    ID3D12CommandAllocatorPtr newCommandAllocator()
+    ComputeContext::~ComputeContext() = default;
+
+    ComputeContext::SharedPtr ComputeContext::create()
     {
-        ID3D12CommandAllocatorPtr pAllocator;
-        if(FAILED(gpDevice->getApiHandle()->CreateCommandAllocator(type, IID_PPV_ARGS(&pAllocator))))
+        SharedPtr pCtx = SharedPtr(new ComputeContext());
+        pCtx->mpLowLevelData = LowLevelContextData::create(LowLevelContextData::CommandListType::Compute);
+        if (pCtx->mpLowLevelData == nullptr)
         {
-            logError("Failed to create command allocator");
             return nullptr;
         }
-        return pAllocator;
+        pCtx->bindDescriptorHeaps();
+
+        return pCtx;
     }
 
-	using GraphicsCommandAllocatorPool = FencedPool<ID3D12CommandAllocatorPtr, newCommandAllocator<D3D12_COMMAND_LIST_TYPE_DIRECT>>;
-    using CopyCommandAllocatorPool = FencedPool<ID3D12CommandAllocatorPtr, newCommandAllocator<D3D12_COMMAND_LIST_TYPE_COPY>>;
+    void ComputeContext::prepareForDispatch()
+    {
+        assert(mpComputeState);
+
+        // Bind the root signature and the root signature data
+        if (mpComputeVars)
+        {
+            mpComputeVars->apply(const_cast<ComputeContext*>(this));
+        }
+        else
+        {
+            mpLowLevelData->getCommandList()->SetComputeRootSignature(RootSignature::getEmpty()->getApiHandle());
+        }
+
+        mpLowLevelData->getCommandList()->SetPipelineState(mpComputeState->getCSO()->getApiHandle());
+        mCommandsPending = true;
+    }
+
+    void ComputeContext::dispatch(uint32_t groupSizeX, uint32_t groupSizeY, uint32_t groupSizeZ)
+    {
+        prepareForDispatch();
+        mpLowLevelData->getCommandList()->Dispatch(groupSizeX, groupSizeY, groupSizeZ);
+    }
+
+    void ComputeContext::applyComputeVars() {}
+    void ComputeContext::applyComputeState() {}
 }

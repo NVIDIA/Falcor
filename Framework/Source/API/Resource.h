@@ -31,7 +31,7 @@
 
 namespace Falcor
 {
-    class RenderContext;
+    class CopyContext;
 
     class Resource : public std::enable_shared_from_this<Resource>
     {
@@ -157,7 +157,7 @@ namespace Falcor
         void invalidateViews() const;
 
     protected:
-        friend class RenderContext;
+        friend class CopyContext;
 
         Resource(Type type, BindFlags bindFlags) : mType(type), mBindFlags(bindFlags) {}
 

@@ -38,7 +38,7 @@
 namespace Falcor
 {
     class ProgramVersion;
-    class RenderContext;
+    class CopyContext;
 
     /** This class manages a program's reflection and variable assignment.
         It's a high-level abstraction of variables-related concepts such as CBs, texture and sampler assignments, root-signature, descriptor tables, etc.
@@ -214,11 +214,9 @@ namespace Falcor
 
         using ResourceDataMap = std::unordered_map<uint32_t, ResourceData<Resource::SharedPtr>>;
 
-        virtual void apply(RenderContext* pContext) const = 0;
-
     protected:
-        template<bool forGraphics>
-        void applyCommon(RenderContext* pContext) const;
+        template<bool forGraphics, typename ContextType>
+        void applyCommon(ContextType* pContext) const;
 
         ProgramVars(const ProgramReflection::SharedConstPtr& pReflector, bool createBuffers, const RootSignature::SharedConstPtr& pRootSig);
 
@@ -260,7 +258,7 @@ namespace Falcor
         \param[in] pRootSignature A root-signature describing how to bind resources into the shader. If this paramter is nullptr, a root-signature object will be created from the program reflection object
         */
         static SharedPtr create(const ProgramReflection::SharedConstPtr& pReflector, bool createBuffers = true, const RootSignature::SharedConstPtr& pRootSig = nullptr);
-        void apply(RenderContext* pContext) const;
+        void apply(CopyContext* pContext) const;
     private:
         ComputeVars(const ProgramReflection::SharedConstPtr& pReflector, bool createBuffers, const RootSignature::SharedConstPtr& pRootSig) :
             ProgramVars(pReflector, createBuffers, pRootSig) {}

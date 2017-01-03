@@ -25,19 +25,37 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#include "Framework.h"
-#include "CopyContext.h"
+#pragma once
+#include "API/LowLevel/FencedPool.h"
 
 namespace Falcor
 {
-    CopyContext::SharedPtr CopyContext::create()
+    class LowLevelContextData : public std::enable_shared_from_this<LowLevelContextData>
     {
-        SharedPtr pCtx = SharedPtr(new CopyContext());
-        pCtx->mpFence = GpuFence::create();
-        if(pCtx->mpFence == nullptr || (pCtx->initApiData() == false))
+    public:
+        using SharedPtr = std::shared_ptr<LowLevelContextData>;
+        using SharedConstPtr = std::shared_ptr<const LowLevelContextData>;
+
+        enum class CommandListType
         {
-            pCtx = nullptr;
-        }
-        return pCtx;
-    }
+            Copy,
+            Compute,
+            Direct
+        };
+
+        static SharedPtr create(CommandListType type);
+        void reset();
+        void flush();
+
+        CommandListHandle getCommandList() const { return mpList; }
+        CommandQueueHandle getCommandQueue() const { return mpQueue; }
+        CommandAllocatorHandle getCommandAllocator() const { return mpAllocator; }
+        GpuFence::SharedPtr getFence() const { return mpFence; }
+    private:
+        FencedPool<CommandAllocatorHandle>::SharedPtr mpAllocatorPool;
+        CommandListHandle mpList;
+        CommandQueueHandle mpQueue;                                                                    
+        CommandAllocatorHandle mpAllocator;
+        GpuFence::SharedPtr mpFence;
+    };
 }

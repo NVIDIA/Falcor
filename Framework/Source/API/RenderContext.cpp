@@ -73,40 +73,4 @@ namespace Falcor
         setGraphicsVars(mpGraphicsVarsStack.top());
         mpGraphicsVarsStack.pop();
     }
-
-    void RenderContext::pushComputeState(const ComputeState::SharedPtr& pState)
-    {
-        mpComputeStateStack.push(mpComputeState);
-        setComputeState(pState);
-    }
-
-    void RenderContext::popComputeState()
-    {
-        if (mpComputeStateStack.empty())
-        {
-            logWarning("Can't pop from the ComputeState stack. The stack is empty");
-            return;
-        }
-
-        setComputeState(mpComputeStateStack.top());
-        mpComputeStateStack.pop();
-    }
-
-    void RenderContext::pushComputeVars(const ComputeVars::SharedPtr& pVars)
-    {
-        mpComputeVarsStack.push(pVars);
-        setComputeVars(pVars);
-    }
-
-    void RenderContext::popComputeVars()
-    {
-        if (mpComputeVarsStack.empty())
-        {
-            logWarning("Can't pop from the ComputeVars stack. The stack is empty");
-            return;
-        }
-
-        setComputeVars(mpComputeVarsStack.top());
-        mpComputeVarsStack.pop();
-    }
 }

@@ -61,9 +61,10 @@
 #include "API/VertexLayout.h"
 #include "API/Window.h"
 #include "API/TypedBuffer.h"
+#include "API/CopyContext.h"
+#include "API/ComputeContext.h"
 
 #if defined FALCOR_D3D12 || defined FALCOR_VULKAN
-#include "API/LowLevel/CopyContext.h"
 #include "API/LowLevel/DescriptorHeap.h"
 #include "API/LowLevel/DescriptorTable.h"
 #include "API/LowLevel/FencedPool.h"

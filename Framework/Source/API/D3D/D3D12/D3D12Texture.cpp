@@ -288,5 +288,7 @@ namespace Falcor
         pContext->popGraphicsVars();
         logInfo("Releasing RTVs after Texture::generateMips()");
         mRtvs.clear();
+
+        pContext->flush(true); // This shouldn't be here. GitLab issue #69
     }
 }

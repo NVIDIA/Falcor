@@ -26,7 +26,10 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 #pragma once
-#include "GpuFence.h"
+#include "API/Resource.h"
+#ifdef FALCOR_LOW_LEVEL_API
+#include "API/LowLevel/LowLevelContextData.h"
+#endif
 
 namespace Falcor
 {
@@ -46,16 +49,42 @@ namespace Falcor
         void updateTextureSubresource(const Texture* pTexture, uint32_t subresourceIndex, const void* pData);
         void updateTextureSubresources(const Texture* pTexture, uint32_t firstSubresource, uint32_t subresourceCount, const void* pData);
 
+        /** Reset
+        */
         void reset();
-        void flush(GpuFence* pFence = nullptr);
 
-        bool hasPendingCommands() const {return mCommandsPending;}
-        CommandQueueHandle getCommandQueue() const;
-    private:
-        bool initApiData();
+        /** Flush the command list. This doesn't reset the command allocator, just submits the commands
+        \param[in] wait If true, will block execution until the GPU finished processing the commands
+        */
+        void flush(bool wait = false);
+
+        /** Check if we have pending commands
+        */
+        bool hasPendingCommands() const { return mCommandsPending; }
+
+        /** Signal the context that we have pending commands. Useful in case you make raw API calls
+        */
+        void setPendingCommands(bool commandsPending) { mCommandsPending = commandsPending; }
+
+        /** Insert a resource barrier
+        */
+        void resourceBarrier(const Resource* pResource, Resource::State newState);
+
+        /** Copy an entire resource
+        */
+        void copyResource(const Resource* pDst, const Resource* pSrc);
+
+#ifdef FALCOR_LOW_LEVEL_API
+        /** Get the low-level context data
+        */
+        LowLevelContextData::SharedPtr getLowLevelData() { return mpLowLevelData; }
+#endif
+    protected:
+        void bindDescriptorHeaps();
         CopyContext() = default;
-        void* mpApiData = nullptr;
-        GpuFence::SharedPtr mpFence;
         bool mCommandsPending = false;
+#ifdef FALCOR_LOW_LEVEL_API
+        LowLevelContextData::SharedPtr mpLowLevelData;
+#endif
     };
 }

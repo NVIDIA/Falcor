@@ -27,7 +27,6 @@
 ***************************************************************************/
 #pragma once
 #include "DescriptorHeap.h"
-#include "FencedPool.h"
 
 namespace Falcor
 {
