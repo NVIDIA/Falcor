@@ -59,7 +59,7 @@ namespace Falcor
         pData->pResolveBuffer = Buffer::create(sizeof(uint64_t) * 2, Buffer::BindFlags::None, Buffer::CpuAccess::Read, nullptr);
 
         uint64_t freq;
-        d3d_call(gpDevice->getRenderContext()->getCommandQueue()->GetTimestampFrequency(&freq));
+        d3d_call(gpDevice->getRenderContext()->getLowLevelData()->getCommandQueue()->GetTimestampFrequency(&freq));
         pData->frequency = 1000.0/(double)freq;
     }
 
@@ -82,7 +82,7 @@ namespace Falcor
             logWarning("GpuTimer::begin() was followed by a call to GpuTimer::end() without querying the data first. The previous results will be discarded.");
         }
         QueryData* pData = (QueryData*)mpApiData;
-        gpDevice->getRenderContext()->getCommandListApiHandle()->EndQuery(pData->pHeap, D3D12_QUERY_TYPE_TIMESTAMP, 0);
+        gpDevice->getRenderContext()->getLowLevelData()->getCommandList()->EndQuery(pData->pHeap, D3D12_QUERY_TYPE_TIMESTAMP, 0);
         mStatus = Status::Begin;
     }
 
@@ -94,7 +94,7 @@ namespace Falcor
             return;
         }
         QueryData* pData = (QueryData*)mpApiData;
-        gpDevice->getRenderContext()->getCommandListApiHandle()->EndQuery(pData->pHeap, D3D12_QUERY_TYPE_TIMESTAMP, 1);
+        gpDevice->getRenderContext()->getLowLevelData()->getCommandList()->EndQuery(pData->pHeap, D3D12_QUERY_TYPE_TIMESTAMP, 1);
         mStatus = Status::End;
     }
 
@@ -106,7 +106,7 @@ namespace Falcor
             return false;
         }
         QueryData* pData = (QueryData*)mpApiData;
-        gpDevice->getRenderContext()->getCommandListApiHandle()->ResolveQueryData(pData->pHeap, D3D12_QUERY_TYPE_TIMESTAMP, 0, 2, pData->pResolveBuffer->getApiHandle(), 0);
+        gpDevice->getRenderContext()->getLowLevelData()->getCommandList()->ResolveQueryData(pData->pHeap, D3D12_QUERY_TYPE_TIMESTAMP, 0, 2, pData->pResolveBuffer->getApiHandle(), 0);
 
         uint64_t* pRes = (uint64*)pData->pResolveBuffer->map(Buffer::MapType::Read);
         

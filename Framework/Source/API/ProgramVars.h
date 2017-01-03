@@ -214,11 +214,9 @@ namespace Falcor
 
         using ResourceDataMap = std::unordered_map<uint32_t, ResourceData<Resource::SharedPtr>>;
 
-        virtual void apply(CopyContext* pContext) const = 0;
-
     protected:
-        template<bool forGraphics>
-        void applyCommon(CopyContext* pContext) const;
+        template<bool forGraphics, typename ContextType>
+        void applyCommon(ContextType* pContext) const;
 
         ProgramVars(const ProgramReflection::SharedConstPtr& pReflector, bool createBuffers, const RootSignature::SharedConstPtr& pRootSig);
 
@@ -242,7 +240,7 @@ namespace Falcor
             \param[in] pRootSignature A root-signature describing how to bind resources into the shader. If this paramter is nullptr, a root-signature object will be created from the program reflection object
         */
         static SharedPtr create(const ProgramReflection::SharedConstPtr& pReflector, bool createBuffers = true, const RootSignature::SharedConstPtr& pRootSig = nullptr);
-        void apply(CopyContext* pContext) const;
+        void apply(RenderContext* pContext) const;
     private:
         GraphicsVars(const ProgramReflection::SharedConstPtr& pReflector, bool createBuffers, const RootSignature::SharedConstPtr& pRootSig) :
             ProgramVars(pReflector, createBuffers, pRootSig) {}

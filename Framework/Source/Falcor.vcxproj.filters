@@ -446,11 +446,11 @@
     <ClCompile Include="API\D3D\D3D12\D3D12CopyContext.cpp">
       <Filter>API\D3D\D3D12</Filter>
     </ClCompile>
-    <ClCompile Include="API\CopyContext.cpp">
-      <Filter>API</Filter>
-    </ClCompile>
     <ClCompile Include="API\D3D\D3D12\D3D12ComputeContext.cpp">
       <Filter>API\D3D\D3D12</Filter>
+    </ClCompile>
+    <ClCompile Include="API\D3D\D3D12\LowLevel\D3D12LowLevelContextData.cpp">
+      <Filter>API\D3D\D3D12\LowLevel</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -1505,14 +1505,14 @@
     <ClInclude Include="API\GraphicsStateObject.h">
       <Filter>API</Filter>
     </ClInclude>
-    <ClInclude Include="API\D3D\D3D12\D3D12Context.h">
-      <Filter>API\D3D\D3D12</Filter>
-    </ClInclude>
     <ClInclude Include="API\CopyContext.h">
       <Filter>API</Filter>
     </ClInclude>
     <ClInclude Include="API\ComputeContext.h">
       <Filter>API</Filter>
+    </ClInclude>
+    <ClInclude Include="API\LowLevel\LowLevelContextData.h">
+      <Filter>API\LowLevel</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

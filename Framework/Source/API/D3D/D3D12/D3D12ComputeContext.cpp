@@ -27,22 +27,19 @@
 ***************************************************************************/
 #include "Framework.h"
 #include "API/ComputeContext.h"
-#include "D3D12Context.h"
 
 namespace Falcor
 {
-	ComputeContext::~ComputeContext()
-	{
-		delete (D3D12ContextData*)mpApiData;
-		mpApiData = nullptr;
-	}
-    
+    ComputeContext::~ComputeContext() = default;
+
     ComputeContext::SharedPtr ComputeContext::create()
     {
         SharedPtr pCtx = SharedPtr(new ComputeContext());
-        auto pDevice = gpDevice->getApiHandle().GetInterfacePtr();
-        D3D12ContextData* pApiData = D3D12ContextData::create(pDevice, D3D12_COMMAND_LIST_TYPE_COMPUTE);
-		pCtx->mpApiData = pApiData;
+        pCtx->mpLowLevelData = LowLevelContextData::create(LowLevelContextData::CommandListType::Compute);
+        if (pCtx->mpLowLevelData == nullptr)
+        {
+            return nullptr;
+        }
         pCtx->bindDescriptorHeaps();
 
         return pCtx;
@@ -50,7 +47,6 @@ namespace Falcor
 
     void ComputeContext::prepareForDispatch()
     {
-        D3D12ContextData* pApiData = (D3D12ContextData*)mpApiData;
         assert(mpComputeState);
 
         // Bind the root signature and the root signature data
@@ -60,52 +56,19 @@ namespace Falcor
         }
         else
         {
-            pApiData->getCommandList()->SetComputeRootSignature(RootSignature::getEmpty()->getApiHandle());
+            mpLowLevelData->getCommandList()->SetComputeRootSignature(RootSignature::getEmpty()->getApiHandle());
         }
 
-        pApiData->getCommandList()->SetPipelineState(mpComputeState->getCSO()->getApiHandle());
+        mpLowLevelData->getCommandList()->SetPipelineState(mpComputeState->getCSO()->getApiHandle());
         mCommandsPending = true;
     }
 
     void ComputeContext::dispatch(uint32_t groupSizeX, uint32_t groupSizeY, uint32_t groupSizeZ)
     {
         prepareForDispatch();
-        D3D12ContextData* pApiData = (D3D12ContextData*)mpApiData;
-        pApiData->getCommandList()->Dispatch(groupSizeX, groupSizeY, groupSizeZ);
+        mpLowLevelData->getCommandList()->Dispatch(groupSizeX, groupSizeY, groupSizeZ);
     }
 
-    void RenderContext::drawInstanced(uint32_t vertexCount, uint32_t instanceCount, uint32_t startVertexLocation, uint32_t startInstanceLocation)
-    {
-        prepareForDraw();
-        D3D12ContextData* pApiData = (D3D12ContextData*)mpApiData;
-        pApiData->getCommandList()->DrawInstanced(vertexCount, instanceCount, startVertexLocation, startInstanceLocation);
-    }
-
-    void RenderContext::draw(uint32_t vertexCount, uint32_t startVertexLocation)
-    {
-        drawInstanced(vertexCount, 1, startVertexLocation, 0);
-    }
-
-    void RenderContext::drawIndexedInstanced(uint32_t indexCount, uint32_t instanceCount, uint32_t startIndexLocation, int baseVertexLocation, uint32_t startInstanceLocation)
-    {
-        prepareForDraw();
-        D3D12ContextData* pApiData = (D3D12ContextData*)mpApiData;
-        pApiData->getCommandList()->DrawIndexedInstanced(indexCount, instanceCount, startIndexLocation, baseVertexLocation, startInstanceLocation);
-    }
-
-    void RenderContext::drawIndexed(uint32_t indexCount, uint32_t startIndexLocation, int baseVertexLocation)
-    {
-        drawIndexedInstanced(indexCount, 1, startIndexLocation, baseVertexLocation, 0);
-    }
-
-    void RenderContext::applyProgramVars() {}
-    void RenderContext::applyGraphicsState() {}
-    void RenderContext::applyComputeVars() {}
-    void RenderContext::applyComputeState() {}
-    
-    GpuFence::SharedPtr RenderContext::getFence() const
-    {
-        D3D12ContextData* pApiData = (D3D12ContextData*)mpApiData;
-        return pApiData->getFence();
-    }
+    void ComputeContext::applyComputeVars() {}
+    void ComputeContext::applyComputeState() {}
 }

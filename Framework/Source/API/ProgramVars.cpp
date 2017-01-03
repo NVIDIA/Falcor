@@ -29,6 +29,7 @@
 #include "ProgramVars.h"
 #include "API/Buffer.h"
 #include "API/CopyContext.h"
+#include "API/RenderContext.h"
 
 namespace Falcor
 {
@@ -444,10 +445,10 @@ namespace Falcor
         return setUav(pDesc->regIndex, pTexture, mipLevel, firstArraySlice, arraySize);
     }
 
-    template<typename HandleType, bool isUav, bool forGraphics>
-    void bindUavSrvCommon(RenderContext* pContext, const ProgramVars::ResourceDataMap& resMap)
+    template<typename HandleType, bool isUav, bool forGraphics, typename ContextType>
+    void bindUavSrvCommon(ContextType* pContext, const ProgramVars::ResourceDataMap& resMap)
     {
-        ID3D12GraphicsCommandList* pList = pContext->getCommandListApiHandle();
+        ID3D12GraphicsCommandList* pList = pContext->getLowLevelData()->getCommandList();
         for (auto& resIt : resMap)
         {
             const auto& resDesc = resIt.second;
@@ -503,11 +504,11 @@ namespace Falcor
         }
     }
 
-    template<bool forGraphics>
-    void ProgramVars::applyCommon(CopyContext* pContext) const
+    template<bool forGraphics, typename ContextType>
+    void ProgramVars::applyCommon(ContextType* pContext) const
     {
         // Get the command list
-        ID3D12GraphicsCommandList* pList = pContext->getCommandListApiHandle();
+        ID3D12GraphicsCommandList* pList = pContext->getLowLevelData()->getCommandList();
         if(forGraphics)
         {
             pList->SetGraphicsRootSignature(mpRootSignature->getApiHandle());
@@ -561,7 +562,7 @@ namespace Falcor
         applyCommon<false>(pContext);
     }
 
-    void GraphicsVars::apply(CopyContext* pContext) const
+    void GraphicsVars::apply(RenderContext* pContext) const
     {
         applyCommon<true>(pContext);
     }

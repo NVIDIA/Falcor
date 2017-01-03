@@ -30,38 +30,29 @@
 #include "API/Device.h"
 #include "API/Buffer.h"
 #include <queue>
-#include "D3D12Context.h"
 #include "D3D12Resource.h"
 
 namespace Falcor
 {
-    CopyContext::~CopyContext()
-    {
-        delete (D3D12ContextData*)mpApiData;
-        mpApiData = nullptr;
-    }
+    CopyContext::~CopyContext() = default;
 
-    bool CopyContext::initApiData()
+    CopyContext::SharedPtr CopyContext::create()
     {
-        D3D12ContextData* pApiData = D3D12ContextData::create(gpDevice->getApiHandle().GetInterfacePtr(), D3D12_COMMAND_LIST_TYPE_COPY);
-        mpApiData = pApiData;
-        return mpApiData ? true : false;
+        SharedPtr pCtx = SharedPtr(new CopyContext());
+        pCtx->mpLowLevelData = LowLevelContextData::create(LowLevelContextData::CommandListType::Copy);
+        return pCtx->mpLowLevelData ? pCtx : nullptr;
     }
 
     void CopyContext::bindDescriptorHeaps()
     {
-        D3D12ContextData* pApiData = (D3D12ContextData*)mpApiData;
         ID3D12DescriptorHeap* pHeaps[] = { gpDevice->getSamplerDescriptorHeap()->getApiHandle(), gpDevice->getSrvDescriptorHeap()->getApiHandle() };
-        pApiData->getCommandList()->SetDescriptorHeaps(arraysize(pHeaps), pHeaps);
+        mpLowLevelData->getCommandList()->SetDescriptorHeaps(arraysize(pHeaps), pHeaps);
     }
 
     void CopyContext::reset()
     {
-        D3D12ContextData* pApiData = (D3D12ContextData*)mpApiData;
         flush();
-
-        // Skip to the next allocator        
-        pApiData->reset();
+        mpLowLevelData->reset();
         bindDescriptorHeaps();
     }
 
@@ -85,32 +76,23 @@ namespace Falcor
         }
     }
 
-    CommandQueueHandle CopyContext::getCommandQueue() const
-    {
-        D3D12ContextData* pApiData = (D3D12ContextData*)mpApiData;
-        return pApiData->getCommandQueue();
-    }
-
     void CopyContext::flush(bool wait)
     {
-        D3D12ContextData* pApiData = (D3D12ContextData*)mpApiData;
-
         if (mCommandsPending)
         {
-            pApiData->flush();
+            mpLowLevelData->flush();
             mCommandsPending = false;
             bindDescriptorHeaps();
         }
 
         if (wait)
         {
-            pApiData->getFence()->syncCpu();
+            mpLowLevelData->getFence()->syncCpu();
         }
     }
 
     void CopyContext::updateBuffer(const Buffer* pBuffer, const void* pData, size_t offset, size_t size)
     {
-        D3D12ContextData* pApiData = (D3D12ContextData*)mpApiData;
         if (size == 0)
         {
             size = pBuffer->getSize() - offset;
@@ -131,7 +113,7 @@ namespace Falcor
         resourceBarrier(pBuffer, Resource::State::CopyDest);
 
         offset = pUploadBuffer->getGpuAddress() - pResource->GetGPUVirtualAddress();
-        pApiData->getCommandList()->CopyBufferRegion(pBuffer->getApiHandle(), 0, pResource, offset, size);
+        mpLowLevelData->getCommandList()->CopyBufferRegion(pBuffer->getApiHandle(), 0, pResource, offset, size);
     }
 
     void CopyContext::updateTextureSubresources(const Texture* pTexture, uint32_t firstSubresource, uint32_t subresourceCount, const void* pData)
@@ -140,7 +122,6 @@ namespace Falcor
 
         uint32_t arraySize = (pTexture->getType() == Texture::Type::TextureCube) ? pTexture->getArraySize() * 6 : pTexture->getArraySize();
         assert(firstSubresource + subresourceCount <= arraySize * pTexture->getMipCount());
-        D3D12ContextData* pApiData = (D3D12ContextData*)mpApiData;
 
         ID3D12Device* pDevice = gpDevice->getApiHandle();
 
@@ -181,7 +162,7 @@ namespace Falcor
             footprint[subresource].Offset += offset;
             D3D12_TEXTURE_COPY_LOCATION dstLoc = { pTexture->getApiHandle(), D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX, subresource };
             D3D12_TEXTURE_COPY_LOCATION srcLoc = { pResource, D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT, footprint[subresource] };
-            pApiData->getCommandList()->CopyTextureRegion(&dstLoc, 0, 0, 0, &srcLoc, nullptr);
+            mpLowLevelData->getCommandList()->CopyTextureRegion(&dstLoc, 0, 0, 0, &srcLoc, nullptr);
         }
 
         pBuffer->unmap();
@@ -206,7 +187,6 @@ namespace Falcor
 
     void CopyContext::resourceBarrier(const Resource* pResource, Resource::State newState)
     {
-        D3D12ContextData* pApiData = (D3D12ContextData*)mpApiData;
         if (pResource->getState() != newState)
         {
             D3D12_RESOURCE_BARRIER barrier;
@@ -217,7 +197,7 @@ namespace Falcor
             barrier.Transition.StateAfter = getD3D12ResourceState(newState);
             barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;   // OPTME: Need to do that only for the subresources we will actually use
 
-            pApiData->getCommandList()->ResourceBarrier(1, &barrier);
+            mpLowLevelData->getCommandList()->ResourceBarrier(1, &barrier);
             mCommandsPending = true;
             pResource->mState = newState;
         }
@@ -225,10 +205,9 @@ namespace Falcor
 
     void CopyContext::copyResource(const Resource* pDst, const Resource* pSrc)
     {
-        D3D12ContextData* pApiData = (D3D12ContextData*)mpApiData;
         resourceBarrier(pDst, Resource::State::CopyDest);
         resourceBarrier(pSrc, Resource::State::CopySource);
-        pApiData->getCommandList()->CopyResource(pDst->getApiHandle(), pSrc->getApiHandle());
+        mpLowLevelData->getCommandList()->CopyResource(pDst->getApiHandle(), pSrc->getApiHandle());
         mCommandsPending = true;
     }
 }

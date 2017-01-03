@@ -27,6 +27,9 @@
 ***************************************************************************/
 #pragma once
 #include "API/Resource.h"
+#ifdef FALCOR_LOW_LEVEL_API
+#include "API/LowLevel/LowLevelContextData.h"
+#endif
 
 namespace Falcor
 {
@@ -54,7 +57,6 @@ namespace Falcor
         \param[in] wait If true, will block execution until the GPU finished processing the commands
         */
         void flush(bool wait = false);
-        CommandQueueHandle getCommandQueue() const;
 
         /** Check if we have pending commands
         */
@@ -68,11 +70,15 @@ namespace Falcor
 
         void copyResource(const Resource* pDst, const Resource* pSrc);
 
+#ifdef FALCOR_LOW_LEVEL_API
+        LowLevelContextData::SharedPtr getLowLevelData() { return mpLowLevelData; }
+#endif
     protected:
-        bool initApiData();
         void bindDescriptorHeaps();
         CopyContext() = default;
-        void* mpApiData = nullptr;
         bool mCommandsPending = false;
+#ifdef FALCOR_LOW_LEVEL_API
+        LowLevelContextData::SharedPtr mpLowLevelData;
+#endif
     };
 }

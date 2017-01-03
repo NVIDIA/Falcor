@@ -38,8 +38,6 @@
 #include "API/ProgramVars.h"
 #include "Graphics/GraphicsState.h"
 #include "API/ComputeContext.h"
-#include "Graphics/ComputeState.h"
-#include "LowLevel/GpuFence.h"
 
 namespace Falcor
 {
@@ -55,12 +53,6 @@ namespace Falcor
         /** create a new object
         */
         static SharedPtr create();
-
-		/** Get the list API handle
-		*/
-		CommandListHandle getCommandListApiHandle() const;
-
-        CommandQueueHandle getCommandQueue() const;
 
         /** Clear an FBO
             \param[in] pFbo The FBO to clear
@@ -177,7 +169,6 @@ namespace Falcor
         */
         void popGraphicsState();
         
-        GpuFence::SharedPtr getFence() const;
     private:
         RenderContext();
         GraphicsVars::SharedPtr mpGraphicsVars;
