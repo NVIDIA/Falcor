@@ -28,64 +28,40 @@
 #include "Framework.h"
 #include "API/LowLevel/CopyContext.h"
 #include "API/Device.h"
-#include "D3D12FencedPool.h"
 #include "API/Buffer.h"
 #include <queue>
+#include "..\D3D12Context.h"
 
 namespace Falcor
 {
-    struct CopyContextData
-    {
-        CopyCommandAllocatorPool::SharedPtr pAllocatorPool;
-        ID3D12GraphicsCommandListPtr pCmdList;
-        ID3D12CommandQueuePtr pQueue;
-        ID3D12CommandAllocatorPtr pAllocator;
-    };
-
     CopyContext::~CopyContext()
     {
-        delete (CopyContextData*)mpApiData;
+        delete (D3D12ContextData*)mpApiData;
         mpApiData = nullptr;
     }
 
     bool CopyContext::initApiData()
     {
-        CopyContextData* pApiData = new CopyContextData;
+        D3D12ContextData* pApiData = D3D12ContextData::create(gpDevice->getApiHandle().GetInterfacePtr(), D3D12_COMMAND_LIST_TYPE_COPY);
         mpApiData = pApiData;
+        return mpApiData ? true : false;
+    }
 
-        // Create the command queue
-        D3D12_COMMAND_QUEUE_DESC cqDesc = {};
-        cqDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
-        cqDesc.Type = D3D12_COMMAND_LIST_TYPE_COPY;
-
-        if (FAILED(gpDevice->getApiHandle()->CreateCommandQueue(&cqDesc, IID_PPV_ARGS(&pApiData->pQueue))))
-        {
-            logError("Failed to create command queue for CopyContext");
-            return false;
-        }
-
-        pApiData->pAllocatorPool = CopyCommandAllocatorPool::create(mpFence);
-        pApiData->pAllocator = pApiData->pAllocatorPool->newObject();
-
-        // Create a command list
-        if (FAILED(gpDevice->getApiHandle()->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_COPY, pApiData->pAllocator, nullptr, IID_PPV_ARGS(&pApiData->pCmdList))))
-        {
-            logError("Failed to create command list for CopyContext");
-            return false;
-        }
-
-        return true;
+    void CopyContext::bindDescriptorHeaps()
+    {
+        D3D12ContextData* pApiData = (D3D12ContextData*)mpApiData;
+        ID3D12DescriptorHeap* pHeaps[] = { gpDevice->getSamplerDescriptorHeap()->getApiHandle(), gpDevice->getSrvDescriptorHeap()->getApiHandle() };
+        pApiData->getCommandList()->SetDescriptorHeaps(arraysize(pHeaps), pHeaps);
     }
 
     void CopyContext::reset()
     {
+        D3D12ContextData* pApiData = (D3D12ContextData*)mpApiData;
         flush();
-        CopyContextData* pApiData = (CopyContextData*)mpApiData;
-        mpFence->gpuSignal(pApiData->pQueue);
-        pApiData->pAllocator = pApiData->pAllocatorPool->newObject();
-        d3d_call(pApiData->pCmdList->Close());
-        d3d_call(pApiData->pAllocator->Reset());
-        d3d_call(pApiData->pCmdList->Reset(pApiData->pAllocator, nullptr));
+
+        // Skip to the next allocator        
+        pApiData->reset();
+        bindDescriptorHeaps();
     }
 
     void copySubresourceData(const D3D12_SUBRESOURCE_DATA& srcData, const D3D12_PLACED_SUBRESOURCE_FOOTPRINT& dstFootprint, uint8_t* pDstStart, uint64_t rowSize, uint64_t rowsToCopy)
@@ -110,36 +86,30 @@ namespace Falcor
 
     CommandQueueHandle CopyContext::getCommandQueue() const
     {
-        CopyContextData* pApiData = (CopyContextData*)mpApiData;
-        return pApiData->pQueue;
+        D3D12ContextData* pApiData = (D3D12ContextData*)mpApiData;
+        return pApiData->getCommandQueue();
     }
 
-    void CopyContext::flush(GpuFence* pFence)
+    void CopyContext::flush(bool wait)
     {
+        D3D12ContextData* pApiData = (D3D12ContextData*)mpApiData;
+
         if (mCommandsPending)
         {
-            CopyContextData* pApiData = (CopyContextData*)mpApiData;
-
-            // Execute the list
-            pApiData->pCmdList->Close();
-            ID3D12CommandList* pList = pApiData->pCmdList;
-            pApiData->pQueue->ExecuteCommandLists(1, &pList);
-
-            if (pFence)
-            {
-                pFence->gpuSignal(pApiData->pQueue);
-            }
-
-            // Reset the list
-            d3d_call(pApiData->pCmdList->Reset(pApiData->pAllocator, nullptr));
-
+            pApiData->flush();
             mCommandsPending = false;
+            bindDescriptorHeaps();
+        }
+
+        if (wait)
+        {
+            pApiData->getFence()->syncCpu();
         }
     }
 
     void CopyContext::updateBuffer(const Buffer* pBuffer, const void* pData, size_t offset, size_t size)
     {
-        CopyContextData* pApiData = (CopyContextData*)mpApiData;
+        D3D12ContextData* pApiData = (D3D12ContextData*)mpApiData;
         if (size == 0)
         {
             size = pBuffer->getSize() - offset;
@@ -158,7 +128,7 @@ namespace Falcor
         ID3D12ResourcePtr pResource = pUploadBuffer->getApiHandle();
 
         offset = pUploadBuffer->getGpuAddress() - pResource->GetGPUVirtualAddress();
-        pApiData->pCmdList->CopyBufferRegion(pBuffer->getApiHandle(), 0, pResource, offset, size);
+        pApiData->getCommandList()->CopyBufferRegion(pBuffer->getApiHandle(), 0, pResource, offset, size);
     }
 
     void CopyContext::updateTextureSubresources(const Texture* pTexture, uint32_t firstSubresource, uint32_t subresourceCount, const void* pData)
@@ -167,7 +137,7 @@ namespace Falcor
 
         uint32_t arraySize = (pTexture->getType() == Texture::Type::TextureCube) ? pTexture->getArraySize() * 6 : pTexture->getArraySize();
         assert(firstSubresource + subresourceCount <= arraySize * pTexture->getMipCount());
-        CopyContextData* pApiData = (CopyContextData*)mpApiData;
+        D3D12ContextData* pApiData = (D3D12ContextData*)mpApiData;
 
         ID3D12Device* pDevice = gpDevice->getApiHandle();
 
@@ -206,7 +176,7 @@ namespace Falcor
             footprint[subresource].Offset += offset;
             D3D12_TEXTURE_COPY_LOCATION dstLoc = { pTexture->getApiHandle(), D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX, subresource };
             D3D12_TEXTURE_COPY_LOCATION srcLoc = { pResource, D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT, footprint[subresource] };
-            pApiData->pCmdList->CopyTextureRegion(&dstLoc, 0, 0, 0, &srcLoc, nullptr);
+            pApiData->getCommandList()->CopyTextureRegion(&dstLoc, 0, 0, 0, &srcLoc, nullptr);
         }
 
         pBuffer->unmap();

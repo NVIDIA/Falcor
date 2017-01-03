@@ -30,49 +30,24 @@
 #include "API/LowLevel/DescriptorHeap.h"
 #include "API/Device.h"
 #include "glm/gtc/type_ptr.hpp"
-#include "LowLevel/D3D12FencedPool.h"
 #include "D3D12Resource.h"
 #include "API/D3D/D3DState.h"
+#include "D3D12Context.h"
 
 namespace Falcor
 {
 	RenderContext::~RenderContext()
 	{
-		delete (RenderContextData*)mpApiData;
+		delete (D3D12ContextData*)mpApiData;
 		mpApiData = nullptr;
 	}
     
     RenderContext::SharedPtr RenderContext::create(uint32_t allocatorsCount)
     {
         SharedPtr pCtx = SharedPtr(new RenderContext());
-        RenderContextData* pApiData = new RenderContextData;
-        pApiData->pFence = GpuFence::create();
+        auto pDevice = gpDevice->getApiHandle().GetInterfacePtr();
+        D3D12ContextData* pApiData = D3D12ContextData::create(pDevice, D3D12_COMMAND_LIST_TYPE_DIRECT);
 		pCtx->mpApiData = pApiData;
-
-		auto pDevice = gpDevice->getApiHandle();
-		
-        // Create the command queue
-        D3D12_COMMAND_QUEUE_DESC cqDesc = {};
-        cqDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
-        cqDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
-
-        if (FAILED(pDevice->CreateCommandQueue(&cqDesc, IID_PPV_ARGS(&pApiData->pQueue))))
-        {
-            logError("Failed to create command queue");
-            return nullptr;
-        }
-
-        // Create a command allocator
-        pApiData->pAllocatorPool = GraphicsCommandAllocatorPool::create(pApiData->pFence);
-        pApiData->pAllocator = pApiData->pAllocatorPool->newObject();
-
-		// Create a command list
-		if (FAILED(pDevice->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, pApiData->pAllocator, nullptr, IID_PPV_ARGS(&pApiData->pList))))
-		{
-            logError("Failed to create command list for RenderContext");
-			return nullptr;
-		}
-
         pCtx->bindDescriptorHeaps();
 
         return pCtx;
@@ -80,33 +55,19 @@ namespace Falcor
 
 	CommandListHandle RenderContext::getCommandListApiHandle() const
 	{
-		const RenderContextData* pApiData = (RenderContextData*)mpApiData;
-		return pApiData->pList;
+		const D3D12ContextData* pApiData = (D3D12ContextData*)mpApiData;
+		return pApiData->getCommandList();
 	}
 
     CommandQueueHandle RenderContext::getCommandQueue() const
     {
-        const RenderContextData* pApiData = (RenderContextData*)mpApiData;
-        return pApiData->pQueue.GetInterfacePtr();
+        const D3D12ContextData* pApiData = (D3D12ContextData*)mpApiData;
+        return pApiData->getCommandQueue();
     }
-
-	void RenderContext::reset()
-	{
-        flush();
-		RenderContextData* pApiData = (RenderContextData*)mpApiData;
-        pApiData->pFence->gpuSignal(pApiData->pQueue);
-
-        // Skip to the next allocator        
-		pApiData->pAllocator = pApiData->pAllocatorPool->newObject();
-        d3d_call(pApiData->pList->Close());
-        d3d_call(pApiData->pAllocator->Reset());
-		d3d_call(pApiData->pList->Reset(pApiData->pAllocator, nullptr));
-        bindDescriptorHeaps();
-	}
 
     void RenderContext::resourceBarrier(const Resource* pResource, Resource::State newState)
     {
-        RenderContextData* pApiData = (RenderContextData*)mpApiData;
+        D3D12ContextData* pApiData = (D3D12ContextData*)mpApiData;
         if(pResource->getState() != newState)
         {
             D3D12_RESOURCE_BARRIER barrier;
@@ -117,7 +78,7 @@ namespace Falcor
             barrier.Transition.StateAfter = getD3D12ResourceState(newState);
             barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;   // OPTME: Need to do that only for the subresources we will actually use
 
-            pApiData->pList->ResourceBarrier(1, &barrier);
+            pApiData->getCommandList()->ResourceBarrier(1, &barrier);
             mCommandsPending = true;
             pResource->mState = newState;
         }
@@ -145,15 +106,15 @@ namespace Falcor
 
     void RenderContext::clearUAV(const UnorderedAccessView* pUav, const vec4& value)
     {
-        RenderContextData* pApiData = (RenderContextData*)mpApiData;
-        clearUavCommon(this, pUav, value, pApiData->pList.GetInterfacePtr());
+        D3D12ContextData* pApiData = (D3D12ContextData*)mpApiData;
+        clearUavCommon(this, pUav, value, pApiData->getCommandList().GetInterfacePtr());
         mCommandsPending = true;
     }
 
     void RenderContext::clearUAV(const UnorderedAccessView* pUav, const uvec4& value)
     {
-        RenderContextData* pApiData = (RenderContextData*)mpApiData;
-        clearUavCommon(this, pUav, value, pApiData->pList.GetInterfacePtr());
+        D3D12ContextData* pApiData = (D3D12ContextData*)mpApiData;
+        clearUavCommon(this, pUav, value, pApiData->getCommandList().GetInterfacePtr());
         mCommandsPending = true;
     }
 
@@ -182,20 +143,20 @@ namespace Falcor
 
     void RenderContext::clearRtv(const RenderTargetView* pRtv, const glm::vec4& color)
     {
-        RenderContextData* pApiData = (RenderContextData*)mpApiData;
+        D3D12ContextData* pApiData = (D3D12ContextData*)mpApiData;
         resourceBarrier(pRtv->getResource(), Resource::State::RenderTarget);
-        pApiData->pList->ClearRenderTargetView(pRtv->getApiHandle()->getCpuHandle(), glm::value_ptr(color), 0, nullptr);
+        pApiData->getCommandList()->ClearRenderTargetView(pRtv->getApiHandle()->getCpuHandle(), glm::value_ptr(color), 0, nullptr);
         mCommandsPending = true;
     }
 
     void RenderContext::clearDsv(const DepthStencilView* pDsv, float depth, uint8_t stencil, bool clearDepth, bool clearStencil)
     {
-        RenderContextData* pApiData = (RenderContextData*)mpApiData;
+        D3D12ContextData* pApiData = (D3D12ContextData*)mpApiData;
         uint32_t flags = clearDepth ? D3D12_CLEAR_FLAG_DEPTH : 0;
         flags |= clearStencil ? D3D12_CLEAR_FLAG_STENCIL : 0;
 
         resourceBarrier(pDsv->getResource(), Resource::State::DepthStencil);
-        pApiData->pList->ClearDepthStencilView(pDsv->getApiHandle()->getCpuHandle(), D3D12_CLEAR_FLAGS(flags), depth, stencil, 0, nullptr);
+        pApiData->getCommandList()->ClearDepthStencilView(pDsv->getApiHandle()->getCpuHandle(), D3D12_CLEAR_FLAGS(flags), depth, stencil, 0, nullptr);
         mCommandsPending = true;
     }
 
@@ -205,7 +166,7 @@ namespace Falcor
 	}
 
 
-    static void D3D12SetVao(const RenderContextData* pApiData, const Vao* pVao)
+    static void D3D12SetVao(const D3D12ContextData* pApiData, const Vao* pVao)
     {
         D3D12_VERTEX_BUFFER_VIEW vb[D3D12_IA_VERTEX_INPUT_RESOURCE_SLOT_COUNT] = {};
         D3D12_INDEX_BUFFER_VIEW ib = {};
@@ -233,11 +194,11 @@ namespace Falcor
             }
         }
 
-        pApiData->pList->IASetVertexBuffers(0, arraysize(vb), vb);
-        pApiData->pList->IASetIndexBuffer(&ib);
+        pApiData->getCommandList()->IASetVertexBuffers(0, arraysize(vb), vb);
+        pApiData->getCommandList()->IASetIndexBuffer(&ib);
     }
 
-    static void D3D12SetFbo(RenderContext* pCtx, const RenderContextData* pApiData, const Fbo* pFbo)
+    static void D3D12SetFbo(RenderContext* pCtx, const D3D12ContextData* pApiData, const Fbo* pFbo)
     {
         // We are setting the entire RTV array to make sure everything that was previously bound is detached
         uint32_t colorTargets = Fbo::getMaxColorTargetCount();
@@ -267,10 +228,10 @@ namespace Falcor
             }
         }
 
-        pApiData->pList->OMSetRenderTargets(colorTargets, pRTV.data(), FALSE, &pDSV);
+        pApiData->getCommandList()->OMSetRenderTargets(colorTargets, pRTV.data(), FALSE, &pDSV);
     }
 
-    static void D3D12SetViewports(const RenderContextData* pApiData, const GraphicsState::Viewport* vp)
+    static void D3D12SetViewports(const D3D12ContextData* pApiData, const GraphicsState::Viewport* vp)
     {
         static_assert(offsetof(GraphicsState::Viewport, originX) == offsetof(D3D12_VIEWPORT, TopLeftX), "VP originX offset");
         static_assert(offsetof(GraphicsState::Viewport, originY) == offsetof(D3D12_VIEWPORT, TopLeftY), "VP originY offset");
@@ -279,22 +240,22 @@ namespace Falcor
         static_assert(offsetof(GraphicsState::Viewport, minDepth) == offsetof(D3D12_VIEWPORT, MinDepth), "VP MinDepth offset");
         static_assert(offsetof(GraphicsState::Viewport, maxDepth) == offsetof(D3D12_VIEWPORT, MaxDepth), "VP TopLeftX offset");
 
-        pApiData->pList->RSSetViewports(D3D12_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE, (D3D12_VIEWPORT*)vp);
+        pApiData->getCommandList()->RSSetViewports(D3D12_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE, (D3D12_VIEWPORT*)vp);
     }
 
-    static void D3D12SetScissors(const RenderContextData* pApiData, const GraphicsState::Scissor* sc)
+    static void D3D12SetScissors(const D3D12ContextData* pApiData, const GraphicsState::Scissor* sc)
     {
         static_assert(offsetof(GraphicsState::Scissor, originX) == offsetof(D3D12_RECT, left), "Scissor originX offset");
         static_assert(offsetof(GraphicsState::Scissor, originY) == offsetof(D3D12_RECT, top), "Scissor originY offset");
         static_assert(offsetof(GraphicsState::Scissor, width) == offsetof(D3D12_RECT, right), "Scissor Width offset");
         static_assert(offsetof(GraphicsState::Scissor, height) == offsetof(D3D12_RECT, bottom), "Scissor Height offset");
 
-        pApiData->pList->RSSetScissorRects(D3D12_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE, (D3D12_RECT*)sc);
+        pApiData->getCommandList()->RSSetScissorRects(D3D12_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE, (D3D12_RECT*)sc);
     }
 
     void RenderContext::prepareForDraw()
     {
-        RenderContextData* pApiData = (RenderContextData*)mpApiData;
+        D3D12ContextData* pApiData = (D3D12ContextData*)mpApiData;
         assert(mpGraphicsState);
 
         // Bind the root signature and the root signature data
@@ -304,21 +265,21 @@ namespace Falcor
         }
         else
         {
-            pApiData->pList->SetGraphicsRootSignature(RootSignature::getEmpty()->getApiHandle());
+            pApiData->getCommandList()->SetGraphicsRootSignature(RootSignature::getEmpty()->getApiHandle());
         }
 
-        pApiData->pList->IASetPrimitiveTopology(getD3DPrimitiveTopology(mpGraphicsState->getVao()->getPrimitiveTopology()));
+        pApiData->getCommandList()->IASetPrimitiveTopology(getD3DPrimitiveTopology(mpGraphicsState->getVao()->getPrimitiveTopology()));
         D3D12SetVao(pApiData, mpGraphicsState->getVao().get());
         D3D12SetFbo(this, pApiData, mpGraphicsState->getFbo().get());
         D3D12SetViewports(pApiData, &mpGraphicsState->getViewport(0));
         D3D12SetScissors(pApiData, &mpGraphicsState->getScissors(0));
-        pApiData->pList->SetPipelineState(mpGraphicsState->getGSO()->getApiHandle());
+        pApiData->getCommandList()->SetPipelineState(mpGraphicsState->getGSO()->getApiHandle());
         mCommandsPending = true;
     }
 
     void RenderContext::prepareForDispatch()
     {
-        RenderContextData* pApiData = (RenderContextData*)mpApiData;
+        D3D12ContextData* pApiData = (D3D12ContextData*)mpApiData;
         assert(mpComputeState);
 
         // Bind the root signature and the root signature data
@@ -328,25 +289,25 @@ namespace Falcor
         }
         else
         {
-            pApiData->pList->SetComputeRootSignature(RootSignature::getEmpty()->getApiHandle());
+            pApiData->getCommandList()->SetComputeRootSignature(RootSignature::getEmpty()->getApiHandle());
         }
 
-        pApiData->pList->SetPipelineState(mpComputeState->getCSO()->getApiHandle());
+        pApiData->getCommandList()->SetPipelineState(mpComputeState->getCSO()->getApiHandle());
         mCommandsPending = true;
     }
 
     void RenderContext::dispatch(uint32_t groupSizeX, uint32_t groupSizeY, uint32_t groupSizeZ)
     {
         prepareForDispatch();
-        RenderContextData* pApiData = (RenderContextData*)mpApiData;
-        pApiData->pList->Dispatch(groupSizeX, groupSizeY, groupSizeZ);
+        D3D12ContextData* pApiData = (D3D12ContextData*)mpApiData;
+        pApiData->getCommandList()->Dispatch(groupSizeX, groupSizeY, groupSizeZ);
     }
 
     void RenderContext::drawInstanced(uint32_t vertexCount, uint32_t instanceCount, uint32_t startVertexLocation, uint32_t startInstanceLocation)
     {
         prepareForDraw();
-        RenderContextData* pApiData = (RenderContextData*)mpApiData;
-        pApiData->pList->DrawInstanced(vertexCount, instanceCount, startVertexLocation, startInstanceLocation);
+        D3D12ContextData* pApiData = (D3D12ContextData*)mpApiData;
+        pApiData->getCommandList()->DrawInstanced(vertexCount, instanceCount, startVertexLocation, startInstanceLocation);
     }
 
     void RenderContext::draw(uint32_t vertexCount, uint32_t startVertexLocation)
@@ -357,8 +318,8 @@ namespace Falcor
     void RenderContext::drawIndexedInstanced(uint32_t indexCount, uint32_t instanceCount, uint32_t startIndexLocation, int baseVertexLocation, uint32_t startInstanceLocation)
     {
         prepareForDraw();
-        RenderContextData* pApiData = (RenderContextData*)mpApiData;
-        pApiData->pList->DrawIndexedInstanced(indexCount, instanceCount, startIndexLocation, baseVertexLocation, startInstanceLocation);
+        D3D12ContextData* pApiData = (D3D12ContextData*)mpApiData;
+        pApiData->getCommandList()->DrawIndexedInstanced(indexCount, instanceCount, startIndexLocation, baseVertexLocation, startInstanceLocation);
     }
 
     void RenderContext::drawIndexed(uint32_t indexCount, uint32_t startIndexLocation, int baseVertexLocation)
@@ -371,72 +332,20 @@ namespace Falcor
     void RenderContext::applyComputeVars() {}
     void RenderContext::applyComputeState() {}
 
-    void RenderContext::flush(bool wait)
-    {
-        RenderContextData* pApiData = (RenderContextData*)mpApiData;
-
-        if(mCommandsPending)
-        {
-            d3d_call(pApiData->pList->Close());
-            ID3D12CommandList* pList = pApiData->pList.GetInterfacePtr();
-            pApiData->pQueue->ExecuteCommandLists(1, &pList);
-            pApiData->pFence->gpuSignal(pApiData->pQueue);
-            mCommandsPending = false;
-            pApiData->pList->Reset(pApiData->pAllocator, nullptr);
-            bindDescriptorHeaps();
-        }
-
-        if (wait)
-        {
-            pApiData->pFence->syncCpu();
-        }
-    }
-
-    void RenderContext::bindDescriptorHeaps()
-    {
-        auto& pList = getCommandListApiHandle();
-        ID3D12DescriptorHeap* pHeaps[] = { gpDevice->getSamplerDescriptorHeap()->getApiHandle(), gpDevice->getSrvDescriptorHeap()->getApiHandle() };
-        pList->SetDescriptorHeaps(arraysize(pHeaps), pHeaps);
-    }
-
     void updateBufferCommon(ID3D12GraphicsCommandList* pList, const Buffer* pBuffer, const void* pData, size_t offset, size_t size, const char* className);
-
-    void RenderContext::updateBuffer(const Buffer* pBuffer, const void* pData, size_t offset, size_t size)
-    {
-        RenderContextData* pApiData = (RenderContextData*)mpApiData;
-        updateBufferCommon(pApiData->pList.GetInterfacePtr(), pBuffer, pData, offset, size, "RenderContext");
-        mCommandsPending = true;
-    }
-
-    void RenderContext::updateTexture(const Texture* pTexture, const void* pData)
-    {
-        RenderContextData* pApiData = (RenderContextData*)mpApiData;
-        mCommandsPending = true;
-        updateTextureSubresources(pTexture, subresourceIndex, 1, pData);
-    }
-
-    void RenderContext::updateTextureSubresource(const Texture* pTexture, uint32_t subresourceIndex, const void* pData)
-    {
-        RenderContextData* pApiData = (RenderContextData*)mpApiData;
-    }
-
-    void RenderContext::updateTextureSubresources(const Texture* pTexture, uint32_t firstSubresource, uint32_t subresourceCount, const void* pData)
-    {
-        RenderContextData* pApiData = (RenderContextData*)mpApiData;
-    }
 
     void RenderContext::copyResource(const Resource* pDst, const Resource* pSrc)
     {
-        RenderContextData* pApiData = (RenderContextData*)mpApiData;
+        D3D12ContextData* pApiData = (D3D12ContextData*)mpApiData;
         resourceBarrier(pDst, Resource::State::CopyDest);
         resourceBarrier(pSrc, Resource::State::CopySource);
-        pApiData->pList->CopyResource(pDst->getApiHandle(), pSrc->getApiHandle());
+        pApiData->getCommandList()->CopyResource(pDst->getApiHandle(), pSrc->getApiHandle());
         mCommandsPending = true;
     }
 
     GpuFence::SharedPtr RenderContext::getFence() const
     {
-        RenderContextData* pApiData = (RenderContextData*)mpApiData;
-        return pApiData->pFence;
+        D3D12ContextData* pApiData = (D3D12ContextData*)mpApiData;
+        return pApiData->getFence();
     }
 }

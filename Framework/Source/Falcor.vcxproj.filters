@@ -787,9 +787,6 @@
     <ClInclude Include="API\D3D\D3D12\FalcorD3D12.h">
       <Filter>API\D3D\D3D12</Filter>
     </ClInclude>
-    <ClInclude Include="API\D3D\D3D12\LowLevel\D3D12FencedPool.h">
-      <Filter>API\D3D\D3D12\LowLevel</Filter>
-    </ClInclude>
     <ClInclude Include="Utils\DDSHeader.h">
       <Filter>Utils</Filter>
     </ClInclude>
@@ -1507,6 +1504,9 @@
     </ClInclude>
     <ClInclude Include="API\GraphicsStateObject.h">
       <Filter>API</Filter>
+    </ClInclude>
+    <ClInclude Include="API\D3D\D3D12\D3D12Context.h">
+      <Filter>API\D3D\D3D12</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

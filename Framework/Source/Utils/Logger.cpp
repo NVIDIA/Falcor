@@ -106,29 +106,31 @@ namespace Falcor
 
     void Logger::log(Level L, const std::string& msg, const bool forceMsgBox /* = false*/)
     {
+        if (L >= Level::Warning)
+        {
 #if _LOG_ENABLED
-        std::string s = getLogLevelString(L) + std::string("\t") + msg + "\n";
-        if(sInit)
-        {
-            fprintf_s(sLogFile, "%s", s.c_str());
-            fflush(sLogFile);   // Slows down execution, but ensures that the message will be printed in case of a crash
-            if (isDebuggerPresent())
+            std::string s = getLogLevelString(L) + std::string("\t") + msg + "\n";
+            if (sInit)
             {
-                printToDebugWindow(s);
+                fprintf_s(sLogFile, "%s", s.c_str());
+                fflush(sLogFile);   // Slows down execution, but ensures that the message will be printed in case of a crash
+                if (isDebuggerPresent())
+                {
+                    printToDebugWindow(s);
+                }
             }
-        }
 #endif
-
-        if(L >= Level::Error)
-        {
-            if(isDebuggerPresent())
+            if (L >= Level::Error)
             {
-                debugBreak();
-            }
+                if (isDebuggerPresent())
+                {
+                    debugBreak();
+                }
 
-            if(sShowErrorBox || forceMsgBox)
-            {
-                msgBox(msg);
+                if (sShowErrorBox || forceMsgBox)
+                {
+                    msgBox(msg);
+                }
             }
         }
     }

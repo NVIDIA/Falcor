@@ -33,8 +33,7 @@ namespace Falcor
     CopyContext::SharedPtr CopyContext::create()
     {
         SharedPtr pCtx = SharedPtr(new CopyContext());
-        pCtx->mpFence = GpuFence::create();
-        if(pCtx->mpFence == nullptr || (pCtx->initApiData() == false))
+        if(pCtx->initApiData() == false)
         {
             pCtx = nullptr;
         }

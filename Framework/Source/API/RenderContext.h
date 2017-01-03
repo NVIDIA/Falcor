@@ -39,18 +39,19 @@
 #include "Graphics/GraphicsState.h"
 #include "API/LowLevel/CopyContext.h"
 #include "Graphics/ComputeState.h"
+#include "API/LowLevel/CopyContext.h"
 
 namespace Falcor
 {
 
     /** The rendering context. Use it to bind state and dispatch calls to the GPU
     */
-    class RenderContext : public std::enable_shared_from_this<RenderContext>
+    class RenderContext : public CopyContext, public inherit_shared_from_this<CopyContext, RenderContext>
     {
     public:
         using SharedPtr = std::shared_ptr<RenderContext>;
         using SharedConstPtr = std::shared_ptr<const RenderContext>;
-      
+
         /** create a new object
         */
         static SharedPtr create(uint32_t allocatorsCount = 1);
@@ -60,10 +61,6 @@ namespace Falcor
 		CommandListHandle getCommandListApiHandle() const;
 
         CommandQueueHandle getCommandQueue() const;
-
-		/** Reset
-		*/
-		void reset();
 
         /** Clear an FBO
             \param[in] pFbo The FBO to clear
@@ -182,11 +179,6 @@ namespace Falcor
         */
         void popGraphicsState();
 
-        /** Flush the command list. This doesn't reset the command allocator, just submits the commands
-            \param[in] wait If true, will block execution until the GPU finished processing the commands
-        */
-        void flush(bool wait = false);
-
         /** Set the compute variables
         */
         void setComputeVars(const ComputeVars::SharedPtr& pVars) { mpComputeVars = pVars; applyComputeVars(); }
@@ -223,25 +215,11 @@ namespace Falcor
         */
         void dispatch(uint32_t groupSizeX, uint32_t groupSizeY, uint32_t groupSizeZ);
 
-        /** Check if we have pending commands
-        */
-        bool hasPendingCommands() const { return mCommandsPending; }
-
-        /** Signal the context that we have pending commands. Useful in case you make raw API calls
-        */
-        void setPendingCommands(bool commandsPending) { mCommandsPending = commandsPending; }
-
-        void updateBuffer(const Buffer* pBuffer, const void* pData, size_t offset = 0, size_t size = 0);
-        void updateTexture(const Texture* pTexture, const void* pData);
-        void updateTextureSubresource(const Texture* pTexture, uint32_t subresourceIndex, const void* pData);
-        void updateTextureSubresources(const Texture* pTexture, uint32_t firstSubresource, uint32_t subresourceCount, const void* pData);
         void copyResource(const Resource* pDst, const Resource* pSrc);
 
         GpuFence::SharedPtr getFence() const;
     private:
         RenderContext();
-        bool mCommandsPending = false;
-
         GraphicsVars::SharedPtr mpGraphicsVars;
         GraphicsState::SharedPtr mpGraphicsState;
 
@@ -260,7 +238,5 @@ namespace Falcor
         void applyComputeVars();
         void prepareForDraw();
         void prepareForDispatch();
-        void bindDescriptorHeaps();
-		void* mpApiData = nullptr;
     };
 }
