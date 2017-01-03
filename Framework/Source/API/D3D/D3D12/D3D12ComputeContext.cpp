@@ -27,6 +27,7 @@
 ***************************************************************************/
 #include "Framework.h"
 #include "API/ComputeContext.h"
+#include "glm/gtc/type_ptr.hpp"
 
 namespace Falcor
 {
@@ -67,6 +68,39 @@ namespace Falcor
     {
         prepareForDispatch();
         mpLowLevelData->getCommandList()->Dispatch(groupSizeX, groupSizeY, groupSizeZ);
+    }
+
+
+    template<typename ClearType>
+    void clearUavCommon(ComputeContext* pContext, const UnorderedAccessView* pUav, const ClearType& clear, ID3D12GraphicsCommandList* pList)
+    {
+        pContext->resourceBarrier(pUav->getResource(), Resource::State::UnorderedAccess);
+        UavHandle clearHandle = pUav->getHandleForClear();
+        UavHandle uav = pUav->getApiHandle();
+        if (typeid(ClearType) == typeid(vec4))
+        {
+            pList->ClearUnorderedAccessViewFloat(uav->getGpuHandle(), clearHandle->getCpuHandle(), pUav->getResource()->getApiHandle(), (float*)value_ptr(clear), 0, nullptr);
+        }
+        else if (typeid(ClearType) == typeid(uvec4))
+        {
+            pList->ClearUnorderedAccessViewUint(uav->getGpuHandle(), clearHandle->getCpuHandle(), pUav->getResource()->getApiHandle(), (uint32_t*)value_ptr(clear), 0, nullptr);
+        }
+        else
+        {
+            should_not_get_here();
+        }
+    }
+
+    void ComputeContext::clearUAV(const UnorderedAccessView* pUav, const vec4& value)
+    {
+        clearUavCommon(this, pUav, value, mpLowLevelData->getCommandList().GetInterfacePtr());
+        mCommandsPending = true;
+    }
+
+    void ComputeContext::clearUAV(const UnorderedAccessView* pUav, const uvec4& value)
+    {
+        clearUavCommon(this, pUav, value, mpLowLevelData->getCommandList().GetInterfacePtr());
+        mCommandsPending = true;
     }
 
     void ComputeContext::applyComputeVars() {}

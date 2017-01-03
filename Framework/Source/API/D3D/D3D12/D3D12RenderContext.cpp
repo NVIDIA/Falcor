@@ -49,40 +49,8 @@ namespace Falcor
         pCtx->bindDescriptorHeaps();
         return pCtx;
     }
-
-    template<typename ClearType>
-    void clearUavCommon(RenderContext* pContext, const UnorderedAccessView* pUav, const ClearType& clear, ID3D12GraphicsCommandList* pList)
-    {
-        pContext->resourceBarrier(pUav->getResource(), Resource::State::UnorderedAccess);
-        UavHandle clearHandle = pUav->getHandleForClear();
-        UavHandle uav = pUav->getApiHandle();        
-        if (typeid(ClearType) == typeid(vec4))
-        {
-            pList->ClearUnorderedAccessViewFloat(uav->getGpuHandle(), clearHandle->getCpuHandle(), pUav->getResource()->getApiHandle(), (float*)value_ptr(clear), 0, nullptr);
-        }
-        else if(typeid(ClearType) == typeid(uvec4))
-        {
-            pList->ClearUnorderedAccessViewUint(uav->getGpuHandle(), clearHandle->getCpuHandle(), pUav->getResource()->getApiHandle(), (uint32_t*)value_ptr(clear), 0, nullptr);
-        }
-        else
-        {
-            should_not_get_here();
-        }
-    }
-
-    void RenderContext::clearUAV(const UnorderedAccessView* pUav, const vec4& value)
-    {
-        clearUavCommon(this, pUav, value, mpLowLevelData->getCommandList().GetInterfacePtr());
-        mCommandsPending = true;
-    }
-
-    void RenderContext::clearUAV(const UnorderedAccessView* pUav, const uvec4& value)
-    {
-        clearUavCommon(this, pUav, value, mpLowLevelData->getCommandList().GetInterfacePtr());
-        mCommandsPending = true;
-    }
-
-	void RenderContext::clearFbo(const Fbo* pFbo, const glm::vec4& color, float depth, uint8_t stencil, FboAttachmentType flags)
+    
+    void RenderContext::clearFbo(const Fbo* pFbo, const glm::vec4& color, float depth, uint8_t stencil, FboAttachmentType flags)
 	{
         bool clearDepth = (flags & FboAttachmentType::Depth) != FboAttachmentType::None;
         bool clearColor = (flags & FboAttachmentType::Color) != FboAttachmentType::None;

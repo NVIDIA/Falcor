@@ -77,6 +77,17 @@ namespace Falcor
         */
         void dispatch(uint32_t groupSizeX, uint32_t groupSizeY, uint32_t groupSizeZ);
 
+        /** Clear an unordered-access view
+        \param[in] pUav The UAV to clear
+        \param[in] value The clear value
+        */
+        void clearUAV(const UnorderedAccessView* pUav, const vec4& value);
+
+        /** Clear an unordered-access view
+        \param[in] pUav The UAV to clear
+        \param[in] value The clear value
+        */
+        void clearUAV(const UnorderedAccessView* pUav, const uvec4& value);
     protected:
         ComputeContext() = default;
         void prepareForDispatch();

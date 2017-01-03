@@ -79,18 +79,6 @@ namespace Falcor
             */
         void clearDsv(const DepthStencilView* pDsv, float depth, uint8_t stencil, bool clearDepth = true, bool clearStencil = true);
 
-        /** Clear an unordered-access view
-            \param[in] pUav The UAV to clear
-            \param[in] value The clear value
-        */
-        void clearUAV(const UnorderedAccessView* pUav, const vec4& value);
-
-        /** Clear an unordered-access view
-            \param[in] pUav The UAV to clear
-            \param[in] value The clear value
-        */
-        void clearUAV(const UnorderedAccessView* pUav, const uvec4& value);
-
         /** Destructor
         */
         ~RenderContext();
