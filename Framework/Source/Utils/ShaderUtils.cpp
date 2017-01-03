@@ -131,7 +131,7 @@ namespace Falcor
                 }
                 else
                 {
-                    pShader->setIncludeList(includeList);
+					pShader->setIncludeList(includeList);
                     return pShader;
                 }
             }

@@ -274,8 +274,8 @@ vec4 _fn evalSpecularLayer(in const MaterialLayerDesc desc, in const MaterialLay
     /* Add albedo regardless of facing */
     result.specularAlbedo += v3(data.albedo.constantColor);
 
-    /* Ignore the layer if it's a transmission */
-    if(dot(lAttr.L, shAttr.N) <= 0.f)
+    /* Ignore the layer if it's a transmission or backfacing */
+	if (dot(lAttr.L, shAttr.N) <= 0.f || dot(shAttr.E, shAttr.N) <= 0.f)
         return v4(0.f);
 
     vec3 value = lAttr.lightIntensity;
@@ -399,10 +399,6 @@ void _fn evalMaterial(
         result.specularIllumination = v3(0.f);
         result.finalValue = v3(0.f);
     }
-
-    /* Ignore the layer if it's back-sided */
-    if(dot(shAttr.E, shAttr.N) <= 0.f)
-        return;
 
     /* Go through all layers and perform a layer-by-layer shading and compositing */
     PassOutput passResult;

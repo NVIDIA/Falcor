@@ -7,7 +7,7 @@ if "%2" == "Win32" SET ATBDLL="AntTweakBar.dll"
 if "%2" == "x64" SET ATBDLL="AntTweakBar64.dll"
 
 if not exist %3 mkdir %3
-SET FALCOR_PROJECT_DIR=%~dp0
+SET FALCOR_PROJECT_DIR="%~dp0"
 copy /y %FALCOR_PROJECT_DIR%\Externals\glew\bin\Release\%2\glew32.dll %3
 copy /y %FALCOR_PROJECT_DIR%\Externals\AntTweakBar\lib\%ATBDLL% %3
 copy /y %FALCOR_PROJECT_DIR%\Externals\GLFW\lib\%2\%1\glfw3.dll %3
