@@ -449,6 +449,9 @@
     <ClCompile Include="API\CopyContext.cpp">
       <Filter>API</Filter>
     </ClCompile>
+    <ClCompile Include="API\D3D\D3D12\D3D12ComputeContext.cpp">
+      <Filter>API\D3D\D3D12</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Graphics\Model\Animation.h">
@@ -1506,6 +1509,9 @@
       <Filter>API\D3D\D3D12</Filter>
     </ClInclude>
     <ClInclude Include="API\CopyContext.h">
+      <Filter>API</Filter>
+    </ClInclude>
+    <ClInclude Include="API\ComputeContext.h">
       <Filter>API</Filter>
     </ClInclude>
   </ItemGroup>

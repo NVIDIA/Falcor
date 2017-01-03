@@ -28,7 +28,7 @@
 #include "Framework.h"
 #include "ProgramVars.h"
 #include "API/Buffer.h"
-#include "API/RenderContext.h"
+#include "API/CopyContext.h"
 
 namespace Falcor
 {
@@ -504,7 +504,7 @@ namespace Falcor
     }
 
     template<bool forGraphics>
-    void ProgramVars::applyCommon(RenderContext* pContext) const
+    void ProgramVars::applyCommon(CopyContext* pContext) const
     {
         // Get the command list
         ID3D12GraphicsCommandList* pList = pContext->getCommandListApiHandle();
@@ -556,12 +556,12 @@ namespace Falcor
         }
     }
 
-    void ComputeVars::apply(RenderContext* pContext) const
+    void ComputeVars::apply(CopyContext* pContext) const
     {
         applyCommon<false>(pContext);
     }
 
-    void GraphicsVars::apply(RenderContext* pContext) const
+    void GraphicsVars::apply(CopyContext* pContext) const
     {
         applyCommon<true>(pContext);
     }

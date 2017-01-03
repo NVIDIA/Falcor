@@ -37,7 +37,7 @@
 #include "API/GraphicsStateObject.h"
 #include "API/ProgramVars.h"
 #include "Graphics/GraphicsState.h"
-#include "API/CopyContext.h"
+#include "API/ComputeContext.h"
 #include "Graphics/ComputeState.h"
 #include "LowLevel/GpuFence.h"
 
@@ -46,7 +46,7 @@ namespace Falcor
 
     /** The rendering context. Use it to bind state and dispatch calls to the GPU
     */
-    class RenderContext : public CopyContext, public inherit_shared_from_this<CopyContext, RenderContext>
+    class RenderContext : public ComputeContext, public inherit_shared_from_this<ComputeContext, RenderContext>
     {
     public:
         using SharedPtr = std::shared_ptr<RenderContext>;
@@ -54,7 +54,7 @@ namespace Falcor
 
         /** create a new object
         */
-        static SharedPtr create(uint32_t allocatorsCount = 1);
+        static SharedPtr create();
 
 		/** Get the list API handle
 		*/
@@ -176,63 +176,19 @@ namespace Falcor
         /** Pops the last graphics state from the stack and sets it
         */
         void popGraphicsState();
-
-        /** Set the compute variables
-        */
-        void setComputeVars(const ComputeVars::SharedPtr& pVars) { mpComputeVars = pVars; applyComputeVars(); }
-
-        /** Get the bound program variables object
-        */
-        ComputeVars::SharedPtr getComputeVars() const { return mpComputeVars; }
-
-        /** Push the current compute vars and sets a new one
-        */
-        void pushComputeVars(const ComputeVars::SharedPtr& pVars);
-
-        /** Pops the last ProgramVars from the stack and sets it
-        */
-        void popComputeVars();
-
-        /** Set a compute state
-        */
-        void setComputeState(const ComputeState::SharedPtr& pState) { mpComputeState = pState; applyComputeState(); }
-
-        /** Get the currently bound compute state
-        */
-        ComputeState::SharedPtr getComputeState() const { return mpComputeState; }
-
-        /** Push the current compute state and sets a new one
-        */
-        void pushComputeState(const ComputeState::SharedPtr& pState);
-
-        /** Pops the last PipelineState from the stack and sets it
-        */
-        void popComputeState();
         
-        /** Dispatch a compute task
-        */
-        void dispatch(uint32_t groupSizeX, uint32_t groupSizeY, uint32_t groupSizeZ);
-
         GpuFence::SharedPtr getFence() const;
     private:
         RenderContext();
         GraphicsVars::SharedPtr mpGraphicsVars;
         GraphicsState::SharedPtr mpGraphicsState;
 
-        ComputeVars::SharedPtr mpComputeVars;
-        ComputeState::SharedPtr mpComputeState;
-
         std::stack<GraphicsState::SharedPtr> mPipelineStateStack;
         std::stack<GraphicsVars::SharedPtr> mpGraphicsVarsStack;
-        std::stack<ComputeState::SharedPtr> mpComputeStateStack;
-        std::stack<ComputeVars::SharedPtr> mpComputeVarsStack;
 
         // Internal functions used by the API layers
         void applyProgramVars();
         void applyGraphicsState();
-        void applyComputeState();
-        void applyComputeVars();
         void prepareForDraw();
-        void prepareForDispatch();
     };
 }
