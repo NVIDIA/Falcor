@@ -17,15 +17,21 @@ Prerequisites
 * NVIDIA® Geforce™ 900 series or better GPU.
 The project uses extentions which are supported only by NVIDIA GPUs.
 
+Creating a New Project
+------------------------
+- If you haven't done so already, create a visual-studio solution and project for your code. Falcor only supports 64-bit builds, so make sure you have a 64-bit build configuration.
+- Add Falcor.props to your project (Property Manager -> Right click your project -> Add existing property sheet).
+- Add Falcor.vcxproj to your solution.
+- Add a reference to Falcor in your project (Solution Explorer -> Right click your project -> Properties -> Common Properties -> References -> Add new reference -> Choose Falcor).
 
 Optional Modules
 ----------------
-To create CUDA applications you will need to install the CUDA Toolkit 7.5.
-To create VR applications, you will need the SDK which came with your headset (SteamVR for Vive, Oculus SDK, etc.).
+To create CUDA applications you will need to install the CUDA Toolkit 7.5.  
+For VR applications development, you will need the SDK which came with your headset (SteamVR for Vive, Oculus SDK, etc.).
 
 *Sample* Class
 -------------------
-This is the bootstrapper class of the application. Your class should inherit from it and override its protected methods which serve as the callback functions.
+This is the bootstrapper class of the application. Your class should inherit from it and override its protected methods which serve as the callback functions.  
 A good place to start would be the ModelViewer sample.
 
 
@@ -43,17 +49,30 @@ Falcor Configuration
 
 Data Files
 --------------------
-Data files include shader files, textures and models.
+Data files include shader files, textures and models.  
 By default, Falcor looks for data files in the current locations:
 - The working directory. In some cases this is not the same as the executable directory. For example, if you launch the application from Visual Studio, by default the working directory is the directory containing the project file.
 - The executable directory.
+- An optional environment variable named `FALCOR_MEDIA_FOLDERS`. It is a semicolon-separated list of folders.
+- Any directory that was added to the data directories list by calling `addDataDirectory()`.
+- A directory called "Data/" under any of the above directories.
 
-Falcor will also look for a directory called "Data/" under those directories.<br/>
-To search for a data file, call `findFileInDataDirectories()`.<br/>
-To add a new data directory, call `addDataDirectory()`.
-
-Falcor will also look for an optional environment variable named `FALCOR_MEDIA_FOLDERS`. It is a semicolon-separated list of folders Falcor will look in when searching for media files. If you have a common 3D models repository, it's a good practice to set this environment variable to point to these locations.
+To search for a data file, call `findFileInDataDirectories()`.
 
 Deployment
 ----------
-The best practice is to create a directory called "Data/" next to your project file and place all your data files there (shaders/models).  If that directory exists, Falcor will copy it to the output directory, making the output directory self-contained (you can zip only the output directory and it should work).  If not, you will have to copy the data files yourself.
+The best practice is to create a directory called "Data/" next to your **project** file and place all your data files there (shaders/models).  If that directory exists, Falcor will copy it to the output directory, making the output directory self-contained (you can zip only the output directory and it should work).  If not, you will have to copy the data files yourself.
+
+Citation
+--------
+If you use Falcor in a research project leading to a publication, please cite the project.
+The BibTex entry is
+
+@Misc{Benty16,  
+   author =      {Nir Benty},  
+   title =       {The {Falcor} Rendering Framework},  
+   year =        {2016},  
+   month =       {08},  
+   url =         {https://github.com/NVIDIA/Falcor},  
+   note=         {\url{https://github.com/NVIDIA/Falcor}}  
+}
