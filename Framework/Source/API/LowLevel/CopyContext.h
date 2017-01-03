@@ -27,6 +27,7 @@
 ***************************************************************************/
 #pragma once
 #include "GpuFence.h"
+#include "API/Resource.h"
 
 namespace Falcor
 {
@@ -63,6 +64,8 @@ namespace Falcor
         /** Signal the context that we have pending commands. Useful in case you make raw API calls
         */
         void setPendingCommands(bool commandsPending) { mCommandsPending = commandsPending; }
+
+        void resourceBarrier(const Resource* pResource, Resource::State newState);
 
     protected:
         bool initApiData();

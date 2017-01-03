@@ -39,7 +39,6 @@
 #include "Graphics/GraphicsState.h"
 #include "API/LowLevel/CopyContext.h"
 #include "Graphics/ComputeState.h"
-#include "API/LowLevel/CopyContext.h"
 
 namespace Falcor
 {
@@ -98,8 +97,6 @@ namespace Falcor
             \param[in] value The clear value
         */
         void clearUAV(const UnorderedAccessView* pUav, const uvec4& value);
-
-        void resourceBarrier(const Resource* pResource, Resource::State newState);
 
         /** Destructor
         */

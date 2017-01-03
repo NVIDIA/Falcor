@@ -65,25 +65,6 @@ namespace Falcor
         return pApiData->getCommandQueue();
     }
 
-    void RenderContext::resourceBarrier(const Resource* pResource, Resource::State newState)
-    {
-        D3D12ContextData* pApiData = (D3D12ContextData*)mpApiData;
-        if(pResource->getState() != newState)
-        {
-            D3D12_RESOURCE_BARRIER barrier;
-            barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-            barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
-            barrier.Transition.pResource = pResource->getApiHandle();
-            barrier.Transition.StateBefore =  getD3D12ResourceState(pResource->getState());
-            barrier.Transition.StateAfter = getD3D12ResourceState(newState);
-            barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;   // OPTME: Need to do that only for the subresources we will actually use
-
-            pApiData->getCommandList()->ResourceBarrier(1, &barrier);
-            mCommandsPending = true;
-            pResource->mState = newState;
-        }
-    }
-
     template<typename ClearType>
     void clearUavCommon(RenderContext* pContext, const UnorderedAccessView* pUav, const ClearType& clear, ID3D12GraphicsCommandList* pList)
     {

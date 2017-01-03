@@ -31,6 +31,7 @@
 #include "API/Buffer.h"
 #include <queue>
 #include "..\D3D12Context.h"
+#include "..\D3D12Resource.h"
 
 namespace Falcor
 {
@@ -127,6 +128,8 @@ namespace Falcor
         pUploadBuffer->updateData(pData, offset, size);
         ID3D12ResourcePtr pResource = pUploadBuffer->getApiHandle();
 
+        resourceBarrier(pBuffer, Resource::State::CopyDest);
+
         offset = pUploadBuffer->getGpuAddress() - pResource->GetGPUVirtualAddress();
         pApiData->getCommandList()->CopyBufferRegion(pBuffer->getApiHandle(), 0, pResource, offset, size);
     }
@@ -157,6 +160,8 @@ namespace Falcor
 
         // Get the offset from the beginning of the resource
         uint64_t offset = pBuffer->getGpuAddress() - pResource->GetGPUVirtualAddress();
+        
+        resourceBarrier(pTexture, Resource::State::CopyDest);
 
         const uint8_t* pSrc = (uint8_t*)pData;
         for (uint32_t s = 0; s < subresourceCount; s++)
@@ -197,5 +202,24 @@ namespace Falcor
             subresourceCount *= 6;
         }
         updateTextureSubresources(pTexture, 0, subresourceCount, pData);
+    }
+
+    void CopyContext::resourceBarrier(const Resource* pResource, Resource::State newState)
+    {
+        D3D12ContextData* pApiData = (D3D12ContextData*)mpApiData;
+        if (pResource->getState() != newState)
+        {
+            D3D12_RESOURCE_BARRIER barrier;
+            barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+            barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+            barrier.Transition.pResource = pResource->getApiHandle();
+            barrier.Transition.StateBefore = getD3D12ResourceState(pResource->getState());
+            barrier.Transition.StateAfter = getD3D12ResourceState(newState);
+            barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;   // OPTME: Need to do that only for the subresources we will actually use
+
+            pApiData->getCommandList()->ResourceBarrier(1, &barrier);
+            mCommandsPending = true;
+            pResource->mState = newState;
+        }
     }
 }
