@@ -44,7 +44,8 @@
 
 namespace Falcor
 {
-	uint32_t Model::sModelCounter = 0;
+
+    uint32_t Model::sModelCounter = 0;
     const char* Model::kSupportedFileFormatsStr = "Supported Formats\0*.obj;*.bin;*.dae;*.x;*.md5mesh;*.ply;*.fbx;*.3ds;*.blend;*.ase;*.ifc;*.xgl;*.zgl;*.dxf;*.lwo;*.lws;*.lxo;*.stl;*.x;*.ac;*.ms3d;*.cob;*.scn;*.3d;*.mdl;*.mdl2;*.pk3;*.smd;*.vta;*.raw;*.ter\0\0";
 
     // Method to sort meshes
@@ -55,24 +56,12 @@ namespace Falcor
         return p1->getMaterial() < p2->getMaterial();
     }
 
-	Model::Model() : mId(sModelCounter++)
+    Model::Model() : mId(sModelCounter++)
     {
 
     }
 
     Model::~Model() = default;
-
-    /** Permanently transform all meshes of the object by the given transform
-    */
-    void Model::applyTransform(const glm::mat4& transform) 
-	{
-        for(auto& pMesh : mpMeshes)
-        {
-            pMesh->applyTransform(transform);
-        }
-
-        calculateModelProperties();
-    }
 
     Model::SharedPtr Model::createFromFile(const std::string& filename, uint32_t flags)
     {
@@ -113,38 +102,41 @@ namespace Falcor
     void Model::calculateModelProperties()
     {
         mVertexCount = 0;
+        mIndexCount = 0;
         mPrimitiveCount = 0;
-        mInstanceCount = 0;
+        mMeshInstanceCount = 0;
 
         // Sort the meshes
-        //std::sort(mpMeshes.begin(), mpMeshes.end(), compareMeshes);
+        sortMeshes();
 
         vec3 modelMin = vec3(1e25f), modelMax = vec3(-1e25f);
-        std::map<const Buffer*, bool> vbFound;
 
-        for(const auto& pMesh : mpMeshes)
+        for(const auto& meshInstances : mMeshes)
         {
-            for(uint32_t i = 0 ; i < pMesh->getInstanceCount() ; i++)
+            // If we have a vector for a mesh, there should be at least one instance of it
+            assert(meshInstances.size() > 0);
+
+            auto& pMesh = meshInstances[0]->getObject();
+            const uint32_t instanceCount = (uint32_t)(meshInstances.size());
+            
+            mVertexCount += pMesh->getVertexCount() * instanceCount;
+            mIndexCount += pMesh->getIndexCount() * instanceCount;
+            mPrimitiveCount += pMesh->getPrimitiveCount() * instanceCount;
+            mMeshInstanceCount += instanceCount;
+
+            for(uint32_t i = 0 ; i < instanceCount; i++)
             {
-                const BoundingBox& meshBox = pMesh->getInstanceBoundingBox(i);
+                const BoundingBox& meshBox = meshInstances[i]->getBoundingBox();
 
                 vec3 meshMin = meshBox.center - meshBox.extent * 0.5f;
                 vec3 meshMax = meshBox.center + meshBox.extent * 0.5f;
 
                 modelMin = min(modelMin, meshMin);
                 modelMax = max(modelMax, meshMax);
-
-                if(vbFound.find(pMesh->getVao()->getVertexBuffer(0).get()) == vbFound.end())
-                {
-                    mVertexCount += pMesh->getVertexCount();
-                    vbFound[pMesh->getVao()->getVertexBuffer(0).get()] = true;
-                }
-
-                mPrimitiveCount += pMesh->getPrimitiveCount();
             }
-            mInstanceCount += pMesh->getInstanceCount();
         }
-        mCenter = (modelMin + modelMax) * 0.5f;
+
+        mBoundingBox = BoundingBox::fromMinMax(modelMin, modelMax);
         mRadius = glm::length(modelMin - modelMax) * 0.5f;
     }
 
@@ -208,23 +200,18 @@ namespace Falcor
         return mpAnimationController->getBoneMatrices();
     }
 
-	void Model::bindSamplerToMaterials(const Sampler::SharedPtr& pSampler)
-	{
-		// Go over all materials and bind the sampler
-		for(auto& m : mpMaterials)
-		{
-			m->setSampler(pSampler);
-		}
-	}
+    void Model::bindSamplerToMaterials(const Sampler::SharedPtr& pSampler)
+    {
+        // Go over all materials and bind the sampler
+        for(auto& m : mpMaterials)
+        {
+            m->setSampler(pSampler);
+        }
+    }
 
     void Model::setAnimationController(AnimationController::UniquePtr pAnimController)
     {
         mpAnimationController = std::move(pAnimController);
-    }
-
-    void Model::addMesh(Mesh::SharedPtr pMesh)
-    {
-        mpMeshes.push_back(std::move(pMesh));
     }
 
     Material::SharedPtr Model::getOrAddMaterial(const Material::SharedPtr& pMaterial)
@@ -252,7 +239,42 @@ namespace Falcor
     {
         mpTextures.push_back(pTexture);
     }
-    
+
+    void Model::addMeshInstance(const Mesh::SharedPtr& pMesh, const glm::mat4& baseTransform)
+    {
+        int32_t meshID = -1;
+
+        // Linear search from the end. Instances are usually added in order by mesh
+        for (int32_t i = (int32_t)mMeshes.size() - 1; i >= 0; i--)
+        {
+            if (mMeshes[i][0]->getObject() == pMesh)
+            {
+                meshID = i;
+                break;
+            }
+        }
+
+        // If mesh not found, new mesh, add new instance vector
+        if (meshID == -1)
+        {
+            mMeshes.push_back(MeshInstanceList());
+            meshID = (int32_t)mMeshes.size() - 1;
+        }
+
+        mMeshes[meshID].push_back(MeshInstance::create(pMesh, baseTransform));
+    }
+
+    void Model::sortMeshes()
+    {
+        // Sort meshes by material ptr
+        auto matSortPred = [](MeshInstanceList& lhs, MeshInstanceList& rhs) 
+        {
+            return lhs[0]->getObject()->getMaterial() < rhs[0]->getObject()->getMaterial();
+        };
+
+        std::sort(mMeshes.begin(), mMeshes.end(), matSortPred);
+    }
+
     template<typename T>
     void removeNullElements(std::vector<T>& Vec)
     {
@@ -261,26 +283,40 @@ namespace Falcor
         Vec.erase(NewEnd, Vec.end());
     }
 
+    void Model::deleteCulledMeshInstances(MeshInstanceList& meshInstances, const Camera *pCamera)
+    {
+        for (auto& instance : meshInstances)
+        {
+            if (pCamera->isObjectCulled(instance->getBoundingBox()))
+            {
+                // Remove mesh ptr reference
+                instance->mpObject = nullptr;
+            }
+        }
+
+        // Remove culled instances
+        auto instPred = [](MeshInstance::SharedPtr& instance) { return instance->getObject() == nullptr; };
+        auto& instEnd = std::remove_if(meshInstances.begin(), meshInstances.end(), instPred);
+        meshInstances.erase(instEnd, meshInstances.end());
+    }
+
     void Model::deleteCulledMeshes(const Camera* pCamera)
     {
         std::map<const Material*, bool> usedMaterials;
         std::map<const Buffer*, bool> usedBuffers;
 
         // Loop over all the meshes and remove its instances
-        for(auto& pMesh : mpMeshes)
+        for(auto& meshInstances : mMeshes)
         {
-            pMesh->deleteCulledInstances(pCamera);
+            deleteCulledMeshInstances(meshInstances, pCamera);
 
-            if(pMesh->getInstanceCount() == 0)
-            {
-                pMesh = nullptr;
-            }
-            else
+            if(meshInstances.size() > 0)
             {
                 // Mark the mesh's objects as used
-                usedMaterials[pMesh->getMaterial().get()] = true;
-                const auto pVao = pMesh->getVao();
+                usedMaterials[meshInstances[0]->getObject()->getMaterial().get()] = true;
+                const auto pVao = meshInstances[0]->getObject()->getVao();
                 usedBuffers[pVao->getIndexBuffer().get()] = true;
+
                 for(uint32_t i = 0 ; i < pVao->getVertexBuffersCount() ; i++)
                 {
                     usedBuffers[pVao->getVertexBuffer(i).get()] = true;
@@ -289,13 +325,14 @@ namespace Falcor
         }
 
         // Remove unused meshes from the vector
-        removeNullElements(mpMeshes);
+        auto pred = [](MeshInstanceList& meshInstances) { return meshInstances.size() == 0; };
+        auto& meshesEnd = std::remove_if(mMeshes.begin(), mMeshes.end(), pred);
+        mMeshes.erase(meshesEnd, mMeshes.end());
 
         deleteUnusedBuffers(usedBuffers);
         deleteUnusedMaterials(usedMaterials);
         calculateModelProperties();
     }
-
 
     void Model::resetGlobalIdCounter()
     {
@@ -386,4 +423,5 @@ namespace Falcor
             pTexture->compress2DTexture();            
         }
     }
+
 }

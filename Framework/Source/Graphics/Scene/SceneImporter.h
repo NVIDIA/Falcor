@@ -65,7 +65,7 @@ namespace Falcor
         bool loadIncludeFile(const std::string& Include);
 
         bool createModel(const rapidjson::Value& jsonModel);
-        bool createModelInstances(const rapidjson::Value& jsonVal, uint32_t modelID);
+        bool createModelInstances(const rapidjson::Value& jsonVal, const Model::SharedPtr& pModel);
         bool createPointLight(const rapidjson::Value& jsonLight);
         bool createDirLight(const rapidjson::Value& jsonLight);
         ObjectPath::SharedPtr createPath(const rapidjson::Value& jsonPath);
@@ -93,7 +93,7 @@ namespace Falcor
         std::string mFilename;
         std::string mDirectory;
         uint32_t mModelLoadFlags = 0;
-		uint32_t mSceneLoadFlags = 0;
+        uint32_t mSceneLoadFlags = 0;
 
         struct FuncValue
         {

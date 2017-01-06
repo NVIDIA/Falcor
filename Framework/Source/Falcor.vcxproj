@@ -788,6 +788,7 @@
     <ClInclude Include="Graphics\Model\Loaders\BinaryModelSpec.h" />
     <ClInclude Include="Graphics\Model\Loaders\SimpleModelImporter.h" />
     <ClInclude Include="Graphics\Model\Mesh.h" />
+    <ClInclude Include="Graphics\Model\ObjectInstance.h" />
     <ClInclude Include="Graphics\Model\Model.h" />
     <ClInclude Include="Graphics\Model\ModelRenderer.h" />
     <ClInclude Include="Graphics\Paths\MovableObject.h" />

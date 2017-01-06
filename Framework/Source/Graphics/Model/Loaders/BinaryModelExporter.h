@@ -68,8 +68,8 @@ namespace Falcor
         void warning(const std::string& Msg);
 
         bool prepareSubmeshes();
-        std::map<const Vao*, std::vector<Mesh::SharedPtr>> mMeshes;
+        std::map<const Vao*, std::vector<uint32_t>> mMeshes; // Maps to meshID in model
         std::map<const Texture*, int32_t> mTextureHash;
-        uint32_t mInstanceCount = 0;   // Not the same as Model::Instance count. Model keeps the total instance count, while the binary format has a concept of meshes and submeshes, and the instance count there is the mesh instance count.
+        uint32_t mInstanceCount = 0; // Not the same as Model::Instance count. Model keeps the total instance count, while the binary format has a concept of meshes and submeshes, and the instance count there is the mesh instance count.
     };
 }

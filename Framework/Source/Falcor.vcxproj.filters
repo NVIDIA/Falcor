@@ -1508,6 +1508,9 @@
     <ClInclude Include="API\LowLevel\LowLevelContextData.h">
       <Filter>API\LowLevel</Filter>
     </ClInclude>
+    <ClInclude Include="Graphics\Model\ObjectInstance.h">
+      <Filter>Graphics\Model</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Externals">

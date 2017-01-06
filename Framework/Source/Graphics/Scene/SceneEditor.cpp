@@ -98,11 +98,11 @@ namespace Falcor
 
     void SceneEditor::setModelVisible(Gui* pGui)
     {
-        const Scene::ModelInstance& instance = mpScene->getModelInstance(mActiveModel, mActiveModelInstance);
-        bool visible = instance.isVisible;
+        const Scene::ModelInstance::SharedPtr& instance = mpScene->getModelInstance(mActiveModel, mActiveModelInstance);
+        bool visible = instance->isVisible();
         if (pGui->addCheckBox("Visible", visible))
         {
-            mpScene->setModelInstanceVisible(mActiveModel, mActiveModelInstance, visible);
+            instance->setVisible(visible);
             mSceneDirty = true;
         }
     }
@@ -142,7 +142,6 @@ namespace Falcor
             }
             pGui->endGroup();
         }
-
     }
 
     void SceneEditor::selectActivePath(Gui* pGui)
@@ -220,32 +219,35 @@ namespace Falcor
 
     void SceneEditor::setInstanceTranslation(Gui* pGui)
     {
-        vec3 t = mpScene->getModelInstance(mActiveModel, mActiveModelInstance).translation;
+        auto& pInstance = mpScene->getModelInstance(mActiveModel, mActiveModelInstance);
+        vec3 t = pInstance->getTranslation();
         if (pGui->addFloat3Var("Translation", t, -FLT_MAX, FLT_MAX))
         {
-            mpScene->setModelInstanceTranslation(mActiveModel, mActiveModelInstance, t);
+            pInstance->setTranslation(t);
             mSceneDirty = true;
         }
     }
 
     void SceneEditor::setInstanceRotation(Gui* pGui)
     {
-        vec3 r = mpScene->getModelInstance(mActiveModel, mActiveModelInstance).rotation;
+        auto& pInstance = mpScene->getModelInstance(mActiveModel, mActiveModelInstance);
+        vec3 r = pInstance->getEulerRotation();
         r = degrees(r);
         if (pGui->addFloat3Var("Rotation", r, -360, 360))
         {
             r = radians(r);
-            mpScene->setModelInstanceRotation(mActiveModel, mActiveModelInstance, r);
+            pInstance->setRotation(r);
             mSceneDirty = true;
         }
     }
 
     void SceneEditor::setInstanceScaling(Gui* pGui)
     {
-        vec3 s = mpScene->getModelInstance(mActiveModel, mActiveModelInstance).scaling;
+        auto& pInstance = mpScene->getModelInstance(mActiveModel, mActiveModelInstance);
+        vec3 s = pInstance->getScaling();
         if (pGui->addFloat3Var("Scaling", s, 0, FLT_MAX))
         {
-            mpScene->setModelInstanceScaling(mActiveModel, mActiveModelInstance, s);
+            pInstance->setScaling(s);
             mSceneDirty = true;
         }
     }
@@ -492,7 +494,9 @@ namespace Falcor
                 modelName = (offset == std::string::npos) ? modelName : modelName.substr(0, offset);
 
                 pModel->setName(modelName);
-                mActiveModel = mpScene->addModel(pModel, filename, true);
+                mpScene->addModelInstance(pModel, "Instance 0");
+
+                mActiveModel = mpScene->getModelCount() - 1;
                 mActiveModelInstance = 0;
             }
             mSceneDirty = true;
@@ -522,8 +526,12 @@ namespace Falcor
     {
         if (pGui->addButton("Add Instance"))
         {
-            const auto& Instance = mpScene->getModelInstance(mActiveModel, mActiveModelInstance);
-            mActiveModelInstance = mpScene->addModelInstance(mActiveModel, Instance.name + "_0", Instance.rotation, Instance.scaling, Instance.translation);
+            const auto& pInstance = mpScene->getModelInstance(mActiveModel, mActiveModelInstance);
+            auto& pModel = mpScene->getModel(mActiveModel);
+
+            mActiveModelInstance = mpScene->getModelInstanceCount(mActiveModel);
+            mpScene->addModelInstance(pModel, "Instance " + mActiveModelInstance, pInstance->getTranslation(), pInstance->getEulerRotation(), pInstance->getScaling());
+
             mSceneDirty = true;
         }
     }

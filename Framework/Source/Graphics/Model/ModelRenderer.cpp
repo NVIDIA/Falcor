@@ -29,11 +29,11 @@
 #include "ModelRenderer.h"
 
 namespace Falcor
-{	
-	void ModelRenderer::render(RenderContext* pRenderContext, Model::SharedPtr pModel, Camera* pCamera, bool frustumCulling)
+{
+    void ModelRenderer::render(RenderContext* pRenderContext, Model::SharedPtr pModel, Camera* pCamera, bool frustumCulling)
     {
         Scene::SharedPtr pScene = Scene::create();
-        uint32_t modelID = pScene->addModel(pModel, "", true);
+        pScene->addModelInstance(pModel, "");
 
         SceneRenderer::UniquePtr pSceneRenderer = SceneRenderer::create(pScene);
         pSceneRenderer->setObjectCullState(frustumCulling);

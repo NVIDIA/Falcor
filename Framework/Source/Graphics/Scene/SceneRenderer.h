@@ -103,16 +103,16 @@ namespace Falcor
 
         void setRenderMode(RenderMode mode);
         void toggleStaticMaterialCompilation(bool on) { mCompileMaterialWithProgram = on; }
+
     protected:
 
-		struct CurrentWorkingData
-		{
-			const Camera* pCamera;
-			mutable GraphicsState* pGsoCache;
-			const Model* pModel;
-			const Mesh* pMesh;
-			const Material* pMaterial;
-		};
+        struct CurrentWorkingData
+        {
+            const Camera* pCamera;
+            mutable GraphicsState* pGsoCache;
+            const Model* pModel;
+            const Material* pMaterial;
+        };
 
         SceneRenderer(const Scene::SharedPtr& pScene);
         Scene::SharedPtr mpScene;
@@ -128,12 +128,12 @@ namespace Falcor
         virtual void setPerFrameData(RenderContext* pContext, const CurrentWorkingData& currentData);
         virtual bool setPerModelData(RenderContext* pContext, const CurrentWorkingData& currentData);
         virtual bool setPerMeshData(RenderContext* pContext,  const CurrentWorkingData& currentData);
-        virtual bool setPerMeshInstanceData(RenderContext* pContext, const glm::mat4& translation, uint32_t meshInstanceID, uint32_t drawInstanceID, const CurrentWorkingData& currentData);
+        virtual bool setPerMeshInstanceData(RenderContext* pContext, const glm::mat4& translation, const Model::MeshInstance::SharedPtr& instance, uint32_t drawInstanceID, const CurrentWorkingData& currentData);
         virtual bool setPerMaterialData(RenderContext* pContext, const CurrentWorkingData& currentData);
         virtual void postFlushDraw(RenderContext* pContext, const CurrentWorkingData& currentData);
 
-        void renderModel(RenderContext* pContext, const Model* pModel, const glm::mat4& instanceMatrix, Camera* pCamera, CurrentWorkingData& currentData);
-        void renderMesh(RenderContext* pContext, const Mesh* pMesh, const glm::mat4& translation, Camera* pCamera, CurrentWorkingData& currentData);
+        void renderModelInstance(RenderContext* pContext, const Model* pModel, const glm::mat4& instanceMatrix, Camera* pCamera, CurrentWorkingData& currentData);
+        void renderMeshInstances(RenderContext* pContext, uint32_t modelID, const glm::mat4& translation, Camera* pCamera, CurrentWorkingData& currentData);
         void flushDraw(RenderContext* pContext, const Mesh* pMesh, uint32_t instanceCount, CurrentWorkingData& currentData);
 
     protected:

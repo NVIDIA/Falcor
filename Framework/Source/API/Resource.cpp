@@ -140,7 +140,7 @@ namespace Falcor
         {
             mipCount = resMipCount - mostDetailedMip;
         }
-        else if (mipCount + mostDetailedMip >= resMipCount)
+        else if (mipCount + mostDetailedMip > resMipCount)
         {
             logWarning("Mip count is OOB when creating resource view. Clamping");
             mipCount = resMipCount - mostDetailedMip;
@@ -150,7 +150,7 @@ namespace Falcor
         {
             arraySize = resArraySize - firstArraySlice;
         }
-        else if (arraySize + firstArraySlice >= resArraySize)
+        else if (arraySize + firstArraySlice > resArraySize)
         {
             logWarning("Array size is OOB when creating resource view. Clamping");
             arraySize = resArraySize - firstArraySlice;

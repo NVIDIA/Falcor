@@ -37,14 +37,14 @@
 
 namespace Falcor
 {
-	uint32_t Material::sMaterialCounter = 0;
+    uint32_t Material::sMaterialCounter = 0;
     std::vector<Material::DescId> Material::sDescIdentifier;
 
-	Material::Material(const std::string& name) : mName(name)
-	{
-		mData.values.id = sMaterialCounter;
-		sMaterialCounter++;
-	}
+    Material::Material(const std::string& name) : mName(name)
+    {
+        mData.values.id = sMaterialCounter;
+        sMaterialCounter++;
+    }
 
     Material::SharedPtr Material::create(const std::string& name)
     {
@@ -63,7 +63,7 @@ namespace Falcor
     }
 
     uint32_t Material::getNumLayers() const
-	{
+    {
         finalize();
         uint32_t i = 0;
         for(; i < MatMaxLayers; ++i)
@@ -73,43 +73,43 @@ namespace Falcor
                 break;
             }
         }
-		return i;
-	}
+        return i;
+    }
 
     Material::Layer Material::getLayer(uint32_t layerIdx) const
-	{
+    {
         finalize();
-		Layer layer;
-		if(layerIdx >= getNumLayers())
+        Layer layer;
+        if(layerIdx >= getNumLayers())
         {
-			const auto& desc = mData.desc.layers[layerIdx];
-			const auto& vals = mData.values.layers[layerIdx];
+            const auto& desc = mData.desc.layers[layerIdx];
+            const auto& vals = mData.values.layers[layerIdx];
 
-			layer.albedo = vals.albedo;
-			layer.roughness = vals.roughness;			
-			layer.extraParam = vals.extraParam;
+            layer.albedo = vals.albedo;
+            layer.roughness = vals.roughness;
+            layer.extraParam = vals.extraParam;
             layer.pTexture = mData.textures.layers[layerIdx];
 
-			layer.type = (Layer::Type)desc.type;
-			layer.ndf = (Layer::NDF)desc.ndf;
-			layer.blend = (Layer::Blend)desc.blending;
-			layer.pmf = vals.pmf;
+            layer.type = (Layer::Type)desc.type;
+            layer.ndf = (Layer::NDF)desc.ndf;
+            layer.blend = (Layer::Blend)desc.blending;
+            layer.pmf = vals.pmf;
         }
 
-		return layer;
-	}
+        return layer;
+    }
 
-	bool Material::addLayer(const Layer& layer)
-	{
-		size_t numLayers = getNumLayers();
-		if(numLayers >= MatMaxLayers)
-		{
-			logError("Exceeded maximum number of layers in a material");
-			return false;
-		}
+    bool Material::addLayer(const Layer& layer)
+    {
+        size_t numLayers = getNumLayers();
+        if(numLayers >= MatMaxLayers)
+        {
+            logError("Exceeded maximum number of layers in a material");
+            return false;
+        }
 
-		auto& desc = mData.desc.layers[numLayers];
-		auto& vals = mData.values.layers[numLayers];
+        auto& desc = mData.desc.layers[numLayers];
+        auto& vals = mData.values.layers[numLayers];
         
         vals.albedo = layer.albedo;
         vals.roughness = layer.roughness;
@@ -124,8 +124,8 @@ namespace Falcor
         vals.pmf = layer.pmf;
         mDescDirty = true;
 
-		return true;
-	}
+        return true;
+    }
 
     void Material::removeLayer(uint32_t layerIdx)
     {
@@ -148,9 +148,9 @@ namespace Falcor
                 {
                     continue;
                 }
-				memmove(&mData.desc.layers[i], &mData.desc.layers[i+1], sizeof(mData.desc.layers[0]));
+                memmove(&mData.desc.layers[i], &mData.desc.layers[i+1], sizeof(mData.desc.layers[0]));
                 memmove(&mData.values.layers[i], &mData.values.layers[i + 1], sizeof(mData.values.layers[0]));
-				mData.desc.layers[i+1].type = MatNone;
+                mData.desc.layers[i+1].type = MatNone;
                 mData.values.layers[i+1] = MaterialLayerValues();
             }
         }
@@ -158,13 +158,13 @@ namespace Falcor
         mDescDirty = true;
     }
 
-	void Material::normalize() const
-	{
-		float totalAlbedo = 0.f;
+    void Material::normalize() const
+    {
+        float totalAlbedo = 0.f;
 
-		/* Compute a conservative worst-case albedo from all layers */
-		for(size_t i=0;i < MatMaxLayers;++i)
-		{
+        /* Compute a conservative worst-case albedo from all layers */
+        for(size_t i=0;i < MatMaxLayers;++i)
+        {
             const MaterialLayerValues& values = mData.values.layers[i];
             const MaterialLayerDesc& desc = mData.desc.layers[i];
 
@@ -173,42 +173,42 @@ namespace Falcor
                 break;
             }
 
-			// TODO: compute maximum texture albedo once there is an interface for it in the future
-			float albedo = luminance(glm::vec3(values.albedo));
+            // TODO: compute maximum texture albedo once there is an interface for it in the future
+            float albedo = luminance(glm::vec3(values.albedo));
 
-			if(desc.blending == BlendAdd || desc.blending == BlendFresnel)
+            if(desc.blending == BlendAdd || desc.blending == BlendFresnel)
             {
                 totalAlbedo += albedo;
             }
-			else
+            else
             {
                 totalAlbedo += glm::mix(totalAlbedo, albedo, values.albedo.w);
             }
-		}
+        }
 
-		if(totalAlbedo == 0.f)
+        if(totalAlbedo == 0.f)
         {
             logWarning("Material " + mName + " is pitch black");
             totalAlbedo = 1.f;
         }
-		else if(totalAlbedo > 1.f)
-		{
-			logWarning("Material " + mName + " is not energy conserving. Renormalizing...");
+        else if(totalAlbedo > 1.f)
+        {
+            logWarning("Material " + mName + " is not energy conserving. Renormalizing...");
 
-			/* Renormalize all albedos assuming linear blending between layers */
-			for(size_t i = 0;i < MatMaxLayers;++i)
-			{
+            /* Renormalize all albedos assuming linear blending between layers */
+            for(size_t i = 0;i < MatMaxLayers;++i)
+            {
                 MaterialLayerValues& values = mData.values.layers[i];
                 const MaterialLayerDesc& desc = mData.desc.layers[i];
-				if (desc.type != MatLambert && desc.type != MatConductor && desc.type != MatDielectric)
+                if (desc.type != MatLambert && desc.type != MatConductor && desc.type != MatDielectric)
                 {
                     break;
                 }
 
-				glm::vec3 newAlbedo = glm::vec3(values.albedo);
-				newAlbedo /= totalAlbedo;
-				values.albedo = glm::vec4(newAlbedo, values.albedo.w);
-			}
+                glm::vec3 newAlbedo = glm::vec3(values.albedo);
+                newAlbedo /= totalAlbedo;
+                values.albedo = glm::vec4(newAlbedo, values.albedo.w);
+            }
             totalAlbedo = 1.f;
         }
 
@@ -218,7 +218,7 @@ namespace Falcor
         {
             MaterialLayerValues& values = mData.values.layers[i];
             const MaterialLayerDesc& desc = mData.desc.layers[i];
-			if (desc.type != MatLambert && desc.type != MatConductor && desc.type != MatDielectric)
+            if (desc.type != MatLambert && desc.type != MatConductor && desc.type != MatDielectric)
             {
                 continue;
             }
@@ -244,7 +244,7 @@ namespace Falcor
                 currentWeight = 1.f;
             }
         }
-	}
+    }
 
 #if _LOG_ENABLED
 #define check_offset(_a) assert(pCB->getVariableOffset(std::string(varName) + "." + #_a) == (offsetof(MaterialData, _a) + offset))
@@ -314,7 +314,7 @@ namespace Falcor
 
     bool Material::operator==(const Material& other) const
     {
-		return memcmp(&mData, &other.mData, sizeof(mData)) == 0 && mData.samplerState == other.mData.samplerState;
+        return memcmp(&mData, &other.mData, sizeof(mData)) == 0 && mData.samplerState == other.mData.samplerState;
     }
 
     void Material::evictTextures() const
@@ -322,7 +322,7 @@ namespace Falcor
         Texture::SharedPtr* pTextures = (Texture::SharedPtr*)&mData.textures;
         for(uint32_t i = 0; i < kTexCount ; i++)
         {
-			if(pTextures[i])
+            if(pTextures[i])
             {
                 pTextures[i]->evict(mData.samplerState.get());
             }

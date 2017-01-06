@@ -110,6 +110,6 @@ namespace Falcor
         void renderModelAnimation(Gui* pGui);
 
         uint32_t mModelLoadFlags = 0;
-		uint32_t mSceneLoadFlags = 0;
+        uint32_t mSceneLoadFlags = 0;
     };
 }

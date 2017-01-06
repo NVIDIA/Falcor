@@ -121,8 +121,7 @@ namespace Falcor
 
         // create a mesh containing this index & vertex data.
         Mesh::SharedPtr pMesh = Mesh::create({ pBuffer }, numVertices, pIB, numIndicies, pLayout, geomTopology, pSimpleMaterial, box, false);
-        pMesh->addInstance( glm::mat4() );      // Add one instance of this mesh, with no transform matrix
-        pModel->addMesh( std::move( pMesh ) );  // Add this mesh to the model
+        pModel->addMeshInstance(pMesh, glm::mat4()); // Add this mesh to the model
 
         // Do internal computations on model properties
         pModel->calculateModelProperties();
