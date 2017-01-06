@@ -81,22 +81,10 @@ namespace Falcor
         ConstantBuffer::SharedPtr getConstantBuffer(const std::string& name) const;
 
         /** Get a constant buffer object.
-        \param[in] index The index of the buffer
-        \return If the index is valid, a shared pointer to the buffer. Otherwise returns nullptr
+            \param[in] index The index of the buffer
+            \return If the index is valid, a shared pointer to the buffer. Otherwise returns nullptr
         */
         ConstantBuffer::SharedPtr getConstantBuffer(uint32_t index) const;
-
-        /** Get a shader-storage buffer object.
-        \param[in] name The name of the buffer
-        \return If the name is valid, a shared pointer to the SSBO. Otherwise returns nullptr
-        */
-        StructuredBuffer::SharedPtr getStructuredBuffer(const std::string& name) const;
-
-        /** Get a shader-storage buffer object.
-        \param[in] index The index of the buffer
-        \return If the index is valid, a shared pointer to the StructuredBuffer. Otherwise returns nullptr
-        */
-        StructuredBuffer::SharedPtr getStructuredBuffer(uint32_t index) const;
 
         /** Set a raw-buffer. Based on the shader reflection, it will be bound as either an SRV or a UAV
             \param[in] name The name of the buffer
@@ -105,94 +93,97 @@ namespace Falcor
         bool setRawBuffer(const std::string& name, Buffer::SharedPtr pBuf);
         
         /** Set a typed buffer. Based on the shader reflection, it will be bound as either an SRV or a UAV
-        \param[in] name The name of the buffer
-        \param[in] pBuf The buffer object
+            \param[in] name The name of the buffer
+            \param[in] pBuf The buffer object
         */
         bool setTypedBuffer(const std::string& name, TypedBufferBase::SharedPtr pBuf);
 
         /** Set a structured buffer. Based on the shader reflection, it will be bound as either an SRV or a UAV
-        \param[in] name The name of the buffer
-        \param[in] pBuf The buffer object
+            \param[in] name The name of the buffer
+            \param[in] pBuf The buffer object
         */
         bool setStructuredBuffer(const std::string& name, StructuredBuffer::SharedPtr pBuf);
 
-        /** Bind a texture to the program in the global namespace.
-            If you are using bindless textures, than this is not the right call for you. You should use the ConstantBuffer::setTexture() method instead.
+        /** Get a raw-buffer object.
+            \param[in] name The name of the buffer
+            \return If the name is valid, a shared pointer to the buffer object. Otherwise returns nullptr
+        */
+        Buffer::SharedPtr getRawBuffer(const std::string& name) const;
+
+        /** Get a typed buffer object.
+            \param[in] name The name of the buffer
+            \return If the name is valid, a shared pointer to the buffer object. Otherwise returns nullptr
+        */
+        TypedBufferBase::SharedPtr getTypedBuffer(const std::string& name) const;
+        
+        /** Get a structured buffer object.
+            \param[in] name The name of the buffer
+            \return If the name is valid, a shared pointer to the buffer object. Otherwise returns nullptr
+        */
+        StructuredBuffer::SharedPtr getStructuredBuffer(const std::string& name) const;
+
+        /** Bind a texture. Based on the shader reflection, it will be bound as either an SRV or a UAV
             \param[in] name The name of the texture object in the shader
             \param[in] pTexture The texture object to bind
-            \param[in] firstArraySlice The first array slice to bind
-            \param[in] arraySize The array size. If this is equal to Texture#kMaxPossible, will bind the range [firstArraySlice, pTexture->getArraySize()]
-            \param[in] mostDetailedMip The most detailed-mip level
-            \param[in] mipCount The number of mip-levels to bind. If this is equal to Texture#kMaxPossible, will bind the range [mostDetailedMip, pTexture->getMipCount()]
-            \return false if the texture was not found in the program, otherwise true
         */
-        bool setTexture(const std::string& name, const Texture::SharedPtr& pTexture, uint32_t firstArraySlice = 0, uint32_t arraySize = Texture::kMaxPossible, uint32_t mostDetailedMip = 0, uint32_t mipCount = Texture::kMaxPossible);
+        bool setTexture(const std::string& name, const Texture::SharedPtr& pTexture);
 
-        /** Bind a texture as a UAV
+        /** Get a texture object.
+            \param[in] name The name of the texture
+            \return If the name is valid, a shared pointer to the texture object. Otherwise returns nullptr
+        */
+        Texture::SharedPtr getTexture(const std::string& name) const;
+
+        /** Bind an SRV
+            \param[in] index The index of the SRV object in the shader
+            \param[in] pSrv The SRV object to bind 
+        */
+        bool setSrv(uint32_t index, const ShaderResourceView::SharedPtr& pSrv);
+
+        /** Bind a UAV
             \param[in] index The index of the UAV object in the shader
-            \param[in] pTexture The texture object to bind
-            \param[in] mipLevel The requested mip-level
-            \param[in] firstArraySlice The first array slice to bind
-            \param[in] arraySize The array size. If this is equal to Texture#kMaxPossible, will bind the range [firstArraySlice, pTexture->getArraySize()]
-            \return false if the UAV was not found in the program, otherwise true
+            \param[in] pSrv The UAV object to bind
         */
-        bool setUav(uint32_t index, const Texture::SharedPtr& pTexture, uint32_t mipLevel = 0, uint32_t firstArraySlice = 0, uint32_t arraySize = Texture::kMaxPossible);
+        bool setUav(uint32_t index, const UnorderedAccessView::SharedPtr& pUav);
 
-        /** Bind a texture as a UAV
-            \param[in] name The name of the UAV object in the shader
-            \param[in] pTexture The texture object to bind
-            \param[in] mipLevel The requested mip-level
-            \param[in] firstArraySlice The first array slice to bind
-            \param[in] arraySize The array size. If this is equal to Texture#kMaxPossible, will bind the range [firstArraySlice, pTexture->getArraySize()]
-            \return false if the UAV was not found in the program, otherwise true
+        /** Get an SRV object
+            \param[in] index The index of the SRV
+            \return If the index is valid, a shared pointer to the SRV. Otherwise returns nullptr
         */
-        bool setUav(const std::string& name, const Texture::SharedPtr& pTexture, uint32_t mipLevel = 0, uint32_t firstArraySlice = 0, uint32_t arraySize = Texture::kMaxPossible);
+        ShaderResourceView::SharedPtr getSrv(uint32_t index) const;
 
-        /** Bind an array of texture to the program in the global namespace.
-        This can be used to bind a texture declared an array or a number of different variables which are known to be continues in the register space (such as for structure fields)
-        If you are using bindless textures, than this is not the right call for you. You should use the ConstantBuffer::setTexture() method instead.
-        \param[in] name The name of the first texture object in the shader.
-        \param[in] pTextures An array of textures to bind
-        \return false if any of the textures was not found in the program, otherwise true
+        /** Get a UAV object
+            \param[in] index The index of the UAV
+            \return If the index is valid, a shared pointer to the UAV. Otherwise returns nullptr
         */
-        bool setTextureRange(const std::string& name, uint32_t count, const Texture::SharedPtr pTextures[]);
-
-        /** Bind a sampler to the program in the global namespace.
-        If you are using bindless textures, than this is not the right call for you. You should use the ConstantBuffer::setTexture() method instead.
-        \param[in] name The name of the sampler object in the shader
-        \param[in] pSampler The sampler object to bind
-        \return false if the sampler was not found in the program, otherwise true
-        */
-        bool setSampler(const std::string& name, const Sampler::SharedPtr& pSampler);
-
-        /** Bind a texture to the program in the global namespace.
-        If you are using bindless textures, than this is not the right call for you. You should use the ConstantBuffer::setTexture() method instead.
-        \param[in] index The index of the texture object in the shader
-        \param[in] firstArraySlice The first array slice to bind
-        \param[in] arraySize The array size. If this is equal to Texture#kMaxPossible, will bind the range [firstArraySlice, pTexture->getArraySize()]
-        \param[in] mostDetailedMip The most detailed-mip level
-        \param[in] mipCount The number of mip-levels to bind. If this is equal to Texture#kMaxPossible, will bind the range [mostDetailedMip, pTexture->getMipCount()]
-        \return false if the texture was not found in the program, otherwise true
-        */
-        bool setTexture(uint32_t index, const Texture::SharedPtr& pTexture, uint32_t firstArraySlice = 0, uint32_t arraySize = Texture::kMaxPossible, uint32_t mostDetailedMip = 0, uint32_t mipCount = Texture::kMaxPossible);
-
-        /** Bind an array of texture to the program in the global namespace.
-        This can be used to bind a texture declared an array or a number of different variables which are known to be continues in the register space (such as for structure fields)
-        If you are using bindless textures, than this is not the right call for you. You should use the ConstantBuffer::setTexture() method instead.
-        \param[in] startIndex The index of the first texture object in the shader
-        \param[in] pTextures An array of textures to bind
-        \return false if any of the textures was not found in the program, otherwise true
-        */
-        bool setTextureRange(uint32_t startIndex, uint32_t count, const Texture::SharedPtr pTextures[]);
+        UnorderedAccessView::SharedPtr getUav(uint32_t index) const;
 
         /** Bind a sampler to the program in the global namespace.
             If you are using bindless textures, than this is not the right call for you. You should use the ConstantBuffer::setTexture() method instead.
             \param[in] name The name of the sampler object in the shader
             \param[in] pSampler The sampler object to bind
             \return false if the sampler was not found in the program, otherwise true
-            */
+        */
+        bool setSampler(const std::string& name, const Sampler::SharedPtr& pSampler);
+
+        /** Bind a sampler to the program in the global namespace.
+            If you are using bindless textures, than this is not the right call for you. You should use the ConstantBuffer::setTexture() method instead.
+            \param[in] name The name of the sampler object in the shader
+            \param[in] pSampler The sampler object to bind
+            \return false if the sampler was not found in the program, otherwise true
+        */
         bool setSampler(uint32_t index, const Sampler::SharedPtr& pSampler);
-        
+
+        /** Gets a sampler object.
+            \return If the index is valid, a shared pointer to the sampler. Otherwise returns nullptr
+        */
+        Sampler::SharedPtr getSampler(const std::string& name) const;
+
+        /** Gets a sampler object.
+            \return If the index is valid, a shared pointer to the sampler. Otherwise returns nullptr
+        */
+        Sampler::SharedPtr getSampler(uint32_t index) const;
+
         /** Get the program reflection interface
         */
         ProgramReflection::SharedConstPtr getReflection() const { return mpReflector; }
@@ -201,18 +192,23 @@ namespace Falcor
         */
         RootSignature::SharedConstPtr getRootSignature() const { return mpRootSignature; }
 
-        template<typename T>
+        template<typename ViewType>
         struct ResourceData
         {
-            T pResource;
-            uint32_t firstArraySlice = 0;
-            uint32_t arraySize = 1;
-            uint32_t mostDetailedMip = 0;
-            uint32_t mipCount = 1;
+            typename ViewType::SharedPtr pView;
+            Resource::SharedPtr pResource;
             uint32_t rootSigOffset = 0;
         };
 
-        using ResourceDataMap = std::unordered_map<uint32_t, ResourceData<Resource::SharedPtr>>;
+        template<>
+        struct ResourceData<Sampler>
+        {
+            Sampler::SharedPtr pSampler;
+            uint32_t rootSigOffset = 0;
+        };
+
+        template<typename T>
+        using ResourceMap = std::unordered_map<uint32_t, ResourceData<T>>;
 
     protected:
         template<bool forGraphics, typename ContextType>
@@ -223,10 +219,10 @@ namespace Falcor
         RootSignature::SharedConstPtr mpRootSignature;
         ProgramReflection::SharedConstPtr mpReflector;
 
-        ResourceDataMap mAssignedCbs;        // HLSL 'b' registers
-        ResourceDataMap mAssignedSrvs;       // HLSL 't' registers
-        ResourceDataMap mAssignedUavs;       // HLSL 'u' registers
-        std::map<uint32_t, ResourceData<Sampler::SharedConstPtr>> mAssignedSamplers;    // HLSL 's' registers
+        ResourceMap<ConstantBuffer> mAssignedCbs;        // HLSL 'b' registers
+        ResourceMap<ShaderResourceView> mAssignedSrvs;   // HLSL 't' registers
+        ResourceMap<UnorderedAccessView> mAssignedUavs;  // HLSL 'u' registers
+        ResourceMap<Sampler> mAssignedSamplers;          // HLSL 's' registers
     };
 
     class GraphicsVars : public ProgramVars, public std::enable_shared_from_this<ProgramVars>
@@ -234,10 +230,11 @@ namespace Falcor
     public:
         using SharedPtr = SharedPtrT<GraphicsVars>;
         using SharedConstPtr = std::shared_ptr<const GraphicsVars>;
+
         /** Create a new object
             \param[in] pReflector A program reflection object containing the requested declarations
             \param[in] createBuffers If true, will create the ConstantBuffer objects. Otherwise, the user will have to bind the CBs himself
-            \param[in] pRootSignature A root-signature describing how to bind resources into the shader. If this paramter is nullptr, a root-signature object will be created from the program reflection object
+            \param[in] pRootSignature A root-signature describing how to bind resources into the shader. If this parameter is nullptr, a root-signature object will be created from the program reflection object
         */
         static SharedPtr create(const ProgramReflection::SharedConstPtr& pReflector, bool createBuffers = true, const RootSignature::SharedConstPtr& pRootSig = nullptr);
         void apply(RenderContext* pContext) const;
@@ -253,9 +250,9 @@ namespace Falcor
         using SharedConstPtr = std::shared_ptr<const ComputeVars>;
 
         /** Create a new object
-        \param[in] pReflector A program reflection object containing the requested declarations
-        \param[in] createBuffers If true, will create the ConstantBuffer objects. Otherwise, the user will have to bind the CBs himself
-        \param[in] pRootSignature A root-signature describing how to bind resources into the shader. If this paramter is nullptr, a root-signature object will be created from the program reflection object
+            \param[in] pReflector A program reflection object containing the requested declarations
+            \param[in] createBuffers If true, will create the ConstantBuffer objects. Otherwise, the user will have to bind the CBs himself
+            \param[in] pRootSignature A root-signature describing how to bind resources into the shader. If this parameter is nullptr, a root-signature object will be created from the program reflection object
         */
         static SharedPtr create(const ProgramReflection::SharedConstPtr& pReflector, bool createBuffers = true, const RootSignature::SharedConstPtr& pRootSig = nullptr);
         void apply(CopyContext* pContext) const;

@@ -298,7 +298,16 @@ namespace Falcor
             logError(std::string("Material::setIntoConstantBuffer() - can't find the first texture object"));
             return;
         }
-        pVars->setTextureRange(pResourceDesc->regIndex, kTexCount, (Texture::SharedPtr*)&mData.textures);
+
+        auto pTextures = (Texture::SharedPtr*)&mData.textures;
+
+        for (uint32_t i = 0; i < kTexCount; i++)
+        {
+            if (pTextures[i] != nullptr) 
+            {
+                pVars->setSrv(pResourceDesc->regIndex + i, pTextures[i]->getSRV());
+            }
+        }
 
         pVars->setSampler("gMaterial.samplerState", mData.samplerState);
     }

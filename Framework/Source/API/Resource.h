@@ -113,33 +113,33 @@ namespace Falcor
         ApiHandle getApiHandle() const { return mApiHandle; }
 
         /** Get a shader-resource view.
-        \param[in] firstArraySlice The first array slice of the view
-        \param[in] arraySize The array size. If this is equal to Texture#kMaxPossible, will create a view ranging from firstArraySlice to the texture's array size
-        \param[in] mostDetailedMip The most detailed mip level of the view
-        \param[in] mipCount The number of mip-levels to bind. If this is equal to Texture#kMaxPossible, will create a view ranging from mostDetailedMip to the texture's mip levels count
+            \param[in] firstArraySlice The first array slice of the view
+            \param[in] arraySize The array size. If this is equal to Texture#kMaxPossible, will create a view ranging from firstArraySlice to the texture's array size
+            \param[in] mostDetailedMip The most detailed mip level of the view
+            \param[in] mipCount The number of mip-levels to bind. If this is equal to Texture#kMaxPossible, will create a view ranging from mostDetailedMip to the texture's mip levels count
         */
         ShaderResourceView::SharedPtr getSRV(uint32_t mostDetailedMip = 0, uint32_t mipCount = kMaxPossible, uint32_t firstArraySlice = 0, uint32_t arraySize = kMaxPossible) const;
 
         /** Get a render-target view.
-        \param[in] mipLevel The requested mip-level
-        \param[in] firstArraySlice The first array slice of the view
-        \param[in] arraySize The array size. If this is equal to Texture#kMaxPossible, will create a view ranging from firstArraySlice to the texture's array size
+            \param[in] mipLevel The requested mip-level
+            \param[in] firstArraySlice The first array slice of the view
+            \param[in] arraySize The array size. If this is equal to Texture#kMaxPossible, will create a view ranging from firstArraySlice to the texture's array size
         */
         RenderTargetView::SharedPtr getRTV(uint32_t mipLevel = 0, uint32_t firstArraySlice = 0, uint32_t arraySize = kMaxPossible) const;
 
         /** Get a depth stencil view.
-        \param[in] mipLevel The requested mip-level
-        \param[in] firstArraySlice The first array slice of the view
-        \param[in] arraySize The array size. If this is equal to Texture#kMaxPossible, will create a view ranging from firstArraySlice to the texture's array size
+            \param[in] mipLevel The requested mip-level
+            \param[in] firstArraySlice The first array slice of the view
+            \param[in] arraySize The array size. If this is equal to Texture#kMaxPossible, will create a view ranging from firstArraySlice to the texture's array size
         */
         DepthStencilView::SharedPtr getDSV(uint32_t mipLevel = 0, uint32_t firstArraySlice = 0, uint32_t arraySize = kMaxPossible) const;
 
         /** Get an unordered access view.
-        \param[in] mipLevel The requested mip-level
-        \param[in] firstArraySlice The first array slice of the view
-        \param[in] arraySize The array size. If this is equal to Texture#kMaxPossible, will create a view ranging from firstArraySlice to the texture's array size
+            \param[in] mipLevel The requested mip-level
+            \param[in] firstArraySlice The first array slice of the view
+            \param[in] arraySize The array size. If this is equal to Texture#kMaxPossible, will create a view ranging from firstArraySlice to the texture's array size
         */
-        virtual UnorderedAccessView::SharedPtr getUAV(uint32_t mipLevel = 0, uint32_t firstArraySlice = 0, uint32_t arraySize = kMaxPossible) const;
+        UnorderedAccessView::SharedPtr getUAV(uint32_t mipLevel = 0, uint32_t firstArraySlice = 0, uint32_t arraySize = kMaxPossible) const;
 
         struct ViewInfoHashFunc
         {

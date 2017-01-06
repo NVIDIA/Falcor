@@ -41,6 +41,13 @@ namespace Falcor
         using SharedPtr = std::shared_ptr<ProgramReflection>;
         using SharedConstPtr = std::shared_ptr<const ProgramReflection>;
 
+        enum class ShaderAccess
+        {
+            Undefined,
+            Read,
+            ReadWrite
+        };
+
         /** Variable definition
         */
         struct Variable
@@ -129,13 +136,6 @@ namespace Falcor
                 Sampler
             };
 
-            enum class ShaderAccess
-            {
-                Undefined,
-                Read,
-                ReadWrite
-            };
-
             ShaderAccess shaderAccess = ShaderAccess::Undefined;
             ResourceType type = ResourceType::Unknown;      ///< Resource type
             Dimensions dims = Dimensions::Unknown;          ///< Resource dimensions
@@ -172,12 +172,6 @@ namespace Falcor
                 Structured,
 
                 Count
-            };
-
-            enum class ShaderAccess
-            {
-                Read,
-                ReadWrite
             };
 
             static const uint32_t kTypeCount = (uint32_t)Type::Count;
@@ -407,9 +401,9 @@ namespace Falcor
 #undef type_2_string
     }
 
-    inline const std::string to_string(ProgramReflection::Resource::ShaderAccess access)
+    inline const std::string to_string(ProgramReflection::ShaderAccess access)
     {
-#define access_2_string(a) case ProgramReflection::Resource::ShaderAccess::a: return #a;
+#define access_2_string(a) case ProgramReflection::ShaderAccess::a: return #a;
         switch (access)
         {
             access_2_string(Undefined);

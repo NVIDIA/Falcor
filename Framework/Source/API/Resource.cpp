@@ -105,34 +105,55 @@ namespace Falcor
 
     template<typename ViewClass>
     using CreateFuncType = std::function<typename ViewClass::SharedPtr(const Resource* pResource, uint32_t mostDetailedMip, uint32_t mipCount, uint32_t firstArraySlice, uint32_t arraySize)>;
-    
+
     template<typename ViewClass, typename ViewMapType>
     typename ViewClass::SharedPtr findViewCommon(const Resource* pResource, uint32_t mostDetailedMip, uint32_t mipCount, uint32_t firstArraySlice, uint32_t arraySize, ViewMapType& viewMap, CreateFuncType<ViewClass> createFunc)
     {
-        const Texture* pTexture = dynamic_cast<const Texture*>(pResource);
-        if(pTexture)
-        {
-            assert(firstArraySlice < pTexture->getArraySize());
-            assert(mostDetailedMip < pTexture->getMipCount());
-            if (mipCount == Resource::kMaxPossible)
-            {
-                mipCount = pTexture->getMipCount() - mostDetailedMip;
-            }
-            if (arraySize == Resource::kMaxPossible)
-            {
-                arraySize = pTexture->getArraySize() - firstArraySlice;
-            }
-            assert(mipCount + mostDetailedMip <= pTexture->getMipCount());
-            assert(arraySize + firstArraySlice <= pTexture->getArraySize());
+        uint32_t resMipCount = 1;
+        uint32_t resArraySize = 1;
 
+        const Texture* pTexture = dynamic_cast<const Texture*>(pResource);
+
+        if (pTexture)
+        {
+            resArraySize = pTexture->getArraySize();
+            resMipCount = pTexture->getMipCount();
         }
         else
         {
             assert(pResource->getType() == Resource::Type::Buffer);
-            assert(mostDetailedMip == 0);
-            assert(mipCount == 1);
-            assert(firstArraySlice == 0);
-            assert(arraySize == 1);
+        }
+
+        if (firstArraySlice >= resArraySize)
+        {
+            logWarning("First array slice is OOB when creating resource view. Clamping");
+            firstArraySlice = resArraySize - 1;
+        }
+
+        if (mostDetailedMip >= resMipCount)
+        {
+            logWarning("Most detailed mip is OOB when creating resource view. Clamping");
+            mostDetailedMip = resMipCount - 1;
+        }
+
+        if (mipCount == Resource::kMaxPossible)
+        {
+            mipCount = resMipCount - mostDetailedMip;
+        }
+        else if (mipCount + mostDetailedMip >= resMipCount)
+        {
+            logWarning("Mip count is OOB when creating resource view. Clamping");
+            mipCount = resMipCount - mostDetailedMip;
+        }
+
+        if (arraySize == Resource::kMaxPossible)
+        {
+            arraySize = resArraySize - firstArraySlice;
+        }
+        else if (arraySize + firstArraySlice >= resArraySize)
+        {
+            logWarning("Array size is OOB when creating resource view. Clamping");
+            arraySize = resArraySize - firstArraySlice;
         }
 
         ViewClass::ViewInfo view = ViewClass::ViewInfo(mostDetailedMip, mipCount, firstArraySlice, arraySize);

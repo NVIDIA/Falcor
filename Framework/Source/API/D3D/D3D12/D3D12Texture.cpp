@@ -279,7 +279,7 @@ namespace Falcor
             mpApiData->spGenMips->pState->setFbo(pFbo);
 
             // Create the resource view
-            mpApiData->spGenMips->pVars->setTexture(0, pNonConst, 0, mArraySize, i, 1);
+            mpApiData->spGenMips->pVars->setSrv(0, pNonConst->getSRV(i, 1, 0, mArraySize));
 
             // Run the program
             mpApiData->spGenMips->pFullScreenPass->execute(pContext);

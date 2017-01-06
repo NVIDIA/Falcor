@@ -131,14 +131,6 @@ namespace Falcor
         */
         void evict() const;
 
-        /** Get an unordered access view.
-        */
-        UnorderedAccessView::SharedPtr getUAV() const { return Resource::getUAV(0, 0, 1); }
-
-        /** Get a shader resource view
-        */
-        ShaderResourceView::SharedPtr getSRV() const { return Resource::getSRV(0, 1, 0, 1); }
-
         /** Get safe offset and size values
         */
         bool adjustSizeOffsetParams(size_t& size, size_t& offset) const

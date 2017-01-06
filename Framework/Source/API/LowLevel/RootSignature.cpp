@@ -161,10 +161,10 @@ namespace Falcor
             {
                 switch (resource.shaderAccess)
                 {
-                case ProgramReflection::Resource::ShaderAccess::ReadWrite:
+                case ProgramReflection::ShaderAccess::ReadWrite:
                     descType = RootSignature::DescType::UAV;
                     break;
-                case ProgramReflection::Resource::ShaderAccess::Read:
+                case ProgramReflection::ShaderAccess::Read:
                     descType = RootSignature::DescType::SRV;
                     break;
                 default:
