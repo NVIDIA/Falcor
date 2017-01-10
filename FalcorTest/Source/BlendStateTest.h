@@ -28,7 +28,6 @@
 #pragma once
 #include "TestBase.h"
 
-
 class BlendStateTest : public TestBase
 {
 public:

@@ -58,9 +58,9 @@ TestBase::TestResult RasterizerStateTest::TestCreate()
     mpRasterizerState = nullptr;
     mpRasterizerState = RasterizerState::create(desc);
     if (doStatesMatch(desc))
-        return TestResult(true);
+        return TestResult(true, FUNCTION_INFO);
     else
-        return TestResult(false, ERROR_PREFIX + "Rasterizer state doesn't match desc used to create it");
+        return TestResult(false, FUNCTION_INFO, "Rasterizer state doesn't match desc used to create it");
 }
 
 TestBase::TestResult RasterizerStateTest::TestCreateStress()
@@ -79,15 +79,15 @@ TestBase::TestResult RasterizerStateTest::TestCreateStress()
     mpRasterizerState = nullptr;
     mpRasterizerState = RasterizerState::create(desc);
     if (!doStatesMatch(desc))
-        return TestResult(false, ERROR_PREFIX + "Rasterizer state doesn't match desc used to create it");
+        return TestResult(false, FUNCTION_INFO + "Rasterizer state doesn't match desc used to create it");
     
     desc.setDepthBias(std::numeric_limits<int32_t>::max(), std::numeric_limits<float>::min());
     mpRasterizerState = nullptr;
     mpRasterizerState = RasterizerState::create(desc);
     if (doStatesMatch(desc))
-        return TestResult(true);
+        return TestResult(true, FUNCTION_INFO);
     else
-        return TestResult(false, ERROR_PREFIX + "Rasterizer state doesn't match desc used to create it");
+        return TestResult(false, FUNCTION_INFO, "Rasterizer state doesn't match desc used to create it");
 }
 
 bool RasterizerStateTest::doStatesMatch(const TestDesc& desc)
@@ -102,4 +102,12 @@ bool RasterizerStateTest::doStatesMatch(const TestDesc& desc)
         mpRasterizerState->isLineAntiAliasingEnabled() == desc.mEnableLinesAA &&
         mpRasterizerState->isConservativeRasterizationEnabled() == desc.mConservativeRaster &&
         mpRasterizerState->getForcedSampleCount() == desc.mForcedSampleCount;
+}
+
+int main()
+{
+    RasterizerStateTest rst;
+    rst.init();
+    rst.run();
+    return 0;
 }

@@ -1,0 +1,5 @@
+BlendStateTest Debug
+BlendStateTest Release
+BlendStateTest adfg
+RasterizerStateTest Debug
+RasterizerStateTest Release

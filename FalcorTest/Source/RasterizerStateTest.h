@@ -31,8 +31,9 @@
 class RasterizerStateTest : public TestBase
 {
 public:
-    std::vector<TestResult> runTests() override;
     RasterizerStateTest();
+    std::vector<TestResult> runTests() override;
+
 private:
     class TestDesc : public RasterizerState::Desc 
     {

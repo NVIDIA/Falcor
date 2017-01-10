@@ -31,12 +31,69 @@
 TestBase::TestBase()
 {}
 
+void TestBase::init()
+{
+    //Turns off crash window 
+    SetErrorMode(GetErrorMode() | SEM_NOGPFAULTERRORBOX);
+    //Turn off debug assertion window
+    _CrtSetReportMode(_CRT_ASSERT, 0);
+
+    //Not needed right now, maybe later.
+    //Whatever specific things the derived might want to init
+    //InitDerived();
+}
+
+void TestBase::run()
+{
+    std::vector<TestResult> testResults = runTests();
+    std::vector<std::string> xmlStrings;
+    xmlStrings.resize(testResults.size());
+    for (int32_t i = 0; i < testResults.size(); ++i)
+    {
+        mResultSummary.addTest(testResults[i]);
+        xmlStrings[i] = XMLFromTestResult(testResults[i]);
+    }
+
+    GenerateXML(xmlStrings);
+}
+
 std::string TestBase::GetDerivedName()
 {
-    return mpDerivedName;
+    return mDerivedName;
 }
 
 std::vector<TestBase::TestResult> TestBase::runTests()
 {
     return std::vector<TestResult>();
+}
+
+void TestBase::GenerateXML(const std::vector<std::string>& xmlStrings)
+{
+    std::ofstream of;
+    
+    of.open(mDerivedName + "_" + CONFIG_NAME + "_TestingLog.xml");
+    of << "<?xml version = \"1.0\" encoding = \"UTF-8\"?>\n";
+    of << "<TestLog>\n";
+    of << "<Summary\n";
+    of << "\tTotalTests=\"" + std::to_string(mResultSummary.total) + "\"\n";
+    of << "\tPassedTests=\"" + std::to_string(mResultSummary.pass) + "\"\n";
+    of << "\tFailedTests=\"" + std::to_string(mResultSummary.fail) + "\"\n";
+    of << "/>\n";
+
+    for (auto it = xmlStrings.begin(); it != xmlStrings.end(); ++it)
+        of << *it;
+
+    of << "</TestLog>";
+    of.close();
+}
+
+std::string TestBase::XMLFromTestResult(const TestResult& r)
+{
+    std::string xml;
+    xml += "<TestResult\n";
+    xml += "\tTestName=\"" + r.functionInfo + "\"\n";
+    xml += "\tPassed=\"" + std::to_string(r.passed) + "\"\n";
+    xml += "\tErrorMessage=\"" + r.error + "\"\n";
+    xml += "/>\n";
+    return xml;
 }

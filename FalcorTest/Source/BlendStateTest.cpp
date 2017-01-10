@@ -38,7 +38,7 @@ std::vector<TestBase::TestResult> BlendStateTest::runTests()
     std::vector<TestResult> results;
     results.push_back(TestCreate());
     results.push_back(TestRtArray());
-    results.push_back(TestResult(false, ERROR_PREFIX + "Intentional Fail for Testing the Tester"));
+    results.push_back(TestResult(false, FUNCTION_INFO, "Intentional Fail for Testing the Tester"));
     return results;
 }
 
@@ -60,9 +60,9 @@ TestBase::TestResult BlendStateTest::TestCreate()
     mpBlendState = BlendState::create(desc);
 
     if (doStatesMatch(desc))
-        return TestResult(true);
+        return TestResult(true, FUNCTION_INFO);
     else
-        return TestResult(false, ERROR_PREFIX + "Blend state doesn't match desc used to create");
+        return TestResult(false, FUNCTION_INFO, "Blend state doesn't match desc used to create");
 }
 
 TestBase::TestResult BlendStateTest::TestRtArray()
@@ -84,29 +84,43 @@ TestBase::TestResult BlendStateTest::TestRtArray()
 
     mpBlendState = BlendState::create(desc);
 
+    //Below is out of bounds testing, having trouble catching an exception from it, 
+    //deal with this later when back to focusing on writing low level tests
+
     //assert in vector will stop this in debug, but you can do it in release
-#ifndef _DEBUG
-    BlendState::Desc::RenderTargetDesc rtDesc = mpBlendState->getRtDesc(99);
-    std::cout << "I can read this random memory " << std::endl;
-    std::cout << rtDesc.writeMask.writeRed << ", " << rtDesc.writeMask.writeGreen <<
-        ", " << rtDesc.writeMask.writeBlue << ", " << rtDesc.writeMask.writeAlpha <<
-        ", " << rtDesc.blendEnabled << std::endl;
-    std::cout << "I can also write to random memory " << std::endl;
-    rtDesc.writeMask.writeRed = true;
-    rtDesc.writeMask.writeGreen = true;
-    rtDesc.writeMask.writeBlue = true;
-    rtDesc.writeMask.writeAlpha = true;
-    rtDesc.blendEnabled = true;
-    std::cout << "updated values" << std::endl;
-    std::cout << rtDesc.writeMask.writeRed << ", " << rtDesc.writeMask.writeGreen <<
-        ", " << rtDesc.writeMask.writeBlue << ", " << rtDesc.writeMask.writeAlpha <<
-        ", " << rtDesc.blendEnabled << std::endl;
-#endif
+    //Interesting, doing this will fuck up the program for the next time you call it
+//#ifndef _DEBUG
+    //try 
+    //{
+    //    BlendState::Desc::RenderTargetDesc rtDesc = mpBlendState->getRtDesc(99);
+    //    rtDesc.writeMask.writeRed = true;
+    //    rtDesc.writeMask.writeGreen = true;
+    //    rtDesc.writeMask.writeBlue = true;
+    //    rtDesc.writeMask.writeAlpha = true;
+    //    rtDesc.blendEnabled = true;
+    //}
+    //catch (...)
+    //{
+    //    std::cout << "Caught"; //<< ia.what() << std::endl;
+    //}
+    //print random Memory
+    //std::cout << rtDesc.writeMask.writeRed << ", " << rtDesc.writeMask.writeGreen <<
+    //    ", " << rtDesc.writeMask.writeBlue << ", " << rtDesc.writeMask.writeAlpha <<
+    //    ", " << rtDesc.blendEnabled << std::endl;
+
+    //Write to random memory
+
+
+    //print updating values (confirming it actually let me write to memory)
+    //std::cout << rtDesc.writeMask.writeRed << ", " << rtDesc.writeMask.writeGreen <<
+    //    ", " << rtDesc.writeMask.writeBlue << ", " << rtDesc.writeMask.writeAlpha <<
+    //    ", " << rtDesc.blendEnabled << std::endl;
+//#endif
 
     if (doStatesMatch(desc))
-        return TestResult(true);
+        return TestResult(true, FUNCTION_INFO);
     else
-        return TestResult(false, ERROR_PREFIX + "Render target desc doesn't match ones used to create");
+        return TestResult(false, FUNCTION_INFO, "Render target desc doesn't match ones used to create");
 }
 
 bool BlendStateTest::doStatesMatch(const TestDesc& desc)
@@ -144,3 +158,10 @@ bool BlendStateTest::doStatesMatch(const TestDesc& desc)
     return true;
 }
 
+int main()
+{
+    BlendStateTest bst;
+    bst.init();
+    bst.run();
+    return 0;
+}

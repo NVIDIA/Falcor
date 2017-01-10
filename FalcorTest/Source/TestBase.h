@@ -34,32 +34,55 @@
 using namespace Falcor;
 
 //.name() gives Class X, substr is to remove the class prefix and just get classname
-#define REGISTER_NAME mpDerivedName = std::string(typeid(*this).name()).substr(6, std::string::npos);
-#define ERROR_PREFIX "[" + std::string(__FUNCTION__) + "(Line " + std::to_string(__LINE__) + ")]: "
+#define REGISTER_NAME mDerivedName = std::string(typeid(*this).name()).substr(6, std::string::npos);
+#define FUNCTION_INFO std::string(__FUNCTION__) + "(Line " + std::to_string(__LINE__) + ")"
 
 class TestBase
 {
 public:
-    using UniquePtr = std::unique_ptr<TestBase>;
-
     struct TestResult
     {
-        TestResult() : passed(false), errorDesc() {}
-        TestResult(bool pass) : passed(pass), errorDesc() {}
-        TestResult(bool pass, std::string err) : passed(pass), errorDesc(err) {}
+        TestResult() : passed(false) {}
+        TestResult(bool pass, std::string fxInfo) : passed(pass), functionInfo(fxInfo) {}
+        TestResult(bool pass, std::string fxInfo, std::string err) : 
+            passed(pass), functionInfo(fxInfo), error(err) {}
 
         bool passed;
-        std::string errorDesc;
+        std::string functionInfo;
+        std::string error;
     };
 
-    virtual std::vector<TestResult> runTests();
-
+    void init();
+    void run();
     std::string GetDerivedName();
+    //needed? 
     //virtual ~TestBase();
+
 protected:
     TestBase();
-    //I don't love this, it isn't great. But I'm not sure how else to allow 
-    //running only tests on particular classes
-    std::string mpDerivedName; 
+    virtual std::vector<TestResult> runTests();
+
+    //I dont need this right now, but this is something might be needed in future
+    //Maybe not anymore with different exes, there will be no container of testbase
+    //virtual void InitDerived();
+
+    //Is this even necessary anymore? used to generate filename i guess
+    std::string mDerivedName; 
+    std::vector<TestResult> mpTestResults;
+
 private: 
+    class ResultSummary
+    {
+    public:
+        ResultSummary() : total(0), pass(0), fail(0) {}
+        void addTest(TestResult r) { ++total; r.passed ? ++pass : ++fail; }
+        uint32_t total;
+        uint32_t pass;
+        uint32_t fail;
+    };
+
+    void GenerateXML(const std::vector<std::string>& xmlStrings);
+
+    std::string XMLFromTestResult(const TestResult& r);
+    ResultSummary mResultSummary;
 };
