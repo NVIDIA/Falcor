@@ -73,13 +73,13 @@ namespace Falcor
         uint32_t getHeight() const {return mHeight;}
         /** Get the number of bytes per pixel
         */
-        uint32_t getBytesPerPixel() const {return mBytesPerPixel;}
+        ResourceFormat getFormat() const {return mFormat;}
 
     private:
         Bitmap() = default;
         uint8_t* mpData    = nullptr;
         uint32_t mWidth    = 0;
         uint32_t mHeight   = 0;
-        uint32_t mBytesPerPixel = 0;
+        ResourceFormat mFormat;
     };
 }

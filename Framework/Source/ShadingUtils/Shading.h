@@ -280,7 +280,15 @@ vec4 _fn evalSpecularLayer(in const MaterialLayerDesc desc, in const MaterialLay
 
     vec3 value = lAttr.lightIntensity;
 
-    vec2 roughness = v2(data.roughness.constantColor.x, data.roughness.constantColor.y);
+    vec2 roughness;
+    if(desc.hasRoughnessTexture != 0)
+    {
+        roughness = v2(data.albedo.constantColor.w, data.albedo.constantColor.w);
+    }
+    else
+    {
+        roughness = v2(data.roughness.constantColor.x, data.roughness.constantColor.y);
+    }
 #ifdef _MS_FILTER_ROUGHNESS
     roughness = filterRoughness(shAttr, lAttr, roughness);
 #endif

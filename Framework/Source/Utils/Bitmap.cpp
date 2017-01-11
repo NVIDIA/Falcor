@@ -84,8 +84,39 @@ namespace Falcor
             return UniqueConstPtr(genError("Invalid image", filename));
         }
 
-        // Convert the image to RGBA image
         uint32_t bpp = FreeImage_GetBPP(pDib);
+        switch(bpp)
+        {
+        case 128:
+            pBmp->mFormat = ResourceFormat::RGBA32Float;  // 4xfloat32 HDR format
+            break;
+        case 96:
+            pBmp->mFormat = ResourceFormat::RGB32Float;  // 3xfloat32 HDR format
+            break;
+        case 64:
+            pBmp->mFormat = ResourceFormat::RGBA16Float;  // 4xfloat16 HDR format
+            break;
+        case 48:
+            pBmp->mFormat = ResourceFormat::RGB16Float;  // 3xfloat16 HDR format
+            break;
+        case 32:
+            pBmp->mFormat = ResourceFormat::BGRA8Unorm;
+            break;
+        case 24:
+            pBmp->mFormat = ResourceFormat::BGRX8Unorm;
+            break;
+        case 16:
+            pBmp->mFormat = ResourceFormat::RG8Unorm;
+            break;
+        case 8:
+            pBmp->mFormat = ResourceFormat::R8Unorm;
+            break;
+        default:
+            genError("Unknown bits-per-pixel", filename);
+            return nullptr;
+        }
+
+        // Convert the image to RGBX image
         if(bpp == 24)
         {
             bpp = 32;
@@ -93,40 +124,10 @@ namespace Falcor
             FreeImage_Unload(pDib);
             pDib = pNew;
         }
+        uint32_t bytesPerPixel = bpp / 8;
 
-        switch(bpp)
-        {
-        case 128:
-            pBmp->mBytesPerPixel = 16;  // 4xfloat32 HDR format
-            break;
-        case 96:
-            pBmp->mBytesPerPixel = 12;  // 3xfloat32 HDR format
-            break;
-        case 64:
-            pBmp->mBytesPerPixel = 8;  // 4xfloat16 HDR format
-            break;
-        case 48:
-            pBmp->mBytesPerPixel = 6;  // 3xfloat16 HDR format
-            break;
-        case 32:
-            pBmp->mBytesPerPixel = 4;
-            break;
-        case 24:
-            pBmp->mBytesPerPixel = 3;
-            break;
-        case 16:
-            pBmp->mBytesPerPixel = 2;
-            break;
-        case 8:
-            pBmp->mBytesPerPixel = 1;
-            break;
-        default:
-            genError("Unknown bits-per-pixel", filename);
-            return nullptr;
-        }
-
-        pBmp->mpData = new uint8_t[pBmp->mHeight * pBmp->mWidth * pBmp->mBytesPerPixel];
-        FreeImage_ConvertToRawBits(pBmp->mpData, pDib, pBmp->mWidth * pBmp->mBytesPerPixel, bpp, FI_RGBA_RED_MASK, FI_RGBA_GREEN_MASK, FI_RGBA_BLUE_MASK, isTopDown);
+        pBmp->mpData = new uint8_t[pBmp->mHeight * pBmp->mWidth * bytesPerPixel];
+        FreeImage_ConvertToRawBits(pBmp->mpData, pDib, pBmp->mWidth * bytesPerPixel, bpp, FI_RGBA_RED_MASK, FI_RGBA_GREEN_MASK, FI_RGBA_BLUE_MASK, isTopDown);
 
         FreeImage_Unload(pDib);
         return UniqueConstPtr(pBmp);

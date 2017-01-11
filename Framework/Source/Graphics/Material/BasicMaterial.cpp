@@ -83,8 +83,24 @@ namespace Falcor
             desc.hasAlbedoTexture = (data.albedo.texture.pTexture != nullptr);
 
             data.roughness.constantColor = vec4(convertShininessToRoughness(shininess));
-            data.roughness.texture.pTexture = pTextures[MapType::ShininessMap];
-            desc.hasRoughnessTexture = (data.roughness.texture.pTexture != nullptr);
+            if(desc.hasAlbedoTexture)
+            {
+                ResourceFormat texFormat = data.albedo.texture.pTexture->getFormat();
+                if(getFormatChannelCount(texFormat) == 4)
+                {
+                    switch(texFormat)
+                    {
+                    case ResourceFormat::RGBX8Unorm:
+                    case ResourceFormat::RGBX8UnormSrgb:
+                    case ResourceFormat::BGRX8Unorm:
+                    case ResourceFormat::BGRX8UnormSrgb:
+                        break;
+                    default:
+                        data.roughness.texture = data.albedo.texture;
+                        desc.hasRoughnessTexture = true;
+                    }
+                }
+            }
 
             /* Average chrome IoR and kappa */
             data.extraParam.constantColor = vec4(3.f, 4.2f, 0.f, 0.f);
