@@ -3,8 +3,10 @@ import shutil
 import time
 import os
 from xml.dom import minidom
+import argparse
 
 testListFile = 'C:\\Users\\clavelle\\Desktop\\FalcorGitHub\\FalcorTest\\TestList.txt'
+buildBatchFile = 'BuildFalcorTest.bat'
 debugFolder = 'C:\\Users\\clavelle\\Desktop\\FalcorGitHub\\FalcorTest\\Bin\\x64\\Debug\\'
 releaseFolder = 'C:\\Users\\clavelle\\Desktop\\FalcorGitHub\\FalcorTest\\Bin\\x64\\Release\\'
 resultsFolder = 'TestResults'
@@ -24,6 +26,9 @@ class TestResults(object):
 
 resultList = []
 resultSummary = TestResults()
+
+def buildTest(testName, config):
+    subprocess.call([buildBatchFile, config, testName])
 
 def addCrash(testName):
     global resultList
@@ -53,10 +58,10 @@ def processTestResult(testName):
         newResult.Failed = int(summary[0].attributes['FailedTests'].value)
         resultList.append((testName, newResult))
         resultSummary.add(newResult)
-        shutil.move(resultFile, resultsFolder)
+        shutil.copy(resultFile, resultsFolder)
+        os.remove(resultFile)
 
-
-def runTests():
+def readTestList(buildTests):
     testList = open(testListFile)
     for line in testList.readlines():
         #strip off newline if there is one 
@@ -64,22 +69,32 @@ def runTests():
             line = line[:-1]
 
         spaceIndex = line.find(' ');
-        testName = line[:spaceIndex]
-        configName = line[spaceIndex + 1:]
-
-        try:
-            if configName == 'Debug':
-                subprocess.check_call([debugFolder + testName])
-            elif configName == 'Release':
-                subprocess.check_call([releaseFolder + testName])
-            else:
-                print 'Unrecognized desired config \"' + configName + '\" for test \"' + testName + '\", skipping...'
-                continue
-        except subprocess.CalledProcessError:
-            addCrash(testName)
+        if spaceIndex == -1:
+            print 'Skipping improperly formatted test request: ' + line
             continue
 
-        processTestResult(testName + '_' + configName)
+        testName = line[:spaceIndex]
+        configName = line[spaceIndex + 1:]
+        #this would be a good place to eventually check exe exists
+        if configName == 'debug' or configName == 'release':
+            if buildTests:
+                buildTest(testName, configName)
+            runTest(testName, configName)
+        else:
+            print 'Skipping test \"' + testName + '\" Unrecognized desired config \"' + configName + '\"'
+def runTest(testName, configName):
+    if configName == 'debug':
+        testPath = debugFolder + testName + ".exe"
+    elif configName == 'release':
+        testPath = releaseFolder + testName + ".exe"
+    try:
+        if os.path.exists(testPath):
+            subprocess.check_call([testPath])
+            processTestResult(testName + '_' + configName)
+        else:
+            print 'Skipping test \"' + testName + '\" Unable to find ' + testPath + ' to run'
+    except subprocess.CalledProcessError:
+        addCrash(testName)
 
 def TestResultToHTML(name, result):
     html = ''
@@ -92,7 +107,7 @@ def TestResultToHTML(name, result):
     html += '</tr>'
     return html
 
-def outputHTML():
+def outputHTML(openSummary):
     html = ''
     html = '<table style="width:100%" border="1">\n'
     html += '<tr>\n'
@@ -110,15 +125,31 @@ def outputHTML():
         html += TestResultToHTML(name, result)
     html += '</table>'
     date = time.strftime("%m-%d-%y")
-    outfile = open(resultsFolder + '\\TestSummary_' + date  + '.html', 'w')
+    resultSummaryName = resultsFolder + '\\TestSummary_' + date  + '.html'
+    outfile = open(resultSummaryName, 'w')
     outfile.write(html)
+    outfile.close()
+    if(openSummary):
+        os.system("start " + resultSummaryName)
 
 def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-nb', '--nobuild', action='store_true', help='run without rebuilding Falcor and test apps')
+    parser.add_argument('-ss', '--showsummary', action='store_true', help='opens testing summary upon completion')
+    parser.add_argument('-bto', '--buildtestsonly', action='store_true', help='builds test apps, but not falcor. Overriden by nobuild')
+    args = parser.parse_args()
+
     if not os.path.isdir(resultsFolder):
         os.makedirs(resultsFolder)
+ 
+    if not args.nobuild and not args.buildtestsonly:
+        buildTest('Falcor', 'debug')
+        buildTest('Falcor', 'release')
+        buildTest('FalcorTest', 'debug')
+        buildTest('FalcorTest', 'release')
 
-    runTests()
-    outputHTML()
+    readTestList(not args.nobuild)
+    outputHTML(args.showsummary)
 
 if __name__ == '__main__':
     main()
