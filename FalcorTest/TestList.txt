@@ -3,5 +3,11 @@ BlendStateTest release
 RasterizerStateTest debug
 RasterizerStateTest release
 BlendStateTest adfg
+DoesNotCompileTest debug
+DoesNotCompileTest release
+BadXMLTest debug
+BadXMLTest release
+BadTestingLogTest debug
+BadTestingLogTest release
 asdajihsfkjb release
 qweeeeeeeeeeeeeeqweqwe
