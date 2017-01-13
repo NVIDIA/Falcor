@@ -33,21 +33,18 @@ BlendStateTest::BlendStateTest() : mpBlendState(nullptr)
     REGISTER_NAME;
 }
 
-std::vector<TestBase::TestResult> BlendStateTest::runTests()
+void BlendStateTest::addTests()
 {
-    std::vector<TestResult> results;
-    results.push_back(TestCreate());
-    results.push_back(TestRtArray());
-    results.push_back(TestResult(false, FUNCTION_INFO, "Intentional Fail for Testing the Tester"));
-    return results;
+    addTestToList<TestCreate>();
+    addTestToList<TestRtArray>();
 }
 
-TestBase::TestResult BlendStateTest::TestCreate()
+TESTING_FUNC(BlendStateTest, TestCreate)
 {
     glm::vec4 blendFactor(1.f);
     BlendState::BlendOp blendOp = BlendState::BlendOp::Add;
     BlendState::BlendFunc blendFunc = BlendState::BlendFunc::Zero;
-    
+
     TestDesc desc;
     desc.setAlphaToCoverage(true);
     desc.setBlendFactor(blendFactor);
@@ -56,21 +53,20 @@ TestBase::TestResult BlendStateTest::TestCreate()
     desc.setRtBlend(0, true);
     desc.setRtParams(0, blendOp, blendOp, blendFunc, blendFunc, blendFunc, blendFunc);
 
-    mpBlendState = nullptr;
-    mpBlendState = BlendState::create(desc);
+    BlendState::SharedPtr blendState = nullptr;
+    blendState = BlendState::create(desc);
 
-    if (doStatesMatch(desc))
-        return TestResult(true, FUNCTION_INFO);
+    if (doStatesMatch(blendState, desc))
+        return TestData(TestResult::Pass, mName);
     else
-        return TestResult(false, FUNCTION_INFO, "Blend state doesn't match desc used to create");
+        return TestData(TestResult::Fail, mName, "Blend state doesn't match desc used to create");
 }
 
-TestBase::TestResult BlendStateTest::TestRtArray()
+TESTING_FUNC(BlendStateTest, TestRtArray)
 {
     const int32_t numBlendOps = 5;
     const int32_t numBlendFuncs = 16;
 
-    mpBlendState = nullptr;
     //create default
     //8 is default rt count
     TestDesc desc;
@@ -82,7 +78,7 @@ TestBase::TestResult BlendStateTest::TestRtArray()
         desc.setRtParams(i, blendOp, blendOp, blendFunc, blendFunc, blendFunc, blendFunc);
     }
 
-    mpBlendState = BlendState::create(desc);
+    BlendState::SharedPtr state = BlendState::create(desc);
 
     //Below is out of bounds testing, having trouble catching an exception from it, 
     //deal with this later when back to focusing on writing low level tests
@@ -117,26 +113,26 @@ TestBase::TestResult BlendStateTest::TestRtArray()
     //    ", " << rtDesc.blendEnabled << std::endl;
 //#endif
 
-    if (doStatesMatch(desc))
-        return TestResult(true, FUNCTION_INFO);
+    if (doStatesMatch(state, desc))
+        return TestData(TestResult::Pass, mName);
     else
-        return TestResult(false, FUNCTION_INFO, "Render target desc doesn't match ones used to create");
+        return TestData(TestResult::Fail, mName, "Render target desc doesn't match ones used to create");
 }
 
-bool BlendStateTest::doStatesMatch(const TestDesc& desc)
+bool BlendStateTest::doStatesMatch(const BlendState::SharedPtr state, const TestDesc& desc)
 {
     bool globalSettingsMatch =
-        mpBlendState->isAlphaToCoverageEnabled() == desc.mAlphaToCoverageEnabled &&
-        mpBlendState->getBlendFactor() == desc.mBlendFactor &&
-        mpBlendState->isIndependentBlendEnabled() == desc.mEnableIndependentBlend &&
-        mpBlendState->getRtCount() == desc.mRtDesc.size();
+        state->isAlphaToCoverageEnabled() == desc.mAlphaToCoverageEnabled &&
+        state->getBlendFactor() == desc.mBlendFactor &&
+        state->isIndependentBlendEnabled() == desc.mEnableIndependentBlend &&
+        state->getRtCount() == desc.mRtDesc.size();
 
     if (!globalSettingsMatch)
         return false;
 
-    for (uint32_t i = 0; i < mpBlendState->getRtCount(); ++i)
+    for (uint32_t i = 0; i < state->getRtCount(); ++i)
     {
-        BlendState::Desc::RenderTargetDesc rtDesc = mpBlendState->getRtDesc(i);
+        BlendState::Desc::RenderTargetDesc rtDesc = state->getRtDesc(i);
         BlendState::Desc::RenderTargetDesc otherRtDesc = desc.mRtDesc[i];
         bool rtMatches = 
             rtDesc.writeMask.writeRed == otherRtDesc.writeMask.writeRed &&

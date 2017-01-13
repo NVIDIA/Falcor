@@ -32,7 +32,6 @@ class RasterizerStateTest : public TestBase
 {
 public:
     RasterizerStateTest();
-    std::vector<TestResult> runTests() override;
 
 private:
     class TestDesc : public RasterizerState::Desc 
@@ -40,9 +39,10 @@ private:
         friend class RasterizerStateTest;
     };
 
-    TestResult TestCreate();
-    TestResult TestCreateStress();
-    bool doStatesMatch(const TestDesc& desc);
+    void addTests() override;
+    ADD_FUNC(TestCreate)
+    ADD_FUNC(TestCreateStress)
+    static bool doStatesMatch(const RasterizerState::SharedPtr state, const TestDesc& desc);
 
     RasterizerState::SharedPtr mpRasterizerState;
 };

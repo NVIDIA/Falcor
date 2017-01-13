@@ -28,26 +28,15 @@
 #pragma once
 #include "TestBase.h"
 
-class BlendStateTest : public TestBase
+class CrashTest : public TestBase
 {
 public:
-    BlendStateTest();
+    CrashTest();
 
 private:
-    class TestDesc : public BlendState::Desc
-    {
-        friend class BlendStateTest;
-    };
-
-    ADD_FUNC(TestCreate)
-    ADD_FUNC(TestRtArray)
+    ADD_FUNC(TestThrow)
+    ADD_FUNC(TestVector)
+    ADD_FUNC(TestCrashHandling)
 
     void addTests() override;
-
-    //TestResult TestCreate();
-    //TestResult TestRtArray();
-    static bool doStatesMatch(const BlendState::SharedPtr state, const TestDesc& desc);
-
-
-    BlendState::SharedPtr mpBlendState;
 };

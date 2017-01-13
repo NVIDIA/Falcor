@@ -34,15 +34,13 @@ RasterizerStateTest::RasterizerStateTest() :mpRasterizerState(nullptr)
     REGISTER_NAME;
 }
 
-std::vector<TestBase::TestResult> RasterizerStateTest::runTests()
+void RasterizerStateTest::addTests()
 {
-    std::vector<TestResult> results;
-    results.push_back(TestCreate());
-    results.push_back(TestCreateStress());
-    return results;
+    addTestToList<TestCreate>();
+    addTestToList<TestCreateStress>();
 }
 
-TestBase::TestResult RasterizerStateTest::TestCreate()
+TESTING_FUNC(RasterizerStateTest, TestCreate)
 {
     TestDesc desc;
     desc.setCullMode(RasterizerState::CullMode::None);
@@ -55,15 +53,14 @@ TestBase::TestResult RasterizerStateTest::TestCreate()
     desc.setConservativeRasterization(true);
     desc.setForcedSampleCount(false);
 
-    mpRasterizerState = nullptr;
-    mpRasterizerState = RasterizerState::create(desc);
-    if (doStatesMatch(desc))
-        return TestResult(true, FUNCTION_INFO);
+    RasterizerState::SharedPtr state = RasterizerState::create(desc);
+    if (doStatesMatch(state, desc))
+        return TestData(TestResult::Pass, mName);
     else
-        return TestResult(false, FUNCTION_INFO, "Rasterizer state doesn't match desc used to create it");
+        return TestData(TestResult::Fail, mName, "Rasterizer state doesn't match desc used to create it");
 }
 
-TestBase::TestResult RasterizerStateTest::TestCreateStress()
+TESTING_FUNC(RasterizerStateTest, TestCreateStress)
 {
     TestDesc desc;
     desc.setCullMode(RasterizerState::CullMode::Front);
@@ -76,32 +73,31 @@ TestBase::TestResult RasterizerStateTest::TestCreateStress()
     desc.setConservativeRasterization(false);
     desc.setForcedSampleCount(true);
 
-    mpRasterizerState = nullptr;
-    mpRasterizerState = RasterizerState::create(desc);
-    if (!doStatesMatch(desc))
-        return TestResult(false, FUNCTION_INFO + "Rasterizer state doesn't match desc used to create it");
+    RasterizerState::SharedPtr state = RasterizerState::create(desc);
+    if (!doStatesMatch(state, desc))
+        return TestData(TestResult::Fail, mName + "Rasterizer state doesn't match desc used to create it");
     
     desc.setDepthBias(std::numeric_limits<int32_t>::max(), std::numeric_limits<float>::min());
-    mpRasterizerState = nullptr;
-    mpRasterizerState = RasterizerState::create(desc);
-    if (doStatesMatch(desc))
-        return TestResult(true, FUNCTION_INFO);
+    state = nullptr;
+    state = RasterizerState::create(desc);
+    if (doStatesMatch(state, desc))
+        return TestData(TestResult::Pass, mName);
     else
-        return TestResult(false, FUNCTION_INFO, "Rasterizer state doesn't match desc used to create it");
+        return TestData(TestResult::Fail, mName, "Rasterizer state doesn't match desc used to create it");
 }
 
-bool RasterizerStateTest::doStatesMatch(const TestDesc& desc)
+bool RasterizerStateTest::doStatesMatch(const RasterizerState::SharedPtr state, const TestDesc& desc)
 {
-    return mpRasterizerState->getCullMode() == desc.mCullMode &&
-        mpRasterizerState->getFillMode() == desc.mFillMode &&
-        mpRasterizerState->isFrontCounterCW() == desc.mIsFrontCcw &&
-        mpRasterizerState->getSlopeScaledDepthBias() == desc.mSlopeScaledDepthBias &&
-        mpRasterizerState->getDepthBias() == desc.mDepthBias &&
-        mpRasterizerState->isDepthClampEnabled() == desc.mClampDepth &&
-        mpRasterizerState->isScissorTestEnabled() == desc.mScissorEnabled &&
-        mpRasterizerState->isLineAntiAliasingEnabled() == desc.mEnableLinesAA &&
-        mpRasterizerState->isConservativeRasterizationEnabled() == desc.mConservativeRaster &&
-        mpRasterizerState->getForcedSampleCount() == desc.mForcedSampleCount;
+    return state->getCullMode() == desc.mCullMode &&
+        state->getFillMode() == desc.mFillMode &&
+        state->isFrontCounterCW() == desc.mIsFrontCcw &&
+        state->getSlopeScaledDepthBias() == desc.mSlopeScaledDepthBias &&
+        state->getDepthBias() == desc.mDepthBias &&
+        state->isDepthClampEnabled() == desc.mClampDepth &&
+        state->isScissorTestEnabled() == desc.mScissorEnabled &&
+        state->isLineAntiAliasingEnabled() == desc.mEnableLinesAA &&
+        state->isConservativeRasterizationEnabled() == desc.mConservativeRaster &&
+        state->getForcedSampleCount() == desc.mForcedSampleCount;
 }
 
 int main()

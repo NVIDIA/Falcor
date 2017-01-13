@@ -32,7 +32,7 @@
 int main()
 {
     std::ofstream of;
-    of.open("BadXMLTest_" + CONFIG_NAME + "_TestingLog.xml");
+    of.open("BadXMLTest_TestingLog.xml");
     of << "<?xml version = \"1.0\" encoding = \"UTF-8\"?>\n";
     of << "<Dummy>\n";
     of << "</Dummy>\n";

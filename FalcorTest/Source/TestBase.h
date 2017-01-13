@@ -35,54 +35,92 @@ using namespace Falcor;
 
 //.name() gives Class X, substr is to remove the class prefix and just get classname
 #define REGISTER_NAME mDerivedName = std::string(typeid(*this).name()).substr(6, std::string::npos);
-#define FUNCTION_INFO std::string(__FUNCTION__) + "(Line " + std::to_string(__LINE__) + ")"
+#define ADD_FUNC(x) class x : public TestBase::TestFunction { public: TestData operator ()() override; };
+#define TESTING_FUNC(x, y) TestBase::TestData x::y::operator()()
 
 class TestBase
 {
 public:
-    struct TestResult
+    enum class TestResult
     {
-        TestResult() : passed(false) {}
-        TestResult(bool pass, std::string fxInfo) : passed(pass), functionInfo(fxInfo) {}
-        TestResult(bool pass, std::string fxInfo, std::string err) : 
-            passed(pass), functionInfo(fxInfo), error(err) {}
+        Pass,
+        Fail, 
+        Crash
+    };
 
-        bool passed;
-        std::string functionInfo;
+    struct TestData
+    {
+        TestData() : result(TestResult::Fail) {}
+        TestData(TestResult r, std::string testName) : result(r), testName(testName) {}
+        TestData(TestResult r, std::string testName, std::string err) :
+            result(r), testName(testName), error(err) {}
+
+        TestResult result;
+        std::string testName;
         std::string error;
     };
 
+    virtual ~TestBase();
     void init();
     void run();
     std::string GetDerivedName();
-    //needed? 
-    //virtual ~TestBase();
 
 protected:
     TestBase();
-    virtual std::vector<TestResult> runTests();
+    virtual void addTests();
 
-    //I dont need this right now, but this is something might be needed in future
-    //Maybe not anymore with different exes, there will be no container of testbase
-    //virtual void InitDerived();
-
-    //Is this even necessary anymore? used to generate filename i guess
+    //Used to gen correct filename in base class method
     std::string mDerivedName; 
-    std::vector<TestResult> mpTestResults;
+    std::vector<TestData> mpTestResults;
+
+    class TestFunction
+    {
+    public:
+        TestFunction() {} 
+        virtual TestData operator()() { return TestData(); }
+        std::string mName;
+    };
+
+    //This is templatized but it expects a type that derives from testfunction
+    template <typename T>
+    void addTestToList()
+    {
+        T* newTestFunctor = new T();
+        std::string wholeName = std::string(typeid(*newTestFunctor).name());
+        size_t colonIndex = wholeName.find(":");
+        newTestFunctor->mName = wholeName.substr(colonIndex + 2, std::string::npos);
+ 
+        mpTestList.push_back(newTestFunctor);
+    }
+
+    std::vector<TestFunction*> mpTestList;
 
 private: 
     class ResultSummary
     {
     public:
-        ResultSummary() : total(0), pass(0), fail(0) {}
-        void addTest(TestResult r) { ++total; r.passed ? ++pass : ++fail; }
+        ResultSummary() : total(0u), pass(0u), fail(0u), crash(0u) {}
+        void addTestToSummary(TestData d)
+        {
+            ++total;
+            if (d.result == TestResult::Pass) ++pass;
+            else if (d.result == TestResult::Fail) ++fail;
+            else ++crash;
+        }
+
         uint32_t total;
         uint32_t pass;
         uint32_t fail;
+        uint32_t crash;
     };
 
+    std::vector<TestData> TestBase::runTests();
     void GenerateXML(const std::vector<std::string>& xmlStrings);
 
-    std::string XMLFromTestResult(const TestResult& r);
+    std::string XMLFromTestResult(const TestData& r);
     ResultSummary mResultSummary;
+    
+    //could add more robust crash detection where test index is spit out to 
+    //script, so script knows how to resume testing without worry of failure
+    //uint32_t mTestIndex;
 };

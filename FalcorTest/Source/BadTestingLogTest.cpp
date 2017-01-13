@@ -32,7 +32,7 @@
 int main()
 {
     std::ofstream of;
-    of.open("BadTestingLogTest_" + CONFIG_NAME + "_TestingLog.xml");
+    of.open("BadTestingLogTest_TestingLog.xml");
     of << "This isn't even really xml";
     of.close();
     return 0;

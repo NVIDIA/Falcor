@@ -1,13 +1,15 @@
-BlendStateTest debug
-BlendStateTest release
-RasterizerStateTest debug
-RasterizerStateTest release
+BlendStateTest debugd3d12
+BlendStateTest released3d12
+RasterizerStateTest DeBuGd3D12
+RasterizerStateTest RELEASED3D12
 BlendStateTest adfg
-DoesNotCompileTest debug
-DoesNotCompileTest release
-BadXMLTest debug
-BadXMLTest release
-BadTestingLogTest debug
-BadTestingLogTest release
-asdajihsfkjb release
+DoesNotCompileTest debugd3d12
+DoesNotCompileTest released3d12
+BadXMLTest debugd3d12
+BadXMLTest released3d12
+BadTestingLogTest debugd3d12
+BadTestingLogTest released3d12
+asdajihsfkjb released3d12
 qweeeeeeeeeeeeeeqweqwe
+CrashTest debugd3d12
+CrashTest released3d12
