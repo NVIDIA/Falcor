@@ -13,6 +13,12 @@ debugFolder = 'C:\\Users\\clavelle\\Desktop\\FalcorGitHub\\FalcorTest\\Bin\\x64\
 releaseFolder = 'C:\\Users\\clavelle\\Desktop\\FalcorGitHub\\FalcorTest\\Bin\\x64\\Release\\'
 resultsFolder = 'TestResults'
 
+class SystemResult(object):
+    def __init__(self):
+        self.Name = ''
+        self.LoadTime = 0
+        self.AvgFps = 0
+
 class TestResults(object):
     def __init__(self):
         self.Name = ''
@@ -26,6 +32,7 @@ class TestResults(object):
         self.Failed += other.Failed
         self.Crashed += other.Crashed
 
+systemResultList = []
 resultList = []
 skippedList = []
 resultSummary = TestResults()
@@ -93,18 +100,27 @@ def processTestResult(testName, configName):
             return
         summary = xmlDoc.getElementsByTagName('Summary')
         if len(summary) != 1:
-            logTestSkip(nameAndConfig, resultFile + ' was found and is XML, but is improperly formatted')
-            overwriteMove(resultFile, configDir)
+            sysResults = xmlDoc.getElementsByTagName('SystemResults')
+            if len(sysResults) != 1:
+                logTestSkip(nameAndConfig, resultFile + ' was found and is XML, but is improperly formatted')
+                overwriteMove(resultFile, configDir)
+            else:
+                newSysResult = SystemResult()
+                newSysResult.Name = nameAndConfig
+                newSysResult.LoadTime = float(sysResults[0].attributes['LoadTime'].value)
+                newSysResult.AvgFps = float(sysResults[0].attributes['Fps'].value)
+                systemResultList.append(newSysResult)
             return
-        newResult = TestResults()
-        newResult.Name = nameAndConfig
-        newResult.Total = int(summary[0].attributes['TotalTests'].value)
-        newResult.Passed = int(summary[0].attributes['PassedTests'].value)
-        newResult.Failed = int(summary[0].attributes['FailedTests'].value)
-        newResult.Crashed = int(summary[0].attributes['CrashedTests'].value)
-        resultList.append((testName, newResult))
-        resultSummary.add(newResult)
-        overwriteMove(resultFile, configDir)
+        else:
+            newResult = TestResults()
+            newResult.Name = nameAndConfig
+            newResult.Total = int(summary[0].attributes['TotalTests'].value)
+            newResult.Passed = int(summary[0].attributes['PassedTests'].value)
+            newResult.Failed = int(summary[0].attributes['FailedTests'].value)
+            newResult.Crashed = int(summary[0].attributes['CrashedTests'].value)
+            resultList.append(newResult)
+            resultSummary.add(newResult)
+            overwriteMove(resultFile, configDir)
     else:
         logTestSkip(testName, 'Unable to find result file ' + resultFile)
 
@@ -165,7 +181,7 @@ def testResultToHTML(result):
 def getTestResultsTable():
     html = '<table style="width:100%" border="1">\n'
     html += '<tr>\n'
-    html += '<th colspan=\'5\'>Test Results</th>\n'
+    html += '<th colspan=\'5\'>Low Level Test Results</th>\n'
     html += '</tr>\n'
     html += '<tr>\n'
     html += '<th>Test</th>\n'
@@ -175,8 +191,29 @@ def getTestResultsTable():
     html += '<th>Crashed</th>\n'
     resultSummary.Name = 'Summary'
     html += testResultToHTML(resultSummary)
-    for name, result in resultList:
+    for result in resultList:
         html += testResultToHTML(result)
+    html += '</table>\n'
+    return html
+
+def systemTestResultToHTML(result):
+    html = '<tr>'
+    html += '<td>' + result.Name + '</td>\n'
+    html += '<td>' + str(result.LoadTime) + '</td>\n'
+    html += '<td>' + str(result.AvgFps) + '</td>\n'
+    html += '</tr>\n'
+    return html
+
+def getSystemTestResultsTable():
+    html = '<table style="width:100%" border="1">\n'
+    html += '<tr>\n'
+    html += '<th colspan=\'3\'>System Test Results</th>\n'
+    html += '</tr>\n'
+    html += '<th>Test</th>\n'
+    html += '<th>LoadTime</th>\n'
+    html += '<th>AvgFps</th>\n'
+    for result in systemResultList:
+        html += systemTestResultToHTML(result)
     html += '</table>\n'
     return html
 
@@ -202,6 +239,8 @@ def getSkipsTable():
 
 def outputHTML(openSummary):
     html = getTestResultsTable()
+    html += '<br><br>'
+    html += getSystemTestResultsTable()
     html += '<br><br>'
     html += getSkipsTable()
     date = time.strftime("%m-%d-%y")

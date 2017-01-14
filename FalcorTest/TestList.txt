@@ -11,5 +11,7 @@ BadTestingLogTest debugd3d12
 BadTestingLogTest released3d12
 asdajihsfkjb released3d12
 qweeeeeeeeeeeeeeqweqwe
-CrashTest debugd3d12
 CrashTest released3d12
+OgreSystemTest released3d12
+OgreSystemTest released3d12
+OgreSystemTest released3d12

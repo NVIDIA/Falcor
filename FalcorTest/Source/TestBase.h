@@ -26,9 +26,6 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 #pragma once
-#include <vector> 
-#include <memory> //unique ptr
-#include <string>
 #include "Falcor.h"
 
 using namespace Falcor;
@@ -114,7 +111,7 @@ private:
         uint32_t crash;
     };
 
-    std::vector<TestData> TestBase::runTests();
+    std::vector<TestData> runTests();
     void GenerateXML(const std::vector<std::string>& xmlStrings);
 
     std::string XMLFromTestResult(const TestData& r);

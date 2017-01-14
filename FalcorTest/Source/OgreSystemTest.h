@@ -26,18 +26,20 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 #pragma once
-#include "TestBase.h"
+#include "Falcor.h"
+#include "SystemTestBase.h"
 
-class CrashTest : public TestBase
+class OgreSystemTest : public SystemTestBase
 {
 public:
-    CrashTest();
+    OgreSystemTest();
 
 private:
-    ADD_FUNC(TestThrow)
-    ADD_FUNC(TestVector)
-    ADD_FUNC(TestAssert)
-    ADD_FUNC(TestCrashHandling)
+    void load() override;
+    void render() override;
+    void shutdown() override;
 
-    void addTests() override;
+    GraphicsState::SharedPtr mpGraphicsState;
+    GraphicsVars::SharedPtr mpGraphicsVars;
+    GraphicsProgram::SharedPtr mpProgram;
 };

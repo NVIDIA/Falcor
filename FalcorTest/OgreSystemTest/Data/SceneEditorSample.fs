@@ -25,19 +25,36 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#pragma once
-#include "TestBase.h"
+#include "ShaderCommon.h"
+#include "Shading.h"
+#define _COMPILE_DEFAULT_VS
+#include "VertexAttrib.h"
 
-class CrashTest : public TestBase
+cbuffer PerFrameCB
 {
-public:
-    CrashTest();
+#foreach p in _LIGHT_SOURCES
+    LightData $(p);
+#endforeach
 
-private:
-    ADD_FUNC(TestThrow)
-    ADD_FUNC(TestVector)
-    ADD_FUNC(TestAssert)
-    ADD_FUNC(TestCrashHandling)
-
-    void addTests() override;
+    float3 gAmbient;
 };
+
+vec4 main(VS_OUT vOut) : SV_TARGET
+{
+    ShadingAttribs shAttr;
+    prepareShadingAttribs(gMaterial, vOut.posW, gCam.position, vOut.normalW, vOut.tangentW, vOut.bitangentW, vOut.texC, shAttr);
+
+    ShadingOutput result;
+    result.finalValue = 0;
+    float4 finalColor = 0;
+
+#foreach p in _LIGHT_SOURCES
+    evalMaterial(shAttr, $(p), result, $(_valIndex) == 0);
+#endforeach
+
+    finalColor = vec4(result.finalValue, 1.f);
+
+    // add ambient
+    finalColor.rgb += gAmbient * getDiffuseColor(shAttr).rgb;
+    return finalColor;
+}

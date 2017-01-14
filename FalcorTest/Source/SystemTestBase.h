@@ -26,18 +26,36 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 #pragma once
-#include "TestBase.h"
+#include "Falcor.h"
 
-class CrashTest : public TestBase
+#define REGISTER_NAME mDerivedName = std::string(typeid(*this).name()).substr(6, std::string::npos);
+
+using namespace Falcor;
+
+class SystemTestBase : public Sample
 {
-public:
-    CrashTest();
+protected:
+    SystemTestBase();
+    virtual void load() {}
+    virtual void render() {}
+    virtual void shutdown() {}
+
+    Scene::SharedPtr mpScene;
+    SceneRenderer::UniquePtr mpSceneRenderer;
+    std::string mDerivedName;
 
 private:
-    ADD_FUNC(TestThrow)
-    ADD_FUNC(TestVector)
-    ADD_FUNC(TestAssert)
-    ADD_FUNC(TestCrashHandling)
+    void onLoad() override;
+    void onFrameRender() override;
+    void onShutdown() override;
+    void onResizeSwapChain() override;
+    void getTestingParameters();
+    void logTestingData();
+    void handleScreenCapture(uint32_t currentFrame);
+    void outputXML();
 
-    void addTests() override;
+    float mLoadTime;
+    float mFpsLoggingTime;
+    Scene::UserVariable mScreencapFrames;
+    glm::vec2 mFpsFrames;   
 };

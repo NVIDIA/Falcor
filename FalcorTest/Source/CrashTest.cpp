@@ -9,6 +9,7 @@ void CrashTest::addTests()
 {
     addTestToList<TestThrow>();
     addTestToList<TestVector>();
+    //addTestToList<TestAssert>();
     addTestToList<TestCrashHandling>();
 }
 
@@ -24,6 +25,12 @@ TESTING_FUNC(CrashTest, TestVector)
     testVec.resize(10);
     testVec.at(100);
     return TestBase::TestData(TestBase::TestResult::Fail, mName, "Test proceeded past operation that should have thrown");
+}
+
+TESTING_FUNC(CrashTest, TestAssert)
+{
+    assert(false);
+    return TestBase::TestData(TestBase::TestResult::Fail, mName, "Test proceeded past assert");
 }
 
 TESTING_FUNC(CrashTest, TestCrashHandling)
