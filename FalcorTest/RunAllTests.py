@@ -12,12 +12,16 @@ buildBatchFile = 'BuildFalcorTest.bat'
 debugFolder = 'C:\\Users\\clavelle\\Desktop\\FalcorGitHub\\FalcorTest\\Bin\\x64\\Debug\\'
 releaseFolder = 'C:\\Users\\clavelle\\Desktop\\FalcorGitHub\\FalcorTest\\Bin\\x64\\Release\\'
 resultsFolder = 'TestResults'
+referenceFolder = 'SystemTestReferenceResults'
 
 class SystemResult(object):
     def __init__(self):
         self.Name = ''
         self.LoadTime = 0
         self.AvgFps = 0
+        self.RefLoadTime = 0
+        self.RefAvgFps = 0
+
 
 class TestResults(object):
     def __init__(self):
@@ -98,6 +102,7 @@ def processTestResult(testName, configName):
             logTestSkip(nameAndConfig, resultFile + ' was found, but is not correct xml')
             overwriteMove(resultFile, configDir)
             return
+        #TODO, find a clean way to separate this into two fxs,
         summary = xmlDoc.getElementsByTagName('Summary')
         if len(summary) != 1:
             sysResults = xmlDoc.getElementsByTagName('SystemResults')
@@ -109,7 +114,28 @@ def processTestResult(testName, configName):
                 newSysResult.Name = nameAndConfig
                 newSysResult.LoadTime = float(sysResults[0].attributes['LoadTime'].value)
                 newSysResult.AvgFps = float(sysResults[0].attributes['Fps'].value)
+                #see, this is why needs to sep, getting ridiculous
+                referenceFile = referenceFolder + '\\' + configName + '\\' + resultFile
+                print referenceFile
+                if os.path.isfile(referenceFile):
+                    try:
+                        referenceDoc = minidom.parse(referenceFile)
+                        refResults = referenceDoc.getElementsByTagName('SystemResults')
+                        if len(refResults) != 1:
+                            logTestSkip(nameAndConfig, referenceFile + ' was found and is XML, but is improperly formatted')
+                            newSysResult.RefLoadTime = '??'
+                            newSysResult.RefAvgFps = '??'
+                        else:
+                            newSysResult.RefLoadTime = float(refResults[0].attributes['LoadTime'].value)
+                            newSysResult.RefAvgFps = float(refResults[0].attributes['Fps'].value)
+
+                    except:
+                        LogTestSkip(nameAndConfig, referenceFile + 'was found, but is not correct xml')
+                        newSysResult.RefLoadTime = '??'
+                        newSysResult.RefAvgFps = '??'
+
                 systemResultList.append(newSysResult)
+                overwriteMove(resultFile, configDir)
             return
         else:
             newResult = TestResults()
@@ -139,7 +165,6 @@ def readTestList(buildTests, cleanTests):
         testName = line[:spaceIndex]
         configName = line[spaceIndex + 1:]
         configName = configName.lower()
-        #TODO make this comparison case insensitive
         if (configName == 'debug' or configName == 'release' or 
             configName == 'debugd3d12' or configName == 'released3d12'):
             if buildTests:
@@ -199,19 +224,33 @@ def getTestResultsTable():
 def systemTestResultToHTML(result):
     html = '<tr>'
     html += '<td>' + result.Name + '</td>\n'
-    html += '<td>' + str(result.LoadTime) + '</td>\n'
-    html += '<td>' + str(result.AvgFps) + '</td>\n'
+    if(result.LoadTime > result.RefLoadTime):
+        html += '<td bgcolor="red">' +'<font color="white">' 
+        html += str(result.LoadTime) + '</font></td>\n'
+    else:
+        html += '<td bgcolor="green">' +'<font color="white">' 
+        html += str(result.LoadTime) + '</font></td>\n'
+    html += '<td>' + str(result.RefLoadTime) + '</td>\n'
+    if(result.AvgFps < result.RefAvgFps):
+        html += '<td bgcolor="red">' +'<font color="white">' 
+        html += str(result.AvgFps) + '</font></td>\n'
+    else:
+        html += '<td bgcolor="green">' +'<font color="white">' 
+        html += str(result.AvgFps) + '</font></td>\n'    
+    html += '<td>' + str(result.RefAvgFps) + '</td>\n'
     html += '</tr>\n'
     return html
 
 def getSystemTestResultsTable():
     html = '<table style="width:100%" border="1">\n'
     html += '<tr>\n'
-    html += '<th colspan=\'3\'>System Test Results</th>\n'
+    html += '<th colspan=\'5\'>System Test Results</th>\n'
     html += '</tr>\n'
     html += '<th>Test</th>\n'
     html += '<th>LoadTime</th>\n'
+    html += '<th>Ref LoadTime</th>\n'
     html += '<th>AvgFps</th>\n'
+    html += '<th>Ref AvgFps</th>\n'
     for result in systemResultList:
         html += systemTestResultToHTML(result)
     html += '</table>\n'
