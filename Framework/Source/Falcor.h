@@ -52,7 +52,6 @@
 #include "API/RasterizerState.h"
 #include "API/RenderContext.h"
 #include "API/Sampler.h"
-#include "API/ScreenCapture.h"
 #include "API/Shader.h"
 #include "API/StructuredBuffer.h"
 #include "API/Texture.h"

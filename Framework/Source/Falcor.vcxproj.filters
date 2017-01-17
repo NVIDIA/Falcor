@@ -337,9 +337,6 @@
     <ClCompile Include="API\D3D\D3D12\D3D12Sampler.cpp">
       <Filter>API\D3D\D3D12</Filter>
     </ClCompile>
-    <ClCompile Include="API\D3D\D3D12\D3D12ScreenCapture.cpp">
-      <Filter>API\D3D\D3D12</Filter>
-    </ClCompile>
     <ClCompile Include="API\D3D\D3D12\D3D12Texture.cpp">
       <Filter>API\D3D\D3D12</Filter>
     </ClCompile>
@@ -704,9 +701,6 @@
       <Filter>API</Filter>
     </ClInclude>
     <ClInclude Include="API\Sampler.h">
-      <Filter>API</Filter>
-    </ClInclude>
-    <ClInclude Include="API\ScreenCapture.h">
       <Filter>API</Filter>
     </ClInclude>
     <ClInclude Include="API\Shader.h">

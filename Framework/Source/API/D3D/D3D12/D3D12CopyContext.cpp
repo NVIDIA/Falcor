@@ -141,7 +141,7 @@ namespace Falcor
 
         // Get the offset from the beginning of the resource
         uint64_t offset = pBuffer->getGpuAddress() - pResource->GetGPUVirtualAddress();
-        
+
         resourceBarrier(pTexture, Resource::State::CopyDest);
 
         const uint8_t* pSrc = (uint8_t*)pData;
@@ -172,6 +172,52 @@ namespace Falcor
     {
         mCommandsPending = true;
         updateTextureSubresources(pTexture, subresourceIndex, 1, pData);
+    }
+
+    std::vector<uint8> CopyContext::readTextureSubresource(const Texture* pTexture, uint32_t subresourceIndex)
+    {
+        //This assumes 4 channels in a few different places
+        assert(getFormatChannelCount(pTexture->getFormat()) == 4);
+
+        //Get footprint
+        D3D12_RESOURCE_DESC texDesc = pTexture->getApiHandle()->GetDesc();
+        D3D12_PLACED_SUBRESOURCE_FOOTPRINT footprint;
+        uint32_t rowCount;
+        uint64_t rowSize;
+        uint64_t size;
+        ID3D12Device* pDevice = gpDevice->getApiHandle();
+        pDevice->GetCopyableFootprints(&texDesc, subresourceIndex, 1, 0, &footprint, &rowCount, &rowSize, &size);
+
+        //Create buffer 
+        Buffer::SharedPtr pBuffer = Buffer::create(size, Buffer::BindFlags::None, Buffer::CpuAccess::Read, nullptr);
+
+        //Copy from texture to buffer
+        D3D12_TEXTURE_COPY_LOCATION srcLoc = { pTexture->getApiHandle(), D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX, subresourceIndex };
+        D3D12_TEXTURE_COPY_LOCATION dstLoc = { pBuffer->getApiHandle(), D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT, footprint };
+        RenderContext* pContext = gpDevice->getRenderContext().get();
+        mpLowLevelData->getCommandList()->CopyTextureRegion(&dstLoc, 0, 0, 0, &srcLoc, nullptr);
+        pContext->flush(true);
+
+        //Get buffer data
+        std::vector<uint8> result;
+		uint32_t actualRowSize = footprint.Footprint.Width * getFormatBytesPerBlock(pTexture->getFormat());
+        result.resize(rowCount * actualRowSize);
+        uint8* pData = reinterpret_cast<uint8*>(pBuffer->map(Buffer::MapType::Read));
+
+        for(uint32_t z = 0 ; z < footprint.Footprint.Depth ; z++)
+        {
+            const uint8_t* pSrcZ = pData + z * footprint.Footprint.RowPitch * rowCount;
+            uint8_t* pDstZ = result.data() + z * actualRowSize * rowCount;
+            for (uint32_t y = 0; y < rowCount; y++)
+            {
+                const uint8_t* pSrc = pSrcZ + y *  footprint.Footprint.RowPitch;
+                uint8_t* pDst = pDstZ + y * actualRowSize;
+                memcpy(pDst, pSrc, actualRowSize);
+            }
+        }
+
+        pBuffer->unmap();
+        return result;
     }
 
     void CopyContext::updateTexture(const Texture* pTexture, const void* pData)
