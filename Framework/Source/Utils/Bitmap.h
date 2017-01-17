@@ -59,7 +59,7 @@ namespace Falcor
             \param[in] isTopDown Control the memory layout of the image. If true, the top-left pixel will be stored first, otherwise the bottom-left pixel will be stored first
             \param[in] pData Pointer to the buffer containing the image
         */
-        static void saveImage(const std::string& filename, uint32_t width, uint32_t height, FileFormat format, uint32_t bytesPerPixel, bool isTopDown, void* pData);
+        static void saveImage(const std::string& filename, uint32_t width, uint32_t height, FileFormat fileFormat, ResourceFormat resourceFormat, bool isTopDown, void* pData);
         ~Bitmap();
 
         /** Get a pointer to the bitmap's data store

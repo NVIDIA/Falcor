@@ -28,7 +28,6 @@
 #include "Framework.h"
 #include "Sample.h"
 #include <map>
-#include "API/ScreenCapture.h"
 #include "API/Window.h"
 #include "Graphics/Program.h"
 #include "Utils/OS.h"
@@ -310,7 +309,9 @@ namespace Falcor
         std::string pngFile;
         if(findAvailableFilename(prefix, executableDir, "png", pngFile))
         {
-            ScreenCapture::captureToPng(mpDefaultFBO->getWidth(), mpDefaultFBO->getHeight(), pngFile);
+            Texture::SharedPtr pTexture = gpDevice->getSwapChainFbo()->getColorTexture(0);
+            std::vector<uint8> textureData = mpRenderContext->readTextureSubresource(pTexture.get(), 0);
+            Bitmap::saveImage(pngFile, pTexture->getWidth(), pTexture->getHeight(), Bitmap::FileFormat::PngFile, pTexture->getFormat(), true, textureData.data());
         }
         else
         {
@@ -396,7 +397,7 @@ namespace Falcor
     {
         // create the capture object and frame buffer
         VideoEncoder::Desc desc;
-        desc.flipY     = true;
+        desc.flipY      = false;
         desc.codec      = mVideoCapture.pUI->getCodec();
         desc.filename   = mVideoCapture.pUI->getFilename();
         desc.format     = VideoEncoder::InputFormat::R8G8B8A8;
@@ -441,11 +442,9 @@ namespace Falcor
 
     void Sample::captureVideoFrame()
     {
-        return;
         if(mVideoCapture.pVideoCapture)
         {
-            ScreenCapture::captureToMemory(mpDefaultFBO->getWidth(), mpDefaultFBO->getHeight(), ResourceFormat::RGBA8Unorm, mVideoCapture.pFrame);
-            mVideoCapture.pVideoCapture->appendFrame(mVideoCapture.pFrame);
+            mVideoCapture.pVideoCapture->appendFrame(mpRenderContext->readTextureSubresource(mpDefaultFBO->getColorTexture(0).get(), 0).data());
 
             if(mVideoCapture.pUI->useTimeRange())
             {

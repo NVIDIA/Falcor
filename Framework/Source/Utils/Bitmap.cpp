@@ -167,17 +167,34 @@ namespace Falcor
         return FIT_BITMAP;
     }
 
-    void Bitmap::saveImage(const std::string& filename, uint32_t width, uint32_t height, FileFormat format, uint32_t bytesPerPixel, bool isTopDown, void* pData)
+    void Bitmap::saveImage(const std::string& filename, uint32_t width, uint32_t height, FileFormat fileFormat, ResourceFormat resourceFormat, bool isTopDown, void* pData)
     {
         if(pData)
         {
+            uint32_t bytesPerPixel = getFormatBytesPerBlock(resourceFormat);
+            assert(bytesPerPixel == 32 || getFormatChannelCount(resourceFormat) == 4);
             FIBITMAP* pImage;
 
-            if(format == Bitmap::FileFormat::PngFile)
+            //TODO replace this code for swapping channels. Can't use freeimage masks b/c they only care about 16 bpp images
+            //issue #74 in gitlab
+            for (uint32_t a = 0; a < width*height; a++)
+            {
+                uint32_t* pPixel = (uint32_t*)pData;
+                pPixel += a;
+                uint8_t* ch = (uint8_t*)pPixel;
+                if (resourceFormat == ResourceFormat::RGBA8Uint || resourceFormat == ResourceFormat::RGBA8Snorm || resourceFormat == ResourceFormat::RGBA8UnormSrgb)
+                {
+                    std::swap(ch[0], ch[2]);
+                }
+                ch[3] = 0xff;
+            }
+            
+
+            if(fileFormat == Bitmap::FileFormat::PngFile)
                 pImage = FreeImage_ConvertFromRawBits((BYTE*)pData, width, height, bytesPerPixel * width, bytesPerPixel*8, FI_RGBA_RED_MASK, FI_RGBA_GREEN_MASK, FI_RGBA_BLUE_MASK, isTopDown);
             else
             {
-                if(format != Bitmap::FileFormat::PfmFile || (bytesPerPixel != 16 && bytesPerPixel != 12))
+                if(fileFormat != Bitmap::FileFormat::PfmFile || (bytesPerPixel != 16 && bytesPerPixel != 12))
                     logError("Bitmap::saveImage supports only 32-bit/channel RGB/RGBA images as HDR source.");
                 // Upload the image manually
                 pImage = FreeImage_AllocateT(getImageType(bytesPerPixel), width, height);
@@ -200,7 +217,7 @@ namespace Falcor
 
             FREE_IMAGE_TYPE type = FreeImage_GetImageType(pImage);
 
-            FreeImage_Save(toFreeImageFormat(format), pImage, filename.c_str(), 0);
+            FreeImage_Save(toFreeImageFormat(fileFormat), pImage, filename.c_str(), 0);
             FreeImage_Unload(pImage);
         }
     }

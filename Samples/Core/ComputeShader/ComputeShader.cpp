@@ -83,7 +83,7 @@ void ComputeShader::onFrameRender()
         {
             mpProg->removeDefine("_PIXELATE");
         }
-        mpProgVars->setUav("gOutput", mpTmpTexture);
+        mpProgVars->setTexture("gOutput", mpTmpTexture);
 
         mpRenderContext->setComputeState(mpState);
         mpRenderContext->setComputeVars(mpProgVars);
