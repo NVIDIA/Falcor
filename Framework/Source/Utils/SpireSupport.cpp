@@ -25,24 +25,9 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#pragma once
 
-#ifdef _DEBUG
-#define _LOG_ENABLED 1
-#else
-#define _LOG_ENABLED 0  /*Set this to 1 to enable log messages in release builds*/
-#endif 
+#include "FalcorConfig.h"
 
-#define _PROFILING_ENABLED 1 /*Set this to 1 to enable CPU/GPU profiling*/
-#define _PROFILING_LOG 0     /*Set this to 1 to dump profiling data while profiler is active.*/
-#define _PROFILING_LOG_BATCH_SIZE 1024*1 /*This can be used to control how many samples are accumulated before they are dumped to file.*/
-
-#define _ENABLE_NVAPI false // Controls NVIDIA specific DX extensions. If it is set to true, make sure you have the NVAPI package in your 'Externals' directory. View the readme for more information
-
-#define FALCOR_BUILD_SPIRE                  1 /* Set this to 1 to enable Spire compiler to be built into Falcor */
-#define FALCOR_USE_SPIRE_AS_COMPILER        1 /* Set this to 1 to actually use the Spire compiler as the compiler and reflection API */
-#define FALCOR_USE_SPIRE_AS_PREPROCESSOR    0 /* Set this to 1 to use Spire as a source-to-source preprocessor */
-
-#if (FALCOR_USE_SPIRE_AS_COMPILER || FALCOR_USE_SPIRE_AS_PREPROCESSOR) && !FALCOR_BUILD_SPIRE
-#error Trying to use Spire without building it
+#if FALCOR_BUILD_SPIRE
+#include "Externals/Spire/SpireAllSource.h"
 #endif

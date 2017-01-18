@@ -97,6 +97,18 @@ namespace Falcor
         Count           ///< Shader Type count
     };
 
+
+    /** Shading languages. Used for shader cross-compilation.
+    */
+    enum class ShadingLanguage
+    {
+        Unknown,        ///< Unknown language (e.g., for a plain .h file)
+        GLSL,           ///< OpenGL Shading Language (GLSL)
+        VulkanGLSL,     ///< GLSL for Vulkan
+        HLSL,           ///< High-Level Shading Language
+        Spire,          ///< Spire shading language
+    };
+
     /** Framebuffer target flags. Used for clears and copy operations
     */
     enum class FboAttachmentType

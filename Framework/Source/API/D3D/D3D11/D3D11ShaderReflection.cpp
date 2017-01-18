@@ -300,9 +300,15 @@ namespace Falcor
                 reflectVariable(pReflector, pVar, variableMap);
             }
 
+            // Note(tfoley): This logic is wrong, so we disable it completely in Spire mode
+#if FALCOR_USE_SPIRE_AS_COMPILER
+#else
             assert(calcStructSize(variableMap) == bufferDesc.Size);
+#endif
         }
 
+#if FALCOR_USE_SPIRE_AS_COMPILER
+#else
         static ShaderResourceDesc::ResourceType getResourceType(D3D_SHADER_INPUT_TYPE type)
         {
             switch(type)
@@ -366,6 +372,7 @@ namespace Falcor
                 return ShaderResourceDesc::Dimensions::Unknown;
             }
         }
+#endif
 
         void reflectResources(ID3D11ShaderReflectionPtr pReflector, ShaderResourceDescMap& resourceMap)
         {

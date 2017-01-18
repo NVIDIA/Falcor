@@ -456,6 +456,7 @@
     <ClCompile Include="Utils\Psychophysics\SingleThresholdMeasurement.cpp" />
     <ClCompile Include="Utils\ShaderPreprocessor.cpp" />
     <ClCompile Include="Utils\ShaderUtils.cpp" />
+    <ClCompile Include="Utils\SpireSupport.cpp" />
     <ClCompile Include="Utils\TextRenderer.cpp" />
     <ClCompile Include="Utils\Video\VideoDecoder.cpp" />
     <ClCompile Include="Utils\Video\VideoEncoder.cpp" />

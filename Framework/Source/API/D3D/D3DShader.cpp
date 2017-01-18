@@ -61,8 +61,115 @@ namespace Falcor
         }
     }
 
+#if FALCOR_USE_SPIRE_AS_COMPILER
+    struct SpireBlob : ID3DBlob
+    {
+        void* buffer;
+        size_t bufferSize;
+        size_t refCount;
+
+        SpireBlob(void* buffer, size_t bufferSize)
+            : buffer(buffer)
+            , bufferSize(bufferSize)
+            , refCount(1)
+        {}
+
+        // IUnknown
+
+        virtual HRESULT STDMETHODCALLTYPE QueryInterface( 
+            /* [in] */ REFIID riid,
+            /* [iid_is][out] */ _COM_Outptr_ void __RPC_FAR *__RPC_FAR *ppvObject) override
+        {
+            *ppvObject = this;
+            return S_OK;
+        }
+
+        virtual ULONG STDMETHODCALLTYPE AddRef( void) override
+        {
+            ++refCount;
+            return (ULONG) refCount;
+        }
+
+        virtual ULONG STDMETHODCALLTYPE Release( void) override
+        {
+            --refCount;
+            if(refCount == 0)
+            {
+                delete this;
+            }
+            return (ULONG) refCount;
+        }
+
+        // ID3DBlob
+
+        virtual LPVOID STDMETHODCALLTYPE GetBufferPointer() override
+        {
+            return buffer;
+        }
+
+        virtual SIZE_T STDMETHODCALLTYPE GetBufferSize() override
+        {
+            return bufferSize;
+        }
+    };
+
+    static ShaderData compileShader(const std::string& source, const std::string& target, std::string& errorLog)
+    {
+        ShaderData shaderData = { 0, 0 };
+
+        // TODO(tfoley): need a way to pass along flags to the `D3DCompile` API here...
+
+        SpireCompilationContext* spireContext = spCreateCompilationContext(NULL);
+        SpireDiagnosticSink* spireSink = spCreateDiagnosticSink(spireContext);
+
+        spSetCodeGenTarget(spireContext, SPIRE_DXBC);
+
+        SpireCompilationResult* result = spCompileShaderFromSource(spireContext, source.c_str(), "falcor", spireSink);
+
+        int diagnosticsSize = spGetDiagnosticOutput(spireSink, NULL, 0);
+        if (diagnosticsSize != 0)
+        {
+            char* diagnostics = (char*)malloc(diagnosticsSize);
+            spGetDiagnosticOutput(spireSink, diagnostics, diagnosticsSize);
+            errorLog += diagnostics;
+            free(diagnostics);
+        }
+        if(spDiagnosticSinkHasAnyErrors(spireSink) != 0)
+        {
+            spDestroyDiagnosticSink(spireSink);
+            spDestroyCompilationContext(spireContext);
+            return shaderData;
+        }
+
+        int bufferSize = 0;
+        void* buffer = (void*) spGetShaderStageSource(result, NULL, NULL, &bufferSize);
+
+        shaderData.pBlob = new SpireBlob(buffer, bufferSize);
+
+        // Extract the reflection data from Spire too.
+        auto reflectionBlob = (spire::ShaderReflection*) spGetReflection(result);
+        assert(reflectionBlob);
+
+        // Note: the reflection data that we query from Spire only survives as long as
+        // the `SpireCompilationResult` that owns it, so we have to make our own copy.
+        auto reflectionBlobSize = reflectionBlob->getReflectionDataSize();
+        spire::ShaderReflection* reflectionBlobCopy = (spire::ShaderReflection*) malloc(reflectionBlobSize);
+        memcpy(reflectionBlobCopy, reflectionBlob, reflectionBlobSize);
+        shaderData.pReflector = reflectionBlobCopy;
+
+        spDestroyCompilationResult(result);
+        spDestroyDiagnosticSink(spireSink);
+        spDestroyCompilationContext(spireContext);
+
+        return shaderData;
+    }
+#endif
+
     ID3DBlobPtr Shader::compile(const std::string& source, std::string& errorLog)
     {
+#if FALCOR_USE_SPIRE_AS_COMPILER
+        return nullptr;
+#else
         ID3DBlob* pCode;
         ID3DBlobPtr pErrors;
 
@@ -79,7 +186,9 @@ namespace Falcor
         }
 
         return pCode;
+#endif
     }
+
 
     Shader::Shader(ShaderType type) : mType(type)
     {
@@ -96,7 +205,11 @@ namespace Falcor
     {
         // Compile the shader
         ShaderData* pData = (ShaderData*)mpPrivateData;
+#if FALCOR_USE_SPIRE_AS_COMPILER
+        *pData = compileShader(shaderString, getTargetString(mType), log);
+#else
         pData->pBlob = compile(shaderString, log);
+#endif
 
         if (pData->pBlob == nullptr)
         {
@@ -137,17 +250,25 @@ namespace Falcor
 #elif defined FALCOR_D3D12
         mApiHandle = { pData->pBlob->GetBufferPointer(), pData->pBlob->GetBufferSize() };
 #endif
+
+#if FALCOR_USE_SPIRE_AS_COMPILER
+        // Note: when using Spire, reflection data was extracted earlier in `compileShader()`
+#else
         // Get the reflection object
         pData->pReflector = createReflection(pData->pBlob);
-
+#endif
         return true;
     }
 
     ShaderReflectionHandle Shader::createReflection(ID3DBlobPtr pBlob)
     {
+#if FALCOR_USE_SPIRE_AS_COMPILER
+        return nullptr;
+#else
         ShaderReflectionHandle pReflection;
         d3d_call(D3DReflect(pBlob->GetBufferPointer(), pBlob->GetBufferSize(), IID_PPV_ARGS(&pReflection)));
         return pReflection;
+#endif
     }
 
     Shader::SharedPtr Shader::create(const std::string& shaderString, ShaderType type, std::string& log)
