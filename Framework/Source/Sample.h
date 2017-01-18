@@ -167,6 +167,8 @@ namespace Falcor
         void captureScreen();
         void toggleText(bool enabled);
 
+        bool mCaptureScreen = false;
+
     private:
         // Private functions
         void initUI();
@@ -181,7 +183,6 @@ namespace Falcor
         Window::SharedPtr mpWindow;
         bool mVsyncOn = false;
         bool mShowText = true;
-        bool mCaptureScreen = false;
         bool mShowUI = true;
         bool mVrEnabled = false;
 

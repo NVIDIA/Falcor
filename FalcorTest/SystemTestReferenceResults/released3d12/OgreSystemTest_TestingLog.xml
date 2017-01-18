@@ -1,7 +1,8 @@
 <?xml version = "1.0" encoding = "UTF-8"?>
 <TestLog>
 <SystemResults
-	LoadTime="0.500878"
-	Fps="1826.765747"
+	LoadTime="0.495029"
+	FrameTime="0.000453"
+	NumScreenshots="9"
 />
 </TestLog>

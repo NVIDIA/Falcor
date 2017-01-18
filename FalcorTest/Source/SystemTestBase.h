@@ -57,5 +57,6 @@ private:
     float mLoadTime;
     float mFpsLoggingTime;
     Scene::UserVariable mScreencapFrames;
+    uint32 mNumScreencaps;
     glm::vec2 mFpsFrames;   
 };

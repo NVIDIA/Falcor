@@ -28,17 +28,15 @@
 #include "SystemTestBase.h"
 
 SystemTestBase::SystemTestBase() : mpScene(nullptr), mpSceneRenderer(nullptr), mDerivedName("UNINITALIZED"),
-mLoadTime(0.f), mFpsLoggingTime(0.f), mFpsFrames(300, 600){}
+mLoadTime(0.f), mFpsLoggingTime(0.f), mFpsFrames(300, 600), mNumScreencaps(0) {}
 
 void SystemTestBase::onLoad()
 {
     mpScene = Scene::loadFromFile("SceneTest.fscene", Model::GenerateTangentSpace);
     mpSceneRenderer = SceneRenderer::create(mpScene);
-
+    toggleText(false);
     getTestingParameters();
-    load(); 
-
-  
+    load();
 }
 
 void SystemTestBase::onFrameRender()
@@ -92,18 +90,13 @@ void SystemTestBase::logTestingData()
     handleScreenCapture(currentFrame);
 
     //FPS 
-    if (frameRate().getFrameCount() == static_cast<uint32_t>(mFpsFrames.x))
-    {
-        std::cout << "Starting fps logging at frame " << mFpsFrames.x << std::endl;
-    }
-    else if (frameRate().getFrameCount() > static_cast<uint32_t>(mFpsFrames.x) &&
+     if (frameRate().getFrameCount() > static_cast<uint32_t>(mFpsFrames.x) &&
         frameRate().getFrameCount() < static_cast<uint32_t>(mFpsFrames.y))
     {
         mFpsLoggingTime += frameRate().getLastFrameTime();
     }
     else if (frameRate().getFrameCount() == static_cast<uint32_t>(mFpsFrames.y))
     {
-        std::cout << "Stopping fps logging at frame " << mFpsFrames.y << std::endl;
         shutdownApp();
     }
 }
@@ -115,42 +108,60 @@ void SystemTestBase::handleScreenCapture(uint32_t currentFrame)
     case Scene::UserVariable::Type::Uint:
     {
         if (mScreencapFrames.u32 == currentFrame)
-            std::cout << "I would screencap here. Frame: " << currentFrame << std::endl;
+        {
+            mNumScreencaps = 1;
+            mCaptureScreen = true;
+        }
 
         break;
     }
     case Scene::UserVariable::Type::Uint64:
     {
         if (mScreencapFrames.u64 == currentFrame)
-            std::cout << "I would screencap here. Frame: " << currentFrame << std::endl;
+        {
+            mNumScreencaps = 1;
+            mCaptureScreen = true;
+        }
 
         break;
     }
     case Scene::UserVariable::Type::Int:
     {
         if (mScreencapFrames.i32 == currentFrame)
-            std::cout << "I would screencap here. Frame: " << currentFrame << std::endl;
+        {
+            mNumScreencaps = 1;
+            mCaptureScreen = true;
+        }
 
         break;
     }
     case Scene::UserVariable::Type::Int64:
     {
         if (mScreencapFrames.i64 == currentFrame)
-            std::cout << "I would screencap here. Frame: " << currentFrame << std::endl;
+        {
+            mNumScreencaps = 1;
+            mCaptureScreen = true;
+        }
 
         break;
     }
     case Scene::UserVariable::Type::Double:
     {
         if (mScreencapFrames.d64 == currentFrame)
-            std::cout << "I would screencap here. Frame: " << currentFrame << std::endl;
+        {
+            mNumScreencaps = 1;
+            mCaptureScreen = true;
+        }
 
         break;
     }
     case Scene::UserVariable::Type::Vec2:
     {
         if (mScreencapFrames.vec2[0] == currentFrame || mScreencapFrames.vec2[1] == currentFrame)
-            std::cout << "I would screencap here. Frame: " << currentFrame << std::endl;
+        {
+            mNumScreencaps = 2;
+            mCaptureScreen = true;
+        }
 
         break;
     }
@@ -158,7 +169,10 @@ void SystemTestBase::handleScreenCapture(uint32_t currentFrame)
     {
         if (mScreencapFrames.vec3[0] == currentFrame || mScreencapFrames.vec3[1] == currentFrame
             || mScreencapFrames.vec3[2] == currentFrame)
-            std::cout << "I would screencap here. Frame: " << currentFrame << std::endl;
+        {
+            mNumScreencaps = 3;
+            mCaptureScreen = true;
+        }
 
         break;
     }
@@ -166,7 +180,10 @@ void SystemTestBase::handleScreenCapture(uint32_t currentFrame)
     {
         if (mScreencapFrames.vec4[0] == currentFrame || mScreencapFrames.vec4[1] == currentFrame
             || mScreencapFrames.vec4[2] == currentFrame || mScreencapFrames.vec4[3] == currentFrame)
-            std::cout << "I would screencap here. Frame: " << currentFrame << std::endl;
+        {
+            mNumScreencaps = 4;
+            mCaptureScreen = true;
+        }
 
         break;
     }
@@ -177,7 +194,8 @@ void SystemTestBase::handleScreenCapture(uint32_t currentFrame)
         {
             if (mScreencapFrames.vector[i] == currentFrame)
             {
-                std::cout << "I would screencap here. Frame: " << currentFrame << std::endl;
+                mNumScreencaps = static_cast<uint32>(mScreencapFrames.vector.size());
+                mCaptureScreen = true;
                 break;
             }
         }
@@ -198,7 +216,8 @@ void SystemTestBase::outputXML()
     of << "<TestLog>\n";
     of << "<SystemResults\n";
     of << "\tLoadTime=\"" << std::to_string(mLoadTime) << "\"\n";
-    of << "\tFps=\"" << std::to_string((mFpsFrames.y - mFpsFrames.x) / mFpsLoggingTime) << "\"\n";
+    of << "\tFrameTime=\"" << std::to_string( mFpsLoggingTime / (mFpsFrames.y - mFpsFrames.x)) << "\"\n";
+    of << "\tNumScreenshots=\"" << std::to_string(mNumScreencaps) << "\"\n";
     of << "/>\n";
     of << "</TestLog>";
     of.close();

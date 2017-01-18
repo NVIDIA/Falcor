@@ -1,4 +1,5 @@
 import subprocess
+from subprocess import PIPE
 import shutil
 import time
 import os
@@ -18,10 +19,10 @@ class SystemResult(object):
     def __init__(self):
         self.Name = ''
         self.LoadTime = 0
-        self.AvgFps = 0
+        self.AvgFrameTime = 0
         self.RefLoadTime = 0
-        self.RefAvgFps = 0
-
+        self.RefAvgFrameTime = 0
+        self.CompareResults = []
 
 class TestResults(object):
     def __init__(self):
@@ -48,6 +49,38 @@ def overwriteMove(filename, newLocation):
     except IOError, info:
         print 'Error moving ' + filename + ' to ' + newLocation + '. Exception: ', info
         return
+
+def compareImages(resultObj, testName, configName, numScreenshots):
+    for i in range(0, numScreenshots):
+        if configName == 'debugd3d12' or configName == 'debugd3d11' or configName == 'debugGL':
+            testFolder = debugFolder
+        elif configName == 'released3d12' or configName == 'released3d11' or configName == 'releaseGL':
+            testFolder = releaseFolder
+        else:
+            print 'This should never get here, config valid in processSysTest but not in compareImages'
+            return
+        refFolder = referenceFolder + '\\' + configName
+        testScreenshot = testFolder + '\\' + testName + '.exe.' + str(i) + '.png'
+        refScreenshot = refFolder + '\\' + testName + '.exe.' + str(i) + '.png'
+        outFile = testName + str(i) + '_Compare.png'
+        command = ['magick', 'compare', '-metric', 'MSE', '-compose', 'Src', '-highlight-color', 'White', 
+        '-lowlight-color', 'Black', testScreenshot, refScreenshot, outFile]
+        p = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
+        result = p.communicate()[0]
+        spaceIndex = result.find(' ')
+        result = result[:spaceIndex]
+        resultObj.CompareResults.append(result)
+        #if the images are sufficently different, save them in test results
+        if float(result) > 0.01:
+            imagesFolder = resultsFolder + '\\' + configName + '\\Images'
+            if not os.path.isdir(imagesFolder):
+                os.makedirs(imagesFolder)
+            overwriteMove(testScreenshot, imagesFolder)
+            overwriteMove(outFile, imagesFolder)
+        #else just delete them
+        else:
+            os.remove(testScreenshot)
+            os.remove(outFile)
 
 def logTestSkip(testName, reason):
     global skippedList
@@ -85,9 +118,55 @@ def buildFail(fatal, testName, configName):
 def addCrash(testName):
     logTestSkip(testName, 'Unhandled Crash')
 
-def processTestResult(testName, configName):
+def processLowLevelTest(xmlElement, nameAndConfig, resultFile, configDir):
     global resultList
     global resultSummary
+    newResult = TestResults()
+    newResult.Name = nameAndConfig
+    newResult.Total = int(xmlElement[0].attributes['TotalTests'].value)
+    newResult.Passed = int(xmlElement[0].attributes['PassedTests'].value)
+    newResult.Failed = int(xmlElement[0].attributes['FailedTests'].value)
+    newResult.Crashed = int(xmlElement[0].attributes['CrashedTests'].value)
+    resultList.append(newResult)
+    resultSummary.add(newResult)
+    overwriteMove(resultFile, configDir)
+
+def processSystemTest(xmlElement, testName, configName, resultFile, configDir):
+    global systemResultList
+    newSysResult = SystemResult()
+    nameAndConfig = testName + '_' + configName
+    newSysResult.Name = nameAndConfig
+    newSysResult.LoadTime = float(xmlElement[0].attributes['LoadTime'].value)
+    newSysResult.AvgFrameTime = float(xmlElement[0].attributes['FrameTime'].value)
+    numScreenshots = int(xmlElement[0].attributes['NumScreenshots'].value)
+    referenceFile = referenceFolder + '\\' + configName + '\\' + resultFile
+    if os.path.isfile(referenceFile):
+        try:
+            referenceDoc = minidom.parse(referenceFile)
+        except ExpatError:
+            logTestSkip(nameAndConfig, resultFile + ' was found, but is not correct xml')
+            newSysResult.RefLoadTime = -1
+            newSysResult.RefAvgFrameTime = -1
+            overwriteMove(resultFile, configDir)
+            return
+
+        refResults = referenceDoc.getElementsByTagName('SystemResults')
+        if len(refResults) != 1:
+            logTestSkip(nameAndConfig, referenceFile + ' was found and is XML, but is improperly formatted')
+            newSysResult.RefLoadTime = -1
+            newSysResult.RefAvgFrameTime = -1
+        else:
+            newSysResult.RefLoadTime = float(refResults[0].attributes['LoadTime'].value)
+            newSysResult.RefAvgFrameTime = float(refResults[0].attributes['FrameTime'].value)
+            compareImages(newSysResult, testName, configName, numScreenshots)
+    else:
+        print 'Could not find reference file ' + referenceFile + ' for comparison'
+        newSysResult.RefLoadTime = -1
+        newSysResult.RefAvgFrameTime = -1
+    systemResultList.append(newSysResult)
+    overwriteMove(resultFile, configDir)
+
+def processTestResult(testName, configName):
     resultFile = testName + "_TestingLog.xml" 
     if os.path.isfile(resultFile):
         #create config dir if it doesn't exist
@@ -102,50 +181,15 @@ def processTestResult(testName, configName):
             logTestSkip(nameAndConfig, resultFile + ' was found, but is not correct xml')
             overwriteMove(resultFile, configDir)
             return
-        #TODO, find a clean way to separate this into two fxs,
-        summary = xmlDoc.getElementsByTagName('Summary')
-        if len(summary) != 1:
-            sysResults = xmlDoc.getElementsByTagName('SystemResults')
-            if len(sysResults) != 1:
-                logTestSkip(nameAndConfig, resultFile + ' was found and is XML, but is improperly formatted')
-                overwriteMove(resultFile, configDir)
-            else:
-                newSysResult = SystemResult()
-                newSysResult.Name = nameAndConfig
-                newSysResult.LoadTime = float(sysResults[0].attributes['LoadTime'].value)
-                newSysResult.AvgFps = float(sysResults[0].attributes['Fps'].value)
-                #see, this is why needs to sep, getting ridiculous
-                referenceFile = referenceFolder + '\\' + configName + '\\' + resultFile
-                print referenceFile
-                if os.path.isfile(referenceFile):
-                    try:
-                        referenceDoc = minidom.parse(referenceFile)
-                        refResults = referenceDoc.getElementsByTagName('SystemResults')
-                        if len(refResults) != 1:
-                            logTestSkip(nameAndConfig, referenceFile + ' was found and is XML, but is improperly formatted')
-                            newSysResult.RefLoadTime = '??'
-                            newSysResult.RefAvgFps = '??'
-                        else:
-                            newSysResult.RefLoadTime = float(refResults[0].attributes['LoadTime'].value)
-                            newSysResult.RefAvgFps = float(refResults[0].attributes['Fps'].value)
 
-                    except:
-                        LogTestSkip(nameAndConfig, referenceFile + 'was found, but is not correct xml')
-                        newSysResult.RefLoadTime = '??'
-                        newSysResult.RefAvgFps = '??'
-
-                systemResultList.append(newSysResult)
-                overwriteMove(resultFile, configDir)
-            return
+        lowLevelResults = xmlDoc.getElementsByTagName('Summary')
+        sysResults  = xmlDoc.getElementsByTagName('SystemResults')
+        if len(lowLevelResults) == 1:
+            processLowLevelTest(lowLevelResults, nameAndConfig, resultFile, configDir)
+        elif len(sysResults) ==  1: 
+            processSystemTest(sysResults, testName, configName, resultFile, configDir)
         else:
-            newResult = TestResults()
-            newResult.Name = nameAndConfig
-            newResult.Total = int(summary[0].attributes['TotalTests'].value)
-            newResult.Passed = int(summary[0].attributes['PassedTests'].value)
-            newResult.Failed = int(summary[0].attributes['FailedTests'].value)
-            newResult.Crashed = int(summary[0].attributes['CrashedTests'].value)
-            resultList.append(newResult)
-            resultSummary.add(newResult)
+            logTestSkip(nameAndConfig, resultFile + ' was found and is XML, but is improperly formatted')
             overwriteMove(resultFile, configDir)
     else:
         logTestSkip(testName, 'Unable to find result file ' + resultFile)
@@ -165,8 +209,9 @@ def readTestList(buildTests, cleanTests):
         testName = line[:spaceIndex]
         configName = line[spaceIndex + 1:]
         configName = configName.lower()
-        if (configName == 'debug' or configName == 'release' or 
-            configName == 'debugd3d12' or configName == 'released3d12'):
+        if (configName == 'debugd3d12' or configName == 'released3d12' or 
+            configName == 'debugd3d11' or configName == 'released3d11' or
+            configName == 'debugGL' or configName == 'releaseGL'):
             if buildTests:
                 if cleanTests:
                     callBatchFile(['clean', configName, testName])
@@ -194,13 +239,17 @@ def runTest(testName, configName):
         addCrash(testName)
 
 def testResultToHTML(result):
-    html = '<tr>'
+    html = '<tr><font>'
+    if int(result.Crashed) > 0:
+        html = '<tr bgcolor="yellow"><font>'
+    elif int(result.Failed) > 0:
+        html = '<tr bgcolor="red"><font color="white">'
     html += '<td>' + result.Name + '</td>\n'
     html += '<td>' + str(result.Total) + '</td>\n'
     html += '<td>' + str(result.Passed) + '</td>\n'
     html += '<td>' + str(result.Failed) + '</td>\n'
     html += '<td>' + str(result.Crashed) + '</td>\n'
-    html += '</tr>\n'
+    html += '</font></tr>\n'
     return html
 
 def getTestResultsTable():
@@ -231,13 +280,13 @@ def systemTestResultToHTML(result):
         html += '<td bgcolor="green">' +'<font color="white">' 
         html += str(result.LoadTime) + '</font></td>\n'
     html += '<td>' + str(result.RefLoadTime) + '</td>\n'
-    if(result.AvgFps < result.RefAvgFps):
+    if(result.AvgFrameTime > result.RefAvgFrameTime):
         html += '<td bgcolor="red">' +'<font color="white">' 
-        html += str(result.AvgFps) + '</font></td>\n'
+        html += str(result.AvgFrameTime) + '</font></td>\n'
     else:
         html += '<td bgcolor="green">' +'<font color="white">' 
-        html += str(result.AvgFps) + '</font></td>\n'    
-    html += '<td>' + str(result.RefAvgFps) + '</td>\n'
+        html += str(result.AvgFrameTime) + '</font></td>\n'    
+    html += '<td>' + str(result.RefAvgFrameTime) + '</td>\n'
     html += '</tr>\n'
     return html
 
@@ -249,10 +298,34 @@ def getSystemTestResultsTable():
     html += '<th>Test</th>\n'
     html += '<th>LoadTime</th>\n'
     html += '<th>Ref LoadTime</th>\n'
-    html += '<th>AvgFps</th>\n'
-    html += '<th>Ref AvgFps</th>\n'
+    html += '<th>Avg FrameTime</th>\n'
+    html += '<th>Ref FrameTime</th>\n'
     for result in systemResultList:
         html += systemTestResultToHTML(result)
+    html += '</table>\n'
+    return html
+
+def getImageCompareResultsTable():
+    max = 0
+    for result in systemResultList:
+        if len(result.CompareResults) > max:
+            max = len(result.CompareResults)
+    html = '<table style="width:100%" border="1">\n'
+    html += '<tr>\n'
+    html += '<th colspan=\'' + str(max + 1) + '\'>Image Compare Tests</th>\n'
+    html += '</tr>\n'
+    html += '<th>Test</th>\n'
+    for i in range (0, max):
+        html += '<th>SS' + str(i) + '</th>\n'
+    for result in systemResultList:
+        html += '<tr>\n'
+        html += '<td>' + result.Name + '</td>\n'
+        for compare in result.CompareResults:
+            if float(compare) > 0.1:
+                html += '<td bgcolor="red"><font color="white">' + str(compare) + '</font></td>\n'
+            else:
+                html += '<td>' + str(compare) + '</td>\n'
+        html += '</tr>\n'
     html += '</table>\n'
     return html
 
@@ -267,10 +340,9 @@ def getSkipsTable():
     html = '<table style="width:100%" border="1">\n'
     html += '<tr>\n'
     html += '<th colspan=\'2\'>Skipped Tests</th>'
-    html += '</tr><tr>'
+    html += '</tr>'
     html += '<th>Test</th>\n'
     html += '<th>Reason for Skip</th>\n'
-    html += '</tr>\n'
     for name, reason in skippedList:
         html += skipToHTML(name, reason)
     html += '</table>'
@@ -281,16 +353,26 @@ def outputHTML(openSummary):
     html += '<br><br>'
     html += getSystemTestResultsTable()
     html += '<br><br>'
+    html += getImageCompareResultsTable()
+    html += '<br><br>'
     html += getSkipsTable()
-    date = time.strftime("%m-%d-%y")
-    resultSummaryName = resultsFolder + '\\TestSummary_' + date  + '.html'
+    resultSummaryName = resultsFolder + '\\TestSummary.html'
     outfile = open(resultSummaryName, 'w')
     outfile.write(html)
     outfile.close()
     if(openSummary):
         os.system("start " + resultSummaryName)
 
+def cleanScreenShots(dir):
+    if not os.path.isdir(dir):
+        print 'Error. unable to clean screenshots, could not find ' + dir
+        return
+    screenshots = [s for s in os.listdir(dir) if s.endswith('.png')]
+    for s in screenshots:
+        os.remove(dir + '\\' + s)
+
 def main():
+    global resultsFolder
     parser = argparse.ArgumentParser()
     parser.add_argument('-nb', '--nobuild', action='store_true', help='run without rebuilding Falcor and test apps')
     parser.add_argument('-ss', '--showsummary', action='store_true', help='opens testing summary upon completion')
@@ -299,6 +381,11 @@ def main():
     parser.add_argument('-ctr', '--cleantestresults', action='store_true', help='deletes test results dir if exists')
     args = parser.parse_args()
 
+    cleanScreenShots(debugFolder)
+    cleanScreenShots(releaseFolder)
+
+    date = time.strftime("%m-%d-%y")
+    resultsFolder += '\\' + date
     if not os.path.isdir(resultsFolder):
         os.makedirs(resultsFolder)
     elif args.cleantestresults:
