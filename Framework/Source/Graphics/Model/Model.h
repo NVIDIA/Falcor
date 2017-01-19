@@ -113,23 +113,15 @@ namespace Falcor
 
         /** Get the number of unique textures in the model
         */
-        uint32_t getTextureCount() const { return (uint32_t)mpTextures.size(); }
+        uint32_t getTextureCount() const { return mTextureCount; }
 
         /** Get the number of unique materials in the model
         */
-        uint32_t getMaterialCount() const { return (uint32_t)mpMaterials.size(); }
+        uint32_t getMaterialCount() const { return mMaterialCount; }
 
         /** Get the number of unique buffers in the model
         */
-        uint32_t getBufferCount() const { return (uint32_t)mpBuffers.size(); }
-
-        /** Get a texture by ID
-        */
-        const Texture::SharedConstPtr& getTexture(uint32_t meshID) const { return mpTextures[meshID]; }
-
-        /** Get a material by ID
-        */
-        const Material::SharedPtr getMaterial(uint32_t materialID) const { return mpMaterials[materialID]; }
+        uint32_t getBufferCount() const { return mBufferCount; }
 
         /** Gets a mesh instance
             \param[in] meshID ID of the mesh
@@ -222,10 +214,6 @@ namespace Falcor
 
         Model();
         void setAnimationController(AnimationController::UniquePtr pAnimController);
-        Material::SharedPtr getOrAddMaterial(const Material::SharedPtr& pMaterial); // If a similar material already exists, will return the existing one. Otherwise, will return the material in pMaterial
-
-        void addBuffer(const Buffer::SharedConstPtr& pBuffer);
-        void addTexture(const Texture::SharedConstPtr& pTexture);
 
         void addMeshInstance(const Mesh::SharedPtr& pMesh, const glm::mat4& transform);
 
@@ -241,23 +229,21 @@ namespace Falcor
         uint32_t mIndexCount;
         uint32_t mPrimitiveCount;
         uint32_t mMeshInstanceCount;
+        uint32_t mBufferCount;
+        uint32_t mMaterialCount;
+        uint32_t mTextureCount;
 
         uint32_t mId;
 
-        std::vector<Material::SharedPtr> mpMaterials;
         std::vector<MeshInstanceList> mMeshes; // [Mesh][Instance]
 
         AnimationController::UniquePtr mpAnimationController;
-        std::vector<Buffer::SharedConstPtr> mpBuffers;
-        std::vector<Texture::SharedConstPtr> mpTextures;
 
         std::string mName;
 
         static uint32_t sModelCounter;
 
         void calculateModelProperties();
-        void deleteUnusedMaterials(std::map<const Material*, bool> usedMaterials);
-        void deleteUnusedBuffers(std::map<const Buffer*, bool> usedBuffers);
         void compressAllTextures();
     };
 }

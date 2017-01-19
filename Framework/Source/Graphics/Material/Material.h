@@ -179,6 +179,10 @@ namespace Falcor
             \param[in] layerIdx The index of the material layer
         */
         void removeLayer(uint32_t layerIdx);
+
+        /** Returns the number of textures in the material
+        */
+        uint32_t getTextureCount() const { return mTextureCount; }
         
         /** Set the normal map
         */
@@ -270,6 +274,8 @@ namespace Falcor
     private:
         void finalize() const;
         void normalize() const;
+        void updateTextureCount() const;
+
         static const uint32_t kTexCount = MatMaxLayers + 4;
         static_assert(sizeof(MaterialTextures) == (sizeof(Texture::SharedPtr) * kTexCount), "Wrong number of textures in Material::mTextures");
 
@@ -277,6 +283,7 @@ namespace Falcor
         mutable MaterialData mData;         ///< Material data shared between host and device
         bool mDoubleSided = false;          ///< Used for culling 
         std::string mName;
+        mutable uint32_t mTextureCount = 0;
 
         // The next functions and fields are used for material compilation into shaders.
         // We only compile based on the material descriptor, so as an optimization we minimize the number of shader permutations based on the desc

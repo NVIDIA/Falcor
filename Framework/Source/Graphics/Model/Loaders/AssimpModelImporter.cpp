@@ -218,7 +218,6 @@ namespace Falcor
                     pTex = createTextureFromFile(fullpath, true, isSrgbRequired(aiType, useSrgb));
                     if(pTex)
                     {
-                        mpModel->addTexture(pTex);
                         mTextureCache[s] = pTex;
                     }
                 }
@@ -345,7 +344,7 @@ namespace Falcor
                 logError("Can't allocate memory for material");
                 return false;
             }
-            auto pAdded = mpModel->getOrAddMaterial(pMaterial);
+            auto pAdded = checkForExistingMaterial(pMaterial);
             if(pMaterial != pAdded)
             {
                 // Material already exists
@@ -696,9 +695,8 @@ namespace Falcor
     Buffer::SharedPtr AssimpModelImporter::createIndexBuffer(const aiMesh* pAiMesh)
     {
         std::vector<uint32_t> indices = createIndexBufferData(pAiMesh);
-        auto pBuffer = Buffer::create(uint32_t(sizeof(uint32_t)*indices.size()), Buffer::BindFlags::Index, Buffer::CpuAccess::None, indices.data());
-        mpModel->addBuffer(pBuffer);
-        return pBuffer;
+        const uint32_t size = (uint32_t)(sizeof(uint32_t) * indices.size());
+        return Buffer::create(size, Buffer::BindFlags::Index, Buffer::CpuAccess::None, indices.data());;
     }
 
 
@@ -838,9 +836,7 @@ namespace Falcor
             loadBones(pAiMesh, initData.data(), vertexCount, vertexStride, boneOffset, weightOffset);
         }
 
-        auto pBuffer = Buffer::create(vertexStride * vertexCount, Buffer::BindFlags::Vertex, Buffer::CpuAccess::None, initData.data());
-        mpModel->addBuffer(pBuffer);
-        return pBuffer;
+        return Buffer::create(vertexStride * vertexCount, Buffer::BindFlags::Vertex, Buffer::CpuAccess::None, initData.data());;
     }
 
     void AssimpModelImporter::loadBones(const aiMesh* pAiMesh, uint8_t* pVertexData, uint32_t vertexCount, uint32_t vertexStride, uint32_t idOffset, uint32_t weightOffset)

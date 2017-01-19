@@ -411,6 +411,7 @@
     <ClCompile Include="Graphics\Model\Loaders\BinaryImage.cpp" />
     <ClCompile Include="Graphics\Model\Loaders\BinaryModelExporter.cpp" />
     <ClCompile Include="Graphics\Model\Loaders\BinaryModelImporter.cpp" />
+    <ClCompile Include="Graphics\Model\Loaders\ModelImporter.cpp" />
     <ClCompile Include="Graphics\Model\Loaders\SimpleModelImporter.cpp" />
     <ClCompile Include="Graphics\Model\Mesh.cpp" />
     <ClCompile Include="Graphics\Model\Model.cpp" />
@@ -786,6 +787,7 @@
     <ClInclude Include="Graphics\Model\Loaders\BinaryModelExporter.h" />
     <ClInclude Include="Graphics\Model\Loaders\BinaryModelImporter.h" />
     <ClInclude Include="Graphics\Model\Loaders\BinaryModelSpec.h" />
+    <ClInclude Include="Graphics\Model\Loaders\ModelImporter.h" />
     <ClInclude Include="Graphics\Model\Loaders\SimpleModelImporter.h" />
     <ClInclude Include="Graphics\Model\Mesh.h" />
     <ClInclude Include="Graphics\Model\ObjectInstance.h" />

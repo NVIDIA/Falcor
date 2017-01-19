@@ -41,6 +41,7 @@
 #include "Utils/StringUtils.h"
 #include "Graphics/Camera/Camera.h"
 #include "API/VAO.h"
+#include <set>
 
 namespace Falcor
 {
@@ -105,6 +106,13 @@ namespace Falcor
         mIndexCount = 0;
         mPrimitiveCount = 0;
         mMeshInstanceCount = 0;
+        mBufferCount = 0;
+        mMaterialCount = 0;
+        mTextureCount = 0;
+
+        std::set<const Material*> uniqueMaterials;
+        std::set<const Texture*> uniqueTextures;
+        std::set<const Buffer*> uniqueBuffers;
 
         // Sort the meshes
         sortMeshes();
@@ -116,14 +124,46 @@ namespace Falcor
             // If we have a vector for a mesh, there should be at least one instance of it
             assert(meshInstances.size() > 0);
 
-            auto& pMesh = meshInstances[0]->getObject();
-            const uint32_t instanceCount = (uint32_t)(meshInstances.size());
+            const auto& pMesh = meshInstances[0]->getObject();
+            const uint32_t instanceCount = (uint32_t)meshInstances.size();
             
             mVertexCount += pMesh->getVertexCount() * instanceCount;
             mIndexCount += pMesh->getIndexCount() * instanceCount;
             mPrimitiveCount += pMesh->getPrimitiveCount() * instanceCount;
             mMeshInstanceCount += instanceCount;
 
+            const Material* pMaterial = pMesh->getMaterial().get();
+
+            // Track material
+            uniqueMaterials.insert(pMaterial);
+
+            // Track all of the material's textures
+            for (uint32_t i = 0; i < pMaterial->getNumLayers(); i++)
+            {
+                uniqueTextures.insert(pMaterial->getLayer(i).pTexture.get());
+            }
+
+            uniqueTextures.insert(pMaterial->getNormalMap().get());
+            uniqueTextures.insert(pMaterial->getAlphaMap().get());
+            uniqueTextures.insert(pMaterial->getAmbientOcclusionMap().get());
+            uniqueTextures.insert(pMaterial->getHeightMap().get());
+
+            // Track the material's buffers
+            const auto& pVao = pMesh->getVao();
+            for (uint32_t i = 0; i < (uint32_t)pVao->getVertexBuffersCount(); i++)
+            {
+                if (pVao->getVertexBuffer(i) != nullptr)
+                {
+                    uniqueBuffers.insert(pVao->getVertexBuffer(i).get());
+                }
+            }
+
+            if (pVao->getIndexBuffer() != nullptr)
+            {
+                uniqueBuffers.insert(pVao->getIndexBuffer().get());
+            }
+
+            // Expand bounding box
             for(uint32_t i = 0 ; i < instanceCount; i++)
             {
                 const BoundingBox& meshBox = meshInstances[i]->getBoundingBox();
@@ -135,6 +175,15 @@ namespace Falcor
                 modelMax = max(modelMax, meshMax);
             }
         }
+
+        // Don't count nullptrs
+        uniqueTextures.erase(nullptr);
+        uniqueMaterials.erase(nullptr);
+        uniqueBuffers.erase(nullptr);
+
+        mTextureCount = (uint32_t)uniqueTextures.size();
+        mMaterialCount = (uint32_t)uniqueMaterials.size();
+        mBufferCount = (uint32_t)uniqueBuffers.size();
 
         mBoundingBox = BoundingBox::fromMinMax(modelMin, modelMax);
         mRadius = glm::length(modelMin - modelMax) * 0.5f;
@@ -202,42 +251,16 @@ namespace Falcor
 
     void Model::bindSamplerToMaterials(const Sampler::SharedPtr& pSampler)
     {
-        // Go over all materials and bind the sampler
-        for(auto& m : mpMaterials)
+        // Go over materials for all meshes and bind the sampler
+        for(auto& meshInstances : mMeshes)
         {
-            m->setSampler(pSampler);
+            meshInstances[0]->getObject()->getMaterial()->setSampler(pSampler);
         }
     }
 
     void Model::setAnimationController(AnimationController::UniquePtr pAnimController)
     {
         mpAnimationController = std::move(pAnimController);
-    }
-
-    Material::SharedPtr Model::getOrAddMaterial(const Material::SharedPtr& pMaterial)
-    {
-        // Check if the material already exists
-        for(const auto& a : mpMaterials)
-        {
-            if(*pMaterial == *a)
-            {
-                return a;
-            }
-        }
-
-        // New material
-        mpMaterials.push_back(pMaterial);
-        return pMaterial;
-    }
-
-    void Model::addBuffer(const Buffer::SharedConstPtr& pBuffer)
-    {
-        mpBuffers.push_back(pBuffer);
-    }
-
-    void Model::addTexture(const Texture::SharedConstPtr& pTexture)
-    {
-        mpTextures.push_back(pTexture);
     }
 
     void Model::addMeshInstance(const Mesh::SharedPtr& pMesh, const glm::mat4& baseTransform)
@@ -271,7 +294,7 @@ namespace Falcor
         {
             return lhs[0]->getObject()->getMaterial() < rhs[0]->getObject()->getMaterial();
         };
-
+        
         std::sort(mMeshes.begin(), mMeshes.end(), matSortPred);
     }
 
@@ -329,8 +352,6 @@ namespace Falcor
         auto& meshesEnd = std::remove_if(mMeshes.begin(), mMeshes.end(), pred);
         mMeshes.erase(meshesEnd, mMeshes.end());
 
-        deleteUnusedBuffers(usedBuffers);
-        deleteUnusedMaterials(usedMaterials);
         calculateModelProperties();
     }
 
@@ -340,87 +361,21 @@ namespace Falcor
         Mesh::resetGlobalIdCounter();
     }
 
-    void Model::deleteUnusedBuffers(std::map<const Buffer*, bool> usedBuffers)
-    {
-        for(auto& Buffer : mpBuffers)
-        {
-            if(usedBuffers.find(Buffer.get()) == usedBuffers.end())
-            {
-                Buffer = nullptr;
-            }            
-        }
-        removeNullElements(mpBuffers);
-    }
-
-    void Model::deleteUnusedMaterials(std::map<const Material*, bool> usedMaterials)
-    {
-        std::map<const Texture*, bool> usedTextures;
-        for(auto& material : mpMaterials)
-        {
-            if(usedMaterials.find(material.get()) == usedMaterials.end())
-            {
-                // Material is not used. Remove it.
-                material = nullptr;
-            }
-            else
-            {
-                // Material is used. Mark its textures
-                std::vector<Texture::SharedConstPtr> activeTextures;
-//                material->getTexturesList(activeTextures);
-                for(const auto& tex : activeTextures)
-                {
-                    usedTextures[tex.get()] = true;
-                }
-            }
-        }
-        removeNullElements(mpMaterials);
-
-        // Now remove unused textures
-        for(auto& texture : mpTextures)
-        {
-            if(usedTextures.find(texture.get()) == usedTextures.end())
-            {
-                texture = nullptr;
-            }
-        }
-        removeNullElements(mpTextures);
-    }
-
     void Model::compressAllTextures()
     {
-        std::map<const Texture*, uint32_t> texturesIndex;
-        std::vector<bool> isNormalMap(mpTextures.size(), false);
+        for (const auto& meshInstances : mMeshes)
+        {
+            const auto& pMaterial = meshInstances[0]->getObject()->getMaterial();
 
-        // Find all normal maps. We don't compress them.
-        for(uint32_t i = 0; i < mpTextures.size(); i++)
-        {
-            texturesIndex[mpTextures[i].get()] = i;
-        }
-        
-        for(const auto& m : mpMaterials)
-        {
-            const auto& pNormalMap = m->getNormalMap();
-            if(pNormalMap)
+            for (uint32_t i = 0; i < pMaterial->getNumLayers(); i++)
             {
-                uint32_t id = texturesIndex[pNormalMap.get()];
-                isNormalMap[id] = true;
-            }
-        }
-
-        std::vector<uint8_t> texData;
-
-        // Now create the textures
-        for(uint32_t i = 0; i < mpTextures.size(); i++)
-        {
-            if(isNormalMap[i] == true)
-            {
-                // Not compressing normal map
-                continue;
+                pMaterial->getLayer(i).pTexture->compress2DTexture();
             }
 
-            Texture* pTexture = const_cast<Texture*>(mpTextures[i].get());
-            assert(pTexture->getType() == Texture::Type::Texture2D);
-            pTexture->compress2DTexture();            
+            // Don't compress normal maps
+            pMaterial->getAlphaMap()->compress2DTexture();
+            pMaterial->getAmbientOcclusionMap()->compress2DTexture();
+            pMaterial->getHeightMap()->compress2DTexture();
         }
     }
 

@@ -141,9 +141,9 @@ namespace Falcor
         for(uint32_t model = 0; model < pScene->getModelCount(); model++)
         {
             const Model* pModel = pScene->getModel(model).get();
-            for(uint32_t material = 0; material < pModel->getMaterialCount(); material++)
+            for(uint32_t meshID = 0; meshID < pModel->getMeshCount(); meshID++)
             {
-                const Material* pMaterial = pModel->getMaterial(material).get();
+                const Material* pMaterial = pModel->getMesh(meshID)->getMaterial().get();
                 if(pLeanMaps->createLeanMap(pMaterial) == false)
                 {
                     return nullptr;

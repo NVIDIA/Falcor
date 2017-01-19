@@ -233,15 +233,29 @@ namespace Falcor
     {
         mTextureHash[nullptr] = -1;
 
-        for(uint32_t i = 0; i < mpModel->getTextureCount(); i++)
+        uint32_t texID = 0;
+        for (uint32_t meshID = 0; meshID < mpModel->getMeshCount(); meshID++)
         {
-            auto pTex = mpModel->getTexture(i).get();
-            mTextureHash[pTex] = i;
-            if(exportBinaryImage(pTex) == false)
+            bool succeeded = true;
+
+            // Write all material textures
+            const auto& pMaterial = mpModel->getMesh(meshID)->getMaterial();
+            for (uint32_t i = 0; i < pMaterial->getNumLayers(); i++)
+            {
+                succeeded &= writeMaterialTexture(texID, pMaterial->getLayer(i).pTexture);
+            }
+
+            succeeded &= writeMaterialTexture(texID, pMaterial->getNormalMap());
+            succeeded &= writeMaterialTexture(texID, pMaterial->getAlphaMap());
+            succeeded &= writeMaterialTexture(texID, pMaterial->getAmbientOcclusionMap());
+            succeeded &= writeMaterialTexture(texID, pMaterial->getHeightMap());
+
+            if (succeeded == false)
             {
                 return false;
             }
         }
+
         return true;
     }
 
@@ -403,6 +417,21 @@ namespace Falcor
 
             meshIdx++;
         }
+        return true;
+    }
+
+    bool BinaryModelExporter::writeMaterialTexture(uint32_t& texID, const Texture::SharedPtr& pTexture)
+    {
+        if (pTexture != nullptr)
+        {
+            // If not exported yet
+            if (mTextureHash.find(pTexture.get()) == mTextureHash.end())
+            {
+                mTextureHash[pTexture.get()] = texID++;
+                return exportBinaryImage(pTexture.get());
+            }
+        }
+
         return true;
     }
 

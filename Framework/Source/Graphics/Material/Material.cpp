@@ -80,7 +80,7 @@ namespace Falcor
     {
         finalize();
         Layer layer;
-        if(layerIdx >= getNumLayers())
+        if(layerIdx < getNumLayers())
         {
             const auto& desc = mData.desc.layers[layerIdx];
             const auto& vals = mData.values.layers[layerIdx];
@@ -246,6 +246,20 @@ namespace Falcor
         }
     }
 
+    void Material::updateTextureCount() const
+    {
+        mTextureCount = 0;
+        auto pTextures = (Texture::SharedPtr*)&mData.textures;
+
+        for (uint32_t i = 0; i < kTexCount; i++)
+        {
+            if (pTextures[i] != nullptr)
+            {
+                mTextureCount++;
+            }
+        }
+    }
+
 #if _LOG_ENABLED
 #define check_offset(_a) assert(pCB->getVariableOffset(std::string(varName) + "." + #_a) == (offsetof(MaterialData, _a) + offset))
 #else
@@ -389,7 +403,7 @@ namespace Falcor
             }
         }
 
-        // Not found, add it to the vector            
+        // Not found, add it to the vector
         sDescIdentifier.push_back({mData.desc, identifier, 1});
         mDescIdentifier = identifier;
         identifier++;
@@ -407,6 +421,7 @@ namespace Falcor
         {
             updateDescIdentifier();
             normalize();
+            updateTextureCount();
             mDescDirty = false;
         }
     }

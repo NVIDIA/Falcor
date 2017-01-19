@@ -807,7 +807,6 @@ namespace Falcor
             for (int32_t i = 0; i < numAttribs; ++i)
             {
                 pVBs[i] = Buffer::create(buffers[i].size(), Buffer::BindFlags::Vertex, Buffer::CpuAccess::None, buffers[i].data());
-                pModel->addBuffer(pVBs[i]);
             }
 
             if(version <= 5)
@@ -877,20 +876,13 @@ namespace Falcor
                             auto pTexture = Texture::create2D(texData[texID].width, texData[texID].height, texSig.format, 1, Texture::kMaxPossible, texSig.pData);
                             pTexture->setSourceFilename(texData[texID].name);
                             textures[texSig] = pTexture;
-                            pModel->addTexture(pTexture);
                             basicMaterial.pTextures[falcorType] = pTexture;
                         }
                     }
                 }
 
-                auto pMaterial = basicMaterial.convertToMaterial();
-                auto pAddedMaterial = pModel->getOrAddMaterial(pMaterial);
-
-                // Check it the material already existed in the model
-                if(pAddedMaterial != pMaterial)
-                {
-                    pMaterial = pAddedMaterial;
-                }
+                // Create material and check if it already exists
+                auto pMaterial = checkForExistingMaterial(basicMaterial.convertToMaterial());
 
                 int32_t numTriangles;
                 mStream >> numTriangles;
@@ -908,9 +900,7 @@ namespace Falcor
                 mStream.read(&indices[0], ibSize);
 
                 auto pIB = Buffer::create(ibSize, Buffer::BindFlags::Index, Buffer::CpuAccess::None, indices.data());
-                pModel->addBuffer(pIB);
 
-                
                 // Generate tangent space data if needed
                 if(genTangentForMesh)
                 {
@@ -938,10 +928,8 @@ namespace Falcor
                     }
 
                     pVBs[tangentBufferIndex] = Buffer::create(buffers[tangentBufferIndex].size(), Buffer::BindFlags::Vertex, Buffer::CpuAccess::None, buffers[tangentBufferIndex].data());
-                    pModel->addBuffer(pVBs[tangentBufferIndex]);
 
                     pVBs[bitangentBufferIndex] = Buffer::create(buffers[bitangentBufferIndex].size(), Buffer::BindFlags::Vertex, Buffer::CpuAccess::None, buffers[bitangentBufferIndex].data());
-                    pModel->addBuffer(pVBs[bitangentBufferIndex]);
                 }
                 
 

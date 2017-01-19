@@ -61,6 +61,8 @@ namespace Falcor
         bool writeCommonMeshData(const Mesh::SharedPtr& pMesh, uint32_t submeshCount);
         bool writeSubmesh(const Mesh::SharedPtr& pMesh);
         bool writeInstances();
+
+        bool writeMaterialTexture(uint32_t& texID, const Texture::SharedPtr& pTexture);
         
         bool exportBinaryImage(const Texture* pTexture);
 

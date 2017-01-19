@@ -28,6 +28,7 @@
 #pragma once
 #include <map>
 #include <vector>
+#include "Graphics/Model/Loaders/ModelImporter.h"
 #include "../AnimationController.h"
 #include "../Mesh.h"
 #include "../Model.h"
@@ -45,7 +46,7 @@ namespace Falcor
     class VertexBufferLayout;
     class Texture;
 
-    class AssimpModelImporter
+    class AssimpModelImporter : public ModelImporter
     {
     public:
         /** create a new model using ASSIMP

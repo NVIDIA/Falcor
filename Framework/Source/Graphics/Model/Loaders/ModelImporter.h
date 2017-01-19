@@ -1,5 +1,5 @@
 /***************************************************************************
-# Copyright (c) 2015, NVIDIA CORPORATION. All rights reserved.
+# Copyright (c) 2017, NVIDIA CORPORATION. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -25,40 +25,21 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
+
 #pragma once
-#include <string>
-#include "Utils/BinaryFileStream.h"
-#include "glm/vec3.hpp"
-#include "../Model.h"
-#include "Graphics/Model/Loaders/ModelImporter.h"
+
+#include <vector>
+#include "Graphics/Material/Material.h"
 
 namespace Falcor
 {
-    class Texture;
-
-    class BinaryModelImporter : public ModelImporter
+    class ModelImporter
     {
-    public:
-        /** create a new model from internal binary format
-            \param[in] filename Model's filename. Loader will look for it in the data directories.
-            \param[in] flags Flags controlling model creation
-            returns nullptr if loading failed, otherwise a new Model object
-        */
-        static Model::SharedPtr createFromFile(const std::string& filename, uint32_t flags);
+    protected:
 
-    private:
-        BinaryModelImporter(const std::string& fullpath);
-        Model::SharedPtr createModel(uint32_t flags);
+        // If a similar material already exists, will return the existing one. Otherwise, will cache the material in pMaterial and return it
+        Material::SharedPtr checkForExistingMaterial(const Material::SharedPtr& pMaterial);
 
-        std::string mModelName;
-        BinaryFileStream mStream;
-
-        struct TangentSpace
-        {
-            glm::vec3 tangent;
-            glm::vec3 bitangent;
-        };
-
-        static const uint32_t kInvalidOffset = uint32_t(-1);
+        std::vector<Material::SharedPtr> mLoadedMaterials; // vector because we make use of operator==, and it's only for the importers
     };
 }

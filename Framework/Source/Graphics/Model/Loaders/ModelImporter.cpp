@@ -1,5 +1,5 @@
 /***************************************************************************
-# Copyright (c) 2015, NVIDIA CORPORATION. All rights reserved.
+# Copyright (c) 2017, NVIDIA CORPORATION. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -25,40 +25,25 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#pragma once
-#include <string>
-#include "Utils/BinaryFileStream.h"
-#include "glm/vec3.hpp"
-#include "../Model.h"
+
+#include "Framework.h"
 #include "Graphics/Model/Loaders/ModelImporter.h"
 
 namespace Falcor
 {
-    class Texture;
-
-    class BinaryModelImporter : public ModelImporter
+    Material::SharedPtr ModelImporter::checkForExistingMaterial(const Material::SharedPtr& pMaterial)
     {
-    public:
-        /** create a new model from internal binary format
-            \param[in] filename Model's filename. Loader will look for it in the data directories.
-            \param[in] flags Flags controlling model creation
-            returns nullptr if loading failed, otherwise a new Model object
-        */
-        static Model::SharedPtr createFromFile(const std::string& filename, uint32_t flags);
-
-    private:
-        BinaryModelImporter(const std::string& fullpath);
-        Model::SharedPtr createModel(uint32_t flags);
-
-        std::string mModelName;
-        BinaryFileStream mStream;
-
-        struct TangentSpace
+        // Check if the material already exists
+        for(const auto& pMat : mLoadedMaterials)
         {
-            glm::vec3 tangent;
-            glm::vec3 bitangent;
-        };
+            if(*pMaterial == *pMat)
+            {
+                return pMat;
+            }
+        }
 
-        static const uint32_t kInvalidOffset = uint32_t(-1);
-    };
+        // New material
+        mLoadedMaterials.push_back(pMaterial);
+        return pMaterial;
+    }
 }
