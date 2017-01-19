@@ -36,4 +36,5 @@ int main()
     OgreSystemTest ost;
     SampleConfig config;
     ost.run(config);
+    return 0;
 }

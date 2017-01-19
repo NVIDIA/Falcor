@@ -1,5 +1,6 @@
 @echo off
 setlocal ENABLEDELAYEDEXPANSION 
+set CL=/D_AUTOTESTING
 
 set "action="
 if "%1"=="clean" set action=clean

@@ -9,7 +9,7 @@ void CrashTest::addTests()
 {
     addTestToList<TestThrow>();
     addTestToList<TestVector>();
-    //addTestToList<TestAssert>();
+    addTestToList<TestAssert>();
     addTestToList<TestCrashHandling>();
 }
 
