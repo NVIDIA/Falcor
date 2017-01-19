@@ -11,7 +11,12 @@ BadTestingLogTest debugd3d12
 BadTestingLogTest released3d12
 asdajihsfkjb released3d12
 qweeeeeeeeeeeeeeqweqwe
+qww released3d12 wweqwe
+HangTest debugd3d12
+HangTest released3d12
 CrashTest released3d12
-OgreSystemTest released3d12
-OgreSystemTest released3d12
-OgreSystemTest released3d12
+FailTest debugd3d12
+FailTest released3d12 
+OgreSystemTest released3d12 2
+OgreSystemTest released3d12 0.06
+OgreSystemTest released3d12 0.75
