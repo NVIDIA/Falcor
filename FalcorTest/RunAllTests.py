@@ -7,10 +7,13 @@ from xml.dom import minidom
 from xml.parsers.expat import ExpatError
 import argparse
 import sys
+import filecmp
+from datetime import date, timedelta
 
 #relevant paths
 gBuildBatchFile = 'BuildFalcorTest.bat'
 gTestListFile = 'C:\\Users\\clavelle\\Desktop\\FalcorGitHub\\FalcorTest\\TestList.txt'
+gEmailRecipientFile = 'EmailRecipients.txt'
 gDebugDir = 'C:\\Users\\clavelle\\Desktop\\FalcorGitHub\\FalcorTest\\Bin\\x64\\Debug\\'
 gReleaseDir = 'C:\\Users\\clavelle\\Desktop\\FalcorGitHub\\FalcorTest\\Bin\\x64\\Release\\'
 gResultsDir = 'TestResults'
@@ -461,12 +464,35 @@ def updateRepo():
     subprocess.call(['git', 'pull', 'origin', 'TestingFramework'])
     subprocess.call(['git', 'checkout', 'TestingFramework'])
 
+def sendEmail():
+    #try to find result dir from yesterday
+    yesterdayStr = (date.today() - timedelta(days=1)).strftime("%m-%d-%y")
+    slashIndex = gResultsDir.find('\\')
+    yesterdayDir = gResultsDir[:slashIndex + 1] + yesterdayStr
+    yesterdayFile = yesterdayDir + '\\TestSummary.html'
+    todayFile = gResultsDir + '\\TestSummary.html'
+    if os.path.isdir(yesterdayDir) and os.path.isfile(yesterdayFile):
+        if filecmp.cmp(yesterdayFile, todayFile):
+            subject = '[Unchanged] '
+        else:
+            subject = '[Different] '
+    else:
+        subject = '[No Reference Summary] '
+    todayStr = (date.today()).strftime("%m-%d-%y")
+    subject += 'Falcor Automated Testing for ' + todayStr
+    body = 'Attached is the testing summary for ' + todayStr
+    sender = 'clavelle@nvidia.com'
+    recipients = str(open(gEmailRecipientFile, 'r').read());
+    subprocess.call(['blat.exe', '-install', 'mail.nvidia.com', sender])
+    subprocess.call(['blat.exe', '-to', recipients, '-subject', subject, '-body', body, '-attach', todayFile])
+
 def main():
     global gResultsDir
     global gGenRefResults
     parser = argparse.ArgumentParser()
     parser.add_argument('-nb', '--nobuild', action='store_true', help='run without rebuilding Falcor and test apps')
     parser.add_argument('-np', '--nopull', action='store_true', help='run without pulling TestingFramework')
+    parser.add_argument('-ne', '--noemail', action='store_true', help='run without emailing the result summary')
     parser.add_argument('-ss', '--showsummary', action='store_true', help='opens testing summary upon completion')
     parser.add_argument('-ctr', '--cleantestresults', action='store_true', help='deletes test results dir if exists')
     parser.add_argument('-gr', '--generatereference', action='store_true', help='generates reference testing logs and images')
@@ -488,8 +514,9 @@ def main():
     #make outer dir if need to
     makeDirIfDoesntExist(gResultsDir)
     #make inner dir for this results
-    date = time.strftime("%m-%d-%y")
-    gResultsDir += '\\' + date
+    dateStr = date.today().strftime("%m-%d-%y")
+    gResultsDir += '\\' + dateStr
+
     if args.cleantestresults:
         shutil.rmtree(gResultsDir, ignore_errors=True)
         try:
@@ -498,13 +525,10 @@ def main():
             print 'Fatal Error, Failed to create test result folder. (just try again). Exception: ', info
     else:
         makeDirIfDoesntExist(gResultsDir)
-
+ 
     if not args.nobuild:
         callBatchFile(['clean', 'debugd3d12'])
         callBatchFile(['clean', 'released3d12'])
-        #TODO, clean other configs
- 
-    if not args.nobuild:
         #returns 1 on fail
         if callBatchFile(['build', 'debugd3d12', 'Falcor']):
             testInfo = TestInfo('Falcor', 'debugd3d12', .05)
@@ -523,5 +547,7 @@ def main():
     readTestList(not args.nobuild)
     outputHTML(args.showsummary)
 
+    if not args.noemail:
+        sendEmail()
 if __name__ == '__main__':
     main()
