@@ -36,5 +36,8 @@ int main()
     OgreSystemTest ost;
     SampleConfig config;
     ost.run(config);
-    return 0;
+    if (ost.CaughtException())
+        return 1;
+    else
+        return 0;
 }

@@ -34,6 +34,9 @@ using namespace Falcor;
 
 class SystemTestBase : public Sample
 {
+public:
+    bool CaughtException() { return mCaughtException;  }
+
 protected:
     SystemTestBase();
     virtual void load() {}
@@ -59,4 +62,5 @@ private:
     Scene::UserVariable mScreencapFrames;
     uint32 mNumScreencaps;
     glm::vec2 mFpsFrames;   
+    bool mCaughtException;
 };

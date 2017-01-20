@@ -256,7 +256,7 @@ def processTestResult(testInfo):
             logTestSkip(testInfo.getFullName(), resultFile + ' was found and is XML, but is improperly formatted')
             overwriteMove(resultFile, resultDir)
     else:
-        logTestSkip(testName, 'Unable to find result file ' + resultFile)
+        logTestSkip(testInfo.Name, 'Unable to find result file ' + resultFile)
 
 def readTestList(buildTests):
     testList = open(gTestListFile)
@@ -308,7 +308,10 @@ def runTest(testInfo):
                     p.kill()
                     logTestSkip(testInfo.getFullName(), 'Test timed out ( > 30 seconds)')
                     return
-            processTestResult(testInfo)
+            if p.returncode != 0:
+                logTestSkip(testInfo.getFullName(), 'Abnormal exit code ' + str(p.returncode) + '. Most likely caught exception.')
+            else:
+                processTestResult(testInfo)
         else:
             logTestSkip(testInfo.getFullName(), 'Unable to find ' + testPath)
     except subprocess.CalledProcessError:

@@ -28,27 +28,49 @@
 #include "SystemTestBase.h"
 
 SystemTestBase::SystemTestBase() : mpScene(nullptr), mpSceneRenderer(nullptr), mDerivedName("UNINITALIZED"),
-mLoadTime(0.f), mFpsLoggingTime(0.f), mFpsFrames(300, 600), mNumScreencaps(0) {}
+mLoadTime(0.f), mFpsLoggingTime(0.f), mFpsFrames(300, 600), mNumScreencaps(0), mCaughtException(false) {}
 
 void SystemTestBase::onLoad()
 {
-    mpScene = Scene::loadFromFile("SceneTest.fscene", Model::GenerateTangentSpace);
-    mpSceneRenderer = SceneRenderer::create(mpScene);
-    toggleText(false);
-    getTestingParameters();
-    load();
+    try 
+    {
+        mpScene = Scene::loadFromFile(mDerivedName + ".fscene", Model::GenerateTangentSpace);
+        mpSceneRenderer = SceneRenderer::create(mpScene);
+        toggleText(false);
+        getTestingParameters();
+        load();
+    }
+    catch (...)
+    {
+        mCaughtException = true;
+        shutdownApp();
+    }
 }
 
 void SystemTestBase::onFrameRender()
 {
-    logTestingData();
-    render();
+    try {
+        logTestingData();
+        render();
+    }
+    catch (...)
+    {
+        mCaughtException = true;
+        shutdownApp();
+    }
 }
 
 void SystemTestBase::onShutdown()
 {
-    outputXML();
-    shutdown();
+    try
+    {
+        outputXML();
+        shutdown();
+    }
+    catch (...)
+    {
+        mCaughtException = true;
+    }
 }
 
 void SystemTestBase::onResizeSwapChain()
