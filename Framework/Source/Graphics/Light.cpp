@@ -64,7 +64,7 @@ namespace Falcor
 
     void Light::setIntoConstantBuffer(ConstantBuffer* pBuffer, const std::string& varName)
     {
-        static const size_t dataSize = sizeof(LightData);
+        static const size_t dataSize = sizeof(LightData) - sizeof(MaterialData);
         static_assert(dataSize % sizeof(float) * 4 == 0, "LightData size should be a multiple of 16");
         static_assert(sizeof(LightData) - sizeof(MaterialData) == offsetof(LightData, material), "'material' must be the last field in LightData");
 
@@ -84,7 +84,7 @@ namespace Falcor
         assert(offset + dataSize <= pBuffer->getSize());
 
         // Set everything except for the material
-        pBuffer->setBlob(&mData, offset, dataSize - sizeof(MaterialData));
+        pBuffer->setBlob(&mData, offset, dataSize);
         if (mData.type == LightArea)
         {
             assert(0);
