@@ -61,6 +61,7 @@ void ModelViewer::setModelString(bool isAfterCull, float loadTime)
     mModelString = isAfterCull ? "Mesh culling" : "Loading";
     mModelString += " took " + std::to_string(loadTime) + " seconds.\n";
     mModelString += "Model has " + std::to_string(mpModel->getVertexCount()) + " vertices, ";
+    mModelString += std::to_string(mpModel->getIndexCount()) + " indices, ";
     mModelString += std::to_string(mpModel->getPrimitiveCount()) + " primitives, ";
     mModelString += std::to_string(mpModel->getMeshCount()) + " meshes, ";
     mModelString += std::to_string(mpModel->getInstanceCount()) + " mesh instances, ";
@@ -238,8 +239,8 @@ void ModelViewer::onLoad()
 
     // Depth test
     DepthStencilState::Desc dsDesc;
-	dsDesc.setDepthTest(false);
-	mpNoDepthDS = DepthStencilState::create(dsDesc);
+    dsDesc.setDepthTest(false);
+    mpNoDepthDS = DepthStencilState::create(dsDesc);
     dsDesc.setDepthTest(true);
     mpDepthTestDS = DepthStencilState::create(dsDesc);
 
@@ -298,8 +299,8 @@ void ModelViewer::onFrameRender()
         }
 
         if(mUseTriLinearFiltering)
-		{
-			mpModel->bindSamplerToMaterials(mpLinearSampler);
+        {
+            mpModel->bindSamplerToMaterials(mpLinearSampler);
         }
         else
         {

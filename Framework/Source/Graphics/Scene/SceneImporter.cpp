@@ -35,6 +35,7 @@
 #include "Graphics/TextureHelper.h"
 #include "glm/detail/func_trigonometric.hpp"
 #include "SceneExportImportCommon.h"
+#include "glm/gtx/euler_angles.hpp"
 
 namespace Falcor
 {
@@ -106,7 +107,7 @@ namespace Falcor
         return nullptr;
     }
 
-    bool SceneImporter::createModelInstances(const rapidjson::Value& jsonVal, uint32_t modelID)
+    bool SceneImporter::createModelInstances(const rapidjson::Value& jsonVal, const Model::SharedPtr& pModel)
     {
         if(jsonVal.IsArray() == false)
         {
@@ -166,8 +167,10 @@ namespace Falcor
                     return false;
                 }
             }
-            mpScene->addModelInstance(modelID, name, rotation, scaling, translation);;
+
+            mpScene->addModelInstance(pModel, name, translation, rotation, scaling);
         }
+
         return true;
     }
 
@@ -194,7 +197,8 @@ namespace Falcor
         }
 
         pModel->setName(modelFile.GetString());
-        uint32_t modelID = mpScene->addModel(pModel, modelFile.GetString(), false);
+
+        bool instanceAdded = false;
 
         // Loop over the other members
         for(auto& jval = jsonModel.MemberBegin(); jval != jsonModel.MemberEnd(); jval++)
@@ -215,10 +219,12 @@ namespace Falcor
             }
             else if(keyName == SceneKeys::kModelInstances)
             {
-                if(createModelInstances(jval->value, modelID) == false)
+                if(createModelInstances(jval->value, pModel) == false)
                 {
                     return false;
                 }
+
+                instanceAdded = true;
             }
             else if(keyName == SceneKeys::kActiveAnimation)
             {
@@ -246,10 +252,12 @@ namespace Falcor
             }
         }
 
-        if(mpScene->getModelInstanceCount(modelID) == 0)
+        // If no instances for the model were loaded from the scene file
+        if (instanceAdded == false)
         {
-            mpScene->addModelInstance(modelID, "Instance 0", glm::vec3(0, 0, 0), glm::vec3(1, 1, 1), glm::vec3(0, 0, 0));
+            mpScene->addModelInstance(pModel, "Instance 0");
         }
+
         return true;
     }
 
@@ -416,16 +424,18 @@ namespace Falcor
             return false;
         }
 
+        float* pData = reinterpret_cast<float*>(&color.data);
+
         switch(jsonValue.Size())
         {
         case 1:
-            return getFloatVec<1>(jsonValue, "Material color value", color.data);
+            return getFloatVec<1>(jsonValue, "Material color value", pData);
         case 2:
-            return getFloatVec<2>(jsonValue, "Material color value", color.data);
+            return getFloatVec<2>(jsonValue, "Material color value", pData);
         case 3:
-            return getFloatVec<3>(jsonValue, "Material color value", color.data);
+            return getFloatVec<3>(jsonValue, "Material color value", pData);
         case 4:
-            return getFloatVec<4>(jsonValue, "Material color value", color.data);
+            return getFloatVec<4>(jsonValue, "Material color value", pData);
         default:
             should_not_get_here();
         }
@@ -1102,7 +1112,7 @@ namespace Falcor
         std::string fullpath;
         mFilename = filename;
         mModelLoadFlags = modelLoadFlags;
-		mSceneLoadFlags = sceneLoadFlags;
+        mSceneLoadFlags = sceneLoadFlags;
 
         if(findFileInDataDirectories(filename, fullpath))
         {
@@ -1136,14 +1146,14 @@ namespace Falcor
                 return nullptr;
             }
 
-			switch (mSceneLoadFlags)
-			{
-				case Scene::GenerateAreaLights:
-					// Create area light(s) in the scene
-					mpScene->createAreaLights();
-					break;
-			}
-			
+            switch (mSceneLoadFlags)
+            {
+                case Scene::GenerateAreaLights:
+                    // Create area light(s) in the scene
+                    mpScene->createAreaLights();
+                    break;
+            }
+            
             return mpScene;
         }
         else

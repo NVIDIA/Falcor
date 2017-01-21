@@ -28,6 +28,7 @@
 #pragma once
 #include <map>
 #include <vector>
+#include "Graphics/Model/Loaders/ModelImporter.h"
 #include "../AnimationController.h"
 #include "../Mesh.h"
 #include "../Model.h"
@@ -45,7 +46,7 @@ namespace Falcor
     class VertexBufferLayout;
     class Texture;
 
-    class AssimpModelImporter
+    class AssimpModelImporter : public ModelImporter
     {
     public:
         /** create a new model using ASSIMP
@@ -56,13 +57,16 @@ namespace Falcor
         static Model::SharedPtr createFromFile(const std::string& filename, uint32_t flags);
 
     private:
+
+        using IdToMesh = std::unordered_map<uint32_t, Mesh::SharedPtr>;
+
         AssimpModelImporter(uint32_t flags);
-        AssimpModelImporter(const AssimpModelImporter&) = delete;        
+        AssimpModelImporter(const AssimpModelImporter&) = delete;
         void operator=(const AssimpModelImporter&) = delete;
 
         bool initModel(const std::string& filename);
         bool createDrawList(const aiScene* pScene);
-        bool parseAiSceneNode(const aiNode* pCurrnet, const aiScene* pScene, std::map<uint32_t, Mesh::SharedPtr>& aiToFalcorMesh);
+        bool parseAiSceneNode(const aiNode* pCurrent, const aiScene* pScene, IdToMesh& aiToFalcorMesh);
         bool createAllMaterials(const aiScene* pScene, const std::string& modelFolder, bool isObjFile, bool useSrgb);
 
         void createAnimationController(const aiScene* pScene);

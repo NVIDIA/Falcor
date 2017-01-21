@@ -99,8 +99,8 @@ namespace Falcor
             return BasicMaterial::MapType::NormalMap;
         case TextureType_Specular:
             return BasicMaterial::MapType::SpecularMap;
-		case TextureType_Displacement:
-			return BasicMaterial::MapType::HeightMap;
+        case TextureType_Displacement:
+            return BasicMaterial::MapType::HeightMap;
         default:
             return BasicMaterial::MapType::Count;
         }
@@ -201,22 +201,22 @@ namespace Falcor
         // Model works in a similar way (meshes can share VB), but only stores the meshes vector. We need to process that vector to identify submeshes.
         for(uint32_t i = 0; i < mpModel->getMeshCount(); i++)
         {
-            auto pMesh = mpModel->getMesh(i);
+            const auto& pMesh = mpModel->getMesh(i);
             if(pMesh->getVao()->getPrimitiveTopology() != Vao::Topology::TriangleList)
             {
                 warning("Binary format doesn't support topologies other than triangles.");
                 continue;
             }
 
-            auto pVao = pMesh->getVao();
+            const auto& pVao = pMesh->getVao();
             auto& submesh = mMeshes[pVao.get()];
-            submesh.push_back(pMesh);
+            submesh.push_back(i);
         }
 
         // Calculate the number of mesh instances
         for(const auto& m : mMeshes)
         {
-            mInstanceCount += m.second[0]->getInstanceCount();
+            mInstanceCount += mpModel->getMeshInstanceCount(m.second[0]);
         }
 
         return true;
@@ -233,23 +233,37 @@ namespace Falcor
     {
         mTextureHash[nullptr] = -1;
 
-        for(uint32_t i = 0; i < mpModel->getTextureCount(); i++)
+        uint32_t texID = 0;
+        for (uint32_t meshID = 0; meshID < mpModel->getMeshCount(); meshID++)
         {
-            auto pTex = mpModel->getTexture(i).get();
-            mTextureHash[pTex] = i;
-            if(exportBinaryImage(pTex) == false)
+            bool succeeded = true;
+
+            // Write all material textures
+            const auto& pMaterial = mpModel->getMesh(meshID)->getMaterial();
+            for (uint32_t i = 0; i < pMaterial->getNumLayers(); i++)
+            {
+                succeeded &= writeMaterialTexture(texID, pMaterial->getLayer(i).pTexture);
+            }
+
+            succeeded &= writeMaterialTexture(texID, pMaterial->getNormalMap());
+            succeeded &= writeMaterialTexture(texID, pMaterial->getAlphaMap());
+            succeeded &= writeMaterialTexture(texID, pMaterial->getAmbientOcclusionMap());
+            succeeded &= writeMaterialTexture(texID, pMaterial->getHeightMap());
+
+            if (succeeded == false)
             {
                 return false;
             }
         }
+
         return true;
     }
 
     bool BinaryModelExporter::writeCommonMeshData(const Mesh::SharedPtr& pMesh, uint32_t submeshCount)
     {
         auto pVao = pMesh->getVao();
-		const uint32_t vertexBufferCount = pMesh->getVao()->getVertexBuffersCount();
-		mStream << (int32_t)vertexBufferCount << (int32_t)pMesh->getVertexCount() << (int32_t)submeshCount;
+        const uint32_t vertexBufferCount = pMesh->getVao()->getVertexBuffersCount();
+        mStream << (int32_t)vertexBufferCount << (int32_t)pMesh->getVertexCount() << (int32_t)submeshCount;
 
         struct vertexBufferInfo 
         {
@@ -260,9 +274,9 @@ namespace Falcor
             
         std::vector<vertexBufferInfo> vbInfo(vertexBufferCount);
 
-		for (uint32_t i = 0; i < vertexBufferCount; i++)
+        for (uint32_t i = 0; i < vertexBufferCount; i++)
         {
-			const VertexBufferLayout* pLayout = pVao->getVertexLayout()->getBufferLayout(i).get();
+            const VertexBufferLayout* pLayout = pVao->getVertexLayout()->getBufferLayout(i).get();
             assert(pLayout->getElementCount() == 1);
             AttribType type = getBinaryAttribType(pLayout->getElementName(0));
             AttribFormat format = GetBinaryAttribFormat(pLayout->getElementFormat(0));
@@ -287,19 +301,19 @@ namespace Falcor
         }
 
         // Write the vertex buffer
-		for (uint32_t i = 0; i < pMesh->getVertexCount(); ++i)
-		{
+        for (uint32_t i = 0; i < pMesh->getVertexCount(); ++i)
+        {
             for (auto& a : vbInfo)
-			{ 			
-				mStream.write((void*)a.pData, a.stride);
-				a.pData += a.stride;
-			}
-		}
+            { 			
+                mStream.write((void*)a.pData, a.stride);
+                a.pData += a.stride;
+            }
+        }
 
         for (auto& a : vbInfo)
-		{
-			a.pBuffer->unmap();
-		}
+        {
+            a.pBuffer->unmap();
+        }
 
         return true;
     }
@@ -326,8 +340,8 @@ namespace Falcor
         for(uint32_t i = 0; i < TextureType_Max; i++)
         {
             BasicMaterial::MapType falcorType = getFalcorMapType(TextureType(i));
-			int32_t index = -1;
-			if(BasicMaterial::MapType::Count != falcorType)
+            int32_t index = -1;
+            if(BasicMaterial::MapType::Count != falcorType)
             {
                 index = mTextureHash[basicMaterial.pTextures[falcorType].get()];
             }
@@ -361,9 +375,11 @@ namespace Falcor
         {
             const auto& submeshes = mesh.second;
 
-            for(const Mesh::SharedPtr& pMesh : submeshes)
+            for(uint32_t meshID : submeshes)
             {
-                if(pMesh == submeshes[0])
+                const Mesh::SharedPtr& pMesh = mpModel->getMesh(meshID);
+
+                if(meshID == submeshes[0])
                 {
                     // All submeshes share the same VB and same layout. We use the first submesh for that.
                     if(writeCommonMeshData(pMesh, (uint32_t)submeshes.size()) == false)
@@ -376,7 +392,7 @@ namespace Falcor
                 {
                     return false;
                 }
-                inst += pMesh->getInstanceCount();
+                inst += mpModel->getMeshInstanceCount(meshID);
             }
         }
 
@@ -389,11 +405,11 @@ namespace Falcor
         int32_t enabled = 1;
         for(const auto& mesh : mMeshes)
         {
-            const Mesh::SharedPtr pMesh = mesh.second[0];
+            const uint32_t meshID = mesh.second[0];
 
-            for(uint32_t i = 0; i < pMesh->getInstanceCount(); i++)
+            for(uint32_t i = 0; i < mpModel->getMeshInstanceCount(meshID); i++)
             {
-                glm::mat4 transformation = pMesh->getInstanceMatrix(i);
+                glm::mat4 transformation = mpModel->getMeshInstance(meshID, i)->getTransformMatrix();
                 mStream << meshIdx << enabled << transformation;
                 writeString(mStream, "");   // Name
                 writeString(mStream, "");   // Meta-data
@@ -401,6 +417,21 @@ namespace Falcor
 
             meshIdx++;
         }
+        return true;
+    }
+
+    bool BinaryModelExporter::writeMaterialTexture(uint32_t& texID, const Texture::SharedPtr& pTexture)
+    {
+        if (pTexture != nullptr)
+        {
+            // If not exported yet
+            if (mTextureHash.find(pTexture.get()) == mTextureHash.end())
+            {
+                mTextureHash[pTexture.get()] = texID++;
+                return exportBinaryImage(pTexture.get());
+            }
+        }
+
         return true;
     }
 

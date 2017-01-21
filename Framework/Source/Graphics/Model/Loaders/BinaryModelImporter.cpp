@@ -179,8 +179,8 @@ namespace Falcor
             return BasicMaterial::MapType::NormalMap;
         case TextureType_Specular:
             return BasicMaterial::MapType::SpecularMap;
-		case TextureType_Displacement:
-			return BasicMaterial::MapType::HeightMap;
+        case TextureType_Displacement:
+            return BasicMaterial::MapType::HeightMap;
         default:
             return BasicMaterial::MapType::Count;
         }
@@ -653,6 +653,9 @@ namespace Falcor
         // When creating instances of meshes, it means we need to translate the original mesh index to all it's submeshes Falcor IDs. This is what the next 2 variables are for.
         std::vector<std::vector<uint32_t>> meshToSubmeshesID(numMeshes);
 
+        // This importer loads mesh/submesh data before instance data, so the meshes are cached here.
+        std::vector<Mesh::SharedPtr> falcorMeshCache;
+        
         struct TexSignature
         {
             const uint8_t* pData;
@@ -694,11 +697,11 @@ namespace Falcor
                 return nullptr;
             }
 
-			Vao::BufferVec pVBs;
+            Vao::BufferVec pVBs;
             VertexLayout::SharedPtr pLayout = VertexLayout::create();
-			std::vector<std::vector<uint8_t> > buffers;
+            std::vector<std::vector<uint8_t> > buffers;
             pVBs.resize(numAttribs);
-			buffers.resize(numAttribs);
+            buffers.resize(numAttribs);
 
             const uint32_t kInvalidBufferIndex = (uint32_t)-1;
             uint32_t positionBufferIndex = kInvalidBufferIndex;
@@ -725,35 +728,35 @@ namespace Falcor
                     ResourceFormat falcorFormat = getFalcorFormat(AttribFormat(format), length);
                     uint32_t shaderLocation = getShaderLocation(AttribType(type));
 
-					switch (shaderLocation)
-					{
-					case VERTEX_POSITION_LOC:
-						positionBufferIndex = i;
+                    switch (shaderLocation)
+                    {
+                    case VERTEX_POSITION_LOC:
+                        positionBufferIndex = i;
                         assert(falcorFormat == ResourceFormat::RGB32Float || falcorFormat == ResourceFormat::RGBA32Float);
-						break;
-					case VERTEX_NORMAL_LOC:
-						normalBufferIndex = i;
+                        break;
+                    case VERTEX_NORMAL_LOC:
+                        normalBufferIndex = i;
                         assert(falcorFormat == ResourceFormat::RGB32Float);
-						break;
-					case VERTEX_TANGENT_LOC:
-						tangentBufferIndex = i;
+                        break;
+                    case VERTEX_TANGENT_LOC:
+                        tangentBufferIndex = i;
                         assert(falcorFormat == ResourceFormat::RGB32Float);
-						break;
-					case VERTEX_BITANGENT_LOC:
-						bitangentBufferIndex = i;
+                        break;
+                    case VERTEX_BITANGENT_LOC:
+                        bitangentBufferIndex = i;
                         assert(falcorFormat == ResourceFormat::RGB32Float);
-						break;
-					case VERTEX_TEXCOORD_LOC:
-						texCoordBufferIndex = i;
-						break;
-					}
+                        break;
+                    case VERTEX_TEXCOORD_LOC:
+                        texCoordBufferIndex = i;
+                        break;
+                    }
 
                     pBufferLayout->addElement(falcorName, 0, falcorFormat, 1, shaderLocation);
                     buffers[i].resize(pBufferLayout->getStride() * numVertices);
                 }
             }
 
-			
+            
             // Check if we need to generate tangents  
             bool genTangentForMesh = false;
             if(shouldGenerateTangents && (tangentBufferIndex == kInvalidBufferIndex) && (bitangentBufferIndex == kInvalidBufferIndex))
@@ -766,46 +769,45 @@ namespace Falcor
                 else
                 {
                     if(texCoordBufferIndex == kInvalidBufferIndex)
-					{
-						logWarning("No uv mapping is provided to generate tangent space for mesh " + std::to_string(meshIdx) + " when loading model " + mModelName + ".\nMesh doesn't contain normals or texture coordinates\n");
-					}
+                    {
+                        logWarning("No uv mapping is provided to generate tangent space for mesh " + std::to_string(meshIdx) + " when loading model " + mModelName + ".\nMesh doesn't contain normals or texture coordinates\n");
+                    }
                     // Set the offsets
                     genTangentForMesh = true;
                     tangentBufferIndex = (uint32_t)pVBs.size();
                     bitangentBufferIndex = (uint32_t)pVBs.size() + 1;
                     pVBs.resize(bitangentBufferIndex + 1);
-					buffers.resize(bitangentBufferIndex + 1);
+                    buffers.resize(bitangentBufferIndex + 1);
                    
                     auto pTangentLayout = VertexBufferLayout::create();
                     pLayout->addBufferLayout(tangentBufferIndex, pTangentLayout);
-					pTangentLayout->addElement(VERTEX_TANGENT_NAME, 0, ResourceFormat::RGB32Float, 1, VERTEX_TANGENT_LOC);
-					buffers[tangentBufferIndex].resize(sizeof(glm::vec3) * numVertices);
+                    pTangentLayout->addElement(VERTEX_TANGENT_NAME, 0, ResourceFormat::RGB32Float, 1, VERTEX_TANGENT_LOC);
+                    buffers[tangentBufferIndex].resize(sizeof(glm::vec3) * numVertices);
 
-					auto pBitangentLayout = VertexBufferLayout::create();
+                    auto pBitangentLayout = VertexBufferLayout::create();
                     pLayout->addBufferLayout(bitangentBufferIndex, pBitangentLayout);
-					pBitangentLayout->addElement(VERTEX_BITANGENT_NAME, 0, ResourceFormat::RGB32Float, 1, VERTEX_BITANGENT_LOC);
-					buffers[bitangentBufferIndex].resize(sizeof(glm::vec3) * numVertices);
+                    pBitangentLayout->addElement(VERTEX_BITANGENT_NAME, 0, ResourceFormat::RGB32Float, 1, VERTEX_BITANGENT_LOC);
+                    buffers[bitangentBufferIndex].resize(sizeof(glm::vec3) * numVertices);
                 }
             }
-			
+            
 
             // Read the data
             // Read one vertex at a time
             for(int32_t i = 0; i < numVertices; i++)
             {
-				for (int32_t attributes = 0; attributes < numAttribs; ++attributes)
-				{
+                for (int32_t attributes = 0; attributes < numAttribs; ++attributes)
+                {
                     uint32_t stride = pLayout->getBufferLayout(attributes)->getStride();
-					uint8_t* pDest = buffers[attributes].data() + stride * i;
-					mStream.read(pDest, stride);
-				}
+                    uint8_t* pDest = buffers[attributes].data() + stride * i;
+                    mStream.read(pDest, stride);
+                }
             }
 
-			for (int32_t i = 0; i < numAttribs; ++i)
-			{
+            for (int32_t i = 0; i < numAttribs; ++i)
+            {
                 pVBs[i] = Buffer::create(buffers[i].size(), Buffer::BindFlags::Vertex, Buffer::CpuAccess::None, buffers[i].data());
-                pModel->addBuffer(pVBs[i]);
-			}
+            }
 
             if(version <= 5)
             {
@@ -853,11 +855,11 @@ namespace Falcor
                     else if(texID != -1)
                     {
                         BasicMaterial::MapType falcorType = getFalcorMapType(TextureType(i));
-						if(BasicMaterial::MapType::Count == falcorType)
-						{
-							logWarning("Texture of Type " + std::to_string(i) + " is not supported by the material system (model " + mModelName + ")");
-							continue;
-						}
+                        if(BasicMaterial::MapType::Count == falcorType)
+                        {
+                            logWarning("Texture of Type " + std::to_string(i) + " is not supported by the material system (model " + mModelName + ")");
+                            continue;
+                        }
 
                         // Load the texture
                         TexSignature texSig;
@@ -874,20 +876,13 @@ namespace Falcor
                             auto pTexture = Texture::create2D(texData[texID].width, texData[texID].height, texSig.format, 1, Texture::kMaxPossible, texSig.pData);
                             pTexture->setSourceFilename(texData[texID].name);
                             textures[texSig] = pTexture;
-                            pModel->addTexture(pTexture);
                             basicMaterial.pTextures[falcorType] = pTexture;
                         }
                     }
                 }
 
-                auto pMaterial = basicMaterial.convertToMaterial();
-                auto pAddedMaterial = pModel->getOrAddMaterial(pMaterial);
-
-                // Check it the material already existed in the model
-                if(pAddedMaterial != pMaterial)
-                {
-                    pMaterial = pAddedMaterial;
-                }
+                // Create material and check if it already exists
+                auto pMaterial = checkForExistingMaterial(basicMaterial.convertToMaterial());
 
                 int32_t numTriangles;
                 mStream >> numTriangles;
@@ -905,9 +900,7 @@ namespace Falcor
                 mStream.read(&indices[0], ibSize);
 
                 auto pIB = Buffer::create(ibSize, Buffer::BindFlags::Index, Buffer::CpuAccess::None, indices.data());
-                pModel->addBuffer(pIB);
 
-                
                 // Generate tangent space data if needed
                 if(genTangentForMesh)
                 {
@@ -935,12 +928,10 @@ namespace Falcor
                     }
 
                     pVBs[tangentBufferIndex] = Buffer::create(buffers[tangentBufferIndex].size(), Buffer::BindFlags::Vertex, Buffer::CpuAccess::None, buffers[tangentBufferIndex].data());
-                    pModel->addBuffer(pVBs[tangentBufferIndex]);
 
                     pVBs[bitangentBufferIndex] = Buffer::create(buffers[bitangentBufferIndex].size(), Buffer::BindFlags::Vertex, Buffer::CpuAccess::None, buffers[bitangentBufferIndex].data());
-                    pModel->addBuffer(pVBs[bitangentBufferIndex]);
                 }
-				
+                
 
                 // Calculate the bounding-box
                 glm::vec3 max, min;
@@ -958,10 +949,18 @@ namespace Falcor
 
                 BoundingBox box = BoundingBox::fromMinMax(min, max);
 
-                // create the mesh                
+                // create the mesh
                 auto pMesh = Mesh::create(pVBs, numVertices, pIB, numIndices, pLayout, Vao::Topology::TriangleList, pMaterial, box, false);
-                pModel->addMesh(std::move(pMesh));
-                meshToSubmeshesID[meshIdx].push_back(pModel->getMeshCount() - 1);
+
+                if (version >= 6)
+                {
+                    falcorMeshCache.push_back(pMesh);
+                    meshToSubmeshesID[meshIdx].push_back((uint32_t)(falcorMeshCache.size() - 1));
+                }
+                else
+                {
+                    pModel->addMeshInstance(pMesh, glm::mat4());
+                }
             }
         }
 
@@ -982,22 +981,12 @@ namespace Falcor
                 {
                     for(uint32_t i : meshToSubmeshesID[meshIdx])
                     {
-                        auto pMesh = pModel->getMesh(i);
-                        pMesh->addInstance(transformation);
+                        pModel->addMeshInstance(falcorMeshCache[i], transformation);
                     }
                 }
             }
         }
-        else
-        {
-            glm::mat4 identity;
-            for(uint32_t MeshID = 0; MeshID < pModel->getMeshCount(); MeshID++)
-            {
-                auto pMesh = pModel->getMesh(MeshID);
-                pMesh->addInstance(identity);
-            }
-        }
-
+        
         return pModel;
     }
 }

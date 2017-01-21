@@ -218,18 +218,17 @@ namespace Falcor
                     pTex = createTextureFromFile(fullpath, true, isSrgbRequired(aiType, useSrgb));
                     if(pTex)
                     {
-                        mpModel->addTexture(pTex);
                         mTextureCache[s] = pTex;
                     }
                 }
 
                 assert(pTex != nullptr);
                 BasicMaterial::MapType texSlot = getFalcorTexTypeFromAi(aiType, isObjFile);
-				if(texSlot != BasicMaterial::MapType::Count)
+                if(texSlot != BasicMaterial::MapType::Count)
                 {
                     pMaterial->pTextures[texSlot] = pTex;
                 }
-				else
+                else
                 {
                     logWarning("Texture '" + s + "' is not supported by the material system\n");
                 }
@@ -244,14 +243,14 @@ namespace Falcor
         std::string nameStr = std::string(name.C_Str());
         std::transform(nameStr.begin(), nameStr.end(), nameStr.begin(), ::tolower);
 
-		BasicMaterial basicMaterial;
+        BasicMaterial basicMaterial;
         loadTextures(pAiMaterial, folder, &basicMaterial, isObjFile, useSrgb);
 
         // Opacity
         float opacity;
         if(pAiMaterial->Get(AI_MATKEY_OPACITY, opacity) == AI_SUCCESS)
         {
-			basicMaterial.opacity = opacity;
+            basicMaterial.opacity = opacity;
         }
 
         // Bump scaling
@@ -279,19 +278,19 @@ namespace Falcor
         aiColor3D color;
         if(pAiMaterial->Get(AI_MATKEY_COLOR_DIFFUSE, color) == AI_SUCCESS)
         {
-			basicMaterial.diffuseColor = glm::vec3(color.r, color.g, color.b);
+            basicMaterial.diffuseColor = glm::vec3(color.r, color.g, color.b);
         }
 
         // Specular color
         if(pAiMaterial->Get(AI_MATKEY_COLOR_SPECULAR, color) == AI_SUCCESS)
         {
-			basicMaterial.specularColor = glm::vec3(color.r, color.g, color.b);
+            basicMaterial.specularColor = glm::vec3(color.r, color.g, color.b);
         }
 
         // Emissive color
         if(pAiMaterial->Get(AI_MATKEY_COLOR_EMISSIVE, color) == AI_SUCCESS)
         {
-			basicMaterial.emissiveColor = glm::vec3(color.r, color.g, color.b);
+            basicMaterial.emissiveColor = glm::vec3(color.r, color.g, color.b);
             if(isObjFile && luminance(basicMaterial.emissiveColor) > 0)
             {
                 basicMaterial.pTextures[BasicMaterial::MapType::EmissiveMap] = basicMaterial.pTextures[BasicMaterial::MapType::DiffuseMap];
@@ -301,17 +300,17 @@ namespace Falcor
         // Transparent color
         if(pAiMaterial->Get(AI_MATKEY_COLOR_TRANSPARENT, color) == AI_SUCCESS)
         {
-			basicMaterial.transparentColor = glm::vec3(color.r, color.g, color.b);
+            basicMaterial.transparentColor = glm::vec3(color.r, color.g, color.b);
         }
 
-		auto pMaterial = basicMaterial.convertToMaterial();
+        auto pMaterial = basicMaterial.convertToMaterial();
 
-		// Double-Sided
-		int isDoubleSided;
-		if(pAiMaterial->Get(AI_MATKEY_TWOSIDED, isDoubleSided) == AI_SUCCESS)
-		{
-			pMaterial->setDoubleSided((isDoubleSided != 0));
-		}
+        // Double-Sided
+        int isDoubleSided;
+        if(pAiMaterial->Get(AI_MATKEY_TWOSIDED, isDoubleSided) == AI_SUCCESS)
+        {
+            pMaterial->setDoubleSided((isDoubleSided != 0));
+        }
 
         return pMaterial;
     }
@@ -345,7 +344,7 @@ namespace Falcor
                 logError("Can't allocate memory for material");
                 return false;
             }
-            auto pAdded = mpModel->getOrAddMaterial(pMaterial);
+            auto pAdded = checkForExistingMaterial(pMaterial);
             if(pMaterial != pAdded)
             {
                 // Material already exists
@@ -357,13 +356,13 @@ namespace Falcor
         return true;
     }
 
-    bool AssimpModelImporter::parseAiSceneNode(const aiNode* pCurrnet, const aiScene* pScene, std::map<uint32_t, Mesh::SharedPtr>& aiToFalcorMesh)
+    bool AssimpModelImporter::parseAiSceneNode(const aiNode* pCurrent, const aiScene* pScene, IdToMesh& aiToFalcorMesh)
     {
-        if(pCurrnet->mNumMeshes)
+        if(pCurrent->mNumMeshes)
         {
             // Init the transformation
-            aiMatrix4x4 transform = pCurrnet->mTransformation;
-            const aiNode* pParent = pCurrnet->mParent;
+            aiMatrix4x4 transform = pCurrent->mTransformation;
+            const aiNode* pParent = pCurrent->mParent;
             while(pParent)
             {
                 transform *= pParent->mTransformation;
@@ -371,33 +370,26 @@ namespace Falcor
             }
 
             // Initialize the meshes
-            for(uint32_t i = 0; i < pCurrnet->mNumMeshes; i++)
+            for(uint32_t i = 0; i < pCurrent->mNumMeshes; i++)
             {
-                uint32_t aiId = pCurrnet->mMeshes[i];
+                uint32_t aiId = pCurrent->mMeshes[i];
+
+                // New mesh
                 if(aiToFalcorMesh.find(aiId) == aiToFalcorMesh.end())
                 {
-                    // New mesh
-                    auto pNewMesh = createMesh(pScene->mMeshes[aiId]);
-                    aiToFalcorMesh[aiId] = pNewMesh;  // Set into the map before adding to the model. std::move() sets pNewMesh to nullptr
-                    mpModel->addMesh(std::move(pNewMesh));
+                    // Cache mesh
+                    aiToFalcorMesh[aiId] = createMesh(pScene->mMeshes[aiId]);
                 }
 
-                auto pMesh = aiToFalcorMesh[aiId];
-
-                if(!pMesh)
-                {
-                    assert(0);
-                    return false;
-                }
-                pMesh->addInstance(aiMatToGLM(transform));
+                mpModel->addMeshInstance(aiToFalcorMesh[aiId], aiMatToGLM(transform));
             }
         }
 
         bool b = true;
         // visit the children
-        for(uint32_t i = 0; i < pCurrnet->mNumChildren; i++)
+        for(uint32_t i = 0; i < pCurrent->mNumChildren; i++)
         {
-            b |= parseAiSceneNode(pCurrnet->mChildren[i], pScene, aiToFalcorMesh);
+            b |= parseAiSceneNode(pCurrent->mChildren[i], pScene, aiToFalcorMesh);
         }
         return b;
     }
@@ -405,9 +397,9 @@ namespace Falcor
     bool AssimpModelImporter::createDrawList(const aiScene* pScene)
     {
         createAnimationController(pScene);
-        std::map<uint32_t, Mesh::SharedPtr> aiToFalcorMesh;
+        IdToMesh aiToFalcorMeshId;
         aiNode* pRoot = pScene->mRootNode;
-        return parseAiSceneNode(pRoot, pScene, aiToFalcorMesh);
+        return parseAiSceneNode(pRoot, pScene, aiToFalcorMeshId);
     }
 
     bool AssimpModelImporter::initModel(const std::string& filename)
@@ -703,14 +695,13 @@ namespace Falcor
     Buffer::SharedPtr AssimpModelImporter::createIndexBuffer(const aiMesh* pAiMesh)
     {
         std::vector<uint32_t> indices = createIndexBufferData(pAiMesh);
-        auto pBuffer = Buffer::create(uint32_t(sizeof(uint32_t)*indices.size()), Buffer::BindFlags::Index, Buffer::CpuAccess::None, indices.data());
-        mpModel->addBuffer(pBuffer);
-        return pBuffer;
+        const uint32_t size = (uint32_t)(sizeof(uint32_t) * indices.size());
+        return Buffer::create(size, Buffer::BindFlags::Index, Buffer::CpuAccess::None, indices.data());;
     }
 
 
-	bool isElementUsed(const aiMesh* pAiMesh, uint32_t location)
-	{
+    bool isElementUsed(const aiMesh* pAiMesh, uint32_t location)
+    {
         switch(location)
         {
         case VERTEX_POSITION_LOC:
@@ -731,9 +722,9 @@ namespace Falcor
             should_not_get_here();
             return false;
         }
-	}
-	
-	VertexLayout::SharedPtr AssimpModelImporter::createVertexLayout(const aiMesh* pAiMesh)
+    }
+    
+    VertexLayout::SharedPtr AssimpModelImporter::createVertexLayout(const aiMesh* pAiMesh)
     {
         // Must have position!!!
         if(pAiMesh->HasPositions() == false)
@@ -758,7 +749,7 @@ namespace Falcor
 
         uint32_t bufferCount = 0;
         for (uint32_t location = 0; location < VERTEX_LOCATION_COUNT; ++location)
-		{
+        {
             if(isElementUsed(pAiMesh, location))
             {
                 VertexBufferLayout::SharedPtr pVbLayout = VertexBufferLayout::create();
@@ -766,7 +757,7 @@ namespace Falcor
                 pLayout->addBufferLayout(bufferCount, pVbLayout);
                 bufferCount++;
             }
-		}
+        }
 
         return pLayout;
     }
@@ -845,9 +836,7 @@ namespace Falcor
             loadBones(pAiMesh, initData.data(), vertexCount, vertexStride, boneOffset, weightOffset);
         }
 
-        auto pBuffer = Buffer::create(vertexStride * vertexCount, Buffer::BindFlags::Vertex, Buffer::CpuAccess::None, initData.data());
-        mpModel->addBuffer(pBuffer);
-        return pBuffer;
+        return Buffer::create(vertexStride * vertexCount, Buffer::BindFlags::Vertex, Buffer::CpuAccess::None, initData.data());;
     }
 
     void AssimpModelImporter::loadBones(const aiMesh* pAiMesh, uint8_t* pVertexData, uint32_t vertexCount, uint32_t vertexStride, uint32_t idOffset, uint32_t weightOffset)

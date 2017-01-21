@@ -46,6 +46,9 @@ namespace Falcor
                                                   uint32_t idxBufSz, const uint32_t *idxBufData, Texture::SharedPtr diffuseTexture,
                                                   Vao::Topology geomTopology )
     {
+        // Since SimpleModelImporter is all static, create an instance here to help track materials
+        SimpleModelImporter modelImporter;
+
         // Create our model container
         Model::SharedPtr        pModel = Model::SharedPtr( new Model() );
 
@@ -83,11 +86,9 @@ namespace Falcor
         VertexLayout::SharedPtr pLayout = VertexLayout::create();
         pLayout->addBufferLayout(0, pVertexLayout);
         Buffer::SharedPtr pBuffer = Buffer::create( vboSz, Buffer::BindFlags::Vertex, Buffer::CpuAccess::None, vboData );
-        pModel->addBuffer(pBuffer);
 
         // Create index buffer and add to the model
         Buffer::SharedPtr pIB = Buffer::create( idxBufSz, Buffer::BindFlags::Index, Buffer::CpuAccess::None, idxBufData );
-        pModel->addBuffer( pIB );
 
         // Compute more explicit / traditional counts needed internally
         uint32_t numVertices = vboSz / vertexStride;
@@ -97,12 +98,11 @@ namespace Falcor
         BasicMaterial basicMat;
         if ( diffuseTexture )
         {
-            pModel->addTexture( diffuseTexture );
             basicMat.pTextures[BasicMaterial::MapType::DiffuseMap] = diffuseTexture;
         }
         basicMat.diffuseColor = vec3( 1.0f );
         Material::SharedPtr pSimpleMaterial = basicMat.convertToMaterial();
-        pModel->getOrAddMaterial( pSimpleMaterial );
+        pSimpleMaterial = modelImporter.checkForExistingMaterial( pSimpleMaterial );
 
         // Calculate a bounding-box for this model
         glm::vec3 posMax, posMin;
@@ -121,8 +121,7 @@ namespace Falcor
 
         // create a mesh containing this index & vertex data.
         Mesh::SharedPtr pMesh = Mesh::create({ pBuffer }, numVertices, pIB, numIndicies, pLayout, geomTopology, pSimpleMaterial, box, false);
-        pMesh->addInstance( glm::mat4() );      // Add one instance of this mesh, with no transform matrix
-        pModel->addMesh( std::move( pMesh ) );  // Add this mesh to the model
+        pModel->addMeshInstance(pMesh, glm::mat4()); // Add this mesh to the model
 
         // Do internal computations on model properties
         pModel->calculateModelProperties();

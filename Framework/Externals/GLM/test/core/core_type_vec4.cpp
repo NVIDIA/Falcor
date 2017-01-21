@@ -1,36 +1,5 @@
-///////////////////////////////////////////////////////////////////////////////////
-/// OpenGL Mathematics (glm.g-truc.net)
-///
-/// Copyright (c) 2005 - 2014 G-Truc Creation (www.g-truc.net)
-/// Permission is hereby granted, free of charge, to any person obtaining a copy
-/// of this software and associated documentation files (the "Software"), to deal
-/// in the Software without restriction, including without limitation the rights
-/// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-/// copies of the Software, and to permit persons to whom the Software is
-/// furnished to do so, subject to the following conditions:
-/// 
-/// The above copyright notice and this permission notice shall be included in
-/// all copies or substantial portions of the Software.
-/// 
-/// Restrictions:
-///		By making use of the Software for military purposes, you choose to make
-///		a Bunny unhappy.
-/// 
-/// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-/// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-/// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-/// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-/// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-/// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-/// THE SOFTWARE.
-///
-/// @file test/core/core_type_vec4.cpp
-/// @date 2008-08-31 / 2014-11-25
-/// @author Christophe Riccio
-///////////////////////////////////////////////////////////////////////////////////
-
-//#define GLM_FORCE_AVX2
-#define GLM_SWIZZLE
+#define GLM_FORCE_ALIGNED
+#define GLM_FORCE_SWIZZLE
 #include <glm/vector_relational.hpp>
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
@@ -59,7 +28,6 @@ enum comp
 //	__m128 Src = _mm_set_ps(v.w, v.z, v.y, v.x);
 //	return _mm_shuffle_ps(Src, Src, mask<(int(W) << 6) | (int(Z) << 4) | (int(Y) << 2) | (int(X) << 0)>::value);
 //}
-
 
 int test_vec4_ctor()
 {
@@ -100,7 +68,7 @@ int test_vec4_ctor()
 	}
 #endif
 
-#if GLM_HAS_ANONYMOUS_UNION && defined(GLM_SWIZZLE)
+#if GLM_HAS_UNRESTRICTED_UNIONS && defined(GLM_FORCE_SWIZZLE)
 	{
 		glm::vec4 A = glm::vec4(1.0f, 2.0f, 3.0f, 4.0f);
 		glm::vec4 B = A.xyzw;
@@ -129,7 +97,7 @@ int test_vec4_ctor()
 		Error += glm::all(glm::equal(A, L)) ? 0 : 1;
 		Error += glm::all(glm::equal(A, M)) ? 0 : 1;
 	}
-#endif// GLM_HAS_ANONYMOUS_UNION && defined(GLM_SWIZZLE)
+#endif// GLM_HAS_UNRESTRICTED_UNIONS && defined(GLM_FORCE_SWIZZLE)
 
 	{
 		glm::vec4 A(1);
@@ -153,6 +121,26 @@ int test_vec4_ctor()
 			Error += Tests[i] == glm::vec4(1, 2, 3, 4) ? 0 : 1;
 	}
 	
+	return Error;
+}
+
+int test_bvec4_ctor()
+{
+	int Error = 0;
+
+	glm::bvec4 const A(true);
+	glm::bvec4 const B(true);
+	glm::bvec4 const C(false);
+	glm::bvec4 const D = A && B;
+	glm::bvec4 const E = A && C;
+	glm::bvec4 const F = A || C;
+	bool const G = A == C;
+	bool const H = A != C;
+
+	Error += D == glm::bvec4(true) ? 0 : 1;
+	Error += E == glm::bvec4(false) ? 0 : 1;
+	Error += F == glm::bvec4(true) ? 0 : 1;
+
 	return Error;
 }
 
@@ -292,10 +280,31 @@ int test_vec4_operators()
 	return Error;
 }
 
+int test_vec4_equal()
+{
+	int Error = 0;
+
+	{
+		glm::vec4 const A(1, 2, 3, 4);
+		glm::vec4 const B(1, 2, 3, 4);
+		Error += A == B ? 0 : 1;
+		Error += A != B ? 1 : 0;
+	}
+
+	{
+		glm::ivec4 const A(1, 2, 3, 4);
+		glm::ivec4 const B(1, 2, 3, 4);
+		Error += A == B ? 0 : 1;
+		Error += A != B ? 1 : 0;
+	}
+
+	return Error;
+}
+
 int test_vec4_size()
 {
 	int Error = 0;
-	
+
 	Error += sizeof(glm::vec4) == sizeof(glm::lowp_vec4) ? 0 : 1;
 	Error += sizeof(glm::vec4) == sizeof(glm::mediump_vec4) ? 0 : 1;
 	Error += sizeof(glm::vec4) == sizeof(glm::highp_vec4) ? 0 : 1;
@@ -306,7 +315,9 @@ int test_vec4_size()
 	Error += 32 == sizeof(glm::highp_dvec4) ? 0 : 1;
 	Error += glm::vec4().length() == 4 ? 0 : 1;
 	Error += glm::dvec4().length() == 4 ? 0 : 1;
-	
+	Error += glm::vec4::length() == 4 ? 0 : 1;
+	Error += glm::dvec4::length() == 4 ? 0 : 1;
+
 	return Error;
 }
 
@@ -316,7 +327,7 @@ int test_vec4_swizzle_partial()
 
 	glm::vec4 A(1, 2, 3, 4);
 
-#	if GLM_HAS_ANONYMOUS_UNION && defined(GLM_SWIZZLE_RELAX)
+#	if GLM_HAS_UNRESTRICTED_UNIONS && defined(GLM_SWIZZLE_RELAX)
 	{
 		glm::vec4 B(A.xy, A.zw);
 		Error += A == B ? 0 : 1;
@@ -398,7 +409,7 @@ int test_vec4_perf_AoS(std::size_t Size)
 
 	std::clock_t EndTime = std::clock();
 
-  std::printf("AoS: %d\n", EndTime - StartTime);
+	std::printf("AoS: %ld\n", EndTime - StartTime);
 
 	return Error;
 }
@@ -437,7 +448,46 @@ int test_vec4_perf_SoA(std::size_t Size)
 
 	std::clock_t EndTime = std::clock();
 
-	std::printf("SoA: %d\n", EndTime - StartTime);
+	std::printf("SoA: %ld\n", EndTime - StartTime);
+
+	return Error;
+}
+
+namespace heap
+{
+	class A
+	{
+		float f;
+	};
+
+	class B : public A
+	{
+		float g;
+		glm::vec4 v;
+	};
+
+	int test()
+	{
+		int Error(0);
+
+		A* p = new B;
+		delete p;
+
+		return Error;
+	}
+}//namespace heap
+
+int test_vec4_simd()
+{
+	int Error = 0;
+
+	glm::vec4 const a(std::clock(), std::clock(), std::clock(), std::clock());
+	glm::vec4 const b(std::clock(), std::clock(), std::clock(), std::clock());
+
+	glm::vec4 const c(b * a);
+	glm::vec4 const d(a + c);
+
+	Error += glm::all(glm::greaterThanEqual(d, glm::vec4(0))) ? 0 : 1;
 
 	return Error;
 }
@@ -446,18 +496,65 @@ int main()
 {
 	int Error(0);
 
-	std::size_t const Size(1000000);
+/*
+	{
+		glm::ivec4 const a1(2);
+		glm::ivec4 const b1 = a1 >> 1;
+
+		__m128i const e1 = _mm_set1_epi32(2);
+		__m128i const f1 = _mm_srli_epi32(e1, 1);
+
+		glm::ivec4 const g1 = *reinterpret_cast<glm::ivec4 const* const>(&f1);
+
+		glm::ivec4 const a2(-2);
+		glm::ivec4 const b2 = a2 >> 1;
+
+		__m128i const e2 = _mm_set1_epi32(-1);
+		__m128i const f2 = _mm_srli_epi32(e2, 1);
+
+		glm::ivec4 const g2 = *reinterpret_cast<glm::ivec4 const* const>(&f2);
+
+		printf("GNI\n");
+	}
+
+	{
+		glm::uvec4 const a1(2);
+		glm::uvec4 const b1 = a1 >> 1u;
+
+		__m128i const e1 = _mm_set1_epi32(2);
+		__m128i const f1 = _mm_srli_epi32(e1, 1);
+
+		glm::uvec4 const g1 = *reinterpret_cast<glm::uvec4 const* const>(&f1);
+
+		glm::uvec4 const a2(-1);
+		glm::uvec4 const b2 = a2 >> 1u;
+
+		__m128i const e2 = _mm_set1_epi32(-1);
+		__m128i const f2 = _mm_srli_epi32(e2, 1);
+
+		glm::uvec4 const g2 = *reinterpret_cast<glm::uvec4 const* const>(&f2);
+
+		printf("GNI\n");
+	}
+*/
+	glm::vec4 v;
+	assert(v.length() == 4);
 
 #	ifdef NDEBUG
+		std::size_t const Size(1000000);
 		Error += test_vec4_perf_AoS(Size);
 		Error += test_vec4_perf_SoA(Size);
 #	endif//NDEBUG
 
 	Error += test_vec4_ctor();
+	Error += test_bvec4_ctor();
 	Error += test_vec4_size();
 	Error += test_vec4_operators();
+	Error += test_vec4_equal();
 	Error += test_vec4_swizzle_partial();
+	Error += test_vec4_simd();
 	Error += test_operator_increment();
+	Error += heap::test();
 
 	return Error;
 }

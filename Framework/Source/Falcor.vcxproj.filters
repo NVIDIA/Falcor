@@ -449,6 +449,9 @@
     <ClCompile Include="API\D3D\D3D12\LowLevel\D3D12LowLevelContextData.cpp">
       <Filter>API\D3D\D3D12\LowLevel</Filter>
     </ClCompile>
+    <ClCompile Include="Graphics\Model\Loaders\ModelImporter.cpp">
+      <Filter>Graphics\Model\Loaders</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Graphics\Model\Animation.h">
@@ -1507,6 +1510,12 @@
     </ClInclude>
     <ClInclude Include="API\LowLevel\LowLevelContextData.h">
       <Filter>API\LowLevel</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\Model\ObjectInstance.h">
+      <Filter>Graphics\Model</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\Model\Loaders\ModelImporter.h">
+      <Filter>Graphics\Model\Loaders</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

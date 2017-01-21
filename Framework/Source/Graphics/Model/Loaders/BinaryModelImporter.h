@@ -30,12 +30,13 @@
 #include "Utils/BinaryFileStream.h"
 #include "glm/vec3.hpp"
 #include "../Model.h"
+#include "Graphics/Model/Loaders/ModelImporter.h"
 
 namespace Falcor
 {
     class Texture;
 
-    class BinaryModelImporter
+    class BinaryModelImporter : public ModelImporter
     {
     public:
         /** create a new model from internal binary format

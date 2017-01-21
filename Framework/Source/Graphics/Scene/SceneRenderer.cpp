@@ -99,39 +99,42 @@ namespace Falcor
 
             pCB->setVariableArray(sBonesOffset, currentData.pModel->getBonesMatrices(), currentData.pModel->getBonesCount());
         }
-		return true;
+        return true;
     }
 
     bool SceneRenderer::setPerMeshData(RenderContext* pContext, const CurrentWorkingData& currentData)
     {
-		return true;
+        return true;
     }
 
-    bool SceneRenderer::setPerMeshInstanceData(RenderContext* pContext, const glm::mat4& translation, uint32_t meshInstanceID, uint32_t drawInstanceID, const CurrentWorkingData& currentData)
+    bool SceneRenderer::setPerMeshInstanceData(RenderContext* pContext, const glm::mat4& translation, const Model::MeshInstance::SharedPtr& pInstance, uint32_t drawInstanceID, const CurrentWorkingData& currentData)
     {
+        const Mesh* pMesh = pInstance->getObject().get();
+
         glm::mat4 worldMat = translation;
-        if(currentData.pMesh->hasBones() == false)
+        if(pMesh->hasBones() == false)
         {
-            worldMat = worldMat * currentData.pMesh->getInstanceMatrix(meshInstanceID);
+            worldMat = worldMat * pInstance->getTransformMatrix();
         }
+
         ConstantBuffer* pCB = pContext->getGraphicsVars()->getConstantBuffer(kPerStaticMeshCbName).get();
         pCB->setBlob(&worldMat, sWorldMatOffset + drawInstanceID*sizeof(glm::mat4), sizeof(glm::mat4));
 
         // Set mesh id
-        pCB->setVariable(sMeshIdOffset, currentData.pMesh->getId());
+        pCB->setVariable(sMeshIdOffset, pMesh->getId());
 
-		return true;
+        return true;
     }
 
     bool SceneRenderer::setPerMaterialData(RenderContext* pContext, const CurrentWorkingData& currentData)
     {
         currentData.pMaterial->setIntoProgramVars(pContext->getGraphicsVars().get(), kPerMaterialCbName, "gMaterial");
-		return true;
+        return true;
     }
 
     void SceneRenderer::flushDraw(RenderContext* pContext, const Mesh* pMesh, uint32_t instanceCount, CurrentWorkingData& currentData)
     {
-		currentData.pMaterial = pMesh->getMaterial().get();
+        currentData.pMaterial = pMesh->getMaterial().get();
         // Bind material
         if(mpLastMaterial != pMesh->getMaterial().get())
         {
@@ -160,75 +163,73 @@ namespace Falcor
 
     }
 
-    void SceneRenderer::renderMesh(RenderContext* pContext, const Mesh* pMesh, const glm::mat4& translation, Camera* pCamera, CurrentWorkingData& currentData)
+    void SceneRenderer::renderMeshInstances(RenderContext* pContext, uint32_t meshID, const glm::mat4& translation, Camera* pCamera, CurrentWorkingData& currentData)
     {
-		currentData.pMesh = pMesh;
+        const Model* pModel = currentData.pModel;
+        const Mesh* pMesh = pModel->getMesh(meshID).get();
 
-		if (setPerMeshData(pContext, currentData))
-		{
-			// Bind VAO and set topology
-			pContext->getGraphicsState()->setVao(pMesh->getVao());
+        if (setPerMeshData(pContext, currentData))
+        {
+            // Bind VAO and set topology
+            pContext->getGraphicsState()->setVao(pMesh->getVao());
 
-			uint32_t InstanceCount = pMesh->getInstanceCount();
+            uint32_t activeInstances = 0;
 
-			uint32_t activeInstances = 0;
-			//auto pCamera = mpScene->getActiveCamera();
+            const uint32_t instanceCount = pModel->getMeshInstanceCount(meshID);
+            for (uint32_t instanceID = 0; instanceID < instanceCount; instanceID++)
+            {
+                auto& meshInstance = pModel->getMeshInstance(meshID, instanceID);
+                BoundingBox box = meshInstance->getBoundingBox().transform(translation);
 
-			for (uint32_t instanceID = 0; instanceID < InstanceCount; instanceID++)
-			{
-				BoundingBox box = pMesh->getInstanceBoundingBox(instanceID).transform(translation);
+                if ((mCullEnabled == false) || (pCamera->isObjectCulled(box) == false))
+                {
+                    if (setPerMeshInstanceData(pContext, translation, meshInstance, activeInstances, currentData))
+                    {
+                        activeInstances++;
 
-				if ((mCullEnabled == false) || (pCamera->isObjectCulled(box) == false))
-				{
-					if (setPerMeshInstanceData(pContext, translation, instanceID, activeInstances, currentData))
-					{
-						activeInstances++;
-
-						if (activeInstances == mMaxInstanceCount)
-						{
-
+                        if (activeInstances == mMaxInstanceCount)
+                        {
                             // DISABLED_FOR_D3D12
                             //pContext->setProgram(currentData.pProgram->getActiveProgramVersion());
-							flushDraw(pContext, pMesh, activeInstances, currentData);
-							activeInstances = 0;
-						}
-					}
-				}
-			}
-			if(activeInstances != 0)
-			{
-				flushDraw(pContext, currentData.pMesh, activeInstances, currentData);
-			}
-		}
+                            flushDraw(pContext, pMesh, activeInstances, currentData);
+                            activeInstances = 0;
+                        }
+                    }
+                }
+            }
+            if(activeInstances != 0)
+            {
+                flushDraw(pContext, pMesh, activeInstances, currentData);
+            }
+        }
     }
 
-    void SceneRenderer::renderModel(RenderContext* pContext, const Model* pModel, const glm::mat4& instanceMatrix, Camera* pCamera, CurrentWorkingData& currentData)
+    void SceneRenderer::renderModelInstance(RenderContext* pContext, const Model* pModel, const glm::mat4& instanceMatrix, Camera* pCamera, CurrentWorkingData& currentData)
     {        
-		currentData.pModel = pModel;
-		if (setPerModelData(pContext, currentData))
-		{
+        currentData.pModel = pModel;
+        if (setPerModelData(pContext, currentData))
+        {
             Program* pProgram = currentData.pGsoCache->getProgram().get();
-			// Bind the program
-			if(pModel->hasBones())
-			{
-				pProgram->addDefine("_VERTEX_BLENDING");
-			}
+            // Bind the program
+            if(pModel->hasBones())
+            {
+                pProgram->addDefine("_VERTEX_BLENDING");
+            }
 
+            mpLastMaterial = nullptr;
 
-			mpLastMaterial = nullptr;
+            // Loop over the meshes
+            for (uint32_t meshID = 0; meshID < pModel->getMeshCount(); meshID++)
+            {
+                renderMeshInstances(pContext, meshID, instanceMatrix, pCamera, currentData);
+            }
 
-			// Loop over the meshes
-			for (uint32_t meshID = 0; meshID < pModel->getMeshCount(); meshID++)
-			{
-				renderMesh(pContext, pModel->getMesh(meshID).get(), instanceMatrix, pCamera, currentData);
-			}
-
-			// Restore the program state
-			if(pModel->hasBones())
-			{
+            // Restore the program state
+            if(pModel->hasBones())
+            {
                 pProgram->removeDefine("_VERTEX_BLENDING");
             }
-		}
+        }
 
     }
 
@@ -265,23 +266,22 @@ namespace Falcor
     void SceneRenderer::renderScene(RenderContext* pContext, Camera* pCamera)
     {
         updateVariableOffsets(pContext->getGraphicsVars()->getReflection().get());
-		CurrentWorkingData currentData;
-		currentData.pGsoCache = pContext->getGraphicsState().get();
-		currentData.pCamera = pCamera;
-		currentData.pMaterial = nullptr;
-		currentData.pMesh = nullptr;
-		currentData.pModel = nullptr;
+        CurrentWorkingData currentData;
+        currentData.pGsoCache = pContext->getGraphicsState().get();
+        currentData.pCamera = pCamera;
+        currentData.pMaterial = nullptr;
+        currentData.pModel = nullptr;
         setupVR();
         setPerFrameData(pContext, currentData);
 
         for (uint32_t modelID = 0; modelID < mpScene->getModelCount(); modelID++)
         {
-            for (uint32_t InstanceID = 0; InstanceID < mpScene->getModelInstanceCount(modelID); InstanceID++)
+            for (uint32_t instanceID = 0; instanceID < mpScene->getModelInstanceCount(modelID); instanceID++)
             {
-                auto& Instance = mpScene->getModelInstance(modelID, InstanceID);
-                if (Instance.isVisible)
+                auto& instance = mpScene->getModelInstance(modelID, instanceID);
+                if (instance->isVisible())
                 {
-                    renderModel(pContext, mpScene->getModel(modelID).get(), Instance.transformMatrix, pCamera, currentData);
+                    renderModelInstance(pContext, mpScene->getModel(modelID).get(), instance->getTransformMatrix(), pCamera, currentData);
                 }
             }
         }

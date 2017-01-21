@@ -1,34 +1,3 @@
-///////////////////////////////////////////////////////////////////////////////////
-/// OpenGL Mathematics (glm.g-truc.net)
-///
-/// Copyright (c) 2005 - 2014 G-Truc Creation (www.g-truc.net)
-/// Permission is hereby granted, free of charge, to any person obtaining a copy
-/// of this software and associated documentation files (the "Software"), to deal
-/// in the Software without restriction, including without limitation the rights
-/// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-/// copies of the Software, and to permit persons to whom the Software is
-/// furnished to do so, subject to the following conditions:
-/// 
-/// The above copyright notice and this permission notice shall be included in
-/// all copies or substantial portions of the Software.
-/// 
-/// Restrictions:
-///		By making use of the Software for military purposes, you choose to make
-///		a Bunny unhappy.
-/// 
-/// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-/// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-/// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-/// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-/// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-/// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-/// THE SOFTWARE.
-///
-/// @file test/gtx/gtx_io.cpp
-/// @date 2013-11-22 / 2014-11-25
-/// @author Christophe Riccio
-///////////////////////////////////////////////////////////////////////////////////
-
 #include <glm/gtc/type_precision.hpp>
 #include <glm/gtx/io.hpp>
 #include <iostream>
@@ -45,9 +14,14 @@ namespace
 		if (cerberus)
 		{
 			switch (a) {
-			case glm::highp:   os << "hi"; break;
-			case glm::mediump: os << "md"; break;
-			case glm::lowp:    os << "lo"; break;
+			case glm::highp:			os << "uhi"; break;
+			case glm::mediump:			os << "umd"; break;
+			case glm::lowp:				os << "ulo"; break;
+#			if GLM_HAS_ALIGNED_TYPE
+				case glm::aligned_highp:	os << "ahi"; break;
+				case glm::aligned_mediump:	os << "amd"; break;
+				case glm::aligned_lowp:		os << "alo"; break;
+#			endif
 			}
 		}
 
@@ -128,7 +102,7 @@ int test_io_vec(OS& os)
 }
 
 template <typename T, glm::precision P, typename OS>
-int test_io_mat(OS& os)
+int test_io_mat(OS& os, glm::io::order_type otype)
 {
 	os << '\n' << typeid(OS).name() << '\n';
 
@@ -145,21 +119,10 @@ int test_io_mat(OS& os)
 	glm::tvec4<T,P> const v4_3(28, 29, 30, 31);
 	glm::tvec4<T,P> const v4_4(32, 33, 34, 35);
 
-#if 0
-	os << "mat2x2<" << typeid(T).name() << ',' << P << ">: " << glm::tmat2x2<T,P>(v2_1, v2_2) << '\n'
-		<< "mat2x3<" << typeid(T).name() << ',' << P << ">: " << glm::tmat2x3<T,P>(v3_1, v3_2) << '\n'
-		<< "mat2x4<" << typeid(T).name() << ',' << P << ">: " << glm::tmat2x4<T,P>(v4_1, v4_2) << '\n'
-		<< "mat3x2<" << typeid(T).name() << ',' << P << ">: " << glm::tmat3x2<T,P>(v2_1, v2_2, v2_3) << '\n'
-		<< "mat3x3<" << typeid(T).name() << ',' << P << ">: " << glm::tmat3x3<T,P>(v3_1, v3_2, v3_3) << '\n'
-		<< "mat3x4<" << typeid(T).name() << ',' << P << ">: " << glm::tmat3x4<T,P>(v4_1, v4_2, v4_3) << '\n'
-		<< "mat4x2<" << typeid(T).name() << ',' << P << ">: " << glm::tmat4x2<T,P>(v2_1, v2_2, v2_3, v2_4) << '\n'
-		<< "mat4x3<" << typeid(T).name() << ',' << P << ">: " << glm::tmat4x3<T,P>(v3_1, v3_2, v3_3, v3_4) << '\n'
-		<< "mat4x4<" << typeid(T).name() << ',' << P << ">: " << glm::tmat4x4<T,P>(v4_1, v4_2, v4_3, v4_4) << '\n';
-#endif
-
 	glm::io::basic_format_saver<typename OS::char_type> const iofs(os);
 
 	os << glm::io::precision(2) << glm::io::width(1 + 2 + 1 + 2)
+		<< glm::io::order(otype)
 		<< "mat2x2<" << typeid(T).name() << ',' << P << ">: " << glm::tmat2x2<T,P>(v2_1, v2_2) << '\n'
 		<< "mat2x3<" << typeid(T).name() << ',' << P << ">: " << glm::tmat2x3<T,P>(v3_1, v3_2) << '\n'
 		<< "mat2x4<" << typeid(T).name() << ',' << P << ">: " << glm::tmat2x4<T,P>(v4_1, v4_2) << '\n'
@@ -171,7 +134,7 @@ int test_io_mat(OS& os)
 		<< "mat4x4<" << typeid(T).name() << ',' << P << ">: " << glm::tmat4x4<T,P>(v4_1, v4_2, v4_3, v4_4) << '\n';
 
 	os << glm::io::unformatted
-		<< glm::io::order(glm::io::column_major)
+		<< glm::io::order(otype)
 		<< "mat2x2<" << typeid(T).name() << ',' << P << ">: " << glm::tmat2x2<T,P>(v2_1, v2_2) << '\n'
 		<< "mat2x3<" << typeid(T).name() << ',' << P << ">: " << glm::tmat2x3<T,P>(v3_1, v3_2) << '\n'
 		<< "mat2x4<" << typeid(T).name() << ',' << P << ">: " << glm::tmat2x4<T,P>(v4_1, v4_2) << '\n'
@@ -203,8 +166,10 @@ int main()
 	Error += test_io_vec<glm::uint, glm::lowp>(std::cout);
 	Error += test_io_vec<glm::uint, glm::lowp>(std::wcout);
 
-	Error += test_io_mat<float, glm::highp>(std::cout);
-	Error += test_io_mat<float, glm::lowp>(std::wcout);
+	Error += test_io_mat<float, glm::highp>(std::cout, glm::io::column_major);
+	Error += test_io_mat<float, glm::lowp>(std::wcout, glm::io::column_major);
+	Error += test_io_mat<float, glm::highp>(std::cout, glm::io::row_major);
+        Error += test_io_mat<float, glm::lowp>(std::wcout, glm::io::row_major);
 
 	return Error;
 }

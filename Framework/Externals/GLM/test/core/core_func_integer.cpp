@@ -1,34 +1,3 @@
-///////////////////////////////////////////////////////////////////////////////////
-/// OpenGL Mathematics (glm.g-truc.net)
-///
-/// Copyright (c) 2005 - 2014 G-Truc Creation (www.g-truc.net)
-/// Permission is hereby granted, free of charge, to any person obtaining a copy
-/// of this software and associated documentation files (the "Software"), to deal
-/// in the Software without restriction, including without limitation the rights
-/// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-/// copies of the Software, and to permit persons to whom the Software is
-/// furnished to do so, subject to the following conditions:
-/// 
-/// The above copyright notice and this permission notice shall be included in
-/// all copies or substantial portions of the Software.
-/// 
-/// Restrictions:
-///		By making use of the Software for military purposes, you choose to make
-///		a Bunny unhappy.
-/// 
-/// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-/// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-/// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-/// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-/// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-/// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-/// THE SOFTWARE.
-///
-/// @file test/core/func_integer.cpp
-/// @date 2011-01-15 / 2014-11-25
-/// @author Christophe Riccio
-///////////////////////////////////////////////////////////////////////////////////
-
 #include <glm/integer.hpp>
 #include <glm/vector_relational.hpp>
 #include <glm/gtc/vec1.hpp>
@@ -482,11 +451,10 @@ namespace bitfieldReverse
 		return Error;
 	}
 
-	int perf32()
+	int perf32(glm::uint32 Count)
 	{
 		int Error = 0;
 
-		glm::uint32 Count = 10000000;
 		std::vector<glm::uint32> Data;
 		Data.resize(static_cast<std::size_t>(Count));
 
@@ -520,11 +488,10 @@ namespace bitfieldReverse
 		return Error;
 	}
 
-	int perf64()
+	int perf64(glm::uint64 Count)
 	{
 		int Error = 0;
 
-		glm::uint64 Count = 10000000;
 		std::vector<glm::uint64> Data;
 		Data.resize(static_cast<std::size_t>(Count));
 
@@ -558,12 +525,12 @@ namespace bitfieldReverse
 		return Error;
 	}
 
-	int perf()
+	int perf(std::size_t Samples)
 	{
 		int Error = 0;
 
-		Error += perf32();
-		Error += perf64();
+		Error += perf32(static_cast<glm::uint32>(Samples));
+		Error += perf64(static_cast<glm::uint64>(Samples));
 
 		return Error;
 	}
@@ -671,7 +638,7 @@ namespace findMSB
 		return 31 - glm::bitCount(~x);
 	}
 
-	int perf_int()
+	int perf_int(std::size_t Count)
 	{
 		type<int, int> const Data[] =
 		{
@@ -713,7 +680,6 @@ namespace findMSB
 		};
 
 		int Error(0);
-		std::size_t const Count(10000000);
 
 		std::clock_t Timestamps0 = std::clock();
 
@@ -949,11 +915,11 @@ namespace findMSB
 		return Error;
 	}
 
-	int perf()
+	int perf(std::size_t Samples)
 	{
 		int Error(0);
 
-		Error += perf_int();
+		Error += perf_int(Samples);
 
 		return Error;
 	}
@@ -1077,10 +1043,9 @@ namespace findLSB
 		return Error;
 	}
 
-	int perf_int()
+	int perf_int(std::size_t Count)
 	{
 		int Error(0);
-		std::size_t const Count(10000000);
 
 		std::clock_t Timestamps0 = std::clock();
 
@@ -1144,11 +1109,11 @@ namespace findLSB
 		return Error;
 	}
 
-	int perf()
+	int perf(std::size_t Samples)
 	{
 		int Error(0);
 
-		Error += perf_int();
+		Error += perf_int(Samples);
 
 		return Error;
 	}
@@ -1478,11 +1443,10 @@ namespace bitCount
 		return bitCount_bitfield(glm::tvec1<genType, glm::defaultp>(x)).x;
 	}
 
-	int perf()
+	int perf(std::size_t Size)
 	{
 		int Error(0);
 
-		std::size_t Size = 10000000;
 		std::vector<int> v;
 		v.resize(Size);
 
@@ -1495,7 +1459,7 @@ namespace bitCount
 		// bitCount - TimeIf
 		{
 			for(std::size_t i = 0, n = v.size(); i < n; ++i)
-				v[i] = bitCount_if(i);
+				v[i] = bitCount_if(static_cast<int>(i));
 		}
 
 		std::clock_t TimestampsB = std::clock();
@@ -1579,10 +1543,11 @@ int main()
 	Error += ::bitfieldExtract::test();
 
 #	ifdef NDEBUG
-		Error += ::bitCount::perf();
-		Error += ::bitfieldReverse::perf();
-		Error += ::findMSB::perf();
-		Error += ::findLSB::perf();
+		std::size_t const Samples = 1000;
+		::bitCount::perf(Samples);
+		::bitfieldReverse::perf(Samples);
+		::findMSB::perf(Samples);
+		::findLSB::perf(Samples);
 #	endif
 
 	return Error;

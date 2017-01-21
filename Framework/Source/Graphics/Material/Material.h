@@ -42,7 +42,7 @@ namespace Falcor
     class ProgramVars;
 
     /** A surface material object
-        The core part of material is the 'SMaterial	m_Material' data structure. It consists of multiple layers and modifiers.
+        The core part of material is the 'SMaterial m_Material' data structure. It consists of multiple layers and modifiers.
         Modifiers can modify shading attributes *before* performing the actual shading. So far only two modifiers are supported:
             - SMaterial::AlphaMap               - Alpha test. 
                                                     Decides whether to shade at all. 
@@ -97,42 +97,42 @@ namespace Falcor
         using SharedPtr = std::shared_ptr<Material>;
         using SharedConstPtr = std::shared_ptr<const Material>;
 
-		struct Layer
-		{
-			enum class Type
-			{
+        struct Layer
+        {
+            enum class Type
+            {
                 Lambert = MatLambert,
-				Conductor = MatConductor,
-				Dielectric = MatDielectric,
-				Emissive = MatEmissive,
-				User = MatUser
-			};
+                Conductor = MatConductor,
+                Dielectric = MatDielectric,
+                Emissive = MatEmissive,
+                User = MatUser
+            };
 
-			enum class NDF
-			{
-				Beckmann = NDFBeckmann,
-				GGX		 = NDFGGX,
-				User	 = NDFUser
-			};
+            enum class NDF
+            {
+                Beckmann = NDFBeckmann,
+                GGX      = NDFGGX,
+                User     = NDFUser
+            };
 
-			enum class Blend
-			{
-				Fresnel = BlendFresnel,
-				Additive = BlendAdd,
-				Constant = BlendConstant
-			};
+            enum class Blend
+            {
+                Fresnel = BlendFresnel,
+                Additive = BlendAdd,
+                Constant = BlendConstant
+            };
 
-			Type type = Type::Lambert;
-			NDF ndf = NDF::Beckmann;
-			Blend blend = Blend::Fresnel;
+            Type type = Type::Lambert;
+            NDF ndf = NDF::Beckmann;
+            Blend blend = Blend::Fresnel;
             glm::vec4 albedo;
             glm::vec4 roughness;
-			glm::vec4 extraParam;
+            glm::vec4 extraParam;
             Texture::SharedPtr pTexture;
-			float pmf = 0;
-		};
-		
-		/** create a new material
+            float pmf = 0;
+        };
+        
+        /** create a new material
             \param[in] name the material name
         */
         static SharedPtr create(const std::string& name);
@@ -159,50 +159,54 @@ namespace Falcor
         */
         static void resetGlobalIdCounter();
 
-		/** API for working with layers */
+        /** API for working with layers */
 
-		/** Returns the number of active layers in the material
-		*/
-		uint32_t getNumLayers() const;
+        /** Returns the number of active layers in the material
+        */
+        uint32_t getNumLayers() const;
 
-		/** Returns a material layer descriptor. If the index is out-of-bound, will return a default layer
+        /** Returns a material layer descriptor. If the index is out-of-bound, will return a default layer
             \param[in] layerIdx The index of the material layer
-		*/
-		Layer getLayer(uint32_t layerIdx) const;
+        */
+        Layer getLayer(uint32_t layerIdx) const;
 
-		/** Adds a layer to the material. Returns true if succeeded
-			\param[in] layer The material layer to add
-		*/
-		bool addLayer(const Layer& layer);
+        /** Adds a layer to the material. Returns true if succeeded
+            \param[in] layer The material layer to add
+        */
+        bool addLayer(const Layer& layer);
 
-		/** Removes a layer of the material.
+        /** Removes a layer of the material.
             \param[in] layerIdx The index of the material layer
-		*/
-		void removeLayer(uint32_t layerIdx);
+        */
+        void removeLayer(uint32_t layerIdx);
+
+        /** Returns the number of textures in the material
+        */
+        uint32_t getTextureCount() const { return mTextureCount; }
         
         /** Set the normal map
         */
         void setNormalMap(Texture::SharedPtr& pNormalMap);
     
-		/** Returns the normal map
-		*/
+        /** Returns the normal map
+        */
         Texture::SharedPtr getNormalMap() const { return mData.textures.normalMap; }
 
         /** Set the alpha map
         */
         void setAlphaMap(const Texture::SharedPtr& pAlphaMap);
 
-		/** Get the alpha map
-		*/
-		Texture::SharedPtr getAlphaMap() const { return mData.textures.alphaMap; }
+        /** Get the alpha map
+        */
+        Texture::SharedPtr getAlphaMap() const { return mData.textures.alphaMap; }
 
-		/** Set the alpha threshold value
-		*/
+        /** Set the alpha threshold value
+        */
         void setAlphaThreshold(float threshold) { mData.values.alphaThreshold = threshold; }
         
-		/** Get the alpha threshold value
-		*/
-		float getAlphaThreshold() const { return mData.values.alphaThreshold; }
+        /** Get the alpha threshold value
+        */
+        float getAlphaThreshold() const { return mData.values.alphaThreshold; }
 
         /** Set the ambient occlusion value
         */
@@ -220,17 +224,18 @@ namespace Falcor
         */
         Texture::SharedPtr getHeightMap() const { return mData.textures.heightMap; }
 
-		/** Set the height scale values
-		*/
+        /** Set the height scale values
+        */
         void setHeightModifiers(const glm::vec2& mod) { mData.values.height = mod; }
 
-		/** Get the height scale value
-		*/
-		glm::vec2 getHeightModifiers() const { return mData.values.height; }
-		
-		/** Check if this is a double-sided material. Meshes with double sided materials should be drawn without culling, and for backfacing polygons, the normal has to be inverted.
+        /** Get the height scale value
         */
-        bool isDoubleSided() const      { return mDoubleSided; }
+        glm::vec2 getHeightModifiers() const { return mData.values.height; }
+        
+        /** Check if this is a double-sided material. Meshes with double sided materials should be drawn without culling, and for backfacing polygons, the normal has to be inverted.
+        */
+        bool isDoubleSided() const { return mDoubleSided; }
+
         /** Set the material as double-sided. Meshes with double sided materials should be drawn without culling, and for backfacing polygons, the normal has to be inverted.
         */
         void setDoubleSided(bool doubleSided) { mDoubleSided = doubleSided; mDescDirty = true; }
@@ -269,13 +274,16 @@ namespace Falcor
     private:
         void finalize() const;
         void normalize() const;
+        void updateTextureCount() const;
+
         static const uint32_t kTexCount = MatMaxLayers + 4;
         static_assert(sizeof(MaterialTextures) == (sizeof(Texture::SharedPtr) * kTexCount), "Wrong number of textures in Material::mTextures");
 
-		Material(const std::string& name);		
-        mutable MaterialData mData;				///< Material data shared between host and device
-		bool				mDoubleSided = false;	///< Used for culling 
-        std::string			mName;
+        Material(const std::string& name);
+        mutable MaterialData mData;         ///< Material data shared between host and device
+        bool mDoubleSided = false;          ///< Used for culling 
+        std::string mName;
+        mutable uint32_t mTextureCount = 0;
 
         // The next functions and fields are used for material compilation into shaders.
         // We only compile based on the material descriptor, so as an optimization we minimize the number of shader permutations based on the desc

@@ -33,7 +33,7 @@
 
 namespace Falcor
 {
-	uint32_t Scene::sSceneCounter = 0;
+    uint32_t Scene::sSceneCounter = 0;
 
     const Scene::UserVariable Scene::kInvalidVar;
 
@@ -49,7 +49,7 @@ namespace Falcor
         return SharedPtr(new Scene(cameraAspectRatio));
     }
 
-	Scene::Scene(float cameraAspectRatio) : mId(sSceneCounter++)
+    Scene::Scene(float cameraAspectRatio) : mId(sSceneCounter++)
     {
         // Reset all global id counters recursively
         Model::resetGlobalIdCounter();
@@ -82,33 +82,52 @@ namespace Falcor
         return false;
     }
 
-    uint32_t Scene::addModelInstance(uint32_t modelID, const std::string& name, const glm::vec3& rotate, const glm::vec3& scale, const glm::vec3& translate)
+    void Scene::deleteModel(uint32_t modelID)
     {
-        ModelInstance instance;
-        instance.scaling = scale;
-        instance.rotation = rotate;
-        instance.translation = translate;
-        instance.name = name;
-        mModels[modelID].instances.push_back(instance);
-        calculateModelInstanceMatrix(modelID, (uint32_t)mModels[modelID].instances.size() - 1);
+        // Delete entire vector of instances
+        mModels.erase(mModels.begin() + modelID);
+    }
 
-        return (uint32_t)mModels[modelID].instances.size() - 1;
+    uint32_t Scene::getModelInstanceCount(uint32_t modelID) const
+    {
+        return (uint32_t)(mModels[modelID].size());
+    }
+
+    void Scene::addModelInstance(const Model::SharedPtr& pModel, const std::string& instanceName, const glm::vec3& translation, const glm::vec3& rotation, const glm::vec3& scaling)
+    {
+        int32_t modelID = -1;
+
+        // Linear search from the end. Instances are usually added in order by model
+        for (int32_t i = (int32_t)mModels.size() - 1; i >= 0; i--)
+        {
+            if (mModels[i][0]->getObject() == pModel)
+            {
+                modelID = i;
+                break;
+            }
+        }
+
+        // If model not found, new model, add new instance vector
+        if (modelID == -1)
+        {
+            mModels.push_back(ModelInstanceList());
+            modelID = (int32_t)mModels.size() - 1;
+        }
+
+        mModels[modelID].push_back(ModelInstance::create(pModel, translation, rotation, scaling));
     }
 
     void Scene::deleteModelInstance(uint32_t modelID, uint32_t instanceID)
     {
-        auto& instances = mModels[modelID].instances;
+        // Delete instance
+        auto& instances = mModels[modelID];
         instances.erase(instances.begin() + instanceID);
-    }
 
-    void Scene::calculateModelInstanceMatrix(uint32_t modelID, uint32_t instanceID)
-    {
-        ModelInstance& instance = mModels[modelID].instances[instanceID];
-        glm::mat4 translation = glm::translate(glm::mat4(), instance.translation);
-        glm::mat4 scaling = glm::scale(glm::mat4(), instance.scaling);
-        glm::mat4 rotation = glm::yawPitchRoll(instance.rotation[0], instance.rotation[1], instance.rotation[2]);
-
-        instance.transformMatrix = translation * scaling * rotation;
+        // If no instances are left, delete the vector
+        if (instances.empty())
+        {
+            deleteModel(modelID);
+        }
     }
 
     const Scene::UserVariable& Scene::getUserVariable(const std::string& name)
@@ -140,22 +159,6 @@ namespace Falcor
         should_not_get_here();
         varName = "";
         return mUserVars.begin()->second;
-    }
-
-    uint32_t Scene::addModel(const Model::SharedPtr& pModel, const std::string& filename, bool createIdentityInstance)
-    {
-        mModels.push_back(ModelData(pModel, filename)); 
-		uint32_t modelID = (uint32_t)mModels.size() - 1;
-		if (createIdentityInstance)
-		{
-			addModelInstance(modelID, pModel->getName(), vec3(0.0), vec3(1.0), vec3(0.0));
-		}
-		return modelID;
-    }
-
-    void Scene::deleteModel(uint32_t modelID)
-    {
-        mModels.erase(mModels.begin() + modelID);
     }
 
     uint32_t Scene::addLight(const Light::SharedPtr& pLight)
@@ -209,24 +212,6 @@ namespace Falcor
         }
     }
 
-    void Scene::setModelInstanceTranslation(uint32_t modelID, uint32_t instanceID, const glm::vec3& translation)
-    {
-        mModels[modelID].instances[instanceID].translation = translation;
-        calculateModelInstanceMatrix(modelID, instanceID);
-    }
-
-    void Scene::setModelInstanceRotation(uint32_t modelID, uint32_t instanceID, const glm::vec3& rotation)
-    {
-        mModels[modelID].instances[instanceID].rotation = rotation;
-        calculateModelInstanceMatrix(modelID, instanceID);
-    }
-
-    void Scene::setModelInstanceScaling(uint32_t modelID, uint32_t instanceID, const glm::vec3& scaling)
-    {
-        mModels[modelID].instances[instanceID].scaling = scaling;
-        calculateModelInstanceMatrix(modelID, instanceID);
-    }
-
     void Scene::setActiveCamera(uint32_t camID)
     {
         detachActiveCameraFromPath();
@@ -274,42 +259,42 @@ namespace Falcor
         mUserVars.insert(pFrom->mUserVars.begin(), pFrom->mUserVars.end());
     }
 
-	void Scene::createAreaLights()
-	{
+    void Scene::createAreaLights()
+    {
         // Clean up area light(s) before adding
-		deleteAreaLights();
+        deleteAreaLights();
 
-		// Go through all models in the scene
-		for (uint32_t modelId = 0; modelId < getModelCount(); ++modelId)
-		{
-			const Model::SharedPtr& pModel = getModel(modelId);
-			if (pModel)
-			{
-				// Retrieve model instances for this model
-				for (uint32_t modelInstanceId = 0; modelInstanceId < getModelInstanceCount(modelId); ++modelInstanceId)
-				{
-					const Scene::ModelInstance& modelInstance = getModelInstance(modelId, modelInstanceId);
-					Falcor::createAreaLightsForModel(pModel.get(), mpLights);
-				}
-			}
-		}
-	}
+        // Go through all models in the scene
+        for (uint32_t modelId = 0; modelId < getModelCount(); ++modelId)
+        {
+            const Model::SharedPtr& pModel = getModel(modelId);
+            if (pModel)
+            {
+                // Retrieve model instances for this model
+                for (uint32_t modelInstanceId = 0; modelInstanceId < getModelInstanceCount(modelId); ++modelInstanceId)
+                {
+                    // #TODO This should probably create per model instance
+                    AreaLight::createAreaLightsForModel(pModel, mpLights);
+                }
+            }
+        }
+    }
 
-	void Scene::deleteAreaLights()
-	{
-		// Clean up the list before adding
-		std::vector<Light::SharedPtr>::iterator it = mpLights.begin();
+    void Scene::deleteAreaLights()
+    {
+        // Clean up the list before adding
+        std::vector<Light::SharedPtr>::iterator it = mpLights.begin();
 
-		for (; it != mpLights.end();)
-		{
-			if ((*it)->getType() == LightArea)
-			{
-				it = mpLights.erase(it);
-			}
-			else
-			{
-				++it;
-			}
-		}
-	}
+        for (; it != mpLights.end();)
+        {
+            if ((*it)->getType() == LightArea)
+            {
+                it = mpLights.erase(it);
+            }
+            else
+            {
+                ++it;
+            }
+        }
+    }
 }

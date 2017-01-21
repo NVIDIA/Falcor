@@ -161,19 +161,19 @@ namespace Falcor
         {
             rapidjson::Value jsonInstance;
             jsonInstance.SetObject();
-            auto& instance = pScene->getModelInstance(modelID, i);
+            auto& pInstance = pScene->getModelInstance(modelID, i);
 
-            addString(jsonInstance, allocator, SceneKeys::kName, instance.name);
-            addVector(jsonInstance, allocator, SceneKeys::kTranslationVec, instance.translation);
-            addVector(jsonInstance, allocator, SceneKeys::kScalingVec, instance.scaling);
+            addString(jsonInstance, allocator, SceneKeys::kName, pInstance->getName());
+            addVector(jsonInstance, allocator, SceneKeys::kTranslationVec, pInstance->getTranslation());
+            addVector(jsonInstance, allocator, SceneKeys::kScalingVec, pInstance->getScaling());
 
             // Translate rotation to degrees
-            glm::vec3 rotation = instance.rotation;
+            glm::vec3 rotation = pInstance->getEulerRotation();
             for(uint32_t c = 0; c < 3; c++)
             {
                 rotation[c] = glm::degrees(rotation[c]);
             }
-
+            
             addVector(jsonInstance, allocator, SceneKeys::kRotationVec, rotation);
 
             jsonInstanceArray.PushBack(jsonInstance, allocator);
