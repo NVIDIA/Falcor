@@ -452,6 +452,9 @@
     <ClCompile Include="Graphics\Model\Loaders\ModelImporter.cpp">
       <Filter>Graphics\Model\Loaders</Filter>
     </ClCompile>
+    <ClCompile Include="ArgList.cpp">
+      <Filter>Utils</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Graphics\Model\Animation.h">
@@ -1516,6 +1519,9 @@
     </ClInclude>
     <ClInclude Include="Graphics\Model\Loaders\ModelImporter.h">
       <Filter>Graphics\Model\Loaders</Filter>
+    </ClInclude>
+    <ClInclude Include="ArgList.h">
+      <Filter>Utils</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
