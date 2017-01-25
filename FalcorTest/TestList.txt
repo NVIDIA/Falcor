@@ -16,7 +16,7 @@ HangTest debugd3d12
 HangTest released3d12
 CrashTest released3d12
 FailTest debugd3d12
-FailTest released3d12 
-OgreSystemTest released3d12 2
-OgreSystemTest released3d12 0.06
-OgreSystemTest released3d12 0.75
+FailTest released3d12
+OgreSystemTest released3d12 1 .10
+OgreSystemTest released3d12 0.06 .03
+OgreSystemTest released3d12 0.75 .5

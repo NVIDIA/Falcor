@@ -9,6 +9,7 @@ import argparse
 import sys
 import filecmp
 from datetime import date, timedelta
+from bs4 import BeautifulSoup
 
 #relevant paths
 gBuildBatchFile = 'BuildFalcorTest.bat'
@@ -20,10 +21,11 @@ gResultsDir = 'TestResults'
 gReferenceDir = 'SystemTestReferenceResults'
 
 class TestInfo(object):
-    def __init__(self, name, configName, errorMargin):
+    def __init__(self, name, configName):
         self.Name = name
         self.ConfigName = configName
-        self.ErrorMargin = errorMargin
+        self.LoadErrorMargin = 10
+        self.FrameErrorMargin = 0.05
     def getResultsFile(self):
         return self.Name + '_TestingLog.xml'
     def getBuildFailFile(self):
@@ -60,7 +62,8 @@ class SystemResult(object):
         self.AvgFrameTime = 0
         self.RefLoadTime = 0
         self.RefAvgFrameTime = 0
-        self.ErrorMargin = 0.05
+        self.LoadErrorMargin = 10
+        self.FrameErrorMargin = 0.05
         self.CompareResults = []        
 
 class TestResults(object):
@@ -196,7 +199,8 @@ def processSystemTest(xmlElement, testInfo):
     newSysResult.Name = testInfo.getFullName()
     newSysResult.LoadTime = float(xmlElement[0].attributes['LoadTime'].value)
     newSysResult.AvgFrameTime = float(xmlElement[0].attributes['FrameTime'].value)
-    newSysResult.ErrorMargin = testInfo.ErrorMargin 
+    newSysResult.LoadErrorMargin = testInfo.LoadErrorMargin 
+    newSysResult.FrameErrorMargin = testInfo.FrameErrorMargin
     numScreenshots = int(xmlElement[0].attributes['NumScreenshots'].value)
     referenceFile = testInfo.getReferenceFile()
     resultFile = testInfo.getResultsFile()
@@ -265,35 +269,36 @@ def readTestList(buildTests):
         if line[-1] == '\n':
             line = line[:-1]
 
-        spaceIndex = line.find(' ');
-        if spaceIndex == -1:
+        testValues = line.split(' ')
+        numValues = len(testValues)
+        if numValues >= 2 and numValues <= 4:
+            testName = testValues[0]
+            configName = testValues[1].lower()
+            if not isConfigValid(configName):
+                logTestSkip(testInfo.getFullName(), 'Unrecognized config ' + configName)
+                continue
+
+            testInfo = TestInfo(testName, configName)
+            if numValues >= 3 and not testValues[2].isspace():
+                try:
+                    testInfo.LoadErrorMargin = float(testValues[2])
+                except:
+                    print 'Unable to convert ' + testValues[2] + ' to float. Using default Load Error Margin 10'
+            if numValues == 4 and not testValues[3].isspace():
+                try:
+                    testInfo.FrameErrorMargin = float(testValues[3])
+                except:
+                    print 'Unable to convert ' + testValues[3] + ' to float. Using default Frame Error Margin .05'
+        else:
             logTestSkip(line, 'Improperly formatted test request')
             continue
 
-        testName = line[:spaceIndex]
-        configName = line[spaceIndex + 1:]
-        secondSpaceIndex = configName.find(' ')
+        if buildTests:
+            if callBatchFile(['build', configName, testName]):
+                buildFail(False, testInfo)
+                continue
 
-        if secondSpaceIndex != -1:
-            errorMarginStr = configName[secondSpaceIndex + 1:]
-            try:
-                errorMargin = float(errorMarginStr)
-            except ValueError:
-                errorMargin = 0.05
-            configName = configName[:secondSpaceIndex]
-        else:
-            errorMargin = .05
-
-        configName = configName.lower()
-        testInfo = TestInfo(testName, configName, errorMargin)
-        if isConfigValid(configName):
-            if buildTests:
-                if callBatchFile(['build', configName, testName]):
-                    buildFail(False, testInfo)
-                    continue
-            runTest(testInfo)
-        else:
-            logTestSkip(testInfo.getFullName(), 'Unrecognized config ' + configName)
+        runTest(testInfo)
 
 def runTest(testInfo):
     testPath = testInfo.getTestPath()
@@ -356,18 +361,18 @@ def getLowLevelTestResultsTable():
 def systemTestResultToHTML(result):
     html = '<tr>'
     html += '<td>' + result.Name + '</td>\n'
-    html += '<td>' + str(result.ErrorMargin * 100) + ' %</td>\n'
-    compareResult = marginCompare(result.LoadTime, result.RefLoadTime, result.ErrorMargin)
-    if(compareResult == 1):
+    html += '<td>' + str(result.LoadErrorMargin) + '</td>\n'
+    if result.LoadTime > (result.RefLoadTime + result.LoadErrorMargin):
         html += '<td bgcolor="red"><font color="white">' 
-    elif(compareResult == -1):
+    elif result.LoadTime < result.RefLoadTime:
         html += '<td bgcolor="green"><font color="white">' 
     else:
         html += '<td><font>' 
     html += str(result.LoadTime) + '</font></td>\n'
     html += '<td>' + str(result.RefLoadTime) + '</td>\n'
 
-    compareResult = marginCompare(result.AvgFrameTime, result.RefAvgFrameTime, result.ErrorMargin)
+    html += '<td>' + str(result.FrameErrorMargin * 100) + '</td>\n'
+    compareResult = marginCompare(result.AvgFrameTime, result.RefAvgFrameTime, result.FrameErrorMargin)
     if(compareResult == 1):
         html += '<td bgcolor="red"><font color="white">' 
     elif(compareResult == -1):
@@ -383,15 +388,16 @@ def systemTestResultToHTML(result):
 def getSystemTestResultsTable():
     html = '<table style="width:100%" border="1">\n'
     html += '<tr>\n'
-    html += '<th colspan=\'6\'>System Test Results</th>\n'
+    html += '<th colspan=\'7\'>System Test Results</th>\n'
     html += '</tr>\n'
 
     html += '<th>Test</th>\n'
-    html += '<th>Error Margin</th>\n'
-    html += '<th>LoadTime</th>\n'
-    html += '<th>Ref LoadTime</th>\n'
-    html += '<th>Avg FrameTime</th>\n'
-    html += '<th>Ref FrameTime</th>\n'
+    html += '<th>Load Time Error Margin Secs</th>\n'
+    html += '<th>Load Time</th>\n'
+    html += '<th>Ref Load Time</th>\n'
+    html += '<th>Frame Time Error Margin %</th>\n'
+    html += '<th>Avg Frame Time</th>\n'
+    html += '<th>Ref Frame Time</th>\n'
     for result in gSystemResultList:
         html += systemTestResultToHTML(result)
     html += '</table>\n'
@@ -467,23 +473,74 @@ def updateRepo():
     subprocess.call(['git', 'pull', 'origin', 'TestingFramework'])
     subprocess.call(['git', 'checkout', 'TestingFramework'])
 
+def compareSummaryFiles(todayFile, yesterdayFile):
+    todayHtml =  str(open(todayFile, 'r').read())
+    yesterdayHtml = str(open(yesterdayFile, 'r').read())
+    todaySoup = BeautifulSoup(todayHtml, 'html.parser')
+    yesterdaySoup = BeautifulSoup(yesterdayHtml, 'html.parser')
+
+    todayTables = todaySoup.findAll('table')
+    yesterdayTables = yesterdaySoup.findAll('table')
+    #just do straight compare for everything except sys test results
+    if todayTables[0] != yesterdayTables[0]:
+        return 'Low Level Test result tables do not match'
+    elif todayTables[2] != yesterdayTables[2]:
+        return 'Image Comparison Test result tables do not match'
+    elif todayTables[3] != yesterdayTables[3]:
+        return 'Skipped Test tables do not match'
+
+    rows = todayTables[1].findAll('tr')
+    yRows = yesterdayTables[1].findAll('tr')
+    for row, yRow in zip(rows, yRows):
+        cols = row.findAll('td') 
+        yCols = yRow.findAll('td')
+        loadErrorMargin = 0
+        frameErrorMargin = 0
+        for i in range (0, len(cols)):
+            #make sure same test
+            if i == 0:
+                if cols[i].string != yCols[i].string:
+                    return ('Tests ' + cols[i].string + ' and ' + yCols[i].string +
+                    ' occupy the same spot in the table but do not match.')
+            #grab the smaller of the two error margins for comparison
+            elif i == 1:
+                loadErrorMargin = min(float(cols[i].string), float(yCols[i].string)) 
+            elif i == 2:
+                if float(cols[i].string) > (float(yCols[i].string) + loadErrorMargin):
+                    return ('For test ' + cols[0].string + ', Load time ' + cols[i].string +
+                    ' is longer than yesterday\'s load time ' +  yCols[i].string +
+                    ' plus error margin ' + str(loadErrorMargin))
+            #grab the smaller of the two error margins for comparison
+            elif i == 4:
+                frameErrorMargin = min(float(cols[i].string), float(yCols[i].string))/100.0 
+            elif i == 5:                 
+                if marginCompare(float(cols[i].string), float(yCols[i].string), frameErrorMargin) == 1:
+                    return ('For test ' + cols[0].string + ', Avg Frame Time ' + cols[i].string +
+                     ' is longer than yesterday\'s avg frame time ' + yCols[i].string +
+                     ' considering error margin ' + str(frameErrorMargin * 100) + '%')
+    #if get to the end without finding difference, return empty string 
+    return ''  
+
 def sendEmail():
     #try to find result dir from yesterday
+    todayStr = (date.today()).strftime("%m-%d-%y")
     yesterdayStr = (date.today() - timedelta(days=1)).strftime("%m-%d-%y")
     slashIndex = gResultsDir.find('\\')
     yesterdayDir = gResultsDir[:slashIndex + 1] + yesterdayStr
     yesterdayFile = yesterdayDir + '\\TestSummary.html'
     todayFile = gResultsDir + '\\TestSummary.html'
+    body = 'Attached is the testing summary for ' + todayStr
     if os.path.isdir(yesterdayDir) and os.path.isfile(yesterdayFile):
-        if filecmp.cmp(yesterdayFile, todayFile):
+        compareError = compareSummaryFiles(todayFile, yesterdayFile)
+        if not compareError:
             subject = '[Unchanged] '
         else:
             subject = '[Different] '
+            body += '. \nSource of difference: ' + compareError
     else:
-        subject = '[No Reference Summary] '
-    todayStr = (date.today()).strftime("%m-%d-%y")
+        subject = '[Missing Yesterday\'s Summary for Comparison] '
+
     subject += 'Falcor Automated Testing for ' + todayStr
-    body = 'Attached is the testing summary for ' + todayStr
     sender = 'clavelle@nvidia.com'
     recipients = str(open(gEmailRecipientFile, 'r').read());
     subprocess.call(['blat.exe', '-install', 'mail.nvidia.com', sender])
@@ -534,16 +591,16 @@ def main():
         callBatchFile(['clean', 'released3d12'])
         #returns 1 on fail
         if callBatchFile(['build', 'debugd3d12', 'Falcor']):
-            testInfo = TestInfo('Falcor', 'debugd3d12', .05)
+            testInfo = TestInfo('Falcor', 'debugd3d12')
             buildFail(True, testInfo)
         if callBatchFile(['build', 'released3d12', 'Falcor']):
-            testInfo = TestInfo('Falcor', 'released3d12', .05)
+            testInfo = TestInfo('Falcor', 'released3d12')
             buildFail(True, testInfo)
         if callBatchFile(['build', 'debugd3d12', 'FalcorTest']):
-            testInfo = TestInfo('FalcorTest', 'debugd3d12', .05)
+            testInfo = TestInfo('FalcorTest', 'debugd3d12')
             buildFail(True, testInfo)
         if callBatchFile(['build', 'released3d12', 'FalcorTest']):
-            testInfo = TestInfo('FalcorTest', 'released3d12', .05)
+            testInfo = TestInfo('FalcorTest', 'released3d12')
             buildFail(True, 'FalcorTest', 'released3d12')
         #TODO, build other falcor configs, or better, only build configs listed in the test file
 
