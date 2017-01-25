@@ -37,6 +37,7 @@
 #include "API/RenderContext.h"
 #include "Utils/Video/VideoEncoderUI.h"
 #include "API/Device.h"
+#include "ArgList.h"
 
 namespace Falcor
 {
@@ -156,8 +157,24 @@ namespace Falcor
         Fbo::SharedPtr mpDefaultFBO;                      ///< The default FBO object
         bool mFreezeTime;                                 ///< Whether global time is frozen
         float mCurrentTime = 0;                           ///< Global time
+        ArgList mArgList;
 
     protected:
+        struct Task
+        {
+            bool operator<(const Task& rhs) { return mStartFrame < rhs.mStartFrame; }
+            enum class Type 
+            { 
+                LoadTime, 
+                MeasureFps, 
+                ScreenCapture
+            };
+            uint32_t mStartFrame;
+            uint32_t mEndFrame;
+            Type mTask;
+            float mResult;
+        };
+
         void renderFrame() override;
         void handleWindowSizeChange() override;
         void handleKeyboardEvent(const KeyboardEvent& keyEvent) override;
@@ -180,7 +197,12 @@ namespace Falcor
         void captureVideoFrame();
         void renderGUI();
 
+        void initializeTestArgs();
+        void runTestTask();
+        void outputXMLTestResults();
+
         Window::SharedPtr mpWindow;
+
         bool mVsyncOn = false;
         bool mShowText = true;
         bool mShowUI = true;
@@ -201,5 +223,8 @@ namespace Falcor
 
         TextRenderer::UniquePtr mpTextRenderer;
         std::set<KeyboardEvent::Key> mPressedKeys;
+
+        std::vector<Task> mTestTasks;
+        std::vector<Task>::iterator mTestTaskIt;
     };
 };

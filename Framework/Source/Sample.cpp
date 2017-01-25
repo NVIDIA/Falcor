@@ -28,6 +28,7 @@
 #include "Framework.h"
 #include "Sample.h"
 #include <map>
+#include <fstream>
 #include "API/Window.h"
 #include "Graphics/Program.h"
 #include "Utils/OS.h"
@@ -189,9 +190,12 @@ namespace Falcor
         }
 
         // Load and run
-        onLoad();        
+        mArgList.parseCommandLine(GetCommandLineA());
+        initializeTestArgs();
+        onLoad();
         mpWindow->msgLoop();
 
+        outputXMLTestResults();
         onShutdown();
         Logger::shutdown();
     }
@@ -276,6 +280,8 @@ namespace Falcor
             mpDefaultPipelineState->setFbo(mpDefaultFBO);
             onFrameRender();
         }
+
+        runTestTask();
 
         {
             PROFILE(renderGUI);
@@ -476,5 +482,162 @@ namespace Falcor
     void Sample::setWindowTitle(const std::string& title)
     {
         mpWindow->setWindowTitle(title);
+    }
+
+    void Sample::initializeTestArgs()
+    {
+        //Load time
+        if (mArgList.argExists("loadtime"))
+        {
+            Task newTask;
+            newTask.mTask = Task::Type::LoadTime;
+            newTask.mStartFrame = 2u;
+            newTask.mEndFrame = 3u;
+            mTestTasks.push_back(newTask);
+        }
+
+        //screenshot frames
+        std::vector<ArgList::Arg> ssFrames = mArgList.getValues("ssframes");
+        if (!ssFrames.empty())
+        {
+            //fps text messes up image compare
+            toggleText(false);
+            for (uint32_t i = 0; i < ssFrames.size(); ++i)
+            {
+                Task newTask;
+                newTask.mTask = Task::Type::ScreenCapture;
+                newTask.mStartFrame = ssFrames[i].asUint();
+                newTask.mEndFrame = newTask.mStartFrame + 1;
+                mTestTasks.push_back(newTask);
+            }
+        }
+
+        //fps capture frames
+        std::vector<ArgList::Arg> fpsRange = mArgList.getValues("perfframes");
+        //integer divison on purpose, only care about ranges with start and end
+        size_t numRanges = fpsRange.size() / 2;
+        for (size_t i = 0; i < numRanges; ++i)
+        {
+            uint32_t rangeStart = fpsRange[2 * i].asUint();
+            uint32_t rangeEnd = fpsRange[2 * i + 1].asUint();
+            //only add if valid range
+            if (rangeEnd > rangeStart)
+            {
+                Task newTask;
+                newTask.mTask = Task::Type::MeasureFps;
+                newTask.mStartFrame = rangeStart;
+                newTask.mEndFrame = rangeEnd;
+                mTestTasks.push_back(newTask);
+            }
+            else
+            {
+                continue;
+            }
+        }
+
+        if (!mTestTasks.empty())
+        {
+            //Put the tasks in start frame order
+            std::sort(mTestTasks.begin(), mTestTasks.end());
+            //ensure no task ranges overlap
+            auto previousIt = mTestTasks.begin();
+            for (auto it = mTestTasks.begin() + 1; it != mTestTasks.end(); ++it)
+            {
+                if (it->mStartFrame < previousIt->mEndFrame)
+                {
+                    logInfo("Test Range from frames " + std::to_string(it->mStartFrame) + " to " + std::to_string(it->mEndFrame) + 
+                        " overlaps existing range from " + std::to_string(previousIt->mStartFrame) + " to " + std::to_string(previousIt->mEndFrame));
+                    it = mTestTasks.erase(it);
+                    --it;
+                }
+                else
+                {
+                    previousIt = it;
+                }
+            }
+        }
+
+        mTestTaskIt = mTestTasks.begin();
+    }
+
+    void Sample::runTestTask()
+    {
+        uint32_t frameId = mFrameRate.getFrameCount();
+        if(mTestTaskIt != mTestTasks.end() && frameId >= mTestTaskIt->mStartFrame)
+        {
+        	if(frameId == mTestTaskIt->mEndFrame)
+        	{
+                if (mTestTaskIt->mTask == Task::Type::MeasureFps)
+                {
+                    mTestTaskIt->mResult /= (mTestTaskIt->mEndFrame - mTestTaskIt->mStartFrame);
+                }
+
+                ++mTestTaskIt;
+        	}
+            else
+            {
+                switch (mTestTaskIt->mTask)
+                {
+                case Task::Type::LoadTime:
+                case Task::Type::MeasureFps:
+                    mTestTaskIt->mResult += mFrameRate.getLastFrameTime();
+                    break;
+                case Task::Type::ScreenCapture:
+                    mCaptureScreen = true;
+                    break;
+                default:
+                    should_not_get_here();
+                }
+            }
+        }
+    }
+
+    void Sample::outputXMLTestResults()
+    {
+        if (!mTestTasks.empty())
+        {
+            float frameTime = 0.f;
+            float loadTime = 0.f;
+            uint32_t numFpsRanges = 0;
+            uint32_t numScreenshots = 0;
+            for (auto it = mTestTasks.begin(); it != mTestTasks.end(); ++it)
+            {
+                switch (it->mTask)
+                {
+                case Task::Type::LoadTime:
+                    loadTime = it->mResult;
+                    break;
+                case Task::Type::MeasureFps:
+                {
+                    frameTime += it->mResult;
+                    ++numFpsRanges;
+                    break;
+                }
+                case Task::Type::ScreenCapture:
+                    ++numScreenshots;
+                    break;
+                default:
+                    should_not_get_here();
+                }
+            }
+
+            //average all performance ranges
+            frameTime /= numFpsRanges;
+
+            std::ofstream of;
+            std::string exeName = getExecutableName();
+            //strip off .exe
+            std::string shortName = exeName.substr(0, exeName.size() - 4);
+            of.open(shortName + "_TestingLog.xml");
+            of << "<?xml version = \"1.0\" encoding = \"UTF-8\"?>\n";
+            of << "<TestLog>\n";
+            of << "<SystemResults\n";
+            of << "\tLoadTime=\"" << std::to_string(loadTime) << "\"\n";
+            of << "\tFrameTime=\"" << std::to_string(frameTime) << "\"\n";
+            of << "\tNumScreenshots=\"" << std::to_string(numScreenshots) << "\"\n";
+            of << "/>\n";
+            of << "</TestLog>";
+            of.close();
+        }
     }
 }
