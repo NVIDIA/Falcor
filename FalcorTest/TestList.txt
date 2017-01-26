@@ -1,22 +1,7 @@
+ModelViewer released3d12 1 .10 : -loadtime -perfframes 200 300 500 1000 -ssframes 25 50 75 100 -shutdown 2000
 BlendStateTest debugd3d12
 BlendStateTest released3d12
+ComputeShader released3d12 5 .25 : -loadtime -perfframes 200 300 500 1250 -ssframes 25 50 75 100 125 150 -shutdown 2000
 RasterizerStateTest DeBuGd3D12
 RasterizerStateTest RELEASED3D12
-BlendStateTest adfg
-DoesNotCompileTest debugd3d12
-DoesNotCompileTest released3d12
-BadXMLTest debugd3d12
-BadXMLTest released3d12
-BadTestingLogTest debugd3d12
-BadTestingLogTest released3d12
-asdajihsfkjb released3d12
-qweeeeeeeeeeeeeeqweqwe
-qww released3d12 wweqwe
-HangTest debugd3d12
-HangTest released3d12
-CrashTest released3d12
-FailTest debugd3d12
-FailTest released3d12
-OgreSystemTest released3d12 1 .10
-OgreSystemTest released3d12 0.06 .03
-OgreSystemTest released3d12 0.75 .5
+ShaderToy released3d12 5 .15 : -loadtime -perfframes 200 300 500 2000 -ssframes 25 50 75 -shutdown 3000

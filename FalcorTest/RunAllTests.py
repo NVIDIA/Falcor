@@ -15,8 +15,8 @@ from bs4 import BeautifulSoup
 gBuildBatchFile = 'BuildFalcorTest.bat'
 gTestListFile = 'C:\\Users\\clavelle\\Desktop\\FalcorGitHub\\FalcorTest\\TestList.txt'
 gEmailRecipientFile = 'EmailRecipients.txt'
-gDebugDir = 'C:\\Users\\clavelle\\Desktop\\FalcorGitHub\\FalcorTest\\Bin\\x64\\Debug\\'
-gReleaseDir = 'C:\\Users\\clavelle\\Desktop\\FalcorGitHub\\FalcorTest\\Bin\\x64\\Release\\'
+gDebugDir = 'C:\\Users\\clavelle\\Desktop\\FalcorGitHub\\Bin\\x64\\Debug\\'
+gReleaseDir = 'C:\\Users\\clavelle\\Desktop\\FalcorGitHub\\Bin\\x64\\Release\\'
 gResultsDir = 'TestResults'
 gReferenceDir = 'SystemTestReferenceResults'
 
@@ -154,7 +154,7 @@ def logTestSkip(testName, reason):
 #if no project given, performs action on entire solution
 def callBatchFile(batchArgs):
     numArgs = len(batchArgs)
-    if numArgs == 2 or numArgs == 3:
+    if numArgs == 3 or numArgs == 4:
         batchArgs.insert(0, gBuildBatchFile)
         try:
             return subprocess.call(batchArgs)
@@ -269,9 +269,15 @@ def readTestList(buildTests):
         if line[-1] == '\n':
             line = line[:-1]
 
+        cmdLineIndex = line.find(':')
+        cmdLine = ''
+        if cmdLineIndex != -1:
+            cmdLine = line[cmdLineIndex + 1:]
+            line = line[:cmdLineIndex]
+
         testValues = line.split(' ')
         numValues = len(testValues)
-        if numValues >= 2 and numValues <= 4:
+        if numValues >= 2:
             testName = testValues[0]
             configName = testValues[1].lower()
             if not isConfigValid(configName):
@@ -284,7 +290,7 @@ def readTestList(buildTests):
                     testInfo.LoadErrorMargin = float(testValues[2])
                 except:
                     print 'Unable to convert ' + testValues[2] + ' to float. Using default Load Error Margin 10'
-            if numValues == 4 and not testValues[3].isspace():
+            if numValues >= 4 and not testValues[3].isspace():
                 try:
                     testInfo.FrameErrorMargin = float(testValues[3])
                 except:
@@ -294,17 +300,22 @@ def readTestList(buildTests):
             continue
 
         if buildTests:
-            if callBatchFile(['build', configName, testName]):
-                buildFail(False, testInfo)
-                continue
+            #if theres a cmd line, is system test, use falcor sln
+            if cmdLine:
+                if callBatchFile(['build', '../Falcor.sln', configName, testName]):
+                    buildFail(False, testInfo)
+                    continue
+            else:
+                if callBatchFile(['build', 'FalcorTest.sln', configName, testName]):
+                    buildFail(False, testInfo)
+                    continue
+        runTest(testInfo, cmdLine)
 
-        runTest(testInfo)
-
-def runTest(testInfo):
+def runTest(testInfo, cmdLine):
     testPath = testInfo.getTestPath()
     try:
         if os.path.exists(testPath):
-            p = subprocess.Popen(testPath)
+            p = subprocess.Popen([testPath, cmdLine])
             start = time.time()
             while p.returncode == None:
                 p.poll()
@@ -313,10 +324,7 @@ def runTest(testInfo):
                     p.kill()
                     logTestSkip(testInfo.getFullName(), 'Test timed out ( > 30 seconds)')
                     return
-            if p.returncode != 0:
-                logTestSkip(testInfo.getFullName(), 'Abnormal exit code ' + str(p.returncode) + '. Most likely caught exception.')
-            else:
-                processTestResult(testInfo)
+            processTestResult(testInfo)
         else:
             logTestSkip(testInfo.getFullName(), 'Unable to find ' + testPath)
     except subprocess.CalledProcessError:
@@ -587,27 +595,36 @@ def main():
         makeDirIfDoesntExist(gResultsDir)
  
     if not args.nobuild:
-        callBatchFile(['clean', 'debugd3d12'])
-        callBatchFile(['clean', 'released3d12'])
+        callBatchFile(['clean', 'FalcorTest.sln', 'debugd3d12'])
+        callBatchFile(['clean', 'FalcorTest.sln', 'released3d12'])
+        callBatchFile(['clean', '../Falcor.sln', 'debugd3d12'])
+        callBatchFile(['clean', '../Falcor.sln', 'released3d12'])
         #returns 1 on fail
-        if callBatchFile(['build', 'debugd3d12', 'Falcor']):
+        if callBatchFile(['build', 'FalcorTest.sln', 'debugd3d12', 'Falcor']):
             testInfo = TestInfo('Falcor', 'debugd3d12')
             buildFail(True, testInfo)
-        if callBatchFile(['build', 'released3d12', 'Falcor']):
+        if callBatchFile(['build', 'FalcorTest.sln', 'released3d12', 'Falcor']):
             testInfo = TestInfo('Falcor', 'released3d12')
             buildFail(True, testInfo)
-        if callBatchFile(['build', 'debugd3d12', 'FalcorTest']):
+        if callBatchFile(['build', 'FalcorTest.sln', 'debugd3d12', 'FalcorTest']):
             testInfo = TestInfo('FalcorTest', 'debugd3d12')
             buildFail(True, testInfo)
-        if callBatchFile(['build', 'released3d12', 'FalcorTest']):
+        if callBatchFile(['build', 'FalcorTest.sln', 'released3d12', 'FalcorTest']):
             testInfo = TestInfo('FalcorTest', 'released3d12')
-            buildFail(True, 'FalcorTest', 'released3d12')
+            buildFail(True, testInfo)
+        if callBatchFile(['build', '../Falcor.sln', 'debugd3d12', 'Falcor']):
+            testInfo = TestInfo('Falcor', 'debugd3d12')
+            buildFail(True, testInfo)
+        if callBatchFile(['build', '../Falcor.sln', 'released3d12', 'Falcor']):
+            testInfo = TestInfo('Falcor', 'released3d12')
+            buildFail(True, testInfo)
         #TODO, build other falcor configs, or better, only build configs listed in the test file
 
     readTestList(not args.nobuild)
-    outputHTML(args.showsummary)
+    if not gGenRefResults:
+        outputHTML(args.showsummary)
 
-    if not args.noemail:
+    if not args.noemail and not gGenRefResults:
         sendEmail()
 if __name__ == '__main__':
     main()

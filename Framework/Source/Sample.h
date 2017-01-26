@@ -167,12 +167,13 @@ namespace Falcor
             { 
                 LoadTime, 
                 MeasureFps, 
-                ScreenCapture
+                ScreenCapture,
+                Shutdown
             };
             uint32_t mStartFrame;
             uint32_t mEndFrame;
             Type mTask;
-            float mResult;
+            float mResult = 0;
         };
 
         void renderFrame() override;

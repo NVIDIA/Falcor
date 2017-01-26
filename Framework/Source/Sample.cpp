@@ -496,6 +496,17 @@ namespace Falcor
             mTestTasks.push_back(newTask);
         }
 
+        //shutdown
+        std::vector<ArgList::Arg> shutdownFrame = mArgList.getValues("shutdown");
+        if (!shutdownFrame.empty())
+        {
+            Task newTask;
+            newTask.mTask = Task::Type::Shutdown;
+            newTask.mStartFrame = shutdownFrame[0].asUint();
+            newTask.mEndFrame = newTask.mStartFrame + 1;
+            mTestTasks.push_back(newTask);
+        }
+
         //screenshot frames
         std::vector<ArgList::Arg> ssFrames = mArgList.getValues("ssframes");
         if (!ssFrames.empty())
@@ -585,6 +596,9 @@ namespace Falcor
                 case Task::Type::ScreenCapture:
                     mCaptureScreen = true;
                     break;
+                case Task::Type::Shutdown:
+                    shutdownApp();
+                    break;
                 default:
                     should_not_get_here();
                 }
@@ -616,13 +630,15 @@ namespace Falcor
                 case Task::Type::ScreenCapture:
                     ++numScreenshots;
                     break;
+                case Task::Type::Shutdown:
+                    continue;
                 default:
                     should_not_get_here();
                 }
             }
 
-            //average all performance ranges
-            frameTime /= numFpsRanges;
+            //average all performance ranges if there are any
+            numFpsRanges ? frameTime /= numFpsRanges : frameTime = 0;
 
             std::ofstream of;
             std::string exeName = getExecutableName();
