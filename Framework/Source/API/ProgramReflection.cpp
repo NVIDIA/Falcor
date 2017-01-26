@@ -38,7 +38,7 @@ namespace Falcor
         return pReflection->init(pProgramVersion, log) ? pReflection : nullptr;
     }
 
-    uint32_t ProgramReflection::getBufferBinding(const std::string& name) const
+    ProgramReflection::BindLocation ProgramReflection::getBufferBinding(const std::string& name) const
     {
         // Names are unique regardless of buffer type. Search in each map
         for (const auto& desc : mBuffers)
@@ -49,7 +49,9 @@ namespace Falcor
                 return it->second;
             }
         }
-        return kInvalidLocation;
+
+        static const BindLocation invalidBind(kInvalidLocation, ShaderAccess::Undefined);
+        return invalidBind;
     }
 
     bool ProgramReflection::init(const ProgramVersion* pProgVer, std::string& log)
@@ -131,10 +133,10 @@ namespace Falcor
         return getVariableData(name, t, allowNonIndexedArray);
     }
 
-    ProgramReflection::BufferReflection::SharedConstPtr ProgramReflection::getBufferDesc(uint32_t bindLocation, BufferReflection::Type bufferType) const
+    ProgramReflection::BufferReflection::SharedConstPtr ProgramReflection::getBufferDesc(uint32_t bindLocation, ShaderAccess shaderAccess, BufferReflection::Type bufferType) const
     {
         const auto& descMap = mBuffers[uint32_t(bufferType)].descMap;
-        auto& desc = descMap.find(bindLocation);
+        auto& desc = descMap.find({ bindLocation, shaderAccess });
         if (desc == descMap.end())
         {
             return nullptr;
@@ -144,10 +146,10 @@ namespace Falcor
 
     ProgramReflection::BufferReflection::SharedConstPtr ProgramReflection::getBufferDesc(const std::string& name, BufferReflection::Type bufferType) const
     {
-        uint32_t bindLoc = getBufferBinding(name);
-        if (bindLoc != kInvalidLocation)
+        BindLocation bindLoc = getBufferBinding(name);
+        if (bindLoc.regIndex != kInvalidLocation)
         {
-            return getBufferDesc(bindLoc, bufferType);
+            return getBufferDesc(bindLoc.regIndex, bindLoc.shaderAccess, bufferType);
         }
         return nullptr;
     }

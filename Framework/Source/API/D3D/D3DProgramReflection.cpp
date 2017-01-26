@@ -401,16 +401,18 @@ namespace Falcor
         ProgramReflection::VariableMap varMap;
         initializeBufferVariables(pBuffer, d3dBufDesc, bindDesc.Type, varMap);
 
+        ProgramReflection::BindLocation bindLocation(bindDesc.BindPoint, shaderAccess);
         // If the buffer already exists in the program, make sure the definitions match
         const auto& prevDef = bufferDesc.nameMap.find(d3dBufDesc.Name);
+
         if (prevDef != bufferDesc.nameMap.end())
         {
-            if (bindDesc.BindPoint != prevDef->second)
+            if (bindLocation != prevDef->second)
             {
                 log += to_string(bufferType) + " buffer '" + std::string(d3dBufDesc.Name) + "' has different bind locations between different shader stages. Falcor do not support that. Use explicit bind locations to avoid this error";
                 return false;
             }
-            ProgramReflection::BufferReflection* pPrevBuffer = bufferDesc.descMap[bindDesc.BindPoint].get();
+            ProgramReflection::BufferReflection* pPrevBuffer = bufferDesc.descMap[bindLocation].get();
             std::string bufLog;
             if (validateBufferDeclaration(pPrevBuffer, varMap, bufLog) == false)
             {
@@ -421,13 +423,13 @@ namespace Falcor
         else
         {
             // Create the buffer reflection
-            bufferDesc.nameMap[d3dBufDesc.Name] = bindDesc.BindPoint;
-            bufferDesc.descMap[bindDesc.BindPoint] = ProgramReflection::BufferReflection::create(d3dBufDesc.Name, bindDesc.BindPoint, bindDesc.Space, bufferType, d3dBufDesc.Size, varMap, ProgramReflection::ResourceMap(), shaderAccess);
+            bufferDesc.nameMap[d3dBufDesc.Name] = bindLocation;
+            bufferDesc.descMap[bindLocation] = ProgramReflection::BufferReflection::create(d3dBufDesc.Name, bindDesc.BindPoint, bindDesc.Space, bufferType, d3dBufDesc.Size, varMap, ProgramReflection::ResourceMap(), shaderAccess);
         }
 
         // Update the shader mask
-        uint32_t mask = bufferDesc.descMap[bindDesc.BindPoint]->getShaderMask() | (1 << shaderIndex);
-        bufferDesc.descMap[bindDesc.BindPoint]->setShaderMask(mask);
+        uint32_t mask = bufferDesc.descMap[bindLocation]->getShaderMask() | (1 << shaderIndex);
+        bufferDesc.descMap[bindLocation]->setShaderMask(mask);
 
         return true;
     }

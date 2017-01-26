@@ -154,7 +154,7 @@ namespace Falcor
 
     ConstantBuffer::SharedPtr ProgramVars::getConstantBuffer(const std::string& name) const
     {
-        uint32_t index = mpReflector->getBufferBinding(name);
+        uint32_t index = mpReflector->getBufferBinding(name).regIndex;
         if (index == ProgramReflection::kInvalidLocation)
         {
             logWarning("Constant buffer \"" + name + "\" was not found. Ignoring getConstantBuffer() call.");
@@ -194,7 +194,7 @@ namespace Falcor
         }
 
         // Just need to make sure the buffer is large enough
-        const auto& desc = mpReflector->getBufferDesc(index, ProgramReflection::BufferReflection::Type::Constant);
+        const auto& desc = mpReflector->getBufferDesc(index, ProgramReflection::ShaderAccess::Read, ProgramReflection::BufferReflection::Type::Constant);
         if (desc->getRequiredSize() > pCB->getSize())
         {
             logError("Can't attach the constant buffer. Size mismatch.");
@@ -209,7 +209,7 @@ namespace Falcor
     bool ProgramVars::setConstantBuffer(const std::string& name, const ConstantBuffer::SharedPtr& pCB)
     {
         // Find the buffer
-        uint32_t loc = mpReflector->getBufferBinding(name);
+        uint32_t loc = mpReflector->getBufferBinding(name).regIndex;
         if (loc == ProgramReflection::kInvalidLocation)
         {
             logWarning("Constant buffer \"" + name + "\" was not found. Ignoring setConstantBuffer() call.");

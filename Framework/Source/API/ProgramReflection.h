@@ -148,9 +148,25 @@ namespace Falcor
             Resource() {}
         };
 
+        union BindLocation
+        {
+            BindLocation() : u64(0) {}
+            BindLocation(uint32_t r, ShaderAccess s) : regIndex(r), shaderAccess(s) {}
+            struct
+            {
+                uint32_t regIndex;
+                ShaderAccess shaderAccess;
+            };
+            uint64_t u64;
+
+            std::size_t operator()(BindLocation b) const {return std::hash<uint64_t>{}(u64);}
+            bool operator==(const BindLocation& other) const { return u64 == other.u64;}
+            bool operator!=(const BindLocation& other) const { return !(*this == other); }
+        };
+
         using VariableMap = std::unordered_map<std::string, Variable>;
         using ResourceMap = std::map < std::string, Resource >;
-        using string_2_uint_map = std::unordered_map<std::string, uint32_t>;
+        using string_2_bindloc_map = std::unordered_map<std::string, BindLocation>;
 
         /** Invalid location of buffers and attributes
         */
@@ -282,9 +298,9 @@ namespace Falcor
         \param[in] name The buffer name in the program
         \return The bind location of the buffer if it is found, otherwise ProgramVersion#kInvalidLocation
         */
-        uint32_t getBufferBinding(const std::string& name) const;
+        BindLocation getBufferBinding(const std::string& name) const;
 
-        using BufferMap = std::unordered_map<uint32_t, BufferReflection::SharedPtr>;
+        using BufferMap = std::unordered_map<BindLocation, BufferReflection::SharedPtr, BindLocation>;
 
         /** Get a buffer list
         */
@@ -294,7 +310,7 @@ namespace Falcor
             \param[in] bindLocation The bindLocation of the requested buffer
             \return The buffer descriptor or nullptr, if the bind location isn't used
         */
-        BufferReflection::SharedConstPtr getBufferDesc(uint32_t bindLocation, BufferReflection::Type bufferType) const;
+        BufferReflection::SharedConstPtr getBufferDesc(uint32_t bindLocation, ShaderAccess shaderAccess, BufferReflection::Type bufferType) const;
 
         /** Get a buffer descriptor
         \param[in] name The name of the requested buffer
@@ -329,7 +345,7 @@ namespace Falcor
         struct BufferData
         {
             BufferMap descMap;
-            string_2_uint_map nameMap;
+            string_2_bindloc_map nameMap;
         };
 
     private:
