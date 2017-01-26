@@ -71,6 +71,8 @@ namespace Falcor
         */
         static SharedPtr createFromFile(const std::string& filename, uint32_t flags);
 
+        static SharedPtr create();
+
         static const char* kSupportedFileFormatsStr;
 
         ~Model();
@@ -142,6 +144,12 @@ namespace Falcor
         */
         uint32_t getMeshInstanceCount(uint32_t meshID) const { return meshID >= mMeshes.size() ? 0 : (uint32_t)(mMeshes[meshID].size()); }
 
+        /** Adds a new mesh instance
+            \param[in] pMesh Mesh geometry
+            \param[in] baseTransform Base transform for the instance
+        */
+        void addMeshInstance(const Mesh::SharedPtr& pMesh, const glm::mat4& baseTransform);
+
         /** Check if the model contains animations
         */
         bool hasAnimations() const;
@@ -170,6 +178,10 @@ namespace Falcor
         /** Turn animation on and select active animation. Changing the active animation will cause the new animation to play from the beginning
         */
         uint32_t getActiveAnimation() const;
+
+        /** Set the animation controller for the model
+        */
+        void setAnimationController(AnimationController::UniquePtr pAnimController);
 
         /** Check if the model has bones
         */
@@ -201,23 +213,26 @@ namespace Falcor
         */
         const std::string& getName() const { return mName; }
 
+        /** Set the model's filename
+        */
+        void setFilename(const std::string& filename) { mFilename = filename; }
+
+        /** Get the model's filename
+        */
+        const std::string& getFilename() const { return mFilename; }
+
+        /** Get global ID of the model
+        */
         const uint32_t getId() const { return mId; }
         
         /** Reset all global id counter of model, mesh and material
         */
         static void resetGlobalIdCounter();
 
-    protected:
-        friend class AssimpModelImporter;
-        friend class BinaryModelImporter;
+    private:
         friend class SimpleModelImporter;
 
         Model();
-        void setAnimationController(AnimationController::UniquePtr pAnimController);
-
-        void addMeshInstance(const Mesh::SharedPtr& pMesh, const glm::mat4& transform);
-
-    private:
 
         void sortMeshes();
         void deleteCulledMeshInstances(MeshInstanceList& meshInstances, const Camera *pCamera);
@@ -240,6 +255,7 @@ namespace Falcor
         AnimationController::UniquePtr mpAnimationController;
 
         std::string mName;
+        std::string mFilename;
 
         static uint32_t sModelCounter;
 

@@ -43,6 +43,7 @@ cbuffer InternalPerFrameCB : register(b10)
 cbuffer InternalPerStaticMeshCB : register(b11)
 {
     mat4 gWorldMat[64];
+    uint32_t gDrawId[64]; // Zero-based order/ID of Mesh Instances drawn per SceneRenderer::renderScene call.
     uint32_t gMeshId;
 };
 

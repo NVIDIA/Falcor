@@ -28,15 +28,13 @@
 
 #pragma once
 
-#include "Framework.h"
 #include "Graphics/Paths/MovableObject.h"
-#include "Graphics/Model/Mesh.h"
 #include "Utils/AABB.h"
 #include "glm/mat4x4.hpp"
 #include "glm/gtc/matrix_transform.hpp"
 #include "glm/gtx/euler_angles.hpp"
 
-namespace Falcor 
+namespace Falcor
 {
     class SceneRenderer;
     class Model;
@@ -71,7 +69,7 @@ namespace Falcor
         */
         static SharedPtr create(const typename ObjectType::SharedPtr& pObject, const glm::vec3& translation, const glm::vec3& target, const glm::vec3& up, const glm::vec3& scale, const std::string& name = "")
         {
-            return create(pObject, calculateTransformMatrix(translation, target, up, scale));
+             return SharedPtr(new ObjectInstance<ObjectType>(pObject, translation, target, up, scale, name));
         }
 
         /** Constructs a object instance with a transform
@@ -84,7 +82,7 @@ namespace Falcor
         */
         static SharedPtr create(const typename ObjectType::SharedPtr& pObject, const glm::vec3& translation, const glm::vec3& rotation, const glm::vec3& scale, const std::string& name = "")
         {
-            return create(pObject, calculateTransformMatrix(translation, rotation, scale));
+            return SharedPtr(new ObjectInstance<ObjectType>(pObject, translation, rotation, scale, name));
         }
 
         /** Gets object for which this is an instance of
@@ -114,23 +112,34 @@ namespace Falcor
 
         /** Sets position/translation of the instance
             \param[in] translation Instance translation
+            \param[in] updateLookAt If true, translates the look-at target as well to maintain rotation
         */
-        void setTranslation(const glm::vec3& translation) { mTranslation = translation; mFinalTransformDirty = true; };
+        void setTranslation(const glm::vec3& translation, bool updateLookAt)
+        {
+            if (updateLookAt)
+            {
+                glm::vec3 toLookAt = mBase.target - mBase.translation;
+                mBase.target = translation + toLookAt;
+            }
+
+            mBase.translation = translation;
+            mBase.matrixDirty = true;
+        };
 
         /** Gets the position/translation of the instance
             \return Translation of the instance
         */
-        const glm::vec3& getTranslation() const { return mTranslation; };
+        const glm::vec3& getTranslation() const { return mBase.translation; };
 
         /** Sets scale of the instance
             \param[in] scaling Instance scale
         */
-        void setScaling(const glm::vec3& scaling) { mScale = scaling; mFinalTransformDirty = true; }
+        void setScaling(const glm::vec3& scaling) { mBase.scale = scaling; mBase.matrixDirty = true; }
 
         /** Gets scale of the instance
             \return Scale of the instance
         */
-        const glm::vec3& getScaling() const { return mScale; }
+        const glm::vec3& getScaling() const { return mBase.scale; }
 
         /** Sets orientation of the instance
             \param[in] rotation Euler angles of rotation
@@ -138,13 +147,17 @@ namespace Falcor
         void setRotation(const glm::vec3& rotation)
         {
             // Construct matrix from Euler angles and take upper 3x3
-            const glm::mat3 rotMtx(glm::yawPitchRoll(rotation[0], rotation[1], rotation[2]));
+            const glm::mat3 rotMtx(glm::yawPitchRoll(rotation[1], rotation[0], rotation[2]));
+
+            // #TODO remove the multiplication, just extract column and negate
+            glm::vec3 up = rotMtx * glm::vec3(0, 1, 0);
+            glm::vec3 forward = rotMtx * glm::vec3(0, 0, -1); // -rotMtx[2]
 
             // Get look-at info
-            mUp = rotMtx[1];
-            mTarget = mTranslation + rotMtx[2]; // position + forward
+            mBase.up = up; // rotMtx[1]
+            mBase.target = mBase.translation + forward; // position + forward
 
-            mFinalTransformDirty = true;
+            mBase.matrixDirty = true;
         }
 
         /** Gets Euler angle rotations for the instance
@@ -154,21 +167,21 @@ namespace Falcor
         {
             glm::vec3 result;
 
-            glm::mat4 rotationMtx = glm::lookAt(mTranslation, mTarget, mUp);
+            glm::mat4 rotationMtx = glm::lookAt(glm::vec3(), mBase.target - mBase.translation, mBase.up);
             glm::extractEulerAngleXYZ(rotationMtx, result[0], result[1], result[2]);
 
-            return result;
+            return -result;
         }
 
         /** Gets the up vector of the instance
             \return Up vector
         */
-        const glm::vec3& getUpVector() const { return mUp; }
+        const glm::vec3& getUpVector() const { return mBase.up; }
 
         /** Gets look-at target of the instance's orientation
             \return Look-at target position
         */
-        const glm::vec3& getTarget() const { return mTarget; }
+        const glm::vec3& getTarget() const { return mBase.target; }
 
         /** Gets the transform matrix
             \return Transform matrix
@@ -188,35 +201,44 @@ namespace Falcor
             return mBoundingBox;
         }
 
-        /**
-            IMovableObject interface
+        /** IMovableObject interface
         */
         virtual void move(const glm::vec3& position, const glm::vec3& target, const glm::vec3& up) override
         {
-            mTranslation = position;
-            mTarget = target;
-            mUp = up;
-
-            mFinalTransformDirty = true;
+            mMovable.translation = position;
+            mMovable.target = target;
+            mMovable.up = up;
+            mMovable.scale = glm::vec3(1.0f);
+            mMovable.matrixDirty = true;
         }
 
     private:
 
         void updateInstanceProperties() const
         {
-            if (mFinalTransformDirty == true)
+            if (mBase.matrixDirty || mMovable.matrixDirty)
             {
-                mFinalTransformMatrix = mBaseTransformMatrix * calculateTransformMatrix(mTranslation, mTarget, mUp, mScale);
-                mBoundingBox = mpObject->getBoundingBox().transform(mFinalTransformMatrix);
+                if (mBase.matrixDirty)
+                {
+                    mBase.matrix = calculateTransformMatrix(mBase.translation, mBase.target, mBase.up, mBase.scale);
+                    mBase.matrixDirty = false;
+                }
 
-                mFinalTransformDirty = false;
+                if (mMovable.matrixDirty)
+                {
+                    mMovable.matrix = calculateTransformMatrix(mMovable.translation, mMovable.target, mMovable.up, mMovable.scale);
+                    mMovable.matrixDirty = false;
+                }
+
+                mFinalTransformMatrix = mMovable.matrix * mBase.matrix;
+                mBoundingBox = mpObject->getBoundingBox().transform(mFinalTransformMatrix);
             }
         }
 
         static glm::mat4 calculateTransformMatrix(const glm::vec3& translation, const glm::vec3& target, const glm::vec3& up, const glm::vec3& scale)
         {
             glm::mat4 translationMtx = glm::translate(glm::mat4(), translation);
-            glm::mat4 rotationMtx = glm::lookAt(translation, target, up);
+            glm::mat4 rotationMtx = glm::lookAt(glm::vec3(), target - translation, up);
             glm::mat4 scalingMtx = glm::scale(glm::mat4(), scale);
 
             return translationMtx * rotationMtx * scalingMtx;
@@ -225,20 +247,39 @@ namespace Falcor
         static glm::mat4 calculateTransformMatrix(const glm::vec3& translation, const glm::vec3& rotation, const glm::vec3& scale)
         {
             glm::mat4 translationMtx = glm::translate(glm::mat4(), translation);
-            glm::mat4 rotationMtx = glm::yawPitchRoll(rotation[0], rotation[1], rotation[2]);
+            glm::mat4 rotationMtx = glm::yawPitchRoll(rotation[1], rotation[0], rotation[2]);
             glm::mat4 scalingMtx = glm::scale(glm::mat4(), scale);
 
             return translationMtx * rotationMtx * scalingMtx;
         }
 
+        ObjectInstance(const typename ObjectType::SharedPtr& pObject, const std::string& name)
+            : mpObject(pObject), mName(name) { }
+
         ObjectInstance(const typename ObjectType::SharedPtr& pObject, const glm::mat4& baseTransform, const std::string& name)
-            : mpObject(pObject)
-            , mName(name)
-            , mUp(glm::vec3(0.0f, 1.0f, 0.0f))
-            , mTarget(glm::vec3(0.0f, 0.0f, -1.0f))
-            , mScale(glm::vec3(1.0f, 1.0f, 1.0f))
-            , mBaseTransformMatrix(baseTransform)
+            : ObjectInstance(pObject, name)
         {
+            // #TODO Decompose matrix
+
+            mBase.matrix = baseTransform;
+            mBase.matrixDirty = false;
+        }
+
+        ObjectInstance(const typename ObjectType::SharedPtr& pObject, const glm::vec3& translation, const glm::vec3& target, const glm::vec3& up, const glm::vec3& scale, const std::string& name = "")
+            : ObjectInstance(pObject, name)
+        {
+            mBase.translation = translation;
+            mBase.target = target;
+            mBase.up = up;
+            mBase.scale = scale;
+        }
+
+        ObjectInstance(const typename ObjectType::SharedPtr& pObject, const glm::vec3& translation, const glm::vec3& rotation, const glm::vec3& scale, const std::string& name = "")
+            : ObjectInstance(pObject, name)
+        {
+            mBase.translation = translation;
+            setRotation(rotation);
+            mBase.scale = scale;
         }
 
         friend class Model;
@@ -247,15 +288,23 @@ namespace Falcor
         bool mVisible = true;
 
         typename ObjectType::SharedPtr mpObject;
-        glm::mat4 mBaseTransformMatrix; 
 
-        glm::vec3 mTranslation;
-        glm::vec3 mUp;
-        glm::vec3 mTarget;
-        glm::vec3 mScale;
+        struct Transform
+        {
+            glm::vec3 translation;
+            glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f);
+            glm::vec3 target = glm::vec3(0.0f, 0.0f, -1.0f);
+            glm::vec3 scale = glm::vec3(1.0f);
+
+            // Matrix containing the above transforms
+            glm::mat4 matrix;
+            bool matrixDirty = true;
+        };
+
+        mutable Transform mBase;
+        mutable Transform mMovable;
 
         mutable glm::mat4 mFinalTransformMatrix;
         mutable BoundingBox mBoundingBox;
-        mutable bool mFinalTransformDirty = true;
     };
 }

@@ -33,7 +33,8 @@
 #include "Utils/OS.h"
 #include "SceneExporter.h"
 #include "Graphics/Model/AnimationController.h"
-#include "Graphics/Paths/PathEditor.h"
+#include "API/Device.h"
+#include "Graphics/Model/ModelRenderer.h"
 
 namespace Falcor
 {
@@ -223,20 +224,20 @@ namespace Falcor
         vec3 t = pInstance->getTranslation();
         if (pGui->addFloat3Var("Translation", t, -FLT_MAX, FLT_MAX))
         {
-            pInstance->setTranslation(t);
+            pInstance->setTranslation(t, true);
             mSceneDirty = true;
         }
     }
 
     void SceneEditor::setInstanceRotation(Gui* pGui)
     {
-        auto& pInstance = mpScene->getModelInstance(mActiveModel, mActiveModelInstance);
-        vec3 r = pInstance->getEulerRotation();
+        vec3 r = mInstanceEulerRotations[mActiveModel][mActiveModelInstance];
         r = degrees(r);
         if (pGui->addFloat3Var("Rotation", r, -360, 360))
         {
             r = radians(r);
-            pInstance->setRotation(r);
+            mInstanceEulerRotations[mActiveModel][mActiveModelInstance] = r;
+            mpScene->getModelInstance(mActiveModel, mActiveModelInstance)->setRotation(r);
             mSceneDirty = true;
         }
     }
@@ -310,7 +311,40 @@ namespace Falcor
         return UniquePtr(new SceneEditor(pScene, modelLoadFlags));
     }
 
-    SceneEditor::SceneEditor(const Scene::SharedPtr& pScene, uint32_t modelLoadFlags) : mpScene(pScene), mModelLoadFlags(modelLoadFlags) {}
+    SceneEditor::SceneEditor(const Scene::SharedPtr& pScene, uint32_t modelLoadFlags) 
+        : mpScene(pScene)
+        , mModelLoadFlags(modelLoadFlags) 
+    {
+        // Rasterizer State for rendering wireframe of selected object
+        RasterizerState::Desc wireframeDesc;
+        wireframeDesc.setFillMode(RasterizerState::FillMode::Wireframe);
+        wireframeDesc.setCullMode(RasterizerState::CullMode::None);
+        wireframeDesc.setDepthBias(-5, 0.0f);
+        mpBiasWireframeRS = RasterizerState::create(wireframeDesc);
+
+        // Depth test
+        DepthStencilState::Desc dsDesc;
+        dsDesc.setDepthTest(true);
+        mpDepthTestDS = DepthStencilState::create(dsDesc);
+
+        mpRenderContext = gpDevice->getRenderContext();
+
+        // Picking
+        auto backBufferFBO = gpDevice->getSwapChainFbo();
+        mpPicking = Picking::create(mpScene, backBufferFBO->getWidth(), backBufferFBO->getHeight());
+
+        mpSelectionScene = Scene::create((float)backBufferFBO->getWidth() / (float)backBufferFBO->getHeight());
+        mpSelectionSceneRenderer = SceneRenderer::create(mpSelectionScene);
+
+        // Create graphics state for drawing wireframe
+        mpWireframeProgram = GraphicsProgram::createFromFile("", "Framework//ConstColorPS.hlsl");
+        mpGraphicsState = GraphicsState::create();
+        mpGraphicsState->setProgram(mpWireframeProgram);
+        mpGraphicsState->setRasterizerState(mpBiasWireframeRS);
+        mpGraphicsState->setDepthStencilState(mpDepthTestDS);
+
+        initializeEulerRotationsCache();
+    }
 
     SceneEditor::~SceneEditor()
     {
@@ -319,6 +353,77 @@ namespace Falcor
             if(msgBox("Scene changed. Do you want to save the changes?", MsgBoxType::OkCancel) == MsgBoxButton::Ok)
             {
                 saveScene();
+            }
+        }
+    }
+
+    void SceneEditor::renderSelection()
+    {
+        // Draw to same Fbo that was set before this call
+        mpGraphicsState->setFbo(mpRenderContext->getGraphicsState()->getFbo());
+        mpRenderContext->setGraphicsState(mpGraphicsState);
+        mpSelectionSceneRenderer->renderScene(mpRenderContext.get(), mpScene->getActiveCamera().get());
+    }
+
+    bool SceneEditor::onMouseEvent(const MouseEvent& mouseEvent)
+    {
+        if (mouseEvent.type == MouseEvent::Type::LeftButtonDown || mouseEvent.type == MouseEvent::Type::LeftButtonUp)
+        {
+            mMouseHoldTimer.update();
+        }
+
+        if (mouseEvent.type == MouseEvent::Type::LeftButtonUp)
+        {
+            if (mMouseHoldTimer.getElapsedTime() < 0.2f)
+            {
+                if (mpPicking->pick(mpRenderContext.get(), mouseEvent.pos, mpScene->getActiveCamera().get()))
+                {
+                    addToSelection(mpPicking->getPickedModelInstance(), mControlDown);
+                }
+                else
+                {
+                    deselect();
+                }
+            }
+        }
+
+        return true;
+    }
+
+    bool SceneEditor::onKeyEvent(const KeyboardEvent& keyEvent)
+    {
+        mControlDown = keyEvent.mods.isCtrlDown;
+        return true;
+    }
+
+    void SceneEditor::onResizeSwapChain()
+    {
+        if (mpPicking)
+        {
+            auto backBufferFBO = gpDevice->getSwapChainFbo();
+            mpPicking->resizeFBO(backBufferFBO->getWidth(), backBufferFBO->getHeight());
+        }
+    }
+
+    void SceneEditor::setActiveModelInstance(const Scene::ModelInstance::SharedPtr& pModelInstance)
+    {
+        for (uint32_t modelID = 0; modelID < mpScene->getModelCount(); modelID++)
+        {
+            // Model found, look for exact instance
+            if (mpScene->getModel(modelID) == pModelInstance->getObject())
+            {
+                for (uint32_t instanceID = 0; instanceID < mpScene->getModelInstanceCount(modelID); instanceID++)
+                {
+                    // Instance found
+                    if (mpScene->getModelInstance(modelID, instanceID) == pModelInstance)
+                    {
+                        mActiveModel = modelID;
+                        mActiveModelInstance = instanceID;
+                        return;
+                    }
+                }
+
+                return;
             }
         }
     }
@@ -425,7 +530,7 @@ namespace Falcor
         }
     }
 
-    void SceneEditor::render(Gui* pGui)
+    void SceneEditor::renderGui(Gui* pGui)
     {
         pGui->pushWindow("Scene Editor", 300, 300, 100, 250);
         if (pGui->addButton("Export Scene"))
@@ -471,6 +576,49 @@ namespace Falcor
         }
     }
     
+    void SceneEditor::initializeEulerRotationsCache()
+    {
+        for (uint32_t modelID = 0; modelID < mpScene->getModelCount(); modelID++)
+        {
+            mInstanceEulerRotations.emplace_back();
+
+            for (uint32_t instanceID = 0; instanceID < mpScene->getModelInstanceCount(modelID); instanceID++)
+            {
+                mInstanceEulerRotations[modelID].push_back(mpScene->getModelInstance(modelID, instanceID)->getEulerRotation());
+            }
+        }
+    }
+
+    void SceneEditor::addToSelection(const Scene::ModelInstance::SharedPtr& pModelInstance, bool append)
+    {
+        // If instance has already been picked, ignore it
+        if (mSelectedInstances.count(pModelInstance.get()) > 0)
+        {
+            return;
+        }
+
+        if (append == false)
+        {
+            deselect();
+        }
+
+        mpSelectionScene->addModelInstance(pModelInstance);
+        setActiveModelInstance(pModelInstance);
+
+        // Track selection
+        mSelectedInstances.insert(pModelInstance.get());
+    }
+
+    void SceneEditor::deselect()
+    {
+        if (mpSelectionScene)
+        {
+            mpSelectionScene->deleteAllModels();
+        }
+
+        mSelectedInstances.clear();
+    }
+
     void SceneEditor::addModel(Gui* pGui)
     {
         if (pGui->addButton("Add Model"))
@@ -498,6 +646,9 @@ namespace Falcor
 
                 mActiveModel = mpScene->getModelCount() - 1;
                 mActiveModelInstance = 0;
+
+                mInstanceEulerRotations.emplace_back();
+                mInstanceEulerRotations.back().push_back(mpScene->getModelInstance(mActiveModel, mActiveModelInstance)->getEulerRotation());
             }
             mSceneDirty = true;
         }
@@ -506,6 +657,7 @@ namespace Falcor
     void SceneEditor::deleteModel()
     {
         mpScene->deleteModel(mActiveModel);
+        mInstanceEulerRotations.erase(mInstanceEulerRotations.begin() + mActiveModel);
         mActiveModel = 0;
         mActiveModelInstance = 0;
         mSceneDirty = true;
@@ -531,6 +683,7 @@ namespace Falcor
 
             mActiveModelInstance = mpScene->getModelInstanceCount(mActiveModel);
             mpScene->addModelInstance(pModel, "Instance " + mActiveModelInstance, pInstance->getTranslation(), pInstance->getEulerRotation(), pInstance->getScaling());
+            mInstanceEulerRotations[mActiveModel].push_back(mpScene->getModelInstance(mActiveModel, mActiveModelInstance)->getEulerRotation());
 
             mSceneDirty = true;
         }
@@ -555,6 +708,10 @@ namespace Falcor
             }
 
             mpScene->deleteModelInstance(mActiveModel, mActiveModelInstance);
+
+            auto& modelRotations = mInstanceEulerRotations[mActiveModel];
+            modelRotations.erase(modelRotations.begin() + mActiveModelInstance);
+
             mActiveModelInstance = 0;
             mSceneDirty = true;
         }
@@ -642,4 +799,5 @@ namespace Falcor
             }
         }
     }
+
 }

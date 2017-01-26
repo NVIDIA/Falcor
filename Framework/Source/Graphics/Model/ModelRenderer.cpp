@@ -27,6 +27,7 @@
 ***************************************************************************/
 #include "Framework.h"
 #include "ModelRenderer.h"
+#include "Graphics/Scene/SceneRenderer.h"
 
 namespace Falcor
 {

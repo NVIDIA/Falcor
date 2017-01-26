@@ -39,7 +39,15 @@ void SceneEditorSample::onGuiRender()
     }
     if(mpEditor)
     {
-        mpEditor->render(mpGui.get());
+        mpEditor->renderGui(mpGui.get());
+    }
+}
+
+void SceneEditorSample::onResizeSwapChain()
+{
+    if (mpEditor)
+    {
+        mpEditor->onResizeSwapChain();
     }
 }
 
@@ -108,6 +116,11 @@ void SceneEditorSample::onFrameRender()
         mpRenderer->update(mCurrentTime);
         mpRenderer->renderScene(mpRenderContext.get());
     }
+
+    if (mpEditor)
+    {
+        mpEditor->renderSelection();
+    }
 }
 
 void SceneEditorSample::onShutdown()
@@ -117,12 +130,18 @@ void SceneEditorSample::onShutdown()
 
 bool SceneEditorSample::onKeyEvent(const KeyboardEvent& keyEvent)
 {
-    return mpRenderer ? mpRenderer->onKeyEvent(keyEvent) : false;
+    bool handled = mpRenderer ? mpRenderer->onKeyEvent(keyEvent) : false;
+    handled |= mpEditor ? mpEditor->onKeyEvent(keyEvent) : false;
+
+    return handled;
 }
 
 bool SceneEditorSample::onMouseEvent(const MouseEvent& mouseEvent)
 {
-    return mpRenderer ? mpRenderer->onMouseEvent(mouseEvent) : false;
+    bool handled = mpRenderer ? mpRenderer->onMouseEvent(mouseEvent) : false;
+    handled |= mpEditor ? mpEditor->onMouseEvent(mouseEvent) : false;
+
+    return handled;
 }
 
 int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ LPSTR lpCmdLine, _In_ int nShowCmd)

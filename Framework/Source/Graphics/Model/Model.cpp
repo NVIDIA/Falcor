@@ -90,6 +90,11 @@ namespace Falcor
         return pModel;
     }
 
+    Model::SharedPtr Model::create()
+    {
+        return SharedPtr(new Model());
+    }
+
     void Model::exportToBinaryFile(const std::string& filename)
     {
         if(hasSuffix(filename, ".bin", false) == false)

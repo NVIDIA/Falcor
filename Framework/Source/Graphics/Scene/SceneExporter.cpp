@@ -147,7 +147,7 @@ namespace Falcor
     void createModelValue(const Scene* pScene, uint32_t modelID, rapidjson::Document::AllocatorType& allocator, rapidjson::Value& jmodel)
     {
         jmodel.SetObject();
-        addString(jmodel, allocator, SceneKeys::kFilename, stripDataDirectories(pScene->getModelFilename(modelID)));
+        addString(jmodel, allocator, SceneKeys::kFilename, stripDataDirectories(pScene->getModel(modelID)->getFilename()));
         addString(jmodel, allocator, SceneKeys::kName, pScene->getModel(modelID)->getName());
 
         if(pScene->getModel(modelID)->hasAnimations())

@@ -30,7 +30,6 @@
 #include "Utils/Gui.h"
 #include "Graphics/Camera/CameraController.h"
 #include "Graphics/Scene/Scene.h"
-#include "SceneEditor.h"
 #include "utils/CpuTimer.h"
 #include "API/ConstantBuffer.h"
 
@@ -112,31 +111,36 @@ namespace Falcor
             mutable GraphicsState* pGsoCache;
             const Model* pModel;
             const Material* pMaterial;
+
+            uint32_t drawID; // Zero-based mesh instance draw order/ID. Resets at the beginning of renderScene, and increments per mesh instance drawn.
         };
 
         SceneRenderer(const Scene::SharedPtr& pScene);
         Scene::SharedPtr mpScene;
-        
+
+        static const char* kPerMaterialCbName;
+        static const char* kPerFrameCbName;
+        static const char* kPerStaticMeshCbName;
+        static const char* kPerSkinnedMeshCbName;
+
         static size_t sBonesOffset;
         static size_t sCameraDataOffset;
         static size_t sWorldMatOffset;
         static size_t sMeshIdOffset;
 
-    private:
         static void updateVariableOffsets(const ProgramReflection* pReflector);
 
         virtual void setPerFrameData(RenderContext* pContext, const CurrentWorkingData& currentData);
         virtual bool setPerModelData(RenderContext* pContext, const CurrentWorkingData& currentData);
         virtual bool setPerMeshData(RenderContext* pContext,  const CurrentWorkingData& currentData);
-        virtual bool setPerMeshInstanceData(RenderContext* pContext, const glm::mat4& translation, const Model::MeshInstance::SharedPtr& instance, uint32_t drawInstanceID, const CurrentWorkingData& currentData);
+        virtual bool setPerMeshInstanceData(RenderContext* pContext, const Scene::ModelInstance::SharedPtr& pModelInstance, const Model::MeshInstance::SharedPtr& pMeshInstance, uint32_t drawInstanceID, const CurrentWorkingData& currentData);
         virtual bool setPerMaterialData(RenderContext* pContext, const CurrentWorkingData& currentData);
         virtual void postFlushDraw(RenderContext* pContext, const CurrentWorkingData& currentData);
 
-        void renderModelInstance(RenderContext* pContext, const Model* pModel, const glm::mat4& instanceMatrix, Camera* pCamera, CurrentWorkingData& currentData);
-        void renderMeshInstances(RenderContext* pContext, uint32_t modelID, const glm::mat4& translation, Camera* pCamera, CurrentWorkingData& currentData);
+        void renderModelInstance(RenderContext* pContext, const Scene::ModelInstance::SharedPtr& pModelInstance, Camera* pCamera, CurrentWorkingData& currentData);
+        void renderMeshInstances(RenderContext* pContext, uint32_t modelID, const Scene::ModelInstance::SharedPtr& pModelInstance, Camera* pCamera, CurrentWorkingData& currentData);
         void flushDraw(RenderContext* pContext, const Mesh* pMesh, uint32_t instanceCount, CurrentWorkingData& currentData);
 
-    protected:
         void setupVR();
 
         CameraControllerType mCamControllerType = CameraControllerType::SixDof;

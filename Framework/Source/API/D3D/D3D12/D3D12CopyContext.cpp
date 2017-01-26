@@ -176,9 +176,6 @@ namespace Falcor
 
     std::vector<uint8> CopyContext::readTextureSubresource(const Texture* pTexture, uint32_t subresourceIndex)
     {
-        //This assumes 4 channels in a few different places
-        assert(getFormatChannelCount(pTexture->getFormat()) == 4);
-
         //Get footprint
         D3D12_RESOURCE_DESC texDesc = pTexture->getApiHandle()->GetDesc();
         D3D12_PLACED_SUBRESOURCE_FOOTPRINT footprint;

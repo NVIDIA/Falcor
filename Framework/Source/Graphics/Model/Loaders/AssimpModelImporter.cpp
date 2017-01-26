@@ -330,7 +330,7 @@ namespace Falcor
 
     AssimpModelImporter::AssimpModelImporter(uint32_t flags) : mFlags(flags)
     {
-        mpModel = Model::SharedPtr(new Model);
+        mpModel = Model::create();
     }
 
     bool AssimpModelImporter::createAllMaterials(const aiScene* pScene, const std::string& modelFolder, bool isObjFile, bool useSrgb)

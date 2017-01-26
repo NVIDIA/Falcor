@@ -26,13 +26,11 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 #pragma once
-#include "Graphics/Scene/SceneRenderer.h"
+#include "Graphics/Model/Model.h"
 
 namespace Falcor
 {
-    class Program;
     class RenderContext;
-    class Material;
     class Camera;
 
 	/**

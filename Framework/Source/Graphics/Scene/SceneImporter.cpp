@@ -196,7 +196,7 @@ namespace Falcor
             return false;
         }
 
-        pModel->setName(modelFile.GetString());
+        pModel->setFilename(modelFile.GetString());
 
         bool instanceAdded = false;
 

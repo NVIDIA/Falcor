@@ -105,16 +105,19 @@ VS_OUT defaultVS(VS_IN vIn)
     float4 posW = mul(worldMat, vIn.pos);
     vOut.posW = posW.xyz;
     vOut.posH = mul(gCam.viewProjMat, posW);
+
 #ifdef HAS_TEXCRD
     vOut.texC = vIn.texC;
 #else
     vOut.texC = 0;
 #endif
+
 #ifdef HAS_COLORS
     vOut.colorV = vIn.color;
 #else
     vOut.colorV = 0;
 #endif
+
     vOut.normalW = mul((float3x3)worldMat, vIn.normal).xyz;
     vOut.tangentW = mul((float3x3)worldMat, vIn.tangent).xyz;
     vOut.bitangentW = mul((float3x3)worldMat, vIn.bitangent).xyz;

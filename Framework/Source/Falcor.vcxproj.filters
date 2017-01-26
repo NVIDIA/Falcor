@@ -456,6 +456,9 @@
       <Filter>Utils</Filter>
     </ClCompile>
     <ClCompile Include="SampleTest.cpp" />
+    <ClCompile Include="Utils\Picking\Picking.cpp">
+      <Filter>Utils\Picking</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Graphics\Model\Animation.h">
@@ -1528,6 +1531,9 @@
     <ClInclude Include="Utils\Graph.h">
       <Filter>Utils</Filter>
     </ClInclude>
+    <ClInclude Include="Utils\Picking\Picking.h">
+      <Filter>Utils\Picking</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Externals">
@@ -1670,6 +1676,9 @@
     </Filter>
     <Filter Include="Externals\dear_imgui">
       <UniqueIdentifier>{fd48defe-6e2a-4ea0-a9e0-b7a8b7cbe222}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Utils\Picking">
+      <UniqueIdentifier>{db06632d-289e-4e1c-85b4-7d6f5e41c73b}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -2053,6 +2062,18 @@
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Data\DefaultVS.hlsl">
+      <Filter>Data\Framework</Filter>
+    </FxCompile>
+    <FxCompile Include="..\..\Media\Picking.ps.hlsl">
+      <Filter>Utils\Picking</Filter>
+    </FxCompile>
+    <FxCompile Include="Data\Framework\PickingVS.hlsl">
+      <Filter>Data\Framework</Filter>
+    </FxCompile>
+    <FxCompile Include="Data\Framework\PickingPS.hlsl">
+      <Filter>Data\Framework</Filter>
+    </FxCompile>
+    <FxCompile Include="Data\Framework\ConstColorPS.hlsl">
       <Filter>Data\Framework</Filter>
     </FxCompile>
   </ItemGroup>

@@ -27,12 +27,14 @@
 ***************************************************************************/
 #pragma once
 #include <vector>
-#include "Utils/Gui.h"
+#include <set>
 #include "Graphics/Paths/PathEditor.h"
+#include "Utils/Picking/Picking.h"
 
 namespace Falcor
 {
     class Scene;
+    class Gui;
 
     class SceneEditor
     {
@@ -41,8 +43,15 @@ namespace Falcor
         using UniqueConstPtr = std::unique_ptr<const SceneEditor>;
 
         static UniquePtr create(const Scene::SharedPtr& pScene, const uint32_t modelLoadFlags = 0);
-        void render(Gui* pGui);
+        void renderGui(Gui* pGui);
         ~SceneEditor();
+
+        void renderSelection();
+        bool onMouseEvent(const MouseEvent& mouseEvent);
+        bool onKeyEvent(const KeyboardEvent& keyEvent);
+        void onResizeSwapChain();
+
+        void setActiveModelInstance(const Scene::ModelInstance::SharedPtr& pModelInstance);
 
     private:
         SceneEditor(const Scene::SharedPtr& pScene, const uint32_t modelLoadFlags);
@@ -111,5 +120,29 @@ namespace Falcor
 
         uint32_t mModelLoadFlags = 0;
         uint32_t mSceneLoadFlags = 0;
+
+        // Gets and caches Euler rotations from model instances in the scene
+        void initializeEulerRotationsCache();
+
+        std::vector<std::vector<glm::vec3>> mInstanceEulerRotations;
+
+        // Picking
+        void addToSelection(const Scene::ModelInstance::SharedPtr& pModelInstance, bool append);
+        void deselect();
+
+        RenderContext::SharedPtr mpRenderContext;
+        Picking::UniquePtr mpPicking;
+
+        bool mControlDown = false;
+        CpuTimer mMouseHoldTimer;
+        
+        GraphicsState::SharedPtr mpGraphicsState;
+        GraphicsProgram::SharedPtr mpWireframeProgram;
+        RasterizerState::SharedPtr mpBiasWireframeRS;
+        DepthStencilState::SharedPtr mpDepthTestDS;
+
+        Scene::SharedPtr mpSelectionScene; // Holds selection in model selection mode
+        SceneRenderer::UniquePtr mpSelectionSceneRenderer;
+        std::set<Scene::ModelInstance*> mSelectedInstances;
     };
 }

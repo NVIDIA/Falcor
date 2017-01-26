@@ -29,7 +29,6 @@
 #include "Utils/Gui.h"
 #include "Graphics/Paths/ObjectPath.h"
 #include "Graphics/Camera/Camera.h"
-#include "Utils/Gui.h"
 
 namespace Falcor
 {

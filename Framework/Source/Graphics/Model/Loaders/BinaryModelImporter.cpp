@@ -639,7 +639,7 @@ namespace Falcor
         }
 
         // create objects
-        auto pModel = Model::SharedPtr(new Model());
+        auto pModel = Model::create();
         bool shouldGenerateTangents = (flags & Model::GenerateTangentSpace) != 0;
 
         std::vector<TextureData> texData;

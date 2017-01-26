@@ -88,6 +88,11 @@ namespace Falcor
         mModels.erase(mModels.begin() + modelID);
     }
 
+    void Scene::deleteAllModels()
+    {
+        mModels.clear();
+    }
+
     uint32_t Scene::getModelInstanceCount(uint32_t modelID) const
     {
         return (uint32_t)(mModels[modelID].size());
@@ -114,7 +119,25 @@ namespace Falcor
             modelID = (int32_t)mModels.size() - 1;
         }
 
-        mModels[modelID].push_back(ModelInstance::create(pModel, translation, rotation, scaling));
+        mModels[modelID].push_back(ModelInstance::create(pModel, translation, rotation, scaling, instanceName));
+    }
+
+    void Scene::addModelInstance(const ModelInstance::SharedPtr& pInstance)
+    {
+        // Checking for existing instance list for model
+        for (uint32_t modelID = 0; modelID < (uint32_t)mModels.size(); modelID++)
+        {
+            // If found, add to that list
+            if (getModel(modelID) == pInstance->getObject())
+            {
+                mModels[modelID].push_back(pInstance);
+                return;
+            }
+        }
+
+        // If not found, add a new list
+        mModels.emplace_back();
+        mModels.back().push_back(pInstance);
     }
 
     void Scene::deleteModelInstance(uint32_t modelID, uint32_t instanceID)

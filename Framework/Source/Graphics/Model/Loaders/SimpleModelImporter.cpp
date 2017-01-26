@@ -50,7 +50,7 @@ namespace Falcor
         SimpleModelImporter modelImporter;
 
         // Create our model container
-        Model::SharedPtr        pModel = Model::SharedPtr( new Model() );
+        Model::SharedPtr pModel = Model::create();
 
         // Need to create our vertex layout
         VertexBufferLayout::SharedPtr pVertexLayout = VertexBufferLayout::create();

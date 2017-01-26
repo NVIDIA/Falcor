@@ -28,12 +28,13 @@
 #pragma once
 #include "Falcor.h"
 #include "SampleTest.h"
+#include "Utils/Picking/Picking.h"
 
 using namespace Falcor;
 
 class ModelViewer : public Sample, public SampleTest
 {
-public:    
+public:
     void onLoad() override;
     void onFrameRender() override;
     void onShutdown() override;

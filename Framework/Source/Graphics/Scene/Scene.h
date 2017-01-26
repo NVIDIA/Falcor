@@ -108,11 +108,13 @@ namespace Falcor
         // Models
         uint32_t getModelCount() const { return (uint32_t)mModels.size(); }
         const Model::SharedPtr& getModel(uint32_t modelID) const { return mModels[modelID][0]->getObject(); };
-        const std::string& getModelFilename(uint32_t modelID) const { return getModel(modelID)->getName(); };
         void deleteModel(uint32_t modelID);
+        void deleteAllModels();
 
         // Model instances
         void addModelInstance(const Model::SharedPtr& pModel, const std::string& instanceName, const glm::vec3& translation = glm::vec3(), const glm::vec3& rotation = glm::vec3(), const glm::vec3& scaling = glm::vec3(1));
+        // Adds a model instance and shares ownership of it
+        void addModelInstance(const ModelInstance::SharedPtr& pInstance);
         uint32_t getModelInstanceCount(uint32_t modelID) const;
         const ModelInstance::SharedPtr& getModelInstance(uint32_t modelID, uint32_t instanceID) const { return mModels[modelID][instanceID]; };
         void deleteModelInstance(uint32_t modelID, uint32_t instanceID);
