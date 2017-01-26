@@ -175,12 +175,18 @@ namespace Falcor
 
     static void D3D12SetScissors(CommandListHandle pList, const GraphicsState::Scissor* sc)
     {
-        static_assert(offsetof(GraphicsState::Scissor, originX) == offsetof(D3D12_RECT, left), "Scissor originX offset");
-        static_assert(offsetof(GraphicsState::Scissor, originY) == offsetof(D3D12_RECT, top), "Scissor originY offset");
-        static_assert(offsetof(GraphicsState::Scissor, width) == offsetof(D3D12_RECT, right), "Scissor Width offset");
-        static_assert(offsetof(GraphicsState::Scissor, height) == offsetof(D3D12_RECT, bottom), "Scissor Height offset");
+        std::vector<D3D12_RECT> scRects;
+        scRects.resize(D3D12_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE);
 
-        pList->RSSetScissorRects(D3D12_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE, (D3D12_RECT*)sc);
+        for (uint32_t i = 0u; i < D3D12_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE; ++i)
+        {
+            scRects[i].left = sc[i].originX;
+            scRects[i].top = sc[i].originY;
+            scRects[i].right = sc[i].originX + sc[i].width;
+            scRects[i].bottom = sc[i].originY + sc[i].height;
+        }
+
+        pList->RSSetScissorRects(D3D12_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE, scRects.data());
     }
 
     void RenderContext::prepareForDraw()
