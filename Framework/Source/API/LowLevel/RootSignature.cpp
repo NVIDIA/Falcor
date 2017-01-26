@@ -115,6 +115,21 @@ namespace Falcor
         return pSig;
     }
 
+    static ProgramReflection::ShaderAccess getRequiredShaderAccess(RootSignature::DescType type)
+    {
+        switch (type)
+        {
+        case Falcor::RootSignature::DescType::SRV:
+        case Falcor::RootSignature::DescType::CBV:
+        case Falcor::RootSignature::DescType::Sampler:
+            return ProgramReflection::ShaderAccess::Read;
+        case Falcor::RootSignature::DescType::UAV:
+            return ProgramReflection::ShaderAccess::ReadWrite;
+        default:
+            should_not_get_here();
+            return ProgramReflection::ShaderAccess(-1);
+        }
+    }
 
     uint32_t initializeBufferDescriptors(const ProgramReflection* pReflector, RootSignature::Desc& desc, ProgramReflection::BufferReflection::Type bufferType, RootSignature::DescType descType)
     {
@@ -130,10 +145,14 @@ namespace Falcor
             }
             else
             {
-                RootSignature::DescriptorTable descTable;
-                descTable.addRange(descType, pBuffer->getRegisterIndex(), 1, pBuffer->getRegisterSpace());
-                cost += 1;
-                desc.addDescriptorTable(descTable);
+                assert(descType == RootSignature::DescType::SRV || descType == RootSignature::DescType::UAV);
+                if(pBuffer->getShaderAccess() == getRequiredShaderAccess(descType))
+                {
+                    RootSignature::DescriptorTable descTable;
+                    descTable.addRange(descType, pBuffer->getRegisterIndex(), 1, pBuffer->getRegisterSpace());
+                    cost += 1;
+                    desc.addDescriptorTable(descTable);
+                }
             }
         }
         return cost;
