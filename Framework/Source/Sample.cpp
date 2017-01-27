@@ -644,7 +644,7 @@ namespace Falcor
             std::string exeName = getExecutableName();
             //strip off .exe
             std::string shortName = exeName.substr(0, exeName.size() - 4);
-            of.open(shortName + "_TestingLog.xml");
+            of.open(shortName + "_TestingLog_0.xml");
             of << "<?xml version = \"1.0\" encoding = \"UTF-8\"?>\n";
             of << "<TestLog>\n";
             of << "<Summary\n";

@@ -92,7 +92,7 @@ void TestBase::GenerateXML(const std::vector<std::string>& xmlStrings)
 {
     std::ofstream of;
     
-    of.open(mDerivedName + "_TestingLog.xml");
+    of.open(mDerivedName + "_TestingLog_0.xml");
     of << "<?xml version = \"1.0\" encoding = \"UTF-8\"?>\n";
     of << "<TestLog>\n";
     of << "<Summary\n";

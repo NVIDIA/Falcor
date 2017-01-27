@@ -20,21 +20,38 @@ gResultsDir = 'TestResults'
 gReferenceDir = 'ReferenceResults'
 
 #default values
+#percent
 gDefaultFrameTimeMargin = 0.05
+#seconds
 gDefaultLoadTimeMargin = 10
+#average pixel color difference
 gDefaultImageCompareMargin = 0.1
+#seconds
 gDefaultHangTimeDuration = 30
 
 class TestInfo(object):
+    def determineIndex(self):
+        initialFilename = self.getResultsFile()
+        if gGenRefResults:
+            while os.path.isfile(self.getReferenceFile()):
+                self.Index += 1
+        else:
+            if os.path.isdir(self.getResultsDir()):
+                while os.path.isfile(self.getResultsDir() + '\\' + self.getResultsFile()):
+                    self.Index += 1
+        if self.Index != 0:
+            os.rename(initialFilename, self.getResultsFile())
+
     def __init__(self, name, configName):
         self.Name = name
         self.ConfigName = configName
         self.LoadErrorMargin = gDefaultLoadTimeMargin
         self.FrameErrorMargin = gDefaultFrameTimeMargin
+        self.Index = 0
     def getResultsFile(self):
-        return self.Name + '_TestingLog.xml'
+        return self.Name + '_TestingLog_' + str(self.Index) + '.xml'
     def getBuildFailFile(self):
-        return self.Name + '_BuildFailLog.txt'
+        return self.Name + '_BuildFailLog_.txt'
     def getResultsDir(self):
         return gResultsDir + '\\' + self.ConfigName
     def getReferenceDir(self):
@@ -42,7 +59,7 @@ class TestInfo(object):
     def getReferenceFile(self):
         return self.getReferenceDir() + '\\' + self.getResultsFile()
     def getFullName(self):
-        return self.Name + '_' + self.ConfigName
+        return self.Name + '_' + self.ConfigName + '_' + str(self.Index)
     def getTestDir(self):
         if (self.ConfigName == 'debugd3d12' or self.ConfigName == 'debugd3d11' or 
             self.ConfigName == 'debugGL'):
@@ -55,18 +72,20 @@ class TestInfo(object):
             return ''
     def getTestPath(self):
         return self.getTestDir() + '\\' + self.Name + '.exe'
-    def getTestScreenshot(self, i): 
+    def getRenamedTestScreenshot(self, i):
+        return self.getTestDir() + '\\' + self.Name + '_' + str(self.Index) + '_' + str(i) + '.png'
+    def getInitialTestScreenshot(self, i): 
         return self.getTestDir() + '\\' + self.Name + '.exe.'+ str(i) + '.png'
     def getReferenceScreenshot(self, i):
-        return self.getReferenceDir() + '\\' + self.Name + '.exe.'+ str(i) + '.png'
+        return self.getReferenceDir() + '\\' + self.Name + '_'+ str(self.Index) + '_' + str(i) + '.png'
 
 class SystemResult(object):
     def __init__(self):
         self.Name = ''
         self.LoadTime = 0
         self.AvgFrameTime = 0
-        self.RefLoadTime = -1
-        self.RefAvgFrameTime = -1
+        self.RefLoadTime = 0
+        self.RefAvgFrameTime = 0
         self.LoadErrorMargin = gDefaultLoadTimeMargin
         self.FrameErrorMargin = gDefaultFrameTimeMargin
         self.CompareResults = []        
@@ -122,10 +141,15 @@ def overwriteMove(filename, newLocation):
         print 'Error moving ' + filename + ' to ' + newLocation + '. Exception: ', info
         return
 
+def renameScreenshots(testInfo, numScreenshots):
+    for i in range (0, numScreenshots):
+        os.rename(testInfo.getInitialTestScreenshot(i), testInfo.getRenamedTestScreenshot(i))
+
 def compareImages(resultObj, testInfo, numScreenshots):
     global gFailReasonsList
+    renameScreenshots(testInfo, numScreenshots)
     for i in range(0, numScreenshots):
-        testScreenshot = testInfo.getTestScreenshot(i)
+        testScreenshot = testInfo.getRenamedTestScreenshot(i)
         refScreenshot = testInfo.getReferenceScreenshot(i)
         outFile = testInfo.Name + str(i) + '_Compare.png'
         command = ['magick', 'compare', '-metric', 'MSE', '-compose', 'Src', '-highlight-color', 'White', 
@@ -150,11 +174,12 @@ def compareImages(resultObj, testInfo, numScreenshots):
             os.remove(outFile)
 
 def addSystemTestReferences(testInfo, numScreenshots):
+    renameScreenshots(testInfo, numScreenshots)
     refDir = testInfo.getReferenceDir()
     makeDirIfDoesntExist(refDir)
     overwriteMove(testInfo.getResultsFile(), refDir)
     for i in range(0, numScreenshots):
-        overwriteMove(testInfo.getTestScreenshot(i), refDir)
+        overwriteMove(testInfo.getRenamedTestScreenshot(i), refDir)
 
 def logTestSkip(testName, reason):
     global gSkippedList
@@ -180,7 +205,7 @@ def buildFail(fatal, testInfo):
     makeDirIfDoesntExist(resultsDir)
     overwriteMove(testInfo.getBuildFailFile(), resultsDir)
     if fatal:
-        print 'Fatal error, failed to build ' + testInfo.Name
+        sendFatalFailEmail('Fatal error, failed to build ' + testInfo.getFullName())
         sys.exit(1)
     else:
         logTestSkip(testInfo.getFullName(), 'Build Failure')
@@ -238,6 +263,7 @@ def processLowLevelTest(xmlElement, testInfo):
     newResult.Crashed = int(xmlElement[0].attributes['CrashedTests'].value)
     gLowLevelResultList.append(newResult)
     gLowLevelResultSummary.add(newResult)
+    makeDirIfDoesntExist(testInfo.getResultsDir())
     overwriteMove(testInfo.getResultsFile(), testInfo.getResultsDir())
     compareLowLevelReference(testInfo, newResult)
 
@@ -263,17 +289,20 @@ def processSystemTest(xmlElement, testInfo):
     newSysResult.RefLoadTime = float(refResults[0].attributes['LoadTime'].value)
     newSysResult.RefAvgFrameTime = float(refResults[0].attributes['FrameTime'].value)
     #check avg fps
-    if marginCompare(newSysResult.AvgFrameTime, newSysResult.RefAvgFrameTime, newSysResult.FrameErrorMargin) == 1:
-        gFailReasonsList.append((newSysResult.Name + ': ' + str(newSysResult.AvgFrameTime) + 
-        ' average frame time is larger than reference ' + str(newSysResult.RefAvgFrameTime) +
-        ' considering error margin ' + str(newSysResult.FrameErrorMargin * 100) + '%'))
+    if newSysResult.AvgFrameTime != 0 and newSysResult.RefAvgFrameTime != 0:
+        if marginCompare(newSysResult.AvgFrameTime, newSysResult.RefAvgFrameTime, newSysResult.FrameErrorMargin) == 1:
+            gFailReasonsList.append((testInfo.getFullName() + ': average frame time ' + 
+            str(newSysResult.AvgFrameTime) + ' is larger than reference ' + str(newSysResult.RefAvgFrameTime) + 
+            ' considering error margin ' + str(newSysResult.FrameErrorMargin * 100) + '%'))
     #check load time
-    if newSysResult.LoadTime > (newSysResult.RefLoadTime + newSysResult.LoadErrorMargin):
-        gFailReasonsList.append(newSysResult.Name + ': ' + (str(newSysResult.LoadTime) + 
-        ' load time is larger than reference ' + str(newSysResult.RefLoadTime) +
-        ' considering error margin ' + str(newSysResult.LoadErrorMargin) + ' seconds'))
+    if newSysResult.LoadTime != 0 and newSysResult.RefLoadTime != 0:
+        if newSysResult.LoadTime > (newSysResult.RefLoadTime + newSysResult.LoadErrorMargin):
+            gFailReasonsList.append(testInfo.getFullName() + ': load time' + (str(newSysResult.LoadTime) +
+            ' is larger than reference ' + str(newSysResult.RefLoadTime) + ' considering error margin ' + 
+            str(newSysResult.LoadErrorMargin) + ' seconds'))
     compareImages(newSysResult, testInfo, numScreenshots)
     gSystemResultList.append(newSysResult)
+    makeDirIfDoesntExist(testInfo.getResultsDir())
     overwriteMove(resultFile, testInfo.getResultsDir())
 
 def readTestList(buildTests):
@@ -296,10 +325,10 @@ def readTestList(buildTests):
             continue
         testName = testValues[0]
         configName = testValues[1].lower()
+        testInfo = TestInfo(testName, configName)
         if not isConfigValid(configName):
             logTestSkip(testInfo.getFullName(), 'Unrecognized config ' + configName)
             continue
-        testInfo = TestInfo(testName, configName)
         if numValues >= 3 and testValues[2] and not testValues[2].isspace():
             try:
                 testInfo.LoadErrorMargin = float(testValues[2])
@@ -342,6 +371,7 @@ def runTest(testInfo, cmdLine):
                 logTestSkip(testInfo.getFullName(), ('Test timed out ( > ' + 
                     str(gDefaultHangTimeDuration) + ' seconds)'))
                 return
+        testInfo.determineIndex()
         #ensure results file exists
         if not os.path.isfile(testInfo.getResultsFile()):
             logTestSkip(testInfo.getFullName(), 'Failed to open ' + testInfo.getResultsFile())
@@ -408,22 +438,29 @@ def systemTestResultToHTML(result):
     html = '<tr>'
     html += '<td>' + result.Name + '</td>\n'
     html += '<td>' + str(result.LoadErrorMargin) + '</td>\n'
-    if result.LoadTime > (result.RefLoadTime + result.LoadErrorMargin):
-        html += '<td bgcolor="red"><font color="white">' 
-    elif result.LoadTime < result.RefLoadTime:
-        html += '<td bgcolor="green"><font color="white">' 
+    #if dont have real load time data, no reason to color
+    if result.LoadTime == 0 or result.RefLoadTime == 0:
+        html += '<td><font>'
     else:
-        html += '<td><font>' 
+        if result.LoadTime > (result.RefLoadTime + result.LoadErrorMargin):
+            html += '<td bgcolor="red"><font color="white">' 
+        elif result.LoadTime < result.RefLoadTime:
+            html += '<td bgcolor="green"><font color="white">' 
+        else:
+            html += '<td><font>' 
     html += str(result.LoadTime) + '</font></td>\n'
     html += '<td>' + str(result.RefLoadTime) + '</td>\n'
     html += '<td>' + str(result.FrameErrorMargin * 100) + '</td>\n'
-    compareResult = marginCompare(result.AvgFrameTime, result.RefAvgFrameTime, result.FrameErrorMargin)
-    if(compareResult == 1):
-        html += '<td bgcolor="red"><font color="white">' 
-    elif(compareResult == -1):
-        html += '<td bgcolor="green"><font color="white">' 
+    if result.AvgFrameTime == 0 or result.RefAvgFrameTime == 0:
+        html += '<td><font>'
     else:
-        html += '<td><font>' 
+        compareResult = marginCompare(result.AvgFrameTime, result.RefAvgFrameTime, result.FrameErrorMargin)
+        if(compareResult == 1):
+            html += '<td bgcolor="red"><font color="white">' 
+        elif(compareResult == -1):
+            html += '<td bgcolor="green"><font color="white">' 
+        else:
+            html += '<td><font>' 
     html += str(result.AvgFrameTime) + '</font></td>\n'   
     html += '<td>' + str(result.RefAvgFrameTime) + '</td>\n'
     html += '</tr>\n'
@@ -517,7 +554,11 @@ def updateRepo():
     subprocess.call(['git', 'pull', 'origin', 'TestingFramework'])
     subprocess.call(['git', 'checkout', 'TestingFramework'])
 
-def sendEmail():
+def sendFatalFailEmail(failMsg):
+    subject = '[FATAL TESTING ERROR] '
+    sendEmail(subject, failMsg, None)
+
+def sendTestingEmail():
     todayStr = (date.today()).strftime("%m-%d-%y")
     todayFile = gResultsDir + '\\TestSummary.html'
     body = 'Attached is the testing summary for ' + todayStr
@@ -531,10 +572,17 @@ def sendEmail():
     else:
         subject = '[Unchanged] '
     subject += 'Falcor Automated Testing for ' + todayStr
+    sendEmail(subject, body, todayFile)
+
+#pass none if no attach
+def sendEmail(subject, body, attachment):
     sender = 'clavelle@nvidia.com'
     recipients = str(open(gEmailRecipientFile, 'r').read());
     subprocess.call(['blat.exe', '-install', 'mail.nvidia.com', sender])
-    subprocess.call(['blat.exe', '-to', recipients, '-subject', subject, '-body', body, '-attach', todayFile])
+    if attachment != None:
+        subprocess.call(['blat.exe', '-to', recipients, '-subject', subject, '-body', body, '-attach', attachment])
+    else:
+        subprocess.call(['blat.exe', '-to', recipients, '-subject', subject, '-body', body])
 
 def main():
     global gResultsDir
@@ -544,7 +592,6 @@ def main():
     parser.add_argument('-np', '--nopull', action='store_true', help='run without pulling TestingFramework')
     parser.add_argument('-ne', '--noemail', action='store_true', help='run without emailing the result summary')
     parser.add_argument('-ss', '--showsummary', action='store_true', help='opens testing summary upon completion')
-    parser.add_argument('-ctr', '--cleantestresults', action='store_true', help='deletes test results dir if exists')
     parser.add_argument('-gr', '--generatereference', action='store_true', help='generates reference testing logs and images')
     args = parser.parse_args()
 
@@ -566,15 +613,13 @@ def main():
     #make inner dir for this results
     dateStr = date.today().strftime("%m-%d-%y")
     gResultsDir += '\\' + dateStr
-
-    if args.cleantestresults:
+    if os.path.isdir(gResultsDir):
         shutil.rmtree(gResultsDir, ignore_errors=True)
         try:
             os.makedirs(gResultsDir)
         except PermissionError, info:
-            print 'Fatal Error, Failed to create test result folder. (just try again). Exception: ', info
-    else:
-        makeDirIfDoesntExist(gResultsDir)
+            sendFatalFailEmail('Fatal Error, Failed to create test result folder. Exception: ', info)
+            sys.exit(1)
  
     if not args.nobuild:
         callBatchFile(['clean', 'FalcorTest.sln', 'debugd3d12'])
@@ -607,6 +652,7 @@ def main():
         outputHTML(args.showsummary)
 
     if not args.noemail and not gGenRefResults:
-        sendEmail()
+        sendTestingEmail()
+
 if __name__ == '__main__':
     main()
