@@ -9,7 +9,6 @@ import argparse
 import sys
 import filecmp
 from datetime import date, timedelta
-from bs4 import BeautifulSoup
 
 #relevant paths
 gBuildBatchFile = 'BuildFalcorTest.bat'
@@ -18,14 +17,20 @@ gEmailRecipientFile = 'EmailRecipients.txt'
 gDebugDir = 'C:\\Users\\clavelle\\Desktop\\FalcorGitHub\\Bin\\x64\\Debug\\'
 gReleaseDir = 'C:\\Users\\clavelle\\Desktop\\FalcorGitHub\\Bin\\x64\\Release\\'
 gResultsDir = 'TestResults'
-gReferenceDir = 'SystemTestReferenceResults'
+gReferenceDir = 'ReferenceResults'
+
+#default values
+gDefaultFrameTimeMargin = 0.05
+gDefaultLoadTimeMargin = 10
+gDefaultImageCompareMargin = 0.1
+gDefaultHangTimeDuration = 30
 
 class TestInfo(object):
     def __init__(self, name, configName):
         self.Name = name
         self.ConfigName = configName
-        self.LoadErrorMargin = 10
-        self.FrameErrorMargin = 0.05
+        self.LoadErrorMargin = gDefaultLoadTimeMargin
+        self.FrameErrorMargin = gDefaultFrameTimeMargin
     def getResultsFile(self):
         return self.Name + '_TestingLog.xml'
     def getBuildFailFile(self):
@@ -60,10 +65,10 @@ class SystemResult(object):
         self.Name = ''
         self.LoadTime = 0
         self.AvgFrameTime = 0
-        self.RefLoadTime = 0
-        self.RefAvgFrameTime = 0
-        self.LoadErrorMargin = 10
-        self.FrameErrorMargin = 0.05
+        self.RefLoadTime = -1
+        self.RefAvgFrameTime = -1
+        self.LoadErrorMargin = gDefaultLoadTimeMargin
+        self.FrameErrorMargin = gDefaultFrameTimeMargin
         self.CompareResults = []        
 
 class TestResults(object):
@@ -85,6 +90,7 @@ gLowLevelResultList = []
 gLowLevelResultSummary = TestResults()
 gSkippedList = []
 gGenRefResults = False
+gFailReasonsList = []
 
 # -1 smaller, 0 same, 1 larger
 def marginCompare(result, reference, margin):
@@ -117,6 +123,7 @@ def overwriteMove(filename, newLocation):
         return
 
 def compareImages(resultObj, testInfo, numScreenshots):
+    global gFailReasonsList
     for i in range(0, numScreenshots):
         testScreenshot = testInfo.getTestScreenshot(i)
         refScreenshot = testInfo.getReferenceScreenshot(i)
@@ -129,11 +136,14 @@ def compareImages(resultObj, testInfo, numScreenshots):
         result = result[:spaceIndex]
         resultObj.CompareResults.append(result)
         #if the images are sufficently different, save them in test results
-        if float(result) > 0.01:
+        if float(result) > gDefaultImageCompareMargin:
             imagesDir = testInfo.getResultsDir() + '\\Images'
             makeDirIfDoesntExist(imagesDir)
             overwriteMove(testScreenshot, imagesDir)
             overwriteMove(outFile, imagesDir)
+            gFailReasonsList.append(('For test ' + testInfo.getFullName() + ', screenshot ' +
+                testScreenshot + ' differs from ' + refScreenshot + ' by ' + result + 
+                ' average difference per pixel. (Exceeds threshold .01)'))
         #else just delete them
         else:
             os.remove(testScreenshot)
@@ -150,7 +160,7 @@ def logTestSkip(testName, reason):
     global gSkippedList
     gSkippedList.append((testName, reason))
 
-#args should be action(build, rebuild, clean), config(debug, release), and optionally project
+#args should be action(build, rebuild, clean), solution, config(debug, release), and optionally project
 #if no project given, performs action on entire solution
 def callBatchFile(batchArgs):
     numArgs = len(batchArgs)
@@ -175,10 +185,47 @@ def buildFail(fatal, testInfo):
     else:
         logTestSkip(testInfo.getFullName(), 'Build Failure')
 
-#Test Base tries to catch any thrown exceptions, but it's possible that the
-#program might crash in a different way
 def addCrash(testName):
     logTestSkip(testName, 'Unhandled Crash')
+
+def compareLowLevelReference(testInfo, testResult):
+    global gFailReasonsList
+    if not os.path.isfile(testInfo.getReferenceFile()):
+        gFailReasonsList.append(('For test ' + testInfo.getFullName() + 
+        ', could not find reference file ' + testInfo.getReferenceFile()))
+        return
+    refTag = getXMLTag(testInfo.getReferenceFile(), 'Summary')
+    if refTag == None: 
+        gFailReasonsList.append(('For test ' + testInfo.getFullName() + 
+        ', could not find reference file ' + testInfo.getReferenceFile()))
+        return
+    refTotal = int(refTag[0].attributes['TotalTests'].value)
+    if testResult.Total != refTotal:
+        gFailReasonsList.append((testInfo.getFullName() + ': Number of tests is ' +
+        str(testResult.Total) + ' which does not match ' + str(refTotal) + ' in reference'))
+    refPassed = int(refTag[0].attributes['PassedTests'].value)
+    if testResult.Passed != refPassed:
+        gFailReasonsList.append((testInfo.getFullName() + ': Number of passed tests is ' + 
+        str(testResult.Passed) + ' which does not match ' + str(refPassed) + ' in reference'))
+    refFailed = int(refTag[0].attributes['FailedTests'].value)
+    if testResult.Failed != refFailed:
+        gFailReasonsList.append((testInfo.getFullName() + ': Number of failed tests is ' + 
+        str(testResult.Failed) + ' which does not match ' + str(refFailed) + ' in reference'))
+    refCrashed = int(refTag[0].attributes['CrashedTests'].value)
+    if testResult.Crashed != refCrashed:
+        gFailReasonsList.append((testInfo.getFullName() + ': Number of crashed tests is ' +  
+        str(testResult.Crashed) + ' which does not match ' + str(refCrashed) + ' in reference'))
+
+def getXMLTag(xmlFilename, tagName):
+    try:
+        referenceDoc = minidom.parse(xmlFilename)
+    except ExpatError:
+        return None
+    tag = referenceDoc.getElementsByTagName(tagName)
+    if len(tag) == 0:
+        return None
+    else:
+        return tag
 
 def processLowLevelTest(xmlElement, testInfo):
     global gLowLevelResultList
@@ -192,9 +239,11 @@ def processLowLevelTest(xmlElement, testInfo):
     gLowLevelResultList.append(newResult)
     gLowLevelResultSummary.add(newResult)
     overwriteMove(testInfo.getResultsFile(), testInfo.getResultsDir())
+    compareLowLevelReference(testInfo, newResult)
 
 def processSystemTest(xmlElement, testInfo):
     global gSystemResultList
+    global gFailReasonsList
     newSysResult = SystemResult()
     newSysResult.Name = testInfo.getFullName()
     newSysResult.LoadTime = float(xmlElement[0].attributes['LoadTime'].value)
@@ -204,63 +253,28 @@ def processSystemTest(xmlElement, testInfo):
     numScreenshots = int(xmlElement[0].attributes['NumScreenshots'].value)
     referenceFile = testInfo.getReferenceFile()
     resultFile = testInfo.getResultsFile()
-    if os.path.isfile(referenceFile):
-        try:
-            referenceDoc = minidom.parse(referenceFile)
-        except ExpatError:
-            logTestSkip(testInfo.getFullName(), resultFile + ' was found, but is not correct xml')
-            newSysResult.RefLoadTime = -1
-            newSysResult.RefAvgFrameTime = -1
-            overwriteMove(resultFile, testInfo.getResultsDir())
-            return
-
-        refResults = referenceDoc.getElementsByTagName('SystemResults')
-        if len(refResults) != 1:
-            logTestSkip(testInfo.getFullName(), referenceFile + ' was found and is XML, but is improperly formatted')
-            newSysResult.RefLoadTime = -1
-            newSysResult.RefAvgFrameTime = -1
-        else:
-            newSysResult.RefLoadTime = float(refResults[0].attributes['LoadTime'].value)
-            newSysResult.RefAvgFrameTime = float(refResults[0].attributes['FrameTime'].value)
-            compareImages(newSysResult, testInfo, numScreenshots)
-    else:
-        print 'Could not find reference file ' + referenceFile + ' for comparison'
-        newSysResult.RefLoadTime = -1
-        newSysResult.RefAvgFrameTime = -1
+    if not os.path.isfile(referenceFile):
+        logTestSkip(testInfo.getFullName(), 'Could not find reference file ' + referenceFile + ' for comparison')
+        return 
+    refResults = getXMLTag(referenceFile, 'Summary')
+    if refResults == None:
+        logTestSkip(testInfo.getFullName(), 'Error getting xml data from reference file ' + referenceFile)
+        return
+    newSysResult.RefLoadTime = float(refResults[0].attributes['LoadTime'].value)
+    newSysResult.RefAvgFrameTime = float(refResults[0].attributes['FrameTime'].value)
+    #check avg fps
+    if marginCompare(newSysResult.AvgFrameTime, newSysResult.RefAvgFrameTime, newSysResult.FrameErrorMargin) == 1:
+        gFailReasonsList.append((newSysResult.Name + ': ' + str(newSysResult.AvgFrameTime) + 
+        ' average frame time is larger than reference ' + str(newSysResult.RefAvgFrameTime) +
+        ' considering error margin ' + str(newSysResult.FrameErrorMargin * 100) + '%'))
+    #check load time
+    if newSysResult.LoadTime > (newSysResult.RefLoadTime + newSysResult.LoadErrorMargin):
+        gFailReasonsList.append(newSysResult.Name + ': ' + (str(newSysResult.LoadTime) + 
+        ' load time is larger than reference ' + str(newSysResult.RefLoadTime) +
+        ' considering error margin ' + str(newSysResult.LoadErrorMargin) + ' seconds'))
+    compareImages(newSysResult, testInfo, numScreenshots)
     gSystemResultList.append(newSysResult)
     overwriteMove(resultFile, testInfo.getResultsDir())
-
-def processTestResult(testInfo):
-    resultFile = testInfo.getResultsFile()
-    if os.path.isfile(resultFile):
-        resultDir = testInfo.getResultsDir()
-        makeDirIfDoesntExist(resultDir)
-        try:
-            xmlDoc = minidom.parse(resultFile)
-        except ExpatError:
-            logTestSkip(testInfo.getFullName(), resultFile + ' was found, but is not correct xml')
-            overwriteMove(resultFile, resultDir)
-            return
-        lowLevelResults = xmlDoc.getElementsByTagName('Summary')
-        sysResults = xmlDoc.getElementsByTagName('SystemResults')
-        if len(lowLevelResults) == 1:
-            if gGenRefResults:
-                makeDirIfDoesntExist(testInfo.getReferenceDir())
-                overwriteMove(resultFile, testInfo.getReferenceDir())
-            else:
-                processLowLevelTest(lowLevelResults, testInfo)
-        elif len(sysResults) ==  1: 
-            if gGenRefResults:
-                #need to know how many ss to move into ref dir
-                numScreenshots = int(sysResults[0].attributes['NumScreenshots'].value)
-                addSystemTestReferences(testInfo, numScreenshots)
-            else:
-                processSystemTest(sysResults, testInfo)
-        else:
-            logTestSkip(testInfo.getFullName(), resultFile + ' was found and is XML, but is improperly formatted')
-            overwriteMove(resultFile, resultDir)
-    else:
-        logTestSkip(testInfo.Name, 'Unable to find result file ' + resultFile)
 
 def readTestList(buildTests):
     testList = open(gTestListFile)
@@ -268,37 +282,37 @@ def readTestList(buildTests):
         #strip off newline if there is one 
         if line[-1] == '\n':
             line = line[:-1]
-
+        #grab cmd line if exists
         cmdLineIndex = line.find(':')
         cmdLine = ''
         if cmdLineIndex != -1:
             cmdLine = line[cmdLineIndex + 1:]
             line = line[:cmdLineIndex]
-
+        #parse testing line
         testValues = line.split(' ')
         numValues = len(testValues)
-        if numValues >= 2:
-            testName = testValues[0]
-            configName = testValues[1].lower()
-            if not isConfigValid(configName):
-                logTestSkip(testInfo.getFullName(), 'Unrecognized config ' + configName)
-                continue
-
-            testInfo = TestInfo(testName, configName)
-            if numValues >= 3 and not testValues[2].isspace():
-                try:
-                    testInfo.LoadErrorMargin = float(testValues[2])
-                except:
-                    print 'Unable to convert ' + testValues[2] + ' to float. Using default Load Error Margin 10'
-            if numValues >= 4 and not testValues[3].isspace():
-                try:
-                    testInfo.FrameErrorMargin = float(testValues[3])
-                except:
-                    print 'Unable to convert ' + testValues[3] + ' to float. Using default Frame Error Margin .05'
-        else:
+        if numValues < 2:
             logTestSkip(line, 'Improperly formatted test request')
             continue
-
+        testName = testValues[0]
+        configName = testValues[1].lower()
+        if not isConfigValid(configName):
+            logTestSkip(testInfo.getFullName(), 'Unrecognized config ' + configName)
+            continue
+        testInfo = TestInfo(testName, configName)
+        if numValues >= 3 and testValues[2] and not testValues[2].isspace():
+            try:
+                testInfo.LoadErrorMargin = float(testValues[2])
+            except:
+                print ('Unable to convert ' + testValues[2] + 
+                    ' to float. Using default Load Error Margin ' + str(gDefaultLoadTimeMargin))
+        if numValues >= 4 and testValues[3] and not testValues[3].isspace():
+            try:
+                testInfo.FrameErrorMargin = float(testValues[3])
+            except:
+                print ('Unable to convert ' + testValues[3] + 
+                    ' to float. Using default Frame Error Margin ' + str(gDefaultFrameTimeMargin))
+        #build and run tests
         if buildTests:
             #if theres a cmd line, is system test, use falcor sln
             if cmdLine:
@@ -313,20 +327,44 @@ def readTestList(buildTests):
 
 def runTest(testInfo, cmdLine):
     testPath = testInfo.getTestPath()
+    if not os.path.exists(testPath):
+        logTestSkip(testInfo.getFullName(), 'Unable to find ' + testPath)
+        return
     try:
-        if os.path.exists(testPath):
-            p = subprocess.Popen([testPath, cmdLine])
-            start = time.time()
-            while p.returncode == None:
-                p.poll()
-                cur = time.time() - start
-                if cur > 30:
-                    p.kill()
-                    logTestSkip(testInfo.getFullName(), 'Test timed out ( > 30 seconds)')
-                    return
-            processTestResult(testInfo)
+        p = subprocess.Popen([testPath, cmdLine])
+        #run test until timeout or return
+        start = time.time()
+        while p.returncode == None:
+            p.poll()
+            cur = time.time() - start
+            if cur > gDefaultHangTimeDuration:
+                p.kill()
+                logTestSkip(testInfo.getFullName(), ('Test timed out ( > ' + 
+                    str(gDefaultHangTimeDuration) + ' seconds)'))
+                return
+        #ensure results file exists
+        if not os.path.isfile(testInfo.getResultsFile()):
+            logTestSkip(testInfo.getFullName(), 'Failed to open ' + testInfo.getResultsFile())
+            return
+        #get xml from results file
+        summary = getXMLTag(testInfo.getResultsFile(), 'Summary')
+        if summary == None:
+            logTestSkip(testInfo.getFullName(), 'Error getting xml data from ' + testInfo.getResultsFile())
+            return
+        #gen ref system
+        if cmdLine and gGenRefResults:
+            numScreenshots = int(summary[0].attributes['NumScreenshots'].value)
+            addSystemTestReferences(testInfo, numScreenshots)
+        #process system
+        elif cmdLine:
+            processSystemTest(summary, testInfo)
+        #gen ref low level
+        elif gGenRefResults:
+            makeDirIfDoesntExist(testInfo.getReferenceDir())
+            overwriteMove(testInfo.getResultsFile(), testInfo.getReferenceDir())
+        #process low level
         else:
-            logTestSkip(testInfo.getFullName(), 'Unable to find ' + testPath)
+            processLowLevelTest(summary, testInfo)
     except subprocess.CalledProcessError:
         addCrash(testInfo.getFullName())
 
@@ -378,7 +416,6 @@ def systemTestResultToHTML(result):
         html += '<td><font>' 
     html += str(result.LoadTime) + '</font></td>\n'
     html += '<td>' + str(result.RefLoadTime) + '</td>\n'
-
     html += '<td>' + str(result.FrameErrorMargin * 100) + '</td>\n'
     compareResult = marginCompare(result.AvgFrameTime, result.RefAvgFrameTime, result.FrameErrorMargin)
     if(compareResult == 1):
@@ -389,7 +426,6 @@ def systemTestResultToHTML(result):
         html += '<td><font>' 
     html += str(result.AvgFrameTime) + '</font></td>\n'   
     html += '<td>' + str(result.RefAvgFrameTime) + '</td>\n'
-
     html += '</tr>\n'
     return html
 
@@ -398,7 +434,6 @@ def getSystemTestResultsTable():
     html += '<tr>\n'
     html += '<th colspan=\'7\'>System Test Results</th>\n'
     html += '</tr>\n'
-
     html += '<th>Test</th>\n'
     html += '<th>Load Time Error Margin Secs</th>\n'
     html += '<th>Load Time</th>\n'
@@ -424,14 +459,15 @@ def getImageCompareResultsTable():
     for i in range (0, max):
         html += '<th>SS' + str(i) + '</th>\n'
     for result in gSystemResultList:
-        html += '<tr>\n'
-        html += '<td>' + result.Name + '</td>\n'
-        for compare in result.CompareResults:
-            if float(compare) > 0.1:
-                html += '<td bgcolor="red"><font color="white">' + str(compare) + '</font></td>\n'
-            else:
-                html += '<td>' + str(compare) + '</td>\n'
-        html += '</tr>\n'
+        if len(result.CompareResults) > 0:
+            html += '<tr>\n'
+            html += '<td>' + result.Name + '</td>\n'
+            for compare in result.CompareResults:
+                if float(compare) > gDefaultImageCompareMargin:
+                    html += '<td bgcolor="red"><font color="white">' + str(compare) + '</font></td>\n'
+                else:
+                    html += '<td>' + str(compare) + '</td>\n'
+            html += '</tr>\n'
     html += '</table>\n'
     return html
 
@@ -481,73 +517,19 @@ def updateRepo():
     subprocess.call(['git', 'pull', 'origin', 'TestingFramework'])
     subprocess.call(['git', 'checkout', 'TestingFramework'])
 
-def compareSummaryFiles(todayFile, yesterdayFile):
-    todayHtml =  str(open(todayFile, 'r').read())
-    yesterdayHtml = str(open(yesterdayFile, 'r').read())
-    todaySoup = BeautifulSoup(todayHtml, 'html.parser')
-    yesterdaySoup = BeautifulSoup(yesterdayHtml, 'html.parser')
-
-    todayTables = todaySoup.findAll('table')
-    yesterdayTables = yesterdaySoup.findAll('table')
-    #just do straight compare for everything except sys test results
-    if todayTables[0] != yesterdayTables[0]:
-        return 'Low Level Test result tables do not match'
-    elif todayTables[2] != yesterdayTables[2]:
-        return 'Image Comparison Test result tables do not match'
-    elif todayTables[3] != yesterdayTables[3]:
-        return 'Skipped Test tables do not match'
-
-    rows = todayTables[1].findAll('tr')
-    yRows = yesterdayTables[1].findAll('tr')
-    for row, yRow in zip(rows, yRows):
-        cols = row.findAll('td') 
-        yCols = yRow.findAll('td')
-        loadErrorMargin = 0
-        frameErrorMargin = 0
-        for i in range (0, len(cols)):
-            #make sure same test
-            if i == 0:
-                if cols[i].string != yCols[i].string:
-                    return ('Tests ' + cols[i].string + ' and ' + yCols[i].string +
-                    ' occupy the same spot in the table but do not match.')
-            #grab the smaller of the two error margins for comparison
-            elif i == 1:
-                loadErrorMargin = min(float(cols[i].string), float(yCols[i].string)) 
-            elif i == 2:
-                if float(cols[i].string) > (float(yCols[i].string) + loadErrorMargin):
-                    return ('For test ' + cols[0].string + ', Load time ' + cols[i].string +
-                    ' is longer than yesterday\'s load time ' +  yCols[i].string +
-                    ' plus error margin ' + str(loadErrorMargin))
-            #grab the smaller of the two error margins for comparison
-            elif i == 4:
-                frameErrorMargin = min(float(cols[i].string), float(yCols[i].string))/100.0 
-            elif i == 5:                 
-                if marginCompare(float(cols[i].string), float(yCols[i].string), frameErrorMargin) == 1:
-                    return ('For test ' + cols[0].string + ', Avg Frame Time ' + cols[i].string +
-                     ' is longer than yesterday\'s avg frame time ' + yCols[i].string +
-                     ' considering error margin ' + str(frameErrorMargin * 100) + '%')
-    #if get to the end without finding difference, return empty string 
-    return ''  
-
 def sendEmail():
-    #try to find result dir from yesterday
     todayStr = (date.today()).strftime("%m-%d-%y")
-    yesterdayStr = (date.today() - timedelta(days=1)).strftime("%m-%d-%y")
-    slashIndex = gResultsDir.find('\\')
-    yesterdayDir = gResultsDir[:slashIndex + 1] + yesterdayStr
-    yesterdayFile = yesterdayDir + '\\TestSummary.html'
     todayFile = gResultsDir + '\\TestSummary.html'
     body = 'Attached is the testing summary for ' + todayStr
-    if os.path.isdir(yesterdayDir) and os.path.isfile(yesterdayFile):
-        compareError = compareSummaryFiles(todayFile, yesterdayFile)
-        if not compareError:
-            subject = '[Unchanged] '
-        else:
-            subject = '[Different] '
-            body += '. \nSource of difference: ' + compareError
+    if len(gFailReasonsList) > 0 or len(gSkippedList) > 0:
+        subject = '[Different] '
+        body += '.\nReasons for Difference'
+        for reason in gFailReasonsList:
+            body += '.\n' + reason
+        for name, skip in gSkippedList:
+            body += '.\n' + name + ': ' + skip
     else:
-        subject = '[Missing Yesterday\'s Summary for Comparison] '
-
+        subject = '[Unchanged] '
     subject += 'Falcor Automated Testing for ' + todayStr
     sender = 'clavelle@nvidia.com'
     recipients = str(open(gEmailRecipientFile, 'r').read());

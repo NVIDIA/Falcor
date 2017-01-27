@@ -1,7 +1,8 @@
-ModelViewer released3d12 1 .10 : -loadtime -perfframes 200 300 500 1000 -ssframes 25 50 75 100 -shutdown 2000
+ShaderBuffers released3d12 1 .10 : -loadtime -perfframes 200 300 500 1000 -ssframes 25 50 75 100 -shutdown 2000
 BlendStateTest debugd3d12
 BlendStateTest released3d12
 ComputeShader released3d12 5 .25 : -loadtime -perfframes 200 300 500 1250 -ssframes 25 50 75 100 125 150 -shutdown 2000
 RasterizerStateTest DeBuGd3D12
 RasterizerStateTest RELEASED3D12
-ShaderToy released3d12 5 .15 : -loadtime -perfframes 200 300 500 2000 -ssframes 25 50 75 -shutdown 3000
+ShaderToy released3d12 2 .15 : -loadtime -perfframes 200 300 500 2000 -shutdown 3000
+MultiPassPostProcess released3d12 : -loadtime -perfframes 300 400 -ssframes 10 20 30 40 -shutdown 1000

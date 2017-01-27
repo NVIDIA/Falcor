@@ -647,7 +647,7 @@ namespace Falcor
             of.open(shortName + "_TestingLog.xml");
             of << "<?xml version = \"1.0\" encoding = \"UTF-8\"?>\n";
             of << "<TestLog>\n";
-            of << "<SystemResults\n";
+            of << "<Summary\n";
             of << "\tLoadTime=\"" << std::to_string(loadTime) << "\"\n";
             of << "\tFrameTime=\"" << std::to_string(frameTime) << "\"\n";
             of << "\tNumScreenshots=\"" << std::to_string(numScreenshots) << "\"\n";
