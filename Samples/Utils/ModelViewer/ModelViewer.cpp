@@ -261,6 +261,12 @@ void ModelViewer::onLoad()
     mpProgramVars = GraphicsVars::create(mpProgram->getActiveVersion()->getReflector());
     mpGraphicsState = GraphicsState::create();
     mpGraphicsState->setProgram(mpProgram);
+
+    std::vector<ArgList::Arg> filenames = mArgList.getValues("loadmodel");
+    if (!filenames.empty())
+    {
+        loadModelFromFile(filenames[0].asString());
+    }
 }
 
 void ModelViewer::onFrameRender()

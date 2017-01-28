@@ -1,28 +1,19 @@
-ShaderBuffers released3d12 1 .10 : -loadtime -perfframes 200 300 500 1000 -ssframes 25 50 75 100 -shutdown 2000
-BlendStateTest debugd3d12
-BlendStateTest debugd3d12
-BlendStateTest debugd3d12
-BlendStateTest debugd3d12
-BlendStateTest debugd3d12
 BlendStateTest debugd3d12
 BlendStateTest released3d12
-BlendStateTest released3d12
-BlendStateTest released3d12
-BlendStateTest released3d12
-BlendStateTest released3d12
-ComputeShader released3d12 5 .25 : -loadtime -perfframes 200 300 500 1250 -ssframes 25 50 75 100 125 150 -shutdown 2000
 RasterizerStateTest DeBuGd3D12
 RasterizerStateTest RELEASED3D12
-ComputeShader released3d12 5 .25 : -loadtime -perfframes 200 300 500 1250 -ssframes 25 50 75 100 125 150 -shutdown 2000
-ShaderToy released3d12 2 .15 : -loadtime -perfframes 200 300 500 2000 -shutdown 3000
-ShaderToy released3d12 2 .15 : -loadtime -perfframes 200 300 500 2000 -shutdown 3000
-ComputeShader released3d12 5 .25 : -loadtime -perfframes 200 300 500 1250 -ssframes 25 50 75 100 125 150 -shutdown 2000
-MultiPassPostProcess released3d12 : -ssframes 10 20 30 40 -shutdown 1000
-MultiPassPostProcess released3d12 : -loadtime -perfframes 300 400 -ssframes 10 20 30 40 -shutdown 1000
-MultiPassPostProcess released3d12 : -loadtime -perfframes 300 400 -ssframes 10 20 30 40 -shutdown 1000
-ShaderToy released3d12 2 .15 : -loadtime -perfframes 200 300 500 2000 -shutdown 3000
-ShaderToy released3d12 2 .15 : -loadtime -perfframes 200 300 500 2000 -shutdown 3000
-ShaderToy released3d12 2 .15 : -loadtime -perfframes 200 300 500 2000 -shutdown 3000
-ShaderToy released3d12 2 .15 : -loadtime -perfframes 200 300 500 2000 -shutdown 3000
-ShaderToy released3d12 2 .15 : -loadtime -perfframes 200 300 500 2000 -shutdown 3000
-ShaderToy released3d12 2 .15 : -loadtime -perfframes 200 300 500 2000 -shutdown 3000
+ShaderBuffers released3d12 1 .25 : -loadtime -perfframes 200 300 500 1000 -ssframes 50 -shutdown 2000 
+ComputeShader released3d12 5 .45 : -loadtime -perfframes 200 300 500 1250 -ssframes 50 -shutdown 2000 -loadimage TestAssets\\TestTex.png 
+ComputeShader released3d12 5 .45 : -loadtime -perfframes 200 300 500 1250 -ssframes 50 -shutdown 2000 -loadimage TestAssets\\TestTex.png -pixelate 
+ComputeShader released3d12 5 .45 : -loadtime -perfframes 200 300 500 1250 -ssframes 50 -shutdown 2000 -loadimage TestAssets\\TestTex2.png 
+ComputeShader released3d12 5 .45 : -loadtime -perfframes 200 300 500 1250 -ssframes 50 -shutdown 2000 -loadimage TestAssets\\TestTex2.png -pixelate 
+ShaderToy released3d12 2 .25 : -loadtime -perfframes 200 300 500 2000 -shutdown 3000
+MultiPassPostProcess released3d12 10 .35 : -loadtime -perfframes 300 400 -ssframes 40 -shutdown 1000 -loadimage TestAssets\\TestTex.png 
+MultiPassPostProcess released3d12 10 .35 : -loadtime -perfframes 300 400 -ssframes 40 -shutdown 1000 -loadimage TestAssets\\TestTex.png -radialblur 
+MultiPassPostProcess released3d12 10 .35 : -loadtime -perfframes 300 400 -ssframes 40 -shutdown 1000 -loadimage TestAssets\\TestTex.png -radialblur -grayscale 
+MultiPassPostProcess released3d12 10 .35 : -loadtime -perfframes 300 400 -ssframes 40 -shutdown 1000 -loadimage TestAssets\\TestTex2.png 
+MultiPassPostProcess released3d12 10 .35 : -loadtime -perfframes 300 400 -ssframes 40 -shutdown 1000 -loadimage TestAssets\\TestTex2.png -radialblur 
+MultiPassPostProcess released3d12 10 .35 : -loadtime -perfframes 300 400 -ssframes 40 -shutdown 1000 -loadimage TestAssets\\TestTex2.png -radialblur -grayscale 
+ModelViewer released3d12 10 .35 : -loadtime -perfframes 300 400 -ssframes 50 -shutdown 1000 -loadmodel C:\\Users\\clavelle\\Desktop\\FalcorGitHub\\Media\\dragon.bin 
+ModelViewer released3d12 10 .35 : -loadtime -perfframes 300 400 -ssframes 50 -shutdown 1000 -loadmodel C:\\Users\\clavelle\\Desktop\\FalcorGitHub\\Media\\teapot.obj 
+ModelViewer released3d12 10 .35 : -loadtime -perfframes 300 400 -ssframes 50 -shutdown 1000 -loadmodel C:\\Users\\clavelle\\Desktop\\FalcorGitHub\\Media\\ogre\\bs_rest.obj 

@@ -371,11 +371,11 @@ def runTest(testInfo, cmdLine):
                 logTestSkip(testInfo.getFullName(), ('Test timed out ( > ' + 
                     str(gDefaultHangTimeDuration) + ' seconds)'))
                 return
-        testInfo.determineIndex()
         #ensure results file exists
         if not os.path.isfile(testInfo.getResultsFile()):
             logTestSkip(testInfo.getFullName(), 'Failed to open ' + testInfo.getResultsFile())
             return
+        testInfo.determineIndex()
         #get xml from results file
         summary = getXMLTag(testInfo.getResultsFile(), 'Summary')
         if summary == None:
