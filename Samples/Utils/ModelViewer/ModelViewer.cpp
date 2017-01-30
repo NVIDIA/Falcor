@@ -267,6 +267,12 @@ void ModelViewer::onLoad()
     {
         loadModelFromFile(filenames[0].asString());
     }
+
+    std::vector<ArgList::Arg> cameraRadius = mArgList.getValues("cameraradius");
+    if (!cameraRadius.empty())
+    {
+        mModelViewCameraController.setModelParams(mpModel->getCenter(), cameraRadius[0].asFloat(), 1.f);
+    }
 }
 
 void ModelViewer::onFrameRender()

@@ -158,9 +158,16 @@ def compareImages(resultObj, testInfo, numScreenshots):
         result = p.communicate()[0]
         spaceIndex = result.find(' ')
         result = result[:spaceIndex]
-        resultObj.CompareResults.append(result)
         #if the images are sufficently different, save them in test results
-        if float(result) > gDefaultImageCompareMargin:
+        try:
+            resultVal = float(result)
+        except:
+            gFailReasonsList.append(('For test ' + testInfo.getFullName() + 
+                ' failed to compare screenshot ' + testScreenshot + ' with ref ' + refScreenshot))
+            resultObj.CompareResults.append(-1)
+            continue
+        resultObj.CompareResults.append(resultVal)
+        if resultVal > gDefaultImageCompareMargin:
             imagesDir = testInfo.getResultsDir() + '\\Images'
             makeDirIfDoesntExist(imagesDir)
             overwriteMove(testScreenshot, imagesDir)
@@ -311,6 +318,9 @@ def readTestList(buildTests):
         #strip off newline if there is one 
         if line[-1] == '\n':
             line = line[:-1]
+        #end cmd line with space
+        if line[-1] != ' ':
+            line += ' '
         #grab cmd line if exists
         cmdLineIndex = line.find(':')
         cmdLine = ''
@@ -435,25 +445,32 @@ def getLowLevelTestResultsTable():
     return html
 
 def systemTestResultToHTML(result):
+    #if missing data for both load time and frame time, no reason for table entry
+    if ((result.LoadTime == 0 or result.RefLoadTime == 0) and 
+        (result.AvgFrameTime == 0 or result.RefAvgFrameTime == 0)):
+        return ''
+
     html = '<tr>'
     html += '<td>' + result.Name + '</td>\n'
-    html += '<td>' + str(result.LoadErrorMargin) + '</td>\n'
-    #if dont have real load time data, no reason to color
+    #if dont have real load time data, dont put it in table
     if result.LoadTime == 0 or result.RefLoadTime == 0:
-        html += '<td><font>'
+        html += '<td></td><td></td><td></td>'
     else:
+        html += '<td>' + str(result.LoadErrorMargin) + '</td>\n'
         if result.LoadTime > (result.RefLoadTime + result.LoadErrorMargin):
             html += '<td bgcolor="red"><font color="white">' 
         elif result.LoadTime < result.RefLoadTime:
             html += '<td bgcolor="green"><font color="white">' 
         else:
             html += '<td><font>' 
-    html += str(result.LoadTime) + '</font></td>\n'
-    html += '<td>' + str(result.RefLoadTime) + '</td>\n'
-    html += '<td>' + str(result.FrameErrorMargin * 100) + '</td>\n'
+        html += str(result.LoadTime) + '</font></td>\n'
+        html += '<td>' + str(result.RefLoadTime) + '</td>\n'
+
+    #if dont have real frame time data, dont put it in table
     if result.AvgFrameTime == 0 or result.RefAvgFrameTime == 0:
-        html += '<td><font>'
+        html += '<td></td><td></td><td></td>'
     else:
+        html += '<td>' + str(result.FrameErrorMargin * 100) + '</td>\n'
         compareResult = marginCompare(result.AvgFrameTime, result.RefAvgFrameTime, result.FrameErrorMargin)
         if(compareResult == 1):
             html += '<td bgcolor="red"><font color="white">' 
@@ -461,8 +478,9 @@ def systemTestResultToHTML(result):
             html += '<td bgcolor="green"><font color="white">' 
         else:
             html += '<td><font>' 
-    html += str(result.AvgFrameTime) + '</font></td>\n'   
-    html += '<td>' + str(result.RefAvgFrameTime) + '</td>\n'
+        html += str(result.AvgFrameTime) + '</font></td>\n'   
+        html += '<td>' + str(result.RefAvgFrameTime) + '</td>\n'
+
     html += '</tr>\n'
     return html
 
