@@ -29,7 +29,11 @@
 #include <iostream>
 
 TestBase::TestBase()
-{}
+{
+    mTestName = getExecutableName();
+    //slice off '.exe'
+    mTestName = mTestName.substr(0, mTestName.size() - 4);
+}
 
 TestBase::~TestBase()
 {
@@ -61,11 +65,6 @@ void TestBase::run()
     GenerateXML(xmlStrings);
 }
 
-std::string TestBase::GetDerivedName()
-{
-    return mDerivedName;
-}
-
 std::vector<TestBase::TestData> TestBase::runTests()
 {
     std::vector<TestData> results;
@@ -92,7 +91,7 @@ void TestBase::GenerateXML(const std::vector<std::string>& xmlStrings)
 {
     std::ofstream of;
     
-    of.open(mDerivedName + "_TestingLog_0.xml");
+    of.open(mTestName + "_TestingLog_0.xml");
     of << "<?xml version = \"1.0\" encoding = \"UTF-8\"?>\n";
     of << "<TestLog>\n";
     of << "<Summary\n";

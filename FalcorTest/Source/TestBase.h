@@ -30,8 +30,6 @@
 
 using namespace Falcor;
 
-//.name() gives Class X, substr is to remove the class prefix and just get classname
-#define REGISTER_NAME mDerivedName = std::string(typeid(*this).name()).substr(6, std::string::npos);
 #define ADD_FUNC(x) class x : public TestBase::TestFunction { public: TestData operator ()() override; };
 #define TESTING_FUNC(x, y) TestBase::TestData x::y::operator()()
 
@@ -60,14 +58,13 @@ public:
     virtual ~TestBase();
     void init();
     void run();
-    std::string GetDerivedName();
 
 protected:
     TestBase();
     virtual void addTests();
 
     //Used to gen correct filename in base class method
-    std::string mDerivedName; 
+    std::string mTestName; 
     std::vector<TestData> mpTestResults;
 
     class TestFunction
@@ -116,8 +113,4 @@ private:
 
     std::string XMLFromTestResult(const TestData& r);
     ResultSummary mResultSummary;
-    
-    //could add more robust crash detection where test index is spit out to 
-    //script, so script knows how to resume testing without worry of failure
-    //uint32_t mTestIndex;
 };

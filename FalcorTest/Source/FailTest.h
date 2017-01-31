@@ -30,9 +30,6 @@
 
 class FailTest : public TestBase
 {
-public:
-    FailTest();
-
 private:
     ADD_FUNC(TestFail)
     void addTests() override;

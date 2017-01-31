@@ -25,9 +25,7 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#include "Falcor.h" //don't actually use this, just want to make sure project 
-//is properly set up like other falcor projects
-#include <iostream>
+#include <fstream>
 
 int main()
 {

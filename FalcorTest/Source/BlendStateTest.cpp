@@ -28,11 +28,6 @@
 #include "BlendStateTest.h"
 #include <iostream>
 
-BlendStateTest::BlendStateTest() : mpBlendState(nullptr)
-{
-    REGISTER_NAME;
-}
-
 void BlendStateTest::addTests()
 {
     addTestToList<TestCreate>();

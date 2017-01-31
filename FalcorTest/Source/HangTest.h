@@ -30,9 +30,6 @@
 
 class HangTest : public TestBase
 {
-public:
-    HangTest();
-
 private:
     void addTests() override;
     ADD_FUNC(TestHang);

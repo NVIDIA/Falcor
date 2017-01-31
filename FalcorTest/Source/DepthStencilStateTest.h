@@ -26,20 +26,19 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 #pragma once
-#include "Falcor.h"
-#include "SystemTestBase.h"
+#include "TestBase.h"
 
-class OgreSystemTest : public SystemTestBase
+class DepthStencilStateTest : public TestBase
 {
-public:
-    OgreSystemTest();
-
 private:
-    void load() override;
-    void render() override;
-    void shutdown() override;
+    class TestDesc : public DepthStencilState::Desc
+    {
+        friend class DepthStencilStateTest;
+    };
 
-    GraphicsState::SharedPtr mpGraphicsState;
-    GraphicsVars::SharedPtr mpGraphicsVars;
-    GraphicsProgram::SharedPtr mpProgram;
+    ADD_FUNC(TestCreate)
+    void addTests() override;
+
+    static bool doStatesMatch(const DepthStencilState::SharedPtr state, const TestDesc& desc);
+    static bool doStencilStatesMatch(const DepthStencilState::StencilDesc& a, const DepthStencilState::StencilDesc& b);
 };

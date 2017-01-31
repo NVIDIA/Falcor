@@ -27,12 +27,6 @@
 ***************************************************************************/
 #include "FailTest.h"
 
-
-FailTest::FailTest()
-{
-    REGISTER_NAME
-}
-
 void FailTest::addTests()
 {
     addTestToList<TestFail>();

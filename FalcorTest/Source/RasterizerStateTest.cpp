@@ -29,11 +29,6 @@
 #include <iostream>
 #include <limits>
 
-RasterizerStateTest::RasterizerStateTest() :mpRasterizerState(nullptr)
-{
-    REGISTER_NAME;
-}
-
 void RasterizerStateTest::addTests()
 {
     addTestToList<TestCreate>();

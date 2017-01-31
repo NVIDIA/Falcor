@@ -11,8 +11,8 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{57E7D34A-60A4-48AB-9F9D-5ECDA9EB1AAA}</ProjectGuid>
-    <RootNamespace>OgreSystemTest</RootNamespace>
+    <ProjectGuid>{96EF73E2-572A-43E4-8A1E-AFDF18673EFF}</ProjectGuid>
+    <RootNamespace>DepthStencilStateTest</RootNamespace>
     <WindowsTargetPlatformVersion>10.0.14393.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -75,10 +75,10 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\Source\OgreSystemTest.h" />
+    <ClCompile Include="..\Source\DepthStencilStateTest.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\Source\OgreSystemTest.cpp" />
+    <ClInclude Include="..\Source\DepthStencilStateTest.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

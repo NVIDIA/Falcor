@@ -30,9 +30,6 @@
 
 class BlendStateTest : public TestBase
 {
-public:
-    BlendStateTest();
-
 private:
     class TestDesc : public BlendState::Desc
     {
@@ -41,13 +38,7 @@ private:
 
     ADD_FUNC(TestCreate)
     ADD_FUNC(TestRtArray)
-
     void addTests() override;
 
-    //TestResult TestCreate();
-    //TestResult TestRtArray();
     static bool doStatesMatch(const BlendState::SharedPtr state, const TestDesc& desc);
-
-
-    BlendState::SharedPtr mpBlendState;
 };

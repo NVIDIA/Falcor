@@ -15,5 +15,5 @@ MultiPassPostProcess released3d12 : -ssframes 40 -shutdown 1000 -loadimage TestA
 MultiPassPostProcess released3d12 : -ssframes 40 -shutdown 1000 -loadimage TestAssets\\TestTex2.png
 MultiPassPostProcess released3d12 : -ssframes 40 -shutdown 1000 -loadimage TestAssets\\TestTex2.png -radialblur
 MultiPassPostProcess released3d12 : -ssframes 40 -shutdown 1000 -loadimage TestAssets\\TestTex2.png -radialblur -grayscale
-ModelViewer released3d12 : -loadtime -perfframes 250 1250 -ssframes 50 -shutdown 2500 -cameraradius 3 -loadmodel C:\\Users\\clavelle\\Desktop\\FalcorGitHub\\Media\\classroom-minimal.obj
-ModelViewer released3d12 : -loadtime -perfframes 250 1250 -ssframes 50 -shutdown 2500 -cameraradius 700 -loadmodel C:\\Users\\clavelle\\Desktop\\FalcorGitHub\\Media\\sponza.obj
+ModelViewer released3d12 10 .10 : -loadtime -perfframes 250 1250 -ssframes 50 -shutdown 2500 -cameraradius 3 -loadmodel C:\\Users\\clavelle\\Desktop\\FalcorGitHub\\Media\\classroom-minimal.obj
+ModelViewer released3d12 10 .10 : -loadtime -perfframes 250 1250 -ssframes 50 -shutdown 2500 -cameraradius 700 -loadmodel C:\\Users\\clavelle\\Desktop\\FalcorGitHub\\Media\\sponza.obj

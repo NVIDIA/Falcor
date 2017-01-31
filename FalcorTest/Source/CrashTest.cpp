@@ -1,10 +1,5 @@
 #include "CrashTest.h"
 
-CrashTest::CrashTest()
-{
-    REGISTER_NAME;
-}
-
 void CrashTest::addTests()
 {
     addTestToList<TestThrow>();

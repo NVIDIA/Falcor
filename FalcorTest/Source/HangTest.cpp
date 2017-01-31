@@ -27,11 +27,6 @@
 ***************************************************************************/
 #include "HangTest.h"
 
-HangTest::HangTest()
-{
-    REGISTER_NAME;
-}
-
 void HangTest::addTests()
 {
     addTestToList<TestHang>();
@@ -41,7 +36,7 @@ TESTING_FUNC(HangTest, TestHang)
 {
     while (true)
     {}
-    return TestBase::TestData(TestBase::TestResult::Fail, mName, "This should never happen");
+    return TestBase::TestData(TestBase::TestResult::Fail, mName, "This should never happen, escaped infinite while loop");
 }
 
 int main()

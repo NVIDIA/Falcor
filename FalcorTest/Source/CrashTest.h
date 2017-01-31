@@ -30,14 +30,10 @@
 
 class CrashTest : public TestBase
 {
-public:
-    CrashTest();
-
 private:
     ADD_FUNC(TestThrow)
     ADD_FUNC(TestVector)
     ADD_FUNC(TestAssert)
     ADD_FUNC(TestCrashHandling)
-
     void addTests() override;
 };

@@ -30,19 +30,15 @@
 
 class RasterizerStateTest : public TestBase
 {
-public:
-    RasterizerStateTest();
-
 private:
     class TestDesc : public RasterizerState::Desc 
     {
         friend class RasterizerStateTest;
     };
 
-    void addTests() override;
     ADD_FUNC(TestCreate)
     ADD_FUNC(TestCreateStress)
-    static bool doStatesMatch(const RasterizerState::SharedPtr state, const TestDesc& desc);
+    void addTests() override;
 
-    RasterizerState::SharedPtr mpRasterizerState;
+    static bool doStatesMatch(const RasterizerState::SharedPtr state, const TestDesc& desc);
 };
