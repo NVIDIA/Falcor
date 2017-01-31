@@ -30,9 +30,9 @@ gDefaultImageCompareMargin = 0.1
 gDefaultHangTimeDuration = 30
 
 class TestInfo(object):
-    def determineIndex(self):
+    def determineIndex(self, generateReference):
         initialFilename = self.getResultsFile()
-        if gGenRefResults:
+        if generateReference:
             while os.path.isfile(self.getReferenceFile()):
                 self.Index += 1
         else:
@@ -90,7 +90,7 @@ class SystemResult(object):
         self.FrameErrorMargin = gDefaultFrameTimeMargin
         self.CompareResults = []        
 
-class TestResults(object):
+class LowLevelResult(object):
     def __init__(self):
         self.Name = ''
         self.Total = 0
@@ -106,9 +106,7 @@ class TestResults(object):
 #Globals
 gSystemResultList = []
 gLowLevelResultList = []
-gLowLevelResultSummary = TestResults()
 gSkippedList = []
-gGenRefResults = False
 gFailReasonsList = []
 
 # -1 smaller, 0 same, 1 larger
@@ -158,7 +156,6 @@ def compareImages(resultObj, testInfo, numScreenshots):
         result = p.communicate()[0]
         spaceIndex = result.find(' ')
         result = result[:spaceIndex]
-        #if the images are sufficently different, save them in test results
         try:
             resultVal = float(result)
         except:
@@ -167,6 +164,7 @@ def compareImages(resultObj, testInfo, numScreenshots):
             resultObj.CompareResults.append(-1)
             continue
         resultObj.CompareResults.append(resultVal)
+        #if the images are sufficently different, save them in test results
         if resultVal > gDefaultImageCompareMargin:
             imagesDir = testInfo.getResultsDir() + '\\Images'
             makeDirIfDoesntExist(imagesDir)
@@ -261,15 +259,15 @@ def getXMLTag(xmlFilename, tagName):
 
 def processLowLevelTest(xmlElement, testInfo):
     global gLowLevelResultList
-    global gLowLevelResultSummary
-    newResult = TestResults()
+    newResult = LowLevelResult()
     newResult.Name = testInfo.getFullName()
     newResult.Total = int(xmlElement[0].attributes['TotalTests'].value)
     newResult.Passed = int(xmlElement[0].attributes['PassedTests'].value)
     newResult.Failed = int(xmlElement[0].attributes['FailedTests'].value)
     newResult.Crashed = int(xmlElement[0].attributes['CrashedTests'].value)
     gLowLevelResultList.append(newResult)
-    gLowLevelResultSummary.add(newResult)
+    #result at index 0 is summary
+    gLowLevelResultList[0].add(newResult)
     makeDirIfDoesntExist(testInfo.getResultsDir())
     overwriteMove(testInfo.getResultsFile(), testInfo.getResultsDir())
     compareLowLevelReference(testInfo, newResult)
@@ -312,7 +310,7 @@ def processSystemTest(xmlElement, testInfo):
     makeDirIfDoesntExist(testInfo.getResultsDir())
     overwriteMove(resultFile, testInfo.getResultsDir())
 
-def readTestList(buildTests):
+def readTestList(buildTests, generateReference):
     testList = open(gTestListFile)
     for line in testList.readlines():
         #strip off newline if there is one 
@@ -362,9 +360,9 @@ def readTestList(buildTests):
                 if callBatchFile(['build', 'FalcorTest.sln', configName, testName]):
                     buildFail(False, testInfo)
                     continue
-        runTest(testInfo, cmdLine)
+        runTest(testInfo, cmdLine, generateReference)
 
-def runTest(testInfo, cmdLine):
+def runTest(testInfo, cmdLine, generateReference):
     testPath = testInfo.getTestPath()
     if not os.path.exists(testPath):
         logTestSkip(testInfo.getFullName(), 'Unable to find ' + testPath)
@@ -385,21 +383,22 @@ def runTest(testInfo, cmdLine):
         if not os.path.isfile(testInfo.getResultsFile()):
             logTestSkip(testInfo.getFullName(), 'Failed to open ' + testInfo.getResultsFile())
             return
-        testInfo.determineIndex()
+        #check for name conflicts
+        testInfo.determineIndex(generateReference)
         #get xml from results file
         summary = getXMLTag(testInfo.getResultsFile(), 'Summary')
         if summary == None:
             logTestSkip(testInfo.getFullName(), 'Error getting xml data from ' + testInfo.getResultsFile())
             return
-        #gen ref system
-        if cmdLine and gGenRefResults:
+        #gen system ref
+        if cmdLine and generateReference:
             numScreenshots = int(summary[0].attributes['NumScreenshots'].value)
             addSystemTestReferences(testInfo, numScreenshots)
         #process system
         elif cmdLine:
             processSystemTest(summary, testInfo)
-        #gen ref low level
-        elif gGenRefResults:
+        #gen low level ref
+        elif generateReference:
             makeDirIfDoesntExist(testInfo.getReferenceDir())
             overwriteMove(testInfo.getResultsFile(), testInfo.getReferenceDir())
         #process low level
@@ -437,8 +436,6 @@ def getLowLevelTestResultsTable():
     html += '<th>Passed</th>\n'
     html += '<th>Failed</th>\n'
     html += '<th>Crashed</th>\n'
-    gLowLevelResultSummary.Name = 'Summary'
-    html += lowLevelTestResultToHTML(gLowLevelResultSummary)
     for result in gLowLevelResultList:
         html += lowLevelTestResultToHTML(result)
     html += '</table>\n'
@@ -503,6 +500,7 @@ def getSystemTestResultsTable():
 
 def getImageCompareResultsTable():
     max = 0
+    #table needs max num of screenshots plus one columns 
     for result in gSystemResultList:
         if len(result.CompareResults) > max:
             max = len(result.CompareResults)
@@ -570,7 +568,7 @@ def cleanScreenShots(ssDir):
 
 def updateRepo():
     subprocess.call(['git', 'pull', 'origin', 'TestingFramework'])
-    subprocess.call(['git', 'checkout', 'TestingFramework'])
+    subprocess.call(['git', 'checkout', 'origin/TestingFramework'])
 
 def sendFatalFailEmail(failMsg):
     subject = '[FATAL TESTING ERROR] '
@@ -604,7 +602,7 @@ def sendEmail(subject, body, attachment):
 
 def main():
     global gResultsDir
-    global gGenRefResults
+    global gLowLevelResultList
     parser = argparse.ArgumentParser()
     parser.add_argument('-nb', '--nobuild', action='store_true', help='run without rebuilding Falcor and test apps')
     parser.add_argument('-np', '--nopull', action='store_true', help='run without pulling TestingFramework')
@@ -614,11 +612,14 @@ def main():
     args = parser.parse_args()
 
     if args.generatereference:
-        gGenRefResults = True
         if os.path.isdir(gReferenceDir):
             shutil.rmtree(gReferenceDir, ignore_errors=True)
-        else:
+        try:
+            time.sleep(1)
             os.makedirs(gReferenceDir)
+        except:
+            print 'Fatal Error, Failed to create reference dir.'
+            sys.exit(1)
 
     if not args.nopull:
         updateRepo()
@@ -632,11 +633,13 @@ def main():
     dateStr = date.today().strftime("%m-%d-%y")
     gResultsDir += '\\' + dateStr
     if os.path.isdir(gResultsDir):
+        #remove date subdir if exists
         shutil.rmtree(gResultsDir, ignore_errors=True)
         try:
+            time.sleep(1)
             os.makedirs(gResultsDir)
-        except PermissionError, info:
-            sendFatalFailEmail('Fatal Error, Failed to create test result folder. Exception: ', info)
+        except:
+            sendFatalFailEmail('Fatal Error, Failed to create test result folder')
             sys.exit(1)
  
     if not args.nobuild:
@@ -663,13 +666,17 @@ def main():
         if callBatchFile(['build', '../Falcor.sln', 'released3d12', 'Falcor']):
             testInfo = TestInfo('Falcor', 'released3d12')
             buildFail(True, testInfo)
-        #TODO, build other falcor configs, or better, only build configs listed in the test file
 
-    readTestList(not args.nobuild)
-    if not gGenRefResults:
+    if not args.generatereference:
+        resultSummary = LowLevelResult()
+        resultSummary.name = 'Summary'
+        gLowLevelResultList.append(resultSummary)
+
+    readTestList(not args.nobuild, args.generatereference)
+    if not args.generatereference:
         outputHTML(args.showsummary)
 
-    if not args.noemail and not gGenRefResults:
+    if not args.noemail and not args.generatereference:
         sendTestingEmail()
 
 if __name__ == '__main__':

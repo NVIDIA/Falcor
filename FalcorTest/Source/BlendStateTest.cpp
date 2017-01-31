@@ -71,47 +71,12 @@ TESTING_FUNC(BlendStateTest, TestRtArray)
         BlendState::BlendFunc blendFunc = static_cast<BlendState::BlendFunc>(i % numBlendFuncs);
 
         desc.setRtParams(i, blendOp, blendOp, blendFunc, blendFunc, blendFunc, blendFunc);
+        BlendState::SharedPtr state = BlendState::create(desc);
+        if (!doStatesMatch(state, desc))
+            return TestData(TestResult::Fail, mName, "Render target desc doesn't match ones used to create");
     }
 
-    BlendState::SharedPtr state = BlendState::create(desc);
-
-    //Below is out of bounds testing, having trouble catching an exception from it, 
-    //deal with this later when back to focusing on writing low level tests
-
-    //assert in vector will stop this in debug, but you can do it in release
-    //Interesting, doing this will fuck up the program for the next time you call it
-//#ifndef _DEBUG
-    //try 
-    //{
-    //    BlendState::Desc::RenderTargetDesc rtDesc = mpBlendState->getRtDesc(99);
-    //    rtDesc.writeMask.writeRed = true;
-    //    rtDesc.writeMask.writeGreen = true;
-    //    rtDesc.writeMask.writeBlue = true;
-    //    rtDesc.writeMask.writeAlpha = true;
-    //    rtDesc.blendEnabled = true;
-    //}
-    //catch (...)
-    //{
-    //    std::cout << "Caught"; //<< ia.what() << std::endl;
-    //}
-    //print random Memory
-    //std::cout << rtDesc.writeMask.writeRed << ", " << rtDesc.writeMask.writeGreen <<
-    //    ", " << rtDesc.writeMask.writeBlue << ", " << rtDesc.writeMask.writeAlpha <<
-    //    ", " << rtDesc.blendEnabled << std::endl;
-
-    //Write to random memory
-
-
-    //print updating values (confirming it actually let me write to memory)
-    //std::cout << rtDesc.writeMask.writeRed << ", " << rtDesc.writeMask.writeGreen <<
-    //    ", " << rtDesc.writeMask.writeBlue << ", " << rtDesc.writeMask.writeAlpha <<
-    //    ", " << rtDesc.blendEnabled << std::endl;
-//#endif
-
-    if (doStatesMatch(state, desc))
-        return TestData(TestResult::Pass, mName);
-    else
-        return TestData(TestResult::Fail, mName, "Render target desc doesn't match ones used to create");
+    return TestData(TestResult::Pass, mName);
 }
 
 bool BlendStateTest::doStatesMatch(const BlendState::SharedPtr state, const TestDesc& desc)

@@ -162,14 +162,20 @@ namespace Falcor
     protected:
         struct Task
         {
-            bool operator<(const Task& rhs) { return mStartFrame < rhs.mStartFrame; }
-            enum class Type 
-            { 
-                LoadTime, 
-                MeasureFps, 
+            enum class Type
+            {
+                LoadTime,
+                MeasureFps,
                 ScreenCapture,
-                Shutdown
+                Shutdown,
+                Uninitialized
             };
+
+            Task() : mStartFrame(0u), mEndFrame(0u), mTask(Type::Uninitialized), mResult(0.f) {}
+            Task(uint32_t startFrame, uint32_t endFrame, Task::Type t) :
+                mStartFrame(startFrame), mEndFrame(endFrame), mTask(t), mResult(0.f) {}
+            bool operator<(const Task& rhs) { return mStartFrame < rhs.mStartFrame; }
+
             uint32_t mStartFrame;
             uint32_t mEndFrame;
             Type mTask;

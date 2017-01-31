@@ -489,10 +489,7 @@ namespace Falcor
         //Load time
         if (mArgList.argExists("loadtime"))
         {
-            Task newTask;
-            newTask.mTask = Task::Type::LoadTime;
-            newTask.mStartFrame = 2u;
-            newTask.mEndFrame = 3u;
+            Task newTask(2u, 3u, Task::Type::LoadTime);
             mTestTasks.push_back(newTask);
         }
 
@@ -500,10 +497,8 @@ namespace Falcor
         std::vector<ArgList::Arg> shutdownFrame = mArgList.getValues("shutdown");
         if (!shutdownFrame.empty())
         {
-            Task newTask;
-            newTask.mTask = Task::Type::Shutdown;
-            newTask.mStartFrame = shutdownFrame[0].asUint();
-            newTask.mEndFrame = newTask.mStartFrame + 1;
+            uint32_t startFame = shutdownFrame[0].asUint();
+            Task newTask(startFame, startFame + 1, Task::Type::Shutdown);
             mTestTasks.push_back(newTask);
         }
 
@@ -515,10 +510,8 @@ namespace Falcor
             toggleText(false);
             for (uint32_t i = 0; i < ssFrames.size(); ++i)
             {
-                Task newTask;
-                newTask.mTask = Task::Type::ScreenCapture;
-                newTask.mStartFrame = ssFrames[i].asUint();
-                newTask.mEndFrame = newTask.mStartFrame + 1;
+                uint32_t startFrame = ssFrames[i].asUint();
+                Task newTask(startFrame, startFrame + 1, Task::Type::ScreenCapture);
                 mTestTasks.push_back(newTask);
             }
         }
@@ -534,10 +527,7 @@ namespace Falcor
             //only add if valid range
             if (rangeEnd > rangeStart)
             {
-                Task newTask;
-                newTask.mTask = Task::Type::MeasureFps;
-                newTask.mStartFrame = rangeStart;
-                newTask.mEndFrame = rangeEnd;
+                Task newTask(rangeStart, rangeEnd, Task::Type::MeasureFps);
                 mTestTasks.push_back(newTask);
             }
             else
