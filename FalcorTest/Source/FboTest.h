@@ -25,15 +25,19 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#include <fstream>
+#pragma once
+#include "TestBase.h"
 
-int main()
+class FboTest : public TestBase
 {
-    std::ofstream of;
-    of.open("BadXMLTest_TestingLog_0.xml");
-    of << "<?xml version = \"1.0\" encoding = \"UTF-8\"?>\n";
-    of << "<Dummy>\n";
-    of << "</Dummy>\n";
-    of.close();
-    return 0;
-}
+private:
+    ADD_FUNC(TestDefault)
+    ADD_FUNC(TestCreate)
+    ADD_FUNC(TestCaptureToFile)
+    //Does these also include get texture versions? this will probably use checkstatus
+    ADD_FUNC(TestDepthStencilAttach)
+    ADD_FUNC(TestColorAttach)
+    ADD_FUNC(TestZeroAttachment)
+    ADD_FUNC(TestGetWidthHeight)
+    void addTests() override;
+};

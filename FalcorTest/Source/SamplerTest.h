@@ -25,15 +25,19 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#include <fstream>
+#pragma once
+#include "TestBase.h"
 
-int main()
+class SamplerTest : public TestBase
 {
-    std::ofstream of;
-    of.open("BadXMLTest_TestingLog_0.xml");
-    of << "<?xml version = \"1.0\" encoding = \"UTF-8\"?>\n";
-    of << "<Dummy>\n";
-    of << "</Dummy>\n";
-    of.close();
-    return 0;
-}
+private:
+    class TestDesc : public Sampler::Desc
+    {
+        friend class SamplerTest;
+    };
+
+    ADD_FUNC(TestCreate);
+    void addTests() override;
+
+    static bool doStatesMatch(Sampler::SharedPtr sampler, TestDesc desc);
+};
