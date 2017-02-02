@@ -51,7 +51,7 @@ class TestInfo(object):
     def getResultsFile(self):
         return self.Name + '_TestingLog_' + str(self.Index) + '.xml'
     def getBuildFailFile(self):
-        return self.Name + '_BuildFailLog_.txt'
+        return self.Name + '_BuildFailLog.txt'
     def getResultsDir(self):
         return gResultsDir + '\\' + self.ConfigName
     def getReferenceDir(self):
@@ -205,12 +205,16 @@ def callBatchFile(batchArgs):
         print 'Incorrect batch file call, found ' + string(numArgs) + ' in arg list :' + batchArgs.tostring()
         return 1
 
-def buildFail(fatal, testInfo):
+def buildFail(fatal, testInfo, sendFailEmail):
     resultsDir = testInfo.getResultsDir()
     makeDirIfDoesntExist(resultsDir)
     overwriteMove(testInfo.getBuildFailFile(), resultsDir)
     if fatal:
-        sendFatalFailEmail('Fatal error, failed to build ' + testInfo.getFullName())
+        errorMsg = 'Fatal error, failed to build ' + testInfo.getFullName()
+        if sendFailEmail:
+            sendFatalFailEmail(errorMsg)
+        else:
+            print errorMsg
         sys.exit(1)
     else:
         logTestSkip(testInfo.getFullName(), 'Build Failure')
@@ -310,7 +314,7 @@ def processSystemTest(xmlElement, testInfo):
     makeDirIfDoesntExist(testInfo.getResultsDir())
     overwriteMove(resultFile, testInfo.getResultsDir())
 
-def readTestList(buildTests, generateReference):
+def readTestList(buildTests, generateReference, sendFailEmail):
     testList = open(gTestListFile)
     for line in testList.readlines():
         #strip off newline if there is one 
@@ -354,11 +358,11 @@ def readTestList(buildTests, generateReference):
             #if theres a cmd line, is system test, use falcor sln
             if cmdLine:
                 if callBatchFile(['build', '../Falcor.sln', configName, testName]):
-                    buildFail(False, testInfo)
+                    buildFail(False, testInfo, sendFailEmail)
                     continue
             else:
                 if callBatchFile(['build', 'FalcorTest.sln', configName, testName]):
-                    buildFail(False, testInfo)
+                    buildFail(False, testInfo, sendFailEmail)
                     continue
         runTest(testInfo, cmdLine, generateReference)
 
@@ -389,6 +393,11 @@ def runTest(testInfo, cmdLine, generateReference):
         summary = getXMLTag(testInfo.getResultsFile(), 'Summary')
         if summary == None:
             logTestSkip(testInfo.getFullName(), 'Error getting xml data from ' + testInfo.getResultsFile())
+            makeDirIfDoesntExist(testInfo.getReferenceDir())
+            if generateReference:
+                overwriteMove(testInfo.getResultsFile(), testInfo.getReferenceDir())
+            else:
+                overwriteMove(testInfo.getResultsFile(), testInfo.getResultsDir())
             return
         #gen system ref
         if cmdLine and generateReference:
@@ -672,9 +681,15 @@ def main():
         resultSummary.Name = 'Summary'
         gLowLevelResultList.append(resultSummary)
 
-    readTestList(not args.nobuild, args.generatereference)
+    readTestList(not args.nobuild, args.generatereference, not args.noemail)
     if not args.generatereference:
         outputHTML(args.showsummary)
+    else:
+        print '\nRan into the following issues while generating reference...'
+        for name, skip in gSkippedList:
+            print name + ': ' + skip
+        for reason in gFailReasonsList:
+            print reason 
 
     if not args.noemail and not args.generatereference:
         sendTestingEmail()
