@@ -56,7 +56,17 @@ namespace Falcor
             int32_t value;          ///< User defined index. Should be unique between different options.
             std::string label;      ///< Label of the dropdown option.
         };
-        using dropdown_list = std::vector < DropdownValue > ;
+
+        using DropdownList = std::vector <DropdownValue>;
+
+        struct RadioButton
+        {
+            int32_t buttonID;  ///< User defined index. Should be unique between different options.
+            std::string label; ///< Label of the radio button.
+            bool sameLine;     ///< Whether the button should appear on the same line as the previous widget/button.
+        };
+
+        using RadioButtonGroup = std::vector<RadioButton>;
 
         /** Create a new GUI object. Each object is essentially a container for a GUI window
         */
@@ -88,6 +98,14 @@ namespace Falcor
             \param[in] sameLine Optional. If set to true, the widget will appear on the same line as the previous widget
         */
         bool addButton(const char label[], bool sameLine = false);
+
+        /** Adds a group of radio buttons.
+            \param[in] buttons List of buttons to show.
+            \param[out] activeID If a button was clicked, activeID will be set to the ID of the clicked button.
+
+            \return Whether activeID changed.
+        */
+        bool addRadioButtons(const RadioButtonGroup& buttons, int32_t& activeID);
 
         /** Begin a collapsible group block
             returns true if the group is expanded, otherwise false. Use it to avoid making unnecessary calls
@@ -191,7 +209,7 @@ namespace Falcor
             \param[in] sameLine Optional. If set to true, the widget will appear on the same line as the previous widget
             \return true if the value changed, otherwise false
         */
-        bool addDropdown(const char label[], const dropdown_list& values, uint32_t& var, bool sameLine = false);
+        bool addDropdown(const char label[], const DropdownList& values, uint32_t& var, bool sameLine = false);
 
         /** Render a tooltip. This will display a small question mark next to the last label item rendered and will display the tooltip if the user hover over it
             \param[in] tip The tooltip's text

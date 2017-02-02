@@ -44,6 +44,7 @@ namespace Falcor
     size_t SceneRenderer::sCameraDataOffset = ConstantBuffer::kInvalidOffset;
     size_t SceneRenderer::sWorldMatOffset = ConstantBuffer::kInvalidOffset;
     size_t SceneRenderer::sMeshIdOffset = ConstantBuffer::kInvalidOffset;
+    size_t SceneRenderer::sDrawIDOffset = ConstantBuffer::kInvalidOffset;
 
     const char* SceneRenderer::kPerMaterialCbName = "InternalPerMaterialCB";
     const char* SceneRenderer::kPerFrameCbName = "InternalPerFrameCB";
@@ -72,6 +73,7 @@ namespace Falcor
             sWorldMatOffset = pPerMeshCbData->getVariableData("gWorldMat[0]")->location;
             sMeshIdOffset = pPerMeshCbData->getVariableData("gMeshId")->location;
             sCameraDataOffset = pPerFrameCbData->getVariableData("gCam.viewMat")->location;
+            sDrawIDOffset = pPerMeshCbData->getVariableData("gDrawId[0]")->location;
         }
     }
 
@@ -101,6 +103,11 @@ namespace Falcor
         return true;
     }
 
+    bool SceneRenderer::setPerModelInstanceData(RenderContext* pContext, const Scene::ModelInstance::SharedPtr& pModelInstance, uint32_t instanceID, const CurrentWorkingData& currentData)
+    {
+        return true;
+    }
+
     bool SceneRenderer::setPerMeshData(RenderContext* pContext, const CurrentWorkingData& currentData)
     {
         return true;
@@ -127,7 +134,14 @@ namespace Falcor
 
     bool SceneRenderer::setPerMaterialData(RenderContext* pContext, const CurrentWorkingData& currentData)
     {
-        currentData.pMaterial->setIntoProgramVars(pContext->getGraphicsVars().get(), kPerMaterialCbName, "gMaterial");
+        ProgramVars* pGraphicsVars = pContext->getGraphicsVars().get();
+
+        ConstantBuffer* pCB = pGraphicsVars->getConstantBuffer(kPerMaterialCbName).get();
+        if (pCB != nullptr)
+        {
+            currentData.pMaterial->setIntoProgramVars(pGraphicsVars, pCB, "gMaterial");
+        }
+
         return true;
     }
 
@@ -209,8 +223,7 @@ namespace Falcor
 
     void SceneRenderer::renderModelInstance(RenderContext* pContext, const Scene::ModelInstance::SharedPtr& pModelInstance, Camera* pCamera, CurrentWorkingData& currentData)
     {
-        const Model* pModel = pModelInstance->getObject().get();;
-        currentData.pModel = pModel;
+        const Model* pModel = pModelInstance->getObject().get();
 
         if (setPerModelData(pContext, currentData))
         {
@@ -284,12 +297,17 @@ namespace Falcor
 
         for (uint32_t modelID = 0; modelID < mpScene->getModelCount(); modelID++)
         {
+            currentData.pModel = mpScene->getModel(modelID).get();
+
             for (uint32_t instanceID = 0; instanceID < mpScene->getModelInstanceCount(modelID); instanceID++)
             {
                 auto& pInstance = mpScene->getModelInstance(modelID, instanceID);
                 if (pInstance->isVisible())
                 {
-                    renderModelInstance(pContext, pInstance, pCamera, currentData);
+                    if (setPerModelInstanceData(pContext, pInstance, instanceID, currentData))
+                    {
+                        renderModelInstance(pContext, pInstance, pCamera, currentData);
+                    }
                 }
             }
         }

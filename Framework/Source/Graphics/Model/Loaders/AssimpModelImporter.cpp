@@ -462,6 +462,8 @@ namespace Falcor
             return false;
         }
 
+        mpModel->setFilename(filename);
+
         return true;
     }
 

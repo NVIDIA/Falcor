@@ -63,6 +63,55 @@ namespace Falcor
         return quat;
     }
 
+    /** Calculates a world-space ray direction from a screen-space mouse pos.
+        \param[in] mousePos Normalized coordinates in the range [0, 1] with (0, 0) being the top-left of the screen. Same coordinate space as MouseEvent.
+        \param[in] viewMat View matrix from the camera.
+        \param[in] projMat Projection matrix from the camera.
+        \return World space ray direction coming from the camera position in the direction of the mouse position
+    */
+    inline glm::vec3 mousePosToWorldRay(const glm::vec2& mousePos, const glm::mat4& viewMat, const glm::mat4& projMat)
+    {
+        // Convert from [0, 1] to [-1, 1] range, and flip Y
+        const float x = mousePos.x * 2.0f - 1.0f;
+        const float y = (1.0f - mousePos.y) * 2.0f - 1.0f;
+
+        // NDC/Clip
+        glm::vec4 ray(x, y, -1.0f, 1.0f);
+
+        // View
+        ray = glm::inverse(projMat) * ray;
+        ray.z = -1.0f;
+        ray.w = 0.0f;
+
+        // World
+        return glm::normalize(glm::inverse(viewMat) * ray);
+    }
+
+    /** Creates a rotation matrix from individual basis vectors.
+        \param[in] forward Forward vector.
+        \param[in] up Up vector.
+        \return 3x3 rotation matrix.
+    */
+    inline glm::mat3 createMatrixFromBasis(const glm::vec3& forward, const glm::vec3& up)
+    {
+        glm::vec3 f = glm::normalize(forward);
+        glm::vec3 s = glm::normalize(glm::cross(up, forward));
+        glm::vec3 u = glm::cross(f, s);
+
+        return glm::mat3(s, u, f);
+    }
+
+    /** Creates a rotation matrix from look-at coordinates.
+        \param[in] position Object's position.
+        \param[in] target Object's look-at target.
+        \param[in] up Object's up vector.
+        \return 3x3 rotation matrix.
+    */
+    inline glm::mat3 createMatrixFromLookAt(const glm::vec3& position, const glm::vec3& target, const glm::vec3& up)
+    {
+        return createMatrixFromBasis(target - position, up);
+    }
+
     /** Projects a 2D coordinate onto a unit sphere
         \param xy The 2D coordinate. if x and y are in the [0,1) range, then a z value can be calculate. Otherwise, xy is normalized and z is zero.
     */

@@ -30,6 +30,8 @@
 #include <set>
 #include "Graphics/Paths/PathEditor.h"
 #include "Utils/Picking/Picking.h"
+#include "Graphics/Scene/Editor/Gizmo.h"
+#include "Graphics/Scene/Editor/SceneEditorRenderer.h"
 
 namespace Falcor
 {
@@ -46,18 +48,19 @@ namespace Falcor
         void renderGui(Gui* pGui);
         ~SceneEditor();
 
-        void renderSelection();
+        const Camera::SharedPtr& getEditorCamera() const { return mpEditorScene->getActiveCamera(); }
+
+        void update(double currentTime);
+        void render();
+
         bool onMouseEvent(const MouseEvent& mouseEvent);
         bool onKeyEvent(const KeyboardEvent& keyEvent);
         void onResizeSwapChain();
 
-        void setActiveModelInstance(const Scene::ModelInstance::SharedPtr& pModelInstance);
-
     private:
+
         SceneEditor(const Scene::SharedPtr& pScene, const uint32_t modelLoadFlags);
         Scene::SharedPtr mpScene;
-        uint32_t mActiveModel = 0;
-        int32_t mActiveModelInstance = 0;
 
         struct
         {
@@ -90,7 +93,6 @@ namespace Falcor
         void setInstanceScaling(Gui* pGui);
         void setInstanceRotation(Gui* pGui);
 
-
         // Camera functions
         void setCameraFOV(Gui* pGui);
         void setCameraDepthRange(Gui* pGui);
@@ -103,6 +105,10 @@ namespace Falcor
         void setCameraPosition(Gui* pGui);
         void setCameraTarget(Gui* pGui);
         void setCameraUp(Gui* pGui);
+
+        // Light functions
+        void addPointLight(Gui* pGui);
+        void addDirectionalLight(Gui* pGui);
 
         // Paths
         void pathEditorFinishedCB();
@@ -121,28 +127,114 @@ namespace Falcor
         uint32_t mModelLoadFlags = 0;
         uint32_t mSceneLoadFlags = 0;
 
-        // Gets and caches Euler rotations from model instances in the scene
-        void initializeEulerRotationsCache();
+        // #TODO get from user
+        RenderContext::SharedPtr mpRenderContext;
 
+        //
+        // Initialization
+        //
+
+        // Initializes Editor helper-scenes, Picking, and Rendering
+        void initializeEditorScenes();
+
+        // Initializes Editor's representation of the scene being edited
+        void initializeEditorObjects();
+
+        // Model Instance Euler Angle Helpers
+        const glm::vec3& getActiveInstanceEulerRotation();
+        void setActiveInstanceEulerRotation(const glm::vec3& rotation);
         std::vector<std::vector<glm::vec3>> mInstanceEulerRotations;
 
+        //
+        // Editor Objects
+        //
+        static const float kCameraModelScale;
+        static const float kLightModelScale;
+
+        // Update transform of gizmos and camera models
+        void updateEditorObjectTransforms();
+
+        // Helper function to update the transform of a single camera model from it's respective camera in the master scene
+        void updateCameraModelTransform(uint32_t cameraID);
+
+        // Rebuilds the lookup map between light model instances and master scene point lights
+        void rebuildLightIDMap();
+
+        // Helper to apply gizmo transforms to the object being edited
+        void applyGizmoTransform();
+
+        // Types of objects selectable in the editor
+        enum class ObjectType
+        {
+            None,
+            Model,
+            Camera,
+            Light
+        };
+
+        //
         // Picking
-        void addToSelection(const Scene::ModelInstance::SharedPtr& pModelInstance, bool append);
+        //
+
+        void select(const Scene::ModelInstance::SharedPtr& pModelInstance);
         void deselect();
 
-        RenderContext::SharedPtr mpRenderContext;
-        Picking::UniquePtr mpPicking;
+        void setActiveModelInstance(const Scene::ModelInstance::SharedPtr& pModelInstance);
 
-        bool mControlDown = false;
-        CpuTimer mMouseHoldTimer;
-        
-        GraphicsState::SharedPtr mpGraphicsState;
-        GraphicsProgram::SharedPtr mpWireframeProgram;
-        RasterizerState::SharedPtr mpBiasWireframeRS;
-        DepthStencilState::SharedPtr mpDepthTestDS;
+        // ID's in master scene
+        uint32_t mSelectedModel = 0;
+        int32_t mSelectedModelInstance = 0;
+        uint32_t mSelectedCamera = 0;
+        uint32_t mSelectedLight = 0;
 
-        Scene::SharedPtr mpSelectionScene; // Holds selection in model selection mode
-        SceneRenderer::UniquePtr mpSelectionSceneRenderer;
+        Picking::UniquePtr mpScenePicker;
+
         std::set<Scene::ModelInstance*> mSelectedInstances;
+        ObjectType mSelectedObjectType = ObjectType::None;
+
+        CpuTimer mMouseHoldTimer;
+
+        //
+        // Gizmos
+        //
+
+        static const Gui::RadioButtonGroup kGizmoSelectionButtons;
+
+        void setActiveGizmo(Gizmo::Type type, bool show);
+
+        bool mGizmoBeingDragged = false;
+        Gizmo::Type mActiveGizmoType = Gizmo::Type::Translate;
+        Gizmo::Gizmos mGizmos;
+
+        //
+        // Editor
+        //
+
+        // Find instance ID of a model instance in the editor scene. Returns uint -1 if not found.
+        uint32_t findEditorModelInstanceID(uint32_t modelID, const Scene::ModelInstance::SharedPtr& pInstance) const;
+
+        // Wireframe Rendering
+        GraphicsState::SharedPtr mpSelectionGraphicsState;
+        GraphicsProgram::SharedPtr mpColorProgram;
+        GraphicsVars::SharedPtr mpColorProgramVars;
+
+        // Separate scene for rendering selected model wireframe
+        Scene::SharedPtr mpSelectionScene;
+        SceneRenderer::UniquePtr mpSelectionSceneRenderer;
+
+        // Separate scene for editor gizmos and objects
+        Scene::SharedPtr mpEditorScene;
+        SceneEditorRenderer::UniquePtr mpEditorSceneRenderer;
+        Picking::UniquePtr mpEditorPicker;
+
+        Model::SharedPtr mpCameraModel;
+        Model::SharedPtr mpLightModel;
+
+        uint32_t mEditorCameraModelID = (uint32_t)-1;
+        uint32_t mEditorLightModelID = (uint32_t)-1;
+
+        // Maps between light models and master scene light ID
+        std::unordered_map<uint32_t, uint32_t> mLightIDEditorToScene;
+        std::unordered_map<uint32_t, uint32_t> mLightIDSceneToEditor;
     };
 }

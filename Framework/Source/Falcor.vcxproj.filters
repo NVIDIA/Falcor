@@ -64,9 +64,6 @@
     <ClCompile Include="Graphics\Scene\SceneUtils.cpp">
       <Filter>Graphics\Scene</Filter>
     </ClCompile>
-    <ClCompile Include="Graphics\Scene\SceneEditor.cpp">
-      <Filter>Graphics\Scene</Filter>
-    </ClCompile>
     <ClCompile Include="Graphics\Camera\CameraController.cpp">
       <Filter>Graphics\Camera</Filter>
     </ClCompile>
@@ -459,6 +456,15 @@
     <ClCompile Include="Utils\Picking\Picking.cpp">
       <Filter>Utils\Picking</Filter>
     </ClCompile>
+    <ClCompile Include="Graphics\Scene\Editor\SceneEditor.cpp">
+      <Filter>Graphics\Scene\Editor</Filter>
+    </ClCompile>
+    <ClCompile Include="Graphics\Scene\Editor\Gizmo.cpp">
+      <Filter>Graphics\Scene\Editor</Filter>
+    </ClCompile>
+    <ClCompile Include="Graphics\Scene\Editor\SceneEditorRenderer.cpp">
+      <Filter>Graphics\Scene\Editor</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Graphics\Model\Animation.h">
@@ -549,9 +555,6 @@
       <Filter>Graphics\Model</Filter>
     </ClInclude>
     <ClInclude Include="Graphics\Scene\SceneUtils.h">
-      <Filter>Graphics\Scene</Filter>
-    </ClInclude>
-    <ClInclude Include="Graphics\Scene\SceneEditor.h">
       <Filter>Graphics\Scene</Filter>
     </ClInclude>
     <ClInclude Include="Graphics\Camera\Camera.h">
@@ -1534,6 +1537,15 @@
     <ClInclude Include="Utils\Picking\Picking.h">
       <Filter>Utils\Picking</Filter>
     </ClInclude>
+    <ClInclude Include="Graphics\Scene\Editor\SceneEditor.h">
+      <Filter>Graphics\Scene\Editor</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\Scene\Editor\Gizmo.h">
+      <Filter>Graphics\Scene\Editor</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\Scene\Editor\SceneEditorRenderer.h">
+      <Filter>Graphics\Scene\Editor</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Externals">
@@ -1679,6 +1691,9 @@
     </Filter>
     <Filter Include="Utils\Picking">
       <UniqueIdentifier>{db06632d-289e-4e1c-85b4-7d6f5e41c73b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Graphics\Scene\Editor">
+      <UniqueIdentifier>{3b164303-abe4-428c-bd50-4368ab7b8933}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -2063,9 +2078,6 @@
   <ItemGroup>
     <FxCompile Include="Data\DefaultVS.hlsl">
       <Filter>Data\Framework</Filter>
-    </FxCompile>
-    <FxCompile Include="..\..\Media\Picking.ps.hlsl">
-      <Filter>Utils\Picking</Filter>
     </FxCompile>
     <FxCompile Include="Data\Framework\PickingVS.hlsl">
       <Filter>Data\Framework</Filter>

@@ -147,7 +147,7 @@ void ModelViewer::onGuiRender()
     mpGui->addCheckBox("Wireframe", mDrawWireframe);
     mpGui->addCheckBox("TriLinear Filtering", mUseTriLinearFiltering);
 
-    Gui::dropdown_list cullList;
+    Gui::DropdownList cullList;
     cullList.push_back({ 0, "No Culling" });
     cullList.push_back({ 1, "Backface Culling" });
     cullList.push_back({ 2, "Frontface Culling" });
@@ -169,7 +169,7 @@ void ModelViewer::onGuiRender()
         mpGui->endGroup();
     }
 
-    Gui::dropdown_list cameraDropdown;
+    Gui::DropdownList cameraDropdown;
     cameraDropdown.push_back({ ModelViewCamera, "Model-View" });
     cameraDropdown.push_back({ FirstPersonCamera, "First-Person" });
     cameraDropdown.push_back({ SixDoFCamera, "6 DoF" });
@@ -188,7 +188,7 @@ void ModelViewer::setModelUIElements()
         mActiveAnimationID = sBindPoseAnimationID;
 
         mpGui->addCheckBox(animateStr, mAnimate);
-        Gui::dropdown_list list;
+        Gui::DropdownList list;
         list.resize(mpModel->getAnimationsCount() + 1);
         list[0].label = "Bind Pose";
         list[0].value = sBindPoseAnimationID;

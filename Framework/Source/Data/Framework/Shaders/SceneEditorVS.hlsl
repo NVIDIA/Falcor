@@ -1,5 +1,5 @@
 /***************************************************************************
-# Copyright (c) 2015, NVIDIA CORPORATION. All rights reserved.
+# Copyright (c) 2017, NVIDIA CORPORATION. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -25,35 +25,25 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#version 440
-#include "../HlslGlslCommon.h"
+#include "SceneEditorCommon.hlsli"
 
-CONSTANT_BUFFER(PerFrameCB, 0)
+EDITOR_VS_OUT main(VS_IN vIn)
 {
-	mat4 gvpTransform;
-	vec3 gFontColor;
-};
+    EDITOR_VS_OUT vOut;
+    vOut.vOut = defaultVS(vIn);
 
-Texture2D gFontTex;
-
-vec4 calcColor(vec2 texC)
-{
-	vec4 color = gFontTex.Load(ivec3(texC, 0));
-	color.rgb = gFontColor;
-	return color;
-}
-
-#ifdef FALCOR_HLSL
-vec4 main(float2 texC  : TEXCOORD) : SV_TARGET0
-{
-	return calcColor(texC);
-}
-
-#elif defined FALCOR_GLSL
-in vec2 texC;
-out vec4 fragColor;
-void main()
-{
-	fragColor = calcColor(texC);
-}
+#ifdef PICKING
+    vOut.drawID = gDrawId[vIn.instanceID];
 #endif
+
+#ifdef CULL_REAR_SECTION
+    // Get instance origin
+    float4x4 worldMtx = getWorldMat(vIn);
+    float3 instancePos = float3(worldMtx._m03, worldMtx._m13, worldMtx._m23);
+
+    // Direction to vertex
+    vOut.toVertex = vOut.vOut.posW - instancePos;
+#endif
+
+    return vOut;
+}

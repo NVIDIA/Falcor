@@ -40,6 +40,7 @@ void SceneEditorSample::onGuiRender()
     if(mpEditor)
     {
         mpEditor->renderGui(mpGui.get());
+        mpGui->addCheckBox("Preview Camera", mCameraLiveViewMode);
     }
 }
 
@@ -68,12 +69,17 @@ void SceneEditorSample::initNewScene()
         mpRenderer = SceneRenderer::create(mpScene);
         mpEditor = SceneEditor::create(mpScene, Model::GenerateTangentSpace);
 
-        mpProgram = GraphicsProgram::createFromFile("", "SceneEditorSample.fs");
-        std::string lights;
-        getSceneLightString(mpScene.get(), lights);
-        mpProgram->addDefine("_LIGHT_SOURCES", lights);
-        mpVars = GraphicsVars::create(mpProgram->getActiveVersion()->getReflector());
+        initShader();
     }
+}
+
+void SceneEditorSample::initShader()
+{
+    mpProgram = GraphicsProgram::createFromFile("", "SceneEditorSample.fs");
+    std::string lights;
+    getSceneLightString(mpScene.get(), lights);
+    mpProgram->addDefine("_LIGHT_SOURCES", lights);
+    mpVars = GraphicsVars::create(mpProgram->getActiveVersion()->getReflector());
 }
 
 void SceneEditorSample::loadScene()
@@ -103,23 +109,35 @@ std::string PrintVec3(const glm::vec3& v)
 
 void SceneEditorSample::onFrameRender()
 {
+
     const glm::vec4 clearColor(0.38f, 0.52f, 0.10f, 1);
     mpRenderContext->clearFbo(mpDefaultFBO.get(), clearColor, 1.0f, 0, FboAttachmentType::All);
 
     if(mpScene)
     {
+        // If lights changed, recompile shader
+        if (mScenePrevLightCount != mpScene->getLightCount())
+        {
+            initShader();
+            mScenePrevLightCount = mpScene->getLightCount();
+        }
+
         mpDefaultPipelineState->setBlendState(nullptr);
         mpDefaultPipelineState->setDepthStencilState(nullptr);
         setSceneLightsIntoConstantBuffer(mpScene.get(), mpVars["PerFrameCB"].get());
         mpRenderContext->setGraphicsVars(mpVars);
         mpDefaultPipelineState->setProgram(mpProgram);
+
+        mpEditor->update(mCurrentTime);
         mpRenderer->update(mCurrentTime);
-        mpRenderer->renderScene(mpRenderContext.get());
+
+        const auto& pCamera = mCameraLiveViewMode ? mpScene->getActiveCamera() : mpEditor->getEditorCamera();
+        mpRenderer->renderScene(mpRenderContext.get(), pCamera.get());
     }
 
-    if (mpEditor)
+    if (mpEditor && mCameraLiveViewMode == false)
     {
-        mpEditor->renderSelection();
+        mpEditor->render();
     }
 }
 
@@ -130,18 +148,22 @@ void SceneEditorSample::onShutdown()
 
 bool SceneEditorSample::onKeyEvent(const KeyboardEvent& keyEvent)
 {
-    bool handled = mpRenderer ? mpRenderer->onKeyEvent(keyEvent) : false;
-    handled |= mpEditor ? mpEditor->onKeyEvent(keyEvent) : false;
+    if (mCameraLiveViewMode)
+    {
+        return mpRenderer->onKeyEvent(keyEvent);
+    }
 
-    return handled;
+    return mpEditor ? mpEditor->onKeyEvent(keyEvent) : false;
 }
 
 bool SceneEditorSample::onMouseEvent(const MouseEvent& mouseEvent)
 {
-    bool handled = mpRenderer ? mpRenderer->onMouseEvent(mouseEvent) : false;
-    handled |= mpEditor ? mpEditor->onMouseEvent(mouseEvent) : false;
+    if (mCameraLiveViewMode)
+    {
+        return mpRenderer->onMouseEvent(mouseEvent);
+    }
 
-    return handled;
+    return mpEditor ? mpEditor->onMouseEvent(mouseEvent) : false;
 }
 
 int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ LPSTR lpCmdLine, _In_ int nShowCmd)

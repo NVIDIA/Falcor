@@ -29,6 +29,8 @@
 
 #include "Graphics/Scene/SceneRenderer.h"
 #include "Graphics/Model/ObjectInstance.h"
+#include "Graphics/Scene/Editor/Gizmo.h"
+#include <unordered_set>
 
 namespace Falcor
 {
@@ -49,9 +51,10 @@ namespace Falcor
         /** Performs a picking operation on the scene and stores the result.
             \param[in] mousePos Mouse position in the range [0,1] with (0,0) being the top left corner. Same coordinate space as in MouseEvent.
             \param[in] pContext Render context to render scene with.
+            \param[in] pCamera Active camera to pick from.
             \return Whether an object was picked or not.
         */
-        bool pick(RenderContext* pContext, const glm::vec2& mousePos, Camera* pCamera);
+        bool pick(RenderContext* pContext, const glm::vec2& mousePos, const Camera::SharedPtr& pCamera);
 
         /** Gets the picked mesh instance.
             \return Pointer to the picked mesh instance, otherwise nullptr if nothing was picked.
@@ -69,6 +72,9 @@ namespace Falcor
         */
         void resizeFBO(uint32_t width, uint32_t height);
 
+        // #HACK For picking the editor scene, register gizmos to conditionally set states
+        void registerGizmos(const Gizmo::Gizmos& gizmos);
+
     private:
 
         Picking(const Scene::SharedPtr& pScene, uint32_t fboWidth, uint32_t fboHeight);
@@ -76,14 +82,12 @@ namespace Falcor
         void renderScene(RenderContext* pContext, Camera* pCamera);
         void readPickResults(RenderContext* pContext);
 
+        virtual void setPerFrameData(RenderContext* pContext, const CurrentWorkingData& currentData) override;
+        virtual bool setPerModelInstanceData(RenderContext* pContext, const Scene::ModelInstance::SharedPtr& pModelInstance, uint32_t instanceID, const CurrentWorkingData& currentData) override;
         virtual bool setPerMeshInstanceData(RenderContext* pContext, const Scene::ModelInstance::SharedPtr& pModelInstance, const Model::MeshInstance::SharedPtr& pMeshInstance, uint32_t drawInstanceID, const CurrentWorkingData& currentData) override;
         virtual bool setPerMaterialData(RenderContext* pContext, const CurrentWorkingData& currentData) override;
 
         void calculateScissor(const glm::vec2& mousePos);
-
-        static void updateVariableOffsets(const ProgramReflection* pReflector);
-
-        static size_t sDrawIDOffset;
 
         struct Instance
         {
@@ -96,13 +100,23 @@ namespace Falcor
                 : pModelInstance(pModelInstance), pMeshInstance(pMeshInstance) {}
         };
 
+        Gizmo::Gizmos mSceneGizmos;
+
         std::unordered_map<uint32_t, Instance> mDrawIDToInstance;
         Instance mPickResult;
 
         Fbo::SharedPtr mpFBO;
+        GraphicsState::SharedPtr mpGraphicsState;
+
         GraphicsProgram::SharedPtr mpProgram;
         GraphicsVars::SharedPtr mpProgramVars;
-        GraphicsState::SharedPtr mpGraphicsState;
+
+        // Separate program for rotation gizmos because away-facing parts are discarded :(
+        GraphicsProgram::SharedPtr mpRotGizmoProgram;
+        GraphicsVars::SharedPtr mpRotGizmoProgramVars;
+
+        DepthStencilState::SharedPtr mpSetStencilDS;
+        DepthStencilState::SharedPtr mpExcludeStencilDS;
 
         GraphicsState::Scissor mScissor;
     };

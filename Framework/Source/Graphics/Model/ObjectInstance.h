@@ -33,6 +33,7 @@
 #include "glm/mat4x4.hpp"
 #include "glm/gtc/matrix_transform.hpp"
 #include "glm/gtx/euler_angles.hpp"
+#include "Utils/Math/FalcorMath.h"
 
 namespace Falcor
 {
@@ -147,15 +148,11 @@ namespace Falcor
         void setRotation(const glm::vec3& rotation)
         {
             // Construct matrix from Euler angles and take upper 3x3
-            const glm::mat3 rotMtx(glm::yawPitchRoll(rotation[1], rotation[0], rotation[2]));
-
-            // #TODO remove the multiplication, just extract column and negate
-            glm::vec3 up = rotMtx * glm::vec3(0, 1, 0);
-            glm::vec3 forward = rotMtx * glm::vec3(0, 0, -1); // -rotMtx[2]
+            const glm::mat3 rotMtx(glm::eulerAngleXYZ(rotation[0], rotation[1], rotation[2]));
 
             // Get look-at info
-            mBase.up = up; // rotMtx[1]
-            mBase.target = mBase.translation + forward; // position + forward
+            mBase.up = rotMtx[1];
+            mBase.target = mBase.translation + rotMtx[2]; // position + forward
 
             mBase.matrixDirty = true;
         }
@@ -167,11 +164,16 @@ namespace Falcor
         {
             glm::vec3 result;
 
-            glm::mat4 rotationMtx = glm::lookAt(glm::vec3(), mBase.target - mBase.translation, mBase.up);
+            glm::mat4 rotationMtx = createMatrixFromLookAt(mBase.translation, mBase.target, mBase.up);
             glm::extractEulerAngleXYZ(rotationMtx, result[0], result[1], result[2]);
 
-            return -result;
+            return result;
         }
+
+// #toodo comments
+        void setUpVector(const glm::vec3& up) { mBase.up = glm::normalize(up); mBase.matrixDirty = true; }
+
+        void setTarget(const glm::vec3& target) { mBase.target = target; mBase.matrixDirty = true; }
 
         /** Gets the up vector of the instance
             \return Up vector
@@ -238,7 +240,7 @@ namespace Falcor
         static glm::mat4 calculateTransformMatrix(const glm::vec3& translation, const glm::vec3& target, const glm::vec3& up, const glm::vec3& scale)
         {
             glm::mat4 translationMtx = glm::translate(glm::mat4(), translation);
-            glm::mat4 rotationMtx = glm::lookAt(glm::vec3(), target - translation, up);
+            glm::mat4 rotationMtx = createMatrixFromLookAt(translation, target, up);
             glm::mat4 scalingMtx = glm::scale(glm::mat4(), scale);
 
             return translationMtx * rotationMtx * scalingMtx;
@@ -247,7 +249,7 @@ namespace Falcor
         static glm::mat4 calculateTransformMatrix(const glm::vec3& translation, const glm::vec3& rotation, const glm::vec3& scale)
         {
             glm::mat4 translationMtx = glm::translate(glm::mat4(), translation);
-            glm::mat4 rotationMtx = glm::yawPitchRoll(rotation[1], rotation[0], rotation[2]);
+            glm::mat4 rotationMtx = glm::eulerAngleXYZ(rotation[0], rotation[1], rotation[2]);
             glm::mat4 scalingMtx = glm::scale(glm::mat4(), scale);
 
             return translationMtx * rotationMtx * scalingMtx;
@@ -293,7 +295,7 @@ namespace Falcor
         {
             glm::vec3 translation;
             glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f);
-            glm::vec3 target = glm::vec3(0.0f, 0.0f, -1.0f);
+            glm::vec3 target = glm::vec3(0.0f, 0.0f, 1.0f);
             glm::vec3 scale = glm::vec3(1.0f);
 
             // Matrix containing the above transforms

@@ -32,17 +32,15 @@
 
 namespace Falcor
 {
-    size_t Picking::sDrawIDOffset = ConstantBuffer::kInvalidOffset;
-
     Picking::UniquePtr Picking::create(const Scene::SharedPtr& pScene, uint32_t fboWidth, uint32_t fboHeight)
     {
         return UniquePtr(new Picking(pScene, fboWidth, fboHeight));
     }
 
-    bool Picking::pick(RenderContext* pContext, const glm::vec2& mousePos, Camera* pCamera)
+    bool Picking::pick(RenderContext* pContext, const glm::vec2& mousePos, const Camera::SharedPtr& pCamera)
     {
         calculateScissor(mousePos);
-        renderScene(pContext, pCamera);
+        renderScene(pContext, pCamera.get());
         readPickResults(pContext);
         return mPickResult.pModelInstance != nullptr;
     }
@@ -65,6 +63,11 @@ namespace Falcor
         mpFBO = FboHelper::create2D(width, height, fboDesc);
     }
 
+    void Picking::registerGizmos(const Gizmo::Gizmos& gizmos)
+    {
+        mSceneGizmos = gizmos;
+    }
+
     Picking::Picking(const Scene::SharedPtr& pScene, uint32_t fboWidth, uint32_t fboHeight)
         : SceneRenderer(pScene)
     {
@@ -75,15 +78,24 @@ namespace Falcor
         mpGraphicsState->setFbo(mpFBO);
 
         // Compile shaders
-        mpProgram = GraphicsProgram::createFromFile("Framework//PickingVS.hlsl", "Framework//PickingPS.hlsl");
-        mpGraphicsState->setProgram(mpProgram);
-
+        Program::DefineList defines;
+        defines.add("PICKING");
+        mpProgram = GraphicsProgram::createFromFile("Framework/Shaders/SceneEditorVS.hlsl", "Framework/Shaders/SceneEditorPS.hlsl", defines);
         mpProgramVars = GraphicsVars::create(mpProgram->getActiveVersion()->getReflector());
+
+        defines.add("CULL_REAR_SECTION");
+        mpRotGizmoProgram = GraphicsProgram::createFromFile("Framework/Shaders/SceneEditorVS.hlsl", "Framework/Shaders/SceneEditorPS.hlsl", defines);
+        mpRotGizmoProgramVars = GraphicsVars::create(mpRotGizmoProgram->getActiveVersion()->getReflector());
 
         // Depth State
         DepthStencilState::Desc dsDesc;
-        dsDesc.setDepthTest(true);
-        mpGraphicsState->setDepthStencilState(DepthStencilState::create(dsDesc));
+        dsDesc.setDepthTest(false).setStencilTest(true).setStencilRef(1);
+        dsDesc.setStencilOp(DepthStencilState::Face::FrontAndBack, DepthStencilState::StencilOp::Keep, DepthStencilState::StencilOp::Keep, DepthStencilState::StencilOp::Replace);
+        mpSetStencilDS = DepthStencilState::create(dsDesc);
+
+        dsDesc.setDepthTest(true).setStencilTest(true).setStencilFunc(DepthStencilState::Face::FrontAndBack, DepthStencilState::Func::NotEqual);
+        dsDesc.setStencilOp(DepthStencilState::Face::FrontAndBack, DepthStencilState::StencilOp::Keep, DepthStencilState::StencilOp::Keep, DepthStencilState::StencilOp::Keep);
+        mpExcludeStencilDS = DepthStencilState::create(dsDesc);
 
         // Rasterizer State
         RasterizerState::Desc rsDesc;
@@ -107,8 +119,6 @@ namespace Falcor
         pContext->setGraphicsState(mpGraphicsState);
         pContext->setGraphicsVars(mpProgramVars);
 
-        updateVariableOffsets(pContext->getGraphicsVars()->getReflection().get());
-
         SceneRenderer::renderScene(pContext, pCamera);
 
         // Restore state
@@ -131,6 +141,48 @@ namespace Falcor
             // Nullptrs
             mPickResult = Instance();
         }
+    }
+
+    void Picking::setPerFrameData(RenderContext* pContext, const CurrentWorkingData& currentData)
+    {
+        if (currentData.pCamera)
+        {
+            // Set camera for regular shader
+            ConstantBuffer* pCB = mpProgramVars->getConstantBuffer(kPerFrameCbName).get();
+            currentData.pCamera->setIntoConstantBuffer(pCB, sCameraDataOffset);
+
+            // Set camera for rotate gizmo shader
+            pCB = mpRotGizmoProgramVars->getConstantBuffer(kPerFrameCbName).get();
+            currentData.pCamera->setIntoConstantBuffer(pCB, sCameraDataOffset);
+        }
+    }
+
+    bool Picking::setPerModelInstanceData(RenderContext* pContext, const Scene::ModelInstance::SharedPtr& pModelInstance, uint32_t instanceID, const CurrentWorkingData& currentData)
+    {
+        const Gizmo::Type gizmoType = Gizmo::getGizmoType(mSceneGizmos, pModelInstance);
+
+        // If rendering a gizmo
+        if (gizmoType != Gizmo::Type::Invalid)
+        {
+            mpGraphicsState->setDepthStencilState(mpSetStencilDS);
+
+            // For rotation gizmo, set shader to cut out away-facing parts
+            if (gizmoType == Gizmo::Type::Rotate)
+            {
+                mpGraphicsState->setProgram(gizmoType == Gizmo::Type::Rotate ? mpRotGizmoProgram : mpProgram);
+                pContext->setGraphicsVars(mpRotGizmoProgramVars);
+                return true;
+            }
+        }
+        else
+        {
+            mpGraphicsState->setDepthStencilState(mpExcludeStencilDS);
+        }
+
+        mpGraphicsState->setProgram(mpProgram);
+        pContext->setGraphicsVars(mpProgramVars);
+
+        return true;
     }
 
     bool Picking::setPerMeshInstanceData(RenderContext* pContext, const Scene::ModelInstance::SharedPtr& pModelInstance, const Model::MeshInstance::SharedPtr& pMeshInstance, uint32_t drawInstanceID, const CurrentWorkingData& currentData)
@@ -157,16 +209,4 @@ namespace Falcor
         mScissor.width = 1;
         mScissor.height = 1;
     }
-
-    void Picking::updateVariableOffsets(const ProgramReflection* pReflector)
-    {
-        if (sDrawIDOffset == ConstantBuffer::kInvalidOffset)
-        {
-            const auto pPerMeshCbData = pReflector->getBufferDesc(kPerStaticMeshCbName, ProgramReflection::BufferReflection::Type::Constant);
-            assert(pPerMeshCbData);
-
-            sDrawIDOffset = pPerMeshCbData->getVariableData("gDrawId[0]")->location;
-        }
-    }
-
 }

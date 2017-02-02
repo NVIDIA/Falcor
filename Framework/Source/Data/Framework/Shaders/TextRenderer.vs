@@ -25,36 +25,34 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#pragma once
-#include "Falcor.h"
+#version 440
+#include "HlslGlslCommon.h"
 
-using namespace Falcor;
-
-class SceneEditorSample : public Sample
+CONSTANT_BUFFER(PerFrameCB, 0)
 {
-public:
-    void onLoad() override;
-    void onFrameRender() override;
-    void onShutdown() override;
-    bool onKeyEvent(const KeyboardEvent& keyEvent) override;
-    bool onMouseEvent(const MouseEvent& mouseEvent) override;
-    void onGuiRender() override;
-    void onResizeSwapChain() override;
-
-private:
-    void loadScene();
-    void createScene();
-    void reset();
-    void initNewScene();
-    void initShader();
-
-    bool mCameraLiveViewMode = false;
-
-    uint32_t mScenePrevLightCount = 0;
-
-    Scene::SharedPtr mpScene = nullptr;
-    GraphicsProgram::SharedPtr mpProgram = nullptr;
-    SceneRenderer::UniquePtr mpRenderer = nullptr;
-    SceneEditor::UniquePtr mpEditor = nullptr;
-    GraphicsVars::SharedPtr mpVars = nullptr;
+	mat4 gvpTransform;
+	vec3 gFontColor;
 };
+
+vec4 transform(vec2 posS)
+{
+	return mul(gvpTransform, vec4(posS, 0.5f, 1));
+}
+
+#ifdef FALCOR_HLSL
+void main(float2 posS : POSITION, inout float2 texC : TEXCOORD, out float4 posSV : SV_POSITION)
+{
+	posSV = transform(posS);
+}
+
+#elif defined FALCOR_GLSL
+layout (location = 0) in vec2 posS;
+layout (location = 1) in vec2 texCIn;
+out vec2 texC;
+
+void main()
+{
+	gl_Position = transform(posS);
+	texC = texCIn;
+}
+#endif

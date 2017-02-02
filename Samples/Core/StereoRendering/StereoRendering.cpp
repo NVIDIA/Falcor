@@ -34,7 +34,7 @@ void StereoRendering::initUI()
 
     Gui::setGlobalHelpMessage("Sample application to load and display a model.\nUse the UI to switch between wireframe and solid mode.");
     mpGui->addButton("Load Scene", &StereoRendering::loadSceneCB, this);
-    Gui::dropdown_list submitModeList;
+    Gui::DropdownList submitModeList;
     submitModeList.push_back({(int)SceneRenderer::RenderMode::Mono, "Render to Screen"});
 
     if(VRSystem::instance())

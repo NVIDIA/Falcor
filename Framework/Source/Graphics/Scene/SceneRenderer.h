@@ -127,11 +127,13 @@ namespace Falcor
         static size_t sCameraDataOffset;
         static size_t sWorldMatOffset;
         static size_t sMeshIdOffset;
+        static size_t sDrawIDOffset;
 
         static void updateVariableOffsets(const ProgramReflection* pReflector);
 
         virtual void setPerFrameData(RenderContext* pContext, const CurrentWorkingData& currentData);
         virtual bool setPerModelData(RenderContext* pContext, const CurrentWorkingData& currentData);
+        virtual bool setPerModelInstanceData(RenderContext* pContext, const Scene::ModelInstance::SharedPtr& pModelInstance, uint32_t instanceID, const CurrentWorkingData& currentData);
         virtual bool setPerMeshData(RenderContext* pContext,  const CurrentWorkingData& currentData);
         virtual bool setPerMeshInstanceData(RenderContext* pContext, const Scene::ModelInstance::SharedPtr& pModelInstance, const Model::MeshInstance::SharedPtr& pMeshInstance, uint32_t drawInstanceID, const CurrentWorkingData& currentData);
         virtual bool setPerMaterialData(RenderContext* pContext, const CurrentWorkingData& currentData);

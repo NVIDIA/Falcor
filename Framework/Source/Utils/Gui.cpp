@@ -69,7 +69,7 @@ namespace Falcor
         mpPipelineState = GraphicsState::create();
 
         // Create the program
-        mpProgram = GraphicsProgram::createFromFile("Framework//Gui.vs", "Framework//Gui.ps");
+        mpProgram = GraphicsProgram::createFromFile("Framework/Shaders/Gui.vs", "Framework/Shaders/Gui.ps");
         mpProgramVars = GraphicsVars::create(mpProgram->getActiveVersion()->getReflector());
         mpPipelineState->setProgram(mpProgram);
 
@@ -77,7 +77,7 @@ namespace Falcor
         uint8_t* pFontData;
         int32_t width, height;
         std::string fontFile;
-        if(findFileInDataDirectories("Framework//trebucbd.ttf", fontFile))
+        if(findFileInDataDirectories("Framework/Fonts/trebucbd.ttf", fontFile))
         {
             io.Fonts->AddFontFromFileTTF(fontFile.c_str(), 16);
         }
@@ -239,6 +239,19 @@ namespace Falcor
         return ImGui::Button(label);
     }
 
+    bool Gui::addRadioButtons(const RadioButtonGroup& buttons, int32_t& activeID)
+    {
+        int32_t oldValue = activeID;
+
+        for (const auto& button : buttons)
+        {
+            if (button.sameLine) ImGui::SameLine();
+            ImGui::RadioButton(button.label.c_str(), &activeID, button.buttonID);
+        }
+
+        return oldValue != activeID;
+    }
+
     bool Gui::beginGroup(const char name[])
     {
         bool visible = mGroupStackSize ? ImGui::TreeNode(name) : ImGui::CollapsingHeader(name);
@@ -394,7 +407,7 @@ namespace Falcor
         ImGui::Separator();
     }
 
-    bool Gui::addDropdown(const char label[], const dropdown_list& values, uint32_t& var, bool sameLine)
+    bool Gui::addDropdown(const char label[], const DropdownList& values, uint32_t& var, bool sameLine)
     {
         if (sameLine) ImGui::SameLine();
         // Check if we need to update the currentItem

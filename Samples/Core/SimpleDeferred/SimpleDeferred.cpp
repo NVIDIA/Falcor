@@ -89,7 +89,7 @@ void SimpleDeferred::onGuiRender()
         mpGui->endGroup();
     }
 
-    Gui::dropdown_list debugModeList;
+    Gui::DropdownList debugModeList;
     debugModeList.push_back({ 0, "Disabled" });
     debugModeList.push_back({ 1, "Positions" });
     debugModeList.push_back({ 2, "Normals" });
@@ -97,7 +97,7 @@ void SimpleDeferred::onGuiRender()
     debugModeList.push_back({ 4, "Illumination" });
     mpGui->addDropdown("Debug mode", debugModeList, (uint32_t&)mDebugMode);
 
-    Gui::dropdown_list cullList;
+    Gui::DropdownList cullList;
     cullList.push_back({0, "No Culling"});
     cullList.push_back({1, "Backface Culling"});
     cullList.push_back({2, "Frontface Culling"});
@@ -119,7 +119,7 @@ void SimpleDeferred::onGuiRender()
         mpGui->endGroup();
     }
 
-    Gui::dropdown_list cameraList;
+    Gui::DropdownList cameraList;
     cameraList.push_back({ModelViewCamera, "Model-View"});
     cameraList.push_back({FirstPersonCamera, "First-Person"});
     mpGui->addDropdown("Camera Type", cameraList, (uint32_t&)mCameraType);
@@ -141,7 +141,7 @@ void SimpleDeferred::renderModelUiElements()
         mActiveAnimationID = sBindPoseAnimationID;
 
         mpGui->addCheckBox(animateStr, mAnimate);
-        Gui::dropdown_list list;
+        Gui::DropdownList list;
         list.resize(mpModel->getAnimationsCount() + 1);
         list[0].label = "Bind Pose";
         list[0].value = sBindPoseAnimationID;

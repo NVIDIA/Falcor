@@ -87,7 +87,7 @@ void PostProcess::loadImage()
 
 void PostProcess::initUI()
 {
-    Gui::dropdown_list imageList;
+    Gui::DropdownList imageList;
     imageList.push_back({HdrImage::EveningSun, "Evening Sun"});
     imageList.push_back({HdrImage::AtTheWindow, "Window"});
     imageList.push_back({HdrImage::OvercastDay, "Overcast Day"});

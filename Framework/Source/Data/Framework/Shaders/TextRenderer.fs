@@ -25,36 +25,35 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#pragma once
-#include "Falcor.h"
+#version 440
+#include "HlslGlslCommon.h"
 
-using namespace Falcor;
-
-class SceneEditorSample : public Sample
+CONSTANT_BUFFER(PerFrameCB, 0)
 {
-public:
-    void onLoad() override;
-    void onFrameRender() override;
-    void onShutdown() override;
-    bool onKeyEvent(const KeyboardEvent& keyEvent) override;
-    bool onMouseEvent(const MouseEvent& mouseEvent) override;
-    void onGuiRender() override;
-    void onResizeSwapChain() override;
-
-private:
-    void loadScene();
-    void createScene();
-    void reset();
-    void initNewScene();
-    void initShader();
-
-    bool mCameraLiveViewMode = false;
-
-    uint32_t mScenePrevLightCount = 0;
-
-    Scene::SharedPtr mpScene = nullptr;
-    GraphicsProgram::SharedPtr mpProgram = nullptr;
-    SceneRenderer::UniquePtr mpRenderer = nullptr;
-    SceneEditor::UniquePtr mpEditor = nullptr;
-    GraphicsVars::SharedPtr mpVars = nullptr;
+	mat4 gvpTransform;
+	vec3 gFontColor;
 };
+
+Texture2D gFontTex;
+
+vec4 calcColor(vec2 texC)
+{
+	vec4 color = gFontTex.Load(ivec3(texC, 0));
+	color.rgb = gFontColor;
+	return color;
+}
+
+#ifdef FALCOR_HLSL
+vec4 main(float2 texC  : TEXCOORD) : SV_TARGET0
+{
+	return calcColor(texC);
+}
+
+#elif defined FALCOR_GLSL
+in vec2 texC;
+out vec4 fragColor;
+void main()
+{
+	fragColor = calcColor(texC);
+}
+#endif

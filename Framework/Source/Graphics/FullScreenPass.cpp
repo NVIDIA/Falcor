@@ -134,11 +134,11 @@ namespace Falcor
             else
             {
                 defs.add("_OUTPUT_PRIM_COUNT", std::to_string(__popcnt(viewportMask)));
-                gs = "Framework\\FullScreenPass.gs";
+                gs = "Framework/Shaders/FullScreenPass.gs";
             }
         }
 
-        const std::string vs("Framework\\FullScreenPass.vs");
+        const std::string vs("Framework/Shaders/FullScreenPass.vs");
         mpProgram = GraphicsProgram::createFromFile(vs, fragmentShaderFile, gs, "", "", defs);
         mpPipelineState->setProgram(mpProgram);
 

@@ -98,7 +98,7 @@
 // Scene
 #include "Graphics/Scene/Scene.h"
 #include "Graphics/Scene/SceneRenderer.h"
-#include "Graphics/Scene/SceneEditor.h"
+#include "Graphics/Scene/Editor/SceneEditor.h"
 #include "Graphics/Scene/SceneUtils.h"
 
 

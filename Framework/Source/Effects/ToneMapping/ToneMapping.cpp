@@ -169,7 +169,7 @@ namespace Falcor
 
     void ToneMapping::setUiElements(Gui* pGui, const std::string& uiGroup)
     {
-        Gui::dropdown_list opList;
+        Gui::DropdownList opList;
         opList.push_back({(uint32_t)Operator::Clamp, "Clamp to LDR"});
         opList.push_back({(uint32_t)Operator::Linear, "Linear"});
         opList.push_back({(uint32_t)Operator::Reinhard, "Reinhard"});

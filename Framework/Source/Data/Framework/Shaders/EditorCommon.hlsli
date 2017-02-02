@@ -1,5 +1,5 @@
 /***************************************************************************
-# Copyright (c) 2015, NVIDIA CORPORATION. All rights reserved.
+# Copyright (c) 2017, NVIDIA CORPORATION. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -25,36 +25,19 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#pragma once
-#include "Falcor.h"
+#include "ShaderCommon.h"
+#define _COMPILE_DEFAULT_VS
+#include "VertexAttrib.h"
 
-using namespace Falcor;
-
-class SceneEditorSample : public Sample
+struct EDITOR_VS_OUT
 {
-public:
-    void onLoad() override;
-    void onFrameRender() override;
-    void onShutdown() override;
-    bool onKeyEvent(const KeyboardEvent& keyEvent) override;
-    bool onMouseEvent(const MouseEvent& mouseEvent) override;
-    void onGuiRender() override;
-    void onResizeSwapChain() override;
+    VS_OUT vOut;
 
-private:
-    void loadScene();
-    void createScene();
-    void reset();
-    void initNewScene();
-    void initShader();
+#ifdef PICKING
+    uint drawID : DRAW_ID;
+#endif
 
-    bool mCameraLiveViewMode = false;
-
-    uint32_t mScenePrevLightCount = 0;
-
-    Scene::SharedPtr mpScene = nullptr;
-    GraphicsProgram::SharedPtr mpProgram = nullptr;
-    SceneRenderer::UniquePtr mpRenderer = nullptr;
-    SceneEditor::UniquePtr mpEditor = nullptr;
-    GraphicsVars::SharedPtr mpVars = nullptr;
+#ifdef CULL_REAR_SECTION
+    float3 toVertex : VERTEX_DIR;
+#endif
 };

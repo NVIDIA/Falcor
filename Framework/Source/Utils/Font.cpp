@@ -81,7 +81,7 @@ namespace Falcor
 
     bool Font::loadFromFile(const std::string& FontName, float size)
     {
-        std::string Filename = "Framework\\" + GetFontFilename(FontName, size);
+        std::string Filename = "Framework/Fonts/" + GetFontFilename(FontName, size);
         std::string TextureFilename;
         findFileInDataDirectories(Filename + ".dds", TextureFilename);
         std::string DataFilename;

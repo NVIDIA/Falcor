@@ -25,11 +25,46 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#include "ShaderCommon.h"
-#define _COMPILE_DEFAULT_VS
-#include "VertexAttrib.h"
+#pragma once
 
-vec4 main(VS_OUT vOut) : SV_TARGET
+#include "Graphics/Scene/SceneRenderer.h"
+#include "Graphics/Scene/Editor/Gizmo.h"
+#include <unordered_set>
+
+namespace Falcor
 {
-    return vec4(0, 1, 0, 1);
+    class SceneEditorRenderer : public SceneRenderer
+    {
+    public:
+        using UniquePtr = std::unique_ptr<SceneEditorRenderer>;
+        using UniqueConstPtr = std::unique_ptr<const SceneEditorRenderer>;
+
+        static UniquePtr create(const Scene::SharedPtr& pScene);
+
+        void renderScene(RenderContext* pContext, Camera* pCamera);
+
+        /** Informs the renderer what gizmos exist in order to color them appropriately when rendering
+        */
+        void registerGizmos(const Gizmo::Gizmos& gizmos);
+
+    private:
+        SceneEditorRenderer(const Scene::SharedPtr& pScene);
+
+        virtual void setPerFrameData(RenderContext* pContext, const CurrentWorkingData& currentData) override;
+        virtual bool setPerModelInstanceData(RenderContext* pContext, const Scene::ModelInstance::SharedPtr& pModelInstance, uint32_t instanceID, const CurrentWorkingData& currentData) override;
+
+        Gizmo::Gizmos mGizmos;
+
+        GraphicsProgram::SharedPtr mpProgram;
+        GraphicsVars::SharedPtr mpProgramVars;
+
+        GraphicsProgram::SharedPtr mpRotGizmoProgram;
+        GraphicsVars::SharedPtr mpRotGizmoProgramVars;
+
+        GraphicsState::SharedPtr mpGraphicsState;
+
+        DepthStencilState::SharedPtr mpSetStencilDS;
+        DepthStencilState::SharedPtr mpExcludeStencilDS;
+    };
 }
+

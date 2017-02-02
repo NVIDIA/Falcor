@@ -82,7 +82,7 @@ namespace Falcor
             Func func = Func::Always;                       ///< Stencil comparison function                    
             StencilOp stencilFailOp = StencilOp::Keep;      ///< Stencil operation in case stencil test fails
             StencilOp depthFailOp = StencilOp::Keep;        ///< Stencil operation in case stencil test passes but depth test fails
-            StencilOp depthStencilPassOp = StencilOp::Replace; ///< Stencil operation in case stencil and depth tests pass
+            StencilOp depthStencilPassOp = StencilOp::Keep; ///< Stencil operation in case stencil and depth tests pass
         };
 
         /** Depth-stencil descriptor

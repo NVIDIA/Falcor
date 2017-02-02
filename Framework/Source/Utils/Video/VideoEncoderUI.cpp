@@ -32,7 +32,7 @@
 
 namespace Falcor
 {
-    static const Gui::dropdown_list kCodecID = 
+    static const Gui::DropdownList kCodecID = 
     {
         { (int32_t)VideoEncoder::CodecID::RawVideo, std::string("Uncompressed") },
         { (int32_t)VideoEncoder::CodecID::H264, std::string("H.264") },

@@ -266,7 +266,7 @@ namespace Falcor
 #define check_offset(_a)
 #endif
 
-    void Material::setIntoProgramVars(ProgramVars* pVars, const char bufferName[], const char varName[]) const
+    void Material::setIntoProgramVars(ProgramVars* pVars, ConstantBuffer* pCB, const char varName[]) const
     {
         // OPTME:
         // We can specialize this function based on the API we are using. This might be worth the extra maintenance cost:
@@ -279,14 +279,6 @@ namespace Falcor
         finalize();
         static const size_t dataSize = sizeof(MaterialDesc) + sizeof(MaterialValues);
         static_assert(dataSize % sizeof(glm::vec4) == 0, "Material::MaterialData size should be a multiple of 16");
-
-        // Get the CB
-        ConstantBuffer* pCB = pVars->getConstantBuffer(bufferName).get();
-        if (pCB == nullptr)
-        {
-            logError(std::string("Material::setIntoProgramVars() - CB \"") + bufferName + "\" is not part of the program\n");
-            return;
-        }
 
         size_t offset = pCB->getVariableOffset(std::string(varName) + ".desc.layers[0].type");
 
@@ -304,6 +296,7 @@ namespace Falcor
 #ifdef FALCOR_GL
 #pragma error Fix material texture bindings for OpenGL
 #endif
+
         // Now set the textures
         std::string resourceName = std::string(varName) + ".textures.layers[0]";
         const auto pResourceDesc = pVars->getReflection()->getResourceDesc(resourceName);
@@ -317,7 +310,7 @@ namespace Falcor
 
         for (uint32_t i = 0; i < kTexCount; i++)
         {
-            if (pTextures[i] != nullptr) 
+            if (pTextures[i] != nullptr)
             {
                 pVars->setSrv(pResourceDesc->regIndex + i, pTextures[i]->getSRV());
             }
