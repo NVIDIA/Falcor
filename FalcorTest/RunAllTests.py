@@ -615,7 +615,7 @@ def main():
         if os.path.isdir(gReferenceDir):
             shutil.rmtree(gReferenceDir, ignore_errors=True)
         try:
-            time.sleep(3)
+            time.sleep(5)
             os.makedirs(gReferenceDir)
         except:
             print 'Fatal Error, Failed to create reference dir.'
@@ -636,7 +636,7 @@ def main():
         #remove date subdir if exists
         shutil.rmtree(gResultsDir, ignore_errors=True)
         try:
-            time.sleep(3)
+            time.sleep(5)
             os.makedirs(gResultsDir)
         except:
             sendFatalFailEmail('Fatal Error, Failed to create test result folder')

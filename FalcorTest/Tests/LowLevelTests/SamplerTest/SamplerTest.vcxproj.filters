@@ -4,7 +4,6 @@
     <ClCompile Include="..\..\..\Source\SamplerTest.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="resource.h" />
     <ClInclude Include="..\..\..\Source\SamplerTest.h" />
   </ItemGroup>
 </Project>

@@ -41,7 +41,7 @@ TestBase::~TestBase()
         delete *it;
 }
 
-void TestBase::init()
+void TestBase::init(bool initDevice /* = false */)
 {
     //Turns off error message boxes
     SetErrorMode(GetErrorMode() | SEM_NOGPFAULTERRORBOX);
@@ -49,6 +49,18 @@ void TestBase::init()
     _set_error_mode(_OUT_TO_STDERR);
 
     addTests();
+
+    if (initDevice)
+    {
+        mpWindow = Window::create(Window::Desc(), &mDummyCallbacks);
+        gpDevice = Device::create(mpWindow, Device::Desc());
+        //Don't have the slightest idea why I need to do this. Loading a texture prevents an assert 
+        //~Device() calls CopyContext::Flush() calls GpuFence::SyncCpu() which has an assert for mCpuValue. 
+        //Createing a texture makes mCpuValue 1 to pass the assert, not sure why. 
+        mpTexture = createTextureFromFile("TestTex.png", false, true);
+    }
+
+    onInit();
 }
 
 void TestBase::run()
@@ -85,6 +97,9 @@ std::vector<TestBase::TestData> TestBase::runTests()
 }
 
 void TestBase::addTests()
+{}
+
+void TestBase::onInit()
 {}
 
 void TestBase::GenerateXML(const std::vector<std::string>& xmlStrings)

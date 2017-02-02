@@ -39,5 +39,10 @@ private:
     ADD_FUNC(TestColorAttach)
     ADD_FUNC(TestZeroAttachment)
     ADD_FUNC(TestGetWidthHeight)
+    ADD_FUNC(TestCreate2D)
+    ADD_FUNC(TestCreateCubemap)
     void addTests() override;
+    //Test create2d and create cubemap are very similar, handled in this helper
+    static bool isStressCreateCorrect(bool randomSampleCount);
+    static bool isFboCorrect(Fbo::SharedPtr fbo, const uint32_t& w, const uint32_t& h, const Fbo::Desc& desc);
 };

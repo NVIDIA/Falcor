@@ -114,7 +114,7 @@ bool SamplerTest::doStatesMatch(Sampler::SharedPtr sampler, TestDesc desc)
 int main()
 {
     SamplerTest st;
-    st.init();
+    st.init(true);
     st.run();
     return 0;
 }

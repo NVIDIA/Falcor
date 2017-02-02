@@ -69,7 +69,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\Source\SamplerTest.h" />
-    <ClInclude Include="resource.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\..\Framework\Source\Falcor.vcxproj">

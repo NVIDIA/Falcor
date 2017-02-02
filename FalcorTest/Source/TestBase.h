@@ -56,12 +56,13 @@ public:
     };
 
     virtual ~TestBase();
-    void init();
+    void init(bool initDevice = false);
     void run();
 
 protected:
     TestBase();
     virtual void addTests();
+    virtual void onInit();
 
     //Used to gen correct filename in base class method
     std::string mTestName; 
@@ -108,9 +109,20 @@ private:
         uint32_t crash;
     };
 
+    class DummyWindowCallbacks : public Window::ICallbacks
+    {
+        void renderFrame() override {}
+        void handleWindowSizeChange() override {}
+        void handleKeyboardEvent(const KeyboardEvent& keyEvent) override {}
+        void handleMouseEvent(const MouseEvent& mouseEvent) override {}
+    } mDummyCallbacks;
+
     std::vector<TestData> runTests();
     void GenerateXML(const std::vector<std::string>& xmlStrings);
 
     std::string XMLFromTestResult(const TestData& r);
     ResultSummary mResultSummary;
+    Window::SharedPtr mpWindow;
+    TextRenderer::UniquePtr mpTextRenderer;
+    Texture::SharedPtr mpTexture;
 };
