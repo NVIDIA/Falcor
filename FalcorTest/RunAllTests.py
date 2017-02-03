@@ -569,12 +569,10 @@ def outputHTML(openSummary):
         os.system("start " + resultSummaryName)
 
 def cleanScreenShots(ssDir):
-    if not os.path.isdir(ssDir):
-        print 'Error. unable to clean screenshots, could not find ' + ssDir
-        return
-    screenshots = [s for s in os.listdir(ssDir) if s.endswith('.png')]
-    for s in screenshots:
-        os.remove(ssDir + '\\' + s)
+    if os.path.isdir(ssDir):
+        screenshots = [s for s in os.listdir(ssDir) if s.endswith('.png')]
+        for s in screenshots:
+            os.remove(ssDir + '\\' + s)
 
 def updateRepo():
     subprocess.call(['git', 'pull', 'origin', 'TestingFramework'])
@@ -660,22 +658,16 @@ def main():
         #returns 1 on fail
         if callBatchFile(['build', 'FalcorTest.sln', 'debugd3d12', 'Falcor']):
             testInfo = TestInfo('Falcor', 'debugd3d12')
-            buildFail(True, testInfo)
+            buildFail(True, testInfo, not args.noemail)
         if callBatchFile(['build', 'FalcorTest.sln', 'released3d12', 'Falcor']):
             testInfo = TestInfo('Falcor', 'released3d12')
-            buildFail(True, testInfo)
+            buildFail(True, testInfo, not args.noemail)
         if callBatchFile(['build', 'FalcorTest.sln', 'debugd3d12', 'FalcorTest']):
             testInfo = TestInfo('FalcorTest', 'debugd3d12')
-            buildFail(True, testInfo)
+            buildFail(True, testInfo, not args.noemail)
         if callBatchFile(['build', 'FalcorTest.sln', 'released3d12', 'FalcorTest']):
             testInfo = TestInfo('FalcorTest', 'released3d12')
-            buildFail(True, testInfo)
-        if callBatchFile(['build', '../Falcor.sln', 'debugd3d12', 'Falcor']):
-            testInfo = TestInfo('Falcor', 'debugd3d12')
-            buildFail(True, testInfo)
-        if callBatchFile(['build', '../Falcor.sln', 'released3d12', 'Falcor']):
-            testInfo = TestInfo('Falcor', 'released3d12')
-            buildFail(True, testInfo)
+            buildFail(True, testInfo, not args.noemail)
 
     if not args.generatereference:
         resultSummary = LowLevelResult()

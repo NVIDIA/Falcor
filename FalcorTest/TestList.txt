@@ -4,7 +4,6 @@ RasterizerStateTest DeBuGd3D12
 RasterizerStateTest RELEASED3D12
 DepthStencilStateTest debugd3d12
 DepthStencilStateTest released3d12
-FboTest debugd3d12
 FboTest released3d12
 SamplerTest debugd3d12
 SamplerTest released3d12
