@@ -32,11 +32,11 @@ void HangTest::addTests()
     addTestToList<TestHang>();
 }
 
-TESTING_FUNC(HangTest, TestHang)
+testing_func(HangTest, TestHang)
 {
     while (true)
     {}
-    return TestBase::TestData(TestBase::TestResult::Fail, mName, "This should never happen, escaped infinite while loop");
+    return test_fail("This should never happen, escaped infinite while loop");
 }
 
 int main()

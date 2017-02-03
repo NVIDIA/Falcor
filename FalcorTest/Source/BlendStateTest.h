@@ -36,9 +36,9 @@ private:
         friend class BlendStateTest;
     };
 
-    ADD_FUNC(TestCreate)
-    ADD_FUNC(TestRtArray)
     void addTests() override;
+    register_testing_func(TestCreate)
+    register_testing_func(TestRtArray)
 
     static bool doStatesMatch(const BlendState::SharedPtr state, const TestDesc& desc);
 };

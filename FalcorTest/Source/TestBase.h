@@ -30,8 +30,10 @@
 
 using namespace Falcor;
 
-#define ADD_FUNC(x) class x : public TestBase::TestFunction { public: TestData operator ()() override; };
-#define TESTING_FUNC(x, y) TestBase::TestData x::y::operator()()
+#define register_testing_func(x_) class x_ : public TestBase::TestFunction { public: TestData operator ()() override; };
+#define testing_func(className_, functorName_) TestBase::TestData className_::functorName_::operator()()
+#define TEST_PASS TestBase::TestData(TestBase::TestResult::Pass, mName);
+#define test_fail(errorMessage_) TestBase::TestData(TestBase::TestResult::Fail, mName, errorMessage_);
 
 class TestBase
 {

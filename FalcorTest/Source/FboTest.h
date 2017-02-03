@@ -31,17 +31,18 @@
 class FboTest : public TestBase
 {
 private:
-    ADD_FUNC(TestDefault)
-    ADD_FUNC(TestCreate)
-    ADD_FUNC(TestCaptureToFile)
-    //Does these also include get texture versions? this will probably use checkstatus
-    ADD_FUNC(TestDepthStencilAttach)
-    ADD_FUNC(TestColorAttach)
-    ADD_FUNC(TestZeroAttachment)
-    ADD_FUNC(TestGetWidthHeight)
-    ADD_FUNC(TestCreate2D)
-    ADD_FUNC(TestCreateCubemap)
     void addTests() override;
+    register_testing_func(TestDefault)
+    register_testing_func(TestCreate)
+    register_testing_func(TestCaptureToFile)
+    //Does these also include get texture versions? this will probably use checkstatus
+    register_testing_func(TestDepthStencilAttach)
+    register_testing_func(TestColorAttach)
+    register_testing_func(TestZeroAttachment)
+    register_testing_func(TestGetWidthHeight)
+    register_testing_func(TestCreate2D)
+    register_testing_func(TestCreateCubemap)
+
     //Test create2d and create cubemap are very similar, handled in this helper
     static bool isStressCreateCorrect(bool randomSampleCount);
     static bool isFboCorrect(Fbo::SharedPtr fbo, const uint32_t& w, const uint32_t& h, const Fbo::Desc& desc);

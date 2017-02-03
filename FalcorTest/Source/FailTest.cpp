@@ -32,9 +32,9 @@ void FailTest::addTests()
     addTestToList<TestFail>();
 }
 
-TESTING_FUNC(FailTest, TestFail)
+testing_func(FailTest, TestFail)
 {
-    return TestBase::TestData(TestBase::TestResult::Fail, mName, "Intentional Failure to test Framework");
+    return test_fail("Intentional Failure to test Framework");
 }
 
 int main()

@@ -36,8 +36,8 @@ private:
         friend class DepthStencilStateTest;
     };
 
-    ADD_FUNC(TestCreate)
     void addTests() override;
+    register_testing_func(TestCreate)
 
     static bool doStatesMatch(const DepthStencilState::SharedPtr state, const TestDesc& desc);
     static bool doStencilStatesMatch(const DepthStencilState::StencilDesc& a, const DepthStencilState::StencilDesc& b);

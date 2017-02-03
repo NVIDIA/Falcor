@@ -32,8 +32,5 @@ class GraphicsStateObjectTest : public TestBase
 {
 private:
     void addTests() override;
-    //ADD_FUNC(TestRootSignature)
-    //ADD_FUNC(TestVertexLayout)
-    //ADD_FUNC(TestFboFormat)
-    //ADD_FUNC(TestProgramVersion)
+    register_testing_func(TestCreate)
 };

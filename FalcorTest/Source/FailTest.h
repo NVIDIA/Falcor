@@ -28,9 +28,10 @@
 #pragma once
 #include "TestBase.h"
 
+//For ensuring failures show up in the summary correctly
 class FailTest : public TestBase
 {
 private:
-    ADD_FUNC(TestFail)
     void addTests() override;
+    register_testing_func(TestFail)
 };

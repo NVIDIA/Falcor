@@ -36,8 +36,8 @@ private:
         friend class SamplerTest;
     };
 
-    ADD_FUNC(TestCreate);
     void addTests() override;
+    register_testing_func(TestCreate);
 
     static bool doStatesMatch(Sampler::SharedPtr sampler, TestDesc desc);
 };

@@ -8,30 +8,30 @@ void CrashTest::addTests()
     addTestToList<TestCrashHandling>();
 }
 
-TESTING_FUNC(CrashTest, TestThrow)
+testing_func(CrashTest, TestThrow)
 {
     throw std::exception("error message");
-    return TestBase::TestData(TestBase::TestResult::Fail, mName, "Test proceeded past throw");
+    return test_fail("Test proceeded past throw");
 }
 
-TESTING_FUNC(CrashTest, TestVector)
+testing_func(CrashTest, TestVector)
 {
     std::vector<char> testVec;
     testVec.resize(10);
     testVec.at(100);
-    return TestBase::TestData(TestBase::TestResult::Fail, mName, "Test proceeded past operation that should have thrown");
+    return test_fail("Test proceeded past operation that should have thrown");
 }
 
-TESTING_FUNC(CrashTest, TestAssert)
+testing_func(CrashTest, TestAssert)
 {
     assert(false);
-    return TestBase::TestData(TestBase::TestResult::Fail, mName, "Test proceeded past assert");
+    return test_fail("Test proceeded past assert");
 }
 
-TESTING_FUNC(CrashTest, TestCrashHandling)
+testing_func(CrashTest, TestCrashHandling)
 {
     //Really only testing that this gets run despite previous tets crashing
-    return TestBase::TestData(TestBase::TestResult::Pass, mName);
+    return TEST_PASS;
 }
 
 int main()

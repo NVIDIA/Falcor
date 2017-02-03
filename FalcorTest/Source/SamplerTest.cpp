@@ -32,7 +32,7 @@ void SamplerTest::addTests()
     addTestToList<TestCreate>();
 }
 
-TESTING_FUNC(SamplerTest, TestCreate)
+testing_func(SamplerTest, TestCreate)
 {
     const uint32_t numFilterCombinations = 8;
     const Sampler::Filter point = Sampler::Filter::Point;
@@ -46,12 +46,15 @@ TESTING_FUNC(SamplerTest, TestCreate)
     TestDesc desc;
 
     //Tests nearly all combinations of settings
+    //Filter
     for (uint32_t i = 0; i < numFilterCombinations; ++i)
     {
         desc.setFilterMode(minFilters[i], magFilters[i], mipFilters[i]);
+        //comparison mode
         for (uint32_t j = 0; j < numComparionModes; ++j)
         {
             desc.setComparisonMode(static_cast<Sampler::ComparisonMode>(j));
+            //random numbers for border color, minLod, maxLod, lodBias, and max anisotropy
             for (uint32_t k = 0; k < numRandomNumbers; ++k)
             {
                 float colorR = static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
@@ -68,10 +71,13 @@ TESTING_FUNC(SamplerTest, TestCreate)
                 uint32_t maxAnisotropy = static_cast<uint32_t>(rand());
                 desc.setMaxAnisotropy(maxAnisotropy);
 
+                //mode u 
                 for (uint32_t x = 0; x < numAddressModes; ++x)
                 {
+                    //mode v
                     for (uint32_t y = 0; y < numAddressModes; ++y)
                     {
+                        //mode w
                         for (uint32_t z = 0; z < numAddressModes; ++z)
                         {
                             desc.setAddressingMode(
@@ -79,11 +85,11 @@ TESTING_FUNC(SamplerTest, TestCreate)
                                 static_cast<Sampler::AddressMode>(y), 
                                 static_cast<Sampler::AddressMode>(z));
 
-                            //This requires some device initalization that isn't happening, similar issue as one of the fbo tests. 
+                            //create sampler and ensure matches desc used to create
                             Sampler::SharedPtr sampler = Sampler::create(desc);
                             if (!doStatesMatch(sampler, desc))
                             {
-                                return TestBase::TestData(TestBase::TestResult::Fail, mName, "Sampler doesn't match desc used to create it");
+                                return test_fail("Sampler doesn't match desc used to create it");
                             }
                         }
                     }
@@ -92,7 +98,7 @@ TESTING_FUNC(SamplerTest, TestCreate)
         }
     }
 
-    return TestBase::TestData(TestBase::TestResult::Pass, mName);
+    return TEST_PASS;
 }
 
 bool SamplerTest::doStatesMatch(Sampler::SharedPtr sampler, TestDesc desc)

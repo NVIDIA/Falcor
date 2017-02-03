@@ -393,10 +393,11 @@ def runTest(testInfo, cmdLine, generateReference):
         summary = getXMLTag(testInfo.getResultsFile(), 'Summary')
         if summary == None:
             logTestSkip(testInfo.getFullName(), 'Error getting xml data from ' + testInfo.getResultsFile())
-            makeDirIfDoesntExist(testInfo.getReferenceDir())
             if generateReference:
+                makeDirIfDoesntExist(testInfo.getReferenceDir())
                 overwriteMove(testInfo.getResultsFile(), testInfo.getReferenceDir())
             else:
+                makeDirIfDoesntExist(testInfo.getResultsDir())
                 overwriteMove(testInfo.getResultsFile(), testInfo.getResultsDir())
             return
         #gen system ref
@@ -685,11 +686,12 @@ def main():
     if not args.generatereference:
         outputHTML(args.showsummary)
     else:
-        print '\nRan into the following issues while generating reference...'
-        for name, skip in gSkippedList:
-            print name + ': ' + skip
-        for reason in gFailReasonsList:
-            print reason 
+        if(len(gSkippedList) > 0 or len(gFailReasonsList) > 0):
+            print '\nRan into the following issues while generating reference...'
+            for name, skip in gSkippedList:
+                print name + ': ' + skip
+            for reason in gFailReasonsList:
+                print reason 
 
     if not args.noemail and not args.generatereference:
         sendTestingEmail()

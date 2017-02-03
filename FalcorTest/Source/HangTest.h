@@ -28,9 +28,10 @@
 #pragma once
 #include "TestBase.h"
 
+//For testing how the script handles tests that hang
 class HangTest : public TestBase
 {
 private:
     void addTests() override;
-    ADD_FUNC(TestHang);
+    register_testing_func(TestHang);
 };

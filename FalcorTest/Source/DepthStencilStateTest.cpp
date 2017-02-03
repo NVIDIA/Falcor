@@ -32,7 +32,7 @@ void DepthStencilStateTest::addTests()
     addTestToList<TestCreate>();
 }
 
-TESTING_FUNC(DepthStencilStateTest, TestCreate)
+testing_func(DepthStencilStateTest, TestCreate)
 {
     TestDesc desc;
     const uint32_t boolCombos = 8;
@@ -42,22 +42,27 @@ TESTING_FUNC(DepthStencilStateTest, TestCreate)
     const uint32_t numCompareFunc = 9;
     const uint32_t numFaceModes = 3;
     const uint32_t numStencilOps = 8;
-    //ridiculous amount of for loops, but tests nearly every possible permutation of settings
+    //loops through nearly all permuatations of settings
     for (uint32_t i = 0; i < boolCombos; ++i)
     {
         desc.setDepthTest(depthTest[i]);
         desc.setDepthWriteMask(writeDepth[i]);
         desc.setStencilTest(stencilTest[i]);
 
+        //depth comparison func
         for (uint32_t j = 0; j < numCompareFunc; ++j)
         {
             desc.setDepthFunc(static_cast<DepthStencilState::Func>(j));
+            //face mode
             for (uint32_t k = 0; k < numFaceModes; ++k)
             {
+                //stencil fail
                 for (uint32_t x = 0; x < numStencilOps; ++x)
                 {
+                    //depth fail
                     for (uint32_t y = 0; y < numStencilOps; ++y)
                     {
+                        //depth pass
                         for (uint32_t z = 0; z < numStencilOps; ++z)
                         {
                             desc.setStencilOp(
@@ -66,16 +71,18 @@ TESTING_FUNC(DepthStencilStateTest, TestCreate)
                                 static_cast<DepthStencilState::StencilOp>(y),
                                 static_cast<DepthStencilState::StencilOp>(z));
 
+                            //read mask
                             for (uint8 m = 0; m < 8; ++m)
                             {
                                 desc.setStencilReadMask(1 << m);
+                                //write mask
                                 for (uint8 n = 0; n < 8; ++n)
                                 {
                                     desc.setStencilWriteMask(1 << n);
                                     DepthStencilState::SharedPtr state = DepthStencilState::create(desc);
                                     if (!doStatesMatch(state, desc))
                                     {
-                                        return TestBase::TestData(TestBase::TestResult::Fail, mName, "State doesn't match desc used to create it");
+                                        return test_fail("State doesn't match desc used to create it");
                                     }
                                 }
                             }
@@ -86,7 +93,7 @@ TESTING_FUNC(DepthStencilStateTest, TestCreate)
         }
     }
 
-    return TestBase::TestData(TestBase::TestResult::Pass, mName);
+    return TEST_PASS;
 }
 
 bool DepthStencilStateTest::doStatesMatch(const DepthStencilState::SharedPtr state, const TestDesc& desc)

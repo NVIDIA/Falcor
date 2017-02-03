@@ -29,6 +29,7 @@
 
 int main()
 {
+    //For testing how script handles xml files without expected tags
     std::ofstream of;
     of.open("BadXMLTest_TestingLog_0.xml");
     of << "<?xml version = \"1.0\" encoding = \"UTF-8\"?>\n";

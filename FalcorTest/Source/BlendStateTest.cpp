@@ -34,13 +34,14 @@ void BlendStateTest::addTests()
     addTestToList<TestRtArray>();
 }
 
-TESTING_FUNC(BlendStateTest, TestCreate)
+testing_func(BlendStateTest, TestCreate)
 {
     glm::vec4 blendFactor(1.f);
     BlendState::BlendOp blendOp = BlendState::BlendOp::Add;
     BlendState::BlendFunc blendFunc = BlendState::BlendFunc::Zero;
 
     TestDesc desc;
+    //Pick some random assortment of parameters and ensure they match after being passed to state
     desc.setAlphaToCoverage(true);
     desc.setBlendFactor(blendFactor);
     desc.setIndependentBlend(true);
@@ -52,19 +53,23 @@ TESTING_FUNC(BlendStateTest, TestCreate)
     blendState = BlendState::create(desc);
 
     if (doStatesMatch(blendState, desc))
-        return TestData(TestResult::Pass, mName);
+    {
+        return TEST_PASS;
+    }
     else
-        return TestData(TestResult::Fail, mName, "Blend state doesn't match desc used to create");
+    {
+        return test_fail("Blend state doesn't match desc used to create");
+    }
 }
 
-TESTING_FUNC(BlendStateTest, TestRtArray)
+testing_func(BlendStateTest, TestRtArray)
 {
     const int32_t numBlendOps = 5;
     const int32_t numBlendFuncs = 16;
 
     //create default
-    //8 is default rt count
     TestDesc desc;
+    //Set parameters in the RT array and ensure they match created state
     for (uint32_t i = 0; i < Fbo::getMaxColorTargetCount(); ++i)
     {
         BlendState::BlendOp blendOp = static_cast<BlendState::BlendOp>(i % numBlendOps);
@@ -73,42 +78,45 @@ TESTING_FUNC(BlendStateTest, TestRtArray)
         desc.setRtParams(i, blendOp, blendOp, blendFunc, blendFunc, blendFunc, blendFunc);
         BlendState::SharedPtr state = BlendState::create(desc);
         if (!doStatesMatch(state, desc))
-            return TestData(TestResult::Fail, mName, "Render target desc doesn't match ones used to create");
+        {
+            return test_fail("Render target desc doesn't match ones used to create");
+        }
     }
 
-    return TestData(TestResult::Pass, mName);
+    return TEST_PASS;
 }
 
 bool BlendStateTest::doStatesMatch(const BlendState::SharedPtr state, const TestDesc& desc)
 {
-    bool globalSettingsMatch =
-        state->isAlphaToCoverageEnabled() == desc.mAlphaToCoverageEnabled &&
-        state->getBlendFactor() == desc.mBlendFactor &&
-        state->isIndependentBlendEnabled() == desc.mEnableIndependentBlend &&
-        state->getRtCount() == desc.mRtDesc.size();
-
-    if (!globalSettingsMatch)
+    //check settings not in the rt array
+    if (state->isAlphaToCoverageEnabled() != desc.mAlphaToCoverageEnabled ||
+        state->getBlendFactor() != desc.mBlendFactor ||
+        state->isIndependentBlendEnabled() != desc.mEnableIndependentBlend ||
+        state->getRtCount() != desc.mRtDesc.size())
+    {
         return false;
+    }
 
+    //check the rt array
     for (uint32_t i = 0; i < state->getRtCount(); ++i)
     {
         BlendState::Desc::RenderTargetDesc rtDesc = state->getRtDesc(i);
         BlendState::Desc::RenderTargetDesc otherRtDesc = desc.mRtDesc[i];
-        bool rtMatches = 
-            rtDesc.writeMask.writeRed == otherRtDesc.writeMask.writeRed &&
-            rtDesc.writeMask.writeGreen == otherRtDesc.writeMask.writeGreen &&
-            rtDesc.writeMask.writeBlue == otherRtDesc.writeMask.writeBlue &&
-            rtDesc.writeMask.writeAlpha == otherRtDesc.writeMask.writeAlpha &&
-            rtDesc.blendEnabled == otherRtDesc.blendEnabled &&
-            rtDesc.rgbBlendOp == otherRtDesc.rgbBlendOp &&
-            rtDesc.alphaBlendOp == otherRtDesc.alphaBlendOp &&
-            rtDesc.srcRgbFunc == otherRtDesc.srcRgbFunc &&
-            rtDesc.dstRgbFunc == otherRtDesc.dstRgbFunc &&
-            rtDesc.srcAlphaFunc == otherRtDesc.srcAlphaFunc &&
-            rtDesc.dstAlphaFunc == otherRtDesc.dstAlphaFunc;
-
-        if (!rtMatches)
+        if (rtDesc.writeMask.writeRed != otherRtDesc.writeMask.writeRed ||
+            rtDesc.writeMask.writeGreen != otherRtDesc.writeMask.writeGreen ||
+            rtDesc.writeMask.writeBlue != otherRtDesc.writeMask.writeBlue ||
+            rtDesc.writeMask.writeAlpha != otherRtDesc.writeMask.writeAlpha ||
+            rtDesc.blendEnabled != otherRtDesc.blendEnabled ||
+            rtDesc.rgbBlendOp != otherRtDesc.rgbBlendOp ||
+            rtDesc.alphaBlendOp != otherRtDesc.alphaBlendOp ||
+            rtDesc.srcRgbFunc != otherRtDesc.srcRgbFunc ||
+            rtDesc.dstRgbFunc != otherRtDesc.dstRgbFunc ||
+            rtDesc.srcAlphaFunc != otherRtDesc.srcAlphaFunc ||
+            rtDesc.dstAlphaFunc != otherRtDesc.dstAlphaFunc)
+        {
             return false;
+        }
+
     }
 
     return true;

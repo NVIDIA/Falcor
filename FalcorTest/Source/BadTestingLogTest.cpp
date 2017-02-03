@@ -29,6 +29,7 @@
 
 int main()
 {
+    //For testing how script handles non xml result files
     std::ofstream of;
     of.open("BadTestingLogTest_TestingLog_0.xml");
     of << "This isn't even really xml";

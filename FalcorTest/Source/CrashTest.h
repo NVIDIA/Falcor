@@ -31,9 +31,9 @@
 class CrashTest : public TestBase
 {
 private:
-    ADD_FUNC(TestThrow)
-    ADD_FUNC(TestVector)
-    ADD_FUNC(TestAssert)
-    ADD_FUNC(TestCrashHandling)
     void addTests() override;
+    register_testing_func(TestThrow)
+    register_testing_func(TestVector)
+    register_testing_func(TestAssert)
+    register_testing_func(TestCrashHandling)
 };

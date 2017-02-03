@@ -35,9 +35,10 @@ void RasterizerStateTest::addTests()
     addTestToList<TestCreateStress>();
 }
 
-TESTING_FUNC(RasterizerStateTest, TestCreate)
+testing_func(RasterizerStateTest, TestCreate)
 {
     TestDesc desc;
+    //Create RSState with particular parameters then ensure those params match
     desc.setCullMode(RasterizerState::CullMode::None);
     desc.setFillMode(RasterizerState::FillMode::Solid);
     desc.setFrontCounterCW(true);
@@ -50,12 +51,17 @@ TESTING_FUNC(RasterizerStateTest, TestCreate)
 
     RasterizerState::SharedPtr state = RasterizerState::create(desc);
     if (doStatesMatch(state, desc))
-        return TestData(TestResult::Pass, mName);
+    {
+        return TEST_PASS;
+    }
     else
-        return TestData(TestResult::Fail, mName, "Rasterizer state doesn't match desc used to create it");
+    {
+        return test_fail("Rasterizer state doesn't match desc used to create it");
+    }
 }
 
-TESTING_FUNC(RasterizerStateTest, TestCreateStress)
+//This function is bad, should probably just fix testcreate to exhaustively test all param combos
+testing_func(RasterizerStateTest, TestCreateStress)
 {
     TestDesc desc;
     desc.setCullMode(RasterizerState::CullMode::Front);
@@ -70,15 +76,22 @@ TESTING_FUNC(RasterizerStateTest, TestCreateStress)
 
     RasterizerState::SharedPtr state = RasterizerState::create(desc);
     if (!doStatesMatch(state, desc))
-        return TestData(TestResult::Fail, mName + "Rasterizer state doesn't match desc used to create it");
+    {
+        return test_fail("Rasterizer state doesn't match desc used to create it");
+    }
+       
     
     desc.setDepthBias(std::numeric_limits<int32_t>::max(), std::numeric_limits<float>::min());
     state = nullptr;
     state = RasterizerState::create(desc);
     if (doStatesMatch(state, desc))
-        return TestData(TestResult::Pass, mName);
+    {
+        return TEST_PASS;
+    }
     else
-        return TestData(TestResult::Fail, mName, "Rasterizer state doesn't match desc used to create it");
+    {
+        return test_fail("Rasterizer state doesn't match desc used to create it");
+    }
 }
 
 bool RasterizerStateTest::doStatesMatch(const RasterizerState::SharedPtr state, const TestDesc& desc)

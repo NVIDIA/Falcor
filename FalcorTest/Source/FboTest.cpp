@@ -41,36 +41,34 @@ void FboTest::addTests()
     addTestToList<TestCreateCubemap>();
 }
 
-TESTING_FUNC(FboTest, TestDefault)
+testing_func(FboTest, TestDefault)
 {
     Fbo::SharedPtr fbo = Fbo::getDefault();
     if (fbo->getApiHandle() == -1)
     {
-        return TestBase::TestData(TestBase::TestResult::Pass, mName);
+        return TEST_PASS;
     }
     else
     {
-        return TestBase::TestData(TestBase::TestResult::Fail, mName, 
-            "Error creating default fbo, api handle is initialized and should not be.");
+        return test_fail("Error creating default fbo, api handle is initialized and should not be.");
     }
 }
 
-TESTING_FUNC(FboTest, TestCreate)
+testing_func(FboTest, TestCreate)
 {
     Fbo::SharedPtr fbo = Fbo::create();
     //This is exactly the same as getDefault. It passes true for initapihandle but that param is unused in Fbo::Fbo(bool)
     if (fbo->getApiHandle() == -1)
     {
-        return TestBase::TestData(TestBase::TestResult::Fail, mName,
-            "Error creating default fbo, api handle isn't initialized and should be.");
+        return test_fail("Error creating default fbo, api handle isn't initialized and should be.");
     }
     else
     {
-        return TestBase::TestData(TestBase::TestResult::Pass, mName);
+        return TEST_PASS;
     }
 }
 
-TESTING_FUNC(FboTest, TestCaptureToFile)
+testing_func(FboTest, TestCaptureToFile)
 {
     //this will fail, capture to file currently does nothing. This might need changing depending on the implementation
     Fbo::SharedPtr fbo = Fbo::create();
@@ -89,15 +87,14 @@ TESTING_FUNC(FboTest, TestCaptureToFile)
         }
         else
         {
-            return TestBase::TestData(TestBase::TestResult::Fail, mName, 
-                "(The tested function is not implemented) Error opening created png: " + pngFile);
+            return test_fail("(The tested function is not implemented) Error opening created png: " + pngFile);
         }
     }
 
-    return TestBase::TestData(TestBase::TestResult::Pass, mName);
+    return TEST_PASS;
 }
 
-TESTING_FUNC(FboTest, TestDepthStencilAttach)
+testing_func(FboTest, TestDepthStencilAttach)
 {
     //Also, attachDepthStencilTarget, the fx this is meant to test, calls applyDepthAttachment, which is unimplemented in d3d12
     const uint32_t texWidth = 800u;
@@ -112,8 +109,7 @@ TESTING_FUNC(FboTest, TestDepthStencilAttach)
         fbo->getDesc().getDepthStencilFormat() != ResourceFormat::D32Float ||
         fbo->getDesc().isDepthStencilUav() /*should be false without uav flag on texture*/)
     {
-        return TestBase::TestData(TestBase::TestResult::Fail, mName,
-            "Fbo properties are incorrect after attaching depth stencil texture");
+        return test_fail("Fbo properties are incorrect after attaching depth stencil texture");
     }
 
     //I have no idea why this causes a crash in texture. Obscure error message incorrect paramaters, can't be 
@@ -126,39 +122,41 @@ TESTING_FUNC(FboTest, TestDepthStencilAttach)
     //if (fbo->getDesc().getDepthStencilFormat() != ResourceFormat::D16Unorm ||
     //    !fbo->getDesc().isDepthStencilUav() /*should be true with unordered access flag*/)
     //{
-    //    return TestBase::TestData(TestBase::TestResult::Fail, mName,
-    //        "Fbo properties are incorrect after attaching depth stencil texture with Unordered Access bind flag");
+    //    return test_fail("Fbo properties are incorrect after attaching depth stencil texture with Unordered Access bind flag");
     //}
 
     fbo->attachDepthStencilTarget(nullptr, 0u, 0u, 0u);
     if (fbo->getDesc().getDepthStencilFormat() != ResourceFormat::Unknown ||
         fbo->getDesc().isDepthStencilUav() /*should be false from nullptr texture*/)
     {
-        return TestBase::TestData(TestBase::TestResult::Fail, mName,
-            "Fbo properties are incorrect after attaching depth stencil texture with nullptr");
+        return test_fail("Fbo properties are incorrect after attaching depth stencil texture with nullptr");
     }
 
-    return TestBase::TestData(TestBase::TestResult::Pass, mName);
+    return TEST_PASS;
 }
 
-TESTING_FUNC(FboTest, TestColorAttach)
+testing_func(FboTest, TestColorAttach)
 {
     //Also, attachColorTarget, the fx this is meant to test, calls applyColorAttachment, which is unimplemented in d3d12
     Fbo::SharedPtr fbo = Fbo::create();
+    //for each color target
     for (uint32_t i = 0; i < Fbo::getMaxColorTargetCount(); ++i)
     {
         Resource::BindFlags flags = Resource::BindFlags::RenderTarget;
+        //Set UA on every other color target
         if (i % 2 == 0)
         {
             flags |= Resource::BindFlags::UnorderedAccess;
         }
 
+        //Set loadAsSrgb on every third color target
         bool loadAsSrgb = false;
         if (i % 3 == 0)
         {
             loadAsSrgb = true;
         }
 
+        //Create tex and attach to fbo
         Texture::SharedPtr tex = createTextureFromFile("TestTex.png", false, loadAsSrgb, flags);
         fbo->attachColorTarget(tex, i);
 
@@ -167,86 +165,86 @@ TESTING_FUNC(FboTest, TestColorAttach)
         {
             if (!fbo->getDesc().isColorTargetUav(i))
             {
-                return TestBase::TestData(TestBase::TestResult::Fail, mName,
-                    "Fbo color target missing uav flag despite texture being created with unordered access flag");
+                return test_fail("Fbo color target missing uav flag despite texture being created with unordered access flag");
             }
         }
         else
         {
             if (fbo->getDesc().isColorTargetUav(i))
             {
-                return TestBase::TestData(TestBase::TestResult::Fail, mName,
-                    "Fbo color target has uav flag despite texture being created without unordered access flag");
+                return test_fail("Fbo color target has uav flag despite texture being created without unordered access flag");
             }
         }
 
+        //check format
         if (tex->getFormat() != fbo->getDesc().getColorTargetFormat(i))
         {
-            return TestBase::TestData(TestBase::TestResult::Fail, mName,
-                "Fbo color target format does not match the format of the attached texture");
+            return test_fail("Fbo color target format does not match the format of the attached texture");
         }
     }
 
-    return TestBase::TestData(TestBase::TestResult::Pass, mName);
+    return TEST_PASS;
 }
 
-TESTING_FUNC(FboTest, TestZeroAttachment)
+testing_func(FboTest, TestZeroAttachment)
 {
-    return TestBase::TestData(TestBase::TestResult::Fail, mName, "This function is only implemented in GL");
+    return test_fail("This function is only implemented in GL");
 }
 
-TESTING_FUNC(FboTest, TestGetWidthHeight)
+testing_func(FboTest, TestGetWidthHeight)
 {
     //This fails, the logic in here tests as if verifyAttachment is being called but it's not being called
     Fbo::SharedPtr fbo = Fbo::create();
     const uint32_t numResolutions = 6;
     uint32_t widths[numResolutions] = { 1920u, 1440u, 1280u, 1600u, 1280u, 800u };
     uint32_t heights[numResolutions] = { 1080u, 900u, 800u, 1200u, 960u, 700u };
+    //For each  texture resolution
     for (size_t i = 0; i < numResolutions; i++)
     {
+        //create texture
         Texture::SharedPtr tex = Texture::create2D(widths[i], heights[i], ResourceFormat::RGBA32Float, 1u, 
             4294967295u, (const void*)nullptr, Resource::BindFlags::RenderTarget);
+        //Keep track of (what should be??) fbo width
         uint32_t curWidth = fbo->getWidth();
         uint32_t curHeight = fbo->getHeight();
         for (uint32_t j = 0; j < fbo->getMaxColorTargetCount(); ++j)
         {
+            //Attach, update current dimensions based on logic in verifyAttachment
             fbo->attachColorTarget(tex, j);
             curWidth = min(curWidth, widths[i]);
             curHeight = min(curHeight, heights[i]);
+            //Check if dimensions match
             if (fbo->getWidth() != curWidth || fbo->getHeight() != curHeight)
             {
-                return TestBase::TestData(TestBase::TestResult::Fail, mName,
-                    "Fbo dimensions do not match dimensions used to set");
+                return test_fail("Fbo dimensions do not match dimensions used to set");
             }
         }
     }
 
-    return TestBase::TestData(TestBase::TestResult::Pass, mName);
+    return TEST_PASS;
 }
 
-TESTING_FUNC(FboTest, TestCreate2D)
+testing_func(FboTest, TestCreate2D)
 {
     if (isStressCreateCorrect(true))
     {
-        return TestBase::TestData(TestBase::TestResult::Pass, mName);
+        return TEST_PASS;
     }
     else
     {
-        return TestBase::TestData(TestBase::TestResult::Fail, mName,
-            "Fbo properties do not match properties used to create it");
+        return test_fail("Fbo properties do not match properties used to create it");
     }
 }
 
-TESTING_FUNC(FboTest, TestCreateCubemap)
+testing_func(FboTest, TestCreateCubemap)
 {
     if (isStressCreateCorrect(false))
     {
-        return TestBase::TestData(TestBase::TestResult::Pass, mName);
+        return TEST_PASS;
     }
     else
     {
-        return TestBase::TestData(TestBase::TestResult::Fail, mName,
-            "Fbo properties do not match properties used to create it");
+        return test_fail("Fbo properties do not match properties used to create it");
     }
 }
 
@@ -298,6 +296,7 @@ bool FboTest::isStressCreateCorrect(bool randomSampleCount)
 
 bool FboTest::isFboCorrect(Fbo::SharedPtr fbo, const uint32_t& w, const uint32_t& h, const Fbo::Desc& desc)
 {
+    //check non color target properties
     if (fbo->getWidth() != w || fbo->getHeight() != h || fbo->getDesc().getSampleCount() != desc.getSampleCount() ||
         fbo->getDesc().isDepthStencilUav() != desc.isDepthStencilUav() || 
         fbo->getDepthStencilTexture()->getFormat() != desc.getDepthStencilFormat())
@@ -305,6 +304,7 @@ bool FboTest::isFboCorrect(Fbo::SharedPtr fbo, const uint32_t& w, const uint32_t
         return false;
     }
 
+    //check color target properties
     for (uint32_t i = 0; i < Fbo::getMaxColorTargetCount(); ++i)
     {
         if (fbo->getColorTexture(i)->getFormat() != desc.getColorTargetFormat(i) ||
