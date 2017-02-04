@@ -36,5 +36,5 @@ private:
     register_testing_func(TestSimpleCreate);
     register_testing_func(TestIndexedCreate);
     register_testing_func(TestMultiBufferCreate);
-    register_testing_func(TestStressLayout);
+    register_testing_func(TestLayout);
 };

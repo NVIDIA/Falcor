@@ -34,56 +34,48 @@ void GraphicsStateObjectTest::addTests()
 
 testing_func(GraphicsStateObjectTest, TestCreate)
 {
+    //This crashes on debug w/ e_invalid arg in create() in apiInit() when calling CreateGraphicsPipelineState
+    //No idea why, tried to emulate what is being done in GraphicsState::getGSO but can't seem to get it to work.
+    //It works and fails (rather than crashing) in release so it would seem the GraphicsStateObject is being 
+    //created despite e_invalidArg being the HRESULT returned by the creation. Not sure why fails in release,
+    //can't really debug in release.
+
     GraphicsStateObject::Desc desc;
-    Program::SharedConstPtr program = GraphicsProgram::createFromFile("", "Simple.ps.hlsl");
+    GraphicsProgram::SharedPtr program = GraphicsProgram::createFromFile("", "Simple.ps.hlsl");
     RootSignature::SharedPtr rootSig = RootSignature::create(program->getActiveVersion()->getReflector().get());
-    //VertexLayout::SharedPtr vertLayout = VertexLayout::create();
-    //vertLayout->addBufferLayout()
 
     //Maybe the layout is the wrong thing? tried to make a dummy layout here but it still crashes on create
     float buffer[10] = { 0.4f };
-    Buffer::SharedPtr vBuf = Buffer::create(10u, Resource::BindFlags::Vertex, Buffer::CpuAccess::Write, buffer);
+    Buffer::SharedPtr vBuf = Buffer::create(10u, Resource::BindFlags::Vertex, Buffer::CpuAccess::Read, buffer);
     VertexLayout::SharedPtr vLayout = VertexLayout::create();
     VertexBufferLayout::SharedPtr vBufLayout = VertexBufferLayout::create();
-    vBufLayout->addElement("buf", 0u, ResourceFormat::Alpha32Float, 10u, 0u);
+    vBufLayout->addElement(VERTEX_POSITION_NAME, 0u, ResourceFormat::RGB32Float, 10u, VERTEX_POSITION_LOC);
     vLayout->addBufferLayout(0u, vBufLayout);
-
 
     Fbo::Desc fboDesc;
     BlendState::SharedPtr blendState = BlendState::create(BlendState::Desc());
     RasterizerState::SharedPtr rasterizerState = RasterizerState::create(RasterizerState::Desc());
     DepthStencilState::SharedPtr depthState = DepthStencilState::create(DepthStencilState::Desc());
 
-    //This is commented out because it's currently crashing on create with e_invalidarg so I tried to fix above, but that didn't work
-    //gonna move on and do VAO/Vlayout test and maybe i can fix when I know more about how vao/vlayout work
-
     //Don't think I need to do anything too in depth with each of these, they will have their own testing classes
-    //desc.setProgramVersion(program->getActiveVersion());
-    //desc.setRootSignature(rootSig);
-    //desc.setVertexLayout(vertLayout);
-    //desc.setFboFormats(fboDesc);
-    //desc.setBlendState(blendState);
-    //desc.setRasterizerState(rasterizerState);
-    //desc.setDepthStencilState(depthState);
-
-    //This is very similar to what's done in 
-    desc.setProgramVersion(nullptr);
-    desc.setFboFormats(Fbo::Desc());
-    desc.setVertexLayout(vLayout);
+    desc.setProgramVersion(program->getActiveVersion());
     desc.setRootSignature(rootSig);
+    desc.setVertexLayout(vLayout);
+    desc.setFboFormats(fboDesc);
+    desc.setBlendState(blendState);
+    desc.setRasterizerState(rasterizerState);
+    desc.setDepthStencilState(depthState);
 
     const uint32_t numRandomMasks = 10;
     const uint32 numPrimTypes = 5;
-
     for (uint32_t i = 0; i < numRandomMasks; ++i)
     {
         uint32_t sampleMask = static_cast<uint32_t>(rand());
-        //desc.setSampleMask(sampleMask);
+        desc.setSampleMask(sampleMask);
         //Start at 1, skip over undefined, which asserts
         for (uint32_t j = 1; j < numPrimTypes; ++j)
         {
             GraphicsStateObject::PrimitiveType primType = static_cast<GraphicsStateObject::PrimitiveType>(j);
-            desc.setPrimitiveType(primType);
 
             GraphicsStateObject::SharedPtr gObj = GraphicsStateObject::create(desc);
             if (gObj->getDesc().getBlendState()->getApiHandle() != blendState->getApiHandle() ||

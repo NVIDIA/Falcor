@@ -7,6 +7,9 @@ DepthStencilStateTest released3d12
 FboTest released3d12
 SamplerTest debugd3d12
 SamplerTest released3d12
+VaoTest debugd3d12
+VaoTest released3d12
+GraphicsStateObjectTest released3d12
 ShaderBuffers released3d12 : -ssframes 50 -shutdown 2000 
 ComputeShader released3d12 : -ssframes 50 -shutdown 2000 -loadimage C:\\Users\\clavelle\\Desktop\\FalcorGitHub\\Media\\StockImage.jpg
 ComputeShader released3d12 : -ssframes 50 -shutdown 2000 -loadimage C:\\Users\\clavelle\\Desktop\\FalcorGitHub\\Media\\StockImage.jpg -pixelate

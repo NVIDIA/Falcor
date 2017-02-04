@@ -96,6 +96,12 @@ testing_func(FboTest, TestCaptureToFile)
 
 testing_func(FboTest, TestDepthStencilAttach)
 {
+    //I have no idea why this causes a crash in texture. Obscure error message incorrect paramaters, can't be 
+    //unordered access and depth stencil? attachDepthStencilTarget() seems to suggest otherwise. It calls 
+    //checkAttachmentParams, which checks to ensure the DepthStencil flag is set. After returning from 
+    //checkattachmentParams, it goes on to check if the unorderedAccess flag is set. 
+    //sThis same issue occurs and also causes a crash in TestColorAttach
+
     //Also, attachDepthStencilTarget, the fx this is meant to test, calls applyDepthAttachment, which is unimplemented in d3d12
     const uint32_t texWidth = 800u;
     const uint32_t texHeight = 600u;
@@ -112,18 +118,15 @@ testing_func(FboTest, TestDepthStencilAttach)
         return test_fail("Fbo properties are incorrect after attaching depth stencil texture");
     }
 
-    //I have no idea why this causes a crash in texture. Obscure error message incorrect paramaters, can't be 
-    //unordered access and depth stencil? attachDepthStencilTarget() seems to suggest otherwise
-
-    //Texture::BindFlags flags = Texture::BindFlags::DepthStencil | Texture::BindFlags::UnorderedAccess;
-    //tex = Texture::create2D(texWidth, texHeight, ResourceFormat::D16Unorm, 1u,
-    //    4294967295u, (const void*)nullptr, flags);
-    //fbo->attachDepthStencilTarget(tex, 0u, 0u, 0u);
-    //if (fbo->getDesc().getDepthStencilFormat() != ResourceFormat::D16Unorm ||
-    //    !fbo->getDesc().isDepthStencilUav() /*should be true with unordered access flag*/)
-    //{
-    //    return test_fail("Fbo properties are incorrect after attaching depth stencil texture with Unordered Access bind flag");
-    //}
+    Texture::BindFlags flags = Texture::BindFlags::DepthStencil | Texture::BindFlags::UnorderedAccess;
+    tex = Texture::create2D(texWidth, texHeight, ResourceFormat::D16Unorm, 1u,
+        4294967295u, (const void*)nullptr, flags);
+    fbo->attachDepthStencilTarget(tex, 0u, 0u, 0u);
+    if (fbo->getDesc().getDepthStencilFormat() != ResourceFormat::D16Unorm ||
+        !fbo->getDesc().isDepthStencilUav() /*should be true with unordered access flag*/)
+    {
+        return test_fail("Fbo properties are incorrect after attaching depth stencil texture with Unordered Access bind flag");
+    }
 
     fbo->attachDepthStencilTarget(nullptr, 0u, 0u, 0u);
     if (fbo->getDesc().getDepthStencilFormat() != ResourceFormat::Unknown ||
@@ -137,6 +140,9 @@ testing_func(FboTest, TestDepthStencilAttach)
 
 testing_func(FboTest, TestColorAttach)
 {
+    //This currently crashes, I believe it's because RenderTarget | UnorderedAccess is an invalid flag, but 
+    //attachcolortarget seems to imply otherwise. See note at top of testdepthattach
+
     //Also, attachColorTarget, the fx this is meant to test, calls applyColorAttachment, which is unimplemented in d3d12
     Fbo::SharedPtr fbo = Fbo::create();
     //for each color target
