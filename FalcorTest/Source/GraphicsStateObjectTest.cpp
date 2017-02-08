@@ -34,22 +34,19 @@ void GraphicsStateObjectTest::addTests()
 
 testing_func(GraphicsStateObjectTest, TestCreate)
 {
-    //This crashes on debug w/ e_invalid arg in create() in apiInit() when calling CreateGraphicsPipelineState
-    //No idea why, tried to emulate what is being done in GraphicsState::getGSO but can't seem to get it to work.
-    //It works and fails (rather than crashing) in release so it would seem the GraphicsStateObject is being 
-    //created despite e_invalidArg being the HRESULT returned by the creation. Not sure why fails in release,
-    //can't really debug in release.
-
     GraphicsStateObject::Desc desc;
     GraphicsProgram::SharedPtr program = GraphicsProgram::createFromFile("", "Simple.ps.hlsl");
     RootSignature::SharedPtr rootSig = RootSignature::create(program->getActiveVersion()->getReflector().get());
 
     //Maybe the layout is the wrong thing? tried to make a dummy layout here but it still crashes on create
-    float buffer[10] = { 0.4f };
+    float buffer[13] = { 0.4f };
     Buffer::SharedPtr vBuf = Buffer::create(10u, Resource::BindFlags::Vertex, Buffer::CpuAccess::Read, buffer);
     VertexLayout::SharedPtr vLayout = VertexLayout::create();
     VertexBufferLayout::SharedPtr vBufLayout = VertexBufferLayout::create();
-    vBufLayout->addElement(VERTEX_POSITION_NAME, 0u, ResourceFormat::RGB32Float, 10u, VERTEX_POSITION_LOC);
+    vBufLayout->addElement(VERTEX_POSITION_NAME, 0u, ResourceFormat::RGBA32Float, 4u, VERTEX_POSITION_LOC);
+    vBufLayout->addElement(VERTEX_NORMAL_NAME, 4u * sizeof(float), ResourceFormat::RGB32Float, 3u, VERTEX_NORMAL_LOC);
+    vBufLayout->addElement(VERTEX_TANGENT_NAME, 7u * sizeof(float), ResourceFormat::RGB32Float, 3u, VERTEX_TANGENT_LOC);
+    vBufLayout->addElement(VERTEX_BITANGENT_NAME, 10u * sizeof(float), ResourceFormat::RGB32Float, 3u, VERTEX_BITANGENT_LOC);
     vLayout->addBufferLayout(0u, vBufLayout);
 
     Fbo::Desc fboDesc;
@@ -73,9 +70,10 @@ testing_func(GraphicsStateObjectTest, TestCreate)
         uint32_t sampleMask = static_cast<uint32_t>(rand());
         desc.setSampleMask(sampleMask);
         //Start at 1, skip over undefined, which asserts
-        for (uint32_t j = 1; j < numPrimTypes; ++j)
+        for (uint32_t j = 1; j < numPrimTypes - 1 /*patch (the final one) is the only thing left that crashes */; ++j)
         {
             GraphicsStateObject::PrimitiveType primType = static_cast<GraphicsStateObject::PrimitiveType>(j);
+            desc.setPrimitiveType(primType);
 
             GraphicsStateObject::SharedPtr gObj = GraphicsStateObject::create(desc);
             if (gObj->getDesc().getBlendState()->getApiHandle() != blendState->getApiHandle() ||

@@ -34,7 +34,6 @@ private:
     void addTests() override;
     register_testing_func(TestDefault)
     register_testing_func(TestCreate)
-    register_testing_func(TestCaptureToFile)
     //Does these also include get texture versions? this will probably use checkstatus
     register_testing_func(TestDepthStencilAttach)
     register_testing_func(TestColorAttach)

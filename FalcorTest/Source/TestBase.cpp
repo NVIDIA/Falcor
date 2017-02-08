@@ -54,10 +54,8 @@ void TestBase::init(bool initDevice /* = false */)
     {
         mpWindow = Window::create(Window::Desc(), &mDummyCallbacks);
         gpDevice = Device::create(mpWindow, Device::Desc());
-        //Don't have the slightest idea why I need to do this. Loading a texture prevents an assert 
-        //~Device() calls CopyContext::Flush() calls GpuFence::SyncCpu() which has an assert for mCpuValue. 
-        //Createing a texture makes mCpuValue 1 to pass the assert, not sure why. 
-        mpTexture = createTextureFromFile("TestTex.png", false, true);
+        //avoid assert failure in ~Device()
+        gpDevice->getRenderContext()->getLowLevelData()->getFence()->cpuSignal();
     }
 
     onInit();
