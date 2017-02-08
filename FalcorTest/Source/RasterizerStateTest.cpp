@@ -32,66 +32,72 @@
 void RasterizerStateTest::addTests()
 {
     addTestToList<TestCreate>();
-    addTestToList<TestCreateStress>();
 }
 
 testing_func(RasterizerStateTest, TestCreate)
 {
-    TestDesc desc;
-    //Create RSState with particular parameters then ensure those params match
-    desc.setCullMode(RasterizerState::CullMode::None);
-    desc.setFillMode(RasterizerState::FillMode::Solid);
-    desc.setFrontCounterCW(true);
-    desc.setDepthBias(27, 42.6f);
-    desc.setDepthClamp(false);
-    desc.setLineAntiAliasing(true);
-    desc.setScissorTest(false);
-    desc.setConservativeRasterization(true);
-    desc.setForcedSampleCount(false);
-
-    RasterizerState::SharedPtr state = RasterizerState::create(desc);
-    if (doStatesMatch(state, desc))
-    {
-        return TEST_PASS;
-    }
-    else
-    {
-        return test_fail("Rasterizer state doesn't match desc used to create it");
-    }
-}
-
-//This function is bad, should probably just fix testcreate to exhaustively test all param combos
-testing_func(RasterizerStateTest, TestCreateStress)
-{
-    TestDesc desc;
-    desc.setCullMode(RasterizerState::CullMode::Front);
-    desc.setFillMode(RasterizerState::FillMode::Wireframe);
-    desc.setFrontCounterCW(false);
-    desc.setDepthBias(std::numeric_limits<int32_t>::min(), std::numeric_limits<float>::max());
-    desc.setDepthClamp(true);
-    desc.setLineAntiAliasing(false);
-    desc.setScissorTest(true);
-    desc.setConservativeRasterization(false);
-    desc.setForcedSampleCount(true);
-
-    RasterizerState::SharedPtr state = RasterizerState::create(desc);
-    if (!doStatesMatch(state, desc))
-    {
-        return test_fail("Rasterizer state doesn't match desc used to create it");
-    }
-       
+    const uint32_t numCullModes = 3u;
+    const uint32_t numFillModes = 2u;
+    const uint32_t numRandomDepthBiases = 5u;
     
-    desc.setDepthBias(std::numeric_limits<int32_t>::max(), std::numeric_limits<float>::min());
-    state = nullptr;
-    state = RasterizerState::create(desc);
-    if (doStatesMatch(state, desc))
+    TestDesc desc;
+    //Cull mode
+    for (uint32_t i = 0; i < numCullModes; ++i)
     {
-        return TEST_PASS;
+        desc.setCullMode(static_cast<RasterizerState::CullMode>(i));
+        //Fill mode
+        for (uint32_t j = 0; j < numFillModes; ++j)
+        {
+            desc.setFillMode(static_cast<RasterizerState::FillMode>(j));
+            //Depth Bias
+            for (uint k = 0; k < numRandomDepthBiases; ++k)
+            {
+                float randFloat = static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
+                int32_t randInt = static_cast<int>(rand());
+                desc.setDepthBias(randInt, randFloat);
+
+                //Boolean properties
+                //Front Counter CW
+                for (uint32_t a = 0; a < 2; ++a)
+                {
+                    desc.setFrontCounterCW(a == 0u);
+                    //Depth Clamp
+                    for (uint32_t b = 0; b < 2; ++b)
+                    {
+                        desc.setDepthClamp(b == 0u);
+                        //Line Anti Aliasing
+                        for (uint32_t c = 0; c < 2; ++c)
+                        {
+                            desc.setLineAntiAliasing(c == 0u);
+                            //scissor test
+                            for (uint32_t d = 0; d < 2; ++d)
+                            {
+                                desc.setScissorTest(d == 0);
+                                //Conservative Rasterization
+                                for (uint32_t e = 0; e < 2; ++e)
+                                {
+                                    desc.setConservativeRasterization(e == 0u);
+                                    //forced sample count
+                                    for (uint32_t f = 0; f < 2; ++f)
+                                    {
+                                        desc.setForcedSampleCount(f == 0u);
+                                        //Create and check  state
+                                        RasterizerState::SharedPtr state = RasterizerState::create(desc);
+                                        if (!doStatesMatch(state, desc))
+                                        {
+                                            return test_fail("Rasterizer state doesn't match desc used to create it");
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
-    else
-    {
-        return test_fail("Rasterizer state doesn't match desc used to create it");
-    }
+
+    return TEST_PASS;
 }
 
 bool RasterizerStateTest::doStatesMatch(const RasterizerState::SharedPtr state, const TestDesc& desc)

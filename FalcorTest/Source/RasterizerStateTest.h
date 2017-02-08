@@ -38,7 +38,6 @@ private:
 
     void addTests() override;
     register_testing_func(TestCreate)
-    register_testing_func(TestCreateStress)
 
     static bool doStatesMatch(const RasterizerState::SharedPtr state, const TestDesc& desc);
 };

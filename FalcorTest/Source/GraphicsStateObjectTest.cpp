@@ -37,8 +37,9 @@ testing_func(GraphicsStateObjectTest, TestCreate)
     GraphicsStateObject::Desc desc;
     GraphicsProgram::SharedPtr program = GraphicsProgram::createFromFile("", "Simple.ps.hlsl");
     RootSignature::SharedPtr rootSig = RootSignature::create(program->getActiveVersion()->getReflector().get());
+    Fbo::Desc fboDesc;
 
-    //Maybe the layout is the wrong thing? tried to make a dummy layout here but it still crashes on create
+    //Vertex Layout
     float buffer[13] = { 0.4f };
     Buffer::SharedPtr vBuf = Buffer::create(10u, Resource::BindFlags::Vertex, Buffer::CpuAccess::Read, buffer);
     VertexLayout::SharedPtr vLayout = VertexLayout::create();
@@ -49,7 +50,7 @@ testing_func(GraphicsStateObjectTest, TestCreate)
     vBufLayout->addElement(VERTEX_BITANGENT_NAME, 10u * sizeof(float), ResourceFormat::RGB32Float, 3u, VERTEX_BITANGENT_LOC);
     vLayout->addBufferLayout(0u, vBufLayout);
 
-    Fbo::Desc fboDesc;
+    //States
     BlendState::SharedPtr blendState = BlendState::create(BlendState::Desc());
     RasterizerState::SharedPtr rasterizerState = RasterizerState::create(RasterizerState::Desc());
     DepthStencilState::SharedPtr depthState = DepthStencilState::create(DepthStencilState::Desc());
@@ -65,10 +66,13 @@ testing_func(GraphicsStateObjectTest, TestCreate)
 
     const uint32_t numRandomMasks = 10;
     const uint32 numPrimTypes = 5;
+    //Sample Mask
     for (uint32_t i = 0; i < numRandomMasks; ++i)
     {
         uint32_t sampleMask = static_cast<uint32_t>(rand());
         desc.setSampleMask(sampleMask);
+
+        //Primitive type
         //Start at 1, skip over undefined, which asserts
         for (uint32_t j = 1; j < numPrimTypes - 1 /*patch (the final one) is the only thing left that crashes */; ++j)
         {

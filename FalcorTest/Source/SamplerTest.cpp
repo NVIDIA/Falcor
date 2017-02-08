@@ -43,8 +43,8 @@ testing_func(SamplerTest, TestCreate)
     const uint32_t numComparionModes = 9;
     const uint32_t numAddressModes = 5;
     const uint32_t numRandomNumbers = 10;
+    
     TestDesc desc;
-
     //Tests nearly all combinations of settings
     //Filter
     for (uint32_t i = 0; i < numFilterCombinations; ++i)

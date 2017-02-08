@@ -106,13 +106,6 @@ namespace Falcor
         */
         uint32_t getApiHandle() const;
 
-        /** Capture a buffer in the FBO to a PNG image.\n
-        \param[in] rtIndex The render-target index to capture.
-        \param[in] filename Name of the PNG file to save.
-        \param[in] fileFormat Destination image file format (e.g., PNG, PFM, etc.)
-        */
-        void captureToFile(uint32_t rtIndex, const std::string& filename, Bitmap::FileFormat fileFormat);
-
         /** Get the maximum number of color targets
         */
         static uint32_t getMaxColorTargetCount();

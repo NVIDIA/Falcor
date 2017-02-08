@@ -34,15 +34,14 @@ void DepthStencilStateTest::addTests()
 
 testing_func(DepthStencilStateTest, TestCreate)
 {
-    TestDesc desc;
     const uint32_t boolCombos = 8;
-    bool depthTest[boolCombos] = { true, false, true, true, false, true, false, false };
-    bool writeDepth[boolCombos] = { true, false, true, false, true, false, true, false };
-    bool stencilTest[boolCombos] = { true, false, false, true, true, false, false, true };
+    const bool depthTest[boolCombos] = { true, false, true, true, false, true, false, false };
+    const bool writeDepth[boolCombos] = { true, false, true, false, true, false, true, false };
+    const bool stencilTest[boolCombos] = { true, false, false, true, true, false, false, true };
     const uint32_t numCompareFunc = 9;
     const uint32_t numFaceModes = 3;
     const uint32_t numStencilOps = 8;
-    //loops through nearly all permuatations of settings
+    TestDesc desc;
     for (uint32_t i = 0; i < boolCombos; ++i)
     {
         desc.setDepthTest(depthTest[i]);

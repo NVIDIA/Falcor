@@ -35,8 +35,6 @@ void VaoTest::addTests()
     addTestToList<TestLayout>();
 }
 
-//It's possible these functions could be better. There's a medium amount of copypaste but there's slight variation 
-//so it might not be worth to abstract some of this into helpers
 testing_func(VaoTest, TestSimpleCreate)
 {
     //Create vertex buffer
@@ -143,6 +141,7 @@ testing_func(VaoTest, TestMultiBufferCreate)
         pLayout->addBufferLayout(i, pBufferLayout);
     }
 
+    //Create VAO and check properties
     Vao::Topology topology = Vao::Topology::LineList;
     Vao::SharedPtr pVao = Vao::create(bufferVec, pLayout, nullptr, ResourceFormat::R32Uint, topology);
     //check 'global' properties
@@ -192,6 +191,7 @@ testing_func(VaoTest, TestLayout)
     }
     pLayout->addBufferLayout(0u, pBufferLayout);
 
+    //Create VAO and check properties
     Vao::Topology topology = Vao::Topology::TriangleList;
     Vao::SharedPtr pVao = Vao::create(bufferVec, pLayout, nullptr, ResourceFormat::R32Uint, topology);
     //check 'global' properties

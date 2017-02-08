@@ -71,33 +71,41 @@ testing_func(FboTest, TestCreate)
 testing_func(FboTest, TestDepthStencilAttach)
 {
     //attachDepthStencilTarget, the fx this is meant to test, calls applyDepthAttachment, which is unimplemented in d3d12
-    const uint32_t texWidth = 800u;
-    const uint32_t texHeight = 600u;
+    const uint32_t numDimensions = 5;
+    const uint32_t widths[numDimensions] = { 1920u, 1440u, 1280u, 1600u, 1280u };
+    const uint32_t heights[numDimensions] = { 1080u, 900u, 800u, 1200u, 960u };
+    const uint32_t numFormats = 4;
+    //D24Unorm crashes in texture, not sure why
+    const ResourceFormat formats[numFormats] = { ResourceFormat::D32Float, ResourceFormat::D16Unorm, ResourceFormat::D32FloatS8X24, ResourceFormat::D24UnormS8 };
+    
+    //Attaching Textures with Various properties
     Fbo::SharedPtr fbo = Fbo::create();
-    Texture::SharedPtr tex = Texture::create2D(texWidth, texHeight, ResourceFormat::D32Float, 1u, 
-        4294967295u, (const void*)nullptr, Resource::BindFlags::DepthStencil);
-    fbo->attachDepthStencilTarget(tex);
-
-    if (fbo->getDepthStencilTexture()->getWidth() != texWidth || 
-        fbo->getDepthStencilTexture()->getHeight() != texHeight ||
-        fbo->getDesc().getDepthStencilFormat() != ResourceFormat::D32Float ||
-        fbo->getDesc().isDepthStencilUav() /*should be false without uav flag on texture*/)
+    for (uint32_t i = 0; i < numDimensions; ++i)
     {
-        return test_fail("Fbo properties are incorrect after attaching depth stencil texture");
+        for (uint32_t j = 0; j < numDimensions; ++j)
+        {
+            for (uint32_t k = 0; k < 2; ++k)
+            {
+                //Create and attach tex
+                Texture::SharedPtr tex = Texture::create2D(widths[i], heights[j], formats[k], 1u,
+                    Resource::kMaxPossible, (const void*)nullptr, Resource::BindFlags::DepthStencil);
+                fbo->attachDepthStencilTarget(tex);
+
+                //Check properties
+                if (fbo->getDepthStencilTexture()->getWidth() != widths[i] ||
+                    fbo->getDepthStencilTexture()->getHeight() != heights[j] ||
+                    fbo->getDesc().getDepthStencilFormat() != formats[k] ||
+                    fbo->getDesc().isDepthStencilUav() /*should be false without uav flag on texture*/)
+                {
+                    return test_fail("Fbo properties are incorrect after attaching depth stencil texture");
+                }
+            }
+        }
     }
 
-    ////Cant create d16 uav | depthStencil, texture format needs to be typeless not currently supported.
+    //Not testing UAV == True b/c not currently supported w/ depth stencil
 
-    //Texture::BindFlags flags = Texture::BindFlags::DepthStencil | Texture::BindFlags::UnorderedAccess;
-    //tex = Texture::create2D(texWidth, texHeight, ResourceFormat::D16Unorm, 1u,
-    //    4294967295u, (const void*)nullptr, flags);
-    //fbo->attachDepthStencilTarget(tex, 0u, 0u, 0u);
-    //if (fbo->getDesc().getDepthStencilFormat() != ResourceFormat::D16Unorm ||
-    //    !fbo->getDesc().isDepthStencilUav() /*should be true with unordered access flag*/)
-    //{
-    //    return test_fail("Fbo properties are incorrect after attaching depth stencil texture with Unordered Access bind flag");
-    //}
-
+    //Attaching nullptr
     fbo->attachDepthStencilTarget(nullptr, 0u, 0u, 0u);
     if (fbo->getDesc().getDepthStencilFormat() != ResourceFormat::Unknown ||
         fbo->getDesc().isDepthStencilUav() /*should be false from nullptr texture*/)
@@ -110,68 +118,97 @@ testing_func(FboTest, TestDepthStencilAttach)
 
 testing_func(FboTest, TestColorAttach)
 {
-    //Also, attachColorTarget, the fx this is meant to test, calls applyColorAttachment, which is unimplemented in d3d12
+    const uint32_t numFormats = 39u;
+    //The H/W aspects of this function are tested in TestGetWidthHeight, const texture size should be fine
+    const uint32_t width = 800u;
+    const uint32_t height = 600u;
+    const uint32_t numTextureTypes = 4u; //1d, 2d, 3d, cube
+
+    uint32_t ctIndex = 0;
     Fbo::SharedPtr fbo = Fbo::create();
-    //for each color target
-    for (uint32_t i = 0; i < Fbo::getMaxColorTargetCount(); ++i)
+    //Texture Format
+    //Starts at 1 to skip format::unknown
+    for (uint32 i = 1; i < numFormats; ++i)
     {
+        ResourceFormat format = static_cast<ResourceFormat>(i);
+        //These formats are skipped because they cause a crash
+        if (format == ResourceFormat::RGB16Unorm || format == ResourceFormat::RGB16Snorm || format == ResourceFormat::RGB16Float 
+            || format == ResourceFormat::RGB32Float || format == ResourceFormat::RGB9E5Float)
+        {
+            continue;
+        }
+
         Resource::BindFlags flags = Resource::BindFlags::RenderTarget;
-        //Set UA on every other color target
-        if (i % 2 == 0)
+        //UAV flag
+        for (uint32_t j = 0; j < 2; ++j)
         {
-            flags |= Resource::BindFlags::UnorderedAccess;
-        }
-
-        //Set loadAsSrgb on every third color target
-        bool loadAsSrgb = false;
-        if (i % 3 == 0)
-        {
-            loadAsSrgb = true;
-        }
-
-        //Create tex and attach to fbo
-        const uint32_t texWidth = 800u;
-        const uint32_t texHeight = 600u;
-        Texture::SharedPtr tex = nullptr;
-        if (i < 2)
-        {
-            tex = Texture::create1D(texWidth, ResourceFormat::R32Float, 1u, 4294967295u, (const void*)nullptr, flags);
-        }
-        else if (i < 4)
-        {
-            tex = Texture::create2D(texWidth, texHeight, ResourceFormat::R32Float, 1u, 4294967295u, (const void*)nullptr, flags);
-        }
-        else if (i < 6)
-        {
-            tex = Texture::create3D(texWidth, texHeight, 1u, ResourceFormat::R32Float, 4294967295u, (const void*)nullptr, flags);
-        }
-        else
-        {
-            tex = Texture::createCube(texWidth, texHeight, ResourceFormat::R32Float, 1u, 4294967295u, (const void*)nullptr, flags);
-        }
-
-        fbo->attachColorTarget(tex, i);
-
-        //Check uav
-        if ((flags & Resource::BindFlags::UnorderedAccess) != Resource::BindFlags::None)
-        {
-            if (!fbo->getDesc().isColorTargetUav(i))
+            //These formats are skipped because they cause a crash with UAV flag
+            if (format == ResourceFormat::RGB5A1Unorm || format == ResourceFormat::RGBA8UnormSrgb)
             {
-                return test_fail("Fbo color target missing uav flag despite texture being created with unordered access flag");
+                continue;
             }
-        }
-        else
-        {
-            if (fbo->getDesc().isColorTargetUav(i))
-            {
-                return test_fail("Fbo color target has uav flag despite texture being created without unordered access flag");
-            }
-        }
 
-        //check format
-        if (tex->getFormat() != fbo->getDesc().getColorTargetFormat(i))
-        {
-            return test_fail("Fbo color target format does not match the format of the attached texture");
+            if (j == 0)
+            {
+                flags |= Resource::BindFlags::UnorderedAccess;
+            }
+
+            //texture type
+            for (uint32_t k = 0; k < numTextureTypes; ++k)
+            {
+                Texture::SharedPtr tex = nullptr;
+                switch (k)
+                {
+                case 0: 
+                    tex = Texture::create1D(width, format, 1u, Resource::kMaxPossible, (const void*)nullptr, flags);
+                    break;
+                case 1:
+                    tex = Texture::create2D(width, height, format, 1u, Resource::kMaxPossible, (const void*)nullptr, flags);
+                    break;
+                case 2:
+                    tex = Texture::create3D(width, height, 1u, format, Resource::kMaxPossible, (const void*)nullptr, flags);
+                    break;
+                case 3:
+                    tex = Texture::createCube(width, height, format, 1u, Resource::kMaxPossible, (const void*)nullptr, flags);
+                    break;
+                default: 
+                    should_not_get_here();
+                }
+
+                //wrap around ct index if necessary
+                if (ctIndex >= Fbo::getMaxColorTargetCount())
+                {
+                    ctIndex = 0;
+                }
+
+                //attach color target
+                fbo->attachColorTarget(tex, ctIndex);
+
+                //Check properties
+                //Check uav
+                if ((flags & Resource::BindFlags::UnorderedAccess) != Resource::BindFlags::None)
+                {
+                    if (!fbo->getDesc().isColorTargetUav(ctIndex))
+                    {
+                        return test_fail("Fbo color target missing uav flag despite texture being created with unordered access flag");
+                    }
+                }
+                else
+                {
+                    if (fbo->getDesc().isColorTargetUav(ctIndex))
+                    {
+                        return test_fail("Fbo color target has uav flag despite texture being created without unordered access flag");
+                    }
+                }
+
+                //check format
+                if (format != fbo->getDesc().getColorTargetFormat(ctIndex))
+                {
+                    return test_fail("Fbo color target format does not match the format of the attached texture");
+                }
+
+                ++ctIndex;
+            }
         }
     }
 
@@ -185,17 +222,17 @@ testing_func(FboTest, TestZeroAttachment)
 
 testing_func(FboTest, TestGetWidthHeight)
 {
-    //This fails, the logic in here tests as if verifyAttachment is being called but it's not being called
-    Fbo::SharedPtr fbo = Fbo::create();
     const uint32_t numResolutions = 7; //should eq max color target count - 1
-    uint32_t widths[numResolutions] = { 1920u, 1440u, 1280u, 1600u, 1280u, 800u, 400u };
-    uint32_t heights[numResolutions] = { 1080u, 900u, 800u, 1200u, 960u, 700u, 350u };
+    const uint32_t widths[numResolutions] = { 1920u, 1440u, 1280u, 1600u, 1280u, 800u, 400u };
+    const uint32_t heights[numResolutions] = { 1080u, 900u, 800u, 1200u, 960u, 700u, 350u };
+
+    Fbo::SharedPtr fbo = Fbo::create();
     //For each  texture resolution
     for (uint32_t i = 0; i < numResolutions; ++i)
     {
         //create texture
         Texture::SharedPtr tex = Texture::create2D(widths[i], heights[i], ResourceFormat::RGBA32Float, 1u, 
-            4294967295u, (const void*)nullptr, Resource::BindFlags::RenderTarget);
+            Resource::kMaxPossible, (const void*)nullptr, Resource::BindFlags::RenderTarget);
         uint32_t curWidth = -1;
         uint32_t curHeight = -1;
         for (uint32_t j = 0; j < i + 1; ++j)
@@ -243,13 +280,14 @@ testing_func(FboTest, TestCreateCubemap)
 bool FboTest::isStressCreateCorrect(bool cubemap)
 {
     const uint32_t numResolutions = 6;
-    uint32_t widths[numResolutions] = { 1920u, 1440u, 1280u, 1600u, 1280u, 800u };
-    uint32_t heights[numResolutions] = { 1080u, 900u, 800u, 1200u, 960u, 700u };
+    const uint32_t widths[numResolutions] = { 1920u, 1440u, 1280u, 1600u, 1280u, 800u };
+    const uint32_t heights[numResolutions] = { 1080u, 900u, 800u, 1200u, 960u, 700u };
+    //Not too many formats, tested more thoroughly in color/depth attach
     const uint32_t numTestFormats = 2;
-    ResourceFormat resources[numTestFormats] = { ResourceFormat::RGBA32Float, ResourceFormat::RGBA32Uint };
-    ResourceFormat depths[numTestFormats] = { ResourceFormat::D16Unorm, ResourceFormat::D24Unorm };
+    const ResourceFormat resources[numTestFormats] = { ResourceFormat::RGBA32Float, ResourceFormat::RGBA32Uint };
+    const ResourceFormat depths[numTestFormats] = { ResourceFormat::D16Unorm, ResourceFormat::D24Unorm };
+    
     Fbo::Desc desc;
-
     //formats
     //skip past resource format 0, unknown.
     for (uint32_t i = 0; i < numTestFormats; ++i)
@@ -264,14 +302,7 @@ bool FboTest::isStressCreateCorrect(bool cubemap)
             //set properties for all color targets
             for (uint32_t k = 0; k < Fbo::getMaxColorTargetCount(); ++k)
             {
-                if (cubemap)
-                {
-                    desc.setColorTarget(k, format, false);
-                }
-                else
-                {
-                    desc.setColorTarget(k, format, j != 0);
-                }
+                 desc.setColorTarget(k, format, j != 0u);
             }
             //create fbos with created desc for each resolution
             for (uint32_t x = 0; x < numResolutions; ++x)

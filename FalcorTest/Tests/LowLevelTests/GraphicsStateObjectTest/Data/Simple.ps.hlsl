@@ -37,5 +37,7 @@ cbuffer PerFrameCB : register(b0)
 
 vec4 main(VS_OUT vOut) : SV_TARGET
 {
-    return vec4(color, 1.0f);
+	vOut.posW += vOut.normalW + vOut.tangentW + vOut.bitangentW;
+	vOut.posW = normalize(vOut.posW);
+    return float4(vOut.posW, 1.0f);
 }

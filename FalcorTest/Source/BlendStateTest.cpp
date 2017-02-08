@@ -36,50 +36,109 @@ void BlendStateTest::addTests()
 
 testing_func(BlendStateTest, TestCreate)
 {
-    glm::vec4 blendFactor(1.f);
-    BlendState::BlendOp blendOp = BlendState::BlendOp::Add;
-    BlendState::BlendFunc blendFunc = BlendState::BlendFunc::Zero;
-
+    const uint32_t numBlendFactors = 10u;
+    const BlendState::BlendOp blendOp = BlendState::BlendOp::Add;
+    const BlendState::BlendFunc blendFunc = BlendState::BlendFunc::Zero;
     TestDesc desc;
-    //Pick some random assortment of parameters and ensure they match after being passed to state
-    desc.setAlphaToCoverage(true);
-    desc.setBlendFactor(blendFactor);
-    desc.setIndependentBlend(true);
+    //RT stuff doesn't need to be thoroughly tested here, tested in TestRtArray
     desc.setRenderTargetWriteMask(0, true, true, true, true);
     desc.setRtBlend(0, true);
     desc.setRtParams(0, blendOp, blendOp, blendFunc, blendFunc, blendFunc, blendFunc);
-
-    BlendState::SharedPtr blendState = nullptr;
-    blendState = BlendState::create(desc);
-
-    if (doStatesMatch(blendState, desc))
+    //Blend factor
+    for (uint32_t i = 0; i < numBlendFactors; ++i)
     {
-        return TEST_PASS;
+        float colorR = static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
+        float colorG = static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
+        float colorB = static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
+        float colorA = static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
+        desc.setBlendFactor(glm::vec4(colorR, colorG, colorB, colorA));
+
+        //Set Alpha To Coverage
+        for (uint32_t j = 0; j < 2; ++j)
+        {
+            desc.setAlphaToCoverage(j == 0u);
+            //Set Independent Blend
+            for (uint32_t k = 0; k < 2; ++k)
+            {
+                desc.setIndependentBlend(k == 0u);
+                //Create and Check blend state
+                BlendState::SharedPtr blendState = BlendState::create(desc);
+                if (!doStatesMatch(blendState, desc))
+                {
+                    return test_fail("Blend state doesn't match desc used to create");
+                }
+            }
+        }
     }
-    else
-    {
-        return test_fail("Blend state doesn't match desc used to create");
-    }
+
+    return TEST_PASS;
 }
 
 testing_func(BlendStateTest, TestRtArray)
 {
-    const int32_t numBlendOps = 5;
-    const int32_t numBlendFuncs = 16;
+    const uint32_t numBlendOps = 5;
+    const uint32_t numBlendFuncs = 16;
+    uint32_t rtIndex = 0;
 
-    //create default
     TestDesc desc;
-    //Set parameters in the RT array and ensure they match created state
-    for (uint32_t i = 0; i < Fbo::getMaxColorTargetCount(); ++i)
+    //rgbop
+    for (uint32_t i = 0; i < numBlendOps; ++i)
     {
-        BlendState::BlendOp blendOp = static_cast<BlendState::BlendOp>(i % numBlendOps);
-        BlendState::BlendFunc blendFunc = static_cast<BlendState::BlendFunc>(i % numBlendFuncs);
-
-        desc.setRtParams(i, blendOp, blendOp, blendFunc, blendFunc, blendFunc, blendFunc);
-        BlendState::SharedPtr state = BlendState::create(desc);
-        if (!doStatesMatch(state, desc))
+        BlendState::BlendOp rgbOp = static_cast<BlendState::BlendOp>(i);
+        //alpha op
+        for (uint32_t j = 0; j < numBlendOps; ++j)
         {
-            return test_fail("Render target desc doesn't match ones used to create");
+            BlendState::BlendOp alphaOp = static_cast<BlendState::BlendOp>(j);
+            //srcRgbFunc
+            for (uint32_t k = 0; k < numBlendFuncs; ++k)
+            {
+                BlendState::BlendFunc srcRgbFunc = static_cast<BlendState::BlendFunc>(k);
+                //dstRgbFunc
+                for (uint32_t x = 0; x < numBlendFuncs; ++x)
+                {
+                    BlendState::BlendFunc dstRgbFunc = static_cast<BlendState::BlendFunc>(x);
+                    //srcAlphaFunc
+                    for (uint32_t y = 0; y < numBlendFuncs; ++y)
+                    {
+                        BlendState::BlendFunc srcAlphaFunc = static_cast<BlendState::BlendFunc>(y);
+                        //dstAlphaFunc
+                        for (uint32_t z = 0; z < numBlendFuncs; ++z)
+                        {
+                            BlendState::BlendFunc dstAlphaFunc = static_cast<BlendState::BlendFunc>(z);
+                            //RT Blend
+                            for (uint32_t a = 0; a < 2; ++a)
+                            {
+                                bool rtBlend = a == 0u;
+                                //RT writeMask
+                                for (uint32_t b = 0; b < 13; ++b)
+                                {
+                                    bool writeRed = (b & 1) != 0u;
+                                    bool writeBlue = (b & 2) != 0u;
+                                    bool writeGreen = (b & 4) != 0u;
+                                    bool writeAlpha = (b & 8) != 0u;
+
+                                    if (rtIndex >= Fbo::getMaxColorTargetCount())
+                                    {
+                                        rtIndex = 0;
+                                    }
+
+                                    //Set all properties
+                                    desc.setRtParams(rtIndex, rgbOp, alphaOp, srcRgbFunc, dstRgbFunc, srcAlphaFunc, dstAlphaFunc);
+                                    desc.setRtBlend(rtIndex, rtBlend);
+                                    desc.setRenderTargetWriteMask(rtIndex, writeRed, writeGreen, writeBlue, writeAlpha);
+                                    //Create and check state
+                                    BlendState::SharedPtr state = BlendState::create(desc);
+                                    if (!doStatesMatch(state, desc))
+                                    {
+                                        return test_fail("Render target desc doesn't match ones used to create");
+                                    }
+                                    ++rtIndex;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 

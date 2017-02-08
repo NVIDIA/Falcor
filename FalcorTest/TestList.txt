@@ -1,4 +1,3 @@
-BlendStateTest debugd3d12
 BlendStateTest released3d12
 RasterizerStateTest DeBuGd3D12
 RasterizerStateTest RELEASED3D12
