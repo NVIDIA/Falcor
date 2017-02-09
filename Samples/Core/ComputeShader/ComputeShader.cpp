@@ -53,6 +53,17 @@ void ComputeShader::onLoad()
     mpBlitVars = GraphicsVars::create(mpBlitPass->getProgram()->getActiveVersion()->getReflector());
 
     mpTmpTexture = createTmpTex(mpDefaultFBO.get());
+
+    std::vector<ArgList::Arg> filenames = mArgList.getValues("loadimage");
+    if (!filenames.empty())
+    {
+        loadImageFromFile(filenames[0].asString());
+    }
+
+    if (mArgList.argExists("pixelate"))
+    {
+        mbPixelate = true;
+    }
 }
 
 void ComputeShader::loadImage()
@@ -60,12 +71,17 @@ void ComputeShader::loadImage()
     std::string filename;
     if(openFileDialog("Supported Formats\0*.jpg;*.bmp;*.dds;*.png;*.tiff;*.tif;*.tga\0\0", filename))
     {
-        mpImage = createTextureFromFile(filename, false, false);
- 
-        resizeSwapChain(mpImage->getWidth(), mpImage->getHeight());
-        mpProgVars->setTexture("gInput", mpImage);
-        mpTmpTexture = createTmpTex(mpDefaultFBO.get());
+        loadImageFromFile(filename);
     }
+}
+
+void ComputeShader::loadImageFromFile(std::string filename)
+{
+    mpImage = createTextureFromFile(filename, false, false);
+
+    resizeSwapChain(mpImage->getWidth(), mpImage->getHeight());
+    mpProgVars->setTexture("gInput", mpImage);
+    mpTmpTexture = createTmpTex(mpDefaultFBO.get());
 }
 
 void ComputeShader::onFrameRender()

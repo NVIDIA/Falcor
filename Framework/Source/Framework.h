@@ -30,14 +30,16 @@
 #include <stdint.h>
 #include <memory>
 #include "glm/glm.hpp"
+#include "Utils/OS.h"
+#include <iostream>
 
 using namespace glm;
 
 #ifndef arraysize
-	#define arraysize(a) (sizeof(a)/sizeof(a[0]))
+#define arraysize(a) (sizeof(a)/sizeof(a[0]))
 #endif
 #ifndef offsetof
-	#define offsetof(s, m) (size_t)( (ptrdiff_t)&reinterpret_cast<const volatile char&>((((s *)0)->m)) )
+#define offsetof(s, m) (size_t)( (ptrdiff_t)&reinterpret_cast<const volatile char&>((((s *)0)->m)) )
 #endif
 
 #ifdef assert
@@ -46,13 +48,19 @@ using namespace glm;
 
 #ifdef _DEBUG
 #define assert(a)\
-	if (!(a)) {\
+    if (!(a)) {\
 		std::string str = "assertion failed(" + std::string(#a) + ")\nFile " + __FILE__ + ", line " + std::to_string(__LINE__);\
 		Falcor::logError(str);\
 	}
+    
 #define should_not_get_here() assert(false);
 #else
+#ifdef _AUTOTESTING
+#define assert(a) if (!(a)) throw std::exception("Assertion Failure");
+#else
 #define assert(a)
+#endif
+
 #define should_not_get_here() __assume(0)
 #endif
 

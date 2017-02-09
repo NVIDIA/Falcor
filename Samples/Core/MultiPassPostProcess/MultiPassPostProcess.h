@@ -50,4 +50,5 @@ private:
     bool mEnableRadialBlur = false;
     bool mEnableGrayscale = false;
     void loadImage();
+    void loadImageFromFile(std::string filename);
 };

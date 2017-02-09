@@ -261,6 +261,18 @@ void ModelViewer::onLoad()
     mpProgramVars = GraphicsVars::create(mpProgram->getActiveVersion()->getReflector());
     mpGraphicsState = GraphicsState::create();
     mpGraphicsState->setProgram(mpProgram);
+
+    std::vector<ArgList::Arg> filenames = mArgList.getValues("loadmodel");
+    if (!filenames.empty())
+    {
+        loadModelFromFile(filenames[0].asString());
+    }
+
+    std::vector<ArgList::Arg> cameraRadius = mArgList.getValues("cameraradius");
+    if (!cameraRadius.empty())
+    {
+        mModelViewCameraController.setModelParams(mpModel->getCenter(), cameraRadius[0].asFloat(), 1.f);
+    }
 }
 
 void ModelViewer::onFrameRender()

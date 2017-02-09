@@ -67,6 +67,28 @@ namespace Falcor
         return true;
     }
 
+    bool SceneImporter::getFloatVecAnySize(const rapidjson::Value& jsonVal, const std::string& desc, std::vector<float>& vec)
+    {
+        if (jsonVal.IsArray() == false)
+        {
+            error("Trying to load a vector for " + desc + ", but JValue is not an array");
+            return false;
+        }
+
+        vec.resize(jsonVal.Size());
+        for (uint32_t i = 0; i < jsonVal.Size(); i++)
+        {
+            if (jsonVal[i].IsNumber() == false)
+            {
+                error("Trying to load a vector for " + desc + ", but one the elements is not a number.");
+                return false;
+            }
+
+            vec[i] = (float)(jsonVal[i].GetDouble());
+        }
+        return true;
+    }
+
     Scene::SharedPtr SceneImporter::loadScene(const std::string& filename, uint32_t modelLoadFlags, uint32_t sceneLoadFlags)
     {
         SceneImporter importer;
@@ -1255,8 +1277,9 @@ namespace Falcor
                     b = getFloatVec<4>(value, "custom-field vec4", &userVar.vec4[0]);
                     break;
                 default:
-                    error("User-defined section contains a vector with unsupported size(" + std::to_string(value.Size()) + "). Legal vector size are 2,3 and 4");
-                    return false;
+                    userVar.type = Scene::UserVariable::Type::Vector;
+                    b = getFloatVecAnySize(value, "vector of floats", userVar.vector);
+                    break;
                 }
                 if(b == false)
                 {

@@ -48,4 +48,5 @@ private:
     FullScreenPass::UniquePtr mpBlitPass;
     Texture::SharedPtr mpTmpTexture;
     void loadImage();
+    void loadImageFromFile(std::string file);
 };

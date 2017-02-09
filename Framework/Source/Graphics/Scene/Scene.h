@@ -60,7 +60,8 @@ namespace Falcor
                 Vec2,
                 Vec3,
                 Vec4,
-                Bool
+                Bool,
+                Vector,
             };
 
             Type type = Type::Unknown;
@@ -77,6 +78,7 @@ namespace Falcor
             glm::vec2 vec2;
             glm::vec3 vec3;
             glm::vec4 vec4;
+            std::vector<float> vector;
 
             UserVariable() { }
             UserVariable(const int32_t      v) : i32(v),            type(Type::Int)       { }

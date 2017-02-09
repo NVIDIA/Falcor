@@ -88,9 +88,11 @@ namespace Falcor
         pVao = Vao::create(buffers, pLayout, nullptr, ResourceFormat::Unknown, Vao::Topology::TriangleStrip);
     }
 
-    FullScreenPass::~FullScreenPass()
+    FullScreenPass::~FullScreenPass() 
     {
+#ifndef _AUTOTESTING
         assert(sObjectCount > 0);
+#endif
         sObjectCount--;
         if (sObjectCount == 0)
         {

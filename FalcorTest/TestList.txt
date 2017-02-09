@@ -1,0 +1,24 @@
+BlendStateTest released3d12
+RasterizerStateTest DeBuGd3D12
+RasterizerStateTest RELEASED3D12
+DepthStencilStateTest debugd3d12
+DepthStencilStateTest released3d12
+FboTest released3d12
+SamplerTest debugd3d12
+SamplerTest released3d12
+VaoTest debugd3d12
+VaoTest released3d12
+GraphicsStateObjectTest released3d12
+ShaderBuffers released3d12 : -ssframes 50 -shutdown 2000 
+ComputeShader released3d12 : -ssframes 50 -shutdown 2000 -loadimage C:\\Users\\clavelle\\Desktop\\FalcorGitHub\\Media\\StockImage.jpg
+ComputeShader released3d12 : -ssframes 50 -shutdown 2000 -loadimage C:\\Users\\clavelle\\Desktop\\FalcorGitHub\\Media\\StockImage.jpg -pixelate
+ComputeShader released3d12 : -ssframes 50 -shutdown 2000 -loadimage C:\\Users\\clavelle\\Desktop\\FalcorGitHub\\Media\\TestTex2.png
+ComputeShader released3d12 : -ssframes 50 -shutdown 2000 -loadimage C:\\Users\\clavelle\\Desktop\\FalcorGitHub\\Media\\TestTex2.png -pixelate
+MultiPassPostProcess released3d12 : -ssframes 40 -shutdown 1000 -loadimage C:\\Users\\clavelle\\Desktop\\FalcorGitHub\\Media\\StockImage.jpg
+MultiPassPostProcess released3d12 : -ssframes 40 -shutdown 1000 -loadimage C:\\Users\\clavelle\\Desktop\\FalcorGitHub\\Media\\StockImage.jpg -radialblur
+MultiPassPostProcess released3d12 : -ssframes 40 -shutdown 1000 -loadimage C:\\Users\\clavelle\\Desktop\\FalcorGitHub\\Media\\StockImage.jpg -radialblur -grayscale
+MultiPassPostProcess released3d12 : -ssframes 40 -shutdown 1000 -loadimage C:\\Users\\clavelle\\Desktop\\FalcorGitHub\\Media\\TestTex2.png
+MultiPassPostProcess released3d12 : -ssframes 40 -shutdown 1000 -loadimage C:\\Users\\clavelle\\Desktop\\FalcorGitHub\\Media\\TestTex2.png -radialblur
+MultiPassPostProcess released3d12 : -ssframes 40 -shutdown 1000 -loadimage C:\\Users\\clavelle\\Desktop\\FalcorGitHub\\Media\\TestTex2.png -radialblur -grayscale
+ModelViewer released3d12 10 .10 : -loadtime -perfframes 250 1250 -ssframes 50 -shutdown 2500 -cameraradius 3 -loadmodel C:\\Users\\clavelle\\Desktop\\FalcorGitHub\\Media\\classroom-minimal.obj
+ModelViewer released3d12 10 .10 : -loadtime -perfframes 250 1250 -ssframes 50 -shutdown 2500 -cameraradius 700 -loadmodel C:\\Users\\clavelle\\Desktop\\FalcorGitHub\\Media\\sponza.obj

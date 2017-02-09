@@ -1,3 +1,4 @@
+FalcorTest/Bin/*
 Bin/*
 *.user
 *.sdf
@@ -5,3 +6,4 @@ Bin/*
 *.suo
 Falcor.VC.VC.opendb
 Falcor.VC.db
+FalcorTest/TestResults/*

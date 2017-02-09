@@ -112,10 +112,6 @@ namespace Falcor
         return true;
     }
 
-    void Fbo::captureToFile(uint32_t rtIndex, const std::string& filename, Bitmap::FileFormat fileFormat)
-    {
-    }
-
     RenderTargetView::SharedPtr Fbo::getRenderTargetView(uint32_t rtIndex) const
     {
         const auto& rt = mColorAttachments[rtIndex];

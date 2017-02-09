@@ -88,6 +88,7 @@ namespace Falcor
 
         template<uint32_t VecSize>
         bool getFloatVec(const rapidjson::Value& jsonVal, const std::string& desc, float vec[VecSize]);
+        bool getFloatVecAnySize(const rapidjson::Value& jsonVal, const std::string& desc, std::vector<float>& vec);
         rapidjson::Document mJDoc;
         Scene::SharedPtr mpScene = nullptr;
         std::string mFilename;

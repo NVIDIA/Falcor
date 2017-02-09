@@ -4,20 +4,21 @@
 
 namespace Falcor
 {
-
     void ArgList::parseCommandLine(const std::string& cmdLine)
     {
         std::stringstream args(cmdLine);
         std::string token;
         std::string currentArg;
-        while (std::getline(args, token, ' '))
+        while (!args.eof())
         {
-            if (token.find('-') != std::string::npos)
+            std::getline(args, token, ' ');
+            size_t dashIndex = token.find('-');
+            if (dashIndex == 0)
             {
                 currentArg = token.substr(1);
                 addArg(currentArg);
             }
-            else if(!token.empty())
+            else if(!token.empty() && token.find_first_not_of(' ') != std::string::npos)
             {
                 addArg(currentArg, token);
             }
