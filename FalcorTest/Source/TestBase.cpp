@@ -94,12 +94,6 @@ std::vector<TestBase::TestData> TestBase::runTests()
     return results;
 }
 
-void TestBase::addTests()
-{}
-
-void TestBase::onInit()
-{}
-
 void TestBase::GenerateXML(const std::vector<std::string>& xmlStrings)
 {
     std::ofstream of;

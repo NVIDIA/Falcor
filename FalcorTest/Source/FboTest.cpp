@@ -44,7 +44,7 @@ testing_func(FboTest, TestDefault)
     Fbo::SharedPtr fbo = Fbo::getDefault();
     if (fbo->getApiHandle() == -1)
     {
-        return TEST_PASS;
+        return test_pass();
     }
     else
     {
@@ -59,7 +59,7 @@ testing_func(FboTest, TestCreate)
     //However, fbos don't have an api handle in d3d12, so both this and default should have api handle -1
     if (fbo->getApiHandle() == -1)
     {
-        return TEST_PASS;
+        return test_pass();
     }
     else
     {
@@ -112,7 +112,7 @@ testing_func(FboTest, TestDepthStencilAttach)
         return test_fail("Fbo properties are incorrect after attaching depth stencil texture with nullptr");
     }
 
-    return TEST_PASS;
+    return test_pass();
 }
 
 testing_func(FboTest, TestColorAttach)
@@ -199,7 +199,7 @@ testing_func(FboTest, TestColorAttach)
         }
     }
 
-    return TEST_PASS;
+    return test_pass();
 }
 
 testing_func(FboTest, TestGetWidthHeight)
@@ -232,14 +232,14 @@ testing_func(FboTest, TestGetWidthHeight)
         }
     }
 
-    return TEST_PASS;
+    return test_pass();
 }
 
 testing_func(FboTest, TestCreate2D)
 {
     if (isStressCreateCorrect(false))
     {
-        return TEST_PASS;
+        return test_pass();
     }
     else
     {
@@ -251,7 +251,7 @@ testing_func(FboTest, TestCreateCubemap)
 {
     if (isStressCreateCorrect(true))
     {
-        return TEST_PASS;
+        return test_pass();
     }
     else
     {

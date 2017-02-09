@@ -37,6 +37,7 @@ private:
     };
 
     void addTests() override;
+    void onInit() override {};
     register_testing_func(TestCreate);
 
     static bool doStatesMatch(Sampler::SharedPtr sampler, TestDesc desc);

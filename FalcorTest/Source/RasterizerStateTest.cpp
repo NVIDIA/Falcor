@@ -97,7 +97,7 @@ testing_func(RasterizerStateTest, TestCreate)
         }
     }
 
-    return TEST_PASS;
+    return test_pass();
 }
 
 bool RasterizerStateTest::doStatesMatch(const RasterizerState::SharedPtr state, const TestDesc& desc)

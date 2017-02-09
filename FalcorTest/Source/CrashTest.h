@@ -32,6 +32,7 @@ class CrashTest : public TestBase
 {
 private:
     void addTests() override;
+    void onInit() override {};
     register_testing_func(TestThrow)
     register_testing_func(TestVector)
     register_testing_func(TestAssert)

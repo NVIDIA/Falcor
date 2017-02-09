@@ -32,6 +32,7 @@ class FboTest : public TestBase
 {
 private:
     void addTests() override;
+    void onInit() override {};
     register_testing_func(TestDefault)
     register_testing_func(TestCreate)
     //Does these also include get texture versions? this will probably use checkstatus

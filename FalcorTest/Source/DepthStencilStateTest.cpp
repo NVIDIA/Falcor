@@ -92,7 +92,7 @@ testing_func(DepthStencilStateTest, TestCreate)
         }
     }
 
-    return TEST_PASS;
+    return test_pass();
 }
 
 bool DepthStencilStateTest::doStatesMatch(const DepthStencilState::SharedPtr state, const TestDesc& desc)

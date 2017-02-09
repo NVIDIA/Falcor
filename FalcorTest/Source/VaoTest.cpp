@@ -70,7 +70,7 @@ testing_func(VaoTest, TestSimpleCreate)
         return test_fail("Vao's properties do not match the properties that were used to create it");
     }
 
-    return TEST_PASS;
+    return test_pass();
 }
 
 testing_func(VaoTest, TestIndexedCreate)
@@ -113,7 +113,7 @@ testing_func(VaoTest, TestIndexedCreate)
         return test_fail("Vao's properties do not match the properties that were used to create it");
     }
 
-    return TEST_PASS;
+    return test_pass();
 }
 
 testing_func(VaoTest, TestMultiBufferCreate)
@@ -164,7 +164,7 @@ testing_func(VaoTest, TestMultiBufferCreate)
         }
     }
 
-    return TEST_PASS;
+    return test_pass();
 }
 
 testing_func(VaoTest, TestLayout)
@@ -214,7 +214,7 @@ testing_func(VaoTest, TestLayout)
         }
     }
 
-    return TEST_PASS;
+    return test_pass();
 }
 
 int main()

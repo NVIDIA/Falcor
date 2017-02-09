@@ -32,7 +32,7 @@ using namespace Falcor;
 
 #define register_testing_func(x_) class x_ : public TestBase::TestFunction { public: TestData operator ()() override; };
 #define testing_func(className_, functorName_) TestBase::TestData className_::functorName_::operator()()
-#define TEST_PASS TestBase::TestData(TestBase::TestResult::Pass, mName);
+#define test_pass() TestBase::TestData(TestBase::TestResult::Pass, mName);
 #define test_fail(errorMessage_) TestBase::TestData(TestBase::TestResult::Fail, mName, errorMessage_);
 
 class TestBase
@@ -63,8 +63,8 @@ public:
 
 protected:
     TestBase();
-    virtual void addTests();
-    virtual void onInit();
+    virtual void addTests() = 0;
+    virtual void onInit() = 0;
 
     //Used to gen correct filename in base class method
     std::string mTestName; 
@@ -109,8 +109,8 @@ private:
         uint32_t pass;
         uint32_t fail;
         uint32_t crash;
-    };
-
+    } mResultSummary;
+     
     class DummyWindowCallbacks : public Window::ICallbacks
     {
         void renderFrame() override {}
@@ -121,10 +121,7 @@ private:
 
     std::vector<TestData> runTests();
     void GenerateXML(const std::vector<std::string>& xmlStrings);
-
     std::string XMLFromTestResult(const TestData& r);
-    ResultSummary mResultSummary;
-    Window::SharedPtr mpWindow;
-    TextRenderer::UniquePtr mpTextRenderer;
-    Texture::SharedPtr mpTexture;
+
+    Window::SharedPtr mpWindow; //used for dummy device creation
 };

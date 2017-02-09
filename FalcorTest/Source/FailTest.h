@@ -33,5 +33,6 @@ class FailTest : public TestBase
 {
 private:
     void addTests() override;
+    void onInit() override {};
     register_testing_func(TestFail)
 };

@@ -33,6 +33,7 @@ class VaoTest : public TestBase
 private:
 
     void addTests() override;
+    void onInit() override {};
     register_testing_func(TestSimpleCreate);
     register_testing_func(TestIndexedCreate);
     register_testing_func(TestMultiBufferCreate);

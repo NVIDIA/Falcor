@@ -95,7 +95,7 @@ testing_func(GraphicsStateObjectTest, TestCreate)
         }
     }
 
-    return TEST_PASS;
+    return test_pass();
 }
 
 int main()

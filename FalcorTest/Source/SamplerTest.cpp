@@ -98,7 +98,7 @@ testing_func(SamplerTest, TestCreate)
         }
     }
 
-    return TEST_PASS;
+    return test_pass();
 }
 
 bool SamplerTest::doStatesMatch(Sampler::SharedPtr sampler, TestDesc desc)

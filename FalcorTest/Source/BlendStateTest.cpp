@@ -71,7 +71,7 @@ testing_func(BlendStateTest, TestCreate)
         }
     }
 
-    return TEST_PASS;
+    return test_pass();
 }
 
 testing_func(BlendStateTest, TestRtArray)
@@ -143,7 +143,7 @@ testing_func(BlendStateTest, TestRtArray)
         }
     }
 
-    return TEST_PASS;
+    return test_pass();
 }
 
 bool BlendStateTest::doStatesMatch(const BlendState::SharedPtr state, const TestDesc& desc)

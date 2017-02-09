@@ -31,7 +31,7 @@ testing_func(CrashTest, TestAssert)
 testing_func(CrashTest, TestCrashHandling)
 {
     //Really only testing that this gets run despite previous tets crashing
-    return TEST_PASS;
+    return test_pass();
 }
 
 int main()
