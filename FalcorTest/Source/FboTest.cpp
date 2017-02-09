@@ -34,7 +34,6 @@ void FboTest::addTests()
     addTestToList<TestCreate>();
     addTestToList<TestDepthStencilAttach>();
     addTestToList<TestColorAttach>();
-    addTestToList<TestZeroAttachment>();
     addTestToList<TestGetWidthHeight>();
     addTestToList<TestCreate2D>();
     addTestToList<TestCreateCubemap>();
@@ -118,7 +117,9 @@ testing_func(FboTest, TestDepthStencilAttach)
 
 testing_func(FboTest, TestColorAttach)
 {
-    const uint32_t numFormats = 39u;
+    const uint32_t numFormats = 6u;
+    const ResourceFormat formats[numFormats] = { ResourceFormat::R8Unorm, ResourceFormat::R16Snorm, ResourceFormat::RGBA32Float,
+        ResourceFormat::RG8Uint, ResourceFormat::RG16Int, ResourceFormat::RG32Uint };
     //The H/W aspects of this function are tested in TestGetWidthHeight, const texture size should be fine
     const uint32_t width = 800u;
     const uint32_t height = 600u;
@@ -128,26 +129,12 @@ testing_func(FboTest, TestColorAttach)
     Fbo::SharedPtr fbo = Fbo::create();
     //Texture Format
     //Starts at 1 to skip format::unknown
-    for (uint32 i = 1; i < numFormats; ++i)
+    for (uint32 i = 0; i < numFormats; ++i)
     {
-        ResourceFormat format = static_cast<ResourceFormat>(i);
-        //These formats are skipped because they cause a crash
-        if (format == ResourceFormat::RGB16Unorm || format == ResourceFormat::RGB16Snorm || format == ResourceFormat::RGB16Float 
-            || format == ResourceFormat::RGB32Float || format == ResourceFormat::RGB9E5Float)
-        {
-            continue;
-        }
-
-        Resource::BindFlags flags = Resource::BindFlags::RenderTarget;
         //UAV flag
         for (uint32_t j = 0; j < 2; ++j)
         {
-            //These formats are skipped because they cause a crash with UAV flag
-            if (format == ResourceFormat::RGB5A1Unorm || format == ResourceFormat::RGBA8UnormSrgb)
-            {
-                continue;
-            }
-
+            Resource::BindFlags flags = Resource::BindFlags::RenderTarget;
             if (j == 0)
             {
                 flags |= Resource::BindFlags::UnorderedAccess;
@@ -160,16 +147,16 @@ testing_func(FboTest, TestColorAttach)
                 switch (k)
                 {
                 case 0: 
-                    tex = Texture::create1D(width, format, 1u, Resource::kMaxPossible, (const void*)nullptr, flags);
+                    tex = Texture::create1D(width, formats[i], 1u, Resource::kMaxPossible, (const void*)nullptr, flags);
                     break;
                 case 1:
-                    tex = Texture::create2D(width, height, format, 1u, Resource::kMaxPossible, (const void*)nullptr, flags);
+                    tex = Texture::create2D(width, height, formats[i], 1u, Resource::kMaxPossible, (const void*)nullptr, flags);
                     break;
                 case 2:
-                    tex = Texture::create3D(width, height, 1u, format, Resource::kMaxPossible, (const void*)nullptr, flags);
+                    tex = Texture::create3D(width, height, 1u, formats[i], Resource::kMaxPossible, (const void*)nullptr, flags);
                     break;
                 case 3:
-                    tex = Texture::createCube(width, height, format, 1u, Resource::kMaxPossible, (const void*)nullptr, flags);
+                    tex = Texture::createCube(width, height, formats[i], 1u, Resource::kMaxPossible, (const void*)nullptr, flags);
                     break;
                 default: 
                     should_not_get_here();
@@ -202,7 +189,7 @@ testing_func(FboTest, TestColorAttach)
                 }
 
                 //check format
-                if (format != fbo->getDesc().getColorTargetFormat(ctIndex))
+                if (formats[i] != fbo->getDesc().getColorTargetFormat(ctIndex))
                 {
                     return test_fail("Fbo color target format does not match the format of the attached texture");
                 }
@@ -213,11 +200,6 @@ testing_func(FboTest, TestColorAttach)
     }
 
     return TEST_PASS;
-}
-
-testing_func(FboTest, TestZeroAttachment)
-{
-    return test_fail("This function is only implemented in GL");
 }
 
 testing_func(FboTest, TestGetWidthHeight)
@@ -285,7 +267,7 @@ bool FboTest::isStressCreateCorrect(bool cubemap)
     //Not too many formats, tested more thoroughly in color/depth attach
     const uint32_t numTestFormats = 2;
     const ResourceFormat resources[numTestFormats] = { ResourceFormat::RGBA32Float, ResourceFormat::RGBA32Uint };
-    const ResourceFormat depths[numTestFormats] = { ResourceFormat::D16Unorm, ResourceFormat::D24Unorm };
+    const ResourceFormat depths[numTestFormats] = { ResourceFormat::D16Unorm, ResourceFormat::D32Float };
     
     Fbo::Desc desc;
     //formats

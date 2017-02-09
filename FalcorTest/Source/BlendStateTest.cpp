@@ -80,31 +80,26 @@ testing_func(BlendStateTest, TestRtArray)
     const uint32_t numBlendFuncs = 16;
     uint32_t rtIndex = 0;
 
+    BlendState::SharedPtr state = nullptr;
     TestDesc desc;
     //rgbop
     for (uint32_t i = 0; i < numBlendOps; ++i)
     {
-        BlendState::BlendOp rgbOp = static_cast<BlendState::BlendOp>(i);
         //alpha op
         for (uint32_t j = 0; j < numBlendOps; ++j)
         {
-            BlendState::BlendOp alphaOp = static_cast<BlendState::BlendOp>(j);
             //srcRgbFunc
             for (uint32_t k = 0; k < numBlendFuncs; ++k)
             {
-                BlendState::BlendFunc srcRgbFunc = static_cast<BlendState::BlendFunc>(k);
                 //dstRgbFunc
                 for (uint32_t x = 0; x < numBlendFuncs; ++x)
                 {
-                    BlendState::BlendFunc dstRgbFunc = static_cast<BlendState::BlendFunc>(x);
                     //srcAlphaFunc
                     for (uint32_t y = 0; y < numBlendFuncs; ++y)
                     {
-                        BlendState::BlendFunc srcAlphaFunc = static_cast<BlendState::BlendFunc>(y);
                         //dstAlphaFunc
                         for (uint32_t z = 0; z < numBlendFuncs; ++z)
                         {
-                            BlendState::BlendFunc dstAlphaFunc = static_cast<BlendState::BlendFunc>(z);
                             //RT Blend
                             for (uint32_t a = 0; a < 2; ++a)
                             {
@@ -123,11 +118,17 @@ testing_func(BlendStateTest, TestRtArray)
                                     }
 
                                     //Set all properties
-                                    desc.setRtParams(rtIndex, rgbOp, alphaOp, srcRgbFunc, dstRgbFunc, srcAlphaFunc, dstAlphaFunc);
+                                    desc.setRtParams(rtIndex, 
+                                        static_cast<BlendState::BlendOp>(i), 
+                                        static_cast<BlendState::BlendOp>(j), 
+                                        static_cast<BlendState::BlendFunc>(k),
+                                        static_cast<BlendState::BlendFunc>(x),
+                                        static_cast<BlendState::BlendFunc>(y),
+                                        static_cast<BlendState::BlendFunc>(z));
                                     desc.setRtBlend(rtIndex, rtBlend);
                                     desc.setRenderTargetWriteMask(rtIndex, writeRed, writeGreen, writeBlue, writeAlpha);
                                     //Create and check state
-                                    BlendState::SharedPtr state = BlendState::create(desc);
+                                    state = BlendState::create(desc);
                                     if (!doStatesMatch(state, desc))
                                     {
                                         return test_fail("Render target desc doesn't match ones used to create");

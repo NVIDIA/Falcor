@@ -103,7 +103,6 @@ namespace Falcor
 
         // Depth-stencil
         D32Float,
-        D24Unorm,
         D16Unorm,
         D32FloatS8X24,
         D24UnormS8,
