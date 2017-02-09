@@ -1,4 +1,5 @@
-FalcorTest/Bin/*
+Test/Bin/*
+Test/TestResults/*
 Bin/*
 *.user
 *.sdf

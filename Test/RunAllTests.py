@@ -12,7 +12,7 @@ from datetime import date, timedelta
 
 #relevant paths
 gBuildBatchFile = 'BuildFalcorTest.bat'
-gTestListFile = 'C:\\Users\\clavelle\\Desktop\\FalcorGitHub\\FalcorTest\\TestList.txt'
+gTestListFile = 'C:\\Users\\clavelle\\Desktop\\FalcorGitHub\\Test\\TestList.txt'
 gEmailRecipientFile = 'EmailRecipients.txt'
 gDebugDir = 'C:\\Users\\clavelle\\Desktop\\FalcorGitHub\\Bin\\x64\\Debug\\'
 gReleaseDir = 'C:\\Users\\clavelle\\Desktop\\FalcorGitHub\\Bin\\x64\\Release\\'
