@@ -82,7 +82,7 @@ namespace Falcor
             Func func = Func::Always;                       ///< Stencil comparison function                    
             StencilOp stencilFailOp = StencilOp::Keep;      ///< Stencil operation in case stencil test fails
             StencilOp depthFailOp = StencilOp::Keep;        ///< Stencil operation in case stencil test passes but depth test fails
-            StencilOp depthStencilPassOp = StencilOp::Keep; ///< Stencil operation in case stencil and depth tests pass
+            StencilOp depthStencilPassOp = StencilOp::Replace; ///< Stencil operation in case stencil and depth tests pass
         };
 
         /** Depth-stencil descriptor
@@ -94,9 +94,11 @@ namespace Falcor
             /** Enable or disable the depth-test
             */
             Desc& setDepthTest(bool enabled) { mDepthEnabled = enabled; return *this; }
+
             /** Set the depth-function
             */
             Desc& setDepthFunc(Func depthFunc) { mDepthFunc = depthFunc; return *this; }
+
             /** Enable or disable depth writes into the depth buffer
             */
             Desc& setDepthWriteMask(bool writeDepth) { mWriteDepth = writeDepth; return *this; }
@@ -104,6 +106,7 @@ namespace Falcor
             /** Enable or disable stencil test
             */
             Desc& setStencilTest(bool enabled) { mStencilEnabled = enabled; return *this; }
+
             /** Set the stencil write-mask
             */
             Desc& setStencilWriteMask(uint8_t mask);
@@ -117,6 +120,7 @@ namespace Falcor
                 \param func Comparison function
             */
             Desc& setStencilFunc(Face face, Func func);
+
             /** Set the stencil operation
                 \param face Chooses the face to apply the operation to
                 \param stencilFail Stencil operation in case stencil test fails
@@ -124,6 +128,10 @@ namespace Falcor
                 \param depthStencilPass Stencil operation in case stencil and depth tests pass
             */
             Desc& setStencilOp(Face face, StencilOp stencilFail, StencilOp depthFail, StencilOp depthStencilPass);
+
+            /** Set the stencil ref value
+            */
+            Desc& setStencilRef(uint8_t value) { mStencilRef = value; return *this; };
 
         protected:
             bool mDepthEnabled = true;
@@ -134,6 +142,7 @@ namespace Falcor
             StencilDesc mStencilBack;
             uint8_t mStencilReadMask = (uint8_t)-1;
             uint8_t mStencilWriteMask = (uint8_t)-1;
+            uint8_t mStencilRef = 0;
         };
 
         ~DepthStencilState();
@@ -166,6 +175,10 @@ namespace Falcor
         /** Get the stencil write mask
         */
         uint8_t getStencilWriteMask() const { return mDesc.mStencilWriteMask; }
+
+        /** Get the stencil ref value
+        */
+        uint8_t getStencilRef() const { return mDesc.mStencilRef; }
 
         /** Get the API handle
         */
