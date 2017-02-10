@@ -36,12 +36,27 @@ using namespace Falcor;
 class SampleTest
 {
 public:
+    /** Checks whether testing is enabled, returns true if Test Tasks vector isn't empty
+    */
     bool isTestingEnabled() const;
+
+    /** Initializes Test Tasks vector based on command line 
+    \param args ArgList object 
+    */
     void initalizeTestingArgs(const ArgList& args);
+
+    /** Checks each frame against testing ranges to see if a testing task should be run and runs it
+    \param frameRate the frame rate object to get frame times and frame count 
+    */
     void runTestTask(const FrameRate& frameRate);
 
 private:
+    /** Captures screen to a png, very similar to Sample::captureScreen
+    */
     void captureScreen();
+
+    /** Outputs xml test results file
+    */
     void outputXML();
 
     struct Task

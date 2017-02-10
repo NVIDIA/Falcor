@@ -6,4 +6,17 @@
   <ItemGroup>
     <ClInclude Include="..\..\..\Source\GraphicsStateObjectTest.h" />
   </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Data">
+      <UniqueIdentifier>{080fcfeb-707d-442d-8ec3-06f3f77ec817}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <FxCompile Include="Data\Simple.gs.hlsl">
+      <Filter>Data</Filter>
+    </FxCompile>
+    <FxCompile Include="Data\Simple.ps.hlsl">
+      <Filter>Data</Filter>
+    </FxCompile>
+  </ItemGroup>
 </Project>

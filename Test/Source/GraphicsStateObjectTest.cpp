@@ -66,18 +66,31 @@ testing_func(GraphicsStateObjectTest, TestCreate)
 
     const uint32_t numRandomMasks = 10;
     const uint32 numPrimTypes = 5;
-    //Sample Mask
-    for (uint32_t i = 0; i < numRandomMasks; ++i)
+    //Primitive type
+    //Start at 1, skip over undefined, which asserts
+    for (uint32_t i = 1; i < numPrimTypes; ++i)
     {
-        uint32_t sampleMask = static_cast<uint32_t>(rand());
-        desc.setSampleMask(sampleMask);
+        GraphicsStateObject::PrimitiveType primType = static_cast<GraphicsStateObject::PrimitiveType>(i);
+        desc.setPrimitiveType(primType);
 
-        //Primitive type
-        //Start at 1, skip over undefined, which asserts
-        for (uint32_t j = 1; j < numPrimTypes - 1 /*patch (the final one) is the only thing left that crashes */; ++j)
+        //Patch needs a geo shader, no pixel shader, and depth disabled
+        if (primType == GraphicsStateObject::PrimitiveType::Patch)
         {
-            GraphicsStateObject::PrimitiveType primType = static_cast<GraphicsStateObject::PrimitiveType>(j);
-            desc.setPrimitiveType(primType);
+            program = GraphicsProgram::createFromFile("", "", "Simple.gs.hlsl", "", "");
+            rootSig = RootSignature::create(program->getActiveVersion()->getReflector().get());
+            desc.setProgramVersion(program->getActiveVersion());
+            desc.setRootSignature(rootSig);
+            DepthStencilState::Desc depthDesc;
+            depthDesc.setDepthTest(false);
+            depthState = DepthStencilState::create(depthDesc);
+            desc.setDepthStencilState(depthState);
+        }
+
+        //Sample Mask
+        for (uint32_t j = 0; j < numRandomMasks; ++j)
+        {
+            uint32_t sampleMask = static_cast<uint32_t>(rand());
+            desc.setSampleMask(sampleMask);
 
             GraphicsStateObject::SharedPtr gObj = GraphicsStateObject::create(desc);
             if (gObj->getDesc().getBlendState()->getApiHandle() != blendState->getApiHandle() ||
