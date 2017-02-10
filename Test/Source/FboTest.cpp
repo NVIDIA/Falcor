@@ -279,7 +279,7 @@ bool FboTest::isStressCreateCorrect(bool cubemap)
         for (uint32_t j = 0; j < 2; ++j)
         {
             //Depthstencil uav currently not supported
-            desc.setDepthStencilTarget(depths[0], false);
+            desc.setDepthStencilTarget(depths[j], false);
             desc.setSampleCount(1u);
             //set properties for all color targets
             for (uint32_t k = 0; k < Fbo::getMaxColorTargetCount(); ++k)
@@ -291,27 +291,27 @@ bool FboTest::isStressCreateCorrect(bool cubemap)
             {
                 for (uint32_t y = 0; y < numResolutions; ++y)
                 {
-                    Fbo::SharedPtr fbo = nullptr;
+                    Fbo::SharedPtr pFbo = gpDevice->getSwapChainFbo();
                     if (cubemap)
                     {
-                        fbo = FboHelper::createCubemap(widths[x], heights[y], desc);
+                        pFbo = FboHelper::createCubemap(widths[x], heights[y], desc);
                     }
                     else
                     {
-                        fbo = FboHelper::create2D(widths[x], heights[y], desc);
+                        pFbo = FboHelper::create2D(widths[x], heights[y], desc);
                     }
 
-                    if (!isFboCorrect(fbo, widths[x], heights[y], desc))
+                    if (!isFboCorrect(pFbo, widths[x], heights[y], desc))
                     {
                         return false;
                     }
+
+                    //sets resource state so before and after states are different, which is required by present
+                    gpDevice->getRenderContext()->resourceBarrier(gpDevice->getSwapChainFbo()->getColorTexture(0).get(), Resource::State::GenericRead);
+                    //frees resources
+                    gpDevice->present();
                 }
             }
-
-            //This test consumes a ton of memory by creating tons of textures. 
-            //These textures are never released if present is not called. 
-            //Present will cause an assert failure in LowLevelContextData::flush()
-            gpDevice->present();
         }
     }
 
