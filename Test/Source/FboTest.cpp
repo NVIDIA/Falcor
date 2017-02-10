@@ -30,41 +30,11 @@
 
 void FboTest::addTests()
 {
-    addTestToList<TestDefault>();
-    addTestToList<TestCreate>();
     addTestToList<TestDepthStencilAttach>();
     addTestToList<TestColorAttach>();
     addTestToList<TestGetWidthHeight>();
     addTestToList<TestCreate2D>();
     addTestToList<TestCreateCubemap>();
-}
-
-testing_func(FboTest, TestDefault)
-{
-    Fbo::SharedPtr fbo = Fbo::getDefault();
-    if (fbo->getApiHandle() == -1)
-    {
-        return test_pass();
-    }
-    else
-    {
-        return test_fail("Error creating default fbo, api handle is initialized and shouldn't be.");
-    }
-}
-
-testing_func(FboTest, TestCreate)
-{
-    Fbo::SharedPtr fbo = Fbo::create();
-    //This is exactly the same as getDefault. It passes true for initapihandle but that param is unused in Fbo::Fbo(bool)
-    //However, fbos don't have an api handle in d3d12, so both this and default should have api handle -1
-    if (fbo->getApiHandle() == -1)
-    {
-        return test_pass();
-    }
-    else
-    {
-        return test_fail("Error creating fbo, api handle is initialized and shouldn't be.");
-    }
 }
 
 testing_func(FboTest, TestDepthStencilAttach)

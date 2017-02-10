@@ -25,21 +25,20 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#pragma once
-#include "TestBase.h"
+#include "ShaderCommon.h"
+#include "Shading.h"
+#define _COMPILE_DEFAULT_VS
+#include "VertexAttrib.h"
 
-class FboTest : public TestBase
+[maxvertexcount(3)]
+void main(InputPatch<VS_OUT, 3> input, inout TriangleStream<VS_OUT> outStream)
 {
-private:
-    void addTests() override;
-    void onInit() override {};
-    register_testing_func(TestDepthStencilAttach)
-    register_testing_func(TestColorAttach)
-    register_testing_func(TestGetWidthHeight)
-    register_testing_func(TestCreate2D)
-    register_testing_func(TestCreateCubemap)
+    VS_OUT output;
+    for (uint i = 0; i < 3; i += 1)
+    {
+        output = input[i];
+        outStream.Append(output);
+    }
 
-    //Test create2d and create cubemap are very similar, handled in this helper
-    static bool isStressCreateCorrect(bool randomSampleCount);
-    static bool isFboCorrect(Fbo::SharedPtr fbo, const uint32_t& w, const uint32_t& h, const Fbo::Desc& desc);
-};
+    outStream.RestartStrip();
+}
