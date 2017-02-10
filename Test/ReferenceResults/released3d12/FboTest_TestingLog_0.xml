@@ -1,0 +1,44 @@
+<?xml version = "1.0" encoding = "UTF-8"?>
+<TestLog>
+<Summary
+	TotalTests="7"
+	PassedTests="5"
+	FailedTests="2"
+	CrashedTests="0"
+/>
+<TestResult
+	TestName="TestDefault"
+	Passed="1"
+	ErrorMessage=""
+/>
+<TestResult
+	TestName="TestCreate"
+	Passed="1"
+	ErrorMessage=""
+/>
+<TestResult
+	TestName="TestDepthStencilAttach"
+	Passed="1"
+	ErrorMessage=""
+/>
+<TestResult
+	TestName="TestColorAttach"
+	Passed="1"
+	ErrorMessage=""
+/>
+<TestResult
+	TestName="TestGetWidthHeight"
+	Passed="1"
+	ErrorMessage=""
+/>
+<TestResult
+	TestName="TestCreate2D"
+	Passed="0"
+	ErrorMessage="Fbo properties do not match properties used to create it"
+/>
+<TestResult
+	TestName="TestCreateCubemap"
+	Passed="0"
+	ErrorMessage="Fbo properties do not match properties used to create it"
+/>
+</TestLog>
