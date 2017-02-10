@@ -27,44 +27,45 @@
 ***************************************************************************/
 #pragma once
 #include "Falcor.h"
-#include "SampleTest.h"
+
+#define check_and_init_tests() if (mArgList.argExists("test")) { toggleText(false); initalizeTestingArgs(mArgList); }
+#define check_and_run_tests() if(isTestingEnabled()) { runTestTask(frameRate()); }
 
 using namespace Falcor;
 
-class ShaderBuffersSample : public Sample, public SampleTest
+class SampleTest
 {
 public:
-    void onLoad() override;
-    void onFrameRender() override;
-    void onResizeSwapChain() override;
-    bool onKeyEvent(const KeyboardEvent& keyEvent) override;
-    bool onMouseEvent(const MouseEvent& mouseEvent) override;
-    void onGuiRender() override;
-    void onDataReload() override;
+    bool isTestingEnabled() const;
+    void initalizeTestingArgs(const ArgList& args);
+    void runTestTask(const FrameRate& frameRate);
 
 private:
+    void captureScreen();
+    void outputXML();
 
-    GraphicsProgram::SharedPtr mpProgram;
-    GraphicsVars::SharedPtr mpProgramVars;
-    Model::SharedPtr mpModel;
-    Vao::SharedConstPtr mpVao;
-    uint32_t mIndexCount = 0;
-    Buffer::SharedPtr mpInvocationsBuffer;
-    TypedBuffer<vec3>::SharedPtr mpSurfaceColorBuffer;
-
-    bool mCountPixelShaderInvocations = false;
-
-    Camera::SharedPtr mpCamera;
-    ModelViewCameraController mCameraController;
-
-    struct Light
+    struct Task
     {
-        glm::vec3 worldDir = glm::vec3(0, -1, 0);
-        glm::vec3 intensity = glm::vec3(0.6f, 0.8f, 0.8f);
+        enum class Type
+        {
+            LoadTime,
+            MeasureFps,
+            ScreenCapture,
+            Shutdown,
+            Uninitialized
+        };
+
+        Task() : mStartFrame(0u), mEndFrame(0u), mTask(Type::Uninitialized), mResult(0.f) {}
+        Task(uint32_t startFrame, uint32_t endFrame, Task::Type t) :
+            mStartFrame(startFrame), mEndFrame(endFrame), mTask(t), mResult(0.f) {}
+        bool operator<(const Task& rhs) { return mStartFrame < rhs.mStartFrame; }
+
+        uint32_t mStartFrame;
+        uint32_t mEndFrame;
+        Type mTask;
+        float mResult = 0;
     };
 
-    Light mLightData;
-
-    glm::vec3 mSurfaceColor = glm::vec3(0.36f,0.87f,0.52f);
-    Vao::SharedConstPtr getVao();
+    std::vector<Task> mTestTasks;
+    std::vector<Task>::iterator mTestTaskIt;
 };

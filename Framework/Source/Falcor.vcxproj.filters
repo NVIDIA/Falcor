@@ -455,6 +455,7 @@
     <ClCompile Include="ArgList.cpp">
       <Filter>Utils</Filter>
     </ClCompile>
+    <ClCompile Include="SampleTest.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Graphics\Model\Animation.h">
@@ -1523,6 +1524,7 @@
     <ClInclude Include="ArgList.h">
       <Filter>Utils</Filter>
     </ClInclude>
+    <ClInclude Include="SampleTest.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Externals">

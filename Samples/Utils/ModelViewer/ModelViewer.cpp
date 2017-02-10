@@ -262,6 +262,8 @@ void ModelViewer::onLoad()
     mpGraphicsState = GraphicsState::create();
     mpGraphicsState->setProgram(mpProgram);
 
+
+    check_and_init_tests();
     std::vector<ArgList::Arg> filenames = mArgList.getValues("loadmodel");
     if (!filenames.empty())
     {
@@ -327,6 +329,8 @@ void ModelViewer::onFrameRender()
     }
 
     renderText(mModelString, glm::vec2(10, 30));
+
+    check_and_run_tests();
 }
 
 void ModelViewer::onShutdown()

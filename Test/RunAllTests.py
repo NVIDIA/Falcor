@@ -27,7 +27,7 @@ gDefaultLoadTimeMargin = 10
 #average pixel color difference
 gDefaultImageCompareMargin = 0.1
 #seconds
-gDefaultHangTimeDuration = 30
+gDefaultHangTimeDuration = 45
 
 class TestInfo(object):
     def determineIndex(self, generateReference):

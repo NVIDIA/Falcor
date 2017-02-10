@@ -43,6 +43,8 @@ void MultiPassPostProcess::onLoad()
     mpRadialBlur = FullScreenPass::create("RadialBlur.fs");
     mpBlit = FullScreenPass::create("Blit.fs");
 
+    check_and_init_tests();
+
     std::vector<ArgList::Arg> filenames = mArgList.getValues("loadimage");
     if (!filenames.empty())
     {
@@ -112,6 +114,8 @@ void MultiPassPostProcess::onFrameRender()
             mpBlit->execute(mpRenderContext.get());
         }
     }
+
+    check_and_run_tests();
 }
 
 void MultiPassPostProcess::onShutdown()

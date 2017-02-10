@@ -42,19 +42,19 @@ namespace Falcor
 
             /** Attempts to return internal string as an Int, -1 if fail
             */
-            int32_t asInt();
+            int32_t asInt() const;
 
             /** Attempts to return internal string as an uint, -1(max unsigned) if fail
             */
-            uint32_t asUint();
+            uint32_t asUint() const;
 
             /** Attempts to return internal string as a float, -1 if fail
             */
-            float asFloat();
+            float asFloat() const;
 
             /** Returns the internal string representing the argument value
             */
-            std::string asString();
+            std::string asString() const;
         private:
             std::string mValue;
         };
@@ -78,12 +78,12 @@ namespace Falcor
         /** Check if the key already exists within the map
             \param key the key to check for
         */
-        bool argExists(const std::string& key);
+        bool argExists(const std::string& key) const;
 
         /** Return the values associated with an arg, or an empty vector if none
             \param key the key to get the values for 
         */
-        std::vector<Arg> getValues(const std::string& key);
+        std::vector<Arg> getValues(const std::string& key) const;
 
         /** Return the value associated with key, or asserts if key has no values or multiple values
             \param key the key to get the value for

@@ -27,10 +27,11 @@
 ***************************************************************************/
 #pragma once
 #include "Falcor.h"
+#include "SampleTest.h"
 
 using namespace Falcor;
 
-class ComputeShader : public Sample
+class ComputeShader : public Sample, public SampleTest
 {
 public:
     void onLoad() override;
