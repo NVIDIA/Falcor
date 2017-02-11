@@ -1,8 +1,8 @@
 <?xml version = "1.0" encoding = "UTF-8"?>
 <TestLog>
 <Summary
-	LoadTime="1.439895"
-	FrameTime="0.002316"
+	LoadTime="1.379996"
+	FrameTime="0.002296"
 	NumScreenshots="1"
 />
 </TestLog>
