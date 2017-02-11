@@ -35,14 +35,21 @@ namespace Falcor
         mMap[key].push_back(arg);
     }
 
-    bool ArgList::argExists(const std::string& arg)
+    bool ArgList::argExists(const std::string& arg) const
     {
         return mMap.find(arg) != mMap.end();
     }
 
-    std::vector<ArgList::Arg> ArgList::getValues(const std::string& key)
+    std::vector<ArgList::Arg> ArgList::getValues(const std::string& key) const
     {
-        return mMap[key];
+        try 
+        {
+            return mMap.at(key);
+        }
+        catch(std::out_of_range)
+        {
+            return std::vector<ArgList::Arg>();
+        }
     }
 
     const ArgList::Arg& ArgList::operator[](const std::string& key) const
@@ -51,7 +58,7 @@ namespace Falcor
         return mMap.at(key)[0];
     }
 
-    int32_t ArgList::Arg::asInt()
+    int32_t ArgList::Arg::asInt() const
     {
         try
         {
@@ -69,7 +76,7 @@ namespace Falcor
         }
     }
 
-    uint32_t ArgList::Arg::asUint()
+    uint32_t ArgList::Arg::asUint() const
     {
         try
         {
@@ -87,7 +94,7 @@ namespace Falcor
         }
     }
 
-    float ArgList::Arg::asFloat()
+    float ArgList::Arg::asFloat() const
     {
         try
         {
@@ -105,7 +112,7 @@ namespace Falcor
         }
     }
 
-    std::string ArgList::Arg::asString()
+    std::string ArgList::Arg::asString() const
     {
         return mValue;
     }

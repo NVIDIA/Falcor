@@ -160,28 +160,6 @@ namespace Falcor
         ArgList mArgList;
 
     protected:
-        struct Task
-        {
-            enum class Type
-            {
-                LoadTime,
-                MeasureFps,
-                ScreenCapture,
-                Shutdown,
-                Uninitialized
-            };
-
-            Task() : mStartFrame(0u), mEndFrame(0u), mTask(Type::Uninitialized), mResult(0.f) {}
-            Task(uint32_t startFrame, uint32_t endFrame, Task::Type t) :
-                mStartFrame(startFrame), mEndFrame(endFrame), mTask(t), mResult(0.f) {}
-            bool operator<(const Task& rhs) { return mStartFrame < rhs.mStartFrame; }
-
-            uint32_t mStartFrame;
-            uint32_t mEndFrame;
-            Type mTask;
-            float mResult = 0;
-        };
-
         void renderFrame() override;
         void handleWindowSizeChange() override;
         void handleKeyboardEvent(const KeyboardEvent& keyEvent) override;
@@ -190,8 +168,6 @@ namespace Falcor
         void initVideoCapture();
         void captureScreen();
         void toggleText(bool enabled);
-
-        bool mCaptureScreen = false;
 
     private:
         // Private functions
@@ -204,16 +180,13 @@ namespace Falcor
         void captureVideoFrame();
         void renderGUI();
 
-        void initializeTestArgs();
-        void runTestTask();
-        void outputXMLTestResults();
-
         Window::SharedPtr mpWindow;
 
         bool mVsyncOn = false;
         bool mShowText = true;
         bool mShowUI = true;
         bool mVrEnabled = false;
+        bool mCaptureScreen = false;
 
         struct VideoCaptureData
         {
@@ -230,8 +203,5 @@ namespace Falcor
 
         TextRenderer::UniquePtr mpTextRenderer;
         std::set<KeyboardEvent::Key> mPressedKeys;
-
-        std::vector<Task> mTestTasks;
-        std::vector<Task>::iterator mTestTaskIt;
     };
 };

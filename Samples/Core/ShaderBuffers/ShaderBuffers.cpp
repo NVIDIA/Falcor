@@ -90,6 +90,8 @@ void ShaderBuffersSample::onLoad()
     mpDefaultPipelineState->setFbo(mpDefaultFBO);
     mpDefaultPipelineState->setVao(mpVao);
     mpDefaultPipelineState->setProgram(mpProgram);
+
+    init_tests();
 }
 
 void ShaderBuffersSample::onFrameRender()
@@ -123,6 +125,8 @@ void ShaderBuffersSample::onFrameRender()
 
         mpRenderContext->clearUAV(mpInvocationsBuffer->getUAV().get(), uvec4(0));
     }
+
+    run_test();
 }
 
 void ShaderBuffersSample::onDataReload()

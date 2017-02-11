@@ -429,6 +429,7 @@
     <ClCompile Include="Graphics\Scene\SceneUtils.cpp" />
     <ClCompile Include="Graphics\TextureHelper.cpp" />
     <ClCompile Include="Sample.cpp" />
+    <ClCompile Include="SampleTest.cpp" />
     <ClCompile Include="Utils\Bitmap.cpp" />
     <ClCompile Include="Utils\Font.cpp" />
     <ClCompile Include="Utils\Gui.cpp" />
@@ -809,6 +810,7 @@
     <ClInclude Include="Graphics\Scene\SceneUtils.h" />
     <ClInclude Include="Graphics\TextureHelper.h" />
     <ClInclude Include="Sample.h" />
+    <ClInclude Include="SampleTest.h" />
     <ClInclude Include="ShadingUtils\BSDFs.h" />
     <ClInclude Include="ShadingUtils\Cameras.h" />
     <ClInclude Include="ShadingUtils\Helpers.h" />

@@ -54,6 +54,8 @@ void ComputeShader::onLoad()
 
     mpTmpTexture = createTmpTex(mpDefaultFBO.get());
 
+    init_tests();
+
     std::vector<ArgList::Arg> filenames = mArgList.getValues("loadimage");
     if (!filenames.empty())
     {
@@ -110,6 +112,8 @@ void ComputeShader::onFrameRender()
     }
 
     mpRenderContext->copyResource(mpDefaultFBO->getColorTexture(0).get(), mpTmpTexture.get());
+
+    run_test();
 }
 
 int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ LPSTR lpCmdLine, _In_ int nShowCmd)
