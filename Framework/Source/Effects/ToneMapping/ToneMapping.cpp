@@ -32,7 +32,7 @@
 
 namespace Falcor
 {
-    static const char* kShaderFilename = "Effects\\ToneMapping.fs";
+    static const char* kShaderFilename = "Effects\\ToneMapping.ps.hlsl";
 
     ToneMapping::~ToneMapping() = default;
 
@@ -72,7 +72,8 @@ namespace Falcor
         {
             Fbo::Desc desc;
             desc.setColorTarget(0, luminanceFormat);
-            mpLuminanceFbo = FboHelper::create2D(pSrcFbo->getWidth(), pSrcFbo->getHeight(), desc, 1, Fbo::kAttachEntireMipLevel);
+            //mpLuminanceFbo = FboHelper::create2D(pSrcFbo->getWidth(), pSrcFbo->getHeight(), desc, 1, Fbo::kAttachEntireMipLevel);
+            mpLuminanceFbo = FboHelper::create2D(pSrcFbo->getWidth(), pSrcFbo->getHeight(), desc, 1, 1);
         }
     }
 
@@ -80,19 +81,19 @@ namespace Falcor
     {
         GraphicsState* pState = pRenderContext->getGraphicsState().get();
         pState->pushFbo(pDst);
-
         createLuminanceFbo(pSrc);
 
-        // Bind the CB
-        mpCb->setTexture(mCbOffsets.colorTex, pSrc->getColorTexture(0).get(), mpPointSampler.get());
-        mpCb->setTexture(mCbOffsets.luminanceTex, mpLuminanceFbo->getColorTexture(0).get(), mpLinearSampler.get());
-        mpCb->setVariable(mCbOffsets.middleGray, mMiddleGray);
-        mpCb->setVariable(mCbOffsets.maxWhiteLuminance, mWhiteMaxLuminance);
-        mpCb->setVariable(mCbOffsets.luminanceLod, mLuminanceLod);
-        mpCb->setVariable(mCbOffsets.whiteScale, mWhiteScale);
-
-        // DISABLED_FOR_D3D12
-//        pRenderContext->setUniformBuffer(0, mpUbo);
+        //Set Vars
+        mpGraphicsVars->setTexture("gColorTex", pSrc->getColorTexture(0));
+        if (mOperator != Operator::Clamp)
+        {
+            mpGraphicsVars["PerImageCB"]["gMiddleGray"] = mMiddleGray;
+            mpGraphicsVars->setTexture("gLuminanceTex", mpLuminanceFbo->getColorTexture(0));
+            mpGraphicsVars["PerImageCB"]["gMaxWhiteLuminance"] = mWhiteMaxLuminance;
+            mpGraphicsVars["PerImageCB"]["gLuminanceLod"] = mLuminanceLod;
+            mpGraphicsVars["PerImageCB"]["gWhiteScale"] = mWhiteScale;
+        }
+        pRenderContext->setGraphicsVars(mpGraphicsVars);
 
         // Calculate luminance
         pState->setFbo(mpLuminanceFbo);
@@ -101,7 +102,6 @@ namespace Falcor
 
         // Tone map
         pState->setFbo(pDst);
-        
         mpToneMapPass->execute(pRenderContext);
         pState->popFbo();
     }
@@ -135,14 +135,7 @@ namespace Falcor
             should_not_get_here();
         }
 
-        // Initialize the CB offsets
-        mpCb = ConstantBuffer::create(mpLuminancePass->getProgram(), "PerImageCB");
-        mCbOffsets.luminanceTex = mpCb->getVariableOffset("gLuminanceTex");
-        mCbOffsets.colorTex = mpCb->getVariableOffset("gColorTex");
-        mCbOffsets.middleGray = mpCb->getVariableOffset("gMiddleGray");
-        mCbOffsets.maxWhiteLuminance = mpCb->getVariableOffset("gMaxWhiteLuminance");
-        mCbOffsets.luminanceLod = mpCb->getVariableOffset("gLuminanceLod");
-        mCbOffsets.whiteScale = mpCb->getVariableOffset("gWhiteScale");
+        mpGraphicsVars = GraphicsVars::create(mpToneMapPass->getProgram()->getActiveVersion()->getReflector());
     }
 
     void ToneMapping::createLuminancePass()
@@ -169,6 +162,7 @@ namespace Falcor
 
     void ToneMapping::setUiElements(Gui* pGui, const std::string& uiGroup)
     {
+
         Gui::dropdown_list opList;
         opList.push_back({(uint32_t)Operator::Clamp, "Clamp to LDR"});
         opList.push_back({(uint32_t)Operator::Linear, "Linear"});
@@ -177,12 +171,17 @@ namespace Falcor
         opList.push_back({(uint32_t)Operator::HejiHableAlu, "Heji's approximation"});
         opList.push_back({(uint32_t)Operator::HableUc2, "Uncharted 2"});
 
-        // FIX_GUI
-//         pGui->addDropdownWithCallback("Operator", opList, setToneMapOperator, getToneMapOperator, this, uiGroup);
-//         pGui->addFloatVar("Exposure Key", &mMiddleGray, uiGroup, 0.0001f, 2.0f);
-//         pGui->addFloatVar("White Luminance", &mWhiteMaxLuminance, uiGroup, 0.1f, FLT_MAX, 0.2f);
-//         pGui->addFloatVar("Luminance LOD", &mLuminanceLod, uiGroup, 0, 16, 0.025f);
-//         pGui->addFloatVar("Linear White", &mWhiteScale, uiGroup, 0, 100, 0.01f);
+         pGui->addDropdown("Operator", opList, mOperatorIndex);
+         pGui->addFloatVar("Exposure Key", mMiddleGray, 0.0001f, 2.0f);
+         pGui->addFloatVar("White Luminance", mWhiteMaxLuminance, 0.1f, FLT_MAX, 0.2f);
+         pGui->addFloatVar("Luminance LOD", mLuminanceLod, 0, 16, 0.025f);
+         pGui->addFloatVar("Linear White", mWhiteScale, 0, 100, 0.01f);
+
+         if (mOperatorIndex != static_cast<uint32_t>(mOperator))
+         {
+             mOperator = static_cast<Operator>(mOperatorIndex);
+             createToneMapPass(mOperator);
+         }
     }
 
     void ToneMapping::setOperator(Operator op)

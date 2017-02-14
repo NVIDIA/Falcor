@@ -49,7 +49,7 @@ private:
     float mSurfaceRoughness = 5.0f;
 
     void initUI();
-    void renderMesh(const Mesh* pMesh, const Program* pProgram, RasterizerState::SharedPtr pRastState, float scale);
+    void renderMesh(const Mesh* pMesh, GraphicsProgram::SharedPtr pProgram, RasterizerState::SharedPtr pRastState, float scale);
 
     Sampler::SharedPtr mpTriLinearSampler;
 
@@ -59,8 +59,11 @@ private:
         RasterizerState::SharedPtr pFrontFaceCulling;
     } mSkybox;
 
+    GraphicsProgram::SharedPtr mpProgram = nullptr;
+    GraphicsVars::SharedPtr mpProgramVars = nullptr;
+    GraphicsState::SharedPtr mpGraphicsState = nullptr;
     Program::SharedPtr mpEnvMapProgram;
-    UniformBuffer::SharedPtr mpPerFrameCB;
+    //UniformBuffer::SharedPtr mpPerFrameCB;
 
     enum HdrImage
     {
@@ -69,9 +72,13 @@ private:
         AtTheWindow
     };
 
-    HdrImage mHdrImageIndex = HdrImage::EveningSun;
+    uint32_t mPrevHdrIndex = 0u;
+    uint32_t mHdrImageIndex = HdrImage::EveningSun;
     Fbo::SharedPtr mpHdrFbo;
     ToneMapping::UniquePtr mpToneMapper;
+    SceneRenderer::UniquePtr mpSceneRenderer;
+    Scene::SharedPtr mpScene;
+    DepthStencilState::SharedPtr mpNoDepth;
 
     void loadImage();
     static void GUI_CALL getHdrImage(void* pVal, void* pThis);

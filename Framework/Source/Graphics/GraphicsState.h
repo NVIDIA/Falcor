@@ -201,7 +201,7 @@ namespace Falcor
 
         /** Set the primitive topology
         */
-        GraphicsState& setRootSignature(RootSignature::SharedPtr pSignature) { mpRootSignature = pSignature; mCachedData.isUserRootSignature = (mpRootSignature == nullptr); }
+        GraphicsState& setRootSignature(RootSignature::SharedPtr pSignature) { mpRootSignature = pSignature; mCachedData.isUserRootSignature = (mpRootSignature == nullptr); return *this; }
 
         /** Get the active graphics state object
         */

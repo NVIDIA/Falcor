@@ -28,10 +28,17 @@
 #version 420
 #include "HlslGlslCommon.h"
 
-CONSTANT_BUFFER(PerImageCB, 0)
+SamplerState gLuminanceTexSampler
+{
+    Filter = MIN_MAG_MIP_POINT;
+    AddressU = Clamp;
+    AddressV = Clamp;
+};
+
+cbuffer PerImageCB : register(b0)
 {
     sampler2D gColorTex;
-    sampler2D gLuminanceTex;
+    texture2D gLuminanceTex;
     float gMiddleGray;
     float gMaxWhiteLuminance;
     float gLuminanceLod;
@@ -131,6 +138,7 @@ vec4 calcColor(vec2 texC)
 #elif defined _HABLE_UC2
     return vec4(hableUc2ToneMap(exposedColor), color.a);
 #endif
+    return vec4(0, 0, 0, 1);
 }
 
 #ifdef FALCOR_HLSL

@@ -100,10 +100,12 @@ namespace Falcor
         ToneMapping(Operator op);
         void createLuminanceFbo(Fbo::SharedPtr pSrcFbo);
 
+        uint32_t mOperatorIndex = 2u;
         Operator mOperator;
         FullScreenPass::UniquePtr mpToneMapPass;
         FullScreenPass::UniquePtr mpLuminancePass;
         Fbo::SharedPtr mpLuminanceFbo;
+        GraphicsVars::SharedPtr mpGraphicsVars;
 
         ConstantBuffer::SharedPtr mpCb;
         Sampler::SharedPtr mpPointSampler;
