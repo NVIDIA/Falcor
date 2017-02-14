@@ -40,7 +40,7 @@ void ComputeShader::onGuiRender()
 Texture::SharedPtr createTmpTex(const Fbo* pFbo)
 {
     auto fboFormat = pFbo->getColorTexture(0)->getFormat();
-    return Texture::create2D(pFbo->getWidth(), pFbo->getHeight(), srgbToLinearFormat(fboFormat), 1, 1, nullptr, Resource::BindFlags::UnorderedAccess | Resource::BindFlags::UnorderedAccess);
+    return Texture::create2D(pFbo->getWidth(), pFbo->getHeight(), srgbToLinearFormat(fboFormat), 1, 1, nullptr, Resource::BindFlags::ShaderResource | Resource::BindFlags::UnorderedAccess);
 }
 
 void ComputeShader::onLoad()

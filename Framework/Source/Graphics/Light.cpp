@@ -220,7 +220,7 @@ namespace Falcor
 
     void PointLight::setUiElements(Gui* pGui)
     {
-        pGui->addFloat3Var("World Position", mData.worldPos);
+        pGui->addFloat3Var("World Position", mData.worldPos, -FLT_MAX, FLT_MAX);
         pGui->addDirectionWidget("Direction", mData.worldDir);
 
         if (pGui->addFloatVar("Opening Angle", mData.openingAngle, 0.f, (float)M_PI))
