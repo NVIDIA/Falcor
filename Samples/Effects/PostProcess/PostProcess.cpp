@@ -31,18 +31,14 @@ using namespace Falcor;
 
 void PostProcess::onLoad()
 {
-    // Create models and texture
-    uint32_t flags = Model::GenerateTangentSpace;
-    mpSphere = Model::createFromFile("sphere.obj", flags);
-    mpTeapot = Model::createFromFile("teapot.obj", flags);
-
-    // Create camera
+    //Create model and camera
+    mpTeapot = Model::createFromFile("teapot.obj", 0u);
     mpCamera = Camera::create();
     float nearZ = 0.1f;
-    float farZ = mpSphere->getRadius() * 5000;
+    float farZ = mpTeapot->getRadius() * 5000;
     mpCamera->setDepthRange(nearZ, farZ);
 
-    // Setup controller
+    //Setup controller
     mCameraController.attachCamera(mpCamera);
     mCameraController.setModelParams(mpTeapot->getCenter(), mpTeapot->getRadius(), 10.0f);    
     
@@ -50,27 +46,13 @@ void PostProcess::onLoad()
     mpProgram = GraphicsProgram::createFromFile("PostProcess.vs.hlsl", "Postprocess.ps.hlsl");
     mpProgramVars = GraphicsVars::create(mpProgram->getActiveVersion()->getReflector());
     mpGraphicsState = GraphicsState::create();
-    mpGraphicsState->setRootSignature(RootSignature::create(mpProgram->getActiveVersion()->getReflector().get()));
     mpGraphicsState->setFbo(mpDefaultFBO);
-
-    //TODO, convert postprocess vs/fs to hlsl
-    //mpEnvMapProgram = GraphicsProgram::createFromFile("postprocess.vs", "postprocess.fs");
-
-    // Create the rasterizer state
-    RasterizerState::Desc rsDesc;
-    rsDesc.setCullMode(RasterizerState::CullMode::Front);
-    mSkybox.pFrontFaceCulling = RasterizerState::create(rsDesc);
-
-    // Create depth state
-    DepthStencilState::Desc depthDesc;
-    depthDesc.setDepthTest(false);
-    mpNoDepth = DepthStencilState::create(depthDesc);
 
     // Create the sampler state
     Sampler::Desc samplerDesc;
     samplerDesc.setFilterMode(Sampler::Filter::Linear, Sampler::Filter::Linear, Sampler::Filter::Linear);
-    mpTriLinearSampler = Sampler::create(samplerDesc);
-    mpProgramVars->setSampler(0, mpTriLinearSampler);
+    Sampler::SharedPtr triLinear = Sampler::create(samplerDesc);
+    mpProgramVars->setSampler(0, triLinear);
 
     mpToneMapper = ToneMapping::create(ToneMapping::Operator::HableUc2);
 
@@ -125,7 +107,6 @@ void PostProcess::renderMesh(const Mesh* pMesh, GraphicsProgram::SharedPtr pProg
     mpGraphicsState->setVao(pMesh->getVao());
     mpGraphicsState->setRasterizerState(pRastState);
     mpGraphicsState->setProgram(mpProgram);
-    mpGraphicsState->setFbo(mpHdrFbo);
     mpRenderContext->setGraphicsState(mpGraphicsState);
     mpRenderContext->setGraphicsVars(mpProgramVars);
     mpRenderContext->drawIndexed(pMesh->getIndexCount(), 0, 0);
@@ -145,19 +126,10 @@ void PostProcess::onFrameRender()
     mpRenderContext->clearFbo(mpHdrFbo.get(), clearColor, 1.0f, 0, FboAttachmentType::All);
     mCameraController.update();
 
-    //mpGraphicsState->pushFbo(mpHdrFbo);
-
-    //mpProgram->addDefine("_TEXTURE_ONLY");
-    //mpGraphicsState->setDepthStencilState(mpNoDepth);
-    //renderMesh(mpSphere->getMesh(0).get(), mpProgram, mSkybox.pFrontFaceCulling, 4500);
-
-    //mpProgram->removeDefine("_TEXTURE_ONLY");
-    mpGraphicsState->setDepthStencilState(nullptr);
+    mpGraphicsState->pushFbo(mpHdrFbo);
     renderMesh(mpTeapot->getMesh(0).get(), mpProgram, nullptr, 1);
+    mpGraphicsState->popFbo();
 
-    //mpGraphicsState->popFbo();
-
-    mpGraphicsState->setFbo(mpDefaultFBO);
     mpToneMapper->execute(mpRenderContext.get(), mpHdrFbo, mpDefaultFBO);
 
     //Global sample message doesn't exist anymore. Something other than this?
@@ -172,17 +144,18 @@ void PostProcess::onShutdown()
 
 void PostProcess::onResizeSwapChain()
 {
+    //Camera aspect 
     float height = (float)mpDefaultFBO->getHeight();
     float width = (float)mpDefaultFBO->getWidth();
-
     mpCamera->setFovY(float(M_PI / 3));
     float aspectRatio = (width / height);
     mpCamera->setAspectRatio(aspectRatio);
 
+    //recreate hdr fbo
     ResourceFormat format = ResourceFormat::RGBA16Float;
     Fbo::Desc desc;
     desc.setDepthStencilTarget(ResourceFormat::D16Unorm);
-    desc.setColorTarget(0u, ResourceFormat::RGBA16Float);
+    desc.setColorTarget(0u, format);
     mpHdrFbo = FboHelper::create2D(mpDefaultFBO->getWidth(), mpDefaultFBO->getHeight(), desc);
 }
 

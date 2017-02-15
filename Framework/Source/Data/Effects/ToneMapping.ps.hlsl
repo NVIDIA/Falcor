@@ -30,9 +30,9 @@
 
 SamplerState gLuminanceTexSampler
 {
-    Filter = MIN_MAG_MIP_POINT;
-    AddressU = Clamp;
-    AddressV = Clamp;
+    Filter = MIN_MAG_MIP_LINEAR;
+    AddressU = Wrap;
+    AddressV = Wrap;
 };
 
 cbuffer PerImageCB : register(b0)
@@ -138,7 +138,7 @@ vec4 calcColor(vec2 texC)
 #elif defined _HABLE_UC2
     return vec4(hableUc2ToneMap(exposedColor), color.a);
 #endif
-    return vec4(0, 0, 0, 1);
+    return vec4(exposedColor, color.a);
 }
 
 #ifdef FALCOR_HLSL

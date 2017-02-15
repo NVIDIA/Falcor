@@ -100,12 +100,13 @@ namespace Falcor
         ToneMapping(Operator op);
         void createLuminanceFbo(Fbo::SharedPtr pSrcFbo);
 
-        uint32_t mOperatorIndex = 2u;
+        uint32_t mOperatorIndex;
         Operator mOperator;
         FullScreenPass::UniquePtr mpToneMapPass;
         FullScreenPass::UniquePtr mpLuminancePass;
         Fbo::SharedPtr mpLuminanceFbo;
-        GraphicsVars::SharedPtr mpGraphicsVars;
+        GraphicsVars::SharedPtr mpToneMapVars;
+        GraphicsVars::SharedPtr mpLuminanceVars;
 
         ConstantBuffer::SharedPtr mpCb;
         Sampler::SharedPtr mpPointSampler;
@@ -127,9 +128,5 @@ namespace Falcor
         float mWhiteMaxLuminance = 1.0f;
         float mLuminanceLod = 16; // Max possible LOD, will result in global operation
         float mWhiteScale = 11.2f;
-
-        // UI callback
-        static void GUI_CALL getToneMapOperator(void* pVal, void* pThis);
-        static void GUI_CALL setToneMapOperator(const void* pVal, void* pThis);
     };
 }

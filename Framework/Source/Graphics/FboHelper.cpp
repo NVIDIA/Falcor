@@ -50,7 +50,7 @@ namespace Falcor
                 param = "arraySize";
             else
             {
-                if(sampleCount > 0 && mipLevels > 1)
+                if(sampleCount > 1 && mipLevels > 1)
                 {
                     logError(msg + "can't create multi-sampled texture with more than one mip-level. sampleCount = " + std::to_string(sampleCount) + ", mipLevels = " + std::to_string(mipLevels) + ".");
                     return false;

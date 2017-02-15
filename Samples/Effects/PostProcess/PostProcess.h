@@ -40,7 +40,6 @@ public:
     bool onMouseEvent(const MouseEvent& mouseEvent) override;
 
 private:
-    Model::SharedPtr mpSphere;
     Model::SharedPtr mpTeapot;
     Texture::SharedPtr mHdrImage;
     ModelViewCameraController mCameraController;
@@ -51,19 +50,9 @@ private:
     void initUI();
     void renderMesh(const Mesh* pMesh, GraphicsProgram::SharedPtr pProgram, RasterizerState::SharedPtr pRastState, float scale);
 
-    Sampler::SharedPtr mpTriLinearSampler;
-
-    struct
-    {
-        Program::SharedPtr pProgram;
-        RasterizerState::SharedPtr pFrontFaceCulling;
-    } mSkybox;
-
     GraphicsProgram::SharedPtr mpProgram = nullptr;
     GraphicsVars::SharedPtr mpProgramVars = nullptr;
     GraphicsState::SharedPtr mpGraphicsState = nullptr;
-    Program::SharedPtr mpEnvMapProgram;
-    //UniformBuffer::SharedPtr mpPerFrameCB;
 
     enum HdrImage
     {
@@ -77,10 +66,6 @@ private:
     Fbo::SharedPtr mpHdrFbo;
     ToneMapping::UniquePtr mpToneMapper;
     SceneRenderer::UniquePtr mpSceneRenderer;
-    Scene::SharedPtr mpScene;
-    DepthStencilState::SharedPtr mpNoDepth;
 
     void loadImage();
-    static void GUI_CALL getHdrImage(void* pVal, void* pThis);
-    static void GUI_CALL setHdrImage(const void* pVal, void* pThis);
 };

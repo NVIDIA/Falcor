@@ -38,6 +38,7 @@ namespace Falcor
 
     ToneMapping::ToneMapping(ToneMapping::Operator op)
     {
+        mOperatorIndex = static_cast<uint32_t>(op);
         createLuminancePass();
         createToneMapPass(op);
         Sampler::Desc samplerDesc;
@@ -72,38 +73,39 @@ namespace Falcor
         {
             Fbo::Desc desc;
             desc.setColorTarget(0, luminanceFormat);
-            //mpLuminanceFbo = FboHelper::create2D(pSrcFbo->getWidth(), pSrcFbo->getHeight(), desc, 1, Fbo::kAttachEntireMipLevel);
-            mpLuminanceFbo = FboHelper::create2D(pSrcFbo->getWidth(), pSrcFbo->getHeight(), desc, 1, 1);
+            mpLuminanceFbo = FboHelper::create2D(pSrcFbo->getWidth(), pSrcFbo->getHeight(), desc, 1, Fbo::kAttachEntireMipLevel);
         }
     }
 
     void ToneMapping::execute(RenderContext* pRenderContext, Fbo::SharedPtr pSrc, Fbo::SharedPtr pDst)
     {
-        GraphicsState* pState = pRenderContext->getGraphicsState().get();
-        pState->pushFbo(pDst);
+        GraphicsState::SharedPtr pState = pRenderContext->getGraphicsState();
         createLuminanceFbo(pSrc);
 
-        //Set Vars
-        mpGraphicsVars->setTexture("gColorTex", pSrc->getColorTexture(0));
-        if (mOperator != Operator::Clamp)
-        {
-            mpGraphicsVars["PerImageCB"]["gMiddleGray"] = mMiddleGray;
-            mpGraphicsVars->setTexture("gLuminanceTex", mpLuminanceFbo->getColorTexture(0));
-            mpGraphicsVars["PerImageCB"]["gMaxWhiteLuminance"] = mWhiteMaxLuminance;
-            mpGraphicsVars["PerImageCB"]["gLuminanceLod"] = mLuminanceLod;
-            mpGraphicsVars["PerImageCB"]["gWhiteScale"] = mWhiteScale;
-        }
-        pRenderContext->setGraphicsVars(mpGraphicsVars);
+        //Set color tex
+        mpToneMapVars->setTexture("gColorTex", pSrc->getColorTexture(0));
+        mpLuminanceVars->setTexture("gColorTex", pSrc->getColorTexture(0));
+        pRenderContext->setGraphicsVars(mpLuminanceVars);
 
-        // Calculate luminance
+        //Calculate luminance
         pState->setFbo(mpLuminanceFbo);
         mpLuminancePass->execute(pRenderContext);
         mpLuminanceFbo->getColorTexture(0)->generateMips();
 
-        // Tone map
+        //Set Tone map vars
+        if (mOperator != Operator::Clamp)
+        {
+            mpToneMapVars["PerImageCB"]["gMiddleGray"] = mMiddleGray;
+            mpToneMapVars["PerImageCB"]["gMaxWhiteLuminance"] = mWhiteMaxLuminance;
+            mpToneMapVars["PerImageCB"]["gLuminanceLod"] = mLuminanceLod;
+            mpToneMapVars["PerImageCB"]["gWhiteScale"] = mWhiteScale;
+            mpToneMapVars->setTexture("gLuminanceTex", mpLuminanceFbo->getColorTexture(0));
+        }
+
+        //Tone map
+        pRenderContext->setGraphicsVars(mpToneMapVars);
         pState->setFbo(pDst);
         mpToneMapPass->execute(pRenderContext);
-        pState->popFbo();
     }
 
     void ToneMapping::createToneMapPass(ToneMapping::Operator op)
@@ -135,29 +137,16 @@ namespace Falcor
             should_not_get_here();
         }
 
-        mpGraphicsVars = GraphicsVars::create(mpToneMapPass->getProgram()->getActiveVersion()->getReflector());
+        mpToneMapVars = GraphicsVars::create(mpToneMapPass->getProgram()->getActiveVersion()->getReflector());
+        mpToneMapVars->setSampler("gColorTex.s", mpPointSampler);
     }
 
     void ToneMapping::createLuminancePass()
     {
         mpLuminancePass = FullScreenPass::create(kShaderFilename);
         mpLuminancePass->getProgram()->addDefine("_LUMINANCE");
-    }
-
-    void GUI_CALL ToneMapping::getToneMapOperator(void* pVal, void* pThis)
-    {
-        const ToneMapping* pToneMap = (ToneMapping*)pThis;
-        *(uint32_t*)pVal = (uint32_t)pToneMap->mOperator;
-    }
-
-    void GUI_CALL ToneMapping::setToneMapOperator(const void* pVal, void* pThis)
-    {
-        ToneMapping* pToneMap = (ToneMapping*)pThis;
-        Operator newOp = (Operator)*(uint32_t*)pVal;
-        if(newOp != pToneMap->mOperator)
-        {
-            pToneMap->createToneMapPass(newOp);
-        }
+        mpLuminanceVars = GraphicsVars::create(mpLuminancePass->getProgram()->getActiveVersion()->getReflector());
+        mpLuminanceVars->setSampler("gColorTex.s", mpPointSampler);
     }
 
     void ToneMapping::setUiElements(Gui* pGui, const std::string& uiGroup)
