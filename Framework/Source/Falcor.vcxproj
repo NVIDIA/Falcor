@@ -823,6 +823,7 @@
     <ClInclude Include="Utils\DDSHeader.h" />
     <ClInclude Include="Utils\Font.h" />
     <ClInclude Include="Utils\FrameRate.h" />
+    <ClInclude Include="Utils\Graph.h" />
     <ClInclude Include="Utils\Gui.h" />
     <ClInclude Include="Utils\Logger.h" />
     <ClInclude Include="Utils\Math\CubicSpline.h" />

@@ -1525,6 +1525,9 @@
       <Filter>Utils</Filter>
     </ClInclude>
     <ClInclude Include="SampleTest.h" />
+    <ClInclude Include="Utils\Graph.h">
+      <Filter>Utils</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Externals">

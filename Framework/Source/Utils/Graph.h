@@ -26,66 +26,72 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 #pragma once
-#include "Framework.h"
-#include "ComputeState.h"
 
 namespace Falcor
 {
-    std::vector<ComputeState*> ComputeState::sObjects;
-
-    ComputeState::ComputeState()
+    template<typename NodeType, typename EdgeType, typename EdgeHashType = std::hash<EdgeType>>
+    class Graph
     {
-        sObjects.push_back(this);
-        mpCsoGraph = StateGraph::create();
-    }
+    public:
+        using SharedPtr = std::shared_ptr<Graph>;
+        using SharedConstPtr = std::shared_ptr<const Graph>;
 
-    ComputeState::~ComputeState()
-    {
-        // Remove the current object from the program vector
-        for (auto it = sObjects.begin(); it != sObjects.end(); it++)
+        static SharedPtr create()
         {
-            if (*it == this)
+            return SharedPtr(new Graph());
+        }
+
+        void gotoStart() { mCurrentNode = 0; }
+
+        bool isEdgeExists(const EdgeType& e) const 
+        {
+            return (getEdgeIt(e) != mGraph[mCurrentNode].edges.end());
+        }
+
+        bool walk(const EdgeType& e)
+        {
+            if (isEdgeExists(e))
             {
-                sObjects.erase(it);
-                break;;
+                mCurrentNode = getEdgeIt(e)->second;
+                return true;
+            }
+            else
+            {
+                uint32_t newIndex = (uint32_t)mGraph.size();
+                mGraph[mCurrentNode].edges[e] = newIndex;
+                mGraph.push_back(Node());
+                mCurrentNode = newIndex;
+                return false;
             }
         }
-    }
-
-    ComputeStateObject::SharedPtr ComputeState::getCSO()
-    {
-        ProgramVersion::SharedConstPtr pProgVersion = mpProgram ? mpProgram->getActiveVersion() : nullptr;
-        bool newProgram = (pProgVersion.get() != mCachedData.pProgramVersion);
-        if (newProgram)
+        
+        const NodeType& getCurrentNode() const
         {
-            mCachedData.pProgramVersion = pProgVersion.get();
-            mpCsoGraph->walk((void*)mCachedData.pProgramVersion);
+            return mGraph[mCurrentNode].data;
         }
 
-        ComputeStateObject::SharedPtr pCso = mpCsoGraph->getCurrentNode();
-
-        if(pCso == nullptr)
+        void setCurrentNodeData(const NodeType& data)
         {
-            if (newProgram && mCachedData.isUserRootSignature == false)
-            {
-                mpRootSignature = RootSignature::create(pProgVersion->getReflector().get());
-            }
+            mGraph[mCurrentNode].data = data;
+        }
+    private:
+        Graph() : mGraph(1) {}
 
-            mDesc.setProgramVersion(pProgVersion);
-            mDesc.setRootSignature(mpRootSignature);
-            pCso = ComputeStateObject::create(mDesc);
-            mpCsoGraph->setCurrentNodeData(pCso);
+        using edge_map = std::unordered_map<EdgeType, uint32_t, EdgeHashType>;
+        
+        const auto getEdgeIt(const EdgeType& e) const
+        {
+            const Node& n = mGraph[mCurrentNode];
+            return n.edges.find(e);
         }
 
-        return pCso;
-    }
-
-    void ComputeState::beginNewFrame()
-    {
-        for (auto& pState : sObjects)
+        struct Node
         {
-            pState->mpCsoGraph->gotoStart();
-            pState->mCachedData.pProgramVersion = nullptr;
-        }
-    }
+            NodeType data = { 0 };
+            edge_map edges;
+        };
+
+        std::vector<Node> mGraph;
+        uint32_t mCurrentNode = 0;
+    };
 }
