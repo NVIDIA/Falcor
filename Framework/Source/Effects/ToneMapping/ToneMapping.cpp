@@ -82,12 +82,14 @@ namespace Falcor
         GraphicsState::SharedPtr pState = pRenderContext->getGraphicsState();
         createLuminanceFbo(pSrc);
 
-        //Set color tex
+        //Set shared vars
         mpToneMapVars->setTexture("gColorTex", pSrc->getColorTexture(0));
         mpLuminanceVars->setTexture("gColorTex", pSrc->getColorTexture(0));
-        pRenderContext->setGraphicsVars(mpLuminanceVars);
+        mpToneMapVars->setSampler(1u, mpPointSampler);
+        mpLuminanceVars->setSampler(1u, mpPointSampler);
 
         //Calculate luminance
+        pRenderContext->setGraphicsVars(mpLuminanceVars);
         pState->setFbo(mpLuminanceFbo);
         mpLuminancePass->execute(pRenderContext);
         mpLuminanceFbo->getColorTexture(0)->generateMips();
@@ -95,6 +97,7 @@ namespace Falcor
         //Set Tone map vars
         if (mOperator != Operator::Clamp)
         {
+            mpToneMapVars->setSampler(0u, mpLinearSampler);
             mpToneMapVars["PerImageCB"]["gMiddleGray"] = mMiddleGray;
             mpToneMapVars["PerImageCB"]["gMaxWhiteLuminance"] = mWhiteMaxLuminance;
             mpToneMapVars["PerImageCB"]["gLuminanceLod"] = mLuminanceLod;
@@ -138,7 +141,6 @@ namespace Falcor
         }
 
         mpToneMapVars = GraphicsVars::create(mpToneMapPass->getProgram()->getActiveVersion()->getReflector());
-        mpToneMapVars->setSampler("gColorTex.s", mpPointSampler);
     }
 
     void ToneMapping::createLuminancePass()
@@ -146,7 +148,6 @@ namespace Falcor
         mpLuminancePass = FullScreenPass::create(kShaderFilename);
         mpLuminancePass->getProgram()->addDefine("_LUMINANCE");
         mpLuminanceVars = GraphicsVars::create(mpLuminancePass->getProgram()->getActiveVersion()->getReflector());
-        mpLuminanceVars->setSampler("gColorTex.s", mpPointSampler);
     }
 
     void ToneMapping::setUiElements(Gui* pGui, const std::string& uiGroup)

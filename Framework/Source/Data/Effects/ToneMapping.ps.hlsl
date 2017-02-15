@@ -28,16 +28,12 @@
 #version 420
 #include "HlslGlslCommon.h"
 
-SamplerState gLuminanceTexSampler
-{
-    Filter = MIN_MAG_MIP_LINEAR;
-    AddressU = Wrap;
-    AddressV = Wrap;
-};
+SamplerState gLuminanceTexSampler : register(s0);
+SamplerState gPointSampler : register(s1);
 
 cbuffer PerImageCB : register(b0)
 {
-    sampler2D gColorTex;
+    texture2D gColorTex;
     texture2D gLuminanceTex;
     float gMiddleGray;
     float gMaxWhiteLuminance;
@@ -53,12 +49,13 @@ float calcLuminance(vec3 color)
 vec3 calcExposedColor(vec3 color, vec2 texC)
 {
     float pixelLuminance = calcLuminance(color);
-    float avgLuminance = textureLod(gLuminanceTex, texC, gLuminanceLod).r;
-    avgLuminance = exp(avgLuminance);
-    
-    float exposedLuminance = gMiddleGray / avgLuminance;
-
-    return exposedLuminance*color;
+    float avgLuminance = gLuminanceTex.SampleLevel(gLuminanceTexSampler, texC, gLuminanceLod).r;
+    avgLuminance = max(exp2(avgLuminance), 0.001f);
+    float exposedLuminance = (gMiddleGray / avgLuminance);
+    exposedLuminance = max(exposedLuminance, 0.001f);
+    //Not sure if the below line is correct but it pretty much fixed the issue
+    exposedLuminance = exposedLuminance / (1 + exposedLuminance);
+    return (exposedLuminance)*color;
 }
 
 vec3 linearToneMap(vec3 color)
@@ -119,11 +116,11 @@ vec3 hableUc2ToneMap(vec3 color)
 
 vec4 calcColor(vec2 texC)
 {
-    vec4 color = texture(gColorTex, texC);
+    vec4 color = gColorTex.Sample(gPointSampler, texC);
     vec3 exposedColor = calcExposedColor(color.rgb, texC);
 #ifdef _LUMINANCE
     float luminance = calcLuminance(color.xyz);
-    luminance = log(max(0.0001, luminance));
+    luminance = log2(max(0.0001, luminance));
     return vec4(luminance, 0, 0, 1);
 #elif defined _CLAMP
     return color;
@@ -141,18 +138,7 @@ vec4 calcColor(vec2 texC)
     return vec4(exposedColor, color.a);
 }
 
-#ifdef FALCOR_HLSL
 vec4 main(float2 texC  : TEXCOORD) : SV_TARGET0
 {
     return calcColor(texC);
 }
-
-#elif defined FALCOR_GLSL
-in vec2 texC;
-out vec4 fragColor;
-
-void main()
-{
-    fragColor = calcColor(texC);
-}
-#endif

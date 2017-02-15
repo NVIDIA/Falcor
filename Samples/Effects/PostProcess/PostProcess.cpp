@@ -152,7 +152,7 @@ void PostProcess::onResizeSwapChain()
     mpCamera->setAspectRatio(aspectRatio);
 
     //recreate hdr fbo
-    ResourceFormat format = ResourceFormat::RGBA16Float;
+    ResourceFormat format = ResourceFormat::RGBA32Float;
     Fbo::Desc desc;
     desc.setDepthStencilTarget(ResourceFormat::D16Unorm);
     desc.setColorTarget(0u, format);
