@@ -456,9 +456,6 @@
       <Filter>Utils</Filter>
     </ClCompile>
     <ClCompile Include="SampleTest.cpp" />
-    <ClCompile Include="Graphics\StateGraph.cpp">
-      <Filter>Graphics</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Graphics\Model\Animation.h">
