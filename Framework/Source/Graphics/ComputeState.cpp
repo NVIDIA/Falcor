@@ -31,22 +31,61 @@
 
 namespace Falcor
 {
+    std::vector<ComputeState*> ComputeState::sObjects;
+
+    ComputeState::ComputeState()
+    {
+        sObjects.push_back(this);
+        mpCsoGraph = StateGraph::create();
+    }
+
+    ComputeState::~ComputeState()
+    {
+        // Remove the current object from the program vector
+        for (auto it = sObjects.begin(); it != sObjects.end(); it++)
+        {
+            if (*it == this)
+            {
+                sObjects.erase(it);
+                break;;
+            }
+        }
+    }
+
     ComputeStateObject::SharedPtr ComputeState::getCSO()
     {
-        const ProgramVersion* pProgVersion = mpProgram ? mpProgram->getActiveVersion().get() : nullptr;
-        if (pProgVersion != mCachedData.pProgramVersion)
+        ProgramVersion::SharedConstPtr pProgVersion = mpProgram ? mpProgram->getActiveVersion() : nullptr;
+        bool newProgram = (pProgVersion.get() != mCachedData.pProgramVersion);
+        if (newProgram)
         {
-            mCachedData.pProgramVersion = pProgVersion;
-            if (mCachedData.isUserRootSignature == false)
+            mCachedData.pProgramVersion = pProgVersion.get();
+            mpCsoGraph->walk((void*)mCachedData.pProgramVersion);
+        }
+
+        ComputeStateObject::SharedPtr pCso = mpCsoGraph->getCurrentNode();
+
+        if(pCso == nullptr)
+        {
+            if (newProgram && mCachedData.isUserRootSignature == false)
             {
                 mpRootSignature = RootSignature::create(pProgVersion->getReflector().get());
             }
+
+            mDesc.setProgramVersion(pProgVersion);
+            mDesc.setRootSignature(mpRootSignature);
+            pCso = ComputeStateObject::create(mDesc);
+            mpCsoGraph->setCurrentNodeData(pCso);
         }
 
-        mDesc.setProgramVersion(mpProgram ? mpProgram->getActiveVersion() : nullptr);
-        mDesc.setRootSignature(mpRootSignature);
+        return pCso;
+    }
 
-        mpCurrentCso = ComputeStateObject::create(mDesc);
-        return mpCurrentCso;
+    void ComputeState::beginNewFrame()
+    {
+        for (auto& pState : sObjects)
+        {
+            pState->mpCsoGraph->gotoStart();
+            pState->mCachedData.pProgramVersion = nullptr;
+        }
     }
 }

@@ -86,6 +86,7 @@ namespace Falcor
         for (auto& pThis : sObjects)
         {
             pThis->mpGsoGraph->gotoStart();
+            pThis->mCachedData.pProgramVersion = nullptr;
         }
     }
 
@@ -95,12 +96,12 @@ namespace Falcor
         {
             mpVao->getVertexLayout()->addVertexAttribDclToProg(mpProgram.get());
         }
-        const ProgramVersion* pProgVersion = mpProgram ? mpProgram->getActiveVersion().get() : nullptr;
-        bool newProgVersion = pProgVersion != mCachedData.pProgramVersion;
+        const ProgramVersion::SharedConstPtr pProgVersion = mpProgram ? mpProgram->getActiveVersion() : nullptr;
+        bool newProgVersion = pProgVersion.get() != mCachedData.pProgramVersion;
         if (newProgVersion)
         {
-            mCachedData.pProgramVersion = pProgVersion;
-            mpGsoGraph->walk((void*)pProgVersion);
+            mCachedData.pProgramVersion = pProgVersion.get();
+            mpGsoGraph->walk((void*)pProgVersion.get());
         }
 
         GraphicsStateObject::SharedPtr pGso = mpGsoGraph->getCurrentNode();
@@ -111,7 +112,7 @@ namespace Falcor
                 mpRootSignature = RootSignature::create(pProgVersion->getReflector().get());
             }
 
-            mDesc.setProgramVersion(mpProgram ? mpProgram->getActiveVersion() : nullptr);
+            mDesc.setProgramVersion(pProgVersion);
             mDesc.setFboFormats(mpFbo ? mpFbo->getDesc() : Fbo::Desc());
             mDesc.setVertexLayout(mpVao->getVertexLayout());
             mDesc.setPrimitiveType(topology2Type(mpVao->getPrimitiveTopology()));

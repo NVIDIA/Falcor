@@ -72,7 +72,6 @@ namespace Falcor
 
         void setCurrentNodeData(const NodeType& data)
         {
-            assert(mCurrentNode != 0);
             mGraph[mCurrentNode].data = data;
         }
     private:

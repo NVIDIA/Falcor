@@ -29,6 +29,7 @@
 #include "API/ComputeStateObject.h"
 #include "Graphics/ComputeProgram.h"
 #include <stack>
+#include "StateGraph.h"
 
 namespace Falcor
 {
@@ -41,7 +42,8 @@ namespace Falcor
     public:
         using SharedPtr = std::shared_ptr<ComputeState>;
         using SharedConstPtr = std::shared_ptr<const ComputeState>;
-        
+        ~ComputeState();
+
         /** Create a new object
         */
         static SharedPtr create() { return SharedPtr(new ComputeState()); }
@@ -70,8 +72,9 @@ namespace Falcor
         */
         RootSignature::SharedPtr getRootSignature() const { return mpRootSignature; }
         
+        static void beginNewFrame();
     private:
-        ComputeState() = default;
+        ComputeState();
         ComputeProgram::SharedPtr mpProgram;
         RootSignature::SharedPtr mpRootSignature;
         ComputeStateObject::Desc mDesc;
@@ -82,6 +85,9 @@ namespace Falcor
             bool isUserRootSignature = false;
         };
         CachedData mCachedData;
-        ComputeStateObject::SharedPtr mpCurrentCso;
+
+        static std::vector<ComputeState*> sObjects;
+        using StateGraph = Graph<ComputeStateObject::SharedPtr, void*>;
+        StateGraph::SharedPtr mpCsoGraph;
     };
 }
