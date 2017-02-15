@@ -100,7 +100,7 @@ namespace Falcor
         if (newProgVersion)
         {
             mCachedData.pProgramVersion = pProgVersion;
-            mpGsoGraph->walk(GraphEdge(GraphEdge::Type::ProgVersion, (void*)pProgVersion));
+            mpGsoGraph->walk((void*)pProgVersion);
         }
 
         GraphicsStateObject::SharedPtr pGso = mpGsoGraph->getCurrentNode();
@@ -126,7 +126,7 @@ namespace Falcor
     GraphicsState& GraphicsState::setFbo(const Fbo::SharedConstPtr& pFbo, bool setVp0Sc0)
     {
         mpFbo = pFbo;
-        mpGsoGraph->walk(GraphEdge(GraphEdge::Type::FBO, (void*)pFbo.get()));
+        mpGsoGraph->walk((void*)pFbo.get());
 
         if (setVp0Sc0 && pFbo)
         {
@@ -158,42 +158,42 @@ namespace Falcor
     GraphicsState& GraphicsState::setVao(const Vao::SharedConstPtr& pVao)
     {
         mpVao = pVao;
-        mpGsoGraph->walk(GraphEdge(GraphEdge::Type::VAO, (void*)pVao.get()));
+        mpGsoGraph->walk((void*)pVao.get());
         return *this;
     }
 
     GraphicsState& GraphicsState::setBlendState(BlendState::SharedPtr pBlendState)
     {
         mDesc.setBlendState(pBlendState);
-        mpGsoGraph->walk(GraphEdge(GraphEdge::Type::BlendState, (void*)pBlendState.get()));
+        mpGsoGraph->walk((void*)pBlendState.get());
         return *this;
     }
 
     GraphicsState& GraphicsState::setRasterizerState(RasterizerState::SharedPtr pRasterizerState)
     {
         mDesc.setRasterizerState(pRasterizerState); 
-        mpGsoGraph->walk(GraphEdge(GraphEdge::Type::RastState, (void*)pRasterizerState.get()));
+        mpGsoGraph->walk((void*)pRasterizerState.get());
         return *this;
     }
 
     GraphicsState& GraphicsState::setSampleMask(uint32_t sampleMask)
     { 
         mDesc.setSampleMask(sampleMask); 
-        mpGsoGraph->walk(GraphEdge(GraphEdge::Type::SampleMask, (void*)(uint64_t)sampleMask));
+        mpGsoGraph->walk((void*)(uint64_t)sampleMask);
         return *this; 
     }
 
     GraphicsState& GraphicsState::setDepthStencilState(DepthStencilState::SharedPtr pDepthStencilState)
     {
         mDesc.setDepthStencilState(pDepthStencilState); 
-        mpGsoGraph->walk(GraphEdge(GraphEdge::Type::DepthState, (void*)pDepthStencilState.get()));
+        mpGsoGraph->walk((void*)pDepthStencilState.get());
         return *this;
     }
 
     GraphicsState& GraphicsState::setRootSignature(RootSignature::SharedPtr pSignature)
     {
         mpRootSignature = pSignature;
-        mpGsoGraph->walk(GraphEdge(GraphEdge::Type::RootSig, (void*)pSignature.get()));
+        mpGsoGraph->walk((void*)pSignature.get());
         mCachedData.isUserRootSignature = (mpRootSignature == nullptr);
         return *this;
     }

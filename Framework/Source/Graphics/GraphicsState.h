@@ -237,41 +237,7 @@ namespace Falcor
         CachedData mCachedData;
 
         static std::vector<GraphicsState*> sObjects;
-
-        struct GraphEdge
-        {
-            enum class Type : uint32_t
-            {
-                VAO,
-                FBO,
-                RastState,
-                DepthState,
-                BlendState,
-                ProgVersion,
-                SampleMask,
-                RootSig
-            };
-
-            GraphEdge(Type t_, void* pData_) : t(t_), pData(pData_) {}
-            Type t;
-            void* pData;
-
-            bool operator==(const GraphEdge& other) const
-            {
-                return (t == other.t) && (pData == other.pData);
-            }
-        };
-
-        struct EdgeHasher
-        {
-            std::size_t operator()(const GraphEdge& e) const
-            {
-                return ((std::hash<uint32_t>()((uint32_t)e.t)
-                    ^ (std::hash<void*>()(e.pData) << 1)) >> 1);
-            }
-        };
-
-        using StateGraph = Graph<GraphicsStateObject::SharedPtr, GraphEdge, EdgeHasher>;
+        using StateGraph = Graph<GraphicsStateObject::SharedPtr, void*>;
         StateGraph::SharedPtr mpGsoGraph;
     };
 }
