@@ -34,7 +34,7 @@
 #include "API/DepthStencilState.h"
 #include "API/BlendState.h"
 #include <stack>
-#include "StateGraph.h"
+#include "Utils/Graph.h"
 
 namespace Falcor
 {

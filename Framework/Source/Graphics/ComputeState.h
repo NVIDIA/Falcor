@@ -29,7 +29,7 @@
 #include "API/ComputeStateObject.h"
 #include "Graphics/ComputeProgram.h"
 #include <stack>
-#include "StateGraph.h"
+#include "Utils/Graph.h"
 
 namespace Falcor
 {
