@@ -427,6 +427,7 @@
     <ClCompile Include="Graphics\Scene\SceneImporter.cpp" />
     <ClCompile Include="Graphics\Scene\SceneRenderer.cpp" />
     <ClCompile Include="Graphics\Scene\SceneUtils.cpp" />
+    <ClCompile Include="Graphics\StateGraph.cpp" />
     <ClCompile Include="Graphics\TextureHelper.cpp" />
     <ClCompile Include="Sample.cpp" />
     <ClCompile Include="SampleTest.cpp" />
@@ -808,6 +809,7 @@
     <ClInclude Include="Graphics\Scene\SceneImporter.h" />
     <ClInclude Include="Graphics\Scene\SceneRenderer.h" />
     <ClInclude Include="Graphics\Scene\SceneUtils.h" />
+    <ClInclude Include="Graphics\StateGraph.h" />
     <ClInclude Include="Graphics\TextureHelper.h" />
     <ClInclude Include="Sample.h" />
     <ClInclude Include="SampleTest.h" />

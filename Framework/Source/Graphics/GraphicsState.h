@@ -34,6 +34,7 @@
 #include "API/DepthStencilState.h"
 #include "API/BlendState.h"
 #include <stack>
+#include "StateGraph.h"
 
 namespace Falcor
 {
@@ -46,7 +47,8 @@ namespace Falcor
     public:
         using SharedPtr = std::shared_ptr<GraphicsState>;
         using SharedConstPtr = std::shared_ptr<const GraphicsState>;
-        
+        ~GraphicsState();
+
         struct Viewport
         {
             Viewport() = default;
@@ -101,7 +103,7 @@ namespace Falcor
         /** Set a new vertex array object. By default, no VAO is bound.
         \param[in] pVao The Vao object to bind. If this is nullptr, will unbind the current VAO.
         */
-        GraphicsState& setVao(const Vao::SharedConstPtr& pVao) { mpVao = pVao; return *this; }
+        GraphicsState& setVao(const Vao::SharedConstPtr& pVao);
 
         /** Get the currently bound VAO
         */
@@ -169,7 +171,7 @@ namespace Falcor
 
         /** Set a blend-state
         */
-        GraphicsState& setBlendState(BlendState::SharedPtr pBlendState) { mDesc.setBlendState(pBlendState); return *this; }
+        GraphicsState& setBlendState(BlendState::SharedPtr pBlendState);
 
         /** Get the currently bound blend-state
         */
@@ -177,7 +179,7 @@ namespace Falcor
 
         /** Set a rasterizer-state
         */
-        GraphicsState& setRasterizerState(RasterizerState::SharedPtr pRasterizerState) { mDesc.setRasterizerState(pRasterizerState); return *this; }
+        GraphicsState& setRasterizerState(RasterizerState::SharedPtr pRasterizerState);
 
         /** Get the currently bound rasterizer-state
         */
@@ -185,7 +187,7 @@ namespace Falcor
 
         /** Set a depth-stencil state
         */
-        GraphicsState& setDepthStencilState(DepthStencilState::SharedPtr pDepthStencilState) { mDesc.setDepthStencilState(pDepthStencilState); return *this; }
+        GraphicsState& setDepthStencilState(DepthStencilState::SharedPtr pDepthStencilState);
 
         /** Get the currently bound depth-stencil state
         */
@@ -193,7 +195,7 @@ namespace Falcor
 
         /** Set the sample mask
         */
-        GraphicsState& setSampleMask(uint32_t sampleMask) { mDesc.setSampleMask(sampleMask); return *this; }
+        GraphicsState& setSampleMask(uint32_t sampleMask);
 
         /** Get the current sample mask
         */
@@ -201,7 +203,7 @@ namespace Falcor
 
         /** Set the primitive topology
         */
-        GraphicsState& setRootSignature(RootSignature::SharedPtr pSignature) { mpRootSignature = pSignature; mCachedData.isUserRootSignature = (mpRootSignature == nullptr); }
+        GraphicsState& setRootSignature(RootSignature::SharedPtr pSignature);
 
         /** Get the active graphics state object
         */
@@ -211,6 +213,7 @@ namespace Falcor
         */
         RootSignature::SharedPtr getRootSignature() const { return mpRootSignature; }
         
+        static void beginNewFrame();
     private:
         GraphicsState();
         Vao::SharedConstPtr mpVao;
@@ -232,6 +235,43 @@ namespace Falcor
             bool isUserRootSignature = false;
         };
         CachedData mCachedData;
-        GraphicsStateObject::SharedPtr mpCurrentGso;
+
+        static std::vector<GraphicsState*> sObjects;
+
+        struct GraphEdge
+        {
+            enum class Type : uint32_t
+            {
+                VAO,
+                FBO,
+                RastState,
+                DepthState,
+                BlendState,
+                ProgVersion,
+                SampleMask,
+                RootSig
+            };
+
+            GraphEdge(Type t_, void* pData_) : t(t_), pData(pData_) {}
+            Type t;
+            void* pData;
+
+            bool operator==(const GraphEdge& other) const
+            {
+                return (t == other.t) && (pData == other.pData);
+            }
+        };
+
+        struct EdgeHasher
+        {
+            std::size_t operator()(const GraphEdge& e) const
+            {
+                return ((std::hash<uint32_t>()((uint32_t)e.t)
+                    ^ (std::hash<void*>()(e.pData) << 1)) >> 1);
+            }
+        };
+
+        using StateGraph = Graph<GraphicsStateObject::SharedPtr, GraphEdge, EdgeHasher>;
+        StateGraph::SharedPtr mpGsoGraph;
     };
 }

@@ -456,6 +456,9 @@
       <Filter>Utils</Filter>
     </ClCompile>
     <ClCompile Include="SampleTest.cpp" />
+    <ClCompile Include="Graphics\StateGraph.cpp">
+      <Filter>Graphics</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Graphics\Model\Animation.h">
@@ -1525,6 +1528,9 @@
       <Filter>Utils</Filter>
     </ClInclude>
     <ClInclude Include="SampleTest.h" />
+    <ClInclude Include="Graphics\StateGraph.h">
+      <Filter>Graphics</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Externals">

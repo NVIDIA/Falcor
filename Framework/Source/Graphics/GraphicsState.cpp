@@ -31,6 +31,8 @@
 
 namespace Falcor
 {
+    std::vector<GraphicsState*> GraphicsState::sObjects;
+
     static GraphicsStateObject::PrimitiveType topology2Type(Vao::Topology t)
     {
         switch (t)
@@ -61,6 +63,30 @@ namespace Falcor
         {
             setViewport(i, mViewports[i], true);
         }
+
+        mpGsoGraph = StateGraph::create();
+        sObjects.push_back(this);
+    }
+
+    GraphicsState::~GraphicsState()
+    {
+        // Remove the current object from the program vector
+        for (auto it = sObjects.begin(); it != sObjects.end(); it++)
+        {
+            if (*it == this)
+            {
+                sObjects.erase(it);
+                break;;
+            }
+        }
+    }
+
+    void GraphicsState::beginNewFrame()
+    {
+        for (auto& pThis : sObjects)
+        {
+            pThis->mpGsoGraph->gotoStart();
+        }
     }
 
     GraphicsStateObject::SharedPtr GraphicsState::getGSO()
@@ -70,28 +96,38 @@ namespace Falcor
             mpVao->getVertexLayout()->addVertexAttribDclToProg(mpProgram.get());
         }
         const ProgramVersion* pProgVersion = mpProgram ? mpProgram->getActiveVersion().get() : nullptr;
-        if (pProgVersion != mCachedData.pProgramVersion)
+        bool newProgVersion = pProgVersion != mCachedData.pProgramVersion;
+        if (newProgVersion)
         {
             mCachedData.pProgramVersion = pProgVersion;
-            if (mCachedData.isUserRootSignature == false)
+            mpGsoGraph->walk(GraphEdge(GraphEdge::Type::ProgVersion, (void*)pProgVersion));
+        }
+
+        GraphicsStateObject::SharedPtr pGso = mpGsoGraph->getCurrentNode();
+        if(pGso == nullptr)
+        {
+            if (newProgVersion && mCachedData.isUserRootSignature == false)
             {
                 mpRootSignature = RootSignature::create(pProgVersion->getReflector().get());
             }
+
+            mDesc.setProgramVersion(mpProgram ? mpProgram->getActiveVersion() : nullptr);
+            mDesc.setFboFormats(mpFbo ? mpFbo->getDesc() : Fbo::Desc());
+            mDesc.setVertexLayout(mpVao->getVertexLayout());
+            mDesc.setPrimitiveType(topology2Type(mpVao->getPrimitiveTopology()));
+            mDesc.setRootSignature(mpRootSignature);
+
+            pGso = GraphicsStateObject::create(mDesc);
+            mpGsoGraph->setCurrentNodeData(pGso);
         }
-
-        mDesc.setProgramVersion(mpProgram ? mpProgram->getActiveVersion() : nullptr);
-        mDesc.setFboFormats(mpFbo ? mpFbo->getDesc() : Fbo::Desc());
-        mDesc.setVertexLayout(mpVao->getVertexLayout());
-        mDesc.setPrimitiveType(topology2Type(mpVao->getPrimitiveTopology()));
-        mDesc.setRootSignature(mpRootSignature);
-
-        mpCurrentGso = GraphicsStateObject::create(mDesc);
-        return mpCurrentGso;
+        return pGso;
     }
 
     GraphicsState& GraphicsState::setFbo(const Fbo::SharedConstPtr& pFbo, bool setVp0Sc0)
     {
         mpFbo = pFbo;
+        mpGsoGraph->walk(GraphEdge(GraphEdge::Type::FBO, (void*)pFbo.get()));
+
         if (setVp0Sc0 && pFbo)
         {
             uint32_t w = pFbo->getWidth();
@@ -117,6 +153,49 @@ namespace Falcor
         }
         setFbo(mFboStack.top(), setVp0Sc0);
         mFboStack.pop();
+    }
+
+    GraphicsState& GraphicsState::setVao(const Vao::SharedConstPtr& pVao)
+    {
+        mpVao = pVao;
+        mpGsoGraph->walk(GraphEdge(GraphEdge::Type::VAO, (void*)pVao.get()));
+        return *this;
+    }
+
+    GraphicsState& GraphicsState::setBlendState(BlendState::SharedPtr pBlendState)
+    {
+        mDesc.setBlendState(pBlendState);
+        mpGsoGraph->walk(GraphEdge(GraphEdge::Type::BlendState, (void*)pBlendState.get()));
+        return *this;
+    }
+
+    GraphicsState& GraphicsState::setRasterizerState(RasterizerState::SharedPtr pRasterizerState)
+    {
+        mDesc.setRasterizerState(pRasterizerState); 
+        mpGsoGraph->walk(GraphEdge(GraphEdge::Type::RastState, (void*)pRasterizerState.get()));
+        return *this;
+    }
+
+    GraphicsState& GraphicsState::setSampleMask(uint32_t sampleMask)
+    { 
+        mDesc.setSampleMask(sampleMask); 
+        mpGsoGraph->walk(GraphEdge(GraphEdge::Type::SampleMask, (void*)(uint64_t)sampleMask));
+        return *this; 
+    }
+
+    GraphicsState& GraphicsState::setDepthStencilState(DepthStencilState::SharedPtr pDepthStencilState)
+    {
+        mDesc.setDepthStencilState(pDepthStencilState); 
+        mpGsoGraph->walk(GraphEdge(GraphEdge::Type::DepthState, (void*)pDepthStencilState.get()));
+        return *this;
+    }
+
+    GraphicsState& GraphicsState::setRootSignature(RootSignature::SharedPtr pSignature)
+    {
+        mpRootSignature = pSignature;
+        mpGsoGraph->walk(GraphEdge(GraphEdge::Type::RootSig, (void*)pSignature.get()));
+        mCachedData.isUserRootSignature = (mpRootSignature == nullptr);
+        return *this;
     }
 
     void GraphicsState::pushViewport(uint32_t index, const Viewport& vp, bool setScissors)

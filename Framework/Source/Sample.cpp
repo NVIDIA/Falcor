@@ -264,6 +264,7 @@ namespace Falcor
 		{
 			return;
 		}
+        GraphicsState::beginNewFrame();
 
 		mFrameRate.newFrame();
         {
