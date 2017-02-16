@@ -80,6 +80,7 @@ struct VS_OUT
     float3 posW       : POSW;
     float3 colorV     : COLOR;
     float4 posH       : SV_POSITION;
+    float4 prevPosH :   PREVPOSH;
 };
 
 #ifdef _SINGLE_PASS_STEREO
@@ -121,6 +122,7 @@ VS_OUT defaultVS(VS_IN vIn)
     vOut.normalW = mul((float3x3)worldMat, vIn.normal).xyz;
     vOut.tangentW = mul((float3x3)worldMat, vIn.tangent).xyz;
     vOut.bitangentW = mul((float3x3)worldMat, vIn.bitangent).xyz;
+    vOut.prevPosH = mul(gCam.prevViewProjMat, posW);
 
 #ifdef _SINGLE_PASS_STEREO
   gl_SecondaryPositionNV.x = (gCam.rightEyeViewProjMat * vec4(posW, 1)).x;

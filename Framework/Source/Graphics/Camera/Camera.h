@@ -141,8 +141,6 @@ namespace Falcor
 
         void setViewMatrix(const glm::mat4& view);
 
-        void setPrevViewProjMatrix(const glm::mat4& prevViewProj);
-
         /** Toggle persistent projection matrix
         \param[in] persistent whether to set it persistent
         */
@@ -165,8 +163,12 @@ namespace Falcor
         const glm::mat4& getRightEyeProjMatrix() const { return mData.rightEyeProjMat; }
         const glm::mat4& getRightEyeViewProjMatrix() const { return mData.rightEyeViewProjMat; }
 
-        void setRightEyePrevViewProjMatrix(const glm::mat4& prevViewProj);
-
+        static uint32_t getShaderDataSize() 
+        {
+            static const size_t dataSize = sizeof(CameraData);
+            static_assert(dataSize % sizeof(float) * 4 == 0, "Camera::CameraData size should be a multiple of 16");
+            return dataSize;
+        }
     private:
         Camera();
 
