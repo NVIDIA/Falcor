@@ -47,7 +47,7 @@ private:
     float mLightIntensity = 1.0f;
     float mSurfaceRoughness = 5.0f;
 
-    void initUI();
+    void onGuiRender() override;
     void renderMesh(const Mesh* pMesh, GraphicsProgram::SharedPtr pProgram, RasterizerState::SharedPtr pRastState, float scale);
 
     GraphicsProgram::SharedPtr mpProgram = nullptr;

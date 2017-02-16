@@ -7,12 +7,6 @@
     <ClInclude Include="PostProcess.h" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="Data\PostProcess.vs">
-      <Filter>Data</Filter>
-    </None>
-    <None Include="Data\PostProcess.fs">
-      <Filter>Data</Filter>
-    </None>
     <None Include="..\..\..\Framework\Source\Data\Effects\ToneMapping.ps.hlsl">
       <Filter>Data</Filter>
     </None>

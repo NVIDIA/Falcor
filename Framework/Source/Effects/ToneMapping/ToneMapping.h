@@ -107,8 +107,6 @@ namespace Falcor
         Fbo::SharedPtr mpLuminanceFbo;
         GraphicsVars::SharedPtr mpToneMapVars;
         GraphicsVars::SharedPtr mpLuminanceVars;
-
-        ConstantBuffer::SharedPtr mpCb;
         Sampler::SharedPtr mpPointSampler;
         Sampler::SharedPtr mpLinearSampler;
 

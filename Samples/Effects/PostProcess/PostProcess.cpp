@@ -48,7 +48,7 @@ void PostProcess::onLoad()
     mpGraphicsState = GraphicsState::create();
     mpGraphicsState->setFbo(mpDefaultFBO);
 
-    // Create the sampler state
+    //Sampler
     Sampler::Desc samplerDesc;
     samplerDesc.setFilterMode(Sampler::Filter::Linear, Sampler::Filter::Linear, Sampler::Filter::Linear);
     Sampler::SharedPtr triLinear = Sampler::create(samplerDesc);
@@ -56,7 +56,6 @@ void PostProcess::onLoad()
 
     mpToneMapper = ToneMapping::create(ToneMapping::Operator::HableUc2);
 
-    initUI();
     loadImage();
 }
 
@@ -79,7 +78,7 @@ void PostProcess::loadImage()
     mHdrImage = createTextureFromFile(filename, false, false, Resource::BindFlags::ShaderResource);
 }
 
-void PostProcess::initUI()
+void PostProcess::onGuiRender()
 {
     Gui::dropdown_list imageList;
     imageList.push_back({HdrImage::EveningSun, "Evening Sun"});
@@ -93,7 +92,7 @@ void PostProcess::initUI()
 
 void PostProcess::renderMesh(const Mesh* pMesh, GraphicsProgram::SharedPtr pProgram, RasterizerState::SharedPtr pRastState, float scale)
 {
-    // Update uniform-buffers data
+    //Update var
     glm::mat4 world = glm::scale(glm::mat4(), glm::vec3(scale));
     glm::mat4 wvp = mpCamera->getProjMatrix() * mpCamera->getViewMatrix() * world;
     mpProgramVars["PerFrameCB"]["gWorldMat"] = world;
@@ -114,25 +113,25 @@ void PostProcess::renderMesh(const Mesh* pMesh, GraphicsProgram::SharedPtr pProg
 
 void PostProcess::onFrameRender()
 {
+    //Switch hdr images if necessary
     if (mPrevHdrIndex != mHdrImageIndex)
     {
         loadImage();
         mPrevHdrIndex = mHdrImageIndex;
     }
 
-    initUI();
-
     const glm::vec4 clearColor(0.38f, 0.52f, 0.10f, 1);
     mpRenderContext->clearFbo(mpHdrFbo.get(), clearColor, 1.0f, 0, FboAttachmentType::All);
     mCameraController.update();
 
+    //Render teapot to hdr fbo
     mpGraphicsState->pushFbo(mpHdrFbo);
     renderMesh(mpTeapot->getMesh(0).get(), mpProgram, nullptr, 1);
     mpGraphicsState->popFbo();
 
+    //Run tone mapping
     mpToneMapper->execute(mpRenderContext.get(), mpHdrFbo, mpDefaultFBO);
 
-    //Global sample message doesn't exist anymore. Something other than this?
     std::string Txt = getFpsMsg() + '\n';
     renderText(Txt, glm::vec2(10, 10));
 }

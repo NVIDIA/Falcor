@@ -152,26 +152,30 @@ namespace Falcor
 
     void ToneMapping::setUiElements(Gui* pGui, const std::string& uiGroup)
     {
+        if (pGui->beginGroup(uiGroup.c_str()))
+        {
+            Gui::dropdown_list opList;
+            opList.push_back({ (uint32_t)Operator::Clamp, "Clamp to LDR" });
+            opList.push_back({ (uint32_t)Operator::Linear, "Linear" });
+            opList.push_back({ (uint32_t)Operator::Reinhard, "Reinhard" });
+            opList.push_back({ (uint32_t)Operator::ReinhardModified, "Modified Reinhard" });
+            opList.push_back({ (uint32_t)Operator::HejiHableAlu, "Heji's approximation" });
+            opList.push_back({ (uint32_t)Operator::HableUc2, "Uncharted 2" });
 
-        Gui::dropdown_list opList;
-        opList.push_back({(uint32_t)Operator::Clamp, "Clamp to LDR"});
-        opList.push_back({(uint32_t)Operator::Linear, "Linear"});
-        opList.push_back({(uint32_t)Operator::Reinhard, "Reinhard"});
-        opList.push_back({(uint32_t)Operator::ReinhardModified, "Modified Reinhard"});
-        opList.push_back({(uint32_t)Operator::HejiHableAlu, "Heji's approximation"});
-        opList.push_back({(uint32_t)Operator::HableUc2, "Uncharted 2"});
+            pGui->addDropdown("Operator", opList, mOperatorIndex);
+            pGui->addFloatVar("Exposure Key", mMiddleGray, 0.0001f, 2.0f);
+            pGui->addFloatVar("White Luminance", mWhiteMaxLuminance, 0.1f, FLT_MAX, 0.2f);
+            pGui->addFloatVar("Luminance LOD", mLuminanceLod, 0, 16, 0.025f);
+            pGui->addFloatVar("Linear White", mWhiteScale, 0, 100, 0.01f);
 
-         pGui->addDropdown("Operator", opList, mOperatorIndex);
-         pGui->addFloatVar("Exposure Key", mMiddleGray, 0.0001f, 2.0f);
-         pGui->addFloatVar("White Luminance", mWhiteMaxLuminance, 0.1f, FLT_MAX, 0.2f);
-         pGui->addFloatVar("Luminance LOD", mLuminanceLod, 0, 16, 0.025f);
-         pGui->addFloatVar("Linear White", mWhiteScale, 0, 100, 0.01f);
+            if (mOperatorIndex != static_cast<uint32_t>(mOperator))
+            {
+                mOperator = static_cast<Operator>(mOperatorIndex);
+                createToneMapPass(mOperator);
+            }
 
-         if (mOperatorIndex != static_cast<uint32_t>(mOperator))
-         {
-             mOperator = static_cast<Operator>(mOperatorIndex);
-             createToneMapPass(mOperator);
-         }
+            pGui->endGroup();
+        }
     }
 
     void ToneMapping::setOperator(Operator op)

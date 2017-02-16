@@ -50,12 +50,9 @@ vec3 calcExposedColor(vec3 color, vec2 texC)
 {
     float pixelLuminance = calcLuminance(color);
     float avgLuminance = gLuminanceTex.SampleLevel(gLuminanceTexSampler, texC, gLuminanceLod).r;
-    avgLuminance = max(exp2(avgLuminance), 0.001f);
+    avgLuminance = exp(avgLuminance);
     float exposedLuminance = (gMiddleGray / avgLuminance);
-    exposedLuminance = max(exposedLuminance, 0.001f);
-    //Not sure if the below line is correct but it pretty much fixed the issue
-    exposedLuminance = exposedLuminance / (1 + exposedLuminance);
-    return (exposedLuminance)*color;
+    return exposedLuminance*color;
 }
 
 vec3 linearToneMap(vec3 color)
@@ -120,7 +117,7 @@ vec4 calcColor(vec2 texC)
     vec3 exposedColor = calcExposedColor(color.rgb, texC);
 #ifdef _LUMINANCE
     float luminance = calcLuminance(color.xyz);
-    luminance = log2(max(0.0001, luminance));
+    luminance = log(max(0.0001, luminance));
     return vec4(luminance, 0, 0, 1);
 #elif defined _CLAMP
     return color;

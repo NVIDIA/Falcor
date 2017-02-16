@@ -85,9 +85,10 @@
     <ClInclude Include="PostProcess.h" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\..\..\Framework\Source\Data\Effects\ToneMapping.ps.hlsl" />
-    <None Include="Data\PostProcess.fs" />
-    <None Include="Data\PostProcess.vs" />
+    <None Include="..\..\..\Framework\Source\Data\Effects\ToneMapping.ps.hlsl">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Framework\Source\Falcor.vcxproj">
