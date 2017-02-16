@@ -60,9 +60,9 @@ private:
         OvercastDay,
         AtTheWindow
     };
+    static const Gui::dropdown_list kImageList;
 
-    uint32_t mPrevHdrIndex = 0u;
-    uint32_t mHdrImageIndex = HdrImage::EveningSun;
+    HdrImage mHdrImageIndex = HdrImage::EveningSun;
     Fbo::SharedPtr mpHdrFbo;
     ToneMapping::UniquePtr mpToneMapper;
     SceneRenderer::UniquePtr mpSceneRenderer;

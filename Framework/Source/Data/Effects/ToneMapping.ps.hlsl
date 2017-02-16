@@ -31,11 +31,12 @@
 SamplerState gLuminanceTexSampler : register(s0);
 SamplerState gPointSampler : register(s1);
 
+texture2D gColorTex;
+texture2D gLuminanceTex;
+
 cbuffer PerImageCB : register(b0)
 {
-    texture2D gColorTex;
-    texture2D gLuminanceTex;
-    float gMiddleGray;
+    float gExposureKey;
     float gMaxWhiteLuminance;
     float gLuminanceLod;
     float gWhiteScale;
@@ -50,8 +51,8 @@ vec3 calcExposedColor(vec3 color, vec2 texC)
 {
     float pixelLuminance = calcLuminance(color);
     float avgLuminance = gLuminanceTex.SampleLevel(gLuminanceTexSampler, texC, gLuminanceLod).r;
-    avgLuminance = exp(avgLuminance);
-    float exposedLuminance = (gMiddleGray / avgLuminance);
+    avgLuminance = exp2(avgLuminance);
+    float exposedLuminance = (gExposureKey / avgLuminance);
     return exposedLuminance*color;
 }
 
@@ -101,6 +102,7 @@ vec3 UC2Operator(vec3 color)
     color = ((color * (A*color+C*B)+D*E)/(color*(A*color+B)+D*F))-(E/F);
     return color;
 }
+
 vec3 hableUc2ToneMap(vec3 color)
 {
     float exposureBias = 2.0f;
@@ -117,7 +119,7 @@ vec4 calcColor(vec2 texC)
     vec3 exposedColor = calcExposedColor(color.rgb, texC);
 #ifdef _LUMINANCE
     float luminance = calcLuminance(color.xyz);
-    luminance = log(max(0.0001, luminance));
+    luminance = log2(max(0.0001, luminance));
     return vec4(luminance, 0, 0, 1);
 #elif defined _CLAMP
     return color;

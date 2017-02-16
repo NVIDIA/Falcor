@@ -29,6 +29,9 @@
 
 using namespace Falcor;
 
+const Gui::dropdown_list PostProcess::kImageList = { { HdrImage::EveningSun, "Evening Sun" },
+{ HdrImage::AtTheWindow, "Window" }, { HdrImage::OvercastDay, "Overcast Day" } };
+
 void PostProcess::onLoad()
 {
     //Create model and camera
@@ -80,11 +83,12 @@ void PostProcess::loadImage()
 
 void PostProcess::onGuiRender()
 {
-    Gui::dropdown_list imageList;
-    imageList.push_back({HdrImage::EveningSun, "Evening Sun"});
-    imageList.push_back({HdrImage::AtTheWindow, "Window"});
-    imageList.push_back({HdrImage::OvercastDay, "Overcast Day"});
-    mpGui->addDropdown("HdrImage", imageList, mHdrImageIndex);
+    uint32_t uHdrIndex = static_cast<uint32_t>(mHdrImageIndex);
+    if (mpGui->addDropdown("HdrImage", kImageList, uHdrIndex))
+    {
+        mHdrImageIndex = static_cast<HdrImage>(uHdrIndex);
+        loadImage();
+    }
     mpGui->addFloatVar("Surface Roughness", mSurfaceRoughness, 0.01f, 1000, 0.01f);
     mpGui->addFloatVar("Light Intensity", mLightIntensity, 0.5f, FLT_MAX, 0.1f);
     mpToneMapper->setUiElements(mpGui.get(), "HDR");
@@ -92,15 +96,16 @@ void PostProcess::onGuiRender()
 
 void PostProcess::renderMesh(const Mesh* pMesh, GraphicsProgram::SharedPtr pProgram, RasterizerState::SharedPtr pRastState, float scale)
 {
-    //Update var
+    //Update vars
     glm::mat4 world = glm::scale(glm::mat4(), glm::vec3(scale));
     glm::mat4 wvp = mpCamera->getProjMatrix() * mpCamera->getViewMatrix() * world;
-    mpProgramVars["PerFrameCB"]["gWorldMat"] = world;
-    mpProgramVars["PerFrameCB"]["gWvpMat"] = wvp;
-    mpProgramVars["PerFrameCB"]["gEyePosW"] = mpCamera->getPosition();
+    ConstantBuffer::SharedPtr pPerFrameCB = mpProgramVars["PerFrameCB"];
+    pPerFrameCB["gWorldMat"] = world;
+    pPerFrameCB["gWvpMat"] = wvp;
+    pPerFrameCB["gEyePosW"] = mpCamera->getPosition();
+    pPerFrameCB["gLightIntensity"] = mLightIntensity;
+    pPerFrameCB["gSurfaceRoughness"] = mSurfaceRoughness;
     mpProgramVars->setTexture("gEnvMap", mHdrImage);
-    mpProgramVars["PerFrameCB"]["gLightIntensity"] = mLightIntensity;
-    mpProgramVars["PerFrameCB"]["gSurfaceRoughness"] = mSurfaceRoughness;
 
     //Set Gfx state
     mpGraphicsState->setVao(pMesh->getVao());
@@ -113,13 +118,6 @@ void PostProcess::renderMesh(const Mesh* pMesh, GraphicsProgram::SharedPtr pProg
 
 void PostProcess::onFrameRender()
 {
-    //Switch hdr images if necessary
-    if (mPrevHdrIndex != mHdrImageIndex)
-    {
-        loadImage();
-        mPrevHdrIndex = mHdrImageIndex;
-    }
-
     const glm::vec4 clearColor(0.38f, 0.52f, 0.10f, 1);
     mpRenderContext->clearFbo(mpHdrFbo.get(), clearColor, 1.0f, 0, FboAttachmentType::All);
     mCameraController.update();

@@ -424,11 +424,14 @@ namespace Falcor
             comboStr += v.label + '\0';
         }
         comboStr += '\0';
+        uint32_t prevItem = curItem;
+        //This returns true if the combo is interacted with at all
         bool b = ImGui::Combo(label, &curItem, comboStr.c_str());
         mDropDownValues[&var].currentItem = curItem;
         mDropDownValues[&var].lastVal = values[curItem].value;
         var = values[curItem].value;
-        return b;
+        //Only return true if value is changed
+        return b && prevItem != curItem;
     }
 
     void Gui::setGlobalFontScaling(float scale)
