@@ -25,55 +25,37 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#version 430
+#version 420
 #include "hlslglslcommon.h"
 
-#define PI 3.141591
-
-UNIFORM_BUFFER (PerFrameCB, 0)
+cbuffer PerFrameCB : register(b0)
 {
-    mat4 gWorldMat;
     mat4 gWvpMat;
+    mat4 gWorldMat;
     sampler2D gEnvMap;
     vec3 gEyePosW;
     float gLightIntensity;
     float gSurfaceRoughness;
 };
 
-vec4 calcColor(vec3 normalW, vec3 posW)
+struct PostProcessIn
 {
-    vec3 p = normalize(normalW);
-    vec2 uv;
-    uv.x = ( 1 + atan(-p.z, p.x) / PI) * 0.5;
-    uv.y = -acos(p.y) / PI;
-    vec4 color = texture(gEnvMap, uv);
-    color.rgb *= gLightIntensity;
-#ifdef _TEXTURE_ONLY
-    return color;
-#endif
-    // compute halfway vector
-    vec3 eyeDir = normalize(gEyePosW - posW);
-    vec3 h = normalize(eyeDir + normalW);
-    float edoth = dot(eyeDir, h);
-    float intensity = pow(clamp(edoth, 0, 1), gSurfaceRoughness);
+    vec4 pos : POSITION;
+    vec3 normal : NORMAL;
+};
 
-    color.rgb *= intensity;
-    return color;
-}
-
-#ifdef FALCOR_HLSL
-vec4 main(in vec3 normalW : NORMAL, in vec3 posW : POSITION) : SV_TARGET
+struct PostProcessOut
 {
-    return calcColor(normalW, posW);
-}
+    vec4 pos : SV_POSITION;
+    vec3 posW : POSITION;
+    vec3 normalW : NORMAL;
+};
 
-#else
-in vec3 normalW;
-in vec3 posW;
-out vec4 fragColor;
-
-void main()
+PostProcessOut main(PostProcessIn vIn)
 {
-    fragColor = calcColor(normalW, posW);
+    PostProcessOut vOut;
+    vOut.pos = (mul(gWvpMat, vIn.pos));
+    vOut.posW = (mul(gWvpMat, vIn.pos)).xyz;
+	vOut.normalW = (mul(gWorldMat, vec4(vIn.normal, 0))).xyz;
+    return vOut;
 }
-#endif

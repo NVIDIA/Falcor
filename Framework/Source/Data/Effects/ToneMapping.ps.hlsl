@@ -28,11 +28,15 @@
 #version 420
 #include "HlslGlslCommon.h"
 
-CONSTANT_BUFFER(PerImageCB, 0)
+SamplerState gLuminanceTexSampler : register(s0);
+SamplerState gPointSampler : register(s1);
+
+texture2D gColorTex;
+texture2D gLuminanceTex;
+
+cbuffer PerImageCB : register(b0)
 {
-    sampler2D gColorTex;
-    sampler2D gLuminanceTex;
-    float gMiddleGray;
+    float gExposureKey;
     float gMaxWhiteLuminance;
     float gLuminanceLod;
     float gWhiteScale;
@@ -46,11 +50,9 @@ float calcLuminance(vec3 color)
 vec3 calcExposedColor(vec3 color, vec2 texC)
 {
     float pixelLuminance = calcLuminance(color);
-    float avgLuminance = textureLod(gLuminanceTex, texC, gLuminanceLod).r;
-    avgLuminance = exp(avgLuminance);
-    
-    float exposedLuminance = gMiddleGray / avgLuminance;
-
+    float avgLuminance = gLuminanceTex.SampleLevel(gLuminanceTexSampler, texC, gLuminanceLod).r;
+    avgLuminance = exp2(avgLuminance);
+    float exposedLuminance = (gExposureKey / avgLuminance);
     return exposedLuminance*color;
 }
 
@@ -100,6 +102,7 @@ vec3 UC2Operator(vec3 color)
     color = ((color * (A*color+C*B)+D*E)/(color*(A*color+B)+D*F))-(E/F);
     return color;
 }
+
 vec3 hableUc2ToneMap(vec3 color)
 {
     float exposureBias = 2.0f;
@@ -112,11 +115,11 @@ vec3 hableUc2ToneMap(vec3 color)
 
 vec4 calcColor(vec2 texC)
 {
-    vec4 color = texture(gColorTex, texC);
+    vec4 color = gColorTex.Sample(gPointSampler, texC);
     vec3 exposedColor = calcExposedColor(color.rgb, texC);
 #ifdef _LUMINANCE
     float luminance = calcLuminance(color.xyz);
-    luminance = log(max(0.0001, luminance));
+    luminance = log2(max(0.0001, luminance));
     return vec4(luminance, 0, 0, 1);
 #elif defined _CLAMP
     return color;
@@ -131,20 +134,10 @@ vec4 calcColor(vec2 texC)
 #elif defined _HABLE_UC2
     return vec4(hableUc2ToneMap(exposedColor), color.a);
 #endif
+    return vec4(exposedColor, color.a);
 }
 
-#ifdef FALCOR_HLSL
 vec4 main(float2 texC  : TEXCOORD) : SV_TARGET0
 {
     return calcColor(texC);
 }
-
-#elif defined FALCOR_GLSL
-in vec2 texC;
-out vec4 fragColor;
-
-void main()
-{
-    fragColor = calcColor(texC);
-}
-#endif

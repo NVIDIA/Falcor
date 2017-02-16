@@ -80,7 +80,7 @@ namespace Falcor
             Lower values maximize contrast. Useful for night scenes.
             Higher values minimize contrast, resulting in brightly lit objects.
         */
-        void setMiddleGray(float middleGray);
+        void setExposureKey(float exposureKey);
 
         /** Sets the maximal luminance to be consider as pure white.
             Only valid if the operator is ReinhardModified
@@ -104,30 +104,21 @@ namespace Falcor
         FullScreenPass::UniquePtr mpToneMapPass;
         FullScreenPass::UniquePtr mpLuminancePass;
         Fbo::SharedPtr mpLuminanceFbo;
-
-        ConstantBuffer::SharedPtr mpCb;
+        GraphicsVars::SharedPtr mpToneMapVars;
+        GraphicsVars::SharedPtr mpLuminanceVars;
+        ConstantBuffer::SharedPtr mpToneMapCBuffer;
         Sampler::SharedPtr mpPointSampler;
         Sampler::SharedPtr mpLinearSampler;
 
-        struct  
+        struct
         {
-            size_t colorTex;
-            size_t luminanceTex;
-            size_t middleGray;
-            size_t maxWhiteLuminance;
-            size_t luminanceLod;
-            size_t whiteScale;
-        } mCbOffsets;
+            float exposureKey = 0.18f;
+            float whiteMaxLuminance = 1.0f;
+            float luminanceLod = 16; // Max possible LOD, will result in global operation
+            float whiteScale = 11.2f;
+        } mConstBufferData;
 
         void createToneMapPass(Operator op);
         void createLuminancePass();
-        float mMiddleGray = 0.18f;
-        float mWhiteMaxLuminance = 1.0f;
-        float mLuminanceLod = 16; // Max possible LOD, will result in global operation
-        float mWhiteScale = 11.2f;
-
-        // UI callback
-        static void GUI_CALL getToneMapOperator(void* pVal, void* pThis);
-        static void GUI_CALL setToneMapOperator(const void* pVal, void* pThis);
     };
 }

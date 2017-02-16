@@ -29,40 +29,36 @@
 
 using namespace Falcor;
 
+const Gui::DropdownList PostProcess::kImageList = { { HdrImage::EveningSun, "Evening Sun" },
+{ HdrImage::AtTheWindow, "Window" }, { HdrImage::OvercastDay, "Overcast Day" } };
+
 void PostProcess::onLoad()
 {
-    // Create models and texture
-    mpSphere = Model::createFromFile("sphere.obj", 0);
-    mpTeapot = Model::createFromFile("teapot.obj", 0);
-
-    // Create camera
+    //Create model and camera
+    mpTeapot = Model::createFromFile("teapot.obj", 0u);
     mpCamera = Camera::create();
     float nearZ = 0.1f;
-    float farZ = mpSphere->getRadius() * 5000;
+    float farZ = mpTeapot->getRadius() * 5000;
     mpCamera->setDepthRange(nearZ, farZ);
 
-    // Setup controller
+    //Setup controller
     mCameraController.attachCamera(mpCamera);
-    mCameraController.setModelParams(mpTeapot->getCenter(), mpTeapot->getRadius(), 10.0f);
+    mCameraController.setModelParams(mpTeapot->getCenter(), mpTeapot->getRadius(), 10.0f);    
+    
+    //Program
+    mpProgram = GraphicsProgram::createFromFile("PostProcess.vs.hlsl", "Postprocess.ps.hlsl");
+    mpProgramVars = GraphicsVars::create(mpProgram->getActiveVersion()->getReflector());
+    mpGraphicsState = GraphicsState::create();
+    mpGraphicsState->setFbo(mpDefaultFBO);
 
-    mSkybox.pProgram = Program::createFromFile("postprocess.vs", "postprocess.fs");
-    mSkybox.pProgram->addDefine("_TEXTURE_ONLY");
-    mpPerFrameCB = UniformBuffer::create(mSkybox.pProgram, "PerFrameCB");
-    mpEnvMapProgram = Program::createFromFile("postprocess.vs", "postprocess.fs");
-
-    // Create the rasterizer state
-    RasterizerState::Desc rsDesc;
-    rsDesc.setCullMode(RasterizerState::CullMode::Front);
-    mSkybox.pFrontFaceCulling = RasterizerState::create(rsDesc);
-
-    // Create the sampler state
+    //Sampler
     Sampler::Desc samplerDesc;
     samplerDesc.setFilterMode(Sampler::Filter::Linear, Sampler::Filter::Linear, Sampler::Filter::Linear);
-    mpTriLinearSampler = Sampler::create(samplerDesc);
+    Sampler::SharedPtr triLinear = Sampler::create(samplerDesc);
+    mpProgramVars->setSampler(0, triLinear);
 
     mpToneMapper = ToneMapping::create(ToneMapping::Operator::HableUc2);
 
-    initUI();
     loadImage();
 }
 
@@ -82,77 +78,59 @@ void PostProcess::loadImage()
         break;
     }
 
-    mHdrImage = createTextureFromFile(filename, true, false);
+    mHdrImage = createTextureFromFile(filename, false, false, Resource::BindFlags::ShaderResource);
 }
 
-void PostProcess::initUI()
+void PostProcess::onGuiRender()
 {
-    Gui::DropdownList imageList;
-    imageList.push_back({HdrImage::EveningSun, "Evening Sun"});
-    imageList.push_back({HdrImage::AtTheWindow, "Window"});
-    imageList.push_back({HdrImage::OvercastDay, "Overcast Day"});
-    mpGui->addDropdownWithCallback("HDR Image", imageList, setHdrImage, getHdrImage, this);
-    mpGui->addFloatVar("Surface Roughness", &mSurfaceRoughness, "", 0.01f, 1000, 0.01f);
-    mpGui->addFloatVar("Light Intensity", &mLightIntensity, "", 0.5f, FLT_MAX, 0.1f);
+    uint32_t uHdrIndex = static_cast<uint32_t>(mHdrImageIndex);
+    if (mpGui->addDropdown("HdrImage", kImageList, uHdrIndex))
+    {
+        mHdrImageIndex = static_cast<HdrImage>(uHdrIndex);
+        loadImage();
+    }
+    mpGui->addFloatVar("Surface Roughness", mSurfaceRoughness, 0.01f, 1000, 0.01f);
+    mpGui->addFloatVar("Light Intensity", mLightIntensity, 0.5f, FLT_MAX, 0.1f);
     mpToneMapper->setUiElements(mpGui.get(), "HDR");
 }
 
-void GUI_CALL PostProcess::getHdrImage(void* pVal, void* pThis)
+void PostProcess::renderMesh(const Mesh* pMesh, GraphicsProgram::SharedPtr pProgram, RasterizerState::SharedPtr pRastState, float scale)
 {
-    PostProcess* pPP = (PostProcess*)pThis;
-    *(uint32_t*)pVal = (uint32_t)pPP->mHdrImageIndex;
-}
-
-void GUI_CALL PostProcess::setHdrImage(const void* pVal, void* pThis)
-{
-    PostProcess* pPP = (PostProcess*)pThis;
-    pPP->mHdrImageIndex = (HdrImage)*(uint32_t*)pVal;
-    pPP->loadImage();
-}
-
-void PostProcess::renderMesh(const Mesh* pMesh, const Program* pProgram, RasterizerState::SharedPtr pRastState, float scale)
-{
-    // Update uniform-buffers data
+    //Update vars
     glm::mat4 world = glm::scale(glm::mat4(), glm::vec3(scale));
     glm::mat4 wvp = mpCamera->getProjMatrix() * mpCamera->getViewMatrix() * world;
-    mpPerFrameCB->setVariable("gWorldMat", world);
-    mpPerFrameCB->setVariable("gWvpMat", wvp);
-    mpPerFrameCB->setVariable("gEyePosW", mpCamera->getPosition());
-    mpPerFrameCB->setTexture("gEnvMap", mHdrImage.get(), mpTriLinearSampler.get());
-    mpPerFrameCB->setVariable("gLightIntensity", mLightIntensity);
-    mpPerFrameCB->setVariable("gSurfaceRoughness", mSurfaceRoughness);
+    ConstantBuffer::SharedPtr pPerFrameCB = mpProgramVars["PerFrameCB"];
+    pPerFrameCB["gWorldMat"] = world;
+    pPerFrameCB["gWvpMat"] = wvp;
+    pPerFrameCB["gEyePosW"] = mpCamera->getPosition();
+    pPerFrameCB["gLightIntensity"] = mLightIntensity;
+    pPerFrameCB["gSurfaceRoughness"] = mSurfaceRoughness;
+    mpProgramVars->setTexture("gEnvMap", mHdrImage);
 
-    // Set uniform buffers
-    mpRenderContext->setProgram(pProgram->getActiveVersion());
-
-    // Just for the sake of the example, we fetch the buffer location from the program here. We could have cached it, or better yet, just use "layout(binding = <someindex>" in the shader
-    mpRenderContext->setUniformBuffer(0, mpPerFrameCB);
-    mpRenderContext->setRasterizerState(pRastState);
-
-    mpRenderContext->setVao(pMesh->getVao());
-    mpRenderContext->setTopology(RenderContext::Topology::TriangleList);
+    //Set Gfx state
+    mpGraphicsState->setVao(pMesh->getVao());
+    mpGraphicsState->setRasterizerState(pRastState);
+    mpGraphicsState->setProgram(mpProgram);
+    mpRenderContext->setGraphicsState(mpGraphicsState);
+    mpRenderContext->setGraphicsVars(mpProgramVars);
     mpRenderContext->drawIndexed(pMesh->getIndexCount(), 0, 0);
 }
 
 void PostProcess::onFrameRender()
 {
     const glm::vec4 clearColor(0.38f, 0.52f, 0.10f, 1);
-    mpHdrFbo->clear(clearColor, 1.0f, 0, FboAttachmentType::All);
-
-    mpRenderContext->pushFbo(mpHdrFbo);
-    mpRenderContext->setDepthStencilState(nullptr, 0);
-    mpRenderContext->setRasterizerState(nullptr);
-
+    mpRenderContext->clearFbo(mpHdrFbo.get(), clearColor, 1.0f, 0, FboAttachmentType::All);
     mCameraController.update();
 
-    renderMesh(mpSphere->getMesh(0).get(), mSkybox.pProgram.get(), mSkybox.pFrontFaceCulling, 4500);
-    renderMesh(mpTeapot->getMesh(0).get(), mpEnvMapProgram.get(), nullptr, 1);
+    //Render teapot to hdr fbo
+    mpGraphicsState->pushFbo(mpHdrFbo);
+    renderMesh(mpTeapot->getMesh(0).get(), mpProgram, nullptr, 1);
+    mpGraphicsState->popFbo();
 
-    mpRenderContext->popFbo();
-
+    //Run tone mapping
     mpToneMapper->execute(mpRenderContext.get(), mpHdrFbo, mpDefaultFBO);
 
-    std::string Txt = getGlobalSampleMessage(true) + '\n';
+    std::string Txt = getFpsMsg() + '\n';
     renderText(Txt, glm::vec2(10, 10));
 }
 
@@ -163,16 +141,19 @@ void PostProcess::onShutdown()
 
 void PostProcess::onResizeSwapChain()
 {
-    RenderContext::Viewport VP;
-    VP.height = (float)mpDefaultFBO->getHeight();
-    VP.width = (float)mpDefaultFBO->getWidth();
-    mpRenderContext->setViewport(0, VP);
+    //Camera aspect 
+    float height = (float)mpDefaultFBO->getHeight();
+    float width = (float)mpDefaultFBO->getWidth();
+    mpCamera->setFovY(float(M_PI / 3));
+    float aspectRatio = (width / height);
+    mpCamera->setAspectRatio(aspectRatio);
 
-    mpCamera->setFovY(float(M_PI / 8));
-    mpCamera->setAspectRatio(VP.width / VP.height);
-
-    ResourceFormat format = ResourceFormat::RGBA16Float;
-    mpHdrFbo = FboHelper::create2DWithDepth(mpDefaultFBO->getWidth(), mpDefaultFBO->getHeight(), &format, ResourceFormat::D16Unorm);
+    //recreate hdr fbo
+    ResourceFormat format = ResourceFormat::RGBA32Float;
+    Fbo::Desc desc;
+    desc.setDepthStencilTarget(ResourceFormat::D16Unorm);
+    desc.setColorTarget(0u, format);
+    mpHdrFbo = FboHelper::create2D(mpDefaultFBO->getWidth(), mpDefaultFBO->getHeight(), desc);
 }
 
 bool PostProcess::onKeyEvent(const KeyboardEvent& keyEvent)
@@ -184,9 +165,6 @@ bool PostProcess::onMouseEvent(const MouseEvent& mouseEvent)
 {
     return mCameraController.onMouseEvent(mouseEvent);
 }
-
-static void GUI_CALL getHdrImage(void* pVal, void* pThis);
-static void GUI_CALL setHdrImage(const void* pVal, void* pThis);
 
 int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ LPSTR lpCmdLine, _In_ int nShowCmd)
 {

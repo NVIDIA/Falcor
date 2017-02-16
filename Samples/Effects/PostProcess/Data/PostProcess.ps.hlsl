@@ -25,32 +25,49 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#version 420
+#version 430
 #include "hlslglslcommon.h"
-#include "VertexAttrib.h"
+#define PI 3.141591
 
-UNIFORM_BUFFER (PerFrameCB, 0)
+cbuffer PerFrameCB : register(b0)
 {
-    mat4 gWorldMat;
     mat4 gWvpMat;
+    mat4 gWorldMat;
     sampler2D gEnvMap;
     vec3 gEyePosW;
     float gLightIntensity;
     float gSurfaceRoughness;
 };
 
-#ifdef FALCOR_GLSL
-out vec3 normalW;
-out vec3 posW;
-layout(location = VERTEX_POSITION_LOC) in vec4 posL;
-layout(location = VERTEX_NORMAL_LOC)   in vec3 normalL;
-
-void main()
-#elif defined FALCOR_HLSL
-void main(in vec4 posL : POSITION, in vec3 normalL : NORMAL, out vec3 normalW : NORMAL, out vec4 gl_Position : SV_POSITION)
-#endif
+struct PostProcessOut
 {
-    posW = (mul(gWvpMat,posL)).xyz;
-	gl_Position = mul(gWvpMat,posL);
-	normalW = (mul(gWorldMat, vec4(normalL, 0))).xyz;
+    vec4 pos : SV_POSITION;
+    vec3 posW : POSITION;
+    vec3 normalW : NORMAL;
+};
+
+vec4 calcColor(vec3 normalW, vec3 posW)
+{
+    vec3 p = normalize(normalW);
+    vec2 uv;
+    uv.x = ( 1 + atan2(-p.z, p.x) / PI) * 0.5;
+    uv.y = 1 - (-acos(p.y) / PI);
+    vec4 color = texture(gEnvMap, uv);
+    color.rgb *= gLightIntensity;
+#ifdef _TEXTURE_ONLY
+    return color;
+#endif
+    // compute halfway vector
+    vec3 eyeDir = normalize(gEyePosW - posW);
+    vec3 h = normalize(eyeDir + normalW);
+    float edoth = dot(eyeDir, h);
+    float intensity = pow(clamp(edoth, 0, 1), gSurfaceRoughness);
+
+    color.rgb *= intensity;
+    return color;
+}
+
+vec4 main(PostProcessOut vOut) : SV_TARGET
+{
+    return calcColor(vOut.normalW, vOut.posW);
 }
