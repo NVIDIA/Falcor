@@ -1695,24 +1695,15 @@
     <Filter Include="Graphics\Scene\Editor">
       <UniqueIdentifier>{3b164303-abe4-428c-bd50-4368ab7b8933}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Data\Framework\Shaders">
+      <UniqueIdentifier>{872e05a2-6354-4a08-ada2-8b8c88a7858c}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\CopyLibs.bat" />
     <None Include="..\CopyData.bat" />
-    <None Include="Data\Framework\FullScreenPass.vs">
-      <Filter>Data\Framework</Filter>
-    </None>
-    <None Include="Data\Framework\TextRenderer.fs">
-      <Filter>Data\Framework</Filter>
-    </None>
-    <None Include="Data\Framework\TextRenderer.vs">
-      <Filter>Data\Framework</Filter>
-    </None>
     <None Include="Data\Framework\ParallelReduction.fs">
       <Filter>Utils\Math</Filter>
-    </None>
-    <None Include="Data\Framework\FullScreenPass.gs">
-      <Filter>Data\Framework</Filter>
     </None>
     <None Include="Data\Effects\ToneMapping.fs">
       <Filter>Data\Effects</Filter>
@@ -1734,12 +1725,6 @@
     </None>
     <None Include="Data\Effects\SkyBox.vs">
       <Filter>Data\Effects</Filter>
-    </None>
-    <None Include="Data\Framework\Gui.ps">
-      <Filter>Data\Framework</Filter>
-    </None>
-    <None Include="Data\Framework\Gui.vs">
-      <Filter>Data\Framework</Filter>
     </None>
     <None Include="..\Externals\dear_imgui\LICENSE">
       <Filter>Externals\dear_imgui</Filter>
@@ -2074,19 +2059,46 @@
     <None Include="..\Externals\GLM\glm\gtx\closest_point.inl">
       <Filter>Externals\GLM\gtx</Filter>
     </None>
+    <None Include="Data\Framework\Shaders\FullScreenPass.gs">
+      <Filter>Data\Framework\Shaders</Filter>
+    </None>
+    <None Include="Data\Framework\Shaders\FullScreenPass.vs">
+      <Filter>Data\Framework\Shaders</Filter>
+    </None>
+    <None Include="Data\Framework\Shaders\Gui.ps">
+      <Filter>Data\Framework\Shaders</Filter>
+    </None>
+    <None Include="Data\Framework\Shaders\Gui.vs">
+      <Filter>Data\Framework\Shaders</Filter>
+    </None>
+    <None Include="Data\Framework\Shaders\ParallelReduction.fs">
+      <Filter>Data\Framework\Shaders</Filter>
+    </None>
+    <None Include="Data\Framework\Shaders\SceneEditorCommon.hlsli">
+      <Filter>Data\Framework\Shaders</Filter>
+    </None>
+    <None Include="Data\Framework\Shaders\TextRenderer.fs">
+      <Filter>Data\Framework\Shaders</Filter>
+    </None>
+    <None Include="Data\Framework\Shaders\TextRenderer.vs">
+      <Filter>Data\Framework\Shaders</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
-    <FxCompile Include="Data\DefaultVS.hlsl">
-      <Filter>Data\Framework</Filter>
+    <FxCompile Include="Data\Framework\Shaders\EditorPS.hlsl">
+      <Filter>Data\Framework\Shaders</Filter>
     </FxCompile>
-    <FxCompile Include="Data\Framework\PickingVS.hlsl">
-      <Filter>Data\Framework</Filter>
+    <FxCompile Include="Data\Framework\Shaders\EditorVS.hlsl">
+      <Filter>Data\Framework\Shaders</Filter>
     </FxCompile>
-    <FxCompile Include="Data\Framework\PickingPS.hlsl">
-      <Filter>Data\Framework</Filter>
+    <FxCompile Include="Data\Framework\Shaders\GenerateMips.hlsl">
+      <Filter>Data\Framework\Shaders</Filter>
     </FxCompile>
-    <FxCompile Include="Data\Framework\ConstColorPS.hlsl">
-      <Filter>Data\Framework</Filter>
+    <FxCompile Include="Data\Framework\Shaders\SceneEditorPS.hlsl">
+      <Filter>Data\Framework\Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="Data\Framework\Shaders\SceneEditorVS.hlsl">
+      <Filter>Data\Framework\Shaders</Filter>
     </FxCompile>
   </ItemGroup>
 </Project>
