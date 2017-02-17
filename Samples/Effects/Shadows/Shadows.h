@@ -82,7 +82,8 @@ private:
         bool showShadowMap = false;
         bool visualizeCascades = false;
         int32_t displayedCascade = 0;
-        uint32_t cascadeCount = 4;
+        //TODO the default for this should be 4
+        uint32_t cascadeCount = 1;
         int32_t lightIndex = 0;
     };
     Controls mControls;

@@ -87,7 +87,7 @@ void Shadows::createScene(const std::string& filename)
     for(uint32_t i = 0; i < mpScene->getLightCount(); i++)
     {
         mpCsmTech[i] = CascadedShadowMaps::create(2048, 2048, mpScene->getLight(i), mpScene, mControls.cascadeCount);
-        mpCsmTech[i]->setFilterMode(CsmFilterEvsm4);
+        mpCsmTech[i]->setFilterMode(CsmFilterVsm);
         mpCsmTech[i]->setVsmLightBleedReduction(0.3f);
     }
     //mpGui->addIntVarWithCallback("Light Index", setLightIndexCB, getLightIndexCB, this, "", 0);
@@ -101,6 +101,8 @@ void Shadows::createScene(const std::string& filename)
     mLightingPass.pProgram->addDefine("_LIGHT_COUNT", std::to_string(mpScene->getLightCount()));
     mLightingPass.pState = GraphicsState::create();
     mLightingPass.pState->setProgram(mLightingPass.pProgram);
+    mLightingPass.pState->setBlendState(nullptr);
+    mLightingPass.pState->setDepthStencilState(nullptr);
     mLightingPass.pProgramVars = GraphicsVars::create(mLightingPass.pProgram->getActiveVersion()->getReflector());
     mLightingPass.pCBuffer = mLightingPass.pProgramVars["PerFrameCB"];
 }
@@ -115,9 +117,12 @@ void Shadows::onLoad()
 void Shadows::runMainPass()
 {
     //state
-    mLightingPass.pState->setBlendState(nullptr);
-    mLightingPass.pState->setDepthStencilState(nullptr);
-    mpRenderContext->setGraphicsState(mLightingPass.pState);
+    //TODO should be push
+    //mpRenderContext->setGraphicsState(mLightingPass.pState);
+
+    //Not sure why this is necessary and the above set call(which should be a push anyway)
+    //doesn't work, look into it in future
+    mpRenderContext->getGraphicsState()->setProgram(mLightingPass.pProgram);
 
     //vars
     setSceneLightsIntoConstantBuffer(mpScene.get(), mLightingPass.pCBuffer.get());
@@ -128,11 +133,14 @@ void Shadows::runMainPass()
     mpRenderContext->setGraphicsVars(mLightingPass.pProgramVars);
 
     mpRenderer->renderScene(mpRenderContext.get());
+
+    //mpRenderContext->popGraphicsVars();
+    //mpRenderContext->popGraphicsState();
 }
 
 void Shadows::displayShadowMap()
 {
-    mShadowVisualizer.pCBuffer->setTexture("gTexture", mpCsmTech[mControls.lightIndex]->getShadowMap().get(), nullptr);
+    mShadowVisualizer.pProgramVars->setTexture("gTexture", mpCsmTech[mControls.lightIndex]->getShadowMap());
     mShadowVisualizer.pCBuffer->setVariable("cascade", mControls.displayedCascade);
     mShadowVisualizer.pProgramVars->setConstantBuffer("PerImageCB", mShadowVisualizer.pCBuffer);
     mpRenderContext->setGraphicsVars(mShadowVisualizer.pProgramVars);
@@ -211,8 +219,9 @@ void Shadows::createVisualizationProgram()
     if(mControls.cascadeCount > 1)
     {
         mShadowVisualizer.pProgram->getProgram()->addDefine("_USE_2D_ARRAY");
+        mShadowVisualizer.pCBuffer = ConstantBuffer::create(mShadowVisualizer.pProgram->getProgram(), "PerImageCB");
     }
-    mShadowVisualizer.pCBuffer = ConstantBuffer::create(mShadowVisualizer.pProgram->getProgram(), "PerImageCB");
+    mShadowVisualizer.pProgramVars = GraphicsVars::create(mShadowVisualizer.pProgram->getProgram()->getActiveVersion()->getReflector());
     //mShadowVisualizer.pState->setProgram(mShadowVisualizer.pProgram->getProgram());
 }
 

@@ -83,7 +83,11 @@ namespace Falcor
         if (currentData.pCamera)
         {
             ConstantBuffer* pCB = pContext->getGraphicsVars()->getConstantBuffer(kPerFrameCbName).get();
-            currentData.pCamera->setIntoConstantBuffer(pCB, sCameraDataOffset);
+            //TODO, i added this cause shadow pass never uses camera and causes this to crash
+            if (pCB != nullptr)
+            {
+                currentData.pCamera->setIntoConstantBuffer(pCB, sCameraDataOffset);
+            }
         }
     }
 

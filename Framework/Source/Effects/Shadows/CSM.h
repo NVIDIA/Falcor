@@ -71,7 +71,7 @@ namespace Falcor
         */
         void setup(RenderContext* pRenderCtx, const Camera* pCamera, const Texture* pSceneDepthBuffer);
 
-        Texture::SharedConstPtr getShadowMap() const;
+        Texture::SharedPtr getShadowMap() const;
 
         void setDataIntoConstantBuffer(ConstantBuffer* pCB, const std::string& varName);
         void setCascadeCount(uint32_t cascadeCount);

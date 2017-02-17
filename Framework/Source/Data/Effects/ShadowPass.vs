@@ -42,7 +42,7 @@ ShadowPassVSOut main(VS_IN vIn)
     mat4 worldMat = getWorldMat(vIn);
     vOut.pos = mul(worldMat, vIn.pos);
 #ifdef _APPLY_PROJECTION
-    vOut.pos = mul(gCam.viewProjMat, vIn.pos);
+    vOut.pos = mul(gCam.viewProjMat, vOut.pos);
 #endif
 //Why not VIN texcoord? HAS_TEXCRD not set
     vOut.texC = float2(0.5f, 0.5f);

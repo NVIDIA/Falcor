@@ -203,7 +203,7 @@ float csmFixedSizePcf(const CsmData csmData, const vec2 texC, float depthRef, ui
             //TODO why is this vec4?
             //res += csmData.shadowMap.Sample(exampleSampler, vec4(sampleCrd, float(cascadeIndex), depthRef)).r;
         //}
-    //}
+   //}
 
     return res / (csmData.sampleKernelSize * csmData.sampleKernelSize);
 }
@@ -241,7 +241,7 @@ float csmStochasticFilter(const CsmData csmData, const vec2 texC, float depthRef
     //IT DOESNT LIKE DOING TEXTURE SAMPLING IN A LOOP OF NONCONST SIZE
     //Todo, why cant hlsl unroll this loop? it's using const int
     //const int numStochasticSamples = 4;
-    //for(uint i = 0; i < 4u; i++)
+    //for(int i = 0; i < numStochasticSamples; i++)
     //{
         //TODO svPosition != gl_FragCoord. well it should but apparently can't use it like this
         //int idx = int(i + 71 * SV_Position.x + 37 * SV_Position.y) & 3;// Tempooral version: (csmData.temporalSampleCount*numStochasticSamples + i)&15;
@@ -250,11 +250,17 @@ float csmStochasticFilter(const CsmData csmData, const vec2 texC, float depthRef
         vec2 sampleCrd = texelOffset + texC;
         //TODO why is this vec4?
         //res += texture(csmData.shadowMap, vec4(sampleCrd, float(cascadeIndex), depthRef)).r;
+        //DOING THIS 4 times to make up for not looping, look in to that later
         res += csmData.shadowMap.Sample(exampleSampler, float3(sampleCrd, cascadeIndex)).r;
+        res += csmData.shadowMap.Sample(exampleSampler, float3(sampleCrd, cascadeIndex)).r;
+        res += csmData.shadowMap.Sample(exampleSampler, float3(sampleCrd, cascadeIndex)).r;
+        res += csmData.shadowMap.Sample(exampleSampler, float3(sampleCrd, cascadeIndex)).r;
+
     //}
 
-    //TODO this should also be float(numStochasticSamples)
-    return res / 4.f;
+    //TODO this should also be 
+    //return res / float(numStochasticSamples);
+        return res / 4.f;
 }
 
 float linstep(float a, float b, float v)

@@ -45,7 +45,7 @@ vec4 calcColor(vec2 texC)
 #ifdef _USE_2D_ARRAY
 	float d = gTexture.SampleLevel(exampleSampler, vec3(texC, float(cascade)), 0).r;
 #else
-    float d = gTexture.SampleLevel(gTexture, texC, 0).r;
+    float d = gTexture.SampleLevel(exampleSampler, texC, 0).r;
 #endif
     return vec4(d.xxx, 1);
 }
