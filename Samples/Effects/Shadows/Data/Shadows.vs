@@ -32,9 +32,7 @@
 #include "ShaderCommon.h"
 #include "Effects/CsmData.h"
 
-out float ShadowsDepthC;
-
-layout(binding = 0) uniform PerFrameCB
+cbuffer PerFrameCB : register(b0)
 {
 #foreach p in _LIGHT_SOURCES
     LightData $(p);
@@ -47,8 +45,18 @@ layout(binding = 0) uniform PerFrameCB
     mat4 camVpAtLastCsmUpdate;
 };
 
-void main()
+struct ShadowsVSOut
 {
-    defaultVS();
-    ShadowsDepthC = (camVpAtLastCsmUpdate * vec4(posW, 1)).z;
+    VS_OUT vsData;
+    float shadowsDepthC : PSIZE;
+};
+
+ShadowsVSOut main(VS_IN vIn)
+{
+    VS_OUT defaultOut = defaultVS(vIn);
+    ShadowsVSOut output;
+    output.vsData = defaultOut;
+
+    output.shadowsDepthC = mul(camVpAtLastCsmUpdate, vec4(defaultOut.posW, 1)).z;
+    return output;
 }

@@ -68,8 +68,9 @@ namespace Falcor
                 a.val = 0.5f;
 #else
                 // DISABLED_FOR_D3D12
-//                 a.map = mpLastMaterial->getAlphaMap().texture.ptr;
-//                 a.val = mpLastMaterial->getAlphaValue().constantColor.x;
+                //TODO what is this?
+                //a.map = mpLastMaterial->getAlphaMap();
+                a.val = mpLastMaterial->getAlphaThreshold();
 #endif
                 mpAlphaMapCb->setBlob(&a, 0, sizeof(a));
             }
@@ -140,8 +141,12 @@ namespace Falcor
         }
         mCsmData.cascadeCount = cascadeCount;
         createShadowPassResources(mapWidth, mapHeight);
+        //TODO, THIS HAS NO PIXEL SHADER. wHY?
         mDepthPass.pProg = GraphicsProgram::createFromFile(kDepthPassVSFile, "");
         mDepthPass.pProg->addDefine("_APPLY_PROJECTION");
+        mDepthPass.pState = GraphicsState::create();
+        mDepthPass.pState->setProgram(mDepthPass.pProg);
+        mDepthPass.pGraphicsVars = GraphicsVars::create(mDepthPass.pProg->getActiveVersion()->getReflector());
 
         mpLightCamera = Camera::create();
         RasterizerState::Desc rsDesc;
@@ -240,15 +245,21 @@ namespace Falcor
         {
             Fbo::Desc fboDesc;
             fboDesc.setDepthStencilTarget(depthFormat).setColorTarget(0, colorFormat);
-            mShadowPass.pFbo = FboHelper::create2D(mapWidth, mapHeight, fboDesc, mCsmData.cascadeCount, Texture::kMaxPossible);
+            //TODO Was max mip, had to change to 1 to fix...
+            //D3D12 ERROR: ID3D12Device::CreateCommittedResource: D3D12_RESOURCE_DESC::SampleDesc::Count must be 1 when number of mip levels is not 1, or Dimension is not D3D12_RESOURCE_DIMENSION_TEXTURE2D. SampleDesc::Count is 4, MipLevels is 12, and Dimension is D3D12_RESOURCE_DIMENSION_TEXTURE2D. [ STATE_CREATION ERROR #723: CREATERESOURCE_INVALIDSAMPLEDESC]
+            mShadowPass.pFbo = FboHelper::create2D(mapWidth, mapHeight, fboDesc, mCsmData.cascadeCount, 1u);
         }
 
         mShadowPass.fboAspectRatio = (float)mapWidth / (float)mapHeight;
 
         // Create the program
         mShadowPass.pProg = GraphicsProgram::createFromFile(kDepthPassVSFile, kDepthPassFsFile, kDepthPassGsFile, "", "", progDef);
-        mShadowPass.pLightCB = ConstantBuffer::create(mShadowPass.pProg, "PerLightCB");
-        mShadowPass.pAlphaCB = ConstantBuffer::create(mShadowPass.pProg, "AlphaMapCB");
+        mShadowPass.pState = GraphicsState::create();
+        mShadowPass.pState->setProgram(mShadowPass.pProg);
+        mShadowPass.pState->setDepthStencilState(nullptr);
+        mShadowPass.pGraphicsVars = GraphicsVars::create(mShadowPass.pProg->getActiveVersion()->getReflector());
+        mShadowPass.pLightCB = mShadowPass.pGraphicsVars["PerLightCB"];
+        mShadowPass.pAlphaCB = mShadowPass.pGraphicsVars["AlphaMapCB"];
 
         mpSceneRenderer = CsmSceneRenderer::create(mpScene, mShadowPass.pAlphaCB);
     }
@@ -468,11 +479,14 @@ namespace Falcor
     void CascadedShadowMaps::renderScene(RenderContext* pCtx)
     {
         mShadowPass.pLightCB->setBlob(&mCsmData, 0, sizeof(mCsmData));
-        // DISABLED_FOR_D3D12
-//         pCtx->setUniformBuffer(0, mShadowPass.pLightUbo);
-//         pCtx->setUniformBuffer(1, mShadowPass.pAlphaUbo);
+        mShadowPass.pGraphicsVars->setConstantBuffer(0, mShadowPass.pLightCB);
         mShadowPass.pAlphaCB->setVariable("evsmExp", mCsmData.evsmExponents);
-//        mpSceneRenderer->renderScene(pCtx, mShadowPass.pProg.get(), mpLightCamera.get());
+        mShadowPass.pGraphicsVars->setConstantBuffer(1, mShadowPass.pAlphaCB);
+        pCtx->pushGraphicsVars(mShadowPass.pGraphicsVars);
+        pCtx->pushGraphicsState(mShadowPass.pState);
+        mpSceneRenderer->renderScene(pCtx, mpLightCamera.get());
+        pCtx->popGraphicsState();
+        pCtx->popGraphicsVars();
     }
 
     void CascadedShadowMaps::executeDepthPass(RenderContext* pCtx, const Camera* pCamera)
@@ -489,15 +503,17 @@ namespace Falcor
         }
 
         pCtx->clearFbo(mDepthPass.pFbo.get(), glm::vec4(), 1, 0, FboAttachmentType::Depth);
-        // DISABLED_FOR_D3D12
-//        pCtx->pushFbo(mDepthPass.pFbo);
 
-        // DISABLED_FOR_D3D12
-//         mpSceneRenderer->setObjectCullState(true);
-//         mpSceneRenderer->renderScene(pCtx, mDepthPass.pProg.get(), const_cast<Camera*>(pCamera));
-//         mpSceneRenderer->setObjectCullState(false);
-// DISABLED_FOR_D3D12
-//        pCtx->popFbo();
+        //TODO, look at this if err, have had push pop problems in past
+        mDepthPass.pState->pushFbo(mDepthPass.pFbo);
+        mpSceneRenderer->setObjectCullState(true);
+        pCtx->pushGraphicsState(mDepthPass.pState);
+        pCtx->pushGraphicsVars(mDepthPass.pGraphicsVars);
+        mpSceneRenderer->renderScene(pCtx, const_cast<Camera*>(pCamera));
+        mpSceneRenderer->setObjectCullState(false);
+        pCtx->popGraphicsVars();
+        pCtx->popGraphicsState();
+        mDepthPass.pState->popFbo();
     }
 
     void CascadedShadowMaps::createVsmSampleState(uint32_t maxAnisotropy)
@@ -558,12 +574,12 @@ namespace Falcor
 
     void CascadedShadowMaps::setup(RenderContext* pRenderCtx, const Camera* pCamera, const Texture* pDepthBuffer)
     {
-        const glm::vec4 clearColor(1);
-        pRenderCtx->clearFbo(mDepthPass.pFbo.get(), clearColor, 1, 0, FboAttachmentType::All);
-
         // Calc the bounds
         glm::vec2 distanceRange;
         calcDistanceRange(pRenderCtx, pCamera, pDepthBuffer, distanceRange);
+
+        const glm::vec4 clearColor(1);
+        pRenderCtx->clearFbo(mDepthPass.pFbo.get(), clearColor, 1, 0, FboAttachmentType::All);
 
         GraphicsState::Viewport VP;
         VP.originX = 0;
@@ -572,17 +588,19 @@ namespace Falcor
         VP.maxDepth = 1;
         VP.height = mShadowPass.mapSize.x;
         VP.width = mShadowPass.mapSize.y;
-        // DISABLED_FOR_D3D12
-//        pRenderCtx->pushViewport(0, VP);
 
-        // DISABLED_FOR_D3D12
-//        const auto& pOldRS = pRenderCtx->getRasterizerState();
-//         if(mControls.depthClamp)
-//         {
-//             pRenderCtx->setRasterizerState(mShadowPass.pDepthClampRS);
-//         }
-//         pRenderCtx->pushFbo(mShadowPass.pFbo);
-//         pRenderCtx->setDepthStencilState(nullptr, 0);
+        //Set shadow pass state
+        mShadowPass.pState->pushViewport(0, VP);
+        if (mControls.depthClamp)
+        {
+            mShadowPass.pState->setRasterizerState(mShadowPass.pDepthClampRS);
+        }
+        else
+        {
+            mShadowPass.pState->setRasterizerState(nullptr);
+        }
+        mShadowPass.pState->pushFbo(mShadowPass.pFbo);
+        pRenderCtx->setGraphicsState(mShadowPass.pState);
 
         partitionCascades(pCamera, distanceRange);
         renderScene(pRenderCtx);
@@ -593,10 +611,8 @@ namespace Falcor
             mShadowPass.pFbo->getColorTexture(0)->generateMips();
         }
 
-        // DISABLED_FOR_D3D12
-//         pRenderCtx->popViewport(0);
-//         pRenderCtx->setRasterizerState(pOldRS);
-//         pRenderCtx->popFbo();
+        mShadowPass.pState->popViewport(0);
+        mShadowPass.pState->popFbo();
     }
 
     void CascadedShadowMaps::setDataIntoConstantBuffer(ConstantBuffer* pCB, const std::string& varName)

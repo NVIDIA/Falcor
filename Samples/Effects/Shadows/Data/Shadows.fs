@@ -3,11 +3,12 @@ Copyright (c) 2014, NVIDIA CORPORATION.  All rights reserved.
 ***************************************************************************/
 #version 450
 
-#include "ShaderCommon.h"
+#define _COMPILE_DEFAULT_VS
+#include "VertexAttrib.h"
 #include "shading.h"
 #include "Effects/CsmData.h"
 
-layout(binding = 0) uniform PerFrameCB
+cbuffer PerFrameCB : register(b0)
 {
 #foreach p in _LIGHT_SOURCES
     LightData $(p);
@@ -20,25 +21,24 @@ layout(binding = 0) uniform PerFrameCB
     mat4 camVpAtLastCsmUpdate;
 };
 
-in vec3 normalW;
-in vec3 posW;
-in vec3 tangentW;
-in vec3 bitangentW;
-in vec2 texC;
-in float ShadowsDepthC;
-out vec4 fragColor;
+struct ShadowsVSOut
+{
+    VS_OUT vsData;
+    float shadowsDepthC : PSIZE;
+};
 
-void main()
+vec4 main(ShadowsVSOut pIn) : SV_TARGET0
 {
     float shadowFactor;
     ShadingAttribs shAttr;
-    prepareShadingAttribs(gMaterial, posW, gCam.position, normalW, tangentW, bitangentW, texC, 0, shAttr);
+    prepareShadingAttribs(gMaterial, pIn.vsData.posW, gCam.position, pIn.vsData.normalW, pIn.vsData.tangentW, pIn.vsData.bitangentW, pIn.vsData.texC, 0, shAttr);
     ShadingOutput result;
-    fragColor = vec4(0,0,0,1);
+    float4 fragColor = vec4(0,0,0,1);
+    
 #foreach p in _LIGHT_SOURCES
     {
+        shadowFactor = calcShadowFactor(gCsmData[0], pIn.shadowsDepthC, shAttr.P);
         evalMaterial(shAttr, $(p), result, $(_valIndex) == 0);
-    	shadowFactor = calcShadowFactor(gCsmData[$(_valIndex)], ShadowsDepthC, shAttr.P);
         fragColor.rgb += result.diffuseAlbedo * result.diffuseIllumination * shadowFactor;
         fragColor.rgb += result.specularAlbedo * result.specularIllumination * (0.01f + shadowFactor * 0.99f);
     }
@@ -46,6 +46,10 @@ void main()
     fragColor.rgb += gAmbient * result.diffuseAlbedo * 0.1;
     if(visualizeCascades)
     {
-        fragColor.rgb *= getCascadeColor(getCascadeIndex(gCsmData[lightIndex], ShadowsDepthC));
+        //TODO, this should be using lightindex, not 0, but that gives sampler array index must be a literal expression
+        //bc csmdata encapsulates 2 sampler arrays
+        fragColor.rgb *= getCascadeColor(getCascadeIndex(gCsmData[0], pIn.shadowsDepthC));
     }
+
+    return fragColor;
 }

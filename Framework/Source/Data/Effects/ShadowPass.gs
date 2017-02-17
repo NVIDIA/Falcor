@@ -26,36 +26,49 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 #version 450
-#include "hlslglslcommon.h"
 #include "VertexAttrib.h"
 #include "ShaderCommon.h"
 #include "csmdata.h"
 
-layout (triangles, invocations = _CASCADE_COUNT) in;
-layout (triangle_strip, max_vertices = 3) out;
-in int gl_InvocationID;
-out int gl_Layer;
-in vec2 texCin[3];
-out vec2 texC;
+//CascadeCount?
 
-CONSTANT_BUFFER(PerLightCB, 0)
+cbuffer PerLightCB : register(b0)
 {
     CsmData gCsmData;
 };
 
-void main()
+struct ShadowPassPSIn
 {
+    float4 pos : SV_POSITION;
+    float2 texC : TexCoord;
+    uint rtIndex : SV_RenderTargetArrayIndex;
+};
+
+struct ShadowPassVSOut
+{
+    float4 pos : SV_POSITION;
+    float2 texC : TEXCOORD;
+};
+
+[maxvertexcount(3)]
+void main(triangle ShadowPassVSOut input[3], uint InstanceID : SV_GSInstanceID, inout TriangleStream<ShadowPassPSIn> outStream)
+{
+    ShadowPassPSIn outputData;
+
     for(int i = 0 ; i < 3 ; i++)
     {
-        gl_Position = gCsmData.globalMat * gl_in[i].gl_Position;
+        outputData.pos = mul(gCsmData.globalMat, input[i].pos);
 
-        gl_Position.xyz /= gl_Position.w;
-        gl_Position.xyz *= gCsmData.cascadeScale[gl_InvocationID].xyz;
-        gl_Position.xyz += gCsmData.cascadeOffset[gl_InvocationID].xyz;
-        gl_Position.xyz *= gl_Position.w;
+        outputData.pos.xyz /= input[i].pos.w;
+        outputData.pos.xyz *= gCsmData.cascadeScale[InstanceID].xyz;
+        outputData.pos.xyz += gCsmData.cascadeOffset[InstanceID].xyz;
+        outputData.pos.xyz *= outputData.pos.w;
 
-        gl_Layer = gl_InvocationID;
-        texC = texCin[i];
-        EmitVertex();
+        outputData.texC = input[i].texC;
+
+        outputData.rtIndex = InstanceID;
+        outStream.Append(outputData);
     }
+
+    outStream.RestartStrip();
 }

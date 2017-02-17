@@ -26,17 +26,25 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 #version 420
-#include "hlslglslcommon.h"
 #define _COMPILE_DEFAULT_VS
 #include "VertexAttrib.h"
 #include "ShaderCommon.h"
 
-void main()
+struct ShadowPassVSOut
 {
-    mat4 worldMat = getWorldMat();
-    gl_Position = worldMat * vPos;
+    float4 pos : SV_POSITION;
+    float2 texC : TEXCOORD;
+};
+
+ShadowPassVSOut main(VS_IN vIn)
+{
+    ShadowPassVSOut vOut; 
+    mat4 worldMat = getWorldMat(vIn);
+    vOut.pos = mul(worldMat, vIn.pos);
 #ifdef _APPLY_PROJECTION
-    gl_Position = gCam.viewProjMat * gl_Position;
+    vOut.pos = mul(gCam.viewProjMat, vIn.pos);
 #endif
-    texC = vTexC;
+//Why not VIN texcoord? HAS_TEXCRD not set
+    vOut.texC = float2(0.5f, 0.5f);
+    return vOut;
 }

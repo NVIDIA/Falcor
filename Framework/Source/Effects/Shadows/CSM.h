@@ -105,10 +105,12 @@ namespace Falcor
             Sampler::SharedPtr pPointCmpSampler;
             Sampler::SharedPtr pLinearCmpSampler;
             Sampler::SharedPtr pVSMTrilinearSampler;
-            Program::SharedPtr pProg;
+            GraphicsProgram::SharedPtr pProg;
             ConstantBuffer::SharedPtr pLightCB;
             ConstantBuffer::SharedPtr pAlphaCB;
             RasterizerState::SharedPtr pDepthClampRS;
+            GraphicsVars::SharedPtr pGraphicsVars;
+            GraphicsState::SharedPtr pState;
             glm::vec2 mapSize;
         } mShadowPass;
 
@@ -131,8 +133,10 @@ namespace Falcor
         // Depth-pass
         struct
         {
-            Program::SharedPtr pProg;
+            GraphicsProgram::SharedPtr pProg;
             Fbo::SharedPtr pFbo;
+            GraphicsState::SharedPtr pState;
+            GraphicsVars::SharedPtr pGraphicsVars;
         } mDepthPass;
         void executeDepthPass(RenderContext* pCtx, const Camera* pCamera);
 

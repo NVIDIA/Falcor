@@ -28,12 +28,14 @@
 #version 450
 #include "HlslGlslCommon.h"
 
-UNIFORM_BUFFER(PerImageCB, 0)
+SamplerState exampleSampler : register(s0);
+
+cbuffer PerImageCB : register(b0)
 {
 #ifdef _USE_2D_ARRAY
-	sampler2DArray gTexture;
+	Texture2DArray gTexture;
 #else
-   sampler2D gTexture;
+    texture2D gTexture;
 #endif
     int cascade;
 };
@@ -41,25 +43,14 @@ UNIFORM_BUFFER(PerImageCB, 0)
 vec4 calcColor(vec2 texC)
 {
 #ifdef _USE_2D_ARRAY
-	float d = textureLod(gTexture, vec3(texC, float(cascade)), 0).r;
+	float d = gTexture.SampleLevel(exampleSampler, vec3(texC, float(cascade)), 0).r;
 #else
-    float d = textureLod(gTexture, texC, 0).r;
+    float d = gTexture.SampleLevel(gTexture, texC, 0).r;
 #endif
     return vec4(d.xxx, 1);
 }
 
-#ifdef FALCOR_HLSL
 vec4 main(float2 texC  : TEXCOORD) : SV_TARGET0
 {
 	return calcColor(texC);
 }
-
-#elif defined FALCOR_GLSL
-in vec2 texC;
-out vec4 fragColor;
-
-void main()
-{
-	fragColor = calcColor(texC);
-}
-#endif

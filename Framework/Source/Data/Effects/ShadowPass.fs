@@ -28,37 +28,46 @@
 #version 450
 #include "ShaderCommon.h"
 #include "csmdata.h"
-layout(binding = 1) uniform AlphaMapCB
+
+texture2D alphaMap;
+
+cbuffer AlphaMapCB : register(b1)
 {
-    sampler2D alphaMap;
     float alphaThreshold;
     vec2 evsmExp;   // (posExp, negExp)
 };
 
-in vec2 texC;
-
-#if defined(_VSM) || defined(_EVSM2)
-out vec2 fragColor;
-#elif defined(_EVSM4)
-out vec4 fragColor;
-#endif
-
-void main()
+struct ShadowPassPSIn
 {
-    if(isSamplerBound(alphaMap) && texture(alphaMap, texC)._ALPHA_CHANNEL < alphaThreshold)
+    float4 pos : SV_POSITION;
+    float2 texC : TexCoord;
+    uint rtIndex : SV_RenderTargetArrayIndex;
+};
+
+//TODO how do?
+//#if defined(_VSM) || defined(_EVSM2)
+//vec2 main(ShadowPassPSIn pIn) : SV_TARGET0
+//#elif defined(_EVSM4)
+vec4 main(ShadowPassPSIn pIn) : SV_TARGET0
+//#endif
+{
+    //if(uVec2(alphaMap != 0 && alphaMap.Sample(exampleSampler, texC)._ALPHA_CHANNEL < alphaThreshold)
+    if(alphaMap.Sample(exampleSampler, pIn.texC)._ALPHA_CHANNEL < alphaThreshold)
     {
         discard;
     }
 
-    vec2 depth = gl_FragCoord.zz;
+    vec2 depth = pIn.pos.zz;
 
 #if defined(_EVSM2) || defined(_EVSM4)
     depth = applyEvsmExponents(depth.x, evsmExp);
 #endif
     vec4 outDepth = vec4(depth, depth*depth);
-#ifdef _EVSM4
-    fragColor = outDepth.xzyw;
-#elif defined(_VSM) || defined(_EVSM2)
-    fragColor = outDepth.xz;
-#endif
+//#ifdef _EVSM4
+    return outDepth.xzyw;
+//#elif defined(_VSM) || defined(_EVSM2)
+//    return outDepth.xz;
+//#endif
+
+    
 }

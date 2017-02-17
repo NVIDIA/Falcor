@@ -57,13 +57,17 @@ private:
     struct
     {
         FullScreenPass::UniquePtr pProgram;
-        UniformBuffer::SharedPtr pBuffer;
+        GraphicsState::SharedPtr pState;
+        GraphicsVars::SharedPtr pProgramVars;
+        ConstantBuffer::SharedPtr pCBuffer;
     } mShadowVisualizer;
 
     struct
     {
-        Program::SharedPtr pProgram;
-        UniformBuffer::SharedPtr pPerFrameCB;
+        GraphicsProgram::SharedPtr pProgram;
+        GraphicsState::SharedPtr pState;
+        GraphicsVars::SharedPtr pProgramVars;
+        ConstantBuffer::SharedPtr pCBuffer;
     } mLightingPass;
 
     Sampler::SharedPtr mpLinearSampler = nullptr;

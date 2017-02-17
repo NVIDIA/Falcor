@@ -28,15 +28,17 @@
 #version 440
 #include "hlslglslcommon.h"
 
-CONSTANT_BUFFER(PerImageCB, 0)
+SamplerState exampleSampler : register(s0);
+
+cbuffer PerImageCB : register(b0)
 {
-   sampler2D gInputTex;
+   texture2D gInputTex;
 };
 
 #ifdef _FIRST_ITERATION
 vec2 compareMinMax(vec2 crd, vec2 range)
 {
-    vec4 d4 = textureGather(gInputTex, crd, 0);
+    vec4 d4 = gInputTex.Gather(exampleSampler, crd);
 
     for(int i = 0 ; i < 4 ; i++)
     {
@@ -51,8 +53,8 @@ vec2 compareMinMax(vec2 crd, vec2 range)
 #else
 vec2 compareMinMax(vec2 crd, vec2 range)
 {
-    vec4 min4 = textureGather(gInputTex, crd, 0);
-    vec4 max4 = textureGather(gInputTex, crd, 1);
+    vec4 min4 = gInputTex.Gather(exampleSampler, crd);
+    vec4 max4 = gInputTex.Gather(exampleSampler, crd, 1);
     float prevMin = min(min4.x, min(min4.y, min(min4.z, min4.w)));
     float prevMax = max(max4.x, max(max4.y, max(max4.z, max4.w)));
      
@@ -65,14 +67,20 @@ vec2 compareMinMax(vec2 crd, vec2 range)
 vec2 minMaxReduction(vec2 texC)
 {
     vec2 range = vec2(1, 0);
-    ivec2 dim = textureSize(gInputTex, 0);
+    ivec2 dim = ivec2(1, 1);
+    float elements, levels;
+    //TODO cleaner version of this fx?
+    gInputTex.GetDimensions(dim.x, dim.y, elements, levels);
 
     // Using gather4, so need to skip 4 samples everytime
     for(int x = 0 ; x < _TILE_SIZE ; x+=2)
     {
         for(int y = 0 ; y < _TILE_SIZE ; y+=2)
         {
-            ivec2 crd = ivec2(gl_FragCoord.xy) * _TILE_SIZE + ivec2(x, y);
+        //TODO REMOVE HLSLGLSLCOMMON AND REPLACE gl_FragCoord
+            //ivec2 crd = ivec2(gl_FragCoord.xy) * _TILE_SIZE + ivec2(x, y);
+            //TODO THIS IS PLACEHOLDER FOR ABOVE TODO
+            ivec2 crd = ivec2(1, 1);
             vec2 normalizedCrd = vec2(crd)/vec2(dim);
 
             range = compareMinMax(normalizedCrd, range);
@@ -81,18 +89,7 @@ vec2 minMaxReduction(vec2 texC)
     return range;
 }
 
-#ifdef FALCOR_HLSL
 vec2 main(float2 texC  : TEXCOORD) : SV_TARGET0
 {
-    return minMaxReduction();
+    return minMaxReduction(texC);
 }
-
-#elif defined FALCOR_GLSL
-in vec2 texC;
-out vec2 fragColor;
-
-void main()
-{
-    fragColor = minMaxReduction(texC);
-}
-#endif

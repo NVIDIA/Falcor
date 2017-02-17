@@ -65,7 +65,8 @@ namespace Falcor
         mpFirstIterProg = FullScreenPass::create(fsFilename, defines);
         mpFirstIterProg->getProgram()->addDefine("_FIRST_ITERATION");
         mpRestIterProg = FullScreenPass::create(fsFilename, defines);
-        mpCb = ConstantBuffer::create(mpFirstIterProg->getProgram(), "PerImageCB");
+        //TODO fix this in the rest of the parallel reduction code, cbuffer only has a texture so there effectively is no cbuffer
+        //mpCb = ConstantBuffer::create(mpFirstIterProg->getProgram(), "PerImageCB");
 
         // Calculate the number of reduction passes
         if(width > kTileSize || height > kTileSize)
@@ -92,8 +93,10 @@ namespace Falcor
 
     void runProgram(RenderContext* pRenderCtx, const Texture* pInput, const FullScreenPass* pProgram, Fbo::SharedPtr pDst, ConstantBuffer::SharedPtr pCB, Sampler::SharedPtr pPointSampler)
     {
+
+        //TODO ALL OF THIS
         // Bind the input texture
-        pCB->setTexture(0, pInput, pPointSampler.get());
+        //pCB->setTexture(0, pInput, pPointSampler.get());
         // DISABLED_FOR_D3D12
 //        pRenderCtx->setUniformBuffer(0, pUbo);
 
