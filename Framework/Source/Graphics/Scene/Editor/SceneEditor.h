@@ -29,6 +29,7 @@
 #include <vector>
 #include <set>
 #include "Graphics/Paths/PathEditor.h"
+#include "Utils/DebugDrawer.h"
 #include "Utils/Picking/Picking.h"
 #include "Graphics/Scene/Editor/Gizmo.h"
 #include "Graphics/Scene/Editor/SceneEditorRenderer.h"
@@ -51,9 +52,9 @@ namespace Falcor
         const Camera::SharedPtr& getEditorCamera() const { return mpEditorScene->getActiveCamera(); }
 
         void update(double currentTime);
-        void render();
+        void render(RenderContext* pContext);
 
-        bool onMouseEvent(const MouseEvent& mouseEvent);
+        bool onMouseEvent(RenderContext* pContext, const MouseEvent& mouseEvent);
         bool onKeyEvent(const KeyboardEvent& keyEvent);
         void onResizeSwapChain();
 
@@ -61,12 +62,6 @@ namespace Falcor
 
         SceneEditor(const Scene::SharedPtr& pScene, const uint32_t modelLoadFlags);
         Scene::SharedPtr mpScene;
-
-        struct
-        {
-            uint32_t ActivePath = 0;
-            PathEditor::UniquePtr pEditor;
-        } mPathEditor;
 
         bool mSceneDirty = false;
 
@@ -107,16 +102,17 @@ namespace Falcor
         void setCameraUp(Gui* pGui);
 
         // Light functions
+        void deleteLight(uint32_t id);
         void addPointLight(Gui* pGui);
         void addDirectionalLight(Gui* pGui);
 
         // Paths
-        void pathEditorFinishedCB();
         void addPath(Gui* pGui);
-        void selectActivePath(Gui* pGui);
+        void selectPath(Gui* pGui);
         void deletePath(Gui* pGui);
         void startPathEditor(Gui* pGui);
         void startPathEditor();
+        void setObjectPath(Gui* pGui, const IMovableObject::SharedPtr& pMovable, const std::string& objType);
 
         // Global functions
         void setAmbientIntensity(Gui* pGui);
@@ -127,15 +123,12 @@ namespace Falcor
         uint32_t mModelLoadFlags = 0;
         uint32_t mSceneLoadFlags = 0;
 
-        // #TODO get from user
-        RenderContext::SharedPtr mpRenderContext;
-
         //
         // Initialization
         //
 
         // Initializes Editor helper-scenes, Picking, and Rendering
-        void initializeEditorScenes();
+        void initializeEditorRendering();
 
         // Initializes Editor's representation of the scene being edited
         void initializeEditorObjects();
@@ -148,8 +141,10 @@ namespace Falcor
         //
         // Editor Objects
         //
+
         static const float kCameraModelScale;
         static const float kLightModelScale;
+        static const float kKeyframeModelScale;
 
         // Update transform of gizmos and camera models
         void updateEditorObjectTransforms();
@@ -169,8 +164,14 @@ namespace Falcor
             None,
             Model,
             Camera,
-            Light
+            Light,
+            Keyframe
         };
+
+        std::string getUniqueNumberedName(const std::string& baseName, uint32_t idSuffix, const std::set<std::string>& nameMap) const;
+        std::set<std::string> mInstanceNames;
+        std::set<std::string> mCameraNames;
+        std::set<std::string> mLightNames;
 
         //
         // Picking
@@ -186,6 +187,7 @@ namespace Falcor
         int32_t mSelectedModelInstance = 0;
         uint32_t mSelectedCamera = 0;
         uint32_t mSelectedLight = 0;
+        uint32_t mSelectedPath = 0;
 
         Picking::UniquePtr mpScenePicker;
 
@@ -229,12 +231,45 @@ namespace Falcor
 
         Model::SharedPtr mpCameraModel;
         Model::SharedPtr mpLightModel;
+        Model::SharedPtr mpKeyframeModel;
 
         uint32_t mEditorCameraModelID = (uint32_t)-1;
         uint32_t mEditorLightModelID = (uint32_t)-1;
+        uint32_t mEditorKeyframeModelID = (uint32_t)-1;
 
         // Maps between light models and master scene light ID
         std::unordered_map<uint32_t, uint32_t> mLightIDEditorToScene;
         std::unordered_map<uint32_t, uint32_t> mLightIDSceneToEditor;
+
+        //
+        // Paths
+        //
+
+        void renderPath(RenderContext* pContext);
+
+        void detachObjectFromPaths(const IMovableObject::SharedPtr& pMovable);
+
+        void addSelectedPathKeyframeModels();
+        void removeSelectedPathKeyframeModels();
+
+        // When path editor closes
+        void pathEditorFinishedCB();
+
+        // When switching to a new active frame, or if active frame properties are changed
+        void pathEditorFrameChangedCB();
+
+        // When frames are added or removed
+        void pathEditorFrameAddRemoveCB();
+
+        bool mRenderAllPaths = false;
+
+        PathEditor::UniquePtr mpPathEditor;
+        std::unordered_map<const IMovableObject*, ObjectPath::SharedPtr> mObjToPathMap;
+
+        DebugDrawer::SharedPtr mpDebugDrawer;
+
+        GraphicsState::SharedPtr mpPathGraphicsState;
+        GraphicsProgram::SharedPtr mpDebugDrawProgram;
+        GraphicsVars::SharedPtr mpDebugDrawProgramVars;
     };
 }

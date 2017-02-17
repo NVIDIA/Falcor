@@ -173,8 +173,8 @@ namespace Falcor
             {
                 const BoundingBox& meshBox = meshInstances[i]->getBoundingBox();
 
-                vec3 meshMin = meshBox.center - meshBox.extent * 0.5f;
-                vec3 meshMax = meshBox.center + meshBox.extent * 0.5f;
+                vec3 meshMin = meshBox.center - meshBox.extent;
+                vec3 meshMax = meshBox.center + meshBox.extent;
 
                 modelMin = min(modelMin, meshMin);
                 modelMax = max(modelMax, meshMax);

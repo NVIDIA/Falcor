@@ -494,6 +494,14 @@ namespace Falcor
 
         BinaryModelImporter loader(fullpath);
         Model::SharedPtr pModel = loader.createModel(flags);
+
+        pModel->setFilename(filename);
+
+        // filename can be a relative path
+        std::string name = getFilenameFromPath(filename);
+        name = swapFileExtension(name, ".bin", "");
+        pModel->setName(name);
+
         return pModel;
     }
 

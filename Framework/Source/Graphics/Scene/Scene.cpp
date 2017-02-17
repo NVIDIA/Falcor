@@ -63,22 +63,21 @@ namespace Falcor
 
     Scene::~Scene() = default;
 
-    bool Scene::updateCamera(double currentTime, CameraController* cameraController)
+    bool Scene::update(double currentTime, CameraController* cameraController)
     {
-        auto pCamera = getActiveCamera();
-        auto pActivePath = getActivePath();
-        if(pActivePath)
+        for (auto& path : mpPaths)
         {
-            pActivePath->animate(currentTime);
-            return true;
+            path->animate(currentTime);
         }
+
         // Ignore the elapsed time we got from the user. This will allow camera movement in cases where the time is frozen
         if(cameraController)
         {
-            cameraController->attachCamera(pCamera);
+            cameraController->attachCamera(getActiveCamera());
             cameraController->setCameraSpeed(getCameraSpeed());
             return cameraController->update();
         }
+
         return false;
     }
 
@@ -144,6 +143,7 @@ namespace Falcor
     {
         // Delete instance
         auto& instances = mModels[modelID];
+
         instances.erase(instances.begin() + instanceID);
 
         // If no instances are left, delete the vector
@@ -204,12 +204,6 @@ namespace Falcor
     void Scene::deletePath(uint32_t pathID)
     {
         mpPaths.erase(mpPaths.begin() + pathID);
-        if(mActivePathID == pathID)
-        {
-            // No need to detach the camera from the path, since the path is destroyed anyway
-            mActivePathID = mpPaths.size() ? 0 : kFreeCameraMovement;
-            attachActiveCameraToPath();
-        }
     }
 
     uint32_t Scene::addCamera(const Camera::SharedPtr& pCamera)
@@ -220,53 +214,17 @@ namespace Falcor
 
     void Scene::deleteCamera(uint32_t cameraID)
     {
-        if(cameraID == mActiveCameraID)
-        {
-            detachActiveCameraFromPath();
-        }
-
         mCameras.erase(mCameras.begin() + cameraID);
 
         if(cameraID == mActiveCameraID)
         {
-            // Don't call SetActiveCamera(), since it will try to detach the current active camera, which might be invalid
             mActiveCameraID = 0;
-            attachActiveCameraToPath();
         }
     }
 
     void Scene::setActiveCamera(uint32_t camID)
     {
-        detachActiveCameraFromPath();
         mActiveCameraID = camID;
-        attachActiveCameraToPath();
-    }
-
-    void Scene::setActivePath(uint32_t pathID)
-    {
-        detachActiveCameraFromPath();
-        mActivePathID = pathID;
-        attachActiveCameraToPath();
-    }
-
-    void Scene::attachActiveCameraToPath()
-    {
-        auto pPath = getActivePath();
-        if(pPath)
-        {
-            auto pCamera = getActiveCamera();
-            pPath->attachObject(pCamera);
-        }
-    }
-
-    void Scene::detachActiveCameraFromPath()
-    {
-        auto pPath = getActivePath();
-        if(pPath)
-        {
-            auto pCamera = getActiveCamera();
-            pPath->detachObject(pCamera);
-        }
     }
 
     void Scene::merge(const Scene* pFrom)

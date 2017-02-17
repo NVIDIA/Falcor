@@ -54,6 +54,8 @@ namespace Falcor
 
         static bool saveScene(const std::string& filename, const Scene* pScene, uint32_t exportOptions = ExportAll);
 
+        static const uint32_t kVersion = 2;
+
     private:
         SceneExporter(const Scene* pScene, const std::string& filename) : mpScene(pScene), mFilename(filename) {};
         bool save(uint32_t exportOptions);

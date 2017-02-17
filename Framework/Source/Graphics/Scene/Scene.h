@@ -123,7 +123,7 @@ namespace Falcor
         uint32_t addLight(const Light::SharedPtr& pLight);
         void deleteLight(uint32_t lightID);
         uint32_t getLightCount() const { return (uint32_t)mpLights.size(); }
-        Light::SharedPtr getLight(uint32_t index) const { return mpLights[index]; }
+        const Light::SharedPtr& getLight(uint32_t index) const { return mpLights[index]; }
         const std::vector<Light::SharedPtr>& getLights() const { return mpLights; }
 
         void setAmbientIntensity(const glm::vec3& ambientIntensity) { mAmbientIntensity = ambientIntensity; }
@@ -140,11 +140,8 @@ namespace Falcor
         // Object paths
         uint32_t addPath(const ObjectPath::SharedPtr& pPath);
         void deletePath(uint32_t pathID);
-
-        ObjectPath::SharedPtr getActivePath() const { return (mActivePathID == kFreeCameraMovement) ? nullptr : mpPaths[mActivePathID]; }
-        uint32_t getActivePathIndex() const { return mActivePathID; }
+        
         const ObjectPath::SharedPtr& getPath(uint32_t pathID) const { return mpPaths[pathID]; }
-        void setActivePath(uint32_t pathID);
         uint32_t getPathCount() const { return (uint32_t)mpPaths.size();}
 
         // Camera
@@ -161,7 +158,7 @@ namespace Falcor
         void setCameraSpeed(float speed) { mCameraSpeed = speed; }
 
         // Camera update
-        bool updateCamera(double currentTime, CameraController* cameraController = nullptr);
+        bool update(double currentTime, CameraController* cameraController = nullptr);
 
         // User variables
         uint32_t getVersion() const { return mVersion; }
@@ -175,7 +172,7 @@ namespace Falcor
 
         const uint32_t getId() const { return mId; }
 
-        static const uint32_t kFreeCameraMovement = (uint32_t)-1;
+        static const uint32_t kNoPath = (uint32_t)-1;
 
         void merge(const Scene* pFrom);
 
@@ -192,9 +189,6 @@ namespace Falcor
 
     private:
 
-        void detachActiveCameraFromPath();
-        void attachActiveCameraToPath();
-
         Scene(float cameraAspectRatio);
 
         static uint32_t sSceneCounter;
@@ -206,7 +200,6 @@ namespace Falcor
         std::vector<Material::SharedPtr> mpMaterials;
         std::vector<Camera::SharedPtr> mCameras;
         std::vector<ObjectPath::SharedPtr> mpPaths;
-        uint32_t mActivePathID = kFreeCameraMovement;
 
         glm::vec3 mAmbientIntensity;
         uint32_t mActiveCameraID = 0;

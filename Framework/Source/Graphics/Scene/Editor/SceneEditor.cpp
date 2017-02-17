@@ -42,20 +42,21 @@ namespace Falcor
 {
     namespace
     {
-        const char* kActiveModelStr = "Active Model";
+        const char* kSelectedModelStr = "Selected Model";
         const char* kModelsStr = "Models";
-        const char* kActiveInstanceStr = "Active Instance";
+        const char* kSelectedInstanceStr = "Selected Instance";
         const char* kActiveAnimationStr = "Active Animation";
         const char* kModelNameStr = "Model Name";
         const char* kInstanceStr = "Instance";
         const char* kCamerasStr = "Cameras";
         const char* kActiveCameraStr = "Active Camera";
         const char* kPathsStr = "Paths";
-        const char* kActivePathStr = "Active Path";
+        const char* kSelectedPathStr = "Selected Path";
     };
 
     const float SceneEditor::kCameraModelScale = 0.5f;
     const float SceneEditor::kLightModelScale = 0.3f;
+    const float SceneEditor::kKeyframeModelScale = 0.2f;
 
     const Falcor::Gui::RadioButtonGroup SceneEditor::kGizmoSelectionButtons
     {
@@ -64,11 +65,15 @@ namespace Falcor
         { (int32_t)Gizmo::Type::Scale, "Scaling", true }
     };
 
-    Gui::DropdownList getPathDropdownList(const Scene* pScene)
+    Gui::DropdownList getPathDropdownList(const Scene* pScene, bool includeDefault)
     {
         Gui::DropdownList pathList;
-        static const Gui::DropdownValue kFreeMove{ (int)Scene::kFreeCameraMovement, "Free Movement" };
-        pathList.push_back(kFreeMove);
+        static const Gui::DropdownValue kNoPathValue{ (int32_t)Scene::kNoPath, "None" };
+
+        if (includeDefault)
+        {
+            pathList.push_back(kNoPathValue);
+        }
 
         for (uint32_t i = 0; i < pScene->getPathCount(); i++)
         {
@@ -92,7 +97,7 @@ namespace Falcor
             modelList.push_back(value);
         }
 
-        if (pGui->addDropdown(kActiveModelStr, modelList, mSelectedModel))
+        if (pGui->addDropdown(kSelectedModelStr, modelList, mSelectedModel))
         {
             mSelectedModelInstance = 0;
         }
@@ -157,21 +162,25 @@ namespace Falcor
         }
     }
 
-    void SceneEditor::selectActivePath(Gui* pGui)
+    void SceneEditor::selectPath(Gui* pGui)
     {
-        if (mPathEditor.pEditor == nullptr)
+        if (mpPathEditor == nullptr)
         {
-            uint32_t activePath = mpScene->getActivePathIndex();
-            Gui::DropdownList pathList = getPathDropdownList(mpScene.get());
-            if (pGui->addDropdown(kActivePathStr, pathList, activePath))
+            uint32_t activePath = mSelectedPath;
+            Gui::DropdownList pathList = getPathDropdownList(mpScene.get(), false);
+
+            if (pathList.size() > 0)
             {
-                mpScene->setActivePath(activePath);
-                mSceneDirty = true;
+                if (pGui->addDropdown(kSelectedPathStr, pathList, activePath))
+                {
+                    mSelectedPath = activePath;
+                    mSceneDirty = true;
+                }
             }
         }
         else
         {
-            std::string msg = kActivePathStr + std::string(": ") + mpScene->getPath(mPathEditor.ActivePath)->getName();
+            std::string msg = kSelectedPathStr + std::string(": ") + mpScene->getPath(mSelectedPath)->getName();
             pGui->addText(msg.c_str());
         }
     }
@@ -191,10 +200,6 @@ namespace Falcor
         if (pGui->addDropdown(kActiveCameraStr, cameraList, camIndex))
         {
             mpScene->setActiveCamera(camIndex);
-            if (mPathEditor.pEditor)
-            {
-                mPathEditor.pEditor->setCamera(mpScene->getActiveCamera());
-            }
             mSceneDirty = true;
         }
     }
@@ -202,10 +207,24 @@ namespace Falcor
     void SceneEditor::setCameraName(Gui* pGui)
     {
         char camName[1024];
-        strcpy_s(camName, mpScene->getActiveCamera()->getName().c_str());
+        std::string oldName = mpScene->getActiveCamera()->getName();
+
+        strcpy_s(camName, oldName.c_str());
         if (pGui->addTextBox("Camera Name", camName, arraysize(camName)))
         {
+            std::string newName(camName);
+
+            if (mCameraNames.count(newName) > 0)
+            {
+                msgBox("Another camera already exists with that name!");
+                return;
+            }
+
             mpScene->getActiveCamera()->setName(camName);
+
+            mCameraNames.erase(oldName);
+            mCameraNames.emplace(newName);
+
             mSceneDirty = true;
         }
     }
@@ -297,44 +316,69 @@ namespace Falcor
         }
     }
 
+    void SceneEditor::deleteLight(uint32_t id)
+    {
+        detachObjectFromPaths(mpScene->getLight(id));
+        mLightNames.erase(mpScene->getLight(id)->getName());
+        mpScene->deleteLight(id);
+
+        uint32_t instanceID = mLightIDSceneToEditor[id];
+        bool isLastInstance = mpEditorScene->getModelInstanceCount(mEditorLightModelID) == 1;
+
+        mpEditorScene->deleteModelInstance(mEditorLightModelID, instanceID);
+
+        if (isLastInstance)
+        {
+            mEditorLightModelID = (uint32_t)-1;
+        }
+
+        rebuildLightIDMap();
+    }
+
     void SceneEditor::addPointLight(Gui* pGui)
     {
-        if (pGui->addButton("Add Point Light"))
+        if (mpPathEditor == nullptr)
         {
-            auto newLight = PointLight::create();
-
-            const auto& pCamera = mpEditorScene->getActiveCamera();
-
-            // Place in front of camera
-            glm::vec3 forward = glm::normalize(pCamera->getTarget() - pCamera->getPosition());
-            newLight->setWorldPosition(pCamera->getPosition() + forward);
-
-            uint32_t lightID = mpScene->addLight(newLight);
-            mpEditorScene->addModelInstance(mpLightModel, "Light " + std::to_string(lightID), glm::vec3(), glm::vec3(), glm::vec3(kLightModelScale));
-            mSelectedLight = lightID;
-
-            rebuildLightIDMap();
-
-            // If this is the first light added, get its modelID
-            if (mEditorLightModelID == (uint32_t)-1)
+            if (pGui->addButton("Add Point Light"))
             {
-                mEditorLightModelID = mpEditorScene->getModelCount() - 1;
+                auto newLight = PointLight::create();
+
+                const auto& pCamera = mpEditorScene->getActiveCamera();
+
+                // Place in front of camera
+                glm::vec3 forward = glm::normalize(pCamera->getTarget() - pCamera->getPosition());
+                newLight->setWorldPosition(pCamera->getPosition() + forward);
+
+                uint32_t lightID = mpScene->addLight(newLight);
+                mpEditorScene->addModelInstance(mpLightModel, "Light " + std::to_string(lightID), glm::vec3(), glm::vec3(), glm::vec3(kLightModelScale));
+                mSelectedLight = lightID;
+
+                rebuildLightIDMap();
+
+                // If this is the first light added, get its modelID
+                if (mEditorLightModelID == (uint32_t)-1)
+                {
+                    mEditorLightModelID = mpEditorScene->getModelCount() - 1;
+                }
+
+                select(mpEditorScene->getModelInstance(mEditorLightModelID, mLightIDSceneToEditor[lightID]));
+
+                mSceneDirty = true;
             }
-
-            select(mpEditorScene->getModelInstance(mEditorLightModelID, mLightIDSceneToEditor[lightID]));
-
-            mSceneDirty = true;
         }
     }
 
     void SceneEditor::addDirectionalLight(Gui* pGui)
     {
-        if (pGui->addButton("Add Directional Light"))
+        if (mpPathEditor == nullptr)
         {
-            auto newLight = DirectionalLight::create();
-            mpScene->addLight(newLight);
+            if (pGui->addButton("Add Directional Light"))
+            {
+                auto newLight = DirectionalLight::create();
+                mpScene->addLight(newLight);
 
-            mSceneDirty = true;
+                mSceneDirty = true;
+            }
         }
     }
 
@@ -346,12 +390,6 @@ namespace Falcor
             SceneExporter::saveScene(filename, mpScene.get());
             mSceneDirty = false;
         }
-    }
-
-    void SceneEditor::pathEditorFinishedCB()
-    {
-        mPathEditor.pEditor = nullptr;
-        mpScene->setActivePath(mPathEditor.ActivePath);
     }
 
     //////////////////////////////////////////////////////////////////////////
@@ -367,13 +405,12 @@ namespace Falcor
         : mpScene(pScene)
         , mModelLoadFlags(modelLoadFlags)
     {
-        mpRenderContext = gpDevice->getRenderContext();
+        mpDebugDrawer = DebugDrawer::create();
 
-        initializeEditorScenes();
+        initializeEditorRendering();
         initializeEditorObjects();
 
         // Copy camera transform from master scene
-        
         const auto& pSceneCamera = mpScene->getActiveCamera();
         const auto& pEditorCamera = mpEditorScene->getActiveCamera();
 
@@ -398,10 +435,8 @@ namespace Falcor
         mpEditorSceneRenderer->update(currentTime);
     }
 
-    void SceneEditor::initializeEditorScenes()
+    void SceneEditor::initializeEditorRendering()
     {
-        mpSelectionGraphicsState = GraphicsState::create();
-
         auto backBufferFBO = gpDevice->getSwapChainFbo();
         const float backBufferWidth = backBufferFBO->getWidth();
         const float backBufferHeight = backBufferFBO->getHeight();
@@ -410,16 +445,18 @@ namespace Falcor
         // Selection Wireframe Scene
         //
 
+        mpSelectionGraphicsState = GraphicsState::create();
+
         // Rasterizer State for rendering wireframe of selected object
-        RasterizerState::Desc rsDesc;
-        rsDesc.setFillMode(RasterizerState::FillMode::Wireframe).setCullMode(RasterizerState::CullMode::None).setDepthBias(-5, 0.0f);
-        mpSelectionGraphicsState->setRasterizerState(RasterizerState::create(rsDesc));
+        RasterizerState::Desc wireFrameRSDesc;
+        wireFrameRSDesc.setFillMode(RasterizerState::FillMode::Wireframe).setCullMode(RasterizerState::CullMode::None).setDepthBias(-5, 0.0f);
+        mpSelectionGraphicsState->setRasterizerState(RasterizerState::create(wireFrameRSDesc));
 
         // Depth test
         DepthStencilState::Desc dsDesc;
         dsDesc.setDepthTest(true);
-        DepthStencilState::SharedPtr dsState = DepthStencilState::create(dsDesc);
-        mpSelectionGraphicsState->setDepthStencilState(dsState);
+        DepthStencilState::SharedPtr depthTestDS = DepthStencilState::create(dsDesc);
+        mpSelectionGraphicsState->setDepthStencilState(depthTestDS);
 
         // Shader
         mpColorProgram = GraphicsProgram::createFromFile("Framework/Shaders/SceneEditorVS.hlsl", "Framework/Shaders/SceneEditorPS.hlsl");
@@ -443,6 +480,23 @@ namespace Falcor
         mpEditorScene = Scene::create(backBufferWidth / backBufferHeight);
         mpEditorSceneRenderer = SceneEditorRenderer::create(mpEditorScene);
         mpEditorPicker = Picking::create(mpEditorScene, backBufferWidth, backBufferHeight);
+
+        //
+        // Debug Draw Shaders
+        //
+
+        RasterizerState::Desc lineRSDesc;
+        lineRSDesc.setFillMode(RasterizerState::FillMode::Solid).setCullMode(RasterizerState::CullMode::None);
+
+        GraphicsProgram::DefineList defines;
+        defines.add("DEBUG_DRAW");
+        mpDebugDrawProgram = GraphicsProgram::createFromFile("Framework/Shaders/SceneEditorVS.hlsl", "Framework/Shaders/SceneEditorPS.hlsl", defines);
+        mpDebugDrawProgramVars = GraphicsVars::create(mpDebugDrawProgram->getActiveVersion()->getReflector());
+
+        mpPathGraphicsState = GraphicsState::create();
+        mpPathGraphicsState->setProgram(mpDebugDrawProgram);
+        mpPathGraphicsState->setDepthStencilState(depthTestDS);
+        mpPathGraphicsState->setRasterizerState(RasterizerState::create(lineRSDesc));
     }
 
     void SceneEditor::initializeEditorObjects()
@@ -471,6 +525,9 @@ namespace Falcor
             {
                 const auto& pCamera = mpScene->getCamera(i);
                 mpEditorScene->addModelInstance(mpCameraModel, "Camera " + std::to_string(i), glm::vec3(), glm::vec3(), glm::vec3(kCameraModelScale));
+
+                // Track camera names
+                mCameraNames.emplace(pCamera->getName());
             }
 
             mEditorCameraModelID = mpEditorScene->getModelCount() - 1;
@@ -494,6 +551,9 @@ namespace Falcor
                 mpEditorScene->addModelInstance(mpLightModel, "Point Light " + std::to_string(pointLightID++), glm::vec3(), glm::vec3(), glm::vec3(kLightModelScale));
                 pointLightsAdded = true;
             }
+
+            // Track light names
+            mLightNames.emplace(pLight->getName());
         }
 
         if (pointLightsAdded)
@@ -513,9 +573,28 @@ namespace Falcor
 
             for (uint32_t instanceID = 0; instanceID < mpScene->getModelInstanceCount(modelID); instanceID++)
             {
-                mInstanceEulerRotations[modelID].push_back(mpScene->getModelInstance(modelID, instanceID)->getEulerRotation());
+                auto& pInstance = mpScene->getModelInstance(modelID, instanceID);
+                mInstanceEulerRotations[modelID].push_back(pInstance->getEulerRotation());
+
+                // Track model instance names
+                mInstanceNames.emplace(pInstance->getName());
             }
         }
+
+        //
+        // Path Attachments
+        //
+
+        for (uint32_t pathID = 0; pathID < mpScene->getPathCount(); pathID++)
+        {
+            const auto& pPath = mpScene->getPath(pathID);
+            for (uint32_t i = 0; i < pPath->getAttachedObjectCount(); i++)
+            {
+                mObjToPathMap[pPath->getAttachedObject(i).get()] = pPath;
+            }
+        }
+
+        mpKeyframeModel = Model::createFromFile("Framework/Models/Camera.obj", Model::GenerateTangentSpace);
     }
 
     const glm::vec3& SceneEditor::getActiveInstanceEulerRotation()
@@ -530,28 +609,33 @@ namespace Falcor
         mSceneDirty = true;
     }
 
-    void SceneEditor::render()
+    void SceneEditor::render(RenderContext* pContext)
     {
-        // Draw to same Fbo that was set before this call
-        mpSelectionGraphicsState->setFbo(mpRenderContext->getGraphicsState()->getFbo());
+        Camera *pCamera = mpEditorScene->getActiveCamera().get();
 
-        //
+        // Draw to same Fbo that was set before this call
+        mpSelectionGraphicsState->setFbo(pContext->getGraphicsState()->getFbo());
+
+        updateEditorObjectTransforms();
+
         // Rendered selected model wireframe
-        //
         if (mSelectedInstances.empty() == false)
         {
-            mpRenderContext->setGraphicsState(mpSelectionGraphicsState);
+            pContext->setGraphicsState(mpSelectionGraphicsState);
             mpColorProgramVars["ConstColorCB"]["gColor"] = glm::vec3(0.25f, 1.0f, 0.63f);
 
-            mpRenderContext->setGraphicsVars(mpColorProgramVars);
-            mpSelectionSceneRenderer->renderScene(mpRenderContext.get(), mpEditorScene->getActiveCamera().get());
+            pContext->setGraphicsVars(mpColorProgramVars);
+            mpSelectionSceneRenderer->renderScene(pContext, pCamera);
         }
 
-        //
         // Camera/Light Models, and Gizmos
-        //
-        updateEditorObjectTransforms();
-        mpEditorSceneRenderer->renderScene(mpRenderContext.get(), mpEditorScene->getActiveCamera().get());
+        mpEditorSceneRenderer->renderScene(pContext, pCamera);
+
+        // Paths
+        if (mpPathEditor != nullptr || mRenderAllPaths)
+        {
+            renderPath(pContext);
+        }
     }
 
     void SceneEditor::updateEditorObjectTransforms()
@@ -559,7 +643,6 @@ namespace Falcor
         // Update Gizmo model
         if (mSelectedInstances.empty() == false)
         {
-            // #TODO When Ctrl Click working, average position
             const auto& activeInstance = mpSelectionScene->getModelInstance(0, 0);
             mGizmos[(uint32_t)mActiveGizmoType]->setTransform(mpEditorScene->getActiveCamera(), activeInstance);
         }
@@ -580,6 +663,26 @@ namespace Falcor
                 pModelInstance->setTranslation(pLight->getData().worldPos, true);
             }
         }
+
+        // Update keyframe models if path editor is open
+        if (mpPathEditor != nullptr)
+        {
+            const auto& pPath = mpPathEditor->getPath();
+            for (uint32_t i = 0; i < pPath->getKeyFrameCount(); i++)
+            {
+                auto& pInstance = mpEditorScene->getModelInstance(mEditorKeyframeModelID, i);
+
+                // Make keyframe model bigger if selected
+                if (mpPathEditor->getActiveFrame() == i && mSelectedObjectType == ObjectType::Keyframe)
+                {
+                    pInstance->setScaling(glm::vec3(kKeyframeModelScale * 2.0f));
+                }
+                else
+                {
+                    pInstance->setScaling(glm::vec3(kKeyframeModelScale));
+                }
+            }
+        }
     }
 
     void SceneEditor::updateCameraModelTransform(uint32_t cameraID)
@@ -592,6 +695,39 @@ namespace Falcor
         pInstance->setUpVector(pCamera->getUpVector());
     }
 
+    void SceneEditor::renderPath(RenderContext* pContext)
+    {
+        mpDebugDrawer->clear();
+
+        mpDebugDrawer->setColor(glm::vec3(0.25f, 1.0f, 0.63f));
+
+        if (mRenderAllPaths)
+        {
+            for (uint32_t i = 0; i < mpScene->getPathCount(); i++)
+            {
+                mpDebugDrawer->addPath(mpScene->getPath(i));
+            }
+        }
+        else if(mpPathEditor != nullptr)
+        {
+            mpDebugDrawer->addPath(mpPathEditor->getPath());
+        }
+
+        mpPathGraphicsState->setFbo(pContext->getGraphicsState()->getFbo());
+        pContext->setGraphicsState(mpPathGraphicsState);
+        pContext->setGraphicsVars(mpDebugDrawProgramVars);
+
+        mpDebugDrawer->render(pContext, mpEditorScene->getActiveCamera().get());
+    }
+
+    void SceneEditor::detachObjectFromPaths(const IMovableObject::SharedPtr& pMovable)
+    {
+        for (uint32_t i = 0; i < mpScene->getPathCount(); i++)
+        {
+            mpScene->getPath(i)->detachObject(pMovable);
+        }
+    }
+
     void SceneEditor::rebuildLightIDMap()
     {
         mLightIDEditorToScene.clear();
@@ -602,7 +738,6 @@ namespace Falcor
         {
             const auto& pLight = mpScene->getLight(sceneLightID);
 
-            // #TODO Other light types?
             if (pLight->getType() == LightPoint)
             {
                 mLightIDEditorToScene[pointLightID] = sceneLightID;
@@ -633,24 +768,50 @@ namespace Falcor
 
         case ObjectType::Camera:
             activeGizmo->applyDelta(mpScene->getActiveCamera());
-            updateCameraModelTransform(mpScene->getActiveCameraIndex());
             break;
 
         case ObjectType::Light:
+        {
             auto pPointLight = std::dynamic_pointer_cast<PointLight>(mpScene->getLight(mSelectedLight));
             if (pPointLight != nullptr)
             {
                 activeGizmo->applyDelta(pPointLight);
                 mpEditorScene->getModelInstance(mEditorLightModelID, mLightIDSceneToEditor[mSelectedLight])->setTranslation(pPointLight->getWorldPosition(), true);
             }
+            break;
+        }
 
+        case ObjectType::Keyframe:
+            assert(mpPathEditor);
+            if (mActiveGizmoType != Gizmo::Type::Scale)
+            {
+                const uint32_t activeFrame = mpPathEditor->getActiveFrame();
+                auto& pInstance = mpEditorScene->getModelInstance(mEditorKeyframeModelID, activeFrame);
+                activeGizmo->applyDelta(pInstance);
+                
+                auto& pPath = mpScene->getPath(mSelectedPath);
+                pPath->setFramePosition(activeFrame, pInstance->getTranslation());
+                pPath->setFrameTarget(activeFrame, pInstance->getTarget());
+                pPath->setFrameUp(activeFrame, pInstance->getUpVector());
+            }
             break;
         }
 
         mSceneDirty = true;
     }
 
-    bool SceneEditor::onMouseEvent(const MouseEvent& mouseEvent)
+    std::string SceneEditor::getUniqueNumberedName(const std::string& baseName, uint32_t idSuffix, const std::set<std::string>& nameMap) const
+    {
+        std::string name = baseName + std::to_string(idSuffix);
+        while (nameMap.count(name) > 0)
+        {
+            name = baseName + std::to_string(idSuffix++);
+        }
+
+        return name;
+    }
+
+    bool SceneEditor::onMouseEvent(RenderContext* pContext, const MouseEvent& mouseEvent)
     {
         // Update mouse hold timer
         if (mouseEvent.type == MouseEvent::Type::LeftButtonDown || mouseEvent.type == MouseEvent::Type::LeftButtonUp)
@@ -668,7 +829,7 @@ namespace Falcor
             // Gizmo Selection
             if (mGizmoBeingDragged == false)
             {
-                if (mpEditorPicker->pick(mpRenderContext.get(), mouseEvent.pos, mpEditorScene->getActiveCamera()))
+                if (mpEditorPicker->pick(pContext, mouseEvent.pos, mpEditorScene->getActiveCamera()))
                 {
                     auto& pInstance = mpEditorPicker->getPickedModelInstance();
 
@@ -701,11 +862,11 @@ namespace Falcor
                 // Scene Object Selection
                 if (mMouseHoldTimer.getElapsedTime() < 0.2f)
                 {
-                    if (mpEditorPicker->pick(mpRenderContext.get(), mouseEvent.pos, mpEditorScene->getActiveCamera()))
+                    if (mpEditorPicker->pick(pContext, mouseEvent.pos, mpEditorScene->getActiveCamera()))
                     {
                         select(mpEditorPicker->getPickedModelInstance());
                     }
-                    else if (mpScenePicker->pick(mpRenderContext.get(), mouseEvent.pos, mpEditorScene->getActiveCamera()))
+                    else if (mpScenePicker->pick(pContext, mouseEvent.pos, mpEditorScene->getActiveCamera()))
                     {
                         select(mpScenePicker->getPickedModelInstance());
                     }
@@ -799,6 +960,7 @@ namespace Falcor
                     setInstanceTranslation(pGui);
                     setInstanceRotation(pGui);
                     setInstanceScaling(pGui);
+                    setObjectPath(pGui, mpScene->getModelInstance(mSelectedModel, mSelectedModelInstance), "ModelInstance");
 
                     pGui->endGroup();
                 }
@@ -823,10 +985,11 @@ namespace Falcor
     {
         if (pGui->beginGroup(kPathsStr))
         {
+            selectPath(pGui);
             addPath(pGui);
-            selectActivePath(pGui);
             startPathEditor(pGui);
             deletePath(pGui);
+            pGui->addCheckBox("Render All Paths", mRenderAllPaths);
             pGui->endGroup();
         }
     }
@@ -848,6 +1011,8 @@ namespace Falcor
             setCameraTarget(pGui);
             setCameraUp(pGui);
 
+            setObjectPath(pGui, mpScene->getActiveCamera(), "Camera");
+
             pGui->endGroup();
         }
     }
@@ -868,14 +1033,22 @@ namespace Falcor
                 }
                 if (pGui->beginGroup(name.c_str()))
                 {
-                    mpScene->getLight(i)->setUiElements(pGui);
+                    const auto& pLight = mpScene->getLight(i);
+                    pLight->setUiElements(pGui);
 
-                    if (pGui->addButton("Remove"))
+                    if (pLight->getType() == LightPoint)
                     {
-                        if (msgBox("Delete light?", MsgBoxType::OkCancel) == MsgBoxButton::Ok)
+                        setObjectPath(pGui, pLight, "PointLight");
+                    }
+
+                    if (mpPathEditor == nullptr)
+                    {
+                        if (pGui->addButton("Remove"))
                         {
-                            mpScene->deleteLight(i);
-                            rebuildLightIDMap();
+                            if (msgBox("Delete light?", MsgBoxType::OkCancel) == MsgBoxButton::Ok)
+                            {
+                                deleteLight(i);
+                            }
                         }
                     }
 
@@ -888,7 +1061,7 @@ namespace Falcor
 
     void SceneEditor::renderGui(Gui* pGui)
     {
-        pGui->pushWindow("Scene Editor", 400, 600, 20, 250);
+        pGui->pushWindow("Scene Editor", 400, 600, 20, 300);
         if (pGui->addButton("Export Scene"))
         {
             saveScene();
@@ -908,9 +1081,9 @@ namespace Falcor
 
         pGui->popWindow();
 
-        if (mPathEditor.pEditor)
+        if (mpPathEditor)
         {
-            mPathEditor.pEditor->render(pGui);
+            mpPathEditor->render(pGui);
         }
     }
 
@@ -949,12 +1122,11 @@ namespace Falcor
         deselect();
 
         mpSelectionScene->addModelInstance(pModelInstance);
-        setActiveModelInstance(pModelInstance);
 
         setActiveGizmo(mActiveGizmoType, true);
 
         //
-        // Track Selection
+        // Track selection and set corresponding object as selected/active
         //
 
         mSelectedInstances.insert(pModelInstance.get());
@@ -979,9 +1151,21 @@ namespace Falcor
                 mSelectedLight = mLightIDEditorToScene[instanceID];
             }
         }
+        else if (pModelInstance->getObject() == mpKeyframeModel)
+        {
+            assert(mpPathEditor);
+            mSelectedObjectType = ObjectType::Keyframe;
+
+            uint32_t frameID = findEditorModelInstanceID(mEditorKeyframeModelID, pModelInstance);
+            if (frameID != (uint32_t)-1)
+            {
+                mpPathEditor->setActiveFrame(frameID);
+            }
+        }
         else
         {
             mSelectedObjectType = ObjectType::Model;
+            setActiveModelInstance(pModelInstance);
         }
     }
 
@@ -995,6 +1179,7 @@ namespace Falcor
         setActiveGizmo(mActiveGizmoType, false);
 
         mSelectedInstances.clear();
+        mSelectedObjectType = ObjectType::None;
     }
 
     void SceneEditor::setActiveGizmo(Gizmo::Type type, bool show)
@@ -1034,41 +1219,46 @@ namespace Falcor
 
     void SceneEditor::addModel(Gui* pGui)
     {
-        if (pGui->addButton("Add Model"))
+        if (mpPathEditor == nullptr)
         {
-            std::string filename;
-            if (openFileDialog(Model::kSupportedFileFormatsStr, filename))
+            if (pGui->addButton("Add Model"))
             {
-                auto pModel = Model::createFromFile(filename, mModelLoadFlags);
-                if (pModel == nullptr)
+                std::string filename;
+                if (openFileDialog(Model::kSupportedFileFormatsStr, filename))
                 {
-                    logError("Error when trying to load model " + filename);
-                    return;
+                    auto pModel = Model::createFromFile(filename, mModelLoadFlags);
+                    if (pModel == nullptr)
+                    {
+                        logError("Error when trying to load model " + filename);
+                        return;
+                    }
+
+                    mpScene->addModelInstance(pModel, getUniqueNumberedName(pModel->getName(), 0, mInstanceNames));
+
+                    mSelectedModel = mpScene->getModelCount() - 1;
+                    mSelectedModelInstance = 0;
+
+                    mInstanceEulerRotations.emplace_back();
+                    mInstanceEulerRotations.back().push_back(mpScene->getModelInstance(mSelectedModel, mSelectedModelInstance)->getEulerRotation());
                 }
-
-                // Get the model name
-                size_t offset = filename.find_last_of("/\\");
-                std::string modelName = (offset == std::string::npos) ? filename : filename.substr(offset + 1);
-
-                // Remove the last extension
-                offset = modelName.find_last_of(".");
-                modelName = (offset == std::string::npos) ? modelName : modelName.substr(0, offset);
-
-                pModel->setName(modelName);
-                mpScene->addModelInstance(pModel, "Instance 0");
-
-                mSelectedModel = mpScene->getModelCount() - 1;
-                mSelectedModelInstance = 0;
-
-                mInstanceEulerRotations.emplace_back();
-                mInstanceEulerRotations.back().push_back(mpScene->getModelInstance(mSelectedModel, mSelectedModelInstance)->getEulerRotation());
+                mSceneDirty = true;
             }
-            mSceneDirty = true;
         }
     }
 
     void SceneEditor::deleteModel()
     {
+        // Cleanup individual instances
+        const uint32_t instanceCount = mpScene->getModelInstanceCount(mSelectedModel);
+        for (uint32_t i = 0; i < instanceCount; i++)
+        {
+            auto& pInstance = mpScene->getModelInstance(mSelectedModel, i);
+            mInstanceNames.erase(pInstance->getName());
+
+            // Each detachObjectFromPaths searches through all paths' attached objects
+            detachObjectFromPaths(pInstance);
+        }
+
         mpScene->deleteModel(mSelectedModel);
         mInstanceEulerRotations.erase(mInstanceEulerRotations.begin() + mSelectedModel);
         mSelectedModel = 0;
@@ -1079,164 +1269,336 @@ namespace Falcor
 
     void SceneEditor::deleteModel(Gui* pGui)
     {
-        if (mpScene->getModelCount() > 0)
+        if (mpPathEditor == nullptr)
         {
-            if (pGui->addButton("Remove Model"))
+            if (mpScene->getModelCount() > 0)
             {
-                deleteModel();
+                if (pGui->addButton("Remove Model"))
+                {
+                    deleteModel();
+                }
             }
         }
     }
 
     void SceneEditor::addModelInstance(Gui* pGui)
     {
-        if (pGui->addButton("Add Instance"))
+        if (mpPathEditor == nullptr)
         {
-            const auto& pInstance = mpScene->getModelInstance(mSelectedModel, mSelectedModelInstance);
-            auto& pModel = mpScene->getModel(mSelectedModel);
+            if (pGui->addButton("Add Instance"))
+            {
+                const auto& pInstance = mpScene->getModelInstance(mSelectedModel, mSelectedModelInstance);
+                auto& pModel = mpScene->getModel(mSelectedModel);
 
-            // Set new selection index
-            mSelectedModelInstance = mpScene->getModelInstanceCount(mSelectedModel);
+                // Set new selection index
+                mSelectedModelInstance = mpScene->getModelInstanceCount(mSelectedModel);
 
-            // Add instance
-            mpScene->addModelInstance(pModel, "Instance " + mSelectedModelInstance, pInstance->getTranslation(), pInstance->getEulerRotation(), pInstance->getScaling());
+                // Add instance
+                std::string name = getUniqueNumberedName(pModel->getName(), mSelectedModelInstance, mInstanceNames);
+                mpScene->addModelInstance(pModel, name, pInstance->getTranslation(), pInstance->getEulerRotation(), pInstance->getScaling());
 
-            auto& pNewInstance = mpScene->getModelInstance(mSelectedModel, mSelectedModelInstance);
-            mInstanceEulerRotations[mSelectedModel].push_back(pNewInstance->getEulerRotation());
-            select(pNewInstance);
+                auto& pNewInstance = mpScene->getModelInstance(mSelectedModel, mSelectedModelInstance);
+                mInstanceEulerRotations[mSelectedModel].push_back(pNewInstance->getEulerRotation());
+                select(pNewInstance);
 
-            mSceneDirty = true;
+                mSceneDirty = true;
+            }
         }
     }
 
     void SceneEditor::addModelInstanceRange(Gui* pGui)
     {
-        pGui->addIntVar(kActiveInstanceStr, mSelectedModelInstance, 0, mpScene->getModelInstanceCount(mSelectedModel) - 1);
+        if (pGui->addIntVar(kSelectedInstanceStr, mSelectedModelInstance, 0, mpScene->getModelInstanceCount(mSelectedModel) - 1))
+        {
+            select(mpScene->getModelInstance(mSelectedModel, mSelectedModelInstance));
+        }
     }
 
     void SceneEditor::deleteModelInstance(Gui* pGui)
     {
-        if (pGui->addButton("Remove Instance"))
+        if (mpPathEditor == nullptr)
         {
-            if (mpScene->getModelInstanceCount(mSelectedModel) == 1)
+            if (pGui->addButton("Remove Instance"))
             {
-                auto MbRes = msgBox("The active model has a single instance. Removing it will remove the model from the scene.\nContinue?", MsgBoxType::OkCancel);
-                if (MbRes == MsgBoxButton::Ok)
+                if (mpScene->getModelInstanceCount(mSelectedModel) == 1)
                 {
-                    deleteModel();
-                    return;
+                    auto MbRes = msgBox("The active model has a single instance. Removing it will remove the model from the scene.\nContinue?", MsgBoxType::OkCancel);
+                    if (MbRes == MsgBoxButton::Ok)
+                    {
+                        deleteModel();
+                        return;
+                    }
                 }
+
+                const auto& pInstance = mpScene->getModelInstance(mSelectedModel, mSelectedModelInstance);
+
+                detachObjectFromPaths(pInstance);
+                mInstanceNames.erase(pInstance->getName());
+
+                mpScene->deleteModelInstance(mSelectedModel, mSelectedModelInstance);
+
+                auto& modelRotations = mInstanceEulerRotations[mSelectedModel];
+                modelRotations.erase(modelRotations.begin() + mSelectedModelInstance);
+
+                deselect();
+
+                mSelectedModelInstance = 0;
+                mSceneDirty = true;
             }
-
-            mpScene->deleteModelInstance(mSelectedModel, mSelectedModelInstance);
-
-            auto& modelRotations = mInstanceEulerRotations[mSelectedModel];
-            modelRotations.erase(modelRotations.begin() + mSelectedModelInstance);
-
-            deselect();
-
-            mSelectedModelInstance = 0;
-            mSceneDirty = true;
         }
     }
 
     void SceneEditor::addCamera(Gui* pGui)
     {
-        if (pGui->addButton("Add Camera"))
+        if (mpPathEditor == nullptr)
         {
-            auto pCamera = Camera::create();
-            auto pActiveCamera = mpScene->getActiveCamera();
-            *pCamera = *pActiveCamera;
-            pCamera->setName(pActiveCamera->getName() + "_");
-
-            const uint32_t camIndex = mpScene->addCamera(pCamera);
-            mpScene->setActiveCamera(camIndex);
-
-            // Update editor scene
-            mpEditorScene->addModelInstance(mpCameraModel, pCamera->getName(), glm::vec3(), glm::vec3(), glm::vec3(kCameraModelScale));
-
-            // #TODO Re: initialization, can scenes start with 0 cameras?
-            // If this is the first camera added, get its modelID
-            if (mEditorCameraModelID == (uint32_t)-1)
+            if (pGui->addButton("Add Camera"))
             {
-                mEditorCameraModelID = mpEditorScene->getModelCount() - 1;
+                auto pCamera = Camera::create();
+                auto pActiveCamera = mpScene->getActiveCamera();
+                *pCamera = *pActiveCamera;
+                pCamera->setName(getUniqueNumberedName("Camera", mpScene->getCameraCount(), mCameraNames));
+
+                const uint32_t camIndex = mpScene->addCamera(pCamera);
+                mpScene->setActiveCamera(camIndex);
+
+                // Update editor scene
+                mpEditorScene->addModelInstance(mpCameraModel, pCamera->getName(), glm::vec3(), glm::vec3(), glm::vec3(kCameraModelScale));
+                mCameraNames.emplace(pCamera->getName());
+
+                // #TODO Re: initialization, can scenes start with 0 cameras?
+                // If this is the first camera added, get its modelID
+                if (mEditorCameraModelID == (uint32_t)-1)
+                {
+                    mEditorCameraModelID = mpEditorScene->getModelCount() - 1;
+                }
+
+                select(mpEditorScene->getModelInstance(mEditorCameraModelID, camIndex));
+
+                mSceneDirty = true;
             }
-
-            select(mpEditorScene->getModelInstance(mEditorCameraModelID, camIndex));
-
-            mSceneDirty = true;
         }
     }
 
     void SceneEditor::deleteCamera(Gui* pGui)
     {
-        if (pGui->addButton("Remove Camera"))
+        if (mpPathEditor == nullptr)
         {
-            if (mpScene->getCameraCount() == 1)
+            if (pGui->addButton("Remove Camera"))
             {
-                msgBox("The Scene has only one camera. Scenes must have at least one camera. Ignoring call.");
-                return;
+                if (mpScene->getCameraCount() == 1)
+                {
+                    msgBox("The Scene has only one camera. Scenes must have at least one camera. Ignoring call.");
+                    return;
+                }
+
+                detachObjectFromPaths(mpScene->getActiveCamera());
+                mCameraNames.erase(mpScene->getActiveCamera()->getName());
+                mpScene->deleteCamera(mpScene->getActiveCameraIndex());
+
+                mpEditorScene->deleteModelInstance(mEditorCameraModelID, mpScene->getActiveCameraIndex());
+                select(mpEditorScene->getModelInstance(mEditorCameraModelID, mpScene->getActiveCameraIndex()));
+
+                mSceneDirty = true;
             }
-
-            mpScene->deleteCamera(mpScene->getActiveCameraIndex());
-            mpEditorScene->deleteModelInstance(mEditorCameraModelID, mpScene->getActiveCameraIndex());
-            select(mpEditorScene->getModelInstance(mEditorCameraModelID, mpScene->getActiveCameraIndex()));
-
-            mSceneDirty = true;
         }
     }
 
     void SceneEditor::addPath(Gui* pGui)
     {
-        if (mPathEditor.pEditor == nullptr && pGui->addButton("Add Path"))
+        if (mpPathEditor == nullptr)
         {
-            auto pPath = ObjectPath::create();
-            pPath->setName("Path " + std::to_string(mpScene->getPathCount()));
-            uint32_t pathIndex = mpScene->addPath(pPath);
-            mpScene->setActivePath(pathIndex);
+            if (pGui->addButton("Add Path"))
+            {
+                auto pPath = ObjectPath::create();
+                pPath->setName("Path " + std::to_string(mpScene->getPathCount()));
+                mSelectedPath = mpScene->addPath(pPath);
 
-            startPathEditor();
-            mSceneDirty = true;
+                startPathEditor();
+                mSceneDirty = true;
+            }
         }
     }
 
     void SceneEditor::deletePath(Gui* pGui)
     {
-        uint32_t pathID = mpScene->getActivePathIndex();
-        if (mPathEditor.pEditor || pathID == Scene::kFreeCameraMovement)
+        if (mpPathEditor == nullptr && mpScene->getPathCount() > 0)
         {
-            // Can't delete a path while the path editor is opened or if it's a free movement. Please finish editing and try again
-            return;
+            if (pGui->addButton("Delete Path", true))
+            {
+                auto& pPath = mpScene->getPath(mSelectedPath);
+                for (uint32_t i = 0; i < pPath->getAttachedObjectCount(); i++)
+                {
+                    mObjToPathMap.erase(pPath->getAttachedObject(i).get());
+                }
+
+                mpScene->deletePath(mSelectedPath);
+
+                if (mSelectedPath == mpScene->getPathCount())
+                {
+                    mSelectedPath = mpScene->getPathCount() - 1;
+                }
+
+                mSceneDirty = true;
+            }
+        }
+    }
+
+    void SceneEditor::pathEditorFrameChangedCB()
+    {
+        const uint32_t activeFrameID = mpPathEditor->getActiveFrame();
+
+        // When active frame ID changed, select a different keyframe in editor
+        const auto& pKeyframeInstance = mpEditorScene->getModelInstance(mEditorKeyframeModelID, activeFrameID);
+        select(pKeyframeInstance);
+
+        // When properties of active frame changed, update the model representing it
+        const auto& frame = mpScene->getPath(mSelectedPath)->getKeyFrame(activeFrameID);
+        pKeyframeInstance->setTranslation(frame.position, false);
+        pKeyframeInstance->setTarget(frame.target);
+        pKeyframeInstance->setUpVector(frame.up);
+    }
+
+    void SceneEditor::pathEditorFrameAddRemoveCB()
+    {
+        if (mSelectedObjectType == ObjectType::Keyframe)
+        {
+            deselect();
         }
 
-        if (pGui->addButton("Delete Path"))
+        removeSelectedPathKeyframeModels();
+        addSelectedPathKeyframeModels();
+    }
+
+    void SceneEditor::pathEditorFinishedCB()
+    {
+        deselect();
+
+        if (mpPathEditor->getPath()->getKeyFrameCount() > 0)
         {
-            mpScene->deletePath(mpScene->getActivePathIndex());
-            mSceneDirty = true;
+            removeSelectedPathKeyframeModels();
+        }
+
+        mpPathEditor = nullptr;
+    }
+
+    void SceneEditor::addSelectedPathKeyframeModels()
+    {
+        assert(mpPathEditor != nullptr);
+
+        const auto& pPath = mpPathEditor->getPath();
+
+        if (pPath->getKeyFrameCount() > 0)
+        {
+            // Add models to represent keyframes
+            for (uint32_t i = 0; i < pPath->getKeyFrameCount(); i++)
+            {
+                const auto& frame = pPath->getKeyFrame(i);
+                auto pNewInstance = Scene::ModelInstance::create(mpKeyframeModel, frame.position, frame.target, frame.up, glm::vec3(kKeyframeModelScale), "Frame " + std::to_string(i));
+                mpEditorScene->addModelInstance(pNewInstance);
+            }
+
+            mEditorKeyframeModelID = mpEditorScene->getModelCount() - 1;
+        }
+    }
+
+    void SceneEditor::removeSelectedPathKeyframeModels()
+    {
+        assert(mpPathEditor != nullptr);
+
+        if (mEditorKeyframeModelID != (uint32_t)-1)
+        {
+            // Remove keyframe models
+            mpEditorScene->deleteModel(mEditorKeyframeModelID);
+            mEditorKeyframeModelID = (uint32_t)-1;
         }
     }
 
     void SceneEditor::startPathEditor()
     {
-        mPathEditor.pEditor = PathEditor::create(mpScene->getActivePath(), mpScene->getActiveCamera(), [this]() {pathEditorFinishedCB(); });
+        const auto& pPath = mpScene->getPath(mSelectedPath);
+        mpPathEditor = PathEditor::create(pPath,
+            mpEditorScene->getActiveCamera(),
+            [this]() { pathEditorFrameChangedCB(); },
+            [this]() { pathEditorFrameAddRemoveCB(); },
+            [this]() { pathEditorFinishedCB(); });
+
+        addSelectedPathKeyframeModels();
+
+        if (pPath->getKeyFrameCount() > 0)
+        {
+            select(mpEditorScene->getModelInstance(mEditorKeyframeModelID, 0));
+        }
+
         mSceneDirty = true;
-        mpScene->setActivePath(Scene::kFreeCameraMovement);
     }
 
     void SceneEditor::startPathEditor(Gui* pGui)
     {
-        if (mPathEditor.pEditor == nullptr)
+        if (mpPathEditor == nullptr && mpScene->getPathCount() > 0)
         {
-            mPathEditor.ActivePath = mpScene->getActivePathIndex();
-            if (mPathEditor.ActivePath == Scene::kFreeCameraMovement)
-            {
-                // Free movement is not a path. Can't edit it
-                return;
-            }
-            if (pGui->addButton("Edit Path"))
+            if (pGui->addButton("Edit Path", true))
             {
                 startPathEditor();
             }
         }
     }
+
+    void SceneEditor::setObjectPath(Gui* pGui, const IMovableObject::SharedPtr& pMovable, const std::string& objType)
+    {
+        // Find what path this pMovable is set to, if any
+        ObjectPath::SharedPtr pOldPath;
+        uint32_t oldPathID = Scene::kNoPath;
+
+        auto it = mObjToPathMap.find(pMovable.get());
+        if (it != mObjToPathMap.end())
+        {
+            pOldPath = it->second;
+        }
+
+        // Find path ID
+        if (pOldPath != nullptr)
+        {
+            for (uint32_t i = 0; i < mpScene->getPathCount(); i++)
+            {
+                if (mpScene->getPath(i) == pOldPath)
+                {
+                    oldPathID = i;
+                }
+            }
+        }
+
+        // Append tag to avoid hash collisions in imgui. ##Tag does not appear when rendered
+        std::string label = std::string(kSelectedPathStr) + "##" + objType;
+
+        uint32_t newPathID = oldPathID;
+        if (pGui->addDropdown(label.c_str(), getPathDropdownList(mpScene.get(), true), newPathID))
+        {
+            // Detach from old path
+            if (oldPathID != Scene::kNoPath)
+            {
+                pOldPath->detachObject(pMovable);
+                mObjToPathMap.erase(pMovable.get());
+
+                // #TODO Find a way to work with base/movable matrices on object instances.
+                // Cameras and Lights attach directly to paths instead of having a separate matrix
+
+                // Reset movable matrix on instances when detaching from path
+                if (std::dynamic_pointer_cast<Scene::ModelInstance>(pMovable) != nullptr)
+                {
+                    pMovable->move(glm::vec3(), glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+                }
+            }
+
+            // Attach to new path
+            if (newPathID != Scene::kNoPath)
+            {
+                const auto& pNewPath = mpScene->getPath(newPathID);
+                pNewPath->attachObject(pMovable);
+                mObjToPathMap[pMovable.get()] = pNewPath;
+            }
+
+        }
+    }
+
 }

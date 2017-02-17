@@ -94,10 +94,10 @@ namespace Falcor
         // create the file
         mJDoc.SetObject();
 
-        // Write the versio
+        // Write the version
         rapidjson::Value& JVal = mJDoc;
         auto& allocator = mJDoc.GetAllocator();
-        addLiteral(JVal, allocator, SceneKeys::kVersion, mpScene->getVersion());
+        addLiteral(JVal, allocator, SceneKeys::kVersion, kVersion);
 
         // Write everything else
         bool exportPaths = (exportOptions & ExportPaths) != 0;
@@ -137,10 +137,6 @@ namespace Falcor
         addLiteral(jval, Allocator, SceneKeys::kCameraSpeed, mpScene->getCameraSpeed());
         addLiteral(jval, Allocator, SceneKeys::kLightingScale, mpScene->getLightingScale());
         addString(jval, Allocator, SceneKeys::kActiveCamera, mpScene->getActiveCamera()->getName());
-        if(writeActivePath && mpScene->getActivePath())
-        {
-            addString(jval, Allocator, SceneKeys::kActivePath, mpScene->getActivePath()->getName());
-        }
         addVector(jval, Allocator, SceneKeys::kAmbientIntensity, mpScene->getAmbientIntensity());
     }
 
@@ -204,7 +200,7 @@ namespace Falcor
     void createPointLightValue(const PointLight* pLight, rapidjson::Document::AllocatorType& allocator, rapidjson::Value& jsonLight)
     {
         addString(jsonLight, allocator, SceneKeys::kName, pLight->getName());
-        addString(jsonLight, allocator, SceneKeys::kLightType, SceneKeys::kPointLight);
+        addString(jsonLight, allocator, SceneKeys::kType, SceneKeys::kPointLight);
         addVector(jsonLight, allocator, SceneKeys::kLightIntensity, pLight->getIntensity());
         addVector(jsonLight, allocator, SceneKeys::kLightPos, pLight->getWorldPosition());
         addVector(jsonLight, allocator, SceneKeys::kLightDirection, pLight->getWorldDirection());
@@ -215,7 +211,7 @@ namespace Falcor
     void createDirectionalLightValue(const DirectionalLight* pLight, rapidjson::Document::AllocatorType& allocator, rapidjson::Value& jsonLight)
     {
         addString(jsonLight, allocator, SceneKeys::kName, pLight->getName());
-        addString(jsonLight, allocator, SceneKeys::kLightType, SceneKeys::kDirLight);
+        addString(jsonLight, allocator, SceneKeys::kType, SceneKeys::kDirLight);
         addVector(jsonLight, allocator, SceneKeys::kLightIntensity, pLight->getIntensity());
         addVector(jsonLight, allocator, SceneKeys::kLightDirection, pLight->getWorldDirection());
     }
@@ -324,8 +320,43 @@ namespace Falcor
 
             addJsonValue(jsonPath, allocator, SceneKeys::kPathFrames, jsonFramesArray);
 
+            // Add attached objects
+            rapidjson::Value jsonObjectsArray(rapidjson::kArrayType);
+            for (uint32_t i = 0; i < pPath->getAttachedObjectCount(); i++)
+            {
+                rapidjson::Value jsonObject(rapidjson::kObjectType);
+
+                const auto& pMovable = pPath->getAttachedObject(i);
+
+                const auto& pModelInstance = std::dynamic_pointer_cast<Scene::ModelInstance>(pMovable);
+                const auto& pCamera = std::dynamic_pointer_cast<Camera>(pMovable);
+                const auto& pLight = std::dynamic_pointer_cast<Light>(pMovable);
+
+                if (pModelInstance != nullptr)
+                {
+                    addString(jsonObject, allocator, SceneKeys::kType, SceneKeys::kModelInstance);
+                    addString(jsonObject, allocator, SceneKeys::kName, pModelInstance->getName());
+                }
+                else if (pCamera != nullptr)
+                {
+                    addString(jsonObject, allocator, SceneKeys::kType, SceneKeys::kCamera);
+                    addString(jsonObject, allocator, SceneKeys::kName, pCamera->getName());
+                }
+                else if (pLight != nullptr)
+                {
+                    addString(jsonObject, allocator, SceneKeys::kType, SceneKeys::kLight);
+                    addString(jsonObject, allocator, SceneKeys::kName, pLight->getName());
+                }
+
+                jsonObjectsArray.PushBack(jsonObject, allocator);
+            }
+
+            addJsonValue(jsonPath, allocator, SceneKeys::kAttachedObjects, jsonObjectsArray);
+
+            // Finish path
             jsonPathsArray.PushBack(jsonPath, allocator);
         }
+
         addJsonValue(mJDoc, allocator, SceneKeys::kPaths, jsonPathsArray);
     }
 

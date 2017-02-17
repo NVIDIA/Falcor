@@ -61,7 +61,7 @@ namespace Falcor
         static const char* kFrameTime = "time";
 
         static const char* kLights = "lights";
-        static const char* kLightType = "type";
+        static const char* kType = "type";
         static const char* kDirLight = "dir_light";
         static const char* kPointLight = "point_light";
         static const char* kLightIntensity = "intensity";
@@ -72,6 +72,10 @@ namespace Falcor
 
         static const char* kPaths = "paths";
         static const char* kActivePath = "active_path";
+        static const char* kAttachedObjects = "attached_objects";
+        static const char* kModelInstance = "model_instance";
+        static const char* kLight = "light";
+        static const char* kCamera = "camera";
 
         static const char* kUserDefined = "user_defined";
 

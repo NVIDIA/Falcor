@@ -29,6 +29,8 @@
 
 void SceneEditorSample::onGuiRender()
 {
+    mpGui->addSeparator();
+
     if (mpGui->addButton("Create New Scene"))
     {
         createScene();
@@ -137,7 +139,7 @@ void SceneEditorSample::onFrameRender()
 
     if (mpEditor && mCameraLiveViewMode == false)
     {
-        mpEditor->render();
+        mpEditor->render(mpRenderContext.get());
     }
 }
 
@@ -163,7 +165,7 @@ bool SceneEditorSample::onMouseEvent(const MouseEvent& mouseEvent)
         return mpRenderer->onMouseEvent(mouseEvent);
     }
 
-    return mpEditor ? mpEditor->onMouseEvent(mouseEvent) : false;
+    return mpEditor ? mpEditor->onMouseEvent(mpRenderContext.get(), mouseEvent) : false;
 }
 
 int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ LPSTR lpCmdLine, _In_ int nShowCmd)

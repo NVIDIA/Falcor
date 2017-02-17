@@ -465,6 +465,9 @@
     <ClCompile Include="Graphics\Scene\Editor\SceneEditorRenderer.cpp">
       <Filter>Graphics\Scene\Editor</Filter>
     </ClCompile>
+    <ClCompile Include="Utils\DebugDrawer.cpp">
+      <Filter>Utils</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Graphics\Model\Animation.h">
@@ -1546,6 +1549,9 @@
     <ClInclude Include="Graphics\Scene\Editor\SceneEditorRenderer.h">
       <Filter>Graphics\Scene\Editor</Filter>
     </ClInclude>
+    <ClInclude Include="Utils\DebugDrawer.h">
+      <Filter>Utils</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Externals">
@@ -2085,12 +2091,6 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <FxCompile Include="Data\Framework\Shaders\EditorPS.hlsl">
-      <Filter>Data\Framework\Shaders</Filter>
-    </FxCompile>
-    <FxCompile Include="Data\Framework\Shaders\EditorVS.hlsl">
-      <Filter>Data\Framework\Shaders</Filter>
-    </FxCompile>
     <FxCompile Include="Data\Framework\Shaders\SceneEditorPS.hlsl">
       <Filter>Data\Framework\Shaders</Filter>
     </FxCompile>

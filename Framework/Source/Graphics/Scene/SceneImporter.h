@@ -84,6 +84,7 @@ namespace Falcor
         bool createMaterialTexture(const rapidjson::Value& jsonValue, Texture::SharedPtr& pTexture);
         bool createMaterialValueColor(const rapidjson::Value& jsonValue, glm::vec4& color);
 
+
         Scene* error(const std::string& msg);
 
         template<uint32_t VecSize>
@@ -95,6 +96,14 @@ namespace Falcor
         std::string mDirectory;
         uint32_t mModelLoadFlags = 0;
         uint32_t mSceneLoadFlags = 0;
+
+        using ObjectMap = std::map<std::string, IMovableObject::SharedPtr>;
+        bool isNameDuplicate(const std::string& name, const ObjectMap& objectMap, const std::string& objectType) const;
+        IMovableObject::SharedPtr getMovableObject(const std::string& type, const std::string& name) const;
+
+        ObjectMap mInstanceMap;
+        ObjectMap mCameraMap;
+        ObjectMap mLightMap;
 
         struct FuncValue
         {

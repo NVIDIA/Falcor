@@ -29,40 +29,48 @@
 #include "Utils/Gui.h"
 #include "Graphics/Paths/ObjectPath.h"
 #include "Graphics/Camera/Camera.h"
+#include "Graphics/Scene/Scene.h"
 
 namespace Falcor
 {
     class PathEditor
     {
     public:
-        using pfnEditComplete = std::function<void(void)>;
+        using PathEditorCallback = std::function<void(void)>;
         using UniquePtr = std::unique_ptr<PathEditor>;
         using UniqueConstPtr = std::unique_ptr<const PathEditor>;
 
-        static UniquePtr create(const ObjectPath::SharedPtr& pPath, const Camera::SharedPtr& pCamera, pfnEditComplete editCompleteCB);
+        static UniquePtr create(const ObjectPath::SharedPtr& pPath, const Camera::SharedPtr& pCamera, PathEditorCallback frameChangedCB, PathEditorCallback addRemoveKeyframeCB, PathEditorCallback editCompleteCB);
         ~PathEditor();
 
         void render(Gui* pGui);
-        void setCamera(const Camera::SharedPtr& pCamera);
+
+        void setActiveFrame(uint32_t id);
+        uint32_t getActiveFrame() const { return mActiveFrame; }
+
+        const ObjectPath::SharedPtr& getPath() const { return mpPath; }
 
     private:
-        PathEditor(const ObjectPath::SharedPtr& pPath, const Camera::SharedPtr& pCamera, pfnEditComplete editCompleteCB);
+        PathEditor(const ObjectPath::SharedPtr& pPath, const Camera::SharedPtr& pCamera, PathEditorCallback frameChangedCB, PathEditorCallback addRemoveKeyframeCB, PathEditorCallback editCompleteCB);
 
         bool closeEditor(Gui* pGui);
         void editPathName(Gui* pGui);
         void editPathLoop(Gui* pGui);
         void editActiveFrameID(Gui* pGui);
         void addFrame(Gui* pGui);
-        void editFrameTime(Gui* pGui);
-        void editCameraProperties(Gui* pGui);
-
-        void updateFrame(Gui* pGui);
         void deleteFrame(Gui* pGui);
-        void setActiveFrameID(uint32_t id);
+        void editFrameTime(Gui* pGui);
+        void editKeyframeProperties(Gui* pGui);
+
+        void updateFrameTime(Gui* pGui);
+        void moveToCamera(Gui* pGui);
 
         ObjectPath::SharedPtr mpPath;
         Camera::SharedPtr mpCamera;
-        pfnEditComplete mEditCompleteCB = nullptr;
+
+        PathEditorCallback mEditCompleteCB;
+        PathEditorCallback mFrameChangedCB;
+        PathEditorCallback mAddRemoveKeyframeCB;
 
         int32_t mActiveFrame = 0;
         float mFrameTime = 0;

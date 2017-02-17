@@ -25,23 +25,33 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
+
 #include "SceneEditorCommon.hlsli"
+
+#ifdef DEBUG_DRAW
+
+float4 main(DebugDrawVSOut vOut) : SV_TARGET
+{
+    return float4(vOut.color, 1);
+}
+
+#else //////////////////////////////////////////////////////////////////////////////////////
 
 #ifndef PICKING
 cbuffer ConstColorCB : register(b0)
 {
-    vec3 gColor;
+    float3 gColor;
 };
 #endif
 
 // PS Output
 #ifdef PICKING
-#define PS_OUT uint
+#define PSOut uint
 #else
-#define PS_OUT vec4
+#define PSOut vec4
 #endif
 
-PS_OUT main(EDITOR_VS_OUT vOut) : SV_TARGET
+PSOut main(EditorVSOut vOut) : SV_TARGET
 {
     float3 toCamera = normalize(gCam.position - vOut.vOut.posW);
 
@@ -63,3 +73,5 @@ PS_OUT main(EDITOR_VS_OUT vOut) : SV_TARGET
     #endif
 #endif
 }
+
+#endif

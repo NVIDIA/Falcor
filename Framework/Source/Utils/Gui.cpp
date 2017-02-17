@@ -455,13 +455,15 @@ namespace Falcor
 
     bool Gui::addTextBox(const char label[], char buf[], size_t bufSize, uint32_t lineCount)
     {
+        const ImGuiInputTextFlags flags = ImGuiInputTextFlags_EnterReturnsTrue;
+
         if (lineCount > 1)
         {
-            return ImGui::InputTextMultiline(label, buf, bufSize, ImVec2(-1.0f, ImGui::GetTextLineHeight() * lineCount));
+            return ImGui::InputTextMultiline(label, buf, bufSize, ImVec2(-1.0f, ImGui::GetTextLineHeight() * lineCount), flags);
         }
         else
         {
-            return ImGui::InputText(label, buf, bufSize);
+            return ImGui::InputText(label, buf, bufSize, flags);
         }
     }
 

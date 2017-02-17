@@ -29,7 +29,7 @@
 #define _COMPILE_DEFAULT_VS
 #include "VertexAttrib.h"
 
-struct EDITOR_VS_OUT
+struct EditorVSOut
 {
     VS_OUT vOut;
 
@@ -40,4 +40,16 @@ struct EDITOR_VS_OUT
 #ifdef CULL_REAR_SECTION
     float3 toVertex : VERTEX_DIR;
 #endif
+};
+
+struct DebugDrawVSIn
+{
+    float3 position : POSITION;
+    float3 color : COLOR;
+};
+
+struct DebugDrawVSOut
+{
+    float4 position : SV_POSITION;
+    float3 color : COLOR;
 };

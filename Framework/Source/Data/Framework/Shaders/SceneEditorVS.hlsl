@@ -25,11 +25,26 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
+
 #include "SceneEditorCommon.hlsli"
 
-EDITOR_VS_OUT main(VS_IN vIn)
+#ifdef DEBUG_DRAW
+
+DebugDrawVSOut main(DebugDrawVSIn vIn)
 {
-    EDITOR_VS_OUT vOut;
+    DebugDrawVSOut vOut;
+
+    vOut.position =  mul(gCam.viewProjMat, float4(vIn.position, 1));
+    vOut.color = vIn.color;
+
+    return vOut;
+}
+
+#else //////////////////////////////////////////////////////////////////////////////////////
+
+EditorVSOut main(VS_IN vIn)
+{
+    EditorVSOut vOut;
     vOut.vOut = defaultVS(vIn);
 
 #ifdef PICKING
@@ -47,3 +62,5 @@ EDITOR_VS_OUT main(VS_IN vIn)
 
     return vOut;
 }
+
+#endif

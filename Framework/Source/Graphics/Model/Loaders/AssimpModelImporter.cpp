@@ -464,6 +464,12 @@ namespace Falcor
 
         mpModel->setFilename(filename);
 
+        // filename can be a relative path
+        std::string name = getFilenameFromPath(filename);
+        size_t extPos = name.find_last_of('.');
+        name = (extPos == std::string::npos) ? name : name.substr(0, extPos);
+        mpModel->setName(name);
+
         return true;
     }
 
