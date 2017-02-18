@@ -60,7 +60,7 @@ namespace Falcor
             mpLowLevelData->getCommandList()->SetComputeRootSignature(RootSignature::getEmpty()->getApiHandle());
         }
 
-        mpLowLevelData->getCommandList()->SetPipelineState(mpComputeState->getCSO()->getApiHandle());
+        mpLowLevelData->getCommandList()->SetPipelineState(mpComputeState->getCSO(mpComputeVars.get())->getApiHandle());
         mCommandsPending = true;
     }
 

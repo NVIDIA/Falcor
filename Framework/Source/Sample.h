@@ -168,7 +168,7 @@ namespace Falcor
         void initVideoCapture();
         void captureScreen();
         void toggleText(bool enabled);
-
+        uint32_t getFrameID() const { return mFrameRate.getFrameCount(); }
     private:
         // Private functions
         void initUI();

@@ -35,8 +35,6 @@
 
 namespace Falcor
 {
-    RenderContext::~RenderContext() = default;
-    
     RenderContext::SharedPtr RenderContext::create()
     {
         SharedPtr pCtx = SharedPtr(new RenderContext());
@@ -89,12 +87,6 @@ namespace Falcor
         mpLowLevelData->getCommandList()->ClearDepthStencilView(pDsv->getApiHandle()->getCpuHandle(), D3D12_CLEAR_FLAGS(flags), depth, stencil, 0, nullptr);
         mCommandsPending = true;
     }
-
-    void RenderContext::blitFbo(const Fbo* pSource, const Fbo* pTarget, const glm::ivec4& srcRegion, const glm::ivec4& dstRegion, bool useLinearFiltering, FboAttachmentType copyFlags, uint32_t srcIdx, uint32_t dstIdx)
-	{
-        UNSUPPORTED_IN_D3D12("BlitFbo");
-	}
-
 
     static void D3D12SetVao(CommandListHandle pList, const Vao* pVao)
     {
@@ -209,7 +201,7 @@ namespace Falcor
         D3D12SetFbo(this, mpGraphicsState->getFbo().get());
         D3D12SetViewports(pList, &mpGraphicsState->getViewport(0));
         D3D12SetScissors(pList, &mpGraphicsState->getScissors(0));
-        pList->SetPipelineState(mpGraphicsState->getGSO()->getApiHandle());
+        pList->SetPipelineState(mpGraphicsState->getGSO(mpGraphicsVars.get())->getApiHandle());
 
         const auto pDsState = mpGraphicsState->getDepthStencilState();
         pList->OMSetStencilRef(pDsState == nullptr ? 0 : pDsState->getStencilRef());

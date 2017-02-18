@@ -33,6 +33,8 @@
 
 namespace Falcor
 {
+    class ComputeVars;
+
     /** Compute state.
         This class contains the entire state required by a single dispatch call. It's not an immutable object - you can change it dynamically during rendering.
         The recommended way to use it is to create multiple ComputeState objects (ideally, a single object per program)
@@ -60,29 +62,20 @@ namespace Falcor
         */
         ComputeProgram::SharedPtr getProgram() const { return mpProgram; }
 
-        /** Set the primitive topology
-        */
-        ComputeState& setRootSignature(RootSignature::SharedPtr pSignature) { mpRootSignature = pSignature; mCachedData.isUserRootSignature = (mpRootSignature == nullptr); }
-
         /** Get the active compute state object
         */
-        ComputeStateObject::SharedPtr getCSO();
-
-        /** Get the current root-signature object
-        */
-        RootSignature::SharedPtr getRootSignature() const { return mpRootSignature; }
+        ComputeStateObject::SharedPtr getCSO(const ComputeVars* pVars);
         
         static void beginNewFrame();
     private:
         ComputeState();
         ComputeProgram::SharedPtr mpProgram;
-        RootSignature::SharedPtr mpRootSignature;
         ComputeStateObject::Desc mDesc;
 
         struct CachedData
         {
             const ProgramVersion* pProgramVersion = nullptr;
-            bool isUserRootSignature = false;
+            const RootSignature* pRootSig = false;
         };
         CachedData mCachedData;
 

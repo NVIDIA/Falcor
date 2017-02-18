@@ -34,8 +34,11 @@
 
 namespace Falcor
 {
-    RenderContext::RenderContext()
+    RenderContext::BlitData RenderContext::sBlitData;
+
+    RenderContext::~RenderContext()
     {
+        releaseBlitData();
     }
 
     void RenderContext::pushGraphicsState(const GraphicsState::SharedPtr& pState)
@@ -72,5 +75,63 @@ namespace Falcor
 
         setGraphicsVars(mpGraphicsVarsStack.top());
         mpGraphicsVarsStack.pop();
+    }
+
+    void RenderContext::initBlitData()
+    {
+        if (sBlitData.pVars == nullptr)
+        {
+            sBlitData.pPass = FullScreenPass::create("Framework/Shaders/Blit.hlsl");
+            sBlitData.pVars = GraphicsVars::create(sBlitData.pPass->getProgram()->getActiveVersion()->getReflector());
+            sBlitData.pState = GraphicsState::create();
+            Sampler::Desc desc;
+            desc.setFilterMode(Sampler::Filter::Linear, Sampler::Filter::Linear, Sampler::Filter::Point).setAddressingMode(Sampler::AddressMode::Clamp, Sampler::AddressMode::Clamp, Sampler::AddressMode::Clamp);
+            sBlitData.pVars->setSampler("gSampler", Sampler::create(desc));
+            assert(sBlitData.pPass->getProgram()->getActiveVersion()->getReflector()->getResourceDesc("gTex")->regIndex == 0);
+        }
+    }
+
+    void RenderContext::releaseBlitData()
+    {
+        sBlitData.pVars = nullptr;
+        sBlitData.pPass = nullptr;
+        sBlitData.pState = nullptr;
+    }
+
+    void RenderContext::blit(ShaderResourceView::SharedPtr pSrc, RenderTargetView::SharedPtr pDst)
+    {
+        initBlitData(); // This has to be here and can't be in the constructor. FullScreenPass will allocate some buffers which depends on the ResourceAllocator which depends on the fence inside the RenderContext. Dependencies are fun!
+
+        assert(pSrc->getViewInfo().arraySize == 1 && pSrc->getViewInfo().mipCount == 1);
+        assert(pDst->getViewInfo().arraySize == 1 && pDst->getViewInfo().mipCount == 1);
+
+        pushGraphicsState(sBlitData.pState);
+        pushGraphicsVars(sBlitData.pVars);
+
+        const Texture* pSrcTex = dynamic_cast<const Texture*>(pSrc->getResource());
+        assert(pSrcTex);
+        if (pSrcTex->getSampleCount() > 1)
+        {
+            sBlitData.pPass->getProgram()->addDefine("SAMPLE_COUNT", std::to_string(pSrcTex->getSampleCount()));
+        }
+        else
+        {
+            sBlitData.pPass->getProgram()->removeDefine("SAMPLE_COUNT");
+        }
+
+        Fbo::SharedPtr pFbo = Fbo::create();
+        const Texture* pTexture = dynamic_cast<const Texture*>(pDst->getResource());
+        assert(pTexture);
+        Texture::SharedPtr pSharedTex = std::const_pointer_cast<Texture>(pTexture->shared_from_this());
+        pFbo->attachColorTarget(pSharedTex, 0, pDst->getViewInfo().mostDetailedMip, pDst->getViewInfo().firstArraySlice, pDst->getViewInfo().arraySize);
+        sBlitData.pState->setFbo(pFbo);
+        sBlitData.pVars->setSrv(0, pSrc);
+        sBlitData.pPass->execute(this);
+
+        // Release the resources we bound
+        sBlitData.pVars->setSrv(0, nullptr);
+
+        popGraphicsState();
+        popGraphicsVars();
     }
 }

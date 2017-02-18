@@ -220,7 +220,6 @@ void SimpleDeferred::onFrameRender()
     uint32_t height = mpDefaultFBO->getHeight();
 
     GraphicsState* pState = mpRenderContext->getGraphicsState().get();
-    Fbo::SharedPtr& pCurrentFbo = mpDisplayFBO ? mpDisplayFBO : mpDefaultFBO;
 
     const glm::vec4 clearColor(0.38f, 0.52f, 0.10f, 1);
 
@@ -254,8 +253,8 @@ void SimpleDeferred::onFrameRender()
 
     // Lighting pass (fullscreen quad)
     {
-		pState->setFbo(pCurrentFbo);
-		mpRenderContext->clearFbo(pCurrentFbo.get(), clearColor, 1.0f, 0, FboAttachmentType::Color);
+		pState->setFbo(mpDefaultFBO);
+		mpRenderContext->clearFbo(mpDefaultFBO.get(), clearColor, 1.0f, 0, FboAttachmentType::Color);
 
         // Reset render state
         pState->setRasterizerState(mpCullRastState[0]);
@@ -280,17 +279,6 @@ void SimpleDeferred::onFrameRender()
         mpRenderContext->setGraphicsVars(mpLightingVars);
         mpLightingPass->execute(mpRenderContext.get());
     }
-
-	// Display upscaling pass
-	if(mpDisplayFBO)
-	{
-		assert(mDisplayScaling > 1);
-		mpRenderContext->blitFbo(mpDisplayFBO.get(), mpDefaultFBO.get(),
-									glm::ivec4(0, 0, width / mDisplayScaling, height / mDisplayScaling),
-									glm::ivec4(0, 0, width, height));
-		// Set the actual FBO
-		pState->setFbo(mpDefaultFBO);
-	}  
 }
 
 void SimpleDeferred::onShutdown()
@@ -332,23 +320,11 @@ void SimpleDeferred::onResizeSwapChain()
     mAspectRatio = (float(width) / float(height));
     mpCamera->setAspectRatio(mAspectRatio);
 
-	// Rule-of-thumb detection if we need to scale to high-dip display (>150dpi)
-	mDisplayScaling = (getDisplayDpi() > 150) ? 2 : 1;
-
-	// create a lower-res default FBO in case if we need to scale the results
-	mpDisplayFBO = nullptr;
-	if(mDisplayScaling > 1)
-	{
-        Fbo::Desc fboDesc;
-        fboDesc.setColorTarget(0, Falcor::ResourceFormat::RGBA8UnormSrgb).setDepthStencilTarget(Falcor::ResourceFormat::D24UnormS8);
-        mpDisplayFBO = FboHelper::create2D(width / mDisplayScaling, height / mDisplayScaling, fboDesc);
-	}
-
     // create G-Buffer
     const glm::vec4 clearColor(0.f, 0.f, 0.f, 0.f);
     Fbo::Desc fboDesc;
     fboDesc.setColorTarget(0, Falcor::ResourceFormat::RGBA16Float).setColorTarget(1, Falcor::ResourceFormat::RGBA16Float).setColorTarget(2, Falcor::ResourceFormat::RGBA16Float).setDepthStencilTarget(Falcor::ResourceFormat::D24UnormS8);
-    mpGBufferFbo = FboHelper::create2D(width / mDisplayScaling, height / mDisplayScaling, fboDesc);
+    mpGBufferFbo = FboHelper::create2D(width, height, fboDesc);
 }
 
 void SimpleDeferred::resetCamera()

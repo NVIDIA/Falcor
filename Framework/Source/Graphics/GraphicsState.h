@@ -38,6 +38,8 @@
 
 namespace Falcor
 {
+    class GraphicsVars;
+
     /** Pipeline state.
         This class contains the entire state required by a single draw-call. It's not an immutable object - you can change it dynamically during rendering.
         The recommended way to use it is to create multiple PipelineState objects (ideally, a single object per render-pass)
@@ -201,17 +203,9 @@ namespace Falcor
         */
         uint32_t getSampleMask() const { return mDesc.getSampleMask(); }
 
-        /** Set the primitive topology
-        */
-        GraphicsState& setRootSignature(RootSignature::SharedPtr pSignature);
-
         /** Get the active graphics state object
         */
-        GraphicsStateObject::SharedPtr getGSO();
-
-        /** Get the current root-signature object
-        */
-        RootSignature::SharedPtr getRootSignature() const { return mpRootSignature; }
+        GraphicsStateObject::SharedPtr getGSO(const GraphicsVars* pVars);
         
         static void beginNewFrame();
     private:
@@ -219,7 +213,6 @@ namespace Falcor
         Vao::SharedConstPtr mpVao;
         Fbo::SharedConstPtr mpFbo;
         GraphicsProgram::SharedPtr mpProgram;
-        RootSignature::SharedPtr mpRootSignature;
         GraphicsStateObject::Desc mDesc;
         uint8_t mStencilRef = 0;
         std::vector<Viewport> mViewports;
@@ -232,7 +225,7 @@ namespace Falcor
         struct CachedData
         {
             const ProgramVersion* pProgramVersion = nullptr;
-            bool isUserRootSignature = false;
+            const RootSignature* pRootSig = nullptr;
         };
         CachedData mCachedData;
 

@@ -25,10 +25,30 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
+#ifndef SAMPLE_COUNT
 Texture2D gTex;
+#else
+Texture2DMS<float4> gTex;
+#endif
 SamplerState gSampler;
 
 float4 main(float2 texC : TEXCOORD) : SV_TARGET
 {
+#ifndef SAMPLE_COUNT
 	return gTex.Sample(gSampler, texC);
+#else
+    uint3 dims;
+    gTex.GetDimensions(dims.x, dims.y, dims.z);
+    uint2 crd = (uint2)(float2(dims.xy) * texC);
+    float4 c = float4(0,0,0,0);
+
+    [unroll]
+    for(uint i = 0 ; i < SAMPLE_COUNT ; i++)
+    {
+        c += gTex.Load(crd, i);
+    }
+
+    c /= SAMPLE_COUNT;
+    return c;
+#endif
 }

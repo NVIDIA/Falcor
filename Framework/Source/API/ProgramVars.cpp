@@ -99,7 +99,7 @@ namespace Falcor
         return true;
     }
 
-    ProgramVars::ProgramVars(const ProgramReflection::SharedConstPtr& pReflector, bool createBuffers, const RootSignature::SharedConstPtr& pRootSig) : mpReflector(pReflector)
+    ProgramVars::ProgramVars(const ProgramReflection::SharedConstPtr& pReflector, bool createBuffers, const RootSignature::SharedPtr& pRootSig) : mpReflector(pReflector)
     {
         // Initialize the CB and StructuredBuffer maps. We always do it, to mark which slots are used in the shader.
         mpRootSignature = pRootSig ? pRootSig : RootSignature::create(pReflector.get());
@@ -142,12 +142,12 @@ namespace Falcor
         }
     }
 
-    GraphicsVars::SharedPtr GraphicsVars::create(const ProgramReflection::SharedConstPtr& pReflector, bool createBuffers, const RootSignature::SharedConstPtr& pRootSig)
+    GraphicsVars::SharedPtr GraphicsVars::create(const ProgramReflection::SharedConstPtr& pReflector, bool createBuffers, const RootSignature::SharedPtr& pRootSig)
     {
         return SharedPtr(new GraphicsVars(pReflector, createBuffers, pRootSig));
     }
 
-    ComputeVars::SharedPtr ComputeVars::create(const ProgramReflection::SharedConstPtr& pReflector, bool createBuffers, const RootSignature::SharedConstPtr& pRootSig)
+    ComputeVars::SharedPtr ComputeVars::create(const ProgramReflection::SharedConstPtr& pReflector, bool createBuffers, const RootSignature::SharedPtr& pRootSig)
     {
         return SharedPtr(new ComputeVars(pReflector, createBuffers, pRootSig));
     }
@@ -513,6 +513,19 @@ namespace Falcor
         return getResourceFromSrvUavCommon<Texture>(pDesc, mAssignedSrvs, mAssignedUavs, name, "getTexture()");
     }
 
+    template<typename ViewType>
+    Resource::SharedPtr getResourceFromView(const ViewType* pView)
+    {
+        if (pView)
+        {
+            return const_cast<Resource*>(pView->getResource())->shared_from_this();
+        }
+        else
+        {
+            return nullptr;
+        }
+    }
+
     bool ProgramVars::setSrv(uint32_t index, const ShaderResourceView::SharedPtr& pSrv)
     {
         auto it = mAssignedSrvs.find(index);
@@ -521,7 +534,7 @@ namespace Falcor
             it->second.pView = pSrv;
 
             // TODO: Fix resource/view const-ness so we don't need to do this
-            it->second.pResource = const_cast<Resource*>(pSrv->getResource())->shared_from_this();
+            it->second.pResource = getResourceFromView(pSrv.get());
         }
         else
         {
@@ -540,7 +553,7 @@ namespace Falcor
             it->second.pView = pUav;
 
             // TODO: Fix resource/view const-ness so we don't need to do this
-            it->second.pResource = const_cast<Resource*>(pUav->getResource())->shared_from_this(); 
+            it->second.pResource = getResourceFromView(pUav.get());
         }
         else
         {

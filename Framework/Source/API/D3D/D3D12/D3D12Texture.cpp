@@ -194,7 +194,7 @@ namespace Falcor
     Texture::SharedPtr Texture::create1D(uint32_t width, ResourceFormat format, uint32_t arraySize, uint32_t mipLevels, const void* pData, BindFlags bindFlags)
     {
         bindFlags = updateBindFlags(bindFlags, pData != nullptr, mipLevels);
-        Texture::SharedPtr pTexture = SharedPtr(new Texture(width, 1, 1, 1, mipLevels, arraySize, format, Type::Texture1D, bindFlags));
+        Texture::SharedPtr pTexture = SharedPtr(new Texture(width, 1, 1, arraySize, mipLevels, 1, format, Type::Texture1D, bindFlags));
         createTextureCommon(pTexture.get(), pTexture->mApiHandle, pData, D3D12_RESOURCE_DIMENSION_TEXTURE1D, (mipLevels == kMaxPossible), bindFlags);
         return pTexture->mApiHandle ? pTexture : nullptr;
     }
@@ -202,7 +202,7 @@ namespace Falcor
     Texture::SharedPtr Texture::create2D(uint32_t width, uint32_t height, ResourceFormat format, uint32_t arraySize, uint32_t mipLevels, const void* pData, BindFlags bindFlags)
     {
         bindFlags = updateBindFlags(bindFlags, pData != nullptr, mipLevels);
-        Texture::SharedPtr pTexture = SharedPtr(new Texture(width, height, 1, 1, mipLevels, arraySize, format, Type::Texture2D, bindFlags));
+        Texture::SharedPtr pTexture = SharedPtr(new Texture(width, height, 1, arraySize, mipLevels, 1, format, Type::Texture2D, bindFlags));
         createTextureCommon(pTexture.get(), pTexture->mApiHandle, pData, D3D12_RESOURCE_DIMENSION_TEXTURE2D, (mipLevels == kMaxPossible), bindFlags);
         return pTexture->mApiHandle ? pTexture : nullptr;
     }
@@ -220,14 +220,14 @@ namespace Falcor
     Texture::SharedPtr Texture::createCube(uint32_t width, uint32_t height, ResourceFormat format, uint32_t arraySize, uint32_t mipLevels, const void* pData, BindFlags bindFlags)
     {
         bindFlags = updateBindFlags(bindFlags, pData != nullptr, mipLevels);
-        Texture::SharedPtr pTexture = SharedPtr(new Texture(width, height, 1, 1, mipLevels, arraySize, format, Type::TextureCube, bindFlags));
+        Texture::SharedPtr pTexture = SharedPtr(new Texture(width, height, 1, arraySize, mipLevels, 1, format, Type::TextureCube, bindFlags));
         createTextureCommon(pTexture.get(), pTexture->mApiHandle, pData, D3D12_RESOURCE_DIMENSION_TEXTURE2D, (mipLevels == kMaxPossible), bindFlags);
         return pTexture->mApiHandle ? pTexture : nullptr;
     }
 
     Texture::SharedPtr Texture::create2DMS(uint32_t width, uint32_t height, ResourceFormat format, uint32_t sampleCount, uint32_t arraySize, BindFlags bindFlags)
     {
-        Texture::SharedPtr pTexture = SharedPtr(new Texture(width, height, 1, 1, 1, arraySize, format, Type::Texture2DMultisample, bindFlags));
+        Texture::SharedPtr pTexture = SharedPtr(new Texture(width, height, 1, arraySize, 1, sampleCount, format, Type::Texture2DMultisample, bindFlags));
         createTextureCommon(pTexture.get(), pTexture->mApiHandle, nullptr, D3D12_RESOURCE_DIMENSION_TEXTURE2D, false, bindFlags);
         return pTexture->mApiHandle ? pTexture : nullptr;
     }
@@ -258,7 +258,7 @@ namespace Falcor
         if (mpApiData->spGenMips == nullptr)
         {
             mpApiData->spGenMips = std::make_unique<GenMipsData>();
-            mpApiData->spGenMips->pFullScreenPass = FullScreenPass::create("Framework/Shaders/GenerateMips.hlsl");
+            mpApiData->spGenMips->pFullScreenPass = FullScreenPass::create("Framework/Shaders/Blit.hlsl");
             mpApiData->spGenMips->pVars = GraphicsVars::create(mpApiData->spGenMips->pFullScreenPass->getProgram()->getActiveVersion()->getReflector());
             mpApiData->spGenMips->pState = GraphicsState::create();
             Sampler::Desc desc;
