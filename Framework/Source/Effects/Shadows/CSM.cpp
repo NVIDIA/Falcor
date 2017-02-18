@@ -546,7 +546,8 @@ namespace Falcor
         }
 
         createSdsmData(pDepthBuffer);
-        distanceRange = glm::vec2(mSdsmData.minMaxReduction->reduce(pRenderCtx, pDepthBuffer));
+        //TODO fix parallel reudction
+        //distanceRange = glm::vec2(mSdsmData.minMaxReduction->reduce(pRenderCtx, pDepthBuffer));
 
         // Convert to linear
         glm::mat4 camProj = pCamera->getProjMatrix();
@@ -581,7 +582,8 @@ namespace Falcor
         pRenderCtx->clearFbo(mDepthPass.pFbo.get(), clearColor, 1, 0, FboAttachmentType::All);
 
         // Calc the bounds
-        glm::vec2 distanceRange;
+        glm::vec2 distanceRange(0, 0);
+        //TODO re-add this when parallel reduction is fixed
         calcDistanceRange(pRenderCtx, pCamera, pDepthBuffer, distanceRange);
 
         GraphicsState::Viewport VP;
@@ -602,6 +604,8 @@ namespace Falcor
         {
             mShadowPass.pState->setRasterizerState(nullptr);
         }
+        //THE PROBLEM IS HERE PROBABLY
+        //mShadowPass.pState->setFbo(pRenderCtx->getGraphicsState()->getFbo());
         mShadowPass.pState->setFbo(mShadowPass.pFbo);
         pRenderCtx->pushGraphicsState(mShadowPass.pState);
 
@@ -619,39 +623,45 @@ namespace Falcor
         pRenderCtx->popGraphicsState();
     }
 
-    void CascadedShadowMaps::setDataIntoConstantBuffer(ConstantBuffer* pCB, const std::string& varName)
+    void CascadedShadowMaps::setDataIntoGraphicsVars(GraphicsVars::SharedPtr pVars, const std::string& varName)
     {
-        size_t offset = pCB->getVariableOffset(varName + ".globalMat");
-        Sampler* pSampler = nullptr;
-        const Texture* pTexture = nullptr;
-        uint64_t* pMap = nullptr;
+        size_t offset = pVars->getConstantBuffer("PerFrameCB")->getVariableOffset(varName + ".globalMat");
+        Sampler::SharedPtr pSampler = nullptr;
+        Texture::SharedPtr pTexture = nullptr;
 
-        switch(mCsmData.filterMode)
+        switch (mCsmData.filterMode)
         {
         case CsmFilterPoint:
-            pSampler = mShadowPass.pPointCmpSampler.get();
-            pTexture = mShadowPass.pFbo->getDepthStencilTexture().get();
-            pMap = &mCsmData.shadowMap;
+            pSampler = mShadowPass.pPointCmpSampler;
+            pTexture = mShadowPass.pFbo->getDepthStencilTexture();
+            pVars->setTexture("shadowMap", pTexture);
+            // = &mCsmData.shadowMap;
             break;
         case CsmFilterHwPcf:
         case CsmFilterFixedPcf:
         case CsmFilterStochasticPcf:
-            pSampler = mShadowPass.pLinearCmpSampler.get();
-            pTexture = mShadowPass.pFbo->getDepthStencilTexture().get();
-            pMap = &mCsmData.shadowMap;
+            pSampler = mShadowPass.pLinearCmpSampler;
+            pTexture = mShadowPass.pFbo->getDepthStencilTexture();
+            pVars->setTexture("shadowMap", pTexture);
+            //pMap = &mCsmData.shadowMap;
             break;
         case CsmFilterVsm:
         case CsmFilterEvsm2:
         case CsmFilterEvsm4:
-            pSampler = mShadowPass.pVSMTrilinearSampler.get();
-            pTexture = mShadowPass.pFbo->getColorTexture(0).get();
-            pMap = &mCsmData.momentsMap;
+            pSampler = mShadowPass.pVSMTrilinearSampler;
+            pTexture = mShadowPass.pFbo->getColorTexture(0);
+            pVars->setTexture("momentsMap", pTexture);
+            //pMap = &mCsmData.momentsMap;
             break;
         }
 
-        *pMap = pTexture->makeResident(pSampler);
+        //*pMap = pTexture->makeResident(pSampler);
+        //TODO, make these blob, not names
+        pVars->setSampler("exampleSampler", pSampler);
+
+        //TODO Get cB OFFSET
         mCsmData.lightDir = glm::normalize(((DirectionalLight*)mpLight.get())->getWorldDirection());
-        pCB->setBlob(&mCsmData, offset, sizeof(mCsmData));
+        pVars->getConstantBuffer("PerFrameCB")->setBlob(&mCsmData, offset, sizeof(mCsmData));
     }
 
     Texture::SharedPtr CascadedShadowMaps::getShadowMap() const

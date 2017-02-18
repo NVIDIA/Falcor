@@ -27,16 +27,16 @@
 ***************************************************************************/
 #include "Shadows.h"
 
-void Shadows::initUI()
+void Shadows::onGuiRender()
 {
     //TODO Fix GUI
 
     //mpGui->addButton("Load Scene", loadSceneCB, this);
-    //mpGui->addCheckBox("Update Shadow Map", &mControls.updateShadowMap);
+    mpGui->addCheckBox("Update Shadow Map", mControls.updateShadowMap);
     //mpGui->addIntVarWithCallback("Cascade Count", setCascadeCountCB, getCascadeCountCB, this, "", 1, CSM_MAX_CASCADES);
-    //mpGui->addCheckBox("Visualize Cascades", &mControls.visualizeCascades);
-    //mpGui->addCheckBox("Display Shadow Map", &mControls.showShadowMap);
-    //mpGui->addIntVar("Displayed Cascade", &mControls.displayedCascade, "", 0, mControls.cascadeCount - 1);
+    mpGui->addCheckBox("Visualize Cascades", mControls.visualizeCascades);
+    mpGui->addCheckBox("Display Shadow Map", mControls.showShadowMap);
+    //mpGui->addIntVar("Displayed Cascade", mControls.displayedCascade, "", 0, mControls.cascadeCount - 1);
 
     //Gui::setGlobalHelpMessage("Sample application to load and display a model.\nUse the UI to switch between wireframe and solid mode.");
     // Load model group
@@ -109,7 +109,6 @@ void Shadows::createScene(const std::string& filename)
 
 void Shadows::onLoad()
 {
-    initUI();
     createScene("Scenes/dragonplane.fscene");
     createVisualizationProgram();
 }
@@ -143,8 +142,9 @@ void Shadows::displayShadowMap()
     mShadowVisualizer.pProgramVars->setTexture("gTexture", mpCsmTech[mControls.lightIndex]->getShadowMap());
     mShadowVisualizer.pCBuffer->setVariable("cascade", mControls.displayedCascade);
     mShadowVisualizer.pProgramVars->setConstantBuffer("PerImageCB", mShadowVisualizer.pCBuffer);
-    mpRenderContext->setGraphicsVars(mShadowVisualizer.pProgramVars);
+    mpRenderContext->pushGraphicsVars(mShadowVisualizer.pProgramVars);
     mShadowVisualizer.pProgram->execute(mpRenderContext.get());
+    mpRenderContext->popGraphicsVars();
 }
 
 void Shadows::onFrameRender()
@@ -170,7 +170,7 @@ void Shadows::onFrameRender()
         for(uint32_t i = 0; i < mpCsmTech.size(); i++)
         {
             std::string var = "gCsmData[" + std::to_string(i) + "]";
-            mpCsmTech[i]->setDataIntoConstantBuffer(mLightingPass.pCBuffer.get(), var);
+            mpCsmTech[i]->setDataIntoGraphicsVars(mLightingPass.pProgramVars, var);
         }
 
         if(mControls.showShadowMap)
@@ -222,7 +222,7 @@ void Shadows::createVisualizationProgram()
         mShadowVisualizer.pCBuffer = ConstantBuffer::create(mShadowVisualizer.pProgram->getProgram(), "PerImageCB");
     }
     mShadowVisualizer.pProgramVars = GraphicsVars::create(mShadowVisualizer.pProgram->getProgram()->getActiveVersion()->getReflector());
-    //mShadowVisualizer.pState->setProgram(mShadowVisualizer.pProgram->getProgram());
+    mShadowVisualizer.pCBuffer = mShadowVisualizer.pProgramVars["PerImageCB"];
 }
 
 void Shadows::setCascadeCountCB(const void* pVal, void* pThis)

@@ -44,7 +44,7 @@ private:
     static void GUI_CALL getModelCB(void* pUserData);
     static void GUI_CALL setModelCB(const void* pUserData);
 
-    void initUI();
+    void onGuiRender() override;
     void displayShadowMap();
     void runMainPass();
     void createVisualizationProgram();
@@ -57,7 +57,6 @@ private:
     struct
     {
         FullScreenPass::UniquePtr pProgram;
-        GraphicsState::SharedPtr pState;
         GraphicsVars::SharedPtr pProgramVars;
         ConstantBuffer::SharedPtr pCBuffer;
     } mShadowVisualizer;

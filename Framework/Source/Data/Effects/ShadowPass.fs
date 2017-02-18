@@ -45,11 +45,13 @@ struct ShadowPassPSIn
 };
 
 //TODO how do?
-//#if defined(_VSM) || defined(_EVSM2)
-//vec2 main(ShadowPassPSIn pIn) : SV_TARGET0
-//#elif defined(_EVSM4)
+#if defined(_VSM) || defined(_EVSM2)
+vec2 main(ShadowPassPSIn pIn) : SV_TARGET0
+#elif defined(_EVSM4)
 vec4 main(ShadowPassPSIn pIn) : SV_TARGET0
-//#endif
+#else
+void main(ShadowPassPSIn pIn)
+#endif
 {
     //if(uVec2(alphaMap != 0 && alphaMap.Sample(exampleSampler, texC)._ALPHA_CHANNEL < alphaThreshold)
     if(alphaMap.Sample(exampleSampler, pIn.texC)._ALPHA_CHANNEL < alphaThreshold)
@@ -63,11 +65,13 @@ vec4 main(ShadowPassPSIn pIn) : SV_TARGET0
     depth = applyEvsmExponents(depth.x, evsmExp);
 #endif
     vec4 outDepth = vec4(depth, depth*depth);
-//#ifdef _EVSM4
+    //TODO
+#ifdef _EVSM4
     return outDepth.xzyw;
-//#elif defined(_VSM) || defined(_EVSM2)
-//    return outDepth.xz;
-//#endif
+#elif defined(_VSM) || defined(_EVSM2)
+    return outDepth.xz;
+#else
+#endif
 
     
 }

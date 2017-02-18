@@ -46,6 +46,9 @@ vec4 calcColor(vec2 texC)
 	float d = gTexture.SampleLevel(exampleSampler, vec3(texC, float(cascade)), 0).r;
 #else
     float d = gTexture.SampleLevel(exampleSampler, texC, 0).r;
+    //TODO
+    //just temp so the buffer isnt optimized out
+    d += cascade * 0.00001f;
 #endif
     return vec4(d.xxx, 1);
 }

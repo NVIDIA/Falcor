@@ -73,7 +73,7 @@ namespace Falcor
 
         Texture::SharedPtr getShadowMap() const;
 
-        void setDataIntoConstantBuffer(ConstantBuffer* pCB, const std::string& varName);
+        void setDataIntoGraphicsVars(GraphicsVars::SharedPtr pVars, const std::string& varName);
         void setCascadeCount(uint32_t cascadeCount);
         uint32_t getCascadeCount() { return mCsmData.cascadeCount; }
         void toggleMinMaxSdsm(bool enable) { mControls.useMinMaxSdsm = enable; }

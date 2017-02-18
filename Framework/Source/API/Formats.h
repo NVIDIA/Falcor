@@ -265,6 +265,26 @@ namespace Falcor
 		}
 	}
 
+    inline ResourceFormat depthToColorFormat(ResourceFormat format)
+    {
+        switch (format)
+        {
+        case ResourceFormat::D16Unorm:
+            return ResourceFormat::R16Unorm;
+        case ResourceFormat::D24UnormS8:
+            should_not_get_here();
+            return ResourceFormat::Unknown;
+        case ResourceFormat::D32Float:
+            return ResourceFormat::R32Float;
+        case ResourceFormat::D32FloatS8X24:
+            should_not_get_here();
+            return ResourceFormat::Unknown;
+        default:
+            assert(isDepthFormat(format) == false);
+            return format;
+        }
+    }
+
     inline const std::string& to_string(ResourceFormat format)
     {
         assert(kFormatDesc[(uint32_t)format].format == format);
