@@ -575,8 +575,8 @@ def cleanScreenShots(ssDir):
             os.remove(ssDir + '\\' + s)
 
 def updateRepo():
-    subprocess.call(['git', 'pull', 'origin', 'TestingFramework'])
-    subprocess.call(['git', 'checkout', 'origin/TestingFramework'])
+    subprocess.call(['git', 'pull', 'origin', 'D3D12'])
+    subprocess.call(['git', 'checkout', 'origin/D3D12'])
 
 def sendFatalFailEmail(failMsg):
     subject = '[FATAL TESTING ERROR] '
