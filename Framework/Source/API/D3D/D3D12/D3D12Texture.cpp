@@ -151,6 +151,12 @@ namespace Falcor
             pClearVal = &clearValue;
         }
 
+        //If depth and either ua or sr, set to typeless
+        if (isDepthFormat(texFormat) && ((bindFlags & (Texture::BindFlags::ShaderResource | Texture::BindFlags::UnorderedAccess)) != Texture::BindFlags::None))
+        {
+            desc.Format = getTypelessFormatFromDepthFormat(texFormat);
+        }
+
         d3d_call(gpDevice->getApiHandle()->CreateCommittedResource(&kDefaultHeapProps, D3D12_HEAP_FLAG_NONE, &desc, D3D12_RESOURCE_STATE_COMMON, pClearVal, IID_PPV_ARGS(&apiHandle)));
 
         if (pData)

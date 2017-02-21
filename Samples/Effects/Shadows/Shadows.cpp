@@ -87,7 +87,7 @@ void Shadows::createScene(const std::string& filename)
     for(uint32_t i = 0; i < mpScene->getLightCount(); i++)
     {
         mpCsmTech[i] = CascadedShadowMaps::create(2048, 2048, mpScene->getLight(i), mpScene, mControls.cascadeCount);
-        mpCsmTech[i]->setFilterMode(CsmFilterVsm);
+        mpCsmTech[i]->setFilterMode(CsmFilterPoint);
         mpCsmTech[i]->setVsmLightBleedReduction(0.3f);
     }
     //mpGui->addIntVarWithCallback("Light Index", setLightIndexCB, getLightIndexCB, this, "", 0);
