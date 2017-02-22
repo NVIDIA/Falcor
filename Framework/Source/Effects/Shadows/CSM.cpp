@@ -69,10 +69,11 @@ namespace Falcor
 #else
                 // DISABLED_FOR_D3D12
                 //TODO what is this?
-                //a.map = mpLastMaterial->getAlphaMap();
                 a.val = mpLastMaterial->getAlphaThreshold();
 #endif
                 mpAlphaMapCb->setBlob(&a, 0, sizeof(a));
+                //TODO THIS
+                //mpAlphaMapCb->setTexture(mpLastMaterial->getAlphaMap(), ;
             }
             return true;
         };
@@ -150,6 +151,7 @@ namespace Falcor
         mpLightCamera = Camera::create();
         RasterizerState::Desc rsDesc;
         rsDesc.setDepthClamp(true);
+        rsDesc.setCullMode(RasterizerState::CullMode::Front);
         mShadowPass.pDepthClampRS = RasterizerState::create(rsDesc);
 
         Sampler::Desc samplerDesc;
@@ -210,6 +212,7 @@ namespace Falcor
     {
         mShadowPass.mapSize = glm::vec2(float(mapWidth), float(mapHeight));
         const ResourceFormat depthFormat = ResourceFormat::D32Float;
+        mCsmData.depthBias = 0.005f;
         Program::DefineList progDef;
         progDef.add("_CASCADE_COUNT", std::to_string(mCsmData.cascadeCount));
 
@@ -596,14 +599,18 @@ namespace Falcor
 
         //Set shadow pass state
         mShadowPass.pState->setViewport(0, VP);
-        if (mControls.depthClamp)
-        {
+        ///if (mControls.depthClamp)
+        //{
+
+        //todo
+        //THIS RS CULLS FRONT, fixes bad self shadowing issues. Depth clamp doesn't have much effect. It's the front
+        //face culling in the shadow pass that fixes the moire shadow mapping issues
             mShadowPass.pState->setRasterizerState(mShadowPass.pDepthClampRS);
-        }
-        else
-        {
-            mShadowPass.pState->setRasterizerState(nullptr);
-        }
+        //}
+        //else
+        //{
+        //    mShadowPass.pState->setRasterizerState(nullptr);
+        //}
         //THE PROBLEM IS HERE PROBABLY
         //mShadowPass.pState->setFbo(pRenderCtx->getGraphicsState()->getFbo());
         mShadowPass.pState->setFbo(mShadowPass.pFbo);
@@ -629,12 +636,14 @@ namespace Falcor
         Sampler::SharedPtr pSampler = nullptr;
         Texture::SharedPtr pTexture = nullptr;
 
+        //TODO, set these textures and samplers by offset rather than by name
         switch (mCsmData.filterMode)
         {
         case CsmFilterPoint:
             pSampler = mShadowPass.pPointCmpSampler;
             pTexture = mShadowPass.pFbo->getDepthStencilTexture();
             pVars->setTexture("shadowMap", pTexture);
+            pVars->setSampler("compareSampler", pSampler);
             break;
         case CsmFilterHwPcf:
         case CsmFilterFixedPcf:
@@ -642,6 +651,7 @@ namespace Falcor
             pSampler = mShadowPass.pLinearCmpSampler;
             pTexture = mShadowPass.pFbo->getDepthStencilTexture();
             pVars->setTexture("shadowMap", pTexture);
+            pVars->setSampler("compareSampler", pSampler);
             break;
         case CsmFilterVsm:
         case CsmFilterEvsm2:
@@ -649,12 +659,10 @@ namespace Falcor
             pSampler = mShadowPass.pVSMTrilinearSampler;
             pTexture = mShadowPass.pFbo->getColorTexture(0);
             pVars->setTexture("momentsMap", pTexture);
+            pVars->setSampler("exampleSampler", pSampler);
             break;
         }
 
-        //*pMap = pTexture->makeResident(pSampler);
-        //TODO, make these blob, not names
-        pVars->setSampler("exampleSampler", pSampler);
 
         //TODO Get cB OFFSET
         mCsmData.lightDir = glm::normalize(((DirectionalLight*)mpLight.get())->getWorldDirection());

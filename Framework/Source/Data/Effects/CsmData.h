@@ -72,6 +72,7 @@ Texture2DArray shadowMap;
 Texture2DArray momentsMap;
 
 SamplerState exampleSampler : register(s0);
+SamplerComparisonState compareSampler : register(s1);
 
 int getCascadeCount(const CsmData csmData)
 {
@@ -174,11 +175,8 @@ vec2 applyEvsmExponents(float depth, vec2 exponents)
 
 float csmFilterUsingHW(const CsmData csmData, const vec2 texC, float depthRef, uint32_t cascadeIndex)
 {
-    //TODO why is this vec4?
-    //float res = csmData.shadowMap.Sample(exampleSampler, vec4(texC, float(cascadeIndex), depthRef)).r;
-    float res = shadowMap.Sample(exampleSampler, float3(texC, 0)).r;
-    
-    return res;
+    float res = shadowMap.SampleCmpLevelZero(compareSampler, float3(texC, 0), depthRef).r;    
+    return saturate(res);
 }
 
 float csmFixedSizePcf(const CsmData csmData, const vec2 texC, float depthRef, uint32_t cascadeIndex)
@@ -325,7 +323,6 @@ float calcShadowFactorWithCascadeIdx(const CsmData csmData, const uint32_t casca
     // Apply TexC transformation
     shadowPos.xy += 1;
     shadowPos.xy *= 0.5;
-
     shadowPos.y = 1 - shadowPos.y;
 
     // Calculate the texC
