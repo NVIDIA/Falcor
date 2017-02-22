@@ -176,7 +176,8 @@ float csmFilterUsingHW(const CsmData csmData, const vec2 texC, float depthRef, u
 {
     //TODO why is this vec4?
     //float res = csmData.shadowMap.Sample(exampleSampler, vec4(texC, float(cascadeIndex), depthRef)).r;
-    float res = shadowMap.Sample(exampleSampler, float3(texC, cascadeIndex)).r;
+    float res = shadowMap.Sample(exampleSampler, float3(texC, 0)).r;
+    
     return res;
 }
 
@@ -324,6 +325,8 @@ float calcShadowFactorWithCascadeIdx(const CsmData csmData, const uint32_t casca
     // Apply TexC transformation
     shadowPos.xy += 1;
     shadowPos.xy *= 0.5;
+
+    shadowPos.y = 1 - shadowPos.y;
 
     // Calculate the texC
     shadowPos.z -= csmData.depthBias;

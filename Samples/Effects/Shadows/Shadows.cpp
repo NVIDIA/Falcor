@@ -132,7 +132,7 @@ void Shadows::runMainPass()
     mLightingPass.pCBuffer->setVariable("lightIndex", mControls.lightIndex);
     mLightingPass.pCBuffer->setVariable("camVpAtLastCsmUpdate", mCamVpAtLastCsmUpdate);
     mLightingPass.pProgramVars->setConstantBuffer("PerFrameCB", mLightingPass.pCBuffer);
-    mpRenderContext->setGraphicsVars(mLightingPass.pProgramVars);
+    mpRenderContext->pushGraphicsVars(mLightingPass.pProgramVars);
 
     mpRenderer->renderScene(mpRenderContext.get());
 

@@ -52,6 +52,5 @@ vec4 main(ShadowsVSOut pIn) : SV_TARGET0
         fragColor.rgb *= getCascadeColor(0);
     }
 
-    //return fragColor * 0.0001f + float4(shadowFactor, shadowFactor, shadowFactor, 1);
     return fragColor;
 }
