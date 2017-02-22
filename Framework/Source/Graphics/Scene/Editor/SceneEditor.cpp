@@ -787,6 +787,13 @@ namespace Falcor
                     addModelInstance(pGui);
                     addModelInstanceRange(pGui);
                     deleteModelInstance(pGui);
+
+                    if (mpScene->getModelCount() == 0)
+                    {
+                        pGui->endGroup();
+                        return;
+                    }
+
                     pGui->addSeparator();
                     setModelVisible(pGui);
                     setInstanceTranslation(pGui);
@@ -1067,6 +1074,7 @@ namespace Falcor
         mSelectedModel = 0;
         mSelectedModelInstance = 0;
         mSceneDirty = true;
+        deselect();
     }
 
     void SceneEditor::deleteModel(Gui* pGui)
@@ -1087,9 +1095,15 @@ namespace Falcor
             const auto& pInstance = mpScene->getModelInstance(mSelectedModel, mSelectedModelInstance);
             auto& pModel = mpScene->getModel(mSelectedModel);
 
+            // Set new selection index
             mSelectedModelInstance = mpScene->getModelInstanceCount(mSelectedModel);
+
+            // Add instance
             mpScene->addModelInstance(pModel, "Instance " + mSelectedModelInstance, pInstance->getTranslation(), pInstance->getEulerRotation(), pInstance->getScaling());
-            mInstanceEulerRotations[mSelectedModel].push_back(mpScene->getModelInstance(mSelectedModel, mSelectedModelInstance)->getEulerRotation());
+
+            auto& pNewInstance = mpScene->getModelInstance(mSelectedModel, mSelectedModelInstance);
+            mInstanceEulerRotations[mSelectedModel].push_back(pNewInstance->getEulerRotation());
+            select(pNewInstance);
 
             mSceneDirty = true;
         }
@@ -1109,7 +1123,8 @@ namespace Falcor
                 auto MbRes = msgBox("The active model has a single instance. Removing it will remove the model from the scene.\nContinue?", MsgBoxType::OkCancel);
                 if (MbRes == MsgBoxButton::Ok)
                 {
-                    return deleteModel();
+                    deleteModel();
+                    return;
                 }
             }
 
@@ -1117,6 +1132,8 @@ namespace Falcor
 
             auto& modelRotations = mInstanceEulerRotations[mSelectedModel];
             modelRotations.erase(modelRotations.begin() + mSelectedModelInstance);
+
+            deselect();
 
             mSelectedModelInstance = 0;
             mSceneDirty = true;
@@ -1136,7 +1153,7 @@ namespace Falcor
             mpScene->setActiveCamera(camIndex);
 
             // Update editor scene
-            mpEditorScene->addModelInstance(mpCameraModel, pCamera->getName());
+            mpEditorScene->addModelInstance(mpCameraModel, pCamera->getName(), glm::vec3(), glm::vec3(), glm::vec3(kCameraModelScale));
 
             // #TODO Re: initialization, can scenes start with 0 cameras?
             // If this is the first camera added, get its modelID
