@@ -105,6 +105,9 @@ void Shadows::createScene(const std::string& filename)
     mLightingPass.pState->setDepthStencilState(nullptr);
     mLightingPass.pProgramVars = GraphicsVars::create(mLightingPass.pProgram->getActiveVersion()->getReflector());
     mLightingPass.pCBuffer = mLightingPass.pProgramVars["PerFrameCB"];
+
+    //TODO remove TESTING
+    _TestTex = createTextureFromFile("TestShadow.png", true, false);
 }
 
 void Shadows::onLoad()
@@ -133,13 +136,16 @@ void Shadows::runMainPass()
 
     mpRenderer->renderScene(mpRenderContext.get());
 
-    //mpRenderContext->popGraphicsVars();
+    mpRenderContext->popGraphicsVars();
     //mpRenderContext->popGraphicsState();
 }
 
 void Shadows::displayShadowMap()
 {
     mShadowVisualizer.pProgramVars->setTexture("gTexture", mpCsmTech[mControls.lightIndex]->getShadowMap());
+    //todo remove TESTING
+    //mShadowVisualizer.pProgramVars->setTexture("gTexture", _TestTex);
+
     mShadowVisualizer.pCBuffer->setVariable("cascade", mControls.displayedCascade);
     mShadowVisualizer.pProgramVars->setConstantBuffer("PerImageCB", mShadowVisualizer.pCBuffer);
     mpRenderContext->pushGraphicsVars(mShadowVisualizer.pProgramVars);
@@ -171,6 +177,11 @@ void Shadows::onFrameRender()
         {
             std::string var = "gCsmData[" + std::to_string(i) + "]";
             mpCsmTech[i]->setDataIntoGraphicsVars(mLightingPass.pProgramVars, var);
+            //todo remove TESTING
+            //mLightingPass.pProgramVars->setTexture("shadowMap", _TestTex);
+            //Texture* pTexture = mLightingPass.pProgramVars->getTexture("shadowMap").get();
+            //std::vector<uint8> textureData = mpRenderContext->readTextureSubresource(pTexture, 0);
+            //Bitmap::saveImage("TestOut.png", pTexture->getWidth(), pTexture->getHeight(), Bitmap::FileFormat::PngFile, pTexture->getFormat(), true, textureData.data());
         }
 
         if(mControls.showShadowMap)

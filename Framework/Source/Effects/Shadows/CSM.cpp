@@ -508,7 +508,6 @@ namespace Falcor
 
         pCtx->clearFbo(mDepthPass.pFbo.get(), glm::vec4(), 1, 0, FboAttachmentType::Depth);
 
-        //TODO, look at this if err, have had push pop problems in past
         mDepthPass.pState->setFbo(mDepthPass.pFbo);
         mpSceneRenderer->setObjectCullState(true);
         pCtx->pushGraphicsState(mDepthPass.pState);
@@ -580,6 +579,7 @@ namespace Falcor
     {
         const glm::vec4 clearColor(1);
         pRenderCtx->clearFbo(mDepthPass.pFbo.get(), clearColor, 1, 0, FboAttachmentType::All);
+        pRenderCtx->clearFbo(mShadowPass.pFbo.get(), clearColor, 1, 0, FboAttachmentType::Depth);
 
         // Calc the bounds
         glm::vec2 distanceRange(0, 0);
@@ -635,7 +635,6 @@ namespace Falcor
             pSampler = mShadowPass.pPointCmpSampler;
             pTexture = mShadowPass.pFbo->getDepthStencilTexture();
             pVars->setTexture("shadowMap", pTexture);
-            // = &mCsmData.shadowMap;
             break;
         case CsmFilterHwPcf:
         case CsmFilterFixedPcf:
@@ -643,7 +642,6 @@ namespace Falcor
             pSampler = mShadowPass.pLinearCmpSampler;
             pTexture = mShadowPass.pFbo->getDepthStencilTexture();
             pVars->setTexture("shadowMap", pTexture);
-            //pMap = &mCsmData.shadowMap;
             break;
         case CsmFilterVsm:
         case CsmFilterEvsm2:
@@ -651,7 +649,6 @@ namespace Falcor
             pSampler = mShadowPass.pVSMTrilinearSampler;
             pTexture = mShadowPass.pFbo->getColorTexture(0);
             pVars->setTexture("momentsMap", pTexture);
-            //pMap = &mCsmData.momentsMap;
             break;
         }
 

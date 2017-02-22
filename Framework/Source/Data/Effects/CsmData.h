@@ -361,24 +361,26 @@ float calcShadowFactor(const CsmData csmData, const float cameraDepth, vec3 posW
     blend = weight < csmData.cascadeBlendThreshold;
 #endif
 
-    if(blend)
-    {
+    //TODO it was blending with 1 cascade. why? dunno. but potential cause of error
+    //if(blend)
+    //{       
         // Getting the previous mip-level to calculate the derivative, otherwise we get cracks between cascade with *VSM.
         // On the edge of the cascade we only use the previous cascade factor (weight == 0), but we get the derivatives from the current cascade, which probably chooses a different mip-level.
         // This should work though, since mip-levels should appear continuous
-        weight = smoothstep(0.0, csmData.cascadeBlendThreshold, weight);
-        int prevCascade = max(0, cascadeIndex - 1);
-        float2 drvX = float2(0, 0);
-        float2 drvY = float2(0, 0);
-        float s1 = calcShadowFactorWithCascadeIdx(csmData, prevCascade, posW, true, drvX, drvY);
-        s = calcShadowFactorWithCascadeIdx(csmData, cascadeIndex, posW, false, drvX, drvY);
-        s = lerp(s1, s, weight);
-    }
-    else
-    {
+        //weight = smoothstep(0.0, csmData.cascadeBlendThreshold, weight);
+        //int prevCascade = max(0, cascadeIndex - 1);
+        //float2 drvX = float2(0, 0);
+        //float2 drvY = float2(0, 0);
+        //float s1 = calcShadowFactorWithCascadeIdx(csmData, prevCascade, posW, true, drvX, drvY);
+        //s = calcShadowFactorWithCascadeIdx(csmData, cascadeIndex, posW, false, drvX, drvY);
+        //s = lerp(s1, s, weight);
+    //}
+    //else
+    //{
         vec2 drvX, drvY;
-        s = calcShadowFactorWithCascadeIdx(csmData, cascadeIndex, posW, true, drvX, drvY);
-    }
+        //todo 0 should be get cascade index
+        s = calcShadowFactorWithCascadeIdx(csmData, 0, posW, true, drvX, drvY);
+    //}
 
     return s;
 }

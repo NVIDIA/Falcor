@@ -48,8 +48,10 @@ vec4 main(ShadowsVSOut pIn) : SV_TARGET0
     {
         //TODO, this should be using lightindex, not 0, but that gives sampler array index must be a literal expression
         //bc csmdata encapsulates 2 sampler arrays
-        fragColor.rgb *= getCascadeColor(getCascadeIndex(gCsmData[0], pIn.shadowsDepthC));
+        //fragColor.rgb *= getCascadeColor(getCascadeIndex(gCsmData[0], pIn.shadowsDepthC));
+        fragColor.rgb *= getCascadeColor(0);
     }
 
+    //return fragColor * 0.0001f + float4(shadowFactor, shadowFactor, shadowFactor, 1);
     return fragColor;
 }

@@ -51,6 +51,9 @@ private:
     void createScene(const std::string& filename);
     void displayLoadSceneDialog();
 
+    //TODO remove
+    Texture::SharedPtr _TestTex;
+
     std::vector<CascadedShadowMaps::UniquePtr> mpCsmTech;
     Scene::SharedPtr mpScene;
 

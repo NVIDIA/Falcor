@@ -44,6 +44,7 @@ ShadowPassVSOut main(VS_IN vIn)
 #ifdef _APPLY_PROJECTION
     vOut.pos = mul(gCam.viewProjMat, vOut.pos);
 #endif
+//TODO, I'm pretty sure this only matters for alpha
 //Why not VIN texcoord? HAS_TEXCRD not set
     vOut.texC = float2(0.5f, 0.5f);
     return vOut;
