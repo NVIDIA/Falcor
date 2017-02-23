@@ -151,7 +151,6 @@ namespace Falcor
         mpLightCamera = Camera::create();
         RasterizerState::Desc rsDesc;
         rsDesc.setDepthClamp(true);
-        rsDesc.setCullMode(RasterizerState::CullMode::Front);
         mShadowPass.pDepthClampRS = RasterizerState::create(rsDesc);
 
         Sampler::Desc samplerDesc;
@@ -643,18 +642,15 @@ namespace Falcor
 
         //Set shadow pass state
         mShadowPass.pState->setViewport(0, VP);
-        ///if (mControls.depthClamp)
-        //{
-
-        //todo
-        //THIS RS CULLS FRONT, fixes bad self shadowing issues. Depth clamp doesn't have much effect. It's the front
-        //face culling in the shadow pass that fixes the moire shadow mapping issues
+        if (mControls.depthClamp)
+        {
             mShadowPass.pState->setRasterizerState(mShadowPass.pDepthClampRS);
-        //}
-        //else
-        //{
-        //    mShadowPass.pState->setRasterizerState(nullptr);
-        //}
+        }
+        else
+        {
+            mShadowPass.pState->setRasterizerState(nullptr);
+        }
+
         //THE PROBLEM IS HERE PROBABLY
         mShadowPass.pState->setFbo(mShadowPass.pFbo);
         pRenderCtx->pushGraphicsState(mShadowPass.pState);
@@ -706,10 +702,15 @@ namespace Falcor
             break;
         }
 
-
         //Todo, at least depth bias and light dir aren't getitng sent to shader correctly 
         mCsmData.lightDir = glm::normalize(((DirectionalLight*)mpLight.get())->getWorldDirection());
+        //I'm not sure what the deal here is, but the offsets in shader don't line up with the offsets of the struct 
+        //depthBias is at offset 1012 from csm data starting at 448, so offset 564 into struct, but the Cpp size of the 
+        //struct is 468. Which is why the set blob call here isn't affecting the depth bias. Also since it's a memcpy 
+        //it's probably setting data incorrectly. 
         pVars->getConstantBuffer("PerFrameCB")->setBlob(&mCsmData, offset, sizeof(mCsmData));
+        //Manually setting the depth bias because of above issue.
+        pVars->getConstantBuffer("PerFrameCB")->setVariable(varName + ".depthBias", mCsmData.depthBias);
     }
     
     Texture::SharedPtr CascadedShadowMaps::getShadowMap() const
