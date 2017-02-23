@@ -175,7 +175,7 @@ vec2 applyEvsmExponents(float depth, vec2 exponents)
 
 float csmFilterUsingHW(const CsmData csmData, const vec2 texC, float depthRef, uint32_t cascadeIndex)
 {
-    float res = shadowMap.SampleCmpLevelZero(compareSampler, float3(texC, 0), depthRef).r;    
+    float res = shadowMap.SampleCmpLevelZero(compareSampler, float3(texC, cascadeIndex), depthRef).r;    
     return saturate(res);
 }
 

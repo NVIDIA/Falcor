@@ -29,23 +29,36 @@
 
 void Shadows::onGuiRender()
 {
-    //TODO Fix GUI
+    if (mpGui->addButton("Load Scene"))
+    {
+        displayLoadSceneDialog();
+    }
 
-    //mpGui->addButton("Load Scene", loadSceneCB, this);
     mpGui->addCheckBox("Update Shadow Map", mControls.updateShadowMap);
-    //mpGui->addIntVarWithCallback("Cascade Count", setCascadeCountCB, getCascadeCountCB, this, "", 1, CSM_MAX_CASCADES);
+    //TODO
+    //This is correct ui for cascade count but multiple cascades doesn't work right now
+    //if(mpGui->addIntVar("Cascade Count", mControls.cascadeCount, 0, CSM_MAX_CASCADES))
+    //{
+    //    for (uint32_t i = 0; i < mpCsmTech.size(); i++)
+    //    {
+    //        mpCsmTech[i]->setCascadeCount(mControls.cascadeCount);
+    //    }
+    //    createVisualizationProgram();
+    //}
+
     mpGui->addCheckBox("Visualize Cascades", mControls.visualizeCascades);
     mpGui->addCheckBox("Display Shadow Map", mControls.showShadowMap);
-    //mpGui->addIntVar("Displayed Cascade", mControls.displayedCascade, "", 0, mControls.cascadeCount - 1);
+    //TODO this is correct ui but dont re-add till you fix above. 
+    //mpGui->addIntVar("Displayed Cascade", mControls.displayedCascade, 0u, mControls.cascadeCount - 1);
+    mpGui->addIntVar("LightIndex", mControls.lightIndex, 0u, mpScene->getLightCount() - 1);
 
-    //Gui::setGlobalHelpMessage("Sample application to load and display a model.\nUse the UI to switch between wireframe and solid mode.");
-    // Load model group
-
-    uint32_t barSize[2];
-    //mpGui->getSize(barSize);
-    barSize[0] += 50;
-    barSize[1] += 100;
-    //mpGui->setSize(barSize[0], barSize[1]);
+    std::string groupName = "Light " + std::to_string(mControls.lightIndex);
+    if (mpGui->beginGroup(groupName.c_str()))
+    {
+        mpScene->getLight(mControls.lightIndex)->setUiElements(mpGui.get());
+        mpGui->endGroup();
+    }
+    mpCsmTech[mControls.lightIndex]->setUiElements(mpGui.get(), "CSM");
 }
 
 void Shadows::displayLoadSceneDialog()
@@ -60,22 +73,11 @@ void Shadows::displayLoadSceneDialog()
 void Shadows::setLightIndex(int32_t index)
 {
     mControls.lightIndex = max(min(index, (int32_t)mpScene->getLightCount() - 1), 0);
-    //TODO Fix Gui2 
-
-    //mpGui->removeGroup("Light");
-    //mpScene->getLight(mControls.lightIndex)->setUiElements(mpGui.get(), "Light");
-
-    //mpGui->removeGroup("CSM");
-
     mpCsmTech[mControls.lightIndex]->setUiElements(mpGui.get(), "CSM");
 }
 
 void Shadows::createScene(const std::string& filename)
 {
-    //TODO fix gui 3
-
-    //mpGui->removeGroup("CSM");
-    //mpGui->removeGroup("Light");
     // Load the scene
     mpScene = Scene::loadFromFile(filename, Model::GenerateTangentSpace);
 
@@ -87,10 +89,9 @@ void Shadows::createScene(const std::string& filename)
     for(uint32_t i = 0; i < mpScene->getLightCount(); i++)
     {
         mpCsmTech[i] = CascadedShadowMaps::create(2048, 2048, mpScene->getLight(i), mpScene, mControls.cascadeCount);
-        mpCsmTech[i]->setFilterMode(CsmFilterPoint);
+        mpCsmTech[i]->setFilterMode(CsmFilterHwPcf);
         mpCsmTech[i]->setVsmLightBleedReduction(0.3f);
     }
-    //mpGui->addIntVarWithCallback("Light Index", setLightIndexCB, getLightIndexCB, this, "", 0);
     setLightIndex(0);
 
     // Create the main effect
@@ -234,42 +235,6 @@ void Shadows::createVisualizationProgram()
     }
     mShadowVisualizer.pProgramVars = GraphicsVars::create(mShadowVisualizer.pProgram->getProgram()->getActiveVersion()->getReflector());
     mShadowVisualizer.pCBuffer = mShadowVisualizer.pProgramVars["PerImageCB"];
-}
-
-void Shadows::setCascadeCountCB(const void* pVal, void* pThis)
-{
-    Shadows* pShadows = (Shadows*)pThis;
-    pShadows->mControls.cascadeCount = *(uint32_t*)pVal;
-    for(uint32_t i = 0; i < pShadows->mpCsmTech.size(); i++)
-    {
-        pShadows->mpCsmTech[i]->setCascadeCount(pShadows->mControls.cascadeCount);
-    }
-    //pShadows->mpGui->setVarRange("Displayed Cascade", "", 0, pShadows->mControls.cascadeCount - 1);
-    pShadows->createVisualizationProgram();
-}
-
-void Shadows::getCascadeCountCB(void* pVal, void* pThis)
-{
-    Shadows* pShadows = (Shadows*)pThis;
-    *(uint32_t*)pVal = pShadows->mControls.cascadeCount;
-}
-
-void Shadows::getLightIndexCB(void* pVal, void* pThis)
-{
-    Shadows* pShadows = (Shadows*)pThis;
-    *(uint32_t*)pVal = pShadows->mControls.lightIndex;
-}
-
-void Shadows::setLightIndexCB(const void* pVal, void* pThis)
-{
-    Shadows* pShadows = (Shadows*)pThis;
-    pShadows->setLightIndex(*(uint32_t*)pVal);
-}
-
-void Shadows::loadSceneCB(void* pThis)
-{
-    Shadows* pShadows = (Shadows*)pThis;
-    pShadows->displayLoadSceneDialog();
 }
 
 int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ LPSTR lpCmdLine, _In_ int nShowCmd)

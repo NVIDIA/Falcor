@@ -85,17 +85,10 @@ private:
         bool visualizeCascades = false;
         int32_t displayedCascade = 0;
         //TODO the default for this should be 4
-        uint32_t cascadeCount = 1;
+        int32_t cascadeCount = 1;
         int32_t lightIndex = 0;
     };
     Controls mControls;
 
     void setLightIndex(int32_t index);
-
-    static void GUI_CALL loadSceneCB(void* pThis);
-    static void GUI_CALL getCascadeCountCB(void* pVal, void* pThis);
-    static void GUI_CALL setCascadeCountCB(const void* pVal, void* pThis);
-
-    static void GUI_CALL getLightIndexCB(void* pVal, void* pThis);
-    static void GUI_CALL setLightIndexCB(const void* pVal, void* pThis);
 };

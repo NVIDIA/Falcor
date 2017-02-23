@@ -78,11 +78,11 @@ namespace Falcor
         uint32_t getCascadeCount() { return mCsmData.cascadeCount; }
         void toggleMinMaxSdsm(bool enable) { mControls.useMinMaxSdsm = enable; }
         void setDistanceRange(const glm::vec2& range) { mControls.distanceRange = range; }
-        void setFilterMode(uint32_t filterMode) { setFilterModeCB(&filterMode, this); }
+        void setFilterMode(uint32_t filterMode) { onSetFilterMode(filterMode); }
         uint32_t getFilterMode() const { return mCsmData.filterMode; }
         void setFilterKernelSize(uint32_t size) { mCsmData.sampleKernelSize = max(1u, size + 1 - (size % 2)); }
         void setConcentricCascades(bool enabled) { mControls.concentricCascades = enabled; }
-        void setVsmMaxAnisotropy(uint32_t maxAniso) { setVsmAnisotropyCB(&maxAniso, this); }
+        void setVsmMaxAnisotropy(uint32_t maxAniso) { onSetVsmAnisotropy(maxAniso); }
         void setVsmLightBleedReduction(float reduction) { mCsmData.lightBleedingReduction = reduction; }
         void setDepthBias(float depthBias) { mCsmData.depthBias = depthBias; }
     private:
@@ -96,6 +96,10 @@ namespace Falcor
         void createShadowPassResources(uint32_t mapWidth, uint32_t mapHeight);
         void partitionCascades(const Camera* pCamera, const glm::vec2& distanceRange);
         void renderScene(RenderContext* pCtx);
+
+        void onSetFilterMode(uint32_t newFilterMode);
+        void onSetVsmAnisotropy(uint32_t maxAniso);
+        void onSetKernalSize(u32 newSize);
 
         // Shadow-pass
         struct
@@ -120,7 +124,7 @@ namespace Falcor
             ParallelReduction::UniquePtr minMaxReduction;
             uint32_t width;
             uint32_t height;
-            uint32_t readbackLatency = 1;
+            int32_t readbackLatency = 1;
         };
         SdsmData mSdsmData;
         void createSdsmData(const Texture* pTexture);
@@ -155,16 +159,5 @@ namespace Falcor
         Controls mControls;
         CsmData mCsmData;
 
-        static void GUI_CALL getSdsmReadbackLatency(void* pData, void* pThis);
-        static void GUI_CALL setSdsmReadbackLatency(const void* pData, void* pThis);
-
-        static void GUI_CALL getFilterModeCB(void* pData, void* pThis);
-        static void GUI_CALL setFilterModeCB(const void* pData, void* pThis);
-
-        static void GUI_CALL getFilterKernelSizeCB(void* pData, void* pThis);
-        static void GUI_CALL setFilterKernelSizeCB(const void* pData, void* pThis);
-
-        static void GUI_CALL getVsmAnisotropyCB(void* pData, void* pThis);
-        static void GUI_CALL setVsmAnisotropyCB(const void* pData, void* pThis);
     };
 }
