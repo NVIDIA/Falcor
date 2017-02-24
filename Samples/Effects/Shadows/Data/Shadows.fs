@@ -46,10 +46,7 @@ vec4 main(ShadowsVSOut pIn) : SV_TARGET0
     fragColor.rgb += gAmbient * result.diffuseAlbedo * 0.1;
     if(visualizeCascades)
     {
-        //TODO, this should be using lightindex, not 0, but that gives sampler array index must be a literal expression
-        //bc csmdata encapsulates 2 sampler arrays
-        //fragColor.rgb *= getCascadeColor(getCascadeIndex(gCsmData[0], pIn.shadowsDepthC));
-        fragColor.rgb *= getCascadeColor(0);
+        fragColor.rgb *= getCascadeColor(getCascadeIndex(gCsmData[lightIndex], pIn.shadowsDepthC));
     }
 
     return fragColor;

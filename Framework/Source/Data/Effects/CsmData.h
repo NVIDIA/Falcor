@@ -44,8 +44,8 @@ struct CsmData
     vec4 cascadeScale[CSM_MAX_CASCADES];
     vec4 cascadeOffset[CSM_MAX_CASCADES];
 
-    float cascadeStartDepth[CSM_MAX_CASCADES];  // In camera clip-space
-    float cascadeRange[CSM_MAX_CASCADES];  // In camera clip-space
+    vec4 cascadeStartDepth[CSM_MAX_CASCADES];  // In camera clip-space
+    vec4 cascadeRange[CSM_MAX_CASCADES];  // In camera clip-space
 
     float depthBias DEFAULTS(0.0011f);
     int cascadeCount DEFAULTS(4);
@@ -96,7 +96,7 @@ int getCascadeIndex(const CsmData csmData, float depthCamClipSpace)
 {
     for(int i = 1; i < getCascadeCount(csmData); i++)
     {
-        if(depthCamClipSpace < csmData.cascadeStartDepth[i])
+        if(depthCamClipSpace < csmData.cascadeStartDepth[i].x)
         {
             return i - 1;
         }
@@ -357,30 +357,28 @@ float calcShadowFactor(const CsmData csmData, const float cameraDepth, vec3 posW
 #if !defined(_CSM_CASCADE_COUNT) || (_CSM_CASCADE_COUNT != 1)
     cascadeIndex = getCascadeIndex(csmData, cameraDepth);
     // Get the prev cascade factor
-    weight = (cameraDepth - csmData.cascadeStartDepth[cascadeIndex]) / csmData.cascadeRange[cascadeIndex];
+    weight = (cameraDepth - csmData.cascadeStartDepth[cascadeIndex].x) / csmData.cascadeRange[cascadeIndex].x;
     blend = weight < csmData.cascadeBlendThreshold;
 #endif
 
-    //TODO it was blending with 1 cascade. why? dunno. but potential cause of error
-    //if(blend)
-    //{       
+    if(blend)
+    {       
         // Getting the previous mip-level to calculate the derivative, otherwise we get cracks between cascade with *VSM.
         // On the edge of the cascade we only use the previous cascade factor (weight == 0), but we get the derivatives from the current cascade, which probably chooses a different mip-level.
         // This should work though, since mip-levels should appear continuous
-        //weight = smoothstep(0.0, csmData.cascadeBlendThreshold, weight);
-        //int prevCascade = max(0, cascadeIndex - 1);
-        //float2 drvX = float2(0, 0);
-        //float2 drvY = float2(0, 0);
-        //float s1 = calcShadowFactorWithCascadeIdx(csmData, prevCascade, posW, true, drvX, drvY);
-        //s = calcShadowFactorWithCascadeIdx(csmData, cascadeIndex, posW, false, drvX, drvY);
-        //s = lerp(s1, s, weight);
-    //}
-    //else
-    //{
+        weight = smoothstep(0.0, csmData.cascadeBlendThreshold, weight);
+        int prevCascade = max(0, cascadeIndex - 1);
+        float2 drvX = float2(0, 0);
+        float2 drvY = float2(0, 0);
+        float s1 = calcShadowFactorWithCascadeIdx(csmData, prevCascade, posW, true, drvX, drvY);
+        s = calcShadowFactorWithCascadeIdx(csmData, cascadeIndex, posW, false, drvX, drvY);
+        s = lerp(s1, s, weight);
+    }
+    else
+    {
         vec2 drvX, drvY;
-        //todo 0 should be get cascade index
-        s = calcShadowFactorWithCascadeIdx(csmData, 0, posW, true, drvX, drvY);
-    //}
+        s = calcShadowFactorWithCascadeIdx(csmData, cascadeIndex, posW, true, drvX, drvY);
+    }
 
     return s;
 }

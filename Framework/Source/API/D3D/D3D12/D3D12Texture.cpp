@@ -208,7 +208,8 @@ namespace Falcor
     Texture::SharedPtr Texture::create2D(uint32_t width, uint32_t height, ResourceFormat format, uint32_t arraySize, uint32_t mipLevels, const void* pData, BindFlags bindFlags)
     {
         bindFlags = updateBindFlags(bindFlags, pData != nullptr, mipLevels);
-        Texture::SharedPtr pTexture = SharedPtr(new Texture(width, height, 1, 1, mipLevels, arraySize, format, Type::Texture2D, bindFlags));
+        //Array size was being set to 1, array size param was being used as mip levels, and array size was being used as sample count
+        Texture::SharedPtr pTexture = SharedPtr(new Texture(width, height, 1u, arraySize, mipLevels, 1u, format, Type::Texture2D, bindFlags));
         createTextureCommon(pTexture.get(), pTexture->mApiHandle, pData, D3D12_RESOURCE_DIMENSION_TEXTURE2D, (mipLevels == kMaxPossible), bindFlags);
         return pTexture->mApiHandle ? pTexture : nullptr;
     }

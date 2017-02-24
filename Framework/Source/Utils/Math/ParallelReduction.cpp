@@ -142,6 +142,9 @@ namespace Falcor
             should_not_get_here();
         }
 
+        //TODO this function doesn't exist, probably need copycontext read texture data used for ss. 
+        //dunno probably not gonna translate straight to glm::vec4. I don't understand how this 
+        //actually works? It's reading just a single vec4? 
         mpResultFbo[mCurFbo]->getColorTexture(0)->readSubresourceData(&result, bytesToRead, 0, 0);
         return result;
     }

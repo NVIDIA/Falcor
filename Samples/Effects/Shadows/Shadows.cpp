@@ -35,21 +35,19 @@ void Shadows::onGuiRender()
     }
 
     mpGui->addCheckBox("Update Shadow Map", mControls.updateShadowMap);
-    //TODO
-    //This is correct ui for cascade count but multiple cascades doesn't work right now
-    //if(mpGui->addIntVar("Cascade Count", mControls.cascadeCount, 0, CSM_MAX_CASCADES))
-    //{
-    //    for (uint32_t i = 0; i < mpCsmTech.size(); i++)
-    //    {
-    //        mpCsmTech[i]->setCascadeCount(mControls.cascadeCount);
-    //    }
-    //    createVisualizationProgram();
-    //}
+    if(mpGui->addIntVar("Cascade Count", mControls.cascadeCount, 1u, CSM_MAX_CASCADES))
+    {
+        for (uint32_t i = 0; i < mpCsmTech.size(); i++)
+        {
+            mpCsmTech[i]->setCascadeCount(mControls.cascadeCount);
+        }
+        createVisualizationProgram();
+    }
 
     mpGui->addCheckBox("Visualize Cascades", mControls.visualizeCascades);
     mpGui->addCheckBox("Display Shadow Map", mControls.showShadowMap);
     //TODO this is correct ui but dont re-add till you fix above. 
-    //mpGui->addIntVar("Displayed Cascade", mControls.displayedCascade, 0u, mControls.cascadeCount - 1);
+    mpGui->addIntVar("Displayed Cascade", mControls.displayedCascade, 0u, mControls.cascadeCount - 1);
     mpGui->addIntVar("LightIndex", mControls.lightIndex, 0u, mpScene->getLightCount() - 1);
 
     std::string groupName = "Light " + std::to_string(mControls.lightIndex);

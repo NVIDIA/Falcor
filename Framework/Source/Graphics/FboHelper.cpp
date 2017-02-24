@@ -120,7 +120,7 @@ namespace Falcor
             {
                 Texture::BindFlags flags = getBindFlags(true, fboDesc.isDepthStencilUav());
                 Texture::SharedPtr pDepth = createTexture2D(width, height, fboDesc.getDepthStencilFormat(), sampleCount, arraySize, mipLevels, flags);
-                pFbo->attachDepthStencilTarget(pDepth, 0, 0, Fbo::kAttachEntireMipLevel);
+                pFbo->attachDepthStencilTarget(pDepth, 0, 0, arraySize);
             }
 
             return pFbo;

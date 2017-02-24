@@ -240,7 +240,7 @@ namespace Falcor
             Fbo::Desc fboDesc;
             fboDesc.setDepthStencilTarget(depthFormat);
             mShadowPass.pFbo = FboHelper::create2D(mapWidth, mapHeight, fboDesc, mCsmData.cascadeCount);
-            mDepthPass.pFbo = FboHelper::create2D(mapWidth, mapHeight, fboDesc);
+            mDepthPass.pFbo = FboHelper::create2D(mapWidth, mapHeight, fboDesc, mCsmData.cascadeCount);
         }
         }
 
@@ -252,17 +252,18 @@ namespace Falcor
             //D3D12 ERROR: ID3D12Device::CreateCommittedResource: D3D12_RESOURCE_DESC::SampleDesc::Count must be 1 when number of mip levels is not 1, or Dimension is not D3D12_RESOURCE_DIMENSION_TEXTURE2D. SampleDesc::Count is 4, MipLevels is 12, and Dimension is D3D12_RESOURCE_DIMENSION_TEXTURE2D. [ STATE_CREATION ERROR #723: CREATERESOURCE_INVALIDSAMPLEDESC]
             //SampleCount should be numCascades, putting it as this for now, requires a MS flag if fbo has > 1 sample
             //See renderTargetView::Create
-            mShadowPass.pFbo = FboHelper::create2D(mapWidth, mapHeight, fboDesc, 1u, 1u);
-            mDepthPass.pFbo = FboHelper::create2D(mapWidth, mapHeight, fboDesc);
+            mShadowPass.pFbo = FboHelper::create2D(mapWidth, mapHeight, fboDesc, mCsmData.cascadeCount);
+            mDepthPass.pFbo = FboHelper::create2D(mapWidth, mapHeight, fboDesc, mCsmData.cascadeCount);
         }
 
         mShadowPass.fboAspectRatio = (float)mapWidth / (float)mapHeight;
 
-        // Create the program
+        // Create the shadows program
         mShadowPass.pProg = GraphicsProgram::createFromFile(kDepthPassVSFile, kDepthPassFsFile, kDepthPassGsFile, "", "", progDef);
         mShadowPass.pState = GraphicsState::create();
         mShadowPass.pState->setProgram(mShadowPass.pProg);
         mShadowPass.pState->setDepthStencilState(nullptr);
+        mShadowPass.pState->setFbo(mShadowPass.pFbo);
         mShadowPass.pGraphicsVars = GraphicsVars::create(mShadowPass.pProg->getActiveVersion()->getReflector());
         mShadowPass.pLightCB = mShadowPass.pGraphicsVars["PerLightCB"];
         mShadowPass.pAlphaCB = mShadowPass.pGraphicsVars["AlphaMapCB"];
@@ -477,8 +478,8 @@ namespace Falcor
         {
             mCsmData.cascadeScale[0] = glm::vec4(1);
             mCsmData.cascadeOffset[0] = glm::vec4(0);
-            mCsmData.cascadeStartDepth[0] = 0;
-            mCsmData.cascadeRange[0] = 1;
+            mCsmData.cascadeStartDepth[0].x = 0;
+            mCsmData.cascadeRange[0].x = 1;
             return;
         }
 
@@ -508,8 +509,8 @@ namespace Falcor
             }
 
             // Calculate the cascade distance in camera-clip space
-            mCsmData.cascadeStartDepth[c] = depthRange * cascadeStart + nearPlane;
-            mCsmData.cascadeRange[c] = (depthRange * cascadeEnd + nearPlane) - mCsmData.cascadeStartDepth[c];
+            mCsmData.cascadeStartDepth[c].x = depthRange * cascadeStart + nearPlane;
+            mCsmData.cascadeRange[c].x = (depthRange * cascadeEnd + nearPlane) - mCsmData.cascadeStartDepth[c].x;
             // Calculate the cascade frustum
             glm::vec3 cascadeFrust[8];
             for(uint32_t i = 0; i < 4; i++)
@@ -537,7 +538,6 @@ namespace Falcor
         pCtx->popGraphicsState();
         pCtx->popGraphicsVars();
     }
-
 
     void CascadedShadowMaps::executeDepthPass(RenderContext* pCtx, const Camera* pCamera)
     {
@@ -651,10 +651,7 @@ namespace Falcor
             mShadowPass.pState->setRasterizerState(nullptr);
         }
 
-        //THE PROBLEM IS HERE PROBABLY
-        mShadowPass.pState->setFbo(mShadowPass.pFbo);
         pRenderCtx->pushGraphicsState(mShadowPass.pState);
-
         partitionCascades(pCamera, distanceRange);
         renderScene(pRenderCtx);
 
@@ -708,9 +705,23 @@ namespace Falcor
         //depthBias is at offset 1012 from csm data starting at 448, so offset 564 into struct, but the Cpp size of the 
         //struct is 468. Which is why the set blob call here isn't affecting the depth bias. Also since it's a memcpy 
         //it's probably setting data incorrectly. 
-        pVars->getConstantBuffer("PerFrameCB")->setBlob(&mCsmData, offset, sizeof(mCsmData));
-        //Manually setting the depth bias because of above issue.
-        pVars->getConstantBuffer("PerFrameCB")->setVariable(varName + ".depthBias", mCsmData.depthBias);
+        ConstantBuffer::SharedPtr pCB = pVars->getConstantBuffer("PerFrameCB");
+        //pCB->setBlob(&mCsmData, offset, sizeof(mCsmData));
+        //Manually setting the depth bias because of above issue. Everything at and beyond depthBias is not getting sent properly
+        //This is all temporary till i can figure out the problems with blob
+        pCB->setVariable(varName + ".globalMat", mCsmData.globalMat);
+        pCB->setVariableArray(varName + ".cascadeScale", mCsmData.cascadeScale, CSM_MAX_CASCADES);
+        pCB->setVariableArray(varName + ".cascadeOffset", mCsmData.cascadeOffset, CSM_MAX_CASCADES);
+        pCB->setVariableArray(varName + ".cascadeStartDepth", mCsmData.cascadeStartDepth, CSM_MAX_CASCADES);
+        pCB->setVariableArray(varName + ".cascadeRange", mCsmData.cascadeRange, CSM_MAX_CASCADES);
+        pCB->setVariable(varName + ".depthBias", mCsmData.depthBias);
+        pCB->setVariable(varName + ".cascadeCount", mCsmData.cascadeCount);
+        pCB->setVariable(varName + ".filterMode", mCsmData.filterMode);
+        pCB->setVariable(varName + ".sampleKernelSize", mCsmData.sampleKernelSize);
+        pCB->setVariable(varName + ".lightDir", mCsmData.lightDir);
+        pCB->setVariable(varName + ".lightBleedingReduction", mCsmData.lightBleedingReduction);
+        pCB->setVariable(varName + ".cascadeBlendThreshold", mCsmData.cascadeBlendThreshold);
+        pCB->setVariable(varName + ".evsmExponents", mCsmData.evsmExponents);
     }
     
     Texture::SharedPtr CascadedShadowMaps::getShadowMap() const

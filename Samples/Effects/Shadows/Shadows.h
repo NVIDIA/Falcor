@@ -85,7 +85,7 @@ private:
         bool visualizeCascades = false;
         int32_t displayedCascade = 0;
         //TODO the default for this should be 4
-        int32_t cascadeCount = 1;
+        int32_t cascadeCount = 4;
         int32_t lightIndex = 0;
     };
     Controls mControls;

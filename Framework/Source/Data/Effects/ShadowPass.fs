@@ -44,7 +44,6 @@ struct ShadowPassPSIn
     uint rtIndex : SV_RenderTargetArrayIndex;
 };
 
-//TODO how do?
 #if defined(_VSM) || defined(_EVSM2)
 vec2 main(ShadowPassPSIn pIn) : SV_TARGET0
 #elif defined(_EVSM4)
@@ -53,6 +52,7 @@ vec4 main(ShadowPassPSIn pIn) : SV_TARGET0
 void main(ShadowPassPSIn pIn)
 #endif
 {
+    //TODO how do?
     //if(uVec2(alphaMap != 0 && alphaMap.Sample(exampleSampler, texC)._ALPHA_CHANNEL < alphaThreshold)
     if(alphaMap.Sample(exampleSampler, pIn.texC)._ALPHA_CHANNEL < alphaThreshold)
     {
