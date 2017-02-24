@@ -183,33 +183,28 @@ float csmFixedSizePcf(const CsmData csmData, const vec2 texC, float depthRef, ui
 {
     float width, height, elements, levels;
     //TODO cleaner version of this fx?
-    shadowMap.GetDimensions(cascadeIndex, width, height, elements, levels);
+    shadowMap.GetDimensions(0u, width, height, elements, levels);
     vec2 pixelSize = 1.0 / float2(width, height);
     float res = 0;
 
     int halfKernelSize = csmData.sampleKernelSize / 2u;
-
-    //TODO THIS NEEDS TO GO IN LOOP BUT ITS COMPLAINING THAT IT CANT UNROLL THE FOREACH LOOP
-    //IT DOESNT LIKE DOING TEXTURE SAMPLING IN A LOOP OF NONCONST SIZE
-    //for(int i = -halfKernelSize; i <= halfKernelSize; i++)
-    //{
-        //for(int j = -halfKernelSize; j <= halfKernelSize; j++)
-        //{
-            vec2 sampleCrd = texC + vec2(-halfKernelSize, -halfKernelSize) * pixelSize;
-            res += shadowMap.Sample(exampleSampler, float3(texC, cascadeIndex)).r;
-            //TODO why is this vec4?
-            //res += csmData.shadowMap.Sample(exampleSampler, vec4(sampleCrd, float(cascadeIndex), depthRef)).r;
-        //}
-   //}
+    for(int i = -halfKernelSize; i <= halfKernelSize; i++)
+    {
+        for(int j = -halfKernelSize; j <= halfKernelSize; j++)
+        {
+            vec2 sampleCrd = texC + vec2(i, j) * pixelSize;
+            res += shadowMap.SampleCmpLevelZero(compareSampler, float3(sampleCrd, cascadeIndex), depthRef).r;
+        }
+    }
 
     return res / (csmData.sampleKernelSize * csmData.sampleKernelSize);
 }
 
-float csmStochasticFilter(const CsmData csmData, const vec2 texC, float depthRef, uint32_t cascadeIndex)
+float csmStochasticFilter(const CsmData csmData, const vec2 texC, float depthRef, uint32_t cascadeIndex, vec2 posHxy)
 {
     float width, height, elements, levels;
     //TODO cleaner version of this fx?
-    shadowMap.GetDimensions(cascadeIndex, width, height, elements, levels);
+    shadowMap.GetDimensions(0u, width, height, elements, levels);
     vec2 pixelSize = 1.0 / float2(width, height);
 
     const vec2 poissonDisk[16] = {
@@ -234,27 +229,18 @@ float csmStochasticFilter(const CsmData csmData, const vec2 texC, float depthRef
     vec2 halfKernelSize = pixelSize * float(csmData.sampleKernelSize) / 4;
 
     float res = 0;
-    //TODO THIS NEEDS TO GO IN LOOP BUT ITS COMPLAINING THAT IT CANT UNROLL THE FOREACH LOOP
-    //IT DOESNT LIKE DOING TEXTURE SAMPLING IN A LOOP OF NONCONST SIZE
-    //Todo, why cant hlsl unroll this loop? it's using const int
-    //const int numStochasticSamples = 4;
-    //for(int i = 0; i < numStochasticSamples; i++)
-    //{
-        //TODO svPosition != gl_FragCoord. well it should but apparently can't use it like this
-        //int idx = int(i + 71 * SV_Position.x + 37 * SV_Position.y) & 3;// Tempooral version: (csmData.temporalSampleCount*numStochasticSamples + i)&15;
-        //TODO, index should be idx, not 0
-        vec2 texelOffset = poissonDisk[0] * halfKernelSize;
+    float posX = posHxy.x / width;
+    float posY = posHxy.y / height;
+    const int numStochasticSamples = 4;
+    for(int i = 0; i < numStochasticSamples; i++)
+    {
+        int idx = int(i + 71 * posX + 37 * posY) & 3;// Temporal version: (csmData.temporalSampleCount*numStochasticSamples + i)&15;
+        vec2 texelOffset = poissonDisk[idx] * halfKernelSize;
         vec2 sampleCrd = texelOffset + texC;
-        //TODO why is this vec4?
-        //res += texture(csmData.shadowMap, vec4(sampleCrd, float(cascadeIndex), depthRef)).r;
-        //DOING THIS 4 times to make up for not looping, look in to that later
-        res += shadowMap.Sample(exampleSampler, float3(sampleCrd, cascadeIndex)).r;
+        res += shadowMap.SampleCmpLevelZero(compareSampler, float3(sampleCrd, cascadeIndex), depthRef).r;
+    }
 
-    //}
-
-    //TODO this should also be 
-    //return res / float(numStochasticSamples);
-        return res / 4.f;
+    return res / float(numStochasticSamples);
 }
 
 float linstep(float a, float b, float v)
@@ -307,7 +293,7 @@ float csmEvsmFilter(const CsmData csmData, const vec2 texC, float sampleDepth, u
     return res;
 }
 
-float calcShadowFactorWithCascadeIdx(const CsmData csmData, const uint32_t cascadeIndex, vec3 posW, bool calcDrv, inout vec2 drvX, inout vec2 drvY)
+float calcShadowFactorWithCascadeIdx(const CsmData csmData, const uint32_t cascadeIndex, vec3 posW, vec2 posHxy, bool calcDrv, inout vec2 drvX, inout vec2 drvY)
 {
     // Apply normal offset
     //posW.xyz += calcNormalOffset(csmData, normal, cascadeIndex);
@@ -343,12 +329,12 @@ float calcShadowFactorWithCascadeIdx(const CsmData csmData, const uint32_t casca
     case CsmFilterEvsm4:
         result = csmEvsmFilter(csmData, shadowPos.xy, shadowPos.z, cascadeIndex, calcDrv, drvX, drvY); break;
     case CsmFilterStochasticPcf:
-        result = csmStochasticFilter(csmData, shadowPos.xy, shadowPos.z, cascadeIndex); break;
+        result = csmStochasticFilter(csmData, shadowPos.xy, shadowPos.z, cascadeIndex, posHxy); break;
     }
     return result;
 }
 
-float calcShadowFactor(const CsmData csmData, const float cameraDepth, vec3 posW)
+float calcShadowFactor(const CsmData csmData, const float cameraDepth, vec3 posW, vec2 posHxy)
 {
     float weight = 0;
     float s;
@@ -370,14 +356,14 @@ float calcShadowFactor(const CsmData csmData, const float cameraDepth, vec3 posW
         int prevCascade = max(0, cascadeIndex - 1);
         float2 drvX = float2(0, 0);
         float2 drvY = float2(0, 0);
-        float s1 = calcShadowFactorWithCascadeIdx(csmData, prevCascade, posW, true, drvX, drvY);
-        s = calcShadowFactorWithCascadeIdx(csmData, cascadeIndex, posW, false, drvX, drvY);
+        float s1 = calcShadowFactorWithCascadeIdx(csmData, prevCascade, posW, posHxy, true, drvX, drvY);
+        s = calcShadowFactorWithCascadeIdx(csmData, cascadeIndex, posW, posHxy, false, drvX, drvY);
         s = lerp(s1, s, weight);
     }
     else
     {
         vec2 drvX, drvY;
-        s = calcShadowFactorWithCascadeIdx(csmData, cascadeIndex, posW, true, drvX, drvY);
+        s = calcShadowFactorWithCascadeIdx(csmData, cascadeIndex, posW, posHxy, true, drvX, drvY);
     }
 
     return s;

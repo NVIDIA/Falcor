@@ -37,7 +37,7 @@ vec4 main(ShadowsVSOut pIn) : SV_TARGET0
     
 #foreach p in _LIGHT_SOURCES
     {
-        shadowFactor = calcShadowFactor(gCsmData[$(_valIndex)], pIn.shadowsDepthC, shAttr.P);
+        shadowFactor = calcShadowFactor(gCsmData[$(_valIndex)], pIn.shadowsDepthC, shAttr.P, pIn.vsData.posH.xy);
         evalMaterial(shAttr, $(p), result, $(_valIndex) == 0);
         fragColor.rgb += result.diffuseAlbedo * result.diffuseIllumination * shadowFactor;
         fragColor.rgb += result.specularAlbedo * result.specularIllumination * (0.01f + shadowFactor * 0.99f);
