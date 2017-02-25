@@ -50,7 +50,7 @@ struct ShadowPassVSOut
     float2 texC : TEXCOORD;
 };
 
-[instance(CSM_MAX_CASCADES)]
+[instance(_CASCADE_COUNT)]
 [maxvertexcount(3)]
 void main(triangle ShadowPassVSOut input[3], uint InstanceID : SV_GSInstanceID, inout TriangleStream<ShadowPassPSIn> outStream)
 {
