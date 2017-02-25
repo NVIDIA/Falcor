@@ -105,6 +105,7 @@ namespace Falcor
  
         // Restore state
         pState->popFbo();
+        pRenderCtx->popGraphicsVars();
     }
 
     glm::vec4 ParallelReduction::reduce(RenderContext* pRenderCtx, Texture::SharedPtr pInput)
