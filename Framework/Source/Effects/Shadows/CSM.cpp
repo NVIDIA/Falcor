@@ -185,7 +185,7 @@ namespace Falcor
         return CascadedShadowMaps::UniquePtr(pCsm);
     }
 
-    void CascadedShadowMaps::createSdsmData(const Texture* pTexture)
+    void CascadedShadowMaps::createSdsmData(Texture::SharedPtr pTexture)
     {
         // Check if we actually need to create it
         if(pTexture)
@@ -248,10 +248,6 @@ namespace Falcor
         {
             Fbo::Desc fboDesc;
             fboDesc.setDepthStencilTarget(depthFormat).setColorTarget(0, colorFormat);
-            //TODO Was max mip, had to change to 1 to fix...
-            //D3D12 ERROR: ID3D12Device::CreateCommittedResource: D3D12_RESOURCE_DESC::SampleDesc::Count must be 1 when number of mip levels is not 1, or Dimension is not D3D12_RESOURCE_DIMENSION_TEXTURE2D. SampleDesc::Count is 4, MipLevels is 12, and Dimension is D3D12_RESOURCE_DIMENSION_TEXTURE2D. [ STATE_CREATION ERROR #723: CREATERESOURCE_INVALIDSAMPLEDESC]
-            //SampleCount should be numCascades, putting it as this for now, requires a MS flag if fbo has > 1 sample
-            //See renderTargetView::Create
             mShadowPass.pFbo = FboHelper::create2D(mapWidth, mapHeight, fboDesc, mCsmData.cascadeCount);
             mDepthPass.pFbo = FboHelper::create2D(mapWidth, mapHeight, fboDesc, mCsmData.cascadeCount);
         }
@@ -581,18 +577,17 @@ namespace Falcor
         mShadowPass.pVSMTrilinearSampler = Sampler::create(samplerDesc);
     }
 
-    void CascadedShadowMaps::reduceDepthSdsmMinMax(RenderContext* pRenderCtx, const Camera* pCamera, const Texture* pDepthBuffer, glm::vec2& distanceRange)
+    void CascadedShadowMaps::reduceDepthSdsmMinMax(RenderContext* pRenderCtx, const Camera* pCamera, Texture::SharedPtr pDepthBuffer, glm::vec2& distanceRange)
     {
         if(pDepthBuffer == nullptr)
         {
             // Run a shadow pass
             executeDepthPass(pRenderCtx, pCamera);
-            pDepthBuffer = mDepthPass.pFbo->getDepthStencilTexture().get();
+            pDepthBuffer = mDepthPass.pFbo->getDepthStencilTexture();
         }
 
         createSdsmData(pDepthBuffer);
-        //TODO fix parallel reudction
-        //distanceRange = glm::vec2(mSdsmData.minMaxReduction->reduce(pRenderCtx, pDepthBuffer));
+        distanceRange = glm::vec2(mSdsmData.minMaxReduction->reduce(pRenderCtx, pDepthBuffer));
 
         // Convert to linear
         glm::mat4 camProj = pCamera->getProjMatrix();
@@ -601,15 +596,15 @@ namespace Falcor
         distanceRange = (distanceRange - pCamera->getNearPlane()) / (pCamera->getNearPlane() - pCamera->getFarPlane());
         distanceRange = glm::clamp(distanceRange, glm::vec2(0), glm::vec2(1));
 
-        //         if(mControls.stabilizeCascades)
-        //         {
-        //             // Ignore minor changes that can result in swimming
-        //             distanceRange = round(distanceRange * 16.0f) / 16.0f;
-        //             distanceRange.y = max(distanceRange.y, 0.005f);
-        //         }
+        if (mControls.stabilizeCascades)
+        {
+            // Ignore minor changes that can result in swimming
+            distanceRange = round(distanceRange * 16.0f) / 16.0f;
+            distanceRange.y = max(distanceRange.y, 0.005f);
+        }
     }
 
-    void CascadedShadowMaps::calcDistanceRange(RenderContext* pRenderCtx, const Camera* pCamera, const Texture* pDepthBuffer, glm::vec2& distanceRange)
+    void CascadedShadowMaps::calcDistanceRange(RenderContext* pRenderCtx, const Camera* pCamera, Texture::SharedPtr pDepthBuffer, glm::vec2& distanceRange)
     {
         if(mControls.useMinMaxSdsm)
         {
@@ -621,7 +616,7 @@ namespace Falcor
         }
     }
 
-    void CascadedShadowMaps::setup(RenderContext* pRenderCtx, const Camera* pCamera, const Texture* pDepthBuffer)
+    void CascadedShadowMaps::setup(RenderContext* pRenderCtx, const Camera* pCamera, Texture::SharedPtr pDepthBuffer)
     {
         const glm::vec4 clearColor(1);
         pRenderCtx->clearFbo(mDepthPass.pFbo.get(), clearColor, 1, 0, FboAttachmentType::All);
@@ -629,7 +624,6 @@ namespace Falcor
 
         // Calc the bounds
         glm::vec2 distanceRange(0, 0);
-        //TODO re-add this when parallel reduction is fixed
         calcDistanceRange(pRenderCtx, pCamera, pDepthBuffer, distanceRange);
 
         GraphicsState::Viewport VP;

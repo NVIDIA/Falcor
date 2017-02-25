@@ -65,8 +65,7 @@ namespace Falcor
         mpFirstIterProg = FullScreenPass::create(fsFilename, defines);
         mpFirstIterProg->getProgram()->addDefine("_FIRST_ITERATION");
         mpRestIterProg = FullScreenPass::create(fsFilename, defines);
-        //TODO fix this in the rest of the parallel reduction code, cbuffer only has a texture so there effectively is no cbuffer
-        //mpCb = ConstantBuffer::create(mpFirstIterProg->getProgram(), "PerImageCB");
+        pVars = GraphicsVars::create(mpFirstIterProg->getProgram()->getActiveVersion()->getReflector());
 
         // Calculate the number of reduction passes
         if(width > kTileSize || height > kTileSize)
@@ -91,42 +90,35 @@ namespace Falcor
         return ParallelReduction::UniquePtr(new ParallelReduction(reductionType, readbackLatency, width, height));
     }
 
-    void runProgram(RenderContext* pRenderCtx, const Texture* pInput, const FullScreenPass* pProgram, Fbo::SharedPtr pDst, ConstantBuffer::SharedPtr pCB, Sampler::SharedPtr pPointSampler)
+    void runProgram(RenderContext* pRenderCtx, Texture::SharedPtr pInput, const FullScreenPass* pProgram, Fbo::SharedPtr pDst, GraphicsVars::SharedPtr pVars, Sampler::SharedPtr pPointSampler)
     {
+        GraphicsState::SharedPtr pState = pRenderCtx->getGraphicsState();
+        pVars->setTexture("gInputTex", pInput);
+        pVars->setSampler("gSampler", pPointSampler);
 
-        //TODO ALL OF THIS
-        // Bind the input texture
-        //pCB->setTexture(0, pInput, pPointSampler.get());
-        // DISABLED_FOR_D3D12
-//        pRenderCtx->setUniformBuffer(0, pUbo);
+        //Set draw params
+        pState->pushFbo(pDst);
+        pRenderCtx->pushGraphicsVars(pVars);
 
-        // Set draw params
-//         pRenderCtx->pushFbo(pDst);
-//         RenderContext::Viewport vp;
-//         vp.height = (float)pDst->getHeight();
-//         vp.width = (float)pDst->getWidth();
-//         pRenderCtx->pushViewport(0, vp);
-// 
-//         // Launch the program
-//         pProgram->execute(pRenderCtx);
-// 
-//         // Restore state
-//         pRenderCtx->popViewport(0);
-//         pRenderCtx->popFbo();
+        // Launch the program
+        pProgram->execute(pRenderCtx);
+ 
+        // Restore state
+        pState->popFbo();
     }
 
-    glm::vec4 ParallelReduction::reduce(RenderContext* pRenderCtx, const Texture* pInput)
+    glm::vec4 ParallelReduction::reduce(RenderContext* pRenderCtx, Texture::SharedPtr pInput)
     {
         const FullScreenPass* pProgram = mpFirstIterProg.get();
 
         for(size_t i = 0; i < mpTmpResultFbo.size(); i++)
         {
-            runProgram(pRenderCtx, pInput, pProgram, mpTmpResultFbo[i], mpCb, mpPointSampler);
+            runProgram(pRenderCtx, pInput, pProgram, mpTmpResultFbo[i], pVars, mpPointSampler);
             pProgram = mpRestIterProg.get();
-            pInput = mpTmpResultFbo[i]->getColorTexture(0).get();
+            pInput = mpTmpResultFbo[i]->getColorTexture(0);
         }
 
-        runProgram(pRenderCtx, pInput, pProgram, mpResultFbo[mCurFbo], mpCb, mpPointSampler);
+        runProgram(pRenderCtx, pInput, pProgram, mpResultFbo[mCurFbo], pVars, mpPointSampler);
 
         // Read back the results
         mCurFbo = (mCurFbo + 1) % mpResultFbo.size();
@@ -142,10 +134,7 @@ namespace Falcor
             should_not_get_here();
         }
 
-        //TODO this function doesn't exist, probably need copycontext read texture data used for ss. 
-        //dunno probably not gonna translate straight to glm::vec4. I don't understand how this 
-        //actually works? It's reading just a single vec4? 
-        mpResultFbo[mCurFbo]->getColorTexture(0)->readSubresourceData(&result, bytesToRead, 0, 0);
+        result = *(vec4*)pRenderCtx->readTextureSubresource(mpResultFbo[mCurFbo]->getColorTexture(0).get(), 0u).data();
         return result;
     }
 }

@@ -69,7 +69,7 @@ namespace Falcor
         \params[in] pCamera The camera that will be used to render the scene
         \params[in] pSceneDepthBuffer Valid only when SDSM is enabled. The depth map to run SDSM analysis on. If this is nullptr, SDSM will run a depth pass
         */
-        void setup(RenderContext* pRenderCtx, const Camera* pCamera, const Texture* pSceneDepthBuffer);
+        void setup(RenderContext* pRenderCtx, const Camera* pCamera, Texture::SharedPtr pSceneDepthBuffer);
 
         Texture::SharedPtr getShadowMap() const;
 
@@ -92,7 +92,7 @@ namespace Falcor
         Camera::SharedPtr mpLightCamera;
         std::unique_ptr<CsmSceneRenderer> mpSceneRenderer;
 
-        void calcDistanceRange(RenderContext* pRenderCtx, const Camera* pCamera, const Texture* pDepthBuffer, glm::vec2& distanceRange);
+        void calcDistanceRange(RenderContext* pRenderCtx, const Camera* pCamera, Texture::SharedPtr pDepthBuffer, glm::vec2& distanceRange);
         void createShadowPassResources(uint32_t mapWidth, uint32_t mapHeight);
         void partitionCascades(const Camera* pCamera, const glm::vec2& distanceRange);
         void renderScene(RenderContext* pCtx);
@@ -127,8 +127,8 @@ namespace Falcor
             int32_t readbackLatency = 1;
         };
         SdsmData mSdsmData;
-        void createSdsmData(const Texture* pTexture);
-        void reduceDepthSdsmMinMax(RenderContext* pRenderCtx, const Camera* pCamera, const Texture* pDepthBuffer, glm::vec2& distanceRange);
+        void createSdsmData(Texture::SharedPtr pTexture);
+        void reduceDepthSdsmMinMax(RenderContext* pRenderCtx, const Camera* pCamera, Texture::SharedPtr pDepthBuffer, glm::vec2& distanceRange);
         void createVsmSampleState(uint32_t maxAnisotropy);
 
         GaussianBlur::UniquePtr mpGaussianBlur;
@@ -151,7 +151,7 @@ namespace Falcor
             glm::vec2 distanceRange = glm::vec2(0, 1);
             float pssmLambda = 0.5f;
             PartitionMode partitionMode = PartitionMode::PSSM;
-            bool stabilizeCascades = true;
+            bool stabilizeCascades = false;
             bool concentricCascades = false;
         };
 
