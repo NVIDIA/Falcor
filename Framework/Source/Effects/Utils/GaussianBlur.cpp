@@ -86,12 +86,12 @@ namespace Falcor
         mpHorizontalBlur->getProgram()->addDefine("_HORIZONTAL_BLUR");
         mpVerticalBlur = FullScreenPass::create(kShaderFilename, defines, true, true, layerMask);
         mpVerticalBlur->getProgram()->addDefine("_VERTICAL_BLUR");
-        mpCb = ConstantBuffer::create(mpVerticalBlur->getProgram(), "PerImageCB");
+        mpVars = GraphicsVars::create(mpHorizontalBlur->getProgram()->getActiveVersion()->getReflector());
     }
 
-    void GaussianBlur::execute(RenderContext* pRenderContext, const Texture* pSrc, Fbo::SharedPtr pDst)
+    void GaussianBlur::execute(RenderContext* pRenderContext, Texture::SharedPtr pSrc, Fbo::SharedPtr pDst)
     {
-        createTmpFbo(pSrc);
+        createTmpFbo(pSrc.get());
         uint32_t arraySize = pSrc->getArraySize();
         GraphicsState::Viewport vp;
         vp.originX = 0;
@@ -108,14 +108,15 @@ namespace Falcor
         }
 
         // Horizontal pass
-        mpCb->setTexture(0, pSrc, mpSampler.get());
+        mpVars->setSampler("gSampler", mpSampler);
+        mpVars->setTexture("gSrcTex", pSrc);
         pState->pushFbo(mpTmpFbo);
-        // DISABLED_FOR_D3D12
-//        pRenderContext->setUniformBuffer(0, mpUbo);
+        pRenderContext->pushGraphicsVars(mpVars);
         mpHorizontalBlur->execute(pRenderContext);
 
         // Vertical pass
-        mpCb->setTexture(0, mpTmpFbo->getColorTexture(0).get(), mpSampler.get());
+        mpVars->setTexture("gSrcTex", mpTmpFbo->getColorTexture(0));
+        pRenderContext->setGraphicsVars(mpVars);
         pState->setFbo(pDst);
         mpVerticalBlur->execute(pRenderContext);
 
@@ -124,5 +125,7 @@ namespace Falcor
         {
             pState->popViewport(i);
         }
-    }   
+
+        pRenderContext->popGraphicsVars();
+    }
 }

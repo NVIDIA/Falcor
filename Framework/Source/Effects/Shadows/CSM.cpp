@@ -165,8 +165,7 @@ namespace Falcor
         samplerDesc.setLodParams(-100.f, 100.f, 0.f);
 
         createVsmSampleState(1);
-        //TODO re-add gaus blur
-        //createGaussianBlurTech();
+        createGaussianBlurTech();
     }
 
     void CascadedShadowMaps::createGaussianBlurTech()
@@ -653,7 +652,7 @@ namespace Falcor
         {
             //todo
             //ILLEGAL char in shader file(1,1)???s
-            //mpGaussianBlur->execute(pRenderCtx, mShadowPass.pFbo->getColorTexture(0).get(), mShadowPass.pFbo);
+            mpGaussianBlur->execute(pRenderCtx, mShadowPass.pFbo->getColorTexture(0), mShadowPass.pFbo);
             mShadowPass.pFbo->getColorTexture(0)->generateMips();
         }
 

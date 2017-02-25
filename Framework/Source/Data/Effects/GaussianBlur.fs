@@ -26,20 +26,15 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 #version 450
-#include "HlslGlslCommon.h"
 #expect _KERNEL_WIDTH
 
-CONSTANT_BUFFER(PerImageCB, 0)
-{
 #ifdef _USE_TEX2D_ARRAY
     sampler2DArray gSrcTex;
 #else
     sampler2D gSrcTex;
 #endif
-};
 
-in vec2 texC;
-out vec4 fragColor;
+SamplerState gSampler;
 
 float getWeight(int i)
 {
@@ -61,29 +56,29 @@ Error. Kernel size must be an odd number in the range [1,11]
     return w[i];
 }
 
-vec4 blur(vec2 texC, const ivec2 direction)
+foat4 blur(float2 texC, const float2 direction)
 {
-    ivec2 offset = -(_KERNEL_WIDTH / 2) * direction;
+    float2 offset = -(_KERNEL_WIDTH / 2) * direction;
 
-    vec4 c = vec4(0,0,0,0);
+    float4 c = float4(0,0,0,0);
     for(int i = 0 ; i < _KERNEL_WIDTH ; i++)
     {
 #ifdef _USE_TEX2D_ARRAY
-        c += textureLodOffset(gSrcTex, vec3(texC, gl_Layer), 0, offset)*getWeight(i);
+        c += gSrcTex.SampleLevel(gSampler, float3(texC, gl_Layer), 0, offset)*getWeight(i);
 #else
-        c += textureLodOffset(gSrcTex, texC, 0, offset)*getWeight(i);
+        c += gSrcTex.SampleLevel(gSampler, texC, 0, offset)*getWeight(i);
 #endif
         offset += direction;
     }
     return c;
 }
 
-void main()
+void main(uint arrayIndex : SV_RenderTargetArrayIndex) : SV_TARGET0
 {
 #ifdef _HORIZONTAL_BLUR
-    fragColor = blur(texC, ivec2(1, 0));
+    fragColor = blur(texC, float2(1, 0));
 #elif defined _VERTICAL_BLUR
-    fragColor = blur(texC, ivec2(0, 1));
+    fragColor = blur(texC, float2(0, 1));
 #else
     Error. Need to define either _HORIZONTAL_BLUR or _VERTICAL_BLUR
 #endif
