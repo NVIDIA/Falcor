@@ -26,34 +26,38 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 #version 450
-#include "hlslglslcommon.h"
-#include "VertexAttrib.h"
-#include "ShaderCommon.h"
 
-#expect _VIEWPORT_MASK
-#expect _OUTPUT_PRIM_COUNT
-
-layout (triangles, invocations = 1) in;
-layout (triangle_strip, max_vertices = 3*_OUTPUT_PRIM_COUNT) out;
-in vec2 texCVS[3];
-out vec2 texC;
-
-void main()
+struct FullScreenPassVSOut
 {
-    uint32_t mask = _VIEWPORT_MASK;
+    float2 texC : TEXCOORD;
+    float4 svPos : SV_POSITION;
+};
+
+struct FullScreenPassGSOut
+{
+    float4 pos : SV_POSITION;
+    float2 texC : TEXCOORD;
+    uint rtIndex : SV_RenderTargetArrayIndex;
+};
+
+[maxvertexcount(3 * _OUTPUT_PRIM_COUNT)]
+void main(triangle FullScreenPassVSOut input[3], inout TriangleStream<FullScreenPassGSOut> outStream)
+{
+    FullScreenPassGSOut output;
+    uint mask = _VIEWPORT_MASK;
 
     while(mask != 0)
     {
-        int layer = findLSB(mask);
+        uint layer = firstbitlow(mask);
+        
         for(int i = 0 ; i < 3 ; i++)
         {
-            gl_Layer = layer;
-            gl_ViewportIndex = layer;
-            gl_Position = gl_in[i].gl_Position;
-            texC = texCVS[i];
-            EmitVertex();
+            output.rtIndex = layer;
+            output.pos = input[i].svPos;
+            output.texC = input[i].texC;
+            outStream.Append(output);
         }
-        EndPrimitive();
+        outStream.RestartStrip();
         mask &= ~(1 << layer);
     }
 }

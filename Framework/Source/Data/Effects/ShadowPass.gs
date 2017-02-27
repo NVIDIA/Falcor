@@ -30,8 +30,6 @@
 #include "ShaderCommon.h"
 #include "csmdata.h"
 
-//CascadeCount?
-
 cbuffer PerLightCB : register(b0)
 {
     CsmData gCsmData;

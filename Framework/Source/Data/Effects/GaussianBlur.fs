@@ -1,4 +1,4 @@
-﻿/***************************************************************************
+/***************************************************************************
 # Copyright (c) 2015, NVIDIA CORPORATION. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -29,9 +29,9 @@
 #expect _KERNEL_WIDTH
 
 #ifdef _USE_TEX2D_ARRAY
-    sampler2DArray gSrcTex;
+    Texture2DArray gSrcTex;
 #else
-    sampler2D gSrcTex;
+    texture2D gSrcTex;
 #endif
 
 SamplerState gSampler;
@@ -56,15 +56,16 @@ Error. Kernel size must be an odd number in the range [1,11]
     return w[i];
 }
 
-foat4 blur(float2 texC, const float2 direction)
+float4 blur(float2 texC, const float2 direction, uint arrayIndex)
 {
-    float2 offset = -(_KERNEL_WIDTH / 2) * direction;
+   int2 offset = -(_KERNEL_WIDTH / 2) * direction;
 
     float4 c = float4(0,0,0,0);
+    [unroll(11)]
     for(int i = 0 ; i < _KERNEL_WIDTH ; i++)
     {
 #ifdef _USE_TEX2D_ARRAY
-        c += gSrcTex.SampleLevel(gSampler, float3(texC, gl_Layer), 0, offset)*getWeight(i);
+        c += gSrcTex.SampleLevel(gSampler, float3(texC, arrayIndex), 0, offset)*getWeight(i);
 #else
         c += gSrcTex.SampleLevel(gSampler, texC, 0, offset)*getWeight(i);
 #endif
@@ -73,13 +74,15 @@ foat4 blur(float2 texC, const float2 direction)
     return c;
 }
 
-void main(uint arrayIndex : SV_RenderTargetArrayIndex) : SV_TARGET0
+float4 main(float4 pos : SV_POSITION, float2 texC : TEXCOORD, uint arrayIndex : SV_RenderTargetArrayIndex) : SV_TARGET0
 {
+    float4 fragColor = float4(1.f, 1.f, 1.f, 1.f);
 #ifdef _HORIZONTAL_BLUR
-    fragColor = blur(texC, float2(1, 0));
+    fragColor = blur(texC, float2(1, 0), arrayIndex);
 #elif defined _VERTICAL_BLUR
-    fragColor = blur(texC, float2(0, 1));
+    fragColor = blur(texC, float2(0, 1), arrayIndex);
 #else
     Error. Need to define either _HORIZONTAL_BLUR or _VERTICAL_BLUR
 #endif
+    return fragColor;
 }
