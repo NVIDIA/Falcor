@@ -46,7 +46,6 @@ void Shadows::onGuiRender()
 
     mpGui->addCheckBox("Visualize Cascades", mControls.visualizeCascades);
     mpGui->addCheckBox("Display Shadow Map", mControls.showShadowMap);
-    //TODO this is correct ui but dont re-add till you fix above. 
     mpGui->addIntVar("Displayed Cascade", mControls.displayedCascade, 0u, mControls.cascadeCount - 1);
     mpGui->addIntVar("LightIndex", mControls.lightIndex, 0u, mpScene->getLightCount() - 1);
 
@@ -56,11 +55,7 @@ void Shadows::onGuiRender()
         mpScene->getLight(mControls.lightIndex)->setUiElements(mpGui.get());
         mpGui->endGroup();
     }
-    mpCsmTech[0]->setUiElements(mpGui.get(), "CSM");
-    for (u32 i = 1; i < mpCsmTech.size(); ++i)
-    {
-        mpCsmTech[i]->copyUiElements(mpCsmTech[0].get());
-    }
+    mpCsmTech[mControls.lightIndex]->setUiElements(mpGui.get(), "CSM");
 }
 
 void Shadows::displayLoadSceneDialog()

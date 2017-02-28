@@ -376,53 +376,6 @@ namespace Falcor
         }
     }
 
-    void CascadedShadowMaps::copyUiElements(CascadedShadowMaps* pCsm)
-    {
-        //filter
-        uint32_t otherFilter = pCsm->getFilterMode();
-        if (mCsmData.filterMode != otherFilter)
-        {
-            mCsmData.filterMode = otherFilter;
-            createShadowPassResources(mShadowPass.pFbo->getWidth(), mShadowPass.pFbo->getHeight());
-        }
-
-        //Kernal 
-        i32 otherKernalSize = pCsm->mCsmData.sampleKernelSize;
-        if (mCsmData.sampleKernelSize != otherKernalSize)
-        {
-            onSetKernalSize(otherKernalSize);
-        }
-
-        //partition
-        mControls.partitionMode = pCsm->mControls.partitionMode;
-        mControls.pssmLambda = pCsm->mControls.pssmLambda;
-
-        //Sdsm data
-        mControls.useMinMaxSdsm = pCsm->mControls.useMinMaxSdsm;
-        int otherReadbackLatency = pCsm->mSdsmData.readbackLatency;
-        if (mSdsmData.readbackLatency != otherReadbackLatency)
-        {
-            createSdsmData(nullptr);
-        }
-
-        //manual settings
-        mControls.distanceRange = pCsm->mControls.distanceRange;
-        mCsmData.depthBias = pCsm->mCsmData.depthBias;
-        mControls.depthClamp = pCsm->mControls.depthClamp;
-        mControls.stabilizeCascades = pCsm->mControls.stabilizeCascades;
-        mControls.concentricCascades = pCsm->mControls.concentricCascades;
-        mCsmData.cascadeBlendThreshold = pCsm->mCsmData.cascadeBlendThreshold;
-
-        //VSM / ESM
-        uint32_t otherMaxAniso = pCsm->mShadowPass.pVSMTrilinearSampler->getMaxAnisotropy();
-        if(mShadowPass.pVSMTrilinearSampler->getMaxAnisotropy() != otherMaxAniso)
-        {
-            createVsmSampleState(otherMaxAniso);
-        }
-        mCsmData.lightBleedingReduction = pCsm->mCsmData.lightBleedingReduction;
-        mCsmData.evsmExponents = pCsm->mCsmData.evsmExponents;
-    }
-
     void camClipSpaceToWorldSpace(const Camera* pCamera, glm::vec3 viewFrustum[8], glm::vec3& center, float& radius)
     {
         glm::vec3 clipSpace[8] =
