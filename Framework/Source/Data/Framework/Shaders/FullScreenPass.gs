@@ -35,8 +35,8 @@ struct FullScreenPassVSOut
 
 struct FullScreenPassGSOut
 {
-    float4 pos : SV_POSITION;
     float2 texC : TEXCOORD;
+    float4 pos : SV_POSITION;
     uint rtIndex : SV_RenderTargetArrayIndex;
 };
 

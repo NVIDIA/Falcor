@@ -36,6 +36,15 @@
 
 SamplerState gSampler;
 
+struct BlurPSIn
+{
+    float2 texC : TEXCOORD;
+    float4 pos : SV_POSITION;
+#ifdef _USE_TEX2D_ARRAY
+    uint arrayIndex : SV_RenderTargetArrayIndex;
+#endif
+};
+
 float getWeight(int i)
 {
 #if _KERNEL_WIDTH == 1
@@ -56,7 +65,11 @@ Error. Kernel size must be an odd number in the range [1,11]
     return w[i];
 }
 
+#ifdef _USE_TEX2D_ARRAY
 float4 blur(float2 texC, const float2 direction, uint arrayIndex)
+#else
+float4 blur(float2 texC, const float2 direction)
+#endif
 {
    int2 offset = -(_KERNEL_WIDTH / 2) * direction;
 
@@ -74,15 +87,21 @@ float4 blur(float2 texC, const float2 direction, uint arrayIndex)
     return c;
 }
 
-float4 main(float4 pos : SV_POSITION, float2 texC : TEXCOORD, uint arrayIndex : SV_RenderTargetArrayIndex) : SV_TARGET0
+float4 main(BlurPSIn pIn) : SV_TARGET0
 {
     float4 fragColor = float4(1.f, 1.f, 1.f, 1.f);
 #ifdef _HORIZONTAL_BLUR
-    fragColor = blur(texC, float2(1, 0), arrayIndex);
+    float2 dir = float2(1, 0);
 #elif defined _VERTICAL_BLUR
-    fragColor = blur(texC, float2(0, 1), arrayIndex);
+    float2 dir = float2(0, 1);
 #else
     Error. Need to define either _HORIZONTAL_BLUR or _VERTICAL_BLUR
+#endif
+
+#ifdef _USE_TEX2D_ARRAY
+    fragColor = blur(pIn.texC, dir, pIn.arrayIndex);
+#else
+    fragColor = blur(pIn.texC, dir);
 #endif
     return fragColor;
 }

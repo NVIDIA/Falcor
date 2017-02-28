@@ -112,7 +112,7 @@ namespace Falcor
                 {
                     Texture::BindFlags flags = getBindFlags(false, fboDesc.isColorTargetUav(i));
                     Texture::SharedPtr pTex = createTexture2D(width, height, fboDesc.getColorTargetFormat(i), sampleCount, arraySize, mipLevels, flags);
-                    pFbo->attachColorTarget(pTex, i, 0, 0, Fbo::kAttachEntireMipLevel);
+                    pFbo->attachColorTarget(pTex, i, 0, 0, arraySize);
                 }
             }
 
