@@ -62,15 +62,15 @@ struct CsmData
 #ifdef HOST_CODE
     uint64_t padding;
     uint64_t padding2;
+#else
+    Texture2DArray shadowMap;
+    Texture2DArray momentsMap;
 #endif
 };
 
 #ifdef HOST_CODE
 static_assert(sizeof(CsmData) % sizeof(vec4) == 0, "CsmData size should be aligned on vec4 size");
 #else
-Texture2DArray shadowMap;
-Texture2DArray momentsMap;
-
 SamplerState exampleSampler : register(s0);
 SamplerComparisonState compareSampler : register(s1);
 
@@ -147,7 +147,7 @@ float calcReceiverPlaneDepthBias(const CsmData csmData, const vec3 shadowPos)
     depthDrv *= invDet;
 
     // Calculate the error based on the texture size
-    vec2 texelSize = 1 / vec2(textureSize(shadowMap, 0).xy);
+    vec2 texelSize = 1 / vec2(textureSize(csmData.shadowMap, 0).xy);
     float bias = dot(texelSize, abs(depthDrv));
     return min(bias, csmData.maxReceiverPlaneDepthBias);
 }
@@ -175,7 +175,7 @@ vec2 applyEvsmExponents(float depth, vec2 exponents)
 
 float csmFilterUsingHW(const CsmData csmData, const vec2 texC, float depthRef, uint32_t cascadeIndex)
 {
-    float res = shadowMap.SampleCmpLevelZero(compareSampler, float3(texC, cascadeIndex), depthRef).r;    
+    float res = csmData.shadowMap.SampleCmpLevelZero(compareSampler, float3(texC, cascadeIndex), depthRef).r;    
     return saturate(res);
 }
 
@@ -183,7 +183,7 @@ float csmFixedSizePcf(const CsmData csmData, const vec2 texC, float depthRef, ui
 {
     float width, height, elements, levels;
     //TODO cleaner version of this fx?
-    shadowMap.GetDimensions(0u, width, height, elements, levels);
+    csmData.shadowMap.GetDimensions(0u, width, height, elements, levels);
     vec2 pixelSize = 1.0 / float2(width, height);
     float res = 0;
 
@@ -193,7 +193,7 @@ float csmFixedSizePcf(const CsmData csmData, const vec2 texC, float depthRef, ui
         for(int j = -halfKernelSize; j <= halfKernelSize; j++)
         {
             vec2 sampleCrd = texC + vec2(i, j) * pixelSize;
-            res += shadowMap.SampleCmpLevelZero(compareSampler, float3(sampleCrd, cascadeIndex), depthRef).r;
+            res += csmData.shadowMap.SampleCmpLevelZero(compareSampler, float3(sampleCrd, cascadeIndex), depthRef).r;
         }
     }
 
@@ -204,7 +204,7 @@ float csmStochasticFilter(const CsmData csmData, const vec2 texC, float depthRef
 {
     float width, height, elements, levels;
     //TODO cleaner version of this fx?
-    shadowMap.GetDimensions(0u, width, height, elements, levels);
+    csmData.shadowMap.GetDimensions(0u, width, height, elements, levels);
     vec2 pixelSize = 1.0 / float2(width, height);
 
     const vec2 poissonDisk[16] = {
@@ -237,7 +237,7 @@ float csmStochasticFilter(const CsmData csmData, const vec2 texC, float depthRef
         int idx = int(i + 71 * posX + 37 * posY) & 3;// Temporal version: (csmData.temporalSampleCount*numStochasticSamples + i)&15;
         vec2 texelOffset = poissonDisk[idx] * halfKernelSize;
         vec2 sampleCrd = texelOffset + texC;
-        res += shadowMap.SampleCmpLevelZero(compareSampler, float3(sampleCrd, cascadeIndex), depthRef).r;
+        res += csmData.shadowMap.SampleCmpLevelZero(compareSampler, float3(sampleCrd, cascadeIndex), depthRef).r;
     }
 
     return res / float(numStochasticSamples);
@@ -267,7 +267,7 @@ float csmVsmFilter(const CsmData csmData, const vec2 texC, float sampleDepth, ui
         drvY = ddy_fine(texC);
         drvX = ddx_fine(texC);
     }
-    vec2 moments = momentsMap.SampleGrad(exampleSampler, float3(texC, float(cascadeIndex)), drvX, drvY).rg;
+    vec2 moments = csmData.momentsMap.SampleGrad(exampleSampler, float3(texC, float(cascadeIndex)), drvX, drvY).rg;
     float pMax = calcChebyshevUpperBound(moments, sampleDepth, csmData.lightBleedingReduction);
 
     return pMax;
@@ -281,7 +281,7 @@ float csmEvsmFilter(const CsmData csmData, const vec2 texC, float sampleDepth, u
         drvX = ddx_fine(texC);
     }
     vec2 expDepth = applyEvsmExponents(sampleDepth, csmData.evsmExponents);
-    vec4 moments = momentsMap.SampleGrad(exampleSampler, vec3(texC, float(cascadeIndex)), drvX, drvY);
+    vec4 moments = csmData.momentsMap.SampleGrad(exampleSampler, vec3(texC, float(cascadeIndex)), drvX, drvY);
     // Positive contribution
     float res = calcChebyshevUpperBound(moments.xy, expDepth.x, csmData.lightBleedingReduction);
     if(getFilterMode(csmData) == CsmFilterEvsm4)

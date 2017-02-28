@@ -376,6 +376,53 @@ namespace Falcor
         }
     }
 
+    void CascadedShadowMaps::copyUiElements(CascadedShadowMaps* pCsm)
+    {
+        //filter
+        uint32_t otherFilter = pCsm->getFilterMode();
+        if (mCsmData.filterMode != otherFilter)
+        {
+            mCsmData.filterMode = otherFilter;
+            createShadowPassResources(mShadowPass.pFbo->getWidth(), mShadowPass.pFbo->getHeight());
+        }
+
+        //Kernal 
+        i32 otherKernalSize = pCsm->mCsmData.sampleKernelSize;
+        if (mCsmData.sampleKernelSize != otherKernalSize)
+        {
+            onSetKernalSize(otherKernalSize);
+        }
+
+        //partition
+        mControls.partitionMode = pCsm->mControls.partitionMode;
+        mControls.pssmLambda = pCsm->mControls.pssmLambda;
+
+        //Sdsm data
+        mControls.useMinMaxSdsm = pCsm->mControls.useMinMaxSdsm;
+        int otherReadbackLatency = pCsm->mSdsmData.readbackLatency;
+        if (mSdsmData.readbackLatency != otherReadbackLatency)
+        {
+            createSdsmData(nullptr);
+        }
+
+        //manual settings
+        mControls.distanceRange = pCsm->mControls.distanceRange;
+        mCsmData.depthBias = pCsm->mCsmData.depthBias;
+        mControls.depthClamp = pCsm->mControls.depthClamp;
+        mControls.stabilizeCascades = pCsm->mControls.stabilizeCascades;
+        mControls.concentricCascades = pCsm->mControls.concentricCascades;
+        mCsmData.cascadeBlendThreshold = pCsm->mCsmData.cascadeBlendThreshold;
+
+        //VSM / ESM
+        uint32_t otherMaxAniso = pCsm->mShadowPass.pVSMTrilinearSampler->getMaxAnisotropy();
+        if(mShadowPass.pVSMTrilinearSampler->getMaxAnisotropy() != otherMaxAniso)
+        {
+            createVsmSampleState(otherMaxAniso);
+        }
+        mCsmData.lightBleedingReduction = pCsm->mCsmData.lightBleedingReduction;
+        mCsmData.evsmExponents = pCsm->mCsmData.evsmExponents;
+    }
+
     void camClipSpaceToWorldSpace(const Camera* pCamera, glm::vec3 viewFrustum[8], glm::vec3& center, float& radius)
     {
         glm::vec3 clipSpace[8] =
@@ -671,7 +718,7 @@ namespace Falcor
         case CsmFilterPoint:
             pSampler = mShadowPass.pPointCmpSampler;
             pTexture = mShadowPass.pFbo->getDepthStencilTexture();
-            pVars->setTexture("shadowMap", pTexture);
+            pVars->setTexture(varName + ".shadowMap", pTexture);
             pVars->setSampler("compareSampler", pSampler);
             break;
         case CsmFilterHwPcf:
@@ -679,7 +726,7 @@ namespace Falcor
         case CsmFilterStochasticPcf:
             pSampler = mShadowPass.pLinearCmpSampler;
             pTexture = mShadowPass.pFbo->getDepthStencilTexture();
-            pVars->setTexture("shadowMap", pTexture);
+            pVars->setTexture(varName + ".shadowMap", pTexture);
             pVars->setSampler("compareSampler", pSampler);
             break;
         case CsmFilterVsm:
@@ -687,10 +734,10 @@ namespace Falcor
         case CsmFilterEvsm4:
             pSampler = mShadowPass.pVSMTrilinearSampler;
             pTexture = mShadowPass.pFbo->getColorTexture(0);
-            pVars->setTexture("momentsMap", pTexture);
+            pVars->setTexture(varName + ".momentsMap", pTexture);
             pVars->setSampler("exampleSampler", pSampler);
             break;
-        }
+        }    
 
         //Todo, at least depth bias and light dir aren't getitng sent to shader correctly 
         mCsmData.lightDir = glm::normalize(((DirectionalLight*)mpLight.get())->getWorldDirection());

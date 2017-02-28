@@ -56,7 +56,11 @@ void Shadows::onGuiRender()
         mpScene->getLight(mControls.lightIndex)->setUiElements(mpGui.get());
         mpGui->endGroup();
     }
-    mpCsmTech[mControls.lightIndex]->setUiElements(mpGui.get(), "CSM");
+    mpCsmTech[0]->setUiElements(mpGui.get(), "CSM");
+    for (u32 i = 1; i < mpCsmTech.size(); ++i)
+    {
+        mpCsmTech[i]->copyUiElements(mpCsmTech[0].get());
+    }
 }
 
 void Shadows::displayLoadSceneDialog()

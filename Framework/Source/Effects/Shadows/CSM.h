@@ -64,6 +64,10 @@ namespace Falcor
         */
         void setUiElements(Gui* pGui, const std::string& uiGroup);
 
+        /** Copy the UI settings from another CSM 
+        */
+        void copyUiElements(CascadedShadowMaps* pCsm);
+
         /** Run the shadow-map generation pass
         \params[in] pScene The scene to render
         \params[in] pCamera The camera that will be used to render the scene

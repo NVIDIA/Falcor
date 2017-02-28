@@ -46,7 +46,10 @@ vec4 main(ShadowsVSOut pIn) : SV_TARGET0
     fragColor.rgb += gAmbient * result.diffuseAlbedo * 0.1;
     if(visualizeCascades)
     {
-        fragColor.rgb *= getCascadeColor(getCascadeIndex(gCsmData[lightIndex], pIn.shadowsDepthC));
+        //This was light index, but cascade color only uses cascade count and cascade 
+        //start count, which should be uniform across csmdatas 
+        //using light index complained sampler array index must be literal
+        fragColor.rgb *= getCascadeColor(getCascadeIndex(gCsmData[0], pIn.shadowsDepthC));
     }
 
     return fragColor;
