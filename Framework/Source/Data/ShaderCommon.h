@@ -73,6 +73,15 @@ cbuffer InternalPerMaterialCB : register(b13)
     bool gDebugTemporalMaterial;
 };
 
+float2 calcMotionVector(float2 pixelCrd, float4 prevPosH, float2 renderTargetDim)
+{
+    float2 prevCrd = prevPosH.xy / prevPosH.w;
+    prevCrd *= float2(0.5, -0.5);
+    prevCrd += 0.5f;
+    float2 normalizedCrd = pixelCrd / renderTargetDim;
+    return prevCrd - normalizedCrd;
+}
+
 /*******************************************************************
                     GLSL Evaluation routines
 *******************************************************************/

@@ -38,6 +38,7 @@
 #include "API/ProgramVars.h"
 #include "Graphics/GraphicsState.h"
 #include "API/ComputeContext.h"
+#include "Graphics/FullScreenPass.h"
 
 namespace Falcor
 {
@@ -49,6 +50,8 @@ namespace Falcor
     public:
         using SharedPtr = std::shared_ptr<RenderContext>;
         using SharedConstPtr = std::shared_ptr<const RenderContext>;
+
+        ~RenderContext();
 
         /** create a new object
         */
@@ -78,10 +81,6 @@ namespace Falcor
             \param[in] clearStencil Optional. Controls whether or not to clear the stencil channel
             */
         void clearDsv(const DepthStencilView* pDsv, float depth, uint8_t stencil, bool clearDepth = true, bool clearStencil = true);
-
-        /** Destructor
-        */
-        ~RenderContext();
 
         /** Ordered draw call
             \param[in] vertexCount Number of vertices to draw
@@ -113,17 +112,11 @@ namespace Falcor
         */
         void drawIndexedInstanced(uint32_t indexCount, uint32_t instanceCount, uint32_t startIndexLocation, int baseVertexLocation, uint32_t startInstanceLocation);
 
-        /** Blits (low-level copy) a source region of one FBO into the target region of another FBO. Supports only one-RT FBOs, only near and linear filtering.
-            \param[in] pSource Source FBO to copy from
-            \param[in] pTarget Target FBO to copy to
-            \param[in] srcRegion Source region to copy from (format: x0, y0, x1, y1)
-            \param[in] dstRegion Target region to copy to (format: x0, y0, x1, y1)
-            \param[in] useLinearFiltering Choice between linear (true) and nearest (false) filtering for resampling
-            \param[in] copyFlags indicate what surfaces of an FBO should be copied (options: color buffer, depth, and stencil buffers)
-            \param[in] srcIdx index of a source color attachment to copy
-            \param[in] dstIdx index of a destination color attachment to copy
+        /** Blits (low-level copy) an SRV into an RTV
+            \param[in] pSrc Source view to copy from
+            \param[in] pDst Target view to copy to
         */
-        void blitFbo(const Fbo* pSource, const Fbo* pTarget, const glm::ivec4& srcRegion, const glm::ivec4& dstRegion, bool useLinearFiltering = false, FboAttachmentType copyFlags = FboAttachmentType::Color, uint32_t srcIdx = 0, uint32_t dstIdx = 0);
+        void blit(ShaderResourceView::SharedPtr pSrc, RenderTargetView::SharedPtr pDst);
 
         /** Set the program variables for graphics
         */
@@ -158,12 +151,24 @@ namespace Falcor
         void popGraphicsState();
         
     private:
-        RenderContext();
+        RenderContext() = default;
         GraphicsVars::SharedPtr mpGraphicsVars;
         GraphicsState::SharedPtr mpGraphicsState;
 
         std::stack<GraphicsState::SharedPtr> mPipelineStateStack;
         std::stack<GraphicsVars::SharedPtr> mpGraphicsVarsStack;
+
+        struct BlitData
+        {
+            FullScreenPass::UniquePtr pPass;
+            GraphicsVars::SharedPtr pVars;
+            GraphicsState::SharedPtr pState;
+        };
+
+        static BlitData sBlitData;
+
+        static void initBlitData();
+        static void releaseBlitData();
 
         // Internal functions used by the API layers
         void applyProgramVars();

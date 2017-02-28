@@ -188,14 +188,14 @@ namespace Falcor
 		return nullptr;
 	}
 
-	bool Device::updateDefaultFBO(uint32_t width, uint32_t height, uint32_t sampleCount, ResourceFormat colorFormat, ResourceFormat depthFormat)
+	bool Device::updateDefaultFBO(uint32_t width, uint32_t height, ResourceFormat colorFormat, ResourceFormat depthFormat)
 	{
         DeviceData* pData = (DeviceData*)mpPrivateData;
 
 		for (uint32_t i = 0; i < kSwapChainBuffers; i++)
 		{
             // Create a texture object
-            auto pColorTex = Texture::SharedPtr(new Texture(width, height, 1, 1, 1, sampleCount, colorFormat, sampleCount > 1 ? Texture::Type::Texture2DMultisample : Texture::Type::Texture2D, Texture::BindFlags::RenderTarget));            
+            auto pColorTex = Texture::SharedPtr(new Texture(width, height, 1, 1, 1, 1, colorFormat, Texture::Type::Texture2D, Texture::BindFlags::RenderTarget));            
             HRESULT hr = pData->pSwapChain->GetBuffer(i, IID_PPV_ARGS(&pColorTex->mApiHandle));
             if(FAILED(hr))
             {
@@ -233,9 +233,9 @@ namespace Falcor
         mpRenderContext->setComputeVars(nullptr);
         DeviceData* pData = (DeviceData*)mpPrivateData;
         releaseFboData(pData);
-        safe_delete(pData);
-        mpResourceAllocator.reset();
         mpRenderContext.reset();
+        mpResourceAllocator.reset();
+        safe_delete(pData);
     }
 
 	Device::SharedPtr Device::create(Window::SharedPtr& pWindow, const Device::Desc& desc)
@@ -319,7 +319,7 @@ namespace Falcor
         mVsyncOn = desc.enableVsync;
 
         // Update the FBOs
-        if (updateDefaultFBO(mpWindow->getClientAreaWidth(), mpWindow->getClientAreaHeight(), 1, desc.colorFormat, desc.depthFormat) == false)
+        if (updateDefaultFBO(mpWindow->getClientAreaWidth(), mpWindow->getClientAreaHeight(), desc.colorFormat, desc.depthFormat) == false)
         {
             return false;
         }
@@ -357,7 +357,7 @@ namespace Falcor
         // Store the FBO parameters
         ResourceFormat colorFormat = pData->frameData[0].pFbo->getColorTexture(0)->getFormat();
         ResourceFormat depthFormat = pData->frameData[0].pFbo->getDepthStencilTexture()->getFormat();
-        uint32_t sampleCount = pData->frameData[0].pFbo->getSampleCount();
+        assert(pData->frameData[0].pFbo->getSampleCount() == 1);
 
         // Delete all the FBOs
         releaseFboData(pData);
@@ -365,7 +365,7 @@ namespace Falcor
         DXGI_SWAP_CHAIN_DESC desc;
         d3d_call(pData->pSwapChain->GetDesc(&desc));
         d3d_call(pData->pSwapChain->ResizeBuffers(kSwapChainBuffers, width, height, desc.BufferDesc.Format, desc.Flags));
-        updateDefaultFBO(width, height, sampleCount, colorFormat, depthFormat);
+        updateDefaultFBO(width, height, colorFormat, depthFormat);
 
         return getSwapChainFbo();
     }

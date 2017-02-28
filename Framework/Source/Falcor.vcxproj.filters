@@ -2091,13 +2091,13 @@
     <FxCompile Include="Data\Framework\Shaders\EditorVS.hlsl">
       <Filter>Data\Framework\Shaders</Filter>
     </FxCompile>
-    <FxCompile Include="Data\Framework\Shaders\GenerateMips.hlsl">
-      <Filter>Data\Framework\Shaders</Filter>
-    </FxCompile>
     <FxCompile Include="Data\Framework\Shaders\SceneEditorPS.hlsl">
       <Filter>Data\Framework\Shaders</Filter>
     </FxCompile>
     <FxCompile Include="Data\Framework\Shaders\SceneEditorVS.hlsl">
+      <Filter>Data\Framework\Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="Data\Framework\Shaders\Blit.hlsl">
       <Filter>Data\Framework\Shaders</Filter>
     </FxCompile>
   </ItemGroup>

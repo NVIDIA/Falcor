@@ -28,6 +28,7 @@
 #pragma once
 #include "Framework.h"
 #include "ComputeState.h"
+#include "API/ProgramVars.h"
 
 namespace Falcor
 {
@@ -52,7 +53,7 @@ namespace Falcor
         }
     }
 
-    ComputeStateObject::SharedPtr ComputeState::getCSO()
+    ComputeStateObject::SharedPtr ComputeState::getCSO(const ComputeVars* pVars)
     {
         ProgramVersion::SharedConstPtr pProgVersion = mpProgram ? mpProgram->getActiveVersion() : nullptr;
         bool newProgram = (pProgVersion.get() != mCachedData.pProgramVersion);
@@ -62,17 +63,20 @@ namespace Falcor
             mpCsoGraph->walk((void*)mCachedData.pProgramVersion);
         }
 
+        RootSignature::SharedPtr pRoot = pVars ? pVars->getRootSignature() : RootSignature::getEmpty();
+
+        if (mCachedData.pRootSig != pRoot.get())
+        {
+            mCachedData.pRootSig = pRoot.get();
+            mpCsoGraph->walk((void*)mCachedData.pRootSig);
+        }
+
         ComputeStateObject::SharedPtr pCso = mpCsoGraph->getCurrentNode();
 
         if(pCso == nullptr)
         {
-            if (newProgram && mCachedData.isUserRootSignature == false)
-            {
-                mpRootSignature = RootSignature::create(pProgVersion->getReflector().get());
-            }
-
             mDesc.setProgramVersion(pProgVersion);
-            mDesc.setRootSignature(mpRootSignature);
+            mDesc.setRootSignature(pRoot);
             pCso = ComputeStateObject::create(mDesc);
             mpCsoGraph->setCurrentNodeData(pCso);
         }

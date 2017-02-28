@@ -101,14 +101,14 @@ namespace Falcor
         }
     }
 
-    FullScreenPass::UniquePtr FullScreenPass::create(const std::string& fragmentShaderFile, const Program::DefineList& programDefines, bool disableDepth, bool disableStencil, uint32_t viewportMask)
+    FullScreenPass::UniquePtr FullScreenPass::create(const std::string& psFile, const Program::DefineList& programDefines, bool disableDepth, bool disableStencil, uint32_t viewportMask)
     {
         UniquePtr pPass = UniquePtr(new FullScreenPass());
-        pPass->init(fragmentShaderFile, programDefines, disableDepth, disableStencil, viewportMask);
+        pPass->init(psFile, programDefines, disableDepth, disableStencil, viewportMask);
         return pPass;
     }
 
-    void FullScreenPass::init(const std::string& fragmentShaderFile, const Program::DefineList& programDefines, bool disableDepth, bool disableStencil, uint32_t viewportMask)
+    void FullScreenPass::init(const std::string& psFile, const Program::DefineList& programDefines, bool disableDepth, bool disableStencil, uint32_t viewportMask)
     {
         mpPipelineState = GraphicsState::create();
 
@@ -139,7 +139,7 @@ namespace Falcor
         }
 
         const std::string vs("Framework/Shaders/FullScreenPass.vs");
-        mpProgram = GraphicsProgram::createFromFile(vs, fragmentShaderFile, gs, "", "", defs);
+        mpProgram = GraphicsProgram::createFromFile(vs, psFile, gs, "", "", defs);
         mpPipelineState->setProgram(mpProgram);
 
         if (FullScreenPass::spVertexBuffer == nullptr)

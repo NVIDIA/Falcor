@@ -101,11 +101,6 @@ private:
     DirectionalLight::SharedPtr mpDirLight;
     PointLight::SharedPtr mpPointLight;
 
-	// Upscaling support for high-density displays
-	Fbo::SharedPtr mpDisplayFBO;										///< The FBO object of the actual window. Coincides with default FBO if there is no display scaling
-
-	uint32_t mDisplayScaling = 1;	///< used for high-dpi scaling example
-
     float mNearZ = 1e-2f;
     float mFarZ = 1e3f;
 };

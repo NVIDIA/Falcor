@@ -28,6 +28,7 @@
 #pragma once
 #include "Framework.h"
 #include "GraphicsState.h"
+#include "API/ProgramVars.h"
 
 namespace Falcor
 {
@@ -90,7 +91,7 @@ namespace Falcor
         }
     }
 
-    GraphicsStateObject::SharedPtr GraphicsState::getGSO()
+    GraphicsStateObject::SharedPtr GraphicsState::getGSO(const GraphicsVars* pVars)
     {
         if (mpProgram && mpVao)
         {
@@ -103,20 +104,23 @@ namespace Falcor
             mCachedData.pProgramVersion = pProgVersion.get();
             mpGsoGraph->walk((void*)pProgVersion.get());
         }
+    
+        RootSignature::SharedPtr pRoot = pVars ? pVars->getRootSignature() : RootSignature::getEmpty();
+
+        if (mCachedData.pRootSig != pRoot.get())
+        {
+            mCachedData.pRootSig = pRoot.get();
+            mpGsoGraph->walk((void*)mCachedData.pRootSig);
+        }
 
         GraphicsStateObject::SharedPtr pGso = mpGsoGraph->getCurrentNode();
         if(pGso == nullptr)
         {
-            if (newProgVersion && mCachedData.isUserRootSignature == false)
-            {
-                mpRootSignature = RootSignature::create(pProgVersion->getReflector().get());
-            }
-
             mDesc.setProgramVersion(pProgVersion);
             mDesc.setFboFormats(mpFbo ? mpFbo->getDesc() : Fbo::Desc());
             mDesc.setVertexLayout(mpVao->getVertexLayout());
             mDesc.setPrimitiveType(topology2Type(mpVao->getPrimitiveTopology()));
-            mDesc.setRootSignature(mpRootSignature);
+            mDesc.setRootSignature(pRoot);
 
             pGso = GraphicsStateObject::create(mDesc);
             mpGsoGraph->setCurrentNodeData(pGso);
@@ -188,14 +192,6 @@ namespace Falcor
     {
         mDesc.setDepthStencilState(pDepthStencilState); 
         mpGsoGraph->walk((void*)pDepthStencilState.get());
-        return *this;
-    }
-
-    GraphicsState& GraphicsState::setRootSignature(RootSignature::SharedPtr pSignature)
-    {
-        mpRootSignature = pSignature;
-        mpGsoGraph->walk((void*)pSignature.get());
-        mCachedData.isUserRootSignature = (mpRootSignature == nullptr);
         return *this;
     }
 

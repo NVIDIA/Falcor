@@ -52,9 +52,15 @@ namespace Falcor
 
         if(arraySize != Fbo::kAttachEntireMipLevel)
         {
+            if (arraySize == 0)
+            {
+                logError("Error when attaching texture to FBO. Requested to attach zero array slices");
+                return false;
+            }
+
             if(pTexture->getType() == Texture::Type::Texture3D)
             {
-                if(arraySize + firstArraySlice >= pTexture->getDepth())
+                if(arraySize + firstArraySlice > pTexture->getDepth())
                 {
                     logError("Error when attaching texture to FBO. Requested depth-index is out-of-bound.");
                     return false;
@@ -62,7 +68,6 @@ namespace Falcor
             }
             else
             {
-                //Why was this >=? shouldnt array size = texture's array size be fine?
                 if(arraySize + firstArraySlice > pTexture->getArraySize())
                 {
                     logError("Error when attaching texture to FBO. Requested array index is out-of-bound.");

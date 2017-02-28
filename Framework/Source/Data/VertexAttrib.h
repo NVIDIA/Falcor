@@ -71,15 +71,20 @@ struct VS_IN
     uint instanceID : SV_INSTANCEID;
 };
 
+#ifndef INTERPOLATION_MODE
+#define INTERPOLATION_MODE linear
+#endif
+
 struct VS_OUT
 {
-    float3 normalW    : NORMAL;
-    float3 tangentW   : TANGENT;
-    float3 bitangentW : BITANGENT;
-    float2 texC       : TEXCRD;
-    float3 posW       : POSW;
-    float3 colorV     : COLOR;
-    float4 posH       : SV_POSITION;
+    INTERPOLATION_MODE float3 normalW    : NORMAL;
+    INTERPOLATION_MODE float3 tangentW   : TANGENT;
+    INTERPOLATION_MODE float3 bitangentW : BITANGENT;
+    INTERPOLATION_MODE float2 texC       : TEXCRD;
+    INTERPOLATION_MODE float3 posW       : POSW;
+    INTERPOLATION_MODE float3 colorV     : COLOR;
+    INTERPOLATION_MODE float4 prevPosH : PREVPOSH;
+    float4 posH : SV_POSITION;
 };
 
 #ifdef _SINGLE_PASS_STEREO
@@ -121,6 +126,7 @@ VS_OUT defaultVS(VS_IN vIn)
     vOut.normalW = mul((float3x3)worldMat, vIn.normal).xyz;
     vOut.tangentW = mul((float3x3)worldMat, vIn.tangent).xyz;
     vOut.bitangentW = mul((float3x3)worldMat, vIn.bitangent).xyz;
+    vOut.prevPosH = mul(gCam.prevViewProjMat, posW);
 
 #ifdef _SINGLE_PASS_STEREO
   gl_SecondaryPositionNV.x = (gCam.rightEyeViewProjMat * vec4(posW, 1)).x;

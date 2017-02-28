@@ -33,10 +33,14 @@
 namespace Falcor
 {
     static const char* kShaderFilename = "Effects\\ToneMapping.ps.hlsl";
-    const Gui::DropdownList kOperatorList = { { (uint32_t)ToneMapping::Operator::Clamp, "Clamp to LDR" },
-    { (uint32_t)ToneMapping::Operator::Linear, "Linear" }, { (uint32_t)ToneMapping::Operator::Reinhard, "Reinhard" },
-    { (uint32_t)ToneMapping::Operator::ReinhardModified, "Modified Reinhard" }, { (uint32_t)ToneMapping::Operator::HejiHableAlu, "Heji's approximation" },
-    { (uint32_t)ToneMapping::Operator::HableUc2, "Uncharted 2" } };
+    const Gui::DropdownList kOperatorList = { 
+    { (uint32_t)ToneMapping::Operator::Clamp, "Clamp to LDR" },
+    { (uint32_t)ToneMapping::Operator::Linear, "Linear" }, 
+    { (uint32_t)ToneMapping::Operator::Reinhard, "Reinhard" },
+    { (uint32_t)ToneMapping::Operator::ReinhardModified, "Modified Reinhard" }, 
+    { (uint32_t)ToneMapping::Operator::HejiHableAlu, "Heji's approximation" },
+    { (uint32_t)ToneMapping::Operator::HableUc2, "Uncharted 2" } 
+    };
 
     ToneMapping::~ToneMapping() = default;
 
