@@ -35,14 +35,15 @@
 #include "Scene.h"
 
 namespace Falcor
-{    
+{
     class SceneImporter
     {
-    protected:
-        friend class Scene;
+    public:
+
         static Scene::SharedPtr loadScene(const std::string& filename, uint32_t modelLoadFlags, uint32_t sceneLoadFlags);
 
     private:
+
         SceneImporter() = default;
         Scene::SharedPtr load(const std::string& filename, const uint32_t& modelLoadFlags, uint32_t sceneLoadFlags);
 
@@ -65,6 +66,7 @@ namespace Falcor
         bool loadIncludeFile(const std::string& Include);
 
         bool createModel(const rapidjson::Value& jsonModel);
+        bool setMaterialOverrides(const rapidjson::Value& jsonVal, const Model::SharedPtr& pModel);
         bool createModelInstances(const rapidjson::Value& jsonVal, const Model::SharedPtr& pModel);
         bool createPointLight(const rapidjson::Value& jsonLight);
         bool createDirLight(const rapidjson::Value& jsonLight);
@@ -73,17 +75,14 @@ namespace Falcor
         bool createCamera(const rapidjson::Value& jsonCamera);
 
         bool createMaterial(const rapidjson::Value& jsonMaterial);
-        bool createMaterialLayer(const rapidjson::Value& jsonLayer, MaterialLayerValues& layerData, MaterialLayerDesc& layerDesc);
-        bool createMaterialValue(const rapidjson::Value& jsonValue, MaterialValues& matValue);
+        bool createMaterialLayer(const rapidjson::Value& jsonLayer, Material::Layer& layerOut);
         bool createAllMaterialLayers(const rapidjson::Value& jsonLayerArray, Material* pMaterial);
 
-        bool createMaterialLayerType(const rapidjson::Value& jsonValue, MaterialLayerDesc& matLayer);
-        bool createMaterialLayerNDF(const rapidjson::Value& jsonValue, MaterialLayerDesc& matLayer);
-        bool createMaterialLayerBlend(const rapidjson::Value& jsonValue, MaterialLayerDesc& matLayer);
+        bool createMaterialLayerType(const rapidjson::Value& jsonValue, Material::Layer& layerOut);
+        bool createMaterialLayerNDF(const rapidjson::Value& jsonValue, Material::Layer& layerOut);
+        bool createMaterialLayerBlend(const rapidjson::Value& jsonValue, Material::Layer& layerOut);
 
-        bool createMaterialTexture(const rapidjson::Value& jsonValue, Texture::SharedPtr& pTexture);
-		bool createMaterialValueColor(const rapidjson::Value& jsonValue, glm::vec4& color);
-
+        bool createMaterialTexture(const rapidjson::Value& jsonValue, Texture::SharedPtr& pTexture, bool isSrgb);
 
         Scene* error(const std::string& msg);
 

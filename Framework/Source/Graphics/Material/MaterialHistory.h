@@ -1,5 +1,5 @@
 /***************************************************************************
-# Copyright (c) 2015, NVIDIA CORPORATION. All rights reserved.
+# Copyright (c) 2017, NVIDIA CORPORATION. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -25,57 +25,50 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
+
 #pragma once
-#include <string>
-#include "glm/vec2.hpp"
-#include "glm/vec3.hpp"
-#include "glm/vec4.hpp"
-#include "Scene.h"
-#include "Externals/RapidJson/include/rapidjson/document.h"
-#include <sstream>
+
+#include "Graphics/Material/Material.h"
+#include <unordered_set>
 
 namespace Falcor
 {
+    class Mesh;
+    class Model;
 
-    class SceneExporter
+    class MaterialHistory
     {
     public:
-        friend class Scene;
 
-        enum : uint32_t
-        {
-            ExportGlobalSettings = 0x1,
-            ExportModels         = 0x2,
-            ExportLights         = 0x4,
-            ExportCameras        = 0x8,
-            ExportPaths          = 0x10,
-            ExportUserDefined    = 0x20,
-            ExportMaterials      = 0x40,
-            ExportAll = 0xFFFFFFFF
-        };
+        using SharedPtr = std::shared_ptr<MaterialHistory>;
+        using SharedConstPtr = std::shared_ptr<MaterialHistory>;
 
-        static bool saveScene(const std::string& filename, const Scene::SharedPtr& pScene, uint32_t exportOptions = ExportAll);
+        static SharedPtr create() { return SharedPtr(new MaterialHistory()); }
 
-        static const uint32_t kVersion = 2;
+        // Override a material on a mesh and saves the original
+        void replace(Mesh* pMesh, const Material::SharedPtr& pNewMaterial);
+
+        // Revert a mesh's material to its original
+        void revert(Mesh* pMesh);
+
+        // Check whether a mesh has its material overridden
+        bool hasOverride(const Mesh* pMesh) const;
+
+        // Revert all mesh material overrides for a model
+        void onModelRemoved(const Model* pModel);
+
+        // Call when a material is removed from the scene. Reverts all meshes using the material
+        void onMaterialRemoved(const Material* pMaterial);
 
     private:
 
-        SceneExporter(const std::string& filename, const Scene::SharedPtr& pScene)
-            : mpScene(pScene), mFilename(filename) {}
+        MaterialHistory() {};
 
-        bool save(uint32_t exportOptions);
+        // Stores original materials for overridden meshes so user can revert them
+        std::unordered_map<const Mesh*, Material::SharedPtr> mOriginalMaterials;
 
-        void writeModels();
-        void writeLights();
-        void writeCameras();
-        void writeGlobalSettings(bool writeActivePath);
-        void writePaths();
-        void writeUserDefinedSection();
-        void writeMaterials();
-
-        rapidjson::Document mJDoc;
-        Scene::SharedPtr mpScene = nullptr;
-        std::string mFilename;
-        uint32_t mExportOptions = 0;
+        // Map of materials from the scene and what meshes they have overridden
+        std::unordered_map<const Material*, std::unordered_set<Mesh*>> mMaterialToMeshes;
     };
+
 }

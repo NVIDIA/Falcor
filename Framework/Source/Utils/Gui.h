@@ -271,7 +271,7 @@ namespace Falcor
             uint32_t lastVal = -1;
             int32_t currentItem = -1;
         };
-        std::map<uint32_t*, ComboData> mDropDownValues;
+        std::map<std::string, ComboData> mDropDownValues;
 
         Vao::SharedPtr mpVao;
         VertexLayout::SharedPtr mpLayout;

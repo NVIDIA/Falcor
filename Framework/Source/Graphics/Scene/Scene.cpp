@@ -135,6 +135,11 @@ namespace Falcor
 
     void Scene::deleteModel(uint32_t modelID)
     {
+        if (mpMaterialHistory != nullptr)
+        {
+            mpMaterialHistory->onModelRemoved(getModel(modelID).get());
+        }
+
         // Delete entire vector of instances
         mModels.erase(mModels.begin() + modelID);
     }
@@ -247,7 +252,30 @@ namespace Falcor
         mpLights.erase(mpLights.begin() + lightID);
     }
 
-    uint32_t Scene::addPath(const ObjectPath::SharedPtr& pPath) 
+    void Scene::deleteMaterial(uint32_t materialID)
+    {
+        if (mpMaterialHistory != nullptr)
+        {
+            mpMaterialHistory->onMaterialRemoved(getMaterial(materialID).get());
+        }
+
+        mpMaterials.erase(mpMaterials.begin() + materialID);
+    }
+
+    void Scene::enableMaterialHistory()
+    {
+        if (mpMaterialHistory == nullptr)
+        {
+            mpMaterialHistory = MaterialHistory::create();
+        }
+    }
+
+    void Scene::disableMaterialHistory()
+    {
+        mpMaterialHistory = nullptr;
+    }
+
+    uint32_t Scene::addPath(const ObjectPath::SharedPtr& pPath)
     { 
         mpPaths.push_back(pPath); 
         return (uint32_t)mpPaths.size() - 1; 

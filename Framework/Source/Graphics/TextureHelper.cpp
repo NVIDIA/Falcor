@@ -690,7 +690,7 @@ namespace Falcor
             }
 
             pTex = Texture::create2D(pBitmap->getWidth(), pBitmap->getHeight(), texFormat, 1, generateMipLevels ? Texture::kMaxPossible : 1, pBitmap->getData(), bindFlags);
-            pTex->setSourceFilename(filename);
+            pTex->setSourceFilename(stripDataDirectories(filename));
         }
         return pTex;
     }

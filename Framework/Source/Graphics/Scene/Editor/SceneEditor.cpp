@@ -58,7 +58,7 @@ namespace Falcor
     const float SceneEditor::kLightModelScale = 0.3f;
     const float SceneEditor::kKeyframeModelScale = 0.2f;
 
-    const Falcor::Gui::RadioButtonGroup SceneEditor::kGizmoSelectionButtons
+    const Gui::RadioButtonGroup SceneEditor::kGizmoSelectionButtons
     {
         { (int32_t)Gizmo::Type::Translate, "Translation", false },
         { (int32_t)Gizmo::Type::Rotate, "Rotation", true },
@@ -85,6 +85,10 @@ namespace Falcor
 
         return pathList;
     }
+
+    //
+    // SceneEditor
+    //
 
     void SceneEditor::selectActiveModel(Gui* pGui)
     {
@@ -387,7 +391,7 @@ namespace Falcor
         std::string filename;
         if (saveFileDialog("Scene files\0*.fscene\0\0", filename))
         {
-            SceneExporter::saveScene(filename, mpScene.get());
+            SceneExporter::saveScene(filename, mpScene);
             mSceneDirty = false;
         }
     }
@@ -406,6 +410,8 @@ namespace Falcor
         , mModelLoadFlags(modelLoadFlags)
     {
         mpDebugDrawer = DebugDrawer::create();
+
+        mpScene->enableMaterialHistory();
 
         initializeEditorRendering();
         initializeEditorObjects();
@@ -619,7 +625,7 @@ namespace Falcor
         updateEditorObjectTransforms();
 
         // Rendered selected model wireframe
-        if (mSelectedInstances.empty() == false)
+        if (mSelectedInstances.empty() == false && mHideWireframe == false)
         {
             pContext->setGraphicsState(mpSelectionGraphicsState);
             mpColorProgramVars["ConstColorCB"]["gColor"] = glm::vec3(0.25f, 1.0f, 0.63f);
@@ -693,6 +699,11 @@ namespace Falcor
         pInstance->setTranslation(pCamera->getPosition(), false);
         pInstance->setTarget(pCamera->getTarget());
         pInstance->setUpVector(pCamera->getUpVector());
+    }
+
+    void SceneEditor::materialEditorFinishedCB()
+    {
+        mpMaterialEditor = nullptr;
     }
 
     void SceneEditor::renderPath(RenderContext* pContext)
@@ -862,13 +873,14 @@ namespace Falcor
                 // Scene Object Selection
                 if (mMouseHoldTimer.getElapsedTime() < 0.2f)
                 {
+                    // When selecting meshes for applying material override, don't check editor objects
                     if (mpEditorPicker->pick(pContext, mouseEvent.pos, mpEditorScene->getActiveCamera()))
                     {
                         select(mpEditorPicker->getPickedModelInstance());
                     }
                     else if (mpScenePicker->pick(pContext, mouseEvent.pos, mpEditorScene->getActiveCamera()))
                     {
-                        select(mpScenePicker->getPickedModelInstance());
+                        select(mpScenePicker->getPickedModelInstance(), mpScenePicker->getPickedMeshInstance());
                     }
                     else
                     {
@@ -994,6 +1006,24 @@ namespace Falcor
         }
     }
 
+    void SceneEditor::renderMaterialElements(Gui* pGui)
+    {
+        if (pGui->beginGroup("Materials"))
+        {
+            selectMaterial(pGui);
+
+            addMaterial(pGui);
+            startMaterialEditor(pGui);
+            deleteMaterial(pGui);
+
+            pGui->addCheckBox("Hide Wireframe", mHideWireframe);
+
+            applyMaterialOverride(pGui);
+
+            pGui->endGroup();
+        }
+    }
+
     void SceneEditor::renderCameraElements(Gui* pGui)
     {
         if (pGui->beginGroup(kCamerasStr))
@@ -1070,7 +1100,7 @@ namespace Falcor
         // Gizmo Selection
         int32_t selectedGizmo = (int32_t)mActiveGizmoType;
         pGui->addRadioButtons(kGizmoSelectionButtons, selectedGizmo);
-        setActiveGizmo((Gizmo::Type)selectedGizmo, mSelectedInstances.size() > 0);
+        setActiveGizmo((Gizmo::Type)selectedGizmo, mSelectedInstances.size() > 0 && mHideWireframe == false);
 
         pGui->addSeparator();
         renderGlobalElements(pGui);
@@ -1078,12 +1108,18 @@ namespace Falcor
         renderPathElements(pGui);
         renderModelElements(pGui);
         renderLightElements(pGui);
+        renderMaterialElements(pGui);
 
         pGui->popWindow();
 
-        if (mpPathEditor)
+        if (mpPathEditor != nullptr)
         {
             mpPathEditor->render(pGui);
+        }
+
+        if (mpMaterialEditor != nullptr)
+        {
+            mpMaterialEditor->renderGui(pGui);
         }
     }
 
@@ -1111,7 +1147,7 @@ namespace Falcor
         }
     }
 
-    void SceneEditor::select(const Scene::ModelInstance::SharedPtr& pModelInstance)
+    void SceneEditor::select(const Scene::ModelInstance::SharedPtr& pModelInstance, const Model::MeshInstance::SharedPtr& pMeshInstance)
     {
         // If instance has already been picked, ignore it
         if (mSelectedInstances.count(pModelInstance.get()) > 0)
@@ -1123,7 +1159,7 @@ namespace Falcor
 
         mpSelectionScene->addModelInstance(pModelInstance);
 
-        setActiveGizmo(mActiveGizmoType, true);
+        setActiveGizmo(mActiveGizmoType, mHideWireframe == false);
 
         //
         // Track selection and set corresponding object as selected/active
@@ -1166,6 +1202,12 @@ namespace Falcor
         {
             mSelectedObjectType = ObjectType::Model;
             setActiveModelInstance(pModelInstance);
+
+            if (pMeshInstance != nullptr)
+            {
+                mpSelectedMesh = pMeshInstance->getObject();
+                mSelectedMeshString = "Selected Mesh: " + pModelInstance->getObject()->getName() + " - Mesh " + std::to_string(mpSelectedMesh->getId());
+            }
         }
     }
 
@@ -1180,6 +1222,7 @@ namespace Falcor
 
         mSelectedInstances.clear();
         mSelectedObjectType = ObjectType::None;
+        mpSelectedMesh = nullptr;
     }
 
     void SceneEditor::setActiveGizmo(Gizmo::Type type, bool show)
@@ -1598,6 +1641,92 @@ namespace Falcor
                 mObjToPathMap[pMovable.get()] = pNewPath;
             }
 
+        }
+    }
+
+    void SceneEditor::addMaterial(Gui* pGui)
+    {
+        if (mpMaterialEditor == nullptr)
+        {
+            if (pGui->addButton("Add Material"))
+            {
+                std::string name("Material" + std::to_string(mpScene->getMaterialCount()));
+                mpScene->addMaterial(Material::create(name));
+                mSelectedMaterial = mpScene->getMaterialCount() - 1;
+            }
+        }
+    }
+
+    void SceneEditor::startMaterialEditor(Gui* pGui)
+    {
+        if (mpScene->getMaterialCount() > 0 && mpMaterialEditor == nullptr)
+        {
+            if (pGui->addButton("Edit Material", true))
+            {
+                mpMaterialEditor = MaterialEditor::create(mpScene->getMaterial(mSelectedMaterial), [this](){ materialEditorFinishedCB(); });
+            }
+        }
+    }
+
+    void SceneEditor::selectMaterial(Gui* pGui)
+    {
+        if (mpScene->getMaterialCount() > 0)
+        {
+            if (mpMaterialEditor == nullptr)
+            {
+                Gui::DropdownList materialList;
+                for (uint32_t i = 0; i < mpScene->getMaterialCount(); i++)
+                {
+                    materialList.push_back({ (int32_t)i, mpScene->getMaterial(i)->getName() });
+                }
+
+                pGui->addDropdown("Selected Material", materialList, mSelectedMaterial);
+            }
+            else
+            {
+                std::string msg = mpScene->getMaterial(mSelectedMaterial)->getName();
+                pGui->addText(msg.c_str());
+            }
+        }
+    }
+
+    void SceneEditor::applyMaterialOverride(Gui* pGui)
+    {
+        if (mpScene->getMaterialCount() > 0 && mpSelectedMesh != nullptr)
+        {
+            pGui->addSeparator();
+
+            // Show selected mesh
+            pGui->addText(mSelectedMeshString.c_str());
+
+            auto& pMaterialHistory = mpScene->getMaterialHistory();
+
+            if (pGui->addButton("Apply to Mesh"))
+            {
+                // Save original material
+                pMaterialHistory->replace(mpSelectedMesh.get(), mpScene->getMaterial(mSelectedMaterial));
+            }
+
+            // Check if mesh has been overridden
+            if (pMaterialHistory->hasOverride(mpSelectedMesh.get()))
+            {
+                if (pGui->addButton("Revert Override", true))
+                {
+                    pMaterialHistory->revert(mpSelectedMesh.get());
+                }
+            }
+        }
+    }
+
+    void SceneEditor::deleteMaterial(Gui* pGui)
+    {
+        if (mpScene->getMaterialCount() > 0 && mpMaterialEditor == nullptr)
+        {
+            if (pGui->addButton("Delete Material", true))
+            {
+                mpScene->deleteMaterial(mSelectedMaterial);
+                mSelectedMaterial = 0;
+            }
         }
     }
 

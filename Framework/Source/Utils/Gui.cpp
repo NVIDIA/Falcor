@@ -411,7 +411,7 @@ namespace Falcor
     {
         if (sameLine) ImGui::SameLine();
         // Check if we need to update the currentItem
-        const auto& iter = mDropDownValues.find(&var);
+        const auto& iter = mDropDownValues.find(label);
         int curItem;
         if ((iter == mDropDownValues.end()) || (iter->second.lastVal != var))
         {
@@ -421,14 +421,14 @@ namespace Falcor
                 if (values[i].value == var)
                 {
                     curItem = i;
-                    mDropDownValues[&var].currentItem = i;
+                    mDropDownValues[label].currentItem = i;
                     break;
                 }
             }
         }
         else
         {
-            curItem = mDropDownValues[&var].currentItem;
+            curItem = mDropDownValues[label].currentItem;
         }
 
         std::string comboStr;
@@ -440,8 +440,8 @@ namespace Falcor
         uint32_t prevItem = curItem;
         //This returns true if the combo is interacted with at all
         bool b = ImGui::Combo(label, &curItem, comboStr.c_str());
-        mDropDownValues[&var].currentItem = curItem;
-        mDropDownValues[&var].lastVal = values[curItem].value;
+        mDropDownValues[label].currentItem = curItem;
+        mDropDownValues[label].lastVal = values[curItem].value;
         var = values[curItem].value;
         //Only return true if value is changed
         return b && prevItem != curItem;

@@ -29,10 +29,12 @@
 #include <vector>
 #include <set>
 #include "Graphics/Paths/PathEditor.h"
+#include "Graphics/Material/MaterialEditor.h"
 #include "Utils/DebugDrawer.h"
 #include "Utils/Picking/Picking.h"
 #include "Graphics/Scene/Editor/Gizmo.h"
 #include "Graphics/Scene/Editor/SceneEditorRenderer.h"
+#include "Graphics/Material/MaterialHistory.h"
 
 namespace Falcor
 {
@@ -46,13 +48,13 @@ namespace Falcor
         using UniqueConstPtr = std::unique_ptr<const SceneEditor>;
 
         static UniquePtr create(const Scene::SharedPtr& pScene, const uint32_t modelLoadFlags = 0);
-        void renderGui(Gui* pGui);
         ~SceneEditor();
 
         const Camera::SharedPtr& getEditorCamera() const { return mpEditorScene->getActiveCamera(); }
 
         void update(double currentTime);
         void render(RenderContext* pContext);
+        void renderGui(Gui* pGui);
 
         bool onMouseEvent(RenderContext* pContext, const MouseEvent& mouseEvent);
         bool onKeyEvent(const KeyboardEvent& keyEvent);
@@ -71,6 +73,7 @@ namespace Falcor
         void renderLightElements(Gui* pGui);
         void renderGlobalElements(Gui* pGui);
         void renderPathElements(Gui* pGui);
+        void renderMaterialElements(Gui* pGui);
 
         // Model functions
         void addModel(Gui* pGui);
@@ -113,6 +116,13 @@ namespace Falcor
         void startPathEditor(Gui* pGui);
         void startPathEditor();
         void setObjectPath(Gui* pGui, const IMovableObject::SharedPtr& pMovable, const std::string& objType);
+
+        // Materials
+        void addMaterial(Gui* pGui);
+        void startMaterialEditor(Gui* pGui);
+        void selectMaterial(Gui* pGui);
+        void deleteMaterial(Gui* pGui);
+        void applyMaterialOverride(Gui* pGui);
 
         // Global functions
         void setAmbientIntensity(Gui* pGui);
@@ -169,6 +179,7 @@ namespace Falcor
         };
 
         std::string getUniqueNumberedName(const std::string& baseName, uint32_t idSuffix, const std::set<std::string>& nameMap) const;
+
         std::set<std::string> mInstanceNames;
         std::set<std::string> mCameraNames;
         std::set<std::string> mLightNames;
@@ -177,7 +188,7 @@ namespace Falcor
         // Picking
         //
 
-        void select(const Scene::ModelInstance::SharedPtr& pModelInstance);
+        void select(const Scene::ModelInstance::SharedPtr& pModelInstance, const Model::MeshInstance::SharedPtr& pMeshInstance = nullptr);
         void deselect();
 
         void setActiveModelInstance(const Scene::ModelInstance::SharedPtr& pModelInstance);
@@ -188,6 +199,7 @@ namespace Falcor
         uint32_t mSelectedCamera = 0;
         uint32_t mSelectedLight = 0;
         uint32_t mSelectedPath = 0;
+        uint32_t mSelectedMaterial = 0;
 
         Picking::UniquePtr mpScenePicker;
 
@@ -216,6 +228,7 @@ namespace Falcor
         uint32_t findEditorModelInstanceID(uint32_t modelID, const Scene::ModelInstance::SharedPtr& pInstance) const;
 
         // Wireframe Rendering
+        bool mHideWireframe = false;
         GraphicsState::SharedPtr mpSelectionGraphicsState;
         GraphicsProgram::SharedPtr mpColorProgram;
         GraphicsVars::SharedPtr mpColorProgramVars;
@@ -240,6 +253,16 @@ namespace Falcor
         // Maps between light models and master scene light ID
         std::unordered_map<uint32_t, uint32_t> mLightIDEditorToScene;
         std::unordered_map<uint32_t, uint32_t> mLightIDSceneToEditor;
+
+        //
+        // Materials
+        //
+
+        void materialEditorFinishedCB();
+
+        MaterialEditor::UniquePtr mpMaterialEditor;
+        std::string mSelectedMeshString;
+        Mesh::SharedPtr mpSelectedMesh;
 
         //
         // Paths

@@ -26,6 +26,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 #include "SceneEditorSample.h"
+#include "Graphics\Scene\SceneImporter.h"
 
 void SceneEditorSample::onGuiRender()
 {
@@ -90,7 +91,8 @@ void SceneEditorSample::loadScene()
     if(openFileDialog("Scene files\0*.fscene\0\0", Filename))
     {
         reset();
-        mpScene = Scene::loadFromFile(Filename, Model::GenerateTangentSpace);
+
+        mpScene = SceneImporter::loadScene(Filename, Model::GenerateTangentSpace, Scene::LoadMaterialHistory);
         initNewScene();
     }
 }

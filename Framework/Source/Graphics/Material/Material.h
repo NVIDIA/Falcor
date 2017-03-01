@@ -181,6 +181,34 @@ namespace Falcor
         */
         void removeLayer(uint32_t layerIdx);
 
+        /** Set a layer's type.
+        */
+        void setLayerType(uint32_t layerId, Layer::Type type) { mData.desc.layers[layerId].type = (uint32_t)type; mDescDirty = true; }
+
+        /** Set a layer's NDF
+        */
+        void setLayerNdf(uint32_t layerId, Layer::NDF ndf) { mData.desc.layers[layerId].ndf = (uint32_t)ndf; mDescDirty = true; }
+
+        /** Set a layer's blend
+        */
+        void setLayerBlend(uint32_t layerId, Layer::Blend blend) { mData.desc.layers[layerId].blending = (uint32_t)blend; mDescDirty = true; }
+
+        /** Set a layer's albedo color
+        */
+        void setLayerAlbedo(uint32_t layerId, const glm::vec4& albedo) { mData.values.layers[layerId].albedo = albedo; }
+
+        /** Set a layer's roughness
+        */
+        void setLayerRoughness(uint32_t layerId, const glm::vec4& roughness) { mData.values.layers[layerId].roughness = roughness; }
+
+        /** Set extra parameters on a layer interpreted based on layer type (IoR, etc.)
+        */
+        void setLayerUserParam(uint32_t layerId, const glm::vec4& data) { mData.values.layers[layerId].extraParam = data; }
+
+        /** Set a layer's texture
+        */
+        void setLayerTexture(uint32_t layerId, const Texture::SharedPtr& pTexture);
+
         /** Returns the number of textures in the material
         */
         uint32_t getTextureCount() const { return mTextureCount; }

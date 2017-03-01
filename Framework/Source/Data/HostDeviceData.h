@@ -55,8 +55,8 @@ namespace Falcor {
 /*******************************************************************
                     CPU declarations
 *******************************************************************/
-	class Sampler;
-	class Texture;
+    class Sampler;
+    class Texture;
 #define loop_unroll
 #define v2 vec2
 #define v3 vec3
@@ -278,9 +278,9 @@ struct MaterialDesc
 struct MaterialValues
 {
     MaterialLayerValues layers[MatMaxLayers];
-    vec2  height;                       // Height (displacement) map modifier (scale, offset). If texture is non-null, one can apply a displacement or parallax mapping
-	float alphaThreshold DEFAULTS(1.0f); // Alpha test threshold, in cast alpha-test is enabled (alphaMap is not nullptr)
-	int32_t id      DEFAULTS(-1);        // Scene-unique material id, -1 is a wrong material
+    vec2  height;                        // Height (displacement) map modifier (scale, offset). If texture is non-null, one can apply a displacement or parallax mapping
+    float alphaThreshold DEFAULTS(1.0f); // Alpha test threshold, in cast alpha-test is enabled (alphaMap is not nullptr)
+    int32_t id           DEFAULTS(-1);   // Scene-unique material id, -1 is a wrong material
 };
 
 struct MaterialTextures

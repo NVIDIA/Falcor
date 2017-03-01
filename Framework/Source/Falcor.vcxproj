@@ -405,6 +405,7 @@
     <ClCompile Include="Graphics\Material\BasicMaterial.cpp" />
     <ClCompile Include="Graphics\Material\Material.cpp" />
     <ClCompile Include="Graphics\Material\MaterialEditor.cpp" />
+    <ClCompile Include="Graphics\Material\MaterialHistory.cpp" />
     <ClCompile Include="Graphics\Material\MaterialSystem.cpp" />
     <ClCompile Include="Graphics\Model\Animation.cpp" />
     <ClCompile Include="Graphics\Model\AnimationController.cpp" />
@@ -793,6 +794,7 @@
     <ClInclude Include="Graphics\Material\BasicMaterial.h" />
     <ClInclude Include="Graphics\Material\Material.h" />
     <ClInclude Include="Graphics\Material\MaterialEditor.h" />
+    <ClInclude Include="Graphics\Material\MaterialHistory.h" />
     <ClInclude Include="Graphics\Material\MaterialSystem.h" />
     <ClInclude Include="Graphics\Model\Animation.h" />
     <ClInclude Include="Graphics\Model\AnimationController.h" />

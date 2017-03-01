@@ -36,6 +36,7 @@
 #include "Graphics/Camera/CameraController.h"
 #include "Graphics/Paths/ObjectPath.h"
 #include "Graphics/Model/ObjectInstance.h"
+#include "Graphics/Material/MaterialHistory.h"
 
 namespace Falcor
 {
@@ -98,6 +99,7 @@ namespace Falcor
         {
             None,
             GenerateAreaLights = 1,    ///< Create area light(s) for meshes that have emissive material
+            LoadMaterialHistory = 2    ///< Load history of overridden mesh materials
         };
 
         static Scene::SharedPtr loadFromFile(const std::string& filename, const uint32_t& modelLoadFlags, uint32_t sceneLoadFlags = 0);
@@ -134,8 +136,13 @@ namespace Falcor
 
         // Materials
         void addMaterial(Material::SharedPtr pMaterial) { mpMaterials.push_back(pMaterial); }
+        void deleteMaterial(uint32_t materialID);
         uint32_t getMaterialCount() const { return (uint32_t)mpMaterials.size(); }
         const Material::SharedPtr& getMaterial(uint32_t index) const { return mpMaterials[index]; }
+
+        void enableMaterialHistory();
+        void disableMaterialHistory();
+        const MaterialHistory::SharedPtr& getMaterialHistory() { return mpMaterialHistory; }
 
         // Object paths
         uint32_t addPath(const ObjectPath::SharedPtr& pPath);
@@ -200,6 +207,8 @@ namespace Falcor
         std::vector<Material::SharedPtr> mpMaterials;
         std::vector<Camera::SharedPtr> mCameras;
         std::vector<ObjectPath::SharedPtr> mpPaths;
+
+        MaterialHistory::SharedPtr mpMaterialHistory;
 
         glm::vec3 mAmbientIntensity;
         uint32_t mActiveCameraID = 0;

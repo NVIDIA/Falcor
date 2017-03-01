@@ -468,6 +468,9 @@
     <ClCompile Include="Utils\DebugDrawer.cpp">
       <Filter>Utils</Filter>
     </ClCompile>
+    <ClCompile Include="Graphics\Material\MaterialHistory.cpp">
+      <Filter>Graphics\Material</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Graphics\Model\Animation.h">
@@ -1551,6 +1554,9 @@
     </ClInclude>
     <ClInclude Include="Data\Effects\LeanMapData.hlsli">
       <Filter>Data\Effects</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\Material\MaterialHistory.h">
+      <Filter>Graphics\Material</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

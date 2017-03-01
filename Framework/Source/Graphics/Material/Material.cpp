@@ -375,6 +375,13 @@ namespace Falcor
         }
     }
 
+    void Material::setLayerTexture(uint32_t layerId, const Texture::SharedPtr& pTexture)
+    {
+        mData.textures.layers[layerId] = pTexture;
+        mData.desc.layers[layerId].hasTexture = (pTexture != nullptr);
+        mDescDirty = true;
+    }
+
     void Material::setNormalMap(Texture::SharedPtr& pNormalMap)
     {
         mData.textures.normalMap = pNormalMap; 
