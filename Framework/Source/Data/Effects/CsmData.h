@@ -58,21 +58,19 @@ struct CsmData
     float cascadeBlendThreshold DEFAULTS(0.2f);
 
     vec2 evsmExponents DEFAULTS(v2(40.0f, 5.0f)); // posExp, negExp
-    //TODO something better than this
-#ifdef HOST_CODE
-    uint64_t padding;
-    uint64_t padding2;
-#else
+    //If this is only in host code, the final element in the array is not padded
+    uint32_t padding;
+#ifndef HOST_CODE
     Texture2DArray shadowMap;
     Texture2DArray momentsMap;
+    SamplerState csmSampler;
+    SamplerComparisonState csmCompareSampler;
 #endif
 };
 
 #ifdef HOST_CODE
 static_assert(sizeof(CsmData) % sizeof(vec4) == 0, "CsmData size should be aligned on vec4 size");
 #else
-SamplerState gSampler : register(s0);
-SamplerComparisonState gCompareSampler : register(s1);
 
 int getCascadeCount(const CsmData csmData)
 {
@@ -173,7 +171,7 @@ vec2 applyEvsmExponents(float depth, vec2 exponents)
 
 float csmFilterUsingHW(const CsmData csmData, const vec2 texC, float depthRef, uint32_t cascadeIndex)
 {
-    float res = csmData.shadowMap.SampleCmpLevelZero(gCompareSampler, float3(texC, cascadeIndex), depthRef).r;    
+    float res = csmData.shadowMap.SampleCmpLevelZero(csmData.csmCompareSampler, float3(texC, cascadeIndex), depthRef).r;    
     return saturate(res);
 }
 
@@ -191,7 +189,7 @@ float csmFixedSizePcf(const CsmData csmData, const vec2 texC, float depthRef, ui
         for(int j = -halfKernelSize; j <= halfKernelSize; j++)
         {
             vec2 sampleCrd = texC + vec2(i, j) * pixelSize;
-            res += csmData.shadowMap.SampleCmpLevelZero(gCompareSampler, float3(sampleCrd, cascadeIndex), depthRef).r;
+            res += csmData.shadowMap.SampleCmpLevelZero(csmData.csmCompareSampler, float3(sampleCrd, cascadeIndex), depthRef).r;
         }
     }
 
@@ -235,7 +233,7 @@ float csmStochasticFilter(const CsmData csmData, const vec2 texC, float depthRef
         int idx = int(i + 71 * posX + 37 * posY) & 3;// Temporal version: (csmData.temporalSampleCount*numStochasticSamples + i)&15;
         vec2 texelOffset = poissonDisk[idx] * halfKernelSize;
         vec2 sampleCrd = texelOffset + texC;
-        res += csmData.shadowMap.SampleCmpLevelZero(gCompareSampler, float3(sampleCrd, cascadeIndex), depthRef).r;
+        res += csmData.shadowMap.SampleCmpLevelZero(csmData.csmCompareSampler, float3(sampleCrd, cascadeIndex), depthRef).r;
     }
 
     return res / float(numStochasticSamples);
@@ -265,7 +263,7 @@ float csmVsmFilter(const CsmData csmData, const vec2 texC, float sampleDepth, ui
         drvY = ddy_fine(texC);
         drvX = ddx_fine(texC);
     }
-    vec2 moments = csmData.momentsMap.SampleGrad(gSampler, float3(texC, float(cascadeIndex)), drvX, drvY).rg;
+    vec2 moments = csmData.momentsMap.SampleGrad(csmData.csmSampler, float3(texC, float(cascadeIndex)), drvX, drvY).rg;
     float pMax = calcChebyshevUpperBound(moments, sampleDepth, csmData.lightBleedingReduction);
 
     return pMax;
@@ -279,7 +277,7 @@ float csmEvsmFilter(const CsmData csmData, const vec2 texC, float sampleDepth, u
         drvX = ddx_fine(texC);
     }
     vec2 expDepth = applyEvsmExponents(sampleDepth, csmData.evsmExponents);
-    vec4 moments = csmData.momentsMap.SampleGrad(gSampler, vec3(texC, float(cascadeIndex)), drvX, drvY);
+    vec4 moments = csmData.momentsMap.SampleGrad(csmData.csmSampler, vec3(texC, float(cascadeIndex)), drvX, drvY);
     // Positive contribution
     float res = calcChebyshevUpperBound(moments.xy, expDepth.x, csmData.lightBleedingReduction);
     if(getFilterMode(csmData) == CsmFilterEvsm4)

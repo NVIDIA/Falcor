@@ -29,6 +29,7 @@
 #include "ShaderCommon.h"
 #include "csmdata.h"
 
+SamplerState alphaSampler;
 texture2D alphaMap : register(t0);
 
 cbuffer AlphaMapCB : register(b1)
@@ -52,7 +53,7 @@ vec4 main(ShadowPassPSIn pIn) : SV_TARGET0
 void main(ShadowPassPSIn pIn)
 #endif
 {
-    if(alphaMap.Sample(gSampler, pIn.texC)._ALPHA_CHANNEL < alphaThreshold)
+    if(alphaMap.Sample(alphaSampler, pIn.texC)._ALPHA_CHANNEL < alphaThreshold)
     {
         discard;
     }

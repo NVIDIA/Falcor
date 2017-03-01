@@ -668,7 +668,7 @@ namespace Falcor
             pSampler = mShadowPass.pPointCmpSampler;
             pTexture = mShadowPass.pFbo->getDepthStencilTexture();
             pVars->setTexture(varName + ".shadowMap", pTexture);
-            pVars->setSampler("gCompareSampler", pSampler);
+            pVars->setSampler(varName + ".csmCompareSampler", pSampler);
             break;
         case CsmFilterHwPcf:
         case CsmFilterFixedPcf:
@@ -676,7 +676,7 @@ namespace Falcor
             pSampler = mShadowPass.pLinearCmpSampler;
             pTexture = mShadowPass.pFbo->getDepthStencilTexture();
             pVars->setTexture(varName + ".shadowMap", pTexture);
-            pVars->setSampler("gCompareSampler", pSampler);
+            pVars->setSampler(varName + ".csmCompareSampler", pSampler);
             break;
         case CsmFilterVsm:
         case CsmFilterEvsm2:
@@ -684,32 +684,13 @@ namespace Falcor
             pSampler = mShadowPass.pVSMTrilinearSampler;
             pTexture = mShadowPass.pFbo->getColorTexture(0);
             pVars->setTexture(varName + ".momentsMap", pTexture);
-            pVars->setSampler("gSampler", pSampler);
+            pVars->setSampler(varName + ".csmSampler", pSampler);
             break;
         }    
 
         mCsmData.lightDir = glm::normalize(((DirectionalLight*)mpLight.get())->getWorldDirection());
-        //I'm not sure what the deal here is, but the offsets in shader don't line up with the offsets of the struct 
-        //depthBias is at offset 1012 from csm data starting at 448, so offset 564 into struct, but the Cpp size of the 
-        //struct is 468. Which is why the set blob call here isn't affecting the depth bias. Also since it's a memcpy 
-        //it's probably setting data incorrectly. 
         ConstantBuffer::SharedPtr pCB = pVars->getConstantBuffer("PerFrameCB");
-        //pCB->setBlob(&mCsmData, offset, sizeof(mCsmData));
-        //Manually setting the depth bias because of above issue. Everything at and beyond depthBias is not getting sent properly
-        //This is all temporary till i can figure out the problems with blob
-        pCB->setVariable(varName + ".globalMat", mCsmData.globalMat);
-        pCB->setVariableArray(varName + ".cascadeScale", mCsmData.cascadeScale, CSM_MAX_CASCADES);
-        pCB->setVariableArray(varName + ".cascadeOffset", mCsmData.cascadeOffset, CSM_MAX_CASCADES);
-        pCB->setVariableArray(varName + ".cascadeStartDepth", mCsmData.cascadeStartDepth, CSM_MAX_CASCADES);
-        pCB->setVariableArray(varName + ".cascadeRange", mCsmData.cascadeRange, CSM_MAX_CASCADES);
-        pCB->setVariable(varName + ".depthBias", mCsmData.depthBias);
-        pCB->setVariable(varName + ".cascadeCount", mCsmData.cascadeCount);
-        pCB->setVariable(varName + ".filterMode", mCsmData.filterMode);
-        pCB->setVariable(varName + ".sampleKernelSize", mCsmData.sampleKernelSize);
-        pCB->setVariable(varName + ".lightDir", mCsmData.lightDir);
-        pCB->setVariable(varName + ".lightBleedingReduction", mCsmData.lightBleedingReduction);
-        pCB->setVariable(varName + ".cascadeBlendThreshold", mCsmData.cascadeBlendThreshold);
-        pCB->setVariable(varName + ".evsmExponents", mCsmData.evsmExponents);
+        pCB->setBlob(&mCsmData, offset, sizeof(mCsmData));
     }
     
     Texture::SharedPtr CascadedShadowMaps::getShadowMap() const
