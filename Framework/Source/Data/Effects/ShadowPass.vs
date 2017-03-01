@@ -32,7 +32,11 @@
 
 struct ShadowPassVSOut
 {
+#ifdef _APPLY_PROJECTION
     float4 pos : SV_POSITION;
+#else
+    float4 pos : POSITION;
+#endif
     float2 texC : TEXCOORD;
 };
 

@@ -44,7 +44,7 @@ struct ShadowPassPSIn
 
 struct ShadowPassVSOut
 {
-    float4 pos : SV_POSITION;
+    float4 pos : POSITION;
     float2 texC : TEXCOORD;
 };
 
@@ -58,10 +58,12 @@ void main(triangle ShadowPassVSOut input[3], uint InstanceID : SV_GSInstanceID, 
     {
         outputData.pos = mul(gCsmData.globalMat, input[i].pos);
 
-        outputData.pos.xyz /= input[i].pos.w;
+        //todo
+        //These two commented lines lose point shadows if uncommented
+        //outputData.pos.xyz /= input[i].pos.w;
         outputData.pos.xyz *= gCsmData.cascadeScale[InstanceID].xyz;
         outputData.pos.xyz += gCsmData.cascadeOffset[InstanceID].xyz;
-        outputData.pos.xyz *= outputData.pos.w;
+        //outputData.pos.xyz *= outputData.pos.w;
 
         outputData.texC = input[i].texC;
 
