@@ -158,6 +158,5 @@ namespace Falcor
         int32_t renderCascade = 0;
         Controls mControls;
         CsmData mCsmData;
-
     };
 }

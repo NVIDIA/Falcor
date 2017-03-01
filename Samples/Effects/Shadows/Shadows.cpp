@@ -97,31 +97,19 @@ void Shadows::createScene(const std::string& filename)
     getSceneLightString(mpScene.get(), lights);
     mLightingPass.pProgram->addDefine("_LIGHT_SOURCES", lights);
     mLightingPass.pProgram->addDefine("_LIGHT_COUNT", std::to_string(mpScene->getLightCount()));
-    mLightingPass.pState = GraphicsState::create();
-    mLightingPass.pState->setProgram(mLightingPass.pProgram);
-    mLightingPass.pState->setBlendState(nullptr);
-    mLightingPass.pState->setDepthStencilState(nullptr);
     mLightingPass.pProgramVars = GraphicsVars::create(mLightingPass.pProgram->getActiveVersion()->getReflector());
     mLightingPass.pCBuffer = mLightingPass.pProgramVars["PerFrameCB"];
 }
 
 void Shadows::onLoad()
 {
-    //createScene("WorkingCitadel.fscene");
     createScene("Scenes/dragonPlane.fscene");
-    //createScene("Scenes/dragonPlanePoint.fscene");
-    //createScene("Scenes/dragonPlaneDir.fscene");
     createVisualizationProgram();
 }
 
 void Shadows::runMainPass()
 {
-    //state
-    //TODO should be push
-    //mpRenderContext->setGraphicsState(mLightingPass.pState);
-
-    //Not sure why this is necessary and the above set call(which should be a push anyway)
-    //doesn't work, look into it in future
+    //Only part of the gfx state I actually want to set
     mpRenderContext->getGraphicsState()->setProgram(mLightingPass.pProgram);
 
     //vars
@@ -135,7 +123,6 @@ void Shadows::runMainPass()
     mpRenderer->renderScene(mpRenderContext.get());
 
     mpRenderContext->popGraphicsVars();
-    //mpRenderContext->popGraphicsState();
 }
 
 void Shadows::displayShadowMap()
@@ -171,6 +158,7 @@ void Shadows::onFrameRender()
             }
         }
 
+        // Put shadow data in program vars
         for(uint32_t i = 0; i < mpCsmTech.size(); i++)
         {
             std::string var = "gCsmData[" + std::to_string(i) + "]";

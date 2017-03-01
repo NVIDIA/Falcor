@@ -105,6 +105,7 @@ namespace Falcor
      
         glm::mat4 view = glm::lookAt(lightPos, lookat, up);
         float distFromCenter = glm::length(lightPos - center);
+        //todo z calculations are not correct. Fix at some point in the future
         float nearZ = max(0.1f, distFromCenter - radius);
         float maxZ = min(radius * 2, distFromCenter + radius);
         float angle = pLight->getOpeningAngle() * 2;
@@ -657,39 +658,29 @@ namespace Falcor
 
     void CascadedShadowMaps::setDataIntoGraphicsVars(GraphicsVars::SharedPtr pVars, const std::string& varName)
     {
-        size_t offset = pVars->getConstantBuffer("PerFrameCB")->getVariableOffset(varName + ".globalMat");
-        Sampler::SharedPtr pSampler = nullptr;
-        Texture::SharedPtr pTexture = nullptr;
-
-        //TODO, set these textures and samplers by offset rather than by name
         switch (mCsmData.filterMode)
         {
         case CsmFilterPoint:
-            pSampler = mShadowPass.pPointCmpSampler;
-            pTexture = mShadowPass.pFbo->getDepthStencilTexture();
-            pVars->setTexture(varName + ".shadowMap", pTexture);
-            pVars->setSampler(varName + ".csmCompareSampler", pSampler);
+            pVars->setTexture(varName + ".shadowMap", mShadowPass.pFbo->getDepthStencilTexture());
+            pVars->setSampler(varName + ".csmCompareSampler", mShadowPass.pPointCmpSampler);
             break;
         case CsmFilterHwPcf:
         case CsmFilterFixedPcf:
         case CsmFilterStochasticPcf:
-            pSampler = mShadowPass.pLinearCmpSampler;
-            pTexture = mShadowPass.pFbo->getDepthStencilTexture();
-            pVars->setTexture(varName + ".shadowMap", pTexture);
-            pVars->setSampler(varName + ".csmCompareSampler", pSampler);
+            pVars->setTexture(varName + ".shadowMap", mShadowPass.pFbo->getDepthStencilTexture());
+            pVars->setSampler(varName + ".csmCompareSampler", mShadowPass.pLinearCmpSampler);
             break;
         case CsmFilterVsm:
         case CsmFilterEvsm2:
         case CsmFilterEvsm4:
-            pSampler = mShadowPass.pVSMTrilinearSampler;
-            pTexture = mShadowPass.pFbo->getColorTexture(0);
-            pVars->setTexture(varName + ".momentsMap", pTexture);
-            pVars->setSampler(varName + ".csmSampler", pSampler);
+            pVars->setTexture(varName + ".momentsMap", mShadowPass.pFbo->getColorTexture(0));
+            pVars->setSampler(varName + ".csmSampler", mShadowPass.pVSMTrilinearSampler);
             break;
         }    
 
         mCsmData.lightDir = glm::normalize(((DirectionalLight*)mpLight.get())->getWorldDirection());
         ConstantBuffer::SharedPtr pCB = pVars->getConstantBuffer("PerFrameCB");
+        size_t offset = pCB->getVariableOffset(varName + ".globalMat");
         pCB->setBlob(&mCsmData, offset, sizeof(mCsmData));
     }
     

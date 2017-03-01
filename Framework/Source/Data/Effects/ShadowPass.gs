@@ -25,7 +25,6 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#version 450
 #include "VertexAttrib.h"
 #include "ShaderCommon.h"
 #include "csmdata.h"
@@ -57,17 +56,13 @@ void main(triangle ShadowPassVSOut input[3], uint InstanceID : SV_GSInstanceID, 
     for(int i = 0 ; i < 3 ; i++)
     {
         outputData.pos = mul(gCsmData.globalMat, input[i].pos);
-
-        //todo
-        //These two commented lines lose point shadows if uncommented
-        //outputData.pos.xyz /= input[i].pos.w;
+        outputData.pos.xyz /= input[i].pos.w;
         outputData.pos.xyz *= gCsmData.cascadeScale[InstanceID].xyz;
         outputData.pos.xyz += gCsmData.cascadeOffset[InstanceID].xyz;
-        //outputData.pos.xyz *= outputData.pos.w;
 
         outputData.texC = input[i].texC;
-
         outputData.rtIndex = InstanceID;
+
         outStream.Append(outputData);
     }
 

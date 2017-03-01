@@ -64,7 +64,6 @@ private:
     struct
     {
         GraphicsProgram::SharedPtr pProgram;
-        GraphicsState::SharedPtr pState;
         GraphicsVars::SharedPtr pProgramVars;
         ConstantBuffer::SharedPtr pCBuffer;
     } mLightingPass;

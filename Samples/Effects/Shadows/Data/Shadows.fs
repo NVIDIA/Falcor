@@ -1,8 +1,6 @@
 /***************************************************************************
 Copyright (c) 2014, NVIDIA CORPORATION.  All rights reserved.
 ***************************************************************************/
-#version 450
-
 #define _COMPILE_DEFAULT_VS
 #include "VertexAttrib.h"
 #include "shading.h"
@@ -46,9 +44,9 @@ vec4 main(ShadowsVSOut pIn) : SV_TARGET0
     fragColor.rgb += gAmbient * result.diffuseAlbedo * 0.1;
     if(visualizeCascades)
     {
-        //This was light index, but cascade color only uses cascade count and cascade 
-        //start count, which should be uniform across csmdatas 
-        //using light index complained sampler array index must be literal
+        //Ideally this would be light index so you can visualize the cascades of the 
+        //currently selected light. However, because csmData contains Textures, it doesn't
+        //like getting them with a non literal index.
         fragColor.rgb *= getCascadeColor(getCascadeIndex(gCsmData[0], pIn.shadowsDepthC));
     }
 
