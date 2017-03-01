@@ -67,13 +67,10 @@ namespace Falcor
                 a.map = pLayer ? pLayer->albedo.texture.gpuAddress : 0;
                 a.val = 0.5f;
 #else
-                // DISABLED_FOR_D3D12
-                //TODO what is this?
                 a.val = mpLastMaterial->getAlphaThreshold();
 #endif
                 mpAlphaMapCb->setBlob(&a, 0, sizeof(a));
-                //TODO THIS
-                //mpAlphaMapCb->setTexture(mpLastMaterial->getAlphaMap(), ;
+                pContext->getGraphicsVars()->setSrv(0u, mpLastMaterial->getAlphaMap()->getSRV());
             }
             return true;
         };
@@ -110,7 +107,7 @@ namespace Falcor
         float nearZ = max(0.01f, distFromCenter - radius);
         float maxZ = min(radius * 2, distFromCenter + radius);
         float angle = pLight->getOpeningAngle() * 2;
-        glm::mat4 proj = perspectiveMatrix(angle, fboAspectRatio, 0.1f, 10);
+        glm::mat4 proj = perspectiveMatrix(angle, fboAspectRatio, nearZ, maxZ);
 
         shadowVP = proj * view;
     }
@@ -650,8 +647,6 @@ namespace Falcor
 
         if(mCsmData.filterMode == CsmFilterVsm || mCsmData.filterMode == CsmFilterEvsm2 || mCsmData.filterMode == CsmFilterEvsm4)
         {
-            //todo
-            //ILLEGAL char in shader file(1,1)???s
             mpGaussianBlur->execute(pRenderCtx, mShadowPass.pFbo->getColorTexture(0), mShadowPass.pFbo);
             mShadowPass.pFbo->getColorTexture(0)->generateMips();
         }
@@ -672,7 +667,7 @@ namespace Falcor
             pSampler = mShadowPass.pPointCmpSampler;
             pTexture = mShadowPass.pFbo->getDepthStencilTexture();
             pVars->setTexture(varName + ".shadowMap", pTexture);
-            pVars->setSampler("compareSampler", pSampler);
+            pVars->setSampler("gCompareSampler", pSampler);
             break;
         case CsmFilterHwPcf:
         case CsmFilterFixedPcf:
@@ -680,7 +675,7 @@ namespace Falcor
             pSampler = mShadowPass.pLinearCmpSampler;
             pTexture = mShadowPass.pFbo->getDepthStencilTexture();
             pVars->setTexture(varName + ".shadowMap", pTexture);
-            pVars->setSampler("compareSampler", pSampler);
+            pVars->setSampler("gCompareSampler", pSampler);
             break;
         case CsmFilterVsm:
         case CsmFilterEvsm2:
@@ -688,11 +683,10 @@ namespace Falcor
             pSampler = mShadowPass.pVSMTrilinearSampler;
             pTexture = mShadowPass.pFbo->getColorTexture(0);
             pVars->setTexture(varName + ".momentsMap", pTexture);
-            pVars->setSampler("exampleSampler", pSampler);
+            pVars->setSampler("gSampler", pSampler);
             break;
         }    
 
-        //Todo, at least depth bias and light dir aren't getitng sent to shader correctly 
         mCsmData.lightDir = glm::normalize(((DirectionalLight*)mpLight.get())->getWorldDirection());
         //I'm not sure what the deal here is, but the offsets in shader don't line up with the offsets of the struct 
         //depthBias is at offset 1012 from csm data starting at 448, so offset 564 into struct, but the Cpp size of the 

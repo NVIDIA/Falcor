@@ -29,7 +29,7 @@
 #include "ShaderCommon.h"
 #include "csmdata.h"
 
-texture2D alphaMap;
+texture2D alphaMap : register(t0);
 
 cbuffer AlphaMapCB : register(b1)
 {
@@ -52,9 +52,7 @@ vec4 main(ShadowPassPSIn pIn) : SV_TARGET0
 void main(ShadowPassPSIn pIn)
 #endif
 {
-    //TODO how do?
-    //if(uVec2(alphaMap != 0 && alphaMap.Sample(exampleSampler, texC)._ALPHA_CHANNEL < alphaThreshold)
-    if(alphaMap.Sample(exampleSampler, pIn.texC)._ALPHA_CHANNEL < alphaThreshold)
+    if(alphaMap.Sample(gSampler, pIn.texC)._ALPHA_CHANNEL < alphaThreshold)
     {
         discard;
     }
@@ -65,13 +63,11 @@ void main(ShadowPassPSIn pIn)
     depth = applyEvsmExponents(depth.x, evsmExp);
 #endif
     vec4 outDepth = vec4(depth, depth*depth);
-    //TODO
+
 #ifdef _EVSM4
     return outDepth.xzyw;
 #elif defined(_VSM) || defined(_EVSM2)
     return outDepth.xz;
 #else
 #endif
-
-    
 }
