@@ -45,12 +45,16 @@ namespace Falcor
         offsetof(MaterialValues, layers[0]) + offsetof(MaterialLayerValues, albedo),
         offsetof(MaterialValues, layers[0]) + offsetof(MaterialLayerValues, roughness),
         offsetof(MaterialValues, layers[0]) + offsetof(MaterialLayerValues, extraParam),
+#if MatMaxLayers > 1
         offsetof(MaterialValues, layers[1]) + offsetof(MaterialLayerValues, albedo),
         offsetof(MaterialValues, layers[1]) + offsetof(MaterialLayerValues, roughness),
         offsetof(MaterialValues, layers[1]) + offsetof(MaterialLayerValues, extraParam),
+#endif
+#if MatMaxLayers > 2
         offsetof(MaterialValues, layers[2]) + offsetof(MaterialLayerValues, albedo),
         offsetof(MaterialValues, layers[2]) + offsetof(MaterialLayerValues, roughness),
         offsetof(MaterialValues, layers[2]) + offsetof(MaterialLayerValues, extraParam),
+#endif
 
         // modifiers
         offsetof(MaterialValues, alphaMap),
@@ -62,7 +66,7 @@ namespace Falcor
 	Material::Material(const std::string& name) : mName(name)
 	{
         static_assert((sizeof(MaterialLayerValues) - sizeof(glm::vec4)) == sizeof(MaterialValue) * 3, "Please register your texture offset in kTextureSlots every time you add another texture slot into material");
-        static_assert((sizeof(MaterialValues) - sizeof(glm::vec4)) == sizeof(MaterialValue) * 4 + sizeof(MaterialLayerValues) * 3, "Please register your texture offset in kTextureSlots every time you add another texture slot into material");
+        static_assert((sizeof(MaterialValues) - sizeof(glm::vec4)) == sizeof(MaterialValue) * 4 + sizeof(MaterialLayerValues) * MatMaxLayers, "Please register your texture offset in kTextureSlots every time you add another texture slot into material");
 
 		mData.values.id = sMaterialCounter;
 		sMaterialCounter++;
@@ -135,6 +139,12 @@ namespace Falcor
         mData.desc.layers[numLayers].hasExtraParamTexture = values.extraParam.texture.pTexture ? true : false;
         mDescDirty = true;
 
+        // Update the index by type
+        if(desc.type != MatNone && mData.desc.layerIdByType[desc.type].id == -1)
+        {
+            mData.desc.layerIdByType[desc.type].id = (int)numLayers;
+        }
+
 		return true;
 	}
 
@@ -145,6 +155,7 @@ namespace Falcor
             assert(false);
             return;
         }
+
         const bool needCompaction = layerIdx + 1 < getNumActiveLayers();
         mData.desc.layers[layerIdx].type = MatNone;
         mData.values.layers[layerIdx] = MaterialLayerValues();
@@ -163,6 +174,16 @@ namespace Falcor
                 memmove(&mData.values.layers[i], &mData.values.layers[i + 1], sizeof(mData.values.layers[0]));
 				mData.desc.layers[i+1].type = MatNone;
                 mData.values.layers[i+1] = MaterialLayerValues();
+            }
+        }
+
+        // Update indices by type
+        memset(&mData.desc.layerIdByType, -1, sizeof(mData.desc.layerIdByType));
+        for(int i = 0; i < MatMaxLayers - 1; ++i)
+        {
+            if(mData.desc.layers[i].type != MatNone && mData.desc.layerIdByType[mData.desc.layers[i].type].id != -1)
+            {
+                mData.desc.layerIdByType[mData.desc.layers[i].type].id = i;
             }
         }
 
@@ -478,7 +499,17 @@ namespace Falcor
             }
         }
         shaderDcl += "},";
-        shaderDcl += std::to_string(mData.desc.hasAlphaMap) + ',' + std::to_string(mData.desc.hasNormalMap) + ',' + std::to_string(mData.desc.hasHeightMap) + ',' + std::to_string(mData.desc.hasAmbientMap);
+        shaderDcl += std::to_string(mData.desc.hasAlphaMap) + ',' + std::to_string(mData.desc.hasNormalMap) + ',' + std::to_string(mData.desc.hasHeightMap) + ',' + std::to_string(mData.desc.hasAmbientMap) + ',';
+
+        shaderDcl += "{";
+        for(uint32_t layerType = 0; layerType < MatNumTypes; layerType++)
+        {
+            shaderDcl += "{" + std::to_string(mData.desc.layerIdByType[layerType].id) + "}";
+            if(layerType != MatNumTypes - 1)
+                shaderDcl += ',';
+        }
+        shaderDcl += "},";
+        shaderDcl += "0,0"; // Padding
         shaderDcl += '}';
     }
 

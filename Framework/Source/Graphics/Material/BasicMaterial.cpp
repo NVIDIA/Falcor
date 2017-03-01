@@ -180,7 +180,7 @@ namespace Falcor
         while(--layerId >= 0)
         {
             const MaterialLayerDesc* pDesc = pMaterial->getLayerDesc(layerId);
-            if(pDesc->type == matType)
+            if(pDesc && pDesc->type == matType)
             {
                 numLayers++;
             }
@@ -196,7 +196,7 @@ namespace Falcor
         {
             const MaterialLayerDesc* pDesc = pMaterial->getLayerDesc(layerId);
 
-            if(pDesc->type == matType)
+            if(pDesc && pDesc->type == matType)
             {
                 return pMaterial->getLayerValues(layerId);
             }
@@ -215,7 +215,7 @@ namespace Falcor
         }
 
         /* Parse diffuse layer */
-        const MaterialLayerValues* pDiffuseData = pMaterial->getLayerValues(MatLambert);
+        const MaterialLayerValues* pDiffuseData = getLayerDataFromType(pMaterial, MatLambert);
         if(pDiffuseData)
         {
             pTextures[MapType::DiffuseMap] = pDiffuseData->albedo.texture.pTexture;
@@ -227,7 +227,7 @@ namespace Falcor
         }
 
         /* Parse emissive layer */
-        const MaterialLayerValues* pEmissiveData = pMaterial->getLayerValues(MatEmissive);
+        const MaterialLayerValues* pEmissiveData = getLayerDataFromType(pMaterial, MatEmissive);
         if(pEmissiveData)
         {
             pTextures[MapType::EmissiveMap] = pEmissiveData->albedo.texture.pTexture;
@@ -239,7 +239,7 @@ namespace Falcor
         }
 
         /* Parse specular layer */
-        const MaterialLayerValues* pSpecData = pMaterial->getLayerValues(MatConductor);
+        const MaterialLayerValues* pSpecData = getLayerDataFromType(pMaterial, MatConductor);
         if(pSpecData)
         {
             pTextures[MapType::SpecularMap] = pSpecData->albedo.texture.pTexture;
@@ -249,7 +249,7 @@ namespace Falcor
         }
 
         /* Parse transparent layer */
-        const MaterialLayerValues* pTransData = pMaterial->getLayerValues(MatDielectric);
+        const MaterialLayerValues* pTransData = getLayerDataFromType(pMaterial, MatDielectric);
         if(pTransData)
         {
             transparentColor = vec3(pTransData->albedo.constantColor);

@@ -106,8 +106,9 @@ namespace Falcor
         \param[in] rtIndex The render-target index to capture.
         \param[in] filename Name of the PNG file to save.
         \param[in] fileFormat Destination image file format (e.g., PNG, PFM, etc.)
+        \param[in] exportFlags Save flags, see Bitmap::ExportFlags
         */
-        void captureToFile(uint32_t rtIndex, const std::string& filename, Bitmap::FileFormat fileFormat);
+        void captureToFile(uint32_t rtIndex, const std::string& filename, Bitmap::FileFormat fileFormat, uint32_t exportFlags = 0);
 
         /** Get the maximum number of color targets
         */

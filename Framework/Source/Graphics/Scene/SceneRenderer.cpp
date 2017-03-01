@@ -37,6 +37,8 @@
 #include "Core/Window.h"
 #include "glm/matrix.hpp"
 #include "Graphics/Material/MaterialSystem.h"
+#include <iostream>
+#include "glm/ext.hpp"
 
 namespace Falcor
 {
@@ -254,12 +256,7 @@ namespace Falcor
 
     bool SceneRenderer::update(double currentTime)
     {
-        return mpScene->updateCamera(currentTime, mpCameraController.get());
-
-        for(uint32_t modelID = 0; modelID < mpScene->getModelCount(); modelID++)
-        {
-            mpScene->getModel(modelID)->animate(currentTime);
-        }
+        return mpScene->update(currentTime, mpCameraController.get());
     }
 
     void SceneRenderer::renderScene(RenderContext* pContext, Program* pProgram)

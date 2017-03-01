@@ -224,7 +224,7 @@ namespace Falcor
         {
             for(uint32_t rtIndex = 0; rtIndex < mColorAttachments.size(); rtIndex++)
             {
-                if(mColorAttachments[rtIndex].pTexture || mApiHandle == 0)
+                if(mColorAttachments[rtIndex].pTexture || (mApiHandle == 0 && rtIndex == 0))
                 {
                     clearColorTarget(rtIndex, color);
                 }

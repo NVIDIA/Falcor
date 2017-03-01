@@ -64,6 +64,14 @@ namespace Falcor
             std::string& log, 
             const std::string& name = "");
 
+        /** create a new compute program object
+            \param[in] pCS Compute shader object
+            \param[out] Log In case of error, this will contain the error log string
+            \param[in] DebugName Optional. A meaningful name to use with log messages
+            \return New object in case of success, otherwise nullptr
+            */
+        static SharedConstPtr create(const Shader::SharedPtr& pCS, std::string& log, const std::string& name = "");
+
         ~ProgramVersion();
 
         /** Get the API handle.
@@ -103,6 +111,16 @@ namespace Falcor
             const Shader::SharedPtr& pGS,
             const Shader::SharedPtr& pHS,
             const Shader::SharedPtr& pDS,
+            const Shader::SharedPtr& pCS,
+            const std::string& name = "");
+
+        static SharedConstPtr createInternal(const Shader::SharedPtr& pVS,
+            const Shader::SharedPtr& pFS,
+            const Shader::SharedPtr& pGS,
+            const Shader::SharedPtr& pHS,
+            const Shader::SharedPtr& pDS,
+            const Shader::SharedPtr& pCS,
+            std::string& log,
             const std::string& name = "");
 
         void deleteApiHandle();

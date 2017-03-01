@@ -40,6 +40,7 @@ namespace Falcor
 {
     class UniformBuffer;
     class Gui;
+    class Scene;
 
     /** Base class for light sources. All light sources should inherit from this.
     */
@@ -149,6 +150,10 @@ namespace Falcor
         /** Set the light intensity.
         */
         void setIntensity(const glm::vec3& intensity) { mData.intensity = intensity; }
+                
+        /** Set the scene parameters
+        */
+        void setWorldParams(const glm::vec3& center, float radius);
 
         /** Get the light's world-space direction.
         */
@@ -166,6 +171,9 @@ namespace Falcor
         /* UI callbacks for keeping the direction and position in-sync */
         static void GUI_CALL setDirectionCB(const void* pVal, void* pUserData);
         static void GUI_CALL getDirectionCB(void* pVal, void* pUserData);		
+
+        float     mSceneRadius = 1e3f;       ///< Scene bounding radius is required to move the light position sufficiently far away
+        vec3      mSceneCenter;
     };
 
     /** Simple infinitely-small point light with quadratic attenuation
@@ -419,6 +427,8 @@ namespace Falcor
         Buffer::SharedPtr       mMeshCDFBuf;         ///< Buffer id for mesh Cumulative distribution function (CDF)
 
 		float                   mSurfaceArea;        ///< Surface area of the mesh
+		vec3                    mTangent;            ///< Unnormalized tangent vector of the light
+		vec3                    mBitangent;          ///< Unnormalized bitangent vector of the light
 		std::vector<float>      mMeshCDF;            ///< CDF function for importance sampling a triangle mesh
 	};
 

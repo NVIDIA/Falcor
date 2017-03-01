@@ -663,6 +663,16 @@ namespace Falcor
         }
     }
 
+    void UniformBuffer::setImage(const std::string& name, const Texture* pTexture, const int32_t pLODLevel, const ResourceFormat pFormat) const
+    {
+        size_t Offset;
+        const auto pUniform = getVariableData<true>(name, Offset);
+        if (pUniform)
+        {
+            setImage(Offset, pTexture, pLODLevel, pFormat);            
+        }
+    }
+
     void UniformBuffer::setTextureArray(const std::string& name, const Texture* pTexture[], const Sampler* pSampler, size_t count, bool bindAsImage)
     {
         size_t Offset;

@@ -145,6 +145,24 @@ namespace Falcor
         */
         void setTexture(size_t Offset, const Texture* pTexture, const Sampler* pSampler, bool bindAsImage = false);
 
+        /** Set an image.
+        The function will NOT validate that the resource Type matches the declaration in the shader.
+        \param[in] name The uniform name in the program. See notes about naming in the UniformBuffer class description.
+        \param[in] pTexture The resource to bind. If bBindAsImage is set, binds as image.
+        \param[in] pLODLevel The LOD level to be used as an image
+        \param[in] pFormat The format to interpret texture image content
+        */
+        void setImage(const std::string& name, const Texture* pTexture, const int32_t pLODLevel, const ResourceFormat pFormat) const;
+
+        /** Set an image.
+        The function will NOT validate that the resource Type matches the declaration in the shader.
+        \param[in] offset The uniform byte offset inside the buffer
+        \param[in] pTexture The resource to bind. If bBindAsImage is set, binds as image.
+        \param[in] pLODLevel The LOD level to be used as an image
+        \param[in] pFormat The format to interpret texture image content
+        */
+        void setImage(size_t Offset, const Texture* pTexture, const int32_t pLODLevel, const ResourceFormat pFormat) const;
+
         /** Apply the changes to the actual GPU buffer.
             Note that it is possible to use this function to update only part of the GPU copy of the buffer. This might lead to inconsistencies between the GPU and CPU buffer, so make sure you know what you are doing.
             \param[in] offset Offset into the buffer to write to

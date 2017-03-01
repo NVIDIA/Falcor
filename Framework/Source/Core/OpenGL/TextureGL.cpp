@@ -30,7 +30,6 @@
 #include "Core/Texture.h"
 #include "Core/Sampler.h"
 #include "Core/Window.h"
-#include "Utils/Bitmap.h"
 
 namespace Falcor
 {
@@ -61,7 +60,7 @@ namespace Falcor
         {
             glMakeTextureHandleNonResidentARB(a.second);
         }
-
+                
         glDeleteTextures(1, &mApiHandle);
     }
         
@@ -499,7 +498,7 @@ namespace Falcor
         }
     }
 
-    void Texture::uploadSubresourceData(const void* pData, uint32_t dataSize, uint32_t mipLevel, uint32_t arraySlice)
+    void Texture::uploadSubresourceData(const void* pData, uint32_t dataSize, uint32_t mipLevel, uint32_t arraySlice) const
     {
         if(mipLevel >= mMipLevels)
         {
@@ -571,7 +570,7 @@ namespace Falcor
 		}
     }
 
-    void Texture::captureToPng(uint32_t mipLevel, uint32_t arraySlice, const std::string& filename) const
+    void Texture::captureToFile(uint32_t mipLevel, uint32_t arraySlice, const std::string& filename, Bitmap::FileFormat format, uint32_t saveFlags) const
     {
         auto dataSize = getMipLevelDataSize(mipLevel);
         uint32_t bytesPerPixel = getFormatBytesPerBlock(mFormat);
@@ -584,7 +583,7 @@ namespace Falcor
 
         readSubresourceData(data.data(), bufferSize, mipLevel, arraySlice);
 
-        Bitmap::saveImage(filename, mipWidth, mipHeight, Bitmap::FileFormat::PngFile, bytesPerPixel, false, data.data());
+        Bitmap::saveImage(filename, mipWidth, mipHeight, format, saveFlags, bytesPerPixel, false, data.data());
 
     }
 
@@ -701,21 +700,26 @@ namespace Falcor
         gl_call(glCopyImageSubData(mApiHandle, convertTexTypeToGL(mType, mArraySize), srcMipLevel, 0, 0, srcArraySlice, pDst->mApiHandle, convertTexTypeToGL(pDst->mType, pDst->mArraySize), dstMipLevel, 0, 0, dstArraySlice, mWidth, mHeight, mDepth));
     }
 
+    glm::i32vec3 Texture::getSparseResidencyPageSize()
+    {
+        if (mSparsePageRes.x == 0)
+        {
+            glGetInternalformativ(GL_TEXTURE_3D, getGlSizedFormat(mFormat), GL_VIRTUAL_PAGE_SIZE_X_ARB, 1, &mSparsePageRes.x);
+            glGetInternalformativ(GL_TEXTURE_3D, getGlSizedFormat(mFormat), GL_VIRTUAL_PAGE_SIZE_Y_ARB, 1, &mSparsePageRes.y);
+            glGetInternalformativ(GL_TEXTURE_3D, getGlSizedFormat(mFormat), GL_VIRTUAL_PAGE_SIZE_Z_ARB, 1, &mSparsePageRes.z);
+        }
+
+        return mSparsePageRes;
+    }
 
 	void Texture::setSparseResidencyPageIndex(bool isResident, uint32_t mipLevel,  uint32_t pageX, uint32_t pageY, uint32_t pageZ, uint32_t width, uint32_t height, uint32_t depth)
 	{
 		assert(mIsSparse);
 
-		if(mSparsePageWidth==0)
-		{
-			glGetInternalformativ(GL_TEXTURE_3D, getGlSizedFormat(mFormat), GL_VIRTUAL_PAGE_SIZE_X_ARB, 1, &mSparsePageWidth);
-			glGetInternalformativ(GL_TEXTURE_3D, getGlSizedFormat(mFormat), GL_VIRTUAL_PAGE_SIZE_Y_ARB, 1, &mSparsePageHeight);
-			glGetInternalformativ(GL_TEXTURE_3D, getGlSizedFormat(mFormat), GL_VIRTUAL_PAGE_SIZE_Z_ARB, 1, &mSparsePageDepth);
-		}
-		
+		Texture::getSparseResidencyPageSize();
 
-		glTexturePageCommitmentEXT(getApiHandle(), mipLevel, static_cast<GLsizei>(mSparsePageWidth * pageX), static_cast<GLsizei>(mSparsePageHeight * pageY), static_cast<GLsizei>(mSparsePageDepth * pageZ),
-			static_cast<GLsizei>(mSparsePageWidth*width), static_cast<GLsizei>(mSparsePageHeight*height), static_cast<GLsizei>(mSparsePageDepth*depth),
+		glTexturePageCommitmentEXT(getApiHandle(), mipLevel, static_cast<GLsizei>(mSparsePageRes.x * pageX), static_cast<GLsizei>(mSparsePageRes.y * pageY), static_cast<GLsizei>(mSparsePageRes.z * pageZ),
+			static_cast<GLsizei>(mSparsePageRes.x*width), static_cast<GLsizei>(mSparsePageRes.y*height), static_cast<GLsizei>(mSparsePageRes.z*depth),
 			isResident);
 	}
 }

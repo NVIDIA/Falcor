@@ -303,7 +303,7 @@ void SimpleDeferred::onFrameRender()
 
 void SimpleDeferred::onShutdown()
 {
-
+    mpModel.reset();
 }
 
 bool SimpleDeferred::onKeyEvent(const KeyboardEvent& keyEvent)
@@ -339,9 +339,6 @@ void SimpleDeferred::onResizeSwapChain()
     mpCamera->setFovY(float(M_PI / 3));
     mAspectRatio = (float(width) / float(height));
     mpCamera->setAspectRatio(mAspectRatio);
-
-	// Rule-of-thumb detection if we need to scale to high-dip display (>150dpi)
-	mDisplayScaling = (getDisplayDpi() > 150) ? 2 : 1;
 
 	// create a lower-res default FBO in case if we need to scale the results
 	mpDisplayFBO = nullptr;
@@ -400,9 +397,13 @@ void SimpleDeferred::setActiveAnimationCB(const void* pVal, void* pUserData)
 int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ LPSTR lpCmdLine, _In_ int nShowCmd)
 {
     SimpleDeferred sample;
+
+    // Rule-of-thumb detection if we need to scale to high-dip display (>150dpi)
+    sample.mDisplayScaling = (getDisplayDpi() > 150) ? 2 : 1;
+
     SampleConfig config;
-    config.windowDesc.swapChainDesc.width = 1280;
-    config.windowDesc.swapChainDesc.height = 720;
+    config.windowDesc.swapChainDesc.width = 1280 * sample.mDisplayScaling;
+    config.windowDesc.swapChainDesc.height = 720 * sample.mDisplayScaling;
     config.windowDesc.resizableWindow = true;
     config.windowDesc.title = "Simple Deferred";
     sample.run(config);

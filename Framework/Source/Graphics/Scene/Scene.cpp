@@ -30,6 +30,8 @@
 #include "SceneImporter.h"
 #include "glm/gtx/euler_angles.hpp"
 #include "glm/gtc/matrix_transform.hpp"
+#include <iostream>
+#include "glm/ext.hpp"
 
 namespace Falcor
 {
@@ -59,18 +61,22 @@ namespace Falcor
         pCamera->setAspectRatio(cameraAspectRatio);
         pCamera->setName("Default");
         addCamera(pCamera);
+        mDirty = true;
     }
 
     Scene::~Scene() = default;
 
-    bool Scene::updateCamera(double currentTime, CameraController* cameraController)
+    bool Scene::update(double currentTime, CameraController* cameraController)
     {
         auto pCamera = getActiveCamera();
         auto pActivePath = getActivePath();
+
+        bool bChanged = false;
+
         if(pActivePath)
         {
             pActivePath->animate(currentTime);
-            return true;
+            bChanged = true;
         }
         // Ignore the elapsed time we got from the user. This will allow camera movement in cases where the time is frozen
         if(cameraController)
@@ -79,7 +85,74 @@ namespace Falcor
             cameraController->setCameraSpeed(getCameraSpeed());
             return cameraController->update();
         }
-        return false;
+
+        // Recompute scene extents if dirty
+        if(mDirty)
+        {
+            mDirty = false;
+
+            mRadius = 0.f;
+            float k = 0.f;
+            mCenter = vec3(0, 0, 0);
+            for(uint32_t i = 0; i<getModelCount(); ++i)
+            {
+                const auto& model = getModel(i);
+                const float r = model->getRadius();
+                const vec3 c = model->getCenter();
+                for(uint32_t j = 0; j<getModelInstanceCount(i); ++j)
+                {
+                    const auto& inst = getModelInstance(i, j);
+                    const vec3 instC = vec3(vec4(c, 1.f) * inst.transformMatrix);
+                    const float instR = r * max(inst.scaling.x, max(inst.scaling.y, inst.scaling.z));
+
+                    if(k == 0.f)
+                    {
+                        mCenter = instC;
+                        mRadius = instR;
+                    }
+                    else
+                    {
+                        vec3 dir = instC - mCenter;
+                        if(length(dir) > 1e-6f)
+                            dir = normalize(dir);
+                        vec3 a = mCenter - dir * mRadius;
+                        vec3 b = instC + dir * instR;
+
+                        mCenter = (a + b) * 0.5f;
+                        mRadius = length(a - b);
+                    }
+                    k++;
+                }
+            }
+
+            // Update light extents
+            for(auto& light : mpLights)
+            {
+                if(light->getType() == LightDirectional)
+                {
+                    auto pDirLight = std::dynamic_pointer_cast<DirectionalLight>(light);
+                    pDirLight->setWorldParams(getCenter(), getRadius());
+                }
+            }
+
+            bChanged = true;
+        }
+
+        return bChanged;
+    }
+
+    vec3 Scene::getCenter()
+    {
+        if(mDirty)
+            update(0.f);
+        return mCenter;
+    }
+
+    float Scene::getRadius()
+    {
+        if(mDirty)
+            update(0.f);
+        return mRadius;
     }
 
     uint32_t Scene::addModelInstance(uint32_t modelID, const std::string& name, const glm::vec3& rotate, const glm::vec3& scale, const glm::vec3& translate)
@@ -92,6 +165,7 @@ namespace Falcor
         mModels[modelID].instances.push_back(instance);
         calculateModelInstanceMatrix(modelID, (uint32_t)mModels[modelID].instances.size() - 1);
 
+        mDirty = true;
         return (uint32_t)mModels[modelID].instances.size() - 1;
     }
 
@@ -99,6 +173,7 @@ namespace Falcor
     {
         auto& instances = mModels[modelID].instances;
         instances.erase(instances.begin() + instanceID);
+        mDirty = true;
     }
 
     void Scene::calculateModelInstanceMatrix(uint32_t modelID, uint32_t instanceID)
@@ -150,23 +225,32 @@ namespace Falcor
 		{
 			addModelInstance(modelID, pModel->getName(), vec3(0.0), vec3(1.0), vec3(0.0));
 		}
-		return modelID;
+        mDirty = true;
+        return modelID;
     }
 
     void Scene::deleteModel(uint32_t modelID)
     {
         mModels.erase(mModels.begin() + modelID);
+        mDirty = true;
     }
 
     uint32_t Scene::addLight(const Light::SharedPtr& pLight)
     {
         mpLights.push_back(pLight);
+        if(pLight->getType() == LightDirectional)
+        {
+            auto pDirLight = std::dynamic_pointer_cast<DirectionalLight>(pLight);
+            pDirLight->setWorldParams(getCenter(), getRadius());
+        }
+        mDirty = true;
         return (uint32_t)mpLights.size() - 1;
     }
 
     void Scene::deleteLight(uint32_t lightID)
     {
         mpLights.erase(mpLights.begin() + lightID);
+        mDirty = true;
     }
 
     uint32_t Scene::addPath(const ObjectPath::SharedPtr& pPath) 
@@ -213,18 +297,21 @@ namespace Falcor
     {
         mModels[modelID].instances[instanceID].translation = translation;
         calculateModelInstanceMatrix(modelID, instanceID);
+        mDirty = true;
     }
 
     void Scene::setModelInstanceRotation(uint32_t modelID, uint32_t instanceID, const glm::vec3& rotation)
     {
         mModels[modelID].instances[instanceID].rotation = rotation;
         calculateModelInstanceMatrix(modelID, instanceID);
+        mDirty = true;
     }
 
     void Scene::setModelInstanceScaling(uint32_t modelID, uint32_t instanceID, const glm::vec3& scaling)
     {
         mModels[modelID].instances[instanceID].scaling = scaling;
         calculateModelInstanceMatrix(modelID, instanceID);
+        mDirty = true;
     }
 
     void Scene::setActiveCamera(uint32_t camID)
@@ -272,6 +359,7 @@ namespace Falcor
         merge(mCameras);
 #undef merge
         mUserVars.insert(pFrom->mUserVars.begin(), pFrom->mUserVars.end());
+        mDirty = true;
     }
 
 	void Scene::createAreaLights()
@@ -291,7 +379,8 @@ namespace Falcor
 					// FIXME
 					const Scene::ModelInstance& modelInstance = getModelInstance(modelId, modelInstanceId);
 					Falcor::createAreaLightsForModel(pModel.get(), mpLights);
-				}
+                    mDirty = true;
+                }
 			}
 		}
 	}
@@ -312,5 +401,6 @@ namespace Falcor
 				++it;
 			}
 		}
-	}
+        mDirty = true;
+    }
 }

@@ -42,6 +42,8 @@ public:
     bool onKeyEvent(const KeyboardEvent& keyEvent) override;
     bool onMouseEvent(const MouseEvent& mouseEvent) override;
 
+    uint32_t mDisplayScaling = 1;	///< used for high-dpi scaling example
+
 private:
     static void GUI_CALL loadModelCallback(void* pUserData);
 
@@ -111,8 +113,6 @@ private:
     // GUI callbacks
     static void GUI_CALL setActiveAnimationCB(const void* pVal, void* pUserData);
     static void GUI_CALL getActiveAnimationCB(void* pVal, void* pUserData);
-
-	uint32_t mDisplayScaling = 1;	///< used for high-dpi scaling example
 
     float mNearZ = 1e-2f;
     float mFarZ = 1e3f;

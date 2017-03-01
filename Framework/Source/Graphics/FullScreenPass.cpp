@@ -54,8 +54,8 @@ namespace Falcor
         glm::vec2 texCoord;
     };
 
-    Buffer::SharedPtr FullScreenPass::spVertexBuffer;
-    Vao::SharedPtr FullScreenPass::spVao;
+    Buffer::WeakPtr FullScreenPass::spSharedVertexBuffer;
+    Vao::WeakPtr FullScreenPass::spSharedVao;
 
 
 #ifdef FALCOR_DX11
@@ -110,26 +110,33 @@ namespace Falcor
         const std::string vs("Framework\\FullScreenPass.vs");
         mpProgram = Program::createFromFile(vs, fragmentShaderFile, gs, "", "", defs);
 
-        if (FullScreenPass::spVertexBuffer == nullptr)
+        if (FullScreenPass::spSharedVertexBuffer.expired())
         {
             // First time we got here. create VB and VAO
             const uint32_t vbSize = (uint32_t)(sizeof(Vertex)*arraysize(kVertices));
-            FullScreenPass::spVertexBuffer = Buffer::create(vbSize, Buffer::BindFlags::Vertex, Buffer::AccessFlags::Dynamic, (void*)kVertices);
+            mpVertexBuffer = Buffer::create(vbSize, Buffer::BindFlags::Vertex, Buffer::AccessFlags::Dynamic, (void*)kVertices);
+            FullScreenPass::spSharedVertexBuffer = mpVertexBuffer;
 
             // create VAO
             Vao::VertexBufferDescVector vbDesc(1);
             vbDesc[0].pLayout->addElement("POSITION", 0, ResourceFormat::RG32Float, 1, 0);
             vbDesc[0].pLayout->addElement("TEXCOORD", 8, ResourceFormat::RG32Float, 1, 1);
             vbDesc[0].stride = sizeof(Vertex);
-            vbDesc[0].pBuffer = spVertexBuffer;
+            vbDesc[0].pBuffer = mpVertexBuffer;
 
-            FullScreenPass::spVao = Vao::create(vbDesc, nullptr);
+            mpVao = Vao::create(vbDesc, nullptr);
+            FullScreenPass::spSharedVao = mpVao;
+        }
+        else
+        {
+            mpVao = FullScreenPass::spSharedVao.lock();
+            mpVertexBuffer = FullScreenPass::spSharedVertexBuffer.lock();
         }
     }
 
     void FullScreenPass::execute(RenderContext* pRenderContext, bool overrideDepthStencil) const
     {
-        pRenderContext->setVao(spVao);
+        pRenderContext->setVao(mpVao);
         pRenderContext->setProgram(mpProgram->getActiveProgramVersion());
         if (overrideDepthStencil) pRenderContext->setDepthStencilState(mpDepthStencilState, 0);
         pRenderContext->setTopology(RenderContext::Topology::TriangleStrip);

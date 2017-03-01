@@ -354,9 +354,12 @@ namespace Falcor
         */
         void collapseGroup(const std::string& group);
 
+		void setGroupLabel(const std::string &group, const std::string &label);
+
         /** Expands a group
         */
         void expandGroup(const std::string& group);
+		void define(const std::string& s);
     protected:
         bool keyboardCallback(const KeyboardEvent& keyEvent);
         bool mouseCallback(const MouseEvent& mouseEvent);

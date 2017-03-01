@@ -3,3 +3,5 @@ Bin/*
 *.sdf
 *.opensdf
 *.suo
+*.ptx
+*.props

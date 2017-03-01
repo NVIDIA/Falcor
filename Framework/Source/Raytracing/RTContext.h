@@ -68,6 +68,7 @@ namespace RT
             int             index;
             optix::Program  program;
             std::string     sourceFilePath;
+            time_t          sourceFileTimeStamp;
             std::string     entryPoint;
         };
         std::vector<Program>    mPrograms;          //< List of programs indexed by entry point number
@@ -117,7 +118,7 @@ namespace RT
         /**
             Adds a static object to a scene. Scene-graph wise, all static geometry is placed in the same geometric node. 
         */
-        ObjectHandle addObject(const Model::SharedPtr& mesh, RoutineHandle& shadingRtn, RoutineHandle& anyHitRtn = RoutineHandle(), RoutineHandle& intersectionRtn = RoutineHandle());
+        ObjectHandle addObject(const Model::SharedPtr& model, const Scene::ModelInstance& instance, RoutineHandle& shadingRtn, RoutineHandle& anyHitRtn = RoutineHandle(), RoutineHandle& intersectionRtn = RoutineHandle());
         
         /**
             Adds a dynamic object. The returned handle can be used to apply affine transformations to the objects with the method setMatrix.
@@ -128,6 +129,9 @@ namespace RT
         */
         DynamicObjectHandle addDynamicObject(const Model::SharedPtr& mesh, RoutineHandle& shadingRtn, RoutineHandle& anyHitRtn = RoutineHandle(), RoutineHandle& intersectionRtn = RoutineHandle());
         ObjectHandle getObject(DynamicObjectHandle dynamic_object);
+
+        DynamicObjectHandle enableDynamicObject(const Mesh::SharedPtr& mesh);
+        void disableDynamicObject(const Mesh::SharedPtr& mesh);
 
         void transformStaticObject(ObjectHandle object, const glm::mat4x3& mx);
 
@@ -204,7 +208,7 @@ namespace RT
         /**
             Extracts geometry from the Falcor model and inserts it into the given geometry group. 
         */
-        void addGeometryToGroup(ObjectHandle groupToAddGeometry, const Model::SharedPtr& mesh, RoutineHandle& shadingRtn, RoutineHandle& anyHitRtn, RoutineHandle& intersectionRtn);
+        ObjectHandle addGeometry(const Model::SharedPtr& mesh, const Scene::ModelInstance& instance, RoutineHandle& shadingRtn, RoutineHandle& anyHitRtn, RoutineHandle& intersectionRtn);
         
         RoutineHandle createRoutineInternal(const std::vector<std::tuple<int, std::string, std::string>>& entryPoints);
 
@@ -212,6 +216,16 @@ namespace RT
             Updates the scene, adds global indexing buffer for instances and materials. 
         */
         void updateScene();
+        
+        /**
+            Creates a shared OptiX buffer between OpenGL and OptiX
+        */
+        BufferHandle _createSceneSharedBuffer(Falcor::BufferHandle glApiHandle, RTformat format, size_t elementCount);
+        
+        /**
+            Creates a shared OptiX sampler for an OpenGL texture
+        */
+        SamplerHandle _createSceneSharedTexture(Texture::SharedConstPtr& pTexture, bool bufferIndexing = false);
 
     protected:
         ContextHandle            mpContext;
@@ -233,6 +247,7 @@ namespace RT
             BufferHandle        tangents;
             BufferHandle        bitangents;
             BufferHandle        texcoord;
+            mat4                transform;
         };
         struct BindlessGeoInstance
         {
@@ -243,16 +258,25 @@ namespace RT
             int             bitangents;
             int             texcoord;
             int             _pad[2];
+            mat4            transform;
+            mat4            invTrTransform;
             MaterialData    material;
         };
-        struct ModelInstance
+        struct MeshInstance
         {
-            int32_t             modelId = -1;
-            ModelGeometry       geo;
-            MaterialData        material;
+            int32_t                     meshId = -1;
+            ModelGeometry               geo;
+            MaterialData                material;
+            optix::GeometryInstance     instance;
+            ObjectHandle                object;
+            DynamicObjectHandle         transformObject;
+            bool                        dynamic = false;
         };
-        std::list<ModelInstance>  mInstances;
-        bool                      mSceneDirty = true;
+        std::vector<MeshInstance>  mInstances;
+        bool                     mSceneDirty = true;
+        bool                     mSceneTransformDirty = true;
+
+        float                    mSceneRadius = -1.0f;
 
         // Global access buffer for the scene
         BufferHandle             mSceneInstancesBuffer;
@@ -267,6 +291,7 @@ namespace RT
         {
             GLuint                  PBO = 0;
             BufferHandle            PBOBuffer;
+            Texture::WeakConstPtr   sourceTexture;
         };
         std::map<uint32_t, SharedTextureBuffer> mSharedBuffers;
         BufferHandle             mFrameBuffers; ///< Used to bind (multiple) render targets
@@ -275,8 +300,8 @@ namespace RT
         std::map<Light::SharedPtr, LightData>    mCachedLights;
 
         // Registered OptiX texture 
-        std::map<GLuint, optix::TextureSampler> mOGLSharedTextures;
-        std::map<GLuint, BufferHandle>          mOGLSharedBuffers;
+        std::map<GLuint, SamplerHandle> mOGLSharedTextures;
+        std::map<GLuint, BufferHandle>  mOGLSharedBuffers;
     };
 }
 }

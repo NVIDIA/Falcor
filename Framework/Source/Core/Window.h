@@ -80,6 +80,7 @@ namespace Falcor
         void swapBuffers();
         void pollForEvents();
         void setWindowTitle(std::string title);
+        bool windowShouldClose() const;
 
         Fbo::SharedPtr getDefaultFBO() const { return mpDefaultFBO; }
 

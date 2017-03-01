@@ -44,15 +44,16 @@ namespace Falcor
         glDeleteProgram(mApiHandle);
     }
 
-    ProgramVersion::SharedConstPtr ProgramVersion::create(const Shader::SharedPtr& pVS, 
+    ProgramVersion::SharedConstPtr ProgramVersion::createInternal(const Shader::SharedPtr& pVS, 
         const Shader::SharedPtr& pFS, 
         const Shader::SharedPtr& pGS, 
         const Shader::SharedPtr& pHS, 
-        const Shader::SharedPtr& pDS, 
+        const Shader::SharedPtr& pDS,
+        const Shader::SharedPtr& pCS,
         std::string& log, 
         const std::string& name)
     {
-        auto pProgram = SharedPtr(new ProgramVersion(pVS, pFS, pGS, pHS, pDS, name));
+        auto pProgram = SharedPtr(new ProgramVersion(pVS, pFS, pGS, pHS, pDS, pCS, name));
 
         pProgram->mApiHandle = gl_call(glCreateProgram());
 

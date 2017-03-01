@@ -31,8 +31,8 @@
 struct AVFormatContext;
 struct AVStream;
 struct AVFrame;
-struct AVPicture;
 struct SwsContext;
+struct AVCodecContext;
 
 namespace Falcor
 {        
@@ -83,13 +83,12 @@ namespace Falcor
         AVFormatContext* mpOutputContext = nullptr;
         AVStream*        mpOutputStream  = nullptr;
         AVFrame*         mpFrame         = nullptr;
-        AVPicture*       mpYUVPicture    = nullptr;
         SwsContext*      mpSwsContext    = nullptr;
+        AVCodecContext*  mpCodecContext = nullptr;
 
         const std::string mFilename;
         InputFormat mForamt;
         uint32_t mRowPitch = 0;
-        uint32_t mFrameCount = 0;
         uint8_t* mpFlippedImage = nullptr; // Used in case the image memory layout if bottom->top
     };
 }

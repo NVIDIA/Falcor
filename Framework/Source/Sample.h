@@ -142,6 +142,7 @@ namespace Falcor
 
         void setWindowTitle(std::string title);
         
+        bool windowShouldClose();
         void toggleUI(bool showUI);
         Gui::UniquePtr mpGui;                             ///< Main sample GUI
         RenderContext::SharedPtr mpRenderContext;         ///< The rendering context
@@ -177,8 +178,8 @@ namespace Falcor
         void startVideoCapture();
         void endVideoCapture();
         void captureVideoFrame();
-
         Window::UniquePtr mpWindow;
+
         bool mVsyncOn = false;
 
         bool mCaptureScreen = false;

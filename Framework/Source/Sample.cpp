@@ -114,12 +114,13 @@ namespace Falcor
                     onDataReload();
                     break;
                 case KeyboardEvent::Key::Escape:
-                    mpWindow->shutdown();
-                    break;
-                case KeyboardEvent::Key::F12:
                     if(mVideoCapture.pVideoCapture)
                     {
                         endVideoCapture();
+                    }
+                    else
+                    {
+                        mpWindow->shutdown();
                     }
                     break;
                 }
@@ -394,6 +395,7 @@ namespace Falcor
         {
             mVideoCapture.pUI = VideoEncoderUI::create(20, 300, 240, 220, &Sample::startVideoCaptureCB, &Sample::endVideoCaptureCB, this);
         }
+        mVideoCapture.pUI->setUIVisibility(true);
     }
 
     void Sample::startVideoCapture()
@@ -425,7 +427,10 @@ namespace Falcor
             }
             mCurrentTime = mVideoCapture.pUI->getStartTime();
             if(!mVideoCapture.pUI->captureUI())
+            {
                 mShowUI = false;
+                setTextMode(TextMode::NoText);
+            }
         }
     }
 
@@ -436,7 +441,7 @@ namespace Falcor
             mVideoCapture.pVideoCapture->endCapture();
             mShowUI = true;
         }
-        mVideoCapture.pUI = nullptr;
+        mVideoCapture.pUI->setUIVisibility(false);
         mVideoCapture.pVideoCapture = nullptr;
         safe_delete_array(mVideoCapture.pFrame);
     }
@@ -483,5 +488,10 @@ namespace Falcor
     void Sample::setWindowTitle(std::string title)
     {
         mpWindow->setWindowTitle(title);
+    }
+
+    bool Sample::windowShouldClose()
+    {
+        return mpWindow->windowShouldClose();
     }
 }

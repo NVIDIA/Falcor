@@ -43,4 +43,14 @@ namespace Falcor
             mMipLevels = (uint32_t)bits + 1;
         }
     }
+
+    uint32_t Texture::getDataSize() const
+    {
+        uint32_t res = 0;
+        for(uint32_t l = 0; l < mMipLevels; l++)
+        {
+            res += getMipLevelDataSize(l);
+        }
+        return res;
+    }
 }

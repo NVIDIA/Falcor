@@ -36,6 +36,7 @@ namespace Falcor
     {
     public:
         using SharedPtr = std::shared_ptr<Buffer>;
+        using WeakPtr = std::weak_ptr<Buffer>;
         using SharedConstPtr = std::shared_ptr<const Buffer>;
 
         /** Buffer access flags.
@@ -131,7 +132,7 @@ namespace Falcor
 
         /** Get the bindless API handle of the buffer object
         */
-        uint64_t getBindlessHandle();
+        uint64_t getBindlessHandle(Buffer::GpuAccessFlags flags = Buffer::GpuAccessFlags::ReadOnly);
 
         /** Get the size of the buffer
         */
@@ -156,7 +157,7 @@ namespace Falcor
     protected:
         Buffer(size_t size, BindFlags bind, AccessFlags access) : mSize(size), mBindFlags(bind), mAccessFlags(access){}
         BufferHandle mApiHandle;
-        uint64_t mBindlessHandle = 0;
+        
         size_t mSize = 0;
         bool mIsMapped = false;
         mutable uint64_t mGpuPtr = 0;

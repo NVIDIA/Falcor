@@ -71,11 +71,14 @@ namespace Falcor
         void init(const std::string & fragmentShaderFile, const Program::DefineList& programDefines, bool disableDepth, bool disableStencil, uint32_t viewportMask);
 
     private:
-        Program::SharedPtr mpProgram;
+        Program::SharedPtr      mpProgram;
         DepthStencilState::SharedPtr mpDepthStencilState;
 
+        Buffer::SharedPtr       mpVertexBuffer;
+        Vao::SharedPtr          mpVao;
+
         // Static
-        static Buffer::SharedPtr spVertexBuffer;
-        static Vao::SharedPtr    spVao;
+        static Buffer::WeakPtr spSharedVertexBuffer;
+        static Vao::WeakPtr    spSharedVao;
     };
 }

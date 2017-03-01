@@ -48,12 +48,15 @@ namespace Falcor
         float getEndTime() const { return mEndTime; }
         const std::string& getFilename() const { return mFilename; }
         float getBitrate() const {return mBitrate; }
-        uint32_t getGopSize() const {return mGopSize; }
+        uint32_t getGopSize() const { return mGopSize; }
+        void setUIVisibility(bool bVisible);
 
     private:
         VideoEncoderUI(uint32_t topLeftX, uint32_t topLeftY, uint32_t width, uint32_t height, Gui::ButtonCallback startCaptureCB, Gui::ButtonCallback endCaptureCB, void* pUserData);
         static void GUI_CALL startCaptureCB(void* pUserData);
         static void GUI_CALL endCaptureCB(void* pUserData);
+
+        void initUI();
 
         void startCapture();
         void endCapture();
@@ -64,15 +67,17 @@ namespace Falcor
 
         Gui::UniquePtr mpUI;
         uint32_t mFPS = 60;
-        VideoEncoder::CodecID mCodec = VideoEncoder::CodecID::RawVideo;
+        VideoEncoder::CodecID mCodec = VideoEncoder::CodecID::H264;
 
         bool mUseTimeRange = false;
         bool mCaptureUI = false;
         float mStartTime = 0;
-        float mEndTime = FLT_MAX;
+        float mEndTime = 5.f;   // 5 seconds by default
+
+        uint32_t mTopLeftX, mTopLeftY, mWidth, mHeight;
 
         std::string mFilename;
-        float mBitrate = 4;
+        float mBitrate = 20;
         uint32_t mGopSize = 10;
     };
 }

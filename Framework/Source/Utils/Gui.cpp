@@ -234,6 +234,7 @@ namespace Falcor
         }
 
         TwDeleteBar(mpTwBar);
+        spRenderContext.reset();
     }
 
     void Gui::displayTwError(const std::string& prefix)
@@ -271,6 +272,7 @@ namespace Falcor
 
     void Gui::drawAll()
     {
+        if(!spRenderContext) return;
         spRenderContext->pushState();
         spRenderContext->setRasterizerState(nullptr);
         TwDraw();
@@ -554,7 +556,12 @@ namespace Falcor
         }
     }
 
-    void Gui::expandGroup(const std::string& group)
+	void Gui::setGroupLabel(const std::string &group, const std::string &label)
+	{
+		TwSetParam(mpTwBar, group.c_str(), "label", TW_PARAM_CSTRING, 1, label.c_str());
+	}
+
+	void Gui::expandGroup(const std::string& group)
     {
         if(group.size())
         {
@@ -563,7 +570,12 @@ namespace Falcor
         }
     }
 
-    void Gui::setVarTitle(const std::string& varName, const std::string& title)
+	void Gui::define(const std::string& s)
+	{
+		TwDefine(s.c_str());
+	}
+
+	void Gui::setVarTitle(const std::string& varName, const std::string& title)
     {
         TwSetParam(mpTwBar, varName.c_str(), "label", TW_PARAM_CSTRING, 1, title.c_str());
     }

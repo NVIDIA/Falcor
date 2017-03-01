@@ -76,7 +76,7 @@ namespace Falcor
         return desc;
     }
 
-    Program::SharedPtr Program::createFromFile(const std::string& vertexFile, const std::string& fragmentFile, const Program::DefineList& programDefines)
+    Program::SharedPtr Program::createFromFile(const std::string& vertexFile, const std::string& fragmentFile, const DefineList& programDefines)
     {
         std::string empty;
         return createFromFile(vertexFile, fragmentFile, empty, empty, empty, programDefines);
@@ -84,28 +84,47 @@ namespace Falcor
 
     Program::SharedPtr Program::createFromFile(const std::string& vertexFile, const std::string& fragmentFile, const std::string& geometryFile, const std::string& hullFile, const std::string& domainFile, const DefineList& programDefines)
     {
-        return createInternal(vertexFile, fragmentFile, geometryFile, hullFile, domainFile, programDefines, true);
+        return createInternal(vertexFile, fragmentFile, geometryFile, hullFile, domainFile, "", programDefines, true);
     }
 
+    Program::SharedPtr Program::createFromFile(const std::string& computeFile, const DefineList& programDefines)
+    {
+        std::string empty;
+        return createInternal(empty, empty, empty, empty, empty, computeFile, programDefines, true);
+    }
+    
     Program::SharedPtr Program::createFromString(const std::string& vertexShader, const std::string& fragmentShader, const DefineList& programDefines)
     {
         std::string empty;
         return createFromString(vertexShader, fragmentShader, empty, empty, empty, programDefines);
     }
 
-    Program::SharedPtr Program::createFromString(const std::string& vertexShader, const std::string& fragmentShader, const std::string& geometryShader, const std::string& hullShader, const std::string& domainShader, const DefineList& programDefines)
+    Program::SharedPtr Program::createFromString(const std::string& computeShader, const DefineList& programDefines)
     {
-        return createInternal(vertexShader, fragmentShader, geometryShader, hullShader, domainShader, programDefines, false);
+        std::string empty;
+        return createInternal(empty, empty, empty, empty, empty, computeShader, programDefines, false);
     }
 
-    Program::SharedPtr Program::createInternal(const std::string& VS, const std::string& FS, const std::string& GS, const std::string& HS, const std::string& DS, const DefineList& programDefines, bool createdFromFile)
+    Program::SharedPtr Program::createFromString(const std::string& vertexShader, const std::string& fragmentShader, const std::string& geometryShader, const std::string& hullShader, const std::string& domainShader, const DefineList& programDefines)
+    {
+        return createInternal(vertexShader, fragmentShader, geometryShader, hullShader, domainShader, "", programDefines, false);
+    }
+
+    Program::SharedPtr Program::createInternal(const std::string& VS, const std::string& FS, const std::string& GS, const std::string& HS, const std::string& DS, const std::string& CS, const DefineList& programDefines, bool createdFromFile)
     {
         SharedPtr pProgram = SharedPtr(new Program);
-        pProgram->mShaderStrings[(uint32_t)ShaderType::Vertex] = VS.size() ? VS : "DefaultVS.vs";
-        pProgram->mShaderStrings[(uint32_t)ShaderType::Fragment] = FS;
-        pProgram->mShaderStrings[(uint32_t)ShaderType::Geometry] = GS;
-        pProgram->mShaderStrings[(uint32_t)ShaderType::Hull] = HS;
-        pProgram->mShaderStrings[(uint32_t)ShaderType::Domain] = DS;
+        if(CS.size())
+        {
+            pProgram->mShaderStrings[(uint32_t)ShaderType::Compute] = CS;
+        }
+        else
+        {
+            pProgram->mShaderStrings[(uint32_t)ShaderType::Vertex] = VS.size() ? VS : "DefaultVS.vs";
+            pProgram->mShaderStrings[(uint32_t)ShaderType::Fragment] = FS;
+            pProgram->mShaderStrings[(uint32_t)ShaderType::Geometry] = GS;
+            pProgram->mShaderStrings[(uint32_t)ShaderType::Hull] = HS;
+            pProgram->mShaderStrings[(uint32_t)ShaderType::Domain] = DS;
+        }
         pProgram->mCreatedFromFile = createdFromFile;
         pProgram->mDefineList = programDefines;
 
@@ -239,13 +258,24 @@ namespace Falcor
 
             // create the program
             std::string log;
-            ProgramVersion::SharedConstPtr pProgram = ProgramVersion::create(pShaders[(uint32_t)ShaderType::Vertex],
-                pShaders[(uint32_t)ShaderType::Fragment],
-                pShaders[(uint32_t)ShaderType::Geometry],
-                pShaders[(uint32_t)ShaderType::Hull],
-                pShaders[(uint32_t)ShaderType::Domain],
-                log, 
-                getProgramDescString());
+            ProgramVersion::SharedConstPtr pProgram;
+            if(pShaders[(uint32_t)ShaderType::Compute] == nullptr)
+            {
+                pProgram = ProgramVersion::create(pShaders[(uint32_t)ShaderType::Vertex],
+                    pShaders[(uint32_t)ShaderType::Fragment],
+                    pShaders[(uint32_t)ShaderType::Geometry],
+                    pShaders[(uint32_t)ShaderType::Hull],
+                    pShaders[(uint32_t)ShaderType::Domain],
+                    log,
+                    getProgramDescString());
+            } 
+            else
+            {
+                pProgram = ProgramVersion::create(pShaders[(uint32_t)ShaderType::Compute],
+                    log,
+                    getProgramDescString());
+            }
+            
 
             if(pProgram == nullptr)
             {

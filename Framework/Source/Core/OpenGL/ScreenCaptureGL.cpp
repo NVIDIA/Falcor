@@ -54,7 +54,7 @@ namespace Falcor
             gl_call(glBindFramebuffer(GL_READ_FRAMEBUFFER, boundFB));
         }
 
-        void captureToPng(uint32_t screenWidth, uint32_t screenHeight, const std::string& filename)
+        void captureToImage(uint32_t screenWidth, uint32_t screenHeight, const std::string& filename, Bitmap::FileFormat fileFormat, Bitmap::ExportFlags flags)
         {
             ResourceFormat format = ResourceFormat::BGRA8Unorm;
             uint32_t bytesPerPixel = getFormatBytesPerBlock(format);
@@ -62,7 +62,12 @@ namespace Falcor
 
             std::vector<uint8_t> data(bufferSize);
             captureToMemory(screenWidth, screenHeight, format, data.data());
-            Bitmap::saveImage(filename, screenWidth, screenHeight, Bitmap::FileFormat::PngFile, bytesPerPixel, false, data.data());
+            Bitmap::saveImage(filename, screenWidth, screenHeight, fileFormat, flags, bytesPerPixel, false, data.data());
+        }
+
+        void captureToPng(uint32_t screenWidth, uint32_t screenHeight, const std::string& filename)
+        {
+            captureToImage(screenWidth, screenHeight, filename, Bitmap::FileFormat::PngFile, Bitmap::ExportFlags::Uncompressed);
         }
     }
 }

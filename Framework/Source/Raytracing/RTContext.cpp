@@ -44,13 +44,10 @@ RTContext::RTContext() : mpContext(nullptr)
     // Setup context
     mpContext->setRayTypeCount(1);
     mpContext->setEntryPointCount(1);
-    //mpContext->setExceptionEnabled(RT_EXCEPTION_ALL, true);
-    {
-        mpContext->setPrintEnabled(true);
-        //mpContext->setPrintLaunchIndex(0, 0);
-        mpContext->setPrintBufferSize(4096);
-    }
-    mpContext->setStackSize(18*1024);
+    mpContext->setExceptionEnabled(RT_EXCEPTION_ALL, false);
+    mpContext->setPrintEnabled(false);
+    //mpContext->setPrintLaunchIndex(0, 0);
+    //mpContext->setPrintBufferSize(4096);
     mpContext->setGPUPagingForcedOff(1);
 
     // Load default programs
@@ -67,10 +64,16 @@ RTContext::~RTContext()
         mMeshBoundRtn.reset();
         mDefaultExceptRtn.reset();
         for(auto tex : mOGLSharedTextures)
+        {
+            tex.second->unregisterGLTexture();
             tex.second->destroy();
+        }
         mOGLSharedTextures.clear();
         for(auto buf : mOGLSharedBuffers)
+        {
+            buf.second->unregisterGLBuffer();
             buf.second->destroy();
+        }
         mOGLSharedBuffers.clear();
         mpContext->destroy();
         mpContext = 0;
@@ -123,7 +126,12 @@ Falcor::RT::RoutineHandle Falcor::RT::RTContext::createRoutineInternal(const std
             string fullPath;
             if (findFileInDataDirectories(fileName + ".ptx", fullPath) == false)
                 Logger::log(Logger::Level::Error, "Routine file does not exist: " + fileName, true);
-            prg->mPrograms.push_back({ std::get<0>(entryPoint), mpContext->createProgramFromPTXFile(fullPath, std::get<2>(entryPoint)), fullPath, std::get<2>(entryPoint) });
+            prg->mPrograms.push_back({ 
+                std::get<0>(entryPoint), 
+                mpContext->createProgramFromPTXFile(fullPath, std::get<2>(entryPoint)), 
+                fullPath, 
+                getFileModifiedTime(fullPath),
+                std::get<2>(entryPoint) });
         }
     }
     catch (const optix::Exception& e)
@@ -140,7 +148,14 @@ void RTContext::reloadRoutine(RoutineHandle& routine)
     {
         try
         {
+            /* Check if the file was actually modified */
+            if(program.program && getFileModifiedTime(program.sourceFilePath) == program.sourceFileTimeStamp)
+            {
+                continue;
+            }
             program.program = mpContext->createProgramFromPTXFile(program.sourceFilePath, program.entryPoint);
+            if(program.program)
+                program.sourceFileTimeStamp = getFileModifiedTime(program.sourceFilePath);
         }
         catch(const optix::Exception& e)
         {
@@ -187,7 +202,27 @@ void RTContext::setSceneClosestHitRoutine(RoutineHandle hitRtn)
         }
     }
 
-    // TODO: add support for dynamic objects
+    // Dynamic objects
+    for(auto& instance : mInstances)
+    {
+        if(instance.transformObject)
+        {
+            GeometryInstance inst = instance.transformObject->getChild<ObjectHandle>()->getChild(0);
+            assert(inst->getMaterialCount() == 1);
+            optix::Material mat = inst->getMaterial(0);
+
+            if(hitRtn)
+            {
+                for(auto& rtn : hitRtn->mPrograms)
+                    mat->setClosestHitProgram(rtn.index, rtn.program);
+            }
+            else // Set a null program
+            {
+                for(unsigned int j = 0; j < mpContext->getRayTypeCount(); j++)
+                    rtMaterialSetClosestHitProgram(mat->get(), j, nullptr);
+            }
+        }
+    }
 }
 
 void RTContext::setSceneAnyHitRoutine(RoutineHandle anyhitRtn)
@@ -216,22 +251,49 @@ void RTContext::setSceneAnyHitRoutine(RoutineHandle anyhitRtn)
         }
     }
 
-    // TODO: add support for dynamic objects
+    // Dynamic objects
+    for(auto& instance : mInstances)
+    {
+        if(instance.transformObject)
+        {
+            GeometryInstance inst = instance.transformObject->getChild<ObjectHandle>()->getChild(0);
+            assert(inst->getMaterialCount() == 1);
+            optix::Material mat = inst->getMaterial(0);
+
+            if(anyhitRtn)
+            {
+                for(auto& rtn : anyhitRtn->mPrograms)
+                    mat->setAnyHitProgram(rtn.index, rtn.program);
+            }
+            else // Set a null program
+            {
+                for(unsigned int j = 0; j < mpContext->getRayTypeCount(); j++)
+                    rtMaterialSetAnyHitProgram(mat->get(), j, nullptr);
+            }
+        }
+    }
 }
 
 void RTContext::updateTransforms()
 {
     mCurrentScene->getAcceleration()->markDirty();
+    mSceneTransformDirty = true;
 }
 
 SceneHandle RTContext::newScene()
 {
     // Clean up first
     for(auto tex : mOGLSharedTextures)
+    {
+        tex.second->unregisterGLTexture();
         tex.second->destroy();
+    }
     mOGLSharedTextures.clear();
     for(auto buf : mOGLSharedBuffers)
+    {
+        buf.second->unregisterGLBuffer();
         buf.second->destroy();
+    }
     mOGLSharedBuffers.clear();
     if(mCurrentScene)
     {
@@ -241,6 +303,21 @@ SceneHandle RTContext::newScene()
     mInstances.clear();
 
     // Clear caches
+    for(auto& it : mSharedBuffers)
+    {
+        auto& buf = it.second;
+        if(buf.PBOBuffer)
+        {
+            buf.PBOBuffer->unregisterGLBuffer();
+            buf.PBOBuffer->destroy();
+            buf.PBOBuffer = nullptr;
+        }
+        if(buf.PBO)
+        {
+            gl_call(glDeleteBuffers(1, &buf.PBO));
+            buf.PBO = 0;
+        }
+    }
     mSharedBuffers.clear();
     mCachedLights.clear();
 
@@ -252,8 +329,8 @@ SceneHandle RTContext::newScene()
     mCurrentScene->setAcceleration(accel);
     
     mStaticGeometryAcceleration = mpContext->createAcceleration("Trbvh", "Bvh"); // The fastest?
-    mStaticGeometryAcceleration->setProperty("vertex_buffer_name", "vertex_buffer");
-    mStaticGeometryAcceleration->setProperty("index_buffer_name", "vindex_buffer");
+    mStaticGeometryAcceleration->setProperty("vertex_buffer_name", "gInstPositions");
+    mStaticGeometryAcceleration->setProperty("index_buffer_name", "gInstIndices");
     mStaticGeometry->setAcceleration(mStaticGeometryAcceleration);
     mCurrentScene->setChildCount(1);
     mCurrentScene->setChild(0, mStaticGeometry);
@@ -266,13 +343,22 @@ SceneHandle RTContext::newScene()
 SceneHandle RTContext::newScene(const Scene::SharedPtr& scene, RoutineHandle& shadingRtn, RoutineHandle& anyHitRtn, RoutineHandle& intersectionRtn)
 {
     SceneHandle rtScene = newScene();
-    for(uint32_t i=0;i<scene->getModelCount();++i)
+    for(uint32_t iModel=0;iModel<scene->getModelCount();++iModel)
     {
-        const Model::SharedPtr& model = scene->getModel(i);
-        addObject(model, shadingRtn, anyHitRtn, intersectionRtn);
+        const auto& model = scene->getModel(iModel);
+        if(scene->getModelInstanceCount(iModel) != 1)
+        {
+            Logger::log(Logger::Level::Error, "A model '" + model->getName() + "' has multiple instances (unsupported).");
+        }
+        // TODO: add instanced geometry
+        //for(uint32_t iInst = 0;iInst<scene->getModelInstanceCount(iModel);++iInst)
+        {
+            addObject(model, scene->getModelInstance(iModel, 0), shadingRtn, anyHitRtn, intersectionRtn);
+        }
     }
 
     mSceneDirty = true;
+    mSceneRadius = scene->getRadius();
     return rtScene;
 }
 
@@ -295,8 +381,8 @@ void RTContext::registerOptiXTexture(MaterialValue& v, const Sampler::SharedPtr&
                     tex->setWrapMode(1, sampler->getAddressModeV() == Sampler::AddressMode::Clamp ? RT_WRAP_CLAMP_TO_EDGE : RT_WRAP_REPEAT);
                     tex->setWrapMode(2, sampler->getAddressModeW() == Sampler::AddressMode::Clamp ? RT_WRAP_CLAMP_TO_EDGE : RT_WRAP_REPEAT);
                     tex->setMaxAnisotropy((float)sampler->getMaxAnisotropy());
-                    tex->setFilteringModes(sampler->getMagFilter() == Sampler::Filter::Linear ? RT_FILTER_LINEAR : RT_FILTER_NEAREST, 
-                                            sampler->getMinFilter() == Sampler::Filter::Linear ? RT_FILTER_LINEAR : RT_FILTER_NEAREST, 
+                    tex->setFilteringModes(sampler->getMinFilter() == Sampler::Filter::Linear ? RT_FILTER_LINEAR : RT_FILTER_NEAREST, 
+                                            sampler->getMagFilter() == Sampler::Filter::Linear ? RT_FILTER_LINEAR : RT_FILTER_NEAREST, 
                                             sampler->getMipFilter() == Sampler::Filter::Linear ? RT_FILTER_LINEAR : RT_FILTER_NEAREST);
                     tex->setMipLevelBias(sampler->getLodBias());
                     tex->setMipLevelClamp(sampler->getMinLod(), sampler->getMaxLod());
@@ -348,6 +434,24 @@ Falcor::RT::SamplerHandle Falcor::RT::RTContext::createSharedTexture(Texture::Sh
     return sampler;
 }
 
+RT::BufferHandle RTContext::_createSceneSharedBuffer(Falcor::BufferHandle glApiHandle, RTformat format, size_t elementCount)
+{
+    auto& buf = mOGLSharedBuffers[glApiHandle];
+    if(!buf)
+    {
+        buf = mpContext->createBufferFromGLBO(RT_BUFFER_INPUT, glApiHandle);
+        buf->setFormat(format);
+        buf->setSize(elementCount);
+    }
+    else
+    {
+        assert(buf->getFormat() == format);
+        RTsize sz = 0; buf->getSize(sz);
+        assert(sz == elementCount);
+    }
+    return buf;
+}
+
 BufPtr Falcor::RT::RTContext::getBufferPtr(BufferHandle& buffer)
 {
     BufPtr ptr;
@@ -358,9 +462,11 @@ BufPtr Falcor::RT::RTContext::getBufferPtr(BufferHandle& buffer)
     return ptr;
 }
 
-void RTContext::addGeometryToGroup(ObjectHandle groupToAddGeometry, const Model::SharedPtr& model, RoutineHandle& shadingRtn, RoutineHandle& anyHitRtn, RoutineHandle& intersectionRtn)
+ObjectHandle RTContext::addGeometry(const Model::SharedPtr& model, const Scene::ModelInstance& modelInstance, RoutineHandle& shadingRtn, RoutineHandle& anyHitRtn, RoutineHandle& intersectionRtn)
 {
     mSceneDirty = true;
+
+    ObjectHandle group = mpContext->createGeometryGroup();
 
     // Add all submeshes
     for(uint32_t i = 0; i < model->getMeshCount(); ++i)
@@ -390,9 +496,10 @@ void RTContext::addGeometryToGroup(ObjectHandle groupToAddGeometry, const Model:
         }
 
         // Create model instance
-        mInstances.push_back(ModelInstance());
-        ModelInstance& inst = mInstances.back();
-        inst.modelId = (int32_t)mInstances.size() - 1;
+        mInstances.push_back(MeshInstance());
+        MeshInstance& inst = mInstances.back();
+        inst.meshId = (int32_t)mInstances.size() - 1;
+        assert(inst.meshId == mesh->getId());
 
         // Figure out vertex layout of vertex attributes
         bool hasTg = false, hasUv = false;
@@ -430,11 +537,11 @@ void RTContext::addGeometryToGroup(ObjectHandle groupToAddGeometry, const Model:
         }
 
         // Share index buffer
-        inst.geo.indices = createSharedBuffer(ib->getApiHandle(), RT_FORMAT_INT3, triCount);
+        inst.geo.indices = _createSceneSharedBuffer(ib->getApiHandle(), RT_FORMAT_INT3, triCount);
 
         // Share vertex buffers, or create if needed
-        inst.geo.positions = createSharedBuffer(vao->getVertexBuffer(posIdx)->getApiHandle(), RT_FORMAT_FLOAT3, vtxCount);
-        inst.geo.normals = createSharedBuffer(vao->getVertexBuffer(nrmIdx)->getApiHandle(), RT_FORMAT_FLOAT3, vtxCount);
+        inst.geo.positions = _createSceneSharedBuffer(vao->getVertexBuffer(posIdx)->getApiHandle(), RT_FORMAT_FLOAT3, vtxCount);
+        inst.geo.normals = _createSceneSharedBuffer(vao->getVertexBuffer(nrmIdx)->getApiHandle(), RT_FORMAT_FLOAT3, vtxCount);
 
         // Initialize tangent frame and texcoord buffers with default values if needed
         {
@@ -444,8 +551,8 @@ void RTContext::addGeometryToGroup(ObjectHandle groupToAddGeometry, const Model:
 
             if(hasTg)
             {
-                inst.geo.tangents = createSharedBuffer(vao->getVertexBuffer(tgIdx)->getApiHandle(), RT_FORMAT_FLOAT3, vtxCount);
-                inst.geo.bitangents = createSharedBuffer(vao->getVertexBuffer(btIdx)->getApiHandle(), RT_FORMAT_FLOAT3, vtxCount);
+                inst.geo.tangents = _createSceneSharedBuffer(vao->getVertexBuffer(tgIdx)->getApiHandle(), RT_FORMAT_FLOAT3, vtxCount);
+                inst.geo.bitangents = _createSceneSharedBuffer(vao->getVertexBuffer(btIdx)->getApiHandle(), RT_FORMAT_FLOAT3, vtxCount);
             }
             else
             {
@@ -457,7 +564,7 @@ void RTContext::addGeometryToGroup(ObjectHandle groupToAddGeometry, const Model:
                 vao->getVertexBuffer(VERTEX_NORMAL_LOC)->readData(nrmData.data(), 0, nrmData.size() * sizeof(vec3));
             }
             if(hasUv)
-                inst.geo.texcoord = createSharedBuffer(vao->getVertexBuffer(uvIdx)->getApiHandle(), RT_FORMAT_FLOAT3, vtxCount);
+                inst.geo.texcoord = _createSceneSharedBuffer(vao->getVertexBuffer(uvIdx)->getApiHandle(), RT_FORMAT_FLOAT3, vtxCount);
             else
             {
                 inst.geo.texcoord = mpContext->createBuffer(RT_BUFFER_INPUT, RT_FORMAT_FLOAT3, vtxCount);
@@ -496,6 +603,8 @@ void RTContext::addGeometryToGroup(ObjectHandle groupToAddGeometry, const Model:
                 inst.geo.texcoord->unmap();
         }
 
+        inst.geo.transform = mesh->getInstanceMatrix(0) * modelInstance.transformMatrix;
+
         // Create OptiX mesh
         Geometry geo = mpContext->createGeometry();
 
@@ -526,6 +635,8 @@ void RTContext::addGeometryToGroup(ObjectHandle groupToAddGeometry, const Model:
         // Create geo instance
         GeometryInstance optInst = mpContext->createGeometryInstance();
         optInst->setGeometry(geo);
+        inst.instance = optInst;
+        inst.object = group;
 
         // Create material data
         if(const Material::SharedPtr& meshMat = mesh->getMaterial())
@@ -558,11 +669,13 @@ void RTContext::addGeometryToGroup(ObjectHandle groupToAddGeometry, const Model:
         gpuInst.tangents = inst.geo.tangents->getId();
         gpuInst.bitangents = inst.geo.bitangents->getId();
         gpuInst.texcoord = inst.geo.texcoord->getId();
+        gpuInst.transform = inst.geo.transform;
+        gpuInst.invTrTransform = mat4(glm::transpose(glm::inverse(glm::mat3(gpuInst.transform))));
         memcpy(&gpuInst.material, &inst.material, sizeof(inst.material));
         optInst["gInstance"]->setUserData(sizeof(gpuInst), &gpuInst);
         memset(&gpuInst, 0x00, sizeof(gpuInst));
 
-        optInst["gInstanceId"]->setInt(inst.modelId);
+        optInst["gInstanceId"]->setInt(inst.meshId);
 
         // Set direct instance buffers
         optInst["gInstIndices"]->setBuffer(inst.geo.indices);
@@ -591,11 +704,112 @@ void RTContext::addGeometryToGroup(ObjectHandle groupToAddGeometry, const Model:
         optInst->setMaterial(0, mat);
 
         // Attach to the scene
-        groupToAddGeometry->addChild(optInst);
+        if(inst.geo.transform == mat4())
+        {
+            group->addChild(optInst);
+        }
+        else
+        {
+            // Create a transform
+            ObjectHandle newGroup = mpContext->createGeometryGroup();
+            Acceleration accel = mpContext->createAcceleration("Trbvh", "Bvh");
+            accel->setProperty("vertex_buffer_name", "gInstPositions");
+            accel->setProperty("index_buffer_name", "gInstIndices");
+            newGroup->setAcceleration(accel);
+            accel->markDirty();
+            Transform transform = mpContext->createTransform();
+            newGroup->addChild(optInst);
+            transform->setChild(newGroup);
+            transform->setMatrix(true, &inst.geo.transform[0][0], nullptr);
+            mCurrentScene->addChild(transform);
+
+            inst.transformObject = transform;
+        }
     }
+
+    return group;
 }
 
-ObjectHandle RTContext::addObject(const Model::SharedPtr& model, RoutineHandle& shadingRtn, RoutineHandle& anyHitRtn, RoutineHandle& intersectionRtn)
+Falcor::RT::DynamicObjectHandle Falcor::RT::RTContext::enableDynamicObject(const Mesh::SharedPtr& mesh)
+{
+    if(!mCurrentScene)
+    {
+        Logger::log(Logger::Level::Error, "Please load a scene first");
+        return DynamicObjectHandle();
+    }
+
+    const uint32_t id = mesh->getId();
+    assert(id < mInstances.size());
+    // Early return if the object is just transformed, but not dynamic
+    if(mInstances[id].transformObject)
+    {
+        return mInstances[id].transformObject;
+    }
+    assert(mInstances[id].instance);
+    assert(mInstances[id].object);
+
+    // Remove from static scene
+    mStaticGeometry->removeChild(mStaticGeometry->getChildIndex(mInstances[id].instance));
+    mStaticGeometryAcceleration->markDirty();   // Rebuild Bvh
+
+    // Add to dynamic objects
+    ObjectHandle newGroup = mpContext->createGeometryGroup();
+    Acceleration accel = mpContext->createAcceleration("Trbvh", "Bvh");
+    accel->setProperty("vertex_buffer_name", "gInstPositions");
+    accel->setProperty("index_buffer_name", "gInstIndices");
+    newGroup->setAcceleration(accel);
+    accel->markDirty();
+    Transform transform = mpContext->createTransform();
+    newGroup->addChild(mInstances[id].instance);
+    transform->setChild(newGroup);
+    mCurrentScene->addChild(transform);
+    mCurrentScene->getAcceleration()->markDirty();
+    mInstances[id].transformObject = transform;
+    mInstances[id].dynamic = true;
+    mSceneDirty = true;
+
+    return mInstances[id].transformObject;
+}   
+
+void Falcor::RT::RTContext::disableDynamicObject(const Mesh::SharedPtr& mesh)
+{
+    if(!mCurrentScene)
+    {
+        Logger::log(Logger::Level::Error, "Please load a scene first");
+        return;
+    }
+
+    const uint32_t id = mesh->getId();
+    assert(id < mInstances.size());
+    assert(mInstances[id].transformObject);
+    
+    // Early return if the object is just transformed, but not dynamic
+    if(!mInstances[id].dynamic)
+    {
+        return;
+    }
+    
+    assert(mInstances[id].instance);
+    assert(mInstances[id].object);
+
+    ObjectHandle group = mInstances[id].object;
+
+    // Remove from dynamic objects
+    mCurrentScene->removeChild(mCurrentScene->getChildIndex(mInstances[id].transformObject));
+    mInstances[id].transformObject->getChild<ObjectHandle>()->destroy();
+    mInstances[id].transformObject->destroy();
+    mInstances[id].transformObject = nullptr;
+    mInstances[id].dynamic = false;
+
+    // Add back to static scene
+    mStaticGeometry->addChild(mInstances[id].instance);
+    mStaticGeometry->setAcceleration(mStaticGeometryAcceleration);
+    mStaticGeometryAcceleration->markDirty();
+    mCurrentScene->getAcceleration()->markDirty();
+    mSceneDirty = true;
+}
+
+ObjectHandle RTContext::addObject(const Model::SharedPtr& model, const Scene::ModelInstance& instance, RoutineHandle& shadingRtn, RoutineHandle& anyHitRtn, RoutineHandle& intersectionRtn)
 {
     if(!mCurrentScene)
     {
@@ -603,9 +817,7 @@ ObjectHandle RTContext::addObject(const Model::SharedPtr& model, RoutineHandle& 
         return ObjectHandle();
     }
 
-    ObjectHandle group = mpContext->createGeometryGroup();
-    addGeometryToGroup(group, model, shadingRtn, anyHitRtn, intersectionRtn);
-    group->setAcceleration(mStaticGeometryAcceleration);
+    ObjectHandle group = addGeometry(model, instance, shadingRtn, anyHitRtn, intersectionRtn);
 
     // Static geometry, to avoid performance issues, shares the same group.
     // This avoid huge scenes (i.e. San Miguel) to be unbearably slow.
@@ -617,7 +829,7 @@ ObjectHandle RTContext::addObject(const Model::SharedPtr& model, RoutineHandle& 
     return group;
 }
 
-DynamicObjectHandle RTContext::addDynamicObject(const Model::SharedPtr& mesh, RoutineHandle& shadingRtn, RoutineHandle& anyHitRtn /*= RoutineHandle()*/, RoutineHandle& intersectionRtn /*= RoutineHandle()*/)
+DynamicObjectHandle RTContext::addDynamicObject(const Model::SharedPtr& model, RoutineHandle& shadingRtn, RoutineHandle& anyHitRtn /*= RoutineHandle()*/, RoutineHandle& intersectionRtn /*= RoutineHandle()*/)
 {
     if(!mCurrentScene)
     {
@@ -625,14 +837,13 @@ DynamicObjectHandle RTContext::addDynamicObject(const Model::SharedPtr& mesh, Ro
         return DynamicObjectHandle();
     }
 
-    ObjectHandle group = mpContext->createGeometryGroup();
-    addGeometryToGroup(group, mesh, shadingRtn, anyHitRtn, intersectionRtn);
+    ObjectHandle group = addGeometry(model, Scene::ModelInstance(), shadingRtn, anyHitRtn, intersectionRtn);
 
     // We need to duplicate the acceleration structure, since we are creating a separate child of the main group.
     // (The acceleration is tied to the geometry in Optix.)
     Acceleration accel = mpContext->createAcceleration("Trbvh", "Bvh");
-    accel->setProperty("vertex_buffer_name", "vertex_buffer");
-    accel->setProperty("index_buffer_name", "vindex_buffer");
+    accel->setProperty("vertex_buffer_name", "gInstPositions");
+    accel->setProperty("index_buffer_name", "gInstIndices");
     group->setAcceleration(accel);
     accel->markDirty();
 
@@ -663,7 +874,7 @@ void RTContext::transformStaticObject(ObjectHandle object, const glm::mat4x3& mx
     for(uint32_t i = 0;i < object->getChildCount();++i)
     {
         GeometryInstance inst = object->getChild(i);
-        optix::Buffer vbuffer = inst["vertex_buffer"]->getBuffer();
+        optix::Buffer vbuffer = inst["gInstPositions"]->getBuffer();
         vec3* pos = (vec3*)vbuffer->map();
         RTsize sz; vbuffer->getSize(sz);
         for(uint32_t j = 0;j < sz;++j)
@@ -726,14 +937,14 @@ void RTContext::setLights(const std::vector<Light::SharedPtr>& list)
 					const AreaLight::SharedPtr& pAreaLight = reinterpret_cast<const AreaLight::SharedPtr&>(elem);
 					if (pAreaLight)
 					{
-						cachedInst.indexPtr.ptrLoHi[0] = createSharedBuffer(pAreaLight->getIndexBuffer()->getApiHandle(), RT_FORMAT_INT3, pAreaLight->getIndexBuffer()->getSize() / sizeof(glm::ivec3))->getId();
-						cachedInst.vertexPtr.ptrLoHi[0] = createSharedBuffer(pAreaLight->getPositionsBuffer()->getApiHandle(), RT_FORMAT_FLOAT3, pAreaLight->getPositionsBuffer()->getSize() / sizeof(glm::vec3))->getId();
+						cachedInst.indexPtr.ptrLoHi[0] = _createSceneSharedBuffer(pAreaLight->getIndexBuffer()->getApiHandle(), RT_FORMAT_INT3, pAreaLight->getIndexBuffer()->getSize() / sizeof(glm::ivec3))->getId();
+						cachedInst.vertexPtr.ptrLoHi[0] = _createSceneSharedBuffer(pAreaLight->getPositionsBuffer()->getApiHandle(), RT_FORMAT_FLOAT3, pAreaLight->getPositionsBuffer()->getSize() / sizeof(glm::vec3))->getId();
 						if (pAreaLight->getTexCoordBuffer())
 						{
-							cachedInst.texCoordPtr.ptrLoHi[0] = createSharedBuffer(pAreaLight->getTexCoordBuffer()->getApiHandle(), RT_FORMAT_FLOAT3, pAreaLight->getTexCoordBuffer()->getSize() / sizeof(glm::vec3))->getId();
+							cachedInst.texCoordPtr.ptrLoHi[0] = _createSceneSharedBuffer(pAreaLight->getTexCoordBuffer()->getApiHandle(), RT_FORMAT_FLOAT3, pAreaLight->getTexCoordBuffer()->getSize() / sizeof(glm::vec3))->getId();
 							assert(pAreaLight->getTexCoordBuffer()->getSize() % sizeof(glm::vec3) == 0);
 						}
-						cachedInst.meshCDFPtr.ptrLoHi[0] = createSharedBuffer(pAreaLight->getMeshCDFBuffer()->getApiHandle(), RT_FORMAT_FLOAT, pAreaLight->getMeshCDFBuffer()->getSize() / sizeof(float))->getId();
+						cachedInst.meshCDFPtr.ptrLoHi[0] = _createSceneSharedBuffer(pAreaLight->getMeshCDFBuffer()->getApiHandle(), RT_FORMAT_FLOAT, pAreaLight->getMeshCDFBuffer()->getSize() / sizeof(float))->getId();
 					}
 				}
 				break;
@@ -823,7 +1034,6 @@ static inline RTformat glToOptixFormat(GLint sizedGLFormat)
         break;
     case GL_RGBA16:
     case GL_RGBA16UI:
-    case GL_RGBA16F:
         format = RT_FORMAT_UNSIGNED_SHORT4;
         break;
 
@@ -844,6 +1054,9 @@ static inline RTformat glToOptixFormat(GLint sizedGLFormat)
     case GL_RGB16F:
         format = RT_FORMAT_HALF3;
         break;
+	case GL_RGBA16F:
+		format = RT_FORMAT_HALF4;
+		break;
 
     case GL_R32F:
         format = RT_FORMAT_FLOAT;
@@ -872,6 +1085,29 @@ bool RTContext::updateTempBuffer(const Fbo::SharedPtr& target)
         mFrameBuffers->setSize(Fbo::getMaxColorTargetCount());
     }
 
+    // Garbage collection
+    for(auto it = mSharedBuffers.begin();it != mSharedBuffers.end();)
+    {
+        auto& buf = it->second;
+        if(buf.sourceTexture.expired())
+        {
+            if(buf.PBOBuffer)
+            {
+                buf.PBOBuffer->unregisterGLBuffer();
+                buf.PBOBuffer->destroy();
+                buf.PBOBuffer = nullptr;
+            }
+            if(buf.PBO)
+            {
+                gl_call(glDeleteBuffers(1, &buf.PBO));
+                buf.PBO = 0;
+            }
+            it = mSharedBuffers.erase(it);
+        }
+        else
+            ++it;
+    }
+
     int* frameBuffers = (int*)mFrameBuffers->map();
     for(uint32_t i = 0;i<Fbo::getMaxColorTargetCount();++i)
     {
@@ -895,8 +1131,7 @@ bool RTContext::updateTempBuffer(const Fbo::SharedPtr& target)
             {
                 if(buf.PBOBuffer)
                 {
-                    if(i == 0)
-                        rtVariableSetObject(mpContext["output_buffer"]->get(), nullptr);
+                    buf.PBOBuffer->unregisterGLBuffer();
                     buf.PBOBuffer->destroy();
                     buf.PBOBuffer = nullptr;
                 }
@@ -913,12 +1148,12 @@ bool RTContext::updateTempBuffer(const Fbo::SharedPtr& target)
                 buf.PBOBuffer = mpContext->createBufferFromGLBO(RT_BUFFER_INPUT_OUTPUT, buf.PBO);
                 buf.PBOBuffer->setFormat(tgtFmt);
                 buf.PBOBuffer->setSize(w, h);
+                buf.sourceTexture = pTex;
             }
+            assert(!buf.sourceTexture.expired() && buf.sourceTexture.lock() == pTex);
 
             // Set buffer's id
             frameBuffers[i] = buf.PBOBuffer->getId();
-            if(i == 0)
-                mpContext["output_buffer"]->set(buf.PBOBuffer);
         }
         catch(const optix::Exception& e) {
             Logger::log(Logger::Level::Error, e.getErrorString(), true);
@@ -933,19 +1168,21 @@ bool RTContext::updateTempBuffer(const Fbo::SharedPtr& target)
 
 void RTContext::updateScene()
 {
-    if(!mSceneDirty)
+    if(!mSceneDirty && !mSceneTransformDirty)
         return;
-    mSceneDirty = false;
 
-    mSceneInstancesBuffer = mpContext->createBuffer(RT_BUFFER_INPUT, RT_FORMAT_USER);
-    mSceneInstancesBuffer->setElementSize(sizeof(BindlessGeoInstance));
+    if(!mSceneInstancesBuffer)
+    {
+        mSceneInstancesBuffer = mpContext->createBuffer(RT_BUFFER_INPUT, RT_FORMAT_USER);
+        mSceneInstancesBuffer->setElementSize(sizeof(BindlessGeoInstance));
+    }
 
     mSceneInstancesBuffer->setSize(mInstances.size());
     BindlessGeoInstance* gpuInstances = (BindlessGeoInstance*)mSceneInstancesBuffer->map();
     size_t instId = 0;
     for(auto& inst : mInstances)
     {
-        assert(instId == inst.modelId);
+        assert(instId == inst.meshId);
         BindlessGeoInstance& gpuInst = gpuInstances[instId++];
 
         gpuInst.indices = inst.geo.indices->getId();
@@ -954,17 +1191,35 @@ void RTContext::updateScene()
         gpuInst.tangents = inst.geo.tangents->getId();
         gpuInst.bitangents = inst.geo.bitangents->getId();
         gpuInst.texcoord = inst.geo.texcoord->getId();
+
+        if(!inst.transformObject)
+        {
+            gpuInst.transform = inst.geo.transform;
+        }
+        else
+        {
+            mat4 mx;
+            inst.transformObject->getMatrix(true, &mx[0][0], nullptr);
+            gpuInst.transform = mx;
+        }
+        gpuInst.invTrTransform = mat4(glm::transpose(glm::inverse(glm::mat3(gpuInst.transform))));
         memcpy(&gpuInst.material, &inst.material, sizeof(inst.material));
     }
     mSceneInstancesBuffer->unmap();
+    mpContext["gSceneInstances"]->set(mSceneInstancesBuffer);
 
     // Set scene
-    mpContext["gSceneInstances"]->set(mSceneInstancesBuffer);
-    mpContext["top_object"]->set(mCurrentScene);
-    mpContext["top_shadower"]->set(mCurrentScene);
+    if(mSceneDirty)
+    {
+        mpContext["top_object"]->set(mCurrentScene);
+        mpContext["top_shadower"]->set(mCurrentScene);
 
-    float scene_epsilon = 1e-3f;// * max_dim;
-    mpContext["scene_epsilon"]->setFloat(scene_epsilon);
+        float scene_epsilon = 1e-5f * mSceneRadius;
+        mpContext["scene_epsilon"]->setFloat(scene_epsilon);
+    }
+
+    mSceneDirty = false;
+    mSceneTransformDirty = false;
 }
 
 void RTContext::render(const Fbo::SharedPtr& target, const Camera::SharedPtr& camera, RoutineHandle& raygenFn, RoutineHandle& missFn, const int activeEntryPoint, const std::initializer_list<uint32_t>& launchGrid)
@@ -1021,11 +1276,30 @@ void RTContext::render(const Fbo::SharedPtr& target, const Camera::SharedPtr& ca
         if(launchGrid.size() > 0)
         {
             auto idx = launchGrid.begin();
+            uint32_t dims[3] = { 0 };
             switch(launchGrid.size())
             {
-            case 1: mpContext->launch(activeEntryPoint, *idx++); break;
-            case 2: mpContext->launch(activeEntryPoint, *idx++, *idx++); break;
-            case 3: mpContext->launch(activeEntryPoint, *idx++, *idx++, *idx++); break;
+            case 1: 
+            {
+                dims[0] = *idx++;
+                mpContext->launch(activeEntryPoint, dims[0]); 
+                break;
+            }
+            case 2:
+            {
+                dims[0] = *idx++; 
+                dims[1] = *idx++;
+                mpContext->launch(activeEntryPoint, dims[0], dims[1]);
+                break;
+            }
+            case 3: 
+            {
+                dims[0] = *idx++;
+                dims[1] = *idx++;
+                dims[2] = *idx++;
+                mpContext->launch(activeEntryPoint, dims[0], dims[1], dims[2]); 
+                break;
+            }
             default: Logger::log(Logger::Level::Error, "Too many dimensions in the launch grid");
             }
         }

@@ -34,7 +34,6 @@
 #include <math.h>
 #include "Data/VertexAttrib.h"
 #include "Graphics/Model/Model.h"
-
 using glm::ivec3;
 
 namespace Falcor
@@ -114,6 +113,18 @@ namespace Falcor
 
         light->mUiLightIntensityColor = color;
         light->mData.intensity = (light->mUiLightIntensityColor * light->mUiLightIntensityScale);
+
+        // Update material
+        if(light->mData.type == LightArea)
+        {
+            for(int i=0;i<MatMaxLayers;++i)
+            {
+                if(light->mData.material.desc.layers[i].type == MatEmissive)
+                {
+                    light->mData.material.values.layers[i].albedo.constantColor = v4(light->mData.intensity, 0.f);
+                }
+            }
+        }
     }
 
 
@@ -146,9 +157,21 @@ namespace Falcor
 
         light->mUiLightIntensityScale = intensityScale;
         light->mData.intensity = (light->mUiLightIntensityColor * light->mUiLightIntensityScale);
+
+        // Update material
+        if(light->mData.type == LightArea)
+        {
+            for(int i = 0;i<MatMaxLayers;++i)
+            {
+                if(light->mData.material.desc.layers[i].type == MatEmissive)
+                {
+                    light->mData.material.values.layers[i].albedo.constantColor = v4(light->mData.intensity, 0.f);
+                }
+            }
+        }
     }
 
-	DirectionalLight::DirectionalLight()
+	DirectionalLight::DirectionalLight() : mSceneRadius(-1.0f)
 	{
 		mData.type = LightDirectional;
 		mName = "dirLight" + std::to_string(mIndex);
@@ -156,7 +179,7 @@ namespace Falcor
 
     DirectionalLight::SharedPtr DirectionalLight::create()
     {
-        DirectionalLight* pLight = new DirectionalLight;
+        DirectionalLight* pLight = new DirectionalLight();
         return SharedPtr(pLight);
     }
 
@@ -172,10 +195,17 @@ namespace Falcor
     void DirectionalLight::setWorldDirection(const glm::vec3& dir)
     {
         mData.worldDir = normalize(dir);
-        mData.worldPos = -mData.worldDir * 1e8f; // Move light's position sufficiently far away
+        mData.worldPos = mSceneCenter - mData.worldDir * mSceneRadius; // Move light's position sufficiently far away
     }
 
-	void DirectionalLight::prepareGPUData()
+    void DirectionalLight::setWorldParams(const glm::vec3& center, float radius)
+    {
+        mSceneRadius = radius;
+        mSceneCenter = center;
+        mData.worldPos = mSceneCenter - mData.worldDir * mSceneRadius; // Move light's position sufficiently far away
+    }
+
+    void DirectionalLight::prepareGPUData()
 	{		
 	}
 
@@ -293,7 +323,22 @@ namespace Falcor
 
 	void AreaLight::setUiElements(Gui* pGui, const std::string& uiGroup)
 	{
-		Logger::log(Logger::Level::Error, "AreaLight::setUiElements() is not used and thus not implemented for now.");
+        std::string posGroup = "worldPos" + std::to_string(mIndex);
+        
+        if(mMeshData.pMesh)
+        {
+            mat4& mx = (mat4&)mMeshData.pMesh->getInstanceMatrices()[mMeshData.instanceId];
+
+            pGui->addFloatVar("x", &mx[3].x, posGroup, -FLT_MAX, FLT_MAX);
+            pGui->addFloatVar("y", &mx[3].y, posGroup, -FLT_MAX, FLT_MAX);
+            pGui->addFloatVar("z", &mx[3].z, posGroup, -FLT_MAX, FLT_MAX);
+            pGui->nestGroups(uiGroup, posGroup);
+            pGui->setVarTitle(posGroup, "World Position");
+        }
+
+        //pGui->addDir3FVar("Direction", &mData.worldDir, uiGroup);
+        pGui->addRgbColorWithCallback("Color" + std::to_string(mIndex), SetColorCB, GetColorCB, this, uiGroup);
+        pGui->addFloatVarWithCallback("Intensity" + std::to_string(mIndex), SetIntensityCB, GetIntensityCB, this, uiGroup, 0.0f, 1000000.0f, 0.1f);
 	}
 
 	void AreaLight::setIntoUniformBuffer(UniformBuffer* pBuffer, const std::string& varName)
@@ -322,6 +367,9 @@ namespace Falcor
 		// Get the surface area of the geometry mesh
 		mData.surfaceArea = mSurfaceArea;
 
+		mData.tangent = mTangent;
+		mData.bitangent = mBitangent;
+
 		// Fetch the mesh instance transformation
 		mData.transMat = mMeshData.pMesh->getInstanceMatrix(mMeshData.instanceId);
 
@@ -343,7 +391,7 @@ namespace Falcor
 
 	void AreaLight::setMeshData(const Mesh::SharedPtr& pMesh, uint32_t instanceId)
 	{
-		if (pMesh)
+		if (pMesh && (mMeshData.pMesh != pMesh || mMeshData.instanceId != instanceId))
 		{
 			mMeshData.pMesh = pMesh;
 			mMeshData.instanceId = instanceId;
@@ -393,6 +441,12 @@ namespace Falcor
 			std::vector<vec3> vertices(mVertexBuf->getSize() / sizeof(vec3));
 			mVertexBuf->readData(vertices.data(), 0, mVertexBuf->getSize());
 
+			if (mMeshData.pMesh->getPrimitiveCount() != 2 || mMeshData.pMesh->getVertexCount() != 4)			
+            {
+                Logger::log(Logger::Level::Warning, "Only support sampling of rectangular light sources made of 2 triangles.");
+                return;
+            }
+
 			// Calculate surface area of the mesh
 			mSurfaceArea = 0.f;
 			mMeshCDF.push_back(0.f);
@@ -419,9 +473,16 @@ namespace Falcor
 				mMeshCDF[mMeshCDF.size() - 1] = 1.f;
 			}
 
+			// Calculate basis tangent vectors and their lengths
+			ivec3 pId = indices[0];
+			const vec3 p0(vertices[pId.x]), p1(vertices[pId.y]), p2(vertices[pId.z]);
+
+			mTangent = p0 - p1;
+			mBitangent = p2 - p1;
+
             // Create a CDF buffer
-            auto pCDFBuffer = Buffer::create(sizeof(mMeshCDF[0])*mMeshCDF.size(), Buffer::BindFlags::ShaderResource, Buffer::AccessFlags::None, mMeshCDF.data());
-            setMeshCDFBuffer(pCDFBuffer);
+            mMeshCDFBuf.reset();
+            mMeshCDFBuf = Buffer::create(sizeof(mMeshCDF[0])*mMeshCDF.size(), Buffer::BindFlags::Vertex, Buffer::AccessFlags::None, mMeshCDF.data());
 
 			// Set the world position and world direction of this light
 			if (!vertices.empty() && !indices.empty())

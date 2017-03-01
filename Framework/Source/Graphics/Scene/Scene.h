@@ -123,7 +123,6 @@ namespace Falcor
         void setModelInstanceTranslation(uint32_t modelID, uint32_t instanceID, const glm::vec3& translation);
         void setModelInstanceRotation(uint32_t modelID, uint32_t instanceID, const glm::vec3& rotation);
         void setModelInstanceScaling(uint32_t modelID, uint32_t instanceID, const glm::vec3& scaling);
-
         void setModelInstanceVisible(uint32_t modelID, uint32_t instanceID, bool isVisible) { mModels[modelID].instances[instanceID].isVisible = isVisible; }
         uint32_t addModelInstance(uint32_t modelID, const std::string& name, const glm::vec3& rotate, const glm::vec3& scale, const glm::vec3& translate);
         void deleteModelInstance(uint32_t modelID, uint32_t instanceID);
@@ -170,8 +169,12 @@ namespace Falcor
         void setCameraSpeed(float speed) { mCameraSpeed = speed; }
         float& getCameraSpeedRef() { return mCameraSpeed; }
 
-        // Camera update
-        bool updateCamera(double currentTime, CameraController* cameraController = nullptr);
+        // Scene extents
+        vec3 getCenter();
+        float getRadius();
+
+        // Scene update
+        bool update(double currentTime, CameraController* cameraController = nullptr);
 
         // User variables
         uint32_t getVersion() const { return mVersion; }
@@ -226,6 +229,11 @@ namespace Falcor
         std::vector<Camera::SharedPtr> mCameras;
         std::vector<ObjectPath::SharedPtr> mpPaths;
         uint32_t mActivePathID = kFreeCameraMovement;
+
+        mutable float mRadius = -1.f;
+        mutable glm::vec3 mCenter;
+
+        mutable bool        mDirty = true;
 
         glm::vec3 mAmbientIntensity;
         uint32_t mActiveCameraID = 0;

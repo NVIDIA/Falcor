@@ -29,6 +29,7 @@
 #include <map>
 #include "Core/Formats.h"
 #include "../Framework.h" //For should_not_get_here
+#include "Utils/Bitmap.h"
 
 namespace Falcor
 {
@@ -42,6 +43,8 @@ namespace Falcor
     public:
         using SharedPtr = std::shared_ptr<Texture>;
         using SharedConstPtr = std::shared_ptr<const Texture>;
+        using WeakPtr = std::weak_ptr<Texture>;
+        using WeakConstPtr = std::weak_ptr<const Texture>;
 
         /** Texture types. Notice there are no array types. Array are controlled using the array size parameter on texture creation.
         */
@@ -171,6 +174,10 @@ namespace Falcor
         */
         uint32_t getMipLevelDataSize(uint32_t mipLevel) const;
 
+        /** Get the required buffer size for the full mip-map pyramid
+        */
+        uint32_t getDataSize() const;
+
         /** Read the data from one a for the texture's sub-resources
             \param pData Buffer to write the data to.
             \param dataSize Size of buffer pointed to by pData. DataSize must be equal to the value returned by Texture#GetMipLevelDataSize().
@@ -185,14 +192,16 @@ namespace Falcor
             \param mipLevel Mip-level to update
             \param arraySlice Array-slice to update
         */
-        void uploadSubresourceData(const void* pData, uint32_t dataSize, uint32_t mipLevel = 0, uint32_t arraySlice = 0);
+        void uploadSubresourceData(const void* pData, uint32_t dataSize, uint32_t mipLevel = 0, uint32_t arraySlice = 0) const;
 
         /** Capture the texture to a PNG image.\n
         \param[in] mipLevel Requested mip-level
         \param[in] arraySlice Requested array-slice
         \param[in] filename Name of the PNG file to save.
+        \param[in] fileFormat Destination image file format (e.g., PNG, PFM, etc.)
+        \param[in] exportFlags Save flags, see Bitmap::ExportFlags
         */
-        void captureToPng(uint32_t mipLevel, uint32_t arraySlice, const std::string& filename) const;
+        void captureToFile(uint32_t mipLevel, uint32_t arraySlice, const std::string& filename, Bitmap::FileFormat format = Bitmap::FileFormat::PngFile, uint32_t saveFlags = 0) const;
 
         void compress2DTexture();
 		
@@ -226,6 +235,10 @@ namespace Falcor
         */
 		void setSparseResidencyPageIndex(bool isResident, uint32_t mipLevel,  uint32_t pageX, uint32_t pageY, uint32_t pageZ, uint32_t width=1, uint32_t height=1, uint32_t depth=1);
 
+        /** If the texture has been created as using sparse storage, makes individual physically pages resident and non-resident.
+        */
+        glm::i32vec3 getSparseResidencyPageSize();
+
     protected:
         friend class Window;
         
@@ -246,9 +259,7 @@ namespace Falcor
         ResourceFormat mFormat = ResourceFormat::Unknown;
         bool mHasFixedSampleLocations = true;
 		bool mIsSparse = false;
-		int32_t mSparsePageWidth = 0;
-		int32_t mSparsePageHeight = 0;
-		int32_t mSparsePageDepth = 0;
+        glm::i32vec3 mSparsePageRes = glm::i32vec3(0);
 
         mutable ShaderResourceViewHandle mpSRV;
         mutable std::map<uint32_t, uint64_t> mBindlessTextureHandle;

@@ -31,13 +31,14 @@
 
 namespace Falcor
 {
-    ProgramVersion::ProgramVersion(const Shader::SharedPtr& pVS, const Shader::SharedPtr& pFS, const Shader::SharedPtr& pGS, const Shader::SharedPtr& pHS, const Shader::SharedPtr& pDS, const std::string& name) : mName(name)
+    ProgramVersion::ProgramVersion(const Shader::SharedPtr& pVS, const Shader::SharedPtr& pFS, const Shader::SharedPtr& pGS, const Shader::SharedPtr& pHS, const Shader::SharedPtr& pDS, const Shader::SharedPtr& pCS, const std::string& name) : mName(name)
     {
         mpShaders[(uint32_t)ShaderType::Vertex] = pVS;
         mpShaders[(uint32_t)ShaderType::Fragment] = pFS;
         mpShaders[(uint32_t)ShaderType::Geometry] = pGS;
         mpShaders[(uint32_t)ShaderType::Domain] = pDS;
         mpShaders[(uint32_t)ShaderType::Hull] = pHS;
+        mpShaders[(uint32_t)ShaderType::Hull] = pCS;
     }
 
     ProgramVersion::~ProgramVersion()
@@ -58,4 +59,20 @@ namespace Falcor
         }
         return it->second.bufferSlot;
     }
+    ProgramVersion::SharedConstPtr ProgramVersion::create(const Shader::SharedPtr& pVS,
+        const Shader::SharedPtr& pFS,
+        const Shader::SharedPtr& pGS,
+        const Shader::SharedPtr& pHS,
+        const Shader::SharedPtr& pDS,
+        std::string& log,
+        const std::string& name)
+    {
+        return ProgramVersion::createInternal(pVS, pFS, pGS, pHS, pDS, nullptr, log, name);
+    }
+
+    ProgramVersion::SharedConstPtr ProgramVersion::create(const Shader::SharedPtr& pCS, std::string& log, const std::string& name)
+    {
+        return ProgramVersion::createInternal(nullptr, nullptr, nullptr, nullptr, nullptr, pCS, log, name);
+    }
+
 }

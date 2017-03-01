@@ -73,5 +73,21 @@ namespace Falcor
             *(uint64_t*)pVar = 0;
         }
     }
+    void UniformBuffer::setImage(size_t offset, const Texture* pTexture, const int32_t pLODLevel, const ResourceFormat pFormat) const
+    {
+        const uint8_t* pVar = mData.data() + offset;
+        if (pTexture)
+        {
+            //Always use "layered" images
+            uint64_t pGpu = gl_call(glGetImageHandleARB(pTexture->getApiHandle(), pLODLevel, GL_TRUE, 0, getGlSizedFormat(pFormat) ));
+            gl_call(glMakeImageHandleResidentARB(pGpu, GL_READ_WRITE));
+
+            *(uint64_t*)pVar = pGpu;
+        }
+        else
+        {
+            *(uint64_t*)pVar = 0;
+        }
+    }
 }
 #endif //#ifdef FALCOR_GL

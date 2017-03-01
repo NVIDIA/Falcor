@@ -87,5 +87,5 @@ RT_PROGRAM void exception()
   const unsigned int code = rtGetExceptionCode();
   rtPrintf( "Caught exception 0x%X at launch index (%d,%d)\n", code, launch_index.x, launch_index.y );
   rtPrintExceptionDetails();
-  pack_color(output_buffer[launch_index], bad_color);
+  fbStore<0, vec4>(bad_color);
 }

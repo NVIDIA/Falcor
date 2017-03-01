@@ -259,7 +259,7 @@ namespace Falcor
         UNSUPPORTED_IN_DX11("int version of ClearColorTarget()");
     }
 
-    void Fbo::captureToFile(uint32_t rtIndex, const std::string& filename, Bitmap::FileFormat fileFormat)
+    void Fbo::captureToFile(uint32_t rtIndex, const std::string& filename, Bitmap::FileFormat fileFormat, uint32_t exportFlags)
     {
         UNSUPPORTED_IN_DX11("captureToPng()");
     }

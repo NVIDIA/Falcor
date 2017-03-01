@@ -142,7 +142,7 @@ namespace Falcor
         UNSUPPORTED_IN_DX11("Buffer::ReadData(). If you really need this, create the resource with CPU read flag, and use Buffer::Map()");
     }
 
-    uint64_t Buffer::getBindlessHandle()
+    uint64_t Buffer::getBindlessHandle(Buffer::GpuAccessFlags flags)
     {
         UNSUPPORTED_IN_DX11("DX11 buffers don't have bindless handles.");
         return 0;

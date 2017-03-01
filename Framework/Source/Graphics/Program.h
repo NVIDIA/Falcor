@@ -97,6 +97,13 @@ namespace Falcor
         */
         static SharedPtr createFromFile(const std::string& vertexFile, const std::string& fragmentFile, const std::string& geometryFile, const std::string& hullFile, const std::string& domainFile, const DefineList& programDefines = DefineList());
 
+        /** create a new compute program object.
+            \param[in] computeFile Compute shader filename
+            \param[in] programDefines A list of macro definitions to set into the shaders
+            \return A new object, or nullptr if creation failed.
+        */
+        static SharedPtr createFromFile(const std::string& computeFile, const DefineList& programDefines);
+
         /** create a new program object.
         \param[in] vertexShader Vertex shader string.
         \param[in] fragmentShader Fragment shader string.
@@ -109,6 +116,13 @@ namespace Falcor
         Note that this call merely creates a program object. The actual compilation and link happens when calling Program#getActiveProgramVersion().
         */
         static SharedPtr createFromString(const std::string& vertexShader, const std::string& fragmentShader, const std::string& geometryShader, const std::string& hullShader, const std::string& domainShader, const DefineList& programDefines = DefineList());
+
+        /** create a new compute program object.
+        \param[in] computeFile Compute shader filename
+        \param[in] programDefines A list of macro definitions to set into the shaders
+        \return A new object, or nullptr if creation failed.
+        */
+        static SharedPtr createFromString(const std::string& computeShader, const DefineList& programDefines);
 
         ~Program();
         /** Get a shader object associated with this program
@@ -180,7 +194,8 @@ namespace Falcor
         static const uint32_t kShaderCount = (uint32_t)ShaderType::Count;
 
         Program();
-        static SharedPtr createInternal(const std::string& vs, const std::string& fs, const std::string& gs, const std::string& hs, const std::string& ds, const DefineList& programDefines, bool createdFromFile);
+        static SharedPtr createInternal(const std::string& vs, const std::string& fs, const std::string& gs, const std::string& hs, const std::string& ds, const std::string& cs, const DefineList& programDefines, bool createdFromFile);
+        static SharedPtr createInternal(const std::string& cs, const std::string& shaderDefines, bool isFromFile);
         bool link() const;
         std::string mShaderStrings[kShaderCount]; // Either a filename or a string, depending on the value of mCreatedFromFile
 

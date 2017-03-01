@@ -35,6 +35,8 @@
 
 namespace Falcor
 {
+    double CpuTimer::sFrequency = 0;
+
     bool gProfileEnabled = false;
 
     std::map<size_t, Profiler::EventData*> Profiler::sProfilerEvents;

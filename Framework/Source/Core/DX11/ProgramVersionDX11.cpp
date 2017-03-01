@@ -171,11 +171,12 @@ namespace Falcor
         programMap.insert(shaderMap.begin(), shaderMap.end());
     }
 
-    ProgramVersion::SharedConstPtr ProgramVersion::create(const Shader::SharedPtr& pVS, 
+    ProgramVersion::SharedConstPtr ProgramVersion::createInternal(const Shader::SharedPtr& pVS, 
         const Shader::SharedPtr& pFS, 
         const Shader::SharedPtr& pGS, 
         const Shader::SharedPtr& pHS, 
         const Shader::SharedPtr& pDS, 
+        const Shader::SharedPtr& pCS,
         std::string& log, 
         const std::string& name)
     {
@@ -185,7 +186,7 @@ namespace Falcor
             log = "Program " + name + " doesn't contain a vertex-shader. That is illegal.";
             return nullptr;
         }
-        SharedPtr pProgram = SharedPtr(new ProgramVersion(std::move(pVS), std::move(pFS), std::move(pGS), std::move(pHS), std::move(pDS), name));
+        SharedPtr pProgram = SharedPtr(new ProgramVersion(pVS, pFS, pGS, pHS, pDS, pCS, name));
         log = std::string();
 
 

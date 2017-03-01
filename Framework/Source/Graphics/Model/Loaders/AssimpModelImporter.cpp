@@ -228,7 +228,8 @@ namespace Falcor
                 assert(pTex != nullptr);
                 BasicMaterial::MapType texSlot = getFalcorTexTypeFromAi(aiType, isObjFile);
 				if(texSlot != BasicMaterial::MapType::Count)
-                {
+				{
+
                     pMaterial->pTextures[texSlot] = pTex;
                 }
 				else
@@ -436,10 +437,8 @@ namespace Falcor
         {
             AssimpFlags &= ~aiProcess_OptimizeGraph;
         }
-        if((mFlags & Model::GenerateTangentSpace) == 0)
-        {
-            AssimpFlags &= ~(aiProcess_CalcTangentSpace);
-        }
+        // Never use AssImp's tangent gen code
+        AssimpFlags &= ~(aiProcess_CalcTangentSpace);
 
         Assimp::Importer importer;
         const aiScene* pScene = importer.ReadFile(fullpath, AssimpFlags);
@@ -647,8 +646,7 @@ namespace Falcor
         auto pIB = createIndexBuffer(pAiMesh);
         BoundingBox boundingBox;
 
-        bool manualTangentGen = pAiMesh->HasTangentsAndBitangents() == false && (mFlags & Model::GenerateTangentSpace);
-        if(manualTangentGen)
+        if(mFlags & Model::GenerateTangentSpace)
         {
             genTangentSpace(pAiMesh);
         }
@@ -688,7 +686,7 @@ namespace Falcor
 
         Mesh::SharedPtr pMesh = Mesh::create(vbDescVec, vertexCount, pIB, indexCount, topology, pMaterial, boundingBox, pAiMesh->HasBones());
 
-        if(manualTangentGen)
+        if(mFlags & Model::GenerateTangentSpace)
         {
            aiMesh* pM = const_cast<aiMesh*>(pAiMesh);
             safe_delete_array(pM->mTangents);
@@ -810,8 +808,8 @@ namespace Falcor
                     size = sizeof(pAiMesh->mBitangents[0]);
                     break;
                 case VERTEX_DIFFUSE_COLOR_LOC:
-                    pSrc = (uint8_t*)(&pAiMesh->mColors[vertexID]);
-                    size = sizeof(pAiMesh->mColors[0]);
+                    pSrc = (uint8_t*)(&pAiMesh->mColors[0][vertexID]);
+                    size = sizeof(pAiMesh->mColors[0][0]);
                     break;
                 case VERTEX_TEXCOORD_LOC:
                     pSrc = (uint8_t*)(&pAiMesh->mTextureCoords[0][vertexID]);

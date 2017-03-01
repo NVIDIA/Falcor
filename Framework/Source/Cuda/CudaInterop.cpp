@@ -43,58 +43,162 @@ namespace Cuda {
     {
 		if (mTextureMap.find((size_t)tex.get()) == mTextureMap.end())
         {
-			CuInteropMapVal<Falcor::Texture, Cuda::CudaTexture> interopVal;
+			CuInteropMapVal<Cuda::CudaTexture> interopVal;
 			GLenum glSizedFormat = getGlSizedFormat(tex->getFormat());
 			GLenum glTarget = getGlTextureTarget((int)(tex->getType()));
 
 			checkFalcorCudaErrors(
-				cuGraphicsGLRegisterImage(&(interopVal.cudaGraphicsResource), tex->getApiHandle(), glTarget, CU_GRAPHICS_REGISTER_FLAGS_NONE));  //CU_GRAPHICS_REGISTER_FLAGS_SURFACE_LDST
+				cuGraphicsGLRegisterImage(&(interopVal.cudaGraphicsResource), tex->getApiHandle(), glTarget, CU_GRAPHICS_REGISTER_FLAGS_NONE));  //
 
 			mTextureMap[(size_t)tex.get()] = interopVal;
 		}
 
-        auto& resource = mTextureMap[(size_t)tex.get()];
-		if (resource.pFalcorCudaGraphicsResource == nullptr)
+        auto& res = mTextureMap[(size_t)tex.get()];
+        std::shared_ptr<Cuda::CudaTexture> resource; 
+		if (res.pFalcorCudaGraphicsResource.expired())
         {
-			resource.pFalcorCudaGraphicsResource = Cuda::CudaTexture::create(resource.cudaGraphicsResource);
+            checkFalcorCudaErrors(cuGraphicsMapResources(1, &res.cudaGraphicsResource, 0));
+            resource = Cuda::CudaTexture::create(res.cudaGraphicsResource);
+			res.pFalcorCudaGraphicsResource = resource;
 		}
+        else
+        {
+            resource = res.pFalcorCudaGraphicsResource.lock();
+        }
 
-		return mTextureMap[(size_t)tex.get()].pFalcorCudaGraphicsResource;
+		return resource;
 	}
 
-    void CudaInterop::unmapCudaTexture(const Falcor::Texture::SharedConstPtr& tex)
+    void CudaInterop::getMappedCudaTextures(std::initializer_list<std::pair<Falcor::Texture::SharedConstPtr, Cuda::CudaTexture::SharedPtr*>> texturePairs)
     {
-		//mTextureMap.erase((size_t)tex.get());
-		if (mTextureMap.find((size_t)tex.get()) != mTextureMap.end())
+        std::vector<std::pair<Falcor::Texture::SharedConstPtr, Cuda::CudaTexture::SharedPtr*>> texToMap;
+        std::vector<CUgraphicsResource> resourcesToMap;
+        texToMap.reserve(texturePairs.size());
+
+        // Register all new textures, collect all unmapped
+        for (auto& texPair : texturePairs)
         {
-			mTextureMap[(size_t)tex.get()].pFalcorCudaGraphicsResource = nullptr;  //force deletion
-		}
-	}
+            if(mTextureMap.find((size_t)texPair.first.get()) == mTextureMap.end())
+            {
+                CuInteropMapVal<Cuda::CudaTexture> interopVal;
+                GLenum glSizedFormat = getGlSizedFormat(texPair.first->getFormat());
+                GLenum glTarget = getGlTextureTarget((int)(texPair.first->getType()));
+
+                checkFalcorCudaErrors(
+                    cuGraphicsGLRegisterImage(&interopVal.cudaGraphicsResource, texPair.first->getApiHandle(), glTarget, CU_GRAPHICS_REGISTER_FLAGS_SURFACE_LDST));  //
+
+                mTextureMap[(size_t)texPair.first.get()] = interopVal;
+            }
+
+            auto& resource = mTextureMap[(size_t)texPair.first.get()];
+            if(resource.pFalcorCudaGraphicsResource.expired())
+            {
+                texToMap.push_back(texPair);
+                resourcesToMap.push_back(resource.cudaGraphicsResource);
+            }
+            else
+            {
+                *texPair.second = resource.pFalcorCudaGraphicsResource.lock();
+            }
+        }
+
+        // Map all unmapped textures
+        if(!resourcesToMap.empty())
+        {
+            checkFalcorCudaErrors(cuGraphicsMapResources((uint32_t)resourcesToMap.size(), resourcesToMap.data(), 0));
+        }
+
+        // Allocate resulting textures, assign the mapped resources
+        for(size_t i=0;i<texToMap.size();++i)
+        {
+            auto& texPair = texToMap[i];
+            auto& mappedResource = resourcesToMap[i];
+            auto& resource = mTextureMap[(size_t)texPair.first.get()];
+            resource.cudaGraphicsResource = mappedResource;
+            assert(resource.pFalcorCudaGraphicsResource.expired());
+            if(resource.pFalcorCudaGraphicsResource.expired())
+            {
+                *texPair.second = Cuda::CudaTexture::create(resource.cudaGraphicsResource);
+                resource.pFalcorCudaGraphicsResource = *texPair.second;
+            }
+        }
+    }
+
+    void CudaInterop::unregisterCudaTexture(const Falcor::Texture* tex)
+    {
+        if(mTextureMap.empty())
+            return;
+
+        size_t ptr = (size_t)tex;
+        auto it = mTextureMap.find(ptr);
+        if(it == mTextureMap.end())
+        {
+            return;
+        }
+
+        if(!it->second.pFalcorCudaGraphicsResource.expired())
+        {
+            Logger::log(Logger::Level::Error, "The resource to be unregistered is still mapped.");
+        }
+
+        checkFalcorCudaErrors(cuGraphicsUnregisterResource(it->second.cudaGraphicsResource));
+        mTextureMap.erase(it);
+    }
 
     std::shared_ptr<Cuda::CudaBuffer> CudaInterop::getMappedCudaBuffer(const Falcor::Buffer::SharedConstPtr& buff)
     {
 		if (mBufferMap.find((size_t)buff.get()) == mBufferMap.end())
         {
-			CuInteropMapVal<Falcor::Buffer, Cuda::CudaBuffer> interopVal;
+			CuInteropMapVal<Cuda::CudaBuffer> interopVal;
 			checkFalcorCudaErrors(cuGraphicsGLRegisterBuffer(&(interopVal.cudaGraphicsResource), buff->getApiHandle(), CU_GRAPHICS_REGISTER_FLAGS_NONE));
-			mBufferMap[(size_t)buff.get()] = interopVal;
-		}
+            mBufferMap.insert(std::make_pair((size_t)buff.get(), interopVal));
+        }
 
-		if (mBufferMap[(size_t)buff.get()].pFalcorCudaGraphicsResource == nullptr) 
+        auto& res = mBufferMap[(size_t)buff.get()];
+        Cuda::CudaBuffer::SharedPtr resource;
+		if (res.pFalcorCudaGraphicsResource.expired()) 
         {
-			mBufferMap[(size_t)buff.get()].pFalcorCudaGraphicsResource = Cuda::CudaBuffer::create(mBufferMap[(size_t)buff.get()].cudaGraphicsResource);
+            resource = Cuda::CudaBuffer::create(res.cudaGraphicsResource);
+			res.pFalcorCudaGraphicsResource = resource;
 		}
+        else
+        {
+            resource = res.pFalcorCudaGraphicsResource.lock();
+        }
 
-		return mBufferMap[(size_t)buff.get()].pFalcorCudaGraphicsResource;
-		////HERE////
+		return resource;
 	}
 
-    void CudaInterop::unmapCudaBuffer(const Falcor::Buffer::SharedConstPtr& buff)
+    void CudaInterop::unregisterCudaBuffer(const Falcor::Buffer* buff)
     {
-		//mTextureMap.erase((size_t)tex.get());
-		if (mBufferMap.find((size_t)buff.get()) != mBufferMap.end())
+        if(mBufferMap.empty())
+            return;
+
+        size_t ptr = (size_t)buff;
+        auto it = mBufferMap.find(ptr);
+        if(it == mBufferMap.end())
         {
-			mBufferMap[(size_t)buff.get()].pFalcorCudaGraphicsResource = nullptr;  //force deletion
-		}
-	}
-}}
+            return;
+        }
+
+        if(!it->second.pFalcorCudaGraphicsResource.expired())
+        {
+            Logger::log(Logger::Level::Error, "The resource to be unregistered is still mapped.");
+        }
+
+        checkFalcorCudaErrors(cuGraphicsUnregisterResource(it->second.cudaGraphicsResource));
+        mBufferMap.erase(it);
+    }
+
+    void CudaInterop::uninit()
+    {
+        for(auto& it : mTextureMap)
+            cuGraphicsUnregisterResource(it.second.cudaGraphicsResource);
+        mTextureMap.clear();
+
+        for(auto& it : mBufferMap)
+            cuGraphicsUnregisterResource(it.second.cudaGraphicsResource);
+        mBufferMap.clear();
+    }
+}
+}

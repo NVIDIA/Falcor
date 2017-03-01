@@ -426,7 +426,7 @@ namespace Falcor
             
             if(key == SceneKeys::kMaterialTexture)
             {
-                bOK = createMaterialTexture(value, matValue.texture.pTexture->shared_from_this());
+                bOK = createMaterialTexture(value, matValue.texture.pTexture);
             }
             else if(key == SceneKeys::kMaterialColor)
             {
@@ -1385,8 +1385,7 @@ namespace Falcor
 
             if(found == false)
             {
-                error("Invalid key found in top-level object. Key == " + std::string(it->name.GetString()) + ".");
-                return false;
+                Logger::log(Logger::Level::Warning, "Invalid key found in top-level object. Key == " + std::string(it->name.GetString()) + ".");
             }
         }
         return true;

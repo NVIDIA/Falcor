@@ -128,8 +128,8 @@ namespace Falcor
             {
                 const BoundingBox& meshBox = pMesh->getInstanceBoundingBox(i);
 
-                vec3 meshMin = meshBox.center - meshBox.extent * 0.5f;
-                vec3 meshMax = meshBox.center + meshBox.extent * 0.5f;
+                vec3 meshMin = meshBox.center - meshBox.extent;
+                vec3 meshMax = meshBox.center + meshBox.extent;
 
                 modelMin = min(modelMin, meshMin);
                 modelMax = max(modelMax, meshMax);
@@ -362,10 +362,10 @@ namespace Falcor
         
         for(const auto& m : mpMaterials)
         {
-            const auto& pNormalMap = m->getNormalValue().texture.pTexture;
+            const Texture* pNormalMap = m->getNormalValue().texture.pTexture.get();
             if(pNormalMap)
             {
-                uint32_t Id = texturesIndex[pNormalMap.get()];
+                uint32_t Id = texturesIndex[pNormalMap];
                 isNormalMap[Id] = true;
             }
         }

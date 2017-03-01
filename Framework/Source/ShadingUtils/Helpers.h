@@ -261,8 +261,8 @@ void _fn applyNormalMap(in vec3 texValue, _ref(vec3) n, _ref(vec3) t, _ref(vec3)
 	const vec3 normalMap = normalize(texValue);
 	n = fromLocal(normalMap, normalize(t), normalize(b), normalize(n));
     // Orthogonalize tangent frame
-    t = normalize(t - n * dot(t, n));
     b = normalize(b - n * dot(b, n));
+    t = normalize(cross(b, n));
 }
 
 // Forward declare it, just in case someone overrides it later

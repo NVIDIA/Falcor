@@ -34,6 +34,7 @@
 #include "Core/FBO.h"
 #include "Core/Texture.h"
 #include <glm/vec2.hpp>
+#include <sstream>
 
 #define GLFW_DLL
 #include "glfw3.h"
@@ -357,9 +358,9 @@ namespace Falcor
             level = Logger::Level::Error;
             break;
         }
-        std::string s("OpenGL debug callback:\n");
-        s += msg;
-        Logger::log(level, s);
+		std::stringstream ss;
+		ss << "OpenGL debug callback (id " << id << "):\n" << msg;
+        Logger::log(level, ss.str());
     }
 
     GLFWwindow* createWindowAndContext(const Window::Desc& desc)
@@ -505,7 +506,14 @@ namespace Falcor
         // Set the debug callback
 #ifdef _DEBUG
         glDebugMessageCallback(glDebugCallback, pWindow.get());
-        glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, GL_TRUE);
+		glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, GL_TRUE);
+
+        GLuint maskIds[] = 
+        {
+			131076, 131185, 131218, 131186
+		};
+		glDebugMessageControl(GL_DEBUG_SOURCE_API, GL_DEBUG_TYPE_OTHER, GL_DONT_CARE, sizeof(maskIds) / sizeof(maskIds[0]), maskIds, GL_FALSE);
+		glDebugMessageControl(GL_DEBUG_SOURCE_API, GL_DEBUG_TYPE_PERFORMANCE, GL_DONT_CARE, sizeof(maskIds) / sizeof(maskIds[0]), maskIds, GL_FALSE);
         glEnable(GL_DEBUG_OUTPUT);
 #endif
 
@@ -603,6 +611,12 @@ namespace Falcor
     void Window::pollForEvents()
     {
         glfwPollEvents();
+    }
+
+    bool Window::windowShouldClose() const
+    {
+        GLFWwindow* pWindow = (GLFWwindow*)mpPrivateData;
+        return !!glfwWindowShouldClose(pWindow);
     }
 
     void Window::setWindowTitle(std::string title)

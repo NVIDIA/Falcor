@@ -361,7 +361,7 @@ namespace Falcor
         UNSUPPORTED_IN_DX11("Texture::readSubresourceData");
     }
 
-    void Texture::uploadSubresourceData(const void* pData, uint32_t dataSize, uint32_t mipLevel, uint32_t arraySlice)
+    void Texture::uploadSubresourceData(const void* pData, uint32_t dataSize, uint32_t mipLevel, uint32_t arraySlice) const
     {
         UNSUPPORTED_IN_DX11("Texture::uploadSubresourceData()");
     }

@@ -109,6 +109,11 @@ namespace Falcor
         */
         void drawIndexedInstanced(uint32_t indexCount, uint32_t instanceCount, uint32_t startIndexLocation, int baseVertexLocation, uint32_t startInstanceLocation);
 
+        /** Dispatch a compute shader
+        \param[in] numGroups Dimensions of the grid of groups to dispatch.
+        */
+        void dispatch(glm::u32vec3 numGroups);
+
         /** Get current FBO.
         */
         Fbo::SharedConstPtr getFbo() const;

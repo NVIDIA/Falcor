@@ -91,6 +91,13 @@ namespace Falcor
         return ((attr != INVALID_FILE_ATTRIBUTES) && (attr & FILE_ATTRIBUTE_DIRECTORY));
     }
 
+    bool createDirectory(const std::string& path)
+    {
+        DWORD res = CreateDirectoryA(path.c_str(), NULL);
+
+        return res == TRUE;
+    }
+
     const std::string& getExecutableDirectory()
     {
         static std::string folder;

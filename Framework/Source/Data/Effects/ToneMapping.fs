@@ -49,7 +49,7 @@ vec3 calcExposedColor(vec3 color, vec2 texC)
     float avgLuminance = textureLod(gLuminanceTex, texC, gLuminanceLod).r;
     avgLuminance = exp(avgLuminance);
     
-    float exposedLuminance = gMiddleGray / avgLuminance;
+    float exposedLuminance = gMiddleGray; // / avgLuminance;
 
     return exposedLuminance*color;
 }

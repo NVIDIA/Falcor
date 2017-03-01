@@ -64,6 +64,10 @@ namespace Falcor
         */
         void setUiElements(Gui* pGui, const std::string& uiGroup);
 
+        /** Remove UI elements 
+        */
+        void removeUiElements(Gui* pGui, const std::string& uiGroup);
+
         /** Run the tone-mapping program
             \param pRenderContext Render-context to use
             \param pSrc The source FBO

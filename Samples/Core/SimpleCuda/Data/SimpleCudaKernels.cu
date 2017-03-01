@@ -38,7 +38,7 @@ __device__ __inline__ uchar4 to_uchar4(float4 vec)
 extern "C"
 __global__ void kernelProcessTexture(	cudaTextureObject_t inputTexObj,
 										cudaSurfaceObject_t outputSurfObj,
-										int width, int height)
+										int width, int height, uchar3 constColorAdd)
 {
 
 	float px = 1.0 / float(width);
@@ -66,6 +66,12 @@ __global__ void kernelProcessTexture(	cudaTextureObject_t inputTexObj,
 		data.z *= 255.0;
 		data.w *= 255.0;
 	
+        data.x += float(constColorAdd.x);
+		data.y += float(constColorAdd.y);
+		data.z += float(constColorAdd.z);
+		//data.w += float(constColorAdd.w);
+        
+        data = clamp(data, make_float4(0,0,0,0), make_float4(255,255,255,255));
 		// Write to output surface
 		surf2Dwrite(to_uchar4(data), outputSurfObj, x * sizeof(uchar4), y);
 

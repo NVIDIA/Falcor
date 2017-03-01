@@ -121,6 +121,11 @@ namespace Falcor
         return true;
     }
 
+    void UniformBuffer::setImage(size_t Offset, const Texture* pTexture, const int32_t pLODLevel, const ResourceFormat pFormat) const
+    {
+        UNSUPPORTED_IN_DX11("UniformBuffer::setImage()");
+    }
+
     void UniformBuffer::setTextureInternal(size_t offset, const Texture* pTexture, const Sampler* pSampler)
     {
 #ifdef _LOG_ENABLED

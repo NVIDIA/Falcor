@@ -173,10 +173,19 @@ namespace Falcor
         opList.push_back({(uint32_t)Operator::HableUc2, "Uncharted 2"});
 
         pGui->addDropdownWithCallback("Operator", opList, setToneMapOperator, getToneMapOperator, this, uiGroup);
-        pGui->addFloatVar("Exposure Key", &mMiddleGray, uiGroup, 0.0001f, 2.0f);
+        pGui->addFloatVar("Exposure Key", &mMiddleGray, uiGroup, 0.0001f, 200.0f);
         pGui->addFloatVar("White Luminance", &mWhiteMaxLuminance, uiGroup, 0.1f, FLT_MAX, 0.2f);
         pGui->addFloatVar("Luminance LOD", &mLuminanceLod, uiGroup, 0, 16, 0.025f);
         pGui->addFloatVar("Linear White", &mWhiteScale, uiGroup, 0, 100, 0.01f);
+    }
+
+    void ToneMapping::removeUiElements(Gui* pGui, const std::string& uiGroup)
+    {
+        pGui->removeVar("Operator", uiGroup);
+        pGui->removeVar("Exposure Key", uiGroup);
+        pGui->removeVar("White Luminance", uiGroup);
+        pGui->removeVar("Luminance LOD", uiGroup);
+        pGui->removeVar("Linear White", uiGroup);
     }
 
     void ToneMapping::setOperator(Operator op)

@@ -665,6 +665,11 @@ namespace Falcor
         }
     }
 
+    bool Window::windowShouldClose() const
+    {
+        return false;
+    }
+
     void Window::swapBuffers()
     {
 

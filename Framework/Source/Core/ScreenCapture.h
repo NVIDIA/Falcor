@@ -28,6 +28,7 @@
 #pragma once
 #include <string>
 #include "Formats.h"
+#include "Utils/Bitmap.h"
 
 namespace Falcor
 {
@@ -54,6 +55,7 @@ namespace Falcor
             \param[in] filename Output filename
         */
         void captureToPng(uint32_t screenWidth, uint32_t screenHeight, const std::string& filename);
+        void captureToImage(uint32_t screenWidth, uint32_t screenHeight, const std::string& filename, Bitmap::FileFormat fileFormat, Bitmap::ExportFlags flags);
 
         /*! @} */
     };
