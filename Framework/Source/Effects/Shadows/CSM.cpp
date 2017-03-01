@@ -102,9 +102,10 @@ namespace Falcor
         {
             up = glm::vec3(1, 0, 0);
         }
+     
         glm::mat4 view = glm::lookAt(lightPos, lookat, up);
         float distFromCenter = glm::length(lightPos - center);
-        float nearZ = max(0.01f, distFromCenter - radius);
+        float nearZ = max(0.1f, distFromCenter - radius);
         float maxZ = min(radius * 2, distFromCenter + radius);
         float angle = pLight->getOpeningAngle() * 2;
         glm::mat4 proj = perspectiveMatrix(angle, fboAspectRatio, nearZ, maxZ);

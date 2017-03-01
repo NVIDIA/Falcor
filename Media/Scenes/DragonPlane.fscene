@@ -72,6 +72,27 @@
                 -0.43,
                 -0.49
             ]
+        },
+        {
+            "name": "PointLight0",
+            "type": "point_light",
+            "intensity": [
+                3.6,
+                3.6,
+                3.6
+            ],
+            "pos": [
+                1.805,
+                0.923,
+                0.192
+            ],
+            "direction": [
+                -1.12,
+                -0.44,
+                -0.14
+            ],
+            "opening_angle": 38.0,
+            "penumbra_angle": 0.0
         }
     ],
     "cameras": [

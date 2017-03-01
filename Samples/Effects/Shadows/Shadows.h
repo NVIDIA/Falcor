@@ -51,9 +51,6 @@ private:
     void createScene(const std::string& filename);
     void displayLoadSceneDialog();
 
-    //TODO remove
-    Texture::SharedPtr _TestTex;
-
     std::vector<CascadedShadowMaps::UniquePtr> mpCsmTech;
     Scene::SharedPtr mpScene;
 
@@ -84,7 +81,6 @@ private:
         bool showShadowMap = false;
         bool visualizeCascades = false;
         int32_t displayedCascade = 0;
-        //TODO the default for this should be 4
         int32_t cascadeCount = 4;
         int32_t lightIndex = 0;
     };

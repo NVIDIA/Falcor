@@ -103,14 +103,14 @@ void Shadows::createScene(const std::string& filename)
     mLightingPass.pState->setDepthStencilState(nullptr);
     mLightingPass.pProgramVars = GraphicsVars::create(mLightingPass.pProgram->getActiveVersion()->getReflector());
     mLightingPass.pCBuffer = mLightingPass.pProgramVars["PerFrameCB"];
-
-    //TODO remove TESTING
-    _TestTex = createTextureFromFile("TestShadow.png", true, false);
 }
 
 void Shadows::onLoad()
 {
-    createScene("Scenes/dragonplane.fscene");
+    //createScene("WorkingCitadel.fscene");
+    createScene("Scenes/dragonPlane.fscene");
+    //createScene("Scenes/dragonPlanePoint.fscene");
+    //createScene("Scenes/dragonPlaneDir.fscene");
     createVisualizationProgram();
 }
 
@@ -131,7 +131,7 @@ void Shadows::runMainPass()
     mLightingPass.pCBuffer->setVariable("camVpAtLastCsmUpdate", mCamVpAtLastCsmUpdate);
     mLightingPass.pProgramVars->setConstantBuffer("PerFrameCB", mLightingPass.pCBuffer);
     mpRenderContext->pushGraphicsVars(mLightingPass.pProgramVars);
-
+    
     mpRenderer->renderScene(mpRenderContext.get());
 
     mpRenderContext->popGraphicsVars();
@@ -141,10 +141,10 @@ void Shadows::runMainPass()
 void Shadows::displayShadowMap()
 {
     mShadowVisualizer.pProgramVars->setTexture("gTexture", mpCsmTech[mControls.lightIndex]->getShadowMap());
-    //todo remove TESTING
-    //mShadowVisualizer.pProgramVars->setTexture("gTexture", _TestTex);
-
-    mShadowVisualizer.pCBuffer->setVariable("cascade", mControls.displayedCascade);
+    if (mControls.cascadeCount > 1)
+    {
+        mShadowVisualizer.pCBuffer->setVariable("cascade", mControls.displayedCascade);
+    }
     mShadowVisualizer.pProgramVars->setConstantBuffer("PerImageCB", mShadowVisualizer.pCBuffer);
     mpRenderContext->pushGraphicsVars(mShadowVisualizer.pProgramVars);
     mShadowVisualizer.pProgram->execute(mpRenderContext.get());
@@ -175,11 +175,6 @@ void Shadows::onFrameRender()
         {
             std::string var = "gCsmData[" + std::to_string(i) + "]";
             mpCsmTech[i]->setDataIntoGraphicsVars(mLightingPass.pProgramVars, var);
-            //todo remove TESTING
-            //mLightingPass.pProgramVars->setTexture("shadowMap", _TestTex);
-            //Texture* pTexture = mLightingPass.pProgramVars->getTexture("shadowMap").get();
-            //std::vector<uint8> textureData = mpRenderContext->readTextureSubresource(pTexture, 0);
-            //Bitmap::saveImage("TestOut.png", pTexture->getWidth(), pTexture->getHeight(), Bitmap::FileFormat::PngFile, pTexture->getFormat(), true, textureData.data());
         }
 
         if(mControls.showShadowMap)

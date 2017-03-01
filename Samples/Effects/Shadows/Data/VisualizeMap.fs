@@ -25,35 +25,29 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#version 450
-#include "HlslGlslCommon.h"
-
-SamplerState exampleSampler : register(s0);
+SamplerState gSampler : register(s0);
 
 cbuffer PerImageCB : register(b0)
 {
 #ifdef _USE_2D_ARRAY
 	Texture2DArray gTexture;
+    int cascade;
 #else
     texture2D gTexture;
 #endif
-    int cascade;
 };
 
-vec4 calcColor(vec2 texC)
+float4 calcColor(float2 texC)
 {
 #ifdef _USE_2D_ARRAY
-	float d = gTexture.SampleLevel(exampleSampler, vec3(texC, float(cascade)), 0).r;
+	float d = gTexture.SampleLevel(gSampler, float3(texC, float(cascade)), 0).r;
 #else
-    float d = gTexture.SampleLevel(exampleSampler, texC, 0).r;
-    //TODO
-    //just temp so the buffer isnt optimized out
-    d += cascade * 0.00001f;
+    float d = gTexture.SampleLevel(gSampler, texC, 0).r;
 #endif
-    return vec4(d.xxx, 1);
+    return float4(d.xxx, 1);
 }
 
-vec4 main(float2 texC  : TEXCOORD) : SV_TARGET0
+float4 main(float2 texC  : TEXCOORD) : SV_TARGET0
 {
 	return calcColor(texC);
 }
