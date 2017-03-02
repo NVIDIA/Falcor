@@ -40,7 +40,7 @@ class TestInfo(object):
                 while os.path.isfile(self.getResultsDir() + '\\' + self.getResultsFile()):
                     self.Index += 1
         if self.Index != 0:
-            os.rename(initialFilename, self.getResultsFile())
+            overwriteMove(initialFilename, self.getResultsFile())
 
     def __init__(self, name, configName):
         self.Name = name
@@ -155,12 +155,13 @@ def compareImages(resultObj, testInfo, numScreenshots):
         p = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
         result = p.communicate()[0]
         spaceIndex = result.find(' ')
-        result = result[:spaceIndex]
+        resultValStr = result[:spaceIndex]
         try:
-            resultVal = float(result)
+            resultVal = float(resultValStr)
         except:
             gFailReasonsList.append(('For test ' + testInfo.getFullName() + 
-                ' failed to compare screenshot ' + testScreenshot + ' with ref ' + refScreenshot))
+                ' failed to compare screenshot ' + testScreenshot + ' with ref ' + refScreenshot +
+                ' instead of compare result, got \"' + resultValStr + '\" from larger string \"' + result + '\"'))
             resultObj.CompareResults.append(-1)
             continue
         resultObj.CompareResults.append(resultVal)
