@@ -158,8 +158,8 @@ namespace Falcor
             {
                 mpLastMaterial->evictTextures();
             }
-            mpLastMaterial = pMesh->getMaterial().get();
             setPerMaterialData(pContext, currentData);
+            mpLastMaterial = pMesh->getMaterial().get();
 
             if(mCompileMaterialWithProgram)
             {

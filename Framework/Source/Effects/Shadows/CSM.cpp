@@ -32,7 +32,6 @@
 #include "Utils/Math/FalcorMath.h"
 #include "Graphics/FboHelper.h"
 
-//#define _ALPHA_FROM_ALBEDO_MAP
 namespace Falcor
 {
     const char* kDepthPassVSFile = "Effects/ShadowPass.vs";
@@ -63,7 +62,7 @@ namespace Falcor
         static UniquePtr create(const Scene::SharedPtr& pScene, ConstantBuffer::SharedPtr pAlphaMapCb) { return UniquePtr(new CsmSceneRenderer(pScene, pAlphaMapCb)); }
 
     protected:
-        CsmSceneRenderer(const Scene::SharedPtr& pScene, ConstantBuffer::SharedPtr pAlphaMapCb) : SceneRenderer(pScene), mpAlphaMapCb(pAlphaMapCb) { setObjectCullState(false); }
+        CsmSceneRenderer(const Scene::SharedPtr& pScene, ConstantBuffer::SharedPtr pAlphaMapCb) : SceneRenderer(pScene), mpAlphaMapCb(pAlphaMapCb) { setObjectCullState(false); mpLastMaterial = nullptr; }
         ConstantBuffer::SharedPtr mpAlphaMapCb;
         bool mMaterialChanged = false;
         bool setPerMaterialData(RenderContext* pContext, const CurrentWorkingData& currentData) override
@@ -72,21 +71,20 @@ namespace Falcor
             {
                 mMaterialChanged = true;
                 mpLastMaterial = currentData.pMaterial;
-                struct alphaData
-                {
-                    uint64_t map;
-                    float val;
-                } a;
+                pContext->getGraphicsVars()->setConstantBuffer("AlphaMapCB", mpAlphaMapCb);
 
-#ifdef _ALPHA_FROM_ALBEDO_MAP
-                const auto& pLayer = mpLastMaterial->getLayer(0);
-                a.map = pLayer ? pLayer->albedo.texture.gpuAddress : 0;
-                a.val = 0.5f;
-#else
-                a.val = mpLastMaterial->getAlphaThreshold();
-#endif
-                mpAlphaMapCb->setBlob(&a, 0, sizeof(a));
-                pContext->getGraphicsVars()->setSrv(0u, mpLastMaterial->getAlphaMap()->getSRV());
+                //mpAlphaMapCb->setBlob(&a, 0, sizeof(a));
+                //pContext->getGraphicsVars()->setSrv(0u, mpLastMaterial->getAlphaMap()->getSRV());    
+                if (mpLastMaterial->getAlphaMap())
+                {
+                    mpAlphaMapCb->setVariable("alphaThreshold", mpLastMaterial->getAlphaThreshold());
+                    pContext->getGraphicsVars()->setTexture("alphaMap", mpLastMaterial->getAlphaMap());
+                    pContext->getGraphicsState()->getProgram()->addDefine("TEST_ALPHA");
+                }
+                else
+                {
+                    pContext->getGraphicsState()->getProgram()->removeDefine("TEST_ALPHA");
+                }
             }
             return true;
         };
@@ -95,7 +93,7 @@ namespace Falcor
         {
             if(mUnloadTexturesOnMaterialChange && mMaterialChanged)
             {
-                mpLastMaterial->evictTextures();
+                mpLastMaterial = nullptr;
                 mMaterialChanged = false;
             }
         }
@@ -218,7 +216,6 @@ namespace Falcor
         }
 
         mSdsmData.minMaxReduction = ParallelReduction::create(ParallelReduction::Type::MinMax, mSdsmData.readbackLatency, mSdsmData.width, mSdsmData.height);
-
     }
 
     void CascadedShadowMaps::createShadowPassResources(uint32_t mapWidth, uint32_t mapHeight)
@@ -227,13 +224,9 @@ namespace Falcor
         const ResourceFormat depthFormat = ResourceFormat::D32Float;
         mCsmData.depthBias = 0.005f;
         Program::DefineList progDef;
+        progDef.add("TEST_ALPHA");
         progDef.add("_CASCADE_COUNT", std::to_string(mCsmData.cascadeCount));
-
-#ifdef _ALPHA_FROM_ALBEDO_MAP
-        progDef.add("_ALPHA_CHANNEL", "a");
-#else
         progDef.add("_ALPHA_CHANNEL", "r");
-#endif
         ResourceFormat colorFormat = ResourceFormat::Unknown;
         switch(mCsmData.filterMode)
         {
@@ -278,7 +271,9 @@ namespace Falcor
         mShadowPass.pLightCB = mShadowPass.pGraphicsVars["PerLightCB"];
         mShadowPass.pAlphaCB = mShadowPass.pGraphicsVars["AlphaMapCB"];
 
-        mpSceneRenderer = CsmSceneRenderer::create(mpScene, mShadowPass.pAlphaCB);
+        mpCsmSceneRenderer = CsmSceneRenderer::create(mpScene, mShadowPass.pAlphaCB);
+        mpSceneRenderer = SceneRenderer::create(mpScene);
+
     }
 
     void CascadedShadowMaps::setCascadeCount(uint32_t cascadeCount)
@@ -530,11 +525,10 @@ namespace Falcor
     {
         mShadowPass.pLightCB->setBlob(&mCsmData, 0, sizeof(mCsmData));
         mShadowPass.pGraphicsVars->setConstantBuffer(0, mShadowPass.pLightCB);
-        mShadowPass.pAlphaCB->setVariable("evsmExp", mCsmData.evsmExponents);
         mShadowPass.pGraphicsVars->setConstantBuffer(1, mShadowPass.pAlphaCB);
         pCtx->pushGraphicsVars(mShadowPass.pGraphicsVars);
         pCtx->pushGraphicsState(mShadowPass.pState);
-        mpSceneRenderer->renderScene(pCtx, mpLightCamera.get());
+        mpCsmSceneRenderer->renderScene(pCtx, mpLightCamera.get());
         pCtx->popGraphicsState();
         pCtx->popGraphicsVars();
     }

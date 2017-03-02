@@ -29,12 +29,16 @@
 #include "csmdata.h"
 
 SamplerState alphaSampler;
-texture2D alphaMap : register(t0);
+texture2D alphaMap;
+
+cbuffer PerLightCB : register(b0)
+{
+    CsmData gCsmData;
+};
 
 cbuffer AlphaMapCB : register(b1)
 {
     float alphaThreshold;
-    vec2 evsmExp;   // (posExp, negExp)
 };
 
 struct ShadowPassPSIn
@@ -52,15 +56,18 @@ vec4 main(ShadowPassPSIn pIn) : SV_TARGET0
 void main(ShadowPassPSIn pIn)
 #endif
 {
-    if(alphaMap.Sample(alphaSampler, pIn.texC)._ALPHA_CHANNEL < alphaThreshold)
+#ifdef TEST_ALPHA
+    float alpha = alphaMap.Sample(alphaSampler, pIn.texC)._ALPHA_CHANNEL;
+    if(alpha < alphaThreshold)
     {
         discard;
     }
+#endif
 
     vec2 depth = pIn.pos.zz;
 
 #if defined(_EVSM2) || defined(_EVSM4)
-    depth = applyEvsmExponents(depth.x, evsmExp);
+    depth = applyEvsmExponents(depth.x, gCsmData.evsmExponents);
 #endif
     vec4 outDepth = vec4(depth, depth*depth);
 
