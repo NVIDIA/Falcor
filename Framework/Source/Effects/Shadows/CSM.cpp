@@ -40,6 +40,22 @@ namespace Falcor
     const char* kDepthPassFsFile = "Effects/ShadowPass.fs";
     const char* kSdsmMinMaxFile = "Effects/SDSMMinMax.fs";
 
+    const Gui::DropdownList kFilterList = {
+        { (uint32_t)CsmFilterPoint, "Point" },
+        { (uint32_t)CsmFilterHwPcf, "2x2 HW PCF" },
+        { (uint32_t)CsmFilterFixedPcf, "Fixed-Size PCF" },
+        { (uint32_t)CsmFilterVsm, "VSM" },
+        { (uint32_t)CsmFilterEvsm2, "EVSM2" },
+        { (uint32_t)CsmFilterEvsm4, "EVSM4" },
+        { (uint32_t)CsmFilterStochasticPcf, "Stochastic Poisson PSF" }
+    };
+
+    const Gui::DropdownList kPartitionList = {
+        { (uint32_t)CascadedShadowMaps::PartitionMode::Linear, "Linear" },
+        { (uint32_t)CascadedShadowMaps::PartitionMode::Logarithmic, "Logarithmic" },
+        { (uint32_t)CascadedShadowMaps::PartitionMode::PSSM, "PSSM" }
+    };
+
     class CsmSceneRenderer : public SceneRenderer
     {
     public:
@@ -277,20 +293,11 @@ namespace Falcor
 
     void CascadedShadowMaps::setUiElements(Gui* pGui, const std::string& uiGroup)
     {
-        //TODO fix this so that settings are only offered if theyre relevant to the current filter mode
         if (pGui->beginGroup(uiGroup.c_str()))
         {
             //Filter mode
-            Gui::DropdownList filterModeList;
-            filterModeList.push_back({ (uint32_t)CsmFilterPoint, "Point" });
-            filterModeList.push_back({ (uint32_t)CsmFilterHwPcf, "2x2 HW PCF" });
-            filterModeList.push_back({ (uint32_t)CsmFilterFixedPcf, "Fixed-Size PCF" });
-            filterModeList.push_back({ (uint32_t)CsmFilterVsm, "VSM" });
-            filterModeList.push_back({ (uint32_t)CsmFilterEvsm2, "EVSM2" });
-            filterModeList.push_back({ (uint32_t)CsmFilterEvsm4, "EVSM4" });
-            filterModeList.push_back({ (uint32_t)CsmFilterStochasticPcf, "Stochastic Poisson PSF" });
             uint32_t filterIndex = static_cast<uint32_t>(mCsmData.filterMode);
-            if (pGui->addDropdown("Filter Mode", filterModeList, filterIndex))
+            if (pGui->addDropdown("Filter Mode", kFilterList, filterIndex))
             {
                 mCsmData.filterMode = filterIndex;
                 createShadowPassResources(mShadowPass.pFbo->getWidth(), mShadowPass.pFbo->getHeight());
@@ -304,12 +311,8 @@ namespace Falcor
             }
 
             //partition mode
-            Gui::DropdownList partitionMode;
-            partitionMode.push_back({ (uint32_t)PartitionMode::Linear, "Linear" });
-            partitionMode.push_back({ (uint32_t)PartitionMode::Logarithmic, "Logarithmic" });
-            partitionMode.push_back({ (uint32_t)PartitionMode::PSSM, "PSSM" });
             uint32_t newPartitionMode = static_cast<uint32_t>(mControls.partitionMode);
-            if (pGui->addDropdown("Partition Mode", partitionMode, newPartitionMode))
+            if (pGui->addDropdown("Partition Mode", kPartitionList, newPartitionMode))
             {
                 mControls.partitionMode = static_cast<PartitionMode>(newPartitionMode);
             }
@@ -343,32 +346,35 @@ namespace Falcor
             }
 
             //VSM/ESM
-            const char* vsmGroup = "VSM/EVSM";
-            if (pGui->beginGroup(vsmGroup))
+            if (mCsmData.filterMode == CsmFilterVsm || mCsmData.filterMode == CsmFilterEvsm2 || mCsmData.filterMode == CsmFilterEvsm4)
             {
-                Gui::DropdownList vsmMaxAniso;
-                vsmMaxAniso.push_back({ (uint32_t)1, "1" });
-                vsmMaxAniso.push_back({ (uint32_t)2, "2" });
-                vsmMaxAniso.push_back({ (uint32_t)4, "4" });
-                vsmMaxAniso.push_back({ (uint32_t)8, "8" });
-                vsmMaxAniso.push_back({ (uint32_t)16, "16" });
-
-                uint32_t newMaxAniso = mShadowPass.pVSMTrilinearSampler->getMaxAnisotropy();
-                pGui->addDropdown("Max Aniso", vsmMaxAniso, newMaxAniso);
+                const char* vsmGroup = "VSM/EVSM";
+                if (pGui->beginGroup(vsmGroup))
                 {
-                    createVsmSampleState(newMaxAniso);
-                }
+                    Gui::DropdownList vsmMaxAniso;
+                    vsmMaxAniso.push_back({ (uint32_t)1, "1" });
+                    vsmMaxAniso.push_back({ (uint32_t)2, "2" });
+                    vsmMaxAniso.push_back({ (uint32_t)4, "4" });
+                    vsmMaxAniso.push_back({ (uint32_t)8, "8" });
+                    vsmMaxAniso.push_back({ (uint32_t)16, "16" });
 
-                pGui->addFloatVar("Light Bleed Reduction", mCsmData.lightBleedingReduction, 0, 1.0f, 0.01f);
-                const char* evsmExpGroup = "EVSM Exp";
-                if (pGui->beginGroup(evsmExpGroup))
-                {
-                    pGui->addFloatVar("Positive", mCsmData.evsmExponents.x, 0.0f, 42.0f, 0.01f);
-                    pGui->addFloatVar("Negative", mCsmData.evsmExponents.y, 0.0f, 42.0f, 0.01f);
+                    uint32_t newMaxAniso = mShadowPass.pVSMTrilinearSampler->getMaxAnisotropy();
+                    pGui->addDropdown("Max Aniso", vsmMaxAniso, newMaxAniso);
+                    {
+                        createVsmSampleState(newMaxAniso);
+                    }
+
+                    pGui->addFloatVar("Light Bleed Reduction", mCsmData.lightBleedingReduction, 0, 1.0f, 0.01f);
+                    const char* evsmExpGroup = "EVSM Exp";
+                    if (pGui->beginGroup(evsmExpGroup))
+                    {
+                        pGui->addFloatVar("Positive", mCsmData.evsmExponents.x, 0.0f, 42.0f, 0.01f);
+                        pGui->addFloatVar("Negative", mCsmData.evsmExponents.y, 0.0f, 42.0f, 0.01f);
+                        pGui->endGroup();
+                    }
+
                     pGui->endGroup();
                 }
-
-                pGui->endGroup();
             }
 
             pGui->endGroup();
