@@ -59,26 +59,21 @@ namespace Falcor
     {
     public:
         using UniquePtr = std::unique_ptr<CsmSceneRenderer>;
-        static UniquePtr create(const Scene::SharedPtr& pScene, ConstantBuffer::SharedPtr pAlphaMapCb) { return UniquePtr(new CsmSceneRenderer(pScene, pAlphaMapCb)); }
+        static UniquePtr create(const Scene::SharedPtr& pScene) { return UniquePtr(new CsmSceneRenderer(pScene)); }
 
     protected:
-        CsmSceneRenderer(const Scene::SharedPtr& pScene, ConstantBuffer::SharedPtr pAlphaMapCb) : SceneRenderer(pScene), mpAlphaMapCb(pAlphaMapCb) { setObjectCullState(false); mpLastMaterial = nullptr; }
-        ConstantBuffer::SharedPtr mpAlphaMapCb;
+        CsmSceneRenderer(const Scene::SharedPtr& pScene) : SceneRenderer(pScene) { setObjectCullState(false); }
         bool mMaterialChanged = false;
         bool setPerMaterialData(RenderContext* pContext, const CurrentWorkingData& currentData) override
         {
             if(mpLastMaterial != currentData.pMaterial)
             {
                 mMaterialChanged = true;
-                mpLastMaterial = currentData.pMaterial;
-                pContext->getGraphicsVars()->setConstantBuffer("AlphaMapCB", mpAlphaMapCb);
-
-                //mpAlphaMapCb->setBlob(&a, 0, sizeof(a));
-                //pContext->getGraphicsVars()->setSrv(0u, mpLastMaterial->getAlphaMap()->getSRV());    
-                if (mpLastMaterial->getAlphaMap())
+                if (currentData.pMaterial->getAlphaMap())
                 {
-                    mpAlphaMapCb->setVariable("alphaThreshold", mpLastMaterial->getAlphaThreshold());
-                    pContext->getGraphicsVars()->setTexture("alphaMap", mpLastMaterial->getAlphaMap());
+                    float alphaThreshold = currentData.pMaterial->getAlphaThreshold();
+                    pContext->getGraphicsVars()->getConstantBuffer(1u)->setBlob(&alphaThreshold, 0u, sizeof(float));
+                    pContext->getGraphicsVars()->setSrv(0u, currentData.pMaterial->getAlphaMap()->getSRV());
                     pContext->getGraphicsState()->getProgram()->addDefine("TEST_ALPHA");
                 }
                 else
@@ -93,7 +88,7 @@ namespace Falcor
         {
             if(mUnloadTexturesOnMaterialChange && mMaterialChanged)
             {
-                mpLastMaterial = nullptr;
+                mpLastMaterial = currentData.pMaterial;
                 mMaterialChanged = false;
             }
         }
@@ -271,7 +266,7 @@ namespace Falcor
         mShadowPass.pLightCB = mShadowPass.pGraphicsVars["PerLightCB"];
         mShadowPass.pAlphaCB = mShadowPass.pGraphicsVars["AlphaMapCB"];
 
-        mpCsmSceneRenderer = CsmSceneRenderer::create(mpScene, mShadowPass.pAlphaCB);
+        mpCsmSceneRenderer = CsmSceneRenderer::create(mpScene);
         mpSceneRenderer = SceneRenderer::create(mpScene);
 
     }

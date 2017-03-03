@@ -58,32 +58,43 @@ private:
     {
         FullScreenPass::UniquePtr pProgram;
         GraphicsVars::SharedPtr pProgramVars;
-        ConstantBuffer::SharedPtr pCBuffer;
     } mShadowVisualizer;
 
     struct
     {
         GraphicsProgram::SharedPtr pProgram;
         GraphicsVars::SharedPtr pProgramVars;
-        ConstantBuffer::SharedPtr pCBuffer;
     } mLightingPass;
 
     Sampler::SharedPtr mpLinearSampler = nullptr;
 
     glm::vec3 mAmbientIntensity = glm::vec3(0.1f, 0.1f, 0.1f);
     SceneRenderer::UniquePtr mpRenderer;
-    glm::mat4 mCamVpAtLastCsmUpdate;
 
     struct Controls
     {
         bool updateShadowMap = true;
         bool showShadowMap = false;
-        bool visualizeCascades = false;
         int32_t displayedCascade = 0;
         int32_t cascadeCount = 4;
-        int32_t lightIndex = 0;
     };
     Controls mControls;
+
+    struct ShadowOffsets
+    {
+        uint32_t visualizeCascades;
+        uint32_t displayedCascade;
+    } mOffsets;  
+
+    //non csm data in this cb so it can be sent as a single blob
+    struct PerFrameCBData
+    {
+        //This is effectively a bool, but bool only takes up 1 byte which messes up setBlob
+        uint32_t visualizeCascades = 0u;
+        int32_t lightIndex = 0;
+        uint64_t padding = 0;
+        glm::mat4 camVpAtLastCsmUpdate = glm::mat4();
+    } mPerFrameCBData;
 
     void setLightIndex(int32_t index);
 };
