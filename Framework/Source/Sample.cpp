@@ -77,7 +77,7 @@ namespace Falcor
         // Consume system messages first
         if(keyEvent.type == KeyboardEvent::Type::KeyPressed)
         {
-            if(keyEvent.mods.isShiftDown && keyEvent.key == KeyboardEvent::Key::PrintScreen)
+            if(keyEvent.mods.isShiftDown && keyEvent.key == KeyboardEvent::Key::F12)
             {
                 initVideoCapture();
             }
@@ -85,7 +85,7 @@ namespace Falcor
             {
                 switch(keyEvent.key)
                 {
-                case KeyboardEvent::Key::PrintScreen:
+                case KeyboardEvent::Key::F12:
                     mCaptureScreen = true;
                     break;
 #if _PROFILING_ENABLED
@@ -221,8 +221,8 @@ namespace Falcor
             "  'F5'      - Reload shaders\n"
             "  'ESC'     - Quit\n"
             "  'V'       - Toggle VSync\n"
-            "  'PrtScr'  - Capture screenshot\n"
-            "  'Shift+PrtScr' - Video capture\n"
+            "  'F12'     - Capture screenshot\n"
+            "  'Shift+F12' - Video capture\n"
 #if _PROFILING_ENABLED
             "  'P'       - Enable profiling\n";
 #else
