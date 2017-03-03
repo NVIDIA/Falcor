@@ -52,7 +52,6 @@ namespace Falcor
         {
             Position = VERTEX_POSITION_LOC,
             Normal = VERTEX_NORMAL_LOC,
-            Tangent = VERTEX_TANGENT_LOC,
             Bitangent = VERTEX_BITANGENT_LOC,
             BoneWeight = VERTEX_BONE_WEIGHT_LOC,
             BoneID = VERTEX_BONE_ID_LOC,

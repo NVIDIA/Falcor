@@ -113,8 +113,6 @@ namespace Falcor
             return AttribType_Position;
         else if(name == VERTEX_NORMAL_NAME)
             return AttribType_Normal;
-        else if(name == VERTEX_TANGENT_NAME)
-            return AttribType_Tangent;
         else if(name == VERTEX_BITANGENT_NAME)
             return AttribType_Bitangent;
         else if(name == VERTEX_DIFFUSE_COLOR_NAME)

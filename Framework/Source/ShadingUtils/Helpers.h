@@ -159,13 +159,12 @@ _fn float rand_next(_ref(uint) s)
 					Geometric routines
 *******************************************************************/
 
-void _fn createTangentFrame(in const vec3 normal, _ref(vec3) tangent, _ref(vec3) bitangent)
+void _fn createTangentFrame(in const vec3 normal, _ref(vec3) bitangent)
 {
 	if(abs(normal.x) > abs(normal.y))
 		bitangent = v3(normal.z, 0.f, -normal.x) / length(v2(normal.x, normal.z));
 	else
 		bitangent = v3(0.f, normal.z, -normal.y) / length(v2(normal.y, normal.z));
-	tangent = cross(bitangent, normal);
 }
 
 void _fn reflectFrame(vec3 n, vec3 reflect, _ref(vec3) t, _ref(vec3) b)

@@ -54,7 +54,6 @@ namespace Falcor
         const glm::vec3* vertexNormalData,
         const glm::vec2* texCrdData,
         uint32_t texCrdCount,
-        glm::vec3* tangentData,
         glm::vec3* bitangentData);
 
 
@@ -82,16 +81,14 @@ namespace Falcor
         if(pAiMesh->mFaces[0].mNumIndices == 3)
         {
             aiMesh* pMesh = const_cast<aiMesh*>(pAiMesh);
-            pMesh->mTangents = new aiVector3D[pMesh->mNumVertices];
             pMesh->mBitangents = new aiVector3D[pMesh->mNumVertices];
 
             const glm::vec3* pPos = (glm::vec3*)pMesh->mVertices;
-            glm::vec3* pTan = (glm::vec3*)pMesh->mTangents;
             glm::vec3* pBi = (glm::vec3*)pMesh->mBitangents;
             glm::vec3* pNormals = (glm::vec3*)pMesh->mNormals;
             std::vector<uint32_t> indices = createIndexBufferData(pAiMesh);
 
-            generateSubmeshTangentData<glm::vec3>(indices, pPos, pNormals, nullptr, 0, pTan, pBi);
+            generateSubmeshTangentData<glm::vec3>(indices, pPos, pNormals, nullptr, 0, pBi);
         }
     }
 
@@ -106,7 +103,6 @@ namespace Falcor
     {
         { VERTEX_POSITION_LOC,      VERTEX_POSITION_NAME,       ResourceFormat::RGB32Float },
         { VERTEX_NORMAL_LOC,        VERTEX_NORMAL_NAME,         ResourceFormat::RGB32Float },
-        { VERTEX_TANGENT_LOC,       VERTEX_TANGENT_NAME,        ResourceFormat::RGB32Float },
         { VERTEX_BITANGENT_LOC,     VERTEX_BITANGENT_NAME,      ResourceFormat::RGB32Float },
         { VERTEX_TEXCOORD_LOC,      VERTEX_TEXCOORD_NAME,       ResourceFormat::RGB32Float }, //for some reason this is rgb
         { VERTEX_BONE_WEIGHT_LOC,   VERTEX_BONE_WEIGHT_NAME,    ResourceFormat::RGBA32Float },
@@ -690,7 +686,6 @@ namespace Falcor
         if(mFlags & Model::GenerateTangentSpace)
         {
            aiMesh* pM = const_cast<aiMesh*>(pAiMesh);
-            safe_delete_array(pM->mTangents);
             safe_delete_array(pM->mBitangents);
         }
 
@@ -713,9 +708,8 @@ namespace Falcor
             return true;
         case VERTEX_NORMAL_LOC:
             return pAiMesh->HasNormals();
-        case VERTEX_TANGENT_LOC:
         case VERTEX_BITANGENT_LOC:
-            return pAiMesh->HasTangentsAndBitangents();
+            return (pAiMesh->mBitangents != nullptr); // ASSIMP doesn't have a function that checks only for bitangents
         case VERTEX_BONE_WEIGHT_LOC:
         case VERTEX_BONE_ID_LOC:
             return pAiMesh->HasBones();
@@ -798,10 +792,6 @@ namespace Falcor
                 case VERTEX_NORMAL_LOC:
                     pSrc = (uint8_t*)(&pAiMesh->mNormals[vertexID]);
                     size = sizeof(pAiMesh->mNormals[0]);
-                    break;
-                case VERTEX_TANGENT_LOC:
-                    pSrc = (uint8_t*)(&pAiMesh->mTangents[vertexID]);
-                    size = sizeof(pAiMesh->mTangents[0]);
                     break;
                 case VERTEX_BITANGENT_LOC:
                     pSrc = (uint8_t*)(&pAiMesh->mBitangents[vertexID]);

@@ -131,7 +131,7 @@ After this step, one can save these shading attributes, e.g., in a G-Buffer to p
 This routine also applies all material modifiers, like performs alpha test and applies a normal map.
 */
 void _fn prepareShadingAttribs(in const MaterialData material, in vec3 P, in vec3 camPos,
-    in vec3 normal, in vec3 tangent, in vec3 bitangent, in vec2 uv,
+    in vec3 normal, in vec3 bitangent, in vec2 uv,
 #ifdef _MS_USER_DERIVATIVES
     in const vec2 dPdx, in const vec2 dPdy,
 #else
@@ -198,10 +198,10 @@ void _fn prepareShadingAttribs(in const MaterialData material, in vec3 P, in vec
     _ref(ShadingAttribs) shAttr)
 {
     /* Generate an axis-aligned tangent frame */
-    vec3 tangent; vec3 bitangent;
-    createTangentFrame(normal, tangent, bitangent);
+    vec3 bitangent;
+    createTangentFrame(normal, bitangent);
 
-    prepareShadingAttribs(material, P, camPos, normal, tangent, bitangent, uv,
+    prepareShadingAttribs(material, P, camPos, normal, bitangent, uv,
 #ifdef _MS_USER_DERIVATIVES
         dPdx, dPdy,
 #else
@@ -217,9 +217,9 @@ void _fn prepareShadingAttribs(in const MaterialData material, in vec3 P, in vec
     prepareShadingAttribs(material, P, camPos, normal, uv, 0, shAttr);
 }
 
-void _fn prepareShadingAttribs(in const MaterialData material, in vec3 P, in vec3 camPos, in vec3 normal, in vec3 tangent, in vec3 bitangent, in vec2 uv, _ref(ShadingAttribs) shAttr)
+void _fn prepareShadingAttribs(in const MaterialData material, in vec3 P, in vec3 camPos, in vec3 normal, in vec3 bitangent, in vec2 uv, _ref(ShadingAttribs) shAttr)
 {
-    prepareShadingAttribs(material, P, camPos, normal, tangent, bitangent, uv, 0, shAttr);
+    prepareShadingAttribs(material, P, camPos, normal, bitangent, uv, 0, shAttr);
 }
 #endif
 
