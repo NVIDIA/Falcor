@@ -23,4 +23,4 @@ MultiPassPostProcess released3d12 : -test -ssframes 40 -shutdown 1000 -loadimage
 MultiPassPostProcess released3d12 : -test -ssframes 40 -shutdown 1000 -loadimage C:\\Users\\clavelle\\Desktop\\FalcorGitHub\\Media\\TestTex2.png -radialblur
 MultiPassPostProcess released3d12 : -test -ssframes 40 -shutdown 1000 -loadimage C:\\Users\\clavelle\\Desktop\\FalcorGitHub\\Media\\TestTex2.png -radialblur -grayscale
 ModelViewer released3d12 10 .10 : -test -loadtime -perfframes 250 1250 -ssframes 50 -shutdown 2500 -cameraradius 3 -loadmodel C:\\Users\\clavelle\\Desktop\\FalcorGitHub\\Media\\classroom-minimal.obj
-ModelViewer released3d12 10 .10 : -test -loadtime -perfframes 250 1250 -ssframes 50 -shutdown 2500 -cameraradius 700 -loadmodel C:\\Users\\clavelle\\Desktop\\FalcorGitHub\\Media\\sponza.obj
+ModelViewer released3d12 10 .10 : -test -loadtime -perfframes 50 250 -ssframes 300 -shutdown 325 -cameraradius 700 -loadmodel C:\Users\clavelle\Desktop\quantum\\qb_vs_textures_instances_v2_downscaled_4x.bin

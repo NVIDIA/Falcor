@@ -27,7 +27,7 @@ gDefaultLoadTimeMargin = 10
 #average pixel color difference
 gDefaultImageCompareMargin = 0.1
 #seconds
-gDefaultHangTimeDuration = 45
+gDefaultHangTimeDuration = 75
 
 class TestInfo(object):
     def determineIndex(self, generateReference):
@@ -156,7 +156,7 @@ def compareImages(resultObj, testInfo, numScreenshots):
         result = p.communicate()[0]
         spaceIndex = result.find(' ')
         resultValStr = result[:spaceIndex]
-		imagesDir = testInfo.getResultsDir() + '\\Images'
+        imagesDir = testInfo.getResultsDir() + '\\Images'
         try:
             resultVal = float(resultValStr)
         except:
