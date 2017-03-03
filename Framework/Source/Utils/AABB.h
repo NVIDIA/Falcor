@@ -69,12 +69,34 @@ namespace Falcor
             return BoundingBox::fromMinMax(newMin, newMax);
         }
 
-        static BoundingBox fromMinMax(const glm::vec3& min, const glm::vec3 max)
+        glm::vec3 getMinPos() const
+        {
+            return center - extent;
+        }
+
+        glm::vec3 getMaxPos() const
+        {
+            return center + extent;
+        }
+
+        glm::vec3 getSize() const
+        {
+            return extent*2.0f;
+        }
+
+
+        static BoundingBox fromMinMax(const glm::vec3& min, const glm::vec3& max)
         {
             BoundingBox box;
             box.center = (max + min) * glm::vec3(0.5f);
             box.extent = (max - min) * glm::vec3(0.5f);
             return box;
+        }
+
+        static BoundingBox fromUnion(const BoundingBox& bb0, const BoundingBox& bb1)
+        {
+
+            return BoundingBox::fromMinMax( min(bb0.getMinPos(), bb1.getMinPos()), max(bb0.getMaxPos(), bb1.getMaxPos()) );
         }
     };
 }

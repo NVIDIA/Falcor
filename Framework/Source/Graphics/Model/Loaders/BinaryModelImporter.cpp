@@ -110,27 +110,33 @@ namespace Falcor
             s.y = -s.y;
             t.y = -t.y;
 
-            float dirCorrection = (t.x * s.y - t.y * s.x) < 0.0f ? -1.0f : 1.0f;
-            // when t1, t2, t3 in same position in UV space, just use default UV direction.
-            if((s == glm::vec2(0, 0)) && (t == glm::vec2(0, 0)))
-            {
-                s.x = 0.0;
-                s.y = 1.0;
-                t.x = 1.0;
-                t.y = 0.0;
-            }
-
-            // tangent points in the direction where to positive X axis of the texture coord's would point in model space
-            // bitangent's points along the positive Y axis of the texture coord's, respectively
             glm::vec3 tangent;
             glm::vec3 bitangent;
-            tangent.x = (posDelta[1].x * s.y - posDelta[0].x * t.y) * dirCorrection;
-            tangent.y = (posDelta[1].y * s.y - posDelta[0].y * t.y) * dirCorrection;
-            tangent.z = (posDelta[1].z * s.y - posDelta[0].z * t.y) * dirCorrection;
 
-            bitangent.x = (posDelta[1].x * s.x - posDelta[0].x * t.x) * dirCorrection;
-            bitangent.y = (posDelta[1].y * s.x - posDelta[0].y * t.x) * dirCorrection;
-            bitangent.z = (posDelta[1].z * s.x - posDelta[0].z * t.x) * dirCorrection;
+            // when t1, t2, t3 in same position in UV space, just use default UV direction.
+            if((s == glm::vec2(0, 0)) || (t == glm::vec2(0, 0)))
+            {
+				const glm::vec3 &normal = V[0].normal;
+				if(abs(normal.x) > abs(normal.y))
+					bitangent = v3(normal.z, 0.f, -normal.x) / length(v2(normal.x, normal.z));
+				else
+					bitangent = v3(0.f, normal.z, -normal.y) / length(v2(normal.y, normal.z));
+				tangent = cross(bitangent, normal);
+            }
+			else
+			{
+				float dirCorrection = (t.x * s.y - t.y * s.x) < 0.0f ? -1.0f : 1.0f;
+
+				// tangent points in the direction where to positive X axis of the texture coord's would point in model space
+				// bitangent's points along the positive Y axis of the texture coord's, respectively
+				tangent.x = (posDelta[1].x * s.y - posDelta[0].x * t.y) * dirCorrection;
+				tangent.y = (posDelta[1].y * s.y - posDelta[0].y * t.y) * dirCorrection;
+				tangent.z = (posDelta[1].z * s.y - posDelta[0].z * t.y) * dirCorrection;
+
+				bitangent.x = (posDelta[1].x * s.x - posDelta[0].x * t.x) * dirCorrection;
+				bitangent.y = (posDelta[1].y * s.x - posDelta[0].y * t.x) * dirCorrection;
+				bitangent.z = (posDelta[1].z * s.x - posDelta[0].z * t.x) * dirCorrection;
+			}
 
             // store for every vertex of that face
             for(uint32_t i = 0; i < 3; i++)
@@ -139,6 +145,8 @@ namespace Falcor
                 glm::vec3 localTangent = tangent - V[i].normal * (glm::dot(tangent, V[i].normal));
                 localTangent = glm::normalize(localTangent);
                 glm::vec3 localBitangent = bitangent - V[i].normal * (glm::dot(bitangent, V[i].normal));
+                localBitangent = glm::normalize(localBitangent);
+                localBitangent = localBitangent - localTangent * (glm::dot(localBitangent, localTangent));
                 localBitangent = glm::normalize(localBitangent);
 
                 // reconstruct tangent/bitangent according to normal and bitangent/tangent when it's infinite or NaN.

@@ -72,7 +72,6 @@ private:
     Camera::SharedPtr mpCamera;
 
     bool mAnimate = false;
-    bool mCompressTextures = false;
     bool mGenerateTangentSpace = true;
     glm::vec3 mAmbientIntensity = glm::vec3(0.1f, 0.1f, 0.1f);
 

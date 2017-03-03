@@ -115,6 +115,7 @@ void SimpleCuda::onLoad()
 	//Load CUDA source kernel file as a module ready for execution
 	mCudaModule         = Cuda::CudaModule::create("SimpleCudaKernels.cu");
     mCudaModuleVertex   = Cuda::CudaModule::create("SimpleCudaKernelVertex.cu");
+
 }
 
 void SimpleCuda::onFrameRender()
@@ -165,9 +166,6 @@ void SimpleCuda::onFrameRender()
 			time = 0;
 			scale = 1.0f / scale; //Yes, this will not end well :)
 		}
-		/////////////
-
-		Cuda::CudaInterop::get().unmapCudaBuffer(buff); //Required
 	}
 
 	mpRenderContext->pushFbo( mDisplayFbo );
@@ -215,10 +213,11 @@ void SimpleCuda::onFrameRender()
 	mCudaModule->launchKernel("kernelProcessTexture", blockSize, gridSize, 
 						(cudaTextureObject_t&)cudaTex->getTextureObject(),
 						(cudaSurfaceObject_t&)cudaTex->getSurfaceObject(),
-						width, height);
-
-	//Unmap texture
-    Cuda::CudaInterop::get().unmapCudaTexture(mDisplayTexture); //Required
+						width, height, 
+                        glm::u8vec3(0,0,128)
+                        //glm::u8vec4(0,0,128, 0)   //Test runtime error checking
+                        //,42                       //Test runtime error checking
+                        );
 
 	////////////////////////////////////////
 

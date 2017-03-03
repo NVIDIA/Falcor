@@ -32,7 +32,6 @@
 #include <cuda.h>
 #include <cudaGL.h>				//Driver API
 #include <vector_types.h>
-#include <helper_cuda_drvapi.h>
 
 #include <unordered_map>
 

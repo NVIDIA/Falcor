@@ -51,8 +51,6 @@ namespace Cuda {
 	private:
 		CudaTexture()
         {   }
-		CudaTexture(const CUarray &cuArray) : mpCUArray(cuArray) 
-        {   }
 
 		/** Private constructor from a registered OpenGL texture.
 		*/
@@ -60,9 +58,10 @@ namespace Cuda {
 
 	protected:
 		CUgraphicsResource		mpCUGraphicsResource	= nullptr;
-		CUarray					mpCUArray				= nullptr;
+		CUarray		            mpCUArray				= nullptr;
+		CUmipmappedArray		mpCUMipArray			= nullptr;
 
-		CUDA_RESOURCE_DESC		mCUImgRessource;
+		CUDA_RESOURCE_DESC		mCUSurfRessource, mCUTexRessource;
 
 		std::unordered_map< uint32_t, CUtexObject >		mCUTexObjMap;
 
@@ -91,14 +90,6 @@ namespace Cuda {
 			Sampler is created based on provided parameters.
 		*/
 		CUtexObject &getTextureObject(bool accessUseNormalizedCoords = true, bool linearFiltering = false, Sampler::AddressMode addressMode = Sampler::AddressMode::Clamp);
-
-
-		/** Return the CUDA array structure.
-		*/
-		CUarray &getArray()
-        {
-			return mpCUArray;
-		}
 	};
 }
 }

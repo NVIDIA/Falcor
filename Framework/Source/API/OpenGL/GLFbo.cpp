@@ -156,12 +156,15 @@ namespace Falcor
             mIsDirty = false;
 
             // Check the status
-            GLenum FbStatus;
-            gl_call(FbStatus = glCheckNamedFramebufferStatus(mApiHandle, GL_DRAW_FRAMEBUFFER));
-            if((mApiHandle != 0) && FbStatus != GL_FRAMEBUFFER_COMPLETE)
+            if(mApiHandle != 0)
             {
-                logError("Incomplete framebuffer object");
-                return false;
+                GLenum FbStatus;
+                gl_call(FbStatus = glCheckNamedFramebufferStatus(mApiHandle, GL_DRAW_FRAMEBUFFER));
+                if(FbStatus != GL_FRAMEBUFFER_COMPLETE)
+                {
+                    logError("Incomplete framebuffer object");
+                    return false;
+                }
             }
         }
         return true;
@@ -276,7 +279,7 @@ namespace Falcor
         }
     }
 
-    void Fbo::captureToFile( uint32_t rtIndex, const std::string& filename, Bitmap::FileFormat fileFormat )
+    void Fbo::captureToFile( uint32_t rtIndex, const std::string& filename, Bitmap::FileFormat fileFormat, uint32_t exportFlags )
     {
         // Figure out the size of the buffer we'll need to pass to GL to store our buffer (and send to FreeImage)
         ResourceFormat format = mColorAttachments[rtIndex].pTexture->getFormat();
@@ -305,7 +308,7 @@ namespace Falcor
         // Restore the read FB
         gl_call(glBindFramebuffer(GL_READ_FRAMEBUFFER, boundFB));
 
-        Bitmap::saveImage(filename, mipWidth, mipHeight, fileFormat, bytesPerPixel, false, data.data());
+        Bitmap::saveImage(filename, mipWidth, mipHeight, fileFormat, exportFlags, bytesPerPixel, false, data.data());
     }
 
 

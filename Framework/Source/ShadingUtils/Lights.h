@@ -78,7 +78,11 @@ inline void _fn prepareLightAttribs(in const LightData Light, in const ShadingAt
     LightAttr.P = getLightPos(Light, ShAttr.P);
     LightAttr.pdf = 0;
     LightAttr.N = 0;
-
+    [unroll]
+    for(uint i = 0 ; i < 4 ; i++)
+    {
+        LightAttr.points[i] = 0;
+    }
     vec3 PosToLight = LightAttr.P - ShAttr.P;
     if(dot(PosToLight, PosToLight) > 1e-3f)
     {
@@ -120,6 +124,27 @@ inline void _fn prepareLightAttribs(in const LightData Light, in const ShadingAt
 
 		LightAttr.lightIntensity *= Atten;
 	}
+    // DISABLED_FOR_D3D12
+#if 0
+	if (Light.type == LightArea)
+	{
+		for (int index = 0; index < 4; index++)
+		{
+			// Access the geometry buffers
+#ifdef CUDA_CODE
+			optix::bufferId<vec3, 1> vertices(Light.vertexPtr.ptr);
+			// Get vertices pointed by the corresponding index
+			vec3 p0 = vertices[index];
+#else
+			float* vertices = (float*)(Light.vertexPtr.ptr);
+			// Get vertices pointed by the corresponding index
+			vec3 p0 = vec3(vertices[index * 3 + 0], vertices[index * 3 + 1], vertices[index * 3 + 2]);
+#endif
+			// Apply model instance transformation matrix
+			LightAttr.points[index] = v3(mul(Light.transMat, v4(p0, 1.0)));
+		}
+	}
+#endif
 }
 
 /**
@@ -226,4 +251,46 @@ void _fn sampleLight(in const vec3 shadingHitPos, in const LightData lData, cons
 #endif
 	}
 }
+
+/**
+This routine samples a rectangular area light source in a stratified way.
+*/
+void _fn stratifiedSampleRectangularAreaLight(in const vec3 shadingHitPos, in const LightData lData, const vec2 rSample, int x, int y, int numStrataX, int numStrataY, _ref(LightAttribs) lAttr)
+{
+	if (lData.type != LightArea)
+		return;
+
+	// Transform light position and light normal
+	vec3 lightPos = mul(lData.transMat, v4(lData.worldPos, 1.0f)).rgb;
+	lAttr.N = mul(lData.transMat, v4(lData.worldDir, 0.0f)).rgb;
+
+	// Transform tangent frame
+	vec3 transformedTangent = mul(lData.transMat, v4(lData.tangent, 0.0f)).rgb;
+	vec3 transformedBitangent = mul(lData.transMat, v4(lData.bitangent, 0.0f)).rgb;
+
+	float lightSizeY1 = length(transformedTangent);
+	float lightSizeY2 = length(transformedBitangent);
+
+	// Generate stratified samples
+	float y1 = ((x + rSample.x) / float(numStrataX) - 0.5f) * lightSizeY1;
+	float y2 = ((y + rSample.y) / float(numStrataY) - 0.5f) * lightSizeY2;
+
+	lAttr.P = lightPos + y1 * normalize(transformedTangent) + y2 * normalize(transformedBitangent);
+
+	vec3 PosToLight = lAttr.P - shadingHitPos;
+	float lDist = length(PosToLight);
+	lAttr.L = PosToLight / max(1e-3f, lDist);
+
+	lAttr.lightIntensity = lData.intensity;
+
+	// Compute the PDF
+	lAttr.pdf = lDist * lDist / (abs(dot(lAttr.N, lAttr.L)) * lData.surfaceArea);
+
+	// Set light's contribution
+    if (lAttr.pdf > 0.f && dot(lAttr.N, lAttr.L) < 0.f)
+        lAttr.lightIntensity /= lAttr.pdf;
+    else
+        lAttr.lightIntensity = 0;
+}
+
 #endif	// _FALCOR_LIGHTS_H_

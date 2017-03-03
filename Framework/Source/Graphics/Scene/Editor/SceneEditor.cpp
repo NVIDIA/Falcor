@@ -1034,7 +1034,7 @@ namespace Falcor
                 if (pGui->beginGroup(name.c_str()))
                 {
                     const auto& pLight = mpScene->getLight(i);
-                    pLight->setUiElements(pGui);
+                    pLight->renderUI(pGui);
 
                     if (pLight->getType() == LightPoint)
                     {

@@ -72,7 +72,7 @@ RT_PROGRAM void closest_hit_radiance()
     if(prd.depth == RAY_PRIMARY && gBounces > 1)
     {
         // Sample diffuse
-        uint seed = launch_index.x * 67 + 53 * launch_index.y + 71 * gFrameNumber;
+        uint seed = launch_index.x * 67 + 53 * launch_index.y + 71 * gIterationCount;
         vec3 wi = cosine_sample_hemisphere(rand_next(seed), rand_next(seed));
         vec3 outDir = toLocal(wi, shAttr.T, shAttr.B, shAttr.N);
         optix::Ray ray2 = optix::make_Ray(shAttr.P, outDir, 0, scene_epsilon, RT_DEFAULT_MAX);

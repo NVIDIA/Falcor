@@ -253,7 +253,7 @@ namespace Falcor
         return getLinePragma(line, filename);
     }
 
-    bool ShaderPreprocessor::addIncludes(std::string& code)
+    bool ShaderPreprocessor::addIncludes(std::string& code, Shader::unordered_string_set& includeFileList)
     {
         auto getDirAbs = [](const std::string& path) -> std::string 
         {
@@ -318,6 +318,9 @@ namespace Falcor
 
                 SUCCESS:;
             }
+
+            // Add the file to the include list
+            includeFileList.insert(includedPathAbs);
 
             // Read the included file.
             std::string includedContent;
@@ -963,14 +966,14 @@ namespace Falcor
         mDefineMap.clear();
     }
 
-    bool ShaderPreprocessor::parseShader(const std::string& filename, std::string& shader, std::string& errorMsg, const Program::DefineList& shaderDefines)
+    bool ShaderPreprocessor::parseShader(const std::string& filename, std::string& shader, std::string& errorMsg, Shader::unordered_string_set& includeFileList, const Program::DefineList& shaderDefines)
     {
         ShaderPreprocessor preProc(errorMsg);
 
         preProc.mShaderPathAbs = canonicalizeFilename(filename);
 
         // First, add include files as the rest of the directive might rely on their content
-        if(preProc.addIncludes(shader) &&
+        if(preProc.addIncludes(shader, includeFileList) &&
             preProc.addDefines(shader, shaderDefines) &&
             preProc.parseExpect(shader) &&
             preProc.parsePragmaBlock(shader, "#foreach", "#endforeach", generateForEachBody) &&

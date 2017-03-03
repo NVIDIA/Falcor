@@ -62,12 +62,12 @@ void ShaderBuffersSample::onLoad()
     float radius = mpModel->getRadius();
 
     float nearZ = 0.1f;
-    float farZ = radius * 10;
+    float farZ = radius * 100;
     mpCamera->setDepthRange(nearZ, farZ);
 
     // Initialize the camera controller
     mCameraController.attachCamera(mpCamera);
-    mCameraController.setModelParams(center, radius, radius * 10);
+    mCameraController.setModelParams(center, radius, radius * 2.5f);
 
     // create the uniform buffers
     mpProgramVars = GraphicsVars::create(mpProgram->getActiveVersion()->getReflector());

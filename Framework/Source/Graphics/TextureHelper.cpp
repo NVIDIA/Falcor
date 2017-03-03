@@ -683,38 +683,10 @@ namespace Falcor
 
         if(pBitmap)
         {
-            ResourceFormat texFormat;
-            switch(pBitmap->getBytesPerPixel())
+            ResourceFormat texFormat = pBitmap->getFormat();
+            if(loadAsSrgb)
             {
-            case 16:
-                texFormat = ResourceFormat::RGBA32Float;
-                break;
-            case 12:
-                texFormat = ResourceFormat::RGB32Float;
-                break;
-            case 8:
-                texFormat = ResourceFormat::RGBA16Float;
-                break;
-            case 6:
-                texFormat = ResourceFormat::RGB16Float;
-                break;
-            case 4:
-                texFormat = loadAsSrgb ? ResourceFormat::BGRA8UnormSrgb : ResourceFormat::BGRA8Unorm;
-                break;
-            case 3:
-                texFormat = loadAsSrgb ? ResourceFormat::BGRX8UnormSrgb : ResourceFormat::BGRX8Unorm;
-                break;
-            case 2:
-                no_srgb();
-                texFormat = ResourceFormat::RG8Unorm;
-                break;
-            case 1:
-                no_srgb();
-                texFormat = ResourceFormat::R8Unorm;
-                break;
-            default:
-                should_not_get_here();
-                break;
+                texFormat = linearToSrgbFormat(texFormat);
             }
 
             pTex = Texture::create2D(pBitmap->getWidth(), pBitmap->getHeight(), texFormat, 1, generateMipLevels ? Texture::kMaxPossible : 1, pBitmap->getData(), bindFlags);

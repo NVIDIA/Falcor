@@ -59,11 +59,11 @@ void Shadows::setLightIndex(int32_t index)
 {
     mControls.lightIndex = max(min(index, (int32_t)mpScene->getLightCount() - 1), 0);
     mpGui->removeGroup("Light");
-    mpScene->getLight(mControls.lightIndex)->setUiElements(mpGui.get(), "Light");
+    mpScene->getLight(mControls.lightIndex)->renderUI(mpGui.get(), "Light");
 
     mpGui->removeGroup("CSM");
 
-    mpCsmTech[mControls.lightIndex]->setUiElements(mpGui.get(), "CSM");
+    mpCsmTech[mControls.lightIndex]->renderUI(mpGui.get(), "CSM");
 }
 
 void Shadows::createScene(const std::string& filename)

@@ -37,6 +37,7 @@ namespace Falcor
     {
     public:
         using SharedPtr = std::shared_ptr<Buffer>;
+        using WeakPtr = std::weak_ptr<Buffer>;
         using SharedConstPtr = std::shared_ptr<const Buffer>;
         using inherit_shared_from_this<Resource, Buffer>::shared_from_this;
 

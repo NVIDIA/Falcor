@@ -62,7 +62,11 @@ namespace Falcor
 
         /** Set UI elements into a give GUI and UI group
         */
-        void setUiElements(Gui* pGui, const std::string& uiGroup);
+        void renderUI(Gui* pGui, const std::string& uiGroup);
+
+        /** Remove UI elements 
+        */
+        void removeUiElements(Gui* pGui, const std::string& uiGroup);
 
         /** Run the tone-mapping program
             \param pRenderContext Render-context to use

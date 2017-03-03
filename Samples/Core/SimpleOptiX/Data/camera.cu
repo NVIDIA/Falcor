@@ -58,8 +58,8 @@ RT_PROGRAM void pinhole()
     if(gSupersample != 0)
     {
         // 0th and 1st prime number corresponds to the 2,3 Halton sequence
-        offset.x = halton<0>(int(gFrameNumber));
-		offset.y = halton<1>(int(gFrameNumber));
+        offset.x = halton<0>(int(gIterationCount));
+		offset.y = halton<1>(int(gIterationCount));
     }
 
     float2 d = (v2(launch_index) + offset) / v2(launch_dim) * 2.f - 1.f;

@@ -34,6 +34,7 @@
 #include "Utils/StringUtils.h"
 #include <Shlwapi.h>
 #include <shlobj.h>
+#include <sys/types.h>
 #include "API/Window.h"
 
 // Always run in Optimus mode on laptops
@@ -88,6 +89,13 @@ namespace Falcor
     {
         DWORD attr = GetFileAttributesA(filename.c_str());
         return ((attr != INVALID_FILE_ATTRIBUTES) && (attr & FILE_ATTRIBUTE_DIRECTORY));
+    }
+
+    bool createDirectory(const std::string& path)
+    {
+        DWORD res = CreateDirectoryA(path.c_str(), NULL);
+
+        return res == TRUE;
     }
 
     const std::string& getExecutableDirectory()
@@ -439,5 +447,17 @@ namespace Falcor
             logWarning("setThreadPriority failed with error: " + std::string(err.begin(), err.end()));
             LocalFree(lpMsgBuf);
         }
+    }
+
+    time_t getFileModifiedTime(const std::string& filename)
+    {
+        struct stat s;
+        if(stat(filename.c_str(), &s) != 0)
+        {
+            logError("Can't get file time for '" + filename + "'");
+            return 0;
+        }
+
+        return s.st_mtime;
     }
 }

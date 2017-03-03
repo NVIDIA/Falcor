@@ -75,7 +75,7 @@ void ModelViewer::loadModelFromFile(const std::string& filename)
     CpuTimer timer;
     timer.update();
 
-    uint32_t flags = mCompressTextures ? Model::CompressTextures : 0;
+    uint32_t flags = 0;
     flags |= mGenerateTangentSpace ? Model::GenerateTangentSpace : 0;
     auto fboFormat = mpDefaultFBO->getColorTexture(0)->getFormat();
     flags |= isSrgbFormat(fboFormat) ? 0 : Model::AssumeLinearSpaceTextures;
@@ -130,7 +130,6 @@ void ModelViewer::onGuiRender()
     }
     if (mpGui->beginGroup("Load Options"))
     {
-        mpGui->addCheckBox("Compress Textures", mCompressTextures);
         mpGui->addCheckBox("Generate Tangent Space", mGenerateTangentSpace);
         if (mpGui->addButton("Export Model To Binary File"))
         {
@@ -158,12 +157,12 @@ void ModelViewer::onGuiRender()
         mpGui->addRgbColor("Ambient intensity", mAmbientIntensity);
         if (mpGui->beginGroup("Directional Light"))
         {
-            mpDirLight->setUiElements(mpGui.get());
+            mpDirLight->renderUI(mpGui.get());
             mpGui->endGroup();
         }
         if (mpGui->beginGroup("Point Light"))
         {
-            mpPointLight->setUiElements(mpGui.get());
+            mpPointLight->renderUI(mpGui.get());
             mpGui->endGroup();
         }
         mpGui->endGroup();

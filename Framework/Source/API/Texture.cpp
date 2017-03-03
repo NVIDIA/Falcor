@@ -27,6 +27,7 @@
 ***************************************************************************/
 #include "Framework.h"
 #include "API/Texture.h"
+#include "API/Device.h"
 
 namespace Falcor
 {
@@ -43,5 +44,22 @@ namespace Falcor
             mMipLevels = (uint32_t)bits + 1;
         }
         apiInit();
+    }
+
+    uint32_t Texture::getDataSize() const
+    {
+        uint32_t res = 0;
+        for(uint32_t l = 0; l < mMipLevels; l++)
+        {
+            res += getMipLevelDataSize(l);
+        }
+        return res;
+    }
+
+    void Texture::captureToFile(uint32_t mipLevel, uint32_t arraySlice, const std::string& filename, Bitmap::FileFormat format, Bitmap::ExportFlags exportFlags) const
+    {
+        uint32_t subresource = getSubresourceIndex(arraySlice, mipLevel);
+        std::vector<uint8> textureData = gpDevice->getRenderContext()->readTextureSubresource(this, subresource);
+        Bitmap::saveImage(filename, getWidth(mipLevel), getHeight(mipLevel), format, exportFlags, getFormat(), true, textureData.data());
     }
 }

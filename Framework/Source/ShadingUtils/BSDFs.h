@@ -335,13 +335,21 @@ float _fn sampleBeckmannDistribution(
 */
 float _fn sampleGGXDistribution(
 	in const vec3 wo,
-	in const vec2 roughness,
+	in vec2 roughness,
 	in const vec2 rSample,
 	_ref(vec3) m,
 	_ref(vec3) wi,
 	_ref(float) pdf)
 {
 	float alphaSqr = roughness.x * roughness.x;
+
+    const bool perfectSpecular = alphaSqr <= 1e-6f;
+
+    if(perfectSpecular)
+    {
+        alphaSqr = 0.f;
+        roughness = 0;
+    }
 
 	// Sample phi component
 	float temp = 2.f * M_PIf * rSample.y;
@@ -356,8 +364,10 @@ float _fn sampleGGXDistribution(
 	temp = 1.f + tanThetaMSqr / alphaSqr;
 	pdf = M_1_PIf / (roughness.x * roughness.y * cosThetaM * cosThetaM * cosThetaM * temp * temp);
 
-	// Sanity check
-	if (pdf < 1e-20f)
+	// Sanity checks
+    if(perfectSpecular)
+        pdf = 1.f;
+	else if (pdf < 1e-20f)
 		pdf = 0.f;
 
 	// Sample microfacet normal
@@ -374,7 +384,11 @@ float _fn sampleGGXDistribution(
 	if (wi.z <= 0.f || pdf <= 0.f)
 		return 0.f;
 
-	float weight = evalGGXDistribution(m, roughness) * dot(wo, m) / (pdf * wo.z);
+	float weight = evalGGXDistribution(m, roughness);
+    if(perfectSpecular)
+        weight = 1.f;
+    
+    weight *= dot(wo, m) / (pdf * wo.z);
 
 	// Cook-Torrance Jacobian
 	pdf /= 4.f * dot(wi, m);

@@ -91,7 +91,7 @@ void PostProcess::onGuiRender()
     }
     mpGui->addFloatVar("Surface Roughness", mSurfaceRoughness, 0.01f, 1000, 0.01f);
     mpGui->addFloatVar("Light Intensity", mLightIntensity, 0.5f, FLT_MAX, 0.1f);
-    mpToneMapper->setUiElements(mpGui.get(), "HDR");
+    mpToneMapper->renderUI(mpGui.get(), "HDR");
 }
 
 void PostProcess::renderMesh(const Mesh* pMesh, GraphicsProgram::SharedPtr pProgram, RasterizerState::SharedPtr pRastState, float scale)

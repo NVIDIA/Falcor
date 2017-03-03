@@ -60,7 +60,9 @@ namespace Falcor
         std::string shader = shaderString;
         std::string errorMsg;
 
-        if(ShaderPreprocessor::parseShader("", shader, errorMsg, shaderDefines) == false)
+        Shader::unordered_string_set includeList;
+
+        if(ShaderPreprocessor::parseShader("", shader, errorMsg, includeList, shaderDefines) == false)
         {
             std::string msg = std::string("Error when parsing shader from string. Code:\n") + shaderString + "\nError:\n" + errorMsg;
             logError(msg);
@@ -69,6 +71,8 @@ namespace Falcor
 
         std::string log;
         auto pShader = Shader::create(shader, shaderType, log);
+        pShader->setIncludeList(includeList);
+
         if(pShader == nullptr)
         {
             std::string msg = "Error when creating " + getShaderNameFromType(shaderType) + " shader from string\nError log:\n";
@@ -98,7 +102,8 @@ namespace Falcor
 
             // Preprocess
             std::string errorMsg;
-            if(ShaderPreprocessor::parseShader(fullpath, shader, errorMsg, shaderDefines) == false)
+            Shader::unordered_string_set includeList;
+            if(ShaderPreprocessor::parseShader(fullpath, shader, errorMsg, includeList, shaderDefines) == false)
             {
                 std::string msg = std::string("Error when pre-processing shader ") + filename + "\n" + errorMsg;
                 if(msgBox(msg, MsgBoxType::RetryCancel) == MsgBoxButton::Cancel)
@@ -126,6 +131,7 @@ namespace Falcor
                 }
                 else
                 {
+					pShader->setIncludeList(includeList);
                     return pShader;
                 }
             }

@@ -90,6 +90,10 @@ typedef float mat4_t[16];
 #ifndef mat4
 #define mat4 mat4_t
 #endif
+typedef float mat3_t [12];
+#ifndef mat3
+#define mat3 mat3_t
+#endif
 #define mul(mx, v) ((v) * (mx))
 _fn float clamp(float t, float mn, float mx) { return fminf(mx, fmaxf(mn, t)); }
 _fn vec2 clamp(vec2 t, vec2 mn, vec2 mx) { return fminf(mx, fmaxf(mn, t)); }
@@ -203,6 +207,7 @@ struct CameraData
 #define     MatDielectric      3            ///< A refractive dielectric material, if applied on top of others acts like a coating
 #define     MatEmissive        4            ///< An emissive material. Can be assigned to a geometry to create geometric a light source (will be supported only with ray tracing)
 #define     MatUser            5            ///< User-defined material, should be parsed and processed by user
+#define     MatNumTypes        (MatUser+1)  ///< Number of material types
 
 /** Type of used Normal Distribution Function (NDF). Options so far
     Beckmann distribution (original Blinn-Phong)
@@ -234,7 +239,7 @@ struct MaterialLayerDesc
     uint32_t    type            DEFAULTS(MatNone);             ///< Specifies a material Type: diffuse/conductor/dielectric/etc. None means there is no material
     uint32_t    ndf             DEFAULTS(NDFGGX);              ///< Specifies a model for normal distribution function (NDF): Beckmann, GGX, etc.
     uint32_t    blending        DEFAULTS(BlendAdd);            ///< Specifies how this layer should be combined with previous layers. E.g., blended based on Fresnel (useful for dielectric coatings), or just added on top, etc.
-    uint32_t    hasTexture      DEFAULTS(0);
+    uint32_t    hasTexture      DEFAULTS(0);                   ///< Specifies whether or not the material has textures. For dielectric and conductor layers this has special meaning - if the 2nd bit is on, it means we have roughness channel
 };
 
 struct MaterialLayerValues
@@ -244,6 +249,15 @@ struct MaterialLayerValues
     vec4     extraParam;                                   ///< Additional user parameter, can be IoR for conductor and dielectric
     vec3     pad             DEFAULTS(vec3(0, 0, 0));
     float    pmf             DEFAULTS(0.f);                 ///< Specifies the current value of the PMF of all layers. E.g., first layer just contains a probability of being selected, others accumulate further
+};
+
+/**
+    The auxiliary structure that provides the first occurrence of the layer by its type.
+*/
+struct LayerIdxByType
+{
+    vec3 pad;               // This is here due to HLSL alignment rules
+    int32_t id DEFAULTS(-1);
 };
 
 /**
@@ -257,6 +271,7 @@ struct MaterialDesc
     uint32_t            hasNormalMap    DEFAULTS(0);
     uint32_t            hasHeightMap    DEFAULTS(0);
     uint32_t            hasAmbientMap   DEFAULTS(0);
+    LayerIdxByType      layerIdByType[MatNumTypes];             ///< Provides a layer idx by its type, if there is no layer of this type, the idx is -1
 };
 
 struct MaterialValues
@@ -292,25 +307,25 @@ struct MaterialData
 */
 struct ShadingAttribs
 {
-    vec3    P;                ///< Shading hit position in world space
-    vec3    E;                ///< Direction to the eye at shading hit
-    vec3    N;                ///< Shading normal at shading hit
-    vec3    T;                ///< Shading tangent at shading hit
-    vec3    B;                ///< Shading bitangent at shading hit
-    vec2    UV;               ///< Texture mapping coordinates
+    vec3    P;                                  ///< Shading hit position in world space
+    vec3    E;                                  ///< Direction to the eye at shading hit
+    vec3    N;                                  ///< Shading normal at shading hit
+    vec3    T;                                  ///< Shading tangent at shading hit
+    vec3    B;                                  ///< Shading bitangent at shading hit
+    vec2    UV;                                 ///< Texture mapping coordinates
 
 #ifdef _MS_USER_DERIVATIVES
-    vec2    DPDX;
-    vec2    DPDY;             ///< User-provided 2x2 full matrix of duv/dxy derivatives of a shading point footprint in texture space
+    vec2    DPDX            DEFAULTS(v2(0, 0));                                  
+    vec2    DPDY            DEFAULTS(v2(0, 0)); ///< User-provided 2x2 full matrix of duv/dxy derivatives of a shading point footprint in texture space
 #else
-    float   lodBias;          ///< LOD bias to use when sampling textures
+    float   lodBias         DEFAULTS(0);        ///< LOD bias to use when sampling textures
 #endif
 
 #ifdef _MS_USER_HALF_VECTOR_DERIVATIVES
-    vec2    DHDX;
-    vec2    DHDY;             ///< User-defined half-vector derivatives
+    vec2    DHDX            DEFAULTS(v2(0, 0));
+    vec2    DHDY            DEFAULTS(v2(0, 0));  ///< User-defined half-vector derivatives
 #endif
-    MaterialData preparedMat; ///< Copy of the original material with evaluated parameters (i.e., textures are fetched etc.)
+    MaterialData preparedMat;                   ///< Copy of the original material with evaluated parameters (i.e., textures are fetched etc.)
     float aoFactor;
 };
 
@@ -333,18 +348,17 @@ struct LightData
     float           penumbraAngle      DEFAULTS(0.f);             ///< For point (spot) light: Opening angle of penumbra region in radians, usually does not exceed openingAngle. 0.f by default, meaning a spot light with hard cut-off
     vec3            aabbMax            DEFAULTS(v3(-1e20f));      ///< For area light: maximum corner of the AABB
     float           surfaceArea        DEFAULTS(0.f);             ///< Surface area of the geometry mesh
+	vec3            tangent            DEFAULTS(vec3());          ///< Tangent vector of the geometry mesh
+	uint32_t        numIndices         DEFAULTS(0);               ///< Number of triangle indices in a polygonal area light
+	vec3            bitangent          DEFAULTS(vec3());          ///< BiTangent vector of the geometry mesh
+	float           pad;
     mat4            transMat           DEFAULTS(mat4());          ///< Transformation matrix of the model instance for area lights
 
     // For area light
 // 	BufPtr          indexPtr;                                     ///< Buffer id for indices
 // 	BufPtr          vertexPtr;                                    ///< Buffer id for vertices
 // 	BufPtr          texCoordPtr;                                  ///< Buffer id for texcoord
-// 
 // 	BufPtr          meshCDFPtr;                                   ///< Pointer to probability distributions of triangle meshes
-    uint32_t        numIndices         DEFAULTS(0);               ///< Number of triangle indices in a polygonal area light
-    uint32_t        pad1               DEFAULTS(0);
-    uint32_t        pad2               DEFAULTS(0);
-    uint32_t        pad3               DEFAULTS(0);
 
     // Keep that last
     MaterialData    material;                                     ///< Emissive material of the geometry mesh

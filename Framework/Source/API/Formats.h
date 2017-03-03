@@ -265,6 +265,31 @@ namespace Falcor
 		}
 	}
 
+    /** Convert an linear format to sRGB. If the format doesn't have a matching sRGB format, will return the original
+    */
+    inline ResourceFormat linearToSrgbFormat(ResourceFormat format)
+    {
+        switch (format)
+        {
+        case ResourceFormat::BC1Unorm:
+            return ResourceFormat::BC1UnormSrgb;
+        case ResourceFormat::BC2Unorm:
+            return ResourceFormat::BC2UnormSrgb;
+        case ResourceFormat::BC3Unorm:
+            return ResourceFormat::BC3UnormSrgb;
+        case ResourceFormat::BGRA8Unorm:
+            return ResourceFormat::BGRA8UnormSrgb;
+        case ResourceFormat::BGRX8Unorm:
+            return ResourceFormat::BGRX8UnormSrgb;
+        case ResourceFormat::RGBA8Unorm:
+            return ResourceFormat::RGBA8UnormSrgb;
+        case ResourceFormat::RGBX8Unorm:
+            return ResourceFormat::RGBX8UnormSrgb;
+        default:
+            return format;
+        }
+    }
+
     inline const std::string& to_string(ResourceFormat format)
     {
         assert(kFormatDesc[(uint32_t)format].format == format);
