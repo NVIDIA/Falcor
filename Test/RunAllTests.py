@@ -156,18 +156,20 @@ def compareImages(resultObj, testInfo, numScreenshots):
         result = p.communicate()[0]
         spaceIndex = result.find(' ')
         resultValStr = result[:spaceIndex]
+		imagesDir = testInfo.getResultsDir() + '\\Images'
         try:
             resultVal = float(resultValStr)
         except:
             gFailReasonsList.append(('For test ' + testInfo.getFullName() + 
                 ' failed to compare screenshot ' + testScreenshot + ' with ref ' + refScreenshot +
                 ' instead of compare result, got \"' + resultValStr + '\" from larger string \"' + result + '\"'))
+            makeDirIfDoesntExist(imagesDir)
+            overwriteMove(testScreenshot, imagesDir)
             resultObj.CompareResults.append(-1)
             continue
         resultObj.CompareResults.append(resultVal)
         #if the images are sufficently different, save them in test results
         if resultVal > gDefaultImageCompareMargin:
-            imagesDir = testInfo.getResultsDir() + '\\Images'
             makeDirIfDoesntExist(imagesDir)
             overwriteMove(testScreenshot, imagesDir)
             overwriteMove(outFile, imagesDir)
