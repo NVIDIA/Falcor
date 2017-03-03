@@ -299,8 +299,9 @@ vec4 _fn evalSpecularLayer(in const MaterialLayerDesc desc, in const MaterialLay
     }
     else
     {
-        roughness = roughness.rg;
+        roughness = data.roughness.rg;
     }
+
 #ifdef _MS_FILTER_ROUGHNESS
     roughness = filterRoughness(shAttr, lAttr, roughness);
 #endif
