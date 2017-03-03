@@ -102,7 +102,7 @@ namespace Falcor
             if (SetupDiEnumDeviceInfo(devInfo, i, &devInfoData))
             {
                 TCHAR Instance[MAX_DEVICE_ID_LEN];
-                SetupDiGetDeviceInstanceId(devInfo, &devInfoData, Instance, MAX_PATH, NULL);
+                SetupDiGetDeviceInstanceId(devInfo, &devInfoData, Instance, MAX_DEVICE_ID_LEN, NULL);
 
                 CString sInstance(Instance);
 

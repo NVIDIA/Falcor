@@ -82,7 +82,7 @@ namespace Falcor
         bool createMaterialLayerBlend(const rapidjson::Value& jsonValue, MaterialLayerDesc& matLayer);
 
         bool createMaterialTexture(const rapidjson::Value& jsonValue, Texture::SharedPtr& pTexture);
-        bool createMaterialValueColor(const rapidjson::Value& jsonValue, glm::vec4& color);
+		bool createMaterialValueColor(const rapidjson::Value& jsonValue, glm::vec4& color);
 
 
         Scene* error(const std::string& msg);

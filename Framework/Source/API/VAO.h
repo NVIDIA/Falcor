@@ -38,6 +38,7 @@ namespace Falcor
     {
     public:
         using SharedPtr = std::shared_ptr<Vao>;
+        using WeakPtr = std::weak_ptr<Vao>;
         using SharedConstPtr = std::shared_ptr<const Vao>;
         /** Primitive topology
         */

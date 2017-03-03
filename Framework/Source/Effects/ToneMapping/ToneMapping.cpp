@@ -156,7 +156,7 @@ namespace Falcor
         mpLuminanceVars = GraphicsVars::create(mpLuminancePass->getProgram()->getActiveVersion()->getReflector());
     }
 
-    void ToneMapping::setUiElements(Gui* pGui, const std::string& uiGroup)
+    void ToneMapping::renderUI(Gui* pGui, const std::string& uiGroup)
     {
         if (pGui->beginGroup(uiGroup.c_str()))
         {
@@ -167,7 +167,7 @@ namespace Falcor
                 createToneMapPass(mOperator);
             }
 
-            pGui->addFloatVar("Exposure Key", mConstBufferData.exposureKey, 0.0001f, 10.0f);
+            pGui->addFloatVar("Exposure Key", mConstBufferData.exposureKey, 0.0001f, 200.0f);
             pGui->addFloatVar("Luminance LOD", mConstBufferData.luminanceLod, 0, 16, 0.025f);
             //Only give option to change these if the relevant operator is selected
             if (mOperator == Operator::ReinhardModified)

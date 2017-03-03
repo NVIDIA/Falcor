@@ -63,6 +63,58 @@ namespace Falcor
 
     Scene::~Scene() = default;
 
+//     void Scene::updateExtents()
+//     {
+//         if (mExtentsDirty)
+//         {
+//             mExtentsDirty = false;
+// 
+//             mRadius = 0.f;
+//             float k = 0.f;
+//             mCenter = vec3(0, 0, 0);
+//             for (uint32_t i = 0; i < getModelCount(); ++i)
+//             {
+//                 const auto& model = getModel(i);
+//                 const float r = model->getRadius();
+//                 const vec3 c = model->getCenter();
+//                 for (uint32_t j = 0; j < getModelInstanceCount(i); ++j)
+//                 {
+//                     const auto& inst = getModelInstance(i, j);
+//                     const vec3 instC = vec3(vec4(c, 1.f) * inst.transformMatrix);
+//                     const float instR = r * max(inst.scaling.x, max(inst.scaling.y, inst.scaling.z));
+// 
+//                     if (k == 0.f)
+//                     {
+//                         mCenter = instC;
+//                         mRadius = instR;
+//                     }
+//                     else
+//                     {
+//                         vec3 dir = instC - mCenter;
+//                         if (length(dir) > 1e-6f)
+//                             dir = normalize(dir);
+//                         vec3 a = mCenter - dir * mRadius;
+//                         vec3 b = instC + dir * instR;
+// 
+//                         mCenter = (a + b) * 0.5f;
+//                         mRadius = length(a - b);
+//                     }
+//                     k++;
+//                 }
+//             }
+// 
+//             // Update light extents
+//             for (auto& light : mpLights)
+//             {
+//                 if (light->getType() == LightDirectional)
+//                 {
+//                     auto pDirLight = std::dynamic_pointer_cast<DirectionalLight>(light);
+//                     pDirLight->setWorldParams(getCenter(), getRadius());
+//                 }
+//             }
+//         }
+//     }
+
     bool Scene::update(double currentTime, CameraController* cameraController)
     {
         for (auto& path : mpPaths)

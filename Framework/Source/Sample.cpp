@@ -77,7 +77,7 @@ namespace Falcor
         // Consume system messages first
         if(keyEvent.type == KeyboardEvent::Type::KeyPressed)
         {
-            if(keyEvent.mods.isShiftDown && keyEvent.key == KeyboardEvent::Key::PrintScreen)
+            if(keyEvent.mods.isShiftDown && keyEvent.key == KeyboardEvent::Key::F12)
             {
                 initVideoCapture();
             }
@@ -85,7 +85,7 @@ namespace Falcor
             {
                 switch(keyEvent.key)
                 {
-                case KeyboardEvent::Key::PrintScreen:
+                case KeyboardEvent::Key::F12:
                     mCaptureScreen = true;
                     break;
 #if _PROFILING_ENABLED
@@ -109,12 +109,13 @@ namespace Falcor
                     onDataReload();
                     break;
                 case KeyboardEvent::Key::Escape:
-                    mpWindow->shutdown();
-                    break;
-                case KeyboardEvent::Key::F12:
                     if(mVideoCapture.pVideoCapture)
                     {
                         endVideoCapture();
+                    }
+                    else
+                    {
+                        mpWindow->shutdown();
                     }
                     break;
                 }
@@ -220,8 +221,8 @@ namespace Falcor
             "  'F5'      - Reload shaders\n"
             "  'ESC'     - Quit\n"
             "  'V'       - Toggle VSync\n"
-            "  'PrtScr'  - Capture screenshot\n"
-            "  'Shift+PrtScr' - Video capture\n"
+            "  'F12'     - Capture screenshot\n"
+            "  'Shift+F12' - Video capture\n"
 #if _PROFILING_ENABLED
             "  'P'       - Enable profiling\n";
 #else
@@ -330,8 +331,7 @@ namespace Falcor
         if(findAvailableFilename(prefix, executableDir, "png", pngFile))
         {
             Texture::SharedPtr pTexture = gpDevice->getSwapChainFbo()->getColorTexture(0);
-            std::vector<uint8> textureData = mpRenderContext->readTextureSubresource(pTexture.get(), 0);
-            Bitmap::saveImage(pngFile, pTexture->getWidth(), pTexture->getHeight(), Bitmap::FileFormat::PngFile, pTexture->getFormat(), true, textureData.data());
+            pTexture->captureToFile(0, 0, pngFile);
         }
         else
         {
@@ -496,5 +496,10 @@ namespace Falcor
     void Sample::setWindowTitle(const std::string& title)
     {
         mpWindow->setWindowTitle(title);
+    }
+
+    void Sample::stopRenderLoop()
+    {
+        return mpWindow->close();
     }
 }

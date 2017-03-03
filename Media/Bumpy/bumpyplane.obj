@@ -6,7 +6,6 @@ mtllib bumpyplane.mtl
 #
 # object Plane01
 #
-
 v  -7.4238 -6.9851 -0.0000
 v  -7.4238 -7.6164 -0.0000
 v  -6.7988 -6.9851 -0.0000
@@ -1262,7 +1261,7 @@ vt 1.0000 1.0000 0.0000
 # 625 texture coords
 
 g Plane01
-usemtl wire_225087143
+usemtl bricks
 s 1
 f 1/1 2/2 3/3 
 f 4/4 3/3 2/2 

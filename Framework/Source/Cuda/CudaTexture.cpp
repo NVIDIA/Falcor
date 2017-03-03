@@ -26,35 +26,38 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 #include "CudaTexture.h"
+#include "CudaContext.h"
 
 namespace Falcor {
 namespace Cuda {
 
 	CudaTexture::CudaTexture(CUgraphicsResource &cuGraphicsResource) 
     {
-		cuGraphicsMapResources(1, &cuGraphicsResource, 0);
 		mpCUGraphicsResource = cuGraphicsResource;
 
-		cuGraphicsSubResourceGetMappedArray(&mpCUArray, cuGraphicsResource, 0, 0);
+        // Get the first mip for surface writes
+        checkFalcorCudaErrors(cuGraphicsSubResourceGetMappedArray(&mpCUArray, cuGraphicsResource, 0, 0));
+        memset(&mCUSurfRessource, 0, sizeof(CUDA_RESOURCE_DESC));
+        mCUSurfRessource.resType = CUresourcetype::CU_RESOURCE_TYPE_ARRAY;
+        mCUSurfRessource.res.array.hArray = mpCUArray;
 
-		memset(&mCUImgRessource, 0, sizeof(CUDA_RESOURCE_DESC));
-		mCUImgRessource.resType = CUresourcetype::CU_RESOURCE_TYPE_ARRAY;
-		mCUImgRessource.res.array.hArray = mpCUArray;
+        // Get the whole array for mip-mapped texture filtering
+		checkFalcorCudaErrors(cuGraphicsResourceGetMappedMipmappedArray(&mpCUMipArray, cuGraphicsResource));
+        memset(&mCUTexRessource, 0, sizeof(CUDA_RESOURCE_DESC));
+        mCUTexRessource.resType = CUresourcetype::CU_RESOURCE_TYPE_MIPMAPPED_ARRAY;
+        mCUTexRessource.res.mipmap.hMipmappedArray = mpCUMipArray;
 	}
 
 	CudaTexture::~CudaTexture()
     {
 		if (mpCUGraphicsResource != nullptr){
-			if (mCUTexObjMap.size() > 0){
-				//cuTexObjectDestroy(_cuTexObj);
-				for (auto it = mCUTexObjMap.begin(); it != mCUTexObjMap.end(); ++it)
-					cuTexObjectDestroy( it->second );
-			}
+            checkFalcorCudaErrors(cuGraphicsUnmapResources(1, &mpCUGraphicsResource, 0));
+
+            for(auto& it : mCUTexObjMap)
+				checkFalcorCudaErrors(cuTexObjectDestroy( it.second ));
 
 			if (mIsCUSurfObjCreated)
-				cuSurfObjectDestroy(mCUSurfObj);
-
-			cuGraphicsUnmapResources(1, &mpCUGraphicsResource, 0);
+				checkFalcorCudaErrors(cuSurfObjectDestroy(mCUSurfObj));
 		}
 	}
 
@@ -68,7 +71,7 @@ namespace Cuda {
     {
 		if (!mIsCUSurfObjCreated)
         {
-			cuSurfObjectCreate(&mCUSurfObj, &mCUImgRessource);
+			checkFalcorCudaErrors(cuSurfObjectCreate(&mCUSurfObj, &mCUSurfRessource));
 			mIsCUSurfObjCreated = true;
 		}
 
@@ -86,7 +89,8 @@ namespace Cuda {
 
 			cu_texDescr.flags = accessUseNormalizedCoords ? CU_TRSF_NORMALIZED_COORDINATES : 0;
 
-			cu_texDescr.filterMode = linearFiltering ? CU_TR_FILTER_MODE_LINEAR : CU_TR_FILTER_MODE_POINT;  //cudaFilterModeLinear
+            cu_texDescr.filterMode = linearFiltering ? CU_TR_FILTER_MODE_LINEAR : CU_TR_FILTER_MODE_POINT;  //cudaFilterModeLinear
+            cu_texDescr.mipmapFilterMode = linearFiltering ? CU_TR_FILTER_MODE_LINEAR : CU_TR_FILTER_MODE_POINT;  //cudaFilterModeLinear
 
 			CUaddress_mode addressmode = CU_TR_ADDRESS_MODE_CLAMP;
 			switch (addressMode){
@@ -112,8 +116,12 @@ namespace Cuda {
 			cu_texDescr.addressMode[1] = addressmode;
 			cu_texDescr.addressMode[2] = addressmode;
 
+            cu_texDescr.mipmapLevelBias = 0;
+            cu_texDescr.minMipmapLevelClamp = 0;
+            cu_texDescr.maxMipmapLevelClamp = 100;
+
 			CUtexObject	cuTexObj;
-			cuTexObjectCreate(&cuTexObj, &mCUImgRessource, &cu_texDescr, NULL);
+			checkFalcorCudaErrors(cuTexObjectCreate(&cuTexObj, &mCUTexRessource, &cu_texDescr, NULL));
 
 			mCUTexObjMap[hashVal] = cuTexObj;
 		}

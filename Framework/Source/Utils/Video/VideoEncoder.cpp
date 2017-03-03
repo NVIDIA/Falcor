@@ -108,27 +108,10 @@ namespace Falcor
         return false;
     }
 
-    AVStream* createVideoStream(AVFormatContext* pCtx, uint32_t width, uint32_t height, uint32_t fps, float bitrateMbps, uint32_t gopSize, AVCodecID codecID, const std::string& filename, AVCodec** ppCodec)
+    AVCodecContext* createCodecContext(AVFormatContext* pCtx, uint32_t width, uint32_t height, uint32_t fps, float bitrateMbps, uint32_t gopSize, AVCodecID codecID, AVCodec* pCodec)
     {
-        // Get the encoder
-        *ppCodec = avcodec_find_encoder(codecID);
-        if(*ppCodec == nullptr)
-        {
-            error(filename, std::string("Can't find ") + avcodec_get_name(codecID) + " encoder.");
-            return nullptr;
-        }
-
-        // create the video stream
-        AVStream* pStream = avformat_new_stream(pCtx, *ppCodec);
-        if(pStream == nullptr)
-        {
-            error(filename, "Failed to create video stream.");
-            return nullptr;
-        }
-        pStream->id = pCtx->nb_streams - 1;
-
         // Initialize the codec context
-        AVCodecContext* pCodecCtx = pStream->codec;
+        AVCodecContext* pCodecCtx = avcodec_alloc_context3(pCodec);
         pCodecCtx->codec_id = codecID;
         pCodecCtx->bit_rate = (int)(bitrateMbps * 1000 * 1000);
         pCodecCtx->width = width;
@@ -137,22 +120,68 @@ namespace Falcor
         pCodecCtx->gop_size = gopSize;
         pCodecCtx->pix_fmt = getPictureFormatFromCodec(codecID);
 
-        // Some formats want stream headers to be separate.
+        // Some formats want stream headers to be separate
         if(pCtx->oformat->flags & AVFMT_GLOBALHEADER)
         {
             pCodecCtx->flags |= CODEC_FLAG_GLOBAL_HEADER;
         }
 
+        return pCodecCtx;
+    }
+
+    AVStream* createVideoStream(AVFormatContext* pCtx, uint32_t fps, AVCodecID codecID, const std::string& filename, AVCodec*& pCodec)
+    {
+        // Get the encoder
+        pCodec = avcodec_find_encoder(codecID);
+        if(pCodec == nullptr)
+        {
+            error(filename, std::string("Can't find ") + avcodec_get_name(codecID) + " encoder.");
+            return nullptr;
+        }
+
+        // create the video stream
+        AVStream* pStream = avformat_new_stream(pCtx, nullptr);
+        if(pStream == nullptr)
+        {
+            error(filename, "Failed to create video stream.");
+            return nullptr;
+        }
+        pStream->id = pCtx->nb_streams - 1;
+        pStream->time_base = {1, (int)fps};
         return pStream;
     }
 
-    bool openVideo(AVCodec* pCodec, AVCodecContext* pCodecCtx, AVFrame** ppFrame, AVPicture* pYUVPicture, const std::string& filename)
+    AVFrame* allocateFrame(int format, uint32_t width, uint32_t height, const std::string& filename)
     {
-        if (pCodecCtx->codec_id == AV_CODEC_ID_H264)
+        AVFrame* pFrame = av_frame_alloc();
+        if(pFrame == nullptr)
+        {
+            error(filename, "Video frame allocation failed.");
+            return nullptr;
+        }
+
+        pFrame->format = format;
+        pFrame->width = width;
+        pFrame->height = height;
+        pFrame->pts = 0;
+
+        // Allocate the buffer for the encoded image
+        if(av_frame_get_buffer(pFrame, 32) < 0)
+        {
+            error(filename, "Can't allocate destination picture");
+            return nullptr;
+        }
+     
+        return pFrame;
+    }
+
+    bool openVideo(AVCodec* pCodec, AVCodecContext* pCodecCtx, AVFrame*& pFrame, const std::string& filename)
+    {
+        AVDictionary* param = nullptr;
+
+        if(pCodecCtx->codec_id == AV_CODEC_ID_H264)
         {
             // H.264 defaults to lossless currently. This should be changed in the future.
-
-            AVDictionary *param = nullptr;
             av_dict_set(&param, "qp", "0", 0);
             /*
             Change options to trade off compression efficiency against encoding speed. If you specify a preset, the changes it makes will be applied before all other parameters are applied.
@@ -160,43 +189,21 @@ namespace Falcor
             Values available: ultrafast, superfast, veryfast, faster, fast, medium, slow, slower, veryslow, placebo.
             */
             av_dict_set(&param, "preset", "veryslow", 0);
-            /*
-            Tune options to further optimize them for your input content. If you specify a tuning, the changes will be applied after --preset but before all other parameters.
-            If your source content matches one of the available tunings you can use this, otherwise leave unset.
-            Values available: film, animation, grain, stillimage, psnr, ssim, fastdecode, zerolatency.
-            */
-            av_dict_set(&param, "tune", "film", 0);
+        }
 
-            // Open the codec
-            if (avcodec_open2(pCodecCtx, pCodec, &param) < 0)
-            {
-                return error(filename, "Can't open video codec.");
-            }
-        }
-        else
+        // Open the codec
+        if(avcodec_open2(pCodecCtx, pCodec, &param) < 0)
         {
-            // Open the codec
-            if (avcodec_open2(pCodecCtx, pCodec, nullptr) < 0)
-            {
-                return error(filename, "Can't open video codec.");
-            }
+            return error(filename, "Can't open video codec.");
         }
+        av_dict_free(&param);
 
         // create a frame
-        *ppFrame = av_frame_alloc();
-        if(*ppFrame == nullptr)
+        pFrame = allocateFrame(pCodecCtx->pix_fmt, pCodecCtx->width, pCodecCtx->height, filename);
+        if(pFrame == nullptr)
         {
-            return error(filename, "Video frame allocation failed.");
+            return false;
         }
-
-        // Allocate the encoded picture
-        if(avpicture_alloc(pYUVPicture, pCodecCtx->pix_fmt, pCodecCtx->width, pCodecCtx->height) < 0)
-        {
-            return error(filename, "Can't allocate destination picture");
-        }
-
-        *((AVPicture*)(*ppFrame)) = *pYUVPicture;
-
         return true;
     }
 
@@ -228,7 +235,6 @@ namespace Falcor
     bool VideoEncoder::init(const Desc& desc)
     {
         // Register the codecs
-        avcodec_register_all();
         av_register_all();
 
         // create the output context
@@ -243,35 +249,33 @@ namespace Falcor
         AVOutputFormat* pOutputFormat = mpOutputContext->oformat;
         assert((pOutputFormat->flags & AVFMT_NOFILE) == 0); // Problem. We want a file.
 
-        // Set the codecs
-        pOutputFormat->video_codec = getCodecID(desc.codec);
-        pOutputFormat->audio_codec = AV_CODEC_ID_NONE;
-
         // create the video codec
         AVCodec* pVideoCodec;
-        mpOutputStream = createVideoStream(mpOutputContext, desc.width, desc.height, desc.fps, desc.bitrateMbps, desc.gopSize, pOutputFormat->video_codec, mFilename, &pVideoCodec);
+        mpOutputStream = createVideoStream(mpOutputContext, desc.fps, getCodecID(desc.codec), mFilename, pVideoCodec);
         if(mpOutputStream == nullptr)
         {
             return false;
         }
 
-        // Open the video stream
-        mpYUVPicture = new AVPicture;
-        if(openVideo(pVideoCodec, mpOutputStream->codec, &mpFrame, mpYUVPicture, mFilename) == false)
+        mpCodecContext = createCodecContext(mpOutputContext, desc.width, desc.height, desc.fps, desc.bitrateMbps, desc.gopSize, getCodecID(desc.codec), pVideoCodec);
+        if(mpCodecContext == nullptr)
         {
             return false;
         }
 
-        av_dump_format(mpOutputContext, 0, mFilename.c_str(), 1);
-
-        // Check/create a directory
-        const size_t lastSlashIdx = mFilename.find_last_of("\\/");
-        if(std::string::npos != lastSlashIdx)
+        // Open the video stream
+        if(openVideo(pVideoCodec, mpCodecContext, mpFrame, mFilename) == false)
         {
-            std::string dir = mFilename.substr(0, lastSlashIdx);
-            if(0 != _mkdir(dir.c_str()) && errno != EEXIST)
-                return error(mFilename, "Can't create output directory.");
+            return false;
         }
+
+        // copy the stream parameters to the muxer
+        if(avcodec_parameters_from_context(mpOutputStream->codecpar, mpCodecContext) < 0)
+        {
+            return error(desc.filename, "Could not copy the stream parameters\n");
+        }
+
+        av_dump_format(mpOutputContext, 0, mFilename.c_str(), 1);
 
         // Open the output file
         assert((pOutputFormat->flags & AVFMT_NOFILE) == 0); // No output file required. Not sure if/when this happens.
@@ -286,11 +290,6 @@ namespace Falcor
             return error(mFilename, "Can't write file header.");
         }
 
-        if(mpFrame)
-        {
-            mpFrame->pts = 0;
-        }
-
         mForamt = desc.format;
         mRowPitch = getInputFormatBytesPerPixel(desc.format) * desc.width;
         if(desc.flipY)
@@ -298,9 +297,7 @@ namespace Falcor
             mpFlippedImage = new uint8_t[desc.height * mRowPitch];
         }
 
-        AVPixelFormat pixFormat = getPictureFormatFromCodec(pOutputFormat->video_codec);
-
-        mpSwsContext = sws_getContext(desc.width, desc.height, getPictureFormatFromFalcorFormat(desc.format), desc.width, desc.height, pixFormat, SWS_POINT, nullptr, nullptr, nullptr);
+        mpSwsContext = sws_getContext(desc.width, desc.height, getPictureFormatFromFalcorFormat(desc.format), desc.width, desc.height, mpCodecContext->pix_fmt, SWS_POINT, nullptr, nullptr, nullptr);
         if(mpSwsContext == nullptr)
         {
             return error(mFilename, "Failed to allocate SWScale context");
@@ -308,34 +305,56 @@ namespace Falcor
         return true;
     }
 
+    bool flush(AVCodecContext* pCodecContext, AVFormatContext* pOutputContext, AVStream* pOutputStream, const std::string& filename)
+    {
+        while(true)
+        {
+            // Initialize the packet
+            AVPacket packet = {0};
+            av_init_packet(&packet);
+
+            int r = avcodec_receive_packet(pCodecContext, &packet);
+            if(r == AVERROR(EAGAIN) || r == AVERROR_EOF)
+            {
+                return true;
+            }
+            else if(r < 0)
+            {
+                error(filename, "Can't retrieve packet");
+                return false;
+            }
+
+            // rescale output packet timestamp values from codec to stream timebase
+            av_packet_rescale_ts(&packet, pCodecContext->time_base, pOutputStream->time_base);
+            packet.stream_index = pOutputStream->index;
+            r = av_interleaved_write_frame(pOutputContext, &packet);
+            if(r < 0)
+            {
+                char msg[1024];
+                av_make_error_string(msg, 1024, r);
+                error(filename, "Failed when writing encoded frame to file");
+                return false;
+            }
+        }
+    }
+
     void VideoEncoder::endCapture()
     {
-        if(mpOutputStream)
-        {
-            avcodec_close(mpOutputStream->codec);
-            mpOutputStream = nullptr;
-        }
-
-        if(mpYUVPicture)
-        {
-            av_free(mpYUVPicture->data[0]);
-            av_free(mpFrame);
-            safe_delete(mpYUVPicture);
-            mpFrame = nullptr;
-        }
-
         if(mpOutputContext)
         {
+            // Flush the codex
+            avcodec_send_frame(mpCodecContext, nullptr);
+            flush(mpCodecContext, mpOutputContext, mpOutputStream, mFilename);
+
             av_write_trailer(mpOutputContext);
-            avio_close(mpOutputContext->pb);
+
+            avio_closep(&mpOutputContext->pb);
+            avcodec_free_context(&mpCodecContext);
+            av_frame_free(&mpFrame);
+            sws_freeContext(mpSwsContext);
             avformat_free_context(mpOutputContext);
             mpOutputContext = nullptr;
-        }
-            
-        if(mpSwsContext)
-        {
-            sws_freeContext(mpSwsContext);
-            mpSwsContext = nullptr;
+            mpOutputStream = nullptr;
         }
         safe_delete(mpFlippedImage)
     }
@@ -345,44 +364,39 @@ namespace Falcor
         if(mpFlippedImage)
         {
             // Flip the image
-            for(int32_t h = 0; h < mpOutputStream->codec->height; h++)
+            for(int32_t h = 0; h < mpCodecContext->height; h++)
             {
                 const uint8_t* pSrc = (uint8_t*)pData + h * mRowPitch;
-                uint8_t* pDst = mpFlippedImage + (mpOutputStream->codec->height - 1 - h) * mRowPitch;
+                uint8_t* pDst = mpFlippedImage + (mpCodecContext->height - 1 - h) * mRowPitch;
                 memcpy(pDst, pSrc, mRowPitch);
             }
 
             pData = mpFlippedImage;
         }
 
-        // Convert input data to YUV
-        sws_scale(mpSwsContext, (uint8_t**)&pData, (int32_t*)&mRowPitch, 0, mpOutputStream->codec->height, mpYUVPicture->data, mpYUVPicture->linesize);
+        uint8_t* src[AV_NUM_DATA_POINTERS] = {0};
+        int32_t rowPitch[AV_NUM_DATA_POINTERS] = {0};
+        src[0] = (uint8_t*)pData;
+        rowPitch[0] = (int32_t)mRowPitch;
 
-        // Initialize the packet
-        AVPacket packet = {0};
-        av_init_packet(&packet);
-        int32_t gotPacket;
+        // Scale and convert the image
+        sws_scale(mpSwsContext, src, rowPitch, 0, mpCodecContext->height, mpFrame->data, mpFrame->linesize);
 
         // Encode the frame
-        if(avcodec_encode_video2(mpOutputStream->codec, &packet, mpFrame, &gotPacket) < 0)
+        int r = avcodec_send_frame(mpCodecContext, mpFrame);
+        mpFrame->pts++;
+        if(r == AVERROR(EAGAIN))
         {
-            error(mFilename, "Can't encode video frame");
-            return;
-        }
-
-        // If the size of the frame is zero, the frame was buffered
-        if(gotPacket && (packet.size > 0))
-        {
-            // Write the frame to the file
-            packet.stream_index = mpOutputStream->index;
-            if(av_interleaved_write_frame(mpOutputContext, &packet) < 0)
+            if(flush(mpCodecContext, mpOutputContext, mpOutputStream, mFilename) == false)
             {
-                error(mFilename, "Failed when writing encoded frame to file");
+                return;
             }
         }
-
-        mFrameCount++;
-        mpFrame->pts += av_rescale_q(1, mpOutputStream->codec->time_base, mpOutputStream->time_base);
+        else if(r < 0)
+        {
+            error(mFilename, "Can't send video frame");
+            return;
+        }
     }
 
     const std::string VideoEncoder::getSupportedContainerForCodec(CodecID codec)

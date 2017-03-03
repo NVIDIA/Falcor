@@ -26,6 +26,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 #include "CudaContext.h"
+#include <helper_cuda_drvapi.h>
 
 namespace Falcor {
     //TODO: find header where this is declared
@@ -56,6 +57,9 @@ namespace Cuda {
 
     void CudaContext::init(bool useGLDevice, int preferedDevice)
     {
+        if(mpCudaContext)
+            return;
+
 		const int kMaxDevices = 32;
 			
 		assert(preferedDevice<kMaxDevices);
@@ -84,9 +88,14 @@ namespace Cuda {
         checkCudaErrors(cuDeviceGetName(deviceName, 256, mpCudaDevice));
         Logger::log(Logger::Level::Info, "GPU Device has SM %d.%d compute capability:" + std::to_string(major) + "." +std::to_string(minor));
 
-        //Create context
-        cuCtxCreate(&mpCudaContext, CU_CTX_SCHED_AUTO, mpCudaDevice );
-
+        // Retain an existing context
+        checkCudaErrors(cuDevicePrimaryCtxRetain(&mpCudaContext, mpCudaDevice));
+        CUcontext context = 0;
+        checkCudaErrors(cuCtxGetCurrent(&context));
+        if(context != mpCudaContext)
+        {
+            checkCudaErrors(cuCtxSetCurrent(mpCudaContext));
+        }
 		//Add CUDA possible header locations paths//
 		const std::string cudaPathEnvVar = "CUDA_PATH_V7_5";
         std::string cudaPath;

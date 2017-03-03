@@ -24,7 +24,6 @@
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="Raytracing\Data\mesh.cu">
-      <CodeGeneration Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">compute_50,sm_50</CodeGeneration>
       <CompileOut Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(OutDir)\Data\%(Filename).ptx</CompileOut>
       <CompileOut Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(OutDir)\Data\%(Filename).ptx</CompileOut>
     </CudaCompile>
@@ -46,12 +45,12 @@
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>v120</PlatformToolset>
-    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <WholeProgramOptimization>false</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
-    <Import Project="$(VCTargetsPath)\BuildCustomizations\CUDA 7.5.props" />
+    <Import Project="$(VCTargetsPath)\BuildCustomizations\CUDA 8.0.props" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <Import Project="..\..\Framework\Source\Falcor.props" />
@@ -73,7 +72,9 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(FALCOR_PROJECT_DIR)\..\..\Internals\OptiX\include;$(FALCOR_PROJECT_DIR)\Externals\OptiX\include;$(CUDA_PATH_V8_0)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <MinimalRebuild>false</MinimalRebuild>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -87,15 +88,16 @@
     <CudaCompile />
     <CudaCompile>
       <TargetMachinePlatform>64</TargetMachinePlatform>
-      <CompileOut>$(IntDir)/%(Filename).ptx</CompileOut>
+      <CompileOut>$(ProjectDir)/Data/%(Filename).ptx</CompileOut>
       <AdditionalCompilerOptions>
       </AdditionalCompilerOptions>
       <FastMath>true</FastMath>
       <CudaRuntime>None</CudaRuntime>
       <GPUDebugInfo>false</GPUDebugInfo>
-      <CodeGeneration>compute_30,sm_30</CodeGeneration>
+      <CodeGeneration>compute_52,sm_52</CodeGeneration>
       <Include>$(FALCOR_PROJECT_DIR);$(FALCOR_PROJECT_DIR)\Source;$(FALCOR_PROJECT_DIR)\Source\Data;$(FALCOR_PROJECT_DIR)\Externals\GLM;%(Include)</Include>
     </CudaCompile>
+    <Lib />
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -107,6 +109,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -122,18 +125,19 @@
     <CudaCompile />
     <CudaCompile>
       <TargetMachinePlatform>64</TargetMachinePlatform>
-      <CompileOut>$(IntDir)/%(Filename).ptx</CompileOut>
+      <CompileOut>$(ProjectDir)/Data/%(Filename).ptx</CompileOut>
       <GPUDebugInfo>false</GPUDebugInfo>
       <AdditionalCompilerOptions>
       </AdditionalCompilerOptions>
       <FastMath>true</FastMath>
       <CudaRuntime>None</CudaRuntime>
-      <CodeGeneration>compute_50,sm_50</CodeGeneration>
+      <CodeGeneration>compute_52,sm_52</CodeGeneration>
       <Include>$(FALCOR_PROJECT_DIR);$(FALCOR_PROJECT_DIR)\Source;$(FALCOR_PROJECT_DIR)\Source\Data;$(FALCOR_PROJECT_DIR)\Externals\GLM;%(Include)</Include>
     </CudaCompile>
+    <Lib />
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
-    <Import Project="$(VCTargetsPath)\BuildCustomizations\CUDA 7.5.targets" />
+    <Import Project="$(VCTargetsPath)\BuildCustomizations\CUDA 8.0.targets" />
   </ImportGroup>
 </Project>

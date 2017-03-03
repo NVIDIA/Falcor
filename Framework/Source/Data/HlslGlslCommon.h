@@ -49,7 +49,7 @@ VECTOR(dvec, double);
 #undef VECTOR
 
 #define mat2 float2x2
-#define mat3 float2x2
+#define mat3 float3x3
 #define mat4 float4x4
 
 #define MATRIXNxM(n,m) typedef matrix<float, n, m> mat##n##x##m;

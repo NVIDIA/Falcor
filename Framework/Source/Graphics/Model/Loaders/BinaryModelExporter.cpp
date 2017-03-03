@@ -35,6 +35,7 @@
 #include "API/Texture.h"
 #include "BinaryImage.hpp"
 #include "Data/VertexAttrib.h"
+#include "API/Device.h"
 
 namespace Falcor
 {
@@ -112,8 +113,6 @@ namespace Falcor
             return AttribType_Position;
         else if(name == VERTEX_NORMAL_NAME)
             return AttribType_Normal;
-        else if(name == VERTEX_TANGENT_NAME)
-            return AttribType_Tangent;
         else if(name == VERTEX_BITANGENT_NAME)
             return AttribType_Bitangent;
         else if(name == VERTEX_DIFFUSE_COLOR_NAME)
@@ -463,8 +462,7 @@ namespace Falcor
         mStream << (int32_t)2 << (int32_t)width << (int32_t)height << bpp << (int32_t)0 << formatID << (int32_t)dataSize;
 
         // Write the data
-        std::vector<uint8_t> data(dataSize);
-        pTexture->readSubresourceData(data.data(), dataSize, 0, 0);
+        std::vector<uint8_t> data = gpDevice->getRenderContext()->readTextureSubresource(pTexture, 0);
         mStream.write(data.data(), dataSize);
         return true;
     }

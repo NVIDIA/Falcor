@@ -40,6 +40,7 @@ extern "C"
 
 namespace Falcor
 {
+#if 0
     float VideoDecoder::rationalToFloat(const AVRational& r)
     {
         return ((float)r.num / (float)r.den);
@@ -333,4 +334,5 @@ namespace Falcor
         if(mpFrameRGB)
             av_free(mpFrameRGB);
     }
+#endif
 }

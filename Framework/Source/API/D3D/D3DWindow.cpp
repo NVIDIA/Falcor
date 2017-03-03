@@ -409,4 +409,9 @@ namespace Falcor
     void Window::pollForEvents()
     {
     }
+
+    void Window::close() const
+    {
+        PostQuitMessage(0);
+    }
 }

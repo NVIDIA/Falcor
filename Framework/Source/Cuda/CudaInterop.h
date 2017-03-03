@@ -51,28 +51,20 @@ namespace Cuda {
 		void operator=(CudaInterop const&);
 	protected:
 
-		template<class FR, class FCR>
+		template<class FCR>
 		struct CuInteropMapVal 
         {
 			CUgraphicsResource		cudaGraphicsResource;
 
-			std::shared_ptr<FR>		pFalcorGraphicsResource		= nullptr;
-			std::shared_ptr<FCR>	pFalcorCudaGraphicsResource = nullptr;
-			
+			std::weak_ptr<FCR>	    pFalcorCudaGraphicsResource;
 		};
 
-		std::unordered_map< size_t, CuInteropMapVal<Falcor::Texture, Cuda::CudaTexture> >	mTextureMap;
-		std::unordered_map< size_t, CuInteropMapVal<Falcor::Buffer, Cuda::CudaBuffer> >		mBufferMap;
+		std::unordered_map< size_t, CuInteropMapVal<Cuda::CudaTexture> >	mTextureMap;
+		std::unordered_map< size_t, CuInteropMapVal<Cuda::CudaBuffer> >		mBufferMap;
 
 	public:
 		~CudaInterop()
         {	
-			for (auto it = mTextureMap.begin(); it != mTextureMap.end(); ++it)
-				cuGraphicsUnregisterResource(it->second.cudaGraphicsResource);
-
-			for (auto it = mBufferMap.begin(); it != mBufferMap.end(); ++it)
-				cuGraphicsUnregisterResource(it->second.cudaGraphicsResource);
-
 		}
 
 		/** Provides singleton instance.
@@ -83,19 +75,28 @@ namespace Cuda {
 			Texture must be OpenGL based.
 		*/
 		std::shared_ptr<Cuda::CudaTexture> getMappedCudaTexture(const Falcor::Texture::SharedConstPtr& tex);
-
-		/** Unmap a Falcor texture from Cuda. Must be called before accessing the texture again in GL.
+        
+		/** Bulk-map Falcor textures to Cuda if not mapped already, and provides the representing CudaTextures.
+			Textures must be OpenGL based.
 		*/
-        void unmapCudaTexture(const Falcor::Texture::SharedConstPtr& tex);
+        void getMappedCudaTextures(std::initializer_list<std::pair<Falcor::Texture::SharedConstPtr, Cuda::CudaTexture::SharedPtr*>> texturePairs);
+
+		/** Unregister a Falcor texture from Cuda.
+		*/
+        void unregisterCudaTexture(const Falcor::Texture* tex);
 	
 		/** Map a Falcor buffer to Cuda if not mapped already, and provides the representing CudaTexture.
 			Buffer must be OpenGL based.
 		*/
 		std::shared_ptr<Cuda::CudaBuffer> getMappedCudaBuffer(const Falcor::Buffer::SharedConstPtr& buff);
 
-		/** Unmap a Falcor texture from Cuda. Must be called before accessing the texture again in GL.
+		/** Unregister a Falcor texture from Cuda.
 		*/
-        void unmapCudaBuffer(const Falcor::Buffer::SharedConstPtr& buff);
+        void unregisterCudaBuffer(const Falcor::Buffer* buff);
+
+		/** Cleans up the resources on uninitialization.
+		*/
+		void uninit();
 	};
 
 }

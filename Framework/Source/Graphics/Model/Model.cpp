@@ -79,11 +79,6 @@ namespace Falcor
 
         if(pModel)
         {
-            if(flags & CompressTextures)
-            {
-                pModel->compressAllTextures();
-            }
-
             pModel->calculateModelProperties();
         }
 
@@ -365,23 +360,4 @@ namespace Falcor
         sModelCounter = 0;
         Mesh::resetGlobalIdCounter();
     }
-
-    void Model::compressAllTextures()
-    {
-        for (const auto& meshInstances : mMeshes)
-        {
-            const auto& pMaterial = meshInstances[0]->getObject()->getMaterial();
-
-            for (uint32_t i = 0; i < pMaterial->getNumLayers(); i++)
-            {
-                pMaterial->getLayer(i).pTexture->compress2DTexture();
-            }
-
-            // Don't compress normal maps
-            pMaterial->getAlphaMap()->compress2DTexture();
-            pMaterial->getAmbientOcclusionMap()->compress2DTexture();
-            pMaterial->getHeightMap()->compress2DTexture();
-        }
-    }
-
 }

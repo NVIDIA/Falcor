@@ -5,6 +5,7 @@ Bin/*
 *.sdf
 *.opensdf
 *.suo
-Falcor.VC.VC.opendb
+*.ptx
 Falcor.VC.db
 FalcorTest/TestResults/*
+Falcor.VC.VC.opendb

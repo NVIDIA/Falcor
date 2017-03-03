@@ -147,7 +147,11 @@ namespace Falcor
         */
         void setWindowTitle(const std::string& title);
         
-        /** Turn UI on and off. Settting this to false will disable UI rendering and will avoid calling the onGuiRender() callback
+        /** Stops the render loop. Use it to gracefully close the app
+        */
+        void stopRenderLoop();
+        
+        /** show/hide the UI
         */
         void toggleUI(bool showUI) { mShowUI = showUI; }
 

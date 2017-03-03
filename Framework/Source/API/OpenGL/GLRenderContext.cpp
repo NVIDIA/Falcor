@@ -510,6 +510,12 @@ namespace Falcor
         gl_call(glDrawElementsInstancedBaseVertexBaseInstance(glTopology, indexCount, GL_UNSIGNED_INT, (void*)(uintptr_t)offset, instanceCount, baseVertexLocation, startInstanceLocation));
     }
 
+    void RenderContext::dispatch(glm::u32vec3 numGroups)
+    {
+        prepareForDraw();
+        gl_call(glDispatchCompute(numGroups.x, numGroups.y, numGroups.z));
+    }
+
     void RenderContext::applyViewport(uint32_t index) const
     {
         const Viewport& vp = mState.viewports[index];

@@ -42,7 +42,7 @@ cbuffer PerFrameCB
 vec4 main(VS_OUT vOut) : SV_TARGET
 {
     ShadingAttribs shAttr;
-    prepareShadingAttribs(gMaterial, vOut.posW, gCam.position, vOut.normalW, vOut.tangentW, vOut.bitangentW, vOut.texC, shAttr);
+    prepareShadingAttribs(gMaterial, vOut.posW, gCam.position, vOut.normalW, vOut.bitangentW, vOut.texC, shAttr);
 
     ShadingOutput result;
     result.finalValue = 0;

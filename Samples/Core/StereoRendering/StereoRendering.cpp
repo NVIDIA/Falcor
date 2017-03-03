@@ -97,6 +97,7 @@ void StereoRendering::setRenderMode()
         std::string lights;
         getSceneLightString(mpScene.get(), lights);
         mpProgram->addDefine("_LIGHT_SOURCES", lights);
+        mpProgram->removeDefine("_SINGLE_PASS_STEREO");
         switch(mRenderMode)
         {
         case SceneRenderer::RenderMode::SinglePassStereo:

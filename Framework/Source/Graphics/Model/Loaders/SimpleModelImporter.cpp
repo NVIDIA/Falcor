@@ -174,8 +174,6 @@ namespace Falcor
             return VERTEX_DIFFUSE_COLOR_NAME;
         case AttribType::TexCoord:
             return VERTEX_TEXCOORD_NAME;
-        case AttribType::Tangent:
-            return VERTEX_TANGENT_NAME;
         case AttribType::Bitangent:
             return VERTEX_BITANGENT_NAME;
         case AttribType::BoneWeight:

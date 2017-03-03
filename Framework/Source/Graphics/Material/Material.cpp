@@ -124,6 +124,33 @@ namespace Falcor
         vals.pmf = layer.pmf;
         mDescDirty = true;
 
+        // Update the index by type
+        if(desc.type != MatNone && mData.desc.layerIdByType[desc.type].id == -1)
+        {
+            mData.desc.layerIdByType[desc.type].id = (int)numLayers;
+        }
+        
+        // For dielectric and conductors, check if we have roughness
+        if (layer.type == Layer::Type::Dielectric || layer.type == Layer::Type::Conductor)
+        {
+            if (desc.hasTexture)
+            {
+                ResourceFormat texFormat = layer.pTexture->getFormat();
+                if (getFormatChannelCount(texFormat) == 4)
+                {
+                    switch (texFormat)
+                    {
+                    case ResourceFormat::RGBX8Unorm:
+                    case ResourceFormat::RGBX8UnormSrgb:
+                    case ResourceFormat::BGRX8Unorm:
+                    case ResourceFormat::BGRX8UnormSrgb:
+                        break;
+                    default:
+                        desc.hasTexture |= 2;
+                    }
+                }
+            }
+        }
         return true;
     }
 
@@ -134,6 +161,7 @@ namespace Falcor
             assert(false);
             return;
         }
+
         const bool needCompaction = layerIdx + 1 < getNumLayers();
         mData.desc.layers[layerIdx].type = MatNone;
         mData.values.layers[layerIdx] = MaterialLayerValues();
@@ -152,6 +180,16 @@ namespace Falcor
                 memmove(&mData.values.layers[i], &mData.values.layers[i + 1], sizeof(mData.values.layers[0]));
                 mData.desc.layers[i+1].type = MatNone;
                 mData.values.layers[i+1] = MaterialLayerValues();
+            }
+        }
+
+        // Update indices by type
+        memset(&mData.desc.layerIdByType, -1, sizeof(mData.desc.layerIdByType));
+        for(int i = 0; i < MatMaxLayers - 1; ++i)
+        {
+            if(mData.desc.layers[i].type != MatNone && mData.desc.layerIdByType[mData.desc.layers[i].type].id != -1)
+            {
+                mData.desc.layerIdByType[mData.desc.layers[i].type].id = i;
             }
         }
 
@@ -288,6 +326,7 @@ namespace Falcor
             return;
         }
 
+        check_offset(values.layers[0].albedo);
         check_offset(values.id);
         assert(offset + dataSize <= pCB->getSize());
 
@@ -482,7 +521,17 @@ namespace Falcor
 //             }
 //         }
 //         shaderDcl += "},";
-//         shaderDcl += std::to_string(mData.desc.hasAlphaMap) + ',' + std::to_string(mData.desc.hasNormalMap) + ',' + std::to_string(mData.desc.hasHeightMap) + ',' + std::to_string(mData.desc.hasAmbientMap);
+//        shaderDcl += std::to_string(mData.desc.hasAlphaMap) + ',' + std::to_string(mData.desc.hasNormalMap) + ',' + std::to_string(mData.desc.hasHeightMap) + ',' + std::to_string(mData.desc.hasAmbientMap);
+//
+//        shaderDcl += "{";
+//        for(uint32_t layerType = 0; layerType < MatNumTypes; layerType++)
+//        {
+//            shaderDcl += "{" + std::to_string(mData.desc.layerIdByType[layerType].id) + "}";
+//            if(layerType != MatNumTypes - 1)
+//                shaderDcl += ',';
+//        }
+//        shaderDcl += "},";
+//        shaderDcl += "0,0"; // Padding
 //         shaderDcl += '}';
     }
 

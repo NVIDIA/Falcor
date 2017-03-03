@@ -67,7 +67,6 @@ namespace Falcor
         const glm::vec3* vertexNormalData,
         const glm::vec2* texCrdData,
         uint32_t texCrdCount,
-        glm::vec3* tangentData,
         glm::vec3* bitangentData)
     {
         // calculate the tangent and bitangent for every face
@@ -110,27 +109,33 @@ namespace Falcor
             s.y = -s.y;
             t.y = -t.y;
 
-            float dirCorrection = (t.x * s.y - t.y * s.x) < 0.0f ? -1.0f : 1.0f;
-            // when t1, t2, t3 in same position in UV space, just use default UV direction.
-            if((s == glm::vec2(0, 0)) && (t == glm::vec2(0, 0)))
-            {
-                s.x = 0.0;
-                s.y = 1.0;
-                t.x = 1.0;
-                t.y = 0.0;
-            }
-
-            // tangent points in the direction where to positive X axis of the texture coord's would point in model space
-            // bitangent's points along the positive Y axis of the texture coord's, respectively
             glm::vec3 tangent;
             glm::vec3 bitangent;
-            tangent.x = (posDelta[1].x * s.y - posDelta[0].x * t.y) * dirCorrection;
-            tangent.y = (posDelta[1].y * s.y - posDelta[0].y * t.y) * dirCorrection;
-            tangent.z = (posDelta[1].z * s.y - posDelta[0].z * t.y) * dirCorrection;
 
-            bitangent.x = (posDelta[1].x * s.x - posDelta[0].x * t.x) * dirCorrection;
-            bitangent.y = (posDelta[1].y * s.x - posDelta[0].y * t.x) * dirCorrection;
-            bitangent.z = (posDelta[1].z * s.x - posDelta[0].z * t.x) * dirCorrection;
+            // when t1, t2, t3 in same position in UV space, just use default UV direction.
+            if((s == glm::vec2(0, 0)) || (t == glm::vec2(0, 0)))
+            {
+				const glm::vec3 &normal = V[0].normal;
+				if(abs(normal.x) > abs(normal.y))
+					bitangent = v3(normal.z, 0.f, -normal.x) / length(v2(normal.x, normal.z));
+				else
+					bitangent = v3(0.f, normal.z, -normal.y) / length(v2(normal.y, normal.z));
+				tangent = cross(bitangent, normal);
+            }
+			else
+			{
+				float dirCorrection = (t.x * s.y - t.y * s.x) < 0.0f ? -1.0f : 1.0f;
+
+				// tangent points in the direction where to positive X axis of the texture coord's would point in model space
+				// bitangent's points along the positive Y axis of the texture coord's, respectively
+				tangent.x = (posDelta[1].x * s.y - posDelta[0].x * t.y) * dirCorrection;
+				tangent.y = (posDelta[1].y * s.y - posDelta[0].y * t.y) * dirCorrection;
+				tangent.z = (posDelta[1].z * s.y - posDelta[0].z * t.y) * dirCorrection;
+
+				bitangent.x = (posDelta[1].x * s.x - posDelta[0].x * t.x) * dirCorrection;
+				bitangent.y = (posDelta[1].y * s.x - posDelta[0].y * t.x) * dirCorrection;
+				bitangent.z = (posDelta[1].z * s.x - posDelta[0].z * t.x) * dirCorrection;
+			}
 
             // store for every vertex of that face
             for(uint32_t i = 0; i < 3; i++)
@@ -140,28 +145,20 @@ namespace Falcor
                 localTangent = glm::normalize(localTangent);
                 glm::vec3 localBitangent = bitangent - V[i].normal * (glm::dot(bitangent, V[i].normal));
                 localBitangent = glm::normalize(localBitangent);
+                localBitangent = localBitangent - localTangent * (glm::dot(localBitangent, localTangent));
+                localBitangent = glm::normalize(localBitangent);
 
                 // reconstruct tangent/bitangent according to normal and bitangent/tangent when it's infinite or NaN.
-                bool isInvalidTangent = isSpecialFloat(localTangent.x) || isSpecialFloat(localTangent.y) || isSpecialFloat(localTangent.z);
                 bool isInvalidBitangent = isSpecialFloat(localBitangent.x) || isSpecialFloat(localBitangent.y) || isSpecialFloat(localBitangent.z);
 
-                if(isInvalidTangent != isInvalidBitangent)
+                if (isInvalidBitangent)
                 {
-                    if(isInvalidTangent)
-                    {
-                        localTangent = glm::cross(V[i].normal, localBitangent);
-                        localTangent = glm::normalize(localTangent);
-                    }
-                    else
-                    {
-                        localBitangent = glm::cross(localTangent, V[i].normal);
-                        localBitangent = glm::normalize(localBitangent);
-                    }
+                    localBitangent = glm::cross(localTangent, V[i].normal);
+                    localBitangent = glm::normalize(localBitangent);
                 }
 
                 // and write it into the mesh
                 uint32_t index = indices[primID * 3 + i];
-                tangentData[index] = localTangent;
                 bitangentData[index] = localBitangent;
             }
         }
@@ -198,8 +195,6 @@ namespace Falcor
             return VERTEX_DIFFUSE_COLOR_NAME;
         case AttribType_TexCoord:
             return VERTEX_TEXCOORD_NAME;
-        case AttribType_Tangent:
-            return VERTEX_TANGENT_NAME;
         case AttribType_Bitangent:
             return VERTEX_BITANGENT_NAME;
         default:
@@ -268,8 +263,6 @@ namespace Falcor
             return VERTEX_DIFFUSE_COLOR_LOC;
         case AttribType_TexCoord:
             return VERTEX_TEXCOORD_LOC;
-        case AttribType_Tangent:
-            return VERTEX_TANGENT_LOC;
         case AttribType_Bitangent:
             return VERTEX_BITANGENT_LOC;
         default:
@@ -714,7 +707,6 @@ namespace Falcor
             const uint32_t kInvalidBufferIndex = (uint32_t)-1;
             uint32_t positionBufferIndex = kInvalidBufferIndex;
             uint32_t normalBufferIndex = kInvalidBufferIndex;
-            uint32_t tangentBufferIndex = kInvalidBufferIndex;
             uint32_t bitangentBufferIndex = kInvalidBufferIndex;
             uint32_t texCoordBufferIndex = kInvalidBufferIndex;
 
@@ -746,10 +738,6 @@ namespace Falcor
                         normalBufferIndex = i;
                         assert(falcorFormat == ResourceFormat::RGB32Float);
                         break;
-                    case VERTEX_TANGENT_LOC:
-                        tangentBufferIndex = i;
-                        assert(falcorFormat == ResourceFormat::RGB32Float);
-                        break;
                     case VERTEX_BITANGENT_LOC:
                         bitangentBufferIndex = i;
                         assert(falcorFormat == ResourceFormat::RGB32Float);
@@ -767,7 +755,7 @@ namespace Falcor
             
             // Check if we need to generate tangents  
             bool genTangentForMesh = false;
-            if(shouldGenerateTangents && (tangentBufferIndex == kInvalidBufferIndex) && (bitangentBufferIndex == kInvalidBufferIndex))
+            if(shouldGenerateTangents && (bitangentBufferIndex == kInvalidBufferIndex))
             {
                 if(normalBufferIndex == kInvalidBufferIndex)
                 {
@@ -782,16 +770,10 @@ namespace Falcor
                     }
                     // Set the offsets
                     genTangentForMesh = true;
-                    tangentBufferIndex = (uint32_t)pVBs.size();
                     bitangentBufferIndex = (uint32_t)pVBs.size() + 1;
                     pVBs.resize(bitangentBufferIndex + 1);
                     buffers.resize(bitangentBufferIndex + 1);
                    
-                    auto pTangentLayout = VertexBufferLayout::create();
-                    pLayout->addBufferLayout(tangentBufferIndex, pTangentLayout);
-                    pTangentLayout->addElement(VERTEX_TANGENT_NAME, 0, ResourceFormat::RGB32Float, 1, VERTEX_TANGENT_LOC);
-                    buffers[tangentBufferIndex].resize(sizeof(glm::vec3) * numVertices);
-
                     auto pBitangentLayout = VertexBufferLayout::create();
                     pLayout->addBufferLayout(bitangentBufferIndex, pBitangentLayout);
                     pBitangentLayout->addElement(VERTEX_BITANGENT_NAME, 0, ResourceFormat::RGB32Float, 1, VERTEX_BITANGENT_LOC);
@@ -928,14 +910,12 @@ namespace Falcor
 
                     if (posFormat == ResourceFormat::RGB32Float)
                     {
-                        generateSubmeshTangentData<glm::vec3>(indices, (glm::vec3*)buffers[positionBufferIndex].data(), (glm::vec3*)buffers[normalBufferIndex].data(), texCrd, texCrdCount, (glm::vec3*)buffers[tangentBufferIndex].data(), (glm::vec3*)buffers[bitangentBufferIndex].data());
+                        generateSubmeshTangentData<glm::vec3>(indices, (glm::vec3*)buffers[positionBufferIndex].data(), (glm::vec3*)buffers[normalBufferIndex].data(), texCrd, texCrdCount, (glm::vec3*)buffers[bitangentBufferIndex].data());
                     }
                     else if (posFormat == ResourceFormat::RGBA32Float)
                     {
-                        generateSubmeshTangentData<glm::vec4>(indices, (glm::vec4*)buffers[positionBufferIndex].data(), (glm::vec3*)buffers[normalBufferIndex].data(), texCrd, texCrdCount, (glm::vec3*)buffers[tangentBufferIndex].data(), (glm::vec3*)buffers[bitangentBufferIndex].data());
+                        generateSubmeshTangentData<glm::vec4>(indices, (glm::vec4*)buffers[positionBufferIndex].data(), (glm::vec3*)buffers[normalBufferIndex].data(), texCrd, texCrdCount, (glm::vec3*)buffers[bitangentBufferIndex].data());
                     }
-
-                    pVBs[tangentBufferIndex] = Buffer::create(buffers[tangentBufferIndex].size(), Buffer::BindFlags::Vertex, Buffer::CpuAccess::None, buffers[tangentBufferIndex].data());
 
                     pVBs[bitangentBufferIndex] = Buffer::create(buffers[bitangentBufferIndex].size(), Buffer::BindFlags::Vertex, Buffer::CpuAccess::None, buffers[bitangentBufferIndex].data());
                 }

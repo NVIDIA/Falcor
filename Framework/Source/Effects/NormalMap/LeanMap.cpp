@@ -30,6 +30,7 @@
 #include "Data/Effects/LeanMapData.h"
 #include "Graphics/Material/Material.h"
 #include "Graphics/Scene/Scene.h"
+#include "API/Device.h"
 
 namespace Falcor
 {
@@ -43,8 +44,7 @@ namespace Falcor
         leanData.resize(texW * texH);
 
         uint32_t normalMapDataSize = pNormalMap->getMipLevelDataSize(0);
-        std::vector<uint8_t> normalMapData(normalMapDataSize);
-        pNormalMap->readSubresourceData(normalMapData.data(), normalMapDataSize, 0, 0);
+        auto normalMapData = gpDevice->getRenderContext()->readTextureSubresource(pNormalMap, 0);
 
         const float oneBy255 = 1.0f / 255.0f;
         for(auto y = 0u; y < texH; y++)

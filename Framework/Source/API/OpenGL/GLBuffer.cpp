@@ -44,6 +44,7 @@ namespace Falcor
 
     Buffer::~Buffer()
     {
+        makeNonResident();
         glDeleteBuffers(1, &mApiHandle);
     }
 
@@ -109,14 +110,9 @@ namespace Falcor
         gl_call(glGetNamedBufferSubData(mApiHandle, offset, size, pData));
     }
 
-    uint64_t Buffer::getBindlessHandle()
+    uint64_t Buffer::getBindlessHandle(Buffer::GpuAccessFlags flags)
     {
-        if(mBindlessHandle == 0)
-        {
-            gl_call(glGetNamedBufferParameterui64vNV(mApiHandle, GL_BUFFER_GPU_ADDRESS_NV, &mBindlessHandle));
-            gl_call(glMakeNamedBufferResidentNV(mApiHandle, GL_READ_ONLY));
-        }
-        return mBindlessHandle;
+        return makeResident(flags);
     }
 
     void* Buffer::map(MapType Type)
@@ -184,7 +180,7 @@ namespace Falcor
     {
         if(mGpuPtr)
         {
-            gl_call(glMakeNamedBufferNonResidentNV(mApiHandle));
+            glMakeNamedBufferNonResidentNV(mApiHandle);
             mGpuPtr = 0;
         }
     }

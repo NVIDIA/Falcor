@@ -26,22 +26,23 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 #include "CudaBuffer.h"
+#include "CudaContext.h"
 
 namespace Falcor {
 namespace Cuda {
 
 	CudaBuffer::CudaBuffer(CUgraphicsResource &cuGraphicsResource) 
     {
-		cuGraphicsMapResources(1, &cuGraphicsResource, 0);
+		checkFalcorCudaErrors(cuGraphicsMapResources(1, &cuGraphicsResource, 0));
 		mpCUGraphicsResource = cuGraphicsResource;
-		cuGraphicsResourceGetMappedPointer(&mCUDevicePtr, &mBufferSize, cuGraphicsResource);
+		checkFalcorCudaErrors(cuGraphicsResourceGetMappedPointer(&mCUDevicePtr, &mBufferSize, cuGraphicsResource));
 	}
 
 	CudaBuffer::~CudaBuffer()
     {
 		if (mpCUGraphicsResource != nullptr)
         {
-			cuGraphicsUnmapResources(1, &mpCUGraphicsResource, 0);
+			checkFalcorCudaErrors(cuGraphicsUnmapResources(1, &mpCUGraphicsResource, 0));
 		}
 	}
 

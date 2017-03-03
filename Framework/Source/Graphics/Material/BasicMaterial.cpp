@@ -74,9 +74,8 @@ namespace Falcor
 
             layer.albedo = glm::vec4(specular, 1.f);
             layer.pTexture = pTextures[MapType::SpecularMap];
-
             layer.roughness = glm::vec4(convertShininessToRoughness(shininess));
-
+            
             /* Average chrome IoR and kappa */
             layer.extraParam = glm::vec4(3.f, 4.2f, 0.f, 0.f);
             pMaterial->addLayer(layer);
@@ -198,7 +197,7 @@ namespace Falcor
             IoR = layer.extraParam.x;
             if(layer.pTexture)
             {
-                logWarning("Material::GetObsoleteMaterial: Material " + pMaterial->getName() + " has an unsupported transparency texture");
+                logWarning("Material::initializeFromMaterial: Material " + pMaterial->getName() + " has an unsupported transparency texture");
             }
         }
 

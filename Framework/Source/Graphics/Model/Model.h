@@ -60,11 +60,10 @@ namespace Falcor
         enum
         {
             None,
-            CompressTextures            = 1,    ///< When loading textures, compress them if they are uncompressed
-            GenerateTangentSpace        = 2,    ///< Calculate tangent/bitangent vectors if they are missing. This require the model to have normals and texture coordinates
-            FindDegeneratePrimitives    = 4,    ///< Replace degenerate triangles/lines with lines/points. This can create a meshes with topology that wasn't present in the original model.
-            AssumeLinearSpaceTextures   = 8,    ///< By default, textures representing colors (diffuse/specular) are interpreted as sRGB data. Use this flag to force linear space for color textures.
-            DontMergeMeshes             = 16,   ///< Preserve the original list of meshes in the scene, don't merge meshes with the same material
+            GenerateTangentSpace        = 1,    ///< Calculate tangent/bitangent vectors if they are missing. This require the model to have normals and texture coordinates
+            FindDegeneratePrimitives    = 2,    ///< Replace degenerate triangles/lines with lines/points. This can create a meshes with topology that wasn't present in the original model.
+            AssumeLinearSpaceTextures   = 4,    ///< By default, textures representing colors (diffuse/specular) are interpreted as sRGB data. Use this flag to force linear space for color textures.
+            DontMergeMeshes             = 8,   ///< Preserve the original list of meshes in the scene, don't merge meshes with the same material
         };
 
         /** create a new model from file
@@ -260,6 +259,5 @@ namespace Falcor
         static uint32_t sModelCounter;
 
         void calculateModelProperties();
-        void compressAllTextures();
     };
 }

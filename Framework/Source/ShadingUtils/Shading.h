@@ -60,6 +60,8 @@ struct LightAttribs
     vec3    P;              ///< Sampled point on the light source
     vec3    N;              ///< Normal of the sampled point on the light source
 	float   pdf;            ///< Probability density function of sampling the light source
+
+    vec3    points[4];
 };
 
 /**
@@ -74,6 +76,9 @@ struct PassOutput
     vec3	diffuseIllumination;	///< Total view-independent outgoing radiance from one light before multiplication by albedo
     vec3	specularAlbedo;			///< Total view-dependent albedo (specular) color component of the material
     vec3	specularIllumination;	///< Total view-dependent outgoing radiance from one light before multiplication by albedo
+
+    vec2    roughness;              ///< Roughness from the last layer
+    vec2    effectiveRoughness;     ///< Accumulated effective roughness
 };
 
 /**
@@ -92,6 +97,8 @@ struct ShadingOutput
 	vec3    wi;                     ///< Incident direction after importance sampling the BRDF
 	float   pdf;                    ///< Probability density function for choosing the incident direction
 	vec3    thp;                    ///< Current path throughput
+
+	vec2    effectiveRoughness;     ///< Sampled brdf roughness, or for evaluated material, an effective roughness
 
 #ifdef CUDA_CODE
     _fn ShadingOutput()
@@ -124,7 +131,7 @@ After this step, one can save these shading attributes, e.g., in a G-Buffer to p
 This routine also applies all material modifiers, like performs alpha test and applies a normal map.
 */
 void _fn prepareShadingAttribs(in const MaterialData material, in vec3 P, in vec3 camPos,
-    in vec3 normal, in vec3 tangent, in vec3 bitangent, in vec2 uv,
+    in vec3 normal, in vec3 bitangent, in vec2 uv,
 #ifdef _MS_USER_DERIVATIVES
     in const vec2 dPdx, in const vec2 dPdy,
 #else
@@ -136,8 +143,8 @@ void _fn prepareShadingAttribs(in const MaterialData material, in vec3 P, in vec
     shAttr.P = P;
     shAttr.E = normalize(camPos - P);
     shAttr.N = normalize(normal);
-    shAttr.T = normalize(tangent);
-    shAttr.B = normalize(bitangent);
+    shAttr.B = normalize(bitangent - shAttr.N * (dot(bitangent, shAttr.N)));
+    shAttr.T = normalize(cross(shAttr.B, shAttr.N));
     shAttr.UV = uv;
 #ifdef _MS_USER_DERIVATIVES
     shAttr.DPDX = dPdx;
@@ -191,10 +198,10 @@ void _fn prepareShadingAttribs(in const MaterialData material, in vec3 P, in vec
     _ref(ShadingAttribs) shAttr)
 {
     /* Generate an axis-aligned tangent frame */
-    vec3 tangent; vec3 bitangent;
-    createTangentFrame(normal, tangent, bitangent);
+    vec3 bitangent;
+    createTangentFrame(normal, bitangent);
 
-    prepareShadingAttribs(material, P, camPos, normal, tangent, bitangent, uv,
+    prepareShadingAttribs(material, P, camPos, normal, bitangent, uv,
 #ifdef _MS_USER_DERIVATIVES
         dPdx, dPdy,
 #else
@@ -210,9 +217,9 @@ void _fn prepareShadingAttribs(in const MaterialData material, in vec3 P, in vec
     prepareShadingAttribs(material, P, camPos, normal, uv, 0, shAttr);
 }
 
-void _fn prepareShadingAttribs(in const MaterialData material, in vec3 P, in vec3 camPos, in vec3 normal, in vec3 tangent, in vec3 bitangent, in vec2 uv, _ref(ShadingAttribs) shAttr)
+void _fn prepareShadingAttribs(in const MaterialData material, in vec3 P, in vec3 camPos, in vec3 normal, in vec3 bitangent, in vec2 uv, _ref(ShadingAttribs) shAttr)
 {
-    prepareShadingAttribs(material, P, camPos, normal, tangent, bitangent, uv, 0, shAttr);
+    prepareShadingAttribs(material, P, camPos, normal, bitangent, uv, 0, shAttr);
 }
 #endif
 
@@ -228,11 +235,11 @@ vec4 _fn evalDiffuseLayer(in const MaterialLayerValues layer, in const vec3 ligh
     vec3 value = lightIntensity;
     float weight = 0;
     vec4 albedo = layer.albedo;
+    result.roughness = 1;
 #ifndef _MS_DISABLE_DIFFUSE
     value *= evalDiffuseBSDF(normal, lightDir);
     weight = albedo.w;
-    /* Implement Oren-Nayar and/or Eric's diffuse GGX here if required */
-    result.diffuseAlbedo += albedo.rgb;
+    result.diffuseAlbedo += albedo.rgb * layer.pmf;
     result.diffuseIllumination += value;
 #else
     value = 0;
@@ -275,23 +282,41 @@ vec4 _fn evalSpecularLayer(in const MaterialLayerDesc desc, in const MaterialLay
 {
 #ifndef _MS_DISABLE_SPECULAR
     /* Add albedo regardless of facing */
-    result.specularAlbedo += data.albedo.rgb;
+    result.specularAlbedo += data.albedo.rgb * data.pmf;
 
-    /* Ignore the layer if it's a transmission */
-    if(dot(lAttr.L, shAttr.N) <= 0.f)
+    /* Ignore the layer if it's a transmission or backfacing */
+    if (dot(lAttr.L, shAttr.N) * dot(shAttr.E, shAttr.N) <= 0.f)
     {
         return 0;
     }
 
     vec3 value = lAttr.lightIntensity;
 
-    vec2 roughness = v2(data.roughness.x, data.roughness.y);
+    vec2 roughness;
+    if(desc.hasTexture & 2)
+    {
+        roughness = v2(data.albedo.w, data.albedo.w);
+    }
+    else
+    {
+        roughness = data.roughness.rg;
+    }
+
 #ifdef _MS_FILTER_ROUGHNESS
     roughness = filterRoughness(shAttr, lAttr, roughness);
 #endif
+
+    // Respect perfect specular cutoff
+    if(max(roughness.x, roughness.y) < 1e-3f)
+    {
+        return 0;
+    }
+    
     // compute halfway vector
     const vec3 hW = normalize(shAttr.E + lAttr.L);
     const vec3 h = normalize(v3(dot(hW, shAttr.T), dot(hW, shAttr.B), dot(hW, shAttr.N)));
+
+    result.roughness = roughness;
 
     switch(desc.ndf)
     {
@@ -321,7 +346,6 @@ vec4 _fn evalSpecularLayer(in const MaterialLayerDesc desc, in const MaterialLay
     value *= F_term;
     float weight = F_term;
 
-    result.specularAlbedo += data.albedo.rgb;
     result.specularIllumination += value;
 
     return v4(value, weight);
@@ -381,7 +405,11 @@ void _fn evalMaterialLayer(in const int iLayer, in const ShadingAttribs attr, in
         break;
     };
 
+	vec3 oldValue = result.value;
     result.value = blendLayer(values.albedo, value, desc.blending, result.value);
+
+	float delta = max(1e-3f, luminance(result.value - oldValue));
+	result.effectiveRoughness += result.roughness * delta;
 }
 
 
@@ -421,6 +449,8 @@ void _fn evalMaterial(
     passResult.diffuseIllumination = 0;
     passResult.specularAlbedo = 0;
     passResult.specularIllumination = 0;
+    passResult.roughness = 0;
+    passResult.effectiveRoughness = 0;
     [unroll]
     for(uint iLayer = 0 ; iLayer < MatMaxLayers ; iLayer++)
     {
@@ -430,6 +460,7 @@ void _fn evalMaterial(
 
     /* Accumulate the results of the pass */
     result.finalValue += passResult.value;
+    result.effectiveRoughness += passResult.effectiveRoughness / max(1e-3f, luminance(passResult.value));
     result.diffuseIllumination += passResult.diffuseIllumination;
     result.specularIllumination += passResult.specularIllumination;
     result.diffuseAlbedo = passResult.diffuseAlbedo;
@@ -522,16 +553,12 @@ returns false if the layer is not found, true otherwise
 */
 bool _fn getLayerByType(in const MaterialData material, in const uint layerType, _ref(MaterialLayerValues) data, _ref(MaterialLayerDesc) desc)
 {
-    for(uint iLayer = 0 ; iLayer < MatMaxLayers ; iLayer++)
+    int layerId = material.desc.layerIdByType[layerType].id;
+    if(layerId != -1)
     {
-        if(material.desc.layers[iLayer].type == MatNone) break;
-
-        if(material.desc.layers[iLayer].type == layerType)
-        {
-            data = material.values.layers[iLayer];
-            desc = material.desc.layers[iLayer];
-            return true;
-        }
+        data = material.values.layers[layerId];
+        desc = material.desc.layers[layerId];
+        return true;
     }
     return false;
 }
@@ -544,10 +571,13 @@ returns black if the layer is not found, diffuse albedo color otherwise
 vec4 _fn getDiffuseColor(in const ShadingAttribs shAttr)
 {
     vec4 ret = 0;
-    MaterialLayerValues data;
-    MaterialLayerDesc   desc;
-    if(getLayerByType(shAttr.preparedMat, MatLambert, data, desc))
+    // This is here because the HLSL compiler complains about 'data' not being completely initialized when used
+    int layerId = shAttr.preparedMat.desc.layerIdByType[MatLambert].id;
+    if (layerId != -1)
     {
+        MaterialLayerValues data;
+        MaterialLayerDesc   desc;
+        getLayerByType(shAttr.preparedMat, MatLambert, data, desc);
         ret = data.albedo;
     }
     return ret;
@@ -561,16 +591,26 @@ returns true if succeeded
 bool _fn overrideDiffuseColor(_ref(ShadingAttribs) shAttr, const vec4 albedo, const bool allLayers = true)
 {
     bool found = false;
-    for(uint iLayer = 0 ; iLayer < MatMaxLayers ; iLayer++)
+    if(!allLayers)
     {
-        if(shAttr.preparedMat.desc.layers[iLayer].type == MatNone) break;
-
-        if(shAttr.preparedMat.desc.layers[iLayer].type == MatLambert)
+        int layerId = shAttr.preparedMat.desc.layerIdByType[MatLambert].id;
+        if(layerId != -1)
         {
-            shAttr.preparedMat.values.layers[iLayer].albedo = albedo;
             found = true;
-            if(!allLayers)
-                return true;
+            shAttr.preparedMat.values.layers[layerId].albedo = albedo;
+        }
+    }
+    else
+    {
+        for(uint iLayer = 0 ; iLayer < MatMaxLayers ; iLayer++)
+        {
+            if(shAttr.preparedMat.desc.layers[iLayer].type == MatNone) break;
+
+            if(shAttr.preparedMat.desc.layers[iLayer].type == MatLambert)
+            {
+                shAttr.preparedMat.values.layers[iLayer].albedo = albedo;
+                found = true;
+            }
         }
     }
     return found;
@@ -610,6 +650,8 @@ void _fn sampleMaterial(
 
 	// Set the initial path throughput
 	result.thp = 0;
+    result.diffuseAlbedo = 0;
+    result.specularAlbedo = 0;
 
 	// Sample specular layer if it exists
 	MaterialLayerValues specData;
@@ -629,7 +671,8 @@ void _fn sampleMaterial(
 			const vec2 roughness = v2(specData.roughness.x, specData.roughness.y);
 
 			// Set the specular reflectivity
-			result.thp = specData.albedo.rgb;
+			result.specularAlbedo = specData.albedo.rgb;
+            result.thp = result.specularAlbedo;
 
 			// Choose the appropriate normal distribution function
             switch(specDesc.ndf)
@@ -647,6 +690,10 @@ void _fn sampleMaterial(
 			break;
 			}
 
+            // Convert direction vector from local to global frame
+            // global space coordinates
+            result.wi = fromLocal(result.wi, shAttr.T, shAttr.B, shAttr.N);
+
 			// Evaluate standard microfacet model terms
             result.thp *= evalMicrofacetTerms(shAttr.T, shAttr.B, shAttr.N, m, shAttr.E, result.wi, roughness, specDesc.ndf, (specDesc.type) == MatDielectric);
 
@@ -656,6 +703,8 @@ void _fn sampleMaterial(
 			const float kappa = specData.extraParam.y;
             const float F_term = (specDesc.type == MatConductor) ? conductorFresnel(HoE, IoR, kappa) : 1.f - dielectricFresnel(HoE, IoR);
 			result.thp *= F_term;
+
+			result.effectiveRoughness = roughness;
 		}
         else
         {
@@ -671,18 +720,22 @@ void _fn sampleMaterial(
 		// Cosine lobe sampling
         result.wi = cosine_sample_hemisphere(rSample.x, rSample.y);
 
+        // Convert direction vector from local to global frame
+        // global space coordinates
+        result.wi = fromLocal(result.wi, shAttr.T, shAttr.B, shAttr.N);
+
 		// Ideally thp = (\rho / \pi) * |\omega_i . n| / bsdfPdf
 		// By importance sampling the cosine lobe, we can set bsdfPdf = |\omega_i . n| / \pi
 		// Thus, we can simplify thp = \rho
 		result.thp = getDiffuseColor(shAttr).rgb;
+		result.thp = result.diffuseAlbedo;
 
 		// Probability density function for perfect importance sampling of cosine lobe 
 		result.pdf = M_1_PIf;
-	}
 
-	// Convert direction vector from local to global frame
-	// global space coordinates
-	result.wi = fromLocal(result.wi, shAttr.T, shAttr.B, shAttr.N);
+		// Record roughness for diffuse brdf
+        result.effectiveRoughness = 1;
+	}
 }
 
 #endif	// _FALCOR_SHADING_H_

@@ -61,7 +61,7 @@ namespace Falcor
         /** create UI elements for this light.
             \param[in] pGui The GUI to create the elements with
         */
-        virtual void setUiElements(Gui* pGui);
+        virtual void renderUI(Gui* pGui);
 
         /**
             Prepare GPU data
@@ -133,7 +133,7 @@ namespace Falcor
         /** create UI elements for this light.
             \param[in] pGui The GUI to create the elements with
         */
-        void setUiElements(Gui* pGui) override;
+        void renderUI(Gui* pGui) override;
 
         /**
             Prepare GPU data
@@ -151,6 +151,10 @@ namespace Falcor
         /** Set the light intensity.
         */
         void setIntensity(const glm::vec3& intensity) { mData.intensity = intensity; }
+                
+        /** Set the scene parameters
+        */
+        void setWorldParams(const glm::vec3& center, float radius);
 
         /** Get the light's world-space direction.
         */
@@ -165,6 +169,9 @@ namespace Falcor
         void move(const glm::vec3& position, const glm::vec3& target, const glm::vec3& up) override;
 
     private:
+
+        float     mDistance = 1e3f;       ///< Scene bounding radius is required to move the light position sufficiently far away
+        vec3      mCenter;
     };
 
     /** Simple infinitely-small point light with quadratic attenuation
@@ -187,7 +194,7 @@ namespace Falcor
         /** create UI elements for this light.
             \param[in] pGui The GUI to create the elements with
         */
-        void setUiElements(Gui* pGui) override;
+        void renderUI(Gui* pGui) override;
 
         /**
             Prepare GPU data
@@ -285,7 +292,7 @@ namespace Falcor
 
             \param[in] pGui The GUI to create the elements with
         */
-        void setUiElements(Gui* pGui) override;
+        void renderUI(Gui* pGui) override;
 
         /**
             Prepare GPU data
@@ -417,6 +424,8 @@ namespace Falcor
         Buffer::SharedPtr              mMeshCDFBuf;         ///< Buffer id for mesh Cumulative distribution function (CDF)
 
         float                          mSurfaceArea;        ///< Surface area of the mesh
+		vec3                           mTangent;            ///< Unnormalized tangent vector of the light
+		vec3                           mBitangent;          ///< Unnormalized bitangent vector of the light
         std::vector<float>             mMeshCDF;            ///< CDF function for importance sampling a triangle mesh
     };
 }

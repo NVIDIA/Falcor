@@ -159,13 +159,12 @@ _fn float rand_next(_ref(uint) s)
 					Geometric routines
 *******************************************************************/
 
-void _fn createTangentFrame(in const vec3 normal, _ref(vec3) tangent, _ref(vec3) bitangent)
+void _fn createTangentFrame(in const vec3 normal, _ref(vec3) bitangent)
 {
 	if(abs(normal.x) > abs(normal.y))
 		bitangent = v3(normal.z, 0.f, -normal.x) / length(v2(normal.x, normal.z));
 	else
 		bitangent = v3(0.f, normal.z, -normal.y) / length(v2(normal.y, normal.z));
-	tangent = cross(bitangent, normal);
 }
 
 void _fn reflectFrame(vec3 n, vec3 reflect, _ref(vec3) t, _ref(vec3) b)
@@ -246,8 +245,8 @@ void _fn applyNormalMap(in vec3 texValue, _ref(vec3) n, _ref(vec3) t, _ref(vec3)
 	const vec3 normalMap = normalize(texValue);
 	n = fromLocal(normalMap, normalize(t), normalize(b), normalize(n));
     // Orthogonalize tangent frame
-    t = normalize(t - n * dot(t, n));
     b = normalize(b - n * dot(b, n));
+    t = normalize(cross(b, n));
 }
 
 // Forward declare it, just in case someone overrides it later

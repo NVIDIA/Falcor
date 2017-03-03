@@ -139,7 +139,8 @@ namespace Falcor
             should_not_get_here();
         }
 
-        mpResultFbo[mCurFbo]->getColorTexture(0)->readSubresourceData(&result, bytesToRead, 0, 0);
+        auto texData = pRenderCtx->readTextureSubresource(mpResultFbo[mCurFbo]->getColorTexture(0).get(), 0);
+        result = *(vec4*)texData.data();
         return result;
     }
 }

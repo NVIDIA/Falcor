@@ -47,7 +47,7 @@ CameraController& SimpleDeferred::getActiveCameraController()
 
 void SimpleDeferred::loadModelFromFile(const std::string& filename)
 {
-    uint32_t flags = mCompressTextures ? Model::CompressTextures : 0;
+    uint32_t flags = 0;
     flags |= mGenerateTangentSpace ? Model::GenerateTangentSpace : 0;
     auto fboFormat = mpDefaultFBO->getColorTexture(0)->getFormat();
     flags |= isSrgbFormat(fboFormat) ? 0 : Model::AssumeLinearSpaceTextures;
@@ -84,7 +84,6 @@ void SimpleDeferred::onGuiRender()
 
     if(mpGui->beginGroup("Load Options"))
     {
-        mpGui->addCheckBox("Compress Textures", mCompressTextures);
         mpGui->addCheckBox("Generate Tangent Space", mGenerateTangentSpace);
         mpGui->endGroup();
     }
@@ -108,12 +107,12 @@ void SimpleDeferred::onGuiRender()
         mpGui->addRgbColor("Ambient intensity", mAmbientIntensity);
         if(mpGui->beginGroup("Directional Light"))
         {
-            mpDirLight->setUiElements(mpGui.get());
+            mpDirLight->renderUI(mpGui.get());
             mpGui->endGroup();
         }
         if (mpGui->beginGroup("Point Light"))
         {
-            mpPointLight->setUiElements(mpGui.get());
+            mpPointLight->renderUI(mpGui.get());
             mpGui->endGroup();
         }
         mpGui->endGroup();
@@ -283,7 +282,7 @@ void SimpleDeferred::onFrameRender()
 
 void SimpleDeferred::onShutdown()
 {
-
+    mpModel.reset();
 }
 
 bool SimpleDeferred::onKeyEvent(const KeyboardEvent& keyEvent)
@@ -319,7 +318,6 @@ void SimpleDeferred::onResizeSwapChain()
     mpCamera->setFovY(float(M_PI / 3));
     mAspectRatio = (float(width) / float(height));
     mpCamera->setAspectRatio(mAspectRatio);
-
     // create G-Buffer
     const glm::vec4 clearColor(0.f, 0.f, 0.f, 0.f);
     Fbo::Desc fboDesc;

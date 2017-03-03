@@ -93,6 +93,32 @@ namespace Falcor
 		return kGlTextureTarget[texType];
 	}
 
+    /** Get the "natural" GLSL image string prefix
+    */
+    inline std::string getGlImagePrefixString(ResourceFormat format)
+    {
+        GlFormatDesc fdesc = kGlFormatDesc[(uint32_t)format];
+        assert(fdesc.format == format);
+
+        switch(fdesc.baseFormat)
+        {
+        case(GL_RED_INTEGER) :
+        case(GL_RG_INTEGER) :
+        case(GL_RGBA_INTEGER) :
+                              if((fdesc.type == GL_UNSIGNED_BYTE) || (fdesc.type == GL_UNSIGNED_SHORT) || (fdesc.type == GL_UNSIGNED_INT))
+                                  return "u";
+                              else
+                                  return "i";
+
+        case(GL_RGB_INTEGER) :
+            //Format not supported by images
+            should_not_get_here();
+        default:
+            return "";
+        }
+
+    }
+
     /*! @} */
 
     using TextureHandle             = GLuint;

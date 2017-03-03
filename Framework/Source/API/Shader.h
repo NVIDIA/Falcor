@@ -27,6 +27,7 @@
 ***************************************************************************/
 #pragma once
 #include <string>
+#include <unordered_set>
 
 namespace Falcor
 {
@@ -58,6 +59,14 @@ namespace Falcor
         */
         ShaderType getType() const { return mType; }
 
+        using unordered_string_set = std::unordered_set<std::string>;
+        /** Set the included file list
+        */
+        void setIncludeList(const unordered_string_set& includeList) { mIncludeList = includeList; }
+
+        /** Get the included file list
+        */
+        const unordered_string_set& getIncludeList() const { return mIncludeList; }
 #ifdef FALCOR_D3D
         ShaderReflectionHandle getReflectionInterface() const;
         ID3DBlobPtr getCodeBlob() const;
@@ -68,5 +77,6 @@ namespace Falcor
         ShaderType mType;
         ApiHandle mApiHandle;
         void* mpPrivateData = nullptr;
+        unordered_string_set mIncludeList;
     };
 }

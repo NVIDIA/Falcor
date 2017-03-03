@@ -106,6 +106,16 @@ namespace Falcor
         \return true if the file was found, otherwise false
     */
     bool doesFileExist(const std::string& filename);
+    
+    /** Checks if a directory exists in the file system.
+        \param[in] filename The directory to look for
+        \return true if the directory was found, otherwise false
+    */
+    bool isDirectoryExists(const std::string& filename);
+    
+    /** Create a directory from path.
+    */
+    bool createDirectory(const std::string& path);
 
     /** Get the current executable directory
         \return The full path of the application directory
@@ -190,6 +200,10 @@ namespace Falcor
     /** Sets thread affinity mask
     */
     void setThreadAffinity(std::thread::native_handle_type thread, uint32_t affinityMask);
+
+    /** Get the last time a file was modified. If the file is not found will return 0
+    */
+    time_t getFileModifiedTime(const std::string& filename);
 
     enum class ThreadPriorityType : int32_t
     {

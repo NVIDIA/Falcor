@@ -154,8 +154,7 @@ void SampleTest::captureScreen()
     if (findAvailableFilename(prefix, executableDir, "png", pngFile))
     {
         Texture::SharedPtr pTexture = gpDevice->getSwapChainFbo()->getColorTexture(0);
-        std::vector<uint8> textureData = gpDevice->getRenderContext()->readTextureSubresource(pTexture.get(), 0);
-        Bitmap::saveImage(pngFile, pTexture->getWidth(), pTexture->getHeight(), Bitmap::FileFormat::PngFile, pTexture->getFormat(), true, textureData.data());
+        pTexture->captureToFile(0, 0, pngFile);
     }
     else
     {

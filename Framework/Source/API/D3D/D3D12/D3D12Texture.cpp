@@ -238,16 +238,6 @@ namespace Falcor
         return 0;
     }
 
-    void Texture::readSubresourceData(void* pData, uint32_t dataSize, uint32_t mipLevel, uint32_t arraySlice) const
-    {
-        UNSUPPORTED_IN_D3D12("Texture::readSubresourceData");
-    }
-
-    void Texture::uploadSubresourceData(const void* pData, uint32_t dataSize, uint32_t mipLevel, uint32_t arraySlice)
-    {
-        UNSUPPORTED_IN_D3D12("Texture::uploadSubresourceData()");
-    }
-
     void Texture::compress2DTexture()
     {
         UNSUPPORTED_IN_D3D12("Texture::compress2DTexture");
