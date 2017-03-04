@@ -112,6 +112,7 @@ void Shadows::onLoad()
 {
     createScene("Scenes/dragonPlane.fscene");
     createVisualizationProgram();
+    init_tests();
 }
 
 void Shadows::runMainPass()
@@ -180,6 +181,7 @@ void Shadows::onFrameRender()
     }
 
     renderText(getFpsMsg(), glm::vec2(10, 10));
+    run_test();
 }
 
 void Shadows::onShutdown()
@@ -220,6 +222,41 @@ void Shadows::createVisualizationProgram()
     else
     {
         mShadowVisualizer.pProgramVars = GraphicsVars::create(mShadowVisualizer.pProgram->getProgram()->getActiveVersion()->getReflector());
+    }
+}
+
+void Shadows::onInitializeTestingArgs(const ArgList& args)
+{
+    std::vector<ArgList::Arg> filterFrames = mArgList.getValues("incrementFilter");
+    if (!filterFrames.empty())
+    {
+        mFilterFrames.resize(filterFrames.size());
+        for (uint32_t i = 0; i < filterFrames.size(); ++i)
+        {
+            mFilterFrames[i] = filterFrames[i].asUint();
+        }
+    }
+
+    //Set to first filter mode because it's going to be incrementing
+    mFilterFramesIt = mFilterFrames.begin();
+    for (uint32_t i = 0; i < mpScene->getLightCount(); i++)
+    {
+        mpCsmTech[i]->setFilterMode(CsmFilterPoint);
+    }
+}
+
+void Shadows::onRunTestTask(const FrameRate& fr)
+{
+    uint32_t frameId = fr.getFrameCount();
+    if (mFilterFramesIt != mFilterFrames.end() && frameId >= *mFilterFramesIt)
+    {
+        ++mFilterFramesIt;
+        uint32_t nextFilterMode = mpCsmTech[0]->getFilterMode() + 1;
+        nextFilterMode = min(nextFilterMode, static_cast<uint32_t>(CsmFilterStochasticPcf));
+        for (uint32_t i = 0; i < mpScene->getLightCount(); i++)
+        {
+            mpCsmTech[i]->setFilterMode(nextFilterMode);
+        }
     }
 }
 

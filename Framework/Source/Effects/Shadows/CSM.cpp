@@ -119,7 +119,6 @@ namespace Falcor
      
         glm::mat4 view = glm::lookAt(lightPos, lookat, up);
         float distFromCenter = glm::length(lightPos - center);
-        //todo z calculations are not correct. Fix at some point in the future
         float nearZ = max(0.1f, distFromCenter - radius);
         float maxZ = min(radius * 2, distFromCenter + radius);
         float angle = pLight->getOpeningAngle() * 2;

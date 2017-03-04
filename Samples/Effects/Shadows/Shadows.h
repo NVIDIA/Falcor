@@ -27,10 +27,11 @@
 ***************************************************************************/
 #pragma once
 #include "Falcor.h"
+#include "SampleTest.h"
 
 using namespace Falcor;
 
-class Shadows : public Sample
+class Shadows : public Sample, public SampleTest
 {
 public:
     void onLoad() override;
@@ -41,15 +42,13 @@ public:
     bool onMouseEvent(const MouseEvent& mouseEvent) override;
 
 private:
-    static void GUI_CALL getModelCB(void* pUserData);
-    static void GUI_CALL setModelCB(const void* pUserData);
-
     void onGuiRender() override;
     void displayShadowMap();
     void runMainPass();
     void createVisualizationProgram();
     void createScene(const std::string& filename);
     void displayLoadSceneDialog();
+    void setLightIndex(int32_t index);
 
     std::vector<CascadedShadowMaps::UniquePtr> mpCsmTech;
     Scene::SharedPtr mpScene;
@@ -97,5 +96,8 @@ private:
         glm::mat4 camVpAtLastCsmUpdate = glm::mat4();
     } mPerFrameCBData;
 
-    void setLightIndex(int32_t index);
+    void onInitializeTestingArgs(const ArgList& args) override;
+    void onRunTestTask(const FrameRate&) override;
+    std::vector<uint32_t> mFilterFrames;
+    std::vector<uint32_t>::iterator mFilterFramesIt;
 };

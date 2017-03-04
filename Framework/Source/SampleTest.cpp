@@ -105,6 +105,7 @@ void SampleTest::initializeTestingArgs(const ArgList& args)
     }
 
     mTestTaskIt = mTestTasks.begin();
+    onInitializeTestingArgs(args);
 }
 
 void SampleTest::runTestTask(const FrameRate& frameRate)
@@ -141,6 +142,8 @@ void SampleTest::runTestTask(const FrameRate& frameRate)
             }
         }
     }
+
+    onRunTestTask(frameRate);
 }
 
 void SampleTest::captureScreen()

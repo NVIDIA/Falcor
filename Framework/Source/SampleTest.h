@@ -45,10 +45,20 @@ public:
     */
     void initializeTestingArgs(const ArgList& args);
 
+    /** Callback for anything the testing sample wants to initialize
+    \param args the arg list object
+    */
+    virtual void onInitializeTestingArgs(const ArgList& args) {};
+
     /** Checks each frame against testing ranges to see if a testing task should be run and runs it
     \param frameRate the frame rate object to get frame times and frame count 
     */
     void runTestTask(const FrameRate& frameRate);
+    
+    /** Callback for anything the testing sample wants to do each frame 
+    \param frameRate the frame rate object to get frame count
+    */
+    virtual void onRunTestTask(const FrameRate& frameRate) {};
 
 private:
     /** Captures screen to a png, very similar to Sample::captureScreen

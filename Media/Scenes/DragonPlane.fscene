@@ -14,7 +14,7 @@
             "name": "plane",
             "instances": [
                 {
-                    "name": "Instance 0",
+                    "name": "Plane Instance 0",
                     "translation": [
                         0.0,
                         0.0,
@@ -38,7 +38,7 @@
             "name": "dragon",
             "instances": [
                 {
-                    "name": "Instance 0",
+                    "name": "Dragon Instance 0",
                     "translation": [
                         0.0,
                         0.2829999327659607,
