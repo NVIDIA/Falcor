@@ -185,15 +185,18 @@ namespace Falcor
             pProg->removeDefine("HAS_COLORS");
             for (const auto& l : mpBufferLayouts)
             {
-                for (uint32_t i = 0; i < l->getElementCount(); i++)
+                if(l)
                 {
-                    if (l->getElementShaderLocation(i) == VERTEX_TEXCOORD_LOC)
+                    for (uint32_t i = 0; i < l->getElementCount(); i++)
                     {
-                        pProg->addDefine("HAS_TEXCRD");
-                    }
-                    if (l->getElementShaderLocation(i) == VERTEX_DIFFUSE_COLOR_LOC)
-                    {
-                        pProg->addDefine("HAS_COLORS");
+                        if (l->getElementShaderLocation(i) == VERTEX_TEXCOORD_LOC)
+                        {
+                            pProg->addDefine("HAS_TEXCRD");
+                        }
+                        if (l->getElementShaderLocation(i) == VERTEX_DIFFUSE_COLOR_LOC)
+                        {
+                            pProg->addDefine("HAS_COLORS");
+                        }
                     }
                 }
             }

@@ -197,9 +197,11 @@ namespace Falcor
             return VERTEX_TEXCOORD_NAME;
         case AttribType_Bitangent:
             return VERTEX_BITANGENT_NAME;
+        case AttribType_Tangent:
+            return "unused";
         default:
             should_not_get_here();
-            return "";
+            return "unused";
         }
     }
 
@@ -251,6 +253,7 @@ namespace Falcor
         return ResourceFormat::Unknown;
     }
 
+    static const uint32_t kUnusedShaderElement = -1;
     static uint32_t getShaderLocation(AttribType type)
     {
         switch(type)
@@ -265,9 +268,11 @@ namespace Falcor
             return VERTEX_TEXCOORD_LOC;
         case AttribType_Bitangent:
             return VERTEX_BITANGENT_LOC;
+        case AttribType_Tangent:
+            return kUnusedShaderElement;
         default:
             should_not_get_here();
-            return 0;
+            return kUnusedShaderElement;
         }
     }
 
@@ -700,7 +705,15 @@ namespace Falcor
 
             Vao::BufferVec pVBs;
             VertexLayout::SharedPtr pLayout = VertexLayout::create();
-            std::vector<std::vector<uint8_t> > buffers;
+            
+            struct BufferData
+            {
+                std::vector<uint8_t> vec;
+                bool shouldSkip = false;
+                uint32_t elementSize = 0;
+            };
+
+            std::vector<BufferData> buffers;
             pVBs.resize(numAttribs);
             buffers.resize(numAttribs);
 
@@ -716,6 +729,7 @@ namespace Falcor
                 pLayout->addBufferLayout(i, pBufferLayout);
                 int32_t type, format, length;
                 mStream >> type >> format >> length;
+
                 if(type < 0 || type >= numAttributesType || format < 0 || format >= AttribFormat::AttribFormat_Max || length < 1 || length > 4)
                 {
                     std::string msg = "Error when loading model " + mModelName + ".\nCorrupted data.!";
@@ -747,8 +761,16 @@ namespace Falcor
                         break;
                     }
 
-                    pBufferLayout->addElement(falcorName, 0, falcorFormat, 1, shaderLocation);
-                    buffers[i].resize(pBufferLayout->getStride() * numVertices);
+                    buffers[i].elementSize = getFormatBytesPerBlock(falcorFormat);
+                    if(shaderLocation != kUnusedShaderElement)
+                    {
+                        pBufferLayout->addElement(falcorName, 0, falcorFormat, 1, shaderLocation);
+                        buffers[i].vec.resize(buffers[i].elementSize * numVertices);
+                    }
+                    else
+                    {
+                        buffers[i].shouldSkip = true;
+                    }
                 }
             }
 
@@ -759,44 +781,49 @@ namespace Falcor
             {
                 if(normalBufferIndex == kInvalidBufferIndex)
                 {
-                    logWarning("Can't generate tangent space for mesh " + std::to_string(meshIdx) + " when loading model " + mModelName + ".\nMesh doesn't contain normals or texture coordinates\n");
+                    logWarning("Can't generate tangent space for mesh " + std::to_string(meshIdx) + " when loading model " + mModelName + ".\nMesh doesn't contain normals coordinates\n");
                     genTangentForMesh = false;
                 }
                 else
                 {
-                    if(texCoordBufferIndex == kInvalidBufferIndex)
-                    {
-                        logWarning("No uv mapping is provided to generate tangent space for mesh " + std::to_string(meshIdx) + " when loading model " + mModelName + ".\nMesh doesn't contain normals or texture coordinates\n");
-                    }
                     // Set the offsets
                     genTangentForMesh = true;
-                    bitangentBufferIndex = (uint32_t)pVBs.size() + 1;
-                    pVBs.resize(bitangentBufferIndex + 1);
-                    buffers.resize(bitangentBufferIndex + 1);
+                    bitangentBufferIndex = (uint32_t)pVBs.size();
+                    pVBs.resize(bitangentBufferIndex);
+                    buffers.resize(bitangentBufferIndex);
                    
                     auto pBitangentLayout = VertexBufferLayout::create();
                     pLayout->addBufferLayout(bitangentBufferIndex, pBitangentLayout);
                     pBitangentLayout->addElement(VERTEX_BITANGENT_NAME, 0, ResourceFormat::RGB32Float, 1, VERTEX_BITANGENT_LOC);
-                    buffers[bitangentBufferIndex].resize(sizeof(glm::vec3) * numVertices);
+                    buffers[bitangentBufferIndex].vec.resize(sizeof(glm::vec3) * numVertices);
                 }
             }
             
 
-            // Read the data
-            // Read one vertex at a time
+            // Read the data, one vertex at a time
             for(int32_t i = 0; i < numVertices; i++)
             {
                 for (int32_t attributes = 0; attributes < numAttribs; ++attributes)
                 {
-                    uint32_t stride = pLayout->getBufferLayout(attributes)->getStride();
-                    uint8_t* pDest = buffers[attributes].data() + stride * i;
-                    mStream.read(pDest, stride);
+                    if (buffers[attributes].shouldSkip)
+                    {
+                        mStream.skip(buffers[attributes].elementSize);
+                    }
+                    else
+                    {
+                        uint32_t stride = pLayout->getBufferLayout(attributes)->getStride();
+                        uint8_t* pDest = buffers[attributes].vec.data() + stride * i;
+                        mStream.read(pDest, stride);
+                    }
                 }
             }
 
             for (int32_t i = 0; i < numAttribs; ++i)
             {
-                pVBs[i] = Buffer::create(buffers[i].size(), Buffer::BindFlags::Vertex, Buffer::CpuAccess::None, buffers[i].data());
+                if(buffers[i].shouldSkip == false)
+                {
+                    pVBs[i] = Buffer::create(buffers[i].vec.size(), Buffer::BindFlags::Vertex, Buffer::CpuAccess::None, buffers[i].vec.data());
+                }
             }
 
             if(version <= 5)
@@ -903,21 +930,21 @@ namespace Falcor
                     if(texCoordBufferIndex != kInvalidBufferIndex)
                     {
                         texCrdCount = pLayout->getBufferLayout(texCoordBufferIndex)->getStride() / sizeof(glm::vec2);
-                        texCrd = (glm::vec2*)buffers[texCoordBufferIndex].data();
+                        texCrd = (glm::vec2*)buffers[texCoordBufferIndex].vec.data();
                     }
 
                     ResourceFormat posFormat = pLayout->getBufferLayout(positionBufferIndex)->getElementFormat(0);
 
                     if (posFormat == ResourceFormat::RGB32Float)
                     {
-                        generateSubmeshTangentData<glm::vec3>(indices, (glm::vec3*)buffers[positionBufferIndex].data(), (glm::vec3*)buffers[normalBufferIndex].data(), texCrd, texCrdCount, (glm::vec3*)buffers[bitangentBufferIndex].data());
+                        generateSubmeshTangentData<glm::vec3>(indices, (glm::vec3*)buffers[positionBufferIndex].vec.data(), (glm::vec3*)buffers[normalBufferIndex].vec.data(), texCrd, texCrdCount, (glm::vec3*)buffers[bitangentBufferIndex].vec.data());
                     }
                     else if (posFormat == ResourceFormat::RGBA32Float)
                     {
-                        generateSubmeshTangentData<glm::vec4>(indices, (glm::vec4*)buffers[positionBufferIndex].data(), (glm::vec3*)buffers[normalBufferIndex].data(), texCrd, texCrdCount, (glm::vec3*)buffers[bitangentBufferIndex].data());
+                        generateSubmeshTangentData<glm::vec4>(indices, (glm::vec4*)buffers[positionBufferIndex].vec.data(), (glm::vec3*)buffers[normalBufferIndex].vec.data(), texCrd, texCrdCount, (glm::vec3*)buffers[bitangentBufferIndex].vec.data());
                     }
 
-                    pVBs[bitangentBufferIndex] = Buffer::create(buffers[bitangentBufferIndex].size(), Buffer::BindFlags::Vertex, Buffer::CpuAccess::None, buffers[bitangentBufferIndex].data());
+                    pVBs[bitangentBufferIndex] = Buffer::create(buffers[bitangentBufferIndex].vec.size(), Buffer::BindFlags::Vertex, Buffer::CpuAccess::None, buffers[bitangentBufferIndex].vec.data());
                 }
                 
 
@@ -926,7 +953,7 @@ namespace Falcor
                 for(uint32_t i = 0; i < numIndices; i++)
                 {
                     uint32_t vertexID = indices[i];
-                    uint8_t* pVertex = (pLayout->getBufferLayout(positionBufferIndex)->getStride() * vertexID) + buffers[positionBufferIndex].data();
+                    uint8_t* pVertex = (pLayout->getBufferLayout(positionBufferIndex)->getStride() * vertexID) + buffers[positionBufferIndex].vec.data();
 
                     float* pPosition = (float*)pVertex;
 
