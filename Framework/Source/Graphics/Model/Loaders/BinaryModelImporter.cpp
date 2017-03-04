@@ -789,8 +789,8 @@ namespace Falcor
                     // Set the offsets
                     genTangentForMesh = true;
                     bitangentBufferIndex = (uint32_t)pVBs.size();
-                    pVBs.resize(bitangentBufferIndex);
-                    buffers.resize(bitangentBufferIndex);
+                    pVBs.resize(bitangentBufferIndex + 1);
+                    buffers.resize(bitangentBufferIndex + 1);
                    
                     auto pBitangentLayout = VertexBufferLayout::create();
                     pLayout->addBufferLayout(bitangentBufferIndex, pBitangentLayout);
