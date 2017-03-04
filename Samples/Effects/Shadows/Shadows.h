@@ -77,6 +77,7 @@ private:
         bool showShadowMap = false;
         int32_t displayedCascade = 0;
         int32_t cascadeCount = 4;
+        int32_t lightIndex = 0;
     };
     Controls mControls;
 
@@ -91,8 +92,8 @@ private:
     {
         //This is effectively a bool, but bool only takes up 1 byte which messes up setBlob
         uint32_t visualizeCascades = 0u;
-        int32_t lightIndex = 0;
-        uint64_t padding = 0;
+        uint32_t padding1 = 0;
+        uint64_t padding2 = 0;
         glm::mat4 camVpAtLastCsmUpdate = glm::mat4();
     } mPerFrameCBData;
 

@@ -1711,15 +1711,6 @@
     <None Include="Data\Effects\GaussianBlur.fs">
       <Filter>Data\Effects</Filter>
     </None>
-    <None Include="Data\Effects\ShadowPass.fs">
-      <Filter>Data\Effects</Filter>
-    </None>
-    <None Include="Data\Effects\ShadowPass.gs">
-      <Filter>Data\Effects</Filter>
-    </None>
-    <None Include="Data\Effects\ShadowPass.vs">
-      <Filter>Data\Effects</Filter>
-    </None>
     <None Include="Data\Effects\SkyBox.fs">
       <Filter>Data\Effects</Filter>
     </None>
@@ -2082,6 +2073,15 @@
     </None>
     <None Include="Data\Framework\Shaders\TextRenderer.vs">
       <Filter>Data\Framework\Shaders</Filter>
+    </None>
+    <None Include="Data\Effects\ShadowPass.ps.hlsl">
+      <Filter>Data\Effects</Filter>
+    </None>
+    <None Include="Data\Effects\ShadowPass.gs.hlsl">
+      <Filter>Data\Effects</Filter>
+    </None>
+    <None Include="Data\Effects\ShadowPass.vs.hlsl">
+      <Filter>Data\Effects</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>

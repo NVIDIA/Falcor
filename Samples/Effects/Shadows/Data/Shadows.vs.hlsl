@@ -39,14 +39,13 @@ cbuffer PerFrameCB : register(b0)
 	vec3 gAmbient;
     CsmData gCsmData[_LIGHT_COUNT];
     bool visualizeCascades;
-    int lightIndex;
     mat4 camVpAtLastCsmUpdate;
 };
 
 struct ShadowsVSOut
 {
     VS_OUT vsData;
-    float shadowsDepthC : PSIZE;
+    float shadowsDepthC : DEPTH;
 };
 
 ShadowsVSOut main(VS_IN vIn)

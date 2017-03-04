@@ -49,15 +49,18 @@ void Shadows::onGuiRender()
     mPerFrameCBData.visualizeCascades = visualizeCascades;
     mpGui->addCheckBox("Display Shadow Map", mControls.showShadowMap);
     mpGui->addIntVar("Displayed Cascade", mControls.displayedCascade, 0u, mControls.cascadeCount - 1);
-    mpGui->addIntVar("LightIndex", mPerFrameCBData.lightIndex, 0u, mpScene->getLightCount() - 1);
+    if (mpGui->addIntVar("LightIndex", mControls.lightIndex, 0u, mpScene->getLightCount() - 1))
+    {
+        mLightingPass.pProgram->addDefine("_LIGHT_INDEX", std::to_string(mControls.lightIndex));
+    }
 
-    std::string groupName = "Light " + std::to_string(mPerFrameCBData.lightIndex);
+    std::string groupName = "Light " + std::to_string(mControls.lightIndex);
     if (mpGui->beginGroup(groupName.c_str()))
     {
-        mpScene->getLight(mPerFrameCBData.lightIndex)->setUiElements(mpGui.get());
+        mpScene->getLight(mControls.lightIndex)->setUiElements(mpGui.get());
         mpGui->endGroup();
     }
-    mpCsmTech[mPerFrameCBData.lightIndex]->setUiElements(mpGui.get(), "CSM");
+    mpCsmTech[mControls.lightIndex]->renderUi(mpGui.get(), "CSM");
 }
 
 void Shadows::displayLoadSceneDialog()
@@ -71,8 +74,8 @@ void Shadows::displayLoadSceneDialog()
 
 void Shadows::setLightIndex(int32_t index)
 {
-    mPerFrameCBData.lightIndex = max(min(index, (int32_t)mpScene->getLightCount() - 1), 0);
-    mpCsmTech[mPerFrameCBData.lightIndex]->setUiElements(mpGui.get(), "CSM");
+    mControls.lightIndex = max(min(index, (int32_t)mpScene->getLightCount() - 1), 0);
+    mpCsmTech[mControls.lightIndex]->renderUi(mpGui.get(), "CSM");
 }
 
 void Shadows::createScene(const std::string& filename)
@@ -94,11 +97,12 @@ void Shadows::createScene(const std::string& filename)
     setLightIndex(0);
 
     // Create the main effect
-    mLightingPass.pProgram = GraphicsProgram::createFromFile("Shadows.vs", "Shadows.fs");
+    mLightingPass.pProgram = GraphicsProgram::createFromFile("Shadows.vs.hlsl", "Shadows.ps.hlsl");
     std::string lights;
     getSceneLightString(mpScene.get(), lights);
     mLightingPass.pProgram->addDefine("_LIGHT_SOURCES", lights);
     mLightingPass.pProgram->addDefine("_LIGHT_COUNT", std::to_string(mpScene->getLightCount()));
+    mLightingPass.pProgram->addDefine("_LIGHT_INDEX", std::to_string(mControls.lightIndex));
     mLightingPass.pProgramVars = GraphicsVars::create(mLightingPass.pProgram->getActiveVersion()->getReflector());
     ConstantBuffer::SharedPtr pCB = mLightingPass.pProgramVars->getConstantBuffer(0u);
     mOffsets.visualizeCascades = static_cast<uint32_t>(pCB->getVariableOffset("visualizeCascades"));
@@ -128,7 +132,7 @@ void Shadows::runMainPass()
 
 void Shadows::displayShadowMap()
 {
-    mShadowVisualizer.pProgramVars->setSrv(0u, mpCsmTech[mPerFrameCBData.lightIndex]->getShadowMap()->getSRV());
+    mShadowVisualizer.pProgramVars->setSrv(0u, mpCsmTech[mControls.lightIndex]->getShadowMap()->getSRV());
     if (mControls.cascadeCount > 1)
     {
         mShadowVisualizer.pProgramVars->getConstantBuffer(0u)->setBlob(&mControls.displayedCascade, mOffsets.displayedCascade, sizeof(mControls.displayedCascade));
@@ -210,9 +214,13 @@ void Shadows::createVisualizationProgram()
     if(mControls.cascadeCount > 1)
     {
         mShadowVisualizer.pProgram->getProgram()->addDefine("_USE_2D_ARRAY");
+        mShadowVisualizer.pProgramVars = GraphicsVars::create(mShadowVisualizer.pProgram->getProgram()->getActiveVersion()->getReflector());
+        mOffsets.displayedCascade = static_cast<uint32_t>(mShadowVisualizer.pProgramVars->getConstantBuffer(0u)->getVariableOffset("cascade"));
     }
-    mShadowVisualizer.pProgramVars = GraphicsVars::create(mShadowVisualizer.pProgram->getProgram()->getActiveVersion()->getReflector());
-    mOffsets.displayedCascade = static_cast<uint32_t>(mShadowVisualizer.pProgramVars->getConstantBuffer(0u)->getVariableOffset("cascade"));
+    else
+    {
+        mShadowVisualizer.pProgramVars = GraphicsVars::create(mShadowVisualizer.pProgram->getProgram()->getActiveVersion()->getReflector());
+    }
 }
 
 int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ LPSTR lpCmdLine, _In_ int nShowCmd)

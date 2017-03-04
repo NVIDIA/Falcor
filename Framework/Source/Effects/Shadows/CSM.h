@@ -62,7 +62,7 @@ namespace Falcor
 
         /** Set UI elements
         */
-        void setUiElements(Gui* pGui, const std::string& uiGroup);
+        void renderUi(Gui* pGui, const std::string& uiGroup);
 
         /** Run the shadow-map generation pass
         \params[in] pScene The scene to render
@@ -82,7 +82,7 @@ namespace Falcor
         uint32_t getFilterMode() const { return mCsmData.filterMode; }
         void setFilterKernelSize(uint32_t size) { mCsmData.sampleKernelSize = max(1u, size + 1 - (size % 2)); }
         void setConcentricCascades(bool enabled) { mControls.concentricCascades = enabled; }
-        void setVsmMaxAnisotropy(uint32_t maxAniso) { onSetVsmAnisotropy(maxAniso); }
+        void setVsmMaxAnisotropy(uint32_t maxAniso) { createVsmSampleState(maxAniso); }
         void setVsmLightBleedReduction(float reduction) { mCsmData.lightBleedingReduction = reduction; }
         void setDepthBias(float depthBias) { mCsmData.depthBias = depthBias; }
     private:
@@ -110,9 +110,6 @@ namespace Falcor
             Sampler::SharedPtr pPointCmpSampler;
             Sampler::SharedPtr pLinearCmpSampler;
             Sampler::SharedPtr pVSMTrilinearSampler;
-            GraphicsProgram::SharedPtr pProg;
-            ConstantBuffer::SharedPtr pLightCB;
-            ConstantBuffer::SharedPtr pAlphaCB;
             RasterizerState::SharedPtr pDepthClampRS;
             GraphicsVars::SharedPtr pGraphicsVars;
             GraphicsState::SharedPtr pState;
@@ -138,8 +135,6 @@ namespace Falcor
         // Depth-pass
         struct
         {
-            GraphicsProgram::SharedPtr pProg;
-            Fbo::SharedPtr pFbo;
             GraphicsState::SharedPtr pState;
             GraphicsVars::SharedPtr pGraphicsVars;
         } mDepthPass;

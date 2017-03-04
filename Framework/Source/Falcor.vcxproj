@@ -985,9 +985,15 @@
     <None Include="..\Externals\GLM\glm\gtx\vector_query.inl" />
     <None Include="..\Externals\GLM\glm\gtx\wrap.inl" />
     <None Include="Data\Effects\GaussianBlur.fs" />
-    <None Include="Data\Effects\ShadowPass.fs" />
-    <None Include="Data\Effects\ShadowPass.gs" />
-    <None Include="Data\Effects\ShadowPass.vs" />
+    <None Include="Data\Effects\ShadowPass.ps.hlsl">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseD3D12|x64'">true</ExcludedFromBuild>
+    </None>
+    <None Include="Data\Effects\ShadowPass.gs.hlsl">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseD3D12|x64'">true</ExcludedFromBuild>
+    </None>
+    <None Include="Data\Effects\ShadowPass.vs.hlsl">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseD3D12|x64'">true</ExcludedFromBuild>
+    </None>
     <None Include="Data\Effects\SkyBox.fs" />
     <None Include="Data\Effects\SkyBox.vs" />
     <None Include="Data\Effects\ToneMapping.fs" />

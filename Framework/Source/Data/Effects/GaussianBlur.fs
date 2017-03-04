@@ -25,7 +25,6 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#version 450
 #expect _KERNEL_WIDTH
 
 #ifdef _USE_TEX2D_ARRAY
@@ -74,7 +73,7 @@ float4 blur(float2 texC, const float2 direction)
    int2 offset = -(_KERNEL_WIDTH / 2) * direction;
 
     float4 c = float4(0,0,0,0);
-    [unroll(11)]
+    [unroll(_KERNEL_WIDTH)]
     for(int i = 0 ; i < _KERNEL_WIDTH ; i++)
     {
 #ifdef _USE_TEX2D_ARRAY

@@ -90,6 +90,7 @@ namespace Falcor
         case ResourceFormat::D16Unorm:
             return DXGI_FORMAT_R16_TYPELESS;
         case ResourceFormat::D32FloatS8X24:
+            return DXGI_FORMAT_R32_FLOAT_X8X24_TYPELESS;
         case ResourceFormat::D24UnormS8:
         case ResourceFormat::D32Float:
             return DXGI_FORMAT_R32_TYPELESS;

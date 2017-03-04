@@ -152,7 +152,7 @@ namespace Falcor
         }
 
         //If depth and either ua or sr, set to typeless
-        if (isDepthFormat(texFormat) && ((bindFlags & (Texture::BindFlags::ShaderResource | Texture::BindFlags::UnorderedAccess)) != Texture::BindFlags::None))
+        if (isDepthFormat(texFormat) && is_set(bindFlags, Texture::BindFlags::ShaderResource | Texture::BindFlags::UnorderedAccess))
         {
             desc.Format = getTypelessFormatFromDepthFormat(texFormat);
         }

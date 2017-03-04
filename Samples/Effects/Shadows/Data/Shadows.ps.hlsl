@@ -15,14 +15,13 @@ cbuffer PerFrameCB : register(b0)
 	vec3 gAmbient;
     CsmData gCsmData[_LIGHT_COUNT];
     bool visualizeCascades;
-    int lightIndex;
     mat4 camVpAtLastCsmUpdate;
 };
 
 struct ShadowsVSOut
 {
     VS_OUT vsData;
-    float shadowsDepthC : PSIZE;
+    float shadowsDepthC : DEPTH;
 };
 
 vec4 main(ShadowsVSOut pIn) : SV_TARGET0
@@ -35,7 +34,7 @@ vec4 main(ShadowsVSOut pIn) : SV_TARGET0
     
 #foreach p in _LIGHT_SOURCES
     {
-        shadowFactor = calcShadowFactor(gCsmData[$(_valIndex)], pIn.shadowsDepthC, shAttr.P, pIn.vsData.posH.xy);
+        shadowFactor = calcShadowFactor(gCsmData[$(_valIndex)], pIn.shadowsDepthC, shAttr.P, pIn.vsData.posH.xy/pIn.vsData.posH.w);
         evalMaterial(shAttr, $(p), result, $(_valIndex) == 0);
         fragColor.rgb += result.diffuseAlbedo * result.diffuseIllumination * shadowFactor;
         fragColor.rgb += result.specularAlbedo * result.specularIllumination * (0.01f + shadowFactor * 0.99f);
@@ -47,7 +46,7 @@ vec4 main(ShadowsVSOut pIn) : SV_TARGET0
         //Ideally this would be light index so you can visualize the cascades of the 
         //currently selected light. However, because csmData contains Textures, it doesn't
         //like getting them with a non literal index.
-        fragColor.rgb *= getCascadeColor(getCascadeIndex(gCsmData[0], pIn.shadowsDepthC));
+        fragColor.rgb *= getCascadeColor(getCascadeIndex(gCsmData[_LIGHT_INDEX], pIn.shadowsDepthC));
     }
 
     return fragColor;
