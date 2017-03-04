@@ -212,7 +212,7 @@ void Shadows::onResizeSwapChain()
 void Shadows::createVisualizationProgram()
 {
     // Create the shadow visualizer
-    mShadowVisualizer.pProgram = FullScreenPass::create("VisualizeMap.fs");
+    mShadowVisualizer.pProgram = FullScreenPass::create("VisualizeMap.ps.hlsl");
     if(mControls.cascadeCount > 1)
     {
         mShadowVisualizer.pProgram->getProgram()->addDefine("_USE_2D_ARRAY");
