@@ -25,18 +25,13 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#version 440
-#include "hlslglslcommon.h"
-
-CONSTANT_BUFFER(PerImageCB, 0)
-{
-   sampler2D gInputTex;
-};
+SamplerState gSampler : register(s0);
+texture2D gInputTex : register(t0);
 
 #ifdef _FIRST_ITERATION
-vec2 compareMinMax(vec2 crd, vec2 range)
+float2 compareMinMax(float2 crd, float2 range)
 {
-    vec4 d4 = textureGather(gInputTex, crd, 0);
+    float4 d4 = gInputTex.GatherRed(gSampler, crd);
 
     for(int i = 0 ; i < 4 ; i++)
     {
@@ -49,10 +44,10 @@ vec2 compareMinMax(vec2 crd, vec2 range)
     return range;
 }
 #else
-vec2 compareMinMax(vec2 crd, vec2 range)
+float2 compareMinMax(float2 crd, float2 range)
 {
-    vec4 min4 = textureGather(gInputTex, crd, 0);
-    vec4 max4 = textureGather(gInputTex, crd, 1);
+    float4 min4 = gInputTex.GatherRed(gSampler, crd);
+    float4 max4 = gInputTex.GatherGreen(gSampler, crd);
     float prevMin = min(min4.x, min(min4.y, min(min4.z, min4.w)));
     float prevMax = max(max4.x, max(max4.y, max(max4.z, max4.w)));
      
@@ -62,18 +57,19 @@ vec2 compareMinMax(vec2 crd, vec2 range)
 }
 #endif
 
-vec2 minMaxReduction(vec2 texC)
+float2 minMaxReduction(float2 posS)
 {
-    vec2 range = vec2(1, 0);
-    ivec2 dim = textureSize(gInputTex, 0);
+    float2 range = float2(1, 0);
+    float2 dim;
+    gInputTex.GetDimensions(dim.x, dim.y);
 
     // Using gather4, so need to skip 4 samples everytime
     for(int x = 0 ; x < _TILE_SIZE ; x+=2)
     {
         for(int y = 0 ; y < _TILE_SIZE ; y+=2)
         {
-            ivec2 crd = ivec2(gl_FragCoord.xy) * _TILE_SIZE + ivec2(x, y);
-            vec2 normalizedCrd = vec2(crd)/vec2(dim);
+            float2 crd = posS * _TILE_SIZE + float2(x, y);
+            float2 normalizedCrd = float2(crd)/float2(dim);
 
             range = compareMinMax(normalizedCrd, range);
         }
@@ -81,18 +77,7 @@ vec2 minMaxReduction(vec2 texC)
     return range;
 }
 
-#ifdef FALCOR_HLSL
-vec2 main(float2 texC  : TEXCOORD) : SV_TARGET0
+float2 main(float2 texC : TEXCOORD, float4 posS : SV_POSITION) : SV_TARGET0
 {
-    return minMaxReduction();
+    return minMaxReduction(posS.xy - 0.5f);
 }
-
-#elif defined FALCOR_GLSL
-in vec2 texC;
-out vec2 fragColor;
-
-void main()
-{
-    fragColor = minMaxReduction(texC);
-}
-#endif

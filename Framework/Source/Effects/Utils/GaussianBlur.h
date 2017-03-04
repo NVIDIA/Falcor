@@ -29,7 +29,7 @@
 #include "API/FBO.h"
 #include "Graphics/FullScreenPass.h"
 #include "API/Sampler.h"
-#include "API/ConstantBuffer.h"
+#include "API/ProgramVars.h"
 #include <memory>
 
 namespace Falcor
@@ -57,7 +57,7 @@ namespace Falcor
             \param pSrc The source FBO
             \param pDst The destination FBO
         */
-        void execute(RenderContext* pRenderContext, const Texture* pSrc, Fbo::SharedPtr pDst);
+        void execute(RenderContext* pRenderContext, Texture::SharedPtr pSrc, Fbo::SharedPtr pDst);
 
         uint32_t getKernelSize() const { return mKernelSize; }
 
@@ -74,6 +74,6 @@ namespace Falcor
         Fbo::SharedPtr mpTmpFbo;
         Sampler::SharedPtr mpSampler;
 
-        ConstantBuffer::SharedPtr mpCb;
+        GraphicsVars::SharedPtr mpVars;
     };
 }

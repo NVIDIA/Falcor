@@ -83,6 +83,23 @@ namespace Falcor
         return kDxgiFormatDesc[(uint32_t)format].dxgiFormat;
     }
 
+    inline DXGI_FORMAT getTypelessFormatFromDepthFormat(ResourceFormat format)
+    {
+        switch (format)
+        {
+        case ResourceFormat::D16Unorm:
+            return DXGI_FORMAT_R16_TYPELESS;
+        case ResourceFormat::D32FloatS8X24:
+            return DXGI_FORMAT_R32_FLOAT_X8X24_TYPELESS;
+        case ResourceFormat::D24UnormS8:
+        case ResourceFormat::D32Float:
+            return DXGI_FORMAT_R32_TYPELESS;
+        default:
+            assert(isDepthFormat(format) == false);
+            return kDxgiFormatDesc[(uint32_t)format].dxgiFormat;
+        }
+    }
+
     /** Get D3D_FEATURE_LEVEL
     */
     D3D_FEATURE_LEVEL getD3DFeatureLevel(uint32_t majorVersion, uint32_t minorVersion);

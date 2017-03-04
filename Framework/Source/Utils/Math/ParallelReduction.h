@@ -28,7 +28,7 @@
 #pragma once
 #include "Framework.h"
 #include "Graphics/FullScreenPass.h"
-#include "API/ConstantBuffer.h"
+#include "API/ProgramVars.h"
 #include "API/FBO.h"
 #include "API/Sampler.h"
 
@@ -46,13 +46,13 @@ namespace Falcor
             MinMax
         };
         static UniquePtr create(Type reductionType, uint32_t readbackLatency, uint32_t width, uint32_t height);
-        glm::vec4 reduce(RenderContext* pRenderCtx, const Texture* pInput);
+        glm::vec4 reduce(RenderContext* pRenderCtx, Texture::SharedPtr pInput);
 
     private:
         ParallelReduction(Type reductionType, uint32_t readbackLatency, uint32_t width, uint32_t height);
         FullScreenPass::UniquePtr mpFirstIterProg;
         FullScreenPass::UniquePtr mpRestIterProg;
-        ConstantBuffer::SharedPtr mpCb;
+        GraphicsVars::SharedPtr pVars;
         std::vector<Fbo::SharedPtr> mpResultFbo;
         uint32_t mCurFbo = 0;
         Type mReductionType;

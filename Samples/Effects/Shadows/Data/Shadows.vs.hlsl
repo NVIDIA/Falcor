@@ -25,40 +25,35 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#version 450
+#define _COMPILE_DEFAULT_VS
+#include "VertexAttrib.h"
 #include "ShaderCommon.h"
-#include "csmdata.h"
-layout(binding = 1) uniform AlphaMapCB
+#include "Effects/CsmData.h"
+
+cbuffer PerFrameCB : register(b0)
 {
-    sampler2D alphaMap;
-    float alphaThreshold;
-    vec2 evsmExp;   // (posExp, negExp)
+#foreach p in _LIGHT_SOURCES
+    LightData $(p);
+#endforeach
+
+	vec3 gAmbient;
+    CsmData gCsmData[_LIGHT_COUNT];
+    bool visualizeCascades;
+    mat4 camVpAtLastCsmUpdate;
 };
 
-in vec2 texC;
-
-#if defined(_VSM) || defined(_EVSM2)
-out vec2 fragColor;
-#elif defined(_EVSM4)
-out vec4 fragColor;
-#endif
-
-void main()
+struct ShadowsVSOut
 {
-    if(isSamplerBound(alphaMap) && texture(alphaMap, texC)._ALPHA_CHANNEL < alphaThreshold)
-    {
-        discard;
-    }
+    VS_OUT vsData;
+    float shadowsDepthC : DEPTH;
+};
 
-    vec2 depth = gl_FragCoord.zz;
+ShadowsVSOut main(VS_IN vIn)
+{
+    VS_OUT defaultOut = defaultVS(vIn);
+    ShadowsVSOut output;
+    output.vsData = defaultOut;
 
-#if defined(_EVSM2) || defined(_EVSM4)
-    depth = applyEvsmExponents(depth.x, evsmExp);
-#endif
-    vec4 outDepth = vec4(depth, depth*depth);
-#ifdef _EVSM4
-    fragColor = outDepth.xzyw;
-#elif defined(_VSM) || defined(_EVSM2)
-    fragColor = outDepth.xz;
-#endif
+    output.shadowsDepthC = mul(camVpAtLastCsmUpdate, vec4(defaultOut.posW, 1)).z;
+    return output;
 }

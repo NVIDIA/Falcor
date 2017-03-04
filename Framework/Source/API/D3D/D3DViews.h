@@ -74,7 +74,11 @@ namespace Falcor
         }
 
         assert(pTexture);
-        desc.Format = getDxgiFormat(pTexture->getFormat());
+
+        //If not depth, returns input format
+        ResourceFormat colorFormat = depthToColorFormat(pTexture->getFormat());
+        desc.Format = getDxgiFormat(colorFormat);
+
         bool isTextureArray = pTexture->getArraySize() > 1;
         desc.ViewDimension = getViewDimension<decltype(desc.ViewDimension)>(pResource->getType(), isTextureArray);
 

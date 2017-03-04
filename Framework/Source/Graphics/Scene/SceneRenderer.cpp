@@ -92,7 +92,10 @@ namespace Falcor
         if (currentData.pCamera)
         {
             ConstantBuffer* pCB = pContext->getGraphicsVars()->getConstantBuffer(kPerFrameCbName).get();
-            currentData.pCamera->setIntoConstantBuffer(pCB, sCameraDataOffset);
+            if (pCB != nullptr)
+            {
+                currentData.pCamera->setIntoConstantBuffer(pCB, sCameraDataOffset);
+            }
         }
     }
 
@@ -164,8 +167,8 @@ namespace Falcor
             {
                 mpLastMaterial->evictTextures();
             }
-            mpLastMaterial = pMesh->getMaterial().get();
             setPerMaterialData(pContext, currentData);
+            mpLastMaterial = pMesh->getMaterial().get();
 
             if(mCompileMaterialWithProgram)
             {

@@ -62,27 +62,27 @@ namespace Falcor
 
         /** Set UI elements
         */
-        void setUiElements(Gui* pGui, const std::string& uiGroup);
+        void renderUi(Gui* pGui, const std::string& uiGroup);
 
         /** Run the shadow-map generation pass
         \params[in] pScene The scene to render
         \params[in] pCamera The camera that will be used to render the scene
         \params[in] pSceneDepthBuffer Valid only when SDSM is enabled. The depth map to run SDSM analysis on. If this is nullptr, SDSM will run a depth pass
         */
-        void setup(RenderContext* pRenderCtx, const Camera* pCamera, const Texture* pSceneDepthBuffer);
+        void setup(RenderContext* pRenderCtx, const Camera* pCamera, Texture::SharedPtr pSceneDepthBuffer);
 
-        Texture::SharedConstPtr getShadowMap() const;
+        Texture::SharedPtr getShadowMap() const;
 
-        void setDataIntoConstantBuffer(ConstantBuffer* pCB, const std::string& varName);
+        void setDataIntoGraphicsVars(GraphicsVars::SharedPtr pVars, const std::string& varName);
         void setCascadeCount(uint32_t cascadeCount);
         uint32_t getCascadeCount() { return mCsmData.cascadeCount; }
         void toggleMinMaxSdsm(bool enable) { mControls.useMinMaxSdsm = enable; }
         void setDistanceRange(const glm::vec2& range) { mControls.distanceRange = range; }
-        void setFilterMode(uint32_t filterMode) { setFilterModeCB(&filterMode, this); }
+        void setFilterMode(uint32_t filterMode) { onSetFilterMode(filterMode); }
         uint32_t getFilterMode() const { return mCsmData.filterMode; }
         void setFilterKernelSize(uint32_t size) { mCsmData.sampleKernelSize = max(1u, size + 1 - (size % 2)); }
         void setConcentricCascades(bool enabled) { mControls.concentricCascades = enabled; }
-        void setVsmMaxAnisotropy(uint32_t maxAniso) { setVsmAnisotropyCB(&maxAniso, this); }
+        void setVsmMaxAnisotropy(uint32_t maxAniso) { createVsmSampleState(maxAniso); }
         void setVsmLightBleedReduction(float reduction) { mCsmData.lightBleedingReduction = reduction; }
         void setDepthBias(float depthBias) { mCsmData.depthBias = depthBias; }
     private:
@@ -90,12 +90,17 @@ namespace Falcor
         Light::SharedConstPtr mpLight;
         Scene::SharedPtr mpScene;
         Camera::SharedPtr mpLightCamera;
-        std::unique_ptr<CsmSceneRenderer> mpSceneRenderer;
+        std::unique_ptr<CsmSceneRenderer> mpCsmSceneRenderer;
+        std::unique_ptr<SceneRenderer> mpSceneRenderer;
 
-        void calcDistanceRange(RenderContext* pRenderCtx, const Camera* pCamera, const Texture* pDepthBuffer, glm::vec2& distanceRange);
+        void calcDistanceRange(RenderContext* pRenderCtx, const Camera* pCamera, Texture::SharedPtr pDepthBuffer, glm::vec2& distanceRange);
         void createShadowPassResources(uint32_t mapWidth, uint32_t mapHeight);
         void partitionCascades(const Camera* pCamera, const glm::vec2& distanceRange);
         void renderScene(RenderContext* pCtx);
+
+        void onSetFilterMode(uint32_t newFilterMode);
+        void onSetVsmAnisotropy(uint32_t maxAniso);
+        void onSetKernalSize(u32 newSize);
 
         // Shadow-pass
         struct
@@ -105,10 +110,9 @@ namespace Falcor
             Sampler::SharedPtr pPointCmpSampler;
             Sampler::SharedPtr pLinearCmpSampler;
             Sampler::SharedPtr pVSMTrilinearSampler;
-            Program::SharedPtr pProg;
-            ConstantBuffer::SharedPtr pLightCB;
-            ConstantBuffer::SharedPtr pAlphaCB;
             RasterizerState::SharedPtr pDepthClampRS;
+            GraphicsVars::SharedPtr pGraphicsVars;
+            GraphicsState::SharedPtr pState;
             glm::vec2 mapSize;
         } mShadowPass;
 
@@ -118,11 +122,11 @@ namespace Falcor
             ParallelReduction::UniquePtr minMaxReduction;
             uint32_t width;
             uint32_t height;
-            uint32_t readbackLatency = 1;
+            int32_t readbackLatency = 1;
         };
         SdsmData mSdsmData;
-        void createSdsmData(const Texture* pTexture);
-        void reduceDepthSdsmMinMax(RenderContext* pRenderCtx, const Camera* pCamera, const Texture* pDepthBuffer, glm::vec2& distanceRange);
+        void createSdsmData(Texture::SharedPtr pTexture);
+        void reduceDepthSdsmMinMax(RenderContext* pRenderCtx, const Camera* pCamera, Texture::SharedPtr pDepthBuffer, glm::vec2& distanceRange);
         void createVsmSampleState(uint32_t maxAnisotropy);
 
         GaussianBlur::UniquePtr mpGaussianBlur;
@@ -131,8 +135,8 @@ namespace Falcor
         // Depth-pass
         struct
         {
-            Program::SharedPtr pProg;
-            Fbo::SharedPtr pFbo;
+            GraphicsState::SharedPtr pState;
+            GraphicsVars::SharedPtr pGraphicsVars;
         } mDepthPass;
         void executeDepthPass(RenderContext* pCtx, const Camera* pCamera);
 
@@ -143,24 +147,12 @@ namespace Falcor
             glm::vec2 distanceRange = glm::vec2(0, 1);
             float pssmLambda = 0.5f;
             PartitionMode partitionMode = PartitionMode::PSSM;
-            bool stabilizeCascades = true;
+            bool stabilizeCascades = false;
             bool concentricCascades = false;
         };
 
         int32_t renderCascade = 0;
         Controls mControls;
         CsmData mCsmData;
-
-        static void GUI_CALL getSdsmReadbackLatency(void* pData, void* pThis);
-        static void GUI_CALL setSdsmReadbackLatency(const void* pData, void* pThis);
-
-        static void GUI_CALL getFilterModeCB(void* pData, void* pThis);
-        static void GUI_CALL setFilterModeCB(const void* pData, void* pThis);
-
-        static void GUI_CALL getFilterKernelSizeCB(void* pData, void* pThis);
-        static void GUI_CALL setFilterKernelSizeCB(const void* pData, void* pThis);
-
-        static void GUI_CALL getVsmAnisotropyCB(void* pData, void* pThis);
-        static void GUI_CALL setVsmAnisotropyCB(const void* pData, void* pThis);
     };
 }

@@ -25,11 +25,10 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#pragma once
+#ifndef CSMDATA_H
+#define CSMDATA_H
+
 #include "Data/HostDeviceData.h"
-#ifndef HOST_CODE
-#include "HlslGlslCommon.h"
-#endif
 
 #define CSM_MAX_CASCADES 8
 
@@ -47,10 +46,10 @@ struct CsmData
     vec4 cascadeScale[CSM_MAX_CASCADES];
     vec4 cascadeOffset[CSM_MAX_CASCADES];
 
-    float cascadeStartDepth[CSM_MAX_CASCADES];  // In camera clip-space
-    float cascadeRange[CSM_MAX_CASCADES];  // In camera clip-space
+    //Only uses xy
+    vec4 cascadeRange[CSM_MAX_CASCADES];  // In camera clip-space
 
-    float depthBias DEFAULTS(0.0011f);
+    float depthBias DEFAULTS(0.005f);
     int cascadeCount DEFAULTS(4);
     uint32_t filterMode DEFAULTS(CsmFilterHwPcf);
 
@@ -60,21 +59,19 @@ struct CsmData
     float lightBleedingReduction DEFAULTS(0);
     float cascadeBlendThreshold DEFAULTS(0.2f);
 
-#ifndef HOST_CODE
-    sampler2DArrayShadow shadowMap;
-    sampler2DArray momentsMap;
-#else
-    uint64_t shadowMap;
-    uint64_t momentsMap;
-#endif
-
     vec2 evsmExponents DEFAULTS(v2(40.0f, 5.0f)); // posExp, negExp
+    //If this is only in host code, the final element in the array is not padded
+    uint32_t padding;
+#ifndef HOST_CODE
+    Texture2DArray shadowMap;
+    SamplerState csmSampler;
+    SamplerComparisonState csmCompareSampler;
+#endif
 };
 
 #ifdef HOST_CODE
 static_assert(sizeof(CsmData) % sizeof(vec4) == 0, "CsmData size should be aligned on vec4 size");
-#endif
-#ifndef HOST_CODE
+#else
 
 int getCascadeCount(const CsmData csmData)
 {
@@ -98,7 +95,7 @@ int getCascadeIndex(const CsmData csmData, float depthCamClipSpace)
 {
     for(int i = 1; i < getCascadeCount(csmData); i++)
     {
-        if(depthCamClipSpace < csmData.cascadeStartDepth[i])
+        if(depthCamClipSpace < csmData.cascadeRange[i].x)
         {
             return i - 1;
         }
@@ -111,23 +108,24 @@ vec3 getCascadeColor(uint32_t cascade)
     switch(cascade)
     {
     case 0:
-        return vec3(1, 0, 0);
+        return float3(1, 0, 0);
     case 1:
-        return vec3(0, 1, 0);
+        return vec3(0, 1, 0); 
     case 2:
-        return vec3(0, 0, 1);
+        return float3(0, 0, 1); 
     case 3:
-        return vec3(1, 0, 1);
+        return float3(1, 0, 1); 
     case 4:
-        return vec3(1, 1, 0);
+        return float3(1, 1, 0); 
     case 5:
-        return vec3(0, 1, 1);
+        return float3(0, 1, 1); 
     case 6:
-        return vec3(0.7, 0.5, 1);
+        return float3(0.7, 0.5, 1); 
     case 7:
-        return vec3(1, 0.5, 0.7);
+        return float3(1, 0.5, 0.7); 
+    default:
+        return float3(0, 0, 0);
     }
-    return vec3(0);
 }
 #if 0
 float calcReceiverPlaneDepthBias(const CsmData csmData, const vec3 shadowPos)
@@ -174,34 +172,37 @@ vec2 applyEvsmExponents(float depth, vec2 exponents)
 
 float csmFilterUsingHW(const CsmData csmData, const vec2 texC, float depthRef, uint32_t cascadeIndex)
 {
-    float res = texture(csmData.shadowMap, vec4(texC, float(cascadeIndex), depthRef)).r;
-    return res;
+    float res = csmData.shadowMap.SampleCmpLevelZero(csmData.csmCompareSampler, float3(texC, cascadeIndex), depthRef).r;    
+    return saturate(res);
 }
 
 float csmFixedSizePcf(const CsmData csmData, const vec2 texC, float depthRef, uint32_t cascadeIndex)
 {
-    vec2 pixelSize = 1.0 / textureSize(csmData.shadowMap, 0).xy;
+    float3 dim;
+    csmData.shadowMap.GetDimensions(dim.x, dim.y, dim.z);
+    vec2 pixelSize = 1.0 / dim.xy;
     float res = 0;
 
-    int halfKernelSize = csmData.sampleKernelSize / 2;
-
+    int halfKernelSize = csmData.sampleKernelSize / 2u;
     for(int i = -halfKernelSize; i <= halfKernelSize; i++)
     {
         for(int j = -halfKernelSize; j <= halfKernelSize; j++)
         {
             vec2 sampleCrd = texC + vec2(i, j) * pixelSize;
-            res += texture(csmData.shadowMap, vec4(sampleCrd, float(cascadeIndex), depthRef)).r;
+            res += csmData.shadowMap.SampleCmpLevelZero(csmData.csmCompareSampler, float3(sampleCrd, cascadeIndex), depthRef).r;
         }
     }
 
     return res / (csmData.sampleKernelSize * csmData.sampleKernelSize);
 }
 
-float csmStochasticFilter(const CsmData csmData, const vec2 texC, float depthRef, uint32_t cascadeIndex)
+float csmStochasticFilter(const CsmData csmData, const vec2 texC, float depthRef, uint32_t cascadeIndex, vec2 posSxy)
 {
-    vec2 pixelSize = 1.0 / textureSize(csmData.shadowMap, 0).xy;
+    float3 dim;
+    csmData.shadowMap.GetDimensions(dim.x, dim.y, dim.z);
+    vec2 pixelSize = 1.0 / dim.xy;
 
-    const vec2 poissonDisk[16] = vec2[](
+    const vec2 poissonDisk[16] = {
         vec2(-0.94201624, -0.39906216),
         vec2(0.94558609, -0.76890725),
         vec2(-0.094184101, -0.92938870),
@@ -218,18 +219,19 @@ float csmStochasticFilter(const CsmData csmData, const vec2 texC, float depthRef
         vec2(-0.81409955, 0.91437590),
         vec2(0.19984126, 0.78641367),
         vec2(0.14383161, -0.14100790)
-        );
+    };
 
     vec2 halfKernelSize = pixelSize * float(csmData.sampleKernelSize) / 4;
 
     float res = 0;
+    float2 pos = posSxy / dim.xy;
     const int numStochasticSamples = 4;
     for(int i = 0; i < numStochasticSamples; i++)
     {
-        int idx = int(i + 71 * gl_FragCoord.x + 37 * gl_FragCoord.y) & 3;// Tempooral version: (csmData.temporalSampleCount*numStochasticSamples + i)&15;
+        int idx = int(i + 71 * pos.x + 37 * pos.y) & 3;// Temporal version: (csmData.temporalSampleCount*numStochasticSamples + i)&15;
         vec2 texelOffset = poissonDisk[idx] * halfKernelSize;
         vec2 sampleCrd = texelOffset + texC;
-        res += texture(csmData.shadowMap, vec4(sampleCrd, float(cascadeIndex), depthRef)).r;
+        res += csmData.shadowMap.SampleCmpLevelZero(csmData.csmCompareSampler, float3(sampleCrd, cascadeIndex), depthRef).r;
     }
 
     return res / float(numStochasticSamples);
@@ -256,10 +258,10 @@ float csmVsmFilter(const CsmData csmData, const vec2 texC, float sampleDepth, ui
 {
     if(calcDrv)
     {
-        drvY = dFdyFine(texC);
-        drvX = dFdxFine(texC);
+        drvY = ddy_fine(texC);
+        drvX = ddx_fine(texC);
     }
-    vec2 moments = textureGrad(csmData.momentsMap, vec3(texC, float(cascadeIndex)), drvX, drvY).rg;
+    vec2 moments = csmData.shadowMap.SampleGrad(csmData.csmSampler, float3(texC, float(cascadeIndex)), drvX, drvY).rg;
     float pMax = calcChebyshevUpperBound(moments, sampleDepth, csmData.lightBleedingReduction);
 
     return pMax;
@@ -269,11 +271,11 @@ float csmEvsmFilter(const CsmData csmData, const vec2 texC, float sampleDepth, u
 {
     if(calcDrv)
     {
-        drvY = dFdyFine(texC);
-        drvX = dFdxFine(texC);
+        drvY = ddy_fine(texC);
+        drvX = ddx_fine(texC);
     }
     vec2 expDepth = applyEvsmExponents(sampleDepth, csmData.evsmExponents);
-    vec4 moments = textureGrad(csmData.momentsMap, vec3(texC, float(cascadeIndex)), drvX, drvY);
+    vec4 moments = csmData.shadowMap.SampleGrad(csmData.csmSampler, vec3(texC, float(cascadeIndex)), drvX, drvY);
     // Positive contribution
     float res = calcChebyshevUpperBound(moments.xy, expDepth.x, csmData.lightBleedingReduction);
     if(getFilterMode(csmData) == CsmFilterEvsm4)
@@ -285,13 +287,13 @@ float csmEvsmFilter(const CsmData csmData, const vec2 texC, float sampleDepth, u
     return res;
 }
 
-float calcShadowFactorWithCascadeIdx(const CsmData csmData, const uint32_t cascadeIndex, vec3 posW, bool calcDrv, inout vec2 drvX, inout vec2 drvY)
+float calcShadowFactorWithCascadeIdx(const CsmData csmData, const uint32_t cascadeIndex, vec3 posW, vec2 posSxy, bool calcDrv, inout vec2 drvX, inout vec2 drvY)
 {
     // Apply normal offset
     //posW.xyz += calcNormalOffset(csmData, normal, cascadeIndex);
 
     // Get the global shadow space position
-    vec4 shadowPos = csmData.globalMat * vec4(posW, 1);
+    vec4 shadowPos = mul(csmData.globalMat, vec4(posW, 1));
     shadowPos /= shadowPos.w;
 
     // Calculate the texC
@@ -301,6 +303,7 @@ float calcShadowFactorWithCascadeIdx(const CsmData csmData, const uint32_t casca
     // Apply TexC transformation
     shadowPos.xy += 1;
     shadowPos.xy *= 0.5;
+    shadowPos.y = 1 - shadowPos.y;
 
     // Calculate the texC
     shadowPos.z -= csmData.depthBias;
@@ -311,20 +314,20 @@ float calcShadowFactorWithCascadeIdx(const CsmData csmData, const uint32_t casca
     case CsmFilterHwPcf:
         return csmFilterUsingHW(csmData, shadowPos.xy, shadowPos.z, cascadeIndex);
     case CsmFilterFixedPcf:
-        return csmFixedSizePcf(csmData, shadowPos.xy, shadowPos.z, cascadeIndex);
+        return csmFixedSizePcf(csmData, shadowPos.xy, shadowPos.z, cascadeIndex); 
     case CsmFilterVsm:
-        return csmVsmFilter(csmData, shadowPos.xy, shadowPos.z, cascadeIndex, calcDrv, drvX, drvY);
+        return csmVsmFilter(csmData, shadowPos.xy, shadowPos.z, cascadeIndex, calcDrv, drvX, drvY); 
     case CsmFilterEvsm2:
     case CsmFilterEvsm4:
-        return csmEvsmFilter(csmData, shadowPos.xy, shadowPos.z, cascadeIndex, calcDrv, drvX, drvY);
+        return csmEvsmFilter(csmData, shadowPos.xy, shadowPos.z, cascadeIndex, calcDrv, drvX, drvY); 
     case CsmFilterStochasticPcf:
-        return csmStochasticFilter(csmData, shadowPos.xy, shadowPos.z, cascadeIndex);
-
+        return csmStochasticFilter(csmData, shadowPos.xy, shadowPos.z, cascadeIndex, posSxy); 
+    default:
+        return 0;
     }
-    return 0;
 }
 
-float calcShadowFactor(const CsmData csmData, const float cameraDepth, vec3 posW)
+float calcShadowFactor(const CsmData csmData, const float cameraDepth, vec3 posW, vec2 posSxy)
 {
     float weight = 0;
     float s;
@@ -333,28 +336,30 @@ float calcShadowFactor(const CsmData csmData, const float cameraDepth, vec3 posW
 #if !defined(_CSM_CASCADE_COUNT) || (_CSM_CASCADE_COUNT != 1)
     cascadeIndex = getCascadeIndex(csmData, cameraDepth);
     // Get the prev cascade factor
-    weight = (cameraDepth - csmData.cascadeStartDepth[cascadeIndex]) / csmData.cascadeRange[cascadeIndex];
+    weight = (cameraDepth - csmData.cascadeRange[cascadeIndex].x) / csmData.cascadeRange[cascadeIndex].y;
     blend = weight < csmData.cascadeBlendThreshold;
 #endif
 
     if(blend)
-    {
+    {       
         // Getting the previous mip-level to calculate the derivative, otherwise we get cracks between cascade with *VSM.
         // On the edge of the cascade we only use the previous cascade factor (weight == 0), but we get the derivatives from the current cascade, which probably chooses a different mip-level.
         // This should work though, since mip-levels should appear continuous
         weight = smoothstep(0.0, csmData.cascadeBlendThreshold, weight);
         int prevCascade = max(0, cascadeIndex - 1);
-        vec2 drvX, drvY;
-        float s1 = calcShadowFactorWithCascadeIdx(csmData, prevCascade, posW, true, drvX, drvY);
-        s = calcShadowFactorWithCascadeIdx(csmData, cascadeIndex, posW, false, drvX, drvY);
-        s = mix(s1, s, weight);
+        float2 drvX = float2(0, 0);
+        float2 drvY = float2(0, 0);
+        float s1 = calcShadowFactorWithCascadeIdx(csmData, prevCascade, posW, posSxy, true, drvX, drvY);
+        s = calcShadowFactorWithCascadeIdx(csmData, cascadeIndex, posW, posSxy, false, drvX, drvY);
+        s = lerp(s1, s, weight);
     }
     else
     {
         vec2 drvX, drvY;
-        s = calcShadowFactorWithCascadeIdx(csmData, cascadeIndex, posW, true, drvX, drvY);
+        s = calcShadowFactorWithCascadeIdx(csmData, cascadeIndex, posW, posSxy, true, drvX, drvY);
     }
 
     return s;
 }
 #endif
+#endif //CSMDATA_H

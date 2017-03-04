@@ -25,18 +25,56 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#version 420
-#include "hlslglslcommon.h"
-#define _COMPILE_DEFAULT_VS
-#include "VertexAttrib.h"
 #include "ShaderCommon.h"
+#include "csmdata.h"
 
-void main()
+SamplerState alphaSampler;
+texture2D alphaMap;
+
+cbuffer PerLightCB : register(b0)
 {
-    mat4 worldMat = getWorldMat();
-    gl_Position = worldMat * vPos;
-#ifdef _APPLY_PROJECTION
-    gl_Position = gCam.viewProjMat * gl_Position;
+    CsmData gCsmData;
+};
+
+cbuffer AlphaMapCB : register(b1)
+{
+    float alphaThreshold;
+};
+
+struct ShadowPassPSIn
+{
+    float4 pos : SV_POSITION;
+    float2 texC : TexCoord;
+    uint rtIndex : SV_RenderTargetArrayIndex;
+};
+
+#if defined(_VSM) || defined(_EVSM2)
+vec2 main(ShadowPassPSIn pIn) : SV_TARGET0
+#elif defined(_EVSM4)
+vec4 main(ShadowPassPSIn pIn) : SV_TARGET0
+#else
+void main(ShadowPassPSIn pIn)
 #endif
-    texC = vTexC;
+{
+#ifdef TEST_ALPHA
+    float alpha = alphaMap.Sample(alphaSampler, pIn.texC)._ALPHA_CHANNEL;
+    if(alpha < alphaThreshold)
+    {
+        discard;
+    }
+#endif
+
+    vec2 depth = pIn.pos.zz;
+
+#if defined(_EVSM2) || defined(_EVSM4)
+    depth = applyEvsmExponents(depth.x, gCsmData.evsmExponents);
+#endif
+    vec4 outDepth = vec4(depth, depth*depth);
+
+#ifdef _EVSM4
+    return outDepth.xzyw;
+#elif defined(_VSM) || defined(_EVSM2)
+    return outDepth.xz;
+#else
+#endif
 }

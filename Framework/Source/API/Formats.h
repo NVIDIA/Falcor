@@ -50,6 +50,7 @@ namespace Falcor
         RG16Snorm,
         RGB16Unorm,
         RGB16Snorm,
+        R24UnormX8,
         RGB5A1Unorm,
         RGBA8Unorm,
         RGBA8Snorm,
@@ -62,6 +63,7 @@ namespace Falcor
         RGB16Float,
         RGBA16Float,
         R32Float,
+        R32FloatX32,
         RG32Float,
         RGB32Float,
         RGBA32Float,
@@ -286,6 +288,26 @@ namespace Falcor
         case ResourceFormat::RGBX8Unorm:
             return ResourceFormat::RGBX8UnormSrgb;
         default:
+            return format;
+        }
+    }
+	
+    inline ResourceFormat depthToColorFormat(ResourceFormat format)
+    {
+        switch (format)
+        {
+        case ResourceFormat::D16Unorm:
+            return ResourceFormat::R16Unorm;
+        case ResourceFormat::D24UnormS8:
+            should_not_get_here();
+            return ResourceFormat::Unknown;
+        case ResourceFormat::D32Float:
+            return ResourceFormat::R32Float;
+        case ResourceFormat::D32FloatS8X24:
+            should_not_get_here();
+            return ResourceFormat::Unknown;
+        default:
+            assert(isDepthFormat(format) == false);
             return format;
         }
     }

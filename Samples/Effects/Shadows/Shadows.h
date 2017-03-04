@@ -44,7 +44,7 @@ private:
     static void GUI_CALL getModelCB(void* pUserData);
     static void GUI_CALL setModelCB(const void* pUserData);
 
-    void initUI();
+    void onGuiRender() override;
     void displayShadowMap();
     void runMainPass();
     void createVisualizationProgram();
@@ -57,38 +57,45 @@ private:
     struct
     {
         FullScreenPass::UniquePtr pProgram;
-        UniformBuffer::SharedPtr pBuffer;
+        GraphicsVars::SharedPtr pProgramVars;
     } mShadowVisualizer;
 
     struct
     {
-        Program::SharedPtr pProgram;
-        UniformBuffer::SharedPtr pPerFrameCB;
+        GraphicsProgram::SharedPtr pProgram;
+        GraphicsVars::SharedPtr pProgramVars;
     } mLightingPass;
 
     Sampler::SharedPtr mpLinearSampler = nullptr;
 
     glm::vec3 mAmbientIntensity = glm::vec3(0.1f, 0.1f, 0.1f);
     SceneRenderer::UniquePtr mpRenderer;
-    glm::mat4 mCamVpAtLastCsmUpdate;
 
     struct Controls
     {
         bool updateShadowMap = true;
         bool showShadowMap = false;
-        bool visualizeCascades = false;
         int32_t displayedCascade = 0;
-        uint32_t cascadeCount = 4;
+        int32_t cascadeCount = 4;
         int32_t lightIndex = 0;
     };
     Controls mControls;
 
+    struct ShadowOffsets
+    {
+        uint32_t visualizeCascades;
+        uint32_t displayedCascade;
+    } mOffsets;  
+
+    //non csm data in this cb so it can be sent as a single blob
+    struct PerFrameCBData
+    {
+        //This is effectively a bool, but bool only takes up 1 byte which messes up setBlob
+        uint32_t visualizeCascades = 0u;
+        uint32_t padding1 = 0;
+        uint64_t padding2 = 0;
+        glm::mat4 camVpAtLastCsmUpdate = glm::mat4();
+    } mPerFrameCBData;
+
     void setLightIndex(int32_t index);
-
-    static void GUI_CALL loadSceneCB(void* pThis);
-    static void GUI_CALL getCascadeCountCB(void* pVal, void* pThis);
-    static void GUI_CALL setCascadeCountCB(const void* pVal, void* pThis);
-
-    static void GUI_CALL getLightIndexCB(void* pVal, void* pThis);
-    static void GUI_CALL setLightIndexCB(const void* pVal, void* pThis);
 };

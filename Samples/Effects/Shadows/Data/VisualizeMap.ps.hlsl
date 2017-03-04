@@ -25,30 +25,29 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#version 450
+SamplerState gSampler : register(s0);
 
-#define _COMPILE_DEFAULT_VS
-#include "VertexAttrib.h"
-#include "ShaderCommon.h"
-#include "Effects/CsmData.h"
-
-out float ShadowsDepthC;
-
-layout(binding = 0) uniform PerFrameCB
+cbuffer PerImageCB : register(b0)
 {
-#foreach p in _LIGHT_SOURCES
-    LightData $(p);
-#endforeach
-
-	vec3 gAmbient;
-    CsmData gCsmData[_LIGHT_COUNT];
-    bool visualizeCascades;
-    int lightIndex;
-    mat4 camVpAtLastCsmUpdate;
+#ifdef _USE_2D_ARRAY
+	Texture2DArray gTexture;
+    int cascade;
+#else
+    texture2D gTexture;
+#endif
 };
 
-void main()
+float4 calcColor(float2 texC)
 {
-    defaultVS();
-    ShadowsDepthC = (camVpAtLastCsmUpdate * vec4(posW, 1)).z;
+#ifdef _USE_2D_ARRAY
+	float d = gTexture.SampleLevel(gSampler, float3(texC, float(cascade)), 0).r;
+#else
+    float d = gTexture.SampleLevel(gSampler, texC, 0).r;
+#endif
+    return float4(d.xxx, 1);
+}
+
+float4 main(float2 texC  : TEXCOORD) : SV_TARGET0
+{
+	return calcColor(texC);
 }

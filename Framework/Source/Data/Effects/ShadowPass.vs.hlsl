@@ -25,41 +25,33 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#version 450
-#include "HlslGlslCommon.h"
+#define _COMPILE_DEFAULT_VS
+#include "VertexAttrib.h"
+#include "ShaderCommon.h"
 
-UNIFORM_BUFFER(PerImageCB, 0)
+struct ShadowPassVSOut
 {
-#ifdef _USE_2D_ARRAY
-	sampler2DArray gTexture;
+#ifdef _APPLY_PROJECTION
+    float4 pos : SV_POSITION;
 #else
-   sampler2D gTexture;
+    float4 pos : POSITION;
 #endif
-    int cascade;
+    float2 texC : TEXCOORD;
 };
 
-vec4 calcColor(vec2 texC)
+ShadowPassVSOut main(VS_IN vIn)
 {
-#ifdef _USE_2D_ARRAY
-	float d = textureLod(gTexture, vec3(texC, float(cascade)), 0).r;
+    ShadowPassVSOut vOut; 
+    mat4 worldMat = getWorldMat(vIn);
+    vOut.pos = mul(worldMat, vIn.pos);
+#ifdef _APPLY_PROJECTION
+    vOut.pos = mul(gCam.viewProjMat, vOut.pos);
+#endif
+
+#ifdef HAS_TEXCRD
+    vOut.texC = vIn.texC;
 #else
-    float d = textureLod(gTexture, texC, 0).r;
+    vOut.texC = float2(0.5f, 0.5f);
 #endif
-    return vec4(d.xxx, 1);
+    return vOut;
 }
-
-#ifdef FALCOR_HLSL
-vec4 main(float2 texC  : TEXCOORD) : SV_TARGET0
-{
-	return calcColor(texC);
-}
-
-#elif defined FALCOR_GLSL
-in vec2 texC;
-out vec4 fragColor;
-
-void main()
-{
-	fragColor = calcColor(texC);
-}
-#endif

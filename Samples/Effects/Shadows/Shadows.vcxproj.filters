@@ -12,13 +12,13 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <None Include="Data\Shadows.fs">
+    <None Include="Data\Shadows.ps.hlsl">
       <Filter>Shaders</Filter>
     </None>
-    <None Include="Data\Shadows.vs">
+    <None Include="Data\Shadows.vs.hlsl">
       <Filter>Shaders</Filter>
     </None>
-    <None Include="Data\VisualizeMap.fs">
+    <None Include="Data\VisualizeMap.ps.hlsl">
       <Filter>Shaders</Filter>
     </None>
   </ItemGroup>

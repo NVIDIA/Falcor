@@ -85,9 +85,15 @@
     <ClInclude Include="Shadows.h" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="Data\Shadows.fs" />
-    <None Include="Data\Shadows.vs" />
-    <None Include="Data\VisualizeMap.fs" />
+    <None Include="Data\Shadows.ps.hlsl">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </None>
+    <None Include="Data\Shadows.vs.hlsl">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </None>
+    <None Include="Data\VisualizeMap.ps.hlsl">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Framework\Source\Falcor.vcxproj">
