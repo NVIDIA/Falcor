@@ -121,3 +121,6 @@
 #include "Effects/Utils/GaussianBlur.h"
 #include "Effects/SkyBox/SkyBox.h"
 #include "Effects/ToneMapping/ToneMapping.h"
+
+#define FALCOR_MAJOR_VERSION 1
+#define FALCOR_MINOR_VERSION 0

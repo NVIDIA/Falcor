@@ -282,7 +282,7 @@ vec4 _fn evalSpecularLayer(in const MaterialLayerDesc desc, in const MaterialLay
     result.specularAlbedo += v3(data.albedo.constantColor) * data.pmf;
 
     /* Ignore the layer if it's a transmission or backfacing */
-	if (dot(lAttr.L, shAttr.N) <= 0.f || dot(shAttr.E, shAttr.N) <= 0.f)
+	if (dot(lAttr.L, shAttr.N)  * dot(shAttr.E, shAttr.N) <= 0.f)
         return v4(0.f);
 
     vec3 value = lAttr.lightIntensity;
@@ -577,8 +577,6 @@ bool _fn overrideDiffuseColor(_ref(ShadingAttribs) shAttr, const vec4 albedo, co
             {
                 shAttr.preparedMat.values.layers[iLayer].albedo.constantColor = albedo;
                 found = true;
-                if(!allLayers)
-                    return true;
             }
         }
     }

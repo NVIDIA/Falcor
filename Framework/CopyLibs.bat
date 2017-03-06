@@ -16,7 +16,6 @@ robocopy "%FALCOR_PROJECT_DIR%\Externals\assimp\bin\%2" %3  *.dll /r:0 >nul
 robocopy "%FALCOR_PROJECT_DIR%\Externals\FFMpeg\bin\%2" %3  *.dll /r:0 >nul
 robocopy "%FALCOR_PROJECT_DIR%\Externals\D3DCompiler\%2" %3  D3Dcompiler_47.dll /r:0 >nul
 robocopy "%FALCOR_PROJECT_DIR%\Externals\OptiX\bin64" %3  *.dll /r:0 >nul
-robocopy "%FALCOR_PROJECT_DIR%\Externals\cuDNN\bin" %3  *.dll /r:0 >nul
 robocopy "%FALCOR_PROJECT_DIR%\Externals\openvr\bin\win64" %3  openvr_api.dll /r:0 >nul
 
 rem copy and overwrite internal files

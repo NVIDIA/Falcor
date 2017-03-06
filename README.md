@@ -15,6 +15,7 @@ Prerequisites
 ------------------------
 * Visual Studio 2013.
 * NVIDIA® Geforce™ 900 series or better GPU.
+
 The project uses extentions which are supported only by NVIDIA GPUs.
 
 Creating a New Project
@@ -26,7 +27,7 @@ Creating a New Project
 
 Optional Modules
 ----------------
-To create CUDA applications you will need to install the CUDA Toolkit 7.5.  
+To create CUDA applications you will need to install the CUDA Toolkit 8.0.  
 For VR applications development, you will need the SDK which came with your headset (SteamVR for Vive, Oculus SDK, etc.).
 
 *Sample* Class
@@ -44,8 +45,8 @@ Falcor has two build configurations:
 Falcor Configuration
 --------------------
 `FalcorConfig.h` contains some flags which control Falcor's behavior.
-* `_LOG_ENABLED` - Enable/disable log messages. By default, this is `false` for release build and `true` for debug builds.
-* `_PROFILING_ENABLED` - Enable/Disable the internal CPU/GPU profiler. By default, this is `false`.
+* `_LOG_ENABLED` - Enable/disable log messages. By default, it is set to `false` for release build and `true` for debug builds.
+* `_PROFILING_ENABLED` - Enable/Disable the internal CPU/GPU profiler. By default, it is set to `true`.
 
 Data Files
 --------------------

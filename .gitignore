@@ -4,3 +4,4 @@ Bin/*
 *.opensdf
 *.suo
 *.ptx
+*.VC.db
