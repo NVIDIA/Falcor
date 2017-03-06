@@ -234,6 +234,7 @@ struct CameraData
     Contains information about underlying BRDF, NDF, and rules for blending with other layers.
     Also contains material properties, such as albedo and roughness.
 */
+#define ROUGHNESS_CHANNEL_BIT 2
 struct MaterialLayerDesc
 {
     uint32_t    type            DEFAULTS(MatNone);             ///< Specifies a material Type: diffuse/conductor/dielectric/etc. None means there is no material

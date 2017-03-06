@@ -146,7 +146,7 @@ namespace Falcor
                     case ResourceFormat::BGRX8UnormSrgb:
                         break;
                     default:
-                        desc.hasTexture |= 2;
+                        desc.hasTexture |= ROUGHNESS_CHANNEL_BIT;
                     }
                 }
             }

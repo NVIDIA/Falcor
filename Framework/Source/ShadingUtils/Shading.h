@@ -293,7 +293,7 @@ vec4 _fn evalSpecularLayer(in const MaterialLayerDesc desc, in const MaterialLay
     vec3 value = lAttr.lightIntensity;
 
     vec2 roughness;
-    if(desc.hasTexture & 2)
+    if(desc.hasTexture & ROUGHNESS_CHANNEL_BIT)
     {
         roughness = v2(data.albedo.w, data.albedo.w);
     }
@@ -318,7 +318,7 @@ vec4 _fn evalSpecularLayer(in const MaterialLayerDesc desc, in const MaterialLay
 
     result.roughness = roughness;
 
-    switch(desc.ndf)
+    switch (desc.ndf)
     {
     case NDFBeckmann: /* Beckmann microfacet distribution */
     {
@@ -434,12 +434,6 @@ void _fn evalMaterial(
         result.wi = 0;
         result.pdf = 0;
         result.thp = 0;
-    }
-
-    /* Ignore the layer if it's back-sided */
-    if(dot(shAttr.E, shAttr.N) <= 0.f)
-    {
-        return;
     }
 
     /* Go through all layers and perform a layer-by-layer shading and compositing */
