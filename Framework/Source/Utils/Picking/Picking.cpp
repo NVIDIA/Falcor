@@ -58,7 +58,7 @@ namespace Falcor
     void Picking::resizeFBO(uint32_t width, uint32_t height)
     {
         Fbo::Desc fboDesc;
-        fboDesc.setColorTarget(0, Falcor::ResourceFormat::R16Int).setDepthStencilTarget(Falcor::ResourceFormat::D24UnormS8);
+        fboDesc.setColorTarget(0, Falcor::ResourceFormat::R16Int).setDepthStencilTarget(Falcor::ResourceFormat::D32Float);
 
         mpFBO = FboHelper::create2D(width, height, fboDesc);
     }

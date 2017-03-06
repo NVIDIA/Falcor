@@ -155,6 +155,7 @@ namespace Falcor
         if (isDepthFormat(texFormat) && is_set(bindFlags, Texture::BindFlags::ShaderResource | Texture::BindFlags::UnorderedAccess))
         {
             desc.Format = getTypelessFormatFromDepthFormat(texFormat);
+            pClearVal = nullptr;
         }
 
         d3d_call(gpDevice->getApiHandle()->CreateCommittedResource(&kDefaultHeapProps, D3D12_HEAP_FLAG_NONE, &desc, D3D12_RESOURCE_STATE_COMMON, pClearVal, IID_PPV_ARGS(&apiHandle)));
