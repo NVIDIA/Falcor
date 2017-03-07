@@ -25,48 +25,40 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#version 420
 #include "ShaderCommon.h"
-#include "Effects/LeanMapData.h"
-#include "HlslGlslCommon.h"
+#include "Shading.h"
+#define _COMPILE_DEFAULT_VS
+#include "VertexAttrib.h"
+#include "Effects/LeanMapData.hlsli"
 
-#ifdef _MS_USER_NORMAL_MAPPING
-UNIFORM_BUFFER(LeanMapsCB, 1)
+cbuffer PerFrameCB : register(b0)
 {
-    sampler2D gLeanMaps[_LEAN_MAP_COUNT];
+#foreach p in _LIGHT_SOURCES
+    LightData $(p);
+#endforeach
+
+    float3 gAmbient;
 };
 
-void perturbNormal(in const MaterialData mat, inout ShadingAttribs shAttr, bool forceSample = false)
+#ifdef _MS_USER_NORMAL_MAPPING
+Texture2D gLeanMaps[_LEAN_MAP_COUNT] : register(t20);
+SamplerState gSampler : register(s10);
+
+void perturbNormal(in const MaterialData mat, inout ShadingAttribs shAttr, bool forceSample)
 {
     if (mat.desc.hasNormalMap != 0)
     {
-        applyLeanMap(gLeanMaps[mat.values.id], shAttr);
+        applyLeanMap(gLeanMaps[mat.values.id], gSampler, shAttr);
     }
 }
 #endif
 
 #include "shading.h"
 
-layout(binding = 0) uniform PerFrameCB
-{
-#foreach p in _LIGHT_SOURCES
-    LightData $(p);
-#endforeach
-
-    vec3 gAmbient;
-};
-
-in vec2 texC;
-in vec3 normalW;
-in vec3 posW;
-out vec4 fragColor;
-in vec3 tangentW;
-in vec3 bitangentW;
-
-void main()
+vec4 main(VS_OUT vOut) : SV_TARGET
 {
     ShadingAttribs shAttr;
-    prepareShadingAttribs(gMaterial, posW, gCam.position, normalW, tangentW, bitangentW, texC, shAttr);
+    prepareShadingAttribs(gMaterial, vOut.posW, gCam.position, vOut.normalW, vOut.bitangentW, vOut.texC, shAttr);
 
     ShadingOutput result;
 
@@ -74,8 +66,6 @@ void main()
     evalMaterial(shAttr, $(p), result, $(_valIndex) == 0);
 #endforeach
 
-    fragColor = vec4(result.finalValue, 1.f);
-
-    // add ambient
-    fragColor.rgb += gAmbient * getDiffuseColor(shAttr).rgb;
+    vec4 finalColor = vec4(result.finalValue + gAmbient * result.diffuseAlbedo, 1.f);
+    return finalColor;
 }

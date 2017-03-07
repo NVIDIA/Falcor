@@ -27,7 +27,6 @@
 ***************************************************************************/
 #include "Framework.h"
 #include "LeanMap.h"
-#include "Data/Effects/LeanMapData.h"
 #include "Graphics/Material/Material.h"
 #include "Graphics/Scene/Scene.h"
 #include "API/Device.h"
@@ -159,20 +158,20 @@ namespace Falcor
         return pLeanMaps;
     }
 
-    void LeanMap::setIntoConstantBuffer(ConstantBuffer* pUB, size_t offset, Sampler* pSampler) const
+    void LeanMap::setIntoProgramVars(ProgramVars* pVars, uint32_t texIndex) const
     {
         for(const auto& pMap : mpLeanMaps)
         {
             uint32_t id = pMap.first;
-            size_t mapOffset = id * sizeof(uint64_t) + offset;
+            uint32_t regIndex = id + texIndex;
             Texture::SharedPtr pTex = pMap.second;
-            pUB->setTexture(mapOffset, pTex.get(), pSampler);
+            pVars->setSrv(regIndex, pTex->getSRV());
         }
     }
 
-    void LeanMap::setIntoConstantBuffer(ConstantBuffer* pUB, const std::string& varName, Sampler* pSampler) const
+    void LeanMap::setIntoProgramVars(ProgramVars* pVars, const std::string& texName) const
     {
-        size_t offset = pUB->getVariableOffset(varName + "[0]");
-        setIntoConstantBuffer(pUB, offset, pSampler);
+        size_t regIndex = pVars->getReflection()->getResourceDesc(texName + "[0]")->regIndex;
+        setIntoProgramVars(pVars, (uint32_t)regIndex);
     }
 }

@@ -25,40 +25,37 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#pragma once
+#ifndef LEAN_MAP_DATA_H
+#define LEAN_MAP_DATA_H
+
 #include "Data/HostDeviceData.h"
-#ifndef HOST_CODE
-#include "HlslGlslCommon.h"
 #include "Helpers.h"
-#else
-namespace Falcor
+
+void applyLeanMap(in Texture2D leanMap, in SamplerState samplerState, inout ShadingAttribs shAttr)
 {
-#endif
+    vec4 t = sampleTexture(leanMap, samplerState, shAttr);
+    // Reconstruct B 
+    vec2 B = 2 * t.xy - 1;
+    vec2 M = t.zw;
 
-#ifndef HOST_CODE
-    void applyLeanMap(in sampler2D leanMap, inout ShadingAttribs shAttr)
+    // Apply normal
+    vec3 unnormalizedNormal = vec3(B, 1);
+    applyNormalMap(unnormalizedNormal, shAttr.N, shAttr.T, shAttr.B);
+    // Reconstruct the diagonal covariance matrix
+    vec2 maxCov = max((0), M - B*B);     // Use only diagonal of covariance due to vec2 aniso roughness
+
+    [unroll]
+    for (uint iLayer = 0; iLayer < MatMaxLayers; iLayer++)
     {
-        vec4 t = sampleTexture(leanMap, shAttr);
-        // Reconstruct B 
-        vec2 B = 2 * t.xy - 1;
-        vec2 M = t.zw;
+        if (shAttr.preparedMat.desc.layers[iLayer].type == MatNone) break;
 
-        // Apply normal
-        vec3 unnormalizedNormal = vec3(B, 1);
-        applyNormalMap(unnormalizedNormal, shAttr.N, shAttr.T, shAttr.B);
-        // Reconstruct the diagonal covariance matrix
-        vec2 maxCov = max(vec2(0), M - B*B);     // Use only diagonal of covariance due to vec2 aniso roughness
-
-        FOR_MAT_LAYERS(iLayer, shAttr.preparedMat)
+        if (shAttr.preparedMat.desc.layers[iLayer].type != MatLambert)
         {
-            if(shAttr.preparedMat.desc.layers[iLayer].type != MatLambert)
-            {
-                vec2 roughness = vec2(shAttr.preparedMat.values.layers[iLayer].roughness.constantColor);
-                roughness = sqrt(roughness*roughness + maxCov); // Approximate convolution that works for all
-                shAttr.preparedMat.values.layers[iLayer].roughness.constantColor.rg = roughness;
-            }
+            float2 roughness = shAttr.preparedMat.values.layers[iLayer].roughness.xy;
+            roughness = sqrt(roughness*roughness + maxCov); // Approximate convolution that works for all
+            shAttr.preparedMat.values.layers[iLayer].roughness.rg = roughness;
         }
     }
-#else
 }
+
 #endif

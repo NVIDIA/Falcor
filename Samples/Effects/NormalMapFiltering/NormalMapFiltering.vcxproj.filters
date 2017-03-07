@@ -12,7 +12,7 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <None Include="Data\NormalMapFiltering.fs">
+    <None Include="Data\NormalMapFiltering.ps.hlsl">
       <Filter>Data</Filter>
     </None>
   </ItemGroup>

@@ -38,17 +38,15 @@ namespace Falcor
     bool GraphicsStateObject::apiInit()
     {
         D3D12_GRAPHICS_PIPELINE_STATE_DESC desc = {};
-        if (mDesc.mpProgram)
-        {
+        assert(mDesc.mpProgram);
 #define get_shader_handle(_type) mDesc.mpProgram->getShader(_type) ? mDesc.mpProgram->getShader(_type)->getApiHandle() : D3D12_SHADER_BYTECODE{}
 
-            desc.VS = get_shader_handle(ShaderType::Vertex);
-            desc.PS = get_shader_handle(ShaderType::Pixel);
-            desc.GS = get_shader_handle(ShaderType::Geometry);
-            desc.HS = get_shader_handle(ShaderType::Hull);
-            desc.DS = get_shader_handle(ShaderType::Domain);
+        desc.VS = get_shader_handle(ShaderType::Vertex);
+        desc.PS = get_shader_handle(ShaderType::Pixel);
+        desc.GS = get_shader_handle(ShaderType::Geometry);
+        desc.HS = get_shader_handle(ShaderType::Hull);
+        desc.DS = get_shader_handle(ShaderType::Domain);
 #undef get_shader_handle
-        }
 
         initD3DBlendDesc(mDesc.mpBlendState.get(), desc.BlendState);
         initD3DRasterizerDesc(mDesc.mpRasterizerState.get(), desc.RasterizerState);

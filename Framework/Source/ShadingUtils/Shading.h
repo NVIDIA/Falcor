@@ -259,15 +259,15 @@ vec2 _fn filterRoughness(in const ShadingAttribs shAttr, in const LightAttribs l
     // Compute half-vector derivatives
     vec3  H = normalize(shAttr.E + lAttr.L);
     vec2  hpp = v2(dot(H, shAttr.T), dot(H, shAttr.B));
-    vec2  hppDx = dFdx(hpp);
-    vec2  hppDy = dFdy(hpp);
+    vec2  hppDx = ddx_fine(hpp);
+    vec2  hppDy = ddy_fine(hpp);
 #endif
     // Compute filtering region
     vec2 rectFp = (abs(hppDx) + abs(hppDy)) * 0.5f;
 
     // For grazing angles where the first-order footprint goes to very high values
     // Usually you don’t need such high values and the maximum value of 1.0 or even 0.1 is enough for filtering.
-    rectFp = min(v2(0.7f), rectFp);
+    rectFp = min(0.7f, rectFp);
 
     // Covariance matrix of pixel filter's Gaussian (remapped in roughness units)
     vec2 covMx = rectFp * rectFp * 2.f;   // Need to x2 because roughness = sqrt(2) * pixel_sigma_hpp

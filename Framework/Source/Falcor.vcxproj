@@ -769,7 +769,7 @@
     <ClInclude Include="API\Window.h" />
     <ClInclude Include="ArgList.h" />
     <ClInclude Include="Data\Effects\CsmData.h" />
-    <ClInclude Include="Data\Effects\LeanMapData.h" />
+    <ClInclude Include="Data\Effects\LeanMapData.hlsli" />
     <ClInclude Include="Data\HlslGlslCommon.h" />
     <ClInclude Include="Data\HostDeviceData.h" />
     <ClInclude Include="Data\ShaderCommon.h" />

@@ -17,7 +17,10 @@
     <ClInclude Include="NormalMapFiltering.h" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="Data\NormalMapFiltering.fs" />
+    <None Include="Data\NormalMapFiltering.ps.hlsl">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Framework\Source\Falcor.vcxproj">

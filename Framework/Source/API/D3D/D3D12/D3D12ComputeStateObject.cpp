@@ -35,11 +35,9 @@ namespace Falcor
     bool ComputeStateObject::apiInit()
     {
         D3D12_COMPUTE_PIPELINE_STATE_DESC desc = {};
-        if (mDesc.mpProgram)
-        {
-            desc.CS = mDesc.mpProgram->getShader(ShaderType::Compute)->getApiHandle();
-        }
-
+        assert(mDesc.mpProgram);
+        desc.CS = mDesc.mpProgram->getShader(ShaderType::Compute)->getApiHandle();
+        
         desc.pRootSignature = mDesc.mpRootSignature ? mDesc.mpRootSignature->getApiHandle() : nullptr;
 
         d3d_call(gpDevice->getApiHandle()->CreateComputePipelineState(&desc, IID_PPV_ARGS(&mApiHandle)));
