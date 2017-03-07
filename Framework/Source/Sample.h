@@ -147,10 +147,6 @@ namespace Falcor
         */
         void setWindowTitle(const std::string& title);
         
-        /** Stops the render loop. Use it to gracefully close the app
-        */
-        void stopRenderLoop();
-        
         /** show/hide the UI
         */
         void toggleUI(bool showUI) { mShowUI = showUI; }

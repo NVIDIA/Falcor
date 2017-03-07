@@ -497,9 +497,4 @@ namespace Falcor
     {
         mpWindow->setWindowTitle(title);
     }
-
-    void Sample::stopRenderLoop()
-    {
-        return mpWindow->close();
-    }
 }

@@ -94,10 +94,6 @@ namespace Falcor
 		*/
         void setWindowTitle(std::string title);
 
-        /** Let the window know it needs to close
-        */
-        void close() const;
-
 		/** Get the native window handle
 		*/
         ApiHandle getApiHandle() const { return mApiHandle; }
