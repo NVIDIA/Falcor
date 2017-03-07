@@ -30,7 +30,8 @@
 using namespace Falcor;
 
 const Gui::DropdownList PostProcess::kImageList = { { HdrImage::EveningSun, "Evening Sun" },
-{ HdrImage::AtTheWindow, "Window" }, { HdrImage::OvercastDay, "Overcast Day" } };
+                                                    { HdrImage::AtTheWindow, "Window" },
+                                                    { HdrImage::OvercastDay, "Overcast Day" } };
 
 void PostProcess::onLoad()
 {

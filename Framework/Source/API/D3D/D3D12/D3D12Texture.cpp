@@ -92,7 +92,7 @@ namespace Falcor
         case Texture::Type::Texture2DMultisample:
             return (isTextureArray) ? D3D12_SRV_DIMENSION_TEXTURE2DMSARRAY : D3D12_SRV_DIMENSION_TEXTURE2DMS;
         case Texture::Type::TextureCube:
-            return D3D12_SRV_DIMENSION_TEXTURE2DARRAY;
+            return (isTextureArray) ? D3D12_SRV_DIMENSION_TEXTURECUBEARRAY : D3D12_SRV_DIMENSION_TEXTURECUBE;
         default:
             should_not_get_here();
             return D3D12_SRV_DIMENSION_UNKNOWN;
@@ -165,9 +165,11 @@ namespace Falcor
             auto& pRenderContext = gpDevice->getRenderContext();
             if (autoGenMips)
             {
+                // Upload just the first mip-level
                 size_t arraySliceSize = pTexture->getWidth() * pTexture->getHeight() * getFormatBytesPerBlock(pTexture->getFormat());
                 const uint8_t* pSrc = (uint8_t*)pData;
-                for (uint32_t i = 0; i < pTexture->getArraySize(); i++)
+                uint32_t numFaces = (pTexture->getType() == Texture::Type::TextureCube) ? 6 : 1;
+                for (uint32_t i = 0; i < pTexture->getArraySize() * numFaces; i++)
                 {
                     uint32_t subresource = pTexture->getSubresourceIndex(i, 0);
                     pRenderContext->updateTextureSubresource(pTexture, subresource, pSrc);
@@ -252,6 +254,12 @@ namespace Falcor
 
     void Texture::generateMips() const
     {
+        if (mType != Type::Texture2D)
+        {
+            logWarning("Texture::generateMips() only supports 2D textures");
+            return;
+        }
+
         if (mpApiData->spGenMips == nullptr)
         {
             mpApiData->spGenMips = std::make_unique<GenMipsData>();

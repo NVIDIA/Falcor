@@ -44,32 +44,27 @@ namespace Falcor
     {
     public:
         using UniquePtr = std::unique_ptr<SkyBox>;
-        static UniquePtr create(Falcor::Texture::SharedPtr& pSkyTexture, Falcor::Sampler::SharedPtr pSampler = nullptr, bool renderStereo = false);
-        static UniquePtr createFromTexCube(const std::string& textureName, bool loadAsSrgb = true, Falcor::Sampler::SharedPtr pSampler = nullptr, bool renderStereo = false);
-        void render(Falcor::RenderContext* pRenderCtx, Falcor::Camera* pCamera);
-        void setSampler(Falcor::Sampler::SharedPtr pSampler) { mpSampler = pSampler; }
+        static UniquePtr create(Texture::SharedPtr& pTexture, Sampler::SharedPtr pSampler = nullptr, bool renderStereo = false);
+        static UniquePtr createFromTexCube(const std::string& textureName, bool loadAsSrgb = true, Sampler::SharedPtr pSampler = nullptr, bool renderStereo = false);
+        void render(RenderContext* pRenderCtx, Camera* pCamera);
+        void setSampler(Sampler::SharedPtr pSampler);
 
-        Falcor::Texture::SharedPtr getTexture() const { return mpTexture; }
-        Falcor::Sampler::SharedPtr getSampler() const { return mpSampler; }
+        Texture::SharedPtr getTexture() const;
+        Sampler::SharedPtr getSampler() const;
 
         void setScale(float scale) { mScale = scale; }
         float getScale() const { return mScale; }
     private:
         SkyBox() = default;
-        bool createResources(Falcor::Texture::SharedPtr& pSkyTexture, Falcor::Sampler::SharedPtr pSampler, bool renderStereo);
+        bool createResources(Texture::SharedPtr& pTexture, Sampler::SharedPtr pSampler, bool renderStereo);
 
         size_t mMatOffset;
         size_t mScaleOffset;
-        size_t mTexOffset;
 
         float mScale = 1;
-        Falcor::Texture::SharedPtr mpTexture;
-        Falcor::Model::SharedPtr mpCubeModel;
-        Falcor::Program::SharedPtr mpProgram;
-        Falcor::ConstantBuffer::SharedPtr mpCB;
-        Falcor::Sampler::SharedPtr mpSampler;
-        Falcor::RasterizerState::SharedPtr mpNoCullRsState;
-        Falcor::DepthStencilState::SharedPtr mpDepthStencilState;
-        Falcor::BlendState::SharedPtr mpBlendState;
+        Model::SharedPtr mpCubeModel;
+        GraphicsProgram::SharedPtr mpProgram;
+        GraphicsVars::SharedPtr mpVars;
+        GraphicsState::SharedPtr mpState;
     };
 }

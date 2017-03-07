@@ -25,39 +25,10 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#version 420
+TextureCube gTexture;
+SamplerState gSampler;
 
-#ifdef _SINGLE_PASS_STEREO
-#extension GL_NV_viewport_array2: require
-#extension GL_NV_stereo_view_rendering: require
-layout(secondary_view_offset=1) out int gl_Layer;
-#endif
-
-#include "VertexAttrib.h"
-#include "ShaderCommon.h"
-#include "HlslGlslCommon.h"
-
-layout(location = VERTEX_POSITION_LOC) in vec4 vPos;
-out vec3 texC;
-
-CONSTANT_BUFFER(PerFrameCB, 0)
+float4 main(float3 dir : NORMAL) : SV_TARGET
 {
-    mat4 gWorld;
-    samplerCube gSkyTex;
-    float gScale;
-};
-
-void main()
-{
-    texC = vPos.xyz;
-    vec4 viewPos = gCam.viewMat * gWorld * vPos;
-    gl_Position = gCam.projMat * viewPos;
-    gl_Position.xy *= gScale;
-    gl_Position.z = gl_Position.w;
-
-#ifdef _SINGLE_PASS_STEREO
-  gl_SecondaryPositionNV.x = (gCam.rightEyeProjMat * viewPos).x * gScale;
-  gl_SecondaryPositionNV.yzw = gl_Position.yzw;
-  gl_Layer = 0;
-#endif
+	return gTexture.Sample(gSampler, normalize(dir), 0);
 }

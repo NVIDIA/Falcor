@@ -92,7 +92,7 @@ namespace Falcor
         if (currentData.pCamera)
         {
             ConstantBuffer* pCB = pContext->getGraphicsVars()->getConstantBuffer(kPerFrameCbName).get();
-            if (pCB != nullptr)
+            if (pCB)
             {
                 currentData.pCamera->setIntoConstantBuffer(pCB, sCameraDataOffset);
             }
@@ -105,12 +105,15 @@ namespace Falcor
         if(currentData.pModel->hasBones())
         {
             ConstantBuffer* pCB = pContext->getGraphicsVars()->getConstantBuffer(kPerSkinnedMeshCbName).get();
-            if (sBonesOffset == ConstantBuffer::kInvalidOffset)
+            if(pCB)
             {
-                sBonesOffset = pCB->getVariableOffset("gBones");
-            }
+                if (sBonesOffset == ConstantBuffer::kInvalidOffset)
+                {
+                    sBonesOffset = pCB->getVariableOffset("gBones");
+                }
 
-            pCB->setVariableArray(sBonesOffset, currentData.pModel->getBonesMatrices(), currentData.pModel->getBonesCount());
+                pCB->setVariableArray(sBonesOffset, currentData.pModel->getBonesMatrices(), currentData.pModel->getBonesCount());
+            }
         }
         return true;
     }
@@ -127,19 +130,22 @@ namespace Falcor
 
     bool SceneRenderer::setPerMeshInstanceData(RenderContext* pContext, const Scene::ModelInstance::SharedPtr& pModelInstance, const Model::MeshInstance::SharedPtr& pMeshInstance, uint32_t drawInstanceID, const CurrentWorkingData& currentData)
     {
-        const Mesh* pMesh = pMeshInstance->getObject().get();
-
-        glm::mat4 worldMat;
-        if(pMesh->hasBones() == false)
-        {
-            worldMat = pModelInstance->getTransformMatrix() * pMeshInstance->getTransformMatrix();
-        }
-
         ConstantBuffer* pCB = pContext->getGraphicsVars()->getConstantBuffer(kPerStaticMeshCbName).get();
-        pCB->setBlob(&worldMat, sWorldMatOffset + drawInstanceID*sizeof(glm::mat4), sizeof(glm::mat4));
+        if(pCB)
+        {
+            const Mesh* pMesh = pMeshInstance->getObject().get();
 
-        // Set mesh id
-        pCB->setVariable(sMeshIdOffset, pMesh->getId());
+            glm::mat4 worldMat;
+            if (pMesh->hasBones() == false)
+            {
+                worldMat = pModelInstance->getTransformMatrix() * pMeshInstance->getTransformMatrix();
+            }
+
+            pCB->setBlob(&worldMat, sWorldMatOffset + drawInstanceID * sizeof(glm::mat4), sizeof(glm::mat4));
+
+            // Set mesh id
+            pCB->setVariable(sMeshIdOffset, pMesh->getId());
+        }
 
         return true;
     }
@@ -149,7 +155,7 @@ namespace Falcor
         ProgramVars* pGraphicsVars = pContext->getGraphicsVars().get();
 
         ConstantBuffer* pCB = pGraphicsVars->getConstantBuffer(kPerMaterialCbName).get();
-        if (pCB != nullptr)
+        if (pCB)
         {
             currentData.pMaterial->setIntoProgramVars(pGraphicsVars, pCB, "gMaterial");
         }

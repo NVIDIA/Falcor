@@ -1717,12 +1717,6 @@
     <None Include="Data\Effects\GaussianBlur.fs">
       <Filter>Data\Effects</Filter>
     </None>
-    <None Include="Data\Effects\SkyBox.fs">
-      <Filter>Data\Effects</Filter>
-    </None>
-    <None Include="Data\Effects\SkyBox.vs">
-      <Filter>Data\Effects</Filter>
-    </None>
     <None Include="..\Externals\dear_imgui\LICENSE">
       <Filter>Externals\dear_imgui</Filter>
     </None>
@@ -2087,6 +2081,12 @@
       <Filter>Data\Effects</Filter>
     </None>
     <None Include="Data\Effects\ShadowPass.vs.hlsl">
+      <Filter>Data\Effects</Filter>
+    </None>
+    <None Include="Data\Effects\SkyBox.ps.hlsl">
+      <Filter>Data\Effects</Filter>
+    </None>
+    <None Include="Data\Effects\SkyBox.vs.hlsl">
       <Filter>Data\Effects</Filter>
     </None>
   </ItemGroup>

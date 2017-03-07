@@ -27,11 +27,17 @@
 ***************************************************************************/
 #include "EnvMap.h"
 
-void EnvMap::initUI()
+void EnvMap::onGuiRender()
 {
-    Gui::setGlobalHelpMessage("Sample application to load and display a model.\nUse the UI to switch between wireframe and solid mode.");
-//     mpGui->addButton("Load TexCube", loadTextureCB, this, "");
-//     mpGui->addFloatVarWithCallback("Cubemap Scale", setScaleCB, getScaleCB, this, "", 0.01f, FLT_MAX, 0.01f);
+    if (mpGui->addButton("Load TexCube"))
+    {
+        loadTexture();
+    }
+    float s = mpSkybox->getScale();
+    if (mpGui->addFloatVar("Cubemap Scale", s, 0.01f, FLT_MAX, 0.01f))
+    {
+        mpSkybox->setScale(s);
+    }
 }
 
 void EnvMap::onLoad()
@@ -42,7 +48,6 @@ void EnvMap::onLoad()
     Sampler::Desc samplerDesc;
     samplerDesc.setFilterMode(Sampler::Filter::Linear, Sampler::Filter::Linear, Sampler::Filter::Linear);
     mpTriLinearSampler = Sampler::create(samplerDesc);
-    initUI();
 
     mpSkybox = SkyBox::createFromTexCube("Cubemaps\\Sorsele3\\Sorsele3.dds", true, mpTriLinearSampler);
 }
@@ -56,12 +61,6 @@ void EnvMap::loadTexture()
     }
 }
 
-void EnvMap::loadTextureCB(void* pThis)
-{
-    EnvMap* pEnvMap = (EnvMap*)pThis;
-    pEnvMap->loadTexture();
-}
-
 void EnvMap::onFrameRender()
 {
     const glm::vec4 clearColor(0.38f, 0.52f, 0.10f, 1);
@@ -72,12 +71,6 @@ void EnvMap::onFrameRender()
         mpCameraController->update();
         mpSkybox->render(mpRenderContext.get(), mpCamera.get());
     }
-    renderText(getGlobalSampleMessage(true), glm::vec2(10, 10));
-}
-
-void EnvMap::onShutdown()
-{
-
 }
 
 bool EnvMap::onKeyEvent(const KeyboardEvent& keyEvent)
@@ -90,11 +83,6 @@ bool EnvMap::onMouseEvent(const MouseEvent& mouseEvent)
     return mpCameraController->onMouseEvent(mouseEvent);
 }
 
-void EnvMap::onDataReload()
-{
-
-}
-
 void GUI_CALL EnvMap::getScaleCB(void* pData, void* pThis)
 {
     EnvMap* pEnv = (EnvMap*)pThis;
@@ -103,6 +91,7 @@ void GUI_CALL EnvMap::getScaleCB(void* pData, void* pThis)
         *(float*)pData = pEnv->mpSkybox->getScale();
     }
 }
+
 void GUI_CALL EnvMap::setScaleCB(const void* pData, void* pThis)
 {
     EnvMap* pEnv = (EnvMap*)pThis;
@@ -115,12 +104,10 @@ void GUI_CALL EnvMap::setScaleCB(const void* pData, void* pThis)
 
 void EnvMap::onResizeSwapChain()
 {
-    RenderContext::Viewport vp;
-    vp.height = (float)mpDefaultFBO->getHeight();
-    vp.width = (float)mpDefaultFBO->getWidth();
-    mpRenderContext->setViewport(0, vp);
+    float h = (float)mpDefaultFBO->getHeight();
+    float w = (float)mpDefaultFBO->getWidth();
     mpCamera->setFovY(float(M_PI / 8));
-    mpCamera->setAspectRatio(vp.width / vp.height);
+    mpCamera->setAspectRatio(w / h);
     mpCamera->setDepthRange(0.01f, 1000);
 }
 

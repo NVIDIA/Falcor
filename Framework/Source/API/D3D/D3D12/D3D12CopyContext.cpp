@@ -147,21 +147,21 @@ namespace Falcor
         const uint8_t* pSrc = (uint8_t*)pData;
         for (uint32_t s = 0; s < subresourceCount; s++)
         {
-            uint32_t subresource = s + firstSubresource;
-            uint32_t physicalWidth = footprint[subresource].Footprint.Width / getFormatWidthCompressionRatio(pTexture->getFormat());
-            uint32_t physicalHeight = footprint[subresource].Footprint.Height / getFormatHeightCompressionRatio(pTexture->getFormat());
+            uint32_t physicalWidth = footprint[s].Footprint.Width / getFormatWidthCompressionRatio(pTexture->getFormat());
+            uint32_t physicalHeight = footprint[s].Footprint.Height / getFormatHeightCompressionRatio(pTexture->getFormat());
 
             D3D12_SUBRESOURCE_DATA src;
             src.pData = pSrc;
             src.RowPitch = physicalWidth * getFormatBytesPerBlock(pTexture->getFormat());
             src.SlicePitch = src.RowPitch * physicalHeight;
-            copySubresourceData(src, footprint[subresource], pDst, rowSize[subresource], rowCount[subresource]);
-            pSrc = (uint8_t*)pSrc + footprint[subresource].Footprint.Depth * src.SlicePitch;
+            copySubresourceData(src, footprint[s], pDst, rowSize[s], rowCount[s]);
+            pSrc = (uint8_t*)pSrc + footprint[s].Footprint.Depth * src.SlicePitch;
 
             // Dispatch a command
-            footprint[subresource].Offset += offset;
+            footprint[s].Offset += offset;
+            uint32_t subresource = s + firstSubresource;
             D3D12_TEXTURE_COPY_LOCATION dstLoc = { pTexture->getApiHandle(), D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX, subresource };
-            D3D12_TEXTURE_COPY_LOCATION srcLoc = { pResource, D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT, footprint[subresource] };
+            D3D12_TEXTURE_COPY_LOCATION srcLoc = { pResource, D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT, footprint[s] };
             mpLowLevelData->getCommandList()->CopyTextureRegion(&dstLoc, 0, 0, 0, &srcLoc, nullptr);
         }
 

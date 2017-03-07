@@ -25,22 +25,27 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#version 420
+#ifdef _SINGLE_PASS_STEREO
+fixme
+#endif
 
 #include "ShaderCommon.h"
-#include "HlslGlslCommon.h"
 
-CONSTANT_BUFFER(PerFrameCB, 0)
+cbuffer PerFrameCB : register(b0)
 {
-    mat4 gWorld;
-    samplerCube gSkyTex;
+    float4x4 gWorld;
     float gScale;
 };
 
-in vec3 texC;
-out vec4 fragColor;
-
-void main()
+void main(float4 posL : POSITION, out float3 dir : NORMAL, out float4 posH : SV_POSITION)
 {
-	fragColor = texture(gSkyTex, normalize(texC));
+    dir = posL.xyz;
+    float4 viewPos = mul(gCam.viewMat, mul(gWorld, posL));
+    posH = mul(gCam.projMat, viewPos);
+    posH.xy *= gScale;
+    posH.z = posH.w;
+
+#ifdef _SINGLE_PASS_STEREO
+    fixme
+#endif
 }
