@@ -10,7 +10,8 @@ def main():
 	parser.add_argument('-numZ', '--numTilesZ', action='store', help='the number of depth tiles')
 	parser.add_argument('-sizeX', '--tileSizeX', action='store', help='the x distance between tiles')
 	parser.add_argument('-sizeZ', '--tileSizeZ', action='store', help='the z distance between tiles')
-	parser.add_argument('-rot', '--rotation', action='store_true', help='if set, applies a random 90 degree rot to tiles')
+	parser.add_argument('-randRotY', '--randRotationY', action='store_true', help='Optional. If set, applies a random 90 degree rot to tiles')
+	parser.add_argument('-rotX', '--rotationX', action='store', help='Optional, applies a given x rotation to tiles.')
 	args = parser.parse_args()
 
 	if not args.modelFile:
@@ -57,6 +58,14 @@ def main():
 			print 'ERROR: Unable to convert num tiles Z ' + args.numTilesZ + ' to int'
 			sys.exit(1)
 
+	if args.rotationX:
+		try:
+			rotX = float(args.rotationX)
+		except:
+			print 'ERROR: Unabled to convert rotation X ' + args.rotationX + ' to float'
+	else:
+		rotX = 0
+
 	name, extension = os.path.splitext(args.modelFile)
 	outfile = open(name + '_tiled.fscene', 'w')
 
@@ -97,13 +106,18 @@ def main():
 			outfile.write('\t\t\t\t\t\t1.0\n')
 			outfile.write('\t\t\t\t\t],\n')
 			outfile.write('\t\t\t\t\t\"rotation\": [\n')
-			outfile.write('\t\t\t\t\t\t0.0,\n')
-			if(args.rotation):
-				randRot = 90 * randint(0, 3)
+			outfile.write('\t\t\t\t\t\t' + str(rotX) + ',\n')
+			if args.randRotationY:
+				randRotY = 90 * randint(0, 3)
 			else:
-				randRot = 0.0
-			outfile.write('\t\t\t\t\t\t' + str(randRot) + ',\n')
-			outfile.write('\t\t\t\t\t\t0.0\n')
+				randRotY = 0.0
+			#if it is Z up, actually want to rotate Z, not Y. 
+			if args.rotationX:
+				outfile.write('\t\t\t\t\t\t0.0,\n')
+				outfile.write('\t\t\t\t\t\t' + str(randRotY) + '\n')
+			else:
+				outfile.write('\t\t\t\t\t\t' + str(randRotY) + ',\n')
+				outfile.write('\t\t\t\t\t\t0.0\n')
 			outfile.write('\t\t\t\t\t]\n')
 			if(i == numX - 1 and j == numZ - 1):
 				outfile.write('\t\t\t\t}\n')
@@ -127,9 +141,23 @@ def main():
 	outfile.write('\t\t\t\t0.388235640525818\n')
 	outfile.write('\t\t\t],\n')
 	outfile.write('\t\t\t\"direction\": [\n')
-	outfile.write('\t\t\t\t0.0,\n')
+	outfile.write('\t\t\t\t0.2235,\n')
 	outfile.write('\t\t\t\t-0.894,\n')
 	outfile.write('\t\t\t\t-0.447\n')
+	outfile.write('\t\t\t]\n')
+	outfile.write('\t\t},\n')
+	outfile.write('\t\t{\n')
+	outfile.write('\t\t\t\"name\": \"DirLight1\",\n')
+	outfile.write('\t\t\t\"type\": \"dir_light\",\n')
+	outfile.write('\t\t\t\"intensity\": [\n')
+	outfile.write('\t\t\t\t0.388235640525818,\n')
+	outfile.write('\t\t\t\t0.388235640525818,\n')
+	outfile.write('\t\t\t\t0.388235640525818\n')
+	outfile.write('\t\t\t],\n')
+	outfile.write('\t\t\t\"direction\": [\n')
+	outfile.write('\t\t\t\t-0.2235,\n')
+	outfile.write('\t\t\t\t-0.894,\n')
+	outfile.write('\t\t\t\t0.447\n')
 	outfile.write('\t\t\t]\n')
 	outfile.write('\t\t}\n')
 	outfile.write('\t],\n')
@@ -157,7 +185,8 @@ def main():
 	outfile.write('\t\t\t\"fovY\": 60.0,\n')
 	outfile.write('\t\t\t\"depth_range\": [\n')
 	outfile.write('\t\t\t\t1.0,\n')
-	outfile.write('\t\t\t\t1000.0\n')
+	depthMax = max(xSize * numX, zSize * numZ)
+	outfile.write('\t\t\t\t' + str(depthMax) + '\n')
 	outfile.write('\t\t\t],\n')
 	outfile.write('\t\t\t\"aspect_ratio\": 1.777\n')
 	outfile.write('\t\t}\n')
