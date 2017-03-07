@@ -22,6 +22,7 @@ MultiPassPostProcess released3d12 : -test -ssframes 40 -shutdown 1000 -loadimage
 MultiPassPostProcess released3d12 : -test -ssframes 40 -shutdown 1000 -loadimage C:\\Users\\clavelle\\Desktop\\FalcorGitHub\\Media\\TestTex2.png
 MultiPassPostProcess released3d12 : -test -ssframes 40 -shutdown 1000 -loadimage C:\\Users\\clavelle\\Desktop\\FalcorGitHub\\Media\\TestTex2.png -radialblur
 MultiPassPostProcess released3d12 : -test -ssframes 40 -shutdown 1000 -loadimage C:\\Users\\clavelle\\Desktop\\FalcorGitHub\\Media\\TestTex2.png -radialblur -grayscale
-ModelViewer released3d12 10 .10 : -test -loadtime -perfframes 250 1250 -ssframes 50 -shutdown 2500 -cameraradius 3 -loadmodel C:\\Users\\clavelle\\Desktop\\FalcorGitHub\\Media\\classroom-minimal.obj
 ModelViewer released3d12 10 .10 : -test -loadtime -perfframes 50 250 -ssframes 300 -shutdown 325 -cameraradius 700 -loadmodel C:\Users\clavelle\Desktop\quantum\\qb_vs_textures_instances_v2_downscaled_4x.bin
+ModelViewer released3d12 10 .10 : -test -ssframes 50 -shutdown 100 -cameraradius 3 -loadmodel C:\\Users\\clavelle\\Desktop\\FalcorGitHub\\Media\\classroom-minimal.obj
+ModelViewer released3d12 10 .10 : -test -ssframes 50 -shutdown 100 -cameraradius 10 -loadmodel C:\Users\clavelle\Desktop\FalcorGithub\Media\Bumpy\bumpyplane.obj
 Shadows released3d12 10 .10 : -test -loadtime -incrementFilter 100 300 500 700 900 1100 -ssframes 150 350 550 750 950 1150 -perfframes 175 275 375 475 575 675 775 875 975 1075 1175 1275 -shutdown 1300

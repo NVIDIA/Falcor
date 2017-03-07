@@ -177,10 +177,10 @@ testing_func(VaoTest, TestLayout)
     bufferVec.push_back(pBuffer);
     
     //Create Layout
-    const uint32_t numElements = 5;
-    std::string names[numElements] = { VERTEX_POSITION_NAME, VERTEX_NORMAL_NAME, VERTEX_TANGENT_NAME, VERTEX_BITANGENT_NAME, VERTEX_TEXCOORD_NAME };
-    ResourceFormat formats[numElements] = { ResourceFormat::RGBA32Float, ResourceFormat::RGB32Float, ResourceFormat::RGB32Float, ResourceFormat::RGB32Float, ResourceFormat::RG32Float };
-    uint32_t shaderLocs[numElements] = { VERTEX_POSITION_LOC, VERTEX_NORMAL_LOC, VERTEX_TANGENT_LOC, VERTEX_BITANGENT_LOC, VERTEX_TEXCOORD_LOC };
+    const uint32_t numElements = 4;
+    std::string names[numElements] = { VERTEX_POSITION_NAME, VERTEX_NORMAL_NAME, VERTEX_BITANGENT_NAME, VERTEX_TEXCOORD_NAME };
+    ResourceFormat formats[numElements] = { ResourceFormat::RGBA32Float, ResourceFormat::RGB32Float, ResourceFormat::RGB32Float, ResourceFormat::RG32Float };
+    uint32_t shaderLocs[numElements] = { VERTEX_POSITION_LOC, VERTEX_NORMAL_LOC, VERTEX_BITANGENT_LOC, VERTEX_TEXCOORD_LOC };
     VertexLayout::SharedPtr pLayout = VertexLayout::create();
     VertexBufferLayout::SharedPtr pBufferLayout = VertexBufferLayout::create();
     uint32_t offset = 0u;

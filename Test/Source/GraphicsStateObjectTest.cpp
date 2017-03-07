@@ -46,8 +46,7 @@ testing_func(GraphicsStateObjectTest, TestCreate)
     VertexBufferLayout::SharedPtr vBufLayout = VertexBufferLayout::create();
     vBufLayout->addElement(VERTEX_POSITION_NAME, 0u, ResourceFormat::RGBA32Float, 4u, VERTEX_POSITION_LOC);
     vBufLayout->addElement(VERTEX_NORMAL_NAME, 4u * sizeof(float), ResourceFormat::RGB32Float, 3u, VERTEX_NORMAL_LOC);
-    vBufLayout->addElement(VERTEX_TANGENT_NAME, 7u * sizeof(float), ResourceFormat::RGB32Float, 3u, VERTEX_TANGENT_LOC);
-    vBufLayout->addElement(VERTEX_BITANGENT_NAME, 10u * sizeof(float), ResourceFormat::RGB32Float, 3u, VERTEX_BITANGENT_LOC);
+    vBufLayout->addElement(VERTEX_BITANGENT_NAME, 7u * sizeof(float), ResourceFormat::RGB32Float, 3u, VERTEX_BITANGENT_LOC);
     vLayout->addBufferLayout(0u, vBufLayout);
 
     //States
