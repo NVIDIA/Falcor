@@ -334,9 +334,9 @@ namespace Falcor
         {
         case KeyboardEvent::Type::KeyPressed:
             io.KeysDown[(uint32_t)event.key] = true;
-            if (event.isChar)
+            if (event.asciiChar)
             {
-                io.AddInputCharacter((uint32_t)event.key);
+                io.AddInputCharacter(event.asciiChar);
             }
             break;
         case KeyboardEvent::Type::KeyReleased:

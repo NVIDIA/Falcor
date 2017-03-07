@@ -95,7 +95,6 @@ namespace Falcor
         }
 
     private:
-
         static void resizeWindow(Window* pWindow)
         {
             RECT r;
@@ -212,6 +211,20 @@ namespace Falcor
                 return KeyboardEvent::Key::ScrollLock;
             case VK_SNAPSHOT:
                 return KeyboardEvent::Key::PrintScreen;
+            case VK_OEM_MINUS:
+                return KeyboardEvent::Key::Minus;
+            case VK_OEM_PERIOD:
+                return KeyboardEvent::Key::Period;
+            case VK_OEM_1:
+                return KeyboardEvent::Key::Semicolon;
+            case VK_OEM_PLUS:
+                return KeyboardEvent::Key::Equal;
+            case VK_OEM_COMMA:
+                return KeyboardEvent::Key::Comma;
+            case VK_OEM_2:
+                return KeyboardEvent::Key::Slash;
+            case VK_OEM_3:
+                return KeyboardEvent::Key::GraveAccent;
             default:
                 // ASCII code
                 return (KeyboardEvent::Key)keyCode;
@@ -232,8 +245,18 @@ namespace Falcor
             KeyboardEvent keyEvent;
             keyEvent.type = isKeyDown ? KeyboardEvent::Type::KeyPressed : KeyboardEvent::Type::KeyReleased;
             keyEvent.key = translateKeyCode(keyCode);
-            keyEvent.isChar = keyEvent.key < KeyboardEvent::Key::CharsEnd;
             keyEvent.mods = getInputModifiers();
+            keyEvent.asciiChar = 0;
+
+            // Update the state table for some keys
+            BYTE keyboardState[256];
+            GetKeyboardState(keyboardState);
+            char c[2];
+            if (ToAscii((UINT)keyCode, 0, keyboardState, (WORD*)c, 0) != 0)
+            {
+                keyEvent.asciiChar = c[0];
+            }
+
             pWindow->mpCallbacks->handleKeyboardEvent(keyEvent);
         }
 
