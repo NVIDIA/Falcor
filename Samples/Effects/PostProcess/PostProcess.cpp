@@ -37,20 +37,23 @@ void PostProcess::onLoad()
 {
     //Create model and camera
     mpTeapot = Model::createFromFile("teapot.obj", 0u);
+    mpSphere = Model::createFromFile("sphere.obj", 0u);
     mpCamera = Camera::create();
     float nearZ = 0.1f;
-    float farZ = mpTeapot->getRadius() * 5000;
+    float farZ = mpSphere->getRadius() * 5000;
     mpCamera->setDepthRange(nearZ, farZ);
 
     //Setup controller
     mCameraController.attachCamera(mpCamera);
-    mCameraController.setModelParams(mpTeapot->getCenter(), mpTeapot->getRadius(), 10.0f);    
+    mCameraController.setModelParams(mpTeapot->getCenter(), mpTeapot->getRadius(), 2.0f);    
     
     //Program
-    mpProgram = GraphicsProgram::createFromFile("PostProcess.vs.hlsl", "Postprocess.ps.hlsl");
-    mpProgramVars = GraphicsVars::create(mpProgram->getActiveVersion()->getReflector());
+    mpMainProg = GraphicsProgram::createFromFile("PostProcess.vs.hlsl", "Postprocess.ps.hlsl");
+    mpProgramVars = GraphicsVars::create(mpMainProg->getActiveVersion()->getReflector());
     mpGraphicsState = GraphicsState::create();
     mpGraphicsState->setFbo(mpDefaultFBO);
+    mpSkyboxProg = GraphicsProgram::createFromFile("PostProcess.vs.hlsl", "Postprocess.ps.hlsl");
+    mpSkyboxProg->addDefine("_TEXTURE_ONLY");
 
     //Sampler
     Sampler::Desc samplerDesc;
@@ -59,6 +62,11 @@ void PostProcess::onLoad()
     mpProgramVars->setSampler(0, triLinear);
 
     mpToneMapper = ToneMapping::create(ToneMapping::Operator::HableUc2);
+
+    // Rasterizer state
+    RasterizerState::Desc rsDesc;
+    rsDesc.setCullMode(RasterizerState::CullMode::Front);
+    mpCullFrontFaceRS = RasterizerState::create(rsDesc);
 
     loadImage();
 }
@@ -111,7 +119,7 @@ void PostProcess::renderMesh(const Mesh* pMesh, GraphicsProgram::SharedPtr pProg
     //Set Gfx state
     mpGraphicsState->setVao(pMesh->getVao());
     mpGraphicsState->setRasterizerState(pRastState);
-    mpGraphicsState->setProgram(mpProgram);
+    mpGraphicsState->setProgram(pProgram);
     mpRenderContext->setGraphicsState(mpGraphicsState);
     mpRenderContext->setGraphicsVars(mpProgramVars);
     mpRenderContext->drawIndexed(pMesh->getIndexCount(), 0, 0);
@@ -125,7 +133,8 @@ void PostProcess::onFrameRender()
 
     //Render teapot to hdr fbo
     mpGraphicsState->pushFbo(mpHdrFbo);
-    renderMesh(mpTeapot->getMesh(0).get(), mpProgram, nullptr, 1);
+    renderMesh(mpSphere->getMesh(0).get(), mpSkyboxProg, mpCullFrontFaceRS, 4500);
+    renderMesh(mpTeapot->getMesh(0).get(), mpMainProg, nullptr, 1);
     mpGraphicsState->popFbo();
 
     //Run tone mapping

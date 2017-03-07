@@ -25,49 +25,44 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#version 430
-#include "hlslglslcommon.h"
 #define PI 3.141591
 
 cbuffer PerFrameCB : register(b0)
 {
-    mat4 gWvpMat;
-    mat4 gWorldMat;
-    sampler2D gEnvMap;
-    vec3 gEyePosW;
+    float4x4 gWvpMat;
+    float4x4 gWorldMat;
+    float3 gEyePosW;
     float gLightIntensity;
     float gSurfaceRoughness;
 };
 
+Texture2D gEnvMap;
+SamplerState gSampler;
+
 struct PostProcessOut
 {
-    vec4 pos : SV_POSITION;
-    vec3 posW : POSITION;
-    vec3 normalW : NORMAL;
+    float4 pos : SV_POSITION;
+    float3 posW : POSITION;
+    float3 normalW : NORMAL;
 };
 
-vec4 calcColor(vec3 normalW, vec3 posW)
+float4 main(PostProcessOut vOut) : SV_TARGET
 {
-    vec3 p = normalize(normalW);
-    vec2 uv;
+    float3 p = normalize(vOut.normalW);
+    float2 uv;
     uv.x = ( 1 + atan2(-p.z, p.x) / PI) * 0.5;
     uv.y = 1 - (-acos(p.y) / PI);
-    vec4 color = texture(gEnvMap, uv);
+    float4 color = gEnvMap.Sample(gSampler, uv);
     color.rgb *= gLightIntensity;
 #ifdef _TEXTURE_ONLY
     return color;
 #endif
     // compute halfway vector
-    vec3 eyeDir = normalize(gEyePosW - posW);
-    vec3 h = normalize(eyeDir + normalW);
+    float3 eyeDir = normalize(gEyePosW - vOut.posW);
+    float3 h = normalize(eyeDir + vOut.normalW);
     float edoth = dot(eyeDir, h);
     float intensity = pow(clamp(edoth, 0, 1), gSurfaceRoughness);
 
     color.rgb *= intensity;
     return color;
-}
-
-vec4 main(PostProcessOut vOut) : SV_TARGET
-{
-    return calcColor(vOut.normalW, vOut.posW);
 }

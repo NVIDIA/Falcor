@@ -25,30 +25,26 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#version 420
-#include "hlslglslcommon.h"
-
 cbuffer PerFrameCB : register(b0)
 {
-    mat4 gWvpMat;
-    mat4 gWorldMat;
-    sampler2D gEnvMap;
-    vec3 gEyePosW;
+    float4x4 gWvpMat;
+    float4x4 gWorldMat;
+    float3 gEyePosW;
     float gLightIntensity;
     float gSurfaceRoughness;
 };
 
 struct PostProcessIn
 {
-    vec4 pos : POSITION;
-    vec3 normal : NORMAL;
+    float4 pos : POSITION;
+    float3 normal : NORMAL;
 };
 
 struct PostProcessOut
 {
-    vec4 pos : SV_POSITION;
-    vec3 posW : POSITION;
-    vec3 normalW : NORMAL;
+    float4 pos : SV_POSITION;
+    float3 posW : POSITION;
+    float3 normalW : NORMAL;
 };
 
 PostProcessOut main(PostProcessIn vIn)
@@ -56,6 +52,6 @@ PostProcessOut main(PostProcessIn vIn)
     PostProcessOut vOut;
     vOut.pos = (mul(gWvpMat, vIn.pos));
     vOut.posW = (mul(gWvpMat, vIn.pos)).xyz;
-	vOut.normalW = (mul(gWorldMat, vec4(vIn.normal, 0))).xyz;
+	vOut.normalW = (mul(gWorldMat, float4(vIn.normal, 0))).xyz;
     return vOut;
 }
