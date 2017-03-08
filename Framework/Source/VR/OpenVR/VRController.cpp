@@ -207,7 +207,7 @@ Model::SharedPtr VRController::getRenderableModel( Texture::SharedPtr overrideTe
 
     if ( !overrideTexture )
         mpModelTexture = Texture::create2D( pTexture->unWidth, pTexture->unHeight,
-        ResourceFormat::RGBA8Unorm, 1, Texture::kEntireMipChain,
+        ResourceFormat::RGBA8Unorm, 1, Texture::kMaxPossible,
         (const void *) pTexture->rubTextureMapData );
 
     // OpenVR models use uint16_t index buffers.  Convert to uint32_t for Falcor.
@@ -260,7 +260,7 @@ Model::SharedPtr   VRController::getRenderableAxes( void )
                                                     sizeof( idxData ),
                                                     idxData,
                                                     nullptr,
-                                                    RenderContext::Topology::LineList );
+                                                    Vao::Topology::LineList );
 
     return mpRenderableAxes;
 }

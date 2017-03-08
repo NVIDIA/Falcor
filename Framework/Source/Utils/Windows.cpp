@@ -33,9 +33,9 @@
 #include <stdint.h>
 #include "Utils/StringUtils.h"
 #include <Shlwapi.h>
-#include <shlobj.h>   
+#include <shlobj.h>
 #include <sys/types.h>
-#include <sys/stat.h>
+#include "API/Window.h"
 
 // Always run in Optimus mode on laptops
 extern "C"
@@ -284,18 +284,18 @@ namespace Falcor
         return false;
     }
 
-    void setActiveWindowIcon(const std::string& iconFile)
+    void setWindowIcon(const std::string& iconFile, const Window* pWindow)
     {
         std::string fullpath;
         if(findFileInDataDirectories(iconFile, fullpath))
         {
             HANDLE hIcon = LoadImageA(GetModuleHandle(NULL), fullpath.c_str(), IMAGE_ICON, 0, 0, LR_DEFAULTSIZE | LR_LOADFROMFILE);
-            HWND hWnd = GetActiveWindow();
+            HWND hWnd = pWindow ? pWindow->getApiHandle() : GetActiveWindow();
             SendMessage(hWnd, WM_SETICON, ICON_BIG, (LPARAM)hIcon);
         }
         else
         {
-            Logger::log(Logger::Level::Error, "Error when loading icon. Can't find the file " + iconFile + ".");
+            logError("Error when loading icon. Can't find the file " + iconFile + ".");
         }
     }
 
@@ -316,6 +316,11 @@ namespace Falcor
 #else
         return false;
 #endif
+    }
+
+    void printToDebugWindow(const std::string& s)
+    {
+        OutputDebugStringA(s.c_str());
     }
 
     void debugBreak()
@@ -417,7 +422,7 @@ namespace Falcor
             FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
                             NULL, dwError, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPTSTR)&lpMsgBuf, 0, NULL);
             std::wstring err((LPTSTR)lpMsgBuf);
-            Logger::log(Logger::Level::Warning, "setThreadAffinity failed with error: " + std::string(err.begin(), err.end()));
+            logWarning("setThreadAffinity failed with error: " + std::string(err.begin(), err.end()));
             LocalFree(lpMsgBuf);
         }
     }
@@ -439,7 +444,7 @@ namespace Falcor
             FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
                 NULL, dwError, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPTSTR)&lpMsgBuf, 0, NULL);
             std::wstring err((LPTSTR)lpMsgBuf);
-            Logger::log(Logger::Level::Warning, "setThreadPriority failed with error: " + std::string(err.begin(), err.end()));
+            logWarning("setThreadPriority failed with error: " + std::string(err.begin(), err.end()));
             LocalFree(lpMsgBuf);
         }
     }
@@ -449,7 +454,7 @@ namespace Falcor
         struct stat s;
         if(stat(filename.c_str(), &s) != 0)
         {
-            Logger::log(Logger::Level::Error, "Can't get file time for '" + filename + "'");
+            logError("Can't get file time for '" + filename + "'");
             return 0;
         }
 

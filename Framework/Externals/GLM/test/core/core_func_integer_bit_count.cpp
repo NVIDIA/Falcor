@@ -1,34 +1,3 @@
-///////////////////////////////////////////////////////////////////////////////////
-/// OpenGL Mathematics (glm.g-truc.net)
-///
-/// Copyright (c) 2005 - 2014 G-Truc Creation (www.g-truc.net)
-/// Permission is hereby granted, free of charge, to any person obtaining a copy
-/// of this software and associated documentation files (the "Software"), to deal
-/// in the Software without restriction, including without limitation the rights
-/// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-/// copies of the Software, and to permit persons to whom the Software is
-/// furnished to do so, subject to the following conditions:
-/// 
-/// The above copyright notice and this permission notice shall be included in
-/// all copies or substantial portions of the Software.
-/// 
-/// Restrictions:
-///		By making use of the Software for military purposes, you choose to make
-///		a Bunny unhappy.
-/// 
-/// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-/// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-/// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-/// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-/// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-/// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-/// THE SOFTWARE.
-///
-/// @file test/core/func_integer_bit_count.cpp
-/// @date 2011-01-15 / 2014-11-25
-/// @author Christophe Riccio
-///////////////////////////////////////////////////////////////////////////////////
-
 // This has the programs for computing the number of 1-bits
 // in a word, or byte, etc.
 // Max line length is 57, to fit in hacker.book.
@@ -210,7 +179,7 @@ int main()
 #	ifdef NDEBUG
 
 	int i, n;
-	static int test[] = {0,0, 1,1, 2,1, 3,2, 4,1, 5,2, 6,2, 7,3,
+	static unsigned test[] = {0,0, 1,1, 2,1, 3,2, 4,1, 5,2, 6,2, 7,3,
 		8,1, 9,2, 10,2, 11,3, 12,2, 13,3, 14,3, 15,4, 16,1, 17,2,
 		0x3F,6, 0x40,1, 0x41,2, 0x7f,7, 0x80,1, 0x81,2, 0xfe,7, 0xff,8,
 		0x4000,1, 0x4001,2, 0x7000,3, 0x7fff,15,
@@ -230,7 +199,7 @@ int main()
 		if (pop0(test[i]) != test[i+1]) error(test[i], pop0(test[i]));}
 	TimestampEnd = std::clock();
 
-	printf("pop0: %d clocks\n", TimestampEnd - TimestampBeg);
+	printf("pop0: %ld clocks\n", TimestampEnd - TimestampBeg);
 
 	TimestampBeg = std::clock();
 	for (std::size_t k = 0; k < Count; ++k)
@@ -238,7 +207,7 @@ int main()
 		if (pop1(test[i]) != test[i+1]) error(test[i], pop1(test[i]));}
 	TimestampEnd = std::clock();
 
-	printf("pop1: %d clocks\n", TimestampEnd - TimestampBeg);
+	printf("pop1: %ld clocks\n", TimestampEnd - TimestampBeg);
 
 	TimestampBeg = std::clock();
 	for (std::size_t k = 0; k < Count; ++k)
@@ -246,7 +215,7 @@ int main()
 		if (pop2(test[i]) != test[i+1]) error(test[i], pop2(test[i]));}
 	TimestampEnd = std::clock();
 
-	printf("pop2: %d clocks\n", TimestampEnd - TimestampBeg);
+	printf("pop2: %ld clocks\n", TimestampEnd - TimestampBeg);
 
 	TimestampBeg = std::clock();
 	for (std::size_t k = 0; k < Count; ++k)
@@ -254,7 +223,7 @@ int main()
 		if (pop3(test[i]) != test[i+1]) error(test[i], pop3(test[i]));}
 	TimestampEnd = std::clock();
 
-	printf("pop3: %d clocks\n", TimestampEnd - TimestampBeg);
+	printf("pop3: %ld clocks\n", TimestampEnd - TimestampBeg);
 
 	TimestampBeg = std::clock();
 	for (std::size_t k = 0; k < Count; ++k)
@@ -262,7 +231,7 @@ int main()
 		if (pop4(test[i]) != test[i+1]) error(test[i], pop4(test[i]));}
 	TimestampEnd = std::clock();
 
-	printf("pop4: %d clocks\n", TimestampEnd - TimestampBeg);
+	printf("pop4: %ld clocks\n", TimestampEnd - TimestampBeg);
 
 	TimestampBeg = std::clock();
 	for (std::size_t k = 0; k < Count; ++k)
@@ -270,7 +239,7 @@ int main()
 		if (pop5(test[i]) != test[i+1]) error(test[i], pop5(test[i]));}
 	TimestampEnd = std::clock();
 
-	printf("pop5: %d clocks\n", TimestampEnd - TimestampBeg);
+	printf("pop5: %ld clocks\n", TimestampEnd - TimestampBeg);
 
 	TimestampBeg = std::clock();
 	for (std::size_t k = 0; k < Count; ++k)
@@ -278,7 +247,7 @@ int main()
 		if (pop5a(test[i]) != test[i+1]) error(test[i], pop5a(test[i]));}
 	TimestampEnd = std::clock();
 
-	printf("pop5a: %d clocks\n", TimestampEnd - TimestampBeg);
+	printf("pop5a: %ld clocks\n", TimestampEnd - TimestampBeg);
 
 	TimestampBeg = std::clock();
 	for (std::size_t k = 0; k < Count; ++k)
@@ -286,7 +255,7 @@ int main()
 		if (pop6(test[i]) != test[i+1]) error(test[i], pop6(test[i]));}
 	TimestampEnd = std::clock();
 
-	printf("pop6: %d clocks\n", TimestampEnd - TimestampBeg);
+	printf("pop6: %ld clocks\n", TimestampEnd - TimestampBeg);
 
 	TimestampBeg = std::clock();
 	for (std::size_t k = 0; k < Count; ++k)
@@ -295,7 +264,7 @@ int main()
 		if (pop7(test[i]) != test[i+1]) error(test[i], pop7(test[i]));}
 	TimestampEnd = std::clock();
 
-	printf("pop7: %d clocks\n", TimestampEnd - TimestampBeg);
+	printf("pop7: %ld clocks\n", TimestampEnd - TimestampBeg);
 
 	TimestampBeg = std::clock();
 	for (std::size_t k = 0; k < Count; ++k)
@@ -304,7 +273,7 @@ int main()
 		if (pop8(test[i]) != test[i+1]) error(test[i], pop8(test[i]));}
 	TimestampEnd = std::clock();
 
-	printf("pop8: %d clocks\n", TimestampEnd - TimestampBeg);
+	printf("pop8: %ld clocks\n", TimestampEnd - TimestampBeg);
 
 	TimestampBeg = std::clock();
 	for (std::size_t k = 0; k < Count; ++k)
@@ -313,7 +282,7 @@ int main()
 		if (pop9(test[i]) != test[i+1]) error(test[i], pop9(test[i]));}
 	TimestampEnd = std::clock();
 
-	printf("pop9: %d clocks\n", TimestampEnd - TimestampBeg);
+	printf("pop9: %ld clocks\n", TimestampEnd - TimestampBeg);
 
 	if (errors == 0)
 		printf("Passed all %d cases.\n", sizeof(test)/8);

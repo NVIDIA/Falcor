@@ -35,6 +35,7 @@
 #include "Graphics/TextureHelper.h"
 #include "glm/detail/func_trigonometric.hpp"
 #include "SceneExportImportCommon.h"
+#include "glm/gtx/euler_angles.hpp"
 
 namespace Falcor
 {
@@ -66,6 +67,28 @@ namespace Falcor
         return true;
     }
 
+    bool SceneImporter::getFloatVecAnySize(const rapidjson::Value& jsonVal, const std::string& desc, std::vector<float>& vec)
+    {
+        if (jsonVal.IsArray() == false)
+        {
+            error("Trying to load a vector for " + desc + ", but JValue is not an array");
+            return false;
+        }
+
+        vec.resize(jsonVal.Size());
+        for (uint32_t i = 0; i < jsonVal.Size(); i++)
+        {
+            if (jsonVal[i].IsNumber() == false)
+            {
+                error("Trying to load a vector for " + desc + ", but one the elements is not a number.");
+                return false;
+            }
+
+            vec[i] = (float)(jsonVal[i].GetDouble());
+        }
+        return true;
+    }
+
     Scene::SharedPtr SceneImporter::loadScene(const std::string& filename, uint32_t modelLoadFlags, uint32_t sceneLoadFlags)
     {
         SceneImporter importer;
@@ -76,7 +99,7 @@ namespace Falcor
     {
         std::string err = "Error when parsing scene file \"" + mFilename + "\".\n" + msg;
 #if _LOG_ENABLED
-        Logger::log(Logger::Level::Error, err);
+        logError(err);
 #else
         msgBox(err);
 #endif
@@ -84,7 +107,7 @@ namespace Falcor
         return nullptr;
     }
 
-    bool SceneImporter::createModelInstances(const rapidjson::Value& jsonVal, uint32_t modelID)
+    bool SceneImporter::createModelInstances(const rapidjson::Value& jsonVal, const Model::SharedPtr& pModel)
     {
         if(jsonVal.IsArray() == false)
         {
@@ -144,8 +167,19 @@ namespace Falcor
                     return false;
                 }
             }
-            mpScene->addModelInstance(modelID, name, rotation, scaling, translation);;
+
+            if (isNameDuplicate(name, mInstanceMap, "model instances"))
+            {
+                return false;
+            }
+            else
+            {
+                auto pInstance = Scene::ModelInstance::create(pModel, translation, rotation, scaling, name);
+                mInstanceMap[pInstance->getName()] = pInstance;
+                mpScene->addModelInstance(pInstance);
+            }
         }
+
         return true;
     }
 
@@ -171,8 +205,9 @@ namespace Falcor
             return false;
         }
 
-        pModel->setName(modelFile.GetString());
-        uint32_t modelID = mpScene->addModel(pModel, modelFile.GetString(), false);
+        pModel->setFilename(modelFile.GetString());
+
+        bool instanceAdded = false;
 
         // Loop over the other members
         for(auto& jval = jsonModel.MemberBegin(); jval != jsonModel.MemberEnd(); jval++)
@@ -191,12 +226,24 @@ namespace Falcor
                 }
                 pModel->setName(std::string(jval->value.GetString()));
             }
+            else if (keyName == SceneKeys::kMaterialOverrides)
+            {
+                if (mSceneLoadFlags & Scene::LoadMaterialHistory)
+                {
+                    if (setMaterialOverrides(jval->value, pModel) == false)
+                    {
+                        return false;
+                    }
+                }
+            }
             else if(keyName == SceneKeys::kModelInstances)
             {
-                if(createModelInstances(jval->value, modelID) == false)
+                if(createModelInstances(jval->value, pModel) == false)
                 {
                     return false;
                 }
+
+                instanceAdded = true;
             }
             else if(keyName == SceneKeys::kActiveAnimation)
             {
@@ -210,7 +257,7 @@ namespace Falcor
                 {
                     std::string msg = "Warning when parsing scene file \"" + mFilename + "\".\nModel " + pModel->getName() + " was specified with active animation " + std::to_string(activeAnimation);
                     msg += ", but model only has " + std::to_string(pModel->getAnimationsCount()) + " animations. Ignoring field";
-                    Logger::log(Logger::Level::Warning, msg);
+                    logWarning(msg);
                 }
                 else
                 {
@@ -224,10 +271,62 @@ namespace Falcor
             }
         }
 
-        if(mpScene->getModelInstanceCount(modelID) == 0)
+        // If no instances for the model were loaded from the scene file
+        if (instanceAdded == false)
         {
-            mpScene->addModelInstance(modelID, "Instance 0", glm::vec3(0, 0, 0), glm::vec3(1, 1, 1), glm::vec3(0, 0, 0));
+            mpScene->addModelInstance(pModel, "Instance 0");
         }
+
+        return true;
+    }
+
+    bool SceneImporter::setMaterialOverrides(const rapidjson::Value& jsonVal, const Model::SharedPtr& pModel)
+    {
+        if (jsonVal.IsArray() == false)
+        {
+            error("Material overrides should be an array of objects");
+            return false;
+        }
+
+        // For each override. Each object represents one mesh and one material
+        for (uint32_t i = 0; i < jsonVal.Size(); i++)
+        {
+            const auto& meshOverride = jsonVal[i];
+
+            uint32_t meshID = (uint32_t)-1;
+            uint32_t materialID = (uint32_t)-1;
+
+            // Read object
+            for (auto& it = meshOverride.MemberBegin(); it < meshOverride.MemberEnd(); it++)
+            {
+                std::string key(it->name.GetString());
+
+                if (key == SceneKeys::kMeshID)
+                {
+                    meshID = it->value.GetUint();
+                }
+                else if(key == SceneKeys::kMaterialID)
+                {
+                    materialID = it->value.GetUint();
+                }
+                else
+                {
+                    error("Unknown key \"" + key + "\" when parsing material overrides for model " + pModel->getFilename());
+                    return false;
+                }
+            }
+
+            if (meshID == (uint32_t)-1 || materialID == (uint32_t)-1)
+            {
+                error("Missing data while parsing when parsing material overrides for model " + pModel->getFilename());
+                return false;
+            }
+
+            // Apply override
+            auto& pMesh = pModel->getMesh(meshID);
+            mpScene->getMaterialHistory()->replace(pMesh.get(), mpScene->getMaterial(materialID));
+        }
+
         return true;
     }
 
@@ -318,54 +417,61 @@ namespace Falcor
         }
     }
 
-    bool SceneImporter::createMaterialLayerType(const rapidjson::Value& jsonValue, MaterialLayerDesc& matLayer)
+    bool SceneImporter::createMaterialLayerType(const rapidjson::Value& jsonValue, Material::Layer& layerOut)
     {
         if(jsonValue.IsString() == false)
         {
             error("Material layer Type should be string");
         }
-        matLayer.type = getMaterialLayerType(jsonValue.GetString());
-        if(matLayer.type == MatNone)
+
+        uint32_t type = getMaterialLayerType(jsonValue.GetString());
+        if(type == MatNone)
         {
             error("Unknown material layer Type '" + std::string(jsonValue.GetString()) + "'");
             return false;
         }
+
+        layerOut.type = (Material::Layer::Type)type;
         return true;
     }
 
-    bool SceneImporter::createMaterialLayerNDF(const rapidjson::Value& jsonValue, MaterialLayerDesc& matLayer)
+    bool SceneImporter::createMaterialLayerNDF(const rapidjson::Value& jsonValue, Material::Layer& layerOut)
     {
         if(jsonValue.IsString() == false)
         {
             error("Material layer NDF should be string");
         }
 
-        matLayer.ndf = getMaterialLayerNDF(jsonValue.GetString());
-        if(matLayer.ndf == -1)
+        uint32_t ndf = getMaterialLayerNDF(jsonValue.GetString());
+        if(ndf == -1)
         {
             error("Unknown material layer NDF '" + std::string(jsonValue.GetString()) + "'");
             return false;
         }
+
+        layerOut.ndf = (Material::Layer::NDF)ndf;
         return true;
     }
 
-    bool SceneImporter::createMaterialLayerBlend(const rapidjson::Value& jsonValue, MaterialLayerDesc& matLayer)
+    bool SceneImporter::createMaterialLayerBlend(const rapidjson::Value& jsonValue, Material::Layer& layerOut)
     {
         if(jsonValue.IsString() == false)
         {
             error("Material layer NDF should be string");
         }
 
-        matLayer.blending = getMaterialLayerBlend(jsonValue.GetString());
-        if(matLayer.blending == -1)
+        uint32_t blending = getMaterialLayerBlend(jsonValue.GetString());
+        if(blending == -1)
         {
             error("Unknown material layer blending '" + std::string(jsonValue.GetString()) + "'");
             return false;
         }
+
+        layerOut.blend = (Material::Layer::Blend)blending;
         return true;
     }
 
-    bool SceneImporter::createMaterialTexture(const rapidjson::Value& jsonValue, Texture::SharedPtr& pTexture)
+    bool SceneImporter::createMaterialTexture(const rapidjson::Value& jsonValue, Texture::SharedPtr& pTexture, bool isSrgb)
     {
         if(jsonValue.IsString() == false)
         {
@@ -381,67 +487,11 @@ namespace Falcor
             filename = fullpath;
         }
 
-        bool isSrgb = (mModelLoadFlags & Model::AssumeLinearSpaceTextures) == 0;
         pTexture = createTextureFromFile(filename, true, isSrgb);
         return (pTexture != nullptr);
     }
 
-    bool SceneImporter::createMaterialValueColor(const rapidjson::Value& jsonValue, glm::vec4& color)
-    {
-        if((jsonValue.IsArray() == false) || (jsonValue.Size() > 4 || jsonValue.Size() == 0))
-        {
-            error("Material color value must be an array of 1-4 values");
-            return false;
-        }
-
-        switch(jsonValue.Size())
-        {
-        case 1:
-            return getFloatVec<1>(jsonValue, "Material color value", color.data);
-        case 2:
-            return getFloatVec<2>(jsonValue, "Material color value", color.data);
-        case 3:
-            return getFloatVec<3>(jsonValue, "Material color value", color.data);
-        case 4:
-            return getFloatVec<4>(jsonValue, "Material color value", color.data);
-        default:
-            should_not_get_here();
-        }
-        return true;
-    }
-
-    bool SceneImporter::createMaterialValue(const rapidjson::Value& jsonValue, MaterialValue& matValue)
-    {
-        if(jsonValue.IsObject() == false)
-        {
-            error("Material value should be an object");
-        }
-
-        bool bOK = true;
-
-        for(auto& it = jsonValue.MemberBegin(); (it != jsonValue.MemberEnd()) && bOK; it++)
-        {
-            std::string key(it->name.GetString());
-            const auto& value = it->value;
-            
-            if(key == SceneKeys::kMaterialTexture)
-            {
-                bOK = createMaterialTexture(value, matValue.texture.pTexture);
-            }
-            else if(key == SceneKeys::kMaterialColor)
-            {
-                bOK = createMaterialValueColor(value, matValue.constantColor);
-            }
-            else
-            {
-                bOK = false;
-                error("Invalid key found in material value section. Key == " + key + ".");
-            }
-        }
-        return bOK;
-    }
-
-    bool SceneImporter::createMaterialLayer(const rapidjson::Value& jsonLayer, MaterialLayerValues& layerData, MaterialLayerDesc& layerDesc)
+    bool SceneImporter::createMaterialLayer(const rapidjson::Value& jsonLayer, Material::Layer& layerOut)
     {
         if(jsonLayer.IsObject() == false)
         {
@@ -455,39 +505,43 @@ namespace Falcor
             std::string key(it->name.GetString());
             const auto& value = it->value;
 
-            if(key == SceneKeys::kMaterialLayerType)
+            if (key == SceneKeys::kMaterialTexture)
             {
-                bOK = createMaterialLayerType(value, layerDesc);
+                bOK = createMaterialTexture(value, layerOut.pTexture, true);
+            }
+            else if(key == SceneKeys::kMaterialLayerType)
+            {
+                bOK = createMaterialLayerType(value, layerOut);
             }
             else if(key == SceneKeys::kMaterialNDF)
             {
-                bOK = createMaterialLayerNDF(value, layerDesc);
+                bOK = createMaterialLayerNDF(value, layerOut);
             }
             else if(key == SceneKeys::kMaterialBlend)
             {
-                bOK = createMaterialLayerBlend(value, layerDesc);
+                bOK = createMaterialLayerBlend(value, layerOut);
             }
             else if(key == SceneKeys::kMaterialAlbedo)
             {
-                bOK = createMaterialValue(value, layerData.albedo);
-                layerDesc.hasAlbedoTexture = layerData.albedo.texture.pTexture != nullptr;
+                float* pData = reinterpret_cast<float*>(layerOut.albedo.data.data);
+                getFloatVec<4>(value, SceneKeys::kMaterialAlbedo, pData);
             }
             else if(key == SceneKeys::kMaterialRoughness)
             {
-                bOK = createMaterialValue(value, layerData.roughness);
-                layerDesc.hasRoughnessTexture = layerData.roughness.texture.pTexture != nullptr;
+                float* pData = reinterpret_cast<float*>(layerOut.roughness.data.data);
+                getFloatVec<4>(value, SceneKeys::kMaterialRoughness, pData);
             }
             else if(key == SceneKeys::kMaterialExtraParam)
             {
-                bOK = createMaterialValue(value, layerData.extraParam);
-                layerDesc.hasExtraParamTexture = layerData.extraParam.texture.pTexture != nullptr;
+                float* pData = reinterpret_cast<float*>(layerOut.extraParam.data.data);
+                getFloatVec<4>(value, "Extra Params", pData);
             }
             else
             {
                 bOK = false;
                 error("Invalid key found in material layers section. Key == " + key + ".");
             }
-        }
+    }
 
         return bOK;
     }
@@ -508,13 +562,13 @@ namespace Falcor
 
         for(uint32_t i = 0; i < jsonLayerArray.Size(); i++)
         {
-            MaterialLayerDesc desc;
-            MaterialLayerValues data;
-            if(createMaterialLayer(jsonLayerArray[i], data, desc) == false)
+            Material::Layer layer;
+            if(createMaterialLayer(jsonLayerArray[i], layer) == false)
             {
                 return false;
             }
-            pMaterial->addLayer(desc, data);
+
+            pMaterial->addLayer(layer);
         }
         return true;
     }
@@ -542,7 +596,7 @@ namespace Falcor
                 }
                 pMaterial->setName(value.GetString());
             }
-            else if(key == SceneKeys::kMaterialID)
+            else if(key == SceneKeys::kID)
             {
                 if(value.IsUint() == false)
                 {
@@ -551,32 +605,66 @@ namespace Falcor
                 }
                 pMaterial->setID(value.GetUint());
             }
-            else if(key == SceneKeys::kMaterialAlpha)
+            else if (key == SceneKeys::kMaterialDoubleSided)
             {
-                MaterialValue alpha;
-                if(createMaterialValue(value, alpha) == false)
+                if (value.IsBool() == false)
                 {
+                    error("Material double-sidedness should be a bool");
                     return false;
                 }
-                pMaterial->setAlphaValue(alpha);
+                pMaterial->setDoubleSided(value.GetBool());
+            }
+            else if(key == SceneKeys::kMaterialAlpha)
+            {
+                Texture::SharedPtr pTexture;
+                if (createMaterialTexture(value, pTexture, false))
+                {
+                    pMaterial->setAlphaMap(pTexture);
+                }
+                else
+                {
+                    error("Material alpha map could not be loaded");
+                    return false;
+                }
             }
             else if(key == SceneKeys::kMaterialNormal)
             {
-                MaterialValue normal;
-                if(createMaterialValue(value, normal) == false)
+                Texture::SharedPtr pTexture;
+                if (createMaterialTexture(value, pTexture, false))
                 {
+                    pMaterial->setNormalMap(pTexture);
+                }
+                else
+                {
+                    error("Material normal map could not be loaded");
                     return false;
                 }
-                pMaterial->setNormalValue(normal);
             }
-            else if(key == SceneKeys::kMaterialHeight)
+            else if (key == SceneKeys::kMaterialHeight)
             {
-                MaterialValue height;
-                if(createMaterialValue(value, height) == false)
+                Texture::SharedPtr pTexture;
+                if (createMaterialTexture(value, pTexture, false))
                 {
+                    pMaterial->setHeightMap(pTexture);
+                }
+                else
+                {
+                    error("Material height map could not be loaded");
                     return false;
                 }
-                pMaterial->setHeightValue(height);
+            }
+            else if (key == SceneKeys::kMaterialAO)
+            {
+                Texture::SharedPtr pTexture;
+                if (createMaterialTexture(value, pTexture, true))
+                {
+                    pMaterial->setAmbientOcclusionMap(pTexture);
+                }
+                else
+                {
+                    error("Material ambient occlusion map could not be loaded");
+                    return false;
+                }
             }
             else if(key == SceneKeys::kMaterialLayers)
             {
@@ -591,6 +679,7 @@ namespace Falcor
                 return false;
             }
         }
+
         mpScene->addMaterial(pMaterial);
         return true;
     }
@@ -637,7 +726,7 @@ namespace Falcor
                 }
                 pDirLight->setName(name);
             }
-            else if(key == SceneKeys::kLightType)
+            else if(key == SceneKeys::kType)
             {
                 // Don't care
             }
@@ -692,7 +781,7 @@ namespace Falcor
                 }
                 pPointLight->setName(name);
             }
-            else if(key == SceneKeys::kLightType)
+            else if(key == SceneKeys::kType)
             {
                 // Don't care
             }
@@ -753,7 +842,17 @@ namespace Falcor
                 return false;
             }
         }
-        mpScene->addLight(pPointLight);
+
+        if (isNameDuplicate(pPointLight->getName(), mLightMap, "lights"))
+        {
+            return false;
+        }
+        else
+        {
+            mLightMap[pPointLight->getName()] = pPointLight;
+            mpScene->addLight(pPointLight);
+        }
+
         return true;
     }
 
@@ -769,7 +868,7 @@ namespace Falcor
         for(uint32_t i = 0; i < jsonVal.Size(); i++)
         {
             const auto& light = jsonVal[i];
-            const auto& type = light.FindMember(SceneKeys::kLightType);
+            const auto& type = light.FindMember(SceneKeys::kType);
             if(type == light.MemberEnd())
             {
                 error("Light source must have a type.");
@@ -870,7 +969,7 @@ namespace Falcor
             {
                 if(value.IsString() == false)
                 {
-                    error("Camera path name should be a string");
+                    error("Path name should be a string");
                     return nullptr;
                 }
 
@@ -881,7 +980,7 @@ namespace Falcor
             {
                 if(value.IsBool() == false)
                 {
-                    error("Camera path loop should be a boolean value");
+                    error("Path loop should be a boolean value");
                     return nullptr;
                 }
 
@@ -893,6 +992,22 @@ namespace Falcor
                 if(createPathFrames(pPath.get(), value) == false)
                 {
                     return false;
+                }
+            }
+            else if (key == SceneKeys::kAttachedObjects)
+            {
+                if (value.IsArray() == false)
+                {
+                    error("Path object list should be an array");
+                    return nullptr;
+                }
+
+                for (uint32_t i = 0; i < value.Size(); i++)
+                {
+                    std::string type = value[i].FindMember(SceneKeys::kType)->value.GetString();
+                    std::string name = value[i].FindMember(SceneKeys::kName)->value.GetString();
+
+                    pPath->attachObject(getMovableObject(type, name));
                 }
             }
             else
@@ -929,6 +1044,11 @@ namespace Falcor
         
     bool SceneImporter::parseActivePath(const rapidjson::Value& jsonVal)
     {
+        if (mpScene->getVersion() != 1)
+        {
+            return true;
+        }
+
         // Paths should already be initialized at this stage
         if(jsonVal.IsString() == false)
         {
@@ -938,12 +1058,12 @@ namespace Falcor
 
         std::string activePath = jsonVal.GetString();
 
-        // Find the camera
+        // Find the path
         for(uint32_t i = 0; i < mpScene->getPathCount(); i++)
         {
             if(activePath == mpScene->getPath(i)->getName())
             {
-                mpScene->setActivePath(i);
+                mpScene->getPath(i)->attachObject(mpScene->getActiveCamera());
                 return true;
             }
         }
@@ -1037,7 +1157,15 @@ namespace Falcor
             }
         }
 
-        mpScene->addCamera(pCamera);
+        if (isNameDuplicate(pCamera->getName(), mCameraMap, "cameras"))
+        {
+            return false;
+        }
+        else
+        {
+            mCameraMap[pCamera->getName()] = pCamera;
+            mpScene->addCamera(pCamera);
+        }
 
         return true;
     }
@@ -1074,7 +1202,7 @@ namespace Falcor
         std::string fullpath;
         mFilename = filename;
         mModelLoadFlags = modelLoadFlags;
-		mSceneLoadFlags = sceneLoadFlags;
+        mSceneLoadFlags = sceneLoadFlags;
 
         if(findFileInDataDirectories(filename, fullpath))
         {
@@ -1103,19 +1231,22 @@ namespace Falcor
             // create the scene
             mpScene = Scene::create();
 
+            if (mSceneLoadFlags & Scene::LoadMaterialHistory)
+            {
+                mpScene->enableMaterialHistory();
+            }
+
             if(topLevelLoop() == false)
             {
                 return nullptr;
             }
 
-			switch (mSceneLoadFlags)
-			{
-				case Scene::GenerateAreaLights:
-					// Create area light(s) in the scene
-					mpScene->createAreaLights();
-					break;
-			}
-			
+            if (mSceneLoadFlags & Scene::GenerateAreaLights)
+            {
+                // Create area light(s) in the scene
+                mpScene->createAreaLights();
+            }
+            
             return mpScene;
         }
         else
@@ -1239,8 +1370,9 @@ namespace Falcor
                     b = getFloatVec<4>(value, "custom-field vec4", &userVar.vec4[0]);
                     break;
                 default:
-                    error("User-defined section contains a vector with unsupported size(" + std::to_string(value.Size()) + "). Legal vector size are 2,3 and 4");
-                    return false;
+                    userVar.type = Scene::UserVariable::Type::Vector;
+                    b = getFloatVecAnySize(value, "vector of floats", userVar.vector);
+                    break;
                 }
                 if(b == false)
                 {
@@ -1345,6 +1477,38 @@ namespace Falcor
         return true;
     }
 
+    bool SceneImporter::isNameDuplicate(const std::string& name, const ObjectMap& objectMap, const std::string& objectType) const
+    {
+        if (objectMap.find(name) != objectMap.end())
+        {
+            const std::string msg = "Multiple " + objectType + " found the same name: " + name + ".\nObjects may not attach to paths correctly.\n\nContinue anyway?";
+
+            // If user pressed ok, return false to ignore duplicate
+            return msgBox(msg, MsgBoxType::OkCancel) == MsgBoxButton::Ok ? false : true;
+        }
+
+        return false;
+    }
+
+    IMovableObject::SharedPtr SceneImporter::getMovableObject(const std::string& type, const std::string& name) const
+    {
+        if (type == SceneKeys::kModelInstance)
+        {
+            return mInstanceMap.find(name)->second;
+        }
+        else if (type == SceneKeys::kCamera)
+        {
+            return mCameraMap.find(name)->second;
+        }
+        else if (type == SceneKeys::kLight)
+        {
+            return mLightMap.find(name)->second;
+        }
+
+        should_not_get_here();
+        return nullptr;
+    }
+
     const SceneImporter::FuncValue SceneImporter::kFunctionTable[] =
     {
         // The order matters here.
@@ -1353,6 +1517,7 @@ namespace Falcor
         {SceneKeys::kLightingScale, &SceneImporter::parseLightingScale},
         {SceneKeys::kCameraSpeed, &SceneImporter::parseCameraSpeed},
 
+        {SceneKeys::kMaterials, &SceneImporter::parseMaterials},
         {SceneKeys::kModels, &SceneImporter::parseModels},
         {SceneKeys::kLights, &SceneImporter::parseLights},
         {SceneKeys::kCameras, &SceneImporter::parseCameras},
@@ -1361,7 +1526,6 @@ namespace Falcor
 
         {SceneKeys::kPaths, &SceneImporter::parsePaths},
         {SceneKeys::kActivePath, &SceneImporter::parseActivePath}, // Should come after ParsePaths
-        {SceneKeys::kMaterials, &SceneImporter::parseMaterials},
         {SceneKeys::kInclude, &SceneImporter::parseIncludes}
     };
 
@@ -1385,7 +1549,8 @@ namespace Falcor
 
             if(found == false)
             {
-                Logger::log(Logger::Level::Warning, "Invalid key found in top-level object. Key == " + std::string(it->name.GetString()) + ".");
+                error("Invalid key found in top-level object. Key == " + std::string(it->name.GetString()) + ".");
+                return false;
             }
         }
         return true;

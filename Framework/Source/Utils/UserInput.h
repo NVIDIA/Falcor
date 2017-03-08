@@ -76,7 +76,7 @@ namespace Falcor
         
         /** Use this enum to find out which key was pressed. Alpha-numeric keys use their uppercase ASCII code, so you can use that as well.
         */
-        enum class Key
+        enum class Key : uint32_t
         {
             // ASCII values. Do not change them.
             Space           = ' ',
@@ -129,8 +129,7 @@ namespace Falcor
             GraveAccent     = '`',
 
             // Special keys
-            SpecialKeys = 256,
-            Escape = SpecialKeys,
+            Escape          ,
             Tab             ,
             Enter           ,          
             Backspace       ,
@@ -192,5 +191,6 @@ namespace Falcor
         Type type; ///< The event Type;
         Key  key;  ///< The last key that was pressed/released;
         InputModifiers mods; ///< Keyboard modifiers;
+        char asciiChar; // The matching ASCII char, or zero if the key type doesn't have one
     };
 }

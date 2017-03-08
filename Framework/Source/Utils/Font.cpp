@@ -30,7 +30,7 @@
 #include "OS.h"
 #include <fstream>
 #include "Graphics/TextureHelper.h"
-#include "Core/Texture.h"
+#include "API/Texture.h"
 
 namespace Falcor
 {
@@ -46,7 +46,7 @@ namespace Falcor
         bool b = pFont->loadFromFile("DejaVu Sans Mono", 14);
         if(b == false)
         {
-            Logger::log(Logger::Level::Error, "Failed to create font resource");
+            logError("Failed to create font resource");
             pFont = nullptr;
         }
 
@@ -81,7 +81,7 @@ namespace Falcor
 
     bool Font::loadFromFile(const std::string& FontName, float size)
     {
-        std::string Filename = "Framework\\" + GetFontFilename(FontName, size);
+        std::string Filename = "Framework/Fonts/" + GetFontFilename(FontName, size);
         std::string TextureFilename;
         findFileInDataDirectories(Filename + ".dds", TextureFilename);
         std::string DataFilename;

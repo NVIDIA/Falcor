@@ -45,7 +45,6 @@ namespace Falcor
             Info = 0,           ///< Informative messages
             Warning = 1,        ///< Warning messages
             Error = 2,          ///< Error messages. Application might be able to continue running, but incorrectly.
-            Fatal = 3,          ///< Fatal messages. Application has to terminate.
 
             Disabled = -1
         };
@@ -66,14 +65,25 @@ namespace Falcor
         */
         static bool isBoxShownOnError() { return sShowErrorBox; }
 
-        /** Write a message to the log.
-            \param[in] L Message level
-            \param[in] Msg The message to write
+        /** Check if the logger is enabled
         */
+        static constexpr bool enabled() { return _LOG_ENABLED != 0; }
+    private:
+        friend void logInfo(const std::string& msg, const bool forceMsgBox);
+        friend void logWarning(const std::string& msg, const bool forceMsgBox);
+        friend void logError(const std::string& msg, const bool forceMsgBox);
+        friend void logErrorAndExit(const std::string& msg, const bool forceMsgBox);
+
         static void log(Level L, const std::string& msg, const bool forceMsgBox = false);
 
-    private:
         Logger() = delete;
         static bool sShowErrorBox;
+        static FILE* sLogFile;
+        static bool sInit;
     };
+
+    inline void logInfo(const std::string& msg, const bool forceMsgBox = false) { Logger::log(Logger::Level::Info, msg, forceMsgBox); }
+    inline void logWarning(const std::string& msg, const bool forceMsgBox = false) { Logger::log(Logger::Level::Warning, msg, forceMsgBox); }
+    inline void logError(const std::string& msg, const bool forceMsgBox = false) { Logger::log(Logger::Level::Error, msg, forceMsgBox); }
+    inline void logErrorAndExit(const std::string& msg, const bool forceMsgBox = false) { Logger::log(Logger::Level::Error, msg + "\nTerminating...", forceMsgBox); exit(1); }
 }

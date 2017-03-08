@@ -28,7 +28,7 @@
 #pragma once
 #include "glm/vec2.hpp"
 #include <string>
-#include "Core/Texture.h"
+#include "API/Texture.h"
 
 namespace Falcor
 {
@@ -54,7 +54,7 @@ namespace Falcor
 
         /** Get the texture containing the characters
         */
-        const Texture* getTexture() const { return mpTexture.get(); }
+        Texture::SharedPtr getTexture() const { return mpTexture; }
         /** Get the character descriptor
         */
         const CharTexCrdDesc& getCharDesc(char c) const

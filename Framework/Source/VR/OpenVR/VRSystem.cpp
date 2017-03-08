@@ -46,7 +46,7 @@ namespace Falcor
     {
         if(spVrSystem)
         {
-            Logger::log(Logger::Level::Warning, "Trying to reinitialize the VR system. Call is ignored");
+            logWarning("Trying to reinitialize the VR system. Call is ignored");
             return spVrSystem;
         }
 
@@ -54,7 +54,7 @@ namespace Falcor
         spVrSystem = new VRSystem;
 #if defined(FALCOR_GL)
         spVrSystem->mRenderAPI = vr::API_OpenGL;
-#elif defined(FALCOR_DX11)
+#elif defined(FALCOR_D3D11)
         spVrSystem->mRenderAPI = vr::API_DirectX;
 #endif
         spVrSystem->mVSyncEnabled = enableVSync;
@@ -367,7 +367,7 @@ namespace Falcor
         if(!mpCompositor) return false;
 
         vr::Texture_t subTex;
-        subTex.handle = (void *)displayTex->getApiHandle();
+        subTex.handle = (void *)(size_t)displayTex->getApiHandle();
         subTex.eColorSpace = isSrgbFormat(displayTex->getFormat()) ? vr::EColorSpace::ColorSpace_Gamma : vr::EColorSpace::ColorSpace_Linear;
         subTex.eType = (vr::GraphicsAPIConvention)(mRenderAPI);
 
@@ -381,7 +381,7 @@ namespace Falcor
         if(!mpCompositor) return false;
 
         vr::Texture_t subTex;
-        subTex.handle = (void *)displayFbo->getColorTexture(0)->getApiHandle();
+        subTex.handle = (void *)(size_t)displayFbo->getColorTexture(0)->getApiHandle();
         subTex.eColorSpace = isSrgbFormat(displayFbo->getColorTexture(0)->getFormat()) ? vr::EColorSpace::ColorSpace_Gamma : vr::EColorSpace::ColorSpace_Linear;
         subTex.eType = (vr::GraphicsAPIConvention)(mRenderAPI);
 
@@ -477,7 +477,7 @@ namespace Falcor
     {
         if(spVrSystem == nullptr)
         {
-            Logger::log(Logger::Level::Warning, "VR system not initialized");
+            logWarning("VR system not initialized");
         }
     }
 #endif

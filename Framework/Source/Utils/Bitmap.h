@@ -35,10 +35,10 @@ namespace Falcor
     class Bitmap : public std::enable_shared_from_this<Bitmap>
     {
     public:
-        enum ExportFlags : uint32_t
+        enum class ExportFlags : uint32_t
         {
             None                = 0u,               //< default
-            HasAlpha            = 1u<<0,            //< Save alpha channel as well
+            ExportAlpha         = 1u<<0,            //< Save alpha channel as well
             Lossy               = 1u<<1,            //< Try to store in a lossy format
             Uncompressed        = 1u<<2,            //< Prefer faster load to a more compact file size
         };
@@ -64,13 +64,13 @@ namespace Falcor
             \param[in] filename Output filename. Can include a path - absolute or relative to the executable directory.
             \param[in] width The width of the image.
             \param[in] height The height of the image.
-            \param[in] format The destination file format. See FileFormat enum above.
+            \param[in] fileFormat The destination file format. See FileFormat enum above.
             \param[in] exportFlags The flags to export the file. See ExportFlags above.
-            \param[in] bytesPerPixel The number of bytes in each pixel
+            \param[in] ResourceFormat the format of the resource data
             \param[in] isTopDown Control the memory layout of the image. If true, the top-left pixel will be stored first, otherwise the bottom-left pixel will be stored first
             \param[in] pData Pointer to the buffer containing the image
         */
-        static void saveImage(const std::string& filename, uint32_t width, uint32_t height, FileFormat format, uint32_t exportFlags, uint32_t bytesPerPixel, bool isTopDown, void* pData);
+        static void saveImage(const std::string& filename, uint32_t width, uint32_t height, FileFormat fileFormat, ExportFlags exportFlags, ResourceFormat resourceFormat, bool isTopDown, void* pData);
         ~Bitmap();
 
         /** Get a pointer to the bitmap's data store
@@ -93,4 +93,5 @@ namespace Falcor
         uint32_t mHeight   = 0;
         ResourceFormat mFormat;
     };
+    enum_class_operators(Bitmap::ExportFlags);
 }

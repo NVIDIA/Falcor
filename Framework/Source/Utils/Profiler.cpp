@@ -27,7 +27,7 @@
 ***************************************************************************/
 #include "Framework.h"
 #include "Profiler.h"
-#include "Core/GpuTimer.h"
+#include "API/GpuTimer.h"
 
 #include <iostream>
 #include <fstream>
@@ -35,8 +35,6 @@
 
 namespace Falcor
 {
-    double CpuTimer::sFrequency = 0;
-
     bool gProfileEnabled = false;
 
     std::map<size_t, Profiler::EventData*> Profiler::sProfilerEvents;
@@ -118,7 +116,7 @@ namespace Falcor
 
 		for (EventData* pData : sProfilerVector)
 		{
-			float gpuTime = pData->gpuTotal;
+            double gpuTime;
 			pData->pGpuTimer[1 - sGpuTimerIndex]->getElapsedTime(true, gpuTime);
 
 			char event[1000];

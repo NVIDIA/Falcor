@@ -30,7 +30,7 @@
 #include <map>
 #include <functional>
 #include <vector>
-#include "Core/GpuTimer.h"
+#include "API/GpuTimer.h"
 #include "Utils/CpuTimer.h"
 #include "FalcorConfig.h"
 

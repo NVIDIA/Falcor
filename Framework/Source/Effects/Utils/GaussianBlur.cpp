@@ -27,7 +27,7 @@
 ***************************************************************************/
 #include "Framework.h"
 #include "GaussianBlur.h"
-#include "Core/RenderContext.h"
+#include "API/RenderContext.h"
 #include "Graphics/FboHelper.h"
 
 namespace Falcor
@@ -64,7 +64,9 @@ namespace Falcor
 
         if(createFbo)
         {
-            mpTmpFbo = FboHelper::create2D(pSrc->getWidth(), pSrc->getHeight(), &srcFormat, pSrc->getArraySize());
+            Fbo::Desc fboDesc;
+            fboDesc.setColorTarget(0, srcFormat);
+            mpTmpFbo = FboHelper::create2D(pSrc->getWidth(), pSrc->getHeight(), fboDesc, pSrc->getArraySize());
             createProgram();
         }
     }
@@ -84,14 +86,14 @@ namespace Falcor
         mpHorizontalBlur->getProgram()->addDefine("_HORIZONTAL_BLUR");
         mpVerticalBlur = FullScreenPass::create(kShaderFilename, defines, true, true, layerMask);
         mpVerticalBlur->getProgram()->addDefine("_VERTICAL_BLUR");
-        mpUbo = UniformBuffer::create(mpVerticalBlur->getProgram()->getActiveProgramVersion().get(), "PerImageCB");
+        mpVars = GraphicsVars::create(mpHorizontalBlur->getProgram()->getActiveVersion()->getReflector());
     }
 
-    void GaussianBlur::execute(RenderContext* pRenderContext, const Texture* pSrc, Fbo::SharedPtr pDst)
+    void GaussianBlur::execute(RenderContext* pRenderContext, Texture::SharedPtr pSrc, Fbo::SharedPtr pDst)
     {
-        createTmpFbo(pSrc);
+        createTmpFbo(pSrc.get());
         uint32_t arraySize = pSrc->getArraySize();
-        RenderContext::Viewport vp;
+        GraphicsState::Viewport vp;
         vp.originX = 0;
         vp.originY = 0;
         vp.height = (float)mpTmpFbo->getHeight();
@@ -99,26 +101,31 @@ namespace Falcor
         vp.minDepth = 0;
         vp.maxDepth = 1;
 
+        GraphicsState* pState = pRenderContext->getGraphicsState().get();
         for(uint32_t i = 0; i < arraySize; i++)
         {
-            pRenderContext->pushViewport(i, vp);
+            pState->pushViewport(i, vp);
         }
 
         // Horizontal pass
-        mpUbo->setTexture(0, pSrc, mpSampler.get(), false);
-        pRenderContext->pushFbo(mpTmpFbo);
-        pRenderContext->setUniformBuffer(0, mpUbo);
+        mpVars->setSampler("gSampler", mpSampler);
+        mpVars->setTexture("gSrcTex", pSrc);
+        pState->pushFbo(mpTmpFbo);
+        pRenderContext->pushGraphicsVars(mpVars);
         mpHorizontalBlur->execute(pRenderContext);
 
         // Vertical pass
-        mpUbo->setTexture(0, mpTmpFbo->getColorTexture(0).get(), mpSampler.get(), false);
-        pRenderContext->setFbo(pDst);
+        mpVars->setTexture("gSrcTex", mpTmpFbo->getColorTexture(0));
+        pRenderContext->setGraphicsVars(mpVars);
+        pState->setFbo(pDst);
         mpVerticalBlur->execute(pRenderContext);
 
-        pRenderContext->popFbo();
+        pState->popFbo();
         for(uint32_t i = 0; i < arraySize; i++)
         {
-            pRenderContext->popViewport(i);
+            pState->popViewport(i);
         }
-    }   
+
+        pRenderContext->popGraphicsVars();
+    }
 }

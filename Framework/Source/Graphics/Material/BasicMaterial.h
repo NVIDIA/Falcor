@@ -31,7 +31,7 @@
 namespace Falcor
 {
     class Texture;
-    class UniformBuffer;
+    class ConstantBuffer;
 
     struct BasicMaterial
     {
@@ -43,7 +43,6 @@ namespace Falcor
             SpecularMap,    ///< Specular reflectance
             EmissiveMap,    ///< Emissive intensity
             NormalMap,      ///< Normal map
-            ShininessMap,   ///< Shininess map
             AlphaMap,       ///< Either opacity map or transparency map, depends on the model
             HeightMap,      ///< Height/displacement map
             AmbientMap,     ///< Ambient occlusion map

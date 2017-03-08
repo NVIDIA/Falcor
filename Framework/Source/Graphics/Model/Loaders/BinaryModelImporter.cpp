@@ -31,13 +31,13 @@
 #include "../Model.h"
 #include "../Mesh.h"
 #include "Utils/OS.h"
-#include "Core/VertexLayout.h"
+#include "API/VertexLayout.h"
 #include "Data/VertexAttrib.h"
-#include "Core/Buffer.h"
+#include "API/Buffer.h"
 #include "glm/common.hpp"
 #include "BinaryImage.hpp"
-#include "Core/Formats.h"
-#include "Core/Texture.h"
+#include "API/Formats.h"
+#include "API/Texture.h"
 #include "Graphics/Material/Material.h"
 #include "glm/geometric.hpp"
 
@@ -67,7 +67,6 @@ namespace Falcor
         const glm::vec3* vertexNormalData,
         const glm::vec2* texCrdData,
         uint32_t texCrdCount,
-        glm::vec3* tangentData,
         glm::vec3* bitangentData)
     {
         // calculate the tangent and bitangent for every face
@@ -150,26 +149,16 @@ namespace Falcor
                 localBitangent = glm::normalize(localBitangent);
 
                 // reconstruct tangent/bitangent according to normal and bitangent/tangent when it's infinite or NaN.
-                bool isInvalidTangent = isSpecialFloat(localTangent.x) || isSpecialFloat(localTangent.y) || isSpecialFloat(localTangent.z);
                 bool isInvalidBitangent = isSpecialFloat(localBitangent.x) || isSpecialFloat(localBitangent.y) || isSpecialFloat(localBitangent.z);
 
-                if(isInvalidTangent != isInvalidBitangent)
+                if (isInvalidBitangent)
                 {
-                    if(isInvalidTangent)
-                    {
-                        localTangent = glm::cross(V[i].normal, localBitangent);
-                        localTangent = glm::normalize(localTangent);
-                    }
-                    else
-                    {
-                        localBitangent = glm::cross(localTangent, V[i].normal);
-                        localBitangent = glm::normalize(localBitangent);
-                    }
+                    localBitangent = glm::cross(localTangent, V[i].normal);
+                    localBitangent = glm::normalize(localBitangent);
                 }
 
                 // and write it into the mesh
                 uint32_t index = indices[primID * 3 + i];
-                tangentData[index] = localTangent;
                 bitangentData[index] = localBitangent;
             }
         }
@@ -187,10 +176,8 @@ namespace Falcor
             return BasicMaterial::MapType::NormalMap;
         case TextureType_Specular:
             return BasicMaterial::MapType::SpecularMap;
-        case TextureType_Glossiness:
-            return BasicMaterial::MapType::ShininessMap;
-		case TextureType_Displacement:
-			return BasicMaterial::MapType::HeightMap;
+        case TextureType_Displacement:
+            return BasicMaterial::MapType::HeightMap;
         default:
             return BasicMaterial::MapType::Count;
         }
@@ -208,13 +195,13 @@ namespace Falcor
             return VERTEX_DIFFUSE_COLOR_NAME;
         case AttribType_TexCoord:
             return VERTEX_TEXCOORD_NAME;
-        case AttribType_Tangent:
-            return VERTEX_TANGENT_NAME;
         case AttribType_Bitangent:
             return VERTEX_BITANGENT_NAME;
+        case AttribType_Tangent:
+            return "unused";
         default:
             should_not_get_here();
-            return "";
+            return "unused";
         }
     }
 
@@ -266,6 +253,7 @@ namespace Falcor
         return ResourceFormat::Unknown;
     }
 
+    static const uint32_t kUnusedShaderElement = -1;
     static uint32_t getShaderLocation(AttribType type)
     {
         switch(type)
@@ -278,13 +266,13 @@ namespace Falcor
             return VERTEX_DIFFUSE_COLOR_LOC;
         case AttribType_TexCoord:
             return VERTEX_TEXCOORD_LOC;
-        case AttribType_Tangent:
-            return VERTEX_TANGENT_LOC;
         case AttribType_Bitangent:
             return VERTEX_BITANGENT_LOC;
+        case AttribType_Tangent:
+            return kUnusedShaderElement;
         default:
             should_not_get_here();
-            return 0;
+            return kUnusedShaderElement;
         }
     }
 
@@ -374,7 +362,7 @@ namespace Falcor
         if(std::string(tag) != "BinImage")
         {
             std::string msg = "Error when loading model " + modelName + ".\nBinary image header corrupted.";
-            Logger::log(Logger::Level::Error, msg);
+            logError(msg);
             return false;
         }
 
@@ -384,7 +372,7 @@ namespace Falcor
         if(version < 1 || version > 2)        
         {
             std::string msg = "Error when loading model " + modelName + ".\nUnsupported binary image version.";
-            Logger::log(Logger::Level::Error, msg);
+            logError(msg);
             return false;
         }
 
@@ -393,7 +381,7 @@ namespace Falcor
         if(data.width < 0 || data.height < 0 || bpp < 0 || numChannels < 0)
         {
             std::string msg = "Error when loading model " + modelName + ".\nCorrupt binary image version.";
-            Logger::log(Logger::Level::Error, msg);
+            logError(msg);
             return false;
         }
 
@@ -406,7 +394,7 @@ namespace Falcor
             if(formatId < 0 || formatId >= FW::ImageFormat::ID_Generic || dataSize < 0)
             {
                 std::string msg = "Error when loading model " + modelName + ".\nCorrupt binary image data (unsupported image format).";
-                Logger::log(Logger::Level::Error, msg);
+                logError(msg);
                 return false;
             }
             format = FW::ImageFormat(FW::ImageFormat::ID(formatId));
@@ -424,7 +412,7 @@ namespace Falcor
                 (cformat == FW::ImageFormat::ChannelFormat_Float && c.fieldSize != 32))
             {
                 std::string msg = "Error when loading model " + modelName + ".\nCorrupt binary image data (unsupported floating point format).";
-                Logger::log(Logger::Level::Error, msg);
+                logError(msg);
                 return false;
             }
 
@@ -436,7 +424,7 @@ namespace Falcor
         if(bpp != format.getBPP())
         {
             std::string msg = "Error when loading model " + modelName + ".\nCorrupt binary image data (bits/pixel do not match with format).";
-            Logger::log(Logger::Level::Error, msg);
+            logError(msg);
             return false;
         }
 
@@ -498,12 +486,20 @@ namespace Falcor
         std::string fullpath;
         if(findFileInDataDirectories(filename, fullpath) == false)
         {
-            Logger::log(Logger::Level::Error, std::string("Can't find model file ") + filename);
+            logError(std::string("Can't find model file ") + filename);
             return nullptr;
         }
 
         BinaryModelImporter loader(fullpath);
         Model::SharedPtr pModel = loader.createModel(flags);
+
+        pModel->setFilename(filename);
+
+        // filename can be a relative path
+        std::string name = getFilenameFromPath(filename);
+        name = swapFileExtension(name, ".bin", "");
+        pModel->setName(name);
+
         return pModel;
     }
 
@@ -514,7 +510,7 @@ namespace Falcor
             if(version < 6 || version > 8)
             {
                 std::string Msg = "Error when loading model " + modelName + ".\nUnsupported binary scene version " + std::to_string(version);
-                Logger::log(Logger::Level::Error, Msg);
+                logError(Msg);
                 return false;
             }
         }
@@ -523,14 +519,14 @@ namespace Falcor
             if(version < 1 || version > 5)
             {
                 std::string Msg = "Error when loading model " + modelName + ".\nUnsupported binary scene version " + std::to_string(version);
-                Logger::log(Logger::Level::Error, Msg);
+                logError(Msg);
                 return false;
             }
         }
         else
         {
             std::string Msg = "Error when loading model " + modelName + ".\nNot a binary scene file!";
-            Logger::log(Logger::Level::Error, Msg);
+            logError(Msg);
             return false;
         }
         return true;
@@ -555,7 +551,7 @@ namespace Falcor
         case ResourceFormat::BC3Unorm:
             return ResourceFormat::BC3UnormSrgb;
         default:
-            Logger::log(Logger::Level::Warning, "BinaryModelImporter::ConvertFormatToSrgb() warning. Provided format doesn't have a matching sRGB format");
+            logWarning("BinaryModelImporter::ConvertFormatToSrgb() warning. Provided format doesn't have a matching sRGB format");
             return format;
         }
     }
@@ -574,7 +570,6 @@ namespace Falcor
         case Falcor::BasicMaterial::EmissiveMap:
             return convertFormatToSrgb(originalFormat);
         case Falcor::BasicMaterial::NormalMap:
-        case Falcor::BasicMaterial::ShininessMap:
         case Falcor::BasicMaterial::AlphaMap:
         case Falcor::BasicMaterial::HeightMap:
             return originalFormat;
@@ -645,12 +640,12 @@ namespace Falcor
         if(numTextures < 0 || numMeshes < 0 || numInstances < 0)
         {
             std::string msg = "Error when loading model " + mModelName + ".\nFile is corrupted.";
-            Logger::log(Logger::Level::Error, msg);
+            logError(msg);
             return nullptr;
         }
 
         // create objects
-        auto pModel = Model::SharedPtr(new Model());
+        auto pModel = Model::create();
         bool shouldGenerateTangents = (flags & Model::GenerateTangentSpace) != 0;
 
         std::vector<TextureData> texData;
@@ -664,6 +659,9 @@ namespace Falcor
         // When creating instances of meshes, it means we need to translate the original mesh index to all it's submeshes Falcor IDs. This is what the next 2 variables are for.
         std::vector<std::vector<uint32_t>> meshToSubmeshesID(numMeshes);
 
+        // This importer loads mesh/submesh data before instance data, so the meshes are cached here.
+        std::vector<Mesh::SharedPtr> falcorMeshCache;
+        
         struct TexSignature
         {
             const uint8_t* pData;
@@ -701,32 +699,41 @@ namespace Falcor
             if(numAttribs < 0 || numVertices < 0 || numSubmeshes < 0)
             {
                 std::string Msg = "Error when loading model " + mModelName + ".\nCorrupted data.!";
-                Logger::log(Logger::Level::Error, Msg);
+                logError(Msg);
                 return nullptr;
             }
 
-			Vao::VertexBufferDescVector vbDescs;
-			std::vector<std::vector<uint8_t> > buffers;
-            vbDescs.resize(numAttribs);
-			buffers.resize(numAttribs);
+            Vao::BufferVec pVBs;
+            VertexLayout::SharedPtr pLayout = VertexLayout::create();
+            
+            struct BufferData
+            {
+                std::vector<uint8_t> vec;
+                bool shouldSkip = false;
+                uint32_t elementSize = 0;
+            };
+
+            std::vector<BufferData> buffers;
+            pVBs.resize(numAttribs);
+            buffers.resize(numAttribs);
 
             const uint32_t kInvalidBufferIndex = (uint32_t)-1;
             uint32_t positionBufferIndex = kInvalidBufferIndex;
             uint32_t normalBufferIndex = kInvalidBufferIndex;
-            uint32_t tangentBufferIndex = kInvalidBufferIndex;
             uint32_t bitangentBufferIndex = kInvalidBufferIndex;
             uint32_t texCoordBufferIndex = kInvalidBufferIndex;
 
             for(int i = 0; i < numAttribs; i++)
             {
-                auto& pLayout = vbDescs[i].pLayout;
-				pLayout = VertexLayout::create();
+                VertexBufferLayout::SharedPtr pBufferLayout = VertexBufferLayout::create();
+                pLayout->addBufferLayout(i, pBufferLayout);
                 int32_t type, format, length;
                 mStream >> type >> format >> length;
+
                 if(type < 0 || type >= numAttributesType || format < 0 || format >= AttribFormat::AttribFormat_Max || length < 1 || length > 4)
                 {
                     std::string msg = "Error when loading model " + mModelName + ".\nCorrupted data.!";
-                    Logger::log(Logger::Level::Error, msg);
+                    logError(msg);
                     return nullptr;
                 }
                 else
@@ -735,93 +742,89 @@ namespace Falcor
                     ResourceFormat falcorFormat = getFalcorFormat(AttribFormat(format), length);
                     uint32_t shaderLocation = getShaderLocation(AttribType(type));
 
-                    vbDescs[i].stride = getFormatByteSize(AttribFormat(format)) * length;
-
-					switch (shaderLocation)
-					{
-					case VERTEX_POSITION_LOC:
-						positionBufferIndex = i;
+                    switch (shaderLocation)
+                    {
+                    case VERTEX_POSITION_LOC:
+                        positionBufferIndex = i;
                         assert(falcorFormat == ResourceFormat::RGB32Float || falcorFormat == ResourceFormat::RGBA32Float);
-						break;
-					case VERTEX_NORMAL_LOC:
-						normalBufferIndex = i;
+                        break;
+                    case VERTEX_NORMAL_LOC:
+                        normalBufferIndex = i;
                         assert(falcorFormat == ResourceFormat::RGB32Float);
-						break;
-					case VERTEX_TANGENT_LOC:
-						tangentBufferIndex = i;
+                        break;
+                    case VERTEX_BITANGENT_LOC:
+                        bitangentBufferIndex = i;
                         assert(falcorFormat == ResourceFormat::RGB32Float);
-						break;
-					case VERTEX_BITANGENT_LOC:
-						bitangentBufferIndex = i;
-                        assert(falcorFormat == ResourceFormat::RGB32Float);
-						break;
-					case VERTEX_TEXCOORD_LOC:
-						texCoordBufferIndex = i;
-						break;
-					}
+                        break;
+                    case VERTEX_TEXCOORD_LOC:
+                        texCoordBufferIndex = i;
+                        break;
+                    }
 
-					pLayout->addElement(falcorName, 0, falcorFormat, 1, shaderLocation);
-                    buffers[i].resize(vbDescs[i].stride * numVertices);
+                    buffers[i].elementSize = getFormatBytesPerBlock(falcorFormat);
+                    if(shaderLocation != kUnusedShaderElement)
+                    {
+                        pBufferLayout->addElement(falcorName, 0, falcorFormat, 1, shaderLocation);
+                        buffers[i].vec.resize(buffers[i].elementSize * numVertices);
+                    }
+                    else
+                    {
+                        buffers[i].shouldSkip = true;
+                    }
                 }
             }
 
-			
+            
             // Check if we need to generate tangents  
             bool genTangentForMesh = false;
-            if(shouldGenerateTangents && (tangentBufferIndex == kInvalidBufferIndex) && (bitangentBufferIndex == kInvalidBufferIndex))
+            if(shouldGenerateTangents && (bitangentBufferIndex == kInvalidBufferIndex))
             {
                 if(normalBufferIndex == kInvalidBufferIndex)
                 {
-                    Logger::log(Logger::Level::Warning, "Can't generate tangent space for mesh " + std::to_string(meshIdx) + " when loading model " + mModelName + ".\nMesh doesn't contain normals or texture coordinates\n");
+                    logWarning("Can't generate tangent space for mesh " + std::to_string(meshIdx) + " when loading model " + mModelName + ".\nMesh doesn't contain normals coordinates\n");
                     genTangentForMesh = false;
                 }
                 else
                 {
-                    if(texCoordBufferIndex == kInvalidBufferIndex)
-					{
-						Logger::log(Logger::Level::Warning, "No uv mapping is provided to generate tangent space for mesh " + std::to_string(meshIdx) + " when loading model " + mModelName + ".\nMesh doesn't contain normals or texture coordinates\n");
-					}
                     // Set the offsets
                     genTangentForMesh = true;
-                    tangentBufferIndex = (uint32_t)vbDescs.size();
-                    bitangentBufferIndex = (uint32_t)vbDescs.size() + 1;
-                    vbDescs.resize(bitangentBufferIndex + 1);
-					buffers.resize(bitangentBufferIndex + 1);
+                    bitangentBufferIndex = (uint32_t)pVBs.size();
+                    pVBs.resize(bitangentBufferIndex + 1);
+                    buffers.resize(bitangentBufferIndex + 1);
                    
-                    Vao::VertexBufferDesc& vbTangentDesc = vbDescs[tangentBufferIndex];
-					auto& pTangentLayout = vbTangentDesc.pLayout;
-					pTangentLayout = VertexLayout::create();
-                    vbDescs[tangentBufferIndex].stride = sizeof(glm::vec3);
-					pTangentLayout->addElement(VERTEX_TANGENT_NAME, 0, ResourceFormat::RGB32Float, 1, VERTEX_TANGENT_LOC);
-					buffers[tangentBufferIndex].resize(sizeof(glm::vec3) * numVertices);
-
-                    Vao::VertexBufferDesc& vbBitangentDesc = vbDescs[bitangentBufferIndex];
-					auto& pBitangentLayout = vbBitangentDesc.pLayout;
-					pBitangentLayout = VertexLayout::create();
-                    vbDescs[tangentBufferIndex].stride = sizeof(glm::vec3);
-					pBitangentLayout->addElement(VERTEX_BITANGENT_NAME, 0, ResourceFormat::RGB32Float, 1, VERTEX_BITANGENT_LOC);
-					buffers[bitangentBufferIndex].resize(sizeof(glm::vec3) * numVertices);
+                    auto pBitangentLayout = VertexBufferLayout::create();
+                    pLayout->addBufferLayout(bitangentBufferIndex, pBitangentLayout);
+                    pBitangentLayout->addElement(VERTEX_BITANGENT_NAME, 0, ResourceFormat::RGB32Float, 1, VERTEX_BITANGENT_LOC);
+                    buffers[bitangentBufferIndex].vec.resize(sizeof(glm::vec3) * numVertices);
                 }
             }
-			
+            
 
-            // Read the data
-            // Read one vertex at a time
+            // Read the data, one vertex at a time
             for(int32_t i = 0; i < numVertices; i++)
             {
-				for (int32_t attributes = 0; attributes < numAttribs; ++attributes)
-				{
-                    uint32_t stride = vbDescs[attributes].stride;
-					uint8_t* pDest = buffers[attributes].data() + stride * i;
-					mStream.read(pDest, stride);
-				}
+                for (int32_t attributes = 0; attributes < numAttribs; ++attributes)
+                {
+                    if (buffers[attributes].shouldSkip)
+                    {
+                        mStream.skip(buffers[attributes].elementSize);
+                    }
+                    else
+                    {
+                        uint32_t stride = pLayout->getBufferLayout(attributes)->getStride();
+                        uint8_t* pDest = buffers[attributes].vec.data() + stride * i;
+                        mStream.read(pDest, stride);
+                    }
+                }
             }
 
-			for (int32_t i = 0; i < numAttribs; ++i)
-			{
-                vbDescs[i].pBuffer = Buffer::create(buffers[i].size(), Buffer::BindFlags::Vertex, Buffer::AccessFlags::None, buffers[i].data());
-                pModel->addBuffer(vbDescs[i].pBuffer);
-			}
+            for (int32_t i = 0; i < numAttribs; ++i)
+            {
+                if(buffers[i].shouldSkip == false)
+                {
+                    pVBs[i] = Buffer::create(buffers[i].vec.size(), Buffer::BindFlags::Vertex, Buffer::CpuAccess::None, buffers[i].vec.data());
+                }
+            }
 
             if(version <= 5)
             {
@@ -863,17 +866,17 @@ namespace Falcor
                     if(texID < -1 || texID >= numTextures)
                     {
                         std::string msg = "Error when loading model " + mModelName + ".\nCorrupt binary mesh data!";
-                        Logger::log(Logger::Level::Error, msg);
+                        logError(msg);
                         return nullptr;
                     }
                     else if(texID != -1)
                     {
                         BasicMaterial::MapType falcorType = getFalcorMapType(TextureType(i));
-						if(BasicMaterial::MapType::Count == falcorType)
-						{
-							Logger::log(Logger::Level::Warning, "Texture of Type " + std::to_string(i) + " is not supported by the material system (model " + mModelName + ")");
-							continue;
-						}
+                        if(BasicMaterial::MapType::Count == falcorType)
+                        {
+                            logWarning("Texture of Type " + std::to_string(i) + " is not supported by the material system (model " + mModelName + ")");
+                            continue;
+                        }
 
                         // Load the texture
                         TexSignature texSig;
@@ -887,30 +890,23 @@ namespace Falcor
                         }
                         else
                         {
-                            auto pTexture = Texture::create2D(texData[texID].width, texData[texID].height, texSig.format, 1, Texture::kEntireMipChain, texSig.pData);
+                            auto pTexture = Texture::create2D(texData[texID].width, texData[texID].height, texSig.format, 1, Texture::kMaxPossible, texSig.pData);
                             pTexture->setSourceFilename(texData[texID].name);
                             textures[texSig] = pTexture;
-                            pModel->addTexture(pTexture);
                             basicMaterial.pTextures[falcorType] = pTexture;
                         }
                     }
                 }
 
-                auto pMaterial = basicMaterial.convertToMaterial();
-                auto pAddedMaterial = pModel->getOrAddMaterial(pMaterial);
-
-                // Check it the material already existed in the model
-                if(pAddedMaterial != pMaterial)
-                {
-                    pMaterial = pAddedMaterial;
-                }
+                // Create material and check if it already exists
+                auto pMaterial = checkForExistingMaterial(basicMaterial.convertToMaterial());
 
                 int32_t numTriangles;
                 mStream >> numTriangles;
                 if(numTriangles < 0)
                 {
                     std::string Msg = "Error when loading model " + mModelName + ".\nMesh has negative number of triangles!";
-                    Logger::log(Logger::Level::Error, Msg);
+                    logError(Msg);
                     return nullptr;
                 }
 
@@ -920,48 +916,44 @@ namespace Falcor
                 uint32_t ibSize = 3 * numTriangles * sizeof(uint32_t);
                 mStream.read(&indices[0], ibSize);
 
-                auto pIB = Buffer::create(ibSize, Buffer::BindFlags::Index, Buffer::AccessFlags::MapRead, indices.data());
-                pModel->addBuffer(pIB);
-				
-                
+                auto pIB = Buffer::create(ibSize, Buffer::BindFlags::Index, Buffer::CpuAccess::None, indices.data());
+
                 // Generate tangent space data if needed
                 if(genTangentForMesh)
                 {
                     if(texCoordBufferIndex != kInvalidBufferIndex)
                     {
-                        Logger::log(Logger::Level::Error, "Model " + mModelName + " asked to generate tangents w/o texture coordinates");
+                        logError("Model " + mModelName + " asked to generate tangents w/o texture coordinates");
                     }
                     uint32_t texCrdCount = 0;
                     glm::vec2* texCrd = nullptr;
                     if(texCoordBufferIndex != kInvalidBufferIndex)
                     {
-                        texCrdCount = vbDescs[texCoordBufferIndex].stride / sizeof(glm::vec2);
-                        texCrd = (glm::vec2*)buffers[texCoordBufferIndex].data();
+                        texCrdCount = pLayout->getBufferLayout(texCoordBufferIndex)->getStride() / sizeof(glm::vec2);
+                        texCrd = (glm::vec2*)buffers[texCoordBufferIndex].vec.data();
                     }
 
-                    if (vbDescs[positionBufferIndex].pLayout->getElementFormat(0) == ResourceFormat::RGB32Float)
+                    ResourceFormat posFormat = pLayout->getBufferLayout(positionBufferIndex)->getElementFormat(0);
+
+                    if (posFormat == ResourceFormat::RGB32Float)
                     {
-                        generateSubmeshTangentData<glm::vec3>(indices, (glm::vec3*)buffers[positionBufferIndex].data(), (glm::vec3*)buffers[normalBufferIndex].data(), texCrd, texCrdCount, (glm::vec3*)buffers[tangentBufferIndex].data(), (glm::vec3*)buffers[bitangentBufferIndex].data());
+                        generateSubmeshTangentData<glm::vec3>(indices, (glm::vec3*)buffers[positionBufferIndex].vec.data(), (glm::vec3*)buffers[normalBufferIndex].vec.data(), texCrd, texCrdCount, (glm::vec3*)buffers[bitangentBufferIndex].vec.data());
                     }
-                    else if (vbDescs[positionBufferIndex].pLayout->getElementFormat(0) == ResourceFormat::RGBA32Float)
+                    else if (posFormat == ResourceFormat::RGBA32Float)
                     {
-                        generateSubmeshTangentData<glm::vec4>(indices, (glm::vec4*)buffers[positionBufferIndex].data(), (glm::vec3*)buffers[normalBufferIndex].data(), texCrd, texCrdCount, (glm::vec3*)buffers[tangentBufferIndex].data(), (glm::vec3*)buffers[bitangentBufferIndex].data());
+                        generateSubmeshTangentData<glm::vec4>(indices, (glm::vec4*)buffers[positionBufferIndex].vec.data(), (glm::vec3*)buffers[normalBufferIndex].vec.data(), texCrd, texCrdCount, (glm::vec3*)buffers[bitangentBufferIndex].vec.data());
                     }
 
-                    vbDescs[tangentBufferIndex].pBuffer = Buffer::create(buffers[tangentBufferIndex].size(), Buffer::BindFlags::Vertex, Buffer::AccessFlags::None, buffers[tangentBufferIndex].data());
-                    pModel->addBuffer(vbDescs[tangentBufferIndex].pBuffer);
-
-                    vbDescs[bitangentBufferIndex].pBuffer = Buffer::create(buffers[bitangentBufferIndex].size(), Buffer::BindFlags::Vertex, Buffer::AccessFlags::None, buffers[bitangentBufferIndex].data());
-                    pModel->addBuffer(vbDescs[bitangentBufferIndex].pBuffer);
+                    pVBs[bitangentBufferIndex] = Buffer::create(buffers[bitangentBufferIndex].vec.size(), Buffer::BindFlags::Vertex, Buffer::CpuAccess::None, buffers[bitangentBufferIndex].vec.data());
                 }
-				
+                
 
                 // Calculate the bounding-box
                 glm::vec3 max, min;
                 for(uint32_t i = 0; i < numIndices; i++)
                 {
                     uint32_t vertexID = indices[i];
-                    uint8_t* pVertex = (vbDescs[positionBufferIndex].stride * vertexID) + buffers[positionBufferIndex].data();
+                    uint8_t* pVertex = (pLayout->getBufferLayout(positionBufferIndex)->getStride() * vertexID) + buffers[positionBufferIndex].vec.data();
 
                     float* pPosition = (float*)pVertex;
 
@@ -972,10 +964,18 @@ namespace Falcor
 
                 BoundingBox box = BoundingBox::fromMinMax(min, max);
 
-                // create the mesh                
-                auto pMesh = Mesh::create(vbDescs, numVertices, pIB, numIndices, RenderContext::Topology::TriangleList, pMaterial, box, false);
-                pModel->addMesh(std::move(pMesh));
-                meshToSubmeshesID[meshIdx].push_back(pModel->getMeshCount() - 1);
+                // create the mesh
+                auto pMesh = Mesh::create(pVBs, numVertices, pIB, numIndices, pLayout, Vao::Topology::TriangleList, pMaterial, box, false);
+
+                if (version >= 6)
+                {
+                    falcorMeshCache.push_back(pMesh);
+                    meshToSubmeshesID[meshIdx].push_back((uint32_t)(falcorMeshCache.size() - 1));
+                }
+                else
+                {
+                    pModel->addMeshInstance(pMesh, glm::mat4());
+                }
             }
         }
 
@@ -996,22 +996,12 @@ namespace Falcor
                 {
                     for(uint32_t i : meshToSubmeshesID[meshIdx])
                     {
-                        auto pMesh = pModel->getMesh(i);
-                        pMesh->addInstance(transformation);
+                        pModel->addMeshInstance(falcorMeshCache[i], transformation);
                     }
                 }
             }
         }
-        else
-        {
-            glm::mat4 identity;
-            for(uint32_t MeshID = 0; MeshID < pModel->getMeshCount(); MeshID++)
-            {
-                auto pMesh = pModel->getMesh(MeshID);
-                pMesh->addInstance(identity);
-            }
-        }
-
+        
         return pModel;
     }
 }

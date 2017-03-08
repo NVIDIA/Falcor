@@ -131,7 +131,7 @@ After this step, one can save these shading attributes, e.g., in a G-Buffer to p
 This routine also applies all material modifiers, like performs alpha test and applies a normal map.
 */
 void _fn prepareShadingAttribs(in const MaterialData material, in vec3 P, in vec3 camPos,
-    in vec3 normal, in vec3 tangent, in vec3 bitangent, in vec2 uv,
+    in vec3 normal, in vec3 bitangent, in vec2 uv,
 #ifdef _MS_USER_DERIVATIVES
     in const vec2 dPdx, in const vec2 dPdy,
 #else
@@ -163,18 +163,21 @@ void _fn prepareShadingAttribs(in const MaterialData material, in vec3 P, in vec
 
     shAttr.preparedMat.values = material.values;
     shAttr.preparedMat.desc = desc;
+    shAttr.preparedMat.textures = material.textures;
+    shAttr.preparedMat.samplerState = material.samplerState;
 
     /* Evaluate alpha test material modifier */
     applyAlphaTest(shAttr.preparedMat, shAttr);
     shAttr.aoFactor = 1;
 
     /* Prefetch textures */
-    FOR_MAT_LAYERS(iLayer, shAttr.preparedMat)
+    loop_unroll
+    for(uint iLayer = 0 ; iLayer < MatMaxLayers ; iLayer++)
     {
-        shAttr.preparedMat.values.layers[iLayer].albedo.constantColor =
-            evalWithColor(desc.layers[iLayer].hasAlbedoTexture, material.values.layers[iLayer].albedo, shAttr);
-        //ShAttr.PreparedMat.Layers[iLayer].Roughness.ConstantColor = EvalWithColor(Material.Layers[iLayer].Roughness, ShAttr);
-        //ShAttr.PreparedMat.Layers[iLayer].ExtraParam.ConstantColor = EvalWithColor(Material.Layers[iLayer].ExtraParam, ShAttr);
+        if(shAttr.preparedMat.desc.layers[iLayer].type == MatNone) break;
+
+        shAttr.preparedMat.values.layers[iLayer].albedo = 
+            evalWithColor(desc.layers[iLayer].hasTexture, material.textures.layers[iLayer], material.samplerState, material.values.layers[iLayer].albedo, shAttr);
     }
 
     /* Perturb shading normal is needed */
@@ -195,10 +198,10 @@ void _fn prepareShadingAttribs(in const MaterialData material, in vec3 P, in vec
     _ref(ShadingAttribs) shAttr)
 {
     /* Generate an axis-aligned tangent frame */
-    vec3 tangent; vec3 bitangent;
-    createTangentFrame(normal, tangent, bitangent);
+    vec3 bitangent;
+    createTangentFrame(normal, bitangent);
 
-    prepareShadingAttribs(material, P, camPos, normal, tangent, bitangent, uv,
+    prepareShadingAttribs(material, P, camPos, normal, bitangent, uv,
 #ifdef _MS_USER_DERIVATIVES
         dPdx, dPdy,
 #else
@@ -214,32 +217,32 @@ void _fn prepareShadingAttribs(in const MaterialData material, in vec3 P, in vec
     prepareShadingAttribs(material, P, camPos, normal, uv, 0, shAttr);
 }
 
-void _fn prepareShadingAttribs(in const MaterialData material, in vec3 P, in vec3 camPos, in vec3 normal, in vec3 tangent, in vec3 bitangent, in vec2 uv, _ref(ShadingAttribs) shAttr)
+void _fn prepareShadingAttribs(in const MaterialData material, in vec3 P, in vec3 camPos, in vec3 normal, in vec3 bitangent, in vec2 uv, _ref(ShadingAttribs) shAttr)
 {
-    prepareShadingAttribs(material, P, camPos, normal, tangent, bitangent, uv, 0, shAttr);
+    prepareShadingAttribs(material, P, camPos, normal, bitangent, uv, 0, shAttr);
 }
 #endif
 
 vec4 _fn evalEmissiveLayer(in const MaterialLayerValues layer, _ref(PassOutput) result)
 {
-    result.diffuseAlbedo += v3(1.f);
-    result.diffuseIllumination += v3(layer.albedo.constantColor);
-    return v4(1.f);
+    result.diffuseAlbedo += 1.f;
+    result.diffuseIllumination += layer.albedo.rgb;
+    return (1).rrrr;
 }
 
 vec4 _fn evalDiffuseLayer(in const MaterialLayerValues layer, in const vec3 lightIntensity, in const vec3 lightDir, in const vec3 normal, _ref(PassOutput) result)
 {
     vec3 value = lightIntensity;
     float weight = 0;
-    vec4 albedo = layer.albedo.constantColor;
-    result.roughness = v2(1.f);
+    vec4 albedo = layer.albedo;
+    result.roughness = 1;
 #ifndef _MS_DISABLE_DIFFUSE
     value *= evalDiffuseBSDF(normal, lightDir);
     weight = albedo.w;
-    result.diffuseAlbedo += v3(albedo) * layer.pmf;
+    result.diffuseAlbedo += albedo.rgb * layer.pmf;
     result.diffuseIllumination += value;
 #else
-    value = v3(0.f);
+    value = 0;
 #endif
     return v4(value, weight);
 }
@@ -256,15 +259,15 @@ vec2 _fn filterRoughness(in const ShadingAttribs shAttr, in const LightAttribs l
     // Compute half-vector derivatives
     vec3  H = normalize(shAttr.E + lAttr.L);
     vec2  hpp = v2(dot(H, shAttr.T), dot(H, shAttr.B));
-    vec2  hppDx = dFdx(hpp);
-    vec2  hppDy = dFdy(hpp);
+    vec2  hppDx = ddx_fine(hpp);
+    vec2  hppDy = ddy_fine(hpp);
 #endif
     // Compute filtering region
     vec2 rectFp = (abs(hppDx) + abs(hppDy)) * 0.5f;
 
     // For grazing angles where the first-order footprint goes to very high values
     // Usually you don’t need such high values and the maximum value of 1.0 or even 0.1 is enough for filtering.
-    rectFp = min(v2(0.7f), rectFp);
+    rectFp = min(0.7f, rectFp);
 
     // Covariance matrix of pixel filter's Gaussian (remapped in roughness units)
     vec2 covMx = rectFp * rectFp * 2.f;   // Need to x2 because roughness = sqrt(2) * pixel_sigma_hpp
@@ -279,38 +282,43 @@ vec4 _fn evalSpecularLayer(in const MaterialLayerDesc desc, in const MaterialLay
 {
 #ifndef _MS_DISABLE_SPECULAR
     /* Add albedo regardless of facing */
-    result.specularAlbedo += v3(data.albedo.constantColor) * data.pmf;
+    result.specularAlbedo += data.albedo.rgb * data.pmf;
 
     /* Ignore the layer if it's a transmission or backfacing */
-	if (dot(lAttr.L, shAttr.N)  * dot(shAttr.E, shAttr.N) <= 0.f)
-        return v4(0.f);
+    if (dot(lAttr.L, shAttr.N) * dot(shAttr.E, shAttr.N) <= 0.f)
+    {
+        return 0;
+    }
 
     vec3 value = lAttr.lightIntensity;
 
     vec2 roughness;
-    if(desc.hasRoughnessTexture != 0)
+    if(desc.hasTexture & ROUGHNESS_CHANNEL_BIT)
     {
-        roughness = v2(data.albedo.constantColor.w, data.albedo.constantColor.w);
+        roughness = v2(data.albedo.w, data.albedo.w);
     }
     else
     {
-        roughness = v2(data.roughness.constantColor.x, data.roughness.constantColor.y);
+        roughness = data.roughness.rg;
     }
+
 #ifdef _MS_FILTER_ROUGHNESS
     roughness = filterRoughness(shAttr, lAttr, roughness);
 #endif
 
     // Respect perfect specular cutoff
     if(max(roughness.x, roughness.y) < 1e-3f)
-        return v4(0.f);
-
+    {
+        return 0;
+    }
+    
     // compute halfway vector
     const vec3 hW = normalize(shAttr.E + lAttr.L);
     const vec3 h = normalize(v3(dot(hW, shAttr.T), dot(hW, shAttr.B), dot(hW, shAttr.N)));
 
     result.roughness = roughness;
 
-    switch(desc.ndf)
+    switch (desc.ndf)
     {
     case NDFBeckmann: /* Beckmann microfacet distribution */
     {
@@ -332,8 +340,8 @@ vec4 _fn evalSpecularLayer(in const MaterialLayerDesc desc, in const MaterialLay
 
     /* Fresnel conductor/dielectric term */
     const float HoE = dot(hW, shAttr.E);
-    const float IoR = data.extraParam.constantColor.x;
-    const float kappa = data.extraParam.constantColor.y;
+    const float IoR = data.extraParam.x;
+    const float kappa = data.extraParam.y;
     const float F_term = (desc.type == MatConductor) ? conductorFresnel(HoE, IoR, kappa) : 1.f - dielectricFresnel(HoE, IoR);
     value *= F_term;
     float weight = F_term;
@@ -342,14 +350,14 @@ vec4 _fn evalSpecularLayer(in const MaterialLayerDesc desc, in const MaterialLay
 
     return v4(value, weight);
 #else
-    return v4(0);
+    return 0;
 #endif
 }
 
 vec3 _fn blendLayer(in const vec4 albedo, in const vec4 layerOut, in const uint blendType, in const vec3 currentValue)
 {
     /* Account for albedo */
-    vec3 scaledLayerOut = v3(layerOut) * v3(albedo);
+    vec3 scaledLayerOut = layerOut.rgb * albedo.rgb;
     float weight = layerOut.w;
 
     /* Perform layer blending */
@@ -361,7 +369,7 @@ vec3 _fn blendLayer(in const vec4 albedo, in const vec4 layerOut, in const uint 
     vec3 result;
     if(blendType != BlendAdd)
     {
-        result = mix(currentValue, scaledLayerOut, weight);
+        result = lerp(currentValue, scaledLayerOut, weight);
     }
     else
     {
@@ -379,26 +387,26 @@ The output is the illumination of the current layer, blended into the results of
 void _fn evalMaterialLayer(in const int iLayer, in const ShadingAttribs attr, in const LightAttribs lAttr,
     _ref(PassOutput) result)
 {
-    vec4 value = v4(0.f);
+    vec4 value = 0;
 
-    const MaterialLayerValues data = attr.preparedMat.values.layers[iLayer];
+    const MaterialLayerValues values = attr.preparedMat.values.layers[iLayer];
     const MaterialLayerDesc desc = attr.preparedMat.desc.layers[iLayer];
     switch(desc.type)
     {
     case MatLambert: /* Diffuse BRDF */
-        value = evalDiffuseLayer(data, lAttr.lightIntensity, lAttr.L, attr.N, result);
+        value = evalDiffuseLayer(values, lAttr.lightIntensity, lAttr.L, attr.N, result);
         break;
     case MatEmissive:
-        value = evalEmissiveLayer(data, result);
+        value = evalEmissiveLayer(values, result);
         break;
     case MatConductor:
     case MatDielectric:
-        value = evalSpecularLayer(desc, data, attr, lAttr, result);
+        value = evalSpecularLayer(desc, values, attr, lAttr, result);
         break;
     };
 
 	vec3 oldValue = result.value;
-	result.value = blendLayer(data.albedo.constantColor, value, desc.blending, result.value);
+    result.value = blendLayer(values.albedo, value, desc.blending, result.value);
 
 	float delta = max(1e-3f, luminance(result.value - oldValue));
 	result.effectiveRoughness += result.roughness * delta;
@@ -413,29 +421,34 @@ void _fn evalMaterial(
     in const ShadingAttribs shAttr,
     in const LightAttribs lAttr,
     _ref(ShadingOutput) result,
-    in const bool initializeShadingOut DEFVAL(false))
+    in const bool initializeShadingOut DEFAULTS(false))
 {
     /* If it's the first pass, initialize all the aggregates to zero */
     if(initializeShadingOut)
     {
-        result.diffuseAlbedo = v3(0.f);
-        result.diffuseIllumination = v3(0.f);
-        result.specularAlbedo = v3(0.f);
-        result.specularIllumination = v3(0.f);
-        result.finalValue = v3(0.f);
+        result.diffuseAlbedo = 0;
+        result.diffuseIllumination = 0;
+        result.specularAlbedo = 0;
+        result.specularIllumination = 0;
+        result.finalValue = 0;
+        result.wi = 0;
+        result.pdf = 0;
+        result.thp = 0;
     }
 
     /* Go through all layers and perform a layer-by-layer shading and compositing */
     PassOutput passResult;
-    passResult.value = v3(0.f);
-    passResult.diffuseAlbedo = v3(0.f);
-    passResult.diffuseIllumination = v3(0.f);
-    passResult.specularAlbedo = v3(0.f);
-    passResult.specularIllumination = v3(0.f);
-    passResult.roughness = v2(0.f);
-    passResult.effectiveRoughness = v2(0.f);
-    FOR_MAT_LAYERS(iLayer, shAttr.preparedMat)
+    passResult.value = 0;
+    passResult.diffuseAlbedo = 0;
+    passResult.diffuseIllumination = 0;
+    passResult.specularAlbedo = 0;
+    passResult.specularIllumination = 0;
+    passResult.roughness = 0;
+    passResult.effectiveRoughness = 0;
+    [unroll]
+    for(uint iLayer = 0 ; iLayer < MatMaxLayers ; iLayer++)
     {
+        if(shAttr.preparedMat.desc.layers[iLayer].type == MatNone) break;
         evalMaterialLayer(iLayer, shAttr, lAttr, passResult);
     }
 
@@ -455,7 +468,7 @@ void _fn evalMaterial(
     in const ShadingAttribs shAttr,
     in const LightData light,
     _ref(ShadingOutput) result,
-    in const bool initializeShadingOut DEFVAL(false))
+    in const bool initializeShadingOut DEFAULTS(false))
 {
     /* Prepare lighting attributes */
     LightAttribs LAttr;
@@ -475,6 +488,9 @@ Initializes a material layer with an empty layer
 void _fn initNullLayer(_ref(MaterialLayerDesc) layer)
 {
     layer.type = MatNone;
+    layer.blending = BlendAdd;
+    layer.hasTexture = false;
+    layer.ndf = NDFUser;
 }
 
 /**
@@ -484,7 +500,13 @@ void _fn initDiffuseLayer(_ref(MaterialLayerDesc) desc, _ref(MaterialLayerValues
 {
     desc.type = MatLambert;
     desc.blending = BlendAdd;
-    data.albedo.constantColor = v4(albedo, 1.f);
+    desc.hasTexture = false;
+    desc.ndf = NDFGGX;
+    data.albedo = v4(albedo, 1.f);
+    data.extraParam = v4(0,0,0,0);
+    data.roughness = v4(0,0,0,0);
+    data.pad = v3(0,0,0);
+    data.pmf = 0;
 }
 
 /**
@@ -494,10 +516,10 @@ void _fn initConductorLayer(_ref(MaterialLayerDesc) desc, _ref(MaterialLayerValu
 {
     desc.type = MatConductor;
     desc.blending = BlendAdd;
-    data.albedo.constantColor = v4(color, 1.f);
-    data.roughness.constantColor = v4(roughness);
-    data.extraParam.constantColor.x = IoR;
-    data.extraParam.constantColor.y = kappa;
+    data.albedo = v4(color, 1.f);
+    data.roughness = roughness.rrrr;
+    data.extraParam.x = IoR;
+    data.extraParam.y = kappa;
 }
 
 /**
@@ -507,9 +529,9 @@ void _fn initDielectricLayer(_ref(MaterialLayerDesc) desc, _ref(MaterialLayerVal
 {
     desc.type = MatDielectric;
     desc.blending = BlendFresnel;
-    data.albedo.constantColor = v4(color, 1.f);
-    data.roughness.constantColor = v4(roughness);
-    data.extraParam.constantColor.x = IoR;
+    data.albedo = v4(color, 1.f);
+    data.roughness = roughness.rrrr;
+    data.extraParam.x = IoR;
 }
 
 /*******************************************************************
@@ -523,7 +545,7 @@ Tries to find a layer data for a given material type (diffuse/conductor/etc).
 \param[out] data           Layer data, if found
 returns false if the layer is not found, true otherwise
 */
-bool _fn getLayerByType(in const MaterialData material, in const int layerType, _ref(MaterialLayerValues) data, _ref(MaterialLayerDesc) desc)
+bool _fn getLayerByType(in const MaterialData material, in const uint layerType, _ref(MaterialLayerValues) data, _ref(MaterialLayerDesc) desc)
 {
     int layerId = material.desc.layerIdByType[layerType].id;
     if(layerId != -1)
@@ -542,12 +564,15 @@ returns black if the layer is not found, diffuse albedo color otherwise
 */
 vec4 _fn getDiffuseColor(in const ShadingAttribs shAttr)
 {
-    vec4 ret = v4(0.f);
-    MaterialLayerValues data;
-    MaterialLayerDesc   desc;
-    if(getLayerByType(shAttr.preparedMat, MatLambert, data, desc))
+    vec4 ret = 0;
+    // This is here because the HLSL compiler complains about 'data' not being completely initialized when used
+    int layerId = shAttr.preparedMat.desc.layerIdByType[MatLambert].id;
+    if (layerId != -1)
     {
-        ret = data.albedo.constantColor;
+        MaterialLayerValues data;
+        MaterialLayerDesc   desc;
+        getLayerByType(shAttr.preparedMat, MatLambert, data, desc);
+        ret = data.albedo;
     }
     return ret;
 }
@@ -566,16 +591,18 @@ bool _fn overrideDiffuseColor(_ref(ShadingAttribs) shAttr, const vec4 albedo, co
         if(layerId != -1)
         {
             found = true;
-            shAttr.preparedMat.values.layers[layerId].albedo.constantColor = albedo;
+            shAttr.preparedMat.values.layers[layerId].albedo = albedo;
         }
     }
     else
     {
-        FOR_MAT_LAYERS(iLayer, shAttr.preparedMat)
+        for(uint iLayer = 0 ; iLayer < MatMaxLayers ; iLayer++)
         {
+            if(shAttr.preparedMat.desc.layers[iLayer].type == MatNone) break;
+
             if(shAttr.preparedMat.desc.layers[iLayer].type == MatLambert)
             {
-                shAttr.preparedMat.values.layers[iLayer].albedo.constantColor = albedo;
+                shAttr.preparedMat.values.layers[iLayer].albedo = albedo;
                 found = true;
             }
         }
@@ -590,12 +617,12 @@ returns black if the layer is not found, specular color otherwise
 */
 vec4 _fn getSpecularColor(in const ShadingAttribs shAttr)
 {
-    vec4 ret = v4(0.f);
+    vec4 ret = 0;
     MaterialLayerValues data;
     MaterialLayerDesc   desc;
     if(getLayerByType(shAttr.preparedMat, MatConductor, data, desc))
     {
-        ret = data.albedo.constantColor;
+        ret = data.albedo;
     }
     return ret;
 }
@@ -616,9 +643,9 @@ void _fn sampleMaterial(
 	bool sampleDiffuse = true;
 
 	// Set the initial path throughput
-	result.thp = v3(0.f);
-    result.diffuseAlbedo = v3(0.f);
-    result.specularAlbedo = v3(0.f);
+	result.thp = 0;
+    result.diffuseAlbedo = 0;
+    result.specularAlbedo = 0;
 
 	// Sample specular layer if it exists
 	MaterialLayerValues specData;
@@ -635,10 +662,10 @@ void _fn sampleMaterial(
 
 			vec3 m;
 			const vec3 wo = toLocal(shAttr.E, shAttr.T, shAttr.B, shAttr.N);
-			const vec2 roughness = v2(specData.roughness.constantColor.x, specData.roughness.constantColor.y);
+			const vec2 roughness = v2(specData.roughness.x, specData.roughness.y);
 
 			// Set the specular reflectivity
-			result.specularAlbedo = v3(specData.albedo.constantColor);
+			result.specularAlbedo = specData.albedo.rgb;
             result.thp = result.specularAlbedo;
 
 			// Choose the appropriate normal distribution function
@@ -666,8 +693,8 @@ void _fn sampleMaterial(
 
 			// Fresnel conductor/dielectric term
 			const float HoE = dot(m, shAttr.E);
-			const float IoR = specData.extraParam.constantColor.x;
-			const float kappa = specData.extraParam.constantColor.y;
+			const float IoR = specData.extraParam.x;
+			const float kappa = specData.extraParam.y;
             const float F_term = (specDesc.type == MatConductor) ? conductorFresnel(HoE, IoR, kappa) : 1.f - dielectricFresnel(HoE, IoR);
 			result.thp *= F_term;
 
@@ -694,14 +721,14 @@ void _fn sampleMaterial(
 		// Ideally thp = (\rho / \pi) * |\omega_i . n| / bsdfPdf
 		// By importance sampling the cosine lobe, we can set bsdfPdf = |\omega_i . n| / \pi
 		// Thus, we can simplify thp = \rho
-        result.diffuseAlbedo = v3(getDiffuseColor(shAttr));
+		result.thp = getDiffuseColor(shAttr).rgb;
 		result.thp = result.diffuseAlbedo;
 
 		// Probability density function for perfect importance sampling of cosine lobe 
 		result.pdf = M_1_PIf;
 
 		// Record roughness for diffuse brdf
-		result.effectiveRoughness = v2(1.f);
+        result.effectiveRoughness = 1;
 	}
 }
 

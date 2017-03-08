@@ -34,7 +34,10 @@
 
 namespace Falcor
 {
-    SkyBox::UniquePtr SkyBox::create(Falcor::Texture::SharedPtr& pSkyTexture, Falcor::Sampler::SharedPtr pSampler, bool renderStereo)
+    static const char* kSamplerName = "gSampler";
+    static const char* kTextureName = "gTexture";
+
+    SkyBox::UniquePtr SkyBox::create(Texture::SharedPtr& pSkyTexture, Sampler::SharedPtr pSampler, bool renderStereo)
     {
         UniquePtr pSkyBox = UniquePtr(new SkyBox());
         if(pSkyBox->createResources(pSkyTexture, pSampler, renderStereo) == false)
@@ -44,32 +47,20 @@ namespace Falcor
         return pSkyBox;
     }
 
-    bool SkyBox::createResources(Falcor::Texture::SharedPtr& pSkyTexture, Falcor::Sampler::SharedPtr pSampler, bool renderStereo)
+    bool SkyBox::createResources(Texture::SharedPtr& pTexture, Sampler::SharedPtr pSampler, bool renderStereo)
     {
-        mpTexture = pSkyTexture;
-        if(mpTexture == nullptr)
+        if(pTexture == nullptr)
         {
-            Logger::log(Logger::Level::Error, "Trying to create a skybox with null texture");
+            logError("Trying to create a skybox with null texture");
             return false;
         }
 
         mpCubeModel = Model::createFromFile("Effects/cube.obj", 0);
         if(mpCubeModel == nullptr)
         {
-            Logger::log(Logger::Level::Error, "Failed to load cube model for SkyBox");
+            logError("Failed to load cube model for SkyBox");
             return false;
         }
-
-        mpSampler = pSampler;
-
-        // Create the rasterizer state
-        RasterizerState::Desc rastDesc;
-        rastDesc.setCullMode(RasterizerState::CullMode::Front).setDepthClamp(true);
-        mpNoCullRsState = RasterizerState::create(rastDesc);
-
-        DepthStencilState::Desc dsDesc;
-        dsDesc.setDepthWriteMask(false).setDepthFunc(DepthStencilState::Func::LessEqual).setDepthTest(true);
-        mpDepthStencilState = DepthStencilState::create(dsDesc);
 
         // Create the program
         Program::DefineList defines;
@@ -81,25 +72,54 @@ namespace Falcor
         {
             defines.remove("_SINGLE_PASS_STEREO");
         }
-        mpProgram = Program::createFromFile("Effects\\SkyBox.vs", "Effects\\Skybox.fs", defines);
-        mpUbo = UniformBuffer::create(mpProgram->getActiveProgramVersion().get(), "PerFrameCB");
-        mScaleOffset = mpUbo->getVariableOffset("gScale");
-        mTexOffset = mpUbo->getVariableOffset("gSkyTex");
-        mMatOffset = mpUbo->getVariableOffset("gWorld");
+        mpProgram = GraphicsProgram::createFromFile("Effects\\SkyBox.vs.hlsl", "Effects\\Skybox.ps.hlsl", defines);
+        mpVars = GraphicsVars::create(mpProgram->getActiveVersion()->getReflector());
+        ConstantBuffer::SharedPtr& pCB = mpVars->getConstantBuffer(0);
+        mScaleOffset = pCB->getVariableOffset("gScale");
+        mMatOffset = pCB->getVariableOffset("gWorld");
 
-        // Create blend state
+        mpVars->setTexture(kTextureName, pTexture);
+        mpVars->setSampler(kSamplerName, pSampler);
+
+        // Create state
+        mpState = GraphicsState::create();
         BlendState::Desc blendDesc;
         for(uint32_t i = 1 ; i < Fbo::getMaxColorTargetCount() ; i++)
         {
             blendDesc.setRenderTargetWriteMask(i, false, false, false, false);
         }
         blendDesc.setIndependentBlend(true);
-        mpBlendState = BlendState::create(blendDesc);
+        mpState->setBlendState(BlendState::create(blendDesc));
+
+        // Create the rasterizer state
+        RasterizerState::Desc rastDesc;
+        rastDesc.setCullMode(RasterizerState::CullMode::Front).setDepthClamp(true);
+        mpState->setRasterizerState(RasterizerState::create(rastDesc));
+
+        DepthStencilState::Desc dsDesc;
+        dsDesc.setDepthWriteMask(false).setDepthFunc(DepthStencilState::Func::LessEqual).setDepthTest(true);
+        mpState->setDepthStencilState(DepthStencilState::create(dsDesc));
+        mpState->setProgram(mpProgram);
 
         return true;
     }
 
-    SkyBox::UniquePtr SkyBox::createFromTexCube(const std::string& textureName, bool loadAsSrgb, Falcor::Sampler::SharedPtr pSampler, bool renderStereo)
+    Sampler::SharedPtr SkyBox::getSampler() const
+    {
+        return mpVars->getSampler(kSamplerName);
+    }
+
+    Texture::SharedPtr SkyBox::getTexture() const
+    {
+        return mpVars->getTexture(kTextureName);
+    }
+
+    void SkyBox::setSampler(Sampler::SharedPtr pSampler)
+    {
+        mpVars->setSampler(kSamplerName, pSampler);
+    }
+
+    SkyBox::UniquePtr SkyBox::createFromTexCube(const std::string& textureName, bool loadAsSrgb, Sampler::SharedPtr pSampler, bool renderStereo)
     {
         Texture::SharedPtr pTexture = createTextureFromFile(textureName, true, loadAsSrgb);
         if(pTexture == nullptr)
@@ -109,31 +129,20 @@ namespace Falcor
         return create(pTexture, pSampler, renderStereo);
     }
 
-    void SkyBox::render(Falcor::RenderContext* pRenderCtx, Falcor::Camera* pCamera)
+    void SkyBox::render(RenderContext* pRenderCtx, Camera* pCamera)
     {
         glm::mat4 world = glm::translate(pCamera->getPosition());
-        mpUbo->setVariable(mMatOffset, world);
-        mpUbo->setTexture(mTexOffset, mpTexture.get(), mpSampler.get());
-        mpUbo->setVariable(mScaleOffset, mScale);
+        ConstantBuffer::SharedPtr& pCB = mpVars->getConstantBuffer(0);
+        pCB->setVariable(mMatOffset, world);
+        pCB->setVariable(mScaleOffset, mScale);
 
-        pRenderCtx->setUniformBuffer(0, mpUbo);
+        mpState->setFbo(pRenderCtx->getGraphicsState()->getFbo());
+        pRenderCtx->pushGraphicsVars(mpVars);
+        pRenderCtx->pushGraphicsState(mpState);
 
-        // Store the state
-        auto pOldRsState = pRenderCtx->getRasterizerState();
-        auto pOldDsState = pRenderCtx->getDepthStencilState();
-        uint32_t stencilRef = pRenderCtx->getStencilRef();
-        auto pOldBlendState = pRenderCtx->getBlendState();
-        uint32_t sampleMask = pRenderCtx->getSampleMask();
+        ModelRenderer::render(pRenderCtx, mpCubeModel, pCamera, false);
 
-        pRenderCtx->setRasterizerState(mpNoCullRsState);
-        pRenderCtx->setDepthStencilState(mpDepthStencilState, 0);
-        pRenderCtx->setBlendState(mpBlendState, sampleMask);
-
-        ModelRenderer::render(pRenderCtx, mpProgram.get(), mpCubeModel, pCamera, false);
-
-        // Restore the state
-        pRenderCtx->setDepthStencilState(pOldDsState, stencilRef);
-        pRenderCtx->setRasterizerState(pOldRsState);
-        pRenderCtx->setBlendState(pOldBlendState, sampleMask);
+        pRenderCtx->popGraphicsVars();
+        pRenderCtx->popGraphicsState();
     }
 }

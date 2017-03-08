@@ -34,7 +34,7 @@ void StereoRendering::initUI()
 
     Gui::setGlobalHelpMessage("Sample application to load and display a model.\nUse the UI to switch between wireframe and solid mode.");
     mpGui->addButton("Load Scene", &StereoRendering::loadSceneCB, this);
-    Gui::dropdown_list submitModeList;
+    Gui::DropdownList submitModeList;
     submitModeList.push_back({(int)SceneRenderer::RenderMode::Mono, "Render to Screen"});
 
     if(VRSystem::instance())
@@ -118,7 +118,7 @@ void StereoRendering::loadScene()
 
         mpProgram = Program::createFromFile("", "StereoRendering.fs");
         setRenderMode();
-        mpUniformBuffer = UniformBuffer::create(mpProgram->getActiveProgramVersion().get(), "PerFrameCB");
+        mpUniformBuffer = UniformBuffer::create(mpProgram, "PerFrameCB");
     }
 }
 
@@ -128,7 +128,7 @@ void StereoRendering::onLoad()
     initVR();
 
     mpBlit = FullScreenPass::create("blit.fs");
-    mpBlitUbo = UniformBuffer::create(mpBlit->getProgram()->getActiveProgramVersion().get(), "PerImageCB");
+    mpBlitUbo = UniformBuffer::create(mpBlit->getProgram(), "PerImageCB");
 }
 
 void StereoRendering::blitTexture(const Texture* pTexture, uint32_t xStart)

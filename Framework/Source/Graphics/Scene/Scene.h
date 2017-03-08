@@ -35,6 +35,8 @@
 #include "Graphics/Camera/Camera.h"
 #include "Graphics/Camera/CameraController.h"
 #include "Graphics/Paths/ObjectPath.h"
+#include "Graphics/Model/ObjectInstance.h"
+#include "Graphics/Material/MaterialHistory.h"
 
 namespace Falcor
 {
@@ -49,7 +51,7 @@ namespace Falcor
         {
             enum class Type
             {
-                Unknown,	// Indicates an invalid/uninitialized variable
+                Unknown,    // Indicates an invalid/uninitialized variable
                 Int,
                 Uint,
                 Int64,
@@ -59,7 +61,8 @@ namespace Falcor
                 Vec2,
                 Vec3,
                 Vec4,
-                Bool
+                Bool,
+                Vector,
             };
 
             Type type = Type::Unknown;
@@ -76,6 +79,7 @@ namespace Falcor
             glm::vec2 vec2;
             glm::vec3 vec3;
             glm::vec4 vec4;
+            std::vector<float> vector;
 
             UserVariable() { }
             UserVariable(const int32_t      v) : i32(v),            type(Type::Int)       { }
@@ -85,24 +89,18 @@ namespace Falcor
             UserVariable(const std::string& s) : str(s),            type(Type::String)    { }
         };
 
-        struct ModelInstance
-        {
-            std::string name;
-            glm::mat4 transformMatrix;
-            glm::vec3 scaling;
-            glm::vec3 rotation;
-            glm::vec3 translation;
-            bool isVisible = true;
-        };
+        using ModelInstance = ObjectInstance<Model>;
+        using ModelInstanceList = std::vector<ModelInstance::SharedPtr>;
 
-		/**
-		    Enum to generate light source(s)
-		*/
-		enum
-		{
-			None,
-			GenerateAreaLights = 1,    ///< Create area light(s) for meshes that have emissive material
-		};
+        /**
+            Enum to generate light source(s)
+        */
+        enum
+        {
+            None,
+            GenerateAreaLights = 1,    ///< Create area light(s) for meshes that have emissive material
+            LoadMaterialHistory = 2    ///< Load history of overridden mesh materials
+        };
 
         static Scene::SharedPtr loadFromFile(const std::string& filename, const uint32_t& modelLoadFlags, uint32_t sceneLoadFlags = 0);
         static Scene::SharedPtr create(float cameraAspectRatio = 1.0f);
@@ -110,29 +108,25 @@ namespace Falcor
         ~Scene();
 
         // Models
-		uint32_t addModel(const Model::SharedPtr& pModel, const std::string& filename, bool createIdentityInstance);
-        void deleteModel(uint32_t modelID);
-
         uint32_t getModelCount() const { return (uint32_t)mModels.size(); }
-        const Model::SharedPtr& getModel(uint32_t index) const { return mModels[index].pModel; }
-        const std::string& getModelFilename(uint32_t index) const { return mModels[index].Filename; }
+        const Model::SharedPtr& getModel(uint32_t modelID) const { return mModels[modelID][0]->getObject(); };
+        void deleteModel(uint32_t modelID);
+        void deleteAllModels();
 
         // Model instances
-        uint32_t getModelInstanceCount(uint32_t modelID) const { return (uint32_t)mModels[modelID].instances.size(); }
-        const ModelInstance& getModelInstance(uint32_t modelID, uint32_t instanceID) const { return mModels[modelID].instances[instanceID]; }
-        void setModelInstanceTranslation(uint32_t modelID, uint32_t instanceID, const glm::vec3& translation);
-        void setModelInstanceRotation(uint32_t modelID, uint32_t instanceID, const glm::vec3& rotation);
-        void setModelInstanceScaling(uint32_t modelID, uint32_t instanceID, const glm::vec3& scaling);
-        void setModelInstanceVisible(uint32_t modelID, uint32_t instanceID, bool isVisible) { mModels[modelID].instances[instanceID].isVisible = isVisible; }
-        uint32_t addModelInstance(uint32_t modelID, const std::string& name, const glm::vec3& rotate, const glm::vec3& scale, const glm::vec3& translate);
+        void addModelInstance(const Model::SharedPtr& pModel, const std::string& instanceName, const glm::vec3& translation = glm::vec3(), const glm::vec3& rotation = glm::vec3(), const glm::vec3& scaling = glm::vec3(1));
+        // Adds a model instance and shares ownership of it
+        void addModelInstance(const ModelInstance::SharedPtr& pInstance);
+        uint32_t getModelInstanceCount(uint32_t modelID) const;
+        const ModelInstance::SharedPtr& getModelInstance(uint32_t modelID, uint32_t instanceID) const { return mModels[modelID][instanceID]; };
         void deleteModelInstance(uint32_t modelID, uint32_t instanceID);
 
         // Light sources
         uint32_t addLight(const Light::SharedPtr& pLight);
         void deleteLight(uint32_t lightID);
         uint32_t getLightCount() const { return (uint32_t)mpLights.size(); }
-        Light::SharedPtr getLight(uint32_t index) const { return mpLights[index]; }
-		const std::vector<Light::SharedPtr>& getLights() const { return mpLights; }
+        const Light::SharedPtr& getLight(uint32_t index) const { return mpLights[index]; }
+        const std::vector<Light::SharedPtr>& getLights() const { return mpLights; }
 
         void setAmbientIntensity(const glm::vec3& ambientIntensity) { mAmbientIntensity = ambientIntensity; }
         const glm::vec3& getAmbientIntensity() const { return mAmbientIntensity; };
@@ -142,17 +136,19 @@ namespace Falcor
 
         // Materials
         void addMaterial(Material::SharedPtr pMaterial) { mpMaterials.push_back(pMaterial); }
+        void deleteMaterial(uint32_t materialID);
         uint32_t getMaterialCount() const { return (uint32_t)mpMaterials.size(); }
-        const Material::SharedPtr& getMaterial(uint32_t Index) const { return mpMaterials[Index]; }
+        const Material::SharedPtr& getMaterial(uint32_t index) const { return mpMaterials[index]; }
+
+        void enableMaterialHistory();
+        void disableMaterialHistory();
+        const MaterialHistory::SharedPtr& getMaterialHistory() { return mpMaterialHistory; }
 
         // Object paths
         uint32_t addPath(const ObjectPath::SharedPtr& pPath);
         void deletePath(uint32_t pathID);
-
-        ObjectPath::SharedPtr getActivePath() const { return (mActivePathID == kFreeCameraMovement) ? nullptr : mpPaths[mActivePathID]; }
-        uint32_t getActivePathIndex() const { return mActivePathID; }
+        
         const ObjectPath::SharedPtr& getPath(uint32_t pathID) const { return mpPaths[pathID]; }
-        void setActivePath(uint32_t pathID);
         uint32_t getPathCount() const { return (uint32_t)mpPaths.size();}
 
         // Camera
@@ -160,80 +156,59 @@ namespace Falcor
         void deleteCamera(uint32_t cameraID);
 
         uint32_t getCameraCount() const { return (uint32_t)mCameras.size(); }
-        const Camera::SharedPtr& getCamera(uint32_t Index) const { return mCameras[Index]; }
+        const Camera::SharedPtr& getCamera(uint32_t index) const { return mCameras[index]; }
         const Camera::SharedPtr& getActiveCamera() const { return getCamera(mActiveCameraID); }
         uint32_t getActiveCameraIndex() const { return mActiveCameraID; }
 
         void setActiveCamera(uint32_t camID);
         float getCameraSpeed() const { return mCameraSpeed; }
         void setCameraSpeed(float speed) { mCameraSpeed = speed; }
-        float& getCameraSpeedRef() { return mCameraSpeed; }
 
-        // Scene extents
-        vec3 getCenter();
-        float getRadius();
-
-        // Scene update
+        // Camera update
         bool update(double currentTime, CameraController* cameraController = nullptr);
 
         // User variables
         uint32_t getVersion() const { return mVersion; }
         void setVersion(uint32_t version) { mVersion = version; }
         void addUserVariable(const std::string& name, const UserVariable& var) { mUserVars[name] = var; }
-		
-		// If the name is not found, returns an invalid var (Type == Unknown)
+        
+        // If the name is not found, returns an invalid var (Type == Unknown)
         const UserVariable& getUserVariable(const std::string& name);
         const UserVariable& getUserVariable(uint32_t varID, std::string& varName) const;
         uint32_t getUserVariableCount() const { return (uint32_t)mUserVars.size(); }
 
-		const uint32_t getId() const { return mId; }
+        const uint32_t getId() const { return mId; }
 
-        static const uint32_t kFreeCameraMovement = (uint32_t)-1;
+        static const uint32_t kNoPath = (uint32_t)-1;
 
         void merge(const Scene* pFrom);
 
-		/**
-		    This routine creates area light(s) in the scene. All meshes that
-			have emissive material are treated as area lights.
-		*/
-		void createAreaLights();
+        /**
+            This routine creates area light(s) in the scene. All meshes that
+            have emissive material are treated as area lights.
+        */
+        void createAreaLights();
 
-		/**
-		    This routine deletes area light(s) from the scene.
-		*/
-		void deleteAreaLights();
+        /**
+            This routine deletes area light(s) from the scene.
+        */
+        void deleteAreaLights();
 
     private:
+
         Scene(float cameraAspectRatio);
 
-		static uint32_t sSceneCounter;
+        static uint32_t sSceneCounter;
 
-		uint32_t mId;
+        uint32_t mId;
 
-        void calculateModelInstanceMatrix(uint32_t modelID, uint32_t instanceID);
-        void detachActiveCameraFromPath();
-        void attachActiveCameraToPath();
-
-        struct ModelData
-        {
-            Model::SharedPtr pModel;
-            std::string Filename;
-            std::vector<ModelInstance> instances;
-
-            ModelData(const Model::SharedPtr& pModel, const std::string& _Filename) : pModel(pModel), Filename(_Filename) {}
-        };
-
-        std::vector<ModelData> mModels;
+        std::vector<ModelInstanceList> mModels;
         std::vector<Light::SharedPtr> mpLights;
         std::vector<Material::SharedPtr> mpMaterials;
         std::vector<Camera::SharedPtr> mCameras;
         std::vector<ObjectPath::SharedPtr> mpPaths;
-        uint32_t mActivePathID = kFreeCameraMovement;
 
-        mutable float mRadius = -1.f;
-        mutable glm::vec3 mCenter;
-
-        mutable bool        mDirty = true;
+        MaterialHistory::SharedPtr mpMaterialHistory;
 
         glm::vec3 mAmbientIntensity;
         uint32_t mActiveCameraID = 0;

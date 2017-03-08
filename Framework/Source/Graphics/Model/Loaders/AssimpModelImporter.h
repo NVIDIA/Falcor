@@ -28,6 +28,7 @@
 #pragma once
 #include <map>
 #include <vector>
+#include "Graphics/Model/Loaders/ModelImporter.h"
 #include "../AnimationController.h"
 #include "../Mesh.h"
 #include "../Model.h"
@@ -42,10 +43,10 @@ namespace Falcor
 {
     class Animation;
     class Buffer;
-    class VertexLayout;
+    class VertexBufferLayout;
     class Texture;
 
-    class AssimpModelImporter
+    class AssimpModelImporter : public ModelImporter
     {
     public:
         /** create a new model using ASSIMP
@@ -56,13 +57,16 @@ namespace Falcor
         static Model::SharedPtr createFromFile(const std::string& filename, uint32_t flags);
 
     private:
+
+        using IdToMesh = std::unordered_map<uint32_t, Mesh::SharedPtr>;
+
         AssimpModelImporter(uint32_t flags);
-        AssimpModelImporter(const AssimpModelImporter&) = delete;        
+        AssimpModelImporter(const AssimpModelImporter&) = delete;
         void operator=(const AssimpModelImporter&) = delete;
 
         bool initModel(const std::string& filename);
         bool createDrawList(const aiScene* pScene);
-        bool parseAiSceneNode(const aiNode* pCurrnet, const aiScene* pScene, std::map<uint32_t, Mesh::SharedPtr>& aiToFalcorMesh);
+        bool parseAiSceneNode(const aiNode* pCurrent, const aiScene* pScene, IdToMesh& aiToFalcorMesh);
         bool createAllMaterials(const aiScene* pScene, const std::string& modelFolder, bool isObjFile, bool useSrgb);
 
         void createAnimationController(const aiScene* pScene);
@@ -73,10 +77,10 @@ namespace Falcor
         Animation::UniquePtr createAnimation(const aiAnimation* pAiAnim);
 
         Mesh::SharedPtr createMesh(const aiMesh* pAiMesh);
-        bool createVertexLayouts(const aiMesh* pAiMesh, Vao::VertexBufferDescVector& layouts);
+        VertexLayout::SharedPtr createVertexLayout(const aiMesh* pAiMesh);
         Buffer::SharedPtr createIndexBuffer(const aiMesh* pAiMesh);
-        Buffer::SharedPtr createVertexBuffer(const aiMesh* pAiMesh, uint32_t vertexCount, BoundingBox& boundingBox, const VertexLayout* pLayout);
-        void loadBones(const aiMesh* pAiMesh, uint8_t* pVertexData, uint32_t vertexCount, uint32_t vertexStride);
+        Buffer::SharedPtr createVertexBuffer(const aiMesh* pAiMesh, uint32_t vertexCount, BoundingBox& boundingBox, const VertexBufferLayout* pLayout);
+        void loadBones(const aiMesh* pAiMesh, uint8_t* pVertexData, uint32_t vertexCount, uint32_t vertexStride, uint32_t idOffset, uint32_t weightOffset);
         void loadTextures(const aiMaterial* pAiMaterial, const std::string& folder, BasicMaterial* pMaterial, bool isObjFile, bool useSrgb);
         Material::SharedPtr createMaterial(const aiMaterial* pAiMaterial, const std::string& folder, bool isObjFile, bool useSrgb);
 
@@ -87,9 +91,6 @@ namespace Falcor
 
         std::vector<Bone> mBones;
         uint32_t mFlags;
-
-        uint32_t mBoneIDOffset = 0;
-        uint32_t mBoneWeightOffset = 0;
         std::map<const std::string, Texture::SharedPtr> mTextureCache;
     };
 }

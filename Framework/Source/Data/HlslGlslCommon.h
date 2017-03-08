@@ -26,7 +26,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 #ifdef FALCOR_GLSL
-#define UNIFORM_BUFFER(name, index) layout(binding = index) uniform name
+#define CONSTANT_BUFFER(name, index) layout(binding = index) uniform name
 #define mul(a,b) (a*b)
 #define static
 
@@ -35,7 +35,7 @@
 
 #elif defined FALCOR_HLSL
 
-#define UNIFORM_BUFFER(name, index) cbuffer name : register(b##index)
+#define CONSTANT_BUFFER(name, index) cbuffer name : register(b##index)
 #define mix lerp
 #define fract frac
 

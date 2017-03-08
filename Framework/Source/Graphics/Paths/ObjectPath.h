@@ -59,6 +59,9 @@ namespace Falcor
         void attachObject(const IMovableObject::SharedPtr& pObject);
         void detachObject(const IMovableObject::SharedPtr& pObject);
 
+        const IMovableObject::SharedPtr& getAttachedObject(uint32_t i) const { return mpObjects[i]; }
+        uint32_t getAttachedObjectCount() const { return (uint32_t)mpObjects.size(); }
+
         void setAnimationRepeat(bool repeatAnimation) { mRepeatAnimation = repeatAnimation; }
 
         const glm::vec3& getCurrentPosition() const { return mCurrentFrame.position; }
@@ -80,15 +83,21 @@ namespace Falcor
         uint32_t getKeyFrameCount() const {return (uint32_t)mKeyFrames.size();}
         const Frame& getKeyFrame(uint32_t frameID) const { return mKeyFrames[frameID]; }
 
-        void setFramePosition(uint32_t frameID, const glm::vec3& pos) { mKeyFrames[frameID].position = pos; }
-        void setFrameTarget(uint32_t frameID, const glm::vec3& target) { mKeyFrames[frameID].target = target; }
-        void setFrameUp(uint32_t frameID, const glm::vec3& up) { mKeyFrames[frameID].up = up; }
+        void setFramePosition(uint32_t frameID, const glm::vec3& pos) { mDirty = true; mKeyFrames[frameID].position = pos; }
+        void setFrameTarget(uint32_t frameID, const glm::vec3& target) { mDirty = true; mKeyFrames[frameID].target = target; }
+        void setFrameUp(uint32_t frameID, const glm::vec3& up) { mDirty = true; mKeyFrames[frameID].up = up; }
         uint32_t setFrameTime(uint32_t frameID, float time);
+
+        void getFrameAt(uint32_t frameID, float t, Frame& frameOut);
+
     private:
         ObjectPath() = default;
-        void linearInterpolation(uint32_t currentFrame, double currentTime);
-        void cubicSplineInterpolation(uint32_t currentFrame, double currentTime);
-        
+
+        float getInterpolationFactor(uint32_t frameID, double currentTime) const;
+
+        Frame linearInterpolation(uint32_t currentFrame, float t) const;
+        Frame cubicSplineInterpolation(uint32_t currentFrame, float t);
+
         std::vector<Frame> mKeyFrames;
         std::vector<IMovableObject::SharedPtr> mpObjects;
         std::string mName;

@@ -27,29 +27,46 @@
 ***************************************************************************/
 #include "NormalMapFiltering.h"
 
-void NormalMapFiltering::initUI()
+void NormalMapFiltering::onGuiRender()
 {
-    Gui::setGlobalHelpMessage("Sample application to load and display a model.\nUse the UI to switch between wireframe and solid mode.");
-
     const Scene* pScene = mpRenderer->getScene();
     for(uint32_t i = 0; i < pScene->getLightCount(); i++)
     {
         std::string group = "Light " + std::to_string(i);
-        pScene->getLight(i)->setUiElements(mpGui.get(), group);
+        if(mpGui->beginGroup(group.c_str()))
+        {
+            pScene->getLight(i)->renderUI(mpGui.get());
+            mpGui->endGroup();
+        }
     }
-    mpGui->addCheckBox("Lean Map", &mUseLeanMap);
+
+    if (mpGui->addCheckBox("Lean Map", mUseLeanMap) || mpGui->addCheckBox("Specular AA", mUseSpecAA))
+    {
+        updateProgram();
+    }
 }
 
-void setProgramDefines(Program* pProgram, bool leanMap, const Scene* pScene, uint32_t leanMapCount)
+void NormalMapFiltering::updateProgram()
 {
     std::string lights;
-    pProgram->clearDefines();
-    getSceneLightString(pScene, lights);
-    pProgram->addDefine("_LIGHT_SOURCES", lights);
-    if(leanMap)
+    mpProgram->clearDefines();
+    getSceneLightString(mpRenderer->getScene(), lights);
+    mpProgram->addDefine("_LIGHT_SOURCES", lights);
+    if (mUseLeanMap)
     {
-        pProgram->addDefine("_MS_USER_NORMAL_MAPPING");
-        pProgram->addDefine("_LEAN_MAP_COUNT", std::to_string(leanMapCount));
+        mpProgram->addDefine("_MS_USER_NORMAL_MAPPING");
+        mpProgram->addDefine("_LEAN_MAP_COUNT", std::to_string(mpLeanMap->getRequiredLeanMapShaderArraySize()));
+    }
+    if (mUseSpecAA)
+    {
+        mpProgram->addDefine("_MS_FILTER_ROUGHNESS");
+    }
+
+    mpVars = GraphicsVars::create(mpProgram->getActiveVersion()->getReflector());
+    if(mUseLeanMap)
+    {
+        mpLeanMap->setIntoProgramVars(mpVars.get(), "gLeanMaps");
+        mpVars->setSampler("gSampler", mpLinearSampler);
     }
 }
 
@@ -62,40 +79,32 @@ void NormalMapFiltering::onLoad()
     }
     mpRenderer = SceneRenderer::create(pScene);
     mpLeanMap = LeanMap::create(pScene.get());
-    mpProgram = Program::createFromFile("", "NormalMapFiltering.fs");
+    mpProgram = GraphicsProgram::createFromFile("", "NormalMapFiltering.ps.hlsl");
     
-    mUseLeanMap = true;
     Sampler::Desc samplerDesc;
     samplerDesc.setFilterMode(Sampler::Filter::Linear, Sampler::Filter::Linear, Sampler::Filter::Linear);
     mpLinearSampler = Sampler::create(samplerDesc);
     pScene->getModel(0)->bindSamplerToMaterials(mpLinearSampler);
 
-    setProgramDefines(mpProgram.get(), mUseLeanMap, pScene.get(), mpLeanMap->getRequiredLeanMapShaderArraySize());
-    mpLightBuffer = UniformBuffer::create(mpProgram->getActiveProgramVersion().get(), "PerFrameCB");
-    mpLeanMapBuffer = UniformBuffer::create(mpProgram->getActiveProgramVersion().get(), "LeanMapsCB");
-    mpLeanMap->setIntoUniformBuffer(mpLeanMapBuffer.get(), 0, mpLinearSampler.get());
+    updateProgram();
     mCameraController.attachCamera(pScene->getCamera(0));
     mCameraController.setModelParams(pScene->getModel(0)->getCenter(), pScene->getModel(0)->getRadius(), 4);
-    
-    initUI();
 }
 
 void NormalMapFiltering::onFrameRender()
 {
-    setProgramDefines(mpProgram.get(), mUseLeanMap, mpRenderer->getScene(), mpLeanMap->getRequiredLeanMapShaderArraySize());
-
     const glm::vec4 clearColor(0.38f, 0.52f, 0.10f, 1);
-    mpDefaultFBO->clear(clearColor, 1.0f, 0, FboAttachmentType::All);
+    mpRenderContext->clearFbo(mpDefaultFBO.get(), clearColor, 1.0f, 0, FboAttachmentType::All);
 
-    mpRenderContext->setBlendState(nullptr);
-    mpRenderContext->setDepthStencilState(nullptr, 0);
-    setSceneLightsIntoUniformBuffer(mpRenderer->getScene(), mpLightBuffer.get());
-    mpRenderContext->setUniformBuffer(0, mpLightBuffer);
-    mpRenderContext->setUniformBuffer(1, mpLeanMapBuffer);
+    auto& pState = mpRenderContext->getGraphicsState();
+    pState->setBlendState(nullptr);
+    pState->setDepthStencilState(nullptr);
+    pState->setProgram(mpProgram);
+    setSceneLightsIntoConstantBuffer(mpRenderer->getScene(), mpVars->getConstantBuffer("PerFrameCB").get());
+    mpRenderContext->pushGraphicsVars(mpVars);
     mCameraController.update();
-    mpRenderer->renderScene(mpRenderContext.get(), mpProgram.get());
-
-    renderText(getGlobalSampleMessage(true), glm::vec2(10, 10));
+    mpRenderer->renderScene(mpRenderContext.get());
+    mpRenderContext->popGraphicsVars();
 }
 
 void NormalMapFiltering::onShutdown()
@@ -115,10 +124,8 @@ bool NormalMapFiltering::onMouseEvent(const MouseEvent& mouseEvent)
 
 void NormalMapFiltering::onResizeSwapChain()
 {
-    RenderContext::Viewport vp;
-    vp.height = (float)mpDefaultFBO->getHeight();
-    vp.width = (float)mpDefaultFBO->getWidth();
-    mpRenderContext->setViewport(0, vp);
+    float aspect = (float)mpDefaultFBO->getWidth() / (float)mpDefaultFBO->getHeight();
+    mpRenderer->getScene()->getActiveCamera()->setAspectRatio(aspect);
 }
 
 int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ LPSTR lpCmdLine, _In_ int nShowCmd)
@@ -126,7 +133,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
     NormalMapFiltering sample;
     SampleConfig config;
     config.windowDesc.title = "Normal Map Filtering";
-    config.windowDesc.swapChainDesc.width = 1600;
-    config.windowDesc.swapChainDesc.height = 1024;
+    config.windowDesc.width = 1350;
+    config.windowDesc.height = 1080;
     sample.run(config);
 }

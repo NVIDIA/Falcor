@@ -38,34 +38,51 @@
 #include <math.h>
 
 // Core
-#include "Core/ProgramVersion.h"
-#include "Core/Shader.h"
-#include "Core/BlendState.h"
-#include "Core/Buffer.h"
-#include "Core/DepthStencilState.h"
-#include "Core/Formats.h"
-#include "Core/RasterizerState.h"
-#include "Core/Texture.h"
-#include "Core/Sampler.h"
-#include "Core/ScreenCapture.h"
-#include "Core/VAO.h"
-#include "Core/FBO.h"
-#include "Core/GpuTimer.h"
-#include "Core/UniformBuffer.h"
-#include "Core/VertexLayout.h"
-#include "Core/ShaderStorageBuffer.h"
-#include "Core/Window.h"
+#include "API/BlendState.h"
+#include "API/Buffer.h"
+#include "API/DepthStencilState.h"
+#include "API/Device.h"
+#include "API/FBO.h"
+#include "API/Formats.h"
+#include "API/GpuTimer.h"
+#include "API/GraphicsStateObject.h"
+#include "API/ProgramReflection.h"
+#include "API/ProgramVars.h"
+#include "API/ProgramVersion.h"
+#include "API/RasterizerState.h"
+#include "API/RenderContext.h"
+#include "API/Sampler.h"
+#include "API/Shader.h"
+#include "API/StructuredBuffer.h"
+#include "API/Texture.h"
+#include "API/ConstantBuffer.h"
+#include "API/VAO.h"
+#include "API/VertexLayout.h"
+#include "API/Window.h"
+#include "API/TypedBuffer.h"
+#include "API/CopyContext.h"
+#include "API/ComputeContext.h"
 
-#include "Graphics/Camera/Camera.h"
-#include "Graphics/Camera/CameraController.h"
+#if defined FALCOR_D3D12 || defined FALCOR_VULKAN
+#include "API/LowLevel/DescriptorHeap.h"
+#include "API/LowLevel/DescriptorTable.h"
+#include "API/LowLevel/FencedPool.h"
+#include "API/LowLevel/GpuFence.h"
+#include "API/LowLevel/RootSignature.h"
+#endif //FALCOR_D3D12 || defined FALCOR_VULKAN
 
 // Graphics
+#include "Graphics/Camera/Camera.h"
+#include "Graphics/Camera/CameraController.h"
+#include "Graphics/GraphicsState.h"
 #include "Graphics/FullScreenPass.h"
 #include "Graphics/TextureHelper.h"
 #include "Graphics/Light.h"
 #include "Graphics/Program.h"
-#include "Graphics/Program.h"
+#include "Graphics/GraphicsProgram.h"
 #include "Graphics/FboHelper.h"
+#include "Graphics/ComputeProgram.h"
+#include "Graphics/ComputeState.h"
 
 // Material
 #include "Graphics/Material/Material.h"
@@ -81,7 +98,7 @@
 // Scene
 #include "Graphics/Scene/Scene.h"
 #include "Graphics/Scene/SceneRenderer.h"
-#include "Graphics/Scene/SceneEditor.h"
+#include "Graphics/Scene/Editor/SceneEditor.h"
 #include "Graphics/Scene/SceneUtils.h"
 
 
@@ -92,6 +109,7 @@
 
 // Utils
 #include "Utils/Bitmap.h"
+#include "Utils/DDSHeader.h"
 #include "Utils/Font.h"
 #include "Utils/Gui.h"
 #include "Utils/Logger.h"
@@ -122,5 +140,6 @@
 #include "Effects/SkyBox/SkyBox.h"
 #include "Effects/ToneMapping/ToneMapping.h"
 
-#define FALCOR_MAJOR_VERSION 1
+#define FALCOR_MAJOR_VERSION 2
 #define FALCOR_MINOR_VERSION 0
+#define FALCOR_DEV_STAGE "alpha"

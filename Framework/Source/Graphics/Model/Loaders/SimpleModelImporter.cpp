@@ -30,12 +30,12 @@
 #include "../Model.h"
 #include "../Mesh.h"
 #include "Utils/OS.h"
-#include "Core/VertexLayout.h"
+#include "API/VertexLayout.h"
 #include "Data/VertexAttrib.h"
-#include "Core/Buffer.h"
+#include "API/Buffer.h"
 #include "glm/common.hpp"
-#include "Core/Formats.h"
-#include "Core/Texture.h"
+#include "API/Formats.h"
+#include "API/Texture.h"
 #include "Graphics/Material/BasicMaterial.h"
 #include "glm/geometric.hpp"
 
@@ -44,13 +44,16 @@ namespace Falcor
 
     Model::SharedPtr SimpleModelImporter::create( VertexFormat vertLayout, uint32_t vboSz, const void *vboData,
                                                   uint32_t idxBufSz, const uint32_t *idxBufData, Texture::SharedPtr diffuseTexture,
-                                                  RenderContext::Topology geomTopology )
+                                                  Vao::Topology geomTopology )
     {
+        // Since SimpleModelImporter is all static, create an instance here to help track materials
+        SimpleModelImporter modelImporter;
+
         // Create our model container
-        Model::SharedPtr        pModel = Model::SharedPtr( new Model() );
+        Model::SharedPtr pModel = Model::create();
 
         // Need to create our vertex layout
-        VertexLayout::SharedPtr pVertexLayout = VertexLayout::create();
+        VertexBufferLayout::SharedPtr pVertexLayout = VertexBufferLayout::create();
         uint32_t vertexStride = 0;
         uint32_t positionOffset = 0;
         for ( int i = 0; i < vertLayout.attribs.size(); i++ )
@@ -80,16 +83,12 @@ namespace Falcor
         }
 
         // Create vertex buffer and add to the model
-        Vao::VertexBufferDescVector vbDescVec( 1 );
-        Vao::VertexBufferDesc& vbDesc = vbDescVec[0];
-        vbDesc.pLayout = pVertexLayout;
-        vbDesc.stride = vertexStride;
-        vbDesc.pBuffer = Buffer::create( vboSz, Buffer::BindFlags::Vertex, Buffer::AccessFlags::None, vboData );
-        pModel->addBuffer( vbDesc.pBuffer );
+        VertexLayout::SharedPtr pLayout = VertexLayout::create();
+        pLayout->addBufferLayout(0, pVertexLayout);
+        Buffer::SharedPtr pBuffer = Buffer::create( vboSz, Buffer::BindFlags::Vertex, Buffer::CpuAccess::None, vboData );
 
         // Create index buffer and add to the model
-        Buffer::SharedPtr pIB = Buffer::create( idxBufSz, Buffer::BindFlags::Index, Buffer::AccessFlags::MapRead, idxBufData );
-        pModel->addBuffer( pIB );
+        Buffer::SharedPtr pIB = Buffer::create( idxBufSz, Buffer::BindFlags::Index, Buffer::CpuAccess::None, idxBufData );
 
         // Compute more explicit / traditional counts needed internally
         uint32_t numVertices = vboSz / vertexStride;
@@ -99,12 +98,11 @@ namespace Falcor
         BasicMaterial basicMat;
         if ( diffuseTexture )
         {
-            pModel->addTexture( diffuseTexture );
             basicMat.pTextures[BasicMaterial::MapType::DiffuseMap] = diffuseTexture;
         }
         basicMat.diffuseColor = vec3( 1.0f );
         Material::SharedPtr pSimpleMaterial = basicMat.convertToMaterial();
-        pModel->getOrAddMaterial( pSimpleMaterial );
+        pSimpleMaterial = modelImporter.checkForExistingMaterial( pSimpleMaterial );
 
         // Calculate a bounding-box for this model
         glm::vec3 posMax, posMin;
@@ -122,9 +120,8 @@ namespace Falcor
         BoundingBox box = BoundingBox::fromMinMax( posMin, posMax );
 
         // create a mesh containing this index & vertex data.
-        Mesh::SharedPtr pMesh = Mesh::create( vbDescVec, numVertices, pIB, numIndicies, geomTopology, pSimpleMaterial, box, false );
-        pMesh->addInstance( glm::mat4() );      // Add one instance of this mesh, with no transform matrix
-        pModel->addMesh( std::move( pMesh ) );  // Add this mesh to the model
+        Mesh::SharedPtr pMesh = Mesh::create({ pBuffer }, numVertices, pIB, numIndicies, pLayout, geomTopology, pSimpleMaterial, box, false);
+        pModel->addMeshInstance(pMesh, glm::mat4()); // Add this mesh to the model
 
         // Do internal computations on model properties
         pModel->calculateModelProperties();
@@ -132,9 +129,6 @@ namespace Falcor
         // Done
         return pModel;
     }
-
-
-
 
     ResourceFormat SimpleModelImporter::getResourceFormat( AttribFormat format, uint32_t components )
     {    
@@ -180,8 +174,6 @@ namespace Falcor
             return VERTEX_DIFFUSE_COLOR_NAME;
         case AttribType::TexCoord:
             return VERTEX_TEXCOORD_NAME;
-        case AttribType::Tangent:
-            return VERTEX_TANGENT_NAME;
         case AttribType::Bitangent:
             return VERTEX_BITANGENT_NAME;
         case AttribType::BoneWeight:

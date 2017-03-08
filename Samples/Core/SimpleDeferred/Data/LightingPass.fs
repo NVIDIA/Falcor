@@ -36,12 +36,9 @@
 #define ShowAlbedo      3
 #define ShowLighting    4
 
-layout(binding = 0) uniform PerImageCB
+cbuffer PerImageCB
 {
     // G-Buffer
-	sampler2D gGBuf0;
-	sampler2D gGBuf1;
-	sampler2D gGBuf2;
     // Lighting params
 	LightData gDirLight;
 	LightData gPointLight;
@@ -50,17 +47,19 @@ layout(binding = 0) uniform PerImageCB
 	uint gDebugMode;
 };
 
-out vec4 fragColor;
+Texture2D gGBuf0;
+Texture2D gGBuf1;
+Texture2D gGBuf2;
 
-void main()
+float4 main(float2 texC : TEXCOORD, float4 pos : SV_POSITION) : SV_TARGET
 {
     // Fetch a G-Buffer
-    const vec3 posW    = texelFetch(gGBuf0, ivec2(gl_FragCoord.xy), 0).rgb;
-    const vec3 normalW = texelFetch(gGBuf1, ivec2(gl_FragCoord.xy), 0).rgb;
-    const vec4 albedo  = texelFetch(gGBuf2, ivec2(gl_FragCoord.xy), 0);
+    const vec3 posW    = gGBuf0.Load(int3(pos.xy, 0)).rgb;
+    const vec3 normalW = gGBuf1.Load(int3(pos.xy, 0)).rgb;
+    const vec4 albedo  = gGBuf2.Load(int3(pos.xy, 0));
 
     // Discard empty pixels
-    if(any(lessThan(albedo.rgb, vec3(0.f))))
+    if(any(albedo.a <= 0))
     {
         discard;
     }
@@ -91,12 +90,12 @@ void main()
         if(gDebugMode == ShowPos)
             result.finalValue = posW;
         else if(gDebugMode == ShowNormals)
-            result.finalValue = 0.5 * normalW + vec3(0.5f);
+            result.finalValue = 0.5 * normalW + 0.5f;
         else if(gDebugMode == ShowAlbedo)
             result.finalValue = albedo.rgb;
         else
             result.finalValue = result.diffuseIllumination;
     }
 
-	fragColor = vec4(result.finalValue, 1);
+	return float4(result.finalValue, 1);
 }

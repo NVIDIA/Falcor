@@ -27,14 +27,13 @@
 ***************************************************************************/
 #include "Framework.h"
 #include "FullScreenPass.h"
-#include "Program.h"
-#include "Core/VAO.h"
+#include "API/VAO.h"
 #include "glm/vec2.hpp"
-#include "Core/Buffer.h"
-#include "Core/DepthStencilState.h"
-#include "Core/RenderContext.h"
-#include "Core/VertexLayout.h"
-#include "Core/Window.h"
+#include "API/Buffer.h"
+#include "API/DepthStencilState.h"
+#include "API/RenderContext.h"
+#include "API/VertexLayout.h"
+#include "API/Window.h"
 
 namespace Falcor
 {
@@ -42,7 +41,7 @@ namespace Falcor
     {
 #ifdef FALCOR_GL
         return checkExtensionSupport("GL_NV_viewport_array2");
-#elif defined FALCOR_DX11
+#elif defined FALCOR_D3D
         return false;
 #else
 #error Unknown API
@@ -54,11 +53,11 @@ namespace Falcor
         glm::vec2 texCoord;
     };
 
-    Buffer::WeakPtr FullScreenPass::spSharedVertexBuffer;
-    Vao::WeakPtr FullScreenPass::spSharedVao;
+    Buffer::SharedPtr FullScreenPass::spVertexBuffer;
+    Vao::SharedPtr FullScreenPass::spVao;
+    uint64_t FullScreenPass::sObjectCount = 0;
 
-
-#ifdef FALCOR_DX11
+#ifdef FALCOR_D3D
 #define INVERT_Y(a) ((a == 1) ? 0 : 1)
 #elif defined FALCOR_GL
 #define INVERT_Y(a) (a)
@@ -72,15 +71,47 @@ namespace Falcor
     };
 #undef INVERT_Y
 
-    FullScreenPass::UniquePtr FullScreenPass::create(const std::string& fragmentShaderFile, const Program::DefineList& programDefines, bool disableDepth, bool disableStencil, uint32_t viewportMask)
+    static void initStaticObjects(Buffer::SharedPtr& pVB, Vao::SharedPtr& pVao)
+    {
+        // First time we got here. create VB and VAO
+        const uint32_t vbSize = (uint32_t)(sizeof(Vertex)*arraysize(kVertices));
+        pVB = Buffer::create(vbSize, Buffer::BindFlags::Vertex, Buffer::CpuAccess::Write, (void*)kVertices);
+
+        // create VAO
+        VertexLayout::SharedPtr pLayout = VertexLayout::create();
+        VertexBufferLayout::SharedPtr pBufLayout = VertexBufferLayout::create();
+        pBufLayout->addElement("POSITION", 0, ResourceFormat::RG32Float, 1, 0);
+        pBufLayout->addElement("TEXCOORD", 8, ResourceFormat::RG32Float, 1, 1);
+        pLayout->addBufferLayout(0, pBufLayout);
+
+        Vao::BufferVec buffers{ pVB };
+        pVao = Vao::create(buffers, pLayout, nullptr, ResourceFormat::Unknown, Vao::Topology::TriangleStrip);
+    }
+
+    FullScreenPass::~FullScreenPass() 
+    {
+#ifndef _AUTOTESTING
+        assert(sObjectCount > 0);
+#endif
+        sObjectCount--;
+        if (sObjectCount == 0)
+        {
+            spVao = nullptr;
+            spVertexBuffer = nullptr;
+        }
+    }
+
+    FullScreenPass::UniquePtr FullScreenPass::create(const std::string& psFile, const Program::DefineList& programDefines, bool disableDepth, bool disableStencil, uint32_t viewportMask)
     {
         UniquePtr pPass = UniquePtr(new FullScreenPass());
-        pPass->init(fragmentShaderFile, programDefines, disableDepth, disableStencil, viewportMask);
+        pPass->init(psFile, programDefines, disableDepth, disableStencil, viewportMask);
         return pPass;
     }
 
-    void FullScreenPass::init(const std::string& fragmentShaderFile, const Program::DefineList& programDefines, bool disableDepth, bool disableStencil, uint32_t viewportMask)
+    void FullScreenPass::init(const std::string& psFile, const Program::DefineList& programDefines, bool disableDepth, bool disableStencil, uint32_t viewportMask)
     {
+        mpPipelineState = GraphicsState::create();
+
         // create depth stencil state
         DepthStencilState::Desc dsDesc;
         dsDesc.setDepthTest(!disableDepth);
@@ -103,43 +134,31 @@ namespace Falcor
             else
             {
                 defs.add("_OUTPUT_PRIM_COUNT", std::to_string(__popcnt(viewportMask)));
-                gs = "Framework\\FullScreenPass.gs";
+                gs = "Framework/Shaders/FullScreenPass.gs";
             }
         }
 
-        const std::string vs("Framework\\FullScreenPass.vs");
-        mpProgram = Program::createFromFile(vs, fragmentShaderFile, gs, "", "", defs);
+        const std::string vs("Framework/Shaders/FullScreenPass.vs");
+        mpProgram = GraphicsProgram::createFromFile(vs, psFile, gs, "", "", defs);
+        mpPipelineState->setProgram(mpProgram);
 
-        if (FullScreenPass::spSharedVertexBuffer.expired())
+        if (FullScreenPass::spVertexBuffer == nullptr)
         {
-            // First time we got here. create VB and VAO
-            const uint32_t vbSize = (uint32_t)(sizeof(Vertex)*arraysize(kVertices));
-            mpVertexBuffer = Buffer::create(vbSize, Buffer::BindFlags::Vertex, Buffer::AccessFlags::Dynamic, (void*)kVertices);
-            FullScreenPass::spSharedVertexBuffer = mpVertexBuffer;
-
-            // create VAO
-            Vao::VertexBufferDescVector vbDesc(1);
-            vbDesc[0].pLayout->addElement("POSITION", 0, ResourceFormat::RG32Float, 1, 0);
-            vbDesc[0].pLayout->addElement("TEXCOORD", 8, ResourceFormat::RG32Float, 1, 1);
-            vbDesc[0].stride = sizeof(Vertex);
-            vbDesc[0].pBuffer = mpVertexBuffer;
-
-            mpVao = Vao::create(vbDesc, nullptr);
-            FullScreenPass::spSharedVao = mpVao;
+            initStaticObjects(spVertexBuffer, spVao);
         }
-        else
-        {
-            mpVao = FullScreenPass::spSharedVao.lock();
-            mpVertexBuffer = FullScreenPass::spSharedVertexBuffer.lock();
-        }
+        mpPipelineState->setVao(FullScreenPass::spVao);
     }
 
-    void FullScreenPass::execute(RenderContext* pRenderContext, bool overrideDepthStencil) const
+    void FullScreenPass::execute(RenderContext* pRenderContext, DepthStencilState::SharedPtr pDsState) const
     {
-        pRenderContext->setVao(mpVao);
-        pRenderContext->setProgram(mpProgram->getActiveProgramVersion());
-        if (overrideDepthStencil) pRenderContext->setDepthStencilState(mpDepthStencilState, 0);
-        pRenderContext->setTopology(RenderContext::Topology::TriangleStrip);
+        mpPipelineState->setFbo(pRenderContext->getGraphicsState()->getFbo(), false);
+        mpPipelineState->setViewport(0, pRenderContext->getGraphicsState()->getViewport(0), false);
+        mpPipelineState->setScissors(0, pRenderContext->getGraphicsState()->getScissors(0));
+
+        mpPipelineState->setVao(spVao);
+        mpPipelineState->setDepthStencilState(pDsState ? pDsState : mpDepthStencilState);
+        pRenderContext->pushGraphicsState(mpPipelineState);
         pRenderContext->draw(arraysize(kVertices), 0);
+        pRenderContext->popGraphicsState();
     }
 }

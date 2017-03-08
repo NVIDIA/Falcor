@@ -82,7 +82,7 @@ namespace Falcor
         ProgramVersion::SharedConstPtr patchActiveProgramVersion(Program* pProgram, const Material* pMaterial)
         {
             // Get the active program version
-            const ProgramVersion* pProgVersion = pProgram->getActiveProgramVersion().get();
+            const ProgramVersion* pProgVersion = pProgram->getActiveVersion().get();
 
             // Get the material's program map
             ProgramVersionMap& programMap = getMaterialProgramMap(pMaterial);
@@ -98,7 +98,7 @@ namespace Falcor
 
                
                 // Get the program version and set it into the map
-                pMaterialProg = pProgram->getActiveProgramVersion();
+                pMaterialProg = pProgram->getActiveVersion();
                 programMap[pProgVersion] = pMaterialProg;
 
                 // Restore the previous define string

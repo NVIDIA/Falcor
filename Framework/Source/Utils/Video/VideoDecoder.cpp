@@ -92,7 +92,7 @@ namespace Falcor
         avformat_close_input(&mpFormatCtx);
 
         for(auto& tex : (*mFrameTextures))
-            if(tex) tex->makeNonResident(nullptr);
+            if(tex) tex->evict(nullptr);
     }
 
     void FlipRGBFrame(AVFrame* pFrame, int H)

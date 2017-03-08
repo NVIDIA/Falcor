@@ -26,8 +26,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 #pragma once
-#define NOMINMAX
-#include <windows.h>
+#include <chrono>
 
 namespace Falcor
 {
@@ -36,25 +35,13 @@ namespace Falcor
     class CpuTimer
     {
     public:
-        CpuTimer()
-        {
-            if(!sFrequency)
-            {
-                LARGE_INTEGER li;
-                QueryPerformanceFrequency(&li);
-                sFrequency = double(li.QuadPart);
-            }
-        }
-
-        using TimePoint = uint64_t;//std::chrono::time_point < std::chrono::high_resolution_clock >;
+        using TimePoint = std::chrono::time_point < std::chrono::high_resolution_clock >;
 
         /** Returns the current time
         */
         static TimePoint getCurrentTimePoint()
         {
-            LARGE_INTEGER li;
-            QueryPerformanceCounter(&li);
-            return li.QuadPart;
+            return std::chrono::high_resolution_clock::now();
         }
 
         /** Update the timer.
@@ -64,8 +51,7 @@ namespace Falcor
         TimePoint update()
         {
             auto now = getCurrentTimePoint();
-            uint64_t delta = (now - mCurrentTime);
-            mElpasedTime = float(double(delta) / sFrequency);
+            mElpasedTime = now - mCurrentTime;
             mCurrentTime = now;
             return mCurrentTime;
         }
@@ -74,21 +60,20 @@ namespace Falcor
         */
         float getElapsedTime() const
         {
-            return mElpasedTime;
+            return float(mElpasedTime.count());
         }
 
         /** Calculate the duration in milliseconds between 2 time points
         */
         static float calcDuration(TimePoint start, TimePoint end)
         {
-            uint64_t delta = end - start;
-            double ms = (double)delta / sFrequency;
-            return float(ms) * 1000;
+            auto delta = end.time_since_epoch() - start.time_since_epoch();
+            auto duration = std::chrono::duration_cast<std::chrono::nanoseconds>(delta);
+            return ((float)duration.count()) * 1.0e-6f;
         }
 
     private:
         TimePoint mCurrentTime;
-        static double sFrequency;
-        float mElpasedTime;
+        std::chrono::duration<double> mElpasedTime;
     };
 }

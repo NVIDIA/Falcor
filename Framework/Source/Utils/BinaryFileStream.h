@@ -66,6 +66,11 @@ namespace Falcor
             mStream.close();
         }
 
+        void skip(uint32_t count)
+        {
+            mStream.ignore(count);
+        }
+
         void remove()
         {
             if(mStream.is_open())

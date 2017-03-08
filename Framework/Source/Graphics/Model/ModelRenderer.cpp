@@ -27,22 +27,17 @@
 ***************************************************************************/
 #include "Framework.h"
 #include "ModelRenderer.h"
+#include "Graphics/Scene/SceneRenderer.h"
 
 namespace Falcor
 {
-	std::map<Model::SharedPtr, SceneRenderer::UniquePtr> ModelRenderer::sceneMap;
-	
-	void ModelRenderer::render(RenderContext* pRenderContext, Program* pProgram, Model::SharedPtr pModel, Camera* pCamera, bool frustumCulling)
+    void ModelRenderer::render(RenderContext* pRenderContext, Model::SharedPtr pModel, Camera* pCamera, bool frustumCulling)
     {
-		auto it = sceneMap.find(pModel);
-		if (it == sceneMap.end())
-		{
-			Scene::SharedPtr pScene = Scene::create();
-			uint32_t modelID = pScene->addModel(pModel, "", true);
-			it = sceneMap.emplace(pModel, SceneRenderer::create(pScene)).first;
-		}
-        SceneRenderer* pSceneRenderer = it->second.get();
+        Scene::SharedPtr pScene = Scene::create();
+        pScene->addModelInstance(pModel, "");
+
+        SceneRenderer::UniquePtr pSceneRenderer = SceneRenderer::create(pScene);
         pSceneRenderer->setObjectCullState(frustumCulling);
-        pSceneRenderer->renderScene(pRenderContext, pProgram, pCamera);
+        pSceneRenderer->renderScene(pRenderContext, pCamera);
     }
 }

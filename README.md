@@ -1,22 +1,21 @@
-Falcor
-============
+Falcor 2.0 alpha
+=================
 
-Falcor is an OpenGL-based rendering framework.
+Falcor is DirectX 12 real-time rendering framework. It aims to improve productivity of reserach and prototype projects.  
 Its features include:
 * Abstract many common graphics operations, such as shader compilation, model loading and scene rendering.
 * VR support using OpenVR.
 * Common rendering effects such as shadows and post-processing effects.
 
-There is a limited D3D11 support. The material system is implemented in GLSL so won't compile when using HLSL. We are working on a cross-compiler to solve this issue.
-
-D3D12 is coming soon.
+This is an alpha version. The interfaces are not final yet and there might be some performance/stability issues.  
+If you'd like OpenGL support, please consider using Falcor 1.0 ('rel-1.0' branch). Note that though Falcor 1.0 is not supported anymore, it is stable and optimized.
 
 Prerequisites
 ------------------------
-* Visual Studio 2013.
-* NVIDIA® Geforce™ 900 series or better GPU.
-
-The project uses extentions which are supported only by NVIDIA GPUs.
+* Visual Studio 2015
+* [Microsoft Windows SDK ver 10.0.14393.795](https://developer.microsoft.com/en-us/windows/downloads/windows-10-sdk)
+* Windows 10
+* GPU that supports DirectX 12
 
 Creating a New Project
 ------------------------
@@ -24,11 +23,6 @@ Creating a New Project
 - Add Falcor.props to your project (Property Manager -> Right click your project -> Add existing property sheet).
 - Add Falcor.vcxproj to your solution.
 - Add a reference to Falcor in your project (Solution Explorer -> Right click your project -> Properties -> Common Properties -> References -> Add new reference -> Choose Falcor).
-
-Optional Modules
-----------------
-To create CUDA applications you will need to install the CUDA Toolkit 8.0.  
-For VR applications development, you will need the SDK which came with your headset (SteamVR for Vive, Oculus SDK, etc.).
 
 *Sample* Class
 -------------------

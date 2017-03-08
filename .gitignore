@@ -1,7 +1,11 @@
+Test/Bin/*
+Test/TestResults/*
 Bin/*
 *.user
 *.sdf
 *.opensdf
 *.suo
 *.ptx
-*.VC.db
+Falcor.VC.db
+FalcorTest/TestResults/*
+Falcor.VC.VC.opendb

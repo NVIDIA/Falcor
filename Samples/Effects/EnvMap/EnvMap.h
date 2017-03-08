@@ -35,16 +35,13 @@ class EnvMap : public Sample
 public:
     void onLoad() override;
     void onFrameRender() override;
-    void onShutdown() override;
     void onResizeSwapChain() override;
     bool onKeyEvent(const KeyboardEvent& keyEvent) override;
     bool onMouseEvent(const MouseEvent& mouseEvent) override;
-    void onDataReload() override;
+    void onGuiRender() override;
 
 private:
-    void initUI();
     void loadTexture();
-    static void GUI_CALL loadTextureCB(void* pThis);
     static void GUI_CALL getScaleCB(void* pData, void* pThis);
     static void GUI_CALL setScaleCB(const void* pData, void* pThis);
 

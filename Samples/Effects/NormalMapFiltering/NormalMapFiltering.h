@@ -37,18 +37,18 @@ public:
     void onFrameRender() override;
     void onShutdown() override;
     void onResizeSwapChain() override;
+    void onGuiRender() override;
     bool onKeyEvent(const KeyboardEvent& keyEvent) override;
     bool onMouseEvent(const MouseEvent& mouseEvent) override;
     
 private:
-    void initUI();
-
-    Program::SharedPtr mpProgram;
+    void updateProgram();
+    GraphicsProgram::SharedPtr mpProgram;
     SceneRenderer::UniquePtr mpRenderer;
-    UniformBuffer::SharedPtr mpLightBuffer;
-    UniformBuffer::SharedPtr mpLeanMapBuffer;
+    GraphicsVars::SharedPtr mpVars;
     ModelViewCameraController mCameraController;
     LeanMap::UniquePtr mpLeanMap;
     bool mUseLeanMap = true;
+    bool mUseSpecAA = true;
     Sampler::SharedPtr mpLinearSampler;
 };

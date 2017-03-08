@@ -26,24 +26,25 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 #include "ProjectTemplate.h"
+#include "API/D3D/FalcorD3D.h"
 
-void ProjectTemplate::initUI()
+void ProjectTemplate::onGuiRender()
 {
-    Gui::setGlobalHelpMessage("Sample application to load and display a model.\nUse the UI to switch between wireframe and solid mode.");
+    mpGui->addText("Hello from ProjectTemplate");
+    if (mpGui->addButton("Click Here"))
+    {
+        msgBox("Now why would you do that?");
+    }
 }
 
 void ProjectTemplate::onLoad()
 {
-    mpCamera = Camera::create();
-    initUI();
 }
 
 void ProjectTemplate::onFrameRender()
 {
-    const glm::vec4 clearColor(0.38f, 0.52f, 0.10f, 1);
-    mpDefaultFBO->clear(clearColor, 1.0f, 0, FboAttachmentType::All);
-
-    renderText(getGlobalSampleMessage(true), glm::vec2(10, 10));
+	const glm::vec4 clearColor(0.38f, 0.52f, 0.10f, 1);
+ 	mpRenderContext->clearFbo(mpDefaultFBO.get(), clearColor, 1.0f, 0, FboAttachmentType::All);
 }
 
 void ProjectTemplate::onShutdown()
@@ -68,13 +69,6 @@ void ProjectTemplate::onDataReload()
 
 void ProjectTemplate::onResizeSwapChain()
 {
-    RenderContext::Viewport vp;
-    vp.height = (float)mpDefaultFBO->getHeight();
-    vp.width = (float)mpDefaultFBO->getWidth();
-    mpRenderContext->setViewport(0, vp);
-    mpCamera->setFovY(float(M_PI / 8));
-    mpCamera->setAspectRatio(vp.width / vp.height);
-    mpCamera->setDepthRange(0, 1000);
 }
 
 int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ LPSTR lpCmdLine, _In_ int nShowCmd)
@@ -82,5 +76,6 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
     ProjectTemplate sample;
     SampleConfig config;
     config.windowDesc.title = "Falcor Project Template";
+    config.windowDesc.resizableWindow = true;
     sample.run(config);
 }

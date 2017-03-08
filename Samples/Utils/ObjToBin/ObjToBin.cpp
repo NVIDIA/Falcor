@@ -92,8 +92,8 @@ int main(int argc, char* argv[])
 
         ObjToBin ObjToBin(objFiles);
         SampleConfig config;
-        config.windowDesc.swapChainDesc.width = 256;
-        config.windowDesc.swapChainDesc.height = 256;
+        config.windowDesc.width = 256;
+        config.windowDesc.height = 256;
         config.windowDesc.title = "ObjToBin";
         ObjToBin.run(config);
     }

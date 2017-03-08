@@ -30,7 +30,7 @@
 #include "OpenVR/VRSystem.h"
 #include "OpenVR/VRDisplay.h"
 #include "Graphics/FboHelper.h"
-#include "Core/Texture.h"
+#include "API/Texture.h"
 
 namespace Falcor
 {
@@ -42,34 +42,38 @@ namespace Falcor
         return renderSize;
     }
 
-    VrFbo::UniquePtr VrFbo::create(ResourceFormat colorFormat[], uint32_t rtCount, ResourceFormat depthFormat, uint32_t sampleCount, const glm::ivec2& rtSize)
+    VrFbo::UniquePtr VrFbo::create(const Fbo::Desc& desc, uint32_t width, uint32_t height)
     {
-        glm::ivec2 renderSize = (rtSize.x == 0 && rtSize.y == 0) ? getHmdRenderSize() : rtSize;
+        width = (width == 0) ? getHmdRenderSize().x : width;
+        height = (height == 0) ? getHmdRenderSize().y : height;
 
         // Create the FBO
         VrFbo::UniquePtr pVrFbo = std::make_unique<VrFbo>();
-        pVrFbo->mpFbo = FboHelper::create2DWithDepth(renderSize.x, renderSize.y, colorFormat, depthFormat, 2, rtCount, sampleCount);
+        pVrFbo->mpFbo = FboHelper::create2D(width, height, desc, 2);
 
         // Get the left and right eye views
-        pVrFbo->mpLeftView.resize(rtCount);
-        pVrFbo->mpRightView.resize(rtCount);
-        for(uint32_t rt = 0 ; rt < rtCount ; rt++)
-        {
-            pVrFbo->mpLeftView[rt] = pVrFbo->mpFbo->getColorTexture(rt)->createView(0, 1, 0, 1);
-            pVrFbo->mpRightView[rt] = pVrFbo->mpFbo->getColorTexture(rt)->createView(1, 1, 0, 1);
-        }
+        // FIXME D3D12
+//         uint32_t rtCount = desc.getColorFormatCount();
+//         pVrFbo->mpLeftView.resize(rtCount);
+//         pVrFbo->mpRightView.resize(rtCount);
+//         for(uint32_t rt = 0 ; rt < rtCount ; rt++)
+//         {
+//             pVrFbo->mpLeftView[rt] = pVrFbo->mpFbo->getColorTexture(rt)->createView(0, 1, 0, 1);
+//             pVrFbo->mpRightView[rt] = pVrFbo->mpFbo->getColorTexture(rt)->createView(1, 1, 0, 1);
+//         }
 
         return pVrFbo;
     }
 
+    // FIXME D3D12
     void VrFbo::pushViewport(RenderContext* pContext, uint32_t vpIndex)
     {
-        RenderContext::Viewport vp = pContext->getViewport(vpIndex);
-        vp.originX = 0;
-        vp.originY = 0;
-        vp.width = (float)mpFbo->getWidth();
-        vp.height = (float)mpFbo->getHeight();
-        pContext->pushViewport(vpIndex, vp);
+//         RenderContext::Viewport vp = pContext->getViewport(vpIndex);
+//         vp.originX = 0;
+//         vp.originY = 0;
+//         vp.width = (float)mpFbo->getWidth();
+//         vp.height = (float)mpFbo->getHeight();
+//         pContext->pushViewport(vpIndex, vp);
     }
 
     void VrFbo::submitToHmd(uint32_t rtIndex) const

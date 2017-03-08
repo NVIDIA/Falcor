@@ -28,7 +28,7 @@
 #include "Framework.h"
 #include <vector>
 #include "Utils/ShaderPreprocessor.h"
-#include "Core/Shader.h"
+#include "API/Shader.h"
 #include "Utils/OS.h"
 
 namespace Falcor
@@ -39,7 +39,7 @@ namespace Falcor
         {
         case ShaderType::Vertex:
             return "Vertex";
-        case ShaderType::Fragment:
+        case ShaderType::Pixel:
             return "Pixel";
         case ShaderType::Hull:
             return "Hull";
@@ -65,7 +65,7 @@ namespace Falcor
         if(ShaderPreprocessor::parseShader("", shader, errorMsg, includeList, shaderDefines) == false)
         {
             std::string msg = std::string("Error when parsing shader from string. Code:\n") + shaderString + "\nError:\n" + errorMsg;
-            Logger::log(Logger::Level::Fatal, msg);
+            logError(msg);
             return nullptr;
         }
 
@@ -78,7 +78,7 @@ namespace Falcor
             std::string msg = "Error when creating " + getShaderNameFromType(shaderType) + " shader from string\nError log:\n";
             msg += log;
             msg += "\nShader string:\n" + shaderString + "\n";
-            Logger::log(Logger::Level::Fatal, msg);
+            logError(msg);
         }
         return pShader;
     }
@@ -90,7 +90,7 @@ namespace Falcor
         if(findFileInDataDirectories(filename, fullpath) == false)
         {
             std::string err = std::string("Can't find shader file ") + filename;
-            Logger::log(Logger::Level::Fatal, err);
+            logError(err);
             return nullptr;
         }
 
@@ -108,7 +108,7 @@ namespace Falcor
                 std::string msg = std::string("Error when pre-processing shader ") + filename + "\n" + errorMsg;
                 if(msgBox(msg, MsgBoxType::RetryCancel) == MsgBoxButton::Cancel)
                 {
-                    Logger::log(Logger::Level::Fatal, msg);
+                    logError(msg);
                     return nullptr;
                 }
             }
@@ -125,7 +125,7 @@ namespace Falcor
                     MsgBoxButton mbButton = msgBox(error, MsgBoxType::RetryCancel);
                     if(mbButton == MsgBoxButton::Cancel)
                     {
-                        Logger::log(Logger::Level::Fatal, error);
+                        logError(error);
                         exit(1);
                     }
                 }

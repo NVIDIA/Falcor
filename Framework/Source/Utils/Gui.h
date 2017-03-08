@@ -27,15 +27,16 @@
 ***************************************************************************/
 #pragma once
 #include <vector>
+#include <unordered_map>
 #include "glm/vec3.hpp"
-#include "Core/RenderContext.h"
-
-struct CTwBar;
-typedef struct CTwBar TwBar;
-
+#include "UserInput.h"
+#include "API/ProgramVars.h"
+#include "Graphics/Program.h"
+#include "Graphics/GraphicsState.h"
+#define GUI_CALL _cdecl
 namespace Falcor
 {
-    class Sample;
+    class RenderContext;
     struct KeyboardEvent;
     struct MouseEvent;
 
@@ -48,318 +49,213 @@ namespace Falcor
         using UniquePtr = std::unique_ptr<Gui>;
         using UniqueConstPtr = std::unique_ptr<const Gui>;
 
-#define GUI_CALL __stdcall
-        /** Callback definition of functions used when a button is pressed
-            \param pUserData - user-defined data.
-        */
-        using ButtonCallback = void(GUI_CALL*)(void* pUserData);
-        /** Callback definition of functions used the user changed a value in the UI
-            \param pVal - Pointer to the value. The Type depends on the variable Type used to initialize the UI field.
-            \param pUserData - user-defined data.
-        */
-        using SetVarCallback = void(GUI_CALL*)(const void* pVal, void* pUserData);
-        /** Callback definition of a function used by the UI to retrieve a variable value.
-            \param pVal - Pointer to the value. The Type depends on the variable Type used to initialize the UI field.
-            \param pUserData - user-defined data.
-        */
-        using GetVarCallback = void(GUI_CALL*)(void* pVal, void* pUserData);
-
         /** This structs is used to initialize dropdowns
         */
         struct DropdownValue
         {
-            int value;              ///< User defined index. Should be unique between different options.
+            int32_t value;          ///< User defined index. Should be unique between different options.
             std::string label;      ///< Label of the dropdown option.
         };
-        using dropdown_list = std::vector < DropdownValue > ;
 
-        static void initialize(uint32_t windowWidth, uint32_t windowHeight, const RenderContext::SharedPtr& pRenderContext);
+        using DropdownList = std::vector <DropdownValue>;
 
-        /** create a new GUI object. New object create a new GUI window.
-            \param[in] caption The title of the GUI window.
-            \param[in] isVisible Optional. Sets the window visibility. By default the GUI is visible.
-            \param[in] refreshRate Optional. Sets the window refresh rate. The default is 60HZ
-        */
-        static UniquePtr create(const std::string& caption, bool isVisible = true, float refreshRate = (1.f / 60.f));
-        ~Gui();
+        struct RadioButton
+        {
+            int32_t buttonID;  ///< User defined index. Should be unique between different options.
+            std::string label; ///< Label of the radio button.
+            bool sameLine;     ///< Whether the button should appear on the same line as the previous widget/button.
+        };
 
-        /** Render all of the GUI windows. If you want to render only part of windows, use SetVisibility() to hide windows.
-        */
-        static void drawAll();
-        /** Set a global help message which is shown on the bottom-left corner of the screen.
-        */
-        static void setGlobalHelpMessage(const std::string& msg);
+        using RadioButtonGroup = std::vector<RadioButton>;
 
-        /** Set global font size scaling. Has to be called BEFORE twInit()!
+        /** Create a new GUI object. Each object is essentially a container for a GUI window
         */
-        static void setGlobalFontScaling(float scale);
+        static UniquePtr create(uint32_t width, uint32_t height);
 
-        /** Set the GUI window visibility
-            \param[in] visible If true, window will be rendered. If false, window will not be rendered.
+        /** Render the GUI
         */
-        void setVisibility(bool visible);
+        void render(RenderContext* pContext, float elapsedTime);
 
-        /** Get the size of the GUI window
-            \param[out] size On return, will hold the width and height of the UI window
+        /** Handle window resize events
         */
-        void getSize(uint32_t size[2]) const;
-        /** Get the position of the GUI window
-            \param[out] position On return, will hold the top-left screen coordinate of the UI window
-        */
-        void getPosition(uint32_t position[2]) const;
+        void onWindowResize(uint32_t width, uint32_t height);
 
-        /** Set the size of the GUI window
-            \param[in] width Width of the GUI window
-            \param[in] height Height of the GUI window
-            */
-        void setSize(uint32_t width, uint32_t height);
-        /** Set the size of the GUI window
-            \param[in] x Top-left x coordinate of the GUI window
-            \param[in] y Top-left y coordinate of the GUI window
+        /** Handle mouse events
         */
-        void setPosition(uint32_t x, uint32_t y);
+        bool onMouseEvent(const MouseEvent& event);
 
-        /** Set the refresh rate of the GUI.
-            \param[in] rate The number of seconds between two updates.
+        /** Handle keyboard events
         */
-        void setRefreshRate(float rate);
+        bool onKeyboardEvent(const KeyboardEvent& event);
+
+        /** Static text
+            \param[in] text The string to display
+            \param[in] sameLine Optional. If set to true, the widget will appear on the same line as the previous widget
+        */
+        void addText(const char text[], bool sameLine = false);
+
+        /** Button. Will return true if the button was pressed
+            \param[in] sameLine Optional. If set to true, the widget will appear on the same line as the previous widget
+        */
+        bool addButton(const char label[], bool sameLine = false);
+
+        /** Adds a group of radio buttons.
+            \param[in] buttons List of buttons to show.
+            \param[out] activeID If a button was clicked, activeID will be set to the ID of the clicked button.
+
+            \return Whether activeID changed.
+        */
+        bool addRadioButtons(const RadioButtonGroup& buttons, int32_t& activeID);
+
+        /** Begin a collapsible group block
+            returns true if the group is expanded, otherwise false. Use it to avoid making unnecessary calls
+        */
+        bool beginGroup(const char label[]);
+
+        /** End a collapsible group block
+        */
+        void endGroup();
+
+        /** Adds a floating-point UI element.
+            \param[in] label The name of the widget.
+            \param[in] var A reference to a float that will be updated directly when the widget state changes.
+            \param[in] minVal Optional. The minimum allowed value for the float.
+            \param[in] maxVal Optional. The maximum allowed value for the float.
+            \param[in] step Optional. The step rate for the float.
+            \param[in] sameLine Optional. If set to true, the widget will appear on the same line as the previous widget
+
+            \return true if the value changed, otherwise false
+        */
+        bool addFloatVar(const char label[], float& var, float minVal = -FLT_MAX, float maxVal = FLT_MAX, float step = 0.001f, bool sameLine = false);
+
+        /** Adds a 2-elements floating-point vector UI element.
+        \param[in] label The name of the widget.
+        \param[in] var A reference to a float2 that will be updated directly when the widget state changes.
+        \param[in] minVal Optional. The minimum allowed value for each element of the vector.
+        \param[in] maxVal Optional. The maximum allowed value for each element ofthe vector.
+        \param[in] sameLine Optional. If set to true, the widget will appear on the same line as the previous widget
+
+        \return true if the value changed, otherwise false
+        */
+        bool addFloat2Var(const char label[], glm::vec2& var, float minVal = -1, float maxVal = 1, bool sameLine = false);
+
+        /** Adds a 3-elements floating-point vector UI element.
+        \param[in] label The name of the widget.
+        \param[in] var A reference to a float3 that will be updated directly when the widget state changes.
+        \param[in] minVal Optional. The minimum allowed value for each element of the vector.
+        \param[in] maxVal Optional. The maximum allowed value for each element of the vector.
+        \param[in] sameLine Optional. If set to true, the widget will appear on the same line as the previous widget
+
+        \return true if the value changed, otherwise false
+        */
+        bool addFloat3Var(const char label[], glm::vec3& var, float minVal = -1, float maxVal = 1, bool sameLine = false);
+
+        /** Adds a 4-elements floating-point vector UI element.
+        \param[in] label The name of the widget.
+        \param[in] var A reference to a float4 that will be updated directly when the widget state changes.
+        \param[in] minVal Optional. The minimum allowed value for each element of the vector.
+        \param[in] maxVal Optional. The maximum allowed value for each element of the vector.
+        \param[in] sameLine Optional. If set to true, the widget will appear on the same line as the previous widget
+
+        \return true if the value changed, otherwise false
+        */
+        bool addFloat4Var(const char label[], glm::vec4& var, float minVal = -1, float maxVal = 1, bool sameLine = false);
+
+        /** Adds a checkbox.
+            \param[in] label The name of the checkbox.
+            \param[in] var A reference to a boolean that will be updated directly when the checkbox state changes.
+            \param[in] sameLine Optional. If set to true, the widget will appear on the same line as the previous widget
+
+            \return true if the value changed, otherwise false
+        */
+        bool addCheckBox(const char label[], bool& pVar, bool sameLine = false);
+
+        /** Adds an RGB color UI widget.
+            \param[in] label The name of the widget.
+            \param[in] var A reference to a vector that will be updated directly when the widget state changes.
+            \param[in] sameLine Optional. If set to true, the widget will appear on the same line as the previous widget
+            \return true if the value changed, otherwise false
+        */
+        bool addRgbColor(const char label[], glm::vec3& var, bool sameLine = false);
+
+        /** Adds an RGBA color UI widget.
+            \param[in] label The name of the widget.
+            \param[in] var A reference to a vector that will be updated directly when the widget state changes.
+            \param[in] sameLine Optional. If set to true, the widget will appear on the same line as the previous widget
+            \return true if the value changed, otherwise false
+        */
+        bool addRgbaColor(const char label[], glm::vec4& var, bool sameLine = false);
+
+        /** Adds an integer UI element.
+            \param[in] label The name of the widget.
+            \param[in] var A reference to an integer that will be updated directly when the widget state changes.
+            \param[in] minVal Optional. The minimum allowed value for the variable.
+            \param[in] maxVal Optional. The maximum allowed value for the variable.
+            \param[in] step Optional. The step rate.
+            \param[in] sameLine Optional. If set to true, the widget will appear on the same line as the previous widget
+            \return true if the value changed, otherwise false
+        */
+        bool addIntVar(const char label[], int32_t& var, int minVal = -INT32_MAX, int maxVal = INT32_MAX, int step = 1, bool sameLine = false);
 
         /** Add a separator
         */
-        void addSeparator(const std::string& group = "");
-
-        /** Adds a button
-            \param[in] name The name of the button.
-            \param[in] callback A user supplied callback function to call when the button is pressed.
-            \param[in] pUserData A user data to pass when the callback function is called.
-            \param[in] group - Optional. If not empty, will add the button under the requested UI group.
-        */
-        void addButton(const std::string& name, ButtonCallback callback, void* pUserData, const std::string& group = "");
-        /** Adds a checkbox.
-            \param[in] name The name of the checkbox.
-            \param[in] pVar A pointer to a boolean that will be updated directly when the checkbox state changes.
-            \param[in] group - Optional. If not empty, will add the button under the requested UI group.
-        */
-        void addCheckBox(const std::string& name, bool* pVar, const std::string& group = "");
-
-        /** Adds a checkbox.
-        \param[in] name The name of the checkbox.
-        \param[in] setCallback - A user callback which will be called whenever the checkbox state changes.
-        \param[in] getCallback - A user callback which the UI uses to query for the current checkbox state.
-        \param[in] pUserData Private data which will be passed to the callback
-        \param[in] group - Optional. If not empty, will add the button under the requested UI group.
-        */
-        void addCheckBoxWithCallback(const std::string& name, SetVarCallback setCallback, GetVarCallback getCallback, void* pUserData, const std::string& group = "");
-
-        /** Adds a text box.
-        \param[in] name The name of the variable.
-        \param[in] pVar A pointer to a string that will be updated directly when the text in the box changes.
-        \param[in] group - Optional. If not empty, will add the button under the requested UI group.
-        */
-        void addTextBox(const std::string& name, std::string* pVar, const std::string& group = "");
-
-        /** Adds a text box.
-        \param[in] name The name of the variable.
-        \param[in] setCallback - A user callback which will be called whenever the text in the box changes.
-        \param[in] getCallback - A user callback which the UI uses to query for the current the text in the box 
-        \param[in] pUserData Private data which will be passed to the callback
-        \param[in] group - Optional. If not empty, will add the button under the requested UI group.
-        */
-        void addTextBoxWithCallback(const std::string& name, SetVarCallback setCallback, GetVarCallback getCallback, void* pUserData, const std::string& group = "");
-
-        /** Adds a directional UI widget.
-            \param[in] name The name of the widget.
-            \param[in] pVar A pointer to a vector that will be updated directly when the widget state changes.
-            \param[in] group - Optional. If not empty, will add the checkbox under the requested UI group.
-        */
-        void addDir3FVar(const std::string& name, glm::vec3* pVar, const std::string& group = "");
-
-		/** Adds a directional UI widget with callback functions.
-            \param[in] name The name of the widget.
-            \param[in] setCallback - A user callback which will be called whenever the color changes.
-            \param[in] getCallback - A user callback which the UI uses to query for the current color state.
-            \param[in] pUserData Private data which will be passed to the callback
-            \param[in] group - Optional. If not empty, will add the checkbox under the requested UI group.
-        */
-        void addDir3FVarWithCallback(const std::string& name, SetVarCallback setCallback, GetVarCallback getCallback, void* pUserData, const std::string& group = "");
-
-        /** Adds a color UI widget.
-            \param[in] name The name of the widget.
-            \param[in] pVar A pointer to a vector that will be updated directly when the widget state changes.
-            \param[in] group - Optional. If not empty, will add the element under the requested UI group.
-        */
-        void addRgbColor(const std::string& name, glm::vec3* pVar, const std::string& group = "");
-
-        /** Adds a color UI widget with callback functions.
-        \param[in] name The name of the widget.
-        \param[in] setCallback - A user callback which will be called whenever the color changes.
-        \param[in] getCallback - A user callback which the UI uses to query for the current color state.
-        \param[in] pUserData Private data which will be passed to the callback
-        \param[in] group - Optional. If not empty, will add the element under the requested UI group.
-        */
-        void addRgbColorWithCallback(const std::string& name, SetVarCallback setCallback, GetVarCallback getCallback, void* pUserData, const std::string& group = "");
-
-        /** Adds a floating-point UI element.
-            \param[in] name The name of the widget.
-            \param[in] pVar A pointer to a float that will be updated directly when the widget state changes.
-            \param[in] group Optional. If not empty, will add the element under the requested UI group.
-            \param[in] min Optional. The minimum allowed value for the float.
-            \param[in] max Optional. The maximum allowed value for the float.
-            \param[in] step Optional. The step rate for the float.
-        */
-        void addFloatVar(const std::string& name, float* pVar, const std::string& group = "", float min = -FLT_MAX, float max = FLT_MAX, float step = 0.001f);
-
-        /** Adds a floating point variable with callback functions.
-        \param[in] name The name of the widget.
-        \param[in] setCallback - A user callback which will be called whenever the widget state changes.
-        \param[in] getCallback - A user callback which the UI uses to query for the current widget state.
-        \param[in] pUserData Private data which will be passed to the callback
-        \param[in] group - Optional. If not empty, will add the button under the requested UI group.
-        \param[in] min Optional. The minimum allowed value for the float.
-        \param[in] max Optional. The maximum allowed value for the float.
-        \param[in] step Optional. The step rate for the float.
-        */
-        void addFloatVarWithCallback(const std::string& name, SetVarCallback setCallback, GetVarCallback getCallback, void* pUserData, const std::string& group = "", float min = -FLT_MAX, float max = FLT_MAX, float step = 0.001f);
-
-        /** Adds a double-precision floating-point UI element.
-        \param[in] name The name of the widget.
-        \param[in] pVar A pointer to a float that will be updated directly when the widget state changes.
-        \param[in] group Optional. If not empty, will add the element under the requested UI group.
-        \param[in] min Optional. The minimum allowed value for the float.
-        \param[in] max Optional. The maximum allowed value for the float.
-        \param[in] step Optional. The step rate for the float.
-        */
-        void addDoubleVar(const std::string& name, double* pVar, const std::string& group = "", double min = -DBL_MAX, double max = DBL_MAX, double step = 0.001);
-
-        /** Adds a double-precision floating point variable with callback functions.
-        \param[in] name The name of the widget.
-        \param[in] setCallback - A user callback which will be called whenever the widget state changes.
-        \param[in] getCallback - A user callback which the UI uses to query for the current widget state.
-        \param[in] pUserData Private data which will be passed to the callback
-        \param[in] group - Optional. If not empty, will add the button under the requested UI group.
-        \param[in] min Optional. The minimum allowed value for the float.
-        \param[in] max Optional. The maximum allowed value for the float.
-        \param[in] step Optional. The step rate for the float.
-        */
-        void addDoubleVarWithCallback(const std::string& name, SetVarCallback setCallback, GetVarCallback getCallback, void* pUserData, const std::string& group = "", double min = -DBL_MAX, double max = DBL_MAX, double step = 0.001);
-
-        /** Adds an integer UI element.
-            \param[in] name The name of the widget.
-            \param[in] pVar A pointer to an integer that will be updated directly when the widget state changes.
-            \param[in] group Optional. If not empty, will add the element under the requested UI group.
-            \param[in] min Optional. The minimum allowed value for the variable.
-            \param[in] max Optional. The maximum allowed value for the variable.
-            \param[in] step Optional. The step rate.
-        */
-        void addIntVar(const std::string& name, int32_t* pVar, const std::string& group = "", int min = -INT32_MAX, int max = INT32_MAX, int step = 1);
-
-        /** Adds a integer variable with callback functions.
-        \param[in] name The name of the widget.
-        \param[in] setCallback - A user callback which will be called whenever the widget state changes.
-        \param[in] getCallback - A user callback which the UI uses to query for the current widget state.
-        \param[in] pUserData Private data which will be passed to the callback
-        \param[in] group - Optional. If not empty, will add the button under the requested UI group.
-        \param[in] min Optional. The minimum allowed value for the variable.
-        \param[in] max Optional. The maximum allowed value for the variable.
-        \param[in] step Optional. The step rate for the variable.
-        */
-        void addIntVarWithCallback(const std::string& name, SetVarCallback setCallback, GetVarCallback getCallback, void* pUserData, const std::string& group = "", int min = -INT32_MAX, int max = INT32_MAX, int step = 1);
+        void addSeparator();
 
         /** Adds a dropdown menu. This will update a user variable directly, so the user has to keep track of that for changes.
             If you want notifications whenever the select option changed, use Gui#addDropdownWithCallback().
-            \param[in] name The name of the dropdown menu.
+            \param[in] label The name of the dropdown menu.
             \param[in] values A list of options to show in the dropdown menu.
-            \param[in] pVar A pointer to a user variable that will be updated directly when a dropdown option changes. This correlates to the 'pValue' field in Gui#SDropdownValue struct.
-            \param[in] group - Optional. If not empty, will add the element under the requested UI group.
+            \param[in] var A reference to a user variable that will be updated directly when a dropdown option changes. This correlates to the 'pValue' field in Gui#SDropdownValue struct.
+            \param[in] sameLine Optional. If set to true, the widget will appear on the same line as the previous widget
+            \return true if the value changed, otherwise false
         */
-        void addDropdown(const std::string& name, const dropdown_list& values, void* pVar, const std::string& group = "");
-        /** Adds a dropdown menu. Whenever the selected options changes, it will call a user callback.
-            \param[in] name The name of the dropdown menu.
-            \param[in] values A list of options to show in the dropdown menu.
-            \param[in] setCallback - A user callback which will be called whenever the selected option changes.
-            \param[in] getCallback - A user callback which the UI uses to query for the current selected option. This allows the user to change options without actively calling the UI.
-            \param[in] pUserData Private data which will be passed to the callback
-            \param[in] group - Optional. If not empty, will add the dropdown under the requested UI group.
-        */
-        void addDropdownWithCallback(const std::string& name, const dropdown_list& values, SetVarCallback setCallback, GetVarCallback getCallback, void* pUserData, const std::string& group = "");
+        bool addDropdown(const char label[], const DropdownList& values, uint32_t& var, bool sameLine = false);
 
-        /** Hide/show a specific variable.
-            \param[in] name name of the variable
-            \param[in] isVisible True to show the variable, false to hide it.
+        /** Render a tooltip. This will display a small question mark next to the last label item rendered and will display the tooltip if the user hover over it
+            \param[in] tip The tooltip's text
+            \param[in] sameLine Optional. If set to true, the widget will appear on the same line as the previous widget
         */
-        void setVarVisibility(const std::string& name, const std::string& group, bool isVisible);
+        void addTooltip(const char tip[], bool sameLine = true);
 
-        /** Hide/show an entire group of variables
-        \param[in] group name of the group
-        \param[in] isVisible True to show the group, false to hide it.
+        /** Adds a text box.
+            \param[in] label The name of the variable.
+            \param[in] buf A character buffer with the initialize text. The buffer will be updated if a text is entered.
+            \param[in] bufSize The size of the text buffer
+            \param[in] lineCount Number of lines in the text-box. If larger then 1 will create a multi-line box
+            \return true if the value changed, otherwise false
         */
-        void setGroupVisibility(const std::string& group, bool isVisible);
+        bool addTextBox(const char label[], char buf[], size_t bufSize, uint32_t lineCount = 1);
 
-        /** Refresh the UI content. UI contents updated periodically. Call this function to force a refresh.
-        */
-        void refresh() const;
-        /** Remove an element from the UI. This function silently ignores elements which do not exist.
-            \param[in] name The name of the element to erase.
-            \param[in] group - Optional. If not empty, will look for the element under the specified group.
-        */
-        void removeVar(const std::string& name, const std::string& group = "");
+        using GraphCallback = float(*)(void*, int32_t index);
 
-        /** Remove an entire group of elements from the UI, including all nested variables and groups.
-        \param[in] group The name of the group to erase.
+        /** Adds a graph based on a function
+        \param[in] label The name of the widget.
+        \param[in] func A function pointer to calculate the values in the graph
+        \param[in] pUserData A user-data pointer to pass to the callback function
+        \param[in] sampleCount Number of sample-points in the graph
+        \param[in] sampleOffset Optional. Determines the value for the center of the x-axis
+        \param[in] yMin Optional. The minimum value of the y-axis. Use FLT_MAX to auto-detect the range based on the function and the provided x-range
+        \param[in] yMax Optional. The maximum value of the y-axis. Use FLT_MAX to auto-detect the range based on the function and the provided x-range
+        \param[in] width Optional. The width of the graph widget. 0 means auto-detect (fits the widget to the GUI width)
+        \param[in] height Optional. The height of the graph widget. 0 means auto-detect (no idea what's the logic. Too short.)
         */
-        void removeGroup(const std::string& group);
+        void addGraph(const char label[], GraphCallback func, void* pUserData, uint32_t sampleCount, int32_t sampleOffset, float yMin = FLT_MAX, float yMax = FLT_MAX, uint32_t width = 0, uint32_t height = 100);
 
-        /** Nest element groups.
-            \param[in] Parent The parent group. The child group will appear as part of it.
-            \param[in] Child The child group.
+        /** Adds a direction widget
+        \param[in] label The name of the widget.
+        \param[in] direction A reference for the direction variable
+        \return true if the value changed, otherwise false
         */
-        void nestGroups(const std::string& Parent, const std::string& Child);
-        /** Change the title of a variable. By default, variable title is the same as the variable name. Note that calling this function doesn't change the variable name, only the title in the UI.
-            \param[in] varName The variable name
-            \param[in] Title The title to show
-        */
-        void setVarTitle(const std::string& varName, const std::string& Title);
+        bool addDirectionWidget(const char label[], glm::vec3& direction);
 
-        /** Change the range of a floating-point variable
-            \param[in] varName The variable name
-            \param[in] group The group name used when creating the variable
-            \param[in] min The min value
-            \param[in] max The max value
+        /** Set global font size scaling
         */
-        void setVarRange(const std::string& varName, const std::string& group, float min, float max);
+        static void setGlobalFontScaling(float scale);
 
-        /** Change the range of an integer variable
-            \param[in] varName The variable name
-            \param[in] group The group name used when creating the variable
-            \param[in] min The min value
-            \param[in] max The max value
+        /** Create a new window on the stack
         */
-        void setVarRange(const std::string& varName, const std::string& group, int32_t min, int32_t max);
-
-        /** Change whether a variable is in read-only or read-write mode (i.e., enable/disable interacting)
-            \param[in] varName The variable name
-            \param[in] group The group name used when creating the variable
-            \param[in] readOnly If the variable will be readOnly (or user interactable)
-        */
-        void setVarReadOnly(const std::string& varName, const std::string& group, bool readOnly);
-
-        /** Sets dropdown menu options to an existing variable
-            \param[in] varName The name of the dropdown menu.
-            \param[in] group The group name used when creating the variable
-            \param[in] Values A list of options to show in the dropdown menu.
-        */
-        void setDropdownValues(const std::string& varName, const std::string& group, const dropdown_list& Values);
-
-        /** Collapses a group
-        */
-        void collapseGroup(const std::string& group);
-
-		void setGroupLabel(const std::string &group, const std::string &label);
-
-        /** Expands a group
-        */
-        void expandGroup(const std::string& group);
-		void define(const std::string& s);
+        void pushWindow(const char label[], uint32_t width = 0, uint32_t height = 0, uint32_t x = 0, uint32_t y = 0);
+        void popWindow();
     protected:
         bool keyboardCallback(const KeyboardEvent& keyEvent);
         bool mouseCallback(const MouseEvent& mouseEvent);
@@ -367,29 +263,22 @@ namespace Falcor
 
     private:
         Gui() = default;
+        void init();
+        void createVao(uint32_t vertexCount, uint32_t indexCount);
 
-        template<uint32_t TwType, typename VarType>
-        void addFloatVarWithCallbackInternal(const std::string& name, SetVarCallback setCallback, GetVarCallback getCallback, void* pUserData, const std::string& group, VarType min, VarType max, VarType step);
-
-        template<uint32_t TwType, typename VarType>
-        void addFloatVarInternal(const std::string& name, VarType* pVar, const std::string& group, VarType min, VarType max, VarType step);
-
-        void displayTwError(const std::string& prefix);
-
-        TwBar* mpTwBar;
-        static bool sInitialized;
-        static RenderContext::SharedPtr spRenderContext;
-
-        struct StringCB
+        struct ComboData
         {
-            SetVarCallback pfnSetStringCB = nullptr;
-            GetVarCallback pfnGetStringCB = nullptr;
-            void* pUserData = nullptr;
+            uint32_t lastVal = -1;
+            int32_t currentItem = -1;
         };
+        std::map<std::string, ComboData> mDropDownValues;
 
-        std::vector<StringCB*> mStringCB;
-        static void GUI_CALL getStringCB(void* pVal, void* pUserData);
-        static void GUI_CALL setStringCB(const void* pVal, void* pUserData);
-        static glm::vec2 sWindowSize;
+        Vao::SharedPtr mpVao;
+        VertexLayout::SharedPtr mpLayout;
+        GraphicsVars::SharedPtr mpProgramVars;
+        GraphicsProgram::SharedPtr mpProgram;
+        GraphicsState::SharedPtr mpPipelineState;
+        uint32_t mGroupStackSize = 0;
+        float mFontScale = 1;
     };
 }

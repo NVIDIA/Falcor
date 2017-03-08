@@ -30,14 +30,11 @@
 #include "glm/vec3.hpp"
 #include <string>
 #include "Font.h"
-#include "Graphics/Program.h"
-#include "Core/VAO.h"
-#include "Core/Buffer.h"
-#include "Core/DepthStencilState.h"
-#include "Core/RasterizerState.h"
-#include "Core/BlendState.h"
-#include "Core/UniformBuffer.h"
-#include "Core/RenderContext.h"
+#include "API/VAO.h"
+#include "API/Buffer.h"
+#include "Graphics/GraphicsState.h"
+#include "API/ProgramVars.h"
+#include "API/RenderContext.h"
 
 namespace Falcor
 {
@@ -97,17 +94,12 @@ namespace Falcor
 
         Font::UniquePtr mpFont;
         Buffer::SharedPtr mpVertexBuffer;
-        Vao::SharedPtr mpVAO;
 
-        Program::SharedPtr mpProgram;
-        DepthStencilState::SharedConstPtr mpDepthStencilState;
-        RasterizerState::SharedConstPtr mpRasterizerState;
-        BlendState::SharedConstPtr mpBlendState;
-        UniformBuffer::SharedPtr mpPerFrameCB;
+        GraphicsState::SharedPtr mpPipelineState;
+        GraphicsVars::SharedPtr mpProgramVars;
 
         uint32_t mCurrentVertexID = 0;
 
-        void createVAO();
         void createVertexBuffer();
         static const auto kMaxBatchSize = 1000;
 
@@ -116,9 +108,8 @@ namespace Falcor
 
         struct  
         {
-            size_t fontTex;
             size_t vpTransform;
             size_t fontColor;
-        } mUniformOffsets;
+        } mVarOffsets;
     };
 }

@@ -28,33 +28,33 @@
 #include "Framework.h"
 #include "SceneUtils.h"
 #include "Scene.h"
-#include "Core/UniformBuffer.h"
+#include "API/ConstantBuffer.h"
 
 namespace Falcor
 {
-    void getSceneLightString(const Scene* pScene, std::string& uniformString)
+    void getSceneLightString(const Scene* pScene, std::string& lights)
     {
-        uniformString.clear();
+        lights.clear();
         for(uint32_t i = 0; i < pScene->getLightCount(); i++)
         {
             auto pLight = pScene->getLight(i);
-            uniformString += " " + pLight->getName() + ",";
+            lights += " " + pLight->getName() + ",";
         }
 
-        if(uniformString.size() > 0)
+        if(lights.size() > 0)
         {
             // Remove the last ','
-            uniformString = uniformString.erase(uniformString.length() - 1);
+            lights = lights.erase(lights.length() - 1);
         }
     }
 
-    void setSceneLightsIntoUniformBuffer(const Scene* pScene, UniformBuffer* pBuffer)
+    void setSceneLightsIntoConstantBuffer(const Scene* pScene, ConstantBuffer* pBuffer)
     {
         // Set all the lights
         for(uint32_t i = 0; i < pScene->getLightCount(); i++)
         {
             auto pLight = pScene->getLight(i);
-            pLight->setIntoUniformBuffer(pBuffer, pLight->getName());
+            pLight->setIntoConstantBuffer(pBuffer, pLight->getName());
         }
         pBuffer->setVariable("gAmbient", pScene->getAmbientIntensity());
     }

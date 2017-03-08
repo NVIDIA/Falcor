@@ -1,37 +1,7 @@
-///////////////////////////////////////////////////////////////////////////////////
-/// OpenGL Mathematics (glm.g-truc.net)
-///
-/// Copyright (c) 2005 - 2014 G-Truc Creation (www.g-truc.net)
-/// Permission is hereby granted, free of charge, to any person obtaining a copy
-/// of this software and associated documentation files (the "Software"), to deal
-/// in the Software without restriction, including without limitation the rights
-/// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-/// copies of the Software, and to permit persons to whom the Software is
-/// furnished to do so, subject to the following conditions:
-/// 
-/// The above copyright notice and this permission notice shall be included in
-/// all copies or substantial portions of the Software.
-/// 
-/// Restrictions:
-///		By making use of the Software for military purposes, you choose to make
-///		a Bunny unhappy.
-/// 
-/// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-/// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-/// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-/// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-/// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-/// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-/// THE SOFTWARE.
-///
-/// @file test/core/func_matrix.cpp
-/// @date 2007-01-25 / 2011-06-07
-/// @author Christophe Riccio
-///////////////////////////////////////////////////////////////////////////////////
-
 #include <glm/matrix.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/ulp.hpp>
+#include <glm/gtc/epsilon.hpp>
 #include <vector>
 #include <ctime>
 #include <cstdio>
@@ -101,7 +71,18 @@ int test_matrixCompMult()
 
 int test_outerProduct()
 {
-	glm::mat4 m = glm::outerProduct(glm::vec4(1.0f), glm::vec4(1.0f));
+	{ glm::mat2 m = glm::outerProduct(glm::vec2(1.0f), glm::vec2(1.0f)); }
+	{ glm::mat3 m = glm::outerProduct(glm::vec3(1.0f), glm::vec3(1.0f)); }
+	{ glm::mat4 m = glm::outerProduct(glm::vec4(1.0f), glm::vec4(1.0f)); }
+
+	{ glm::mat2x3 m = glm::outerProduct(glm::vec3(1.0f), glm::vec2(1.0f)); }
+	{ glm::mat2x4 m = glm::outerProduct(glm::vec4(1.0f), glm::vec2(1.0f)); }
+
+	{ glm::mat3x2 m = glm::outerProduct(glm::vec2(1.0f), glm::vec3(1.0f)); }
+	{ glm::mat3x4 m = glm::outerProduct(glm::vec4(1.0f), glm::vec3(1.0f)); }
+  
+	{ glm::mat4x2 m = glm::outerProduct(glm::vec2(1.0f), glm::vec4(1.0f)); }
+	{ glm::mat4x3 m = glm::outerProduct(glm::vec3(1.0f), glm::vec4(1.0f)); }
 
 	return 0;
 }
@@ -202,15 +183,33 @@ int test_inverse()
 	glm::mat2x2 I2x2 = A2x2 * B2x2;
 	Failed += I2x2 == glm::mat2x2(1) ? 0 : 1;
 
-
-
 	return Failed;
 }
 
-std::size_t const Count(10000000);
+int test_inverse_simd()
+{
+	int Error = 0;
+
+	glm::mat4x4 const Identity(1);
+
+	glm::mat4x4 const A4x4(
+		glm::vec4(1, 0, 1, 0),
+		glm::vec4(0, 1, 0, 0),
+		glm::vec4(0, 0, 1, 0),
+		glm::vec4(0, 0, 0, 1));
+	glm::mat4x4 const B4x4 = glm::inverse(A4x4);
+	glm::mat4x4 const I4x4 = A4x4 * B4x4;
+
+	Error += glm::all(glm::epsilonEqual(I4x4[0], Identity[0], 0.001f)) ? 0 : 1;
+	Error += glm::all(glm::epsilonEqual(I4x4[1], Identity[1], 0.001f)) ? 0 : 1;
+	Error += glm::all(glm::epsilonEqual(I4x4[2], Identity[2], 0.001f)) ? 0 : 1;
+	Error += glm::all(glm::epsilonEqual(I4x4[3], Identity[3], 0.001f)) ? 0 : 1;
+
+	return Error;
+}
 
 template <typename VEC3, typename MAT4>
-int test_inverse_perf(std::size_t Instance, char const * Message)
+int test_inverse_perf(std::size_t Count, std::size_t Instance, char const * Message)
 {
 	std::vector<MAT4> TestInputs;
 	TestInputs.resize(Count);
@@ -262,12 +261,14 @@ int main()
 	Error += test_transpose();
 	Error += test_determinant();
 	Error += test_inverse();
+	Error += test_inverse_simd();
 
 #	ifdef NDEBUG
+	std::size_t const Samples(1000);
 	for(std::size_t i = 0; i < 1; ++i)
 	{
-		Error += test_inverse_perf<glm::vec3, glm::mat4>(i, "mat4");
-		Error += test_inverse_perf<glm::dvec3, glm::dmat4>(i, "dmat4");
+		Error += test_inverse_perf<glm::vec3, glm::mat4>(Samples, i, "mat4");
+		Error += test_inverse_perf<glm::dvec3, glm::dmat4>(Samples, i, "dmat4");
 	}
 #	endif//NDEBUG
 

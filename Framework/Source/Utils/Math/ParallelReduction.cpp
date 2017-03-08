@@ -28,12 +28,12 @@
 #include "Framework.h"
 #include "ParallelReduction.h"
 #include "Graphics/FboHelper.h"
-#include "Core/RenderContext.h"
+#include "API/RenderContext.h"
 #include "glm/vec2.hpp"
 
 namespace Falcor
 {
-    const char* fsFilename = "Framework/ParallelReduction.fs";
+    const char* fsFilename = "Framework/Shaders/ParallelReduction.fs";
 
     ParallelReduction::ParallelReduction(ParallelReduction::Type reductionType, uint32_t readbackLatency, uint32_t width, uint32_t height) : mReductionType(reductionType)
     {
@@ -58,12 +58,14 @@ namespace Falcor
         mpResultFbo.resize(readbackLatency + 1);
         for(auto& pFbo : mpResultFbo)
         {
-            pFbo = FboHelper::create2D(1, 1, &texFormat);
+            Fbo::Desc fboDesc;
+            fboDesc.setColorTarget(0, texFormat);
+            pFbo = FboHelper::create2D(1, 1, fboDesc);
         }
         mpFirstIterProg = FullScreenPass::create(fsFilename, defines);
         mpFirstIterProg->getProgram()->addDefine("_FIRST_ITERATION");
         mpRestIterProg = FullScreenPass::create(fsFilename, defines);
-        mpUbo = UniformBuffer::create(mpFirstIterProg->getProgram()->getActiveProgramVersion().get(), "PerImageCB");
+        pVars = GraphicsVars::create(mpFirstIterProg->getProgram()->getActiveVersion()->getReflector());
 
         // Calculate the number of reduction passes
         if(width > kTileSize || height > kTileSize)
@@ -76,7 +78,9 @@ namespace Falcor
                 width = max(width, 1u);
                 height = max(height, 1u);
 
-                mpTmpResultFbo.push_back(FboHelper::create2D(width, height, &texFormat));
+                Fbo::Desc fboDesc;
+                fboDesc.setColorTarget(0, texFormat);
+                mpTmpResultFbo.push_back(FboHelper::create2D(width, height, fboDesc));
             }
         }
     }
@@ -86,39 +90,36 @@ namespace Falcor
         return ParallelReduction::UniquePtr(new ParallelReduction(reductionType, readbackLatency, width, height));
     }
 
-    void runProgram(RenderContext* pRenderCtx, const Texture* pInput, const FullScreenPass* pProgram, Fbo::SharedPtr pDst, UniformBuffer::SharedPtr pUbo, Sampler::SharedPtr pPointSampler)
+    void runProgram(RenderContext* pRenderCtx, Texture::SharedPtr pInput, const FullScreenPass* pProgram, Fbo::SharedPtr pDst, GraphicsVars::SharedPtr pVars, Sampler::SharedPtr pPointSampler)
     {
-        // Bind the input texture
-        pUbo->setTexture(0, pInput, pPointSampler.get());
-        pRenderCtx->setUniformBuffer(0, pUbo);
+        GraphicsState::SharedPtr pState = pRenderCtx->getGraphicsState();
+        pVars->setSrv(0u, pInput->getSRV());
+        pVars->setSampler(0, pPointSampler);
 
-        // Set draw params
-        pRenderCtx->pushFbo(pDst);
-        RenderContext::Viewport vp;
-        vp.height = (float)pDst->getHeight();
-        vp.width = (float)pDst->getWidth();
-        pRenderCtx->pushViewport(0, vp);
+        //Set draw params
+        pState->pushFbo(pDst);
+        pRenderCtx->pushGraphicsVars(pVars);
 
         // Launch the program
         pProgram->execute(pRenderCtx);
-
+ 
         // Restore state
-        pRenderCtx->popViewport(0);
-        pRenderCtx->popFbo();
+        pState->popFbo();
+        pRenderCtx->popGraphicsVars();
     }
 
-    glm::vec4 ParallelReduction::reduce(RenderContext* pRenderCtx, const Texture* pInput)
+    glm::vec4 ParallelReduction::reduce(RenderContext* pRenderCtx, Texture::SharedPtr pInput)
     {
         const FullScreenPass* pProgram = mpFirstIterProg.get();
 
         for(size_t i = 0; i < mpTmpResultFbo.size(); i++)
         {
-            runProgram(pRenderCtx, pInput, pProgram, mpTmpResultFbo[i], mpUbo, mpPointSampler);
+            runProgram(pRenderCtx, pInput, pProgram, mpTmpResultFbo[i], pVars, mpPointSampler);
             pProgram = mpRestIterProg.get();
-            pInput = mpTmpResultFbo[i]->getColorTexture(0).get();
+            pInput = mpTmpResultFbo[i]->getColorTexture(0);
         }
 
-        runProgram(pRenderCtx, pInput, pProgram, mpResultFbo[mCurFbo], mpUbo, mpPointSampler);
+        runProgram(pRenderCtx, pInput, pProgram, mpResultFbo[mCurFbo], pVars, mpPointSampler);
 
         // Read back the results
         mCurFbo = (mCurFbo + 1) % mpResultFbo.size();
@@ -134,7 +135,8 @@ namespace Falcor
             should_not_get_here();
         }
 
-        mpResultFbo[mCurFbo]->getColorTexture(0)->readSubresourceData(&result, bytesToRead, 0, 0);
+        auto texData = pRenderCtx->readTextureSubresource(mpResultFbo[mCurFbo]->getColorTexture(0).get(), 0);
+        result = *(vec4*)texData.data();
         return result;
     }
 }

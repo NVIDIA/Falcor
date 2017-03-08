@@ -14,20 +14,20 @@
             "name": "plane",
             "instances": [
                 {
-                    "name": "Instance 0",
+                    "name": "Plane Instance 0",
                     "translation": [
                         0.0,
                         0.0,
                         0.0
                     ],
                     "scaling": [
-                        2.0,
-                        2.0,
-                        2.0
+                        0.5,
+                        0.5,
+                        0.5
                     ],
                     "rotation": [
+                        270.0,
                         0.0,
-                        -90.0,
                         0.0
                     ]
                 }
@@ -38,7 +38,7 @@
             "name": "dragon",
             "instances": [
                 {
-                    "name": "Instance 0",
+                    "name": "Dragon Instance 0",
                     "translation": [
                         0.0,
                         0.2829999327659607,
@@ -50,8 +50,8 @@
                         1.0
                     ],
                     "rotation": [
-                        90.60000610351563,
                         0.0,
+                        180.0,
                         0.0
                     ]
                 }

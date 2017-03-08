@@ -35,16 +35,18 @@
 #include "glm/geometric.hpp"
 #include "AnimationController.h"
 #include "Animation.h"
-#include "Core/Buffer.h"
-#include "Core/Texture.h"
+#include "API/Buffer.h"
+#include "API/Texture.h"
 #include "Graphics/TextureHelper.h"
 #include "Utils/StringUtils.h"
 #include "Graphics/Camera/Camera.h"
-#include "core/VAO.h"
+#include "API/VAO.h"
+#include <set>
 
 namespace Falcor
 {
-	uint32_t Model::sModelCounter = 0;
+
+    uint32_t Model::sModelCounter = 0;
     const char* Model::kSupportedFileFormatsStr = "Supported Formats\0*.obj;*.bin;*.dae;*.x;*.md5mesh;*.ply;*.fbx;*.3ds;*.blend;*.ase;*.ifc;*.xgl;*.zgl;*.dxf;*.lwo;*.lws;*.lxo;*.stl;*.x;*.ac;*.ms3d;*.cob;*.scn;*.3d;*.mdl;*.mdl2;*.pk3;*.smd;*.vta;*.raw;*.ter\0\0";
 
     // Method to sort meshes
@@ -55,24 +57,12 @@ namespace Falcor
         return p1->getMaterial() < p2->getMaterial();
     }
 
-	Model::Model() : mId(sModelCounter++)
+    Model::Model() : mId(sModelCounter++)
     {
 
     }
 
     Model::~Model() = default;
-
-    /** Permanently transform all meshes of the object by the given transform
-    */
-    void Model::applyTransform(const glm::mat4& transform) 
-	{
-        for(auto& pMesh : mpMeshes)
-        {
-            pMesh->applyTransform(transform);
-        }
-
-        calculateModelProperties();
-    }
 
     Model::SharedPtr Model::createFromFile(const std::string& filename, uint32_t flags)
     {
@@ -89,22 +79,22 @@ namespace Falcor
 
         if(pModel)
         {
-            if(flags & CompressTextures)
-            {
-                pModel->compressAllTextures();
-            }
-
             pModel->calculateModelProperties();
         }
 
         return pModel;
     }
 
+    Model::SharedPtr Model::create()
+    {
+        return SharedPtr(new Model());
+    }
+
     void Model::exportToBinaryFile(const std::string& filename)
     {
         if(hasSuffix(filename, ".bin", false) == false)
         {
-            Logger::log(Logger::Level::Warning, "Exporting model to binary file, but extension is not '.bin'. This will cause error when loading the file");
+            logWarning("Exporting model to binary file, but extension is not '.bin'. This will cause error when loading the file");
         }
 
         BinaryModelExporter::exportToFile(filename, this);
@@ -113,38 +103,89 @@ namespace Falcor
     void Model::calculateModelProperties()
     {
         mVertexCount = 0;
+        mIndexCount = 0;
         mPrimitiveCount = 0;
-        mInstanceCount = 0;
+        mMeshInstanceCount = 0;
+        mBufferCount = 0;
+        mMaterialCount = 0;
+        mTextureCount = 0;
+
+        std::set<const Material*> uniqueMaterials;
+        std::set<const Texture*> uniqueTextures;
+        std::set<const Buffer*> uniqueBuffers;
 
         // Sort the meshes
-        //std::sort(mpMeshes.begin(), mpMeshes.end(), compareMeshes);
+        sortMeshes();
 
         vec3 modelMin = vec3(1e25f), modelMax = vec3(-1e25f);
-        std::map<const Buffer*, bool> vbFound;
 
-        for(const auto& pMesh : mpMeshes)
+        for(const auto& meshInstances : mMeshes)
         {
-            for(uint32_t i = 0 ; i < pMesh->getInstanceCount() ; i++)
+            // If we have a vector for a mesh, there should be at least one instance of it
+            assert(meshInstances.size() > 0);
+
+            const auto& pMesh = meshInstances[0]->getObject();
+            const uint32_t instanceCount = (uint32_t)meshInstances.size();
+            
+            mVertexCount += pMesh->getVertexCount() * instanceCount;
+            mIndexCount += pMesh->getIndexCount() * instanceCount;
+            mPrimitiveCount += pMesh->getPrimitiveCount() * instanceCount;
+            mMeshInstanceCount += instanceCount;
+
+            const Material* pMaterial = pMesh->getMaterial().get();
+
+            // Track material
+            uniqueMaterials.insert(pMaterial);
+
+            // Track all of the material's textures
+            for (uint32_t i = 0; i < pMaterial->getNumLayers(); i++)
             {
-                const BoundingBox& meshBox = pMesh->getInstanceBoundingBox(i);
+                uniqueTextures.insert(pMaterial->getLayer(i).pTexture.get());
+            }
+
+            uniqueTextures.insert(pMaterial->getNormalMap().get());
+            uniqueTextures.insert(pMaterial->getAlphaMap().get());
+            uniqueTextures.insert(pMaterial->getAmbientOcclusionMap().get());
+            uniqueTextures.insert(pMaterial->getHeightMap().get());
+
+            // Track the material's buffers
+            const auto& pVao = pMesh->getVao();
+            for (uint32_t i = 0; i < (uint32_t)pVao->getVertexBuffersCount(); i++)
+            {
+                if (pVao->getVertexBuffer(i) != nullptr)
+                {
+                    uniqueBuffers.insert(pVao->getVertexBuffer(i).get());
+                }
+            }
+
+            if (pVao->getIndexBuffer() != nullptr)
+            {
+                uniqueBuffers.insert(pVao->getIndexBuffer().get());
+            }
+
+            // Expand bounding box
+            for(uint32_t i = 0 ; i < instanceCount; i++)
+            {
+                const BoundingBox& meshBox = meshInstances[i]->getBoundingBox();
 
                 vec3 meshMin = meshBox.center - meshBox.extent;
                 vec3 meshMax = meshBox.center + meshBox.extent;
 
                 modelMin = min(modelMin, meshMin);
                 modelMax = max(modelMax, meshMax);
-
-                if(vbFound.find(pMesh->getVao()->getVertexBuffer(0).get()) == vbFound.end())
-                {
-                    mVertexCount += pMesh->getVertexCount();
-                    vbFound[pMesh->getVao()->getVertexBuffer(0).get()] = true;
-                }
-
-                mPrimitiveCount += pMesh->getPrimitiveCount();
             }
-            mInstanceCount += pMesh->getInstanceCount();
         }
-        mCenter = (modelMin + modelMax) * 0.5f;
+
+        // Don't count nullptrs
+        uniqueTextures.erase(nullptr);
+        uniqueMaterials.erase(nullptr);
+        uniqueBuffers.erase(nullptr);
+
+        mTextureCount = (uint32_t)uniqueTextures.size();
+        mMaterialCount = (uint32_t)uniqueMaterials.size();
+        mBufferCount = (uint32_t)uniqueBuffers.size();
+
+        mBoundingBox = BoundingBox::fromMinMax(modelMin, modelMax);
         mRadius = glm::length(modelMin - modelMax) * 0.5f;
     }
 
@@ -208,51 +249,55 @@ namespace Falcor
         return mpAnimationController->getBoneMatrices();
     }
 
-	void Model::bindSamplerToMaterials(const Sampler::SharedPtr& pSampler)
-	{
-		// Go over all materials and bind the sampler
-		for(auto& m : mpMaterials)
-		{
-			m->overrideAllSamplers(pSampler);
-		}
-	}
+    void Model::bindSamplerToMaterials(const Sampler::SharedPtr& pSampler)
+    {
+        // Go over materials for all meshes and bind the sampler
+        for(auto& meshInstances : mMeshes)
+        {
+            meshInstances[0]->getObject()->getMaterial()->setSampler(pSampler);
+        }
+    }
 
     void Model::setAnimationController(AnimationController::UniquePtr pAnimController)
     {
         mpAnimationController = std::move(pAnimController);
     }
 
-    void Model::addMesh(Mesh::SharedPtr pMesh)
+    void Model::addMeshInstance(const Mesh::SharedPtr& pMesh, const glm::mat4& baseTransform)
     {
-        mpMeshes.push_back(std::move(pMesh));
-    }
+        int32_t meshID = -1;
 
-    Material::SharedPtr Model::getOrAddMaterial(const Material::SharedPtr& pMaterial)
-    {
-        // Check if the material already exists
-        for(const auto& a : mpMaterials)
+        // Linear search from the end. Instances are usually added in order by mesh
+        for (int32_t i = (int32_t)mMeshes.size() - 1; i >= 0; i--)
         {
-            if(*pMaterial == *a)
+            if (mMeshes[i][0]->getObject() == pMesh)
             {
-                return a;
+                meshID = i;
+                break;
             }
         }
 
-        // New material
-        mpMaterials.push_back(pMaterial);
-        return pMaterial;
+        // If mesh not found, new mesh, add new instance vector
+        if (meshID == -1)
+        {
+            mMeshes.push_back(MeshInstanceList());
+            meshID = (int32_t)mMeshes.size() - 1;
+        }
+
+        mMeshes[meshID].push_back(MeshInstance::create(pMesh, baseTransform));
     }
 
-    void Model::addBuffer(const Buffer::SharedConstPtr& pBuffer)
+    void Model::sortMeshes()
     {
-        mpBuffers.push_back(pBuffer);
+        // Sort meshes by material ptr
+        auto matSortPred = [](MeshInstanceList& lhs, MeshInstanceList& rhs) 
+        {
+            return lhs[0]->getObject()->getMaterial() < rhs[0]->getObject()->getMaterial();
+        };
+        
+        std::sort(mMeshes.begin(), mMeshes.end(), matSortPred);
     }
 
-    void Model::addTexture(const Texture::SharedConstPtr& pTexture)
-    {
-        mpTextures.push_back(pTexture);
-    }
-    
     template<typename T>
     void removeNullElements(std::vector<T>& Vec)
     {
@@ -261,26 +306,40 @@ namespace Falcor
         Vec.erase(NewEnd, Vec.end());
     }
 
+    void Model::deleteCulledMeshInstances(MeshInstanceList& meshInstances, const Camera *pCamera)
+    {
+        for (auto& instance : meshInstances)
+        {
+            if (pCamera->isObjectCulled(instance->getBoundingBox()))
+            {
+                // Remove mesh ptr reference
+                instance->mpObject = nullptr;
+            }
+        }
+
+        // Remove culled instances
+        auto instPred = [](MeshInstance::SharedPtr& instance) { return instance->getObject() == nullptr; };
+        auto& instEnd = std::remove_if(meshInstances.begin(), meshInstances.end(), instPred);
+        meshInstances.erase(instEnd, meshInstances.end());
+    }
+
     void Model::deleteCulledMeshes(const Camera* pCamera)
     {
         std::map<const Material*, bool> usedMaterials;
         std::map<const Buffer*, bool> usedBuffers;
 
         // Loop over all the meshes and remove its instances
-        for(auto& pMesh : mpMeshes)
+        for(auto& meshInstances : mMeshes)
         {
-            pMesh->deleteCulledInstances(pCamera);
+            deleteCulledMeshInstances(meshInstances, pCamera);
 
-            if(pMesh->getInstanceCount() == 0)
-            {
-                pMesh = nullptr;
-            }
-            else
+            if(meshInstances.size() > 0)
             {
                 // Mark the mesh's objects as used
-                usedMaterials[pMesh->getMaterial().get()] = true;
-                const auto pVao = pMesh->getVao();
+                usedMaterials[meshInstances[0]->getObject()->getMaterial().get()] = true;
+                const auto pVao = meshInstances[0]->getObject()->getVao();
                 usedBuffers[pVao->getIndexBuffer().get()] = true;
+
                 for(uint32_t i = 0 ; i < pVao->getVertexBuffersCount() ; i++)
                 {
                     usedBuffers[pVao->getVertexBuffer(i).get()] = true;
@@ -289,101 +348,16 @@ namespace Falcor
         }
 
         // Remove unused meshes from the vector
-        removeNullElements(mpMeshes);
+        auto pred = [](MeshInstanceList& meshInstances) { return meshInstances.size() == 0; };
+        auto& meshesEnd = std::remove_if(mMeshes.begin(), mMeshes.end(), pred);
+        mMeshes.erase(meshesEnd, mMeshes.end());
 
-        deleteUnusedBuffers(usedBuffers);
-        deleteUnusedMaterials(usedMaterials);
         calculateModelProperties();
     }
-
 
     void Model::resetGlobalIdCounter()
     {
         sModelCounter = 0;
         Mesh::resetGlobalIdCounter();
-    }
-
-    void Model::deleteUnusedBuffers(std::map<const Buffer*, bool> usedBuffers)
-    {
-        for(auto& Buffer : mpBuffers)
-        {
-            if(usedBuffers.find(Buffer.get()) == usedBuffers.end())
-            {
-                Buffer = nullptr;
-            }            
-        }
-        removeNullElements(mpBuffers);
-    }
-
-    void Model::deleteUnusedMaterials(std::map<const Material*, bool> usedMaterials)
-    {
-        std::map<const Texture*, bool> usedTextures;
-        for(auto& material : mpMaterials)
-        {
-            if(usedMaterials.find(material.get()) == usedMaterials.end())
-            {
-                // Material is not used. Remove it.
-                material = nullptr;
-            }
-            else
-            {
-                // Material is used. Mark its textures
-                std::vector<Texture::SharedConstPtr> activeTextures;
-                material->getActiveTextures(activeTextures);
-                for(const auto& tex : activeTextures)
-                {
-                    usedTextures[tex.get()] = true;
-                }
-            }
-        }
-        removeNullElements(mpMaterials);
-
-        // Now remove unused textures
-        for(auto& texture : mpTextures)
-        {
-            if(usedTextures.find(texture.get()) == usedTextures.end())
-            {
-                texture = nullptr;
-            }
-        }
-        removeNullElements(mpTextures);
-    }
-
-    void Model::compressAllTextures()
-    {
-        std::map<const Texture*, uint32_t> texturesIndex;
-        std::vector<bool> isNormalMap(mpTextures.size(), false);
-
-        // Find all normal maps. We don't compress them.
-        for(uint32_t i = 0; i < mpTextures.size(); i++)
-        {
-            texturesIndex[mpTextures[i].get()] = i;
-        }
-        
-        for(const auto& m : mpMaterials)
-        {
-            const Texture* pNormalMap = m->getNormalValue().texture.pTexture.get();
-            if(pNormalMap)
-            {
-                uint32_t Id = texturesIndex[pNormalMap];
-                isNormalMap[Id] = true;
-            }
-        }
-
-        std::vector<uint8_t> texData;
-
-        // Now create the textures
-        for(uint32_t i = 0; i < mpTextures.size(); i++)
-        {
-            if(isNormalMap[i] == true)
-            {
-                // Not compressing normal map
-                continue;
-            }
-
-            Texture* pTexture = const_cast<Texture*>(mpTextures[i].get());
-            assert(pTexture->getType() == Texture::Type::Texture2D);
-            pTexture->compress2DTexture();            
-        }
     }
 }

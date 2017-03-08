@@ -30,7 +30,7 @@
 #include "glm/gtx/quaternion.hpp"
 #include "utils/AABB.h"
 #include "Utils/math/FalcorMath.h"
-#include "Core/UniformBuffer.h"
+#include "API/ConstantBuffer.h"
 
 namespace Falcor
 {
@@ -51,6 +51,9 @@ namespace Falcor
     {
         if (mDirty)
         {
+            mData.prevViewProjMat = mData.viewProjMat;
+            mData.rightEyePrevViewProjMat = mData.rightEyeViewProjMat;
+
             if(mEnablePersistentViewMat)
             {
                 mData.viewMat = mPersistentViewMat;
@@ -158,11 +161,6 @@ namespace Falcor
         togglePersistentViewMatrix(true);
     }
 
-    void Camera::setPrevViewProjMatrix(const glm::mat4& prevViewProj)
-    {
-        mData.prevViewProjMat = prevViewProj;        
-    }
-
     void Camera::togglePersistentProjectionMatrix(bool persistent)
     {
         mEnablePersistentProjMat = persistent;
@@ -190,11 +188,6 @@ namespace Falcor
         return !isInside;
     }
 
-    void Camera::setRightEyePrevViewProjMatrix(const glm::mat4& prevViewProj)
-    {
-        mData.rightEyePrevViewProjMat = prevViewProj;
-    }
-
     void Camera::setRightEyeMatrices(const glm::mat4& view, const glm::mat4& proj)
     {
         mData.rightEyeViewMat = view;
@@ -202,34 +195,25 @@ namespace Falcor
         mData.rightEyeViewProjMat = proj * view;
     }
 
-    void Camera::setIntoUniformBuffer(UniformBuffer* pBuffer, const std::string& varName) const
+    void Camera::setIntoConstantBuffer(ConstantBuffer* pCB, const std::string& varName) const
     {
-        calculateCameraParameters();
-        static const size_t dataSize = sizeof(CameraData);
-        static_assert(dataSize % sizeof(float) * 4 == 0, "Camera::CameraData size should be a multiple of 16");
+        size_t offset = pCB->getVariableOffset(varName + ".viewMat");
 
-        size_t offset = pBuffer->getVariableOffset(varName + ".viewMat");
-
-        if (offset == UniformBuffer::kInvalidUniformOffset)
+        if (offset == ConstantBuffer::kInvalidOffset)
         {
-            Logger::log(Logger::Level::Warning, "Camera::setIntoUniformBuffer() - variable \"" + varName + "\"not found in uniform buffer\n");
+            logWarning("Camera::setIntoConstantBuffer() - variable \"" + varName + "\"not found in constant buffer\n");
             return;
         }
 
-        assert(offset + dataSize <= pBuffer->getBuffer()->getSize());
-
-        pBuffer->setBlob(&mData, offset, dataSize);
+        setIntoConstantBuffer(pCB, offset);
     }
 
-    void Camera::setIntoUniformBuffer(UniformBuffer* pBuffer, const std::size_t& offset) const
+    void Camera::setIntoConstantBuffer(ConstantBuffer* pBuffer, const std::size_t& offset) const
     {
         calculateCameraParameters();
-        static const size_t dataSize = sizeof(CameraData);
-        static_assert(dataSize % sizeof(float) * 4 == 0, "Camera::CameraData size should be a multiple of 16");
+        assert(offset + getShaderDataSize() <= pBuffer->getSize());
 
-        assert(offset + dataSize <= pBuffer->getBuffer()->getSize());
-
-        pBuffer->setBlob(&mData, offset, dataSize);
+        pBuffer->setBlob(&mData, offset, getShaderDataSize());
     }
 
     void Camera::move(const glm::vec3& position, const glm::vec3& target, const glm::vec3& up)

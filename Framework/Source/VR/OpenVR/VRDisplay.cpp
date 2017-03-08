@@ -81,8 +81,10 @@ namespace Falcor
 
 #if defined(FALCOR_GL)
         vr::GraphicsAPIConvention curRenderAPI = vr::GraphicsAPIConvention::API_OpenGL;
-#elif defined(FALCOR_DX11)
+#elif defined(FALCOR_D3D)
         vr::GraphicsAPIConvention curRenderAPI = vr::GraphicsAPIConvention::API_DirectX;
+#else
+#error Unknown API
 #endif
 
         // Grab guesses for projection matricies, so we have *something* in case the user asks for a matrix prior to specifying a near/far plane
@@ -130,8 +132,10 @@ namespace Falcor
     {
 #if defined(FALCOR_GL)
         vr::GraphicsAPIConvention curRenderAPI = vr::GraphicsAPIConvention::API_OpenGL;
-#elif defined(FALCOR_DX11)
+#elif defined(FALCOR_D3D)
         vr::GraphicsAPIConvention curRenderAPI = vr::GraphicsAPIConvention::API_DirectX;
+#else
+#error Unknown API
 #endif
 
         mNearFarPlanes = glm::vec2(nearZ, farZ);
@@ -197,7 +201,7 @@ namespace Falcor
 
         if(!overrideTexture)
             mpModelTexture = Texture::create2D(pTexture->unWidth, pTexture->unHeight,
-            ResourceFormat::RGBA8Unorm, 1, Texture::kEntireMipChain,
+            ResourceFormat::RGBA8Unorm, 1, Texture::kMaxPossible,
             (const void *)pTexture->rubTextureMapData);
 
         // OpenVR models use uint16_t index buffers.  Convert to uint32_t for Falcor.

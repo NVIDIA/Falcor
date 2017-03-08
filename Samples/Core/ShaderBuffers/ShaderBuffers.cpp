@@ -27,14 +27,12 @@
 ***************************************************************************/
 #include "ShaderBuffers.h"
 
-void ShaderBuffersSample::initUI()
+void ShaderBuffersSample::onGuiRender()
 {
-    Gui::setGlobalHelpMessage("Sample application that shows how to use uniform-buffers");
-
-    mpGui->addDir3FVar("Light Direction", &mLightData.worldDir);
-    mpGui->addRgbColor("Light intensity", &mLightData.intensity);
-    mpGui->addRgbColor("Surface Color", &mSurfaceColor);
-    mpGui->addCheckBox("Count FS invocations", &mCountPixelShaderInvocations);
+     mpGui->addDirectionWidget("Light Direction", mLightData.worldDir);
+     mpGui->addRgbColor("Light intensity", mLightData.intensity);
+     mpGui->addRgbColor("Surface Color", mSurfaceColor);
+     mpGui->addCheckBox("Count FS invocations", mCountPixelShaderInvocations);
 }
 
 Vao::SharedConstPtr ShaderBuffersSample::getVao()
@@ -48,9 +46,8 @@ void ShaderBuffersSample::onLoad()
 {
     mpCamera = Camera::create();
 
-    initUI();
     // create the program
-    mpProgram = Program::createFromFile("ShaderBuffers.vs", "ShaderBuffers.fs");
+    mpProgram = GraphicsProgram::createFromFile("ShaderBuffers.vs", "ShaderBuffers.fs");
 
     // Load the model
     mpModel = Model::createFromFile("teapot.obj", 0);
@@ -59,10 +56,6 @@ void ShaderBuffersSample::onLoad()
     mpVao = getVao();
     auto pMesh = mpModel->getMesh(0);
     mIndexCount = pMesh->getIndexCount();
-
-    // Initialize uniform-buffers data
-    mLightData.intensity = glm::vec3(1, 1, 1);
-    mLightData.worldDir = glm::vec3(0, -1, 0);
 
     // Set camera parameters
     glm::vec3 center = mpModel->getCenter();
@@ -77,61 +70,63 @@ void ShaderBuffersSample::onLoad()
     mCameraController.setModelParams(center, radius, radius * 2.5f);
 
     // create the uniform buffers
-    mpPixelCountBuffer = ShaderStorageBuffer::create(mpProgram->getActiveProgramVersion().get(), "PixelCount");
+    mpProgramVars = GraphicsVars::create(mpProgram->getActiveVersion()->getReflector());
+    mpSurfaceColorBuffer = TypedBuffer<vec3>::create(1);
+    uint32_t z = 0;
+    mpInvocationsBuffer = Buffer::create(sizeof(uint32_t), Buffer::BindFlags::UnorderedAccess, Buffer::CpuAccess::Read, &z);
+    mpProgramVars->setRawBuffer("gInvocationBuffer", mpInvocationsBuffer);
+    mpProgramVars->setTypedBuffer("surfaceColor", mpSurfaceColorBuffer);
+    mpProgramVars->setStructuredBuffer("gLight", StructuredBuffer::create(mpProgram, "gLight" , 2));
 
-    // create rasterizer state
+    // create pipeline cache
     RasterizerState::Desc rsDesc;
     rsDesc.setCullMode(RasterizerState::CullMode::Back);
-    mpBackFaceCullRS = RasterizerState::create(rsDesc);
+    mpDefaultPipelineState->setRasterizerState(RasterizerState::create(rsDesc));
 
     // Depth test
     DepthStencilState::Desc dsDesc;
     dsDesc.setDepthTest(true);
-    mpDepthTestDS = DepthStencilState::create(dsDesc);
+    mpDefaultPipelineState->setDepthStencilState(DepthStencilState::create(dsDesc));
+    mpDefaultPipelineState->setFbo(mpDefaultFBO);
+    mpDefaultPipelineState->setVao(mpVao);
+    mpDefaultPipelineState->setProgram(mpProgram);
 
+    init_tests();
 }
 
 void ShaderBuffersSample::onFrameRender()
 {
     const glm::vec4 clearColor(0.38f, 0.52f, 0.10f, 1);
-    mpDefaultFBO->clear(clearColor, 1.0f, 0, FboAttachmentType::All);
-
-    mpRenderContext->setDepthStencilState(mpDepthTestDS, 0);
-    mpRenderContext->setRasterizerState(mpBackFaceCullRS);
-
+    mpRenderContext->clearFbo(mpDefaultFBO.get(), clearColor, 1.0f, 0, FboAttachmentType::All);
     mCameraController.update();
 
     // Update uniform-buffers data
-    mpProgram["PerFrameCB"]["m.worldMat"] = glm::mat4();
-    mpProgram["PerFrameCB"]["m.wvpMat"] = mpCamera->getProjMatrix() * mpCamera->getViewMatrix();
-    mpProgram["PerFrameCB"]["surfaceColor"] = mSurfaceColor;
+    mpProgramVars["PerFrameCB"]["m.worldMat"] = glm::mat4();
+    glm::mat4 wvp = mpCamera->getViewProjMatrix();
+    mpProgramVars["PerFrameCB"]["m.wvpMat"] = wvp;
 
-    mpProgram["LightCB"]["worldDir"] = mLightData.worldDir;
-    mpProgram["LightCB"]["intensity"] = mLightData.intensity;
+    mpProgramVars->getStructuredBuffer("gLight")[0]["vec3Val"] = mLightData.worldDir;
+    mpProgramVars->getStructuredBuffer("gLight")[1]["vec3Val"] = mLightData.intensity;
     
-    // Set uniform buffers
-    mpRenderContext->setProgram(mpProgram->getActiveProgramVersion());
-    mpRenderContext->setShaderStorageBuffer(0, mpPixelCountBuffer);
-    mpProgram->setUniformBuffersIntoContext(mpRenderContext.get());
+    mpSurfaceColorBuffer[0] = mSurfaceColor;
+    mpSurfaceColorBuffer->uploadToGPU();
 
-    mpRenderContext->setVao(mpVao);
-    mpRenderContext->setTopology(RenderContext::Topology::TriangleList);
+    // Set uniform buffers
+    mpRenderContext->setGraphicsVars(mpProgramVars);
     mpRenderContext->drawIndexed(mIndexCount, 0, 0);
 
-    std::string Txt = getGlobalSampleMessage(true) + '\n';
+    std::string msg = getFpsMsg() + '\n';
     if(mCountPixelShaderInvocations)
     {
-#ifndef FALCOR_DX11
-        uint32_t FsInvocations = mpPixelCountBuffer["count"];
-        Txt += "FS was invoked " + std::to_string(FsInvocations) + " times.";
-        mpPixelCountBuffer["count"] = 0U;
-#endif
-    }
-    renderText(Txt, glm::vec2(10, 10));
-}
+        uint32_t* pData = (uint32_t*)mpInvocationsBuffer->map(Buffer::MapType::Read);
+        std::string msg = "PS was invoked " + std::to_string(*pData) + " times";
+        mpInvocationsBuffer->unmap();
+        renderText(msg, vec2(600, 100));
 
-void ShaderBuffersSample::onShutdown()
-{
+        mpRenderContext->clearUAV(mpInvocationsBuffer->getUAV().get(), uvec4(0));
+    }
+
+    run_test();
 }
 
 void ShaderBuffersSample::onDataReload()
@@ -151,13 +146,11 @@ bool ShaderBuffersSample::onMouseEvent(const MouseEvent& mouseEvent)
 
 void ShaderBuffersSample::onResizeSwapChain()
 {
-    RenderContext::Viewport VP;
-    VP.height = (float)mpDefaultFBO->getHeight();
-    VP.width = (float)mpDefaultFBO->getWidth();
-    mpRenderContext->setViewport(0, VP);
+    float height = (float)mpDefaultFBO->getHeight();
+    float width = (float)mpDefaultFBO->getWidth();
 
     mpCamera->setFovY(float(M_PI / 8));
-    mpCamera->setAspectRatio(VP.width / VP.height);
+    mpCamera->setAspectRatio(width / height);
 }
 
 int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ LPSTR lpCmdLine, _In_ int nShowCmd)
@@ -165,5 +158,6 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
     ShaderBuffersSample buffersSample;
     SampleConfig config;
     config.windowDesc.title = "Shader Buffers";
+    config.windowDesc.resizableWindow = true;
     buffersSample.run(config);
 }

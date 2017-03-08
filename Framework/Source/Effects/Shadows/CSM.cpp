@@ -32,47 +32,60 @@
 #include "Utils/Math/FalcorMath.h"
 #include "Graphics/FboHelper.h"
 
-//#define _ALPHA_FROM_ALBEDO_MAP
 namespace Falcor
 {
-    const char* kDepthPassVSFile = "Effects/ShadowPass.vs";
-    const char* kDepthPassGsFile = "Effects/ShadowPass.gs";
-    const char* kDepthPassFsFile = "Effects/ShadowPass.fs";
-    const char* kSdsmMinMaxFile = "Effects/SDSMMinMax.fs";
+    const char* kDepthPassVSFile = "Effects/ShadowPass.vs.hlsl";
+    const char* kDepthPassGsFile = "Effects/ShadowPass.gs.hlsl";
+    const char* kDepthPassFsFile = "Effects/ShadowPass.ps.hlsl";
+
+    const Gui::DropdownList kFilterList = {
+        { (uint32_t)CsmFilterPoint, "Point" },
+        { (uint32_t)CsmFilterHwPcf, "2x2 HW PCF" },
+        { (uint32_t)CsmFilterFixedPcf, "Fixed-Size PCF" },
+        { (uint32_t)CsmFilterVsm, "VSM" },
+        { (uint32_t)CsmFilterEvsm2, "EVSM2" },
+        { (uint32_t)CsmFilterEvsm4, "EVSM4" },
+        { (uint32_t)CsmFilterStochasticPcf, "Stochastic Poisson PCF" }
+    };
+
+    const Gui::DropdownList kPartitionList = {
+        { (uint32_t)CascadedShadowMaps::PartitionMode::Linear, "Linear" },
+        { (uint32_t)CascadedShadowMaps::PartitionMode::Logarithmic, "Logarithmic" },
+        { (uint32_t)CascadedShadowMaps::PartitionMode::PSSM, "PSSM" }
+    };
+
+    const Gui::DropdownList kMaxAniso = {
+        { (uint32_t)1, "1" },
+        { (uint32_t)2, "2" },
+        { (uint32_t)4, "4" },
+        { (uint32_t)8, "8" },
+        { (uint32_t)16, "16" }
+    };
 
     class CsmSceneRenderer : public SceneRenderer
     {
     public:
         using UniquePtr = std::unique_ptr<CsmSceneRenderer>;
-        static UniquePtr create(const Scene::SharedPtr& pScene, UniformBuffer::SharedPtr pAlphaMapUbo) { return UniquePtr(new CsmSceneRenderer(pScene, pAlphaMapUbo)); }
+        static UniquePtr create(const Scene::SharedPtr& pScene) { return UniquePtr(new CsmSceneRenderer(pScene)); }
 
     protected:
-        CsmSceneRenderer(const Scene::SharedPtr& pScene, UniformBuffer::SharedPtr pAlphaMapUbo) : SceneRenderer(pScene), mpAlphaMapUbo(pAlphaMapUbo) { setObjectCullState(false); }
-        UniformBuffer::SharedPtr mpAlphaMapUbo;
+        CsmSceneRenderer(const Scene::SharedPtr& pScene) : SceneRenderer(pScene) { setObjectCullState(false); }
         bool mMaterialChanged = false;
         bool setPerMaterialData(RenderContext* pContext, const CurrentWorkingData& currentData) override
         {
-            if(mpLastMaterial != currentData.pMaterial)
+            mMaterialChanged = true;
+            if (currentData.pMaterial->getAlphaMap())
             {
-                mMaterialChanged = true;
-                mpLastMaterial = currentData.pMaterial;
-                struct alphaData
-                {
-                    uint64_t map;
-                    float val;
-                } a;
-
-                mpLastMaterial->bindTextures();
-#ifdef _ALPHA_FROM_ALBEDO_MAP
-                const auto& pLayer = mpLastMaterial->getLayer(0);
-                a.map = pLayer ? pLayer->albedo.texture.gpuAddress : 0;
-                a.val = 0.5f;
-#else
-                a.map = mpLastMaterial->getAlphaValue().texture.ptr;
-                a.val = mpLastMaterial->getAlphaValue().constantColor.x;
-#endif
-                mpAlphaMapUbo->setBlob(&a, 0, sizeof(a));
+                float alphaThreshold = currentData.pMaterial->getAlphaThreshold();
+                pContext->getGraphicsVars()->getConstantBuffer(1u)->setBlob(&alphaThreshold, 0u, sizeof(float));
+                pContext->getGraphicsVars()->setSrv(0u, currentData.pMaterial->getAlphaMap()->getSRV());
+                pContext->getGraphicsState()->getProgram()->addDefine("TEST_ALPHA");
             }
+            else
+            {
+                pContext->getGraphicsState()->getProgram()->removeDefine("TEST_ALPHA");
+            }
+            
             return true;
         };
 
@@ -80,7 +93,7 @@ namespace Falcor
         {
             if(mUnloadTexturesOnMaterialChange && mMaterialChanged)
             {
-                mpLastMaterial->unloadTextures();
+                mpLastMaterial = currentData.pMaterial;
                 mMaterialChanged = false;
             }
         }
@@ -103,12 +116,13 @@ namespace Falcor
         {
             up = glm::vec3(1, 0, 0);
         }
+     
         glm::mat4 view = glm::lookAt(lightPos, lookat, up);
         float distFromCenter = glm::length(lightPos - center);
-        float nearZ = max(0.01f, distFromCenter - radius);
+        float nearZ = max(0.1f, distFromCenter - radius);
         float maxZ = min(radius * 2, distFromCenter + radius);
-        float angle = pLight->getOpeningAngle() * 2; // FIXME: Why 3? In theory, 2 should be the right number
-        glm::mat4 proj = perspectiveMatrix(angle, fboAspectRatio, 0.1f, 10);
+        float angle = pLight->getOpeningAngle() * 2;
+        glm::mat4 proj = perspectiveMatrix(angle, fboAspectRatio, nearZ, maxZ);
 
         shadowVP = proj * view;
     }
@@ -130,15 +144,21 @@ namespace Falcor
 
     CascadedShadowMaps::CascadedShadowMaps(uint32_t mapWidth, uint32_t mapHeight, Light::SharedConstPtr pLight, Scene::SharedPtr pScene, uint32_t cascadeCount, ResourceFormat shadowMapFormat) : mpLight(pLight), mpScene(pScene)
     {
-        // FIXME: CSM and point lights don't work together, got some issues between cascades
         if(mpLight->getType() != LightDirectional)
         {
+            if (cascadeCount != 1)
+            {
+                logWarning("CSM with point-light only supports a single cascade (the user requested " + std::to_string(cascadeCount) + ")");
+            }
             cascadeCount = 1;
         }
         mCsmData.cascadeCount = cascadeCount;
+        GraphicsProgram::SharedPtr pProg = GraphicsProgram::createFromFile(kDepthPassVSFile, "");
+        pProg->addDefine("_APPLY_PROJECTION");
+        mDepthPass.pState = GraphicsState::create();
+        mDepthPass.pState->setProgram(pProg);
+        mDepthPass.pGraphicsVars = GraphicsVars::create(pProg->getActiveVersion()->getReflector());
         createShadowPassResources(mapWidth, mapHeight);
-        mDepthPass.pProg = Program::createFromFile(kDepthPassVSFile, "");
-        mDepthPass.pProg->addDefine("_APPLY_PROJECTION");
 
         mpLightCamera = Camera::create();
         RasterizerState::Desc rsDesc;
@@ -152,7 +172,7 @@ namespace Falcor
         mShadowPass.pPointCmpSampler = Sampler::create(samplerDesc);
         samplerDesc.setFilterMode(Sampler::Filter::Linear, Sampler::Filter::Linear, Sampler::Filter::Linear);
         mShadowPass.pLinearCmpSampler = Sampler::create(samplerDesc);
-        samplerDesc.setComparisonMode(Sampler::ComparisonMode::NoComparison);
+        samplerDesc.setComparisonMode(Sampler::ComparisonMode::Disabled);
         samplerDesc.setAddressingMode(Sampler::AddressMode::Clamp, Sampler::AddressMode::Clamp, Sampler::AddressMode::Clamp);
         samplerDesc.setLodParams(-100.f, 100.f, 0.f);
 
@@ -169,14 +189,14 @@ namespace Falcor
     {
         if(isDepthFormat(shadowMapFormat) == false)
         {
-            Logger::log(Logger::Level::Error, std::string("Can't create CascadedShadowMaps effect. Requested resource format ") + to_string(shadowMapFormat) + " is not a depth format", true);
+            logError(std::string("Can't create CascadedShadowMaps effect. Requested resource format ") + to_string(shadowMapFormat) + " is not a depth format", true);
         }
 
         CascadedShadowMaps* pCsm = new CascadedShadowMaps(mapWidth, mapHeight, pLight, pScene, cascadeCount, shadowMapFormat);
         return CascadedShadowMaps::UniquePtr(pCsm);
     }
 
-    void CascadedShadowMaps::createSdsmData(const Texture* pTexture)
+    void CascadedShadowMaps::createSdsmData(Texture::SharedPtr pTexture)
     {
         // Check if we actually need to create it
         if(pTexture)
@@ -195,21 +215,17 @@ namespace Falcor
         }
 
         mSdsmData.minMaxReduction = ParallelReduction::create(ParallelReduction::Type::MinMax, mSdsmData.readbackLatency, mSdsmData.width, mSdsmData.height);
-
     }
 
     void CascadedShadowMaps::createShadowPassResources(uint32_t mapWidth, uint32_t mapHeight)
     {
         mShadowPass.mapSize = glm::vec2(float(mapWidth), float(mapHeight));
         const ResourceFormat depthFormat = ResourceFormat::D32Float;
+        mCsmData.depthBias = 0.005f;
         Program::DefineList progDef;
+        progDef.add("TEST_ALPHA");
         progDef.add("_CASCADE_COUNT", std::to_string(mCsmData.cascadeCount));
-
-#ifdef _ALPHA_FROM_ALBEDO_MAP
-        progDef.add("_ALPHA_CHANNEL", "a");
-#else
         progDef.add("_ALPHA_CHANNEL", "r");
-#endif
         ResourceFormat colorFormat = ResourceFormat::Unknown;
         switch(mCsmData.filterMode)
         {
@@ -225,23 +241,37 @@ namespace Falcor
             colorFormat = ResourceFormat::RGBA32Float;
             progDef.add("_EVSM4");
             break;
-        default:
-            mShadowPass.pFbo = FboHelper::createDepthOnly(mapWidth, mapHeight, depthFormat, mCsmData.cascadeCount);
+        default:            
+        {
+            Fbo::Desc fboDesc;
+            fboDesc.setDepthStencilTarget(depthFormat);
+            mShadowPass.pFbo = FboHelper::create2D(mapWidth, mapHeight, fboDesc, mCsmData.cascadeCount);
+            mDepthPass.pState->setFbo(FboHelper::create2D(mapWidth, mapHeight, fboDesc, mCsmData.cascadeCount));
+        }
         }
 
         if(colorFormat != ResourceFormat::Unknown)
         {
-            mShadowPass.pFbo = FboHelper::create2DWithDepth(mapWidth, mapHeight, &colorFormat, depthFormat, mCsmData.cascadeCount, 1, 0, Texture::kEntireMipChain);
+            Fbo::Desc fboDesc;
+            fboDesc.setDepthStencilTarget(depthFormat).setColorTarget(0, colorFormat);
+            mShadowPass.pFbo = FboHelper::create2D(mapWidth, mapHeight, fboDesc, mCsmData.cascadeCount);
+            mDepthPass.pState->setFbo(FboHelper::create2D(mapWidth, mapHeight, fboDesc, mCsmData.cascadeCount));
         }
 
         mShadowPass.fboAspectRatio = (float)mapWidth / (float)mapHeight;
 
-        // Create the program
-        mShadowPass.pProg = Program::createFromFile(kDepthPassVSFile, kDepthPassFsFile, kDepthPassGsFile, "", "", progDef);
-        mShadowPass.pLightUbo = UniformBuffer::create(mShadowPass.pProg->getActiveProgramVersion().get(), "PerLightCB");
-        mShadowPass.pAlphaUbo = UniformBuffer::create(mShadowPass.pProg->getActiveProgramVersion().get(), "AlphaMapCB");
+        // Create the shadows program
+        GraphicsProgram::SharedPtr pProg = GraphicsProgram::createFromFile(kDepthPassVSFile, kDepthPassFsFile, kDepthPassGsFile, "", "", progDef);
+        mShadowPass.pState = GraphicsState::create();
+        mShadowPass.pState->setProgram(pProg);
+        mShadowPass.pState->setDepthStencilState(nullptr);
+        mShadowPass.pState->setFbo(mShadowPass.pFbo);
+        mShadowPass.pGraphicsVars = GraphicsVars::create(pProg->getActiveVersion()->getReflector());
 
-        mpSceneRenderer = CsmSceneRenderer::create(mpScene, mShadowPass.pAlphaUbo);
+        mpCsmSceneRenderer = CsmSceneRenderer::create(mpScene);
+        mpSceneRenderer = SceneRenderer::create(mpScene);
+        mpSceneRenderer->setObjectCullState(true);
+
     }
 
     void CascadedShadowMaps::setCascadeCount(uint32_t cascadeCount)
@@ -254,57 +284,89 @@ namespace Falcor
         createShadowPassResources(mShadowPass.pFbo->getWidth(), mShadowPass.pFbo->getHeight());
     }
 
-    void CascadedShadowMaps::setUiElements(Gui* pGui, const std::string& uiGroup)
+    void CascadedShadowMaps::renderUi(Gui* pGui, const std::string& uiGroup)
     {
-        Gui::dropdown_list filterMode;
-        filterMode.push_back({(uint32_t)CsmFilterPoint, "Point"});
-        filterMode.push_back({(uint32_t)CsmFilterHwPcf, "2x2 HW PCF"});
-        filterMode.push_back({(uint32_t)CsmFilterFixedPcf, "Fixed-Size PCF"});
-        filterMode.push_back({(uint32_t)CsmFilterVsm, "VSM"});
-        filterMode.push_back({(uint32_t)CsmFilterEvsm2, "EVSM2"});
-        filterMode.push_back({(uint32_t)CsmFilterEvsm4, "EVSM4"});
-        filterMode.push_back({(uint32_t)CsmFilterStochasticPcf, "Stochastic Poisson PSF"});
-        pGui->addDropdownWithCallback("Filter Mode", filterMode, setFilterModeCB, getFilterModeCB, this, uiGroup);
-        pGui->addIntVarWithCallback("Max Kernel Size", &CascadedShadowMaps::setFilterKernelSizeCB, &CascadedShadowMaps::getFilterKernelSizeCB, this, uiGroup);
+        if (pGui->beginGroup(uiGroup.c_str()))
+        {
+            //Filter mode
+            uint32_t filterIndex = static_cast<uint32_t>(mCsmData.filterMode);
+            if (pGui->addDropdown("Filter Mode", kFilterList, filterIndex))
+            {
+                mCsmData.filterMode = filterIndex;
+                createShadowPassResources(mShadowPass.pFbo->getWidth(), mShadowPass.pFbo->getHeight());
+            }
 
-        Gui::dropdown_list partitionMode;
-        partitionMode.push_back({(uint32_t)PartitionMode::Linear, "Linear"});
-        partitionMode.push_back({(uint32_t)PartitionMode::Logarithmic, "Logarithmic"});
-        partitionMode.push_back({(uint32_t)PartitionMode::PSSM, "PSSM"});
-        pGui->addDropdown("Partition Mode", partitionMode, &mControls.partitionMode, uiGroup);
-        pGui->addFloatVar("PSSM Lambda", &mControls.pssmLambda, uiGroup, 0, 1.0f);
+            //Kernal size
+            i32 newKernalSize = mCsmData.sampleKernelSize;
+            if (pGui->addIntVar("Max Kernel Size", newKernalSize))
+            {
+                onSetKernalSize(newKernalSize);
+            }
 
-        // SDSM data
-        const char* sdsmGroup = "SDSM MinMax";
-        pGui->addCheckBox("Enable", &mControls.useMinMaxSdsm, sdsmGroup);
-        pGui->addIntVarWithCallback("Readback Latency", setSdsmReadbackLatency, getSdsmReadbackLatency, this, sdsmGroup, 0);
-        pGui->nestGroups(uiGroup, sdsmGroup);
+            //partition mode
+            uint32_t newPartitionMode = static_cast<uint32_t>(mControls.partitionMode);
+            if (pGui->addDropdown("Partition Mode", kPartitionList, newPartitionMode))
+            {
+                mControls.partitionMode = static_cast<PartitionMode>(newPartitionMode);
+            }
 
-        // Controls
-        const char* manualSettingsGroup = "Manual Settings";
-        pGui->addFloatVar("Min Distance", &mControls.distanceRange.x, manualSettingsGroup, 0, 1);
-        pGui->addFloatVar("Max Distance", &mControls.distanceRange.y, manualSettingsGroup, 0, 1);
-        pGui->addFloatVar("Depth Bias", &mCsmData.depthBias, manualSettingsGroup, 0, FLT_MAX, 0.0001f);
-        pGui->addCheckBox("Depth Clamp", &mControls.depthClamp, manualSettingsGroup);
-        pGui->addCheckBox("Stabilize Cascades", &mControls.stabilizeCascades, manualSettingsGroup);
-        pGui->addCheckBox("Concentric Cascades", &mControls.concentricCascades, manualSettingsGroup);
-        pGui->addFloatVar("Cascade Blend Threshold", &mCsmData.cascadeBlendThreshold, manualSettingsGroup, 0, 1.0f);
-        pGui->nestGroups(uiGroup, manualSettingsGroup);
+            pGui->addFloatVar("PSSM Lambda", mControls.pssmLambda, 0, 1.0f);
 
-        const char* vsmGroup = "VSM/EVSM";
-        Gui::dropdown_list vsmMaxAniso;
-        vsmMaxAniso.push_back({(uint32_t)1, "1"});
-        vsmMaxAniso.push_back({(uint32_t)2, "2"});
-        vsmMaxAniso.push_back({(uint32_t)4, "4"});
-        vsmMaxAniso.push_back({(uint32_t)8, "8"});
-        vsmMaxAniso.push_back({(uint32_t)16, "16"});
-        pGui->addDropdownWithCallback("Max Aniso", vsmMaxAniso, &CascadedShadowMaps::setVsmAnisotropyCB, &CascadedShadowMaps::getVsmAnisotropyCB, this, vsmGroup);
-        pGui->addFloatVar("Light Bleed Reduction", &mCsmData.lightBleedingReduction, vsmGroup, 0, 1.0f, 0.01f);
-        const char* evsmExpGroup = "EVSM Exp";
-        pGui->addFloatVar("Positive", &mCsmData.evsmExponents.x, evsmExpGroup, 0.0f, 42.0f, 0.01f);
-        pGui->addFloatVar("Negative", &mCsmData.evsmExponents.y, evsmExpGroup, 0.0f, 42.0f, 0.01f);
-        pGui->nestGroups(vsmGroup, evsmExpGroup);
-        pGui->nestGroups(uiGroup, vsmGroup);
+            // SDSM data
+            const char* sdsmGroup = "SDSM MinMax";
+            if (pGui->beginGroup(sdsmGroup))
+            {
+                pGui->addCheckBox("Enable", mControls.useMinMaxSdsm);
+                if(pGui->addIntVar("Readback Latency", mSdsmData.readbackLatency))
+                {
+                    createSdsmData(nullptr);
+                }
+                pGui->endGroup();
+            }
+            
+            // Controls
+            const char* manualSettingsGroup = "Manual Settings";
+            if (pGui->beginGroup(manualSettingsGroup))
+            {
+                pGui->addFloatVar("Min Distance", mControls.distanceRange.x, 0, 1);
+                pGui->addFloatVar("Max Distance", mControls.distanceRange.y, 0, 1);
+                pGui->addFloatVar("Depth Bias", mCsmData.depthBias, 0, FLT_MAX, 0.0001f);
+                pGui->addCheckBox("Depth Clamp", mControls.depthClamp);
+                pGui->addCheckBox("Stabilize Cascades", mControls.stabilizeCascades);
+                pGui->addCheckBox("Concentric Cascades", mControls.concentricCascades);
+                pGui->addFloatVar("Cascade Blend Threshold", mCsmData.cascadeBlendThreshold, 0, 1.0f);
+                pGui->endGroup();
+            }
+
+            //VSM/ESM
+            if (mCsmData.filterMode == CsmFilterVsm || mCsmData.filterMode == CsmFilterEvsm2 || mCsmData.filterMode == CsmFilterEvsm4)
+            {
+                const char* vsmGroup = "VSM/EVSM";
+                if (pGui->beginGroup(vsmGroup))
+                {
+
+
+                    uint32_t newMaxAniso = mShadowPass.pVSMTrilinearSampler->getMaxAnisotropy();
+                    pGui->addDropdown("Max Aniso", kMaxAniso, newMaxAniso);
+                    {
+                        createVsmSampleState(newMaxAniso);
+                    }
+
+                    pGui->addFloatVar("Light Bleed Reduction", mCsmData.lightBleedingReduction, 0, 1.0f, 0.01f);
+                    const char* evsmExpGroup = "EVSM Exp";
+                    if (pGui->beginGroup(evsmExpGroup))
+                    {
+                        pGui->addFloatVar("Positive", mCsmData.evsmExponents.x, 0.0f, 42.0f, 0.01f);
+                        pGui->addFloatVar("Negative", mCsmData.evsmExponents.y, 0.0f, 42.0f, 0.01f);
+                        pGui->endGroup();
+                    }
+
+                    pGui->endGroup();
+                }
+            }
+
+            pGui->endGroup();
+        }
     }
 
     void camClipSpaceToWorldSpace(const Camera* pCamera, glm::vec3 viewFrustum[8], glm::vec3& center, float& radius)
@@ -404,8 +466,8 @@ namespace Falcor
         {
             mCsmData.cascadeScale[0] = glm::vec4(1);
             mCsmData.cascadeOffset[0] = glm::vec4(0);
-            mCsmData.cascadeStartDepth[0] = 0;
-            mCsmData.cascadeRange[0] = 1;
+            mCsmData.cascadeRange[0].x = 0;
+            mCsmData.cascadeRange[0].y = 1;
             return;
         }
 
@@ -435,8 +497,8 @@ namespace Falcor
             }
 
             // Calculate the cascade distance in camera-clip space
-            mCsmData.cascadeStartDepth[c] = depthRange * cascadeStart + nearPlane;
-            mCsmData.cascadeRange[c] = (depthRange * cascadeEnd + nearPlane) - mCsmData.cascadeStartDepth[c];
+            mCsmData.cascadeRange[c].x = depthRange * cascadeStart + nearPlane;
+            mCsmData.cascadeRange[c].y = (depthRange * cascadeEnd + nearPlane) - mCsmData.cascadeRange[c].x;
             // Calculate the cascade frustum
             glm::vec3 cascadeFrust[8];
             for(uint32_t i = 0; i < 4; i++)
@@ -454,31 +516,34 @@ namespace Falcor
 
     void CascadedShadowMaps::renderScene(RenderContext* pCtx)
     {
-        mShadowPass.pLightUbo->setBlob(&mCsmData, 0, sizeof(mCsmData));
-        pCtx->setUniformBuffer(0, mShadowPass.pLightUbo);
-        pCtx->setUniformBuffer(1, mShadowPass.pAlphaUbo);
-        mShadowPass.pAlphaUbo->setVariable("evsmExp", mCsmData.evsmExponents);
-        mpSceneRenderer->renderScene(pCtx, mShadowPass.pProg.get(), mpLightCamera.get());
+        mShadowPass.pGraphicsVars->getConstantBuffer(0u)->setBlob(&mCsmData, 0, sizeof(mCsmData));
+        pCtx->pushGraphicsVars(mShadowPass.pGraphicsVars);
+        pCtx->pushGraphicsState(mShadowPass.pState);
+        mpCsmSceneRenderer->renderScene(pCtx, mpLightCamera.get());
+        pCtx->popGraphicsState();
+        pCtx->popGraphicsVars();
     }
 
     void CascadedShadowMaps::executeDepthPass(RenderContext* pCtx, const Camera* pCamera)
     {
         // Must have an FBO attached, otherwise don't know the size of the depth map
-        uint32_t width = pCtx->getFbo()->getWidth();
-        uint32_t height = pCtx->getFbo()->getHeight();
+        uint32_t width = pCtx->getGraphicsState()->getFbo()->getWidth();
+        uint32_t height = pCtx->getGraphicsState()->getFbo()->getHeight();
 
-        if((mDepthPass.pFbo == nullptr) || (mDepthPass.pFbo->getWidth() != width) || (mDepthPass.pFbo->getHeight() != height))
+        Fbo::SharedConstPtr pFbo = mDepthPass.pState->getFbo();
+        if((pFbo == nullptr) || (pFbo->getWidth() != width) || (pFbo->getHeight() != height))
         {
-            mDepthPass.pFbo = FboHelper::createDepthOnly(width, height, mShadowPass.pFbo->getDepthStencilTexture()->getFormat());
+            Fbo::Desc desc;
+            desc.setDepthStencilTarget(mShadowPass.pFbo->getDepthStencilTexture()->getFormat());
+            mDepthPass.pState->setFbo(FboHelper::create2D(width, height, desc));
         }
 
-        mDepthPass.pFbo->clearDepthStencil(1, 0, true, false);
-        pCtx->pushFbo(mDepthPass.pFbo);
-
-        mpSceneRenderer->setObjectCullState(true);
-        mpSceneRenderer->renderScene(pCtx, mDepthPass.pProg.get(), const_cast<Camera*>(pCamera));
-        mpSceneRenderer->setObjectCullState(false);
-        pCtx->popFbo();
+        pCtx->clearFbo(pFbo.get(), glm::vec4(), 1, 0, FboAttachmentType::Depth);
+        pCtx->pushGraphicsState(mDepthPass.pState);
+        pCtx->pushGraphicsVars(mDepthPass.pGraphicsVars);
+        mpSceneRenderer->renderScene(pCtx, const_cast<Camera*>(pCamera));
+        pCtx->popGraphicsVars();
+        pCtx->popGraphicsState();
     }
 
     void CascadedShadowMaps::createVsmSampleState(uint32_t maxAnisotropy)
@@ -488,7 +553,7 @@ namespace Falcor
             const auto pTexture = mShadowPass.pFbo->getColorTexture(0);
             if(pTexture)
             {
-                pTexture->makeNonResident(mShadowPass.pVSMTrilinearSampler.get());
+                pTexture->evict(mShadowPass.pVSMTrilinearSampler.get());
             }
         }
         Sampler::Desc samplerDesc;
@@ -498,13 +563,13 @@ namespace Falcor
         mShadowPass.pVSMTrilinearSampler = Sampler::create(samplerDesc);
     }
 
-    void CascadedShadowMaps::reduceDepthSdsmMinMax(RenderContext* pRenderCtx, const Camera* pCamera, const Texture* pDepthBuffer, glm::vec2& distanceRange)
+    void CascadedShadowMaps::reduceDepthSdsmMinMax(RenderContext* pRenderCtx, const Camera* pCamera, Texture::SharedPtr pDepthBuffer, glm::vec2& distanceRange)
     {
         if(pDepthBuffer == nullptr)
         {
             // Run a shadow pass
             executeDepthPass(pRenderCtx, pCamera);
-            pDepthBuffer = mDepthPass.pFbo->getDepthStencilTexture().get();
+            pDepthBuffer = mDepthPass.pState->getFbo()->getDepthStencilTexture();
         }
 
         createSdsmData(pDepthBuffer);
@@ -517,15 +582,15 @@ namespace Falcor
         distanceRange = (distanceRange - pCamera->getNearPlane()) / (pCamera->getNearPlane() - pCamera->getFarPlane());
         distanceRange = glm::clamp(distanceRange, glm::vec2(0), glm::vec2(1));
 
-        //         if(mControls.stabilizeCascades)
-        //         {
-        //             // Ignore minor changes that can result in swimming
-        //             distanceRange = round(distanceRange * 16.0f) / 16.0f;
-        //             distanceRange.y = max(distanceRange.y, 0.005f);
-        //         }
+        //if (mControls.stabilizeCascades)
+        //{
+        //    // Ignore minor changes that can result in swimming
+        //    distanceRange = round(distanceRange * 16.0f) / 16.0f;
+        //    distanceRange.y = max(distanceRange.y, 0.005f);
+        //}
     }
 
-    void CascadedShadowMaps::calcDistanceRange(RenderContext* pRenderCtx, const Camera* pCamera, const Texture* pDepthBuffer, glm::vec2& distanceRange)
+    void CascadedShadowMaps::calcDistanceRange(RenderContext* pRenderCtx, const Camera* pCamera, Texture::SharedPtr pDepthBuffer, glm::vec2& distanceRange)
     {
         if(mControls.useMinMaxSdsm)
         {
@@ -537,82 +602,76 @@ namespace Falcor
         }
     }
 
-    void CascadedShadowMaps::setup(RenderContext* pRenderCtx, const Camera* pCamera, const Texture* pDepthBuffer)
+    void CascadedShadowMaps::setup(RenderContext* pRenderCtx, const Camera* pCamera, Texture::SharedPtr pDepthBuffer)
     {
         const glm::vec4 clearColor(1);
-        mShadowPass.pFbo->clear(clearColor, 1.0f, 0, FboAttachmentType::All);
+        pRenderCtx->clearFbo(mShadowPass.pFbo.get(), clearColor, 1, 0, FboAttachmentType::Depth);
 
         // Calc the bounds
-        glm::vec2 distanceRange;
+        glm::vec2 distanceRange(0, 0);
         calcDistanceRange(pRenderCtx, pCamera, pDepthBuffer, distanceRange);
 
-        RenderContext::Viewport VP;
+        GraphicsState::Viewport VP;
         VP.originX = 0;
         VP.originY = 0;
         VP.minDepth = 0;
         VP.maxDepth = 1;
         VP.height = mShadowPass.mapSize.x;
         VP.width = mShadowPass.mapSize.y;
-        pRenderCtx->pushViewport(0, VP);
 
-        const auto& pOldRS = pRenderCtx->getRasterizerState();
-        if(mControls.depthClamp)
+        //Set shadow pass state
+        mShadowPass.pState->setViewport(0, VP);
+        if (mControls.depthClamp)
         {
-            pRenderCtx->setRasterizerState(mShadowPass.pDepthClampRS);
+            mShadowPass.pState->setRasterizerState(mShadowPass.pDepthClampRS);
         }
-        pRenderCtx->pushFbo(mShadowPass.pFbo);
-        pRenderCtx->setDepthStencilState(nullptr, 0);
+        else
+        {
+            mShadowPass.pState->setRasterizerState(nullptr);
+        }
 
+        pRenderCtx->pushGraphicsState(mShadowPass.pState);
         partitionCascades(pCamera, distanceRange);
         renderScene(pRenderCtx);
 
         if(mCsmData.filterMode == CsmFilterVsm || mCsmData.filterMode == CsmFilterEvsm2 || mCsmData.filterMode == CsmFilterEvsm4)
         {
-            mpGaussianBlur->execute(pRenderCtx, mShadowPass.pFbo->getColorTexture(0).get(), mShadowPass.pFbo);
+            mpGaussianBlur->execute(pRenderCtx, mShadowPass.pFbo->getColorTexture(0), mShadowPass.pFbo);
             mShadowPass.pFbo->getColorTexture(0)->generateMips();
         }
 
-        pRenderCtx->popViewport(0);
-        pRenderCtx->setRasterizerState(pOldRS);
-        pRenderCtx->popFbo();
+        pRenderCtx->popGraphicsState();
     }
 
-    void CascadedShadowMaps::setDataIntoUniformBuffer(UniformBuffer* pUbo, const std::string& varName)
+    void CascadedShadowMaps::setDataIntoGraphicsVars(GraphicsVars::SharedPtr pVars, const std::string& varName)
     {
-        size_t offset = pUbo->getVariableOffset(varName + ".globalMat");
-        Sampler* pSampler = nullptr;
-        const Texture* pTexture = nullptr;
-        uint64_t* pMap = nullptr;
-
-        switch(mCsmData.filterMode)
+        switch (mCsmData.filterMode)
         {
         case CsmFilterPoint:
-            pSampler = mShadowPass.pPointCmpSampler.get();
-            pTexture = mShadowPass.pFbo->getDepthStencilTexture().get();
-            pMap = &mCsmData.shadowMap;
+            pVars->setTexture(varName + ".shadowMap", mShadowPass.pFbo->getDepthStencilTexture());
+            pVars->setSampler(varName + ".csmCompareSampler", mShadowPass.pPointCmpSampler);
             break;
         case CsmFilterHwPcf:
         case CsmFilterFixedPcf:
         case CsmFilterStochasticPcf:
-            pSampler = mShadowPass.pLinearCmpSampler.get();
-            pTexture = mShadowPass.pFbo->getDepthStencilTexture().get();
-            pMap = &mCsmData.shadowMap;
+            pVars->setTexture(varName + ".shadowMap", mShadowPass.pFbo->getDepthStencilTexture());
+            pVars->setSampler(varName + ".csmCompareSampler", mShadowPass.pLinearCmpSampler);
             break;
         case CsmFilterVsm:
         case CsmFilterEvsm2:
         case CsmFilterEvsm4:
-            pSampler = mShadowPass.pVSMTrilinearSampler.get();
-            pTexture = mShadowPass.pFbo->getColorTexture(0).get();
-            pMap = &mCsmData.momentsMap;
+            pVars->setTexture(varName + ".shadowMap", mShadowPass.pFbo->getColorTexture(0));
+            pVars->setSampler(varName + ".csmSampler", mShadowPass.pVSMTrilinearSampler);
             break;
-        }
+        }    
 
-        *pMap = pTexture->makeResident(pSampler);
         mCsmData.lightDir = glm::normalize(((DirectionalLight*)mpLight.get())->getWorldDirection());
-        pUbo->setBlob(&mCsmData, offset, sizeof(mCsmData));
+        ConstantBuffer::SharedPtr pCB = pVars->getConstantBuffer("PerFrameCB");
+        size_t offset = pCB->getVariableOffset(varName + ".globalMat");
+        pCB->setBlob(&mCsmData, offset, sizeof(mCsmData));
     }
-
-    Texture::SharedConstPtr CascadedShadowMaps::getShadowMap() const
+    
+    Texture::SharedPtr CascadedShadowMaps::getShadowMap() const
     {
         switch(mCsmData.filterMode)
         {
@@ -624,60 +683,21 @@ namespace Falcor
         return mShadowPass.pFbo->getDepthStencilTexture();
     }
 
-    void GUI_CALL CascadedShadowMaps::getSdsmReadbackLatency(void* pData, void* pThis)
+    void CascadedShadowMaps::onSetFilterMode(uint32_t newFilterMode)
     {
-        const CascadedShadowMaps* pCsm = (CascadedShadowMaps*)pThis;
-        *(uint32_t*)pData = pCsm->mSdsmData.readbackLatency;
+        mCsmData.filterMode = newFilterMode;
+        createShadowPassResources(mShadowPass.pFbo->getWidth(), mShadowPass.pFbo->getHeight());
     }
 
-    void GUI_CALL CascadedShadowMaps::setSdsmReadbackLatency(const void* pData, void* pThis)
+    void CascadedShadowMaps::onSetKernalSize(u32 newSize)
     {
-        CascadedShadowMaps* pCsm = (CascadedShadowMaps*)pThis;
-        pCsm->mSdsmData.readbackLatency = *(uint32_t*)pData;
-        pCsm->createSdsmData(nullptr);
-    }
-
-    void GUI_CALL CascadedShadowMaps::getFilterModeCB(void* pData, void* pThis)
-    {
-        CascadedShadowMaps* pCsm = (CascadedShadowMaps*)pThis;
-        *(uint32_t*)pData = pCsm->mCsmData.filterMode;
-    }
-
-    void GUI_CALL CascadedShadowMaps::setFilterModeCB(const void* pData, void* pThis)
-    {
-        CascadedShadowMaps* pCsm = (CascadedShadowMaps*)pThis;
-        pCsm->mCsmData.filterMode = *(uint32_t*)pData;
-        pCsm->createShadowPassResources(pCsm->mShadowPass.pFbo->getWidth(), pCsm->mShadowPass.pFbo->getHeight());
-    }
-
-    void GUI_CALL CascadedShadowMaps::getFilterKernelSizeCB(void* pData, void* pThis)
-    {
-        CascadedShadowMaps* pCsm = (CascadedShadowMaps*)pThis;
-        *(uint32_t*)pData = pCsm->mCsmData.sampleKernelSize;
-    }
-
-    void GUI_CALL CascadedShadowMaps::setFilterKernelSizeCB(const void* pData, void* pThis)
-    {
-        CascadedShadowMaps* pCsm = (CascadedShadowMaps*)pThis;
-        int32_t size = *(int32_t*)pData;
-        int32_t delta = size - pCsm->mCsmData.sampleKernelSize;
+        int32_t delta = newSize - mCsmData.sampleKernelSize;
         // Make sure we always step in 2
         int32_t offset = delta & 1;
         delta = delta + (delta < 0 ? -offset : offset);
-        pCsm->mCsmData.sampleKernelSize += delta;
-        pCsm->mCsmData.sampleKernelSize = min(11, max(1, pCsm->mCsmData.sampleKernelSize));
-        pCsm->createGaussianBlurTech();
+        mCsmData.sampleKernelSize += delta;
+        mCsmData.sampleKernelSize = min(11, max(1, mCsmData.sampleKernelSize));
+        createGaussianBlurTech();
     }
 
-    void GUI_CALL CascadedShadowMaps::setVsmAnisotropyCB(const void* pData, void* pThis)
-    {
-        CascadedShadowMaps* pCsm = (CascadedShadowMaps*)pThis;
-        pCsm->createVsmSampleState(*(uint32_t*)pData);
-    }
-
-    void GUI_CALL CascadedShadowMaps::getVsmAnisotropyCB(void* pData, void* pThis)
-    {
-        CascadedShadowMaps* pCsm = (CascadedShadowMaps*)pThis;
-        *(uint32_t*)pData = pCsm->mShadowPass.pVSMTrilinearSampler->getMaxAnisotropy();
-    }
 }

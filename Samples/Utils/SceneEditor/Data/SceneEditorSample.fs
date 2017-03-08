@@ -25,40 +25,36 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#version 420
-
 #include "ShaderCommon.h"
-#include "shading.h"
+#include "Shading.h"
+#define _COMPILE_DEFAULT_VS
+#include "VertexAttrib.h"
 
-layout(binding = 0) uniform PerFrameCB
+cbuffer PerFrameCB
 {
 #foreach p in _LIGHT_SOURCES
     LightData $(p);
 #endforeach
 
-    vec3 gAmbient;
+    float3 gAmbient;
 };
 
-in vec2 texC;
-in vec3 normalW;
-in vec3 posW;
-out vec4 fragColor;
-in vec3 tangentW;
-in vec3 bitangentW;
-
-void main()
+vec4 main(VS_OUT vOut) : SV_TARGET
 {
     ShadingAttribs shAttr;
-    prepareShadingAttribs(gMaterial, posW, gCam.position, normalW, tangentW, bitangentW, texC, shAttr);
+    prepareShadingAttribs(gMaterial, vOut.posW, gCam.position, vOut.normalW, vOut.bitangentW, vOut.texC, shAttr);
 
     ShadingOutput result;
+    result.finalValue = 0;
+    float4 finalColor = 0;
 
 #foreach p in _LIGHT_SOURCES
     evalMaterial(shAttr, $(p), result, $(_valIndex) == 0);
 #endforeach
 
-    fragColor = vec4(result.finalValue, 1.f);
+    finalColor = vec4(result.finalValue, 1.f);
 
     // add ambient
-    fragColor.rgb += gAmbient * getDiffuseColor(shAttr).rgb;
+    finalColor.rgb += gAmbient * getDiffuseColor(shAttr).rgb;
+    return finalColor;
 }

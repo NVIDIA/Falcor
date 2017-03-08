@@ -27,7 +27,7 @@
 ***************************************************************************/
 #version 420
 #include "hlslglslcommon.h"
-UNIFORM_BUFFER(ToyCB, 0)
+CONSTANT_BUFFER(ToyCB, 0)
 {
     vec2 iResolution;
     float iGlobalTime;

@@ -35,7 +35,7 @@ namespace Falcor
     const Bitmap* genError(const std::string& errMsg, const std::string& filename)
     {
         std::string err = "Error when loading image file " + filename + '\n' + errMsg + '.';
-        Logger::log(Logger::Level::Error, err);
+        logError(err);
         return nullptr;
     }
 
@@ -173,78 +173,99 @@ namespace Falcor
         return FIT_BITMAP;
     }
 
-    void Bitmap::saveImage(const std::string& filename, uint32_t width, uint32_t height, FileFormat format, uint32_t exportFlags, uint32_t bytesPerPixel, bool isTopDown, void* pData)
+    void Bitmap::saveImage(const std::string& filename, uint32_t width, uint32_t height, FileFormat fileFormat, ExportFlags exportFlags, ResourceFormat resourceFormat, bool isTopDown, void* pData)
     {
         if(pData == nullptr)
         {
-            Logger::log(Logger::Level::Error, "Bitmap::saveImage provided no data to save.");
+            logError("Bitmap::saveImage provided no data to save.");
         }
         
-        if((exportFlags&ExportFlags::Uncompressed) != 0 && (exportFlags&ExportFlags::Lossy) != 0)
+        if(is_set(exportFlags, ExportFlags::Uncompressed) && is_set(exportFlags, ExportFlags::Lossy))
         {
-            Logger::log(Logger::Level::Error, "Bitmap::saveImage incompatible flags: lossy cannot be combined with uncompressed.");
+            logError("Bitmap::saveImage incompatible flags: lossy cannot be combined with uncompressed.");
         }
 
         int flags = 0;
         FIBITMAP* pImage;
+        uint32_t bytesPerPixel = getFormatBytesPerBlock(resourceFormat);
 
-        if (format == Bitmap::FileFormat::PngFile)
+        //TODO replace this code for swapping channels. Can't use freeimage masks b/c they only care about 16 bpp images
+        //issue #74 in gitlab
+        if (resourceFormat == ResourceFormat::RGBA8Uint || resourceFormat == ResourceFormat::RGBA8Snorm || resourceFormat == ResourceFormat::RGBA8UnormSrgb)
+        {
+            for (uint32_t a = 0; a < width*height; a++)
+            {
+                uint32_t* pPixel = (uint32_t*)pData;
+                pPixel += a;
+                uint8_t* ch = (uint8_t*)pPixel;
+                std::swap(ch[0], ch[2]);                
+                ch[3] = 0xff;
+            }
+        }
+        if (fileFormat == Bitmap::FileFormat::PngFile)
         {
             pImage = FreeImage_ConvertFromRawBits((BYTE*)pData, width, height, bytesPerPixel * width, bytesPerPixel * 8, FI_RGBA_RED_MASK, FI_RGBA_GREEN_MASK, FI_RGBA_BLUE_MASK, isTopDown);
-            if((exportFlags&ExportFlags::HasAlpha) == 0)
+            if(is_set(exportFlags, ExportFlags::ExportAlpha) == false)
             {
                 auto pTemp = pImage;
                 pImage = FreeImage_ConvertTo24Bits(pImage);
                 FreeImage_Unload(pTemp);
             }
             flags = PNG_Z_BEST_COMPRESSION;
-            if(exportFlags&ExportFlags::Uncompressed)
+
+            if(is_set(exportFlags, ExportFlags::Uncompressed))
             {
                 flags = PNG_Z_NO_COMPRESSION;
             }
-            if(exportFlags&ExportFlags::Lossy)
+
+            if(is_set(exportFlags, ExportFlags::Lossy))
             {
-                Logger::log(Logger::Level::Error, "Bitmap::saveImage: PNG does not support lossy compression mode.");
+                logError("Bitmap::saveImage: PNG does not support lossy compression mode.");
             }
         }
-        else if (format == Bitmap::FileFormat::JpegFile)
+        else if (fileFormat == Bitmap::FileFormat::JpegFile)
         {
             FIBITMAP* pTemp = FreeImage_ConvertFromRawBits((BYTE*)pData, width, height, bytesPerPixel * width, bytesPerPixel * 8, FI_RGBA_RED_MASK, FI_RGBA_GREEN_MASK, FI_RGBA_BLUE_MASK, isTopDown);
             pImage = FreeImage_ConvertTo24Bits(pTemp);
             FreeImage_Unload(pTemp);
-            if((exportFlags&ExportFlags::Lossy) == 0 || (exportFlags&ExportFlags::Uncompressed) != 0)
+            if(is_set(exportFlags, ExportFlags::Lossy) == false || is_set(exportFlags, ExportFlags::Uncompressed))
             {
                 flags = JPEG_QUALITYSUPERB | JPEG_SUBSAMPLING_444;
             }
-            if(exportFlags&ExportFlags::HasAlpha)
+
+            if(is_set(exportFlags, ExportFlags::ExportAlpha))
             {
-                Logger::log(Logger::Level::Error, "Bitmap::saveImage: JPEG does not support alpha channel.");
+                logError("Bitmap::saveImage: JPEG does not support alpha channel.");
             }
         }
-        else if (format == Bitmap::FileFormat::PfmFile)
+        else if (fileFormat == Bitmap::FileFormat::PfmFile)
         {
             if(bytesPerPixel != 16 && bytesPerPixel != 12)
             {
-                Logger::log(Logger::Level::Error, "Bitmap::saveImage supports only 32-bit/channel RGB/RGBA images as HDR source.");
+                logError("Bitmap::saveImage supports only 32-bit/channel RGB/RGBA images as HDR source.");
             }
-            if(exportFlags&ExportFlags::Lossy)
+            if(is_set(exportFlags, ExportFlags::Lossy))
             {
-                Logger::log(Logger::Level::Error, "Bitmap::saveImage: PFM does not support lossy compression mode.");
+                logError("Bitmap::saveImage: PFM does not support lossy compression mode.");
             }
-            if(exportFlags&ExportFlags::HasAlpha)
+            if(is_set(exportFlags, ExportFlags::ExportAlpha))
             {
-                Logger::log(Logger::Level::Error, "Bitmap::saveImage: PFM does not support alpha channel.");
+                logError("Bitmap::saveImage: PFM does not support alpha channel.");
             }
             // Upload the image manually
             pImage = FreeImage_AllocateT(FIT_RGBF, width, height);
             BYTE* head = (BYTE*)pData;
-            for(unsigned y = 0; y < height; y++) {
+            for(unsigned y = 0; y < height; y++) 
+            {
                 float* dstBits = (float*)FreeImage_GetScanLine(pImage, y);
                 if(bytesPerPixel == 12)
+                {
                     memcpy(dstBits, head, bytesPerPixel * width);
+                }
                 else
                 {
-                    for(unsigned x = 0; x < width; x++) {
+                    for(unsigned x = 0; x < width; x++) 
+                    {
                         dstBits[x*3 + 0] = (((float*)head)[x*4 + 0]);
                         dstBits[x*3 + 1] = (((float*)head)[x*4 + 1]);
                         dstBits[x*3 + 2] = (((float*)head)[x*4 + 2]);
@@ -253,18 +274,18 @@ namespace Falcor
                 head += bytesPerPixel * width;
             }
         }
-        else if (format == Bitmap::FileFormat::ExrFile)
+        else if (fileFormat == Bitmap::FileFormat::ExrFile)
         {
             if(bytesPerPixel != 16 && bytesPerPixel != 12)
             {
-                Logger::log(Logger::Level::Error, "Bitmap::saveImage supports only 32-bit/channel RGB/RGBA for EXR");
+                logError("Bitmap::saveImage supports only 32-bit/channel RGB/RGBA for EXR");
             }
 
-            const bool hasAlpha = (exportFlags&ExportFlags::HasAlpha) != 0;
+            const bool hasAlpha = is_set(exportFlags, ExportFlags::ExportAlpha);
 
             if(hasAlpha && bytesPerPixel != 16)
             {
-                Logger::log(Logger::Level::Error, "Bitmap::saveImage 32-bit/channel format has no alpha channel for EXR");
+                logError("Bitmap::saveImage 32-bit/channel format has no alpha channel for EXR");
             }
 
             // Upload the image manually
@@ -280,7 +301,8 @@ namespace Falcor
                 }
                 else
                 {
-                    for(unsigned x = 0; x < width; x++) {
+                    for(unsigned x = 0; x < width; x++) 
+                    {
                         dstBits[x * 3 + 0] = (((float*)head)[x * 4 + 0]);
                         dstBits[x * 3 + 1] = (((float*)head)[x * 4 + 1]);
                         dstBits[x * 3 + 2] = (((float*)head)[x * 4 + 2]);
@@ -290,17 +312,17 @@ namespace Falcor
             }
 
             flags = 0;
-            if(exportFlags&ExportFlags::Uncompressed)
+            if(is_set(exportFlags, ExportFlags::Uncompressed))
             {
                 flags |= EXR_NONE | EXR_FLOAT;
             }
-            else if(exportFlags&ExportFlags::Lossy)
+            else if(is_set(exportFlags, ExportFlags::Lossy))
             {
                 flags |= EXR_B44 | EXR_ZIP;
             }
         }
 
-        FreeImage_Save(toFreeImageFormat(format), pImage, filename.c_str(), flags);
+        FreeImage_Save(toFreeImageFormat(fileFormat), pImage, filename.c_str(), flags);
         FreeImage_Unload(pImage);
     }
 }

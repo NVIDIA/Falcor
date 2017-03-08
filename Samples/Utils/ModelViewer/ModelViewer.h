@@ -27,27 +27,26 @@
 ***************************************************************************/
 #pragma once
 #include "Falcor.h"
+#include "SampleTest.h"
+#include "Utils/Picking/Picking.h"
 
 using namespace Falcor;
 
-class ModelViewer : public Sample
+class ModelViewer : public Sample, public SampleTest
 {
-public:    
+public:
     void onLoad() override;
     void onFrameRender() override;
     void onShutdown() override;
     void onResizeSwapChain() override;
     bool onKeyEvent(const KeyboardEvent& keyEvent) override;
     bool onMouseEvent(const MouseEvent& mouseEvent) override;
+    void onGuiRender() override;
 
 private:
-    static void GUI_CALL loadModelCallback(void* pUserData);
-    static void GUI_CALL saveModelCallback(void* pUserData);
-    static void GUI_CALL deleteCulledMeshesCallback(void* pUserData);
-
-    void initUI();
     void loadModel();
     void saveModel();
+    void deleteCulledMeshes();
 
     void loadModelFromFile(const std::string& Filename);
     void resetCamera();
@@ -59,13 +58,13 @@ private:
     FirstPersonCameraController mFirstPersonCameraController;
     SixDoFCameraController m6DoFCameraController;
 
+    bool mUseTriLinearFiltering = true;
     Sampler::SharedPtr mpPointSampler = nullptr;
     Sampler::SharedPtr mpLinearSampler = nullptr;
 
-    Program::SharedPtr mpProgram = nullptr;
-    UniformBuffer::SharedPtr mpPerFrameCB = nullptr;
-
-    bool mUseTriLinearFiltering = true;
+    GraphicsProgram::SharedPtr mpProgram = nullptr;
+    GraphicsVars::SharedPtr mpProgramVars = nullptr;
+    GraphicsState::SharedPtr mpGraphicsState = nullptr;
 
     enum
     {
@@ -80,7 +79,6 @@ private:
 
     bool mDrawWireframe = false;
     bool mAnimate = false;
-    bool mCompressTextures = false;
     bool mGenerateTangentSpace = true;
     glm::vec3 mAmbientIntensity = glm::vec3(0.1f, 0.1f, 0.1f);
 
@@ -96,10 +94,6 @@ private:
 
     DirectionalLight::SharedPtr mpDirLight;
     PointLight::SharedPtr mpPointLight;
-
-    // GUI callbacks
-    static void GUI_CALL SetActiveAnimationCB(const void* pVal, void* pUserData);
-    static void GUI_CALL GetActiveAnimationCB(void* pVal, void* pUserData);
 
     std::string mModelString;
 

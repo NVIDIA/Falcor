@@ -61,7 +61,7 @@ namespace Falcor
         static const char* kFrameTime = "time";
 
         static const char* kLights = "lights";
-        static const char* kLightType = "type";
+        static const char* kType = "type";
         static const char* kDirLight = "dir_light";
         static const char* kPointLight = "point_light";
         static const char* kLightIntensity = "intensity";
@@ -72,14 +72,24 @@ namespace Falcor
 
         static const char* kPaths = "paths";
         static const char* kActivePath = "active_path";
+        static const char* kAttachedObjects = "attached_objects";
+        static const char* kModelInstance = "model_instance";
+        static const char* kLight = "light";
+        static const char* kCamera = "camera";
+
+        static const char* kMaterialOverrides = "material_overrides";
+        static const char* kMeshID = "mesh_id";
+        static const char* kMaterialID = "material_id";
 
         static const char* kUserDefined = "user_defined";
 
         static const char* kMaterials = "materials";
-        static const char* kMaterialID     = "id";
+        static const char* kID = "id";
+        static const char* kMaterialDoubleSided = "double_sided";
         static const char* kMaterialAlpha = "alpha";
         static const char* kMaterialNormal = "normal";
         static const char* kMaterialHeight = "height";
+        static const char* kMaterialAO = "ao";
         static const char* kMaterialTexture = "texture";
         static const char* kMaterialColor = "color";
         static const char* kMaterialLayers = "layers";

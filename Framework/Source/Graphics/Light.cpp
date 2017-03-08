@@ -28,18 +28,28 @@
 #include "Framework.h"
 #include "light.h"
 #include "Utils/Gui.h"
-#include "Core/UniformBuffer.h"
-#include "Core/Buffer.h"
+#include "API/ConstantBuffer.h"
+#include "API/Buffer.h"
 #define _USE_MATH_DEFINES
 #include <math.h>
 #include "Data/VertexAttrib.h"
 #include "Graphics/Model/Model.h"
-using glm::ivec3;
+
 
 namespace Falcor
 {
+    bool checkOffset(size_t cbOffset, size_t cppOffset, const char* field)
+    {
+        if (cbOffset != cppOffset)
+        {
+            logError("Light::LightData::" + std::string(field) + " CB offset mismatch. CB offset is " + std::to_string(cbOffset) + ", C++ data offset is " + std::to_string(cppOffset));
+            return false;
+        }
+        return true;
+    }
+
 #if _LOG_ENABLED
-#define check_offset(_a) assert(pBuffer->getVariableOffset(varName + "." + #_a) == (offsetof(LightData, _a) + offset))
+#define check_offset(_a) {static bool b = true; if(b) {assert(checkOffset(pBuffer->getVariableOffset(varName + "." + #_a) - offset, offsetof(LightData, _a), #_a));} b = false;}
 #else
 #define check_offset(_a)
 #endif
@@ -52,130 +62,127 @@ namespace Falcor
         sCount++;
     }
 
-	void Light::setIntoUniformBuffer(UniformBuffer* pBuffer, const std::string& varName)
-	{
-		static const size_t dataSize = sizeof(LightData);
-		static_assert(dataSize % sizeof(float) * 4 == 0, "LightData size should be a multiple of 16");
+    void Light::setIntoConstantBuffer(ConstantBuffer* pBuffer, const std::string& varName)
+    {
+        static const size_t dataSize = sizeof(LightData) - sizeof(MaterialData);
+        static_assert(dataSize % sizeof(float) * 4 == 0, "LightData size should be a multiple of 16");
+        static_assert(sizeof(LightData) - sizeof(MaterialData) == offsetof(LightData, material), "'material' must be the last field in LightData");
 
-		size_t offset = pBuffer->getVariableOffset(varName + ".worldPos");
-		if (offset == UniformBuffer::kInvalidUniformOffset)
-		{
-			Logger::log(Logger::Level::Warning, "AreaLight::setIntoUniformBuffer() - variable \"" + varName + "\"not found in uniform buffer\n");
-			return;
-		}
+        size_t offset = pBuffer->getVariableOffset(varName + ".worldPos");
+        if (offset == ConstantBuffer::kInvalidOffset)
+        {
+            logWarning("AreaLight::setIntoConstantBuffer() - variable \"" + varName + "\"not found in constant buffer\n");
+            return;
+        }
 
-		check_offset(worldDir);
-		check_offset(intensity);
-		check_offset(aabbMin);
-		check_offset(aabbMax);
-		check_offset(transMat);
-        check_offset(material.desc.layers[0].type);
-        check_offset(material.values.layers[0].albedo.texture.ptr);
-        check_offset(material.values.ambientMap.texture.ptr);
-        check_offset(material.values.id);
-		check_offset(numIndices);
-		assert(offset + dataSize <= pBuffer->getBuffer()->getSize());
+        check_offset(worldDir);
+        check_offset(intensity);
+        check_offset(aabbMin);
+        check_offset(aabbMax);
+        check_offset(transMat);
+        check_offset(numIndices);
+        assert(offset + dataSize <= pBuffer->getSize());
 
-		pBuffer->setBlob(&mData, offset, dataSize);
-	}
+        // Set everything except for the material
+        pBuffer->setBlob(&mData, offset, dataSize);
+        if (mData.type == LightArea)
+        {
+            assert(0);
+        }
+    }
 
     void Light::resetGlobalIdCounter()
     {
         sCount = 0;
     }
 
-    void GUI_CALL Light::GetColorCB(void* pVal, void* pUserData)
+    glm::vec3 Light::getColorForUI()
     {
-        Light* light = (Light*)pUserData;
-
-        if ((light->mUiLightIntensityColor * light->mUiLightIntensityScale) != light->mData.intensity)
+        if ((mUiLightIntensityColor * mUiLightIntensityScale) != mData.intensity)
         {
-            float mag = max(light->mData.intensity.x, max(light->mData.intensity.y, light->mData.intensity.z));
+            float mag = max(mData.intensity.x, max(mData.intensity.y, mData.intensity.z));
             if (mag <= 1.f)
             {
-                light->mUiLightIntensityColor = light->mData.intensity;
-                light->mUiLightIntensityScale = 1.0f;
+                mUiLightIntensityColor = mData.intensity;
+                mUiLightIntensityScale = 1.0f;
             }
             else
             {
-                light->mUiLightIntensityColor = light->mData.intensity / mag;
-                light->mUiLightIntensityScale = mag;
+                mUiLightIntensityColor = mData.intensity / mag;
+                mUiLightIntensityScale = mag;
             }
         }
 
-        *(glm::vec3*)pVal = light->mUiLightIntensityColor;
+        return mUiLightIntensityColor;
     }
 
-    void GUI_CALL Light::SetColorCB(const void* pVal, void* pUserData)
+    void updateAreaLightIntensity(LightData& light)
     {
-        Light* light = (Light*)pUserData; 
-        glm::vec3 color = *(glm::vec3*)pVal;
-
-        light->mUiLightIntensityColor = color;
-        light->mData.intensity = (light->mUiLightIntensityColor * light->mUiLightIntensityScale);
-
         // Update material
-        if(light->mData.type == LightArea)
+        if (light.type == LightArea)
         {
-            for(int i=0;i<MatMaxLayers;++i)
+            for (int i = 0; i < MatMaxLayers; ++i)
             {
-                if(light->mData.material.desc.layers[i].type == MatEmissive)
+                if (light.material.desc.layers[i].type == MatEmissive)
                 {
-                    light->mData.material.values.layers[i].albedo.constantColor = v4(light->mData.intensity, 0.f);
+                    light.material.values.layers[i].albedo = v4(light.intensity, 0.f);
                 }
             }
         }
     }
 
-
-    void GUI_CALL Light::GetIntensityCB(void* pVal, void* pUserData)
+    void Light::setColorFromUI(const glm::vec3& uiColor)
     {
-        Light* light = (Light*)pUserData; 
+        mUiLightIntensityColor = uiColor;
+        mData.intensity = (mUiLightIntensityColor * mUiLightIntensityScale);
+        updateAreaLightIntensity(mData);
+    }
 
-        if ((light->mUiLightIntensityColor * light->mUiLightIntensityScale) != light->mData.intensity)
+    float Light::getIntensityForUI()
+    {
+        if ((mUiLightIntensityColor * mUiLightIntensityScale) != mData.intensity)
         {
-            float mag = max(light->mData.intensity.x, max(light->mData.intensity.y, light->mData.intensity.z));
+            float mag = max(mData.intensity.x, max(mData.intensity.y, mData.intensity.z));
             if (mag <= 1.f)
             {
-                light->mUiLightIntensityColor = light->mData.intensity;
-                light->mUiLightIntensityScale = 1.0f;
+                mUiLightIntensityColor = mData.intensity;
+                mUiLightIntensityScale = 1.0f;
             }
             else
             {
-                light->mUiLightIntensityColor = light->mData.intensity / mag;
-                light->mUiLightIntensityScale = mag;
+                mUiLightIntensityColor = mData.intensity / mag;
+                mUiLightIntensityScale = mag;
             }
         }
 
-        *(float*)pVal = light->mUiLightIntensityScale;
+        return mUiLightIntensityScale;
     }
 
-    void GUI_CALL Light::SetIntensityCB(const void* pVal, void* pUserData)
+    void Light::setIntensityFromUI(float intensity)
     {
-        Light* light = (Light*)pUserData;
-        float intensityScale = *(float*)pVal;
+        mUiLightIntensityScale = intensity;
+        mData.intensity = (mUiLightIntensityColor * mUiLightIntensityScale);
+        updateAreaLightIntensity(mData);
+    }
 
-        light->mUiLightIntensityScale = intensityScale;
-        light->mData.intensity = (light->mUiLightIntensityColor * light->mUiLightIntensityScale);
-
-        // Update material
-        if(light->mData.type == LightArea)
+    void Light::renderUI(Gui* pGui)
+    {
+        glm::vec3 color = getColorForUI();
+        if (pGui->addRgbColor("Color", color))
         {
-            for(int i = 0;i<MatMaxLayers;++i)
-            {
-                if(light->mData.material.desc.layers[i].type == MatEmissive)
-                {
-                    light->mData.material.values.layers[i].albedo.constantColor = v4(light->mData.intensity, 0.f);
-                }
-            }
+        }
+        float intensity = getIntensityForUI();
+        if (pGui->addFloatVar("Intensity", intensity))
+        {
+            setIntensityFromUI(intensity);
         }
     }
 
-	DirectionalLight::DirectionalLight() : mSceneRadius(-1.0f)
-	{
-		mData.type = LightDirectional;
-		mName = "dirLight" + std::to_string(mIndex);
-	}
+	DirectionalLight::DirectionalLight() : mDistance(-1.0f)
+    {
+        mData.type = LightDirectional;
+        mName = "dirLight" + std::to_string(mIndex);
+    }
 
     DirectionalLight::SharedPtr DirectionalLight::create()
     {
@@ -185,50 +192,39 @@ namespace Falcor
 
     DirectionalLight::~DirectionalLight() = default;
 
-    void DirectionalLight::setUiElements(Gui* pGui, const std::string& uiGroup)
+    void DirectionalLight::renderUI(Gui* pGui)
     {
-        pGui->addDir3FVarWithCallback("Direction", &DirectionalLight::setDirectionCB, &DirectionalLight::getDirectionCB, this, uiGroup);
-        pGui->addRgbColorWithCallback("Color",     SetColorCB,     GetColorCB,     this, uiGroup);
-        pGui->addFloatVarWithCallback("Intensity", SetIntensityCB, GetIntensityCB, this, uiGroup, 0.0f, 1e15f, 0.1f);
+        if (pGui->addDirectionWidget("Direction", mData.worldDir))
+        {
+            setWorldDirection(mData.worldDir);
+        }
+        Light::renderUI(pGui);
     }
 
     void DirectionalLight::setWorldDirection(const glm::vec3& dir)
     {
         mData.worldDir = normalize(dir);
-        mData.worldPos = mSceneCenter - mData.worldDir * mSceneRadius; // Move light's position sufficiently far away
+        mData.worldPos = mCenter - mData.worldDir * mDistance; // Move light's position sufficiently far away
     }
 
     void DirectionalLight::setWorldParams(const glm::vec3& center, float radius)
     {
-        mSceneRadius = radius;
-        mSceneCenter = center;
-        mData.worldPos = mSceneCenter - mData.worldDir * mSceneRadius; // Move light's position sufficiently far away
+        mDistance = radius;
+        mCenter = center;
+        mData.worldPos = mCenter - mData.worldDir * mDistance; // Move light's position sufficiently far away
     }
 
     void DirectionalLight::prepareGPUData()
-	{		
-	}
-
-	void DirectionalLight::unloadGPUData()
-	{		
-	}
-
-    void DirectionalLight::move(const glm::vec3& position, const glm::vec3& target, const glm::vec3& up)
-	{
-		Logger::log(Logger::Level::Error, "DirectionalLight::move() is not used and thus not implemented for now.");
-	}
-
-
-    void GUI_CALL DirectionalLight::setDirectionCB(const void* pVal, void* pUserData)
     {
-        DirectionalLight* pLight = (DirectionalLight*)pUserData;
-        pLight->setWorldDirection(*(glm::vec3*)pVal);
     }
 
-    void GUI_CALL DirectionalLight::getDirectionCB(void* pVal, void* pUserData)
+    void DirectionalLight::unloadGPUData()
     {
-        const DirectionalLight* pLight = (DirectionalLight*)pUserData;
-        *(glm::vec3*)pVal = pLight->mData.worldDir;
+    }
+
+    void DirectionalLight::move(const glm::vec3& position, const glm::vec3& target, const glm::vec3& up)
+    {
+        logError("DirectionalLight::move() is not used and thus not implemented for now.");
     }
 
     PointLight::SharedPtr PointLight::create()
@@ -237,98 +233,77 @@ namespace Falcor
         return SharedPtr(pLight);
     }
 
-	PointLight::PointLight()
-	{
-		mData.type = LightPoint;
-		mName = "pointLight" + std::to_string(mIndex);
-	}
+    PointLight::PointLight()
+    {
+        mData.type = LightPoint;
+        mName = "pointLight" + std::to_string(mIndex);
+    }
 
     PointLight::~PointLight() = default;
 
-	void GUI_CALL PointLight::setOpeningAngleCB(const void* pVal, void* pUserData)
-	{
-		PointLight* pLight = (PointLight*)pUserData;
-		pLight->setOpeningAngle(*(float*)pVal);
-	}
-
-	void GUI_CALL PointLight::getOpeningAngleCB(void* pVal, void* pUserData)
-	{
-		const PointLight* pLight = (PointLight*)pUserData;
-		*(float*)pVal = pLight->getOpeningAngle();
-	}
-
-	void GUI_CALL PointLight::setPenumbraAngleCB(const void* pVal, void* pUserData)
-	{
-		PointLight* pLight = (PointLight*)pUserData;
-        pLight->setPenumbraAngle(*(float*)pVal);
-	}
-
-	void GUI_CALL PointLight::getPenumbraAngleCB(void* pVal, void* pUserData)
-	{
-		const PointLight* pLight = (PointLight*)pUserData;
-		*(float*)pVal = pLight->getPenumbraAngle();
-	}
-
-    void PointLight::setUiElements(Gui* pGui, const std::string& uiGroup)
+    void PointLight::renderUI(Gui* pGui)
     {
-        std::string posGroup = "worldPos" + std::to_string(mIndex);
-        pGui->addFloatVar("x", &mData.worldPos.x, posGroup, -FLT_MAX, FLT_MAX);
-        pGui->addFloatVar("y", &mData.worldPos.y, posGroup, -FLT_MAX, FLT_MAX);
-        pGui->addFloatVar("z", &mData.worldPos.z, posGroup, -FLT_MAX, FLT_MAX);
-        pGui->nestGroups(uiGroup, posGroup);
-        pGui->setVarTitle(posGroup, "World Position");
+        pGui->addFloat3Var("World Position", mData.worldPos, -FLT_MAX, FLT_MAX);
+        pGui->addDirectionWidget("Direction", mData.worldDir);
 
-		pGui->addDir3FVar("Direction", &mData.worldDir, uiGroup);
-		pGui->addFloatVarWithCallback("Opening Angle", &PointLight::setOpeningAngleCB, &PointLight::getOpeningAngleCB, this, uiGroup, 0.f, (float)M_PI);
-		pGui->addFloatVarWithCallback("Penumbra Width", &PointLight::setPenumbraAngleCB, &PointLight::getPenumbraAngleCB, this, uiGroup, 0.f, (float)M_PI);
-        pGui->addRgbColorWithCallback("Color", SetColorCB, GetColorCB, this, uiGroup);
-        pGui->addFloatVarWithCallback("Intensity", SetIntensityCB, GetIntensityCB, this, uiGroup, 0.0f, 1000000.0f, 0.1f);
-	}
+        if (pGui->addFloatVar("Opening Angle", mData.openingAngle, 0.f, (float)M_PI))
+        {
+            setOpeningAngle(mData.openingAngle);
+        }
+        if (pGui->addFloatVar("Penumbra Width", mData.penumbraAngle, 0.f, (float)M_PI))
+        {
+            setPenumbraAngle(mData.penumbraAngle);
+        }
+        Light::renderUI(pGui);
+    }
 
     void PointLight::setOpeningAngle(float openingAngle)
-	{
-		openingAngle = glm::clamp(openingAngle, 0.f, (float)M_PI);
-		mData.openingAngle = openingAngle;
-		/* Prepare an auxiliary cosine of the opening angle to quickly check whether we're within the cone of a spot light */
-		mData.cosOpeningAngle = cos(openingAngle);
-	}
+    {
+        openingAngle = glm::clamp(openingAngle, 0.f, (float)M_PI);
+        mData.openingAngle = openingAngle;
+        /* Prepare an auxiliary cosine of the opening angle to quickly check whether we're within the cone of a spot light */
+        mData.cosOpeningAngle = cos(openingAngle);
+    }
 
-	void PointLight::prepareGPUData()
-	{
-	}
+    void PointLight::prepareGPUData()
+    {
+    }
 
-	void PointLight::unloadGPUData()
-	{
-	}
+    void PointLight::unloadGPUData()
+    {
+    }
 
     void PointLight::move(const glm::vec3& position, const glm::vec3& target, const glm::vec3& up)
-	{
-		mData.worldPos = position;
+    {
+        mData.worldPos = position;
         mData.worldDir = target - position;
-	}
+    }
 
-	AreaLight::SharedPtr AreaLight::create()
-	{
-		AreaLight* pLight = new AreaLight;
-		return SharedPtr(pLight);
-	}
+    AreaLight::SharedPtr AreaLight::create()
+    {
+        AreaLight* pLight = new AreaLight;
+        return SharedPtr(pLight);
+    }
 
-	AreaLight::AreaLight()
-	{
-		mData.type = LightArea;
-		mName = std::string("areaLight") + std::to_string(mIndex);
-	}
+    AreaLight::AreaLight()
+    {
+        mData.type = LightArea;
+        mName = std::string("areaLight") + std::to_string(mIndex);
+    }
 
-	AreaLight::~AreaLight() = default;
+    AreaLight::~AreaLight() = default;
 
-	void AreaLight::setUiElements(Gui* pGui, const std::string& uiGroup)
-	{
+    void AreaLight::renderUI(Gui* pGui)
+    {
+		logError("AreaLight::renderUI() is not used and thus not implemented for now.");
+        return;
+        // DISABLED_FOR_D3D12
+#if 0        
         std::string posGroup = "worldPos" + std::to_string(mIndex);
         
         if(mMeshData.pMesh)
         {
             mat4& mx = (mat4&)mMeshData.pMesh->getInstanceMatrices()[mMeshData.instanceId];
-
             pGui->addFloatVar("x", &mx[3].x, posGroup, -FLT_MAX, FLT_MAX);
             pGui->addFloatVar("y", &mx[3].y, posGroup, -FLT_MAX, FLT_MAX);
             pGui->addFloatVar("z", &mx[3].z, posGroup, -FLT_MAX, FLT_MAX);
@@ -339,139 +314,147 @@ namespace Falcor
         //pGui->addDir3FVar("Direction", &mData.worldDir, uiGroup);
         pGui->addRgbColorWithCallback("Color" + std::to_string(mIndex), SetColorCB, GetColorCB, this, uiGroup);
         pGui->addFloatVarWithCallback("Intensity" + std::to_string(mIndex), SetIntensityCB, GetIntensityCB, this, uiGroup, 0.0f, 1000000.0f, 0.1f);
-	}
+#endif
+    }
 
-	void AreaLight::setIntoUniformBuffer(UniformBuffer* pBuffer, const std::string& varName)
-	{
-		// Upload data to GPU
-		prepareGPUData();
+    void AreaLight::setIntoConstantBuffer(ConstantBuffer* pBuffer, const std::string& varName)
+    {
+        // Upload data to GPU
+        prepareGPUData();
 
-		// Call base class method;
-		Light::setIntoUniformBuffer(pBuffer, varName);
-	}
+        // Call base class method;
+        Light::setIntoConstantBuffer(pBuffer, varName);
+    }
 
-	void AreaLight::prepareGPUData()
-	{
-		// Set OGL buffer pointers for indices, vertices, and texcoord
-		if (mData.indexPtr.ptr == 0ull)
-		{
-			mData.indexPtr.ptr = mIndexBuf->makeResident();
-			mData.vertexPtr.ptr = mVertexBuf->makeResident();
-			if (mTexCoordBuf)
-				mData.texCoordPtr.ptr = mTexCoordBuf->makeResident();
-			// Store the mesh CDF buffer id
-			mData.meshCDFPtr.ptr = mMeshCDFBuf->makeResident();
-		}
-		mData.numIndices = uint32_t(mIndexBuf->getSize() / sizeof(glm::ivec3));
+    void AreaLight::prepareGPUData()
+    {
+        // DISABLED_FOR_D3D12
+        // Set OGL buffer pointers for indices, vertices, and texcoord
+// 		if (mData.indexPtr.ptr == 0ull)
+// 		{
+// 			mData.indexPtr.ptr = mIndexBuf->makeResident();
+// 			mData.vertexPtr.ptr = mVertexBuf->makeResident();
+// 			if (mTexCoordBuf)
+// 				mData.texCoordPtr.ptr = mTexCoordBuf->makeResident();
+// 			// Store the mesh CDF buffer id
+// 			mData.meshCDFPtr.ptr = mMeshCDFBuf->makeResident();
+// 		}
+// 		mData.numIndices = uint32_t(mIndexBuf->getSize() / sizeof(glm::ivec3));
+// 
+// 		// Get the surface area of the geometry mesh
+// 		mData.surfaceArea = mSurfaceArea;
+// 
+//		mData.tangent = mTangent;
+//		mData.bitangent = mBitangent;
+//
+// 		// Fetch the mesh instance transformation
+// 		mData.transMat = mMeshData.pMesh->getInstanceMatrix(mMeshData.instanceId);
+// 
+// 		// Copy the material data
+// 		const Material::SharedPtr& pMaterial = mMeshData.pMesh->getMaterial();
+// 		if (pMaterial)
+// 			memcpy(&mData.material, &pMaterial->getData(), sizeof(MaterialData));
+    }
 
-		// Get the surface area of the geometry mesh
-		mData.surfaceArea = mSurfaceArea;
+    void AreaLight::unloadGPUData()
+    {
+        // Unload GPU data by calling evict()
+        mIndexBuf->evict();
+        mVertexBuf->evict();
+        if (mTexCoordBuf)
+            mTexCoordBuf->evict();
+        mMeshCDFBuf->evict();
+    }
 
-		mData.tangent = mTangent;
-		mData.bitangent = mBitangent;
+    void AreaLight::setMeshData(const Model::MeshInstance::SharedPtr& pMeshInstance)
+{
+		if (pMeshInstance && pMeshInstance != mpMeshInstance)
+        {
+            const auto& pMesh = pMeshInstance->getObject();
+            assert(pMesh != nullptr);
 
-		// Fetch the mesh instance transformation
-		mData.transMat = mMeshData.pMesh->getInstanceMatrix(mMeshData.instanceId);
+            mpMeshInstance = pMeshInstance;
 
-		// Copy the material data
-		const Material::SharedPtr& pMaterial = mMeshData.pMesh->getMaterial();
-		if (pMaterial)
-			memcpy(&mData.material, &pMaterial->getData(), sizeof(MaterialData));
-	}
+            const auto& vao = pMesh->getVao();
 
-	void AreaLight::unloadGPUData()
-	{
-	    // Unload GPU data by calling makeNonResident()
-		mIndexBuf->makeNonResident();
-		mVertexBuf->makeNonResident();
-		if (mTexCoordBuf)
-			mTexCoordBuf->makeNonResident();
-		mMeshCDFBuf->makeNonResident();
-	}
-
-	void AreaLight::setMeshData(const Mesh::SharedPtr& pMesh, uint32_t instanceId)
-	{
-		if (pMesh && (mMeshData.pMesh != pMesh || mMeshData.instanceId != instanceId))
-		{
-			mMeshData.pMesh = pMesh;
-			mMeshData.instanceId = instanceId;
-
-			auto& vao = mMeshData.pMesh->getVao();
-		
             setIndexBuffer(vao->getIndexBuffer());
 
-			int32_t posIdx = vao->getElementIndexByLocation(VERTEX_POSITION_LOC).vbIndex;
-			assert(posIdx != Vao::ElementDesc::kInvalidIndex);
+            int32_t posIdx = vao->getElementIndexByLocation(VERTEX_POSITION_LOC).vbIndex;
+            assert(posIdx != Vao::ElementDesc::kInvalidIndex);
             setPositionsBuffer(vao->getVertexBuffer(posIdx));
 
-			const int32_t uvIdx = vao->getElementIndexByLocation(VERTEX_TEXCOORD_LOC).vbIndex;
-			bool hasUv = uvIdx != Vao::ElementDesc::kInvalidIndex;
-			if (hasUv)
-			{
+            const int32_t uvIdx = vao->getElementIndexByLocation(VERTEX_TEXCOORD_LOC).vbIndex;
+            bool hasUv = uvIdx != Vao::ElementDesc::kInvalidIndex;
+            if (hasUv)
+            {
                 setTexCoordBuffer(vao->getVertexBuffer(VERTEX_TEXCOORD_LOC));
-			}
+            }
 
-			// Compute surface area of the mesh and generate probability
-			// densities for importance sampling a triangle mesh
-			computeSurfaceArea();
+            // Compute surface area of the mesh and generate probability
+            // densities for importance sampling a triangle mesh
+            computeSurfaceArea();
 
             // Check if this mesh has a material
             const Material::SharedPtr& pMaterial = pMesh->getMaterial();
-            if(pMaterial)
+            if (pMaterial)
             {
-                for(uint32_t layerId = 0; layerId < pMaterial->getNumActiveLayers(); ++layerId)
+                for (uint32_t layerId = 0; layerId < pMaterial->getNumLayers(); ++layerId)
                 {
-                    if(pMaterial->getLayerDesc(layerId)->type == MatEmissive)
+                    const Material::Layer l = pMaterial->getLayer(layerId);
+                    if (l.type == Material::Layer::Type::Emissive)
                     {
-                        mData.intensity = v3(pMaterial->getLayerValues(layerId)->albedo.constantColor);
+                        mData.intensity = vec3(l.albedo);
                         break;
                     }
                 }
             }
-		}
-	}
+        }
+    }
 
-	void AreaLight::computeSurfaceArea()
-	{
-		if(mVertexBuf && mIndexBuf)
+    void AreaLight::computeSurfaceArea()
+    {
+        if (mpMeshInstance && mVertexBuf && mIndexBuf)
         {
-			// Read data from the buffers
-			std::vector<ivec3> indices(mMeshData.pMesh->getPrimitiveCount());
-			mIndexBuf->readData(indices.data(), 0, mIndexBuf->getSize());
-			std::vector<vec3> vertices(mVertexBuf->getSize() / sizeof(vec3));
-			mVertexBuf->readData(vertices.data(), 0, mVertexBuf->getSize());
+            const auto& pMesh = mpMeshInstance->getObject();
+            assert(pMesh != nullptr);
 
-			if (mMeshData.pMesh->getPrimitiveCount() != 2 || mMeshData.pMesh->getVertexCount() != 4)			
+            // Read data from the buffers
+            std::vector<glm::ivec3> indices(pMesh->getPrimitiveCount());
+            mIndexBuf->readData(indices.data(), 0, mIndexBuf->getSize());
+            std::vector<vec3> vertices(mVertexBuf->getSize() / sizeof(vec3));
+            mVertexBuf->readData(vertices.data(), 0, mVertexBuf->getSize());
+
+			if (mpMeshInstance->getObject()->getPrimitiveCount() != 2 || mpMeshInstance->getObject()->getVertexCount() != 4)
             {
-                Logger::log(Logger::Level::Warning, "Only support sampling of rectangular light sources made of 2 triangles.");
+                logWarning("Only support sampling of rectangular light sources made of 2 triangles.");
                 return;
             }
 
-			// Calculate surface area of the mesh
-			mSurfaceArea = 0.f;
-			mMeshCDF.push_back(0.f);
-			for (uint32_t i = 0; i < mMeshData.pMesh->getPrimitiveCount(); ++i)
-			{
-				ivec3 pId = indices[i];
-				const vec3 p0(vertices[pId.x]), p1(vertices[pId.y]),  p2(vertices[pId.z]);
+            // Calculate surface area of the mesh
+            mSurfaceArea = 0.f;
+            mMeshCDF.push_back(0.f);
+            for (uint32_t i = 0; i < pMesh->getPrimitiveCount(); ++i)
+            {
+                glm::ivec3 pId = indices[i];
+                const vec3 p0(vertices[pId.x]), p1(vertices[pId.y]), p2(vertices[pId.z]);
 
-				mSurfaceArea += 0.5f * glm::length(glm::cross(p1 - p0, p2 - p0));
+                mSurfaceArea += 0.5f * glm::length(glm::cross(p1 - p0, p2 - p0));
 
-				// Add an entry using surface area measure as the discrete probability
-				mMeshCDF.push_back(mMeshCDF[mMeshCDF.size() - 1] + mSurfaceArea);
-			}
+                // Add an entry using surface area measure as the discrete probability
+                mMeshCDF.push_back(mMeshCDF[mMeshCDF.size() - 1] + mSurfaceArea);
+            }
 
-			// Normalize the probability densities
-			if (mSurfaceArea > 0.f)
-			{
-				float invSurfaceArea = 1.f / mSurfaceArea;
-				for (uint32_t i = 1; i < mMeshCDF.size(); ++i)
-				{
-					mMeshCDF[i] *= invSurfaceArea;
-				}
-						
-				mMeshCDF[mMeshCDF.size() - 1] = 1.f;
-			}
+            // Normalize the probability densities
+            if (mSurfaceArea > 0.f)
+            {
+                float invSurfaceArea = 1.f / mSurfaceArea;
+                for (uint32_t i = 1; i < mMeshCDF.size(); ++i)
+                {
+                    mMeshCDF[i] *= invSurfaceArea;
+                }
+
+                mMeshCDF[mMeshCDF.size() - 1] = 1.f;
+            }
 
 			// Calculate basis tangent vectors and their lengths
 			ivec3 pId = indices[0];
@@ -482,90 +465,84 @@ namespace Falcor
 
             // Create a CDF buffer
             mMeshCDFBuf.reset();
-            mMeshCDFBuf = Buffer::create(sizeof(mMeshCDF[0])*mMeshCDF.size(), Buffer::BindFlags::Vertex, Buffer::AccessFlags::None, mMeshCDF.data());
+            mMeshCDFBuf = Buffer::create(sizeof(mMeshCDF[0])*mMeshCDF.size(), Buffer::BindFlags::Vertex, Buffer::CpuAccess::None, mMeshCDF.data());
 
-			// Set the world position and world direction of this light
-			if (!vertices.empty() && !indices.empty())
-			{
-				glm::vec3 boxMin = vertices[0];
-				glm::vec3 boxMax = vertices[0];
-				for (uint32_t id = 1; id < vertices.size(); ++id)
-				{
-					boxMin = glm::min(boxMin, vertices[id]);
-					boxMax = glm::max(boxMax, vertices[id]);
-				}
+            // Set the world position and world direction of this light
+            if (!vertices.empty() && !indices.empty())
+            {
+                glm::vec3 boxMin = vertices[0];
+                glm::vec3 boxMax = vertices[0];
+                for (uint32_t id = 1; id < vertices.size(); ++id)
+                {
+                    boxMin = glm::min(boxMin, vertices[id]);
+                    boxMax = glm::max(boxMax, vertices[id]);
+                }
 
-				mData.worldPos = BoundingBox::fromMinMax(boxMin, boxMax).center;
+                mData.worldPos = BoundingBox::fromMinMax(boxMin, boxMax).center;
 
-				// This holds only for planar light sources
-				const glm::vec3& p0 = vertices[indices[0].x];
-				const glm::vec3& p1 = vertices[indices[0].y];
-				const glm::vec3& p2 = vertices[indices[0].z];
+                // This holds only for planar light sources
+                const glm::vec3& p0 = vertices[indices[0].x];
+                const glm::vec3& p1 = vertices[indices[0].y];
+                const glm::vec3& p2 = vertices[indices[0].z];
 
                 // Take the normal of the first triangle as a light normal
-				mData.worldDir = normalize(cross(p1 - p0, p2 - p0));
+                mData.worldDir = normalize(cross(p1 - p0, p2 - p0));
 
                 // Save the axis-aligned bounding box
                 mData.aabbMin = boxMin;
                 mData.aabbMax = boxMax;
-			}
-		}
-	}
+            }
+        }
+    }
 
-	Light::SharedPtr createAreaLight(const Mesh::SharedPtr& pMesh, uint32_t instanceId)
-	{
-		// Create an area light
-		AreaLight::SharedPtr pAreaLight = AreaLight::create();
-		if (pAreaLight)
-		{
-			// Set the geometry mesh
-			pAreaLight->setMeshData(pMesh, instanceId);
-		}
+    Light::SharedPtr AreaLight::createAreaLight(const Model::MeshInstance::SharedPtr& pMeshInstance)
+    {
+        // Create an area light
+        AreaLight::SharedPtr pAreaLight = AreaLight::create();
+        if (pAreaLight)
+        {
+            // Set the geometry mesh
+            pAreaLight->setMeshData(pMeshInstance);
+        }
 
-		return pAreaLight;
-	}
+        return pAreaLight;
+    }
 
-	void createAreaLightsForModel(const Model* pModel, std::vector<Light::SharedPtr>& areaLights)
-	{
-		assert(pModel);
+    void AreaLight::createAreaLightsForModel(const Model::SharedPtr& pModel, std::vector<Light::SharedPtr>& areaLights)
+    {
+        assert(pModel);
 
-		// Get meshes for this model
-		for (uint32_t meshId = 0; meshId < pModel->getMeshCount(); ++meshId)
-		{
-			const Mesh::SharedPtr& pMesh = pModel->getMesh(meshId);
+        // Get meshes for this model
+        for (uint32_t meshId = 0; meshId < pModel->getMeshCount(); ++meshId)
+        {
+            const Mesh::SharedPtr& pMesh = pModel->getMesh(meshId);
 
-			// Obtain mesh instances for this mesh
-			for (uint32_t meshInstanceId = 0; meshInstanceId < pMesh->getInstanceCount(); ++meshInstanceId)
-			{
-				// Check if this mesh has a material
-				const Material::SharedPtr& pMaterial = pMesh->getMaterial();
-				if (pMaterial)
-				{
-					size_t numLayers = pMaterial->getNumActiveLayers();
-					const MaterialLayerDesc* pLayerDesc = nullptr;
+            // Obtain mesh instances for this mesh
+            for (uint32_t instanceId = 0; instanceId < pModel->getMeshInstanceCount(meshId); ++instanceId)
+            {
+                // Check if this mesh has a material
+                const Material::SharedPtr& pMaterial = pMesh->getMaterial();
+                if (pMaterial)
+                {
+                    // Check for emissive layers
+                    const uint32_t numLayers = pMaterial->getNumLayers();
+                    for (uint32_t layerId = 0; layerId < numLayers; ++layerId)
+                    {
+                        const Material::Layer l = pMaterial->getLayer(layerId);
+                        if (l.type == Material::Layer::Type::Emissive)
+                        {
+                            // Create an area light for an emissive material
+                            areaLights.push_back(createAreaLight(pModel->getMeshInstance(meshId, instanceId)));
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+    }
 
-					for (uint32_t layerId = 0; layerId < numLayers; ++layerId)
-					{
-						pLayerDesc = pMaterial->getLayerDesc(layerId);
-						if (pLayerDesc->type == MatEmissive)
-						{
-							// Create an area light for an emissive material
-							areaLights.push_back(createAreaLight(pMesh, meshInstanceId));
-							break;
-						}
-					}
-				}
-			}			
-		}			
-	}
-
-	void AreaLight::move(const glm::vec3& position, const glm::vec3& target, const glm::vec3& up)
-	{
-		if(mMeshData.pMesh)
-		{
-			mat4 mx = mMeshData.pMesh->getInstanceMatrix(mMeshData.instanceId);
-			mx[3] = v4(position, 1.f);
-			mMeshData.pMesh->setInstanceMatrix(mMeshData.instanceId, mx);
-		}
-	}
+    void AreaLight::move(const glm::vec3& position, const glm::vec3& target, const glm::vec3& up)
+    {
+        mpMeshInstance->move(position, target, up);
+    }
 }

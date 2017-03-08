@@ -1,7 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <ClCompile Include="Sample.cpp" />
     <ClCompile Include="Graphics\Model\AnimationController.cpp">
       <Filter>Graphics\Model</Filter>
     </ClCompile>
@@ -18,9 +17,6 @@
       <Filter>Graphics</Filter>
     </ClCompile>
     <ClCompile Include="Graphics\Light.cpp">
-      <Filter>Graphics</Filter>
-    </ClCompile>
-    <ClCompile Include="Graphics\Program.cpp">
       <Filter>Graphics</Filter>
     </ClCompile>
     <ClCompile Include="Utils\Bitmap.cpp">
@@ -68,9 +64,6 @@
     <ClCompile Include="Graphics\Scene\SceneUtils.cpp">
       <Filter>Graphics\Scene</Filter>
     </ClCompile>
-    <ClCompile Include="Graphics\Scene\SceneEditor.cpp">
-      <Filter>Graphics\Scene</Filter>
-    </ClCompile>
     <ClCompile Include="Graphics\Camera\CameraController.cpp">
       <Filter>Graphics\Camera</Filter>
     </ClCompile>
@@ -89,146 +82,8 @@
     <ClCompile Include="Graphics\Paths\PathEditor.cpp">
       <Filter>Graphics\Paths</Filter>
     </ClCompile>
-    <ClCompile Include="Core\OpenGL\BlendStateGL.cpp">
-      <Filter>Core\OpenGL</Filter>
-    </ClCompile>
-    <ClCompile Include="Core\OpenGL\BufferGL.cpp">
-      <Filter>Core\OpenGL</Filter>
-    </ClCompile>
-    <ClCompile Include="Core\OpenGL\DepthStencilStateGL.cpp">
-      <Filter>Core\OpenGL</Filter>
-    </ClCompile>
-    <ClCompile Include="Core\OpenGL\FboGL.cpp">
-      <Filter>Core\OpenGL</Filter>
-    </ClCompile>
-    <ClCompile Include="Core\OpenGL\FormatsGL.cpp">
-      <Filter>Core\OpenGL</Filter>
-    </ClCompile>
-    <ClCompile Include="Core\OpenGL\GpuTimerGL.cpp">
-      <Filter>Core\OpenGL</Filter>
-    </ClCompile>
-    <ClCompile Include="Core\OpenGL\RasterizerStateGL.cpp">
-      <Filter>Core\OpenGL</Filter>
-    </ClCompile>
-    <ClCompile Include="Core\OpenGL\RenderContextGL.cpp">
-      <Filter>Core\OpenGL</Filter>
-    </ClCompile>
-    <ClCompile Include="Core\OpenGL\SamplerGL.cpp">
-      <Filter>Core\OpenGL</Filter>
-    </ClCompile>
-    <ClCompile Include="Core\OpenGL\ScreenCaptureGL.cpp">
-      <Filter>Core\OpenGL</Filter>
-    </ClCompile>
-    <ClCompile Include="Core\OpenGL\ShaderStorageBufferGL.cpp">
-      <Filter>Core\OpenGL</Filter>
-    </ClCompile>
-    <ClCompile Include="Core\OpenGL\TextureGL.cpp">
-      <Filter>Core\OpenGL</Filter>
-    </ClCompile>
-    <ClCompile Include="Core\OpenGL\UniformBufferGL.cpp">
-      <Filter>Core\OpenGL</Filter>
-    </ClCompile>
-    <ClCompile Include="Core\OpenGL\VaoGL.cpp">
-      <Filter>Core\OpenGL</Filter>
-    </ClCompile>
-    <ClCompile Include="Core\OpenGL\WindowGL.cpp">
-      <Filter>Core\OpenGL</Filter>
-    </ClCompile>
-    <ClCompile Include="Core\DX11\BlendStateDX11.cpp">
-      <Filter>Core\DX11</Filter>
-    </ClCompile>
-    <ClCompile Include="Core\DX11\BufferDX11.cpp">
-      <Filter>Core\DX11</Filter>
-    </ClCompile>
-    <ClCompile Include="Core\DX11\DepthStencilStateDX11.cpp">
-      <Filter>Core\DX11</Filter>
-    </ClCompile>
-    <ClCompile Include="Core\DX11\FboDX11.cpp">
-      <Filter>Core\DX11</Filter>
-    </ClCompile>
-    <ClCompile Include="Core\DX11\FormatsDX11.cpp">
-      <Filter>Core\DX11</Filter>
-    </ClCompile>
-    <ClCompile Include="Core\DX11\GpuTimerDX11.cpp">
-      <Filter>Core\DX11</Filter>
-    </ClCompile>
-    <ClCompile Include="Core\DX11\RasterizerStateDX11.cpp">
-      <Filter>Core\DX11</Filter>
-    </ClCompile>
-    <ClCompile Include="Core\DX11\RenderContextDX11.cpp">
-      <Filter>Core\DX11</Filter>
-    </ClCompile>
-    <ClCompile Include="Core\DX11\SamplerDX11.cpp">
-      <Filter>Core\DX11</Filter>
-    </ClCompile>
-    <ClCompile Include="Core\DX11\ScreenCaptureDX11.cpp">
-      <Filter>Core\DX11</Filter>
-    </ClCompile>
-    <ClCompile Include="Core\DX11\ShaderStorageBufferDX11.cpp">
-      <Filter>Core\DX11</Filter>
-    </ClCompile>
-    <ClCompile Include="Core\DX11\TextureDX11.cpp">
-      <Filter>Core\DX11</Filter>
-    </ClCompile>
-    <ClCompile Include="Core\DX11\UniformBufferDX11.cpp">
-      <Filter>Core\DX11</Filter>
-    </ClCompile>
-    <ClCompile Include="Core\DX11\VaoDX11.cpp">
-      <Filter>Core\DX11</Filter>
-    </ClCompile>
-    <ClCompile Include="Core\DX11\WindowDX11.cpp">
-      <Filter>Core\DX11</Filter>
-    </ClCompile>
-    <ClCompile Include="Core\Formats.cpp">
-      <Filter>Core</Filter>
-    </ClCompile>
-    <ClCompile Include="Core\FBO.cpp">
-      <Filter>Core</Filter>
-    </ClCompile>
-    <ClCompile Include="Core\DX11\ShaderDX11.cpp">
-      <Filter>Core\DX11</Filter>
-    </ClCompile>
-    <ClCompile Include="Core\DX11\ProgramVersionDX11.cpp">
-      <Filter>Core\DX11</Filter>
-    </ClCompile>
-    <ClCompile Include="Core\OpenGL\ProgramVersionGL.cpp">
-      <Filter>Core\OpenGL</Filter>
-    </ClCompile>
-    <ClCompile Include="Core\OpenGL\ShaderGL.cpp">
-      <Filter>Core\OpenGL</Filter>
-    </ClCompile>
-    <ClCompile Include="Core\ProgramVersion.cpp">
-      <Filter>Core</Filter>
-    </ClCompile>
-    <ClCompile Include="Core\BlendState.cpp">
-      <Filter>Core</Filter>
-    </ClCompile>
-    <ClCompile Include="Core\DepthStencilState.cpp">
-      <Filter>Core</Filter>
-    </ClCompile>
-    <ClCompile Include="Core\Sampler.cpp">
-      <Filter>Core</Filter>
-    </ClCompile>
-    <ClCompile Include="Core\RenderContext.cpp">
-      <Filter>Core</Filter>
-    </ClCompile>
     <ClCompile Include="Utils\ShaderUtils.cpp">
       <Filter>Utils</Filter>
-    </ClCompile>
-    <ClCompile Include="Core\DX11\ShaderReflectionDX11.cpp">
-      <Filter>Core\DX11</Filter>
-    </ClCompile>
-    <ClCompile Include="Core\OpenGL\ShaderReflectionGL.cpp">
-      <Filter>Core\OpenGL</Filter>
-    </ClCompile>
-    <ClCompile Include="Core\Texture.cpp">
-      <Filter>Core</Filter>
-    </ClCompile>
-    <ClCompile Include="Core\UniformBuffer.cpp">
-      <Filter>Core</Filter>
-    </ClCompile>
-    <ClCompile Include="Core\VAO.cpp">
-      <Filter>Core</Filter>
     </ClCompile>
     <ClCompile Include="Graphics\Material\Material.cpp">
       <Filter>Graphics\Material</Filter>
@@ -244,9 +99,6 @@
     </ClCompile>
     <ClCompile Include="Utils\Video\VideoEncoderUI.cpp">
       <Filter>Utils\Video</Filter>
-    </ClCompile>
-    <ClCompile Include="Core\Window.cpp">
-      <Filter>Core</Filter>
     </ClCompile>
     <ClCompile Include="Graphics\FboHelper.cpp">
       <Filter>Graphics</Filter>
@@ -284,7 +136,6 @@
     <ClCompile Include="Utils\MonitorInfo.cpp">
       <Filter>Utils</Filter>
     </ClCompile>
-    <ClCompile Include="VR\VrFbo.cpp" />
     <ClCompile Include="VR\OpenVR\VROverlay.cpp">
       <Filter>VR\OpenVR</Filter>
     </ClCompile>
@@ -312,473 +163,316 @@
     <ClCompile Include="Graphics\Model\Loaders\BinaryImage.cpp">
       <Filter>Graphics\Model\Loaders</Filter>
     </ClCompile>
+    <ClCompile Include="Graphics\Program.cpp">
+      <Filter>Graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="VR\VrFbo.cpp">
+      <Filter>VR</Filter>
+    </ClCompile>
+    <ClCompile Include="API\ProgramVars.cpp">
+      <Filter>API</Filter>
+    </ClCompile>
+    <ClCompile Include="API\ProgramVersion.cpp">
+      <Filter>API</Filter>
+    </ClCompile>
+    <ClCompile Include="API\RenderContext.cpp">
+      <Filter>API</Filter>
+    </ClCompile>
+    <ClCompile Include="API\Sampler.cpp">
+      <Filter>API</Filter>
+    </ClCompile>
+    <ClCompile Include="API\Texture.cpp">
+      <Filter>API</Filter>
+    </ClCompile>
+    <ClCompile Include="API\VAO.cpp">
+      <Filter>API</Filter>
+    </ClCompile>
+    <ClCompile Include="API\BlendState.cpp">
+      <Filter>API</Filter>
+    </ClCompile>
+    <ClCompile Include="API\DepthStencilState.cpp">
+      <Filter>API</Filter>
+    </ClCompile>
+    <ClCompile Include="API\FBO.cpp">
+      <Filter>API</Filter>
+    </ClCompile>
+    <ClCompile Include="API\Formats.cpp">
+      <Filter>API</Filter>
+    </ClCompile>
+    <ClCompile Include="API\ProgramReflection.cpp">
+      <Filter>API</Filter>
+    </ClCompile>
+    <ClCompile Include="API\LowLevel\RootSignature.cpp">
+      <Filter>API\LowLevel</Filter>
+    </ClCompile>
+    <ClCompile Include="API\OpenGL\GLBlendState.cpp">
+      <Filter>API\OpenGL</Filter>
+    </ClCompile>
+    <ClCompile Include="API\OpenGL\GLBuffer.cpp">
+      <Filter>API\OpenGL</Filter>
+    </ClCompile>
+    <ClCompile Include="API\OpenGL\GLDepthStencilState.cpp">
+      <Filter>API\OpenGL</Filter>
+    </ClCompile>
+    <ClCompile Include="API\OpenGL\GLFbo.cpp">
+      <Filter>API\OpenGL</Filter>
+    </ClCompile>
+    <ClCompile Include="API\OpenGL\GLFormats.cpp">
+      <Filter>API\OpenGL</Filter>
+    </ClCompile>
+    <ClCompile Include="API\OpenGL\GLGpuTimer.cpp">
+      <Filter>API\OpenGL</Filter>
+    </ClCompile>
+    <ClCompile Include="API\OpenGL\GLProgramReflection.cpp">
+      <Filter>API\OpenGL</Filter>
+    </ClCompile>
+    <ClCompile Include="API\OpenGL\GLProgramVersion.cpp">
+      <Filter>API\OpenGL</Filter>
+    </ClCompile>
+    <ClCompile Include="API\OpenGL\GLRasterizerState.cpp">
+      <Filter>API\OpenGL</Filter>
+    </ClCompile>
+    <ClCompile Include="API\OpenGL\GLRenderContext.cpp">
+      <Filter>API\OpenGL</Filter>
+    </ClCompile>
+    <ClCompile Include="API\OpenGL\GLSampler.cpp">
+      <Filter>API\OpenGL</Filter>
+    </ClCompile>
+    <ClCompile Include="API\OpenGL\GLScreenCapture.cpp">
+      <Filter>API\OpenGL</Filter>
+    </ClCompile>
+    <ClCompile Include="API\OpenGL\GLShader.cpp">
+      <Filter>API\OpenGL</Filter>
+    </ClCompile>
+    <ClCompile Include="API\OpenGL\GLTexture.cpp">
+      <Filter>API\OpenGL</Filter>
+    </ClCompile>
+    <ClCompile Include="API\OpenGL\GLUniformBuffer.cpp">
+      <Filter>API\OpenGL</Filter>
+    </ClCompile>
+    <ClCompile Include="API\OpenGL\GLVao.cpp">
+      <Filter>API\OpenGL</Filter>
+    </ClCompile>
+    <ClCompile Include="API\OpenGL\GLWindow.cpp">
+      <Filter>API\OpenGL</Filter>
+    </ClCompile>
+    <ClCompile Include="API\D3D\D3DFormats.cpp">
+      <Filter>API\D3D</Filter>
+    </ClCompile>
+    <ClCompile Include="API\D3D\D3DProgramReflection.cpp">
+      <Filter>API\D3D</Filter>
+    </ClCompile>
+    <ClCompile Include="API\D3D\D3DProgramVersion.cpp">
+      <Filter>API\D3D</Filter>
+    </ClCompile>
+    <ClCompile Include="API\D3D\D3DShader.cpp">
+      <Filter>API\D3D</Filter>
+    </ClCompile>
+    <ClCompile Include="API\D3D\D3DState.cpp">
+      <Filter>API\D3D</Filter>
+    </ClCompile>
+    <ClCompile Include="API\D3D\D3DWindow.cpp">
+      <Filter>API\D3D</Filter>
+    </ClCompile>
+    <ClCompile Include="API\D3D\D3D11\D3D11BlendState.cpp">
+      <Filter>API\D3D\D3D11</Filter>
+    </ClCompile>
+    <ClCompile Include="API\D3D\D3D11\D3D11Buffer.cpp">
+      <Filter>API\D3D\D3D11</Filter>
+    </ClCompile>
+    <ClCompile Include="API\D3D\D3D11\D3D11DepthStencilState.cpp">
+      <Filter>API\D3D\D3D11</Filter>
+    </ClCompile>
+    <ClCompile Include="API\D3D\D3D11\D3D11Fbo.cpp">
+      <Filter>API\D3D\D3D11</Filter>
+    </ClCompile>
+    <ClCompile Include="API\D3D\D3D11\D3D11GpuTimer.cpp">
+      <Filter>API\D3D\D3D11</Filter>
+    </ClCompile>
+    <ClCompile Include="API\D3D\D3D11\D3D11ProgramVersion.cpp">
+      <Filter>API\D3D\D3D11</Filter>
+    </ClCompile>
+    <ClCompile Include="API\D3D\D3D11\D3D11RasterizerState.cpp">
+      <Filter>API\D3D\D3D11</Filter>
+    </ClCompile>
+    <ClCompile Include="API\D3D\D3D11\D3D11RenderContext.cpp">
+      <Filter>API\D3D\D3D11</Filter>
+    </ClCompile>
+    <ClCompile Include="API\D3D\D3D11\D3D11Sampler.cpp">
+      <Filter>API\D3D\D3D11</Filter>
+    </ClCompile>
+    <ClCompile Include="API\D3D\D3D11\D3D11ScreenCapture.cpp">
+      <Filter>API\D3D\D3D11</Filter>
+    </ClCompile>
+    <ClCompile Include="API\D3D\D3D11\D3D11Shader.cpp">
+      <Filter>API\D3D\D3D11</Filter>
+    </ClCompile>
+    <ClCompile Include="API\D3D\D3D11\D3D11ShaderReflection.cpp">
+      <Filter>API\D3D\D3D11</Filter>
+    </ClCompile>
+    <ClCompile Include="API\D3D\D3D11\D3D11Texture.cpp">
+      <Filter>API\D3D\D3D11</Filter>
+    </ClCompile>
+    <ClCompile Include="API\D3D\D3D11\D3D11UniformBuffer.cpp">
+      <Filter>API\D3D\D3D11</Filter>
+    </ClCompile>
+    <ClCompile Include="API\D3D\D3D11\D3D11Vao.cpp">
+      <Filter>API\D3D\D3D11</Filter>
+    </ClCompile>
+    <ClCompile Include="API\D3D\D3D11\D3D11Window.cpp">
+      <Filter>API\D3D\D3D11</Filter>
+    </ClCompile>
+    <ClCompile Include="API\D3D\D3D12\D3D12ProgramVars.cpp">
+      <Filter>API\D3D\D3D12</Filter>
+    </ClCompile>
+    <ClCompile Include="API\D3D\D3D12\D3D12RasterizerState.cpp">
+      <Filter>API\D3D\D3D12</Filter>
+    </ClCompile>
+    <ClCompile Include="API\D3D\D3D12\D3D12RenderContext.cpp">
+      <Filter>API\D3D\D3D12</Filter>
+    </ClCompile>
+    <ClCompile Include="API\D3D\D3D12\D3D12Sampler.cpp">
+      <Filter>API\D3D\D3D12</Filter>
+    </ClCompile>
+    <ClCompile Include="API\D3D\D3D12\D3D12Texture.cpp">
+      <Filter>API\D3D\D3D12</Filter>
+    </ClCompile>
+    <ClCompile Include="API\D3D\D3D12\D3D12UniformBuffer.cpp">
+      <Filter>API\D3D\D3D12</Filter>
+    </ClCompile>
+    <ClCompile Include="API\D3D\D3D12\D3D12Vao.cpp">
+      <Filter>API\D3D\D3D12</Filter>
+    </ClCompile>
+    <ClCompile Include="API\D3D\D3D12\D3D12BlendState.cpp">
+      <Filter>API\D3D\D3D12</Filter>
+    </ClCompile>
+    <ClCompile Include="API\D3D\D3D12\D3D12Buffer.cpp">
+      <Filter>API\D3D\D3D12</Filter>
+    </ClCompile>
+    <ClCompile Include="API\D3D\D3D12\D3D12DepthStencilState.cpp">
+      <Filter>API\D3D\D3D12</Filter>
+    </ClCompile>
+    <ClCompile Include="API\D3D\D3D12\D3D12Device.cpp">
+      <Filter>API\D3D\D3D12</Filter>
+    </ClCompile>
+    <ClCompile Include="API\D3D\D3D12\D3D12Fbo.cpp">
+      <Filter>API\D3D\D3D12</Filter>
+    </ClCompile>
+    <ClCompile Include="API\D3D\D3D12\D3D12GpuTimer.cpp">
+      <Filter>API\D3D\D3D12</Filter>
+    </ClCompile>
+    <ClCompile Include="API\D3D\D3D12\LowLevel\D3D12DescriptorHeap.cpp">
+      <Filter>API\D3D\D3D12\LowLevel</Filter>
+    </ClCompile>
+    <ClCompile Include="API\D3D\D3D12\LowLevel\D3D12GpuFence.cpp">
+      <Filter>API\D3D\D3D12\LowLevel</Filter>
+    </ClCompile>
+    <ClCompile Include="API\D3D\D3D12\LowLevel\D3D12RootSignature.cpp">
+      <Filter>API\D3D\D3D12\LowLevel</Filter>
+    </ClCompile>
+    <ClCompile Include="API\LowLevel\DescriptorTable.cpp">
+      <Filter>API\LowLevel</Filter>
+    </ClCompile>
+    <ClCompile Include="API\ConstantBuffer.cpp">
+      <Filter>API</Filter>
+    </ClCompile>
+    <ClCompile Include="API\D3D\D3D12\LowLevel\D3D12ResourceAllocator.cpp">
+      <Filter>API\D3D\D3D12\LowLevel</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Externals\dear_imgui\imgui.cpp">
+      <Filter>Externals\dear_imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Externals\dear_imgui\imgui_demo.cpp">
+      <Filter>Externals\dear_imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Externals\dear_imgui\imgui_draw.cpp">
+      <Filter>Externals\dear_imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Externals\GLM\glm\detail\glm.cpp">
+      <Filter>Externals\GLM\detail</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Externals\GLM\glm\detail\dummy.cpp">
+      <Filter>Externals\GLM\detail</Filter>
+    </ClCompile>
+    <ClCompile Include="Sample.cpp" />
+    <ClCompile Include="API\Resource.cpp">
+      <Filter>API</Filter>
+    </ClCompile>
+    <ClCompile Include="API\D3D\D3D12\D3D12Resource.cpp">
+      <Filter>API\D3D\D3D12</Filter>
+    </ClCompile>
+    <ClCompile Include="API\D3D\D3D12\D3D12ResourceViews.cpp">
+      <Filter>API\D3D\D3D12</Filter>
+    </ClCompile>
+    <ClCompile Include="API\TypedBuffer.cpp">
+      <Filter>API</Filter>
+    </ClCompile>
+    <ClCompile Include="API\StructuredBuffer.cpp">
+      <Filter>API</Filter>
+    </ClCompile>
+    <ClCompile Include="API\VariablesBuffer.cpp">
+      <Filter>API</Filter>
+    </ClCompile>
+    <ClCompile Include="Graphics\GraphicsProgram.cpp">
+      <Filter>Graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="Graphics\ComputeProgram.cpp">
+      <Filter>Graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="API\ComputeStateObject.cpp">
+      <Filter>API</Filter>
+    </ClCompile>
+    <ClCompile Include="API\D3D\D3D12\D3D12ComputeStateObject.cpp">
+      <Filter>API\D3D\D3D12</Filter>
+    </ClCompile>
+    <ClCompile Include="Graphics\ComputeState.cpp">
+      <Filter>Graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="Graphics\GraphicsState.cpp">
+      <Filter>Graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="API\GraphicsStateObject.cpp">
+      <Filter>API</Filter>
+    </ClCompile>
+    <ClCompile Include="API\D3D\D3D12\D3D12GraphicsStateObject.cpp">
+      <Filter>API\D3D\D3D12</Filter>
+    </ClCompile>
+    <ClCompile Include="API\D3D\D3D12\D3D12CopyContext.cpp">
+      <Filter>API\D3D\D3D12</Filter>
+    </ClCompile>
+    <ClCompile Include="API\D3D\D3D12\D3D12ComputeContext.cpp">
+      <Filter>API\D3D\D3D12</Filter>
+    </ClCompile>
+    <ClCompile Include="API\D3D\D3D12\LowLevel\D3D12LowLevelContextData.cpp">
+      <Filter>API\D3D\D3D12\LowLevel</Filter>
+    </ClCompile>
+    <ClCompile Include="Graphics\Model\Loaders\ModelImporter.cpp">
+      <Filter>Graphics\Model\Loaders</Filter>
+    </ClCompile>
+    <ClCompile Include="ArgList.cpp">
+      <Filter>Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="SampleTest.cpp" />
+    <ClCompile Include="Utils\Picking\Picking.cpp">
+      <Filter>Utils\Picking</Filter>
+    </ClCompile>
+    <ClCompile Include="Graphics\Scene\Editor\SceneEditor.cpp">
+      <Filter>Graphics\Scene\Editor</Filter>
+    </ClCompile>
+    <ClCompile Include="Graphics\Scene\Editor\Gizmo.cpp">
+      <Filter>Graphics\Scene\Editor</Filter>
+    </ClCompile>
+    <ClCompile Include="Graphics\Scene\Editor\SceneEditorRenderer.cpp">
+      <Filter>Graphics\Scene\Editor</Filter>
+    </ClCompile>
+    <ClCompile Include="Utils\DebugDrawer.cpp">
+      <Filter>Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="Graphics\Material\MaterialHistory.cpp">
+      <Filter>Graphics\Material</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Sample.h" />
-    <ClInclude Include="..\Externals\AntTweakBar\include\AntTweakBar.h">
-      <Filter>Externals\AntTweakBar</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Externals\GLFW\include\glfw3.h">
-      <Filter>Externals\GLFW</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Externals\GLFW\include\glfw3native.h">
-      <Filter>Externals\GLFW</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Externals\GLM\glm\mat4x4.hpp">
-      <Filter>Externals\GLM</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Externals\GLM\glm\matrix.hpp">
-      <Filter>Externals\GLM</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Externals\GLM\glm\packing.hpp">
-      <Filter>Externals\GLM</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Externals\GLM\glm\trigonometric.hpp">
-      <Filter>Externals\GLM</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Externals\GLM\glm\vec2.hpp">
-      <Filter>Externals\GLM</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Externals\GLM\glm\vec3.hpp">
-      <Filter>Externals\GLM</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Externals\GLM\glm\vec4.hpp">
-      <Filter>Externals\GLM</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Externals\GLM\glm\vector_relational.hpp">
-      <Filter>Externals\GLM</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Externals\GLM\glm\common.hpp">
-      <Filter>Externals\GLM</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Externals\GLM\glm\exponential.hpp">
-      <Filter>Externals\GLM</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Externals\GLM\glm\ext.hpp">
-      <Filter>Externals\GLM</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Externals\GLM\glm\fwd.hpp">
-      <Filter>Externals\GLM</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Externals\GLM\glm\geometric.hpp">
-      <Filter>Externals\GLM</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Externals\GLM\glm\glm.hpp">
-      <Filter>Externals\GLM</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Externals\GLM\glm\integer.hpp">
-      <Filter>Externals\GLM</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Externals\GLM\glm\mat2x2.hpp">
-      <Filter>Externals\GLM</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Externals\GLM\glm\mat2x3.hpp">
-      <Filter>Externals\GLM</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Externals\GLM\glm\mat2x4.hpp">
-      <Filter>Externals\GLM</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Externals\GLM\glm\mat3x2.hpp">
-      <Filter>Externals\GLM</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Externals\GLM\glm\mat3x3.hpp">
-      <Filter>Externals\GLM</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Externals\GLM\glm\mat3x4.hpp">
-      <Filter>Externals\GLM</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Externals\GLM\glm\mat4x2.hpp">
-      <Filter>Externals\GLM</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Externals\GLM\glm\mat4x3.hpp">
-      <Filter>Externals\GLM</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Externals\GLM\glm\detail\_swizzle_func.hpp">
-      <Filter>Externals\GLM\detail</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Externals\GLM\glm\detail\_vectorize.hpp">
-      <Filter>Externals\GLM\detail</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Externals\GLM\glm\detail\func_common.hpp">
-      <Filter>Externals\GLM\detail</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Externals\GLM\glm\detail\func_exponential.hpp">
-      <Filter>Externals\GLM\detail</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Externals\GLM\glm\detail\func_geometric.hpp">
-      <Filter>Externals\GLM\detail</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Externals\GLM\glm\detail\func_integer.hpp">
-      <Filter>Externals\GLM\detail</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Externals\GLM\glm\detail\func_matrix.hpp">
-      <Filter>Externals\GLM\detail</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Externals\GLM\glm\detail\func_noise.hpp">
-      <Filter>Externals\GLM\detail</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Externals\GLM\glm\detail\func_packing.hpp">
-      <Filter>Externals\GLM\detail</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Externals\GLM\glm\detail\func_trigonometric.hpp">
-      <Filter>Externals\GLM\detail</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Externals\GLM\glm\detail\func_vector_relational.hpp">
-      <Filter>Externals\GLM\detail</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Externals\GLM\glm\detail\intrinsic_common.hpp">
-      <Filter>Externals\GLM\detail</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Externals\GLM\glm\detail\intrinsic_exponential.hpp">
-      <Filter>Externals\GLM\detail</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Externals\GLM\glm\detail\intrinsic_geometric.hpp">
-      <Filter>Externals\GLM\detail</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Externals\GLM\glm\detail\intrinsic_integer.hpp">
-      <Filter>Externals\GLM\detail</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Externals\GLM\glm\detail\intrinsic_matrix.hpp">
-      <Filter>Externals\GLM\detail</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Externals\GLM\glm\detail\intrinsic_trigonometric.hpp">
-      <Filter>Externals\GLM\detail</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Externals\GLM\glm\detail\intrinsic_vector_relational.hpp">
-      <Filter>Externals\GLM\detail</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Externals\GLM\glm\detail\precision.hpp">
-      <Filter>Externals\GLM\detail</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Externals\GLM\glm\detail\setup.hpp">
-      <Filter>Externals\GLM\detail</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Externals\GLM\glm\detail\type_float.hpp">
-      <Filter>Externals\GLM\detail</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Externals\GLM\glm\detail\type_gentype.hpp">
-      <Filter>Externals\GLM\detail</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Externals\GLM\glm\detail\type_half.hpp">
-      <Filter>Externals\GLM\detail</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Externals\GLM\glm\detail\type_int.hpp">
-      <Filter>Externals\GLM\detail</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Externals\GLM\glm\detail\type_mat.hpp">
-      <Filter>Externals\GLM\detail</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Externals\GLM\glm\detail\type_mat2x2.hpp">
-      <Filter>Externals\GLM\detail</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Externals\GLM\glm\detail\type_mat2x3.hpp">
-      <Filter>Externals\GLM\detail</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Externals\GLM\glm\detail\type_mat2x4.hpp">
-      <Filter>Externals\GLM\detail</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Externals\GLM\glm\detail\type_mat3x2.hpp">
-      <Filter>Externals\GLM\detail</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Externals\GLM\glm\detail\type_mat3x3.hpp">
-      <Filter>Externals\GLM\detail</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Externals\GLM\glm\detail\type_mat3x4.hpp">
-      <Filter>Externals\GLM\detail</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Externals\GLM\glm\detail\type_mat4x2.hpp">
-      <Filter>Externals\GLM\detail</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Externals\GLM\glm\detail\type_mat4x3.hpp">
-      <Filter>Externals\GLM\detail</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Externals\GLM\glm\detail\type_mat4x4.hpp">
-      <Filter>Externals\GLM\detail</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Externals\GLM\glm\detail\type_vec.hpp">
-      <Filter>Externals\GLM\detail</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Externals\GLM\glm\detail\type_vec1.hpp">
-      <Filter>Externals\GLM\detail</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Externals\GLM\glm\detail\type_vec2.hpp">
-      <Filter>Externals\GLM\detail</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Externals\GLM\glm\detail\type_vec3.hpp">
-      <Filter>Externals\GLM\detail</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Externals\GLM\glm\detail\type_vec4.hpp">
-      <Filter>Externals\GLM\detail</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Externals\GLM\glm\detail\_features.hpp">
-      <Filter>Externals\GLM\detail</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Externals\GLM\glm\detail\_fixes.hpp">
-      <Filter>Externals\GLM\detail</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Externals\GLM\glm\detail\_noise.hpp">
-      <Filter>Externals\GLM\detail</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Externals\GLM\glm\detail\_swizzle.hpp">
-      <Filter>Externals\GLM\detail</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Externals\GLM\glm\gtc\matrix_integer.hpp">
-      <Filter>Externals\GLM\gtc</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Externals\GLM\glm\gtc\matrix_inverse.hpp">
-      <Filter>Externals\GLM\gtc</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Externals\GLM\glm\gtc\matrix_transform.hpp">
-      <Filter>Externals\GLM\gtc</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Externals\GLM\glm\gtc\noise.hpp">
-      <Filter>Externals\GLM\gtc</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Externals\GLM\glm\gtc\packing.hpp">
-      <Filter>Externals\GLM\gtc</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Externals\GLM\glm\gtc\quaternion.hpp">
-      <Filter>Externals\GLM\gtc</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Externals\GLM\glm\gtc\random.hpp">
-      <Filter>Externals\GLM\gtc</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Externals\GLM\glm\gtc\reciprocal.hpp">
-      <Filter>Externals\GLM\gtc</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Externals\GLM\glm\gtc\round.hpp">
-      <Filter>Externals\GLM\gtc</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Externals\GLM\glm\gtc\type_precision.hpp">
-      <Filter>Externals\GLM\gtc</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Externals\GLM\glm\gtc\type_ptr.hpp">
-      <Filter>Externals\GLM\gtc</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Externals\GLM\glm\gtc\ulp.hpp">
-      <Filter>Externals\GLM\gtc</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Externals\GLM\glm\gtc\vec1.hpp">
-      <Filter>Externals\GLM\gtc</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Externals\GLM\glm\gtc\bitfield.hpp">
-      <Filter>Externals\GLM\gtc</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Externals\GLM\glm\gtc\constants.hpp">
-      <Filter>Externals\GLM\gtc</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Externals\GLM\glm\gtc\epsilon.hpp">
-      <Filter>Externals\GLM\gtc</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Externals\GLM\glm\gtc\integer.hpp">
-      <Filter>Externals\GLM\gtc</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Externals\GLM\glm\gtc\matrix_access.hpp">
-      <Filter>Externals\GLM\gtc</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Externals\GLM\glm\gtx\color_space.hpp">
-      <Filter>Externals\GLM\gtx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Externals\GLM\glm\gtx\color_space_YCoCg.hpp">
-      <Filter>Externals\GLM\gtx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Externals\GLM\glm\gtx\common.hpp">
-      <Filter>Externals\GLM\gtx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Externals\GLM\glm\gtx\compatibility.hpp">
-      <Filter>Externals\GLM\gtx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Externals\GLM\glm\gtx\component_wise.hpp">
-      <Filter>Externals\GLM\gtx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Externals\GLM\glm\gtx\dual_quaternion.hpp">
-      <Filter>Externals\GLM\gtx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Externals\GLM\glm\gtx\euler_angles.hpp">
-      <Filter>Externals\GLM\gtx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Externals\GLM\glm\gtx\extend.hpp">
-      <Filter>Externals\GLM\gtx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Externals\GLM\glm\gtx\extented_min_max.hpp">
-      <Filter>Externals\GLM\gtx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Externals\GLM\glm\gtx\fast_exponential.hpp">
-      <Filter>Externals\GLM\gtx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Externals\GLM\glm\gtx\fast_square_root.hpp">
-      <Filter>Externals\GLM\gtx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Externals\GLM\glm\gtx\fast_trigonometry.hpp">
-      <Filter>Externals\GLM\gtx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Externals\GLM\glm\gtx\gradient_paint.hpp">
-      <Filter>Externals\GLM\gtx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Externals\GLM\glm\gtx\handed_coordinate_space.hpp">
-      <Filter>Externals\GLM\gtx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Externals\GLM\glm\gtx\integer.hpp">
-      <Filter>Externals\GLM\gtx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Externals\GLM\glm\gtx\intersect.hpp">
-      <Filter>Externals\GLM\gtx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Externals\GLM\glm\gtx\io.hpp">
-      <Filter>Externals\GLM\gtx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Externals\GLM\glm\gtx\log_base.hpp">
-      <Filter>Externals\GLM\gtx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Externals\GLM\glm\gtx\matrix_cross_product.hpp">
-      <Filter>Externals\GLM\gtx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Externals\GLM\glm\gtx\matrix_decompose.hpp">
-      <Filter>Externals\GLM\gtx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Externals\GLM\glm\gtx\matrix_interpolation.hpp">
-      <Filter>Externals\GLM\gtx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Externals\GLM\glm\gtx\matrix_major_storage.hpp">
-      <Filter>Externals\GLM\gtx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Externals\GLM\glm\gtx\matrix_operation.hpp">
-      <Filter>Externals\GLM\gtx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Externals\GLM\glm\gtx\matrix_query.hpp">
-      <Filter>Externals\GLM\gtx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Externals\GLM\glm\gtx\matrix_transform_2d.hpp">
-      <Filter>Externals\GLM\gtx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Externals\GLM\glm\gtx\mixed_product.hpp">
-      <Filter>Externals\GLM\gtx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Externals\GLM\glm\gtx\multiple.hpp">
-      <Filter>Externals\GLM\gtx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Externals\GLM\glm\gtx\norm.hpp">
-      <Filter>Externals\GLM\gtx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Externals\GLM\glm\gtx\normal.hpp">
-      <Filter>Externals\GLM\gtx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Externals\GLM\glm\gtx\normalize_dot.hpp">
-      <Filter>Externals\GLM\gtx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Externals\GLM\glm\gtx\number_precision.hpp">
-      <Filter>Externals\GLM\gtx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Externals\GLM\glm\gtx\optimum_pow.hpp">
-      <Filter>Externals\GLM\gtx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Externals\GLM\glm\gtx\orthonormalize.hpp">
-      <Filter>Externals\GLM\gtx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Externals\GLM\glm\gtx\perpendicular.hpp">
-      <Filter>Externals\GLM\gtx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Externals\GLM\glm\gtx\polar_coordinates.hpp">
-      <Filter>Externals\GLM\gtx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Externals\GLM\glm\gtx\projection.hpp">
-      <Filter>Externals\GLM\gtx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Externals\GLM\glm\gtx\quaternion.hpp">
-      <Filter>Externals\GLM\gtx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Externals\GLM\glm\gtx\range.hpp">
-      <Filter>Externals\GLM\gtx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Externals\GLM\glm\gtx\raw_data.hpp">
-      <Filter>Externals\GLM\gtx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Externals\GLM\glm\gtx\rotate_normalized_axis.hpp">
-      <Filter>Externals\GLM\gtx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Externals\GLM\glm\gtx\rotate_vector.hpp">
-      <Filter>Externals\GLM\gtx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Externals\GLM\glm\gtx\scalar_multiplication.hpp">
-      <Filter>Externals\GLM\gtx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Externals\GLM\glm\gtx\scalar_relational.hpp">
-      <Filter>Externals\GLM\gtx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Externals\GLM\glm\gtx\simd_mat4.hpp">
-      <Filter>Externals\GLM\gtx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Externals\GLM\glm\gtx\simd_quat.hpp">
-      <Filter>Externals\GLM\gtx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Externals\GLM\glm\gtx\simd_vec4.hpp">
-      <Filter>Externals\GLM\gtx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Externals\GLM\glm\gtx\spline.hpp">
-      <Filter>Externals\GLM\gtx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Externals\GLM\glm\gtx\std_based_type.hpp">
-      <Filter>Externals\GLM\gtx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Externals\GLM\glm\gtx\string_cast.hpp">
-      <Filter>Externals\GLM\gtx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Externals\GLM\glm\gtx\transform.hpp">
-      <Filter>Externals\GLM\gtx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Externals\GLM\glm\gtx\transform2.hpp">
-      <Filter>Externals\GLM\gtx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Externals\GLM\glm\gtx\type_aligned.hpp">
-      <Filter>Externals\GLM\gtx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Externals\GLM\glm\gtx\vector_angle.hpp">
-      <Filter>Externals\GLM\gtx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Externals\GLM\glm\gtx\vector_query.hpp">
-      <Filter>Externals\GLM\gtx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Externals\GLM\glm\gtx\wrap.hpp">
-      <Filter>Externals\GLM\gtx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Externals\GLM\glm\gtx\associated_min_max.hpp">
-      <Filter>Externals\GLM\gtx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Externals\GLM\glm\gtx\bit.hpp">
-      <Filter>Externals\GLM\gtx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Externals\GLM\glm\gtx\closest_point.hpp">
-      <Filter>Externals\GLM\gtx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Externals\FreeImage\FreeImage.h">
-      <Filter>Externals\FreeImage</Filter>
-    </ClInclude>
-    <ClInclude Include="Falcor.h" />
-    <ClInclude Include="Framework.h" />
-    <ClInclude Include="Core\BlendState.h">
-      <Filter>Core</Filter>
-    </ClInclude>
-    <ClInclude Include="Core\Buffer.h">
-      <Filter>Core</Filter>
-    </ClInclude>
-    <ClInclude Include="Core\DepthStencilState.h">
-      <Filter>Core</Filter>
-    </ClInclude>
-    <ClInclude Include="Core\Formats.h">
-      <Filter>Core</Filter>
-    </ClInclude>
-    <ClInclude Include="Core\RasterizerState.h">
-      <Filter>Core</Filter>
-    </ClInclude>
-    <ClInclude Include="Core\Sampler.h">
-      <Filter>Core</Filter>
-    </ClInclude>
-    <ClInclude Include="Core\ScreenCapture.h">
-      <Filter>Core</Filter>
-    </ClInclude>
-    <ClInclude Include="Core\VAO.h">
-      <Filter>Core</Filter>
-    </ClInclude>
     <ClInclude Include="Graphics\Model\Animation.h">
       <Filter>Graphics\Model</Filter>
     </ClInclude>
@@ -795,9 +489,6 @@
       <Filter>Graphics</Filter>
     </ClInclude>
     <ClInclude Include="Graphics\Light.h">
-      <Filter>Graphics</Filter>
-    </ClInclude>
-    <ClInclude Include="Graphics\Program.h">
       <Filter>Graphics</Filter>
     </ClInclude>
     <ClInclude Include="Utils\Bitmap.h">
@@ -821,30 +512,14 @@
     <ClInclude Include="Utils\UserInput.h">
       <Filter>Utils</Filter>
     </ClInclude>
-    <ClInclude Include="Core\Texture.h">
-      <Filter>Core</Filter>
-    </ClInclude>
-    <ClInclude Include="Core\FBO.h">
-      <Filter>Core</Filter>
-    </ClInclude>
     <ClInclude Include="Utils\FrameRate.h">
       <Filter>Utils</Filter>
     </ClInclude>
     <ClInclude Include="Utils\CpuTimer.h">
       <Filter>Utils</Filter>
     </ClInclude>
-    <ClInclude Include="Core\GpuTimer.h">
-      <Filter>Core</Filter>
-    </ClInclude>
     <ClInclude Include="Utils\Profiler.h">
       <Filter>Utils</Filter>
-    </ClInclude>
-    <ClInclude Include="FalcorConfig.h" />
-    <ClInclude Include="Core\UniformBuffer.h">
-      <Filter>Core</Filter>
-    </ClInclude>
-    <ClInclude Include="Core\RenderContext.h">
-      <Filter>Core</Filter>
     </ClInclude>
     <ClInclude Include="Data\ShaderCommon.h">
       <Filter>Data</Filter>
@@ -854,9 +529,6 @@
     </ClInclude>
     <ClInclude Include="Utils\BinaryFileStream.h">
       <Filter>Utils</Filter>
-    </ClInclude>
-    <ClInclude Include="Core\VertexLayout.h">
-      <Filter>Core</Filter>
     </ClInclude>
     <ClInclude Include="Utils\AABB.h">
       <Filter>Utils</Filter>
@@ -876,9 +548,6 @@
     <ClInclude Include="Graphics\Model\Loaders\BinaryModelSpec.h">
       <Filter>Graphics\Model\Loaders</Filter>
     </ClInclude>
-    <ClInclude Include="Core\ShaderStorageBuffer.h">
-      <Filter>Core</Filter>
-    </ClInclude>
     <ClInclude Include="Graphics\Scene\SceneImporter.h">
       <Filter>Graphics\Scene</Filter>
     </ClInclude>
@@ -894,9 +563,6 @@
     <ClInclude Include="Graphics\Scene\SceneUtils.h">
       <Filter>Graphics\Scene</Filter>
     </ClInclude>
-    <ClInclude Include="Graphics\Scene\SceneEditor.h">
-      <Filter>Graphics\Scene</Filter>
-    </ClInclude>
     <ClInclude Include="Graphics\Camera\Camera.h">
       <Filter>Graphics\Camera</Filter>
     </ClInclude>
@@ -908,6 +574,261 @@
     </ClInclude>
     <ClInclude Include="Utils\Math\FalcorMath.h">
       <Filter>Utils\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Utils\ShaderPreprocessor.h">
+      <Filter>Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\Scene\SceneExporter.h">
+      <Filter>Graphics\Scene</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\Scene\SceneExportImportCommon.h">
+      <Filter>Graphics\Scene</Filter>
+    </ClInclude>
+    <ClInclude Include="Data\HostDeviceData.h">
+      <Filter>Data</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\Paths\MovableObject.h">
+      <Filter>Graphics\Paths</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\Paths\ObjectPath.h">
+      <Filter>Graphics\Paths</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\Paths\PathEditor.h">
+      <Filter>Graphics\Paths</Filter>
+    </ClInclude>
+    <ClInclude Include="ShadingUtils\BSDFs.h">
+      <Filter>ShadingUtils</Filter>
+    </ClInclude>
+    <ClInclude Include="ShadingUtils\Cameras.h">
+      <Filter>ShadingUtils</Filter>
+    </ClInclude>
+    <ClInclude Include="ShadingUtils\Helpers.h">
+      <Filter>ShadingUtils</Filter>
+    </ClInclude>
+    <ClInclude Include="ShadingUtils\Lights.h">
+      <Filter>ShadingUtils</Filter>
+    </ClInclude>
+    <ClInclude Include="ShadingUtils\Shading.h">
+      <Filter>ShadingUtils</Filter>
+    </ClInclude>
+    <ClInclude Include="Utils\ShaderUtils.h">
+      <Filter>Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="Data\HlslGlslCommon.h">
+      <Filter>Data</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\Material\Material.h">
+      <Filter>Graphics\Material</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\Material\MaterialEditor.h">
+      <Filter>Graphics\Material</Filter>
+    </ClInclude>
+    <ClInclude Include="Utils\Video\VideoDecoder.h">
+      <Filter>Utils\Video</Filter>
+    </ClInclude>
+    <ClInclude Include="Utils\Video\VideoEncoder.h">
+      <Filter>Utils\Video</Filter>
+    </ClInclude>
+    <ClInclude Include="Utils\Video\VideoEncoderUI.h">
+      <Filter>Utils\Video</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\FboHelper.h">
+      <Filter>Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\TextureHelper.h">
+      <Filter>Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\Model\Loaders\SimpleModelImporter.h">
+      <Filter>Graphics\Model\Loaders</Filter>
+    </ClInclude>
+    <ClInclude Include="VR\OpenVR\VRController.h">
+      <Filter>VR\OpenVR</Filter>
+    </ClInclude>
+    <ClInclude Include="VR\OpenVR\VRDisplay.h">
+      <Filter>VR\OpenVR</Filter>
+    </ClInclude>
+    <ClInclude Include="VR\OpenVR\VRPlayArea.h">
+      <Filter>VR\OpenVR</Filter>
+    </ClInclude>
+    <ClInclude Include="VR\OpenVR\VRSystem.h">
+      <Filter>VR\OpenVR</Filter>
+    </ClInclude>
+    <ClInclude Include="VR\OpenVR\VRTrackerBox.h">
+      <Filter>VR\OpenVR</Filter>
+    </ClInclude>
+    <ClInclude Include="Utils\Math\ParallelReduction.h">
+      <Filter>Utils\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Utils\Psychophysics\Experiment.h">
+      <Filter>Utils\Psychophysics</Filter>
+    </ClInclude>
+    <ClInclude Include="Utils\Psychophysics\SingleThresholdMeasurement.h">
+      <Filter>Utils\Psychophysics</Filter>
+    </ClInclude>
+    <ClInclude Include="Utils\MonitorInfo.h">
+      <Filter>Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="VR\OpenVR\VROverlay.h">
+      <Filter>VR\OpenVR</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\Material\BasicMaterial.h">
+      <Filter>Graphics\Material</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\Material\MaterialSystem.h">
+      <Filter>Graphics\Material</Filter>
+    </ClInclude>
+    <ClInclude Include="Effects\NormalMap\LeanMap.h">
+      <Filter>Effects\NormalMap</Filter>
+    </ClInclude>
+    <ClInclude Include="Effects\Shadows\CSM.h">
+      <Filter>Effects\Shadows</Filter>
+    </ClInclude>
+    <ClInclude Include="Effects\Utils\GaussianBlur.h">
+      <Filter>Effects\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="Effects\SkyBox\SkyBox.h">
+      <Filter>Effects\SkyBox</Filter>
+    </ClInclude>
+    <ClInclude Include="Effects\ToneMapping\ToneMapping.h">
+      <Filter>Effects\ToneMapping</Filter>
+    </ClInclude>
+    <ClInclude Include="Data\Effects\CsmData.h">
+      <Filter>Data\Effects</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\Model\Loaders\BinaryImage.hpp">
+      <Filter>Graphics\Model\Loaders</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\Program.h">
+      <Filter>Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="VR\VrFbo.h">
+      <Filter>VR</Filter>
+    </ClInclude>
+    <ClInclude Include="API\ProgramVars.h">
+      <Filter>API</Filter>
+    </ClInclude>
+    <ClInclude Include="API\ProgramVersion.h">
+      <Filter>API</Filter>
+    </ClInclude>
+    <ClInclude Include="API\RasterizerState.h">
+      <Filter>API</Filter>
+    </ClInclude>
+    <ClInclude Include="API\RenderContext.h">
+      <Filter>API</Filter>
+    </ClInclude>
+    <ClInclude Include="API\Sampler.h">
+      <Filter>API</Filter>
+    </ClInclude>
+    <ClInclude Include="API\Shader.h">
+      <Filter>API</Filter>
+    </ClInclude>
+    <ClInclude Include="API\Texture.h">
+      <Filter>API</Filter>
+    </ClInclude>
+    <ClInclude Include="API\VAO.h">
+      <Filter>API</Filter>
+    </ClInclude>
+    <ClInclude Include="API\VertexLayout.h">
+      <Filter>API</Filter>
+    </ClInclude>
+    <ClInclude Include="API\Window.h">
+      <Filter>API</Filter>
+    </ClInclude>
+    <ClInclude Include="API\BlendState.h">
+      <Filter>API</Filter>
+    </ClInclude>
+    <ClInclude Include="API\Buffer.h">
+      <Filter>API</Filter>
+    </ClInclude>
+    <ClInclude Include="API\DepthStencilState.h">
+      <Filter>API</Filter>
+    </ClInclude>
+    <ClInclude Include="API\Device.h">
+      <Filter>API</Filter>
+    </ClInclude>
+    <ClInclude Include="API\FBO.h">
+      <Filter>API</Filter>
+    </ClInclude>
+    <ClInclude Include="API\Formats.h">
+      <Filter>API</Filter>
+    </ClInclude>
+    <ClInclude Include="API\GpuTimer.h">
+      <Filter>API</Filter>
+    </ClInclude>
+    <ClInclude Include="API\ProgramReflection.h">
+      <Filter>API</Filter>
+    </ClInclude>
+    <ClInclude Include="API\LowLevel\DescriptorHeap.h">
+      <Filter>API\LowLevel</Filter>
+    </ClInclude>
+    <ClInclude Include="API\LowLevel\DescriptorTable.h">
+      <Filter>API\LowLevel</Filter>
+    </ClInclude>
+    <ClInclude Include="API\LowLevel\FencedPool.h">
+      <Filter>API\LowLevel</Filter>
+    </ClInclude>
+    <ClInclude Include="API\LowLevel\GpuFence.h">
+      <Filter>API\LowLevel</Filter>
+    </ClInclude>
+    <ClInclude Include="API\LowLevel\RootSignature.h">
+      <Filter>API\LowLevel</Filter>
+    </ClInclude>
+    <ClInclude Include="API\OpenGL\FalcorGL.h">
+      <Filter>API\OpenGL</Filter>
+    </ClInclude>
+    <ClInclude Include="API\OpenGL\GlEnum2Str.h">
+      <Filter>API\OpenGL</Filter>
+    </ClInclude>
+    <ClInclude Include="API\D3D\D3DState.h">
+      <Filter>API\D3D</Filter>
+    </ClInclude>
+    <ClInclude Include="API\D3D\D3DViews.h">
+      <Filter>API\D3D</Filter>
+    </ClInclude>
+    <ClInclude Include="API\D3D\FalcorD3D.h">
+      <Filter>API\D3D</Filter>
+    </ClInclude>
+    <ClInclude Include="API\D3D\D3D11\D3D11ShaderReflection.h">
+      <Filter>API\D3D\D3D11</Filter>
+    </ClInclude>
+    <ClInclude Include="API\D3D\D3D11\FalcorD3D11.h">
+      <Filter>API\D3D\D3D11</Filter>
+    </ClInclude>
+    <ClInclude Include="API\D3D\D3D12\FalcorD3D12.h">
+      <Filter>API\D3D\D3D12</Filter>
+    </ClInclude>
+    <ClInclude Include="Utils\DDSHeader.h">
+      <Filter>Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="API\ConstantBuffer.h">
+      <Filter>API</Filter>
+    </ClInclude>
+    <ClInclude Include="API\D3D\D3D12\D3D12ResourceAllocator.h">
+      <Filter>API\D3D\D3D12</Filter>
+    </ClInclude>
+    <ClInclude Include="API\LowLevel\ResourceAllocator.h">
+      <Filter>API\LowLevel</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Externals\dear_imgui\imconfig.h">
+      <Filter>Externals\dear_imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Externals\dear_imgui\imgui.h">
+      <Filter>Externals\dear_imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Externals\dear_imgui\imgui_internal.h">
+      <Filter>Externals\dear_imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Externals\dear_imgui\stb_rect_pack.h">
+      <Filter>Externals\dear_imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Externals\dear_imgui\stb_textedit.h">
+      <Filter>Externals\dear_imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Externals\dear_imgui\stb_truetype.h">
+      <Filter>Externals\dear_imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Externals\FFMpeg\include\libavcodec\avcodec.h">
+      <Filter>Externals\FFMpeg\libavcodec</Filter>
     </ClInclude>
     <ClInclude Include="..\Externals\FFMpeg\include\libavcodec\avfft.h">
       <Filter>Externals\FFMpeg\libavcodec</Filter>
@@ -942,17 +863,11 @@
     <ClInclude Include="..\Externals\FFMpeg\include\libavcodec\xvmc.h">
       <Filter>Externals\FFMpeg\libavcodec</Filter>
     </ClInclude>
-    <ClInclude Include="..\Externals\FFMpeg\include\libavcodec\avcodec.h">
-      <Filter>Externals\FFMpeg\libavcodec</Filter>
-    </ClInclude>
     <ClInclude Include="..\Externals\FFMpeg\include\libavdevice\avdevice.h">
       <Filter>Externals\FFMpeg\libavdevice</Filter>
     </ClInclude>
     <ClInclude Include="..\Externals\FFMpeg\include\libavdevice\version.h">
       <Filter>Externals\FFMpeg\libavdevice</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Externals\FFMpeg\include\libavfilter\avcodec.h">
-      <Filter>Externals\FFMpeg\libavfilter</Filter>
     </ClInclude>
     <ClInclude Include="..\Externals\FFMpeg\include\libavfilter\avfilter.h">
       <Filter>Externals\FFMpeg\libavfilter</Filter>
@@ -972,8 +887,8 @@
     <ClInclude Include="..\Externals\FFMpeg\include\libavfilter\asrc_abuffer.h">
       <Filter>Externals\FFMpeg\libavfilter</Filter>
     </ClInclude>
-    <ClInclude Include="..\Externals\FFMpeg\include\libavformat\avio.h">
-      <Filter>Externals\FFMpeg\libavformat</Filter>
+    <ClInclude Include="..\Externals\FFMpeg\include\libavfilter\avcodec.h">
+      <Filter>Externals\FFMpeg\libavfilter</Filter>
     </ClInclude>
     <ClInclude Include="..\Externals\FFMpeg\include\libavformat\version.h">
       <Filter>Externals\FFMpeg\libavformat</Filter>
@@ -981,8 +896,8 @@
     <ClInclude Include="..\Externals\FFMpeg\include\libavformat\avformat.h">
       <Filter>Externals\FFMpeg\libavformat</Filter>
     </ClInclude>
-    <ClInclude Include="..\Externals\FFMpeg\include\libavutil\avassert.h">
-      <Filter>Externals\FFMpeg\libavutil</Filter>
+    <ClInclude Include="..\Externals\FFMpeg\include\libavformat\avio.h">
+      <Filter>Externals\FFMpeg\libavformat</Filter>
     </ClInclude>
     <ClInclude Include="..\Externals\FFMpeg\include\libavutil\avconfig.h">
       <Filter>Externals\FFMpeg\libavutil</Filter>
@@ -1173,188 +1088,480 @@
     <ClInclude Include="..\Externals\FFMpeg\include\libavutil\audioconvert.h">
       <Filter>Externals\FFMpeg\libavutil</Filter>
     </ClInclude>
+    <ClInclude Include="..\Externals\FFMpeg\include\libavutil\avassert.h">
+      <Filter>Externals\FFMpeg\libavutil</Filter>
+    </ClInclude>
     <ClInclude Include="..\Externals\FFMpeg\include\libpostproc\postprocess.h">
       <Filter>Externals\FFMpeg\libpostproc</Filter>
     </ClInclude>
     <ClInclude Include="..\Externals\FFMpeg\include\libpostproc\version.h">
       <Filter>Externals\FFMpeg\libpostproc</Filter>
     </ClInclude>
-    <ClInclude Include="..\Externals\FFMpeg\include\libswresample\swresample.h">
-      <Filter>Externals\FFMpeg\libswresample</Filter>
-    </ClInclude>
     <ClInclude Include="..\Externals\FFMpeg\include\libswresample\version.h">
       <Filter>Externals\FFMpeg\libswresample</Filter>
     </ClInclude>
-    <ClInclude Include="..\Externals\FFMpeg\include\libswscale\swscale.h">
-      <Filter>Externals\FFMpeg\libswscale</Filter>
+    <ClInclude Include="..\Externals\FFMpeg\include\libswresample\swresample.h">
+      <Filter>Externals\FFMpeg\libswresample</Filter>
     </ClInclude>
     <ClInclude Include="..\Externals\FFMpeg\include\libswscale\version.h">
       <Filter>Externals\FFMpeg\libswscale</Filter>
     </ClInclude>
-    <ClInclude Include="Utils\ShaderPreprocessor.h">
-      <Filter>Utils</Filter>
+    <ClInclude Include="..\Externals\FFMpeg\include\libswscale\swscale.h">
+      <Filter>Externals\FFMpeg\libswscale</Filter>
     </ClInclude>
-    <ClInclude Include="Graphics\Scene\SceneExporter.h">
-      <Filter>Graphics\Scene</Filter>
+    <ClInclude Include="..\Externals\FreeImage\FreeImage.h">
+      <Filter>Externals\FreeImage</Filter>
     </ClInclude>
-    <ClInclude Include="Graphics\Scene\SceneExportImportCommon.h">
-      <Filter>Graphics\Scene</Filter>
+    <ClInclude Include="..\Externals\GLFW\include\glfw3.h">
+      <Filter>Externals\GLFW</Filter>
     </ClInclude>
-    <ClInclude Include="Data\HostDeviceData.h">
-      <Filter>Data</Filter>
+    <ClInclude Include="..\Externals\GLFW\include\glfw3native.h">
+      <Filter>Externals\GLFW</Filter>
     </ClInclude>
-    <ClInclude Include="Graphics\Paths\MovableObject.h">
-      <Filter>Graphics\Paths</Filter>
+    <ClInclude Include="..\Externals\GLM\glm\detail\func_exponential.hpp">
+      <Filter>Externals\GLM\detail</Filter>
     </ClInclude>
-    <ClInclude Include="Graphics\Paths\ObjectPath.h">
-      <Filter>Graphics\Paths</Filter>
+    <ClInclude Include="..\Externals\GLM\glm\detail\func_geometric.hpp">
+      <Filter>Externals\GLM\detail</Filter>
     </ClInclude>
-    <ClInclude Include="Graphics\Paths\PathEditor.h">
-      <Filter>Graphics\Paths</Filter>
+    <ClInclude Include="..\Externals\GLM\glm\detail\func_integer.hpp">
+      <Filter>Externals\GLM\detail</Filter>
     </ClInclude>
-    <ClInclude Include="ShadingUtils\BSDFs.h">
-      <Filter>ShadingUtils</Filter>
+    <ClInclude Include="..\Externals\GLM\glm\detail\func_matrix.hpp">
+      <Filter>Externals\GLM\detail</Filter>
     </ClInclude>
-    <ClInclude Include="ShadingUtils\Cameras.h">
-      <Filter>ShadingUtils</Filter>
+    <ClInclude Include="..\Externals\GLM\glm\detail\func_noise.hpp">
+      <Filter>Externals\GLM\detail</Filter>
     </ClInclude>
-    <ClInclude Include="ShadingUtils\Helpers.h">
-      <Filter>ShadingUtils</Filter>
+    <ClInclude Include="..\Externals\GLM\glm\detail\func_packing.hpp">
+      <Filter>Externals\GLM\detail</Filter>
     </ClInclude>
-    <ClInclude Include="ShadingUtils\Lights.h">
-      <Filter>ShadingUtils</Filter>
+    <ClInclude Include="..\Externals\GLM\glm\detail\func_trigonometric.hpp">
+      <Filter>Externals\GLM\detail</Filter>
     </ClInclude>
-    <ClInclude Include="ShadingUtils\Shading.h">
-      <Filter>ShadingUtils</Filter>
+    <ClInclude Include="..\Externals\GLM\glm\detail\func_vector_relational.hpp">
+      <Filter>Externals\GLM\detail</Filter>
     </ClInclude>
-    <ClInclude Include="Core\Window.h">
-      <Filter>Core</Filter>
+    <ClInclude Include="..\Externals\GLM\glm\detail\intrinsic_common.hpp">
+      <Filter>Externals\GLM\detail</Filter>
     </ClInclude>
-    <ClInclude Include="Core\OpenGL\FalcorGL.h">
-      <Filter>Core\OpenGL</Filter>
+    <ClInclude Include="..\Externals\GLM\glm\detail\intrinsic_exponential.hpp">
+      <Filter>Externals\GLM\detail</Filter>
     </ClInclude>
-    <ClInclude Include="Core\DX11\FalcorDX11.h">
-      <Filter>Core\DX11</Filter>
+    <ClInclude Include="..\Externals\GLM\glm\detail\intrinsic_geometric.hpp">
+      <Filter>Externals\GLM\detail</Filter>
     </ClInclude>
-    <ClInclude Include="Core\ProgramVersion.h">
-      <Filter>Core</Filter>
+    <ClInclude Include="..\Externals\GLM\glm\detail\intrinsic_integer.hpp">
+      <Filter>Externals\GLM\detail</Filter>
     </ClInclude>
-    <ClInclude Include="Core\Shader.h">
-      <Filter>Core</Filter>
+    <ClInclude Include="..\Externals\GLM\glm\detail\intrinsic_matrix.hpp">
+      <Filter>Externals\GLM\detail</Filter>
     </ClInclude>
-    <ClInclude Include="Core\ShaderReflection.h">
-      <Filter>Core</Filter>
+    <ClInclude Include="..\Externals\GLM\glm\detail\intrinsic_trigonometric.hpp">
+      <Filter>Externals\GLM\detail</Filter>
     </ClInclude>
-    <ClInclude Include="Utils\ShaderUtils.h">
-      <Filter>Utils</Filter>
+    <ClInclude Include="..\Externals\GLM\glm\detail\intrinsic_vector_relational.hpp">
+      <Filter>Externals\GLM\detail</Filter>
     </ClInclude>
-    <ClInclude Include="Core\DX11\ShaderReflectionDX11.h">
-      <Filter>Core\DX11</Filter>
+    <ClInclude Include="..\Externals\GLM\glm\detail\precision.hpp">
+      <Filter>Externals\GLM\detail</Filter>
     </ClInclude>
-    <ClInclude Include="Core\OpenGL\ShaderReflectionGL.h">
-      <Filter>Core\OpenGL</Filter>
+    <ClInclude Include="..\Externals\GLM\glm\detail\setup.hpp">
+      <Filter>Externals\GLM\detail</Filter>
     </ClInclude>
-    <ClInclude Include="Core\OpenGL\GlEnum2Str.h">
-      <Filter>Core\OpenGL</Filter>
+    <ClInclude Include="..\Externals\GLM\glm\detail\type_float.hpp">
+      <Filter>Externals\GLM\detail</Filter>
     </ClInclude>
-    <ClInclude Include="Data\HlslGlslCommon.h">
-      <Filter>Data</Filter>
+    <ClInclude Include="..\Externals\GLM\glm\detail\type_gentype.hpp">
+      <Filter>Externals\GLM\detail</Filter>
     </ClInclude>
-    <ClInclude Include="Graphics\Material\Material.h">
-      <Filter>Graphics\Material</Filter>
+    <ClInclude Include="..\Externals\GLM\glm\detail\type_half.hpp">
+      <Filter>Externals\GLM\detail</Filter>
     </ClInclude>
-    <ClInclude Include="Graphics\Material\MaterialEditor.h">
-      <Filter>Graphics\Material</Filter>
+    <ClInclude Include="..\Externals\GLM\glm\detail\type_int.hpp">
+      <Filter>Externals\GLM\detail</Filter>
     </ClInclude>
-    <ClInclude Include="Utils\Video\VideoDecoder.h">
-      <Filter>Utils\Video</Filter>
+    <ClInclude Include="..\Externals\GLM\glm\detail\type_mat.hpp">
+      <Filter>Externals\GLM\detail</Filter>
     </ClInclude>
-    <ClInclude Include="Utils\Video\VideoEncoder.h">
-      <Filter>Utils\Video</Filter>
+    <ClInclude Include="..\Externals\GLM\glm\detail\type_mat2x2.hpp">
+      <Filter>Externals\GLM\detail</Filter>
     </ClInclude>
-    <ClInclude Include="Utils\Video\VideoEncoderUI.h">
-      <Filter>Utils\Video</Filter>
+    <ClInclude Include="..\Externals\GLM\glm\detail\type_mat2x3.hpp">
+      <Filter>Externals\GLM\detail</Filter>
     </ClInclude>
-    <ClInclude Include="Graphics\FboHelper.h">
+    <ClInclude Include="..\Externals\GLM\glm\detail\type_mat2x4.hpp">
+      <Filter>Externals\GLM\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Externals\GLM\glm\detail\type_mat3x2.hpp">
+      <Filter>Externals\GLM\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Externals\GLM\glm\detail\type_mat3x3.hpp">
+      <Filter>Externals\GLM\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Externals\GLM\glm\detail\type_mat3x4.hpp">
+      <Filter>Externals\GLM\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Externals\GLM\glm\detail\type_mat4x2.hpp">
+      <Filter>Externals\GLM\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Externals\GLM\glm\detail\type_mat4x3.hpp">
+      <Filter>Externals\GLM\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Externals\GLM\glm\detail\type_mat4x4.hpp">
+      <Filter>Externals\GLM\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Externals\GLM\glm\detail\type_vec.hpp">
+      <Filter>Externals\GLM\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Externals\GLM\glm\detail\type_vec1.hpp">
+      <Filter>Externals\GLM\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Externals\GLM\glm\detail\type_vec2.hpp">
+      <Filter>Externals\GLM\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Externals\GLM\glm\detail\type_vec3.hpp">
+      <Filter>Externals\GLM\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Externals\GLM\glm\detail\type_vec4.hpp">
+      <Filter>Externals\GLM\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Externals\GLM\glm\detail\_features.hpp">
+      <Filter>Externals\GLM\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Externals\GLM\glm\detail\_fixes.hpp">
+      <Filter>Externals\GLM\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Externals\GLM\glm\detail\_noise.hpp">
+      <Filter>Externals\GLM\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Externals\GLM\glm\detail\_swizzle.hpp">
+      <Filter>Externals\GLM\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Externals\GLM\glm\detail\_swizzle_func.hpp">
+      <Filter>Externals\GLM\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Externals\GLM\glm\detail\_vectorize.hpp">
+      <Filter>Externals\GLM\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Externals\GLM\glm\detail\func_common.hpp">
+      <Filter>Externals\GLM\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Externals\GLM\glm\gtc\constants.hpp">
+      <Filter>Externals\GLM\gtc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Externals\GLM\glm\gtc\epsilon.hpp">
+      <Filter>Externals\GLM\gtc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Externals\GLM\glm\gtc\integer.hpp">
+      <Filter>Externals\GLM\gtc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Externals\GLM\glm\gtc\matrix_access.hpp">
+      <Filter>Externals\GLM\gtc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Externals\GLM\glm\gtc\matrix_integer.hpp">
+      <Filter>Externals\GLM\gtc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Externals\GLM\glm\gtc\matrix_inverse.hpp">
+      <Filter>Externals\GLM\gtc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Externals\GLM\glm\gtc\matrix_transform.hpp">
+      <Filter>Externals\GLM\gtc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Externals\GLM\glm\gtc\noise.hpp">
+      <Filter>Externals\GLM\gtc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Externals\GLM\glm\gtc\packing.hpp">
+      <Filter>Externals\GLM\gtc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Externals\GLM\glm\gtc\quaternion.hpp">
+      <Filter>Externals\GLM\gtc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Externals\GLM\glm\gtc\random.hpp">
+      <Filter>Externals\GLM\gtc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Externals\GLM\glm\gtc\reciprocal.hpp">
+      <Filter>Externals\GLM\gtc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Externals\GLM\glm\gtc\round.hpp">
+      <Filter>Externals\GLM\gtc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Externals\GLM\glm\gtc\type_precision.hpp">
+      <Filter>Externals\GLM\gtc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Externals\GLM\glm\gtc\type_ptr.hpp">
+      <Filter>Externals\GLM\gtc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Externals\GLM\glm\gtc\ulp.hpp">
+      <Filter>Externals\GLM\gtc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Externals\GLM\glm\gtc\vec1.hpp">
+      <Filter>Externals\GLM\gtc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Externals\GLM\glm\gtc\bitfield.hpp">
+      <Filter>Externals\GLM\gtc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Externals\GLM\glm\gtx\color_space.hpp">
+      <Filter>Externals\GLM\gtx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Externals\GLM\glm\gtx\color_space_YCoCg.hpp">
+      <Filter>Externals\GLM\gtx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Externals\GLM\glm\gtx\common.hpp">
+      <Filter>Externals\GLM\gtx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Externals\GLM\glm\gtx\compatibility.hpp">
+      <Filter>Externals\GLM\gtx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Externals\GLM\glm\gtx\component_wise.hpp">
+      <Filter>Externals\GLM\gtx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Externals\GLM\glm\gtx\dual_quaternion.hpp">
+      <Filter>Externals\GLM\gtx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Externals\GLM\glm\gtx\euler_angles.hpp">
+      <Filter>Externals\GLM\gtx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Externals\GLM\glm\gtx\extend.hpp">
+      <Filter>Externals\GLM\gtx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Externals\GLM\glm\gtx\extented_min_max.hpp">
+      <Filter>Externals\GLM\gtx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Externals\GLM\glm\gtx\fast_exponential.hpp">
+      <Filter>Externals\GLM\gtx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Externals\GLM\glm\gtx\fast_square_root.hpp">
+      <Filter>Externals\GLM\gtx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Externals\GLM\glm\gtx\fast_trigonometry.hpp">
+      <Filter>Externals\GLM\gtx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Externals\GLM\glm\gtx\gradient_paint.hpp">
+      <Filter>Externals\GLM\gtx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Externals\GLM\glm\gtx\handed_coordinate_space.hpp">
+      <Filter>Externals\GLM\gtx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Externals\GLM\glm\gtx\integer.hpp">
+      <Filter>Externals\GLM\gtx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Externals\GLM\glm\gtx\intersect.hpp">
+      <Filter>Externals\GLM\gtx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Externals\GLM\glm\gtx\io.hpp">
+      <Filter>Externals\GLM\gtx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Externals\GLM\glm\gtx\log_base.hpp">
+      <Filter>Externals\GLM\gtx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Externals\GLM\glm\gtx\matrix_cross_product.hpp">
+      <Filter>Externals\GLM\gtx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Externals\GLM\glm\gtx\matrix_decompose.hpp">
+      <Filter>Externals\GLM\gtx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Externals\GLM\glm\gtx\matrix_interpolation.hpp">
+      <Filter>Externals\GLM\gtx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Externals\GLM\glm\gtx\matrix_major_storage.hpp">
+      <Filter>Externals\GLM\gtx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Externals\GLM\glm\gtx\matrix_operation.hpp">
+      <Filter>Externals\GLM\gtx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Externals\GLM\glm\gtx\matrix_query.hpp">
+      <Filter>Externals\GLM\gtx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Externals\GLM\glm\gtx\matrix_transform_2d.hpp">
+      <Filter>Externals\GLM\gtx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Externals\GLM\glm\gtx\mixed_product.hpp">
+      <Filter>Externals\GLM\gtx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Externals\GLM\glm\gtx\multiple.hpp">
+      <Filter>Externals\GLM\gtx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Externals\GLM\glm\gtx\norm.hpp">
+      <Filter>Externals\GLM\gtx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Externals\GLM\glm\gtx\normal.hpp">
+      <Filter>Externals\GLM\gtx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Externals\GLM\glm\gtx\normalize_dot.hpp">
+      <Filter>Externals\GLM\gtx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Externals\GLM\glm\gtx\number_precision.hpp">
+      <Filter>Externals\GLM\gtx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Externals\GLM\glm\gtx\optimum_pow.hpp">
+      <Filter>Externals\GLM\gtx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Externals\GLM\glm\gtx\orthonormalize.hpp">
+      <Filter>Externals\GLM\gtx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Externals\GLM\glm\gtx\perpendicular.hpp">
+      <Filter>Externals\GLM\gtx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Externals\GLM\glm\gtx\polar_coordinates.hpp">
+      <Filter>Externals\GLM\gtx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Externals\GLM\glm\gtx\projection.hpp">
+      <Filter>Externals\GLM\gtx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Externals\GLM\glm\gtx\quaternion.hpp">
+      <Filter>Externals\GLM\gtx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Externals\GLM\glm\gtx\range.hpp">
+      <Filter>Externals\GLM\gtx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Externals\GLM\glm\gtx\raw_data.hpp">
+      <Filter>Externals\GLM\gtx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Externals\GLM\glm\gtx\rotate_normalized_axis.hpp">
+      <Filter>Externals\GLM\gtx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Externals\GLM\glm\gtx\rotate_vector.hpp">
+      <Filter>Externals\GLM\gtx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Externals\GLM\glm\gtx\scalar_multiplication.hpp">
+      <Filter>Externals\GLM\gtx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Externals\GLM\glm\gtx\scalar_relational.hpp">
+      <Filter>Externals\GLM\gtx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Externals\GLM\glm\gtx\simd_mat4.hpp">
+      <Filter>Externals\GLM\gtx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Externals\GLM\glm\gtx\simd_quat.hpp">
+      <Filter>Externals\GLM\gtx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Externals\GLM\glm\gtx\simd_vec4.hpp">
+      <Filter>Externals\GLM\gtx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Externals\GLM\glm\gtx\spline.hpp">
+      <Filter>Externals\GLM\gtx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Externals\GLM\glm\gtx\std_based_type.hpp">
+      <Filter>Externals\GLM\gtx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Externals\GLM\glm\gtx\string_cast.hpp">
+      <Filter>Externals\GLM\gtx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Externals\GLM\glm\gtx\transform.hpp">
+      <Filter>Externals\GLM\gtx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Externals\GLM\glm\gtx\transform2.hpp">
+      <Filter>Externals\GLM\gtx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Externals\GLM\glm\gtx\type_aligned.hpp">
+      <Filter>Externals\GLM\gtx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Externals\GLM\glm\gtx\vector_angle.hpp">
+      <Filter>Externals\GLM\gtx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Externals\GLM\glm\gtx\vector_query.hpp">
+      <Filter>Externals\GLM\gtx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Externals\GLM\glm\gtx\wrap.hpp">
+      <Filter>Externals\GLM\gtx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Externals\GLM\glm\gtx\associated_min_max.hpp">
+      <Filter>Externals\GLM\gtx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Externals\GLM\glm\gtx\bit.hpp">
+      <Filter>Externals\GLM\gtx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Externals\GLM\glm\gtx\closest_point.hpp">
+      <Filter>Externals\GLM\gtx</Filter>
+    </ClInclude>
+    <ClInclude Include="Falcor.h" />
+    <ClInclude Include="FalcorConfig.h" />
+    <ClInclude Include="Framework.h" />
+    <ClInclude Include="Sample.h" />
+    <ClInclude Include="API\Resource.h">
+      <Filter>API</Filter>
+    </ClInclude>
+    <ClInclude Include="API\D3D\D3D12\D3D12Resource.h">
+      <Filter>API\D3D\D3D12</Filter>
+    </ClInclude>
+    <ClInclude Include="API\ResourceViews.h">
+      <Filter>API</Filter>
+    </ClInclude>
+    <ClInclude Include="API\TypedBuffer.h">
+      <Filter>API</Filter>
+    </ClInclude>
+    <ClInclude Include="API\StructuredBuffer.h">
+      <Filter>API</Filter>
+    </ClInclude>
+    <ClInclude Include="API\VariablesBuffer.h">
+      <Filter>API</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\GraphicsProgram.h">
       <Filter>Graphics</Filter>
     </ClInclude>
-    <ClInclude Include="Graphics\TextureHelper.h">
+    <ClInclude Include="Graphics\ComputeProgram.h">
       <Filter>Graphics</Filter>
     </ClInclude>
-    <ClInclude Include="Graphics\Model\Loaders\SimpleModelImporter.h">
+    <ClInclude Include="API\ComputeStateObject.h">
+      <Filter>API</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\ComputeState.h">
+      <Filter>Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\GraphicsState.h">
+      <Filter>Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="API\GraphicsStateObject.h">
+      <Filter>API</Filter>
+    </ClInclude>
+    <ClInclude Include="API\CopyContext.h">
+      <Filter>API</Filter>
+    </ClInclude>
+    <ClInclude Include="API\ComputeContext.h">
+      <Filter>API</Filter>
+    </ClInclude>
+    <ClInclude Include="API\LowLevel\LowLevelContextData.h">
+      <Filter>API\LowLevel</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\Model\ObjectInstance.h">
+      <Filter>Graphics\Model</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\Model\Loaders\ModelImporter.h">
       <Filter>Graphics\Model\Loaders</Filter>
     </ClInclude>
-    <ClInclude Include="VR\OpenVR\VRController.h">
-      <Filter>VR\OpenVR</Filter>
-    </ClInclude>
-    <ClInclude Include="VR\OpenVR\VRDisplay.h">
-      <Filter>VR\OpenVR</Filter>
-    </ClInclude>
-    <ClInclude Include="VR\OpenVR\VRPlayArea.h">
-      <Filter>VR\OpenVR</Filter>
-    </ClInclude>
-    <ClInclude Include="VR\OpenVR\VRSystem.h">
-      <Filter>VR\OpenVR</Filter>
-    </ClInclude>
-    <ClInclude Include="VR\OpenVR\VRTrackerBox.h">
-      <Filter>VR\OpenVR</Filter>
-    </ClInclude>
-    <ClInclude Include="Utils\Math\ParallelReduction.h">
-      <Filter>Utils\Math</Filter>
-    </ClInclude>
-    <ClInclude Include="Utils\Psychophysics\Experiment.h">
-      <Filter>Utils\Psychophysics</Filter>
-    </ClInclude>
-    <ClInclude Include="Utils\Psychophysics\SingleThresholdMeasurement.h">
-      <Filter>Utils\Psychophysics</Filter>
-    </ClInclude>
-    <ClInclude Include="Core\DDSHeader.h">
-      <Filter>Core</Filter>
-    </ClInclude>
-    <ClInclude Include="Utils\MonitorInfo.h">
+    <ClInclude Include="ArgList.h">
       <Filter>Utils</Filter>
     </ClInclude>
-    <ClInclude Include="VR\VrFbo.h" />
-    <ClInclude Include="VR\OpenVR\VROverlay.h">
-      <Filter>VR\OpenVR</Filter>
+    <ClInclude Include="SampleTest.h" />
+    <ClInclude Include="Utils\Graph.h">
+      <Filter>Utils</Filter>
     </ClInclude>
-    <ClInclude Include="Graphics\Material\BasicMaterial.h">
-      <Filter>Graphics\Material</Filter>
+    <ClInclude Include="Utils\Picking\Picking.h">
+      <Filter>Utils\Picking</Filter>
     </ClInclude>
-    <ClInclude Include="Graphics\Material\MaterialSystem.h">
-      <Filter>Graphics\Material</Filter>
+    <ClInclude Include="Graphics\Scene\Editor\SceneEditor.h">
+      <Filter>Graphics\Scene\Editor</Filter>
     </ClInclude>
-    <ClInclude Include="Effects\NormalMap\LeanMap.h">
-      <Filter>Effects\NormalMap</Filter>
+    <ClInclude Include="Graphics\Scene\Editor\Gizmo.h">
+      <Filter>Graphics\Scene\Editor</Filter>
     </ClInclude>
-    <ClInclude Include="Effects\Shadows\CSM.h">
-      <Filter>Effects\Shadows</Filter>
+    <ClInclude Include="Graphics\Scene\Editor\SceneEditorRenderer.h">
+      <Filter>Graphics\Scene\Editor</Filter>
     </ClInclude>
-    <ClInclude Include="Effects\Utils\GaussianBlur.h">
-      <Filter>Effects\Utils</Filter>
+    <ClInclude Include="Utils\DebugDrawer.h">
+      <Filter>Utils</Filter>
     </ClInclude>
-    <ClInclude Include="Effects\SkyBox\SkyBox.h">
-      <Filter>Effects\SkyBox</Filter>
-    </ClInclude>
-    <ClInclude Include="Effects\ToneMapping\ToneMapping.h">
-      <Filter>Effects\ToneMapping</Filter>
-    </ClInclude>
-    <ClInclude Include="Data\Effects\CsmData.h">
+    <ClInclude Include="Data\Effects\LeanMapData.hlsli">
       <Filter>Data\Effects</Filter>
     </ClInclude>
-    <ClInclude Include="Data\Effects\LeanMapData.h">
-      <Filter>Data\Effects</Filter>
-    </ClInclude>
-    <ClInclude Include="Graphics\Model\Loaders\BinaryImage.hpp">
-      <Filter>Graphics\Model\Loaders</Filter>
+    <ClInclude Include="Graphics\Material\MaterialHistory.h">
+      <Filter>Graphics\Material</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Externals">
       <UniqueIdentifier>{91055aa0-2e25-4507-816e-5b43817cef35}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Externals\AntTweakBar">
-      <UniqueIdentifier>{1a398732-6e00-4f0d-87af-d424744952c1}</UniqueIdentifier>
     </Filter>
     <Filter Include="Externals\GLFW">
       <UniqueIdentifier>{be02830e-afa2-487f-9c2e-5d8096bbba61}</UniqueIdentifier>
@@ -1373,12 +1580,6 @@
     </Filter>
     <Filter Include="Externals\FreeImage">
       <UniqueIdentifier>{f2ec6f46-f660-4827-a0be-ecbf231b69b0}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Core">
-      <UniqueIdentifier>{8582b8d3-4a8e-4861-9277-295a37b7c673}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Core\OpenGL">
-      <UniqueIdentifier>{351abba5-1234-4eab-a1b7-4eaca58e7f10}</UniqueIdentifier>
     </Filter>
     <Filter Include="Graphics">
       <UniqueIdentifier>{acefc4bf-9434-4454-8a62-201442c09368}</UniqueIdentifier>
@@ -1440,9 +1641,6 @@
     <Filter Include="ShadingUtils">
       <UniqueIdentifier>{aab19330-4eb2-405a-af5a-a4f65faa888a}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Core\DX11">
-      <UniqueIdentifier>{7d3ad1ac-f2a2-474f-9c0b-ec93fcd10fe2}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Graphics\Material">
       <UniqueIdentifier>{6019fee5-465d-409d-92c2-499985e4d084}</UniqueIdentifier>
     </Filter>
@@ -1479,10 +1677,57 @@
     <Filter Include="Effects\ToneMapping">
       <UniqueIdentifier>{93980430-1a93-4999-bd8a-2f0b46713318}</UniqueIdentifier>
     </Filter>
+    <Filter Include="API">
+      <UniqueIdentifier>{6165d5ad-97ac-4ff3-9c9e-68c93acc245f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="API\LowLevel">
+      <UniqueIdentifier>{8bb5d38b-eb7d-40a8-a5aa-c934669015b5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="API\OpenGL">
+      <UniqueIdentifier>{61d7bfbe-a0dc-47c5-b185-6811de4040c5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="API\D3D">
+      <UniqueIdentifier>{60aa2a7f-98dc-4717-99f2-a4fd141ad6b4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="API\D3D\D3D11">
+      <UniqueIdentifier>{e0f6e384-0d36-423a-9ca6-1ee4c871a306}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="API\D3D\D3D12">
+      <UniqueIdentifier>{b4658507-5d1b-40b8-98e4-a46e99ced4cd}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="API\D3D\D3D12\LowLevel">
+      <UniqueIdentifier>{95cd469b-4af1-4e96-b133-8d553ad215a8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Externals\dear_imgui">
+      <UniqueIdentifier>{fd48defe-6e2a-4ea0-a9e0-b7a8b7cbe222}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Utils\Picking">
+      <UniqueIdentifier>{db06632d-289e-4e1c-85b4-7d6f5e41c73b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Graphics\Scene\Editor">
+      <UniqueIdentifier>{3b164303-abe4-428c-bd50-4368ab7b8933}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Data\Framework\Shaders">
+      <UniqueIdentifier>{872e05a2-6354-4a08-ada2-8b8c88a7858c}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\Externals\GLM\glm\detail\func_common.inl">
-      <Filter>Externals\GLM\detail</Filter>
+    <None Include="..\CopyLibs.bat" />
+    <None Include="..\CopyData.bat" />
+    <None Include="Data\Framework\ParallelReduction.fs">
+      <Filter>Utils\Math</Filter>
+    </None>
+    <None Include="Data\Effects\ToneMapping.fs">
+      <Filter>Data\Effects</Filter>
+    </None>
+    <None Include="Data\Effects\GaussianBlur.fs">
+      <Filter>Data\Effects</Filter>
+    </None>
+    <None Include="..\Externals\dear_imgui\LICENSE">
+      <Filter>Externals\dear_imgui</Filter>
+    </None>
+    <None Include="..\Externals\dear_imgui\README.md">
+      <Filter>Externals\dear_imgui</Filter>
     </None>
     <None Include="..\Externals\GLM\glm\detail\func_exponential.inl">
       <Filter>Externals\GLM\detail</Filter>
@@ -1589,6 +1834,18 @@
     <None Include="..\Externals\GLM\glm\detail\type_vec4_sse2.inl">
       <Filter>Externals\GLM\detail</Filter>
     </None>
+    <None Include="..\Externals\GLM\glm\detail\func_common.inl">
+      <Filter>Externals\GLM\detail</Filter>
+    </None>
+    <None Include="..\Externals\GLM\glm\gtc\constants.inl">
+      <Filter>Externals\GLM\gtc</Filter>
+    </None>
+    <None Include="..\Externals\GLM\glm\gtc\epsilon.inl">
+      <Filter>Externals\GLM\gtc</Filter>
+    </None>
+    <None Include="..\Externals\GLM\glm\gtc\integer.inl">
+      <Filter>Externals\GLM\gtc</Filter>
+    </None>
     <None Include="..\Externals\GLM\glm\gtc\matrix_access.inl">
       <Filter>Externals\GLM\gtc</Filter>
     </None>
@@ -1629,15 +1886,6 @@
       <Filter>Externals\GLM\gtc</Filter>
     </None>
     <None Include="..\Externals\GLM\glm\gtc\bitfield.inl">
-      <Filter>Externals\GLM\gtc</Filter>
-    </None>
-    <None Include="..\Externals\GLM\glm\gtc\constants.inl">
-      <Filter>Externals\GLM\gtc</Filter>
-    </None>
-    <None Include="..\Externals\GLM\glm\gtc\epsilon.inl">
-      <Filter>Externals\GLM\gtc</Filter>
-    </None>
-    <None Include="..\Externals\GLM\glm\gtc\integer.inl">
       <Filter>Externals\GLM\gtc</Filter>
     </None>
     <None Include="..\Externals\GLM\glm\gtx\color_space.inl">
@@ -1808,46 +2056,55 @@
     <None Include="..\Externals\GLM\glm\gtx\closest_point.inl">
       <Filter>Externals\GLM\gtx</Filter>
     </None>
-    <None Include="..\CopyLibs.bat" />
-    <None Include="..\CopyData.bat" />
-    <None Include="Data\Framework\FullScreenPass.vs">
-      <Filter>Data\Framework</Filter>
+    <None Include="Data\Framework\Shaders\FullScreenPass.gs">
+      <Filter>Data\Framework\Shaders</Filter>
     </None>
-    <None Include="Data\Framework\TextRenderer.fs">
-      <Filter>Data\Framework</Filter>
+    <None Include="Data\Framework\Shaders\FullScreenPass.vs">
+      <Filter>Data\Framework\Shaders</Filter>
     </None>
-    <None Include="Data\Framework\TextRenderer.vs">
-      <Filter>Data\Framework</Filter>
+    <None Include="Data\Framework\Shaders\Gui.ps">
+      <Filter>Data\Framework\Shaders</Filter>
     </None>
-    <None Include="Data\Framework\ParallelReduction.fs">
-      <Filter>Utils\Math</Filter>
+    <None Include="Data\Framework\Shaders\Gui.vs">
+      <Filter>Data\Framework\Shaders</Filter>
     </None>
-    <None Include="Data\Framework\FullScreenPass.gs">
-      <Filter>Data\Framework</Filter>
+    <None Include="Data\Framework\Shaders\ParallelReduction.fs">
+      <Filter>Data\Framework\Shaders</Filter>
     </None>
-    <None Include="Data\Effects\ToneMapping.fs">
+    <None Include="Data\Framework\Shaders\SceneEditorCommon.hlsli">
+      <Filter>Data\Framework\Shaders</Filter>
+    </None>
+    <None Include="Data\Framework\Shaders\TextRenderer.fs">
+      <Filter>Data\Framework\Shaders</Filter>
+    </None>
+    <None Include="Data\Framework\Shaders\TextRenderer.vs">
+      <Filter>Data\Framework\Shaders</Filter>
+    </None>
+    <None Include="Data\Effects\ShadowPass.ps.hlsl">
       <Filter>Data\Effects</Filter>
     </None>
-    <None Include="Data\Effects\GaussianBlur.fs">
+    <None Include="Data\Effects\ShadowPass.gs.hlsl">
       <Filter>Data\Effects</Filter>
     </None>
-    <None Include="Data\Effects\ShadowPass.fs">
+    <None Include="Data\Effects\ShadowPass.vs.hlsl">
       <Filter>Data\Effects</Filter>
     </None>
-    <None Include="Data\Effects\ShadowPass.gs">
+    <None Include="Data\Effects\SkyBox.ps.hlsl">
       <Filter>Data\Effects</Filter>
     </None>
-    <None Include="Data\Effects\ShadowPass.vs">
+    <None Include="Data\Effects\SkyBox.vs.hlsl">
       <Filter>Data\Effects</Filter>
     </None>
-    <None Include="Data\Effects\SkyBox.fs">
-      <Filter>Data\Effects</Filter>
-    </None>
-    <None Include="Data\Effects\SkyBox.vs">
-      <Filter>Data\Effects</Filter>
-    </None>
-    <None Include="Data\DefaultVS.vs">
-      <Filter>Data</Filter>
-    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <FxCompile Include="Data\Framework\Shaders\SceneEditorPS.hlsl">
+      <Filter>Data\Framework\Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="Data\Framework\Shaders\SceneEditorVS.hlsl">
+      <Filter>Data\Framework\Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="Data\Framework\Shaders\Blit.hlsl">
+      <Filter>Data\Framework\Shaders</Filter>
+    </FxCompile>
   </ItemGroup>
 </Project>

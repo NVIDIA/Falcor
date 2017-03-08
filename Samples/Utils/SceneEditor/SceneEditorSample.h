@@ -36,24 +36,25 @@ public:
     void onLoad() override;
     void onFrameRender() override;
     void onShutdown() override;
-    void onResizeSwapChain() override;
     bool onKeyEvent(const KeyboardEvent& keyEvent) override;
     bool onMouseEvent(const MouseEvent& mouseEvent) override;
-    void onDataReload() override;
+    void onGuiRender() override;
+    void onResizeSwapChain() override;
 
 private:
-    void initUI();
-    static void GUI_CALL loadSceneCallback(void* pUserData);
-    static void GUI_CALL createSceneCallback(void* pUserData);
-
     void loadScene();
     void createScene();
     void reset();
     void initNewScene();
+    void initShader();
+
+    bool mCameraLiveViewMode = false;
+
+    uint32_t mScenePrevLightCount = 0;
 
     Scene::SharedPtr mpScene = nullptr;
-    Program::SharedPtr mpProgram = nullptr;
+    GraphicsProgram::SharedPtr mpProgram = nullptr;
     SceneRenderer::UniquePtr mpRenderer = nullptr;
     SceneEditor::UniquePtr mpEditor = nullptr;
-    UniformBuffer::SharedPtr mpLightBuffer = nullptr;
+    GraphicsVars::SharedPtr mpVars = nullptr;
 };

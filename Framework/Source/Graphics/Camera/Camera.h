@@ -28,7 +28,6 @@
 #pragma once
 #include <glm/common.hpp>
 #include "glm/geometric.hpp"
-#include "Core/Texture.h"
 #include "glm/mat4x4.hpp"
 #include "Data/HostDeviceData.h"
 #include <vector>
@@ -37,7 +36,7 @@
 namespace Falcor
 {
     struct BoundingBox;
-    class UniformBuffer;
+    class ConstantBuffer;
 
    /** Camera class
     */
@@ -84,7 +83,7 @@ namespace Falcor
         const glm::vec3& getUpVector() const {return mData.up;}
         /** Get the camera's world space target position
         */
-        const glm::vec3& getTargetPosition() const { return mData.target; }
+        const glm::vec3& getTarget() const { return mData.target; }
 
         /** Set the camera's world space position
         */
@@ -142,8 +141,6 @@ namespace Falcor
 
         void setViewMatrix(const glm::mat4& view);
 
-        void setPrevViewProjMatrix(const glm::mat4& prevViewProj);
-
         /** Toggle persistent projection matrix
         \param[in] persistent whether to set it persistent
         */
@@ -154,8 +151,8 @@ namespace Falcor
         */
         bool isObjectCulled(const BoundingBox& box) const;
 
-        void setIntoUniformBuffer(UniformBuffer* pBuffer, const std::string& varName) const;
-        void setIntoUniformBuffer(UniformBuffer* pBuffer, const std::size_t& offset) const;
+        void setIntoConstantBuffer(ConstantBuffer* pBuffer, const std::string& varName) const;
+        void setIntoConstantBuffer(ConstantBuffer* pBuffer, const std::size_t& offset) const;
 
         /** Returns the raw camera data
         */
@@ -166,8 +163,12 @@ namespace Falcor
         const glm::mat4& getRightEyeProjMatrix() const { return mData.rightEyeProjMat; }
         const glm::mat4& getRightEyeViewProjMatrix() const { return mData.rightEyeViewProjMat; }
 
-        void setRightEyePrevViewProjMatrix(const glm::mat4& prevViewProj);
-
+        static uint32_t getShaderDataSize() 
+        {
+            static const size_t dataSize = sizeof(CameraData);
+            static_assert(dataSize % sizeof(float) * 4 == 0, "Camera::CameraData size should be a multiple of 16");
+            return dataSize;
+        }
     private:
         Camera();
 
@@ -185,9 +186,9 @@ namespace Falcor
 
         struct 
         {
-            vec3        xyz;    ///< Camera frustum plane position
+            glm::vec3   xyz;    ///< Camera frustum plane position
             float       negW;                ///< Camera frustum plane, sign of the coordinates
-            vec3        sign;    ///< Camera frustum plane position
+            glm::vec3   sign;    ///< Camera frustum plane position
         } mutable mFrustumPlanes[6];
     };
 }

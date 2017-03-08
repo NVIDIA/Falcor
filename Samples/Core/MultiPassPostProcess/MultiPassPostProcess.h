@@ -27,32 +27,29 @@
 ***************************************************************************/
 #pragma once
 #include "Falcor.h"
+#include "SampleTest.h"
 
 using namespace Falcor;
 
-class MultiPassPostProcess : public Sample
+class MultiPassPostProcess : public Sample, public SampleTest
 {
 public:
     void onLoad() override;
     void onFrameRender() override;
     void onShutdown() override;
-    void onResizeSwapChain() override;
-
+    bool onKeyEvent(const KeyboardEvent& keyEvent) override;
+    void onGuiRender() override;
 private:
-    void initUI();
-
     Texture::SharedPtr mpImage;
     Fbo::SharedPtr mpTempFB;
 
     FullScreenPass::UniquePtr mpLuminance;
     FullScreenPass::UniquePtr mpRadialBlur;
     FullScreenPass::UniquePtr mpBlit;
-    UniformBuffer::SharedPtr mpFirstPassCB;
-    UniformBuffer::SharedPtr mpSecondPassCB;
+    GraphicsVars::SharedPtr mpProgVars[2];
 
     bool mEnableRadialBlur = false;
     bool mEnableGrayscale = false;
-
-    static void GUI_CALL loadImageCallback(void* pUserData);
     void loadImage();
+    void loadImageFromFile(std::string filename);
 };

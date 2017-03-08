@@ -29,33 +29,27 @@
 #include "SceneRenderer.h"
 #include "Graphics/Program.h"
 #include "Utils/Gui.h"
-#include "Core/UniformBuffer.h"
-#include "core/RenderContext.h"
+#include "API/ConstantBuffer.h"
+#include "API/RenderContext.h"
 #include "Scene.h"
 #include "Utils/OS.h"
 #include "VR/OpenVR/VRSystem.h"
-#include "Core/Window.h"
+#include "API/Device.h"
 #include "glm/matrix.hpp"
 #include "Graphics/Material/MaterialSystem.h"
-#include <iostream>
-#include "glm/ext.hpp"
 
 namespace Falcor
 {
-    UniformBuffer::SharedPtr SceneRenderer::sPerMaterialCB;
-    UniformBuffer::SharedPtr SceneRenderer::sPerFrameCB;
-    UniformBuffer::SharedPtr SceneRenderer::sPerStaticMeshCB;
-    UniformBuffer::SharedPtr SceneRenderer::sPerSkinnedMeshCB;
-    size_t SceneRenderer::sBonesOffset = 0;
-    size_t SceneRenderer::sCameraDataOffset = 0;
-    size_t SceneRenderer::sWorldMatOffset = 0;
-    size_t SceneRenderer::sMeshIdOffset = 0;
-    
+    size_t SceneRenderer::sBonesOffset = ConstantBuffer::kInvalidOffset;
+    size_t SceneRenderer::sCameraDataOffset = ConstantBuffer::kInvalidOffset;
+    size_t SceneRenderer::sWorldMatOffset = ConstantBuffer::kInvalidOffset;
+    size_t SceneRenderer::sMeshIdOffset = ConstantBuffer::kInvalidOffset;
+    size_t SceneRenderer::sDrawIDOffset = ConstantBuffer::kInvalidOffset;
 
-    static const std::string kPerMaterialCbName = "InternalPerMaterialCB";
-    static const std::string kPerFrameCbName = "InternalPerFrameCB";
-    static const std::string kPerStaticMeshCbName = "InternalPerStaticMeshCB";
-    static const std::string kPerSkinnedMeshCbName = "InternalPerSkinnedMeshCB";
+    const char* SceneRenderer::kPerMaterialCbName = "InternalPerMaterialCB";
+    const char* SceneRenderer::kPerFrameCbName = "InternalPerFrameCB";
+    const char* SceneRenderer::kPerStaticMeshCbName = "InternalPerStaticMeshCB";
+    const char* SceneRenderer::kPerSkinnedMeshCbName = "InternalPerSkinnedMeshCB";
 
     SceneRenderer::UniquePtr SceneRenderer::create(const Scene::SharedPtr& pScene)
     {
@@ -67,52 +61,41 @@ namespace Falcor
         setCameraControllerType(CameraControllerType::SixDof);
     }
 
-    void SceneRenderer::createUniformBuffers(Program* pProgram)
+    void SceneRenderer::updateVariableOffsets(const ProgramReflection* pReflector)
     {
-        // create uniform buffers if required
-        if(sPerMaterialCB == nullptr)
+        if(sWorldMatOffset == ConstantBuffer::kInvalidOffset)
         {
-            auto pProgVer = pProgram->getActiveProgramVersion().get();
-            sPerMaterialCB = UniformBuffer::create(pProgVer, kPerMaterialCbName);
-            sPerFrameCB = UniformBuffer::create(pProgVer, kPerFrameCbName);
-            sPerStaticMeshCB = UniformBuffer::create(pProgVer, kPerStaticMeshCbName);
-            sPerSkinnedMeshCB = UniformBuffer::create(pProgVer, kPerSkinnedMeshCbName);
+            const auto pPerMeshCbData = pReflector->getBufferDesc(kPerStaticMeshCbName, ProgramReflection::BufferReflection::Type::Constant);
 
-            sBonesOffset = sPerSkinnedMeshCB->getVariableOffset("gBones");
-            sWorldMatOffset = sPerStaticMeshCB->getVariableOffset("gWorldMat");
-            sMeshIdOffset = sPerStaticMeshCB->getVariableOffset("gMeshId");
-            sCameraDataOffset = sPerFrameCB->getVariableOffset("gCam.viewMat");
+            if (pPerMeshCbData != nullptr)
+            {
+                sWorldMatOffset = pPerMeshCbData->getVariableData("gWorldMat[0]")->location;
+                sMeshIdOffset = pPerMeshCbData->getVariableData("gMeshId")->location;
+                sDrawIDOffset = pPerMeshCbData->getVariableData("gDrawId[0]")->location;
+            }
         }
-    }
 
-    void SceneRenderer::bindUniformBuffers(RenderContext* pRenderContext, Program* pProgram)
-    {
-        createUniformBuffers(pProgram);
+        if (sCameraDataOffset == ConstantBuffer::kInvalidOffset)
+        {
+            const auto pPerFrameCbData = pReflector->getBufferDesc(kPerFrameCbName, ProgramReflection::BufferReflection::Type::Constant);
 
-        // Per skinned mesh
-        uint32_t bufferLoc = pProgram->getUniformBufferBinding(kPerSkinnedMeshCbName);
-        pRenderContext->setUniformBuffer(bufferLoc, sPerSkinnedMeshCB);
-
-        // Per static mesh
-        bufferLoc = pProgram->getUniformBufferBinding(kPerStaticMeshCbName);
-        pRenderContext->setUniformBuffer(bufferLoc, sPerStaticMeshCB);
-
-        // Per material
-        bufferLoc = pProgram->getUniformBufferBinding(kPerMaterialCbName);
-        pRenderContext->setUniformBuffer(bufferLoc, sPerMaterialCB);
-
-        // Per frame
-        bufferLoc = pProgram->getUniformBufferBinding(kPerFrameCbName);
-        pRenderContext->setUniformBuffer(bufferLoc, sPerFrameCB);
+            if (pPerFrameCbData != nullptr)
+            {
+                sCameraDataOffset = pPerFrameCbData->getVariableData("gCam.viewMat")->location;
+            }
+        }
     }
 
     void SceneRenderer::setPerFrameData(RenderContext* pContext, const CurrentWorkingData& currentData)
     {
         // Set VPMat
-        //auto pCamera = mpScene->getActiveCamera();
         if (currentData.pCamera)
         {
-            currentData.pCamera->setIntoUniformBuffer(sPerFrameCB.get(), sCameraDataOffset);
+            ConstantBuffer* pCB = pContext->getGraphicsVars()->getConstantBuffer(kPerFrameCbName).get();
+            if (pCB)
+            {
+                currentData.pCamera->setIntoConstantBuffer(pCB, sCameraDataOffset);
+            }
         }
     }
 
@@ -121,54 +104,83 @@ namespace Falcor
         // Set bones
         if(currentData.pModel->hasBones())
         {
-            sPerSkinnedMeshCB->setVariableArray(sBonesOffset, currentData.pModel->getBonesMatrices(), currentData.pModel->getBonesCount());
+            ConstantBuffer* pCB = pContext->getGraphicsVars()->getConstantBuffer(kPerSkinnedMeshCbName).get();
+            if(pCB)
+            {
+                if (sBonesOffset == ConstantBuffer::kInvalidOffset)
+                {
+                    sBonesOffset = pCB->getVariableOffset("gBones");
+                }
+
+                pCB->setVariableArray(sBonesOffset, currentData.pModel->getBonesMatrices(), currentData.pModel->getBonesCount());
+            }
         }
-		return true;
+        return true;
+    }
+
+    bool SceneRenderer::setPerModelInstanceData(RenderContext* pContext, const Scene::ModelInstance::SharedPtr& pModelInstance, uint32_t instanceID, const CurrentWorkingData& currentData)
+    {
+        return true;
     }
 
     bool SceneRenderer::setPerMeshData(RenderContext* pContext, const CurrentWorkingData& currentData)
     {
-		return true;
+        return true;
     }
 
-    bool SceneRenderer::setPerMeshInstanceData(RenderContext* pContext, const glm::mat4& translation, uint32_t meshInstanceID, uint32_t drawInstanceID, const CurrentWorkingData& currentData)
+    bool SceneRenderer::setPerMeshInstanceData(RenderContext* pContext, const Scene::ModelInstance::SharedPtr& pModelInstance, const Model::MeshInstance::SharedPtr& pMeshInstance, uint32_t drawInstanceID, const CurrentWorkingData& currentData)
     {
-        glm::mat4 worldMat = translation;
-        if(currentData.pMesh->hasBones() == false)
+        ConstantBuffer* pCB = pContext->getGraphicsVars()->getConstantBuffer(kPerStaticMeshCbName).get();
+        if(pCB)
         {
-            worldMat = worldMat * currentData.pMesh->getInstanceMatrix(meshInstanceID);
+            const Mesh* pMesh = pMeshInstance->getObject().get();
+
+            glm::mat4 worldMat;
+            if (pMesh->hasBones() == false)
+            {
+                worldMat = pModelInstance->getTransformMatrix() * pMeshInstance->getTransformMatrix();
+            }
+
+            pCB->setBlob(&worldMat, sWorldMatOffset + drawInstanceID * sizeof(glm::mat4), sizeof(glm::mat4));
+
+            // Set mesh id
+            pCB->setVariable(sMeshIdOffset, pMesh->getId());
         }
-        sPerStaticMeshCB->setBlob(&worldMat, sWorldMatOffset + drawInstanceID*sizeof(glm::mat4), sizeof(glm::mat4));
 
-        // Set mesh id
-        sPerStaticMeshCB->setVariable(sMeshIdOffset, currentData.pMesh->getId());
-
-		return true;
+        return true;
     }
 
     bool SceneRenderer::setPerMaterialData(RenderContext* pContext, const CurrentWorkingData& currentData)
     {
-        currentData.pMaterial->setIntoUniformBuffer(sPerMaterialCB.get(), "gMaterial");
-		return true;
+        ProgramVars* pGraphicsVars = pContext->getGraphicsVars().get();
+
+        ConstantBuffer* pCB = pGraphicsVars->getConstantBuffer(kPerMaterialCbName).get();
+        if (pCB)
+        {
+            currentData.pMaterial->setIntoProgramVars(pGraphicsVars, pCB, "gMaterial");
+        }
+
+        return true;
     }
 
     void SceneRenderer::flushDraw(RenderContext* pContext, const Mesh* pMesh, uint32_t instanceCount, CurrentWorkingData& currentData)
     {
-		currentData.pMaterial = pMesh->getMaterial().get();
+        currentData.pMaterial = pMesh->getMaterial().get();
         // Bind material
         if(mpLastMaterial != pMesh->getMaterial().get())
         {
             if(mUnloadTexturesOnMaterialChange && mpLastMaterial)
             {
-                mpLastMaterial->unloadTextures();
+                mpLastMaterial->evictTextures();
             }
-            mpLastMaterial = pMesh->getMaterial().get();
             setPerMaterialData(pContext, currentData);
+            mpLastMaterial = pMesh->getMaterial().get();
 
             if(mCompileMaterialWithProgram)
             {
-                ProgramVersion::SharedConstPtr pPatchedProgram = MaterialSystem::patchActiveProgramVersion(currentData.pProgram, mpLastMaterial);
-                pContext->setProgram(pPatchedProgram);
+                // DISABLED_FOR_D3D12
+//                 ProgramVersion::SharedConstPtr pPatchedProgram = MaterialSystem::patchActiveProgramVersion(currentData.pProgram, mpLastMaterial);
+//                 pContext->setProgram(pPatchedProgram);
             }
         }
 
@@ -182,75 +194,78 @@ namespace Falcor
 
     }
 
-    void SceneRenderer::renderMesh(RenderContext* pContext, const Mesh* pMesh, const glm::mat4& translation, Camera* pCamera, CurrentWorkingData& currentData)
+    void SceneRenderer::renderMeshInstances(RenderContext* pContext, uint32_t meshID, const Scene::ModelInstance::SharedPtr& pModelInstance, Camera* pCamera, CurrentWorkingData& currentData)
     {
-		currentData.pMesh = pMesh;
+        const Model* pModel = currentData.pModel;
+        const Mesh* pMesh = pModel->getMesh(meshID).get();
 
-		if (setPerMeshData(pContext, currentData))
-		{
-			// Bind VAO and set topology
-			pContext->setVao(pMesh->getVao());
-			pContext->setTopology(pMesh->getTopology());
+        if (setPerMeshData(pContext, currentData))
+        {
+            // Bind VAO and set topology
+            pContext->getGraphicsState()->setVao(pMesh->getVao());
 
-			uint32_t InstanceCount = pMesh->getInstanceCount();
+            uint32_t activeInstances = 0;
 
-			uint32_t activeInstances = 0;
-			//auto pCamera = mpScene->getActiveCamera();
+            const uint32_t instanceCount = pModel->getMeshInstanceCount(meshID);
+            for (uint32_t instanceID = 0; instanceID < instanceCount; instanceID++)
+            {
+                auto& meshInstance = pModel->getMeshInstance(meshID, instanceID);
+                BoundingBox box = meshInstance->getBoundingBox().transform(pModelInstance->getTransformMatrix());
 
-			for (uint32_t instanceID = 0; instanceID < InstanceCount; instanceID++)
-			{
-				BoundingBox box = pMesh->getInstanceBoundingBox(instanceID).transform(translation);
+                if ((mCullEnabled == false) || (pCamera->isObjectCulled(box) == false))
+                {
+                    if (meshInstance->isVisible())
+                    {
+                        if (setPerMeshInstanceData(pContext, pModelInstance, meshInstance, activeInstances, currentData))
+                        {
+                            currentData.drawID++;
+                            activeInstances++;
 
-				if ((mCullEnabled == false) || (pCamera->isObjectCulled(box) == false))
-				{
-					if (setPerMeshInstanceData(pContext, translation, instanceID, activeInstances, currentData))
-					{
-						activeInstances++;
-
-						if (activeInstances == mMaxInstanceCount)
-						{
-
-							pContext->setProgram(currentData.pProgram->getActiveProgramVersion());
-							flushDraw(pContext, pMesh, activeInstances, currentData);
-							activeInstances = 0;
-						}
-					}
-				}
-			}
-			if(activeInstances != 0)
-			{
-				pContext->setProgram(currentData.pProgram->getActiveProgramVersion());
-				flushDraw(pContext, currentData.pMesh, activeInstances, currentData);
-			}
-		}
+                            if (activeInstances == mMaxInstanceCount)
+                            {
+                                // DISABLED_FOR_D3D12
+                                //pContext->setProgram(currentData.pProgram->getActiveProgramVersion());
+                                flushDraw(pContext, pMesh, activeInstances, currentData);
+                                activeInstances = 0;
+                            }
+                        }
+                    }
+                }
+            }
+            if(activeInstances != 0)
+            {
+                flushDraw(pContext, pMesh, activeInstances, currentData);
+            }
+        }
     }
 
-    void SceneRenderer::renderModel(RenderContext* pContext, Program* pProgram, const Model* pModel, const glm::mat4& instanceMatrix, Camera* pCamera, CurrentWorkingData& currentData)
-    {        
-		currentData.pModel = pModel;
-		if (setPerModelData(pContext, currentData))
-		{
-			// Bind the program
-			if(pModel->hasBones())
-			{
-				pProgram->addDefine("_VERTEX_BLENDING");
-			}
+    void SceneRenderer::renderModelInstance(RenderContext* pContext, const Scene::ModelInstance::SharedPtr& pModelInstance, Camera* pCamera, CurrentWorkingData& currentData)
+    {
+        const Model* pModel = pModelInstance->getObject().get();
 
+        if (setPerModelData(pContext, currentData))
+        {
+            Program* pProgram = currentData.pGsoCache->getProgram().get();
+            // Bind the program
+            if(pModel->hasBones())
+            {
+                pProgram->addDefine("_VERTEX_BLENDING");
+            }
 
-			mpLastMaterial = nullptr;
+            mpLastMaterial = nullptr;
 
-			// Loop over the meshes
-			for (uint32_t meshID = 0; meshID < pModel->getMeshCount(); meshID++)
-			{
-				renderMesh(pContext, pModel->getMesh(meshID).get(), instanceMatrix, pCamera, currentData);
-			}
+            // Loop over the meshes
+            for (uint32_t meshID = 0; meshID < pModel->getMeshCount(); meshID++)
+            {
+                renderMeshInstances(pContext, meshID, pModelInstance, pCamera, currentData);
+            }
 
-			// Restore the program state
-			if(pModel->hasBones())
-			{
+            // Restore the program state
+            if(pModel->hasBones())
+            {
                 pProgram->removeDefine("_VERTEX_BLENDING");
             }
-		}
+        }
 
     }
 
@@ -259,9 +274,9 @@ namespace Falcor
         return mpScene->update(currentTime, mpCameraController.get());
     }
 
-    void SceneRenderer::renderScene(RenderContext* pContext, Program* pProgram)
+    void SceneRenderer::renderScene(RenderContext* pContext)
     {
-        renderScene(pContext, pProgram, mpScene->getActiveCamera().get());
+        renderScene(pContext, mpScene->getActiveCamera().get());
     }
 
     void SceneRenderer::setupVR()
@@ -279,26 +294,33 @@ namespace Falcor
         }
     }
 
-    void SceneRenderer::renderScene(RenderContext* pContext, Program* pProgram, Camera* pCamera)
+    void SceneRenderer::renderScene(RenderContext* pContext, Camera* pCamera)
     {
-        bindUniformBuffers(pContext, pProgram);
-		CurrentWorkingData currentData;
-		currentData.pProgram = pProgram;
-		currentData.pCamera = pCamera;
-		currentData.pMaterial = nullptr;
-		currentData.pMesh = nullptr;
-		currentData.pModel = nullptr;
+        updateVariableOffsets(pContext->getGraphicsVars()->getReflection().get());
+
+        CurrentWorkingData currentData;
+        currentData.pGsoCache = pContext->getGraphicsState().get();
+        currentData.pCamera = pCamera;
+        currentData.pMaterial = nullptr;
+        currentData.pModel = nullptr;
+        currentData.drawID = 0;
+
         setupVR();
         setPerFrameData(pContext, currentData);
 
         for (uint32_t modelID = 0; modelID < mpScene->getModelCount(); modelID++)
         {
-            for (uint32_t InstanceID = 0; InstanceID < mpScene->getModelInstanceCount(modelID); InstanceID++)
+            currentData.pModel = mpScene->getModel(modelID).get();
+
+            for (uint32_t instanceID = 0; instanceID < mpScene->getModelInstanceCount(modelID); instanceID++)
             {
-                auto& Instance = mpScene->getModelInstance(modelID, InstanceID);
-                if (Instance.isVisible)
+                auto& pInstance = mpScene->getModelInstance(modelID, instanceID);
+                if (pInstance->isVisible())
                 {
-                    renderModel(pContext, pProgram, mpScene->getModel(modelID).get(), Instance.transformMatrix, pCamera, currentData);
+                    if (setPerModelInstanceData(pContext, pInstance, instanceID, currentData))
+                    {
+                        renderModelInstance(pContext, pInstance, pCamera, currentData);
+                    }
                 }
             }
         }

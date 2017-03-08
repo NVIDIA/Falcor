@@ -27,9 +27,9 @@
 ***************************************************************************/
 #include "Framework.h"
 #include "LeanMap.h"
-#include "Data/Effects/LeanMapData.h"
 #include "Graphics/Material/Material.h"
 #include "Graphics/Scene/Scene.h"
+#include "API/Device.h"
 
 namespace Falcor
 {
@@ -43,8 +43,7 @@ namespace Falcor
         leanData.resize(texW * texH);
 
         uint32_t normalMapDataSize = pNormalMap->getMipLevelDataSize(0);
-        std::vector<uint8_t> normalMapData(normalMapDataSize);
-        pNormalMap->readSubresourceData(normalMapData.data(), normalMapDataSize, 0, 0);
+        auto normalMapData = gpDevice->getRenderContext()->readTextureSubresource(pNormalMap, 0);
 
         const float oneBy255 = 1.0f / 255.0f;
         for(auto y = 0u; y < texH; y++)
@@ -82,7 +81,7 @@ namespace Falcor
                     tn.x = clamp(SRGBToLinear(oneBy255 * (float)(normalMapData[texIdx * 4 + 2])), 0.0f, 1.0f);
                 } break;
                 default: 
-                    Logger::log(Logger::Level::Error, "Can't generate LEAN map. Unsupported normal map format.");
+                    logError("Can't generate LEAN map. Unsupported normal map format.");
                     return nullptr;
                 };
 
@@ -100,7 +99,7 @@ namespace Falcor
             }
         }
 
-        Texture::SharedPtr pTex = Texture::create2D(texW, texH, ResourceFormat::RGBA32Float, 1, Texture::kEntireMipChain, leanData.data());
+        Texture::SharedPtr pTex = Texture::create2D(texW, texH, ResourceFormat::RGBA32Float, 1, Texture::kMaxPossible, leanData.data());
         return pTex;
     }
 
@@ -110,11 +109,11 @@ namespace Falcor
 
         if(mpLeanMaps.find(materialID) != mpLeanMaps.end())
         {
-            Logger::log(Logger::Level::Error, "Error when creating SceneLeanMaps. Scene material IDs should be unique for scene materials.");
+            logError("Error when creating SceneLeanMaps. Scene material IDs should be unique for scene materials.");
             return false;
         }
 
-        const Texture* pNormalMap = pMaterial->getNormalValue().texture.pTexture.get();
+        const Texture* pNormalMap = pMaterial->getNormalMap().get();
         if(pNormalMap)
         {
             mpLeanMaps[materialID] = createFromNormalMap(pNormalMap);
@@ -141,9 +140,9 @@ namespace Falcor
         for(uint32_t model = 0; model < pScene->getModelCount(); model++)
         {
             const Model* pModel = pScene->getModel(model).get();
-            for(uint32_t material = 0; material < pModel->getMaterialCount(); material++)
+            for(uint32_t meshID = 0; meshID < pModel->getMeshCount(); meshID++)
             {
-                const Material* pMaterial = pModel->getMaterial(material).get();
+                const Material* pMaterial = pModel->getMesh(meshID)->getMaterial().get();
                 if(pLeanMaps->createLeanMap(pMaterial) == false)
                 {
                     return nullptr;
@@ -153,26 +152,26 @@ namespace Falcor
 
         if(pLeanMaps->mpLeanMaps.size() == 0)
         {
-            Logger::log(Logger::Level::Warning, "Trying to create SceneLeanMaps for a scene without materials.");
+            logWarning("Trying to create SceneLeanMaps for a scene without materials.");
         }
 
         return pLeanMaps;
     }
 
-    void LeanMap::setIntoUniformBuffer(UniformBuffer* pUB, size_t offset, Sampler* pSampler) const
+    void LeanMap::setIntoProgramVars(ProgramVars* pVars, uint32_t texIndex) const
     {
         for(const auto& pMap : mpLeanMaps)
         {
             uint32_t id = pMap.first;
-            size_t mapOffset = id * sizeof(uint64_t) + offset;
+            uint32_t regIndex = id + texIndex;
             Texture::SharedPtr pTex = pMap.second;
-            pUB->setTexture(mapOffset, pTex.get(), pSampler, false);
+            pVars->setSrv(regIndex, pTex->getSRV());
         }
     }
 
-    void LeanMap::setIntoUniformBuffer(UniformBuffer* pUB, const std::string& varName, Sampler* pSampler) const
+    void LeanMap::setIntoProgramVars(ProgramVars* pVars, const std::string& texName) const
     {
-        size_t offset = pUB->getVariableOffset(varName + "[0]");
-        setIntoUniformBuffer(pUB, offset, pSampler);
+        size_t regIndex = pVars->getReflection()->getResourceDesc(texName + "[0]")->regIndex;
+        setIntoProgramVars(pVars, (uint32_t)regIndex);
     }
 }

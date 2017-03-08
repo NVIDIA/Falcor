@@ -29,8 +29,8 @@
 #include <string>
 #include <vector>
 #include "glm/vec4.hpp"
-#include "Core/FBO.h"
-#include "Core/Texture.h"
+#include "API/FBO.h"
+#include "API/Texture.h"
 
 namespace Falcor
 {
@@ -50,30 +50,9 @@ namespace Falcor
         \param[in] arraySize The number of array slices in the texture.
         \param[in] renderTargetCount Optional. Specify how many color textures to create (to be used as MRT).
         \param[in] sampleCount Optional. Specify number of samples in the buffers.
-        \param[in] mipLevels Optional. The number of mip levels to create. You can use Fbo#kEntireMipChain to create the entire chain
+        \param[in] mipLevels Optional. The number of mip levels to create. You can use Texture#kMaxPossible to create the entire chain
         */
-        Fbo::SharedPtr create2D(uint32_t width, uint32_t height, const ResourceFormat formats[], uint32_t arraySize = 1, uint32_t renderTargetCount = 1, uint32_t sampleCount = 0, uint32_t mipLevels = 1);
-
-        /** create a color with depth 2D framebuffer
-        \param[in] width width of the render-targets.
-        \param[in] height height of the render-targets.
-        \param[in] colorFormats Array containing the formats of the render-targets (to be used as MRT). The array size should match the value passed in renderTargetCount.
-        \param[in] depthFormat Format of the depth-stencil buffer.
-        \param[in] arraySize The number of array slices in the texture.
-        \param[in] renderTargetCount Optional. Specify how many color textures to create (to be used as MRT).
-        \param[in] sampleCount Optional. Specify number of samples in the buffers.
-        \param[in] mipLevels Optional. The number of mip levels to create. You can use Fbo#kEntireMipChain to create the entire chain
-        */
-        Fbo::SharedPtr create2DWithDepth(uint32_t width, uint32_t height, const ResourceFormat colorFormats[], ResourceFormat depthFormat, uint32_t arraySize = 1, uint32_t renderTargetCount = 1, uint32_t sampleCount = 0, uint32_t mipLevels = 1);
-
-        /** create a depth-only 2D framebuffer. The depth-buffer can be used as a shader resource. Useful for depth pre-pass and shadow maps.
-            \param[in] width width of the depth buffer.
-            \param[in] height height of the depth buffer.
-            \param[in] Format Format of the depth buffer.
-            \param[in] arraySize The number of array slices in the texture.
-            \param[in] mipLevels Optional. The number of mip levels to create. You can use Fbo#kEntireMipChain to create the entire chain
-            */
-        Fbo::SharedPtr createDepthOnly(uint32_t width, uint32_t height, ResourceFormat depthFormat, uint32_t arraySize = 1, uint32_t mipLevels = 1);
+        Fbo::SharedPtr create2D(uint32_t width, uint32_t height, const Fbo::Desc& fboDesc, uint32_t arraySize = 1, uint32_t mipLevels = 1);
 
         /** create a color-only cubemap framebuffer
         \param[in] width width of the render-targets.
@@ -81,19 +60,8 @@ namespace Falcor
         \param[in] formats Array containing the formats of the render-targets (to be used as MRT). The array size should match the value passed in renderTargetCount.
         \param[in] arraySize The number of cubes in the texture.
         \param[in] renderTargetCount Optional. Specify how many color textures to create (to be used as MRT).
-        \param[in] mipLevels Optional. The number of mip levels to create. You can use Fbo#kEntireMipChain to create the entire chain
+        \param[in] mipLevels Optional. The number of mip levels to create. You can use Texture#kMaxPossible to create the entire chain
         */
-        Fbo::SharedPtr createCubemap(uint32_t width, uint32_t height, const ResourceFormat formats[], uint32_t arraySize = 1, uint32_t renderTargetCount = 1, uint32_t mipLevels = 1);
-
-        /** create a color with depth 2D framebuffer
-        \param[in] width width of the render-targets.
-        \param[in] height height of the render-targets.
-        \param[in] colorFormats Array containing the formats of the render-targets (to be used as MRT). The array size should match the value passed in renderTargetCount.
-        \param[in] depthFormat Format of the depth-stencil buffer.
-        \param[in] arraySize The number of cubes in the texture.
-        \param[in] renderTargetCount Optional. Specify how many color textures to create (to be used as MRT).
-        \param[in] mipLevels Optional. The number of mip levels to create. You can use Fbo#kEntireMipChain to create the entire chain
-        */
-        Fbo::SharedPtr createCubemapWithDepth(uint32_t width, uint32_t height, const ResourceFormat colorFormats[], ResourceFormat depthFormat, uint32_t arraySize = 1, uint32_t renderTargetCount = 1, uint32_t mipLevels = 1);
+        Fbo::SharedPtr createCubemap(uint32_t width, uint32_t height, const Fbo::Desc& fboDesc, uint32_t arraySize = 1, uint32_t mipLevels = 1);
     }
 }

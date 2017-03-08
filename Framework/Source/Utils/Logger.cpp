@@ -37,9 +37,8 @@ namespace Falcor
     bool Logger::sShowErrorBox = false;
 #endif
 
-    // FIXME: global variables...
-    static bool gInit = false;
-    static FILE* gLogFile = nullptr;
+    bool Logger::sInit = false;
+    FILE* Logger::sLogFile = nullptr;
 
     static FILE* openLogFile()
     {
@@ -68,11 +67,11 @@ namespace Falcor
     void Logger::init()
     {
 #if _LOG_ENABLED
-        if(gInit == false)
+        if(sInit == false)
         {
-            gLogFile = openLogFile();
-            gInit = gLogFile != nullptr;
-            assert(gInit);
+            sLogFile = openLogFile();
+            sInit = sLogFile != nullptr;
+            assert(sInit);
         }
 #endif
     }
@@ -80,11 +79,11 @@ namespace Falcor
     void Logger::shutdown()
     {
 #if _LOG_ENABLED
-        if(gLogFile)
+        if(sLogFile)
         {
-            fclose(gLogFile);
-            gLogFile = nullptr;
-            gInit = false;
+            fclose(sLogFile);
+            sLogFile = nullptr;
+            sInit = false;
         }
 #endif
     }
@@ -97,7 +96,6 @@ namespace Falcor
         {
             create_level_case(Logger::Level::Info);
             create_level_case(Logger::Level::Warning);
-            create_level_case(Logger::Level::Fatal);
             create_level_case(Logger::Level::Error);
         default:
             should_not_get_here();
@@ -109,18 +107,21 @@ namespace Falcor
     void Logger::log(Level L, const std::string& msg, const bool forceMsgBox /* = false*/)
     {
 #if _LOG_ENABLED
-        if(gInit)
+        std::string s = getLogLevelString(L) + std::string("\t") + msg + "\n";
+        if(sInit)
         {
-            fprintf_s(gLogFile, "%-12s", getLogLevelString(L));
-            fprintf_s(gLogFile, msg.c_str());
-            fprintf_s(gLogFile, "\n");
-            fflush(gLogFile);   // Slows down execution, but ensures that the message will be printed in case of a crash
+            fprintf_s(sLogFile, "%s", s.c_str());
+            fflush(sLogFile);   // Slows down execution, but ensures that the message will be printed in case of a crash
+            if (isDebuggerPresent())
+            {
+                printToDebugWindow(s);
+            }
         }
 #endif
 
         if(L >= Level::Error)
         {
-            if(L >= Level::Fatal && isDebuggerPresent())
+            if(isDebuggerPresent())
             {
                 debugBreak();
             }

@@ -30,12 +30,10 @@
 #include "SceneImporter.h"
 #include "glm/gtx/euler_angles.hpp"
 #include "glm/gtc/matrix_transform.hpp"
-#include <iostream>
-#include "glm/ext.hpp"
 
 namespace Falcor
 {
-	uint32_t Scene::sSceneCounter = 0;
+    uint32_t Scene::sSceneCounter = 0;
 
     const Scene::UserVariable Scene::kInvalidVar;
 
@@ -51,7 +49,7 @@ namespace Falcor
         return SharedPtr(new Scene(cameraAspectRatio));
     }
 
-	Scene::Scene(float cameraAspectRatio) : mId(sSceneCounter++)
+    Scene::Scene(float cameraAspectRatio) : mId(sSceneCounter++)
     {
         // Reset all global id counters recursively
         Model::resetGlobalIdCounter();
@@ -61,129 +59,155 @@ namespace Falcor
         pCamera->setAspectRatio(cameraAspectRatio);
         pCamera->setName("Default");
         addCamera(pCamera);
-        mDirty = true;
     }
 
     Scene::~Scene() = default;
 
+//     void Scene::updateExtents()
+//     {
+//         if (mExtentsDirty)
+//         {
+//             mExtentsDirty = false;
+// 
+//             mRadius = 0.f;
+//             float k = 0.f;
+//             mCenter = vec3(0, 0, 0);
+//             for (uint32_t i = 0; i < getModelCount(); ++i)
+//             {
+//                 const auto& model = getModel(i);
+//                 const float r = model->getRadius();
+//                 const vec3 c = model->getCenter();
+//                 for (uint32_t j = 0; j < getModelInstanceCount(i); ++j)
+//                 {
+//                     const auto& inst = getModelInstance(i, j);
+//                     const vec3 instC = vec3(vec4(c, 1.f) * inst.transformMatrix);
+//                     const float instR = r * max(inst.scaling.x, max(inst.scaling.y, inst.scaling.z));
+// 
+//                     if (k == 0.f)
+//                     {
+//                         mCenter = instC;
+//                         mRadius = instR;
+//                     }
+//                     else
+//                     {
+//                         vec3 dir = instC - mCenter;
+//                         if (length(dir) > 1e-6f)
+//                             dir = normalize(dir);
+//                         vec3 a = mCenter - dir * mRadius;
+//                         vec3 b = instC + dir * instR;
+// 
+//                         mCenter = (a + b) * 0.5f;
+//                         mRadius = length(a - b);
+//                     }
+//                     k++;
+//                 }
+//             }
+// 
+//             // Update light extents
+//             for (auto& light : mpLights)
+//             {
+//                 if (light->getType() == LightDirectional)
+//                 {
+//                     auto pDirLight = std::dynamic_pointer_cast<DirectionalLight>(light);
+//                     pDirLight->setWorldParams(getCenter(), getRadius());
+//                 }
+//             }
+//         }
+//     }
+
     bool Scene::update(double currentTime, CameraController* cameraController)
     {
-        auto pCamera = getActiveCamera();
-        auto pActivePath = getActivePath();
-
-        bool bChanged = false;
-
-        if(pActivePath)
+        for (auto& path : mpPaths)
         {
-            pActivePath->animate(currentTime);
-            bChanged = true;
+            path->animate(currentTime);
         }
+
         // Ignore the elapsed time we got from the user. This will allow camera movement in cases where the time is frozen
         if(cameraController)
         {
-            cameraController->attachCamera(pCamera);
+            cameraController->attachCamera(getActiveCamera());
             cameraController->setCameraSpeed(getCameraSpeed());
             return cameraController->update();
         }
 
-        // Recompute scene extents if dirty
-        if(mDirty)
+        return false;
+    }
+
+    void Scene::deleteModel(uint32_t modelID)
+    {
+        if (mpMaterialHistory != nullptr)
         {
-            mDirty = false;
-
-            mRadius = 0.f;
-            float k = 0.f;
-            mCenter = vec3(0, 0, 0);
-            for(uint32_t i = 0; i<getModelCount(); ++i)
-            {
-                const auto& model = getModel(i);
-                const float r = model->getRadius();
-                const vec3 c = model->getCenter();
-                for(uint32_t j = 0; j<getModelInstanceCount(i); ++j)
-                {
-                    const auto& inst = getModelInstance(i, j);
-                    const vec3 instC = vec3(vec4(c, 1.f) * inst.transformMatrix);
-                    const float instR = r * max(inst.scaling.x, max(inst.scaling.y, inst.scaling.z));
-
-                    if(k == 0.f)
-                    {
-                        mCenter = instC;
-                        mRadius = instR;
-                    }
-                    else
-                    {
-                        vec3 dir = instC - mCenter;
-                        if(length(dir) > 1e-6f)
-                            dir = normalize(dir);
-                        vec3 a = mCenter - dir * mRadius;
-                        vec3 b = instC + dir * instR;
-
-                        mCenter = (a + b) * 0.5f;
-                        mRadius = length(a - b);
-                    }
-                    k++;
-                }
-            }
-
-            // Update light extents
-            for(auto& light : mpLights)
-            {
-                if(light->getType() == LightDirectional)
-                {
-                    auto pDirLight = std::dynamic_pointer_cast<DirectionalLight>(light);
-                    pDirLight->setWorldParams(getCenter(), getRadius());
-                }
-            }
-
-            bChanged = true;
+            mpMaterialHistory->onModelRemoved(getModel(modelID).get());
         }
 
-        return bChanged;
+        // Delete entire vector of instances
+        mModels.erase(mModels.begin() + modelID);
     }
 
-    vec3 Scene::getCenter()
+    void Scene::deleteAllModels()
     {
-        if(mDirty)
-            update(0.f);
-        return mCenter;
+        mModels.clear();
     }
 
-    float Scene::getRadius()
+    uint32_t Scene::getModelInstanceCount(uint32_t modelID) const
     {
-        if(mDirty)
-            update(0.f);
-        return mRadius;
+        return (uint32_t)(mModels[modelID].size());
     }
 
-    uint32_t Scene::addModelInstance(uint32_t modelID, const std::string& name, const glm::vec3& rotate, const glm::vec3& scale, const glm::vec3& translate)
+    void Scene::addModelInstance(const Model::SharedPtr& pModel, const std::string& instanceName, const glm::vec3& translation, const glm::vec3& rotation, const glm::vec3& scaling)
     {
-        ModelInstance instance;
-        instance.scaling = scale;
-        instance.rotation = rotate;
-        instance.translation = translate;
-        instance.name = name;
-        mModels[modelID].instances.push_back(instance);
-        calculateModelInstanceMatrix(modelID, (uint32_t)mModels[modelID].instances.size() - 1);
+        int32_t modelID = -1;
 
-        mDirty = true;
-        return (uint32_t)mModels[modelID].instances.size() - 1;
+        // Linear search from the end. Instances are usually added in order by model
+        for (int32_t i = (int32_t)mModels.size() - 1; i >= 0; i--)
+        {
+            if (mModels[i][0]->getObject() == pModel)
+            {
+                modelID = i;
+                break;
+            }
+        }
+
+        // If model not found, new model, add new instance vector
+        if (modelID == -1)
+        {
+            mModels.push_back(ModelInstanceList());
+            modelID = (int32_t)mModels.size() - 1;
+        }
+
+        mModels[modelID].push_back(ModelInstance::create(pModel, translation, rotation, scaling, instanceName));
+    }
+
+    void Scene::addModelInstance(const ModelInstance::SharedPtr& pInstance)
+    {
+        // Checking for existing instance list for model
+        for (uint32_t modelID = 0; modelID < (uint32_t)mModels.size(); modelID++)
+        {
+            // If found, add to that list
+            if (getModel(modelID) == pInstance->getObject())
+            {
+                mModels[modelID].push_back(pInstance);
+                return;
+            }
+        }
+
+        // If not found, add a new list
+        mModels.emplace_back();
+        mModels.back().push_back(pInstance);
     }
 
     void Scene::deleteModelInstance(uint32_t modelID, uint32_t instanceID)
     {
-        auto& instances = mModels[modelID].instances;
+        // Delete instance
+        auto& instances = mModels[modelID];
+
         instances.erase(instances.begin() + instanceID);
-        mDirty = true;
-    }
 
-    void Scene::calculateModelInstanceMatrix(uint32_t modelID, uint32_t instanceID)
-    {
-        ModelInstance& instance = mModels[modelID].instances[instanceID];
-        glm::mat4 translation = glm::translate(glm::mat4(), instance.translation);
-        glm::mat4 scaling = glm::scale(glm::mat4(), instance.scaling);
-        glm::mat4 rotation = glm::yawPitchRoll(instance.rotation[0], instance.rotation[1], instance.rotation[2]);
-
-        instance.transformMatrix = translation * scaling * rotation;
+        // If no instances are left, delete the vector
+        if (instances.empty())
+        {
+            deleteModel(modelID);
+        }
     }
 
     const Scene::UserVariable& Scene::getUserVariable(const std::string& name)
@@ -191,7 +215,7 @@ namespace Falcor
         const auto& a = mUserVars.find(name);
         if(a == mUserVars.end())
         {
-            Logger::log(Logger::Level::Warning, "Can't find user variable " + name + " in scene.");
+            logWarning("Can't find user variable " + name + " in scene.");
             return kInvalidVar;
         }
         else
@@ -217,43 +241,41 @@ namespace Falcor
         return mUserVars.begin()->second;
     }
 
-    uint32_t Scene::addModel(const Model::SharedPtr& pModel, const std::string& filename, bool createIdentityInstance)
-    {
-        mModels.push_back(ModelData(pModel, filename)); 
-		uint32_t modelID = (uint32_t)mModels.size() - 1;
-		if (createIdentityInstance)
-		{
-			addModelInstance(modelID, pModel->getName(), vec3(0.0), vec3(1.0), vec3(0.0));
-		}
-        mDirty = true;
-        return modelID;
-    }
-
-    void Scene::deleteModel(uint32_t modelID)
-    {
-        mModels.erase(mModels.begin() + modelID);
-        mDirty = true;
-    }
-
     uint32_t Scene::addLight(const Light::SharedPtr& pLight)
     {
         mpLights.push_back(pLight);
-        if(pLight->getType() == LightDirectional)
-        {
-            auto pDirLight = std::dynamic_pointer_cast<DirectionalLight>(pLight);
-            pDirLight->setWorldParams(getCenter(), getRadius());
-        }
-        mDirty = true;
         return (uint32_t)mpLights.size() - 1;
     }
 
     void Scene::deleteLight(uint32_t lightID)
     {
         mpLights.erase(mpLights.begin() + lightID);
-        mDirty = true;
     }
 
-    uint32_t Scene::addPath(const ObjectPath::SharedPtr& pPath) 
+    void Scene::deleteMaterial(uint32_t materialID)
+    {
+        if (mpMaterialHistory != nullptr)
+        {
+            mpMaterialHistory->onMaterialRemoved(getMaterial(materialID).get());
+        }
+
+        mpMaterials.erase(mpMaterials.begin() + materialID);
+    }
+
+    void Scene::enableMaterialHistory()
+    {
+        if (mpMaterialHistory == nullptr)
+        {
+            mpMaterialHistory = MaterialHistory::create();
+        }
+    }
+
+    void Scene::disableMaterialHistory()
+    {
+        mpMaterialHistory = nullptr;
+    }
+
+    uint32_t Scene::addPath(const ObjectPath::SharedPtr& pPath)
     { 
         mpPaths.push_back(pPath); 
         return (uint32_t)mpPaths.size() - 1; 
@@ -262,12 +284,6 @@ namespace Falcor
     void Scene::deletePath(uint32_t pathID)
     {
         mpPaths.erase(mpPaths.begin() + pathID);
-        if(mActivePathID == pathID)
-        {
-            // No need to detach the camera from the path, since the path is destroyed anyway
-            mActivePathID = mpPaths.size() ? 0 : kFreeCameraMovement;
-            attachActiveCameraToPath();
-        }
     }
 
     uint32_t Scene::addCamera(const Camera::SharedPtr& pCamera)
@@ -278,74 +294,17 @@ namespace Falcor
 
     void Scene::deleteCamera(uint32_t cameraID)
     {
-        if(cameraID == mActiveCameraID)
-        {
-            detachActiveCameraFromPath();
-        }
-
         mCameras.erase(mCameras.begin() + cameraID);
 
         if(cameraID == mActiveCameraID)
         {
-            // Don't call SetActiveCamera(), since it will try to detach the current active camera, which might be invalid
             mActiveCameraID = 0;
-            attachActiveCameraToPath();
         }
-    }
-
-    void Scene::setModelInstanceTranslation(uint32_t modelID, uint32_t instanceID, const glm::vec3& translation)
-    {
-        mModels[modelID].instances[instanceID].translation = translation;
-        calculateModelInstanceMatrix(modelID, instanceID);
-        mDirty = true;
-    }
-
-    void Scene::setModelInstanceRotation(uint32_t modelID, uint32_t instanceID, const glm::vec3& rotation)
-    {
-        mModels[modelID].instances[instanceID].rotation = rotation;
-        calculateModelInstanceMatrix(modelID, instanceID);
-        mDirty = true;
-    }
-
-    void Scene::setModelInstanceScaling(uint32_t modelID, uint32_t instanceID, const glm::vec3& scaling)
-    {
-        mModels[modelID].instances[instanceID].scaling = scaling;
-        calculateModelInstanceMatrix(modelID, instanceID);
-        mDirty = true;
     }
 
     void Scene::setActiveCamera(uint32_t camID)
     {
-        detachActiveCameraFromPath();
         mActiveCameraID = camID;
-        attachActiveCameraToPath();
-    }
-
-    void Scene::setActivePath(uint32_t pathID)
-    {
-        detachActiveCameraFromPath();
-        mActivePathID = pathID;
-        attachActiveCameraToPath();
-    }
-
-    void Scene::attachActiveCameraToPath()
-    {
-        auto pPath = getActivePath();
-        if(pPath)
-        {
-            auto pCamera = getActiveCamera();
-            pPath->attachObject(pCamera);
-        }
-    }
-
-    void Scene::detachActiveCameraFromPath()
-    {
-        auto pPath = getActivePath();
-        if(pPath)
-        {
-            auto pCamera = getActiveCamera();
-            pPath->detachObject(pCamera);
-        }
     }
 
     void Scene::merge(const Scene* pFrom)
@@ -359,48 +318,44 @@ namespace Falcor
         merge(mCameras);
 #undef merge
         mUserVars.insert(pFrom->mUserVars.begin(), pFrom->mUserVars.end());
-        mDirty = true;
     }
 
-	void Scene::createAreaLights()
-	{
+    void Scene::createAreaLights()
+    {
         // Clean up area light(s) before adding
-		deleteAreaLights();
+        deleteAreaLights();
 
-		// Go through all models in the scene
-		for (uint32_t modelId = 0; modelId < getModelCount(); ++modelId)
-		{
-			const Model::SharedPtr& pModel = getModel(modelId);
-			if (pModel)
-			{
-				// Retrieve model instances for this model
-				for (uint32_t modelInstanceId = 0; modelInstanceId < getModelInstanceCount(modelId); ++modelInstanceId)
-				{
-					// FIXME
-					const Scene::ModelInstance& modelInstance = getModelInstance(modelId, modelInstanceId);
-					Falcor::createAreaLightsForModel(pModel.get(), mpLights);
-                    mDirty = true;
+        // Go through all models in the scene
+        for (uint32_t modelId = 0; modelId < getModelCount(); ++modelId)
+        {
+            const Model::SharedPtr& pModel = getModel(modelId);
+            if (pModel)
+            {
+                // Retrieve model instances for this model
+                for (uint32_t modelInstanceId = 0; modelInstanceId < getModelInstanceCount(modelId); ++modelInstanceId)
+                {
+                    // #TODO This should probably create per model instance
+                    AreaLight::createAreaLightsForModel(pModel, mpLights);
                 }
-			}
-		}
-	}
+            }
+        }
+    }
 
-	void Scene::deleteAreaLights()
-	{
-		// Clean up the list before adding
-		std::vector<Light::SharedPtr>::iterator it = mpLights.begin();
+    void Scene::deleteAreaLights()
+    {
+        // Clean up the list before adding
+        std::vector<Light::SharedPtr>::iterator it = mpLights.begin();
 
-		for (; it != mpLights.end();)
-		{
-			if ((*it)->getType() == LightArea)
-			{
-				it = mpLights.erase(it);
-			}
-			else
-			{
-				++it;
-			}
-		}
-        mDirty = true;
+        for (; it != mpLights.end();)
+        {
+            if ((*it)->getType() == LightArea)
+            {
+                it = mpLights.erase(it);
+            }
+            else
+            {
+                ++it;
+            }
+        }
     }
 }

@@ -32,6 +32,7 @@
 #include "../Model.h"
 #include "glm/vec3.hpp"
 #include "../../../Framework/Source/Data/VertexAttrib.h"
+#include "Graphics/Model/Loaders/ModelImporter.h"
 
 namespace Falcor
 {
@@ -42,7 +43,7 @@ namespace Falcor
     //     Note 1:  this is pretty simplistic and may not correctly integrate with fancy materials, etc.
     //     Note 2:  this may not correctly setup model to interact with DirectX shaders.  In particular,
     //              vertex attribute names are required, and these may not all be set correctly!
-    class SimpleModelImporter
+    class SimpleModelImporter : public ModelImporter
     {
     public:
         
@@ -51,7 +52,6 @@ namespace Falcor
         {
             Position = VERTEX_POSITION_LOC,
             Normal = VERTEX_NORMAL_LOC,
-            Tangent = VERTEX_TANGENT_LOC,
             Bitangent = VERTEX_BITANGENT_LOC,
             BoneWeight = VERTEX_BONE_WEIGHT_LOC,
             BoneID = VERTEX_BONE_ID_LOC,
@@ -81,12 +81,11 @@ namespace Falcor
         static Model::SharedPtr create( VertexFormat vertLayout, uint32_t vboSz, const void *vboData, 
                                         uint32_t idxBufSz, const uint32_t *idxData, 
                                         Texture::SharedPtr diffuseTexture = nullptr,
-                                        RenderContext::Topology geomTopology = RenderContext::Topology::TriangleList );
+                                        Vao::Topology geomTopology = Vao::Topology::TriangleList );
 
     private:
         static ResourceFormat    getResourceFormat( AttribFormat format, uint32_t components );
         static int32_t           getFormatByteSize( AttribFormat format );
         static const std::string getSemanticName( AttribType type );
-
     };
 }

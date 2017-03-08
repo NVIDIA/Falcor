@@ -56,18 +56,18 @@
 #include "glm/mat4x4.hpp"
 #include "glm/vec2.hpp"
 #include "glm/vec3.hpp"
-#include "Core/FBO.h"
-#include "Core/RenderContext.h"
+#include "API/FBO.h"
+#include "API/RenderContext.h"
 #include "Graphics/Program.h"
-#include "Core/Texture.h"
+#include "API/Texture.h"
 #include "VRController.h"
 #include "VRTrackerBox.h"
 #include "VRDisplay.h"
 #include "VRPlayArea.h"
 #include "VROverlay.h"
 
-#if !defined( FALCOR_GL ) && !defined( FALCOR_DX11 )
-#error VRWrapper.h requires preprocessor definitions of *either* FALCOR_GL or FALCOR_DX11
+#if !defined( FALCOR_GL ) && !defined( FALCOR_D3D )
+#error VRWrapper.h requires preprocessor definitions of *either* FALCOR_GL or FALCOR_D3D
 #endif
 
 #pragma comment(lib, "openvr_api.lib")

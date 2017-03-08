@@ -40,27 +40,22 @@ public:
     bool onMouseEvent(const MouseEvent& mouseEvent) override;
 
 private:
-    Model::SharedPtr mpSphere;
     Model::SharedPtr mpTeapot;
+    Model::SharedPtr mpSphere;
     Texture::SharedPtr mHdrImage;
     ModelViewCameraController mCameraController;
     Camera::SharedPtr mpCamera;
     float mLightIntensity = 1.0f;
     float mSurfaceRoughness = 5.0f;
 
-    void initUI();
-    void renderMesh(const Mesh* pMesh, const Program* pProgram, RasterizerState::SharedPtr pRastState, float scale);
+    void onGuiRender() override;
+    void renderMesh(const Mesh* pMesh, GraphicsProgram::SharedPtr pProgram, RasterizerState::SharedPtr pRastState, float scale);
 
-    Sampler::SharedPtr mpTriLinearSampler;
-
-    struct
-    {
-        Program::SharedPtr pProgram;
-        RasterizerState::SharedPtr pFrontFaceCulling;
-    } mSkybox;
-
-    Program::SharedPtr mpEnvMapProgram;
-    UniformBuffer::SharedPtr mpPerFrameCB;
+    GraphicsProgram::SharedPtr mpMainProg = nullptr;
+    GraphicsProgram::SharedPtr mpSkyboxProg = nullptr;
+    GraphicsVars::SharedPtr mpProgramVars = nullptr;
+    GraphicsState::SharedPtr mpGraphicsState = nullptr;
+    RasterizerState::SharedPtr mpCullFrontFaceRS;
 
     enum HdrImage
     {
@@ -68,12 +63,12 @@ private:
         OvercastDay,
         AtTheWindow
     };
+    static const Gui::DropdownList kImageList;
 
     HdrImage mHdrImageIndex = HdrImage::EveningSun;
     Fbo::SharedPtr mpHdrFbo;
     ToneMapping::UniquePtr mpToneMapper;
+    SceneRenderer::UniquePtr mpSceneRenderer;
 
     void loadImage();
-    static void GUI_CALL getHdrImage(void* pVal, void* pThis);
-    static void GUI_CALL setHdrImage(const void* pVal, void* pThis);
 };

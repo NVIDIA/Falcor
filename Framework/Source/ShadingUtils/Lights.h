@@ -40,7 +40,9 @@ inline vec3 _fn getLightPos(in const LightData Light, in const vec3 shadingPosit
 {
     vec3 lightPos = Light.worldPos;
     if(Light.type == LightArea)
-        lightPos = v3(mul(Light.transMat, v4(lightPos, 1.0)));
+    {
+        lightPos = mul(Light.transMat, v4(lightPos, 1.0)).rrr;
+    }    
     else if(Light.type == LightDirectional)
     {
         float dist = length(shadingPosition - lightPos);
@@ -74,14 +76,27 @@ inline void _fn prepareLightAttribs(in const LightData Light, in const ShadingAt
 {
 	/* Evaluate direction to the light */
     LightAttr.P = getLightPos(Light, ShAttr.P);
+    LightAttr.pdf = 0;
+    LightAttr.N = 0;
+    [unroll]
+    for(uint i = 0 ; i < 4 ; i++)
+    {
+        LightAttr.points[i] = 0;
+    }
     vec3 PosToLight = LightAttr.P - ShAttr.P;
     if(dot(PosToLight, PosToLight) > 1e-3f)
+    {
 	    LightAttr.L = normalize(PosToLight);
+    }
     else
-        LightAttr.L = v3(0.f);
+    {
+        LightAttr.L = 0;
+    }
 	LightAttr.lightIntensity = Light.intensity;
     if(Light.type == LightDirectional)
+    {
 		LightAttr.L = -Light.worldDir;
+    }
     else if(Light.type == LightArea || Light.type == LightPoint)
 	{
 		/* Evaluate various attenuation factors: cosine, 1/r^2, etc. */
@@ -109,7 +124,8 @@ inline void _fn prepareLightAttribs(in const LightData Light, in const ShadingAt
 
 		LightAttr.lightIntensity *= Atten;
 	}
-
+    // DISABLED_FOR_D3D12
+#if 0
 	if (Light.type == LightArea)
 	{
 		for (int index = 0; index < 4; index++)
@@ -128,6 +144,7 @@ inline void _fn prepareLightAttribs(in const LightData Light, in const ShadingAt
 			LightAttr.points[index] = v3(mul(Light.transMat, v4(p0, 1.0)));
 		}
 	}
+#endif
 }
 
 /**
@@ -171,6 +188,7 @@ void _fn sampleLight(in const vec3 shadingHitPos, in const LightData lData, cons
 		}
 		break;
 
+#if defined(CUDA_CODE) || defined(FALCOR_GLSL)
 		case LightArea:
 		{
 			if (lData.numIndices != 0)
@@ -189,7 +207,7 @@ void _fn sampleLight(in const vec3 shadingHitPos, in const LightData lData, cons
 				vec3 p0 = vertices[pId.x];
 				vec3 p1 = vertices[pId.y];
 				vec3 p2 = vertices[pId.z];
-#else
+#elif
 				int* indices = (int*)(lData.indexPtr.ptr);
 				float* vertices = (float*)(lData.vertexPtr.ptr);
 				// Retrieve indices
@@ -230,6 +248,7 @@ void _fn sampleLight(in const vec3 shadingHitPos, in const LightData lData, cons
 				lAttr.lightIntensity = v3(0.f);
 		}
 		break;
+#endif
 	}
 }
 
@@ -242,12 +261,12 @@ void _fn stratifiedSampleRectangularAreaLight(in const vec3 shadingHitPos, in co
 		return;
 
 	// Transform light position and light normal
-	vec3 lightPos = v3(mul(lData.transMat, v4(lData.worldPos, 1.0f)));
-	lAttr.N = v3(mul(lData.transMat, v4(lData.worldDir, 0.0f)));
+	vec3 lightPos = mul(lData.transMat, v4(lData.worldPos, 1.0f)).rgb;
+	lAttr.N = mul(lData.transMat, v4(lData.worldDir, 0.0f)).rgb;
 
 	// Transform tangent frame
-	vec3 transformedTangent = v3(mul(lData.transMat, v4(lData.tangent, 0.0f)));
-	vec3 transformedBitangent = v3(mul(lData.transMat, v4(lData.bitangent, 0.0f)));
+	vec3 transformedTangent = mul(lData.transMat, v4(lData.tangent, 0.0f)).rgb;
+	vec3 transformedBitangent = mul(lData.transMat, v4(lData.bitangent, 0.0f)).rgb;
 
 	float lightSizeY1 = length(transformedTangent);
 	float lightSizeY2 = length(transformedBitangent);
@@ -268,10 +287,10 @@ void _fn stratifiedSampleRectangularAreaLight(in const vec3 shadingHitPos, in co
 	lAttr.pdf = lDist * lDist / (abs(dot(lAttr.N, lAttr.L)) * lData.surfaceArea);
 
 	// Set light's contribution
-	if (lAttr.pdf > 0.f && dot(lAttr.N, lAttr.L) < 0.f)
-		lAttr.lightIntensity /= lAttr.pdf;
-	else
-		lAttr.lightIntensity = v3(0.f);
+    if (lAttr.pdf > 0.f && dot(lAttr.N, lAttr.L) < 0.f)
+        lAttr.lightIntensity /= lAttr.pdf;
+    else
+        lAttr.lightIntensity = 0;
 }
 
 #endif	// _FALCOR_LIGHTS_H_

@@ -1,34 +1,3 @@
-///////////////////////////////////////////////////////////////////////////////////
-/// OpenGL Mathematics (glm.g-truc.net)
-///
-/// Copyright (c) 2005 - 2014 G-Truc Creation (www.g-truc.net)
-/// Permission is hereby granted, free of charge, to any person obtaining a copy
-/// of this software and associated documentation files (the "Software"), to deal
-/// in the Software without restriction, including without limitation the rights
-/// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-/// copies of the Software, and to permit persons to whom the Software is
-/// furnished to do so, subject to the following conditions:
-/// 
-/// The above copyright notice and this permission notice shall be included in
-/// all copies or substantial portions of the Software.
-/// 
-/// Restrictions:
-///		By making use of the Software for military purposes, you choose to make
-///		a Bunny unhappy.
-/// 
-/// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-/// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-/// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-/// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-/// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-/// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-/// THE SOFTWARE.
-///
-/// @file test/core/func_common.cpp
-/// @date 2011-01-15 / 2011-09-13
-/// @author Christophe Riccio
-///////////////////////////////////////////////////////////////////////////////////
-
 #define GLM_FORCE_EXPLICIT_CTOR
 #include <glm/common.hpp>
 #include <glm/gtc/constants.hpp>
@@ -167,6 +136,22 @@ namespace mod_
 	int test()
 	{
 		int Error(0);
+
+		{
+			float A(1.5f);
+			float B(1.0f);
+			float C = glm::mod(A, B);
+
+			Error += glm::abs(C - 0.5f) < 0.00001f ? 0 : 1;
+		}
+
+		{
+			float A(-0.2f);
+			float B(1.0f);
+			float C = glm::mod(A, B);
+
+			Error += glm::abs(C - 0.8f) < 0.00001f ? 0 : 1;
+		}
 
 		{
 			float A(3.0);
@@ -428,7 +413,7 @@ namespace mix_
 
 	entry<glm::vec4, glm::bvec4> TestBVec4[] = 
 	{
-		{glm::vec4(0.0f), glm::vec4(1.0f), glm::bvec4(false), glm::vec4(0.0f)},
+		{glm::vec4(0.0f, 0.0f, 1.0f, 1.0f), glm::vec4(2.0f, 2.0f, 3.0f, 3.0f), glm::bvec4(false, true, false, true), glm::vec4(0.0f, 2.0f, 1.0f, 3.0f)},
 		{glm::vec4(0.0f), glm::vec4(1.0f), glm::bvec4(true), glm::vec4(1.0f)},
 		{glm::vec4(-1.0f), glm::vec4(1.0f), glm::bvec4(false), glm::vec4(-1.0f)},
 		{glm::vec4(-1.0f), glm::vec4(1.0f), glm::bvec4(true), glm::vec4(1.0f)},
@@ -539,8 +524,8 @@ namespace step_
 
 	entry<float, glm::vec4> TestVec4Scalar [] =
 	{
-		{ 0.0f, glm::vec4(1.0f, 2.0f, 3.0f, 4.0f), glm::vec4(1.0f) },
 		{ 1.0f, glm::vec4(1.0f, 2.0f, 3.0f, 4.0f), glm::vec4(1.0f) },
+		{ 0.0f, glm::vec4(1.0f, 2.0f, 3.0f, 4.0f), glm::vec4(1.0f) },
 		{ 0.0f, glm::vec4(-1.0f, -2.0f, -3.0f, -4.0f), glm::vec4(0.0f) }
 	};
 
@@ -583,7 +568,7 @@ namespace round_
 	int test()
 	{
 		int Error = 0;
-	
+
 		{
 			float A = glm::round(0.0f);
 			Error += A == 0.0f ? 0 : 1;
@@ -970,21 +955,46 @@ namespace sign
 		return Error;
 	}
 
+	int test_f32vec4()
+	{
+		type<glm::vec4> const Data[] =
+		{
+			{glm::vec4( 1), glm::vec4( 1)},
+			{glm::vec4( 0), glm::vec4( 0)},
+			{glm::vec4( 2), glm::vec4( 1)},
+			{glm::vec4( 3), glm::vec4( 1)},
+			{glm::vec4(-1), glm::vec4(-1)},
+			{glm::vec4(-2), glm::vec4(-1)},
+			{glm::vec4(-3), glm::vec4(-1)}
+		};
+
+		int Error = 0;
+
+		for(std::size_t i = 0; i < sizeof(Data) / sizeof(type<glm::vec4>); ++i)
+		{
+			glm::vec4 Result = glm::sign(Data[i].Value);
+			Error += glm::all(glm::equal(Data[i].Return, Result)) ? 0 : 1;
+		}
+
+		return Error;
+	}
+
 	int test()
 	{
 		int Error = 0;
 
 		Error += test_int32();
 		Error += test_i32vec4();
+		Error += test_f32vec4();
 
 		return Error;
 	}
 
-	int perf_rand()
+	int perf_rand(std::size_t Samples)
 	{
 		int Error = 0;
 
-		std::size_t const Count = 100000000;
+		std::size_t const Count = Samples;
 		std::vector<glm::int32> Input, Output;
 		Input.resize(Count);
 		Output.resize(Count);
@@ -1033,11 +1043,11 @@ namespace sign
 		return Error;
 	}
 
-	int perf_linear()
+	int perf_linear(std::size_t Samples)
 	{
 		int Error = 0;
 
-		std::size_t const Count = 10000000;
+		std::size_t const Count = Samples;
 		std::vector<glm::int32> Input, Output;
 		Input.resize(Count);
 		Output.resize(Count);
@@ -1080,11 +1090,11 @@ namespace sign
 		return Error;
 	}
 
-	int perf_linear_cal()
+	int perf_linear_cal(std::size_t Samples)
 	{
 		int Error = 0;
 
-		glm::uint32 const Count = 10000000;
+		glm::int32 const Count = static_cast<glm::int32>(Samples);
 
 		std::clock_t Timestamp0 = std::clock();
 		glm::int32 Sum = 0;
@@ -1125,21 +1135,115 @@ namespace sign
 		return Error;
 	}
 
-	int perf()
+	int perf(std::size_t Samples)
 	{
 		int Error(0);
 
-		Error += perf_linear_cal();
-		Error += perf_linear();
-		Error += perf_rand();
+		Error += perf_linear_cal(Samples);
+		Error += perf_linear(Samples);
+		Error += perf_rand(Samples);
 
 		return Error;
 	}
 }//namespace sign
 
+namespace frexp_
+{
+	int test()
+	{
+		int Error(0);
+
+		{
+			glm::vec1 x(1024);
+			glm::ivec1 exp;
+			glm::vec1 A = glm::frexp(x, exp);
+			Error += glm::all(glm::epsilonEqual(A, glm::vec1(0.5), 0.00001f)) ? 0 : 1;
+			Error += glm::all(glm::equal(exp, glm::ivec1(11))) ? 0 : 1;
+		}
+
+		{
+			glm::vec2 x(1024, 0.24);
+			glm::ivec2 exp;
+			glm::vec2 A = glm::frexp(x, exp);
+			Error += glm::all(glm::epsilonEqual(A, glm::vec2(0.5, 0.96), 0.00001f)) ? 0 : 1;
+			Error += glm::all(glm::equal(exp, glm::ivec2(11, -2))) ? 0 : 1;
+		}
+
+		{
+			glm::vec3 x(1024, 0.24, 0);
+			glm::ivec3 exp;
+			glm::vec3 A = glm::frexp(x, exp);
+			Error += glm::all(glm::epsilonEqual(A, glm::vec3(0.5, 0.96, 0.0), 0.00001f)) ? 0 : 1;
+			Error += glm::all(glm::equal(exp, glm::ivec3(11, -2, 0))) ? 0 : 1;
+		}
+
+		{
+			glm::vec4 x(1024, 0.24, 0, -1.33);
+			glm::ivec4 exp;
+			glm::vec4 A = glm::frexp(x, exp);
+			Error += glm::all(glm::epsilonEqual(A, glm::vec4(0.5, 0.96, 0.0, -0.665), 0.00001f)) ? 0 : 1;
+			Error += glm::all(glm::equal(exp, glm::ivec4(11, -2, 0, 1))) ? 0 : 1;
+		}
+
+		return Error;
+	}
+}//namespace frexp_
+
+namespace ldexp_
+{
+	int test()
+	{
+		int Error(0);
+
+		{
+			glm::vec1 A = glm::vec1(0.5);
+			glm::ivec1 exp = glm::ivec1(11);
+			glm::vec1 x = glm::ldexp(A, exp);
+			Error += glm::all(glm::epsilonEqual(x, glm::vec1(1024),0.00001f)) ? 0 : 1;
+		}
+
+		{
+			glm::vec2 A = glm::vec2(0.5, 0.96);
+			glm::ivec2 exp = glm::ivec2(11, -2);
+			glm::vec2 x = glm::ldexp(A, exp);
+			Error += glm::all(glm::epsilonEqual(x, glm::vec2(1024, .24),0.00001f)) ? 0 : 1;
+		}
+
+		{
+			glm::vec3 A = glm::vec3(0.5, 0.96, 0.0);
+			glm::ivec3 exp = glm::ivec3(11, -2, 0);
+			glm::vec3 x = glm::ldexp(A, exp);
+			Error += glm::all(glm::epsilonEqual(x, glm::vec3(1024, .24, 0),0.00001f)) ? 0 : 1;
+		}
+
+		{
+			glm::vec4 A = glm::vec4(0.5, 0.96, 0.0, -0.665);
+			glm::ivec4 exp = glm::ivec4(11, -2, 0, 1);
+			glm::vec4 x = glm::ldexp(A, exp);
+			Error += glm::all(glm::epsilonEqual(x, glm::vec4(1024, .24, 0, -1.33),0.00001f)) ? 0 : 1;
+		}
+
+		return Error;
+	}
+}//namespace ldexp_
+
 int main()
 {
-	int Error(0);
+	int Error = 0;
+
+	glm::ivec4 const a(1);
+	glm::ivec4 const b = ~a;
+
+	glm::int32 const c(1);
+	glm::int32 const d = ~c;
+
+#	if GLM_ARCH & GLM_ARCH_AVX_BIT && GLM_HAS_UNRESTRICTED_UNIONS
+	glm_vec4 const A = _mm_set_ps(4, 3, 2, 1);
+	glm_vec4 const B = glm_vec4_swizzle_xyzw(A);
+	glm_vec4 const C = _mm_permute_ps(A, _MM_SHUFFLE(3, 2, 1, 0));
+	glm_vec4 const D = _mm_permute_ps(A, _MM_SHUFFLE(0, 1, 2, 3));
+	glm_vec4 const E = _mm_shuffle_ps(A, A, _MM_SHUFFLE(0, 1, 2, 3));
+#	endif
 
 	Error += sign::test();
 	Error += floor_::test();
@@ -1147,17 +1251,20 @@ int main()
 	Error += modf_::test();
 	Error += floatBitsToInt::test();
 	Error += floatBitsToUint::test();
+	Error += mix_::test();
 	Error += step_::test();
 	Error += max_::test();
 	Error += min_::test();
-	Error += mix_::test();
 	Error += round_::test();
 	Error += roundEven::test();
 	Error += isnan_::test();
 	Error += isinf_::test();
+	Error += frexp_::test();
+	Error += ldexp_::test();
 
 #	ifdef NDEBUG
-		Error += sign::perf();
+		std::size_t Samples = 1000;
+		Error += sign::perf(Samples);
 #	endif
 
 	return Error;

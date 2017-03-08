@@ -1,0 +1,28 @@
+BlendStateTest released3d12
+RasterizerStateTest DeBuGd3D12
+RasterizerStateTest RELEASED3D12
+DepthStencilStateTest debugd3d12
+DepthStencilStateTest released3d12
+FboTest debugd3d12
+FboTest released3d12
+SamplerTest debugd3d12
+SamplerTest released3d12
+VaoTest debugd3d12
+VaoTest released3d12
+GraphicsStateObjectTest debugd3d12
+GraphicsStateObjectTest released3d12
+ShaderBuffers released3d12 : -test -ssframes 50 -shutdown 2000 
+ComputeShader released3d12 : -test -ssframes 50 -shutdown 2000 -loadimage C:\\Users\\clavelle\\Desktop\\FalcorGitHub\\Media\\StockImage.jpg
+ComputeShader released3d12 : -test -ssframes 50 -shutdown 2000 -loadimage C:\\Users\\clavelle\\Desktop\\FalcorGitHub\\Media\\StockImage.jpg -pixelate
+ComputeShader released3d12 : -test -ssframes 50 -shutdown 2000 -loadimage C:\\Users\\clavelle\\Desktop\\FalcorGitHub\\Media\\TestTex2.png
+ComputeShader released3d12 : -test -ssframes 50 -shutdown 2000 -loadimage C:\\Users\\clavelle\\Desktop\\FalcorGitHub\\Media\\TestTex2.png -pixelate
+MultiPassPostProcess released3d12 : -test -ssframes 40 -shutdown 1000 -loadimage C:\\Users\\clavelle\\Desktop\\FalcorGitHub\\Media\\StockImage.jpg
+MultiPassPostProcess released3d12 : -test -ssframes 40 -shutdown 1000 -loadimage C:\\Users\\clavelle\\Desktop\\FalcorGitHub\\Media\\StockImage.jpg -radialblur
+MultiPassPostProcess released3d12 : -test -ssframes 40 -shutdown 1000 -loadimage C:\\Users\\clavelle\\Desktop\\FalcorGitHub\\Media\\StockImage.jpg -radialblur -grayscale
+MultiPassPostProcess released3d12 : -test -ssframes 40 -shutdown 1000 -loadimage C:\\Users\\clavelle\\Desktop\\FalcorGitHub\\Media\\TestTex2.png
+MultiPassPostProcess released3d12 : -test -ssframes 40 -shutdown 1000 -loadimage C:\\Users\\clavelle\\Desktop\\FalcorGitHub\\Media\\TestTex2.png -radialblur
+MultiPassPostProcess released3d12 : -test -ssframes 40 -shutdown 1000 -loadimage C:\\Users\\clavelle\\Desktop\\FalcorGitHub\\Media\\TestTex2.png -radialblur -grayscale
+ModelViewer released3d12 10 .10 : -test -loadtime -perfframes 50 250 -ssframes 300 -shutdown 325 -cameraradius 700 -loadmodel C:\Users\clavelle\Desktop\quantum\\qb_vs_textures_instances_v2_downscaled_4x.bin
+ModelViewer released3d12 10 .10 : -test -ssframes 50 -shutdown 100 -cameraradius 3 -loadmodel C:\\Users\\clavelle\\Desktop\\FalcorGitHub\\Media\\classroom-minimal.obj
+ModelViewer released3d12 10 .10 : -test -ssframes 50 -shutdown 100 -cameraradius 10 -loadmodel C:\Users\clavelle\Desktop\FalcorGithub\Media\Bumpy\bumpyplane.obj
+Shadows released3d12 10 .10 : -test -loadtime -incrementFilter 100 300 500 700 900 1100 -ssframes 150 350 550 750 950 1150 -perfframes 175 275 375 475 575 675 775 875 975 1075 1175 1275 -shutdown 1300

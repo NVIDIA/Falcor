@@ -26,30 +26,27 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 #pragma once
-#include "Graphics/Scene/SceneRenderer.h"
+#include "Graphics/Model/Model.h"
 
 namespace Falcor
 {
-    class Program;
     class RenderContext;
-    class Material;
     class Camera;
+
 	/**
-	* This is deprecated and has memory leaks
+	* This is deprecated and has performance issues
 	**/
     class ModelRenderer
     {
     public:
         /** Render a model.  Uses frustum culling, if enabled.
             \param[in] pRenderContext The render context
-            \param[in] pProgram       The program to use
             \param[in] pModel         The model to render
             \param[in] pCamera        The camera to use
             \param[in] frustumCulling Enable/disable per-mesh frustum culling
         */
-        static void render(RenderContext* pRenderContext, Program* pProgram, Model::SharedPtr pModel, Camera* pCamera, bool frustumCulling = true);
+        static void render(RenderContext* pRenderContext, Model::SharedPtr pModel, Camera* pCamera, bool frustumCulling = true);
 
     private:
-		static std::map<Model::SharedPtr, SceneRenderer::UniquePtr> sceneMap;
     };
 }

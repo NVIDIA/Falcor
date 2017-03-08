@@ -27,7 +27,7 @@
 ***************************************************************************/
 #pragma once
 #include <string>
-#include "Core/Texture.h"
+#include "API/Texture.h"
 namespace Falcor
 {
     /*!
@@ -37,10 +37,11 @@ namespace Falcor
 
     /** create a new texture from an a file
         \param[in] Filename Filename
-        \param[in] bCreateMipChain true is mip-chain should be generated, otherwise false
-        \param[in] bSrgb Load the texture using sRGB format. Only valid for 3/4 component textures.
+        \param[in] generateMipLevels true is mip-chain should be generated, otherwise false
+        \param[in] loadAsSrgb Load the texture using sRGB format. Only valid for 3/4 component textures.
+        \param[in] bindFlags The bind flags to create the texture with
     */
-	Texture::SharedPtr createTextureFromFile(const std::string& filename, bool generateMipLevels, bool loadAsSrgb);
+	Texture::SharedPtr createTextureFromFile(const std::string& filename, bool generateMipLevels, bool loadAsSrgb, Texture::BindFlags bindFlags = Texture::BindFlags::ShaderResource);
     
     /*! @} */
 }

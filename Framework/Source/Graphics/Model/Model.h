@@ -32,7 +32,8 @@
 #include "glm/vec3.hpp"
 #include "Graphics/Material/BasicMaterial.h"
 #include "Graphics/Model/Mesh.h"
-#include "Core/Sampler.h"
+#include "Graphics/Model/ObjectInstance.h"
+#include "API/Sampler.h"
 #include "Graphics/Model/AnimationController.h"
 
 namespace Falcor
@@ -40,6 +41,7 @@ namespace Falcor
     class AssimpModelImporter;
     class BinaryModelImporter;
     class SimpleModelImporter;
+    class BinaryModelExporter;
     class Buffer;
     class Camera;
 
@@ -52,28 +54,27 @@ namespace Falcor
         using SharedPtr = std::shared_ptr<Model>;
         using SharedConstPtr = std::shared_ptr<const Model>;
 
+        using MeshInstance = ObjectInstance<Mesh>;
+        using MeshInstanceList = std::vector<MeshInstance::SharedPtr>;
+
         enum
         {
             None,
-            CompressTextures            = 1,    ///< When loading textures, compress them if they are uncompressed
-            GenerateTangentSpace        = 2,    ///< Calculate tangent/bitangent vectors if they are missing. This require the model to have normals and texture coordinates
-            FindDegeneratePrimitives    = 4,    ///< Replace degenerate triangles/lines with lines/points. This can create a meshes with topology that wasn't present in the original model.
-            AssumeLinearSpaceTextures   = 8,    ///< By default, textures representing colors (diffuse/specular) are interpreted as sRGB data. Use this flag to force linear space for color textures.
-            DontMergeMeshes             = 16,   ///< Preserve the original list of meshes in the scene, don't merge meshes with the same material
+            GenerateTangentSpace        = 1,    ///< Calculate tangent/bitangent vectors if they are missing. This require the model to have normals and texture coordinates
+            FindDegeneratePrimitives    = 2,    ///< Replace degenerate triangles/lines with lines/points. This can create a meshes with topology that wasn't present in the original model.
+            AssumeLinearSpaceTextures   = 4,    ///< By default, textures representing colors (diffuse/specular) are interpreted as sRGB data. Use this flag to force linear space for color textures.
+            DontMergeMeshes             = 8,   ///< Preserve the original list of meshes in the scene, don't merge meshes with the same material
         };
 
         /** create a new model from file
         */
         static SharedPtr createFromFile(const std::string& filename, uint32_t flags);
 
+        static SharedPtr create();
+
         static const char* kSupportedFileFormatsStr;
 
         ~Model();
-
-        /** Permanently transform all meshes of the object by the given transform
-            \param[in] Transform The transform to apply
-        */
-        void applyTransform(const glm::mat4& transform);
 
         /** Export the model to a binary file
         */
@@ -82,63 +83,93 @@ namespace Falcor
         /** Get the model radius
         */
         float getRadius() const { return mRadius; }
+
         /** Get the model center
         */
-        const glm::vec3& getCenter() const { return mCenter; }
+        const glm::vec3& getCenter() const { return mBoundingBox.center; }
+
+        /** Get the model's AABB
+        */
+        const BoundingBox& getBoundingBox() const { return mBoundingBox; }
+
         /** Get the number of vertices in the model
         */
         uint32_t getVertexCount() const { return mVertexCount; }
+
+        /** Get the number of indices in the model
+        */
+        uint32_t getIndexCount() const { return mIndexCount; }
+
         /** Get the number of primitives in the model
         */
         uint32_t getPrimitiveCount() const { return mPrimitiveCount; }
+
         /** Get the number of meshes in the model
         */
-        uint32_t getMeshCount() const {return uint32_t(mpMeshes.size());}
+        uint32_t getMeshCount() const { return uint32_t(mMeshes.size()); }
 
-        /** Get the number of mesh instances in the model
+        /** Get the total number of mesh instances in the model
         */
-        uint32_t getInstanceCount() const { return mInstanceCount; }
+        uint32_t getInstanceCount() const { return mMeshInstanceCount; }
 
         /** Get the number of unique textures in the model
         */
-        uint32_t getTextureCount() const { return (uint32_t)mpTextures.size(); }
+        uint32_t getTextureCount() const { return mTextureCount; }
 
         /** Get the number of unique materials in the model
         */
-        uint32_t getMaterialCount() const { return (uint32_t)mpMaterials.size(); }
+        uint32_t getMaterialCount() const { return mMaterialCount; }
 
         /** Get the number of unique buffers in the model
         */
-        uint32_t getBufferCount() const { return (uint32_t)mpBuffers.size(); }
+        uint32_t getBufferCount() const { return mBufferCount; }
 
-        /** Get a texture by ID
+        /** Gets a mesh instance
+            \param[in] meshID ID of the mesh
+            \param[in] instanceID ID of the instance
+            \return Mesh instance
         */
-        const Texture::SharedConstPtr& getTexture(uint32_t MeshID) const { return mpTextures[MeshID]; }
+        const MeshInstance::SharedPtr& getMeshInstance(uint_t meshID, uint_t instanceID) const { return mMeshes[meshID][instanceID]; }
 
-        /** Get a mesh by ID
+        /** Gets a mesh
+            \param[in] meshID ID of the mesh
+            \return Mesh object
         */
-        const Mesh::SharedPtr& getMesh(uint32_t MeshID) const { return mpMeshes[MeshID]; }
+        const Mesh::SharedPtr& getMesh(uint32_t meshID) const { return mMeshes[meshID][0]->getObject(); };
 
-        /** Get a material by ID
+        /** Gets how many instances exist of a mesh
+            \param[in] meshID ID of the mesh
+            \return Number of instances
         */
-        const Material::SharedPtr getMaterial(uint32_t materialID) const { return mpMaterials[materialID]; }
+        uint32_t getMeshInstanceCount(uint32_t meshID) const { return meshID >= mMeshes.size() ? 0 : (uint32_t)(mMeshes[meshID].size()); }
+
+        /** Adds a new mesh instance
+            \param[in] pMesh Mesh geometry
+            \param[in] baseTransform Base transform for the instance
+        */
+        void addMeshInstance(const Mesh::SharedPtr& pMesh, const glm::mat4& baseTransform);
 
         /** Check if the model contains animations
         */
         bool hasAnimations() const;
+
         /** Get the number of animations in the model
         */
         uint32_t getAnimationsCount() const;
+
         /** Animate the active animation. Use SetActiveAnimation() to switch between different animations.
             \param[in] CurrentTime The current global time
         */
         void animate(double currentTime);
+
         /** Get the animation name from animation ID
         */
         const std::string& getAnimationName(uint32_t animationID) const;
+
         /** Turn animations off and use bind pose for rendering
         */
         void setBindPose();
+        
         /** Turn animation on and select active animation. Changing the active animation will cause the new animation to play from the beginning
         */
         void setActiveAnimation(uint32_t animationID);
@@ -147,12 +178,18 @@ namespace Falcor
         */
         uint32_t getActiveAnimation() const;
 
+        /** Set the animation controller for the model
+        */
+        void setAnimationController(AnimationController::UniquePtr pAnimController);
+
         /** Check if the model has bones
         */
         bool hasBones() const;
+
         /** Get the number of bone matrices
         */
         uint32_t getBonesCount() const;
+
         /** Get a pointer to the bone matrices
         */
         const glm::mat4* getBonesMatrices() const;
@@ -175,47 +212,52 @@ namespace Falcor
         */
         const std::string& getName() const { return mName; }
 
-		const uint32_t getId() const { return mId; }
+        /** Set the model's filename
+        */
+        void setFilename(const std::string& filename) { mFilename = filename; }
+
+        /** Get the model's filename
+        */
+        const std::string& getFilename() const { return mFilename; }
+
+        /** Get global ID of the model
+        */
+        const uint32_t getId() const { return mId; }
         
         /** Reset all global id counter of model, mesh and material
         */
         static void resetGlobalIdCounter();
 
-    protected:
-        friend class AssimpModelImporter;
-        friend class BinaryModelImporter;
-        friend class SimpleModelImporter;
-        Model();
-        void setAnimationController(AnimationController::UniquePtr pAnimController);
-        void addMesh(Mesh::SharedPtr pMesh);
-        Material::SharedPtr getOrAddMaterial(const Material::SharedPtr& pMaterial); // If a similar material already exists, will return the existing one. Otherwise, will return the material in pMaterial
-
-        void addBuffer(const Buffer::SharedConstPtr& pBuffer);
-        void addTexture(const Texture::SharedConstPtr& pTexture);
     private:
+        friend class SimpleModelImporter;
+
+        Model();
+
+        void sortMeshes();
+        void deleteCulledMeshInstances(MeshInstanceList& meshInstances, const Camera *pCamera);
+
+        BoundingBox mBoundingBox;
         float mRadius;
-        glm::vec3 mCenter;
 
         uint32_t mVertexCount;
+        uint32_t mIndexCount;
         uint32_t mPrimitiveCount;
-        uint32_t mInstanceCount;
+        uint32_t mMeshInstanceCount;
+        uint32_t mBufferCount;
+        uint32_t mMaterialCount;
+        uint32_t mTextureCount;
 
-		uint32_t mId;
+        uint32_t mId;
 
-        std::vector<Material::SharedPtr> mpMaterials;
+        std::vector<MeshInstanceList> mMeshes; // [Mesh][Instance]
 
-        std::vector<Mesh::SharedPtr> mpMeshes;
         AnimationController::UniquePtr mpAnimationController;
-        std::vector<Buffer::SharedConstPtr> mpBuffers;
-        std::vector<Texture::SharedConstPtr> mpTextures;
 
         std::string mName;
+        std::string mFilename;
 
-		static uint32_t sModelCounter;
+        static uint32_t sModelCounter;
 
         void calculateModelProperties();
-        void deleteUnusedMaterials(std::map<const Material*, bool> usedMaterials);
-        void deleteUnusedBuffers(std::map<const Buffer*, bool> usedBuffers);
-        void compressAllTextures();
     };
 }

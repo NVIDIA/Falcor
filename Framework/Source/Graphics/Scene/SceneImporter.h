@@ -35,14 +35,15 @@
 #include "Scene.h"
 
 namespace Falcor
-{    
+{
     class SceneImporter
     {
-    protected:
-        friend class Scene;
+    public:
+
         static Scene::SharedPtr loadScene(const std::string& filename, uint32_t modelLoadFlags, uint32_t sceneLoadFlags);
 
     private:
+
         SceneImporter() = default;
         Scene::SharedPtr load(const std::string& filename, const uint32_t& modelLoadFlags, uint32_t sceneLoadFlags);
 
@@ -65,7 +66,8 @@ namespace Falcor
         bool loadIncludeFile(const std::string& Include);
 
         bool createModel(const rapidjson::Value& jsonModel);
-        bool createModelInstances(const rapidjson::Value& jsonVal, uint32_t modelID);
+        bool setMaterialOverrides(const rapidjson::Value& jsonVal, const Model::SharedPtr& pModel);
+        bool createModelInstances(const rapidjson::Value& jsonVal, const Model::SharedPtr& pModel);
         bool createPointLight(const rapidjson::Value& jsonLight);
         bool createDirLight(const rapidjson::Value& jsonLight);
         ObjectPath::SharedPtr createPath(const rapidjson::Value& jsonPath);
@@ -73,27 +75,34 @@ namespace Falcor
         bool createCamera(const rapidjson::Value& jsonCamera);
 
         bool createMaterial(const rapidjson::Value& jsonMaterial);
-        bool createMaterialLayer(const rapidjson::Value& jsonLayer, MaterialLayerValues& layerData, MaterialLayerDesc& layerDesc);
-        bool createMaterialValue(const rapidjson::Value& jsonValue, MaterialValue& matValue);
+        bool createMaterialLayer(const rapidjson::Value& jsonLayer, Material::Layer& layerOut);
         bool createAllMaterialLayers(const rapidjson::Value& jsonLayerArray, Material* pMaterial);
 
-        bool createMaterialLayerType(const rapidjson::Value& jsonValue, MaterialLayerDesc& matLayer);
-        bool createMaterialLayerNDF(const rapidjson::Value& jsonValue, MaterialLayerDesc& matLayer);
-        bool createMaterialLayerBlend(const rapidjson::Value& jsonValue, MaterialLayerDesc& matLayer);
+        bool createMaterialLayerType(const rapidjson::Value& jsonValue, Material::Layer& layerOut);
+        bool createMaterialLayerNDF(const rapidjson::Value& jsonValue, Material::Layer& layerOut);
+        bool createMaterialLayerBlend(const rapidjson::Value& jsonValue, Material::Layer& layerOut);
 
-        bool createMaterialTexture(const rapidjson::Value& jsonValue, Texture::SharedPtr& pTexture);
-		bool createMaterialValueColor(const rapidjson::Value& jsonValue, glm::vec4& color);
+        bool createMaterialTexture(const rapidjson::Value& jsonValue, Texture::SharedPtr& pTexture, bool isSrgb);
 
         Scene* error(const std::string& msg);
 
         template<uint32_t VecSize>
         bool getFloatVec(const rapidjson::Value& jsonVal, const std::string& desc, float vec[VecSize]);
+        bool getFloatVecAnySize(const rapidjson::Value& jsonVal, const std::string& desc, std::vector<float>& vec);
         rapidjson::Document mJDoc;
         Scene::SharedPtr mpScene = nullptr;
         std::string mFilename;
         std::string mDirectory;
         uint32_t mModelLoadFlags = 0;
-		uint32_t mSceneLoadFlags = 0;
+        uint32_t mSceneLoadFlags = 0;
+
+        using ObjectMap = std::map<std::string, IMovableObject::SharedPtr>;
+        bool isNameDuplicate(const std::string& name, const ObjectMap& objectMap, const std::string& objectType) const;
+        IMovableObject::SharedPtr getMovableObject(const std::string& type, const std::string& name) const;
+
+        ObjectMap mInstanceMap;
+        ObjectMap mCameraMap;
+        ObjectMap mLightMap;
 
         struct FuncValue
         {

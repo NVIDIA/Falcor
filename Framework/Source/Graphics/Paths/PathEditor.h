@@ -29,65 +29,48 @@
 #include "Utils/Gui.h"
 #include "Graphics/Paths/ObjectPath.h"
 #include "Graphics/Camera/Camera.h"
-#include "Utils/Gui.h"
+#include "Graphics/Scene/Scene.h"
 
 namespace Falcor
 {
     class PathEditor
     {
     public:
-        using pfnEditComplete = void(*)(void*);
+        using PathEditorCallback = std::function<void(void)>;
         using UniquePtr = std::unique_ptr<PathEditor>;
         using UniqueConstPtr = std::unique_ptr<const PathEditor>;
 
-        static UniquePtr create(const ObjectPath::SharedPtr& pPath, const Camera::SharedPtr& pCamera, pfnEditComplete editCompleteCB, void* pUserData);
+        static UniquePtr create(const ObjectPath::SharedPtr& pPath, const Camera::SharedPtr& pCamera, PathEditorCallback frameChangedCB, PathEditorCallback addRemoveKeyframeCB, PathEditorCallback editCompleteCB);
         ~PathEditor();
 
-        void setCamera(const Camera::SharedPtr& pCamera);
+        void render(Gui* pGui);
 
-        static void GUI_CALL closeEditorCB(void* pUserData);
-        static void GUI_CALL addFrameCB(void* pUserData);
-        static void GUI_CALL updateFrameCB(void* pUserData);
-        static void GUI_CALL deleteFrameCB(void* pUserData);
+        void setActiveFrame(uint32_t id);
+        uint32_t getActiveFrame() const { return mActiveFrame; }
 
-        static void GUI_CALL getActiveFrameID(void* pVar, void* pUserData);
-        static void GUI_CALL setActiveFrameID(const void* pVar, void* pUserData);
-
-        static void GUI_CALL getPathLoop(void* pVar, void* pUserData);
-        static void GUI_CALL setPathLoop(const void* pVar, void* pUserData);
-
-        static void GUI_CALL getPathName(void* pVar, void* pUserData);
-        static void GUI_CALL setPathName(const void* pVar, void* pUserData);
-
-        template<uint32_t channel>
-        static void GUI_CALL setCameraPositionCB(const void* pVal, void* pUserData);
-        template<uint32_t channel>
-        static void GUI_CALL getCameraPositionCB(void* pVal, void* pUserData);
-
-        template<uint32_t channel>
-        static void GUI_CALL setCameraTargetCB(const void* pVal, void* pUserData);
-        template<uint32_t channel>
-        static void GUI_CALL getCameraTargetCB(void* pVal, void* pUserData);
-
-        template<uint32_t channel>
-        static void GUI_CALL setCameraUpCB(const void* pVal, void* pUserData);
-        template<uint32_t channel>
-        static void GUI_CALL getCameraUpCB(void* pVal, void* pUserData);
+        const ObjectPath::SharedPtr& getPath() const { return mpPath; }
 
     private:
-        PathEditor(const ObjectPath::SharedPtr& pPath, const Camera::SharedPtr& pCamera, pfnEditComplete editCompleteCB, void* pUserData);
+        PathEditor(const ObjectPath::SharedPtr& pPath, const Camera::SharedPtr& pCamera, PathEditorCallback frameChangedCB, PathEditorCallback addRemoveKeyframeCB, PathEditorCallback editCompleteCB);
 
-        void initUI();
-        void addFrame();
-        void updateFrame();
-        void deleteFrame();
+        bool closeEditor(Gui* pGui);
+        void editPathName(Gui* pGui);
+        void editPathLoop(Gui* pGui);
+        void editActiveFrameID(Gui* pGui);
+        void addFrame(Gui* pGui);
+        void deleteFrame(Gui* pGui);
+        void editFrameTime(Gui* pGui);
+        void editKeyframeProperties(Gui* pGui);
 
-        void updateFrameCountUI();
-        Gui::UniquePtr mpGui;
+        void updateFrameTime(Gui* pGui);
+        void moveToCamera(Gui* pGui);
+
         ObjectPath::SharedPtr mpPath;
         Camera::SharedPtr mpCamera;
-        pfnEditComplete mEditCompleteCB = nullptr;
-        void* mpUserData = nullptr;
+
+        PathEditorCallback mEditCompleteCB;
+        PathEditorCallback mFrameChangedCB;
+        PathEditorCallback mAddRemoveKeyframeCB;
 
         int32_t mActiveFrame = 0;
         float mFrameTime = 0;

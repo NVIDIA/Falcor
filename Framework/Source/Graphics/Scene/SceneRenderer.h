@@ -30,14 +30,14 @@
 #include "Utils/Gui.h"
 #include "Graphics/Camera/CameraController.h"
 #include "Graphics/Scene/Scene.h"
-#include "SceneEditor.h"
 #include "utils/CpuTimer.h"
-#include "Core/UniformBuffer.h"
+#include "API/ConstantBuffer.h"
+#include "Utils/DebugDrawer.h"
 
 namespace Falcor
 {
     class Model;
-    class Program;
+    class GraphicsState;
     class RenderContext;
     class Material;
     class Mesh;
@@ -61,13 +61,13 @@ namespace Falcor
         /** Renders the full scene, does update of the camera internally
             Call update() before using this function, otherwise camera will not move and models will not be animated
         */
-        void renderScene(RenderContext* pContext, Program* pProgram);
+        void renderScene(RenderContext* pContext);
 
         /** Renders the full scene, overriding the internal camera
             Call update() before using this function otherwise model animation will not work
         */
-        void renderScene(RenderContext* pContext, Program* pProgram, Camera* pCamera);
-        
+        void renderScene(RenderContext* pContext, Camera* pCamera);
+
         /** Update the camera and model animation.
             Should be called before renderScene(), unless not animations are used and you update the camera manualy
         */
@@ -103,45 +103,47 @@ namespace Falcor
 
         void setRenderMode(RenderMode mode);
         void toggleStaticMaterialCompilation(bool on) { mCompileMaterialWithProgram = on; }
+
     protected:
 
-		struct CurrentWorkingData
-		{
-			const Camera* pCamera;
-			mutable Program* pProgram;
-			const Model* pModel;
-			const Mesh* pMesh;
-			const Material* pMaterial;
-		};
+        struct CurrentWorkingData
+        {
+            const Camera* pCamera;
+            mutable GraphicsState* pGsoCache;
+            const Model* pModel;
+            const Material* pMaterial;
+
+            uint32_t drawID; // Zero-based mesh instance draw order/ID. Resets at the beginning of renderScene, and increments per mesh instance drawn.
+        };
 
         SceneRenderer(const Scene::SharedPtr& pScene);
         Scene::SharedPtr mpScene;
-        
-        static UniformBuffer::SharedPtr sPerMaterialCB;
-        static UniformBuffer::SharedPtr sPerFrameCB;
-        static UniformBuffer::SharedPtr sPerStaticMeshCB;
-        static UniformBuffer::SharedPtr sPerSkinnedMeshCB;
+
+        static const char* kPerMaterialCbName;
+        static const char* kPerFrameCbName;
+        static const char* kPerStaticMeshCbName;
+        static const char* kPerSkinnedMeshCbName;
+
         static size_t sBonesOffset;
         static size_t sCameraDataOffset;
         static size_t sWorldMatOffset;
         static size_t sMeshIdOffset;
+        static size_t sDrawIDOffset;
 
-    private:
-        void createUniformBuffers(Program* pProgram);
-        void bindUniformBuffers(RenderContext* pRenderContext, Program* pProgram);
+        static void updateVariableOffsets(const ProgramReflection* pReflector);
 
         virtual void setPerFrameData(RenderContext* pContext, const CurrentWorkingData& currentData);
         virtual bool setPerModelData(RenderContext* pContext, const CurrentWorkingData& currentData);
+        virtual bool setPerModelInstanceData(RenderContext* pContext, const Scene::ModelInstance::SharedPtr& pModelInstance, uint32_t instanceID, const CurrentWorkingData& currentData);
         virtual bool setPerMeshData(RenderContext* pContext,  const CurrentWorkingData& currentData);
-        virtual bool setPerMeshInstanceData(RenderContext* pContext, const glm::mat4& translation, uint32_t meshInstanceID, uint32_t drawInstanceID, const CurrentWorkingData& currentData);
+        virtual bool setPerMeshInstanceData(RenderContext* pContext, const Scene::ModelInstance::SharedPtr& pModelInstance, const Model::MeshInstance::SharedPtr& pMeshInstance, uint32_t drawInstanceID, const CurrentWorkingData& currentData);
         virtual bool setPerMaterialData(RenderContext* pContext, const CurrentWorkingData& currentData);
         virtual void postFlushDraw(RenderContext* pContext, const CurrentWorkingData& currentData);
 
-        void renderModel(RenderContext* pContext, Program* pProgram, const Model* pModel, const glm::mat4& instanceMatrix, Camera* pCamera, CurrentWorkingData& currentData);
-        void renderMesh(RenderContext* pContext, const Mesh* pMesh, const glm::mat4& translation, Camera* pCamera, CurrentWorkingData& currentData);
+        void renderModelInstance(RenderContext* pContext, const Scene::ModelInstance::SharedPtr& pModelInstance, Camera* pCamera, CurrentWorkingData& currentData);
+        void renderMeshInstances(RenderContext* pContext, uint32_t modelID, const Scene::ModelInstance::SharedPtr& pModelInstance, Camera* pCamera, CurrentWorkingData& currentData);
         void flushDraw(RenderContext* pContext, const Mesh* pMesh, uint32_t instanceCount, CurrentWorkingData& currentData);
 
-    protected:
         void setupVR();
 
         CameraControllerType mCamControllerType = CameraControllerType::SixDof;

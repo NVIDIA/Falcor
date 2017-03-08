@@ -28,7 +28,7 @@
 #version 420
 #include "HlslGlslCommon.h"
 
-UNIFORM_BUFFER(PerImageCB, 0)
+CONSTANT_BUFFER(PerImageCB, 0)
 {
     sampler2D gTexture;
 };

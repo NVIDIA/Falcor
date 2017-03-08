@@ -27,46 +27,44 @@
 ***************************************************************************/
 #pragma once
 #include "Falcor.h"
+#include "SampleTest.h"
 
 using namespace Falcor;
 
-class ShaderBuffersSample : public Sample
+class ShaderBuffersSample : public Sample, public SampleTest
 {
 public:
     void onLoad() override;
     void onFrameRender() override;
-    void onShutdown() override;
     void onResizeSwapChain() override;
     bool onKeyEvent(const KeyboardEvent& keyEvent) override;
     bool onMouseEvent(const MouseEvent& mouseEvent) override;
+    void onGuiRender() override;
     void onDataReload() override;
 
 private:
-    void initUI();
 
-    Program::SharedPtr mpProgram;
+    GraphicsProgram::SharedPtr mpProgram;
+    GraphicsVars::SharedPtr mpProgramVars;
     Model::SharedPtr mpModel;
     Vao::SharedConstPtr mpVao;
     uint32_t mIndexCount = 0;
-
-    ShaderStorageBuffer::SharedPtr mpPixelCountBuffer = nullptr;
+    Buffer::SharedPtr mpInvocationsBuffer;
+    TypedBuffer<vec3>::SharedPtr mpSurfaceColorBuffer;
 
     bool mCountPixelShaderInvocations = false;
 
     Camera::SharedPtr mpCamera;
     ModelViewCameraController mCameraController;
 
-    DepthStencilState::SharedConstPtr mpDepthTestDS = nullptr;
-    RasterizerState::SharedConstPtr mpBackFaceCullRS = nullptr;
-    
     struct Light
     {
-        glm::vec3 worldDir;
-        glm::vec3 intensity;
+        glm::vec3 worldDir = glm::vec3(0, -1, 0);
+        glm::vec3 intensity = glm::vec3(0.6f, 0.8f, 0.8f);
     };
 
     Light mLightData;
 
-    glm::vec3 mSurfaceColor = glm::vec3(1,1,1);
+    glm::vec3 mSurfaceColor = glm::vec3(0.36f,0.87f,0.52f);
     Vao::SharedConstPtr getVao();
 };

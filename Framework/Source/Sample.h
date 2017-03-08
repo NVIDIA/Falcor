@@ -30,12 +30,14 @@
 #include <set>
 #include <string>
 #include <stdint.h>
-#include "Core/Window.h"
+#include "API/Window.h"
 #include "utils/FrameRate.h"
 #include "utils/Gui.h"
 #include "utils/TextRenderer.h"
-#include "core/RenderContext.h"
+#include "API/RenderContext.h"
 #include "Utils/Video/VideoEncoderUI.h"
+#include "API/Device.h"
+#include "ArgList.h"
 
 namespace Falcor
 {
@@ -49,8 +51,8 @@ namespace Falcor
     */
     struct SampleConfig
     {
-        Window::Desc windowDesc;            ///< Controls window and graphics device creation
-        bool enableVsync = false;           ///< Controls vertical-sync
+        Window::Desc windowDesc;            ///< Controls window and creation
+		Device::Desc deviceDesc;			///< Controls device creation;
         bool showMessageBoxOnError = _SHOW_MB_BY_DEFAULT; ///< Show message box on framework/API errors.
         float timeScale = 1;                ///< A scaling factor for the time elapsed between frames.
         bool freezeTimeOnStartup = false;   ///< Control whether or not to start the clock when the sample start running.
@@ -103,6 +105,12 @@ namespace Falcor
         */
         virtual bool onMouseEvent(const MouseEvent& mouseEvent) { return false; }
         
+        /** Called after onFrameRender() 
+        It is highly recommended to use onGuiRender() exclusicly for GUI handling. onGuiRender() will not be called when the GUI is hidden, which should help reduce CPU overhead.
+        You could also ignore this and render the GUI directly in your onFrameRender() function, but that is discouraged.
+        */
+        virtual void onGuiRender() {};
+
         /** Resize the swap-chain buffers
             \param width Requested width
             \param height Requested height
@@ -123,10 +131,9 @@ namespace Falcor
         */
         void renderText(const std::string& str, const glm::vec2& position, const glm::vec2 shadowOffset = glm::vec2(1.f, 1.f)) const;
 
-        /** Get the global sample message, which includes the FPS and potentially help message
-            \param includeHelpMsg If true, the returned message will contain the help message, otherwise will only contain the FPS.
+        /** Get the FPS message string
         */
-        const std::string getGlobalSampleMessage(bool includeHelpMsg) const;
+        const std::string getFpsMsg() const;
 
         /** Close the window and exit the application
         */
@@ -136,39 +143,32 @@ namespace Falcor
         */
         void pollForEvents();
         
-        /** Swap buffers
+        /** Change the title of the window
         */
-        void swapBuffers();
-
-        void setWindowTitle(std::string title);
+        void setWindowTitle(const std::string& title);
         
-        bool windowShouldClose();
-        void toggleUI(bool showUI);
+        /** show/hide the UI
+        */
+        void toggleUI(bool showUI) { mShowUI = showUI; }
+
         Gui::UniquePtr mpGui;                             ///< Main sample GUI
         RenderContext::SharedPtr mpRenderContext;         ///< The rendering context
+        GraphicsState::SharedPtr mpDefaultPipelineState;  ///< The default pipeline state 
         Fbo::SharedPtr mpDefaultFBO;                      ///< The default FBO object
         bool mFreezeTime;                                 ///< Whether global time is frozen
-        double mCurrentTime = 0;                          ///< Global time
+        float mCurrentTime = 0;                           ///< Global time
+        ArgList mArgList;
 
     protected:
-        enum class TextMode
-        {
-            All,
-            FpsOnly,
-            NoText,
-
-            Count
-        };
-
         void renderFrame() override;
-        void handleFrameBufferSizeChange(const Fbo::SharedPtr& pFBO) override;
+        void handleWindowSizeChange() override;
         void handleKeyboardEvent(const KeyboardEvent& keyEvent) override;
         void handleMouseEvent(const MouseEvent& mouseEvent) override;
         virtual float getTimeScale() final { return mTimeScale; }
         void initVideoCapture();
         void captureScreen();
-        void setTextMode(TextMode mode);
-
+        void toggleText(bool enabled);
+        uint32_t getFrameID() const { return mFrameRate.getFrameCount(); }
     private:
         // Private functions
         void initUI();
@@ -178,13 +178,15 @@ namespace Falcor
         void startVideoCapture();
         void endVideoCapture();
         void captureVideoFrame();
-        Window::UniquePtr mpWindow;
+        void renderGUI();
+
+        Window::SharedPtr mpWindow;
 
         bool mVsyncOn = false;
-
-        bool mCaptureScreen = false;
+        bool mShowText = true;
         bool mShowUI = true;
         bool mVrEnabled = false;
+        bool mCaptureScreen = false;
 
         struct VideoCaptureData
         {
@@ -198,15 +200,8 @@ namespace Falcor
 
         FrameRate mFrameRate;
         float mTimeScale;
-        TextMode mTextMode = TextMode::All;
 
         TextRenderer::UniquePtr mpTextRenderer;
         std::set<KeyboardEvent::Key> mPressedKeys;
-
-        // GUI callbacks
-        static void GUI_CALL captureScreenCB(void* pUserData);
-        static void GUI_CALL initVideoCaptureCB(void* pUserData);
-        static void GUI_CALL startVideoCaptureCB(void* pUserData);
-        static void GUI_CALL endVideoCaptureCB(void* pUserData);
     };
 };

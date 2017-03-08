@@ -43,15 +43,13 @@ public:
     bool onMouseEvent(const MouseEvent& mouseEvent) override;
 
 private:
-    void initUI();
-
     Sampler::SharedPtr              mpLinearSampler;
     float                           mAspectRatio = 0;
     RasterizerState::SharedPtr      mpNoCullRastState;
     DepthStencilState::SharedPtr    mpNoDepthDS;
     BlendState::SharedPtr           mpOpaqueBS;
     FullScreenPass::UniquePtr       mpMainPass;
-    UniformBuffer::SharedPtr        mpToyCB;
+    GraphicsVars::SharedPtr         mpToyVars;
     uint32_t                        mToyCBBinding;
 
 };
