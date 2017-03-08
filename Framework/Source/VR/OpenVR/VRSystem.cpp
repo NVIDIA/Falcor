@@ -135,11 +135,6 @@ namespace Falcor
         }
 
         hmdError = vr::VRInitError_None;
-        spVrSystem->mpOverlay = (vr::IVROverlay *)vr::VR_GetGenericInterface(vr::IVROverlay_Version, &hmdError);
-        if (!spVrSystem->mpOverlay)
-        {
-            spVrSystem->mpOverlay = 0;
-        }
 
         // Create a display/hmd object for our system
         spVrSystem->mDisplay = VRDisplay::create(spVrSystem->mpHMD, spVrSystem->mpModels);
@@ -155,9 +150,6 @@ namespace Falcor
 
         // Create a play area
         spVrSystem->mPlayArea = VRPlayArea::create(spVrSystem->mpHMD, spVrSystem->mpChaperone);
-
-        // Create a overlay
-        spVrSystem->mOverlay = VROverlay::create(spVrSystem->mpOverlay);
 
         // All right!  Done with basic setup.  If we get this far, we should be ready and able to render
         //    (even if we have issues with controllers, etc).
@@ -274,7 +266,7 @@ namespace Falcor
                     // Check to see if we have a tracker/lighthouse model yet.  If not, get one.
                     if(!mpLighthouseModel)
                     {
-                        mpLighthouseModel = pTracker->getRenderableModel();
+//                        mpLighthouseModel = pTracker->getRenderableModel();
                     }
 
                     printf("Lighthouse tracker %d activated; OpenVR device ID %d\n", (mTracker[0]->getDeviceID() == event.trackedDeviceIndex ? 0 : 1), event.trackedDeviceIndex);
@@ -362,32 +354,43 @@ namespace Falcor
 
     }
 
-    bool VRSystem::submit(VRDisplay::Eye whichEye, Texture::SharedConstPtr displayTex)
+    bool VRSystem::submit(VRDisplay::Eye whichEye, Texture::SharedConstPtr displayTex, RenderContext* pRenderCtx)
     {
         if(!mpCompositor) return false;
 
-        vr::Texture_t subTex;
-        subTex.handle = (void *)(size_t)displayTex->getApiHandle();
-        subTex.eColorSpace = isSrgbFormat(displayTex->getFormat()) ? vr::EColorSpace::ColorSpace_Gamma : vr::EColorSpace::ColorSpace_Linear;
-        subTex.eType = (vr::GraphicsAPIConvention)(mRenderAPI);
+        vr::D3D12TextureData_t submitTex;
 
-        mpCompositor->Submit((whichEye == VRDisplay::Eye::Right) ? vr::Eye_Right : vr::Eye_Left,       // Left or right eye?
-            &subTex,                                                                  // Our API handle
-            NULL);                                                                   // No cropping of input texture
+        submitTex.m_pResource = displayTex->getApiHandle();
+        submitTex.m_pCommandQueue = pRenderCtx->getLowLevelData()->getCommandQueue();
+        submitTex.m_nNodeMask = 0;
+
+        vr::Texture_t subTex;
+
+        subTex.eType = vr::TextureType_DirectX12;
+        subTex.handle = &submitTex;
+        subTex.eColorSpace = isSrgbFormat(displayTex->getFormat()) ? vr::EColorSpace::ColorSpace_Gamma : vr::EColorSpace::ColorSpace_Linear;
+
+        mpCompositor->Submit((whichEye == VRDisplay::Eye::Right) ? vr::Eye_Right : vr::Eye_Left, &subTex, NULL);
         return true;
     }
-    bool VRSystem::submit(VRDisplay::Eye whichEye, Fbo::SharedConstPtr displayFbo)
+    
+    bool VRSystem::submit(VRDisplay::Eye whichEye, Fbo::SharedConstPtr displayFbo, RenderContext* pRenderCtx)
     {
-        if(!mpCompositor) return false;
+        if (!mpCompositor) return false;
+
+        vr::D3D12TextureData_t submitTex;
+
+        submitTex.m_pResource = displayFbo->getColorTexture(0)->getApiHandle();
+        submitTex.m_pCommandQueue = pRenderCtx->getLowLevelData()->getCommandQueue();
+        submitTex.m_nNodeMask = 0;
 
         vr::Texture_t subTex;
-        subTex.handle = (void *)(size_t)displayFbo->getColorTexture(0)->getApiHandle();
-        subTex.eColorSpace = isSrgbFormat(displayFbo->getColorTexture(0)->getFormat()) ? vr::EColorSpace::ColorSpace_Gamma : vr::EColorSpace::ColorSpace_Linear;
-        subTex.eType = (vr::GraphicsAPIConvention)(mRenderAPI);
 
-        mpCompositor->Submit((whichEye == VRDisplay::Eye::Right) ? vr::Eye_Right : vr::Eye_Left,        // Left or right eye?
-            &subTex,                                                                  // Submitted texture
-            NULL);                                                                   // No cropping of input texture
+        subTex.eType = vr::TextureType_DirectX12;
+        subTex.handle = &submitTex;
+        subTex.eColorSpace = isSrgbFormat(displayFbo->getColorTexture(0)->getFormat()) ? vr::EColorSpace::ColorSpace_Gamma : vr::EColorSpace::ColorSpace_Linear;
+
+        mpCompositor->Submit((whichEye == VRDisplay::Eye::Right) ? vr::Eye_Right : vr::Eye_Left, &subTex, NULL);
         return true;
     }
 
@@ -397,73 +400,73 @@ namespace Falcor
     //     distorted image yourself on your non-HMD screen, you'll need this to do the transformation.
     void VRSystem::createDistortionVBO(void)
     {
-        // Declare internal structure type only needed in this method...
-        struct VertexDataLens
-        {
-            float position[2];
-            float texCoordRed[2];
-            float texCoordGreen[2];
-            float texCoordBlue[2];
-        };
+        //// Declare internal structure type only needed in this method...
+        //struct VertexDataLens
+        //{
+        //    float position[2];
+        //    float texCoordRed[2];
+        //    float texCoordGreen[2];
+        //    float texCoordBlue[2];
+        //};
 
-        // HACK!  This may only work for OpenGL renderers...  TBD.  (This code came from the OpenVR OpenGL sample app.)
-        if(!mpHMD) return;
+        //// HACK!  This may only work for OpenGL renderers...  TBD.  (This code came from the OpenVR OpenGL sample app.)
+        //if(!mpHMD) return;
 
-        uint32_t m_iLensGridSegmentCountH = 43;
-        uint32_t m_iLensGridSegmentCountV = 43;
+        //uint32_t m_iLensGridSegmentCountH = 43;
+        //uint32_t m_iLensGridSegmentCountV = 43;
 
-        float w = (float)(1.0 / float(m_iLensGridSegmentCountH - 1));
-        float h = (float)(1.0 / float(m_iLensGridSegmentCountV - 1));
-        float u, v = 0;
-        std::vector<VertexDataLens> vVerts(0);
-        std::vector<uint32_t> vIndices;
-        uint32_t a, b, c, d;
+        //float w = (float)(1.0 / float(m_iLensGridSegmentCountH - 1));
+        //float h = (float)(1.0 / float(m_iLensGridSegmentCountV - 1));
+        //float u, v = 0;
+        //std::vector<VertexDataLens> vVerts(0);
+        //std::vector<uint32_t> vIndices;
+        //uint32_t a, b, c, d;
 
-        // Distortion vertex positions
-        for(int eye = 0; eye < 2; eye++)
-        {
-            float Xoffset = (eye == 0) ? -1.0f : 0.0f;
-            for(int y = 0; y<int(m_iLensGridSegmentCountV); y++)
-            {
-                for(int x = 0; x<int(m_iLensGridSegmentCountH); x++)
-                {
-                    u = x*w; v = 1 - y*h;
-                    vr::DistortionCoordinates_t dc0 = mpHMD->ComputeDistortion((eye == 0) ? vr::Eye_Left : vr::Eye_Right, u, v);
-                    vVerts.push_back({{Xoffset + u, -1 + 2 * y*h}, {dc0.rfRed[0], 1 - dc0.rfRed[1]}, {dc0.rfGreen[0], 1 - dc0.rfGreen[1]}, {dc0.rfBlue[0], 1 - dc0.rfBlue[1]}});
-                }
-            }
+        //// Distortion vertex positions
+        //for(int eye = 0; eye < 2; eye++)
+        //{
+        //    float Xoffset = (eye == 0) ? -1.0f : 0.0f;
+        //    for(int y = 0; y<int(m_iLensGridSegmentCountV); y++)
+        //    {
+        //        for(int x = 0; x<int(m_iLensGridSegmentCountH); x++)
+        //        {
+        //            u = x*w; v = 1 - y*h;
+        //            vr::DistortionCoordinates_t dc0 = mpHMD->ComputeDistortion((eye == 0) ? vr::Eye_Left : vr::Eye_Right, u, v);
+        //            vVerts.push_back({{Xoffset + u, -1 + 2 * y*h}, {dc0.rfRed[0], 1 - dc0.rfRed[1]}, {dc0.rfGreen[0], 1 - dc0.rfGreen[1]}, {dc0.rfBlue[0], 1 - dc0.rfBlue[1]}});
+        //        }
+        //    }
 
-            uint32_t offset = (eye == 0) ? 0 : (m_iLensGridSegmentCountH)*(m_iLensGridSegmentCountV);
-            for(uint32_t y = 0; y < m_iLensGridSegmentCountV - 1; y++)
-            {
-                for(uint32_t x = 0; x < m_iLensGridSegmentCountH - 1; x++)
-                {
-                    a = m_iLensGridSegmentCountH*y + x + offset;
-                    b = m_iLensGridSegmentCountH*y + x + 1 + offset;
-                    c = (y + 1)*m_iLensGridSegmentCountH + x + 1 + offset;
-                    d = (y + 1)*m_iLensGridSegmentCountH + x + offset;
-                    vIndices.push_back(a);
-                    vIndices.push_back(b);
-                    vIndices.push_back(c);
+        //    uint32_t offset = (eye == 0) ? 0 : (m_iLensGridSegmentCountH)*(m_iLensGridSegmentCountV);
+        //    for(uint32_t y = 0; y < m_iLensGridSegmentCountV - 1; y++)
+        //    {
+        //        for(uint32_t x = 0; x < m_iLensGridSegmentCountH - 1; x++)
+        //        {
+        //            a = m_iLensGridSegmentCountH*y + x + offset;
+        //            b = m_iLensGridSegmentCountH*y + x + 1 + offset;
+        //            c = (y + 1)*m_iLensGridSegmentCountH + x + 1 + offset;
+        //            d = (y + 1)*m_iLensGridSegmentCountH + x + offset;
+        //            vIndices.push_back(a);
+        //            vIndices.push_back(b);
+        //            vIndices.push_back(c);
 
-                    vIndices.push_back(a);
-                    vIndices.push_back(c);
-                    vIndices.push_back(d);
-                }
-            }
-        }
+        //            vIndices.push_back(a);
+        //            vIndices.push_back(c);
+        //            vIndices.push_back(d);
+        //        }
+        //    }
+        //}
 
-        SimpleModelImporter::VertexFormat vaoLayout;
-        vaoLayout.attribs.push_back({SimpleModelImporter::AttribType::Position, 2, AttribFormat::AttribFormat_F32});
-        vaoLayout.attribs.push_back({SimpleModelImporter::AttribType::User0, 2, AttribFormat::AttribFormat_F32});  // texcoord red
-        vaoLayout.attribs.push_back({SimpleModelImporter::AttribType::User1, 2, AttribFormat::AttribFormat_F32});  // texcoord green
-        vaoLayout.attribs.push_back({SimpleModelImporter::AttribType::User2, 2, AttribFormat::AttribFormat_F32});  // texcoord blue
-        mpLensDistortModel[0] = SimpleModelImporter::create(vaoLayout,
-            uint32_t(vVerts.size()*sizeof(VertexDataLens)), &vVerts[0],
-            uint32_t(vIndices.size()*sizeof(uint32_t) / 2), &vIndices[0]);
-        mpLensDistortModel[1] = SimpleModelImporter::create(vaoLayout,
-            uint32_t(vVerts.size()*sizeof(VertexDataLens)), &vVerts[0],
-            uint32_t(vIndices.size()*sizeof(uint32_t) / 2), &vIndices[vIndices.size() / 2]);
+        //SimpleModelImporter::VertexFormat vaoLayout;
+        //vaoLayout.attribs.push_back({SimpleModelImporter::AttribType::Position, 2, AttribFormat::AttribFormat_F32});
+        //vaoLayout.attribs.push_back({SimpleModelImporter::AttribType::User0, 2, AttribFormat::AttribFormat_F32});  // texcoord red
+        //vaoLayout.attribs.push_back({SimpleModelImporter::AttribType::User1, 2, AttribFormat::AttribFormat_F32});  // texcoord green
+        //vaoLayout.attribs.push_back({SimpleModelImporter::AttribType::User2, 2, AttribFormat::AttribFormat_F32});  // texcoord blue
+        //mpLensDistortModel[0] = SimpleModelImporter::create(vaoLayout,
+        //    uint32_t(vVerts.size()*sizeof(VertexDataLens)), &vVerts[0],
+        //    uint32_t(vIndices.size()*sizeof(uint32_t) / 2), &vIndices[0]);
+        //mpLensDistortModel[1] = SimpleModelImporter::create(vaoLayout,
+        //    uint32_t(vVerts.size()*sizeof(VertexDataLens)), &vVerts[0],
+        //    uint32_t(vIndices.size()*sizeof(uint32_t) / 2), &vIndices[vIndices.size() / 2]);
 
     }
 

@@ -167,24 +167,26 @@ namespace Falcor
 
     static void D3D12SetScissors(CommandListHandle pList, const GraphicsState::Scissor* sc)
     {
-        std::vector<D3D12_RECT> scRects;
-        scRects.resize(D3D12_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE);
+        static_assert(offsetof(GraphicsState::Scissor, left) == offsetof(D3D12_RECT, left), "Scissor.left offset");
+        static_assert(offsetof(GraphicsState::Scissor, top) == offsetof(D3D12_RECT, top), "Scissor.top offset");
+        static_assert(offsetof(GraphicsState::Scissor, right) == offsetof(D3D12_RECT, right), "Scissor.right offset");
+        static_assert(offsetof(GraphicsState::Scissor, bottom) == offsetof(D3D12_RECT, bottom), "Scissor.bottom offset");
 
-        for (uint32_t i = 0u; i < D3D12_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE; ++i)
-        {
-            scRects[i].left = sc[i].originX;
-            scRects[i].top = sc[i].originY;
-            scRects[i].right = sc[i].originX + sc[i].width;
-            scRects[i].bottom = sc[i].originY + sc[i].height;
-        }
-
-        pList->RSSetScissorRects(D3D12_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE, scRects.data());
+        pList->RSSetScissorRects(D3D12_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE, (D3D12_RECT*)sc);
     }
 
     void RenderContext::prepareForDraw()
     {
         assert(mpGraphicsState);
-
+#if _ENABLE_NVAPI
+        if(mpGraphicsState->isSinglePassStereoEnabled())
+        {
+            NvAPI_Status ret = NvAPI_D3D12_SetSinglePassStereoMode(mpLowLevelData->getCommandList(), 2, 1, false);
+            assert(ret == NVAPI_OK);
+    }
+#else
+        assert(mpGraphicsState->isSinglePassStereoEnabled() == false);
+#endif
         // Bind the root signature and the root signature data
         if (mpGraphicsVars)
         {

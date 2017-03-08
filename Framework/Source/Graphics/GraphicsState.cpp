@@ -122,6 +122,8 @@ namespace Falcor
             mDesc.setPrimitiveType(topology2Type(mpVao->getPrimitiveTopology()));
             mDesc.setRootSignature(pRoot);
 
+            mDesc.setSinglePassStereoEnable(mEnableSinglePassStereo);
+            
             pGso = GraphicsStateObject::create(mDesc);
             mpGsoGraph->setCurrentNodeData(pGso);
         }
@@ -176,7 +178,7 @@ namespace Falcor
 
     GraphicsState& GraphicsState::setRasterizerState(RasterizerState::SharedPtr pRasterizerState)
     {
-        mDesc.setRasterizerState(pRasterizerState); 
+        mDesc.setRasterizerState(pRasterizerState);
         mpGsoGraph->walk((void*)pRasterizerState.get());
         return *this;
     }
@@ -236,7 +238,11 @@ namespace Falcor
         mViewports[index] = vp;
         if (setScissors)
         {
-            Scissor sc(0, 0, (int32_t)vp.width, (int32_t)vp.height);
+            Scissor sc;
+            sc.left = (int32_t)vp.originX;
+            sc.right = sc.left + (int32_t)vp.width;
+            sc.top = (int32_t)vp.originY;
+            sc.bottom = sc.top + (int32_t)vp.height;
             this->setScissors(index, sc);
         }
     }
@@ -244,5 +250,18 @@ namespace Falcor
     void GraphicsState::setScissors(uint32_t index, const Scissor& sc)
     {
         mScissors[index] = sc;
+    }
+
+    void GraphicsState::toggleSinglePassStereo(bool enable)
+    {
+#if _ENABLE_NVAPI
+        mEnableSinglePassStereo = enable;
+        mpGsoGraph->walk((void*)enable);
+#else
+        if (enable)
+        {
+            logWarning("NVAPI support is missing. Can't enable Single-Pass-Stereo");
+        }
+#endif
     }
 }

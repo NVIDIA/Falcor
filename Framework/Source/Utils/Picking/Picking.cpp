@@ -130,7 +130,7 @@ namespace Falcor
         std::vector<uint8_t> textureData = pContext->readTextureSubresource(mpFBO->getColorTexture(0).get(), 0);
         uint16_t* pData = (uint16_t*)textureData.data();
 
-        uint32_t i = mScissor.originY * mpFBO->getWidth() + mScissor.originX;
+        uint32_t i = mScissor.top * mpFBO->getWidth() + mScissor.left;
 
         if (pData[i] >= 0)
         {
@@ -204,9 +204,9 @@ namespace Falcor
     {
         glm::vec2 mouseCoords = mousePos * glm::vec2(mpFBO->getWidth(), mpFBO->getHeight());;
 
-        mScissor.originX = (int32_t)mouseCoords.x;
-        mScissor.originY = (int32_t)mouseCoords.y;
-        mScissor.width = 1;
-        mScissor.height = 1;
+        mScissor.top = (int32_t)mouseCoords.x;
+        mScissor.left = (int32_t)mouseCoords.y;
+        mScissor.right = mScissor.top + 1;
+        mScissor.bottom = mScissor.bottom + 1;
     }
 }

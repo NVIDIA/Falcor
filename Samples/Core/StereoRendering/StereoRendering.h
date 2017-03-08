@@ -39,30 +39,29 @@ public:
     bool onKeyEvent(const KeyboardEvent& keyEvent) override;
     bool onMouseEvent(const MouseEvent& mouseEvent) override;
     void onDataReload() override;
+    void onGuiRender() override;
 
 private:
-    void initUI();
 
     Scene::SharedPtr mpScene;
     SceneRenderer::UniquePtr mpSceneRenderer;
 
-    Program::SharedPtr mpProgram = nullptr;
-    UniformBuffer::SharedPtr mpUniformBuffer = nullptr;
+    GraphicsProgram::SharedPtr mpProgram = nullptr;
+    GraphicsVars::SharedPtr mpProgramVars = nullptr;
+    GraphicsState::SharedPtr mpGraphicsState = nullptr;
+    Sampler::SharedPtr mpTriLinearSampler;
 
     void loadScene();
-    static void GUI_CALL loadSceneCB(void* pThis);
+    void loadScene(const std::string & filename);
 
     SceneRenderer::RenderMode mRenderMode = SceneRenderer::RenderMode::Mono;
     void submitToScreen();
     void initVR();
-    void blitTexture(const Texture* pTexture, uint32_t xStart);
+    void blitTexture(Texture::SharedPtr pTexture, uint32_t xStart);
     VrFbo::UniquePtr mpVrFbo;
     FullScreenPass::UniquePtr mpBlit;
-    UniformBuffer::SharedPtr mpBlitUbo;
+    GraphicsVars::SharedPtr mpBlitVars;
     bool mShowStereoViews = true;
     void submitSinglePassStereo();
     void setRenderMode();
-
-    static void GUI_CALL getRenderModeCB(void* pVal, void* pUserData);
-    static void GUI_CALL setRenderModeCB(const void* pVal, void* pUserData);
 };

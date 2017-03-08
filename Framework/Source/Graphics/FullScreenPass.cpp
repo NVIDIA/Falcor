@@ -40,7 +40,7 @@ namespace Falcor
     bool checkForViewportArray2Support()
     {
 #ifdef FALCOR_GL
-        return checkExtensionSupport("GL_NV_viewport_array2");
+        return Device::isExtensionSupported("GL_NV_viewport_array2");
 #elif defined FALCOR_D3D
         return false;
 #else
@@ -101,16 +101,17 @@ namespace Falcor
         }
     }
 
-    FullScreenPass::UniquePtr FullScreenPass::create(const std::string& psFile, const Program::DefineList& programDefines, bool disableDepth, bool disableStencil, uint32_t viewportMask)
+    FullScreenPass::UniquePtr FullScreenPass::create(const std::string& psFile, const Program::DefineList& programDefines, bool disableDepth, bool disableStencil, uint32_t viewportMask, bool enableSPS)
     {
         UniquePtr pPass = UniquePtr(new FullScreenPass());
-        pPass->init(psFile, programDefines, disableDepth, disableStencil, viewportMask);
+        pPass->init(psFile, programDefines, disableDepth, disableStencil, viewportMask, enableSPS);
         return pPass;
     }
 
-    void FullScreenPass::init(const std::string& psFile, const Program::DefineList& programDefines, bool disableDepth, bool disableStencil, uint32_t viewportMask)
+    void FullScreenPass::init(const std::string& psFile, const Program::DefineList& programDefines, bool disableDepth, bool disableStencil, uint32_t viewportMask, bool enableSPS)
     {
         mpPipelineState = GraphicsState::create();
+        mpPipelineState->toggleSinglePassStereo(enableSPS);
 
         // create depth stencil state
         DepthStencilState::Desc dsDesc;
@@ -134,11 +135,11 @@ namespace Falcor
             else
             {
                 defs.add("_OUTPUT_PRIM_COUNT", std::to_string(__popcnt(viewportMask)));
-                gs = "Framework/Shaders/FullScreenPass.gs";
+                gs = "Framework/Shaders/FullScreenPass.gs.hlsl";
             }
         }
 
-        const std::string vs("Framework/Shaders/FullScreenPass.vs");
+        const std::string vs("Framework/Shaders/FullScreenPass.vs.hlsl");
         mpProgram = GraphicsProgram::createFromFile(vs, psFile, gs, "", "", defs);
         mpPipelineState->setProgram(mpProgram);
 

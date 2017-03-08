@@ -49,11 +49,7 @@ namespace Falcor
 
         /** Submit the color target into the HMD
         */
-        void submitToHmd(uint32_t rtIndex = 0) const;
-
-        /** Pushs a viewport matching the FBO size into the render context
-        */
-        void pushViewport(RenderContext* pContext, uint32_t vpIndex);
+        void submitToHmd(RenderContext* pRenderCtx) const;
 
         /** Get the FBO
         */
@@ -61,11 +57,11 @@ namespace Falcor
 
         /** Get the resource view to an eye's resource view
         */
-        Texture::SharedConstPtr getEyeResourceView(VRDisplay::Eye eye, uint32_t rtIndex = 0) const { return (eye == VRDisplay::Eye::Left) ? mpLeftView[rtIndex] : mpRightView[rtIndex]; }
+        Texture::SharedPtr getEyeResourceView(VRDisplay::Eye eye) const { return (eye == VRDisplay::Eye::Left) ? mpLeftView : mpRightView; }
 
     private:
         Fbo::SharedPtr mpFbo;
-        std::vector<Texture::SharedPtr> mpLeftView;
-        std::vector<Texture::SharedPtr> mpRightView;
+        Texture::SharedPtr mpLeftView;
+        Texture::SharedPtr mpRightView;
     };
 }

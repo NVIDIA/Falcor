@@ -64,7 +64,6 @@
 #include "VRTrackerBox.h"
 #include "VRDisplay.h"
 #include "VRPlayArea.h"
-#include "VROverlay.h"
 
 #if !defined( FALCOR_GL ) && !defined( FALCOR_D3D )
 #error VRWrapper.h requires preprocessor definitions of *either* FALCOR_GL or FALCOR_D3D
@@ -130,8 +129,8 @@ namespace Falcor
         //     each frame.  The submit() routines handle all warping due to lens and color distortions.
         //     Can either pass in explicit texture, or an FBO (and it will pull colorTexture(0) from FBO).
         //     Size of each texture should be:  getHMD()->getRecommendedRenderSize() for best results.
-        bool submit( VRDisplay::Eye whichEye, Texture::SharedConstPtr displayTex );
-        bool submit( VRDisplay::Eye whichEye, Fbo::SharedConstPtr displayFbo );
+        bool submit( VRDisplay::Eye whichEye, Texture::SharedConstPtr displayTex, RenderContext* pRenderCtx);
+        bool submit( VRDisplay::Eye whichEye, Fbo::SharedConstPtr displayFbo, RenderContext* pRenderCtx);
 
 
         //////////////////////////////////////////////////////////////////////////////////////////////////
@@ -149,10 +148,6 @@ namespace Falcor
 
         // Get information about our room/play area.
         VRPlayArea::SharedPtr   getPlayArea( void ) { return mPlayArea; }
-
-        // Get pointer to overlay object
-        VROverlay::SharedPtr    getOverlay( void ) { return mOverlay; }
-
 
         //////////////////////////////////////////////////////////////////////////////////////////////////
         // Access renderable geometry.  These are shortcuts (can also be accessed through controller, hmd,
@@ -221,7 +216,6 @@ namespace Falcor
         vr::IVRCompositor   *mpCompositor;
         vr::IVRRenderModels *mpModels;
         vr::IVRChaperone    *mpChaperone;
-        vr::IVROverlay      *mpOverlay;
 
         // A place to stash OpenVR's most recent error information
         uint32_t           mLastError;  // TODO:  convert to enum
@@ -238,7 +232,6 @@ namespace Falcor
         VRTrackerBox::SharedPtr mTracker[2];
         VRDisplay::SharedPtr    mDisplay;
         VRPlayArea::SharedPtr   mPlayArea;
-        VROverlay::SharedPtr    mOverlay;
 
         // Renderable models.  We initialize these as soon as we know we have valid instances 
         //     of controllers, trackers, and HMDs.  This makes it a bit easier than querying 

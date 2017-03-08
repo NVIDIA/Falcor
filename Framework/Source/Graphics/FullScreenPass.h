@@ -56,7 +56,7 @@ namespace Falcor
             \param[in] disableStencil Optional. As DisableDepth for stencil.
             \param[in] viewportMask Optional. If different than zero, than will be used to initialize the gl_Layer and gl_ViewportMask[]. Useful for multi-projection passes
         */
-        static UniquePtr create(const std::string& psFile, const Program::DefineList& programDefines = Program::DefineList(), bool disableDepth = true, bool disableStencil = true, uint32_t viewportMask = 0);
+        static UniquePtr create(const std::string& psFile, const Program::DefineList& programDefines = Program::DefineList(), bool disableDepth = true, bool disableStencil = true, uint32_t viewportMask = 0, bool enableSPS = false);
 
         /** Execute the pass.
             \param[in] pRenderContext The render context.
@@ -71,7 +71,7 @@ namespace Falcor
 
     protected:
         FullScreenPass() { sObjectCount++; }
-        void init(const std::string & psFile, const Program::DefineList& programDefines, bool disableDepth, bool disableStencil, uint32_t viewportMask);
+        void init(const std::string & psFile, const Program::DefineList& programDefines, bool disableDepth, bool disableStencil, uint32_t viewportMask, bool enableSPS = false);
 
     private:
         GraphicsProgram::SharedPtr mpProgram;

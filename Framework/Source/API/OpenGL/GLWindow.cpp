@@ -598,13 +598,6 @@ namespace Falcor
     {
         glfwPollEvents();
     }
-
-    bool Window::windowShouldClose() const
-    {
-        GLFWwindow* pWindow = (GLFWwindow*)mpPrivateData;
-        return !!glfwWindowShouldClose(pWindow);
-    }
-
     void Window::setWindowTitle(std::string title)
     {
         GLFWwindow* pWindow = (GLFWwindow*)mpPrivateData;

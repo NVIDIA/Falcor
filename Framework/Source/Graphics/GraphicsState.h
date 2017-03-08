@@ -66,11 +66,11 @@ namespace Falcor
         struct Scissor
         {
             Scissor() = default;
-            Scissor(int32_t x, int32_t y, int32_t w, int32_t h) : originX(x), originY(y), width(w), height(h) {}
-            int32_t originX = 0;
-            int32_t originY = 0;
-            int32_t width = 0;
-            int32_t height = 0;
+            Scissor(int32_t l, int32_t t, int32_t r, int32_t b) : left(l), top(t), right(r), bottom(b) {}
+            int32_t left  = 0;
+            int32_t top    = 0;
+            int32_t right   = 0;
+            int32_t bottom = 0;
         };
 
         /** Create a new object
@@ -207,12 +207,21 @@ namespace Falcor
         */
         GraphicsStateObject::SharedPtr getGSO(const GraphicsVars* pVars);
         
+        /** Enable/disable single-pass-stereo
+        */
+        void toggleSinglePassStereo(bool enable);
+
+        /** Get the status of single-pass-stereo
+        */
+        bool isSinglePassStereoEnabled() const { return mEnableSinglePassStereo; }
+
         static void beginNewFrame();
     private:
         GraphicsState();
         Vao::SharedConstPtr mpVao;
         Fbo::SharedConstPtr mpFbo;
         GraphicsProgram::SharedPtr mpProgram;
+        RootSignature::SharedPtr mpRootSignature;
         GraphicsStateObject::Desc mDesc;
         uint8_t mStencilRef = 0;
         std::vector<Viewport> mViewports;
@@ -221,6 +230,8 @@ namespace Falcor
         std::stack<Fbo::SharedConstPtr> mFboStack;
         std::vector<std::stack<Viewport>> mVpStack;
         std::vector<std::stack<Scissor>> mScStack;
+
+        bool mEnableSinglePassStereo = false;
 
         struct CachedData
         {

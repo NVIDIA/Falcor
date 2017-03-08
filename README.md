@@ -17,6 +17,16 @@ Prerequisites
 * Windows 10
 * GPU that supports DirectX 12
 
+NVAPI Support
+--------------
+NVIDIA's NVAPI SDK exposes a set of GPU features that are not part of the DirectX spec.
+Using it with Falcor is not mandatory. However, Falcor does abstract some of those features. For example, the SceneRenderer VR mode relies on Single Pass Stereo support.
+If you want to use it:
+* Please download the [NVAPI SDK](https://developer.nvidia.com/nvapi)
+* Unzip the content of the package to Framework\Externals
+* Rename the folder to 'NVAPI'
+
+
 Creating a New Project
 ------------------------
 - If you haven't done so already, create a visual-studio solution and project for your code. Falcor only supports 64-bit builds, so make sure you have a 64-bit build configuration.

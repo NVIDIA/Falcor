@@ -370,7 +370,7 @@ namespace Falcor
             if(mode == RenderMode::SinglePassStereo)
             {
                 // Make sure single pass stereo is supported
-                if(checkExtensionSupport("GL_NV_stereo_view_rendering") == false)
+                if(Device::isExtensionSupported("GL_NV_stereo_view_rendering") == false)
                 {
                     msgBox("Can't set SceneRenderer render mode to single pass stereo. Extension is not supported on this machine");
                     return;

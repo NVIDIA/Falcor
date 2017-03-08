@@ -72,6 +72,7 @@ namespace Falcor
             Desc& setDepthStencilState(DepthStencilState::SharedPtr pDepthStencilState) { mpDepthStencilState = pDepthStencilState; return *this; }
             Desc& setSampleMask(uint32_t sampleMask) { mSampleMask = sampleMask; return *this; }
             Desc& setPrimitiveType(PrimitiveType type) { mPrimType = type; return *this; }
+            Desc& setSinglePassStereoEnable(bool sps) { mSinglePassStereoEnabled = sps; return *this; }
 
             BlendState::SharedPtr getBlendState() const { return mpBlendState; }
             RasterizerState::SharedPtr getRasterizerState() const { return mpRasterizerState; }
@@ -81,6 +82,7 @@ namespace Falcor
             VertexLayout::SharedConstPtr getVertexLayout() const { return mpLayout; }
             const Fbo::Desc& getFboDesc() const { return mFboDesc; }
             ProgramVersion::SharedConstPtr getProgramVersion() const { return mpProgram; }
+            bool getSinglePassStereoEnabled() const { return mSinglePassStereoEnabled; }
         private:
             friend class GraphicsStateObject;
             VertexLayout::SharedConstPtr mpLayout;
@@ -92,6 +94,7 @@ namespace Falcor
             uint32_t mSampleMask = kSampleMaskAll;
             RootSignature::SharedPtr mpRootSignature;
             PrimitiveType mPrimType = PrimitiveType::Undefined;
+            bool mSinglePassStereoEnabled = false;
         };
 
         static SharedPtr create(const Desc& desc);

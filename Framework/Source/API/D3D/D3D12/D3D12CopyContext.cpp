@@ -253,4 +253,25 @@ namespace Falcor
         mpLowLevelData->getCommandList()->CopyResource(pDst->getApiHandle(), pSrc->getApiHandle());
         mCommandsPending = true;
     }
+
+    void CopyContext::copySubresource(const Resource* pDst, uint32_t dstSubresourceIdx, const Resource* pSrc, uint32_t srcSubresourceIdx)
+    {
+        resourceBarrier(pDst, Resource::State::CopyDest);
+        resourceBarrier(pSrc, Resource::State::CopySource);
+
+        D3D12_TEXTURE_COPY_LOCATION pSrcCopyLoc;
+        D3D12_TEXTURE_COPY_LOCATION pDstCopyLoc;
+
+        pDstCopyLoc.pResource = pDst->getApiHandle();
+        pDstCopyLoc.Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
+        pDstCopyLoc.SubresourceIndex = dstSubresourceIdx;
+
+        pSrcCopyLoc.pResource = pSrc->getApiHandle();
+        pSrcCopyLoc.Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
+        pSrcCopyLoc.SubresourceIndex = srcSubresourceIdx;
+
+        mpLowLevelData->getCommandList()->CopyTextureRegion(&pDstCopyLoc, 0, 0, 0, &pSrcCopyLoc, NULL);
+
+        mCommandsPending = true;
+    }
 }

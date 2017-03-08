@@ -81,6 +81,10 @@ namespace Falcor
         /** Reload and relink all programs.
         */
         static void reloadAllPrograms();
+
+        /** update define list
+        */
+        void replaceAllDefines(const DefineList& dl) { mDefineList = dl; }
     protected:
         static const uint32_t kShaderCount = (uint32_t)ShaderType::Count;
 

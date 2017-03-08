@@ -12,10 +12,10 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <None Include="Data\StereoRendering.fs">
+    <None Include="Data\Blit.fs">
       <Filter>Data</Filter>
     </None>
-    <None Include="Data\Blit.fs">
+    <None Include="Data\StereoRendering.ps.hlsl">
       <Filter>Data</Filter>
     </None>
   </ItemGroup>

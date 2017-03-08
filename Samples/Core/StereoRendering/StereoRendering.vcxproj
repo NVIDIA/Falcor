@@ -23,7 +23,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Data\Blit.fs" />
-    <None Include="Data\StereoRendering.fs" />
+    <None Include="Data\StereoRendering.ps.hlsl" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{7C6C43DE-EEF4-4165-BE92-ED753D3799EE}</ProjectGuid>

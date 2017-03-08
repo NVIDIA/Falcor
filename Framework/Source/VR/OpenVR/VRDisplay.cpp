@@ -79,18 +79,10 @@ namespace Falcor
         ctrl->mOffsetMats[(uint32_t)Eye::Left] = glm::inverse(convertOpenVRMatrix34(vrSys->GetEyeToHeadTransform(vr::Eye_Left)));
         ctrl->mOffsetMats[(uint32_t)Eye::Right] = glm::inverse(convertOpenVRMatrix34(vrSys->GetEyeToHeadTransform(vr::Eye_Right)));
 
-#if defined(FALCOR_GL)
-        vr::GraphicsAPIConvention curRenderAPI = vr::GraphicsAPIConvention::API_OpenGL;
-#elif defined(FALCOR_D3D)
-        vr::GraphicsAPIConvention curRenderAPI = vr::GraphicsAPIConvention::API_DirectX;
-#else
-#error Unknown API
-#endif
-
         // Grab guesses for projection matricies, so we have *something* in case the user asks for a matrix prior to specifying a near/far plane
         //   -> We're totally guessing at near/far planes here.  User needs to set near/far planes for real on their own.
-        ctrl->mProjMats[(uint32_t)Eye::Left] = convertOpenVRMatrix44(vrSys->GetProjectionMatrix(vr::Eye_Left, ctrl->mNearFarPlanes.x, ctrl->mNearFarPlanes.y, curRenderAPI));
-        ctrl->mProjMats[(uint32_t)Eye::Right] = convertOpenVRMatrix44(vrSys->GetProjectionMatrix(vr::Eye_Right, ctrl->mNearFarPlanes.x, ctrl->mNearFarPlanes.y, curRenderAPI));
+        ctrl->mProjMats[(uint32_t)Eye::Left] = convertOpenVRMatrix44(vrSys->GetProjectionMatrix(vr::Eye_Left, ctrl->mNearFarPlanes.x, ctrl->mNearFarPlanes.y));
+        ctrl->mProjMats[(uint32_t)Eye::Right] = convertOpenVRMatrix44(vrSys->GetProjectionMatrix(vr::Eye_Right, ctrl->mNearFarPlanes.x, ctrl->mNearFarPlanes.y));
 
         // Get the recommended per-eye render size
         uint32_t recSize[2];
@@ -130,17 +122,9 @@ namespace Falcor
 
     void VRDisplay::setDepthRange(float nearZ, float farZ)
     {
-#if defined(FALCOR_GL)
-        vr::GraphicsAPIConvention curRenderAPI = vr::GraphicsAPIConvention::API_OpenGL;
-#elif defined(FALCOR_D3D)
-        vr::GraphicsAPIConvention curRenderAPI = vr::GraphicsAPIConvention::API_DirectX;
-#else
-#error Unknown API
-#endif
-
         mNearFarPlanes = glm::vec2(nearZ, farZ);
-        mProjMats[(uint32_t)Eye::Left] = convertOpenVRMatrix44(mpVrSys->GetProjectionMatrix(vr::Eye_Left, mNearFarPlanes.x, mNearFarPlanes.y, curRenderAPI));
-        mProjMats[(uint32_t)Eye::Right] = convertOpenVRMatrix44(mpVrSys->GetProjectionMatrix(vr::Eye_Right, mNearFarPlanes.x, mNearFarPlanes.y, curRenderAPI));
+        mProjMats[(uint32_t)Eye::Left] = convertOpenVRMatrix44(mpVrSys->GetProjectionMatrix(vr::Eye_Left, mNearFarPlanes.x, mNearFarPlanes.y));
+        mProjMats[(uint32_t)Eye::Right] = convertOpenVRMatrix44(mpVrSys->GetProjectionMatrix(vr::Eye_Right, mNearFarPlanes.x, mNearFarPlanes.y));
     }
 
     void VRDisplay::updateOnNewPose(vr::TrackedDevicePose_t *newPose)

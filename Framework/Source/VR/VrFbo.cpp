@@ -51,35 +51,30 @@ namespace Falcor
         VrFbo::UniquePtr pVrFbo = std::make_unique<VrFbo>();
         pVrFbo->mpFbo = FboHelper::create2D(width, height, desc, 2);
 
-        // Get the left and right eye views
-        // FIXME D3D12
-//         uint32_t rtCount = desc.getColorFormatCount();
-//         pVrFbo->mpLeftView.resize(rtCount);
-//         pVrFbo->mpRightView.resize(rtCount);
-//         for(uint32_t rt = 0 ; rt < rtCount ; rt++)
-//         {
-//             pVrFbo->mpLeftView[rt] = pVrFbo->mpFbo->getColorTexture(rt)->createView(0, 1, 0, 1);
-//             pVrFbo->mpRightView[rt] = pVrFbo->mpFbo->getColorTexture(rt)->createView(1, 1, 0, 1);
-//         }
+        // create the textures
+        // in the future we should use SRVs directly
+        // or some other way to avoid copying resources
+
+        pVrFbo->mpLeftView = Texture::create2D(width, height, desc.getColorTargetFormat(0),1,1);
+        pVrFbo->mpRightView = Texture::create2D(width, height, desc.getColorTargetFormat(0),1,1);
 
         return pVrFbo;
     }
 
-    // FIXME D3D12
-    void VrFbo::pushViewport(RenderContext* pContext, uint32_t vpIndex)
-    {
-//         RenderContext::Viewport vp = pContext->getViewport(vpIndex);
-//         vp.originX = 0;
-//         vp.originY = 0;
-//         vp.width = (float)mpFbo->getWidth();
-//         vp.height = (float)mpFbo->getHeight();
-//         pContext->pushViewport(vpIndex, vp);
-    }
-
-    void VrFbo::submitToHmd(uint32_t rtIndex) const
+    void VrFbo::submitToHmd(RenderContext* pRenderCtx) const
     {
         VRSystem* pVrSystem = VRSystem::instance();
-        pVrSystem->submit(VRDisplay::Eye::Left, mpLeftView[rtIndex]);
-        pVrSystem->submit(VRDisplay::Eye::Right, mpRightView[rtIndex]);
+
+        uint32_t ltSrcSubresourceIdx = mpFbo->getColorTexture(0)->getSubresourceIndex(0, 0);
+        uint32_t rtSrcSubresourceIdx = mpFbo->getColorTexture(0)->getSubresourceIndex(1, 0);
+
+        uint32_t ltDstSubresourceIdx = mpLeftView->getSubresourceIndex(0, 0);
+        uint32_t rtDstSubresourceIdx = mpRightView->getSubresourceIndex(0, 0);
+
+        pRenderCtx->copySubresource(mpLeftView.get(),  ltDstSubresourceIdx, mpFbo->getColorTexture(0).get(), ltSrcSubresourceIdx);
+        pRenderCtx->copySubresource(mpRightView.get(), rtDstSubresourceIdx, mpFbo->getColorTexture(0).get(), rtSrcSubresourceIdx);
+
+        pVrSystem->submit(VRDisplay::Eye::Left, mpLeftView, pRenderCtx);
+        pVrSystem->submit(VRDisplay::Eye::Right, mpRightView, pRenderCtx);
     }
 }

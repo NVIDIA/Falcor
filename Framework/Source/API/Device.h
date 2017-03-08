@@ -143,5 +143,4 @@ namespace Falcor
 	};
 
     extern Device::SharedPtr gpDevice;
-    bool checkExtensionSupport(const std::string& name);
 }

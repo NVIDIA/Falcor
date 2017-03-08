@@ -136,9 +136,6 @@
     <ClCompile Include="Utils\MonitorInfo.cpp">
       <Filter>Utils</Filter>
     </ClCompile>
-    <ClCompile Include="VR\OpenVR\VROverlay.cpp">
-      <Filter>VR\OpenVR</Filter>
-    </ClCompile>
     <ClCompile Include="Graphics\Material\BasicMaterial.cpp">
       <Filter>Graphics\Material</Filter>
     </ClCompile>
@@ -667,9 +664,6 @@
     </ClInclude>
     <ClInclude Include="Utils\MonitorInfo.h">
       <Filter>Utils</Filter>
-    </ClInclude>
-    <ClInclude Include="VR\OpenVR\VROverlay.h">
-      <Filter>VR\OpenVR</Filter>
     </ClInclude>
     <ClInclude Include="Graphics\Material\BasicMaterial.h">
       <Filter>Graphics\Material</Filter>
@@ -2056,12 +2050,6 @@
     <None Include="..\Externals\GLM\glm\gtx\closest_point.inl">
       <Filter>Externals\GLM\gtx</Filter>
     </None>
-    <None Include="Data\Framework\Shaders\FullScreenPass.gs">
-      <Filter>Data\Framework\Shaders</Filter>
-    </None>
-    <None Include="Data\Framework\Shaders\FullScreenPass.vs">
-      <Filter>Data\Framework\Shaders</Filter>
-    </None>
     <None Include="Data\Framework\Shaders\Gui.ps">
       <Filter>Data\Framework\Shaders</Filter>
     </None>
@@ -2094,6 +2082,12 @@
     </None>
     <None Include="Data\Effects\SkyBox.vs.hlsl">
       <Filter>Data\Effects</Filter>
+    </None>
+    <None Include="Data\Framework\Shaders\FullScreenPass.gs.hlsl">
+      <Filter>Data\Framework\Shaders</Filter>
+    </None>
+    <None Include="Data\Framework\Shaders\FullScreenPass.vs.hlsl">
+      <Filter>Data\Framework\Shaders</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>

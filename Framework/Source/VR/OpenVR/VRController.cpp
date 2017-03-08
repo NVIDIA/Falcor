@@ -141,7 +141,7 @@ void VRController::updateOnNewPose( vr::TrackedDevicePose_t *newPose, int32_t de
     // Grab the current controller state.  Ideally, we'd pass this in, but due to templated class forwarding
     //    issues, this is remarkably hard.  So, move it in here.
     vr::VRControllerState_t curState;
-    mpVrSys->GetControllerState( mOpenVRDeviceID, &curState );
+    mpVrSys->GetControllerState( mOpenVRDeviceID, &curState, sizeof(curState));
 
     // Now that we have our current pose & state, update internal variables
     mWorldMatrix      = convertOpenVRMatrix34( newPose->mDeviceToAbsoluteTracking );

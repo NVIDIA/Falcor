@@ -128,10 +128,6 @@
 // VR
 #include "VR/OpenVR/VRSystem.h"
 #include "VR/VrFbo.h"
-#ifdef _ENABLE_OCULUS
-#pragma comment(lib,"LibOVR.lib")
-#pragma comment(lib,"LibOVRKernel.lib")
-#endif
 
 // Effects
 #include "Effects/NormalMap/LeanMap.h"
@@ -143,3 +139,5 @@
 #define FALCOR_MAJOR_VERSION 2
 #define FALCOR_MINOR_VERSION 0
 #define FALCOR_DEV_STAGE "alpha"
+#define FALCOR_DEV_REVISION 1
+#define FALCOR_VERSION_STRING "2.0a.1"

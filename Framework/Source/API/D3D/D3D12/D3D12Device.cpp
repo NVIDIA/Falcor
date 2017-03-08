@@ -70,11 +70,6 @@ namespace Falcor
         decltype(pData->deferredReleases)().swap(pData->deferredReleases);
     }
 
-    bool checkExtensionSupport(const std::string& name)
-    {
-        return false;
-    }
-
     void d3dTraceHR(const std::string& msg, HRESULT hr)
 	{
 		char hr_msg[512];
@@ -388,7 +383,6 @@ namespace Falcor
 
     bool Device::isExtensionSupported(const std::string& name)
     {
-        UNSUPPORTED_IN_D3D("Device::isExtensionSupported()");
-        return false;
+        return _ENABLE_NVAPI;
     }
 }

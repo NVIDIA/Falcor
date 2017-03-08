@@ -75,6 +75,10 @@ namespace Falcor
         */
         void copyResource(const Resource* pDst, const Resource* pSrc);
 
+        /** Copy a subresource
+        */
+        void copySubresource(const Resource* pDst, uint32_t dstSubresourceIdx, const Resource* pSrc, uint32_t srcSubresourceIdx);
+
 #ifdef FALCOR_LOW_LEVEL_API
         /** Get the low-level context data
         */

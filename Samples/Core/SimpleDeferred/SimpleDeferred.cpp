@@ -207,7 +207,7 @@ void SimpleDeferred::onLoad()
     mpDirLight->setWorldDirection(glm::vec3(-0.5f, -0.2f, -1.0f));
 
     mpDeferredVars = GraphicsVars::create(mpDeferredPassProgram->getActiveVersion()->getReflector());
-    mpLightingVars = GraphicsVars::create(mpLightingPass->getProgram()->getActiveVersion()->getReflector(), "PerImageCB");
+    mpLightingVars = GraphicsVars::create(mpLightingPass->getProgram()->getActiveVersion()->getReflector());
 
     // Load default model
     loadModelFromFile("Ogre/bs_rest.obj");

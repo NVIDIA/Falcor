@@ -29,65 +29,85 @@
 
 static const glm::vec4 kClearColor(0.38f, 0.52f, 0.10f, 1);
 
-void StereoRendering::initUI()
+
+void StereoRendering::onGuiRender()
 {
-
-    Gui::setGlobalHelpMessage("Sample application to load and display a model.\nUse the UI to switch between wireframe and solid mode.");
-    mpGui->addButton("Load Scene", &StereoRendering::loadSceneCB, this);
-    Gui::DropdownList submitModeList;
-    submitModeList.push_back({(int)SceneRenderer::RenderMode::Mono, "Render to Screen"});
-
-    if(VRSystem::instance())
+    if (mpGui->addButton("Load Scene"))
     {
-        mpGui->addCheckBox("Display VR FBO", &mShowStereoViews);
-        submitModeList.push_back({(int)SceneRenderer::RenderMode::SinglePassStereo, "Single Pass Stereo"});
+        loadScene();
     }
-    mpGui->addDropdownWithCallback("Submission Mode", submitModeList, setRenderModeCB, getRenderModeCB, this);
+    Gui::DropdownList submitModeList;
+    submitModeList.push_back({ (int)SceneRenderer::RenderMode::Mono, "Render to Screen" });
+    if(VRSystem::instance() && gpDevice->isExtensionSupported(""))
+    {
+        submitModeList.push_back({(int)SceneRenderer::RenderMode::SinglePassStereo, "Single Pass Stereo"});
+        mpGui->addCheckBox("Display VR FBO", mShowStereoViews);
+    }
+    if (mpGui->addDropdown("Submission Mode", submitModeList, (uint32_t&)mRenderMode))
+    {
+        setRenderMode();
+    }
 }
 
 void StereoRendering::initVR()
 {
-    VRDisplay* pDisplay = VRSystem::instance()->getHMD().get();
+    if (VRSystem::instance())
+    {
+        VRDisplay* pDisplay = VRSystem::instance()->getHMD().get();
 
-    // Create the FBOs
-    glm::ivec2 renderSize = pDisplay->getRecommendedRenderSize();
-    ResourceFormat colorFormat = ResourceFormat::RGBA8UnormSrgb;
-    mpVrFbo = VrFbo::create(&colorFormat, 1, ResourceFormat::D24Unorm);
+        // Create the FBOs
+        Fbo::Desc vrFboDesc;
+
+        vrFboDesc.setColorTarget(0, mpDefaultFBO->getColorTexture(0)->getFormat());
+        vrFboDesc.setDepthStencilTarget(mpDefaultFBO->getDepthStencilTexture()->getFormat());
+
+        mpVrFbo = VrFbo::create(vrFboDesc);
+
+        static bool first = true;
+        if (Device::isExtensionSupported("") == false && first)
+        {
+            first = false;
+            msgBox("The sample relies on NVIDIA's Single Pass Stereo extension to operate correctly.\nMake sure you have an NVIDIA GPU, you enabled NVAPI support in FalcorConfig.h at that you downloaded the NVAPI SDK.\nCheck the readme for instructions");
+        }
+    }
+    else
+    {
+        msgBox("Can't initialize the VR system. Make sure that your HMD is connected properly");
+    }
 }
 
 void StereoRendering::submitSinglePassStereo()
 {
     PROFILE(SPS);
 
-    // Set the viewport
-    mpVrFbo->pushViewport(mpRenderContext.get(), 0);
-
     // Clear the FBO
-    mpVrFbo->getFbo()->clear(kClearColor, 1.0f, 0, FboAttachmentType::All);
-    mpRenderContext->pushFbo(mpVrFbo->getFbo());
+    mpRenderContext->clearFbo(mpVrFbo->getFbo().get(), kClearColor, 1.0f, 0, FboAttachmentType::All);
+    
+    // update state
+    mpGraphicsState->setProgram(mpProgram);
+    mpGraphicsState->setFbo(mpVrFbo->getFbo());
+    mpRenderContext->pushGraphicsState(mpGraphicsState);
+    mpRenderContext->setGraphicsVars(mpProgramVars);
 
     // Render
-    mpSceneRenderer->renderScene(mpRenderContext.get(), mpProgram.get());
+    mpSceneRenderer->renderScene(mpRenderContext.get());
 
     // Restore the state
-    mpRenderContext->popFbo();
-    mpRenderContext->popViewport(0);
+    mpRenderContext->popGraphicsState();
 
     // Submit the views and display them
-    mpVrFbo->submitToHmd();
-    blitTexture(mpVrFbo->getEyeResourceView(VRDisplay::Eye::Left).get(), 0);
-    blitTexture(mpVrFbo->getEyeResourceView(VRDisplay::Eye::Right).get(), mpDefaultFBO->getWidth() / 2);
+    mpVrFbo->submitToHmd(mpRenderContext.get());
+    blitTexture(mpVrFbo->getEyeResourceView(VRDisplay::Eye::Left), 0);
+    blitTexture(mpVrFbo->getEyeResourceView(VRDisplay::Eye::Right), mpDefaultFBO->getWidth() / 2);
 }
 
 void StereoRendering::submitToScreen()
 {
-    mpSceneRenderer->renderScene(mpRenderContext.get(), mpProgram.get());
-}
-
-void StereoRendering::loadSceneCB(void* pThis)
-{
-    StereoRendering* pSR = (StereoRendering*)pThis;
-    pSR->loadScene();
+    mpGraphicsState->setProgram(mpProgram);
+    mpGraphicsState->setFbo(mpDefaultFBO);
+    mpRenderContext->setGraphicsState(mpGraphicsState);
+    mpRenderContext->setGraphicsVars(mpProgramVars);
+    mpSceneRenderer->renderScene(mpRenderContext.get());
 }
 
 void StereoRendering::setRenderMode()
@@ -97,11 +117,12 @@ void StereoRendering::setRenderMode()
         std::string lights;
         getSceneLightString(mpScene.get(), lights);
         mpProgram->addDefine("_LIGHT_SOURCES", lights);
-        mpProgram->removeDefine("_SINGLE_PASS_STEREO");
+        mpGraphicsState->toggleSinglePassStereo(false);
         switch(mRenderMode)
         {
         case SceneRenderer::RenderMode::SinglePassStereo:
             mpProgram->addDefine("_SINGLE_PASS_STEREO");
+            mpGraphicsState->toggleSinglePassStereo(true);
             break;
         }
         mpSceneRenderer->setRenderMode(mRenderMode);
@@ -113,52 +134,67 @@ void StereoRendering::loadScene()
     std::string Filename;
     if(openFileDialog("Scene files\0*.fscene\0\0", Filename))
     {
-        mpScene = Scene::loadFromFile(Filename, Model::GenerateTangentSpace);
-        mpSceneRenderer = SceneRenderer::create(mpScene);
+        loadScene(Filename);
+    }
+}
 
-        mpProgram = Program::createFromFile("", "StereoRendering.fs");
-        setRenderMode();
-        mpUniformBuffer = UniformBuffer::create(mpProgram, "PerFrameCB");
+void StereoRendering::loadScene(const std::string& filename)
+{
+    mpScene = Scene::loadFromFile(filename, Model::GenerateTangentSpace);
+    mpSceneRenderer = SceneRenderer::create(mpScene);
+    mpProgram = GraphicsProgram::createFromFile("", "StereoRendering.ps.hlsl");
+    setRenderMode();
+    mpProgramVars = GraphicsVars::create(mpProgram->getActiveVersion()->getReflector());
+    for (uint32_t m = 0; m < mpScene->getModelCount(); m++)
+    {
+        mpScene->getModel(m)->bindSamplerToMaterials(mpTriLinearSampler);
     }
 }
 
 void StereoRendering::onLoad()
 {
-    initUI();
     initVR();
 
+    mpGraphicsState = GraphicsState::create();
+
     mpBlit = FullScreenPass::create("blit.fs");
-    mpBlitUbo = UniformBuffer::create(mpBlit->getProgram(), "PerImageCB");
+    mpBlitVars = GraphicsVars::create(mpBlit->getProgram()->getActiveVersion()->getReflector());
+    setRenderMode();
+
+    Sampler::Desc samplerDesc;
+    samplerDesc.setFilterMode(Sampler::Filter::Linear, Sampler::Filter::Linear, Sampler::Filter::Linear);
+    mpTriLinearSampler = Sampler::create(samplerDesc);
 }
 
-void StereoRendering::blitTexture(const Texture* pTexture, uint32_t xStart)
+void StereoRendering::blitTexture(Texture::SharedPtr pTexture, uint32_t xStart)
 {
     if(mShowStereoViews)
     {
-        RenderContext::Viewport vp;
-        vp.originX = (float)xStart;
-        vp.originY = 0;
-        vp.height = (float)mpDefaultFBO->getHeight();
-        vp.width = (float)(mpDefaultFBO->getWidth() / 2);
-        vp.minDepth = 0;
-        vp.maxDepth = 1;
-        mpRenderContext->pushViewport(0, vp);
-        mpBlitUbo->setTexture(0, pTexture, nullptr);
-        mpRenderContext->setUniformBuffer(0, mpBlitUbo);
+        uint32_t w = mpDefaultFBO->getWidth() / 2;
+        uint32_t h = mpDefaultFBO->getHeight();
+        GraphicsState::Viewport vp(float(xStart), 0, float(w), float(h), 0, 1);
+        mpGraphicsState->setViewport(0, vp, true);
+        
+        mpGraphicsState->setFbo(mpDefaultFBO, false);
+        mpRenderContext->setGraphicsState(mpGraphicsState);
+        mpBlitVars->setTexture("gTexture", pTexture);
+        mpRenderContext->setGraphicsVars(mpBlitVars);  
+
         mpBlit->execute(mpRenderContext.get());
-        mpRenderContext->popViewport(0);
     }
 }
 
 void StereoRendering::onFrameRender()
 {
-    mpDefaultFBO->clear(kClearColor, 1.0f, 0, FboAttachmentType::All);
+    static uint32_t frameCount = 0u;
+
+    mpRenderContext->clearFbo(mpDefaultFBO.get(), kClearColor, 1.0f, 0, FboAttachmentType::All);
 
     if(mpSceneRenderer)
-    {
-        setSceneLightsIntoUniformBuffer(mpScene.get(), mpUniformBuffer.get());
-        mpRenderContext->setUniformBuffer(0, mpUniformBuffer);
+    {      
         mpSceneRenderer->update(mCurrentTime);
+
+        setSceneLightsIntoConstantBuffer(mpScene.get(), mpProgramVars->getConstantBuffer(0).get());
 
         switch(mRenderMode)
         {
@@ -173,18 +209,25 @@ void StereoRendering::onFrameRender()
         }
     }
 
-    renderText(getGlobalSampleMessage(true), glm::vec2(10, 10));
+    std::string message = getFpsMsg();
+    message += "\nFrame counter: " + std::to_string(frameCount);
+
+    renderText(message, glm::vec2(10, 10));
+
+    frameCount++;
 }
 
 bool StereoRendering::onKeyEvent(const KeyboardEvent& keyEvent)
 {
     if(keyEvent.key == KeyboardEvent::Key::Space && keyEvent.type == KeyboardEvent::Type::KeyPressed)
     {
-        mRenderMode = (mRenderMode == SceneRenderer::RenderMode::SinglePassStereo) ? SceneRenderer::RenderMode::Mono : SceneRenderer::RenderMode::SinglePassStereo;
-        setRenderModeCB(&mRenderMode, this);
-        return true;
+        if (VRSystem::instance() && gpDevice->isExtensionSupported(""))
+        {
+            mRenderMode = (mRenderMode == SceneRenderer::RenderMode::SinglePassStereo) ? SceneRenderer::RenderMode::Mono : SceneRenderer::RenderMode::SinglePassStereo;
+            setRenderMode();
+            return true;
+        }
     }
-
     return mpSceneRenderer ? mpSceneRenderer->onKeyEvent(keyEvent) : false;
 }
 
@@ -200,23 +243,7 @@ void StereoRendering::onDataReload()
 
 void StereoRendering::onResizeSwapChain()
 {
-    RenderContext::Viewport vp;
-    vp.height = (float)mpDefaultFBO->getHeight();
-    vp.width = (float)mpDefaultFBO->getWidth();
-    mpRenderContext->setViewport(0, vp);
-}
-
-void StereoRendering::getRenderModeCB(void* pVal, void* pUserData)
-{
-    StereoRendering* pThis = (StereoRendering*)pUserData;
-    *(uint32_t*)pVal = (uint32_t)pThis->mRenderMode;
-}
-
-void StereoRendering::setRenderModeCB(const void* pVal, void* pUserData)
-{
-    StereoRendering* pThis = (StereoRendering*)pUserData;
-    pThis->mRenderMode = (SceneRenderer::RenderMode)*(uint32_t*)pVal;
-    pThis->setRenderMode();
+    initVR();
 }
 
 int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ LPSTR lpCmdLine, _In_ int nShowCmd)
@@ -224,8 +251,9 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
     StereoRendering sample;
     SampleConfig config;
     config.windowDesc.title = "Stereo Rendering";
-    config.windowDesc.swapChainDesc.height = 1024;
-    config.windowDesc.swapChainDesc.width = 1600;
+    config.windowDesc.height = 1024;
+    config.windowDesc.width = 1600;
+    config.windowDesc.resizableWindow = true;
     config.enableVR = true;
     sample.run(config);
 }

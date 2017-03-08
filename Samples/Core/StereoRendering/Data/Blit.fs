@@ -28,20 +28,20 @@
 #version 420
 #include "HlslGlslCommon.h"
 
-UNIFORM_BUFFER(PerImageCB, 0)
+CONSTANT_BUFFER(PerImageCB, 0)
 {
-	sampler2DArray gTexture;
+    sampler2D gTexture;
 };
 
 vec4 calcColor(vec2 texC)
 {
-	return texture(gTexture, vec3(texC, 0));
+    return texture(gTexture, texC);
 }
 
 #ifdef FALCOR_HLSL
-vec4 main(float2 texC  : TEXCOORD) : SV_TARGET0
+vec4 main(float2 texC : TEXCOORD) : SV_TARGET0
 {
-	return calcColor(texC);
+    return calcColor(texC);
 }
 
 #elif defined FALCOR_GLSL
@@ -50,6 +50,6 @@ out vec4 fragColor;
 
 void main()
 {
-	fragColor = calcColor(texC);
+    fragColor = calcColor(texC);
 }
 #endif

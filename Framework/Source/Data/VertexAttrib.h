@@ -81,13 +81,12 @@ struct VS_OUT
     INTERPOLATION_MODE float3 colorV     : COLOR;
     INTERPOLATION_MODE float4 prevPosH : PREVPOSH;
     float4 posH : SV_POSITION;
-};
-
 #ifdef _SINGLE_PASS_STEREO
-#extension GL_NV_viewport_array2: require
-#extension GL_NV_stereo_view_rendering: require
-layout(secondary_view_offset=1) out int gl_Layer;
+    INTERPOLATION_MODE float4 rightEyePosS : NV_X_RIGHT;
+    uint4 viewportMask : NV_VIEWPORT_MASK;
+    uint renderTargetIndex : SV_RenderTargetArrayIndex;
 #endif
+};
 
 float4x4 getWorldMat(VS_IN vIn)
 {
@@ -124,9 +123,9 @@ VS_OUT defaultVS(VS_IN vIn)
     vOut.prevPosH = mul(gCam.prevViewProjMat, posW);
 
 #ifdef _SINGLE_PASS_STEREO
-  gl_SecondaryPositionNV.x = (gCam.rightEyeViewProjMat * vec4(posW, 1)).x;
-  gl_SecondaryPositionNV.yzw = gl_Position.yzw;
-  gl_Layer = 0;
+    vOut.rightEyePosS = mul(gCam.rightEyeViewProjMat, posW).x;
+    vOut.viewportMask = 0x00000001;
+    vOut.renderTargetIndex = 0;
 #endif
   return vOut;
 }
