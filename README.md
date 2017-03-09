@@ -1,7 +1,7 @@
 Falcor 2.0 alpha
 =================
 
-Falcor is DirectX 12 real-time rendering framework. It aims to improve productivity of reserach and prototype projects.  
+Falcor is DirectX 12 real-time rendering framework. It aims to improve productivity of research and prototype projects.  
 Its features include:
 * Abstract many common graphics operations, such as shader compilation, model loading and scene rendering.
 * VR support using OpenVR.
