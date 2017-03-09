@@ -82,7 +82,7 @@
             ]
         },
         {
-            "file": "C:\\src\\Falcor-GitHub\\Media\\quad1x1.obj",
+            "file": "quad1x1.obj",
             "name": "quad1x1",
             "instances": [
                 {

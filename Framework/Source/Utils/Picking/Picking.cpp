@@ -204,9 +204,9 @@ namespace Falcor
     {
         glm::vec2 mouseCoords = mousePos * glm::vec2(mpFBO->getWidth(), mpFBO->getHeight());;
 
-        mScissor.top = (int32_t)mouseCoords.x;
-        mScissor.left = (int32_t)mouseCoords.y;
-        mScissor.right = mScissor.top + 1;
-        mScissor.bottom = mScissor.bottom + 1;
+        mScissor.top = (int32_t)mouseCoords.y;
+        mScissor.left = (int32_t)mouseCoords.x;
+        mScissor.right = mScissor.left + 1;
+        mScissor.bottom = mScissor.top + 1;
     }
 }
