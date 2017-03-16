@@ -160,22 +160,22 @@ namespace Falcor
         return it == mResources.end() ? nullptr : &(it->second);
     }
 
-    ProgramReflection::BufferReflection::BufferReflection(const std::string& name, uint32_t registerIndex, uint32_t regSpace, Type type, size_t size, const VariableMap& varMap, const ResourceMap& resourceMap, ShaderAccess shaderAccess) :
+    ProgramReflection::BufferReflection::BufferReflection(const std::string& name, uint32_t registerIndex, uint32_t regSpace, Type type, StructuredType structuredType, size_t size, const VariableMap& varMap, const ResourceMap& resourceMap, ShaderAccess shaderAccess) :
         mName(name),
         mType(type),
+        mStructuredType(structuredType),
         mSizeInBytes(size),
         mVariables(varMap),
         mResources(resourceMap),
         mRegIndex(registerIndex),
         mShaderAccess(shaderAccess)
     {
-
     }
 
-    ProgramReflection::BufferReflection::SharedPtr ProgramReflection::BufferReflection::create(const std::string& name, uint32_t regIndex, uint32_t regSpace, Type type, size_t size, const VariableMap& varMap, const ResourceMap& resourceMap, ShaderAccess shaderAccess)
+    ProgramReflection::BufferReflection::SharedPtr ProgramReflection::BufferReflection::create(const std::string& name, uint32_t regIndex, uint32_t regSpace, Type type, StructuredType structuredType, size_t size, const VariableMap& varMap, const ResourceMap& resourceMap, ShaderAccess shaderAccess)
     {
         assert(regSpace == 0);
-        return SharedPtr(new BufferReflection(name, regIndex, regSpace, type, size, varMap, resourceMap, shaderAccess));
+        return SharedPtr(new BufferReflection(name, regIndex, regSpace, type, structuredType, size, varMap, resourceMap, shaderAccess));
     }
 
     const ProgramReflection::Variable* ProgramReflection::getVertexAttribute(const std::string& name) const

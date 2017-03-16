@@ -30,10 +30,16 @@
 
 struct LightCB
 {
-	vec3 vec3Val;   // We're using 2 values. [0]: worldDir [1]: intensity
+    vec3 vec3Val;   // We're using 2 values. [0]: worldDir [1]: intensity
+};
+
+struct Append
+{
+    vec3 value;
 };
 
 StructuredBuffer<LightCB> gLight;
+RWStructuredBuffer<Append> gValues;
 RWByteAddressBuffer gInvocationBuffer;
 Buffer<vec3> surfaceColor;
 
@@ -44,6 +50,12 @@ vec4 calcColor(vec3 normalW)
     nDotL = clamp(nDotL, 0, 1);
     vec4 color = vec4(nDotL * gLight[1].vec3Val * surfaceColor[0], 1);
     gInvocationBuffer.InterlockedAdd(0, 1);
+
+    if(gInvocationBuffer.Load(0) % 2)
+    {
+        gValues.IncrementCounter();
+    }
+
     return color;
 }
 

@@ -76,7 +76,8 @@ void ShaderBuffersSample::onLoad()
     mpInvocationsBuffer = Buffer::create(sizeof(uint32_t), Buffer::BindFlags::UnorderedAccess, Buffer::CpuAccess::Read, &z);
     mpProgramVars->setRawBuffer("gInvocationBuffer", mpInvocationsBuffer);
     mpProgramVars->setTypedBuffer("surfaceColor", mpSurfaceColorBuffer);
-    mpProgramVars->setStructuredBuffer("gLight", StructuredBuffer::create(mpProgram, "gLight" , 2));
+    mpProgramVars->setStructuredBuffer("gLight", StructuredBuffer::create(mpProgram, "gLight", 2));
+    mpProgramVars->setStructuredBuffer("gValues", StructuredBuffer::create(mpProgram, "gValues", 4));
 
     // create pipeline cache
     RasterizerState::Desc rsDesc;
@@ -120,9 +121,16 @@ void ShaderBuffersSample::onFrameRender()
     {
         uint32_t* pData = (uint32_t*)mpInvocationsBuffer->map(Buffer::MapType::Read);
         std::string msg = "PS was invoked " + std::to_string(*pData) + " times";
-        mpInvocationsBuffer->unmap();
         renderText(msg, vec2(600, 100));
 
+
+        uint32_t* pData2 = (uint32_t*)mpProgramVars->getStructuredBuffer("gValues")->getUAVCounter()->map(Buffer::MapType::Read);
+        logInfo(std::to_string(*pData2));
+
+
+        mpProgramVars->getStructuredBuffer("gValues")->getUAVCounter()->unmap();
+
+        mpInvocationsBuffer->unmap();
         mpRenderContext->clearUAV(mpInvocationsBuffer->getUAV().get(), uvec4(0));
     }
 

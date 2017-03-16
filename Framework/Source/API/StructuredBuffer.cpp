@@ -38,9 +38,15 @@ namespace Falcor
 
 #define verify_element_index() if(elementIndex >= mElementCount) {logWarning(std::string(__FUNCTION__) + ": elementIndex is out-of-bound. Ignoring call."); return;}
 
-    StructuredBuffer::StructuredBuffer(const ProgramReflection::BufferReflection::SharedConstPtr& pReflector, size_t elementCount, Resource::BindFlags bindFlags) :
-        VariablesBuffer(pReflector, pReflector->getRequiredSize(), elementCount, bindFlags, Buffer::CpuAccess::None)
-        {}
+    StructuredBuffer::StructuredBuffer(const ProgramReflection::BufferReflection::SharedConstPtr& pReflector, size_t elementCount, Resource::BindFlags bindFlags)
+        : VariablesBuffer(pReflector, pReflector->getRequiredSize(), elementCount, bindFlags, Buffer::CpuAccess::None)
+    {
+        if (hasUAVCounter())
+        {
+            // #TODO This can maybe just be CPU read and we clear with some API call?
+            mUAVCounter = Buffer::create(sizeof(uint32_t), Resource::BindFlags::UnorderedAccess, Buffer::CpuAccess::None, nullptr);
+        }
+    }
 
     StructuredBuffer::SharedPtr StructuredBuffer::create(const ProgramReflection::BufferReflection::SharedConstPtr& pReflection, size_t elementCount, Resource::BindFlags bindFlags)
     {
@@ -81,6 +87,11 @@ namespace Falcor
             mGpuCopyDirty = false;
             readData((void*)mData.data(), offset, size);
         }
+    }
+
+    bool StructuredBuffer::hasUAVCounter() const
+    {
+        return getBufferReflector()->getStructuredType() != ProgramReflection::BufferReflection::StructuredType::Default;
     }
 
     StructuredBuffer::~StructuredBuffer() = default;

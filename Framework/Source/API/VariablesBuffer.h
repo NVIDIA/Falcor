@@ -80,6 +80,7 @@ namespace Falcor
         size_t getElementCount() const { return mElementCount; }
 
         size_t getElementSize() const { return mElementSize; }
+
     protected:
         template<typename T>
         void setVariable(const std::string& name, size_t elementIndex, const T& value);

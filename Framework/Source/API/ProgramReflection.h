@@ -190,6 +190,15 @@ namespace Falcor
                 Count
             };
 
+            enum class StructuredType
+            {
+                Invalid,    ///< Not a structured buffer
+                Default,    ///< Regular structured buffer
+                Counter,    ///< RWStructuredBuffer with counter
+                Append,     ///< AppendStructuredBuffer
+                Consume     ///< ConsumeStructuredBuffer
+            };
+
             static const uint32_t kTypeCount = (uint32_t)Type::Count;
 
             /** Create a new object
@@ -202,7 +211,7 @@ namespace Falcor
                 \param[in] shaderAccess How the buffer will be access by the shader
                 \return A shared pointer for a new buffer object
             */
-            static SharedPtr create(const std::string& name, uint32_t regIndex, uint32_t regSpace, Type type, size_t size, const VariableMap& varMap, const ResourceMap& resourceMap, ShaderAccess shaderAccess);
+            static SharedPtr create(const std::string& name, uint32_t regIndex, uint32_t regSpace, Type type, StructuredType structuredType, size_t size, const VariableMap& varMap, const ResourceMap& resourceMap, ShaderAccess shaderAccess);
 
             /** Get variable data
                 \param[in] name The name of the requested variable
@@ -253,6 +262,10 @@ namespace Falcor
             */
             Type getType() const { return mType; }
 
+            /** Get the type of the structured buffer. Returns StructuredType::Invalid for constant buffers
+            */
+            StructuredType getStructuredType() const { return mStructuredType; }
+
             /** Get the variable count
             */
             size_t getVariableCount() const { return mVariables.size(); }
@@ -276,12 +289,14 @@ namespace Falcor
             /** Get the shader access
             */
             ShaderAccess getShaderAccess() const { return mShaderAccess; }
+
         private:
 
-            BufferReflection(const std::string& name, uint32_t registerIndex, uint32_t regSpace, Type type, size_t size, const VariableMap& varMap, const ResourceMap& resourceMap, ShaderAccess shaderAccess);
+            BufferReflection(const std::string& name, uint32_t registerIndex, uint32_t regSpace, Type type, StructuredType structuredType, size_t size, const VariableMap& varMap, const ResourceMap& resourceMap, ShaderAccess shaderAccess);
             std::string mName;
             size_t mSizeInBytes = 0;
             Type mType;
+            StructuredType mStructuredType;
             ResourceMap mResources;
             VariableMap mVariables;
             uint32_t mShaderMask = 0;

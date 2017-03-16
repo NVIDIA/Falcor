@@ -336,7 +336,9 @@ namespace Falcor
 
     static void initializeBufferVariables(ID3DShaderReflectionConstantBuffer* pReflector, const D3D_SHADER_BUFFER_DESC& desc, D3D_SHADER_INPUT_TYPE inputType, ProgramReflection::VariableMap& varMap)
     {
-        assert(inputType == D3D_SIT_CBUFFER || inputType == D3D_SIT_STRUCTURED || inputType == D3D_SIT_UAV_RWSTRUCTURED);
+        assert(inputType == D3D_SIT_CBUFFER || inputType == D3D_SIT_STRUCTURED || inputType == D3D_SIT_UAV_RWSTRUCTURED
+            || inputType == D3D_SIT_UAV_RWSTRUCTURED_WITH_COUNTER || inputType == D3D_SIT_UAV_APPEND_STRUCTURED || inputType == D3D_SIT_UAV_CONSUME_STRUCTURED);
+
         bool isStructured = inputType != D3D_SIT_CBUFFER;   // Otherwise it's a constant buffer
 
         for (uint32_t varID = 0; varID < desc.Variables; varID++)
@@ -389,7 +391,7 @@ namespace Falcor
         return match;
     }
 
-    bool reflectBuffer(ShaderReflectionHandle pReflection, const char* bufName, ProgramReflection::BufferData& bufferDesc, ProgramReflection::BufferReflection::Type bufferType, ProgramReflection::ShaderAccess shaderAccess, uint32_t shaderIndex, std::string& log)
+    bool reflectBuffer(ShaderReflectionHandle pReflection, const char* bufName, ProgramReflection::BufferData& bufferDesc, ProgramReflection::BufferReflection::Type bufferType, ProgramReflection::BufferReflection::StructuredType structuredType, ProgramReflection::ShaderAccess shaderAccess, uint32_t shaderIndex, std::string& log)
     {
         D3D_SHADER_BUFFER_DESC d3dBufDesc;
         ID3DShaderReflectionConstantBuffer* pBuffer = pReflection->GetConstantBufferByName(bufName);
@@ -424,7 +426,7 @@ namespace Falcor
         {
             // Create the buffer reflection
             bufferDesc.nameMap[d3dBufDesc.Name] = bindLocation;
-            bufferDesc.descMap[bindLocation] = ProgramReflection::BufferReflection::create(d3dBufDesc.Name, bindDesc.BindPoint, bindDesc.Space, bufferType, d3dBufDesc.Size, varMap, ProgramReflection::ResourceMap(), shaderAccess);
+            bufferDesc.descMap[bindLocation] = ProgramReflection::BufferReflection::create(d3dBufDesc.Name, bindDesc.BindPoint, bindDesc.Space, bufferType, structuredType, d3dBufDesc.Size, varMap, ProgramReflection::ResourceMap(), shaderAccess);
         }
 
         // Update the shader mask
@@ -538,8 +540,10 @@ namespace Falcor
         case D3D_SIT_BYTEADDRESS:
             return ProgramReflection::ShaderAccess::Read;
         case D3D_SIT_UAV_RWTYPED:
-        case D3D_SIT_UAV_RWSTRUCTURED:
         case D3D_SIT_UAV_RWBYTEADDRESS:
+        case D3D_SIT_UAV_RWSTRUCTURED:
+        case D3D_SIT_UAV_RWSTRUCTURED_WITH_COUNTER:
+        case D3D_SIT_UAV_CONSUME_STRUCTURED: // #TODO Should this be read?
             return ProgramReflection::ShaderAccess::ReadWrite;
         default:
             should_not_get_here();
@@ -625,13 +629,22 @@ namespace Falcor
                     switch (inputDesc.Type)
                     {
                     case D3D_SIT_CBUFFER:
-                        res = reflectBuffer(pReflection, inputDesc.Name, mBuffers[(uint32_t)BufferReflection::Type::Constant], BufferReflection::Type::Constant, ShaderAccess::Read, shader, log);
+                        res = reflectBuffer(pReflection, inputDesc.Name, mBuffers[(uint32_t)BufferReflection::Type::Constant], BufferReflection::Type::Constant, BufferReflection::StructuredType::Invalid, ShaderAccess::Read, shader, log);
                         break;
                     case D3D_SIT_STRUCTURED:
-                        res = reflectBuffer(pReflection, inputDesc.Name, mBuffers[(uint32_t)BufferReflection::Type::Structured], BufferReflection::Type::Structured, ShaderAccess::Read, shader, log);
+                        res = reflectBuffer(pReflection, inputDesc.Name, mBuffers[(uint32_t)BufferReflection::Type::Structured], BufferReflection::Type::Structured, BufferReflection::StructuredType::Default, ShaderAccess::Read, shader, log);
                         break;
                     case D3D_SIT_UAV_RWSTRUCTURED:
-                        res = reflectBuffer(pReflection, inputDesc.Name, mBuffers[(uint32_t)BufferReflection::Type::Structured], BufferReflection::Type::Structured, ShaderAccess::ReadWrite, shader, log);
+                        res = reflectBuffer(pReflection, inputDesc.Name, mBuffers[(uint32_t)BufferReflection::Type::Structured], BufferReflection::Type::Structured, BufferReflection::StructuredType::Default, ShaderAccess::ReadWrite, shader, log);
+                        break;
+                    case D3D_SIT_UAV_RWSTRUCTURED_WITH_COUNTER:
+                        res = reflectBuffer(pReflection, inputDesc.Name, mBuffers[(uint32_t)BufferReflection::Type::Structured], BufferReflection::Type::Structured, BufferReflection::StructuredType::Counter, ShaderAccess::ReadWrite, shader, log);
+                        break;
+                    case D3D_SIT_UAV_APPEND_STRUCTURED:
+                        res = reflectBuffer(pReflection, inputDesc.Name, mBuffers[(uint32_t)BufferReflection::Type::Structured], BufferReflection::Type::Structured, BufferReflection::StructuredType::Append, ShaderAccess::ReadWrite, shader, log);
+                        break;
+                    case D3D_SIT_UAV_CONSUME_STRUCTURED: // #TODO should this be ShaderAccess::Read?
+                        res = reflectBuffer(pReflection, inputDesc.Name, mBuffers[(uint32_t)BufferReflection::Type::Structured], BufferReflection::Type::Structured, BufferReflection::StructuredType::Consume, ShaderAccess::ReadWrite, shader, log);
                         break;
                     default:
                         res = reflectResource(pReflection, inputDesc, mResources, i, log);
