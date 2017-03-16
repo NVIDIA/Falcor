@@ -61,7 +61,7 @@ namespace Falcor
         /** create UI elements for this light.
             \param[in] pGui The GUI to create the elements with
         */
-        virtual void renderUI(Gui* pGui);
+        virtual void renderUI(Gui* pGui, const char* group = nullptr);
 
         /**
             Prepare GPU data
@@ -133,7 +133,7 @@ namespace Falcor
         /** create UI elements for this light.
             \param[in] pGui The GUI to create the elements with
         */
-        void renderUI(Gui* pGui) override;
+        void renderUI(Gui* pGui, const char* group = nullptr) override;
 
         /**
             Prepare GPU data
@@ -194,7 +194,7 @@ namespace Falcor
         /** create UI elements for this light.
             \param[in] pGui The GUI to create the elements with
         */
-        void renderUI(Gui* pGui) override;
+        void renderUI(Gui* pGui, const char* group = nullptr) override;
 
         /**
             Prepare GPU data
@@ -292,7 +292,7 @@ namespace Falcor
 
             \param[in] pGui The GUI to create the elements with
         */
-        void renderUI(Gui* pGui) override;
+        void renderUI(Gui* pGui, const char* group = nullptr) override;
 
         /**
             Prepare GPU data

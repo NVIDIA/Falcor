@@ -120,6 +120,10 @@ namespace Falcor
         BC4Snorm,   // RGTC Signed Red
         BC5Unorm,   // RGTC Unsigned RG
         BC5Snorm,   // RGTC Signed RG
+        BC6HS16,
+        BC6HU16,
+        BC7Unorm,
+        BC7UnormSrgb
     };
     
     /** Falcor format Type
@@ -261,6 +265,8 @@ namespace Falcor
 			return ResourceFormat::RGBA8Unorm;
 		case ResourceFormat::RGBX8UnormSrgb:
 			return ResourceFormat::RGBX8Unorm;
+        case ResourceFormat::BC7UnormSrgb:
+            return ResourceFormat::BC7Unorm;
 		default:
 			assert(isSrgbFormat(format) == false);
 			return format;
@@ -287,6 +293,8 @@ namespace Falcor
             return ResourceFormat::RGBA8UnormSrgb;
         case ResourceFormat::RGBX8Unorm:
             return ResourceFormat::RGBX8UnormSrgb;
+        case ResourceFormat::BC7Unorm:
+            return ResourceFormat::BC7UnormSrgb;
         default:
             return format;
         }
@@ -299,8 +307,7 @@ namespace Falcor
         case ResourceFormat::D16Unorm:
             return ResourceFormat::R16Unorm;
         case ResourceFormat::D24UnormS8:
-            should_not_get_here();
-            return ResourceFormat::Unknown;
+            return ResourceFormat::R24UnormX8;
         case ResourceFormat::D32Float:
             return ResourceFormat::R32Float;
         case ResourceFormat::D32FloatS8X24:

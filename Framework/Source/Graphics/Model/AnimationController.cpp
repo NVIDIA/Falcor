@@ -45,7 +45,7 @@ namespace Falcor
         for(uint32_t i = 0; i < count; i++)
         {
             const Bone& bone = pBone[i];
-            if(bone.parentID != INVALID_BONE_ID)
+            if(bone.parentID != AnimationController::kInvalidBoneID)
             {
                 std::string parent = pBone[bone.parentID].name;
                 std::string me = bone.name;
@@ -70,6 +70,7 @@ namespace Falcor
     {
         mBones = Bones;
         mBoneTransforms.resize(mBones.size());
+        setActiveAnimation(kBindPoseAnimationId);
     }
 
     void AnimationController::addAnimation(Animation::UniquePtr pAnimation)
@@ -87,7 +88,7 @@ namespace Falcor
 
     void AnimationController::animate(double currentTime)
     {
-        if(mActiveAnimation != BIND_POSE_ANIMATION_ID)
+        if(mActiveAnimation != kBindPoseAnimationId)
         {
             mAnimations[mActiveAnimation]->animate(currentTime, this);
         }
@@ -95,7 +96,7 @@ namespace Falcor
         for(uint32_t i = 0; i < mBones.size(); i++)
         {
             mBones[i].globalTransform = mBones[i].localTransform;
-            if(mBones[i].parentID != INVALID_BONE_ID)
+            if(mBones[i].parentID != kInvalidBoneID)
             {
                 mBones[i].globalTransform = mBones[mBones[i].parentID].globalTransform * mBones[i].globalTransform;
             }
@@ -105,15 +106,16 @@ namespace Falcor
 
     void AnimationController::setActiveAnimation(uint32_t id)
     {
-        assert(id == BIND_POSE_ANIMATION_ID || id < mAnimations.size());
+        assert(id == kBindPoseAnimationId || id < mAnimations.size());
         mActiveAnimation = id;
-        if(id == BIND_POSE_ANIMATION_ID)
+        if(id == kBindPoseAnimationId)
         {
             for(auto& bone : mBones)
             {
                 bone.localTransform = bone.originalLocalTransform;
             }
         }
+        animate(0);
     }
 
     const std::string& AnimationController::getAnimationName(uint32_t ID) const

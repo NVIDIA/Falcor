@@ -111,11 +111,7 @@ namespace Falcor
 		case DXGI_FORMAT_BC3_TYPELESS:
 		case DXGI_FORMAT_BC5_TYPELESS:
 		case DXGI_FORMAT_BC6H_TYPELESS:
-		case DXGI_FORMAT_BC6H_UF16:
-		case DXGI_FORMAT_BC6H_SF16:
 		case DXGI_FORMAT_BC7_TYPELESS:
-		case DXGI_FORMAT_BC7_UNORM:
-		case DXGI_FORMAT_BC7_UNORM_SRGB:
 			return ResourceFormat::Unknown;
 		case DXGI_FORMAT_R32G32B32A32_FLOAT:
 			return ResourceFormat::RGBA32Float;
@@ -245,7 +241,15 @@ namespace Falcor
 			return ResourceFormat::BC5Unorm;
 		case DXGI_FORMAT_BC5_SNORM:
 			return ResourceFormat::BC5Snorm;
-		default:
+        case DXGI_FORMAT_BC6H_SF16:
+            return ResourceFormat::BC6HS16;
+        case DXGI_FORMAT_BC6H_UF16:
+            return ResourceFormat::BC6HU16;
+        case DXGI_FORMAT_BC7_UNORM:
+            return ResourceFormat::BC7Unorm;
+        case DXGI_FORMAT_BC7_UNORM_SRGB:
+            return ResourceFormat::BC7UnormSrgb;
+        default:
 			return ResourceFormat::Unknown;
 		}
 	}

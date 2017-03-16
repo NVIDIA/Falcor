@@ -50,7 +50,7 @@ private:
 
     void loadModelFromFile(const std::string& Filename);
     void resetCamera();
-    void setModelUIElements();
+    void renderModelUI();
     void setModelString(bool isAfterCull, float LoadTime);
 
     Model::SharedPtr mpModel = nullptr;
@@ -82,8 +82,8 @@ private:
     bool mGenerateTangentSpace = true;
     glm::vec3 mAmbientIntensity = glm::vec3(0.1f, 0.1f, 0.1f);
 
-    uint32_t mActiveAnimationID = sBindPoseAnimationID;
-    static const uint32_t sBindPoseAnimationID = (uint32_t)-1;
+    uint32_t mActiveAnimationID = kBindPoseAnimationID;
+    static const uint32_t kBindPoseAnimationID = AnimationController::kBindPoseAnimationId;
 
     RasterizerState::SharedPtr mpWireframeRS = nullptr;
     RasterizerState::SharedPtr mpCullRastState[3]; // 0 = no culling, 1 = backface culling, 2 = frontface culling

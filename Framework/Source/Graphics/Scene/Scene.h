@@ -103,7 +103,7 @@ namespace Falcor
         };
 
         static Scene::SharedPtr loadFromFile(const std::string& filename, const uint32_t& modelLoadFlags, uint32_t sceneLoadFlags = 0);
-        static Scene::SharedPtr create(float cameraAspectRatio = 1.0f);
+        static Scene::SharedPtr create();
 
         ~Scene();
 
@@ -156,8 +156,8 @@ namespace Falcor
         void deleteCamera(uint32_t cameraID);
 
         uint32_t getCameraCount() const { return (uint32_t)mCameras.size(); }
-        const Camera::SharedPtr& getCamera(uint32_t index) const { return mCameras[index]; }
-        const Camera::SharedPtr& getActiveCamera() const { return getCamera(mActiveCameraID); }
+        const Camera::SharedPtr getCamera(uint32_t index) const { return index < getCameraCount() ? mCameras[index] : nullptr; }
+        const Camera::SharedPtr getActiveCamera() const { return getCamera(mActiveCameraID); }
         uint32_t getActiveCameraIndex() const { return mActiveCameraID; }
 
         void setActiveCamera(uint32_t camID);
@@ -196,7 +196,7 @@ namespace Falcor
 
     private:
 
-        Scene(float cameraAspectRatio);
+        Scene();
 
         static uint32_t sSceneCounter;
 

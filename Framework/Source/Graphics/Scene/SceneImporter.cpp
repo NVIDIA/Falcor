@@ -1178,9 +1178,6 @@ namespace Falcor
             return false;
         }
 
-        // New scenes are created with a default camera. Delete it.
-        mpScene->deleteCamera(0);
-
         // Go over all the objects
         for(uint32_t i = 0; i < jsonVal.Size(); i++)
         {

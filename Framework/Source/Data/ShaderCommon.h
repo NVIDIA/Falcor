@@ -40,31 +40,26 @@ cbuffer InternalPerFrameCB : register(b10)
     CameraData gCam;
 };
 
-cbuffer InternalPerStaticMeshCB : register(b11)
+cbuffer InternalPerMeshCB : register(b11)
 {
-    mat4 gWorldMat[64];
+    mat4 gWorldMat[64]; // If the mesh has bones, these are the bones matrices
     uint32_t gDrawId[64]; // Zero-based order/ID of Mesh Instances drawn per SceneRenderer::renderScene call.
     uint32_t gMeshId;
-};
-
-cbuffer InternalPerSkinnedMeshCB : register(b12)
-{
-    mat4 gBones[64];
 };
 
 #ifdef _VERTEX_BLENDING
 mat4 blendVertices(vec4 weights, uint4 ids)
 {
-    mat4 worldMat = gBones[ids.x] * weights.x;
-    worldMat += gBones[ids.y] * weights.y;
-    worldMat += gBones[ids.z] * weights.z;
-    worldMat += gBones[ids.w] * weights.w;
+    mat4 worldMat = gWorldMat[ids.x] * weights.x;
+    worldMat += gWorldMat[ids.y] * weights.y;
+    worldMat += gWorldMat[ids.z] * weights.z;
+    worldMat += gWorldMat[ids.w] * weights.w;
 
     return worldMat;
 }
 #endif
 
-cbuffer InternalPerMaterialCB : register(b13)
+cbuffer InternalPerMaterialCB : register(b12)
 {
     MaterialData gMaterial;
     MaterialData gTemporalMaterial;

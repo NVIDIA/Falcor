@@ -45,7 +45,8 @@ namespace Falcor
     public:
         using UniquePtr = std::unique_ptr<SkyBox>;
         static UniquePtr create(Texture::SharedPtr& pTexture, Sampler::SharedPtr pSampler = nullptr, bool renderStereo = false);
-        static UniquePtr createFromTexCube(const std::string& textureName, bool loadAsSrgb = true, Sampler::SharedPtr pSampler = nullptr, bool renderStereo = false);
+        static UniquePtr createFromTexture(const std::string& textureName, bool loadAsSrgb = true, Sampler::SharedPtr pSampler = nullptr, bool renderStereo = false);
+
         void render(RenderContext* pRenderCtx, Camera* pCamera);
         void setSampler(Sampler::SharedPtr pSampler);
 

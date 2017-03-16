@@ -57,9 +57,9 @@ void NormalMapFiltering::updateProgram()
         mpProgram->addDefine("_MS_USER_NORMAL_MAPPING");
         mpProgram->addDefine("_LEAN_MAP_COUNT", std::to_string(mpLeanMap->getRequiredLeanMapShaderArraySize()));
     }
-    if (mUseSpecAA)
+    if (mUseSpecAA == false)
     {
-        mpProgram->addDefine("_MS_FILTER_ROUGHNESS");
+        mpProgram->addDefine("_MS_DISABLE_ROUGHNESS_FILTERING");
     }
 
     mpVars = GraphicsVars::create(mpProgram->getActiveVersion()->getReflector());

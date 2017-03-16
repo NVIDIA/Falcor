@@ -121,8 +121,7 @@ namespace Falcor
 
         static const char* kPerMaterialCbName;
         static const char* kPerFrameCbName;
-        static const char* kPerStaticMeshCbName;
-        static const char* kPerSkinnedMeshCbName;
+        static const char* kPerMeshCbName;
 
         static size_t sBonesOffset;
         static size_t sCameraDataOffset;

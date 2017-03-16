@@ -68,10 +68,13 @@ namespace Falcor
         {
             defines.add("_SINGLE_PASS_STEREO");
         }
-        else
+
+        assert(pTexture->getType() == Texture::Type::TextureCube || pTexture->getType() == Texture::Type::Texture2D);
+        if (pTexture->getType() == Texture::Type::Texture2D)
         {
-            defines.remove("_SINGLE_PASS_STEREO");
+            defines.add("_SPHERICAL_MAP");
         }
+
         mpProgram = GraphicsProgram::createFromFile("Effects\\SkyBox.vs.hlsl", "Effects\\Skybox.ps.hlsl", defines);
         mpVars = GraphicsVars::create(mpProgram->getActiveVersion()->getReflector());
         ConstantBuffer::SharedPtr& pCB = mpVars->getConstantBuffer(0);
@@ -119,9 +122,9 @@ namespace Falcor
         mpVars->setSampler(kSamplerName, pSampler);
     }
 
-    SkyBox::UniquePtr SkyBox::createFromTexCube(const std::string& textureName, bool loadAsSrgb, Sampler::SharedPtr pSampler, bool renderStereo)
+    SkyBox::UniquePtr SkyBox::createFromTexture(const std::string& textureName, bool loadAsSrgb, Sampler::SharedPtr pSampler, bool renderStereo)
     {
-        Texture::SharedPtr pTexture = createTextureFromFile(textureName, true, loadAsSrgb);
+        Texture::SharedPtr pTexture = createTextureFromFile(textureName, false, loadAsSrgb);
         if(pTexture == nullptr)
         {
             return nullptr;

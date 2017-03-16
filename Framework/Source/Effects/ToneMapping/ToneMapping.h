@@ -54,6 +54,7 @@ namespace Falcor
             ReinhardModified,   ///< Reinhard operator with maximum white intensity
             HejiHableAlu,       ///< John Hable's ALU approximation of Jim Heji's filmic operator
             HableUc2,           ///< John Hable's filmic tone-mapping used in Uncharted 2
+            Aces,               ///< Aces Filmic Tone-Mapping
         };
 
         /** Create a new object
@@ -63,10 +64,6 @@ namespace Falcor
         /** Set UI elements into a give GUI and UI group
         */
         void renderUI(Gui* pGui, const std::string& uiGroup);
-
-        /** Remove UI elements 
-        */
-        void removeUiElements(Gui* pGui, const std::string& uiGroup);
 
         /** Run the tone-mapping program
             \param pRenderContext Render-context to use
@@ -116,7 +113,7 @@ namespace Falcor
 
         struct
         {
-            float exposureKey = 0.18f;
+            float exposureKey = 0.042f;
             float whiteMaxLuminance = 1.0f;
             float luminanceLod = 16; // Max possible LOD, will result in global operation
             float whiteScale = 11.2f;

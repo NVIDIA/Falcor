@@ -58,11 +58,11 @@ namespace Falcor
 
         /** Create a new instance
         */
-        static UniquePtr create(uint32_t mapWidth, uint32_t mapHeight, Light::SharedConstPtr pLight, Scene::SharedPtr pScene, uint32_t cascadeCount = 4, ResourceFormat shadowMapFormat = ResourceFormat::D32Float);
+        static UniquePtr create(uint32_t mapWidth, uint32_t mapHeight, Light::SharedConstPtr pLight, Scene::SharedConstPtr pScene, uint32_t cascadeCount = 4, ResourceFormat shadowMapFormat = ResourceFormat::D32Float);
 
         /** Set UI elements
         */
-        void renderUi(Gui* pGui, const std::string& uiGroup);
+        void renderUi(Gui* pGui, const char* uiGroup = nullptr);
 
         /** Run the shadow-map generation pass
         \params[in] pScene The scene to render
@@ -86,9 +86,9 @@ namespace Falcor
         void setVsmLightBleedReduction(float reduction) { mCsmData.lightBleedingReduction = reduction; }
         void setDepthBias(float depthBias) { mCsmData.depthBias = depthBias; }
     private:
-        CascadedShadowMaps(uint32_t mapWidth, uint32_t mapHeight, Light::SharedConstPtr pLight, Scene::SharedPtr pScene, uint32_t cascadeCount, ResourceFormat shadowMapFormat);
+        CascadedShadowMaps(uint32_t mapWidth, uint32_t mapHeight, Light::SharedConstPtr pLight, Scene::SharedConstPtr pScene, uint32_t cascadeCount, ResourceFormat shadowMapFormat);
         Light::SharedConstPtr mpLight;
-        Scene::SharedPtr mpScene;
+        Scene::SharedConstPtr mpScene;
         Camera::SharedPtr mpLightCamera;
         std::unique_ptr<CsmSceneRenderer> mpCsmSceneRenderer;
         std::unique_ptr<SceneRenderer> mpSceneRenderer;

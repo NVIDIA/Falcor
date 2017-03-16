@@ -47,6 +47,16 @@
 
 namespace Falcor
 {
+    static_assert(Mesh::kMaxBonesPerVertex == 4, "Fix the weights and IDs container below");
+    using VertexWeightsVec = std::vector<float4>;
+    struct uvec8_4
+    {
+        uint8_t u[4];
+        uint8_t& operator[](uint32_t i) { return u[i]; }
+    };
+
+    using VertexIdsVec = std::vector<uvec8_4>;
+
     template<typename posType>
     void generateSubmeshTangentData(
         const std::vector<uint32_t>& indices,
@@ -57,17 +67,78 @@ namespace Falcor
         glm::vec3* bitangentData);
 
 
+    void loadBones(const aiMesh* pAiMesh, VertexWeightsVec& weights, VertexIdsVec& ids, uint32_t vertexCount, const std::map<std::string, uint32_t>& boneNameToIdMap)
+    {
+        if (pAiMesh->mNumBones > 0xff)
+        {
+            logError("Too many bones");
+        }
+
+        weights.resize(vertexCount);
+        ids.resize(vertexCount);
+
+        for (uint32_t bone = 0; bone < pAiMesh->mNumBones; bone++)
+        {
+            const aiBone* pAiBone = pAiMesh->mBones[bone];
+            uint32_t aiBoneID = boneNameToIdMap.at(std::string(pAiBone->mName.C_Str()));
+
+            // The way Assimp works, the weights holds the IDs of the vertices it affects.
+            // We loop over all the weights, initializing the vertices data along the way
+            for (uint32_t weightID = 0; weightID < pAiBone->mNumWeights; weightID++)
+            {
+                // Get the vertex the current weight affects
+                const aiVertexWeight& aiWeight = pAiBone->mWeights[weightID];
+
+                // Get the address of the Bone ID and weight for the current vertex
+                uvec8_4& vertexIds = ids[aiWeight.mVertexId];
+                vec4& vertexWeights = weights[aiWeight.mVertexId];
+
+                // Find the next unused slot in the bone array of the vertex, and initialize it with the current value
+                bool emptySlotFound = false;
+                for (uint32_t j = 0; j < Mesh::kMaxBonesPerVertex; j++)
+                {
+                    if (vertexWeights[j] == 0)
+                    {
+                        vertexIds[j] = (uint8_t)aiBoneID;
+                        vertexWeights[j] = aiWeight.mWeight;
+                        emptySlotFound = true;
+                        break;
+                    }
+                }
+
+                if (emptySlotFound == false)
+                {
+                    logError("Too many bones");
+                }
+            }
+        }
+
+        // Now we need to normalize the weights for each vertex, since in some models the sum is larger than 1
+        for (uint32_t i = 0; i < vertexCount; i++)
+        {
+            vec4& w = weights[i];
+
+            float f = 0;
+            // Sum the weights
+            for (int j = 0; j < Mesh::kMaxBonesPerVertex; j++)
+            {
+                f += w[j];
+            }
+            w /= f;
+        }
+    }
+
     std::vector<uint32_t> createIndexBufferData(const aiMesh* pAiMesh)
     {
         uint32_t indexCount = pAiMesh->mNumFaces * pAiMesh->mFaces[0].mNumIndices;
         std::vector<uint32_t> indices(indexCount);
         const uint32_t firstFacePrimSize = pAiMesh->mFaces[0].mNumIndices;
 
-        for(uint32_t i = 0; i < pAiMesh->mNumFaces; i++)
+        for (uint32_t i = 0; i < pAiMesh->mNumFaces; i++)
         {
             uint32_t primSize = pAiMesh->mFaces[i].mNumIndices;
             assert(primSize == firstFacePrimSize); // Mesh contains mixed primitive types, can be solved using aiProcess_SortByPType
-            for(uint32_t j = 0; j < firstFacePrimSize; j++)
+            for (uint32_t j = 0; j < firstFacePrimSize; j++)
             {
                 indices[i * firstFacePrimSize + j] = (uint32_t)(pAiMesh->mFaces[i].mIndices[j]);
             }
@@ -78,7 +149,7 @@ namespace Falcor
 
     void genTangentSpace(const aiMesh* pAiMesh)
     {
-        if(pAiMesh->mFaces[0].mNumIndices == 3)
+        if (pAiMesh->mFaces[0].mNumIndices == 3)
         {
             aiMesh* pMesh = const_cast<aiMesh*>(pAiMesh);
             pMesh->mBitangents = new aiVector3D[pMesh->mNumVertices];
@@ -93,12 +164,12 @@ namespace Falcor
     }
 
     struct layoutsData
-    { 
+    {
         uint32_t pos;
         std::string name;
         ResourceFormat format;
     };
-    
+
     static const layoutsData kLayoutData[VERTEX_LOCATION_COUNT] =
     {
         { VERTEX_POSITION_LOC,      VERTEX_POSITION_NAME,       ResourceFormat::RGB32Float },
@@ -124,35 +195,35 @@ namespace Falcor
 
     BasicMaterial::MapType getFalcorTexTypeFromAi(aiTextureType type, const bool isObjFile)
     {
-        switch(type)
+        switch (type)
         {
-            case aiTextureType_DIFFUSE:
-                return BasicMaterial::MapType::DiffuseMap;
-            case aiTextureType_SPECULAR:
-                return BasicMaterial::MapType::SpecularMap;
-            case aiTextureType_EMISSIVE:
-                return BasicMaterial::MapType::EmissiveMap;
-            case aiTextureType_HEIGHT:
-                // OBJ doesn't support normal maps, so they are usually placed in the height map slot. For consistency with other formats, we move them to the normal map slot.
-                return isObjFile ? BasicMaterial::MapType::NormalMap : BasicMaterial::MapType::HeightMap;
-            case aiTextureType_NORMALS:
-                return BasicMaterial::MapType::NormalMap;
-            case aiTextureType_OPACITY:
-                return BasicMaterial::MapType::AlphaMap;
-            case aiTextureType_AMBIENT:
-                return BasicMaterial::MapType::AmbientMap;
-            default:
-                return BasicMaterial::MapType::Count;
+        case aiTextureType_DIFFUSE:
+            return BasicMaterial::MapType::DiffuseMap;
+        case aiTextureType_SPECULAR:
+            return BasicMaterial::MapType::SpecularMap;
+        case aiTextureType_EMISSIVE:
+            return BasicMaterial::MapType::EmissiveMap;
+        case aiTextureType_HEIGHT:
+            // OBJ doesn't support normal maps, so they are usually placed in the height map slot. For consistency with other formats, we move them to the normal map slot.
+            return isObjFile ? BasicMaterial::MapType::NormalMap : BasicMaterial::MapType::HeightMap;
+        case aiTextureType_NORMALS:
+            return BasicMaterial::MapType::NormalMap;
+        case aiTextureType_OPACITY:
+            return BasicMaterial::MapType::AlphaMap;
+        case aiTextureType_AMBIENT:
+            return BasicMaterial::MapType::AmbientMap;
+        default:
+            return BasicMaterial::MapType::Count;
         }
     }
 
     bool isSrgbRequired(aiTextureType aiType, bool isSrgbRequested)
     {
-        if(isSrgbRequested == false)
+        if (isSrgbRequested == false)
         {
             return false;
         }
-        switch(aiType)
+        switch (aiType)
         {
         case aiTextureType_DIFFUSE:
         case aiTextureType_SPECULAR:
@@ -175,15 +246,15 @@ namespace Falcor
 
     void AssimpModelImporter::loadTextures(const aiMaterial* pAiMaterial, const std::string& folder, BasicMaterial* pMaterial, bool isObjFile, bool useSrgb)
     {
-        for(int i = 0; i < AI_TEXTURE_TYPE_MAX; ++i)
+        for (int i = 0; i < AI_TEXTURE_TYPE_MAX; ++i)
         {
             aiTextureType aiType = (aiTextureType)i;
 
             uint32_t textureCount = pAiMaterial->GetTextureCount(aiType);
 
-            if(textureCount >= 1)
+            if (textureCount >= 1)
             {
-                if(textureCount != 1)
+                if (textureCount != 1)
                 {
                     logError("Can't create material with more then one texture per Type");
                     return;
@@ -195,7 +266,7 @@ namespace Falcor
                 std::string s(path.data);
                 Texture::SharedPtr pTex = nullptr;
 
-                if(s.empty())
+                if (s.empty())
                 {
                     logWarning("Texture has empty file name, ignoring.");
                     continue;
@@ -203,7 +274,7 @@ namespace Falcor
 
                 // Check if the texture was already loaded
                 const auto& a = mTextureCache.find(s);
-                if(a != mTextureCache.end())
+                if (a != mTextureCache.end())
                 {
                     pTex = a->second;
                 }
@@ -212,7 +283,7 @@ namespace Falcor
                     // create a new texture
                     std::string fullpath = folder + '\\' + s;
                     pTex = createTextureFromFile(fullpath, true, isSrgbRequired(aiType, useSrgb));
-                    if(pTex)
+                    if (pTex)
                     {
                         mTextureCache[s] = pTex;
                     }
@@ -220,7 +291,7 @@ namespace Falcor
 
                 assert(pTex != nullptr);
                 BasicMaterial::MapType texSlot = getFalcorTexTypeFromAi(aiType, isObjFile);
-                if(texSlot != BasicMaterial::MapType::Count)
+                if (texSlot != BasicMaterial::MapType::Count)
                 {
                     pMaterial->pTextures[texSlot] = pTex;
                 }
@@ -244,57 +315,57 @@ namespace Falcor
 
         // Opacity
         float opacity;
-        if(pAiMaterial->Get(AI_MATKEY_OPACITY, opacity) == AI_SUCCESS)
+        if (pAiMaterial->Get(AI_MATKEY_OPACITY, opacity) == AI_SUCCESS)
         {
             basicMaterial.opacity = opacity;
         }
 
         // Bump scaling
         float bumpScaling;
-        if(pAiMaterial->Get(AI_MATKEY_BUMPSCALING, bumpScaling) == AI_SUCCESS)
+        if (pAiMaterial->Get(AI_MATKEY_BUMPSCALING, bumpScaling) == AI_SUCCESS)
         {
             basicMaterial.bumpScale = bumpScaling;
         }
 
         // Shininess
         float shininess;
-        if(pAiMaterial->Get(AI_MATKEY_SHININESS, shininess) == AI_SUCCESS)
+        if (pAiMaterial->Get(AI_MATKEY_SHININESS, shininess) == AI_SUCCESS)
         {
             basicMaterial.shininess = shininess;
         }
 
         // Refraction
         float refraction;
-        if(pAiMaterial->Get(AI_MATKEY_REFRACTI, refraction) == AI_SUCCESS)
+        if (pAiMaterial->Get(AI_MATKEY_REFRACTI, refraction) == AI_SUCCESS)
         {
             basicMaterial.IoR = refraction;
         }
 
         // Diffuse color
         aiColor3D color;
-        if(pAiMaterial->Get(AI_MATKEY_COLOR_DIFFUSE, color) == AI_SUCCESS)
+        if (pAiMaterial->Get(AI_MATKEY_COLOR_DIFFUSE, color) == AI_SUCCESS)
         {
             basicMaterial.diffuseColor = glm::vec3(color.r, color.g, color.b);
         }
 
         // Specular color
-        if(pAiMaterial->Get(AI_MATKEY_COLOR_SPECULAR, color) == AI_SUCCESS)
+        if (pAiMaterial->Get(AI_MATKEY_COLOR_SPECULAR, color) == AI_SUCCESS)
         {
             basicMaterial.specularColor = glm::vec3(color.r, color.g, color.b);
         }
 
         // Emissive color
-        if(pAiMaterial->Get(AI_MATKEY_COLOR_EMISSIVE, color) == AI_SUCCESS)
+        if (pAiMaterial->Get(AI_MATKEY_COLOR_EMISSIVE, color) == AI_SUCCESS)
         {
             basicMaterial.emissiveColor = glm::vec3(color.r, color.g, color.b);
-            if(isObjFile && luminance(basicMaterial.emissiveColor) > 0)
+            if (isObjFile && luminance(basicMaterial.emissiveColor) > 0)
             {
                 basicMaterial.pTextures[BasicMaterial::MapType::EmissiveMap] = basicMaterial.pTextures[BasicMaterial::MapType::DiffuseMap];
             }
         }
 
         // Transparent color
-        if(pAiMaterial->Get(AI_MATKEY_COLOR_TRANSPARENT, color) == AI_SUCCESS)
+        if (pAiMaterial->Get(AI_MATKEY_COLOR_TRANSPARENT, color) == AI_SUCCESS)
         {
             basicMaterial.transparentColor = glm::vec3(color.r, color.g, color.b);
         }
@@ -303,7 +374,7 @@ namespace Falcor
 
         // Double-Sided
         int isDoubleSided;
-        if(pAiMaterial->Get(AI_MATKEY_TWOSIDED, isDoubleSided) == AI_SUCCESS)
+        if (pAiMaterial->Get(AI_MATKEY_TWOSIDED, isDoubleSided) == AI_SUCCESS)
         {
             pMaterial->setDoubleSided((isDoubleSided != 0));
         }
@@ -316,7 +387,7 @@ namespace Falcor
         bool b = true;
 
         // No internal textures
-        if(pScene->mTextures != 0)
+        if (pScene->mTextures != 0)
         {
             logError("Model has internal textures");
             b = false;
@@ -331,17 +402,17 @@ namespace Falcor
 
     bool AssimpModelImporter::createAllMaterials(const aiScene* pScene, const std::string& modelFolder, bool isObjFile, bool useSrgb)
     {
-        for(uint32_t i = 0; i < pScene->mNumMaterials; i++)
+        for (uint32_t i = 0; i < pScene->mNumMaterials; i++)
         {
             const aiMaterial* pAiMaterial = pScene->mMaterials[i];
             auto pMaterial = createMaterial(pAiMaterial, modelFolder, isObjFile, useSrgb);
-            if(pMaterial == nullptr)
+            if (pMaterial == nullptr)
             {
                 logError("Can't allocate memory for material");
                 return false;
             }
             auto pAdded = checkForExistingMaterial(pMaterial);
-            if(pMaterial != pAdded)
+            if (pMaterial != pAdded)
             {
                 // Material already exists
                 pMaterial = pAdded;
@@ -354,24 +425,24 @@ namespace Falcor
 
     bool AssimpModelImporter::parseAiSceneNode(const aiNode* pCurrent, const aiScene* pScene, IdToMesh& aiToFalcorMesh)
     {
-        if(pCurrent->mNumMeshes)
+        if (pCurrent->mNumMeshes)
         {
             // Init the transformation
             aiMatrix4x4 transform = pCurrent->mTransformation;
             const aiNode* pParent = pCurrent->mParent;
-            while(pParent)
+            while (pParent)
             {
                 transform *= pParent->mTransformation;
                 pParent = pParent->mParent;
             }
 
             // Initialize the meshes
-            for(uint32_t i = 0; i < pCurrent->mNumMeshes; i++)
+            for (uint32_t i = 0; i < pCurrent->mNumMeshes; i++)
             {
                 uint32_t aiId = pCurrent->mMeshes[i];
 
                 // New mesh
-                if(aiToFalcorMesh.find(aiId) == aiToFalcorMesh.end())
+                if (aiToFalcorMesh.find(aiId) == aiToFalcorMesh.end())
                 {
                     // Cache mesh
                     aiToFalcorMesh[aiId] = createMesh(pScene->mMeshes[aiId]);
@@ -383,7 +454,7 @@ namespace Falcor
 
         bool b = true;
         // visit the children
-        for(uint32_t i = 0; i < pCurrent->mNumChildren; i++)
+        for (uint32_t i = 0; i < pCurrent->mNumChildren; i++)
         {
             b |= parseAiSceneNode(pCurrent->mChildren[i], pScene, aiToFalcorMesh);
         }
@@ -401,7 +472,7 @@ namespace Falcor
     bool AssimpModelImporter::initModel(const std::string& filename)
     {
         std::string fullpath;
-        if(findFileInDataDirectories(filename, fullpath) == false)
+        if (findFileInDataDirectories(filename, fullpath) == false)
         {
             logError(std::string("Can't find model file ") + filename, true);
             return nullptr;
@@ -410,16 +481,16 @@ namespace Falcor
         uint32_t AssimpFlags = aiProcessPreset_TargetRealtime_MaxQuality |
             aiProcess_OptimizeGraph |
             aiProcess_FlipUVs |
-           // aiProcess_FixInfacingNormals | // causes incorrect facing normals for crytek-sponza
+            // aiProcess_FixInfacingNormals | // causes incorrect facing normals for crytek-sponza
             0;
 
         // aiProcessPreset_TargetRealtime_MaxQuality enabled some optimizations the user might not want
-        if((mFlags & Model::FindDegeneratePrimitives) == 0)
+        if ((mFlags & Model::FindDegeneratePrimitives) == 0)
         {
             AssimpFlags &= ~aiProcess_FindDegenerates;
         }
         // Avoid merging original meshes
-        if((mFlags & Model::DontMergeMeshes) != 0)
+        if ((mFlags & Model::DontMergeMeshes) != 0)
         {
             AssimpFlags &= ~aiProcess_OptimizeGraph;
         }
@@ -429,7 +500,7 @@ namespace Falcor
         Assimp::Importer importer;
         const aiScene* pScene = importer.ReadFile(fullpath, AssimpFlags);
 
-        if((pScene == nullptr) || (verifyScene(pScene) == false))
+        if ((pScene == nullptr) || (verifyScene(pScene) == false))
         {
             std::string str("Can't open model file '");
             str = str + std::string(filename) + "'\n" + importer.GetErrorString();
@@ -444,13 +515,13 @@ namespace Falcor
         // Order of initialization matters, materials, bones and animations need to loaded before mesh initialization
         bool isObjFile = hasSuffix(filename, ".obj", false);
         bool useSrgbTextures = (mFlags & Model::AssumeLinearSpaceTextures) == 0;
-        if(createAllMaterials(pScene, modelFolder, isObjFile, useSrgbTextures) == false)
+        if (createAllMaterials(pScene, modelFolder, isObjFile, useSrgbTextures) == false)
         {
             logError(std::string("Can't create materials for model ") + filename, true);
             return false;
         }
 
-        if(createDrawList(pScene) == false)
+        if (createDrawList(pScene) == false)
         {
             logError(std::string("Can't create draw lists for model ") + filename, true);
             return false;
@@ -472,7 +543,7 @@ namespace Falcor
         AssimpModelImporter loader(flags);
 
         // Init the model
-        if(loader.initModel(filename) == false)
+        if (loader.initModel(filename) == false)
         {
             loader.mpModel = nullptr;
         }
@@ -495,17 +566,17 @@ namespace Falcor
         bone.originalLocalTransform = bone.localTransform;
         bone.globalTransform = bone.localTransform;
 
-        if(parentID != INVALID_BONE_ID)
+        if (parentID != AnimationController::kInvalidBoneID)
         {
             bone.globalTransform *= mBones[parentID].globalTransform;
         }
 
         boneID++;
 
-        for(uint32_t i = 0; i < pCurNode->mNumChildren; i++)
+        for (uint32_t i = 0; i < pCurNode->mNumChildren; i++)
         {
             // Check that the child is actually used
-            if(mBoneNameToIdMap.find(pCurNode->mChildren[i]->mName.C_Str()) != mBoneNameToIdMap.end())
+            if (mBoneNameToIdMap.find(pCurNode->mChildren[i]->mName.C_Str()) != mBoneNameToIdMap.end())
             {
                 boneID = initBone(pCurNode->mChildren[i], bone.boneID, boneID);
             }
@@ -515,11 +586,11 @@ namespace Falcor
 
     void AssimpModelImporter::initializeBonesOffsetMatrices(const aiScene* pScene)
     {
-        for(uint32_t meshID = 0; meshID < pScene->mNumMeshes; meshID++)
+        for (uint32_t meshID = 0; meshID < pScene->mNumMeshes; meshID++)
         {
             const aiMesh* pAiMesh = pScene->mMeshes[meshID];
 
-            for(uint32_t boneID = 0; boneID < pAiMesh->mNumBones; boneID++)
+            for (uint32_t boneID = 0; boneID < pAiMesh->mNumBones; boneID++)
             {
                 const aiBone* pAiBone = pAiMesh->mBones[boneID];
                 auto boneIt = mBoneNameToIdMap.find(pAiBone->mName.C_Str());
@@ -533,28 +604,28 @@ namespace Falcor
     void AssimpModelImporter::initializeBones(const aiScene* pScene)
     {
         // Go over all the meshes, and find the bones that are being used
-        for(uint32_t i = 0; i < pScene->mNumMeshes; i++)
+        for (uint32_t i = 0; i < pScene->mNumMeshes; i++)
         {
             const aiMesh* pMesh = pScene->mMeshes[i];
-            if(pMesh->HasBones())
+            if (pMesh->HasBones())
             {
-                for(uint32_t j = 0; j < pMesh->mNumBones; j++)
+                for (uint32_t j = 0; j < pMesh->mNumBones; j++)
                 {
-                    mBoneNameToIdMap[pMesh->mBones[j]->mName.C_Str()] = INVALID_BONE_ID;
+                    mBoneNameToIdMap[pMesh->mBones[j]->mName.C_Str()] = AnimationController::kInvalidBoneID;
                 }
             }
         }
 
-        if(mBoneNameToIdMap.size() != 0)
+        if (mBoneNameToIdMap.size() != 0)
         {
             // For every bone used, all its ancestors are bones too. Mark them
             auto it = mBoneNameToIdMap.begin();
-            while(it != mBoneNameToIdMap.end())
+            while (it != mBoneNameToIdMap.end())
             {
                 aiNode* pCurNode = pScene->mRootNode->FindNode(it->first.c_str());
-                while(pCurNode)
+                while (pCurNode)
                 {
-                    mBoneNameToIdMap[pCurNode->mName.C_Str()] = INVALID_BONE_ID;
+                    mBoneNameToIdMap[pCurNode->mName.C_Str()] = AnimationController::kInvalidBoneID;
                     pCurNode = pCurNode->mParent;
                 }
                 it++;
@@ -562,7 +633,7 @@ namespace Falcor
 
             // Now create the hierarchy
             mBones.resize(mBoneNameToIdMap.size());
-            uint32_t bonesCount = initBone(pScene->mRootNode, INVALID_BONE_ID, 0);
+            uint32_t bonesCount = initBone(pScene->mRootNode, AnimationController::kInvalidBoneID, 0);
             assert(mBoneNameToIdMap.size() == bonesCount);
 
             initializeBonesOffsetMatrices(pScene);
@@ -571,13 +642,13 @@ namespace Falcor
 
     void AssimpModelImporter::createAnimationController(const aiScene* pScene)
     {
-        if(pScene->HasAnimations())
-        {
-            initializeBones(pScene);
+        initializeBones(pScene);
 
+        if (pScene->HasAnimations())
+        {
             auto pAnimCtrl = AnimationController::create(mBones);
 
-            for(uint32_t i = 0; i < pScene->mNumAnimations; i++)
+            for (uint32_t i = 0; i < pScene->mNumAnimations; i++)
             {
                 Animation::UniquePtr pAnimation = createAnimation(pScene->mAnimations[i]);
                 pAnimCtrl->addAnimation(std::move(pAnimation));
@@ -597,12 +668,16 @@ namespace Falcor
         std::vector<Animation::AnimationSet> animationSets;
         animationSets.resize(pAiAnim->mNumChannels);
 
-        for(uint32_t i = 0; i < pAiAnim->mNumChannels; i++)
+        for (uint32_t i = 0; i < pAiAnim->mNumChannels; i++)
         {
             const aiNodeAnim* pAiNode = pAiAnim->mChannels[i];
-            animationSets[i].boneID = mBoneNameToIdMap.at(pAiNode->mNodeName.C_Str());
+            // If the bone is not used, skip it
+            const auto& idIt = mBoneNameToIdMap.find(pAiNode->mNodeName.C_Str());
+            if (idIt == mBoneNameToIdMap.end()) continue;;
 
-            for(uint32_t j = 0; j < pAiNode->mNumPositionKeys; j++)
+            animationSets[i].boneID = idIt->second;
+
+            for (uint32_t j = 0; j < pAiNode->mNumPositionKeys; j++)
             {
                 const aiVectorKey& key = pAiNode->mPositionKeys[j];
                 Animation::AnimationKey<glm::vec3> position;
@@ -611,7 +686,7 @@ namespace Falcor
                 animationSets[i].translation.keys.push_back(position);
             }
 
-            for(uint32_t j = 0; j < pAiNode->mNumScalingKeys; j++)
+            for (uint32_t j = 0; j < pAiNode->mNumScalingKeys; j++)
             {
                 const aiVectorKey& key = pAiNode->mScalingKeys[j];
                 Animation::AnimationKey<glm::vec3> scale;
@@ -620,7 +695,7 @@ namespace Falcor
                 animationSets[i].scaling.keys.push_back(scale);
             }
 
-            for(uint32_t j = 0; j < pAiNode->mNumRotationKeys; j++)
+            for (uint32_t j = 0; j < pAiNode->mNumRotationKeys; j++)
             {
                 const aiQuatKey& key = pAiNode->mRotationKeys[j];
                 Animation::AnimationKey<glm::quat> rotation;
@@ -633,20 +708,33 @@ namespace Falcor
         return Animation::create(std::string(pAiAnim->mName.C_Str()), animationSets, duration, ticksPerSecond);
     }
 
+    BoundingBox createMeshBbox(const aiMesh* pAiMesh)
+    {
+        glm::vec3 boxMin, boxMax;
+        for (uint32_t vertexID = 0; vertexID < pAiMesh->mNumVertices; vertexID++)
+        {
+            glm::vec3 xyz(pAiMesh->mVertices[vertexID].x, pAiMesh->mVertices[vertexID].y, pAiMesh->mVertices[vertexID].z);
+            boxMin = glm::min(boxMin, xyz);
+            boxMax = glm::max(boxMax, xyz);
+        }
+
+        return BoundingBox::fromMinMax(boxMin, boxMax);
+    }
+
     Mesh::SharedPtr AssimpModelImporter::createMesh(const aiMesh* pAiMesh)
     {
         uint32_t vertexCount = pAiMesh->mNumVertices;
         uint32_t indexCount = pAiMesh->mNumFaces * pAiMesh->mFaces[0].mNumIndices;
         auto pIB = createIndexBuffer(pAiMesh);
-        BoundingBox boundingBox;
+        BoundingBox boundingBox = createMeshBbox(pAiMesh);
 
-        if(mFlags & Model::GenerateTangentSpace)
+        if (mFlags & Model::GenerateTangentSpace)
         {
             genTangentSpace(pAiMesh);
         }
 
         VertexLayout::SharedPtr pLayout = createVertexLayout(pAiMesh);
-        if(pLayout == nullptr)
+        if (pLayout == nullptr)
         {
             assert(0);
             return nullptr;
@@ -654,15 +742,23 @@ namespace Falcor
 
         std::vector<Buffer::SharedPtr> pVBs(pLayout->getBufferCount());
 
+        // Initialize the bones data
+        VertexWeightsVec weights;
+        VertexIdsVec ids;
+        if (pAiMesh->HasBones())
+        {
+            loadBones(pAiMesh, weights, ids, vertexCount, mBoneNameToIdMap);
+        }
+
         // Create corresponding vertex buffers
-        for(uint32_t i = 0 ; i < pLayout->getBufferCount() ; i++)
+        for (uint32_t i = 0; i < pLayout->getBufferCount(); i++)
         {
             const VertexBufferLayout* pVbLayout = pLayout->getBufferLayout(i).get();
-            pVBs[i] = createVertexBuffer(pAiMesh, vertexCount, boundingBox, pVbLayout);
+            pVBs[i] = createVertexBuffer(pAiMesh, pVbLayout, (uint8_t*)ids.data(), weights.data());
         }
 
         Vao::Topology topology;
-        switch(pAiMesh->mFaces[0].mNumIndices)
+        switch (pAiMesh->mFaces[0].mNumIndices)
         {
         case 1:
             topology = Vao::Topology::PointList;
@@ -683,9 +779,9 @@ namespace Falcor
 
         Mesh::SharedPtr pMesh = Mesh::create(pVBs, vertexCount, pIB, indexCount, pLayout, topology, pMaterial, boundingBox, pAiMesh->HasBones());
 
-        if(mFlags & Model::GenerateTangentSpace)
+        if (mFlags & Model::GenerateTangentSpace)
         {
-           aiMesh* pM = const_cast<aiMesh*>(pAiMesh);
+            aiMesh* pM = const_cast<aiMesh*>(pAiMesh);
             safe_delete_array(pM->mBitangents);
         }
 
@@ -702,7 +798,7 @@ namespace Falcor
 
     bool isElementUsed(const aiMesh* pAiMesh, uint32_t location)
     {
-        switch(location)
+        switch (location)
         {
         case VERTEX_POSITION_LOC:
             return true;
@@ -722,23 +818,23 @@ namespace Falcor
             return false;
         }
     }
-    
+
     VertexLayout::SharedPtr AssimpModelImporter::createVertexLayout(const aiMesh* pAiMesh)
     {
         // Must have position!!!
-        if(pAiMesh->HasPositions() == false)
+        if (pAiMesh->HasPositions() == false)
         {
             logError("Loaded mesh with no positions!");
             return nullptr;
         }
 
-        if(pAiMesh->GetNumUVChannels() > 1)
+        if (pAiMesh->GetNumUVChannels() > 1)
         {
             logError("Too many texture-coordinate sets when creating model");
             return nullptr;
-        }		
+        }
 
-        if((pAiMesh->GetNumUVChannels()) == 1 && (pAiMesh->HasTextureCoords(0) == false))
+        if ((pAiMesh->GetNumUVChannels()) == 1 && (pAiMesh->HasTextureCoords(0) == false))
         {
             logError("AssimpModelImporter: Unsupported texture coordinate set used in model.");
             return nullptr;
@@ -749,7 +845,7 @@ namespace Falcor
         uint32_t bufferCount = 0;
         for (uint32_t location = 0; location < VERTEX_LOCATION_COUNT; ++location)
         {
-            if(isElementUsed(pAiMesh, location))
+            if (isElementUsed(pAiMesh, location))
             {
                 VertexBufferLayout::SharedPtr pVbLayout = VertexBufferLayout::create();
                 pVbLayout->addElement(kLayoutData[location].name, 0, kLayoutData[location].format, 1, location);
@@ -761,21 +857,16 @@ namespace Falcor
         return pLayout;
     }
 
-    Buffer::SharedPtr AssimpModelImporter::createVertexBuffer(const aiMesh* pAiMesh, uint32_t vertexCount, BoundingBox& boundingBox, const VertexBufferLayout* pLayout)
+    Buffer::SharedPtr AssimpModelImporter::createVertexBuffer(const aiMesh* pAiMesh, const VertexBufferLayout* pLayout, const uint8_t* pBoneIds, const vec4* pBoneWeights)
     {
         const uint32_t vertexStride = pLayout->getStride();
-        std::vector<uint8_t> initData(vertexStride * vertexCount, 0);
+        std::vector<uint8_t> initData(vertexStride * pAiMesh->mNumVertices, 0);
 
-        glm::vec3 boxMin, boxMax;
-
-        uint32_t weightOffset = -1;
-        uint32_t boneOffset = -1;
-
-        for(uint32_t vertexID = 0; vertexID < vertexCount; vertexID++)
+        for (uint32_t vertexID = 0; vertexID < pAiMesh->mNumVertices; vertexID++)
         {
             uint8_t* pVertex = &initData[vertexStride * vertexID];
 
-            for(uint32_t elementID = 0; elementID < pLayout->getElementCount(); elementID++)
+            for (uint32_t elementID = 0; elementID < pLayout->getElementCount(); elementID++)
             {
                 uint32_t offset = pLayout->getElementOffset(elementID);
                 uint32_t location = pLayout->getElementShaderLocation(elementID);
@@ -783,7 +874,7 @@ namespace Falcor
 
                 uint8_t* pSrc = nullptr;
                 uint32_t size = 0;
-                switch(location)
+                switch (location)
                 {
                 case VERTEX_POSITION_LOC:
                     pSrc = (uint8_t*)(&pAiMesh->mVertices[vertexID]);
@@ -804,12 +895,14 @@ namespace Falcor
                 case VERTEX_TEXCOORD_LOC:
                     pSrc = (uint8_t*)(&pAiMesh->mTextureCoords[0][vertexID]);
                     size = sizeof(pAiMesh->mTextureCoords[0][vertexID]);
-                    break; 
+                    break;
                 case VERTEX_BONE_WEIGHT_LOC:
-                    weightOffset = offset;
+                    pSrc = (uint8_t*)(&pBoneWeights[vertexID]);
+                    size = sizeof(pBoneWeights[vertexID]);
                     break;
                 case VERTEX_BONE_ID_LOC:
-                    boneOffset = offset;
+                    pSrc = (uint8_t*)(&pBoneIds[vertexID * 4]);
+                    size = sizeof(uint8_t) * 4;
                     break;
                 default:
                     should_not_get_here();
@@ -817,84 +910,8 @@ namespace Falcor
                 }
 
                 memcpy(pDst, pSrc, size);
-
-                // Calculate bounding-box
-                glm::vec3 xyz(pAiMesh->mVertices[vertexID].x, pAiMesh->mVertices[vertexID].y, pAiMesh->mVertices[vertexID].z);
-                boxMin = glm::min(boxMin, xyz);
-                boxMax = glm::max(boxMax, xyz);
             }
         }
-        boundingBox = BoundingBox::fromMinMax(boxMin, boxMax);
-
-        if(pAiMesh->HasBones() && boneOffset != -1 && weightOffset != -1)
-        {
-            loadBones(pAiMesh, initData.data(), vertexCount, vertexStride, boneOffset, weightOffset);
-        }
-
-        return Buffer::create(vertexStride * vertexCount, Buffer::BindFlags::Vertex, Buffer::CpuAccess::None, initData.data());;
-    }
-
-    void AssimpModelImporter::loadBones(const aiMesh* pAiMesh, uint8_t* pVertexData, uint32_t vertexCount, uint32_t vertexStride, uint32_t idOffset, uint32_t weightOffset)
-    {
-        if(pAiMesh->mNumBones > 0xff)
-        {
-            logError("Too many bones");
-        }
-
-        for(uint32_t bone = 0; bone < pAiMesh->mNumBones; bone++)
-        {
-            const aiBone* pAiBone = pAiMesh->mBones[bone];
-            uint32_t aiBoneID = mBoneNameToIdMap.at(std::string(pAiBone->mName.C_Str()));
-
-            // The way Assimp works, the weights holds the IDs of the vertices it affects.
-            // We loop over all the weights, initializing the vertices data along the way
-            for(uint32_t weightID = 0; weightID < pAiBone->mNumWeights; weightID++)
-            {
-                // Get the vertex the current weight affects
-                const aiVertexWeight& aiWeight = pAiBone->mWeights[weightID];
-                uint8_t* pVertex = pVertexData + (aiWeight.mVertexId * vertexStride);
-
-                // Get the address of the Bone ID and weight for the current vertex
-                uint8_t* pBoneIDs = (uint8_t*)(pVertex + idOffset);
-                float* pVertexWeights = (float*)(pVertex + weightOffset);
-
-                // Find the next unused slot in the bone array of the vertex, and initialize it with the current value
-                bool bFoundEmptySlot = false;
-                for(uint32_t j = 0; j < Mesh::kMaxBonesPerVertex; j++)
-                {
-                    if(pVertexWeights[j] == 0)
-                    {
-                        pBoneIDs[j] = (uint8_t)aiBoneID;
-                        pVertexWeights[j] = aiWeight.mWeight;
-                        bFoundEmptySlot = true;
-                        break;
-                    }
-                }
-
-                if(bFoundEmptySlot == false)
-                {
-                    logError("Too many bones");
-                }
-            }
-        }
-
-        // Now we need to normalize the weights for each vertex, since in some models the sum is larger than 1
-        for(uint32_t i = 0; i < vertexCount; i++)
-        {
-            uint8_t* pVertex = pVertexData + (i * vertexStride);
-            float* pVertexWeights = (float*)(pVertex + weightOffset);
-
-            float f = 0;
-            // Sum the weights
-            for(int j = 0; j < Mesh::kMaxBonesPerVertex; j++)
-            {
-                f += pVertexWeights[j];
-            }
-            // Normalize the weights
-            for(int j = 0; j < Mesh::kMaxBonesPerVertex; j++)
-            {
-                pVertexWeights[j] /= f;
-            }
-        }
+        return Buffer::create(vertexStride * pAiMesh->mNumVertices, Buffer::BindFlags::Vertex, Buffer::CpuAccess::None, initData.data());
     }
 }

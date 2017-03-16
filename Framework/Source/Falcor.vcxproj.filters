@@ -468,6 +468,9 @@
     <ClCompile Include="Graphics\Material\MaterialHistory.cpp">
       <Filter>Graphics\Material</Filter>
     </ClCompile>
+    <ClCompile Include="Effects\AmbientOcclusion\SSAO.cpp">
+      <Filter>Effects\AmbientOcclusion</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Graphics\Model\Animation.h">
@@ -1552,6 +1555,12 @@
     <ClInclude Include="Graphics\Material\MaterialHistory.h">
       <Filter>Graphics\Material</Filter>
     </ClInclude>
+    <ClInclude Include="Effects\AmbientOcclusion\SSAO.h">
+      <Filter>Effects\AmbientOcclusion</Filter>
+    </ClInclude>
+    <ClInclude Include="Data\Effects\SSAOData.h">
+      <Filter>Data\Effects</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Externals">
@@ -1704,15 +1713,15 @@
     <Filter Include="Data\Framework\Shaders">
       <UniqueIdentifier>{872e05a2-6354-4a08-ada2-8b8c88a7858c}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Effects\AmbientOcclusion">
+      <UniqueIdentifier>{723ff80c-2107-49c1-8a2b-e01f9d4eb6e9}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\CopyLibs.bat" />
     <None Include="..\CopyData.bat" />
     <None Include="Data\Framework\ParallelReduction.fs">
       <Filter>Utils\Math</Filter>
-    </None>
-    <None Include="Data\Effects\ToneMapping.fs">
-      <Filter>Data\Effects</Filter>
     </None>
     <None Include="Data\Effects\GaussianBlur.fs">
       <Filter>Data\Effects</Filter>
@@ -2099,6 +2108,9 @@
     </FxCompile>
     <FxCompile Include="Data\Framework\Shaders\Blit.hlsl">
       <Filter>Data\Framework\Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="Data\Effects\SSAO.ps.hlsl">
+      <Filter>Data\Effects</Filter>
     </FxCompile>
   </ItemGroup>
 </Project>

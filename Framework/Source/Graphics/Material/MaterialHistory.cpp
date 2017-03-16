@@ -100,11 +100,16 @@ namespace Falcor
             auto& meshList = mMaterialToMeshes.at(pMaterial);
             for (auto& pMesh : meshList)
             {
-                revert(pMesh);
-            }
+                bool lastMesh = meshList.size() == 1;
 
-            // Remove material
-            mMaterialToMeshes.erase(pMaterial);
+                revert(pMesh);
+
+                // Manually exit because revert() will have cleaned up meshList, so the loop cannot reference it anymore
+                if (lastMesh)
+                {
+                    break;
+                }
+            }
         }
     }
 }

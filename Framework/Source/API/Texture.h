@@ -35,7 +35,7 @@ namespace Falcor
 {
     class Sampler;
     class Device;
-
+    
     struct TextureApiData;
 
     /** Abstracts the API texture objects

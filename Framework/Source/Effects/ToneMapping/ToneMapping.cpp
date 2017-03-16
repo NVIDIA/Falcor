@@ -39,7 +39,8 @@ namespace Falcor
     { (uint32_t)ToneMapping::Operator::Reinhard, "Reinhard" },
     { (uint32_t)ToneMapping::Operator::ReinhardModified, "Modified Reinhard" }, 
     { (uint32_t)ToneMapping::Operator::HejiHableAlu, "Heji's approximation" },
-    { (uint32_t)ToneMapping::Operator::HableUc2, "Uncharted 2" } 
+    { (uint32_t)ToneMapping::Operator::HableUc2, "Uncharted 2" },
+    { (uint32_t)ToneMapping::Operator::Aces, "ACES" }
     };
 
     ToneMapping::~ToneMapping() = default;
@@ -51,7 +52,7 @@ namespace Falcor
         Sampler::Desc samplerDesc;
         samplerDesc.setFilterMode(Sampler::Filter::Point, Sampler::Filter::Point, Sampler::Filter::Point);
         mpPointSampler = Sampler::create(samplerDesc);
-        samplerDesc.setFilterMode(Sampler::Filter::Linear, Sampler::Filter::Linear, Sampler::Filter::Linear);
+        samplerDesc.setFilterMode(Sampler::Filter::Linear, Sampler::Filter::Linear, Sampler::Filter::Point);
         mpLinearSampler = Sampler::create(samplerDesc);
     }
 
@@ -67,12 +68,15 @@ namespace Falcor
         ResourceFormat srcFormat = pSrcFbo->getColorTexture(0)->getFormat();
         uint32_t bytesPerChannel = getFormatBytesPerBlock(srcFormat) / getFormatChannelCount(srcFormat);
         
+        // Find the required texture size and format
         ResourceFormat luminanceFormat = (bytesPerChannel == 32) ? ResourceFormat::R32Float : ResourceFormat::R16Float;
+        uint32_t requiredHeight = getLowerPowerOf2(pSrcFbo->getHeight());
+        uint32_t requiredWidth = getLowerPowerOf2(pSrcFbo->getWidth());
 
         if(createFbo == false)
         {
-            createFbo = (pSrcFbo->getWidth() != mpLuminanceFbo->getWidth()) ||
-                (pSrcFbo->getHeight() != mpLuminanceFbo->getHeight()) ||
+            createFbo = (requiredWidth != mpLuminanceFbo->getWidth()) ||
+                (requiredHeight != mpLuminanceFbo->getHeight()) ||
                 (luminanceFormat != mpLuminanceFbo->getColorTexture(0)->getFormat());
         }
 
@@ -80,7 +84,7 @@ namespace Falcor
         {
             Fbo::Desc desc;
             desc.setColorTarget(0, luminanceFormat);
-            mpLuminanceFbo = FboHelper::create2D(pSrcFbo->getWidth(), pSrcFbo->getHeight(), desc, 1, Fbo::kAttachEntireMipLevel);
+            mpLuminanceFbo = FboHelper::create2D(requiredWidth, requiredHeight, desc, 1, Fbo::kAttachEntireMipLevel);
         }
     }
 
@@ -93,7 +97,7 @@ namespace Falcor
         mpToneMapVars->setTexture("gColorTex", pSrc->getColorTexture(0));
         mpLuminanceVars->setTexture("gColorTex", pSrc->getColorTexture(0));
         mpToneMapVars->setSampler(1u, mpPointSampler);
-        mpLuminanceVars->setSampler(1u, mpPointSampler);
+        mpLuminanceVars->setSampler(1u, mpLinearSampler);
 
         //Calculate luminance
         pRenderContext->setGraphicsVars(mpLuminanceVars);
@@ -139,6 +143,9 @@ namespace Falcor
             break;
         case Operator::HableUc2:
             mpToneMapPass->getProgram()->addDefine("_HABLE_UC2");
+            break;
+        case Operator::Aces:
+            mpToneMapPass->getProgram()->addDefine("_ACES");
             break;
         default:
             should_not_get_here();

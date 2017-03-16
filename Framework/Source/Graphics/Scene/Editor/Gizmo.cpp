@@ -181,7 +181,9 @@ namespace Falcor
 
     void TranslateGizmo::applyDelta(const Camera::SharedPtr& pCamera) const
     {
-        pCamera->setPosition(pCamera->getPosition() + calculateMovementDelta());
+        auto delta = calculateMovementDelta();
+        pCamera->setPosition(pCamera->getPosition() + delta);
+        pCamera->setTarget(pCamera->getTarget() + delta);
     }
 
     void TranslateGizmo::applyDelta(const PointLight::SharedPtr& pLight) const

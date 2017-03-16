@@ -389,6 +389,7 @@
     <ClCompile Include="API\VAO.cpp" />
     <ClCompile Include="API\VariablesBuffer.cpp" />
     <ClCompile Include="ArgList.cpp" />
+    <ClCompile Include="Effects\AmbientOcclusion\SSAO.cpp" />
     <ClCompile Include="Effects\NormalMap\LeanMap.cpp" />
     <ClCompile Include="Effects\Shadows\CSM.cpp" />
     <ClCompile Include="Effects\SkyBox\SkyBox.cpp" />
@@ -770,10 +771,12 @@
     <ClInclude Include="ArgList.h" />
     <ClInclude Include="Data\Effects\CsmData.h" />
     <ClInclude Include="Data\Effects\LeanMapData.hlsli" />
+    <ClInclude Include="Data\Effects\SSAOData.h" />
     <ClInclude Include="Data\HlslGlslCommon.h" />
     <ClInclude Include="Data\HostDeviceData.h" />
     <ClInclude Include="Data\ShaderCommon.h" />
     <ClInclude Include="Data\VertexAttrib.h" />
+    <ClInclude Include="Effects\AmbientOcclusion\SSAO.h" />
     <ClInclude Include="Effects\NormalMap\LeanMap.h" />
     <ClInclude Include="Effects\Shadows\CSM.h" />
     <ClInclude Include="Effects\SkyBox\SkyBox.h" />
@@ -998,7 +1001,6 @@
     </None>
     <None Include="Data\Effects\SkyBox.ps.hlsl" />
     <None Include="Data\Effects\SkyBox.vs.hlsl" />
-    <None Include="Data\Effects\ToneMapping.fs" />
     <None Include="Data\Framework\ParallelReduction.fs" />
     <None Include="Data\Framework\Shaders\FullScreenPass.gs.hlsl" />
     <None Include="Data\Framework\Shaders\FullScreenPass.vs.hlsl" />
@@ -1010,6 +1012,9 @@
     <None Include="Data\Framework\Shaders\TextRenderer.vs" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="Data\Effects\SSAO.ps.hlsl">
+      <FileType>Document</FileType>
+    </None>
     <FxCompile Include="Data\Framework\Shaders\Blit.hlsl">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseD3D11|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseD3D12|x64'">true</ExcludedFromBuild>

@@ -165,7 +165,7 @@ namespace Falcor
     GraphicsState& GraphicsState::setVao(const Vao::SharedConstPtr& pVao)
     {
         mpVao = pVao;
-        mpGsoGraph->walk((void*)pVao.get());
+        mpGsoGraph->walk((void*)pVao->getVertexLayout().get());
         return *this;
     }
 

@@ -187,7 +187,7 @@ namespace Falcor
 
     bool Picking::setPerMeshInstanceData(RenderContext* pContext, const Scene::ModelInstance::SharedPtr& pModelInstance, const Model::MeshInstance::SharedPtr& pMeshInstance, uint32_t drawInstanceID, const CurrentWorkingData& currentData)
     {
-        ConstantBuffer* pCB = pContext->getGraphicsVars()->getConstantBuffer(kPerStaticMeshCbName).get();
+        ConstantBuffer* pCB = pContext->getGraphicsVars()->getConstantBuffer(kPerMeshCbName).get();
         pCB->setBlob(&currentData.drawID, sDrawIDOffset + drawInstanceID * sizeof(uint32_t), sizeof(uint32_t));
 
         mDrawIDToInstance[currentData.drawID] = Instance(pModelInstance, pMeshInstance);

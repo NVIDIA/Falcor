@@ -90,26 +90,38 @@ vec3 hejiHableAluToneMap(vec3 color)
 
 // John Hable's Uncharted 2 filmic tone map
 // http://filmicgames.com/archives/75
-vec3 UC2Operator(vec3 color)
+vec3 ApplyUc2Curve(vec3 color)
 {
-    float A = 0.15;//Shoulder Strength
-    float B = 0.50;//Linear Strength
-    float C = 0.10;//Linear Angle
-    float D = 0.20;//Toe Strength
+    float A = 0.22;//Shoulder Strength
+    float B = 0.3;//Linear Strength
+    float C = 0.1;//Linear Angle
+    float D = 0.2;//Toe Strength
     float E = 0.01;//Toe Numerator
-    float F = 0.30;//Toe Denominator
+    float F = 0.3;//Toe Denominator
 
     color = ((color * (A*color+C*B)+D*E)/(color*(A*color+B)+D*F))-(E/F);
     return color;
 }
 
-vec3 hableUc2ToneMap(vec3 color)
+vec3 Uc2ToneMap(vec3 color)
 {
     float exposureBias = 2.0f;
-    color = UC2Operator(exposureBias * color);
-    vec3 whiteScale = 1 / UC2Operator(gWhiteScale.xxx);
+    color = ApplyUc2Curve(exposureBias * color);
+    float whiteScale = 1 / ApplyUc2Curve(gWhiteScale.xxx).x;
     color = color * whiteScale;
 
+    return color;
+}
+
+vec3 AcesToneMap(vec3 color)
+{
+    float A = 2.51f;
+    float B = 0.03f;
+    float C = 2.43f;
+    float D = 0.59f;
+    float E = 0.14f;
+
+    color = saturate((color*(A*color+B))/(color*(C*color+D)+E));
     return color;
 }
 
@@ -131,8 +143,10 @@ vec4 calcColor(vec2 texC)
     return vec4(reinhardModifiedToneMap(exposedColor), color.a);
 #elif defined _HEJI_HABLE_ALU
     return vec4(hejiHableAluToneMap(exposedColor), color.a);
-#elif defined _HABLE_UC2
-    return vec4(hableUc2ToneMap(exposedColor), color.a);
+#elif defined(_HABLE_UC2)
+    return vec4(Uc2ToneMap(exposedColor), color.a);
+#elif defined (_ACES)
+    return vec4(AcesToneMap(exposedColor), color.a);
 #endif
     return vec4(exposedColor, color.a);
 }

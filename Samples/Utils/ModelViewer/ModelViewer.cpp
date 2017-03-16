@@ -86,7 +86,6 @@ void ModelViewer::loadModelFromFile(const std::string& filename)
         msgBox("Could not load model");
         return;
     }
-    setModelUIElements();
     resetCamera();
 
     float radius = mpModel->getRadius();
@@ -94,6 +93,7 @@ void ModelViewer::loadModelFromFile(const std::string& filename)
     mpPointLight->setWorldPosition(glm::vec3(0, lightHeight, 0));
     timer.update();
 
+    mActiveAnimationID = kBindPoseAnimationID;
     setModelString(false, timer.getElapsedTime());
 }
 
@@ -174,9 +174,14 @@ void ModelViewer::onGuiRender()
     cameraDropdown.push_back({ SixDoFCamera, "6 DoF" });
 
     mpGui->addDropdown("Camera Type", cameraDropdown, (uint32_t&)mCameraType);
+
+    if(mpModel)
+    {
+        renderModelUI();
+    }
 }
 
-void ModelViewer::setModelUIElements()
+void ModelViewer::renderModelUI()
 {
     bool bAnim = mpModel && mpModel->hasAnimations();
     static const char* animateStr = "Animate";
@@ -184,13 +189,11 @@ void ModelViewer::setModelUIElements()
 
     if(bAnim)
     {
-        mActiveAnimationID = sBindPoseAnimationID;
-
         mpGui->addCheckBox(animateStr, mAnimate);
         Gui::DropdownList list;
         list.resize(mpModel->getAnimationsCount() + 1);
         list[0].label = "Bind Pose";
-        list[0].value = sBindPoseAnimationID;
+        list[0].value = kBindPoseAnimationID;
 
         for(uint32_t i = 0; i < mpModel->getAnimationsCount(); i++)
         {

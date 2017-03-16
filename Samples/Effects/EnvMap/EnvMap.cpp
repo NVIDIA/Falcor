@@ -49,7 +49,7 @@ void EnvMap::onLoad()
     samplerDesc.setFilterMode(Sampler::Filter::Linear, Sampler::Filter::Linear, Sampler::Filter::Linear);
     mpTriLinearSampler = Sampler::create(samplerDesc);
 
-    mpSkybox = SkyBox::createFromTexCube("Cubemaps\\Sorsele3\\Sorsele3.dds", true, mpTriLinearSampler);
+    mpSkybox = SkyBox::createFromTexture("Cubemaps\\Sorsele3\\Sorsele3.dds", true, mpTriLinearSampler);
 }
 
 void EnvMap::loadTexture()
@@ -57,7 +57,7 @@ void EnvMap::loadTexture()
     std::string filename;
     if(openFileDialog("DDS files\0*.dds\0\0", filename))
     {
-        mpSkybox = SkyBox::createFromTexCube(filename, true, mpTriLinearSampler);
+        mpSkybox = SkyBox::createFromTexture(filename, true, mpTriLinearSampler);
     }
 }
 

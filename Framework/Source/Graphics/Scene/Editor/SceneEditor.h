@@ -50,7 +50,7 @@ namespace Falcor
         static UniquePtr create(const Scene::SharedPtr& pScene, const uint32_t modelLoadFlags = 0);
         ~SceneEditor();
 
-        const Camera::SharedPtr& getEditorCamera() const { return mpEditorScene->getActiveCamera(); }
+        const Camera::SharedPtr getEditorCamera() const { return mpEditorScene->getActiveCamera(); }
 
         void update(double currentTime);
         void render(RenderContext* pContext);

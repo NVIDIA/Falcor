@@ -34,7 +34,10 @@ void MultiPassPostProcess::onGuiRender()
         loadImage();
     }
     mpGui->addCheckBox("Radial Blur", mEnableRadialBlur);
-    mpGui->addCheckBox("Grayscale", mEnableGrayscale);
+    if(mEnableRadialBlur)
+    {
+        mpGui->addCheckBox("Grayscale", mEnableGrayscale);
+    }
 }
 
 void MultiPassPostProcess::onLoad()

@@ -389,7 +389,7 @@ namespace Falcor
     void SceneEditor::saveScene()
     {
         std::string filename;
-        if (saveFileDialog("Scene files\0*.fscene\0\0", filename))
+        if (saveFileDialog(Scene::kFileFormatString, filename))
         {
             SceneExporter::saveScene(filename, mpScene);
             mSceneDirty = false;
@@ -418,11 +418,15 @@ namespace Falcor
 
         // Copy camera transform from master scene
         const auto& pSceneCamera = mpScene->getActiveCamera();
-        const auto& pEditorCamera = mpEditorScene->getActiveCamera();
 
-        pEditorCamera->setPosition(pSceneCamera->getPosition());
-        pEditorCamera->setUpVector(pSceneCamera->getUpVector());
-        pEditorCamera->setTarget(pSceneCamera->getTarget());
+        if(pSceneCamera)
+        {
+            const auto& pEditorCamera = mpEditorScene->getActiveCamera();
+
+            pEditorCamera->setPosition(pSceneCamera->getPosition());
+            pEditorCamera->setUpVector(pSceneCamera->getUpVector());
+            pEditorCamera->setTarget(pSceneCamera->getTarget());
+        }
     }
 
     SceneEditor::~SceneEditor()
@@ -470,7 +474,7 @@ namespace Falcor
         mpSelectionGraphicsState->setProgram(mpColorProgram);
 
         // Selection Scene and Renderer
-        mpSelectionScene = Scene::create(backBufferWidth / backBufferHeight);
+        mpSelectionScene = Scene::create();
         mpSelectionSceneRenderer = SceneRenderer::create(mpSelectionScene);
 
         //
@@ -483,7 +487,9 @@ namespace Falcor
         // Editor Scene and Picking
         //
 
-        mpEditorScene = Scene::create(backBufferWidth / backBufferHeight);
+        mpEditorScene = Scene::create();
+        mpEditorScene->addCamera(Camera::create());
+        mpEditorScene->getActiveCamera()->setAspectRatio((float)backBufferWidth/(float)backBufferHeight);
         mpEditorSceneRenderer = SceneEditorRenderer::create(mpEditorScene);
         mpEditorPicker = Picking::create(mpEditorScene, backBufferWidth, backBufferHeight);
 
@@ -1029,19 +1035,22 @@ namespace Falcor
         if (pGui->beginGroup(kCamerasStr))
         {
             addCamera(pGui);
-            setActiveCamera(pGui);
-            setCameraName(pGui);
-            deleteCamera(pGui);
-            pGui->addSeparator();
-            assert(mpScene->getCameraCount() > 0);
-            setCameraAspectRatio(pGui);
-            setCameraDepthRange(pGui);
+            if(mpScene->getCameraCount())
+            {
+                setActiveCamera(pGui);
+                setCameraName(pGui);
+                deleteCamera(pGui);
+                pGui->addSeparator();
+                assert(mpScene->getCameraCount() > 0);
+                setCameraAspectRatio(pGui);
+                setCameraDepthRange(pGui);
 
-            setCameraPosition(pGui);
-            setCameraTarget(pGui);
-            setCameraUp(pGui);
+                setCameraPosition(pGui);
+                setCameraTarget(pGui);
+                setCameraUp(pGui);
 
-            setObjectPath(pGui, mpScene->getActiveCamera(), "Camera");
+                setObjectPath(pGui, mpScene->getActiveCamera(), "Camera");
+            }
 
             pGui->endGroup();
         }
@@ -1131,7 +1140,7 @@ namespace Falcor
         {
             Gui::DropdownList list(pModel->getAnimationsCount() + 1);
             list[0].label = "Bind Pose";
-            list[0].value = BIND_POSE_ANIMATION_ID;
+            list[0].value = AnimationController::kBindPoseAnimationId;
 
             for (uint32_t i = 0; i < pModel->getAnimationsCount(); i++)
             {
@@ -1399,7 +1408,10 @@ namespace Falcor
             {
                 auto pCamera = Camera::create();
                 auto pActiveCamera = mpScene->getActiveCamera();
-                *pCamera = *pActiveCamera;
+                if(pActiveCamera)
+                {
+                    *pCamera = *pActiveCamera;
+                }
                 pCamera->setName(getUniqueNumberedName("Camera", mpScene->getCameraCount(), mCameraNames));
 
                 const uint32_t camIndex = mpScene->addCamera(pCamera);

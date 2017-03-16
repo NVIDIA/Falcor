@@ -111,7 +111,12 @@ namespace Falcor
         {ResourceFormat::BC4Snorm,           "BC4Snorm",        8,              1,  FormatType::Snorm,      {false,  false, true, },        {4, 4}},
         {ResourceFormat::BC5Unorm,           "BC5Unorm",        16,             2,  FormatType::Unorm,      {false,  false, true, },        {4, 4}},
         {ResourceFormat::BC5Snorm,           "BC5Snorm",        16,             2,  FormatType::Snorm,      {false,  false, true, },        {4, 4}},
+
+        { ResourceFormat::BC6HS16,            "BC6HS16",         16,            3,  FormatType::Float,      { false,  false, true, },       { 4, 4 }},
+        { ResourceFormat::BC6HU16,            "BC6HU16",         16,            3,  FormatType::Float,      { false,  false, true, },       { 4, 4 } },
+        { ResourceFormat::BC7Unorm,           "BC7Unorm",        16,            4,  FormatType::Unorm,      { false,  false, true, },       { 4, 4 } },
+        { ResourceFormat::BC7UnormSrgb,       "BC7UnormSrgb",    16,            4,  FormatType::UnormSrgb,  { false,  false, true, },       { 4, 4 } },
     };
 
-    static_assert(arraysize(kFormatDesc) == (uint32_t)ResourceFormat::BC5Snorm + 1, "Format desc table has a wrong size");
+    static_assert(arraysize(kFormatDesc) == (uint32_t)ResourceFormat::BC7UnormSrgb + 1, "Format desc table has a wrong size");
 }

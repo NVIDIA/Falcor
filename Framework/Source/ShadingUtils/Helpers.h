@@ -293,8 +293,26 @@ void _fn applyAlphaTest(in const MaterialData mat, in const ShadingAttribs attr)
 }
 
 /*******************************************************************
+    Spherical map sampling
+*******************************************************************/
+float2 dirToSphericalCrd(float3 direction)
+{
+    static const float PI = 3.14159265f;
+    float3 p = normalize(direction);
+    float2 uv;
+    uv.x = (1 + atan2(-p.z, p.x) / PI) * 0.5;
+    uv.y = 1 - (-acos(p.y) / PI);
+    return uv;
+}
+
+/*******************************************************************
 					Color conversion
 *******************************************************************/
 
+vec4 _fn applyAmbientOcclusion(vec4 color, Texture2D aoTex, SamplerState s, vec2 texC)
+{
+    float aoFactor = aoTex.SampleLevel(s, texC, 0).r;
+    return float4(color.rgb * aoFactor, color.a);
+}
 
 #endif	// _FALCOR_SHADING_HELPERS_H_

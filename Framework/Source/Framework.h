@@ -32,6 +32,7 @@
 #include "glm/glm.hpp"
 #include "Utils/OS.h"
 #include <iostream>
+#include "Utils/Logger.h"
 
 using namespace glm;
 
@@ -121,6 +122,15 @@ namespace Falcor
         uint64_t t = (uint64_t)a;
         return (t & (t - 1)) == 0;
     }
+
+    inline uint32_t getLowerPowerOf2(uint32_t a)
+    {
+        assert(a != 0);
+        unsigned long index;
+        _BitScanReverse(&index, a);
+        return 1 << index;
+    }
+
     /*! @} */
 }
 

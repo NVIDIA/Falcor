@@ -31,9 +31,6 @@
 #include "glm/mat4x4.hpp"
 #include "Animation.h"
 
-#define INVALID_BONE_ID uint32_t(-1)
-#define BIND_POSE_ANIMATION_ID uint32_t(-1)
-
 namespace Falcor
 {
     struct Bone
@@ -55,6 +52,8 @@ namespace Falcor
     public:
         using UniquePtr = std::unique_ptr<AnimationController>;
         using UniqueConstPtr = std::unique_ptr<const AnimationController>;
+        static const uint32_t kInvalidBoneID = -1;
+        static const uint32_t kBindPoseAnimationId = -1;
 
         static UniquePtr create(const std::vector<Bone>& bones);
         ~AnimationController();
@@ -80,7 +79,7 @@ namespace Falcor
         std::vector<glm::mat4> mBoneTransforms;
         std::vector<Animation::UniquePtr> mAnimations;
 
-        uint32_t mActiveAnimation = BIND_POSE_ANIMATION_ID;
+        uint32_t mActiveAnimation = kBindPoseAnimationId;
 
         void calculateBoneTransforms();
     };

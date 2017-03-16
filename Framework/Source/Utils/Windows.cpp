@@ -337,7 +337,9 @@ namespace Falcor
             std::string canonDir = canonicalizeFilename(dir);
             if(hasPrefix(canonFile, canonDir, false))
             {
-                std::string tmp = canonFile.erase(0, canonDir.length() + 1);
+                // canonicalizeFilename adds trailing \\ to drive letters and removes them from paths containing folders
+                size_t len = canonDir.back() == '\\' ? canonDir.length() : canonDir.length() + 1;
+                std::string tmp = canonFile.erase(0, len);
                 if(tmp.length() < stripped.length())
                 {
                     stripped = tmp;

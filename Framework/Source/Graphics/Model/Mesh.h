@@ -120,11 +120,12 @@ namespace Falcor
         */
         static void resetGlobalIdCounter();
 
+        static const uint32_t kMaxBonesPerVertex = 4; ///> Max supported bones per vertex
+
     protected:
         friend AssimpModelImporter;
         friend BinaryModelImporter;
         friend SimpleModelImporter;
-        static const uint32_t kMaxBonesPerVertex = 4; ///> Max supported bones per vertex
 
     private:
         Mesh(const Vao::BufferVec& vertexBuffers,

@@ -37,28 +37,23 @@ namespace Falcor
 
     const Scene::UserVariable Scene::kInvalidVar;
 
-    const char* Scene::kFileFormatString = "Falcor Scene File\n*.fscene\0\0";
+    const char* Scene::kFileFormatString = "Scene files\0*.fscene\0\0";
 
     Scene::SharedPtr Scene::loadFromFile(const std::string& filename, const uint32_t& modelLoadFlags, uint32_t sceneLoadFlags)
     {
         return SceneImporter::loadScene(filename, modelLoadFlags, sceneLoadFlags);
     }
 
-    Scene::SharedPtr Scene::create(float cameraAspectRatio)
+    Scene::SharedPtr Scene::create()
     {
-        return SharedPtr(new Scene(cameraAspectRatio));
+        return SharedPtr(new Scene());
     }
 
-    Scene::Scene(float cameraAspectRatio) : mId(sSceneCounter++)
+    Scene::Scene() : mId(sSceneCounter++)
     {
         // Reset all global id counters recursively
         Model::resetGlobalIdCounter();
         Light::resetGlobalIdCounter();
-        // create a default camera
-        auto pCamera = Camera::create();
-        pCamera->setAspectRatio(cameraAspectRatio);
-        pCamera->setName("Default");
-        addCamera(pCamera);
     }
 
     Scene::~Scene() = default;

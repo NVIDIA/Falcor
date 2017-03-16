@@ -247,7 +247,6 @@ vec4 _fn evalDiffuseLayer(in const MaterialLayerValues layer, in const vec3 ligh
     return v4(value, weight);
 }
 
-#ifdef _MS_FILTER_ROUGHNESS
 // Implementation of NDF filtering code from the HPG'16 submission
 // The writeup is here: //research/graphics/projects/halfvectorSpace/SAA/paper/specaa-sub.pdf
 vec2 _fn filterRoughness(in const ShadingAttribs shAttr, in const LightAttribs lAttr, in vec2 roughness)
@@ -276,7 +275,6 @@ vec2 _fn filterRoughness(in const ShadingAttribs shAttr, in const LightAttribs l
 
     return roughness;
 }
-#endif
 
 vec4 _fn evalSpecularLayer(in const MaterialLayerDesc desc, in const MaterialLayerValues data, in const ShadingAttribs shAttr, in const LightAttribs lAttr, _ref(PassOutput) result)
 {
@@ -296,13 +294,14 @@ vec4 _fn evalSpecularLayer(in const MaterialLayerDesc desc, in const MaterialLay
     if(desc.hasTexture & ROUGHNESS_CHANNEL_BIT)
     {
         roughness = v2(data.albedo.w, data.albedo.w);
+        roughness *= roughness;
     }
     else
     {
         roughness = data.roughness.rg;
     }
 
-#ifdef _MS_FILTER_ROUGHNESS
+#ifndef _MS_DISABLE_ROUGHNESS_FILTERING
     roughness = filterRoughness(shAttr, lAttr, roughness);
 #endif
 
@@ -431,6 +430,7 @@ void _fn evalMaterial(
         result.specularAlbedo = 0;
         result.specularIllumination = 0;
         result.finalValue = 0;
+        result.effectiveRoughness = 0;
         result.wi = 0;
         result.pdf = 0;
         result.thp = 0;

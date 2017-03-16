@@ -106,7 +106,11 @@ namespace Falcor
         {ResourceFormat::BC4Snorm,                      DXGI_FORMAT_BC4_SNORM},
         {ResourceFormat::BC5Unorm,                      DXGI_FORMAT_BC5_UNORM},
         {ResourceFormat::BC5Snorm,                      DXGI_FORMAT_BC5_SNORM},
+        {ResourceFormat::BC6HS16,                       DXGI_FORMAT_BC6H_SF16},
+        {ResourceFormat::BC6HU16,                       DXGI_FORMAT_BC6H_UF16},
+        {ResourceFormat::BC7Unorm,                      DXGI_FORMAT_BC7_UNORM},
+        {ResourceFormat::BC7UnormSrgb,                  DXGI_FORMAT_BC7_UNORM_SRGB},
     };
 
-    static_assert(arraysize(kDxgiFormatDesc) == (uint32_t)ResourceFormat::BC5Snorm + 1, "DXGI format desc table has a wrong size");
+    static_assert(arraysize(kDxgiFormatDesc) == (uint32_t)ResourceFormat::BC7UnormSrgb + 1, "DXGI format desc table has a wrong size");
 }

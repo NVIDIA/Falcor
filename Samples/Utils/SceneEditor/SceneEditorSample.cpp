@@ -40,10 +40,14 @@ void SceneEditorSample::onGuiRender()
     {
         loadScene();
     }
+
     if(mpEditor)
     {
         mpEditor->renderGui(mpGui.get());
-        mpGui->addCheckBox("Preview Camera", mCameraLiveViewMode);
+        if(mpScene->getCameraCount())
+        {
+            mpGui->addCheckBox("Preview Camera", mCameraLiveViewMode);
+        }
     }
 }
 
@@ -88,7 +92,7 @@ void SceneEditorSample::initShader()
 void SceneEditorSample::loadScene()
 {
     std::string Filename;
-    if(openFileDialog("Scene files\0*.fscene\0\0", Filename))
+    if(openFileDialog(Scene::kFileFormatString, Filename))
     {
         reset();
 
@@ -100,7 +104,7 @@ void SceneEditorSample::loadScene()
 void SceneEditorSample::createScene()
 {
     reset();
-    mpScene = Scene::create((float)mpDefaultFBO->getWidth()/(float)mpDefaultFBO->getHeight());
+    mpScene = Scene::create();
     initNewScene();
 }
 

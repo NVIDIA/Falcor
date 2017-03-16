@@ -54,6 +54,7 @@ namespace Falcor
         ~TextureApiData() { sObjCount--; if (sObjCount == 0) spGenMips = nullptr; }
 
         static std::unique_ptr<GenMipsData> spGenMips;
+        std::vector<Fbo::SharedPtr> pGenMipsFbos;
     private:
         uint64_t sObjCount = 0;
     };
@@ -267,7 +268,7 @@ namespace Falcor
             mpApiData->spGenMips->pVars = GraphicsVars::create(mpApiData->spGenMips->pFullScreenPass->getProgram()->getActiveVersion()->getReflector());
             mpApiData->spGenMips->pState = GraphicsState::create();
             Sampler::Desc desc;
-            desc.setFilterMode(Sampler::Filter::Linear, Sampler::Filter::Linear, Sampler::Filter::Linear).setAddressingMode(Sampler::AddressMode::Clamp, Sampler::AddressMode::Clamp, Sampler::AddressMode::Clamp);
+            desc.setFilterMode(Sampler::Filter::Linear, Sampler::Filter::Linear, Sampler::Filter::Point).setAddressingMode(Sampler::AddressMode::Clamp, Sampler::AddressMode::Clamp, Sampler::AddressMode::Clamp);
             mpApiData->spGenMips->pVars->setSampler("gSampler", Sampler::create(desc));
         }
 
@@ -275,12 +276,24 @@ namespace Falcor
         pContext->pushGraphicsState(mpApiData->spGenMips->pState);
         pContext->pushGraphicsVars(mpApiData->spGenMips->pVars);
 
+        // The first time around we don't cache the FBOs. Most likely we got here during load-time. This should help minimize the memory footprint if the user doesn't plan to call GenMips every frame
+        bool createNew = mpApiData->pGenMipsFbos.size() == 0;
+        if(createNew)
+        {
+            mpApiData->pGenMipsFbos.resize(mMipLevels);
+        }
+
         for (uint32_t i = 0; i < mMipLevels - 1; i++)
         {
             // Create an FBO for the next mip level
-            Fbo::SharedPtr pFbo = Fbo::create();
             SharedPtr pNonConst = const_cast<Texture*>(this)->shared_from_this();
-            pFbo->attachColorTarget(pNonConst, 0, i + 1, 0);
+            if (createNew)
+            {
+                mpApiData->pGenMipsFbos[i] = Fbo::create();
+                mpApiData->pGenMipsFbos[i]->attachColorTarget(pNonConst, 0, i + 1, 0);
+            }
+
+            Fbo::SharedPtr pFbo = mpApiData->pGenMipsFbos[i];
             mpApiData->spGenMips->pState->setFbo(pFbo);
 
             // Create the resource view

@@ -54,9 +54,7 @@ float4 main(PostProcessOut vOut) : SV_TARGET
     uv.y = 1 - (-acos(p.y) / PI);
     float4 color = gEnvMap.Sample(gSampler, uv);
     color.rgb *= gLightIntensity;
-#ifdef _TEXTURE_ONLY
-    return color;
-#endif
+
     // compute halfway vector
     float3 eyeDir = normalize(gEyePosW - vOut.posW);
     float3 h = normalize(eyeDir + vOut.normalW);

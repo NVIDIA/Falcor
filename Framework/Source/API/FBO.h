@@ -93,8 +93,9 @@ namespace Falcor
             \param arraySize The number of array sliced to bind, or Fbo#kAttachEntireMipLevel to attach the range [firstArraySlice, pTexture->getArraySize()]
         */
         void attachDepthStencilTarget(const Texture::SharedPtr& pDepthStencil, uint32_t mipLevel = 0, uint32_t firstArraySlice = 0, uint32_t arraySize = kAttachEntireMipLevel);
+
         /** Attach a color texture.
-            \param pColorTexture The depth-stencil texture.
+            \param pColorTexture The color texture.
             \param rtIndex The render-target index to attach the texture to.
             \param mipLevel The selected mip-level to attach.
             \param firstArraySlice The first array-slice to bind

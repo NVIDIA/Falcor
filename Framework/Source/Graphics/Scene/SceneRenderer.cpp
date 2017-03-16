@@ -48,8 +48,7 @@ namespace Falcor
 
     const char* SceneRenderer::kPerMaterialCbName = "InternalPerMaterialCB";
     const char* SceneRenderer::kPerFrameCbName = "InternalPerFrameCB";
-    const char* SceneRenderer::kPerStaticMeshCbName = "InternalPerStaticMeshCB";
-    const char* SceneRenderer::kPerSkinnedMeshCbName = "InternalPerSkinnedMeshCB";
+    const char* SceneRenderer::kPerMeshCbName = "InternalPerMeshCB";
 
     SceneRenderer::UniquePtr SceneRenderer::create(const Scene::SharedPtr& pScene)
     {
@@ -65,7 +64,7 @@ namespace Falcor
     {
         if(sWorldMatOffset == ConstantBuffer::kInvalidOffset)
         {
-            const auto pPerMeshCbData = pReflector->getBufferDesc(kPerStaticMeshCbName, ProgramReflection::BufferReflection::Type::Constant);
+            const auto pPerMeshCbData = pReflector->getBufferDesc(kPerMeshCbName, ProgramReflection::BufferReflection::Type::Constant);
 
             if (pPerMeshCbData != nullptr)
             {
@@ -104,12 +103,12 @@ namespace Falcor
         // Set bones
         if(currentData.pModel->hasBones())
         {
-            ConstantBuffer* pCB = pContext->getGraphicsVars()->getConstantBuffer(kPerSkinnedMeshCbName).get();
+            ConstantBuffer* pCB = pContext->getGraphicsVars()->getConstantBuffer(kPerMeshCbName).get();
             if(pCB)
             {
                 if (sBonesOffset == ConstantBuffer::kInvalidOffset)
                 {
-                    sBonesOffset = pCB->getVariableOffset("gBones");
+                    sBonesOffset = pCB->getVariableOffset("gWorldMat[0]");
                 }
 
                 pCB->setVariableArray(sBonesOffset, currentData.pModel->getBonesMatrices(), currentData.pModel->getBonesCount());
@@ -130,7 +129,7 @@ namespace Falcor
 
     bool SceneRenderer::setPerMeshInstanceData(RenderContext* pContext, const Scene::ModelInstance::SharedPtr& pModelInstance, const Model::MeshInstance::SharedPtr& pMeshInstance, uint32_t drawInstanceID, const CurrentWorkingData& currentData)
     {
-        ConstantBuffer* pCB = pContext->getGraphicsVars()->getConstantBuffer(kPerStaticMeshCbName).get();
+        ConstantBuffer* pCB = pContext->getGraphicsVars()->getConstantBuffer(kPerMeshCbName).get();
         if(pCB)
         {
             const Mesh* pMesh = pMeshInstance->getObject().get();

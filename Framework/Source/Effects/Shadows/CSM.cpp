@@ -66,10 +66,10 @@ namespace Falcor
     {
     public:
         using UniquePtr = std::unique_ptr<CsmSceneRenderer>;
-        static UniquePtr create(const Scene::SharedPtr& pScene) { return UniquePtr(new CsmSceneRenderer(pScene)); }
+        static UniquePtr create(const Scene::SharedConstPtr& pScene) { return UniquePtr(new CsmSceneRenderer(pScene)); }
 
     protected:
-        CsmSceneRenderer(const Scene::SharedPtr& pScene) : SceneRenderer(pScene) { setObjectCullState(false); }
+        CsmSceneRenderer(const Scene::SharedConstPtr& pScene) : SceneRenderer(std::const_pointer_cast<Scene>(pScene)) { setObjectCullState(false); }
         bool mMaterialChanged = false;
         bool setPerMaterialData(RenderContext* pContext, const CurrentWorkingData& currentData) override
         {
@@ -142,7 +142,7 @@ namespace Falcor
 
     CascadedShadowMaps::~CascadedShadowMaps() = default;
 
-    CascadedShadowMaps::CascadedShadowMaps(uint32_t mapWidth, uint32_t mapHeight, Light::SharedConstPtr pLight, Scene::SharedPtr pScene, uint32_t cascadeCount, ResourceFormat shadowMapFormat) : mpLight(pLight), mpScene(pScene)
+    CascadedShadowMaps::CascadedShadowMaps(uint32_t mapWidth, uint32_t mapHeight, Light::SharedConstPtr pLight, Scene::SharedConstPtr pScene, uint32_t cascadeCount, ResourceFormat shadowMapFormat) : mpLight(pLight), mpScene(pScene)
     {
         if(mpLight->getType() != LightDirectional)
         {
@@ -185,7 +185,7 @@ namespace Falcor
         mpGaussianBlur = GaussianBlur::create(mCsmData.sampleKernelSize);
     }
 
-    CascadedShadowMaps::UniquePtr CascadedShadowMaps::create(uint32_t mapWidth, uint32_t mapHeight, Light::SharedConstPtr pLight, Scene::SharedPtr pScene, uint32_t cascadeCount, ResourceFormat shadowMapFormat)
+    CascadedShadowMaps::UniquePtr CascadedShadowMaps::create(uint32_t mapWidth, uint32_t mapHeight, Light::SharedConstPtr pLight, Scene::SharedConstPtr pScene, uint32_t cascadeCount, ResourceFormat shadowMapFormat)
     {
         if(isDepthFormat(shadowMapFormat) == false)
         {
@@ -269,7 +269,7 @@ namespace Falcor
         mShadowPass.pGraphicsVars = GraphicsVars::create(pProg->getActiveVersion()->getReflector());
 
         mpCsmSceneRenderer = CsmSceneRenderer::create(mpScene);
-        mpSceneRenderer = SceneRenderer::create(mpScene);
+        mpSceneRenderer = SceneRenderer::create(std::const_pointer_cast<Scene>(mpScene));
         mpSceneRenderer->setObjectCullState(true);
 
     }
@@ -284,9 +284,9 @@ namespace Falcor
         createShadowPassResources(mShadowPass.pFbo->getWidth(), mShadowPass.pFbo->getHeight());
     }
 
-    void CascadedShadowMaps::renderUi(Gui* pGui, const std::string& uiGroup)
+    void CascadedShadowMaps::renderUi(Gui* pGui, const char* uiGroup)
     {
-        if (pGui->beginGroup(uiGroup.c_str()))
+        if (!uiGroup || pGui->beginGroup(uiGroup))
         {
             //Filter mode
             uint32_t filterIndex = static_cast<uint32_t>(mCsmData.filterMode);
@@ -365,7 +365,7 @@ namespace Falcor
                 }
             }
 
-            pGui->endGroup();
+            if(uiGroup) pGui->endGroup();
         }
     }
 

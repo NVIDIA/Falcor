@@ -41,7 +41,6 @@ public:
 
 private:
     Model::SharedPtr mpTeapot;
-    Model::SharedPtr mpSphere;
     Texture::SharedPtr mHdrImage;
     ModelViewCameraController mCameraController;
     Camera::SharedPtr mpCamera;
@@ -49,13 +48,14 @@ private:
     float mSurfaceRoughness = 5.0f;
 
     void onGuiRender() override;
-    void renderMesh(const Mesh* pMesh, GraphicsProgram::SharedPtr pProgram, RasterizerState::SharedPtr pRastState, float scale);
+    void renderTeapot();
 
+    Sampler::SharedPtr mpTriLinearSampler;
     GraphicsProgram::SharedPtr mpMainProg = nullptr;
-    GraphicsProgram::SharedPtr mpSkyboxProg = nullptr;
     GraphicsVars::SharedPtr mpProgramVars = nullptr;
     GraphicsState::SharedPtr mpGraphicsState = nullptr;
-    RasterizerState::SharedPtr mpCullFrontFaceRS;
+
+    SkyBox::UniquePtr mpSkyBox;
 
     enum HdrImage
     {

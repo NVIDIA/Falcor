@@ -223,13 +223,13 @@ namespace Falcor
     {
         if(mpAnimationController)
         {
-            mpAnimationController->setActiveAnimation(BIND_POSE_ANIMATION_ID);
+            mpAnimationController->setActiveAnimation(AnimationController::kBindPoseAnimationId);
         }
     }
 
     void Model::setActiveAnimation(uint32_t animationID)
     {
-        assert(animationID < getAnimationsCount() || animationID == BIND_POSE_ANIMATION_ID);
+        assert(animationID < getAnimationsCount() || animationID == AnimationController::kBindPoseAnimationId);
         mpAnimationController->setActiveAnimation(animationID);
     }
 

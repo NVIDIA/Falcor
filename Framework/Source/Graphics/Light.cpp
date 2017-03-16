@@ -165,16 +165,25 @@ namespace Falcor
         updateAreaLightIntensity(mData);
     }
 
-    void Light::renderUI(Gui* pGui)
+    void Light::renderUI(Gui* pGui, const char* group)
     {
-        glm::vec3 color = getColorForUI();
-        if (pGui->addRgbColor("Color", color))
+        if(!group || pGui->beginGroup(group))
         {
-        }
-        float intensity = getIntensityForUI();
-        if (pGui->addFloatVar("Intensity", intensity))
-        {
-            setIntensityFromUI(intensity);
+            glm::vec3 color = getColorForUI();
+            if (pGui->addRgbColor("Color", color))
+            {
+                setColorFromUI(color);
+            }
+            float intensity = getIntensityForUI();
+            if (pGui->addFloatVar("Intensity", intensity))
+            {
+                setIntensityFromUI(intensity);
+            }
+
+            if (group)
+            {
+                pGui->endGroup();
+            }
         }
     }
 
@@ -192,13 +201,20 @@ namespace Falcor
 
     DirectionalLight::~DirectionalLight() = default;
 
-    void DirectionalLight::renderUI(Gui* pGui)
+    void DirectionalLight::renderUI(Gui* pGui, const char* group)
     {
-        if (pGui->addDirectionWidget("Direction", mData.worldDir))
+        if(!group || pGui->beginGroup(group))
         {
-            setWorldDirection(mData.worldDir);
+            if (pGui->addDirectionWidget("Direction", mData.worldDir))
+            {
+                setWorldDirection(mData.worldDir);
+            }
+            Light::renderUI(pGui);
+            if (group)
+            {
+                pGui->endGroup();
+            }
         }
-        Light::renderUI(pGui);
     }
 
     void DirectionalLight::setWorldDirection(const glm::vec3& dir)
@@ -241,20 +257,28 @@ namespace Falcor
 
     PointLight::~PointLight() = default;
 
-    void PointLight::renderUI(Gui* pGui)
+    void PointLight::renderUI(Gui* pGui, const char* group)
     {
-        pGui->addFloat3Var("World Position", mData.worldPos, -FLT_MAX, FLT_MAX);
-        pGui->addDirectionWidget("Direction", mData.worldDir);
+        if(!group || pGui->beginGroup(group))
+        {
+            pGui->addFloat3Var("World Position", mData.worldPos, -FLT_MAX, FLT_MAX);
+            pGui->addDirectionWidget("Direction", mData.worldDir);
 
-        if (pGui->addFloatVar("Opening Angle", mData.openingAngle, 0.f, (float)M_PI))
-        {
-            setOpeningAngle(mData.openingAngle);
+            if (pGui->addFloatVar("Opening Angle", mData.openingAngle, 0.f, (float)M_PI))
+            {
+                setOpeningAngle(mData.openingAngle);
+            }
+            if (pGui->addFloatVar("Penumbra Width", mData.penumbraAngle, 0.f, (float)M_PI))
+            {
+                setPenumbraAngle(mData.penumbraAngle);
+            }
+            Light::renderUI(pGui);
+
+            if (group)
+            {
+                pGui->endGroup();
+            }
         }
-        if (pGui->addFloatVar("Penumbra Width", mData.penumbraAngle, 0.f, (float)M_PI))
-        {
-            setPenumbraAngle(mData.penumbraAngle);
-        }
-        Light::renderUI(pGui);
     }
 
     void PointLight::setOpeningAngle(float openingAngle)
@@ -293,27 +317,35 @@ namespace Falcor
 
     AreaLight::~AreaLight() = default;
 
-    void AreaLight::renderUI(Gui* pGui)
+    void AreaLight::renderUI(Gui* pGui, const char* group)
     {
 		logError("AreaLight::renderUI() is not used and thus not implemented for now.");
         return;
         // DISABLED_FOR_D3D12
 #if 0        
-        std::string posGroup = "worldPos" + std::to_string(mIndex);
-        
-        if(mMeshData.pMesh)
+        if(!group || pGui->beginGroup(group))
         {
-            mat4& mx = (mat4&)mMeshData.pMesh->getInstanceMatrices()[mMeshData.instanceId];
-            pGui->addFloatVar("x", &mx[3].x, posGroup, -FLT_MAX, FLT_MAX);
-            pGui->addFloatVar("y", &mx[3].y, posGroup, -FLT_MAX, FLT_MAX);
-            pGui->addFloatVar("z", &mx[3].z, posGroup, -FLT_MAX, FLT_MAX);
-            pGui->nestGroups(uiGroup, posGroup);
-            pGui->setVarTitle(posGroup, "World Position");
-        }
+            std::string posGroup = "worldPos" + std::to_string(mIndex);
 
-        //pGui->addDir3FVar("Direction", &mData.worldDir, uiGroup);
-        pGui->addRgbColorWithCallback("Color" + std::to_string(mIndex), SetColorCB, GetColorCB, this, uiGroup);
-        pGui->addFloatVarWithCallback("Intensity" + std::to_string(mIndex), SetIntensityCB, GetIntensityCB, this, uiGroup, 0.0f, 1000000.0f, 0.1f);
+            if (mMeshData.pMesh)
+            {
+                mat4& mx = (mat4&)mMeshData.pMesh->getInstanceMatrices()[mMeshData.instanceId];
+                pGui->addFloatVar("x", &mx[3].x, posGroup, -FLT_MAX, FLT_MAX);
+                pGui->addFloatVar("y", &mx[3].y, posGroup, -FLT_MAX, FLT_MAX);
+                pGui->addFloatVar("z", &mx[3].z, posGroup, -FLT_MAX, FLT_MAX);
+                pGui->nestGroups(uiGroup, posGroup);
+                pGui->setVarTitle(posGroup, "World Position");
+            }
+
+            //pGui->addDir3FVar("Direction", &mData.worldDir, uiGroup);
+            pGui->addRgbColorWithCallback("Color" + std::to_string(mIndex), SetColorCB, GetColorCB, this, uiGroup);
+            pGui->addFloatVarWithCallback("Intensity" + std::to_string(mIndex), SetIntensityCB, GetIntensityCB, this, uiGroup, 0.0f, 1000000.0f, 0.1f);
+
+            if (group)
+            {
+                pGui->endGroup();
+            }
+        }
 #endif
     }
 

@@ -30,6 +30,8 @@
 #include "glm/geometric.hpp"
 #include "glm/mat4x4.hpp"
 #include "glm/gtc/matrix_transform.hpp"
+#define _USE_MATH_DEFINES
+#include <math.h>
 
 namespace Falcor
 {
@@ -157,5 +159,39 @@ namespace Falcor
 
         return result;
     }
+
+    // Base 2 Van der Corput radical inverse
+    inline float radicalInverse(uint32_t i)
+    {
+        i = (i & 0x55555555) << 1 | (i & 0xAAAAAAAA) >> 1;
+        i = (i & 0x33333333) << 2 | (i & 0xCCCCCCCC) >> 2;
+        i = (i & 0x0F0F0F0F) << 4 | (i & 0xF0F0F0F0) >> 4;
+        i = (i & 0x00FF00FF) << 8 | (i & 0xFF00FF00) >> 8;
+        i = (i << 16) | (i >> 16);
+        return float(i) * 2.3283064365386963e-10f;
+    }
+
+    inline vec3 hammersleyUniform(uint32_t i, uint32_t n)
+    {
+        vec2 uv((float)i / (float)n, radicalInverse(i));
+
+        // Map to radius 1 hemisphere
+        float phi = uv.y * 2.0f * (float)M_PI;
+        float t = 1.0f - uv.x;
+        float s = sqrt(1.0f - t * t);
+        return vec3(s * cos(phi), s * sin(phi), t);
+    }
+
+    inline vec3 hammersleyCosine(uint32_t i, uint32_t n)
+    {
+        vec2 uv((float)i / (float)n, radicalInverse(i));
+
+        // Map to radius 1 hemisphere
+        float phi = uv.y * 2.0f * (float)M_PI;
+        float t = sqrt(1.0f - uv.x);
+        float s = sqrt(1.0f - t * t);
+        return vec3(s * cos(phi), s * sin(phi), t);
+    }
+
 /*! @} */
 }
