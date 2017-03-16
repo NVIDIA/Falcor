@@ -26,8 +26,9 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 #include "Framework.h"
-#include "StructuredBuffer.h"
-#include "Buffer.h"
+#include "API/StructuredBuffer.h"
+#include "API/Buffer.h"
+#include "API/ComputeContext.h"
 
 namespace Falcor
 {
@@ -43,8 +44,12 @@ namespace Falcor
     {
         if (hasUAVCounter())
         {
-            // #TODO This can maybe just be CPU read and we clear with some API call?
-            mUAVCounter = Buffer::create(sizeof(uint32_t), Resource::BindFlags::UnorderedAccess, Buffer::CpuAccess::None, nullptr);
+            static const uint32_t zero = 0;
+            mpUAVCounter = Buffer::create(sizeof(uint32_t), Resource::BindFlags::UnorderedAccess, Buffer::CpuAccess::None, &zero);
+            
+            // #TODO we only need this for clearing UAV, but a UAV for shader binding will be allocated as well.
+            // Maybe mpCounterClearView should just be created in UnorderedAccessView::create and const_cast to make it work
+            mpCounterClearView = mpUAVCounter->getUAV();
         }
     }
 
@@ -70,7 +75,6 @@ namespace Falcor
         return nullptr;
     }
 
-
     void StructuredBuffer::readFromGPU(size_t offset, size_t size) const
     {
         if(size == -1)
@@ -92,6 +96,11 @@ namespace Falcor
     bool StructuredBuffer::hasUAVCounter() const
     {
         return getBufferReflector()->getStructuredType() != ProgramReflection::BufferReflection::StructuredType::Default;
+    }
+
+    void StructuredBuffer::clearUAVCounter(ComputeContext* pContext)
+    {
+        pContext->clearUAV(mpCounterClearView.get(), uvec4(0));
     }
 
     StructuredBuffer::~StructuredBuffer() = default;

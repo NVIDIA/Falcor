@@ -50,6 +50,7 @@ private:
     Vao::SharedConstPtr mpVao;
     uint32_t mIndexCount = 0;
     Buffer::SharedPtr mpInvocationsBuffer;
+    StructuredBuffer::SharedPtr mpRWBuffer;
     TypedBuffer<vec3>::SharedPtr mpSurfaceColorBuffer;
 
     bool mCountPixelShaderInvocations = false;

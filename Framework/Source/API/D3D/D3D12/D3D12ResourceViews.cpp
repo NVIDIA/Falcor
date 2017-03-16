@@ -151,9 +151,9 @@ namespace Falcor
         ApiHandle handle = pHeap->allocateEntry();
         gpDevice->getApiHandle()->CreateUnorderedAccessView(resHandle, counterHandle, &desc, handle->getCpuHandle());
 
-        // Create the view for the clear
         pObj = SharedPtr(new UnorderedAccessView(pResource, handle, mipLevel, firstArraySlice, arraySize));
 
+        // Create the view for the clear
         pHeap = gpDevice->getCpuUavDescriptorHeap().get();
         pObj->mViewForClear = pHeap->allocateEntry();
         gpDevice->getApiHandle()->CreateUnorderedAccessView(resHandle, nullptr, &desc, pObj->mViewForClear->getCpuHandle());
