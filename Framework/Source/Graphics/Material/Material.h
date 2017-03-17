@@ -124,7 +124,7 @@ namespace Falcor
             };
 
             Type type = Type::Lambert;
-            NDF ndf = NDF::Beckmann;
+            NDF ndf = NDF::GGX;
             Blend blend = Blend::Fresnel;
             glm::vec4 albedo;
             glm::vec4 roughness;

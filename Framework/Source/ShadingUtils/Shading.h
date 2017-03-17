@@ -294,12 +294,13 @@ vec4 _fn evalSpecularLayer(in const MaterialLayerDesc desc, in const MaterialLay
     if(desc.hasTexture & ROUGHNESS_CHANNEL_BIT)
     {
         roughness = v2(data.albedo.w, data.albedo.w);
-        roughness *= roughness;
     }
     else
     {
         roughness = data.roughness.rg;
     }
+
+    roughness *= roughness;
 
 #ifndef _MS_DISABLE_ROUGHNESS_FILTERING
     roughness = filterRoughness(shAttr, lAttr, roughness);
