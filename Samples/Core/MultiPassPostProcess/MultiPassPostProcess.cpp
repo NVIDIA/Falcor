@@ -33,9 +33,10 @@ void MultiPassPostProcess::onGuiRender()
     {
         loadImage();
     }
-    mpGui->addCheckBox("Radial Blur", mEnableRadialBlur);
-    if(mEnableRadialBlur)
+    mpGui->addCheckBox("Gaussian Blur", mEnableGaussianBlur);
+    if(mEnableGaussianBlur)
     {
+        mpGaussianBlur->renderUI(mpGui.get(), "Blur Settings");
         mpGui->addCheckBox("Grayscale", mEnableGrayscale);
     }
 }
@@ -43,7 +44,7 @@ void MultiPassPostProcess::onGuiRender()
 void MultiPassPostProcess::onLoad()
 {
     mpLuminance = FullScreenPass::create("Luminance.fs");
-    mpRadialBlur = FullScreenPass::create("RadialBlur.fs");
+    mpGaussianBlur = GaussianBlur::create(5);
     mpBlit = FullScreenPass::create("Blit.fs");
 
     init_tests();
@@ -54,9 +55,9 @@ void MultiPassPostProcess::onLoad()
         loadImageFromFile(filenames[0].asString());
     }
 
-    if (mArgList.argExists("radialblur"))
+    if (mArgList.argExists("gaussianblur"))
     {
-        mEnableRadialBlur = true;
+        mEnableGaussianBlur = true;
         if (mArgList.argExists("grayscale"))
         {
             mEnableGrayscale = true;
@@ -83,11 +84,7 @@ void MultiPassPostProcess::loadImageFromFile(std::string filename)
     mpTempFB = FboHelper::create2D(mpImage->getWidth(), mpImage->getHeight(), fboDesc);
 
     resizeSwapChain(mpImage->getWidth(), mpImage->getHeight());
-    mpProgVars[0] = GraphicsVars::create(mpBlit->getProgram()->getActiveVersion()->getReflector());
-    mpProgVars[0]->setTexture("gTexture", mpImage);
-
-    mpProgVars[1] = GraphicsVars::create(mpLuminance->getProgram()->getActiveVersion()->getReflector());
-    mpProgVars[1]->setTexture("gTexture", mpTempFB->getColorTexture(0));
+    mpProgVars = GraphicsVars::create(mpBlit->getProgram()->getActiveVersion()->getReflector());
 }
 
 void MultiPassPostProcess::onFrameRender()
@@ -98,22 +95,20 @@ void MultiPassPostProcess::onFrameRender()
     if(mpImage)
     {
         // Grayscale is only with radial blur
-        mEnableGrayscale = mEnableRadialBlur && mEnableGrayscale;
+        mEnableGrayscale = mEnableGaussianBlur && mEnableGrayscale;
 
-        mpRenderContext->setGraphicsVars(mpProgVars[0]);
+        mpRenderContext->setGraphicsVars(mpProgVars);
 
-        if(mEnableRadialBlur)
+        if(mEnableGaussianBlur)
         {
-            mpRenderContext->getGraphicsState()->pushFbo(mpTempFB);
-            mpRadialBlur->execute(mpRenderContext.get());
-            mpRenderContext->getGraphicsState()->popFbo();
-
-            mpRenderContext->setGraphicsVars(mpProgVars[1]);
+            mpGaussianBlur->execute(mpRenderContext.get(), mpImage, mpTempFB);
+            mpProgVars->setTexture("gTexture", mpTempFB->getColorTexture(0));
             const FullScreenPass* pFinalPass = mEnableGrayscale ? mpLuminance.get() : mpBlit.get();
             pFinalPass->execute(mpRenderContext.get());
         }
         else
         {
+            mpProgVars->setTexture("gTexture", mpImage);
             mpBlit->execute(mpRenderContext.get());
         }
     }
@@ -137,8 +132,8 @@ bool MultiPassPostProcess::onKeyEvent(const KeyboardEvent& keyEvent)
         case KeyboardEvent::Key::G:
             mEnableGrayscale = true;
             return true;
-        case KeyboardEvent::Key::R:
-            mEnableRadialBlur = true;
+        case KeyboardEvent::Key::B:
+            mEnableGaussianBlur = true;
             return true;
         }
     }

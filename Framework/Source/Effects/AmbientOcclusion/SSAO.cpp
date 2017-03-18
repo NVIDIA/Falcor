@@ -75,9 +75,9 @@ namespace Falcor
 
         pGui->addCheckBox("Apply Blur", mApplyBlur);
 
-        if (pGui->addIntVar("Blur Kernel Size", mBlurSize, 1, 11, 2))
+        if (mApplyBlur)
         {
-            mpBlur = GaussianBlur::create(mBlurSize);
+            mpBlur->renderUI(pGui, "Blur Settings");
         }
     }
 
@@ -139,8 +139,7 @@ namespace Falcor
 
         mpSSAOState = GraphicsState::create();
 
-        mBlurSize = blurSize;
-        mpBlur = GaussianBlur::create(blurSize);
+        mpBlur = GaussianBlur::create();
 
         Sampler::Desc samplerDesc;
         samplerDesc.setFilterMode(Sampler::Filter::Point, Sampler::Filter::Point, Sampler::Filter::Point).setAddressingMode(Sampler::AddressMode::Wrap, Sampler::AddressMode::Wrap, Sampler::AddressMode::Wrap);

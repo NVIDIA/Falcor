@@ -37,6 +37,7 @@ namespace Falcor
     class RenderContext;
     class Texture;
     class Fbo;
+    class Gui;
 
     /** Gaussian-blur technique
     */
@@ -50,7 +51,7 @@ namespace Falcor
 
         /** Create a new object
         */
-        static UniquePtr create(uint32_t kernelSize);
+        static UniquePtr create(uint32_t kernelSize = 5, float sigma = 1.0f);
 
         /** Run the tone-mapping program
             \param pRenderContext Render-context to use
@@ -59,21 +60,42 @@ namespace Falcor
         */
         void execute(RenderContext* pRenderContext, Texture::SharedPtr pSrc, Fbo::SharedPtr pDst);
 
-        uint32_t getKernelSize() const { return mKernelSize; }
+        /** Set the kernel width. Controls the number of texels which will be sampled when blurring each pixel.
+            Values smaller than twice the sigma are ineffective.
+        */
+        void setKernelWidth(uint32_t kernelWidth);
 
-        void setViewportMask(uint32_t mask);
+        /** Get the kernel width
+        */
+        uint32_t getKernelWidth() const { return mKernelWidth; }
+
+        /** Set the sigma. Higher values will result in a blurrier image.
+            Values greater than half the kernel width are ineffective.
+        */
+        void setSigma(float sigma) { mSigma = sigma; mDirty = true; }
+
+        /** Get the sigma
+        */
+        float getSigma() const { return mSigma; }
+
+        /** Render the UI
+        */
+        void renderUI(Gui* pGui, const char* uiGroup = nullptr);
+
     private:
-        GaussianBlur(uint32_t kernelSize);
-        uint32_t mKernelSize;
+        GaussianBlur(uint32_t kernelSize, float sigma);
+        uint32_t mKernelWidth;
+        float mSigma;
         uint32_t vpMask;
         void createTmpFbo(const Texture* pSrc);
         void createProgram();
+        void updateKernel();
 
         FullScreenPass::UniquePtr mpHorizontalBlur;
         FullScreenPass::UniquePtr mpVerticalBlur;
         Fbo::SharedPtr mpTmpFbo;
         Sampler::SharedPtr mpSampler;
-
+        bool mDirty = true;
         GraphicsVars::SharedPtr mpVars;
     };
 }

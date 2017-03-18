@@ -29,24 +29,82 @@
 #include "GaussianBlur.h"
 #include "API/RenderContext.h"
 #include "Graphics/FboHelper.h"
+#include "Utils/Gui.h"
+#define _USE_MATH_DEFINES
+#include <math.h>
 
 namespace Falcor
 {
-    static std::string kShaderFilename("Effects\\GaussianBlur.fs");
+    static std::string kShaderFilename("Effects\\GaussianBlur.ps.hlsl");
 
     GaussianBlur::~GaussianBlur() = default;
 
-    GaussianBlur::GaussianBlur(uint32_t kernelSize) : mKernelSize(kernelSize)
+    GaussianBlur::GaussianBlur(uint32_t kernelWidth, float sigma) : mKernelWidth(kernelWidth), mSigma(sigma)
     {
         Sampler::Desc samplerDesc;
         samplerDesc.setFilterMode(Sampler::Filter::Linear, Sampler::Filter::Linear, Sampler::Filter::Point).setAddressingMode(Sampler::AddressMode::Clamp, Sampler::AddressMode::Clamp, Sampler::AddressMode::Clamp);
         mpSampler = Sampler::create(samplerDesc);
     }
 
-    GaussianBlur::UniquePtr GaussianBlur::create(uint32_t kernelSize)
+    GaussianBlur::UniquePtr GaussianBlur::create(uint32_t kernelSize, float sigma)
     {
-        GaussianBlur* pBlur = new GaussianBlur(kernelSize);
+        GaussianBlur* pBlur = new GaussianBlur(kernelSize, sigma);
         return GaussianBlur::UniquePtr(pBlur);
+    }
+
+    void GaussianBlur::renderUI(Gui* pGui, const char* uiGroup)
+    {
+        if (uiGroup == nullptr || pGui->beginGroup(uiGroup))
+        {
+            if (pGui->addIntVar("Kernel Width", (int&)mKernelWidth, 1, 15, 2))
+            {
+                setKernelWidth(mKernelWidth);
+            }
+            if (pGui->addFloatVar("Sigma", mSigma, 0.001f))
+            {
+                setSigma(mSigma);
+            }
+            if (uiGroup) pGui->endGroup();
+        }
+    }
+
+    void GaussianBlur::setKernelWidth(uint32_t kernelWidth)
+    {
+        mKernelWidth = kernelWidth | 1; // Make sure the kernel width is an odd number
+        mDirty = true; 
+    }
+
+    float getCoefficient(float sigma, float kernelWidth, float x)
+    {
+        float sigmaSquared = sigma * sigma;
+        float p = -(x*x) / (2 * sigmaSquared);
+        float e = exp(p);
+
+        float a = 2 * (float)M_PI * sigmaSquared;
+        return e / a;
+    }
+
+    void GaussianBlur::updateKernel()
+    {
+        ConstantBuffer::SharedPtr pCB = mpVars[0];
+        uint32_t center = mKernelWidth / 2;
+        float sum = 0;
+        std::vector<float> weights(center + 1);
+        for (uint32_t i = 0; i <= center; i++)
+        {
+            weights[i] = getCoefficient(mSigma, (float)mKernelWidth, (float)i);
+            sum += (i == 0) ? weights[i] : 2 * weights[i];
+        }
+
+        TypedBuffer<float>::SharedPtr pBuf = TypedBuffer<float>::create(mKernelWidth, Resource::BindFlags::ShaderResource);
+
+        for (uint32_t i = 0; i <= center; i++)
+        {
+            float w = weights[i] / sum;
+            pBuf[center + i] = w;
+            pBuf[center - i] = w;
+        }
+        mpVars->setTypedBuffer("weights", pBuf);
     }
 
     void GaussianBlur::createTmpFbo(const Texture* pSrc)
@@ -67,14 +125,13 @@ namespace Falcor
             Fbo::Desc fboDesc;
             fboDesc.setColorTarget(0, srcFormat);
             mpTmpFbo = FboHelper::create2D(pSrc->getWidth(), pSrc->getHeight(), fboDesc, pSrc->getArraySize());
-            createProgram();
         }
     }
 
     void GaussianBlur::createProgram()
     {
         Program::DefineList defines;
-        defines.add("_KERNEL_WIDTH", std::to_string(mKernelSize));
+        defines.add("_KERNEL_WIDTH", std::to_string(mKernelWidth));
         if(mpTmpFbo->getColorTexture(0)->getArraySize() > 1)
         {
             defines.add("_USE_TEX2D_ARRAY");
@@ -87,11 +144,19 @@ namespace Falcor
         mpVerticalBlur = FullScreenPass::create(kShaderFilename, defines, true, true, layerMask);
         mpVerticalBlur->getProgram()->addDefine("_VERTICAL_BLUR");
         mpVars = GraphicsVars::create(mpHorizontalBlur->getProgram()->getActiveVersion()->getReflector());
+
+        updateKernel();
+        mDirty = false;
     }
 
     void GaussianBlur::execute(RenderContext* pRenderContext, Texture::SharedPtr pSrc, Fbo::SharedPtr pDst)
     {
         createTmpFbo(pSrc.get());
+        if (mDirty)
+        {
+            createProgram();
+        }
+
         uint32_t arraySize = pSrc->getArraySize();
         GraphicsState::Viewport vp;
         vp.originX = 0;

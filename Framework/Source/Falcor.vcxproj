@@ -989,7 +989,7 @@
     <None Include="..\Externals\GLM\glm\gtx\vector_angle.inl" />
     <None Include="..\Externals\GLM\glm\gtx\vector_query.inl" />
     <None Include="..\Externals\GLM\glm\gtx\wrap.inl" />
-    <None Include="Data\Effects\GaussianBlur.fs" />
+    <None Include="Data\Effects\GaussianBlur.ps.hlsl" />
     <None Include="Data\Effects\ShadowPass.ps.hlsl">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseD3D12|x64'">true</ExcludedFromBuild>
     </None>

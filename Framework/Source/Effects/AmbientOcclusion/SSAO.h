@@ -129,7 +129,6 @@ namespace Falcor
         GraphicsVars::SharedPtr mpSSAOVars;
 
         bool mApplyBlur = true;
-        int32_t mBlurSize = 5;
         GaussianBlur::UniquePtr mpBlur;
     };
 

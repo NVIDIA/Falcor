@@ -24,7 +24,6 @@
   <ItemGroup>
     <None Include="Data\Blit.fs" />
     <None Include="Data\Luminance.fs" />
-    <None Include="Data\RadialBlur.fs" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{282AAB9B-2150-447C-9C27-62C38C23761E}</ProjectGuid>

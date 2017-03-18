@@ -25,55 +25,64 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#version 420
-#include "HlslGlslCommon.h"
+#expect _KERNEL_WIDTH
 
-CONSTANT_BUFFER(PerImageCB, 0)
+#ifdef _USE_TEX2D_ARRAY
+    Texture2DArray gSrcTex;
+#else
+    texture2D gSrcTex;
+#endif
+
+SamplerState gSampler;
+
+struct BlurPSIn
 {
-    sampler2D gTexture;
+    float2 texC : TEXCOORD;
+    float4 pos : SV_POSITION;
+#ifdef _USE_TEX2D_ARRAY
+    uint arrayIndex : SV_RenderTargetArrayIndex;
+#endif
 };
- 
-vec4 calcColor(vec2 texC)
+
+Buffer<float> weights;
+
+#ifdef _USE_TEX2D_ARRAY
+float4 blur(float2 texC, const float2 direction, uint arrayIndex)
+#else
+float4 blur(float2 texC, const float2 direction)
+#endif
 {
-    const float blurStrength = 2.7; // Controls the strength of the blur effect. Higher values will make it more noticable at the center of the image
-    const float offsets[5] = {0.005,0.01,0.03,0.05,0.075}; // Controls the shape of the blur
- 
-    // get the direction we are going to sample from
-    vec2 sampleDirection = 0.5 - texC; 
-    float dirLength = length(sampleDirection);
-    sampleDirection = sampleDirection/dirLength;
- 
-    // Get the original color
-    vec4 texelColor = texture(gTexture, texC);  
-    vec4 blurColor = texelColor;
- 
-    // sample based on the direction
-    for (int i = 0; i < 5; i++)
+   int2 offset = -(_KERNEL_WIDTH / 2) * direction;
+
+    float4 c = float4(0,0,0,0);
+    [unroll(_KERNEL_WIDTH)]
+    for(int i = 0 ; i < _KERNEL_WIDTH ; i++)
     {
-      blurColor += texture( gTexture, texC + sampleDirection * offsets[i] );
-      blurColor += texture( gTexture, texC + sampleDirection * -offsets[i] );
+#ifdef _USE_TEX2D_ARRAY
+        c += gSrcTex.SampleLevel(gSampler, float3(texC, arrayIndex), 0, offset)*weights[i];
+#else
+        c += gSrcTex.SampleLevel(gSampler, texC, 0, offset)*weights[i];
+#endif
+        offset += direction;
     }
-    blurColor *= 1.0/11;
- 
-    // Blend the results
-    float weight = dirLength * blurStrength;
-    weight = clamp(weight,0.0,1.0);
-    vec4 fragColor = mix(texelColor, blurColor, weight);
-
-    return fragColor;
-} 
-
- #ifdef FALCOR_HLSL
- float4 main(in vec2 texC : TEXCOORD) : SV_TARGET
- {
-    return calcColor(texC);
- }
- #elif defined FALCOR_GLSL
-in vec2 texC;
-out vec4 fragColor;
-
-void main()
-{
-    fragColor = calcColor(texC);
+    return c;
 }
- #endif
+
+float4 main(BlurPSIn pIn) : SV_TARGET0
+{
+    float4 fragColor = float4(1.f, 1.f, 1.f, 1.f);
+#ifdef _HORIZONTAL_BLUR
+    float2 dir = float2(1, 0);
+#elif defined _VERTICAL_BLUR
+    float2 dir = float2(0, 1);
+#else
+    Error. Need to define either _HORIZONTAL_BLUR or _VERTICAL_BLUR
+#endif
+
+#ifdef _USE_TEX2D_ARRAY
+    fragColor = blur(pIn.texC, dir, pIn.arrayIndex);
+#else
+    fragColor = blur(pIn.texC, dir);
+#endif
+    return fragColor;
+}

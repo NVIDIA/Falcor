@@ -1723,9 +1723,6 @@
     <None Include="Data\Framework\ParallelReduction.fs">
       <Filter>Utils\Math</Filter>
     </None>
-    <None Include="Data\Effects\GaussianBlur.fs">
-      <Filter>Data\Effects</Filter>
-    </None>
     <None Include="..\Externals\dear_imgui\LICENSE">
       <Filter>Externals\dear_imgui</Filter>
     </None>
@@ -2098,6 +2095,10 @@
     <None Include="Data\Framework\Shaders\FullScreenPass.vs.hlsl">
       <Filter>Data\Framework\Shaders</Filter>
     </None>
+    <None Include="Data\Effects\SSAO.ps.hlsl" />
+    <None Include="Data\Effects\GaussianBlur.ps.hlsl">
+      <Filter>Data\Effects</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Data\Framework\Shaders\SceneEditorPS.hlsl">
@@ -2108,9 +2109,6 @@
     </FxCompile>
     <FxCompile Include="Data\Framework\Shaders\Blit.hlsl">
       <Filter>Data\Framework\Shaders</Filter>
-    </FxCompile>
-    <FxCompile Include="Data\Effects\SSAO.ps.hlsl">
-      <Filter>Data\Effects</Filter>
     </FxCompile>
   </ItemGroup>
 </Project>
