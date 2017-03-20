@@ -76,7 +76,6 @@ void ShaderBuffersSample::onLoad()
     mpInvocationsBuffer = Buffer::create(sizeof(uint32_t), Buffer::BindFlags::UnorderedAccess, Buffer::CpuAccess::Read, &z);
     mpProgramVars->setRawBuffer("gInvocationBuffer", mpInvocationsBuffer);
     mpProgramVars->setTypedBuffer("surfaceColor", mpSurfaceColorBuffer);
-    mpProgramVars->setStructuredBuffer("gLight", StructuredBuffer::create(mpProgram, "gLight", 2));
 
     mpRWBuffer = StructuredBuffer::create(mpProgram, "gRWBuffer", 4);
     mpProgramVars->setStructuredBuffer("gRWBuffer", mpRWBuffer);
@@ -94,6 +93,17 @@ void ShaderBuffersSample::onLoad()
     mpDefaultPipelineState->setVao(mpVao);
     mpDefaultPipelineState->setProgram(mpProgram);
 
+    // Compute
+    mpComputeProgram = ComputeProgram::createFromFile("ShaderBuffers.cs.hlsl");
+    mpComputeState = ComputeState::create();
+    mpComputeState->setProgram(mpComputeProgram);
+
+    mpComputeVars = ComputeVars::create(mpComputeProgram->getActiveVersion()->getReflector());
+    mpComputeVars->setStructuredBuffer("gLightIn", StructuredBuffer::create(mpComputeProgram, "gLightIn", 2));
+
+    mpAppendLights = StructuredBuffer::create(mpComputeProgram, "gLightOut", 2);
+    mpComputeVars->setStructuredBuffer("gLightOut", mpAppendLights);
+
     init_tests();
 }
 
@@ -103,14 +113,37 @@ void ShaderBuffersSample::onFrameRender()
     mpRenderContext->clearFbo(mpDefaultFBO.get(), clearColor, 1.0f, 0, FboAttachmentType::All);
     mCameraController.update();
 
+    //
+    // Compute
+    //
+
+    mpRenderContext->clearUAV(mpAppendLights->getUAV().get(), uvec4(0));
+    mpAppendLights->clearUAVCounter(mpRenderContext.get());
+
+    // Send lights to compute shader
+    mpComputeVars->getStructuredBuffer("gLightIn")[0]["vec3Val"] = mLightData.worldDir;
+    mpComputeVars->getStructuredBuffer("gLightIn")[1]["vec3Val"] = mLightData.intensity;
+    mpComputeVars->setStructuredBuffer("gLightOut", mpAppendLights);
+
+    mpRenderContext->setComputeState(mpComputeState);
+    mpRenderContext->setComputeVars(mpComputeVars);
+
+    // Compute shader passes light data through an append buffer
+    mpRenderContext->dispatch(1, 1, 1);
+
+    //
+    // Render
+    //
+
+    // Bind compute output
+    mpProgramVars->setStructuredBuffer("gLight", mpAppendLights);
+    mpRenderContext->setGraphicsState(mpDefaultPipelineState);
+
     // Update uniform-buffers data
     mpProgramVars["PerFrameCB"]["m.worldMat"] = glm::mat4();
     glm::mat4 wvp = mpCamera->getViewProjMatrix();
     mpProgramVars["PerFrameCB"]["m.wvpMat"] = wvp;
 
-    mpProgramVars->getStructuredBuffer("gLight")[0]["vec3Val"] = mLightData.worldDir;
-    mpProgramVars->getStructuredBuffer("gLight")[1]["vec3Val"] = mLightData.intensity;
-    
     mpSurfaceColorBuffer[0] = mSurfaceColor;
     mpSurfaceColorBuffer->uploadToGPU();
 
@@ -118,7 +151,12 @@ void ShaderBuffersSample::onFrameRender()
     mpRenderContext->setGraphicsVars(mpProgramVars);
     mpRenderContext->drawIndexed(mIndexCount, 0, 0);
 
-    std::string msg = getFpsMsg() + '\n';
+    // Read UAV counter from append buffer
+    uint32_t* pCounter = (uint32_t*)mpAppendLights->getUAVCounter()->map(Buffer::MapType::Read);
+    std::string msg = "Light Data struct count: " + std::to_string(*pCounter);
+    renderText(msg, vec2(600, 80));
+    mpAppendLights->getUAVCounter()->unmap();
+
     if(mCountPixelShaderInvocations)
     {
         // RWByteAddressBuffer

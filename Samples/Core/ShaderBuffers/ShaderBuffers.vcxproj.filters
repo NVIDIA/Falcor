@@ -13,6 +13,12 @@
     <None Include="Data\ShaderBuffers.vs">
       <Filter>Data</Filter>
     </None>
+    <None Include="Data\ShaderBuffers.cs.hlsl">
+      <Filter>Data</Filter>
+    </None>
+    <None Include="Data\ShaderBuffersCommon.h">
+      <Filter>Data</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Data">

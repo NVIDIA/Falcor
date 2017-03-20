@@ -588,6 +588,11 @@ namespace Falcor
                 if (pStructured)
                 {
                     pStructured->uploadToGPU();
+
+                    if (pStructured->hasUAVCounter() && isUav)
+                    {
+                        pContext->resourceBarrier(pStructured->getUAVCounter().get(), Resource::State::UnorderedAccess);
+                    }
                 }
 
                 pContext->resourceBarrier(pResource, isUav ? Resource::State::UnorderedAccess : Resource::State::ShaderResource);

@@ -25,51 +25,8 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#version 430
-#include "hlslglslcommon.h"
-#include "ShaderBuffersCommon.h"
 
-struct Data
+struct LightCB
 {
-    float value;
+    float3 vec3Val;   // We're using 2 values. [0]: worldDir [1]: intensity
 };
-
-RWStructuredBuffer<Data> gRWBuffer; // Only UAV counter used
-StructuredBuffer<LightCB> gLight;
-RWByteAddressBuffer gInvocationBuffer;
-Buffer<vec3> surfaceColor;
-
-vec4 calcColor(vec3 normalW)
-{
-    vec3 n = normalize(normalW);
-    float nDotL = dot(n, -gLight[0].vec3Val);
-    nDotL = clamp(nDotL, 0, 1);
-    vec4 color = vec4(nDotL * gLight[1].vec3Val * surfaceColor[0], 1);
-
-    gInvocationBuffer.InterlockedAdd(0, 1);
-    gRWBuffer.IncrementCounter();
-
-    return color;
-}
-
-#ifdef FALCOR_HLSL
-vec4 main(in vec3 normalW : NORMAL) : SV_TARGET
-{
-    return calcColor(normalW);
-}
-
-#else
-in vec3 normalW;
-out vec4 fragColor;
-
-layout(binding = 0) buffer PixelCount
-{
-    uint count;   
-} pixelCountBuffer;
-
-void main()
-{
-    fragColor = calcColor(normalW);
-    atomicAdd(pixelCountBuffer.count, 1); // This is a costly operation.
-}
-#endif

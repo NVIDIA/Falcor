@@ -14,6 +14,7 @@
     <ClCompile Include="ShaderBuffers.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="Data\ShaderBuffersCommon.h" />
     <ClInclude Include="ShaderBuffers.h" />
   </ItemGroup>
   <ItemGroup>
@@ -24,6 +25,11 @@
   <ItemGroup>
     <None Include="Data\ShaderBuffers.fs" />
     <None Include="Data\ShaderBuffers.vs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Data\ShaderBuffers.cs.hlsl">
+      <FileType>Document</FileType>
+    </None>
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{E9189681-F552-4811-9B9C-C88E63D21363}</ProjectGuid>

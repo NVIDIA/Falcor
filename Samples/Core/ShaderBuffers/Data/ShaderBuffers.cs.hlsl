@@ -1,5 +1,5 @@
 /***************************************************************************
-# Copyright (c) 2015, NVIDIA CORPORATION. All rights reserved.
+# Copyright (c) 2017, NVIDIA CORPORATION. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -25,51 +25,21 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#version 430
-#include "hlslglslcommon.h"
+
 #include "ShaderBuffersCommon.h"
 
-struct Data
-{
-    float value;
-};
+StructuredBuffer<LightCB> gLightIn;
+AppendStructuredBuffer<LightCB> gLightOut;
 
-RWStructuredBuffer<Data> gRWBuffer; // Only UAV counter used
-StructuredBuffer<LightCB> gLight;
-RWByteAddressBuffer gInvocationBuffer;
-Buffer<vec3> surfaceColor;
-
-vec4 calcColor(vec3 normalW)
-{
-    vec3 n = normalize(normalW);
-    float nDotL = dot(n, -gLight[0].vec3Val);
-    nDotL = clamp(nDotL, 0, 1);
-    vec4 color = vec4(nDotL * gLight[1].vec3Val * surfaceColor[0], 1);
-
-    gInvocationBuffer.InterlockedAdd(0, 1);
-    gRWBuffer.IncrementCounter();
-
-    return color;
-}
-
-#ifdef FALCOR_HLSL
-vec4 main(in vec3 normalW : NORMAL) : SV_TARGET
-{
-    return calcColor(normalW);
-}
-
-#else
-in vec3 normalW;
-out vec4 fragColor;
-
-layout(binding = 0) buffer PixelCount
-{
-    uint count;   
-} pixelCountBuffer;
-
+[numthreads(1, 1, 1)]
 void main()
 {
-    fragColor = calcColor(normalW);
-    atomicAdd(pixelCountBuffer.count, 1); // This is a costly operation.
+    uint numLights = 0;
+    uint stride;
+    gLightIn.GetDimensions(numLights, stride);
+
+    for (uint i = 0; i < numLights; i++)
+    {
+        gLightOut.Append(gLightIn[i]);
+    }
 }
-#endif
