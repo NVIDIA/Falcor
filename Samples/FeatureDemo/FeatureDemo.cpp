@@ -256,7 +256,7 @@ void FeatureDemo::onResizeSwapChain()
     uint32_t h = mpDefaultFBO->getHeight();
 
     Fbo::Desc fboDesc;
-    fboDesc.setColorTarget(0, ResourceFormat::RGBA8Unorm);
+    fboDesc.setColorTarget(0, ResourceFormat::RGBA8UnormSrgb);
     mpPostProcessFbo = FboHelper::create2D(w, h, fboDesc);
 
     fboDesc.setColorTarget(0, ResourceFormat::RGBA32Float).setColorTarget(1, ResourceFormat::RGBA8Unorm).setColorTarget(2, ResourceFormat::R32Float);
