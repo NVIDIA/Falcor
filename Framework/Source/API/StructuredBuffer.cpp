@@ -46,10 +46,6 @@ namespace Falcor
         {
             static const uint32_t zero = 0;
             mpUAVCounter = Buffer::create(sizeof(uint32_t), Resource::BindFlags::UnorderedAccess, Buffer::CpuAccess::None, &zero);
-            
-            // #TODO we only need this for clearing UAV, but a UAV for shader binding will be allocated as well.
-            // Maybe mpCounterClearView should just be created in UnorderedAccessView::create and const_cast to make it work
-            mpCounterClearView = mpUAVCounter->getUAV();
         }
     }
 
@@ -100,7 +96,7 @@ namespace Falcor
 
     void StructuredBuffer::clearUAVCounter(ComputeContext* pContext)
     {
-        pContext->clearUAV(mpCounterClearView.get(), uvec4(0));
+        pContext->clearUAV(mpUAVCounter->getUAV().get(), uvec4(0));
     }
 
     StructuredBuffer::~StructuredBuffer() = default;

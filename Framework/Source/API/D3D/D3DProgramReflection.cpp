@@ -543,7 +543,7 @@ namespace Falcor
         case D3D_SIT_UAV_RWBYTEADDRESS:
         case D3D_SIT_UAV_RWSTRUCTURED:
         case D3D_SIT_UAV_RWSTRUCTURED_WITH_COUNTER:
-        case D3D_SIT_UAV_CONSUME_STRUCTURED: // #TODO Should this be read?
+        case D3D_SIT_UAV_CONSUME_STRUCTURED:
             return ProgramReflection::ShaderAccess::ReadWrite;
         default:
             should_not_get_here();

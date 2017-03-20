@@ -162,6 +162,5 @@ namespace Falcor
         mutable bool mGpuCopyDirty = false;
 
         Buffer::SharedPtr mpUAVCounter;
-        UnorderedAccessView::SharedPtr mpCounterClearView;
     };
 }
