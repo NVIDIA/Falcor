@@ -61,13 +61,19 @@ float4 main(float2 texC : TEXCOORD) : SV_TARGET0
     }
 
     // Calculate world position of pixel
-    float4 posW = getPosition(texC);
-    float originDist = length(posW.xyz - gCam.position);
+    float3 posW = getPosition(texC).xyz;
+
+#ifdef HEMISPHERE
+    float3 normal = gNormalTex.Sample(gSampler, texC).xyz * 2.0f - 1.0f;
+    // Bias
+    posW += normal * gData.surfaceOffset;
+#endif
+
+    float originDist = length(posW - gCam.position);
 
     float3 randDir = gNoiseTex.Sample(gSampler, texC * gData.noiseScale).xyz * 2.0f - 1.0f;
 
 #ifdef HEMISPHERE
-    float3 normal = gNormalTex.Sample(gSampler, texC).xyz * 2.0f - 1.0f;
     float3 tangent = normalize(randDir - normal * dot(randDir, normal));
     float3 bitangent = cross(normal, tangent);
     float3x3 tbn = float3x3(tangent, bitangent, normal);
@@ -81,13 +87,12 @@ float4 main(float2 texC : TEXCOORD) : SV_TARGET0
         float3 kernelPos = mul(gData.sampleKernel[i].xyz, tbn);
 #endif
 #ifdef SPHERE
-        // Flips directions facing into surface
         float3 kernelPos = gData.sampleKernel[i].xyz;
         kernelPos = reflect(kernelPos, randDir);
 #endif
 
         // Calculate sample world space pos
-        float3 samplePosW = posW.xyz + (kernelPos * gData.radius);
+        float3 samplePosW = posW + (kernelPos * gData.radius);
         float sampleDepth = length(samplePosW - gCam.position);
 
         // Get screen space pos of sample
@@ -95,7 +100,7 @@ float4 main(float2 texC : TEXCOORD) : SV_TARGET0
         samplePosProj /= samplePosProj.w;
 
         // Sample depth buffer at the same place as sample
-        float2 sampleUV = float2(samplePosProj.x, -samplePosProj.y) * 0.5f + 0.5f;
+        float2 sampleUV = clamp(float2(samplePosProj.x, -samplePosProj.y) * 0.5f + 0.5f, 0.0f, 1.0f);
         float sceneDepth = length(getPosition(sampleUV).xyz - gCam.position);
 
         float rangeCheck = step(abs(sampleDepth - sceneDepth), gData.radius);

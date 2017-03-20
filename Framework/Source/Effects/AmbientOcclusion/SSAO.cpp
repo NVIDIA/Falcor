@@ -73,6 +73,11 @@ namespace Falcor
             mDirty = true;
         }
 
+        if (pGui->addFloatVar("Surface Offset", mData.surfaceOffset, 0.0f, FLT_MAX))
+        {
+            mDirty = true;
+        }
+
         pGui->addCheckBox("Apply Blur", mApplyBlur);
 
         if (mApplyBlur)
@@ -139,7 +144,7 @@ namespace Falcor
 
         mpSSAOState = GraphicsState::create();
 
-        mpBlur = GaussianBlur::create(blurSize, blurSigma);
+        mpBlur = GaussianBlur::create(5, 2.0f);
 
         Sampler::Desc samplerDesc;
         samplerDesc.setFilterMode(Sampler::Filter::Point, Sampler::Filter::Point, Sampler::Filter::Point).setAddressingMode(Sampler::AddressMode::Wrap, Sampler::AddressMode::Wrap, Sampler::AddressMode::Wrap);

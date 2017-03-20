@@ -85,6 +85,10 @@ namespace Falcor
         */
         void setBlurSigma(float sigma) { mpBlur->setSigma(sigma); }
 
+        /** Set distance of kernel offset/bias from the surface in the normal direction. Used with hemisphere sampling.
+        */
+        void setSurfaceOffset(float distance) { mData.surfaceOffset = distance; mDirty = true; }
+
         /** Recreate sampling kernel
             \param[in] kernelSize Number of samples
             \param[in] distribution Distribution of sample points within a hemisphere kernel. Parameter is ignored for sphere kernel generation, but is saved for use in future hemisphere kernels.
