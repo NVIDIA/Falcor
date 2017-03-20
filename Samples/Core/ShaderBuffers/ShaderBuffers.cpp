@@ -47,7 +47,7 @@ void ShaderBuffersSample::onLoad()
     mpCamera = Camera::create();
 
     // create the program
-    mpProgram = GraphicsProgram::createFromFile("ShaderBuffers.vs", "ShaderBuffers.fs");
+    mpProgram = GraphicsProgram::createFromFile("ShaderBuffers.vs.hlsl", "ShaderBuffers.ps.hlsl");
 
     // Load the model
     mpModel = Model::createFromFile("teapot.obj", 0);
@@ -118,8 +118,7 @@ void ShaderBuffersSample::onFrameRender()
     //
 
     mpRenderContext->clearUAV(mpAppendLightData->getUAV().get(), uvec4(0));
-    mpRenderContext->clearUAV(mpAppendLightData->getUAVCounter()->getUAV().get(), uvec4(0));
-    //mpAppendLights->clearUAVCounter(mpRenderContext.get());
+    mpRenderContext->clearUAVCounter(mpAppendLightData, 0);
 
     // Send lights to compute shader
     mpComputeVars->getStructuredBuffer("gLightIn")[0]["vec3Val"] = mLightData.worldDir;
@@ -141,9 +140,9 @@ void ShaderBuffersSample::onFrameRender()
     mpRenderContext->setGraphicsState(mpDefaultPipelineState);
 
     // Update uniform-buffers data
-    mpProgramVars["PerFrameCB"]["m.worldMat"] = glm::mat4();
+    mpProgramVars["PerFrameCB"]["gWorldMat"] = glm::mat4();
     glm::mat4 wvp = mpCamera->getViewProjMatrix();
-    mpProgramVars["PerFrameCB"]["m.wvpMat"] = wvp;
+    mpProgramVars["PerFrameCB"]["gWvpMat"] = wvp;
 
     mpSurfaceColorBuffer[0] = mSurfaceColor;
     mpSurfaceColorBuffer->uploadToGPU();
@@ -154,7 +153,7 @@ void ShaderBuffersSample::onFrameRender()
 
     // Read UAV counter from append buffer
     uint32_t* pCounter = (uint32_t*)mpAppendLightData->getUAVCounter()->map(Buffer::MapType::Read);
-    std::string msg = "Light Data struct count: " + std::to_string(*pCounter);
+    std::string msg = "Light Data append buffer count: " + std::to_string(*pCounter);
     renderText(msg, vec2(600, 80));
     mpAppendLightData->getUAVCounter()->unmap();
 
@@ -173,7 +172,7 @@ void ShaderBuffersSample::onFrameRender()
         mpRWBuffer->getUAVCounter()->unmap();
 
         mpRenderContext->clearUAV(mpInvocationsBuffer->getUAV().get(), uvec4(0));
-        mpRWBuffer->clearUAVCounter(mpRenderContext.get());
+        mpRenderContext->clearUAVCounter(mpRWBuffer, 0);
     }
 
     run_test();

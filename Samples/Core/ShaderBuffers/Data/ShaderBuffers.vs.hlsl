@@ -25,51 +25,26 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#version 430
-#include "hlslglslcommon.h"
-#include "ShaderBuffersCommon.h"
+#include "VertexAttrib.h"
 
-struct Data
+cbuffer PerFrameCB
 {
-    float value;
+    float4x4 gWorldMat;
+    float4x4 gWvpMat;
 };
 
-RWStructuredBuffer<Data> gRWBuffer; // Only UAV counter used
-StructuredBuffer<LightCB> gLight;
-RWByteAddressBuffer gInvocationBuffer;
-Buffer<vec3> gSurfaceColor;
-
-vec4 calcColor(vec3 normalW)
+struct VSOut
 {
-    vec3 n = normalize(normalW);
-    float nDotL = dot(n, -gLight[0].vec3Val);
-    nDotL = clamp(nDotL, 0, 1);
-    vec4 color = vec4(nDotL * gLight[1].vec3Val * gSurfaceColor[0], 1);
+    float4 position : SV_POSITION;
+    float3 normalW : NORMAL;
+};
 
-    gInvocationBuffer.InterlockedAdd(0, 1);
-    gRWBuffer.IncrementCounter();
+VSOut main(in float4 posL : POSITION, in float3 normalL : NORMAL)
+{
+    VSOut vsOut;
 
-    return color;
+    vsOut.position = mul(gWvpMat, posL);
+    vsOut.normalW = (mul(gWorldMat, float4(normalL, 0))).xyz;
+
+    return vsOut;
 }
-
-#ifdef FALCOR_HLSL
-vec4 main(in vec3 normalW : NORMAL) : SV_TARGET
-{
-    return calcColor(normalW);
-}
-
-#else
-in vec3 normalW;
-out vec4 fragColor;
-
-layout(binding = 0) buffer PixelCount
-{
-    uint count;   
-} pixelCountBuffer;
-
-void main()
-{
-    fragColor = calcColor(normalW);
-    atomicAdd(pixelCountBuffer.count, 1); // This is a costly operation.
-}
-#endif

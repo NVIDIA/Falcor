@@ -25,8 +25,10 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-
-#include "ShaderBuffersCommon.h"
+struct LightCB
+{
+    float3 vec3Val; // We're using 2 values. [0]: worldDir [1]: intensity
+};
 
 StructuredBuffer<LightCB> gLightIn;
 AppendStructuredBuffer<LightCB> gLightOut;

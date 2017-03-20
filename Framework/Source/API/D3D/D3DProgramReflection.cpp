@@ -643,7 +643,7 @@ namespace Falcor
                     case D3D_SIT_UAV_APPEND_STRUCTURED:
                         res = reflectBuffer(pReflection, inputDesc.Name, mBuffers[(uint32_t)BufferReflection::Type::Structured], BufferReflection::Type::Structured, BufferReflection::StructuredType::Append, ShaderAccess::ReadWrite, shader, log);
                         break;
-                    case D3D_SIT_UAV_CONSUME_STRUCTURED: // #TODO should this be ShaderAccess::Read?
+                    case D3D_SIT_UAV_CONSUME_STRUCTURED:
                         res = reflectBuffer(pReflection, inputDesc.Name, mBuffers[(uint32_t)BufferReflection::Type::Structured], BufferReflection::Type::Structured, BufferReflection::StructuredType::Consume, ShaderAccess::ReadWrite, shader, log);
                         break;
                     default:

@@ -36,7 +36,6 @@ namespace Falcor
     class ProgramVersion;
     class Texture;
     class Sampler;
-    class ComputeContext;
 
     class StructuredBuffer : public VariablesBuffer, public inherit_shared_from_this<VariablesBuffer, StructuredBuffer>
 
@@ -154,8 +153,6 @@ namespace Falcor
         bool hasUAVCounter() const;
 
         const Buffer::SharedPtr& getUAVCounter() const { return mpUAVCounter; }
-
-        void clearUAVCounter(ComputeContext* pContext);
 
     private:
         StructuredBuffer(const ProgramReflection::BufferReflection::SharedConstPtr& pReflector, size_t elementCount, Resource::BindFlags bindFlags);

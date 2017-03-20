@@ -14,7 +14,6 @@
     <ClCompile Include="ShaderBuffers.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="Data\ShaderBuffersCommon.h" />
     <ClInclude Include="ShaderBuffers.h" />
   </ItemGroup>
   <ItemGroup>
@@ -23,8 +22,8 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <None Include="Data\ShaderBuffers.fs" />
-    <None Include="Data\ShaderBuffers.vs" />
+    <None Include="Data\ShaderBuffers.ps.hlsl" />
+    <None Include="Data\ShaderBuffers.vs.hlsl" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Data\ShaderBuffers.cs.hlsl">

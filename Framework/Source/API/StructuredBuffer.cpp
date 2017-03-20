@@ -28,7 +28,6 @@
 #include "Framework.h"
 #include "API/StructuredBuffer.h"
 #include "API/Buffer.h"
-#include "API/ComputeContext.h"
 
 namespace Falcor
 {
@@ -92,11 +91,6 @@ namespace Falcor
     bool StructuredBuffer::hasUAVCounter() const
     {
         return getBufferReflector()->getStructuredType() != ProgramReflection::BufferReflection::StructuredType::Default;
-    }
-
-    void StructuredBuffer::clearUAVCounter(ComputeContext* pContext)
-    {
-        pContext->clearUAV(mpUAVCounter->getUAV().get(), uvec4(0));
     }
 
     StructuredBuffer::~StructuredBuffer() = default;

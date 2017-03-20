@@ -7,16 +7,13 @@
     <ClInclude Include="ShaderBuffers.h" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="Data\ShaderBuffers.fs">
-      <Filter>Data</Filter>
-    </None>
-    <None Include="Data\ShaderBuffers.vs">
-      <Filter>Data</Filter>
-    </None>
     <None Include="Data\ShaderBuffers.cs.hlsl">
       <Filter>Data</Filter>
     </None>
-    <None Include="Data\ShaderBuffersCommon.h">
+    <None Include="Data\ShaderBuffers.ps.hlsl">
+      <Filter>Data</Filter>
+    </None>
+    <None Include="Data\ShaderBuffers.vs.hlsl">
       <Filter>Data</Filter>
     </None>
   </ItemGroup>
