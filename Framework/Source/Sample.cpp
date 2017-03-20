@@ -119,6 +119,9 @@ namespace Falcor
                         mpWindow->shutdown();
                     }
                     break;
+                case KeyboardEvent::Key::Equal:
+                    mFreezeTime = !mFreezeTime;
+                    break;
                 }
             }
         }
@@ -239,6 +242,7 @@ namespace Falcor
             "  'V'       - Toggle VSync\n"
             "  'F12'     - Capture screenshot\n"
             "  'Shift+F12' - Video capture\n"
+            "  '='       - Pause\\resume timer\n"
 #if _PROFILING_ENABLED
             "  'P'       - Enable profiling\n";
 #else
@@ -246,11 +250,8 @@ namespace Falcor
 #endif
 
         mpGui->pushWindow("Falcor", 250, 200, 20, 40);
-        if (mpGui->beginGroup("Help"))
-        {
-            mpGui->addText(help);
-            mpGui->endGroup();
-        }
+        mpGui->addText("Keyboard Shortcuts");
+        mpGui->addTooltip(help, true);
 
         if(mpGui->beginGroup("Global Controls"))
         {
