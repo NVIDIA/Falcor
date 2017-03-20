@@ -2,8 +2,10 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <ClCompile Include="Source\TestBase.cpp" />
+    <ClCompile Include="Source\TestHelper.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\TestBase.h" />
+    <ClInclude Include="Source\TestHelper.h" />
   </ItemGroup>
 </Project>

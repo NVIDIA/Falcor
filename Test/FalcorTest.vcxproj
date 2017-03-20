@@ -82,9 +82,11 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Source\TestBase.cpp" />
+    <ClCompile Include="Source\TestHelper.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\TestBase.h" />
+    <ClInclude Include="Source\TestHelper.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

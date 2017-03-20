@@ -99,4 +99,7 @@ private:
 
     float mNearZ;
     float mFarZ;
+
+    //testing
+    void onInitializeTestingArgs(const ArgList& args) override;
 };

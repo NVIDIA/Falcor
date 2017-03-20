@@ -27,10 +27,11 @@
 ***************************************************************************/
 #pragma once
 #include "Falcor.h"
+#include "SampleTest.h"
 
 using namespace Falcor;
 
-class EnvMap : public Sample
+class EnvMap : public Sample, public SampleTest
 {
 public:
     void onLoad() override;
@@ -49,4 +50,11 @@ private:
     SixDoFCameraController::SharedPtr mpCameraController;
     SkyBox::UniquePtr mpSkybox;  
     Sampler::SharedPtr mpTriLinearSampler;
+
+    //Testing
+    void onInitializeTestingArgs(const ArgList& args) override;
+    void onRunTestTask(const FrameRate& frameRate) override;
+    void onTestShutdown() override { shutdownApp(); }
+    std::vector<uint32_t> mChangeViewFrames;
+    std::vector<uint32_t>::iterator mChangeViewIt;
 };

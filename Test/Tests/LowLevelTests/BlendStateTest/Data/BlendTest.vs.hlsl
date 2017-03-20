@@ -25,38 +25,25 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#pragma once
-#include "Falcor.h"
-#include "SampleTest.h"
 
-using namespace Falcor;
-
-class NormalMapFiltering : public Sample, public SampleTest
+struct VsIn
 {
-public:
-    void onLoad() override;
-    void onFrameRender() override;
-    void onShutdown() override;
-    void onResizeSwapChain() override;
-    void onGuiRender() override;
-    bool onKeyEvent(const KeyboardEvent& keyEvent) override;
-    bool onMouseEvent(const MouseEvent& mouseEvent) override;
-    
-private:
-    void updateProgram();
-    GraphicsProgram::SharedPtr mpProgram;
-    SceneRenderer::UniquePtr mpRenderer;
-    GraphicsVars::SharedPtr mpVars;
-    ModelViewCameraController mCameraController;
-    LeanMap::UniquePtr mpLeanMap;
-    bool mUseLeanMap = true;
-    bool mUseSpecAA = true;
-    Sampler::SharedPtr mpLinearSampler;
-
-    //Testing
-    void onInitializeTestingArgs(const ArgList& args) override;
-    void onRunTestTask(const FrameRate& frameRate) override;
-    void onTestShutdown() override { shutdownApp(); }
-    std::vector<uint32_t> mChangeModeFrames;
-    std::vector<uint32_t>::iterator mChangeModeIt;
+    float4 pos : POSITION;
 };
+
+struct VsOut
+{
+    float4 svPos : SV_POSITION;
+};
+
+cbuffer PerFrameCB : register(b0)
+{
+    float4 color;
+};
+
+VsOut main(VsIn vIn)
+{
+    VsOut vOut;
+    vOut.svPos = vIn.pos;
+    return vOut;
+}

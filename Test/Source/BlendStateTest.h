@@ -40,6 +40,11 @@ private:
     void onInit() override {};
     register_testing_func(TestCreate)
     register_testing_func(TestRtArray)
+    register_testing_func(TestBlend)
 
     static bool doStatesMatch(const BlendState::SharedPtr state, const TestDesc& desc);
+    static vec4 simulateBlend(vec4 srcColor, vec4 dstColor, vec4 blendFactor, BlendState::Desc::RenderTargetDesc::WriteMask mask, BlendState::BlendOp rgbOp,
+        BlendState::BlendOp alphaOp, BlendState::BlendFunc srcRgbFunc, BlendState::BlendFunc dstRgbFunc, BlendState::BlendFunc srcAlphaFunc, BlendState::BlendFunc dstAlphaFunc);
+    static vec3 applyBlendFuncRgb(vec4 srcColor, vec4 dstColor, vec4 blendFactor, BlendState::BlendFunc func, bool src);
+    static float applyBlendFuncAlpha(float srcAlpha, float dstAlpha, float blendFactorAlpha, BlendState::BlendFunc func, bool src);
 };

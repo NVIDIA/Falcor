@@ -12,12 +12,13 @@ from datetime import date, timedelta
 
 #relevant paths
 gBuildBatchFile = 'BuildFalcorTest.bat'
-gTestListFile = 'C:\\Users\\clavelle\\Desktop\\FalcorGitHub\\Test\\TestList.txt'
+gTestListFile = 'TestList.txt'
 gEmailRecipientFile = 'EmailRecipients.txt'
-gDebugDir = 'C:\\Users\\clavelle\\Desktop\\FalcorGitHub\\Bin\\x64\\Debug\\'
-gReleaseDir = 'C:\\Users\\clavelle\\Desktop\\FalcorGitHub\\Bin\\x64\\Release\\'
+gDebugDir = '..\\Bin\\x64\\Debug\\'
+gReleaseDir = '..\\Bin\\x64\\Release\\'
 gResultsDir = 'TestResults'
 gReferenceDir = 'ReferenceResults'
+gPullBranch = 'dev-2.0a2'
 
 #default values
 #percent
@@ -27,7 +28,7 @@ gDefaultLoadTimeMargin = 10
 #average pixel color difference
 gDefaultImageCompareMargin = 0.1
 #seconds
-gDefaultHangTimeDuration = 75
+gDefaultHangTimeDuration = 1800
 
 class TestInfo(object):
     def determineIndex(self, generateReference):
@@ -578,8 +579,8 @@ def cleanScreenShots(ssDir):
             os.remove(ssDir + '\\' + s)
 
 def updateRepo():
-    subprocess.call(['git', 'pull', 'origin', 'D3D12'])
-    subprocess.call(['git', 'checkout', 'origin/D3D12'])
+    subprocess.call(['git', 'pull', 'origin', gPullBranch])
+    subprocess.call(['git', 'checkout', 'origin/' + gPullBranch])
 
 def sendFatalFailEmail(failMsg):
     subject = '[FATAL TESTING ERROR] '
@@ -614,14 +615,23 @@ def sendEmail(subject, body, attachment):
 def main():
     global gResultsDir
     global gLowLevelResultList
+    global gReferenceDir
     parser = argparse.ArgumentParser()
     parser.add_argument('-nb', '--nobuild', action='store_true', help='run without rebuilding Falcor and test apps')
     parser.add_argument('-np', '--nopull', action='store_true', help='run without pulling TestingFramework')
     parser.add_argument('-ne', '--noemail', action='store_true', help='run without emailing the result summary')
     parser.add_argument('-ss', '--showsummary', action='store_true', help='opens testing summary upon completion')
     parser.add_argument('-gr', '--generatereference', action='store_true', help='generates reference testing logs and images')
+    parser.add_argument('-ref', '--referencedir', action='store', help='Allows user to specify an existing reference dir')
     args = parser.parse_args()
 
+    if args.referencedir:
+        if os.path.isdir(gReferenceDir): 
+            gReferenceDir = args.referencedir
+        else:
+            print 'Fatal Error, Failed to find user specified reference dir: ' + args.referencedir
+            sys.exit(1)
+    
     if args.generatereference:
         if os.path.isdir(gReferenceDir):
             shutil.rmtree(gReferenceDir, ignore_errors=True)
@@ -671,6 +681,11 @@ def main():
         if callBatchFile(['build', 'FalcorTest.sln', 'released3d12', 'FalcorTest']):
             testInfo = TestInfo('FalcorTest', 'released3d12')
             buildFail(True, testInfo, not args.noemail)
+        if callBatchFile(['build', '../Falcor.sln', 'debugd3d12', 'Falcor']):
+            testInfo = TestInfo('Falcor', 'debugd3d12')
+            buildFail(True, testInfo, not args.noemail)
+        if callBatchFile(['build', '../Falcor.sln', 'released3d12', 'Falcor']):
+            testInfo = TestInfo('Falcor', 'released3d12')
 
     if not args.generatereference:
         resultSummary = LowLevelResult()
@@ -680,16 +695,17 @@ def main():
     readTestList(not args.nobuild, args.generatereference, not args.noemail)
     if not args.generatereference:
         outputHTML(args.showsummary)
-    else:
-        if(len(gSkippedList) > 0 or len(gFailReasonsList) > 0):
-            print '\nRan into the following issues while generating reference...'
-            for name, skip in gSkippedList:
-                print name + ': ' + skip
-            for reason in gFailReasonsList:
-                print reason 
 
     if not args.noemail and not args.generatereference:
         sendTestingEmail()
+    
+    if args.generatereference or args.noemail:
+        if(len(gSkippedList) > 0 or len(gFailReasonsList) > 0):
+            print '\n\nRan into the following issues ....\n-----\n'
+            for name, skip in gSkippedList:
+                print name + ': ' + skip
+            for reason in gFailReasonsList:
+                print reason
 
 if __name__ == '__main__':
     main()

@@ -266,17 +266,6 @@ void ModelViewer::onLoad()
 
 
     init_tests();
-    std::vector<ArgList::Arg> filenames = mArgList.getValues("loadmodel");
-    if (!filenames.empty())
-    {
-        loadModelFromFile(filenames[0].asString());
-    }
-
-    std::vector<ArgList::Arg> cameraRadius = mArgList.getValues("cameraradius");
-    if (!cameraRadius.empty())
-    {
-        mModelViewCameraController.setModelParams(mpModel->getCenter(), cameraRadius[0].asFloat(), 1.f);
-    }
 }
 
 void ModelViewer::onFrameRender()
@@ -395,6 +384,21 @@ void ModelViewer::resetCamera()
 
         mNearZ = std::max(0.1f, mpModel->getRadius() / 750.0f);
         mFarZ = Radius * 10;
+    }
+}
+
+void ModelViewer::onInitializeTestingArgs(const ArgList& args)
+{
+    std::vector<ArgList::Arg> filenames = mArgList.getValues("loadmodel");
+    if (!filenames.empty())
+    {
+        loadModelFromFile(filenames[0].asString());
+    }
+
+    std::vector<ArgList::Arg> cameraRadius = mArgList.getValues("cameraradius");
+    if (!cameraRadius.empty())
+    {
+        mModelViewCameraController.setModelParams(mpModel->getCenter(), cameraRadius[0].asFloat(), 1.f);
     }
 }
 
