@@ -87,11 +87,11 @@ namespace Falcor
         static SharedPtr create(const ProgramReflection::BufferReflection::SharedConstPtr& pReflector, size_t elementCount = 1, Resource::BindFlags bindFlags = Resource::BindFlags::ShaderResource | Resource::BindFlags::UnorderedAccess);
         
         /** create a new shader storage buffer.\n
-        This function is purely syntactic sugar. It will fetch the requested buffer reflector from the active program version and create the buffer from it
-        \param[in] pProgram A program object which defines the buffer
-        \param[in] elementCount - the number of struct elements in the buffer
-        \param[in] bindFlags The bind flags for the resource
-        \return A new buffer object if the operation was successful, otherwise nullptr
+            This function is purely syntactic sugar. It will fetch the requested buffer reflector from the active program version and create the buffer from it
+            \param[in] pProgram A program object which defines the buffer
+            \param[in] elementCount - the number of struct elements in the buffer
+            \param[in] bindFlags The bind flags for the resource
+            \return A new buffer object if the operation was successful, otherwise nullptr
         */
         static SharedPtr create(const Program::SharedPtr& pProgram, const std::string& name, size_t elementCount = 1, Resource::BindFlags bindFlags = Resource::BindFlags::ShaderResource | Resource::BindFlags::UnorderedAccess);
 
@@ -149,9 +149,15 @@ namespace Falcor
         /** Set the GPUCopyDirty flag
         */
         void setGpuCopyDirty() const { mGpuCopyDirty = true; }
-                
+
+        bool hasUAVCounter() const;
+
+        const Buffer::SharedPtr& getUAVCounter() const { return mpUAVCounter; }
+
     private:
         StructuredBuffer(const ProgramReflection::BufferReflection::SharedConstPtr& pReflector, size_t elementCount, Resource::BindFlags bindFlags);
         mutable bool mGpuCopyDirty = false;
+
+        Buffer::SharedPtr mpUAVCounter;
     };
 }

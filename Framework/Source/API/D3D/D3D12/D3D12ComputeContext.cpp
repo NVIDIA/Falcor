@@ -103,6 +103,14 @@ namespace Falcor
         mCommandsPending = true;
     }
 
+    void ComputeContext::clearUAVCounter(const StructuredBuffer::SharedPtr& pBuffer, uint32_t value)
+    {
+        if (pBuffer->hasUAVCounter())
+        {
+            clearUAV(pBuffer->getUAVCounter()->getUAV().get(), uvec4(value));
+        }
+    }
+
     void ComputeContext::applyComputeVars() {}
     void ComputeContext::applyComputeState() {}
 }

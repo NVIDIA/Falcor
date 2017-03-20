@@ -124,11 +124,18 @@ namespace Falcor
 
         D3D12_UNORDERED_ACCESS_VIEW_DESC desc;
         Resource::ApiHandle resHandle = nullptr;
+        Resource::ApiHandle counterHandle = nullptr;
 
-        if(pSharedPtr)
+        if(pSharedPtr != nullptr)
         {
             initializeUavDesc(pSharedPtr.get(), mipLevel, firstArraySlice, arraySize, desc);
             resHandle = pSharedPtr->getApiHandle();
+
+            StructuredBuffer::SharedConstPtr pStructuredBuffer = std::dynamic_pointer_cast<const StructuredBuffer>(pSharedPtr);
+            if (pStructuredBuffer != nullptr && pStructuredBuffer->hasUAVCounter())
+            {
+                counterHandle = pStructuredBuffer->getUAVCounter()->getApiHandle();
+            }
         }
         else
         {
@@ -136,16 +143,17 @@ namespace Falcor
             desc.Format = DXGI_FORMAT_R32_UINT;
             desc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE2D;
         }
+
         SharedPtr pNewObj;
         SharedPtr& pObj = pSharedPtr ? pNewObj : sNullView;
 
         DescriptorHeap* pHeap = gpDevice->getUavDescriptorHeap().get();
         ApiHandle handle = pHeap->allocateEntry();
-        gpDevice->getApiHandle()->CreateUnorderedAccessView(resHandle, nullptr, &desc, handle->getCpuHandle());
+        gpDevice->getApiHandle()->CreateUnorderedAccessView(resHandle, counterHandle, &desc, handle->getCpuHandle());
 
-        // Create the view for the clear
         pObj = SharedPtr(new UnorderedAccessView(pResource, handle, mipLevel, firstArraySlice, arraySize));
 
+        // Create the view for the clear
         pHeap = gpDevice->getCpuUavDescriptorHeap().get();
         pObj->mViewForClear = pHeap->allocateEntry();
         gpDevice->getApiHandle()->CreateUnorderedAccessView(resHandle, nullptr, &desc, pObj->mViewForClear->getCpuHandle());

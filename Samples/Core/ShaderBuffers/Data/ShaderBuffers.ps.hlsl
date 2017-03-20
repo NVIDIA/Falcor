@@ -25,31 +25,36 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#version 420
-#include "hlslglslcommon.h"
-#include "VertexAttrib.h"
-
-struct Matrices
+struct LightCB
 {
-    mat4 worldMat;
-    mat4 wvpMat;
+    float3 vec3Val; // We're using 2 values. [0]: worldDir [1]: intensity
 };
 
-CONSTANT_BUFFER (PerFrameCB, 0)
+RWStructuredBuffer<LightCB> gRWBuffer; // Only UAV counter used
+StructuredBuffer<LightCB> gLight;
+RWByteAddressBuffer gInvocationBuffer;
+Buffer<float3> gSurfaceColor;
+
+float4 calcColor(float3 normalW)
 {
-	Matrices m;
+    float3 n = normalize(normalW);
+    float nDotL = dot(n, -gLight[0].vec3Val);
+    nDotL = clamp(nDotL, 0, 1);
+    float4 color = float4(nDotL * gLight[1].vec3Val * gSurfaceColor[0], 1);
+
+    gInvocationBuffer.InterlockedAdd(0, 1);
+    gRWBuffer.IncrementCounter();
+
+    return color;
+}
+
+struct VSOut
+{
+    float4 position : SV_POSITION;
+    float3 normalW : NORMAL;
 };
 
-#ifdef FALCOR_GLSL
-out vec3 normalW;
-layout(location = VERTEX_POSITION_LOC) in vec4 posL;
-layout(location = VERTEX_NORMAL_LOC)   in vec3 normalL;
-
-void main()
-#elif defined FALCOR_HLSL
-void main(in vec4 posL : POSITION, in vec3 normalL : NORMAL, out vec3 normalW : NORMAL, out vec4 gl_Position : SV_POSITION)
-#endif
+float4 main(VSOut vsOut) : SV_TARGET
 {
-	gl_Position = mul(m.wvpMat,posL);
-	normalW = (mul(m.worldMat, vec4(normalL, 0))).xyz;
+    return calcColor(vsOut.normalW);
 }

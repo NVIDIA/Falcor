@@ -1,5 +1,5 @@
 /***************************************************************************
-# Copyright (c) 2015, NVIDIA CORPORATION. All rights reserved.
+# Copyright (c) 2017, NVIDIA CORPORATION. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -25,53 +25,23 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#pragma once
-#include "Falcor.h"
-#include "SampleTest.h"
-
-using namespace Falcor;
-
-class ShaderBuffersSample : public Sample, public SampleTest
+struct LightCB
 {
-public:
-    void onLoad() override;
-    void onFrameRender() override;
-    void onResizeSwapChain() override;
-    bool onKeyEvent(const KeyboardEvent& keyEvent) override;
-    bool onMouseEvent(const MouseEvent& mouseEvent) override;
-    void onGuiRender() override;
-    void onDataReload() override;
-
-private:
-
-    ComputeProgram::SharedPtr mpComputeProgram;
-    ComputeState::SharedPtr mpComputeState;
-    ComputeVars::SharedPtr mpComputeVars;
-    StructuredBuffer::SharedPtr mpLightBuffer;
-
-    GraphicsProgram::SharedPtr mpProgram;
-    GraphicsVars::SharedPtr mpProgramVars;
-    Model::SharedPtr mpModel;
-    Vao::SharedConstPtr mpVao;
-    uint32_t mIndexCount = 0;
-    Buffer::SharedPtr mpInvocationsBuffer;
-    StructuredBuffer::SharedPtr mpRWBuffer;
-    StructuredBuffer::SharedPtr mpAppendLightData;
-    TypedBuffer<vec3>::SharedPtr mpSurfaceColorBuffer;
-
-    bool mCountPixelShaderInvocations = false;
-
-    Camera::SharedPtr mpCamera;
-    ModelViewCameraController mCameraController;
-
-    struct Light
-    {
-        glm::vec3 worldDir = glm::vec3(0, -1, 0);
-        glm::vec3 intensity = glm::vec3(0.6f, 0.8f, 0.8f);
-    };
-
-    Light mLightData;
-
-    glm::vec3 mSurfaceColor = glm::vec3(0.36f,0.87f,0.52f);
-    Vao::SharedConstPtr getVao();
+    float3 vec3Val; // We're using 2 values. [0]: worldDir [1]: intensity
 };
+
+StructuredBuffer<LightCB> gLightIn;
+AppendStructuredBuffer<LightCB> gLightOut;
+
+[numthreads(1, 1, 1)]
+void main()
+{
+    uint numLights = 0;
+    uint stride;
+    gLightIn.GetDimensions(numLights, stride);
+
+    for (uint i = 0; i < numLights; i++)
+    {
+        gLightOut.Append(gLightIn[i]);
+    }
+}

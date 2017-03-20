@@ -47,7 +47,7 @@ void ShaderBuffersSample::onLoad()
     mpCamera = Camera::create();
 
     // create the program
-    mpProgram = GraphicsProgram::createFromFile("ShaderBuffers.vs", "ShaderBuffers.fs");
+    mpProgram = GraphicsProgram::createFromFile("ShaderBuffers.vs.hlsl", "ShaderBuffers.ps.hlsl");
 
     // Load the model
     mpModel = Model::createFromFile("teapot.obj", 0);
@@ -75,8 +75,10 @@ void ShaderBuffersSample::onLoad()
     uint32_t z = 0;
     mpInvocationsBuffer = Buffer::create(sizeof(uint32_t), Buffer::BindFlags::UnorderedAccess, Buffer::CpuAccess::Read, &z);
     mpProgramVars->setRawBuffer("gInvocationBuffer", mpInvocationsBuffer);
-    mpProgramVars->setTypedBuffer("surfaceColor", mpSurfaceColorBuffer);
-    mpProgramVars->setStructuredBuffer("gLight", StructuredBuffer::create(mpProgram, "gLight" , 2));
+    mpProgramVars->setTypedBuffer("gSurfaceColor", mpSurfaceColorBuffer);
+
+    mpRWBuffer = StructuredBuffer::create(mpProgram, "gRWBuffer", 4);
+    mpProgramVars->setStructuredBuffer("gRWBuffer", mpRWBuffer);
 
     // create pipeline cache
     RasterizerState::Desc rsDesc;
@@ -91,6 +93,17 @@ void ShaderBuffersSample::onLoad()
     mpDefaultPipelineState->setVao(mpVao);
     mpDefaultPipelineState->setProgram(mpProgram);
 
+    // Compute
+    mpComputeProgram = ComputeProgram::createFromFile("ShaderBuffers.cs.hlsl");
+    mpComputeState = ComputeState::create();
+    mpComputeState->setProgram(mpComputeProgram);
+
+    mpComputeVars = ComputeVars::create(mpComputeProgram->getActiveVersion()->getReflector());
+    mpComputeVars->setStructuredBuffer("gLightIn", StructuredBuffer::create(mpComputeProgram, "gLightIn", 2));
+
+    mpAppendLightData = StructuredBuffer::create(mpComputeProgram, "gLightOut", 2);
+    mpComputeVars->setStructuredBuffer("gLightOut", mpAppendLightData);
+
     init_tests();
 }
 
@@ -100,14 +113,37 @@ void ShaderBuffersSample::onFrameRender()
     mpRenderContext->clearFbo(mpDefaultFBO.get(), clearColor, 1.0f, 0, FboAttachmentType::All);
     mCameraController.update();
 
-    // Update uniform-buffers data
-    mpProgramVars["PerFrameCB"]["m.worldMat"] = glm::mat4();
-    glm::mat4 wvp = mpCamera->getViewProjMatrix();
-    mpProgramVars["PerFrameCB"]["m.wvpMat"] = wvp;
+    //
+    // Compute
+    //
 
-    mpProgramVars->getStructuredBuffer("gLight")[0]["vec3Val"] = mLightData.worldDir;
-    mpProgramVars->getStructuredBuffer("gLight")[1]["vec3Val"] = mLightData.intensity;
-    
+    mpRenderContext->clearUAV(mpAppendLightData->getUAV().get(), uvec4(0));
+    mpRenderContext->clearUAVCounter(mpAppendLightData, 0);
+
+    // Send lights to compute shader
+    mpComputeVars->getStructuredBuffer("gLightIn")[0]["vec3Val"] = mLightData.worldDir;
+    mpComputeVars->getStructuredBuffer("gLightIn")[1]["vec3Val"] = mLightData.intensity;
+    mpComputeVars->setStructuredBuffer("gLightOut", mpAppendLightData);
+
+    mpRenderContext->setComputeState(mpComputeState);
+    mpRenderContext->setComputeVars(mpComputeVars);
+
+    // Compute shader passes light data through an append buffer
+    mpRenderContext->dispatch(1, 1, 1);
+
+    //
+    // Render
+    //
+
+    // Bind compute output
+    mpProgramVars->setStructuredBuffer("gLight", mpAppendLightData);
+    mpRenderContext->setGraphicsState(mpDefaultPipelineState);
+
+    // Update uniform-buffers data
+    mpProgramVars["PerFrameCB"]["gWorldMat"] = glm::mat4();
+    glm::mat4 wvp = mpCamera->getViewProjMatrix();
+    mpProgramVars["PerFrameCB"]["gWvpMat"] = wvp;
+
     mpSurfaceColorBuffer[0] = mSurfaceColor;
     mpSurfaceColorBuffer->uploadToGPU();
 
@@ -115,15 +151,28 @@ void ShaderBuffersSample::onFrameRender()
     mpRenderContext->setGraphicsVars(mpProgramVars);
     mpRenderContext->drawIndexed(mIndexCount, 0, 0);
 
-    std::string msg = getFpsMsg() + '\n';
+    // Read UAV counter from append buffer
+    uint32_t* pCounter = (uint32_t*)mpAppendLightData->getUAVCounter()->map(Buffer::MapType::Read);
+    std::string msg = "Light Data append buffer count: " + std::to_string(*pCounter);
+    renderText(msg, vec2(600, 80));
+    mpAppendLightData->getUAVCounter()->unmap();
+
     if(mCountPixelShaderInvocations)
     {
+        // RWByteAddressBuffer
         uint32_t* pData = (uint32_t*)mpInvocationsBuffer->map(Buffer::MapType::Read);
         std::string msg = "PS was invoked " + std::to_string(*pData) + " times";
-        mpInvocationsBuffer->unmap();
         renderText(msg, vec2(600, 100));
+        mpInvocationsBuffer->unmap();
+
+        // RWStructuredBuffer UAV Counter
+        pData = (uint32_t*)mpRWBuffer->getUAVCounter()->map(Buffer::MapType::Read);
+        msg = "UAV Counter counted " + std::to_string(*pData) + " times";
+        renderText(msg, vec2(600, 120));
+        mpRWBuffer->getUAVCounter()->unmap();
 
         mpRenderContext->clearUAV(mpInvocationsBuffer->getUAV().get(), uvec4(0));
+        mpRenderContext->clearUAVCounter(mpRWBuffer, 0);
     }
 
     run_test();

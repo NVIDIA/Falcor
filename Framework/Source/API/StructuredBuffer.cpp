@@ -26,8 +26,8 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 #include "Framework.h"
-#include "StructuredBuffer.h"
-#include "Buffer.h"
+#include "API/StructuredBuffer.h"
+#include "API/Buffer.h"
 
 namespace Falcor
 {
@@ -38,9 +38,15 @@ namespace Falcor
 
 #define verify_element_index() if(elementIndex >= mElementCount) {logWarning(std::string(__FUNCTION__) + ": elementIndex is out-of-bound. Ignoring call."); return;}
 
-    StructuredBuffer::StructuredBuffer(const ProgramReflection::BufferReflection::SharedConstPtr& pReflector, size_t elementCount, Resource::BindFlags bindFlags) :
-        VariablesBuffer(pReflector, pReflector->getRequiredSize(), elementCount, bindFlags, Buffer::CpuAccess::None)
-        {}
+    StructuredBuffer::StructuredBuffer(const ProgramReflection::BufferReflection::SharedConstPtr& pReflector, size_t elementCount, Resource::BindFlags bindFlags)
+        : VariablesBuffer(pReflector, pReflector->getRequiredSize(), elementCount, bindFlags, Buffer::CpuAccess::None)
+    {
+        if (hasUAVCounter())
+        {
+            static const uint32_t zero = 0;
+            mpUAVCounter = Buffer::create(sizeof(uint32_t), Resource::BindFlags::UnorderedAccess, Buffer::CpuAccess::None, &zero);
+        }
+    }
 
     StructuredBuffer::SharedPtr StructuredBuffer::create(const ProgramReflection::BufferReflection::SharedConstPtr& pReflection, size_t elementCount, Resource::BindFlags bindFlags)
     {
@@ -64,7 +70,6 @@ namespace Falcor
         return nullptr;
     }
 
-
     void StructuredBuffer::readFromGPU(size_t offset, size_t size) const
     {
         if(size == -1)
@@ -81,6 +86,11 @@ namespace Falcor
             mGpuCopyDirty = false;
             readData((void*)mData.data(), offset, size);
         }
+    }
+
+    bool StructuredBuffer::hasUAVCounter() const
+    {
+        return getBufferReflector()->getStructuredType() != ProgramReflection::BufferReflection::StructuredType::Default;
     }
 
     StructuredBuffer::~StructuredBuffer() = default;

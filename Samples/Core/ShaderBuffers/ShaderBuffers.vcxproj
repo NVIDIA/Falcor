@@ -22,8 +22,13 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <None Include="Data\ShaderBuffers.fs" />
-    <None Include="Data\ShaderBuffers.vs" />
+    <None Include="Data\ShaderBuffers.ps.hlsl" />
+    <None Include="Data\ShaderBuffers.vs.hlsl" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Data\ShaderBuffers.cs.hlsl">
+      <FileType>Document</FileType>
+    </None>
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{E9189681-F552-4811-9B9C-C88E63D21363}</ProjectGuid>
