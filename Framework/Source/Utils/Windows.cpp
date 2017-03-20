@@ -284,13 +284,13 @@ namespace Falcor
         return false;
     }
 
-    void setWindowIcon(const std::string& iconFile, const Window* pWindow)
+    void setWindowIcon(const std::string& iconFile, Window::ApiHandle windowHandle)
     {
         std::string fullpath;
         if(findFileInDataDirectories(iconFile, fullpath))
         {
             HANDLE hIcon = LoadImageA(GetModuleHandle(NULL), fullpath.c_str(), IMAGE_ICON, 0, 0, LR_DEFAULTSIZE | LR_LOADFROMFILE);
-            HWND hWnd = pWindow ? pWindow->getApiHandle() : GetActiveWindow();
+            HWND hWnd = windowHandle ? windowHandle : GetActiveWindow();
             SendMessage(hWnd, WM_SETICON, ICON_BIG, (LPARAM)hIcon);
         }
         else

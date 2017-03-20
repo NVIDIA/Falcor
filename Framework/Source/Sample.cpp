@@ -34,6 +34,7 @@
 #include "Utils/OS.h"
 #include "API/FBO.h"
 #include "VR\OpenVR\VRSystem.h"
+#include "Utils\ProgressBar.h"
 
 namespace Falcor
 {
@@ -155,11 +156,25 @@ namespace Falcor
         Logger::init();
         Logger::showBoxOnError(config.showMessageBoxOnError);
 
-        mpWindow = Window::create(config.windowDesc, this);
-
-        if(mpWindow == nullptr)
+        // Show the progress bar
+        ProgressBar::MessageList msgList =
         {
-			logError("Failed to create device and window");
+            { "Initializing Falcor" },
+            { "Takes a while, doesn't it?" },
+            { "Don't get too bored now" },
+            { "Getting there" },
+            { "Loading. Seriously, loading" },
+            { "Are we there yet?"},
+            { "NI!"}
+        };
+
+        ProgressBar::SharedPtr pBar = ProgressBar::create(msgList);
+
+        // Create the window
+        mpWindow = Window::create(config.windowDesc, this);
+        if (mpWindow == nullptr)
+        {
+            logError("Failed to create device and window");
             return;
         }
 
@@ -171,7 +186,7 @@ namespace Falcor
 		}
 
         // Set the icon
-        setWindowIcon("Framework\\Nvidia.ico", mpWindow.get());
+        setWindowIcon("Framework\\Nvidia.ico", mpWindow->getApiHandle());
 
         // Get the default objects before calling onLoad()
         mpDefaultFBO = gpDevice->getSwapChainFbo();
@@ -193,6 +208,7 @@ namespace Falcor
         // Load and run
         mArgList.parseCommandLine(GetCommandLineA());
         onLoad();
+        pBar = nullptr;
         mpWindow->msgLoop();
 
         onShutdown();

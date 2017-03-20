@@ -30,7 +30,6 @@
 #include <stdint.h>
 #include <memory>
 #include "glm/glm.hpp"
-#include "Utils/OS.h"
 #include <iostream>
 #include "Utils/Logger.h"
 
@@ -144,6 +143,8 @@ namespace Falcor
 #else
 #error Undefined falcor backend. Make sure that a backend is selected in "FalcorConfig.h"
 #endif
+
+#include "Utils/OS.h"
 
 #if defined(FALCOR_D3D12) || defined(FALCOR_VULKAN)
 #define FALCOR_LOW_LEVEL_API
