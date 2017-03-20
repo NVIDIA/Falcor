@@ -54,16 +54,15 @@ namespace Falcor
         };
 
         /** Create an SSAO pass object sampling with a hemisphere kernel by default.
-            \param[in] aoMapWidth Width of the AO map texture
-            \param[in] aoMapHeight Height of the AO map texture
+            \param[in] aoMapSize Width and height of the AO map texture
             \param[in] kernelSize Number of samples in the AO kernel
             \param[in] blurSize Kernel size used for blurring the AO map
-            \param[in] noiseWidth Width of the noise texture
-            \param[in] noiseHeight Height of the noise texture
+            \param[in] blurSigma Sigma of the blur kernel
+            \param[in] noiseSize Width and height of the noise texture
             \param[in] distribution Distribution of sample points when using a hemisphere kernel.
             \return SSAO pass object.
         */
-        static UniquePtr create(uint32_t aoMapWidth, uint32_t aoMapHeight, uint32_t kernelSize = 16, uint32_t blurSize = 5, uint32_t noiseWidth = 16, uint32_t noiseHeight = 16, SampleDistribution distribution = SampleDistribution::UniformHammersley);
+        static UniquePtr create(const uvec2& aoMapSize, uint32_t kernelSize = 16, uint32_t blurSize = 5, float blurSigma = 2.0f, const uvec2& noiseSize = uvec2(16), SampleDistribution distribution = SampleDistribution::UniformHammersley);
 
         /** Render GUI for tweaking SSAO settings
         */
@@ -78,10 +77,13 @@ namespace Falcor
         */
         Texture::SharedPtr generateAOMap(RenderContext* pContext, const Camera* pCamera, const Texture::SharedPtr& pDepthTexture, const Texture::SharedPtr& pNormalTexture = nullptr);
 
-        /** Recreates the Gaussian blur pass with the desired blur kernel size.
-            \param[in] size Blur kernel size
+        /** Sets blur kernel size
         */
-        void setBlurKernelSize(uint32_t size) { mpBlur = GaussianBlur::create(size); }
+        void setBlurKernelWidth(uint32_t width) { mpBlur->setKernelWidth(width); }
+
+        /** Set blur sigma value
+        */
+        void setBlurSigma(float sigma) { mpBlur->setSigma(sigma); }
 
         /** Recreate sampling kernel
             \param[in] kernelSize Number of samples
@@ -97,7 +99,7 @@ namespace Falcor
 
     private:
 
-        SSAO(uint32_t aoMapWidth, uint32_t aoMapHeight, uint32_t kernelSize, uint32_t blurSize, uint32_t noiseWidth, uint32_t noiseHeight, SampleDistribution distribution);
+        SSAO(const uvec2& aoMapSize, uint32_t kernelSize, uint32_t blurSize, float blurSigma, const uvec2& noiseSize, SampleDistribution distribution);
 
         void upload();
 

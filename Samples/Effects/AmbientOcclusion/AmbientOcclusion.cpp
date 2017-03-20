@@ -96,7 +96,7 @@ void AmbientOcclusion::onLoad()
     mpCopyVars = GraphicsVars::create(mpCopyPass->getProgram()->getActiveVersion()->getReflector());
 
     // Effects
-    mpSSAO = SSAO::create(1024, 1024);
+    mpSSAO = SSAO::create(uvec2(1024));
 
     // Model
     mpModel = Model::createFromFile("ogre/bs_smile.obj");

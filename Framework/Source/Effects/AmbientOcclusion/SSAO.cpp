@@ -50,9 +50,9 @@ namespace Falcor
         { (int32_t)SampleDistribution::CosineHammersley, "Cosine Hammersley" }
     };
 
-    SSAO::UniquePtr SSAO::create(uint32_t aoMapWidth, uint32_t aoMapHeight, uint32_t kernelSize, uint32_t blurSize, uint32_t noiseWidth, uint32_t noiseHeight, SampleDistribution distribution)
+    SSAO::UniquePtr SSAO::create(const uvec2& aoMapSize, uint32_t kernelSize, uint32_t blurSize, float blurSigma, const uvec2& noiseSize, SampleDistribution distribution)
     {
-        return UniquePtr(new SSAO(aoMapWidth, aoMapHeight, kernelSize, blurSize, noiseWidth, noiseHeight, distribution));
+        return UniquePtr(new SSAO(aoMapSize, kernelSize, blurSize, blurSigma, noiseSize, distribution));
     }
 
     void SSAO::renderGui(Gui* pGui)
@@ -128,25 +128,25 @@ namespace Falcor
         return mpAOFbo->getColorTexture(0);
     }
 
-    SSAO::SSAO(uint32_t aoMapWidth, uint32_t aoMapHeight, uint32_t kernelSize, uint32_t blurSize, uint32_t noiseWidth, uint32_t noiseHeight, SampleDistribution distribution)
+    SSAO::SSAO(const uvec2& aoMapSize, uint32_t kernelSize, uint32_t blurSize, float blurSigma, const uvec2& noiseSize, SampleDistribution distribution)
     {
         Fbo::Desc fboDesc;
         fboDesc.setColorTarget(0, Falcor::ResourceFormat::RGBA8Unorm);
-        mpAOFbo = FboHelper::create2D(aoMapWidth, aoMapHeight, fboDesc);
+        mpAOFbo = FboHelper::create2D(aoMapSize.x, aoMapSize.y, fboDesc);
 
         mKernelShape = KernelShape::Hemisphere;
         initShader();
 
         mpSSAOState = GraphicsState::create();
 
-        mpBlur = GaussianBlur::create();
+        mpBlur = GaussianBlur::create(blurSize, blurSigma);
 
         Sampler::Desc samplerDesc;
         samplerDesc.setFilterMode(Sampler::Filter::Point, Sampler::Filter::Point, Sampler::Filter::Point).setAddressingMode(Sampler::AddressMode::Wrap, Sampler::AddressMode::Wrap, Sampler::AddressMode::Wrap);
         mpPointSampler = Sampler::create(samplerDesc);
 
         setKernel(kernelSize, distribution);
-        setNoiseTexture(noiseWidth, noiseHeight);
+        setNoiseTexture(noiseSize.x, noiseSize.y);
     }
 
     void SSAO::upload()

@@ -47,7 +47,7 @@ void FeatureDemo::initShadowPass()
 
 void FeatureDemo::initSSAO()
 {
-    mSSAO.pSSAO = SSAO::create(1024, 1024);
+    mSSAO.pSSAO = SSAO::create(uvec2(1024));
     mSSAO.pApplySSAOPass = FullScreenPass::create("ApplyAO.ps.hlsl");
     mSSAO.pVars = GraphicsVars::create(mSSAO.pApplySSAOPass->getProgram()->getActiveVersion()->getReflector());
 
