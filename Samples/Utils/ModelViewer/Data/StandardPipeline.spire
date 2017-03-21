@@ -40,6 +40,8 @@ module PerFrameCB_T
 {
 //    LightData gDirLight;
 //    LightData gPointLight;
-    param uint gConstColor;
+
+//    param uint gConstColor;
+
     param vec3 gAmbient;
 }

@@ -88,8 +88,9 @@ namespace Falcor
             { #SPIRE_NAME, ProgramReflection::Variable::Type::FALCOR_NAME }
 
             ENTRY(float,    Float),
-            ENTRY(uint,     Uint),
             ENTRY(vec3,     Float3),
+            ENTRY(uint,     Uint),
+            ENTRY(uvec3,    Uint3),
 
         #undef ENTRY
 
