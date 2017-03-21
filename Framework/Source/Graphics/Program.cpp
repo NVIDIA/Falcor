@@ -105,6 +105,8 @@ namespace Falcor
 
         spGetDiagnosticOutput(sink, &result[0], size);
 
+        spClearDiagnosticSink(sink);
+
         return result;
     }
 
@@ -175,22 +177,21 @@ namespace Falcor
 
 
             // Use Spire to compile the entry point (shader)
-			SpireDiagnosticSink * sink = spCreateDiagnosticSink(spireContext);
-
             SpireShader* spireShader = spCreateShaderFromSource(
                 spireContext,
                 code.c_str(),
-				sink);
+                spireSink);
 
-			if (spDiagnosticSinkHasAnyErrors(sink))
-			{
-				int bufSize = spGetDiagnosticOutput(sink, nullptr, 0);
-				std::vector<char> buffer;
-				buffer.resize(bufSize);
-				spGetDiagnosticOutput(sink, buffer.data(), bufSize);
-				logError(buffer.data());
-			}
-			spDestroyDiagnosticSink(sink);
+            // check for and report errors
+            //
+            // TODO: show a dialog box and allow user to iterat eon fixing errors
+            if( spDiagnosticSinkHasAnyErrors(spireSink) )
+            {
+                std::string err = std::string("Errors compiling ") + name + ":\n"
+                    + getSpireErrors(spireSink);
+                logError(err);
+                return;
+            }
 
             mSpireShader = spireShader;
         }
