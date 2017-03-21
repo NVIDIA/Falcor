@@ -55,6 +55,7 @@ radiance emitted from the light souce, which is *received* at the shading point.
 struct LightAttribs
 {
     vec3	L;				///< Normalized direction to the light at shading hit
+    float   shadowFactor;   ///< Shadow factor
     vec3	lightIntensity;	///< Radiance of the emitted light at shading hit
 
     vec3    P;              ///< Sampled point on the light source
@@ -394,14 +395,14 @@ void _fn evalMaterialLayer(in const int iLayer, in const ShadingAttribs attr, in
     switch(desc.type)
     {
     case MatLambert: /* Diffuse BRDF */
-        value = evalDiffuseLayer(values, lAttr.lightIntensity, lAttr.L, attr.N, result);
+        value = evalDiffuseLayer(values, lAttr.lightIntensity, lAttr.L, attr.N, result) * lAttr.shadowFactor;
         break;
     case MatEmissive:
         value = evalEmissiveLayer(values, result);
         break;
     case MatConductor:
     case MatDielectric:
-        value = evalSpecularLayer(desc, values, attr, lAttr, result);
+        value = evalSpecularLayer(desc, values, attr, lAttr, result) * lAttr.shadowFactor;
         break;
     };
 
@@ -462,6 +463,21 @@ void _fn evalMaterial(
     result.specularAlbedo = passResult.specularAlbedo;
 }
 
+void _fn evalMaterial(
+    in const ShadingAttribs shAttr,
+    in const LightData light,
+    float shadowFactor,
+    _ref(ShadingOutput) result,
+    in const bool initializeShadingOut DEFAULTS(false))
+{
+    /* Prepare lighting attributes */
+    LightAttribs LAttr;
+    prepareLightAttribs(light, shAttr, shadowFactor, LAttr);
+
+    /* Evaluate material with lighting attributes */
+    evalMaterial(shAttr, LAttr, result, initializeShadingOut);
+}
+
 /**
 Another overload of material evaluation function, which prepares light attributes internally.
 */
@@ -471,12 +487,7 @@ void _fn evalMaterial(
     _ref(ShadingOutput) result,
     in const bool initializeShadingOut DEFAULTS(false))
 {
-    /* Prepare lighting attributes */
-    LightAttribs LAttr;
-    prepareLightAttribs(light, shAttr, LAttr);
-
-    /* Evaluate material with lighting attributes */
-    evalMaterial(shAttr, LAttr, result, initializeShadingOut);
+    evalMaterial(shAttr, light, 1, result, initializeShadingOut);
 }
 
 /*******************************************************************

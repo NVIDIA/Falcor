@@ -71,15 +71,15 @@ PsOut main(MainVsOut vOut)
     float envMapFactor = 1;
 
 #foreach p in _LIGHT_SOURCES
-    evalMaterial(shAttr, $(p), result, $(_valIndex) == 0);
+    float shadowFactor = 1;
 #ifdef _ENABLE_SHADOWS
     if($(_valIndex) == 0)
     {
-        float shadowFactor = calcShadowFactor(gCsmData, vOut.shadowsDepthC, shAttr.P, vOut.vsData.posH.xy/vOut.vsData.posH.w);
-        result.finalValue *= shadowFactor;
+        shadowFactor = calcShadowFactor(gCsmData, vOut.shadowsDepthC, shAttr.P, vOut.vsData.posH.xy/vOut.vsData.posH.w);
         envMapFactor -= 1 - shadowFactor;
     }
 #endif
+    evalMaterial(shAttr, $(p), shadowFactor, result, $(_valIndex) == 0);
 #endforeach
 
     finalColor = vec4(result.finalValue, 1.f);

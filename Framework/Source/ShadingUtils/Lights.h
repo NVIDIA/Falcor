@@ -72,12 +72,14 @@ inline vec3 _fn getLightRadiance(in const LightData Light, in const vec3 shading
 	The outputs are an incident radiance towards the shading point 
 	and the direction from the shading point towards the light source.
 */
-inline void _fn prepareLightAttribs(in const LightData Light, in const ShadingAttribs ShAttr, _ref(LightAttribs) LightAttr)
+inline void _fn prepareLightAttribs(in const LightData Light, in const ShadingAttribs ShAttr, float shadowFactor, _ref(LightAttribs) LightAttr)
 {
 	/* Evaluate direction to the light */
     LightAttr.P = getLightPos(Light, ShAttr.P);
     LightAttr.pdf = 0;
     LightAttr.N = 0;
+    LightAttr.shadowFactor = shadowFactor;
+
     [unroll]
     for(uint i = 0 ; i < 4 ; i++)
     {
