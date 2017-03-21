@@ -579,8 +579,12 @@ def cleanScreenShots(ssDir):
             os.remove(ssDir + '\\' + s)
 
 def updateRepo():
-    subprocess.call(['git', 'pull', 'origin', gPullBranch])
+    subprocess.call(['git', 'fetch', 'origin', gPullBranch])
     subprocess.call(['git', 'checkout', 'origin/' + gPullBranch])
+    os.chdir('../')
+    subprocess.call(['git', 'reset', '--hard'])
+    subprocess.call(['git', 'clean', '-fd'])
+    os.chdir('test')
 
 def sendFatalFailEmail(failMsg):
     subject = '[FATAL TESTING ERROR] '
@@ -616,6 +620,7 @@ def main():
     global gResultsDir
     global gLowLevelResultList
     global gReferenceDir
+    global gPullBranch
     parser = argparse.ArgumentParser()
     parser.add_argument('-nb', '--nobuild', action='store_true', help='run without rebuilding Falcor and test apps')
     parser.add_argument('-np', '--nopull', action='store_true', help='run without pulling TestingFramework')
@@ -623,6 +628,7 @@ def main():
     parser.add_argument('-ss', '--showsummary', action='store_true', help='opens testing summary upon completion')
     parser.add_argument('-gr', '--generatereference', action='store_true', help='generates reference testing logs and images')
     parser.add_argument('-ref', '--referencedir', action='store', help='Allows user to specify an existing reference dir')
+    parser.add_argument('-branch', '--pullbranch', action='store', help='Allows user to specify the branch to pull')
     args = parser.parse_args()
 
     if args.referencedir:
@@ -631,6 +637,9 @@ def main():
         else:
             print 'Fatal Error, Failed to find user specified reference dir: ' + args.referencedir
             sys.exit(1)
+
+    if args.pullbranch:
+        gPullBranch = args.pullbranch
     
     if args.generatereference:
         if os.path.isdir(gReferenceDir):
@@ -660,8 +669,9 @@ def main():
             time.sleep(5)
             os.makedirs(gResultsDir)
         except:
-            sendFatalFailEmail('Fatal Error, Failed to create test result folder')
-            sys.exit(1)
+            if not args.noemail:
+                sendFatalFailEmail('Fatal Error, Failed to create test result folder')
+                sys.exit(1)
  
     if not args.nobuild:
         callBatchFile(['clean', 'FalcorTest.sln', 'debugd3d12'])
