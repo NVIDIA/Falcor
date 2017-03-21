@@ -177,12 +177,7 @@ namespace Falcor
         samplerDesc.setLodParams(-100.f, 100.f, 0.f);
 
         createVsmSampleState(1);
-        createGaussianBlurTech();
-    }
-
-    void CascadedShadowMaps::createGaussianBlurTech()
-    {
-        mpGaussianBlur = GaussianBlur::create(mCsmData.sampleKernelSize);
+        mpGaussianBlur = GaussianBlur::create();
     }
 
     CascadedShadowMaps::UniquePtr CascadedShadowMaps::create(uint32_t mapWidth, uint32_t mapHeight, Light::SharedConstPtr pLight, Scene::SharedConstPtr pScene, uint32_t cascadeCount, ResourceFormat shadowMapFormat)
@@ -292,15 +287,7 @@ namespace Falcor
             uint32_t filterIndex = static_cast<uint32_t>(mCsmData.filterMode);
             if (pGui->addDropdown("Filter Mode", kFilterList, filterIndex))
             {
-                mCsmData.filterMode = filterIndex;
-                createShadowPassResources(mShadowPass.pFbo->getWidth(), mShadowPass.pFbo->getHeight());
-            }
-
-            //Kernal size
-            i32 newKernalSize = mCsmData.sampleKernelSize;
-            if (pGui->addIntVar("Max Kernel Size", newKernalSize))
-            {
-                onSetKernalSize(newKernalSize);
+                setFilterMode(filterIndex);
             }
 
             //partition mode
@@ -338,6 +325,15 @@ namespace Falcor
                 pGui->endGroup();
             }
 
+            if (mCsmData.filterMode == CsmFilterFixedPcf || mCsmData.filterMode == CsmFilterStochasticPcf)
+            {
+                i32 kernelWidth = mCsmData.pcfKernelWidth;
+                if (pGui->addIntVar("Kernel Width", kernelWidth, 1, 15, 2))
+                {
+                    setPcfKernelWidth(kernelWidth);
+                }
+            }
+
             //VSM/ESM
             if (mCsmData.filterMode == CsmFilterVsm || mCsmData.filterMode == CsmFilterEvsm2 || mCsmData.filterMode == CsmFilterEvsm4)
             {
@@ -361,6 +357,7 @@ namespace Falcor
                         pGui->endGroup();
                     }
 
+                    mpGaussianBlur->renderUI(pGui, "Blur");
                     pGui->endGroup();
                 }
             }
@@ -683,21 +680,9 @@ namespace Falcor
         return mShadowPass.pFbo->getDepthStencilTexture();
     }
 
-    void CascadedShadowMaps::onSetFilterMode(uint32_t newFilterMode)
+    void CascadedShadowMaps::setFilterMode(uint32_t newFilterMode)
     {
         mCsmData.filterMode = newFilterMode;
         createShadowPassResources(mShadowPass.pFbo->getWidth(), mShadowPass.pFbo->getHeight());
     }
-
-    void CascadedShadowMaps::onSetKernalSize(u32 newSize)
-    {
-        int32_t delta = newSize - mCsmData.sampleKernelSize;
-        // Make sure we always step in 2
-        int32_t offset = delta & 1;
-        delta = delta + (delta < 0 ? -offset : offset);
-        mCsmData.sampleKernelSize += delta;
-        mCsmData.sampleKernelSize = min(11, max(1, mCsmData.sampleKernelSize));
-        createGaussianBlurTech();
-    }
-
 }
