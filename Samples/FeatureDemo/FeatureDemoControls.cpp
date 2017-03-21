@@ -42,6 +42,7 @@ void FeatureDemo::initControls()
     mControls[ControlID::DisableSpecAA] = { false, "_MS_DISABLE_ROUGHNESS_FILTERING" };
     mControls[ControlID::EnableShadows] = { true, "_ENABLE_SHADOWS" };
     mControls[ControlID::EnableReflections] = { true, "_ENABLE_REFLECTIONS" };
+    mControls[ControlID::EnableSSAO] = { true, "" };
 
     for (uint32_t i = 0 ; i < ControlID::Count ; i++)
     {
@@ -52,13 +53,16 @@ void FeatureDemo::initControls()
 void FeatureDemo::applyLightingProgramControl(ControlID controlId)
 {
     const ProgramControl control = mControls[controlId];
-    if (control.enabled)
+    if(control.define.size())
     {
-        mLightingPass.pProgram->addDefine(control.define, control.value);
-    }
-    else
-    {
-        mLightingPass.pProgram->removeDefine(control.define);
+        if (control.enabled)
+        {
+            mLightingPass.pProgram->addDefine(control.define, control.value);
+        }
+        else
+        {
+            mLightingPass.pProgram->removeDefine(control.define);
+        }
     }
 }
 
