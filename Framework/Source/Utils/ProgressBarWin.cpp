@@ -74,9 +74,9 @@ namespace Falcor
         }
         else
         {
-            SetWindowTextA(pData->hwnd, "Falcor");
+            SetWindowTextA(pData->hwnd, "Loading...");
         }
-
+        SetForegroundWindow(pData->hwnd);
         // Execute
         int j = 0;
         while (pData->running)
@@ -108,6 +108,16 @@ namespace Falcor
         pBar->mpData->thread = std::thread(progressBarThread, pBar->mpData, list);
 
         return pBar;
+    }
+
+    ProgressBar::SharedPtr ProgressBar::create(const char* pMsg)
+    {
+        MessageList list;
+        if (pMsg)
+        {
+            list.push_back(pMsg);
+        }
+        return create(list);
     }
 }
 

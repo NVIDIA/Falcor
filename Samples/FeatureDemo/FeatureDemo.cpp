@@ -97,6 +97,7 @@ void FeatureDemo::initScene(Scene::SharedPtr pScene)
 
 void FeatureDemo::loadModel(const std::string& filename)
 {
+    ProgressBar::SharedPtr pBar = ProgressBar::create("Loading Model");
     Model::SharedPtr pModel = Model::createFromFile(filename, Model::GenerateTangentSpace);
     if (!pModel) return;
     pModel->bindSamplerToMaterials(mSkyBox.pEffect->getSampler());
@@ -108,6 +109,7 @@ void FeatureDemo::loadModel(const std::string& filename)
 
 void FeatureDemo::loadScene(const std::string& filename)
 {
+    ProgressBar::SharedPtr pBar = ProgressBar::create("Loading Scene");
     Scene::SharedPtr pScene = Scene::loadFromFile(filename, Model::GenerateTangentSpace);
     initScene(pScene);
 }

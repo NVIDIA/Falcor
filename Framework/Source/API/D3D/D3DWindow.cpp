@@ -405,7 +405,6 @@ namespace Falcor
     {
         // Show the window
         ShowWindow(mApiHandle, SW_SHOWNORMAL);
-        SetWindowPos(mApiHandle, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOREPOSITION | SWP_NOSIZE);
         SetForegroundWindow(mApiHandle);
 
         MSG msg;

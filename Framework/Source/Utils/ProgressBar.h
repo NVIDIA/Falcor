@@ -40,6 +40,7 @@ namespace Falcor
         using MessageList = std::vector<std::string>;
 
         static SharedPtr create(const MessageList& list);
+        static SharedPtr create(const char* pMsg = nullptr);
         ~ProgressBar();
 
     private:
