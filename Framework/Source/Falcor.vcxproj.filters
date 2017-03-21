@@ -471,6 +471,9 @@
     <ClCompile Include="Effects\AmbientOcclusion\SSAO.cpp">
       <Filter>Effects\AmbientOcclusion</Filter>
     </ClCompile>
+    <ClCompile Include="Utils\SpireSupport.cpp">
+      <Filter>Utils</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Graphics\Model\Animation.h">
@@ -2098,6 +2101,7 @@
     <None Include="Data\Framework\Shaders\FullScreenPass.vs.hlsl">
       <Filter>Data\Framework\Shaders</Filter>
     </None>
+    <None Include="Data\Effects\SSAO.ps.hlsl" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Data\Framework\Shaders\SceneEditorPS.hlsl">
@@ -2108,9 +2112,6 @@
     </FxCompile>
     <FxCompile Include="Data\Framework\Shaders\Blit.hlsl">
       <Filter>Data\Framework\Shaders</Filter>
-    </FxCompile>
-    <FxCompile Include="Data\Effects\SSAO.ps.hlsl">
-      <Filter>Data\Effects</Filter>
     </FxCompile>
   </ItemGroup>
 </Project>

@@ -54,4 +54,20 @@ namespace Falcor
         pProg->init(vertexShader, fragmentShader, geometryShader, hullShader, domainShader, programDefines, false);
         return pProg;
     }
+
+    GraphicsProgram::SharedPtr GraphicsProgram::createFromSpireFile(const std::string& path)
+    {
+        SharedPtr pProg = SharedPtr(new GraphicsProgram);
+        pProg->initFromSpire(path, true);
+        return pProg;
+    }
+
+    GraphicsProgram::SharedPtr GraphicsProgram::createFromSpireString(const std::string& code)
+    {
+        SharedPtr pProg = SharedPtr(new GraphicsProgram);
+        pProg->initFromSpire(code, false);
+        return pProg;
+    }
+
+
 }

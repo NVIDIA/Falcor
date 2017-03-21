@@ -223,7 +223,7 @@ void ModelViewer::renderModelUI()
 void ModelViewer::onLoad()
 {
     mpCamera = Camera::create();
-    mpProgram = GraphicsProgram::createFromFile("", "ModelViewer.ps.hlsl");
+    mpProgram = GraphicsProgram::createFromSpireFile("ModelViewer.spire");
 
     // create rasterizer state
     RasterizerState::Desc wireframeDesc;

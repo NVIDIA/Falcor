@@ -31,6 +31,11 @@
 #include <vector>
 #include "API/ProgramVersion.h"
 
+// Forward-declare requirements from Spire
+struct SpireCompilationContext;
+struct SpireDiagnosticSink;
+struct SpireShader;
+
 namespace Falcor
 {
     class Shader;
@@ -91,6 +96,7 @@ namespace Falcor
         Program();
         void init(const std::string& vs, const std::string& fs, const std::string& gs, const std::string& hs, const std::string& ds, const DefineList& programDefines, bool createdFromFile);
         void init(const std::string& cs, const DefineList& programDefines, bool createdFromFile);
+        void initFromSpire(const std::string& shader, bool createdFromFile);
 
         bool link() const;
         std::string mShaderStrings[kShaderCount]; // Either a filename or a string, depending on the value of mCreatedFromFile
@@ -108,6 +114,12 @@ namespace Falcor
         bool mCreatedFromFile = false;
         using string_time_map = std::unordered_map<std::string, time_t>;
         mutable string_time_map mFileTimeMap;
+
+        // State related to Spire-based shaders
+        bool mIsSpire = false;
+        SpireCompilationContext* mSpireContext = nullptr;
+        SpireShader* mSpireShader = nullptr;
+        SpireDiagnosticSink* mSpireSink = nullptr;
 
         bool checkIfFilesChanged();
         void reset();

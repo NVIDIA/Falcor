@@ -38,6 +38,13 @@ namespace Falcor
         return pReflection->init(pProgramVersion, log) ? pReflection : nullptr;
     }
 
+    ProgramReflection::SharedPtr ProgramReflection::createFromSpire(SpireProgramReflection* pSpireReflection, std::string& log)
+    {
+        SharedPtr pReflection = SharedPtr(new ProgramReflection);
+        return pReflection->initFromSpire(pSpireReflection, log) ? pReflection : nullptr;
+    }
+
+
     ProgramReflection::BindLocation ProgramReflection::getBufferBinding(const std::string& name) const
     {
         // Names are unique regardless of buffer type. Search in each map
@@ -61,6 +68,12 @@ namespace Falcor
         b = b && reflectVertexAttributes(pProgVer, log);
         b = b && reflectFragmentOutputs(pProgVer, log);
         return b;
+    }
+
+    bool ProgramReflection::initFromSpire(SpireProgramReflection* pSpireReflection, std::string& log)
+    {
+        // TODO: actually load reflection data from spire representation...
+        return true;
     }
 
     const ProgramReflection::Variable* ProgramReflection::BufferReflection::getVariableData(const std::string& name, size_t& offset, bool allowNonIndexedArray) const

@@ -40,6 +40,8 @@
 #include "API/RenderContext.h"
 #include "Utils/StringUtils.h"
 
+#include "Externals/Spire/Spire.h"
+
 namespace Falcor
 {
     std::vector<Program*> Program::sPrograms;
@@ -94,12 +96,59 @@ namespace Falcor
         mDefineList = programDefines;
     }
 
+    void Program::initFromSpire(const std::string& shader, bool createdFromFile)
+    {
+        mCreatedFromFile = createdFromFile;
+        mIsSpire = true;
+
+        SpireCompilationContext* spireContext = spCreateCompilationContext(nullptr);
+        spSetCodeGenTarget(spireContext, SPIRE_HLSL);
+
+        mSpireContext = spireContext;
+
+        // load the code
+        // TODO: loop so that the user can fix errors and retry
+        {
+            std::string name;
+            std::string code;
+            if (createdFromFile)
+            {
+                 std::string fullpath;
+                if (!findFileInDataDirectories(shader, fullpath))
+                {
+                    std::string err = std::string("Can't find shader file ") + shader;
+                    logError(err);
+                    return;
+                }
+
+                name = shader;
+                readFileToString(fullpath, code);
+            }
+            else
+            {
+                name = "shader";
+                code = shader;
+            }
+
+
+            // Use Spire to compile the entry point (shader)
+
+            SpireShader* spireShader = spCreateShaderFromSource(
+                spireContext,
+                code.c_str());
+
+            // TODO: check for and report errors!
+
+            mSpireShader = spireShader;
+        }
+    }
+
     void Program::addDefine(const std::string& name, const std::string& value)
     {
         // Make sure that it doesn't exist already
-        if(mDefineList.find(name) != mDefineList.end())
+        if (mDefineList.find(name) != mDefineList.end())
         {
-            if(mDefineList[name] == value)
+            if (mDefineList[name] == value)
             {
                 // Same define
                 return;
@@ -111,7 +160,7 @@ namespace Falcor
 
     void Program::removeDefine(const std::string& name)
     {
-        if(mDefineList.find(name) != mDefineList.end())
+        if (mDefineList.find(name) != mDefineList.end())
         {
             mLinkRequired = true;
             mDefineList.erase(name);
@@ -120,31 +169,31 @@ namespace Falcor
 
     bool Program::checkIfFilesChanged()
     {
-        if(mpActiveProgram == nullptr)
+        if (mpActiveProgram == nullptr)
         {
             // We never linked, so nothing really changed
             return false;
         }
 
-        for(uint32_t i = 0; i < arraysize(mShaderStrings); i++)
+        for (uint32_t i = 0; i < arraysize(mShaderStrings); i++)
         {
             const Shader* pShader = mpActiveProgram->getShader(ShaderType(i));
-            if(pShader)
+            if (pShader)
             {
-                if(mCreatedFromFile)
+                if (mCreatedFromFile)
                 {
                     std::string fullpath;
                     findFileInDataDirectories(mShaderStrings[i], fullpath);
-                    if(mFileTimeMap[fullpath] != getFileModifiedTime(fullpath))
+                    if (mFileTimeMap[fullpath] != getFileModifiedTime(fullpath))
                     {
                         return true;
                     }
                 }
 
                 // Loop over the shader's included files
-                for(const auto& include : pShader->getIncludeList())
+                for (const auto& include : pShader->getIncludeList())
                 {
-                    if(mFileTimeMap[include] != getFileModifiedTime(include))
+                    if (mFileTimeMap[include] != getFileModifiedTime(include))
                     {
                         return true;
                     }
@@ -156,13 +205,13 @@ namespace Falcor
 
     ProgramVersion::SharedConstPtr Program::getActiveVersion() const
     {
-        if(mLinkRequired)
+        if (mLinkRequired)
         {
             const auto& it = mProgramVersions.find(mDefineList);
             ProgramVersion::SharedConstPtr pVersion = nullptr;
-            if(it == mProgramVersions.end())
+            if (it == mProgramVersions.end())
             {
-                if(link() == false)
+                if (link() == false)
                 {
                     return false;
                 }
@@ -184,11 +233,73 @@ namespace Falcor
     {
         mFileTimeMap.clear();
 
-        while(1)
+        while (1)
         {
             Shader::SharedPtr pShaders[kShaderCount];
 
             // create the shaders
+            if( mIsSpire )
+            {
+                // we have a spire shader, so we need to link here for a particular version
+
+                if( !mSpireSink )
+                {
+                    // Const-"correctness" is a pox on all living things.
+                    *(SpireDiagnosticSink**)&mSpireSink = spCreateDiagnosticSink(mSpireContext);
+                }
+                else
+                {
+                    spClearDiagnosticSink(mSpireSink);
+                }
+
+                SpireCompilationResult* spireResult = spCompileShader(
+                    mSpireContext,
+                    mSpireShader,
+
+                    // no arguments for now
+                    nullptr,
+                    0,
+
+                    // no additional source
+                    "",
+                    mSpireSink);
+
+                // TODO: check the sink
+                if( spDiagnosticSinkHasAnyErrors(mSpireSink) )
+                {
+                    // TODO: signal the errors here!!!
+                }
+
+                // Now extract the per-stage kernels from the compilation reuslt
+
+                const char* spireShaderName = spShaderGetName(mSpireShader);
+
+                static const char* kSpireStageNames[] = {
+                    "vs",
+                    "fs",
+                    "hs",
+                    "ds",
+                    "gs",
+                    "cs",
+                };
+
+                for(uint32_t i = 0; i < kShaderCount; i++)
+                {
+                    char const* code = nullptr;
+                    int codeLength = 0;
+                    code = spGetShaderStageSource(
+                        spireResult,
+                        spireShaderName,
+                        kSpireStageNames[i],
+                        &codeLength);
+
+                    if( code )
+                    {
+                        pShaders[i] = createShaderFromString(code, ShaderType(i), mDefineList);
+                    }
+                }
+            }
+            else
             for(uint32_t i = 0; i < kShaderCount; i++)
             {
                 if(mShaderStrings[i].size())

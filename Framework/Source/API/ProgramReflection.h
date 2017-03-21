@@ -29,6 +29,9 @@
 #include "Framework.h"
 #include <unordered_map>
 
+// TIM:
+struct SpireProgramReflection;
+
 namespace Falcor
 {
     class ProgramVersion;
@@ -294,6 +297,10 @@ namespace Falcor
         */
         static SharedPtr create(const ProgramVersion* pProgramVersion, std::string& log);
 
+        /** Create a new object, from Spire reflection information
+        */
+        static SharedPtr createFromSpire(SpireProgramReflection* pSpireReflection, std::string& log);
+
         /** Get a buffer binding index
         \param[in] name The buffer name in the program
         \return The bind location of the buffer if it is found, otherwise ProgramVersion#kInvalidLocation
@@ -350,6 +357,8 @@ namespace Falcor
 
     private:
         bool init(const ProgramVersion* pProgVer, std::string& log);
+        bool initFromSpire(SpireProgramReflection* pSpireReflection, std::string& log);
+
         bool reflectVertexAttributes(const ProgramVersion* pProgVer, std::string& log);       // Input attributes
         bool reflectFragmentOutputs(const ProgramVersion* pProgVer, std::string& log);        // FS output (if FS exists)
         bool reflectResources(const ProgramVersion* pProgVer, std::string& log);              // SRV/UAV/ROV/Buffers and samplers

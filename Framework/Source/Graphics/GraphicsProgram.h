@@ -87,6 +87,14 @@ namespace Falcor
         */
         static SharedPtr createFromString(const std::string& vertexShader, const std::string& fragmentShader, const std::string& geometryShader, const std::string& hullShader, const std::string& domainShader, const DefineList& programDefines = DefineList());
 
+        /** create a program using Spire shaders
+        */
+        static SharedPtr createFromSpireFile(const std::string& path);
+
+        /** create a program using Spire shaders
+        */
+        static SharedPtr createFromSpireString(const std::string& code);
+
     private:
         GraphicsProgram() = default;
     };
