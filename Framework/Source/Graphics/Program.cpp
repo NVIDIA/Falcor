@@ -96,6 +96,18 @@ namespace Falcor
         mDefineList = programDefines;
     }
 
+    static std::string getSpireErrors(SpireDiagnosticSink* sink)
+    {
+        int size = spGetDiagnosticOutput(sink, nullptr, 0);
+
+        std::string result;
+        result.resize(size-1);
+
+        spGetDiagnosticOutput(sink, &result[0], size);
+
+        return result;
+    }
+
     void Program::initFromSpire(const std::string& shader, bool createdFromFile)
     {
         mCreatedFromFile = createdFromFile;
@@ -103,6 +115,37 @@ namespace Falcor
 
         SpireCompilationContext* spireContext = spCreateCompilationContext(nullptr);
         spSetCodeGenTarget(spireContext, SPIRE_HLSL);
+
+        for(auto p : getDataDirectoriesList())
+        {
+            spAddSearchPath(spireContext, p.c_str());
+        }
+
+        SpireDiagnosticSink* spireSink = spCreateDiagnosticSink(spireContext);
+        mSpireSink = spireSink;
+
+        // Load default code into the spire context, I guess
+        std::string libFile = "StandardPipeline.spire";
+        std::string libPath;
+        if (!findFileInDataDirectories(libFile, libPath))
+        {
+            std::string err = std::string("Can't find shader file ") + libFile;
+            logError(err);
+            return;
+        }
+
+        spLoadModuleLibrary(
+            spireContext,
+            libPath.c_str(),
+            spireSink);
+
+        if( spDiagnosticSinkHasAnyErrors(spireSink) )
+        {
+            std::string err = std::string("Errors compiling ") + libFile + ":\n"
+                + getSpireErrors(spireSink);
+            logError(err);
+            return;
+        }
 
         mSpireContext = spireContext;
 
@@ -113,7 +156,7 @@ namespace Falcor
             std::string code;
             if (createdFromFile)
             {
-                 std::string fullpath;
+                std::string fullpath;
                 if (!findFileInDataDirectories(shader, fullpath))
                 {
                     std::string err = std::string("Can't find shader file ") + shader;
@@ -242,15 +285,7 @@ namespace Falcor
             {
                 // we have a spire shader, so we need to link here for a particular version
 
-                if( !mSpireSink )
-                {
-                    // Const-"correctness" is a pox on all living things.
-                    *(SpireDiagnosticSink**)&mSpireSink = spCreateDiagnosticSink(mSpireContext);
-                }
-                else
-                {
-                    spClearDiagnosticSink(mSpireSink);
-                }
+                spClearDiagnosticSink(mSpireSink);
 
                 SpireCompilationResult* spireResult = spCompileShader(
                     mSpireContext,
@@ -267,12 +302,15 @@ namespace Falcor
                 // TODO: check the sink
                 if( spDiagnosticSinkHasAnyErrors(mSpireSink) )
                 {
-                    // TODO: signal the errors here!!!
+                    std::string err = std::string("Errors compiling Spire shader:\n")
+                        + getSpireErrors(mSpireSink);
+                    logError(err);
+
+                    // TDOO: use a message box and give the option to retry compilation
+                    return false;
                 }
 
                 // Now extract the per-stage kernels from the compilation reuslt
-
-                const char* spireShaderName = spShaderGetName(mSpireShader);
 
                 static const char* kSpireStageNames[] = {
                     "vs",
@@ -289,7 +327,7 @@ namespace Falcor
                     int codeLength = 0;
                     code = spGetShaderStageSource(
                         spireResult,
-                        spireShaderName,
+                        nullptr,
                         kSpireStageNames[i],
                         &codeLength);
 

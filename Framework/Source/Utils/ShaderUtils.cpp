@@ -71,7 +71,6 @@ namespace Falcor
 
         std::string log;
         auto pShader = Shader::create(shader, shaderType, log);
-        pShader->setIncludeList(includeList);
 
         if(pShader == nullptr)
         {
@@ -80,6 +79,11 @@ namespace Falcor
             msg += "\nShader string:\n" + shaderString + "\n";
             logError(msg);
         }
+        else
+        {
+            pShader->setIncludeList(includeList);
+        }
+
         return pShader;
     }
 

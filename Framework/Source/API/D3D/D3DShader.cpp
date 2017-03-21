@@ -44,7 +44,11 @@ namespace Falcor
         ID3DBlob* pCode;
         ID3DBlobPtr pErrors;
 
-        UINT flags = D3DCOMPILE_WARNINGS_ARE_ERRORS;
+        // Note: The warnings-as-errors flag is great in theory, but in practice it hage a *huge*
+        // show-stopper issue, in that it will make a warning into an error even when you have
+        // *disabled* the corresponding warning with a `#pragma`. This means that this flag is
+        // useless if you need to pass through code that has a known warning with no workaround.
+        UINT flags = 0; // D3DCOMPILE_WARNINGS_ARE_ERRORS;
 #ifdef _DEBUG
         flags |= D3DCOMPILE_DEBUG;
 #endif
