@@ -180,6 +180,7 @@ namespace Falcor
                 varMap,
                 ProgramReflection::ResourceMap(),
                 shaderAccess);
+            bufferReflection->setShaderMask(0xFFFFFFFF);
 
             // Create the buffer reflection
             bufferDesc.nameMap[bufferName] = bindLocation;
