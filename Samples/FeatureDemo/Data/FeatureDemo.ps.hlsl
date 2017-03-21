@@ -95,7 +95,7 @@ PsOut main(MainVsOut vOut)
     float3 envMapVal = gEnvMap.SampleLevel(gSampler, texC, lod).rgb;
 
     envMapFactor = saturate(envMapFactor + 0.007);
-    finalColor.rgb += (result.specularAlbedo) * envMapVal * envMapFactor * evalGGXDistribution(float3(0, 0, 1), shAttr.N, rough) * 0.3;
+    finalColor.rgb += (result.specularAlbedo) * envMapVal * envMapFactor * max(1e-3, evalGGXDistribution(float3(0, 0, 1), shAttr.N, rough)) * 0.3;
 #endif
 
     // add ambient
