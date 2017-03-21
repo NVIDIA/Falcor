@@ -68,7 +68,7 @@ PsOut main(MainVsOut vOut)
     ShadingOutput result;
     result.finalValue = 0;
     float4 finalColor = 0;
-    float shadowFactor = 1;
+    float envMapFactor = 1;
 
 #foreach p in _LIGHT_SOURCES
     evalMaterial(shAttr, $(p), result, $(_valIndex) == 0);
@@ -77,6 +77,7 @@ PsOut main(MainVsOut vOut)
     {
         float shadowFactor = calcShadowFactor(gCsmData, vOut.shadowsDepthC, shAttr.P, vOut.vsData.posH.xy/vOut.vsData.posH.w);
         result.finalValue *= shadowFactor;
+        envMapFactor -= 1 - shadowFactor;
     }
 #endif
 #endforeach
@@ -87,11 +88,12 @@ PsOut main(MainVsOut vOut)
     // Calculate the view vector
     float3 view = reflect(-shAttr.E, shAttr.N);
     float2 texC = dirToSphericalCrd(view);
-    float3 envMapVal = gEnvMap.SampleLevel(gSampler, texC, 2).rgb;
+    float rough = shAttr.preparedMat.values.layers[1].albedo.a;
+    float lod = rough * 16;
+    float3 envMapVal = gEnvMap.SampleLevel(gSampler, texC, lod).rgb;
 
-    finalColor.rgb += (result.specularAlbedo) * envMapVal * 0.1;
-#else
-
+    envMapFactor = saturate(envMapFactor + 0.07);
+    finalColor.rgb += (result.specularAlbedo) * envMapVal * envMapFactor * evalGGXDistribution(float3(0, 0, 1), shAttr.N, rough) * 0.5;
 #endif
 
     // add ambient
