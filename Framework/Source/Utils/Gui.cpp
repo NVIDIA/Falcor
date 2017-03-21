@@ -63,7 +63,11 @@ namespace Falcor
         io.IniFilename = nullptr;
 
         ImGuiStyle& style = ImGui::GetStyle();
-        style.Colors[ImGuiCol_WindowBg].w = 0.95f;
+        style.Colors[ImGuiCol_WindowBg].w = 0.85f;
+        style.Colors[ImGuiCol_FrameBg].x *= 0.1f;
+        style.Colors[ImGuiCol_FrameBg].y *= 0.1f;
+        style.Colors[ImGuiCol_FrameBg].z *= 0.1f;
+        style.ScrollbarSize *= 0.7f;
 
         // Create the pipeline state cache
         mpPipelineState = GraphicsState::create();
@@ -388,13 +392,19 @@ namespace Falcor
         return io.WantCaptureMouse;
     }
 
-    void Gui::pushWindow(const char label[], uint32_t width, uint32_t height, uint32_t x, uint32_t y)
+    void Gui::pushWindow(const char label[], uint32_t width, uint32_t height, uint32_t x, uint32_t y, bool showTitleBar)
     {
         ImVec2 pos{ float(x), float(y) };
         ImVec2 size{ float(width), float(height) };
         ImGui::SetNextWindowSize(size, ImGuiSetCond_FirstUseEver);
         ImGui::SetNextWindowPos(pos, ImGuiSetCond_FirstUseEver);
-        ImGui::Begin(label);
+        int flags = 0;
+        if (!showTitleBar)
+        {
+            flags |= ImGuiWindowFlags_NoTitleBar;
+        }
+        ImGui::Begin(label, nullptr, flags);
+        ImGui::PushItemWidth(ImGui::GetContentRegionAvailWidth() * 0.45f);
     }
 
     void Gui::popWindow()

@@ -254,7 +254,7 @@ namespace Falcor
 
         /** Create a new window on the stack
         */
-        void pushWindow(const char label[], uint32_t width = 0, uint32_t height = 0, uint32_t x = 0, uint32_t y = 0);
+        void pushWindow(const char label[], uint32_t width = 0, uint32_t height = 0, uint32_t x = 0, uint32_t y = 0, bool showTitleBar = true);
         void popWindow();
     protected:
         bool keyboardCallback(const KeyboardEvent& keyEvent);

@@ -109,7 +109,7 @@ void FeatureDemo::loadModel(const std::string& filename)
 
 void FeatureDemo::loadScene(const std::string& filename)
 {
-    ProgressBar::SharedPtr pBar = ProgressBar::create("Loading Scene");
+    ProgressBar::SharedPtr pBar = ProgressBar::create("Loading Scene", 100);
     Scene::SharedPtr pScene = Scene::loadFromFile(filename);
 
     if (pScene != nullptr)

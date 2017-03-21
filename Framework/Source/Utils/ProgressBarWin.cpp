@@ -53,9 +53,12 @@ namespace Falcor
         safe_delete(mpData);
     }
 
-    void progressBarThread(ProgressBarData* pData, const ProgressBar::MessageList& msgList)
+    void progressBarThread(ProgressBarData* pData, const ProgressBar::MessageList& msgList, uint32_t delayInMs)
     {
-        Sleep(1000);
+        if(delayInMs)
+        {
+            Sleep(delayInMs);
+        }
         if (pData->running == false) return;
 
         // Create the window
@@ -93,7 +96,7 @@ namespace Falcor
         }
     }
 
-    ProgressBar::SharedPtr ProgressBar::create(const MessageList& list)
+    ProgressBar::SharedPtr ProgressBar::create(const MessageList& list, uint32_t delayInMs)
     {
         SharedPtr pBar = SharedPtr(new ProgressBar());
         pBar->mpData = new ProgressBarData;
@@ -105,19 +108,19 @@ namespace Falcor
         InitCommonControlsEx(&init);
 
         // Start the thread
-        pBar->mpData->thread = std::thread(progressBarThread, pBar->mpData, list);
+        pBar->mpData->thread = std::thread(progressBarThread, pBar->mpData, list, delayInMs);
 
         return pBar;
     }
 
-    ProgressBar::SharedPtr ProgressBar::create(const char* pMsg)
+    ProgressBar::SharedPtr ProgressBar::create(const char* pMsg, uint32_t delayInMs)
     {
         MessageList list;
         if (pMsg)
         {
             list.push_back(pMsg);
         }
-        return create(list);
+        return create(list, delayInMs);
     }
 }
 

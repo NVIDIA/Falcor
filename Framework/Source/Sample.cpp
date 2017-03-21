@@ -35,6 +35,8 @@
 #include "API/FBO.h"
 #include "VR\OpenVR\VRSystem.h"
 #include "Utils\ProgressBar.h"
+#include <sstream>
+#include <iomanip>
 
 namespace Falcor
 {
@@ -254,7 +256,7 @@ namespace Falcor
             ;
 #endif
 
-        mpGui->pushWindow("Falcor", 250, 200, 20, 40);
+        mpGui->pushWindow("Falcor", 250, 200, 20, 40, false);
         mpGui->addText("Keyboard Shortcuts");
         mpGui->addTooltip(help, true);
 
@@ -373,9 +375,11 @@ namespace Falcor
         std::string s;
         if(mShowText)
         {
+            std::stringstream strstr;
             float msPerFrame = mFrameRate.getAverageFrameTime();
-            s = std::to_string(int(ceil(1000 / msPerFrame))) + " FPS (" + std::to_string(msPerFrame) + " ms/frame)";
-            if(mVsyncOn) s += std::string(", VSync");
+            std::string msStr = std::to_string(msPerFrame);
+            s = std::to_string(int(ceil(1000 / msPerFrame))) + " FPS (" + msStr.erase(msStr.size() - 4) + " ms/frame)";
+            if (mVsyncOn) s += std::string(", VSync");
         }
         return s;
     }
