@@ -89,11 +89,13 @@ PsOut main(MainVsOut vOut)
     float3 view = reflect(-shAttr.E, shAttr.N);
     float2 texC = dirToSphericalCrd(view);
     float rough = shAttr.preparedMat.values.layers[1].albedo.a;
-    float lod = rough * 16;
+    uint h,w, mipCount;
+    gEnvMap.GetDimensions(0, h, w, mipCount);
+    float lod = rough * mipCount;
     float3 envMapVal = gEnvMap.SampleLevel(gSampler, texC, lod).rgb;
 
-    envMapFactor = saturate(envMapFactor + 0.07);
-    finalColor.rgb += (result.specularAlbedo) * envMapVal * envMapFactor * evalGGXDistribution(float3(0, 0, 1), shAttr.N, rough) * 0.5;
+    envMapFactor = saturate(envMapFactor + 0.007);
+    finalColor.rgb += (result.specularAlbedo) * envMapVal * envMapFactor * evalGGXDistribution(float3(0, 0, 1), shAttr.N, rough) * 0.3;
 #endif
 
     // add ambient
