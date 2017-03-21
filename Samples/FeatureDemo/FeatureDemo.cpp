@@ -111,7 +111,11 @@ void FeatureDemo::loadScene(const std::string& filename)
 {
     ProgressBar::SharedPtr pBar = ProgressBar::create("Loading Scene");
     Scene::SharedPtr pScene = Scene::loadFromFile(filename);
-    initScene(pScene);
+
+    if (pScene != nullptr)
+    {
+        initScene(pScene);
+    }
 }
 
 void FeatureDemo::initSkyBox()
