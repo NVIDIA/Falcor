@@ -260,7 +260,7 @@ void ModelViewer::onLoad()
     mpPointLight = PointLight::create();
     mpDirLight->setWorldDirection(glm::vec3(0.13f, 0.27f, -0.9f));
 
-    mpProgramVars = GraphicsVars::create(mpProgram->getActiveVersion()->getReflector());
+    mpProgramVars = GraphicsVars::create(mpProgram);
     mpGraphicsState = GraphicsState::create();
     mpGraphicsState->setProgram(mpProgram);
 
@@ -323,7 +323,7 @@ void ModelViewer::onFrameRender()
             mpModel->bindSamplerToMaterials(mpPointSampler);
         }
 
-//SPIRE        mpProgramVars["PerFrameCB"]["gAmbient"] = mAmbientIntensity;
+        mpProgramVars["PerFrameCB"]["gAmbient"] = mAmbientIntensity;
         mpGraphicsState->setProgram(mpProgram);
         mpRenderContext->setGraphicsState(mpGraphicsState);
         mpRenderContext->setGraphicsVars(mpProgramVars);

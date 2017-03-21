@@ -29,8 +29,9 @@
 #include "Framework.h"
 #include <unordered_map>
 
-// TIM:
-struct SpireProgramReflection;
+//SPIRE: forward declare required spire types
+struct SpireCompilationContext;
+struct SpireShader;
 
 namespace Falcor
 {
@@ -299,7 +300,10 @@ namespace Falcor
 
         /** Create a new object, from Spire reflection information
         */
-        static SharedPtr createFromSpire(SpireProgramReflection* pSpireReflection, std::string& log);
+        static SharedPtr createFromSpire(
+            SpireCompilationContext*    pSpireContext,
+            SpireShader*                pSpireShader,
+            std::string& log);
 
         /** Get a buffer binding index
         \param[in] name The buffer name in the program
@@ -357,7 +361,10 @@ namespace Falcor
 
     private:
         bool init(const ProgramVersion* pProgVer, std::string& log);
-        bool initFromSpire(SpireProgramReflection* pSpireReflection, std::string& log);
+        bool initFromSpire(
+            SpireCompilationContext*    pSpireContext,
+            SpireShader*                pSpireShader,
+            std::string& log);
 
         bool reflectVertexAttributes(const ProgramVersion* pProgVer, std::string& log);       // Input attributes
         bool reflectFragmentOutputs(const ProgramVersion* pProgVer, std::string& log);        // FS output (if FS exists)

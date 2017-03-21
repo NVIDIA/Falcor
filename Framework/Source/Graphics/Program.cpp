@@ -193,9 +193,45 @@ namespace Falcor
                 return;
             }
 
+            SpireModule* spireShaderParamsComponentClass = nullptr;
+            if(spShaderGetParameterCount(spireShader) >= 1)
+            {
+                // We assume that the first component parameter represents the inputs
+                // needed by the shader itself
+                char const* componentTypeName = spShaderGetParameterType(spireShader, 0);
+
+                spireShaderParamsComponentClass = spFindModule(
+                    spireContext,
+                    componentTypeName);
+            }
+
+            // HACK
+            if( !spireShaderParamsComponentClass )
+            {
+                spireShaderParamsComponentClass = spFindModule(
+                    spireContext,
+                    "PerFrameCB");
+            }
+
             mSpireShader = spireShader;
+            mSpireShaderParamsComponentClass = spireShaderParamsComponentClass;
         }
     }
+
+    ProgramReflection::SharedConstPtr Program::getSpireReflector() const
+    {
+        if( !mSpireReflector )
+        {
+            std::string err;
+            mSpireReflector = ProgramReflection::createFromSpire(mSpireContext, mSpireShader, err);
+            if( !err.empty() )
+            {
+                logError(err);
+            }
+        }
+        return mSpireReflector;
+    }
+
 
     void Program::addDefine(const std::string& name, const std::string& value)
     {
@@ -298,13 +334,24 @@ namespace Falcor
 
                 spClearDiagnosticSink(mSpireSink);
 
+                SpireModule* componentClasses[16];
+                int componentClassCount = 0;
+
+                if( mSpireShaderParamsComponentClass )
+                {
+                    componentClasses[componentClassCount++] = mSpireShaderParamsComponentClass;
+                }
+
+                // TODO: this is where we'd need to enumerate the additional component
+                // classes desired for the "active version"
+
                 SpireCompilationResult* spireResult = spCompileShader(
                     mSpireContext,
                     mSpireShader,
 
                     // no arguments for now
-                    nullptr,
-                    0,
+                    &componentClasses[0],
+                    componentClassCount,
 
                     // no additional source
                     "",

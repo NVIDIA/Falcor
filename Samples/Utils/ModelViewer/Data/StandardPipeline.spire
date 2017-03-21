@@ -33,3 +33,13 @@ pipeline StandardPipeline
         World: Fragment;
     }
 }
+
+// HACK: putting this here instead of in `ModelViewer.spire`
+// so that we can actually look it up...
+module PerFrameCB_T
+{
+//    LightData gDirLight;
+//    LightData gPointLight;
+    param uint gConstColor;
+    param vec3 gAmbient;
+}

@@ -1,9 +1,14 @@
-template shader ModelViewerShader() targets StandardPipeline
+
+template shader ModelViewerShader(
+	PerFrameCB : PerFrameCB_T
+	) targets StandardPipeline
 {
+	using perFrame = PerFrameCB();
+
 	public @MeshVertex vec3 POSITION;
 	vec3 vertPos = POSITION;
 
 	public vec4 projCoord = vec4(vertPos, 1.0);
 	
-    public out @Fragment vec4 outputColor = vec4(1.0, 0.0, 0.0, 1.0);
+    public out @Fragment vec4 outputColor = vec4(perFrame.gAmbient, 1.0);
 }

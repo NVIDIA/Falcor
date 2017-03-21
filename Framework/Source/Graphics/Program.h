@@ -34,6 +34,7 @@
 // Forward-declare requirements from Spire
 struct SpireCompilationContext;
 struct SpireDiagnosticSink;
+struct SpireModule;
 struct SpireShader;
 
 namespace Falcor
@@ -90,6 +91,13 @@ namespace Falcor
         /** update define list
         */
         void replaceAllDefines(const DefineList& dl) { mDefineList = dl; }
+
+
+
+        bool isSpire() const { return mIsSpire; }
+        ProgramReflection::SharedConstPtr getSpireReflector() const;
+
+
     protected:
         static const uint32_t kShaderCount = (uint32_t)ShaderType::Count;
 
@@ -117,9 +125,11 @@ namespace Falcor
 
         // State related to Spire-based shaders
         bool mIsSpire = false;
-        SpireCompilationContext* mSpireContext = nullptr;
-        SpireShader* mSpireShader = nullptr;
-        SpireDiagnosticSink* mSpireSink = nullptr;
+        SpireCompilationContext*    mSpireContext                       = nullptr;
+        SpireShader*                mSpireShader                        = nullptr;
+        SpireModule*                mSpireShaderParamsComponentClass    = nullptr;
+        SpireDiagnosticSink*        mSpireSink                          = nullptr;
+        mutable ProgramReflection::SharedConstPtr   mSpireReflector;
 
         bool checkIfFilesChanged();
         void reset();

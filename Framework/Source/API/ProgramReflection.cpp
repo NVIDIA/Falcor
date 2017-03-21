@@ -30,6 +30,8 @@
 #include "ProgramReflection.h"
 #include "Utils/StringUtils.h"
 
+#include "Externals/Spire/Spire.h"
+
 namespace Falcor
 {
     ProgramReflection::SharedPtr ProgramReflection::create(const ProgramVersion* pProgramVersion, std::string& log)
@@ -38,10 +40,13 @@ namespace Falcor
         return pReflection->init(pProgramVersion, log) ? pReflection : nullptr;
     }
 
-    ProgramReflection::SharedPtr ProgramReflection::createFromSpire(SpireProgramReflection* pSpireReflection, std::string& log)
+    ProgramReflection::SharedPtr ProgramReflection::createFromSpire(
+        SpireCompilationContext*    pSpireContext,
+        SpireShader*                pSpireShader,
+        std::string& log)
     {
         SharedPtr pReflection = SharedPtr(new ProgramReflection);
-        return pReflection->initFromSpire(pSpireReflection, log) ? pReflection : nullptr;
+        return pReflection->initFromSpire(pSpireContext, pSpireShader, log) ? pReflection : nullptr;
     }
 
 
@@ -70,8 +75,117 @@ namespace Falcor
         return b;
     }
 
-    bool ProgramReflection::initFromSpire(SpireProgramReflection* pSpireReflection, std::string& log)
+    static ProgramReflection::Variable::Type getSpireVariableType(
+        char const* spireTypeName)
     {
+        static const struct
+        {
+            char const*                         name;
+            ProgramReflection::Variable::Type   type;
+        } kEntries[] = {
+
+        #define ENTRY(SPIRE_NAME, FALCOR_NAME) \
+            { #SPIRE_NAME, ProgramReflection::Variable::Type::FALCOR_NAME }
+
+            ENTRY(float,    Float),
+            ENTRY(uint,     Uint),
+            ENTRY(vec3,     Float3),
+
+        #undef ENTRY
+
+            { nullptr },
+        };
+
+        for(auto ee = kEntries; ee->name; ++ee)
+        {
+            if(strcmp(ee->name, spireTypeName) == 0)
+                return ee->type;
+        }
+        assert(!"unimplemented");
+        return ProgramReflection::Variable::Type::Unknown;
+    }
+
+    bool ProgramReflection::initFromSpire(
+        SpireCompilationContext*    pSpireContext,
+        SpireShader*                pSpireShader,
+        std::string& log)
+    {
+        int componentCount = spShaderGetParameterCount(pSpireShader);
+        for(int cc = 0; cc < componentCount; ++cc)
+        {
+            char const* componentTypeName = spShaderGetParameterType(pSpireShader, cc);
+            SpireModule* componentType = spFindModule(pSpireContext, componentTypeName);
+            if(!componentType)
+                continue;
+
+            // Note: we don't care about anything past the first componet parameter for now
+            if(cc > 0)
+                break;
+
+            char const* bufferName = "PerFrameCB"; // spShaderGetParameterName(pSpireShaer, cc);
+            auto& bufferDesc = mBuffers[(uint32_t)BufferReflection::Type::Constant];
+            auto bufferType = BufferReflection::Type::Constant;
+            auto shaderAccess = ShaderAccess::Read;
+            uint32_t bindPoint = 0;
+            uint32_t bindSpace = 0;
+
+            ProgramReflection::VariableMap varMap;
+
+            // loop over variables to fill them in...
+            int paramCount = spModuleGetParameterCount(componentType);
+            for( int pp = 0; pp < paramCount; ++pp )
+            {
+                SpireComponentInfo spireVarInfo;
+                spModuleGetParameter(componentType, pp, &spireVarInfo);
+
+                char const* varName = spireVarInfo.Name;
+ 
+                switch( spireVarInfo.BindableResourceType )
+                {
+                case SPIRE_NON_BINDABLE:
+                    {
+                        // An ordinary uniform
+
+
+                        ProgramReflection::Variable varInfo;
+                        varInfo.arraySize = 0;
+                        varInfo.isRowMajor = true;
+                        varInfo.location = spireVarInfo.Offset;
+                        varInfo.type = getSpireVariableType(spireVarInfo.TypeName);
+                        varMap[varName] = varInfo;
+                    }
+                    break;
+
+                default:
+                case SPIRE_TEXTURE:
+                case SPIRE_SAMPLER:
+                case SPIRE_UNIFORM_BUFFER:
+                case SPIRE_STORAGE_BUFFER:
+                    assert(!"unimplemented");
+                    break;
+                }
+
+            }
+
+            // TODO: confirm that this is how to get the right size!
+            size_t bufferSize = spModuleGetParameterBufferSize(componentType);
+
+            ProgramReflection::BindLocation bindLocation(bindPoint, shaderAccess);
+            auto bufferReflection = ProgramReflection::BufferReflection::create(
+                bufferName,
+                bindPoint,
+                bindSpace,
+                bufferType,
+                bufferSize,
+                varMap,
+                ProgramReflection::ResourceMap(),
+                shaderAccess);
+
+            // Create the buffer reflection
+            bufferDesc.nameMap[bufferName] = bindLocation;
+            bufferDesc.descMap[bindLocation] = bufferReflection;
+        }
+
         // TODO: actually load reflection data from spire representation...
         return true;
     }

@@ -147,6 +147,17 @@ namespace Falcor
         return SharedPtr(new GraphicsVars(pReflector, createBuffers, pRootSig));
     }
 
+    GraphicsVars::SharedPtr GraphicsVars::create(const Program::SharedConstPtr& pProgram)\
+    {
+        if( pProgram->isSpire() )
+        {
+            return create(pProgram->getSpireReflector());
+        }
+
+        return create(pProgram->getActiveVersion()->getReflector());
+    }
+
+
     ComputeVars::SharedPtr ComputeVars::create(const ProgramReflection::SharedConstPtr& pReflector, bool createBuffers, const RootSignature::SharedPtr& pRootSig)
     {
         return SharedPtr(new ComputeVars(pReflector, createBuffers, pRootSig));
