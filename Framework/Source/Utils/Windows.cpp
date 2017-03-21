@@ -27,7 +27,6 @@
 ***************************************************************************/
 #include "Framework.h"
 #include "Utils/OS.h"
-#include <windows.h>
 #include <fstream>
 #include <vector>
 #include <stdint.h>

@@ -41,7 +41,7 @@ namespace Falcor
     public:
         using SharedPtr = std::shared_ptr<CopyContext>;
         using SharedConstPtr = std::shared_ptr<const CopyContext>;
-        ~CopyContext();
+        virtual ~CopyContext();
 
         static SharedPtr create();
         void updateBuffer(const Buffer* pBuffer, const void* pData, size_t offset = 0, size_t size = 0);
@@ -69,7 +69,7 @@ namespace Falcor
 
         /** Insert a resource barrier
         */
-        void resourceBarrier(const Resource* pResource, Resource::State newState);
+        virtual void resourceBarrier(const Resource* pResource, Resource::State newState);
 
         /** Copy an entire resource
         */
@@ -82,7 +82,11 @@ namespace Falcor
 #ifdef FALCOR_LOW_LEVEL_API
         /** Get the low-level context data
         */
-        LowLevelContextData::SharedPtr getLowLevelData() { return mpLowLevelData; }
+        virtual LowLevelContextData::SharedPtr getLowLevelData() const { return mpLowLevelData; }
+
+        /** Override the low-level context data with a user provided object
+        */
+        void setLowLevelContextData(LowLevelContextData::SharedPtr pLowLevelData) { mpLowLevelData = pLowLevelData; }
 #endif
     protected:
         void bindDescriptorHeaps();

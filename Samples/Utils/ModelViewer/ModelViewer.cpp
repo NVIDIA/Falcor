@@ -75,11 +75,14 @@ void ModelViewer::loadModelFromFile(const std::string& filename)
     CpuTimer timer;
     timer.update();
 
-    uint32_t flags = 0;
-    flags |= mGenerateTangentSpace ? Model::GenerateTangentSpace : 0;
+    Model::LoadFlags flags = Model::LoadFlags::None;
+    if (mGenerateTangentSpace == false)
+    {
+        flags |= Model::LoadFlags::DontGenerateTangentSpace;
+    }
     auto fboFormat = mpDefaultFBO->getColorTexture(0)->getFormat();
-    flags |= isSrgbFormat(fboFormat) ? 0 : Model::AssumeLinearSpaceTextures;
-    mpModel = Model::createFromFile(filename, flags);
+    flags |= isSrgbFormat(fboFormat) ? Model::LoadFlags::None : Model::LoadFlags::AssumeLinearSpaceTextures;
+    mpModel = Model::createFromFile(filename.c_str(), flags);
 
     if(mpModel == nullptr)
     {

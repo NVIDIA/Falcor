@@ -58,6 +58,11 @@ namespace Falcor
         Entry allocateEntry();
         ApiHandle getApiHandle() const { return mApiHandle; }
         Type getType() const { return mType; }
+
+        uint32_t getReservedDescCount() const { return mCount; }
+        GpuHandle getGpuBaseHandle() const { return mGpuHeapStart; }
+        CpuHandle getCpuBaseHandle() const { return mCpuHeapStart; }
+        uint32_t getDescriptorSize() const { return mDescriptorSize; }
     private:
         friend DescriptorHeapEntry;
         DescriptorHeap(Type type, uint32_t descriptorsCount);
@@ -104,6 +109,7 @@ namespace Falcor
         // OPTME we could store the handles in the class to avoid the additional indirection at the expense of memory
         CpuHandle getCpuHandle() const { return mpHeap->getCpuHandle(mHeapEntry); }
         GpuHandle getGpuHandle() const { return mpHeap->getGpuHandle(mHeapEntry); }
+        uint32_t getHeapEntryIndex() const { return mHeapEntry; }
         DescriptorHeap::SharedPtr getHeap() const { return mpHeap; }
     private:
         DescriptorHeapEntry(DescriptorHeap::SharedPtr pHeap) : mpHeap(pHeap) {}

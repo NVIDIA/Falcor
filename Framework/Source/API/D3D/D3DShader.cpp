@@ -39,40 +39,9 @@ namespace Falcor
 
     static const char* kEntryPoint = "main";
 
-    static ID3DBlob* compileShader(const std::string& source, const std::string& target, std::string& errorLog)
+    const char* getTargetString(ShaderType type)
     {
-        ID3DBlob* pCode;
-        ID3DBlobPtr pErrors;
-
-        UINT flags = D3DCOMPILE_WARNINGS_ARE_ERRORS;
-#ifdef _DEBUG
-        flags |= D3DCOMPILE_DEBUG;
-#endif
-
-        HRESULT hr = D3DCompile(source.c_str(), source.size(), nullptr, nullptr, nullptr, kEntryPoint, target.c_str(), flags, 0, &pCode, &pErrors);
-        if(FAILED(hr))
-        {
-            convertBlobToString(pErrors, errorLog);
-            return nullptr;
-        }
-
-        return pCode;
-    }
-
-    Shader::Shader(ShaderType type) : mType(type)
-    {
-        mpPrivateData = new ShaderData;
-    }
-
-    Shader::~Shader()
-    {
-        ShaderData* pData = (ShaderData*)mpPrivateData;
-        safe_delete(pData);
-    }
-
-    const std::string getTargetString(ShaderType type)
-    {
-        switch(type)
+        switch (type)
         {
         case ShaderType::Vertex:
             return "vs_5_0";
@@ -92,13 +61,42 @@ namespace Falcor
         }
     }
 
-    Shader::SharedPtr Shader::create(const std::string& shaderString, ShaderType type, std::string& log)
+    ID3DBlobPtr Shader::compile(const std::string& source, std::string& errorLog)
     {
-        SharedPtr pShader = SharedPtr(new Shader(type));
+        ID3DBlob* pCode;
+        ID3DBlobPtr pErrors;
 
+        UINT flags = D3DCOMPILE_WARNINGS_ARE_ERRORS;
+#ifdef _DEBUG
+        flags |= D3DCOMPILE_DEBUG;
+#endif
+
+        HRESULT hr = D3DCompile(source.c_str(), source.size(), nullptr, nullptr, nullptr, kEntryPoint, getTargetString(mType), flags, 0, &pCode, &pErrors);
+        if(FAILED(hr))
+        {
+            errorLog = convertBlobToString(pErrors.GetInterfacePtr());
+            return nullptr;
+        }
+
+        return pCode;
+    }
+
+    Shader::Shader(ShaderType type) : mType(type)
+    {
+        mpPrivateData = new ShaderData;
+    }
+
+    Shader::~Shader()
+    {
+        ShaderData* pData = (ShaderData*)mpPrivateData;
+        safe_delete(pData);
+    }
+
+    bool Shader::init(const std::string& shaderString, std::string& log)
+    {
         // Compile the shader
-        ShaderData* pData = (ShaderData*)pShader->mpPrivateData;
-        pData->pBlob = compileShader(shaderString, getTargetString(type), log);
+        ShaderData* pData = (ShaderData*)mpPrivateData;
+        pData->pBlob = compile(shaderString, log);
 
         if (pData->pBlob == nullptr)
         {
@@ -134,15 +132,28 @@ namespace Falcor
 
         if (pData->pHandle == nullptr)
         {
-            return nullptr;
+            return false;
         }
 #elif defined FALCOR_D3D12
-        pShader->mApiHandle = { pData->pBlob->GetBufferPointer(), pData->pBlob->GetBufferSize() };
+        mApiHandle = { pData->pBlob->GetBufferPointer(), pData->pBlob->GetBufferSize() };
 #endif
         // Get the reflection object
-        d3d_call(D3DReflect(pData->pBlob->GetBufferPointer(), pData->pBlob->GetBufferSize(), IID_PPV_ARGS(&pData->pReflector)));
+        pData->pReflector = createReflection(pData->pBlob);
 
-        return pShader;
+        return true;
+    }
+
+    ShaderReflectionHandle Shader::createReflection(ID3DBlobPtr pBlob)
+    {
+        ShaderReflectionHandle pReflection;
+        d3d_call(D3DReflect(pBlob->GetBufferPointer(), pBlob->GetBufferSize(), IID_PPV_ARGS(&pReflection)));
+        return pReflection;
+    }
+
+    Shader::SharedPtr Shader::create(const std::string& shaderString, ShaderType type, std::string& log)
+    {
+        SharedPtr pShader = SharedPtr(new Shader(type));
+        return pShader->init(shaderString, log) ? pShader : nullptr;
     }
 
     ShaderReflectionHandle Shader::getReflectionInterface() const

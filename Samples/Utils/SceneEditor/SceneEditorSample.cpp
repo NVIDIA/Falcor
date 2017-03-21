@@ -74,7 +74,7 @@ void SceneEditorSample::initNewScene()
     if(mpScene)
     {
         mpRenderer = SceneRenderer::create(mpScene);
-        mpEditor = SceneEditor::create(mpScene, Model::GenerateTangentSpace);
+        mpEditor = SceneEditor::create(mpScene);
 
         initShader();
     }
@@ -96,7 +96,7 @@ void SceneEditorSample::loadScene()
     {
         reset();
 
-        mpScene = SceneImporter::loadScene(Filename, Model::GenerateTangentSpace, Scene::LoadMaterialHistory);
+        mpScene = SceneImporter::loadScene(Filename, Model::LoadFlags::None, Scene::LoadFlags::StoreMaterialHistory);
         initNewScene();
     }
 }

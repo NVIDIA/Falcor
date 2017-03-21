@@ -400,12 +400,12 @@ namespace Falcor
     //// End callbacks
     //////////////////////////////////////////////////////////////////////////
 
-    SceneEditor::UniquePtr SceneEditor::create(const Scene::SharedPtr& pScene, const uint32_t modelLoadFlags)
+    SceneEditor::UniquePtr SceneEditor::create(const Scene::SharedPtr& pScene, Model::LoadFlags modelLoadFlags)
     {
         return UniquePtr(new SceneEditor(pScene, modelLoadFlags));
     }
 
-    SceneEditor::SceneEditor(const Scene::SharedPtr& pScene, uint32_t modelLoadFlags)
+    SceneEditor::SceneEditor(const Scene::SharedPtr& pScene, Model::LoadFlags modelLoadFlags)
         : mpScene(pScene)
         , mModelLoadFlags(modelLoadFlags)
     {
@@ -528,7 +528,7 @@ namespace Falcor
         // Cameras
         //
 
-        mpCameraModel = Model::createFromFile("Framework/Models/Camera.obj", Model::GenerateTangentSpace);
+        mpCameraModel = Model::createFromFile("Framework/Models/Camera.obj");
 
         // #TODO can a scene have no cameras?
         if (mpScene->getCameraCount() > 0)
@@ -549,7 +549,7 @@ namespace Falcor
         // Lights
         //
 
-        mpLightModel = Model::createFromFile("Framework/Models/LightBulb.obj", Model::GenerateTangentSpace);
+        mpLightModel = Model::createFromFile("Framework/Models/LightBulb.obj");
 
         bool pointLightsAdded = false;
         uint32_t pointLightID = 0;
@@ -606,7 +606,7 @@ namespace Falcor
             }
         }
 
-        mpKeyframeModel = Model::createFromFile("Framework/Models/Camera.obj", Model::GenerateTangentSpace);
+        mpKeyframeModel = Model::createFromFile("Framework/Models/Camera.obj");
     }
 
     const glm::vec3& SceneEditor::getActiveInstanceEulerRotation()
@@ -1278,7 +1278,7 @@ namespace Falcor
                 std::string filename;
                 if (openFileDialog(Model::kSupportedFileFormatsStr, filename))
                 {
-                    auto pModel = Model::createFromFile(filename, mModelLoadFlags);
+                    auto pModel = Model::createFromFile(filename.c_str(), mModelLoadFlags);
                     if (pModel == nullptr)
                     {
                         logError("Error when trying to load model " + filename);

@@ -117,11 +117,12 @@ namespace Falcor
     MAKE_SMART_COM_PTR(ID3DBlob);
     /*! @} */
 
-    inline void convertBlobToString(ID3DBlob* pBlob, std::string& str)
+    template<typename BlobType>
+    inline std::string convertBlobToString(BlobType* pBlob)
     {
         std::vector<char> infoLog(pBlob->GetBufferSize() + 1);
         memcpy(infoLog.data(), pBlob->GetBufferPointer(), pBlob->GetBufferSize());
         infoLog[pBlob->GetBufferSize()] = 0;
-        str = std::string(infoLog.data());
+        return std::string(infoLog.data());
     }
 }

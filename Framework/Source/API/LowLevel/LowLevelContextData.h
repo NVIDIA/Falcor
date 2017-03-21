@@ -45,13 +45,19 @@ namespace Falcor
 
         static SharedPtr create(CommandListType type);
         void reset();
-        void flush();
+        virtual void flush();
 
         CommandListHandle getCommandList() const { return mpList; }
         CommandQueueHandle getCommandQueue() const { return mpQueue; }
+        FencedPool<CommandAllocatorHandle>::SharedPtr getAllocatorPool() const { return mpAllocatorPool; }
         CommandAllocatorHandle getCommandAllocator() const { return mpAllocator; }
         GpuFence::SharedPtr getFence() const { return mpFence; }
-    private:
+
+        void setCommandList(CommandListHandle pList) { mpList = pList; }
+
+    protected:
+
+        LowLevelContextData() = default;
         FencedPool<CommandAllocatorHandle>::SharedPtr mpAllocatorPool;
         CommandListHandle mpList;
         CommandQueueHandle mpQueue;                                                                    

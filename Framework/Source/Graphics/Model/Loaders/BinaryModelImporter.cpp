@@ -481,26 +481,17 @@ namespace Falcor
     {
     }
 
-    Model::SharedPtr BinaryModelImporter::createFromFile(const std::string& filename, uint32_t flags)
+    bool BinaryModelImporter::import(Model* pModel, const std::string& filename, Model::LoadFlags flags)
     {
         std::string fullpath;
         if(findFileInDataDirectories(filename, fullpath) == false)
         {
             logError(std::string("Can't find model file ") + filename);
-            return nullptr;
+            return false;
         }
 
         BinaryModelImporter loader(fullpath);
-        Model::SharedPtr pModel = loader.createModel(flags);
-
-        pModel->setFilename(filename);
-
-        // filename can be a relative path
-        std::string name = getFilenameFromPath(filename);
-        name = swapFileExtension(name, ".bin", "");
-        pModel->setName(name);
-
-        return pModel;
+        return loader.importModel(pModel, flags);
     }
 
     static bool checkVersion(const std::string& formatID, uint32_t version, const std::string& modelName)
@@ -579,7 +570,7 @@ namespace Falcor
         }
     }
     
-    Model::SharedPtr BinaryModelImporter::createModel(uint32_t flags)
+    bool BinaryModelImporter::importModel(Model* pModel, Model::LoadFlags flags)
     {
         // Format ID and version.
         char formatID[9];
@@ -592,7 +583,7 @@ namespace Falcor
         // Check if the version matches
         if(checkVersion(formatID, version, mModelName) == false)
         {
-            return nullptr;
+            return false;
         }
 
         int numTextureSlots;
@@ -610,7 +601,7 @@ namespace Falcor
         case 8:     numTextureSlots = TextureType_Glossiness + 1; numAttributesType = AttribType_Max; break;
         default:
             should_not_get_here();
-            return nullptr;
+            return false;
         }
 
 
@@ -641,12 +632,11 @@ namespace Falcor
         {
             std::string msg = "Error when loading model " + mModelName + ".\nFile is corrupted.";
             logError(msg);
-            return nullptr;
+            return false;
         }
 
         // create objects
-        auto pModel = Model::create();
-        bool shouldGenerateTangents = (flags & Model::GenerateTangentSpace) != 0;
+        bool shouldGenerateTangents = is_set(flags, Model::LoadFlags::DontGenerateTangentSpace) == false;
 
         std::vector<TextureData> texData;
 
@@ -675,7 +665,7 @@ namespace Falcor
             bool operator==(const TexSignature& other) const { return pData == other.pData || format == other.format; }
         };
         std::map<TexSignature, Texture::SharedPtr> textures;
-        bool loadTexAsSrgb = (flags & Model::AssumeLinearSpaceTextures) ? false : true;
+        bool loadTexAsSrgb = !is_set(flags, Model::LoadFlags::AssumeLinearSpaceTextures);
 
         // Load the meshes
         for(int meshIdx = 0; meshIdx < numMeshes; meshIdx++)
@@ -700,7 +690,7 @@ namespace Falcor
             {
                 std::string Msg = "Error when loading model " + mModelName + ".\nCorrupted data.!";
                 logError(Msg);
-                return nullptr;
+                return false;
             }
 
             Vao::BufferVec pVBs;
@@ -734,7 +724,7 @@ namespace Falcor
                 {
                     std::string msg = "Error when loading model " + mModelName + ".\nCorrupted data.!";
                     logError(msg);
-                    return nullptr;
+                    return false;
                 }
                 else
                 {
@@ -867,7 +857,7 @@ namespace Falcor
                     {
                         std::string msg = "Error when loading model " + mModelName + ".\nCorrupt binary mesh data!";
                         logError(msg);
-                        return nullptr;
+                        return false;
                     }
                     else if(texID != -1)
                     {
@@ -907,7 +897,7 @@ namespace Falcor
                 {
                     std::string Msg = "Error when loading model " + mModelName + ".\nMesh has negative number of triangles!";
                     logError(Msg);
-                    return nullptr;
+                    return false;
                 }
 
                 // create the index buffer
@@ -1002,6 +992,6 @@ namespace Falcor
             }
         }
         
-        return pModel;
+        return true;
     }
 }

@@ -99,7 +99,7 @@ void AmbientOcclusion::onLoad()
     mpSSAO = SSAO::create(1024, 1024);
 
     // Model
-    mpModel = Model::createFromFile("ogre/bs_smile.obj", Model::GenerateTangentSpace);
+    mpModel = Model::createFromFile("ogre/bs_smile.obj");
 
     mpCamera = Camera::create();
     mpCamera->setAspectRatio((float)mpDefaultFBO->getWidth() / (float)mpDefaultFBO->getHeight());

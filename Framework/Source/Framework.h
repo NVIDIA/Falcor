@@ -87,10 +87,12 @@ namespace Falcor
     {
         Vertex,         ///< Vertex shader
         Pixel,          ///< Pixel shader
+        Geometry,       ///< Geometry shader
         Hull,           ///< Hull shader (AKA Tessellation control shader)
         Domain,         ///< Domain shader (AKA Tessellation evaluation shader)
-        Geometry,       ///< Geometry shader
         Compute,        ///< Compute shader
+
+        Extended,       ///< An extended, non-standard shader type
 
         Count           ///< Shader Type count
     };

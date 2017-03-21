@@ -39,13 +39,12 @@ namespace Falcor
     class SceneImporter
     {
     public:
-
-        static Scene::SharedPtr loadScene(const std::string& filename, uint32_t modelLoadFlags, uint32_t sceneLoadFlags);
+        static Scene::SharedPtr loadScene(const std::string& filename, Model::LoadFlags modelLoadFlags, Scene::LoadFlags sceneLoadFlags);
 
     private:
 
         SceneImporter() = default;
-        Scene::SharedPtr load(const std::string& filename, const uint32_t& modelLoadFlags, uint32_t sceneLoadFlags);
+        Scene::SharedPtr load(const std::string& filename, Model::LoadFlags modelLoadFlags, Scene::LoadFlags sceneLoadFlags);
 
         bool parseVersion(const rapidjson::Value& jsonVal);
         bool parseModels(const rapidjson::Value& jsonVal);
@@ -93,8 +92,8 @@ namespace Falcor
         Scene::SharedPtr mpScene = nullptr;
         std::string mFilename;
         std::string mDirectory;
-        uint32_t mModelLoadFlags = 0;
-        uint32_t mSceneLoadFlags = 0;
+        Model::LoadFlags mModelLoadFlags;
+        Scene::LoadFlags mSceneLoadFlags;
 
         using ObjectMap = std::map<std::string, IMovableObject::SharedPtr>;
         bool isNameDuplicate(const std::string& name, const ObjectMap& objectMap, const std::string& objectType) const;

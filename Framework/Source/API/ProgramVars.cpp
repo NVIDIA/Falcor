@@ -46,7 +46,7 @@ namespace Falcor
             found = (desc.type == descType) && (desc.regIndex == regIndex) && (desc.regSpace == regSpace);
             if (found)
             {
-                return pRootSig->getDescriptorRootOffset(i);
+                return pRootSig->getDescriptorRootIndex(i);
             }
         }
 
@@ -59,7 +59,7 @@ namespace Falcor
             assert(range.descCount == 1);
             if (range.type == descType && range.firstRegIndex == regIndex && range.regSpace == regSpace)
             {
-                return pRootSig->getDescriptorTableRootOffset(i);
+                return pRootSig->getDescriptorTableRootIndex(i);
             }
         }
         should_not_get_here();
@@ -564,8 +564,8 @@ namespace Falcor
         return true;
     }
 
-    template<typename ViewType, bool isUav, bool forGraphics, typename ContextType>
-    void bindUavSrvCommon(ContextType* pContext, const ProgramVars::ResourceMap<ViewType>& resMap)
+    template<typename ViewType, bool isUav, bool forGraphics>
+    void bindUavSrvCommon(CopyContext* pContext, const ProgramVars::ResourceMap<ViewType>& resMap)
     {
         ID3D12GraphicsCommandList* pList = pContext->getLowLevelData()->getCommandList();
         for (auto& resIt : resMap)
@@ -583,7 +583,6 @@ namespace Falcor
                 {
                     pTypedBuffer->uploadToGPU();
                 }
-
                 const StructuredBuffer* pStructured = dynamic_cast<const StructuredBuffer*>(pResource);
                 if (pStructured)
                 {
@@ -595,8 +594,7 @@ namespace Falcor
                     }
                 }
 
-                pContext->resourceBarrier(pResource, isUav ? Resource::State::UnorderedAccess : Resource::State::ShaderResource);
-
+                pContext->resourceBarrier(resDesc.pResource.get(), isUav ? Resource::State::UnorderedAccess : Resource::State::ShaderResource);
                 if (isUav)
                 {
                     if (pTypedBuffer)
@@ -627,22 +625,22 @@ namespace Falcor
         }
     }
 
-    template<bool forGraphics, typename ContextType>
-    void ProgramVars::applyCommon(ContextType* pContext) const
+    template<bool forGraphics>
+    void applyProgramVarsCommon(const ProgramVars* pVars, CopyContext* pContext)
     {
-        // Get the command list
         ID3D12GraphicsCommandList* pList = pContext->getLowLevelData()->getCommandList();
+
         if(forGraphics)
         {
-            pList->SetGraphicsRootSignature(mpRootSignature->getApiHandle());
+            pList->SetGraphicsRootSignature(pVars->getRootSignature()->getApiHandle());
         }
         else
         {
-            pList->SetComputeRootSignature(mpRootSignature->getApiHandle());
+            pList->SetComputeRootSignature(pVars->getRootSignature()->getApiHandle());
         }
 
         // Bind the constant-buffers
-        for (auto& bufIt : mAssignedCbs)
+        for (auto& bufIt : pVars->getAssignedCbs())
         {
             uint32_t rootOffset = bufIt.second.rootSigOffset;
             const ConstantBuffer* pCB = dynamic_cast<const ConstantBuffer*>(bufIt.second.pResource.get());
@@ -658,11 +656,11 @@ namespace Falcor
         }
 
         // Bind the SRVs and UAVs
-        bindUavSrvCommon<ShaderResourceView, false, forGraphics>(pContext, mAssignedSrvs);
-        bindUavSrvCommon<UnorderedAccessView, true, forGraphics>(pContext, mAssignedUavs);
+        bindUavSrvCommon<ShaderResourceView, false, forGraphics>(pContext, pVars->getAssignedSrvs());
+        bindUavSrvCommon<UnorderedAccessView, true, forGraphics>(pContext, pVars->getAssignedUavs());
 
         // Bind the samplers
-        for (auto& samplerIt : mAssignedSamplers)
+        for (auto& samplerIt : pVars->getAssignedSamplers())
         {
             uint32_t rootOffset = samplerIt.second.rootSigOffset;
             const Sampler* pSampler = samplerIt.second.pSampler.get();
@@ -680,13 +678,13 @@ namespace Falcor
         }
     }
 
-    void ComputeVars::apply(CopyContext* pContext) const
+    void ComputeVars::apply(ComputeContext* pContext) const
     {
-        applyCommon<false>(pContext);
+        applyProgramVarsCommon<false>(this, pContext);
     }
 
     void GraphicsVars::apply(RenderContext* pContext) const
     {
-        applyCommon<true>(pContext);
+        applyProgramVarsCommon<true>(this, pContext);
     }
 }

@@ -95,14 +95,14 @@ namespace Falcor
         /**
             Enum to generate light source(s)
         */
-        enum
+		enum class LoadFlags
         {
-            None,
-            GenerateAreaLights = 1,    ///< Create area light(s) for meshes that have emissive material
-            LoadMaterialHistory = 2    ///< Load history of overridden mesh materials
+			None                =   0x0,
+			GenerateAreaLights  =   0x1,    ///< Create area light(s) for meshes that have emissive material
+            StoreMaterialHistory =  0x2     ///< Store history of overridden mesh materials
         };
 
-        static Scene::SharedPtr loadFromFile(const std::string& filename, const uint32_t& modelLoadFlags, uint32_t sceneLoadFlags = 0);
+        static Scene::SharedPtr loadFromFile(const std::string& filename, Model::LoadFlags modelLoadFlags = Model::LoadFlags::None, Scene::LoadFlags sceneLoadFlags = LoadFlags::None);
         static Scene::SharedPtr create();
 
         ~Scene();
@@ -220,4 +220,6 @@ namespace Falcor
         string_uservar_map mUserVars;
         static const UserVariable kInvalidVar;
     };
+
+    enum_class_operators(Scene::LoadFlags);
 }

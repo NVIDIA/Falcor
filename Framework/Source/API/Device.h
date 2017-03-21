@@ -60,6 +60,13 @@ namespace Falcor
             std::vector<std::string> requiredExtensions; ///< Extensions required by the sample
 			bool enableVsync = false;           ///< Controls vertical-sync
             bool enableDebugLayer = DEFAULT_ENABLE_DEBUG_LAYER;    ///< Enable the debug layer. The default for release build is false, for debug build it's true.
+            
+#ifdef FALCOR_D3D
+            /** The following callback allows the user to create its own device (for example, create a WARP device or choose a specific GPU in a multi-GPU machine)
+            */
+            using CreateDeviceFunc = std::function<DeviceHandle(IDXGIAdapter* pAdapter, D3D_FEATURE_LEVEL featureLevel)>;
+            CreateDeviceFunc createDeviceFunc;
+#endif
         };
 
 		/** Create a new device.
@@ -120,6 +127,7 @@ namespace Falcor
         DescriptorHeap::SharedPtr getSamplerDescriptorHeap() const { return mpSamplerHeap; }
         ResourceAllocator::SharedPtr getResourceAllocator() const { return mpResourceAllocator; }
         void releaseResource(ApiObjectHandle pResource);
+
     private:
 		Device(Window::SharedPtr pWindow) : mpWindow(pWindow) {}
 		bool init(const Desc& desc);

@@ -27,35 +27,12 @@
 ***************************************************************************/
 #include "Framework.h"
 #include <vector>
-#include "Utils/ShaderPreprocessor.h"
 #include "API/Shader.h"
-#include "Utils/OS.h"
+#include "ShaderUtils.h"
 
 namespace Falcor
 {
-    const std::string getShaderNameFromType(ShaderType type)
-    {
-        switch(type)
-        {
-        case ShaderType::Vertex:
-            return "Vertex";
-        case ShaderType::Pixel:
-            return "Pixel";
-        case ShaderType::Hull:
-            return "Hull";
-        case ShaderType::Domain:
-            return "Domain";
-        case ShaderType::Geometry:
-            return "Geometry";
-        case ShaderType::Compute:
-            return "Compute";
-        default:
-            should_not_get_here();
-            return "";
-        }
-    }
-
-    const Shader::SharedPtr createShaderFromString(const std::string& shaderString, ShaderType shaderType, const Program::DefineList& shaderDefines)
+    Shader::SharedPtr createShaderFromString(const std::string& shaderString, ShaderType shaderType, const Program::DefineList& shaderDefines)
     {
         std::string shader = shaderString;
         std::string errorMsg;
@@ -71,11 +48,10 @@ namespace Falcor
 
         std::string log;
         auto pShader = Shader::create(shader, shaderType, log);
-        pShader->setIncludeList(includeList);
 
         if(pShader == nullptr)
         {
-            std::string msg = "Error when creating " + getShaderNameFromType(shaderType) + " shader from string\nError log:\n";
+            std::string msg = "Error when creating " + to_string(shaderType) + " shader from string\nError log:\n";
             msg += log;
             msg += "\nShader string:\n" + shaderString + "\n";
             logError(msg);
@@ -83,58 +59,8 @@ namespace Falcor
         return pShader;
     }
 
-    const Shader::SharedPtr createShaderFromFile(const std::string& filename, ShaderType shaderType, const Program::DefineList& shaderDefines)
+    Shader::SharedPtr createShaderFromFile(const std::string& filename, ShaderType shaderType, const Program::DefineList& shaderDefines)
     {
-        // New shader, look for the file
-        std::string fullpath;
-        if(findFileInDataDirectories(filename, fullpath) == false)
-        {
-            std::string err = std::string("Can't find shader file ") + filename;
-            logError(err);
-            return nullptr;
-        }
-
-        while(1)
-        {
-            // Open the file
-            std::string shader;
-            readFileToString(fullpath, shader);
-
-            // Preprocess
-            std::string errorMsg;
-            Shader::unordered_string_set includeList;
-            if(ShaderPreprocessor::parseShader(fullpath, shader, errorMsg, includeList, shaderDefines) == false)
-            {
-                std::string msg = std::string("Error when pre-processing shader ") + filename + "\n" + errorMsg;
-                if(msgBox(msg, MsgBoxType::RetryCancel) == MsgBoxButton::Cancel)
-                {
-                    logError(msg);
-                    return nullptr;
-                }
-            }
-            else
-            {
-                // Preprocessing is good
-                std::string errorLog;
-                auto pShader = Shader::create(shader, shaderType, errorLog);
-
-                if(pShader == nullptr)
-                {
-                    std::string error = std::string("Compilation of shader ") + filename + "\n\n";
-                    error += errorLog;
-                    MsgBoxButton mbButton = msgBox(error, MsgBoxType::RetryCancel);
-                    if(mbButton == MsgBoxButton::Cancel)
-                    {
-                        logError(error);
-                        exit(1);
-                    }
-                }
-                else
-                {
-					pShader->setIncludeList(includeList);
-                    return pShader;
-                }
-            }
-        }
+        return createShaderFromFile<Shader>(filename, shaderType, shaderDefines);
     }
 }

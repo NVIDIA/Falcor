@@ -32,10 +32,10 @@
 
 namespace Falcor
 {
-    ProgramReflection::SharedPtr ProgramReflection::create(const ProgramVersion* pProgramVersion, std::string& log)
+    ProgramReflection::SharedPtr ProgramReflection::create(const ReflectionHandleVector& reflectHandles, std::string& log)
     {
         SharedPtr pReflection = SharedPtr(new ProgramReflection);
-        return pReflection->init(pProgramVersion, log) ? pReflection : nullptr;
+        return pReflection->init(reflectHandles, log) ? pReflection : nullptr;
     }
 
     ProgramReflection::BindLocation ProgramReflection::getBufferBinding(const std::string& name) const
@@ -54,12 +54,12 @@ namespace Falcor
         return invalidBind;
     }
 
-    bool ProgramReflection::init(const ProgramVersion* pProgVer, std::string& log)
+    bool ProgramReflection::init(const ReflectionHandleVector& reflectHandles, std::string& log)
     {
         bool b = true;
-        b = b && reflectResources(pProgVer, log);
-        b = b && reflectVertexAttributes(pProgVer, log);
-        b = b && reflectFragmentOutputs(pProgVer, log);
+        b = b && reflectResources(reflectHandles, log);
+        b = b && reflectVertexAttributes(reflectHandles, log);
+        b = b && reflectPixelShaderOutputs(reflectHandles, log);
         return b;
     }
 
@@ -67,6 +67,7 @@ namespace Falcor
     {
         const std::string msg = "Error when getting variable data \"" + name + "\" from buffer \"" + mName + "\".\n";
         uint32_t arrayIndex = 0;
+        offset = kInvalidLocation;
 
         // Look for the variable
         auto& var = mVariables.find(name);

@@ -47,7 +47,7 @@ namespace Falcor
         using UniquePtr = std::unique_ptr<SceneEditor>;
         using UniqueConstPtr = std::unique_ptr<const SceneEditor>;
 
-        static UniquePtr create(const Scene::SharedPtr& pScene, const uint32_t modelLoadFlags = 0);
+        static UniquePtr create(const Scene::SharedPtr& pScene, Model::LoadFlags modelLoadFlags = Model::LoadFlags::None);
         ~SceneEditor();
 
         const Camera::SharedPtr getEditorCamera() const { return mpEditorScene->getActiveCamera(); }
@@ -62,7 +62,7 @@ namespace Falcor
 
     private:
 
-        SceneEditor(const Scene::SharedPtr& pScene, const uint32_t modelLoadFlags);
+        SceneEditor(const Scene::SharedPtr& pScene, Model::LoadFlags modelLoadFlags);
         Scene::SharedPtr mpScene;
 
         bool mSceneDirty = false;
@@ -130,8 +130,8 @@ namespace Falcor
 
         void renderModelAnimation(Gui* pGui);
 
-        uint32_t mModelLoadFlags = 0;
-        uint32_t mSceneLoadFlags = 0;
+        Model::LoadFlags mModelLoadFlags = Model::LoadFlags::None;
+        Scene::LoadFlags mSceneLoadFlags = Scene::LoadFlags::None;
 
         //
         // Initialization

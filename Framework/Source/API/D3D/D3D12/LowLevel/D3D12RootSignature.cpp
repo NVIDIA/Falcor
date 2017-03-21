@@ -145,6 +145,7 @@ namespace Falcor
 
     bool RootSignature::apiInit()
     {
+        mSizeInBytes = 0;
         StaticSamplerVec samplerVec(mDesc.mSamplers.size());
         for (size_t i = 0 ; i < samplerVec.size() ; i++)
         {
@@ -152,37 +153,40 @@ namespace Falcor
         }
         size_t rootParamsCount = mDesc.mConstants.size() + mDesc.mDescriptorTables.size() + mDesc.mRootDescriptors.size();
         RootParameterVec rootParams(rootParamsCount);
-        auto& paramIt = rootParams.begin();
+        mElementByteOffset.resize(rootParamsCount);
 
-        mConstantOffset.resize(mDesc.mConstants.size());
-
-        uint32_t rootOffset = 0;
-        // Constants
-        for(size_t i = 0 ; i < mDesc.mConstants.size() ; i++)
-        {
-            mConstantOffset[i] = rootOffset++;
-            convertRootConstant(mDesc.mConstants[i], *paramIt);
-            paramIt++;
-        }
+        mConstantIndices.resize(mDesc.mConstants.size());
+        
+        uint32_t elementIndex = 0;
 
         // Root descriptors
-        mDescriptorOffset.resize(mDesc.mRootDescriptors.size());
-        for (size_t i = 0 ; i < mDesc.mRootDescriptors.size() ; i++)
+        mDescriptorIndices.resize(mDesc.mRootDescriptors.size());
+        for (size_t i = 0; i < mDesc.mRootDescriptors.size(); i++, elementIndex++)
         {
-            mDescriptorOffset[i] = rootOffset++;
-            convertRootDescriptor(mDesc.mRootDescriptors[i], *paramIt);
-            paramIt++;
+            mDescriptorIndices[i] = elementIndex;
+            convertRootDescriptor(mDesc.mRootDescriptors[i], rootParams[elementIndex]);
+            mElementByteOffset[elementIndex] = mSizeInBytes;
+            mSizeInBytes += 8;
+        }
 
+        // Constants
+        for (size_t i = 0; i < mDesc.mConstants.size(); i++, elementIndex++)
+        {
+            mConstantIndices[i] = elementIndex;
+            convertRootConstant(mDesc.mConstants[i], rootParams[elementIndex]);
+            mElementByteOffset[elementIndex] = mSizeInBytes;
+            mSizeInBytes += 4;
         }
 
         // Descriptor tables. Need to allocate some space for the D3D12 tables
         std::vector<std::vector<D3D12_DESCRIPTOR_RANGE>> d3dRanges(mDesc.mDescriptorTables.size());
-        mDescTableOffset.resize(mDesc.mDescriptorTables.size());
-        for (size_t i = 0 ; i < mDesc.mDescriptorTables.size() ; i++)
+        mDescTableIndices.resize(mDesc.mDescriptorTables.size());
+        for (size_t i = 0 ; i < mDesc.mDescriptorTables.size() ; i++, elementIndex++)
         {
-            mDescTableOffset[i] = rootOffset++;
-            convertDescTable(mDesc.mDescriptorTables[i], *paramIt, d3dRanges[i]);
-            paramIt++;
+            mDescTableIndices[i] = elementIndex;
+            convertDescTable(mDesc.mDescriptorTables[i], rootParams[elementIndex], d3dRanges[i]);
+            mElementByteOffset[elementIndex] = mSizeInBytes;
+            mSizeInBytes += 4;
         }
 
         // Create the root signature
@@ -198,9 +202,14 @@ namespace Falcor
         HRESULT hr = D3D12SerializeRootSignature(&desc, D3D_ROOT_SIGNATURE_VERSION_1_0, &pSigBlob, &pErrorBlob);
         if (FAILED(hr))
         {
-            std::string msg;
-            convertBlobToString(pErrorBlob, msg);
+            std::string msg = convertBlobToString(pErrorBlob.GetInterfacePtr());
             logError(msg);
+            return false;
+        }
+
+        if (mSizeInBytes > sizeof(uint32_t) * D3D12_MAX_ROOT_COST)
+        {
+            logError("Root-signature cost is too high. D3D12 root-signatures are limited to 64 DWORDs, trying to create a signature with " + std::to_string(mSizeInBytes / sizeof(uint32_t)) + " DWORDs");
             return false;
         }
 

@@ -43,7 +43,7 @@ namespace Falcor
         glDeleteProgram(mApiHandle);
     }
 
-    bool ProgramVersion::apiInit(std::string& log, const std::string& name)
+    bool ProgramVersion::init(std::string& log, const std::string& name)
     {
         mApiHandle = gl_call(glCreateProgram());
 

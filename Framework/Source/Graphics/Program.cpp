@@ -180,61 +180,65 @@ namespace Falcor
         return mpActiveProgram;
     }
 
-    bool Program::link() const
+    ProgramVersion::SharedPtr Program::createProgramVersion(std::string& log) const
     {
         mFileTimeMap.clear();
 
-        while(1)
+        Shader::SharedPtr shaders[kShaderCount] = {};
+
+        // create the shaders
+        for (uint32_t i = 0; i < kShaderCount; i++)
         {
-            Shader::SharedPtr pShaders[kShaderCount];
-
-            // create the shaders
-            for(uint32_t i = 0; i < kShaderCount; i++)
+            if (mShaderStrings[i].size())
             {
-                if(mShaderStrings[i].size())
+                if (mCreatedFromFile)
                 {
-                    if(mCreatedFromFile)
+                    shaders[i] = createShaderFromFile(mShaderStrings[i], ShaderType(i), mDefineList);
+                    if(shaders[i])
                     {
-                        pShaders[i] = createShaderFromFile(mShaderStrings[i], ShaderType(i), mDefineList);
-                        if(pShaders[i])
-                        {
-                            std::string fullpath;
-                            findFileInDataDirectories(mShaderStrings[i], fullpath);
-                            mFileTimeMap[fullpath] = getFileModifiedTime(fullpath);
-                        }
-                    }
-                    else
-                    {
-                        pShaders[i] = createShaderFromString(mShaderStrings[i], ShaderType(i), mDefineList);
-                    }
-
-                    if(pShaders[i])
-                    {
-                        for(const auto& include : pShaders[i]->getIncludeList())
-                        {
-                            mFileTimeMap[include] = getFileModifiedTime(include);
-                        }
+                        std::string fullpath;
+                        findFileInDataDirectories(mShaderStrings[i], fullpath);
+                        mFileTimeMap[fullpath] = getFileModifiedTime(fullpath);
                     }
                 }
-            }
+                else
+                {
+                    shaders[i] = createShaderFromString(mShaderStrings[i], ShaderType(i), mDefineList);
+                }
 
+                if(shaders[i])
+                {
+                    for(const auto& include : shaders[i]->getIncludeList())
+                    {
+                        mFileTimeMap[include] = getFileModifiedTime(include);
+                    }
+                }
+            }           
+        }
+
+        if (shaders[(uint32_t)ShaderType::Compute])
+        {
+            return ProgramVersion::create(shaders[(uint32_t)ShaderType::Compute], log, getProgramDescString());
+        }
+        else
+        {
+            return ProgramVersion::create(shaders[(uint32_t)ShaderType::Vertex],
+                shaders[(uint32_t)ShaderType::Pixel],
+                shaders[(uint32_t)ShaderType::Geometry],
+                shaders[(uint32_t)ShaderType::Hull],
+                shaders[(uint32_t)ShaderType::Domain],
+                log,
+                getProgramDescString());
+        }
+    }
+
+    bool Program::link() const
+    {
+        while(1)
+        {
             // create the program
             std::string log;
-            ProgramVersion::SharedConstPtr pProgram;
-            if (pShaders[(uint32_t)ShaderType::Compute])
-            {
-                pProgram = ProgramVersion::create(pShaders[(uint32_t)ShaderType::Compute], log, getProgramDescString());
-            }
-            else
-            {
-                pProgram = ProgramVersion::create(pShaders[(uint32_t)ShaderType::Vertex],
-                    pShaders[(uint32_t)ShaderType::Pixel],
-                    pShaders[(uint32_t)ShaderType::Geometry],
-                    pShaders[(uint32_t)ShaderType::Hull],
-                    pShaders[(uint32_t)ShaderType::Domain],
-                    log,
-                    getProgramDescString());
-            }
+            ProgramVersion::SharedConstPtr pProgram = createProgramVersion(log);
 
             if(pProgram == nullptr)
             {

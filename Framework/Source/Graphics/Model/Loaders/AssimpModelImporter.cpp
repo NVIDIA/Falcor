@@ -395,9 +395,8 @@ namespace Falcor
         return b;
     }
 
-    AssimpModelImporter::AssimpModelImporter(uint32_t flags) : mFlags(flags)
+    AssimpModelImporter::AssimpModelImporter(Model* pModel, Model::LoadFlags flags) : mFlags(flags), mpModel(pModel)
     {
-        mpModel = Model::create();
     }
 
     bool AssimpModelImporter::createAllMaterials(const aiScene* pScene, const std::string& modelFolder, bool isObjFile, bool useSrgb)
@@ -485,22 +484,24 @@ namespace Falcor
             0;
 
         // aiProcessPreset_TargetRealtime_MaxQuality enabled some optimizations the user might not want
-        if ((mFlags & Model::FindDegeneratePrimitives) == 0)
+        if(is_set(mFlags, Model::LoadFlags::FindDegeneratePrimitives) == false)
         {
             AssimpFlags &= ~aiProcess_FindDegenerates;
         }
+
         // Avoid merging original meshes
-        if ((mFlags & Model::DontMergeMeshes) != 0)
+        if(is_set(mFlags, Model::LoadFlags::DontMergeMeshes))
         {
             AssimpFlags &= ~aiProcess_OptimizeGraph;
         }
+
         // Never use Assimp's tangent gen code
         AssimpFlags &= ~(aiProcess_CalcTangentSpace);
 
         Assimp::Importer importer;
         const aiScene* pScene = importer.ReadFile(fullpath, AssimpFlags);
 
-        if ((pScene == nullptr) || (verifyScene(pScene) == false))
+        if((pScene == nullptr) || (verifyScene(pScene) == false))
         {
             std::string str("Can't open model file '");
             str = str + std::string(filename) + "'\n" + importer.GetErrorString();
@@ -514,8 +515,8 @@ namespace Falcor
 
         // Order of initialization matters, materials, bones and animations need to loaded before mesh initialization
         bool isObjFile = hasSuffix(filename, ".obj", false);
-        bool useSrgbTextures = (mFlags & Model::AssumeLinearSpaceTextures) == 0;
-        if (createAllMaterials(pScene, modelFolder, isObjFile, useSrgbTextures) == false)
+        bool useSrgbTextures = !is_set(mFlags, Model::LoadFlags::AssumeLinearSpaceTextures);
+        if(createAllMaterials(pScene, modelFolder, isObjFile, useSrgbTextures) == false)
         {
             logError(std::string("Can't create materials for model ") + filename, true);
             return false;
@@ -527,28 +528,13 @@ namespace Falcor
             return false;
         }
 
-        mpModel->setFilename(filename);
-
-        // filename can be a relative path
-        std::string name = getFilenameFromPath(filename);
-        size_t extPos = name.find_last_of('.');
-        name = (extPos == std::string::npos) ? name : name.substr(0, extPos);
-        mpModel->setName(name);
-
         return true;
     }
 
-    Model::SharedPtr AssimpModelImporter::createFromFile(const std::string& filename, uint32_t flags)
+    bool AssimpModelImporter::import(Model* pModel, const std::string& filename, Model::LoadFlags flags)
     {
-        AssimpModelImporter loader(flags);
-
-        // Init the model
-        if (loader.initModel(filename) == false)
-        {
-            loader.mpModel = nullptr;
-        }
-
-        return loader.mpModel;
+        AssimpModelImporter loader(pModel, flags);
+        return loader.initModel(filename);
     }
 
     uint32_t AssimpModelImporter::initBone(const aiNode* pCurNode, uint32_t parentID, uint32_t boneID)
@@ -728,7 +714,7 @@ namespace Falcor
         auto pIB = createIndexBuffer(pAiMesh);
         BoundingBox boundingBox = createMeshBbox(pAiMesh);
 
-        if (mFlags & Model::GenerateTangentSpace)
+        if(is_set(mFlags, Model::LoadFlags::DontGenerateTangentSpace) == false)
         {
             genTangentSpace(pAiMesh);
         }
@@ -779,7 +765,7 @@ namespace Falcor
 
         Mesh::SharedPtr pMesh = Mesh::create(pVBs, vertexCount, pIB, indexCount, pLayout, topology, pMaterial, boundingBox, pAiMesh->HasBones());
 
-        if (mFlags & Model::GenerateTangentSpace)
+        if (is_set(mFlags, Model::LoadFlags::DontGenerateTangentSpace) == false)
         {
             aiMesh* pM = const_cast<aiMesh*>(pAiMesh);
             safe_delete_array(pM->mBitangents);
@@ -792,7 +778,12 @@ namespace Falcor
     {
         std::vector<uint32_t> indices = createIndexBufferData(pAiMesh);
         const uint32_t size = (uint32_t)(sizeof(uint32_t) * indices.size());
-        return Buffer::create(size, Buffer::BindFlags::Index, Buffer::CpuAccess::None, indices.data());;
+        Buffer::BindFlags bindFlags = Buffer::BindFlags::Index;
+        if (is_set(mFlags, Model::LoadFlags::BuffersAsShaderResource))
+        {
+            bindFlags |= Buffer::BindFlags::ShaderResource;
+        }
+        return Buffer::create(size, bindFlags, Buffer::CpuAccess::None, indices.data());;
     }
 
 
@@ -912,6 +903,12 @@ namespace Falcor
                 memcpy(pDst, pSrc, size);
             }
         }
-        return Buffer::create(vertexStride * pAiMesh->mNumVertices, Buffer::BindFlags::Vertex, Buffer::CpuAccess::None, initData.data());
+        Buffer::BindFlags bindFlags = Buffer::BindFlags::Vertex;
+        if (is_set(mFlags, Model::LoadFlags::BuffersAsShaderResource))
+        {
+            bindFlags |= Buffer::BindFlags::ShaderResource;
+        }
+
+        return Buffer::create(vertexStride * pAiMesh->mNumVertices, bindFlags, Buffer::CpuAccess::None, initData.data());;
     }
 }

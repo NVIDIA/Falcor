@@ -171,7 +171,7 @@ namespace Falcor
         programMap.insert(shaderMap.begin(), shaderMap.end());
     }
 
-    bool ProgramVersion::apiInit(std::string& log, const std::string& name)
+    bool ProgramVersion::init(std::string& log, const std::string& name)
     {
         return true;
     }

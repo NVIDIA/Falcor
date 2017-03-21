@@ -31,8 +31,6 @@
 
 namespace Falcor
 {
-    class ProgramVersion;
-
     /** This class holds all of the data required to reflect a program, including inputs, outputs, constants, textures and samplers declarations
     */
     class ProgramReflection
@@ -40,6 +38,7 @@ namespace Falcor
     public:
         using SharedPtr = std::shared_ptr<ProgramReflection>;
         using SharedConstPtr = std::shared_ptr<const ProgramReflection>;
+        using ReflectionHandleVector = std::vector<ShaderReflectionHandle>;
 
         enum class ShaderAccess
         {
@@ -307,7 +306,7 @@ namespace Falcor
 
         /** Create a new object
         */
-        static SharedPtr create(const ProgramVersion* pProgramVersion, std::string& log);
+        static SharedPtr create(const ReflectionHandleVector& reflectHandles, std::string& log);
 
         /** Get a buffer binding index
         \param[in] name The buffer name in the program
@@ -364,10 +363,10 @@ namespace Falcor
         };
 
     private:
-        bool init(const ProgramVersion* pProgVer, std::string& log);
-        bool reflectVertexAttributes(const ProgramVersion* pProgVer, std::string& log);       // Input attributes
-        bool reflectFragmentOutputs(const ProgramVersion* pProgVer, std::string& log);        // FS output (if FS exists)
-        bool reflectResources(const ProgramVersion* pProgVer, std::string& log);              // SRV/UAV/ROV/Buffers and samplers
+        bool init(const ReflectionHandleVector& reflectHandles, std::string& log);
+        bool reflectVertexAttributes(const ReflectionHandleVector& reflectHandles, std::string& log);       // Input attributes
+        bool reflectPixelShaderOutputs(const ReflectionHandleVector& reflectHandles, std::string& log);        // PS output (if PS exists)
+        bool reflectResources(const ReflectionHandleVector& reflectHandles, std::string& log);              // SRV/UAV/ROV/Buffers and samplers
        
         BufferData mBuffers[BufferReflection::kTypeCount];
         VariableMap mFragOut;

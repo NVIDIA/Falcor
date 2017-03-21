@@ -29,22 +29,15 @@
 #include "API/Window.h"
 #include "Utils/UserInput.h"
 #include "Utils/OS.h"
-#include <codecvt>
 #include <algorithm>
 #include "API/texture.h"
 #include "API/FBO.h"
 #include <Initguid.h>
 #include <Windowsx.h>
+#include "Utils/StringUtils.h"
 
 namespace Falcor
 {
-    static std::wstring string_2_wstring(const std::string& s)
-    {
-        std::wstring_convert<std::codecvt_utf8<WCHAR>> cvt;
-        std::wstring ws = cvt.from_bytes(s);
-        return ws;
-    }
-
 	class ApiCallbacks
     {
     public:

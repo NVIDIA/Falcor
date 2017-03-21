@@ -50,7 +50,7 @@ void ShaderBuffersSample::onLoad()
     mpProgram = GraphicsProgram::createFromFile("ShaderBuffers.vs.hlsl", "ShaderBuffers.ps.hlsl");
 
     // Load the model
-    mpModel = Model::createFromFile("teapot.obj", 0);
+    mpModel = Model::createFromFile("teapot.obj");
 
     // Plane has only one mesh, get the VAO now
     mpVao = getVao();

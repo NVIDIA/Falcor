@@ -30,7 +30,6 @@
 #include <cstdio>
 #include <SetupApi.h>
 #include <cfgmgr32.h>
-#include <Windows.h>
 #include <cmath>
 
 #pragma comment(lib, "setupapi.lib")

@@ -181,12 +181,17 @@ namespace Falcor
             return;
         }
 
-        gpDevice = Device::create(mpWindow, Device::Desc());
+        gpDevice = Device::create(mpWindow, config.deviceDesc);
 		if (gpDevice == nullptr)
 		{
 			logError("Failed to create device");
 			return;
 		}
+
+        if (config.deviceCreatedCallback)
+        {
+            config.deviceCreatedCallback();
+        }
 
         // Set the icon
         setWindowIcon("Framework\\Nvidia.ico", mpWindow->getApiHandle());

@@ -35,7 +35,7 @@ ObjToBin::ObjToBin(std::vector<std::string> objFiles)
 void ObjToBin::convertObjToBin(const std::string& objFile)
 {
     printf("Converting %s ...\n", objFile.c_str());
-    auto pModel = Model::createFromFile(objFile, Model::GenerateTangentSpace);
+    auto pModel = Model::createFromFile(objFile.c_str());
 
     if (pModel)
     {

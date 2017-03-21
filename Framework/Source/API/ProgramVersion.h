@@ -48,7 +48,7 @@ namespace Falcor
 
         /** create a new program object for graphics
             \param[in] pVS Vertex shader object
-            \param[in] pFS Fragment shader object
+            \param[in] pPS Fragment shader object
             \param[in] pGS Geometry shader object
             \param[in] pHS Hull shader object
             \param[in] pDS Domain shader object
@@ -56,8 +56,8 @@ namespace Falcor
             \param[in] DebugName Optional. A meaningful name to use with log messages
             \return New object in case of success, otherwise nullptr
             */
-        static SharedConstPtr create(const Shader::SharedPtr& pVS,
-            const Shader::SharedPtr& pFS,
+        static SharedPtr create(const Shader::SharedPtr& pVS,
+            const Shader::SharedPtr& pPS,
             const Shader::SharedPtr& pGS,
             const Shader::SharedPtr& pHS,
             const Shader::SharedPtr& pDS,
@@ -70,11 +70,11 @@ namespace Falcor
         \param[in] DebugName Optional. A meaningful name to use with log messages
         \return New object in case of success, otherwise nullptr
         */
-        static SharedConstPtr create(const Shader::SharedPtr& pCS,
+        static SharedPtr create(const Shader::SharedPtr& pCS,
             std::string& log,
             const std::string& name = "");
 
-        ~ProgramVersion();
+        virtual ~ProgramVersion();
 
         /** Get the API handle.
         */
@@ -96,16 +96,16 @@ namespace Falcor
         /** Get the reflection object
         */
         ProgramReflection::SharedConstPtr getReflector() const { return mpReflector; }
-    private:
+    protected:
         ProgramVersion(const Shader::SharedPtr& pVS,
-            const Shader::SharedPtr& pFS,
+            const Shader::SharedPtr& pPS,
             const Shader::SharedPtr& pGS,
             const Shader::SharedPtr& pHS,
             const Shader::SharedPtr& pDS,
             const Shader::SharedPtr& pCS,
             const std::string& name = "");
 
-        bool apiInit(std::string& log, const std::string& name);
+        virtual bool init(std::string& log);
         void deleteApiHandle();
         ProgramHandle mApiHandle = ProgramHandle();
         const std::string mName;

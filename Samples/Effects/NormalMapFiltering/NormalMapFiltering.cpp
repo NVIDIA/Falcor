@@ -72,7 +72,7 @@ void NormalMapFiltering::updateProgram()
 
 void NormalMapFiltering::onLoad()
 {
-    Scene::SharedPtr pScene = Scene::loadFromFile("scenes\\ogre.fscene", Model::GenerateTangentSpace);
+    Scene::SharedPtr pScene = Scene::loadFromFile("scenes\\ogre.fscene");
     if(pScene == nullptr)
     {
         exit(1);

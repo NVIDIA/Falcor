@@ -36,7 +36,7 @@ const Gui::DropdownList PostProcess::kImageList = { { HdrImage::EveningSun, "Eve
 void PostProcess::onLoad()
 {
     //Create model and camera
-    mpTeapot = Model::createFromFile("teapot.obj", 0u);
+    mpTeapot = Model::createFromFile("teapot.obj");
     mpCamera = Camera::create();
     float nearZ = 0.1f;
     float farZ = mpTeapot->getRadius() * 1000;

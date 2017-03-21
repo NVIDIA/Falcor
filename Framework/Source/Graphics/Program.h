@@ -93,6 +93,8 @@ namespace Falcor
         void init(const std::string& cs, const DefineList& programDefines, bool createdFromFile);
 
         bool link() const;
+        virtual ProgramVersion::SharedPtr createProgramVersion(std::string& log) const;
+
         std::string mShaderStrings[kShaderCount]; // Either a filename or a string, depending on the value of mCreatedFromFile
 
         DefineList mDefineList;

@@ -99,7 +99,6 @@ namespace Falcor
             logError("Failed to create command list for LowLevelContextData");
             return nullptr;
         }
-
         return pThis;
     }
 
