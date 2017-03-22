@@ -20,6 +20,8 @@ gResultsDir = 'TestResults'
 gReferenceDir = 'ReferenceResults'
 gPullBranch = 'dev-2.0a2'
 
+gConfigDirDict = {}
+
 #default values
 #percent
 gDefaultFrameTimeMargin = 0.05
@@ -62,13 +64,9 @@ class TestInfo(object):
     def getFullName(self):
         return self.Name + '_' + self.ConfigName + '_' + str(self.Index)
     def getTestDir(self):
-        if (self.ConfigName == 'debugd3d12' or self.ConfigName == 'debugd3d11' or 
-            self.ConfigName == 'debugGL'):
-            return gDebugDir
-        elif(self.ConfigName == 'released3d12' or self.ConfigName == 'released3d11' or
-            self.ConfigName == 'releaseGL'):
-            return gReleaseDir
-        else:
+        try:
+            return gConfigDirDict[self.ConfigName]
+        except:
             print 'Invalid config' + self.ConfigName + ' for testInfo obj named ' + self.Name
             return ''
     def getTestPath(self):
@@ -318,57 +316,43 @@ def processSystemTest(xmlElement, testInfo):
     makeDirIfDoesntExist(testInfo.getResultsDir())
     overwriteMove(resultFile, testInfo.getResultsDir())
 
-def readTestList(buildTests, generateReference, sendFailEmail):
-    testList = open(gTestListFile)
-    for line in testList.readlines():
-        #strip off newline if there is one 
-        if line[-1] == '\n':
-            line = line[:-1]
-        #end cmd line with space
-        if line[-1] != ' ':
-            line += ' '
-        #grab cmd line if exists
-        cmdLineIndex = line.find(':')
-        cmdLine = ''
-        if cmdLineIndex != -1:
-            cmdLine = line[cmdLineIndex + 1:]
-            line = line[:cmdLineIndex]
-        #parse testing line
-        testValues = line.split(' ')
-        numValues = len(testValues)
-        if numValues < 2:
-            logTestSkip(line, 'Improperly formatted test request')
-            continue
-        testName = testValues[0]
-        configName = testValues[1].lower()
-        testInfo = TestInfo(testName, configName)
-        if not isConfigValid(configName):
-            logTestSkip(testInfo.getFullName(), 'Unrecognized config ' + configName)
-            continue
-        if numValues >= 3 and testValues[2] and not testValues[2].isspace():
-            try:
-                testInfo.LoadErrorMargin = float(testValues[2])
-            except:
-                print ('Unable to convert ' + testValues[2] + 
-                    ' to float. Using default Load Error Margin ' + str(gDefaultLoadTimeMargin))
-        if numValues >= 4 and testValues[3] and not testValues[3].isspace():
-            try:
-                testInfo.FrameErrorMargin = float(testValues[3])
-            except:
-                print ('Unable to convert ' + testValues[3] + 
-                    ' to float. Using default Frame Error Margin ' + str(gDefaultFrameTimeMargin))
-        #build and run tests
+def readTestList(generateReference, buildTests):
+    global gConfigDirDict
+    file = open(gTestListFile)
+    contents = file.read()
+    slnEndIndex = contents.find(' ')
+    slnName = contents[:slnEndIndex]
+    slnConfigStartIndex = contents.find('{')
+    slnConfigEndIndex = contents.find('}')
+    configData = contents[slnConfigStartIndex + 1 : slnConfigEndIndex]
+    configDataList = configData.split(' ')
+    for i in xrange(0, len(configDataList), 2):
+        gConfigDirDict[configDataList[i].lower()] = configDataList[i + 1]
         if buildTests:
-            #if theres a cmd line, is system test, use falcor sln
-            if cmdLine:
-                if callBatchFile(['build', '../Falcor.sln', configName, testName]):
-                    buildFail(False, testInfo, sendFailEmail)
-                    continue
-            else:
-                if callBatchFile(['build', 'FalcorTest.sln', configName, testName]):
-                    buildFail(False, testInfo, sendFailEmail)
-                    continue
-        runTest(testInfo, cmdLine, generateReference)
+            callBatchFile(['clean', slnName, configDataList[i].lower()])
+            callBatchFile(['build', slnName, configDataList[i].lower()])
+
+    contents = contents[slnConfigEndIndex + 1 :]
+    argStartIndex = contents.find('{')
+    while(argStartIndex != -1):
+        testName = cleanupString(contents[:argStartIndex])
+        argEndIndex = contents.find('}')
+        args = cleanupString(contents[argStartIndex + 1 : argEndIndex])
+        argsList = args.split(',')
+        contents = contents[argEndIndex + 1 :]
+        configStartIndex = contents.find('{')
+        configEndIndex = contents.find('}')
+        configList = cleanupString(contents[configStartIndex + 1 : configEndIndex]).split(' ')
+        #run test for each config and each set of args
+        for config in configList:
+            print 'Running ' + testName + ' in config ' + config 
+            for argSet in argsList:
+                testInfo = TestInfo(testName, config)
+                runTest(testInfo, cleanupString(argSet), generateReference)
+
+        #goto next set
+        contents = contents[configEndIndex + 1 :]
+        argStartIndex = contents.find('{')
 
 def runTest(testInfo, cmdLine, generateReference):
     testPath = testInfo.getTestPath()
@@ -376,7 +360,7 @@ def runTest(testInfo, cmdLine, generateReference):
         logTestSkip(testInfo.getFullName(), 'Unable to find ' + testPath)
         return
     try:
-        p = subprocess.Popen([testPath, cmdLine])
+        p = subprocess.Popen(testPath + ' ' + cmdLine)
         #run test until timeout or return
         start = time.time()
         while p.returncode == None:
@@ -389,7 +373,7 @@ def runTest(testInfo, cmdLine, generateReference):
                 return
         #ensure results file exists
         if not os.path.isfile(testInfo.getResultsFile()):
-            logTestSkip(testInfo.getFullName(), 'Failed to open ' + testInfo.getResultsFile())
+            logTestSkip(testInfo.getFullName(), 'Failed to open test result file ' + testInfo.getResultsFile())
             return
         #check for name conflicts
         testInfo.determineIndex(generateReference)
@@ -672,37 +656,13 @@ def main():
             if not args.noemail:
                 sendFatalFailEmail('Fatal Error, Failed to create test result folder')
                 sys.exit(1)
- 
-    if not args.nobuild:
-        callBatchFile(['clean', 'FalcorTest.sln', 'debugd3d12'])
-        callBatchFile(['clean', 'FalcorTest.sln', 'released3d12'])
-        callBatchFile(['clean', '../Falcor.sln', 'debugd3d12'])
-        callBatchFile(['clean', '../Falcor.sln', 'released3d12'])
-        #returns 1 on fail
-        if callBatchFile(['build', 'FalcorTest.sln', 'debugd3d12', 'Falcor']):
-            testInfo = TestInfo('Falcor', 'debugd3d12')
-            buildFail(True, testInfo, not args.noemail)
-        if callBatchFile(['build', 'FalcorTest.sln', 'released3d12', 'Falcor']):
-            testInfo = TestInfo('Falcor', 'released3d12')
-            buildFail(True, testInfo, not args.noemail)
-        if callBatchFile(['build', 'FalcorTest.sln', 'debugd3d12', 'FalcorTest']):
-            testInfo = TestInfo('FalcorTest', 'debugd3d12')
-            buildFail(True, testInfo, not args.noemail)
-        if callBatchFile(['build', 'FalcorTest.sln', 'released3d12', 'FalcorTest']):
-            testInfo = TestInfo('FalcorTest', 'released3d12')
-            buildFail(True, testInfo, not args.noemail)
-        if callBatchFile(['build', '../Falcor.sln', 'debugd3d12', 'Falcor']):
-            testInfo = TestInfo('Falcor', 'debugd3d12')
-            buildFail(True, testInfo, not args.noemail)
-        if callBatchFile(['build', '../Falcor.sln', 'released3d12', 'Falcor']):
-            testInfo = TestInfo('Falcor', 'released3d12')
 
     if not args.generatereference:
         resultSummary = LowLevelResult()
         resultSummary.Name = 'Summary'
         gLowLevelResultList.append(resultSummary)
 
-    readTestList(not args.nobuild, args.generatereference, not args.noemail)
+    readTestList(args.generatereference, not args.nobuild)
     if not args.generatereference:
         outputHTML(args.showsummary)
 
@@ -716,6 +676,14 @@ def main():
                 print name + ': ' + skip
             for reason in gFailReasonsList:
                 print reason
+
+def cleanupString(string):
+    string = string.replace('\t', '')
+    if string[0] == '\"':
+        string[0] = ' '
+    if string[-1] == '\"':
+        string[-1] = ' '
+    return string.replace('\n', '').strip()
 
 if __name__ == '__main__':
     main()
