@@ -184,6 +184,13 @@ namespace Falcor
         */
         Sampler::SharedPtr getSampler(uint32_t index) const;
 
+
+        // Spire-related stuff
+
+        void setComponent(uint32_t index, ComponentInstance::SharedPtr const& pComponent);
+
+
+
         /** Get the program reflection interface
         */
         ProgramReflection::SharedConstPtr getReflection() const { return mpReflector; }

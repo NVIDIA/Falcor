@@ -91,6 +91,7 @@ namespace Falcor
             ENTRY(vec3,     Float3),
             ENTRY(uint,     Uint),
             ENTRY(uvec3,    Uint3),
+            ENTRY(mat4, Float4x4),
 
         #undef ENTRY
 
@@ -106,6 +107,69 @@ namespace Falcor
         return ProgramReflection::Variable::Type::Unknown;
     }
 
+    ProgramReflection::BufferReflection::SharedPtr ProgramReflection::BufferReflection::create(SpireModule* componentClass)
+    {
+        char const* bufferName = spGetModuleName(componentClass);
+        auto bufferType = BufferReflection::Type::Constant;
+        auto shaderAccess = ShaderAccess::Read;
+        uint32_t bindPoint = 0;
+        uint32_t bindSpace = 0;
+
+        ProgramReflection::VariableMap varMap;
+
+        // loop over variables to fill them in...
+        int paramCount = spModuleGetParameterCount(componentClass);
+        for( int pp = 0; pp < paramCount; ++pp )
+        {
+            SpireComponentInfo spireVarInfo;
+            spModuleGetParameter(componentClass, pp, &spireVarInfo);
+
+            char const* varName = spireVarInfo.Name;
+ 
+            switch( spireVarInfo.BindableResourceType )
+            {
+            case SPIRE_NON_BINDABLE:
+                {
+                    // An ordinary uniform
+                    ProgramReflection::Variable varInfo;
+                    varInfo.arraySize = 0;
+                    varInfo.isRowMajor = true;
+                    varInfo.location = spireVarInfo.Offset;
+                    varInfo.type = getSpireVariableType(spireVarInfo.TypeName);
+                    varMap[varName] = varInfo;
+                }
+                break;
+
+            default:
+            case SPIRE_TEXTURE:
+            case SPIRE_SAMPLER:
+            case SPIRE_UNIFORM_BUFFER:
+            case SPIRE_STORAGE_BUFFER:
+                assert(!"unimplemented");
+                break;
+            }
+
+        }
+
+        // TODO: confirm that this is how to get the right size!
+        size_t bufferSize = spModuleGetParameterBufferSize(componentClass);
+
+        ProgramReflection::BindLocation bindLocation(bindPoint, shaderAccess);
+        auto bufferReflection = ProgramReflection::BufferReflection::create(
+            bufferName,
+            bindPoint,
+            bindSpace,
+            bufferType,
+            bufferSize,
+            varMap,
+            ProgramReflection::ResourceMap(),
+            shaderAccess);
+        bufferReflection->setShaderMask(0xFFFFFFFF);
+
+        return bufferReflection;
+    }
+
+
     bool ProgramReflection::initFromSpire(
         SpireCompilationContext*    pSpireContext,
         SpireShader*                pSpireShader,
@@ -114,81 +178,32 @@ namespace Falcor
         int componentCount = spShaderGetParameterCount(pSpireShader);
         for(int cc = 0; cc < componentCount; ++cc)
         {
-            char const* componentTypeName = spShaderGetParameterType(pSpireShader, cc);
-            SpireModule* componentType = spFindModule(pSpireContext, componentTypeName);
-            if(!componentType)
+            char const* componentClassName = spShaderGetParameterType(pSpireShader, cc);
+            SpireModule* componentClass = spFindModule(pSpireContext, componentClassName);
+            if(!componentClass)
                 continue;
 
-            // Note: we don't care about anything past the first componet parameter for now
-            if(cc > 0)
-                break;
+            char const* bufferName = spShaderGetParameterName(pSpireShader, cc);
 
-            char const* bufferName = "PerFrameCB"; // spShaderGetParameterName(pSpireShaer, cc);
             auto& bufferDesc = mBuffers[(uint32_t)BufferReflection::Type::Constant];
-            auto bufferType = BufferReflection::Type::Constant;
-            auto shaderAccess = ShaderAccess::Read;
-            uint32_t bindPoint = 0;
-            uint32_t bindSpace = 0;
-
-            ProgramReflection::VariableMap varMap;
-
-            // loop over variables to fill them in...
-            int paramCount = spModuleGetParameterCount(componentType);
-            for( int pp = 0; pp < paramCount; ++pp )
-            {
-                SpireComponentInfo spireVarInfo;
-                spModuleGetParameter(componentType, pp, &spireVarInfo);
-
-                char const* varName = spireVarInfo.Name;
- 
-                switch( spireVarInfo.BindableResourceType )
-                {
-                case SPIRE_NON_BINDABLE:
-                    {
-                        // An ordinary uniform
-
-
-                        ProgramReflection::Variable varInfo;
-                        varInfo.arraySize = 0;
-                        varInfo.isRowMajor = true;
-                        varInfo.location = spireVarInfo.Offset;
-                        varInfo.type = getSpireVariableType(spireVarInfo.TypeName);
-                        varMap[varName] = varInfo;
-                    }
-                    break;
-
-                default:
-                case SPIRE_TEXTURE:
-                case SPIRE_SAMPLER:
-                case SPIRE_UNIFORM_BUFFER:
-                case SPIRE_STORAGE_BUFFER:
-                    assert(!"unimplemented");
-                    break;
-                }
-
-            }
-
-            // TODO: confirm that this is how to get the right size!
-            size_t bufferSize = spModuleGetParameterBufferSize(componentType);
-
-            ProgramReflection::BindLocation bindLocation(bindPoint, shaderAccess);
-            auto bufferReflection = ProgramReflection::BufferReflection::create(
-                bufferName,
-                bindPoint,
-                bindSpace,
-                bufferType,
-                bufferSize,
-                varMap,
-                ProgramReflection::ResourceMap(),
-                shaderAccess);
-            bufferReflection->setShaderMask(0xFFFFFFFF);
 
             // Create the buffer reflection
+            auto bufferReflection = ProgramReflection::BufferReflection::create(componentClass);
+
+            auto shaderAccess = ShaderAccess::Read;
+            uint32_t bindPoint = spShaderGetParameterBinding(pSpireShader, cc);
+            uint32_t bindSpace = 0;
+
+            // clobber some stuff in the reflection computed from the component class
+            bufferReflection->mRegIndex = bindPoint;
+            bufferReflection->mRegSpace = bindSpace;
+
+            ProgramReflection::BindLocation bindLocation(bindPoint, shaderAccess);
+
             bufferDesc.nameMap[bufferName] = bindLocation;
             bufferDesc.descMap[bindLocation] = bufferReflection;
         }
 
-        // TODO: actually load reflection data from spire representation...
         return true;
     }
 

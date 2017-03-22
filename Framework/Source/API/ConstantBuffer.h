@@ -183,4 +183,7 @@ namespace Falcor
         const std::map<uint32_t, ID3D11SamplerStatePtr>& getAssignedSamplersMap() const { return *mAssignedSamplersMap; }
 #endif
     };
+
+    // For now, use a constant buffer to stand for a Spire component instance...
+    typedef ConstantBuffer ComponentInstance;
 }

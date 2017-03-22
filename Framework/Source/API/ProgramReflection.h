@@ -29,9 +29,7 @@
 #include "Framework.h"
 #include <unordered_map>
 
-//SPIRE: forward declare required spire types
-struct SpireCompilationContext;
-struct SpireShader;
+#include "Utils/SpireSupport.h"
 
 namespace Falcor
 {
@@ -208,6 +206,9 @@ namespace Falcor
             */
             static SharedPtr create(const std::string& name, uint32_t regIndex, uint32_t regSpace, Type type, size_t size, const VariableMap& varMap, const ResourceMap& resourceMap, ShaderAccess shaderAccess);
 
+            static SharedPtr create(SpireModule* componentClass);
+
+
             /** Get variable data
                 \param[in] name The name of the requested variable
                 \param[out] offset The offset of the variable or kInvalidLocation if the variable wasn't found. This is useful in cases where the requested variable is an array element, since the returned result will be different than Variable::offset
@@ -281,6 +282,7 @@ namespace Falcor
             */
             ShaderAccess getShaderAccess() const { return mShaderAccess; }
         private:
+            friend class ProgramReflection;
 
             BufferReflection(const std::string& name, uint32_t registerIndex, uint32_t regSpace, Type type, size_t size, const VariableMap& varMap, const ResourceMap& resourceMap, ShaderAccess shaderAccess);
             std::string mName;

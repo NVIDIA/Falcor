@@ -33,6 +33,9 @@
 #include <vector>
 #include "graphics/Paths/MovableObject.h"
 
+#include "Utils/SpireSupport.h"
+#include "API/ConstantBuffer.h"
+
 namespace Falcor
 {
     struct BoundingBox;
@@ -154,6 +157,10 @@ namespace Falcor
         void setIntoConstantBuffer(ConstantBuffer* pBuffer, const std::string& varName) const;
         void setIntoConstantBuffer(ConstantBuffer* pBuffer, const std::size_t& offset) const;
 
+        SpireModule* getSpireComponentClass(SpireCompilationContext*) const;
+        ComponentInstance::SharedPtr getSpireComponentInstance(SpireCompilationContext*) const;
+
+
         /** Returns the raw camera data
         */
         const CameraData& getData() const     { calculateCameraParameters(); return  mData; }
@@ -190,5 +197,13 @@ namespace Falcor
             float       negW;                ///< Camera frustum plane, sign of the coordinates
             glm::vec3   sign;    ///< Camera frustum plane position
         } mutable mFrustumPlanes[6];
+
+        // Spire stuff:
+
+        // The component class to use when compiling shaders for htis camera
+        mutable SpireModule* mSpireComponentClass = nullptr;
+
+        // The component "instance" to be used for spire stuff...
+        mutable ComponentInstance::SharedPtr mSpireComponentInstance;
     };
 }
