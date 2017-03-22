@@ -30,3 +30,22 @@
 // Spire is installed
 
 #include "Externals/Spire/Spire.h"
+
+namespace Falcor
+{
+	class ShaderRepositoryImpl;
+
+	class ShaderRepository
+	{
+	private:
+		static ShaderRepositoryImpl * impl;
+		ShaderRepository() = default;
+	public:
+		SpireCompilationContext * GetContext();
+		SpireModule* LoadLibraryModule(const char * name);
+		SpireCompilationEnvironment* LoadSource(const char * source, const char * fileName, SpireDiagnosticSink * sink);
+		void UnloadSource(SpireCompilationEnvironment * env);
+		static ShaderRepository Instance();
+		static void Close();
+	};
+}

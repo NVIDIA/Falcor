@@ -863,6 +863,7 @@
     <ClInclude Include="Utils\Psychophysics\SingleThresholdMeasurement.h" />
     <ClInclude Include="Utils\ShaderPreprocessor.h" />
     <ClInclude Include="Utils\ShaderUtils.h" />
+    <ClInclude Include="Utils\SpireSupport.h" />
     <ClInclude Include="Utils\StringUtils.h" />
     <ClInclude Include="Utils\TextRenderer.h" />
     <ClInclude Include="Utils\UserInput.h" />

@@ -40,7 +40,7 @@
 #include "API/RenderContext.h"
 #include "Utils/StringUtils.h"
 
-#include "Externals/Spire/Spire.h"
+#include "Utils/SpireSupport.h"
 
 namespace Falcor
 {
@@ -62,6 +62,10 @@ namespace Falcor
                 break;;
             }
         }
+		if (mSpireEnv)
+			ShaderRepository::Instance().UnloadSource(mSpireEnv);
+		if (mSpireSink)
+			spDestroyDiagnosticSink(mSpireSink);
     }
 
     std::string Program::getProgramDescString() const
@@ -114,42 +118,7 @@ namespace Falcor
     {
         mCreatedFromFile = createdFromFile;
         mIsSpire = true;
-
-        SpireCompilationContext* spireContext = spCreateCompilationContext(nullptr);
-        spSetCodeGenTarget(spireContext, SPIRE_HLSL);
-
-        for(auto p : getDataDirectoriesList())
-        {
-            spAddSearchPath(spireContext, p.c_str());
-        }
-
-        SpireDiagnosticSink* spireSink = spCreateDiagnosticSink(spireContext);
-        mSpireSink = spireSink;
-
-        // Load default code into the spire context, I guess
-        std::string libFile = "StandardPipeline.spire";
-        std::string libPath;
-        if (!findFileInDataDirectories(libFile, libPath))
-        {
-            std::string err = std::string("Can't find shader file ") + libFile;
-            logError(err);
-            return;
-        }
-
-        spLoadModuleLibrary(
-            spireContext,
-            libPath.c_str(),
-            spireSink);
-
-        if( spDiagnosticSinkHasAnyErrors(spireSink) )
-        {
-            std::string err = std::string("Errors compiling ") + libFile + ":\n"
-                + getSpireErrors(spireSink);
-            logError(err);
-            return;
-        }
-
-        mSpireContext = spireContext;
+		mSpireSink = spCreateDiagnosticSink(ShaderRepository::Instance().GetContext());
 
         // load the code
         // TODO: loop so that the user can fix errors and retry
@@ -175,12 +144,12 @@ namespace Falcor
                 code = shader;
             }
 
+			SpireDiagnosticSink * spireSink = spCreateDiagnosticSink(ShaderRepository::Instance().GetContext());
 
-            // Use Spire to compile the entry point (shader)
-            SpireShader* spireShader = spCreateShaderFromSource(
-                spireContext,
-                code.c_str(),
-                spireSink);
+			mSpireEnv = ShaderRepository::Instance().LoadSource(code.c_str(), name.c_str(), spireSink);
+
+            // retrieve the last shader entry point in source
+            SpireShader* spireShader = spEnvGetShader(mSpireEnv, spEnvGetShaderCount(mSpireEnv) - 1);
 
             // check for and report errors
             //
@@ -200,16 +169,16 @@ namespace Falcor
                 // needed by the shader itself
                 char const* componentTypeName = spShaderGetParameterType(spireShader, 0);
 
-                spireShaderParamsComponentClass = spFindModule(
-                    spireContext,
+                spireShaderParamsComponentClass = spEnvFindModule(
+                    mSpireEnv,
                     componentTypeName);
             }
 
             // HACK
             if( !spireShaderParamsComponentClass )
             {
-                spireShaderParamsComponentClass = spFindModule(
-                    spireContext,
+                spireShaderParamsComponentClass = spEnvFindModule(
+					mSpireEnv,
                     "PerFrameCB");
             }
 
@@ -223,7 +192,7 @@ namespace Falcor
         if( !mSpireReflector )
         {
             std::string err;
-            mSpireReflector = ProgramReflection::createFromSpire(mSpireContext, mSpireShader, err);
+            mSpireReflector = ProgramReflection::createFromSpire(mSpireEnv, mSpireShader, err);
             if( !err.empty() )
             {
                 logError(err);
@@ -345,8 +314,8 @@ namespace Falcor
                 // TODO: this is where we'd need to enumerate the additional component
                 // classes desired for the "active version"
 
-                SpireCompilationResult* spireResult = spCompileShader(
-                    mSpireContext,
+                SpireCompilationResult* spireResult = spEnvCompileShader(
+                    mSpireEnv,
                     mSpireShader,
 
                     // no arguments for now

@@ -31,6 +31,7 @@
 
 //SPIRE: forward declare required spire types
 struct SpireCompilationContext;
+struct SpireCompilationEnvironment;
 struct SpireShader;
 
 namespace Falcor
@@ -301,7 +302,7 @@ namespace Falcor
         /** Create a new object, from Spire reflection information
         */
         static SharedPtr createFromSpire(
-            SpireCompilationContext*    pSpireContext,
+			SpireCompilationEnvironment*    pSpireEnv,
             SpireShader*                pSpireShader,
             std::string& log);
 
@@ -362,7 +363,7 @@ namespace Falcor
     private:
         bool init(const ProgramVersion* pProgVer, std::string& log);
         bool initFromSpire(
-            SpireCompilationContext*    pSpireContext,
+			SpireCompilationEnvironment*    pSpireEnv,
             SpireShader*                pSpireShader,
             std::string& log);
 

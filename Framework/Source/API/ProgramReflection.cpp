@@ -41,12 +41,12 @@ namespace Falcor
     }
 
     ProgramReflection::SharedPtr ProgramReflection::createFromSpire(
-        SpireCompilationContext*    pSpireContext,
+        SpireCompilationEnvironment*    pSpireEnv,
         SpireShader*                pSpireShader,
         std::string& log)
     {
         SharedPtr pReflection = SharedPtr(new ProgramReflection);
-        return pReflection->initFromSpire(pSpireContext, pSpireShader, log) ? pReflection : nullptr;
+        return pReflection->initFromSpire(pSpireEnv, pSpireShader, log) ? pReflection : nullptr;
     }
 
 
@@ -107,7 +107,7 @@ namespace Falcor
     }
 
     bool ProgramReflection::initFromSpire(
-        SpireCompilationContext*    pSpireContext,
+        SpireCompilationEnvironment*    pSpireEnv,
         SpireShader*                pSpireShader,
         std::string& log)
     {
@@ -115,7 +115,7 @@ namespace Falcor
         for(int cc = 0; cc < componentCount; ++cc)
         {
             char const* componentTypeName = spShaderGetParameterType(pSpireShader, cc);
-            SpireModule* componentType = spFindModule(pSpireContext, componentTypeName);
+            SpireModule* componentType = spEnvFindModule(pSpireEnv, componentTypeName);
             if(!componentType)
                 continue;
 

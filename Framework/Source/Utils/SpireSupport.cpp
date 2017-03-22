@@ -31,3 +31,127 @@
 #define NOMINMAX
 
 #include "Externals/Spire/SpireAllSource.h"
+#include "SpireSupport.h"
+#include "Logger.h"
+#include "OS.h"
+
+namespace Falcor
+{
+	class ShaderRepositoryImpl
+	{
+	private:
+		SpireCompilationContext * context;
+		SpireCompilationEnvironment * libEnv;
+		SpireDiagnosticSink * sink;
+		void ReportErrors()
+		{
+			int size = spGetDiagnosticOutput(sink, nullptr, 0);
+			std::vector<char> buffer;
+			buffer.resize(size);
+			spGetDiagnosticOutput(sink, buffer.data(), size);
+			logError(buffer.data(), true);
+		}
+	public:
+		ShaderRepositoryImpl()
+		{
+			context = spCreateCompilationContext(nullptr);
+			sink = spCreateDiagnosticSink(context);
+
+			spSetCodeGenTarget(context, SPIRE_HLSL);
+
+			for (auto p : getDataDirectoriesList())
+			{
+				spAddSearchPath(context, p.c_str());
+			}
+
+			const char * libFiles[] = { "StandardPipeline.spire", "SharedLib.spire" };
+			for (auto file : libFiles)
+			{
+				std::string libPath;
+				if (!findFileInDataDirectories(file, libPath))
+				{
+					std::string err = std::string("Can't find shader file ") + file;
+					logError(err, true);
+					break;
+				}
+				spLoadModuleLibrary(context, libPath.c_str(), sink);
+			}
+
+			if (spDiagnosticSinkHasAnyErrors(sink))
+			{
+				ReportErrors();
+			}
+
+			libEnv = spGetCurrentEnvironment(context);
+		}
+		~ShaderRepositoryImpl()
+		{
+			spReleaseEnvironment(libEnv);
+			spDestroyDiagnosticSink(sink);
+			spDestroyCompilationContext(context);
+		}
+		SpireCompilationContext * GetContext()
+		{
+			return context;
+		}
+		SpireModule* LoadLibraryModule(const char * name)
+		{
+			return spEnvFindModule(libEnv, name);
+		}
+		SpireCompilationEnvironment* LoadSource(const char * source, const char * fileName, SpireDiagnosticSink * sink)
+		{
+			spPushContext(context);
+			spLoadModuleLibraryFromSource(context, source, fileName, sink);
+			if (spDiagnosticSinkHasAnyErrors(sink))
+			{
+				spPopContext(context);
+				ReportErrors();
+				return nullptr;
+			}
+			auto rs = spGetCurrentEnvironment(context);
+			spPopContext(context);
+			return rs;
+		}
+		void UnloadSource(SpireCompilationEnvironment * env)
+		{
+			spReleaseEnvironment(env);
+		}
+	};
+	
+	ShaderRepositoryImpl * ShaderRepository::impl = nullptr;
+
+	SpireCompilationContext * ShaderRepository::GetContext()
+	{
+		return impl->GetContext();
+	}
+
+	SpireModule * ShaderRepository::LoadLibraryModule(const char * name)
+	{
+		return impl->LoadLibraryModule(name);
+	}
+
+	SpireCompilationEnvironment * ShaderRepository::LoadSource(const char * source, const char * fileName, SpireDiagnosticSink * sink)
+	{
+		return impl->LoadSource(source, fileName, sink);
+	}
+
+	void ShaderRepository::UnloadSource(SpireCompilationEnvironment * env)
+	{
+		impl->UnloadSource(env);
+	}
+
+	ShaderRepository ShaderRepository::Instance()
+	{
+		if (!impl)
+			impl = new ShaderRepositoryImpl();
+		return ShaderRepository();
+	}
+
+	void ShaderRepository::Close()
+	{
+		delete impl;
+		impl = nullptr;
+	}
+}
+
+

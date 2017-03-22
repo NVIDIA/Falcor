@@ -58,7 +58,7 @@ namespace Falcor
             void remove(const std::string& name) {(*this).erase(name); }
         };
 
-        virtual ~Program() = 0;
+        virtual ~Program();
 
         /** Get the API handle of the active program
         */
@@ -125,7 +125,7 @@ namespace Falcor
 
         // State related to Spire-based shaders
         bool mIsSpire = false;
-        SpireCompilationContext*    mSpireContext                       = nullptr;
+        SpireCompilationEnvironment*    mSpireEnv                       = nullptr;
         SpireShader*                mSpireShader                        = nullptr;
         SpireModule*                mSpireShaderParamsComponentClass    = nullptr;
         SpireDiagnosticSink*        mSpireSink                          = nullptr;

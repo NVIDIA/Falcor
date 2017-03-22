@@ -1564,6 +1564,9 @@
     <ClInclude Include="Data\Effects\SSAOData.h">
       <Filter>Data\Effects</Filter>
     </ClInclude>
+    <ClInclude Include="Utils\SpireSupport.h">
+      <Filter>Utils</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Externals">
