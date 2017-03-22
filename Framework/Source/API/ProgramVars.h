@@ -189,6 +189,11 @@ namespace Falcor
 
         void setComponent(uint32_t index, ComponentInstance::SharedPtr const& pComponent);
 
+        template<typename T>
+        void setVariable(const std::string& name, const T& value)
+        {
+            mAssignedComponents[0]->setVariable(name, value);
+        }
 
 
         /** Get the program reflection interface
@@ -223,13 +228,19 @@ namespace Falcor
 
         ProgramVars(const ProgramReflection::SharedConstPtr& pReflector, bool createBuffers, const RootSignature::SharedPtr& pRootSig);
 
-        RootSignature::SharedPtr mpRootSignature;
+        mutable RootSignature::SharedPtr mpRootSignature;
         ProgramReflection::SharedConstPtr mpReflector;
 
         ResourceMap<ConstantBuffer> mAssignedCbs;        // HLSL 'b' registers
         ResourceMap<ShaderResourceView> mAssignedSrvs;   // HLSL 't' registers
         ResourceMap<UnorderedAccessView> mAssignedUavs;  // HLSL 'u' registers
         ResourceMap<Sampler> mAssignedSamplers;          // HLSL 's' registers
+
+        // SPIRE:
+        std::vector<ComponentInstance::SharedPtr> mAssignedComponents;
+        mutable bool mRootSignatureDirty = false;
+
+        RootSignature::SharedPtr createRootSignature() const;
     };
 
     class GraphicsVars : public ProgramVars, public std::enable_shared_from_this<ProgramVars>

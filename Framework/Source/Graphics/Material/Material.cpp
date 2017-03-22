@@ -542,4 +542,50 @@ namespace Falcor
 //         shaderDcl += '}';
     }
 
+    // Spire stuff
+
+    SpireModule* Material::getSpireComponentClass() const
+    {
+        auto spireContext = ShaderRepository::Instance().GetContext();
+
+        if( !mSpireComponentClass )
+        {
+            // TODO: need to actually construct an appropriate material module on the
+            // fly, based on the actual set of components used...
+            mSpireComponentClass = spFindModule(spireContext, "Material");
+        }
+
+        return mSpireComponentClass;
+    }
+
+    ComponentInstance::SharedPtr Material::getSpireComponentInstance() const
+    {
+        if( !mSpireComponentInstance )
+        {
+            SpireModule* componentClass = getSpireComponentClass();
+
+            // TODO: we should share/cache the buffer reflection somehwere...
+            ProgramReflection::BufferTypeReflection::SharedPtr componentReflection =
+                ProgramReflection::BufferTypeReflection::create(componentClass);
+
+            mSpireComponentInstance = ComponentInstance::create(
+                componentReflection);
+
+            mDescDirty = true;
+        }
+
+        // fill in the instance if data is dirty...
+        if( mDescDirty )
+        {
+            // TODO: this is a bit hacky, because we are using the same dirty
+            // flag for two different things...
+            finalize();
+
+            mSpireComponentInstance->setTexture("diffuseMap", mData.textures.layers[0].get());
+            mSpireComponentInstance->setSampler("samplerState", mData.samplerState.get());
+        }
+
+        return mSpireComponentInstance;
+    }
+
 }

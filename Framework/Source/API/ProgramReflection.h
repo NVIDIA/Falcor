@@ -497,6 +497,11 @@ namespace Falcor
             string_2_bindloc_map nameMap;
         };
 
+
+        // Spire
+        uint32_t getComponentCount() const { return mSpireComponentCount; }
+        BufferTypeReflection::SharedPtr getComponent(uint32_t index) const { return mSpireComponents[index]; }
+
     private:
         bool init(const ProgramVersion* pProgVer, std::string& log);
         bool initFromSpire(
@@ -512,6 +517,10 @@ namespace Falcor
         VariableMap mFragOut;
         VariableMap mVertAttr;
         ResourceMap mResources;
+
+        // Spire:
+        uint32_t mSpireComponentCount = 0;
+        std::vector<BufferTypeReflection::SharedPtr> mSpireComponents;
     };
 
 

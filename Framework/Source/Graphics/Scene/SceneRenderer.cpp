@@ -207,11 +207,24 @@ namespace Falcor
     {
         ProgramVars* pGraphicsVars = pContext->getGraphicsVars().get();
 
+#if 0
         ConstantBuffer* pCB = pGraphicsVars->getConstantBuffer(kPerMaterialCbName).get();
         if (pCB)
         {
             currentData.pMaterial->setIntoProgramVars(pGraphicsVars, pCB, "gMaterial");
         }
+#else
+        // Do it the Spire way
+
+        auto material = currentData.pMaterial;
+        
+        SpireModule* componentClass = material->getSpireComponentClass();
+        ComponentInstance::SharedPtr componentInstance = material->getSpireComponentInstance();
+
+        int componentIndex = 3;
+        currentData.pGsoCache->getProgram()->setComponent(componentIndex, componentClass);
+        pContext->getGraphicsVars()->setComponent(componentIndex, componentInstance);
+#endif
 
         return true;
     }

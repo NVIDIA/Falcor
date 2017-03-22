@@ -116,6 +116,10 @@ namespace Falcor
         uint32_t bindSpace = 0;
 
         ProgramReflection::VariableMap varMap;
+        ProgramReflection::ResourceMap resourceMap;
+
+        uint32_t textureIndex = 0;
+        uint32_t samplerIndex = 0;
 
         // loop over variables to fill them in...
         int paramCount = spModuleGetParameterCount(componentClass);
@@ -126,6 +130,7 @@ namespace Falcor
 
             char const* varName = spireVarInfo.Name;
  
+
             switch( spireVarInfo.BindableResourceType )
             {
             case SPIRE_NON_BINDABLE:
@@ -140,9 +145,34 @@ namespace Falcor
                 }
                 break;
 
-            default:
             case SPIRE_TEXTURE:
+                {
+                    ProgramReflection::Resource resourceInfo;
+
+                    resourceInfo.type = Resource::ResourceType::Texture;
+                    resourceInfo.regIndex = textureIndex++;
+                    resourceInfo.shaderMask = 0xFFFFFFFF;
+                    // TODO: need to fill all that stuff in
+
+                    resourceMap[varName] = resourceInfo;
+                }
+                break;
+
             case SPIRE_SAMPLER:
+                {
+                    ProgramReflection::Resource resourceInfo;
+
+                    resourceInfo.type = Resource::ResourceType::Sampler;
+                    resourceInfo.regIndex = samplerIndex++;
+                    resourceInfo.shaderMask = 0xFFFFFFFF;
+                    // TODO: need to fill all that stuff in
+
+                    resourceMap[varName] = resourceInfo;
+                }
+                break;
+
+
+            default:
             case SPIRE_UNIFORM_BUFFER:
             case SPIRE_STORAGE_BUFFER:
                 assert(!"unimplemented");
@@ -160,7 +190,7 @@ namespace Falcor
             bufferType,
             bufferSize,
             varMap,
-            ProgramReflection::ResourceMap(),
+            resourceMap,
             shaderAccess);
 
         return bufferTypeReflection;
@@ -173,6 +203,7 @@ namespace Falcor
         std::string&                    log)
     {
         int componentCount = spShaderGetParameterCount(pSpireShader);
+        mSpireComponents.reserve(componentCount);
         for(int cc = 0; cc < componentCount; ++cc)
         {
             char const* componentClassName = spShaderGetParameterType(pSpireShader, cc);
@@ -187,6 +218,15 @@ namespace Falcor
             // Do reflection on the buffer type
             auto bufferTypeReflection = ProgramReflection::BufferTypeReflection::create(componentClass);
 
+            mSpireComponents.push_back(bufferTypeReflection);
+
+            // TODO: probably need to store info for binding the component as
+            // a parameter, and for name-based loopup...
+
+            // TODO: also may need a map from type->componeent, so that
+            // a subsystem can check whether it needs to bind things...
+
+            /*
             auto shaderAccess = bufferTypeReflection->getShaderAccess();
             uint32_t bindPoint = spShaderGetParameterBinding(pSpireShader, cc);
             uint32_t bindSpace = 0;
@@ -198,7 +238,10 @@ namespace Falcor
 
             bufferDesc.nameMap[bufferName] = bindLocation;
             bufferDesc.descMap[bindLocation] = bufferReflection;
+            */
         }
+
+        mSpireComponentCount = componentCount;
 
         return true;
     }

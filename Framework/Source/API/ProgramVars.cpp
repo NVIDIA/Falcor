@@ -102,7 +102,17 @@ namespace Falcor
     ProgramVars::ProgramVars(const ProgramReflection::SharedConstPtr& pReflector, bool createBuffers, const RootSignature::SharedPtr& pRootSig) : mpReflector(pReflector)
     {
         // Initialize the CB and StructuredBuffer maps. We always do it, to mark which slots are used in the shader.
+
         mpRootSignature = pRootSig ? pRootSig : RootSignature::create(pReflector.get());
+
+        //SPIRE: in the Spire case, we really can't create the root signature up front,
+        //so trying to do it here is bogus.
+//        mpRootSignature = nullptr;
+        if( pReflector->getComponentCount() )
+        {
+            // Spire-based shaders will re-build their root signature as needed
+            mRootSignatureDirty = true;
+        }
 
         auto getNullptrFunc = [](const Resource::SharedPtr& pResource) { return nullptr; };
         auto getSrvFunc = [](const Resource::SharedPtr& pResource) { return pResource->getSRV(0, 1, 0, 1); };
@@ -139,6 +149,15 @@ namespace Falcor
             default:
                 should_not_get_here();
             }
+        }
+
+        mAssignedComponents.resize(pReflector->getComponentCount());
+        if( pReflector->getComponentCount() > 0 )
+        {
+            // There is at least one component, and we assume the first one represents
+            // the "direct" parameters of the program...
+            auto componentInstance = ComponentInstance::create(pReflector->getComponent(0));
+            mAssignedComponents[0] = componentInstance;
         }
     }
 
@@ -633,11 +652,58 @@ namespace Falcor
         }
     }
 
+    static void setRootConstantBuffer(
+        CopyContext*                pContext,
+        ID3D12GraphicsCommandList*  pList,
+        uint32_t                    rootOffset,
+        uint64_t                    gpuAddress)
+    {
+        pList->SetComputeRootConstantBufferView(rootOffset, gpuAddress);
+    }
+
+    static void setRootConstantBuffer(
+        RenderContext*              pContext,
+        ID3D12GraphicsCommandList*  pList,
+        uint32_t                    rootOffset,
+        uint64_t                    gpuAddress)
+    {
+        pList->SetGraphicsRootConstantBufferView(rootOffset, gpuAddress);
+    }
+
+    
+    static void setRootDescriptorTable(
+        CopyContext*                pContext,
+        ID3D12GraphicsCommandList*  pList,
+        uint32_t                    rootOffset,
+        DescriptorHeap::GpuHandle   gpuHandle)
+    {
+        pList->SetComputeRootDescriptorTable(rootOffset, gpuHandle);
+    }
+
+    static void setRootDescriptorTable(
+        RenderContext*              pContext,
+        ID3D12GraphicsCommandList*  pList,
+        uint32_t                    rootOffset,
+        DescriptorHeap::GpuHandle   gpuHandle)
+    {
+        pList->SetGraphicsRootDescriptorTable(rootOffset, gpuHandle);
+    }
+
     template<bool forGraphics, typename ContextType>
     void ProgramVars::applyCommon(ContextType* pContext) const
     {
         // Get the command list
         ID3D12GraphicsCommandList* pList = pContext->getLowLevelData()->getCommandList();
+
+        // Spire
+        if( mRootSignatureDirty )
+        {
+            mpRootSignature = createRootSignature();
+
+            mRootSignatureDirty = false;
+        }
+
+
         if(forGraphics)
         {
             pList->SetGraphicsRootSignature(mpRootSignature->getApiHandle());
@@ -684,6 +750,33 @@ namespace Falcor
                 }
             }
         }
+
+        // Spire: bind the components that have been specified...
+        uint32_t rootIndex = 0;
+        for( auto& component : mAssignedComponents )
+        {
+            if( component->mConstantBuffer )
+            {
+                component->mConstantBuffer->uploadToGPU();
+                setRootConstantBuffer(pContext, pList, rootIndex, component->mConstantBuffer->getGpuAddress());
+                rootIndex++;
+            }
+
+            for( auto& texture : component->mBoundTextures )
+            {
+                // TODO: get the SRV earlier than this... don't re-create it per draw...
+                setRootDescriptorTable(pContext, pList, rootIndex,
+                    (texture ? texture->getSRV() : ShaderResourceView::getNullView())->getApiHandle()->getGpuHandle());
+                rootIndex++;
+            }
+
+            for( auto& sampler : component->mBoundSamplers )
+            {
+                // TODO: get the SRV earlier than this... don't re-create it per draw...
+                setRootDescriptorTable(pContext, pList, rootIndex, sampler->getApiHandle()->getGpuHandle());
+                rootIndex++;
+            }
+        }
     }
 
     void ComputeVars::apply(CopyContext* pContext) const
@@ -700,8 +793,56 @@ namespace Falcor
 
     void ProgramVars::setComponent(uint32_t index, ComponentInstance::SharedPtr const& pComponent)
     {
-        // For now, a component is just an alias for a constant buffer...
-        setConstantBuffer(index, pComponent);
+        auto newType = pComponent ? pComponent->mReflector : nullptr;
+        auto oldType = mAssignedComponents[index] ? mAssignedComponents[index]->mReflector : nullptr;
+
+        if( newType != oldType )
+        {
+            mRootSignatureDirty = true;
+        }
+
+        mAssignedComponents[index] = pComponent;
+    }
+
+    RootSignature::SharedPtr ProgramVars::createRootSignature() const
+    {
+        // Need to create a root signature that reflects the components we have bound...
+
+        // TODO: this can (and should) be cached...
+
+        RootSignature::Desc desc;
+
+        uint32_t regSpace = 0;
+
+        uint32_t bReg = 0;
+        uint32_t sReg = 0;
+        uint32_t tReg = 0;
+
+        for( auto c : mAssignedComponents )
+        {
+            // TODO: this logic should only rely on the *class* of the component...
+
+            if( c->mConstantBuffer )
+            {
+                desc.addDescriptor(bReg++, RootSignature::DescType::CBV, ShaderVisibility::All, regSpace);
+            }
+
+            for( auto t : c->mBoundTextures )
+            {
+                RootSignature::DescriptorTable tableDesc;
+                tableDesc.addRange(RootSignature::DescType::SRV, tReg++, 1, regSpace);
+                desc.addDescriptorTable(tableDesc);
+            }
+
+            for( auto s : c->mBoundSamplers )
+            {
+                RootSignature::DescriptorTable tableDesc;
+                tableDesc.addRange(RootSignature::DescType::Sampler, sReg++, 1, regSpace);
+                desc.addDescriptorTable(tableDesc);
+            }
+        }
+
+        return RootSignature::create(desc);
     }
 
 }

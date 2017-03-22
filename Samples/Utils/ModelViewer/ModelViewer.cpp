@@ -323,7 +323,9 @@ void ModelViewer::onFrameRender()
             mpModel->bindSamplerToMaterials(mpPointSampler);
         }
 
-        mpProgramVars["PerFrameCB"]["gAmbient"] = mAmbientIntensity;
+//SPIRE        mpProgramVars["PerFrameCB"]["gAmbient"] = mAmbientIntensity;
+        mpProgramVars->setVariable("gAmbient", mAmbientIntensity);
+
         mpGraphicsState->setProgram(mpProgram);
         mpRenderContext->setGraphicsState(mpGraphicsState);
         mpRenderContext->setGraphicsVars(mpProgramVars);

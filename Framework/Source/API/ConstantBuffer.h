@@ -33,6 +33,8 @@
 #include "Graphics/Program.h"
 #include "API/LowLevel/DescriptorHeap.h"
 
+#include "Sampler.h"
+
 namespace Falcor
 {
     class Sampler;
@@ -189,6 +191,49 @@ namespace Falcor
 #endif
     };
 
-    // For now, use a constant buffer to stand for a Spire component instance...
-    typedef ConstantBuffer ComponentInstance;
+    class ComponentInstance : public std::enable_shared_from_this<ComponentInstance>
+    {
+    public:
+        using SharedPtr = std::shared_ptr<ComponentInstance>;
+
+        static SharedPtr create(const ProgramReflection::BufferTypeReflection::SharedConstPtr& pReflector);
+
+        template<typename T>
+        void setVariable(size_t offset, const T& value)
+        {
+            mConstantBuffer->setVariable(offset, value);
+        }
+
+        template<typename T>
+        void setVariable(const std::string& name, const T& value)
+        {
+            mConstantBuffer->setVariable(name, value);
+        }
+
+        void setBlob(const void* pSrc, size_t offset, size_t size)
+        {
+            mConstantBuffer->setBlob(pSrc, offset, size);
+        }
+
+        void setTexture(const std::string& name, const Texture* pTexture);
+
+        void setSampler(const std::string& name, const Sampler* pSampler);
+
+        void setVariable(const std::string& name, const Texture* pTexture)
+        {
+            setTexture(name, pTexture);
+        }
+
+        void setVariable(const std::string& name, const Sampler* pSampler)
+        {
+            setSampler(name, pSampler);
+        }
+
+    //private:
+        ProgramReflection::BufferTypeReflection::SharedConstPtr mReflector;
+        ConstantBuffer::SharedPtr mConstantBuffer;
+
+        std::vector<Texture::SharedConstPtr> mBoundTextures;
+        std::vector<Sampler::SharedConstPtr> mBoundSamplers;
+    };
 }

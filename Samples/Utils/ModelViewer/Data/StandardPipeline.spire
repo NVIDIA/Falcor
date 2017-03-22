@@ -81,3 +81,13 @@ module PerFrameCB_T
 
     param vec3 gAmbient;
 }
+
+module Material
+{
+	param Texture2D diffuseMap;
+	param SamplerState samplerState;
+
+	require vec2 vertUV;
+
+	public float4 diffuse = diffuseMap.Sample(samplerState, vertUV);
+}
