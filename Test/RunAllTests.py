@@ -17,7 +17,7 @@ gEmailRecipientFile = 'EmailRecipients.txt'
 gDebugDir = '..\\Bin\\x64\\Debug\\'
 gReleaseDir = '..\\Bin\\x64\\Release\\'
 gResultsDir = 'TestResults'
-gReferenceDir = 'ReferenceResults'
+gReferenceDir = 'ReferenceResults'      
 gPullBranch = 'dev-2.0a2'
 
 gConfigDirDict = {}
@@ -616,9 +616,9 @@ def main():
     args = parser.parse_args()
 
     if args.referencedir:
-        if os.path.isdir(gReferenceDir): 
+        if os.path.isdir(gReferenceDir):
             gReferenceDir = args.referencedir
-        else:
+        elif not args.generatereference:
             print 'Fatal Error, Failed to find user specified reference dir: ' + args.referencedir
             sys.exit(1)
 
@@ -626,14 +626,12 @@ def main():
         gPullBranch = args.pullbranch
     
     if args.generatereference:
-        if os.path.isdir(gReferenceDir):
-            shutil.rmtree(gReferenceDir, ignore_errors=True)
-        try:
-            time.sleep(5)
-            os.makedirs(gReferenceDir)
-        except:
-            print 'Fatal Error, Failed to create reference dir.'
-            sys.exit(1)
+        if not os.path.isdir(gReferenceDir):
+            try:
+                os.makedirs(gReferenceDir)
+            except:
+                print 'Fatal Error, Failed to create reference dir.'
+                sys.exit(1)
 
     if not args.nopull:
         updateRepo()
@@ -679,10 +677,6 @@ def main():
 
 def cleanupString(string):
     string = string.replace('\t', '')
-    if string[0] == '\"':
-        string[0] = ' '
-    if string[-1] == '\"':
-        string[-1] = ' '
     return string.replace('\n', '').strip()
 
 if __name__ == '__main__':
