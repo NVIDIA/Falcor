@@ -80,7 +80,9 @@ namespace Falcor
 
             if (pPerFrameCbData != nullptr)
             {
-                sCameraDataOffset = pPerFrameCbData->getVariableData("gCam.viewMat")->location;
+// SPIRE:
+//                sCameraDataOffset = pPerFrameCbData->getVariableData("gCam.viewMat")->location;
+                sCameraDataOffset = pPerFrameCbData->getVariableData("viewMat")->location;
             }
         }
     }
@@ -90,11 +92,26 @@ namespace Falcor
         // Set VPMat
         if (currentData.pCamera)
         {
+#if 0
             ConstantBuffer* pCB = pContext->getGraphicsVars()->getConstantBuffer(kPerFrameCbName).get();
             if (pCB)
             {
                 currentData.pCamera->setIntoConstantBuffer(pCB, sCameraDataOffset);
             }
+#else
+            auto spireContext = currentData.pGsoCache->getProgram()->getSpireContext();
+
+            SpireModule* cameraComponentClass = currentData.pCamera->getSpireComponentClass(spireContext);
+
+            // TODO: need to find the index of the correct parameter, if any...
+            currentData.pGsoCache->getProgram()->setComponent(1, cameraComponentClass);
+
+            ComponentInstance::SharedPtr cameraComponent = currentData.pCamera->getSpireComponentInstance(spireContext);
+
+            // Need to set this at the right place...
+            pContext->getGraphicsVars()->setComponent(1, cameraComponent);
+
+#endif
         }
     }
 

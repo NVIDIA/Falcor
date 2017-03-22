@@ -162,8 +162,11 @@ namespace Falcor
                 return;
             }
 
+            int componentParameterCount = spShaderGetParameterCount(spireShader);
+            mSpireComponentClassList.resize(componentParameterCount, nullptr);
+
             SpireModule* spireShaderParamsComponentClass = nullptr;
-            if(spShaderGetParameterCount(spireShader) >= 1)
+            if(componentParameterCount >= 1)
             {
                 // We assume that the first component parameter represents the inputs
                 // needed by the shader itself
@@ -180,6 +183,11 @@ namespace Falcor
                 spireShaderParamsComponentClass = spEnvFindModule(
 					mSpireEnv,
                     "PerFrameCB");
+            }
+
+            if( spireShaderParamsComponentClass )
+            {
+                mSpireComponentClassList[0] = spireShaderParamsComponentClass;
             }
 
             mSpireShader = spireShader;
@@ -201,6 +209,13 @@ namespace Falcor
         return mSpireReflector;
     }
 
+    void Program::setComponent(int index, SpireModule* componentClass)
+    {
+        assert(index >= 0);
+        assert((size_t)index < mSpireComponentClassList.size());
+        mSpireComponentClassList[index] = componentClass;
+        mLinkRequired = true;
+    }
 
     void Program::addDefine(const std::string& name, const std::string& value)
     {
@@ -303,6 +318,7 @@ namespace Falcor
 
                 spClearDiagnosticSink(mSpireSink);
 
+#if 0
                 SpireModule* componentClasses[16];
                 int componentClassCount = 0;
 
@@ -310,6 +326,10 @@ namespace Falcor
                 {
                     componentClasses[componentClassCount++] = mSpireShaderParamsComponentClass;
                 }
+#else
+                SpireModule** componentClasses = (SpireModule**) &mSpireComponentClassList[0];
+                int componentClassCount = (int) mSpireComponentClassList.size();
+#endif
 
                 // TODO: this is where we'd need to enumerate the additional component
                 // classes desired for the "active version"

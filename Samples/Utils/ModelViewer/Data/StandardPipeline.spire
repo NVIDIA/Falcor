@@ -34,36 +34,31 @@ pipeline StandardPipeline
     }
 }
 
-struct CameraData
-{
-    mat4            viewMat;//                DEFAULTS(mat4());                ///< Camera view matrix.
-    mat4            projMat;//                DEFAULTS(mat4());                ///< Camera projection matrix.
-    mat4            viewProjMat;//            DEFAULTS(mat4());                ///< Camera view-projection matrix.
-    mat4            invViewProj;//			   DEFAULTS(mat4());                ///< Camera inverse view-projection matrix.
-    mat4            prevViewProjMat;//        DEFAULTS(mat4());                ///< Camera view-projection matrix associated to previous frame.
-
-    vec3            position;//               DEFAULTS(vec3(0, 0, 0));         ///< Camera world-space position.
-    float           fovY;//                   DEFAULTS(1.f);                   ///< vertical field-of-view, in radians
-    vec3            up;//                     DEFAULTS(vec3(0, 1, 0));         ///< Camera world-space up vector.
-    float           aspectRatio;//            DEFAULTS(1.f);                   ///< Camera aspect ratio.
-    vec3            target;//                 DEFAULTS(vec3(0, 0, -1));        ///< Camera target point in world-space.
-    float           nearZ;//                  DEFAULTS(0.1f);                  ///< Camera near plane.
-    vec3            cameraU;//                DEFAULTS(vec3(0, 0, 1));         ///< Camera base vector U. normalized it indicates the left image plane vector. The length is dependent on the FOV. 
-    float           farZ;//                   DEFAULTS(10000.0f);              ///< Camera far plane.
-    vec3            cameraV;//                DEFAULTS(vec3(0, 1, 0));         ///< Camera base vector V. normalized it indicates the up image plane vector. The length is dependent on the FOV. 
-    float           jitterX;//                DEFAULTS(0.0f);                  ///< Eventual camera jitter in the x coordinate
-    vec3            cameraW;//                DEFAULTS(vec3(1, 0, 0));         ///< Camera base vector U. normalized it indicates the forward direction. The length is the camera focal distance.
-    float           jitterY;//                DEFAULTS(0.0f);                  ///< Eventual camera jitter in the y coordinate
-
-    mat4            rightEyeViewMat;
-    mat4            rightEyeProjMat;
-    mat4            rightEyeViewProjMat;
-    mat4            rightEyePrevViewProjMat;
-}
-
 module InternalPerFrameCB_T
 {
-	CameraData gCam;
+    param mat4            viewMat;//                DEFAULTS(mat4());                ///< Camera view matrix.
+    param mat4            projMat;//                DEFAULTS(mat4());                ///< Camera projection matrix.
+    param mat4            viewProjMat;//            DEFAULTS(mat4());                ///< Camera view-projection matrix.
+    param mat4            invViewProj;//			   DEFAULTS(mat4());                ///< Camera inverse view-projection matrix.
+    param mat4            prevViewProjMat;//        DEFAULTS(mat4());                ///< Camera view-projection matrix associated to previous frame.
+
+    param vec3            position;//               DEFAULTS(vec3(0, 0, 0));         ///< Camera world-space position.
+    param float           fovY;//                   DEFAULTS(1.f);                   ///< vertical field-of-view, in radians
+    param vec3            up;//                     DEFAULTS(vec3(0, 1, 0));         ///< Camera world-space up vector.
+    param float           aspectRatio;//            DEFAULTS(1.f);                   ///< Camera aspect ratio.
+    param vec3            target;//                 DEFAULTS(vec3(0, 0, -1));        ///< Camera target point in world-space.
+    param float           nearZ;//                  DEFAULTS(0.1f);                  ///< Camera near plane.
+    param vec3            cameraU;//                DEFAULTS(vec3(0, 0, 1));         ///< Camera base vector U. normalized it indicates the left image plane vector. The length is dependent on the FOV. 
+    param float           farZ;//                   DEFAULTS(10000.0f);              ///< Camera far plane.
+    param vec3            cameraV;//                DEFAULTS(vec3(0, 1, 0));         ///< Camera base vector V. normalized it indicates the up image plane vector. The length is dependent on the FOV. 
+    param float           jitterX;//                DEFAULTS(0.0f);                  ///< Eventual camera jitter in the x coordinate
+    param vec3            cameraW;//                DEFAULTS(vec3(1, 0, 0));         ///< Camera base vector U. normalized it indicates the forward direction. The length is the camera focal distance.
+    param float           jitterY;//                DEFAULTS(0.0f);                  ///< Eventual camera jitter in the y coordinate
+
+    param mat4            rightEyeViewMat;
+    param mat4            rightEyeProjMat;
+    param mat4            rightEyeViewProjMat;
+    param mat4            rightEyePrevViewProjMat;
 }
 
 

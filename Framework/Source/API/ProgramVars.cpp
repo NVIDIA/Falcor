@@ -695,4 +695,13 @@ namespace Falcor
     {
         applyCommon<true>(pContext);
     }
+
+    // Spire stuff
+
+    void ProgramVars::setComponent(uint32_t index, ComponentInstance::SharedPtr const& pComponent)
+    {
+        // For now, a component is just an alias for a constant buffer...
+        setConstantBuffer(index, pComponent);
+    }
+
 }

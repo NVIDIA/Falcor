@@ -96,7 +96,9 @@ namespace Falcor
 
         bool isSpire() const { return mIsSpire; }
         ProgramReflection::SharedConstPtr getSpireReflector() const;
+        SpireCompilationContext* getSpireContext() const { return mSpireContext; }
 
+        void setComponent(int index, SpireModule* componentClass);
 
     protected:
         static const uint32_t kShaderCount = (uint32_t)ShaderType::Count;
@@ -130,6 +132,9 @@ namespace Falcor
         SpireModule*                mSpireShaderParamsComponentClass    = nullptr;
         SpireDiagnosticSink*        mSpireSink                          = nullptr;
         mutable ProgramReflection::SharedConstPtr   mSpireReflector;
+
+        // List of Spire components in the "active" program
+        std::vector<SpireModule*> mSpireComponentClassList;
 
         bool checkIfFilesChanged();
         void reset();
