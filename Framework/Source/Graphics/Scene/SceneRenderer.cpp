@@ -68,9 +68,10 @@ namespace Falcor
 
             if (pPerMeshCbData != nullptr)
             {
-                sWorldMatOffset = pPerMeshCbData->getVariableData("gWorldMat[0]")->location;
-                sMeshIdOffset = pPerMeshCbData->getVariableData("gMeshId")->location;
-                sDrawIDOffset = pPerMeshCbData->getVariableData("gDrawId[0]")->location;
+// SPIRE:
+//                sWorldMatOffset = pPerMeshCbData->getVariableData("gWorldMat[0]")->location;
+//                sMeshIdOffset = pPerMeshCbData->getVariableData("gMeshId")->location;
+//                sDrawIDOffset = pPerMeshCbData->getVariableData("gDrawId[0]")->location;
             }
         }
 
@@ -99,7 +100,7 @@ namespace Falcor
                 currentData.pCamera->setIntoConstantBuffer(pCB, sCameraDataOffset);
             }
 #else
-            auto spireContext = currentData.pGsoCache->getProgram()->getSpireContext();
+            auto spireContext = ShaderRepository::Instance().GetContext();
 
             SpireModule* cameraComponentClass = currentData.pCamera->getSpireComponentClass(spireContext);
 
@@ -118,6 +119,7 @@ namespace Falcor
     bool SceneRenderer::setPerModelData(RenderContext* pContext,const CurrentWorkingData& currentData)
     {
         // Set bones
+#if 0
         if(currentData.pModel->hasBones())
         {
             ConstantBuffer* pCB = pContext->getGraphicsVars()->getConstantBuffer(kPerMeshCbName).get();
@@ -131,6 +133,9 @@ namespace Falcor
                 pCB->setVariableArray(sBonesOffset, currentData.pModel->getBonesMatrices(), currentData.pModel->getBonesCount());
             }
         }
+#else
+        // The spire way...
+#endif
         return true;
     }
 
@@ -146,6 +151,7 @@ namespace Falcor
 
     bool SceneRenderer::setPerMeshInstanceData(RenderContext* pContext, const Scene::ModelInstance::SharedPtr& pModelInstance, const Model::MeshInstance::SharedPtr& pMeshInstance, uint32_t drawInstanceID, const CurrentWorkingData& currentData)
     {
+#if 0
         ConstantBuffer* pCB = pContext->getGraphicsVars()->getConstantBuffer(kPerMeshCbName).get();
         if(pCB)
         {
@@ -162,6 +168,37 @@ namespace Falcor
             // Set mesh id
             pCB->setVariable(sMeshIdOffset, pMesh->getId());
         }
+#else
+        // Do it the Spire way...
+
+        const Mesh* pMesh = pMeshInstance->getObject().get();
+
+        glm::mat4 worldMat;
+        if (pMesh->hasBones() == false)
+        {
+            worldMat = pModelInstance->getTransformMatrix() * pMeshInstance->getTransformMatrix();
+        }
+
+         auto spireContext = ShaderRepository::Instance().GetContext();
+
+        SpireModule* componentClass = spFindModule(spireContext, "InternalPerMeshCB_T");
+
+        // TODO: cache and re-use reflection data...
+        ProgramReflection::BufferTypeReflection::SharedPtr componentClassReflection =
+            ProgramReflection::BufferTypeReflection::create(componentClass);
+
+        // We create a transient component instance here.
+        // TODO: find a way to reclaim this space more cleanly.
+        ComponentInstance::SharedPtr componentInstance = ComponentInstance::create(componentClassReflection);
+
+        componentInstance->setVariable("gWorldMat", worldMat);
+        componentInstance->setVariable("gMeshId", pMesh->getId());
+
+        // Need to set this at the right place...
+        int componentIndex = 2;
+        currentData.pGsoCache->getProgram()->setComponent(componentIndex, componentClass);
+        pContext->getGraphicsVars()->setComponent(componentIndex, componentInstance);
+#endif
 
         return true;
     }

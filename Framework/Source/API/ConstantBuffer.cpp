@@ -36,12 +36,12 @@
 
 namespace Falcor
 {
-    ConstantBuffer::ConstantBuffer(const ProgramReflection::BufferReflection::SharedConstPtr& pReflector, size_t size) :
+    ConstantBuffer::ConstantBuffer(const ProgramReflection::BufferTypeReflection::SharedConstPtr& pReflector, size_t size) :
         VariablesBuffer(pReflector, size, 1, Buffer::BindFlags::Constant, Buffer::CpuAccess::Write)
     {
     }
 
-    ConstantBuffer::SharedPtr ConstantBuffer::create(const ProgramReflection::BufferReflection::SharedConstPtr& pReflector, size_t overrideSize)
+    ConstantBuffer::SharedPtr ConstantBuffer::create(const ProgramReflection::BufferTypeReflection::SharedConstPtr& pReflector, size_t overrideSize)
     {
         size_t size = (overrideSize == 0) ? pReflector->getRequiredSize() : overrideSize;        
         SharedPtr pBuffer = SharedPtr(new ConstantBuffer(pReflector, size));

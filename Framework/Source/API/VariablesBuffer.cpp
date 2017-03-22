@@ -80,8 +80,15 @@ namespace Falcor
         return ProgramReflection::Variable::Type::Unknown;
     }
 
-    VariablesBuffer::VariablesBuffer(const ProgramReflection::BufferReflection::SharedConstPtr& pReflector, size_t elementSize, size_t elementCount, BindFlags bindFlags, CpuAccess cpuAccess) :
+    VariablesBuffer::VariablesBuffer(const ProgramReflection::BufferTypeReflection::SharedConstPtr& pReflector, size_t elementSize, size_t elementCount, BindFlags bindFlags, CpuAccess cpuAccess) :
         mpReflector(pReflector), Buffer(elementSize * elementCount, bindFlags, cpuAccess), mElementCount(elementCount), mElementSize(elementSize)
+    {
+        Buffer::init(nullptr);
+        mData.assign(mSize, 0);
+    }
+
+    VariablesBuffer::VariablesBuffer(const ProgramReflection::BufferReflection::SharedConstPtr& pReflector, size_t elementSize, size_t elementCount, BindFlags bindFlags, CpuAccess cpuAccess) :
+        mpReflector(pReflector->getTypeReflection()), Buffer(elementSize * elementCount, bindFlags, cpuAccess), mElementCount(elementCount), mElementSize(elementSize)
     {
         Buffer::init(nullptr);
         mData.assign(mSize, 0);
@@ -136,7 +143,7 @@ namespace Falcor
     }
 
     template<typename VarType>
-    bool checkVariableByOffset(size_t offset, size_t count, const ProgramReflection::BufferReflection* pBufferDesc)
+    bool checkVariableByOffset(size_t offset, size_t count, const ProgramReflection::BufferTypeReflection* pBufferDesc)
     {
 #if _LOG_ENABLED
         ProgramReflection::Variable::Type callType = getReflectionTypeFromCType<VarType>();
@@ -493,7 +500,7 @@ namespace Falcor
         return true;
     }
 
-    const ProgramReflection::Resource* getResourceDesc(const std::string& name, const ProgramReflection::BufferReflection* pReflector)
+    const ProgramReflection::Resource* getResourceDesc(const std::string& name, const ProgramReflection::BufferTypeReflection* pReflector)
     {
         auto pResource = pReflector->getResourceData(name);
 #ifdef FALCOR_D3D11

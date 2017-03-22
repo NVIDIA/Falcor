@@ -76,7 +76,12 @@ namespace Falcor
             \param[in] overrideSize - if 0, will use the buffer size as declared in the shader. Otherwise, will use this value as the buffer size. Useful when using buffers with dynamic arrays.
             \return A new buffer object if the operation was successful, otherwise nullptr
         */
-        static SharedPtr create(const ProgramReflection::BufferReflection::SharedConstPtr& pReflector, size_t overrideSize = 0);
+        static SharedPtr create(const ProgramReflection::BufferTypeReflection::SharedConstPtr& pReflector, size_t overrideSize = 0);
+
+        static SharedPtr create(const ProgramReflection::BufferReflection::SharedConstPtr& pReflector, size_t overrideSize = 0)
+        {
+            return create(pReflector->getTypeReflection(), overrideSize);
+        }
 
         /** create a new constant buffer from a program object.\n
         This function is purely syntactic sugar. It will fetch the requested buffer reflector from the active program version and create the buffer from it
@@ -173,7 +178,7 @@ namespace Falcor
 
         DescriptorHeap::Entry getCBV() const;
     protected:
-        ConstantBuffer(const ProgramReflection::BufferReflection::SharedConstPtr& pReflector, size_t size);
+        ConstantBuffer(const ProgramReflection::BufferTypeReflection::SharedConstPtr& pReflector, size_t size);
         mutable DescriptorHeap::Entry mCBV;
 #ifdef FALCOR_D3D11
         friend class RenderContext;

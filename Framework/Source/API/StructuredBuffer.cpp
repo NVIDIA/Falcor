@@ -32,7 +32,7 @@
 namespace Falcor
 {
     template<typename VarType>
-    bool checkVariableByOffset(size_t offset, size_t count, const ProgramReflection::BufferReflection* pBufferDesc);
+    bool checkVariableByOffset(size_t offset, size_t count, const ProgramReflection::BufferTypeReflection* pBufferDesc);
     template<typename VarType>
     bool checkVariableType(ProgramReflection::Variable::Type shaderType, const std::string& name, const std::string& bufferName);
 

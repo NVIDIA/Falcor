@@ -107,7 +107,7 @@ namespace Falcor
         return ProgramReflection::Variable::Type::Unknown;
     }
 
-    ProgramReflection::BufferReflection::SharedPtr ProgramReflection::BufferReflection::create(SpireModule* componentClass)
+    ProgramReflection::BufferTypeReflection::SharedPtr ProgramReflection::BufferTypeReflection::create(SpireModule* componentClass)
     {
         char const* bufferName = spGetModuleName(componentClass);
         auto bufferType = BufferReflection::Type::Constant;
@@ -155,31 +155,28 @@ namespace Falcor
         size_t bufferSize = spModuleGetParameterBufferSize(componentClass);
 
         ProgramReflection::BindLocation bindLocation(bindPoint, shaderAccess);
-        auto bufferReflection = ProgramReflection::BufferReflection::create(
+        auto bufferTypeReflection = BufferTypeReflection::create(
             bufferName,
-            bindPoint,
-            bindSpace,
             bufferType,
             bufferSize,
             varMap,
             ProgramReflection::ResourceMap(),
             shaderAccess);
-        bufferReflection->setShaderMask(0xFFFFFFFF);
 
-        return bufferReflection;
+        return bufferTypeReflection;
     }
 
 
     bool ProgramReflection::initFromSpire(
-        SpireCompilationContext*    pSpireContext,
-        SpireShader*                pSpireShader,
-        std::string& log)
+        SpireCompilationEnvironment*    pSpireEnv,
+        SpireShader*                    pSpireShader,
+        std::string&                    log)
     {
         int componentCount = spShaderGetParameterCount(pSpireShader);
         for(int cc = 0; cc < componentCount; ++cc)
         {
             char const* componentClassName = spShaderGetParameterType(pSpireShader, cc);
-            SpireModule* componentClass = spFindModule(pSpireContext, componentClassName);
+            SpireModule* componentClass = spEnvFindModule(pSpireEnv, componentClassName);
             if(!componentClass)
                 continue;
 
@@ -187,16 +184,15 @@ namespace Falcor
 
             auto& bufferDesc = mBuffers[(uint32_t)BufferReflection::Type::Constant];
 
-            // Create the buffer reflection
-            auto bufferReflection = ProgramReflection::BufferReflection::create(componentClass);
+            // Do reflection on the buffer type
+            auto bufferTypeReflection = ProgramReflection::BufferTypeReflection::create(componentClass);
 
-            auto shaderAccess = ShaderAccess::Read;
+            auto shaderAccess = bufferTypeReflection->getShaderAccess();
             uint32_t bindPoint = spShaderGetParameterBinding(pSpireShader, cc);
             uint32_t bindSpace = 0;
 
-            // clobber some stuff in the reflection computed from the component class
-            bufferReflection->mRegIndex = bindPoint;
-            bufferReflection->mRegSpace = bindSpace;
+            auto bufferReflection = ProgramReflection::BufferReflection::create(
+                bufferName, bindPoint, bindSpace, bufferTypeReflection);
 
             ProgramReflection::BindLocation bindLocation(bindPoint, shaderAccess);
 
@@ -207,7 +203,7 @@ namespace Falcor
         return true;
     }
 
-    const ProgramReflection::Variable* ProgramReflection::BufferReflection::getVariableData(const std::string& name, size_t& offset, bool allowNonIndexedArray) const
+    const ProgramReflection::Variable* ProgramReflection::BufferTypeReflection::getVariableData(const std::string& name, size_t& offset, bool allowNonIndexedArray) const
     {
         const std::string msg = "Error when getting variable data \"" + name + "\" from buffer \"" + mName + "\".\n";
         uint32_t arrayIndex = 0;
@@ -271,7 +267,7 @@ namespace Falcor
         return pData;
     }
 
-    const ProgramReflection::Variable* ProgramReflection::BufferReflection::getVariableData(const std::string& name, bool allowNonIndexedArray) const
+    const ProgramReflection::Variable* ProgramReflection::BufferTypeReflection::getVariableData(const std::string& name, bool allowNonIndexedArray) const
     {
         size_t t;
         return getVariableData(name, t, allowNonIndexedArray);
@@ -298,28 +294,65 @@ namespace Falcor
         return nullptr;
     }
 
-    const ProgramReflection::Resource* ProgramReflection::BufferReflection::getResourceData(const std::string& name) const
+    const ProgramReflection::Resource* ProgramReflection::BufferTypeReflection::getResourceData(const std::string& name) const
     {
         auto& it = mResources.find(name);
         return it == mResources.end() ? nullptr : &(it->second);
     }
 
-    ProgramReflection::BufferReflection::BufferReflection(const std::string& name, uint32_t registerIndex, uint32_t regSpace, Type type, size_t size, const VariableMap& varMap, const ResourceMap& resourceMap, ShaderAccess shaderAccess) :
+    ProgramReflection::BufferTypeReflection::BufferTypeReflection(const std::string& name, Type type, size_t size, const VariableMap& varMap, const ResourceMap& resourceMap, ShaderAccess shaderAccess) :
         mName(name),
         mType(type),
         mSizeInBytes(size),
         mVariables(varMap),
         mResources(resourceMap),
-        mRegIndex(registerIndex),
         mShaderAccess(shaderAccess)
     {
-
     }
 
-    ProgramReflection::BufferReflection::SharedPtr ProgramReflection::BufferReflection::create(const std::string& name, uint32_t regIndex, uint32_t regSpace, Type type, size_t size, const VariableMap& varMap, const ResourceMap& resourceMap, ShaderAccess shaderAccess)
+    ProgramReflection::BufferTypeReflection::SharedPtr ProgramReflection::BufferTypeReflection::create(
+        const std::string& name,
+        Type type,
+        size_t size,
+        const VariableMap& varMap,
+        const ResourceMap& resourceMap,
+        ShaderAccess shaderAccess)
+    {
+        return SharedPtr(new BufferTypeReflection(name, type, size, varMap, resourceMap, shaderAccess));
+    }
+
+    ProgramReflection::BufferReflection::BufferReflection(const std::string& name, uint32_t registerIndex, uint32_t regSpace,
+                BufferTypeReflection::SharedPtr const& typeReflection) :
+        mName(name),
+        mRegIndex(registerIndex),
+        mRegSpace(regSpace),
+        mTypeReflection(typeReflection)
+    {
+    }
+
+    ProgramReflection::BufferReflection::SharedPtr ProgramReflection::BufferReflection::create(
+        const std::string& name,
+        uint32_t regIndex,
+        uint32_t regSpace,
+        BufferTypeReflection::SharedPtr const& typeReflection)
     {
         assert(regSpace == 0);
-        return SharedPtr(new BufferReflection(name, regIndex, regSpace, type, size, varMap, resourceMap, shaderAccess));
+        return SharedPtr(new BufferReflection(name, regIndex, regSpace, typeReflection));
+    }
+
+    ProgramReflection::BufferReflection::SharedPtr ProgramReflection::BufferReflection::create(
+        const std::string& name,
+        uint32_t regIndex,
+        uint32_t regSpace,
+        Type type,
+        size_t size,
+        const VariableMap& varMap,
+        const ResourceMap& resourceMap,
+        ShaderAccess shaderAccess)
+    {
+        auto typeReflection = BufferTypeReflection::create(
+            name, type, size, varMap, resourceMap, shaderAccess);
+        return BufferReflection::create(name, regIndex, regSpace, typeReflection);
     }
 
     const ProgramReflection::Variable* ProgramReflection::getVertexAttribute(const std::string& name) const

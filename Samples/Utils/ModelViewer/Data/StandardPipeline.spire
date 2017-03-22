@@ -61,6 +61,14 @@ module InternalPerFrameCB_T
     param mat4            rightEyePrevViewProjMat;
 }
 
+module InternalPerMeshCB_T
+{
+//    param mat4[64] gWorldMat; // If the mesh has bones, these are the bones matrices
+//    param uint[64] gDrawId; // Zero-based order/ID of Mesh Instances drawn per SceneRenderer::renderScene call.
+    param mat4 gWorldMat;
+	param uint gDrawId;
+    param uint gMeshId;
+};
 
 // HACK: putting this here instead of in `ModelViewer.spire`
 // so that we can actually look it up...
