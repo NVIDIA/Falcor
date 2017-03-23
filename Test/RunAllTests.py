@@ -14,13 +14,8 @@ from datetime import date, timedelta
 gBuildBatchFile = 'BuildFalcorTest.bat'
 gTestListFile = 'TestList.txt'
 gEmailRecipientFile = 'EmailRecipients.txt'
-gDebugDir = '..\\Bin\\x64\\Debug\\'
-gReleaseDir = '..\\Bin\\x64\\Release\\'
 gResultsDir = 'TestResults'
 gReferenceDir = 'ReferenceResults'      
-gPullBranch = 'dev-2.0a2'
-
-gConfigDirDict = {}
 
 #default values
 #percent
@@ -31,6 +26,9 @@ gDefaultLoadTimeMargin = 10
 gDefaultImageCompareMargin = 0.1
 #seconds
 gDefaultHangTimeDuration = 1800
+
+#dictionary of configName : exeDirPath
+gConfigDirDict = {}
 
 class TestInfo(object):
     def determineIndex(self, generateReference):
@@ -53,8 +51,6 @@ class TestInfo(object):
         self.Index = 0
     def getResultsFile(self):
         return self.Name + '_TestingLog_' + str(self.Index) + '.xml'
-    def getBuildFailFile(self):
-        return self.Name + '_BuildFailLog.txt'
     def getResultsDir(self):
         return gResultsDir + '\\' + self.ConfigName
     def getReferenceDir(self):
@@ -207,19 +203,15 @@ def callBatchFile(batchArgs):
         print 'Incorrect batch file call, found ' + string(numArgs) + ' in arg list :' + batchArgs.tostring()
         return 1
 
-def buildFail(fatal, testInfo, sendFailEmail):
+def buildFail(slnName, configName):
+    global gFailReasonsList
     resultsDir = testInfo.getResultsDir()
     makeDirIfDoesntExist(resultsDir)
-    overwriteMove(testInfo.getBuildFailFile(), resultsDir)
-    if fatal:
-        errorMsg = 'Fatal error, failed to build ' + testInfo.getFullName()
-        if sendFailEmail:
-            sendFatalFailEmail(errorMsg)
-        else:
-            print errorMsg
-        sys.exit(1)
-    else:
-        logTestSkip(testInfo.getFullName(), 'Build Failure')
+    buildLog = 'TestedSolution_BuildFailLog.txt'
+    overwriteMove(buildLog, resultsDir)
+    errorMsg = 'failed to build one or more projects with config ' + configName + ' of solution ' + slnName  + ". Build log written to " + buildLog
+    print 'Error: ' + errorMsg
+    gFailReasonsList.append(errorMsg)
 
 def addCrash(testName):
     logTestSkip(testName, 'Unhandled Crash')
@@ -327,10 +319,19 @@ def readTestList(generateReference, buildTests):
     configData = contents[slnConfigStartIndex + 1 : slnConfigEndIndex]
     configDataList = configData.split(' ')
     for i in xrange(0, len(configDataList), 2):
-        gConfigDirDict[configDataList[i].lower()] = configDataList[i + 1]
+        exeDir = configDataList[i + 1]
+        configName = configDataList[i].lower()
+        gConfigDirDict[configName] = exeDir
         if buildTests:
-            callBatchFile(['clean', slnName, configDataList[i].lower()])
-            callBatchFile(['build', slnName, configDataList[i].lower()])
+            callBatchFile(['clean', slnName, configName])
+            #delete bin dir
+            if os.path.isdir(exeDir):
+                shutil.rmtree(exeDir)
+            #returns 1 on fail
+            if callBatchFile(['rebuild', slnName, configName]):
+                buildFail(slnName, configName)
+        else:
+            cleanScreenShots(exeDir)
 
     contents = contents[slnConfigEndIndex + 1 :]
     argStartIndex = contents.find('{')
@@ -353,6 +354,7 @@ def readTestList(generateReference, buildTests):
         #goto next set
         contents = contents[configEndIndex + 1 :]
         argStartIndex = contents.find('{')
+    return slnName
 
 def runTest(testInfo, cmdLine, generateReference):
     testPath = testInfo.getTestPath()
@@ -541,7 +543,7 @@ def getSkipsTable():
     html += '</table>'
     return html
 
-def outputHTML(openSummary):
+def outputHTML(openSummary, slnName):
     html = getLowLevelTestResultsTable()
     html += '<br><br>'
     html += getSystemTestResultsTable()
@@ -549,7 +551,7 @@ def outputHTML(openSummary):
     html += getImageCompareResultsTable()
     html += '<br><br>'
     html += getSkipsTable()
-    resultSummaryName = gResultsDir + '\\TestSummary.html'
+    resultSummaryName = gResultsDir + '\\' + slnName + '_TestSummary.html'
     outfile = open(resultSummaryName, 'w')
     outfile.write(html)
     outfile.close()
@@ -561,14 +563,6 @@ def cleanScreenShots(ssDir):
         screenshots = [s for s in os.listdir(ssDir) if s.endswith('.png')]
         for s in screenshots:
             os.remove(ssDir + '\\' + s)
-
-def updateRepo():
-    subprocess.call(['git', 'fetch', 'origin', gPullBranch])
-    subprocess.call(['git', 'checkout', 'origin/' + gPullBranch])
-    os.chdir('../')
-    subprocess.call(['git', 'reset', '--hard'])
-    subprocess.call(['git', 'clean', '-fd'])
-    os.chdir('test')
 
 def sendFatalFailEmail(failMsg):
     subject = '[FATAL TESTING ERROR] '
@@ -604,15 +598,14 @@ def main():
     global gResultsDir
     global gLowLevelResultList
     global gReferenceDir
-    global gPullBranch
+    global gTestListFile
     parser = argparse.ArgumentParser()
     parser.add_argument('-nb', '--nobuild', action='store_true', help='run without rebuilding Falcor and test apps')
-    parser.add_argument('-np', '--nopull', action='store_true', help='run without pulling TestingFramework')
     parser.add_argument('-ne', '--noemail', action='store_true', help='run without emailing the result summary')
     parser.add_argument('-ss', '--showsummary', action='store_true', help='opens testing summary upon completion')
     parser.add_argument('-gr', '--generatereference', action='store_true', help='generates reference testing logs and images')
     parser.add_argument('-ref', '--referencedir', action='store', help='Allows user to specify an existing reference dir')
-    parser.add_argument('-branch', '--pullbranch', action='store', help='Allows user to specify the branch to pull')
+    parser.add_argument('-tests', '--testlist', action='store', help='Allows user to specify the test list file')
     args = parser.parse_args()
 
     if args.referencedir:
@@ -622,9 +615,6 @@ def main():
             print 'Fatal Error, Failed to find user specified reference dir: ' + args.referencedir
             sys.exit(1)
 
-    if args.pullbranch:
-        gPullBranch = args.pullbranch
-    
     if args.generatereference:
         if not os.path.isdir(gReferenceDir):
             try:
@@ -633,11 +623,11 @@ def main():
                 print 'Fatal Error, Failed to create reference dir.'
                 sys.exit(1)
 
-    if not args.nopull:
-        updateRepo()
-
-    cleanScreenShots(gDebugDir)
-    cleanScreenShots(gReleaseDir)
+    if args.testlist:
+        if not os.path.exists(args.testlist):
+            print 'Error, Failed to find user specified test list. using default ' + testlist
+        else:
+            gTestListFile = args.testlist
 
     #make outer dir if need to
     makeDirIfDoesntExist(gResultsDir)
@@ -660,9 +650,9 @@ def main():
         resultSummary.Name = 'Summary'
         gLowLevelResultList.append(resultSummary)
 
-    readTestList(args.generatereference, not args.nobuild)
+    slnName = readTestList(args.generatereference, not args.nobuild)
     if not args.generatereference:
-        outputHTML(args.showsummary)
+        outputHTML(args.showsummary, slnName)
 
     if not args.noemail and not args.generatereference:
         sendTestingEmail()
