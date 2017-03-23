@@ -609,8 +609,9 @@ def main():
     args = parser.parse_args()
 
     if args.referencedir:
-        if os.path.isdir(gReferenceDir):
-            gReferenceDir = args.referencedir
+        refDir = cleanupString(args.referencedir)
+        if os.path.isdir(refDir):
+            gReferenceDir = refDir
         elif not args.generatereference:
             print 'Fatal Error, Failed to find user specified reference dir: ' + args.referencedir
             sys.exit(1)
