@@ -89,6 +89,7 @@ namespace Falcor
 
             ENTRY(float,    Float),
             ENTRY(vec3,     Float3),
+            ENTRY(vec4,     Float4),
             ENTRY(uint,     Uint),
             ENTRY(uvec3,    Uint3),
             ENTRY(mat4, Float4x4),

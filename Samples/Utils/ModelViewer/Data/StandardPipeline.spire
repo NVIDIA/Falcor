@@ -82,12 +82,32 @@ module PerFrameCB_T
     param vec3 gAmbient;
 }
 
-module Material
+interface Material
 {
+}
+
+module ConstantMaterial
+	implements Material
+{
+	param vec4 diffuseVal;
+
+	public float4 diffuse = diffuseVal;
+}
+
+module TexturedMaterial
+	implements Material
+{
+	// HACK: I'm declaring the texture-coordinate input here, because I
+	// don't want to put it on the base shader and then make everything
+	// need to have a texture coordinate.
+	//
+	public @MeshVertex vec2 TEXCOORD;
+	vec2 vertUV = TEXCOORD;
+
 	param Texture2D diffuseMap;
 	param SamplerState samplerState;
 
-	require vec2 vertUV;
+//	require vec2 vertUV;
 
 	public float4 diffuse = diffuseMap.Sample(samplerState, vertUV);
 }

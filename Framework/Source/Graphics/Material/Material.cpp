@@ -550,9 +550,20 @@ namespace Falcor
 
         if( !mSpireComponentClass )
         {
-            // TODO: need to actually construct an appropriate material module on the
-            // fly, based on the actual set of components used...
-            mSpireComponentClass = spFindModule(spireContext, "Material");
+            // TODO: Here is where we'd need to construct an appropriate component
+            // class for the material, based on the data in the layers.
+            //
+            // TODO: the proper logic for invalidating and re-generating this
+            // also needs to be worked out...
+            if( mData.textures.layers[0] )
+            {
+                mSpireComponentClass = spFindModule(spireContext, "TexturedMaterial");
+            }
+            else
+            {
+                mSpireComponentClass = spFindModule(spireContext, "ConstantMaterial");
+            }
+            assert(mSpireComponentClass);
         }
 
         return mSpireComponentClass;
@@ -575,14 +586,30 @@ namespace Falcor
         }
 
         // fill in the instance if data is dirty...
+        //
+        // TODO: this is a bit hacky, because we are using the same dirty
+        // flag for two different things...
         if( mDescDirty )
         {
-            // TODO: this is a bit hacky, because we are using the same dirty
-            // flag for two different things...
             finalize();
 
-            mSpireComponentInstance->setTexture("diffuseMap", mData.textures.layers[0].get());
-            mSpireComponentInstance->setSampler("samplerState", mData.samplerState.get());
+            // Fill in the values for the material fields, if anything has changed.
+            //
+            // TODO: we want to copy in data from our "sub-component instances"
+            // (the layers), which we assume will match the "component instance"
+            // we created for the material.
+            if( mData.textures.layers[0] )
+            {
+                // `TexturedMaterial`
+                mSpireComponentInstance->setTexture("diffuseMap", mData.textures.layers[0].get());
+                mSpireComponentInstance->setSampler("samplerState", mData.samplerState.get());
+            }
+            else
+            {
+                // `ConstantMaterial`
+                mSpireComponentInstance->setVariable("diffuseVal", mData.values.layers[0].albedo);
+            }
+
         }
 
         return mSpireComponentInstance;

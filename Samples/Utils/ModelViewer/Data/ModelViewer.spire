@@ -11,10 +11,8 @@ template shader ModelViewerShader(
 	using internalPerMesh = InternalPerMeshCB();
 
 	public @MeshVertex vec3 POSITION;
-	public @MeshVertex vec2 TEXCOORD;
 
 	vec3 vertPos = POSITION;
-	vec2 vertUV = TEXCOORD;
 
 	public vec4 projCoord = internalPerFrame.viewProjMat * (internalPerMesh.gWorldMat * vec4(vertPos, 1.0));
 
