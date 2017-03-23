@@ -32,10 +32,19 @@ Texture2DMS<float4> gTex;
 #endif
 SamplerState gSampler;
 
+#ifdef SRC_RECT
+// Bounds to sample source by. [left, up, right, down] in UV coordinates
+Buffer<float4> gSrcRect;
+#endif
+
 float4 main(float2 texC : TEXCOORD) : SV_TARGET
 {
+#ifdef SRC_RECT
+    texC = lerp(gSrcRect[0].xy, gSrcRect[0].zw, texC);
+#endif
+
 #ifndef SAMPLE_COUNT
-	return gTex.Sample(gSampler, texC);
+    return gTex.Sample(gSampler, texC);
 #else
     uint3 dims;
     gTex.GetDimensions(dims.x, dims.y, dims.z);

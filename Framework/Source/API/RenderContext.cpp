@@ -82,8 +82,13 @@ namespace Falcor
         if (sBlitData.pVars == nullptr)
         {
             sBlitData.pPass = FullScreenPass::create("Framework/Shaders/Blit.hlsl");
+            sBlitData.pPass->getProgram()->addDefine("SRC_RECT");
             sBlitData.pVars = GraphicsVars::create(sBlitData.pPass->getProgram()->getActiveVersion()->getReflector());
             sBlitData.pState = GraphicsState::create();
+
+            sBlitData.pSrcRectBuffer = TypedBuffer<vec4>::create(1);
+            sBlitData.pVars->setTypedBuffer("gSrcRect", sBlitData.pSrcRectBuffer);
+
             Sampler::Desc desc;
             desc.setFilterMode(Sampler::Filter::Linear, Sampler::Filter::Linear, Sampler::Filter::Point).setAddressingMode(Sampler::AddressMode::Clamp, Sampler::AddressMode::Clamp, Sampler::AddressMode::Clamp);
             sBlitData.pVars->setSampler("gSampler", Sampler::create(desc));
@@ -93,26 +98,42 @@ namespace Falcor
 
     void RenderContext::releaseBlitData()
     {
+        sBlitData.pSrcRectBuffer = nullptr;
         sBlitData.pVars = nullptr;
         sBlitData.pPass = nullptr;
         sBlitData.pState = nullptr;
     }
 
-    void RenderContext::blit(ShaderResourceView::SharedPtr pSrc, RenderTargetView::SharedPtr pDst)
+    void RenderContext::blit(ShaderResourceView::SharedPtr pSrc, RenderTargetView::SharedPtr pDst, const uvec4& srcRect, const uvec4& dstRect)
     {
         initBlitData(); // This has to be here and can't be in the constructor. FullScreenPass will allocate some buffers which depends on the ResourceAllocator which depends on the fence inside the RenderContext. Dependencies are fun!
 
         assert(pSrc->getViewInfo().arraySize == 1 && pSrc->getViewInfo().mipCount == 1);
         assert(pDst->getViewInfo().arraySize == 1 && pDst->getViewInfo().mipCount == 1);
 
+        const Texture* pSrcTexture = dynamic_cast<const Texture*>(pSrc->getResource());
+        const Texture* pDstTexture = dynamic_cast<const Texture*>(pDst->getResource());
+        assert(pSrcTexture != nullptr && pDstTexture != nullptr);
+
+        // Clamp rect coordinates
+        const vec2 srcSize(pSrcTexture->getWidth(), pSrcTexture->getHeight());
+        const vec2 dstSize(pDstTexture->getWidth(), pDstTexture->getHeight());
+
+        // [left, up, right, down]
+        vec4 srcCoords(glm::clamp(vec4(srcRect), vec4(0), vec4(srcSize, srcSize)));
+        vec4 dstCoords(glm::clamp(vec4(dstRect), vec4(0), vec4(dstSize, dstSize)));
+
+        // Set draw params
+        sBlitData.pSrcRectBuffer[0] = srcCoords / vec4(srcSize, srcSize); // Convert to UV
+        sBlitData.pSrcRectBuffer->uploadToGPU();
+        sBlitData.pState->setViewport(0, GraphicsState::Viewport(dstCoords.x, dstCoords.y, dstCoords.z - dstCoords.x, dstCoords.w - dstCoords.y, 0.0f, 1.0f));
+
         pushGraphicsState(sBlitData.pState);
         pushGraphicsVars(sBlitData.pVars);
 
-        const Texture* pSrcTex = dynamic_cast<const Texture*>(pSrc->getResource());
-        assert(pSrcTex);
-        if (pSrcTex->getSampleCount() > 1)
+        if (pSrcTexture->getSampleCount() > 1)
         {
-            sBlitData.pPass->getProgram()->addDefine("SAMPLE_COUNT", std::to_string(pSrcTex->getSampleCount()));
+            sBlitData.pPass->getProgram()->addDefine("SAMPLE_COUNT", std::to_string(pSrcTexture->getSampleCount()));
         }
         else
         {
@@ -120,11 +141,9 @@ namespace Falcor
         }
 
         Fbo::SharedPtr pFbo = Fbo::create();
-        const Texture* pTexture = dynamic_cast<const Texture*>(pDst->getResource());
-        assert(pTexture);
-        Texture::SharedPtr pSharedTex = std::const_pointer_cast<Texture>(pTexture->shared_from_this());
+        Texture::SharedPtr pSharedTex = std::const_pointer_cast<Texture>(pDstTexture->shared_from_this());
         pFbo->attachColorTarget(pSharedTex, 0, pDst->getViewInfo().mostDetailedMip, pDst->getViewInfo().firstArraySlice, pDst->getViewInfo().arraySize);
-        sBlitData.pState->setFbo(pFbo);
+        sBlitData.pState->setFbo(pFbo, false);
         sBlitData.pVars->setSrv(0, pSrc);
         sBlitData.pPass->execute(this);
 

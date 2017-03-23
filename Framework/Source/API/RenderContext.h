@@ -65,7 +65,7 @@ namespace Falcor
             \param[in] flags Optional. Which components of the FBO to clear. By default will clear all attached resource.
             If you'd like to clear a specific color target, you can use RenderContext#clearFboColorTarget().
         */
-		void clearFbo(const Fbo* pFbo, const glm::vec4& color, float depth, uint8_t stencil, FboAttachmentType flags = FboAttachmentType::All);
+        void clearFbo(const Fbo* pFbo, const glm::vec4& color, float depth, uint8_t stencil, FboAttachmentType flags = FboAttachmentType::All);
 
         /** Clear a render-target view
             \param[in] pRtv The RTV to clear
@@ -115,8 +115,10 @@ namespace Falcor
         /** Blits (low-level copy) an SRV into an RTV
             \param[in] pSrc Source view to copy from
             \param[in] pDst Target view to copy to
+            \param[in] srcRect Source rectangle to blit from, specified by [left, up, right, down]
+            \param[in] dstRect Target rectangle to blit to, specified by [left, up, right, down]
         */
-        void blit(ShaderResourceView::SharedPtr pSrc, RenderTargetView::SharedPtr pDst);
+        void blit(ShaderResourceView::SharedPtr pSrc, RenderTargetView::SharedPtr pDst, const uvec4& srcRect = uvec4(0, 0, -1, -1), const uvec4& dstRect = uvec4(0, 0, -1, -1));
 
         /** Set the program variables for graphics
         */
@@ -163,6 +165,7 @@ namespace Falcor
             FullScreenPass::UniquePtr pPass;
             GraphicsVars::SharedPtr pVars;
             GraphicsState::SharedPtr pState;
+            TypedBuffer<vec4>::SharedPtr pSrcRectBuffer;
         };
 
         static BlitData sBlitData;
