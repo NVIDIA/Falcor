@@ -194,9 +194,9 @@ namespace Falcor
             return std::static_pointer_cast<const Derived>(pShared);
         }
     };
+}
 
 #if (_ENABLE_NVAPI == true)
 #include "nvapi.h"
 #pragma comment(lib, "nvapi64.lib")
 #endif
-}

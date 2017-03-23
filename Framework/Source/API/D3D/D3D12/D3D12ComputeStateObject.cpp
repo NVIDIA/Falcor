@@ -27,11 +27,66 @@
 ***************************************************************************/
 #pragma once
 #include "Framework.h"
+#include "D3D12NvApiExDesc.h"
 #include "API/ComputeStateObject.h"
 #include "API/Device.h"
 
 namespace Falcor
 {
+#if _ENABLE_NVAPI
+    void getNvApiComputePsoDesc(const ComputeStateObject::Desc& desc, std::vector<NvApiPsoExDesc>& nvApiPsoExDescs)
+    {
+        auto ret = NvAPI_Initialize();
+
+        if (ret != NVAPI_OK)
+        {
+            logError("Failed to initialize NvApi", true);
+        }
+
+        auto uav = desc.getProgramVersion()->getReflector()->getBufferBinding("g_NvidiaExt");
+        if (uav.regIndex != ProgramReflection::kInvalidLocation)
+        {
+            nvApiPsoExDescs.push_back(NvApiPsoExDesc());
+            createNvApiUavSlotExDesc(nvApiPsoExDescs.back(), uav.regIndex);
+        }
+    }
+
+    ComputeStateObject::ApiHandle getNvApiComputePsoHandle(const std::vector<NvApiPsoExDesc>& nvDescVec, const D3D12_COMPUTE_PIPELINE_STATE_DESC& desc)
+    {
+        const NVAPI_D3D12_PSO_EXTENSION_DESC* ppPSOExtensionsDesc[1];
+
+        for (uint32_t ex = 0; ex < nvDescVec.size(); ex++)
+        {
+            switch (nvDescVec[ex].psoExtension)
+            {
+            case NV_PSO_SET_SHADER_EXTNENSION_SLOT_AND_SPACE:   ppPSOExtensionsDesc[ex] = &nvDescVec[ex].mExtSlotDesc; break;
+            default: should_not_get_here();
+            }
+        }
+        ComputeStateObject::ApiHandle apiHandle;
+        auto ret = NvAPI_D3D12_CreateComputePipelineState(gpDevice->getApiHandle(), &desc, (NvU32)nvDescVec.size(), ppPSOExtensionsDesc, &apiHandle);
+
+        if (ret != NVAPI_OK || apiHandle == nullptr)
+        {
+            logError("Failed to create a compute pipeline state object with NVAPI extensions", true);
+            return nullptr;
+        }
+
+        return apiHandle;
+    }
+
+    bool getIsNvApiComputePsoRequired(const ComputeStateObject::Desc& desc)
+    {
+        auto uav = desc.getProgramVersion()->getReflector()->getBufferBinding("g_NvidiaExt");
+        return uav.regIndex != ProgramReflection::kInvalidLocation;
+    }
+
+#else
+    void getNvApiComputePsoDesc(const ComputeStateObject::Desc& desc, std::vector<NvApiPsoExDesc>& nvApiPsoExDescs) { should_not_get_here(); }
+    ComputeStateObject::ApiHandle getNvApiComputePsoHandle(const std::vector<NvApiPsoExDesc>& psoDesc, const D3D12_COMPUTE_PIPELINE_STATE_DESC& desc) { should_not_get_here(); return nullptr; }
+    bool getIsNvApiComputePsoRequired(const ComputeStateObject::Desc& desc) { return false; }
+#endif
+
     bool ComputeStateObject::apiInit()
     {
         D3D12_COMPUTE_PIPELINE_STATE_DESC desc = {};
@@ -40,7 +95,16 @@ namespace Falcor
         
         desc.pRootSignature = mDesc.mpRootSignature ? mDesc.mpRootSignature->getApiHandle() : nullptr;
 
-        d3d_call(gpDevice->getApiHandle()->CreateComputePipelineState(&desc, IID_PPV_ARGS(&mApiHandle)));
+        if (getIsNvApiComputePsoRequired(mDesc))
+        {
+            std::vector<NvApiPsoExDesc> nvApiDesc;
+            getNvApiComputePsoDesc(mDesc, nvApiDesc);
+            mApiHandle = getNvApiComputePsoHandle(nvApiDesc, desc);
+        }
+        else
+        {
+            d3d_call(gpDevice->getApiHandle()->CreateComputePipelineState(&desc, IID_PPV_ARGS(&mApiHandle)));
+        }
         return true;
     }
 }

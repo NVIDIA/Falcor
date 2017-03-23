@@ -64,9 +64,9 @@ namespace Falcor
 
         ImGuiStyle& style = ImGui::GetStyle();
         style.Colors[ImGuiCol_WindowBg].w = 0.85f;
-        style.Colors[ImGuiCol_FrameBg].x *= 0.1f;
-        style.Colors[ImGuiCol_FrameBg].y *= 0.1f;
-        style.Colors[ImGuiCol_FrameBg].z *= 0.1f;
+        style.Colors[ImGuiCol_FrameBg].x *= 0.5f;
+        style.Colors[ImGuiCol_FrameBg].y *= 0.5f;
+        style.Colors[ImGuiCol_FrameBg].z *= 0.5f;
         style.ScrollbarSize *= 0.7f;
 
         // Create the pipeline state cache
@@ -404,7 +404,6 @@ namespace Falcor
             flags |= ImGuiWindowFlags_NoTitleBar;
         }
         ImGui::Begin(label, nullptr, flags);
-        ImGui::PushItemWidth(ImGui::GetContentRegionAvailWidth() * 0.45f);
     }
 
     void Gui::popWindow()
