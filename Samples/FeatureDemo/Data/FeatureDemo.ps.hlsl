@@ -70,8 +70,9 @@ PsOut main(MainVsOut vOut)
     float4 finalColor = 0;
     float envMapFactor = 1;
 
+    float shadowFactor;
 #foreach p in _LIGHT_SOURCES
-    float shadowFactor = 1;
+    shadowFactor = 1;
 #ifdef _ENABLE_SHADOWS
     if($(_valIndex) == 0)
     {
