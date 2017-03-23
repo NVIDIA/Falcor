@@ -102,6 +102,18 @@ namespace Falcor
         return componentInstance;
     }
 
+    void ComponentInstance::setSrv(
+        uint32_t index,
+        const ShaderResourceView::SharedPtr& pSrv,
+        const Resource::SharedPtr& pResource)
+    {
+        if(index >= mBoundSRVs.size())
+            mBoundSRVs.resize(index+1);
+
+        mBoundSRVs[index].srv = pSrv ? pSrv : ShaderResourceView::getNullView();
+        mBoundSRVs[index].resource = pResource;
+    }
+
     void ComponentInstance::setTexture(const std::string& name, const Texture* pTexture)
     {
         auto resourceInfo = mReflector->getResourceData(name);
@@ -112,10 +124,10 @@ namespace Falcor
 
         auto index = resourceInfo->regIndex;
 
-        if(index >= mBoundTextures.size())
-            mBoundTextures.resize(index+1, nullptr);
-
-        mBoundTextures[index] = pTexture ? pTexture->shared_from_this() : nullptr;
+        setSrv(
+            index,
+            pTexture ? pTexture->getSRV() : nullptr,
+            ((Texture*)pTexture)->shared_from_this());
     }
 
     void ComponentInstance::setSampler(const std::string& name, const Sampler* pSampler)

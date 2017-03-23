@@ -264,8 +264,8 @@ namespace Falcor
         if (mpApiData->spGenMips == nullptr)
         {
             mpApiData->spGenMips = std::make_unique<GenMipsData>();
-            mpApiData->spGenMips->pFullScreenPass = FullScreenPass::create("Framework/Shaders/Blit.hlsl");
-            mpApiData->spGenMips->pVars = GraphicsVars::create(mpApiData->spGenMips->pFullScreenPass->getProgram()->getActiveVersion()->getReflector());
+            mpApiData->spGenMips->pFullScreenPass = FullScreenPass::create("Framework/Shaders/Blit.spire");
+            mpApiData->spGenMips->pVars = GraphicsVars::create(mpApiData->spGenMips->pFullScreenPass->getProgram());
             mpApiData->spGenMips->pState = GraphicsState::create();
             Sampler::Desc desc;
             desc.setFilterMode(Sampler::Filter::Linear, Sampler::Filter::Linear, Sampler::Filter::Point).setAddressingMode(Sampler::AddressMode::Clamp, Sampler::AddressMode::Clamp, Sampler::AddressMode::Clamp);

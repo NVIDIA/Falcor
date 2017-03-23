@@ -215,6 +215,11 @@ namespace Falcor
             mConstantBuffer->setBlob(pSrc, offset, size);
         }
 
+        void setSrv(
+            uint32_t index,
+            const ShaderResourceView::SharedPtr& pSrv,
+            const Resource::SharedPtr& pResource);
+
         void setTexture(const std::string& name, const Texture* pTexture);
 
         void setSampler(const std::string& name, const Sampler* pSampler);
@@ -229,13 +234,24 @@ namespace Falcor
             setSampler(name, pSampler);
         }
 
+        size_t getVariableOffset(const std::string& name)
+        {
+            return mConstantBuffer->getVariableOffset(name);
+        }
+
         SpireModule* getSpireComponentClass() const { return mReflector->getSpireComponentClass(); }
 
     //private:
         ProgramReflection::BufferTypeReflection::SharedConstPtr mReflector;
         ConstantBuffer::SharedPtr mConstantBuffer;
 
-        std::vector<Texture::SharedConstPtr> mBoundTextures;
+        struct SRVEntry
+        {
+            ShaderResourceView::SharedPtr srv;
+            Resource::SharedPtr resource;
+        };
+
+        std::vector<SRVEntry> mBoundSRVs;
         std::vector<Sampler::SharedConstPtr> mBoundSamplers;
     };
 }

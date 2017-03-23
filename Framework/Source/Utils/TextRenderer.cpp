@@ -63,8 +63,7 @@ namespace Falcor
 
     TextRenderer::TextRenderer()
     {
-        static const std::string kVsFile("Framework/Shaders/TextRenderer.vs");
-        static const std::string kFsFile("Framework/Shaders/TextRenderer.fs");
+        static const std::string kSpireFile("Framework/Shaders/TextRenderer.spire");
 
         // Create a vertex buffer
         const uint32_t vbSize = (uint32_t)(sizeof(Vertex)*kMaxBatchSize*arraysize(kVertexPos));
@@ -72,7 +71,7 @@ namespace Falcor
 
         // Create the RenderState
         mpPipelineState = GraphicsState::create();
-        GraphicsProgram::SharedPtr pProgram = GraphicsProgram::createFromFile(kVsFile, kFsFile);
+        GraphicsProgram::SharedPtr pProgram = GraphicsProgram::createFromSpireFile(kSpireFile);
         mpPipelineState->setProgram(pProgram);
         mpPipelineState->setVao(createVAO(mpVertexBuffer));
 
@@ -99,12 +98,25 @@ namespace Falcor
         mpFont = Font::create();
 
         // Create and initialize the program variables
-        mpProgramVars = GraphicsVars::create(pProgram->getActiveVersion()->getReflector(), true);
+        mpProgramVars = GraphicsVars::create(pProgram);
         // Initialize the buffer
-        auto& pCB = mpProgramVars["PerFrameCB"];
-        mVarOffsets.vpTransform = mpProgramVars["PerFrameCB"]->getVariableOffset("gvpTransform");
-        mVarOffsets.fontColor = mpProgramVars["PerFrameCB"]->getVariableOffset("gFontColor");
+
+        // SPIRE
+//        auto& pCB = mpProgramVars["PerFrameCB"];
+//        mVarOffsets.vpTransform = mpProgramVars["PerFrameCB"]->getVariableOffset("gvpTransform");
+//        mVarOffsets.fontColor = mpProgramVars["PerFrameCB"]->getVariableOffset("gFontColor");
+//        mpProgramVars->setTexture("gFontTex", mpFont->getTexture());
+
+        mVarOffsets.vpTransform = mpProgramVars->getVariableOffset("gvpTransform");
+        mVarOffsets.fontColor = mpProgramVars->getVariableOffset("gFontColor");
         mpProgramVars->setTexture("gFontTex", mpFont->getTexture());
+
+        // TODO: eliminate when `Load` is re-enabled in Spire shader
+        Sampler::Desc samplerDesc;
+        samplerDesc.setFilterMode(Sampler::Filter::Point, Sampler::Filter::Point, Sampler::Filter::Point).setAddressingMode(Sampler::AddressMode::Border, Sampler::AddressMode::Border, Sampler::AddressMode::Border).setBorderColor(glm::vec4(1.0f));
+        samplerDesc.setLodParams(0.f, 0.f, 0.f);
+        auto sampler = Sampler::create(samplerDesc);
+        mpProgramVars->setSampler("gSampler", sampler);
     }
 
     TextRenderer::~TextRenderer() = default;
@@ -132,8 +144,8 @@ namespace Falcor
         vpTransform[3][1] = (VP.originX + VP.height) / VP.height;
 
         // Update the program variables
-        mpProgramVars["PerFrameCB"]->setVariable(mVarOffsets.vpTransform, vpTransform);
-        mpProgramVars["PerFrameCB"]->setVariable(mVarOffsets.fontColor, mTextColor);
+        mpProgramVars->setVariable(mVarOffsets.vpTransform, vpTransform);
+        mpProgramVars->setVariable(mVarOffsets.fontColor, mTextColor);
         pRenderContext->setGraphicsVars(mpProgramVars);
 
 

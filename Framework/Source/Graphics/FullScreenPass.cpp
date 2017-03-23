@@ -127,6 +127,7 @@ namespace Falcor
 
         if(viewportMask)
         {
+/*SPIRE: need to figure out equivalent of this
             defs.add("_VIEWPORT_MASK", std::to_string(viewportMask));
             if(checkForViewportArray2Support())
             {
@@ -137,10 +138,13 @@ namespace Falcor
                 defs.add("_OUTPUT_PRIM_COUNT", std::to_string(__popcnt(viewportMask)));
                 gs = "Framework/Shaders/FullScreenPass.gs.hlsl";
             }
+*/
         }
 
-        const std::string vs("Framework/Shaders/FullScreenPass.vs.hlsl");
-        mpProgram = GraphicsProgram::createFromFile(vs, psFile, gs, "", "", defs);
+//SPIRE:        const std::string vs("Framework/Shaders/FullScreenPass.vs.hlsl");
+//SPIRE:        mpProgram = GraphicsProgram::createFromFile(vs, psFile, gs, "", "", defs);
+        mpProgram = GraphicsProgram::createFromSpireFile(psFile);
+
         mpPipelineState->setProgram(mpProgram);
 
         if (FullScreenPass::spVertexBuffer == nullptr)

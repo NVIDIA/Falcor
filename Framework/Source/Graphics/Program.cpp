@@ -148,9 +148,6 @@ namespace Falcor
 
 			mSpireEnv = ShaderRepository::Instance().LoadSource(code.c_str(), name.c_str(), spireSink);
 
-            // retrieve the last shader entry point in source
-            SpireShader* spireShader = spEnvGetShader(mSpireEnv, spEnvGetShaderCount(mSpireEnv) - 1);
-
             // check for and report errors
             //
             // TODO: show a dialog box and allow user to iterat eon fixing errors
@@ -160,6 +157,20 @@ namespace Falcor
                     + getSpireErrors(spireSink);
                 logError(err);
                 return;
+            }
+
+            // retrieve the last shader entry point in source
+
+//            SpireShader* spireShader = spEnvGetShader(mSpireEnv, spEnvGetShaderCount(mSpireEnv) - 1);
+
+            // HACK: pick first shader with non-zero number of parameters
+            int shaderCount = spEnvGetShaderCount(mSpireEnv);
+            SpireShader* spireShader = nullptr;
+            for(int ss = 0; ss < shaderCount; ++ss)
+            {
+                spireShader = spEnvGetShader(mSpireEnv, ss);
+                if(spShaderGetParameterCount(spireShader) > 0)
+                    break;
             }
 
             int componentParameterCount = spShaderGetParameterCount(spireShader);

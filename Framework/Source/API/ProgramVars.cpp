@@ -461,6 +461,7 @@ namespace Falcor
 
     bool ProgramVars::setSampler(const std::string& name, const Sampler::SharedPtr& pSampler)
     {
+#if 0
         const ProgramReflection::Resource* pDesc = mpReflector->getResourceDesc(name);
         if (verifyResourceDesc(pDesc, ProgramReflection::Resource::ResourceType::Sampler, ProgramReflection::ShaderAccess::Read, name, "setSampler()") == false)
         {
@@ -468,6 +469,10 @@ namespace Falcor
         }
 
         return setSampler(pDesc->regIndex, pSampler);
+#else
+        mAssignedComponents[0]->setSampler(name, pSampler.get());
+        return true;
+#endif
     }
 
     Sampler::SharedPtr ProgramVars::getSampler(const std::string& name) const
@@ -519,6 +524,7 @@ namespace Falcor
 
     bool ProgramVars::setTexture(const std::string& name, const Texture::SharedPtr& pTexture)
     {
+#if 0
         const ProgramReflection::Resource* pDesc = mpReflector->getResourceDesc(name);
 
         if (verifyResourceDesc(pDesc, ProgramReflection::Resource::ResourceType::Texture, ProgramReflection::ShaderAccess::Undefined, name, "setTexture()") == false)
@@ -527,7 +533,10 @@ namespace Falcor
         }
 
         setResourceSrvUavCommon(pDesc, pTexture, mAssignedSrvs, mAssignedUavs);
-
+#else
+        // SPIRE
+        mAssignedComponents[0]->setTexture(name, pTexture.get());
+#endif
         return true;
     }
 
@@ -558,6 +567,7 @@ namespace Falcor
 
     bool ProgramVars::setSrv(uint32_t index, const ShaderResourceView::SharedPtr& pSrv)
     {
+#if 0
         auto it = mAssignedSrvs.find(index);
         if (it != mAssignedSrvs.end())
         {
@@ -571,6 +581,10 @@ namespace Falcor
             logWarning("Can't find SRV with index " + std::to_string(index) + ". Ignoring call to ProgramVars::setSrv()");
             return false;
         }
+#else
+        //SPIRE:
+        mAssignedComponents[0]->setSrv(index, pSrv, getResourceFromView(pSrv.get()));
+#endif
 
         return true;
     }
@@ -762,16 +776,53 @@ namespace Falcor
                 rootIndex++;
             }
 
-            for( auto& texture : component->mBoundTextures )
+            for( auto& entry : component->mBoundSRVs )
             {
+                auto pResource = entry.resource.get();
+                if(pResource)
+                {
+                    // SPIRE: NOTE: The existing Falcor code does a bunch of work here,
+                    // and I'm not clear on whether this is the best place for it.
+
+                    // If it's a typed buffer, upload it to the GPU
+                    const TypedBufferBase* pTypedBuffer = dynamic_cast<const TypedBufferBase*>(pResource);
+                    if (pTypedBuffer)
+                    {
+                        pTypedBuffer->uploadToGPU();
+                    }
+
+                    const StructuredBuffer* pStructured = dynamic_cast<const StructuredBuffer*>(pResource);
+                    if (pStructured)
+                    {
+                        pStructured->uploadToGPU();
+                    }
+
+                    // SPIRE: TODO: follow this through and make sure we aren't issuing barriers we don't need to...
+                    pContext->resourceBarrier(pResource, Resource::State::ShaderResource);
+
+                    if (pTypedBuffer)
+                    {
+                        pTypedBuffer->setGpuCopyDirty();
+                    }
+                    if (pStructured)
+                    {
+                        pStructured->setGpuCopyDirty();
+                    }
+                }
+
+                auto& srv = entry.srv;
+                assert(srv);
+
                 // TODO: get the SRV earlier than this... don't re-create it per draw...
                 setRootDescriptorTable(pContext, pList, rootIndex,
-                    (texture ? texture->getSRV() : ShaderResourceView::getNullView())->getApiHandle()->getGpuHandle());
+                    srv->getApiHandle()->getGpuHandle());
                 rootIndex++;
             }
 
             for( auto& sampler : component->mBoundSamplers )
             {
+                assert(sampler);
+
                 // TODO: get the SRV earlier than this... don't re-create it per draw...
                 setRootDescriptorTable(pContext, pList, rootIndex, sampler->getApiHandle()->getGpuHandle());
                 rootIndex++;
@@ -826,7 +877,7 @@ namespace Falcor
 			{
 				desc.addDescriptor(bReg++, RootSignature::DescType::CBV, ShaderVisibility::All, regSpace);
 			}
-            for( auto t : c->mBoundTextures )
+            for( auto t : c->mBoundSRVs )
             {
                 RootSignature::DescriptorTable tableDesc;
                 tableDesc.addRange(RootSignature::DescType::SRV, tReg++, 1, regSpace);

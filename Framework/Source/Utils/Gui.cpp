@@ -69,8 +69,8 @@ namespace Falcor
         mpPipelineState = GraphicsState::create();
 
         // Create the program
-        mpProgram = GraphicsProgram::createFromFile("Framework/Shaders/Gui.vs", "Framework/Shaders/Gui.ps");
-        mpProgramVars = GraphicsVars::create(mpProgram->getActiveVersion()->getReflector());
+        mpProgram = GraphicsProgram::createFromSpireFile("Framework/Shaders/Gui.spire");
+        mpProgramVars = GraphicsVars::create(mpProgram);
         mpPipelineState->setProgram(mpProgram);
 
         // Create and set the texture
@@ -84,6 +84,15 @@ namespace Falcor
         io.Fonts->GetTexDataAsAlpha8(&pFontData, &width, &height);
         Texture::SharedPtr pTexture = Texture::create2D(width, height, ResourceFormat::Alpha8Unorm, 1, 1, pFontData);
         mpProgramVars->setTexture("gFont", pTexture);
+
+        // SPIRE: Why wasn't the existing code setitng a sampler?
+        Sampler::Desc samplerDesc;
+        samplerDesc.setFilterMode(Sampler::Filter::Linear, Sampler::Filter::Linear, Sampler::Filter::Linear).setAddressingMode(Sampler::AddressMode::Border, Sampler::AddressMode::Border, Sampler::AddressMode::Border).setBorderColor(glm::vec4(1.0f));
+        samplerDesc.setLodParams(0.f, 0.f, 0.f);
+        auto sampler = Sampler::create(samplerDesc);
+        mpProgramVars->setSampler("gSampler", sampler);
+
+
 
         // Create the blend state
         BlendState::Desc blendDesc;
@@ -114,7 +123,10 @@ namespace Falcor
         UniquePtr pGui = UniquePtr(new Gui);
         pGui->init();
         pGui->onWindowResize(width, height);
-        pGui->mpProgramVars[0][64] = glm::vec3(1, 1, 1);
+        // SPIRE:
+//        pGui->mpProgramVars[0][64] = glm::vec3(1, 1, 1);
+        pGui->mpProgramVars->setVariable(64, glm::vec3(1, 1, 1));
+
         ImGui::NewFrame();
         return pGui;
     }
@@ -150,7 +162,9 @@ namespace Falcor
         ImGuiIO& io = ImGui::GetIO();
         io.DisplaySize.x = (float)width;
         io.DisplaySize.y = (float)height;
-        mpProgramVars[0][0] = orthographicMatrix(0, float(width), float(height), 0, 0, 1);
+        // SPIRE:
+//        mpProgramVars[0][0] = orthographicMatrix(0, float(width), float(height), 0, 0, 1);
+        mpProgramVars->setVariable(0, orthographicMatrix(0, float(width), float(height), 0, 0, 1));
     }
 
     void Gui::render(RenderContext* pContext, float elapsedTime)

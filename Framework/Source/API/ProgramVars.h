@@ -197,6 +197,16 @@ namespace Falcor
             mAssignedComponents[0]->setVariable(name, value);
         }
 
+        template<typename T>
+        void setVariable(size_t offset, const T& value)
+        {
+            mAssignedComponents[0]->setVariable(offset, value);
+        }
+
+        size_t getVariableOffset(const std::string& name)
+        {
+            return mAssignedComponents[0]->getVariableOffset(name);
+        }
 
         /** Get the program reflection interface
         */
