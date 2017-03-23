@@ -229,6 +229,8 @@ namespace Falcor
             setSampler(name, pSampler);
         }
 
+        SpireModule* getSpireComponentClass() const { return mReflector->getSpireComponentClass(); }
+
     //private:
         ProgramReflection::BufferTypeReflection::SharedConstPtr mReflector;
         ConstantBuffer::SharedPtr mConstantBuffer;

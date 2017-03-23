@@ -187,6 +187,8 @@ namespace Falcor
 
         // Spire-related stuff
 
+        size_t getComponentCount() const { return mAssignedComponents.size(); }
+
         void setComponent(uint32_t index, ComponentInstance::SharedPtr const& pComponent);
 
         template<typename T>
@@ -237,6 +239,7 @@ namespace Falcor
         ResourceMap<Sampler> mAssignedSamplers;          // HLSL 's' registers
 
         // SPIRE:
+    public:
         std::vector<ComponentInstance::SharedPtr> mAssignedComponents;
         mutable bool mRootSignatureDirty = false;
 

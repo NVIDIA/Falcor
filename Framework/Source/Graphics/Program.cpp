@@ -209,10 +209,14 @@ namespace Falcor
         return mSpireReflector;
     }
 
-    void Program::setComponent(int index, SpireModule* componentClass)
+    void Program::setComponent(size_t index, SpireModule* componentClass)
     {
-        assert(index >= 0);
-        assert((size_t)index < mSpireComponentClassList.size());
+        assert(index < mSpireComponentClassList.size());
+
+        // Don't change anything if the same class is already set
+        if(mSpireComponentClassList[index] == componentClass)
+            return;
+
         mSpireComponentClassList[index] = componentClass;
         mLinkRequired = true;
     }

@@ -193,6 +193,8 @@ namespace Falcor
             resourceMap,
             shaderAccess);
 
+        bufferTypeReflection->mSpireComponentClass = componentClass;
+
         return bufferTypeReflection;
     }
 

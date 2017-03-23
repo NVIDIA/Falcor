@@ -97,7 +97,7 @@ namespace Falcor
         bool isSpire() const { return mIsSpire; }
         ProgramReflection::SharedConstPtr getSpireReflector() const;
 
-        void setComponent(int index, SpireModule* componentClass);
+        void setComponent(size_t index, SpireModule* componentClass);
 
     protected:
         static const uint32_t kShaderCount = (uint32_t)ShaderType::Count;

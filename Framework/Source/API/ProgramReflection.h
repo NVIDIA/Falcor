@@ -266,6 +266,11 @@ namespace Falcor
             */
             ShaderAccess getShaderAccess() const { return mShaderAccess; }
 
+            // SPIRE:
+            SpireModule* mSpireComponentClass = nullptr;
+            SpireModule* getSpireComponentClass() const { return mSpireComponentClass; }
+
+
         private:
 
             BufferTypeReflection(const std::string& name, Type type, size_t size, const VariableMap& varMap, const ResourceMap& resourceMap, ShaderAccess shaderAccess);

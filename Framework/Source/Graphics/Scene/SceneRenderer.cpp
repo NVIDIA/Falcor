@@ -105,7 +105,7 @@ namespace Falcor
             SpireModule* cameraComponentClass = currentData.pCamera->getSpireComponentClass(spireContext);
 
             // TODO: need to find the index of the correct parameter, if any...
-            currentData.pGsoCache->getProgram()->setComponent(1, cameraComponentClass);
+//            currentData.pGsoCache->getProgram()->setComponent(1, cameraComponentClass);
 
             ComponentInstance::SharedPtr cameraComponent = currentData.pCamera->getSpireComponentInstance(spireContext);
 
@@ -196,7 +196,7 @@ namespace Falcor
 
         // Need to set this at the right place...
         int componentIndex = 2;
-        currentData.pGsoCache->getProgram()->setComponent(componentIndex, componentClass);
+//        currentData.pGsoCache->getProgram()->setComponent(componentIndex, componentClass);
         pContext->getGraphicsVars()->setComponent(componentIndex, componentInstance);
 #endif
 
@@ -222,7 +222,7 @@ namespace Falcor
         ComponentInstance::SharedPtr componentInstance = material->getSpireComponentInstance();
 
         int componentIndex = 3;
-        currentData.pGsoCache->getProgram()->setComponent(componentIndex, componentClass);
+//        currentData.pGsoCache->getProgram()->setComponent(componentIndex, componentClass);
         pContext->getGraphicsVars()->setComponent(componentIndex, componentInstance);
 #endif
 
