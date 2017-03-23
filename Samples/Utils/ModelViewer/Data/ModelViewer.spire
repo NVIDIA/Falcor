@@ -1,4 +1,3 @@
-
 template shader ModelViewerShader(
 	PerFrameCB : PerFrameCB_T,
 	InternalPerFrameCB : InternalPerFrameCB_T,
