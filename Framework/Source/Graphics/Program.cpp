@@ -209,6 +209,8 @@ namespace Falcor
         return mSpireReflector;
     }
 
+	SpireCompilationContext * Program::getSpireContext() const { return ShaderRepository::Instance().GetContext(); }
+
     void Program::setComponent(int index, SpireModule* componentClass)
     {
         assert(index >= 0);

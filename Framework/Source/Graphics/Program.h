@@ -96,7 +96,7 @@ namespace Falcor
 
         bool isSpire() const { return mIsSpire; }
         ProgramReflection::SharedConstPtr getSpireReflector() const;
-        SpireCompilationContext* getSpireContext() const { return mSpireContext; }
+		SpireCompilationContext* getSpireContext() const;
 
         void setComponent(int index, SpireModule* componentClass);
 

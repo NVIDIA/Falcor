@@ -1,3 +1,6 @@
+#ifndef SPIRE_SUPPORT_H
+#define SPIRE_SUPPORT_H
+
 /***************************************************************************
 # Copyright (c) 2015, NVIDIA CORPORATION. All rights reserved.
 #
@@ -49,3 +52,5 @@ namespace Falcor
 		static void Close();
 	};
 }
+
+#endif

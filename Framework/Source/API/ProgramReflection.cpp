@@ -171,7 +171,7 @@ namespace Falcor
 
 
     bool ProgramReflection::initFromSpire(
-        SpireCompilationContext*    pSpireContext,
+        SpireCompilationEnvironment*    pSpireEnv,
         SpireShader*                pSpireShader,
         std::string& log)
     {
@@ -179,7 +179,7 @@ namespace Falcor
         for(int cc = 0; cc < componentCount; ++cc)
         {
             char const* componentClassName = spShaderGetParameterType(pSpireShader, cc);
-            SpireModule* componentClass = spFindModule(pSpireContext, componentClassName);
+            SpireModule* componentClass = spEnvFindModule(pSpireEnv, componentClassName);
             if(!componentClass)
                 continue;
 
