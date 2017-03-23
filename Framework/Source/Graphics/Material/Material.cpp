@@ -542,4 +542,77 @@ namespace Falcor
 //         shaderDcl += '}';
     }
 
+    // Spire stuff
+
+    SpireModule* Material::getSpireComponentClass() const
+    {
+        auto spireContext = ShaderRepository::Instance().GetContext();
+
+        if( !mSpireComponentClass )
+        {
+            // TODO: Here is where we'd need to construct an appropriate component
+            // class for the material, based on the data in the layers.
+            //
+            // TODO: the proper logic for invalidating and re-generating this
+            // also needs to be worked out...
+            if( mData.textures.layers[0] )
+            {
+                mSpireComponentClass = spFindModule(spireContext, "TexturedMaterial");
+            }
+            else
+            {
+                mSpireComponentClass = spFindModule(spireContext, "ConstantMaterial");
+            }
+            assert(mSpireComponentClass);
+        }
+
+        return mSpireComponentClass;
+    }
+
+    ComponentInstance::SharedPtr Material::getSpireComponentInstance() const
+    {
+        if( !mSpireComponentInstance )
+        {
+            SpireModule* componentClass = getSpireComponentClass();
+
+            // TODO: we should share/cache the buffer reflection somehwere...
+            ProgramReflection::BufferTypeReflection::SharedPtr componentReflection =
+                ProgramReflection::BufferTypeReflection::create(componentClass);
+
+            mSpireComponentInstance = ComponentInstance::create(
+                componentReflection);
+
+            mDescDirty = true;
+        }
+
+        // fill in the instance if data is dirty...
+        //
+        // TODO: this is a bit hacky, because we are using the same dirty
+        // flag for two different things...
+        if( mDescDirty )
+        {
+            finalize();
+
+            // Fill in the values for the material fields, if anything has changed.
+            //
+            // TODO: we want to copy in data from our "sub-component instances"
+            // (the layers), which we assume will match the "component instance"
+            // we created for the material.
+            if( mData.textures.layers[0] )
+            {
+                // `TexturedMaterial`
+                mSpireComponentInstance->setTexture("diffuseMap", mData.textures.layers[0].get());
+                mSpireComponentInstance->setSampler("samplerState", mData.samplerState.get());
+            }
+            else
+            {
+                // `ConstantMaterial`
+                mSpireComponentInstance->setVariable("diffuseVal", mData.values.layers[0].albedo);
+            }
+
+        }
+
+        return mSpireComponentInstance;
+    }
+
 }

@@ -61,6 +61,14 @@ module InternalPerFrameCB_T
     param mat4            rightEyePrevViewProjMat;
 }
 
+module InternalPerMeshCB_T
+{
+//    param mat4[64] gWorldMat; // If the mesh has bones, these are the bones matrices
+//    param uint[64] gDrawId; // Zero-based order/ID of Mesh Instances drawn per SceneRenderer::renderScene call.
+    param mat4 gWorldMat;
+	param uint gDrawId;
+    param uint gMeshId;
+};
 
 // HACK: putting this here instead of in `ModelViewer.spire`
 // so that we can actually look it up...
@@ -72,4 +80,34 @@ module PerFrameCB_T
 //    param uint gConstColor;
 
     param vec3 gAmbient;
+}
+
+interface Material
+{
+}
+
+module ConstantMaterial
+	implements Material
+{
+	param vec4 diffuseVal;
+
+	public float4 diffuse = diffuseVal;
+}
+
+module TexturedMaterial
+	implements Material
+{
+	// HACK: I'm declaring the texture-coordinate input here, because I
+	// don't want to put it on the base shader and then make everything
+	// need to have a texture coordinate.
+	//
+	public @MeshVertex vec2 TEXCOORD;
+	vec2 vertUV = TEXCOORD;
+
+	param Texture2D diffuseMap;
+	param SamplerState samplerState;
+
+//	require vec2 vertUV;
+
+	public float4 diffuse = diffuseMap.Sample(samplerState, vertUV);
 }

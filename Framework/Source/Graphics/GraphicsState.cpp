@@ -97,6 +97,19 @@ namespace Falcor
         {
             mpVao->getVertexLayout()->addVertexAttribDclToProg(mpProgram.get());
         }
+
+        // SPIRE: specialize program to variables
+        if(mpProgram && pVars)
+        {
+            size_t componentCount = pVars->getComponentCount();
+            for(size_t cc = 0; cc < componentCount; ++cc)
+            {
+                auto component = pVars->mAssignedComponents[cc];
+                mpProgram->setComponent(cc, component->getSpireComponentClass());
+            }
+        }
+
+
         const ProgramVersion::SharedConstPtr pProgVersion = mpProgram ? mpProgram->getActiveVersion() : nullptr;
         bool newProgVersion = pProgVersion.get() != mCachedData.pProgramVersion;
         if (newProgVersion)

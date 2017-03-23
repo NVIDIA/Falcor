@@ -174,14 +174,9 @@ namespace Falcor
         */
         static const uint32_t kInvalidLocation = -1;
 
-        /** This class holds all of the data required to reflect a buffer, either constant buffer or SSBO
-        */
-        class BufferReflection
+        class BufferReflectionBase
         {
         public:
-            using SharedPtr = std::shared_ptr<BufferReflection>;
-            using SharedConstPtr = std::shared_ptr<const BufferReflection>;
-
             /** Buffer type
             */
             enum class Type
@@ -194,20 +189,25 @@ namespace Falcor
 
             static const uint32_t kTypeCount = (uint32_t)Type::Count;
 
-            /** Create a new object
-                \param[in] name The name of the buffer as was declared in the program
-                \param[in] regIndex The register index allocated for the buffer inside the program
-                \param[in] regSpace The register space allocated for the buffer inside the program
-                \param[in] size The size of the buffer
-                \param[in] varMap Map describing each variable in the buffer, excluding resources
-                \param[in] resourceMap Map describing the resources defined as part of the buffer. This map is only valid for APIs that support resource declarations nested inside buffers
-                \param[in] shaderAccess How the buffer will be access by the shader
-                \return A shared pointer for a new buffer object
-            */
-            static SharedPtr create(const std::string& name, uint32_t regIndex, uint32_t regSpace, Type type, size_t size, const VariableMap& varMap, const ResourceMap& resourceMap, ShaderAccess shaderAccess);
+        };
+
+        /** Reflection information for a *type* of buffer, that might be used at binding slots
+            in various entry points
+        */
+        class BufferTypeReflection : public BufferReflectionBase
+        {
+        public:
+            using SharedPtr = std::shared_ptr<BufferTypeReflection>;
+            using SharedConstPtr = std::shared_ptr<const BufferTypeReflection>;
+
+            static SharedPtr create(
+                const std::string& name,
+                Type type, size_t size,
+                const VariableMap& varMap,
+                const ResourceMap& resourceMap,
+                ShaderAccess shaderAccess);
 
             static SharedPtr create(SpireModule* componentClass);
-
 
             /** Get variable data
                 \param[in] name The name of the requested variable
@@ -246,7 +246,7 @@ namespace Falcor
             */
             ResourceMap::const_iterator resourceEnd() const { return mResources.end(); }
 
-            /** Get the buffer's name
+            /** Get the buffer type's name
             */
             const std::string& getName() const { return mName; }
 
@@ -261,6 +261,137 @@ namespace Falcor
             /** Get the variable count
             */
             size_t getVariableCount() const { return mVariables.size(); }
+
+            /** Get the shader access
+            */
+            ShaderAccess getShaderAccess() const { return mShaderAccess; }
+
+            // SPIRE:
+            SpireModule* mSpireComponentClass = nullptr;
+            SpireModule* getSpireComponentClass() const { return mSpireComponentClass; }
+
+
+        private:
+
+            BufferTypeReflection(const std::string& name, Type type, size_t size, const VariableMap& varMap, const ResourceMap& resourceMap, ShaderAccess shaderAccess);
+
+            std::string mName;
+            size_t mSizeInBytes = 0;
+            Type mType;
+            ResourceMap mResources;
+            VariableMap mVariables;
+            ShaderAccess mShaderAccess;
+        };
+
+
+        /** This class holds all of the data required to reflect a buffer, either constant buffer or SSBO
+        */
+        class BufferReflection : public BufferReflectionBase
+        {
+        public:
+            using SharedPtr = std::shared_ptr<BufferReflection>;
+            using SharedConstPtr = std::shared_ptr<const BufferReflection>;
+
+
+            /** Create a new object
+                \param[in] name The name of the buffer as was declared in the program
+                \param[in] regIndex The register index allocated for the buffer inside the program
+                \param[in] regSpace The register space allocated for the buffer inside the program
+                \param[in] size The size of the buffer
+                \param[in] varMap Map describing each variable in the buffer, excluding resources
+                \param[in] resourceMap Map describing the resources defined as part of the buffer. This map is only valid for APIs that support resource declarations nested inside buffers
+                \param[in] shaderAccess How the buffer will be access by the shader
+                \return A shared pointer for a new buffer object
+            */
+            static SharedPtr create(const std::string& name, uint32_t regIndex, uint32_t regSpace, Type type, size_t size, const VariableMap& varMap, const ResourceMap& resourceMap, ShaderAccess shaderAccess);
+
+            static SharedPtr create(const std::string& name, uint32_t regIndex, uint32_t regSpace,
+                BufferTypeReflection::SharedPtr const& typeReflection);
+
+            BufferTypeReflection::SharedPtr getTypeReflection() const { return mTypeReflection; }
+
+            /** Get variable data
+                \param[in] name The name of the requested variable
+                \param[out] offset The offset of the variable or kInvalidLocation if the variable wasn't found. This is useful in cases where the requested variable is an array element, since the returned result will be different than Variable::offset
+                \param[in] allowNonIndexedArray Optional. By default, getting the first element in an array requires explicit '[0]' at the end of the name. Set this to true to search for the start of an array when the name doesn't contain an index
+                \return Pointer to the variable data, or nullptr if the name wasn't found
+            */
+            const Variable* getVariableData(const std::string& name, size_t& offset, bool allowNonIndexedArray = false) const
+            {
+                return mTypeReflection->getVariableData(name, offset, allowNonIndexedArray);
+            }
+
+            /** Get variable data
+            \param[in] name The name of the requested variable
+            \param[in] allowNonIndexedArray Optional. By default, getting the first element in an array requires explicit '[0]' at the end of the name. Set this to true to search for the start of an array without any index
+            \return Pointer to the variable data, or nullptr if the name wasn't found
+            */
+            const Variable* getVariableData(const std::string& name, bool allowNonIndexedArray = false) const
+            {
+                return mTypeReflection->getVariableData(name, allowNonIndexedArray);
+            }
+
+            /** Get resource data
+            \param[in] name The name of the requested resource
+            \return Pointer to the resource data, or nullptr if the name wasn't found or is not a resource
+            */
+            const Resource* getResourceData(const std::string& name) const
+            {
+                return mTypeReflection->getResourceData(name);
+            }
+
+            /** Get an iterator to the first variable
+            */
+            VariableMap::const_iterator varBegin() const
+            {
+                return mTypeReflection->varBegin();
+            }
+
+            /** Get an iterator to the end of the variable list
+            */
+            VariableMap::const_iterator varEnd() const
+            {
+                return mTypeReflection->varEnd();
+            }
+
+            /** Get an iterator to the first resource
+            */
+            ResourceMap::const_iterator resourceBegin() const
+            {
+                return mTypeReflection->resourceBegin();
+            }
+
+            /** Get an iterator to the end of the variable list
+            */
+            ResourceMap::const_iterator resourceEnd() const
+            {
+                return mTypeReflection->resourceEnd();
+            }
+
+            /** Get the buffer's name
+            */
+            const std::string& getName() const { return mName; }
+
+            /** Get the required buffer size
+            */
+            size_t getRequiredSize() const
+            {
+                return mTypeReflection->getRequiredSize();
+            }
+            
+            /** Get the type of the buffer
+            */
+            Type getType() const
+            {
+                return mTypeReflection->getType();
+            }
+
+            /** Get the variable count
+            */
+            size_t getVariableCount() const
+            {
+                return mTypeReflection->getVariableCount();
+            }
 
             /** Set a mask indicating in which shader stages the buffer is used
             */
@@ -280,20 +411,30 @@ namespace Falcor
 
             /** Get the shader access
             */
-            ShaderAccess getShaderAccess() const { return mShaderAccess; }
+            ShaderAccess getShaderAccess() const
+            {
+                return mTypeReflection->getShaderAccess();
+            }
+
         private:
             friend class ProgramReflection;
 
-            BufferReflection(const std::string& name, uint32_t registerIndex, uint32_t regSpace, Type type, size_t size, const VariableMap& varMap, const ResourceMap& resourceMap, ShaderAccess shaderAccess);
+            BufferReflection(const std::string& name, uint32_t registerIndex, uint32_t regSpace,
+                BufferTypeReflection::SharedPtr const& typeReflection);
             std::string mName;
+
+#if 0
             size_t mSizeInBytes = 0;
             Type mType;
             ResourceMap mResources;
             VariableMap mVariables;
+            ShaderAccess mShaderAccess;
+#else
             uint32_t mShaderMask = 0;
             uint32_t mRegIndex;
             uint32_t mRegSpace = 0;
-            ShaderAccess mShaderAccess;
+            BufferTypeReflection::SharedPtr mTypeReflection;
+#endif
         };
 
         /** Create a new object
@@ -361,12 +502,17 @@ namespace Falcor
             string_2_bindloc_map nameMap;
         };
 
+
+        // Spire
+        uint32_t getComponentCount() const { return mSpireComponentCount; }
+        BufferTypeReflection::SharedPtr getComponent(uint32_t index) const { return mSpireComponents[index]; }
+
     private:
         bool init(const ProgramVersion* pProgVer, std::string& log);
         bool initFromSpire(
-			SpireCompilationEnvironment*    pSpireEnv,
-            SpireShader*                pSpireShader,
-            std::string& log);
+            SpireCompilationEnvironment*    pSpireEnv,
+            SpireShader*                    pSpireShader,
+            std::string&                    log);
 
         bool reflectVertexAttributes(const ProgramVersion* pProgVer, std::string& log);       // Input attributes
         bool reflectFragmentOutputs(const ProgramVersion* pProgVer, std::string& log);        // FS output (if FS exists)
@@ -376,6 +522,10 @@ namespace Falcor
         VariableMap mFragOut;
         VariableMap mVertAttr;
         ResourceMap mResources;
+
+        // Spire:
+        uint32_t mSpireComponentCount = 0;
+        std::vector<BufferTypeReflection::SharedPtr> mSpireComponents;
     };
 
 

@@ -33,6 +33,8 @@
 #include "Graphics/Program.h"
 #include "API/LowLevel/DescriptorHeap.h"
 
+#include "Sampler.h"
+
 namespace Falcor
 {
     class Sampler;
@@ -76,7 +78,12 @@ namespace Falcor
             \param[in] overrideSize - if 0, will use the buffer size as declared in the shader. Otherwise, will use this value as the buffer size. Useful when using buffers with dynamic arrays.
             \return A new buffer object if the operation was successful, otherwise nullptr
         */
-        static SharedPtr create(const ProgramReflection::BufferReflection::SharedConstPtr& pReflector, size_t overrideSize = 0);
+        static SharedPtr create(const ProgramReflection::BufferTypeReflection::SharedConstPtr& pReflector, size_t overrideSize = 0);
+
+        static SharedPtr create(const ProgramReflection::BufferReflection::SharedConstPtr& pReflector, size_t overrideSize = 0)
+        {
+            return create(pReflector->getTypeReflection(), overrideSize);
+        }
 
         /** create a new constant buffer from a program object.\n
         This function is purely syntactic sugar. It will fetch the requested buffer reflector from the active program version and create the buffer from it
@@ -173,7 +180,7 @@ namespace Falcor
 
         DescriptorHeap::Entry getCBV() const;
     protected:
-        ConstantBuffer(const ProgramReflection::BufferReflection::SharedConstPtr& pReflector, size_t size);
+        ConstantBuffer(const ProgramReflection::BufferTypeReflection::SharedConstPtr& pReflector, size_t size);
         mutable DescriptorHeap::Entry mCBV;
 #ifdef FALCOR_D3D11
         friend class RenderContext;
@@ -184,6 +191,51 @@ namespace Falcor
 #endif
     };
 
-    // For now, use a constant buffer to stand for a Spire component instance...
-    typedef ConstantBuffer ComponentInstance;
+    class ComponentInstance : public std::enable_shared_from_this<ComponentInstance>
+    {
+    public:
+        using SharedPtr = std::shared_ptr<ComponentInstance>;
+
+        static SharedPtr create(const ProgramReflection::BufferTypeReflection::SharedConstPtr& pReflector);
+
+        template<typename T>
+        void setVariable(size_t offset, const T& value)
+        {
+            mConstantBuffer->setVariable(offset, value);
+        }
+
+        template<typename T>
+        void setVariable(const std::string& name, const T& value)
+        {
+            mConstantBuffer->setVariable(name, value);
+        }
+
+        void setBlob(const void* pSrc, size_t offset, size_t size)
+        {
+            mConstantBuffer->setBlob(pSrc, offset, size);
+        }
+
+        void setTexture(const std::string& name, const Texture* pTexture);
+
+        void setSampler(const std::string& name, const Sampler* pSampler);
+
+        void setVariable(const std::string& name, const Texture* pTexture)
+        {
+            setTexture(name, pTexture);
+        }
+
+        void setVariable(const std::string& name, const Sampler* pSampler)
+        {
+            setSampler(name, pSampler);
+        }
+
+        SpireModule* getSpireComponentClass() const { return mReflector->getSpireComponentClass(); }
+
+    //private:
+        ProgramReflection::BufferTypeReflection::SharedConstPtr mReflector;
+        ConstantBuffer::SharedPtr mConstantBuffer;
+
+        std::vector<Texture::SharedConstPtr> mBoundTextures;
+        std::vector<Sampler::SharedConstPtr> mBoundSamplers;
+    };
 }

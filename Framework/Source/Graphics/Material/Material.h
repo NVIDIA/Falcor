@@ -36,6 +36,9 @@
 #include "API/Sampler.h"
 #include "Data/HostDeviceData.h"
 
+#include "API/ConstantBuffer.h"
+#include "Utils/SpireSupport.h"
+
 namespace Falcor
 {
     class Texture;
@@ -300,6 +303,14 @@ namespace Falcor
         */
         uint64_t getDescIdentifier() const;
 
+
+
+        //SPIRE:
+        SpireModule* getSpireComponentClass() const;
+        ComponentInstance::SharedPtr getSpireComponentInstance() const;
+
+
+
     private:
         void finalize() const;
         void normalize() const;
@@ -328,5 +339,14 @@ namespace Falcor
         void removeDescIdentifier() const;
         static uint32_t sMaterialCounter;
         static std::vector<DescId> sDescIdentifier; // vector is slower then map, but map requires 'less' operator. This vector is only being used when the material is dirty, which shouldn't happen often
+
+
+        // Spire stuff:
+
+        // The component class to use when compiling shaders for htis camera
+        mutable SpireModule* mSpireComponentClass = nullptr;
+
+        // The component "instance" to be used for spire stuff...
+        mutable ComponentInstance::SharedPtr mSpireComponentInstance;
     };
 }

@@ -48,6 +48,7 @@ namespace Falcor
         using SharedPtr = std::shared_ptr<VariablesBuffer>;
         using SharedConstPtr = std::shared_ptr<const VariablesBuffer>;
 
+        VariablesBuffer(const ProgramReflection::BufferTypeReflection::SharedConstPtr& pReflector, size_t elementSize, size_t elementCount, BindFlags bindFlags, CpuAccess cpuAccess);
         VariablesBuffer(const ProgramReflection::BufferReflection::SharedConstPtr& pReflector, size_t elementSize, size_t elementCount, BindFlags bindFlags, CpuAccess cpuAccess);
 
         virtual ~VariablesBuffer() = 0;
@@ -61,7 +62,7 @@ namespace Falcor
 
         /** Get the reflection object describing the CB
         */
-        ProgramReflection::BufferReflection::SharedConstPtr getBufferReflector() const { return mpReflector; }
+        ProgramReflection::BufferTypeReflection::SharedConstPtr getBufferReflector() const { return mpReflector; }
 
         /** Set a block of data into the constant buffer.\n
         If Offset + Size will result in buffer overflow, the call will be ignored and log an error.
@@ -101,7 +102,7 @@ namespace Falcor
 
         void setTextureInternal(size_t offset, const Texture* pTexture, const Sampler* pSampler);
 
-        ProgramReflection::BufferReflection::SharedConstPtr mpReflector;
+        ProgramReflection::BufferTypeReflection::SharedConstPtr mpReflector;
         std::vector<uint8_t> mData;
         mutable bool mDirty = true;
         size_t mElementCount;
