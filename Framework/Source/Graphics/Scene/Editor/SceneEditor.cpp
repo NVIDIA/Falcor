@@ -848,7 +848,7 @@ namespace Falcor
             {
                 if (mpEditorPicker->pick(pContext, mouseEvent.pos, mpEditorScene->getActiveCamera()))
                 {
-                    auto& pInstance = mpEditorPicker->getPickedModelInstance();
+                    const auto& pInstance = mpEditorPicker->getPickedModelInstance();
 
                     // If picked model instance is part of the active gizmo
                     if (mGizmos[(uint32_t)mActiveGizmoType]->beginAction(mpEditorScene->getActiveCamera(), pInstance))

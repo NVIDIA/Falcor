@@ -69,7 +69,7 @@ private:
     HdrImage mHdrImageIndex = HdrImage::EveningSun;
     Fbo::SharedPtr mpHdrFbo;
     ToneMapping::UniquePtr mpToneMapper;
-    SceneRenderer::UniquePtr mpSceneRenderer;
+    SceneRenderer::SharedPtr mpSceneRenderer;
 
     void loadImage();
 

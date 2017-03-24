@@ -96,11 +96,11 @@ namespace Falcor
         }
     }
 
-    bool Gizmo::isPartOfGizmo(const Scene::ModelInstance::SharedPtr& pInstance) const
+    bool Gizmo::isPartOfGizmo(const Scene::ModelInstance* pInstance) const
     {
         for (auto& axis : mpAxesInstances)
         {
-            if (axis == pInstance)
+            if (axis.get() == pInstance)
             {
                 return true;
             }
@@ -110,7 +110,7 @@ namespace Falcor
     }
 
     // static
-    Gizmo::Type Gizmo::getGizmoType(const Gizmos& gizmos, const Scene::ModelInstance::SharedPtr& pInstance)
+    Gizmo::Type Gizmo::getGizmoType(const Gizmos& gizmos, const Scene::ModelInstance* pInstance)
     {
         for (uint32_t i = 0; i < 3; i++)
         {

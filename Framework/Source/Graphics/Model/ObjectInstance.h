@@ -41,11 +41,11 @@ namespace Falcor
     class Model;
 
     template<typename ObjectType>
-    class ObjectInstance : public IMovableObject, public inherit_shared_from_this<IMovableObject, ObjectInstance<ObjectType>>
+    class ObjectInstance : public IMovableObject, public inherit_shared_from_this<IMovableObject, ObjectInstance<typename ObjectType>>
     {
     public:
-        using SharedPtr = std::shared_ptr<ObjectInstance>;
-        using SharedConstPtr = std::shared_ptr<const ObjectInstance>;
+        using SharedPtr = std::shared_ptr<ObjectInstance<typename ObjectType>>;
+        using SharedConstPtr = std::shared_ptr<const ObjectInstance<typename ObjectType>>;
 
         /** Constructs a object instance with a transform
             \param[in] pObject Object to create an instance of
@@ -214,6 +214,15 @@ namespace Falcor
             mMovable.matrixDirty = true;
         }
 
+        SharedPtr shared_from_this()
+        {
+            return inherit_shared_from_this < IMovableObject, ObjectInstance>::shared_from_this();
+        }
+
+        SharedConstPtr shared_from_this() const
+        {
+            return inherit_shared_from_this < IMovableObject, ObjectInstance>::shared_from_this();
+        }
     private:
 
         void updateInstanceProperties() const

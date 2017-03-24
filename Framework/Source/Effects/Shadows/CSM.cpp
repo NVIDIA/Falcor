@@ -71,25 +71,25 @@ namespace Falcor
     protected:
         CsmSceneRenderer(const Scene::SharedConstPtr& pScene) : SceneRenderer(std::const_pointer_cast<Scene>(pScene)) { setObjectCullState(false); }
         bool mMaterialChanged = false;
-        bool setPerMaterialData(RenderContext* pContext, const CurrentWorkingData& currentData) override
+        bool setPerMaterialData(const CurrentWorkingData& currentData, const Material* pMaterial) override
         {
             mMaterialChanged = true;
             if (currentData.pMaterial->getAlphaMap())
             {
                 float alphaThreshold = currentData.pMaterial->getAlphaThreshold();
-                pContext->getGraphicsVars()->getConstantBuffer(1u)->setBlob(&alphaThreshold, 0u, sizeof(float));
-                pContext->getGraphicsVars()->setSrv(0u, currentData.pMaterial->getAlphaMap()->getSRV());
-                pContext->getGraphicsState()->getProgram()->addDefine("TEST_ALPHA");
+                currentData.pContext->getGraphicsVars()->getConstantBuffer(1u)->setBlob(&alphaThreshold, 0u, sizeof(float));
+                currentData.pContext->getGraphicsVars()->setSrv(0u, currentData.pMaterial->getAlphaMap()->getSRV());
+                currentData.pContext->getGraphicsState()->getProgram()->addDefine("TEST_ALPHA");
             }
             else
             {
-                pContext->getGraphicsState()->getProgram()->removeDefine("TEST_ALPHA");
+                currentData.pContext->getGraphicsState()->getProgram()->removeDefine("TEST_ALPHA");
             }
             
             return true;
         };
 
-        void postFlushDraw(RenderContext* pContext, const CurrentWorkingData& currentData) override
+        void postFlushDraw(const CurrentWorkingData& currentData) override
         {
             if(mUnloadTexturesOnMaterialChange && mMaterialChanged)
             {

@@ -96,7 +96,7 @@ namespace Falcor
 
         uint32_t getIndex() const { return mIndex; }
 
-        uint32_t getShaderStructSize() const { return kDataSize; }
+        static uint32_t getShaderStructSize() { return kDataSize; }
     protected:
 
         static const size_t kDataSize = sizeof(LightData) - sizeof(MaterialData);

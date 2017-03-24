@@ -235,7 +235,7 @@ namespace Falcor
 
         // Separate scene for rendering selected model wireframe
         Scene::SharedPtr mpSelectionScene;
-        SceneRenderer::UniquePtr mpSelectionSceneRenderer;
+        SceneRenderer::SharedPtr mpSelectionSceneRenderer;
 
         // Separate scene for editor gizmos and objects
         Scene::SharedPtr mpEditorScene;

@@ -75,7 +75,7 @@ namespace Falcor
 
         static const char* kSupportedFileFormatsStr;
 
-        ~Model();
+        virtual ~Model();
 
         /** Export the model to a binary file
         */

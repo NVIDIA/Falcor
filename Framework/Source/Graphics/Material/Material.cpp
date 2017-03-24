@@ -341,7 +341,7 @@ namespace Falcor
         const auto pResourceDesc = pVars->getReflection()->getResourceDesc(resourceName);
         if (pResourceDesc == nullptr)
         {
-            logError(std::string("Material::setIntoConstantBuffer() - can't find the first texture object"));
+            logWarning(std::string("Material::setIntoConstantBuffer() - can't find the first texture object"));
             return;
         }
 

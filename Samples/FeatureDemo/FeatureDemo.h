@@ -94,7 +94,7 @@ private:
     void initControls();
     
     GraphicsState::SharedPtr mpState;
-    SceneRenderer::UniquePtr mpSceneRenderer;
+    SceneRenderer::SharedPtr mpSceneRenderer;
     void loadModel(const std::string& filename);
     void loadScene(const std::string& filename);
     void initScene(Scene::SharedPtr pScene);

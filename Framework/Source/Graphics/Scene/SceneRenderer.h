@@ -46,8 +46,8 @@ namespace Falcor
     class SceneRenderer
     {
     public:
-        using UniquePtr = std::unique_ptr<SceneRenderer>;
-        using UniqueConstPtr = std::unique_ptr<const SceneRenderer>;
+        using SharedPtr = std::shared_ptr<SceneRenderer>;
+        using SharedConstPtr = std::shared_ptr<const SceneRenderer>;
 
         enum class RenderMode
         {
@@ -56,7 +56,7 @@ namespace Falcor
             SinglePassStereo,
         };
 
-        static UniquePtr create(const Scene::SharedPtr& pScene);
+        static SharedPtr create(const Scene::SharedPtr& pScene);
 
         /** Renders the full scene, does update of the camera internally
             Call update() before using this function, otherwise camera will not move and models will not be animated
@@ -108,10 +108,12 @@ namespace Falcor
 
         struct CurrentWorkingData
         {
-            const Camera* pCamera;
-            mutable GraphicsState* pGsoCache;
-            const Model* pModel;
-            const Material* pMaterial;
+            RenderContext* pContext = nullptr;
+            GraphicsVars* pVars = nullptr;
+            GraphicsState* pState = nullptr;
+            const Camera* pCamera = nullptr;
+            const Model* pModel = nullptr;
+            const Material* pMaterial = nullptr;
 
             uint32_t drawID; // Zero-based mesh instance draw order/ID. Resets at the beginning of renderScene, and increments per mesh instance drawn.
         };
@@ -125,25 +127,29 @@ namespace Falcor
 
         static size_t sBonesOffset;
         static size_t sCameraDataOffset;
+        static size_t sLightCountOffset;
+        static size_t sLightArrayOffset;
         static size_t sWorldMatOffset;
         static size_t sMeshIdOffset;
         static size_t sDrawIDOffset;
 
         static void updateVariableOffsets(const ProgramReflection* pReflector);
 
-        virtual void setPerFrameData(RenderContext* pContext, const CurrentWorkingData& currentData);
-        virtual bool setPerModelData(RenderContext* pContext, const CurrentWorkingData& currentData);
-        virtual bool setPerModelInstanceData(RenderContext* pContext, const Scene::ModelInstance::SharedPtr& pModelInstance, uint32_t instanceID, const CurrentWorkingData& currentData);
-        virtual bool setPerMeshData(RenderContext* pContext,  const CurrentWorkingData& currentData);
-        virtual bool setPerMeshInstanceData(RenderContext* pContext, const Scene::ModelInstance::SharedPtr& pModelInstance, const Model::MeshInstance::SharedPtr& pMeshInstance, uint32_t drawInstanceID, const CurrentWorkingData& currentData);
-        virtual bool setPerMaterialData(RenderContext* pContext, const CurrentWorkingData& currentData);
-        virtual void postFlushDraw(RenderContext* pContext, const CurrentWorkingData& currentData);
+        virtual void setPerFrameData(const CurrentWorkingData& currentData);
+        virtual bool setPerModelData(const CurrentWorkingData& currentData);
+        virtual bool setPerModelInstanceData(const CurrentWorkingData& currentData, const Scene::ModelInstance* pModelInstance, uint32_t instanceID);
+        virtual bool setPerMeshData(const CurrentWorkingData& currentData, const Mesh* pMesh);
+        virtual bool setPerMeshInstanceData(const CurrentWorkingData& currentData, const Scene::ModelInstance* pModelInstance, const Model::MeshInstance* pMeshInstance, uint32_t drawInstanceID);
+        virtual bool setPerMaterialData(const CurrentWorkingData& currentData, const Material* pMaterial);
+        virtual void executeDraw(const CurrentWorkingData& currentData, uint32_t indexCount, uint32_t instanceCount);
+        virtual void postFlushDraw(const CurrentWorkingData& currentData);
 
-        void renderModelInstance(RenderContext* pContext, const Scene::ModelInstance::SharedPtr& pModelInstance, Camera* pCamera, CurrentWorkingData& currentData);
-        void renderMeshInstances(RenderContext* pContext, uint32_t modelID, const Scene::ModelInstance::SharedPtr& pModelInstance, Camera* pCamera, CurrentWorkingData& currentData);
-        void flushDraw(RenderContext* pContext, const Mesh* pMesh, uint32_t instanceCount, CurrentWorkingData& currentData);
+        void renderModelInstance(CurrentWorkingData& currentData, const Scene::ModelInstance* pModelInstance);
+        void renderMeshInstances(CurrentWorkingData& currentData, const Scene::ModelInstance* pModelInstance, uint32_t meshID);
+        void draw(CurrentWorkingData& currentData, const Mesh* pMesh, uint32_t instanceCount);
 
         void setupVR();
+        void renderScene(CurrentWorkingData& currentData);
 
         CameraControllerType mCamControllerType = CameraControllerType::SixDof;
         CameraController::SharedPtr mpCameraController;

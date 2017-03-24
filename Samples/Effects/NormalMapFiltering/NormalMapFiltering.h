@@ -45,7 +45,7 @@ public:
 private:
     void updateProgram();
     GraphicsProgram::SharedPtr mpProgram;
-    SceneRenderer::UniquePtr mpRenderer;
+    SceneRenderer::SharedPtr mpRenderer;
     GraphicsVars::SharedPtr mpVars;
     ModelViewCameraController mCameraController;
     LeanMap::UniquePtr mpLeanMap;

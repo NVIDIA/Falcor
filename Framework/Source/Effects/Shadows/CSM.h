@@ -90,8 +90,8 @@ namespace Falcor
         Light::SharedConstPtr mpLight;
         Scene::SharedConstPtr mpScene;
         Camera::SharedPtr mpLightCamera;
-        std::unique_ptr<CsmSceneRenderer> mpCsmSceneRenderer;
-        std::unique_ptr<SceneRenderer> mpSceneRenderer;
+        std::shared_ptr<CsmSceneRenderer> mpCsmSceneRenderer;
+        std::shared_ptr<SceneRenderer> mpSceneRenderer;
 
         void calcDistanceRange(RenderContext* pRenderCtx, const Camera* pCamera, Texture::SharedPtr pDepthBuffer, glm::vec2& distanceRange);
         void createShadowPassResources(uint32_t mapWidth, uint32_t mapHeight);

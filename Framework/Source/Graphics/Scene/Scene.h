@@ -105,7 +105,7 @@ namespace Falcor
         static Scene::SharedPtr loadFromFile(const std::string& filename, Model::LoadFlags modelLoadFlags = Model::LoadFlags::None, Scene::LoadFlags sceneLoadFlags = LoadFlags::None);
         static Scene::SharedPtr create();
 
-        ~Scene();
+        virtual ~Scene();
 
         // Models
         uint32_t getModelCount() const { return (uint32_t)mModels.size(); }
@@ -194,7 +194,7 @@ namespace Falcor
         */
         void deleteAreaLights();
 
-    private:
+    protected:
 
         Scene();
 

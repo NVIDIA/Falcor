@@ -35,9 +35,16 @@
 
 #include "HostDeviceData.h"
 
+#ifndef MAX_LIGHT_SOURCES
+#define MAX_LIGHT_SOURCES 16
+#endif
+
 cbuffer InternalPerFrameCB : register(b10)
 {
     CameraData gCam;
+    uint32_t gLightsCount;
+    vec3 pad;
+    LightData gLights[MAX_LIGHT_SOURCES];
 };
 
 cbuffer InternalPerMeshCB : register(b11)

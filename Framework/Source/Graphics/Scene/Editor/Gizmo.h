@@ -114,14 +114,14 @@ namespace Falcor
             \param[in] pInstance Model instance to check.
             \return Whether pInstance is part of the gizmo.
         */
-        bool isPartOfGizmo(const Scene::ModelInstance::SharedPtr& pInstance) const;
+        bool isPartOfGizmo(const Scene::ModelInstance* pInstance) const;
 
         /** Check if model instance is part of a set of gizmos
             \param[in] gizmos Array of three gizmos.
             \param[in] pInstance Model instance to check.
             \return If gizmos contain pInstance, returns the type of gizmo pInstance is a part of. Otherwise returns Type::Invalid.
         */
-        static Type getGizmoType(const Gizmos& gizmos, const Scene::ModelInstance::SharedPtr& pInstance);
+        static Type getGizmoType(const Gizmos& gizmos, const Scene::ModelInstance* pInstance);
 
     protected:
 

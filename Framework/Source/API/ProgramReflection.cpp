@@ -88,7 +88,7 @@ namespace Falcor
 
             if (var == mVariables.end())
             {
-                logError(msg + "Variable not found.");
+                logWarning(msg + "Variable not found.");
                 return nullptr;
             }
 
@@ -205,7 +205,7 @@ namespace Falcor
 #endif
             if(pRes == nullptr)
             {
-                logError("Can't find resource '" + name + "' in program");
+                logWarning("Can't find resource '" + name + "' in program");
             }
         }
         return pRes;
