@@ -288,10 +288,29 @@ void FeatureDemo::setActiveCameraAspectRatio()
 void FeatureDemo::onInitializeTestingArgs(const ArgList& args)
 {
     mUniformDt = args.argExists("uniformdt");
+
+    std::vector<ArgList::Arg> model = args.getValues("loadmodel");
+    if (!model.empty())
+    {
+        loadModel(model[0].asString());
+    }
+
     std::vector<ArgList::Arg> scene = args.getValues("loadscene");
     if (!scene.empty())
     {
         loadScene(scene[0].asString());
+    }
+
+    std::vector<ArgList::Arg> cameraPos = args.getValues("camerapos");
+    if (!cameraPos.empty())
+    {
+        mpSceneRenderer->getScene()->getActiveCamera()->setPosition(glm::vec3(cameraPos[0].asFloat(), cameraPos[1].asFloat(), cameraPos[2].asFloat()));
+    }
+
+    std::vector<ArgList::Arg> cameraTarget = args.getValues("cameratarget");
+    if (!cameraTarget.empty())
+    {
+        mpSceneRenderer->getScene()->getActiveCamera()->setTarget(glm::vec3(cameraTarget[0].asFloat(), cameraTarget[1].asFloat(), cameraTarget[2].asFloat()));
     }
 }
 

@@ -15,9 +15,9 @@ MultiPassPostProcess {
 	-test -ssframes 50 -shutdown 100 -gaussianblur -grayscale -loadimage \\netapp-wa02\\public\\Falcor\\TestMedia\\TestTex2.png}
 	{released3d12}
 FeatureDemo {
--test -uniformdt -loadscene \\netapp-wa02\public\Falcor\TestMedia\SanMiguelWithPath.fscene -ssframes 350 700 1050 1400 -perfframes 1500 2900 -shutdown 3000,
--test -uniformdt -loadscene \\netapp-wa02\public\Falcor\TestMedia\City2x2WithPath.fscene -ssframes 350 700 1050 1400 -perfframes 1500 2900 -shutdown 3000, 
--test -uniformdt -loadscene \\netapp-wa02\public\Falcor\TestMedia\ClassroomWithPath.fscene -ssframes 350 700 1050 1400 -perfframes 1500 2900 -shutdown 3000 } 
+-test -loadmodel san-miguel\san-miguel-high-poly.fbx -camerapos 22.7 2 10.8 -cameratarget 21.9 1.9 10.2 -ssframes 50 -loadtime -perfframes 100 400 -shutdown 450,
+-test -loadmodel CityScene\CityScene.fbx -ssframes 50 -loadtime -perfframes 100 400 -shutdown 450,
+-test -loadmodel classroom\Classroom.fbx -ssframes 50 -loadtime -perfframes 100 400 -shutdown 450} 
 {released3d12}
 Shadows {
 -test -loadtime -incrementFilter 100 300 500 700 900 1100 -ssframes 150 350 550 750 950 1150 -perfframes 175 275 375 475 575 675 775 875 975 1075 1175 1275 -shutdown 1300} {released3d12}
