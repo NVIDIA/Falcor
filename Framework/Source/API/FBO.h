@@ -140,6 +140,7 @@ namespace Falcor
         /** Get the FBO format descriptor
         */
         const Desc& getDesc() const { checkStatus();  return mDesc; }
+
 #ifdef FALCOR_D3D
         DepthStencilView::SharedPtr getDepthStencilView() const;
         RenderTargetView::SharedPtr getRenderTargetView(uint32_t rtIndex) const;

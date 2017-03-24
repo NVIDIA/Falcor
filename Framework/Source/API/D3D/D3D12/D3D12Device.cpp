@@ -223,7 +223,7 @@ namespace Falcor
 		return true;
 	}
 
-    Device::~Device()
+    void Device::cleanup()
     {
         mpRenderContext->flush(true);
         // Release all the bound resources. Need to do that before deleting the RenderContext
@@ -236,6 +236,7 @@ namespace Falcor
         mpRenderContext.reset();
         mpResourceAllocator.reset();
         safe_delete(pData);
+        mpWindow.reset();
     }
 
 	Device::SharedPtr Device::create(Window::SharedPtr& pWindow, const Device::Desc& desc)

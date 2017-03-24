@@ -193,12 +193,15 @@ namespace Falcor
             return false;
         }
 
-        // Just need to make sure the buffer is large enough
-        const auto& desc = mpReflector->getBufferDesc(index, ProgramReflection::ShaderAccess::Read, ProgramReflection::BufferReflection::Type::Constant);
-        if (desc->getRequiredSize() > pCB->getSize())
+        if (pCB != nullptr)
         {
-            logError("Can't attach the constant buffer. Size mismatch.");
-            return false;
+            // Just need to make sure the buffer is large enough
+            const auto& desc = mpReflector->getBufferDesc(index, ProgramReflection::ShaderAccess::Read, ProgramReflection::BufferReflection::Type::Constant);
+            if (desc->getRequiredSize() > pCB->getSize())
+            {
+                logError("Can't attach the constant buffer. Size mismatch.");
+                return false;
+            }
         }
 
         assert(mAssignedCbs.find(index) != mAssignedCbs.end());
@@ -229,7 +232,7 @@ namespace Falcor
             assert(uavIt != assignedUavs.end());
 
             uavIt->second.pResource = resource;
-            uavIt->second.pView = resource->getUAV();
+            uavIt->second.pView = (resource != nullptr) ? resource->getUAV() : nullptr;
             break;
         }
 
@@ -239,7 +242,7 @@ namespace Falcor
             assert(srvIt != assignedSrvs.end());
 
             srvIt->second.pResource = resource;
-            srvIt->second.pView = resource->getSRV();
+            srvIt->second.pView = (resource != nullptr) ? resource->getSRV() : nullptr;
             break;
         }
 
@@ -534,7 +537,7 @@ namespace Falcor
             it->second.pView = pSrv;
 
             // TODO: Fix resource/view const-ness so we don't need to do this
-            it->second.pResource = getResourceFromView(pSrv.get());
+            it->second.pResource = (pSrv != nullptr) ? getResourceFromView(pSrv.get()) : nullptr;
         }
         else
         {
@@ -553,7 +556,7 @@ namespace Falcor
             it->second.pView = pUav;
 
             // TODO: Fix resource/view const-ness so we don't need to do this
-            it->second.pResource = getResourceFromView(pUav.get());
+            it->second.pResource = (pUav != nullptr) ? getResourceFromView(pUav.get()) : nullptr;
         }
         else
         {

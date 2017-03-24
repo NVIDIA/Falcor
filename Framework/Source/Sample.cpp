@@ -149,7 +149,16 @@ namespace Falcor
         {
             endVideoCapture();
         }
+
         VRSystem::cleanup();
+
+        mpGui.reset();
+        mpDefaultPipelineState.reset();
+        mpDefaultFBO.reset();
+        mpTextRenderer.reset();
+        mpRenderContext.reset();
+        gpDevice->cleanup();
+        gpDevice.reset();
     }
 
     void Sample::run(const SampleConfig& config)
@@ -184,11 +193,11 @@ namespace Falcor
         }
 
         gpDevice = Device::create(mpWindow, config.deviceDesc);
-		if (gpDevice == nullptr)
-		{
-			logError("Failed to create device");
-			return;
-		}
+        if (gpDevice == nullptr)
+        {
+            logError("Failed to create device");
+            return;
+        }
 
         if (config.deviceCreatedCallback)
         {
@@ -301,23 +310,23 @@ namespace Falcor
 
     void Sample::renderFrame()
     {
-		if (gpDevice->isWindowOccluded())
-		{
-			return;
-		}
+        if (gpDevice->isWindowOccluded())
+        {
+            return;
+        }
 
         GraphicsState::beginNewFrame();
         ComputeState::beginNewFrame();
 
-		mFrameRate.newFrame();
+        mFrameRate.newFrame();
         {
             PROFILE(onFrameRender);
             // The swap-chain FBO might have changed between frames, so get it
-			mpDefaultFBO = gpDevice->getSwapChainFbo();
+            mpDefaultFBO = gpDevice->getSwapChainFbo();
             mpRenderContext = gpDevice->getRenderContext();
             calculateTime();
 
-			// Bind the default state
+            // Bind the default state
             mpRenderContext->setGraphicsState(mpDefaultPipelineState);
             mpDefaultPipelineState->setFbo(mpDefaultFBO);
             onFrameRender();

@@ -54,11 +54,13 @@ namespace Falcor
         ~TextureApiData() { sObjCount--; if (sObjCount == 0) spGenMips = nullptr; }
 
         static std::unique_ptr<GenMipsData> spGenMips;
-        std::vector<Fbo::SharedPtr> pGenMipsFbos;
+        Fbo::SharedPtr pGenMipsFbo;
+
     private:
-        uint64_t sObjCount = 0;
+        static uint64_t sObjCount;
     };
 
+    uint64_t TextureApiData::sObjCount = 0;
     std::unique_ptr<GenMipsData> TextureApiData::spGenMips;
 
     template<>
@@ -276,25 +278,17 @@ namespace Falcor
         pContext->pushGraphicsState(mpApiData->spGenMips->pState);
         pContext->pushGraphicsVars(mpApiData->spGenMips->pVars);
 
-        // The first time around we don't cache the FBOs. Most likely we got here during load-time. This should help minimize the memory footprint if the user doesn't plan to call GenMips every frame
-        bool createNew = mpApiData->pGenMipsFbos.size() == 0;
-        if(createNew)
+        if(mpApiData->pGenMipsFbo == nullptr)
         {
-            mpApiData->pGenMipsFbos.resize(mMipLevels);
+            mpApiData->pGenMipsFbo = Fbo::create();
         }
 
         for (uint32_t i = 0; i < mMipLevels - 1; i++)
         {
             // Create an FBO for the next mip level
             SharedPtr pNonConst = const_cast<Texture*>(this)->shared_from_this();
-            if (createNew)
-            {
-                mpApiData->pGenMipsFbos[i] = Fbo::create();
-                mpApiData->pGenMipsFbos[i]->attachColorTarget(pNonConst, 0, i + 1, 0);
-            }
-
-            Fbo::SharedPtr pFbo = mpApiData->pGenMipsFbos[i];
-            mpApiData->spGenMips->pState->setFbo(pFbo);
+            mpApiData->pGenMipsFbo->attachColorTarget(pNonConst, 0, i + 1, 0);
+            mpApiData->spGenMips->pState->setFbo(mpApiData->pGenMipsFbo);
 
             // Create the resource view
             mpApiData->spGenMips->pVars->setSrv(0, pNonConst->getSRV(i, 1, 0, mArraySize));
@@ -302,11 +296,17 @@ namespace Falcor
             // Run the program
             mpApiData->spGenMips->pFullScreenPass->execute(pContext);
         }
+
         pContext->popGraphicsState();
         pContext->popGraphicsVars();
+
         logInfo("Releasing RTVs after Texture::generateMips()");
         mRtvs.clear();
 
-        pContext->flush(true); // This shouldn't be here. GitLab issue #69
+        // Detach from circular reference (this -> this->pFbo -> this -> ...)
+        mpApiData->pGenMipsFbo->attachColorTarget(nullptr, 0);
+
+        // Detach from shared static state so it doesn't keep our resource alive
+        mpApiData->spGenMips->pVars->setSrv(0, nullptr);
     }
 }
