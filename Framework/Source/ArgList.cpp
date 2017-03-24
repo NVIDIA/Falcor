@@ -1,6 +1,7 @@
 #include "ArgList.h"
 #include "Framework.h"
 #include <sstream>
+#include <ctype.h>
 
 namespace Falcor
 {
@@ -13,7 +14,7 @@ namespace Falcor
         {
             std::getline(args, token, ' ');
             size_t dashIndex = token.find('-');
-            if (dashIndex == 0)
+            if (dashIndex == 0 && isalpha(token[1]))
             {
                 currentArg = token.substr(1);
                 addArg(currentArg);
