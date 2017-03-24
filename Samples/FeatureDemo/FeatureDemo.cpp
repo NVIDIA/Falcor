@@ -140,6 +140,7 @@ void FeatureDemo::onLoad()
 
     initSkyBox();
     initPostProcess();
+    init_tests();
 }
 
 void FeatureDemo::renderSkyBox()
@@ -236,6 +237,8 @@ void FeatureDemo::onFrameRender()
     {
         mpRenderContext->clearFbo(mpDefaultFBO.get(), vec4(0.2f, 0.4f, 0.5f, 1), 1, 0);
     }
+
+    run_test();
 }
 
 void FeatureDemo::onShutdown()
@@ -280,6 +283,25 @@ void FeatureDemo::setActiveCameraAspectRatio()
     uint32_t w = mpDefaultFBO->getWidth();
     uint32_t h = mpDefaultFBO->getHeight();
     mpSceneRenderer->getScene()->getActiveCamera()->setAspectRatio((float)w / (float)h);
+}
+
+void FeatureDemo::onInitializeTestingArgs(const ArgList& args)
+{
+    mUniformDt = args.argExists("uniformdt");
+    std::vector<ArgList::Arg> scene = args.getValues("loadscene");
+    if (!scene.empty())
+    {
+        loadScene(scene[0].asString());
+    }
+}
+
+void FeatureDemo::onRunTestTask(const FrameRate&)
+{
+    if (mUniformDt)
+    {
+        mUniformGlobalTime += 0.016f;
+        mCurrentTime = mUniformGlobalTime;
+    }
 }
 
 int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ LPSTR lpCmdLine, _In_ int nShowCmd)
