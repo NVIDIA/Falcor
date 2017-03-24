@@ -331,7 +331,7 @@ def readTestList(generateReference, buildTests):
             if callBatchFile(['rebuild', slnName, configName]):
                 buildFail(slnName, configName)
         else:
-            cleanScreenShots(exeDir)
+            cleanDir(exeDir, None, '.png')
 
     contents = contents[slnConfigEndIndex + 1 :]
     argStartIndex = contents.find('{')
@@ -347,6 +347,10 @@ def readTestList(generateReference, buildTests):
         #run test for each config and each set of args
         for config in configList:
             print 'Running ' + testName + ' in config ' + config 
+            testInfo = TestInfo(testName, config)
+            if generateReference:
+                cleanDir(testInfo.getReferenceDir(), testName, '.png')
+                cleanDir(testInfo.getReferenceDir(), testName, '.xml')
             for argSet in argsList:
                 testInfo = TestInfo(testName, config)
                 runTest(testInfo, cleanupString(argSet), generateReference)
@@ -558,11 +562,18 @@ def outputHTML(openSummary, slnName):
     if(openSummary):
         os.system("start " + resultSummaryName)
 
-def cleanScreenShots(ssDir):
-    if os.path.isdir(ssDir):
-        screenshots = [s for s in os.listdir(ssDir) if s.endswith('.png')]
-        for s in screenshots:
-            os.remove(ssDir + '\\' + s)
+def cleanDir(cleanDir, prefix, suffix):
+    if os.path.isdir(cleanDir):
+        if prefix and suffix:
+            deadFiles = [f for f in os.listdir(cleanDir) if f.endswith(suffix) and f.startswith(prefix)]
+        elif prefix:
+            deadFiles = [f for f in os.listdir(cleanDir) if f.startswith(prefix)]
+        elif suffix:
+            deadFiles = [f for f in os.listdir(cleanDir) if f.endswith(suffix)]
+        else:
+            deadFiles = [f for f in os.listdir(cleanDir)]
+        for f in deadFiles:
+            os.remove(cleanDir + '\\' + f)
 
 def sendFatalFailEmail(failMsg):
     subject = '[FATAL TESTING ERROR] '

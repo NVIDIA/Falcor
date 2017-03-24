@@ -21,6 +21,7 @@ def main():
     parser.add_argument('-np', '--nopull', action='store_true', help='Do not pull/checkout, overriding/ignoring setting in test config')
     parser.add_argument('-ne', '--noemail', action='store_true', help='Do not send emails, overriding/ignoring setting in test config')
     parser.add_argument('-ss', '--showsummary', action='store_true', help='Show a testing summary upon the completion of each test list')
+    parser.add_argument('-gr', '--generatereference', action='store_true', help='Instead of running testing, generate reference for each test list')
     args = parser.parse_args()
 
     if args.testconfig:
@@ -61,6 +62,8 @@ def main():
             command += ' -ne'
         if args.showsummary:
             command += ' -ss'
+        if args.generatereference:
+            command += ' -gr'
 
         if testDir:
             prevWorkingDir = os.getcwd()
