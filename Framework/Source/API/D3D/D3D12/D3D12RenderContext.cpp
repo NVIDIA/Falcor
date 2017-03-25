@@ -204,6 +204,11 @@ namespace Falcor
         D3D12SetViewports(pList, &mpGraphicsState->getViewport(0));
         D3D12SetScissors(pList, &mpGraphicsState->getScissors(0));
         pList->SetPipelineState(mpGraphicsState->getGSO(mpGraphicsVars.get())->getApiHandle());
+        BlendState::SharedPtr blendState = mpGraphicsState->getBlendState();
+        if (blendState != nullptr)
+        {
+            pList->OMSetBlendFactor(glm::value_ptr(blendState->getBlendFactor()));
+        }
 
         const auto pDsState = mpGraphicsState->getDepthStencilState();
         pList->OMSetStencilRef(pDsState == nullptr ? 0 : pDsState->getStencilRef());

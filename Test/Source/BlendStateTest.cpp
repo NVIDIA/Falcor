@@ -34,7 +34,7 @@ void BlendStateTest::addTests()
 {
     addTestToList<TestCreate>();
     addTestToList<TestRtArray>();
-    addTestToList<TestBlend>();
+    //addTestToList<TestBlend>();
 }
 
 testing_func(BlendStateTest, TestCreate)
