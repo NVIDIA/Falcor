@@ -35,6 +35,7 @@
 #include "utils/AABB.h"
 #include "Graphics/Material/Material.h"
 #include "Graphics/Paths/MovableObject.h"
+#include "Utils/SpireSupport.h"
 
 namespace Falcor
 {
@@ -112,6 +113,8 @@ namespace Falcor
         */
         const Vao::SharedPtr& getVao() const { return mpVao; }
 
+		const ComponentInstance::SharedPtr& getVertexComponent() const { return mpVertexComponentInstance; }
+
         /** Get global mesh ID
         */
         const uint32_t getId() const { return mId; }
@@ -146,6 +149,8 @@ namespace Falcor
         uint32_t mPrimitiveCount = 0;
         bool mHasBones = false;
         Material::SharedPtr mpMaterial;
+		SpireModule* mpVertexModule;
+		ComponentInstance::SharedPtr mpVertexComponentInstance;
         BoundingBox mBoundingBox;
         Vao::SharedPtr mpVao;
     };

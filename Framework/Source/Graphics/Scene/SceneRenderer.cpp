@@ -105,12 +105,12 @@ namespace Falcor
             SpireModule* cameraComponentClass = currentData.pCamera->getSpireComponentClass(spireContext);
 
             // TODO: need to find the index of the correct parameter, if any...
-//            currentData.pGsoCache->getProgram()->setComponent(1, cameraComponentClass);
+//            currentData.pGsoCache->getProgram()->setComponent(2, cameraComponentClass);
 
             ComponentInstance::SharedPtr cameraComponent = currentData.pCamera->getSpireComponentInstance(spireContext);
 
             // Need to set this at the right place...
-            pContext->getGraphicsVars()->setComponent(1, cameraComponent);
+            pContext->getGraphicsVars()->setComponent(2, cameraComponent);
 
 #endif
         }
@@ -195,7 +195,7 @@ namespace Falcor
         componentInstance->setVariable("gMeshId", pMesh->getId());
 
         // Need to set this at the right place...
-        int componentIndex = 2;
+        int componentIndex = 3;
 //        currentData.pGsoCache->getProgram()->setComponent(componentIndex, componentClass);
         pContext->getGraphicsVars()->setComponent(componentIndex, componentInstance);
 #endif
@@ -221,7 +221,7 @@ namespace Falcor
         SpireModule* componentClass = material->getSpireComponentClass();
         ComponentInstance::SharedPtr componentInstance = material->getSpireComponentInstance();
 
-        int componentIndex = 3;
+        int componentIndex = 4;
 //        currentData.pGsoCache->getProgram()->setComponent(componentIndex, componentClass);
         pContext->getGraphicsVars()->setComponent(componentIndex, componentInstance);
 #endif
@@ -269,6 +269,11 @@ namespace Falcor
         {
             // Bind VAO and set topology
             pContext->getGraphicsState()->setVao(pMesh->getVao());
+			// Bind spire vertex module
+			//TODO: need to set this at right place
+			int componentIndex = 1;
+			pContext->getGraphicsVars()->setComponent(componentIndex, pMesh->getVertexComponent());
+
 
             uint32_t activeInstances = 0;
 

@@ -90,6 +90,13 @@ namespace Falcor
         mPrimitiveCount = mIndexCount / VertsPerPrim;
 
         mpVao = Vao::create(vertexBuffers, pLayout, pIndexBuffer, ResourceFormat::R32Uint, topology);
+
+		// create spire vertex component instance from VertexLayout
+		mpVertexModule = ShaderRepository::Instance().GetVertexModule(pLayout.get());
+		ProgramReflection::BufferTypeReflection::SharedPtr componentReflection =
+			ProgramReflection::BufferTypeReflection::create(mpVertexModule);
+		mpVertexComponentInstance = ComponentInstance::create(
+			componentReflection);
     }
 
     void Mesh::resetGlobalIdCounter()

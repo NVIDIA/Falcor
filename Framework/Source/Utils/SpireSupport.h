@@ -38,6 +38,7 @@
 namespace Falcor
 {
 	class ShaderRepositoryImpl;
+	class VertexLayout;
 
 	class ShaderRepository
 	{
@@ -48,6 +49,7 @@ namespace Falcor
 		SpireCompilationContext * GetContext();
 		SpireModule* LoadLibraryModule(const char * name);
 		SpireCompilationEnvironment* LoadSource(const char * source, const char * fileName, SpireDiagnosticSink * sink);
+		SpireModule* GetVertexModule(VertexLayout* vertexLayout);
 		void UnloadSource(SpireCompilationEnvironment * env);
 		static ShaderRepository Instance();
 		static void Close();

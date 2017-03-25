@@ -1,5 +1,6 @@
 template shader ModelViewerShader(
 	PerFrameCB : PerFrameCB_T,
+	VertexAttribs : IVertexAttribs,
 	InternalPerFrameCB : InternalPerFrameCB_T,
 	InternalPerMeshCB : InternalPerMeshCB_T,
 	M : Material,
@@ -8,8 +9,7 @@ template shader ModelViewerShader(
 	using perFrame = PerFrameCB();
 	using internalPerFrame = InternalPerFrameCB();
 	using internalPerMesh = InternalPerMeshCB();
-
-	public @MeshVertex vec3 POSITION;
+	using VertexAttribs;
 
 	vec3 vertPos = POSITION;
 

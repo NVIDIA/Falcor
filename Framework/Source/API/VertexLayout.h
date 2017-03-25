@@ -34,6 +34,7 @@
 namespace Falcor
 {
     class Program;
+
     class VertexBufferLayout : public std::enable_shared_from_this<VertexBufferLayout>
     {
     public:
@@ -201,7 +202,6 @@ namespace Falcor
                 }
             }
         }
-
     private:
         VertexLayout() { mpBufferLayouts.reserve(16); }
         std::vector<VertexBufferLayout::SharedConstPtr> mpBufferLayouts;

@@ -34,6 +34,11 @@ pipeline StandardPipeline
     }
 }
 
+interface IVertexAttribs
+{
+	
+}
+
 module InternalPerFrameCB_T
 {
     param mat4            viewMat;//                DEFAULTS(mat4());                ///< Camera view matrix.
