@@ -140,8 +140,6 @@ namespace Falcor
                 {
                     switch (texFormat)
                     {
-                    case ResourceFormat::RGBX8Unorm:
-                    case ResourceFormat::RGBX8UnormSrgb:
                     case ResourceFormat::BGRX8Unorm:
                     case ResourceFormat::BGRX8UnormSrgb:
                         break;

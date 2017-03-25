@@ -217,7 +217,7 @@ namespace Falcor
             case 2:
                 return ResourceFormat::RG8Unorm;
             case 3:
-                return ResourceFormat::RGBX8Unorm;
+                return ResourceFormat::RGBA8Unorm;
             case 4:
                 return ResourceFormat::RGBA8Unorm;
             }
@@ -297,13 +297,11 @@ namespace Falcor
         switch(formatId)
         {
         case FW::ImageFormat::R8_G8_B8:
-            return ResourceFormat::RGBX8Unorm;
         case FW::ImageFormat::R8_G8_B8_A8:
             return ResourceFormat::RGBA8Unorm;
         case FW::ImageFormat::A8:
             return ResourceFormat::Alpha8Unorm;
         case FW::ImageFormat::XBGR_8888:
-            return ResourceFormat::RGBX8Unorm;
         case FW::ImageFormat::ABGR_8888:
             return ResourceFormat::RGBA8Unorm;
         case FW::ImageFormat::RGB_565:
@@ -522,30 +520,6 @@ namespace Falcor
         }
         return true;
     }
-
-    ResourceFormat convertFormatToSrgb(ResourceFormat format)
-    {
-        switch(format)
-        {
-        case ResourceFormat::RGBX8Unorm:
-            return ResourceFormat::RGBX8UnormSrgb;
-        case ResourceFormat::RGBA8Unorm:
-            return ResourceFormat::RGBA8UnormSrgb;
-        case ResourceFormat::BGRA8Unorm:
-            return ResourceFormat::BGRA8UnormSrgb;
-        case ResourceFormat::BGRX8Unorm:
-            return ResourceFormat::BGRX8UnormSrgb;
-        case ResourceFormat::BC1Unorm:
-            return ResourceFormat::BC1UnormSrgb;
-        case ResourceFormat::BC2Unorm:
-            return ResourceFormat::BC2UnormSrgb;
-        case ResourceFormat::BC3Unorm:
-            return ResourceFormat::BC3UnormSrgb;
-        default:
-            logWarning("BinaryModelImporter::ConvertFormatToSrgb() warning. Provided format doesn't have a matching sRGB format");
-            return format;
-        }
-    }
     
     ResourceFormat getFormatFromMapType(bool requestSrgb, ResourceFormat originalFormat, BasicMaterial::MapType mapType)
     {
@@ -559,7 +533,7 @@ namespace Falcor
         case Falcor::BasicMaterial::DiffuseMap:
         case Falcor::BasicMaterial::SpecularMap:
         case Falcor::BasicMaterial::EmissiveMap:
-            return convertFormatToSrgb(originalFormat);
+            return srgbToLinearFormat(originalFormat);
         case Falcor::BasicMaterial::NormalMap:
         case Falcor::BasicMaterial::AlphaMap:
         case Falcor::BasicMaterial::HeightMap:
@@ -911,10 +885,6 @@ namespace Falcor
                 // Generate tangent space data if needed
                 if(genTangentForMesh)
                 {
-                    if(texCoordBufferIndex != kInvalidBufferIndex)
-                    {
-                        logError("Model " + mModelName + " asked to generate tangents w/o texture coordinates");
-                    }
                     uint32_t texCrdCount = 0;
                     glm::vec2* texCrd = nullptr;
                     if(texCoordBufferIndex != kInvalidBufferIndex)

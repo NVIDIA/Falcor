@@ -132,7 +132,7 @@ namespace Falcor
 
     ResourceFormat SimpleModelImporter::getResourceFormat( AttribFormat format, uint32_t components )
     {    
-        ResourceFormat byteFormats[4] = { ResourceFormat::R8Unorm, ResourceFormat::RG8Unorm, ResourceFormat::RGBX8Unorm, ResourceFormat::RGBA8Unorm };
+        ResourceFormat byteFormats[4] = { ResourceFormat::R8Unorm, ResourceFormat::RG8Unorm, ResourceFormat::RGBA8Unorm, ResourceFormat::RGBA8Unorm };
         ResourceFormat intFormats[4] = { ResourceFormat::R32Int, ResourceFormat::RG32Int, ResourceFormat::RGB32Int, ResourceFormat::RGBA32Int };
         ResourceFormat floatFormats[4] = { ResourceFormat::R32Float, ResourceFormat::RG32Float, ResourceFormat::RGB32Float, ResourceFormat::RGBA32Float };
 
