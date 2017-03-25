@@ -818,15 +818,14 @@ namespace Falcor
         uint32_t sReg = 0;
         uint32_t tReg = 0;
 
-        for( auto c : mAssignedComponents )
-        {
-            // TODO: this logic should only rely on the *class* of the component...
+		for (auto c : mAssignedComponents)
+		{
+			// TODO: this logic should only rely on the *class* of the component...
 
-            if( c->mConstantBuffer )
-            {
-                desc.addDescriptor(bReg++, RootSignature::DescType::CBV, ShaderVisibility::All, regSpace);
-            }
-
+			if (c->mConstantBuffer)
+			{
+				desc.addDescriptor(bReg++, RootSignature::DescType::CBV, ShaderVisibility::All, regSpace);
+			}
             for( auto t : c->mBoundTextures )
             {
                 RootSignature::DescriptorTable tableDesc;

@@ -1,17 +1,15 @@
 template shader ModelViewerShader(
 	PerFrameCB : PerFrameCB_T,
-	VertexAttribs : IVertexAttribs,
 	InternalPerFrameCB : InternalPerFrameCB_T,
 	InternalPerMeshCB : InternalPerMeshCB_T,
 	M : Material,
+	VertexAttribs : IVertexAttribs,  // hack: put components that does not generate a uniform buffer last to avoid incomplete pso
 	) targets StandardPipeline
 {
 	using perFrame = PerFrameCB();
 	using internalPerFrame = InternalPerFrameCB();
 	using internalPerMesh = InternalPerMeshCB();
 	using VertexAttribs;
-
-	vec3 vertPos = POSITION;
 
 	public vec4 projCoord = internalPerFrame.viewProjMat * (internalPerMesh.gWorldMat * vec4(vertPos, 1.0));
 

@@ -199,6 +199,10 @@ namespace Falcor
 						break;
 					}
 					moduleSrc << " " << bufLayout->getElementName(j) << ";\n";
+					if (bufLayout->getElementName(j) == VERTEX_TEXCOORD_NAME)
+						moduleSrc << "\tpublic vec2 vertUV = " << VERTEX_TEXCOORD_NAME << ".xy;\n";
+					else if (bufLayout->getElementName(j) == VERTEX_POSITION_NAME)
+						moduleSrc << "\tpublic vec3 vertPos = " << VERTEX_POSITION_NAME << ";\n";
 				}
 			}
 			moduleSrc << "}";
