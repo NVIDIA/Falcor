@@ -101,14 +101,14 @@ namespace Falcor
         }
     }
 
-    FullScreenPass::UniquePtr FullScreenPass::create(const std::string& psFile, const Program::DefineList& programDefines, bool disableDepth, bool disableStencil, uint32_t viewportMask, bool enableSPS)
+    FullScreenPass::UniquePtr FullScreenPass::create(const std::string& psFile, const std::string& vsFile, const Program::DefineList& programDefines, bool disableDepth, bool disableStencil, uint32_t viewportMask, bool enableSPS)
     {
         UniquePtr pPass = UniquePtr(new FullScreenPass());
-        pPass->init(psFile, programDefines, disableDepth, disableStencil, viewportMask, enableSPS);
+        pPass->init(psFile, vsFile, programDefines, disableDepth, disableStencil, viewportMask, enableSPS);
         return pPass;
     }
 
-    void FullScreenPass::init(const std::string& psFile, const Program::DefineList& programDefines, bool disableDepth, bool disableStencil, uint32_t viewportMask, bool enableSPS)
+    void FullScreenPass::init(const std::string& psFile, const std::string& vsFile, const Program::DefineList& programDefines, bool disableDepth, bool disableStencil, uint32_t viewportMask, bool enableSPS)
     {
         mpPipelineState = GraphicsState::create();
         mpPipelineState->toggleSinglePassStereo(enableSPS);
@@ -139,7 +139,7 @@ namespace Falcor
             }
         }
 
-        const std::string vs("Framework/Shaders/FullScreenPass.vs.hlsl");
+        const std::string vs(vsFile.empty() ? "Framework/Shaders/FullScreenPass.vs.hlsl" : vsFile);
         mpProgram = GraphicsProgram::createFromFile(vs, psFile, gs, "", "", defs);
         mpPipelineState->setProgram(mpProgram);
 

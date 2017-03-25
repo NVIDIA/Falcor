@@ -1,5 +1,5 @@
 /***************************************************************************
-# Copyright (c) 2015, NVIDIA CORPORATION. All rights reserved.
+# Copyright (c) 2017, NVIDIA CORPORATION. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -25,39 +25,22 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#ifndef SAMPLE_COUNT
-Texture2D gTex;
-#else
-Texture2DMS<float4> gTex;
-#endif
-SamplerState gSampler;
-
-#ifdef SRC_RECT
-// Bounds to sample source by. [left, up, right, down] in UV coordinates
-Buffer<float4> gSrcRect;
-#endif
-
-float4 main(float2 texC : TEXCOORD) : SV_TARGET
+cbuffer SrcRectCB : register(b0)
 {
-#ifdef SRC_RECT
-    texC = lerp(gSrcRect[0].xy, gSrcRect[0].zw, texC);
-#endif
+    // Source rect bounds in UV coordinates. [left, up, right, down]
+    float4 gSrcRectUV;
+}
 
-#ifndef SAMPLE_COUNT
-    return gTex.Sample(gSampler, texC);
-#else
-    uint3 dims;
-    gTex.GetDimensions(dims.x, dims.y, dims.z);
-    uint2 crd = (uint2)(float2(dims.xy) * texC);
-    float4 c = float4(0,0,0,0);
+struct VsOut
+{
+    float2 texC : TEXCOORD;
+    float4 posH : SV_POSITION;
+};
 
-    [unroll]
-    for(uint i = 0 ; i < SAMPLE_COUNT ; i++)
-    {
-        c += gTex.Load(crd, i);
-    }
-
-    c /= SAMPLE_COUNT;
-    return c;
-#endif
+VsOut main(float4 posS : POSITION, float2 texC : TEXCOORD)
+{
+    VsOut vOut;
+    vOut.texC = lerp(gSrcRectUV.xy, gSrcRectUV.zw, texC);
+    vOut.posH = posS;
+    return vOut;
 }

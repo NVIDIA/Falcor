@@ -2116,7 +2116,10 @@
     <FxCompile Include="Data\Framework\Shaders\SceneEditorVS.hlsl">
       <Filter>Data\Framework\Shaders</Filter>
     </FxCompile>
-    <FxCompile Include="Data\Framework\Shaders\Blit.hlsl">
+    <FxCompile Include="Data\Framework\Shaders\Blit.ps.hlsl">
+      <Filter>Data\Framework\Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="Data\Framework\Shaders\Blit.vs.hlsl">
       <Filter>Data\Framework\Shaders</Filter>
     </FxCompile>
   </ItemGroup>

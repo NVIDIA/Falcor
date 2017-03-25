@@ -165,7 +165,7 @@ namespace Falcor
             FullScreenPass::UniquePtr pPass;
             GraphicsVars::SharedPtr pVars;
             GraphicsState::SharedPtr pState;
-            TypedBuffer<vec4>::SharedPtr pSrcRectBuffer;
+            ConstantBuffer::SharedPtr pSrcRectBuffer;
         };
 
         static BlitData sBlitData;

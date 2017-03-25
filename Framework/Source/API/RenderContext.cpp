@@ -81,13 +81,11 @@ namespace Falcor
     {
         if (sBlitData.pVars == nullptr)
         {
-            sBlitData.pPass = FullScreenPass::create("Framework/Shaders/Blit.hlsl");
-            sBlitData.pPass->getProgram()->addDefine("SRC_RECT");
+            sBlitData.pPass = FullScreenPass::create("Framework/Shaders/Blit.ps.hlsl", "Framework/Shaders/Blit.vs.hlsl");
             sBlitData.pVars = GraphicsVars::create(sBlitData.pPass->getProgram()->getActiveVersion()->getReflector());
             sBlitData.pState = GraphicsState::create();
-
-            sBlitData.pSrcRectBuffer = TypedBuffer<vec4>::create(1);
-            sBlitData.pVars->setTypedBuffer("gSrcRect", sBlitData.pSrcRectBuffer);
+            sBlitData.pSrcRectBuffer = ConstantBuffer::create(sBlitData.pPass->getProgram(), "SrcRectCB");
+            sBlitData.pVars->setConstantBuffer("SrcRectCB", sBlitData.pSrcRectBuffer);
 
             Sampler::Desc desc;
             desc.setFilterMode(Sampler::Filter::Linear, Sampler::Filter::Linear, Sampler::Filter::Point).setAddressingMode(Sampler::AddressMode::Clamp, Sampler::AddressMode::Clamp, Sampler::AddressMode::Clamp);
@@ -124,8 +122,7 @@ namespace Falcor
         vec4 dstCoords(glm::clamp(vec4(dstRect), vec4(0), vec4(dstSize, dstSize)));
 
         // Set draw params
-        sBlitData.pSrcRectBuffer[0] = srcCoords / vec4(srcSize, srcSize); // Convert to UV
-        sBlitData.pSrcRectBuffer->uploadToGPU();
+        sBlitData.pSrcRectBuffer->setVariable(0, srcCoords / vec4(srcSize, srcSize)); // Convert to UV
         sBlitData.pState->setViewport(0, GraphicsState::Viewport(dstCoords.x, dstCoords.y, dstCoords.z - dstCoords.x, dstCoords.w - dstCoords.y, 0.0f, 1.0f));
 
         pushGraphicsState(sBlitData.pState);

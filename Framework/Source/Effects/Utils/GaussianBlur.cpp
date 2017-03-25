@@ -139,9 +139,9 @@ namespace Falcor
 
         uint32_t arraySize = mpTmpFbo->getColorTexture(0)->getArraySize();
         uint32_t layerMask = (arraySize > 1) ? ((1 << arraySize) - 1) : 0;
-        mpHorizontalBlur = FullScreenPass::create(kShaderFilename, defines, true, true, layerMask);
+        mpHorizontalBlur = FullScreenPass::create(kShaderFilename, "", defines, true, true, layerMask);
         mpHorizontalBlur->getProgram()->addDefine("_HORIZONTAL_BLUR");
-        mpVerticalBlur = FullScreenPass::create(kShaderFilename, defines, true, true, layerMask);
+        mpVerticalBlur = FullScreenPass::create(kShaderFilename, "", defines, true, true, layerMask);
         mpVerticalBlur->getProgram()->addDefine("_VERTICAL_BLUR");
         mpVars = GraphicsVars::create(mpHorizontalBlur->getProgram()->getActiveVersion()->getReflector());
 

@@ -1018,7 +1018,7 @@
     <None Include="Data\Effects\SSAO.ps.hlsl">
       <FileType>Document</FileType>
     </None>
-    <FxCompile Include="Data\Framework\Shaders\Blit.hlsl">
+    <FxCompile Include="Data\Framework\Shaders\Blit.ps.hlsl">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseD3D11|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseD3D12|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugGL|x64'">true</ExcludedFromBuild>
@@ -1026,6 +1026,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugD3D11|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugD3D12|x64'">true</ExcludedFromBuild>
     </FxCompile>
+    <FxCompile Include="Data\Framework\Shaders\Blit.vs.hlsl" />
     <FxCompile Include="Data\Framework\Shaders\SceneEditorPS.hlsl">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseD3D11|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseD3D12|x64'">true</ExcludedFromBuild>
