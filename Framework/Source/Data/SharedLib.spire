@@ -1,0 +1,457 @@
+using "BSDF.spire";
+using "Helpers.spire"
+
+#include "ShaderConstants.spire"
+
+/*******************************************************************
+Documentation
+*******************************************************************/
+
+// Possible user-defined global macros to configure shading 
+//#define _MS_DISABLE_ALPHA_TEST	///< Disables alpha test (handy for early-z etc.)
+//#define _MS_DISABLE_TEXTURES		///< Disables material texture fetches, all materials are solid color
+//#define _MS_USER_DERIVATIVES		///< Use user-passed dx/dy derivatives for texture filtering during shading
+//#define _MS_USER_NORMAL_MAPPING	///< Use user-defined callback of a form void PerturbNormal(in SMaterial mat, inout ShadingAttribs ShAttr) to perform normal mapping
+//#define _MS_NUM_LAYERS			///< Use a pre-specified number of layers to use in the material
+//#define _MS_IMPORTANCE_SAMPLING   ///< Use BSDF importance sampling for path tracer next event estimation
+
+/*******************************************************************
+Shading routines
+*******************************************************************/
+
+struct ShadingAttribs
+{
+    vec3    P;                                  ///< Shading hit position in world space
+    vec3    E;                                  ///< Direction to the eye at shading hit
+    vec3    N;                                  ///< Shading normal at shading hit
+    vec3    T;                                  ///< Shading tangent at shading hit
+    vec3    B;                                  ///< Shading bitangent at shading hit
+    vec2    UV;                                 ///< Texture mapping coordinates
+
+#ifdef _MS_USER_DERIVATIVES
+    vec2    DPDX            ;                                  
+    vec2    DPDY            ; ///< User-provided 2x2 full matrix of duv/dxy derivatives of a shading point footprint in texture space
+#else
+    float   lodBias         ;        ///< LOD bias to use when sampling textures
+#endif
+
+#ifdef _MS_USER_HALF_VECTOR_DERIVATIVES
+    vec2    DHDX            ;
+    vec2    DHDY            ;  ///< User-defined half-vector derivatives
+#endif
+    float aoFactor;
+};
+
+struct LightData
+{
+    vec3            worldPos           ;    ///< World-space position of the center of a light source
+    uint32_t        type               ;    ///< Type of the light source (see above)
+    vec3            worldDir           ;    ///< World-space orientation of the light source
+    float           openingAngle       ;    ///< For point (spot) light: Opening angle of a spot light cut-off, pi by default - full-sphere point light
+    vec3            intensity          ;    ///< Emitted radiance of th light source
+    float           cosOpeningAngle    ;    ///< For point (spot) light: cos(openingAngle), -1 by default because openingAngle is pi by default
+    vec3            aabbMin            ;    ///< For area light: minimum corner of the AABB
+    float           penumbraAngle      ;    ///< For point (spot) light: Opening angle of penumbra region in radians, usually does not exceed openingAngle. 0.f by default, meaning a spot light with hard cut-off
+    vec3            aabbMax            ;    ///< For area light: maximum corner of the AABB
+    float           surfaceArea        ;    ///< Surface area of the geometry mesh
+	vec3            tangent            ;    ///< Tangent vector of the geometry mesh
+	uint32_t        numIndices         ;    ///< Number of triangle indices in a polygonal area light
+	vec3            bitangent          ;    ///< BiTangent vector of the geometry mesh
+	float           pad                ;
+    mat4            transMat           ;    ///< Transformation matrix of the model instance for area lights
+};
+
+
+/**
+This stores the information about the current light source at the shading point.
+This includes a direction from a shading point towards the light,
+radiance emitted from the light souce, which is *received* at the shading point.
+*/
+struct LightAttribs
+{
+    vec3	L;				///< Normalized direction to the light at shading hit
+    vec3	lightIntensity;	///< Radiance of the emitted light at shading hit
+
+    vec3    P;              ///< Sampled point on the light source
+    vec3    N;              ///< Normal of the sampled point on the light source
+	float   pdf;            ///< Probability density function of sampling the light source
+
+    vec3    points[4];
+};
+
+/**
+This is an output resulting radiance of a full pass over all material layers
+after evaluating the material for a single light source.
+This result can be accumulated to a total shading result for all light sources.
+*/
+struct PassOutput
+{
+    vec3	value;					///< Outgoing radiance after evaluating the complete material for a single light
+    vec3	diffuseAlbedo;			///< Total view-independent albedo color component of the material
+    vec3	diffuseIllumination;	///< Total view-independent outgoing radiance from one light before multiplication by albedo
+    vec3	specularAlbedo;			///< Total view-dependent albedo (specular) color component of the material
+    vec3	specularIllumination;	///< Total view-dependent outgoing radiance from one light before multiplication by albedo
+
+    vec2    roughness;              ///< Roughness from the last layer
+    vec2    effectiveRoughness;     ///< Accumulated effective roughness
+};
+
+/**
+This is an accumulative structure that collects the resulting output
+of material evaluations with all light sources.
+*/
+struct ShadingOutput
+{
+    vec3	diffuseAlbedo;			///< Total view-independent albedo color component of the material
+    vec3	diffuseIllumination;	///< Total view-independent outgoing radiance from all lights before multiplication by albedo
+    vec3	specularAlbedo;			///< Total view-dependent albedo (specular) color component of the material
+    vec3	specularIllumination;	///< Total view-dependent outgoing radiance from all light before multiplication by albedo
+
+    vec3	finalValue;				///< Outgoing radiance after evaluating the complete material for all lights
+
+	vec3    wi;                     ///< Incident direction after importance sampling the BRDF
+	float   pdf;                    ///< Probability density function for choosing the incident direction
+	vec3    thp;                    ///< Current path throughput
+
+	vec2    effectiveRoughness;     ///< Sampled brdf roughness, or for evaluated material, an effective roughness
+};
+
+/*******************************************************************
+					Lights
+*******************************************************************/
+
+/**
+	This routine computes the position of the the light based on the point 'shadingPosition'.
+*/
+vec3 getLightPos(in LightData Light, in vec3 shadingPosition)
+{
+    vec3 lightPos = Light.worldPos;
+    if(Light.type == LightArea)
+    {
+        lightPos = mul(Light.transMat, v4(lightPos, 1.0)).rrr;
+    }    
+    else if(Light.type == LightDirectional)
+    {
+        float dist = length(shadingPosition - lightPos);
+        lightPos = shadingPosition - Light.worldDir * dist;
+    }
+    return lightPos;
+}
+
+/**
+	This routine computes the radiance from the light at the point 'shadingPosition'.
+*/
+vec3 getLightRadiance(in LightData Light, in vec3 shadingPosition)
+{
+    vec3 lightRadiance = Light.intensity;
+    if(Light.type == LightPoint || Light.type == LightArea)
+    {
+        // TODO: add point on the light for area lights
+        vec3 lightDir = shadingPosition - getLightPos(Light, shadingPosition);
+        lightRadiance *= 1.0f / (4.0f * M_PIf);    // per steradian
+        lightRadiance /= dot(lightDir, lightDir);        // per square meter
+    }
+    return lightRadiance;
+}
+
+/**
+	This routine prepares attributes for shading a point with a particular light source.
+	The outputs are an incident radiance towards the shading point 
+	and the direction from the shading point towards the light source.
+*/
+void prepareLightAttribs(in LightData Light, in ShadingAttribs ShAttr, inout LightAttribs LightAttr)
+{
+	/* Evaluate direction to the light */
+    LightAttr.P = getLightPos(Light, ShAttr.P);
+    LightAttr.pdf = 0;
+    LightAttr.N = 0;
+    [unroll]
+    for(uint i = 0 ; i < 4 ; i++)
+    {
+        LightAttr.points[i] = 0;
+    }
+    vec3 PosToLight = LightAttr.P - ShAttr.P;
+    if(dot(PosToLight, PosToLight) > 1e-3f)
+    {
+	    LightAttr.L = normalize(PosToLight);
+    }
+    else
+    {
+        LightAttr.L = 0;
+    }
+	LightAttr.lightIntensity = Light.intensity;
+    if(Light.type == LightDirectional)
+    {
+		LightAttr.L = -Light.worldDir;
+    }
+    else if(Light.type == LightPoint)
+	{
+		/* Evaluate various attenuation factors: cosine, 1/r^2, etc. */
+		float Atten = 1.f;
+
+		float cosTheta = -dot(LightAttr.L, Light.worldDir);	// cos of angle of light orientation with outgoing direction
+        if(Light.type == LightArea)			// Cosine attenuation
+        {
+			Atten = max(0.f, cosTheta) * Light.surfaceArea;
+        }
+        else if(Light.type == LightPoint)
+		{
+			// Spot light cone angle
+			if(cosTheta < Light.cosOpeningAngle)
+				Atten = 0.f;
+			if(Light.penumbraAngle > 0.f)	// Compute cone attenuation of a spot light
+			{
+				float deltaAngle = Light.openingAngle - acos(cosTheta);
+				Atten *= clamp((deltaAngle - Light.penumbraAngle) / Light.penumbraAngle, 0.f, 1.f);
+			}
+		}
+
+		// Quadratic attenuation
+        Atten /= max(1e-3f, dot(PosToLight, PosToLight));
+
+		LightAttr.lightIntensity *= Atten;
+	}
+}
+
+/**
+    This routine samples the light source.
+*/
+void sampleLight(in vec3 shadingHitPos, in LightData lData, vec3 rSample, inout LightAttribs lAttr)
+{
+	// Sample the light based on its type: point, directional, or area
+	switch (lData.type)
+	{
+	    case LightPoint:
+	    {
+			// Get the position
+            lAttr.P = getLightPos(lData, shadingHitPos);
+
+			vec3 PosToLight = lAttr.P - shadingHitPos;
+            float lDist = length(PosToLight);
+            lAttr.L = PosToLight / max(1e-3f, lDist);
+
+			// For point light, its normal is always along the L direction
+			lAttr.N = lAttr.L;
+
+			// Compute the intensity and the PDF
+			lAttr.lightIntensity = getLightRadiance(lData, shadingHitPos);
+			lAttr.pdf = 1.f;
+		}
+	    break;
+		case LightDirectional:
+		{
+			// Get the position
+			lAttr.P = getLightPos(lData, shadingHitPos);
+			lAttr.L = -lData.worldDir;
+
+			// For directional light, its normal is always along the L direction
+			lAttr.N = lAttr.L;
+			
+			// Compute the intensity and the PDF
+			lAttr.lightIntensity = lData.intensity;
+			lAttr.pdf = 1.f;
+		}
+		break;
+	}
+}
+
+// Implementation of NDF filtering code from the HPG'16 submission
+// The writeup is here: //research/graphics/projects/halfvectorSpace/SAA/paper/specaa-sub.pdf
+vec2 filterRoughness(in ShadingAttribs shAttr, in LightAttribs lAttr, in vec2 roughness)
+{
+#ifdef _MS_USER_HALF_VECTOR_DERIVATIVES
+    vec2  hppDx = shAttr.DHDX;
+    vec2  hppDy = shAttr.DHDY;
+#else
+    // Compute half-vector derivatives
+    vec3  H = normalize(shAttr.E + lAttr.L);
+    vec2  hpp = v2(dot(H, shAttr.T), dot(H, shAttr.B));
+    vec2  hppDx = ddx_fine(hpp);
+    vec2  hppDy = ddy_fine(hpp);
+#endif
+    // Compute filtering region
+    vec2 rectFp = (abs(hppDx) + abs(hppDy)) * 0.5f;
+
+    // For grazing angles where the first-order footprint goes to very high values
+    // Usually you don抰 need such high values and the maximum value of 1.0 or even 0.1 is enough for filtering.
+    rectFp = min(0.7f, rectFp);
+
+    // Covariance matrix of pixel filter's Gaussian (remapped in roughness units)
+    vec2 covMx = rectFp * rectFp * 2.f;   // Need to x2 because roughness = sqrt(2) * pixel_sigma_hpp
+
+    roughness = sqrt(roughness*roughness + covMx);          // Beckmann proxy convolution for GGX
+
+    return roughness;
+}
+
+vec3 blendLayer(in vec4 albedo, in vec4 layerOut, in uint blendType, in vec3 currentValue)
+{
+    /* Account for albedo */
+    vec3 scaledLayerOut = layerOut.rgb * albedo.rgb;
+    float weight = layerOut.w;
+
+    /* Perform layer blending */
+    if(blendType == BlendConstant)
+    {
+        weight = albedo.w;
+    }
+
+    vec3 result;
+    if(blendType != BlendAdd)
+    {
+        result = lerp(currentValue, scaledLayerOut, weight);
+    }
+    else
+    {
+        result = currentValue + scaledLayerOut;
+    }
+    return result;
+}
+
+module MaterialLayer
+{
+    param int materialType;
+    param int ndf;
+    param int blend;
+    param float pmf;
+    param vec4 albedoColor;
+    param vec4 roughness;
+    param vec4 extraParam; 
+    require bool useTexture;
+    require SamplerState samplerState;
+    require vec2 vertUV;
+    Texture2D tex;
+
+    vec4 albedo
+    {
+        vec4 rs = albedoColor;
+        if (useTexture)
+            rs = tex.Sample(samplerState, vertUV);
+        return rs;
+    }
+    
+    void evalMaterialLayer(ShadingAttribs attr, LightAttribs lAttr, inout PassOutput result)
+    {
+        vec4 value = 0;
+        
+        switch(desc.type)
+        {
+        case MatLambert: /* Diffuse BRDF */
+            value = evalDiffuseLayer(lAttr.lightIntensity, lAttr.L, attr.N, result);
+            break;
+        case MatEmissive:
+            value = evalEmissiveLayer(result);
+            break;
+        case MatConductor:
+        case MatDielectric:
+            value = evalSpecularLayer(attr, lAttr, result);
+            break;
+        };
+
+        vec3 oldValue = result.value;
+        result.value = blendLayer(albedo, value, blend, result.value);
+
+        float delta = max(1e-3f, luminance(result.value - oldValue));
+        result.effectiveRoughness += result.roughness * delta;
+    }
+    
+    vec4 evalEmissiveLayer(inout PassOutput result)
+    {
+        result.diffuseAlbedo += 1.f;
+        result.diffuseIllumination += albedo.rgb;
+        return vec4(1.0f);
+    }
+
+    vec4 evalDiffuseLayer(vec3 lightIntensity, vec3 lightDir, vec3 normal, inout PassOutput result)
+    {
+        vec3 value = lightIntensity;
+        float weight = 0;
+        result.roughness = 1;
+    #ifndef _MS_DISABLE_DIFFUSE
+        value *= evalDiffuseBSDF(normal, lightDir);
+        weight = albedo.w;
+        result.diffuseAlbedo += albedo.rgb * layer.pmf;
+        result.diffuseIllumination += value;
+    #else
+        value = 0;
+    #endif
+        return v4(value, weight);
+    }
+
+    vec4 evalSpecularLayer(ShadingAttribs shAttr, LightAttribs lAttr, inout PassOutput result)
+    {
+    #ifndef _MS_DISABLE_SPECULAR
+        /* Add albedo regardless of facing */
+        result.specularAlbedo += albedo.rgb * pmf;
+
+        /* Ignore the layer if it's a transmission or backfacing */
+        if (dot(lAttr.L, shAttr.N) * dot(shAttr.E, shAttr.N) <= 0.f)
+        {
+            return 0;
+        }
+
+        vec3 value = lAttr.lightIntensity;
+
+        vec2 roughness2;
+        if(desc.hasTexture & ROUGHNESS_CHANNEL_BIT)
+        {
+            roughness2 = v2(albedo.w, albedo.w);
+            roughness2 *= roughness2;
+        }
+        else
+        {
+            roughness2 = roughness.rg;
+        }
+
+    #ifndef _MS_DISABLE_ROUGHNESS_FILTERING
+        roughness2 = filterRoughness(shAttr, lAttr, roughness2);
+    #endif
+
+        // Respect perfect specular cutoff
+        if(max(roughness2.x, roughness2.y) < 1e-3f)
+        {
+            return 0;
+        }
+        
+        // compute halfway vector
+        vec3 hW = normalize(shAttr.E + lAttr.L);
+        vec3 h = normalize(v3(dot(hW, shAttr.T), dot(hW, shAttr.B), dot(hW, shAttr.N)));
+
+        result.roughness = roughness2;
+
+        switch (desc.ndf)
+        {
+        case NDFBeckmann: /* Beckmann microfacet distribution */
+        {
+            value *= evalBeckmannDistribution(h, roughness2);
+        }
+        break;
+        case NDFGGX: /* GGX */
+        {
+            value *= evalGGXDistribution(h, roughness2);
+        }
+        break;
+        }
+
+        /* Evaluate standard microfacet model terms */
+        value *= evalMicrofacetTerms(shAttr.T, shAttr.B, shAttr.N, h, shAttr.E, lAttr.L, roughness2, ndf, materialType == MatDielectric);
+
+        /* Cook-Torrance Jacobian */
+        value /= 4.f * dot(shAttr.E, shAttr.N);
+
+        /* Fresnel conductor/dielectric term */
+        float HoE = dot(hW, shAttr.E);
+        float IoR = extraParam.x;
+        float kappa = extraParam.y;
+        float F_term = (materialType == MatConductor) ? conductorFresnel(HoE, IoR, kappa) : 1.f - dielectricFresnel(HoE, IoR);
+        value *= F_term;
+        float weight = F_term;
+
+        result.specularIllumination += value;
+
+        return v4(value, weight);
+    #else
+        return 0;
+    #endif
+    }
+}

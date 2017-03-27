@@ -1,0 +1,343 @@
+
+/*******************************************************************
+					Math functions
+*******************************************************************/
+
+#ifndef M_PIf
+#define M_PIf 3.14159265359f
+#endif
+
+#ifndef M_1_PIf
+#define M_1_PIf 0.31830988618379f
+#endif
+
+vec3 sample_disk(float rnd1, float rnd2, float minR = 0.0f)
+{
+    vec3 p;
+    float r = max(sqrt(rnd1), minR);
+    float phi = 2.0f * M_PIf * rnd2;
+    p.x = r * cos(phi);
+    p.y = r * sin(phi);
+    p.z = 0.0f;
+    return p;
+}
+
+vec3 sample_gauss(float rnd1, float rnd2)
+{
+    vec3 p;
+    float r = sqrt(-2.f * log(1.f - rnd1));
+    float phi = 2.0f * M_PIf * rnd2;
+    p.x = r * cos(phi);
+    p.y = r * sin(phi);
+    p.z = 0.0f;
+    return p;
+}
+
+float eval_gauss2_1d(float x2)
+{
+    return exp(-.5f * x2) / sqrt(2.0f * M_PIf);
+}
+float eval_gauss2_2d(float x2)
+{
+    return exp(-.5f * x2) / (2.0f * M_PIf);
+}
+float eval_gauss2_3d(float x2)
+{
+    return exp(-.5f * x2) / pow(2.0f * M_PIf, 1.5f);
+}
+// "band limit" (k sigma in frequency space): k / (2pi sigma)
+float eval_gauss_1d(float x)
+{
+    return eval_gauss2_1d(x * x);
+}
+float eval_gauss_2d(vec3 x)
+{
+    return eval_gauss2_2d(x.x * x.x + x.y * x.y);
+}
+float eval_gauss_3d(vec3 x)
+{
+    return eval_gauss2_3d(x.x * x.x + x.y * x.y + x.z * x.z);
+}
+
+// [0, 2] -> [1, 0]
+// "band limit" (1st root in frequency space): 1/2
+// Therefore x = t / step =F=> limit = 1/2 / step = 1/2 f_sampling
+float eval_cos2_wnd(float x)
+{
+    float c = abs(x) < 2.0f ? cos((M_PIf * 0.25f) * x) : 0.0f;
+    return c * c;
+}
+
+vec3 cosine_sample_hemisphere(float rnd1, float rnd2)
+{
+    vec3 p = sample_disk(rnd1, rnd2);
+    // Project up to hemisphere.
+    p.z = sqrt(max(0.0f, 1.0f - p.x * p.x - p.y * p.y));
+    return p;
+}
+
+vec3 uniform_sample_sphere(float rnd1, float rnd2)
+{
+    vec3 p;
+    p.z = 2.0f * rnd1 - 1.0f;
+    float r = sqrt(max(0.0f, 1.0f - p.z * p.z));
+    float phi = 2.0f * M_PIf * rnd2;
+    p.x = r * cos(phi);
+    p.y = r * sin(phi);
+    return p;
+}
+
+vec3 uniform_sample_hemisphere(float rnd1, float rnd2)
+{
+    vec3 p;
+    p.z = rnd1;
+    float r = sqrt(max(0.0f, 1.0f - p.z * p.z));
+    float phi = 2.0f * M_PIf * rnd2;
+    p.x = r * cos(phi);
+    p.y = r * sin(phi);
+    return p;
+}
+/**
+	Random numbers based on Mersenne Twister
+*/
+uint rand_init(uint val0, uint val1, uint backoff = 16)
+{
+    uint v0 = val0;
+    uint v1 = val1;
+    uint s0 = 0;
+
+    for(uint n = 0; n < backoff; n++)
+    {
+        s0 += 0x9e3779b9;
+        v0 += ((v1<<4)+0xa341316c)^(v1+s0)^((v1>>5)+0xc8013ea4);
+        v1 += ((v0<<4)+0xad90777d)^(v0+s0)^((v0>>5)+0x7e95761e);
+    }
+
+    return v0;
+}
+
+float rand_next(inout uint s)
+{
+    uint LCG_A = 1664525u;
+    uint LCG_C = 1013904223u;
+    s = (LCG_A * s + LCG_C);
+    return float(s & 0x00FFFFFF) / float(0x01000000);
+}
+
+/*******************************************************************
+					Geometric routines
+*******************************************************************/
+
+void createTangentFrame(in vec3 normal, inout vec3 bitangent)
+{
+	if(abs(normal.x) > abs(normal.y))
+		bitangent = vec3(normal.z, 0.f, -normal.x) / length(vec2(normal.x, normal.z));
+	else
+		bitangent = vec3(0.f, normal.z, -normal.y) / length(vec2(normal.y, normal.z));
+}
+
+void reflectFrame(vec3 n, vec3 reflect, inout vec3 t, inout vec3 b)
+{
+    if(abs(dot(n, reflect)) > 0.999f)
+        reflect = abs(n.z) < .8f ? vec3(0.f, 0.f, 1.f) : vec3(1.f, 0.f, 0.f);
+    b = normalize(cross(n, reflect));
+    t = cross(b, n);
+}
+
+/*******************************************************************
+					Texturing routines
+*******************************************************************/
+
+vec4 sampleTexture(Texture2D t, SamplerState s, ShadingAttribs attr)
+{
+#ifndef _MS_USER_DERIVATIVES
+    return t.SampleBias(s, attr.UV, attr.lodBias);
+#else
+	return t.SampleGrad(s, attr.UV, attr.DPDX, attr.DPDY);
+#endif
+}
+
+#ifndef CUDA_CODE
+vec4 sampleTexture(Texture2DArray t, SamplerState s, ShadingAttribs attr, int arrayIndex)
+{
+#ifndef _MS_USER_DERIVATIVES
+    return t.SampleBias(s, vec3(attr.UV, arrayIndex), attr.lodBias);
+#else
+    return t.SampleGrad(s, vec3(attr.UV, arrayIndex), attr.DPDX, attr.DPDY);
+#endif
+}
+#endif
+
+vec4 evalTex(in uint hasTexture, in Texture2D tex, SamplerState s, in ShadingAttribs attr, in vec4 defaultValue)
+{
+#ifndef _MS_DISABLE_TEXTURES
+	if(hasTexture != 0)
+    {
+        // MAT_CODE
+        defaultValue = sampleTexture(tex, s, attr);
+    }
+#endif
+	return defaultValue;
+}
+
+vec4 evalWithColor(in uint hasTexture, in Texture2D tex, SamplerState s, float4 color, in ShadingAttribs attr)
+{
+	return evalTex(hasTexture, tex, s, attr, color);
+}
+
+/*******************************************************************
+					Normal mapping
+*******************************************************************/
+
+
+/*******************************************************************
+    Spherical map sampling
+*******************************************************************/
+float2 dirToSphericalCrd(float3 direction)
+{
+    static float PI = 3.14159265f;
+    float3 p = normalize(direction);
+    float2 uv;
+    uv.x = (1 + atan2(-p.z, p.x) / PI) * 0.5;
+    uv.y = 1 - (-acos(p.y) / PI);
+    return uv;
+}
+
+/*******************************************************************
+					Color conversion
+*******************************************************************/
+
+vec4 applyAmbientOcclusion(vec4 color, Texture2D aoTex, SamplerState s, vec2 texC)
+{
+    float aoFactor = aoTex.SampleLevel(s, texC, 0).r;
+    return float4(color.rgb * aoFactor, color.a);
+}
+
+
+/*******************************************************************
+Other helpful shared routines
+*******************************************************************/
+
+
+/** Returns a relative luminance of an input linear RGB color in the ITU-R BT.709 color space
+\param RGBColor linear HDR RGB color in the ITU-R BT.709 color space
+*/
+float luminance(vec3 rgb)
+{
+    return dot(rgb, vec3(0.2126f, 0.7152f, 0.0722f));
+}
+
+/** Converts color from RGB to YCgCo space
+\param RGBColor linear HDR RGB color
+*/
+vec3 RGBToYCgCo(vec3 rgb)
+{
+    float Y = dot(rgb, vec3(0.25f, 0.50f, 0.25f));
+    float Cg = dot(rgb, vec3(-0.25f, 0.50f, -0.25f));
+    float Co = dot(rgb, vec3(0.50f, 0.00f, -0.50f));
+
+    return vec3(Y, Cg, Co);
+}
+
+/** Converts color from YCgCo to RGB space
+\param YCgCoColor linear HDR YCgCo color
+*/
+vec3 YCgCoToRGB(vec3 YCgCo)
+{
+    float tmp = YCgCo.x - YCgCo.y;
+    float r = tmp + YCgCo.z;
+    float g = YCgCo.x + YCgCo.y;
+    float b = tmp - YCgCo.z;
+
+    return vec3(r, g, b);
+}
+
+/** Returns a YUV version of an input linear RGB color in the ITU-R BT.709 color space
+\param RGBColor linear HDR RGB color in the ITU-R BT.709 color space
+*/
+vec3 RGBToYUV(vec3 rgb)
+{
+    vec3 ret;
+
+    ret.x = dot(rgb, vec3(0.2126f, 0.7152f, 0.0722f));
+    ret.y = dot(rgb, vec3(-0.09991f, -0.33609f, 0.436f));
+    ret.z = dot(rgb, vec3(0.615f, -0.55861f, -0.05639f));
+
+    return ret;
+}
+
+/** Returns a RGB version of an input linear YUV color in the ITU-R BT.709 color space
+\param YUVColor linear HDR YUV color in the ITU-R BT.709 color space
+*/
+vec3 YUVToRGB(vec3 yuv)
+{
+    vec3 ret;
+
+    ret.x = dot(yuv, vec3(1.0f, 0.0f, 1.28033f));
+    ret.y = dot(yuv, vec3(1.0f, -0.21482f, -0.38059f));
+    ret.z = dot(yuv, vec3(1.0f, 2.12798f, 0.0f));
+
+    return ret;
+}
+
+/** Returns a linear-space RGB version of an input RGB channel value in the ITU-R BT.709 color space
+\param sRGBColor sRGB input channel value
+*/
+float SRGBToLinear(float srgb)
+{
+    if (srgb <= 0.04045f)
+    {
+        return srgb * (1.0f / 12.92f);
+    }
+    else
+    {
+        return pow((srgb + 0.055f) * (1.0f / 1.055f), 2.4f);
+    }
+}
+
+/** Returns a linear-space RGB version of an input RGB color in the ITU-R BT.709 color space
+\param sRGBColor sRGB input color
+*/
+vec3 SRGBToLinear(vec3 srgb)
+{
+    return vec3(
+        SRGBToLinear(srgb.x),
+        SRGBToLinear(srgb.y),
+        SRGBToLinear(srgb.z));
+}
+
+/** Returns a sRGB version of an input linear RGB channel value in the ITU-R BT.709 color space
+\param LinearColor linear input channel value
+*/
+float LinearToSRGB(float lin)
+{
+    if (lin <= 0.0031308f)
+    {
+        return lin * 12.92f;
+    }
+    else
+    {
+        return pow(lin, (1.0f / 2.4f)) * (1.055f) - 0.055f;
+    }
+}
+
+/** Returns a sRGB version of an input linear RGB color in the ITU-R BT.709 color space
+\param LinearColor linear input color
+*/
+vec3 LinearToSRGB(vec3 lin)
+{
+    return vec3(
+        LinearToSRGB(lin.x),
+        LinearToSRGB(lin.y),
+        LinearToSRGB(lin.z));
+}
+
+/** Returns Michelson contrast given minimum and maximum intensities of an image region
+\param Imin minimum intensity of an image region
+\param Imax maximum intensity of an image region
+*/
+float computeMichelsonContrast(float iMin, float iMax)
+{
+    if (iMin == 0.0f && iMax == 0.0f) return 0.0f;
+    else return (iMax - iMin) / (iMax + iMin);
+}
