@@ -32,7 +32,7 @@ if defined project (
     echo Starting %action% of %config% config of project %project% in solution %2
     call "%VS140COMNTOOLS%\..\IDE\devenv.com" %solution% /%action% %config% /project %project% > !errFile!
 ) else (
-    set errFile="TestedSolution%errFileSuffix%"
+    set errFile="Solution%errFileSuffix%"
     echo Starting %action% of %config% config of entire solution %2
     call "%VS140COMNTOOLS%\..\IDE\devenv.com" %solution% /%action% %config% > !errFile!
 )

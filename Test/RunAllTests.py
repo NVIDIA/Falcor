@@ -8,6 +8,7 @@ from xml.parsers.expat import ExpatError
 import argparse
 import sys
 import filecmp
+import ntpath
 from datetime import date, timedelta
 
 #relevant paths
@@ -204,11 +205,9 @@ def callBatchFile(batchArgs):
         return 1
 
 def buildFail(slnName, configName):
-    global gFailReasonsList
-    resultsDir = testInfo.getResultsDir()
-    makeDirIfDoesntExist(resultsDir)
-    buildLog = 'TestedSolution_BuildFailLog.txt'
-    overwriteMove(buildLog, resultsDir)
+    makeDirIfDoesntExist(gResultsDir)
+    buildLog = 'Solution_BuildFailLog.txt'
+    overwriteMove(buildLog, gResultsDir)
     errorMsg = 'failed to build one or more projects with config ' + configName + ' of solution ' + slnName  + ". Build log written to " + buildLog
     print 'Error: ' + errorMsg
     gFailReasonsList.append(errorMsg)
@@ -310,10 +309,19 @@ def processSystemTest(xmlElement, testInfo):
 
 def readTestList(generateReference, buildTests):
     global gConfigDirDict
+    global gResultsDir
     file = open(gTestListFile)
     contents = file.read()
     slnEndIndex = contents.find(' ')
     slnName = contents[:slnEndIndex]
+    #make sln name dir within date dir
+    slnBaseName, extension = os.path.splitext(slnName)
+    slnBaseName = ntpath.basename(slnBaseName) 
+    gResultsDir += '\\' + slnBaseName
+    if os.path.isdir(gResultsDir):
+        cleanDir(gResultsDir, None, None)
+    else:
+        os.makedirs(gResultsDir)
     slnConfigStartIndex = contents.find('{')
     slnConfigEndIndex = contents.find('}')
     configData = contents[slnConfigStartIndex + 1 : slnConfigEndIndex]
@@ -358,7 +366,7 @@ def readTestList(generateReference, buildTests):
         #goto next set
         contents = contents[configEndIndex + 1 :]
         argStartIndex = contents.find('{')
-    return slnName
+    return slnBaseName
 
 def runTest(testInfo, cmdLine, generateReference):
     testPath = testInfo.getTestPath()
@@ -562,18 +570,22 @@ def outputHTML(openSummary, slnName):
     if(openSummary):
         os.system("start " + resultSummaryName)
 
-def cleanDir(cleanDir, prefix, suffix):
-    if os.path.isdir(cleanDir):
+def cleanDir(cleanedDir, prefix, suffix):
+    if os.path.isdir(cleanedDir):
         if prefix and suffix:
-            deadFiles = [f for f in os.listdir(cleanDir) if f.endswith(suffix) and f.startswith(prefix)]
+            deadFiles = [f for f in os.listdir(cleanedDir) if f.endswith(suffix) and f.startswith(prefix)]
         elif prefix:
-            deadFiles = [f for f in os.listdir(cleanDir) if f.startswith(prefix)]
+            deadFiles = [f for f in os.listdir(cleanedDir) if f.startswith(prefix)]
         elif suffix:
-            deadFiles = [f for f in os.listdir(cleanDir) if f.endswith(suffix)]
+            deadFiles = [f for f in os.listdir(cleanedDir) if f.endswith(suffix)]
         else:
-            deadFiles = [f for f in os.listdir(cleanDir)]
+            deadFiles = [f for f in os.listdir(cleanedDir)]
         for f in deadFiles:
-            os.remove(cleanDir + '\\' + f)
+            filepath = cleanedDir + '\\' + f
+            if os.path.isdir(filepath):
+                cleanDir(filepath, prefix, suffix)
+            else:
+                os.remove(filepath)
 
 def sendFatalFailEmail(failMsg):
     subject = '[FATAL TESTING ERROR] '
@@ -643,19 +655,10 @@ def main():
 
     #make outer dir if need to
     makeDirIfDoesntExist(gResultsDir)
-    #make inner dir for this results
+    #make date dir if needed
     dateStr = date.today().strftime("%m-%d-%y")
     gResultsDir += '\\' + dateStr
-    if os.path.isdir(gResultsDir):
-        #remove date subdir if exists
-        shutil.rmtree(gResultsDir, ignore_errors=True)
-        try:
-            time.sleep(5)
-            os.makedirs(gResultsDir)
-        except:
-            if not args.noemail:
-                sendFatalFailEmail('Fatal Error, Failed to create test result folder')
-                sys.exit(1)
+    makeDirIfDoesntExist(gResultsDir)
 
     if not args.generatereference:
         resultSummary = LowLevelResult()
@@ -669,13 +672,19 @@ def main():
     if not args.noemail and not args.generatereference:
         sendTestingEmail()
     
-    if args.generatereference or args.noemail:
-        if(len(gSkippedList) > 0 or len(gFailReasonsList) > 0):
-            print '\n\nRan into the following issues ....\n-----\n'
-            for name, skip in gSkippedList:
-                print name + ': ' + skip
-            for reason in gFailReasonsList:
-                print reason
+    #open a file instead, move file to result dir
+    #if(len(gSkippedList) > 0 or len(gFailReasonsList) > 0):
+    #    errorFileStr = 'Ran into the following issues\n-----\n'
+    #    for name, skip in gSkippedList:
+    #        errorFileStr += name + ': ' + skip
+    #    for reason in gFailReasonsList:
+    #        errorFileStr += reason
+    #    errorFile = open(gResultsDir + '\\' + slnName + '_ErrorSummary.txt', 'w')
+    #    errorFile.write(errorFileStr)
+    #    errorFile.close();
+    #    return 1
+    #else:
+    #    return 0
 
 def cleanupString(string):
     string = string.replace('\t', '')
