@@ -27,8 +27,8 @@
 ***************************************************************************/
 cbuffer SrcRectCB : register(b0)
 {
-    // Source rect bounds in UV coordinates. [left, up, right, down]
-    float4 gSrcRectUV;
+    float2 gOffset;
+    float2 gScale;
 }
 
 struct VsOut
@@ -40,7 +40,7 @@ struct VsOut
 VsOut main(float4 posS : POSITION, float2 texC : TEXCOORD)
 {
     VsOut vOut;
-    vOut.texC = lerp(gSrcRectUV.xy, gSrcRectUV.zw, texC);
+    vOut.texC = texC * gScale + gOffset;
     vOut.posH = posS;
     return vOut;
 }

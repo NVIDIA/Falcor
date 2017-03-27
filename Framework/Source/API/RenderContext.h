@@ -118,7 +118,7 @@ namespace Falcor
             \param[in] srcRect Source rectangle to blit from, specified by [left, up, right, down]
             \param[in] dstRect Target rectangle to blit to, specified by [left, up, right, down]
         */
-        void blit(ShaderResourceView::SharedPtr pSrc, RenderTargetView::SharedPtr pDst, const uvec4& srcRect = uvec4(0, 0, -1, -1), const uvec4& dstRect = uvec4(0, 0, -1, -1));
+        void blit(ShaderResourceView::SharedPtr pSrc, RenderTargetView::SharedPtr pDst, const uvec4& srcRect = uvec4(-1), const uvec4& dstRect = uvec4(-1));
 
         /** Set the program variables for graphics
         */
@@ -165,7 +165,15 @@ namespace Falcor
             FullScreenPass::UniquePtr pPass;
             GraphicsVars::SharedPtr pVars;
             GraphicsState::SharedPtr pState;
+            Fbo::SharedPtr pFbo;
+
             ConstantBuffer::SharedPtr pSrcRectBuffer;
+            vec2 prevSrcRectOffset;
+            vec2 prevSrcReftScale;
+
+            // Variable offsets in constant buffer
+            size_t offsetVarOffset;
+            size_t scaleVarOffset;
         };
 
         static BlitData sBlitData;

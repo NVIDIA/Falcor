@@ -281,6 +281,7 @@ namespace Falcor
         if(mpApiData->pGenMipsFbo == nullptr)
         {
             mpApiData->pGenMipsFbo = Fbo::create();
+            mpApiData->spGenMips->pState->setFbo(mpApiData->pGenMipsFbo);
         }
 
         for (uint32_t i = 0; i < mMipLevels - 1; i++)
@@ -288,7 +289,10 @@ namespace Falcor
             // Create an FBO for the next mip level
             SharedPtr pNonConst = const_cast<Texture*>(this)->shared_from_this();
             mpApiData->pGenMipsFbo->attachColorTarget(pNonConst, 0, i + 1, 0);
-            mpApiData->spGenMips->pState->setFbo(mpApiData->pGenMipsFbo);
+
+            const float width = (float)mpApiData->pGenMipsFbo->getWidth();
+            const float height = (float)mpApiData->pGenMipsFbo->getHeight();
+            mpApiData->spGenMips->pState->setViewport(0, GraphicsState::Viewport(0.0f, 0.0f, width, height, 0.0f, 1.0f));
 
             // Create the resource view
             mpApiData->spGenMips->pVars->setSrv(0, pNonConst->getSRV(i, 1, 0, mArraySize));

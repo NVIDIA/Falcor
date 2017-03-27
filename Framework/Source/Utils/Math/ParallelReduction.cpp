@@ -62,9 +62,9 @@ namespace Falcor
             fboDesc.setColorTarget(0, texFormat);
             pFbo = FboHelper::create2D(1, 1, fboDesc);
         }
-        mpFirstIterProg = FullScreenPass::create(fsFilename, "", defines);
+        mpFirstIterProg = FullScreenPass::create(fsFilename, defines);
         mpFirstIterProg->getProgram()->addDefine("_FIRST_ITERATION");
-        mpRestIterProg = FullScreenPass::create(fsFilename, "", defines);
+        mpRestIterProg = FullScreenPass::create(fsFilename, defines);
         pVars = GraphicsVars::create(mpFirstIterProg->getProgram()->getActiveVersion()->getReflector());
 
         // Calculate the number of reduction passes
