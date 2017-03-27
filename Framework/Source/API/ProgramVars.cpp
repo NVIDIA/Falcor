@@ -727,6 +727,8 @@ namespace Falcor
             pList->SetComputeRootSignature(mpRootSignature->getApiHandle());
         }
 
+// SPIRE: no more parameters stored directly in `ProgramVars`: they are all in components...
+#if 0
         // Bind the constant-buffers
         for (auto& bufIt : mAssignedCbs)
         {
@@ -764,11 +766,13 @@ namespace Falcor
                 }
             }
         }
+#endif
 
         // Spire: bind the components that have been specified...
         uint32_t rootIndex = 0;
         for( auto& component : mAssignedComponents )
         {
+#if 0
             if( component->mConstantBuffer )
             {
                 component->mConstantBuffer->uploadToGPU();
@@ -827,6 +831,75 @@ namespace Falcor
                 setRootDescriptorTable(pContext, pList, rootIndex, sampler->getApiHandle()->getGpuHandle());
                 rootIndex++;
             }
+#else
+            // SPIRE: NOTE: Still have to do everything related to automatic/implicit upload of
+            // modified data, as well as implicit barriers for read-after-write of textures, etc.
+            if( component->mConstantBuffer )
+            {
+                component->mConstantBuffer->uploadToGPU();
+            }
+            for( auto& entry : component->mBoundSRVs )
+            {
+                auto pResource = entry.resource.get();
+                if(pResource)
+                {
+                    // SPIRE: NOTE: The existing Falcor code does a bunch of work here,
+                    // and I'm not clear on whether this is the best place for it.
+
+                    // If it's a typed buffer, upload it to the GPU
+                    const TypedBufferBase* pTypedBuffer = dynamic_cast<const TypedBufferBase*>(pResource);
+                    if (pTypedBuffer)
+                    {
+                        pTypedBuffer->uploadToGPU();
+                    }
+
+                    const StructuredBuffer* pStructured = dynamic_cast<const StructuredBuffer*>(pResource);
+                    if (pStructured)
+                    {
+                        pStructured->uploadToGPU();
+                    }
+
+                    // SPIRE: TODO: follow this through and make sure we aren't issuing barriers we don't need to...
+                    pContext->resourceBarrier(pResource, Resource::State::ShaderResource);
+
+                    if (pTypedBuffer)
+                    {
+                        pTypedBuffer->setGpuCopyDirty();
+                    }
+                    if (pStructured)
+                    {
+                        pStructured->setGpuCopyDirty();
+                    }
+                }
+            }
+
+            // SPIRE: once we've dealt with data hazard issues, the logic is really simple:
+            // we bind zero, one, or two descriptor tables per component, based on what
+            // kind of parameters it uses.
+            //
+            // NOTE: the `getApiHandle()` operation there hides more implicit update
+            // stuff, where we build the table on first use...
+
+            auto& apiHandle = component->getApiHandle();
+            if( apiHandle.resourceDescriptorTable )
+            {
+                setRootDescriptorTable(
+                    pContext,
+                    pList,
+                    rootIndex,
+                    apiHandle.resourceDescriptorTable->getGpuHandle());
+                rootIndex++;
+            }
+            if( apiHandle.samplerDescriptorTable )
+            {
+                setRootDescriptorTable(
+                    pContext,
+                    pList,
+                    rootIndex,
+                    apiHandle.samplerDescriptorTable->getGpuHandle());
+                rootIndex++;
+            }
+#endif
         }
     }
 
@@ -869,6 +942,8 @@ namespace Falcor
         uint32_t sReg = 0;
         uint32_t tReg = 0;
 
+#if 0
+
 		for (auto c : mAssignedComponents)
 		{
 			// TODO: this logic should only rely on the *class* of the component...
@@ -891,6 +966,62 @@ namespace Falcor
                 desc.addDescriptorTable(tableDesc);
             }
         }
+#else
+        for( auto& component : mAssignedComponents )
+        {
+            auto& reflector = component->mReflector;
+
+            // We will allocate up to two descriptor tables per component,
+            // one to hold resources (constant buffers, textures, UAVs, etc.)
+            // and another one to hold samplers.
+            // Any uniform parameters of the component are grouped into a
+            // constant buffer that comes first in the resource table.
+            //
+            // We won't allocate a table to a component unless it needs
+            // at least *some* parameters of the corresponding category.
+            // This should mean that we automatically skip allocating
+            // root-signature space for any component that only has
+            // logic, and no parameters.
+            //
+            // Eventually it would be nice to handle more special cases.
+            // The most important of these would be the case where a
+            // component has only a single constant buffer, and no
+            // other resource parameters. In this case we might as
+            // well use a root constant buffer slot.
+            uint32_t uniformCount = (uint32_t) reflector->getVariableCount();
+            uint32_t resourceCount = reflector->getResourceCount();
+            uint32_t samplerCount = reflector->getSamplerCount();
+
+            //
+            //
+            // TODO(tfoley): if there are no resources, then just use a root CBV slot
+            if( resourceCount || uniformCount )
+            {
+                RootSignature::DescriptorTable tableDesc;
+                if( uniformCount )
+                {
+                    tableDesc.addRange(RootSignature::DescType::CBV, bReg, 1, regSpace);
+                    bReg++;
+                }
+                if( resourceCount )
+                {
+                    tableDesc.addRange(RootSignature::DescType::SRV, tReg, resourceCount, regSpace);
+                    tReg += resourceCount;
+                }
+                desc.addDescriptorTable(tableDesc);
+            }
+
+            if( samplerCount )
+            {
+                RootSignature::DescriptorTable tableDesc;
+
+                tableDesc.addRange(RootSignature::DescType::Sampler, sReg, samplerCount, regSpace);
+                sReg += samplerCount;
+
+                desc.addDescriptorTable(tableDesc);
+            }
+        }
+#endif
 
         return RootSignature::create(desc);
     }

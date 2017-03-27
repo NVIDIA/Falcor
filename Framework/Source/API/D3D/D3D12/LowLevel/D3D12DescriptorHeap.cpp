@@ -31,7 +31,7 @@
 
 namespace Falcor
 {
-    static D3D12_DESCRIPTOR_HEAP_TYPE getHeapType(DescriptorHeap::Type type)
+    D3D12_DESCRIPTOR_HEAP_TYPE getHeapType(DescriptorHeap::Type type)
     {
         switch(type)
         {
@@ -51,7 +51,13 @@ namespace Falcor
         }
     }
 
-    DescriptorHeap::DescriptorHeap(Type type, uint32_t descriptorsCount) : mCount(descriptorsCount), mType (type)
+    DescriptorHeap::DescriptorHeap(
+        DescriptorAllocator*    pDescriptorAllocator, 
+        Type                    type,
+        uint32_t                descriptorsCount)
+        : mpDescriptorAllocator(pDescriptorAllocator)
+        , mCount(descriptorsCount)
+        , mType (type)
     {
 		ID3D12DevicePtr pDevice = gpDevice->getApiHandle();
         mDescriptorSize = pDevice->GetDescriptorHandleIncrementSize(getHeapType(type));
@@ -59,11 +65,18 @@ namespace Falcor
 
     DescriptorHeap::~DescriptorHeap() = default;
 
-    DescriptorHeap::SharedPtr DescriptorHeap::create(Type type, uint32_t descriptorsCount, bool shaderVisible)
+    DescriptorHeap::SharedPtr DescriptorHeap::create(
+        DescriptorAllocator*    pDescriptorAllocator, 
+        Type                    type,
+        uint32_t                descriptorsCount,
+        bool                    shaderVisible)
     {
 		ID3D12DevicePtr pDevice = gpDevice->getApiHandle();
 
-        DescriptorHeap::SharedPtr pHeap = SharedPtr(new DescriptorHeap(type, descriptorsCount));
+        DescriptorHeap::SharedPtr pHeap = SharedPtr(new DescriptorHeap(
+            pDescriptorAllocator,
+            type,
+            descriptorsCount));
         D3D12_DESCRIPTOR_HEAP_DESC desc = {};
 
         desc.Flags = shaderVisible ? D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE : D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
@@ -99,7 +112,40 @@ namespace Falcor
         return getHandleCommon(mGpuHeapStart, index, mDescriptorSize);
     }
 
-    DescriptorHeapEntry::SharedPtr DescriptorHeap::allocateEntry()
+    DescriptorHeapEntry::SharedPtr DescriptorHeap::allocateTable(uint32_t entryCount)
+    {
+        assert(entryCount);
+        return getPool(entryCount)->allocateTable();
+    }
+
+    std::shared_ptr<DescriptorPool> DescriptorHeap::getPool(uint32 entryCount)
+    {
+        assert(entryCount);
+
+        auto iter = mPools.find(entryCount);
+        if( iter != mPools.end() )
+        {
+            auto pool = iter->second.lock();
+            if(pool)
+                return pool;
+        }
+
+        std::shared_ptr<DescriptorPool> pool = std::shared_ptr<DescriptorPool>(
+            new DescriptorPool(shared_from_this(), entryCount));
+
+        mPools.insert_or_assign(entryCount, pool);
+
+        return pool;
+    }
+
+    DescriptorPool::DescriptorPool(
+        DescriptorHeap::SharedPtr   pDescriptorHeap,
+        uint32_t                    tableEntryCount)
+        : mpDescriptorHeap(pDescriptorHeap)
+        , mTableEntryCount(tableEntryCount)
+    {}
+
+    DescriptorHeap::Entry DescriptorPool::allocateTable()
     {
         uint32_t entry;
         if (mFreeEntries.empty() == false)
@@ -109,15 +155,58 @@ namespace Falcor
         }
         else
         {
-            if (mCurDesc >= mCount)
+            auto pDescriptorHeap = mpDescriptorHeap.get();
+            uint32_t entryCount = mTableEntryCount;
+            uint32_t current = pDescriptorHeap->mCurDesc;
+            uint32_t capacity = pDescriptorHeap->mCount;
+            assert(entryCount < capacity);
+            if ((current + entryCount) > capacity)
             {
                 logError("Can't find free CPU handle in descriptor heap");
                 return nullptr;
             }
-            entry = mCurDesc;
-            mCurDesc++;
+            entry = current;
+            pDescriptorHeap->mCurDesc = current + entryCount;
         }
 
         return DescriptorHeapEntry::create(shared_from_this(), entry);
     }
+
+    DescriptorHeapEntry::~DescriptorHeapEntry()
+    {
+        getHeap()->getAllocator()->deferredRelease(this);
+    }
+
+    void DescriptorPool::releaseTable(uint32_t entry)
+    {
+        mFreeEntries.push(entry);
+    }
+
+    void DescriptorAllocator::init(GpuFence::SharedPtr const& pFence)
+    {
+        mpFence = pFence;
+    }
+
+    void DescriptorAllocator::deferredRelease(DescriptorHeapEntry* entry)
+    {
+        Entry info;
+        info.pPool = entry->mpPool;
+        info.heapEntry = entry->mHeapEntry;
+        info.fenceValue = mpFence->getCpuValue();
+        mDeferredReleases.push(info);
+    }
+
+    void DescriptorAllocator::executeDeferredReleases()
+    {
+        uint64_t gpuVal = mpFence->getGpuValue();
+        while (mDeferredReleases.size() && mDeferredReleases.top().fenceValue <= gpuVal)
+        {
+            const Entry& info = mDeferredReleases.top();
+
+            info.pPool->releaseTable(info.heapEntry);
+
+            mDeferredReleases.pop();
+        }
+    }
+
 }

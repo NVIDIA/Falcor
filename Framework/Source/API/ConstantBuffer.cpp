@@ -73,7 +73,7 @@ namespace Falcor
     {
         if (mCBV == nullptr)
         {
-            DescriptorHeap* pHeap = gpDevice->getSrvDescriptorHeap().get();
+            DescriptorHeap* pHeap = gpDevice->getCpuSrvDescriptorHeap().get();
 
             mCBV = pHeap->allocateEntry();
             D3D12_CONSTANT_BUFFER_VIEW_DESC viewDesc = {};
@@ -91,7 +91,16 @@ namespace Falcor
     {
         auto componentInstance = SharedPtr(new ComponentInstance());
 
+        componentInstance->mSamplerTableDirty = true;
+        componentInstance->mResourceTableDirty = true;
+
         componentInstance->mReflector = pReflector;
+
+        uint32_t resourceCount = pReflector->getResourceCount();
+        uint32_t samplerCount = pReflector->getSamplerCount();
+
+        componentInstance->mBoundSRVs.resize(resourceCount);
+        componentInstance->mBoundSamplers.resize(samplerCount);
 
         // need to construct the constant buffer, if needed
         if( pReflector->getVariableCount() )
@@ -107,11 +116,22 @@ namespace Falcor
         const ShaderResourceView::SharedPtr& pSrv,
         const Resource::SharedPtr& pResource)
     {
-        if(index >= mBoundSRVs.size())
-            mBoundSRVs.resize(index+1);
+        if( index >= mBoundSRVs.size() )
+        {
+            logError("SRV index out of range");
+            return;
+        }
+
+        if( mBoundSRVs[index].srv.get() == pSrv.get()
+            && mBoundSRVs[index].resource.get() == pResource.get() )
+        {
+            return;
+        }
 
         mBoundSRVs[index].srv = pSrv ? pSrv : ShaderResourceView::getNullView();
         mBoundSRVs[index].resource = pResource;
+
+        mResourceTableDirty = true;
     }
 
     void ComponentInstance::setTexture(const std::string& name, const Texture* pTexture)
@@ -119,7 +139,8 @@ namespace Falcor
         auto resourceInfo = mReflector->getResourceData(name);
         if( !resourceInfo )
         {
-            throw 99;
+            logError("no resource parameter named '" + name + "' found");
+            return;
         }
 
         auto index = resourceInfo->regIndex;
@@ -135,14 +156,95 @@ namespace Falcor
         auto resourceInfo = mReflector->getResourceData(name);
         if( !resourceInfo )
         {
-            throw 99;
+            logError("no sampler parameter named '" + name + "' found");
+            return;
         }
 
         auto index = resourceInfo->regIndex;
 
         if(index >= mBoundSamplers.size())
-            mBoundSamplers.resize(index+1, nullptr);
+        {
+            logError("sampler index out of range");
+            return;
+        }
+
+        if( mBoundSamplers[index].get() == pSampler)
+            return;
 
         mBoundSamplers[index] = pSampler ? pSampler->shared_from_this() : nullptr;
+
+        mSamplerTableDirty = true;
     }
+
+    ComponentInstance::ApiHandle const& ComponentInstance::getApiHandle() const
+    {
+        auto device = gpDevice;
+
+        if( mResourceTableDirty )
+        {
+            uint32_t resourceCount = (uint32_t) mBoundSRVs.size();
+            if(mConstantBuffer)
+                resourceCount++;
+
+            if( resourceCount )
+            {
+                // TODO(tfoley): we know the size of allocation we will make ahead of time,
+                // which means that the "reflector" can go ahead and cache a pointer to
+                // the proper allocation pool in the heap and avoid the lookup step
+                // that we do here...
+                mApiHandle.resourceDescriptorTable = gpDevice->getShaderSrvDescriptorHeap()->allocateTable(resourceCount);
+
+                // now copy things in!
+
+                uint32_t srvIndex = 0;
+
+                if( mConstantBuffer )
+                {
+                    // SPIRE: NOTE: The call to `getCBV()` instead of `getSRV()` on the constant
+                    // buffer is important!
+
+                    device->copyDescriptor(
+                        mApiHandle.resourceDescriptorTable->getCpuHandle(srvIndex++),
+                        mConstantBuffer->getCBV()->getCpuHandle(),
+                        DescriptorHeap::Type::SRV);
+                }
+
+                for( auto& entry : mBoundSRVs )
+                {
+                    auto& srv = entry.srv;
+
+                    device->copyDescriptor(
+                        mApiHandle.resourceDescriptorTable->getCpuHandle(srvIndex++),
+                        srv->getApiHandle()->getCpuHandle(),
+                        DescriptorHeap::Type::SRV);
+                }
+            }
+
+            mResourceTableDirty = false;
+        }
+
+        if( mSamplerTableDirty )
+        {
+            uint32_t samplerCount = (uint32_t) mBoundSamplers.size();
+            if( samplerCount )
+            {
+                mApiHandle.samplerDescriptorTable = gpDevice->getShaderSamplerDescriptorHeap()->allocateTable(samplerCount);
+
+                uint32_t samplerIndex = 0;
+
+                for( auto& sampler : mBoundSamplers )
+                {
+                    device->copyDescriptor(
+                        mApiHandle.samplerDescriptorTable->getCpuHandle(samplerIndex++),
+                        sampler->getApiHandle()->getCpuHandle(),
+                        DescriptorHeap::Type::Sampler);
+                }
+            }
+
+            mSamplerTableDirty = false;
+        }
+
+        return mApiHandle;
+    }
+
 }

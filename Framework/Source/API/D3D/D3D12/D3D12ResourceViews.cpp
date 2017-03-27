@@ -63,7 +63,10 @@ namespace Falcor
         SharedPtr pNewObj;
         SharedPtr& pObj = pSharedPtr ? pNewObj : sNullView;
 
-        DescriptorHeap* pHeap = gpDevice->getSrvDescriptorHeap().get();
+        // SPIRE: NOTE: The CPU-side `ShaderResourceView` object maps to a single entry
+        // in a CPU-visible descriptor heap, that will be copied into GPU-visible
+        // descriptor tables as needed.
+        DescriptorHeap* pHeap = gpDevice->getCpuSrvDescriptorHeap().get();
         ApiHandle handle = pHeap->allocateEntry();
         gpDevice->getApiHandle()->CreateShaderResourceView(pSharedPtr ? pSharedPtr->getApiHandle() : nullptr, &desc, handle->getCpuHandle());
 
@@ -139,16 +142,20 @@ namespace Falcor
         SharedPtr pNewObj;
         SharedPtr& pObj = pSharedPtr ? pNewObj : sNullView;
 
-        DescriptorHeap* pHeap = gpDevice->getUavDescriptorHeap().get();
+        // SPIRE: NOTE: the CPU-side UAV object is backed by a CPU-visible descriptor heap.
+        // The descriptor in that heap will be copied to a GPU descriptor table as needed.
+        DescriptorHeap* pHeap = gpDevice->getCpuSrvDescriptorHeap().get();
         ApiHandle handle = pHeap->allocateEntry();
         gpDevice->getApiHandle()->CreateUnorderedAccessView(resHandle, nullptr, &desc, handle->getCpuHandle());
 
+        /*SPIRE: We already have a CPU handle, so we are golden...
         // Create the view for the clear
         pObj = SharedPtr(new UnorderedAccessView(pResource, handle, mipLevel, firstArraySlice, arraySize));
 
         pHeap = gpDevice->getCpuUavDescriptorHeap().get();
         pObj->mViewForClear = pHeap->allocateEntry();
         gpDevice->getApiHandle()->CreateUnorderedAccessView(resHandle, nullptr, &desc, pObj->mViewForClear->getCpuHandle());
+        */
 
         return pObj;
     }

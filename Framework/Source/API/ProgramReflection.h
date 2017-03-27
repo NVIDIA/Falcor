@@ -270,6 +270,9 @@ namespace Falcor
             SpireModule* mSpireComponentClass = nullptr;
             SpireModule* getSpireComponentClass() const { return mSpireComponentClass; }
 
+            uint32_t getResourceCount() const { return mResourceCount; }
+            uint32_t getSamplerCount() const { return mSamplerCount; }
+
 
         private:
 
@@ -281,6 +284,8 @@ namespace Falcor
             ResourceMap mResources;
             VariableMap mVariables;
             ShaderAccess mShaderAccess;
+            uint32_t mResourceCount;
+            uint32_t mSamplerCount;
         };
 
 
