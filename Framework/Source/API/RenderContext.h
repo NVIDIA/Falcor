@@ -165,7 +165,6 @@ namespace Falcor
             FullScreenPass::UniquePtr pPass;
             GraphicsVars::SharedPtr pVars;
             GraphicsState::SharedPtr pState;
-            Fbo::SharedPtr pFbo;
 
             ConstantBuffer::SharedPtr pSrcRectBuffer;
             vec2 prevSrcRectOffset;

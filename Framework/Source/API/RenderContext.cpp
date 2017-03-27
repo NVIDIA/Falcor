@@ -84,8 +84,6 @@ namespace Falcor
             sBlitData.pPass = FullScreenPass::create("Framework/Shaders/Blit.vs.hlsl", "Framework/Shaders/Blit.ps.hlsl");
             sBlitData.pVars = GraphicsVars::create(sBlitData.pPass->getProgram()->getActiveVersion()->getReflector());
             sBlitData.pState = GraphicsState::create();
-            sBlitData.pFbo = Fbo::create();
-            sBlitData.pState->setFbo(sBlitData.pFbo);
 
             sBlitData.pSrcRectBuffer = sBlitData.pVars->getConstantBuffer("SrcRectCB");
             sBlitData.offsetVarOffset = (uint32_t)sBlitData.pSrcRectBuffer->getVariableOffset("gOffset");
@@ -102,7 +100,6 @@ namespace Falcor
 
     void RenderContext::releaseBlitData()
     {
-        sBlitData.pFbo = nullptr;
         sBlitData.pSrcRectBuffer = nullptr;
         sBlitData.pVars = nullptr;
         sBlitData.pPass = nullptr;
@@ -165,14 +162,15 @@ namespace Falcor
             sBlitData.pPass->getProgram()->removeDefine("SAMPLE_COUNT");
         }
 
+        Fbo::SharedPtr pFbo = Fbo::create();
         Texture::SharedPtr pSharedTex = std::const_pointer_cast<Texture>(pDstTexture->shared_from_this());
-        sBlitData.pFbo->attachColorTarget(pSharedTex, 0, pDst->getViewInfo().mostDetailedMip, pDst->getViewInfo().firstArraySlice, pDst->getViewInfo().arraySize);
+        pFbo->attachColorTarget(pSharedTex, 0, pDst->getViewInfo().mostDetailedMip, pDst->getViewInfo().firstArraySlice, pDst->getViewInfo().arraySize);
+        sBlitData.pState->setFbo(pFbo, false);
         sBlitData.pVars->setSrv(0, pSrc);
         sBlitData.pPass->execute(this);
 
         // Release the resources we bound
         sBlitData.pVars->setSrv(0, nullptr);
-        sBlitData.pFbo->attachColorTarget(nullptr, 0);
 
         popGraphicsState();
         popGraphicsVars();
