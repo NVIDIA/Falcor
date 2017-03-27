@@ -13,6 +13,7 @@ def main():
 	parser.add_argument('-sizeZ', '--tileSizeZ', action='store', help='the z distance between tiles')
 	parser.add_argument('-randRotY', '--randRotationY', action='store_true', help='Optional. If set, applies a random 90 degree rot to tiles')
 	parser.add_argument('-rotX', '--rotationX', action='store', help='Optional, applies a given x rotation to tiles.')
+	parser.add_argument('-f1', '--falcor1', action='store_true', help='Optional, outputs falcor1.0 format. (yaw pitch roll instead of x y z)')
 	args = parser.parse_args()
 
 	if not args.modelFile:
@@ -108,18 +109,33 @@ def main():
 			outfile.write('\t\t\t\t\t\t1.0\n')
 			outfile.write('\t\t\t\t\t],\n')
 			outfile.write('\t\t\t\t\t\"rotation\": [\n')
-			outfile.write('\t\t\t\t\t\t' + str(rotX) + ',\n')
-			if args.randRotationY:
-				randRotY = 90 * randint(0, 3)
+			if args.falcor1:
+				if args.randRotationY:
+					randRotY = 90 * randint(0, 3)
+				else:
+					randRotY = 0.0
+				#if it is Z up, actually want to rotate Z, not Y. 
+				if args.rotationX:
+					outfile.write('\t\t\t\t\t\t' + str(rotX) + ',\n')
+					outfile.write('\t\t\t\t\t\t0.0,\n')
+					outfile.write('\t\t\t\t\t\t' + str(randRotY) + '\n')
+				else:
+					outfile.write('\t\t\t\t\t\t' + str(randRotY) + ',\n')
+					outfile.write('\t\t\t\t\t\t' + str(rotX) + ',\n')
+					outfile.write('\t\t\t\t\t\t0.0\n')
 			else:
-				randRotY = 0.0
-			#if it is Z up, actually want to rotate Z, not Y. 
-			if args.rotationX:
-				outfile.write('\t\t\t\t\t\t0.0,\n')
-				outfile.write('\t\t\t\t\t\t' + str(randRotY) + '\n')
-			else:
-				outfile.write('\t\t\t\t\t\t' + str(randRotY) + ',\n')
-				outfile.write('\t\t\t\t\t\t0.0\n')
+				outfile.write('\t\t\t\t\t\t' + str(rotX) + ',\n')
+				if args.randRotationY:
+					randRotY = 90 * randint(0, 3)
+				else:
+					randRotY = 0.0
+				#if it is Z up, actually want to rotate Z, not Y. 
+				if args.rotationX:
+					outfile.write('\t\t\t\t\t\t0.0,\n')
+					outfile.write('\t\t\t\t\t\t' + str(randRotY) + '\n')
+				else:
+					outfile.write('\t\t\t\t\t\t' + str(randRotY) + ',\n')
+					outfile.write('\t\t\t\t\t\t0.0\n')
 			outfile.write('\t\t\t\t\t]\n')
 			if(i == numX - 1 and j == numZ - 1):
 				outfile.write('\t\t\t\t}\n')
