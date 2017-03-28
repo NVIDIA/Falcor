@@ -1,9 +1,47 @@
 #define NDF_BECKMANN 0
 #define NDF_GGX 1
 #define _ref(x) inout x
+
+#ifndef M_PIf
+#define M_PIf 3.14159265359f
+#endif
+
+#ifndef M_1_PIf
+#define M_1_PIf 0.31830988618379f
+#endif
+
 /**********************************************************************************
 BRDF helpers
 **********************************************************************************/
+
+/*******************************************************************
+                    Shared material routines
+*******************************************************************/
+
+
+/** Converts specular power to roughness. Note there is no "the conversion".
+    Reference: http://simonstechblog.blogspot.com/2011/12/microfacet-brdf.html
+    \param shininess specular power of an obsolete Phong BSDF
+*/
+float convertShininessToRoughness(const float shininess)
+{
+    return clamp(sqrt(2.0f / (shininess + 2.0f)), 0.f, 1.f);
+}
+
+vec2 convertShininessToRoughness(const vec2 shininess)
+{
+    return clamp(sqrt(2.0f / (shininess + 2.0f)), 0.f, 1.f);
+}
+
+float convertRoughnessToShininess(const float a)
+{
+    return 2.0f / clamp(a*a, 1e-8f, 1.f) - 2.0f;
+}
+
+vec2 convertRoughnessToShininess(const vec2 a)
+{
+    return 2.0f / clamp(a*a, 1e-8f, 1.f) - 2.0f;
+}
 
 /**********************************************************************************
 Microfacet routines: Fresnel (conductor/dielectric), shadowing/masking
@@ -28,7 +66,7 @@ float dielectricFresnelFast(in float NdE, in float NdL, in float IoR)
 {
     float Rs = (NdE - IoR * NdL) / (NdE + IoR * NdL);	// Transmitted-to-incident wave ratio, perpendicular component
     float Rp = (IoR * NdE - NdL) / (IoR * NdE + NdL);	// Transmitted-to-incident wave ratio, parallel component
-    return (Rs * Rs + Rp * Rp) * .5f;						// Total amplitude of the transmitted wave
+    return (Rs * Rs + Rp * Rp) * 0.5f;						// Total amplitude of the transmitted wave
 }
 
 /**
@@ -46,7 +84,7 @@ float dielectricFresnel(in float NdE, in float IoR)
     NdE = abs(NdE);		// Wrap the incident direction
     float Rp = (IoR * NdL - NdE) / (IoR * NdL + NdE);	// Reflected-to-incident wave ratio, parallel component
     float Rs = (NdE - IoR * NdL) / (NdE + IoR * NdL);	// Reflected-to-incident wave ratio, parallel component
-    return (Rp * Rp + Rs * Rs) * .5f;						// Total amplitude of the reflected wave
+    return (Rp * Rp + Rs * Rs) * 0.5f;						// Total amplitude of the reflected wave
 }
 
 /**
@@ -62,7 +100,7 @@ float conductorFresnel(in float NdE, in float IoR, in float Kappa)
     float ReducedNdE2 = TotalIoR2 * NdE2;
     float Rp2 = (ReducedNdE2 - IoR * NdE * 2.f + 1.f) / (ReducedNdE2 + IoR * NdE * 2.f + 1.f);	// Reflected-to-incident wave ratio, perpendicular component
     float Rs2 = (TotalIoR2 - IoR * NdE * 2.f + NdE2) / (TotalIoR2 + IoR * NdE * 2.f + NdE2);		// Reflected-to-incident wave ratio, parallel component
-    return (Rp2 + Rs2) * .5f;					// Total amplitude of the reflected wave
+    return (Rp2 + Rs2) * 0.5f;					// Total amplitude of the reflected wave
 }
 
 /**********************************************************************************

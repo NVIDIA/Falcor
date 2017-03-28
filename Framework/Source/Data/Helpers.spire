@@ -35,15 +35,15 @@ vec3 sample_gauss(float rnd1, float rnd2)
 
 float eval_gauss2_1d(float x2)
 {
-    return exp(-.5f * x2) / sqrt(2.0f * M_PIf);
+    return exp(-0.5f * x2) / sqrt(2.0f * M_PIf);
 }
 float eval_gauss2_2d(float x2)
 {
-    return exp(-.5f * x2) / (2.0f * M_PIf);
+    return exp(-0.5f * x2) / (2.0f * M_PIf);
 }
 float eval_gauss2_3d(float x2)
 {
-    return exp(-.5f * x2) / pow(2.0f * M_PIf, 1.5f);
+    return exp(-0.5f * x2) / pow(2.0f * M_PIf, 1.5f);
 }
 // "band limit" (k sigma in frequency space): k / (2pi sigma)
 float eval_gauss_1d(float x)
@@ -139,50 +139,9 @@ void createTangentFrame(in vec3 normal, inout vec3 bitangent)
 void reflectFrame(vec3 n, vec3 reflect, inout vec3 t, inout vec3 b)
 {
     if(abs(dot(n, reflect)) > 0.999f)
-        reflect = abs(n.z) < .8f ? vec3(0.f, 0.f, 1.f) : vec3(1.f, 0.f, 0.f);
+        reflect = abs(n.z) < 0.8f ? vec3(0.f, 0.f, 1.f) : vec3(1.f, 0.f, 0.f);
     b = normalize(cross(n, reflect));
     t = cross(b, n);
-}
-
-/*******************************************************************
-					Texturing routines
-*******************************************************************/
-
-vec4 sampleTexture(Texture2D t, SamplerState s, ShadingAttribs attr)
-{
-#ifndef _MS_USER_DERIVATIVES
-    return t.SampleBias(s, attr.UV, attr.lodBias);
-#else
-	return t.SampleGrad(s, attr.UV, attr.DPDX, attr.DPDY);
-#endif
-}
-
-#ifndef CUDA_CODE
-vec4 sampleTexture(Texture2DArray t, SamplerState s, ShadingAttribs attr, int arrayIndex)
-{
-#ifndef _MS_USER_DERIVATIVES
-    return t.SampleBias(s, vec3(attr.UV, arrayIndex), attr.lodBias);
-#else
-    return t.SampleGrad(s, vec3(attr.UV, arrayIndex), attr.DPDX, attr.DPDY);
-#endif
-}
-#endif
-
-vec4 evalTex(in uint hasTexture, in Texture2D tex, SamplerState s, in ShadingAttribs attr, in vec4 defaultValue)
-{
-#ifndef _MS_DISABLE_TEXTURES
-	if(hasTexture != 0)
-    {
-        // MAT_CODE
-        defaultValue = sampleTexture(tex, s, attr);
-    }
-#endif
-	return defaultValue;
-}
-
-vec4 evalWithColor(in uint hasTexture, in Texture2D tex, SamplerState s, float4 color, in ShadingAttribs attr)
-{
-	return evalTex(hasTexture, tex, s, attr, color);
 }
 
 /*******************************************************************

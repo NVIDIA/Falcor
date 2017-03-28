@@ -1,6 +1,3 @@
-using "BSDF.spire";
-using "Helpers.spire"
-
 #include "ShaderConstants.spire"
 
 /*******************************************************************
@@ -255,6 +252,48 @@ void sampleLight(in vec3 shadingHitPos, in LightData lData, vec3 rSample, inout 
 	}
 }
 
+
+/*******************************************************************
+					Texturing routines
+*******************************************************************/
+
+vec4 sampleTexture(Texture2D t, SamplerState s, ShadingAttribs attr)
+{
+#ifndef _MS_USER_DERIVATIVES
+    return t.SampleBias(s, attr.UV, attr.lodBias);
+#else
+	return t.SampleGrad(s, attr.UV, attr.DPDX, attr.DPDY);
+#endif
+}
+
+#ifndef CUDA_CODE
+vec4 sampleTexture(Texture2DArray t, SamplerState s, ShadingAttribs attr, int arrayIndex)
+{
+#ifndef _MS_USER_DERIVATIVES
+    return t.SampleBias(s, vec3(attr.UV, arrayIndex), attr.lodBias);
+#else
+    return t.SampleGrad(s, vec3(attr.UV, arrayIndex), attr.DPDX, attr.DPDY);
+#endif
+}
+#endif
+
+vec4 evalTex(in uint hasTexture, in Texture2D tex, SamplerState s, in ShadingAttribs attr, in vec4 defaultValue)
+{
+#ifndef _MS_DISABLE_TEXTURES
+	if(hasTexture != 0)
+    {
+        // MAT_CODE
+        defaultValue = sampleTexture(tex, s, attr);
+    }
+#endif
+	return defaultValue;
+}
+
+vec4 evalWithColor(in uint hasTexture, in Texture2D tex, SamplerState s, float4 color, in ShadingAttribs attr)
+{
+	return evalTex(hasTexture, tex, s, attr, color);
+}
+
 // Implementation of NDF filtering code from the HPG'16 submission
 // The writeup is here: //research/graphics/projects/halfvectorSpace/SAA/paper/specaa-sub.pdf
 vec2 filterRoughness(in ShadingAttribs shAttr, in LightAttribs lAttr, in vec2 roughness)
@@ -367,20 +406,20 @@ module MaterialLayer
         vec3 value = lightIntensity;
         float weight = 0;
         result.roughness = 1;
-    #ifndef _MS_DISABLE_DIFFUSE
+#ifndef _MS_DISABLE_DIFFUSE
         value *= evalDiffuseBSDF(normal, lightDir);
         weight = albedo.w;
         result.diffuseAlbedo += albedo.rgb * layer.pmf;
         result.diffuseIllumination += value;
-    #else
+#else
         value = 0;
-    #endif
+#endif
         return v4(value, weight);
     }
 
     vec4 evalSpecularLayer(ShadingAttribs shAttr, LightAttribs lAttr, inout PassOutput result)
     {
-    #ifndef _MS_DISABLE_SPECULAR
+#ifndef _MS_DISABLE_SPECULAR
         /* Add albedo regardless of facing */
         result.specularAlbedo += albedo.rgb * pmf;
 
@@ -403,9 +442,9 @@ module MaterialLayer
             roughness2 = roughness.rg;
         }
 
-    #ifndef _MS_DISABLE_ROUGHNESS_FILTERING
+#ifndef _MS_DISABLE_ROUGHNESS_FILTERING
         roughness2 = filterRoughness(shAttr, lAttr, roughness2);
-    #endif
+#endif
 
         // Respect perfect specular cutoff
         if(max(roughness2.x, roughness2.y) < 1e-3f)
@@ -450,8 +489,8 @@ module MaterialLayer
         result.specularIllumination += value;
 
         return v4(value, weight);
-    #else
+#else
         return 0;
-    #endif
+#endif
     }
 }

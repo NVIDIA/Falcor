@@ -184,7 +184,7 @@ void prepareShadingAttribs(in vec3 P, in vec3 camPos,
 Another overload of PrepareShadingAttribs(), which does not require tangents.
 Instead it constructs a world-space axis-aligned tangent frame on the fly.
 */
-void prepareShadingAttribs(in MaterialData material, in vec3 P, in vec3 camPos,
+void prepareShadingAttribs(in vec3 P, in vec3 camPos,
     in vec3 normal, in vec2 uv,
 #ifdef _MS_USER_DERIVATIVES
     in vec2 dPdx, in vec2 dPdy,
@@ -197,7 +197,7 @@ void prepareShadingAttribs(in MaterialData material, in vec3 P, in vec3 camPos,
     vec3 bitangent;
     createTangentFrame(normal, bitangent);
 
-    prepareShadingAttribs(material, P, camPos, normal, bitangent, uv,
+    prepareShadingAttribs(P, camPos, normal, bitangent, uv,
 #ifdef _MS_USER_DERIVATIVES
         dPdx, dPdy,
 #else
