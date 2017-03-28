@@ -266,7 +266,7 @@ namespace Falcor
         if (mpApiData->spGenMips == nullptr)
         {
             mpApiData->spGenMips = std::make_unique<GenMipsData>();
-            mpApiData->spGenMips->pFullScreenPass = FullScreenPass::create("Framework/Shaders/Blit.hlsl");
+            mpApiData->spGenMips->pFullScreenPass = FullScreenPass::create("Framework/Shaders/Blit.ps.hlsl");
             mpApiData->spGenMips->pVars = GraphicsVars::create(mpApiData->spGenMips->pFullScreenPass->getProgram()->getActiveVersion()->getReflector());
             mpApiData->spGenMips->pState = GraphicsState::create();
             Sampler::Desc desc;
@@ -312,5 +312,7 @@ namespace Falcor
 
         // Detach from shared static state so it doesn't keep our resource alive
         mpApiData->spGenMips->pVars->setSrv(0, nullptr);
+
+        pContext->flush(true); // This shouldn't be here. GitLab issue #69
     }
 }
