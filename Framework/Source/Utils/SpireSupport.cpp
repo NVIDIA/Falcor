@@ -68,7 +68,7 @@ namespace Falcor
 				spAddSearchPath(context, p.c_str());
 			}
 
-			const char * libFiles[] = { "StandardPipeline.spire", "SharedLib.spire" };
+			const char * libFiles[] = { "StandardPipeline.spire"/*, "SharedLib.spire"*/ };
 			for (auto file : libFiles)
 			{
 				std::string libPath;
