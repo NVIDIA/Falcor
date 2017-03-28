@@ -44,11 +44,11 @@ private:
     Fbo::SharedPtr mpTempFB;
 
     FullScreenPass::UniquePtr mpLuminance;
-    FullScreenPass::UniquePtr mpRadialBlur;
+    GaussianBlur::UniquePtr mpGaussianBlur;
     FullScreenPass::UniquePtr mpBlit;
-    GraphicsVars::SharedPtr mpProgVars[2];
+    GraphicsVars::SharedPtr mpProgVars;
 
-    bool mEnableRadialBlur = false;
+    bool mEnableGaussianBlur = false;
     bool mEnableGrayscale = false;
     void loadImage();
     void loadImageFromFile(std::string filename);

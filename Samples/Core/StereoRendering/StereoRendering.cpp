@@ -140,7 +140,7 @@ void StereoRendering::loadScene()
 
 void StereoRendering::loadScene(const std::string& filename)
 {
-    mpScene = Scene::loadFromFile(filename, Model::GenerateTangentSpace);
+    mpScene = Scene::loadFromFile(filename);
     mpSceneRenderer = SceneRenderer::create(mpScene);
     mpProgram = GraphicsProgram::createFromFile("", "StereoRendering.ps.hlsl");
     setRenderMode();

@@ -50,17 +50,13 @@ namespace Falcor
     private:
         SceneEditorRenderer(const Scene::SharedPtr& pScene);
 
-        virtual void setPerFrameData(RenderContext* pContext, const CurrentWorkingData& currentData) override;
-        virtual bool setPerModelInstanceData(RenderContext* pContext, const Scene::ModelInstance::SharedPtr& pModelInstance, uint32_t instanceID, const CurrentWorkingData& currentData) override;
-
+        virtual void setPerFrameData(const CurrentWorkingData& currentData) override;
+        virtual bool setPerModelInstanceData(const CurrentWorkingData& currentData, const Scene::ModelInstance* pModelInstance, uint32_t instanceID);
         Gizmo::Gizmos mGizmos;
 
         GraphicsProgram::SharedPtr mpProgram;
-        GraphicsVars::SharedPtr mpProgramVars;
-
         GraphicsProgram::SharedPtr mpRotGizmoProgram;
-        GraphicsVars::SharedPtr mpRotGizmoProgramVars;
-
+        GraphicsVars::SharedPtr mpProgramVars;
         GraphicsState::SharedPtr mpGraphicsState;
 
         DepthStencilState::SharedPtr mpSetStencilDS;

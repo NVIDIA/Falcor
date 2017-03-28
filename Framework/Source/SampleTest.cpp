@@ -135,7 +135,7 @@ void SampleTest::runTestTask(const FrameRate& frameRate)
                 break;
             case Task::Type::Shutdown:
                 outputXML();
-                exit(1);
+                onTestShutdown();
                 break;
             default:
                 should_not_get_here();

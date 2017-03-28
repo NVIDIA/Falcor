@@ -85,8 +85,6 @@ namespace Falcor
         {ResourceFormat::RGBA32Uint,                    DXGI_FORMAT_R32G32B32A32_UINT},
         {ResourceFormat::BGRA8Unorm,                    DXGI_FORMAT_B8G8R8A8_UNORM},
         {ResourceFormat::BGRA8UnormSrgb,                DXGI_FORMAT_B8G8R8A8_UNORM_SRGB},
-        {ResourceFormat::RGBX8Unorm,                    DXGI_FORMAT_UNKNOWN},
-        {ResourceFormat::RGBX8UnormSrgb,                DXGI_FORMAT_UNKNOWN},
         {ResourceFormat::BGRX8Unorm,                    DXGI_FORMAT_B8G8R8X8_UNORM},
         {ResourceFormat::BGRX8UnormSrgb,                DXGI_FORMAT_B8G8R8X8_UNORM_SRGB},
         {ResourceFormat::Alpha8Unorm,                   DXGI_FORMAT_A8_UNORM},

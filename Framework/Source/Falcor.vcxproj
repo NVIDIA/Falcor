@@ -450,6 +450,7 @@
     <ClCompile Include="Utils\MonitorInfo.cpp" />
     <ClCompile Include="Utils\Picking\Picking.cpp" />
     <ClCompile Include="Utils\Profiler.cpp" />
+    <ClCompile Include="Utils\ProgressBarWin.cpp" />
     <ClCompile Include="Utils\Psychophysics\Experiment.cpp" />
     <ClCompile Include="Utils\Psychophysics\SingleThresholdMeasurement.cpp" />
     <ClCompile Include="Utils\ShaderPreprocessor.cpp" />
@@ -706,6 +707,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseGL|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugD3D12|x64'">true</ExcludedFromBuild>
     </ClInclude>
+    <ClInclude Include="API\D3D\D3D12\D3D12NvApiExDesc.h" />
     <ClInclude Include="API\D3D\D3D12\D3D12Resource.h" />
     <ClInclude Include="API\D3D\D3D12\D3D12ResourceAllocator.h" />
     <ClInclude Include="API\D3D\D3D12\FalcorD3D12.h">
@@ -858,6 +860,7 @@
     <ClInclude Include="Utils\OS.h" />
     <ClInclude Include="Utils\Picking\Picking.h" />
     <ClInclude Include="Utils\Profiler.h" />
+    <ClInclude Include="Utils\ProgressBar.h" />
     <ClInclude Include="Utils\Psychophysics\Experiment.h" />
     <ClInclude Include="Utils\Psychophysics\SingleThresholdMeasurement.h" />
     <ClInclude Include="Utils\ShaderPreprocessor.h" />
@@ -989,7 +992,7 @@
     <None Include="..\Externals\GLM\glm\gtx\vector_angle.inl" />
     <None Include="..\Externals\GLM\glm\gtx\vector_query.inl" />
     <None Include="..\Externals\GLM\glm\gtx\wrap.inl" />
-    <None Include="Data\Effects\GaussianBlur.fs" />
+    <None Include="Data\Effects\GaussianBlur.ps.hlsl" />
     <None Include="Data\Effects\ShadowPass.ps.hlsl">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseD3D12|x64'">true</ExcludedFromBuild>
     </None>
@@ -1015,7 +1018,7 @@
     <None Include="Data\Effects\SSAO.ps.hlsl">
       <FileType>Document</FileType>
     </None>
-    <FxCompile Include="Data\Framework\Shaders\Blit.hlsl">
+    <FxCompile Include="Data\Framework\Shaders\Blit.ps.hlsl">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseD3D11|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseD3D12|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugGL|x64'">true</ExcludedFromBuild>
@@ -1023,6 +1026,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugD3D11|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugD3D12|x64'">true</ExcludedFromBuild>
     </FxCompile>
+    <FxCompile Include="Data\Framework\Shaders\Blit.vs.hlsl" />
     <FxCompile Include="Data\Framework\Shaders\SceneEditorPS.hlsl">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseD3D11|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseD3D12|x64'">true</ExcludedFromBuild>

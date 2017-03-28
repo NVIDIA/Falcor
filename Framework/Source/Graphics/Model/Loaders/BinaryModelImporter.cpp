@@ -217,7 +217,7 @@ namespace Falcor
             case 2:
                 return ResourceFormat::RG8Unorm;
             case 3:
-                return ResourceFormat::RGBX8Unorm;
+                return ResourceFormat::RGBA8Unorm;
             case 4:
                 return ResourceFormat::RGBA8Unorm;
             }
@@ -297,13 +297,11 @@ namespace Falcor
         switch(formatId)
         {
         case FW::ImageFormat::R8_G8_B8:
-            return ResourceFormat::RGBX8Unorm;
         case FW::ImageFormat::R8_G8_B8_A8:
             return ResourceFormat::RGBA8Unorm;
         case FW::ImageFormat::A8:
             return ResourceFormat::Alpha8Unorm;
         case FW::ImageFormat::XBGR_8888:
-            return ResourceFormat::RGBX8Unorm;
         case FW::ImageFormat::ABGR_8888:
             return ResourceFormat::RGBA8Unorm;
         case FW::ImageFormat::RGB_565:
@@ -481,26 +479,17 @@ namespace Falcor
     {
     }
 
-    Model::SharedPtr BinaryModelImporter::createFromFile(const std::string& filename, uint32_t flags)
+    bool BinaryModelImporter::import(Model* pModel, const std::string& filename, Model::LoadFlags flags)
     {
         std::string fullpath;
         if(findFileInDataDirectories(filename, fullpath) == false)
         {
             logError(std::string("Can't find model file ") + filename);
-            return nullptr;
+            return false;
         }
 
         BinaryModelImporter loader(fullpath);
-        Model::SharedPtr pModel = loader.createModel(flags);
-
-        pModel->setFilename(filename);
-
-        // filename can be a relative path
-        std::string name = getFilenameFromPath(filename);
-        name = swapFileExtension(name, ".bin", "");
-        pModel->setName(name);
-
-        return pModel;
+        return loader.importModel(pModel, flags);
     }
 
     static bool checkVersion(const std::string& formatID, uint32_t version, const std::string& modelName)
@@ -531,30 +520,6 @@ namespace Falcor
         }
         return true;
     }
-
-    ResourceFormat convertFormatToSrgb(ResourceFormat format)
-    {
-        switch(format)
-        {
-        case ResourceFormat::RGBX8Unorm:
-            return ResourceFormat::RGBX8UnormSrgb;
-        case ResourceFormat::RGBA8Unorm:
-            return ResourceFormat::RGBA8UnormSrgb;
-        case ResourceFormat::BGRA8Unorm:
-            return ResourceFormat::BGRA8UnormSrgb;
-        case ResourceFormat::BGRX8Unorm:
-            return ResourceFormat::BGRX8UnormSrgb;
-        case ResourceFormat::BC1Unorm:
-            return ResourceFormat::BC1UnormSrgb;
-        case ResourceFormat::BC2Unorm:
-            return ResourceFormat::BC2UnormSrgb;
-        case ResourceFormat::BC3Unorm:
-            return ResourceFormat::BC3UnormSrgb;
-        default:
-            logWarning("BinaryModelImporter::ConvertFormatToSrgb() warning. Provided format doesn't have a matching sRGB format");
-            return format;
-        }
-    }
     
     ResourceFormat getFormatFromMapType(bool requestSrgb, ResourceFormat originalFormat, BasicMaterial::MapType mapType)
     {
@@ -568,7 +533,7 @@ namespace Falcor
         case Falcor::BasicMaterial::DiffuseMap:
         case Falcor::BasicMaterial::SpecularMap:
         case Falcor::BasicMaterial::EmissiveMap:
-            return convertFormatToSrgb(originalFormat);
+            return srgbToLinearFormat(originalFormat);
         case Falcor::BasicMaterial::NormalMap:
         case Falcor::BasicMaterial::AlphaMap:
         case Falcor::BasicMaterial::HeightMap:
@@ -579,7 +544,7 @@ namespace Falcor
         }
     }
     
-    Model::SharedPtr BinaryModelImporter::createModel(uint32_t flags)
+    bool BinaryModelImporter::importModel(Model* pModel, Model::LoadFlags flags)
     {
         // Format ID and version.
         char formatID[9];
@@ -592,7 +557,7 @@ namespace Falcor
         // Check if the version matches
         if(checkVersion(formatID, version, mModelName) == false)
         {
-            return nullptr;
+            return false;
         }
 
         int numTextureSlots;
@@ -610,7 +575,7 @@ namespace Falcor
         case 8:     numTextureSlots = TextureType_Glossiness + 1; numAttributesType = AttribType_Max; break;
         default:
             should_not_get_here();
-            return nullptr;
+            return false;
         }
 
 
@@ -641,12 +606,11 @@ namespace Falcor
         {
             std::string msg = "Error when loading model " + mModelName + ".\nFile is corrupted.";
             logError(msg);
-            return nullptr;
+            return false;
         }
 
         // create objects
-        auto pModel = Model::create();
-        bool shouldGenerateTangents = (flags & Model::GenerateTangentSpace) != 0;
+        bool shouldGenerateTangents = is_set(flags, Model::LoadFlags::DontGenerateTangentSpace) == false;
 
         std::vector<TextureData> texData;
 
@@ -675,7 +639,7 @@ namespace Falcor
             bool operator==(const TexSignature& other) const { return pData == other.pData || format == other.format; }
         };
         std::map<TexSignature, Texture::SharedPtr> textures;
-        bool loadTexAsSrgb = (flags & Model::AssumeLinearSpaceTextures) ? false : true;
+        bool loadTexAsSrgb = !is_set(flags, Model::LoadFlags::AssumeLinearSpaceTextures);
 
         // Load the meshes
         for(int meshIdx = 0; meshIdx < numMeshes; meshIdx++)
@@ -700,7 +664,7 @@ namespace Falcor
             {
                 std::string Msg = "Error when loading model " + mModelName + ".\nCorrupted data.!";
                 logError(Msg);
-                return nullptr;
+                return false;
             }
 
             Vao::BufferVec pVBs;
@@ -734,7 +698,7 @@ namespace Falcor
                 {
                     std::string msg = "Error when loading model " + mModelName + ".\nCorrupted data.!";
                     logError(msg);
-                    return nullptr;
+                    return false;
                 }
                 else
                 {
@@ -867,7 +831,7 @@ namespace Falcor
                     {
                         std::string msg = "Error when loading model " + mModelName + ".\nCorrupt binary mesh data!";
                         logError(msg);
-                        return nullptr;
+                        return false;
                     }
                     else if(texID != -1)
                     {
@@ -907,7 +871,7 @@ namespace Falcor
                 {
                     std::string Msg = "Error when loading model " + mModelName + ".\nMesh has negative number of triangles!";
                     logError(Msg);
-                    return nullptr;
+                    return false;
                 }
 
                 // create the index buffer
@@ -921,10 +885,6 @@ namespace Falcor
                 // Generate tangent space data if needed
                 if(genTangentForMesh)
                 {
-                    if(texCoordBufferIndex != kInvalidBufferIndex)
-                    {
-                        logError("Model " + mModelName + " asked to generate tangents w/o texture coordinates");
-                    }
                     uint32_t texCrdCount = 0;
                     glm::vec2* texCrd = nullptr;
                     if(texCoordBufferIndex != kInvalidBufferIndex)
@@ -1002,6 +962,6 @@ namespace Falcor
             }
         }
         
-        return pModel;
+        return true;
     }
 }

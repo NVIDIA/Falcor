@@ -48,8 +48,6 @@ namespace Falcor
             return FW::ImageFormat::R8_G8_B8_A8;
         case ResourceFormat::Alpha8Unorm:
             return FW::ImageFormat::A8;
-        case ResourceFormat::RGBX8Unorm:
-            return FW::ImageFormat::XBGR_8888;
         case ResourceFormat::R5G6B5Unorm:
             return FW::ImageFormat::RGB_565;
         case ResourceFormat::RGB5A1Unorm:

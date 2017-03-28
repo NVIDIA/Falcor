@@ -59,12 +59,12 @@ namespace Falcor
         /** Gets the picked mesh instance.
             \return Pointer to the picked mesh instance, otherwise nullptr if nothing was picked.
         */
-        const Model::MeshInstance::SharedPtr& getPickedMeshInstance() const;
+        Model::MeshInstance::SharedPtr getPickedMeshInstance() const;
 
         /** Gets the picked model instance.
             \return Pointer to the picked model instance, otherwise nullptr if nothing was picked.
         */
-        const Scene::ModelInstance::SharedPtr& getPickedModelInstance() const;
+        Scene::ModelInstance::SharedPtr getPickedModelInstance() const;
 
         /** Resize the internal FBO used for picking.
             \param[in] width Width of the FBO.
@@ -82,10 +82,10 @@ namespace Falcor
         void renderScene(RenderContext* pContext, Camera* pCamera);
         void readPickResults(RenderContext* pContext);
 
-        virtual void setPerFrameData(RenderContext* pContext, const CurrentWorkingData& currentData) override;
-        virtual bool setPerModelInstanceData(RenderContext* pContext, const Scene::ModelInstance::SharedPtr& pModelInstance, uint32_t instanceID, const CurrentWorkingData& currentData) override;
-        virtual bool setPerMeshInstanceData(RenderContext* pContext, const Scene::ModelInstance::SharedPtr& pModelInstance, const Model::MeshInstance::SharedPtr& pMeshInstance, uint32_t drawInstanceID, const CurrentWorkingData& currentData) override;
-        virtual bool setPerMaterialData(RenderContext* pContext, const CurrentWorkingData& currentData) override;
+        virtual void setPerFrameData(const CurrentWorkingData& currentData) override;
+        virtual bool setPerModelInstanceData(const CurrentWorkingData& currentData, const Scene::ModelInstance* pModelInstance, uint32_t instanceID) override;
+        virtual bool setPerMeshInstanceData(const CurrentWorkingData& currentData, const Scene::ModelInstance* pModelInstance, const Model::MeshInstance* pMeshInstance, uint32_t drawInstanceID) override;
+        virtual bool setPerMaterialData(const CurrentWorkingData& currentData, const Material* pMaterial) override;
 
         void calculateScissor(const glm::vec2& mousePos);
 

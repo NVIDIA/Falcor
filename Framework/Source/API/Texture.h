@@ -35,7 +35,7 @@ namespace Falcor
 {
     class Sampler;
     class Device;
-    
+
     struct TextureApiData;
 
     /** Abstracts the API texture objects
@@ -64,19 +64,24 @@ namespace Falcor
 
         /** Get a mip-level width
         */
-        uint32_t getWidth(uint32_t mipLevel = 0) const {return (mipLevel < mMipLevels) ? max(1U, mWidth >> mipLevel) : 0;}
+        uint32_t getWidth(uint32_t mipLevel = 0) const { return (mipLevel < mMipLevels) ? max(1U, mWidth >> mipLevel) : 0; }
+
         /** Get a mip-level height
         */
         uint32_t getHeight(uint32_t mipLevel = 0) const { return (mipLevel < mMipLevels) ? max(1U, mHeight >> mipLevel) : 0; }
+
         /** Get a mip-level depth
         */
         uint32_t getDepth(uint32_t mipLevel = 0) const { return (mipLevel < mMipLevels) ? max(1U, mDepth >> mipLevel) : 0; }
+
         /** Get the number of mip-levels
         */
-        uint32_t getMipCount() const {return mMipLevels;}
+        uint32_t getMipCount() const { return mMipLevels; }
+
         /** Get the sample count
         */
         uint32_t getSampleCount() const { return mSampleCount; }
+
         /** Get the array size
         */
         uint32_t getArraySize() const { return mArraySize; }
@@ -107,39 +112,43 @@ namespace Falcor
             \return A pointer to a new texture, or nullptr if creation failed
         */
         static SharedPtr create1D(uint32_t width, ResourceFormat format, uint32_t arraySize = 1, uint32_t mipLevels = kMaxPossible, const void* pInitData = nullptr, BindFlags bindFlags = BindFlags::ShaderResource);
+
         /** create a 2D texture
             \param width The width of the texture.
             \param height The height of the texture.
             \param Format The format of the texture.
             \param arraySize The array size of the texture.
-			\param mipLevels if equal to kMaxPossible then an entire mip chain will be generated from mip level 0. If any other value is given then the data for at least that number of miplevels must be provided.
+            \param mipLevels if equal to kMaxPossible then an entire mip chain will be generated from mip level 0. If any other value is given then the data for at least that number of miplevels must be provided.
             \param pInitData If different than nullptr, pointer to a buffer containing data to initialize the texture with.
             \param bindFlags The requested bind flags for the resource
             \return A pointer to a new texture, or nullptr if creation failed
         */
         static SharedPtr create2D(uint32_t width, uint32_t height, ResourceFormat format, uint32_t arraySize = 1, uint32_t mipLevels = kMaxPossible, const void* pInitData = nullptr, BindFlags bindFlags = BindFlags::ShaderResource);
+
         /** create a 3D texture
             \param width The width of the texture.
             \param height The height of the texture.
             \param depth The depth of the texture.
             \param format The format of the texture.
-			\param mipLevels if equal to kMaxPossible then an entire mip chain will be generated from mip level 0. If any other value is given then the data for at least that number of miplevels must be provided.
+            \param mipLevels if equal to kMaxPossible then an entire mip chain will be generated from mip level 0. If any other value is given then the data for at least that number of miplevels must be provided.
             \param pInitData If different than nullptr, pointer to a buffer containing data to initialize the texture with.
             \param bindFlags The requested bind flags for the resource
             \param isSparse If true, the texture is created as a sparse texture (GL_ARB_sparse_texture) without any physical memory allocated. pInitData must be null in this case.
             \return A pointer to a new texture, or nullptr if creation failed
         */
-        static SharedPtr create3D(uint32_t width, uint32_t height, uint32_t depth, ResourceFormat format, uint32_t mipLevels = kMaxPossible, const void* pInitData = nullptr, BindFlags bindFlags = BindFlags::ShaderResource, bool isSparse=false);
+
+        static SharedPtr create3D(uint32_t width, uint32_t height, uint32_t depth, ResourceFormat format, uint32_t mipLevels = kMaxPossible, const void* pInitData = nullptr, BindFlags bindFlags = BindFlags::ShaderResource, bool isSparse = false);
         /** create a texture-cube
             \param width The width of the texture.
             \param height The height of the texture.
             \param format The format of the texture.
             \param arraySize The array size of the texture.
-			\param mipLevels if equal to kMaxPossible then an entire mip chain will be generated from mip level 0. If any other value is given then the data for at least that number of miplevels must be provided.
-			\param pInitData If different than nullptr, pointer to a buffer containing data to initialize the texture with.
+            \param mipLevels if equal to kMaxPossible then an entire mip chain will be generated from mip level 0. If any other value is given then the data for at least that number of miplevels must be provided.
+            \param pInitData If different than nullptr, pointer to a buffer containing data to initialize the texture with.
             \param bindFlags The requested bind flags for the resource
             \return A pointer to a new texture, or nullptr if creation failed
         */
+
         static SharedPtr createCube(uint32_t width, uint32_t height, ResourceFormat format, uint32_t arraySize = 1, uint32_t mipLevels = kMaxPossible, const void* pInitData = nullptr, BindFlags bindFlags = BindFlags::ShaderResource);
         /** create a multi-sampled 2D texture
             \param width The width of the texture.
@@ -149,6 +158,7 @@ namespace Falcor
             \param bindFlags The requested bind flags for the resource
             \return A pointer to a new texture, or nullptr if creation failed
         */
+
         static SharedPtr create2DMS(uint32_t width, uint32_t height, ResourceFormat format, uint32_t sampleCount, uint32_t arraySize = 1, BindFlags bindFlags = BindFlags::ShaderResource);
 
         /** Get the image size for a single array slice in a mip-level
@@ -164,16 +174,16 @@ namespace Falcor
         uint32_t getDataSize() const;
 
         /** Capture the texture to a PNG image.\n
-        \param[in] mipLevel Requested mip-level
-        \param[in] arraySlice Requested array-slice
-        \param[in] filename Name of the PNG file to save.
-        \param[in] fileFormat Destination image file format (e.g., PNG, PFM, etc.)
-        \param[in] exportFlags Save flags, see Bitmap::ExportFlags
+            \param[in] mipLevel Requested mip-level
+            \param[in] arraySlice Requested array-slice
+            \param[in] filename Name of the PNG file to save.
+            \param[in] fileFormat Destination image file format (e.g., PNG, PFM, etc.)
+            \param[in] exportFlags Save flags, see Bitmap::ExportFlags
         */
         void captureToFile(uint32_t mipLevel, uint32_t arraySlice, const std::string& filename, Bitmap::FileFormat format = Bitmap::FileFormat::PngFile, Bitmap::ExportFlags exportFlags = Bitmap::ExportFlags::None) const;
 
         void compress2DTexture();
-		
+
         /** Generates mipmaps for a specified texture object.
         */
         void generateMips() const;
@@ -196,10 +206,10 @@ namespace Falcor
 
         void copySubresource(const Texture* pDst, uint32_t srcMipLevel, uint32_t srcArraySlice, uint32_t dstMipLevel, uint32_t dstArraySlice) const;
 
-		/** If the texture has been created as using sparse storage, makes individual physically pages resident and non-resident.
-		  * Use page index.
+        /** If the texture has been created as using sparse storage, makes individual physically pages resident and non-resident.
+          * Use page index.
         */
-		void setSparseResidencyPageIndex(bool isResident, uint32_t mipLevel,  uint32_t pageX, uint32_t pageY, uint32_t pageZ, uint32_t width=1, uint32_t height=1, uint32_t depth=1);
+        void setSparseResidencyPageIndex(bool isResident, uint32_t mipLevel, uint32_t pageX, uint32_t pageY, uint32_t pageZ, uint32_t width = 1, uint32_t height = 1, uint32_t depth = 1);
 
         /** If the texture has been created as using sparse storage, makes individual physically pages resident and non-resident.
         */
@@ -212,13 +222,13 @@ namespace Falcor
         static RtvHandle spNullRTV;
         static DsvHandle spNullDSV;
 
-		static uint32_t tempDefaultUint;
+        static uint32_t tempDefaultUint;
 
         std::string mName;
         std::string mSourceFilename;
 
         Texture(uint32_t width, uint32_t height, uint32_t depth, uint32_t arraySize, uint32_t mipLevels, uint32_t sampleCount, ResourceFormat format, Type Type, BindFlags bindFlags);
-        
+
         uint32_t mWidth = 0;
         uint32_t mHeight = 0;
         uint32_t mDepth = 0;
@@ -226,7 +236,7 @@ namespace Falcor
         uint32_t mSampleCount = 0;
         uint32_t mArraySize = 0;
         ResourceFormat mFormat = ResourceFormat::Unknown;
-		bool mIsSparse = false;
+        bool mIsSparse = false;
         glm::i32vec3 mSparsePageRes = glm::i32vec3(0);
     };
 }

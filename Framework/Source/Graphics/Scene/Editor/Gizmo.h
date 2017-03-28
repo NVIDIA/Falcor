@@ -114,18 +114,18 @@ namespace Falcor
             \param[in] pInstance Model instance to check.
             \return Whether pInstance is part of the gizmo.
         */
-        bool isPartOfGizmo(const Scene::ModelInstance::SharedPtr& pInstance) const;
+        bool isPartOfGizmo(const Scene::ModelInstance* pInstance) const;
 
         /** Check if model instance is part of a set of gizmos
             \param[in] gizmos Array of three gizmos.
             \param[in] pInstance Model instance to check.
             \return If gizmos contain pInstance, returns the type of gizmo pInstance is a part of. Otherwise returns Type::Invalid.
         */
-        static Type getGizmoType(const Gizmos& gizmos, const Scene::ModelInstance::SharedPtr& pInstance);
+        static Type getGizmoType(const Gizmos& gizmos, const Scene::ModelInstance* pInstance);
 
     protected:
 
-        Gizmo(const Scene::SharedPtr& pScene, const std::string& modelFilename);
+        Gizmo(const Scene::SharedPtr& pScene, const char* modelFilename);
 
         // Finds the best plane to track mouse movements on
         virtual void findBestPlane(const Camera::SharedPtr& pCamera);
@@ -151,14 +151,14 @@ namespace Falcor
         using SharedPtr = std::shared_ptr<TranslateGizmo>;
         using SharedConstPtr = std::shared_ptr<const TranslateGizmo>;
 
-        static SharedPtr create(const Scene::SharedPtr& pScene, const std::string& modelFilename);
+        static SharedPtr create(const Scene::SharedPtr& pScene, const char* modelFilename);
 
         virtual void applyDelta(const Scene::ModelInstance::SharedPtr& pInstance) const override;
         virtual void applyDelta(const Camera::SharedPtr& pCamera) const override;
         virtual void applyDelta(const PointLight::SharedPtr& pLight) const override;
 
     private:
-        TranslateGizmo(const Scene::SharedPtr& pScene, const std::string& modelFilename)
+        TranslateGizmo(const Scene::SharedPtr& pScene, const char* modelFilename)
             : Gizmo(pScene, modelFilename) { mGizmoType = Gizmo::Type::Translate; }
 
         glm::vec3 calculateMovementDelta() const;
@@ -171,7 +171,7 @@ namespace Falcor
         using SharedPtr = std::shared_ptr<RotateGizmo>;
         using SharedConstPtr = std::shared_ptr<const RotateGizmo>;
 
-        static SharedPtr create(const Scene::SharedPtr& pScene, const std::string& modelFilename);
+        static SharedPtr create(const Scene::SharedPtr& pScene, const char* modelFilename);
 
         virtual void applyDelta(const Scene::ModelInstance::SharedPtr& pInstance) const override;
         virtual void applyDelta(const Camera::SharedPtr& pCamera) const override;
@@ -182,7 +182,7 @@ namespace Falcor
 
         glm::mat3 calculateDeltaRotation() const;
 
-        RotateGizmo(const Scene::SharedPtr& pScene, const std::string& modelFilename)
+        RotateGizmo(const Scene::SharedPtr& pScene, const char* modelFilename)
             : Gizmo(pScene, modelFilename) { mGizmoType = Gizmo::Type::Rotate; }
     };
 
@@ -193,7 +193,7 @@ namespace Falcor
         using SharedPtr = std::shared_ptr<ScaleGizmo>;
         using SharedConstPtr = std::shared_ptr<const ScaleGizmo>;
 
-        static SharedPtr create(const Scene::SharedPtr& pScene, const std::string& modelFilename);
+        static SharedPtr create(const Scene::SharedPtr& pScene, const char* modelFilename);
 
         // Rotates axes to align with model
         virtual void setTransform(const Camera::SharedPtr& pCamera, const Scene::ModelInstance::SharedPtr& pInstance) override;
@@ -203,7 +203,7 @@ namespace Falcor
         virtual void applyDelta(const PointLight::SharedPtr& pLight) const override;
 
     private:
-        ScaleGizmo(const Scene::SharedPtr& pScene, const std::string& modelFilename);
+        ScaleGizmo(const Scene::SharedPtr& pScene, const char* modelFilename);
 
         std::array<glm::mat3, 3> mDefaultGizmoRotation;
     };

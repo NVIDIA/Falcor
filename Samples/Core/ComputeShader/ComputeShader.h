@@ -43,10 +43,8 @@ private:
     ComputeState::SharedPtr mpState;
     bool mbPixelate = false;
     ComputeVars::SharedPtr mpProgVars;
-    GraphicsVars::SharedPtr mpBlitVars;
     Texture::SharedPtr mpImage;
 
-    FullScreenPass::UniquePtr mpBlitPass;
     Texture::SharedPtr mpTmpTexture;
     void loadImage();
     void loadImageFromFile(std::string file);

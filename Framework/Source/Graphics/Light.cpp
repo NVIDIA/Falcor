@@ -62,12 +62,24 @@ namespace Falcor
         sCount++;
     }
 
+    void Light::setIntoConstantBuffer(ConstantBuffer* pBuffer, size_t offset)
+    {
+        static_assert(kDataSize % sizeof(float) * 4 == 0, "LightData size should be a multiple of 16");
+        static_assert(kDataSize == offsetof(LightData, material), "'material' must be the last field in LightData");
+
+        assert(offset + kDataSize <= pBuffer->getSize());
+
+        // Set everything except for the material
+        pBuffer->setBlob(&mData, offset, kDataSize);
+        if (mData.type == LightArea)
+        {
+            assert(0);
+        }
+    }
+
+
     void Light::setIntoConstantBuffer(ConstantBuffer* pBuffer, const std::string& varName)
     {
-        static const size_t dataSize = sizeof(LightData) - sizeof(MaterialData);
-        static_assert(dataSize % sizeof(float) * 4 == 0, "LightData size should be a multiple of 16");
-        static_assert(sizeof(LightData) - sizeof(MaterialData) == offsetof(LightData, material), "'material' must be the last field in LightData");
-
         size_t offset = pBuffer->getVariableOffset(varName + ".worldPos");
         if (offset == ConstantBuffer::kInvalidOffset)
         {
@@ -81,14 +93,8 @@ namespace Falcor
         check_offset(aabbMax);
         check_offset(transMat);
         check_offset(numIndices);
-        assert(offset + dataSize <= pBuffer->getSize());
 
-        // Set everything except for the material
-        pBuffer->setBlob(&mData, offset, dataSize);
-        if (mData.type == LightArea)
-        {
-            assert(0);
-        }
+        setIntoConstantBuffer(pBuffer, offset);
     }
 
     void Light::resetGlobalIdCounter()

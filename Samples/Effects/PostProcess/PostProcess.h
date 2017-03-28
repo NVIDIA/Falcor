@@ -27,9 +27,10 @@
 ***************************************************************************/
 #pragma once
 #include "Falcor.h"
+#include "SampleTest.h"
 using namespace Falcor;
 
-class PostProcess : public Sample
+class PostProcess : public Sample, public SampleTest
 {
 public:
     void onLoad() override;
@@ -68,7 +69,15 @@ private:
     HdrImage mHdrImageIndex = HdrImage::EveningSun;
     Fbo::SharedPtr mpHdrFbo;
     ToneMapping::UniquePtr mpToneMapper;
-    SceneRenderer::UniquePtr mpSceneRenderer;
+    SceneRenderer::SharedPtr mpSceneRenderer;
 
     void loadImage();
+
+    //testing
+    void onInitializeTestingArgs(const ArgList& args) override;
+    void onRunTestTask(const FrameRate& frameRate) override;
+    void onTestShutdown() override { shutdownApp(); }
+    std::vector<uint32_t> mChangeModeFrames;
+    std::vector<uint32_t>::iterator mChangeModeIt;
+    uint32_t mToneMapOperatorIndex;
 };

@@ -44,12 +44,19 @@ public:
 
 private:
 
+    ComputeProgram::SharedPtr mpComputeProgram;
+    ComputeState::SharedPtr mpComputeState;
+    ComputeVars::SharedPtr mpComputeVars;
+    StructuredBuffer::SharedPtr mpLightBuffer;
+
     GraphicsProgram::SharedPtr mpProgram;
     GraphicsVars::SharedPtr mpProgramVars;
     Model::SharedPtr mpModel;
     Vao::SharedConstPtr mpVao;
     uint32_t mIndexCount = 0;
     Buffer::SharedPtr mpInvocationsBuffer;
+    StructuredBuffer::SharedPtr mpRWBuffer;
+    StructuredBuffer::SharedPtr mpAppendLightData;
     TypedBuffer<vec3>::SharedPtr mpSurfaceColorBuffer;
 
     bool mCountPixelShaderInvocations = false;

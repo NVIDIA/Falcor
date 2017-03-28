@@ -78,9 +78,9 @@ namespace Falcor
         uint32_t getCascadeCount() { return mCsmData.cascadeCount; }
         void toggleMinMaxSdsm(bool enable) { mControls.useMinMaxSdsm = enable; }
         void setDistanceRange(const glm::vec2& range) { mControls.distanceRange = range; }
-        void setFilterMode(uint32_t filterMode) { onSetFilterMode(filterMode); }
+        void setFilterMode(uint32_t filterMode);
         uint32_t getFilterMode() const { return mCsmData.filterMode; }
-        void setFilterKernelSize(uint32_t size) { mCsmData.sampleKernelSize = max(1u, size + 1 - (size % 2)); }
+        void setPcfKernelWidth(uint32_t width) { mCsmData.pcfKernelWidth = width | 1; }
         void setConcentricCascades(bool enabled) { mControls.concentricCascades = enabled; }
         void setVsmMaxAnisotropy(uint32_t maxAniso) { createVsmSampleState(maxAniso); }
         void setVsmLightBleedReduction(float reduction) { mCsmData.lightBleedingReduction = reduction; }
@@ -90,17 +90,13 @@ namespace Falcor
         Light::SharedConstPtr mpLight;
         Scene::SharedConstPtr mpScene;
         Camera::SharedPtr mpLightCamera;
-        std::unique_ptr<CsmSceneRenderer> mpCsmSceneRenderer;
-        std::unique_ptr<SceneRenderer> mpSceneRenderer;
+        std::shared_ptr<CsmSceneRenderer> mpCsmSceneRenderer;
+        std::shared_ptr<SceneRenderer> mpSceneRenderer;
 
         void calcDistanceRange(RenderContext* pRenderCtx, const Camera* pCamera, Texture::SharedPtr pDepthBuffer, glm::vec2& distanceRange);
         void createShadowPassResources(uint32_t mapWidth, uint32_t mapHeight);
         void partitionCascades(const Camera* pCamera, const glm::vec2& distanceRange);
         void renderScene(RenderContext* pCtx);
-
-        void onSetFilterMode(uint32_t newFilterMode);
-        void onSetVsmAnisotropy(uint32_t maxAniso);
-        void onSetKernalSize(u32 newSize);
 
         // Shadow-pass
         struct
@@ -130,7 +126,6 @@ namespace Falcor
         void createVsmSampleState(uint32_t maxAnisotropy);
 
         GaussianBlur::UniquePtr mpGaussianBlur;
-        void createGaussianBlurTech();
 
         // Depth-pass
         struct

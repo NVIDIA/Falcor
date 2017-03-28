@@ -426,7 +426,7 @@ namespace Falcor
         return true;
     }
 
-    bool ProgramReflection::reflectFragmentOutputs(const ProgramVersion* pProgVer, std::string& log)
+    bool ProgramReflection::reflectPixelShaderOutputs(const ProgramVersion* pProgVer, std::string& log)
     {
         return reflectShaderIO<ShaderType::Fragment, GL_PROGRAM_OUTPUT>(pProgVer, log, mFragOut);
     }

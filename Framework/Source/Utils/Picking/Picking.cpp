@@ -45,12 +45,12 @@ namespace Falcor
         return mPickResult.pModelInstance != nullptr;
     }
 
-    const ObjectInstance<Mesh>::SharedPtr& Picking::getPickedMeshInstance() const
+    ObjectInstance<Mesh>::SharedPtr Picking::getPickedMeshInstance() const
     {
         return mPickResult.pMeshInstance;
     }
 
-    const ObjectInstance<Model>::SharedPtr& Picking::getPickedModelInstance() const
+    ObjectInstance<Model>::SharedPtr Picking::getPickedModelInstance() const
     {
         return mPickResult.pModelInstance;
     }
@@ -143,7 +143,7 @@ namespace Falcor
         }
     }
 
-    void Picking::setPerFrameData(RenderContext* pContext, const CurrentWorkingData& currentData)
+    void Picking::setPerFrameData(const CurrentWorkingData& currentData)
     {
         if (currentData.pCamera)
         {
@@ -157,7 +157,7 @@ namespace Falcor
         }
     }
 
-    bool Picking::setPerModelInstanceData(RenderContext* pContext, const Scene::ModelInstance::SharedPtr& pModelInstance, uint32_t instanceID, const CurrentWorkingData& currentData)
+    bool Picking::setPerModelInstanceData(const CurrentWorkingData& currentData, const Scene::ModelInstance* pModelInstance, uint32_t instanceID)
     {
         const Gizmo::Type gizmoType = Gizmo::getGizmoType(mSceneGizmos, pModelInstance);
 
@@ -170,7 +170,7 @@ namespace Falcor
             if (gizmoType == Gizmo::Type::Rotate)
             {
                 mpGraphicsState->setProgram(gizmoType == Gizmo::Type::Rotate ? mpRotGizmoProgram : mpProgram);
-                pContext->setGraphicsVars(mpRotGizmoProgramVars);
+                currentData.pContext->setGraphicsVars(mpRotGizmoProgramVars);
                 return true;
             }
         }
@@ -180,22 +180,22 @@ namespace Falcor
         }
 
         mpGraphicsState->setProgram(mpProgram);
-        pContext->setGraphicsVars(mpProgramVars);
+        currentData.pContext->setGraphicsVars(mpProgramVars);
 
         return true;
     }
 
-    bool Picking::setPerMeshInstanceData(RenderContext* pContext, const Scene::ModelInstance::SharedPtr& pModelInstance, const Model::MeshInstance::SharedPtr& pMeshInstance, uint32_t drawInstanceID, const CurrentWorkingData& currentData)
+    bool Picking::setPerMeshInstanceData(const CurrentWorkingData& currentData, const Scene::ModelInstance* pModelInstance, const Model::MeshInstance* pMeshInstance, uint32_t drawInstanceID)
     {
-        ConstantBuffer* pCB = pContext->getGraphicsVars()->getConstantBuffer(kPerMeshCbName).get();
+        ConstantBuffer* pCB = currentData.pContext->getGraphicsVars()->getConstantBuffer(kPerMeshCbName).get();
         pCB->setBlob(&currentData.drawID, sDrawIDOffset + drawInstanceID * sizeof(uint32_t), sizeof(uint32_t));
 
-        mDrawIDToInstance[currentData.drawID] = Instance(pModelInstance, pMeshInstance);
+        mDrawIDToInstance[currentData.drawID] = Instance(const_cast<Scene::ModelInstance*>(pModelInstance)->shared_from_this(), const_cast<Model::MeshInstance*>(pMeshInstance)->shared_from_this());
 
-        return SceneRenderer::setPerMeshInstanceData(pContext, pModelInstance, pMeshInstance, drawInstanceID, currentData);
+        return SceneRenderer::setPerMeshInstanceData(currentData, pModelInstance, pMeshInstance, drawInstanceID);
     }
 
-    bool Picking::setPerMaterialData(RenderContext* pContext, const CurrentWorkingData& currentData)
+    bool Picking::setPerMaterialData(const CurrentWorkingData& currentData, const Material* pMaterial)
     {
         return true;
     }

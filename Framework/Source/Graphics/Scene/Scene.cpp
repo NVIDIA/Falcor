@@ -39,7 +39,7 @@ namespace Falcor
 
     const char* Scene::kFileFormatString = "Scene files\0*.fscene\0\0";
 
-    Scene::SharedPtr Scene::loadFromFile(const std::string& filename, const uint32_t& modelLoadFlags, uint32_t sceneLoadFlags)
+    Scene::SharedPtr Scene::loadFromFile(const std::string& filename, Model::LoadFlags modelLoadFlags, Scene::LoadFlags sceneLoadFlags)
     {
         return SceneImporter::loadScene(filename, modelLoadFlags, sceneLoadFlags);
     }

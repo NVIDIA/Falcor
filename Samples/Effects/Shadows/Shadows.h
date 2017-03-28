@@ -68,7 +68,7 @@ private:
     Sampler::SharedPtr mpLinearSampler = nullptr;
 
     glm::vec3 mAmbientIntensity = glm::vec3(0.1f, 0.1f, 0.1f);
-    SceneRenderer::UniquePtr mpRenderer;
+    SceneRenderer::SharedPtr mpRenderer;
 
     struct Controls
     {
@@ -96,6 +96,7 @@ private:
         glm::mat4 camVpAtLastCsmUpdate = glm::mat4();
     } mPerFrameCBData;
 
+    //Testing 
     void onInitializeTestingArgs(const ArgList& args) override;
     void onRunTestTask(const FrameRate&) override;
     std::vector<uint32_t> mFilterFrames;

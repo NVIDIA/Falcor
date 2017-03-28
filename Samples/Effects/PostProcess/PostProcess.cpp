@@ -36,7 +36,7 @@ const Gui::DropdownList PostProcess::kImageList = { { HdrImage::EveningSun, "Eve
 void PostProcess::onLoad()
 {
     //Create model and camera
-    mpTeapot = Model::createFromFile("teapot.obj", 0u);
+    mpTeapot = Model::createFromFile("teapot.obj");
     mpCamera = Camera::create();
     float nearZ = 0.1f;
     float farZ = mpTeapot->getRadius() * 1000;
@@ -63,6 +63,7 @@ void PostProcess::onLoad()
     mLightIntensity = 2.5f;
 
     loadImage();
+    init_tests();
 }
 
 void PostProcess::loadImage()
@@ -135,11 +136,11 @@ void PostProcess::onFrameRender()
 
     std::string Txt = getFpsMsg() + '\n';
     renderText(Txt, glm::vec2(10, 10));
+    run_test();
 }
 
 void PostProcess::onShutdown()
 {
-
 }
 
 void PostProcess::onResizeSwapChain()
@@ -167,6 +168,47 @@ bool PostProcess::onKeyEvent(const KeyboardEvent& keyEvent)
 bool PostProcess::onMouseEvent(const MouseEvent& mouseEvent)
 {
     return mCameraController.onMouseEvent(mouseEvent);
+}
+
+void PostProcess::onInitializeTestingArgs(const ArgList& args)
+{
+    std::vector<ArgList::Arg> modeFrames = args.getValues("changeMode");
+    if (!modeFrames.empty())
+    {
+        mChangeModeFrames.resize(modeFrames.size());
+        for (uint32_t i = 0; i < modeFrames.size(); ++i)
+        {
+            mChangeModeFrames[i] = modeFrames[i].asUint();
+        }
+    }
+
+    mChangeModeIt = mChangeModeFrames.begin();
+    mToneMapOperatorIndex = 0;
+    mHdrImageIndex = HdrImage::EveningSun;
+    mpToneMapper->setOperator(ToneMapping::Operator::Clamp);
+}
+
+void PostProcess::onRunTestTask(const FrameRate& frameRate)
+{
+    uint32_t frameId = frameRate.getFrameCount();
+    if (mChangeModeIt != mChangeModeFrames.end() && frameId >= *mChangeModeIt)
+    {
+        ++mChangeModeIt;
+        if (mToneMapOperatorIndex == static_cast<uint32_t>(ToneMapping::Operator::HableUc2))
+        {
+            //Done all operators on this image, go to next image
+            mToneMapOperatorIndex = 0;
+            mHdrImageIndex = static_cast<HdrImage>(min(mHdrImageIndex + 1u, static_cast<uint32_t>(AtTheWindow)));
+            loadImage();
+        }
+        else
+        {
+            //Next operator
+            ++mToneMapOperatorIndex;
+        }
+
+        mpToneMapper->setOperator(static_cast<ToneMapping::Operator>(mToneMapOperatorIndex));
+    }
 }
 
 int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ LPSTR lpCmdLine, _In_ int nShowCmd)

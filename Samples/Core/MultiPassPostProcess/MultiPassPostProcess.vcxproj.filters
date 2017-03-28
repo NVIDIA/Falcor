@@ -18,8 +18,5 @@
     <None Include="Data\Luminance.fs">
       <Filter>Data</Filter>
     </None>
-    <None Include="Data\RadialBlur.fs">
-      <Filter>Data</Filter>
-    </None>
   </ItemGroup>
 </Project>

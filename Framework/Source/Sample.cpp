@@ -34,6 +34,9 @@
 #include "Utils/OS.h"
 #include "API/FBO.h"
 #include "VR\OpenVR\VRSystem.h"
+#include "Utils\ProgressBar.h"
+#include <sstream>
+#include <iomanip>
 
 namespace Falcor
 {
@@ -118,6 +121,9 @@ namespace Falcor
                         mpWindow->shutdown();
                     }
                     break;
+                case KeyboardEvent::Key::Equal:
+                    mFreezeTime = !mFreezeTime;
+                    break;
                 }
             }
         }
@@ -143,7 +149,16 @@ namespace Falcor
         {
             endVideoCapture();
         }
+
         VRSystem::cleanup();
+
+        mpGui.reset();
+        mpDefaultPipelineState.reset();
+        mpDefaultFBO.reset();
+        mpTextRenderer.reset();
+        mpRenderContext.reset();
+        gpDevice->cleanup();
+        gpDevice.reset();
     }
 
     void Sample::run(const SampleConfig& config)
@@ -155,23 +170,42 @@ namespace Falcor
         Logger::init();
         Logger::showBoxOnError(config.showMessageBoxOnError);
 
-        mpWindow = Window::create(config.windowDesc, this);
-
-        if(mpWindow == nullptr)
+        // Show the progress bar
+        ProgressBar::MessageList msgList =
         {
-			logError("Failed to create device and window");
+            { "Initializing Falcor" },
+            { "Takes a while, doesn't it?" },
+            { "Don't get too bored now" },
+            { "Getting there" },
+            { "Loading. Seriously, loading" },
+            { "Are we there yet?"},
+            { "NI!"}
+        };
+
+        ProgressBar::SharedPtr pBar = ProgressBar::create(msgList);
+
+        // Create the window
+        mpWindow = Window::create(config.windowDesc, this);
+        if (mpWindow == nullptr)
+        {
+            logError("Failed to create device and window");
             return;
         }
 
-        gpDevice = Device::create(mpWindow, Device::Desc());
-		if (gpDevice == nullptr)
-		{
-			logError("Failed to create device");
-			return;
-		}
+        gpDevice = Device::create(mpWindow, config.deviceDesc);
+        if (gpDevice == nullptr)
+        {
+            logError("Failed to create device");
+            return;
+        }
+
+        if (config.deviceCreatedCallback)
+        {
+            config.deviceCreatedCallback();
+        }
 
         // Set the icon
-        setWindowIcon("Framework\\Nvidia.ico", mpWindow.get());
+        setWindowIcon("Framework\\Nvidia.ico", mpWindow->getApiHandle());
 
         // Get the default objects before calling onLoad()
         mpDefaultFBO = gpDevice->getSwapChainFbo();
@@ -193,6 +227,7 @@ namespace Falcor
         // Load and run
         mArgList.parseCommandLine(GetCommandLineA());
         onLoad();
+        pBar = nullptr;
         mpWindow->msgLoop();
 
         onShutdown();
@@ -223,18 +258,16 @@ namespace Falcor
             "  'V'       - Toggle VSync\n"
             "  'F12'     - Capture screenshot\n"
             "  'Shift+F12' - Video capture\n"
+            "  '='       - Pause\\resume timer\n"
 #if _PROFILING_ENABLED
             "  'P'       - Enable profiling\n";
 #else
             ;
 #endif
 
-        mpGui->pushWindow("Falcor", 250, 200, 20, 40);
-        if (mpGui->beginGroup("Help"))
-        {
-            mpGui->addText(help);
-            mpGui->endGroup();
-        }
+        mpGui->pushWindow("Falcor", 250, 200, 20, 40, false);
+        mpGui->addText("Keyboard Shortcuts");
+        mpGui->addTooltip(help, true);
 
         if(mpGui->beginGroup("Global Controls"))
         {
@@ -277,23 +310,23 @@ namespace Falcor
 
     void Sample::renderFrame()
     {
-		if (gpDevice->isWindowOccluded())
-		{
-			return;
-		}
+        if (gpDevice->isWindowOccluded())
+        {
+            return;
+        }
 
         GraphicsState::beginNewFrame();
         ComputeState::beginNewFrame();
 
-		mFrameRate.newFrame();
+        mFrameRate.newFrame();
         {
             PROFILE(onFrameRender);
             // The swap-chain FBO might have changed between frames, so get it
-			mpDefaultFBO = gpDevice->getSwapChainFbo();
+            mpDefaultFBO = gpDevice->getSwapChainFbo();
             mpRenderContext = gpDevice->getRenderContext();
             calculateTime();
 
-			// Bind the default state
+            // Bind the default state
             mpRenderContext->setGraphicsState(mpDefaultPipelineState);
             mpDefaultPipelineState->setFbo(mpDefaultFBO);
             onFrameRender();
@@ -351,9 +384,11 @@ namespace Falcor
         std::string s;
         if(mShowText)
         {
+            std::stringstream strstr;
             float msPerFrame = mFrameRate.getAverageFrameTime();
-            s = std::to_string(int(ceil(1000 / msPerFrame))) + " FPS (" + std::to_string(msPerFrame) + " ms/frame)";
-            if(mVsyncOn) s += std::string(", VSync");
+            std::string msStr = std::to_string(msPerFrame);
+            s = std::to_string(int(ceil(1000 / msPerFrame))) + " FPS (" + msStr.erase(msStr.size() - 4) + " ms/frame)";
+            if (mVsyncOn) s += std::string(", VSync");
         }
         return s;
     }

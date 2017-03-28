@@ -142,27 +142,33 @@ namespace Falcor
 
         size_t getDescriptorTableCount() const { return mDesc.mDescriptorTables.size(); }
         const DescriptorTable& getDescriptorTable(size_t index) const { return mDesc.mDescriptorTables[index]; }
-        uint32_t getDescriptorTableRootOffset(size_t index) const { return mDescTableOffset[index]; }
+        uint32_t getDescriptorTableRootIndex(size_t index) const { return mDescTableIndices[index]; }
 
         size_t getRootDescriptorCount() const { return mDesc.mRootDescriptors.size(); }
         const DescriptorDesc& getRootDescriptor(size_t index) const { return mDesc.mRootDescriptors[index]; }
-        uint32_t getDescriptorRootOffset(size_t index) const { return mDescriptorOffset[index]; }
+        uint32_t getDescriptorRootIndex(size_t index) const { return mDescriptorIndices[index]; }
 
         size_t getRootConstantCount() const { return mDesc.mConstants.size(); }
         const ConstantDesc& getRootConstantDesc(size_t index) const { return mDesc.mConstants[index]; }
-        uint32_t getConstantRootOffset(size_t index) const { return mConstantOffset[index]; }
+        uint32_t getConstantRootIndex(size_t index) const { return mConstantIndices[index]; }
 
         size_t getStaticSamplersCount() const { return mDesc.mSamplers.size(); }
         const SamplerDesc& getStaticSamplerDesc(size_t index) const { return mDesc.mSamplers[index]; }
+
+        uint32_t getSizeInBytes() const { return mSizeInBytes; }
+        uint32_t getElementByteOffset(uint32_t elementIndex) { return mElementByteOffset[elementIndex]; }
     private:
         RootSignature(const Desc& desc);
         bool apiInit();
         ApiHandle mApiHandle;
         Desc mDesc;
-        std::vector<uint32_t> mDescriptorOffset;
-        std::vector<uint32_t> mDescTableOffset;
-        std::vector<uint32_t> mConstantOffset;
+        std::vector<uint32_t> mDescriptorIndices;
+        std::vector<uint32_t> mDescTableIndices;
+        std::vector<uint32_t> mConstantIndices;
         static SharedPtr spEmptySig;
         static uint64_t sObjCount;
+
+        uint32_t mSizeInBytes;
+        std::vector<uint32_t> mElementByteOffset;
     };
 }

@@ -29,22 +29,15 @@
 #include "API/Window.h"
 #include "Utils/UserInput.h"
 #include "Utils/OS.h"
-#include <codecvt>
 #include <algorithm>
 #include "API/texture.h"
 #include "API/FBO.h"
 #include <Initguid.h>
 #include <Windowsx.h>
+#include "Utils/StringUtils.h"
 
 namespace Falcor
 {
-    static std::wstring string_2_wstring(const std::string& s)
-    {
-        std::wstring_convert<std::codecvt_utf8<WCHAR>> cvt;
-        std::wstring ws = cvt.from_bytes(s);
-        return ws;
-    }
-
 	class ApiCallbacks
     {
     public:
@@ -88,6 +81,9 @@ namespace Falcor
                 case WM_RBUTTONUP:
                 case WM_MOUSEWHEEL:
                     dispatchMouseEvent(pWindow, msg, wParam, lParam);
+                    return 0;
+                case WM_WINDOWPOSCHANGED:
+                    // Triggers a WM_SIZE message which we want to ignore
                     return 0;
                 }
                 return DefWindowProc(hwnd, msg, wParam, lParam);
@@ -405,6 +401,7 @@ namespace Falcor
     {
         // Show the window
         ShowWindow(mApiHandle, SW_SHOWNORMAL);
+        SetForegroundWindow(mApiHandle);
 
         MSG msg;
         while(1) 

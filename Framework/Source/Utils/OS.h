@@ -29,6 +29,7 @@
 #include <string>
 #include <vector>
 #include <thread>
+#include "API/Window.h"
 
 namespace Falcor
 {
@@ -41,9 +42,9 @@ namespace Falcor
 
     /** Adds an icon to the foreground window.
         \param[in] iconFile Icon file name
-        \param[in] pWindow The window for which we need to set the icon to
+        \param[in] windowHandle The api handle of the window for which we need to set the icon to. nullptr will apply the icon to the foreground window
     */
-    void setWindowIcon(const std::string& iconFile, const Window* pWindow);
+    void setWindowIcon(const std::string& iconFile, Window::ApiHandle windowHandle);
 
     /** Retrieves estimated/user-set pixel density of a display.
         \return integer value of number of pixels per inch.

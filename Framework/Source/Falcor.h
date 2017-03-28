@@ -28,6 +28,7 @@
 #pragma once
 #ifdef _WIN32
 #define NOMINMAX
+#define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #endif
 
@@ -124,6 +125,7 @@
 #include "Utils/Video/VideoEncoder.h"
 #include "Utils/Video/VideoEncoderUI.h"
 #include "Utils/Video/VideoDecoder.h"
+#include "Utils/ProgressBar.h"
 
 // VR
 #include "VR/OpenVR/VRSystem.h"
@@ -140,5 +142,5 @@
 #define FALCOR_MAJOR_VERSION 2
 #define FALCOR_MINOR_VERSION 0
 #define FALCOR_DEV_STAGE "alpha"
-#define FALCOR_DEV_REVISION 1
-#define FALCOR_VERSION_STRING "2.0a.1"
+#define FALCOR_DEV_REVISION 2
+#define FALCOR_VERSION_STRING "2.0a2"

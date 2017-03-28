@@ -54,7 +54,7 @@ private:
 
     Scene::SharedPtr mpScene = nullptr;
     GraphicsProgram::SharedPtr mpProgram = nullptr;
-    SceneRenderer::UniquePtr mpRenderer = nullptr;
+    SceneRenderer::SharedPtr mpRenderer = nullptr;
     SceneEditor::UniquePtr mpEditor = nullptr;
     GraphicsVars::SharedPtr mpVars = nullptr;
 };

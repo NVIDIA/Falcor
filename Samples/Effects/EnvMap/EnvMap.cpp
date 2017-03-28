@@ -50,6 +50,8 @@ void EnvMap::onLoad()
     mpTriLinearSampler = Sampler::create(samplerDesc);
 
     mpSkybox = SkyBox::createFromTexture("Cubemaps\\Sorsele3\\Sorsele3.dds", true, mpTriLinearSampler);
+
+    init_tests();
 }
 
 void EnvMap::loadTexture()
@@ -71,6 +73,8 @@ void EnvMap::onFrameRender()
         mpCameraController->update();
         mpSkybox->render(mpRenderContext.get(), mpCamera.get());
     }
+
+    run_test();
 }
 
 bool EnvMap::onKeyEvent(const KeyboardEvent& keyEvent)
@@ -101,7 +105,6 @@ void GUI_CALL EnvMap::setScaleCB(const void* pData, void* pThis)
     }
 }
 
-
 void EnvMap::onResizeSwapChain()
 {
     float h = (float)mpDefaultFBO->getHeight();
@@ -109,6 +112,48 @@ void EnvMap::onResizeSwapChain()
     mpCamera->setFovY(float(M_PI / 8));
     mpCamera->setAspectRatio(w / h);
     mpCamera->setDepthRange(0.01f, 1000);
+}
+
+void EnvMap::onInitializeTestingArgs(const ArgList& args)
+{
+    std::vector<ArgList::Arg> viewFrames = args.getValues("changeView");
+    if (!viewFrames.empty())
+    {
+        mChangeViewFrames.resize(viewFrames.size());
+        for (uint32_t i = 0; i < viewFrames.size(); ++i)
+        {
+            mChangeViewFrames[i] = viewFrames[i].asUint();
+        }
+    }
+
+    mChangeViewIt = mChangeViewFrames.begin();
+}
+
+void EnvMap::onRunTestTask(const FrameRate& frameRate)
+{
+    //initial target is (0, 0, -1)
+    static uint32_t targetIndex = 0;
+    static const uint32_t numTargets = 5;
+    static const vec3 targets[numTargets] = {
+        vec3(0,  0, 1),
+        vec3(0.1,  0.9, 0), //camera doesn't like looking directly up or down
+        vec3(-0.1, -0.9, 0),
+        vec3(1,  0, 0),
+        vec3(-1, 0, 0) 
+    };
+
+    uint32_t frameId = frameRate.getFrameCount();
+    if (mChangeViewIt != mChangeViewFrames.end() && frameId >= *mChangeViewIt)
+    {
+        ++mChangeViewIt;
+        mpCamera->setTarget(targets[targetIndex]);
+        ++targetIndex;
+        //wrap around so it doesn't crash if too many args are given
+        if (targetIndex == numTargets)
+        {
+            targetIndex = 0;
+        }
+    }
 }
 
 int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ LPSTR lpCmdLine, _In_ int nShowCmd)

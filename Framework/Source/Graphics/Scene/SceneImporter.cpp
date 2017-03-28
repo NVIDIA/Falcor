@@ -89,7 +89,7 @@ namespace Falcor
         return true;
     }
 
-    Scene::SharedPtr SceneImporter::loadScene(const std::string& filename, uint32_t modelLoadFlags, uint32_t sceneLoadFlags)
+    Scene::SharedPtr SceneImporter::loadScene(const std::string& filename, Model::LoadFlags modelLoadFlags, Scene::LoadFlags sceneLoadFlags)
     {
         SceneImporter importer;
         return importer.load(filename, modelLoadFlags, sceneLoadFlags);
@@ -228,7 +228,7 @@ namespace Falcor
             }
             else if (keyName == SceneKeys::kMaterialOverrides)
             {
-                if (mSceneLoadFlags & Scene::LoadMaterialHistory)
+                if (is_set(mSceneLoadFlags, Scene::LoadFlags::StoreMaterialHistory))
                 {
                     if (setMaterialOverrides(jval->value, pModel) == false)
                     {
@@ -1194,7 +1194,7 @@ namespace Falcor
     }
 
 
-    Scene::SharedPtr SceneImporter::load(const std::string& filename, const uint32_t& modelLoadFlags, uint32_t sceneLoadFlags)
+    Scene::SharedPtr SceneImporter::load(const std::string& filename, Model::LoadFlags modelLoadFlags, Scene::LoadFlags sceneLoadFlags)
     {
         std::string fullpath;
         mFilename = filename;
@@ -1228,7 +1228,7 @@ namespace Falcor
             // create the scene
             mpScene = Scene::create();
 
-            if (mSceneLoadFlags & Scene::LoadMaterialHistory)
+            if (is_set(mSceneLoadFlags, Scene::LoadFlags::StoreMaterialHistory))
             {
                 mpScene->enableMaterialHistory();
             }
@@ -1238,12 +1238,11 @@ namespace Falcor
                 return nullptr;
             }
 
-            if (mSceneLoadFlags & Scene::GenerateAreaLights)
+            if(is_set(mSceneLoadFlags, Scene::LoadFlags::GenerateAreaLights))
             {
-                // Create area light(s) in the scene
                 mpScene->createAreaLights();
             }
-            
+			
             return mpScene;
         }
         else

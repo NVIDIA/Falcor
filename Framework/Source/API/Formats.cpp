@@ -89,8 +89,6 @@ namespace Falcor
         {ResourceFormat::RGBA32Uint,         "RGBA32Uint",     16,              4,  FormatType::Uint,      {false,  false, false,},         {1, 1}},
         {ResourceFormat::BGRA8Unorm,         "BGRA8Unorm",      4,              4,  FormatType::Unorm,     {false,  false, false,},         {1, 1}},
         {ResourceFormat::BGRA8UnormSrgb,     "BGRA8UnormSrgb",  4,              4,  FormatType::UnormSrgb, {false,  false, false,},         {1, 1}},
-        {ResourceFormat::RGBX8Unorm,         "RGBX8Unorm",      4,              4,  FormatType::Unorm,     {false,  false, false,},         {1, 1}},
-        {ResourceFormat::RGBX8UnormSrgb,     "RGBX8UnormSrgb",  4,              4,  FormatType::UnormSrgb, {false,  false, false,},         {1, 1}},
         {ResourceFormat::BGRX8Unorm,         "BGRX8Unorm",      4,              4,  FormatType::Unorm,     {false,  false, false,},         {1, 1}},
         {ResourceFormat::BGRX8UnormSrgb,     "BGRX8UnormSrgb",  4,              4,  FormatType::UnormSrgb, {false,  false, false,},         {1, 1}},
         {ResourceFormat::Alpha8Unorm,        "Alpha8Unorm",     1,              1,  FormatType::Unorm,     {false,  false, false,},         {1, 1}},

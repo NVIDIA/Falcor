@@ -57,24 +57,25 @@ namespace Falcor
         using MeshInstance = ObjectInstance<Mesh>;
         using MeshInstanceList = std::vector<MeshInstance::SharedPtr>;
 
-        enum
+        enum class LoadFlags
         {
             None,
-            GenerateTangentSpace        = 1,    ///< Calculate tangent/bitangent vectors if they are missing. This require the model to have normals and texture coordinates
-            FindDegeneratePrimitives    = 2,    ///< Replace degenerate triangles/lines with lines/points. This can create a meshes with topology that wasn't present in the original model.
-            AssumeLinearSpaceTextures   = 4,    ///< By default, textures representing colors (diffuse/specular) are interpreted as sRGB data. Use this flag to force linear space for color textures.
-            DontMergeMeshes             = 8,   ///< Preserve the original list of meshes in the scene, don't merge meshes with the same material
+            DontGenerateTangentSpace    = 0x1,    ///< Do not attemp to generate tangents if they are missing
+            FindDegeneratePrimitives    = 0x2,    ///< Replace degenerate triangles/lines with lines/points. This can create a meshes with topology that wasn't present in the original model.
+            AssumeLinearSpaceTextures   = 0x4,    ///< By default, textures representing colors (diffuse/specular) are interpreted as sRGB data. Use this flag to force linear space for color textures.
+            DontMergeMeshes             = 0x8,    ///< Preserve the original list of meshes in the scene, don't merge meshes with the same material
+            BuffersAsShaderResource     = 0x10,   ///< Generate the VBs and IB with the shader-resource-view bind flag
         };
 
         /** create a new model from file
         */
-        static SharedPtr createFromFile(const std::string& filename, uint32_t flags);
+        static SharedPtr createFromFile(const char* filename, LoadFlags flags = LoadFlags::None);
 
         static SharedPtr create();
 
         static const char* kSupportedFileFormatsStr;
 
-        ~Model();
+        virtual ~Model();
 
         /** Export the model to a binary file
         */
@@ -228,11 +229,10 @@ namespace Falcor
         */
         static void resetGlobalIdCounter();
 
-    private:
+    protected:
         friend class SimpleModelImporter;
 
         Model();
-
         void sortMeshes();
         void deleteCulledMeshInstances(MeshInstanceList& meshInstances, const Camera *pCamera);
 
@@ -259,5 +259,8 @@ namespace Falcor
         static uint32_t sModelCounter;
 
         void calculateModelProperties();
+        bool init(const char* filename, Model::LoadFlags flags);
     };
+
+    enum_class_operators(Model::LoadFlags);
 }

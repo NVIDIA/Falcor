@@ -471,6 +471,9 @@
     <ClCompile Include="Effects\AmbientOcclusion\SSAO.cpp">
       <Filter>Effects\AmbientOcclusion</Filter>
     </ClCompile>
+    <ClCompile Include="Utils\ProgressBarWin.cpp">
+      <Filter>Utils</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Graphics\Model\Animation.h">
@@ -1561,6 +1564,12 @@
     <ClInclude Include="Data\Effects\SSAOData.h">
       <Filter>Data\Effects</Filter>
     </ClInclude>
+    <ClInclude Include="Utils\ProgressBar.h">
+      <Filter>Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="API\D3D\D3D12\D3D12NvApiExDesc.h">
+      <Filter>API\D3D\D3D12</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Externals">
@@ -1722,9 +1731,6 @@
     <None Include="..\CopyData.bat" />
     <None Include="Data\Framework\ParallelReduction.fs">
       <Filter>Utils\Math</Filter>
-    </None>
-    <None Include="Data\Effects\GaussianBlur.fs">
-      <Filter>Data\Effects</Filter>
     </None>
     <None Include="..\Externals\dear_imgui\LICENSE">
       <Filter>Externals\dear_imgui</Filter>
@@ -2098,6 +2104,10 @@
     <None Include="Data\Framework\Shaders\FullScreenPass.vs.hlsl">
       <Filter>Data\Framework\Shaders</Filter>
     </None>
+    <None Include="Data\Effects\SSAO.ps.hlsl" />
+    <None Include="Data\Effects\GaussianBlur.ps.hlsl">
+      <Filter>Data\Effects</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Data\Framework\Shaders\SceneEditorPS.hlsl">
@@ -2106,11 +2116,11 @@
     <FxCompile Include="Data\Framework\Shaders\SceneEditorVS.hlsl">
       <Filter>Data\Framework\Shaders</Filter>
     </FxCompile>
-    <FxCompile Include="Data\Framework\Shaders\Blit.hlsl">
+    <FxCompile Include="Data\Framework\Shaders\Blit.ps.hlsl">
       <Filter>Data\Framework\Shaders</Filter>
     </FxCompile>
-    <FxCompile Include="Data\Effects\SSAO.ps.hlsl">
-      <Filter>Data\Effects</Filter>
+    <FxCompile Include="Data\Framework\Shaders\Blit.vs.hlsl">
+      <Filter>Data\Framework\Shaders</Filter>
     </FxCompile>
   </ItemGroup>
 </Project>

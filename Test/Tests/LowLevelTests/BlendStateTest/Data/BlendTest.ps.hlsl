@@ -25,55 +25,18 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#version 420
-#include "HlslGlslCommon.h"
 
-CONSTANT_BUFFER(PerImageCB, 0)
+struct VsOut
 {
-    sampler2D gTexture;
+    float4 svPos : SV_POSITION;
 };
- 
-vec4 calcColor(vec2 texC)
+
+cbuffer PerFrameCB : register(b0)
 {
-    const float blurStrength = 2.7; // Controls the strength of the blur effect. Higher values will make it more noticable at the center of the image
-    const float offsets[5] = {0.005,0.01,0.03,0.05,0.075}; // Controls the shape of the blur
- 
-    // get the direction we are going to sample from
-    vec2 sampleDirection = 0.5 - texC; 
-    float dirLength = length(sampleDirection);
-    sampleDirection = sampleDirection/dirLength;
- 
-    // Get the original color
-    vec4 texelColor = texture(gTexture, texC);  
-    vec4 blurColor = texelColor;
- 
-    // sample based on the direction
-    for (int i = 0; i < 5; i++)
-    {
-      blurColor += texture( gTexture, texC + sampleDirection * offsets[i] );
-      blurColor += texture( gTexture, texC + sampleDirection * -offsets[i] );
-    }
-    blurColor *= 1.0/11;
- 
-    // Blend the results
-    float weight = dirLength * blurStrength;
-    weight = clamp(weight,0.0,1.0);
-    vec4 fragColor = mix(texelColor, blurColor, weight);
+    float4 color;
+};
 
-    return fragColor;
-} 
-
- #ifdef FALCOR_HLSL
- float4 main(in vec2 texC : TEXCOORD) : SV_TARGET
- {
-    return calcColor(texC);
- }
- #elif defined FALCOR_GLSL
-in vec2 texC;
-out vec4 fragColor;
-
-void main()
+float4 main(VsOut vOut) : SV_TARGET
 {
-    fragColor = calcColor(texC);
+    return color;
 }
- #endif

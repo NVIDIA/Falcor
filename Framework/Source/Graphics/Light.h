@@ -57,6 +57,7 @@ namespace Falcor
             \param[in] varName The name of the light variable in the program.
         */
         virtual void setIntoConstantBuffer(ConstantBuffer* pBuffer, const std::string& varName);
+        virtual void setIntoConstantBuffer(ConstantBuffer* pBuffer, size_t offset);
 
         /** create UI elements for this light.
             \param[in] pGui The GUI to create the elements with
@@ -95,7 +96,10 @@ namespace Falcor
 
         uint32_t getIndex() const { return mIndex; }
 
+        static uint32_t getShaderStructSize() { return kDataSize; }
     protected:
+
+        static const size_t kDataSize = sizeof(LightData) - sizeof(MaterialData);
 
         /* UI callbacks for keeping the intensity in-sync */
         glm::vec3 getColorForUI();

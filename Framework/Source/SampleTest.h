@@ -60,6 +60,10 @@ public:
     */
     virtual void onRunTestTask(const FrameRate& frameRate) {};
 
+    /** 
+    */
+    virtual void onTestShutdown() { exit(1); }
+
 private:
     /** Captures screen to a png, very similar to Sample::captureScreen
     */

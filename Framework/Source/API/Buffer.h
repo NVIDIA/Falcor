@@ -77,7 +77,7 @@ namespace Falcor
             \param[in] pInitData Optional parameter. Initial buffer data. Pointed buffer size should be at least Size bytes.
             \return A pointer to a new buffer object, or nullptr if creation failed.
         */
-        static SharedPtr create(size_t size, Resource::BindFlags bind, CpuAccess cpuAccess, const void* pInitData);
+        static SharedPtr create(size_t size, Resource::BindFlags bind, CpuAccess cpuAccess, const void* pInitData = nullptr);
         
         /** Copy the contents of this buffer to the given buffer.\nThe entire buffer will be copied, so the destination buffer must have the *same* size as the source buffer.
             \param pDst The destination buffer.

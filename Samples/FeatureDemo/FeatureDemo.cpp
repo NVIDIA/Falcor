@@ -47,7 +47,7 @@ void FeatureDemo::initShadowPass()
 
 void FeatureDemo::initSSAO()
 {
-    mSSAO.pSSAO = SSAO::create(1024, 1024);
+    mSSAO.pSSAO = SSAO::create(uvec2(1024));
     mSSAO.pApplySSAOPass = FullScreenPass::create("ApplyAO.ps.hlsl");
     mSSAO.pVars = GraphicsVars::create(mSSAO.pApplySSAOPass->getProgram()->getActiveVersion()->getReflector());
 
@@ -97,7 +97,8 @@ void FeatureDemo::initScene(Scene::SharedPtr pScene)
 
 void FeatureDemo::loadModel(const std::string& filename)
 {
-    Model::SharedPtr pModel = Model::createFromFile(filename, Model::GenerateTangentSpace);
+    ProgressBar::SharedPtr pBar = ProgressBar::create("Loading Model");
+    Model::SharedPtr pModel = Model::createFromFile(filename.c_str());
     if (!pModel) return;
     pModel->bindSamplerToMaterials(mSkyBox.pEffect->getSampler());
     Scene::SharedPtr pScene = Scene::create();
@@ -108,8 +109,13 @@ void FeatureDemo::loadModel(const std::string& filename)
 
 void FeatureDemo::loadScene(const std::string& filename)
 {
-    Scene::SharedPtr pScene = Scene::loadFromFile(filename, Model::GenerateTangentSpace);
-    initScene(pScene);
+    ProgressBar::SharedPtr pBar = ProgressBar::create("Loading Scene", 100);
+    Scene::SharedPtr pScene = Scene::loadFromFile(filename);
+
+    if (pScene != nullptr)
+    {
+        initScene(pScene);
+    }
 }
 
 void FeatureDemo::initSkyBox()
@@ -134,6 +140,7 @@ void FeatureDemo::onLoad()
 
     initSkyBox();
     initPostProcess();
+    init_tests();
 }
 
 void FeatureDemo::renderSkyBox()
@@ -230,6 +237,8 @@ void FeatureDemo::onFrameRender()
     {
         mpRenderContext->clearFbo(mpDefaultFBO.get(), vec4(0.2f, 0.4f, 0.5f, 1), 1, 0);
     }
+
+    run_test();
 }
 
 void FeatureDemo::onShutdown()
@@ -254,7 +263,7 @@ void FeatureDemo::onResizeSwapChain()
     uint32_t h = mpDefaultFBO->getHeight();
 
     Fbo::Desc fboDesc;
-    fboDesc.setColorTarget(0, ResourceFormat::RGBA8Unorm);
+    fboDesc.setColorTarget(0, ResourceFormat::RGBA8UnormSrgb);
     mpPostProcessFbo = FboHelper::create2D(w, h, fboDesc);
 
     fboDesc.setColorTarget(0, ResourceFormat::RGBA32Float).setColorTarget(1, ResourceFormat::RGBA8Unorm).setColorTarget(2, ResourceFormat::R32Float);
@@ -274,6 +283,44 @@ void FeatureDemo::setActiveCameraAspectRatio()
     uint32_t w = mpDefaultFBO->getWidth();
     uint32_t h = mpDefaultFBO->getHeight();
     mpSceneRenderer->getScene()->getActiveCamera()->setAspectRatio((float)w / (float)h);
+}
+
+void FeatureDemo::onInitializeTestingArgs(const ArgList& args)
+{
+    mUniformDt = args.argExists("uniformdt");
+
+    std::vector<ArgList::Arg> model = args.getValues("loadmodel");
+    if (!model.empty())
+    {
+        loadModel(model[0].asString());
+    }
+
+    std::vector<ArgList::Arg> scene = args.getValues("loadscene");
+    if (!scene.empty())
+    {
+        loadScene(scene[0].asString());
+    }
+
+    std::vector<ArgList::Arg> cameraPos = args.getValues("camerapos");
+    if (!cameraPos.empty())
+    {
+        mpSceneRenderer->getScene()->getActiveCamera()->setPosition(glm::vec3(cameraPos[0].asFloat(), cameraPos[1].asFloat(), cameraPos[2].asFloat()));
+    }
+
+    std::vector<ArgList::Arg> cameraTarget = args.getValues("cameratarget");
+    if (!cameraTarget.empty())
+    {
+        mpSceneRenderer->getScene()->getActiveCamera()->setTarget(glm::vec3(cameraTarget[0].asFloat(), cameraTarget[1].asFloat(), cameraTarget[2].asFloat()));
+    }
+}
+
+void FeatureDemo::onRunTestTask(const FrameRate&)
+{
+    if (mUniformDt)
+    {
+        mUniformGlobalTime += 0.016f;
+        mCurrentTime = mUniformGlobalTime;
+    }
 }
 
 int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ LPSTR lpCmdLine, _In_ int nShowCmd)

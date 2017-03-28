@@ -55,7 +55,7 @@ namespace Falcor
             return false;
         }
 
-        mpCubeModel = Model::createFromFile("Effects/cube.obj", 0);
+        mpCubeModel = Model::createFromFile("Effects/cube.obj");
         if(mpCubeModel == nullptr)
         {
             logError("Failed to load cube model for SkyBox");

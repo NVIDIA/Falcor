@@ -103,6 +103,50 @@ namespace Falcor
         mCommandsPending = true;
     }
 
+    void ComputeContext::clearUAVCounter(const StructuredBuffer::SharedPtr& pBuffer, uint32_t value)
+    {
+        if (pBuffer->hasUAVCounter())
+        {
+            clearUAV(pBuffer->getUAVCounter()->getUAV().get(), uvec4(value));
+        }
+    }
+
+    void ComputeContext::pushComputeVars(const ComputeVars::SharedPtr& pVars)
+    {
+        mpComputeVarsStack.push(mpComputeVars);
+        setComputeVars(pVars);
+    }
+
+    void ComputeContext::popComputeVars()
+    {
+        if (mpComputeVarsStack.empty())
+        {
+            logWarning("Can't pop from the compute vars stack. The stack is empty");
+            return;
+        }
+
+        setComputeVars(mpComputeVarsStack.top());
+        mpComputeVarsStack.pop();
+    }
+
+    void ComputeContext::pushComputeState(const ComputeState::SharedPtr& pState)
+    {
+        mpComputeStateStack.push(mpComputeState);
+        setComputeState(pState);
+    }
+
+    void ComputeContext::popComputeState()
+    {
+        if (mpComputeStateStack.empty())
+        {
+            logWarning("Can't pop from the compute state stack. The stack is empty");
+            return;
+        }
+
+        setComputeState(mpComputeStateStack.top());
+        mpComputeStateStack.pop();
+    }
+
     void ComputeContext::applyComputeVars() {}
     void ComputeContext::applyComputeState() {}
 }

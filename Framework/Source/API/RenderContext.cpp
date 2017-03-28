@@ -81,9 +81,16 @@ namespace Falcor
     {
         if (sBlitData.pVars == nullptr)
         {
-            sBlitData.pPass = FullScreenPass::create("Framework/Shaders/Blit.hlsl");
+            sBlitData.pPass = FullScreenPass::create("Framework/Shaders/Blit.vs.hlsl", "Framework/Shaders/Blit.ps.hlsl");
             sBlitData.pVars = GraphicsVars::create(sBlitData.pPass->getProgram()->getActiveVersion()->getReflector());
             sBlitData.pState = GraphicsState::create();
+
+            sBlitData.pSrcRectBuffer = sBlitData.pVars->getConstantBuffer("SrcRectCB");
+            sBlitData.offsetVarOffset = (uint32_t)sBlitData.pSrcRectBuffer->getVariableOffset("gOffset");
+            sBlitData.scaleVarOffset = (uint32_t)sBlitData.pSrcRectBuffer->getVariableOffset("gScale");
+            sBlitData.prevSrcRectOffset = vec2(-1.0f);
+            sBlitData.prevSrcReftScale = vec2(-1.0f);
+
             Sampler::Desc desc;
             desc.setFilterMode(Sampler::Filter::Linear, Sampler::Filter::Linear, Sampler::Filter::Point).setAddressingMode(Sampler::AddressMode::Clamp, Sampler::AddressMode::Clamp, Sampler::AddressMode::Clamp);
             sBlitData.pVars->setSampler("gSampler", Sampler::create(desc));
@@ -93,26 +100,62 @@ namespace Falcor
 
     void RenderContext::releaseBlitData()
     {
+        sBlitData.pSrcRectBuffer = nullptr;
         sBlitData.pVars = nullptr;
         sBlitData.pPass = nullptr;
         sBlitData.pState = nullptr;
     }
 
-    void RenderContext::blit(ShaderResourceView::SharedPtr pSrc, RenderTargetView::SharedPtr pDst)
+    void RenderContext::blit(ShaderResourceView::SharedPtr pSrc, RenderTargetView::SharedPtr pDst, const uvec4& srcRect, const uvec4& dstRect)
     {
         initBlitData(); // This has to be here and can't be in the constructor. FullScreenPass will allocate some buffers which depends on the ResourceAllocator which depends on the fence inside the RenderContext. Dependencies are fun!
 
         assert(pSrc->getViewInfo().arraySize == 1 && pSrc->getViewInfo().mipCount == 1);
         assert(pDst->getViewInfo().arraySize == 1 && pDst->getViewInfo().mipCount == 1);
 
+        const Texture* pSrcTexture = dynamic_cast<const Texture*>(pSrc->getResource());
+        const Texture* pDstTexture = dynamic_cast<const Texture*>(pDst->getResource());
+        assert(pSrcTexture != nullptr && pDstTexture != nullptr);
+
+        vec2 srcRectOffset(0.0f);
+        vec2 srcRectScale(1.0f);
+        GraphicsState::Viewport dstViewport(0.0f, 0.0f, (float)pDstTexture->getWidth(), (float)pDstTexture->getHeight(), 0.0f, 1.0f);
+
+        // If src rect specified
+        if (srcRect.x != (uint32_t)-1)
+        {
+            const vec2 srcSize(pSrcTexture->getWidth(), pSrcTexture->getHeight());
+            srcRectOffset = vec2(srcRect.x, srcRect.y) / srcSize;
+            srcRectScale = vec2(srcRect.z - srcRect.x, srcRect.w - srcRect.y) / srcSize;
+        }
+
+        // If dest rect specified
+        if (dstRect.x != (uint32_t)-1)
+        {
+            dstViewport = GraphicsState::Viewport((float)dstRect.x, (float)dstRect.y, (float)(dstRect.z - dstRect.x), (float)(dstRect.w - dstRect.y), 0.0f, 1.0f);
+        }
+
+        // Update buffer/state
+        if (srcRectOffset != sBlitData.prevSrcRectOffset)
+        {
+            sBlitData.pSrcRectBuffer->setVariable(sBlitData.offsetVarOffset, srcRectOffset);
+            sBlitData.prevSrcRectOffset = srcRectOffset;
+        }
+
+        if (srcRectScale != sBlitData.prevSrcReftScale)
+        {
+            sBlitData.pSrcRectBuffer->setVariable(sBlitData.scaleVarOffset, srcRectScale);
+            sBlitData.prevSrcReftScale = srcRectScale;
+        }
+
+        sBlitData.pState->setViewport(0, dstViewport);
+
         pushGraphicsState(sBlitData.pState);
         pushGraphicsVars(sBlitData.pVars);
 
-        const Texture* pSrcTex = dynamic_cast<const Texture*>(pSrc->getResource());
-        assert(pSrcTex);
-        if (pSrcTex->getSampleCount() > 1)
+        if (pSrcTexture->getSampleCount() > 1)
         {
-            sBlitData.pPass->getProgram()->addDefine("SAMPLE_COUNT", std::to_string(pSrcTex->getSampleCount()));
+            sBlitData.pPass->getProgram()->addDefine("SAMPLE_COUNT", std::to_string(pSrcTexture->getSampleCount()));
         }
         else
         {
@@ -120,11 +163,9 @@ namespace Falcor
         }
 
         Fbo::SharedPtr pFbo = Fbo::create();
-        const Texture* pTexture = dynamic_cast<const Texture*>(pDst->getResource());
-        assert(pTexture);
-        Texture::SharedPtr pSharedTex = std::const_pointer_cast<Texture>(pTexture->shared_from_this());
+        Texture::SharedPtr pSharedTex = std::const_pointer_cast<Texture>(pDstTexture->shared_from_this());
         pFbo->attachColorTarget(pSharedTex, 0, pDst->getViewInfo().mostDetailedMip, pDst->getViewInfo().firstArraySlice, pDst->getViewInfo().arraySize);
-        sBlitData.pState->setFbo(pFbo);
+        sBlitData.pState->setFbo(pFbo, false);
         sBlitData.pVars->setSrv(0, pSrc);
         sBlitData.pPass->execute(this);
 

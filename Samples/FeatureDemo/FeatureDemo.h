@@ -27,10 +27,11 @@
 ***************************************************************************/
 #pragma once
 #include "Falcor.h"
+#include "SampleTest.h"
 
 using namespace Falcor;
 
-class FeatureDemo : public Sample
+class FeatureDemo : public Sample, public SampleTest
 {
 public:
     void onLoad() override;
@@ -93,7 +94,7 @@ private:
     void initControls();
     
     GraphicsState::SharedPtr mpState;
-    SceneRenderer::UniquePtr mpSceneRenderer;
+    SceneRenderer::SharedPtr mpSceneRenderer;
     void loadModel(const std::string& filename);
     void loadScene(const std::string& filename);
     void initScene(Scene::SharedPtr pScene);
@@ -121,4 +122,11 @@ private:
 
     std::vector<ProgramControl> mControls;
     void applyLightingProgramControl(ControlID controlID);
+
+    //Testing 
+    void onInitializeTestingArgs(const ArgList& args) override;
+    void onRunTestTask(const FrameRate&) override;
+    void onTestShutdown() { shutdownApp(); }
+    bool mUniformDt = false;
+    float mUniformGlobalTime = 0.f;
 };

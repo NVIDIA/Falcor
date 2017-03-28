@@ -44,25 +44,7 @@ struct BlurPSIn
 #endif
 };
 
-float getWeight(int i)
-{
-#if _KERNEL_WIDTH == 1
-    const float w[1] = {1};
-#elif _KERNEL_WIDTH == 3
-    const float w[3] = {0.27901, 0.44198, 0.27901};
-#elif _KERNEL_WIDTH == 5
-    const float w[5] = {0.06136, 0.24477, 0.38774, 0.24477, 0.06136};
-#elif _KERNEL_WIDTH == 7
-    const float w[7] = {0.00598, 0.060626, 0.241843, 0.383103, 0.241843, 0.060626, 0.00598};
-#elif _KERNEL_WIDTH == 9
-    const float w[9] = {0.000229, 0.005977, 0.060598, 0.241732, 0.382928, 0.241732, 0.060598, 0.005977, 0.000229};
-#elif _KERNEL_WIDTH == 11
-    const float w[11] = {0.000003, 0.000229, 0.005977, 0.060598, 0.24173, 0.382925, 0.24173, 0.060598, 0.005977, 0.000229, 0.000003};
-#else
-Error. Kernel size must be an odd number in the range [1,11]
-#endif
-    return w[i];
-}
+Buffer<float> weights;
 
 #ifdef _USE_TEX2D_ARRAY
 float4 blur(float2 texC, const float2 direction, uint arrayIndex)
@@ -77,9 +59,9 @@ float4 blur(float2 texC, const float2 direction)
     for(int i = 0 ; i < _KERNEL_WIDTH ; i++)
     {
 #ifdef _USE_TEX2D_ARRAY
-        c += gSrcTex.SampleLevel(gSampler, float3(texC, arrayIndex), 0, offset)*getWeight(i);
+        c += gSrcTex.SampleLevel(gSampler, float3(texC, arrayIndex), 0, offset)*weights[i];
 #else
-        c += gSrcTex.SampleLevel(gSampler, texC, 0, offset)*getWeight(i);
+        c += gSrcTex.SampleLevel(gSampler, texC, 0, offset)*weights[i];
 #endif
         offset += direction;
     }

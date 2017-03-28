@@ -31,8 +31,6 @@
 
 namespace Falcor
 {
-    class ProgramVersion;
-
     /** This class holds all of the data required to reflect a program, including inputs, outputs, constants, textures and samplers declarations
     */
     class ProgramReflection
@@ -40,6 +38,7 @@ namespace Falcor
     public:
         using SharedPtr = std::shared_ptr<ProgramReflection>;
         using SharedConstPtr = std::shared_ptr<const ProgramReflection>;
+        using ReflectionHandleVector = std::vector<ShaderReflectionHandle>;
 
         enum class ShaderAccess
         {
@@ -190,6 +189,15 @@ namespace Falcor
                 Count
             };
 
+            enum class StructuredType
+            {
+                Invalid,    ///< Not a structured buffer
+                Default,    ///< Regular structured buffer
+                Counter,    ///< RWStructuredBuffer with counter
+                Append,     ///< AppendStructuredBuffer
+                Consume     ///< ConsumeStructuredBuffer
+            };
+
             static const uint32_t kTypeCount = (uint32_t)Type::Count;
 
             /** Create a new object
@@ -202,7 +210,7 @@ namespace Falcor
                 \param[in] shaderAccess How the buffer will be access by the shader
                 \return A shared pointer for a new buffer object
             */
-            static SharedPtr create(const std::string& name, uint32_t regIndex, uint32_t regSpace, Type type, size_t size, const VariableMap& varMap, const ResourceMap& resourceMap, ShaderAccess shaderAccess);
+            static SharedPtr create(const std::string& name, uint32_t regIndex, uint32_t regSpace, Type type, StructuredType structuredType, size_t size, const VariableMap& varMap, const ResourceMap& resourceMap, ShaderAccess shaderAccess);
 
             /** Get variable data
                 \param[in] name The name of the requested variable
@@ -253,6 +261,10 @@ namespace Falcor
             */
             Type getType() const { return mType; }
 
+            /** Get the type of the structured buffer. Returns StructuredType::Invalid for constant buffers
+            */
+            StructuredType getStructuredType() const { return mStructuredType; }
+
             /** Get the variable count
             */
             size_t getVariableCount() const { return mVariables.size(); }
@@ -276,12 +288,14 @@ namespace Falcor
             /** Get the shader access
             */
             ShaderAccess getShaderAccess() const { return mShaderAccess; }
+
         private:
 
-            BufferReflection(const std::string& name, uint32_t registerIndex, uint32_t regSpace, Type type, size_t size, const VariableMap& varMap, const ResourceMap& resourceMap, ShaderAccess shaderAccess);
+            BufferReflection(const std::string& name, uint32_t registerIndex, uint32_t regSpace, Type type, StructuredType structuredType, size_t size, const VariableMap& varMap, const ResourceMap& resourceMap, ShaderAccess shaderAccess);
             std::string mName;
             size_t mSizeInBytes = 0;
             Type mType;
+            StructuredType mStructuredType;
             ResourceMap mResources;
             VariableMap mVariables;
             uint32_t mShaderMask = 0;
@@ -292,7 +306,7 @@ namespace Falcor
 
         /** Create a new object
         */
-        static SharedPtr create(const ProgramVersion* pProgramVersion, std::string& log);
+        static SharedPtr create(const ReflectionHandleVector& reflectHandles, std::string& log);
 
         /** Get a buffer binding index
         \param[in] name The buffer name in the program
@@ -349,10 +363,10 @@ namespace Falcor
         };
 
     private:
-        bool init(const ProgramVersion* pProgVer, std::string& log);
-        bool reflectVertexAttributes(const ProgramVersion* pProgVer, std::string& log);       // Input attributes
-        bool reflectFragmentOutputs(const ProgramVersion* pProgVer, std::string& log);        // FS output (if FS exists)
-        bool reflectResources(const ProgramVersion* pProgVer, std::string& log);              // SRV/UAV/ROV/Buffers and samplers
+        bool init(const ReflectionHandleVector& reflectHandles, std::string& log);
+        bool reflectVertexAttributes(const ReflectionHandleVector& reflectHandles, std::string& log);       // Input attributes
+        bool reflectPixelShaderOutputs(const ReflectionHandleVector& reflectHandles, std::string& log);        // PS output (if PS exists)
+        bool reflectResources(const ReflectionHandleVector& reflectHandles, std::string& log);              // SRV/UAV/ROV/Buffers and samplers
        
         BufferData mBuffers[BufferReflection::kTypeCount];
         VariableMap mFragOut;

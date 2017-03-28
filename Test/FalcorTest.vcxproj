@@ -36,9 +36,11 @@
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <Import Project="FalcorTest.props" />
+    <Import Project="..\Framework\Source\Falcor.props" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <Import Project="FalcorTest.props" />
+    <Import Project="..\Framework\Source\Falcor.props" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -82,9 +84,11 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Source\TestBase.cpp" />
+    <ClCompile Include="Source\TestHelper.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\TestBase.h" />
+    <ClInclude Include="Source\TestHelper.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

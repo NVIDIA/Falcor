@@ -30,7 +30,6 @@
 #include <stdint.h>
 #include <memory>
 #include "glm/glm.hpp"
-#include "Utils/OS.h"
 #include <iostream>
 #include "Utils/Logger.h"
 
@@ -88,10 +87,12 @@ namespace Falcor
     {
         Vertex,         ///< Vertex shader
         Pixel,          ///< Pixel shader
+        Geometry,       ///< Geometry shader
         Hull,           ///< Hull shader (AKA Tessellation control shader)
         Domain,         ///< Domain shader (AKA Tessellation evaluation shader)
-        Geometry,       ///< Geometry shader
         Compute,        ///< Compute shader
+
+        Extended,       ///< An extended, non-standard shader type
 
         Count           ///< Shader Type count
     };
@@ -145,6 +146,8 @@ namespace Falcor
 #error Undefined falcor backend. Make sure that a backend is selected in "FalcorConfig.h"
 #endif
 
+#include "Utils/OS.h"
+
 #if defined(FALCOR_D3D12) || defined(FALCOR_VULKAN)
 #define FALCOR_LOW_LEVEL_API
 #endif
@@ -191,9 +194,9 @@ namespace Falcor
             return std::static_pointer_cast<const Derived>(pShared);
         }
     };
+}
 
 #if (_ENABLE_NVAPI == true)
 #include "nvapi.h"
 #pragma comment(lib, "nvapi64.lib")
 #endif
-}

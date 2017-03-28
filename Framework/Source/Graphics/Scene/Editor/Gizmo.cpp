@@ -96,11 +96,11 @@ namespace Falcor
         }
     }
 
-    bool Gizmo::isPartOfGizmo(const Scene::ModelInstance::SharedPtr& pInstance) const
+    bool Gizmo::isPartOfGizmo(const Scene::ModelInstance* pInstance) const
     {
         for (auto& axis : mpAxesInstances)
         {
-            if (axis == pInstance)
+            if (axis.get() == pInstance)
             {
                 return true;
             }
@@ -110,7 +110,7 @@ namespace Falcor
     }
 
     // static
-    Gizmo::Type Gizmo::getGizmoType(const Gizmos& gizmos, const Scene::ModelInstance::SharedPtr& pInstance)
+    Gizmo::Type Gizmo::getGizmoType(const Gizmos& gizmos, const Scene::ModelInstance* pInstance)
     {
         for (uint32_t i = 0; i < 3; i++)
         {
@@ -126,11 +126,11 @@ namespace Falcor
         return Type::Invalid;
     }
 
-    Gizmo::Gizmo(const Scene::SharedPtr& pScene, const std::string& modelFilename)
+    Gizmo::Gizmo(const Scene::SharedPtr& pScene, const char* modelFilename)
         : mGizmoType(Type::Invalid)
     {
         // Add model instances to scene
-        Model::SharedPtr pModel = Model::createFromFile(modelFilename, Model::GenerateTangentSpace);
+        Model::SharedPtr pModel = Model::createFromFile(modelFilename);
         pScene->addModelInstance(pModel, "X", glm::vec3(), glm::radians(glm::vec3(0.0f, 0.0f, -90.0f)));
         pScene->addModelInstance(pModel, "Y");
         pScene->addModelInstance(pModel, "Z", glm::vec3(), glm::radians(glm::vec3(90.0f, 0.0f, 0.0f)));
@@ -169,7 +169,7 @@ namespace Falcor
     // Translation Gizmo
     //***************************************************************************
 
-    TranslateGizmo::SharedPtr TranslateGizmo::create(const Scene::SharedPtr& pScene, const std::string& modelFilename)
+    TranslateGizmo::SharedPtr TranslateGizmo::create(const Scene::SharedPtr& pScene, const char* modelFilename)
     {
         return SharedPtr(new TranslateGizmo(pScene, modelFilename));
     }
@@ -201,7 +201,7 @@ namespace Falcor
     // Rotation Gizmo
     //***************************************************************************
 
-    RotateGizmo::SharedPtr RotateGizmo::create(const Scene::SharedPtr& pScene, const std::string& modelFilename)
+    RotateGizmo::SharedPtr RotateGizmo::create(const Scene::SharedPtr& pScene, const char* modelFilename)
     {
         return SharedPtr(new RotateGizmo(pScene, modelFilename));
     }
@@ -252,7 +252,7 @@ namespace Falcor
     // Scaling Gizmo
     //***************************************************************************
 
-    ScaleGizmo::ScaleGizmo(const Scene::SharedPtr& pScene, const std::string& modelFilename)
+    ScaleGizmo::ScaleGizmo(const Scene::SharedPtr& pScene, const char* modelFilename)
         : Gizmo(pScene, modelFilename)
     {
         mGizmoType = Gizmo::Type::Scale;
@@ -264,7 +264,7 @@ namespace Falcor
         }
     }
 
-    ScaleGizmo::SharedPtr ScaleGizmo::create(const Scene::SharedPtr& pScene, const std::string& modelFilename)
+    ScaleGizmo::SharedPtr ScaleGizmo::create(const Scene::SharedPtr& pScene, const char* modelFilename)
     {
         return SharedPtr(new ScaleGizmo(pScene, modelFilename));
     }

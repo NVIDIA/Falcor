@@ -75,7 +75,7 @@ namespace Falcor
 		char hr_msg[512];
 		FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM, nullptr, hr, 0, hr_msg, ARRAYSIZE(hr_msg), nullptr);
 
-		std::string error_msg = msg + ".\nError " + hr_msg;
+		std::string error_msg = msg + ".\nError! " + hr_msg;
 		logError(error_msg);
 	}
 
@@ -155,11 +155,11 @@ namespace Falcor
 		return pSwapChain3;
 	}
 
-	ID3D12DevicePtr createDevice(IDXGIFactory4* pFactory, D3D_FEATURE_LEVEL featureLevel)
+	ID3D12DevicePtr createDevice(IDXGIFactory4* pFactory, D3D_FEATURE_LEVEL featureLevel, Device::Desc::CreateDeviceFunc createFunc)
 	{
 		// Find the HW adapter
 		IDXGIAdapter1Ptr pAdapter;
-		ID3D12DevicePtr pDevice;
+        ID3D12DevicePtr pDevice;
 
 		for (uint32_t i = 0; DXGI_ERROR_NOT_FOUND != pFactory->EnumAdapters1(i, &pAdapter); i++)
 		{
@@ -173,7 +173,12 @@ namespace Falcor
 			}
 
 			// Try and create a D3D12 device
-			if (D3D12CreateDevice(pAdapter, featureLevel, IID_PPV_ARGS(&pDevice)) == S_OK)
+            if (createFunc)
+            {
+                pDevice = createFunc(pAdapter, featureLevel);
+                if (pDevice) return pDevice;
+            }
+            else if (D3D12CreateDevice(pAdapter, featureLevel, IID_PPV_ARGS(&pDevice)) == S_OK)
 			{
 				return pDevice;
 			}
@@ -218,7 +223,7 @@ namespace Falcor
 		return true;
 	}
 
-    Device::~Device()
+    void Device::cleanup()
     {
         mpRenderContext->flush(true);
         // Release all the bound resources. Need to do that before deleting the RenderContext
@@ -231,6 +236,7 @@ namespace Falcor
         mpRenderContext.reset();
         mpResourceAllocator.reset();
         safe_delete(pData);
+        mpWindow.reset();
     }
 
 	Device::SharedPtr Device::create(Window::SharedPtr& pWindow, const Device::Desc& desc)
@@ -288,7 +294,7 @@ namespace Falcor
 		d3d_call(CreateDXGIFactory1(IID_PPV_ARGS(&pDxgiFactory)));
 
 		// Create the device
-        mApiHandle = createDevice(pDxgiFactory, getD3DFeatureLevel(desc.apiMajorVersion, desc.apiMinorVersion));
+        mApiHandle = createDevice(pDxgiFactory, getD3DFeatureLevel(desc.apiMajorVersion, desc.apiMinorVersion), desc.createDeviceFunc);
 		if (mApiHandle == nullptr)
 		{
 			return false;
@@ -351,7 +357,8 @@ namespace Falcor
 
         // Store the FBO parameters
         ResourceFormat colorFormat = pData->frameData[0].pFbo->getColorTexture(0)->getFormat();
-        ResourceFormat depthFormat = pData->frameData[0].pFbo->getDepthStencilTexture()->getFormat();
+        const auto& pDepth = pData->frameData[0].pFbo->getDepthStencilTexture();
+        ResourceFormat depthFormat = pDepth ? pDepth->getFormat() : ResourceFormat::Unknown;
         assert(pData->frameData[0].pFbo->getSampleCount() == 1);
 
         // Delete all the FBOs

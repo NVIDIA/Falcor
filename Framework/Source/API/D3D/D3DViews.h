@@ -233,6 +233,8 @@ namespace Falcor
         {
             const Buffer* pBuffer = dynamic_cast<const Buffer*>(pResource);
             const TypedBufferBase* pTypedBuffer = dynamic_cast<const TypedBufferBase*>(pBuffer);
+            const StructuredBuffer* pStructuredBuffer = dynamic_cast<const StructuredBuffer*>(pBuffer);
+
             desc = {};
             desc.ViewDimension = D3D12_UAV_DIMENSION_BUFFER;
 
@@ -240,6 +242,12 @@ namespace Falcor
             {
                 desc.Format = getDxgiFormat(pTypedBuffer->getResourceFormat());
                 desc.Buffer.NumElements = pTypedBuffer->getElementCount();
+            }
+            else if (pStructuredBuffer != nullptr)
+            {
+                desc.Format = DXGI_FORMAT_UNKNOWN;
+                desc.Buffer.NumElements = (uint32_t)pStructuredBuffer->getElementCount();
+                desc.Buffer.StructureByteStride = (uint32_t)pStructuredBuffer->getElementSize();
             }
             else
             {

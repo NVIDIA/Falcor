@@ -28,6 +28,8 @@
 #pragma once
 #include <string>
 #include "Graphics/Program.h"
+#include "Utils/ShaderPreprocessor.h"
+#include "Utils/OS.h"
 
 namespace Falcor
 {
@@ -43,7 +45,7 @@ namespace Falcor
     \return A pointer to a new object if compilation was successful, otherwise nullptr.
     In case of compilation error, a message box will appear with the log, allowing quick shader fixes without having to restart the program.
     */
-    const Shader::SharedPtr createShaderFromFile(const std::string& filename, ShaderType type, const Program::DefineList& shaderDefines = Program::DefineList());
+    Shader::SharedPtr createShaderFromFile(const std::string& filename, ShaderType type, const Program::DefineList& shaderDefines = Program::DefineList());
 
     /** create a new shader from a string. The shader will be processed using the shader pre-processor before creating the hardware object. See CShaderPreprocessor reference to see its supported directives.
     \param[in] shaderString The shader.
@@ -51,5 +53,61 @@ namespace Falcor
     \param[in] shaderDefines A string containing macro definitions to be patched into the shaders. Defines are separated by newline.
     \return A pointer to a new object if compilation was successful, otherwise nullptr.
     */
-    const Shader::SharedPtr createShaderFromString(const std::string& shaderString, ShaderType type, const Program::DefineList& shaderDefines = Program::DefineList());
+    Shader::SharedPtr createShaderFromString(const std::string& shaderString, ShaderType type, const Program::DefineList& shaderDefines = Program::DefineList());
+       
+    template<typename ObjectType, typename EnumType>
+    typename ObjectType::SharedPtr createShaderFromFile(const std::string& filename, EnumType shaderType, const Program::DefineList& shaderDefines)
+    {
+        // New shader, look for the file
+        std::string fullpath;
+        if (findFileInDataDirectories(filename, fullpath) == false)
+        {
+            std::string err = std::string("Can't find shader file ") + filename;
+            logError(err);
+            return nullptr;
+        }
+
+        while (1)
+        {
+            // Open the file
+            std::string shader;
+            readFileToString(fullpath, shader);
+
+            // Preprocess
+            std::string errorMsg;
+            Shader::unordered_string_set includeList;
+            if (ShaderPreprocessor::parseShader(fullpath, shader, errorMsg, includeList, shaderDefines) == false)
+            {
+                std::string msg = std::string("Error when pre-processing shader ") + filename + "\n" + errorMsg;
+                if (msgBox(msg, MsgBoxType::RetryCancel) == MsgBoxButton::Cancel)
+                {
+                    logError(msg);
+                    return nullptr;
+                }
+            }
+            else
+            {
+                // Preprocessing is good
+                std::string errorLog;
+                auto pShader = ObjectType::create(shader, shaderType, errorLog);
+
+                if (pShader == nullptr)
+                {
+                    std::string error = std::string("Compilation of shader ") + filename + "\n\n";
+                    error += errorLog;
+                    MsgBoxButton mbButton = msgBox(error, MsgBoxType::RetryCancel);
+                    if (mbButton == MsgBoxButton::Cancel)
+                    {
+                        logError(error);
+                        exit(1);
+                    }
+                }
+                else
+                {
+                    pShader->setIncludeList(includeList);
+                    return pShader;
+                }
+            }
+        }
+    }
 }

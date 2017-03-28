@@ -73,9 +73,9 @@ namespace Falcor
         
         static SharedPtr create(ResourceWeakPtr pResource, uint32_t mostDetailedMip = 0, uint32_t mipCount = kMaxPossible, uint32_t firstArraySlice = 0, uint32_t arraySize = kMaxPossible);
         static SharedPtr getNullView();
-    private:
         ShaderResourceView(ResourceWeakPtr& pResource, ApiHandle handle, uint32_t mostDetailedMip_, uint32_t mipCount_, uint32_t firstArraySlice_, uint32_t arraySize_) :
             ResourceView(pResource, handle, mostDetailedMip_, mipCount_, firstArraySlice_, arraySize_) {}
+    private:
         static SharedPtr sNullView;
     };
 

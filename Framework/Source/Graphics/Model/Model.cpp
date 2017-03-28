@@ -64,25 +64,41 @@ namespace Falcor
 
     Model::~Model() = default;
 
-    Model::SharedPtr Model::createFromFile(const std::string& filename, uint32_t flags)
+    Model::SharedPtr Model::createFromFile(const char* filename, Model::LoadFlags flags)
     {
-        Model::SharedPtr pModel;
-
-        if(hasSuffix(filename, ".bin", false))
+        Model::SharedPtr pModel = SharedPtr(new Model);
+        if (pModel->init(filename, flags) == false)
         {
-            pModel = BinaryModelImporter::createFromFile(filename, flags);
-        }
-        else
-        {
-            pModel = AssimpModelImporter::createFromFile(filename, flags);
-        }
-
-        if(pModel)
-        {
-            pModel->calculateModelProperties();
+            return nullptr;
         }
 
         return pModel;
+    }
+
+    bool Model::init(const char* filename, Model::LoadFlags flags)
+    {
+        bool res;
+        if (hasSuffix(filename, ".bin", false))
+        {
+            res = BinaryModelImporter::import(this, filename, flags);
+        }
+        else
+        {
+            res = AssimpModelImporter::import(this, filename, flags);
+        }
+
+        if (res)
+        {
+            calculateModelProperties();
+            setFilename(filename);
+
+            std::string name = getFilenameFromPath(filename);
+            size_t extPos = name.find_last_of('.');
+            name = (extPos == std::string::npos) ? name : name.substr(0, extPos);
+            setName(name);
+        }
+
+        return res;
     }
 
     Model::SharedPtr Model::create()

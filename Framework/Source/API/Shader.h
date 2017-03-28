@@ -49,7 +49,7 @@ namespace Falcor
             \return If success, a new shader object, otherwise nullptr
         */
         static SharedPtr create(const std::string& shaderString, ShaderType Type, std::string& log);
-        ~Shader();
+        virtual ~Shader();
 
         /** Get the API handle.
         */
@@ -68,10 +68,13 @@ namespace Falcor
         */
         const unordered_string_set& getIncludeList() const { return mIncludeList; }
 #ifdef FALCOR_D3D
+        bool init(const std::string& shaderString, std::string& log);
         ShaderReflectionHandle getReflectionInterface() const;
         ID3DBlobPtr getCodeBlob() const;
+        virtual ID3DBlobPtr compile(const std::string& source, std::string& errorLog);
+        virtual ShaderReflectionHandle createReflection(ID3DBlobPtr pBlob);
 #endif
-    private:
+    protected:
         // API handle depends on the shader Type, so it stored be stored as part of the private data
         Shader(ShaderType Type);
         ShaderType mType;

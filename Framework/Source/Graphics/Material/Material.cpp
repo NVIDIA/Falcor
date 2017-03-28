@@ -140,8 +140,6 @@ namespace Falcor
                 {
                     switch (texFormat)
                     {
-                    case ResourceFormat::RGBX8Unorm:
-                    case ResourceFormat::RGBX8UnormSrgb:
                     case ResourceFormat::BGRX8Unorm:
                     case ResourceFormat::BGRX8UnormSrgb:
                         break;
@@ -341,7 +339,7 @@ namespace Falcor
         const auto pResourceDesc = pVars->getReflection()->getResourceDesc(resourceName);
         if (pResourceDesc == nullptr)
         {
-            logError(std::string("Material::setIntoConstantBuffer() - can't find the first texture object"));
+            logWarning(std::string("Material::setIntoConstantBuffer() - can't find the first texture object"));
             return;
         }
 

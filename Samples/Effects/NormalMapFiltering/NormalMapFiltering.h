@@ -27,10 +27,11 @@
 ***************************************************************************/
 #pragma once
 #include "Falcor.h"
+#include "SampleTest.h"
 
 using namespace Falcor;
 
-class NormalMapFiltering : public Sample
+class NormalMapFiltering : public Sample, public SampleTest
 {
 public:
     void onLoad() override;
@@ -44,11 +45,18 @@ public:
 private:
     void updateProgram();
     GraphicsProgram::SharedPtr mpProgram;
-    SceneRenderer::UniquePtr mpRenderer;
+    SceneRenderer::SharedPtr mpRenderer;
     GraphicsVars::SharedPtr mpVars;
     ModelViewCameraController mCameraController;
     LeanMap::UniquePtr mpLeanMap;
     bool mUseLeanMap = true;
     bool mUseSpecAA = true;
     Sampler::SharedPtr mpLinearSampler;
+
+    //Testing
+    void onInitializeTestingArgs(const ArgList& args) override;
+    void onRunTestTask(const FrameRate& frameRate) override;
+    void onTestShutdown() override { shutdownApp(); }
+    std::vector<uint32_t> mChangeModeFrames;
+    std::vector<uint32_t>::iterator mChangeModeIt;
 };

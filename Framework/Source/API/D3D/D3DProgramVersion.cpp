@@ -38,7 +38,7 @@ namespace Falcor
 
     }
 
-    bool ProgramVersion::apiInit(std::string& log, const std::string& name)
+    bool ProgramVersion::init(std::string& log)
     {
         return true;
     }

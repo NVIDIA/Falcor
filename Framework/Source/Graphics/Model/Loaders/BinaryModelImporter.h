@@ -39,16 +39,16 @@ namespace Falcor
     class BinaryModelImporter : public ModelImporter
     {
     public:
-        /** create a new model from internal binary format
+        /** import a new model from internal binary format
             \param[in] filename Model's filename. Loader will look for it in the data directories.
             \param[in] flags Flags controlling model creation
             returns nullptr if loading failed, otherwise a new Model object
         */
-        static Model::SharedPtr createFromFile(const std::string& filename, uint32_t flags);
+        static bool import(Model* pModel, const std::string& filename, Model::LoadFlags flags);
 
     private:
         BinaryModelImporter(const std::string& fullpath);
-        Model::SharedPtr createModel(uint32_t flags);
+        bool importModel(Model* pModel, Model::LoadFlags flags);
 
         std::string mModelName;
         BinaryFileStream mStream;

@@ -38,7 +38,7 @@
 namespace Falcor
 {
     class ProgramVersion;
-    class CopyContext;
+    class ComputeContext;
 
     /** This class manages a program's reflection and variable assignment.
         It's a high-level abstraction of variables-related concepts such as CBs, texture and sampler assignments, root-signature, descriptor tables, etc.
@@ -209,6 +209,12 @@ namespace Falcor
 
         template<typename T>
         using ResourceMap = std::unordered_map<uint32_t, ResourceData<T>>;
+        using SamplerMap = std::map<uint32_t, ResourceData<Sampler::SharedConstPtr>>;
+
+        const ResourceMap<ConstantBuffer>& getAssignedCbs() const { return mAssignedCbs; }
+        const ResourceMap<ShaderResourceView>& getAssignedSrvs() const { return mAssignedSrvs; }
+        const ResourceMap<UnorderedAccessView>& getAssignedUavs() const { return mAssignedUavs; }
+        const ResourceMap<Sampler>& getAssignedSamplers() const { return mAssignedSamplers; }
 
     protected:
         template<bool forGraphics, typename ContextType>
@@ -222,7 +228,7 @@ namespace Falcor
         ResourceMap<ConstantBuffer> mAssignedCbs;        // HLSL 'b' registers
         ResourceMap<ShaderResourceView> mAssignedSrvs;   // HLSL 't' registers
         ResourceMap<UnorderedAccessView> mAssignedUavs;  // HLSL 'u' registers
-        ResourceMap<Sampler> mAssignedSamplers;          // HLSL 's' registers
+        ResourceMap<Sampler> mAssignedSamplers;    // HLSL 's' registers
     };
 
     class GraphicsVars : public ProgramVars, public std::enable_shared_from_this<ProgramVars>
@@ -255,7 +261,7 @@ namespace Falcor
             \param[in] pRootSignature A root-signature describing how to bind resources into the shader. If this parameter is nullptr, a root-signature object will be created from the program reflection object
         */
         static SharedPtr create(const ProgramReflection::SharedConstPtr& pReflector, bool createBuffers = true, const RootSignature::SharedPtr& pRootSig = nullptr);
-        void apply(CopyContext* pContext) const;
+        void apply(ComputeContext* pContext) const;
     private:
         ComputeVars(const ProgramReflection::SharedConstPtr& pReflector, bool createBuffers, const RootSignature::SharedPtr& pRootSig) :
             ProgramVars(pReflector, createBuffers, pRootSig) {}

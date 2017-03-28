@@ -47,12 +47,15 @@ CameraController& SimpleDeferred::getActiveCameraController()
 
 void SimpleDeferred::loadModelFromFile(const std::string& filename)
 {
-    uint32_t flags = 0;
-    flags |= mGenerateTangentSpace ? Model::GenerateTangentSpace : 0;
+    Model::LoadFlags flags = Model::LoadFlags::None;
+    if (mGenerateTangentSpace == false)
+    {
+        flags |= Model::LoadFlags::DontGenerateTangentSpace;
+    }
     auto fboFormat = mpDefaultFBO->getColorTexture(0)->getFormat();
-    flags |= isSrgbFormat(fboFormat) ? 0 : Model::AssumeLinearSpaceTextures;
+    flags |= isSrgbFormat(fboFormat) ? Model::LoadFlags::None : Model::LoadFlags::AssumeLinearSpaceTextures;
 
-    mpModel = Model::createFromFile(filename, flags);
+    mpModel = Model::createFromFile(filename.c_str(), flags);
 
     if(mpModel == nullptr)
     {
@@ -211,6 +214,8 @@ void SimpleDeferred::onLoad()
 
     // Load default model
     loadModelFromFile("Ogre/bs_rest.obj");
+
+    init_tests();
 }
 
 void SimpleDeferred::onFrameRender()
@@ -278,6 +283,8 @@ void SimpleDeferred::onFrameRender()
         mpRenderContext->setGraphicsVars(mpLightingVars);
         mpLightingPass->execute(mpRenderContext.get());
     }
+
+    run_test();
 }
 
 void SimpleDeferred::onShutdown()
@@ -344,6 +351,32 @@ void SimpleDeferred::resetCamera()
         mFirstPersonCameraController.setCameraSpeed(radius*0.25f);
         mNearZ = std::max(0.1f, mpModel->getRadius() / 750.0f);
         mFarZ = radius * 10;
+    }
+}
+
+void SimpleDeferred::onInitializeTestingArgs(const ArgList& args)
+{
+    std::vector<ArgList::Arg> modeFrames = args.getValues("incrementDebugMode");
+    if (!modeFrames.empty())
+    {
+        mChangeModeFrames.resize(modeFrames.size());
+        for (uint32_t i = 0; i < modeFrames.size(); ++i)
+        {
+            mChangeModeFrames[i] = modeFrames[i].asUint();
+        }
+    }
+
+    mChangeModeIt = mChangeModeFrames.begin();
+}
+
+void SimpleDeferred::onRunTestTask(const FrameRate& frameRate)
+{
+    uint32_t frameId = frameRate.getFrameCount();
+    if (mChangeModeIt != mChangeModeFrames.end() && frameId >= *mChangeModeIt)
+    {
+        ++mChangeModeIt;
+        uint32_t* pMode = (uint32_t*)&mDebugMode;
+        *pMode = min(*pMode + 1, (uint32_t)ShowLighting);
     }
 }
 

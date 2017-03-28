@@ -32,10 +32,10 @@
 
 namespace Falcor
 {
-    ProgramReflection::SharedPtr ProgramReflection::create(const ProgramVersion* pProgramVersion, std::string& log)
+    ProgramReflection::SharedPtr ProgramReflection::create(const ReflectionHandleVector& reflectHandles, std::string& log)
     {
         SharedPtr pReflection = SharedPtr(new ProgramReflection);
-        return pReflection->init(pProgramVersion, log) ? pReflection : nullptr;
+        return pReflection->init(reflectHandles, log) ? pReflection : nullptr;
     }
 
     ProgramReflection::BindLocation ProgramReflection::getBufferBinding(const std::string& name) const
@@ -54,12 +54,12 @@ namespace Falcor
         return invalidBind;
     }
 
-    bool ProgramReflection::init(const ProgramVersion* pProgVer, std::string& log)
+    bool ProgramReflection::init(const ReflectionHandleVector& reflectHandles, std::string& log)
     {
         bool b = true;
-        b = b && reflectResources(pProgVer, log);
-        b = b && reflectVertexAttributes(pProgVer, log);
-        b = b && reflectFragmentOutputs(pProgVer, log);
+        b = b && reflectResources(reflectHandles, log);
+        b = b && reflectVertexAttributes(reflectHandles, log);
+        b = b && reflectPixelShaderOutputs(reflectHandles, log);
         return b;
     }
 
@@ -67,6 +67,7 @@ namespace Falcor
     {
         const std::string msg = "Error when getting variable data \"" + name + "\" from buffer \"" + mName + "\".\n";
         uint32_t arrayIndex = 0;
+        offset = kInvalidLocation;
 
         // Look for the variable
         auto& var = mVariables.find(name);
@@ -87,7 +88,7 @@ namespace Falcor
 
             if (var == mVariables.end())
             {
-                logError(msg + "Variable not found.");
+                logWarning(msg + "Variable not found.");
                 return nullptr;
             }
 
@@ -160,22 +161,22 @@ namespace Falcor
         return it == mResources.end() ? nullptr : &(it->second);
     }
 
-    ProgramReflection::BufferReflection::BufferReflection(const std::string& name, uint32_t registerIndex, uint32_t regSpace, Type type, size_t size, const VariableMap& varMap, const ResourceMap& resourceMap, ShaderAccess shaderAccess) :
+    ProgramReflection::BufferReflection::BufferReflection(const std::string& name, uint32_t registerIndex, uint32_t regSpace, Type type, StructuredType structuredType, size_t size, const VariableMap& varMap, const ResourceMap& resourceMap, ShaderAccess shaderAccess) :
         mName(name),
         mType(type),
+        mStructuredType(structuredType),
         mSizeInBytes(size),
         mVariables(varMap),
         mResources(resourceMap),
         mRegIndex(registerIndex),
         mShaderAccess(shaderAccess)
     {
-
     }
 
-    ProgramReflection::BufferReflection::SharedPtr ProgramReflection::BufferReflection::create(const std::string& name, uint32_t regIndex, uint32_t regSpace, Type type, size_t size, const VariableMap& varMap, const ResourceMap& resourceMap, ShaderAccess shaderAccess)
+    ProgramReflection::BufferReflection::SharedPtr ProgramReflection::BufferReflection::create(const std::string& name, uint32_t regIndex, uint32_t regSpace, Type type, StructuredType structuredType, size_t size, const VariableMap& varMap, const ResourceMap& resourceMap, ShaderAccess shaderAccess)
     {
         assert(regSpace == 0);
-        return SharedPtr(new BufferReflection(name, regIndex, regSpace, type, size, varMap, resourceMap, shaderAccess));
+        return SharedPtr(new BufferReflection(name, regIndex, regSpace, type, structuredType, size, varMap, resourceMap, shaderAccess));
     }
 
     const ProgramReflection::Variable* ProgramReflection::getVertexAttribute(const std::string& name) const
@@ -204,7 +205,7 @@ namespace Falcor
 #endif
             if(pRes == nullptr)
             {
-                logError("Can't find resource '" + name + "' in program");
+                logWarning("Can't find resource '" + name + "' in program");
             }
         }
         return pRes;

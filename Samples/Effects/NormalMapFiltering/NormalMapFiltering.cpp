@@ -72,7 +72,7 @@ void NormalMapFiltering::updateProgram()
 
 void NormalMapFiltering::onLoad()
 {
-    Scene::SharedPtr pScene = Scene::loadFromFile("scenes\\ogre.fscene", Model::GenerateTangentSpace);
+    Scene::SharedPtr pScene = Scene::loadFromFile("scenes\\ogre.fscene");
     if(pScene == nullptr)
     {
         exit(1);
@@ -89,6 +89,8 @@ void NormalMapFiltering::onLoad()
     updateProgram();
     mCameraController.attachCamera(pScene->getCamera(0));
     mCameraController.setModelParams(pScene->getModel(0)->getCenter(), pScene->getModel(0)->getRadius(), 4);
+
+    init_tests();
 }
 
 void NormalMapFiltering::onFrameRender()
@@ -105,6 +107,8 @@ void NormalMapFiltering::onFrameRender()
     mCameraController.update();
     mpRenderer->renderScene(mpRenderContext.get());
     mpRenderContext->popGraphicsVars();
+
+    run_test();
 }
 
 void NormalMapFiltering::onShutdown()
@@ -126,6 +130,48 @@ void NormalMapFiltering::onResizeSwapChain()
 {
     float aspect = (float)mpDefaultFBO->getWidth() / (float)mpDefaultFBO->getHeight();
     mpRenderer->getScene()->getActiveCamera()->setAspectRatio(aspect);
+}
+
+void NormalMapFiltering::onInitializeTestingArgs(const ArgList& args)
+{
+    std::vector<ArgList::Arg> modeFrames = args.getValues("changeMode");
+    if (!modeFrames.empty())
+    {
+        mChangeModeFrames.resize(modeFrames.size());
+        for (uint32_t i = 0; i < modeFrames.size(); ++i)
+        {
+            mChangeModeFrames[i] = modeFrames[i].asUint();
+        }
+    }
+
+    mChangeModeIt = mChangeModeFrames.begin();
+    mUseLeanMap = false;
+    mUseSpecAA = false;
+    updateProgram();
+}
+
+void NormalMapFiltering::onRunTestTask(const FrameRate& frameRate)
+{
+    static const uint32_t numCombos = 4;
+    static const bool useLeanMap[numCombos] = {false, false, true, true };
+    static const bool useSpecAA[numCombos] = {false, true, false, true };
+    static uint32_t index = 0;
+
+    uint32_t frameId = frameRate.getFrameCount();
+    if (mChangeModeIt != mChangeModeFrames.end() && frameId >= *mChangeModeIt)
+    {
+        ++mChangeModeIt;
+        ++index;
+        //wrap around so no crash if too many args supplied
+        if (index == numCombos)
+        {
+            index = 0;
+        }
+
+        mUseLeanMap = useLeanMap[index];
+        mUseSpecAA = useSpecAA[index];
+        updateProgram();
+    }
 }
 
 int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ LPSTR lpCmdLine, _In_ int nShowCmd)

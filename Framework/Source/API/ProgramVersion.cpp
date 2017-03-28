@@ -31,18 +31,31 @@
 
 namespace Falcor
 {
-    ProgramVersion::ProgramVersion(const Shader::SharedPtr& pVS, const Shader::SharedPtr& pFS, const Shader::SharedPtr& pGS, const Shader::SharedPtr& pHS, const Shader::SharedPtr& pDS, const Shader::SharedPtr& pCS, const std::string& name) : mName(name)
+    ProgramVersion::ProgramVersion(const Shader::SharedPtr& pVS, const Shader::SharedPtr& pPS, const Shader::SharedPtr& pGS, const Shader::SharedPtr& pHS, const Shader::SharedPtr& pDS, const Shader::SharedPtr& pCS, const std::string& name) : mName(name)
     {
         mpShaders[(uint32_t)ShaderType::Vertex] = pVS;
-        mpShaders[(uint32_t)ShaderType::Pixel] = pFS;
+        mpShaders[(uint32_t)ShaderType::Pixel] = pPS;
         mpShaders[(uint32_t)ShaderType::Geometry] = pGS;
         mpShaders[(uint32_t)ShaderType::Domain] = pDS;
         mpShaders[(uint32_t)ShaderType::Hull] = pHS;
         mpShaders[(uint32_t)ShaderType::Compute] = pCS;
     }
 
-    ProgramVersion::SharedConstPtr ProgramVersion::create(const Shader::SharedPtr& pVS,
-        const Shader::SharedPtr& pFS,
+    ProgramReflection::SharedPtr createProgramReflection(const Shader::SharedConstPtr pShaders[], std::string& log)
+    {
+        ProgramReflection::ReflectionHandleVector reflect;
+        for (uint32_t i = 0; i < (uint32_t)ShaderType::Count; i++)
+        {
+            if (pShaders[i])
+            {
+                reflect.push_back(pShaders[i]->getReflectionInterface());
+            }
+        }
+        return ProgramReflection::create(reflect, log);
+    }
+
+    ProgramVersion::SharedPtr ProgramVersion::create(const Shader::SharedPtr& pVS,
+        const Shader::SharedPtr& pPS,
         const Shader::SharedPtr& pGS,
         const Shader::SharedPtr& pHS,
         const Shader::SharedPtr& pDS,
@@ -55,13 +68,14 @@ namespace Falcor
             log = "Program " + name + " doesn't contain a vertex-shader. This is illegal.";
             return nullptr;
         }
-        SharedPtr pProgram = SharedPtr(new ProgramVersion(pVS, pFS, pGS, pHS, pDS, nullptr, name));
+        SharedPtr pProgram = SharedPtr(new ProgramVersion(pVS, pPS, pGS, pHS, pDS, nullptr, name));
 
-        if(pProgram->apiInit(log, name) == false)
+        if(pProgram->init(log) == false)
         {
             return nullptr;
         }
-        pProgram->mpReflector = ProgramReflection::create(pProgram.get(), log);
+
+        pProgram->mpReflector = createProgramReflection(pProgram->mpShaders, log);
         if (pProgram->mpReflector == nullptr)
         {
             return nullptr;
@@ -69,7 +83,7 @@ namespace Falcor
         return pProgram;
     }
 
-    ProgramVersion::SharedConstPtr ProgramVersion::create(const Shader::SharedPtr& pCS, std::string& log, const std::string& name)
+    ProgramVersion::SharedPtr ProgramVersion::create(const Shader::SharedPtr& pCS, std::string& log, const std::string& name)
     {
         // We must have at least a CS
         if (pCS == nullptr)
@@ -79,11 +93,11 @@ namespace Falcor
         }
         SharedPtr pProgram = SharedPtr(new ProgramVersion(nullptr, nullptr, nullptr, nullptr, nullptr, pCS, name));
 
-        if (pProgram->apiInit(log, name) == false)
+        if (pProgram->init(log) == false)
         {
             return nullptr;
         }
-        pProgram->mpReflector = ProgramReflection::create(pProgram.get(), log);
+        pProgram->mpReflector = createProgramReflection(pProgram->mpShaders, log);
         if (pProgram->mpReflector == nullptr)
         {
             return nullptr;

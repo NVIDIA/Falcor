@@ -81,7 +81,7 @@ void Shadows::setLightIndex(int32_t index)
 void Shadows::createScene(const std::string& filename)
 {
     // Load the scene
-    mpScene = Scene::loadFromFile(filename, Model::GenerateTangentSpace);
+    mpScene = Scene::loadFromFile(filename);
 
     // Create the renderer
     mpRenderer = SceneRenderer::create(mpScene);

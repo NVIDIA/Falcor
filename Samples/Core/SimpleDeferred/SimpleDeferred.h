@@ -27,10 +27,11 @@
 ***************************************************************************/
 #pragma once
 #include "Falcor.h"
+#include "SampleTest.h"
 
 using namespace Falcor;
 
-class SimpleDeferred : public Sample
+class SimpleDeferred : public Sample, public SampleTest
 {
 public:
     ~SimpleDeferred();
@@ -102,4 +103,11 @@ private:
 
     float mNearZ = 1e-2f;
     float mFarZ = 1e3f;
+
+    //testing
+    void onInitializeTestingArgs(const ArgList& args) override;
+    void onRunTestTask(const FrameRate& frameRate) override;
+    void onTestShutdown() override { shutdownApp(); }
+    std::vector<uint32_t> mChangeModeFrames;
+    std::vector<uint32_t>::iterator mChangeModeIt;
 };

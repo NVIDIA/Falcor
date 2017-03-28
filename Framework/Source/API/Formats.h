@@ -95,8 +95,6 @@ namespace Falcor
         BGRA8Unorm,
         BGRA8UnormSrgb,
         
-        RGBX8Unorm,
-        RGBX8UnormSrgb,
         BGRX8Unorm,
         BGRX8UnormSrgb,
         Alpha8Unorm,
@@ -263,8 +261,6 @@ namespace Falcor
 			return ResourceFormat::BGRX8Unorm;
 		case ResourceFormat::RGBA8UnormSrgb:
 			return ResourceFormat::RGBA8Unorm;
-		case ResourceFormat::RGBX8UnormSrgb:
-			return ResourceFormat::RGBX8Unorm;
         case ResourceFormat::BC7UnormSrgb:
             return ResourceFormat::BC7Unorm;
 		default:
@@ -291,8 +287,6 @@ namespace Falcor
             return ResourceFormat::BGRX8UnormSrgb;
         case ResourceFormat::RGBA8Unorm:
             return ResourceFormat::RGBA8UnormSrgb;
-        case ResourceFormat::RGBX8Unorm:
-            return ResourceFormat::RGBX8UnormSrgb;
         case ResourceFormat::BC7Unorm:
             return ResourceFormat::BC7UnormSrgb;
         default:

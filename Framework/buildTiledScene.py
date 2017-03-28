@@ -2,6 +2,7 @@ import argparse
 import os
 import sys
 from random import randint
+import ntpath
 
 def main():
 	parser = argparse.ArgumentParser()
@@ -67,6 +68,7 @@ def main():
 		rotX = 0
 
 	name, extension = os.path.splitext(args.modelFile)
+	name = ntpath.basename(name)
 	outfile = open(name + '_tiled.fscene', 'w')
 
 	#global data

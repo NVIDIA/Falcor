@@ -53,7 +53,7 @@ struct CsmData
     int cascadeCount DEFAULTS(4);
     uint32_t filterMode DEFAULTS(CsmFilterHwPcf);
 
-    int32_t sampleKernelSize DEFAULTS(5);
+    int32_t pcfKernelWidth DEFAULTS(5);
     vec3 lightDir;
 
     float lightBleedingReduction DEFAULTS(0);
@@ -183,7 +183,7 @@ float csmFixedSizePcf(const CsmData csmData, const vec2 texC, float depthRef, ui
     vec2 pixelSize = 1.0 / dim.xy;
     float res = 0;
 
-    int halfKernelSize = csmData.sampleKernelSize / 2u;
+    int halfKernelSize = csmData.pcfKernelWidth / 2u;
     for(int i = -halfKernelSize; i <= halfKernelSize; i++)
     {
         for(int j = -halfKernelSize; j <= halfKernelSize; j++)
@@ -193,7 +193,7 @@ float csmFixedSizePcf(const CsmData csmData, const vec2 texC, float depthRef, ui
         }
     }
 
-    return res / (csmData.sampleKernelSize * csmData.sampleKernelSize);
+    return res / (csmData.pcfKernelWidth * csmData.pcfKernelWidth);
 }
 
 float csmStochasticFilter(const CsmData csmData, const vec2 texC, float depthRef, uint32_t cascadeIndex, vec2 posSxy)
@@ -221,7 +221,7 @@ float csmStochasticFilter(const CsmData csmData, const vec2 texC, float depthRef
         vec2(0.14383161, -0.14100790)
     };
 
-    vec2 halfKernelSize = pixelSize * float(csmData.sampleKernelSize) / 4;
+    vec2 halfKernelSize = pixelSize * float(csmData.pcfKernelWidth) / 4;
 
     float res = 0;
     float2 pos = posSxy / dim.xy;

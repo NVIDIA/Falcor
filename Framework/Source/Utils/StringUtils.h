@@ -28,6 +28,7 @@
 #pragma once
 #include <string>
 #include <algorithm>
+#include <codecvt>
 
 namespace Falcor
 {
@@ -176,6 +177,22 @@ namespace Falcor
         }
 
         return name;
+    }
+
+    /** convert string to wstring
+    */
+    inline std::wstring string_2_wstring(const std::string& s)
+    {
+        std::wstring_convert<std::codecvt_utf8<WCHAR>> cvt;
+        std::wstring ws = cvt.from_bytes(s);
+        return ws;
+    }
+
+    inline std::string wstring_2_string(const std::wstring& ws)
+    {
+        std::wstring_convert<std::codecvt_utf8<WCHAR>> cvt;
+        std::string s = cvt.to_bytes(ws);
+        return s;
     }
     /*! @} */
 };

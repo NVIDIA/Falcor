@@ -8,16 +8,15 @@ from xml.parsers.expat import ExpatError
 import argparse
 import sys
 import filecmp
+import ntpath
 from datetime import date, timedelta
 
 #relevant paths
 gBuildBatchFile = 'BuildFalcorTest.bat'
-gTestListFile = 'C:\\Users\\clavelle\\Desktop\\FalcorGitHub\\Test\\TestList.txt'
+gTestListFile = 'TestList.txt'
 gEmailRecipientFile = 'EmailRecipients.txt'
-gDebugDir = 'C:\\Users\\clavelle\\Desktop\\FalcorGitHub\\Bin\\x64\\Debug\\'
-gReleaseDir = 'C:\\Users\\clavelle\\Desktop\\FalcorGitHub\\Bin\\x64\\Release\\'
 gResultsDir = 'TestResults'
-gReferenceDir = 'ReferenceResults'
+gReferenceDir = 'ReferenceResults'      
 
 #default values
 #percent
@@ -27,7 +26,10 @@ gDefaultLoadTimeMargin = 10
 #average pixel color difference
 gDefaultImageCompareMargin = 0.1
 #seconds
-gDefaultHangTimeDuration = 75
+gDefaultHangTimeDuration = 1800
+
+#dictionary of configName : exeDirPath
+gConfigDirDict = {}
 
 class TestInfo(object):
     def determineIndex(self, generateReference):
@@ -50,8 +52,6 @@ class TestInfo(object):
         self.Index = 0
     def getResultsFile(self):
         return self.Name + '_TestingLog_' + str(self.Index) + '.xml'
-    def getBuildFailFile(self):
-        return self.Name + '_BuildFailLog.txt'
     def getResultsDir(self):
         return gResultsDir + '\\' + self.ConfigName
     def getReferenceDir(self):
@@ -61,13 +61,9 @@ class TestInfo(object):
     def getFullName(self):
         return self.Name + '_' + self.ConfigName + '_' + str(self.Index)
     def getTestDir(self):
-        if (self.ConfigName == 'debugd3d12' or self.ConfigName == 'debugd3d11' or 
-            self.ConfigName == 'debugGL'):
-            return gDebugDir
-        elif(self.ConfigName == 'released3d12' or self.ConfigName == 'released3d11' or
-            self.ConfigName == 'releaseGL'):
-            return gReleaseDir
-        else:
+        try:
+            return gConfigDirDict[self.ConfigName]
+        except:
             print 'Invalid config' + self.ConfigName + ' for testInfo obj named ' + self.Name
             return ''
     def getTestPath(self):
@@ -208,19 +204,13 @@ def callBatchFile(batchArgs):
         print 'Incorrect batch file call, found ' + string(numArgs) + ' in arg list :' + batchArgs.tostring()
         return 1
 
-def buildFail(fatal, testInfo, sendFailEmail):
-    resultsDir = testInfo.getResultsDir()
-    makeDirIfDoesntExist(resultsDir)
-    overwriteMove(testInfo.getBuildFailFile(), resultsDir)
-    if fatal:
-        errorMsg = 'Fatal error, failed to build ' + testInfo.getFullName()
-        if sendFailEmail:
-            sendFatalFailEmail(errorMsg)
-        else:
-            print errorMsg
-        sys.exit(1)
-    else:
-        logTestSkip(testInfo.getFullName(), 'Build Failure')
+def buildFail(slnName, configName):
+    makeDirIfDoesntExist(gResultsDir)
+    buildLog = 'Solution_BuildFailLog.txt'
+    overwriteMove(buildLog, gResultsDir)
+    errorMsg = 'failed to build one or more projects with config ' + configName + ' of solution ' + slnName  + ". Build log written to " + buildLog
+    print 'Error: ' + errorMsg
+    gFailReasonsList.append(errorMsg)
 
 def addCrash(testName):
     logTestSkip(testName, 'Unhandled Crash')
@@ -317,57 +307,66 @@ def processSystemTest(xmlElement, testInfo):
     makeDirIfDoesntExist(testInfo.getResultsDir())
     overwriteMove(resultFile, testInfo.getResultsDir())
 
-def readTestList(buildTests, generateReference, sendFailEmail):
-    testList = open(gTestListFile)
-    for line in testList.readlines():
-        #strip off newline if there is one 
-        if line[-1] == '\n':
-            line = line[:-1]
-        #end cmd line with space
-        if line[-1] != ' ':
-            line += ' '
-        #grab cmd line if exists
-        cmdLineIndex = line.find(':')
-        cmdLine = ''
-        if cmdLineIndex != -1:
-            cmdLine = line[cmdLineIndex + 1:]
-            line = line[:cmdLineIndex]
-        #parse testing line
-        testValues = line.split(' ')
-        numValues = len(testValues)
-        if numValues < 2:
-            logTestSkip(line, 'Improperly formatted test request')
-            continue
-        testName = testValues[0]
-        configName = testValues[1].lower()
-        testInfo = TestInfo(testName, configName)
-        if not isConfigValid(configName):
-            logTestSkip(testInfo.getFullName(), 'Unrecognized config ' + configName)
-            continue
-        if numValues >= 3 and testValues[2] and not testValues[2].isspace():
-            try:
-                testInfo.LoadErrorMargin = float(testValues[2])
-            except:
-                print ('Unable to convert ' + testValues[2] + 
-                    ' to float. Using default Load Error Margin ' + str(gDefaultLoadTimeMargin))
-        if numValues >= 4 and testValues[3] and not testValues[3].isspace():
-            try:
-                testInfo.FrameErrorMargin = float(testValues[3])
-            except:
-                print ('Unable to convert ' + testValues[3] + 
-                    ' to float. Using default Frame Error Margin ' + str(gDefaultFrameTimeMargin))
-        #build and run tests
+def readTestList(generateReference, buildTests):
+    global gConfigDirDict
+    global gResultsDir
+    file = open(gTestListFile)
+    contents = file.read()
+    slnEndIndex = contents.find(' ')
+    slnName = contents[:slnEndIndex]
+    #make sln name dir within date dir
+    slnBaseName, extension = os.path.splitext(slnName)
+    slnBaseName = ntpath.basename(slnBaseName) 
+    gResultsDir += '\\' + slnBaseName
+    if os.path.isdir(gResultsDir):
+        cleanDir(gResultsDir, None, None)
+    else:
+        os.makedirs(gResultsDir)
+    slnConfigStartIndex = contents.find('{')
+    slnConfigEndIndex = contents.find('}')
+    configData = contents[slnConfigStartIndex + 1 : slnConfigEndIndex]
+    configDataList = configData.split(' ')
+    for i in xrange(0, len(configDataList), 2):
+        exeDir = configDataList[i + 1]
+        configName = configDataList[i].lower()
+        gConfigDirDict[configName] = exeDir
         if buildTests:
-            #if theres a cmd line, is system test, use falcor sln
-            if cmdLine:
-                if callBatchFile(['build', '../Falcor.sln', configName, testName]):
-                    buildFail(False, testInfo, sendFailEmail)
-                    continue
-            else:
-                if callBatchFile(['build', 'FalcorTest.sln', configName, testName]):
-                    buildFail(False, testInfo, sendFailEmail)
-                    continue
-        runTest(testInfo, cmdLine, generateReference)
+            callBatchFile(['clean', slnName, configName])
+            #delete bin dir
+            if os.path.isdir(exeDir):
+                shutil.rmtree(exeDir)
+            #returns 1 on fail
+            if callBatchFile(['rebuild', slnName, configName]):
+                buildFail(slnName, configName)
+        else:
+            cleanDir(exeDir, None, '.png')
+
+    contents = contents[slnConfigEndIndex + 1 :]
+    argStartIndex = contents.find('{')
+    while(argStartIndex != -1):
+        testName = cleanupString(contents[:argStartIndex])
+        argEndIndex = contents.find('}')
+        args = cleanupString(contents[argStartIndex + 1 : argEndIndex])
+        argsList = args.split(',')
+        contents = contents[argEndIndex + 1 :]
+        configStartIndex = contents.find('{')
+        configEndIndex = contents.find('}')
+        configList = cleanupString(contents[configStartIndex + 1 : configEndIndex]).split(' ')
+        #run test for each config and each set of args
+        for config in configList:
+            print 'Running ' + testName + ' in config ' + config 
+            testInfo = TestInfo(testName, config)
+            if generateReference:
+                cleanDir(testInfo.getReferenceDir(), testName, '.png')
+                cleanDir(testInfo.getReferenceDir(), testName, '.xml')
+            for argSet in argsList:
+                testInfo = TestInfo(testName, config)
+                runTest(testInfo, cleanupString(argSet), generateReference)
+
+        #goto next set
+        contents = contents[configEndIndex + 1 :]
+        argStartIndex = contents.find('{')
+    return slnBaseName
 
 def runTest(testInfo, cmdLine, generateReference):
     testPath = testInfo.getTestPath()
@@ -375,7 +374,7 @@ def runTest(testInfo, cmdLine, generateReference):
         logTestSkip(testInfo.getFullName(), 'Unable to find ' + testPath)
         return
     try:
-        p = subprocess.Popen([testPath, cmdLine])
+        p = subprocess.Popen(testPath + ' ' + cmdLine)
         #run test until timeout or return
         start = time.time()
         while p.returncode == None:
@@ -388,7 +387,7 @@ def runTest(testInfo, cmdLine, generateReference):
                 return
         #ensure results file exists
         if not os.path.isfile(testInfo.getResultsFile()):
-            logTestSkip(testInfo.getFullName(), 'Failed to open ' + testInfo.getResultsFile())
+            logTestSkip(testInfo.getFullName(), 'Failed to open test result file ' + testInfo.getResultsFile())
             return
         #check for name conflicts
         testInfo.determineIndex(generateReference)
@@ -556,7 +555,7 @@ def getSkipsTable():
     html += '</table>'
     return html
 
-def outputHTML(openSummary):
+def outputHTML(openSummary, slnName):
     html = getLowLevelTestResultsTable()
     html += '<br><br>'
     html += getSystemTestResultsTable()
@@ -564,22 +563,29 @@ def outputHTML(openSummary):
     html += getImageCompareResultsTable()
     html += '<br><br>'
     html += getSkipsTable()
-    resultSummaryName = gResultsDir + '\\TestSummary.html'
+    resultSummaryName = gResultsDir + '\\' + slnName + '_TestSummary.html'
     outfile = open(resultSummaryName, 'w')
     outfile.write(html)
     outfile.close()
     if(openSummary):
         os.system("start " + resultSummaryName)
 
-def cleanScreenShots(ssDir):
-    if os.path.isdir(ssDir):
-        screenshots = [s for s in os.listdir(ssDir) if s.endswith('.png')]
-        for s in screenshots:
-            os.remove(ssDir + '\\' + s)
-
-def updateRepo():
-    subprocess.call(['git', 'pull', 'origin', 'D3D12'])
-    subprocess.call(['git', 'checkout', 'origin/D3D12'])
+def cleanDir(cleanedDir, prefix, suffix):
+    if os.path.isdir(cleanedDir):
+        if prefix and suffix:
+            deadFiles = [f for f in os.listdir(cleanedDir) if f.endswith(suffix) and f.startswith(prefix)]
+        elif prefix:
+            deadFiles = [f for f in os.listdir(cleanedDir) if f.startswith(prefix)]
+        elif suffix:
+            deadFiles = [f for f in os.listdir(cleanedDir) if f.endswith(suffix)]
+        else:
+            deadFiles = [f for f in os.listdir(cleanedDir)]
+        for f in deadFiles:
+            filepath = cleanedDir + '\\' + f
+            if os.path.isdir(filepath):
+                cleanDir(filepath, prefix, suffix)
+            else:
+                os.remove(filepath)
 
 def sendFatalFailEmail(failMsg):
     subject = '[FATAL TESTING ERROR] '
@@ -614,82 +620,75 @@ def sendEmail(subject, body, attachment):
 def main():
     global gResultsDir
     global gLowLevelResultList
+    global gReferenceDir
+    global gTestListFile
     parser = argparse.ArgumentParser()
     parser.add_argument('-nb', '--nobuild', action='store_true', help='run without rebuilding Falcor and test apps')
-    parser.add_argument('-np', '--nopull', action='store_true', help='run without pulling TestingFramework')
     parser.add_argument('-ne', '--noemail', action='store_true', help='run without emailing the result summary')
     parser.add_argument('-ss', '--showsummary', action='store_true', help='opens testing summary upon completion')
     parser.add_argument('-gr', '--generatereference', action='store_true', help='generates reference testing logs and images')
+    parser.add_argument('-ref', '--referencedir', action='store', help='Allows user to specify an existing reference dir')
+    parser.add_argument('-tests', '--testlist', action='store', help='Allows user to specify the test list file')
     args = parser.parse_args()
 
-    if args.generatereference:
-        if os.path.isdir(gReferenceDir):
-            shutil.rmtree(gReferenceDir, ignore_errors=True)
-        try:
-            time.sleep(5)
-            os.makedirs(gReferenceDir)
-        except:
-            print 'Fatal Error, Failed to create reference dir.'
+    if args.referencedir:
+        refDir = cleanupString(args.referencedir)
+        if os.path.isdir(refDir):
+            gReferenceDir = refDir
+        elif not args.generatereference:
+            print 'Fatal Error, Failed to find user specified reference dir: ' + args.referencedir
             sys.exit(1)
 
-    if not args.nopull:
-        updateRepo()
+    if args.generatereference:
+        if not os.path.isdir(gReferenceDir):
+            try:
+                os.makedirs(gReferenceDir)
+            except:
+                print 'Fatal Error, Failed to create reference dir.'
+                sys.exit(1)
 
-    cleanScreenShots(gDebugDir)
-    cleanScreenShots(gReleaseDir)
+    if args.testlist:
+        if not os.path.exists(args.testlist):
+            print 'Error, Failed to find user specified test list. using default ' + testlist
+        else:
+            gTestListFile = args.testlist
 
     #make outer dir if need to
     makeDirIfDoesntExist(gResultsDir)
-    #make inner dir for this results
+    #make date dir if needed
     dateStr = date.today().strftime("%m-%d-%y")
     gResultsDir += '\\' + dateStr
-    if os.path.isdir(gResultsDir):
-        #remove date subdir if exists
-        shutil.rmtree(gResultsDir, ignore_errors=True)
-        try:
-            time.sleep(5)
-            os.makedirs(gResultsDir)
-        except:
-            sendFatalFailEmail('Fatal Error, Failed to create test result folder')
-            sys.exit(1)
- 
-    if not args.nobuild:
-        callBatchFile(['clean', 'FalcorTest.sln', 'debugd3d12'])
-        callBatchFile(['clean', 'FalcorTest.sln', 'released3d12'])
-        callBatchFile(['clean', '../Falcor.sln', 'debugd3d12'])
-        callBatchFile(['clean', '../Falcor.sln', 'released3d12'])
-        #returns 1 on fail
-        if callBatchFile(['build', 'FalcorTest.sln', 'debugd3d12', 'Falcor']):
-            testInfo = TestInfo('Falcor', 'debugd3d12')
-            buildFail(True, testInfo, not args.noemail)
-        if callBatchFile(['build', 'FalcorTest.sln', 'released3d12', 'Falcor']):
-            testInfo = TestInfo('Falcor', 'released3d12')
-            buildFail(True, testInfo, not args.noemail)
-        if callBatchFile(['build', 'FalcorTest.sln', 'debugd3d12', 'FalcorTest']):
-            testInfo = TestInfo('FalcorTest', 'debugd3d12')
-            buildFail(True, testInfo, not args.noemail)
-        if callBatchFile(['build', 'FalcorTest.sln', 'released3d12', 'FalcorTest']):
-            testInfo = TestInfo('FalcorTest', 'released3d12')
-            buildFail(True, testInfo, not args.noemail)
+    makeDirIfDoesntExist(gResultsDir)
 
     if not args.generatereference:
         resultSummary = LowLevelResult()
         resultSummary.Name = 'Summary'
         gLowLevelResultList.append(resultSummary)
 
-    readTestList(not args.nobuild, args.generatereference, not args.noemail)
+    slnName = readTestList(args.generatereference, not args.nobuild)
     if not args.generatereference:
-        outputHTML(args.showsummary)
-    else:
-        if(len(gSkippedList) > 0 or len(gFailReasonsList) > 0):
-            print '\nRan into the following issues while generating reference...'
-            for name, skip in gSkippedList:
-                print name + ': ' + skip
-            for reason in gFailReasonsList:
-                print reason 
+        outputHTML(args.showsummary, slnName)
 
     if not args.noemail and not args.generatereference:
         sendTestingEmail()
+    
+    #open a file instead, move file to result dir
+    #if(len(gSkippedList) > 0 or len(gFailReasonsList) > 0):
+    #    errorFileStr = 'Ran into the following issues\n-----\n'
+    #    for name, skip in gSkippedList:
+    #        errorFileStr += name + ': ' + skip
+    #    for reason in gFailReasonsList:
+    #        errorFileStr += reason
+    #    errorFile = open(gResultsDir + '\\' + slnName + '_ErrorSummary.txt', 'w')
+    #    errorFile.write(errorFileStr)
+    #    errorFile.close();
+    #    return 1
+    #else:
+    #    return 0
+
+def cleanupString(string):
+    string = string.replace('\t', '')
+    return string.replace('\n', '').strip()
 
 if __name__ == '__main__':
     main()

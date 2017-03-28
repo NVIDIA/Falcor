@@ -25,31 +25,25 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#version 420
-#include "hlslglslcommon.h"
-#include "VertexAttrib.h"
 
-struct Matrices
+struct VsIn
 {
-    mat4 worldMat;
-    mat4 wvpMat;
+    float4 pos : POSITION;
 };
 
-CONSTANT_BUFFER (PerFrameCB, 0)
+struct VsOut
 {
-	Matrices m;
+    float4 svPos : SV_POSITION;
 };
 
-#ifdef FALCOR_GLSL
-out vec3 normalW;
-layout(location = VERTEX_POSITION_LOC) in vec4 posL;
-layout(location = VERTEX_NORMAL_LOC)   in vec3 normalL;
-
-void main()
-#elif defined FALCOR_HLSL
-void main(in vec4 posL : POSITION, in vec3 normalL : NORMAL, out vec3 normalW : NORMAL, out vec4 gl_Position : SV_POSITION)
-#endif
+cbuffer PerFrameCB : register(b0)
 {
-	gl_Position = mul(m.wvpMat,posL);
-	normalW = (mul(m.worldMat, vec4(normalL, 0))).xyz;
+    float4 color;
+};
+
+VsOut main(VsIn vIn)
+{
+    VsOut vOut;
+    vOut.svPos = vIn.pos;
+    return vOut;
 }

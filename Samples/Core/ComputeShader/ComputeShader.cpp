@@ -49,8 +49,6 @@ void ComputeShader::onLoad()
     mpState = ComputeState::create();
     mpState->setProgram(mpProg);
     mpProgVars = ComputeVars::create(mpProg->getActiveVersion()->getReflector());
-    mpBlitPass = FullScreenPass::create("blit.fs");
-    mpBlitVars = GraphicsVars::create(mpBlitPass->getProgram()->getActiveVersion()->getReflector());
 
     mpTmpTexture = createTmpTex(mpDefaultFBO.get());
 

@@ -39,7 +39,7 @@ namespace Falcor
     {
         mpGraphicsState->setFbo(pContext->getGraphicsState()->getFbo());
         pContext->setGraphicsState(mpGraphicsState);
-
+        pContext->setGraphicsVars(mpProgramVars);
         SceneRenderer::renderScene(pContext, pCamera);
     }
 
@@ -76,24 +76,19 @@ namespace Falcor
 
         defines.add("CULL_REAR_SECTION");
         mpRotGizmoProgram = GraphicsProgram::createFromFile("Framework/Shaders/SceneEditorVS.hlsl", "Framework/Shaders/SceneEditorPS.hlsl", defines);
-        mpRotGizmoProgramVars = GraphicsVars::create(mpRotGizmoProgram->getActiveVersion()->getReflector());
     }
 
-    void SceneEditorRenderer::setPerFrameData(RenderContext* pContext, const CurrentWorkingData& currentData)
+    void SceneEditorRenderer::setPerFrameData(const CurrentWorkingData& currentData)
     {
         if (currentData.pCamera)
         {
             // Set camera for regular shader
             ConstantBuffer* pCB = mpProgramVars->getConstantBuffer(kPerFrameCbName).get();
             currentData.pCamera->setIntoConstantBuffer(pCB, sCameraDataOffset);
-
-            // Set camera for rotate gizmo shader
-            pCB = mpRotGizmoProgramVars->getConstantBuffer(kPerFrameCbName).get();
-            currentData.pCamera->setIntoConstantBuffer(pCB, sCameraDataOffset);
         }
     }
 
-    bool SceneEditorRenderer::setPerModelInstanceData(RenderContext* pContext, const Scene::ModelInstance::SharedPtr& pModelInstance, uint32_t instanceID, const CurrentWorkingData& currentData)
+    bool SceneEditorRenderer::setPerModelInstanceData(const CurrentWorkingData& currentData, const Scene::ModelInstance* pModelInstance, uint32_t instanceID)
     {
         const Gizmo::Type gizmoType = Gizmo::getGizmoType(mGizmos, pModelInstance);
 
@@ -104,18 +99,13 @@ namespace Falcor
             color[instanceID] = 1.0f;
 
             mpGraphicsState->setDepthStencilState(mpSetStencilDS);
+            mpProgramVars["ConstColorCB"]["gColor"] = color;
 
             // For rotation gizmo, set shader to cut out away-facing parts
             if (gizmoType == Gizmo::Type::Rotate)
             {
-                mpRotGizmoProgramVars["ConstColorCB"]["gColor"] = color;
                 mpGraphicsState->setProgram(mpRotGizmoProgram);
-                pContext->setGraphicsVars(mpRotGizmoProgramVars);
                 return true;
-            }
-            else
-            {
-                mpProgramVars["ConstColorCB"]["gColor"] = color;
             }
         }
         else
@@ -125,7 +115,6 @@ namespace Falcor
         }
 
         mpGraphicsState->setProgram(mpProgram);
-        pContext->setGraphicsVars(mpProgramVars);
 
         return true;
     }
