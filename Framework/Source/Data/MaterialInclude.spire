@@ -35,7 +35,7 @@ bool alphaTestPassed(in ShadingAttribs attr)
 void applyAlphaTest(in ShadingAttribs attr)
 {
 #ifndef _MS_DISABLE_ALPHA_TEST
-    if(alphaTestEnabled()
+    if(alphaTestEnabled())
     {
         if(!alphaTestPassed(attr))
             discard;
@@ -88,8 +88,15 @@ Should be called once per light.
 void evalMaterial(
     in ShadingAttribs shAttr,
     in LightAttribs lAttr,
+    inout ShadingOutput result)
+{
+    evalMaterial(shAttr, lAttr, result, false);
+}
+void evalMaterial(
+    in ShadingAttribs shAttr,
+    in LightAttribs lAttr,
     inout ShadingOutput result,
-    in bool initializeShadingOut = false)
+    in bool initializeShadingOut)
 {
     /* If it's the first pass, initialize all the aggregates to zero */
     if(initializeShadingOut)
@@ -133,7 +140,7 @@ void evalMaterial(
     in ShadingAttribs shAttr,
     in LightData light,
     inout ShadingOutput result,
-    in bool initializeShadingOut = false)
+    in bool initializeShadingOut)
 {
     /* Prepare lighting attributes */
     LightAttribs LAttr;
@@ -142,7 +149,13 @@ void evalMaterial(
     /* Evaluate material with lighting attributes */
     evalMaterial(shAttr, LAttr, result, initializeShadingOut);
 }
-
+void evalMaterial(
+    in ShadingAttribs shAttr,
+    in LightData light,
+    inout ShadingOutput result)
+{
+    evalMaterial(shAttr, light, result, false);
+}
 
 
 /**

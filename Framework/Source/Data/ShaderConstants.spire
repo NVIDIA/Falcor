@@ -1,9 +1,23 @@
+#ifndef M_PIf
+#define M_PIf 3.14159265359f
+#endif
+
+#ifndef M_1_PIf
+#define M_1_PIf 0.31830988618379f
+#endif
+
 #define     MatNone            0            ///< A "null" material. Used to end the list of layers
+
 #define     MatLambert         1            ///< A simple diffuse Lambertian BRDF layer
+
 #define     MatConductor       2            ///< A conductor material, metallic reflection, no refraction nor subscattering
+
 #define     MatDielectric      3            ///< A refractive dielectric material, if applied on top of others acts like a coating
+
 #define     MatEmissive        4            ///< An emissive material. Can be assigned to a geometry to create geometric a light source (will be supported only with ray tracing)
+
 #define     MatUser            5            ///< User-defined material, should be parsed and processed by user
+
 #define     MatNumTypes        (MatUser+1)  ///< Number of material types
 
 /** Type of used Normal Distribution Function (NDF). Options so far
@@ -11,11 +25,15 @@
     GGX distribution (smoother highlight, better fit for some materials, default)
 */
 #define     NDFBeckmann        0    ///< Beckmann distribution for NDF
+
 #define     NDFGGX             1    ///< GGX distribution for NDF
+
 #define     NDFUser            2    ///< User-defined distribution for NDF, should be processed by user
 
 #define     BlendFresnel       0    ///< Material layer is blended according to Fresnel
+
 #define     BlendConstant      1    ///< Material layer is blended according to a constant factor stored in w component of constant color
+
 #define     BlendAdd           2    ///< Material layer is added to the previous layers
 
 /**
@@ -34,6 +52,9 @@
     Types of light sources. Used in LightData structure.
 */
 #define LightPoint           0    ///< Point light source, can be a spot light if its opening angle is < 2pi
+
 #define LightDirectional     1    ///< Directional light source
+
 #define LightArea            2    ///< Area light source, potentially with arbitrary geometry
+
 //#define LightVolume        3    ///< Volumetric light source
