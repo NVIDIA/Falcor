@@ -74,7 +74,10 @@ def main():
 
 	#global data
 	outfile.write('{\n')
-	outfile.write('\t\"version\": 2,\n')
+	if args.falcor1:
+		outfile.write('\t\"version\": 1.0,\n')
+	else:
+		outfile.write('\t\"version\": 2.0,\n')
 	outfile.write('\t\"camera_speed\": 1.0,\n')
 	outfile.write('\t\"lighting_scale\": 1.0,\n')
 	outfile.write('\t\"active_camera\": \"Default\",\n')
