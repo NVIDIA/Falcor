@@ -189,6 +189,8 @@ namespace Falcor
 
         size_t getComponentCount() const { return mAssignedComponents.size(); }
 
+        ComponentInstance::SharedPtr const& getComponent(uint32_t index) const { return mAssignedComponents[index]; }
+        ComponentInstance::SharedPtr const& getDefaultComponent() const { return getComponent(0); }
         void setComponent(uint32_t index, ComponentInstance::SharedPtr const& pComponent);
 
         template<typename T>
@@ -243,10 +245,12 @@ namespace Falcor
         mutable RootSignature::SharedPtr mpRootSignature;
         ProgramReflection::SharedConstPtr mpReflector;
 
+        /*SPIRE:
         ResourceMap<ConstantBuffer> mAssignedCbs;        // HLSL 'b' registers
         ResourceMap<ShaderResourceView> mAssignedSrvs;   // HLSL 't' registers
         ResourceMap<UnorderedAccessView> mAssignedUavs;  // HLSL 'u' registers
         ResourceMap<Sampler> mAssignedSamplers;          // HLSL 's' registers
+        */
 
         // SPIRE:
     public:

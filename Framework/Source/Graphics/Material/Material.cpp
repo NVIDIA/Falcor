@@ -576,8 +576,8 @@ namespace Falcor
             SpireModule* componentClass = getSpireComponentClass();
 
             // TODO: we should share/cache the buffer reflection somehwere...
-            ProgramReflection::BufferTypeReflection::SharedPtr componentReflection =
-                ProgramReflection::BufferTypeReflection::create(componentClass);
+            ProgramReflection::ComponentClassReflection::SharedPtr componentReflection =
+                ProgramReflection::ComponentClassReflection::create(componentClass);
 
             mSpireComponentInstance = ComponentInstance::create(
                 componentReflection);
@@ -601,8 +601,8 @@ namespace Falcor
             if( mData.textures.layers[0] )
             {
                 // `TexturedMaterial`
-                mSpireComponentInstance->setTexture("diffuseMap", mData.textures.layers[0].get());
-                mSpireComponentInstance->setSampler("samplerState", mData.samplerState.get());
+                mSpireComponentInstance->setTexture("diffuseMap", mData.textures.layers[0]);
+                mSpireComponentInstance->setSampler("samplerState", mData.samplerState);
             }
             else
             {

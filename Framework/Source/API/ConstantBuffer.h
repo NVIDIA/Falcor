@@ -34,6 +34,8 @@
 #include "API/LowLevel/DescriptorHeap.h"
 
 #include "Sampler.h"
+#include "TypedBuffer.h"
+#include "StructuredBuffer.h"
 
 namespace Falcor
 {
@@ -196,7 +198,7 @@ namespace Falcor
     public:
         using SharedPtr = std::shared_ptr<ComponentInstance>;
 
-        static SharedPtr create(const ProgramReflection::BufferTypeReflection::SharedConstPtr& pReflector);
+        static SharedPtr create(const ProgramReflection::ComponentClassReflection::SharedPtr& pReflector);
 
         template<typename T>
         void setVariable(size_t offset, const T& value)
@@ -218,21 +220,49 @@ namespace Falcor
             mResourceTableDirty = true;
         }
 
-        void setSrv(
+        bool setRawBuffer(const std::string& name, Buffer::SharedPtr const& pBuf);
+        bool setTypedBuffer(const std::string& name, TypedBufferBase::SharedPtr const& pBuf);
+        bool setStructuredBuffer(const std::string& name, StructuredBuffer::SharedPtr const& pBuf);
+
+        Buffer::SharedPtr getRawBuffer(const std::string& name) const;
+        TypedBufferBase::SharedPtr getTypedBuffer(const std::string& name) const;
+        StructuredBuffer::SharedPtr getStructuredBuffer(const std::string& name) const;
+ 
+        bool setSrv(
             uint32_t index,
             const ShaderResourceView::SharedPtr& pSrv,
             const Resource::SharedPtr& pResource);
+        bool setSrv(
+            uint32_t index,
+            const ShaderResourceView::SharedPtr& pSrv);
 
-        void setTexture(const std::string& name, const Texture* pTexture);
+        ShaderResourceView::SharedPtr getSrv(uint32_t index) const;
 
-        void setSampler(const std::string& name, const Sampler* pSampler);
+        bool setUav(
+            uint32_t index,
+            UnorderedAccessView::SharedPtr const& pUav,
+            const Resource::SharedPtr& pResource);
+        bool setUav(
+            uint32_t index,
+            UnorderedAccessView::SharedPtr const& pUav);
+        UnorderedAccessView::SharedPtr getUav(uint32_t index) const;
+
+        bool setTexture(const std::string& name, Texture::SharedPtr const& pTexture);
+
+        Texture::SharedPtr getTexture(std::string const& name) const;
+
+        bool setSampler(uint32_t index, Sampler::SharedPtr const& pSampler);
+        bool setSampler(const std::string& name, Sampler::SharedPtr const& pSampler);
+
+        Sampler::SharedPtr getSampler(uint32_t index) const;
+        Sampler::SharedPtr getSampler(const std::string& name) const;
 
         size_t getVariableOffset(const std::string& name)
         {
             return mConstantBuffer->getVariableOffset(name);
         }
 
-        SpireModule* getSpireComponentClass() const { return mReflector->getSpireComponentClass(); }
+        SpireModule* getSpireComponentClass() const { return mpReflector->getSpireComponentClass(); }
 
         struct ApiHandle
         {
@@ -243,17 +273,24 @@ namespace Falcor
         ApiHandle const& getApiHandle() const;
 
     //private:
-        ProgramReflection::BufferTypeReflection::SharedConstPtr mReflector;
+        ProgramReflection::ComponentClassReflection::SharedPtr mpReflector;
         ConstantBuffer::SharedPtr mConstantBuffer;
 
         struct SRVEntry
         {
-            ShaderResourceView::SharedPtr srv;
-            Resource::SharedPtr resource;
+            ShaderResourceView::SharedPtr   pView;
+            Resource::SharedPtr             pResource;
         };
 
-        std::vector<SRVEntry> mBoundSRVs;
-        std::vector<Sampler::SharedConstPtr> mBoundSamplers;
+        struct UAVEntry
+        {
+            UnorderedAccessView::SharedPtr  pView;
+            Resource::SharedPtr             pResource;
+        };
+
+        std::vector<SRVEntry> mAssignedSRVs;
+        std::vector<UAVEntry> mAssignedUAVs;
+        std::vector<Sampler::SharedPtr> mAssignedSamplers;
         mutable ApiHandle mApiHandle;
         mutable unsigned mResourceTableDirty : 1;
         mutable unsigned mSamplerTableDirty : 1;

@@ -184,8 +184,8 @@ namespace Falcor
         SpireModule* componentClass = spFindModule(spireContext, "InternalPerMeshCB_T");
 
         // TODO: cache and re-use reflection data...
-        ProgramReflection::BufferTypeReflection::SharedPtr componentClassReflection =
-            ProgramReflection::BufferTypeReflection::create(componentClass);
+        ProgramReflection::ComponentClassReflection::SharedPtr componentClassReflection =
+            ProgramReflection::ComponentClassReflection::create(componentClass);
 
         // We create a transient component instance here.
         // TODO: find a way to reclaim this space more cleanly.
