@@ -102,6 +102,19 @@ namespace Falcor
 		{
 			return spEnvFindModule(libEnv, name);
 		}
+		SpireModule* CreateLibraryModuleFromSource(const char * source, const char * moduleName)
+		{
+			spEnvLoadModuleLibraryFromSource(libEnv, source, moduleName, sink);
+			if (spDiagnosticSinkHasAnyErrors(sink))
+			{
+				ReportErrors();
+				return nullptr;
+			}
+			else
+			{
+				return spEnvFindModule(libEnv, moduleName);
+			}
+		}
 		SpireModule* GetVertexModule(VertexLayout* vertLayout)
 		{
 			auto bc = vertLayout->getBufferCount();
@@ -241,6 +254,11 @@ namespace Falcor
 	SpireModule * ShaderRepository::LoadLibraryModule(const char * name)
 	{
 		return impl->LoadLibraryModule(name);
+	}
+
+	SpireModule * ShaderRepository::CreateLibraryModuleFromSource(const char * source, const char * moduleName)
+	{
+		return impl->CreateLibraryModuleFromSource(source, moduleName);
 	}
 
 	SpireCompilationEnvironment * ShaderRepository::LoadSource(const char * source, const char * fileName, SpireDiagnosticSink * sink)

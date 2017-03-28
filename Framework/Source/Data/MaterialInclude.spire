@@ -16,6 +16,8 @@ public param Texture2D heightMap;        // Height (displacement) map modifier, 
 public param Texture2D ambientMap;       // Ambient occlusion map
 public param SamplerState samplerState;
 
+require vec2 vertUV;
+
 public bool alphaTestEnabled()
 {
     return hasAlphaMap != 0;
@@ -113,7 +115,7 @@ void evalMaterial(
     passResult.roughness = 0;
     passResult.effectiveRoughness = 0;
 
-    $LAYER.evalMaterialLayer(shAttr, lAttr, passResult);
+    $LAYER_EVAL  //.evalMaterialLayer(shAttr, lAttr, passResult);
 
     /* Accumulate the results of the pass */
     result.finalValue += passResult.value;

@@ -48,6 +48,7 @@ namespace Falcor
 	public:
 		SpireCompilationContext * GetContext();
 		SpireModule* LoadLibraryModule(const char * name);
+		SpireModule* CreateLibraryModuleFromSource(const char * source, const char * fileName);
 		SpireCompilationEnvironment* LoadSource(const char * source, const char * fileName, SpireDiagnosticSink * sink);
 		SpireModule* GetVertexModule(VertexLayout* vertexLayout);
 		void UnloadSource(SpireCompilationEnvironment * env);

@@ -350,15 +350,16 @@ vec3 blendLayer(in vec4 albedo, in vec4 layerOut, in uint blendType, in vec3 cur
 
 module MaterialLayer
 {
-    param int materialType;
-    param int ndf;
-    param int blend;
-    param float pmf;
     param vec4 albedoColor;
     param vec4 roughness;
     param vec4 extraParam; 
+    param float pmf;
     param Texture2D tex;
+
     require int hasTexture;
+    require int materialType;
+    require int ndf;
+    require int blend;
     require SamplerState samplerState;
     require vec2 vertUV;
 
