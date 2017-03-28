@@ -75,15 +75,21 @@ namespace Falcor
     void clearUavCommon(ComputeContext* pContext, const UnorderedAccessView* pUav, const ClearType& clear, ID3D12GraphicsCommandList* pList)
     {
         pContext->resourceBarrier(pUav->getResource(), Resource::State::UnorderedAccess);
-        UavHandle clearHandle = pUav->getHandleForClear();
+        // SPIRE: TODO: this is broken right now. The old UAV handling stored both a CPU and GPU descriptor,
+        // but we wanted to only have a CPU-side descritpor. The operation below needs a GPU descriptor handle
+        // as well, which means we need somebody to allocate one.
+        //
+        // The right long-term answer here is that a "clear" operation like this is logically an entry point
+        // itself, and we need to construct a component for its parameters... That sound like a bit of a dodge right now, though.
+//SPIRE:        UavHandle clearHandle = pUav->getHandleForClear();
         UavHandle uav = pUav->getApiHandle();
         if (typeid(ClearType) == typeid(vec4))
         {
-            pList->ClearUnorderedAccessViewFloat(uav->getGpuHandle(), clearHandle->getCpuHandle(), pUav->getResource()->getApiHandle(), (float*)value_ptr(clear), 0, nullptr);
+            pList->ClearUnorderedAccessViewFloat(uav->getGpuHandle(), uav->getCpuHandle(), pUav->getResource()->getApiHandle(), (float*)value_ptr(clear), 0, nullptr);
         }
         else if (typeid(ClearType) == typeid(uvec4))
         {
-            pList->ClearUnorderedAccessViewUint(uav->getGpuHandle(), clearHandle->getCpuHandle(), pUav->getResource()->getApiHandle(), (uint32_t*)value_ptr(clear), 0, nullptr);
+            pList->ClearUnorderedAccessViewUint(uav->getGpuHandle(), uav->getCpuHandle(), pUav->getResource()->getApiHandle(), (uint32_t*)value_ptr(clear), 0, nullptr);
         }
         else
         {

@@ -45,7 +45,7 @@ namespace Falcor
 
     void CopyContext::bindDescriptorHeaps()
     {
-        ID3D12DescriptorHeap* pHeaps[] = { gpDevice->getSamplerDescriptorHeap()->getApiHandle(), gpDevice->getSrvDescriptorHeap()->getApiHandle() };
+        ID3D12DescriptorHeap* pHeaps[] = { gpDevice->getShaderSamplerDescriptorHeap()->getApiHandle(), gpDevice->getShaderSrvDescriptorHeap()->getApiHandle() };
         mpLowLevelData->getCommandList()->SetDescriptorHeaps(arraysize(pHeaps), pHeaps);
     }
 

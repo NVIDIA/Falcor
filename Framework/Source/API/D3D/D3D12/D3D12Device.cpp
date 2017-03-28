@@ -294,16 +294,34 @@ namespace Falcor
 			return false;
 		}
 
+        // SPIRE: do this before we create the heaps...
+
         // Create the descriptor heaps
-        mpSrvHeap = DescriptorHeap::create(DescriptorHeap::Type::SRV, 16 * 1024);
-        mpSamplerHeap = DescriptorHeap::create(DescriptorHeap::Type::Sampler, 2048);
-        mpRtvHeap = DescriptorHeap::create(DescriptorHeap::Type::RTV, 1024, false);
-        mpDsvHeap = DescriptorHeap::create(DescriptorHeap::Type::DSV, 1024, false);
-        mpUavHeap = mpSrvHeap;
-        mpCpuUavHeap = DescriptorHeap::create(DescriptorHeap::Type::SRV, 2*1024, false);
+
+        auto pDescriptorAllocator = getDescriptorAllocator();
+
+        // SPIRE: separate CPU and GPU heaps for SRVs/Samplers
+        // SPIRE: TODO: How to size the CPU vs. GPU heaps?
+        uint32_t srvEntryCount = 16 * 1024;
+        mpShaderSrvHeap = DescriptorHeap::create(pDescriptorAllocator, DescriptorHeap::Type::SRV, srvEntryCount);
+        mpCpuSrvHeap = DescriptorHeap::create(pDescriptorAllocator, DescriptorHeap::Type::SRV, srvEntryCount, false);
+
+        uint32_t samplerEntryCount = 2048;
+        mpShaderSamplerHeap = DescriptorHeap::create(pDescriptorAllocator, DescriptorHeap::Type::Sampler, samplerEntryCount);
+        mpCpuSamplerHeap = DescriptorHeap::create(pDescriptorAllocator, DescriptorHeap::Type::Sampler, samplerEntryCount, false);
+
+        mpRtvHeap = DescriptorHeap::create(pDescriptorAllocator, DescriptorHeap::Type::RTV, 1024, false);
+        mpDsvHeap = DescriptorHeap::create(pDescriptorAllocator, DescriptorHeap::Type::DSV, 1024, false);
+//SPIRE:        mpUavHeap = mpSrvHeap;
+//SPIRE:        mpCpuUavHeap = DescriptorHeap::create(DescriptorHeap::Type::SRV, 2*1024, false);
 
 		// Create the swap-chain
         mpRenderContext = RenderContext::create();
+
+        // SPIRE: big hack here
+        pDescriptorAllocator->init(mpRenderContext->getLowLevelData()->getFence());
+
+
         mpResourceAllocator = ResourceAllocator::create(1024 * 1024 * 2, mpRenderContext->getLowLevelData()->getFence());
         pData->pSwapChain = createSwapChain(pDxgiFactory, mpWindow.get(), mpRenderContext->getLowLevelData()->getCommandQueue(), desc.colorFormat);
 		if(pData->pSwapChain == nullptr)
@@ -335,6 +353,8 @@ namespace Falcor
     void Device::executeDeferredReleases()
     {
         mpResourceAllocator->executeDeferredReleases();
+        getDescriptorAllocator()->executeDeferredReleases();
+
         DeviceData* pData = (DeviceData*)mpPrivateData;
         uint64_t gpuVal = pData->pFrameFence->getGpuValue();
         while (pData->deferredReleases.size() && pData->deferredReleases.front().frameID < gpuVal)
@@ -385,4 +405,21 @@ namespace Falcor
     {
         return _ENABLE_NVAPI;
     }
+
+    // SPIRE:
+
+    D3D12_DESCRIPTOR_HEAP_TYPE getHeapType(DescriptorHeap::Type type);
+
+    void Device::copyDescriptor(
+        DescriptorHeap::CpuHandle   dest,
+        DescriptorHeap::CpuHandle   src,
+        DescriptorHeap::Type        type)
+    {
+        this->mApiHandle->CopyDescriptorsSimple(
+            1,
+            dest,
+            src,
+            getHeapType(type));
+    }
+
 }

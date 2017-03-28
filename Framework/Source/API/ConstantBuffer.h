@@ -202,17 +202,20 @@ namespace Falcor
         void setVariable(size_t offset, const T& value)
         {
             mConstantBuffer->setVariable(offset, value);
+            mResourceTableDirty = true;
         }
 
         template<typename T>
         void setVariable(const std::string& name, const T& value)
         {
             mConstantBuffer->setVariable(name, value);
+            mResourceTableDirty = true;
         }
 
         void setBlob(const void* pSrc, size_t offset, size_t size)
         {
             mConstantBuffer->setBlob(pSrc, offset, size);
+            mResourceTableDirty = true;
         }
 
         void setSrv(
@@ -224,22 +227,20 @@ namespace Falcor
 
         void setSampler(const std::string& name, const Sampler* pSampler);
 
-        void setVariable(const std::string& name, const Texture* pTexture)
-        {
-            setTexture(name, pTexture);
-        }
-
-        void setVariable(const std::string& name, const Sampler* pSampler)
-        {
-            setSampler(name, pSampler);
-        }
-
         size_t getVariableOffset(const std::string& name)
         {
             return mConstantBuffer->getVariableOffset(name);
         }
 
         SpireModule* getSpireComponentClass() const { return mReflector->getSpireComponentClass(); }
+
+        struct ApiHandle
+        {
+            DescriptorHeap::Entry resourceDescriptorTable;
+            DescriptorHeap::Entry samplerDescriptorTable;
+        };
+
+        ApiHandle const& getApiHandle() const;
 
     //private:
         ProgramReflection::BufferTypeReflection::SharedConstPtr mReflector;
@@ -253,5 +254,8 @@ namespace Falcor
 
         std::vector<SRVEntry> mBoundSRVs;
         std::vector<Sampler::SharedConstPtr> mBoundSamplers;
+        mutable ApiHandle mApiHandle;
+        mutable unsigned mResourceTableDirty : 1;
+        mutable unsigned mSamplerTableDirty : 1;
     };
 }

@@ -29,10 +29,18 @@
 #include "Framework.h"
 #include <queue>
 
+// SPIRE:
+#include "GpuFence.h"
+
 namespace Falcor
 {
+    class DescriptorAllocator;
     class DescriptorHeapEntry;
+    class DescriptorPool;
 
+    // A `DescriptorHeap` manages a single contiguous range of descriptor memory,
+    // of a single type. It allows contiguous blocks (tables) to be allocated
+    // from that memory, but blocks are never freed back to the heap.
     class DescriptorHeap : public std::enable_shared_from_this<DescriptorHeap>
     {
     public:
@@ -53,22 +61,36 @@ namespace Falcor
             DSV,
             UAV
         };
-        static SharedPtr create(Type type, uint32_t descriptorsCount, bool shaderVisible = true);
+        static SharedPtr create(
+            DescriptorAllocator*    pAllocator,
+            Type                    type,
+            uint32_t                descriptorsCount,
+            bool                    shaderVisible = true);
 
-        Entry allocateEntry();
+        std::shared_ptr<DescriptorPool> getPool(uint32 entryCount);
+
+        DescriptorHeap::Entry allocateTable(uint32_t entryCount);
+        DescriptorHeap::Entry allocateEntry()
+        {
+            return allocateTable(1);
+        }
+
         ApiHandle getApiHandle() const { return mApiHandle; }
         Type getType() const { return mType; }
+
+        DescriptorAllocator* getAllocator() const { return mpDescriptorAllocator; }
+
     private:
         friend DescriptorHeapEntry;
-        DescriptorHeap(Type type, uint32_t descriptorsCount);
+        friend class DescriptorPool;
+        DescriptorHeap(
+            DescriptorAllocator*    pAllocator,
+            Type type, uint32_t descriptorsCount);
 
         CpuHandle getCpuHandle(uint32_t index) const;
         GpuHandle getGpuHandle(uint32_t index) const;
-        void releaseEntry(uint32_t handle)
-        {
-            mFreeEntries.push(handle);
-        }
 
+        DescriptorAllocator* mpDescriptorAllocator;
         CpuHandle mCpuHeapStart = {};
         GpuHandle mGpuHeapStart = {};
         uint32_t mDescriptorSize;
@@ -77,7 +99,33 @@ namespace Falcor
         ApiHandle mApiHandle;
         Type mType;
 
-        std::queue<uint32_t> mFreeEntries;
+        std::map<uint32_t, std::weak_ptr<DescriptorPool>> mPools;
+    };
+
+    // A `DescriptorPool` manages allocation of fixed-size descriptor tables
+    // (the number of tables is baked into the pool object), and allows allocated
+    // tables to be released and put back into a free list on the pool.
+    class DescriptorPool : public std::enable_shared_from_this<DescriptorPool>
+    {
+    public:
+        using SharedPtr = std::shared_ptr<DescriptorPool>;
+
+        DescriptorHeap::SharedPtr getDescriptorHeap() { return mpDescriptorHeap; }
+        uint32_t getTableEntryCount() { return mTableEntryCount; }
+
+        DescriptorHeap::Entry allocateTable();
+        void releaseTable(uint32_t entry);
+
+    private:
+        friend class DescriptorHeap;
+        DescriptorPool(
+            DescriptorHeap::SharedPtr   pDescriptorHeap,
+            uint32_t                    tableEntryCount);
+
+        DescriptorHeap::SharedPtr   mpDescriptorHeap;
+        uint32_t                    mTableEntryCount;
+
+        std::queue<uint32_t>        mFreeEntries;
     };
 
     // Ideally this would be nested inside the Descriptor heap. Unfortunately, we need to forward declare it in FalcorD3D12.h, which is impossible with nesting
@@ -89,25 +137,55 @@ namespace Falcor
         using CpuHandle = DescriptorHeap::CpuHandle;
         using GpuHandle = DescriptorHeap::GpuHandle;
 
-        static SharedPtr create(DescriptorHeap::SharedPtr pHeap, uint32_t heapEntry)
+        static SharedPtr create(DescriptorPool::SharedPtr pHeap, uint32_t heapEntry)
         {
             SharedPtr pEntry = SharedPtr(new DescriptorHeapEntry(pHeap));
             pEntry->mHeapEntry = heapEntry;
             return pEntry;
         }
 
-        ~DescriptorHeapEntry()
+        ~DescriptorHeapEntry();
+#if 0
         {
-            mpHeap->releaseEntry(mHeapEntry);
+            mpPool->releaseTable(mHeapEntry);
         }
+#endif
 
         // OPTME we could store the handles in the class to avoid the additional indirection at the expense of memory
-        CpuHandle getCpuHandle() const { return mpHeap->getCpuHandle(mHeapEntry); }
-        GpuHandle getGpuHandle() const { return mpHeap->getGpuHandle(mHeapEntry); }
-        DescriptorHeap::SharedPtr getHeap() const { return mpHeap; }
+        CpuHandle getCpuHandle(uint32_t offset = 0) const { return mpPool->getDescriptorHeap()->getCpuHandle(mHeapEntry + offset); }
+        GpuHandle getGpuHandle(uint32_t offset = 0) const { return mpPool->getDescriptorHeap()->getGpuHandle(mHeapEntry + offset); }
+        DescriptorHeap::SharedPtr getHeap() const { return mpPool->getDescriptorHeap(); }
+
+
+
     private:
-        DescriptorHeapEntry(DescriptorHeap::SharedPtr pHeap) : mpHeap(pHeap) {}
+        friend class DescriptorAllocator;
+        DescriptorHeapEntry(DescriptorPool::SharedPtr pPool) : mpPool(pPool) {}
+        DescriptorPool::SharedPtr mpPool;
         uint32_t mHeapEntry = -1;
-        DescriptorHeap::SharedPtr mpHeap;
+    };
+
+    class DescriptorAllocator
+    {
+    public:
+        void init(GpuFence::SharedPtr const& pFence);
+
+        void deferredRelease(DescriptorHeapEntry* entry);
+        void executeDeferredReleases();
+
+
+    private:
+        GpuFence::SharedPtr mpFence;
+
+        struct Entry
+        {
+            DescriptorPool::SharedPtr pPool;
+            uint32_t heapEntry;
+            uint64_t fenceValue = 0;
+
+            bool operator<(const Entry& other)  const { return fenceValue > other.fenceValue; }
+        };
+        std::priority_queue<Entry> mDeferredReleases;
+
     };
 }

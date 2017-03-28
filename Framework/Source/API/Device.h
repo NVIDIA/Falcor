@@ -112,14 +112,29 @@ namespace Falcor
         */
         Fbo::SharedPtr resizeSwapChain(uint32_t width, uint32_t height);
 
-        DescriptorHeap::SharedPtr getSrvDescriptorHeap() const { return mpSrvHeap; }
+        // SPIRE: split CPU and GPU heaps for SRVs and samplers
+        DescriptorHeap::SharedPtr getShaderSrvDescriptorHeap() const { return mpShaderSrvHeap; }
+        DescriptorHeap::SharedPtr getCpuSrvDescriptorHeap() const { return mpCpuSrvHeap; }
+
         DescriptorHeap::SharedPtr getDsvDescriptorHeap() const { return mpDsvHeap; }
-        DescriptorHeap::SharedPtr getUavDescriptorHeap() const { return mpUavHeap; }
-        DescriptorHeap::SharedPtr getCpuUavDescriptorHeap() const { return mpCpuUavHeap; }
+//SPIRE:        DescriptorHeap::SharedPtr getUavDescriptorHeap() const { return mpUavHeap; }
+//SPIRE:        DescriptorHeap::SharedPtr getCpuUavDescriptorHeap() const { return mpCpuUavHeap; }
         DescriptorHeap::SharedPtr getRtvDescriptorHeap() const { return mpRtvHeap; }
-        DescriptorHeap::SharedPtr getSamplerDescriptorHeap() const { return mpSamplerHeap; }
+
+        DescriptorHeap::SharedPtr getShaderSamplerDescriptorHeap() const { return mpShaderSamplerHeap; }
+        DescriptorHeap::SharedPtr getCpuSamplerDescriptorHeap() const { return mpCpuSamplerHeap; }
+
         ResourceAllocator::SharedPtr getResourceAllocator() const { return mpResourceAllocator; }
+        DescriptorAllocator* getDescriptorAllocator() const { return const_cast<DescriptorAllocator*>(&mDescriptorAllocator); }
         void releaseResource(ApiObjectHandle pResource);
+
+
+        //SPIRE:
+        void copyDescriptor(
+            DescriptorHeap::CpuHandle   dest,
+            DescriptorHeap::CpuHandle   src,
+            DescriptorHeap::Type        type);
+
     private:
 		Device(Window::SharedPtr pWindow) : mpWindow(pWindow) {}
 		bool init(const Desc& desc);
@@ -128,12 +143,18 @@ namespace Falcor
 
         ApiHandle mApiHandle;
         ResourceAllocator::SharedPtr mpResourceAllocator;
+
+        // SPIRE:
+        DescriptorAllocator mDescriptorAllocator;
+
         DescriptorHeap::SharedPtr mpRtvHeap;
         DescriptorHeap::SharedPtr mpDsvHeap;
-        DescriptorHeap::SharedPtr mpSamplerHeap;
-        DescriptorHeap::SharedPtr mpSrvHeap;
-        DescriptorHeap::SharedPtr mpUavHeap;
-        DescriptorHeap::SharedPtr mpCpuUavHeap; // We need it for clearing UAVs
+        DescriptorHeap::SharedPtr mpShaderSamplerHeap;
+        DescriptorHeap::SharedPtr mpCpuSamplerHeap;
+        DescriptorHeap::SharedPtr mpShaderSrvHeap;
+        DescriptorHeap::SharedPtr mpCpuSrvHeap;
+//        DescriptorHeap::SharedPtr mpUavHeap;
+//        DescriptorHeap::SharedPtr mpCpuUavHeap; // We need it for clearing UAVs
 
 		Window::SharedPtr mpWindow;
 		void* mpPrivateData;

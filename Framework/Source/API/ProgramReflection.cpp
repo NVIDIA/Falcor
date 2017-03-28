@@ -195,6 +195,8 @@ namespace Falcor
             shaderAccess);
 
         bufferTypeReflection->mSpireComponentClass = componentClass;
+        bufferTypeReflection->mResourceCount = textureIndex;
+        bufferTypeReflection->mSamplerCount = samplerIndex;
 
         return bufferTypeReflection;
     }
