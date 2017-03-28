@@ -14,7 +14,8 @@ from datetime import date, timedelta
 #relevant paths
 gBuildBatchFile = 'BuildFalcorTest.bat'
 gTestListFile = 'TestList.txt'
-gResultsDir = 'TestResults'
+gResultsDirBase = 'TestResults'
+gResultsDir = ''
 gReferenceDir = 'ReferenceResults'      
 
 #default values
@@ -612,6 +613,7 @@ def main(build, showSummary, generateReference, referenceDir, testList):
     else:
         gTestListFile = testList
 
+    gResultsDir = gResultsDirBase
     #make outer dir if need to
     makeDirIfDoesntExist(gResultsDir)
     #make date dir if needed
@@ -629,18 +631,21 @@ def main(build, showSummary, generateReference, referenceDir, testList):
         outputHTML(showSummary, slnName)
     
     #open a file move file to result dir
+    testingResult = [os.getcwd() + '\\' + gResultsDir + '\\' + slnName + '_TestSummary.html']
     if(len(gSkippedList) > 0 or len(gFailReasonsList) > 0):
         errorFileStr = 'Ran into the following issues\n-----\n'
         for name, skip in gSkippedList:
             errorFileStr += name + ': ' + skip + '\n'
         for reason in gFailReasonsList:
             errorFileStr += reason + '\n'
-        errorFile = open(gResultsDir + '\\' + slnName + '_ErrorSummary.txt', 'w')
+        errorFilename = os.getcwd() + '\\' + gResultsDir + '\\' + slnName + '_ErrorSummary.txt'
+        errorFile = open(errorFilename, 'w')
         errorFile.write(errorFileStr)
         errorFile.close();
-        return gResultsDir + '\\,' + ' Fail'
-    else:
-        return gResultsDir + '\\,' + ' Pass'
+        testingResult.append(errorFilename)
+
+    #check len for pass fail, len 2 includes error file, which is a fail  
+    return  testingResult
 
 def cleanupString(string):
     string = string.replace('\t', '')
