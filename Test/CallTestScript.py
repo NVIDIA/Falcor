@@ -1,6 +1,16 @@
 import subprocess
 import argparse
 import os
+from datetime import date
+import RunAllTests
+
+gEmailRecipientFile = 'EmailRecipients.txt'
+
+class TestSetInfo(object):
+    def __init__(self, testDir, testList, result):
+        self.testDir = testDir
+        self.testList = testList
+        self.result = result
 
 def cleanupString(string):
     string = string.replace('\t', '')
@@ -13,6 +23,15 @@ def updateRepo(pullBranch):
     subprocess.call(['git', 'reset', '--hard'])
     subprocess.call(['git', 'clean', '-fd'])
     os.chdir('test')
+
+def sendEmail(subject, body, attachment):
+    sender = 'clavelle@nvidia.com'
+    recipients = str(open(gEmailRecipientFile, 'r').read());
+    subprocess.call(['blat.exe', '-install', 'mail.nvidia.com', sender])
+    if attachment != None:
+        subprocess.call(['blat.exe', '-to', recipients, '-subject', subject, '-body', body, '-attach', attachment])
+    else:
+        subprocess.call(['blat.exe', '-to', recipients, '-subject', subject, '-body', body])
 
 def main():
     testConfigFile = 'TestConfig.txt'
@@ -33,6 +52,7 @@ def main():
     testConfig = open(testConfigFile)
     contents = file.read(testConfig)
     argStartIndex = contents.find('{')
+    testResults = []
     while argStartIndex != -1 :
         testDir = cleanupString(contents[:argStartIndex])
         argEndIndex = contents.find('}')
@@ -45,21 +65,15 @@ def main():
         noBuild = argList[0].strip().lower() != 'true'
         refDir = argList[1].strip()
         testList = argList[2].strip()
-        if args.noemail:
-            noemail = True
-        else:
-            noemail = argList[3].strip().lower() != 'true'
 
         if args.nopull:
             shouldPull = False
         else:
-            shouldPull = argList[4].strip().lower() == 'true'
+            shouldPull = argList[3].strip().lower() == 'true'
 
         command = 'python.exe RunAllTests.py -ref ' + refDir + ' -tests ' + testList
         if noBuild:
             command += ' -nb'
-        if noemail:
-            command += ' -ne'
         if args.showsummary:
             command += ' -ss'
         if args.generatereference:
@@ -71,18 +85,41 @@ def main():
 
         if shouldPull:
             try:
-                pullBranch = argList[5].strip()
+                pullBranch = argList[4].strip()
+                updateRepo(pullBranch)
             except:
                 print 'Error: no pull branch provided for testing dir ' + testDir + ' shouldPull being true. Continuing without pull'
-                #updateRepo(pullBranch)
-        subprocess.call(command)
+
+        workingDir = os.getcwd()
+        setInfo = TestSetInfo(workingDir, testList, 'Unitialized')
+        try:
+            print 'Running Test list ' + testList + ' in test dir ' + workingDir
+            subprocess.check_call(command)
+            setInfo.result = 'Success'
+        except:
+            setInfo.result = 'Fail'
+        testResults.append(setInfo)
 
         if testDir:
             os.chdir(prevWorkingDir)
 
-        #goto next set
         contents = contents[argEndIndex + 1 :]
         argStartIndex = contents.find('{')
+
+    if not args.noemail and not args.generatereference:
+        body = 'Ran ' + str(len(testResults)) + ' test sets:\n'
+        anyFails = False
+        for r in testResults:
+            if r.result == 'Fail':
+                anyFails = True
+            body += r.testDir + '\\' + r.testList + ': ' + r.result + '\n'
+        if anyFails:
+            subject = '[FAILED]'
+        else:
+            subject = '[SUCCESS]'
+        dateStr = date.today().strftime("%m-%d-%y")
+        subject += ' Falcor automated testing ' + dateStr
+        sendEmail(subject, body, None)
 
 if __name__ == '__main__':
     main()

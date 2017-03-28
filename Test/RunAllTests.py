@@ -14,7 +14,6 @@ from datetime import date, timedelta
 #relevant paths
 gBuildBatchFile = 'BuildFalcorTest.bat'
 gTestListFile = 'TestList.txt'
-gEmailRecipientFile = 'EmailRecipients.txt'
 gResultsDir = 'TestResults'
 gReferenceDir = 'ReferenceResults'      
 
@@ -528,7 +527,7 @@ def getImageCompareResultsTable():
             html += '<tr>\n'
             html += '<td>' + result.Name + '</td>\n'
             for compare in result.CompareResults:
-                if float(compare) > gDefaultImageCompareMargin:
+                if float(compare) > gDefaultImageCompareMargin or float(compare) < 0:
                     html += '<td bgcolor="red"><font color="white">' + str(compare) + '</font></td>\n'
                 else:
                     html += '<td>' + str(compare) + '</td>\n'
@@ -587,59 +586,20 @@ def cleanDir(cleanedDir, prefix, suffix):
             else:
                 os.remove(filepath)
 
-def sendFatalFailEmail(failMsg):
-    subject = '[FATAL TESTING ERROR] '
-    sendEmail(subject, failMsg, None)
-
-def sendTestingEmail():
-    todayStr = (date.today()).strftime("%m-%d-%y")
-    todayFile = gResultsDir + '\\TestSummary.html'
-    body = 'Attached is the testing summary for ' + todayStr
-    if len(gFailReasonsList) > 0 or len(gSkippedList) > 0:
-        subject = '[Different] '
-        body += '.\nReasons for Difference'
-        for reason in gFailReasonsList:
-            body += '.\n' + reason
-        for name, skip in gSkippedList:
-            body += '.\n' + name + ': ' + skip
-    else:
-        subject = '[Unchanged] '
-    subject += 'Falcor Automated Testing for ' + todayStr
-    sendEmail(subject, body, todayFile)
-
-#pass none if no attach
-def sendEmail(subject, body, attachment):
-    sender = 'clavelle@nvidia.com'
-    recipients = str(open(gEmailRecipientFile, 'r').read());
-    subprocess.call(['blat.exe', '-install', 'mail.nvidia.com', sender])
-    if attachment != None:
-        subprocess.call(['blat.exe', '-to', recipients, '-subject', subject, '-body', body, '-attach', attachment])
-    else:
-        subprocess.call(['blat.exe', '-to', recipients, '-subject', subject, '-body', body])
-
-def main():
+def main(build, showSummary, generateReference, referenceDir, testList):
     global gResultsDir
     global gLowLevelResultList
     global gReferenceDir
     global gTestListFile
-    parser = argparse.ArgumentParser()
-    parser.add_argument('-nb', '--nobuild', action='store_true', help='run without rebuilding Falcor and test apps')
-    parser.add_argument('-ne', '--noemail', action='store_true', help='run without emailing the result summary')
-    parser.add_argument('-ss', '--showsummary', action='store_true', help='opens testing summary upon completion')
-    parser.add_argument('-gr', '--generatereference', action='store_true', help='generates reference testing logs and images')
-    parser.add_argument('-ref', '--referencedir', action='store', help='Allows user to specify an existing reference dir')
-    parser.add_argument('-tests', '--testlist', action='store', help='Allows user to specify the test list file')
-    args = parser.parse_args()
 
-    if args.referencedir:
-        refDir = cleanupString(args.referencedir)
-        if os.path.isdir(refDir):
-            gReferenceDir = refDir
-        elif not args.generatereference:
-            print 'Fatal Error, Failed to find user specified reference dir: ' + args.referencedir
-            sys.exit(1)
+    refDir = cleanupString(referenceDir)
+    if os.path.isdir(refDir):
+        gReferenceDir = refDir
+    elif not generateReference:
+        print 'Fatal Error, Failed to find reference dir: ' + referenceDir
+        sys.exit(1)
 
-    if args.generatereference:
+    if generateReference:
         if not os.path.isdir(gReferenceDir):
             try:
                 os.makedirs(gReferenceDir)
@@ -647,11 +607,10 @@ def main():
                 print 'Fatal Error, Failed to create reference dir.'
                 sys.exit(1)
 
-    if args.testlist:
-        if not os.path.exists(args.testlist):
-            print 'Error, Failed to find user specified test list. using default ' + testlist
-        else:
-            gTestListFile = args.testlist
+    if not os.path.exists(testList):
+        print 'Error, Failed to find test list ' + testList 
+    else:
+        gTestListFile = testList
 
     #make outer dir if need to
     makeDirIfDoesntExist(gResultsDir)
@@ -660,35 +619,50 @@ def main():
     gResultsDir += '\\' + dateStr
     makeDirIfDoesntExist(gResultsDir)
 
-    if not args.generatereference:
+    if not generateReference:
         resultSummary = LowLevelResult()
         resultSummary.Name = 'Summary'
         gLowLevelResultList.append(resultSummary)
 
-    slnName = readTestList(args.generatereference, not args.nobuild)
-    if not args.generatereference:
-        outputHTML(args.showsummary, slnName)
-
-    if not args.noemail and not args.generatereference:
-        sendTestingEmail()
+    slnName = readTestList(generateReference, build)
+    if not generateReference:
+        outputHTML(showSummary, slnName)
     
-    #open a file instead, move file to result dir
-    #if(len(gSkippedList) > 0 or len(gFailReasonsList) > 0):
-    #    errorFileStr = 'Ran into the following issues\n-----\n'
-    #    for name, skip in gSkippedList:
-    #        errorFileStr += name + ': ' + skip
-    #    for reason in gFailReasonsList:
-    #        errorFileStr += reason
-    #    errorFile = open(gResultsDir + '\\' + slnName + '_ErrorSummary.txt', 'w')
-    #    errorFile.write(errorFileStr)
-    #    errorFile.close();
-    #    return 1
-    #else:
-    #    return 0
+    #open a file move file to result dir
+    if(len(gSkippedList) > 0 or len(gFailReasonsList) > 0):
+        errorFileStr = 'Ran into the following issues\n-----\n'
+        for name, skip in gSkippedList:
+            errorFileStr += name + ': ' + skip + '\n'
+        for reason in gFailReasonsList:
+            errorFileStr += reason + '\n'
+        errorFile = open(gResultsDir + '\\' + slnName + '_ErrorSummary.txt', 'w')
+        errorFile.write(errorFileStr)
+        errorFile.close();
+        return gResultsDir + '\\,' + ' Fail'
+    else:
+        return gResultsDir + '\\,' + ' Pass'
 
 def cleanupString(string):
     string = string.replace('\t', '')
     return string.replace('\n', '').strip()
 
 if __name__ == '__main__':
-    main()
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-nb', '--nobuild', action='store_true', help='run without rebuilding Falcor and test apps')
+    parser.add_argument('-ss', '--showsummary', action='store_true', help='opens testing summary upon completion')
+    parser.add_argument('-gr', '--generatereference', action='store_true', help='generates reference testing logs and images')
+    parser.add_argument('-ref', '--referencedir', action='store', help='Allows user to specify an existing reference dir')
+    parser.add_argument('-tests', '--testlist', action='store', help='Allows user to specify the test list file')
+    args = parser.parse_args()
+
+    if args.referencedir:
+        refDir = args.referencedir
+    else:
+        refDir = gReferenceDir
+
+    if args.testlist:
+        testList = args.testlist
+    else:
+        testList = gTestListFile
+
+    main(not args.nobuild, args.showsummary, args.generatereference, refDir, testList)
