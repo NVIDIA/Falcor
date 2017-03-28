@@ -3,6 +3,7 @@
 /*******************************************************************
 Documentation
 *******************************************************************/
+#define ROUGHNESS_CHANNEL_BIT 2
 
 // Possible user-defined global macros to configure shading 
 //#define _MS_DISABLE_ALPHA_TEST	///< Disables alpha test (handy for early-z etc.)
@@ -26,15 +27,21 @@ struct ShadingAttribs
     vec2    UV;                                 ///< Texture mapping coordinates
 
 #ifdef _MS_USER_DERIVATIVES
+
     vec2    DPDX            ;                                  
     vec2    DPDY            ; ///< User-provided 2x2 full matrix of duv/dxy derivatives of a shading point footprint in texture space
+
 #else
-    float   lodBias         ;        ///< LOD bias to use when sampling textures
+
+    float   lodBias         ; ///< LOD bias to use when sampling textures
+
 #endif
 
 #ifdef _MS_USER_HALF_VECTOR_DERIVATIVES
+
     vec2    DHDX            ;
     vec2    DHDY            ;  ///< User-defined half-vector derivatives
+
 #endif
     float aoFactor;
 };
@@ -42,7 +49,7 @@ struct ShadingAttribs
 struct LightData
 {
     vec3            worldPos           ;    ///< World-space position of the center of a light source
-    uint32_t        type               ;    ///< Type of the light source (see above)
+    uint            type               ;    ///< Type of the light source (see above)
     vec3            worldDir           ;    ///< World-space orientation of the light source
     float           openingAngle       ;    ///< For point (spot) light: Opening angle of a spot light cut-off, pi by default - full-sphere point light
     vec3            intensity          ;    ///< Emitted radiance of th light source
@@ -52,7 +59,7 @@ struct LightData
     vec3            aabbMax            ;    ///< For area light: maximum corner of the AABB
     float           surfaceArea        ;    ///< Surface area of the geometry mesh
 	vec3            tangent            ;    ///< Tangent vector of the geometry mesh
-	uint32_t        numIndices         ;    ///< Number of triangle indices in a polygonal area light
+	uint            numIndices         ;    ///< Number of triangle indices in a polygonal area light
 	vec3            bitangent          ;    ///< BiTangent vector of the geometry mesh
 	float           pad                ;
     mat4            transMat           ;    ///< Transformation matrix of the model instance for area lights
@@ -73,7 +80,7 @@ struct LightAttribs
     vec3    N;              ///< Normal of the sampled point on the light source
 	float   pdf;            ///< Probability density function of sampling the light source
 
-    vec3    points[4];
+    vec3[4]    points;
 };
 
 /**
@@ -125,7 +132,7 @@ vec3 getLightPos(in LightData Light, in vec3 shadingPosition)
     vec3 lightPos = Light.worldPos;
     if(Light.type == LightArea)
     {
-        lightPos = mul(Light.transMat, v4(lightPos, 1.0)).rrr;
+        lightPos = (Light.transMat * vec4(lightPos, 1.0)).rrr;
     }    
     else if(Light.type == LightDirectional)
     {
@@ -162,7 +169,6 @@ void prepareLightAttribs(in LightData Light, in ShadingAttribs ShAttr, inout Lig
     LightAttr.P = getLightPos(Light, ShAttr.P);
     LightAttr.pdf = 0;
     LightAttr.N = 0;
-    [unroll]
     for(uint i = 0 ; i < 4 ; i++)
     {
         LightAttr.points[i] = 0;
@@ -216,40 +222,35 @@ void prepareLightAttribs(in LightData Light, in ShadingAttribs ShAttr, inout Lig
 void sampleLight(in vec3 shadingHitPos, in LightData lData, vec3 rSample, inout LightAttribs lAttr)
 {
 	// Sample the light based on its type: point, directional, or area
-	switch (lData.type)
+	if (lData.type == LightPoint)
 	{
-	    case LightPoint:
-	    {
-			// Get the position
-            lAttr.P = getLightPos(lData, shadingHitPos);
+        // Get the position
+        lAttr.P = getLightPos(lData, shadingHitPos);
 
-			vec3 PosToLight = lAttr.P - shadingHitPos;
-            float lDist = length(PosToLight);
-            lAttr.L = PosToLight / max(1e-3f, lDist);
+        vec3 PosToLight = lAttr.P - shadingHitPos;
+        float lDist = length(PosToLight);
+        lAttr.L = PosToLight / max(1e-3f, lDist);
 
-			// For point light, its normal is always along the L direction
-			lAttr.N = lAttr.L;
+        // For point light, its normal is always along the L direction
+        lAttr.N = lAttr.L;
 
-			// Compute the intensity and the PDF
-			lAttr.lightIntensity = getLightRadiance(lData, shadingHitPos);
-			lAttr.pdf = 1.f;
-		}
-	    break;
-		case LightDirectional:
-		{
-			// Get the position
-			lAttr.P = getLightPos(lData, shadingHitPos);
-			lAttr.L = -lData.worldDir;
-
-			// For directional light, its normal is always along the L direction
-			lAttr.N = lAttr.L;
-			
-			// Compute the intensity and the PDF
-			lAttr.lightIntensity = lData.intensity;
-			lAttr.pdf = 1.f;
-		}
-		break;
+        // Compute the intensity and the PDF
+        lAttr.lightIntensity = getLightRadiance(lData, shadingHitPos);
+        lAttr.pdf = 1.f;
 	}
+    else if (lData.type == LightDirectional)
+    {
+        // Get the position
+        lAttr.P = getLightPos(lData, shadingHitPos);
+        lAttr.L = -lData.worldDir;
+
+        // For directional light, its normal is always along the L direction
+        lAttr.N = lAttr.L;
+        
+        // Compute the intensity and the PDF
+        lAttr.lightIntensity = lData.intensity;
+        lAttr.pdf = 1.f;
+    }
 }
 
 
@@ -304,16 +305,16 @@ vec2 filterRoughness(in ShadingAttribs shAttr, in LightAttribs lAttr, in vec2 ro
 #else
     // Compute half-vector derivatives
     vec3  H = normalize(shAttr.E + lAttr.L);
-    vec2  hpp = v2(dot(H, shAttr.T), dot(H, shAttr.B));
-    vec2  hppDx = ddx_fine(hpp);
-    vec2  hppDy = ddy_fine(hpp);
+    vec2  hpp = vec2(dot(H, shAttr.T), dot(H, shAttr.B));
+    vec2  hppDx = ddx(hpp);
+    vec2  hppDy = ddy(hpp);
 #endif
     // Compute filtering region
     vec2 rectFp = (abs(hppDx) + abs(hppDy)) * 0.5f;
 
     // For grazing angles where the first-order footprint goes to very high values
-    // Usually you don抰 need such high values and the maximum value of 1.0 or even 0.1 is enough for filtering.
-    rectFp = min(0.7f, rectFp);
+    // Usually you don't need such high values and the maximum value of 1.0 or even 0.1 is enough for filtering.
+    rectFp = min(rectFp, vec2(0.7f, 0.7f));
 
     // Covariance matrix of pixel filter's Gaussian (remapped in roughness units)
     vec2 covMx = rectFp * rectFp * 2.f;   // Need to x2 because roughness = sqrt(2) * pixel_sigma_hpp
@@ -356,36 +357,29 @@ module MaterialLayer
     param vec4 albedoColor;
     param vec4 roughness;
     param vec4 extraParam; 
-    require bool useTexture;
+    param Texture2D tex;
+    require int hasTexture;
     require SamplerState samplerState;
     require vec2 vertUV;
-    Texture2D tex;
 
     vec4 albedo
     {
         vec4 rs = albedoColor;
-        if (useTexture)
+        if (hasTexture)
             rs = tex.Sample(samplerState, vertUV);
         return rs;
     }
     
     void evalMaterialLayer(ShadingAttribs attr, LightAttribs lAttr, inout PassOutput result)
     {
-        vec4 value = 0;
+        vec4 value = vec4(0.0f);
         
-        switch(desc.type)
-        {
-        case MatLambert: /* Diffuse BRDF */
+        if (materialType == MatLambert)
             value = evalDiffuseLayer(lAttr.lightIntensity, lAttr.L, attr.N, result);
-            break;
-        case MatEmissive:
+        else if (materialType == MatEmissive)
             value = evalEmissiveLayer(result);
-            break;
-        case MatConductor:
-        case MatDielectric:
+        else
             value = evalSpecularLayer(attr, lAttr, result);
-            break;
-        };
 
         vec3 oldValue = result.value;
         result.value = blendLayer(albedo, value, blend, result.value);
@@ -409,16 +403,17 @@ module MaterialLayer
 #ifndef _MS_DISABLE_DIFFUSE
         value *= evalDiffuseBSDF(normal, lightDir);
         weight = albedo.w;
-        result.diffuseAlbedo += albedo.rgb * layer.pmf;
+        result.diffuseAlbedo += albedo.rgb * pmf;
         result.diffuseIllumination += value;
 #else
         value = 0;
 #endif
-        return v4(value, weight);
+        return vec4(value, weight);
     }
 
     vec4 evalSpecularLayer(ShadingAttribs shAttr, LightAttribs lAttr, inout PassOutput result)
     {
+        vec4 retVal = vec4(0.0f);
 #ifndef _MS_DISABLE_SPECULAR
         /* Add albedo regardless of facing */
         result.specularAlbedo += albedo.rgb * pmf;
@@ -426,71 +421,68 @@ module MaterialLayer
         /* Ignore the layer if it's a transmission or backfacing */
         if (dot(lAttr.L, shAttr.N) * dot(shAttr.E, shAttr.N) <= 0.f)
         {
-            return 0;
-        }
-
-        vec3 value = lAttr.lightIntensity;
-
-        vec2 roughness2;
-        if(desc.hasTexture & ROUGHNESS_CHANNEL_BIT)
-        {
-            roughness2 = v2(albedo.w, albedo.w);
-            roughness2 *= roughness2;
+            
         }
         else
         {
-            roughness2 = roughness.rg;
-        }
+            vec3 value = lAttr.lightIntensity;
+
+            vec2 roughness2;
+            if (hasTexture & ROUGHNESS_CHANNEL_BIT)
+            {
+                roughness2 = vec2(albedo.w, albedo.w);
+                roughness2 *= roughness2;
+            }
+            else
+            {
+                roughness2 = roughness.rg;
+            }
 
 #ifndef _MS_DISABLE_ROUGHNESS_FILTERING
-        roughness2 = filterRoughness(shAttr, lAttr, roughness2);
+            roughness2 = filterRoughness(shAttr, lAttr, roughness2);
 #endif
 
-        // Respect perfect specular cutoff
-        if(max(roughness2.x, roughness2.y) < 1e-3f)
-        {
-            return 0;
+            // Respect perfect specular cutoff
+            if (max(roughness2.x, roughness2.y) < 1e-3f)
+            {
+                retVal = vec4(0.0f);
+            }
+            else
+            {
+                // compute halfway vector
+                vec3 hW = normalize(shAttr.E + lAttr.L);
+                vec3 h = normalize(vec3(dot(hW, shAttr.T), dot(hW, shAttr.B), dot(hW, shAttr.N)));
+
+                result.roughness = roughness2;
+
+                if (ndf == NDFBeckmann)
+                {
+                    value *= evalBeckmannDistribution(h, roughness2);
+                }
+                else if (ndf == NDFGGX) /* GGX */
+                {
+                    value *= evalGGXDistribution(h, roughness2);
+                }
+
+                /* Evaluate standard microfacet model terms */
+                value *= evalMicrofacetTerms(shAttr.T, shAttr.B, shAttr.N, h, shAttr.E, lAttr.L, roughness2, ndf, materialType == MatDielectric);
+
+                /* Cook-Torrance Jacobian */
+                value /= 4.f * dot(shAttr.E, shAttr.N);
+
+                /* Fresnel conductor/dielectric term */
+                float HoE = dot(hW, shAttr.E);
+                float IoR = extraParam.x;
+                float kappa = extraParam.y;
+                float F_term = (materialType == MatConductor) ? conductorFresnel(HoE, IoR, kappa) : 1.f - dielectricFresnel(HoE, IoR);
+                value *= F_term;
+                float weight = F_term;
+
+                result.specularIllumination += value;
+                retVal = vec4(value, weight);
+            }
         }
-        
-        // compute halfway vector
-        vec3 hW = normalize(shAttr.E + lAttr.L);
-        vec3 h = normalize(v3(dot(hW, shAttr.T), dot(hW, shAttr.B), dot(hW, shAttr.N)));
-
-        result.roughness = roughness2;
-
-        switch (desc.ndf)
-        {
-        case NDFBeckmann: /* Beckmann microfacet distribution */
-        {
-            value *= evalBeckmannDistribution(h, roughness2);
-        }
-        break;
-        case NDFGGX: /* GGX */
-        {
-            value *= evalGGXDistribution(h, roughness2);
-        }
-        break;
-        }
-
-        /* Evaluate standard microfacet model terms */
-        value *= evalMicrofacetTerms(shAttr.T, shAttr.B, shAttr.N, h, shAttr.E, lAttr.L, roughness2, ndf, materialType == MatDielectric);
-
-        /* Cook-Torrance Jacobian */
-        value /= 4.f * dot(shAttr.E, shAttr.N);
-
-        /* Fresnel conductor/dielectric term */
-        float HoE = dot(hW, shAttr.E);
-        float IoR = extraParam.x;
-        float kappa = extraParam.y;
-        float F_term = (materialType == MatConductor) ? conductorFresnel(HoE, IoR, kappa) : 1.f - dielectricFresnel(HoE, IoR);
-        value *= F_term;
-        float weight = F_term;
-
-        result.specularIllumination += value;
-
-        return v4(value, weight);
-#else
-        return 0;
 #endif
+        return retVal;
     }
 }

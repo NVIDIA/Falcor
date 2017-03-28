@@ -1,14 +1,7 @@
-#define NDF_BECKMANN 0
-#define NDF_GGX 1
+#include "ShaderConstants.spire"
+
 #define _ref(x) inout x
 
-#ifndef M_PIf
-#define M_PIf 3.14159265359f
-#endif
-
-#ifndef M_1_PIf
-#define M_1_PIf 0.31830988618379f
-#endif
 
 /**********************************************************************************
 BRDF helpers
@@ -144,7 +137,7 @@ float evalBeckmannDistribution(in vec3 N, in vec3 H, in float roughness)
 float evalBeckmannDistribution(in vec3 H, in vec2 rgns)
 {
     float NoH2 = H.z * H.z;
-    vec2 Hproj = v2(H.x, H.y);
+    vec2 Hproj = vec2(H.x, H.y);
     // Compute Beckmann distribution
     float exponent = dot(Hproj / (rgns*rgns), Hproj) / NoH2;
     return exp(-exponent) / (M_PIf * rgns.x * rgns.y * NoH2 * NoH2);
@@ -198,8 +191,8 @@ float evalGGXDistribution(in vec3 H, in vec2 rgns)
     float anisoV = rgns.x < rgns.y ? rgns.x / rgns.y : 1.f;
     float r = min(rgns.x, rgns.y);
     float NoH2 = H.z * H.z;
-    vec2 Hproj = v2(H.x, H.y);
-    float exponent = dot(Hproj / v2(anisoU*anisoU, anisoV*anisoV), Hproj);
+    vec2 Hproj = vec2(H.x, H.y);
+    float exponent = dot(Hproj / vec2(anisoU*anisoU, anisoV*anisoV), Hproj);
     float root = NoH2 * r*r + exponent;
     return r*r / (M_PIf * anisoU * anisoV * root * root);
 }
@@ -217,7 +210,7 @@ returns effective visible roughness
 float effectiveVisibleRoughness(in vec3 dir, in vec2 rghns)
 {
     float recipSinThSq = 1.f / (1.f - dir.z * dir.z);
-    vec2 dirPlane = v2(dir.x, dir.y);
+    vec2 dirPlane = vec2(dir.x, dir.y);
     vec2 cosSinPhiSq = dirPlane * dirPlane * recipSinThSq;
     vec2 res = rghns * rghns * cosSinPhiSq;
     return sqrt(res.x + res.y);
@@ -240,7 +233,7 @@ float GSmith(in vec3 dir, in vec3 h, in vec2 rghns, in uint ndfType)
         return 1.f;
     float recipSlope = sqrt(sinThSq) / dir.z;
     float alpha = effectiveVisibleRoughness(dir, rghns);
-    if(ndfType == NDF_BECKMANN)
+    if (ndfType == NDFBeckmann)
     {
         // Use the Beckmann G fit from [Walter07]
         float a = 1.f / (alpha * recipSlope);
@@ -252,7 +245,7 @@ float GSmith(in vec3 dir, in vec3 h, in vec2 rghns, in uint ndfType)
 
     // Otherwise it's GGX, use GGX shadowing/masking
     float isectRoot = alpha * recipSlope;
-    return 2.f / (1.f + length(v2(1.f, isectRoot)));
+    return 2.f / (1.f + length(vec2(1.f, isectRoot)));
 }
 
 /**
@@ -262,8 +255,8 @@ float evalMicrofacetTerms(in vec3 T, in vec3 B, in vec3 N,
     in vec3 h, in vec3 V, in vec3 L,
     in vec2 roughness, in uint ndfType, bool transmissive)
 {
-    vec3 lTg = v3(dot(T, L), dot(B, L), dot(N, L));
-    vec3 vTg = v3(dot(T, V), dot(B, V), dot(N, V));
+    vec3 lTg = vec3(dot(T, L), dot(B, L), dot(N, L));
+    vec3 vTg = vec3(dot(T, V), dot(B, V), dot(N, V));
 
     /* If it's not transmission, they should be on the same side of the hemisphere */
     if(!transmissive && lTg.z*vTg.z <= 0.f)

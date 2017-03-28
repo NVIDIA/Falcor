@@ -1,17 +1,9 @@
-
+#include "ShaderConstants.spire"
 /*******************************************************************
 					Math functions
 *******************************************************************/
 
-#ifndef M_PIf
-#define M_PIf 3.14159265359f
-#endif
-
-#ifndef M_1_PIf
-#define M_1_PIf 0.31830988618379f
-#endif
-
-vec3 sample_disk(float rnd1, float rnd2, float minR = 0.0f)
+vec3 sample_disk(float rnd1, float rnd2, float minR)
 {
     vec3 p;
     float r = max(sqrt(rnd1), minR);
@@ -20,6 +12,11 @@ vec3 sample_disk(float rnd1, float rnd2, float minR = 0.0f)
     p.y = r * sin(phi);
     p.z = 0.0f;
     return p;
+}
+
+vec3 sample_disk(float rnd1, float rnd2)
+{
+    return sample_disk(rnd1, rnd2, 0.0f);
 }
 
 vec3 sample_gauss(float rnd1, float rnd2)
@@ -100,7 +97,7 @@ vec3 uniform_sample_hemisphere(float rnd1, float rnd2)
 /**
 	Random numbers based on Mersenne Twister
 */
-uint rand_init(uint val0, uint val1, uint backoff = 16)
+uint rand_init(uint val0, uint val1, uint backoff)
 {
     uint v0 = val0;
     uint v1 = val1;
@@ -114,6 +111,11 @@ uint rand_init(uint val0, uint val1, uint backoff = 16)
     }
 
     return v0;
+}
+
+uint rand_init(uint val0, uint val1)
+{
+    return rand_init(val0, val1, 16);
 }
 
 float rand_next(inout uint s)
@@ -154,7 +156,7 @@ void reflectFrame(vec3 n, vec3 reflect, inout vec3 t, inout vec3 b)
 *******************************************************************/
 float2 dirToSphericalCrd(float3 direction)
 {
-    static float PI = 3.14159265f;
+    float PI = 3.14159265f;
     float3 p = normalize(direction);
     float2 uv;
     uv.x = (1 + atan2(-p.z, p.x) / PI) * 0.5;
