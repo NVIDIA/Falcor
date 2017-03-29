@@ -203,14 +203,14 @@ namespace Falcor
         template<typename T>
         void setVariable(size_t offset, const T& value)
         {
-            mConstantBuffer->setVariable(offset, value);
+			mConstantBuffer->setVariable(offset, value);
             mResourceTableDirty = true;
         }
 
         template<typename T>
         void setVariable(const std::string& name, const T& value)
         {
-            mConstantBuffer->setVariable(name, value);
+			mConstantBuffer->setVariable(name, value);
             mResourceTableDirty = true;
         }
 

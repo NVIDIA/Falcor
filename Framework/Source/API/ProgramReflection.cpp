@@ -131,13 +131,13 @@ namespace Falcor
         uint32_t samplerIndex = 0;
 
         // loop over variables to fill them in...
-		auto processModuleParams = [&](SpireModule * module)
+		std::function<void(SpireModule *)> processModule = [&](SpireModule * module)
 		{
-			int paramCount = spModuleGetParameterCount(componentClass);
+			int paramCount = spModuleGetParameterCount(module);
 			for (int pp = 0; pp < paramCount; ++pp)
 			{
 				SpireComponentInfo spireVarInfo;
-				spModuleGetParameter(componentClass, pp, &spireVarInfo);
+				spModuleGetParameter(module, pp, &spireVarInfo);
 
 				char const* varName = spireVarInfo.Name;
 
@@ -159,11 +159,11 @@ namespace Falcor
 				{
 					ProgramReflection::Resource resourceInfo;
 
-                    resourceInfo.type = Resource::ResourceType::Texture;
-                    resourceInfo.regIndex = textureIndex++;
-                    resourceInfo.shaderMask = 0xFFFFFFFF;
-                    resourceInfo.shaderAccess = ShaderAccess::Read; // TODO: figure out how to get this properly!
-                    // TODO: need to fill all that stuff in
+					resourceInfo.type = Resource::ResourceType::Texture;
+					resourceInfo.regIndex = textureIndex++;
+					resourceInfo.shaderMask = 0xFFFFFFFF;
+					resourceInfo.shaderAccess = ShaderAccess::Read; // TODO: figure out how to get this properly!
+					// TODO: need to fill all that stuff in
 
 					resourceMap[varName] = resourceInfo;
 				}
@@ -190,9 +190,11 @@ namespace Falcor
 					break;
 				}
 			}
+			int subCount = spModuleGetSubModuleCount(module);
+			for (int i = 0; i < subCount; i++)
+				processModule(spModuleGetSubModule(module, i));
 		};
-        
-
+		processModule(componentClass);
         // TODO: confirm that this is how to get the right size!
         size_t bufferSize = spModuleGetParameterBufferSize(componentClass);
 

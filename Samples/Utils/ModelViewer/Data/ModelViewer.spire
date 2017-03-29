@@ -29,6 +29,6 @@ template shader ModelViewerShader(
 
 		material.evalMaterial(shAttr, perFrame.gDirLight, output);
 		material.evalMaterial(shAttr, perFrame.gPointLight, output);
-		return output.finalValue;
+		return vec4(output.finalValue, 1.0);
 	}
 }

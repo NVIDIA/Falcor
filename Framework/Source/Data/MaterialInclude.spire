@@ -15,8 +15,9 @@ public param Texture2D normalMap;        // Normal map modifier, if texture is n
 public param Texture2D heightMap;        // Height (displacement) map modifier, if texture is non-null, one can apply a displacement or parallax mapping
 public param Texture2D ambientMap;       // Ambient occlusion map
 public param SamplerState samplerState;
-
 require vec2 vertUV;
+
+$LAYER_USING
 
 bool alphaTestPassed(in ShadingAttribs attr)
 {

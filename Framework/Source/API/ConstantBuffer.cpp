@@ -192,11 +192,11 @@ namespace Falcor
                 for( auto& entry : mAssignedSRVs )
                 {
                     auto& srv = entry.pView;
-
-                    device->copyDescriptor(
-                        mApiHandle.resourceDescriptorTable->getCpuHandle(srvIndex++),
-                        srv->getApiHandle()->getCpuHandle(),
-                        DescriptorHeap::Type::SRV);
+					if (srv)
+						device->copyDescriptor(
+							mApiHandle.resourceDescriptorTable->getCpuHandle(srvIndex++),
+							srv->getApiHandle()->getCpuHandle(),
+							DescriptorHeap::Type::SRV);
                 }
             }
 

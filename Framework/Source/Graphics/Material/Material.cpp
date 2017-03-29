@@ -545,6 +545,12 @@ namespace Falcor
 
     // Spire stuff
 
+	std::string ReplaceStr(std::string templateStr, std::string name, std::string content)
+	{
+		auto pos = templateStr.find(name);
+		return templateStr.substr(0, pos) + content + templateStr.substr(pos + name.length());
+	}
+
     SpireModule* Material::getSpireComponentClass() const
     {
         auto spireContext = ShaderRepository::Instance().GetContext();
@@ -579,16 +585,17 @@ namespace Falcor
 				{
 					readFileToString(fullPath, kernelStr);
 					sb << "module " << moduleName << " implements Material\n{\n";
-					std::stringstream sbEval;
+					std::stringstream sbEval, sbUsing;
 					for (int i = 0; i < layerCount; i++)
 					{
-						sb << "using layer" << i << " = MaterialLayer(" << (getLayer(i).pTexture ? "1" : "0") << ", " << (int)getLayer(i).type
+						sbUsing << "using layer" << i << " = MaterialLayer(" << (getLayer(i).pTexture ? "1" : "0") << ", " << (int)getLayer(i).type
 							<< ", " << (int)getLayer(i).ndf << ", " << (int)getLayer(i).blend << ");\n";
+						
 						sbEval << "layer" << i << ".evalMaterialLayer(shAttr, lAttr, passResult);\n";
 					}
-					auto pos = kernelStr.find("$LAYER_EVAL");
-					auto evalStr = sbEval.str();
-					kernelStr = kernelStr.substr(0, pos) + evalStr + kernelStr.substr(pos+11);
+					kernelStr = ReplaceStr(kernelStr, "$LAYER_EVAL", sbEval.str());
+					kernelStr = ReplaceStr(kernelStr, "$LAYER_USING", sbUsing.str());
+
 					sb << kernelStr;
 					sb << "\n}\n";
 					auto moduleStr = sb.str();
@@ -642,25 +649,25 @@ namespace Falcor
             finalize();
 			if (auto normalMap = this->getNormalMap())
 			{
-				mSpireComponentInstance->setTexture("normalMap", normalMap.get());
+				mSpireComponentInstance->setTexture("normalMap", normalMap);
 				mSpireComponentInstance->setVariable("hasNormalMap", true);
 			}
 			if (auto alphaMap = this->getAlphaMap())
 			{
-				mSpireComponentInstance->setTexture("alphaMap", alphaMap.get());
+				mSpireComponentInstance->setTexture("alphaMap", alphaMap);
 				mSpireComponentInstance->setVariable("hasAlphaMap", true);
 			}
 			if (auto ambientMap = this->getAmbientOcclusionMap())
 			{
-				mSpireComponentInstance->setTexture("ambientMap", ambientMap.get());
+				mSpireComponentInstance->setTexture("ambientMap", ambientMap);
 				mSpireComponentInstance->setVariable("hasAmbientMap", true);
 			}
 			if (auto heightMap = this->getHeightMap())
 			{
-				mSpireComponentInstance->setTexture("heightMap", heightMap.get());
+				mSpireComponentInstance->setTexture("heightMap", heightMap);
 				mSpireComponentInstance->setVariable("hasHeightMap", true);
 			}
-			mSpireComponentInstance->setSampler("samplerState", mData.samplerState.get());
+			mSpireComponentInstance->setSampler("samplerState", mData.samplerState);
 			mSpireComponentInstance->setVariable("height", getHeightModifiers());
 			mSpireComponentInstance->setVariable("id", getId());
 			mSpireComponentInstance->setVariable("alphaThreshold", getAlphaThreshold());
@@ -672,7 +679,8 @@ namespace Falcor
 				mSpireComponentInstance->setBlob(&layer.getValues(), (size_t)offset, sizeof(LayerValues));
 				SpireBindingIndex index;
 				spModuleGetBindingOffset(subModule, &index);
-				mSpireComponentInstance->setSrv(index.texture, layer.pTexture->getSRV(), layer.pTexture);
+				if (layer.pTexture)
+					mSpireComponentInstance->setSrv(index.texture, layer.pTexture->getSRV(), layer.pTexture);
 			}
 			// Fill in the values for the material fields, if anything has changed.
             //
@@ -683,7 +691,7 @@ namespace Falcor
             //if( mData.textures.layers[0] )
             //{
             //    // `TexturedMaterial`
-                mSpireComponentInstance->setTexture("diffuseMap", mData.textures.layers[0].get());
+                //mSpireComponentInstance->setTexture("diffuseMap", mData.textures.layers[0].get());
             //    mSpireComponentInstance->setSampler("samplerState", mData.samplerState.get());
             //}
             //else
