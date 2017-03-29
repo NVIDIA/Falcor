@@ -1,4 +1,5 @@
-[../Falcor.sln {Released3d12 ..\Bin\x64\Release\}
+[
+../Falcor.sln {Released3d12 ..\Bin\x64\Release\}
 ShaderBuffers {-test -ssframes 50 -shutdown 100} {released3d12}
 ComputeShader {
      -test -ssframes 50 -shutdown 100 -loadimage \\netapp-wa02\\public\\Falcor\\TestMedia\\StockImage.jpg, 
@@ -26,14 +27,4 @@ PostProcess {
 SimpleDeferred { -test -incrementDebugMode 100 200 300 400 -ssframes 50 150 250 350 450 -shutdown 500} {released3d12}
 EnvMap {-test -changeView 100 200 300 400 500 -ssframes 50 150 250 350 450 550 -shutdown 600} {released3d12}
 NormalMapFiltering {-test -changeMode 100 200 300 -ssframes 50 150 250 350 -shutdown 400} {released3d12}
-]
-[
-FalcorTest.sln {Released3d12 Bin\x64\Release\ Debugd3d12 Bin\x64\Debug\}
-BlendStateTest {} {released3d12}
-RasterizerStateTest {} {debugd3d12 released3d12}
-DepthStencilStateTest {} {debugd3d12 released3d12}
-FboTest {} {debugd3d12 released3d12}
-SamplerTest {} {debugd3d12 released3d12}
-VaoTest {} {debugd3d12 released3d12}
-GraphicsStateObjectTest {} {debugd3d12 released3d12}
 ]

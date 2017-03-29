@@ -1,8 +1,0 @@
-FalcorTest.sln {Released3d12 Bin\x64\Release\ Debugd3d12 Bin\x64\Debug\}
-BlendStateTest {} {released3d12}
-RasterizerStateTest {} {debugd3d12 released3d12}
-DepthStencilStateTest {} {debugd3d12 released3d12}
-FboTest {} {debugd3d12 released3d12}
-SamplerTest {} {debugd3d12 released3d12}
-VaoTest {} {debugd3d12 released3d12}
-GraphicsStateObjectTest {} {debugd3d12 released3d12}

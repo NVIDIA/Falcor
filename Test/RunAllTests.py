@@ -15,7 +15,6 @@ from datetime import date, timedelta
 gBuildBatchFile = 'BuildFalcorTest.bat'
 gTestListFile = 'TestList.txt'
 gResultsDirBase = 'TestResults'
-gResultsDir = ''
 gReferenceDir = 'ReferenceResults'      
 
 #default values
@@ -28,11 +27,28 @@ gDefaultImageCompareMargin = 0.1
 #seconds
 gDefaultHangTimeDuration = 1800
 
-#dictionary of configName : exeDirPath
-gConfigDirDict = {}
+class TestSolution(object):
+    def __init__(self, name):
+        self.name = name
+        self.systemResultList = []
+        self.lowLevelResultList = []
+        self.skippedList = []
+        self.errorList = []
+        dateStr = date.today().strftime("%m-%d-%y")
+        self.resultsDir = gResultsDirBase + '\\' + dateStr
+        makeDirIfDoesntExist(self.resultsDir)
+        self.configDict = {}
 
 class TestInfo(object):
-    def determineIndex(self, generateReference):
+    def __init__(self, name, configName, slnInfo):
+        self.Name = name
+        self.ConfigName = configName
+        self.LoadErrorMargin = gDefaultLoadTimeMargin
+        self.FrameErrorMargin = gDefaultFrameTimeMargin
+        self.Index = 0
+        self.slnInfo = slnInfo
+
+    def determineIndex(self, generateReference,):
         initialFilename = self.getResultsFile()
         if generateReference:
             while os.path.isfile(self.getReferenceFile()):
@@ -44,16 +60,10 @@ class TestInfo(object):
         if self.Index != 0:
             overwriteMove(initialFilename, self.getResultsFile())
 
-    def __init__(self, name, configName):
-        self.Name = name
-        self.ConfigName = configName
-        self.LoadErrorMargin = gDefaultLoadTimeMargin
-        self.FrameErrorMargin = gDefaultFrameTimeMargin
-        self.Index = 0
     def getResultsFile(self):
         return self.Name + '_TestingLog_' + str(self.Index) + '.xml'
     def getResultsDir(self):
-        return gResultsDir + '\\' + self.ConfigName
+        return self.slnInfo.resultsDir + '\\' + self.ConfigName
     def getReferenceDir(self):
         return gReferenceDir + '\\' + self.ConfigName
     def getReferenceFile(self):
@@ -62,7 +72,7 @@ class TestInfo(object):
         return self.Name + '_' + self.ConfigName + '_' + str(self.Index)
     def getTestDir(self):
         try:
-            return gConfigDirDict[self.ConfigName]
+            return self.slnInfo.configDict[self.ConfigName]
         except:
             print 'Invalid config' + self.ConfigName + ' for testInfo obj named ' + self.Name
             return ''
@@ -99,12 +109,6 @@ class LowLevelResult(object):
         self.Failed += other.Failed
         self.Crashed += other.Crashed
 
-#Globals
-gSystemResultList = []
-gLowLevelResultList = []
-gSkippedList = []
-gFailReasonsList = []
-
 # -1 smaller, 0 same, 1 larger
 def marginCompare(result, reference, margin):
     delta = result - reference
@@ -131,8 +135,7 @@ def renameScreenshots(testInfo, numScreenshots):
     for i in range (0, numScreenshots):
         os.rename(testInfo.getInitialTestScreenshot(i), testInfo.getRenamedTestScreenshot(i))
 
-def compareImages(resultObj, testInfo, numScreenshots):
-    global gFailReasonsList
+def compareImages(resultObj, testInfo, numScreenshots, slnInfo):
     renameScreenshots(testInfo, numScreenshots)
     for i in range(0, numScreenshots):
         testScreenshot = testInfo.getRenamedTestScreenshot(i)
@@ -148,7 +151,7 @@ def compareImages(resultObj, testInfo, numScreenshots):
         try:
             resultVal = float(resultValStr)
         except:
-            gFailReasonsList.append(('For test ' + testInfo.getFullName() + 
+            slnInfo.errorList.append(('For test ' + testInfo.getFullName() + 
                 ' failed to compare screenshot ' + testScreenshot + ' with ref ' + refScreenshot +
                 ' instead of compare result, got \"' + resultValStr + '\" from larger string \"' + result + '\"'))
             makeDirIfDoesntExist(imagesDir)
@@ -161,7 +164,7 @@ def compareImages(resultObj, testInfo, numScreenshots):
             makeDirIfDoesntExist(imagesDir)
             overwriteMove(testScreenshot, imagesDir)
             overwriteMove(outFile, imagesDir)
-            gFailReasonsList.append(('For test ' + testInfo.getFullName() + ', screenshot ' +
+            slnInfo.errorList.append(('For test ' + testInfo.getFullName() + ', screenshot ' +
                 testScreenshot + ' differs from ' + refScreenshot + ' by ' + result + 
                 ' average difference per pixel. (Exceeds threshold .01)'))
         #else just delete them
@@ -176,10 +179,6 @@ def addSystemTestReferences(testInfo, numScreenshots):
     overwriteMove(testInfo.getResultsFile(), refDir)
     for i in range(0, numScreenshots):
         overwriteMove(testInfo.getRenamedTestScreenshot(i), refDir)
-
-def logTestSkip(testName, reason):
-    global gSkippedList
-    gSkippedList.append((testName, reason))
 
 #args should be action(build, rebuild, clean), solution, config(debug, release), and optionally project
 #if no project given, performs action on entire solution
@@ -196,43 +195,42 @@ def callBatchFile(batchArgs):
         print 'Incorrect batch file call, found ' + string(numArgs) + ' in arg list :' + batchArgs.tostring()
         return 1
 
-def buildFail(slnName, configName):
-    makeDirIfDoesntExist(gResultsDir)
+def buildFail(slnName, configName, slnInfo):
+    makeDirIfDoesntExist(slnInfo.resultsDir)
     buildLog = 'Solution_BuildFailLog.txt'
-    overwriteMove(buildLog, gResultsDir)
+    overwriteMove(buildLog, slnInfo.resultsDir)
     errorMsg = 'failed to build one or more projects with config ' + configName + ' of solution ' + slnName  + ". Build log written to " + buildLog
     print 'Error: ' + errorMsg
-    gFailReasonsList.append(errorMsg)
+    slnInfo.errorList.append(errorMsg)
 
-def addCrash(testName):
-    logTestSkip(testName, 'Unhandled Crash')
+def addCrash(test, slnInfo):
+    slnInfo.skippedList.append(testName, 'Unhandled Crash')
 
-def compareLowLevelReference(testInfo, testResult):
-    global gFailReasonsList
+def compareLowLevelReference(testInfo, testResult, slnInfo):
     if not os.path.isfile(testInfo.getReferenceFile()):
-        gFailReasonsList.append(('For test ' + testInfo.getFullName() + 
+        slnInfo.errorList.append(('For test ' + testInfo.getFullName() + 
         ', could not find reference file ' + testInfo.getReferenceFile()))
         return
     refTag = getXMLTag(testInfo.getReferenceFile(), 'Summary')
     if refTag == None: 
-        gFailReasonsList.append(('For test ' + testInfo.getFullName() + 
+        slnInfo.errorList.append(('For test ' + testInfo.getFullName() + 
         ', could not find reference file ' + testInfo.getReferenceFile()))
         return
     refTotal = int(refTag[0].attributes['TotalTests'].value)
     if testResult.Total != refTotal:
-        gFailReasonsList.append((testInfo.getFullName() + ': Number of tests is ' +
+        slnInfo.errorList.append((testInfo.getFullName() + ': Number of tests is ' +
         str(testResult.Total) + ' which does not match ' + str(refTotal) + ' in reference'))
     refPassed = int(refTag[0].attributes['PassedTests'].value)
     if testResult.Passed != refPassed:
-        gFailReasonsList.append((testInfo.getFullName() + ': Number of passed tests is ' + 
+        slnInfo.errorList.append((testInfo.getFullName() + ': Number of passed tests is ' + 
         str(testResult.Passed) + ' which does not match ' + str(refPassed) + ' in reference'))
     refFailed = int(refTag[0].attributes['FailedTests'].value)
     if testResult.Failed != refFailed:
-        gFailReasonsList.append((testInfo.getFullName() + ': Number of failed tests is ' + 
+        slnInfo.errorList.append((testInfo.getFullName() + ': Number of failed tests is ' + 
         str(testResult.Failed) + ' which does not match ' + str(refFailed) + ' in reference'))
     refCrashed = int(refTag[0].attributes['CrashedTests'].value)
     if testResult.Crashed != refCrashed:
-        gFailReasonsList.append((testInfo.getFullName() + ': Number of crashed tests is ' +  
+        slnInfo.errorList.append((testInfo.getFullName() + ': Number of crashed tests is ' +  
         str(testResult.Crashed) + ' which does not match ' + str(refCrashed) + ' in reference'))
 
 def getXMLTag(xmlFilename, tagName):
@@ -246,24 +244,29 @@ def getXMLTag(xmlFilename, tagName):
     else:
         return tag
 
-def processLowLevelTest(xmlElement, testInfo):
-    global gLowLevelResultList
+def addToLowLevelSummary(slnInfo, result):
+    if not slnInfo.lowLevelResultList:
+        resultSummary = LowLevelResult()
+        resultSummary.Name = 'Summary'
+        slnInfo.lowLevelResultList.append(resultSummary)
+    slnInfo.lowLevelResultList[0].add(result)
+    slnInfo.lowLevelResultList.append(result)
+
+def processLowLevelTest(xmlElement, testInfo, slnInfo):
     newResult = LowLevelResult()
     newResult.Name = testInfo.getFullName()
     newResult.Total = int(xmlElement[0].attributes['TotalTests'].value)
     newResult.Passed = int(xmlElement[0].attributes['PassedTests'].value)
     newResult.Failed = int(xmlElement[0].attributes['FailedTests'].value)
     newResult.Crashed = int(xmlElement[0].attributes['CrashedTests'].value)
-    gLowLevelResultList.append(newResult)
+    addToLowLevelSummary(slnInfo, newResult)
+    slnInfo.lowLevelResultList.append(newResult)
     #result at index 0 is summary
-    gLowLevelResultList[0].add(newResult)
     makeDirIfDoesntExist(testInfo.getResultsDir())
     overwriteMove(testInfo.getResultsFile(), testInfo.getResultsDir())
-    compareLowLevelReference(testInfo, newResult)
+    compareLowLevelReference(testInfo, newResult, slnInfo)
 
-def processSystemTest(xmlElement, testInfo):
-    global gSystemResultList
-    global gFailReasonsList
+def processSystemTest(xmlElement, testInfo, slnInfo):
     newSysResult = SystemResult()
     newSysResult.Name = testInfo.getFullName()
     newSysResult.LoadTime = float(xmlElement[0].attributes['LoadTime'].value)
@@ -274,99 +277,116 @@ def processSystemTest(xmlElement, testInfo):
     referenceFile = testInfo.getReferenceFile()
     resultFile = testInfo.getResultsFile()
     if not os.path.isfile(referenceFile):
-        logTestSkip(testInfo.getFullName(), 'Could not find reference file ' + referenceFile + ' for comparison')
+        slnInfo.skippedList.append((testInfo.getFullName(), 'Could not find reference file ' + referenceFile + ' for comparison'))
         return 
     refResults = getXMLTag(referenceFile, 'Summary')
     if refResults == None:
-        logTestSkip(testInfo.getFullName(), 'Error getting xml data from reference file ' + referenceFile)
+        slnInfo.skippedList.append((testInfo.getFullName(), 'Error getting xml data from reference file ' + referenceFile))
         return
     newSysResult.RefLoadTime = float(refResults[0].attributes['LoadTime'].value)
     newSysResult.RefAvgFrameTime = float(refResults[0].attributes['FrameTime'].value)
     #check avg fps
     if newSysResult.AvgFrameTime != 0 and newSysResult.RefAvgFrameTime != 0:
         if marginCompare(newSysResult.AvgFrameTime, newSysResult.RefAvgFrameTime, newSysResult.FrameErrorMargin) == 1:
-            gFailReasonsList.append((testInfo.getFullName() + ': average frame time ' + 
+            slnInfo.errorList.append((testInfo.getFullName() + ': average frame time ' + 
             str(newSysResult.AvgFrameTime) + ' is larger than reference ' + str(newSysResult.RefAvgFrameTime) + 
             ' considering error margin ' + str(newSysResult.FrameErrorMargin * 100) + '%'))
     #check load time
     if newSysResult.LoadTime != 0 and newSysResult.RefLoadTime != 0:
         if newSysResult.LoadTime > (newSysResult.RefLoadTime + newSysResult.LoadErrorMargin):
-            gFailReasonsList.append(testInfo.getFullName() + ': load time' + (str(newSysResult.LoadTime) +
+            slnInfo.errorList.append(testInfo.getFullName() + ': load time' + (str(newSysResult.LoadTime) +
             ' is larger than reference ' + str(newSysResult.RefLoadTime) + ' considering error margin ' + 
             str(newSysResult.LoadErrorMargin) + ' seconds'))
-    compareImages(newSysResult, testInfo, numScreenshots)
-    gSystemResultList.append(newSysResult)
+    compareImages(newSysResult, testInfo, numScreenshots, slnInfo)
+    slnInfo.systemResultList.append(newSysResult)
     makeDirIfDoesntExist(testInfo.getResultsDir())
     overwriteMove(resultFile, testInfo.getResultsDir())
 
 def readTestList(generateReference, buildTests, pullBranch):
-    global gConfigDirDict
-    global gResultsDir
     file = open(gTestListFile)
     contents = file.read()
-    slnEndIndex = contents.find(' ')
-    slnName = contents[:slnEndIndex]
-    #make sln name dir within date dir
-    slnBaseName, extension = os.path.splitext(slnName)
-    slnBaseName = ntpath.basename(slnBaseName) 
-    if pullBranch:
-        gResultsDir += '\\' + slnBaseName + '_' + pullBranch
-    else:
-        gResultsDir += '\\' + slnBaseName
-    if os.path.isdir(gResultsDir):
-        cleanDir(gResultsDir, None, None)
-    else:
-        os.makedirs(gResultsDir)
-    slnConfigStartIndex = contents.find('{')
-    slnConfigEndIndex = contents.find('}')
-    configData = contents[slnConfigStartIndex + 1 : slnConfigEndIndex]
-    configDataList = configData.split(' ')
-    for i in xrange(0, len(configDataList), 2):
-        exeDir = configDataList[i + 1]
-        configName = configDataList[i].lower()
-        gConfigDirDict[configName] = exeDir
-        if buildTests:
-            callBatchFile(['clean', slnName, configName])
-            #delete bin dir
-            if os.path.isdir(exeDir):
-                shutil.rmtree(exeDir)
-            #returns 1 on fail
-            if callBatchFile(['rebuild', slnName, configName]):
-                buildFail(slnName, configName)
+
+    slnInfos = []
+
+    slnDataStartIndex = contents.find('[')
+    while slnDataStartIndex != -1:
+        #get all data about testing this solution
+        slnDataEndIndex = contents.find(']')
+        solutionData = contents[slnDataStartIndex + 1 : slnDataEndIndex]
+        slnEndIndex = solutionData.find(' ')
+        slnName = cleanupString(solutionData[:slnEndIndex])
+
+        #make sln name dir within date dir
+        slnBaseName, extension = os.path.splitext(slnName)
+        slnBaseName = ntpath.basename(slnBaseName)
+        slnInfo = TestSolution(slnBaseName)
+        slnInfos.append(slnInfo)
+        if pullBranch:
+            slnInfo.resultsDir += '\\' + slnBaseName + '_' + pullBranch
         else:
-            cleanDir(exeDir, None, '.png')
+            slnInfo.resultsDir += '\\' + slnBaseName
+        if os.path.isdir(slnInfo.resultsDir):
+            cleanDir(slnInfo.resultsDir, None, None)
+        else:
+            os.makedirs(slnInfo.resultsDir)
 
-    contents = contents[slnConfigEndIndex + 1 :]
-    argStartIndex = contents.find('{')
-    while(argStartIndex != -1):
-        testName = cleanupString(contents[:argStartIndex])
-        argEndIndex = contents.find('}')
-        args = cleanupString(contents[argStartIndex + 1 : argEndIndex])
-        argsList = args.split(',')
-        contents = contents[argEndIndex + 1 :]
-        configStartIndex = contents.find('{')
-        configEndIndex = contents.find('}')
-        configList = cleanupString(contents[configStartIndex + 1 : configEndIndex]).split(' ')
-        #run test for each config and each set of args
-        for config in configList:
-            print 'Running ' + testName + ' in config ' + config 
-            testInfo = TestInfo(testName, config)
-            if generateReference:
-                cleanDir(testInfo.getReferenceDir(), testName, '.png')
-                cleanDir(testInfo.getReferenceDir(), testName, '.xml')
-            for argSet in argsList:
-                testInfo = TestInfo(testName, config)
-                runTest(testInfo, cleanupString(argSet), generateReference)
+        #parse solutiondata
+        slnConfigStartIndex = solutionData.find('{')
+        slnConfigEndIndex = solutionData.find('}')
+        configData = solutionData[slnConfigStartIndex + 1 : slnConfigEndIndex]
+        configDataList = configData.split(' ')
+        for i in xrange(0, len(configDataList), 2):
+            exeDir = configDataList[i + 1]
+            configName = configDataList[i].lower()
+            slnInfo.configDict[configName] = exeDir
+            if buildTests:
+                callBatchFile(['clean', slnName, configName])
+                #delete bin dir
+                if os.path.isdir(exeDir):
+                    shutil.rmtree(exeDir)
+                #returns 1 on fail
+                if callBatchFile(['rebuild', slnName, configName]):
+                    buildFail(slnName, configName, slnInfo)
+            else:
+                cleanDir(exeDir, None, '.png')
 
-        #goto next set
-        contents = contents[configEndIndex + 1 :]
-        argStartIndex = contents.find('{')
-    return slnBaseName
+        #move buffer to beginning of args
+        solutionData = solutionData[slnConfigEndIndex + 1 :]
 
-def runTest(testInfo, cmdLine, generateReference):
+        #parse arg data
+        argStartIndex = solutionData.find('{')
+        while(argStartIndex != -1):
+            testName = cleanupString(solutionData[:argStartIndex])
+            argEndIndex = solutionData.find('}')
+            args = cleanupString(solutionData[argStartIndex + 1 : argEndIndex])
+            argsList = args.split(',')
+            solutionData = solutionData[argEndIndex + 1 :]
+            configStartIndex = solutionData.find('{')
+            configEndIndex = solutionData.find('}')
+            configList = cleanupString(solutionData[configStartIndex + 1 : configEndIndex]).split(' ')
+            #run test for each config and each set of args
+            for config in configList:
+                print 'Running ' + testName + ' in config ' + config 
+                testInfo = TestInfo(testName, config, slnInfo)
+                if generateReference:
+                    cleanDir(testInfo.getReferenceDir(), testName, '.png')
+                    cleanDir(testInfo.getReferenceDir(), testName, '.xml')
+                for argSet in argsList:
+                    testInfo = TestInfo(testName, config, slnInfo)
+                    runTest(testInfo, cleanupString(argSet), generateReference, slnInfo)
+
+            #goto next set
+            solutionData = solutionData[configEndIndex + 1 :]
+            argStartIndex = solutionData.find('{')
+        #goto next solution set
+        contents = contents[slnDataEndIndex + 1 :]
+        slnDataStartIndex = contents.find('[')
+    return slnInfos
+
+def runTest(testInfo, cmdLine, generateReference, slnInfo):
     testPath = testInfo.getTestPath()
     if not os.path.exists(testPath):
-        logTestSkip(testInfo.getFullName(), 'Unable to find ' + testPath)
+        slnInfo.skippedList.append((testInfo.getFullName(), 'Unable to find ' + testPath))
         return
     try:
         p = subprocess.Popen(testPath + ' ' + cmdLine)
@@ -377,19 +397,19 @@ def runTest(testInfo, cmdLine, generateReference):
             cur = time.time() - start
             if cur > gDefaultHangTimeDuration:
                 p.kill()
-                logTestSkip(testInfo.getFullName(), ('Test timed out ( > ' + 
-                    str(gDefaultHangTimeDuration) + ' seconds)'))
+                slnInfo.skippedList.append((testInfo.getFullName(), ('Test timed out ( > ' + 
+                    str(gDefaultHangTimeDuration) + ' seconds)')))
                 return
         #ensure results file exists
         if not os.path.isfile(testInfo.getResultsFile()):
-            logTestSkip(testInfo.getFullName(), 'Failed to open test result file ' + testInfo.getResultsFile())
+            slnInfo.skippedList.append((testInfo.getFullName(), 'Failed to open test result file ' + testInfo.getResultsFile()))
             return
         #check for name conflicts
         testInfo.determineIndex(generateReference)
         #get xml from results file
         summary = getXMLTag(testInfo.getResultsFile(), 'Summary')
         if summary == None:
-            logTestSkip(testInfo.getFullName(), 'Error getting xml data from ' + testInfo.getResultsFile())
+            slnInfo.skippedList.append((testInfo.getFullName(), 'Error getting xml data from ' + testInfo.getResultsFile()))
             if generateReference:
                 makeDirIfDoesntExist(testInfo.getReferenceDir())
                 overwriteMove(testInfo.getResultsFile(), testInfo.getReferenceDir())
@@ -403,16 +423,16 @@ def runTest(testInfo, cmdLine, generateReference):
             addSystemTestReferences(testInfo, numScreenshots)
         #process system
         elif cmdLine:
-            processSystemTest(summary, testInfo)
+            processSystemTest(summary, testInfo, slnInfo)
         #gen low level ref
         elif generateReference:
             makeDirIfDoesntExist(testInfo.getReferenceDir())
             overwriteMove(testInfo.getResultsFile(), testInfo.getReferenceDir())
         #process low level
         else:
-            processLowLevelTest(summary, testInfo)
+            processLowLevelTest(summary, testInfo, slnInfo)
     except subprocess.CalledProcessError:
-        addCrash(testInfo.getFullName())
+        addCrash(testInfo.getFullName(), slnInfo)
 
 def lowLevelTestResultToHTML(result):
     html = '<tr>'
@@ -432,8 +452,8 @@ def lowLevelTestResultToHTML(result):
     html += '</tr>\n'
     return html
 
-def getLowLevelTestResultsTable():
-    if gLowLevelResultList:
+def getLowLevelTestResultsTable(slnInfo):
+    if slnInfo.lowLevelResultList:
         html = '<table style="width:100%" border="1">\n'
         html += '<tr>\n'
         html += '<th colspan=\'5\'>Low Level Test Results</th>\n'
@@ -444,7 +464,7 @@ def getLowLevelTestResultsTable():
         html += '<th>Passed</th>\n'
         html += '<th>Failed</th>\n'
         html += '<th>Crashed</th>\n'
-        for result in gLowLevelResultList:
+        for result in slnInfo.lowLevelResultList:
             html += lowLevelTestResultToHTML(result)
         html += '</table>\n'
         return html
@@ -491,8 +511,8 @@ def systemTestResultToHTML(result):
     html += '</tr>\n'
     return html
 
-def getSystemTestResultsTable():
-    if gSystemResultList:
+def getSystemTestResultsTable(slnInfo):
+    if slnInfo.systemResultList:
         html = '<table style="width:100%" border="1">\n'
         html += '<tr>\n'
         html += '<th colspan=\'7\'>System Test Results</th>\n'
@@ -504,18 +524,18 @@ def getSystemTestResultsTable():
         html += '<th>Frame Time Error Margin %</th>\n'
         html += '<th>Avg Frame Time</th>\n'
         html += '<th>Ref Frame Time</th>\n'
-        for result in gSystemResultList:
+        for result in slnInfo.systemResultList:
             html += systemTestResultToHTML(result)
         html += '</table>\n'
         return html
     else:
         return ''
 
-def getImageCompareResultsTable():
-    if gSystemResultList:
+def getImageCompareResultsTable(slnInfo):
+    if slnInfo.systemResultList:
         max = 0
         #table needs max num of screenshots plus one columns 
-        for result in gSystemResultList:
+        for result in slnInfo.systemResultList:
             if len(result.CompareResults) > max:
                 max = len(result.CompareResults)
         html = '<table style="width:100%" border="1">\n'
@@ -525,7 +545,7 @@ def getImageCompareResultsTable():
         html += '<th>Test</th>\n'
         for i in range (0, max):
             html += '<th>SS' + str(i) + '</th>\n'
-        for result in gSystemResultList:
+        for result in slnInfo.systemResultList:
             if len(result.CompareResults) > 0:
                 html += '<tr>\n'
                 html += '<td>' + result.Name + '</td>\n'
@@ -547,33 +567,33 @@ def skipToHTML(name, reason):
     html += '</tr>\n'
     return html
 
-def getSkipsTable():
-    if gSkippedList:
+def getSkipsTable(slnInfo):
+    if slnInfo.skippedList:
         html = '<table style="width:100%" border="1">\n'
         html += '<tr>\n'
         html += '<th colspan=\'2\'>Skipped Tests</th>'
         html += '</tr>'
         html += '<th>Test</th>\n'
         html += '<th>Reason for Skip</th>\n'
-        for name, reason in gSkippedList:
+        for name, reason in slnInfo.skippedList:
             html += skipToHTML(name, reason)
         html += '</table>'
         return html
     else:
         return ''
 
-def outputHTML(openSummary, slnName, pullBranch):
-    html = getLowLevelTestResultsTable()
+def outputHTML(openSummary, slnInfo, pullBranch):
+    html = getLowLevelTestResultsTable(slnInfo)
     html += '<br><br>'
-    html += getSystemTestResultsTable()
+    html += getSystemTestResultsTable(slnInfo)
     html += '<br><br>'
-    html += getImageCompareResultsTable()
+    html += getImageCompareResultsTable(slnInfo)
     html += '<br><br>'
-    html += getSkipsTable()
+    html += getSkipsTable(slnInfo)
     if pullBranch:
-        resultSummaryName = gResultsDir + '\\' + slnName + '_' + pullBranch + '_TestSummary.html'
+        resultSummaryName = slnInfo.resultsDir + '\\' + slnInfo.name + '_' + pullBranch + '_TestSummary.html'
     else:
-        resultSummaryName = gResultsDir + '\\' + slnName + '_TestSummary.html'
+        resultSummaryName = slnInfo.resultsDir + '\\' + slnInfo.name + '_TestSummary.html'
     outfile = open(resultSummaryName, 'w')
     outfile.write(html)
     outfile.close()
@@ -598,18 +618,8 @@ def cleanDir(cleanedDir, prefix, suffix):
                 os.remove(filepath)
 
 def main(build, showSummary, generateReference, referenceDir, testList, pullBranch):
-    global gResultsDir
     global gReferenceDir
     global gTestListFile
-    global gSystemResultList
-    global gLowLevelResultList
-    global gSkippedList
-    global gFailReasonsList
-
-    gSystemResultList[:] = []
-    gLowLevelResultList[:] = []
-    gSkippedList [:] = []
-    gFailReasonsList[:] = []
 
     refDir = cleanupString(referenceDir)
     if os.path.isdir(refDir):
@@ -631,45 +641,37 @@ def main(build, showSummary, generateReference, referenceDir, testList, pullBran
     else:
         gTestListFile = testList
 
-    gResultsDir = gResultsDirBase
     #make outer dir if need to
-    makeDirIfDoesntExist(gResultsDir)
-    #make date dir if needed
-    dateStr = date.today().strftime("%m-%d-%y")
-    gResultsDir += '\\' + dateStr
-    makeDirIfDoesntExist(gResultsDir)
+    makeDirIfDoesntExist(gResultsDirBase)
 
+    slnInfos = readTestList(generateReference, build, pullBranch)
     if not generateReference:
-        resultSummary = LowLevelResult()
-        resultSummary.Name = 'Summary'
-        gLowLevelResultList.append(resultSummary)
+        for sln in slnInfos:
+            outputHTML(showSummary, sln, pullBranch)
 
-    slnName = readTestList(generateReference, build, pullBranch)
-    if not generateReference:
-        outputHTML(showSummary, slnName, pullBranch)
-    
-    #open a file move file to result dir
-    if pullBranch:
-        testingResult = [os.getcwd() + '\\' + gResultsDir + '\\' + slnName + '_' + pullBranch + '_TestSummary.html']
-    else:
-        testingResult = [os.getcwd() + '\\' + gResultsDir + '\\' + slnName + '_TestSummary.html']
-    if(len(gSkippedList) > 0 or len(gFailReasonsList) > 0):
-        errorFileStr = 'Ran into the following issues\n-----\n'
-        for name, skip in gSkippedList:
-            errorFileStr += name + ': ' + skip + '\n'
-        for reason in gFailReasonsList:
-            errorFileStr += reason + '\n'
+    testingResults = []
+    for sln in slnInfos:
+        slnResultPath =  os.getcwd() + '\\' + sln.resultsDir + '\\' + sln.name
         if pullBranch:
-            errorFilename = os.getcwd() + '\\' + gResultsDir + '\\' + slnName + '_' + pullBranch + '_ErrorSummary.txt'
+            slnResultPath += '_' + pullBranch
+        resultSummary = slnResultPath + '_TestSummary.html'
+        errorSummary = slnResultPath + '_ErrorSummary.txt'
+
+        if(len(sln.skippedList) > 0 or len(sln.errorList) > 0):
+            errorStr = ''
+            for name, skip in sln.skippedList:
+                errorStr += name + ': ' + skip + '\n'
+            for reason in sln.errorList:
+                errorStr += reason + '\n' 
+            errorFile = open(errorSummary, 'w')
+            errorFile.write(errorStr)
+            errorFile.close()
+            testingResults.append([resultSummary, False])
         else:
-            errorFilename = os.getcwd() + '\\' + gResultsDir + '\\' + slnName + '_ErrorSummary.txt'
-        errorFile = open(errorFilename, 'w')
-        errorFile.write(errorFileStr)
-        errorFile.close();
-        testingResult.append(errorFilename)
+            testingResults.append([resultSummary, True])
 
     #check len for pass fail, len 2 includes error file, which is a fail  
-    return  testingResult
+    return  testingResults
 
 def cleanupString(string):
     string = string.replace('\t', '')
@@ -694,5 +696,5 @@ if __name__ == '__main__':
     else:
         testList = gTestListFile
 
-    #pull branch is just to names subdirectories in the same repo folder so results dont overwrite 
-    main(not args.nobuild, args.showsummary, args.generatereference, refDir, testList, pullBranch)
+    #final arg is pull branch, just to name subdirectories in the same repo folder so results dont overwrite 
+    main(not args.nobuild, args.showsummary, args.generatereference, refDir, testList, '')
