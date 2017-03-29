@@ -136,6 +136,8 @@ namespace Falcor
 			auto index = vertexModules.size();
 			std::stringstream moduleSrc;
 			moduleSrc << "module VertexFormat" << index << " implements IVertexAttribs\n{\n";
+			bool hasBitangent = false;
+			bool hasColor = false;
 			for (auto i = 0u; i < bc; i++)
 			{
 				auto bufLayout = vertLayout->getBufferLayout(i);
@@ -216,8 +218,24 @@ namespace Falcor
 						moduleSrc << "\tpublic vec2 vertUV = " << VERTEX_TEXCOORD_NAME << ".xy;\n";
 					else if (bufLayout->getElementName(j) == VERTEX_POSITION_NAME)
 						moduleSrc << "\tpublic vec3 vertPos = " << VERTEX_POSITION_NAME << ";\n";
+					else if (bufLayout->getElementName(j) == VERTEX_NORMAL_NAME)
+						moduleSrc << "\tpublic vec3 vertNormal = " << VERTEX_NORMAL_NAME << ";\n";
+					else if (bufLayout->getElementName(j) == VERTEX_BITANGENT_NAME)
+					{
+						moduleSrc << "\tpublic vec3 vertBitangent = " << VERTEX_BITANGENT_NAME << ";\n";
+						hasBitangent = true;
+					}
+					else if (bufLayout->getElementName(j) == VERTEX_DIFFUSE_COLOR_NAME)
+					{
+						moduleSrc << "\tpublic vec3 vertColor = " << VERTEX_DIFFUSE_COLOR_NAME << ";\n";
+						hasColor = true;
+					}
 				}
 			}
+			if (!hasBitangent)
+				moduleSrc << "\tpublic vec3 vertBitangent = vec3(1.0f, 0.0f, 0.0f);\n";
+			if (!hasColor)
+				moduleSrc << "\tpublic vec3 vertColor = vec3(1.0, 0.0, 0.0);\n";
 			moduleSrc << "}";
 			spEnvLoadModuleLibraryFromSource(libEnv, moduleSrc.str().c_str(), "VertexModule", sink);
 			auto moduleHandle = spEnvFindModule(libEnv, (std::string("VertexFormat") + std::to_string(index)).c_str());

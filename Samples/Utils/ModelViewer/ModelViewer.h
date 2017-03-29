@@ -65,7 +65,7 @@ private:
     GraphicsProgram::SharedPtr mpProgram = nullptr;
     GraphicsVars::SharedPtr mpProgramVars = nullptr;
     GraphicsState::SharedPtr mpGraphicsState = nullptr;
-
+	SpireModule * mPerFrameModule = nullptr;
     enum
     {
         ModelViewCamera,

@@ -212,6 +212,8 @@ namespace Falcor
             mResourceTableDirty = true;
         }
 
+		void setVariableBlob(const std::string& name, const void * value, size_t size);
+
         void setBlob(const void* pSrc, size_t offset, size_t size)
         {
             mConstantBuffer->setBlob(pSrc, offset, size);

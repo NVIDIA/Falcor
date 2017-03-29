@@ -120,6 +120,18 @@ struct ShadingOutput
 	vec2    effectiveRoughness;     ///< Sampled brdf roughness, or for evaluated material, an effective roughness
 };
 
+void InitializeShadingOutput(out ShadingOutput rs)
+{
+    rs.diffuseAlbedo = vec3(0.0f);
+    rs.diffuseIllumination = vec3(0.0f);
+    rs.specularAlbedo = vec3(0.0f);
+    rs.specularIllumination = vec3(0.0f);
+    rs.finalValue = vec3(0.0f);
+    rs.wi = vec3(0.0f);
+    rs.pdf = 0.0f;
+    rs.thp = vec3(0.0f);
+    rs.effectiveRoughness = vec2(0.0f);
+}
 /*******************************************************************
 					Lights
 *******************************************************************/
@@ -486,4 +498,85 @@ module MaterialLayer
 #endif
         return retVal;
     }
+}
+
+
+interface IVertexAttribs
+{
+	
+}
+
+module InternalPerFrameCB_T
+{
+    param mat4            viewMat;//                DEFAULTS(mat4());                ///< Camera view matrix.
+    param mat4            projMat;//                DEFAULTS(mat4());                ///< Camera projection matrix.
+    param mat4            viewProjMat;//            DEFAULTS(mat4());                ///< Camera view-projection matrix.
+    param mat4            invViewProj;//			   DEFAULTS(mat4());                ///< Camera inverse view-projection matrix.
+    param mat4            prevViewProjMat;//        DEFAULTS(mat4());                ///< Camera view-projection matrix associated to previous frame.
+
+    param vec3            position;//               DEFAULTS(vec3(0, 0, 0));         ///< Camera world-space position.
+    param float           fovY;//                   DEFAULTS(1.f);                   ///< vertical field-of-view, in radians
+    param vec3            up;//                     DEFAULTS(vec3(0, 1, 0));         ///< Camera world-space up vector.
+    param float           aspectRatio;//            DEFAULTS(1.f);                   ///< Camera aspect ratio.
+    param vec3            target;//                 DEFAULTS(vec3(0, 0, -1));        ///< Camera target point in world-space.
+    param float           nearZ;//                  DEFAULTS(0.1f);                  ///< Camera near plane.
+    param vec3            cameraU;//                DEFAULTS(vec3(0, 0, 1));         ///< Camera base vector U. normalized it indicates the left image plane vector. The length is dependent on the FOV. 
+    param float           farZ;//                   DEFAULTS(10000.0f);              ///< Camera far plane.
+    param vec3            cameraV;//                DEFAULTS(vec3(0, 1, 0));         ///< Camera base vector V. normalized it indicates the up image plane vector. The length is dependent on the FOV. 
+    param float           jitterX;//                DEFAULTS(0.0f);                  ///< Eventual camera jitter in the x coordinate
+    param vec3            cameraW;//                DEFAULTS(vec3(1, 0, 0));         ///< Camera base vector U. normalized it indicates the forward direction. The length is the camera focal distance.
+    param float           jitterY;//                DEFAULTS(0.0f);                  ///< Eventual camera jitter in the y coordinate
+
+    param mat4            rightEyeViewMat;
+    param mat4            rightEyeProjMat;
+    param mat4            rightEyeViewProjMat;
+    param mat4            rightEyePrevViewProjMat;
+}
+
+module InternalPerMeshCB_T
+{
+//    param mat4[64] gWorldMat; // If the mesh has bones, these are the bones matrices
+//    param uint[64] gDrawId; // Zero-based order/ID of Mesh Instances drawn per SceneRenderer::renderScene call.
+    param mat4 gWorldMat;
+	param uint gDrawId;
+    param uint gMeshId;
+};
+
+// HACK: putting this here instead of in `ModelViewer.spire`
+// so that we can actually look it up...
+module PerFrameCB_T
+{
+    public param LightData gDirLight;
+    public param LightData gPointLight;
+
+//    param uint gConstColor;
+
+    public param vec3 gAmbient;
+}
+
+interface Material
+{
+}
+
+module ConstantMaterial
+	implements Material
+{
+	param vec4 diffuseVal;
+
+	public float4 diffuse = diffuseVal;
+}
+
+module TexturedMaterial
+	implements Material
+{
+	// HACK: I'm declaring the texture-coordinate input here, because I
+	// don't want to put it on the base shader and then make everything
+	// need to have a texture coordinate.
+	//
+	require vec2 vertUV;
+
+	param Texture2D diffuseMap;
+	param SamplerState samplerState;
+	
+	public float4 diffuse = diffuseMap.Sample(samplerState, vertUV);
 }

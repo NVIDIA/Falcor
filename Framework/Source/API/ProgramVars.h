@@ -197,6 +197,11 @@ namespace Falcor
             mAssignedComponents[0]->setVariable(name, value);
         }
 
+		void setVariableBlob(const std::string name, const void * value, size_t size)
+		{
+			mAssignedComponents[0]->setVariableBlob(name, value, size);
+		}
+
         template<typename T>
         void setVariable(size_t offset, const T& value)
         {

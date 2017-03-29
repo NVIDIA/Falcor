@@ -284,7 +284,6 @@ void ModelViewer::onFrameRender()
     const glm::vec4 clearColor(0.38f, 0.52f, 0.10f, 1);
     mpRenderContext->clearFbo(mpDefaultFBO.get(), clearColor, 1.0f, 0, FboAttachmentType::All);
     mpGraphicsState->setFbo(mpDefaultFBO);
-
     if(mpModel)
     {
         mpCamera->setDepthRange(mNearZ, mFarZ);
@@ -310,8 +309,13 @@ void ModelViewer::onFrameRender()
             mpGraphicsState->setDepthStencilState(mpDepthTestDS);
 //SPIRE            mpProgramVars["PerFrameCB"]["gConstColor"] = false;
 
-//SPIRE            mpDirLight->setIntoConstantBuffer(mpProgramVars["PerFrameCB"].get(), "gDirLight");
-//SPIRE            mpPointLight->setIntoConstantBuffer(mpProgramVars["PerFrameCB"].get(), "gPointLight");
+			if (mpDirLight)
+				mpProgramVars->setVariableBlob("gDirLight", &mpDirLight->getData(), sizeof(LightData) - sizeof(MaterialData));
+			if (mpPointLight)
+				mpProgramVars->setVariableBlob("gPointLight", &mpPointLight->getData(), sizeof(LightData) - sizeof(MaterialData));
+
+            //mpDirLight->setIntoConstantBuffer(mpProgramVars["PerFrameCB"].get(), "gDirLight");
+            //mpPointLight->setIntoConstantBuffer(mpProgramVars["PerFrameCB"].get(), "gPointLight");
         }
 
         if(mUseTriLinearFiltering)

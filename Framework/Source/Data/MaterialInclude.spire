@@ -18,24 +18,19 @@ public param SamplerState samplerState;
 
 require vec2 vertUV;
 
-public bool alphaTestEnabled()
-{
-    return hasAlphaMap != 0;
-}
-
 bool alphaTestPassed(in ShadingAttribs attr)
 {
 #ifndef _MS_DISABLE_ALPHA_TEST
-    if(sampleTexture(alphaMap, samplerState, attr).x < alphaThreshold)
-        return false;
-#endif
+    return sampleTexture(alphaMap, samplerState, attr).x >= alphaThreshold;
+#else
     return true;
+#endif
 }
 
 void applyAlphaTest(in ShadingAttribs attr)
 {
 #ifndef _MS_DISABLE_ALPHA_TEST
-    if(alphaTestEnabled())
+    if (hasAlphaMap)
     {
         if(!alphaTestPassed(attr))
             discard;
@@ -60,7 +55,7 @@ vec3 fromLocal(in vec3 v, in vec3 t, in vec3 b, in vec3 n)
 
 vec3 toLocal(in vec3 v, in vec3 t, in vec3 b, in vec3 n)
 {
-    return v3(dot(v, t), dot(v, b), dot(v, n));
+    return vec3(dot(v, t), dot(v, b), dot(v, n));
 }
 
 void applyNormalMap(in vec3 texValue, inout vec3 n, inout vec3 t, inout vec3 b)
@@ -122,7 +117,8 @@ void evalMaterial(
     passResult.roughness = 0;
     passResult.effectiveRoughness = 0;
 
-    $LAYER_EVAL  //.evalMaterialLayer(shAttr, lAttr, passResult);
+    $LAYER_EVAL
+  //.evalMaterialLayer(shAttr, lAttr, passResult);
 
     /* Accumulate the results of the pass */
     result.finalValue += passResult.value;

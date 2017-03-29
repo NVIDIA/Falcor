@@ -34,6 +34,7 @@
 #include "Utils/Math/FalcorMath.h"
 #include "MaterialSystem.h"
 #include "API/ProgramVars.h"
+#include <sstream>
 
 namespace Falcor
 {
@@ -550,19 +551,66 @@ namespace Falcor
 
         if( !mSpireComponentClass )
         {
+			int layerCount = this->getNumLayers();
+			// currently material module source depend on number of layers and type of each layer
+			// we encode the material module configuration in the module name
+			std::string moduleName = "Material" + std::to_string(layerCount);
+			for (int i = 0; i < layerCount; i++)
+			{
+				moduleName += "_";
+				auto layer = getLayer(i);
+				if (layer.pTexture)
+					moduleName += "M";
+				else
+					moduleName += "C";
+				moduleName += std::to_string((int)layer.type);
+				moduleName += std::to_string((int)layer.ndf);
+				moduleName += std::to_string((int)layer.blend);
+			}
+			// check if we have already generated the material module
+			mSpireComponentClass = spFindModule(spireContext, moduleName.c_str());
+			if (!mSpireComponentClass)
+			{
+				// if module not found, generate it
+				std::stringstream sb;
+				std::string kernelStr;
+				std::string fullPath;
+				if (findFileInDataDirectories("MaterialInclude.spire", fullPath))
+				{
+					readFileToString(fullPath, kernelStr);
+					sb << "module " << moduleName << " implements Material\n{\n";
+					std::stringstream sbEval;
+					for (int i = 0; i < layerCount; i++)
+					{
+						sb << "using layer" << i << " = MaterialLayer(" << (getLayer(i).pTexture ? "1" : "0") << ", " << (int)getLayer(i).type
+							<< ", " << (int)getLayer(i).ndf << ", " << (int)getLayer(i).blend << ");\n";
+						sbEval << "layer" << i << ".evalMaterialLayer(shAttr, lAttr, passResult);\n";
+					}
+					auto pos = kernelStr.find("$LAYER_EVAL");
+					auto evalStr = sbEval.str();
+					kernelStr = kernelStr.substr(0, pos) + evalStr + kernelStr.substr(pos+11);
+					sb << kernelStr;
+					sb << "\n}\n";
+					auto moduleStr = sb.str();
+					mSpireComponentClass = ShaderRepository::Instance().CreateLibraryModuleFromSource(moduleStr.c_str(), moduleName.c_str());
+				}
+				else
+					logError("Cannot find 'MaterialInclude.spire'.");
+			}
+
             // TODO: Here is where we'd need to construct an appropriate component
             // class for the material, based on the data in the layers.
             //
             // TODO: the proper logic for invalidating and re-generating this
             // also needs to be worked out...
-            if( mData.textures.layers[0] )
+            /*if( mData.textures.layers[0] )
             {
                 mSpireComponentClass = spFindModule(spireContext, "TexturedMaterial");
             }
             else
             {
                 mSpireComponentClass = spFindModule(spireContext, "ConstantMaterial");
-            }
+            }*/
             assert(mSpireComponentClass);
         }
 
@@ -592,23 +640,57 @@ namespace Falcor
         if( mDescDirty )
         {
             finalize();
-
-            // Fill in the values for the material fields, if anything has changed.
+			if (auto normalMap = this->getNormalMap())
+			{
+				mSpireComponentInstance->setTexture("normalMap", normalMap.get());
+				mSpireComponentInstance->setVariable("hasNormalMap", true);
+			}
+			if (auto alphaMap = this->getAlphaMap())
+			{
+				mSpireComponentInstance->setTexture("alphaMap", alphaMap.get());
+				mSpireComponentInstance->setVariable("hasAlphaMap", true);
+			}
+			if (auto ambientMap = this->getAmbientOcclusionMap())
+			{
+				mSpireComponentInstance->setTexture("ambientMap", ambientMap.get());
+				mSpireComponentInstance->setVariable("hasAmbientMap", true);
+			}
+			if (auto heightMap = this->getHeightMap())
+			{
+				mSpireComponentInstance->setTexture("heightMap", heightMap.get());
+				mSpireComponentInstance->setVariable("hasHeightMap", true);
+			}
+			mSpireComponentInstance->setSampler("samplerState", mData.samplerState.get());
+			mSpireComponentInstance->setVariable("height", getHeightModifiers());
+			mSpireComponentInstance->setVariable("id", getId());
+			mSpireComponentInstance->setVariable("alphaThreshold", getAlphaThreshold());
+			for (auto i = 0u; i < getNumLayers(); i++)
+			{
+				auto layer = getLayer(i);
+				auto subModule = spModuleGetSubModule(mSpireComponentClass, i);
+				auto offset = spModuleGetBufferOffset(subModule);
+				mSpireComponentInstance->setBlob(&layer.getValues(), (size_t)offset, sizeof(LayerValues));
+				SpireBindingIndex index;
+				spModuleGetBindingOffset(subModule, &index);
+				mSpireComponentInstance->setSrv(index.texture, layer.pTexture->getSRV(), layer.pTexture);
+			}
+			// Fill in the values for the material fields, if anything has changed.
             //
             // TODO: we want to copy in data from our "sub-component instances"
             // (the layers), which we assume will match the "component instance"
             // we created for the material.
-            if( mData.textures.layers[0] )
-            {
-                // `TexturedMaterial`
+
+            //if( mData.textures.layers[0] )
+            //{
+            //    // `TexturedMaterial`
                 mSpireComponentInstance->setTexture("diffuseMap", mData.textures.layers[0].get());
-                mSpireComponentInstance->setSampler("samplerState", mData.samplerState.get());
-            }
-            else
-            {
-                // `ConstantMaterial`
-                mSpireComponentInstance->setVariable("diffuseVal", mData.values.layers[0].albedo);
-            }
+            //    mSpireComponentInstance->setSampler("samplerState", mData.samplerState.get());
+            //}
+            //else
+            //{
+            //    // `ConstantMaterial`
+            //    mSpireComponentInstance->setVariable("diffuseVal", mData.values.layers[0].albedo);
+            //}
 
         }
 

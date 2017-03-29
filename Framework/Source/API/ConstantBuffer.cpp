@@ -111,7 +111,16 @@ namespace Falcor
         return componentInstance;
     }
 
-    void ComponentInstance::setSrv(
+	void ComponentInstance::setVariableBlob(const std::string & name, const void * value, size_t size)
+	{
+		SpireComponentInfo compInfo;
+		if (spModuleGetParameterByName(getSpireComponentClass(), name.c_str(), &compInfo))
+		{
+			setBlob(value, compInfo.Offset, size);
+		}
+	}
+
+	void ComponentInstance::setSrv(
         uint32_t index,
         const ShaderResourceView::SharedPtr& pSrv,
         const Resource::SharedPtr& pResource)

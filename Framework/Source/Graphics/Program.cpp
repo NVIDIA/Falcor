@@ -231,7 +231,7 @@ namespace Falcor
         mSpireComponentClassList[index] = componentClass;
         mLinkRequired = true;
     }
-
+	
     void Program::addDefine(const std::string& name, const std::string& value)
     {
         // Make sure that it doesn't exist already

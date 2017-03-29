@@ -100,6 +100,14 @@ namespace Falcor
     public:
         using SharedPtr = std::shared_ptr<Material>;
         using SharedConstPtr = std::shared_ptr<const Material>;
+		
+		struct LayerValues
+		{
+			glm::vec4 albedo;
+			glm::vec4 roughness;
+			glm::vec4 extraParam;
+			float pmf = 0;
+		};
 
         struct Layer
         {
@@ -132,8 +140,18 @@ namespace Falcor
             glm::vec4 albedo;
             glm::vec4 roughness;
             glm::vec4 extraParam;
-            Texture::SharedPtr pTexture;
             float pmf = 0;
+            Texture::SharedPtr pTexture;
+
+			LayerValues getValues()
+			{
+				LayerValues result;
+				result.albedo = albedo;
+				result.extraParam = extraParam;
+				result.pmf = pmf;
+				result.roughness = roughness;
+				return result;
+			}
         };
         
         /** create a new material

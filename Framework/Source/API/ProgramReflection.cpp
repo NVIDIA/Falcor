@@ -88,12 +88,20 @@ namespace Falcor
             { #SPIRE_NAME, ProgramReflection::Variable::Type::FALCOR_NAME }
 
             ENTRY(float,    Float),
+			ENTRY(bool,		Bool),
+			ENTRY(vec2,		Float2),
             ENTRY(vec3,     Float3),
             ENTRY(vec4,     Float4),
+			ENTRY(int,		Int),
+			ENTRY(ivec2,	Int2),
+			ENTRY(ivec3,	Int3),
+			ENTRY(ivec4,	Int4),
             ENTRY(uint,     Uint),
-            ENTRY(uvec3,    Uint3),
-            ENTRY(mat4, Float4x4),
-
+			ENTRY(uvec2,	Uint2),
+			ENTRY(uvec3,	Uint3),
+            ENTRY(uvec4,    Uint4),
+            ENTRY(mat4,		Float4x4),
+			ENTRY(mat3,		Float3x3),
         #undef ENTRY
 
             { nullptr },
@@ -104,7 +112,7 @@ namespace Falcor
             if(strcmp(ee->name, spireTypeName) == 0)
                 return ee->type;
         }
-        assert(!"unimplemented");
+        //assert(!"unimplemented");
         return ProgramReflection::Variable::Type::Unknown;
     }
 
@@ -123,64 +131,66 @@ namespace Falcor
         uint32_t samplerIndex = 0;
 
         // loop over variables to fill them in...
-        int paramCount = spModuleGetParameterCount(componentClass);
-        for( int pp = 0; pp < paramCount; ++pp )
-        {
-            SpireComponentInfo spireVarInfo;
-            spModuleGetParameter(componentClass, pp, &spireVarInfo);
+		auto processModuleParams = [&](SpireModule * module)
+		{
+			int paramCount = spModuleGetParameterCount(componentClass);
+			for (int pp = 0; pp < paramCount; ++pp)
+			{
+				SpireComponentInfo spireVarInfo;
+				spModuleGetParameter(componentClass, pp, &spireVarInfo);
 
-            char const* varName = spireVarInfo.Name;
- 
+				char const* varName = spireVarInfo.Name;
 
-            switch( spireVarInfo.BindableResourceType )
-            {
-            case SPIRE_NON_BINDABLE:
-                {
-                    // An ordinary uniform
-                    ProgramReflection::Variable varInfo;
-                    varInfo.arraySize = 0;
-                    varInfo.isRowMajor = true;
-                    varInfo.location = spireVarInfo.Offset;
-                    varInfo.type = getSpireVariableType(spireVarInfo.TypeName);
-                    varMap[varName] = varInfo;
-                }
-                break;
+				switch (spireVarInfo.BindableResourceType)
+				{
+				case SPIRE_NON_BINDABLE:
+				{
+					// An ordinary uniform
+					ProgramReflection::Variable varInfo;
+					varInfo.arraySize = 0;
+					varInfo.isRowMajor = true;
+					varInfo.location = spireVarInfo.Offset;
+					varInfo.type = getSpireVariableType(spireVarInfo.TypeName);
+					varMap[varName] = varInfo;
+				}
+				break;
 
-            case SPIRE_TEXTURE:
-                {
-                    ProgramReflection::Resource resourceInfo;
+				case SPIRE_TEXTURE:
+				{
+					ProgramReflection::Resource resourceInfo;
 
-                    resourceInfo.type = Resource::ResourceType::Texture;
-                    resourceInfo.regIndex = textureIndex++;
-                    resourceInfo.shaderMask = 0xFFFFFFFF;
-                    // TODO: need to fill all that stuff in
+					resourceInfo.type = Resource::ResourceType::Texture;
+					resourceInfo.regIndex = textureIndex++;
+					resourceInfo.shaderMask = 0xFFFFFFFF;
+					// TODO: need to fill all that stuff in
 
-                    resourceMap[varName] = resourceInfo;
-                }
-                break;
+					resourceMap[varName] = resourceInfo;
+				}
+				break;
 
-            case SPIRE_SAMPLER:
-                {
-                    ProgramReflection::Resource resourceInfo;
+				case SPIRE_SAMPLER:
+				{
+					ProgramReflection::Resource resourceInfo;
 
-                    resourceInfo.type = Resource::ResourceType::Sampler;
-                    resourceInfo.regIndex = samplerIndex++;
-                    resourceInfo.shaderMask = 0xFFFFFFFF;
-                    // TODO: need to fill all that stuff in
+					resourceInfo.type = Resource::ResourceType::Sampler;
+					resourceInfo.regIndex = samplerIndex++;
+					resourceInfo.shaderMask = 0xFFFFFFFF;
+					// TODO: need to fill all that stuff in
 
-                    resourceMap[varName] = resourceInfo;
-                }
-                break;
+					resourceMap[varName] = resourceInfo;
+				}
+				break;
 
 
-            default:
-            case SPIRE_UNIFORM_BUFFER:
-            case SPIRE_STORAGE_BUFFER:
-                assert(!"unimplemented");
-                break;
-            }
-
-        }
+				default:
+				case SPIRE_UNIFORM_BUFFER:
+				case SPIRE_STORAGE_BUFFER:
+					assert(!"unimplemented");
+					break;
+				}
+			}
+		};
+        
 
         // TODO: confirm that this is how to get the right size!
         size_t bufferSize = spModuleGetParameterBufferSize(componentClass);

@@ -2117,4 +2117,7 @@
       <Filter>Data\Framework\Shaders</Filter>
     </FxCompile>
   </ItemGroup>
+  <ItemGroup>
+    <Natvis Include="corelib.natvis" />
+  </ItemGroup>
 </Project>

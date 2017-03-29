@@ -11,10 +11,24 @@ template shader ModelViewerShader(
 	using internalPerMesh = InternalPerMeshCB();
 	using VertexAttribs;
 
-	public vec4 projCoord = internalPerFrame.viewProjMat * (internalPerMesh.gWorldMat * vec4(vertPos, 1.0));
+	vec3 pos = (internalPerMesh.gWorldMat * vec4(vertPos, 1.0)).xyz;
+	vec3 normal = normalize((internalPerMesh.gWorldMat * vec4(vertNormal, 0.0)).xyz);
+	vec3 bitangent = normalize((internalPerMesh.gWorldMat * vec4(vertBitangent, 0.0)).xyz);
+
+	public vec4 projCoord = internalPerFrame.viewProjMat * vec4(pos, 1.0);
 
 	using material = M();
 
-//    public out @Fragment vec4 outputColor = vec4(perFrame.gAmbient, 1.0);
-    public out @Fragment vec4 outputColor = material.diffuse * vec4(perFrame.gAmbient, 1.0);
+    public out @Fragment vec4 outputColor
+	{
+		ShadingAttribs shAttr;
+		material.prepareShadingAttribs(pos, internalPerFrame.position, normal, bitangent, vertUV, 0.0f, shAttr);
+		
+		ShadingOutput output;
+		InitializeShadingOutput(output);
+
+		material.evalMaterial(shAttr, perFrame.gDirLight, output);
+		material.evalMaterial(shAttr, perFrame.gPointLight, output);
+		return output.finalValue;
+	}
 }
