@@ -157,8 +157,8 @@ namespace Falcor
         void setIntoConstantBuffer(ConstantBuffer* pBuffer, const std::string& varName) const;
         void setIntoConstantBuffer(ConstantBuffer* pBuffer, const std::size_t& offset) const;
 
-        SpireModule* getSpireComponentClass(SpireCompilationContext*) const;
-        ComponentInstance::SharedPtr getSpireComponentInstance(SpireCompilationContext*) const;
+        ProgramReflection::ComponentClassReflection::SharedPtr const& getSpireComponentClass() const;
+        ComponentInstance::SharedPtr const& getSpireComponentInstance() const;
 
 
         /** Returns the raw camera data
@@ -201,7 +201,7 @@ namespace Falcor
         // Spire stuff:
 
         // The component class to use when compiling shaders for htis camera
-        mutable SpireModule* mSpireComponentClass = nullptr;
+        mutable ProgramReflection::ComponentClassReflection::SharedPtr mSpireComponentClass;
 
         // The component "instance" to be used for spire stuff...
         mutable ComponentInstance::SharedPtr mSpireComponentInstance;

@@ -224,29 +224,22 @@ namespace Falcor
     }
 
     // Spire stuff:
-    SpireModule* Camera::getSpireComponentClass(SpireCompilationContext* spireContext) const
+    ProgramReflection::ComponentClassReflection::SharedPtr const& Camera::getSpireComponentClass() const
     {
         if( !mSpireComponentClass )
         {
-            mSpireComponentClass = spFindModule(spireContext, "InternalPerFrameCB_T");
+            mSpireComponentClass = ShaderRepository::Instance().findComponentClass( "InternalPerFrameCB_T");
         }
 
         return mSpireComponentClass;
     }
 
-    ComponentInstance::SharedPtr Camera::getSpireComponentInstance(SpireCompilationContext* spireContext) const
+    ComponentInstance::SharedPtr const& Camera::getSpireComponentInstance() const
     {
         if( !mSpireComponentInstance )
         {
-            SpireModule* componentClass = getSpireComponentClass(spireContext);
-
-            // TODO: we should share/cache the buffer reflection somehwere...
-            ProgramReflection::ComponentClassReflection::SharedPtr componentReflection =
-                ProgramReflection::ComponentClassReflection::create(componentClass);
-
-            mSpireComponentInstance = ComponentInstance::create(
-                componentReflection);
-
+            auto& componentClass = getSpireComponentClass();
+            mSpireComponentInstance = ComponentInstance::create(getSpireComponentClass());
             mDirty = true;
         }
 

@@ -551,7 +551,7 @@ namespace Falcor
 		return templateStr.substr(0, pos) + content + templateStr.substr(pos + name.length());
 	}
 
-    SpireModule* Material::getSpireComponentClass() const
+    ProgramReflection::ComponentClassReflection::SharedPtr const& Material::getSpireComponentClass() const
     {
         auto spireContext = ShaderRepository::Instance().GetContext();
 
@@ -574,8 +574,8 @@ namespace Falcor
 				moduleName += std::to_string((int)layer.blend);
 			}
 			// check if we have already generated the material module
-			mSpireComponentClass = spFindModule(spireContext, moduleName.c_str());
-			if (!mSpireComponentClass)
+			SpireModule* spireComponentClass = spFindModule(spireContext, moduleName.c_str());
+			if (!spireComponentClass)
 			{
 				// if module not found, generate it
 				std::stringstream sb;
@@ -599,10 +599,13 @@ namespace Falcor
 					sb << kernelStr;
 					sb << "\n}\n";
 					auto moduleStr = sb.str();
-					mSpireComponentClass = ShaderRepository::Instance().CreateLibraryModuleFromSource(moduleStr.c_str(), moduleName.c_str());
+					spireComponentClass = ShaderRepository::Instance().CreateLibraryModuleFromSource(moduleStr.c_str(), moduleName.c_str());
 				}
 				else
 					logError("Cannot find 'MaterialInclude.spire'.");
+
+                // 
+                mSpireComponentClass = ShaderRepository::Instance().findComponentClass(spireComponentClass);
 			}
 
             // TODO: Here is where we'd need to construct an appropriate component
@@ -624,19 +627,11 @@ namespace Falcor
         return mSpireComponentClass;
     }
 
-    ComponentInstance::SharedPtr Material::getSpireComponentInstance() const
+    ComponentInstance::SharedPtr const& Material::getSpireComponentInstance() const
     {
         if( !mSpireComponentInstance )
         {
-            SpireModule* componentClass = getSpireComponentClass();
-
-            // TODO: we should share/cache the buffer reflection somehwere...
-            ProgramReflection::ComponentClassReflection::SharedPtr componentReflection =
-                ProgramReflection::ComponentClassReflection::create(componentClass);
-
-            mSpireComponentInstance = ComponentInstance::create(
-                componentReflection);
-
+            mSpireComponentInstance = ComponentInstance::create(getSpireComponentClass());
             mDescDirty = true;
         }
 
@@ -674,7 +669,7 @@ namespace Falcor
 			for (auto i = 0u; i < getNumLayers(); i++)
 			{
 				auto layer = getLayer(i);
-				auto subModule = spModuleGetSubModule(mSpireComponentClass, i);
+				auto subModule = spModuleGetSubModule(mSpireComponentClass->getSpireComponentClass(), i);
 				auto offset = spModuleGetBufferOffset(subModule);
 				mSpireComponentInstance->setBlob(&layer.getValues(), (size_t)offset, sizeof(LayerValues));
 				SpireBindingIndex index;

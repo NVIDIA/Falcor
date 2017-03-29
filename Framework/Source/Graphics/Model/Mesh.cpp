@@ -93,10 +93,8 @@ namespace Falcor
 
 		// create spire vertex component instance from VertexLayout
 		mpVertexModule = ShaderRepository::Instance().GetVertexModule(pLayout.get());
-		ProgramReflection::ComponentClassReflection::SharedPtr componentReflection =
-			ProgramReflection::ComponentClassReflection::create(mpVertexModule);
-		mpVertexComponentInstance = ComponentInstance::create(
-			componentReflection);
+        auto componentClass = ShaderRepository::Instance().findComponentClass(mpVertexModule);
+		mpVertexComponentInstance = ComponentInstance::create(componentClass);
     }
 
     void Mesh::resetGlobalIdCounter()

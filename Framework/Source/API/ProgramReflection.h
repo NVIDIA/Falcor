@@ -29,7 +29,7 @@
 #include "Framework.h"
 #include <unordered_map>
 
-#include "Utils/SpireSupport.h"
+#include "Externals/Spire/Spire.h"
 
 namespace Falcor
 {

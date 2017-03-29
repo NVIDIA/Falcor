@@ -100,14 +100,8 @@ namespace Falcor
                 currentData.pCamera->setIntoConstantBuffer(pCB, sCameraDataOffset);
             }
 #else
-            auto spireContext = ShaderRepository::Instance().GetContext();
 
-            SpireModule* cameraComponentClass = currentData.pCamera->getSpireComponentClass(spireContext);
-
-            // TODO: need to find the index of the correct parameter, if any...
-//            currentData.pGsoCache->getProgram()->setComponent(1, cameraComponentClass);
-
-            ComponentInstance::SharedPtr cameraComponent = currentData.pCamera->getSpireComponentInstance(spireContext);
+            ComponentInstance::SharedPtr cameraComponent = currentData.pCamera->getSpireComponentInstance();
 
             // Need to set this at the right place...
             pContext->getGraphicsVars()->setComponent(1, cameraComponent);
@@ -179,17 +173,11 @@ namespace Falcor
             worldMat = pModelInstance->getTransformMatrix() * pMeshInstance->getTransformMatrix();
         }
 
-         auto spireContext = ShaderRepository::Instance().GetContext();
-
-        SpireModule* componentClass = spFindModule(spireContext, "InternalPerMeshCB_T");
-
-        // TODO: cache and re-use reflection data...
-        ProgramReflection::ComponentClassReflection::SharedPtr componentClassReflection =
-            ProgramReflection::ComponentClassReflection::create(componentClass);
+         auto componentClass = ShaderRepository::Instance().findComponentClass("InternalPerMeshCB_T");
 
         // We create a transient component instance here.
         // TODO: find a way to reclaim this space more cleanly.
-        ComponentInstance::SharedPtr componentInstance = ComponentInstance::create(componentClassReflection);
+        ComponentInstance::SharedPtr componentInstance = ComponentInstance::create(componentClass);
 
         componentInstance->setVariable("gWorldMat", worldMat);
         componentInstance->setVariable("gMeshId", pMesh->getId());
@@ -216,13 +204,10 @@ namespace Falcor
 #else
         // Do it the Spire way
 
-        auto material = currentData.pMaterial;
-        
-        SpireModule* componentClass = material->getSpireComponentClass();
+        auto material = currentData.pMaterial;        
         ComponentInstance::SharedPtr componentInstance = material->getSpireComponentInstance();
 
         int componentIndex = 3;
-//        currentData.pGsoCache->getProgram()->setComponent(componentIndex, componentClass);
         pContext->getGraphicsVars()->setComponent(componentIndex, componentInstance);
 #endif
 

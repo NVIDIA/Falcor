@@ -31,6 +31,7 @@
 #include "Utils/StringUtils.h"
 
 #include "Externals/Spire/Spire.h"
+#include "Utils/SpireSupport.h"
 
 namespace Falcor
 {
@@ -226,8 +227,8 @@ namespace Falcor
         for(int cc = 0; cc < componentCount; ++cc)
         {
             char const* componentClassName = spShaderGetParameterType(pSpireShader, cc);
-            SpireModule* componentClass = spEnvFindModule(pSpireEnv, componentClassName);
-            if(!componentClass)
+            SpireModule* spireComponentClass = spEnvFindModule(pSpireEnv, componentClassName);
+            if(!spireComponentClass)
                 continue;
 
             char const* bufferName = spShaderGetParameterName(pSpireShader, cc);
@@ -235,9 +236,9 @@ namespace Falcor
             auto& bufferDesc = mBuffers[(uint32_t)BufferReflection::Type::Constant];
 
             // Do reflection on the buffer type
-            auto componentClassReflection = ProgramReflection::ComponentClassReflection::create(componentClass);
-
-            mSpireComponents.push_back(componentClassReflection);
+            auto componentClass = ShaderRepository::Instance().findComponentClass(spireComponentClass);
+                
+            mSpireComponents.push_back(componentClass);
 
             // TODO: probably need to store info for binding the component as
             // a parameter, and for name-based loopup...

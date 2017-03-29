@@ -324,8 +324,8 @@ namespace Falcor
 
 
         //SPIRE:
-        SpireModule* getSpireComponentClass() const;
-        ComponentInstance::SharedPtr getSpireComponentInstance() const;
+        ProgramReflection::ComponentClassReflection::SharedPtr const& getSpireComponentClass() const;
+        ComponentInstance::SharedPtr const& getSpireComponentInstance() const;
 
 
 
@@ -361,8 +361,8 @@ namespace Falcor
 
         // Spire stuff:
 
-        // The component class to use when compiling shaders for htis camera
-        mutable SpireModule* mSpireComponentClass = nullptr;
+        // The component class to use when compiling shaders for this material
+        mutable ProgramReflection::ComponentClassReflection::SharedPtr mSpireComponentClass;
 
         // The component "instance" to be used for spire stuff...
         mutable ComponentInstance::SharedPtr mSpireComponentInstance;

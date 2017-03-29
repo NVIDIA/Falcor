@@ -30,6 +30,11 @@
 #include "GraphicsState.h"
 #include "API/ProgramVars.h"
 
+#if 0
+// SPIRE: used in GSO creation debugging
+#include <sstream>
+#endif
+
 namespace Falcor
 {
     std::vector<GraphicsState*> GraphicsState::sObjects;
@@ -139,6 +144,27 @@ namespace Falcor
             
             pGso = GraphicsStateObject::create(mDesc);
             mpGsoGraph->setCurrentNodeData(pGso);
+
+            // SPIRE: helpers for debugging when GSOs get created
+#if 0
+            std::stringstream str;
+            str << "GSO:0x" << (void*)pGso.get()
+                << " vs:0x" << (void*) pProgVersion->getShader(ShaderType::Vertex)
+                << " fs:0x" << (void*) pProgVersion->getShader(ShaderType::Pixel)
+                << " rootSig:0x" << (void*) pRoot.get();
+            if(pVars)
+            {
+                size_t componentCount = pVars->getComponentCount();
+                for(size_t cc = 0; cc < componentCount; ++cc)
+                {
+                    auto componentClass = pVars->getComponent((uint32_t) cc)->getSpireComponentClass();
+                    auto componentClassName = spGetModuleName(componentClass);
+
+                    str << " [" << cc << "]=" << componentClassName;
+                }
+            }
+            logInfo(str.str());
+#endif
         }
         return pGso;
     }

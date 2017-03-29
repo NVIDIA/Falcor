@@ -42,11 +42,14 @@ namespace Falcor
 {
 	class ShaderRepositoryImpl
 	{
-	private:
+    // Note(tfoley): `private` only exists to waste people's time. These members are de facto file-local anyway...
+	public:
 		SpireCompilationContext * context;
 		SpireCompilationEnvironment * libEnv;
 		SpireDiagnosticSink * sink;
 		std::map<std::string, SpireModule*> vertexModules;
+        std::map<SpireModule*, ProgramReflection::ComponentClassReflection::SharedPtr> componentClasses;
+
 		void ReportErrors()
 		{
 			int size = spGetDiagnosticOutput(sink, nullptr, 0);
@@ -306,6 +309,30 @@ namespace Falcor
 		delete impl;
 		impl = nullptr;
 	}
+
+    //
+
+    ProgramReflection::ComponentClassReflection::SharedPtr ShaderRepository::findComponentClass(SpireModule* spireComponentClass)
+    {
+        auto iter = impl->componentClasses.find(spireComponentClass);
+        if( iter != impl->componentClasses.end() )
+            return iter->second;
+
+        auto componentClass = ProgramReflection::ComponentClassReflection::create(spireComponentClass);
+        impl->componentClasses.insert(std::make_pair(spireComponentClass, componentClass));
+        return componentClass;
+    }
+
+
+    ProgramReflection::ComponentClassReflection::SharedPtr ShaderRepository::findComponentClass(char const* name)
+    {
+        SpireModule* spireComponentClass = spFindModule(impl->context, name);
+        if(!spireComponentClass)
+            return nullptr;
+
+        return findComponentClass(spireComponentClass);
+    }
+
 }
 
 

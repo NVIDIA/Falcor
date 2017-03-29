@@ -33,7 +33,10 @@
 // A helper file just so that other code is insulated from the path where
 // Spire is installed
 
+#include "../API/ProgramReflection.h"
+
 #include "Externals/Spire/Spire.h"
+
 
 namespace Falcor
 {
@@ -54,6 +57,9 @@ namespace Falcor
 		void UnloadSource(SpireCompilationEnvironment * env);
 		static ShaderRepository Instance();
 		static void Close();
+
+        ProgramReflection::ComponentClassReflection::SharedPtr findComponentClass(SpireModule* spireComponentClass);
+        ProgramReflection::ComponentClassReflection::SharedPtr findComponentClass(char const* name);
 	};
 }
 
