@@ -604,6 +604,15 @@ def main(build, showSummary, generateReference, referenceDir, testList):
     global gLowLevelResultList
     global gReferenceDir
     global gTestListFile
+    global gSystemResultList
+    global gLowLevelResultList
+    global gSkippedList
+    global gFailReasonsList
+
+    gSystemResultList[:] = []
+    gLowLevelResultList[:] = []
+    gSkippedList [:] = []
+    gFailReasonsList[:] = []
 
     refDir = cleanupString(referenceDir)
     if os.path.isdir(refDir):
