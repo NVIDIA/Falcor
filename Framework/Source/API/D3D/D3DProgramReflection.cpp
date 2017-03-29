@@ -606,11 +606,11 @@ namespace Falcor
             falcorDesc.retType = getReturnType(desc.ReturnType);
             falcorDesc.dims = getResourceDimensions(desc.Dimension);
         }
-        bool isArray = name[name.length() - 1] == ']';
+
         falcorDesc.regIndex = desc.BindPoint;
         falcorDesc.registerSpace = desc.Space;
         assert(falcorDesc.registerSpace == 0);
-        falcorDesc.arraySize = isArray ? desc.BindCount : 0;
+        falcorDesc.arraySize = desc.BindCount;
 
         // If this already exists, definitions should match
         const auto& prevDef = resourceMap.find(name);

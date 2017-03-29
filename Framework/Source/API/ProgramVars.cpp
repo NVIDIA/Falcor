@@ -30,6 +30,7 @@
 #include "API/Buffer.h"
 #include "API/CopyContext.h"
 #include "API/RenderContext.h"
+#include "Utils/StringUtils.h"
 
 namespace Falcor
 {
@@ -116,28 +117,31 @@ namespace Falcor
         for (const auto& res : pReflector->getResourceMap())
         {
             const auto& desc = res.second;
-            switch (desc.type)
+            for(uint32_t a = 0 ; a < desc.arraySize ; a++)
             {
-            case ProgramReflection::Resource::ResourceType::Sampler:
-                mAssignedSamplers[desc.regIndex].pSampler = nullptr;
-                mAssignedSamplers[desc.regIndex].rootSigOffset = findRootSignatureOffset<RootSignature::DescType::Sampler>(mpRootSignature.get(), desc.regIndex, desc.registerSpace);
-                break;
-            case ProgramReflection::Resource::ResourceType::Texture:
-            case ProgramReflection::Resource::ResourceType::RawBuffer:
-                if (desc.shaderAccess == ProgramReflection::ShaderAccess::Read)
+                switch (desc.type)
                 {
-                    assert(mAssignedSrvs.find(desc.regIndex) == mAssignedSrvs.end());
-                    mAssignedSrvs[desc.regIndex].rootSigOffset = findRootSignatureOffset<RootSignature::DescType::SRV>(mpRootSignature.get(), desc.regIndex, desc.registerSpace);
+                case ProgramReflection::Resource::ResourceType::Sampler:
+                    mAssignedSamplers[desc.regIndex].pSampler = nullptr;
+                    mAssignedSamplers[desc.regIndex].rootSigOffset = findRootSignatureOffset<RootSignature::DescType::Sampler>(mpRootSignature.get(), desc.regIndex + a, desc.registerSpace);
+                    break;
+                case ProgramReflection::Resource::ResourceType::Texture:
+                case ProgramReflection::Resource::ResourceType::RawBuffer:
+                    if (desc.shaderAccess == ProgramReflection::ShaderAccess::Read)
+                    {
+                        assert(mAssignedSrvs.find(desc.regIndex) == mAssignedSrvs.end());
+                        mAssignedSrvs[desc.regIndex].rootSigOffset = findRootSignatureOffset<RootSignature::DescType::SRV>(mpRootSignature.get(), desc.regIndex + a, desc.registerSpace);
+                    }
+                    else
+                    {
+                        assert(mAssignedUavs.find(desc.regIndex) == mAssignedUavs.end());
+                        assert(desc.shaderAccess == ProgramReflection::ShaderAccess::ReadWrite);
+                        mAssignedUavs[desc.regIndex].rootSigOffset = findRootSignatureOffset<RootSignature::DescType::UAV>(mpRootSignature.get(), desc.regIndex + a, desc.registerSpace);
+                    }
+                    break;
+                default:
+                    should_not_get_here();
                 }
-                else
-                {
-                    assert(mAssignedUavs.find(desc.regIndex) == mAssignedUavs.end());
-                    assert(desc.shaderAccess == ProgramReflection::ShaderAccess::ReadWrite);
-                    mAssignedUavs[desc.regIndex].rootSigOffset = findRootSignatureOffset<RootSignature::DescType::UAV>(mpRootSignature.get(), desc.regIndex, desc.registerSpace);
-                }
-                break;
-            default:
-                should_not_get_here();
             }
         }
     }
@@ -248,9 +252,37 @@ namespace Falcor
         }
     }
 
-    void setResourceSrvUavCommon(const ProgramReflection::Resource* pDesc, const Resource::SharedPtr& resource, ProgramVars::ResourceMap<ShaderResourceView>& assignedSrvs, ProgramVars::ResourceMap<UnorderedAccessView>& assignedUavs)
+
+    struct ResDescWithArray
     {
-        setResourceSrvUavCommon(pDesc->regIndex, pDesc->shaderAccess, resource, assignedSrvs, assignedUavs);
+        const ProgramReflection::Resource* pDesc = nullptr;
+        uint32_t arrayIndex = 0;
+    };
+
+    ResDescWithArray getResourceDescWithArray(const std::string& name, const ProgramReflection* pReflector)
+    {
+        ResDescWithArray desc;
+        desc.pDesc = pReflector->getResourceDesc(name);
+        if (desc.pDesc == nullptr)
+        {
+            std::string nameNoArrayIndex = removeLastArrayIndex(name);
+            if(desc.pDesc)
+            {
+                std::string indexStr = name.substr(nameNoArrayIndex.length() + 1);
+                char* pEndPtr;
+                desc.arrayIndex = strtol(indexStr.c_str(), &pEndPtr, 0);
+                if (desc.arrayIndex >= desc.pDesc->arraySize)
+                {
+                    desc.pDesc = nullptr;
+                }
+            }
+        }
+        return desc;
+    }
+
+    void setResourceSrvUavCommon(const ResDescWithArray& desc, const Resource::SharedPtr& resource, ProgramVars::ResourceMap<ShaderResourceView>& assignedSrvs, ProgramVars::ResourceMap<UnorderedAccessView>& assignedUavs)
+    {
+        setResourceSrvUavCommon(desc.pDesc->regIndex + desc.arrayIndex, desc.pDesc->shaderAccess, resource, assignedSrvs, assignedUavs);
     }
 
     void setResourceSrvUavCommon(const ProgramReflection::BufferReflection *pDesc, const Resource::SharedPtr& resource, ProgramVars::ResourceMap<ShaderResourceView>& assignedSrvs, ProgramVars::ResourceMap<UnorderedAccessView>& assignedUavs)
@@ -274,18 +306,18 @@ namespace Falcor
 
         return true;
     }
-
+        
     bool ProgramVars::setRawBuffer(const std::string& name, Buffer::SharedPtr pBuf)
     {
         // Find the buffer
-        const ProgramReflection::Resource* pDesc = mpReflector->getResourceDesc(name);
+        ResDescWithArray desc = getResourceDescWithArray(name, mpReflector.get());
 
-        if (verifyBufferResourceDesc(pDesc, name, ProgramReflection::Resource::ResourceType::RawBuffer, ProgramReflection::Resource::Dimensions::Unknown, "setRawBuffer()") == false)
+        if (verifyBufferResourceDesc(desc.pDesc, name, ProgramReflection::Resource::ResourceType::RawBuffer, ProgramReflection::Resource::Dimensions::Unknown, "setRawBuffer()") == false)
         {
             return false;
         }
 
-        setResourceSrvUavCommon(pDesc, pBuf, mAssignedSrvs, mAssignedUavs);
+        setResourceSrvUavCommon(desc, pBuf, mAssignedSrvs, mAssignedUavs);
 
         return true;
     }
@@ -293,14 +325,14 @@ namespace Falcor
     bool ProgramVars::setTypedBuffer(const std::string& name, TypedBufferBase::SharedPtr pBuf)
     {
         // Find the buffer
-        const ProgramReflection::Resource* pDesc = mpReflector->getResourceDesc(name);
+        ResDescWithArray desc = getResourceDescWithArray(name, mpReflector.get());
 
-        if (verifyBufferResourceDesc(pDesc, name, ProgramReflection::Resource::ResourceType::Texture, ProgramReflection::Resource::Dimensions::Buffer, "setTypedBuffer()") == false)
+        if (verifyBufferResourceDesc(desc.pDesc, name, ProgramReflection::Resource::ResourceType::Texture, ProgramReflection::Resource::Dimensions::Buffer, "setTypedBuffer()") == false)
         {
             return false;
         }
 
-        setResourceSrvUavCommon(pDesc, pBuf, mAssignedSrvs, mAssignedUavs);
+        setResourceSrvUavCommon(desc, pBuf, mAssignedSrvs, mAssignedUavs);
 
         return true;
     }
@@ -350,9 +382,9 @@ namespace Falcor
     }
 
     template<typename ResourceType>
-    typename ResourceType::SharedPtr getResourceFromSrvUavCommon(const ProgramReflection::Resource *pDesc, const ProgramVars::ResourceMap<ShaderResourceView>& assignedSrvs, const ProgramVars::ResourceMap<UnorderedAccessView>& assignedUavs, const std::string& varName, const std::string& funcName)
+    typename ResourceType::SharedPtr getResourceFromSrvUavCommon(const ResDescWithArray& desc, const ProgramVars::ResourceMap<ShaderResourceView>& assignedSrvs, const ProgramVars::ResourceMap<UnorderedAccessView>& assignedUavs, const std::string& varName, const std::string& funcName)
     {
-        return getResourceFromSrvUavCommon<ResourceType>(pDesc->regIndex, pDesc->shaderAccess, assignedSrvs, assignedUavs, varName, funcName);
+        return getResourceFromSrvUavCommon<ResourceType>(desc.pDesc->regIndex + desc.arrayIndex, desc.pDesc->shaderAccess, assignedSrvs, assignedUavs, varName, funcName);
     }
 
     template<typename ResourceType>
@@ -364,27 +396,27 @@ namespace Falcor
     Buffer::SharedPtr ProgramVars::getRawBuffer(const std::string& name) const
     {
         // Find the buffer
-        const ProgramReflection::Resource* pDesc = mpReflector->getResourceDesc(name);
+        ResDescWithArray desc = getResourceDescWithArray(name, mpReflector.get());
 
-        if (verifyBufferResourceDesc(pDesc, name, ProgramReflection::Resource::ResourceType::RawBuffer, ProgramReflection::Resource::Dimensions::Unknown, "getRawBuffer()") == false)
+        if (verifyBufferResourceDesc(desc.pDesc, name, ProgramReflection::Resource::ResourceType::RawBuffer, ProgramReflection::Resource::Dimensions::Unknown, "getRawBuffer()") == false)
         {
             return false;
         }
 
-        return getResourceFromSrvUavCommon<Buffer>(pDesc, mAssignedSrvs, mAssignedUavs, name, "getRawBuffer()");
+        return getResourceFromSrvUavCommon<Buffer>(desc, mAssignedSrvs, mAssignedUavs, name, "getRawBuffer()");
     }
 
     TypedBufferBase::SharedPtr ProgramVars::getTypedBuffer(const std::string& name) const
     {
         // Find the buffer
-        const ProgramReflection::Resource* pDesc = mpReflector->getResourceDesc(name);
+        ResDescWithArray desc = getResourceDescWithArray(name, mpReflector.get());
 
-        if (verifyBufferResourceDesc(pDesc, name, ProgramReflection::Resource::ResourceType::Texture, ProgramReflection::Resource::Dimensions::Buffer, "getTypedBuffer()") == false)
+        if (verifyBufferResourceDesc(desc.pDesc, name, ProgramReflection::Resource::ResourceType::Texture, ProgramReflection::Resource::Dimensions::Buffer, "getTypedBuffer()") == false)
         {
             return false;
         }
 
-        return getResourceFromSrvUavCommon<TypedBufferBase>(pDesc, mAssignedSrvs, mAssignedUavs, name, "getTypedBuffer()");
+        return getResourceFromSrvUavCommon<TypedBufferBase>(desc, mAssignedSrvs, mAssignedUavs, name, "getTypedBuffer()");
     }
 
     StructuredBuffer::SharedPtr ProgramVars::getStructuredBuffer(const std::string& name) const
@@ -489,28 +521,28 @@ namespace Falcor
 
     bool ProgramVars::setTexture(const std::string& name, const Texture::SharedPtr& pTexture)
     {
-        const ProgramReflection::Resource* pDesc = mpReflector->getResourceDesc(name);
+        ResDescWithArray desc = getResourceDescWithArray(name, mpReflector.get());
 
-        if (verifyResourceDesc(pDesc, ProgramReflection::Resource::ResourceType::Texture, ProgramReflection::ShaderAccess::Undefined, name, "setTexture()") == false)
+        if (verifyResourceDesc(desc.pDesc, ProgramReflection::Resource::ResourceType::Texture, ProgramReflection::ShaderAccess::Undefined, name, "setTexture()") == false)
         {
             return false;
         }
 
-        setResourceSrvUavCommon(pDesc, pTexture, mAssignedSrvs, mAssignedUavs);
+        setResourceSrvUavCommon(desc, pTexture, mAssignedSrvs, mAssignedUavs);
 
         return true;
     }
 
     Texture::SharedPtr ProgramVars::getTexture(const std::string& name) const
     {
-        const ProgramReflection::Resource* pDesc = mpReflector->getResourceDesc(name);
+        ResDescWithArray desc = getResourceDescWithArray(name, mpReflector.get());
 
-        if (verifyResourceDesc(pDesc, ProgramReflection::Resource::ResourceType::Texture, ProgramReflection::ShaderAccess::Undefined, name, "getTexture()") == false)
+        if (verifyResourceDesc(desc.pDesc, ProgramReflection::Resource::ResourceType::Texture, ProgramReflection::ShaderAccess::Undefined, name, "getTexture()") == false)
         {
             return nullptr;
         }
 
-        return getResourceFromSrvUavCommon<Texture>(pDesc, mAssignedSrvs, mAssignedUavs, name, "getTexture()");
+        return getResourceFromSrvUavCommon<Texture>(desc, mAssignedSrvs, mAssignedUavs, name, "getTexture()");
     }
 
     template<typename ViewType>
