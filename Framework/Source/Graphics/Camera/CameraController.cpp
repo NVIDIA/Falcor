@@ -309,12 +309,13 @@ namespace Falcor
             CameraController::attachCamera(pCamera);
 
             // Store the original camera parameters
-            mOrigFovY = pCamera->getFovY();
+            mOrigFocalLength = pCamera->getFocalLength();
             mOrigAspectRatio = pCamera->getAspectRatio();
 
             // Initialize the parameters from the HMD
             VRDisplay* pDisplay = VRSystem::instance()->getHMD().get();
-            pCamera->setFovY(pDisplay->getFovY());
+
+            pCamera->setFocalLength(fovYToFocalLength(pDisplay->getFovY(), Camera::kDefaultFrameHeight));
             pCamera->setAspectRatio(pDisplay->getAspectRatio());
 
             mInvPrevHmdViewMat = glm::mat4();
@@ -380,7 +381,7 @@ namespace Falcor
             setCameraParamsFromViewMat(mpCamera.get(), mInvPrevHmdViewMat * mpCamera->getViewMatrix());
 
             // Restore the original parameters
-            mpCamera->setFovY(mOrigFovY);
+            mpCamera->setFocalLength(mOrigFocalLength);
             mpCamera->setAspectRatio(mOrigAspectRatio);
             mpCamera->togglePersistentProjectionMatrix(false);
             mpCamera->togglePersistentViewMatrix(false);

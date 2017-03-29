@@ -34,6 +34,8 @@
 
 namespace Falcor
 {
+    // Default dimensions of full frame cameras and 35mm film
+    const float Camera::kDefaultFrameHeight = 24.0f;
 
     Camera::Camera()
     {
@@ -51,10 +53,13 @@ namespace Falcor
     {
         if (mDirty)
         {
+            // Interpret focal length of 0 as 0 FOV. Technically 0 FOV should be focal length of infinity.
+            const float fovY = mData.focalLength == 0.0f ? 0.0f : focalLengthToFovY(mData.focalLength, kDefaultFrameHeight);
+
             mData.prevViewProjMat = mData.viewProjMat;
             mData.rightEyePrevViewProjMat = mData.rightEyeViewProjMat;
 
-            if(mEnablePersistentViewMat)
+            if (mEnablePersistentViewMat)
             {
                 mData.viewMat = mPersistentViewMat;
             }
@@ -70,9 +75,9 @@ namespace Falcor
             }
             else
             {
-                if (mData.fovY != 0.f)
+                if (fovY != 0.f)
                 {
-                    mData.projMat = perspectiveMatrix(mData.fovY, mData.aspectRatio, mData.nearZ, mData.farZ);
+                    mData.projMat = perspectiveMatrix(fovY, mData.aspectRatio, mData.nearZ, mData.farZ);
                 }
                 else
                 {
@@ -97,7 +102,7 @@ namespace Falcor
 
             // Extract camera space frustum planes from the VP matrix
             // Note: this method **ONLY** works for OpenGL. D3D requires a slightly different test for the near plane.
-            // See: https://fgiesen.wordpress.com/2012/08/31/frustum-planes-from-the-projection-matrix/                    
+            // See: https://fgiesen.wordpress.com/2012/08/31/frustum-planes-from-the-projection-matrix/
             glm::mat4 tempMat = glm::transpose(mData.viewProjMat);
             for (int i = 0; i < 6; i++)
             {
@@ -114,9 +119,9 @@ namespace Falcor
             const float lookdir_len = length(mData.cameraW);
             mData.cameraU = glm::normalize(glm::cross(mData.cameraW, mData.up));
             mData.cameraV = glm::normalize(glm::cross(mData.cameraU, mData.cameraW));
-            const float ulen = lookdir_len * tanf(mData.fovY*0.5f) * mData.aspectRatio;
+            const float ulen = lookdir_len * tanf(fovY * 0.5f) * mData.aspectRatio;
             mData.cameraU *= ulen;
-            const float vlen = lookdir_len * tanf(mData.fovY*0.5f);
+            const float vlen = lookdir_len * tanf(fovY * 0.5f);
             mData.cameraV *= vlen;
 
             mDirty = false;
@@ -177,8 +182,8 @@ namespace Falcor
 
         bool isInside = true;
         // AABB vs. frustum test
-        // See method 4b: https://fgiesen.wordpress.com/2010/10/17/view-frustum-culling/                    
-        for(int plane = 0; plane < 6; plane++) 
+        // See method 4b: https://fgiesen.wordpress.com/2010/10/17/view-frustum-culling/
+        for (int plane = 0; plane < 6; plane++)
         {
             glm::vec3 signedExtent = box.extent * mFrustumPlanes[plane].sign;
             float dr = glm::dot(box.center + signedExtent, mFrustumPlanes[plane].xyz);
@@ -223,5 +228,3 @@ namespace Falcor
         setUpVector(up);
     }
 }
-
-

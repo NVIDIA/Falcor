@@ -312,7 +312,7 @@ namespace Falcor
         addVector(jsonCamera, allocator, SceneKeys::kCamPosition, pCamera->getPosition());
         addVector(jsonCamera, allocator, SceneKeys::kCamTarget, pCamera->getTarget());
         addVector(jsonCamera, allocator, SceneKeys::kCamUp, pCamera->getUpVector());
-        addLiteral(jsonCamera, allocator, SceneKeys::kCamFovY, glm::degrees(pCamera->getFovY()));
+        addLiteral(jsonCamera, allocator, SceneKeys::kCamFocalLength, pCamera->getFocalLength());
         glm::vec2 depthRange;
         depthRange[0] = pCamera->getNearPlane();
         depthRange[1] = pCamera->getFarPlane();

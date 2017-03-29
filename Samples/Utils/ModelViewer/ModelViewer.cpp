@@ -361,7 +361,7 @@ void ModelViewer::onResizeSwapChain()
     float height = (float)mpDefaultFBO->getHeight();
     float width = (float)mpDefaultFBO->getWidth();
 
-    mpCamera->setFovY(float(M_PI / 3));
+    mpCamera->setFocalLength(21.0f);
     float aspectRatio = (width / height);
     mpCamera->setAspectRatio(aspectRatio);
 }

@@ -171,11 +171,11 @@ struct CameraData
     mat4            viewMat                DEFAULTS(mat4());                ///< Camera view matrix.
     mat4            projMat                DEFAULTS(mat4());                ///< Camera projection matrix.
     mat4            viewProjMat            DEFAULTS(mat4());                ///< Camera view-projection matrix.
-    mat4            invViewProj			   DEFAULTS(mat4());                ///< Camera inverse view-projection matrix.
+    mat4            invViewProj            DEFAULTS(mat4());                ///< Camera inverse view-projection matrix.
     mat4            prevViewProjMat        DEFAULTS(mat4());                ///< Camera view-projection matrix associated to previous frame.
 
     vec3            position               DEFAULTS(vec3(0, 0, 0));         ///< Camera world-space position.
-    float           fovY                   DEFAULTS(1.f);                   ///< vertical field-of-view, in radians
+    float           focalLength            DEFAULTS(21.0f);                 ///< Camera focal length in mm. Default is 59 degree vertical, 90 horizontal FOV at 16:9 aspect ratio.
     vec3            up                     DEFAULTS(vec3(0, 1, 0));         ///< Camera world-space up vector.
     float           aspectRatio            DEFAULTS(1.f);                   ///< Camera aspect ratio.
     vec3            target                 DEFAULTS(vec3(0, 0, -1));        ///< Camera target point in world-space.

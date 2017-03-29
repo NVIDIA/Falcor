@@ -92,7 +92,7 @@ namespace Falcor
         void setInstanceRotation(Gui* pGui);
 
         // Camera functions
-        void setCameraFOV(Gui* pGui);
+        void setCameraFocalLength(Gui* pGui);
         void setCameraDepthRange(Gui* pGui);
         void setCameraAspectRatio(Gui* pGui);
         void setCameraName(Gui* pGui);

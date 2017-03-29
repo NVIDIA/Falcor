@@ -129,12 +129,12 @@ namespace Falcor
         }
     }
 
-    void SceneEditor::setCameraFOV(Gui* pGui)
+    void SceneEditor::setCameraFocalLength(Gui* pGui)
     {
-        float fovY = degrees(mpScene->getActiveCamera()->getFovY());
-        if (pGui->addFloatVar("FovY", fovY, 0, 360))
+        float focalLength = mpScene->getActiveCamera()->getFocalLength();
+        if (pGui->addFloatVar("Focal Length", focalLength, 0.0f, FLT_MAX, 0.5f))
         {
-            mpScene->getActiveCamera()->setFovY(radians(fovY));
+            mpScene->getActiveCamera()->setFocalLength(focalLength);
             mSceneDirty = true;
         }
     }
@@ -1042,6 +1042,7 @@ namespace Falcor
                 deleteCamera(pGui);
                 pGui->addSeparator();
                 assert(mpScene->getCameraCount() > 0);
+                setCameraFocalLength(pGui);
                 setCameraAspectRatio(pGui);
                 setCameraDepthRange(pGui);
 

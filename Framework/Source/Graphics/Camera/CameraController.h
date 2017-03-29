@@ -169,7 +169,7 @@ namespace Falcor
 
     private:
         void detachCamera();
-        float mOrigFovY;
+        float mOrigFocalLength;
         float mOrigAspectRatio;
         glm::mat4 mInvPrevHmdViewMat;
     };

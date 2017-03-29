@@ -322,7 +322,7 @@ void SimpleDeferred::onResizeSwapChain()
     uint32_t width = mpDefaultFBO->getWidth();
     uint32_t height = mpDefaultFBO->getHeight();
 
-    mpCamera->setFovY(float(M_PI / 3));
+    mpCamera->setFocalLength(21.0f);
     mAspectRatio = (float(width) / float(height));
     mpCamera->setAspectRatio(mAspectRatio);
     // create G-Buffer

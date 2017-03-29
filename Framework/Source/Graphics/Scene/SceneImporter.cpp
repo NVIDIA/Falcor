@@ -1120,17 +1120,39 @@ namespace Falcor
                 }
                 pCamera->setUpVector(up);
             }
-            else if(key == SceneKeys::kCamFovY)
+            else if(key == SceneKeys::kCamFovY) // Version 1
             {
+                if (mpScene->getVersion() != 1)
+                {
+                    error("Camera FOV is only valid in scene version 1. Ignoring value.");
+                    return false;
+                }
+
                 if(value.IsNumber() == false)
                 {
                     error("Camera's FOV should be a number");
                     return false;
                 }
-                float fovY = (float)value.GetDouble();
-                // Convert to radiance
-                fovY = glm::radians(fovY);
-                pCamera->setFovY(fovY);
+
+                // Convert to radians
+                float fovY = glm::radians((float)value.GetDouble());
+                pCamera->setFocalLength(fovYToFocalLength(fovY, Camera::kDefaultFrameHeight));
+            }
+            else if (key == SceneKeys::kCamFocalLength) // Version 2
+            {
+                if (mpScene->getVersion() != 2)
+                {
+                    error("Camera focal length is only valid in scene version 2. Ignoring value.");
+                    return false;
+                }
+
+                if (value.IsNumber() == false)
+                {
+                    error("Camera's focal length should be a number");
+                    return false;
+                }
+
+                pCamera->setFocalLength((float)value.GetDouble());
             }
             else if(key == SceneKeys::kCamDepthRange)
             {
@@ -1242,7 +1264,7 @@ namespace Falcor
             {
                 mpScene->createAreaLights();
             }
-			
+
             return mpScene;
         }
         else

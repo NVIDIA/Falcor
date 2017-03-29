@@ -1,5 +1,5 @@
 {
-    "version": 0,
+    "version": 2,
     "camera_speed": 1.0,
     "lighting_scale": 1.0,
     "active_camera": "default",
@@ -52,7 +52,7 @@
                 1.0,
                 0.0
             ],
-            "fovY": 60.000003814697269,
+            "focal_length": 21.0,
             "depth_range": [
                 0.1065976619720459,
                 106.59766387939453

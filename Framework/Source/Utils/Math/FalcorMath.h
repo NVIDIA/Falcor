@@ -160,6 +160,24 @@ namespace Falcor
         return result;
     }
 
+    /** Calculates vertical FOV in radians from camera parameters.
+        \param[in] focalLength Focal length in mm.
+        \param[in] frameHeight Height of film/sensor in mm.
+    */
+    inline float focalLengthToFovY(float focalLength, float frameHeight)
+    {
+        return 2.0f * atan(0.5f * frameHeight / focalLength);
+    }
+
+    /** Calculates camera focal length from vertical FOV.
+        \param[in] fovY Vertical FOV in radians.
+        \param[in] frameHeight Height of film/sensor in mm.
+    */
+    inline float fovYToFocalLength(float fovY, float frameHeight)
+    {
+        return frameHeight / (2.0f * tan(0.5f * fovY));
+    }
+
     // Base 2 Van der Corput radical inverse
     inline float radicalInverse(uint32_t i)
     {
