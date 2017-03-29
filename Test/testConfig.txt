@@ -1,7 +1,7 @@
  {
-    true, \\netapp-wa02\public\Falcor\ReferenceResultsHub, TestList.txt, false, FAlSe, dev2.0a2
+    true, \\netapp-wa02\public\Falcor\ReferenceResultsHub, TestList.txt, true, Testing2.0a2
 }
 
  {
-    true, \\netapp-wa02\public\Falcor\ReferenceResultsHub, LLTestList.txt, false, False, dev2.0a2
+    true, \\netapp-wa02\public\Falcor\ReferenceResultsHub, LLTestList.txt, true, Testing2.0a2
 }

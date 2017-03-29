@@ -7,11 +7,12 @@ import RunAllTests
 gEmailRecipientFile = 'EmailRecipients.txt'
 
 class TestSetInfo(object):
-    def __init__(self, testDir, testList, summaryFile, errorFile):
+    def __init__(self, testDir, testList, summaryFile, errorFile, pullBranch):
         self.testDir = testDir
         self.testList = testList
         self.summaryFile = summaryFile
         self.errorFile = errorFile
+        self.pullBranch = pullBranch
 
 def cleanupString(string):
     string = string.replace('\t', '')
@@ -86,9 +87,9 @@ def main():
         testingResult = RunAllTests.main(shouldBuild, args.showsummary, args.generatereference, refDir, testList, pullBranch)
         #if size 2, includes an error file, means failure
         if len(testingResult) > 1:
-            setInfo = TestSetInfo(workingDir, testList, testingResult[0], testingResult[1])
+            setInfo = TestSetInfo(workingDir, testList, testingResult[0], testingResult[1], pullBranch)
         else:
-            setInfo = TestSetInfo(workingDir, testList, testingResult[0], None)
+            setInfo = TestSetInfo(workingDir, testList, testingResult[0], None, pullBranch)
         testResults.append(setInfo)
 
         if testDir:
@@ -109,7 +110,10 @@ def main():
                 attachments.append(r.errorFile)
             else:
                 result = 'Success'
-            body += r.testDir + '\\' + r.testList + ': ' + result + '\n'
+            body += r.testDir + '\\' + r.testList
+            if r.pullBranch:
+                body += ' (' + pullBranch + ') '
+            body += ': ' + result + '\n'
         if anyFails:
             subject = '[FAIL]'
         else:
