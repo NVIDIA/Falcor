@@ -176,6 +176,7 @@ namespace Falcor
 					resourceInfo.type = Resource::ResourceType::Sampler;
 					resourceInfo.regIndex = samplerIndex++;
 					resourceInfo.shaderMask = 0xFFFFFFFF;
+                    resourceInfo.shaderAccess = ShaderAccess::Read;
 					// TODO: need to fill all that stuff in
 
 					resourceMap[varName] = resourceInfo;

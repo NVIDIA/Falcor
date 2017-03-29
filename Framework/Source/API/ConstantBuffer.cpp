@@ -100,7 +100,7 @@ namespace Falcor
         uint32_t samplerCount = pReflector->getSamplerCount();
 
         componentInstance->mAssignedSRVs.resize(resourceCount);
-        componentInstance->mAssignedSRVs.resize(samplerCount);
+        componentInstance->mAssignedSamplers.resize(samplerCount);
         // TODO: also allocate space for UAVs here...
 
         // need to construct the constant buffer, if needed

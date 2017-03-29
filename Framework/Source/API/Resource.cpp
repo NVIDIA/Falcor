@@ -208,7 +208,8 @@ namespace Falcor
 
     void Resource::invalidateViews() const
     {
-        logInfo("Invalidating resource views");
+        // SPIRE: This is really annoying...
+//        logInfo("Invalidating resource views");
         mSrvs.clear();
         mUavs.clear();
         mRtvs.clear();
