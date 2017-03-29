@@ -542,18 +542,6 @@ module InternalPerMeshCB_T
     param uint gMeshId;
 };
 
-// HACK: putting this here instead of in `ModelViewer.spire`
-// so that we can actually look it up...
-module PerFrameCB_T
-{
-    public param LightData gDirLight;
-    public param LightData gPointLight;
-
-//    param uint gConstColor;
-
-    public param vec3 gAmbient;
-}
-
 interface Material
 {
 }

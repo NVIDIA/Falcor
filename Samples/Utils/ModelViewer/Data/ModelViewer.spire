@@ -1,3 +1,17 @@
+
+// HACK: putting this here instead of in `ModelViewer.spire`
+// so that we can actually look it up...
+module PerFrameCB_T
+{
+    public param LightData gDirLight;
+    public param LightData gPointLight;
+
+//    param uint gConstColor;
+
+    public param vec3 gAmbient;
+}
+
+
 template shader ModelViewerShader(
 	PerFrameCB : PerFrameCB_T,
 	InternalPerFrameCB : InternalPerFrameCB_T,
