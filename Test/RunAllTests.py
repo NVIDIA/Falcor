@@ -115,14 +115,6 @@ def marginCompare(result, reference, margin):
     else:
         return -1
 
-def isConfigValid(config):
-    if (config == 'debugd3d12' or config == 'released3d12' or 
-    config == 'debugd3d11' or config == 'released3d11' or
-    config == 'debugGL' or config == 'releaseGL'):
-        return True
-    else:
-        return False
-
 def makeDirIfDoesntExist(dirPath):
     if not os.path.isdir(dirPath):
         os.makedirs(dirPath)
@@ -307,7 +299,7 @@ def processSystemTest(xmlElement, testInfo):
     makeDirIfDoesntExist(testInfo.getResultsDir())
     overwriteMove(resultFile, testInfo.getResultsDir())
 
-def readTestList(generateReference, buildTests):
+def readTestList(generateReference, buildTests, pullBranch):
     global gConfigDirDict
     global gResultsDir
     file = open(gTestListFile)
@@ -317,7 +309,10 @@ def readTestList(generateReference, buildTests):
     #make sln name dir within date dir
     slnBaseName, extension = os.path.splitext(slnName)
     slnBaseName = ntpath.basename(slnBaseName) 
-    gResultsDir += '\\' + slnBaseName
+    if pullBranch:
+        gResultsDir += '\\' + slnBaseName + '_' + pullBranch
+    else:
+        gResultsDir += '\\' + slnBaseName
     if os.path.isdir(gResultsDir):
         cleanDir(gResultsDir, None, None)
     else:
@@ -567,7 +562,7 @@ def getSkipsTable():
     else:
         return ''
 
-def outputHTML(openSummary, slnName):
+def outputHTML(openSummary, slnName, pullBranch):
     html = getLowLevelTestResultsTable()
     html += '<br><br>'
     html += getSystemTestResultsTable()
@@ -575,7 +570,10 @@ def outputHTML(openSummary, slnName):
     html += getImageCompareResultsTable()
     html += '<br><br>'
     html += getSkipsTable()
-    resultSummaryName = gResultsDir + '\\' + slnName + '_TestSummary.html'
+    if pullBranch:
+        resultSummaryName = gResultsDir + '\\' + slnName + '_' + pullBranch + '_TestSummary.html'
+    else:
+        resultSummaryName = gResultsDir + '\\' + slnName + '_TestSummary.html'
     outfile = open(resultSummaryName, 'w')
     outfile.write(html)
     outfile.close()
@@ -599,9 +597,8 @@ def cleanDir(cleanedDir, prefix, suffix):
             else:
                 os.remove(filepath)
 
-def main(build, showSummary, generateReference, referenceDir, testList):
+def main(build, showSummary, generateReference, referenceDir, testList, pullBranch):
     global gResultsDir
-    global gLowLevelResultList
     global gReferenceDir
     global gTestListFile
     global gSystemResultList
@@ -647,19 +644,25 @@ def main(build, showSummary, generateReference, referenceDir, testList):
         resultSummary.Name = 'Summary'
         gLowLevelResultList.append(resultSummary)
 
-    slnName = readTestList(generateReference, build)
+    slnName = readTestList(generateReference, build, pullBranch)
     if not generateReference:
-        outputHTML(showSummary, slnName)
+        outputHTML(showSummary, slnName, pullBranch)
     
     #open a file move file to result dir
-    testingResult = [os.getcwd() + '\\' + gResultsDir + '\\' + slnName + '_TestSummary.html']
+    if pullBranch:
+        testingResult = [os.getcwd() + '\\' + gResultsDir + '\\' + slnName + '_' + pullBranch + '_TestSummary.html']
+    else:
+        testingResult = [os.getcwd() + '\\' + gResultsDir + '\\' + slnName + '_TestSummary.html']
     if(len(gSkippedList) > 0 or len(gFailReasonsList) > 0):
         errorFileStr = 'Ran into the following issues\n-----\n'
         for name, skip in gSkippedList:
             errorFileStr += name + ': ' + skip + '\n'
         for reason in gFailReasonsList:
             errorFileStr += reason + '\n'
-        errorFilename = os.getcwd() + '\\' + gResultsDir + '\\' + slnName + '_ErrorSummary.txt'
+        if pullBranch:
+            errorFilename = os.getcwd() + '\\' + gResultsDir + '\\' + slnName + '_' + pullBranch + '_ErrorSummary.txt'
+        else:
+            errorFilename = os.getcwd() + '\\' + gResultsDir + '\\' + slnName + '_ErrorSummary.txt'
         errorFile = open(errorFilename, 'w')
         errorFile.write(errorFileStr)
         errorFile.close();
@@ -691,4 +694,5 @@ if __name__ == '__main__':
     else:
         testList = gTestListFile
 
-    main(not args.nobuild, args.showsummary, args.generatereference, refDir, testList)
+    #pull branch is just to names subdirectories in the same repo folder so results dont overwrite 
+    main(not args.nobuild, args.showsummary, args.generatereference, refDir, testList, pullBranch)

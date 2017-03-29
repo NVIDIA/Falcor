@@ -20,10 +20,6 @@ def cleanupString(string):
 def updateRepo(pullBranch):
     subprocess.call(['git', 'fetch', 'origin', pullBranch])
     subprocess.call(['git', 'checkout', 'origin/' + pullBranch])
-    os.chdir('../')
-    subprocess.call(['git', 'reset', '--hard'])
-    subprocess.call(['git', 'clean', '-fd'])
-    os.chdir('test')
 
 def sendEmail(subject, body, attachments):
     sender = 'clavelle@nvidia.com'
@@ -82,10 +78,12 @@ def main():
                 pullBranch = argList[4].strip()
                 updateRepo(pullBranch)
             except:
-                print 'Error: no pull branch provided for testing dir ' + testDir + ' shouldPull being true. Continuing without pull'
+                print 'Error: no pull branch provided for testing dir ' + testDir + ' with shouldPull being true. Continuing without pull'
+        else:
+            pullBranch = ''
 
         workingDir = os.getcwd()
-        testingResult = RunAllTests.main(shouldBuild, args.showsummary, args.generatereference, refDir, testList)
+        testingResult = RunAllTests.main(shouldBuild, args.showsummary, args.generatereference, refDir, testList, pullBranch)
         #if size 2, includes an error file, means failure
         if len(testingResult) > 1:
             setInfo = TestSetInfo(workingDir, testList, testingResult[0], testingResult[1])
