@@ -255,7 +255,7 @@ namespace Falcor
         {
 
             DescriptorHeap* pHeap = forClear ? gpDevice->getCpuUavDescriptorHeap().get() : gpDevice->getUavDescriptorHeap().get();
-            handle = pHeap->allocateEntry();
+            handle = pHeap->allocateEntries();
             gpDevice->getApiHandle()->CreateUnorderedAccessView(apiHandle, nullptr, &desc, handle->getCpuHandle());
         }
 

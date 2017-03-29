@@ -66,7 +66,6 @@
 
 #if defined FALCOR_D3D12 || defined FALCOR_VULKAN
 #include "API/LowLevel/DescriptorHeap.h"
-#include "API/LowLevel/DescriptorTable.h"
 #include "API/LowLevel/FencedPool.h"
 #include "API/LowLevel/GpuFence.h"
 #include "API/LowLevel/RootSignature.h"

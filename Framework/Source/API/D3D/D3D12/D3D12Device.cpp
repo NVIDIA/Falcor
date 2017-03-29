@@ -301,8 +301,8 @@ namespace Falcor
 		}
 
         // Create the descriptor heaps
-        mpSrvHeap = DescriptorHeap::create(DescriptorHeap::Type::SRV, 16 * 1024);
-        mpSamplerHeap = DescriptorHeap::create(DescriptorHeap::Type::Sampler, 2048);
+        mpSrvHeap = DescriptorHeap::create(DescriptorHeap::Type::SRV, D3D12_MAX_SHADER_VISIBLE_DESCRIPTOR_HEAP_SIZE_TIER_1);
+        mpSamplerHeap = DescriptorHeap::create(DescriptorHeap::Type::Sampler, D3D12_MAX_SHADER_VISIBLE_SAMPLER_HEAP_SIZE);
         mpRtvHeap = DescriptorHeap::create(DescriptorHeap::Type::RTV, 1024, false);
         mpDsvHeap = DescriptorHeap::create(DescriptorHeap::Type::DSV, 1024, false);
         mpUavHeap = mpSrvHeap;

@@ -75,11 +75,11 @@ namespace Falcor
         {
             DescriptorHeap* pHeap = gpDevice->getSrvDescriptorHeap().get();
 
-            mCBV = pHeap->allocateEntry();
+            mCBV = pHeap->allocateEntries(1);
             D3D12_CONSTANT_BUFFER_VIEW_DESC viewDesc = {};
             viewDesc.BufferLocation = getGpuAddress();
             viewDesc.SizeInBytes = (uint32_t)getSize();
-            gpDevice->getApiHandle()->CreateConstantBufferView(&viewDesc, mCBV->getCpuHandle());
+            gpDevice->getApiHandle()->CreateConstantBufferView(&viewDesc, mCBV->getCpuHandle(0));
         }
 
         return mCBV;

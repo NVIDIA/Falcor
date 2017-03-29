@@ -99,17 +99,17 @@ namespace Falcor
         return getHandleCommon(mGpuHeapStart, index, mDescriptorSize);
     }
 
-    DescriptorHeapEntry::SharedPtr DescriptorHeap::allocateEntry()
+    DescriptorHeapRange::SharedPtr DescriptorHeap::allocateEntries(uint32_t count)
     {
         uint32_t entry;
-        if (mFreeEntries.empty() == false)
+//         if (mFreeEntries.empty() == false)
+//         {
+//             entry = mFreeEntries.front();
+//             mFreeEntries.pop();
+//         }
+//         else
         {
-            entry = mFreeEntries.front();
-            mFreeEntries.pop();
-        }
-        else
-        {
-            if (mCurDesc >= mCount)
+            if (mCurDesc + count > mCount)
             {
                 logError("Can't find free CPU handle in descriptor heap");
                 return nullptr;
@@ -118,6 +118,6 @@ namespace Falcor
             mCurDesc++;
         }
 
-        return DescriptorHeapEntry::create(shared_from_this(), entry);
+        return DescriptorHeapRange::create(shared_from_this(), entry, count);
     }
 }

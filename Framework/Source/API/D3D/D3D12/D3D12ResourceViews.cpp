@@ -64,8 +64,8 @@ namespace Falcor
         SharedPtr& pObj = pSharedPtr ? pNewObj : sNullView;
 
         DescriptorHeap* pHeap = gpDevice->getSrvDescriptorHeap().get();
-        ApiHandle handle = pHeap->allocateEntry();
-        gpDevice->getApiHandle()->CreateShaderResourceView(pSharedPtr ? pSharedPtr->getApiHandle() : nullptr, &desc, handle->getCpuHandle());
+        ApiHandle handle = pHeap->allocateEntries(1);
+        gpDevice->getApiHandle()->CreateShaderResourceView(pSharedPtr ? pSharedPtr->getApiHandle() : nullptr, &desc, handle->getCpuHandle(0));
 
         pObj = SharedPtr(new ShaderResourceView(pResource, handle, mostDetailedMip, mipCount, firstArraySlice, arraySize));
         return pObj;
@@ -101,8 +101,8 @@ namespace Falcor
         SharedPtr& pObj = pSharedPtr ? pNewObj : sNullView;
 
         DescriptorHeap* pHeap = gpDevice->getDsvDescriptorHeap().get();
-        ApiHandle handle = pHeap->allocateEntry();
-        gpDevice->getApiHandle()->CreateDepthStencilView(resHandle, &desc, handle->getCpuHandle());
+        ApiHandle handle = pHeap->allocateEntries(1);
+        gpDevice->getApiHandle()->CreateDepthStencilView(resHandle, &desc, handle->getCpuHandle(0));
 
         pObj = SharedPtr(new DepthStencilView(pResource, handle, mipLevel, firstArraySlice, arraySize));
         return pObj;
@@ -148,15 +148,15 @@ namespace Falcor
         SharedPtr& pObj = pSharedPtr ? pNewObj : sNullView;
 
         DescriptorHeap* pHeap = gpDevice->getUavDescriptorHeap().get();
-        ApiHandle handle = pHeap->allocateEntry();
-        gpDevice->getApiHandle()->CreateUnorderedAccessView(resHandle, counterHandle, &desc, handle->getCpuHandle());
+        ApiHandle handle = pHeap->allocateEntries(1);
+        gpDevice->getApiHandle()->CreateUnorderedAccessView(resHandle, counterHandle, &desc, handle->getCpuHandle(0));
 
         pObj = SharedPtr(new UnorderedAccessView(pResource, handle, mipLevel, firstArraySlice, arraySize));
 
         // Create the view for the clear
         pHeap = gpDevice->getCpuUavDescriptorHeap().get();
-        pObj->mViewForClear = pHeap->allocateEntry();
-        gpDevice->getApiHandle()->CreateUnorderedAccessView(resHandle, nullptr, &desc, pObj->mViewForClear->getCpuHandle());
+        pObj->mViewForClear = pHeap->allocateEntries(1);
+        gpDevice->getApiHandle()->CreateUnorderedAccessView(resHandle, nullptr, &desc, pObj->mViewForClear->getCpuHandle(0));
 
         return pObj;
     }
@@ -191,8 +191,8 @@ namespace Falcor
         }
 
         DescriptorHeap* pHeap = gpDevice->getRtvDescriptorHeap().get();
-        ApiHandle handle = pHeap->allocateEntry();
-        gpDevice->getApiHandle()->CreateRenderTargetView(resHandle, &desc, handle->getCpuHandle());
+        ApiHandle handle = pHeap->allocateEntries(1);
+        gpDevice->getApiHandle()->CreateRenderTargetView(resHandle, &desc, handle->getCpuHandle(0));
 
         SharedPtr pNewObj;
         SharedPtr& pObj = pSharedPtr ? pNewObj : sNullView;

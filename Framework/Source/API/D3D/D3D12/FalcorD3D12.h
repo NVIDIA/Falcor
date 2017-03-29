@@ -56,7 +56,7 @@ namespace Falcor
     using HeapCpuHandle = D3D12_CPU_DESCRIPTOR_HANDLE;
     using HeapGpuHandle = D3D12_GPU_DESCRIPTOR_HANDLE;
 
-    class DescriptorHeapEntry;
+    class DescriptorHeapRange;
 
 	using WindowHandle = HWND;
 	using DeviceHandle = ID3D12DevicePtr;
@@ -65,11 +65,11 @@ namespace Falcor
     using CommandAllocatorHandle = ID3D12CommandAllocatorPtr;
     using FenceHandle = ID3D12FencePtr;
     using ResourceHandle = ID3D12ResourcePtr;
-    using RtvHandle = std::shared_ptr<DescriptorHeapEntry>;
-    using DsvHandle = std::shared_ptr<DescriptorHeapEntry>;
-    using SrvHandle = std::shared_ptr<DescriptorHeapEntry>;
-    using SamplerHandle = std::shared_ptr<DescriptorHeapEntry>;
-    using UavHandle = std::shared_ptr<DescriptorHeapEntry>;
+    using RtvHandle = std::shared_ptr<DescriptorHeapRange>;
+    using DsvHandle = std::shared_ptr<DescriptorHeapRange>;
+    using SrvHandle = std::shared_ptr<DescriptorHeapRange>;
+    using SamplerHandle = std::shared_ptr<DescriptorHeapRange>;
+    using UavHandle = std::shared_ptr<DescriptorHeapRange>;
     using GpuAddress = D3D12_GPU_VIRTUAL_ADDRESS;
     
     using PsoHandle = ID3D12PipelineStatePtr;

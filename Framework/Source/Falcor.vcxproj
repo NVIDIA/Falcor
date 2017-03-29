@@ -271,7 +271,6 @@
     <ClCompile Include="API\DepthStencilState.cpp" />
     <ClCompile Include="API\FBO.cpp" />
     <ClCompile Include="API\Formats.cpp" />
-    <ClCompile Include="API\LowLevel\DescriptorTable.cpp" />
     <ClCompile Include="API\LowLevel\RootSignature.cpp" />
     <ClCompile Include="API\OpenGL\GLBlendState.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseD3D11|x64'">true</ExcludedFromBuild>
@@ -734,7 +733,6 @@
     <ClInclude Include="API\Formats.h" />
     <ClInclude Include="API\GpuTimer.h" />
     <ClInclude Include="API\LowLevel\DescriptorHeap.h" />
-    <ClInclude Include="API\LowLevel\DescriptorTable.h" />
     <ClInclude Include="API\LowLevel\FencedPool.h" />
     <ClInclude Include="API\LowLevel\GpuFence.h" />
     <ClInclude Include="API\LowLevel\LowLevelContextData.h" />

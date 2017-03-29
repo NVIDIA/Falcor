@@ -31,7 +31,7 @@
 
 namespace Falcor
 {
-    class DescriptorHeapEntry;
+    class DescriptorHeapRange;
 
     class DescriptorHeap : public std::enable_shared_from_this<DescriptorHeap>
     {
@@ -39,7 +39,7 @@ namespace Falcor
         using SharedPtr = std::shared_ptr<DescriptorHeap>;
         using SharedConstPtr = std::shared_ptr<const DescriptorHeap>;
         using ApiHandle = DescriptorHeapHandle;
-        using Entry = std::shared_ptr<DescriptorHeapEntry>;
+        using Entry = std::shared_ptr<DescriptorHeapRange>;
         using CpuHandle = HeapCpuHandle;
         using GpuHandle = HeapGpuHandle;
 
@@ -55,7 +55,7 @@ namespace Falcor
         };
         static SharedPtr create(Type type, uint32_t descriptorsCount, bool shaderVisible = true);
 
-        Entry allocateEntry();
+        Entry allocateEntries(uint32_t count);
         ApiHandle getApiHandle() const { return mApiHandle; }
         Type getType() const { return mType; }
 
@@ -64,56 +64,62 @@ namespace Falcor
         CpuHandle getCpuBaseHandle() const { return mCpuHeapStart; }
         uint32_t getDescriptorSize() const { return mDescriptorSize; }
     private:
-        friend DescriptorHeapEntry;
+        friend DescriptorHeapRange;
         DescriptorHeap(Type type, uint32_t descriptorsCount);
 
         CpuHandle getCpuHandle(uint32_t index) const;
         GpuHandle getGpuHandle(uint32_t index) const;
-        void releaseEntry(uint32_t handle)
+        void releaseEntry(uint32_t handle, uint32_t count)
         {
-            mFreeEntries.push(handle);
+            mFreeEntries.push({ handle, count });
         }
 
         CpuHandle mCpuHeapStart = {};
         GpuHandle mGpuHeapStart = {};
         uint32_t mDescriptorSize;
-        uint32_t mCount;
+        const uint32_t mCount;
         uint32_t mCurDesc = 0;
         ApiHandle mApiHandle;
         Type mType;
 
-        std::queue<uint32_t> mFreeEntries;
+        struct EntryRange
+        {
+            uint32_t base;
+            uint32_t count;
+        };
+        std::queue<EntryRange> mFreeEntries;
     };
 
     // Ideally this would be nested inside the Descriptor heap. Unfortunately, we need to forward declare it in FalcorD3D12.h, which is impossible with nesting
-    class DescriptorHeapEntry
+    class DescriptorHeapRange
     {
     public:
-        using SharedPtr = std::shared_ptr<DescriptorHeapEntry>;
-        using WeakPtr = std::weak_ptr<DescriptorHeapEntry>;
+        using SharedPtr = std::shared_ptr<DescriptorHeapRange>;
+        using WeakPtr = std::weak_ptr<DescriptorHeapRange>;
         using CpuHandle = DescriptorHeap::CpuHandle;
         using GpuHandle = DescriptorHeap::GpuHandle;
 
-        static SharedPtr create(DescriptorHeap::SharedPtr pHeap, uint32_t heapEntry)
+        static SharedPtr create(DescriptorHeap::SharedPtr pHeap, uint32_t baseEntry, uint32_t count)
         {
-            SharedPtr pEntry = SharedPtr(new DescriptorHeapEntry(pHeap));
-            pEntry->mHeapEntry = heapEntry;
+            SharedPtr pEntry = SharedPtr(new DescriptorHeapRange(pHeap, baseEntry, count));
             return pEntry;
         }
 
-        ~DescriptorHeapEntry()
+        ~DescriptorHeapRange()
         {
-            mpHeap->releaseEntry(mHeapEntry);
+            mpHeap->releaseEntry(mBaseEntry, mCount);
         }
 
         // OPTME we could store the handles in the class to avoid the additional indirection at the expense of memory
-        CpuHandle getCpuHandle() const { return mpHeap->getCpuHandle(mHeapEntry); }
-        GpuHandle getGpuHandle() const { return mpHeap->getGpuHandle(mHeapEntry); }
-        uint32_t getHeapEntryIndex() const { return mHeapEntry; }
+        CpuHandle getCpuHandle(uint32_t entryIndex) const { assert(entryIndex < mCount); return mpHeap->getCpuHandle(mBaseEntry + entryIndex); }
+        GpuHandle getGpuHandle(uint32_t entryIndex) const { assert(entryIndex < mCount); return mpHeap->getGpuHandle(mBaseEntry + entryIndex); }
+        uint32_t getBaseEntryIndex() const { return mBaseEntry; }
+        uint32_t getEntriesCount() const { return mCount; }
         DescriptorHeap::SharedPtr getHeap() const { return mpHeap; }
     private:
-        DescriptorHeapEntry(DescriptorHeap::SharedPtr pHeap) : mpHeap(pHeap) {}
-        uint32_t mHeapEntry = -1;
+        DescriptorHeapRange(DescriptorHeap::SharedPtr pHeap, uint32_t baseEntry, uint32_t count) : mpHeap(pHeap), mBaseEntry(baseEntry), mCount(count) {}
+        const uint32_t mBaseEntry = -1;
+        const uint32_t mCount = 0;
         DescriptorHeap::SharedPtr mpHeap;
     };
 }

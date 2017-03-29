@@ -79,11 +79,11 @@ namespace Falcor
         UavHandle uav = pUav->getApiHandle();
         if (typeid(ClearType) == typeid(vec4))
         {
-            pList->ClearUnorderedAccessViewFloat(uav->getGpuHandle(), clearHandle->getCpuHandle(), pUav->getResource()->getApiHandle(), (float*)value_ptr(clear), 0, nullptr);
+            pList->ClearUnorderedAccessViewFloat(uav->getGpuHandle(0), clearHandle->getCpuHandle(0), pUav->getResource()->getApiHandle(), (float*)value_ptr(clear), 0, nullptr);
         }
         else if (typeid(ClearType) == typeid(uvec4))
         {
-            pList->ClearUnorderedAccessViewUint(uav->getGpuHandle(), clearHandle->getCpuHandle(), pUav->getResource()->getApiHandle(), (uint32_t*)value_ptr(clear), 0, nullptr);
+            pList->ClearUnorderedAccessViewUint(uav->getGpuHandle(0), clearHandle->getCpuHandle(0), pUav->getResource()->getApiHandle(), (uint32_t*)value_ptr(clear), 0, nullptr);
         }
         else
         {

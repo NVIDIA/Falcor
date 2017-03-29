@@ -367,9 +367,6 @@
     <ClCompile Include="API\D3D\D3D12\LowLevel\D3D12RootSignature.cpp">
       <Filter>API\D3D\D3D12\LowLevel</Filter>
     </ClCompile>
-    <ClCompile Include="API\LowLevel\DescriptorTable.cpp">
-      <Filter>API\LowLevel</Filter>
-    </ClCompile>
     <ClCompile Include="API\ConstantBuffer.cpp">
       <Filter>API</Filter>
     </ClCompile>
@@ -759,9 +756,6 @@
       <Filter>API</Filter>
     </ClInclude>
     <ClInclude Include="API\LowLevel\DescriptorHeap.h">
-      <Filter>API\LowLevel</Filter>
-    </ClInclude>
-    <ClInclude Include="API\LowLevel\DescriptorTable.h">
       <Filter>API\LowLevel</Filter>
     </ClInclude>
     <ClInclude Include="API\LowLevel\FencedPool.h">

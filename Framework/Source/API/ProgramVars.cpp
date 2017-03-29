@@ -648,11 +648,11 @@ namespace Falcor
 
             if(forGraphics)
             {
-                pList->SetGraphicsRootDescriptorTable(rootOffset, handle->getGpuHandle());
+                pList->SetGraphicsRootDescriptorTable(rootOffset, handle->getGpuHandle(0));
             }
             else
             {
-                pList->SetComputeRootDescriptorTable(rootOffset, handle->getGpuHandle());
+                pList->SetComputeRootDescriptorTable(rootOffset, handle->getGpuHandle(0));
             }
         }
     }
@@ -700,11 +700,11 @@ namespace Falcor
             {
                 if(forGraphics)
                 {
-                    pList->SetGraphicsRootDescriptorTable(rootOffset, pSampler->getApiHandle()->getGpuHandle());
+                    pList->SetGraphicsRootDescriptorTable(rootOffset, pSampler->getApiHandle()->getGpuHandle(0));
                 }
                 else
                 {
-                    pList->SetComputeRootDescriptorTable(rootOffset, pSampler->getApiHandle()->getGpuHandle());
+                    pList->SetComputeRootDescriptorTable(rootOffset, pSampler->getApiHandle()->getGpuHandle(0));
                 }
             }
         }
