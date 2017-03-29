@@ -116,7 +116,7 @@ namespace Falcor
         return ProgramReflection::Variable::Type::Unknown;
     }
 
-    ProgramReflection::BufferTypeReflection::SharedPtr ProgramReflection::BufferTypeReflection::create(SpireModule* componentClass)
+    ProgramReflection::ComponentClassReflection::SharedPtr ProgramReflection::ComponentClassReflection::create(SpireModule* componentClass)
     {
         char const* bufferName = spGetModuleName(componentClass);
         auto bufferType = BufferReflection::Type::Constant;
@@ -159,10 +159,11 @@ namespace Falcor
 				{
 					ProgramReflection::Resource resourceInfo;
 
-					resourceInfo.type = Resource::ResourceType::Texture;
-					resourceInfo.regIndex = textureIndex++;
-					resourceInfo.shaderMask = 0xFFFFFFFF;
-					// TODO: need to fill all that stuff in
+                    resourceInfo.type = Resource::ResourceType::Texture;
+                    resourceInfo.regIndex = textureIndex++;
+                    resourceInfo.shaderMask = 0xFFFFFFFF;
+                    resourceInfo.shaderAccess = ShaderAccess::Read; // TODO: figure out how to get this properly!
+                    // TODO: need to fill all that stuff in
 
 					resourceMap[varName] = resourceInfo;
 				}
@@ -196,13 +197,13 @@ namespace Falcor
         size_t bufferSize = spModuleGetParameterBufferSize(componentClass);
 
         ProgramReflection::BindLocation bindLocation(bindPoint, shaderAccess);
-        auto bufferTypeReflection = BufferTypeReflection::create(
+        auto bufferTypeReflection = SharedPtr(new ComponentClassReflection(
             bufferName,
             bufferType,
             bufferSize,
             varMap,
             resourceMap,
-            shaderAccess);
+            shaderAccess));
 
         bufferTypeReflection->mSpireComponentClass = componentClass;
         bufferTypeReflection->mResourceCount = textureIndex;
@@ -231,9 +232,9 @@ namespace Falcor
             auto& bufferDesc = mBuffers[(uint32_t)BufferReflection::Type::Constant];
 
             // Do reflection on the buffer type
-            auto bufferTypeReflection = ProgramReflection::BufferTypeReflection::create(componentClass);
+            auto componentClassReflection = ProgramReflection::ComponentClassReflection::create(componentClass);
 
-            mSpireComponents.push_back(bufferTypeReflection);
+            mSpireComponents.push_back(componentClassReflection);
 
             // TODO: probably need to store info for binding the component as
             // a parameter, and for name-based loopup...
@@ -358,6 +359,12 @@ namespace Falcor
         return it == mResources.end() ? nullptr : &(it->second);
     }
 
+    std::shared_ptr<const ProgramReflection::BufferReflection> ProgramReflection::BufferTypeReflection::getBufferDesc(const std::string& name, BufferReflectionBase::Type bufferType) const
+    {
+        // TODO: need to fix this!
+        return nullptr;
+    }
+
     ProgramReflection::BufferTypeReflection::BufferTypeReflection(const std::string& name, Type type, size_t size, const VariableMap& varMap, const ResourceMap& resourceMap, ShaderAccess shaderAccess) :
         mName(name),
         mType(type),
@@ -378,6 +385,10 @@ namespace Falcor
     {
         return SharedPtr(new BufferTypeReflection(name, type, size, varMap, resourceMap, shaderAccess));
     }
+
+    ProgramReflection::ComponentClassReflection::ComponentClassReflection(const std::string& name, Type type, size_t size, const VariableMap& varMap, const ResourceMap& resourceMap, ShaderAccess shaderAccess)
+        : BufferTypeReflection(name, type, size, varMap, resourceMap, shaderAccess)
+    {}
 
     ProgramReflection::BufferReflection::BufferReflection(const std::string& name, uint32_t registerIndex, uint32_t regSpace,
                 BufferTypeReflection::SharedPtr const& typeReflection) :

@@ -624,8 +624,8 @@ namespace Falcor
             SpireModule* componentClass = getSpireComponentClass();
 
             // TODO: we should share/cache the buffer reflection somehwere...
-            ProgramReflection::BufferTypeReflection::SharedPtr componentReflection =
-                ProgramReflection::BufferTypeReflection::create(componentClass);
+            ProgramReflection::ComponentClassReflection::SharedPtr componentReflection =
+                ProgramReflection::ComponentClassReflection::create(componentClass);
 
             mSpireComponentInstance = ComponentInstance::create(
                 componentReflection);

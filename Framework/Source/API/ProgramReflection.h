@@ -191,6 +191,8 @@ namespace Falcor
 
         };
 
+        class BufferReflection;
+
         /** Reflection information for a *type* of buffer, that might be used at binding slots
             in various entry points
         */
@@ -206,8 +208,6 @@ namespace Falcor
                 const VariableMap& varMap,
                 const ResourceMap& resourceMap,
                 ShaderAccess shaderAccess);
-
-            static SharedPtr create(SpireModule* componentClass);
 
             /** Get variable data
                 \param[in] name The name of the requested variable
@@ -266,16 +266,13 @@ namespace Falcor
             */
             ShaderAccess getShaderAccess() const { return mShaderAccess; }
 
-            // SPIRE:
-            SpireModule* mSpireComponentClass = nullptr;
-            SpireModule* getSpireComponentClass() const { return mSpireComponentClass; }
 
-            uint32_t getResourceCount() const { return mResourceCount; }
-            uint32_t getSamplerCount() const { return mSamplerCount; }
+            // SPIRE: provide alias for `getResourceData()` to ease porting of code that had used `ProgramVars::getResourceDesc()`
+            const Resource* getResourceDesc(const std::string& name) const { return getResourceData(name); }
+            std::shared_ptr<const BufferReflection> getBufferDesc(const std::string& name, BufferReflectionBase::Type bufferType) const;
 
 
-        private:
-
+        protected:
             BufferTypeReflection(const std::string& name, Type type, size_t size, const VariableMap& varMap, const ResourceMap& resourceMap, ShaderAccess shaderAccess);
 
             std::string mName;
@@ -284,9 +281,31 @@ namespace Falcor
             ResourceMap mResources;
             VariableMap mVariables;
             ShaderAccess mShaderAccess;
+        };
+
+        /* Reflection for a Spire component class...
+        */
+        class ComponentClassReflection : public BufferTypeReflection
+        {
+        public:
+            using SharedPtr = std::shared_ptr<ComponentClassReflection>;
+            using SharedConstPtr = std::shared_ptr<const ComponentClassReflection>;
+
+            static SharedPtr create(SpireModule* componentClass);
+
+            SpireModule* mSpireComponentClass = nullptr;
+            SpireModule* getSpireComponentClass() const { return mSpireComponentClass; }
+
+            uint32_t getResourceCount() const { return mResourceCount; }
+            uint32_t getSamplerCount() const { return mSamplerCount; }
+
+        //"private"
+            ComponentClassReflection(const std::string& name, Type type, size_t size, const VariableMap& varMap, const ResourceMap& resourceMap, ShaderAccess shaderAccess);
+
             uint32_t mResourceCount;
             uint32_t mSamplerCount;
         };
+
 
 
         /** This class holds all of the data required to reflect a buffer, either constant buffer or SSBO
@@ -510,7 +529,7 @@ namespace Falcor
 
         // Spire
         uint32_t getComponentCount() const { return mSpireComponentCount; }
-        BufferTypeReflection::SharedPtr getComponent(uint32_t index) const { return mSpireComponents[index]; }
+        ComponentClassReflection::SharedPtr const& getComponent(uint32_t index) const { return mSpireComponents[index]; }
 
     private:
         bool init(const ProgramVersion* pProgVer, std::string& log);
@@ -530,7 +549,7 @@ namespace Falcor
 
         // Spire:
         uint32_t mSpireComponentCount = 0;
-        std::vector<BufferTypeReflection::SharedPtr> mSpireComponents;
+        std::vector<ComponentClassReflection::SharedPtr> mSpireComponents;
     };
 
 

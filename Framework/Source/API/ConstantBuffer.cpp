@@ -87,20 +87,21 @@ namespace Falcor
 
     //
 
-    ComponentInstance::SharedPtr ComponentInstance::create(const ProgramReflection::BufferTypeReflection::SharedConstPtr& pReflector)
+    ComponentInstance::SharedPtr ComponentInstance::create(const ProgramReflection::ComponentClassReflection::SharedPtr& pReflector)
     {
         auto componentInstance = SharedPtr(new ComponentInstance());
 
         componentInstance->mSamplerTableDirty = true;
         componentInstance->mResourceTableDirty = true;
 
-        componentInstance->mReflector = pReflector;
+        componentInstance->mpReflector = pReflector;
 
         uint32_t resourceCount = pReflector->getResourceCount();
         uint32_t samplerCount = pReflector->getSamplerCount();
 
-        componentInstance->mBoundSRVs.resize(resourceCount);
-        componentInstance->mBoundSamplers.resize(samplerCount);
+        componentInstance->mAssignedSRVs.resize(resourceCount);
+        componentInstance->mAssignedSRVs.resize(samplerCount);
+        // TODO: also allocate space for UAVs here...
 
         // need to construct the constant buffer, if needed
         if( pReflector->getVariableCount() )
@@ -111,79 +112,49 @@ namespace Falcor
         return componentInstance;
     }
 
-	void ComponentInstance::setVariableBlob(const std::string & name, const void * value, size_t size)
-	{
-		SpireComponentInfo compInfo;
-		if (spModuleGetParameterByName(getSpireComponentClass(), name.c_str(), &compInfo))
+#if 0
+        void ComponentInstance::setTexture(const std::string& name, const Texture* pTexture);
+
+        Texture::SharedPtr ComponentInstance::getTexture(std::string const& name);
+
+        void ComponentInstance::setSampler(uint32_t index, Sampler::SharedPtr const& pSampler);
+        void ComponentInstance::setSampler(const std::string& name, const Sampler* pSampler);
+
+        Sampler::SharedPtr ComponentInstance::getSampler(uint32_t index);
+        Sampler::SharedPtr ComponentInstance::getSampler(const std::string& name);
+
+        void ComponentInstance::setResource(std::string const& name, Resource::SharedPtr pResource);
+#endif
+
+
+
+
+
+
+
+
+
+
+
+		void ComponentInstance::setVariableBlob(const std::string & name, const void * value, size_t size)
 		{
-			setBlob(value, compInfo.Offset, size);
+			SpireComponentInfo compInfo;
+			if (spModuleGetParameterByName(getSpireComponentClass(), name.c_str(), &compInfo))
+			{
+				setBlob(value, compInfo.Offset, size);
+			}
 		}
-	}
 
-	void ComponentInstance::setSrv(
-        uint32_t index,
-        const ShaderResourceView::SharedPtr& pSrv,
-        const Resource::SharedPtr& pResource)
-    {
-        if( index >= mBoundSRVs.size() )
-        {
-            logError("SRV index out of range");
-            return;
-        }
 
-        if( mBoundSRVs[index].srv.get() == pSrv.get()
-            && mBoundSRVs[index].resource.get() == pResource.get() )
-        {
-            return;
-        }
 
-        mBoundSRVs[index].srv = pSrv ? pSrv : ShaderResourceView::getNullView();
-        mBoundSRVs[index].resource = pResource;
 
-        mResourceTableDirty = true;
-    }
 
-    void ComponentInstance::setTexture(const std::string& name, const Texture* pTexture)
-    {
-        auto resourceInfo = mReflector->getResourceData(name);
-        if( !resourceInfo )
-        {
-            logError("no resource parameter named '" + name + "' found");
-            return;
-        }
 
-        auto index = resourceInfo->regIndex;
 
-        setSrv(
-            index,
-            pTexture ? pTexture->getSRV() : nullptr,
-            ((Texture*)pTexture)->shared_from_this());
-    }
 
-    void ComponentInstance::setSampler(const std::string& name, const Sampler* pSampler)
-    {
-        auto resourceInfo = mReflector->getResourceData(name);
-        if( !resourceInfo )
-        {
-            logError("no sampler parameter named '" + name + "' found");
-            return;
-        }
 
-        auto index = resourceInfo->regIndex;
 
-        if(index >= mBoundSamplers.size())
-        {
-            logError("sampler index out of range");
-            return;
-        }
 
-        if( mBoundSamplers[index].get() == pSampler)
-            return;
-
-        mBoundSamplers[index] = pSampler ? pSampler->shared_from_this() : nullptr;
-
-        mSamplerTableDirty = true;
-    }
 
     ComponentInstance::ApiHandle const& ComponentInstance::getApiHandle() const
     {
@@ -191,7 +162,7 @@ namespace Falcor
 
         if( mResourceTableDirty )
         {
-            uint32_t resourceCount = (uint32_t) mBoundSRVs.size();
+            uint32_t resourceCount = (uint32_t) mAssignedSRVs.size();
             if(mConstantBuffer)
                 resourceCount++;
 
@@ -218,9 +189,9 @@ namespace Falcor
                         DescriptorHeap::Type::SRV);
                 }
 
-                for( auto& entry : mBoundSRVs )
+                for( auto& entry : mAssignedSRVs )
                 {
-                    auto& srv = entry.srv;
+                    auto& srv = entry.pView;
 
                     device->copyDescriptor(
                         mApiHandle.resourceDescriptorTable->getCpuHandle(srvIndex++),
@@ -234,14 +205,14 @@ namespace Falcor
 
         if( mSamplerTableDirty )
         {
-            uint32_t samplerCount = (uint32_t) mBoundSamplers.size();
+            uint32_t samplerCount = (uint32_t) mAssignedSamplers.size();
             if( samplerCount )
             {
                 mApiHandle.samplerDescriptorTable = gpDevice->getShaderSamplerDescriptorHeap()->allocateTable(samplerCount);
 
                 uint32_t samplerIndex = 0;
 
-                for( auto& sampler : mBoundSamplers )
+                for( auto& sampler : mAssignedSamplers )
                 {
                     device->copyDescriptor(
                         mApiHandle.samplerDescriptorTable->getCpuHandle(samplerIndex++),
