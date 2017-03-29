@@ -1,1 +1,1 @@
-call python.exe CallTestScript.py -np -ne -ss
+call python.exe CallTestScript.py -np -ne -ss -config testConfigSamplesOnly.txt

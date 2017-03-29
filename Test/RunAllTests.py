@@ -438,20 +438,23 @@ def lowLevelTestResultToHTML(result):
     return html
 
 def getLowLevelTestResultsTable():
-    html = '<table style="width:100%" border="1">\n'
-    html += '<tr>\n'
-    html += '<th colspan=\'5\'>Low Level Test Results</th>\n'
-    html += '</tr>\n'
-    html += '<tr>\n'
-    html += '<th>Test</th>\n'
-    html += '<th>Total</th>\n'
-    html += '<th>Passed</th>\n'
-    html += '<th>Failed</th>\n'
-    html += '<th>Crashed</th>\n'
-    for result in gLowLevelResultList:
-        html += lowLevelTestResultToHTML(result)
-    html += '</table>\n'
-    return html
+    if gLowLevelResultList:
+        html = '<table style="width:100%" border="1">\n'
+        html += '<tr>\n'
+        html += '<th colspan=\'5\'>Low Level Test Results</th>\n'
+        html += '</tr>\n'
+        html += '<tr>\n'
+        html += '<th>Test</th>\n'
+        html += '<th>Total</th>\n'
+        html += '<th>Passed</th>\n'
+        html += '<th>Failed</th>\n'
+        html += '<th>Crashed</th>\n'
+        for result in gLowLevelResultList:
+            html += lowLevelTestResultToHTML(result)
+        html += '</table>\n'
+        return html
+    else:
+        return ''
 
 def systemTestResultToHTML(result):
     #if missing data for both load time and frame time, no reason for table entry
@@ -494,66 +497,75 @@ def systemTestResultToHTML(result):
     return html
 
 def getSystemTestResultsTable():
-    html = '<table style="width:100%" border="1">\n'
-    html += '<tr>\n'
-    html += '<th colspan=\'7\'>System Test Results</th>\n'
-    html += '</tr>\n'
-    html += '<th>Test</th>\n'
-    html += '<th>Load Time Error Margin Secs</th>\n'
-    html += '<th>Load Time</th>\n'
-    html += '<th>Ref Load Time</th>\n'
-    html += '<th>Frame Time Error Margin %</th>\n'
-    html += '<th>Avg Frame Time</th>\n'
-    html += '<th>Ref Frame Time</th>\n'
-    for result in gSystemResultList:
-        html += systemTestResultToHTML(result)
-    html += '</table>\n'
-    return html
+    if gSystemResultList:
+        html = '<table style="width:100%" border="1">\n'
+        html += '<tr>\n'
+        html += '<th colspan=\'7\'>System Test Results</th>\n'
+        html += '</tr>\n'
+        html += '<th>Test</th>\n'
+        html += '<th>Load Time Error Margin Secs</th>\n'
+        html += '<th>Load Time</th>\n'
+        html += '<th>Ref Load Time</th>\n'
+        html += '<th>Frame Time Error Margin %</th>\n'
+        html += '<th>Avg Frame Time</th>\n'
+        html += '<th>Ref Frame Time</th>\n'
+        for result in gSystemResultList:
+            html += systemTestResultToHTML(result)
+        html += '</table>\n'
+        return html
+    else:
+        return ''
 
 def getImageCompareResultsTable():
-    max = 0
-    #table needs max num of screenshots plus one columns 
-    for result in gSystemResultList:
-        if len(result.CompareResults) > max:
-            max = len(result.CompareResults)
-    html = '<table style="width:100%" border="1">\n'
-    html += '<tr>\n'
-    html += '<th colspan=\'' + str(max + 1) + '\'>Image Compare Tests</th>\n'
-    html += '</tr>\n'
-    html += '<th>Test</th>\n'
-    for i in range (0, max):
-        html += '<th>SS' + str(i) + '</th>\n'
-    for result in gSystemResultList:
-        if len(result.CompareResults) > 0:
-            html += '<tr>\n'
-            html += '<td>' + result.Name + '</td>\n'
-            for compare in result.CompareResults:
-                if float(compare) > gDefaultImageCompareMargin or float(compare) < 0:
-                    html += '<td bgcolor="red"><font color="white">' + str(compare) + '</font></td>\n'
-                else:
-                    html += '<td>' + str(compare) + '</td>\n'
-            html += '</tr>\n'
-    html += '</table>\n'
-    return html
+    if gSystemResultList:
+        max = 0
+        #table needs max num of screenshots plus one columns 
+        for result in gSystemResultList:
+            if len(result.CompareResults) > max:
+                max = len(result.CompareResults)
+        html = '<table style="width:100%" border="1">\n'
+        html += '<tr>\n'
+        html += '<th colspan=\'' + str(max + 1) + '\'>Image Compare Tests</th>\n'
+        html += '</tr>\n'
+        html += '<th>Test</th>\n'
+        for i in range (0, max):
+            html += '<th>SS' + str(i) + '</th>\n'
+        for result in gSystemResultList:
+            if len(result.CompareResults) > 0:
+                html += '<tr>\n'
+                html += '<td>' + result.Name + '</td>\n'
+                for compare in result.CompareResults:
+                    if float(compare) > gDefaultImageCompareMargin or float(compare) < 0:
+                        html += '<td bgcolor="red"><font color="white">' + str(compare) + '</font></td>\n'
+                    else:
+                        html += '<td>' + str(compare) + '</td>\n'
+                html += '</tr>\n'
+        html += '</table>\n'
+        return html
+    else:
+        return ''
 
 def skipToHTML(name, reason):
     html = '<tr>\n'
-    html += '<td>' + name + '</td>\n'
+    html += '<td bgcolor="red"><font color="white">' + name + '</font></td>\n'
     html += '<td>' + reason + '</td>\n'
     html += '</tr>\n'
     return html
 
 def getSkipsTable():
-    html = '<table style="width:100%" border="1">\n'
-    html += '<tr>\n'
-    html += '<th colspan=\'2\'>Skipped Tests</th>'
-    html += '</tr>'
-    html += '<th>Test</th>\n'
-    html += '<th>Reason for Skip</th>\n'
-    for name, reason in gSkippedList:
-        html += skipToHTML(name, reason)
-    html += '</table>'
-    return html
+    if gSkippedList:
+        html = '<table style="width:100%" border="1">\n'
+        html += '<tr>\n'
+        html += '<th colspan=\'2\'>Skipped Tests</th>'
+        html += '</tr>'
+        html += '<th>Test</th>\n'
+        html += '<th>Reason for Skip</th>\n'
+        for name, reason in gSkippedList:
+            html += skipToHTML(name, reason)
+        html += '</table>'
+        return html
+    else:
+        return ''
 
 def outputHTML(openSummary, slnName):
     html = getLowLevelTestResultsTable()
