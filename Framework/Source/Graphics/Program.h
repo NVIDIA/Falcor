@@ -78,11 +78,11 @@ namespace Falcor
 
         /** Clear the macro definition list
         */
-        void clearDefines() { mDefineList.clear(); }
+        void clearDefines() { getDefineList().clear(); }
     
         /** Get the macro definition string of the active program version
         */
-        const DefineList& getActiveDefinesList() const { return mDefineList; }
+        const DefineList& getActiveDefinesList() const { return const_cast<Program*>(this)->getDefineList(); }
 
         /** Reload and relink all programs.
         */
@@ -90,7 +90,7 @@ namespace Falcor
 
         /** update define list
         */
-        void replaceAllDefines(const DefineList& dl) { mDefineList = dl; }
+        void replaceAllDefines(const DefineList& dl) { getDefineList() = dl; }
 
 
 
@@ -107,14 +107,22 @@ namespace Falcor
         void init(const std::string& cs, const DefineList& programDefines, bool createdFromFile);
         void initFromSpire(const std::string& shader, bool createdFromFile);
 
-        bool link() const;
+        bool link();
         std::string mShaderStrings[kShaderCount]; // Either a filename or a string, depending on the value of mCreatedFromFile
 
-        DefineList mDefineList;
+        typedef std::vector<SpireModule*> ComponentClassList;
+        typedef std::pair<DefineList, ComponentClassList> VariantKey;
+//        DefineList mDefineList;
+//        ComponentClassList mSpireComponentClassList;
+        VariantKey mVariantKey;
+        DefineList& getDefineList() { return mVariantKey.first; }
+        ComponentClassList& getComponentClassList() { return mVariantKey.second; }
 
         // We are doing lazy compilation, so these are mutable
         mutable bool mLinkRequired = true;
-        mutable std::map<const DefineList, ProgramVersion::SharedConstPtr> mProgramVersions;
+        // SPIRE: This is our de facto "variant database"
+        mutable std::map<VariantKey, ProgramVersion::SharedConstPtr> mProgramVersions;
+
         mutable ProgramVersion::SharedConstPtr mpActiveProgram = nullptr;
 
         std::string getProgramDescString() const;
@@ -133,7 +141,6 @@ namespace Falcor
         mutable ProgramReflection::SharedConstPtr   mSpireReflector;
 
         // List of Spire components in the "active" program
-        std::vector<SpireModule*> mSpireComponentClassList;
 
         bool checkIfFilesChanged();
         void reset();

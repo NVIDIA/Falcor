@@ -806,13 +806,7 @@ namespace Falcor
         ID3D12GraphicsCommandList* pList = pContext->getLowLevelData()->getCommandList();
 
         // Spire
-        if( mRootSignatureDirty )
-        {
-            mpRootSignature = createRootSignature();
-
-            mRootSignatureDirty = false;
-        }
-
+        getRootSignature();
 
         if(forGraphics)
         {
@@ -1023,6 +1017,17 @@ namespace Falcor
 
         mAssignedComponents[index] = pComponent;
     }
+
+    RootSignature::SharedPtr ProgramVars::getRootSignature() const
+    {
+        if( mRootSignatureDirty )
+        {
+            mpRootSignature = createRootSignature();
+            mRootSignatureDirty = false;
+        }
+        return mpRootSignature;
+    }
+
 
     RootSignature::SharedPtr ProgramVars::createRootSignature() const
     {

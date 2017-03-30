@@ -90,14 +90,14 @@ namespace Falcor
         mShaderStrings[(uint32_t)ShaderType::Hull] = HS;
         mShaderStrings[(uint32_t)ShaderType::Domain] = DS;
         mCreatedFromFile = createdFromFile;
-        mDefineList = programDefines;
+        getDefineList() = programDefines;
     }
 
     void Program::init(const std::string& cs, const DefineList& programDefines, bool createdFromFile)
     {
         mShaderStrings[(uint32_t)ShaderType::Compute] = cs;
         mCreatedFromFile = createdFromFile;
-        mDefineList = programDefines;
+        getDefineList() = programDefines;
     }
 
     static std::string getSpireErrors(SpireDiagnosticSink* sink)
@@ -174,7 +174,7 @@ namespace Falcor
             }
 
             int componentParameterCount = spShaderGetParameterCount(spireShader);
-            mSpireComponentClassList.resize(componentParameterCount, nullptr);
+            getComponentClassList().resize(componentParameterCount, nullptr);
 
             SpireModule* spireShaderParamsComponentClass = nullptr;
             if(componentParameterCount >= 1)
@@ -198,7 +198,7 @@ namespace Falcor
 
             if( spireShaderParamsComponentClass )
             {
-                mSpireComponentClassList[0] = spireShaderParamsComponentClass;
+                getComponentClassList()[0] = spireShaderParamsComponentClass;
             }
 
             mSpireShader = spireShader;
@@ -222,37 +222,37 @@ namespace Falcor
 
     void Program::setComponent(size_t index, SpireModule* componentClass)
     {
-        assert(index < mSpireComponentClassList.size());
+        assert(index < getComponentClassList().size());
 
         // Don't change anything if the same class is already set
-        if(mSpireComponentClassList[index] == componentClass)
+        if(getComponentClassList()[index] == componentClass)
             return;
 
-        mSpireComponentClassList[index] = componentClass;
+        getComponentClassList()[index] = componentClass;
         mLinkRequired = true;
     }
 	
     void Program::addDefine(const std::string& name, const std::string& value)
     {
         // Make sure that it doesn't exist already
-        if (mDefineList.find(name) != mDefineList.end())
+        if (getDefineList().find(name) != getDefineList().end())
         {
-            if (mDefineList[name] == value)
+            if (getDefineList()[name] == value)
             {
                 // Same define
                 return;
             }
         }
         mLinkRequired = true;
-        mDefineList[name] = value;
+        getDefineList()[name] = value;
     }
 
     void Program::removeDefine(const std::string& name)
     {
-        if (mDefineList.find(name) != mDefineList.end())
+        if (getDefineList().find(name) != getDefineList().end())
         {
             mLinkRequired = true;
-            mDefineList.erase(name);
+            getDefineList().erase(name);
         }
     }
 
@@ -296,29 +296,29 @@ namespace Falcor
     {
         if (mLinkRequired)
         {
-            const auto& it = mProgramVersions.find(mDefineList);
+            const auto& it = mProgramVersions.find(mVariantKey);
             ProgramVersion::SharedConstPtr pVersion = nullptr;
             if (it == mProgramVersions.end())
             {
-                if (link() == false)
+                if (const_cast<Program*>(this)->link() == false)
                 {
                     return false;
                 }
                 else
                 {
-                    mProgramVersions[mDefineList] = mpActiveProgram;
+                    mProgramVersions[mVariantKey] = mpActiveProgram;
                 }
             }
             else
             {
-                mpActiveProgram = mProgramVersions[mDefineList];
+                mpActiveProgram = mProgramVersions[mVariantKey];
             }
         }
 
         return mpActiveProgram;
     }
 
-    bool Program::link() const
+    bool Program::link()
     {
         mFileTimeMap.clear();
 
@@ -342,8 +342,8 @@ namespace Falcor
                     componentClasses[componentClassCount++] = mSpireShaderParamsComponentClass;
                 }
 #else
-                SpireModule** componentClasses = (SpireModule**) &mSpireComponentClassList[0];
-                int componentClassCount = (int) mSpireComponentClassList.size();
+                SpireModule** componentClasses = (SpireModule**) &getComponentClassList()[0];
+                int componentClassCount = (int) getComponentClassList().size();
 #endif
 
                 // TODO: this is where we'd need to enumerate the additional component
@@ -395,7 +395,7 @@ namespace Falcor
 
                     if( code )
                     {
-                        pShaders[i] = createShaderFromString(code, ShaderType(i), mDefineList);
+                        pShaders[i] = createShaderFromString(code, ShaderType(i), getDefineList());
                     }
                 }
             }
@@ -406,7 +406,7 @@ namespace Falcor
                 {
                     if(mCreatedFromFile)
                     {
-                        pShaders[i] = createShaderFromFile(mShaderStrings[i], ShaderType(i), mDefineList);
+                        pShaders[i] = createShaderFromFile(mShaderStrings[i], ShaderType(i), getDefineList());
                         if(pShaders[i])
                         {
                             std::string fullpath;
@@ -416,7 +416,7 @@ namespace Falcor
                     }
                     else
                     {
-                        pShaders[i] = createShaderFromString(mShaderStrings[i], ShaderType(i), mDefineList);
+                        pShaders[i] = createShaderFromString(mShaderStrings[i], ShaderType(i), getDefineList());
                     }
 
                     if(pShaders[i])

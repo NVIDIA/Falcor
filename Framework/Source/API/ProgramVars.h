@@ -221,7 +221,7 @@ namespace Falcor
 
         /** Get the root signature object
         */
-        RootSignature::SharedPtr getRootSignature() const { return mpRootSignature; }
+        RootSignature::SharedPtr getRootSignature() const;
 
         template<typename ViewType>
         struct ResourceData
