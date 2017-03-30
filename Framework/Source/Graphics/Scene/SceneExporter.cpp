@@ -139,7 +139,12 @@ namespace Falcor
 
         addLiteral(jval, Allocator, SceneKeys::kCameraSpeed, mpScene->getCameraSpeed());
         addLiteral(jval, Allocator, SceneKeys::kLightingScale, mpScene->getLightingScale());
-        addString(jval, Allocator, SceneKeys::kActiveCamera, mpScene->getActiveCamera()->getName());
+
+        if (mpScene->getCameraCount() > 0)
+        {
+            addString(jval, Allocator, SceneKeys::kActiveCamera, mpScene->getActiveCamera()->getName());
+        }
+
         addVector(jval, Allocator, SceneKeys::kAmbientIntensity, mpScene->getAmbientIntensity());
     }
 
