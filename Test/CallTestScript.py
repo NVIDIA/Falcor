@@ -3,28 +3,48 @@ import argparse
 import os
 from datetime import date
 import RunAllTests
-
-gEmailRecipientFile = 'EmailRecipients.txt'
+import shutil
+import stat
 
 class TestSetInfo(object):
-    def __init__(self, testDir, testList, summaryFile, errorFile, pullBranch):
+    def __init__(self, testDir, testList, summaryFile, passedTests, repoSrc, pullBranch):
         self.testDir = testDir
         self.testList = testList
         self.summaryFile = summaryFile
-        self.errorFile = errorFile
+        self.passedTests = passedTests
         self.pullBranch = pullBranch
+        self.repoSrc = repoSrc
 
 def cleanupString(string):
     string = string.replace('\t', '')
     return string.replace('\n', '').strip()
 
-def updateRepo(pullBranch):
-    subprocess.call(['git', 'fetch', 'origin', pullBranch])
-    subprocess.call(['git', 'checkout', 'origin/' + pullBranch])
+def cloneRepo(repoSrc, repoDst, pullBranch):
+    # make dir if it doesnt exist, clean dir if it does exist
+    if not os.path.isdir(repoDst):
+        os.makedirs(repoDst)
+    else:        
+        filesToDelete = [f for f in os.listdir(repoDst)]
+        for f in filesToDelete:
+            path = repoDst + '\\' + f
+            #change permissions to allow deletion 
+            os.chmod(path, stat.S_IWUSR)
+            if os.path.isdir(path):
+                #change permissions to allow deletion in the dir tree
+                for root, subdirs, files in os.walk(path):
+                    for s in subdirs:
+                        os.chmod(os.path.join(root, s), stat.S_IWUSR)
+                    for f in files:
+                        os.chmod(os.path.join(root, f), stat.S_IWUSR)
+                shutil.rmtree(path)
+            else:
+                os.remove(path)
 
-def sendEmail(subject, body, attachments):
+    subprocess.call(['git', 'clone', repoSrc, repoDst, '-b', pullBranch])
+
+def sendEmail(recipientsFile, subject, body, attachments):
     sender = 'clavelle@nvidia.com'
-    recipients = str(open(gEmailRecipientFile, 'r').read());
+    recipients = str(open(recipientsFile, 'r').read());
     subprocess.call(['blat.exe', '-install', 'mail.nvidia.com', sender])
     command = ['blat.exe', '-to', recipients, '-subject', subject, '-body', body]
     for a in attachments:
@@ -34,9 +54,9 @@ def sendEmail(subject, body, attachments):
 
 def main():
     testConfigFile = 'TestConfig.txt'
+    emailRecipientFile = 'EmailRecipients.txt'
     parser = argparse.ArgumentParser()
     parser.add_argument('-config', '--testconfig', action='store', help='Allows user to specify test config file')
-    parser.add_argument('-np', '--nopull', action='store_true', help='Do not pull/checkout, overriding/ignoring setting in test config')
     parser.add_argument('-ne', '--noemail', action='store_true', help='Do not send emails, overriding/ignoring setting in test config')
     parser.add_argument('-ss', '--showsummary', action='store_true', help='Show a testing summary upon the completion of each test list')
     parser.add_argument('-gr', '--generatereference', action='store_true', help='Instead of running testing, generate reference for each test list')
@@ -47,54 +67,43 @@ def main():
             testConfigFile = args.testconfig
         else:
             print 'Fatal Error, failed to find user specified test config file ' + args.testconfig
+            sys.exit(1)
 
     testConfig = open(testConfigFile)
     contents = file.read(testConfig)
     argStartIndex = contents.find('{')
     testResults = []
     while argStartIndex != -1 :
-        testDir = cleanupString(contents[:argStartIndex])
         argEndIndex = contents.find('}')
         argString = cleanupString(contents[argStartIndex + 1 : argEndIndex])
         argList = argString.split(',')
         if len(argList) < 5:
-            print 'Error: only found ' + str(len(argList)) + ' args for testing dir ' + testDir + '. Need at least 5 (shouldBuild, refDir, testList, shouldEmail, shouldPull)'
+            print 'Error: only found ' + str(len(argList)) + ' args. Need at least 5 (refDir, testList, repoSrc, repoDst, repoBranch)'
             continue
 
-        shouldBuild = argList[0].strip().lower() == 'true'
-        refDir = argList[1].strip()
-        testList = argList[2].strip()
+        refDir = argList[0].strip()
+        testList = argList[1].strip()
+        repoSrc = argList[2].strip()
+        repoDst = argList[3].strip()
+        pullBranch = argList[4].strip()
 
-        if args.nopull:
-            shouldPull = False
-        else:
-            shouldPull = argList[3].strip().lower() == 'true'
+        #clone repo and move into test dir
+        cloneRepo(repoSrc, repoDst, pullBranch)
+        prevWorkingDir = os.getcwd()
+        workingDir = repoDst + '\\Test'
+        os.chdir(workingDir)
 
-        if testDir:
-            prevWorkingDir = os.getcwd()
-            os.chdir(testDir)
+        #run tests
+        testingResults = RunAllTests.main(True, args.showsummary, args.generatereference, refDir, testList, pullBranch)
+        #testing results is list of lists 
+        for result in testingResults:
+            setInfo = TestSetInfo(workingDir, testList, result[0], result[1], repoSrc, pullBranch)
+            testResults.append(setInfo)
 
-        if shouldPull:
-            try:
-                pullBranch = argList[4].strip()
-                updateRepo(pullBranch)
-            except:
-                print 'Error: no pull branch provided for testing dir ' + testDir + ' with shouldPull being true. Continuing without pull'
-        else:
-            pullBranch = ''
+        #move out of repo back to previous location
+        os.chdir(prevWorkingDir)
 
-        workingDir = os.getcwd()
-        testingResult = RunAllTests.main(shouldBuild, args.showsummary, args.generatereference, refDir, testList, pullBranch)
-        #if size 2, includes an error file, means failure
-        if len(testingResult) > 1:
-            setInfo = TestSetInfo(workingDir, testList, testingResult[0], testingResult[1], pullBranch)
-        else:
-            setInfo = TestSetInfo(workingDir, testList, testingResult[0], None, pullBranch)
-        testResults.append(setInfo)
-
-        if testDir:
-            os.chdir(prevWorkingDir)
-
+        #advance buffer to the next test config
         contents = contents[argEndIndex + 1 :]
         argStartIndex = contents.find('{')
 
@@ -104,7 +113,7 @@ def main():
         anyFails = False
         for r in testResults:
             attachments.append(r.summaryFile)
-            if r.errorFile:
+            if not r.passedTests:
                 anyFails = True
                 result = 'Fail'
                 attachments.append(r.errorFile)
@@ -112,7 +121,7 @@ def main():
                 result = 'Success'
             body += r.testDir + '\\' + r.testList
             if r.pullBranch:
-                body += ' (' + pullBranch + ') '
+                body += ' (' + r.repoSrc + ' ' + r.pullBranch + ') '
             body += ': ' + result + '\n'
         if anyFails:
             subject = '[FAIL]'
@@ -120,7 +129,7 @@ def main():
             subject = '[SUCCESS]'
         dateStr = date.today().strftime("%m-%d-%y")
         subject += ' Falcor automated testing ' + dateStr
-        sendEmail(subject, body, attachments)
+        sendEmail(emailRecipientFile, subject, body, attachments)
 
 if __name__ == '__main__':
     main()

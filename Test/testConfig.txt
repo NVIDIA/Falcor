@@ -1,7 +1,3 @@
- {
-    true, \\netapp-wa02\public\Falcor\ReferenceResultsHub, TestList.txt, true, Testing2.0a2
-}
-
- {
-    true, \\netapp-wa02\public\Falcor\ReferenceResultsHub, LLTestList.txt, true, Testing2.0a2
+{
+    \\netapp-wa02\public\Falcor\ReferenceResultsHub, TestList.txt, https://github.com/NVIDIA/Falcor.git, C:\Users\clavelle\Desktop\FalcorDest, Testing2.0a2
 }
