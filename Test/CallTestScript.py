@@ -116,7 +116,6 @@ def main():
             if not r.passedTests:
                 anyFails = True
                 result = 'Fail'
-                attachments.append(r.errorFile)
             else:
                 result = 'Success'
             body += r.testDir + '\\' + r.testList
