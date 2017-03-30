@@ -90,6 +90,7 @@ namespace Falcor
 
         pHeap->mCpuHeapStart = pHeap->mApiHandle->GetCPUDescriptorHandleForHeapStart();
         pHeap->mGpuHeapStart = pHeap->mApiHandle->GetGPUDescriptorHandleForHeapStart();
+        pHeap->mShaderVisible = shaderVisible;
         return pHeap;
     }
 
@@ -174,7 +175,18 @@ namespace Falcor
 
     DescriptorHeapEntry::~DescriptorHeapEntry()
     {
-        getHeap()->getAllocator()->deferredRelease(this);
+        // CPU-only descriptors can be re-used right away,
+        // while shader-visible descriptors need their
+        // release to be deferred.
+        auto heap = getHeap();
+        if( heap->mShaderVisible )
+        {
+            heap->getAllocator()->deferredRelease(this);
+        }
+        else
+        {
+            mpPool->releaseTable(mHeapEntry);
+        }
     }
 
     void DescriptorPool::releaseTable(uint32_t entry)

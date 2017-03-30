@@ -98,6 +98,7 @@ namespace Falcor
         uint32_t mCurDesc = 0;
         ApiHandle mApiHandle;
         Type mType;
+        bool mShaderVisible;
 
         std::map<uint32_t, std::weak_ptr<DescriptorPool>> mPools;
     };

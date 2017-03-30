@@ -604,9 +604,9 @@ namespace Falcor
 				else
 					logError("Cannot find 'MaterialInclude.spire'.");
 
-                // 
-                mSpireComponentClass = ShaderRepository::Instance().findComponentClass(spireComponentClass);
 			}
+            // 
+            mSpireComponentClass = ShaderRepository::Instance().findComponentClass(spireComponentClass);
 
             // TODO: Here is where we'd need to construct an appropriate component
             // class for the material, based on the data in the layers.
