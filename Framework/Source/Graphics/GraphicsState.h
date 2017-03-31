@@ -83,13 +83,13 @@ namespace Falcor
 
         /** Get current FBO.
         */
-        Fbo::SharedConstPtr getFbo() const { return mpFbo; }
+        Fbo::SharedPtr getFbo() const { return mpFbo; }
 
         /** Set a new FBO. This function doesn't store the current FBO state.
         \param[in] pFbo - a new FBO object. If nullptr is used, will detach the current FBO
         \param[in] setVp0Sc0 If true, will set the viewport 0 and scissor 0 to match the FBO dimensions
         */
-        GraphicsState& setFbo(const Fbo::SharedConstPtr& pFbo, bool setVp0Sc0 = true);
+        GraphicsState& setFbo(const Fbo::SharedPtr& pFbo, bool setVp0Sc0 = true);
         
         /** Set a new FBO and store the current FBO into a stack. Useful for multi-pass effects.
             \param[in] pFbo - a new FBO object. If nullptr is used, will bind an empty framebuffer object
@@ -219,7 +219,7 @@ namespace Falcor
     private:
         GraphicsState();
         Vao::SharedConstPtr mpVao;
-        Fbo::SharedConstPtr mpFbo;
+        Fbo::SharedPtr mpFbo;
         GraphicsProgram::SharedPtr mpProgram;
         RootSignature::SharedPtr mpRootSignature;
         GraphicsStateObject::Desc mDesc;
@@ -227,7 +227,7 @@ namespace Falcor
         std::vector<Viewport> mViewports;
         std::vector<Scissor> mScissors;
 
-        std::stack<Fbo::SharedConstPtr> mFboStack;
+        std::stack<Fbo::SharedPtr> mFboStack;
         std::vector<std::stack<Viewport>> mVpStack;
         std::vector<std::stack<Scissor>> mScStack;
 

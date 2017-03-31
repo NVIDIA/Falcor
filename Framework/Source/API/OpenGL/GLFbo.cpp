@@ -146,7 +146,7 @@ namespace Falcor
 
     bool Fbo::checkStatus() const
     {
-        if(mIsDirty)
+        if(mpDesc == nullptr)
         {
             if(calcAndValidateProperties() == false)
             {

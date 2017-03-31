@@ -130,7 +130,7 @@ namespace Falcor
         return pGso;
     }
 
-    GraphicsState& GraphicsState::setFbo(const Fbo::SharedConstPtr& pFbo, bool setVp0Sc0)
+    GraphicsState& GraphicsState::setFbo(const Fbo::SharedPtr& pFbo, bool setVp0Sc0)
     {
         mpFbo = pFbo;
         mpGsoGraph->walk((void*)pFbo.get());

@@ -32,6 +32,20 @@
 
 namespace Falcor
 {
+    std::set<Fbo::Desc> Fbo::sDescs;
+
+    bool Fbo::Desc::operator<(const Fbo::Desc& other) const 
+    {
+        if (mColorTargets.size() < other.mColorTargets.size()) return true;
+        for (size_t i = 0; i < mColorTargets.size(); i++)
+        {
+            if (mColorTargets[i] < other.mColorTargets[i]) return true;
+        }
+        if (mDepthStencilTarget < other.mDepthStencilTarget) return true;
+        if (mSampleCount < other.mSampleCount) return true;
+        return false;
+    }
+
     Fbo::Desc::Desc()
     {
         mColorTargets.resize(Fbo::getMaxColorTargetCount());
@@ -129,7 +143,7 @@ namespace Falcor
     {
         if(checkAttachmentParams(pDepthStencil.get(), mipLevel, firstArraySlice, arraySize, true))
         {
-            mIsDirty = true;
+            mpDesc = nullptr;
             mDepthStencil.pTexture = pDepthStencil;
             mDepthStencil.mipLevel = mipLevel;
             mDepthStencil.firstArraySlice = firstArraySlice;
@@ -140,7 +154,7 @@ namespace Falcor
                 allowUav = ((pDepthStencil->getBindFlags() & Texture::BindFlags::UnorderedAccess) != Texture::BindFlags::None);
             }
 
-            mDesc.setDepthStencilTarget(pDepthStencil ? pDepthStencil->getFormat() : ResourceFormat::Unknown, allowUav);
+            mTempDesc.setDepthStencilTarget(pDepthStencil ? pDepthStencil->getFormat() : ResourceFormat::Unknown, allowUav);
             applyDepthAttachment();
         }
     }
@@ -155,7 +169,7 @@ namespace Falcor
 
         if(checkAttachmentParams(pTexture.get(), mipLevel, firstArraySlice, arraySize, false))
         {
-            mIsDirty = true;
+            mpDesc = nullptr;
             mColorAttachments[rtIndex].pTexture = pTexture;
             mColorAttachments[rtIndex].mipLevel = mipLevel;
             mColorAttachments[rtIndex].firstArraySlice = firstArraySlice;
@@ -166,7 +180,7 @@ namespace Falcor
                 allowUav = ((pTexture->getBindFlags() & Texture::BindFlags::UnorderedAccess) != Texture::BindFlags::None);
             }
 
-            mDesc.setColorTarget(rtIndex, pTexture ? pTexture->getFormat() : ResourceFormat::Unknown, allowUav);
+            mTempDesc.setColorTarget(rtIndex, pTexture ? pTexture->getFormat() : ResourceFormat::Unknown, allowUav);
             applyColorAttachment(rtIndex);
         }
     }
@@ -180,7 +194,7 @@ namespace Falcor
             if(mWidth == uint32_t(-1))
             {
                 // First attachment in the FBO
-                mDesc.setSampleCount(pTexture->getSampleCount());
+                mTempDesc.setSampleCount(pTexture->getSampleCount());
                 mIsLayered = (attachment.arraySize > 1);
             }
 
@@ -189,14 +203,14 @@ namespace Falcor
             mDepth = min(mDepth, pTexture->getDepth(attachment.mipLevel));
 
             {
-				if ( (pTexture->getSampleCount() > mDesc.getSampleCount()) && isDepthStencilFormat(pTexture->getFormat()) )
+				if ( (pTexture->getSampleCount() > mTempDesc.getSampleCount()) && isDepthStencilFormat(pTexture->getFormat()) )
 				{
 					// We're using target-independent raster (more depth samples than color samples).  This is OK.
-					mDesc.setSampleCount(pTexture->getSampleCount());
+                    mTempDesc.setSampleCount(pTexture->getSampleCount());
 					return true;
 				}
 
-				if (mDesc.getSampleCount() != pTexture->getSampleCount())
+				if (mTempDesc.getSampleCount() != pTexture->getSampleCount())
 				{
                     logError("Error when validating FBO. Different sample counts in attachments\n");
 					return false;
@@ -218,7 +232,7 @@ namespace Falcor
         mWidth = (uint32_t)-1;
         mHeight = (uint32_t)-1;
         mDepth = (uint32_t)-1;
-        mDesc.setSampleCount(uint32_t(-1));
+        mTempDesc.setSampleCount(uint32_t(-1));
         mIsLayered = false;
 
         // Check color
@@ -231,7 +245,12 @@ namespace Falcor
         }
 
         // Check depth
-        return verifyAttachment(mDepthStencil);
+        if (verifyAttachment(mDepthStencil) == false) return false;
+
+        // Insert the attachment into the static array and initialize the address
+        mpDesc = &(*(sDescs.insert(mTempDesc).first));
+
+        return true;
     }
 
     Texture::SharedPtr Fbo::getColorTexture(uint32_t index) const

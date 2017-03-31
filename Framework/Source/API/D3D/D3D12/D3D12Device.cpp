@@ -352,7 +352,7 @@ namespace Falcor
     Fbo::SharedPtr Device::resizeSwapChain(uint32_t width, uint32_t height)
     {
         mpRenderContext->flush(true);
-
+        
         DeviceData* pData = (DeviceData*)mpPrivateData;
 
         // Store the FBO parameters

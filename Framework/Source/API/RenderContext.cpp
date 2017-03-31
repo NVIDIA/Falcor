@@ -165,13 +165,13 @@ namespace Falcor
         Fbo::SharedPtr pFbo = Fbo::create();
         Texture::SharedPtr pSharedTex = std::const_pointer_cast<Texture>(pDstTexture->shared_from_this());
         pFbo->attachColorTarget(pSharedTex, 0, pDst->getViewInfo().mostDetailedMip, pDst->getViewInfo().firstArraySlice, pDst->getViewInfo().arraySize);
-        sBlitData.pState->setFbo(pFbo, false);
+        sBlitData.pState->pushFbo(pFbo, false);
         sBlitData.pVars->setSrv(0, pSrc);
         sBlitData.pPass->execute(this);
 
         // Release the resources we bound
         sBlitData.pVars->setSrv(0, nullptr);
-
+        sBlitData.pState->popFbo(false);
         popGraphicsState();
         popGraphicsVars();
     }

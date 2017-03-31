@@ -29,6 +29,7 @@
 #include "glm/vec4.hpp"
 #include "Texture.h"
 #include "Utils/Bitmap.h"
+#include <set>
 
 namespace Falcor
 {
@@ -56,6 +57,8 @@ namespace Falcor
             ResourceFormat getDepthStencilFormat() const { return mDepthStencilTarget.format; }
             bool isDepthStencilUav() const { return mDepthStencilTarget.allowUav; }
             uint32_t getSampleCount() const { return mSampleCount; }
+
+            bool operator<(const Desc& other) const;
         private:
             struct TargetDesc
             {
@@ -63,6 +66,13 @@ namespace Falcor
                 TargetDesc(ResourceFormat f, bool uav) : format(f), allowUav(uav) {}
                 ResourceFormat format = ResourceFormat::Unknown;
                 bool allowUav = false;
+
+                bool operator<(const TargetDesc& other) const
+                {
+                    if ((uint32_t)format < (uint32_t)other.format) return true;
+                    if (allowUav < allowUav) return true;
+                    return false;
+                }
             };
 
             std::vector<TargetDesc> mColorTargets;
@@ -131,7 +141,7 @@ namespace Falcor
         uint32_t getHeight() const { checkStatus(); return mHeight; }
         /** Get the sample-count of the FBO
         */
-        uint32_t getSampleCount() const { checkStatus(); return mDesc.getSampleCount(); }
+        uint32_t getSampleCount() const { checkStatus(); return mpDesc->getSampleCount(); }
 
 		/** Force the FBO to have zero attachment (no texture attached) and use a virtual resolution.
 		*/
@@ -139,7 +149,7 @@ namespace Falcor
 
         /** Get the FBO format descriptor
         */
-        const Desc& getDesc() const { checkStatus();  return mDesc; }
+        const Desc& getDesc() const { checkStatus();  return *mpDesc; }
 
 #ifdef FALCOR_D3D
         DepthStencilView::SharedPtr getDepthStencilView() const;
@@ -153,6 +163,7 @@ namespace Falcor
             uint32_t firstArraySlice = 0;
         };
     private:
+        static std::set<Desc> sDescs;
 
         bool verifyAttachment(const Attachment& attachment) const;
         bool calcAndValidateProperties() const;
@@ -164,8 +175,8 @@ namespace Falcor
         std::vector<Attachment> mColorAttachments;
         Attachment mDepthStencil;
 
-        mutable Desc mDesc;
-        mutable bool mIsDirty = false;
+        mutable Desc mTempDesc;
+        mutable const Desc* mpDesc = nullptr;
         mutable uint32_t mWidth  = (uint32_t)-1;
         mutable uint32_t mHeight = (uint32_t)-1;
         mutable uint32_t mDepth = (uint32_t)-1;

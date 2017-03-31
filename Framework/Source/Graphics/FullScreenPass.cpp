@@ -157,7 +157,7 @@ namespace Falcor
 
     void FullScreenPass::execute(RenderContext* pRenderContext, DepthStencilState::SharedPtr pDsState) const
     {
-        mpPipelineState->setFbo(pRenderContext->getGraphicsState()->getFbo(), false);
+        mpPipelineState->pushFbo(pRenderContext->getGraphicsState()->getFbo(), false);
         mpPipelineState->setViewport(0, pRenderContext->getGraphicsState()->getViewport(0), false);
         mpPipelineState->setScissors(0, pRenderContext->getGraphicsState()->getScissors(0));
 
@@ -166,5 +166,6 @@ namespace Falcor
         pRenderContext->pushGraphicsState(mpPipelineState);
         pRenderContext->draw(arraysize(kVertices), 0);
         pRenderContext->popGraphicsState();
+        mpPipelineState->popFbo(false);
     }
 }
