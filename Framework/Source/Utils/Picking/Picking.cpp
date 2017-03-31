@@ -85,7 +85,6 @@ namespace Falcor
 
         defines.add("CULL_REAR_SECTION");
         mpRotGizmoProgram = GraphicsProgram::createFromFile("Framework/Shaders/SceneEditorVS.hlsl", "Framework/Shaders/SceneEditorPS.hlsl", defines);
-        mpRotGizmoProgramVars = GraphicsVars::create(mpRotGizmoProgram->getActiveVersion()->getReflector());
 
         // Depth State
         DepthStencilState::Desc dsDesc;
@@ -150,10 +149,6 @@ namespace Falcor
             // Set camera for regular shader
             ConstantBuffer* pCB = mpProgramVars->getConstantBuffer(kPerFrameCbName).get();
             currentData.pCamera->setIntoConstantBuffer(pCB, sCameraDataOffset);
-
-            // Set camera for rotate gizmo shader
-            pCB = mpRotGizmoProgramVars->getConstantBuffer(kPerFrameCbName).get();
-            currentData.pCamera->setIntoConstantBuffer(pCB, sCameraDataOffset);
         }
     }
 
@@ -170,7 +165,6 @@ namespace Falcor
             if (gizmoType == Gizmo::Type::Rotate)
             {
                 mpGraphicsState->setProgram(gizmoType == Gizmo::Type::Rotate ? mpRotGizmoProgram : mpProgram);
-                currentData.pContext->setGraphicsVars(mpRotGizmoProgramVars);
                 return true;
             }
         }

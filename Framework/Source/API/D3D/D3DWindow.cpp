@@ -259,6 +259,7 @@ namespace Falcor
         static void dispatchMouseEvent(const Window* pWindow, UINT Msg, WPARAM wParam, LPARAM lParam)
         {
             MouseEvent mouseEvent;
+            POINT pos = { GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam) };
             switch(Msg)
             {
             case WM_MOUSEMOVE:
@@ -285,15 +286,17 @@ namespace Falcor
             case WM_MOUSEWHEEL:
                 mouseEvent.type = MouseEvent::Type::Wheel;
                 mouseEvent.wheelDelta.y = ((float)GET_WHEEL_DELTA_WPARAM(wParam)) / WHEEL_DELTA;
+                ScreenToClient(pWindow->getApiHandle(), &pos);
                 break;
             case WM_MOUSEHWHEEL:
                 mouseEvent.type = MouseEvent::Type::Wheel;
                 mouseEvent.wheelDelta.x = ((float)GET_WHEEL_DELTA_WPARAM(wParam)) / WHEEL_DELTA;
+                ScreenToClient(pWindow->getApiHandle(), &pos);
             default:
                 should_not_get_here();
             }
 
-            mouseEvent.pos = glm::vec2(float(GET_X_LPARAM(lParam)), float(GET_Y_LPARAM(lParam)));
+            mouseEvent.pos = glm::vec2((float)pos.x, (float)pos.y);
             mouseEvent.pos *= pWindow->getMouseScale();
             mouseEvent.mods = getInputModifiers();
 

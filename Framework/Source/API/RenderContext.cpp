@@ -93,7 +93,9 @@ namespace Falcor
 
             Sampler::Desc desc;
             desc.setFilterMode(Sampler::Filter::Linear, Sampler::Filter::Linear, Sampler::Filter::Point).setAddressingMode(Sampler::AddressMode::Clamp, Sampler::AddressMode::Clamp, Sampler::AddressMode::Clamp);
-            sBlitData.pVars->setSampler("gSampler", Sampler::create(desc));
+            sBlitData.pLinearSampler = Sampler::create(desc);
+            desc.setFilterMode(Sampler::Filter::Point, Sampler::Filter::Point, Sampler::Filter::Point).setAddressingMode(Sampler::AddressMode::Clamp, Sampler::AddressMode::Clamp, Sampler::AddressMode::Clamp);
+            sBlitData.pPointSampler = Sampler::create(desc);
             assert(sBlitData.pPass->getProgram()->getActiveVersion()->getReflector()->getResourceDesc("gTex")->regIndex == 0);
         }
     }
@@ -106,9 +108,17 @@ namespace Falcor
         sBlitData.pState = nullptr;
     }
 
-    void RenderContext::blit(ShaderResourceView::SharedPtr pSrc, RenderTargetView::SharedPtr pDst, const uvec4& srcRect, const uvec4& dstRect)
+    void RenderContext::blit(ShaderResourceView::SharedPtr pSrc, RenderTargetView::SharedPtr pDst, const uvec4& srcRect, const uvec4& dstRect, Sampler::Filter filter)
     {
         initBlitData(); // This has to be here and can't be in the constructor. FullScreenPass will allocate some buffers which depends on the ResourceAllocator which depends on the fence inside the RenderContext. Dependencies are fun!
+        if (filter == Sampler::Filter::Linear)
+        {
+            sBlitData.pVars->setSampler(0, sBlitData.pLinearSampler);
+        }
+        else
+        {
+            sBlitData.pVars->setSampler(0, sBlitData.pPointSampler);
+        }
 
         assert(pSrc->getViewInfo().arraySize == 1 && pSrc->getViewInfo().mipCount == 1);
         assert(pDst->getViewInfo().arraySize == 1 && pDst->getViewInfo().mipCount == 1);
@@ -165,13 +175,13 @@ namespace Falcor
         Fbo::SharedPtr pFbo = Fbo::create();
         Texture::SharedPtr pSharedTex = std::const_pointer_cast<Texture>(pDstTexture->shared_from_this());
         pFbo->attachColorTarget(pSharedTex, 0, pDst->getViewInfo().mostDetailedMip, pDst->getViewInfo().firstArraySlice, pDst->getViewInfo().arraySize);
-        sBlitData.pState->setFbo(pFbo, false);
+        sBlitData.pState->pushFbo(pFbo, false);
         sBlitData.pVars->setSrv(0, pSrc);
         sBlitData.pPass->execute(this);
 
         // Release the resources we bound
         sBlitData.pVars->setSrv(0, nullptr);
-
+        sBlitData.pState->popFbo(false);
         popGraphicsState();
         popGraphicsVars();
     }

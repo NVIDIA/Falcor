@@ -129,12 +129,12 @@ namespace Falcor
         }
     }
 
-    void SceneEditor::setCameraFOV(Gui* pGui)
+    void SceneEditor::setCameraFocalLength(Gui* pGui)
     {
-        float fovY = degrees(mpScene->getActiveCamera()->getFovY());
-        if (pGui->addFloatVar("FovY", fovY, 0, 360))
+        float focalLength = mpScene->getActiveCamera()->getFocalLength();
+        if (pGui->addFloatVar("Focal Length", focalLength, 0.0f, FLT_MAX, 0.5f))
         {
-            mpScene->getActiveCamera()->setFovY(radians(fovY));
+            mpScene->getActiveCamera()->setFocalLength(focalLength);
             mSceneDirty = true;
         }
     }
@@ -266,12 +266,12 @@ namespace Falcor
 
     void SceneEditor::setInstanceRotation(Gui* pGui)
     {
-        vec3 r = getActiveInstanceEulerRotation();
+        vec3 r = getActiveInstanceRotationAngles();
         r = degrees(r);
         if (pGui->addFloat3Var("Rotation", r, -360, 360))
         {
             r = radians(r);
-            setActiveInstanceEulerRotation(r);
+            setActiveInstanceRotationAngles(r);
             mSceneDirty = true;
         }
     }
@@ -410,8 +410,6 @@ namespace Falcor
         , mModelLoadFlags(modelLoadFlags)
     {
         mpDebugDrawer = DebugDrawer::create();
-
-        mpScene->enableMaterialHistory();
 
         initializeEditorRendering();
         initializeEditorObjects();
@@ -576,17 +574,17 @@ namespace Falcor
         rebuildLightIDMap();
 
         //
-        // Master Scene Model Instance Euler Rotations
+        // Master Scene Model Instance Rotations
         //
 
         for (uint32_t modelID = 0; modelID < mpScene->getModelCount(); modelID++)
         {
-            mInstanceEulerRotations.emplace_back();
+            mInstanceRotationAngles.emplace_back();
 
             for (uint32_t instanceID = 0; instanceID < mpScene->getModelInstanceCount(modelID); instanceID++)
             {
                 auto& pInstance = mpScene->getModelInstance(modelID, instanceID);
-                mInstanceEulerRotations[modelID].push_back(pInstance->getEulerRotation());
+                mInstanceRotationAngles[modelID].push_back(pInstance->getRotation());
 
                 // Track model instance names
                 mInstanceNames.emplace(pInstance->getName());
@@ -609,14 +607,14 @@ namespace Falcor
         mpKeyframeModel = Model::createFromFile("Framework/Models/Camera.obj");
     }
 
-    const glm::vec3& SceneEditor::getActiveInstanceEulerRotation()
+    const glm::vec3& SceneEditor::getActiveInstanceRotationAngles()
     {
-        return mInstanceEulerRotations[mSelectedModel][mSelectedModelInstance];
+        return mInstanceRotationAngles[mSelectedModel][mSelectedModelInstance];
     }
 
-    void SceneEditor::setActiveInstanceEulerRotation(const glm::vec3& rotation)
+    void SceneEditor::setActiveInstanceRotationAngles(const glm::vec3& rotation)
     {
-        mInstanceEulerRotations[mSelectedModel][mSelectedModelInstance] = rotation;
+        mInstanceRotationAngles[mSelectedModel][mSelectedModelInstance] = rotation;
         mpScene->getModelInstance(mSelectedModel, mSelectedModelInstance)->setRotation(rotation);
         mSceneDirty = true;
     }
@@ -778,7 +776,7 @@ namespace Falcor
 
             if (mActiveGizmoType == Gizmo::Type::Rotate)
             {
-                mInstanceEulerRotations[mSelectedModel][mSelectedModelInstance] = pInstance->getEulerRotation();
+                mInstanceRotationAngles[mSelectedModel][mSelectedModelInstance] = pInstance->getRotation();
             }
             break;
         }
@@ -1042,6 +1040,7 @@ namespace Falcor
                 deleteCamera(pGui);
                 pGui->addSeparator();
                 assert(mpScene->getCameraCount() > 0);
+                setCameraFocalLength(pGui);
                 setCameraAspectRatio(pGui);
                 setCameraDepthRange(pGui);
 
@@ -1290,8 +1289,8 @@ namespace Falcor
                     mSelectedModel = mpScene->getModelCount() - 1;
                     mSelectedModelInstance = 0;
 
-                    mInstanceEulerRotations.emplace_back();
-                    mInstanceEulerRotations.back().push_back(mpScene->getModelInstance(mSelectedModel, mSelectedModelInstance)->getEulerRotation());
+                    mInstanceRotationAngles.emplace_back();
+                    mInstanceRotationAngles.back().push_back(mpScene->getModelInstance(mSelectedModel, mSelectedModelInstance)->getRotation());
                 }
                 mSceneDirty = true;
             }
@@ -1312,7 +1311,7 @@ namespace Falcor
         }
 
         mpScene->deleteModel(mSelectedModel);
-        mInstanceEulerRotations.erase(mInstanceEulerRotations.begin() + mSelectedModel);
+        mInstanceRotationAngles.erase(mInstanceRotationAngles.begin() + mSelectedModel);
         mSelectedModel = 0;
         mSelectedModelInstance = 0;
         mSceneDirty = true;
@@ -1347,10 +1346,10 @@ namespace Falcor
 
                 // Add instance
                 std::string name = getUniqueNumberedName(pModel->getName(), mSelectedModelInstance, mInstanceNames);
-                mpScene->addModelInstance(pModel, name, pInstance->getTranslation(), pInstance->getEulerRotation(), pInstance->getScaling());
+                mpScene->addModelInstance(pModel, name, pInstance->getTranslation(), pInstance->getRotation(), pInstance->getScaling());
 
                 auto& pNewInstance = mpScene->getModelInstance(mSelectedModel, mSelectedModelInstance);
-                mInstanceEulerRotations[mSelectedModel].push_back(pNewInstance->getEulerRotation());
+                mInstanceRotationAngles[mSelectedModel].push_back(pNewInstance->getRotation());
                 select(pNewInstance);
 
                 mSceneDirty = true;
@@ -1389,7 +1388,7 @@ namespace Falcor
 
                 mpScene->deleteModelInstance(mSelectedModel, mSelectedModelInstance);
 
-                auto& modelRotations = mInstanceEulerRotations[mSelectedModel];
+                auto& modelRotations = mInstanceRotationAngles[mSelectedModel];
                 modelRotations.erase(modelRotations.begin() + mSelectedModelInstance);
 
                 deselect();

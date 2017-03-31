@@ -156,10 +156,7 @@ namespace Falcor
                         return false;
                     }
 
-                    for(uint32_t c = 0; c < 3; c++)
-                    {
-                        rotation[c] = glm::radians(rotation[c]);
-                    }
+                    rotation = glm::radians(rotation);
                 }
                 else
                 {
@@ -228,12 +225,9 @@ namespace Falcor
             }
             else if (keyName == SceneKeys::kMaterialOverrides)
             {
-                if (is_set(mSceneLoadFlags, Scene::LoadFlags::StoreMaterialHistory))
+                if (setMaterialOverrides(jval->value, pModel) == false)
                 {
-                    if (setMaterialOverrides(jval->value, pModel) == false)
-                    {
-                        return false;
-                    }
+                    return false;
                 }
             }
             else if(keyName == SceneKeys::kModelInstances)
@@ -1120,17 +1114,39 @@ namespace Falcor
                 }
                 pCamera->setUpVector(up);
             }
-            else if(key == SceneKeys::kCamFovY)
+            else if(key == SceneKeys::kCamFovY) // Version 1
             {
+                if (mpScene->getVersion() > 1)
+                {
+                    error("Camera FOV is only valid in scene version 1. Ignoring value.");
+                    return false;
+                }
+
                 if(value.IsNumber() == false)
                 {
                     error("Camera's FOV should be a number");
                     return false;
                 }
-                float fovY = (float)value.GetDouble();
-                // Convert to radiance
-                fovY = glm::radians(fovY);
-                pCamera->setFovY(fovY);
+
+                // Convert to radians
+                float fovY = glm::radians((float)value.GetDouble());
+                pCamera->setFocalLength(fovYToFocalLength(fovY, Camera::kDefaultFrameHeight));
+            }
+            else if (key == SceneKeys::kCamFocalLength) // Version 2
+            {
+                if (mpScene->getVersion() != 2)
+                {
+                    error("Camera focal length is only valid in scene version 2. Ignoring value.");
+                    return false;
+                }
+
+                if (value.IsNumber() == false)
+                {
+                    error("Camera's focal length should be a number");
+                    return false;
+                }
+
+                pCamera->setFocalLength((float)value.GetDouble());
             }
             else if(key == SceneKeys::kCamDepthRange)
             {
@@ -1228,11 +1244,6 @@ namespace Falcor
             // create the scene
             mpScene = Scene::create();
 
-            if (is_set(mSceneLoadFlags, Scene::LoadFlags::StoreMaterialHistory))
-            {
-                mpScene->enableMaterialHistory();
-            }
-
             if(topLevelLoop() == false)
             {
                 return nullptr;
@@ -1242,7 +1253,12 @@ namespace Falcor
             {
                 mpScene->createAreaLights();
             }
-			
+
+            if (is_set(mSceneLoadFlags, Scene::LoadFlags::StoreMaterialHistory) == false)
+            {
+                mpScene->deleteMaterialHistory();
+            }
+
             return mpScene;
         }
         else

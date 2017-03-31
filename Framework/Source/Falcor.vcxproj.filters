@@ -474,6 +474,9 @@
     <ClCompile Include="Utils\ProgressBarWin.cpp">
       <Filter>Utils</Filter>
     </ClCompile>
+    <ClCompile Include="Utils\PixelZoom.cpp">
+      <Filter>Utils</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Graphics\Model\Animation.h">
@@ -1569,6 +1572,9 @@
     </ClInclude>
     <ClInclude Include="API\D3D\D3D12\D3D12NvApiExDesc.h">
       <Filter>API\D3D\D3D12</Filter>
+    </ClInclude>
+    <ClInclude Include="Utils\PixelZoom.h">
+      <Filter>Utils</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

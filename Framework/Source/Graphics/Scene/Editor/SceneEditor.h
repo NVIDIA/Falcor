@@ -92,7 +92,7 @@ namespace Falcor
         void setInstanceRotation(Gui* pGui);
 
         // Camera functions
-        void setCameraFOV(Gui* pGui);
+        void setCameraFocalLength(Gui* pGui);
         void setCameraDepthRange(Gui* pGui);
         void setCameraAspectRatio(Gui* pGui);
         void setCameraName(Gui* pGui);
@@ -143,10 +143,10 @@ namespace Falcor
         // Initializes Editor's representation of the scene being edited
         void initializeEditorObjects();
 
-        // Model Instance Euler Angle Helpers
-        const glm::vec3& getActiveInstanceEulerRotation();
-        void setActiveInstanceEulerRotation(const glm::vec3& rotation);
-        std::vector<std::vector<glm::vec3>> mInstanceEulerRotations;
+        // Model Instance Rotation Angle Helpers
+        const glm::vec3& getActiveInstanceRotationAngles();
+        void setActiveInstanceRotationAngles(const glm::vec3& rotation);
+        std::vector<std::vector<glm::vec3>> mInstanceRotationAngles;
 
         //
         // Editor Objects

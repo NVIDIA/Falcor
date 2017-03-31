@@ -198,7 +198,7 @@ void ShaderBuffersSample::onResizeSwapChain()
     float height = (float)mpDefaultFBO->getHeight();
     float width = (float)mpDefaultFBO->getWidth();
 
-    mpCamera->setFovY(float(M_PI / 8));
+    mpCamera->setFocalLength(60.0f);
     mpCamera->setAspectRatio(width / height);
 }
 

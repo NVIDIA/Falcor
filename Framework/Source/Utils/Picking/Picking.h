@@ -113,7 +113,6 @@ namespace Falcor
 
         // Separate program for rotation gizmos because away-facing parts are discarded :(
         GraphicsProgram::SharedPtr mpRotGizmoProgram;
-        GraphicsVars::SharedPtr mpRotGizmoProgramVars;
 
         DepthStencilState::SharedPtr mpSetStencilDS;
         DepthStencilState::SharedPtr mpExcludeStencilDS;

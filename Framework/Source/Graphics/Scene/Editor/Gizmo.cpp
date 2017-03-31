@@ -133,7 +133,7 @@ namespace Falcor
         Model::SharedPtr pModel = Model::createFromFile(modelFilename);
         pScene->addModelInstance(pModel, "X", glm::vec3(), glm::radians(glm::vec3(0.0f, 0.0f, -90.0f)));
         pScene->addModelInstance(pModel, "Y");
-        pScene->addModelInstance(pModel, "Z", glm::vec3(), glm::radians(glm::vec3(90.0f, 0.0f, 0.0f)));
+        pScene->addModelInstance(pModel, "Z", glm::vec3(), glm::radians(glm::vec3(0.0f, 90.0f, 0.0f)));
 
         const uint32_t sceneModelID = pScene->getModelCount() - 1;
 

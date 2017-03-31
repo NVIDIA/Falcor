@@ -114,7 +114,7 @@ namespace Falcor
         void deleteAllModels();
 
         // Model instances
-        void addModelInstance(const Model::SharedPtr& pModel, const std::string& instanceName, const glm::vec3& translation = glm::vec3(), const glm::vec3& rotation = glm::vec3(), const glm::vec3& scaling = glm::vec3(1));
+        void addModelInstance(const Model::SharedPtr& pModel, const std::string& instanceName, const glm::vec3& translation = glm::vec3(), const glm::vec3& yawPitchRoll = glm::vec3(), const glm::vec3& scaling = glm::vec3(1));
         // Adds a model instance and shares ownership of it
         void addModelInstance(const ModelInstance::SharedPtr& pInstance);
         uint32_t getModelInstanceCount(uint32_t modelID) const;
@@ -140,9 +140,8 @@ namespace Falcor
         uint32_t getMaterialCount() const { return (uint32_t)mpMaterials.size(); }
         const Material::SharedPtr& getMaterial(uint32_t index) const { return mpMaterials[index]; }
 
-        void enableMaterialHistory();
-        void disableMaterialHistory();
         const MaterialHistory::SharedPtr& getMaterialHistory() { return mpMaterialHistory; }
+        void deleteMaterialHistory();
 
         // Object paths
         uint32_t addPath(const ObjectPath::SharedPtr& pPath);

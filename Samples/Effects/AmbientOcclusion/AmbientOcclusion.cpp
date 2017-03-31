@@ -161,7 +161,7 @@ void AmbientOcclusion::onResizeSwapChain()
     uint32_t width = mpDefaultFBO->getWidth();
     uint32_t height = mpDefaultFBO->getHeight();
 
-    mpCamera->setFovY(float(M_PI / 3.0f));
+    mpCamera->setFocalLength(21.0f);
     mpCamera->setAspectRatio((float)width / (float)height);
 
     Fbo::Desc fboDesc;

@@ -1,5 +1,5 @@
 {
-  "version" : 1,
+  "version" : 2,
   "ambient_intensity":[0.1, 0.1, 0.1],
   "camera_speed" : 0.5,
 
@@ -8,7 +8,7 @@
     "models":[
         {"file" : "ogre\\bs_rest.obj", "name" : "Ogre"}
   ],
-  
+
   "paths": [
       {
         "name":"mainpath",
@@ -21,11 +21,11 @@
     ],
 
   "cameras":[
-    {"name":"Camera 1", 
-    "pos" : [-0.69,0.18,1.36], 
-    "target" : [-0.17,-0.07,0.54], 
+    {"name":"Camera 1",
+    "pos" : [-0.69,0.18,1.36],
+    "target" : [-0.17,-0.07,0.54],
     "up" : [0.0,1.0,0.0],
-    "fovY": 60.00,
+    "focal_length": 21.0,
     "depth_range": [0.05, 1000.0],
     "aspect_ratio":1.333
   }
@@ -35,7 +35,7 @@
   "name":"DirLight0",
   "type":"dir_light",
   "intensity":[1, 1, 1],
-  "direction":[0.5, 0.2, -1]  
+  "direction":[0.5, 0.2, -1]
   }
   ]
 }

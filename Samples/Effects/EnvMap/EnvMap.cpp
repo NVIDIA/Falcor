@@ -109,7 +109,7 @@ void EnvMap::onResizeSwapChain()
 {
     float h = (float)mpDefaultFBO->getHeight();
     float w = (float)mpDefaultFBO->getWidth();
-    mpCamera->setFovY(float(M_PI / 8));
+    mpCamera->setFocalLength(60.0f);
     mpCamera->setAspectRatio(w / h);
     mpCamera->setDepthRange(0.01f, 1000);
 }

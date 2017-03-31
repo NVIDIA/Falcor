@@ -204,7 +204,7 @@ void Shadows::onResizeSwapChain()
     float height = (float)mpDefaultFBO->getHeight();
     float width = (float)mpDefaultFBO->getWidth();
     Camera::SharedPtr activeCamera = mpScene->getActiveCamera();
-    activeCamera->setFovY(float(M_PI / 3));
+    activeCamera->setFocalLength(21.0f);
     float aspectRatio = (width / height);
     activeCamera->setAspectRatio(aspectRatio);
 }

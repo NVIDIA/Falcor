@@ -38,13 +38,16 @@ namespace Falcor
     struct BoundingBox;
     class ConstantBuffer;
 
-   /** Camera class
+    /** Camera class
     */
     class Camera : public IMovableObject, public std::enable_shared_from_this<Camera>
     {
     public:
         using SharedPtr = std::shared_ptr<Camera>;
         using SharedConstPtr = std::shared_ptr<const Camera>;
+
+        // Default dimensions of full frame cameras and 35mm film
+        static const float kDefaultFrameHeight;
 
         /** create a new camera object
         */
@@ -67,20 +70,22 @@ namespace Falcor
         */
         float getAspectRatio() const { return mData.aspectRatio; }
 
-        /** Set the camera's field-of-view in the Y-axis, in radians
+        /** Set camera focal length in mm
         */
-        void setFovY(float fovY) { mData.fovY = fovY; mDirty = true; }
+        void setFocalLength(float length) { mData.focalLength = length; mDirty = true; }
 
-        /** Get the camera's field-of-view in the Y-axis, in radians
+        /** Get the camera's focal length
         */
-        float getFovY() const { return mData.fovY; }
+        float getFocalLength() const { return mData.focalLength; }
 
         /** Get the camera's world space position
         */
         const glm::vec3& getPosition() const { return mData.position; }
+
         /** Get the camera's world space up vector
         */
         const glm::vec3& getUpVector() const {return mData.up;}
+
         /** Get the camera's world space target position
         */
         const glm::vec3& getTarget() const { return mData.target; }
@@ -88,9 +93,11 @@ namespace Falcor
         /** Set the camera's world space position
         */
         void setPosition(const glm::vec3& pos) { mData.position = pos; mDirty = true; }
+
         /** Set the camera's world space up vector
         */
         void setUpVector(const glm::vec3& up) { mData.up = up; mDirty = true; }
+
         /** Set the camera's world space target position
         */
         void setTarget(const glm::vec3& target) { mData.target = target; mDirty = true; }
@@ -169,9 +176,9 @@ namespace Falcor
             static_assert(dataSize % sizeof(float) * 4 == 0, "Camera::CameraData size should be a multiple of 16");
             return dataSize;
         }
+
     private:
         Camera();
-
 
         mutable bool mDirty = true;
         mutable bool mEnablePersistentProjMat = false;
@@ -187,8 +194,8 @@ namespace Falcor
         struct 
         {
             glm::vec3   xyz;    ///< Camera frustum plane position
-            float       negW;                ///< Camera frustum plane, sign of the coordinates
-            glm::vec3   sign;    ///< Camera frustum plane position
+            float       negW;   ///< Camera frustum plane, sign of the coordinates
+            glm::vec3   sign;   ///< Camera frustum plane position
         } mutable mFrustumPlanes[6];
     };
 }

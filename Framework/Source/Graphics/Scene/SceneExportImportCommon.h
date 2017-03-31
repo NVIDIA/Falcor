@@ -54,6 +54,7 @@ namespace Falcor
         static const char* kCamTarget = "target";
         static const char* kCamUp = "up";
         static const char* kCamFovY = "fovY";
+        static const char* kCamFocalLength = "focal_length";
         static const char* kCamDepthRange = "depth_range";
         static const char* kCamAspectRatio = "aspect_ratio";
         static const char* kPathLoop = "loop";

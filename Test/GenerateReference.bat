@@ -1,1 +1,1 @@
-call python.exe CallTestScript.py -np -ne -gr
+call python.exe CallTestScript.py -ne -gr

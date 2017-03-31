@@ -108,17 +108,18 @@ def main():
 			outfile.write('\t\t\t\t\t\t1.0\n')
 			outfile.write('\t\t\t\t\t],\n')
 			outfile.write('\t\t\t\t\t\"rotation\": [\n')
-			outfile.write('\t\t\t\t\t\t' + str(rotX) + ',\n')
 			if args.randRotationY:
 				randRotY = 90 * randint(0, 3)
 			else:
 				randRotY = 0.0
 			#if it is Z up, actually want to rotate Z, not Y. 
 			if args.rotationX:
+				outfile.write('\t\t\t\t\t\t' + str(rotX) + ',\n')
 				outfile.write('\t\t\t\t\t\t0.0,\n')
 				outfile.write('\t\t\t\t\t\t' + str(randRotY) + '\n')
 			else:
 				outfile.write('\t\t\t\t\t\t' + str(randRotY) + ',\n')
+				outfile.write('\t\t\t\t\t\t' + str(rotX) + ',\n')
 				outfile.write('\t\t\t\t\t\t0.0\n')
 			outfile.write('\t\t\t\t\t]\n')
 			if(i == numX - 1 and j == numZ - 1):
@@ -184,7 +185,7 @@ def main():
 	outfile.write('\t\t\t\t1.0,\n')
 	outfile.write('\t\t\t\t0.0\n')
 	outfile.write('\t\t\t],\n')
-	outfile.write('\t\t\t\"fovY\": 60.0,\n')
+	outfile.write('\t\t\t\"focal_length\": 21.0,\n')
 	outfile.write('\t\t\t\"depth_range\": [\n')
 	outfile.write('\t\t\t\t1.0,\n')
 	depthMax = max(xSize * numX, zSize * numZ)

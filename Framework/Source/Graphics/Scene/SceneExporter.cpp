@@ -139,7 +139,12 @@ namespace Falcor
 
         addLiteral(jval, Allocator, SceneKeys::kCameraSpeed, mpScene->getCameraSpeed());
         addLiteral(jval, Allocator, SceneKeys::kLightingScale, mpScene->getLightingScale());
-        addString(jval, Allocator, SceneKeys::kActiveCamera, mpScene->getActiveCamera()->getName());
+
+        if (mpScene->getCameraCount() > 0)
+        {
+            addString(jval, Allocator, SceneKeys::kActiveCamera, mpScene->getActiveCamera()->getName());
+        }
+
         addVector(jval, Allocator, SceneKeys::kAmbientIntensity, mpScene->getAmbientIntensity());
     }
 
@@ -208,12 +213,7 @@ namespace Falcor
             addVector(jsonInstance, allocator, SceneKeys::kScalingVec, pInstance->getScaling());
 
             // Translate rotation to degrees
-            glm::vec3 rotation = pInstance->getEulerRotation();
-            for (uint32_t c = 0; c < 3; c++)
-            {
-                rotation[c] = glm::degrees(rotation[c]);
-            }
-
+            glm::vec3 rotation = glm::degrees(pInstance->getRotation());
             addVector(jsonInstance, allocator, SceneKeys::kRotationVec, rotation);
 
             jsonInstanceArray.PushBack(jsonInstance, allocator);
@@ -312,7 +312,7 @@ namespace Falcor
         addVector(jsonCamera, allocator, SceneKeys::kCamPosition, pCamera->getPosition());
         addVector(jsonCamera, allocator, SceneKeys::kCamTarget, pCamera->getTarget());
         addVector(jsonCamera, allocator, SceneKeys::kCamUp, pCamera->getUpVector());
-        addLiteral(jsonCamera, allocator, SceneKeys::kCamFovY, glm::degrees(pCamera->getFovY()));
+        addLiteral(jsonCamera, allocator, SceneKeys::kCamFocalLength, pCamera->getFocalLength());
         glm::vec2 depthRange;
         depthRange[0] = pCamera->getNearPlane();
         depthRange[1] = pCamera->getFarPlane();

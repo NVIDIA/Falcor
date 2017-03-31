@@ -76,14 +76,14 @@ namespace Falcor
         /** Constructs a object instance with a transform
             \param[in] pObject Object to create an instance of
             \param[in] translation Base translation of the instance
-            \param[in] rotation Euler angle rotations of the instance
+            \param[in] yawPitchRoll Rotation of the instance in radians
             \param[in] scale Base scale of the instance
             \param[in] name Name of the instance
             \return A new instance of the object
         */
-        static SharedPtr create(const typename ObjectType::SharedPtr& pObject, const glm::vec3& translation, const glm::vec3& rotation, const glm::vec3& scale, const std::string& name = "")
+        static SharedPtr create(const typename ObjectType::SharedPtr& pObject, const glm::vec3& translation, const glm::vec3& yawPitchRoll, const glm::vec3& scale, const std::string& name = "")
         {
-            return SharedPtr(new ObjectInstance<ObjectType>(pObject, translation, rotation, scale, name));
+            return SharedPtr(new ObjectInstance<ObjectType>(pObject, translation, yawPitchRoll, scale, name));
         }
 
         /** Gets object for which this is an instance of
@@ -143,12 +143,12 @@ namespace Falcor
         const glm::vec3& getScaling() const { return mBase.scale; }
 
         /** Sets orientation of the instance
-            \param[in] rotation Euler angles of rotation
+            \param[in] yawPitchRoll Yaw-Pitch-Roll rotation in radians
         */
-        void setRotation(const glm::vec3& rotation)
+        void setRotation(const glm::vec3& yawPitchRoll)
         {
-            // Construct matrix from Euler angles and take upper 3x3
-            const glm::mat3 rotMtx(glm::eulerAngleXYZ(rotation[0], rotation[1], rotation[2]));
+            // Construct matrix from angles and take upper 3x3
+            const glm::mat3 rotMtx(glm::yawPitchRoll(yawPitchRoll[0], yawPitchRoll[1], yawPitchRoll[2]));
 
             // Get look-at info
             mBase.up = rotMtx[1];
@@ -157,15 +157,15 @@ namespace Falcor
             mBase.matrixDirty = true;
         }
 
-        /** Gets Euler angle rotations for the instance
-            \return Vec3 containing Euler angle rotations
+        /** Gets rotation for the instance
+            \return Yaw-Pitch-Roll rotations in radians
         */
-        glm::vec3 getEulerRotation() const 
+        glm::vec3 getRotation() const 
         {
             glm::vec3 result;
 
             glm::mat4 rotationMtx = createMatrixFromLookAt(mBase.translation, mBase.target, mBase.up);
-            glm::extractEulerAngleXYZ(rotationMtx, result[0], result[1], result[2]);
+            glm::extractEulerAngleXYZ(rotationMtx, result[1], result[0], result[2]); // YawPitchRoll is YXZ
 
             return result;
         }
@@ -255,10 +255,10 @@ namespace Falcor
             return translationMtx * rotationMtx * scalingMtx;
         }
 
-        static glm::mat4 calculateTransformMatrix(const glm::vec3& translation, const glm::vec3& rotation, const glm::vec3& scale)
+        static glm::mat4 calculateTransformMatrix(const glm::vec3& translation, const glm::vec3& yawPitchRoll, const glm::vec3& scale)
         {
             glm::mat4 translationMtx = glm::translate(glm::mat4(), translation);
-            glm::mat4 rotationMtx = glm::eulerAngleXYZ(rotation[0], rotation[1], rotation[2]);
+            glm::mat4 rotationMtx = glm::yawPitchRoll(yawPitchRoll[0], yawPitchRoll[1], yawPitchRoll[2]);
             glm::mat4 scalingMtx = glm::scale(glm::mat4(), scale);
 
             return translationMtx * rotationMtx * scalingMtx;
@@ -285,11 +285,11 @@ namespace Falcor
             mBase.scale = scale;
         }
 
-        ObjectInstance(const typename ObjectType::SharedPtr& pObject, const glm::vec3& translation, const glm::vec3& rotation, const glm::vec3& scale, const std::string& name = "")
+        ObjectInstance(const typename ObjectType::SharedPtr& pObject, const glm::vec3& translation, const glm::vec3& yawPitchRoll, const glm::vec3& scale, const std::string& name = "")
             : ObjectInstance(pObject, name)
         {
             mBase.translation = translation;
-            setRotation(rotation);
+            setRotation(yawPitchRoll);
             mBase.scale = scale;
         }
 

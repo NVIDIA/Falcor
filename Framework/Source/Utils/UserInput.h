@@ -59,7 +59,7 @@ namespace Falcor
         };
 
         Type type;                  ///< Event Type;
-        glm::vec2 pos;	         ///< Normalized coordinates x,y in range [0, 1]. (0,0) is the top-left corner of the screen.
+        glm::vec2 pos;	         ///< Normalized coordinates x,y in range [0, 1]. (0,0) is the top-left corner of the window.
         glm::vec2 wheelDelta;    ///< If the current event is CMouseEvent#Type#Wheel, the change in wheel scroll. Otherwise zero.
         InputModifiers mods;    ///< Keyboard modifiers. Only valid if the event Type is one the button events
     };

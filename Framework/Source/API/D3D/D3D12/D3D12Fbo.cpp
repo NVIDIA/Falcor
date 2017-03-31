@@ -104,9 +104,8 @@ namespace Falcor
 
     bool Fbo::checkStatus() const
     {
-        if (mIsDirty)
+        if (mpDesc == nullptr)
         {
-            mIsDirty = false;
             return calcAndValidateProperties();
         }
         return true;
