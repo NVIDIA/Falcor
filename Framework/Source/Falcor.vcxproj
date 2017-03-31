@@ -449,6 +449,7 @@
     <ClCompile Include="Utils\Math\ParallelReduction.cpp" />
     <ClCompile Include="Utils\MonitorInfo.cpp" />
     <ClCompile Include="Utils\Picking\Picking.cpp" />
+    <ClCompile Include="Utils\PixelZoom.cpp" />
     <ClCompile Include="Utils\Profiler.cpp" />
     <ClCompile Include="Utils\ProgressBarWin.cpp" />
     <ClCompile Include="Utils\Psychophysics\Experiment.cpp" />
@@ -859,6 +860,7 @@
     <ClInclude Include="Utils\MonitorInfo.h" />
     <ClInclude Include="Utils\OS.h" />
     <ClInclude Include="Utils\Picking\Picking.h" />
+    <ClInclude Include="Utils\PixelZoom.h" />
     <ClInclude Include="Utils\Profiler.h" />
     <ClInclude Include="Utils\ProgressBar.h" />
     <ClInclude Include="Utils\Psychophysics\Experiment.h" />

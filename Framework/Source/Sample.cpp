@@ -76,7 +76,10 @@ namespace Falcor
         {
             return;
         }
-            
+        
+        //Checks if should toggle zoom
+        mpPixelZoom->onKeyboardEvent(keyEvent);
+
         // Consume system messages first
         if(keyEvent.type == KeyboardEvent::Type::KeyPressed)
         {
@@ -138,6 +141,7 @@ namespace Falcor
         {
             return;
         }
+        mpPixelZoom->onMouseEvent(mouseEvent);
         onMouseEvent(mouseEvent);
     }
 
@@ -156,6 +160,7 @@ namespace Falcor
         mpDefaultPipelineState.reset();
         mpDefaultFBO.reset();
         mpTextRenderer.reset();
+        mpPixelZoom.reset();
         mpRenderContext.reset();
         gpDevice->cleanup();
         gpDevice.reset();
@@ -226,6 +231,8 @@ namespace Falcor
 
         // Load and run
         mArgList.parseCommandLine(GetCommandLineA());
+        mpPixelZoom = PixelZoom::create();
+        mpPixelZoom->init(mpDefaultFBO.get());
         onLoad();
         pBar = nullptr;
         mpWindow->msgLoop();
@@ -259,6 +266,8 @@ namespace Falcor
             "  'F12'     - Capture screenshot\n"
             "  'Shift+F12' - Video capture\n"
             "  '='       - Pause\\resume timer\n"
+            "  'Z'       - Zoom in on a pixel\n"
+            "  'MouseWheel' - Change level of zoom\n"
 #if _PROFILING_ENABLED
             "  'P'       - Enable profiling\n";
 #else
@@ -340,6 +349,7 @@ namespace Falcor
         }
 
         renderText(getFpsMsg(), glm::vec2(10, 10));
+        mpPixelZoom->render(mpRenderContext.get(), gpDevice->getSwapChainFbo().get());
 
         captureVideoFrame();
         if(mCaptureScreen)
@@ -401,6 +411,7 @@ namespace Falcor
     void Sample::resizeSwapChain(uint32_t width, uint32_t height)
     {
         mpWindow->resize(width, height);
+        mpPixelZoom->init(gpDevice->getSwapChainFbo().get());
     }
 
     bool Sample::isKeyPressed(const KeyboardEvent::Key& key) const 

@@ -38,6 +38,7 @@
 #include "Utils/Video/VideoEncoderUI.h"
 #include "API/Device.h"
 #include "ArgList.h"
+#include "Utils/PixelZoom.h"
 
 namespace Falcor
 {
@@ -204,5 +205,6 @@ namespace Falcor
 
         TextRenderer::UniquePtr mpTextRenderer;
         std::set<KeyboardEvent::Key> mPressedKeys;
+        PixelZoom::SharedPtr mpPixelZoom;
     };
 };
