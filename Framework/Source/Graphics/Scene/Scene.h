@@ -140,9 +140,8 @@ namespace Falcor
         uint32_t getMaterialCount() const { return (uint32_t)mpMaterials.size(); }
         const Material::SharedPtr& getMaterial(uint32_t index) const { return mpMaterials[index]; }
 
-        void enableMaterialHistory();
-        void disableMaterialHistory();
         const MaterialHistory::SharedPtr& getMaterialHistory() { return mpMaterialHistory; }
+        void deleteMaterialHistory();
 
         // Object paths
         uint32_t addPath(const ObjectPath::SharedPtr& pPath);

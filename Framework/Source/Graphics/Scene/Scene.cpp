@@ -49,11 +49,14 @@ namespace Falcor
         return SharedPtr(new Scene());
     }
 
-    Scene::Scene() : mId(sSceneCounter++)
+    Scene::Scene()
+        : mId(sSceneCounter++)
     {
         // Reset all global id counters recursively
         Model::resetGlobalIdCounter();
         Light::resetGlobalIdCounter();
+
+        mpMaterialHistory = MaterialHistory::create();
     }
 
     Scene::~Scene() = default;
@@ -257,15 +260,7 @@ namespace Falcor
         mpMaterials.erase(mpMaterials.begin() + materialID);
     }
 
-    void Scene::enableMaterialHistory()
-    {
-        if (mpMaterialHistory == nullptr)
-        {
-            mpMaterialHistory = MaterialHistory::create();
-        }
-    }
-
-    void Scene::disableMaterialHistory()
+    void Scene::deleteMaterialHistory()
     {
         mpMaterialHistory = nullptr;
     }

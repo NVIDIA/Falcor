@@ -411,8 +411,6 @@ namespace Falcor
     {
         mpDebugDrawer = DebugDrawer::create();
 
-        mpScene->enableMaterialHistory();
-
         initializeEditorRendering();
         initializeEditorObjects();
 

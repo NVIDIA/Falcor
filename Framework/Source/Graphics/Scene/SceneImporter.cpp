@@ -231,12 +231,9 @@ namespace Falcor
             }
             else if (keyName == SceneKeys::kMaterialOverrides)
             {
-                if (is_set(mSceneLoadFlags, Scene::LoadFlags::StoreMaterialHistory))
+                if (setMaterialOverrides(jval->value, pModel) == false)
                 {
-                    if (setMaterialOverrides(jval->value, pModel) == false)
-                    {
-                        return false;
-                    }
+                    return false;
                 }
             }
             else if(keyName == SceneKeys::kModelInstances)
@@ -1253,11 +1250,6 @@ namespace Falcor
             // create the scene
             mpScene = Scene::create();
 
-            if (is_set(mSceneLoadFlags, Scene::LoadFlags::StoreMaterialHistory))
-            {
-                mpScene->enableMaterialHistory();
-            }
-
             if(topLevelLoop() == false)
             {
                 return nullptr;
@@ -1266,6 +1258,11 @@ namespace Falcor
             if(is_set(mSceneLoadFlags, Scene::LoadFlags::GenerateAreaLights))
             {
                 mpScene->createAreaLights();
+            }
+
+            if (is_set(mSceneLoadFlags, Scene::LoadFlags::StoreMaterialHistory) == false)
+            {
+                mpScene->deleteMaterialHistory();
             }
 
             return mpScene;
