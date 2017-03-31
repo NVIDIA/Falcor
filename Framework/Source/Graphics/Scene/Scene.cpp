@@ -152,7 +152,7 @@ namespace Falcor
         return (uint32_t)(mModels[modelID].size());
     }
 
-    void Scene::addModelInstance(const Model::SharedPtr& pModel, const std::string& instanceName, const glm::vec3& translation, const glm::vec3& rotation, const glm::vec3& scaling)
+    void Scene::addModelInstance(const Model::SharedPtr& pModel, const std::string& instanceName, const glm::vec3& translation, const glm::vec3& yawPitchRoll, const glm::vec3& scaling)
     {
         int32_t modelID = -1;
 
@@ -173,7 +173,7 @@ namespace Falcor
             modelID = (int32_t)mModels.size() - 1;
         }
 
-        mModels[modelID].push_back(ModelInstance::create(pModel, translation, rotation, scaling, instanceName));
+        mModels[modelID].push_back(ModelInstance::create(pModel, translation, yawPitchRoll, scaling, instanceName));
     }
 
     void Scene::addModelInstance(const ModelInstance::SharedPtr& pInstance)

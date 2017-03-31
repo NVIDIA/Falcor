@@ -157,12 +157,6 @@ namespace Falcor
                     }
 
                     rotation = glm::radians(rotation);
-
-                    // Version 1 files stores rotation in yaw-pitch-roll, which is YXZ, so X and Y must be flipped
-                    if (mpScene->getVersion() == 1)
-                    {
-                        rotation = vec3(rotation.y, rotation.x, rotation.z);
-                    }
                 }
                 else
                 {

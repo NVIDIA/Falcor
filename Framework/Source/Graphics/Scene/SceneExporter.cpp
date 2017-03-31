@@ -213,12 +213,7 @@ namespace Falcor
             addVector(jsonInstance, allocator, SceneKeys::kScalingVec, pInstance->getScaling());
 
             // Translate rotation to degrees
-            glm::vec3 rotation = pInstance->getEulerRotation();
-            for (uint32_t c = 0; c < 3; c++)
-            {
-                rotation[c] = glm::degrees(rotation[c]);
-            }
-
+            glm::vec3 rotation = glm::degrees(pInstance->getRotation());
             addVector(jsonInstance, allocator, SceneKeys::kRotationVec, rotation);
 
             jsonInstanceArray.PushBack(jsonInstance, allocator);
