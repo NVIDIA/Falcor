@@ -32,17 +32,42 @@
 
 namespace Falcor
 {
-    std::set<Fbo::Desc> Fbo::sDescs;
+    std::unordered_set<Fbo::Desc, Fbo::DescHash> Fbo::sDescs;
 
-    bool Fbo::Desc::operator<(const Fbo::Desc& other) const 
+    size_t Fbo::DescHash::operator()(const Fbo::Desc& d) const
     {
-        if (mColorTargets.size() < other.mColorTargets.size()) return true;
-        for (size_t i = 0; i < mColorTargets.size(); i++)
+        size_t hash = 0;
+        std::hash<uint32_t> u32hash;
+        std::hash<bool> bhash;
+        for (uint32_t i = 0; i < getMaxColorTargetCount(); i++)
         {
-            if (mColorTargets[i] < other.mColorTargets[i]) return true;
+            uint32_t format = (uint32_t)d.getColorTargetFormat(i);
+            format <<= i;
+            hash |= u32hash(format) >> i;
+            hash |= bhash(d.isColorTargetUav(i)) << i;
         }
-        if (mDepthStencilTarget < other.mDepthStencilTarget) return true;
-        if (mSampleCount < other.mSampleCount) return true;
+
+        uint32_t format = (uint32_t)d.getDepthStencilFormat();
+        hash |= u32hash(format);
+        hash |= bhash(d.isDepthStencilUav());
+        hash |= u32hash(d.getSampleCount());
+
+        return hash;
+    }
+
+    bool Fbo::Desc::operator==(const Fbo::Desc& other) const
+    {
+        if (mColorTargets.size() != other.mColorTargets.size()) return false;
+
+        else if (mColorTargets.size() < other.mColorTargets.size())
+        {
+            for (size_t i = 0; i < mColorTargets.size(); i++)
+            {
+                if (mColorTargets[i] != other.mColorTargets[i]) return false;
+            }
+            if (mDepthStencilTarget != other.mDepthStencilTarget) return false;
+            if (mSampleCount != other.mSampleCount) return false;
+        }
         return false;
     }
 

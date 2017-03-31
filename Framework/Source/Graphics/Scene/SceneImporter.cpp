@@ -1116,7 +1116,7 @@ namespace Falcor
             }
             else if(key == SceneKeys::kCamFovY) // Version 1
             {
-                if (mpScene->getVersion() != 1)
+                if (mpScene->getVersion() > 1)
                 {
                     error("Camera FOV is only valid in scene version 1. Ignoring value.");
                     return false;

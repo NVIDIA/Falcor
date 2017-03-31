@@ -29,7 +29,7 @@
 #include "glm/vec4.hpp"
 #include "Texture.h"
 #include "Utils/Bitmap.h"
-#include <set>
+#include <unordered_set>
 
 namespace Falcor
 {
@@ -58,7 +58,7 @@ namespace Falcor
             bool isDepthStencilUav() const { return mDepthStencilTarget.allowUav; }
             uint32_t getSampleCount() const { return mSampleCount; }
 
-            bool operator<(const Desc& other) const;
+            bool operator==(const Desc& other) const;
         private:
             struct TargetDesc
             {
@@ -66,13 +66,10 @@ namespace Falcor
                 TargetDesc(ResourceFormat f, bool uav) : format(f), allowUav(uav) {}
                 ResourceFormat format = ResourceFormat::Unknown;
                 bool allowUav = false;
+                
+                bool operator==(const TargetDesc& other) const {return (format == other.format) && (allowUav == other.allowUav); }
 
-                bool operator<(const TargetDesc& other) const
-                {
-                    if ((uint32_t)format < (uint32_t)other.format) return true;
-                    if (allowUav < allowUav) return true;
-                    return false;
-                }
+                bool operator!=(const TargetDesc& other) const { return !(*this == other); }
             };
 
             std::vector<TargetDesc> mColorTargets;
@@ -162,8 +159,14 @@ namespace Falcor
             uint32_t arraySize = 1;
             uint32_t firstArraySlice = 0;
         };
+
+        struct DescHash
+        {
+            std::size_t operator()(const Desc& d) const;
+        };
+
     private:
-        static std::set<Desc> sDescs;
+        static std::unordered_set<Desc, DescHash> sDescs;
 
         bool verifyAttachment(const Attachment& attachment) const;
         bool calcAndValidateProperties() const;
