@@ -221,7 +221,7 @@ namespace Falcor
 
         /** Get the root signature object
         */
-        RootSignature::SharedPtr getRootSignature() const;
+        RootSignature::SharedPtr const& getRootSignature() const;
 
         template<typename ViewType>
         struct ResourceData
@@ -261,6 +261,14 @@ namespace Falcor
     public:
         std::vector<ComponentInstance::SharedPtr> mAssignedComponents;
         mutable bool mRootSignatureDirty = false;
+
+        typedef std::vector<SpireModule*> ComponentClassList;
+        ComponentClassList mAssignedComponentClasses;
+
+
+        mutable std::map<ComponentClassList, RootSignature::SharedPtr> mRootSignatureCache;
+
+
 
         RootSignature::SharedPtr createRootSignature() const;
     };

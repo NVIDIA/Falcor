@@ -116,12 +116,12 @@ namespace Falcor
 //        ComponentClassList mSpireComponentClassList;
         VariantKey mVariantKey;
         DefineList& getDefineList() { return mVariantKey.first; }
-        ComponentClassList& getComponentClassList() { return mVariantKey.second; }
+        ComponentClassList& getComponentClassList()  const { return const_cast<Program*>(this)->mVariantKey.second; }
 
         // We are doing lazy compilation, so these are mutable
         mutable bool mLinkRequired = true;
         // SPIRE: This is our de facto "variant database"
-        mutable std::map<VariantKey, ProgramVersion::SharedConstPtr> mProgramVersions;
+        mutable std::map<ComponentClassList, ProgramVersion::SharedConstPtr> mProgramVersions;
 
         mutable ProgramVersion::SharedConstPtr mpActiveProgram = nullptr;
 

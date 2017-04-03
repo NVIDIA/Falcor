@@ -98,10 +98,11 @@ namespace Falcor
 
     GraphicsStateObject::SharedPtr GraphicsState::getGSO(const GraphicsVars* pVars)
     {
-        if (mpProgram && mpVao)
-        {
-            mpVao->getVertexLayout()->addVertexAttribDclToProg(mpProgram.get());
-        }
+// SPIRE: This shouldn't be needed, since we don't use the `#define` interface any more
+//        if (mpProgram && mpVao)
+//        {
+//            mpVao->getVertexLayout()->addVertexAttribDclToProg(mpProgram.get());
+//        }
 
         // SPIRE: specialize program to variables
         if(mpProgram && pVars)
@@ -109,7 +110,7 @@ namespace Falcor
             size_t componentCount = pVars->getComponentCount();
             for(size_t cc = 0; cc < componentCount; ++cc)
             {
-                auto component = pVars->mAssignedComponents[cc];
+                auto& component = pVars->mAssignedComponents[cc];
                 mpProgram->setComponent(cc, component->getSpireComponentClass());
             }
         }

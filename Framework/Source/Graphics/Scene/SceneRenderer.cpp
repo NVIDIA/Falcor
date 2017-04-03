@@ -64,14 +64,13 @@ namespace Falcor
     {
         if(sWorldMatOffset == ConstantBuffer::kInvalidOffset)
         {
-            const auto pPerMeshCbData = pReflector->getBufferDesc(kPerMeshCbName, ProgramReflection::BufferReflection::Type::Constant);
+            auto pPerMeshCbData = ShaderRepository::Instance().findComponentClass("InternalPerMeshCB_T");
 
             if (pPerMeshCbData != nullptr)
             {
-// SPIRE:
-//                sWorldMatOffset = pPerMeshCbData->getVariableData("gWorldMat[0]")->location;
-//                sMeshIdOffset = pPerMeshCbData->getVariableData("gMeshId")->location;
-//                sDrawIDOffset = pPerMeshCbData->getVariableData("gDrawId[0]")->location;
+                sWorldMatOffset = pPerMeshCbData->getVariableData("gWorldMat", true)->location;
+                sMeshIdOffset = pPerMeshCbData->getVariableData("gMeshId")->location;
+                sDrawIDOffset = pPerMeshCbData->getVariableData("gDrawId", true)->location;
             }
         }
 
@@ -83,7 +82,7 @@ namespace Falcor
             {
 // SPIRE:
 //                sCameraDataOffset = pPerFrameCbData->getVariableData("gCam.viewMat")->location;
-                sCameraDataOffset = pPerFrameCbData->getVariableData("viewMat")->location;
+//                sCameraDataOffset = pPerFrameCbData->getVariableData("viewMat")->location;
             }
         }
     }
@@ -173,19 +172,23 @@ namespace Falcor
             worldMat = pModelInstance->getTransformMatrix() * pMeshInstance->getTransformMatrix();
         }
 
-         auto componentClass = ShaderRepository::Instance().findComponentClass("InternalPerMeshCB_T");
+        // We are re-using a single component instance for "transient" data, which means that
+        // we will end up churning through descriptor sets a bit here...
+        if(!mpPerMeshComponentInstance)
+        {
+            auto componentClass = ShaderRepository::Instance().findComponentClass("InternalPerMeshCB_T");
+            mpPerMeshComponentInstance = ComponentInstance::create(componentClass);
+        }
 
-        // We create a transient component instance here.
-        // TODO: find a way to reclaim this space more cleanly.
-        ComponentInstance::SharedPtr componentInstance = ComponentInstance::create(componentClass);
+        mpPerMeshComponentInstance->setVariable(
+            sWorldMatOffset + drawInstanceID * sizeof(glm::mat4),
+            worldMat);
 
-        componentInstance->setVariable("gWorldMat", worldMat);
-        componentInstance->setVariable("gMeshId", pMesh->getId());
+        mpPerMeshComponentInstance->setVariable(sMeshIdOffset, pMesh->getId());
 
         // Need to set this at the right place...
         int componentIndex = 2;
-//        currentData.pGsoCache->getProgram()->setComponent(componentIndex, componentClass);
-        pContext->getGraphicsVars()->setComponent(componentIndex, componentInstance);
+        pContext->getGraphicsVars()->setComponent(componentIndex, mpPerMeshComponentInstance);
 #endif
 
         return true;

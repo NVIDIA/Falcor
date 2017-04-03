@@ -296,7 +296,9 @@ namespace Falcor
     {
         if (mLinkRequired)
         {
-            const auto& it = mProgramVersions.find(mVariantKey);
+            mLinkRequired = false;
+
+            const auto& it = mProgramVersions.find(getComponentClassList());
             ProgramVersion::SharedConstPtr pVersion = nullptr;
             if (it == mProgramVersions.end())
             {
@@ -306,12 +308,12 @@ namespace Falcor
                 }
                 else
                 {
-                    mProgramVersions[mVariantKey] = mpActiveProgram;
+                    mProgramVersions[getComponentClassList()] = mpActiveProgram;
                 }
             }
             else
             {
-                mpActiveProgram = mProgramVersions[mVariantKey];
+                mpActiveProgram = it->second;
             }
         }
 
@@ -349,6 +351,7 @@ namespace Falcor
                 // TODO: this is where we'd need to enumerate the additional component
                 // classes desired for the "active version"
 
+                logWarning("SPIRE LINK");
                 SpireCompilationResult* spireResult = spEnvCompileShader(
                     mSpireEnv,
                     mSpireShader,

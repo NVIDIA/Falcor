@@ -535,10 +535,10 @@ module InternalPerFrameCB_T
 
 module InternalPerMeshCB_T
 {
-//    param mat4[64] gWorldMat; // If the mesh has bones, these are the bones matrices
-//    param uint[64] gDrawId; // Zero-based order/ID of Mesh Instances drawn per SceneRenderer::renderScene call.
-    param mat4 gWorldMat;
-	param uint gDrawId;
+    param mat4[64] gWorldMat; // If the mesh has bones, these are the bones matrices
+    param uint[64] gDrawId; // Zero-based order/ID of Mesh Instances drawn per SceneRenderer::renderScene call.
+//    param mat4 gWorldMat;
+//	param uint gDrawId;
     param uint gMeshId;
 };
 

@@ -76,9 +76,64 @@ namespace Falcor
         return b;
     }
 
-    static ProgramReflection::Variable::Type getSpireVariableType(
-        char const* spireTypeName)
+    static void extractSpireVariableTypeInfo(
+        char const*                     spireTypeName,
+        ProgramReflection::Variable&    varInfo)
     {
+        // Scan for array markers
+        char const* cursor = spireTypeName;
+        uint32_t arraySize = 0;
+        for(;;)
+        {
+            int c = *cursor++;
+            switch( c )
+            {
+            default:
+                continue;
+
+            case 0:
+                break;
+
+            case '[':
+                {
+                    // HACK: clobber the type-info string we got from Spire,
+                    // so that we can terminate the string where we want...
+                    ((char*)cursor)[-1] = 0;
+
+                    uint32_t size = 0;
+                    for(;;)
+                    {
+                        int d = *cursor++;
+                        switch(d)
+                        {
+                        default:
+                            size = 0;
+                            break;
+
+                        case ']':
+                            break;
+
+                        case '0': case '1': case '2': case '3': case '4':
+                        case '5': case '6': case '7': case '8': case '9':
+                            size = size*10 + (d - '0');
+                            continue;
+                        }
+                        break;
+                    }
+
+                    if(size)
+                    {
+                        if(!arraySize) arraySize = 1;
+                        arraySize *= size;
+                    }
+                    continue;
+                }
+            }
+            break;
+        }
+        varInfo.arraySize = arraySize;
+        // TODO: Spire needs to provide info to fill in `arrayStride`
+
         static const struct
         {
             char const*                         name;
@@ -101,6 +156,7 @@ namespace Falcor
 			ENTRY(uvec2,	Uint2),
 			ENTRY(uvec3,	Uint3),
             ENTRY(uvec4,    Uint4),
+            ENTRY(mat,		Float4x4),
             ENTRY(mat4,		Float4x4),
 			ENTRY(mat3,		Float3x3),
         #undef ENTRY
@@ -111,10 +167,14 @@ namespace Falcor
         for(auto ee = kEntries; ee->name; ++ee)
         {
             if(strcmp(ee->name, spireTypeName) == 0)
-                return ee->type;
+            {
+                varInfo.type = ee->type;
+                return;
+            }
         }
-        //assert(!"unimplemented");
-        return ProgramReflection::Variable::Type::Unknown;
+
+//        assert(!"unimplemented");
+        varInfo.type = ProgramReflection::Variable::Type::Unknown;
     }
 
     ProgramReflection::ComponentClassReflection::SharedPtr ProgramReflection::ComponentClassReflection::create(SpireModule* componentClass)
@@ -151,8 +211,15 @@ namespace Falcor
 					varInfo.arraySize = 0;
 					varInfo.isRowMajor = true;
 					varInfo.location = spireVarInfo.Offset;
-					varInfo.type = getSpireVariableType(spireVarInfo.TypeName);
-					varMap[varName] = varInfo;
+
+                    extractSpireVariableTypeInfo(spireVarInfo.TypeName, varInfo);
+
+                    if(varInfo.arraySize != 0)
+                    {
+                        varInfo.arrayStride = spireVarInfo.Size / varInfo.arraySize;
+                    }
+
+                    varMap[varName] = varInfo;
 				}
 				break;
 

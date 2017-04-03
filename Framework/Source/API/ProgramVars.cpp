@@ -159,13 +159,16 @@ namespace Falcor
         // bit is Falcor policy, rather than a Spire requirement).
 
         mRootSignatureDirty = true;
-        mAssignedComponents.resize(pReflector->getComponentCount());
-        if( pReflector->getComponentCount() > 0 )
+        auto componentCount = pReflector->getComponentCount();
+        mAssignedComponents.resize(componentCount);
+        mAssignedComponentClasses.resize(componentCount);
+        if( componentCount > 0 )
         {
             // There is at least one component, and we assume the first one represents
             // the "direct" parameters of the program...
             auto componentInstance = ComponentInstance::create(pReflector->getComponent(0));
             mAssignedComponents[0] = componentInstance;
+            mAssignedComponentClasses[0] = componentInstance->getSpireComponentClass();
         }
     }
 
@@ -1007,22 +1010,44 @@ namespace Falcor
 
     void ProgramVars::setComponent(uint32_t index, ComponentInstance::SharedPtr const& pComponent)
     {
-        auto newType = pComponent ? pComponent->mpReflector : nullptr;
-        auto oldType = mAssignedComponents[index] ? mAssignedComponents[index]->mpReflector : nullptr;
+        // Check if we already have this component bound, and early exit if possible
+        if(pComponent == mAssignedComponents[index])
+            return;
+        // Otherwise, set the component.
+        mAssignedComponents[index] = pComponent;
 
+        // We are changing components, but check if we are also changing component *class*
+        //
+        // TODO(tfoley): This check is too specific. We really only care if we are changing
+        // to a class with a different parameter signature (what Vulkan would call a
+        // "descriptor set layout"), but we don't currently have a concept that corresponds
+        // to that idea.
+        auto newType = pComponent ? pComponent->getSpireComponentClass() : nullptr;
+        auto oldType = mAssignedComponentClasses[index];
+        //
+        // If we are changing signature too, then keep track of the fact and mark
+        // our root signature dirty.
         if( newType != oldType )
         {
             mRootSignatureDirty = true;
+            mAssignedComponentClasses[index] = newType;
         }
-
-        mAssignedComponents[index] = pComponent;
     }
 
-    RootSignature::SharedPtr ProgramVars::getRootSignature() const
+    RootSignature::SharedPtr const& ProgramVars::getRootSignature() const
     {
         if( mRootSignatureDirty )
         {
-            mpRootSignature = createRootSignature();
+            auto iter = mRootSignatureCache.find(mAssignedComponentClasses);
+            if(iter != mRootSignatureCache.end())
+            {
+                mpRootSignature = iter->second;
+            }
+            else
+            {
+                mpRootSignature = createRootSignature();
+                mRootSignatureCache.insert(std::make_pair(mAssignedComponentClasses, mpRootSignature));
+            }
             mRootSignatureDirty = false;
         }
         return mpRootSignature;
@@ -1031,6 +1056,8 @@ namespace Falcor
 
     RootSignature::SharedPtr ProgramVars::createRootSignature() const
     {
+        logWarning("SPIRE CREATE ROOT SIGNATURE");
+
         // Need to create a root signature that reflects the components we have bound...
 
         // TODO: this can (and should) be cached...

@@ -15,6 +15,9 @@ pipeline StandardPipeline
         return project(vertAttribIn);
     }
     
+    // TODO(tfoley): This should be `uint`
+    [InstanceId] extern @CoarseVertex int sv_instanceID;
+
     extern @Fragment CoarseVertex CoarseVertexIn;
     import(CoarseVertex->Fragment) standardImport<T>()
         require trait IsTriviallyPassable(T)

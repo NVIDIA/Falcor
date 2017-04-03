@@ -25,9 +25,15 @@ template shader ModelViewerShader(
 	using internalPerMesh = InternalPerMeshCB();
 	using VertexAttribs;
 
-	vec3 pos = (internalPerMesh.gWorldMat * vec4(vertPos, 1.0)).xyz;
-	vec3 normal = normalize((internalPerMesh.gWorldMat * vec4(vertNormal, 0.0)).xyz);
-	vec3 bitangent = normalize((internalPerMesh.gWorldMat * vec4(vertBitangent, 0.0)).xyz);
+	// TODO: the per-vertex logic here should actually go in a shared "default vertex shader" component
+
+	// HACK(foley): Making this explicitly per-vertex so that `sv_instanceID` isn't live downstream,
+	// because if it is, then the Spire compiler fails on trying to propagate it along...
+	@CoarseVertex mat4 worldMat = internalPerMesh.gWorldMat[sv_instanceID];
+
+	vec3 pos = (worldMat * vec4(vertPos, 1.0)).xyz;
+	vec3 normal = normalize((worldMat * vec4(vertNormal, 0.0)).xyz);
+	vec3 bitangent = normalize((worldMat * vec4(vertBitangent, 0.0)).xyz);
 
 	public vec4 projCoord = internalPerFrame.viewProjMat * vec4(pos, 1.0);
 
