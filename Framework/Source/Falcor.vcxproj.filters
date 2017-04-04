@@ -477,6 +477,9 @@
     <ClCompile Include="Utils\PixelZoom.cpp">
       <Filter>Utils</Filter>
     </ClCompile>
+    <ClCompile Include="Effects\ParticleSystem\ParticleSystem.cpp">
+      <Filter>Effects\ParticleSystem</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Graphics\Model\Animation.h">
@@ -1576,6 +1579,12 @@
     <ClInclude Include="Utils\PixelZoom.h">
       <Filter>Utils</Filter>
     </ClInclude>
+    <ClInclude Include="Effects\ParticleSystem\ParticleSystem.h">
+      <Filter>Effects\ParticleSystem</Filter>
+    </ClInclude>
+    <ClInclude Include="Data\Effects\ParticleData.h">
+      <Filter>Data\Effects\Particles</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Externals">
@@ -1730,6 +1739,12 @@
     </Filter>
     <Filter Include="Effects\AmbientOcclusion">
       <UniqueIdentifier>{723ff80c-2107-49c1-8a2b-e01f9d4eb6e9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Effects\ParticleSystem">
+      <UniqueIdentifier>{0e68557f-93f7-47e1-8027-61e014ea4895}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Data\Effects\Particles">
+      <UniqueIdentifier>{812ea108-2797-475d-bb2f-d10928cd8c36}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -2127,6 +2142,12 @@
     </FxCompile>
     <FxCompile Include="Data\Framework\Shaders\Blit.vs.hlsl">
       <Filter>Data\Framework\Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="Data\Effects\ParticleEmit.cs.hlsl">
+      <Filter>Data\Effects\Particles</Filter>
+    </FxCompile>
+    <FxCompile Include="Data\Effects\ParticleSimulate.cs.hlsl">
+      <Filter>Data\Effects\Particles</Filter>
     </FxCompile>
   </ItemGroup>
 </Project>
