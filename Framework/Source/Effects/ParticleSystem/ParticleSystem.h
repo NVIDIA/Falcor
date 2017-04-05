@@ -71,8 +71,13 @@ namespace Falcor
         ComputeVars::SharedPtr mSimulateVars;
         ComputeState::SharedPtr mSimulateState;
 
+        ComputeProgram::SharedPtr mPrepSimArgsCs;
+        ComputeVars::SharedPtr mPrepSimArgsVars;
+        ComputeState::SharedPtr mPrepSimArgsState;
+
         StructuredBuffer::SharedPtr mpParticlePool;
         StructuredBuffer::SharedPtr mpIndexList;
+        StructuredBuffer::SharedPtr mpSimulateArgs;
     };
 
 }

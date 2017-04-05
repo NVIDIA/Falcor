@@ -34,7 +34,8 @@ cbuffer PerEmit
 
 RWStructuredBuffer<uint> IndexList;
 RWStructuredBuffer<Particle> ParticlePool;
-RWByteAddressBuffer numAlive;
+ByteAddressBuffer numAlive;
+RWStructuredBuffer<uint> dispatchArgs;
 
 [numthreads(64, 1, 1)]
 void main(int3 groupID : SV_GroupID, int3 threadID : SV_GroupThreadID)
@@ -49,6 +50,18 @@ void main(int3 groupID : SV_GroupID, int3 threadID : SV_GroupThreadID)
         {
             uint indexListCounter = IndexList.IncrementCounter();
             ParticlePool[IndexList[indexListCounter]] = emitData.particles[index];
+
+            //TODO
+            //This should be groupshared memory or something? I think then itll only execute once at end of group?
+            if (numAliveParticles % 64 == 0)
+            {
+                //0-1 are the virrtual address
+                dispatchArgs[1] = numAliveParticles / 64;
+            }
+            else
+            {
+                dispatchArgs[1] = (numAliveParticles / 64) + 1;
+            }
         }
     }
 }

@@ -42,6 +42,7 @@ void Particles::onLoad()
     //Wtf is this computecontext for?
     //mpComputeContext = ComputeContext::create();
     mParticleSystem.init(mpRenderContext.get(), 4096);
+    mpRenderContext->initCommandSignatures();
 }
 
 void Particles::onFrameRender()
@@ -56,7 +57,7 @@ void Particles::onFrameRender()
 
 void Particles::onShutdown()
 {
-
+    mpRenderContext->releaseCommandSignatures();
 }
 
 bool Particles::onKeyEvent(const KeyboardEvent& keyEvent)

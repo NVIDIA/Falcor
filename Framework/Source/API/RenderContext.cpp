@@ -31,10 +31,14 @@
 #include "DepthStencilState.h"
 #include "BlendState.h"
 #include "FBO.h"
+#include "Device.h"
 
 namespace Falcor
 {
     RenderContext::BlitData RenderContext::sBlitData;
+    ID3D12CommandSignature* RenderContext::spDrawCommandSig = nullptr;
+    ID3D12CommandSignature* RenderContext::spDrawIndexCommandSig = nullptr;
+    ID3D12CommandSignature* RenderContext::spDispatchCommandSig = nullptr;
 
     RenderContext::~RenderContext()
     {
@@ -75,6 +79,60 @@ namespace Falcor
 
         setGraphicsVars(mpGraphicsVarsStack.top());
         mpGraphicsVarsStack.pop();
+    }
+
+    void RenderContext::initCommandSignatures()
+    {
+        //Draw
+        D3D12_COMMAND_SIGNATURE_DESC drawSigDesc;
+        drawSigDesc.ByteStride = sizeof(D3D12_DRAW_ARGUMENTS);
+        drawSigDesc.NumArgumentDescs = 1;
+        D3D12_INDIRECT_ARGUMENT_DESC drawArgDesc;
+        drawArgDesc.Type = D3D12_INDIRECT_ARGUMENT_TYPE_DRAW;
+        drawSigDesc.pArgumentDescs = &drawArgDesc;
+        drawSigDesc.NodeMask = 0;
+        gpDevice->getApiHandle()->CreateCommandSignature(&drawSigDesc, nullptr, IID_PPV_ARGS(&spDrawCommandSig));
+
+        //Draw index
+        D3D12_COMMAND_SIGNATURE_DESC drawIndexSigDesc;
+        drawIndexSigDesc.ByteStride = sizeof(D3D12_DRAW_INDEXED_ARGUMENTS);
+        drawIndexSigDesc.NumArgumentDescs = 1;
+        D3D12_INDIRECT_ARGUMENT_DESC drawIndexArgDesc;
+        drawIndexArgDesc.Type = D3D12_INDIRECT_ARGUMENT_TYPE_DRAW_INDEXED;
+        drawIndexSigDesc.pArgumentDescs = &drawIndexArgDesc;
+        drawIndexSigDesc.NodeMask = 0;
+        gpDevice->getApiHandle()->CreateCommandSignature(&drawIndexSigDesc, nullptr, IID_PPV_ARGS(&spDrawIndexCommandSig));
+
+        //dispatch
+        D3D12_COMMAND_SIGNATURE_DESC dispatchSigDesc;
+        dispatchSigDesc.ByteStride = sizeof(D3D12_DISPATCH_ARGUMENTS);
+        dispatchSigDesc.NumArgumentDescs = 1;
+        D3D12_INDIRECT_ARGUMENT_DESC dispatchArgDesc;
+        dispatchArgDesc.Type = D3D12_INDIRECT_ARGUMENT_TYPE_DISPATCH;
+        dispatchSigDesc.pArgumentDescs = &dispatchArgDesc;
+        dispatchSigDesc.NodeMask = 0;
+        gpDevice->getApiHandle()->CreateCommandSignature(&dispatchSigDesc, nullptr, IID_PPV_ARGS(&spDispatchCommandSig));
+    }
+
+    void RenderContext::releaseCommandSignatures()
+    {
+        if (spDrawCommandSig != nullptr)
+        {
+            spDrawCommandSig->Release();
+            spDrawCommandSig = nullptr;
+        }
+
+        if (spDrawIndexCommandSig != nullptr)
+        {
+            spDrawIndexCommandSig->Release();
+            spDrawIndexCommandSig = nullptr;
+        }
+
+        if (spDispatchCommandSig != nullptr)
+        {
+            spDispatchCommandSig->Release();
+            spDispatchCommandSig = nullptr;
+        }
     }
 
     void RenderContext::initBlitData()

@@ -40,8 +40,10 @@ namespace Falcor
         //Shaders
         mEmitCs = ComputeProgram::createFromFile("Effects/ParticleEmit.cs.hlsl");
         mSimulateCs = ComputeProgram::createFromFile("Effects/ParticleSimulate.cs.hlsl");
+        mPrepSimArgsCs = ComputeProgram::createFromFile("Effects/ParticlePrepareSimulateIndirect.cs.hlsl");
 
         //Buffers
+        //IndexList
         std::vector<uint32_t> indices;
         indices.resize(maxParticles);
         uint32_t counter = 0;
@@ -51,14 +53,25 @@ namespace Falcor
             pEmitReflect->getBufferDesc("IndexList", ProgramReflection::BufferReflection::Type::Structured);
         mpIndexList = StructuredBuffer::create(indexListReflect, maxParticles);
         mpIndexList->setBlob(indices.data(), 0, indices.size() * sizeof(uint32_t));
+        //ParticlePool
         ProgramReflection::BufferReflection::SharedConstPtr particlePoolReflect =
             pEmitReflect->getBufferDesc("ParticlePool", ProgramReflection::BufferReflection::Type::Structured);
         mpParticlePool = StructuredBuffer::create(particlePoolReflect, maxParticles);
+        //Simulate Dispatch indirect Args
+        mpSimulateArgs = StructuredBuffer::create(pEmitReflect->
+            getBufferDesc("dispatchArgs", ProgramReflection::BufferReflection::Type::Structured), sizeof(D3D12_DISPATCH_ARGUMENTS) / sizeof(uint32_t),
+            Resource::BindFlags::UnorderedAccess | Resource::BindFlags::IndirectArg);
+        D3D12_DISPATCH_ARGUMENTS initialArgs;
+        initialArgs.ThreadGroupCountX = 1;
+        initialArgs.ThreadGroupCountY = 1;
+        initialArgs.ThreadGroupCountZ = 1;
+        mpSimulateArgs->setBlob(&initialArgs, 0, sizeof(D3D12_DISPATCH_ARGUMENTS));
 
         //Vars
         mEmitVars = ComputeVars::create(pEmitReflect);
         mEmitVars->setStructuredBuffer("IndexList", mpIndexList);
         mEmitVars->setStructuredBuffer("ParticlePool", mpParticlePool);
+        mEmitVars->setStructuredBuffer("dispatchArgs", mpSimulateArgs);
         mEmitVars->setRawBuffer("numAlive", mpIndexList->getUAVCounter());
         mSimulateVars = ComputeVars::create(mSimulateCs->getActiveVersion()->getReflector());
         mSimulateVars->setStructuredBuffer("IndexList", mpIndexList);
@@ -70,7 +83,8 @@ namespace Falcor
         mEmitState->setProgram(mEmitCs);
         mSimulateState = ComputeState::create();
         mSimulateState->setProgram(mSimulateCs);
-
+        mPrepSimArgsState = ComputeState::create();
+        mPrepSimArgsState->setProgram(mPrepSimArgsCs);
     }
 
     void ParticleSystem::emit(RenderContext* pCtx, uint32_t num)
@@ -112,9 +126,7 @@ namespace Falcor
         pCtx->pushComputeState(mSimulateState);
         mSimulateVars->getConstantBuffer(0)->setBlob(&perFrame, 0u, sizeof(SimulatePerFrame));
         pCtx->pushComputeVars(mSimulateVars);
-        //TODO
-        //This should be dispatch indirect. whatever. I'll just simulate everything for now
-        pCtx->dispatch(1, mMaxParticles / 64, 1);
+        pCtx->DispatchIndirect(mpSimulateArgs.get(), 0, 1);
         pCtx->popComputeVars();
         pCtx->popComputeState();
     }

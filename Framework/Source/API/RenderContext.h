@@ -118,6 +118,14 @@ namespace Falcor
             \param[in] srcRect Source rectangle to blit from, specified by [left, up, right, down]
             \param[in] dstRect Target rectangle to blit to, specified by [left, up, right, down]
         */
+
+        static void initCommandSignatures();
+        static void releaseCommandSignatures();
+        void DrawIndirect(Resource* argBuffer, uint64_t argBufferOffset, uint32_t maxCommandCount);
+        void DrawIndexedIndirect(Resource* argBuffer, uint64_t argBufferOffset, uint32_t maxCommandCount);
+        //TODO move this to compute context
+        void DispatchIndirect(Resource* argBuffer, uint64_t argBufferOffset, uint32_t maxCommandCount);
+
         void blit(ShaderResourceView::SharedPtr pSrc, RenderTargetView::SharedPtr pDst, const uvec4& srcRect = uvec4(-1), const uvec4& dstRect = uvec4(-1), Sampler::Filter = Sampler::Filter::Linear);
 
         /** Set the program variables for graphics
@@ -160,6 +168,10 @@ namespace Falcor
         std::stack<GraphicsState::SharedPtr> mPipelineStateStack;
         std::stack<GraphicsVars::SharedPtr> mpGraphicsVarsStack;
 
+        static ID3D12CommandSignature* spDrawCommandSig;
+        static ID3D12CommandSignature* spDrawIndexCommandSig;
+        static ID3D12CommandSignature* spDispatchCommandSig;
+
         struct BlitData
         {
             FullScreenPass::UniquePtr pPass;
@@ -185,7 +197,7 @@ namespace Falcor
 
         // Internal functions used by the API layers
         void applyProgramVars();
-        void applyGraphicsState();
+        void applyGraphicsState();  
         void prepareForDraw();
     };
 }
