@@ -35,8 +35,8 @@ namespace Falcor
         // Must have at least 1 VB
         if(vbDesc.size() == 0)
         {
-            logError("Error when creating VAO. Must have at least 1 vertex buffer");
-            return false;
+            //empty vao is fine
+            return true;
         }
 
         if (pLayout->getBufferCount() != vbDesc.size())

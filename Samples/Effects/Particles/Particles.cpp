@@ -43,6 +43,8 @@ void Particles::onLoad()
     //mpComputeContext = ComputeContext::create();
     mParticleSystem.init(mpRenderContext.get(), 4096);
     mpRenderContext->initCommandSignatures();
+    mpCamera = Camera::create();
+    mpCamController.attachCamera(mpCamera);
 }
 
 void Particles::onFrameRender()
@@ -50,9 +52,12 @@ void Particles::onFrameRender()
 	const glm::vec4 clearColor(0.38f, 0.52f, 0.10f, 1);
  	mpRenderContext->clearFbo(mpDefaultFBO.get(), clearColor, 1.0f, 0, FboAttachmentType::All);
 
-    mParticleSystem.emit(mpRenderContext.get(), 2);
+    mpCamController.update();
+
+    mParticleSystem.emit(mpRenderContext.get(), 1);
     //This should actually be dt from framerate object
     mParticleSystem.update(mpRenderContext.get(), 0.016f);
+    mParticleSystem.render(mpRenderContext.get(), mpCamera->getViewMatrix(), mpCamera->getProjMatrix());
 }
 
 void Particles::onShutdown()
@@ -62,11 +67,13 @@ void Particles::onShutdown()
 
 bool Particles::onKeyEvent(const KeyboardEvent& keyEvent)
 {
+    mpCamController.onKeyEvent(keyEvent);
     return false;
 }
 
 bool Particles::onMouseEvent(const MouseEvent& mouseEvent)
 {
+    mpCamController.onMouseEvent(mouseEvent);
     return false;
 }
 

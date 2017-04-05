@@ -37,13 +37,13 @@ namespace Falcor
     public:
         struct EmitterData
         {
-            vec3 spawnPos = vec3(0.f, 0.f, 0.f);
+            vec3 spawnPos = vec3(0.f, 0.f, -5.f);
             vec3 randSpawnPos = vec3(0.f, 0.f, 0.f);
-            vec3 vel = vec3(0.f, 0.f, 0.f);
+            vec3 vel = vec3(0.f, 2.f, 0.f);
             vec3 randVel = vec3(1.f, 1.f, 1.f);
-            vec3 accel = vec3(0.f, 0.f, 0.f);
+            vec3 accel = vec3(0.f, -1.f, 0.f);
             vec3 randAccel = vec3(0.f, 0.f, 0.f);
-            f32 duration = 5.f;
+            f32 duration = 7.f;
             f32 randDuration = 0.f;
             //scale
             //rot
@@ -52,6 +52,7 @@ namespace Falcor
         void init(RenderContext* pCtx, uint32_t maxParticles);
         void emit(RenderContext* pCtx, uint32_t num);
         void update(RenderContext* pCtx, float dt);
+        void render(RenderContext* pCtx, glm::mat4 view, glm::mat4 proj);
 
 
     private:
@@ -59,6 +60,12 @@ namespace Falcor
         {
             float dt;
             uint32_t maxParticles;
+        };
+
+        struct VSPerFrame
+        {
+            glm::mat4 view;
+            glm::mat4 proj;
         };
 
         uint32_t mMaxParticles;
@@ -71,13 +78,19 @@ namespace Falcor
         ComputeVars::SharedPtr mSimulateVars;
         ComputeState::SharedPtr mSimulateState;
 
-        ComputeProgram::SharedPtr mPrepSimArgsCs;
-        ComputeVars::SharedPtr mPrepSimArgsVars;
-        ComputeState::SharedPtr mPrepSimArgsState;
+        GraphicsProgram::SharedPtr mDrawParticles;
+        GraphicsVars::SharedPtr mpDrawVars;
+        GraphicsState::SharedPtr mpDrawState;
 
         StructuredBuffer::SharedPtr mpParticlePool;
         StructuredBuffer::SharedPtr mpIndexList;
-        StructuredBuffer::SharedPtr mpSimulateArgs;
+        //bytes 0 - 11 are for simulate dispatch, bytes 12 - 27 are for draw
+        StructuredBuffer::SharedPtr mpIndirectArgs;
+        //todo 
+        //This shouldnt be in the class, it should just get added to a draw gfx state and then that state can be set 
+        //However right now setting the draw state fbo is giving me multi buffer command list error. Just gonna do this 
+        //and move on for now and figure it out before i merge
+        Vao::SharedPtr pVao;
     };
 
 }

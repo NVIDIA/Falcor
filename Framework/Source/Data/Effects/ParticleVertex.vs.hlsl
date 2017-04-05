@@ -27,44 +27,31 @@
 ***************************************************************************/
 #include "ParticleData.h"
 
+static const int xOffset[6] = { -1, 1, -1, -1, 1, 1};
+static const int yOffset[6] = { -1, -1, 1, 1 , -1, 1};
+
 cbuffer PerFrame
 {
-    float dt;
-    uint maxParticles;
+    matrix view;
+    matrix proj;
 };
 
-RWStructuredBuffer<uint> IndexList;
-RWStructuredBuffer<Particle> ParticlePool;
-RWByteAddressBuffer numAlive;
-RWStructuredBuffer<uint> drawArgs;
-
-[numthreads(64, 1, 1)]
-void main(int3 groupID : SV_GroupID, int3 threadID : SV_GroupThreadID)
+struct VSOut
 {
-    uint index = 64 * groupID.y + threadID.x;
-    uint numAliveParticles = (uint)(numAlive.Load(0));
+    float4 pos : SV_POSITION;
+};
 
-    //make sure this corresponds to an actual alive particle, not a redundant thread
-    if (index < numAliveParticles)
-    {
-        uint poolIndex = IndexList[index];
-        ParticlePool[poolIndex].life -= dt;
-        if (ParticlePool[poolIndex].life <= 0)
-        {
-            ParticlePool[poolIndex].alive = 0;
-            uint counterIndex = IndexList.DecrementCounter();
-            uint prevIndex;
-            InterlockedExchange(IndexList[counterIndex], poolIndex, prevIndex);
-            InterlockedExchange(IndexList[index], prevIndex, poolIndex);
-            numAliveParticles -= 1;
-        }
-        else
-        {
-            ParticlePool[poolIndex].pos += ParticlePool[poolIndex].vel * dt;
-            ParticlePool[poolIndex].vel += ParticlePool[poolIndex].accel * dt;
-        }
+StructuredBuffer<uint> IndexList;
+RWStructuredBuffer<Particle> ParticlePool;
 
-        //0, 1, 2, dispatch xyz. 3 instance count, 4 numInstances, 5 start vert loc, 6 start index loc
-        drawArgs[3] = numAliveParticles * 6;
-    }
+VSOut main(uint vId : SV_VertexID)
+{
+    VSOut output;
+    Particle p = ParticlePool[IndexList[vId / 6]];
+    uint billboardIndex = vId % 6;
+
+    float4 viewPos = mul(view, float4(p.pos, 1.f));
+    viewPos.xy += float2(0.5f * p.scale, 0.5f * p.scale) * float2(xOffset[billboardIndex], yOffset[billboardIndex]);
+    output.pos = mul(proj, viewPos);
+    return output;
 }

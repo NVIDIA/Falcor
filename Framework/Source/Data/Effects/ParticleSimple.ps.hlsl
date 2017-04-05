@@ -27,44 +27,12 @@
 ***************************************************************************/
 #include "ParticleData.h"
 
-cbuffer PerFrame
+struct VSOut
 {
-    float dt;
-    uint maxParticles;
+    float4 pos : SV_POSITION;
 };
 
-RWStructuredBuffer<uint> IndexList;
-RWStructuredBuffer<Particle> ParticlePool;
-RWByteAddressBuffer numAlive;
-RWStructuredBuffer<uint> drawArgs;
-
-[numthreads(64, 1, 1)]
-void main(int3 groupID : SV_GroupID, int3 threadID : SV_GroupThreadID)
+float4 main(VSOut vOut) : SV_Target0
 {
-    uint index = 64 * groupID.y + threadID.x;
-    uint numAliveParticles = (uint)(numAlive.Load(0));
-
-    //make sure this corresponds to an actual alive particle, not a redundant thread
-    if (index < numAliveParticles)
-    {
-        uint poolIndex = IndexList[index];
-        ParticlePool[poolIndex].life -= dt;
-        if (ParticlePool[poolIndex].life <= 0)
-        {
-            ParticlePool[poolIndex].alive = 0;
-            uint counterIndex = IndexList.DecrementCounter();
-            uint prevIndex;
-            InterlockedExchange(IndexList[counterIndex], poolIndex, prevIndex);
-            InterlockedExchange(IndexList[index], prevIndex, poolIndex);
-            numAliveParticles -= 1;
-        }
-        else
-        {
-            ParticlePool[poolIndex].pos += ParticlePool[poolIndex].vel * dt;
-            ParticlePool[poolIndex].vel += ParticlePool[poolIndex].accel * dt;
-        }
-
-        //0, 1, 2, dispatch xyz. 3 instance count, 4 numInstances, 5 start vert loc, 6 start index loc
-        drawArgs[3] = numAliveParticles * 6;
-    }
+    return float4(0.2f, 0.2f, 0.8f, 1.f);
 }

@@ -40,7 +40,7 @@ namespace Falcor
         //Shaders
         mEmitCs = ComputeProgram::createFromFile("Effects/ParticleEmit.cs.hlsl");
         mSimulateCs = ComputeProgram::createFromFile("Effects/ParticleSimulate.cs.hlsl");
-        mPrepSimArgsCs = ComputeProgram::createFromFile("Effects/ParticlePrepareSimulateIndirect.cs.hlsl");
+        mDrawParticles = GraphicsProgram::createFromFile("Effects/ParticleVertex.vs.hlsl", "Effects/ParticleSimple.ps.hlsl");
 
         //Buffers
         //IndexList
@@ -58,33 +58,44 @@ namespace Falcor
             pEmitReflect->getBufferDesc("ParticlePool", ProgramReflection::BufferReflection::Type::Structured);
         mpParticlePool = StructuredBuffer::create(particlePoolReflect, maxParticles);
         //Simulate Dispatch indirect Args
-        mpSimulateArgs = StructuredBuffer::create(pEmitReflect->
-            getBufferDesc("dispatchArgs", ProgramReflection::BufferReflection::Type::Structured), sizeof(D3D12_DISPATCH_ARGUMENTS) / sizeof(uint32_t),
-            Resource::BindFlags::UnorderedAccess | Resource::BindFlags::IndirectArg);
-        D3D12_DISPATCH_ARGUMENTS initialArgs;
-        initialArgs.ThreadGroupCountX = 1;
-        initialArgs.ThreadGroupCountY = 1;
-        initialArgs.ThreadGroupCountZ = 1;
-        mpSimulateArgs->setBlob(&initialArgs, 0, sizeof(D3D12_DISPATCH_ARGUMENTS));
+        uint32_t indirectArgsSize = sizeof(D3D12_DISPATCH_ARGUMENTS) + sizeof(D3D12_DRAW_INDEXED_ARGUMENTS);
+        mpIndirectArgs = StructuredBuffer::create(pEmitReflect->
+            getBufferDesc("dispatchArgs", ProgramReflection::BufferReflection::Type::Structured), 
+            indirectArgsSize / sizeof(uint32_t), Resource::BindFlags::UnorderedAccess | Resource::BindFlags::IndirectArg);
+        uint32_t initialValues[8] = { 1, 1, 1, 1, 1, 0, 0, 0 };
+        mpIndirectArgs->setBlob(initialValues, 0, indirectArgsSize);
 
         //Vars
         mEmitVars = ComputeVars::create(pEmitReflect);
         mEmitVars->setStructuredBuffer("IndexList", mpIndexList);
         mEmitVars->setStructuredBuffer("ParticlePool", mpParticlePool);
-        mEmitVars->setStructuredBuffer("dispatchArgs", mpSimulateArgs);
+        mEmitVars->setStructuredBuffer("dispatchArgs", mpIndirectArgs);
         mEmitVars->setRawBuffer("numAlive", mpIndexList->getUAVCounter());
         mSimulateVars = ComputeVars::create(mSimulateCs->getActiveVersion()->getReflector());
         mSimulateVars->setStructuredBuffer("IndexList", mpIndexList);
         mSimulateVars->setStructuredBuffer("ParticlePool", mpParticlePool);
+        mSimulateVars->setStructuredBuffer("drawArgs", mpIndirectArgs);
         mSimulateVars->setRawBuffer("numAlive", mpIndexList->getUAVCounter());
+        mpDrawVars = GraphicsVars::create(mDrawParticles->getActiveVersion()->getReflector());
+        mpDrawVars->setStructuredBuffer("IndexList", mpIndexList);
+        mpDrawVars->setStructuredBuffer("ParticlePool", mpParticlePool);
 
         //State
         mEmitState = ComputeState::create();
         mEmitState->setProgram(mEmitCs);
         mSimulateState = ComputeState::create();
         mSimulateState->setProgram(mSimulateCs);
-        mPrepSimArgsState = ComputeState::create();
-        mPrepSimArgsState->setProgram(mPrepSimArgsCs);
+        mpDrawState = GraphicsState::create();
+        mpDrawState->setProgram(mDrawParticles);
+
+        //Create vertex buffer
+        //Buffer::SharedPtr pBuffer = Buffer::create(1, Resource::BindFlags::Vertex, Buffer::CpuAccess::None, nullptr);
+        Vao::BufferVec bufferVec;
+        //bufferVec.push_back(pBuffer);
+        VertexLayout::SharedPtr pLayout = VertexLayout::create();
+        //Craete and check vao
+        Vao::Topology topology = Vao::Topology::TriangleList;
+        pVao = Vao::create(bufferVec, pLayout, nullptr, ResourceFormat::R32Uint, topology);
     }
 
     void ParticleSystem::emit(RenderContext* pCtx, uint32_t num)
@@ -97,7 +108,7 @@ namespace Falcor
             p.pos = Emitter.spawnPos + glm::linearRand(-Emitter.randSpawnPos, Emitter.randSpawnPos);
             p.vel = Emitter.vel + glm::linearRand(-Emitter.randVel, Emitter.randVel);
             p.accel = Emitter.accel + glm::linearRand(-Emitter.randAccel, Emitter.randAccel);
-            p.scale = 1.f;
+            p.scale = 0.1f;
             p.life = Emitter.duration + glm::linearRand(-Emitter.randDuration, Emitter.randDuration);
             //TODO
             //Not needed in final i think, can just use which side of counter barrier. for debugging
@@ -126,9 +137,27 @@ namespace Falcor
         pCtx->pushComputeState(mSimulateState);
         mSimulateVars->getConstantBuffer(0)->setBlob(&perFrame, 0u, sizeof(SimulatePerFrame));
         pCtx->pushComputeVars(mSimulateVars);
-        pCtx->DispatchIndirect(mpSimulateArgs.get(), 0, 1);
+        pCtx->DispatchIndirect(mpIndirectArgs.get(), 0, 1);
         pCtx->popComputeVars();
         pCtx->popComputeState();
+    }
+
+    void ParticleSystem::render(RenderContext* pCtx, glm::mat4 view, glm::mat4 proj)
+    {
+        VSPerFrame cbuf;
+        cbuf.view = view;
+        cbuf.proj = proj;
+        mpDrawVars->getConstantBuffer(0)->setBlob(&cbuf, 0, sizeof(cbuf));
+
+        pCtx->getGraphicsState()->setProgram(mDrawParticles);
+        pCtx->getGraphicsState()->setVao(pVao);
+
+        //This gives can't write to multiple buf same swapchain
+        //pCtx->pushGraphicsState(mpDrawState);
+        pCtx->pushGraphicsVars(mpDrawVars);
+        pCtx->DrawIndirect(mpIndirectArgs.get(), sizeof(D3D12_DISPATCH_ARGUMENTS), 1);
+        pCtx->popGraphicsVars();
+        //pCtx->popGraphicsState();
     }
 
 }
