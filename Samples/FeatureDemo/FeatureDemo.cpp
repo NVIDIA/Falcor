@@ -90,10 +90,8 @@ void FeatureDemo::initScene(Scene::SharedPtr pScene)
     Sampler::Desc samplerDesc;
     samplerDesc.setAddressingMode(Sampler::AddressMode::Wrap, Sampler::AddressMode::Wrap, Sampler::AddressMode::Wrap).setFilterMode(Sampler::Filter::Linear, Sampler::Filter::Linear, Sampler::Filter::Linear);
     Sampler::SharedPtr pSampler = Sampler::create(samplerDesc);
-    for (uint32_t i = 0; i < pScene->getModelCount(); i++)
-    {
-        pScene->getModel(i)->bindSamplerToMaterials(pSampler);
-    }
+    pScene->bindSamplerToMaterials(pSampler);
+
     mpSceneRenderer = SceneRenderer::create(pScene);
     mpSceneRenderer->setCameraControllerType(SceneRenderer::CameraControllerType::FirstPerson);
     setActiveCameraAspectRatio();

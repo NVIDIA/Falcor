@@ -348,4 +348,20 @@ namespace Falcor
             }
         }
     }
+
+    void Scene::bindSamplerToMaterials(Sampler::SharedPtr pSampler)
+    {
+        for (auto& pMat : mpMaterials)
+        {
+            pMat->setSampler(pSampler);
+        }
+    }
+
+    void Scene::bindSamplerToModels(Sampler::SharedPtr pSampler)
+    {
+        for (auto& model : mModels)
+        {
+            model[0]->getObject()->bindSamplerToMaterials(pSampler);
+        }
+    }
 }

@@ -192,7 +192,14 @@ namespace Falcor
             This routine deletes area light(s) from the scene.
         */
         void deleteAreaLights();
+        
+        /** Bind a sampler to all the materials
+        */
+        void bindSamplerToMaterials(Sampler::SharedPtr pSampler);
 
+        /** Bind a sampler to all the models
+        */
+        void bindSamplerToModels(Sampler::SharedPtr pSampler);
     protected:
 
         Scene();
