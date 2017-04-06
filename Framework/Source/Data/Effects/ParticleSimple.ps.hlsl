@@ -25,14 +25,20 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#include "ParticleData.h"
+SamplerState gSampler;
+Texture2D gTex : register(t2);
 
 struct VSOut
 {
     float4 pos : SV_POSITION;
+    float2 texCoords : TEXCOORD;
 };
 
 float4 main(VSOut vOut) : SV_Target0
 {
-    return float4(0.2f, 0.2f, 0.8f, 1.f);
+    float4 color = gTex.Sample(gSampler, vOut.texCoords);
+    if (color.w < 0.01f)
+        discard;
+    
+    return color;
 }

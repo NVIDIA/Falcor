@@ -47,4 +47,5 @@ private:
     ParticleSystem mParticleSystem;
     Camera::SharedPtr mpCamera;
     FirstPersonCameraController mpCamController;
+    Texture::SharedPtr mpTex;
 };

@@ -29,6 +29,8 @@
 
 static const int xOffset[6] = { -1, 1, -1, -1, 1, 1};
 static const int yOffset[6] = { -1, -1, 1, 1 , -1, 1};
+static const float xTex[6] = { 0.f, 1.f, 0.f, 0.f, 1.f, 1.f };
+static const float yTex[6] = { 1.f, 1.f, 0.f, 0.f, 1.f, 0.f };
 
 cbuffer PerFrame
 {
@@ -39,6 +41,7 @@ cbuffer PerFrame
 struct VSOut
 {
     float4 pos : SV_POSITION;
+    float2 texCoords : TEXCOORD;
 };
 
 StructuredBuffer<uint> IndexList;
@@ -53,5 +56,6 @@ VSOut main(uint vId : SV_VertexID)
     float4 viewPos = mul(view, float4(p.pos, 1.f));
     viewPos.xy += float2(p.scale, p.scale) * float2(xOffset[billboardIndex], yOffset[billboardIndex]);
     output.pos = mul(proj, viewPos);
+    output.texCoords = float2(xTex[billboardIndex], yTex[billboardIndex]);
     return output;
 }

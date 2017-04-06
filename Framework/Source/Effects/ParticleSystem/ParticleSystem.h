@@ -59,7 +59,8 @@ namespace Falcor
         void emit(RenderContext* pCtx, uint32_t num);
         void update(RenderContext* pCtx, float dt);
         void render(RenderContext* pCtx, glm::mat4 view, glm::mat4 proj);
-
+        GraphicsVars::SharedPtr getDrawVars() { return mpDrawVars; }
+        ComputeVars::SharedPtr getSimulateVars() { return mSimulateVars; }
 
     private:
         struct SimulatePerFrame

@@ -51,16 +51,10 @@ void main(int3 groupID : SV_GroupID, int3 threadID : SV_GroupThreadID)
             uint indexListCounter = IndexList.IncrementCounter();
             ParticlePool[IndexList[indexListCounter]] = emitData.particles[index];
 
-            //TODO
-            //This should be groupshared memory or something? I think then itll only execute once at end of group?
-            if (numAliveParticles % 64 == 0)
+            dispatchArgs[1] = numAliveParticles / 64;
+            if (numAliveParticles % 64 > 0)
             {
-                //care about modifying y threadgroups
-                dispatchArgs[1] = numAliveParticles / 64;
-            }
-            else
-            {
-                dispatchArgs[1] = (numAliveParticles / 64) + 1;
+                dispatchArgs[1] += 1;
             }
         }
     }

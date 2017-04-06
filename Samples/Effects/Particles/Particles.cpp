@@ -38,6 +38,8 @@ void Particles::onLoad()
     mParticleSystem.init(mpRenderContext.get(), 4096);
     mpCamera = Camera::create();
     mpCamController.attachCamera(mpCamera);
+    mpTex = createTextureFromFile("C:/Users/clavelle/Desktop/TestParticle.png", true, false);
+    mParticleSystem.getDrawVars()->setSrv(2, mpTex->getSRV());
 }
 
 void Particles::onFrameRender()
