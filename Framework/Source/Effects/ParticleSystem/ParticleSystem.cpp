@@ -144,7 +144,7 @@ namespace Falcor
         if (mEmitTimer >= Emitter.emitFrequency)
         {
             mEmitTimer -= Emitter.emitFrequency;
-            emit(pCtx, Emitter.emitCount + glm::linearRand(-Emitter.randEmitCount, Emitter.randEmitCount));
+            emit(pCtx, max(Emitter.emitCount + glm::linearRand(-Emitter.randEmitCount, Emitter.randEmitCount), 0u));
         }
 
         pCtx->pushComputeState(mSimulateState);
