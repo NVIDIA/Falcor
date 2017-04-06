@@ -32,6 +32,7 @@ struct VSOut
 {
     float4 pos : SV_POSITION;
     float2 texCoords : TEXCOORD;
+    uint particleIndex : ID;
 };
 
 float4 main(VSOut vOut) : SV_Target0

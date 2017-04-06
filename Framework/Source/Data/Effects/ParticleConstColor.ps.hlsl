@@ -29,9 +29,21 @@ struct VSOut
 {
     float4 pos : SV_POSITION;
     float2 texCoords : TEXCOORD;
+    uint particleIndex : ID;
 };
 
 float4 main(VSOut vOut) : SV_Target0
 {
-    return float4(0.75f, 0.25f, 0.25f, 1.f);
+    if (vOut.particleIndex > 512)
+    {
+        return float4(0.75f, 0.25f, 0.25f, 1.f);
+    }
+    else if (vOut.particleIndex > 256)
+    {
+        return float4(0.25f, 0.75f, 0.25f, 1.f);
+    }
+    else
+    {
+        return float4(0.25f, 0.25f, 0.75f, 1.f);
+    }
 }

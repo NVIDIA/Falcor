@@ -42,6 +42,7 @@ struct VSOut
 {
     float4 pos : SV_POSITION;
     float2 texCoords : TEXCOORD;
+    uint particleIndex : ID;
 };
 
 StructuredBuffer<uint> IndexList;
@@ -50,12 +51,14 @@ RWStructuredBuffer<Particle> ParticlePool;
 VSOut main(uint vId : SV_VertexID)
 {
     VSOut output;
-    Particle p = ParticlePool[IndexList[vId / 6]];
+    uint particleIndex = vId / 6;
+    Particle p = ParticlePool[IndexList[particleIndex]];
     uint billboardIndex = vId % 6;
 
     float4 viewPos = mul(view, float4(p.pos, 1.f));
     viewPos.xy += float2(p.scale, p.scale) * float2(xOffset[billboardIndex], yOffset[billboardIndex]);
     output.pos = mul(proj, viewPos);
     output.texCoords = float2(xTex[billboardIndex], yTex[billboardIndex]);
+    output.particleIndex = particleIndex;
     return output;
 }

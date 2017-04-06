@@ -53,7 +53,7 @@ void main(int3 groupID : SV_GroupID, int3 threadID : SV_GroupThreadID)
             uint indexListCounter = IndexList.IncrementCounter();
             ParticlePool[IndexList[indexListCounter]] = emitData.particles[index];
 
-            dispatchArgs[0] = numAliveParticles / _SIMULATE_THREADS;
+            dispatchArgs[0] = (numAliveParticles + emitData.numEmit) / _SIMULATE_THREADS;
             if (numAliveParticles % _SIMULATE_THREADS > 0)
             {
                 dispatchArgs[0] += 1;
