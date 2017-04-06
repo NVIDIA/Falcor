@@ -518,7 +518,7 @@ void _fn initDiffuseLayer(_ref(MaterialLayerDesc) desc, _ref(MaterialLayerValues
     data.extraParam = v4(0,0,0,0);
     data.roughness = v4(0,0,0,0);
     data.pad = v3(0,0,0);
-    data.pmf = 0;
+    data.pmf = 1;
 }
 
 /**
@@ -532,7 +532,7 @@ void _fn initConductorLayer(_ref(MaterialLayerDesc) desc, _ref(MaterialLayerValu
     data.roughness = roughness.rrrr;
     data.extraParam.x = IoR;
     data.extraParam.y = kappa;
-    data.pmf = 0;
+    data.pmf = 1;
 }
 
 /**
@@ -545,7 +545,7 @@ void _fn initDielectricLayer(_ref(MaterialLayerDesc) desc, _ref(MaterialLayerVal
     data.albedo = v4(color, 1.f);
     data.roughness = roughness.rrrr;
     data.extraParam.x = IoR;
-    data.pmf = 0;
+    data.pmf = 1;
 }
 
 /*******************************************************************
