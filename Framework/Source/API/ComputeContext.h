@@ -95,6 +95,14 @@ namespace Falcor
         */
         void clearUAVCounter(const StructuredBuffer::SharedPtr& pBuffer, uint32_t value);
 
+        /** Initializes the command signature for calling dispatchIndirect
+        */
+        void initDispatchCommandSignature();
+
+        /** Executes a dispatch call. Args to the dispatch call are contained in argbuffer 
+        */
+        void dispatchIndirect(Resource* argBuffer, uint64_t argBufferOffset);
+
     protected:
         ComputeContext() = default;
         void prepareForDispatch();
@@ -106,6 +114,8 @@ namespace Falcor
 
         ComputeVars::SharedPtr mpComputeVars;
         ComputeState::SharedPtr mpComputeState;
+
+        static CommandSignatureHandle spDispatchCommandSig;
     };
 
 }

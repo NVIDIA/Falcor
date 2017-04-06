@@ -53,16 +53,18 @@ namespace Falcor
             pEmitReflect->getBufferDesc("IndexList", ProgramReflection::BufferReflection::Type::Structured);
         mpIndexList = StructuredBuffer::create(indexListReflect, maxParticles);
         mpIndexList->setBlob(indices.data(), 0, indices.size() * sizeof(uint32_t));
+
         //ParticlePool
         ProgramReflection::BufferReflection::SharedConstPtr particlePoolReflect =
             pEmitReflect->getBufferDesc("ParticlePool", ProgramReflection::BufferReflection::Type::Structured);
         mpParticlePool = StructuredBuffer::create(particlePoolReflect, maxParticles);
-        //Simulate Dispatch indirect Args
-        uint32_t indirectArgsSize = sizeof(D3D12_DISPATCH_ARGUMENTS) + sizeof(D3D12_DRAW_INDEXED_ARGUMENTS);
+
+        //Indirect Arg buffer (for simulate dispatch and draw)
+        uint32_t indirectArgsSize = sizeof(D3D12_DISPATCH_ARGUMENTS) + sizeof(D3D12_DRAW_ARGUMENTS);
         mpIndirectArgs = StructuredBuffer::create(pEmitReflect->
             getBufferDesc("dispatchArgs", ProgramReflection::BufferReflection::Type::Structured), 
             indirectArgsSize / sizeof(uint32_t), Resource::BindFlags::UnorderedAccess | Resource::BindFlags::IndirectArg);
-        uint32_t initialValues[8] = { 1, 1, 1, 1, 1, 0, 0, 0 };
+        uint32_t initialValues[7] = { 1, 1, 1, 1, 1, 0, 0 };
         mpIndirectArgs->setBlob(initialValues, 0, indirectArgsSize);
 
         //Vars
@@ -87,15 +89,14 @@ namespace Falcor
         mSimulateState->setProgram(mSimulateCs);
         mpDrawState = GraphicsState::create();
         mpDrawState->setProgram(mDrawParticles);
+        mpDrawState->setProgram(mDrawParticles);
 
-        //Create vertex buffer
-        //Buffer::SharedPtr pBuffer = Buffer::create(1, Resource::BindFlags::Vertex, Buffer::CpuAccess::None, nullptr);
+        //Create empty vbo for draw 
         Vao::BufferVec bufferVec;
-        //bufferVec.push_back(pBuffer);
         VertexLayout::SharedPtr pLayout = VertexLayout::create();
-        //Craete and check vao
         Vao::Topology topology = Vao::Topology::TriangleList;
-        pVao = Vao::create(bufferVec, pLayout, nullptr, ResourceFormat::R32Uint, topology);
+        Vao::SharedPtr pVao = Vao::create(bufferVec, pLayout, nullptr, ResourceFormat::R32Uint, topology);
+        mpDrawState->setVao(pVao);
     }
 
     void ParticleSystem::emit(RenderContext* pCtx, uint32_t num)
@@ -108,11 +109,10 @@ namespace Falcor
             p.pos = Emitter.spawnPos + glm::linearRand(-Emitter.randSpawnPos, Emitter.randSpawnPos);
             p.vel = Emitter.vel + glm::linearRand(-Emitter.randVel, Emitter.randVel);
             p.accel = Emitter.accel + glm::linearRand(-Emitter.randAccel, Emitter.randAccel);
-            p.scale = 0.1f;
+            //total scale of the billboard, so the amount to actually move to billboard corners is half scale. 
+            p.scale = Emitter.scale + glm::linearRand(-Emitter.randScale, Emitter.randScale);
+            p.growth = 0.5f * Emitter.growth + glm::linearRand(-Emitter.randGrowth, Emitter.randGrowth);
             p.life = Emitter.duration + glm::linearRand(-Emitter.randDuration, Emitter.randDuration);
-            //TODO
-            //Not needed in final i think, can just use which side of counter barrier. for debugging
-            p.alive = 1;
             emitData.particles[i] = p;
         }
         emitData.numEmit = num;
@@ -134,10 +134,17 @@ namespace Falcor
         perFrame.dt = dt;
         perFrame.maxParticles = mMaxParticles;
 
+        mEmitTimer += dt;
+        if (mEmitTimer >= Emitter.emitFrequency)
+        {
+            mEmitTimer -= Emitter.emitFrequency;
+            emit(pCtx, Emitter.emitCount + glm::linearRand(-Emitter.randEmitCount, Emitter.randEmitCount));
+        }
+
         pCtx->pushComputeState(mSimulateState);
         mSimulateVars->getConstantBuffer(0)->setBlob(&perFrame, 0u, sizeof(SimulatePerFrame));
         pCtx->pushComputeVars(mSimulateVars);
-        pCtx->DispatchIndirect(mpIndirectArgs.get(), 0, 1);
+        pCtx->dispatchIndirect(mpIndirectArgs.get(), 0);
         pCtx->popComputeVars();
         pCtx->popComputeState();
     }
@@ -149,15 +156,17 @@ namespace Falcor
         cbuf.proj = proj;
         mpDrawVars->getConstantBuffer(0)->setBlob(&cbuf, 0, sizeof(cbuf));
 
-        pCtx->getGraphicsState()->setProgram(mDrawParticles);
-        pCtx->getGraphicsState()->setVao(pVao);
+        //TODO
+        //I think I should be able to do this in init, pass in fbo once. But For some reason, that gives the error 
+        //"A single command list cannot write to multiple buffers within a particular swapchain."
+        //[STATE_SETTING ERROR #904: COMMAND_LIST_MULTIPLE_SWAPCHAIN_BUFFER_REFERENCES]
+        mpDrawState->setFbo(pCtx->getGraphicsState()->getFbo());
 
-        //This gives can't write to multiple buf same swapchain
-        //pCtx->pushGraphicsState(mpDrawState);
+        pCtx->pushGraphicsState(mpDrawState);
         pCtx->pushGraphicsVars(mpDrawVars);
-        pCtx->DrawIndirect(mpIndirectArgs.get(), sizeof(D3D12_DISPATCH_ARGUMENTS), 1);
+        pCtx->drawIndirect(mpIndirectArgs.get(), sizeof(D3D12_DISPATCH_ARGUMENTS));
         pCtx->popGraphicsVars();
-        //pCtx->popGraphicsState();
+        pCtx->popGraphicsState();
     }
 
 }

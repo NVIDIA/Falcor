@@ -30,19 +30,12 @@
 
 void Particles::onGuiRender()
 {
-    mpGui->addText("Hello from Particles");
-    if (mpGui->addButton("Click Here"))
-    {
-        msgBox("Now why would you do that?");
-    }
 }
 
 void Particles::onLoad()
 {
-    //Wtf is this computecontext for?
-    //mpComputeContext = ComputeContext::create();
-    mParticleSystem.init(mpRenderContext.get(), 4096);
     mpRenderContext->initCommandSignatures();
+    mParticleSystem.init(mpRenderContext.get(), 4096);
     mpCamera = Camera::create();
     mpCamController.attachCamera(mpCamera);
 }
@@ -51,18 +44,14 @@ void Particles::onFrameRender()
 {
 	const glm::vec4 clearColor(0.38f, 0.52f, 0.10f, 1);
  	mpRenderContext->clearFbo(mpDefaultFBO.get(), clearColor, 1.0f, 0, FboAttachmentType::All);
-
     mpCamController.update();
 
-    mParticleSystem.emit(mpRenderContext.get(), 1);
-    //This should actually be dt from framerate object
-    mParticleSystem.update(mpRenderContext.get(), 0.016f);
+    mParticleSystem.update(mpRenderContext.get(), frameRate().getLastFrameTime());
     mParticleSystem.render(mpRenderContext.get(), mpCamera->getViewMatrix(), mpCamera->getProjMatrix());
 }
 
 void Particles::onShutdown()
 {
-    mpRenderContext->releaseCommandSignatures();
 }
 
 bool Particles::onKeyEvent(const KeyboardEvent& keyEvent)
@@ -79,11 +68,16 @@ bool Particles::onMouseEvent(const MouseEvent& mouseEvent)
 
 void Particles::onDataReload()
 {
-
 }
 
 void Particles::onResizeSwapChain()
 {
+    float height = (float)mpDefaultFBO->getHeight();
+    float width = (float)mpDefaultFBO->getWidth();
+
+    mpCamera->setFocalLength(21.0f);
+    float aspectRatio = (width / height);
+    mpCamera->setAspectRatio(aspectRatio);
 }
 
 int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ LPSTR lpCmdLine, _In_ int nShowCmd)

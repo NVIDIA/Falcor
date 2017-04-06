@@ -51,7 +51,7 @@ VSOut main(uint vId : SV_VertexID)
     uint billboardIndex = vId % 6;
 
     float4 viewPos = mul(view, float4(p.pos, 1.f));
-    viewPos.xy += float2(0.5f * p.scale, 0.5f * p.scale) * float2(xOffset[billboardIndex], yOffset[billboardIndex]);
+    viewPos.xy += float2(p.scale, p.scale) * float2(xOffset[billboardIndex], yOffset[billboardIndex]);
     output.pos = mul(proj, viewPos);
     return output;
 }

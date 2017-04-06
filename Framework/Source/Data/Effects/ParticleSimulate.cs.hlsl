@@ -51,7 +51,6 @@ void main(int3 groupID : SV_GroupID, int3 threadID : SV_GroupThreadID)
         ParticlePool[poolIndex].life -= dt;
         if (ParticlePool[poolIndex].life <= 0)
         {
-            ParticlePool[poolIndex].alive = 0;
             uint counterIndex = IndexList.DecrementCounter();
             uint prevIndex;
             InterlockedExchange(IndexList[counterIndex], poolIndex, prevIndex);
@@ -62,6 +61,7 @@ void main(int3 groupID : SV_GroupID, int3 threadID : SV_GroupThreadID)
         {
             ParticlePool[poolIndex].pos += ParticlePool[poolIndex].vel * dt;
             ParticlePool[poolIndex].vel += ParticlePool[poolIndex].accel * dt;
+            ParticlePool[poolIndex].scale = max(ParticlePool[poolIndex].scale + ParticlePool[poolIndex].growth * dt, 0);
         }
 
         //0, 1, 2, dispatch xyz. 3 instance count, 4 numInstances, 5 start vert loc, 6 start index loc

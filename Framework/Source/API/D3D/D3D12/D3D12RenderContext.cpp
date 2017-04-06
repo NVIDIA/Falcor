@@ -238,25 +238,18 @@ namespace Falcor
         drawIndexedInstanced(indexCount, 1, startIndexLocation, baseVertexLocation, 0);
     }
 
-    void RenderContext::DrawIndirect(Resource* argBuffer, uint64_t argBufferOffset, uint32_t maxCommandCount)
+    void RenderContext::drawIndirect(Resource* argBuffer, uint64_t argBufferOffset)
     {
         prepareForDraw();
         resourceBarrier(argBuffer, Resource::State::IndirectArg);
-        mpLowLevelData->getCommandList()->ExecuteIndirect(spDrawCommandSig, maxCommandCount, argBuffer->getApiHandle(), argBufferOffset, nullptr, 0);
+        mpLowLevelData->getCommandList()->ExecuteIndirect(spDrawCommandSig, 1, argBuffer->getApiHandle(), argBufferOffset, nullptr, 0);
     }
 
-    void RenderContext::DrawIndexedIndirect(Resource* argBuffer, uint64_t argBufferOffset, uint32_t maxCommandCount)
+    void RenderContext::drawIndexedIndirect(Resource* argBuffer, uint64_t argBufferOffset)
     {
         prepareForDraw();
         resourceBarrier(argBuffer, Resource::State::IndirectArg);
-        mpLowLevelData->getCommandList()->ExecuteIndirect(spDrawIndexCommandSig, maxCommandCount, argBuffer->getApiHandle(), argBufferOffset, nullptr, 0);
-    }
-
-    void RenderContext::DispatchIndirect(Resource* argBuffer, uint64_t argBufferOffset, uint32_t maxCommandCount)
-    {
-        prepareForDispatch();
-        resourceBarrier(argBuffer, Resource::State::IndirectArg);
-        mpLowLevelData->getCommandList()->ExecuteIndirect(spDispatchCommandSig, maxCommandCount, argBuffer->getApiHandle(), argBufferOffset, nullptr, 0);
+        mpLowLevelData->getCommandList()->ExecuteIndirect(spDrawIndexCommandSig, 1, argBuffer->getApiHandle(), argBufferOffset, nullptr, 0);
     }
 
     void RenderContext::applyProgramVars() {}

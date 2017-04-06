@@ -39,10 +39,10 @@ struct Particle
     vec3 vel;    
     float life;
     vec3 accel;
-    uint alive;
-    vec4 padding; //needed?
-                   // id ? 
-                   // billboard rot?
+    float growth;
+    vec4 padding2;
+    //id?
+    //rotation
 };
 
 struct EmitData

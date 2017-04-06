@@ -55,7 +55,7 @@ void main(int3 groupID : SV_GroupID, int3 threadID : SV_GroupThreadID)
             //This should be groupshared memory or something? I think then itll only execute once at end of group?
             if (numAliveParticles % 64 == 0)
             {
-                //0-1 are the virrtual address
+                //care about modifying y threadgroups
                 dispatchArgs[1] = numAliveParticles / 64;
             }
             else

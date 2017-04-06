@@ -119,12 +119,18 @@ namespace Falcor
             \param[in] dstRect Target rectangle to blit to, specified by [left, up, right, down]
         */
 
-        static void initCommandSignatures();
-        static void releaseCommandSignatures();
-        void DrawIndirect(Resource* argBuffer, uint64_t argBufferOffset, uint32_t maxCommandCount);
-        void DrawIndexedIndirect(Resource* argBuffer, uint64_t argBufferOffset, uint32_t maxCommandCount);
-        //TODO move this to compute context
-        void DispatchIndirect(Resource* argBuffer, uint64_t argBufferOffset, uint32_t maxCommandCount);
+        /** Creates command signatures for DrawIndirect, DrawIndexedIndirect. Also calls
+            compute context's initDispatchCommandSignature() to create command signature for dispatchIndirect
+        */
+        void initCommandSignatures();
+
+        /** Executes a draw call. Args to the draw call are contained in argbuffer
+        */
+        void drawIndirect(Resource* argBuffer, uint64_t argBufferOffset);
+
+        /** Executes a drawIndexed call. Args to the drawIndexed call are contained in argbuffer
+        */
+        void drawIndexedIndirect(Resource* argBuffer, uint64_t argBufferOffset);
 
         void blit(ShaderResourceView::SharedPtr pSrc, RenderTargetView::SharedPtr pDst, const uvec4& srcRect = uvec4(-1), const uvec4& dstRect = uvec4(-1), Sampler::Filter = Sampler::Filter::Linear);
 
@@ -168,9 +174,8 @@ namespace Falcor
         std::stack<GraphicsState::SharedPtr> mPipelineStateStack;
         std::stack<GraphicsVars::SharedPtr> mpGraphicsVarsStack;
 
-        static ID3D12CommandSignature* spDrawCommandSig;
-        static ID3D12CommandSignature* spDrawIndexCommandSig;
-        static ID3D12CommandSignature* spDispatchCommandSig;
+        static CommandSignatureHandle spDrawCommandSig;
+        static CommandSignatureHandle spDrawIndexCommandSig;
 
         struct BlitData
         {

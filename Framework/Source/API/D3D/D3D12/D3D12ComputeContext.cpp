@@ -28,9 +28,12 @@
 #include "Framework.h"
 #include "API/ComputeContext.h"
 #include "glm/gtc/type_ptr.hpp"
+#include "API/Device.h"
 
 namespace Falcor
 {
+    CommandSignatureHandle RenderContext::spDispatchCommandSig = nullptr;
+
     ComputeContext::~ComputeContext() = default;
 
     ComputeContext::SharedPtr ComputeContext::create()
@@ -145,6 +148,25 @@ namespace Falcor
 
         setComputeState(mpComputeStateStack.top());
         mpComputeStateStack.pop();
+    }
+
+    void ComputeContext::initDispatchCommandSignature()
+    {
+        D3D12_COMMAND_SIGNATURE_DESC sigDesc;
+        sigDesc.NumArgumentDescs = 1;
+        sigDesc.NodeMask = 0;
+        D3D12_INDIRECT_ARGUMENT_DESC argDesc;        
+        sigDesc.ByteStride = sizeof(D3D12_DISPATCH_ARGUMENTS);
+        argDesc.Type = D3D12_INDIRECT_ARGUMENT_TYPE_DISPATCH;
+        sigDesc.pArgumentDescs = &argDesc;
+        gpDevice->getApiHandle()->CreateCommandSignature(&sigDesc, nullptr, IID_PPV_ARGS(&spDispatchCommandSig));
+    }
+
+    void ComputeContext::dispatchIndirect(Resource* argBuffer, uint64_t argBufferOffset)
+    {
+        prepareForDispatch();
+        resourceBarrier(argBuffer, Resource::State::IndirectArg);
+        mpLowLevelData->getCommandList()->ExecuteIndirect(spDispatchCommandSig, 1, argBuffer->getApiHandle(), argBufferOffset, nullptr, 0);
     }
 
     void ComputeContext::applyComputeVars() {}
