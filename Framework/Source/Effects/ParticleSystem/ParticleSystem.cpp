@@ -39,13 +39,13 @@ namespace Falcor
 
         //Shaders
         mSimulateCs = ComputeProgram::createFromFile(cs);
+        //Add num sim threads to emit defines (for calculating needed thread groups in indirect arg buffer)
         uint32_t simThreadsX = 1, simThreadsY = 1, simThreadsZ= 1;
         mSimulateCs->getActiveVersion()->getShader(ShaderType::Compute)->
             getReflectionInterface()->GetThreadGroupSize(&simThreadsX, &simThreadsY, &simThreadsZ);
         Program::DefineList emitDefines;
         emitDefines.add("_SIMULATE_THREADS", std::to_string(simThreadsX * simThreadsY * simThreadsZ));
         mEmitCs = ComputeProgram::createFromFile("Effects/ParticleEmit.cs.hlsl", emitDefines);
-        Program::DefineList defines;
         mDrawParticles = GraphicsProgram::createFromFile("Effects/ParticleVertex.vs.hlsl", ps);
 
         //Buffers
