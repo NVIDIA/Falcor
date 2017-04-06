@@ -96,7 +96,7 @@ void SceneEditorSample::loadScene()
     {
         reset();
 
-        mpScene = SceneImporter::loadScene(Filename, Model::LoadFlags::None, Scene::LoadFlags::StoreMaterialHistory);
+        mpScene = Scene::loadFromFile(Filename, Model::LoadFlags::None, Scene::LoadFlags::StoreMaterialHistory);
         initNewScene();
     }
 }

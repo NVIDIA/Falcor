@@ -237,6 +237,7 @@ namespace Falcor
         {
             const ProgramVersion* pProgramVersion = nullptr;
             const RootSignature* pRootSig = nullptr;
+            const Fbo::Desc* pFboDesc = nullptr;
         };
         CachedData mCachedData;
 

@@ -126,14 +126,6 @@ namespace Falcor
         return true;
     }
 
-    void Buffer::copy(Buffer* pDst) const
-    {
-    }
-
-    void Buffer::copy(Buffer* pDst, size_t srcOffset, size_t dstOffset, size_t count) const
-    {
-    }
-
     void Buffer::updateData(const void* pData, size_t offset, size_t size) const
     {
         // Clamp the offset and size

@@ -353,14 +353,8 @@ namespace Falcor
         mStream << (int32_t)primCount;
 
         // Output the index buffer
-        // Most of the buffers we use were created without any access flags, so can't be mapped.
-        // We create a temporary staging buffer to overcome this.
-        
-        auto pStaging = Buffer::create(pMesh->getVao()->getIndexBuffer()->getSize(), Buffer::BindFlags::None, Buffer::CpuAccess::Read, nullptr);
-        pMesh->getVao()->getIndexBuffer()->copy(pStaging.get());
-        const void* pIndices = pStaging->map(Buffer::MapType::Read);
+        const void* pIndices = pMesh->getVao()->getIndexBuffer()->map(Buffer::MapType::Read);
         mStream.write(pIndices, indexCount * sizeof(uint32_t));
-        pStaging->unmap();
 
         return true;
     }

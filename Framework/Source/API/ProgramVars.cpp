@@ -229,7 +229,7 @@ namespace Falcor
             assert(uavIt != assignedUavs.end());
 
             uavIt->second.pResource = resource;
-            uavIt->second.pView = resource->getUAV();
+            uavIt->second.pView = resource ? resource->getUAV() : nullptr;
             break;
         }
 
@@ -239,7 +239,7 @@ namespace Falcor
             assert(srvIt != assignedSrvs.end());
 
             srvIt->second.pResource = resource;
-            srvIt->second.pView = resource->getSRV();
+            srvIt->second.pView = resource ? resource->getSRV() : nullptr;
             break;
         }
 

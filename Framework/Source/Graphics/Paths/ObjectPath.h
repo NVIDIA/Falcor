@@ -54,7 +54,7 @@ namespace Falcor
         uint32_t addKeyFrame(float time, const glm::vec3& position, const glm::vec3& target, const glm::vec3& up);
         void removeKeyFrame(uint32_t frameID);
 
-        void animate(double currentTime);
+        bool animate(double currentTime);
 
         void attachObject(const IMovableObject::SharedPtr& pObject);
         void detachObject(const IMovableObject::SharedPtr& pObject);

@@ -2128,5 +2128,9 @@
     <FxCompile Include="Data\Framework\Shaders\Blit.vs.hlsl">
       <Filter>Data\Framework\Shaders</Filter>
     </FxCompile>
+    <FxCompile Include="Data\Framework\Shaders\Blit.hlsl" />
+    <FxCompile Include="Data\Effects\ToneMapping.ps.hlsl">
+      <Filter>Data\Effects</Filter>
+    </FxCompile>
   </ItemGroup>
 </Project>

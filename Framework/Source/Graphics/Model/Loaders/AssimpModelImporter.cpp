@@ -395,7 +395,7 @@ namespace Falcor
         return b;
     }
 
-    AssimpModelImporter::AssimpModelImporter(Model* pModel, Model::LoadFlags flags) : mFlags(flags), mpModel(pModel)
+    AssimpModelImporter::AssimpModelImporter(Model& model, Model::LoadFlags flags) : mFlags(flags), mModel(model)
     {
     }
 
@@ -447,7 +447,7 @@ namespace Falcor
                     aiToFalcorMesh[aiId] = createMesh(pScene->mMeshes[aiId]);
                 }
 
-                mpModel->addMeshInstance(aiToFalcorMesh[aiId], aiMatToGLM(transform));
+                mModel.addMeshInstance(aiToFalcorMesh[aiId], aiMatToGLM(transform));
             }
         }
 
@@ -531,9 +531,9 @@ namespace Falcor
         return true;
     }
 
-    bool AssimpModelImporter::import(Model* pModel, const std::string& filename, Model::LoadFlags flags)
+    bool AssimpModelImporter::import(Model& model, const std::string& filename, Model::LoadFlags flags)
     {
-        AssimpModelImporter loader(pModel, flags);
+        AssimpModelImporter loader(model, flags);
         return loader.initModel(filename);
     }
 
@@ -640,7 +640,7 @@ namespace Falcor
                 pAnimCtrl->addAnimation(std::move(pAnimation));
             }
 
-            mpModel->setAnimationController(std::move(pAnimCtrl));
+            mModel.setAnimationController(std::move(pAnimCtrl));
         }
     }
 

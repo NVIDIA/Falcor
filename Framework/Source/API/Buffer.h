@@ -78,18 +78,6 @@ namespace Falcor
             \return A pointer to a new buffer object, or nullptr if creation failed.
         */
         static SharedPtr create(size_t size, Resource::BindFlags bind, CpuAccess cpuAccess, const void* pInitData = nullptr);
-        
-        /** Copy the contents of this buffer to the given buffer.\nThe entire buffer will be copied, so the destination buffer must have the *same* size as the source buffer.
-            \param pDst The destination buffer.
-        */
-        void copy(Buffer* pDst) const;
-        /** Copy the contents of this buffer to the given buffer.
-            \param pDst The destination buffer.
-            \param srcOffset The offset within this buffer to start copying from.
-            \param dstOffset The offset within the destination buffer to start copying from.
-            \param count The number of bytes to copy.
-        */
-        void copy(Buffer* pDst, size_t srcOffset, size_t dstOffset, size_t count) const;
 
         /** Update the buffer's data
             \param[in] pData Pointer to the source data.

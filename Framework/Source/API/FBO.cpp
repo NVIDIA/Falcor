@@ -59,16 +59,14 @@ namespace Falcor
     {
         if (mColorTargets.size() != other.mColorTargets.size()) return false;
 
-        else if (mColorTargets.size() < other.mColorTargets.size())
+        for (size_t i = 0; i < mColorTargets.size(); i++)
         {
-            for (size_t i = 0; i < mColorTargets.size(); i++)
-            {
-                if (mColorTargets[i] != other.mColorTargets[i]) return false;
-            }
-            if (mDepthStencilTarget != other.mDepthStencilTarget) return false;
-            if (mSampleCount != other.mSampleCount) return false;
+            if (mColorTargets[i] != other.mColorTargets[i]) return false;
         }
-        return false;
+        if (mDepthStencilTarget != other.mDepthStencilTarget) return false;
+        if (mSampleCount != other.mSampleCount) return false;
+
+        return true;
     }
 
     Fbo::Desc::Desc()
