@@ -55,7 +55,9 @@ namespace Falcor
             //rot
         } Emitter;
 
-        void init(RenderContext* pCtx, uint32_t maxParticles);
+        void init(RenderContext* pCtx, uint32_t maxParticles, 
+            std::string ps = std::string("Effects/ParitcleTexture.ps.hlsl"),
+            std::string cs = std::string("Effects/ParticleSimulate.cs.hlsl"));
         void emit(RenderContext* pCtx, uint32_t num);
         void update(RenderContext* pCtx, float dt);
         void render(RenderContext* pCtx, glm::mat4 view, glm::mat4 proj);

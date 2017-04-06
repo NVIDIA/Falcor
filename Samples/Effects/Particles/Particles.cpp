@@ -35,7 +35,8 @@ void Particles::onGuiRender()
 void Particles::onLoad()
 {
     mpRenderContext->initCommandSignatures();
-    mParticleSystem.init(mpRenderContext.get(), 4096);
+    mParticleSystem.init(mpRenderContext.get(), 4096,
+        "Effects/ParticleConstColor.ps.hlsl", "Effects/ParticleSimulate2.cs.hlsl");
     mpCamera = Camera::create();
     mpCamController.attachCamera(mpCamera);
     mpTex = createTextureFromFile("C:/Users/clavelle/Desktop/TestParticle.png", true, false);

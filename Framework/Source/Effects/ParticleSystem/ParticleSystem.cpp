@@ -33,14 +33,20 @@
 
 namespace Falcor
 {
-    void ParticleSystem::init(RenderContext* pCtx, uint32_t maxParticles)
+    void ParticleSystem::init(RenderContext* pCtx, uint32_t maxParticles, std::string ps, std::string cs)
     {
         mMaxParticles = maxParticles;
 
         //Shaders
-        mEmitCs = ComputeProgram::createFromFile("Effects/ParticleEmit.cs.hlsl");
-        mSimulateCs = ComputeProgram::createFromFile("Effects/ParticleSimulate.cs.hlsl");
-        mDrawParticles = GraphicsProgram::createFromFile("Effects/ParticleVertex.vs.hlsl", "Effects/ParticleSimple.ps.hlsl");
+        mSimulateCs = ComputeProgram::createFromFile(cs);
+        uint32_t simThreadsX = 1, simThreadsY = 1, simThreadsZ= 1;
+        mSimulateCs->getActiveVersion()->getShader(ShaderType::Compute)->
+            getReflectionInterface()->GetThreadGroupSize(&simThreadsX, &simThreadsY, &simThreadsZ);
+        Program::DefineList emitDefines;
+        emitDefines.add("_SIMULATE_THREADS", std::to_string(simThreadsX * simThreadsY * simThreadsZ));
+        mEmitCs = ComputeProgram::createFromFile("Effects/ParticleEmit.cs.hlsl", emitDefines);
+        Program::DefineList defines;
+        mDrawParticles = GraphicsProgram::createFromFile("Effects/ParticleVertex.vs.hlsl", ps);
 
         //Buffers
         //IndexList

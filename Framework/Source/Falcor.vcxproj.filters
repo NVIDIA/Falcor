@@ -2152,7 +2152,13 @@
     <FxCompile Include="Data\Effects\ParticleVertex.vs.hlsl">
       <Filter>Data\Effects\Particles</Filter>
     </FxCompile>
-    <FxCompile Include="Data\Effects\ParticleSimple.ps.hlsl">
+    <FxCompile Include="Data\Effects\ParitcleTexture.ps.hlsl">
+      <Filter>Data\Effects\Particles</Filter>
+    </FxCompile>
+    <FxCompile Include="Data\Effects\ParticleSimulate2.cs.hlsl">
+      <Filter>Data\Effects\Particles</Filter>
+    </FxCompile>
+    <FxCompile Include="Data\Effects\ParticleConstColor.ps.hlsl">
       <Filter>Data\Effects\Particles</Filter>
     </FxCompile>
   </ItemGroup>

@@ -25,37 +25,13 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#ifndef PARTICLEDATA_H
-#define PARTICLEDATA_H
-
-#include "Data/HostDeviceData.h"
-
-#define MAX_EMIT 512
-
-struct Particle
+struct VSOut
 {
-    vec3 pos;
-    float scale;
-    vec3 vel;    
-    float life;
-    vec3 accel;
-    float growth;
-    vec4 padding2;
-    //id?
-    //rotation
+    float4 pos : SV_POSITION;
+    float2 texCoords : TEXCOORD;
 };
 
-struct EmitData
+float4 main(VSOut vOut) : SV_Target0
 {
-    Particle particles[MAX_EMIT];
-    uint numEmit;
-    uint maxParticles;
-    uint simulateThreads;
-};
-
-uint GetParticleIndex(uint groupIDx, uint threadsPerGroup, uint groupIndex)
-{
-    return groupIDx * threadsPerGroup + groupIndex;
+    return float4(0.75f, 0.25f, 0.25f, 1.f);
 }
-
-#endif //particleData_h

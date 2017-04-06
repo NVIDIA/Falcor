@@ -38,10 +38,10 @@ RWStructuredBuffer<Particle> ParticlePool;
 RWByteAddressBuffer numAlive;
 RWStructuredBuffer<uint> drawArgs;
 
-[numthreads(256, 1, 1)]
+[numthreads(13, 3, 17)]
 void main(uint3 groupID : SV_GroupID, uint groupIndex : SV_GroupIndex)
 {
-    uint index = GetParticleIndex(groupID.x, 256, groupIndex);
+    uint index = GetParticleIndex(groupID.x, 13 * 17 * 3, groupIndex);
     uint numAliveParticles = (uint)(numAlive.Load(0));
 
     //make sure this corresponds to an actual alive particle, not a redundant thread
@@ -56,6 +56,11 @@ void main(uint3 groupID : SV_GroupID, uint groupIndex : SV_GroupIndex)
             InterlockedExchange(IndexList[counterIndex], poolIndex, prevIndex);
             InterlockedExchange(IndexList[index], prevIndex, poolIndex);
             numAliveParticles -= 1;
+        }
+        else if (ParticlePool[poolIndex].life <= 3.5f)
+        {
+            //This is just to confirm this shader is passed in and called properly by the particle system class
+            ParticlePool[poolIndex].scale = max(ParticlePool[poolIndex].scale + ParticlePool[poolIndex].growth * dt, 0);
         }
         else
         {

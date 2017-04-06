@@ -27,6 +27,8 @@
 ***************************************************************************/
 #include "ParticleData.h"
 
+#expect _SIMULATE_THREADS
+
 cbuffer PerEmit
 {
     EmitData emitData;
@@ -51,10 +53,10 @@ void main(int3 groupID : SV_GroupID, int3 threadID : SV_GroupThreadID)
             uint indexListCounter = IndexList.IncrementCounter();
             ParticlePool[IndexList[indexListCounter]] = emitData.particles[index];
 
-            dispatchArgs[1] = numAliveParticles / 64;
-            if (numAliveParticles % 64 > 0)
+            dispatchArgs[0] = numAliveParticles / _SIMULATE_THREADS;
+            if (numAliveParticles % _SIMULATE_THREADS > 0)
             {
-                dispatchArgs[1] += 1;
+                dispatchArgs[0] += 1;
             }
         }
     }
