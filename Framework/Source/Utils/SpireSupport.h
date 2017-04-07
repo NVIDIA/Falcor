@@ -30,6 +30,8 @@
 ***************************************************************************/
 #pragma once
 
+#define FALCOR_SPIRE_SUPPORTED 1 
+
 // A helper file just so that other code is insulated from the path where
 // Spire is installed
 
