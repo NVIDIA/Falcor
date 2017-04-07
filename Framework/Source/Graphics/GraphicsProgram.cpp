@@ -55,17 +55,17 @@ namespace Falcor
         return pProg;
     }
 
-    GraphicsProgram::SharedPtr GraphicsProgram::createFromSpireFile(const std::string& path)
+    GraphicsProgram::SharedPtr GraphicsProgram::createFromSpireFile(const std::string& path, std::string const& entryPoint)
     {
         SharedPtr pProg = SharedPtr(new GraphicsProgram);
-        pProg->initFromSpire(path, true);
+        pProg->initFromSpire(path, true, entryPoint);
         return pProg;
     }
 
     GraphicsProgram::SharedPtr GraphicsProgram::createFromSpireString(const std::string& code)
     {
         SharedPtr pProg = SharedPtr(new GraphicsProgram);
-        pProg->initFromSpire(code, false);
+        pProg->initFromSpire(code, false, std::string());
         return pProg;
     }
 

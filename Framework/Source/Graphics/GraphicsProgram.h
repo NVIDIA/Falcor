@@ -89,7 +89,7 @@ namespace Falcor
 
         /** create a program using Spire shaders
         */
-        static SharedPtr createFromSpireFile(const std::string& path);
+        static SharedPtr createFromSpireFile(const std::string& path, std::string const& entryPoint = std::string());
 
         /** create a program using Spire shaders
         */

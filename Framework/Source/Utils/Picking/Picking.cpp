@@ -80,12 +80,12 @@ namespace Falcor
         // Compile shaders
         Program::DefineList defines;
         defines.add("PICKING");
-        mpProgram = GraphicsProgram::createFromFile("Framework/Shaders/SceneEditorVS.hlsl", "Framework/Shaders/SceneEditorPS.hlsl", defines);
-        mpProgramVars = GraphicsVars::create(mpProgram->getActiveVersion()->getReflector());
+        mpProgram = GraphicsProgram::createFromSpireFile("Framework/Shaders/SceneEditor.spire", "PickingShader");
+        mpProgramVars = GraphicsVars::create(mpProgram);
 
         defines.add("CULL_REAR_SECTION");
-        mpRotGizmoProgram = GraphicsProgram::createFromFile("Framework/Shaders/SceneEditorVS.hlsl", "Framework/Shaders/SceneEditorPS.hlsl", defines);
-        mpRotGizmoProgramVars = GraphicsVars::create(mpRotGizmoProgram->getActiveVersion()->getReflector());
+        mpRotGizmoProgram = GraphicsProgram::createFromSpireFile("Framework/Shaders/SceneEditor.spire", "RotGizmoShader");
+        mpRotGizmoProgramVars = GraphicsVars::create(mpRotGizmoProgram);
 
         // Depth State
         DepthStencilState::Desc dsDesc;

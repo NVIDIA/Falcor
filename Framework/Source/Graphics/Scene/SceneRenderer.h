@@ -130,7 +130,7 @@ namespace Falcor
         static size_t sDrawIDOffset;
         ComponentInstance::SharedPtr mpPerMeshComponentInstance;
 
-        static void updateVariableOffsets(const ProgramReflection* pReflector);
+        void updateVariableOffsets(const ProgramReflection* pReflector);
 
         virtual void setPerFrameData(RenderContext* pContext, const CurrentWorkingData& currentData);
         virtual bool setPerModelData(RenderContext* pContext, const CurrentWorkingData& currentData);
@@ -155,5 +155,11 @@ namespace Falcor
         bool mUnloadTexturesOnMaterialChange = false;
         RenderMode mRenderMode = RenderMode::Mono;
         bool mCompileMaterialWithProgram = true;
+
+        ProgramReflection const* mpSavedProgramReflection = nullptr;
+        uint32_t mCameraComponentBinding = ConstantBuffer::kInvalidOffset;
+        uint32_t mMeshComponentBinding = ConstantBuffer::kInvalidOffset;
+        uint32_t mMaterialComponentBinding = ConstantBuffer::kInvalidOffset;
+        uint32_t mVertexAttributeComponentBinding = ConstantBuffer::kInvalidOffset;
     };
 }

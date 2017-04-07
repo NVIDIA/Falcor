@@ -1,0 +1,196 @@
+/***************************************************************************
+# Copyright (c) 2017, NVIDIA CORPORATION. All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions
+# are met:
+#  * Redistributions of source code must retain the above copyright
+#    notice, this list of conditions and the following disclaimer.
+#  * Redistributions in binary form must reproduce the above copyright
+#    notice, this list of conditions and the following disclaimer in the
+#    documentation and/or other materials provided with the distribution.
+#  * Neither the name of NVIDIA CORPORATION nor the names of its
+#    contributors may be used to endorse or promote products derived
+#    from this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS ``AS IS'' AND ANY
+# EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THEa
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+# PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR
+# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+# EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+# PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+# PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+# OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+***************************************************************************/
+
+/*
+
+This file combines code that mainly resided in 3 different HLSL files:
+
+    SceneEditorCommon.hlsli
+    SceneEditorVS.hlsl
+    SceneEditorPS.hlsl
+
+Those files implemented three different rendering modes, which seem to have
+been combined into a single shader program not because they shared a lot
+of code, but more for the convenience of not having to deal with additional
+files and entry-point declaration rigamarole.
+
+For porting these to Spire, it makes a lot of sense to tease them out
+separately.
+
+Debug Drawing
+-------------
+
+The first major case is when the `DEBUG_DRAW` define is set, and this
+case uses almost completely distinct logic. It is also a very simple
+shader so writing it out in Spire is pretty concise:
+
+*/
+
+module DebugDrawParamsT
+{}
+
+template shader DebugDrawShader(
+	DebugDrawParams : DebugDrawParamsT,
+	InternalPerFrameCB : InternalPerFrameCB_T,
+	VertexAttribs : IVertexAttribs,
+	)
+{
+    using VertexAttribs;
+
+	using DebugDrawParams;
+	using gCam = InternalPerFrameCB();
+
+    // DebugDrawVSOut
+    public vec4 projCoord =  mul(gCam.viewProjMat, float4(vertPosition, 1));
+
+    public out @Fragment float4 sv_target = float4(vertColor, 1);
+}
+
+
+/*
+
+Picking
+-------
+
+Next we have the case where `PICKING` is set. This mode want to use
+the same vertex transformation as the main shading mode, so we'll
+want to factor out that code for sharing.
+
+It is unclear to me at the moment whether the `CULL_REAR_SECTION`
+behavior is ever needed together with `PICKING`. For right now
+I'm going to leave that code out anyway.
+
+*/
+
+module PickingParamsT
+{
+	// Note: we seem to not support the case where a component has *no* uniforms correctly
+	param float4 dummy;
+}
+
+template shader PickingShader(
+	PickingParams : PickingParamsT,
+	InternalPerFrameCB : InternalPerFrameCB_T,
+	InternalPerMeshCB : InternalPerMeshCB_T,
+	VertexAttribs : IVertexAttribs,
+	) targets StandardPipeline
+{
+	using VertexAttribs;
+
+    using PickingParams;
+    using InternalPerFrameCB;
+    using InternalPerMeshCB;
+
+    using DefaultVertexShader;
+
+    @CoarseVertex uint drawID = gDrawId[sv_instanceID];
+
+    public out @Fragment uint sv_target = drawID;
+}
+
+
+/*
+
+Ordinary Drawing
+----------------
+
+
+*/
+
+module ConstColorCBT
+{
+	param float3 gColor;
+}
+
+template shader SceneEditorShader(
+	ConstColorCB : ConstColorCBT,
+	InternalPerFrameCB : InternalPerFrameCB_T,
+	InternalPerMeshCB : InternalPerMeshCB_T,
+	VertexAttribs : IVertexAttribs,
+	) targets StandardPipeline
+{
+	using VertexAttribs;
+
+    using ConstColorCB;
+    using InternalPerFrameCB;
+    using InternalPerMeshCB;
+
+    using DefaultVertexShader;
+
+
+    float3 instancePos = float3(worldMat[0][3], worldMat[1][3], worldMat[2][3]);
+    @CoarseVertex vec3 toVertex = posW - instancePos;
+
+    float3 toCamera = normalize(/*gCam.*/position - posW);
+
+	// TODO(tfoley): Also support the mode where `SHADING` is not defined?
+
+    float shading = lerp(0.5, 1.0, dot(toCamera, normalW));
+
+    public out @Fragment vec4 sv_target = vec4(gColor * shading, 1);
+}
+
+/*
+
+`RotGizmo` Shader
+-----------------
+
+
+*/
+
+template shader RotGizmoShader(
+	ConstColorCB : ConstColorCBT,
+	InternalPerFrameCB : InternalPerFrameCB_T,
+	InternalPerMeshCB : InternalPerMeshCB_T,
+	VertexAttribs : IVertexAttribs,
+	) targets StandardPipeline
+{
+	using VertexAttribs;
+
+    using ConstColorCB;
+    using InternalPerFrameCB;
+    using InternalPerMeshCB;
+
+    using DefaultVertexShader;
+
+    float3 instancePos = float3(worldMat[0][3], worldMat[1][3], worldMat[2][3]);
+    @CoarseVertex vec3 toVertex = posW - instancePos;
+
+    float3 toCamera = normalize(/*gCam.*/position - posW);
+
+    public out @Fragment vec4 sv_target
+	{
+		// TODO(tfoley): Need to support top-level `void`-type fields for stuff like this...
+		if(dot(toCamera, toVertex) < -0.1)
+		{
+			discard;
+		}
+
+		return vec4(gColor, 1);
+	}
+}

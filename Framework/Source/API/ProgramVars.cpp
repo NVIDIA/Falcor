@@ -193,91 +193,58 @@ namespace Falcor
         return SharedPtr(new ComputeVars(pReflector, createBuffers, pRootSig));
     }
 
-    ConstantBuffer::SharedPtr ProgramVars::getConstantBuffer(const std::string& name) const
+
+    ComponentInstance::SharedPtr ProgramVars::getComponent(const std::string& name) const
     {
-#if 0
-        uint32_t index = mpReflector->getBufferBinding(name).regIndex;
+        uint32_t index = mpReflector->getComponentBinding(name);
         if (index == ProgramReflection::kInvalidLocation)
         {
-            logWarning("Constant buffer \"" + name + "\" was not found. Ignoring getConstantBuffer() call.");
+            logWarning("Component \"" + name + "\" was not found. Ignoring getComponent() call.");
             return nullptr;
         }
+        return getComponent(index);
+    }
 
-        auto& pDesc = mpReflector->getBufferDesc(name, ProgramReflection::BufferReflection::Type::Constant);
+    ConstantBuffer::SharedPtr ProgramVars::getConstantBuffer(const std::string& name) const
+    {
+        return getComponent(name)->getConstantBuffer();
+    }
 
-        if (pDesc->getType() != ProgramReflection::BufferReflection::Type::Constant)
+    ComponentInstance::SharedPtr ProgramVars::getComponent(uint32_t index) const
+    {
+        if(index >= mAssignedComponents.size())
         {
-            logWarning("Buffer \"" + name + "\" is not a constant buffer. Type = " + to_string(pDesc->getType()));
+            logWarning("Can't find component at index " + std::to_string(index) + ". Ignoring getComponent() call.");
             return nullptr;
         }
 
-        return getConstantBuffer(index);
-#else
-        logWarning("Spire-based shaders don't expose direct access to constant buffers");
-        return nullptr;
-#endif
+        // HACK(tfoley): If the component isn't found, then create one on-demand
+        if(!mAssignedComponents[index])
+        {
+            auto componentClass = mpReflector->getComponent(index);
+            if( componentClass )
+            {
+                auto componentInstance = ComponentInstance::create(componentClass);
+                const_cast<ProgramVars*>(this)->setComponent(index, componentInstance);
+            }
+        }
+
+        return mAssignedComponents[index];
     }
 
     ConstantBuffer::SharedPtr ProgramVars::getConstantBuffer(uint32_t index) const
     {
-#if 0
-        auto& it = mAssignedCbs.find(index);
-        if (it == mAssignedCbs.end())
-        {
-            logWarning("Can't find constant buffer at index " + std::to_string(index) + ". Ignoring getConstantBuffer() call.");
-            return nullptr;
-        }
-
-        return std::static_pointer_cast<ConstantBuffer>(it->second.pResource);
-#else
-        logWarning("Spire-based shaders don't expose direct access to constant buffers");
-        return nullptr;
-#endif
+        return getComponent(index)->getConstantBuffer();
     }
 
     bool ProgramVars::setConstantBuffer(uint32_t index, const ConstantBuffer::SharedPtr& pCB)
     {
-#if 0
-        // Check that the index is valid
-        if (mAssignedCbs.find(index) == mAssignedCbs.end())
-        {
-            logWarning("No constant buffer was found at index " + std::to_string(index) + ". Ignoring setConstantBuffer() call.");
-            return false;
-        }
-
-        // Just need to make sure the buffer is large enough
-        const auto& desc = mpReflector->getBufferDesc(index, ProgramReflection::ShaderAccess::Read, ProgramReflection::BufferReflection::Type::Constant);
-        if (desc->getRequiredSize() > pCB->getSize())
-        {
-            logError("Can't attach the constant buffer. Size mismatch.");
-            return false;
-        }
-
-        assert(mAssignedCbs.find(index) != mAssignedCbs.end());
-        mAssignedCbs[index].pResource = pCB;
-        return true;
-#else
-        logWarning("Spire-based shaders don't expose direct access to constant buffers");
-        return nullptr;
-#endif
+        return getComponent(index)->setConstantBuffer(pCB);
     }
 
     bool ProgramVars::setConstantBuffer(const std::string& name, const ConstantBuffer::SharedPtr& pCB)
     {
-#if 0
-        // Find the buffer
-        uint32_t loc = mpReflector->getBufferBinding(name).regIndex;
-        if (loc == ProgramReflection::kInvalidLocation)
-        {
-            logWarning("Constant buffer \"" + name + "\" was not found. Ignoring setConstantBuffer() call.");
-            return false;
-        }
-
-        return setConstantBuffer(loc, pCB);
-#else
-        logWarning("Spire-based shaders don't expose direct access to constant buffers");
-        return nullptr;
-#endif
+        return getComponent(name)->setConstantBuffer(pCB);
     }
 
     void setResourceSrvUavCommon(uint32_t regIndex, ProgramReflection::ShaderAccess shaderAccess, const Resource::SharedPtr& resource, ComponentInstance* pComponent)

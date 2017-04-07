@@ -160,6 +160,18 @@ namespace Falcor
     {
         auto device = gpDevice;
 
+        // HACK: if the user set something directly through the CB, then we need to treat that as making us dirty too... :(
+        if( mConstantBuffer )
+        {
+            if(mConstantBuffer->isDirty())
+                mResourceTableDirty = true;
+            else if( mConstantBuffer->getSequenceNumber() != mCBSequenceNumber )
+            {
+                mResourceTableDirty = true;
+            }
+        }
+
+
         if( mResourceTableDirty )
         {
             uint32_t resourceCount = (uint32_t) mAssignedSRVs.size();
@@ -187,6 +199,9 @@ namespace Falcor
                         mApiHandle.resourceDescriptorTable->getCpuHandle(srvIndex++),
                         mConstantBuffer->getCBV()->getCpuHandle(),
                         DescriptorHeap::Type::SRV);
+
+                    // Note that we are up-to-date with the CB
+                    mCBSequenceNumber = mConstantBuffer->getSequenceNumber();
                 }
 
                 for( auto& entry : mAssignedSRVs )
@@ -213,10 +228,14 @@ namespace Falcor
 
                 for( auto& sampler : mAssignedSamplers )
                 {
-                    device->copyDescriptor(
-                        mApiHandle.samplerDescriptorTable->getCpuHandle(samplerIndex++),
-                        sampler->getApiHandle()->getCpuHandle(),
-                        DescriptorHeap::Type::Sampler);
+                    if( sampler )
+                    {
+                        device->copyDescriptor(
+                            mApiHandle.samplerDescriptorTable->getCpuHandle(samplerIndex),
+                            sampler->getApiHandle()->getCpuHandle(),
+                            DescriptorHeap::Type::Sampler);
+                    }
+                    samplerIndex++;
                 }
             }
 

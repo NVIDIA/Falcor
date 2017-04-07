@@ -76,14 +76,30 @@ namespace Falcor
 
         if (sCameraDataOffset == ConstantBuffer::kInvalidOffset)
         {
-            const auto pPerFrameCbData = pReflector->getBufferDesc(kPerFrameCbName, ProgramReflection::BufferReflection::Type::Constant);
+//            const auto pPerFrameCbData = pReflector->getBufferDesc(kPerFrameCbName, ProgramReflection::BufferReflection::Type::Constant);
+            auto pPerFrameCbData = pReflector->getComponent(kPerFrameCbName);
 
             if (pPerFrameCbData != nullptr)
             {
 // SPIRE:
 //                sCameraDataOffset = pPerFrameCbData->getVariableData("gCam.viewMat")->location;
-//                sCameraDataOffset = pPerFrameCbData->getVariableData("viewMat")->location;
+                sCameraDataOffset = pPerFrameCbData->getVariableData("viewMat")->location;
             }
+        }
+
+        if(mpSavedProgramReflection != pReflector)
+        {
+            mpSavedProgramReflection = pReflector;
+
+            // Extract component offsets for the components we will set
+            //
+            // TODO: These should perform lookup based on teh declared class/interface of the
+            // parameter, and not on the name, but that is a tweak we can make later...
+
+            mCameraComponentBinding = pReflector->getComponentBinding("InternalPerFrameCB");
+            mMeshComponentBinding = pReflector->getComponentBinding("InternalPerMeshCB");
+            mMaterialComponentBinding = pReflector->getComponentBinding("M");
+            mVertexAttributeComponentBinding = pReflector->getComponentBinding("VertexAttribs");
         }
     }
 
@@ -99,12 +115,13 @@ namespace Falcor
                 currentData.pCamera->setIntoConstantBuffer(pCB, sCameraDataOffset);
             }
 #else
+            if(mCameraComponentBinding != ConstantBuffer::kInvalidOffset)
+            {
+                ComponentInstance::SharedPtr cameraComponent = currentData.pCamera->getSpireComponentInstance();
 
-            ComponentInstance::SharedPtr cameraComponent = currentData.pCamera->getSpireComponentInstance();
-
-            // Need to set this at the right place...
-            pContext->getGraphicsVars()->setComponent(1, cameraComponent);
-
+                // Need to set this at the right place...
+                pContext->getGraphicsVars()->setComponent(mCameraComponentBinding, cameraComponent);
+            }
 #endif
         }
     }
@@ -172,23 +189,25 @@ namespace Falcor
             worldMat = pModelInstance->getTransformMatrix() * pMeshInstance->getTransformMatrix();
         }
 
-        // We are re-using a single component instance for "transient" data, which means that
-        // we will end up churning through descriptor sets a bit here...
-        if(!mpPerMeshComponentInstance)
+        if(mMeshComponentBinding != ConstantBuffer::kInvalidOffset)
         {
-            auto componentClass = ShaderRepository::Instance().findComponentClass("InternalPerMeshCB_T");
-            mpPerMeshComponentInstance = ComponentInstance::create(componentClass);
+            // We are re-using a single component instance for "transient" data, which means that
+            // we will end up churning through descriptor sets a bit here...
+            if(!mpPerMeshComponentInstance)
+            {
+                auto componentClass = ShaderRepository::Instance().findComponentClass("InternalPerMeshCB_T");
+                mpPerMeshComponentInstance = ComponentInstance::create(componentClass);
+            }
+
+            mpPerMeshComponentInstance->setVariable(
+                sWorldMatOffset + drawInstanceID * sizeof(glm::mat4),
+                worldMat);
+
+            mpPerMeshComponentInstance->setVariable(sMeshIdOffset, pMesh->getId());
+
+            // Need to set this at the right place...
+            pContext->getGraphicsVars()->setComponent(mMeshComponentBinding, mpPerMeshComponentInstance);
         }
-
-        mpPerMeshComponentInstance->setVariable(
-            sWorldMatOffset + drawInstanceID * sizeof(glm::mat4),
-            worldMat);
-
-        mpPerMeshComponentInstance->setVariable(sMeshIdOffset, pMesh->getId());
-
-        // Need to set this at the right place...
-        int componentIndex = 2;
-        pContext->getGraphicsVars()->setComponent(componentIndex, mpPerMeshComponentInstance);
 #endif
 
         return true;
@@ -206,12 +225,13 @@ namespace Falcor
         }
 #else
         // Do it the Spire way
+        if(mMaterialComponentBinding != ConstantBuffer::kInvalidOffset)
+        {
+            auto material = currentData.pMaterial;        
+            ComponentInstance::SharedPtr componentInstance = material->getSpireComponentInstance();
 
-        auto material = currentData.pMaterial;        
-        ComponentInstance::SharedPtr componentInstance = material->getSpireComponentInstance();
-
-        int componentIndex = 3;
-        pContext->getGraphicsVars()->setComponent(componentIndex, componentInstance);
+            pContext->getGraphicsVars()->setComponent(mMaterialComponentBinding, componentInstance);
+        }
 #endif
 
         return true;
@@ -220,6 +240,10 @@ namespace Falcor
     void SceneRenderer::flushDraw(RenderContext* pContext, const Mesh* pMesh, uint32_t instanceCount, CurrentWorkingData& currentData)
     {
         currentData.pMaterial = pMesh->getMaterial().get();
+
+        // SPIRE: is it okay to require this?
+        assert(currentData.pMaterial);
+
         // Bind material
         if(mpLastMaterial != pMesh->getMaterial().get())
         {
@@ -257,10 +281,14 @@ namespace Falcor
         {
             // Bind VAO and set topology
             pContext->getGraphicsState()->setVao(pMesh->getVao());
-			// Bind spire vertex module
-			//TODO: need to set this at right place
-			int componentIndex = 4;
-			pContext->getGraphicsVars()->setComponent(componentIndex, pMesh->getVertexComponent());
+
+
+            if(mVertexAttributeComponentBinding != ConstantBuffer::kInvalidOffset)
+            {
+                // Bind spire vertex module
+                //TODO: need to set this at right place
+                pContext->getGraphicsVars()->setComponent(mVertexAttributeComponentBinding, pMesh->getVertexComponent());
+            }
 
 
             uint32_t activeInstances = 0;
@@ -363,6 +391,8 @@ namespace Falcor
         currentData.pMaterial = nullptr;
         currentData.pModel = nullptr;
         currentData.drawID = 0;
+
+        mpLastMaterial = nullptr;
 
         setupVR();
         setPerFrameData(pContext, currentData);

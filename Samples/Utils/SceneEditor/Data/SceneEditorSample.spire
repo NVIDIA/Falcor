@@ -25,38 +25,62 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#include "Framework.h"
-#include "SceneUtils.h"
-#include "Scene.h"
-#include "API/ConstantBuffer.h"
 
-namespace Falcor
+module SceneEditorSampleShaderParamsT
 {
-    void getSceneLightString(const Scene* pScene, std::string& lights)
-    {
-        lights.clear();
-        for(uint32_t i = 0; i < pScene->getLightCount(); i++)
-        {
-            auto pLight = pScene->getLight(i);
-            lights += " " + pLight->getName() + ",";
-        }
+// #foreach p in _LIGHT_SOURCES
+//     LightData $(p);
+// #endforeach
+// 
+//     float3 gAmbient;
 
-        if(lights.size() > 0)
-        {
-            // Remove the last ','
-            lights = lights.erase(lights.length() - 1);
-        }
-    }
+	param LightData[16] gLights;
 
-    void setSceneLightsIntoConstantBuffer(const Scene* pScene, ConstantBuffer* pBuffer)
-    {
-        // Set all the lights
-        for(uint32_t i = 0; i < pScene->getLightCount(); i++)
-        {
-            auto pLight = pScene->getLight(i);
-            pLight->setIntoConstantBuffer(pBuffer, "gLights[" + std::to_string(i) + "]");
-        }
-        pBuffer->setVariable("gLightCount", (int)pScene->getLightCount());
-        pBuffer->setVariable("gAmbient", pScene->getAmbientIntensity());
-    }
+	param float3 gAmbient;
+	param int gLightCount;
+}
+
+
+template shader SceneEditorSampleShader(
+	PerFrameCB : SceneEditorSampleShaderParamsT,
+	InternalPerFrameCB : InternalPerFrameCB_T,
+	InternalPerMeshCB : InternalPerMeshCB_T,
+	M : Material,
+	VertexAttribs : IVertexAttribs,  // hack: put components that does not generate a uniform buffer last to avoid incomplete pso
+	) targets StandardPipeline
+{
+	using PerFrameCB;
+
+	using InternalPerFrameCB;
+	using InternalPerMeshCB;
+	using VertexAttribs;
+
+
+	using DefaultVertexShader;
+
+	using material = M();
+
+    public out @Fragment vec4 outputColor
+	{
+		ShadingAttribs shAttr;
+		material.prepareShadingAttribs(posW, /*gCam.*/position, normal, bitangent, vertUV, 0.0f, shAttr);
+		
+		ShadingOutput result;
+		InitializeShadingOutput(result);
+
+// #foreach p in _LIGHT_SOURCES
+//     evalMaterial(shAttr, $(p), result, $(_valIndex) == 0);
+// #endforeach
+		for(int ii = 0; ii < gLightCount; ++ii)
+		{
+			material.evalMaterial(shAttr, gLights[ii], result);
+		}
+
+		float4 finalColor = float4(0.0f);
+		finalColor = vec4(result.finalValue, 1.f);
+
+		// add ambient
+//		finalColor.rgb += gAmbient * getDiffuseColor(shAttr).rgb;
+		return finalColor;
+	}
 }

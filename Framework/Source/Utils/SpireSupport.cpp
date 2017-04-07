@@ -50,14 +50,18 @@ namespace Falcor
 		std::map<std::string, SpireModule*> vertexModules;
         std::map<SpireModule*, ProgramReflection::ComponentClassReflection::SharedPtr> componentClasses;
 
-		void ReportErrors()
+		void ReportErrors(SpireDiagnosticSink* sink)
 		{
 			int size = spGetDiagnosticOutput(sink, nullptr, 0);
 			std::vector<char> buffer;
 			buffer.resize(size);
 			spGetDiagnosticOutput(sink, buffer.data(), size);
-			logError(buffer.data(), true);
+			logError(std::string("Spire compilation failed:\n") + buffer.data(), true);
 		}
+		void ReportErrors()
+        {
+            ReportErrors(sink);
+        }
 	public:
 		ShaderRepositoryImpl()
 		{
@@ -141,6 +145,7 @@ namespace Falcor
 			moduleSrc << "module VertexFormat" << index << " implements IVertexAttribs\n{\n";
 			bool hasBitangent = false;
 			bool hasColor = false;
+            bool hasTexCoord = false;
 			for (auto i = 0u; i < bc; i++)
 			{
 				auto bufLayout = vertLayout->getBufferLayout(i);
@@ -217,8 +222,11 @@ namespace Falcor
 						break;
 					}
 					moduleSrc << " " << bufLayout->getElementName(j) << ";\n";
-					if (bufLayout->getElementName(j) == VERTEX_TEXCOORD_NAME)
+                    if( bufLayout->getElementName(j) == VERTEX_TEXCOORD_NAME )
+                    {
 						moduleSrc << "\tpublic vec2 vertUV = " << VERTEX_TEXCOORD_NAME << ".xy;\n";
+                        hasTexCoord = true;
+                    }
 					else if (bufLayout->getElementName(j) == VERTEX_POSITION_NAME)
 						moduleSrc << "\tpublic vec3 vertPos = " << VERTEX_POSITION_NAME << ";\n";
 					else if (bufLayout->getElementName(j) == VERTEX_NORMAL_NAME)
@@ -239,6 +247,8 @@ namespace Falcor
 				moduleSrc << "\tpublic vec3 vertBitangent = vec3(1.0f, 0.0f, 0.0f);\n";
 			if (!hasColor)
 				moduleSrc << "\tpublic vec3 vertColor = vec3(1.0, 0.0, 0.0);\n";
+			if (!hasTexCoord)
+				moduleSrc << "\tpublic vec2 vertUV = vec2(0.0);\n";
 			moduleSrc << "}";
 			spEnvLoadModuleLibraryFromSource(libEnv, moduleSrc.str().c_str(), "VertexModule", sink);
 			auto moduleHandle = spEnvFindModule(libEnv, (std::string("VertexFormat") + std::to_string(index)).c_str());
@@ -252,7 +262,7 @@ namespace Falcor
 			if (spDiagnosticSinkHasAnyErrors(sink))
 			{
 				spPopContext(context);
-				ReportErrors();
+				ReportErrors(sink);
 				return nullptr;
 			}
 			auto rs = spGetCurrentEnvironment(context);

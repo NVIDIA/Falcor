@@ -531,6 +531,9 @@ namespace Falcor
         uint32_t getComponentCount() const { return mSpireComponentCount; }
         ComponentClassReflection::SharedPtr const& getComponent(uint32_t index) const { return mSpireComponents[index]; }
 
+        ComponentClassReflection::SharedPtr const& getComponent(std::string const& name) const;
+        uint32_t getComponentBinding(std::string const& name) const;
+
     private:
         bool init(const ProgramVersion* pProgVer, std::string& log);
         bool initFromSpire(
@@ -550,6 +553,7 @@ namespace Falcor
         // Spire:
         uint32_t mSpireComponentCount = 0;
         std::vector<ComponentClassReflection::SharedPtr> mSpireComponents;
+        std::map<std::string, uint32_t> mComponentBindings;
     };
 
 

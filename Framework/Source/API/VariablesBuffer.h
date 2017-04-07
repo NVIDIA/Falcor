@@ -81,6 +81,10 @@ namespace Falcor
         size_t getElementCount() const { return mElementCount; }
 
         size_t getElementSize() const { return mElementSize; }
+
+        uint32_t getSequenceNumber() const { return mSequenceNumber; }
+        bool isDirty() const { return mDirty; }
+
     protected:
         template<typename T>
         void setVariable(const std::string& name, size_t elementIndex, const T& value);
@@ -105,6 +109,7 @@ namespace Falcor
         ProgramReflection::BufferTypeReflection::SharedConstPtr mpReflector;
         std::vector<uint8_t> mData;
         mutable bool mDirty = true;
+        mutable uint32_t mSequenceNumber = 0;
         size_t mElementCount;
         size_t mElementSize;
     };

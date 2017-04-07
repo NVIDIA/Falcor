@@ -105,7 +105,7 @@ namespace Falcor
         Program();
         void init(const std::string& vs, const std::string& fs, const std::string& gs, const std::string& hs, const std::string& ds, const DefineList& programDefines, bool createdFromFile);
         void init(const std::string& cs, const DefineList& programDefines, bool createdFromFile);
-        void initFromSpire(const std::string& shader, bool createdFromFile);
+        void initFromSpire(const std::string& shader, bool createdFromFile, std::string const& entryPoint);
 
         bool link();
         std::string mShaderStrings[kShaderCount]; // Either a filename or a string, depending on the value of mCreatedFromFile

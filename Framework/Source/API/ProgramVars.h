@@ -52,6 +52,7 @@ namespace Falcor
         public:
             SharedPtrT() : std::shared_ptr<T>() {}
             SharedPtrT(T* pProgVars) : std::shared_ptr<T>(pProgVars) {}
+
             ConstantBuffer::SharedPtr operator[](const std::string& cbName) { return get()->getConstantBuffer(cbName); }
             ConstantBuffer::SharedPtr operator[](uint32_t index) { return get()->getConstantBuffer(index); }
         };
@@ -189,8 +190,10 @@ namespace Falcor
 
         size_t getComponentCount() const { return mAssignedComponents.size(); }
 
-        ComponentInstance::SharedPtr const& getComponent(uint32_t index) const { return mAssignedComponents[index]; }
-        ComponentInstance::SharedPtr const& getDefaultComponent() const { return getComponent(0); }
+        ComponentInstance::SharedPtr getComponent(const std::string& name) const;
+        ComponentInstance::SharedPtr getComponent(uint32_t index) const;
+
+        ComponentInstance::SharedPtr const& getDefaultComponent() const { return mAssignedComponents[0]; }
         void setComponent(uint32_t index, ComponentInstance::SharedPtr const& pComponent);
 
         template<typename T>

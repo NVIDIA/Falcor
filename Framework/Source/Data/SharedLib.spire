@@ -568,3 +568,27 @@ module TexturedMaterial
 	
 	public float4 diffuse = diffuseMap.Sample(samplerState, vertUV);
 }
+
+// A default vertex shader implementation that entry points can opt into.
+// Equivalent of old `defaultVS`
+module DefaultVertexShader targets StandardPipeline
+{
+	require vec3 vertPos;
+	require vec3 vertNormal;
+	require vec3 vertBitangent;
+	require mat4[64] gWorldMat;
+	require mat4 viewProjMat;
+
+	// HACK(foley): Making this explicitly per-vertex so that `sv_instanceID` isn't live downstream,
+	// because if it is, then the Spire compiler fails on trying to propagate it along...
+	public @CoarseVertex mat4 worldMat = gWorldMat[sv_instanceID];
+
+	public @CoarseVertex vec3 pos = (worldMat * vec4(vertPos, 1.0)).xyz;
+	public @CoarseVertex vec3 normal = normalize((worldMat * vec4(vertNormal, 0.0)).xyz);
+	public @CoarseVertex vec3 bitangent = normalize((worldMat * vec4(vertBitangent, 0.0)).xyz);
+
+	public @CoarseVertex vec3 posW = pos;
+	public @CoarseVertex vec3 normalW = normal;
+
+	public vec4 projCoord = viewProjMat * vec4(pos, 1.0);
+}

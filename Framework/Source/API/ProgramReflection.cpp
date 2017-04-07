@@ -283,7 +283,6 @@ namespace Falcor
         return bufferTypeReflection;
     }
 
-
     bool ProgramReflection::initFromSpire(
         SpireCompilationEnvironment*    pSpireEnv,
         SpireShader*                    pSpireShader,
@@ -293,44 +292,44 @@ namespace Falcor
         mSpireComponents.reserve(componentCount);
         for(int cc = 0; cc < componentCount; ++cc)
         {
+            char const* paramName = spShaderGetParameterName(pSpireShader, cc);
             char const* componentClassName = spShaderGetParameterType(pSpireShader, cc);
+
+            ComponentClassReflection::SharedPtr componentClass;
+
+            // If we have parameter type info, then we will use it to construct reflection info
+            // for the parameter.
             SpireModule* spireComponentClass = spEnvFindModule(pSpireEnv, componentClassName);
-            if(!spireComponentClass)
-                continue;
-
-            char const* bufferName = spShaderGetParameterName(pSpireShader, cc);
-
-            auto& bufferDesc = mBuffers[(uint32_t)BufferReflection::Type::Constant];
-
-            // Do reflection on the buffer type
-            auto componentClass = ShaderRepository::Instance().findComponentClass(spireComponentClass);
-                
+            if(spireComponentClass)
+            {
+                componentClass = ShaderRepository::Instance().findComponentClass(spireComponentClass);
+            }
+            else
+            {
+                // Otherwise,  we leave the type information for the parameter NULL.
+                //
+                // TODO: Consider whether we should stub in an empty reflection object here...
+            }
             mSpireComponents.push_back(componentClass);
-
-            // TODO: probably need to store info for binding the component as
-            // a parameter, and for name-based loopup...
-
-            // TODO: also may need a map from type->componeent, so that
-            // a subsystem can check whether it needs to bind things...
-
-            /*
-            auto shaderAccess = bufferTypeReflection->getShaderAccess();
-            uint32_t bindPoint = spShaderGetParameterBinding(pSpireShader, cc);
-            uint32_t bindSpace = 0;
-
-            auto bufferReflection = ProgramReflection::BufferReflection::create(
-                bufferName, bindPoint, bindSpace, bufferTypeReflection);
-
-            ProgramReflection::BindLocation bindLocation(bindPoint, shaderAccess);
-
-            bufferDesc.nameMap[bufferName] = bindLocation;
-            bufferDesc.descMap[bindLocation] = bufferReflection;
-            */
+            mComponentBindings.insert(std::make_pair(paramName, uint32_t(cc)));
         }
 
         mSpireComponentCount = componentCount;
 
         return true;
+    }
+
+    uint32_t ProgramReflection::getComponentBinding(std::string const& name) const
+    {
+        auto iter = mComponentBindings.find(name);
+        if(iter == mComponentBindings.end())
+            return ProgramReflection::kInvalidLocation;
+        return iter->second;
+    }
+
+    ProgramReflection::ComponentClassReflection::SharedPtr const& ProgramReflection::getComponent(std::string const& name) const
+    {
+        return getComponent(getComponentBinding(name));
     }
 
     const ProgramReflection::Variable* ProgramReflection::BufferTypeReflection::getVariableData(const std::string& name, size_t& offset, bool allowNonIndexedArray) const

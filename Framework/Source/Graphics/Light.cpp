@@ -68,19 +68,25 @@ namespace Falcor
         static_assert(dataSize % sizeof(float) * 4 == 0, "LightData size should be a multiple of 16");
         static_assert(sizeof(LightData) - sizeof(MaterialData) == offsetof(LightData, material), "'material' must be the last field in LightData");
 
-        size_t offset = pBuffer->getVariableOffset(varName + ".worldPos");
+
+// SPIRE:
+//        size_t offset = pBuffer->getVariableOffset(varName + ".worldPos");
+        size_t offset = pBuffer->getVariableOffset(varName);
         if (offset == ConstantBuffer::kInvalidOffset)
         {
             logWarning("AreaLight::setIntoConstantBuffer() - variable \"" + varName + "\"not found in constant buffer\n");
             return;
         }
 
+// SPIRE
+#if 0
         check_offset(worldDir);
         check_offset(intensity);
         check_offset(aabbMin);
         check_offset(aabbMax);
         check_offset(transMat);
         check_offset(numIndices);
+#endif
         assert(offset + dataSize <= pBuffer->getSize());
 
         // Set everything except for the material

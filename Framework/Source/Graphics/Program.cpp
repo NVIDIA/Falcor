@@ -114,7 +114,7 @@ namespace Falcor
         return result;
     }
 
-    void Program::initFromSpire(const std::string& shader, bool createdFromFile)
+    void Program::initFromSpire(const std::string& shader, bool createdFromFile, std::string const& entryPoint)
     {
         mCreatedFromFile = createdFromFile;
         mIsSpire = true;
@@ -163,16 +163,37 @@ namespace Falcor
 
 //            SpireShader* spireShader = spEnvGetShader(mSpireEnv, spEnvGetShaderCount(mSpireEnv) - 1);
 
-            // HACK: pick first shader with non-zero number of parameters
-            int shaderCount = spEnvGetShaderCount(mSpireEnv);
             SpireShader* spireShader = nullptr;
-            for(int ss = 0; ss < shaderCount; ++ss)
+            if(!entryPoint.empty())
             {
-                spireShader = spEnvGetShader(mSpireEnv, ss);
-                if(spShaderGetParameterCount(spireShader) > 0)
-                    break;
+                spireShader = spEnvFindShader(mSpireEnv, entryPoint.c_str());
+                if(!spireShader)
+                {
+                    std::string err = "Entry point '" + entryPoint + "' not found in shader '" + name + "'";
+                    logError(err);
+                    return;
+                }
+            }
+            else
+            {
+                // HACK: pick first shader with non-zero number of parameters
+                int shaderCount = spEnvGetShaderCount(mSpireEnv);
+                for(int ss = 0; ss < shaderCount; ++ss)
+                {
+                    spireShader = spEnvGetShader(mSpireEnv, ss);
+                    if(spShaderGetParameterCount(spireShader) > 0)
+                        break;
+                }
+
+                if(!spireShader)
+                {
+                    std::string err = "No suitable entry point found in shader '" + name + "'";
+                    logError(err);
+                    return;
+                }
             }
 
+            assert(spireShader);
             int componentParameterCount = spShaderGetParameterCount(spireShader);
             getComponentClassList().resize(componentParameterCount, nullptr);
 

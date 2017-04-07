@@ -222,6 +222,9 @@ namespace Falcor
             mResourceTableDirty = true;
         }
 
+        ConstantBuffer::SharedPtr getConstantBuffer() const { return mConstantBuffer; }
+        bool setConstantBuffer(ConstantBuffer::SharedPtr pCB) { mConstantBuffer = pCB; return true; }
+
         bool setRawBuffer(const std::string& name, Buffer::SharedPtr const& pBuf);
         bool setTypedBuffer(const std::string& name, TypedBufferBase::SharedPtr const& pBuf);
         bool setStructuredBuffer(const std::string& name, StructuredBuffer::SharedPtr const& pBuf);
@@ -296,5 +299,6 @@ namespace Falcor
         mutable ApiHandle mApiHandle;
         mutable unsigned mResourceTableDirty : 1;
         mutable unsigned mSamplerTableDirty : 1;
+        mutable uint32_t mCBSequenceNumber = -1;
     };
 }

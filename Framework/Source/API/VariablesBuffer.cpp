@@ -210,6 +210,7 @@ namespace Falcor
             const uint8_t* pVar = mData.data() + offset + elementIndex * mElementSize;
             *(VarType*)pVar = value;
             mDirty = true;
+            mSequenceNumber++;
         }
     }
 
@@ -312,6 +313,7 @@ namespace Falcor
                 pData[i] = pValue[i];
             }
             mDirty = true;
+            mSequenceNumber++;
         }
     }
 
@@ -413,6 +415,7 @@ namespace Falcor
         }
         memcpy(mData.data() + offset, pSrc, size);
         mDirty = true;
+        mSequenceNumber++;
     }
 
     bool checkResourceDimension(const Texture* pTexture, const ProgramReflection::Resource* pResourceDesc, const std::string& name, const std::string& bufferName)
@@ -568,6 +571,7 @@ namespace Falcor
         if(bOK)
         {
             mDirty = true;
+            mSequenceNumber++;
             setTextureInternal(offset, pTexture, pSampler);
         }
     }

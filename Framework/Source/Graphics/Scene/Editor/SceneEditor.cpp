@@ -469,8 +469,8 @@ namespace Falcor
         mpSelectionGraphicsState->setDepthStencilState(depthTestDS);
 
         // Shader
-        mpColorProgram = GraphicsProgram::createFromFile("Framework/Shaders/SceneEditorVS.hlsl", "Framework/Shaders/SceneEditorPS.hlsl");
-        mpColorProgramVars = GraphicsVars::create(mpColorProgram->getActiveVersion()->getReflector());
+        mpColorProgram = GraphicsProgram::createFromSpireFile("Framework/Shaders/SceneEditor.spire", "SceneEditorShader");
+        mpColorProgramVars = GraphicsVars::create(mpColorProgram);
         mpSelectionGraphicsState->setProgram(mpColorProgram);
 
         // Selection Scene and Renderer
@@ -502,8 +502,8 @@ namespace Falcor
 
         GraphicsProgram::DefineList defines;
         defines.add("DEBUG_DRAW");
-        mpDebugDrawProgram = GraphicsProgram::createFromFile("Framework/Shaders/SceneEditorVS.hlsl", "Framework/Shaders/SceneEditorPS.hlsl", defines);
-        mpDebugDrawProgramVars = GraphicsVars::create(mpDebugDrawProgram->getActiveVersion()->getReflector());
+        mpDebugDrawProgram = GraphicsProgram::createFromSpireFile("Framework/Shaders/SceneEditor.spire", "DebugDrawShader");
+        mpDebugDrawProgramVars = GraphicsVars::create(mpDebugDrawProgram);
 
         mpPathGraphicsState = GraphicsState::create();
         mpPathGraphicsState->setProgram(mpDebugDrawProgram);

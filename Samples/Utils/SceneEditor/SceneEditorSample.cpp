@@ -65,8 +65,8 @@ void SceneEditorSample::onLoad()
 
 void SceneEditorSample::reset()
 {
-    mpProgram = nullptr;
-    mpVars = nullptr;
+//    mpProgram = nullptr;
+//    mpVars = nullptr;
 }
 
 void SceneEditorSample::initNewScene()
@@ -82,11 +82,14 @@ void SceneEditorSample::initNewScene()
 
 void SceneEditorSample::initShader()
 {
-    mpProgram = GraphicsProgram::createFromFile("", "SceneEditorSample.fs");
+    // SPIRE: don't re-create the program!
+    if(mpProgram) return;
+
+    mpProgram = GraphicsProgram::createFromSpireFile("SceneEditorSample.spire");
     std::string lights;
     getSceneLightString(mpScene.get(), lights);
     mpProgram->addDefine("_LIGHT_SOURCES", lights);
-    mpVars = GraphicsVars::create(mpProgram->getActiveVersion()->getReflector());
+    mpVars = GraphicsVars::create(mpProgram);
 }
 
 void SceneEditorSample::loadScene()
