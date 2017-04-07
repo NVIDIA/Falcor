@@ -37,10 +37,10 @@ namespace Falcor
     public:
         struct EmitterData
         {
-            f32 duration = 5.f;
-            f32 randDuration = 0.f;
-            f32 emitFrequency = 0.01f;
-            uint32_t emitCount = 4;
+            float duration = 5.f;
+            float randDuration = 0.f;
+            float emitFrequency = 0.01f;
+            int32_t emitCount = 4;
             int32_t randEmitCount = 0;
             vec3 spawnPos = vec3(0.f, 0.f, 0.f);
             vec3 randSpawnPos = vec3(0.f, 0.f, 0.f);
@@ -48,10 +48,10 @@ namespace Falcor
             vec3 randVel = vec3(1.f, 1.f, 1.f);
             vec3 accel = vec3(0.f, 0.f, 0.f);
             vec3 randAccel = vec3(2.f, 2.f, 2.f);
-            f32 scale = 0.1f;
-            f32 randScale = 0.f;
-            f32 growth = -0.05f;
-            f32 randGrowth = 0.f;
+            float scale = 0.1f;
+            float randScale = 0.f;
+            float growth = -0.05f;
+            float randGrowth = 0.f;
             //rot
         } Emitter;
 

@@ -32,7 +32,6 @@
 void Particles::onGuiRender()
 {
     float floatMax = std::numeric_limits<float>::max();
-    float floatMin = std::numeric_limits<float>::min();
     mpGui->addFloatVar("Duration", mParticleSystem.Emitter.duration, 0.f);
     mpGui->addFloatVar("RandDuration", mParticleSystem.Emitter.randDuration, 0.f);
     mpGui->addFloatVar("Frequency", mParticleSystem.Emitter.emitFrequency, 0.01f);
@@ -40,16 +39,16 @@ void Particles::onGuiRender()
     mpGui->addIntVar("EmitCount", emitCount, 0);
     mParticleSystem.Emitter.emitCount = emitCount;
     mpGui->addIntVar("RandEmitCount", mParticleSystem.Emitter.randEmitCount, 0);
-    mpGui->addFloat3Var("SpawnPos", mParticleSystem.Emitter.spawnPos, floatMin, floatMax);
-    mpGui->addFloat3Var("RandSpawnPos", mParticleSystem.Emitter.randSpawnPos, floatMin, floatMax);
-    mpGui->addFloat3Var("Velocity", mParticleSystem.Emitter.vel, floatMin, floatMax);
-    mpGui->addFloat3Var("RandVel", mParticleSystem.Emitter.randVel, floatMin, floatMax);
-    mpGui->addFloat3Var("Accel", mParticleSystem.Emitter.accel, floatMin, floatMax);
-    mpGui->addFloat3Var("RandAccel", mParticleSystem.Emitter.randAccel, floatMin, floatMax);
+    mpGui->addFloat3Var("SpawnPos", mParticleSystem.Emitter.spawnPos, -floatMax, floatMax);
+    mpGui->addFloat3Var("RandSpawnPos", mParticleSystem.Emitter.randSpawnPos, 0.f, floatMax);
+    mpGui->addFloat3Var("Velocity", mParticleSystem.Emitter.vel, -floatMax, floatMax);
+    mpGui->addFloat3Var("RandVel", mParticleSystem.Emitter.randVel, 0.f, floatMax);
+    mpGui->addFloat3Var("Accel", mParticleSystem.Emitter.accel, -floatMax, floatMax);
+    mpGui->addFloat3Var("RandAccel", mParticleSystem.Emitter.randAccel, 0.f, floatMax);
     mpGui->addFloatVar("Scale", mParticleSystem.Emitter.scale, 0.001f);
     mpGui->addFloatVar("RandScale", mParticleSystem.Emitter.randScale, 0.001f);
     mpGui->addFloatVar("Growth", mParticleSystem.Emitter.growth);
-    mpGui->addFloatVar("RandGrowth", mParticleSystem.Emitter.randGrowth);
+    mpGui->addFloatVar("RandGrowth", mParticleSystem.Emitter.randGrowth, 0.001f);
 }
 
 void Particles::onLoad()
