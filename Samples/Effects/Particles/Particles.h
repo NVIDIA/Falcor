@@ -44,7 +44,7 @@ public:
 
 private:
     ComputeContext::SharedPtr mpComputeContext;
-    ParticleSystem mParticleSystem;
+    ParticleSystem::SharedPtr mParticleSystem;
     Camera::SharedPtr mpCamera;
     FirstPersonCameraController mpCamController;
     Texture::SharedPtr mpTex;

@@ -31,34 +31,17 @@
 
 void Particles::onGuiRender()
 {
-    float floatMax = std::numeric_limits<float>::max();
-    mpGui->addFloatVar("Duration", mParticleSystem.Emitter.duration, 0.f);
-    mpGui->addFloatVar("RandDuration", mParticleSystem.Emitter.randDuration, 0.f);
-    mpGui->addFloatVar("Frequency", mParticleSystem.Emitter.emitFrequency, 0.01f);
-    int32_t emitCount = mParticleSystem.Emitter.emitCount;
-    mpGui->addIntVar("EmitCount", emitCount, 0);
-    mParticleSystem.Emitter.emitCount = emitCount;
-    mpGui->addIntVar("RandEmitCount", mParticleSystem.Emitter.randEmitCount, 0);
-    mpGui->addFloat3Var("SpawnPos", mParticleSystem.Emitter.spawnPos, -floatMax, floatMax);
-    mpGui->addFloat3Var("RandSpawnPos", mParticleSystem.Emitter.randSpawnPos, 0.f, floatMax);
-    mpGui->addFloat3Var("Velocity", mParticleSystem.Emitter.vel, -floatMax, floatMax);
-    mpGui->addFloat3Var("RandVel", mParticleSystem.Emitter.randVel, 0.f, floatMax);
-    mpGui->addFloat3Var("Accel", mParticleSystem.Emitter.accel, -floatMax, floatMax);
-    mpGui->addFloat3Var("RandAccel", mParticleSystem.Emitter.randAccel, 0.f, floatMax);
-    mpGui->addFloatVar("Scale", mParticleSystem.Emitter.scale, 0.001f);
-    mpGui->addFloatVar("RandScale", mParticleSystem.Emitter.randScale, 0.001f);
-    mpGui->addFloatVar("Growth", mParticleSystem.Emitter.growth);
-    mpGui->addFloatVar("RandGrowth", mParticleSystem.Emitter.randGrowth, 0.001f);
+    mParticleSystem->renderUi(mpGui.get());
 }
 
 void Particles::onLoad()
 {
-    mpRenderContext->initCommandSignatures();
-    mParticleSystem.init(mpRenderContext.get(), 4096, "Effects/ParticleConstColor.ps.hlsl");
+    mParticleSystem = ParticleSystem::create(mpRenderContext.get(), 4096, "Effects/ParticleConstColor.ps.hlsl");
     mpCamera = Camera::create();
+    mpCamera->setPosition(mpCamera->getPosition() + glm::vec3(0, 5, 10));
     mpCamController.attachCamera(mpCamera);
     mpTex = createTextureFromFile("C:/Users/clavelle/Desktop/TestParticle.png", true, false);
-    mParticleSystem.getDrawVars()->setSrv(2, mpTex->getSRV());
+    mParticleSystem->getDrawVars()->setSrv(2, mpTex->getSRV());
 }
 
 void Particles::onFrameRender()
@@ -67,8 +50,8 @@ void Particles::onFrameRender()
  	mpRenderContext->clearFbo(mpDefaultFBO.get(), clearColor, 1.0f, 0, FboAttachmentType::All);
     mpCamController.update();
 
-    mParticleSystem.update(mpRenderContext.get(), frameRate().getLastFrameTime());
-    mParticleSystem.render(mpRenderContext.get(), mpCamera->getViewMatrix(), mpCamera->getProjMatrix());
+    mParticleSystem->update(mpRenderContext.get(), frameRate().getLastFrameTime());
+    mParticleSystem->render(mpRenderContext.get(), mpCamera->getViewMatrix(), mpCamera->getProjMatrix());
 }
 
 void Particles::onShutdown()

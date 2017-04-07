@@ -39,10 +39,10 @@ RWStructuredBuffer<Particle> ParticlePool;
 ByteAddressBuffer numAlive;
 RWStructuredBuffer<uint> dispatchArgs;
 
-[numthreads(64, 1, 1)]
+[numthreads(EMIT_THREADS, 1, 1)]
 void main(int3 groupID : SV_GroupID, int3 threadID : SV_GroupThreadID)
 {
-    uint index = 64 * groupID.y + threadID.x;
+    uint index = EMIT_THREADS * groupID.y + threadID.x;
     uint numAliveParticles = (uint)(numAlive.Load(0));
     //make sure this corresponds to an emitted particle, and isnt a redundant thread
     if (index < emitData.numEmit)
@@ -53,10 +53,10 @@ void main(int3 groupID : SV_GroupID, int3 threadID : SV_GroupThreadID)
             uint indexListCounter = IndexList.IncrementCounter();
             ParticlePool[IndexList[indexListCounter]] = emitData.particles[index];
 
-            dispatchArgs[0] = (numAliveParticles + emitData.numEmit) / _SIMULATE_THREADS;
-            if (numAliveParticles % _SIMULATE_THREADS > 0)
+            //this buffer only needs to be update once
+            if (index == 0)
             {
-                dispatchArgs[0] += 1;
+                dispatchArgs[0] = ceil(((numAliveParticles + emitData.numEmit) / (float)_SIMULATE_THREADS));
             }
         }
     }

@@ -27,10 +27,11 @@
 ***************************************************************************/
 #include "ParticleData.h"
 
+static const uint numThreads = 256;
+
 cbuffer PerFrame
 {
-    float dt;
-    uint maxParticles;
+    SimulatePerFrame perFrame;
 };
 
 RWStructuredBuffer<uint> IndexList;
@@ -38,17 +39,17 @@ RWStructuredBuffer<Particle> ParticlePool;
 RWByteAddressBuffer numAlive;
 RWStructuredBuffer<uint> drawArgs;
 
-[numthreads(256, 1, 1)]
+[numthreads(numThreads, 1, 1)]
 void main(uint3 groupID : SV_GroupID, uint groupIndex : SV_GroupIndex)
 {
-    uint index = GetParticleIndex(groupID.x, 256, groupIndex);
+    uint index = getParticleIndex(groupID.x, numThreads, groupIndex);
     uint numAliveParticles = (uint)(numAlive.Load(0));
 
     //make sure this corresponds to an actual alive particle, not a redundant thread
     if (index < numAliveParticles)
     {
         uint poolIndex = IndexList[index];
-        ParticlePool[poolIndex].life -= dt;
+        ParticlePool[poolIndex].life -= perFrame.dt;
         if (ParticlePool[poolIndex].life <= 0)
         {
             uint counterIndex = IndexList.DecrementCounter();
@@ -59,9 +60,9 @@ void main(uint3 groupID : SV_GroupID, uint groupIndex : SV_GroupIndex)
         }
         else
         {
-            ParticlePool[poolIndex].pos += ParticlePool[poolIndex].vel * dt;
-            ParticlePool[poolIndex].vel += ParticlePool[poolIndex].accel * dt;
-            ParticlePool[poolIndex].scale = max(ParticlePool[poolIndex].scale + ParticlePool[poolIndex].growth * dt, 0);
+            ParticlePool[poolIndex].pos += ParticlePool[poolIndex].vel * perFrame.dt;
+            ParticlePool[poolIndex].vel += ParticlePool[poolIndex].accel * perFrame.dt;
+            ParticlePool[poolIndex].scale = max(ParticlePool[poolIndex].scale + ParticlePool[poolIndex].growth * perFrame.dt, 0);
         }
 
         //0, 1, 2, dispatch xyz. 3 vert count per instance, 4 numInstances, 5 start vert loc, 6 start instance loc

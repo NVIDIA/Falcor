@@ -32,64 +32,81 @@
 
 namespace Falcor
 {
+    class Gui;
+
     class ParticleSystem
     {
     public:
-        struct EmitterData
-        {
-            float duration = 5.f;
-            float randDuration = 0.f;
-            float emitFrequency = 0.01f;
-            int32_t emitCount = 4;
-            int32_t randEmitCount = 0;
-            vec3 spawnPos = vec3(0.f, 0.f, 0.f);
-            vec3 randSpawnPos = vec3(0.f, 0.f, 0.f);
-            vec3 vel = vec3(0.f, 0.f, 0.f);
-            vec3 randVel = vec3(1.f, 1.f, 1.f);
-            vec3 accel = vec3(0.f, 0.f, 0.f);
-            vec3 randAccel = vec3(2.f, 2.f, 2.f);
-            float scale = 0.1f;
-            float randScale = 0.f;
-            float growth = -0.05f;
-            float randGrowth = 0.f;
-            //rot
-        } Emitter;
+        using SharedPtr = std::shared_ptr<ParticleSystem>;
 
-        void init(RenderContext* pCtx, uint32_t maxParticles, 
-            std::string ps = std::string("Effects/ParitcleTexture.ps.hlsl"),
-            std::string cs = std::string("Effects/ParticleSimulate.cs.hlsl"));
-        void emit(RenderContext* pCtx, uint32_t num);
+        static SharedPtr create(RenderContext* pCtx, uint32_t maxParticles, 
+            std::string drawPixelShader = std::string("Effects/ParitcleTexture.ps.hlsl"),
+            std::string simulateComputeShader = std::string("Effects/ParticleSimulate.cs.hlsl"));
         void update(RenderContext* pCtx, float dt);
         void render(RenderContext* pCtx, glm::mat4 view, glm::mat4 proj);
-        GraphicsVars::SharedPtr getDrawVars() { return mpDrawVars; }
-        ComputeVars::SharedPtr getSimulateVars() { return mSimulateVars; }
+        void renderUi(Gui* pGui);
+        GraphicsVars::SharedPtr getDrawVars() { return mDrawResources.vars; }
+        ComputeVars::SharedPtr getSimulateVars() { return mSimulateResources.vars; }
+
+        void setParticleDuration(float dur, float offset);
+        void setEmitData(uint32_t emitCount, uint32_t emitCountOffset, float emitFrequency);
+        void setSpawnPos(vec3 spawnPos, vec3 offset);
+        void setVelocity(vec3 velocity, vec3 offset);
+        void setAcceleration(vec3 accel, vec3 offset);
+        void setScale(float scale, float offset);
+        void setGrowth(float growth, float offset);
 
     private:
-        struct SimulatePerFrame
+        struct EmitterData
         {
-            float dt;
-            uint32_t maxParticles;
-        };
+            EmitterData() : duration(3.f), durationOffset(0.f), emitFrequency(0.1f), emitCount(32),
+                emitCountOffset(0), spawnPos(0.f, 0.f, 0.f), spawnPosOffset(0.f, 0.5f, 0.f),
+                vel(0, 5, 0), velOffset(2, 1, 2), accel(0, -3, 0), accelOffset(0.f, 0.f, 0.f),
+                scale(0.2f), scaleOffset(0.f), growth(-0.05f), growthOffset(0.f) {}
+            float duration;
+            float durationOffset; 
+            float emitFrequency;
+            int32_t emitCount;
+            int32_t emitCountOffset;
+            vec3 spawnPos;
+            vec3 spawnPosOffset;
+            vec3 vel;
+            vec3 velOffset;
+            vec3 accel;
+            vec3 accelOffset;
+            float scale;
+            float scaleOffset;
+            float growth;
+            float growthOffset;
+            //rot
+        } mEmitter;
 
-        struct VSPerFrame
-        {
-            glm::mat4 view;
-            glm::mat4 proj;
-        };
+        ParticleSystem() = delete;
+        ParticleSystem(RenderContext* pCtx, uint32_t maxParticles,
+            std::string drawPixelShader, std::string simulateComputeShader);
+        void emit(RenderContext* pCtx, uint32_t num);
 
         uint32_t mMaxParticles;
 
-        ComputeProgram::SharedPtr mEmitCs;
-        ComputeVars::SharedPtr mEmitVars;
-        ComputeState::SharedPtr mEmitState;
+        struct EmitResources
+        {
+            ComputeVars::SharedPtr vars;
+            ComputeState::SharedPtr state;
+        } mEmitResources;
 
-        ComputeProgram::SharedPtr mSimulateCs;
-        ComputeVars::SharedPtr mSimulateVars;
-        ComputeState::SharedPtr mSimulateState;
+        struct SimulateResources
+        {
+            ComputeVars::SharedPtr vars;
+            ComputeState::SharedPtr state;
+        } mSimulateResources;
 
-        GraphicsProgram::SharedPtr mDrawParticles;
-        GraphicsVars::SharedPtr mpDrawVars;
-        GraphicsState::SharedPtr mpDrawState;
+        struct DrawResources
+        {
+            GraphicsProgram::SharedPtr shader;
+            GraphicsVars::SharedPtr vars;
+            Vao::SharedPtr vao;
+        } mDrawResources;
+
 
         StructuredBuffer::SharedPtr mpParticlePool;
         StructuredBuffer::SharedPtr mpIndexList;

@@ -38,7 +38,7 @@ struct VSOut
 float4 main(VSOut vOut) : SV_Target0
 {
     float4 color = gTex.Sample(gSampler, vOut.texCoords);
-    if (color.w < 0.01f)
+    if (color.w < 0.5f)
         discard;
     
     return color;

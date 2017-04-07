@@ -41,7 +41,7 @@ RWStructuredBuffer<uint> drawArgs;
 [numthreads(13, 3, 17)]
 void main(uint3 groupID : SV_GroupID, uint groupIndex : SV_GroupIndex)
 {
-    uint index = GetParticleIndex(groupID.x, 13 * 17 * 3, groupIndex);
+    uint index = getParticleIndex(groupID.x, 13 * 17 * 3, groupIndex);
     uint numAliveParticles = (uint)(numAlive.Load(0));
 
     //make sure this corresponds to an actual alive particle, not a redundant thread

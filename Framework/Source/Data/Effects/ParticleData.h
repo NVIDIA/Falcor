@@ -31,6 +31,7 @@
 #include "Data/HostDeviceData.h"
 
 #define MAX_EMIT 512
+#define EMIT_THREADS 64
 
 struct Particle
 {
@@ -53,7 +54,26 @@ struct EmitData
     uint simulateThreads;
 };
 
-uint GetParticleIndex(uint groupIDx, uint threadsPerGroup, uint groupIndex)
+struct SimulatePerFrame
+{
+    float dt;
+};
+
+#ifdef HOST_CODE
+struct VSPerFrame
+{
+    glm::mat4 view;
+    glm::mat4 proj;
+};
+#else
+struct VSPerFrame
+{
+    matrix view;
+    matrix proj;
+};
+#endif
+
+uint getParticleIndex(uint groupIDx, uint threadsPerGroup, uint groupIndex)
 {
     return groupIDx * threadsPerGroup + groupIndex;
 }

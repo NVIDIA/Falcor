@@ -30,23 +30,29 @@
 #include "glm/gtc/random.hpp"
 #include <algorithm>
 #include "Data/Effects/ParticleData.h"
+#include "Utils/Gui.h"
 
 namespace Falcor
 {
-    void ParticleSystem::init(RenderContext* pCtx, uint32_t maxParticles, std::string ps, std::string cs)
+    ParticleSystem::SharedPtr ParticleSystem::create(RenderContext* pCtx, uint32_t maxParticles, std::string drawPixelShader, std::string simulateComputeShader)
+    {
+        return ParticleSystem::SharedPtr(new ParticleSystem(pCtx, maxParticles, drawPixelShader, simulateComputeShader));
+    }
+
+    ParticleSystem::ParticleSystem(RenderContext* pCtx, uint32_t maxParticles, std::string drawPixelShader, std::string simulateComputeShader)
     {
         mMaxParticles = maxParticles;
 
         //Shaders
-        mSimulateCs = ComputeProgram::createFromFile(cs);
+        ComputeProgram::SharedPtr simulateCs = ComputeProgram::createFromFile(simulateComputeShader);
         //Add num sim threads to emit defines (for calculating needed thread groups in indirect arg buffer)
         uint32_t simThreadsX = 1, simThreadsY = 1, simThreadsZ= 1;
-        mSimulateCs->getActiveVersion()->getShader(ShaderType::Compute)->
+        simulateCs->getActiveVersion()->getShader(ShaderType::Compute)->
             getReflectionInterface()->GetThreadGroupSize(&simThreadsX, &simThreadsY, &simThreadsZ);
         Program::DefineList emitDefines;
         emitDefines.add("_SIMULATE_THREADS", std::to_string(simThreadsX * simThreadsY * simThreadsZ));
-        mEmitCs = ComputeProgram::createFromFile("Effects/ParticleEmit.cs.hlsl", emitDefines);
-        mDrawParticles = GraphicsProgram::createFromFile("Effects/ParticleVertex.vs.hlsl", ps);
+        ComputeProgram::SharedPtr emitCs = ComputeProgram::createFromFile("Effects/ParticleEmit.cs.hlsl", emitDefines);
+        mDrawResources.shader = GraphicsProgram::createFromFile("Effects/ParticleVertex.vs.hlsl", drawPixelShader);
 
         //Buffers
         //IndexList
@@ -54,15 +60,13 @@ namespace Falcor
         indices.resize(maxParticles);
         uint32_t counter = 0;
         std::generate(indices.begin(), indices.end(), [&counter] {return counter++; });
-        ProgramReflection::SharedConstPtr pEmitReflect = mEmitCs->getActiveVersion()->getReflector();
-        ProgramReflection::BufferReflection::SharedConstPtr indexListReflect = 
-            pEmitReflect->getBufferDesc("IndexList", ProgramReflection::BufferReflection::Type::Structured);
+        ProgramReflection::SharedConstPtr pEmitReflect = emitCs->getActiveVersion()->getReflector();
+        auto indexListReflect = pEmitReflect->getBufferDesc("IndexList", ProgramReflection::BufferReflection::Type::Structured);
         mpIndexList = StructuredBuffer::create(indexListReflect, maxParticles);
         mpIndexList->setBlob(indices.data(), 0, indices.size() * sizeof(uint32_t));
 
         //ParticlePool
-        ProgramReflection::BufferReflection::SharedConstPtr particlePoolReflect =
-            pEmitReflect->getBufferDesc("ParticlePool", ProgramReflection::BufferReflection::Type::Structured);
+        auto particlePoolReflect = pEmitReflect->getBufferDesc("ParticlePool", ProgramReflection::BufferReflection::Type::Structured);
         mpParticlePool = StructuredBuffer::create(particlePoolReflect, maxParticles);
 
         //Indirect Arg buffer (for simulate dispatch and draw)
@@ -74,35 +78,31 @@ namespace Falcor
         mpIndirectArgs->setBlob(initialValues, 0, indirectArgsSize);
 
         //Vars
-        mEmitVars = ComputeVars::create(pEmitReflect);
-        mEmitVars->setStructuredBuffer("IndexList", mpIndexList);
-        mEmitVars->setStructuredBuffer("ParticlePool", mpParticlePool);
-        mEmitVars->setStructuredBuffer("dispatchArgs", mpIndirectArgs);
-        mEmitVars->setRawBuffer("numAlive", mpIndexList->getUAVCounter());
-        mSimulateVars = ComputeVars::create(mSimulateCs->getActiveVersion()->getReflector());
-        mSimulateVars->setStructuredBuffer("IndexList", mpIndexList);
-        mSimulateVars->setStructuredBuffer("ParticlePool", mpParticlePool);
-        mSimulateVars->setStructuredBuffer("drawArgs", mpIndirectArgs);
-        mSimulateVars->setRawBuffer("numAlive", mpIndexList->getUAVCounter());
-        mpDrawVars = GraphicsVars::create(mDrawParticles->getActiveVersion()->getReflector());
-        mpDrawVars->setStructuredBuffer("IndexList", mpIndexList);
-        mpDrawVars->setStructuredBuffer("ParticlePool", mpParticlePool);
+        mEmitResources.vars = ComputeVars::create(pEmitReflect);
+        mEmitResources.vars->setStructuredBuffer("IndexList", mpIndexList);
+        mEmitResources.vars->setStructuredBuffer("ParticlePool", mpParticlePool);
+        mEmitResources.vars->setStructuredBuffer("dispatchArgs", mpIndirectArgs);
+        mEmitResources.vars->setRawBuffer("numAlive", mpIndexList->getUAVCounter());
+        mSimulateResources.vars = ComputeVars::create(simulateCs->getActiveVersion()->getReflector());
+        mSimulateResources.vars->setStructuredBuffer("IndexList", mpIndexList);
+        mSimulateResources.vars->setStructuredBuffer("ParticlePool", mpParticlePool);
+        mSimulateResources.vars->setStructuredBuffer("drawArgs", mpIndirectArgs);
+        mSimulateResources.vars->setRawBuffer("numAlive", mpIndexList->getUAVCounter());
+        mDrawResources.vars = GraphicsVars::create(mDrawResources.shader->getActiveVersion()->getReflector());
+        mDrawResources.vars->setStructuredBuffer("IndexList", mpIndexList);
+        mDrawResources.vars->setStructuredBuffer("ParticlePool", mpParticlePool);
 
         //State
-        mEmitState = ComputeState::create();
-        mEmitState->setProgram(mEmitCs);
-        mSimulateState = ComputeState::create();
-        mSimulateState->setProgram(mSimulateCs);
-        mpDrawState = GraphicsState::create();
-        mpDrawState->setProgram(mDrawParticles);
-        mpDrawState->setProgram(mDrawParticles);
+        mEmitResources.state = ComputeState::create();
+        mEmitResources.state->setProgram(emitCs);
+        mSimulateResources.state = ComputeState::create();
+        mSimulateResources.state->setProgram(simulateCs);
 
         //Create empty vbo for draw 
         Vao::BufferVec bufferVec;
         VertexLayout::SharedPtr pLayout = VertexLayout::create();
         Vao::Topology topology = Vao::Topology::TriangleList;
-        Vao::SharedPtr pVao = Vao::create(bufferVec, pLayout, nullptr, ResourceFormat::R32Uint, topology);
-        mpDrawState->setVao(pVao);
+        mDrawResources.vao = Vao::create(bufferVec, pLayout, nullptr, ResourceFormat::R32Uint, topology);
     }
 
     void ParticleSystem::emit(RenderContext* pCtx, uint32_t num)
@@ -112,23 +112,23 @@ namespace Falcor
         for (uint32_t i = 0; i < num; ++i)
         {
             Particle p;  
-            p.pos = Emitter.spawnPos + glm::linearRand(-Emitter.randSpawnPos, Emitter.randSpawnPos);
-            p.vel = Emitter.vel + glm::linearRand(-Emitter.randVel, Emitter.randVel);
-            p.accel = Emitter.accel + glm::linearRand(-Emitter.randAccel, Emitter.randAccel);
+            p.pos = mEmitter.spawnPos + glm::linearRand(-mEmitter.spawnPosOffset, mEmitter.spawnPosOffset);
+            p.vel = mEmitter.vel + glm::linearRand(-mEmitter.velOffset, mEmitter.velOffset);
+            p.accel = mEmitter.accel + glm::linearRand(-mEmitter.accelOffset, mEmitter.accelOffset);
             //total scale of the billboard, so the amount to actually move to billboard corners is half scale. 
-            p.scale = Emitter.scale + glm::linearRand(-Emitter.randScale, Emitter.randScale);
-            p.growth = 0.5f * Emitter.growth + glm::linearRand(-Emitter.randGrowth, Emitter.randGrowth);
-            p.life = Emitter.duration + glm::linearRand(-Emitter.randDuration, Emitter.randDuration);
+            p.scale = 0.5f * mEmitter.scale + glm::linearRand(-mEmitter.scaleOffset, mEmitter.scaleOffset);
+            p.growth = 0.5f * mEmitter.growth + glm::linearRand(-mEmitter.growthOffset, mEmitter.growthOffset);
+            p.life = mEmitter.duration + glm::linearRand(-mEmitter.growthOffset, mEmitter.growthOffset);
             emitData.particles[i] = p;
         }
         emitData.numEmit = num;
         emitData.maxParticles = mMaxParticles;
 
         //Send vars and call
-        pCtx->pushComputeState(mEmitState);
-        mEmitVars->getConstantBuffer(0)->setBlob(&emitData, 0u, sizeof(EmitData));
-        pCtx->pushComputeVars(mEmitVars);
-        u32 numGroups = num % 64 == 0 ? num / 64 : (num / 64) + 1;
+        pCtx->pushComputeState(mEmitResources.state);
+        mEmitResources.vars->getConstantBuffer(0)->setBlob(&emitData, 0u, sizeof(EmitData));
+        pCtx->pushComputeVars(mEmitResources.vars);
+        uint32_t numGroups = (uint32_t)std::ceil((float)num / EMIT_THREADS);
         pCtx->dispatch(1, numGroups, 1);
         pCtx->popComputeVars();
         pCtx->popComputeState();
@@ -138,18 +138,17 @@ namespace Falcor
     {
         SimulatePerFrame perFrame;
         perFrame.dt = dt;
-        perFrame.maxParticles = mMaxParticles;
 
         mEmitTimer += dt;
-        if (mEmitTimer >= Emitter.emitFrequency)
+        if (mEmitTimer >= mEmitter.emitFrequency)
         {
-            mEmitTimer -= Emitter.emitFrequency;
-            emit(pCtx, max(Emitter.emitCount + glm::linearRand(-Emitter.randEmitCount, Emitter.randEmitCount), 0));
+            mEmitTimer -= mEmitter.emitFrequency;
+            emit(pCtx, max(mEmitter.emitCount + glm::linearRand(-mEmitter.emitCountOffset, mEmitter.emitCountOffset), 0));
         }
 
-        pCtx->pushComputeState(mSimulateState);
-        mSimulateVars->getConstantBuffer(0)->setBlob(&perFrame, 0u, sizeof(SimulatePerFrame));
-        pCtx->pushComputeVars(mSimulateVars);
+        pCtx->pushComputeState(mSimulateResources.state);
+        mSimulateResources.vars->getConstantBuffer(0)->setBlob(&perFrame, 0u, sizeof(SimulatePerFrame));
+        pCtx->pushComputeVars(mSimulateResources.vars);
         pCtx->dispatchIndirect(mpIndirectArgs.get(), 0);
         pCtx->popComputeVars();
         pCtx->popComputeState();
@@ -160,19 +159,88 @@ namespace Falcor
         VSPerFrame cbuf;
         cbuf.view = view;
         cbuf.proj = proj;
-        mpDrawVars->getConstantBuffer(0)->setBlob(&cbuf, 0, sizeof(cbuf));
+        mDrawResources.vars->getConstantBuffer(0)->setBlob(&cbuf, 0, sizeof(cbuf));
 
-        //TODO
-        //I think I should be able to do this in init, pass in fbo once. But For some reason, that gives the error 
-        //"A single command list cannot write to multiple buffers within a particular swapchain."
-        //[STATE_SETTING ERROR #904: COMMAND_LIST_MULTIPLE_SWAPCHAIN_BUFFER_REFERENCES]
-        mpDrawState->setFbo(pCtx->getGraphicsState()->getFbo());
-
-        pCtx->pushGraphicsState(mpDrawState);
-        pCtx->pushGraphicsVars(mpDrawVars);
+        //save prev vao and shader program
+        GraphicsState::SharedPtr state = pCtx->getGraphicsState();
+        GraphicsProgram::SharedPtr prevShader = state->getProgram();
+        Vao::SharedConstPtr prevVao = state->getVao();
+        //update to ps's vao/draw shader
+        state->setProgram(mDrawResources.shader);
+        state->setVao(mDrawResources.vao);
+        pCtx->pushGraphicsVars(mDrawResources.vars);
         pCtx->drawIndirect(mpIndirectArgs.get(), sizeof(D3D12_DISPATCH_ARGUMENTS));
         pCtx->popGraphicsVars();
-        pCtx->popGraphicsState();
+        //setting null vao causes crash
+        if (prevVao)
+        {
+            state->setVao(prevVao);
+        }
+        state->setProgram(prevShader);
     }
 
+    void ParticleSystem::renderUi(Gui* pGui)
+    {
+        float floatMax = std::numeric_limits<float>::max();
+        pGui->addFloatVar("Duration", mEmitter.duration, 0.f);
+        pGui->addFloatVar("RandDuration", mEmitter.durationOffset, 0.f);
+        pGui->addFloatVar("Frequency", mEmitter.emitFrequency, 0.01f);
+        int32_t emitCount = mEmitter.emitCount;
+        pGui->addIntVar("EmitCount", emitCount, 0, MAX_EMIT);
+        mEmitter.emitCount = emitCount;
+        pGui->addIntVar("RandEmitCount", mEmitter.emitCountOffset, 0);
+        pGui->addFloat3Var("SpawnPos", mEmitter.spawnPos, -floatMax, floatMax);
+        pGui->addFloat3Var("RandSpawnPos", mEmitter.spawnPosOffset, 0.f, floatMax);
+        pGui->addFloat3Var("Velocity", mEmitter.vel, -floatMax, floatMax);
+        pGui->addFloat3Var("RandVel", mEmitter.velOffset, 0.f, floatMax);
+        pGui->addFloat3Var("Accel", mEmitter.accel, -floatMax, floatMax);
+        pGui->addFloat3Var("RandAccel", mEmitter.accelOffset, 0.f, floatMax);
+        pGui->addFloatVar("Scale", mEmitter.scale, 0.001f);
+        pGui->addFloatVar("RandScale", mEmitter.scaleOffset, 0.001f);
+        pGui->addFloatVar("Growth", mEmitter.growth);
+        pGui->addFloatVar("RandGrowth", mEmitter.growthOffset, 0.001f);
+    }
+
+    void ParticleSystem::setParticleDuration(float dur, float offset)
+    { 
+        mEmitter.duration = dur; 
+        mEmitter.durationOffset = offset; 
+    }
+
+    void ParticleSystem::setEmitData(uint32_t emitCount, uint32_t emitCountOffset, float emitFrequency)
+    {
+        mEmitter.emitCount = (int32_t)emitCount;
+        mEmitter.emitCountOffset = (int32_t)emitCountOffset;
+        mEmitter.emitFrequency = emitFrequency;
+    }
+
+    void ParticleSystem::setSpawnPos(vec3 spawnPos, vec3 offset)
+    {
+        mEmitter.spawnPos = spawnPos;
+        mEmitter.spawnPosOffset = offset;
+    }
+
+    void ParticleSystem::setVelocity(vec3 velocity, vec3 offset)
+    {
+        mEmitter.vel = velocity;
+        mEmitter.velOffset = offset;
+    }
+
+    void ParticleSystem::setAcceleration(vec3 accel, vec3 offset)
+    {
+        mEmitter.accel = accel;
+        mEmitter.accelOffset = offset;
+    }
+
+    void ParticleSystem::setScale(float scale, float offset)
+    {
+        mEmitter.scale = scale;
+        mEmitter.scaleOffset = offset;
+    }
+
+    void ParticleSystem::setGrowth(float growth, float offset)
+    {
+        mEmitter.growth = growth;
+        mEmitter.growthOffset = offset;
+    }
 }

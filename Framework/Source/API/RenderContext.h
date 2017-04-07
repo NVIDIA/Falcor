@@ -119,11 +119,6 @@ namespace Falcor
             \param[in] dstRect Target rectangle to blit to, specified by [left, up, right, down]
         */
 
-        /** Creates command signatures for DrawIndirect, DrawIndexedIndirect. Also calls
-            compute context's initDispatchCommandSignature() to create command signature for dispatchIndirect
-        */
-        void initCommandSignatures();
-
         /** Executes a draw call. Args to the draw call are contained in argbuffer
         */
         void drawIndirect(Resource* argBuffer, uint64_t argBufferOffset);
@@ -196,6 +191,11 @@ namespace Falcor
         };
 
         static BlitData sBlitData;
+
+        /** Creates command signatures for DrawIndirect, DrawIndexedIndirect. Also calls
+        compute context's initDispatchCommandSignature() to create command signature for dispatchIndirect
+        */
+        static void initCommandSignatures();
 
         static void initBlitData();
         static void releaseBlitData();

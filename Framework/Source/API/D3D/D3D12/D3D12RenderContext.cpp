@@ -45,6 +45,12 @@ namespace Falcor
         }
 
         pCtx->bindDescriptorHeaps();
+
+        if (spDrawCommandSig == nullptr)
+        {
+            initCommandSignatures();
+        }
+
         return pCtx;
     }
     
