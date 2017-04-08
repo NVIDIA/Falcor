@@ -2,7 +2,7 @@
     \\netapp-wa02\public\Falcor\ReferenceResultsHub, TestList.txt, https://github.com/NVIDIA/Falcor.git, C:\Users\clavelle\Desktop\FalcorDest, master
 }
 {
-    \\netapp-wa02\public\Falcor\ReferenceResultsHub, TestList.txt, https://github.com/NVIDIA/Falcor.git, C:\Users\clavelle\Desktop\FalcorDestDev, dev-2.0a4
+    \\netapp-wa02\public\Falcor\ReferenceResultsHubDev, TestList.txt, https://github.com/NVIDIA/Falcor.git, C:\Users\clavelle\Desktop\FalcorDestDev, dev-2.0a4
 }
 {
 	\\netapp-wa02\public\Falcor\ReferenceResultsHub, TestList.txt, https://clavelleNV@gtl-gitlab.nvidia.com/NVResearch/Falcor.git, C:\Users\clavelle\Desktop\FalcorDestLab, master
