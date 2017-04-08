@@ -27,10 +27,10 @@
 ***************************************************************************/
 #include "ParticleData.h"
 
-static const int xOffset[6] = { -1, 1, -1, -1, 1, 1};
-static const int yOffset[6] = { -1, -1, 1, 1 , -1, 1};
-static const float xTex[6] = { 0.f, 1.f, 0.f, 0.f, 1.f, 1.f };
-static const float yTex[6] = { 1.f, 1.f, 0.f, 0.f, 1.f, 0.f };
+static const int xOffset[4] = { -1, -1, 1, 1 };
+static const int yOffset[4] = { 1, -1, 1, -1 };
+static const float xTex[4] = { 0.f, 0.f, 1.f, 1.f };
+static const float yTex[4] = { 0.f, 1.f, 0.f, 1.f };
 
 cbuffer PerFrame
 {
@@ -47,12 +47,12 @@ struct VSOut
 StructuredBuffer<uint> IndexList;
 RWStructuredBuffer<Particle> ParticlePool;
 
-VSOut main(uint vId : SV_VertexID)
+VSOut main(uint vId : SV_VertexID, uint iId : SV_InstanceID)
 {
     VSOut output;
-    uint particleIndex = vId / 6;
+    uint particleIndex = iId;
     Particle p = ParticlePool[IndexList[particleIndex]];
-    uint billboardIndex = vId % 6;
+    uint billboardIndex = vId;
 
     float4 viewPos = mul(frameData.view, float4(p.pos, 1.f));
     viewPos.xy += float2(p.scale, p.scale) * float2(xOffset[billboardIndex], yOffset[billboardIndex]);

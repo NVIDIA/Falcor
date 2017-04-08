@@ -74,7 +74,7 @@ namespace Falcor
         mpIndirectArgs = StructuredBuffer::create(pEmitReflect->
             getBufferDesc("dispatchArgs", ProgramReflection::BufferReflection::Type::Structured), 
             indirectArgsSize / sizeof(uint32_t), Resource::BindFlags::UnorderedAccess | Resource::BindFlags::IndirectArg);
-        uint32_t initialValues[7] = { 1, 1, 1, 1, 1, 0, 0 };
+        uint32_t initialValues[7] = { 1, 1, 1, 4, 1, 0, 0 };
         mpIndirectArgs->setBlob(initialValues, 0, indirectArgsSize);
 
         //Vars
@@ -101,7 +101,7 @@ namespace Falcor
         //Create empty vbo for draw 
         Vao::BufferVec bufferVec;
         VertexLayout::SharedPtr pLayout = VertexLayout::create();
-        Vao::Topology topology = Vao::Topology::TriangleList;
+        Vao::Topology topology = Vao::Topology::TriangleStrip;
         mDrawResources.vao = Vao::create(bufferVec, pLayout, nullptr, ResourceFormat::R32Uint, topology);
     }
 

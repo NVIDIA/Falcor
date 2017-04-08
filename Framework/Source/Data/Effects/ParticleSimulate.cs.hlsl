@@ -66,6 +66,6 @@ void main(uint3 groupID : SV_GroupID, uint groupIndex : SV_GroupIndex)
         }
 
         //0, 1, 2, dispatch xyz. 3 vert count per instance, 4 numInstances, 5 start vert loc, 6 start instance loc
-        drawArgs[3] = numAliveParticles * 6;
+        drawArgs[4] = numAliveParticles;
     }
 }
