@@ -125,7 +125,7 @@ namespace Falcor
         {
             if (path->animate(currentTime))
             {
-                mExtentsDirty = mExtentsDirty || true;
+                mExtentsDirty = true;
             }
         }
 

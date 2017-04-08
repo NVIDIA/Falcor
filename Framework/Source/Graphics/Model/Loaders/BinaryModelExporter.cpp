@@ -355,6 +355,7 @@ namespace Falcor
         // Output the index buffer
         const void* pIndices = pMesh->getVao()->getIndexBuffer()->map(Buffer::MapType::Read);
         mStream.write(pIndices, indexCount * sizeof(uint32_t));
+        pMesh->getVao()->getIndexBuffer()->unmap();
 
         return true;
     }

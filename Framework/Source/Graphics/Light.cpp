@@ -460,15 +460,15 @@ namespace Falcor
             const auto& pMesh = mpMeshInstance->getObject();
             assert(pMesh != nullptr);
 
-            // Read data from the buffers
-            const glm::ivec3* indices = (const glm::ivec3*)mIndexBuf->map(Buffer::MapType::Read);
-            const glm::vec3* vertices = (const glm::vec3*)mVertexBuf->map(Buffer::MapType::Read);
-
 			if (mpMeshInstance->getObject()->getPrimitiveCount() != 2 || mpMeshInstance->getObject()->getVertexCount() != 4)
             {
                 logWarning("Only support sampling of rectangular light sources made of 2 triangles.");
                 return;
             }
+
+            // Read data from the buffers
+            const glm::ivec3* indices = (const glm::ivec3*)mIndexBuf->map(Buffer::MapType::Read);
+            const glm::vec3* vertices = (const glm::vec3*)mVertexBuf->map(Buffer::MapType::Read);
 
             // Calculate surface area of the mesh
             mSurfaceArea = 0.f;
@@ -532,6 +532,9 @@ namespace Falcor
                 mData.aabbMin = boxMin;
                 mData.aabbMax = boxMax;
             }
+
+            mIndexBuf->unmap();
+            mVertexBuf->unmap();
         }
     }
 
