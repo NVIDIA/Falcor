@@ -44,7 +44,8 @@ public:
 
 private:
     ComputeContext::SharedPtr mpComputeContext;
-    ParticleSystem::SharedPtr mParticleSystem;
+    std::vector<ParticleSystem::SharedPtr> mParticleSystems;
+    int32_t mGuiIndex = 0;
     Camera::SharedPtr mpCamera;
     FirstPersonCameraController mpCamController;
     Texture::SharedPtr mpTex;

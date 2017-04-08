@@ -31,17 +31,33 @@
 
 void Particles::onGuiRender()
 {
-    mParticleSystem->renderUi(mpGui.get());
+    if (mpGui->beginGroup("Create System"))
+    {
+        static int32_t sMaxParticles = 512;
+        mpGui->addIntVar("Max Particles", sMaxParticles, 0);
+        if (mpGui->addButton("Create"))
+        {
+            mParticleSystems.push_back(ParticleSystem::create(mpRenderContext.get(), sMaxParticles, "Effects/ParticleConstColor.ps.hlsl"));
+        }
+        mpGui->endGroup();
+    }
+
+    if (mpGui->beginGroup("Edit Properties"))
+    {
+        mpGui->addIntVar("System index", mGuiIndex, 0, ((int32_t)mParticleSystems.size()) - 1);
+        mpGui->addSeparator();
+        mParticleSystems[mGuiIndex]->renderUi(mpGui.get());
+    }
 }
 
 void Particles::onLoad()
 {
-    mParticleSystem = ParticleSystem::create(mpRenderContext.get(), 4096, "Effects/ParticleConstColor.ps.hlsl");
+    mParticleSystems.push_back(ParticleSystem::create(mpRenderContext.get(), 16 * 1024));
     mpCamera = Camera::create();
     mpCamera->setPosition(mpCamera->getPosition() + glm::vec3(0, 5, 10));
     mpCamController.attachCamera(mpCamera);
-    mpTex = createTextureFromFile("C:/Users/clavelle/Desktop/TestParticle.png", true, false);
-    mParticleSystem->getDrawVars()->setSrv(2, mpTex->getSRV());
+    mpTex = createTextureFromFile("C:/Users/clavelle/Desktop/waterdrop.png", true, false);
+    mParticleSystems[0]->getDrawVars()->setSrv(2, mpTex->getSRV());
 }
 
 void Particles::onFrameRender()
@@ -50,8 +66,11 @@ void Particles::onFrameRender()
  	mpRenderContext->clearFbo(mpDefaultFBO.get(), clearColor, 1.0f, 0, FboAttachmentType::All);
     mpCamController.update();
 
-    mParticleSystem->update(mpRenderContext.get(), frameRate().getLastFrameTime());
-    mParticleSystem->render(mpRenderContext.get(), mpCamera->getViewMatrix(), mpCamera->getProjMatrix());
+    for (auto it = mParticleSystems.begin(); it != mParticleSystems.end(); ++it)
+    {
+        (*it)->update(mpRenderContext.get(), frameRate().getLastFrameTime());
+        (*it)->render(mpRenderContext.get(), mpCamera->getViewMatrix(), mpCamera->getProjMatrix());
+    }
 }
 
 void Particles::onShutdown()
