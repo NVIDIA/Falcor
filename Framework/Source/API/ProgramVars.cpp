@@ -941,6 +941,15 @@ namespace Falcor
             // stuff, where we build the table on first use...
 
             auto& apiHandle = component->getApiHandle();
+            if( component->mConstantBuffer )
+            {
+                setRootConstantBuffer(
+                    pContext,
+                    pList,
+                    rootIndex,
+                    component->mConstantBuffer->getGpuAddress());
+                rootIndex++;
+            }
             if( apiHandle.resourceDescriptorTable )
             {
                 setRootDescriptorTable(
@@ -1041,46 +1050,31 @@ namespace Falcor
         {
             auto& reflector = component->mpReflector;
 
-            // We will allocate up to two descriptor tables per component,
-            // one to hold resources (constant buffers, textures, UAVs, etc.)
-            // and another one to hold samplers.
-            // Any uniform parameters of the component are grouped into a
-            // constant buffer that comes first in the resource table.
+            // We will allocate up to three root-table slots per component:
             //
-            // We won't allocate a table to a component unless it needs
-            // at least *some* parameters of the corresponding category.
-            // This should mean that we automatically skip allocating
-            // root-signature space for any component that only has
-            // logic, and no parameters.
+            // - One for a constant buffer, if the component has any uniforms
+            // - One for resources (SRVs/UAVs) if it has an resource parameters
+            // - One for samplers, if it uses any samplers
             //
-            // Eventually it would be nice to handle more special cases.
-            // The most important of these would be the case where a
-            // component has only a single constant buffer, and no
-            // other resource parameters. In this case we might as
-            // well use a root constant buffer slot.
+            // Note that we do *not* allocate the constant buffer inside the
+            // resource buffer, just to avoid any potential overhead this
+            // might cause.
             uint32_t uniformCount = (uint32_t) reflector->getVariableCount();
             uint32_t resourceCount = reflector->getResourceCount();
             uint32_t samplerCount = reflector->getSamplerCount();
 
-            //
-            //
-            // TODO(tfoley): if there are no resources, then just use a root CBV slot
-            if( resourceCount || uniformCount )
+            if( uniformCount )
+            {
+                desc.addDescriptor(bReg, RootSignature::DescType::CBV, Falcor::ShaderVisibility::All, regSpace);
+                bReg++;
+            }
+            if( resourceCount )
             {
                 RootSignature::DescriptorTable tableDesc;
-                if( uniformCount )
-                {
-                    tableDesc.addRange(RootSignature::DescType::CBV, bReg, 1, regSpace);
-                    bReg++;
-                }
-                if( resourceCount )
-                {
-                    tableDesc.addRange(RootSignature::DescType::SRV, tReg, resourceCount, regSpace);
-                    tReg += resourceCount;
-                }
+                tableDesc.addRange(RootSignature::DescType::SRV, tReg, resourceCount, regSpace);
+                tReg += resourceCount;
                 desc.addDescriptorTable(tableDesc);
             }
-
             if( samplerCount )
             {
                 RootSignature::DescriptorTable tableDesc;

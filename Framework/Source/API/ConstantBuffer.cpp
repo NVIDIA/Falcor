@@ -160,6 +160,7 @@ namespace Falcor
     {
         auto device = gpDevice;
 
+#if 0
         // HACK: if the user set something directly through the CB, then we need to treat that as making us dirty too... :(
         if( mConstantBuffer )
         {
@@ -170,13 +171,11 @@ namespace Falcor
                 mResourceTableDirty = true;
             }
         }
-
+#endif
 
         if( mResourceTableDirty )
         {
             uint32_t resourceCount = (uint32_t) mAssignedSRVs.size();
-            if(mConstantBuffer)
-                resourceCount++;
 
             if( resourceCount )
             {
@@ -189,20 +188,6 @@ namespace Falcor
                 // now copy things in!
 
                 uint32_t srvIndex = 0;
-
-                if( mConstantBuffer )
-                {
-                    // SPIRE: NOTE: The call to `getCBV()` instead of `getSRV()` on the constant
-                    // buffer is important!
-
-                    device->copyDescriptor(
-                        mApiHandle.resourceDescriptorTable->getCpuHandle(srvIndex++),
-                        mConstantBuffer->getCBV()->getCpuHandle(),
-                        DescriptorHeap::Type::SRV);
-
-                    // Note that we are up-to-date with the CB
-                    mCBSequenceNumber = mConstantBuffer->getSequenceNumber();
-                }
 
                 for( auto& entry : mAssignedSRVs )
                 {
