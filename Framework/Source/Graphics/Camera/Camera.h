@@ -205,5 +205,6 @@ namespace Falcor
 
         // The component "instance" to be used for spire stuff...
         mutable ComponentInstance::SharedPtr mSpireComponentInstance;
+        mutable bool mComponentInstanceDirty = true;
     };
 }

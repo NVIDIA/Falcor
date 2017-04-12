@@ -394,6 +394,130 @@ namespace Falcor
 
         mpLastMaterial = nullptr;
 
+
+        // Step 1: collect meshes to draw into a draw list
+        mDrawList.clear();
+
+        uint32_t modelCount = mpScene->getModelCount();
+        for (uint32_t modelID = 0; modelID < modelCount; modelID++)
+        {
+            uint32_t modelInstanceCount = mpScene->getModelInstanceCount(modelID);
+            for (uint32_t modelInstanceID = 0; modelInstanceID < modelInstanceCount; modelInstanceID++)
+            {
+                auto& pModelInstance = mpScene->getModelInstance(modelID, modelInstanceID);
+                if (pModelInstance->isVisible())
+                {
+                    const Model* pModel = pModelInstance->getObject().get();
+
+                    // Loop over the meshes
+                    uint32_t meshCount = pModel->getMeshCount();
+                    for (uint32_t meshID = 0; meshID < meshCount; meshID++)
+                    {
+                        const Mesh* pMesh = pModel->getMesh(meshID).get();
+
+                        const uint32_t instanceCount = pModel->getMeshInstanceCount(meshID);
+                        for (uint32_t instanceID = 0; instanceID < instanceCount; instanceID++)
+                        {
+                            auto& meshInstance = pModel->getMeshInstance(meshID, instanceID);
+                            BoundingBox box = meshInstance->getBoundingBox().transform(pModelInstance->getTransformMatrix());
+
+                            if ((mCullEnabled == false) || (pCamera->isObjectCulled(box) == false))
+                            {
+                                if (meshInstance->isVisible())
+                                {
+                                    DrawListItem item;
+
+                                    item.modelID = modelID;
+                                    item.modelInstanceID = modelInstanceID;
+                                    item.meshID = meshID;
+                                    item.meshInstanceID = instanceID;
+
+                                    item.pMaterial = pMesh->getMaterial().get();
+
+                                    mDrawList.push_back(item);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Step 2: sort the draw list, based on material
+        std::sort(mDrawList.begin(), mDrawList.end(), [=](DrawListItem const& left, DrawListItem const& right)
+        {
+            return left.pMaterial->getSpireComponentClass()->getSpireComponentClass() < right.pMaterial->getSpireComponentClass()->getSpireComponentClass();
+        });
+
+        // Step 3: actually render the meshes we collected
+
+
+#if 1
+        setupVR();
+        setPerFrameData(pContext, currentData);
+
+        mpLastMaterial = nullptr;
+        for(auto& item : mDrawList)
+        {
+            auto modelID = item.modelID;
+            auto meshID = item.meshID;
+            auto modelInstanceID = item.modelInstanceID;
+            auto meshInstanceID = item.meshInstanceID;
+
+            auto pModel = mpScene->getModel(modelID).get();
+            if(pModel != currentData.pModel)
+            {
+                currentData.pModel = pModel;
+            }
+
+            auto& pModelInstance = mpScene->getModelInstance(modelID, modelInstanceID);
+            if (!setPerModelInstanceData(pContext, pModelInstance, modelInstanceID, currentData))
+                continue;
+
+            if (!setPerModelData(pContext, currentData))
+                continue;
+
+            Program* pProgram = currentData.pGsoCache->getProgram().get();
+            // Bind the program
+
+            // TODO(tfoley): handle `_VERTEX_BLENDING` state...
+
+            const Mesh* pMesh = pModel->getMesh(meshID).get();
+            if (!setPerMeshData(pContext, currentData))
+                continue;
+
+            // Bind VAO and set topology
+            pContext->getGraphicsState()->setVao(pMesh->getVao());
+
+            if(mVertexAttributeComponentBinding != ConstantBuffer::kInvalidOffset)
+            {
+                // Bind spire vertex module
+                //TODO: need to set this at right place
+                pContext->getGraphicsVars()->setComponent(mVertexAttributeComponentBinding, pMesh->getVertexComponent());
+            }
+
+
+            uint32_t activeInstances = 0;
+
+            auto& meshInstance = pModel->getMeshInstance(meshID, meshInstanceID);
+            if (!setPerMeshInstanceData(pContext, pModelInstance, meshInstance, activeInstances, currentData))
+                continue;
+
+            currentData.drawID++;
+            activeInstances++;
+
+//                            if (activeInstances == mMaxInstanceCount)
+            {
+                // DISABLED_FOR_D3D12
+                //pContext->setProgram(currentData.pProgram->getActiveProgramVersion());
+                flushDraw(pContext, pMesh, activeInstances, currentData);
+                activeInstances = 0;
+            }
+        }
+
+#else
+        // The old way: no sorting
+
         setupVR();
         setPerFrameData(pContext, currentData);
 
@@ -413,6 +537,7 @@ namespace Falcor
                 }
             }
         }
+#endif
     }
 
     void SceneRenderer::setCameraControllerType(CameraControllerType type)

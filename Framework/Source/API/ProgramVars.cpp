@@ -31,6 +31,8 @@
 #include "API/CopyContext.h"
 #include "API/RenderContext.h"
 
+#include <sstream>
+
 namespace Falcor
 {
     template<RootSignature::DescType descType>
@@ -769,6 +771,10 @@ namespace Falcor
         pList->SetGraphicsRootDescriptorTable(rootOffset, gpuHandle);
     }
 
+    uint32_t gRootSignatureSets = 0;
+    uint32_t gRootSignatureSwitches = 0;
+    void* gLastRootSignature = nullptr;
+
     template<bool forGraphics, typename ContextType>
     void ProgramVars::applyCommon(ContextType* pContext) const
     {
@@ -780,6 +786,13 @@ namespace Falcor
 
         if(forGraphics)
         {
+            gRootSignatureSets++;
+            if(mpRootSignature.get() != gLastRootSignature)
+            {
+                gLastRootSignature = mpRootSignature.get();
+                gRootSignatureSwitches++;
+            }
+
             pList->SetGraphicsRootSignature(mpRootSignature->getApiHandle());
         }
         else
@@ -1029,10 +1042,19 @@ namespace Falcor
         return mpRootSignature;
     }
 
-
     RootSignature::SharedPtr ProgramVars::createRootSignature() const
     {
-        logWarning("SPIRE CREATE ROOT SIGNATURE");
+        {
+            static int rootSignatureCount = 0;
+            std::stringstream sb;
+            sb << "SPIRE CREATE ROOT SIGNATURE #" << rootSignatureCount << ":";
+            for( auto& componentClass : mAssignedComponentClasses )
+            {
+                sb << " " << spGetModuleName(componentClass);
+            }
+            logWarning(sb.str());
+            rootSignatureCount++;
+        }
 
         // Need to create a root signature that reflects the components we have bound...
 

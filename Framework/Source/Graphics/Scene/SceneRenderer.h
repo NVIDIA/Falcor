@@ -161,5 +161,18 @@ namespace Falcor
         uint32_t mMeshComponentBinding = ConstantBuffer::kInvalidOffset;
         uint32_t mMaterialComponentBinding = ConstantBuffer::kInvalidOffset;
         uint32_t mVertexAttributeComponentBinding = ConstantBuffer::kInvalidOffset;
+
+
+        struct DrawListItem
+        {
+            Material*   pMaterial;
+            uint32_t    modelID;
+            uint32_t    modelInstanceID;
+            uint32_t    meshID;
+            uint32_t    meshInstanceID;
+        };
+        typedef std::vector<DrawListItem> DrawList;
+
+        DrawList mDrawList;
     };
 }

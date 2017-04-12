@@ -120,6 +120,7 @@ namespace Falcor
             mData.cameraV *= vlen;
 
             mDirty = false;
+            mComponentInstanceDirty = true;
         }
     }
 
@@ -240,13 +241,13 @@ namespace Falcor
         {
             auto& componentClass = getSpireComponentClass();
             mSpireComponentInstance = ComponentInstance::create(getSpireComponentClass());
-            mDirty = true;
+            mComponentInstanceDirty = true;
         }
 
         // fill in the instance if data is dirty...
-        if( mDirty )
+        calculateCameraParameters();
+        if( mComponentInstanceDirty )
         {
-            calculateCameraParameters();
             mSpireComponentInstance->setBlob(&mData, 0, getShaderDataSize());
         }
 
