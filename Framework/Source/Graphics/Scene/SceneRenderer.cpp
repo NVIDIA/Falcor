@@ -394,6 +394,8 @@ namespace Falcor
 
         mpLastMaterial = nullptr;
 
+#if 0
+        // Render things a new way, that involves creating a sorted "draw list"
 
         // Step 1: collect meshes to draw into a draw list
         mDrawList.clear();
@@ -452,7 +454,6 @@ namespace Falcor
         // Step 3: actually render the meshes we collected
 
 
-#if 1
         setupVR();
         setPerFrameData(pContext, currentData);
 

@@ -113,7 +113,7 @@ namespace Falcor
             Filter mMipFilter = Filter::Point;
             uint32_t mMaxAnisotropy = 1;
             float mMaxLod = 1000;
-            float mMinLod = -1000;
+            float mMinLod = /*Spire: was: -1000*/ 0;
             float mLodBias = 0;
             ComparisonMode mComparisonMode = ComparisonMode::Disabled;
             AddressMode mModeU = AddressMode::Wrap;
