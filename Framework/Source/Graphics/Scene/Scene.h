@@ -37,6 +37,7 @@
 #include "Graphics/Paths/ObjectPath.h"
 #include "Graphics/Model/ObjectInstance.h"
 #include "Graphics/Material/MaterialHistory.h"
+#include "Graphics/DynamicLightEnvironment.h"
 
 namespace Falcor
 {
@@ -45,7 +46,10 @@ namespace Falcor
     public:
         using SharedPtr = std::shared_ptr<Scene>;
         using SharedConstPtr = std::shared_ptr<const Scene>;
+		
         static const char* kFileFormatString;
+		
+		DynamicLightEnvironment lightEnvironment;
 
         struct UserVariable
         {
@@ -124,6 +128,7 @@ namespace Falcor
         // Light sources
         uint32_t addLight(const Light::SharedPtr& pLight);
         void deleteLight(uint32_t lightID);
+		void updateLights();
         uint32_t getLightCount() const { return (uint32_t)mpLights.size(); }
         const Light::SharedPtr& getLight(uint32_t index) const { return mpLights[index]; }
         const std::vector<Light::SharedPtr>& getLights() const { return mpLights; }

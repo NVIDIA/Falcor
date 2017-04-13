@@ -500,6 +500,35 @@ module MaterialLayer
     }
 }
 
+interface ILighting
+{
+    vec4 lit(ShadingAttribs shAttr);
+}
+
+module DynamicLighting implements ILighting
+{
+    param LightData[16] lights;
+    param vec3 ambient;
+    param int lightCount;
+
+    require void evalMaterial(
+        in ShadingAttribs shAttr,
+        in LightData light,
+        inout ShadingOutput result);
+    public vec4 lit(ShadingAttribs shAttr)
+    {
+        ShadingOutput result;
+		InitializeShadingOutput(result);
+        for(int ii = 0; ii < lightCount; ++ii)
+		{
+			evalMaterial(shAttr, lights[ii], result);
+		}
+        vec4 finalColor = vec4(result.finalValue, 1.f);
+        finalColor.rgb += ambient * result.finalValue;
+        return finalColor;
+    }    
+}
+
 
 interface IVertexAttribs
 {

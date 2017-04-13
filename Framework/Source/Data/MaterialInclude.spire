@@ -81,14 +81,14 @@ void perturbNormal(inout ShadingAttribs attr, bool forceSample)
 This is the main routing for evaluating a complete PBR material, given a shading point and a light source.
 Should be called once per light.
 */
-void evalMaterial(
+public void evalMaterial(
     in ShadingAttribs shAttr,
     in LightAttribs lAttr,
     inout ShadingOutput result)
 {
     evalMaterial(shAttr, lAttr, result, false);
 }
-void evalMaterial(
+public void evalMaterial(
     in ShadingAttribs shAttr,
     in LightAttribs lAttr,
     inout ShadingOutput result,
@@ -133,7 +133,7 @@ void evalMaterial(
 /**
 Another overload of material evaluation function, which prepares light attributes internally.
 */
-void evalMaterial(
+public void evalMaterial(
     in ShadingAttribs shAttr,
     in LightData light,
     inout ShadingOutput result,
@@ -146,7 +146,7 @@ void evalMaterial(
     /* Evaluate material with lighting attributes */
     evalMaterial(shAttr, LAttr, result, initializeShadingOut);
 }
-void evalMaterial(
+public void evalMaterial(
     in ShadingAttribs shAttr,
     in LightData light,
     inout ShadingOutput result)

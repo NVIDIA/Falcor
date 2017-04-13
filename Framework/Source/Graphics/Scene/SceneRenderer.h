@@ -112,7 +112,7 @@ namespace Falcor
             mutable GraphicsState* pGsoCache;
             const Model* pModel;
             const Material* pMaterial;
-
+			const DynamicLightEnvironment * pLightEnv;
             uint32_t drawID; // Zero-based mesh instance draw order/ID. Resets at the beginning of renderScene, and increments per mesh instance drawn.
         };
 
@@ -159,6 +159,7 @@ namespace Falcor
         ProgramReflection const* mpSavedProgramReflection = nullptr;
         uint32_t mCameraComponentBinding = ConstantBuffer::kInvalidOffset;
         uint32_t mMeshComponentBinding = ConstantBuffer::kInvalidOffset;
+		uint32_t mLightEnvBinding = ConstantBuffer::kInvalidOffset;
         uint32_t mMaterialComponentBinding = ConstantBuffer::kInvalidOffset;
         uint32_t mVertexAttributeComponentBinding = ConstantBuffer::kInvalidOffset;
 

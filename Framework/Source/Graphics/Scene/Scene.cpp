@@ -112,6 +112,8 @@ namespace Falcor
 
     bool Scene::update(double currentTime, CameraController* cameraController)
     {
+		updateLights();
+
         for (auto& path : mpPaths)
         {
             path->animate(currentTime);
@@ -239,13 +241,21 @@ namespace Falcor
     uint32_t Scene::addLight(const Light::SharedPtr& pLight)
     {
         mpLights.push_back(pLight);
+		updateLights();
         return (uint32_t)mpLights.size() - 1;
     }
 
     void Scene::deleteLight(uint32_t lightID)
     {
         mpLights.erase(mpLights.begin() + lightID);
+		updateLights();
     }
+
+	void Scene::updateLights()
+	{
+		lightEnvironment.setLightList(mpLights);
+		lightEnvironment.setAmbient(mAmbientIntensity);
+	}
 
     void Scene::deleteMaterial(uint32_t materialID)
     {

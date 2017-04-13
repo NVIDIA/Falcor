@@ -474,6 +474,9 @@
     <ClCompile Include="Utils\SpireSupport.cpp">
       <Filter>Utils</Filter>
     </ClCompile>
+    <ClCompile Include="Graphics\DynamicLightEnvironment.cpp">
+      <Filter>Graphics</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Graphics\Model\Animation.h">
@@ -1566,6 +1569,9 @@
     </ClInclude>
     <ClInclude Include="Utils\SpireSupport.h">
       <Filter>Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\DynamicLightEnvironment.h">
+      <Filter>Graphics</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

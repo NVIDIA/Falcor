@@ -37,6 +37,7 @@
 #include "API/Device.h"
 #include "glm/matrix.hpp"
 #include "Graphics/Material/MaterialSystem.h"
+#include "Graphics/DynamicLightEnvironment.h"
 
 namespace Falcor
 {
@@ -98,6 +99,7 @@ namespace Falcor
 
             mCameraComponentBinding = pReflector->getComponentBinding("InternalPerFrameCB");
             mMeshComponentBinding = pReflector->getComponentBinding("InternalPerMeshCB");
+			mLightEnvBinding = pReflector->getComponentBinding("L");
             mMaterialComponentBinding = pReflector->getComponentBinding("M");
             mVertexAttributeComponentBinding = pReflector->getComponentBinding("VertexAttribs");
         }
@@ -105,6 +107,7 @@ namespace Falcor
 
     void SceneRenderer::setPerFrameData(RenderContext* pContext, const CurrentWorkingData& currentData)
     {
+		mpScene->updateLights();
         // Set VPMat
         if (currentData.pCamera)
         {
@@ -124,6 +127,10 @@ namespace Falcor
             }
 #endif
         }
+		if (mLightEnvBinding != ConstantBuffer::kInvalidOffset)
+		{
+			pContext->getGraphicsVars()->setComponent(mLightEnvBinding, currentData.pLightEnv->getSpireComponentInstance());
+		}
     }
 
     bool SceneRenderer::setPerModelData(RenderContext* pContext,const CurrentWorkingData& currentData)
@@ -388,6 +395,7 @@ namespace Falcor
         CurrentWorkingData currentData;
         currentData.pGsoCache = pContext->getGraphicsState().get();
         currentData.pCamera = pCamera;
+		currentData.pLightEnv = &mpScene->lightEnvironment;
         currentData.pMaterial = nullptr;
         currentData.pModel = nullptr;
         currentData.drawID = 0;
