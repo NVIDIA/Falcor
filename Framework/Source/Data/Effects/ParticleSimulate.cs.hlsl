@@ -63,6 +63,7 @@ void main(uint3 groupID : SV_GroupID, uint groupIndex : SV_GroupIndex)
             ParticlePool[poolIndex].pos += ParticlePool[poolIndex].vel * perFrame.dt;
             ParticlePool[poolIndex].vel += ParticlePool[poolIndex].accel * perFrame.dt;
             ParticlePool[poolIndex].scale = max(ParticlePool[poolIndex].scale + ParticlePool[poolIndex].growth * perFrame.dt, 0);
+            ParticlePool[poolIndex].rot += ParticlePool[poolIndex].rotVel * perFrame.dt;
         }
 
         //0, 1, 2, dispatch xyz. 3 vert count per instance, 4 numInstances, 5 start vert loc, 6 start instance loc

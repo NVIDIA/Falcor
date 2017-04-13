@@ -45,7 +45,9 @@ namespace Falcor
         void update(RenderContext* pCtx, float dt);
         void render(RenderContext* pCtx, glm::mat4 view, glm::mat4 proj);
         void renderUi(Gui* pGui);
+        GraphicsProgram::SharedPtr getDrawProgram() { return mDrawResources.shader; }
         GraphicsVars::SharedPtr getDrawVars() { return mDrawResources.vars; }
+        ComputeProgram::SharedPtr getSimulateProgram() { return mSimulateResources.state->getProgram(); }
         ComputeVars::SharedPtr getSimulateVars() { return mSimulateResources.vars; }
 
         void setParticleDuration(float dur, float offset);
@@ -55,6 +57,10 @@ namespace Falcor
         void setAcceleration(vec3 accel, vec3 offset);
         void setScale(float scale, float offset);
         void setGrowth(float growth, float offset);
+        //in radians
+        void setBillboardRotation(float rot, float offset);
+        //in radians/sec
+        void setBillboardRotationVelocity(float rotVel, float offset);
 
     private:
         struct EmitterData
@@ -62,7 +68,8 @@ namespace Falcor
             EmitterData() : duration(3.f), durationOffset(0.f), emitFrequency(0.1f), emitCount(32),
                 emitCountOffset(0), spawnPos(0.f, 0.f, 0.f), spawnPosOffset(0.f, 0.5f, 0.f),
                 vel(0, 5, 0), velOffset(2, 1, 2), accel(0, -3, 0), accelOffset(0.f, 0.f, 0.f),
-                scale(0.2f), scaleOffset(0.f), growth(-0.05f), growthOffset(0.f) {}
+                scale(0.2f), scaleOffset(0.f), growth(-0.05f), growthOffset(0.f), billboardRotation(0.f),
+                billboardRotationOffset(0.25f), billboardRotationVel(0.f), billboardRotationVelOffset(0.f) {}
             float duration;
             float durationOffset; 
             float emitFrequency;
@@ -78,7 +85,10 @@ namespace Falcor
             float scaleOffset;
             float growth;
             float growthOffset;
-            //rot
+            float billboardRotation;
+            float billboardRotationOffset;
+            float billboardRotationVel;
+            float billboardRotationVelOffset;
         } mEmitter;
 
         ParticleSystem() = delete;

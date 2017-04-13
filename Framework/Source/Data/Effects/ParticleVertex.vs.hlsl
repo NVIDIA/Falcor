@@ -37,6 +37,14 @@ cbuffer PerFrame
     VSPerFrame frameData;
 };
 
+float2 vectorRotate(float2 vec, float sinAngle, float cosAngle)
+{
+    float2 result;
+    result.x = vec.x * cosAngle - vec.y * sinAngle;
+    result.y = vec.y * cosAngle + vec.x * sinAngle;
+    return result;
+}
+
 struct VSOut
 {
     float4 pos : SV_POSITION;
@@ -55,9 +63,11 @@ VSOut main(uint vId : SV_VertexID, uint iId : SV_InstanceID)
     uint billboardIndex = vId;
 
     float4 viewPos = mul(frameData.view, float4(p.pos, 1.f));
-    viewPos.xy += float2(p.scale, p.scale) * float2(xOffset[billboardIndex], yOffset[billboardIndex]);
+    float2 rotOffset = vectorRotate(float2(xOffset[billboardIndex], yOffset[billboardIndex]), sin(p.rot), cos(p.rot));
+    viewPos.xy += float2(p.scale, p.scale) * rotOffset;
     output.pos = mul(frameData.proj, viewPos);
     output.texCoords = float2(xTex[billboardIndex], yTex[billboardIndex]);
     output.particleIndex = particleIndex;
     return output;
 }
+

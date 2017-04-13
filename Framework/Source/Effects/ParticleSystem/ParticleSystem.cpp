@@ -119,6 +119,8 @@ namespace Falcor
             p.scale = 0.5f * mEmitter.scale + glm::linearRand(-mEmitter.scaleOffset, mEmitter.scaleOffset);
             p.growth = 0.5f * mEmitter.growth + glm::linearRand(-mEmitter.growthOffset, mEmitter.growthOffset);
             p.life = mEmitter.duration + glm::linearRand(-mEmitter.growthOffset, mEmitter.growthOffset);
+            p.rot = mEmitter.billboardRotation + glm::linearRand(-mEmitter.billboardRotationOffset, mEmitter.billboardRotationOffset);
+            p.rotVel = mEmitter.billboardRotationVel + glm::linearRand(-mEmitter.billboardRotationVelOffset, mEmitter.billboardRotationVelOffset);
             emitData.particles[i] = p;
         }
         emitData.numEmit = num;
@@ -183,22 +185,26 @@ namespace Falcor
     {
         float floatMax = std::numeric_limits<float>::max();
         pGui->addFloatVar("Duration", mEmitter.duration, 0.f);
-        pGui->addFloatVar("RandDuration", mEmitter.durationOffset, 0.f);
+        pGui->addFloatVar("DurationOffset", mEmitter.durationOffset, 0.f);
         pGui->addFloatVar("Frequency", mEmitter.emitFrequency, 0.01f);
         int32_t emitCount = mEmitter.emitCount;
         pGui->addIntVar("EmitCount", emitCount, 0, MAX_EMIT);
         mEmitter.emitCount = emitCount;
-        pGui->addIntVar("RandEmitCount", mEmitter.emitCountOffset, 0);
+        pGui->addIntVar("EmitCountOffset", mEmitter.emitCountOffset, 0);
         pGui->addFloat3Var("SpawnPos", mEmitter.spawnPos, -floatMax, floatMax);
-        pGui->addFloat3Var("RandSpawnPos", mEmitter.spawnPosOffset, 0.f, floatMax);
+        pGui->addFloat3Var("SpawnPosOffset", mEmitter.spawnPosOffset, 0.f, floatMax);
         pGui->addFloat3Var("Velocity", mEmitter.vel, -floatMax, floatMax);
-        pGui->addFloat3Var("RandVel", mEmitter.velOffset, 0.f, floatMax);
+        pGui->addFloat3Var("VelOffset", mEmitter.velOffset, 0.f, floatMax);
         pGui->addFloat3Var("Accel", mEmitter.accel, -floatMax, floatMax);
-        pGui->addFloat3Var("RandAccel", mEmitter.accelOffset, 0.f, floatMax);
+        pGui->addFloat3Var("AccelOffset", mEmitter.accelOffset, 0.f, floatMax);
         pGui->addFloatVar("Scale", mEmitter.scale, 0.001f);
-        pGui->addFloatVar("RandScale", mEmitter.scaleOffset, 0.001f);
+        pGui->addFloatVar("ScaleOffset", mEmitter.scaleOffset, 0.001f);
         pGui->addFloatVar("Growth", mEmitter.growth);
-        pGui->addFloatVar("RandGrowth", mEmitter.growthOffset, 0.001f);
+        pGui->addFloatVar("GrowthOffset", mEmitter.growthOffset, 0.001f);
+        pGui->addFloatVar("BillboardRotation", mEmitter.billboardRotation);
+        pGui->addFloatVar("BillboardRotationOffset", mEmitter.billboardRotationOffset);
+        pGui->addFloatVar("BillboardRotationVel", mEmitter.billboardRotationVel);
+        pGui->addFloatVar("BillboardRotationVelOffset", mEmitter.billboardRotationVelOffset);
     }
 
     void ParticleSystem::setParticleDuration(float dur, float offset)
@@ -242,5 +248,17 @@ namespace Falcor
     {
         mEmitter.growth = growth;
         mEmitter.growthOffset = offset;
+    }
+
+    void ParticleSystem::setBillboardRotation(float rot, float offset)
+    {
+        mEmitter.billboardRotation = rot;
+        mEmitter.billboardRotationOffset = offset;
+    }
+    
+    void ParticleSystem::setBillboardRotationVelocity(float rotVel, float offset)
+    {
+        mEmitter.billboardRotationVel = rotVel;
+        mEmitter.billboardRotationVelOffset = offset;
     }
 }

@@ -41,9 +41,10 @@ struct Particle
     float life;
     vec3 accel;
     float growth;
-    vec4 padding2;
+    float rot; 
+    float rotVel;
+    vec2 padding;
     //id?
-    //rotation
 };
 
 struct EmitData
