@@ -1,4 +1,4 @@
 [submodule "Framework/Externals/Spire"]
 	path = Framework/Externals/Spire
-	url = https://github.com/tfoleyNV/Spire.git
-	branch = falcor-redux
+	url = https://github.com/csyonghe/Spire.git
+	branch = master
