@@ -562,14 +562,154 @@ module InternalPerFrameCB_T
     param mat4            rightEyePrevViewProjMat;
 }
 
-module InternalPerMeshCB_T
+// Interface for mesh geometry (TODO: rename it to make sense)
+interface InternalPerMeshCB_T
+{
+}
+
+module StaticMeshGeometry implements InternalPerMeshCB_T targets StandardPipeline
 {
     param mat4[64] gWorldMat; // If the mesh has bones, these are the bones matrices
     param uint[64] gDrawId; // Zero-based order/ID of Mesh Instances drawn per SceneRenderer::renderScene call.
-//    param mat4 gWorldMat;
-//	param uint gDrawId;
     param uint gMeshId;
-};
+
+	require vec3 vertPos;
+	require vec3 vertNormal;
+	require vec3 vertBitangent;
+
+	// HACK(foley): Making this explicitly per-vertex so that `sv_instanceID` isn't live downstream,
+	// because if it is, then the Spire compiler fails on trying to propagate it along...
+	public @CoarseVertex mat4 worldMat = gWorldMat[sv_instanceID];
+
+
+	public @CoarseVertex vec3 pos = (worldMat * vec4(vertPos, 1.0)).xyz;
+	public @CoarseVertex vec3 normal = normalize((worldMat * vec4(vertNormal, 0.0)).xyz);
+	public @CoarseVertex vec3 bitangent = normalize((worldMat * vec4(vertBitangent, 0.0)).xyz);
+
+	public @CoarseVertex vec3 posW = pos;
+	public @CoarseVertex vec3 normalW = normal;
+}
+
+module SkeletalMeshGeometry implements InternalPerMeshCB_T targets StandardPipeline
+{
+    param mat4[64] gWorldMat; // If the mesh has bones, these are the bones matrices
+    param uint[64] gDrawId; // Zero-based order/ID of Mesh Instances drawn per SceneRenderer::renderScene call.
+    param uint gMeshId;
+
+	// TODO: actually compute worldMat on the fly from bones...
+}
+
+
+// Directly copy-pasting in PN-triangle tessellation from Yong's engine:
+module PN_Tessellation targets TessellationPipeline
+{
+    require vec3 coarseVertPos;
+    require vec3 coarseVertNormal;
+    
+    public @ControlPoint vec4 tessLevelOuter = vec4(3, 3, 3, 0);
+    public @ControlPoint vec2 tessLevelInner = vec2(3.0);
+    
+    vec3 ProjectToPlane(vec3 Point, vec3 PlanePoint, vec3 PlaneNormal)
+    {
+        vec3 v = Point - PlanePoint;
+        float Len = dot(v, PlaneNormal);
+        vec3 d = Len * PlaneNormal;
+        return (Point - d);
+    }
+    
+    @ControlPoint vec3 WorldPos_B030 = indexImport(coarseVertPos, 0);
+    @ControlPoint vec3 WorldPos_B003 = indexImport(coarseVertPos, 1);
+    @ControlPoint vec3 WorldPos_B300 = indexImport(coarseVertPos, 2);
+
+    // Edges are names according to the opposing vertex
+    vec3 EdgeB300 = WorldPos_B003 - WorldPos_B030;
+    vec3 EdgeB030 = WorldPos_B300 - WorldPos_B003;
+    vec3 EdgeB003 = WorldPos_B030 - WorldPos_B300;
+
+    // Generate two midpoints on each edge
+    vec3 WorldPos_B021t = WorldPos_B030 + EdgeB300 / 3.0;
+    vec3 WorldPos_B012t = WorldPos_B030 + EdgeB300 * 2.0 / 3.0;
+    vec3 WorldPos_B102t = WorldPos_B003 + EdgeB030 / 3.0;
+    vec3 WorldPos_B201t = WorldPos_B003 + EdgeB030 * 2.0 / 3.0;
+    vec3 WorldPos_B210t = WorldPos_B300 + EdgeB003 / 3.0;
+    vec3 WorldPos_B120t = WorldPos_B300 + EdgeB003 * 2.0 / 3.0;
+
+    // Project each midpoint on the plane defined by the nearest vertex and its normal
+    @ControlPoint vec3 WorldPos_B021 = ProjectToPlane(WorldPos_B021t, WorldPos_B030,
+                                         indexImport(coarseVertNormal, 0));
+    @ControlPoint vec3 WorldPos_B012 = ProjectToPlane(WorldPos_B012t, WorldPos_B003,
+                                         indexImport(coarseVertNormal, 1));
+    @ControlPoint vec3 WorldPos_B102 = ProjectToPlane(WorldPos_B102t, WorldPos_B003,
+                                         indexImport(coarseVertNormal, 1));
+    @ControlPoint vec3 WorldPos_B201 = ProjectToPlane(WorldPos_B201t, WorldPos_B300,
+                                         indexImport(coarseVertNormal, 2));
+    @ControlPoint vec3 WorldPos_B210 = ProjectToPlane(WorldPos_B210t, WorldPos_B300,
+                                         indexImport(coarseVertNormal, 2));
+    @ControlPoint vec3 WorldPos_B120 = ProjectToPlane(WorldPos_B120t, WorldPos_B030,
+                                         indexImport(coarseVertNormal, 0));
+
+    // Handle the center
+    vec3 Center = (WorldPos_B003 + WorldPos_B030 + WorldPos_B300) / 3.0;
+    vec3 WorldPos_B111t = (WorldPos_B021 + WorldPos_B012 + WorldPos_B102 +
+                          WorldPos_B201 + WorldPos_B210 + WorldPos_B120) / 6.0;
+    vec3 WorldPos_B111 = WorldPos_B111t + (WorldPos_B111t - Center) / 2.0;
+
+    
+    float u = tessCoord.x;
+    float v = tessCoord.y;
+    float w = tessCoord.z;
+
+    float vPow2 = v*v;
+    float uPow2 = u*u;
+    float wPow2 = w*w;
+    float uPow3 = uPow2 * u;
+    float vPow3 = vPow2 * v;
+    float wPow3 = wPow2 * w;
+
+    public @FineVertex float3 fineVertPos = indexImport(WorldPos_B300, 0) * wPow3 +
+                    indexImport(WorldPos_B030, 0) * uPow3 +
+                    indexImport(WorldPos_B003, 0) * vPow3 +
+                    indexImport(WorldPos_B210, 0) * 3.0 * wPow2 * u +
+                    indexImport(WorldPos_B120, 0) * 3.0 * w * uPow2 +
+                    indexImport(WorldPos_B201, 0) * 3.0 * wPow2 * v +
+                    indexImport(WorldPos_B021, 0) * 3.0 * uPow2 * v +
+                    indexImport(WorldPos_B102, 0) * 3.0 * w * vPow2 +
+                    indexImport(WorldPos_B012, 0) * 3.0 * u * vPow2 +
+                    indexImport(WorldPos_B111, 0) * 6.0 * w * u * v;
+}
+
+
+module TessellatedMeshGeometry implements InternalPerMeshCB_T targets TessellationPipeline
+{
+    param mat4[64] gWorldMat; // If the mesh has bones, these are the bones matrices
+    param uint[64] gDrawId; // Zero-based order/ID of Mesh Instances drawn per SceneRenderer::renderScene call.
+    param uint gMeshId;
+
+	require vec3 vertPos;
+	require vec3 vertNormal;
+	require vec3 vertBitangent;
+
+	// HACK(foley): Making this explicitly per-vertex so that `sv_instanceID` isn't live downstream,
+	// because if it is, then the Spire compiler fails on trying to propagate it along...
+	public @CoarseVertex mat4 worldMat = gWorldMat[sv_instanceID];
+
+
+	public @CoarseVertex vec3 coarsePos = (worldMat * vec4(vertPos, 1.0)).xyz;
+	public @CoarseVertex vec3 normal = normalize((worldMat * vec4(vertNormal, 0.0)).xyz);
+	public @CoarseVertex vec3 bitangent = normalize((worldMat * vec4(vertBitangent, 0.0)).xyz);
+
+	public @CoarseVertex vec3 normalW = normal;
+
+	// TODO(tfoley): propagate normal and tangent(s) through higher-order surface evaluation...
+
+	// Note: `public using` here so that PNTRi can set tess factors for us
+	// TODO: set tess factors based on view!
+	public using PN_Tessellation(coarseVertPos: coarsePos, coarseVertNormal: normal);
+
+	public @FineVertex vec3 pos = fineVertPos;
+	public @FineVertex vec3 posW = pos;
+}
+
 
 interface Material
 {
@@ -602,22 +742,8 @@ module TexturedMaterial
 // Equivalent of old `defaultVS`
 module DefaultVertexShader targets StandardPipeline
 {
-	require vec3 vertPos;
-	require vec3 vertNormal;
-	require vec3 vertBitangent;
-	require mat4[64] gWorldMat;
+	require vec3 pos;
 	require mat4 viewProjMat;
-
-	// HACK(foley): Making this explicitly per-vertex so that `sv_instanceID` isn't live downstream,
-	// because if it is, then the Spire compiler fails on trying to propagate it along...
-	public @CoarseVertex mat4 worldMat = gWorldMat[sv_instanceID];
-
-	public @CoarseVertex vec3 pos = (worldMat * vec4(vertPos, 1.0)).xyz;
-	public @CoarseVertex vec3 normal = normalize((worldMat * vec4(vertNormal, 0.0)).xyz);
-	public @CoarseVertex vec3 bitangent = normalize((worldMat * vec4(vertBitangent, 0.0)).xyz);
-
-	public @CoarseVertex vec3 posW = pos;
-	public @CoarseVertex vec3 normalW = normal;
 
 	public vec4 projCoord = viewProjMat * vec4(pos, 1.0);
 }

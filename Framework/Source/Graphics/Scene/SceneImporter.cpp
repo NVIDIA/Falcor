@@ -264,6 +264,29 @@ namespace Falcor
                     pModel->setActiveAnimation(activeAnimation);
                 }
             }
+            else if( keyName == "tessellation" )
+            {
+                if(!jval->value.IsString())
+                {
+                    error("Model tessellation mode should be a string");
+                    return false;
+                }
+                auto mode = std::string(jval->value.GetString());
+                if( mode == "none" )
+                {
+                    // default is to not tessellate
+                    continue;
+                }
+                else if( mode == "pntri" )
+                {
+                    // HACK: set all meshes to be tessellated
+                    uint32_t meshCount = pModel->getMeshCount();
+                    for( uint32_t mm = 0; mm < meshCount; ++mm )
+                    {
+                        pModel->getMesh(mm)->enableTessellation();
+                    }
+                }
+            }
             else
             {
                 error("Invalid key found in models array. Key == " + keyName + ".");

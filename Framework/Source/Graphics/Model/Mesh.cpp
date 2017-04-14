@@ -95,11 +95,78 @@ namespace Falcor
 		mpVertexModule = ShaderRepository::Instance().GetVertexModule(pLayout.get());
         auto componentClass = ShaderRepository::Instance().findComponentClass(mpVertexModule);
 		mpVertexComponentInstance = ComponentInstance::create(componentClass);
+
+        // Find the correct component class to use for transformation:
+        ProgramReflection::ComponentClassReflection::SharedPtr pTransformClass;
+        if( mHasBones )
+        {
+            pTransformClass = ShaderRepository::Instance().findComponentClass("SkeletalMeshGeometry");
+        }
+        else
+        {
+            pTransformClass = ShaderRepository::Instance().findComponentClass("StaticMeshGeometry");
+        }
+
+        mWorldMatOffset = pTransformClass->getVariableData("gWorldMat", true)->location;
+        mMeshIdOffset = pTransformClass->getVariableData("gMeshId")->location;
+        mpTransformComponentInstance = ComponentInstance::create(pTransformClass);
     }
 
     void Mesh::resetGlobalIdCounter()
     {
         sMeshCounter = 0;
         Material::resetGlobalIdCounter();
+    }
+
+    const ComponentInstance::SharedPtr& Mesh::getTransformComponent(
+        glm::mat4 const&    inWorldMat,
+        uint32_t            drawInstanceID) const
+    {
+        glm::mat4 worldMat = inWorldMat;
+        if( hasBones() )
+        {
+            worldMat = glm::mat4();
+        }
+
+        mpTransformComponentInstance->setVariable(
+            mWorldMatOffset + drawInstanceID * sizeof(glm::mat4),
+            worldMat);
+
+        // TODO: why do this in the inner loop?
+        mpTransformComponentInstance->setVariable(
+            mMeshIdOffset,
+            getId());
+
+        return mpTransformComponentInstance;
+    }
+
+    void Mesh::enableTessellation()
+    {
+        // We are basically re-doing construction here... :(
+
+        Vao::Topology patchTopology;
+        switch(mpVao->getPrimitiveTopology())
+        {
+        case Vao::Topology::PointList:
+            patchTopology = Vao::Topology::Patch1;
+            break;
+        case Vao::Topology::LineList:
+            patchTopology = Vao::Topology::Patch3;
+            break;
+        case Vao::Topology::TriangleList:
+            patchTopology = Vao::Topology::Patch3;
+            break;
+        default:
+            should_not_get_here();
+        }
+
+        mpVao->setPrimitiveTopology(patchTopology);
+
+        ProgramReflection::ComponentClassReflection::SharedPtr pTransformClass =
+            ShaderRepository::Instance().findComponentClass("TessellatedMeshGeometry");
+
+        mWorldMatOffset = pTransformClass->getVariableData("gWorldMat", true)->location;
+        mMeshIdOffset = pTransformClass->getVariableData("gMeshId")->location;
+        mpTransformComponentInstance = ComponentInstance::create(pTransformClass);
     }
 }

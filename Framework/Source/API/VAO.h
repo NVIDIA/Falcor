@@ -48,7 +48,13 @@ namespace Falcor
             LineList,
             LineStrip,
             TriangleList,
-            TriangleStrip
+            TriangleStrip,
+
+            // patch topologies
+            Patch0,
+            Patch1,
+            Patch2,
+            Patch3,
         };
 
         struct ElementDesc
@@ -101,6 +107,11 @@ namespace Falcor
         /** Get the primitive topology
         */
         Topology getPrimitiveTopology() const { return mTopology; }
+
+        // clobber the topology because sometimes we need to do that.
+        //
+        // TODO: there is no reason for the "VAO" to own this...
+        void setPrimitiveTopology(Topology topology) { mTopology = topology; }
 
     protected:
         friend class RenderContext;

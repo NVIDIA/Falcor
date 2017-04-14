@@ -60,6 +60,12 @@ namespace Falcor
             return D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
         case Vao::Topology::TriangleStrip:
             return D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP;
+        case Vao::Topology::Patch1:
+            return D3D_PRIMITIVE_TOPOLOGY_1_CONTROL_POINT_PATCHLIST;
+        case Vao::Topology::Patch2:
+            return D3D_PRIMITIVE_TOPOLOGY_2_CONTROL_POINT_PATCHLIST;
+        case Vao::Topology::Patch3:
+            return D3D_PRIMITIVE_TOPOLOGY_3_CONTROL_POINT_PATCHLIST;
         default:
             should_not_get_here();
             return D3D_PRIMITIVE_TOPOLOGY_UNDEFINED;

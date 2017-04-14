@@ -113,7 +113,17 @@ namespace Falcor
         */
         const Vao::SharedPtr& getVao() const { return mpVao; }
 
+        // Get the component that represents the vertex attributes used by this mesh
 		const ComponentInstance::SharedPtr& getVertexComponent() const { return mpVertexComponentInstance; }
+
+        // Get and populate the component that represents transformation of this mesh...
+        const ComponentInstance::SharedPtr& Mesh::getTransformComponent(
+            glm::mat4 const&    worldMat,
+            uint32_t            drawInstanceID) const;
+
+        // HACK: make this a tessellated mesh
+        void enableTessellation();
+
 
         /** Get global mesh ID
         */
@@ -151,6 +161,10 @@ namespace Falcor
         Material::SharedPtr mpMaterial;
 		SpireModule* mpVertexModule;
 		ComponentInstance::SharedPtr mpVertexComponentInstance;
+        ComponentInstance::SharedPtr mpTransformComponentInstance;
+        size_t mWorldMatOffset;
+        size_t mMeshIdOffset;
+
         BoundingBox mBoundingBox;
         Vao::SharedPtr mpVao;
     };

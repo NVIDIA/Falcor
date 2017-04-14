@@ -128,7 +128,7 @@ namespace Falcor
         static size_t sWorldMatOffset;
         static size_t sMeshIdOffset;
         static size_t sDrawIDOffset;
-        ComponentInstance::SharedPtr mpPerMeshComponentInstance;
+//        ComponentInstance::SharedPtr mpPerMeshComponentInstance;
 
         void updateVariableOffsets(const ProgramReflection* pReflector);
 

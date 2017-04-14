@@ -198,6 +198,8 @@ namespace Falcor
 
         if(mMeshComponentBinding != ConstantBuffer::kInvalidOffset)
         {
+#if 0
+
             // We are re-using a single component instance for "transient" data, which means that
             // we will end up churning through descriptor sets a bit here...
             if(!mpPerMeshComponentInstance)
@@ -214,6 +216,10 @@ namespace Falcor
 
             // Need to set this at the right place...
             pContext->getGraphicsVars()->setComponent(mMeshComponentBinding, mpPerMeshComponentInstance);
+#else
+            auto pPerMeshComponentInstance = pMesh->getTransformComponent(worldMat, drawInstanceID);
+            pContext->getGraphicsVars()->setComponent(mMeshComponentBinding, pPerMeshComponentInstance);
+#endif
         }
 #endif
 
