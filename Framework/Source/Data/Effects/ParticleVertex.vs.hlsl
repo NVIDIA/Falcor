@@ -52,14 +52,15 @@ struct VSOut
     uint particleIndex : ID;
 };
 
-StructuredBuffer<uint> IndexList;
-RWStructuredBuffer<Particle> ParticlePool;
+StructuredBuffer<uint> IndexList : register(t0);
+StructuredBuffer<Particle> ParticlePool : register(t1);
 
 VSOut main(uint vId : SV_VertexID, uint iId : SV_InstanceID)
 {
     VSOut output;
     uint particleIndex = iId;
-    Particle p = ParticlePool[IndexList[particleIndex]];
+    uint poolIndex = IndexList[particleIndex];
+    Particle p = ParticlePool[poolIndex];
     uint billboardIndex = vId;
 
     float4 viewPos = mul(frameData.view, float4(p.pos, 1.f));
@@ -67,7 +68,7 @@ VSOut main(uint vId : SV_VertexID, uint iId : SV_InstanceID)
     viewPos.xy += float2(p.scale, p.scale) * rotOffset;
     output.pos = mul(frameData.proj, viewPos);
     output.texCoords = float2(xTex[billboardIndex], yTex[billboardIndex]);
-    output.particleIndex = particleIndex;
+    output.particleIndex = poolIndex;
     return output;
 }
 

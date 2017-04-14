@@ -67,9 +67,9 @@ void Particles::onGuiRender()
                 mParticleSystems.push_back(pSys);
                 ColorInterpPsPerFrame perFrame;
                 perFrame.color1 = vec3(1.f, 0.f, 0.f);
-                perFrame.colorT1 = 0.f;
+                perFrame.colorT1 = pSys->getParticleDuration();
                 perFrame.color2 = vec3(0.f, 0.f, 1.f);
-                perFrame.colorT2 = pSys->getParticleDuration();
+                perFrame.colorT2 = 0.f;
                 mPsData.push_back(perFrame);
                 break;
             }
@@ -164,13 +164,11 @@ void Particles::onGuiRender()
 
 void Particles::onLoad()
 {
-    //mParticleSystems.push_back(ParticleSystem::create(mpRenderContext.get(), 16 * 1024));
     mpCamera = Camera::create();
     mpCamera->setPosition(mpCamera->getPosition() + glm::vec3(0, 5, 10));
     mpCamController.attachCamera(mpCamera);
     mTextures.push_back(createTextureFromFile(kDefaultTexture, true, false));
     mTexDropdown.push_back({ 0, kDefaultTexture });
-    //mParticleSystems[0]->getDrawVars()->setSrv(2, mpTex->getSRV());
 }
 
 void Particles::onFrameRender()
