@@ -29,6 +29,7 @@
 
 #include "Framework.h"
 #include "API/RenderContext.h"
+#include "Data/Effects/ParticleData.h"
 
 namespace Falcor
 {
@@ -51,6 +52,7 @@ namespace Falcor
         ComputeVars::SharedPtr getSimulateVars() { return mSimulateResources.vars; }
 
         void setParticleDuration(float dur, float offset);
+        float getParticleDuration() { return mEmitter.duration; }
         void setEmitData(uint32_t emitCount, uint32_t emitCountOffset, float emitFrequency);
         void setSpawnPos(vec3 spawnPos, vec3 offset);
         void setVelocity(vec3 velocity, vec3 offset);

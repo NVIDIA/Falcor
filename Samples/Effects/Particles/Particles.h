@@ -43,10 +43,59 @@ public:
     void onGuiRender() override;
 
 private:
+    enum class ExamplePixelShaders
+    {
+        ConstColor = 0,
+        ColorInterp = 1,
+        Textured = 2,
+        Count 
+    };
+
     ComputeContext::SharedPtr mpComputeContext;
     std::vector<ParticleSystem::SharedPtr> mParticleSystems;
     int32_t mGuiIndex = 0;
+    uint32_t mPixelShaderIndex = 0;
     Camera::SharedPtr mpCamera;
     FirstPersonCameraController mpCamController;
     Texture::SharedPtr mpTex;
+    static const uint32_t guiTextBufferSize = 200;
+    char mGuiTextBuffer[guiTextBufferSize];
+    //This seems kinda messy. I imagine user would wrap particle system in their own class to store additional 
+    //custom properties like these
+    union PSData
+    {
+        PSData() : color(vec3(1.f, 1.f, 1.f)) {}
+        ~PSData() {}
+        PSData(vec3 newColor) : color(newColor) {};
+        PSData(ColorInterpPsPerFrame interpData) : interp(interpData) {};
+        PSData(uint32_t newTexIndex) : texIndex(newTexIndex) {};
+        vec3 color;
+        ColorInterpPsPerFrame interp;
+        uint32_t texIndex;
+    };
+
+    struct PixelShaderData
+    {
+        PixelShaderData(const PixelShaderData& rhs) 
+        {
+            type = rhs.type;
+            switch (type)
+            {
+            case ExamplePixelShaders::ConstColor: data.color = rhs.data.color; return;
+            case ExamplePixelShaders::ColorInterp: data.interp = rhs.data.interp; return;
+            case ExamplePixelShaders::Textured: data.texIndex = rhs.data.texIndex; return;
+            default: should_not_get_here();
+            }
+        }
+        PixelShaderData(vec3 color) : type(ExamplePixelShaders::ConstColor), data(color) {}
+        PixelShaderData(ColorInterpPsPerFrame interpData) : type(ExamplePixelShaders::ColorInterp), data(interpData) {}
+        PixelShaderData(uint32_t texIndex) : type(ExamplePixelShaders::Textured), data(texIndex) {}
+        ExamplePixelShaders type;
+        PSData data;
+    };
+
+    std::vector<PixelShaderData> mPsData;
+    std::vector<Texture::SharedPtr> mTextures;
+    Gui::DropdownList mTexDropdown;
+    uint32_t mTexIndex = 0;
 };

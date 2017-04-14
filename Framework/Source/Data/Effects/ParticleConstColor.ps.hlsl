@@ -32,18 +32,12 @@ struct VSOut
     uint particleIndex : ID;
 };
 
+cbuffer PsPerFrame : register(b2)
+{
+    float3 color;
+};
+
 float4 main(VSOut vOut) : SV_Target0
 {
-    if (vOut.particleIndex > 512)
-    {
-        return float4(0.75f, 0.25f, 0.25f, 1.f);
-    }
-    else if (vOut.particleIndex > 256)
-    {
-        return float4(0.25f, 0.75f, 0.25f, 1.f);
-    }
-    else
-    {
-        return float4(0.25f, 0.25f, 0.75f, 1.f);
-    }
+    return float4(color, 1.f);
 }

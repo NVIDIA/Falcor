@@ -25,66 +25,25 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#ifndef PARTICLEDATA_H
-#define PARTICLEDATA_H
+#include "ParticleData.h"
 
-#include "Data/HostDeviceData.h"
+RWStructuredBuffer<Particle> ParticlePool;
 
-#define MAX_EMIT 512
-#define EMIT_THREADS 64
-
-struct Particle
+struct VSOut
 {
-    vec3 pos;
-    float scale;
-    vec3 vel;    
-    float life;
-    vec3 accel;
-    float growth;
-    float rot; 
-    float rotVel;
-    vec2 padding;
-    //id?
+    float4 pos : SV_POSITION;
+    float2 texCoords : TEXCOORD;
+    uint particleIndex : ID;
 };
 
-struct EmitData
+cbuffer PsPerFrame : register(b2)
 {
-    Particle particles[MAX_EMIT];
-    uint numEmit;
-    uint maxParticles;
-    uint simulateThreads;
+    ColorInterpPsPerFrame perFrame;
 };
 
-struct SimulatePerFrame
+float4 main(VSOut vOut) : SV_Target0
 {
-    float dt;
-};
-
-struct ColorInterpPsPerFrame
-{
-    vec3 color1;
-    float colorT1;
-    vec3 color2;
-    float colorT2;
-};
-
-#ifdef HOST_CODE
-struct VSPerFrame
-{
-    glm::mat4 view;
-    glm::mat4 proj;
-};
-#else
-struct VSPerFrame
-{
-    matrix view;
-    matrix proj;
-};
-
-uint getParticleIndex(uint groupIDx, uint threadsPerGroup, uint groupIndex)
-{
-    return groupIDx * threadsPerGroup + groupIndex;
+    float life = ParticlePool[vOut.particleIndex].life;
+    float t = saturate((life - perFrame.colorT1) / (perFrame.colorT2 - perFrame.colorT1));
+    return float4((1.0f - t) * perFrame.color1 + t * perFrame.color2, 1.f);
 }
-#endif
-
-#endif //particleData_h

@@ -29,35 +29,148 @@
 #include "API/D3D/FalcorD3D.h"
 #include <limits>
 
+const Gui::DropdownList kPixelShaders 
+{
+    {0, "ConstColor"},
+    {1, "ColorInterp"},
+    {2, "Textured"}
+};
+
+const char* kConstColorPs = "Effects/ParticleConstColor.ps.hlsl";
+const char* kColorInterpPs = "Effects/ParticleInterpColor.ps.hlsl";
+const char* kTexturedPs = "Effects/ParticleTexture.ps.hlsl";
+const std::string kDefaultTexture = "TestParticle.png";
+
 void Particles::onGuiRender()
 {
     if (mpGui->beginGroup("Create System"))
     {
-        static int32_t sMaxParticles = 512;
+        static int32_t sMaxParticles = 4096;
         mpGui->addIntVar("Max Particles", sMaxParticles, 0);
+        mpGui->addDropdown("PixelShader", kPixelShaders, mPixelShaderIndex);
         if (mpGui->addButton("Create"))
         {
-            mParticleSystems.push_back(ParticleSystem::create(mpRenderContext.get(), sMaxParticles, "Effects/ParticleConstColor.ps.hlsl"));
+            switch ((ExamplePixelShaders)mPixelShaderIndex)
+            {
+            case ExamplePixelShaders::ConstColor:
+            {
+                ParticleSystem::SharedPtr pSys = 
+                    ParticleSystem::create(mpRenderContext.get(), sMaxParticles, kConstColorPs);
+                mParticleSystems.push_back(pSys);
+                mPsData.push_back(vec3(0.f, 0.f, 0.f));
+                break;
+            }
+            case ExamplePixelShaders::ColorInterp:
+            {
+                ParticleSystem::SharedPtr pSys =
+                    ParticleSystem::create(mpRenderContext.get(), sMaxParticles, kColorInterpPs);
+                mParticleSystems.push_back(pSys);
+                ColorInterpPsPerFrame perFrame;
+                perFrame.color1 = vec3(1.f, 0.f, 0.f);
+                perFrame.colorT1 = 0.f;
+                perFrame.color2 = vec3(0.f, 0.f, 1.f);
+                perFrame.colorT2 = pSys->getParticleDuration();
+                mPsData.push_back(perFrame);
+                break;
+            }
+            case ExamplePixelShaders::Textured:
+            {
+                ParticleSystem::SharedPtr pSys = 
+                    ParticleSystem::create(mpRenderContext.get(), sMaxParticles, kTexturedPs);
+                mParticleSystems.push_back(pSys);
+                mPsData.push_back(0);
+                pSys->getDrawVars()->setSrv(2, mTextures[0]->getSRV());
+                break;
+            }
+            default:
+            {
+                should_not_get_here();
+            }
+            }
         }
         mpGui->endGroup();
     }
 
-    if (mpGui->beginGroup("Edit Properties"))
+    mpGui->addSeparator();
+    mpGui->addIntVar("System index", mGuiIndex, 0, ((int32_t)mParticleSystems.size()) - 1);
+    mpGui->addSeparator();
+
+    //If there are no systems yet, don't let user touch properties
+    if (mGuiIndex < 0)
+        return;
+
+    if (mpGui->beginGroup("Common Properties"))
     {
-        mpGui->addIntVar("System index", mGuiIndex, 0, ((int32_t)mParticleSystems.size()) - 1);
-        mpGui->addSeparator();
         mParticleSystems[mGuiIndex]->renderUi(mpGui.get());
+        mpGui->endGroup();
+    }
+    if (mpGui->beginGroup("Pixel Shader Properties"))
+    {
+        switch ((ExamplePixelShaders)mPsData[mGuiIndex].type)
+        {
+        case ExamplePixelShaders::ConstColor:
+        {
+            if (mpGui->addRgbColor("Color", mPsData[mGuiIndex].data.color))
+            {
+                mParticleSystems[mGuiIndex]->getDrawVars()->getConstantBuffer(2)->
+                    setBlob(&mPsData[mGuiIndex].data.color, 0, sizeof(vec4));
+            }
+            break;
+        }
+        case ExamplePixelShaders::ColorInterp:
+        {
+            bool dirty = mpGui->addRgbColor("Color1", mPsData[mGuiIndex].data.interp.color1);
+            dirty |= mpGui->addFloatVar("Color T1", mPsData[mGuiIndex].data.interp.colorT1);
+            dirty |= mpGui->addRgbColor("Color2", mPsData[mGuiIndex].data.interp.color2);
+            dirty |= mpGui->addFloatVar("Color T2", mPsData[mGuiIndex].data.interp.colorT2);
+
+            if (dirty)
+            {
+                mParticleSystems[mGuiIndex]->getDrawVars()->getConstantBuffer(2)->
+                    setBlob(&mPsData[mGuiIndex].data.interp, 0, sizeof(ColorInterpPsPerFrame));
+            }
+
+            break;
+        }
+        case ExamplePixelShaders::Textured:
+        {
+            if (mpGui->addButton("Add Texture"))
+            {
+                std::string filename;
+                //todo put a proper filter here
+                openFileDialog("", filename);
+                mTextures.push_back(createTextureFromFile(filename, true, false));
+                mTexDropdown.push_back({(int32_t)mTexDropdown.size(), filename });
+            }
+
+            uint32_t texIndex = mPsData[mGuiIndex].data.texIndex;
+            if (mpGui->addDropdown("Texture", mTexDropdown, texIndex))
+            {
+                mParticleSystems[mGuiIndex]->getDrawVars()->setSrv(2, mTextures[texIndex]->getSRV());
+                mPsData[mGuiIndex].data.texIndex = texIndex;
+            }
+            break;
+        }
+        default:
+        {
+            should_not_get_here();
+            break;
+        }
+        }
+
+        mpGui->endGroup();
     }
 }
 
 void Particles::onLoad()
 {
-    mParticleSystems.push_back(ParticleSystem::create(mpRenderContext.get(), 16 * 1024));
+    //mParticleSystems.push_back(ParticleSystem::create(mpRenderContext.get(), 16 * 1024));
     mpCamera = Camera::create();
     mpCamera->setPosition(mpCamera->getPosition() + glm::vec3(0, 5, 10));
     mpCamController.attachCamera(mpCamera);
-    mpTex = createTextureFromFile("C:/Users/clavelle/Desktop/waterdrop.png", true, false);
-    mParticleSystems[0]->getDrawVars()->setSrv(2, mpTex->getSRV());
+    mTextures.push_back(createTextureFromFile(kDefaultTexture, true, false));
+    mTexDropdown.push_back({ 0, kDefaultTexture });
+    //mParticleSystems[0]->getDrawVars()->setSrv(2, mpTex->getSRV());
 }
 
 void Particles::onFrameRender()

@@ -29,7 +29,6 @@
 #include "API/Resource.h"
 #include "glm/gtc/random.hpp"
 #include <algorithm>
-#include "Data/Effects/ParticleData.h"
 #include "Utils/Gui.h"
 
 namespace Falcor
