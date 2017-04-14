@@ -74,6 +74,11 @@ namespace Falcor
         */
         virtual void unloadGPUData() = 0;
 
+		/**
+		    Get total light power (needed for light picking)
+		*/
+        virtual float getPower() = 0;
+
         /** Get the light Type
         */
         uint32_t getType() const { return mData.type; }
@@ -168,6 +173,11 @@ namespace Falcor
         const glm::vec3& getIntensity() const { return mData.intensity; }
 
         /**
+		    Get total light power (needed for light picking)
+		*/
+        float getPower() override;
+
+		/**
             IMovableObject interface
         */
         void move(const glm::vec3& position, const glm::vec3& target, const glm::vec3& up) override;
@@ -209,6 +219,11 @@ namespace Falcor
             Unload GPU data
         */
         void unloadGPUData() override;
+        
+		/**
+		    Get total light power (needed for light picking)
+		*/
+        float getPower() override;
 
         /** Set the light's world-space position
         */
@@ -281,6 +296,11 @@ namespace Falcor
             Default destructor
         */
         ~AreaLight();
+        
+		/**
+		    Get total light power (needed for light picking)
+		*/
+        float getPower() override;
 
         /**
             Set the light parameters into a program. To use this you need to

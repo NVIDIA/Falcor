@@ -56,6 +56,7 @@ namespace Falcor
         static const uint32_t kBindPoseAnimationId = -1;
 
         static UniquePtr create(const std::vector<Bone>& bones);
+        static UniquePtr create(const AnimationController& other);
         ~AnimationController();
 
         void addAnimation(Animation::UniquePtr pAnimation);

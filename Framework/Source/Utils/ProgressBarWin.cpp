@@ -80,6 +80,8 @@ namespace Falcor
             SetWindowTextA(pData->hwnd, "Loading...");
         }
         SetForegroundWindow(pData->hwnd);
+        setWindowIcon("Framework\\Nvidia.ico", pData->hwnd);
+
         // Execute
         int j = 0;
         while (pData->running)
@@ -92,6 +94,13 @@ namespace Falcor
                 j = 0;
                 SetWindowTextA(pData->hwnd, msgList[pData->dist(pData->rng)].c_str());
             }
+            MSG msg;
+            while (PeekMessage(&msg, pData->hwnd, 0, 0, PM_REMOVE))
+            {
+                TranslateMessage(&msg);
+                DispatchMessage(&msg);
+            }
+
             j++;
         }
     }

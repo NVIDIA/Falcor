@@ -39,12 +39,12 @@ namespace Falcor
     class SceneImporter
     {
     public:
-        static Scene::SharedPtr loadScene(const std::string& filename, Model::LoadFlags modelLoadFlags, Scene::LoadFlags sceneLoadFlags);
+        static bool loadScene(Scene& scene, const std::string& filename, Model::LoadFlags modelLoadFlags, Scene::LoadFlags sceneLoadFlags);
 
     private:
 
-        SceneImporter() = default;
-        Scene::SharedPtr load(const std::string& filename, Model::LoadFlags modelLoadFlags, Scene::LoadFlags sceneLoadFlags);
+        SceneImporter(Scene& scene) : mScene(scene) {}
+        bool load(const std::string& filename, Model::LoadFlags modelLoadFlags, Scene::LoadFlags sceneLoadFlags);
 
         bool parseVersion(const rapidjson::Value& jsonVal);
         bool parseModels(const rapidjson::Value& jsonVal);
@@ -83,13 +83,13 @@ namespace Falcor
 
         bool createMaterialTexture(const rapidjson::Value& jsonValue, Texture::SharedPtr& pTexture, bool isSrgb);
 
-        Scene* error(const std::string& msg);
+        bool error(const std::string& msg);
 
         template<uint32_t VecSize>
         bool getFloatVec(const rapidjson::Value& jsonVal, const std::string& desc, float vec[VecSize]);
         bool getFloatVecAnySize(const rapidjson::Value& jsonVal, const std::string& desc, std::vector<float>& vec);
         rapidjson::Document mJDoc;
-        Scene::SharedPtr mpScene = nullptr;
+        Scene& mScene;
         std::string mFilename;
         std::string mDirectory;
         Model::LoadFlags mModelLoadFlags;

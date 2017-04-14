@@ -229,7 +229,7 @@ namespace Falcor
             assert(uavIt != assignedUavs.end());
 
             uavIt->second.pResource = resource;
-            uavIt->second.pView = resource->getUAV();
+            uavIt->second.pView = resource ? resource->getUAV() : nullptr;
             break;
         }
 
@@ -239,7 +239,7 @@ namespace Falcor
             assert(srvIt != assignedSrvs.end());
 
             srvIt->second.pResource = resource;
-            srvIt->second.pView = resource->getSRV();
+            srvIt->second.pView = resource ? resource->getSRV() : nullptr;
             break;
         }
 
@@ -664,16 +664,18 @@ namespace Falcor
         {
             uint32_t rootOffset = samplerIt.second.rootSigOffset;
             const Sampler* pSampler = samplerIt.second.pSampler.get();
-            if (pSampler)
+            if (pSampler == nullptr)
             {
-                if(forGraphics)
-                {
-                    pList->SetGraphicsRootDescriptorTable(rootOffset, pSampler->getApiHandle()->getGpuHandle());
-                }
-                else
-                {
-                    pList->SetComputeRootDescriptorTable(rootOffset, pSampler->getApiHandle()->getGpuHandle());
-                }
+                pSampler = Sampler::getDefault().get();
+            }
+
+            if (forGraphics)
+            {
+                pList->SetGraphicsRootDescriptorTable(rootOffset, pSampler->getApiHandle()->getGpuHandle());
+            }
+            else
+            {
+                pList->SetComputeRootDescriptorTable(rootOffset, pSampler->getApiHandle()->getGpuHandle());
             }
         }
     }

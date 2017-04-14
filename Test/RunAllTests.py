@@ -666,12 +666,12 @@ def main(build, showSummary, generateReference, referenceDir, testList, pullBran
             errorFile = open(errorSummary, 'w')
             errorFile.write(errorStr)
             errorFile.close()
-            testingResults.append([resultSummary, False])
+            testingResults.append([sln.name, resultSummary, False])
         else:
-            testingResults.append([resultSummary, True])
+            testingResults.append([sln.name, resultSummary, True])
 
     #check len for pass fail, len 2 includes error file, which is a fail  
-    return  testingResults
+    return testingResults
 
 def cleanupString(string):
     string = string.replace('\t', '')

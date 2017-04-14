@@ -31,8 +31,8 @@
 SamplerState gLuminanceTexSampler : register(s0);
 SamplerState gPointSampler : register(s1);
 
-texture2D gColorTex;
-texture2D gLuminanceTex;
+Texture2D gColorTex;
+Texture2D gLuminanceTex;
 
 cbuffer PerImageCB : register(b0)
 {

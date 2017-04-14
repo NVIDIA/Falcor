@@ -62,43 +62,59 @@ namespace Falcor
 
     }
 
-    Model::~Model() = default;
-
-    Model::SharedPtr Model::createFromFile(const char* filename, Model::LoadFlags flags)
+    Model::Model(const Model& other) : mId(sModelCounter++)
     {
-        Model::SharedPtr pModel = SharedPtr(new Model);
-        if (pModel->init(filename, flags) == false)
+        mBoundingBox = other.mBoundingBox;
+        mRadius = other.mRadius;
+        mVertexCount = other.mVertexCount;
+        mIndexCount = other.mIndexCount;
+        mPrimitiveCount = other.mPrimitiveCount;
+        mMeshInstanceCount = other.mMeshInstanceCount;
+        mBufferCount = other.mBufferCount;
+        mMaterialCount = other.mMaterialCount;
+        mTextureCount = other.mTextureCount;
+
+        mMeshes = other.mMeshes;
+        if(other.mpAnimationController)
         {
-            return nullptr;
+            mpAnimationController = AnimationController::create(*other.mpAnimationController);
         }
 
-        return pModel;
+        mName = other.mName + "_copy";
+        mFilename = other.mFilename;
     }
 
-    bool Model::init(const char* filename, Model::LoadFlags flags)
+    Model::~Model() = default;
+
+    Model::SharedPtr Model::createFromFile(const char* filename, LoadFlags flags)
     {
+        SharedPtr pModel = SharedPtr(new Model());
         bool res;
-        if (hasSuffix(filename, ".bin", false))
+        if(hasSuffix(filename, ".bin", false))
         {
-            res = BinaryModelImporter::import(this, filename, flags);
+            res = BinaryModelImporter::import(*pModel, filename, flags);
         }
         else
         {
-            res = AssimpModelImporter::import(this, filename, flags);
+            res = AssimpModelImporter::import(*pModel, filename, flags);
         }
 
-        if (res)
+        if(res)
         {
-            calculateModelProperties();
-            setFilename(filename);
+            pModel->calculateModelProperties();
+            pModel->setFilename(filename);
 
             std::string name = getFilenameFromPath(filename);
             size_t extPos = name.find_last_of('.');
             name = (extPos == std::string::npos) ? name : name.substr(0, extPos);
-            setName(name);
+            pModel->setName(name);
+        }
+        else
+        {
+            pModel = nullptr;
         }
 
-        return res;
+        return pModel;
     }
 
     Model::SharedPtr Model::create()
@@ -308,7 +324,7 @@ namespace Falcor
         // Sort meshes by material ptr
         auto matSortPred = [](MeshInstanceList& lhs, MeshInstanceList& rhs) 
         {
-            return lhs[0]->getObject()->getMaterial() < rhs[0]->getObject()->getMaterial();
+            return lhs[0]->getObject()->getMaterial()->getId() < rhs[0]->getObject()->getMaterial()->getId();
         };
         
         std::sort(mMeshes.begin(), mMeshes.end(), matSortPred);

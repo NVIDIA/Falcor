@@ -7,13 +7,14 @@ import shutil
 import stat
 
 class TestSetInfo(object):
-    def __init__(self, testDir, testList, summaryFile, passedTests, repoSrc, pullBranch):
+    def __init__(self, testDir, testList, summaryFile, passedTests, repoSrc, pullBranch, name):
         self.testDir = testDir
         self.testList = testList
         self.summaryFile = summaryFile
         self.passedTests = passedTests
         self.pullBranch = pullBranch
         self.repoSrc = repoSrc
+        self.name = name
 
 def cleanupString(string):
     string = string.replace('\t', '')
@@ -97,7 +98,7 @@ def main():
         testingResults = RunAllTests.main(True, args.showsummary, args.generatereference, refDir, testList, pullBranch)
         #testing results is list of lists 
         for result in testingResults:
-            setInfo = TestSetInfo(workingDir, testList, result[0], result[1], repoSrc, pullBranch)
+            setInfo = TestSetInfo(workingDir, testList, result[1], result[2], repoSrc, pullBranch, result[0])
             testResults.append(setInfo)
 
         #move out of repo back to previous location
@@ -118,10 +119,10 @@ def main():
                 result = 'Fail'
             else:
                 result = 'Success'
-            body += r.testDir + '\\' + r.testList
+            body += r.testDir + '\\' + r.testList + ' ' + r.name
             if r.pullBranch:
                 body += ' (' + r.repoSrc + ' ' + r.pullBranch + ') '
-            body += ': ' + result + '\n'
+            body += ': ' + result + '\n\n'
         if anyFails:
             subject = '[FAIL]'
         else:

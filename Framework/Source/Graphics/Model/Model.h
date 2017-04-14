@@ -233,6 +233,7 @@ namespace Falcor
         friend class SimpleModelImporter;
 
         Model();
+        Model(const Model& other);
         void sortMeshes();
         void deleteCulledMeshInstances(MeshInstanceList& meshInstances, const Camera *pCamera);
 
@@ -259,7 +260,6 @@ namespace Falcor
         static uint32_t sModelCounter;
 
         void calculateModelProperties();
-        bool init(const char* filename, Model::LoadFlags flags);
     };
 
     enum_class_operators(Model::LoadFlags);

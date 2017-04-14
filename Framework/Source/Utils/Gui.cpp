@@ -83,7 +83,7 @@ namespace Falcor
         std::string fontFile;
         if(findFileInDataDirectories("Framework/Fonts/trebucbd.ttf", fontFile))
         {
-            io.Fonts->AddFontFromFileTTF(fontFile.c_str(), 16);
+            io.Fonts->AddFontFromFileTTF(fontFile.c_str(), 14);
         }
         io.Fonts->GetTexDataAsAlpha8(&pFontData, &width, &height);
         Texture::SharedPtr pTexture = Texture::create2D(width, height, ResourceFormat::Alpha8Unorm, 1, 1, pFontData);
@@ -157,6 +157,23 @@ namespace Falcor
         mpProgramVars[0][0] = orthographicMatrix(0, float(width), float(height), 0, 0, 1);
     }
 
+    void Gui::setIoMouseEvents()
+    {
+        ImGuiIO& io = ImGui::GetIO();
+        memcpy(io.MouseDown, mMouseEvents.buttonPressed, sizeof(mMouseEvents.buttonPressed));
+    }
+
+    void Gui::resetMouseEvents()
+    {
+        for (uint32_t i = 0; i < arraysize(mMouseEvents.buttonPressed); i++)
+        {
+            if (mMouseEvents.buttonReleased[i])
+            {
+                mMouseEvents.buttonPressed[i] = mMouseEvents.buttonReleased[i] = false;
+            }
+        }
+    }
+
     void Gui::render(RenderContext* pContext, float elapsedTime)
     {
         while (mGroupStackSize)
@@ -165,10 +182,15 @@ namespace Falcor
         }
 
         pContext->setGraphicsVars(mpProgramVars);
+        // Set the mouse state
+        setIoMouseEvents();
+
         ImGui::Render();
         ImDrawData* pDrawData = ImGui::GetDrawData();
-
+    
+        resetMouseEvents();
         // Update the VAO
+
         createVao(pDrawData->TotalVtxCount, pDrawData->TotalIdxCount);
         mpPipelineState->setVao(mpVao);
 
@@ -256,9 +278,10 @@ namespace Falcor
         return oldValue != activeID;
     }
 
-    bool Gui::beginGroup(const char name[])
+    bool Gui::beginGroup(const char name[], bool beginExpanded)
     {
-        bool visible = mGroupStackSize ? ImGui::TreeNode(name) : ImGui::CollapsingHeader(name);
+        ImGuiTreeNodeFlags flags = beginExpanded ? ImGuiTreeNodeFlags_DefaultOpen :  0;
+        bool visible = mGroupStackSize ? ImGui::TreeNode(name) : ImGui::CollapsingHeader(name, flags);
         if (visible)
         {
             mGroupStackSize++;
@@ -363,29 +386,29 @@ namespace Falcor
         switch (event.type)
         {
         case MouseEvent::Type::LeftButtonDown:
-            io.MouseDown[0] = true;
+            mMouseEvents.buttonPressed[0] = true;
             break;
         case MouseEvent::Type::LeftButtonUp:
-            io.MouseDown[0] = false;
+            mMouseEvents.buttonReleased[0] = true;
             break;
         case MouseEvent::Type::RightButtonDown:
-            io.MouseDown[1] = true;
+            mMouseEvents.buttonPressed[1] = true;
             break;
         case MouseEvent::Type::RightButtonUp:
-            io.MouseDown[1] = false;
+            mMouseEvents.buttonReleased[1] = true;
             break;
         case MouseEvent::Type::MiddleButtonDown:
-            io.MouseDown[2] = true;
+            mMouseEvents.buttonPressed[2] = true;
             break;
         case MouseEvent::Type::MiddleButtonUp:
-            io.MouseDown[2] = false;
+            mMouseEvents.buttonReleased[2] = true;
             break;
         case MouseEvent::Type::Move:
             io.MousePos.x = event.pos.x * io.DisplaySize.x;
             io.MousePos.y = event.pos.y * io.DisplaySize.y;
             break;
         case MouseEvent::Type::Wheel:
-            io.MouseWheel += event.wheelDelta.x;
+            io.MouseWheel += event.wheelDelta.y;
             break;
         }
 
