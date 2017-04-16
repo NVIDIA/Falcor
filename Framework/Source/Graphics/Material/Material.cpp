@@ -41,6 +41,8 @@ namespace Falcor
     uint32_t Material::sMaterialCounter = 0;
     std::vector<Material::DescId> Material::sDescIdentifier;
 
+	bool Material::UseGeneralShader = true;
+
     Material::Material(const std::string& name) : mName(name)
     {
         mData.values.id = sMaterialCounter;
@@ -557,57 +559,61 @@ namespace Falcor
 
         if( !mSpireComponentClass )
         {
-			int layerCount = this->getNumLayers();
-			// currently material module source depend on number of layers and type of each layer
-			// we encode the material module configuration in the module name
-			std::string moduleName = "Material" + std::to_string(layerCount);
-			for (int i = 0; i < layerCount; i++)
+			if (UseGeneralShader)
+				mSpireComponentClass = ShaderRepository::Instance().findComponentClass("GeneralMaterial");
+			else
 			{
-				moduleName += "_";
-				auto layer = getLayer(i);
-				if (layer.pTexture)
-					moduleName += "M";
-				else
-					moduleName += "C";
-				moduleName += std::to_string((int)layer.type);
-				moduleName += std::to_string((int)layer.ndf);
-				moduleName += std::to_string((int)layer.blend);
-			}
-			// check if we have already generated the material module
-			SpireModule* spireComponentClass = spFindModule(spireContext, moduleName.c_str());
-			if (!spireComponentClass)
-			{
-				// if module not found, generate it
-				std::stringstream sb;
-				std::string kernelStr;
-				std::string fullPath;
-				if (findFileInDataDirectories("MaterialInclude.spire", fullPath))
+				int layerCount = this->getNumLayers();
+				// currently material module source depend on number of layers and type of each layer
+				// we encode the material module configuration in the module name
+				std::string moduleName = "Material" + std::to_string(layerCount);
+				for (int i = 0; i < layerCount; i++)
 				{
-					readFileToString(fullPath, kernelStr);
-					sb << "module " << moduleName << " implements Material\n{\n";
-					std::stringstream sbEval, sbUsing;
-					for (int i = 0; i < layerCount; i++)
-					{
-						sbUsing << "using layer" << i << " = MaterialLayer(" << (getLayer(i).pTexture ? "1" : "0") << ", " << (int)getLayer(i).type
-							<< ", " << (int)getLayer(i).ndf << ", " << (int)getLayer(i).blend << ");\n";
-						
-						sbEval << "layer" << i << ".evalMaterialLayer(shAttr, lAttr, passResult);\n";
-					}
-					kernelStr = ReplaceStr(kernelStr, "$LAYER_EVAL", sbEval.str());
-					kernelStr = ReplaceStr(kernelStr, "$LAYER_USING", sbUsing.str());
-
-					sb << kernelStr;
-					sb << "\n}\n";
-					auto moduleStr = sb.str();
-					spireComponentClass = ShaderRepository::Instance().CreateLibraryModuleFromSource(moduleStr.c_str(), moduleName.c_str());
+					moduleName += "_";
+					auto layer = getLayer(i);
+					if (layer.pTexture)
+						moduleName += "M";
+					else
+						moduleName += "C";
+					moduleName += std::to_string((int)layer.type);
+					moduleName += std::to_string((int)layer.ndf);
+					moduleName += std::to_string((int)layer.blend);
 				}
-				else
-					logError("Cannot find 'MaterialInclude.spire'.");
+				// check if we have already generated the material module
+				SpireModule* spireComponentClass = spFindModule(spireContext, moduleName.c_str());
+				if (!spireComponentClass)
+				{
+					// if module not found, generate it
+					std::stringstream sb;
+					std::string kernelStr;
+					std::string fullPath;
+					if (findFileInDataDirectories("MaterialInclude.spire", fullPath))
+					{
+						readFileToString(fullPath, kernelStr);
+						sb << "module " << moduleName << " implements Material\n{\n";
+						std::stringstream sbEval, sbUsing;
+						for (int i = 0; i < layerCount; i++)
+						{
+							sbUsing << "using layer" << i << " = MaterialLayer(" << (getLayer(i).pTexture ? "1" : "0") << ", " << (int)getLayer(i).type
+								<< ", " << (int)getLayer(i).ndf << ", " << (int)getLayer(i).blend << ");\n";
 
+							sbEval << "layer" << i << ".evalMaterialLayer(shAttr, lAttr, passResult);\n";
+						}
+						kernelStr = ReplaceStr(kernelStr, "$LAYER_EVAL", sbEval.str());
+						kernelStr = ReplaceStr(kernelStr, "$LAYER_USING", sbUsing.str());
+
+						sb << kernelStr;
+						sb << "\n}\n";
+						auto moduleStr = sb.str();
+						spireComponentClass = ShaderRepository::Instance().CreateLibraryModuleFromSource(moduleStr.c_str(), moduleName.c_str());
+					}
+					else
+						logError("Cannot find 'MaterialInclude.spire'.");
+
+				}
+				// 
+				mSpireComponentClass = ShaderRepository::Instance().findComponentClass(spireComponentClass);
 			}
-            // 
-            mSpireComponentClass = ShaderRepository::Instance().findComponentClass(spireComponentClass);
-
             // TODO: Here is where we'd need to construct an appropriate component
             // class for the material, based on the data in the layers.
             //
@@ -676,6 +682,33 @@ namespace Falcor
 				spModuleGetBindingOffset(subModule, &index);
 				if (layer.pTexture)
 					mSpireComponentInstance->setSrv(index.texture, layer.pTexture->getSRV(), layer.pTexture);
+			}
+			// if we are using general shader, set additional layer parameters 
+			if (UseGeneralShader)
+			{
+				/*
+				param int4 hasTexture;
+				param int4 materialType;
+				param int4 ndf;
+				param int4 blend;
+				*/
+				int hasTexture[MatMaxLayers];
+				int materialType[MatMaxLayers];
+				int ndf[MatMaxLayers];
+				int blend[MatMaxLayers];
+				for (auto i = 0u; i < std::min(getNumLayers(), (uint32)MatMaxLayers); i++)
+				{
+					auto layer = getLayer(i);
+					hasTexture[i] = layer.pTexture != nullptr;
+					materialType[i] = (int)layer.type;
+					ndf[i] = (int)layer.ndf;
+					blend[i] = (int)layer.blend;
+				}
+				mSpireComponentInstance->setVariableBlob("hasTexture", hasTexture, sizeof(int)*MatMaxLayers);
+				mSpireComponentInstance->setVariableBlob("materialType", materialType, sizeof(int)*MatMaxLayers);
+				mSpireComponentInstance->setVariableBlob("ndf", ndf, sizeof(int)*MatMaxLayers);
+				mSpireComponentInstance->setVariableBlob("blend", blend, sizeof(int)*MatMaxLayers);
+				mSpireComponentInstance->setVariable("layerCount", (int)getNumLayers());
 			}
 			// Fill in the values for the material fields, if anything has changed.
             //

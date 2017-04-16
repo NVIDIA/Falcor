@@ -100,7 +100,7 @@ namespace Falcor
     public:
         using SharedPtr = std::shared_ptr<Material>;
         using SharedConstPtr = std::shared_ptr<const Material>;
-		
+		static bool UseGeneralShader;
 		struct LayerValues
 		{
 			glm::vec4 albedo;

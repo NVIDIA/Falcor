@@ -20,6 +20,7 @@
 
 #define     MatNumTypes        (MatUser+1)  ///< Number of material types
 
+
 /** Type of used Normal Distribution Function (NDF). Options so far
     Beckmann distribution (original Blinn-Phong)
     GGX distribution (smoother highlight, better fit for some materials, default)
