@@ -25,7 +25,6 @@ struct ShadingAttribs
     vec3    T;                                  ///< Shading tangent at shading hit
     vec3    B;                                  ///< Shading bitangent at shading hit
     vec2    UV;                                 ///< Texture mapping coordinates
-
 #ifdef _MS_USER_DERIVATIVES
 
     vec2    DPDX            ;                                  
@@ -524,7 +523,7 @@ module DynamicLighting implements ILighting
 			evalMaterial(shAttr, lights[ii], result);
 		}
         vec4 finalColor = vec4(result.finalValue, 1.f);
-        finalColor.rgb += ambient * result.finalValue;
+        finalColor.rgb += ambient * result.diffuseAlbedo;
         return finalColor;
     }    
 }

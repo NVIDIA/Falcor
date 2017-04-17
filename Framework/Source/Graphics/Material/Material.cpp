@@ -41,7 +41,7 @@ namespace Falcor
     uint32_t Material::sMaterialCounter = 0;
     std::vector<Material::DescId> Material::sDescIdentifier;
 
-	bool Material::UseGeneralShader = true;
+	bool Material::UseGeneralShader = false;
 
     Material::Material(const std::string& name) : mName(name)
     {
@@ -708,7 +708,7 @@ namespace Falcor
 				mSpireComponentInstance->setVariableBlob("materialType", materialType, sizeof(int)*MatMaxLayers);
 				mSpireComponentInstance->setVariableBlob("ndf", ndf, sizeof(int)*MatMaxLayers);
 				mSpireComponentInstance->setVariableBlob("blend", blend, sizeof(int)*MatMaxLayers);
-				mSpireComponentInstance->setVariable("layerCount", (int)getNumLayers());
+				//mSpireComponentInstance->setVariable("layerCount", (int)getNumLayers());
 			}
 			// Fill in the values for the material fields, if anything has changed.
             //

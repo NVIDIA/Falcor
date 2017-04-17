@@ -254,7 +254,7 @@ namespace Falcor
 	void Scene::updateLights()
 	{
 		lightEnvironment.setLightList(mpLights);
-		lightEnvironment.setAmbient(mAmbientIntensity);
+ 		lightEnvironment.setAmbient(mAmbientIntensity);
 	}
 
     void Scene::deleteMaterial(uint32_t materialID)

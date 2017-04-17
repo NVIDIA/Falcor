@@ -51,6 +51,7 @@ namespace Falcor
     */
     struct SampleConfig
     {
+		char fileName[512] = "";
         Window::Desc windowDesc;            ///< Controls window and creation
 		Device::Desc deviceDesc;			///< Controls device creation;
         bool showMessageBoxOnError = _SHOW_MB_BY_DEFAULT; ///< Show message box on framework/API errors.
@@ -169,6 +170,7 @@ namespace Falcor
         void captureScreen();
         void toggleText(bool enabled);
         uint32_t getFrameID() const { return mFrameRate.getFrameCount(); }
+        Window::SharedPtr mpWindow;
     private:
         // Private functions
         void initUI();
@@ -180,7 +182,6 @@ namespace Falcor
         void captureVideoFrame();
         void renderGUI();
 
-        Window::SharedPtr mpWindow;
 
         bool mVsyncOn = false;
         bool mShowText = true;

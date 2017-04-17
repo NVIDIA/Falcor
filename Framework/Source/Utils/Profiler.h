@@ -73,6 +73,7 @@ namespace Falcor
             CpuTimer::TimePoint cpuEnd;
             float cpuTotal = 0;
 			float gpuTotal = 0;
+			float lastCpuTime = 0, lastGpuTime = 0;
             uint32_t level;
 #if _PROFILING_LOG == 1
 			int stepNr = 0;

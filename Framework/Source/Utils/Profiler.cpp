@@ -35,7 +35,7 @@
 
 namespace Falcor
 {
-    bool gProfileEnabled = false;
+    bool gProfileEnabled = true;
 
     std::map<size_t, Profiler::EventData*> Profiler::sProfilerEvents;
     uint32_t Profiler::sCurrentLevel = 0;
@@ -141,6 +141,8 @@ namespace Falcor
 				pData->stepNr = 0;
 			}
 #endif
+			pData->lastCpuTime = pData->cpuTotal;
+			pData->lastGpuTime = (float)gpuTime;
             pData->cpuTotal = 0;
 			pData->gpuTotal = 0;
             profileResults += event;

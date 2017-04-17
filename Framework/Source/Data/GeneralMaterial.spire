@@ -195,7 +195,6 @@ module GeneralMaterial implements Material
     #else
         shAttr.lodBias = lodBias;
     #endif
-
         /* Evaluate alpha test material modifier */
         applyAlphaTest(shAttr);
         shAttr.aoFactor = 1;

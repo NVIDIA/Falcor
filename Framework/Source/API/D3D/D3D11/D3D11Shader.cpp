@@ -62,7 +62,7 @@ namespace Falcor
         ID3DBlob* pCode;
         ID3DBlobPtr pErrors;
 
-        UINT flags = D3DCOMPILE_WARNINGS_ARE_ERRORS;
+        UINT flags = D3DCOMPILE_WARNINGS_ARE_ERRORS | D3DCOMPILE_NO_PRESHADER;
 #ifdef _DEBUG
         flags |= D3DCOMPILE_DEBUG;
 #endif
