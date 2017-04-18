@@ -99,6 +99,7 @@ namespace Falcor
         void emit(RenderContext* pCtx, uint32_t num);
 
         uint32_t mMaxParticles;
+        uint32_t mSimulateThreads;
 
         struct EmitResources
         {
@@ -121,8 +122,9 @@ namespace Falcor
 
 
         StructuredBuffer::SharedPtr mpParticlePool;
-        StructuredBuffer::SharedPtr mpIndexList;
-        //bytes 0 - 11 are for simulate dispatch, bytes 12 - 27 are for draw
+        StructuredBuffer::SharedPtr mpDeadList;
+        StructuredBuffer::SharedPtr mpAliveList;
+        //for draw indirect
         StructuredBuffer::SharedPtr mpIndirectArgs;
 
         float mEmitTimer = 0.f;

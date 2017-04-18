@@ -48,47 +48,56 @@ namespace Falcor
         uint32_t simThreadsX = 1, simThreadsY = 1, simThreadsZ= 1;
         simulateCs->getActiveVersion()->getShader(ShaderType::Compute)->
             getReflectionInterface()->GetThreadGroupSize(&simThreadsX, &simThreadsY, &simThreadsZ);
+        mSimulateThreads = simThreadsX * simThreadsY * simThreadsZ;
         Program::DefineList emitDefines;
-        emitDefines.add("_SIMULATE_THREADS", std::to_string(simThreadsX * simThreadsY * simThreadsZ));
+        emitDefines.add("_SIMULATE_THREADS", std::to_string(mSimulateThreads));
         ComputeProgram::SharedPtr emitCs = ComputeProgram::createFromFile("Effects/ParticleEmit.cs.hlsl", emitDefines);
         mDrawResources.shader = GraphicsProgram::createFromFile("Effects/ParticleVertex.vs.hlsl", drawPixelShader);
 
         //Buffers
-        //IndexList
+        //Dead List
         std::vector<uint32_t> indices;
         indices.resize(maxParticles);
         uint32_t counter = 0;
         std::generate(indices.begin(), indices.end(), [&counter] {return counter++; });
         ProgramReflection::SharedConstPtr pEmitReflect = emitCs->getActiveVersion()->getReflector();
-        auto indexListReflect = pEmitReflect->getBufferDesc("IndexList", ProgramReflection::BufferReflection::Type::Structured);
-        mpIndexList = StructuredBuffer::create(indexListReflect, maxParticles);
-        mpIndexList->setBlob(indices.data(), 0, indices.size() * sizeof(uint32_t));
+        auto deadListReflect = pEmitReflect->getBufferDesc("deadList", ProgramReflection::BufferReflection::Type::Structured);
+        mpDeadList = StructuredBuffer::create(deadListReflect, maxParticles);
+        mpDeadList->setBlob(indices.data(), 0, indices.size() * sizeof(uint32_t));
+        mpDeadList->getUAVCounter()->updateData(&mMaxParticles, 0, sizeof(uint32_t));
+        //Alive list
+        auto pSimulateReflect = simulateCs->getActiveVersion()->getReflector();
+        auto aliveListReflect = pSimulateReflect->getBufferDesc("aliveList", ProgramReflection::BufferReflection::Type::Structured);
+        mpAliveList = StructuredBuffer::create(aliveListReflect, maxParticles);
 
         //ParticlePool
         auto particlePoolReflect = pEmitReflect->getBufferDesc("ParticlePool", ProgramReflection::BufferReflection::Type::Structured);
         mpParticlePool = StructuredBuffer::create(particlePoolReflect, maxParticles);
 
         //Indirect Arg buffer (for simulate dispatch and draw)
-        uint32_t indirectArgsSize = sizeof(D3D12_DISPATCH_ARGUMENTS) + sizeof(D3D12_DRAW_ARGUMENTS);
-        mpIndirectArgs = StructuredBuffer::create(pEmitReflect->
-            getBufferDesc("dispatchArgs", ProgramReflection::BufferReflection::Type::Structured), 
+        uint32_t indirectArgsSize = sizeof(D3D12_DRAW_ARGUMENTS);
+        mpIndirectArgs = StructuredBuffer::create(pSimulateReflect->
+            getBufferDesc("drawArgs", ProgramReflection::BufferReflection::Type::Structured), 
             indirectArgsSize / sizeof(uint32_t), Resource::BindFlags::UnorderedAccess | Resource::BindFlags::IndirectArg);
-        uint32_t initialValues[7] = { 1, 1, 1, 4, 1, 0, 0 };
+        uint32_t initialValues[4] = {4, 1, 0, 0 };
         mpIndirectArgs->setBlob(initialValues, 0, indirectArgsSize);
 
         //Vars
+        //emit
         mEmitResources.vars = ComputeVars::create(pEmitReflect);
-        mEmitResources.vars->setStructuredBuffer("IndexList", mpIndexList);
+        mEmitResources.vars->setStructuredBuffer("deadList", mpDeadList);
         mEmitResources.vars->setStructuredBuffer("ParticlePool", mpParticlePool);
-        mEmitResources.vars->setStructuredBuffer("dispatchArgs", mpIndirectArgs);
-        mEmitResources.vars->setRawBuffer("numAlive", mpIndexList->getUAVCounter());
-        mSimulateResources.vars = ComputeVars::create(simulateCs->getActiveVersion()->getReflector());
-        mSimulateResources.vars->setStructuredBuffer("IndexList", mpIndexList);
+        mEmitResources.vars->setRawBuffer("numAlive", mpAliveList->getUAVCounter());
+        //simulate
+        mSimulateResources.vars = ComputeVars::create(pSimulateReflect);
+        mSimulateResources.vars->setStructuredBuffer("deadList", mpDeadList);
+        mSimulateResources.vars->setStructuredBuffer("aliveList", mpAliveList);
         mSimulateResources.vars->setStructuredBuffer("ParticlePool", mpParticlePool);
         mSimulateResources.vars->setStructuredBuffer("drawArgs", mpIndirectArgs);
-        mSimulateResources.vars->setRawBuffer("numAlive", mpIndexList->getUAVCounter());
+        mSimulateResources.vars->setRawBuffer("numDead", mpDeadList->getUAVCounter());
+        //draw
         mDrawResources.vars = GraphicsVars::create(mDrawResources.shader->getActiveVersion()->getReflector());
-        mDrawResources.vars->setStructuredBuffer("IndexList", mpIndexList);
+        mDrawResources.vars->setStructuredBuffer("aliveList", mpAliveList);
         mDrawResources.vars->setStructuredBuffer("ParticlePool", mpParticlePool);
 
         //State
@@ -128,6 +137,8 @@ namespace Falcor
         //Send vars and call
         pCtx->pushComputeState(mEmitResources.state);
         mEmitResources.vars->getConstantBuffer(0)->setBlob(&emitData, 0u, sizeof(EmitData));
+        uint32_t numPOffset = (uint32_t)mEmitResources.vars->getConstantBuffer(0)->getVariableOffset("emitData.numEmit");
+        uint32_t sizeData = sizeof(emitData);
         pCtx->pushComputeVars(mEmitResources.vars);
         uint32_t numGroups = (uint32_t)std::ceil((float)num / EMIT_THREADS);
         pCtx->dispatch(1, numGroups, 1);
@@ -137,9 +148,7 @@ namespace Falcor
 
     void ParticleSystem::update(RenderContext* pCtx, float dt)
     {
-        SimulatePerFrame perFrame;
-        perFrame.dt = dt;
-
+        //emit
         mEmitTimer += dt;
         if (mEmitTimer >= mEmitter.emitFrequency)
         {
@@ -147,10 +156,19 @@ namespace Falcor
             emit(pCtx, max(mEmitter.emitCount + glm::linearRand(-mEmitter.emitCountOffset, mEmitter.emitCountOffset), 0));
         }
 
+        //Simulate
+        SimulatePerFrame perFrame;
+        perFrame.dt = dt;
+        perFrame.maxParticles = mMaxParticles;
         pCtx->pushComputeState(mSimulateResources.state);
         mSimulateResources.vars->getConstantBuffer(0)->setBlob(&perFrame, 0u, sizeof(SimulatePerFrame));
         pCtx->pushComputeVars(mSimulateResources.vars);
-        pCtx->dispatchIndirect(mpIndirectArgs.get(), 0);
+
+        //reset alive list counter to 0
+        uint32_t zero = 0;
+        mpAliveList->getUAVCounter()->updateData(&zero, 0, sizeof(uint32_t));
+
+        pCtx->dispatch(mMaxParticles / mSimulateThreads, 1, 1);
         pCtx->popComputeVars();
         pCtx->popComputeState();
     }
@@ -170,7 +188,7 @@ namespace Falcor
         state->setProgram(mDrawResources.shader);
         state->setVao(mDrawResources.vao);
         pCtx->pushGraphicsVars(mDrawResources.vars);
-        pCtx->drawIndirect(mpIndirectArgs.get(), sizeof(D3D12_DISPATCH_ARGUMENTS));
+        pCtx->drawIndirect(mpIndirectArgs.get(), 0);
         pCtx->popGraphicsVars();
         //setting null vao causes crash
         if (prevVao)

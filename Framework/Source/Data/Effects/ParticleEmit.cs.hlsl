@@ -34,10 +34,9 @@ cbuffer PerEmit
     EmitData emitData;
 };
 
-RWStructuredBuffer<uint> IndexList;
+ConsumeStructuredBuffer<uint> deadList;
 RWStructuredBuffer<Particle> ParticlePool;
 ByteAddressBuffer numAlive;
-RWStructuredBuffer<uint> dispatchArgs;
 
 [numthreads(EMIT_THREADS, 1, 1)]
 void main(int3 groupID : SV_GroupID, int3 threadID : SV_GroupThreadID)
@@ -48,16 +47,10 @@ void main(int3 groupID : SV_GroupID, int3 threadID : SV_GroupThreadID)
     if (index < emitData.numEmit)
     {
         //make sure there's actually room for this particle
-        if (index < emitData.maxParticles - numAliveParticles)
+        if (index < emitData.maxParticles - numAliveParticles + emitData.numEmit)
         {
-            uint indexListCounter = IndexList.IncrementCounter();
-            ParticlePool[IndexList[indexListCounter]] = emitData.particles[index];
-
-            //this buffer only needs to be update once
-            if (index == 0)
-            {
-                dispatchArgs[0] = ceil(((numAliveParticles + emitData.numEmit) / (float)_SIMULATE_THREADS));
-            }
+            uint deadIndex = deadList.Consume();
+            ParticlePool[deadIndex] = emitData.particles[index];
         }
     }
 }

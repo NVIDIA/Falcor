@@ -43,21 +43,22 @@ struct Particle
     float growth;
     float rot; 
     float rotVel;
-    vec2 padding;
+    vec2 padding1;
     //id?
 };
 
 struct EmitData
 {
-    Particle particles[MAX_EMIT];
     uint numEmit;
     uint maxParticles;
-    uint simulateThreads;
+    vec2 padding;
+    Particle particles[MAX_EMIT];
 };
 
 struct SimulatePerFrame
 {
     float dt;
+    uint maxParticles;
 };
 
 struct ColorInterpPsPerFrame

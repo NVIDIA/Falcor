@@ -2150,22 +2150,19 @@
     <FxCompile Include="Data\Effects\ParticleConstColor.ps.hlsl">
       <Filter>Data\Effects\Particles</Filter>
     </FxCompile>
-    <FxCompile Include="Data\Effects\ParticleEmit.cs.hlsl">
-      <Filter>Data\Effects\Particles</Filter>
-    </FxCompile>
     <FxCompile Include="Data\Effects\ParticleInterpColor.ps.hlsl">
-      <Filter>Data\Effects\Particles</Filter>
-    </FxCompile>
-    <FxCompile Include="Data\Effects\ParticleSimulate.cs.hlsl">
-      <Filter>Data\Effects\Particles</Filter>
-    </FxCompile>
-    <FxCompile Include="Data\Effects\ParticleSimulate2.cs.hlsl">
       <Filter>Data\Effects\Particles</Filter>
     </FxCompile>
     <FxCompile Include="Data\Effects\ParticleTexture.ps.hlsl">
       <Filter>Data\Effects\Particles</Filter>
     </FxCompile>
     <FxCompile Include="Data\Effects\ParticleVertex.vs.hlsl">
+      <Filter>Data\Effects\Particles</Filter>
+    </FxCompile>
+    <FxCompile Include="Data\Effects\ParticleEmit.cs.hlsl">
+      <Filter>Data\Effects\Particles</Filter>
+    </FxCompile>
+    <FxCompile Include="Data\Effects\ParticleSimulate.cs.hlsl">
       <Filter>Data\Effects\Particles</Filter>
     </FxCompile>
   </ItemGroup>

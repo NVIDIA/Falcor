@@ -34,39 +34,38 @@ cbuffer PerFrame
     SimulatePerFrame perFrame;
 };
 
-RWStructuredBuffer<uint> IndexList;
+AppendStructuredBuffer<uint> deadList;
+AppendStructuredBuffer<uint> aliveList;
 RWStructuredBuffer<Particle> ParticlePool;
-RWByteAddressBuffer numAlive;
+RWByteAddressBuffer numDead;
 RWStructuredBuffer<uint> drawArgs;
 
 [numthreads(numThreads, 1, 1)]
 void main(uint3 groupID : SV_GroupID, uint groupIndex : SV_GroupIndex)
 {
-    uint index = getParticleIndex(groupID.x, numThreads, groupIndex);
-    uint numAliveParticles = (uint)(numAlive.Load(0));
+    int index = (int)getParticleIndex(groupID.x, numThreads, groupIndex);
+    uint numDeadParticles = (uint)(numDead.Load(0));
+    int numAliveParticles = perFrame.maxParticles - numDeadParticles;
 
-    //make sure this corresponds to an actual alive particle, not a redundant thread
-    if (index < numAliveParticles)
+    //check if the particle is alive
+    if (ParticlePool[index].life > 0)
     {
-        uint poolIndex = IndexList[index];
-        ParticlePool[poolIndex].life -= perFrame.dt;
-        if (ParticlePool[poolIndex].life <= 0)
+        ParticlePool[index].life -= perFrame.dt;
+        //check if the particle died this frame
+        if (ParticlePool[index].life <= 0)
         {
-            uint counterIndex = IndexList.DecrementCounter();
-            uint prevIndex;
-            InterlockedExchange(IndexList[counterIndex], poolIndex, prevIndex);
-            InterlockedExchange(IndexList[index], prevIndex, poolIndex);
-            numAliveParticles -= 1;
+            deadList.Append(index);
         }
         else
         {
-            ParticlePool[poolIndex].pos += ParticlePool[poolIndex].vel * perFrame.dt;
-            ParticlePool[poolIndex].vel += ParticlePool[poolIndex].accel * perFrame.dt;
-            ParticlePool[poolIndex].scale = max(ParticlePool[poolIndex].scale + ParticlePool[poolIndex].growth * perFrame.dt, 0);
-            ParticlePool[poolIndex].rot += ParticlePool[poolIndex].rotVel * perFrame.dt;
+            ParticlePool[index].pos += ParticlePool[index].vel * perFrame.dt;
+            ParticlePool[index].vel += ParticlePool[index].accel * perFrame.dt;
+            ParticlePool[index].scale = max(ParticlePool[index].scale + ParticlePool[index].growth * perFrame.dt, 0);            
+            ParticlePool[index].rot += ParticlePool[index].rotVel * perFrame.dt;
+            aliveList.Append(index);
         }
 
-        //0, 1, 2, dispatch xyz. 3 vert count per instance, 4 numInstances, 5 start vert loc, 6 start instance loc
-        drawArgs[4] = numAliveParticles;
+        //0 vert count per instance, 1 numInstances, 2 start vert loc, 3 start instance loc
+        drawArgs[1] = numAliveParticles;
     }
 }

@@ -52,14 +52,14 @@ struct VSOut
     uint particleIndex : ID;
 };
 
-StructuredBuffer<uint> IndexList : register(t0);
+StructuredBuffer<uint> aliveList : register(t0);
 StructuredBuffer<Particle> ParticlePool : register(t1);
 
 VSOut main(uint vId : SV_VertexID, uint iId : SV_InstanceID)
 {
     VSOut output;
     uint particleIndex = iId;
-    uint poolIndex = IndexList[particleIndex];
+    uint poolIndex = aliveList[particleIndex];
     Particle p = ParticlePool[poolIndex];
     uint billboardIndex = vId;
 
