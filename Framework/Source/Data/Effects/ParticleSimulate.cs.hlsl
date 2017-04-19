@@ -31,21 +31,46 @@ static const uint numThreads = 256;
 
 cbuffer PerFrame
 {
+#ifdef _SORT
+    SimulateWithSortPerFrame perFrame;
+#else
     SimulatePerFrame perFrame;
+#endif
 };
 
 AppendStructuredBuffer<uint> deadList;
+#ifdef _SORT
+AppendStructuredBuffer<SortData> aliveList;
+RWStructuredBuffer<uint> sortIterationCounter;
+#else
 AppendStructuredBuffer<uint> aliveList;
+#endif
 RWStructuredBuffer<Particle> ParticlePool;
 RWByteAddressBuffer numDead;
 RWStructuredBuffer<uint> drawArgs;
 
+uint getNextPow2(uint n)
+{
+    if (n == 0)
+        return 0;
+
+    n--;
+    n |= n >> 1;
+    n |= n >> 2;
+    n |= n >> 4;
+    n |= n >> 8;
+    n |= n >> 16;
+    n++;
+
+    return n;
+}
+
 [numthreads(numThreads, 1, 1)]
 void main(uint3 groupID : SV_GroupID, uint groupIndex : SV_GroupIndex)
 {
-    int index = (int)getParticleIndex(groupID.x, numThreads, groupIndex);
+    uint index = getParticleIndex(groupID.x, numThreads, groupIndex);
     uint numDeadParticles = (uint)(numDead.Load(0));
-    int numAliveParticles = perFrame.maxParticles - numDeadParticles;
+    uint numAliveParticles = perFrame.maxParticles - numDeadParticles;
 
     //check if the particle is alive
     if (ParticlePool[index].life > 0)
@@ -62,10 +87,31 @@ void main(uint3 groupID : SV_GroupID, uint groupIndex : SV_GroupIndex)
             ParticlePool[index].vel += ParticlePool[index].accel * perFrame.dt;
             ParticlePool[index].scale = max(ParticlePool[index].scale + ParticlePool[index].growth * perFrame.dt, 0);            
             ParticlePool[index].rot += ParticlePool[index].rotVel * perFrame.dt;
+        #ifdef _SORT
+            SortData data;
+            data.index = index;
+            data.zDistance = 0.f;
+            data.zDistance = mul(perFrame.view, float4(ParticlePool[index].pos, 1.f)).z;
+            aliveList.Append(data);
+        #else
             aliveList.Append(index);
+        #endif
         }
 
         //0 vert count per instance, 1 numInstances, 2 start vert loc, 3 start instance loc
+    #ifdef _SORT
+        uint nextPow2 = getNextPow2(numAliveParticles);
+        uint twoExp = log2(nextPow2);
+        sortIterationCounter[0] = nextPow2 / 2; //sort only needs to touch 
+        sortIterationCounter[1] = (twoExp * (twoExp + 1)) / 2;
+        sortIterationCounter[2] = 0;
+        //4 = dispatchX, 5 = dispatchY, 6 = dispatchZ
+        //todo unhardcode this
+        drawArgs[4] = nextPow2 / (256 * 2);
+        drawArgs[5] = 1;
+        drawArgs[6] = 1;
+    #endif
+
         drawArgs[1] = numAliveParticles;
     }
 }

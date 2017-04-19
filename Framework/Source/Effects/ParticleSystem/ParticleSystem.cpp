@@ -30,20 +30,57 @@
 #include "glm/gtc/random.hpp"
 #include <algorithm>
 #include "Utils/Gui.h"
+#include <limits>
 
 namespace Falcor
 {
-    ParticleSystem::SharedPtr ParticleSystem::create(RenderContext* pCtx, uint32_t maxParticles, std::string drawPixelShader, std::string simulateComputeShader)
+    ParticleSystem::SharedPtr ParticleSystem::create(RenderContext* pCtx, uint32_t maxParticles, std::string drawPixelShader, std::string simulateComputeShader, bool sorted)
     {
-        return ParticleSystem::SharedPtr(new ParticleSystem(pCtx, maxParticles, drawPixelShader, simulateComputeShader));
+        return ParticleSystem::SharedPtr(new ParticleSystem(pCtx, maxParticles, drawPixelShader, simulateComputeShader, sorted));
     }
 
-    ParticleSystem::ParticleSystem(RenderContext* pCtx, uint32_t maxParticles, std::string drawPixelShader, std::string simulateComputeShader)
+    ParticleSystem::ParticleSystem(RenderContext* pCtx, uint32_t maxParticles, std::string drawPixelShader, std::string simulateComputeShader, bool sorted)
     {
-        mMaxParticles = maxParticles;
-
+        ComputeProgram::SharedPtr simulateCs;
         //Shaders
-        ComputeProgram::SharedPtr simulateCs = ComputeProgram::createFromFile(simulateComputeShader);
+        if (sorted)
+        {
+            mMaxParticles = (uint32_t)pow(2, (std::ceil(log2((float)maxParticles))));
+            //should this be a derived sorted particle system class?
+
+            Program::DefineList simulateDefines;
+            simulateDefines.add("_SORT");
+            simulateCs = ComputeProgram::createFromFile(simulateComputeShader, simulateDefines);
+            
+            //Sort data reset buffer
+            mSortDataReset;
+            SortData resetData;
+            resetData.index = (uint32_t)(-1);
+            resetData.zDistance = std::numeric_limits<float>::max();
+            mSortDataReset.resize(mMaxParticles, resetData);
+
+            ////
+            uint32_t maxIterations = (uint32_t)log2((float)mMaxParticles);
+            maxIterations = (maxIterations * (maxIterations + 1)) / 2;
+            Program::DefineList sortDefines;
+            sortDefines.add("_NUM_PASSES", std::to_string(maxIterations));
+            ComputeProgram::SharedPtr pSortCs = ComputeProgram::createFromFile("Effects/ParticleSort.cs.hlsl", sortDefines);
+            mSortResources.vars = ComputeVars::create(pSortCs->getActiveVersion()->getReflector());
+            initSortParams(pSortCs);
+            mSortResources.sortIterationCounter = StructuredBuffer::create(pSortCs->getActiveVersion()->getReflector()->
+                getBufferDesc("IterationCounter", ProgramReflection::BufferReflection::Type::Structured), 3);
+            mDrawResources.shader = GraphicsProgram::createFromFile("Effects/ParticleVertex.vs.hlsl", drawPixelShader, simulateDefines);
+            
+            mSortResources.state = ComputeState::create();
+            mSortResources.state->setProgram(pSortCs);
+        }
+        else
+        {
+            mMaxParticles = maxParticles;
+            simulateCs = ComputeProgram::createFromFile(simulateComputeShader);
+            mDrawResources.shader = GraphicsProgram::createFromFile("Effects/ParticleVertex.vs.hlsl", drawPixelShader);
+        }
+  
         //Add num sim threads to emit defines (for calculating needed thread groups in indirect arg buffer)
         uint32_t simThreadsX = 1, simThreadsY = 1, simThreadsZ= 1;
         simulateCs->getActiveVersion()->getShader(ShaderType::Compute)->
@@ -51,8 +88,8 @@ namespace Falcor
         mSimulateThreads = simThreadsX * simThreadsY * simThreadsZ;
         Program::DefineList emitDefines;
         emitDefines.add("_SIMULATE_THREADS", std::to_string(mSimulateThreads));
+        //todo put these shader names as constants in the psys class
         ComputeProgram::SharedPtr emitCs = ComputeProgram::createFromFile("Effects/ParticleEmit.cs.hlsl", emitDefines);
-        mDrawResources.shader = GraphicsProgram::createFromFile("Effects/ParticleVertex.vs.hlsl", drawPixelShader);
 
         //Buffers
         //Dead List
@@ -74,13 +111,26 @@ namespace Falcor
         auto particlePoolReflect = pEmitReflect->getBufferDesc("ParticlePool", ProgramReflection::BufferReflection::Type::Structured);
         mpParticlePool = StructuredBuffer::create(particlePoolReflect, maxParticles);
 
-        //Indirect Arg buffer (for simulate dispatch and draw)
-        uint32_t indirectArgsSize = sizeof(D3D12_DRAW_ARGUMENTS);
-        mpIndirectArgs = StructuredBuffer::create(pSimulateReflect->
-            getBufferDesc("drawArgs", ProgramReflection::BufferReflection::Type::Structured), 
-            indirectArgsSize / sizeof(uint32_t), Resource::BindFlags::UnorderedAccess | Resource::BindFlags::IndirectArg);
-        uint32_t initialValues[4] = {4, 1, 0, 0 };
-        mpIndirectArgs->setBlob(initialValues, 0, indirectArgsSize);
+        if (sorted)
+        {
+            //Indirect Arg buffer for sort and draw
+            uint32_t indirectArgsSize = sizeof(D3D12_DRAW_ARGUMENTS) + sizeof(D3D12_DISPATCH_ARGUMENTS);
+            mpIndirectArgs = StructuredBuffer::create(pSimulateReflect->
+                getBufferDesc("drawArgs", ProgramReflection::BufferReflection::Type::Structured),
+                indirectArgsSize / sizeof(uint32_t), Resource::BindFlags::UnorderedAccess | Resource::BindFlags::IndirectArg);
+            uint32_t initialValues[7] = { 4, 0, 0, 0, 1, 1, 1 };
+            mpIndirectArgs->setBlob(initialValues, 0, indirectArgsSize);
+        }
+        else
+        {
+            //Indirect Arg buffer for draw
+            uint32_t indirectArgsSize = sizeof(D3D12_DRAW_ARGUMENTS);
+            mpIndirectArgs = StructuredBuffer::create(pSimulateReflect->
+                getBufferDesc("drawArgs", ProgramReflection::BufferReflection::Type::Structured),
+                indirectArgsSize / sizeof(uint32_t), Resource::BindFlags::UnorderedAccess | Resource::BindFlags::IndirectArg);
+            uint32_t initialValues[4] = { 4, 0, 0, 0 };
+            mpIndirectArgs->setBlob(initialValues, 0, indirectArgsSize);
+        }
 
         //Vars
         //emit
@@ -91,9 +141,16 @@ namespace Falcor
         //simulate
         mSimulateResources.vars = ComputeVars::create(pSimulateReflect);
         mSimulateResources.vars->setStructuredBuffer("deadList", mpDeadList);
-        mSimulateResources.vars->setStructuredBuffer("aliveList", mpAliveList);
         mSimulateResources.vars->setStructuredBuffer("ParticlePool", mpParticlePool);
         mSimulateResources.vars->setStructuredBuffer("drawArgs", mpIndirectArgs);
+        mSimulateResources.vars->setStructuredBuffer("aliveList", mpAliveList);
+        if (sorted)
+        {
+            mSimulateResources.vars->setStructuredBuffer("sortIterationCounter", mSortResources.sortIterationCounter);
+            mSortResources.vars->setStructuredBuffer("SortList", mpAliveList);
+            mSortResources.vars->setStructuredBuffer("sortArgs", mpIndirectArgs);
+            mSortResources.vars->setStructuredBuffer("IterationCounter", mSortResources.sortIterationCounter);
+        }
         mSimulateResources.vars->setRawBuffer("numDead", mpDeadList->getUAVCounter());
         //draw
         mDrawResources.vars = GraphicsVars::create(mDrawResources.shader->getActiveVersion()->getReflector());
@@ -146,7 +203,7 @@ namespace Falcor
         pCtx->popComputeState();
     }
 
-    void ParticleSystem::update(RenderContext* pCtx, float dt)
+    void ParticleSystem::update(RenderContext* pCtx, float dt, glm::mat4 view)
     {
         //emit
         mEmitTimer += dt;
@@ -157,16 +214,19 @@ namespace Falcor
         }
 
         //Simulate
-        SimulatePerFrame perFrame;
+        SimulateWithSortPerFrame perFrame;
+        perFrame.view = view;
         perFrame.dt = dt;
         perFrame.maxParticles = mMaxParticles;
         pCtx->pushComputeState(mSimulateResources.state);
-        mSimulateResources.vars->getConstantBuffer(0)->setBlob(&perFrame, 0u, sizeof(SimulatePerFrame));
+        mSimulateResources.vars->getConstantBuffer(0)->setBlob(&perFrame, 0u, sizeof(SimulateWithSortPerFrame));
         pCtx->pushComputeVars(mSimulateResources.vars);
 
         //reset alive list counter to 0
         uint32_t zero = 0;
         mpAliveList->getUAVCounter()->updateData(&zero, 0, sizeof(uint32_t));
+        //not actually alive list
+        //mpAliveList->setBlob(mSortDataReset.data(), 0, sizeof(SortData) * mMaxParticles);
 
         pCtx->dispatch(mMaxParticles / mSimulateThreads, 1, 1);
         pCtx->popComputeVars();
@@ -179,6 +239,18 @@ namespace Falcor
         cbuf.view = view;
         cbuf.proj = proj;
         mDrawResources.vars->getConstantBuffer(0)->setBlob(&cbuf, 0, sizeof(cbuf));
+
+        pCtx->pushComputeState(mSortResources.state);
+        pCtx->pushComputeVars(mSortResources.vars);
+        for (u32 setSize = 2; setSize <= mMaxParticles; setSize *= 2)
+        {
+            for (u32 compareDist = setSize / 2; compareDist > 0; compareDist /= 2)
+            {
+                pCtx->dispatchIndirect(mpIndirectArgs.get(), sizeof(D3D12_DRAW_ARGUMENTS));
+            }
+        }
+        pCtx->popComputeVars();
+        pCtx->popComputeState();
 
         //save prev vao and shader program
         GraphicsState::SharedPtr state = pCtx->getGraphicsState();
@@ -222,6 +294,25 @@ namespace Falcor
         pGui->addFloatVar("BillboardRotationOffset", mEmitter.billboardRotationOffset);
         pGui->addFloatVar("BillboardRotationVel", mEmitter.billboardRotationVel);
         pGui->addFloatVar("BillboardRotationVelOffset", mEmitter.billboardRotationVelOffset);
+    }
+
+    void ParticleSystem::initSortParams(ComputeProgram::SharedPtr pCs)
+    {
+        std::vector<SortParams> sortParams;
+        for (u32 setSize = 2; setSize <= mMaxParticles; setSize *= 2)
+        {
+            for (u32 compareDist = setSize / 2; compareDist > 0; compareDist /= 2)
+            {
+                SortParams data;
+                data.setSize = setSize;
+                data.compareDist = compareDist;
+                data.twoCompareDist = compareDist * 2;
+                sortParams.push_back(data);
+            }
+        }
+
+        //Set cbuffer to sort 
+        mSortResources.vars->getConstantBuffer(0)->setBlob(sortParams.data(), 0, sortParams.size() * sizeof(SortParams));
     }
 
     void ParticleSystem::setParticleDuration(float dur, float offset)

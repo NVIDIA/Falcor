@@ -98,4 +98,12 @@ private:
     std::vector<Texture::SharedPtr> mTextures;
     Gui::DropdownList mTexDropdown;
     uint32_t mTexIndex = 0;
+
+    void initScene(std::string filename);
+
+    //Hacked in temporarily for screenshot
+    Scene::SharedPtr mpScene;
+    SceneRenderer::SharedPtr mpSceneRenderer;
+    GraphicsVars::SharedPtr mpSceneVars;
+    GraphicsProgram::SharedPtr mpSceneProgram;
 };

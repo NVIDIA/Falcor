@@ -45,5 +45,5 @@ float4 main(VSOut vOut) : SV_Target0
 {
     float life = ParticlePool[vOut.particleIndex].life;
     float t = saturate((perFrame.colorT1 - life) / (perFrame.colorT1 - perFrame.colorT2));
-    return float4((1.0f - t) * perFrame.color1 + t * perFrame.color2, 1.f);
+    return (1.0f - t) * perFrame.color1 + t * perFrame.color2;
 }

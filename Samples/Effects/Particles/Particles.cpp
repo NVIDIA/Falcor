@@ -28,6 +28,7 @@
 #include "Particles.h"
 #include "API/D3D/FalcorD3D.h"
 #include <limits>
+#include <fstream>
 
 const Gui::DropdownList kPixelShaders 
 {
@@ -41,8 +42,29 @@ const char* kColorInterpPs = "Effects/ParticleInterpColor.ps.hlsl";
 const char* kTexturedPs = "Effects/ParticleTexture.ps.hlsl";
 const std::string kDefaultTexture = "TestParticle.png";
 
+void Particles::initScene(std::string filename)
+{
+    mpScene = Scene::loadFromFile(filename, Model::LoadFlags::None, Scene::LoadFlags::StoreMaterialHistory);
+    mpSceneRenderer = SceneRenderer::create(mpScene);
+    mpSceneProgram = GraphicsProgram::createFromFile("", "SceneEditorSample.fs");
+    std::string lights;
+    getSceneLightString(mpScene.get(), lights);
+    mpSceneProgram->addDefine("_LIGHT_SOURCES", lights);
+    mpSceneVars = GraphicsVars::create(mpSceneProgram->getActiveVersion()->getReflector());
+    setSceneLightsIntoConstantBuffer(mpScene.get(), mpSceneVars["PerFrameCB"].get());
+    mpCamera = mpScene->getActiveCamera();
+    mpCamController.attachCamera(mpCamera);
+}
+
 void Particles::onGuiRender()
 {
+    //if (mpGui->addButton("Load Scene"))
+    //{
+    //    std::string filename;
+    //    openFileDialog("", filename);
+    //    initScene(filename);
+    //}
+
     if (mpGui->beginGroup("Create System"))
     {
         static int32_t sMaxParticles = 4096;
@@ -66,9 +88,9 @@ void Particles::onGuiRender()
                     ParticleSystem::create(mpRenderContext.get(), sMaxParticles, kColorInterpPs);
                 mParticleSystems.push_back(pSys);
                 ColorInterpPsPerFrame perFrame;
-                perFrame.color1 = vec3(1.f, 0.f, 0.f);
+                perFrame.color1 = vec4(1.f, 0.f, 0.f, 1.f);
                 perFrame.colorT1 = pSys->getParticleDuration();
-                perFrame.color2 = vec3(0.f, 0.f, 1.f);
+                perFrame.color2 = vec4(0.f, 0.f, 1.f, 1.f);
                 perFrame.colorT2 = 0.f;
                 mPsData.push_back(perFrame);
                 break;
@@ -119,9 +141,9 @@ void Particles::onGuiRender()
         }
         case ExamplePixelShaders::ColorInterp:
         {
-            bool dirty = mpGui->addRgbColor("Color1", mPsData[mGuiIndex].data.interp.color1);
+            bool dirty = mpGui->addRgbaColor("Color1", mPsData[mGuiIndex].data.interp.color1);
             dirty |= mpGui->addFloatVar("Color T1", mPsData[mGuiIndex].data.interp.colorT1);
-            dirty |= mpGui->addRgbColor("Color2", mPsData[mGuiIndex].data.interp.color2);
+            dirty |= mpGui->addRgbaColor("Color2", mPsData[mGuiIndex].data.interp.color2);
             dirty |= mpGui->addFloatVar("Color T2", mPsData[mGuiIndex].data.interp.colorT2);
 
             if (dirty)
@@ -169,6 +191,12 @@ void Particles::onLoad()
     mpCamController.attachCamera(mpCamera);
     mTextures.push_back(createTextureFromFile(kDefaultTexture, true, false));
     mTexDropdown.push_back({ 0, kDefaultTexture });
+    BlendState::Desc blendDesc;
+    blendDesc.setRtBlend(0, true);
+    blendDesc.setRtParams(0, BlendState::BlendOp::Add, BlendState::BlendOp::Add, BlendState::BlendFunc::SrcAlpha, BlendState::BlendFunc::OneMinusSrcAlpha,
+        BlendState::BlendFunc::SrcAlpha, BlendState::BlendFunc::OneMinusSrcAlpha);
+    BlendState::SharedPtr pBlend = BlendState::create(blendDesc);
+    mpRenderContext->getGraphicsState()->setBlendState(pBlend);
 }
 
 void Particles::onFrameRender()
@@ -177,9 +205,19 @@ void Particles::onFrameRender()
  	mpRenderContext->clearFbo(mpDefaultFBO.get(), clearColor, 1.0f, 0, FboAttachmentType::All);
     mpCamController.update();
 
+    if(mpScene)
+    {
+        mpRenderContext->getGraphicsState()->setProgram(mpSceneProgram);
+        mpRenderContext->pushGraphicsVars(mpSceneVars);
+
+        mpSceneRenderer->renderScene(mpRenderContext.get());
+        
+        mpRenderContext->popGraphicsVars();
+    }
+
     for (auto it = mParticleSystems.begin(); it != mParticleSystems.end(); ++it)
     {
-        (*it)->update(mpRenderContext.get(), frameRate().getLastFrameTime());
+        (*it)->update(mpRenderContext.get(), frameRate().getLastFrameTime(), mpCamera->getViewMatrix());
         (*it)->render(mpRenderContext.get(), mpCamera->getViewMatrix(), mpCamera->getProjMatrix());
     }
 }

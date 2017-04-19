@@ -42,8 +42,9 @@ namespace Falcor
 
         static SharedPtr create(RenderContext* pCtx, uint32_t maxParticles, 
             std::string drawPixelShader = std::string("Effects/ParitcleTexture.ps.hlsl"),
-            std::string simulateComputeShader = std::string("Effects/ParticleSimulate.cs.hlsl"));
-        void update(RenderContext* pCtx, float dt);
+            std::string simulateComputeShader = std::string("Effects/ParticleSimulate.cs.hlsl"),
+            bool sorted = true);
+        void update(RenderContext* pCtx, float dt, glm::mat4 view);
         void render(RenderContext* pCtx, glm::mat4 view, glm::mat4 proj);
         void renderUi(Gui* pGui);
         GraphicsProgram::SharedPtr getDrawProgram() { return mDrawResources.shader; }
@@ -95,11 +96,12 @@ namespace Falcor
 
         ParticleSystem() = delete;
         ParticleSystem(RenderContext* pCtx, uint32_t maxParticles,
-            std::string drawPixelShader, std::string simulateComputeShader);
+            std::string drawPixelShader, std::string simulateComputeShader, bool sorted);
         void emit(RenderContext* pCtx, uint32_t num);
 
         uint32_t mMaxParticles;
         uint32_t mSimulateThreads;
+        std::vector<SortData> mSortDataReset;
 
         struct EmitResources
         {
@@ -127,6 +129,17 @@ namespace Falcor
         //for draw indirect
         StructuredBuffer::SharedPtr mpIndirectArgs;
 
+
+        struct SortResources
+        {
+            StructuredBuffer::SharedPtr sortIterationCounter;
+            ComputeState::SharedPtr state;
+            //not sure if this is good practice usage of the shader preprocessor or not
+            std::vector<ProgramVersion::SharedConstPtr> programVersions;
+            ComputeVars::SharedPtr vars;
+        } mSortResources;
+
+        void initSortParams(ComputeProgram::SharedPtr pCs);
         float mEmitTimer = 0.f;
     };
 

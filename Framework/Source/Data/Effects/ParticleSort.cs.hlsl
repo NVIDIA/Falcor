@@ -27,56 +27,64 @@
 ***************************************************************************/
 #include "ParticleData.h"
 
-static const int xOffset[4] = { -1, -1, 1, 1 };
-static const int yOffset[4] = { 1, -1, 1, -1 };
-static const float xTex[4] = { 0.f, 0.f, 1.f, 1.f };
-static const float yTex[4] = { 0.f, 1.f, 0.f, 1.f };
+static const uint numThreads = 256;
 
 cbuffer PerFrame
 {
-    VSPerFrame frameData;
+    // numPasses = (lg2(n) * (lg2(n) + 1)) / 2
+    SortParams sortParams[_NUM_PASSES];
 };
 
-float2 vectorRotate(float2 vec, float sinAngle, float cosAngle)
+RWStructuredBuffer<SortData> SortList;
+// [0], num things you wanna sort, [1] counter to -=1 for each sort pass and turn off shader
+RWStructuredBuffer<uint> IterationCounter;
+RWStructuredBuffer<uint> sortArgs;
+
+void Swap(uint index, uint compareIndex)
 {
-    float2 result;
-    result.x = vec.x * cosAngle - vec.y * sinAngle;
-    result.y = vec.y * cosAngle + vec.x * sinAngle;
-    return result;
+    SortData temp = SortList[index];
+    SortList[index] = SortList[compareIndex];
+    SortList[compareIndex] = temp;
 }
 
-struct VSOut
+[numthreads(numThreads, 1, 1)]
+void main(uint3 groupID : SV_GroupID, uint groupIndex : SV_GroupIndex)
 {
-    float4 pos : SV_POSITION;
-    float2 texCoords : TEXCOORD;
-    uint particleIndex : ID;
-};
+    InterlockedAdd(IterationCounter[2], 1);
+    uint count = max(IterationCounter[2], 1) - 1;
+    uint iterationIndex = count / IterationCounter[0];
 
-#ifdef _SORT
-StructuredBuffer<SortData> aliveList : register(t0);
-#else
-StructuredBuffer<uint> aliveList : register(t0);
-#endif
-StructuredBuffer<Particle> ParticlePool : register(t1);
+    int threadIndex = (int)getParticleIndex(groupID.x, numThreads, groupIndex);
+    if (threadIndex == 0)
+    {
+        IterationCounter[1] -= 1;
+        if (IterationCounter[1] <= 0)
+        {
+            sortArgs[4] = 0;
+            sortArgs[5] = 0;
+            sortArgs[6] = 0;
+        }
+    }
 
-VSOut main(uint vId : SV_VertexID, uint iId : SV_InstanceID)
-{
-    VSOut output;
-    uint particleIndex = iId;
-#ifdef _SORT
-    uint poolIndex = aliveList[particleIndex].index;
-#else
-    uint poolIndex = aliveList[particleIndex];
-#endif
-    Particle p = ParticlePool[poolIndex];
-    uint billboardIndex = vId;
+    SortParams params = sortParams[iterationIndex];
+    uint index = params.twoCompareDist * (threadIndex / params.compareDist) + threadIndex % params.compareDist;
+    uint compareIndex = index + params.compareDist;
 
-    float4 viewPos = mul(frameData.view, float4(p.pos, 1.f));
-    float2 rotOffset = vectorRotate(float2(xOffset[billboardIndex], yOffset[billboardIndex]), sin(p.rot), cos(p.rot));
-    viewPos.xy += float2(p.scale, p.scale) * rotOffset;
-    output.pos = mul(frameData.proj, viewPos);
-    output.texCoords = float2(xTex[billboardIndex], yTex[billboardIndex]);
-    output.particleIndex = poolIndex;
-    return output;
+    uint descending = (index / params.setSize) % 2;
+    if (descending)
+    {
+        //if this is less than other, not descending
+        if (SortList[index].zDistance < SortList[compareIndex].zDistance)
+        {
+            Swap(index, compareIndex);
+        }
+    }
+    else
+    {
+        //if this is greater than other, not ascending
+        if (SortList[index].zDistance > SortList[compareIndex].zDistance)
+        {
+            Swap(index, compareIndex);
+        }
+    }
 }
-

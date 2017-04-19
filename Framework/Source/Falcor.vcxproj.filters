@@ -2165,5 +2165,8 @@
     <FxCompile Include="Data\Effects\ParticleSimulate.cs.hlsl">
       <Filter>Data\Effects\Particles</Filter>
     </FxCompile>
+    <FxCompile Include="Data\Effects\ParticleSort.cs.hlsl">
+      <Filter>Data\Effects\Particles</Filter>
+    </FxCompile>
   </ItemGroup>
 </Project>

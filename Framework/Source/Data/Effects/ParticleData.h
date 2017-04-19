@@ -55,18 +55,33 @@ struct EmitData
     Particle particles[MAX_EMIT];
 };
 
+struct SortData
+{
+    int index;
+    float zDistance;
+};
+
+struct ColorInterpPsPerFrame
+{
+    vec4 color1;
+    vec4 color2;
+    float colorT1;
+    float colorT2;
+};
+
 struct SimulatePerFrame
 {
     float dt;
     uint maxParticles;
 };
 
-struct ColorInterpPsPerFrame
+struct SortParams
 {
-    vec3 color1;
-    float colorT1;
-    vec3 color2;
-    float colorT2;
+    uint setSize;
+    uint compareDist;
+    //why do this in parallel
+    uint twoCompareDist;
+    float padding;
 };
 
 #ifdef HOST_CODE
@@ -75,11 +90,28 @@ struct VSPerFrame
     glm::mat4 view;
     glm::mat4 proj;
 };
+
+struct SimulateWithSortPerFrame
+{
+    glm::mat4 view;
+    float dt;
+    uint maxParticles;
+    vec2 padding;
+};
+
 #else
 struct VSPerFrame
 {
     matrix view;
     matrix proj;
+};
+
+struct SimulateWithSortPerFrame
+{
+    matrix view;
+    float dt;
+    uint maxParticles;
+    vec2 padding;
 };
 
 uint getParticleIndex(uint groupIDx, uint threadsPerGroup, uint groupIndex)
