@@ -138,6 +138,10 @@ namespace Falcor
 #include "Utils/Logger.h"
 #include "Utils/Profiler.h"
 
+#  ifdef FALCOR_VK
+#   include "API/vulkan/FalcorVK.h"
+#  endif
+
 #ifdef FALCOR_GL
 #include "API/OpenGL/FalcorGL.h"
 #elif defined(FALCOR_D3D11) || defined(FALCOR_D3D12)

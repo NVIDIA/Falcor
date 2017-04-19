@@ -477,6 +477,12 @@
     <ClCompile Include="Utils\PixelZoom.cpp">
       <Filter>Utils</Filter>
     </ClCompile>
+    <ClCompile Include="API\vulkan\VulkanDevice.cpp">
+      <Filter>API\Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="API\vulkan\FalcorVK.cpp">
+      <Filter>API\Vulkan</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Graphics\Model\Animation.h">
@@ -1576,6 +1582,9 @@
     <ClInclude Include="Utils\PixelZoom.h">
       <Filter>Utils</Filter>
     </ClInclude>
+    <ClInclude Include="API\vulkan\FalcorVK.h">
+      <Filter>API\Vulkan</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Externals">
@@ -1730,6 +1739,9 @@
     </Filter>
     <Filter Include="Effects\AmbientOcclusion">
       <UniqueIdentifier>{723ff80c-2107-49c1-8a2b-e01f9d4eb6e9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="API\Vulkan">
+      <UniqueIdentifier>{f191732c-c52a-4867-976e-f96cedcbf908}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>

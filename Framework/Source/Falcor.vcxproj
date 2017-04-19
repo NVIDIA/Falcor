@@ -388,6 +388,8 @@
     <ClCompile Include="API\TypedBuffer.cpp" />
     <ClCompile Include="API\VAO.cpp" />
     <ClCompile Include="API\VariablesBuffer.cpp" />
+    <ClCompile Include="API\vulkan\FalcorVK.cpp" />
+    <ClCompile Include="API\vulkan\VulkanDevice.cpp" />
     <ClCompile Include="ArgList.cpp" />
     <ClCompile Include="Effects\AmbientOcclusion\SSAO.cpp" />
     <ClCompile Include="Effects\NormalMap\LeanMap.cpp" />
@@ -770,6 +772,7 @@
     <ClInclude Include="API\VAO.h" />
     <ClInclude Include="API\VariablesBuffer.h" />
     <ClInclude Include="API\VertexLayout.h" />
+    <ClInclude Include="API\vulkan\FalcorVK.h" />
     <ClInclude Include="API\Window.h" />
     <ClInclude Include="ArgList.h" />
     <ClInclude Include="Data\Effects\CsmData.h" />
@@ -1208,8 +1211,8 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>FALCOR_D3D12;WIN32;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)\..\Externals\GLM;$(ProjectDir)\..\Externals\glew\include;$(ProjectDir)\..\Externals\GLFW\include;$(ProjectDir)\..\Externals\AntTweakBar\include;$(ProjectDir)\..\Externals\FreeImage;$(ProjectDir)\..\Externals\assimp\include;$(ProjectDir)\..\Externals\FFMpeg\Include;$(ProjectDir)\..\Externals\OculusSDK\LibOVR\Include;$(ProjectDir)\..\Externals\OculusSDK\LibOVRKernel\Src;$(ProjectDir)\..\Externals\openvr\headers;$(ProjectDir)\..;$(ProjectDir)\..\Externals\nvapi;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>FALCOR_VK;FALCOR_D3D12;WIN32;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)\..\Externals\GLM;$(ProjectDir)\..\Externals\glew\include;$(ProjectDir)\..\Externals\GLFW\include;$(ProjectDir)\..\Externals\AntTweakBar\include;$(ProjectDir)\..\Externals\FreeImage;$(ProjectDir)\..\Externals\assimp\include;$(ProjectDir)\..\Externals\FFMpeg\Include;$(ProjectDir)\..\Externals\OculusSDK\LibOVR\Include;$(ProjectDir)\..\Externals\OculusSDK\LibOVRKernel\Src;$(ProjectDir)\..\Externals\openvr\headers;$(ProjectDir)\..;$(ProjectDir)\..\Externals\nvapi;C:\VulkanSDK\1.0.42.2\Include\vulkan;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <TreatWarningAsError>true</TreatWarningAsError>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <MinimalRebuild>false</MinimalRebuild>
@@ -1230,6 +1233,9 @@
     <CustomBuildStep>
       <Outputs>needs output to run </Outputs>
     </CustomBuildStep>
+    <Lib>
+      <AdditionalDependencies>C:\VulkanSDK\1.0.42.2\Lib\vulkan-1.lib</AdditionalDependencies>
+    </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseGL|x64'">
     <ClCompile>
@@ -1303,8 +1309,8 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>FALCOR_D3D12;WIN32;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)\..\Externals\GLM;$(ProjectDir)\..\Externals\glew\include;$(ProjectDir)\..\Externals\GLFW\include;$(ProjectDir)\..\Externals\AntTweakBar\include;$(ProjectDir)\..\Externals\FreeImage;$(ProjectDir)\..\Externals\assimp\include;$(ProjectDir)\..\Externals\FFMpeg\Include;$(ProjectDir)\..\Externals\OculusSDK\LibOVR\Include;$(ProjectDir)\..\Externals\OculusSDK\LibOVRKernel\Src;$(ProjectDir)\..\Externals\openvr\headers;$(ProjectDir)\..;$(ProjectDir)\..\Externals\nvapi;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>FALCOR_VK;FALCOR_D3D12;WIN32;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)\..\Externals\GLM;$(ProjectDir)\..\Externals\glew\include;$(ProjectDir)\..\Externals\GLFW\include;$(ProjectDir)\..\Externals\AntTweakBar\include;$(ProjectDir)\..\Externals\FreeImage;$(ProjectDir)\..\Externals\assimp\include;$(ProjectDir)\..\Externals\FFMpeg\Include;$(ProjectDir)\..\Externals\OculusSDK\LibOVR\Include;$(ProjectDir)\..\Externals\OculusSDK\LibOVRKernel\Src;$(ProjectDir)\..\Externals\openvr\headers;$(ProjectDir)\..;$(ProjectDir)\..\Externals\nvapi;C:\VulkanSDK\1.0.42.2\Include\vulkan;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <TreatWarningAsError>true</TreatWarningAsError>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
@@ -1326,6 +1332,10 @@
     <CustomBuildStep>
       <Outputs>needs output to run </Outputs>
     </CustomBuildStep>
+    <Lib>
+      <AdditionalLibraryDirectories>C:\VulkanSDK\1.0.42.2\Lib\vulkan-1.lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>C:\VulkanSDK\1.0.42.2\Lib\vulkan-1.lib</AdditionalDependencies>
+    </Lib>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
