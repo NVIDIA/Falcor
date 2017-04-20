@@ -57,7 +57,7 @@ StructuredBuffer<SortData> aliveList : register(t0);
 #else
 StructuredBuffer<uint> aliveList : register(t0);
 #endif
-StructuredBuffer<Particle> ParticlePool : register(t1);
+StructuredBuffer<Particle> particlePool : register(t1);
 
 VSOut main(uint vId : SV_VertexID, uint iId : SV_InstanceID)
 {
@@ -68,7 +68,7 @@ VSOut main(uint vId : SV_VertexID, uint iId : SV_InstanceID)
 #else
     uint poolIndex = aliveList[particleIndex];
 #endif
-    Particle p = ParticlePool[poolIndex];
+    Particle p = particlePool[poolIndex];
     uint billboardIndex = vId;
 
     float4 viewPos = mul(frameData.view, float4(p.pos, 1.f));

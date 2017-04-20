@@ -35,30 +35,30 @@ cbuffer PerFrame
     SortParams sortParams[_NUM_PASSES];
 };
 
-RWStructuredBuffer<SortData> SortList;
-// [0], num things you wanna sort, [1] counter to -=1 for each sort pass and turn off shader
-RWStructuredBuffer<uint> IterationCounter;
+RWStructuredBuffer<SortData> sortList;
+// [0], num particles touched each frame, [1] counter to -=1 for each sort pass and turn off shader
+RWStructuredBuffer<uint> iterationCounter;
 RWStructuredBuffer<uint> sortArgs;
 
 void Swap(uint index, uint compareIndex)
 {
-    SortData temp = SortList[index];
-    SortList[index] = SortList[compareIndex];
-    SortList[compareIndex] = temp;
+    SortData temp = sortList[index];
+    sortList[index] = sortList[compareIndex];
+    sortList[compareIndex] = temp;
 }
 
 [numthreads(numThreads, 1, 1)]
 void main(uint3 groupID : SV_GroupID, uint groupIndex : SV_GroupIndex)
 {
-    InterlockedAdd(IterationCounter[2], 1);
-    uint count = max(IterationCounter[2], 1) - 1;
-    uint iterationIndex = count / IterationCounter[0];
+    InterlockedAdd(iterationCounter[2], 1);
+    uint count = max(iterationCounter[2], 1) - 1;
+    uint iterationIndex = count / iterationCounter[0];
 
     int threadIndex = (int)getParticleIndex(groupID.x, numThreads, groupIndex);
     if (threadIndex == 0)
     {
-        IterationCounter[1] -= 1;
-        if (IterationCounter[1] <= 0)
+        iterationCounter[1] -= 1;
+        if (iterationCounter[1] <= 0)
         {
             sortArgs[4] = 0;
             sortArgs[5] = 0;
@@ -74,7 +74,7 @@ void main(uint3 groupID : SV_GroupID, uint groupIndex : SV_GroupIndex)
     if (descending)
     {
         //if this is less than other, not descending
-        if (SortList[index].zDistance < SortList[compareIndex].zDistance)
+        if (sortList[index].zDistance < sortList[compareIndex].zDistance)
         {
             Swap(index, compareIndex);
         }
@@ -82,7 +82,7 @@ void main(uint3 groupID : SV_GroupID, uint groupIndex : SV_GroupIndex)
     else
     {
         //if this is greater than other, not ascending
-        if (SortList[index].zDistance > SortList[compareIndex].zDistance)
+        if (sortList[index].zDistance > sortList[compareIndex].zDistance)
         {
             Swap(index, compareIndex);
         }

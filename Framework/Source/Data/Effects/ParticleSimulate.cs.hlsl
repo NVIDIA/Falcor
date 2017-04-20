@@ -45,7 +45,7 @@ RWStructuredBuffer<uint> sortIterationCounter;
 #else
 AppendStructuredBuffer<uint> aliveList;
 #endif
-RWStructuredBuffer<Particle> ParticlePool;
+RWStructuredBuffer<Particle> particlePool;
 RWByteAddressBuffer numDead;
 RWStructuredBuffer<uint> drawArgs;
 
@@ -73,41 +73,44 @@ void main(uint3 groupID : SV_GroupID, uint groupIndex : SV_GroupIndex)
     uint numAliveParticles = perFrame.maxParticles - numDeadParticles;
 
     //check if the particle is alive
-    if (ParticlePool[index].life > 0)
+    if (particlePool[index].life > 0)
     {
-        ParticlePool[index].life -= perFrame.dt;
+        particlePool[index].life -= perFrame.dt;
         //check if the particle died this frame
-        if (ParticlePool[index].life <= 0)
+        if (particlePool[index].life <= 0)
         {
             deadList.Append(index);
         }
         else
         {
-            ParticlePool[index].pos += ParticlePool[index].vel * perFrame.dt;
-            ParticlePool[index].vel += ParticlePool[index].accel * perFrame.dt;
-            ParticlePool[index].scale = max(ParticlePool[index].scale + ParticlePool[index].growth * perFrame.dt, 0);            
-            ParticlePool[index].rot += ParticlePool[index].rotVel * perFrame.dt;
+            particlePool[index].pos += particlePool[index].vel * perFrame.dt;
+            particlePool[index].vel += particlePool[index].accel * perFrame.dt;
+            particlePool[index].scale = max(particlePool[index].scale + particlePool[index].growth * perFrame.dt, 0);            
+            particlePool[index].rot += particlePool[index].rotVel * perFrame.dt;
         #ifdef _SORT
             SortData data;
             data.index = index;
             data.zDistance = 0.f;
-            data.zDistance = mul(perFrame.view, float4(ParticlePool[index].pos, 1.f)).z;
+            data.zDistance = mul(perFrame.view, float4(particlePool[index].pos, 1.f)).z;
             aliveList.Append(data);
         #else
             aliveList.Append(index);
         #endif
         }
 
-        //0 vert count per instance, 1 numInstances, 2 start vert loc, 3 start instance loc
+        //This seems slow, there must be a better way
     #ifdef _SORT
         uint nextPow2 = getNextPow2(numAliveParticles);
+        //Sort only needs to touch half the particles, so the min amount of particles 
+        //to sort is 2 * numThreads
+        uint sortNum = 2 * numThreads;
+        nextPow2 = max(nextPow2, sortNum);
         uint twoExp = log2(nextPow2);
-        sortIterationCounter[0] = nextPow2 / 2; //sort only needs to touch 
+        sortIterationCounter[0] = nextPow2 / 2; //sort only needs to touch half the things
         sortIterationCounter[1] = (twoExp * (twoExp + 1)) / 2;
         sortIterationCounter[2] = 0;
         //4 = dispatchX, 5 = dispatchY, 6 = dispatchZ
-        //todo unhardcode this
-        drawArgs[4] = nextPow2 / (256 * 2);
+        drawArgs[4] = nextPow2 / sortNum;
         drawArgs[5] = 1;
         drawArgs[6] = 1;
     #endif

@@ -38,11 +38,17 @@ namespace Falcor
     class ParticleSystem
     {
     public:
+        static const char* kVertexShader;
+        static const char* kSortShader;
+        static const char* kEmitShader;
+        static const char* kDefaultPixelShader;
+        static const char* kDefaultSimulateShader;
+
         using SharedPtr = std::shared_ptr<ParticleSystem>;
 
-        static SharedPtr create(RenderContext* pCtx, uint32_t maxParticles, 
-            std::string drawPixelShader = std::string("Effects/ParitcleTexture.ps.hlsl"),
-            std::string simulateComputeShader = std::string("Effects/ParticleSimulate.cs.hlsl"),
+        static SharedPtr create(RenderContext* pCtx, uint32_t maxParticles,
+            std::string drawPixelShader = kDefaultPixelShader,
+            std::string simulateComputeShader = kDefaultSimulateShader,
             bool sorted = true);
         void update(RenderContext* pCtx, float dt, glm::mat4 view);
         void render(RenderContext* pCtx, glm::mat4 view, glm::mat4 proj);
@@ -66,6 +72,11 @@ namespace Falcor
         void setBillboardRotationVelocity(float rotVel, float offset);
 
     private:
+        ParticleSystem() = delete;
+        ParticleSystem(RenderContext* pCtx, uint32_t maxParticles,
+            std::string drawPixelShader, std::string simulateComputeShader, bool sorted);
+        void emit(RenderContext* pCtx, uint32_t num);
+
         struct EmitterData
         {
             EmitterData() : duration(3.f), durationOffset(0.f), emitFrequency(0.1f), emitCount(32),
@@ -94,15 +105,6 @@ namespace Falcor
             float billboardRotationVelOffset;
         } mEmitter;
 
-        ParticleSystem() = delete;
-        ParticleSystem(RenderContext* pCtx, uint32_t maxParticles,
-            std::string drawPixelShader, std::string simulateComputeShader, bool sorted);
-        void emit(RenderContext* pCtx, uint32_t num);
-
-        uint32_t mMaxParticles;
-        uint32_t mSimulateThreads;
-        std::vector<SortData> mSortDataReset;
-
         struct EmitResources
         {
             ComputeVars::SharedPtr vars;
@@ -122,25 +124,26 @@ namespace Falcor
             Vao::SharedPtr vao;
         } mDrawResources;
 
+        uint32_t mMaxParticles;
+        uint32_t mSimulateThreads;
+        float mEmitTimer = 0.f;
 
+        //buffers
         StructuredBuffer::SharedPtr mpParticlePool;
         StructuredBuffer::SharedPtr mpDeadList;
         StructuredBuffer::SharedPtr mpAliveList;
-        //for draw indirect
+        //for draw and sort (Draw 0, 1, 2, 3) (Dispatch 4, 5, 6)
         StructuredBuffer::SharedPtr mpIndirectArgs;
 
-
+        //Maybe it'd be better to have a derived "SortedParticleSystem" class?
+        void initSortResources();
+        bool mShouldSort;
+        std::vector<SortData> mSortDataReset;
         struct SortResources
         {
             StructuredBuffer::SharedPtr sortIterationCounter;
             ComputeState::SharedPtr state;
-            //not sure if this is good practice usage of the shader preprocessor or not
-            std::vector<ProgramVersion::SharedConstPtr> programVersions;
             ComputeVars::SharedPtr vars;
         } mSortResources;
-
-        void initSortParams(ComputeProgram::SharedPtr pCs);
-        float mEmitTimer = 0.f;
     };
-
 }

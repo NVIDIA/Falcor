@@ -69,6 +69,8 @@ void Particles::onGuiRender()
     {
         static int32_t sMaxParticles = 4096;
         mpGui->addIntVar("Max Particles", sMaxParticles, 0);
+        static bool sorted = false;
+        mpGui->addCheckBox("Sorted", sorted);
         mpGui->addDropdown("PixelShader", kPixelShaders, mPixelShaderIndex);
         if (mpGui->addButton("Create"))
         {
@@ -77,15 +79,17 @@ void Particles::onGuiRender()
             case ExamplePixelShaders::ConstColor:
             {
                 ParticleSystem::SharedPtr pSys = 
-                    ParticleSystem::create(mpRenderContext.get(), sMaxParticles, kConstColorPs);
+                    ParticleSystem::create(mpRenderContext.get(), sMaxParticles, kConstColorPs, ParticleSystem::kDefaultSimulateShader, sorted);
                 mParticleSystems.push_back(pSys);
-                mPsData.push_back(vec3(0.f, 0.f, 0.f));
+                mPsData.push_back(vec4(0.f, 0.f, 0.f, 1.f));
+                mParticleSystems[mParticleSystems.size() - 1]->getDrawVars()->getConstantBuffer(2)->
+                    setBlob(&mPsData[mPsData.size() - 1].data.color, 0, sizeof(vec4));
                 break;
             }
             case ExamplePixelShaders::ColorInterp:
             {
                 ParticleSystem::SharedPtr pSys =
-                    ParticleSystem::create(mpRenderContext.get(), sMaxParticles, kColorInterpPs);
+                    ParticleSystem::create(mpRenderContext.get(), sMaxParticles, kColorInterpPs, ParticleSystem::kDefaultSimulateShader, sorted);
                 mParticleSystems.push_back(pSys);
                 ColorInterpPsPerFrame perFrame;
                 perFrame.color1 = vec4(1.f, 0.f, 0.f, 1.f);
@@ -93,12 +97,14 @@ void Particles::onGuiRender()
                 perFrame.color2 = vec4(0.f, 0.f, 1.f, 1.f);
                 perFrame.colorT2 = 0.f;
                 mPsData.push_back(perFrame);
+                mParticleSystems[mParticleSystems.size() - 1]->getDrawVars()->getConstantBuffer(2)->
+                    setBlob(&mPsData[mPsData.size() - 1].data.interp, 0, sizeof(ColorInterpPsPerFrame));
                 break;
             }
             case ExamplePixelShaders::Textured:
             {
                 ParticleSystem::SharedPtr pSys = 
-                    ParticleSystem::create(mpRenderContext.get(), sMaxParticles, kTexturedPs);
+                    ParticleSystem::create(mpRenderContext.get(), sMaxParticles, kTexturedPs, ParticleSystem::kDefaultSimulateShader, sorted);
                 mParticleSystems.push_back(pSys);
                 mPsData.push_back(0);
                 pSys->getDrawVars()->setSrv(2, mTextures[0]->getSRV());
@@ -132,7 +138,7 @@ void Particles::onGuiRender()
         {
         case ExamplePixelShaders::ConstColor:
         {
-            if (mpGui->addRgbColor("Color", mPsData[mGuiIndex].data.color))
+            if (mpGui->addRgbaColor("Color", mPsData[mGuiIndex].data.color))
             {
                 mParticleSystems[mGuiIndex]->getDrawVars()->getConstantBuffer(2)->
                     setBlob(&mPsData[mGuiIndex].data.color, 0, sizeof(vec4));

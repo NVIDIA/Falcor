@@ -64,12 +64,12 @@ private:
     //custom properties like these
     union PSData
     {
-        PSData() : color(vec3(1.f, 1.f, 1.f)) {}
+        PSData() : color(vec4(1.f, 1.f, 1.f, 1.f)) {}
         ~PSData() {}
-        PSData(vec3 newColor) : color(newColor) {};
+        PSData(vec4 newColor) : color(newColor) {};
         PSData(ColorInterpPsPerFrame interpData) : interp(interpData) {};
         PSData(uint32_t newTexIndex) : texIndex(newTexIndex) {};
-        vec3 color;
+        vec4 color;
         ColorInterpPsPerFrame interp;
         uint32_t texIndex;
     };
@@ -87,7 +87,7 @@ private:
             default: should_not_get_here();
             }
         }
-        PixelShaderData(vec3 color) : type(ExamplePixelShaders::ConstColor), data(color) {}
+        PixelShaderData(vec4 color) : type(ExamplePixelShaders::ConstColor), data(color) {}
         PixelShaderData(ColorInterpPsPerFrame interpData) : type(ExamplePixelShaders::ColorInterp), data(interpData) {}
         PixelShaderData(uint32_t texIndex) : type(ExamplePixelShaders::Textured), data(texIndex) {}
         ExamplePixelShaders type;

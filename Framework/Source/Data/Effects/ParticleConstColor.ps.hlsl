@@ -34,10 +34,10 @@ struct VSOut
 
 cbuffer PsPerFrame : register(b2)
 {
-    float3 color;
+    float4 color;
 };
 
 float4 main(VSOut vOut) : SV_Target0
 {
-    return float4(color, 1.f);
+    return color;
 }
