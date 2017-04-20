@@ -29,53 +29,51 @@
 #include "Falcor.h"
 
 #define init_tests() if (mArgList.argExists("test")) { toggleText(false); initializeTestingArgs(mArgList); }
-#define run_test() if(isTestingEnabled()) { runTestTask(frameRate()); }
+#define run_test() if(isTestingEnabled()) { runTestTask(frameRate(), this); }
 
-using namespace Falcor;
-
-class SampleTest
+namespace Falcor
 {
-public:
-    /** Checks whether testing is enabled, returns true if Test Tasks vector isn't empty
-    */
-    bool isTestingEnabled() const;
-
-    /** Initializes Test Tasks vector based on command line 
-    \param args ArgList object 
-    */
-    void initializeTestingArgs(const ArgList& args);
-
-    /** Callback for anything the testing sample wants to initialize
-    \param args the arg list object
-    */
-    virtual void onInitializeTestingArgs(const ArgList& args) {};
-
-    /** Checks each frame against testing ranges to see if a testing task should be run and runs it
-    \param frameRate the frame rate object to get frame times and frame count 
-    */
-    void runTestTask(const FrameRate& frameRate);
-    
-    /** Callback for anything the testing sample wants to do each frame 
-    \param frameRate the frame rate object to get frame count
-    */
-    virtual void onRunTestTask(const FrameRate& frameRate) {};
-
-    /** 
-    */
-    virtual void onTestShutdown() { exit(1); }
-
-private:
-    /** Captures screen to a png, very similar to Sample::captureScreen
-    */
-    void captureScreen();
-
-    /** Outputs xml test results file
-    */
-    void outputXML();
-
-    struct Task
+    class SampleTest
     {
-        enum class Type
+    public:
+        /** Checks whether testing is enabled, returns true if Test Tasks vector isn't empty
+        */
+        bool isTestingEnabled() const;
+
+        /** Initializes Test Tasks vector based on command line
+        \param args ArgList object
+        */
+        void initializeTestingArgs(const ArgList& args);
+
+        /** Callback for anything the testing sample wants to initialize
+        \param args the arg list object
+        */
+        virtual void onInitializeTestingArgs(const ArgList& args) {};
+
+        /** Checks each frame against testing ranges to see if a testing task should be run and runs it
+        \param frameRate the frame rate object to get frame times and frame count
+        */
+        void runTestTask(const FrameRate& frameRate, Sample* pSample);
+
+        /** Callback for anything the testing sample wants to do each frame
+        \param frameRate the frame rate object to get frame count
+        */
+        virtual void onRunTestTask(const FrameRate& frameRate) {};
+
+        /**
+        */
+        virtual void onTestShutdown() { exit(1); }
+
+    private:
+        /** Captures screen to a png, very similar to Sample::captureScreen
+        */
+        void captureScreen();
+
+        /** Outputs xml test results file
+        */
+        void outputXML();
+
+        enum class TestTaskType
         {
             LoadTime,
             MeasureFps,
@@ -84,17 +82,33 @@ private:
             Uninitialized
         };
 
-        Task() : mStartFrame(0u), mEndFrame(0u), mTask(Type::Uninitialized), mResult(0.f) {}
-        Task(uint32_t startFrame, uint32_t endFrame, Task::Type t) :
-            mStartFrame(startFrame), mEndFrame(endFrame), mTask(t), mResult(0.f) {}
-        bool operator<(const Task& rhs) { return mStartFrame < rhs.mStartFrame; }
+        struct Task
+        {
+            Task() : mStartFrame(0u), mEndFrame(0u), mTask(TestTaskType::Uninitialized), mResult(0.f) {}
+            Task(uint32_t startFrame, uint32_t endFrame, TestTaskType t) :
+                mStartFrame(startFrame), mEndFrame(endFrame), mTask(t), mResult(0.f) {}
+            bool operator<(const Task& rhs) { return mStartFrame < rhs.mStartFrame; }
 
-        uint32_t mStartFrame;
-        uint32_t mEndFrame;
-        Type mTask;
-        float mResult = 0;
+            uint32_t mStartFrame;
+            uint32_t mEndFrame;
+            TestTaskType mTask;
+            float mResult = 0;
+        };
+
+        std::vector<Task> mTestTasks;
+        std::vector<Task>::iterator mTestTaskIt;
+
+        struct TimedTask
+        {
+            TimedTask() : mStartTime(0.f), mTask(TestTaskType::Uninitialized) {};
+            TimedTask(float startTime, TestTaskType t) : mStartTime(startTime), mTask(t) {};
+            bool operator<(const TimedTask& rhs) { return mStartTime < rhs.mStartTime; }
+
+            float mStartTime;
+            TestTaskType mTask;
+        };
+
+        std::vector<TimedTask> mTimedTestTasks;
+        std::vector<TimedTask>::iterator mTimedTestTaskIt;
     };
-
-    std::vector<Task> mTestTasks;
-    std::vector<Task>::iterator mTestTaskIt;
-};
+}

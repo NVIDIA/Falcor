@@ -27,191 +27,250 @@
 ***************************************************************************/
 #include "SampleTest.h"
 
-bool SampleTest::isTestingEnabled() const
+namespace Falcor
 {
-    return !mTestTasks.empty();
-}
 
-void SampleTest::initializeTestingArgs(const ArgList& args)
-{
-    //Load time
-    if (args.argExists("loadtime"))
+    bool SampleTest::isTestingEnabled() const
     {
-        Task newTask(2u, 3u, Task::Type::LoadTime);
-        mTestTasks.push_back(newTask);
+        return !mTestTasks.empty() || !mTimedTestTasks.empty();
     }
 
-    //shutdown
-    std::vector<ArgList::Arg> shutdownFrame = args.getValues("shutdown");
-    if (!shutdownFrame.empty())
+    void SampleTest::initializeTestingArgs(const ArgList& args)
     {
-        uint32_t startFame = shutdownFrame[0].asUint();
-        Task newTask(startFame, startFame + 1, Task::Type::Shutdown);
-        mTestTasks.push_back(newTask);
-    }
+        //Frame based tests
+        //Load time
+        if (args.argExists("loadtime"))
+        {
+            Task newTask(2u, 3u, TestTaskType::LoadTime);
+            mTestTasks.push_back(newTask);
+        }
 
-    //screenshot frames
-    std::vector<ArgList::Arg> ssFrames = args.getValues("ssframes");
-    if (!ssFrames.empty())
-    {
+        //shutdown
+        std::vector<ArgList::Arg> shutdownFrame = args.getValues("shutdown");
+        if (!shutdownFrame.empty())
+        {
+            uint32_t startFame = shutdownFrame[0].asUint();
+            Task newTask(startFame, startFame + 1, TestTaskType::Shutdown);
+            mTestTasks.push_back(newTask);
+        }
+
+        //screenshot frames
+        std::vector<ArgList::Arg> ssFrames = args.getValues("ssframes");
         for (uint32_t i = 0; i < ssFrames.size(); ++i)
         {
             uint32_t startFrame = ssFrames[i].asUint();
-            Task newTask(startFrame, startFrame + 1, Task::Type::ScreenCapture);
+            Task newTask(startFrame, startFrame + 1, TestTaskType::ScreenCapture);
             mTestTasks.push_back(newTask);
         }
-    }
 
-    //fps capture frames
-    std::vector<ArgList::Arg> fpsRange = args.getValues("perfframes");
-    //integer division on purpose, only care about ranges with start and end
-    size_t numRanges = fpsRange.size() / 2;
-    for (size_t i = 0; i < numRanges; ++i)
-    {
-        uint32_t rangeStart = fpsRange[2 * i].asUint();
-        uint32_t rangeEnd = fpsRange[2 * i + 1].asUint();
-        //only add if valid range
-        if (rangeEnd > rangeStart)
+        //fps capture frames
+        std::vector<ArgList::Arg> fpsRange = args.getValues("perfframes");
+        //integer division on purpose, only care about ranges with start and end
+        size_t numRanges = fpsRange.size() / 2;
+        for (size_t i = 0; i < numRanges; ++i)
         {
-            Task newTask(rangeStart, rangeEnd, Task::Type::MeasureFps);
-            mTestTasks.push_back(newTask);
-        }
-        else
-        {
-            continue;
-        }
-    }
-
-    if (!mTestTasks.empty())
-    {
-        //Put the tasks in start frame order
-        std::sort(mTestTasks.begin(), mTestTasks.end());
-        //ensure no task ranges overlap
-        auto previousIt = mTestTasks.begin();
-        for (auto it = mTestTasks.begin() + 1; it != mTestTasks.end(); ++it)
-        {
-            if (it->mStartFrame < previousIt->mEndFrame)
+            uint32_t rangeStart = fpsRange[2 * i].asUint();
+            uint32_t rangeEnd = fpsRange[2 * i + 1].asUint();
+            //only add if valid range
+            if (rangeEnd > rangeStart)
             {
-                logInfo("Test Range from frames " + std::to_string(it->mStartFrame) + " to " + std::to_string(it->mEndFrame) +
-                    " overlaps existing range from " + std::to_string(previousIt->mStartFrame) + " to " + std::to_string(previousIt->mEndFrame));
-                it = mTestTasks.erase(it);
-                --it;
+                Task newTask(rangeStart, rangeEnd, TestTaskType::MeasureFps);
+                mTestTasks.push_back(newTask);
             }
             else
             {
-                previousIt = it;
+                continue;
             }
         }
+
+        if (!mTestTasks.empty())
+        {
+            //Put the tasks in start frame order
+            std::sort(mTestTasks.begin(), mTestTasks.end());
+            //ensure no task ranges overlap
+            auto previousIt = mTestTasks.begin();
+            for (auto it = mTestTasks.begin() + 1; it != mTestTasks.end(); ++it)
+            {
+                if (it->mStartFrame < previousIt->mEndFrame)
+                {
+                    logInfo("Test Range from frames " + std::to_string(it->mStartFrame) + " to " + std::to_string(it->mEndFrame) +
+                        " overlaps existing range from " + std::to_string(previousIt->mStartFrame) + " to " + std::to_string(previousIt->mEndFrame));
+                    it = mTestTasks.erase(it);
+                    --it;
+                }
+                else
+                {
+                    previousIt = it;
+                }
+            }
+        }
+
+        mTestTaskIt = mTestTasks.begin();
+
+        //Time based tests
+        std::vector<ArgList::Arg> timedScreenshots = args.getValues("sstimes");
+        for (auto it = timedScreenshots.begin(); it != timedScreenshots.end(); ++it)
+        {
+            float startTime = it->asFloat();
+            TimedTask newTask(startTime, TestTaskType::ScreenCapture);
+            mTimedTestTasks.push_back(newTask);
+        }
+
+        std::vector<ArgList::Arg> shutdownTimeArg = args.getValues("shutdowntime");
+        if (!shutdownTimeArg.empty())
+        {
+            float shutdownTime = shutdownTimeArg[0].asFloat();
+            TimedTask newTask(shutdownTime, TestTaskType::Shutdown);
+            mTimedTestTasks.push_back(newTask);
+        }
+
+        if (!mTimedTestTasks.empty())
+        {
+            std::sort(mTimedTestTasks.begin(), mTimedTestTasks.end());
+        }
+
+        mTimedTestTaskIt = mTimedTestTasks.begin();
+
+        //callback
+        onInitializeTestingArgs(args);
     }
 
-    mTestTaskIt = mTestTasks.begin();
-    onInitializeTestingArgs(args);
-}
-
-void SampleTest::runTestTask(const FrameRate& frameRate)
-{
-    uint32_t frameId = frameRate.getFrameCount();
-    if (mTestTaskIt != mTestTasks.end() && frameId >= mTestTaskIt->mStartFrame)
+    void SampleTest::runTestTask(const FrameRate& frameRate, Sample* pSample)
     {
-        if (frameId == mTestTaskIt->mEndFrame)
+        uint32_t frameId = frameRate.getFrameCount();
+        if (mTestTaskIt != mTestTasks.end() && frameId >= mTestTaskIt->mStartFrame)
         {
-            if (mTestTaskIt->mTask == Task::Type::MeasureFps)
+            if (frameId == mTestTaskIt->mEndFrame)
             {
-                mTestTaskIt->mResult /= (mTestTaskIt->mEndFrame - mTestTaskIt->mStartFrame);
-            }
+                if (mTestTaskIt->mTask == TestTaskType::MeasureFps)
+                {
+                    mTestTaskIt->mResult /= (mTestTaskIt->mEndFrame - mTestTaskIt->mStartFrame);
+                }
 
-            ++mTestTaskIt;
-        }
-        else
-        {
-            switch (mTestTaskIt->mTask)
+                ++mTestTaskIt;
+            }
+            else
             {
-            case Task::Type::LoadTime:
-            case Task::Type::MeasureFps:
-                mTestTaskIt->mResult += frameRate.getLastFrameTime();
-                break;
-            case Task::Type::ScreenCapture:
-                captureScreen();
-                break;
-            case Task::Type::Shutdown:
+                switch (mTestTaskIt->mTask)
+                {
+                case TestTaskType::LoadTime:
+                case TestTaskType::MeasureFps:
+                    mTestTaskIt->mResult += frameRate.getLastFrameTime();
+                    break;
+                case TestTaskType::ScreenCapture:
+                    captureScreen();
+                    break;
+                case TestTaskType::Shutdown:
+                    outputXML();
+                    onTestShutdown();
+                    break;
+                default:
+                    should_not_get_here();
+                }
+            }
+        }
+
+        if (mTimedTestTaskIt != mTimedTestTasks.end() && pSample->mCurrentTime > mTimedTestTaskIt->mStartTime)
+        {
+            TestTaskType curType = mTimedTestTaskIt->mTask;
+
+            switch (curType)
+            {
+            case TestTaskType::ScreenCapture:
+                //Makes sure the ss is taken at the correct time for image compare
+                if (pSample->mFreezeTime)
+                {
+                    captureScreen();
+                    pSample->mFreezeTime = false;
+                    break;
+                }
+                else
+                {
+                    pSample->mCurrentTime = mTimedTestTaskIt->mStartTime;
+                    pSample->mFreezeTime = true;
+                    return;
+                }
+            case TestTaskType::Shutdown:
                 outputXML();
                 onTestShutdown();
                 break;
             default:
                 should_not_get_here();
             }
+
+            ++mTimedTestTaskIt;
         }
+
+        onRunTestTask(frameRate);
     }
 
-    onRunTestTask(frameRate);
-}
-
-void SampleTest::captureScreen()
-{
-    std::string filename = getExecutableName();
-
-    // Now we have a folder and a filename, look for an available filename (we don't overwrite existing files)
-    std::string prefix = std::string(filename);
-    std::string executableDir = getExecutableDirectory();
-    std::string pngFile;
-    if (findAvailableFilename(prefix, executableDir, "png", pngFile))
+    void SampleTest::captureScreen()
     {
-        Texture::SharedPtr pTexture = gpDevice->getSwapChainFbo()->getColorTexture(0);
-        pTexture->captureToFile(0, 0, pngFile);
-    }
-    else
-    {
-        logError("Could not find available filename when capturing screen");
-    }
-}
+        std::string filename = getExecutableName();
 
-void SampleTest::outputXML()
-{
-    if (!mTestTasks.empty())
-    {
-        float frameTime = 0.f;
-        float loadTime = 0.f;
-        uint32_t numFpsRanges = 0;
-        uint32_t numScreenshots = 0;
-        for (auto it = mTestTasks.begin(); it != mTestTasks.end(); ++it)
+        // Now we have a folder and a filename, look for an available filename (we don't overwrite existing files)
+        std::string prefix = std::string(filename);
+        std::string executableDir = getExecutableDirectory();
+        std::string pngFile;
+        if (findAvailableFilename(prefix, executableDir, "png", pngFile))
         {
-            switch (it->mTask)
-            {
-            case Task::Type::LoadTime:
-                loadTime = it->mResult;
-                break;
-            case Task::Type::MeasureFps:
-            {
-                frameTime += it->mResult;
-                ++numFpsRanges;
-                break;
-            }
-            case Task::Type::ScreenCapture:
-                ++numScreenshots;
-                break;
-            case Task::Type::Shutdown:
-                continue;
-            default:
-                should_not_get_here();
-            }
+            Texture::SharedPtr pTexture = gpDevice->getSwapChainFbo()->getColorTexture(0);
+            pTexture->captureToFile(0, 0, pngFile);
         }
+        else
+        {
+            logError("Could not find available filename when capturing screen");
+        }
+    }
 
-        //average all performance ranges if there are any
-        numFpsRanges ? frameTime /= numFpsRanges : frameTime = 0;
+    void SampleTest::outputXML()
+    {
+        if (!mTestTasks.empty())
+        {
+            float frameTime = 0.f;
+            float loadTime = 0.f;
+            uint32_t numFpsRanges = 0;
+            uint32_t numScreenshots = 0;
+            for (auto it = mTestTasks.begin(); it != mTestTasks.end(); ++it)
+            {
+                switch (it->mTask)
+                {
+                case TestTaskType::LoadTime:
+                    loadTime = it->mResult;
+                    break;
+                case TestTaskType::MeasureFps:
+                {
+                    frameTime += it->mResult;
+                    ++numFpsRanges;
+                    break;
+                }
+                case TestTaskType::ScreenCapture:
+                    ++numScreenshots;
+                    break;
+                case TestTaskType::Shutdown:
+                    continue;
+                default:
+                    should_not_get_here();
+                }
+            }
 
-        std::ofstream of;
-        std::string exeName = getExecutableName();
-        //strip off .exe
-        std::string shortName = exeName.substr(0, exeName.size() - 4);
-        of.open(shortName + "_TestingLog_0.xml");
-        of << "<?xml version = \"1.0\" encoding = \"UTF-8\"?>\n";
-        of << "<TestLog>\n";
-        of << "<Summary\n";
-        of << "\tLoadTime=\"" << std::to_string(loadTime) << "\"\n";
-        of << "\tFrameTime=\"" << std::to_string(frameTime) << "\"\n";
-        of << "\tNumScreenshots=\"" << std::to_string(numScreenshots) << "\"\n";
-        of << "/>\n";
-        of << "</TestLog>";
-        of.close();
+            //average all performance ranges if there are any
+            numFpsRanges ? frameTime /= numFpsRanges : frameTime = 0;
+
+            std::ofstream of;
+            std::string exeName = getExecutableName();
+            //strip off .exe
+            std::string shortName = exeName.substr(0, exeName.size() - 4);
+            of.open(shortName + "_TestingLog_0.xml");
+            of << "<?xml version = \"1.0\" encoding = \"UTF-8\"?>\n";
+            of << "<TestLog>\n";
+            of << "<Summary\n";
+            of << "\tLoadTime=\"" << std::to_string(loadTime) << "\"\n";
+            of << "\tFrameTime=\"" << std::to_string(frameTime) << "\"\n";
+            of << "\tNumScreenshots=\"" << std::to_string(numScreenshots) << "\"\n";
+            of << "/>\n";
+            of << "</TestLog>";
+            of.close();
+        }
     }
 }
