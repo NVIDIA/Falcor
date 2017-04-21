@@ -23,7 +23,7 @@ gDefaultFrameTimeMargin = 0.05
 #seconds
 gDefaultLoadTimeMargin = 10
 #average pixel color difference
-gDefaultImageCompareMargin = 0.1
+gDefaultImageCompareMargin = 5.0
 #seconds
 gDefaultHangTimeDuration = 1800
 

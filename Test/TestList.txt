@@ -15,9 +15,9 @@ MultiPassPostProcess {
 	-test -ssframes 50 -shutdown 100 -gaussianblur -grayscale -loadimage \\netapp-wa02\\public\\Falcor\\TestMedia\\TestTex2.png}
 	{released3d12}
 FeatureDemo {
--test -loadmodel san-miguel\san-miguel-high-poly.fbx -camerapos 22.7 2 10.8 -cameratarget 21.9 1.9 10.2 -ssframes 50 -shutdown 450,
--test -loadmodel CityScene\CityScene.fbx -ssframes 50 -shutdown 450,
--test -loadmodel classroom\Classroom.fbx -ssframes 50 -shutdown 450} 
+-test -loadscene san-miguel\SanMiguel.fscene -sstimes 10 20 30 -shutdowntime 35,
+-test -loadscene classroom\Classroom.fscene -sstimes 7 15 -shutdowntime 20,
+-test -loadscene CityScene\Tiled_CityScene_20x20.fscene -sstimes 10 -shutdowntime 15} 
 {released3d12}
 Shadows {
 -test -incrementFilter 100 300 500 700 900 1100 -ssframes 150 350 550 750 950 1150 -shutdown 1300} {released3d12}
