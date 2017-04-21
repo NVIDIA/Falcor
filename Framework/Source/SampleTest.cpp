@@ -225,7 +225,7 @@ namespace Falcor
 
     void SampleTest::outputXML()
     {
-        if (!mTestTasks.empty())
+        if (!mTestTasks.empty() || !mTimedTestTasks.empty())
         {
             float frameTime = 0.f;
             float loadTime = 0.f;
@@ -251,6 +251,14 @@ namespace Falcor
                     continue;
                 default:
                     should_not_get_here();
+                }
+            }
+
+            for (auto it = mTimedTestTasks.begin(); it != mTimedTestTasks.end(); ++it)
+            {
+                if (it->mTask == TestTaskType::ScreenCapture)
+                {
+                    ++numScreenshots;
                 }
             }
 
