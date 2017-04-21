@@ -170,7 +170,7 @@ namespace Falcor
             }
         }
 
-        if (mTimedTestTaskIt != mTimedTestTasks.end() && pSample->mCurrentTime > mTimedTestTaskIt->mStartTime)
+        if (mTimedTestTaskIt != mTimedTestTasks.end() && pSample->mCurrentTime >= mTimedTestTaskIt->mStartTime)
         {
             TestTaskType curType = mTimedTestTaskIt->mTask;
 
