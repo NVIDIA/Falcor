@@ -206,33 +206,6 @@ def buildFail(slnName, configName, slnInfo):
 def addCrash(test, slnInfo):
     slnInfo.skippedList.append(testName, 'Unhandled Crash')
 
-def compareLowLevelReference(testInfo, testResult, slnInfo):
-    if not os.path.isfile(testInfo.getReferenceFile()):
-        slnInfo.errorList.append(('For test ' + testInfo.getFullName() + 
-        ', could not find reference file ' + testInfo.getReferenceFile()))
-        return
-    refTag = getXMLTag(testInfo.getReferenceFile(), 'Summary')
-    if refTag == None: 
-        slnInfo.errorList.append(('For test ' + testInfo.getFullName() + 
-        ', could not find reference file ' + testInfo.getReferenceFile()))
-        return
-    refTotal = int(refTag[0].attributes['TotalTests'].value)
-    if testResult.Total != refTotal:
-        slnInfo.errorList.append((testInfo.getFullName() + ': Number of tests is ' +
-        str(testResult.Total) + ' which does not match ' + str(refTotal) + ' in reference'))
-    refPassed = int(refTag[0].attributes['PassedTests'].value)
-    if testResult.Passed != refPassed:
-        slnInfo.errorList.append((testInfo.getFullName() + ': Number of passed tests is ' + 
-        str(testResult.Passed) + ' which does not match ' + str(refPassed) + ' in reference'))
-    refFailed = int(refTag[0].attributes['FailedTests'].value)
-    if testResult.Failed != refFailed:
-        slnInfo.errorList.append((testInfo.getFullName() + ': Number of failed tests is ' + 
-        str(testResult.Failed) + ' which does not match ' + str(refFailed) + ' in reference'))
-    refCrashed = int(refTag[0].attributes['CrashedTests'].value)
-    if testResult.Crashed != refCrashed:
-        slnInfo.errorList.append((testInfo.getFullName() + ': Number of crashed tests is ' +  
-        str(testResult.Crashed) + ' which does not match ' + str(refCrashed) + ' in reference'))
-
 def getXMLTag(xmlFilename, tagName):
     try:
         referenceDoc = minidom.parse(xmlFilename)
@@ -258,13 +231,14 @@ def processLowLevelTest(xmlElement, testInfo, slnInfo):
     newResult.Total = int(xmlElement[0].attributes['TotalTests'].value)
     newResult.Passed = int(xmlElement[0].attributes['PassedTests'].value)
     newResult.Failed = int(xmlElement[0].attributes['FailedTests'].value)
+    if newResult.Failed > 0:
+        slnInfo.errorList.append(testInfo.getFullName() + ' had ' + str(newResult.Failed) + ' failed tests')
     newResult.Crashed = int(xmlElement[0].attributes['CrashedTests'].value)
     addToLowLevelSummary(slnInfo, newResult)
     slnInfo.lowLevelResultList.append(newResult)
     #result at index 0 is summary
     makeDirIfDoesntExist(testInfo.getResultsDir())
     overwriteMove(testInfo.getResultsFile(), testInfo.getResultsDir())
-    compareLowLevelReference(testInfo, newResult, slnInfo)
 
 def processSystemTest(xmlElement, testInfo, slnInfo):
     newSysResult = SystemResult()
@@ -384,6 +358,10 @@ def readTestList(generateReference, buildTests, pullBranch):
     return slnInfos
 
 def runTest(testInfo, cmdLine, generateReference, slnInfo):
+    #dont generate low level reference
+    if generateReference and not cmdLine:
+        return
+
     testPath = testInfo.getTestPath()
     if not os.path.exists(testPath):
         slnInfo.skippedList.append((testInfo.getFullName(), 'Unable to find ' + testPath))
@@ -424,10 +402,7 @@ def runTest(testInfo, cmdLine, generateReference, slnInfo):
         #process system
         elif cmdLine:
             processSystemTest(summary, testInfo, slnInfo)
-        #gen low level ref
-        elif generateReference:
-            makeDirIfDoesntExist(testInfo.getReferenceDir())
-            overwriteMove(testInfo.getResultsFile(), testInfo.getReferenceDir())
+
         #process low level
         else:
             processLowLevelTest(summary, testInfo, slnInfo)
