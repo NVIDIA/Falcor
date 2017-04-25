@@ -70,9 +70,6 @@
     <ClCompile Include="Graphics\Camera\Camera.cpp">
       <Filter>Graphics\Camera</Filter>
     </ClCompile>
-    <ClCompile Include="Utils\ShaderPreprocessor.cpp">
-      <Filter>Utils</Filter>
-    </ClCompile>
     <ClCompile Include="Graphics\Scene\SceneExporter.cpp">
       <Filter>Graphics\Scene</Filter>
     </ClCompile>
@@ -583,9 +580,6 @@
     </ClInclude>
     <ClInclude Include="Utils\Math\FalcorMath.h">
       <Filter>Utils\Math</Filter>
-    </ClInclude>
-    <ClInclude Include="Utils\ShaderPreprocessor.h">
-      <Filter>Utils</Filter>
     </ClInclude>
     <ClInclude Include="Graphics\Scene\SceneExporter.h">
       <Filter>Graphics\Scene</Filter>

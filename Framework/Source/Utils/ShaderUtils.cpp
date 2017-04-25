@@ -37,15 +37,6 @@ namespace Falcor
         std::string shader = shaderString;
         std::string errorMsg;
 
-        Shader::unordered_string_set includeList;
-
-        if(ShaderPreprocessor::parseShader("", shader, errorMsg, includeList, shaderDefines) == false)
-        {
-            std::string msg = std::string("Error when parsing shader from string. Code:\n") + shaderString + "\nError:\n" + errorMsg;
-            logError(msg);
-            return nullptr;
-        }
-
         std::string log;
         auto pShader = Shader::create(shader, shaderType, log);
 

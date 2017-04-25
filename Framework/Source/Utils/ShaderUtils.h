@@ -28,7 +28,6 @@
 #pragma once
 #include <string>
 #include "Graphics/Program.h"
-#include "Utils/ShaderPreprocessor.h"
 #include "Utils/OS.h"
 
 namespace Falcor
@@ -76,16 +75,6 @@ namespace Falcor
             // Preprocess
             std::string errorMsg;
             Shader::unordered_string_set includeList;
-            if (ShaderPreprocessor::parseShader(fullpath, shader, errorMsg, includeList, shaderDefines) == false)
-            {
-                std::string msg = std::string("Error when pre-processing shader ") + filename + "\n" + errorMsg;
-                if (msgBox(msg, MsgBoxType::RetryCancel) == MsgBoxButton::Cancel)
-                {
-                    logError(msg);
-                    return nullptr;
-                }
-            }
-            else
             {
                 // Preprocessing is good
                 std::string errorLog;

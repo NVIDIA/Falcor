@@ -454,7 +454,6 @@
     <ClCompile Include="Utils\ProgressBarWin.cpp" />
     <ClCompile Include="Utils\Psychophysics\Experiment.cpp" />
     <ClCompile Include="Utils\Psychophysics\SingleThresholdMeasurement.cpp" />
-    <ClCompile Include="Utils\ShaderPreprocessor.cpp" />
     <ClCompile Include="Utils\ShaderUtils.cpp" />
     <ClCompile Include="Utils\SpireSupport.cpp" />
     <ClCompile Include="Utils\TextRenderer.cpp" />
@@ -866,7 +865,6 @@
     <ClInclude Include="Utils\ProgressBar.h" />
     <ClInclude Include="Utils\Psychophysics\Experiment.h" />
     <ClInclude Include="Utils\Psychophysics\SingleThresholdMeasurement.h" />
-    <ClInclude Include="Utils\ShaderPreprocessor.h" />
     <ClInclude Include="Utils\ShaderUtils.h" />
     <ClInclude Include="Utils\StringUtils.h" />
     <ClInclude Include="Utils\TextRenderer.h" />

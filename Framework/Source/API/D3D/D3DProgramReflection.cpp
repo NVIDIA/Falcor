@@ -796,6 +796,9 @@ namespace Falcor
                 break;
             }
             break;
+        case spire::ParameterCategory::Mixed:
+            // TODO: propagate this information up the Falcor level
+            return ProgramReflection::Resource::ResourceType::Unknown;
         default:
             break;
         }
@@ -812,6 +815,8 @@ namespace Falcor
             return ProgramReflection::ShaderAccess::Read;
         case spire::ParameterCategory::UnorderedAccess:
             return ProgramReflection::ShaderAccess::ReadWrite;
+        case spire::ParameterCategory::Mixed:
+            return ProgramReflection::ShaderAccess::Undefined;
         default:
             should_not_get_here();
             return ProgramReflection::ShaderAccess::Undefined;
@@ -1008,6 +1013,49 @@ namespace Falcor
     }
 #endif
 
+    static bool reflectResourcesRec(ProgramReflection* pReflector, spire::ParameterReflection* param, uint32_t shader, std::string& log)
+    {
+        bool res = true;
+        switch (param->getCategory())
+        {
+        case spire::ParameterCategory::Mixed:
+            {
+                // The parameter spans multiple binding kinds (e.g., both texture and uniform).
+                // We need to recursively split it into sub-parameters, each using a single
+                // kind of bindable resource.
+                //
+                // Also, the parameter may have been declared as a constant buffer, so
+                // we need to reflect it directly in that case:
+                //
+                switch(param->getType()->getKind())
+                {
+                case spire::TypeReflection::Kind::ConstantBuffer:
+                    res = reflectBuffer(param->asBuffer(), pReflector->mBuffers[(uint32_t)ProgramReflection::BufferReflection::Type::Constant], ProgramReflection::BufferReflection::Type::Constant, ProgramReflection::ShaderAccess::Read, shader, log);
+                    break;
+
+                default:
+                    break;
+                }
+
+                //
+                // Okay, let's walk it recursively to bind the sub-pieces...
+                //
+
+
+            }
+            break;
+
+        case spire::ParameterCategory::ConstantBuffer:
+            res = reflectBuffer(param->asBuffer(), pReflector->mBuffers[(uint32_t)ProgramReflection::BufferReflection::Type::Constant], ProgramReflection::BufferReflection::Type::Constant, ProgramReflection::ShaderAccess::Read, shader, log);
+            break;
+
+        default:
+            res = reflectResource(param, pReflector->mResources, shader, log);
+            break;
+        }
+        return res;
+    }
+
     bool ProgramReflection::reflectResources(const ReflectionHandleVector& reflectHandles, std::string& log)
     {
         bool res = true;
@@ -1019,16 +1067,7 @@ namespace Falcor
             for (uint32_t pp = 0; pp < paramCount; ++pp)
             {
                 spire::ParameterReflection* param = pReflection->getParameterByIndex(pp);
-                switch (param->getCategory())
-                {
-                case spire::ParameterCategory::ConstantBuffer:
-                    res = reflectBuffer(param->asBuffer(), mBuffers[(uint32_t)BufferReflection::Type::Constant], BufferReflection::Type::Constant, ShaderAccess::Read, shader, log);
-                    break;
-
-                default:
-                    res = reflectResource(param, mResources, shader, log);
-                    break;
-                }
+                res = reflectResourcesRec(this, param, shader, log);
             }
 #else
             D3D_SHADER_DESC shaderDesc;

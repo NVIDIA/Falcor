@@ -362,7 +362,8 @@ namespace Falcor
             string_2_bindloc_map nameMap;
         };
 
-    private:
+    // TODO(tfoley): switch this back
+    public://private:
         bool init(const ReflectionHandleVector& reflectHandles, std::string& log);
         bool reflectVertexAttributes(const ReflectionHandleVector& reflectHandles, std::string& log);       // Input attributes
         bool reflectPixelShaderOutputs(const ReflectionHandleVector& reflectHandles, std::string& log);        // PS output (if PS exists)

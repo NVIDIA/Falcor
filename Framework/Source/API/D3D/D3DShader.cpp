@@ -122,7 +122,38 @@ namespace Falcor
         SpireCompilationContext* spireContext = spCreateCompilationContext(NULL);
         SpireDiagnosticSink* spireSink = spCreateDiagnosticSink(spireContext);
 
+        // TODO: Spire should really support a callback API for all file I/O,
+        // rather than having us specify data directories to it...
+        for (auto path : getDataDirectoriesList())
+        {
+            spAddSearchPath(spireContext, path.c_str());
+        }
+
+#if 0
+        for(auto shaderDefine : shaderDefines)
+        {
+            spAddPreprocessorDefine(spireContext, shaderDefine.first.c_str(), shaderDefine.second.c_str());
+        }
+#endif
+
+#if defined(FALCOR_GL)
+        spSetCodeGenTarget(spireContext, SPIRE_GLSL);
+#elif defined(FALCOR_D3D11) || defined(FALCOR_D3D12)
         spSetCodeGenTarget(spireContext, SPIRE_DXBC);
+        spAddPreprocessorDefine(spireContext, "FALCOR_HLSL", "1");
+#else
+#error unknown shader compilation target
+#endif
+
+        SpireCompileFlags spireFlags = 0;
+
+        // Don't actually perform semantic checking: just pass through functions bodies to downstream compiler
+        spireFlags |= SPIRE_COMPILE_FLAG_NO_CHECKING;
+
+        spSetCompileFlags(spireContext, spireFlags);
+        spAddEntryPoint(spireContext, "main", target.c_str());
+
+//        spSetCodeGenTarget(spireContext, SPIRE_DXBC);
 
         SpireCompilationResult* result = spCompileShaderFromSource(spireContext, source.c_str(), "falcor", spireSink);
 
