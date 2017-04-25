@@ -73,6 +73,19 @@ namespace Falcor
         */
         void outputXML();
 
+        /** inits tests that start on a particular frame 
+        */
+        void initFrameTests(const ArgList& args);
+        /** inits tests that start at a particular time
+        */
+        void initTimeTests(const ArgList& args);
+        /** run tests that start on a particular frame 
+        */
+        void runFrameTests(const FrameRate& frameRate);
+        /** run tests that start at a particular time 
+        */
+        void runTimeTests(const FrameRate& frameRate, Sample* pSample);
+
         enum class TestTaskType
         {
             LoadTime,
@@ -91,8 +104,8 @@ namespace Falcor
 
             uint32_t mStartFrame;
             uint32_t mEndFrame;
-            TestTaskType mTask;
             float mResult = 0;
+            TestTaskType mTask;
         };
 
         std::vector<Task> mTestTasks;
@@ -101,10 +114,14 @@ namespace Falcor
         struct TimedTask
         {
             TimedTask() : mStartTime(0.f), mTask(TestTaskType::Uninitialized) {};
-            TimedTask(float startTime, TestTaskType t) : mStartTime(startTime), mTask(t) {};
+            TimedTask(float startTime, float endTime, TestTaskType t) : mStartTime(startTime), mEndTime(endTime), mTask(t) {};
             bool operator<(const TimedTask& rhs) { return mStartTime < rhs.mStartTime; }
 
             float mStartTime;
+            float mEndTime;
+            float mResult = 0;
+            //used to calc avg fps in a perf range
+            uint mStartFrame;
             TestTaskType mTask;
         };
 
