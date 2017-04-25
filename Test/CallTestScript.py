@@ -44,7 +44,7 @@ def cloneRepo(repoSrc, repoDst, pullBranch):
     subprocess.call(['git', 'clone', repoSrc, repoDst, '-b', pullBranch])
 
 def sendEmail(recipientsFile, subject, body, attachments):
-    sender = 'clavelle@nvidia.com'
+    sender = 'NvrGfxTest@nvidia.com'
     recipients = str(open(recipientsFile, 'r').read());
     subprocess.call(['blat.exe', '-install', 'mail.nvidia.com', sender])
     command = ['blat.exe', '-to', recipients, '-subject', subject, '-body', body]
