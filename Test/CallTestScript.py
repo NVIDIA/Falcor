@@ -83,15 +83,16 @@ def main():
             continue
 
         refDir = argList[0].strip()
-        testList = argList[1].strip()
-        repoSrc = argList[2].strip()
-        repoDst = argList[3].strip()
-        pullBranch = argList[4].strip()
+        testDir = argList[1].strip()
+        testList = argList[2].strip()
+        repoSrc = argList[3].strip()
+        repoDst = argList[4].strip()
+        pullBranch = argList[5].strip()
 
         #clone repo and move into test dir
         cloneRepo(repoSrc, repoDst, pullBranch)
         prevWorkingDir = os.getcwd()
-        workingDir = repoDst + '\\Test'
+        workingDir = repoDst + '\\' + testDir
         os.chdir(workingDir)
 
         #run tests
