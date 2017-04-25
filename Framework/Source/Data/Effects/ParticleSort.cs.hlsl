@@ -32,7 +32,7 @@ static const uint numThreads = 256;
 cbuffer PerFrame
 {
     // numPasses = (lg2(n) * (lg2(n) + 1)) / 2
-    SortParams sortParams[_NUM_PASSES];
+    SortParams sortParams;
 };
 
 RWStructuredBuffer<SortData> sortList;
@@ -50,15 +50,11 @@ void Swap(uint index, uint compareIndex)
 [numthreads(numThreads, 1, 1)]
 void main(uint3 groupID : SV_GroupID, uint groupIndex : SV_GroupIndex)
 {
-    InterlockedAdd(iterationCounter[2], 1);
-    uint count = max(iterationCounter[2], 1) - 1;
-    uint iterationIndex = count / iterationCounter[0];
-
     int threadIndex = (int)getParticleIndex(groupID.x, numThreads, groupIndex);
     if (threadIndex == 0)
     {
-        iterationCounter[1] -= 1;
-        if (iterationCounter[1] <= 0)
+        iterationCounter[0] -= 1;
+        if (iterationCounter[0] <= 0)
         {
             sortArgs[4] = 0;
             sortArgs[5] = 0;
@@ -66,11 +62,9 @@ void main(uint3 groupID : SV_GroupID, uint groupIndex : SV_GroupIndex)
         }
     }
 
-    SortParams params = sortParams[iterationIndex];
-    uint index = params.twoCompareDist * (threadIndex / params.compareDist) + threadIndex % params.compareDist;
-    uint compareIndex = index + params.compareDist;
-
-    uint descending = (index / params.setSize) % 2;
+    uint index = sortParams.twoCompareDist * (threadIndex / sortParams.compareDist) + threadIndex % sortParams.compareDist;
+    uint compareIndex = index + sortParams.compareDist;
+    uint descending = (index / sortParams.setSize) % 2;
     if (descending)
     {
         //if this is less than other, not descending

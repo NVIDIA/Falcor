@@ -28,7 +28,6 @@
 #include "Particles.h"
 #include "API/D3D/FalcorD3D.h"
 #include <limits>
-#include <fstream>
 
 const Gui::DropdownList kPixelShaders 
 {
@@ -42,29 +41,8 @@ const char* kColorInterpPs = "Effects/ParticleInterpColor.ps.hlsl";
 const char* kTexturedPs = "Effects/ParticleTexture.ps.hlsl";
 const std::string kDefaultTexture = "TestParticle.png";
 
-void Particles::initScene(std::string filename)
-{
-    mpScene = Scene::loadFromFile(filename, Model::LoadFlags::None, Scene::LoadFlags::StoreMaterialHistory);
-    mpSceneRenderer = SceneRenderer::create(mpScene);
-    mpSceneProgram = GraphicsProgram::createFromFile("", "SceneEditorSample.fs");
-    std::string lights;
-    getSceneLightString(mpScene.get(), lights);
-    mpSceneProgram->addDefine("_LIGHT_SOURCES", lights);
-    mpSceneVars = GraphicsVars::create(mpSceneProgram->getActiveVersion()->getReflector());
-    setSceneLightsIntoConstantBuffer(mpScene.get(), mpSceneVars["PerFrameCB"].get());
-    mpCamera = mpScene->getActiveCamera();
-    mpCamController.attachCamera(mpCamera);
-}
-
 void Particles::onGuiRender()
 {
-    //if (mpGui->addButton("Load Scene"))
-    //{
-    //    std::string filename;
-    //    openFileDialog("", filename);
-    //    initScene(filename);
-    //}
-
     if (mpGui->beginGroup("Create System"))
     {
         static int32_t sMaxParticles = 4096;
@@ -210,16 +188,6 @@ void Particles::onFrameRender()
 	const glm::vec4 clearColor(0.38f, 0.52f, 0.10f, 1);
  	mpRenderContext->clearFbo(mpDefaultFBO.get(), clearColor, 1.0f, 0, FboAttachmentType::All);
     mpCamController.update();
-
-    if(mpScene)
-    {
-        mpRenderContext->getGraphicsState()->setProgram(mpSceneProgram);
-        mpRenderContext->pushGraphicsVars(mpSceneVars);
-
-        mpSceneRenderer->renderScene(mpRenderContext.get());
-        
-        mpRenderContext->popGraphicsVars();
-    }
 
     for (auto it = mParticleSystems.begin(); it != mParticleSystems.end(); ++it)
     {

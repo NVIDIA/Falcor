@@ -106,9 +106,7 @@ void main(uint3 groupID : SV_GroupID, uint groupIndex : SV_GroupIndex)
         uint sortNum = 2 * numThreads;
         nextPow2 = max(nextPow2, sortNum);
         uint twoExp = log2(nextPow2);
-        sortIterationCounter[0] = nextPow2 / 2; //sort only needs to touch half the things
-        sortIterationCounter[1] = (twoExp * (twoExp + 1)) / 2;
-        sortIterationCounter[2] = 0;
+        sortIterationCounter[0] = (twoExp * (twoExp + 1)) / 2;
         //4 = dispatchX, 5 = dispatchY, 6 = dispatchZ
         drawArgs[4] = nextPow2 / sortNum;
         drawArgs[5] = 1;

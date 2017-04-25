@@ -220,6 +220,12 @@ namespace Falcor
             {
                 for (u32 compareDist = setSize / 2; compareDist > 0; compareDist /= 2)
                 {
+                    SortParams data;
+                    data.setSize = setSize;
+                    data.compareDist = compareDist;
+                    data.twoCompareDist = compareDist * 2;
+                    mSortResources.vars->getConstantBuffer(0)->setBlob(&data, 0, sizeof(SortParams));
+
                     pCtx->dispatchIndirect(mpIndirectArgs.get(), sizeof(D3D12_DRAW_ARGUMENTS));
                 }
             }
@@ -288,7 +294,7 @@ namespace Falcor
 
         //iteration counter buffer
         mSortResources.sortIterationCounter = StructuredBuffer::create(pSortCs->getActiveVersion()->getReflector()->
-            getBufferDesc("iterationCounter", ProgramReflection::BufferReflection::Type::Structured), 3);
+            getBufferDesc("iterationCounter", ProgramReflection::BufferReflection::Type::Structured), 1);
         //Sort data reset buffer
         mSortDataReset;
         SortData resetData;
@@ -300,23 +306,6 @@ namespace Falcor
         mSortResources.vars = ComputeVars::create(pSortCs->getActiveVersion()->getReflector());
         mSortResources.state = ComputeState::create();
         mSortResources.state->setProgram(pSortCs);
-        
-        //fill up sort param cbuffer
-        std::vector<SortParams> sortParams;
-        for (u32 setSize = 2; setSize <= mMaxParticles; setSize *= 2)
-        {
-            for (u32 compareDist = setSize / 2; compareDist > 0; compareDist /= 2)
-            {
-                SortParams data;
-                data.setSize = setSize;
-                data.compareDist = compareDist;
-                data.twoCompareDist = compareDist * 2;
-                sortParams.push_back(data);
-            }
-        }
-
-        //Set cbuffer to sort 
-        mSortResources.vars->getConstantBuffer(0)->setBlob(sortParams.data(), 0, sortParams.size() * sizeof(SortParams));
     }
 
     void ParticleSystem::setParticleDuration(float dur, float offset)
