@@ -597,7 +597,7 @@ namespace Falcor
         ProgramReflection::BufferData&              bufferDesc,
         ProgramReflection::BufferReflection::Type   bufferType,
         ProgramReflection::ShaderAccess             shaderAccess,
-        uint32_t                                    shaderIndex,
+        uint32_t                                    shaderType,
         std::string&                                log)
     {
         auto bufName = spireBuffer->getName();
@@ -1014,23 +1014,20 @@ namespace Falcor
         for (auto& pReflection : reflectHandles)
         {
 #if FALCOR_USE_SPIRE_AS_COMPILER
+            uint32_t shader = 0; // TODO: fix this up
             uint32_t paramCount = pReflection->getParameterCount();
             for (uint32_t pp = 0; pp < paramCount; ++pp)
             {
                 spire::ParameterReflection* param = pReflection->getParameterByIndex(pp);
                 switch (param->getCategory())
                 {
-                    spire::ParameterReflection* param = pReflection->getParameterByIndex(pp);
-                    switch (param->getCategory())
-                    {
-                    case spire::ParameterCategory::ConstantBuffer:
-                        res = reflectBuffer(param->asBuffer(), mBuffers[(uint32_t)BufferReflection::Type::Constant], BufferReflection::Type::Constant, ShaderAccess::Read, shader, log);
-                        break;
+                case spire::ParameterCategory::ConstantBuffer:
+                    res = reflectBuffer(param->asBuffer(), mBuffers[(uint32_t)BufferReflection::Type::Constant], BufferReflection::Type::Constant, ShaderAccess::Read, shader, log);
+                    break;
 
-                    default:
-                        res = reflectResource(param, mResources, shader, log);
-                        break;
-                    }
+                default:
+                    res = reflectResource(param, mResources, shader, log);
+                    break;
                 }
             }
 #else

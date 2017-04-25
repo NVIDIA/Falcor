@@ -264,7 +264,6 @@ namespace Falcor
         if (strLen < suffixLen) return false;
         return strcmp(str.c_str() + (strLen - suffixLen), suffix) == 0;
     }
-#endif
 
     static bool checkSpireErrors(
         SpireDiagnosticSink* spireSink,
@@ -282,7 +281,6 @@ namespace Falcor
         return spDiagnosticSinkHasAnyErrors(spireSink) != 0;
     }
 
-#if 0
     static bool translateSpireToTargetShadingLanguage(
         const std::string& path,
         const std::string& spireContent,
@@ -297,7 +295,7 @@ namespace Falcor
 
 #if defined(FALCOR_GL)
         spSetCodeGenTarget(spireContext, SPIRE_GLSL);
-#elif defined(FACLOR_D3D11)
+#elif defined(FALCOR_D3D11) || defined(FALCOR_D3D12)
         spSetCodeGenTarget(spireContext, SPIRE_HLSL);
 #else
 #error unknown shader compilation target
