@@ -113,12 +113,28 @@ namespace Falcor
         }
     };
 
-    static ShaderData compileShader(const std::string& source, const std::string& target, std::string& errorLog)
+    ID3DBlobPtr Shader::compile(const std::string& source, std::string& errorLog)
     {
-        ShaderData shaderData = { 0, 0 };
+        ID3DBlob* pCode;
+        ID3DBlobPtr pErrors;
 
-        // TODO(tfoley): need a way to pass along flags to the `D3DCompile` API here...
+        UINT flags = D3DCOMPILE_WARNINGS_ARE_ERRORS;
+#ifdef _DEBUG
+        flags |= D3DCOMPILE_DEBUG;
+#endif
 
+        HRESULT hr = D3DCompile(source.c_str(), source.size(), nullptr, nullptr, nullptr, kEntryPoint, getTargetString(mType), flags, 0, &pCode, &pErrors);
+        if(FAILED(hr))
+        {
+            errorLog = convertBlobToString(pErrors.GetInterfacePtr());
+            return nullptr;
+        }
+
+        return pCode;
+    }
+
+    ID3DBlobPtr Shader::compileSpire(const std::string& source, std::string& errorLog, ShaderReflectionHandle& outReflector)
+    {
         SpireCompilationContext* spireContext = spCreateCompilationContext(NULL);
         SpireDiagnosticSink* spireSink = spCreateDiagnosticSink(spireContext);
 
@@ -129,6 +145,8 @@ namespace Falcor
             spAddSearchPath(spireContext, path.c_str());
         }
 
+        // TODO: Need to pass #define flags down to Spire here, since we aren't doing
+        // it in our own preprocessor any more...
 #if 0
         for(auto shaderDefine : shaderDefines)
         {
@@ -139,7 +157,9 @@ namespace Falcor
 #if defined(FALCOR_GL)
         spSetCodeGenTarget(spireContext, SPIRE_GLSL);
 #elif defined(FALCOR_D3D11) || defined(FALCOR_D3D12)
-        spSetCodeGenTarget(spireContext, SPIRE_DXBC);
+        // Note: we could compile Spire directly to DXBC (by having Spire invoke the MS compiler for us,
+        // but that path seems to have more issues at present, so let's just go to HLSL instead...)
+        spSetCodeGenTarget(spireContext, SPIRE_HLSL);
         spAddPreprocessorDefine(spireContext, "FALCOR_HLSL", "1");
 #else
 #error unknown shader compilation target
@@ -151,7 +171,7 @@ namespace Falcor
         spireFlags |= SPIRE_COMPILE_FLAG_NO_CHECKING;
 
         spSetCompileFlags(spireContext, spireFlags);
-        spAddEntryPoint(spireContext, "main", target.c_str());
+        spAddEntryPoint(spireContext, "main", getTargetString(mType));
 
 //        spSetCodeGenTarget(spireContext, SPIRE_DXBC);
 
@@ -169,15 +189,17 @@ namespace Falcor
         {
             spDestroyDiagnosticSink(spireSink);
             spDestroyCompilationContext(spireContext);
-            return shaderData;
+            return nullptr;
         }
 
         int bufferSize = 0;
-        void* buffer = (void*) spGetShaderStageSource(result, NULL, NULL, &bufferSize);
+        char const* buffer = spGetShaderStageSource(result, NULL, NULL, &bufferSize);
 
-        shaderData.pBlob = new SpireBlob(buffer, bufferSize);
+        // Now invoke the MS compiler to translate the generated HLSL down to DXBC
+        ID3DBlobPtr compiledBlob = compile(buffer, errorLog);
 
-        // Extract the reflection data from Spire too.
+
+        // Extract the reflection data from Spire, rather than use the MS-compiled version
         auto reflectionBlob = (spire::ShaderReflection*) spGetReflection(result);
         assert(reflectionBlob);
 
@@ -186,40 +208,15 @@ namespace Falcor
         auto reflectionBlobSize = reflectionBlob->getReflectionDataSize();
         spire::ShaderReflection* reflectionBlobCopy = (spire::ShaderReflection*) malloc(reflectionBlobSize);
         memcpy(reflectionBlobCopy, reflectionBlob, reflectionBlobSize);
-        shaderData.pReflector = reflectionBlobCopy;
 
         spDestroyCompilationResult(result);
         spDestroyDiagnosticSink(spireSink);
         spDestroyCompilationContext(spireContext);
 
-        return shaderData;
+        outReflector = reflectionBlobCopy;
+        return compiledBlob;
     }
 #endif
-
-    ID3DBlobPtr Shader::compile(const std::string& source, std::string& errorLog)
-    {
-#if FALCOR_USE_SPIRE_AS_COMPILER
-        return nullptr;
-#else
-        ID3DBlob* pCode;
-        ID3DBlobPtr pErrors;
-
-        UINT flags = D3DCOMPILE_WARNINGS_ARE_ERRORS;
-#ifdef _DEBUG
-        flags |= D3DCOMPILE_DEBUG;
-#endif
-
-        HRESULT hr = D3DCompile(source.c_str(), source.size(), nullptr, nullptr, nullptr, kEntryPoint, getTargetString(mType), flags, 0, &pCode, &pErrors);
-        if(FAILED(hr))
-        {
-            errorLog = convertBlobToString(pErrors.GetInterfacePtr());
-            return nullptr;
-        }
-
-        return pCode;
-#endif
-    }
-
 
     Shader::Shader(ShaderType type) : mType(type)
     {
@@ -237,7 +234,7 @@ namespace Falcor
         // Compile the shader
         ShaderData* pData = (ShaderData*)mpPrivateData;
 #if FALCOR_USE_SPIRE_AS_COMPILER
-        *pData = compileShader(shaderString, getTargetString(mType), log);
+        pData->pBlob= compileSpire(shaderString, log, pData->pReflector);
 #else
         pData->pBlob = compile(shaderString, log);
 #endif

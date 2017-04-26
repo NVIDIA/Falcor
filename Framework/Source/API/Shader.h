@@ -72,6 +72,7 @@ namespace Falcor
         ShaderReflectionHandle getReflectionInterface() const;
         ID3DBlobPtr getCodeBlob() const;
         virtual ID3DBlobPtr compile(const std::string& source, std::string& errorLog);
+        ID3DBlobPtr compileSpire(const std::string& source, std::string& errorLog, ShaderReflectionHandle& outReflector);
         virtual ShaderReflectionHandle createReflection(ID3DBlobPtr pBlob);
 #endif
     protected:
