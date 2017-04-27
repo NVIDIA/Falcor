@@ -47,7 +47,7 @@ void main(int3 groupID : SV_GroupID, int3 threadID : SV_GroupThreadID)
     if (index < emitData.numEmit)
     {
         //make sure there's actually room for this particle
-        if (index < emitData.maxParticles - numAliveParticles + emitData.numEmit)
+        if (index < emitData.maxParticles - (numAliveParticles + emitData.numEmit))
         {
             uint deadIndex = deadList.Consume();
             particlePool[deadIndex] = emitData.particles[index];

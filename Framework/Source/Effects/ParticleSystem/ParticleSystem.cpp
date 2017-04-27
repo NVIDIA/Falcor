@@ -86,20 +86,20 @@ namespace Falcor
         mpIndirectArgs->setBlob(indirectInitialValues, 0, indirectArgsSize);
         //Dead List
         std::vector<uint32_t> indices;
-        indices.resize(maxParticles);
+        indices.resize(mMaxParticles);
         uint32_t counter = 0;
         std::generate(indices.begin(), indices.end(), [&counter] {return counter++; });
         ProgramReflection::SharedConstPtr pEmitReflect = emitCs->getActiveVersion()->getReflector();
         auto deadListReflect = pEmitReflect->getBufferDesc("deadList", ProgramReflection::BufferReflection::Type::Structured);
-        mpDeadList = StructuredBuffer::create(deadListReflect, maxParticles);
+        mpDeadList = StructuredBuffer::create(deadListReflect, mMaxParticles);
         mpDeadList->setBlob(indices.data(), 0, indices.size() * sizeof(uint32_t));
         mpDeadList->getUAVCounter()->updateData(&mMaxParticles, 0, sizeof(uint32_t));
         //Alive list
         auto aliveListReflect = pSimulateReflect->getBufferDesc("aliveList", ProgramReflection::BufferReflection::Type::Structured);
-        mpAliveList = StructuredBuffer::create(aliveListReflect, maxParticles);
+        mpAliveList = StructuredBuffer::create(aliveListReflect, mMaxParticles);
         //ParticlePool
         auto particlePoolReflect = pEmitReflect->getBufferDesc("particlePool", ProgramReflection::BufferReflection::Type::Structured);
-        mpParticlePool = StructuredBuffer::create(particlePoolReflect, maxParticles);
+        mpParticlePool = StructuredBuffer::create(particlePoolReflect, mMaxParticles);
 
         //Vars
         //emit
@@ -205,7 +205,7 @@ namespace Falcor
 
         pCtx->pushComputeState(mSimulateResources.state);
         pCtx->pushComputeVars(mSimulateResources.vars);
-        pCtx->dispatch(mMaxParticles / mSimulateThreads, 1, 1);
+        pCtx->dispatch(max(mMaxParticles / mSimulateThreads, 1u), 1, 1);
         pCtx->popComputeVars();
         pCtx->popComputeState();
     }

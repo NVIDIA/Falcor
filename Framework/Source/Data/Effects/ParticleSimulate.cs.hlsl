@@ -90,7 +90,6 @@ void main(uint3 groupID : SV_GroupID, uint groupIndex : SV_GroupIndex)
         #ifdef _SORT
             SortData data;
             data.index = index;
-            data.zDistance = 0.f;
             data.zDistance = mul(perFrame.view, float4(particlePool[index].pos, 1.f)).z;
             aliveList.Append(data);
         #else
