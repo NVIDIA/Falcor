@@ -69,9 +69,6 @@ uint getNextPow2(uint n)
 void main(uint3 groupID : SV_GroupID, uint groupIndex : SV_GroupIndex)
 {
     uint index = getParticleIndex(groupID.x, numThreads, groupIndex);
-    uint numDeadParticles = (uint)(numDead.Load(0));
-    uint numAliveParticles = perFrame.maxParticles - numDeadParticles;
-
     //check if the particle is alive
     if (particlePool[index].life > 0)
     {
@@ -96,22 +93,19 @@ void main(uint3 groupID : SV_GroupID, uint groupIndex : SV_GroupIndex)
             aliveList.Append(index);
         #endif
         }
+    }
 
-        //This seems slow, there must be a better way
-    #ifdef _SORT
-        uint nextPow2 = getNextPow2(numAliveParticles);
-        //Sort only needs to touch half the particles, so the min amount of particles 
-        //to sort is 2 * numThreads
-        uint sortNum = 2 * numThreads;
-        nextPow2 = max(nextPow2, sortNum);
-        uint twoExp = log2(nextPow2);
-        sortIterationCounter[0] = (twoExp * (twoExp + 1)) / 2;
-        //4 = dispatchX, 5 = dispatchY, 6 = dispatchZ
-        drawArgs[4] = nextPow2 / sortNum;
-        drawArgs[5] = 1;
-        drawArgs[6] = 1;
-    #endif
-
+    //Set up data for sort/draw
+    DeviceMemoryBarrierWithGroupSync();
+    if (index == 0)
+    {
+        uint numDeadParticles = (uint)(numDead.Load(0));
+        uint numAliveParticles = perFrame.maxParticles - numDeadParticles;
+        //todo define num sort threads in header
+#ifdef _SORT
+        sortIterationCounter[0] = max(SORT_THREADS, getNextPow2(numAliveParticles));
+        sortIterationCounter[1] = sortIterationCounter[0] / SORT_THREADS;
+#endif
         drawArgs[1] = numAliveParticles;
     }
 }

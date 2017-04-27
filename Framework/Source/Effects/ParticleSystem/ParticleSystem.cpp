@@ -51,20 +51,17 @@ namespace Falcor
 
         //Data that is different if system is sorted
         Program::DefineList defineList;
-        uint32_t indirectArgsSize; 
-        uint32_t indirectInitialValues[7] = { 4, 0, 0, 0, 1, 1, 1 };
         if (mShouldSort)
         {
             mMaxParticles = (uint32_t)pow(2, (std::ceil(log2((float)maxParticles))));
             initSortResources();
             defineList.add("_SORT");
-            indirectArgsSize = sizeof(D3D12_DRAW_ARGUMENTS) + sizeof(D3D12_DISPATCH_ARGUMENTS);
         }
         else
         {
             mMaxParticles = maxParticles;
-            indirectArgsSize = sizeof(D3D12_DRAW_ARGUMENTS);
         }
+        //compute cs
         ComputeProgram::SharedPtr simulateCs = ComputeProgram::createFromFile(simulateComputeShader, defineList);
         auto pSimulateReflect = simulateCs->getActiveVersion()->getReflector();
         mDrawResources.shader = GraphicsProgram::createFromFile(kVertexShader, drawPixelShader, defineList);
@@ -82,6 +79,8 @@ namespace Falcor
 
         //Buffers
         //indirect args
+        uint32_t indirectInitialValues[4] = { 4, 0, 0, 0 };
+        uint32_t indirectArgsSize = sizeof(D3D12_DRAW_ARGUMENTS);
         mpIndirectArgs = StructuredBuffer::create(pSimulateReflect->
             getBufferDesc("drawArgs", ProgramReflection::BufferReflection::Type::Structured),
             indirectArgsSize / sizeof(uint32_t), Resource::BindFlags::UnorderedAccess | Resource::BindFlags::IndirectArg);
@@ -121,7 +120,6 @@ namespace Falcor
             mSimulateResources.vars->setStructuredBuffer("sortIterationCounter", mSortResources.sortIterationCounter);
             //sort
             mSortResources.vars->setStructuredBuffer("sortList", mpAliveList);
-            mSortResources.vars->setStructuredBuffer("sortArgs", mpIndirectArgs);
             mSortResources.vars->setStructuredBuffer("iterationCounter", mSortResources.sortIterationCounter);
         }
         //draw
@@ -219,19 +217,9 @@ namespace Falcor
         {
             pCtx->pushComputeState(mSortResources.state);
             pCtx->pushComputeVars(mSortResources.vars);
-            for (u32 setSize = 2; setSize <= mMaxParticles; setSize *= 2)
-            {
-                for (u32 compareDist = setSize / 2; compareDist > 0; compareDist /= 2)
-                {
-                    SortParams data;
-                    data.setSize = setSize;
-                    data.compareDist = compareDist;
-                    data.twoCompareDist = compareDist * 2;
-                    mSortResources.vars->getConstantBuffer(0)->setBlob(&data, 0, sizeof(SortParams));
 
-                    pCtx->dispatchIndirect(mpIndirectArgs.get(), sizeof(D3D12_DRAW_ARGUMENTS));
-                }
-            }
+            pCtx->dispatch(1, 1, 1);
+
             pCtx->popComputeVars();
             pCtx->popComputeState();
         }
@@ -297,7 +285,7 @@ namespace Falcor
 
         //iteration counter buffer
         mSortResources.sortIterationCounter = StructuredBuffer::create(pSortCs->getActiveVersion()->getReflector()->
-            getBufferDesc("iterationCounter", ProgramReflection::BufferReflection::Type::Structured), 1);
+            getBufferDesc("iterationCounter", ProgramReflection::BufferReflection::Type::Structured), 2);
         //Sort data reset buffer
         mSortDataReset;
         SortData resetData;

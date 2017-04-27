@@ -32,6 +32,7 @@
 
 #define MAX_EMIT 512
 #define EMIT_THREADS 64
+#define SORT_THREADS 1024
 
 struct Particle
 {

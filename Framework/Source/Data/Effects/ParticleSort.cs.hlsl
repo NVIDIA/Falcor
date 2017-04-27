@@ -27,18 +27,9 @@
 ***************************************************************************/
 #include "ParticleData.h"
 
-static const uint numThreads = 256;
-
-cbuffer PerFrame
-{
-    // numPasses = (lg2(n) * (lg2(n) + 1)) / 2
-    SortParams sortParams;
-};
-
 RWStructuredBuffer<SortData> sortList;
-// [0], num particles touched each frame, [1] counter to -=1 for each sort pass and turn off shader
-RWStructuredBuffer<uint> iterationCounter;
-RWStructuredBuffer<uint> sortArgs;
+//[0] is total num particles to sort, [1] is [0] / 1024 (required iterations per pass)
+StructuredBuffer<uint> iterationCounter;
 
 void Swap(uint index, uint compareIndex)
 {
@@ -47,38 +38,43 @@ void Swap(uint index, uint compareIndex)
     sortList[compareIndex] = temp;
 }
 
-[numthreads(numThreads, 1, 1)]
+[numthreads(SORT_THREADS, 1, 1)]
 void main(uint3 groupID : SV_GroupID, uint groupIndex : SV_GroupIndex)
 {
-    int threadIndex = (int)getParticleIndex(groupID.x, numThreads, groupIndex);
-    if (threadIndex == 0)
+    int threadIndex = (int)getParticleIndex(groupID.x, SORT_THREADS, groupIndex);
+    //set size used to determine whether a subset of the data should be ascending or descending
+    for (uint setSize = 2; setSize <= iterationCounter[0]; setSize *= 2)
     {
-        iterationCounter[0] -= 1;
-        if (iterationCounter[0] <= 0)
+        for (uint compareDist = setSize / 2; compareDist > 0; compareDist /= 2)
         {
-            sortArgs[4] = 0;
-            sortArgs[5] = 0;
-            sortArgs[6] = 0;
-        }
-    }
+            //shader can only touch 1024 sets of values (2048 total values) at a time, if the sort needs to affect 
+            //more than 2048 paticles, the thread index is offset here in this loop to do each pass in multiple 2048 sized chunks 
+            for (uint i = 0; i < iterationCounter[1]; ++i)
+            {
+                uint effectiveThreadIndex = threadIndex + i * SORT_THREADS;
+                uint index = 2 * compareDist * (effectiveThreadIndex / compareDist) + effectiveThreadIndex % compareDist;
+                uint compareIndex = index + compareDist;
+                uint descending = (index / setSize) % 2;
 
-    uint index = sortParams.twoCompareDist * (threadIndex / sortParams.compareDist) + threadIndex % sortParams.compareDist;
-    uint compareIndex = index + sortParams.compareDist;
-    uint descending = (index / sortParams.setSize) % 2;
-    if (descending)
-    {
-        //if this is less than other, not descending
-        if (sortList[index].zDistance < sortList[compareIndex].zDistance)
-        {
-            Swap(index, compareIndex);
-        }
-    }
-    else
-    {
-        //if this is greater than other, not ascending
-        if (sortList[index].zDistance > sortList[compareIndex].zDistance)
-        {
-            Swap(index, compareIndex);
+                if (descending)
+                {
+                    //if this is less than other, not descending
+                    if (sortList[index].zDistance < sortList[compareIndex].zDistance)
+                    {
+                        Swap(index, compareIndex);
+                    }
+                }
+                else
+                {
+                    //if this is greater than other, not ascending
+                    if (sortList[index].zDistance > sortList[compareIndex].zDistance)
+                    {
+                        Swap(index, compareIndex);
+                    }
+                }
+
+                DeviceMemoryBarrierWithGroupSync();
+            }
         }
     }
 }

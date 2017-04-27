@@ -132,7 +132,8 @@ namespace Falcor
         StructuredBuffer::SharedPtr mpParticlePool;
         StructuredBuffer::SharedPtr mpDeadList;
         StructuredBuffer::SharedPtr mpAliveList;
-        //for draw and sort (Draw 0, 1, 2, 3) (Dispatch 4, 5, 6)
+        //for draw (0 - Verts Per Instance, 1 - Instance Count, 
+        //2 - start vertex offset, 3 - start instance offset)
         StructuredBuffer::SharedPtr mpIndirectArgs;
 
         //Data for sorted systems
