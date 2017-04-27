@@ -45,19 +45,17 @@ void Particles::onGuiRender()
 {
     if (mpGui->beginGroup("Create System"))
     {
-        static int32_t sMaxParticles = 4096;
-        mpGui->addIntVar("Max Particles", sMaxParticles, 0);
-        static bool sorted = false;
-        mpGui->addCheckBox("Sorted", sorted);
-        mpGui->addDropdown("PixelShader", kPixelShaders, mPixelShaderIndex);
+        mpGui->addIntVar("Max Particles", mGuiData.mMaxParticles, 0);
+        mpGui->addCheckBox("Sorted", mGuiData.mSortSystem);
+        mpGui->addDropdown("PixelShader", kPixelShaders, mGuiData.mPixelShaderIndex);
         if (mpGui->addButton("Create"))
         {
-            switch ((ExamplePixelShaders)mPixelShaderIndex)
+            switch ((ExamplePixelShaders)mGuiData.mPixelShaderIndex)
             {
             case ExamplePixelShaders::ConstColor:
             {
                 ParticleSystem::SharedPtr pSys = 
-                    ParticleSystem::create(mpRenderContext.get(), sMaxParticles, kConstColorPs, ParticleSystem::kDefaultSimulateShader, sorted);
+                    ParticleSystem::create(mpRenderContext.get(), mGuiData.mMaxParticles, kConstColorPs, ParticleSystem::kDefaultSimulateShader, mGuiData.mSortSystem);
                 mParticleSystems.push_back(pSys);
                 mPsData.push_back(vec4(0.f, 0.f, 0.f, 1.f));
                 mParticleSystems[mParticleSystems.size() - 1]->getDrawVars()->getConstantBuffer(2)->
@@ -67,7 +65,7 @@ void Particles::onGuiRender()
             case ExamplePixelShaders::ColorInterp:
             {
                 ParticleSystem::SharedPtr pSys =
-                    ParticleSystem::create(mpRenderContext.get(), sMaxParticles, kColorInterpPs, ParticleSystem::kDefaultSimulateShader, sorted);
+                    ParticleSystem::create(mpRenderContext.get(), mGuiData.mMaxParticles, kColorInterpPs, ParticleSystem::kDefaultSimulateShader, mGuiData.mSortSystem);
                 mParticleSystems.push_back(pSys);
                 ColorInterpPsPerFrame perFrame;
                 perFrame.color1 = vec4(1.f, 0.f, 0.f, 1.f);
@@ -82,7 +80,7 @@ void Particles::onGuiRender()
             case ExamplePixelShaders::Textured:
             {
                 ParticleSystem::SharedPtr pSys = 
-                    ParticleSystem::create(mpRenderContext.get(), sMaxParticles, kTexturedPs, ParticleSystem::kDefaultSimulateShader, sorted);
+                    ParticleSystem::create(mpRenderContext.get(), mGuiData.mMaxParticles, kTexturedPs, ParticleSystem::kDefaultSimulateShader, mGuiData.mSortSystem);
                 mParticleSystems.push_back(pSys);
                 mPsData.push_back(0);
                 pSys->getDrawVars()->setSrv(2, mTextures[0]->getSRV());
@@ -98,42 +96,42 @@ void Particles::onGuiRender()
     }
 
     mpGui->addSeparator();
-    mpGui->addIntVar("System index", mGuiIndex, 0, ((int32_t)mParticleSystems.size()) - 1);
+    mpGui->addIntVar("System index", mGuiData.mSystemIndex, 0, ((int32_t)mParticleSystems.size()) - 1);
     mpGui->addSeparator();
 
     //If there are no systems yet, don't let user touch properties
-    if (mGuiIndex < 0)
+    if (mGuiData.mSystemIndex < 0)
         return;
 
     if (mpGui->beginGroup("Common Properties"))
     {
-        mParticleSystems[mGuiIndex]->renderUi(mpGui.get());
+        mParticleSystems[mGuiData.mSystemIndex]->renderUi(mpGui.get());
         mpGui->endGroup();
     }
     if (mpGui->beginGroup("Pixel Shader Properties"))
     {
-        switch ((ExamplePixelShaders)mPsData[mGuiIndex].type)
+        switch ((ExamplePixelShaders)mPsData[mGuiData.mSystemIndex].type)
         {
         case ExamplePixelShaders::ConstColor:
         {
-            if (mpGui->addRgbaColor("Color", mPsData[mGuiIndex].data.color))
+            if (mpGui->addRgbaColor("Color", mPsData[mGuiData.mSystemIndex].data.color))
             {
-                mParticleSystems[mGuiIndex]->getDrawVars()->getConstantBuffer(2)->
-                    setBlob(&mPsData[mGuiIndex].data.color, 0, sizeof(vec4));
+                mParticleSystems[mGuiData.mSystemIndex]->getDrawVars()->getConstantBuffer(2)->
+                    setBlob(&mPsData[mGuiData.mSystemIndex].data.color, 0, sizeof(vec4));
             }
             break;
         }
         case ExamplePixelShaders::ColorInterp:
         {
-            bool dirty = mpGui->addRgbaColor("Color1", mPsData[mGuiIndex].data.interp.color1);
-            dirty |= mpGui->addFloatVar("Color T1", mPsData[mGuiIndex].data.interp.colorT1);
-            dirty |= mpGui->addRgbaColor("Color2", mPsData[mGuiIndex].data.interp.color2);
-            dirty |= mpGui->addFloatVar("Color T2", mPsData[mGuiIndex].data.interp.colorT2);
+            bool dirty = mpGui->addRgbaColor("Color1", mPsData[mGuiData.mSystemIndex].data.interp.color1);
+            dirty |= mpGui->addFloatVar("Color T1", mPsData[mGuiData.mSystemIndex].data.interp.colorT1);
+            dirty |= mpGui->addRgbaColor("Color2", mPsData[mGuiData.mSystemIndex].data.interp.color2);
+            dirty |= mpGui->addFloatVar("Color T2", mPsData[mGuiData.mSystemIndex].data.interp.colorT2);
 
             if (dirty)
             {
-                mParticleSystems[mGuiIndex]->getDrawVars()->getConstantBuffer(2)->
-                    setBlob(&mPsData[mGuiIndex].data.interp, 0, sizeof(ColorInterpPsPerFrame));
+                mParticleSystems[mGuiData.mSystemIndex]->getDrawVars()->getConstantBuffer(2)->
+                    setBlob(&mPsData[mGuiData.mSystemIndex].data.interp, 0, sizeof(ColorInterpPsPerFrame));
             }
 
             break;
@@ -146,14 +144,14 @@ void Particles::onGuiRender()
                 //todo put a proper filter here
                 openFileDialog("", filename);
                 mTextures.push_back(createTextureFromFile(filename, true, false));
-                mTexDropdown.push_back({(int32_t)mTexDropdown.size(), filename });
+                mGuiData.mTexDropdown.push_back({(int32_t)mGuiData.mTexDropdown.size(), filename });
             }
 
-            uint32_t texIndex = mPsData[mGuiIndex].data.texIndex;
-            if (mpGui->addDropdown("Texture", mTexDropdown, texIndex))
+            uint32_t texIndex = mPsData[mGuiData.mSystemIndex].data.texIndex;
+            if (mpGui->addDropdown("Texture", mGuiData.mTexDropdown, texIndex))
             {
-                mParticleSystems[mGuiIndex]->getDrawVars()->setSrv(2, mTextures[texIndex]->getSRV());
-                mPsData[mGuiIndex].data.texIndex = texIndex;
+                mParticleSystems[mGuiData.mSystemIndex]->getDrawVars()->setSrv(2, mTextures[texIndex]->getSRV());
+                mPsData[mGuiData.mSystemIndex].data.texIndex = texIndex;
             }
             break;
         }
@@ -174,7 +172,7 @@ void Particles::onLoad()
     mpCamera->setPosition(mpCamera->getPosition() + glm::vec3(0, 5, 10));
     mpCamController.attachCamera(mpCamera);
     mTextures.push_back(createTextureFromFile(kDefaultTexture, true, false));
-    mTexDropdown.push_back({ 0, kDefaultTexture });
+    mGuiData.mTexDropdown.push_back({ 0, kDefaultTexture });
     BlendState::Desc blendDesc;
     blendDesc.setRtBlend(0, true);
     blendDesc.setRtParams(0, BlendState::BlendOp::Add, BlendState::BlendOp::Add, BlendState::BlendFunc::SrcAlpha, BlendState::BlendFunc::OneMinusSrcAlpha,

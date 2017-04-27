@@ -51,17 +51,19 @@ private:
         Count 
     };
 
-    ComputeContext::SharedPtr mpComputeContext;
     std::vector<ParticleSystem::SharedPtr> mParticleSystems;
-    int32_t mGuiIndex = 0;
-    uint32_t mPixelShaderIndex = 0;
     Camera::SharedPtr mpCamera;
     FirstPersonCameraController mpCamController;
-    Texture::SharedPtr mpTex;
-    static const uint32_t guiTextBufferSize = 200;
-    char mGuiTextBuffer[guiTextBufferSize];
-    //This seems kinda messy. I imagine user would wrap particle system in their own class to store additional 
-    //custom properties like these
+
+    struct GuiData
+    {
+        int32_t mSystemIndex = -1;
+        uint32_t mPixelShaderIndex = 0;
+        bool mSortSystem = false;
+        int32_t mMaxParticles = 4096;
+        Gui::DropdownList mTexDropdown;
+    } mGuiData;
+
     union PSData
     {
         PSData() : color(vec4(1.f, 1.f, 1.f, 1.f)) {}
@@ -96,6 +98,6 @@ private:
 
     std::vector<PixelShaderData> mPsData;
     std::vector<Texture::SharedPtr> mTextures;
-    Gui::DropdownList mTexDropdown;
     uint32_t mTexIndex = 0;
+    //gui var for setting the max particles of created particle systems
 };
