@@ -103,11 +103,13 @@ void Particles::onGuiRender()
     if (mGuiData.mSystemIndex < 0)
         return;
 
+    //properties shared by all systems
     if (mpGui->beginGroup("Common Properties"))
     {
         mParticleSystems[mGuiData.mSystemIndex]->renderUi(mpGui.get());
         mpGui->endGroup();
     }
+    //pixel shader specific properties
     if (mpGui->beginGroup("Pixel Shader Properties"))
     {
         switch ((ExamplePixelShaders)mPsData[mGuiData.mSystemIndex].type)
@@ -141,8 +143,7 @@ void Particles::onGuiRender()
             if (mpGui->addButton("Add Texture"))
             {
                 std::string filename;
-                //todo put a proper filter here
-                openFileDialog("", filename);
+                openFileDialog("Supported Formats\0*.png;*.dds;*.jpg;\0\0", filename);
                 mTextures.push_back(createTextureFromFile(filename, true, false));
                 mGuiData.mTexDropdown.push_back({(int32_t)mGuiData.mTexDropdown.size(), filename });
             }
@@ -156,10 +157,7 @@ void Particles::onGuiRender()
             break;
         }
         default:
-        {
             should_not_get_here();
-            break;
-        }
         }
 
         mpGui->endGroup();

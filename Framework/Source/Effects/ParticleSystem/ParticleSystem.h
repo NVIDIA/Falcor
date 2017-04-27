@@ -135,7 +135,7 @@ namespace Falcor
         //for draw and sort (Draw 0, 1, 2, 3) (Dispatch 4, 5, 6)
         StructuredBuffer::SharedPtr mpIndirectArgs;
 
-        //Maybe it'd be better to have a derived "SortedParticleSystem" class?
+        //Data for sorted systems
         void initSortResources();
         bool mShouldSort;
         std::vector<SortData> mSortDataReset;

@@ -51,10 +51,6 @@ private:
         Count 
     };
 
-    std::vector<ParticleSystem::SharedPtr> mParticleSystems;
-    Camera::SharedPtr mpCamera;
-    FirstPersonCameraController mpCamController;
-
     struct GuiData
     {
         int32_t mSystemIndex = -1;
@@ -96,8 +92,9 @@ private:
         PSData data;
     };
 
+    std::vector<ParticleSystem::SharedPtr> mParticleSystems;
+    Camera::SharedPtr mpCamera;
+    FirstPersonCameraController mpCamController;
     std::vector<PixelShaderData> mPsData;
     std::vector<Texture::SharedPtr> mTextures;
-    uint32_t mTexIndex = 0;
-    //gui var for setting the max particles of created particle systems
 };

@@ -49,6 +49,7 @@ namespace Falcor
     {
         mShouldSort = sorted;
 
+        //Data that is different if system is sorted
         Program::DefineList defineList;
         uint32_t indirectArgsSize; 
         uint32_t indirectInitialValues[7] = { 4, 0, 0, 0, 1, 1, 1 };
@@ -73,6 +74,7 @@ namespace Falcor
         simulateCs->getActiveVersion()->getShader(ShaderType::Compute)->
             getReflectionInterface()->GetThreadGroupSize(&simThreadsX, &simThreadsY, &simThreadsZ);
         mSimulateThreads = simThreadsX * simThreadsY * simThreadsZ;
+
         //Emit cs
         Program::DefineList emitDefines;
         emitDefines.add("_SIMULATE_THREADS", std::to_string(mSimulateThreads));
@@ -212,6 +214,7 @@ namespace Falcor
 
     void ParticleSystem::render(RenderContext* pCtx, glm::mat4 view, glm::mat4 proj)
     {
+        //sorting
         if (mShouldSort)
         {
             pCtx->pushComputeState(mSortResources.state);
@@ -249,7 +252,7 @@ namespace Falcor
         pCtx->pushGraphicsVars(mDrawResources.vars);
         pCtx->drawIndirect(mpIndirectArgs.get(), 0);
         pCtx->popGraphicsVars();
-        //setting null vao causes crash
+        //can't set null vao, will crash
         if (prevVao)
         {
             state->setVao(prevVao);
