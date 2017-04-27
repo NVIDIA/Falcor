@@ -401,6 +401,11 @@ namespace Falcor
             }
             break;
 
+        case spire::TypeReflection::Kind::SamplerState:
+        case spire::TypeReflection::Kind::Texture:
+            // Ignore nested fields with resource types...
+            break;
+
         default:
             ProgramReflection::Variable desc;
 //            desc.arraySize = typeDesc.Elements;
