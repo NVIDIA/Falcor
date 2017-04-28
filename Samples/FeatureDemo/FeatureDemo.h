@@ -123,6 +123,8 @@ private:
     std::vector<ProgramControl> mControls;
     void applyLightingProgramControl(ControlID controlID);
 
+    bool mShouldUseCameraPath = true;
+
     //Testing 
     void onInitializeTestingArgs(const ArgList& args) override;
     void onRunTestTask(const FrameRate&) override;
