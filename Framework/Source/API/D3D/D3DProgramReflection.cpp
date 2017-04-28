@@ -362,11 +362,258 @@ namespace Falcor
     }
 
 #if FALCOR_USE_SPIRE_AS_COMPILER
-    static void reflectType(
-        spire::TypeLayoutReflection*    type,
-        ProgramReflection::VariableMap& varMap,
+
+    struct ReflectionGenerationContext
+    {
+        ProgramReflection*  pReflector = nullptr;
+        ProgramReflection::VariableMap* pVariables = nullptr;
+        ProgramReflection::ResourceMap* pResourceMap = nullptr;
+        std::string* pLog = nullptr;
+        size_t shaderIndex = 0;
+
+        ProgramReflection::VariableMap& getVariableMap() { return *pVariables; }
+        ProgramReflection::ResourceMap& getResourceMap() { return *pResourceMap; }
+        std::string& getLog() { return *pLog; }
+    };
+
+    struct ReflectionPath
+    {
+        ReflectionPath*                     parent = nullptr;
+        spire::VariableLayoutReflection*    var = nullptr;
+        spire::TypeLayoutReflection*        typeLayout = nullptr;
+        size_t                              childIndex = 0;
+    };
+
+    size_t getBindingIndex(ReflectionPath* path, SpireParameterCategory category)
+    {
+        size_t offset = 0;
+        for(auto pp = path; pp; pp = pp->parent)
+        {
+            if(pp->var)
+            {
+                offset += pp->var->getOffset(category);
+                continue;
+            }
+            else if(pp->typeLayout)
+            {
+                switch(pp->typeLayout->getKind())
+                {
+                case spire::TypeReflection::Kind::Array:
+                    offset += pp->typeLayout->getElementStride(category) * pp->childIndex;
+                    continue;
+
+                case spire::TypeReflection::Kind::Struct:
+                    offset += pp->typeLayout->getFieldByIndex(int(pp->childIndex))->getOffset(category);
+                    continue;
+
+                default:
+                    break;
+                }
+            }
+
+            logError("internal error: invalid reflection path");
+            return 0;
+        }
+        return offset;
+    }
+
+    size_t getUniformOffset(ReflectionPath* path)
+    {
+        return getBindingIndex(path, SPIRE_PARAMETER_CATEGORY_UNIFORM);
+    }
+
+    size_t getBindingSpace(ReflectionPath* path, SpireParameterCategory category)
+    {
+        // TODO: implement
+        return 0;
+    }
+
+    static ProgramReflection::Resource::ResourceType getResourceType(spire::TypeReflection* pSpireType)
+    {
+        switch(pSpireType->getKind())
+        {
+        case spire::TypeReflection::Kind::SamplerState:
+            return ProgramReflection::Resource::ResourceType::Sampler;
+
+        case spire::TypeReflection::Kind::Texture:
+            switch(pSpireType->getTextureShape() & SPIRE_TEXTURE_BASE_SHAPE_MASK)
+            {
+            case SPIRE_TEXTURE_STRUCTURE_BUFFER:
+                return ProgramReflection::Resource::ResourceType::StructuredBuffer;
+
+            case SPIRE_TEXTURE_BYTE_ADDRESS_BUFFER:
+                return ProgramReflection::Resource::ResourceType::RawBuffer;
+
+            default:
+                return ProgramReflection::Resource::ResourceType::Texture;
+            }
+            break;
+
+        default:
+            break;
+        }
+        should_not_get_here();
+        return ProgramReflection::Resource::ResourceType::Unknown;
+    }
+
+    static ProgramReflection::ShaderAccess getShaderAccess(spire::TypeReflection* pSpireType)
+    {
+        // Compute access for an array using the underlying type...
+        pSpireType = pSpireType->unwrapArray();
+
+        switch(pSpireType->getKind())
+        {
+        case spire::TypeReflection::Kind::SamplerState:
+        case spire::TypeReflection::Kind::ConstantBuffer:
+            return ProgramReflection::ShaderAccess::Read;
+            break;
+
+        case spire::TypeReflection::Kind::Texture:
+            if((pSpireType->getTextureShape() & SPIRE_TEXTURE_READ_WRITE_FLAG) != 0)
+            {
+                return ProgramReflection::ShaderAccess::ReadWrite;
+            }
+            else
+            {
+                return ProgramReflection::ShaderAccess::Read;
+            }
+            break;
+
+        default:
+            should_not_get_here();
+            return ProgramReflection::ShaderAccess::Undefined;
+        }
+    }
+
+    static ProgramReflection::Resource::ReturnType getReturnType(spire::TypeReflection* pType)
+    {
+        switch (pType->getScalarType())
+        {
+        case spire::TypeReflection::ScalarType::Float32:
+            return ProgramReflection::Resource::ReturnType::Float;
+        case spire::TypeReflection::ScalarType::Int32:
+            return ProgramReflection::Resource::ReturnType::Int;
+        case spire::TypeReflection::ScalarType::UInt32:
+            return ProgramReflection::Resource::ReturnType::Uint;
+        case spire::TypeReflection::ScalarType::Float64:
+            return ProgramReflection::Resource::ReturnType::Double;
+        default:
+            should_not_get_here();
+            return ProgramReflection::Resource::ReturnType::Unknown;
+        }
+    }
+
+    static ProgramReflection::Resource::Dimensions getResourceDimensions(SpireTextureShape shape)
+    {
+        switch (shape)
+        {
+        case SPIRE_TEXTURE_BUFFER:
+            return ProgramReflection::Resource::Dimensions::Buffer; 
+        case SPIRE_TEXTURE_1D:
+            return ProgramReflection::Resource::Dimensions::Texture1D;
+        case SPIRE_TEXTURE_1D_ARRAY:
+            return ProgramReflection::Resource::Dimensions::Texture1DArray;
+        case SPIRE_TEXTURE_2D:
+            return ProgramReflection::Resource::Dimensions::Texture2D;
+        case SPIRE_TEXTURE_2D_ARRAY:
+            return ProgramReflection::Resource::Dimensions::Texture2DArray;
+        case SPIRE_TEXTURE_2D_MULTISAMPLE:
+            return ProgramReflection::Resource::Dimensions::Texture2DMS;
+        case SPIRE_TEXTURE_2D_MULTISAMPLE_ARRAY:
+            return ProgramReflection::Resource::Dimensions::Texture2DMSArray;
+        case SPIRE_TEXTURE_3D:
+            return ProgramReflection::Resource::Dimensions::Texture3D;
+        case SPIRE_TEXTURE_CUBE:
+            return ProgramReflection::Resource::Dimensions::TextureCube;
+        case SPIRE_TEXTURE_CUBE_ARRAY:
+            return ProgramReflection::Resource::Dimensions::TextureCubeArray;
+        default:
+            should_not_get_here();
+            return ProgramReflection::Resource::Dimensions::Unknown;
+        }
+    }
+
+    static bool verifyResourceDefinition(const ProgramReflection::Resource& prev, ProgramReflection::Resource& current, std::string& log)
+    {
+        bool match = true;
+#define error_msg(msg_) std::string(msg_) + " mismatch.\n";
+#define test_field(field_)                                           \
+            if(prev.field_ != current.field_)                        \
+            {                                                        \
+                log += error_msg(#field_)                            \
+                match = false;                                       \
+            }
+
+        test_field(type);
+        test_field(dims);
+        test_field(retType);
+        test_field(regIndex);
+        test_field(registerSpace);
+        test_field(arraySize);
+#undef test_field
+#undef error_msg
+
+        return match;
+    }
+
+
+    // Generate reflection data for a single variable
+    static bool reflectResource(
+        ReflectionGenerationContext*    pContext,
+        spire::TypeLayoutReflection*    pSpireType,
         const std::string&              name,
-        size_t                          offset)
+        ReflectionPath*                 path)
+    {
+
+//    bool reflectResource(
+// spire::ParameterReflection* pParameter,
+// ProgramReflection::ResourceMap& resourceMap,
+// uint32_t shaderIndex,
+// std::string& log)
+
+        ProgramReflection::Resource falcorDesc;
+
+        falcorDesc.type = getResourceType(pSpireType);
+        falcorDesc.shaderAccess = getShaderAccess(pSpireType);
+        if (falcorDesc.type == ProgramReflection::Resource::ResourceType::Texture)
+        {
+            falcorDesc.retType = getReturnType(pSpireType->getTextureResultType());
+            falcorDesc.dims = getResourceDimensions(pSpireType->getTextureShape());
+        }
+        bool isArray = pSpireType->isArray();
+        falcorDesc.regIndex = (uint32_t) getBindingIndex(path, pSpireType->getParameterCategory());
+        falcorDesc.registerSpace = (uint32_t) getBindingSpace(path, pSpireType->getParameterCategory());
+        assert(falcorDesc.registerSpace == 0);
+        falcorDesc.arraySize = isArray ? (uint32_t)pSpireType->getTotalArrayElementCount() : 0;
+
+        // If this already exists, definitions should match
+        auto& resourceMap = * pContext->pResourceMap;
+        const auto& prevDef = resourceMap.find(name);
+        if (prevDef == resourceMap.end())
+        {
+            resourceMap[name] = falcorDesc;
+        }
+        else
+        {
+            std::string varLog;
+            if (verifyResourceDefinition(prevDef->second, falcorDesc, varLog) == false)
+            {
+                pContext->getLog() += "Shader resource '" + std::string(name) + "' has different definitions between different shader stages. " + varLog;
+                return false;
+            }
+        }
+
+        // Update the mask
+        resourceMap[name].shaderMask |= (1 << pContext->shaderIndex);
+
+        return true;
+    }
+
+    static void reflectType(
+        ReflectionGenerationContext*    pContext,
+        spire::TypeLayoutReflection*    type,
+        const std::string&              name,
+        ReflectionPath*                 path)
     {
         size_t size = type->getSize();
         switch (type->getKind())
@@ -374,14 +621,19 @@ namespace Falcor
         case spire::TypeReflection::Kind::Array:
             {
                 size_t elementCount = type->getElementCount();
-                size_t stride = type->getElementStride();
+                // size_t stride = type->getElementStride();
                 spire::TypeLayoutReflection* elementType = type->getElementType();
 
                 assert(name.size());
 
                 for (size_t ee = 0; ee < elementCount; ++ee)
                 {
-                    reflectType(elementType, varMap, name + '[' + std::to_string(ee) + "]", offset + stride * ee);
+                    ReflectionPath elementPath;
+                    elementPath.parent = path;
+                    elementPath.typeLayout = type;
+                    elementPath.childIndex = ee;
+
+                    reflectType(pContext, elementType, name + '[' + std::to_string(ee) + "]", &elementPath);
                 }
             }
             break;
@@ -394,15 +646,21 @@ namespace Falcor
                 {
                     spire::VariableLayoutReflection* field = type->getFieldByIndex(ff);
                     std::string memberName(field->getName());
-
                     std::string fullName = name.size() ? name + '.' + memberName : memberName;
-                    reflectType(field->getType(), varMap, fullName, offset + field->getOffset());
+
+                    ReflectionPath fieldPath;
+                    fieldPath.parent = path;
+                    fieldPath.typeLayout = type;
+                    fieldPath.childIndex = ff;
+
+                    reflectType(pContext, field->getType(), fullName, &fieldPath);
                 }
             }
             break;
 
         case spire::TypeReflection::Kind::SamplerState:
         case spire::TypeReflection::Kind::Texture:
+            reflectResource(pContext, type, name, path);
             // Ignore nested fields with resource types...
             break;
 
@@ -410,35 +668,40 @@ namespace Falcor
             ProgramReflection::Variable desc;
 //            desc.arraySize = typeDesc.Elements;
 //            desc.isRowMajor = (typeDesc.Class == D3D_SVC_MATRIX_ROWS);
-            desc.location = offset;
+            desc.location = getUniformOffset(path);
             desc.type = getVariableType(type->getScalarType(), type->getRowCount(), type->getColumnCount());
-            varMap[name] = desc;
+            (*pContext->pVariables)[name] = desc;
             break;
         }
     }
 
     static void reflectVariable(
-        spire::BufferReflection*            buffer,
+        ReflectionGenerationContext*        pContext,
         spire::VariableLayoutReflection*    var,
-        ProgramReflection::VariableMap&     varMap)
+        ReflectionPath*                     path)
     {
         // Get the variable name
         std::string name(var->getName());
 
         // Reflect the Type
-        reflectType(var->getType(), varMap, name, var->getOffset());
+        reflectType(pContext, var->getType(), name, path);
     }
 
     static void initializeBufferVariables(
-        spire::BufferReflection*        buffer,
-        ProgramReflection::VariableMap& varMap)
+        ReflectionGenerationContext*    pContext,
+        spire::BufferReflection*        buffer)
     {
         uint32_t varCount = buffer->getVariableCount();
 
         for (uint32_t varID = 0; varID < varCount; varID++)
         {
             auto var = buffer->getVariableByIndex(varID);
-            reflectVariable(buffer, var, varMap);
+
+            ReflectionPath path;
+            path.parent = nullptr;
+            path.var = var;
+
+            reflectVariable(pContext, var, &path);
         }
     }
 #else
@@ -597,18 +860,21 @@ namespace Falcor
     }
 
 #if FALCOR_USE_SPIRE_AS_COMPILER
-    bool reflectBuffer(
+    static bool reflectBuffer(
+        ReflectionGenerationContext*                pContext,
         spire::BufferReflection*                    spireBuffer,
         ProgramReflection::BufferData&              bufferDesc,
         ProgramReflection::BufferReflection::Type   bufferType,
-        ProgramReflection::ShaderAccess             shaderAccess,
-        uint32_t                                    shaderType,
-        std::string&                                log)
+        ProgramReflection::ShaderAccess             shaderAccess)
     {
         auto bufName = spireBuffer->getName();
 
         ProgramReflection::VariableMap varMap;
-        initializeBufferVariables(spireBuffer, varMap);
+
+        ReflectionGenerationContext context = *pContext;
+        context.pVariables = &varMap;
+
+        initializeBufferVariables(&context, spireBuffer);
 
         ProgramReflection::BindLocation bindLocation(spireBuffer->getBindingIndex(), shaderAccess);
         // If the buffer already exists in the program, make sure the definitions match
@@ -618,14 +884,14 @@ namespace Falcor
         {
             if (bindLocation != prevDef->second)
             {
-                log += to_string(bufferType) + " buffer '" + std::string(spireBuffer->getName()) + "' has different bind locations between different shader stages. Falcor do not support that. Use explicit bind locations to avoid this error";
+                pContext->getLog() += to_string(bufferType) + " buffer '" + std::string(spireBuffer->getName()) + "' has different bind locations between different shader stages. Falcor do not support that. Use explicit bind locations to avoid this error";
                 return false;
             }
             ProgramReflection::BufferReflection* pPrevBuffer = bufferDesc.descMap[bindLocation].get();
             std::string bufLog;
             if (validateBufferDeclaration(pPrevBuffer, varMap, bufLog) == false)
             {
-                log += to_string(bufferType) + " buffer '" + std::string(spireBuffer->getName()) + "' has different definitions between different shader stages. " + bufLog;
+                pContext->getLog() += to_string(bufferType) + " buffer '" + std::string(spireBuffer->getName()) + "' has different definitions between different shader stages. " + bufLog;
                 return false;
             }
         }
@@ -646,7 +912,7 @@ namespace Falcor
         }
 
         // Update the shader mask
-        uint32_t shaderIndex = (uint32_t)shaderType;
+        uint32_t shaderIndex = (uint32_t) pContext->shaderIndex;
         uint32_t mask = bufferDesc.descMap[bindLocation]->getShaderMask() | (1 << shaderIndex);
         bufferDesc.descMap[bindLocation]->setShaderMask(mask);
 
@@ -727,60 +993,9 @@ namespace Falcor
         return true;
     }
 
-    static bool verifyResourceDefinition(const ProgramReflection::Resource& prev, ProgramReflection::Resource& current, std::string& log)
-    {
-        bool match = true;
-#define error_msg(msg_) std::string(msg_) + " mismatch.\n";
-#define test_field(field_)                                           \
-            if(prev.field_ != current.field_)                        \
-            {                                                        \
-                log += error_msg(#field_)                            \
-                match = false;                                       \
-            }
-
-        test_field(type);
-        test_field(dims);
-        test_field(retType);
-        test_field(regIndex);
-        test_field(registerSpace);
-        test_field(arraySize);
-#undef test_field
-#undef error_msg
-
-        return match;
-    }
-
 #if FALCOR_USE_SPIRE_AS_COMPILER
-    static ProgramReflection::Resource::Dimensions getResourceDimensions(SpireTextureShape shape)
-    {
-        switch (shape)
-        {
-        case SPIRE_TEXTURE_BUFFER:
-            return ProgramReflection::Resource::Dimensions::Buffer; 
-        case SPIRE_TEXTURE_1D:
-            return ProgramReflection::Resource::Dimensions::Texture1D;
-        case SPIRE_TEXTURE_1D_ARRAY:
-            return ProgramReflection::Resource::Dimensions::Texture1DArray;
-        case SPIRE_TEXTURE_2D:
-            return ProgramReflection::Resource::Dimensions::Texture2D;
-        case SPIRE_TEXTURE_2D_ARRAY:
-            return ProgramReflection::Resource::Dimensions::Texture2DArray;
-        case SPIRE_TEXTURE_2D_MULTISAMPLE:
-            return ProgramReflection::Resource::Dimensions::Texture2DMS;
-        case SPIRE_TEXTURE_2D_MULTISAMPLE_ARRAY:
-            return ProgramReflection::Resource::Dimensions::Texture2DMSArray;
-        case SPIRE_TEXTURE_3D:
-            return ProgramReflection::Resource::Dimensions::Texture3D;
-        case SPIRE_TEXTURE_CUBE:
-            return ProgramReflection::Resource::Dimensions::TextureCube;
-        case SPIRE_TEXTURE_CUBE_ARRAY:
-            return ProgramReflection::Resource::Dimensions::TextureCubeArray;
-        default:
-            should_not_get_here();
-            return ProgramReflection::Resource::Dimensions::Unknown;
-        }
-    }
 
+    // TODO(tfoley): Should try to strictly use type...
     static ProgramReflection::Resource::ResourceType getResourceType(spire::ParameterReflection* pParameter)
     {
         switch (pParameter->getCategory())
@@ -828,27 +1043,12 @@ namespace Falcor
         }
     }
 
-    static ProgramReflection::Resource::ReturnType getReturnType(spire::TypeReflection* pType)
-    {
-        switch (pType->getScalarType())
-        {
-        case spire::TypeReflection::ScalarType::Float32:
-            return ProgramReflection::Resource::ReturnType::Float;
-        case spire::TypeReflection::ScalarType::Int32:
-            return ProgramReflection::Resource::ReturnType::Int;
-        case spire::TypeReflection::ScalarType::UInt32:
-            return ProgramReflection::Resource::ReturnType::Uint;
-        case spire::TypeReflection::ScalarType::Float64:
-            return ProgramReflection::Resource::ReturnType::Double;
-        default:
-            should_not_get_here();
-            return ProgramReflection::Resource::ReturnType::Unknown;
-        }
-    }
 
 
 
-    bool reflectResource(spire::ParameterReflection* pParameter, ProgramReflection::ResourceMap& resourceMap, uint32_t shaderIndex, std::string& log)
+    bool reflectResource(
+        ReflectionGenerationContext*    pContext,
+        spire::ParameterReflection*     pParameter )
     {
         ProgramReflection::Resource falcorDesc;
         std::string name(pParameter->getName());
@@ -867,6 +1067,7 @@ namespace Falcor
         falcorDesc.arraySize = isArray ? (uint32_t)pParameter->getType()->getTotalArrayElementCount() : 0;
 
         // If this already exists, definitions should match
+        auto& resourceMap = pContext->getResourceMap();
         const auto& prevDef = resourceMap.find(name);
         if (prevDef == resourceMap.end())
         {
@@ -877,13 +1078,13 @@ namespace Falcor
             std::string varLog;
             if (verifyResourceDefinition(prevDef->second, falcorDesc, varLog) == false)
             {
-                log += "Shader resource '" + std::string(name) + "' has different definitions between different shader stages. " + varLog;
+                pContext->getLog() += "Shader resource '" + std::string(name) + "' has different definitions between different shader stages. " + varLog;
                 return false;
             }
         }
 
         // Update the mask
-        resourceMap[name].shaderMask |= (1 << shaderIndex);
+        resourceMap[name].shaderMask |= (1 << pContext->shaderIndex);
 
         return true;
     }
@@ -1018,7 +1219,10 @@ namespace Falcor
     }
 #endif
 
-    static bool reflectResourcesRec(ProgramReflection* pReflector, spire::ParameterReflection* param, uint32_t shader, std::string& log)
+    static bool reflectResourcesRec(
+        ReflectionGenerationContext*    pContext,
+        ProgramReflection* pReflector,
+        spire::ParameterReflection* param)
     {
         bool res = true;
         switch (param->getCategory())
@@ -1035,7 +1239,7 @@ namespace Falcor
                 switch(param->getType()->getKind())
                 {
                 case spire::TypeReflection::Kind::ConstantBuffer:
-                    res = reflectBuffer(param->asBuffer(), pReflector->mBuffers[(uint32_t)ProgramReflection::BufferReflection::Type::Constant], ProgramReflection::BufferReflection::Type::Constant, ProgramReflection::ShaderAccess::Read, shader, log);
+                    res = reflectBuffer(pContext, param->asBuffer(), pReflector->mBuffers[(uint32_t)ProgramReflection::BufferReflection::Type::Constant], ProgramReflection::BufferReflection::Type::Constant, ProgramReflection::ShaderAccess::Read);
                     break;
 
                 default:
@@ -1051,11 +1255,11 @@ namespace Falcor
             break;
 
         case spire::ParameterCategory::ConstantBuffer:
-            res = reflectBuffer(param->asBuffer(), pReflector->mBuffers[(uint32_t)ProgramReflection::BufferReflection::Type::Constant], ProgramReflection::BufferReflection::Type::Constant, ProgramReflection::ShaderAccess::Read, shader, log);
+            res = reflectBuffer(pContext, param->asBuffer(), pReflector->mBuffers[(uint32_t)ProgramReflection::BufferReflection::Type::Constant], ProgramReflection::BufferReflection::Type::Constant, ProgramReflection::ShaderAccess::Read);
             break;
 
         default:
-            res = reflectResource(param, pReflector->mResources, shader, log);
+            res = reflectResource(pContext, param);
             break;
         }
         return res;
@@ -1063,16 +1267,23 @@ namespace Falcor
 
     bool ProgramReflection::reflectResources(const ReflectionHandleVector& reflectHandles, std::string& log)
     {
+        ReflectionGenerationContext context;
+        context.pReflector = this;
+        context.pResourceMap = &mResources;
+        context.pLog = &log;
+
         bool res = true;
         for (auto& pReflection : reflectHandles)
         {
 #if FALCOR_USE_SPIRE_AS_COMPILER
             uint32_t shader = 0; // TODO: fix this up
+            context.shaderIndex = shader;
+
             uint32_t paramCount = pReflection->getParameterCount();
             for (uint32_t pp = 0; pp < paramCount; ++pp)
             {
                 spire::ParameterReflection* param = pReflection->getParameterByIndex(pp);
-                res = reflectResourcesRec(this, param, shader, log);
+                res = reflectResourcesRec(&context, this, param);
             }
 #else
             D3D_SHADER_DESC shaderDesc;

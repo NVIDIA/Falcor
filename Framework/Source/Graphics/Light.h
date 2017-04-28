@@ -99,7 +99,7 @@ namespace Falcor
         static uint32_t getShaderStructSize() { return kDataSize; }
     protected:
 
-        static const size_t kDataSize = sizeof(LightData) - sizeof(MaterialData);
+        static const size_t kDataSize = sizeof(LightData); //HACK:SPIRE - sizeof(MaterialData);
 
         /* UI callbacks for keeping the intensity in-sync */
         glm::vec3 getColorForUI();
