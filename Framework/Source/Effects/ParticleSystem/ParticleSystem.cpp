@@ -86,15 +86,16 @@ namespace Falcor
             indirectArgsSize / sizeof(uint32_t), Resource::BindFlags::UnorderedAccess | Resource::BindFlags::IndirectArg);
         mpIndirectArgs->setBlob(indirectInitialValues, 0, indirectArgsSize);
         //Dead List
+        ProgramReflection::SharedConstPtr pEmitReflect = emitCs->getActiveVersion()->getReflector();
+        auto deadListReflect = pEmitReflect->getBufferDesc("deadList", ProgramReflection::BufferReflection::Type::Structured);
+        mpDeadList = StructuredBuffer::create(deadListReflect, mMaxParticles);
+        //init data in dead list buffer
+        mpDeadList->getUAVCounter()->updateData(&mMaxParticles, 0, sizeof(uint32_t));
         std::vector<uint32_t> indices;
         indices.resize(mMaxParticles);
         uint32_t counter = 0;
         std::generate(indices.begin(), indices.end(), [&counter] {return counter++; });
-        ProgramReflection::SharedConstPtr pEmitReflect = emitCs->getActiveVersion()->getReflector();
-        auto deadListReflect = pEmitReflect->getBufferDesc("deadList", ProgramReflection::BufferReflection::Type::Structured);
-        mpDeadList = StructuredBuffer::create(deadListReflect, mMaxParticles);
         mpDeadList->setBlob(indices.data(), 0, indices.size() * sizeof(uint32_t));
-        mpDeadList->getUAVCounter()->updateData(&mMaxParticles, 0, sizeof(uint32_t));
         //Alive list
         auto aliveListReflect = pSimulateReflect->getBufferDesc("aliveList", ProgramReflection::BufferReflection::Type::Structured);
         mpAliveList = StructuredBuffer::create(aliveListReflect, mMaxParticles);
@@ -276,24 +277,20 @@ namespace Falcor
 
     void ParticleSystem::initSortResources()
     {
-        //Create Shader
-        uint32_t maxIterations = (uint32_t)log2((float)mMaxParticles);
-        maxIterations = (maxIterations * (maxIterations + 1)) / 2;
-        Program::DefineList sortDefines;
-        sortDefines.add("_NUM_PASSES", std::to_string(maxIterations));
-        ComputeProgram::SharedPtr pSortCs = ComputeProgram::createFromFile(kSortShader, sortDefines);
+        //Shader
+        ComputeProgram::SharedPtr pSortCs = ComputeProgram::createFromFile(kSortShader);
 
         //iteration counter buffer
         mSortResources.sortIterationCounter = StructuredBuffer::create(pSortCs->getActiveVersion()->getReflector()->
             getBufferDesc("iterationCounter", ProgramReflection::BufferReflection::Type::Structured), 2);
+
         //Sort data reset buffer
-        mSortDataReset;
         SortData resetData;
         resetData.index = (uint32_t)(-1);
         resetData.zDistance = std::numeric_limits<float>::max();
         mSortDataReset.resize(mMaxParticles, resetData);
 
-        //Create Vars and state
+        //Vars and state
         mSortResources.vars = ComputeVars::create(pSortCs->getActiveVersion()->getReflector());
         mSortResources.state = ComputeState::create();
         mSortResources.state->setProgram(pSortCs);
