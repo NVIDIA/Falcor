@@ -26,7 +26,6 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 #include "Particles.h"
-#include "API/D3D/FalcorD3D.h"
 #include <limits>
 
 const Gui::DropdownList kPixelShaders 
@@ -56,9 +55,9 @@ void Particles::onGuiRender()
             {
                 ParticleSystem::SharedPtr pSys = 
                     ParticleSystem::create(mpRenderContext.get(), mGuiData.mMaxParticles, kConstColorPs, ParticleSystem::kDefaultSimulateShader, mGuiData.mSortSystem);
-                mParticleSystems.push_back(pSys);
+                mpParticleSystems.push_back(pSys);
                 mPsData.push_back(vec4(0.f, 0.f, 0.f, 1.f));
-                mParticleSystems[mParticleSystems.size() - 1]->getDrawVars()->getConstantBuffer(2)->
+                mpParticleSystems[mpParticleSystems.size() - 1]->getDrawVars()->getConstantBuffer(2)->
                     setBlob(&mPsData[mPsData.size() - 1].data.color, 0, sizeof(vec4));
                 break;
             }
@@ -66,14 +65,14 @@ void Particles::onGuiRender()
             {
                 ParticleSystem::SharedPtr pSys =
                     ParticleSystem::create(mpRenderContext.get(), mGuiData.mMaxParticles, kColorInterpPs, ParticleSystem::kDefaultSimulateShader, mGuiData.mSortSystem);
-                mParticleSystems.push_back(pSys);
+                mpParticleSystems.push_back(pSys);
                 ColorInterpPsPerFrame perFrame;
                 perFrame.color1 = vec4(1.f, 0.f, 0.f, 1.f);
                 perFrame.colorT1 = pSys->getParticleDuration();
                 perFrame.color2 = vec4(0.f, 0.f, 1.f, 1.f);
                 perFrame.colorT2 = 0.f;
                 mPsData.push_back(perFrame);
-                mParticleSystems[mParticleSystems.size() - 1]->getDrawVars()->getConstantBuffer(2)->
+                mpParticleSystems[mpParticleSystems.size() - 1]->getDrawVars()->getConstantBuffer(2)->
                     setBlob(&mPsData[mPsData.size() - 1].data.interp, 0, sizeof(ColorInterpPsPerFrame));
                 break;
             }
@@ -81,9 +80,9 @@ void Particles::onGuiRender()
             {
                 ParticleSystem::SharedPtr pSys = 
                     ParticleSystem::create(mpRenderContext.get(), mGuiData.mMaxParticles, kTexturedPs, ParticleSystem::kDefaultSimulateShader, mGuiData.mSortSystem);
-                mParticleSystems.push_back(pSys);
+                mpParticleSystems.push_back(pSys);
                 mPsData.push_back(0);
-                pSys->getDrawVars()->setSrv(2, mTextures[0]->getSRV());
+                pSys->getDrawVars()->setSrv(2, mpTextures[0]->getSRV());
                 break;
             }
             default:
@@ -96,7 +95,7 @@ void Particles::onGuiRender()
     }
 
     mpGui->addSeparator();
-    mpGui->addIntVar("System index", mGuiData.mSystemIndex, 0, ((int32_t)mParticleSystems.size()) - 1);
+    mpGui->addIntVar("System index", mGuiData.mSystemIndex, 0, ((int32_t)mpParticleSystems.size()) - 1);
     mpGui->addSeparator();
 
     //If there are no systems yet, don't let user touch properties
@@ -106,7 +105,7 @@ void Particles::onGuiRender()
     //properties shared by all systems
     if (mpGui->beginGroup("Common Properties"))
     {
-        mParticleSystems[mGuiData.mSystemIndex]->renderUi(mpGui.get());
+        mpParticleSystems[mGuiData.mSystemIndex]->renderUi(mpGui.get());
         mpGui->endGroup();
     }
     //pixel shader specific properties
@@ -118,7 +117,7 @@ void Particles::onGuiRender()
         {
             if (mpGui->addRgbaColor("Color", mPsData[mGuiData.mSystemIndex].data.color))
             {
-                mParticleSystems[mGuiData.mSystemIndex]->getDrawVars()->getConstantBuffer(2)->
+                mpParticleSystems[mGuiData.mSystemIndex]->getDrawVars()->getConstantBuffer(2)->
                     setBlob(&mPsData[mGuiData.mSystemIndex].data.color, 0, sizeof(vec4));
             }
             break;
@@ -132,7 +131,7 @@ void Particles::onGuiRender()
 
             if (dirty)
             {
-                mParticleSystems[mGuiData.mSystemIndex]->getDrawVars()->getConstantBuffer(2)->
+                mpParticleSystems[mGuiData.mSystemIndex]->getDrawVars()->getConstantBuffer(2)->
                     setBlob(&mPsData[mGuiData.mSystemIndex].data.interp, 0, sizeof(ColorInterpPsPerFrame));
             }
 
@@ -144,14 +143,14 @@ void Particles::onGuiRender()
             {
                 std::string filename;
                 openFileDialog("Supported Formats\0*.png;*.dds;*.jpg;\0\0", filename);
-                mTextures.push_back(createTextureFromFile(filename, true, false));
+                mpTextures.push_back(createTextureFromFile(filename, true, false));
                 mGuiData.mTexDropdown.push_back({(int32_t)mGuiData.mTexDropdown.size(), filename });
             }
 
             uint32_t texIndex = mPsData[mGuiData.mSystemIndex].data.texIndex;
             if (mpGui->addDropdown("Texture", mGuiData.mTexDropdown, texIndex))
             {
-                mParticleSystems[mGuiData.mSystemIndex]->getDrawVars()->setSrv(2, mTextures[texIndex]->getSRV());
+                mpParticleSystems[mGuiData.mSystemIndex]->getDrawVars()->setSrv(2, mpTextures[texIndex]->getSRV());
                 mPsData[mGuiData.mSystemIndex].data.texIndex = texIndex;
             }
             break;
@@ -169,7 +168,7 @@ void Particles::onLoad()
     mpCamera = Camera::create();
     mpCamera->setPosition(mpCamera->getPosition() + glm::vec3(0, 5, 10));
     mpCamController.attachCamera(mpCamera);
-    mTextures.push_back(createTextureFromFile(kDefaultTexture, true, false));
+    mpTextures.push_back(createTextureFromFile(kDefaultTexture, true, false));
     mGuiData.mTexDropdown.push_back({ 0, kDefaultTexture });
     BlendState::Desc blendDesc;
     blendDesc.setRtBlend(0, true);
@@ -185,15 +184,11 @@ void Particles::onFrameRender()
  	mpRenderContext->clearFbo(mpDefaultFBO.get(), clearColor, 1.0f, 0, FboAttachmentType::All);
     mpCamController.update();
 
-    for (auto it = mParticleSystems.begin(); it != mParticleSystems.end(); ++it)
+    for (auto it = mpParticleSystems.begin(); it != mpParticleSystems.end(); ++it)
     {
         (*it)->update(mpRenderContext.get(), frameRate().getLastFrameTime(), mpCamera->getViewMatrix());
         (*it)->render(mpRenderContext.get(), mpCamera->getViewMatrix(), mpCamera->getProjMatrix());
     }
-}
-
-void Particles::onShutdown()
-{
 }
 
 bool Particles::onKeyEvent(const KeyboardEvent& keyEvent)
@@ -206,10 +201,6 @@ bool Particles::onMouseEvent(const MouseEvent& mouseEvent)
 {
     mpCamController.onMouseEvent(mouseEvent);
     return false;
-}
-
-void Particles::onDataReload()
-{
 }
 
 void Particles::onResizeSwapChain()

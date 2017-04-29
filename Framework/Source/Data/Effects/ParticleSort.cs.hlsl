@@ -59,7 +59,7 @@ void main(uint3 groupID : SV_GroupID, uint groupIndex : SV_GroupIndex)
                 if (descending)
                 {
                     //if this is less than other, not descending
-                    if (sortList[index].zDistance < sortList[compareIndex].zDistance)
+                    if (sortList[index].depth < sortList[compareIndex].depth)
                     {
                         Swap(index, compareIndex);
                     }
@@ -67,7 +67,7 @@ void main(uint3 groupID : SV_GroupID, uint groupIndex : SV_GroupIndex)
                 else
                 {
                     //if this is greater than other, not ascending
-                    if (sortList[index].zDistance > sortList[compareIndex].zDistance)
+                    if (sortList[index].depth > sortList[compareIndex].depth)
                     {
                         Swap(index, compareIndex);
                     }

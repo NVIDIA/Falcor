@@ -46,29 +46,89 @@ namespace Falcor
 
         using SharedPtr = std::shared_ptr<ParticleSystem>;
 
+        /** Creates a new particle system
+        \params[in] pCtx The render context
+        \params[in] maxParticles the max number of particles allowed at once, emits will be blocked if the system is maxxed out 
+        \params[in] drawPixelShader the pixel shader used to draw the particles
+        \params[in] simulateComputeShader the compute shader used to update the particles
+        \params[in] sorted whether or not the particles should be sorted by depth before render
+        */
         static SharedPtr create(RenderContext* pCtx, uint32_t maxParticles,
             std::string drawPixelShader = kDefaultPixelShader,
             std::string simulateComputeShader = kDefaultSimulateShader,
             bool sorted = true);
-        void update(RenderContext* pCtx, float dt, glm::mat4 view);
-        void render(RenderContext* pCtx, glm::mat4 view, glm::mat4 proj);
-        void renderUi(Gui* pGui);
-        GraphicsProgram::SharedPtr getDrawProgram() { return mDrawResources.shader; }
-        GraphicsVars::SharedPtr getDrawVars() { return mDrawResources.vars; }
-        ComputeProgram::SharedPtr getSimulateProgram() { return mSimulateResources.state->getProgram(); }
-        ComputeVars::SharedPtr getSimulateVars() { return mSimulateResources.vars; }
 
+        /** Updates the particle system, emitting if it's time to do so and simulating particles 
+        */
+        void update(RenderContext* pCtx, float dt, glm::mat4 view);
+        /** Render the particle system, sorting if necessary and drawing the particles
+        */
+        void render(RenderContext* pCtx, glm::mat4 view, glm::mat4 proj);
+        /** Set UI elements
+        */
+        void renderUi(Gui* pGui);
+
+        /** Returns a ptr to the draw shader
+        */
+        GraphicsProgram::SharedPtr getDrawProgram() { return mDrawResources.pShader; }
+        /** Returns a ptr to the gfx vars for drawing
+        */
+        GraphicsVars::SharedPtr getDrawVars() { return mDrawResources.pVars; }
+        /** Returns a ptr to the simulate shader 
+        */
+        ComputeProgram::SharedPtr getSimulateProgram() { return mSimulateResources.pState->getProgram(); }
+        /** Returns a ptr to the gfx vars for simulate
+        */
+        ComputeVars::SharedPtr getSimulateVars() { return mSimulateResources.pVars; }
+
+        /** Sets how long a particle will remain alive after spawning
+        \params[in] dur the new base duration 
+        \params[in] offset the new random offset to be applied. final value is base + randRange(-offset, offset)
+        */
         void setParticleDuration(float dur, float offset);
+        /** Returns the particle emitter's current duration 
+        */
         float getParticleDuration() { return mEmitter.duration; }
+        /** Sets data associated with the emitting of particles
+        \params[in] dur the new base emit count
+        \params[in] emitCountOffset the new random offset to be applied. final value is base + randRange(-offset, offset)
+        \params[in] emitFrequency the frequency at which particles should be emitted
+        */
         void setEmitData(uint32_t emitCount, uint32_t emitCountOffset, float emitFrequency);
+        /** Sets particles' spawn position
+        \params[in] dur the new base spawn position
+        \params[in] offset the new random offset to be applied. final value is base + randRange(-offset, offset)
+        */
         void setSpawnPos(vec3 spawnPos, vec3 offset);
+        /** Sets the velocity particles spawn with
+        \params[in] dur the new base velocity
+        \params[in] offset the new random offset to be applied. final value is base + randRange(-offset, offset)
+        */
         void setVelocity(vec3 velocity, vec3 offset);
+        /** Sets the acceleration particles spawn with
+        \params[in] dur the new base acceleration
+        \params[in] offset the new random offset to be applied. final value is base + randRange(-offset, offset)
+        */
         void setAcceleration(vec3 accel, vec3 offset);
+        /** Sets the scale particles spawn with
+        \params[in] dur the new base scale
+        \params[in] offset the new random offset to be applied. final value is base + randRange(-offset, offset)
+        */
         void setScale(float scale, float offset);
+        /** Sets the rate of change of the particles' scale
+        \params[in] dur the new base growth
+        \params[in] offset the new random offset to be applied. final value is base + randRange(-offset, offset)
+        */
         void setGrowth(float growth, float offset);
-        //in radians
+        /** Sets the rotation particles spawn with
+        \params[in] dur the new base rotation in radians
+        \params[in] offset the new random offset to be applied. final value is base + randRange(-offset, offset)
+        */
         void setBillboardRotation(float rot, float offset);
-        //in radians/sec
+        /** Sets the the rate of change of the particles' rotation
+        \params[in] dur the new base rotational velocity in radians/second
+        \params[in] offset the new random offset to be applied. final value is base + randRange(-offset, offset)
+        */        
         void setBillboardRotationVelocity(float rotVel, float offset);
 
     private:
@@ -107,21 +167,21 @@ namespace Falcor
 
         struct EmitResources
         {
-            ComputeVars::SharedPtr vars;
-            ComputeState::SharedPtr state;
+            ComputeVars::SharedPtr pVars;
+            ComputeState::SharedPtr pState;
         } mEmitResources;
 
         struct SimulateResources
         {
-            ComputeVars::SharedPtr vars;
-            ComputeState::SharedPtr state;
+            ComputeVars::SharedPtr pVars;
+            ComputeState::SharedPtr pState;
         } mSimulateResources;
 
         struct DrawResources
         {
-            GraphicsProgram::SharedPtr shader;
-            GraphicsVars::SharedPtr vars;
-            Vao::SharedPtr vao;
+            GraphicsProgram::SharedPtr pShader;
+            GraphicsVars::SharedPtr pVars;
+            Vao::SharedPtr pVao;
         } mDrawResources;
 
         uint32_t mMaxParticles;
@@ -142,9 +202,9 @@ namespace Falcor
         std::vector<SortData> mSortDataReset;
         struct SortResources
         {
-            StructuredBuffer::SharedPtr sortIterationCounter;
-            ComputeState::SharedPtr state;
-            ComputeVars::SharedPtr vars;
+            StructuredBuffer::SharedPtr pSortIterationCounter;
+            ComputeState::SharedPtr pState;
+            ComputeVars::SharedPtr pVars;
         } mSortResources;
     };
 }

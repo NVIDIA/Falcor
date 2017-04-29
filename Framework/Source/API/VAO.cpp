@@ -32,13 +32,6 @@ namespace Falcor
 {
     bool checkVaoParams(const Vao::BufferVec& vbDesc, const VertexLayout* pLayout, Buffer* pIB, ResourceFormat ibFormat)
     {
-        // Must have at least 1 VB
-        if(vbDesc.size() == 0)
-        {
-            //empty vao is fine
-            return true;
-        }
-
         if (pLayout->getBufferCount() != vbDesc.size())
         {
             logError("Error when creating VAO. Number of buffers in the BufferVec is different then the number of buffers in the vertex layout object");

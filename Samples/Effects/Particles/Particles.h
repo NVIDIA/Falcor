@@ -35,11 +35,9 @@ class Particles : public Sample
 public:
     void onLoad() override;
     void onFrameRender() override;
-    void onShutdown() override;
     void onResizeSwapChain() override;
     bool onKeyEvent(const KeyboardEvent& keyEvent) override;
     bool onMouseEvent(const MouseEvent& mouseEvent) override;
-    void onDataReload() override;
     void onGuiRender() override;
 
 private:
@@ -92,9 +90,9 @@ private:
         PSData data;
     };
 
-    std::vector<ParticleSystem::SharedPtr> mParticleSystems;
+    std::vector<ParticleSystem::SharedPtr> mpParticleSystems;
     Camera::SharedPtr mpCamera;
     FirstPersonCameraController mpCamController;
     std::vector<PixelShaderData> mPsData;
-    std::vector<Texture::SharedPtr> mTextures;
+    std::vector<Texture::SharedPtr> mpTextures;
 };
