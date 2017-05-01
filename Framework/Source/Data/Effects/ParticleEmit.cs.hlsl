@@ -36,6 +36,7 @@ cbuffer PerEmit
 
 ConsumeStructuredBuffer<uint> deadList;
 RWStructuredBuffer<Particle> particlePool;
+StructuredBuffer<Particle> emitList;
 ByteAddressBuffer numAlive;
 
 [numthreads(EMIT_THREADS, 1, 1)]
@@ -50,7 +51,7 @@ void main(int3 groupID : SV_GroupID, int3 threadID : SV_GroupThreadID)
         if (index < emitData.maxParticles - (numAliveParticles + emitData.numEmit))
         {
             uint deadIndex = deadList.Consume();
-            particlePool[deadIndex] = emitData.particles[index];
+            particlePool[deadIndex] = emitList[index];
         }
     }
 }

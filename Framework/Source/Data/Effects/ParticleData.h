@@ -30,7 +30,6 @@
 
 #include "Data/HostDeviceData.h"
 
-#define MAX_EMIT 512
 #define EMIT_THREADS 64
 #define SORT_THREADS 1024
 
@@ -53,7 +52,6 @@ struct EmitData
     uint numEmit;
     uint maxParticles;
     vec2 padding;
-    Particle particles[MAX_EMIT];
 };
 
 struct SortData

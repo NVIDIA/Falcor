@@ -40,14 +40,18 @@ namespace Falcor
     const char* ParticleSystem::kDefaultPixelShader = "Effects/ParitcleTexture.ps.hlsl";
     const char* ParticleSystem::kDefaultSimulateShader = "Effects/ParticleSimulate.cs.hlsl";
 
-    ParticleSystem::SharedPtr ParticleSystem::create(RenderContext* pCtx, uint32_t maxParticles, std::string drawPixelShader, std::string simulateComputeShader, bool sorted)
+    ParticleSystem::SharedPtr ParticleSystem::create(RenderContext* pCtx, uint32_t maxParticles, uint32_t maxEmitPerFrame,
+        std::string drawPixelShader, std::string simulateComputeShader, bool sorted)
     {
-        return ParticleSystem::SharedPtr(new ParticleSystem(pCtx, maxParticles, drawPixelShader, simulateComputeShader, sorted));
+        return ParticleSystem::SharedPtr(
+            new ParticleSystem(pCtx, maxParticles, maxEmitPerFrame, drawPixelShader, simulateComputeShader, sorted));
     }
 
-    ParticleSystem::ParticleSystem(RenderContext* pCtx, uint32_t maxParticles, std::string drawPixelShader, std::string simulateComputeShader, bool sorted)
+    ParticleSystem::ParticleSystem(RenderContext* pCtx, uint32_t maxParticles, uint32_t maxEmitPerFrame,
+        std::string drawPixelShader, std::string simulateComputeShader, bool sorted)
     {
         mShouldSort = sorted;
+        mMaxEmitPerFrame = maxEmitPerFrame;
 
         //Data that is different if system is sorted
         Program::DefineList defineList;
@@ -64,7 +68,6 @@ namespace Falcor
         //compute cs
         ComputeProgram::SharedPtr simulateCs = ComputeProgram::createFromFile(simulateComputeShader, defineList);
         auto pSimulateReflect = simulateCs->getActiveVersion()->getReflector();
-        mDrawResources.pShader = GraphicsProgram::createFromFile(kVertexShader, drawPixelShader, defineList);
   
         //get num sim threads, required as a define for emit cs
         uint32_t simThreadsX = 1, simThreadsY = 1, simThreadsZ= 1;
@@ -77,16 +80,18 @@ namespace Falcor
         emitDefines.add("_SIMULATE_THREADS", std::to_string(mSimulateThreads));
         ComputeProgram::SharedPtr emitCs = ComputeProgram::createFromFile(kEmitShader, emitDefines);
 
+        //draw shader
+        GraphicsProgram::SharedPtr pDrawProgram = GraphicsProgram::createFromFile(kVertexShader, drawPixelShader, defineList);
+
         //Buffers
-        //indirect args
-        uint32_t indirectInitialValues[4] = { 4, 0, 0, 0 };
-        uint32_t indirectArgsSize = sizeof(D3D12_DRAW_ARGUMENTS);
-        mpIndirectArgs = StructuredBuffer::create(pSimulateReflect->
-            getBufferDesc("drawArgs", ProgramReflection::BufferReflection::Type::Structured),
-            indirectArgsSize / sizeof(uint32_t), Resource::BindFlags::UnorderedAccess | Resource::BindFlags::IndirectArg);
-        mpIndirectArgs->setBlob(indirectInitialValues, 0, indirectArgsSize);
-        //Dead List
         ProgramReflection::SharedConstPtr pEmitReflect = emitCs->getActiveVersion()->getReflector();
+        //ParticlePool
+        auto particlePoolReflect = pEmitReflect->getBufferDesc("particlePool", ProgramReflection::BufferReflection::Type::Structured);
+        mpParticlePool = StructuredBuffer::create(particlePoolReflect, mMaxParticles);
+        //emitList
+        auto emitListReflect = pEmitReflect->getBufferDesc("emitList", ProgramReflection::BufferReflection::Type::Structured);
+        mpEmitList = StructuredBuffer::create(emitListReflect, mMaxEmitPerFrame);
+        //Dead List
         auto deadListReflect = pEmitReflect->getBufferDesc("deadList", ProgramReflection::BufferReflection::Type::Structured);
         mpDeadList = StructuredBuffer::create(deadListReflect, mMaxParticles);
         //init data in dead list buffer
@@ -99,15 +104,20 @@ namespace Falcor
         //Alive list
         auto aliveListReflect = pSimulateReflect->getBufferDesc("aliveList", ProgramReflection::BufferReflection::Type::Structured);
         mpAliveList = StructuredBuffer::create(aliveListReflect, mMaxParticles);
-        //ParticlePool
-        auto particlePoolReflect = pEmitReflect->getBufferDesc("particlePool", ProgramReflection::BufferReflection::Type::Structured);
-        mpParticlePool = StructuredBuffer::create(particlePoolReflect, mMaxParticles);
+        //indirect args
+        uint32_t indirectInitialValues[4] = { 4, 0, 0, 0 };
+        uint32_t indirectArgsSize = sizeof(D3D12_DRAW_ARGUMENTS);
+        mpIndirectArgs = StructuredBuffer::create(pSimulateReflect->
+            getBufferDesc("drawArgs", ProgramReflection::BufferReflection::Type::Structured),
+            indirectArgsSize / sizeof(uint32_t), Resource::BindFlags::UnorderedAccess | Resource::BindFlags::IndirectArg);
+        mpIndirectArgs->setBlob(indirectInitialValues, 0, indirectArgsSize);
 
         //Vars
         //emit
         mEmitResources.pVars = ComputeVars::create(pEmitReflect);
         mEmitResources.pVars->setStructuredBuffer("deadList", mpDeadList);
         mEmitResources.pVars->setStructuredBuffer("particlePool", mpParticlePool);
+        mEmitResources.pVars->setStructuredBuffer("emitList", mpEmitList);
         mEmitResources.pVars->setRawBuffer("numAlive", mpAliveList->getUAVCounter());
         //simulate
         mSimulateResources.pVars = ComputeVars::create(pSimulateReflect);
@@ -124,7 +134,7 @@ namespace Falcor
             mSortResources.pVars->setStructuredBuffer("iterationCounter", mSortResources.pSortIterationCounter);
         }
         //draw
-        mDrawResources.pVars = GraphicsVars::create(mDrawResources.pShader->getActiveVersion()->getReflector());
+        mDrawResources.pVars = GraphicsVars::create(pDrawProgram->getActiveVersion()->getReflector());
         mDrawResources.pVars->setStructuredBuffer("aliveList", mpAliveList);
         mDrawResources.pVars->setStructuredBuffer("particlePool", mpParticlePool);
 
@@ -133,18 +143,20 @@ namespace Falcor
         mEmitResources.pState->setProgram(emitCs);
         mSimulateResources.pState = ComputeState::create();
         mSimulateResources.pState->setProgram(simulateCs);
+        mDrawResources.pState = GraphicsState::create();
+        mDrawResources.pState->setProgram(pDrawProgram);
 
         //Create empty vbo for draw 
         Vao::BufferVec bufferVec;
         VertexLayout::SharedPtr pLayout = VertexLayout::create();
         Vao::Topology topology = Vao::Topology::TriangleStrip;
-        mDrawResources.pVao = Vao::create(bufferVec, pLayout, nullptr, ResourceFormat::R32Uint, topology);
+        mDrawResources.pState->setVao(Vao::create(bufferVec, pLayout, nullptr, ResourceFormat::R32Uint, topology));
     }
 
     void ParticleSystem::emit(RenderContext* pCtx, uint32_t num)
     {
-        //Fill emit data
-        EmitData emitData;
+        std::vector<Particle> emittedParticles;
+        emittedParticles.resize(num);
         for (uint32_t i = 0; i < num; ++i)
         {
             Particle p;  
@@ -157,10 +169,14 @@ namespace Falcor
             p.life = mEmitter.duration + glm::linearRand(-mEmitter.growthOffset, mEmitter.growthOffset);
             p.rot = mEmitter.billboardRotation + glm::linearRand(-mEmitter.billboardRotationOffset, mEmitter.billboardRotationOffset);
             p.rotVel = mEmitter.billboardRotationVel + glm::linearRand(-mEmitter.billboardRotationVelOffset, mEmitter.billboardRotationVelOffset);
-            emitData.particles[i] = p;
+            emittedParticles[i] = p;
         }
+        //Fill emit data
+        EmitData emitData;
         emitData.numEmit = num;
         emitData.maxParticles = mMaxParticles;
+        //update emitted particles list
+        mpEmitList->setBlob(emittedParticles.data(), 0, emittedParticles.size() * sizeof(Particle));
 
         //Send vars and call
         pCtx->pushComputeState(mEmitResources.pState);
@@ -231,22 +247,18 @@ namespace Falcor
         cbuf.proj = proj;
         mDrawResources.pVars->getConstantBuffer(0)->setBlob(&cbuf, 0, sizeof(cbuf));
 
-        //save prev vao and shader program
+        //particle draw uses many of render context's existing state's properties 
         GraphicsState::SharedPtr state = pCtx->getGraphicsState();
-        GraphicsProgram::SharedPtr prevShader = state->getProgram();
-        Vao::SharedConstPtr prevVao = state->getVao();
-        //update vao/draw shader
-        state->setProgram(mDrawResources.pShader);
-        state->setVao(mDrawResources.pVao);
+        mDrawResources.pState->setBlendState(state->getBlendState());
+        mDrawResources.pState->setFbo(state->getFbo());
+        mDrawResources.pState->setRasterizerState(state->getRasterizerState());
+        mDrawResources.pState->setDepthStencilState(state->getDepthStencilState());
+
+        pCtx->pushGraphicsState(mDrawResources.pState);
         pCtx->pushGraphicsVars(mDrawResources.pVars);
         pCtx->drawIndirect(mpIndirectArgs.get(), 0);
         pCtx->popGraphicsVars();
-        //can't set null vao, will crash
-        if (prevVao)
-        {
-            state->setVao(prevVao);
-        }
-        state->setProgram(prevShader);
+        pCtx->popGraphicsState();
     }
 
     void ParticleSystem::renderUi(Gui* pGui)
@@ -256,7 +268,7 @@ namespace Falcor
         pGui->addFloatVar("DurationOffset", mEmitter.durationOffset, 0.f);
         pGui->addFloatVar("Frequency", mEmitter.emitFrequency, 0.01f);
         int32_t emitCount = mEmitter.emitCount;
-        pGui->addIntVar("EmitCount", emitCount, 0, MAX_EMIT);
+        pGui->addIntVar("EmitCount", emitCount, 0, mMaxEmitPerFrame);
         mEmitter.emitCount = emitCount;
         pGui->addIntVar("EmitCountOffset", mEmitter.emitCountOffset, 0);
         pGui->addFloat3Var("SpawnPos", mEmitter.spawnPos, -floatMax, floatMax);

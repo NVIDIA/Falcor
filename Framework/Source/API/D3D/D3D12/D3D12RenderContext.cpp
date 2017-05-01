@@ -48,7 +48,7 @@ namespace Falcor
 
         if (spDrawCommandSig == nullptr)
         {
-            initCommandSignatures();
+            initDrawCommandSignatures();
         }
 
         return pCtx;
@@ -256,6 +256,27 @@ namespace Falcor
         prepareForDraw();
         resourceBarrier(argBuffer, Resource::State::IndirectArg);
         mpLowLevelData->getCommandList()->ExecuteIndirect(spDrawIndexCommandSig, 1, argBuffer->getApiHandle(), argBufferOffset, nullptr, 0);
+    }
+
+    void RenderContext::initDrawCommandSignatures()
+    {
+        //Common properties
+        D3D12_COMMAND_SIGNATURE_DESC sigDesc;
+        sigDesc.NumArgumentDescs = 1;
+        sigDesc.NodeMask = 0;
+        D3D12_INDIRECT_ARGUMENT_DESC argDesc;
+
+        //Draw 
+        sigDesc.ByteStride = sizeof(D3D12_DRAW_ARGUMENTS);
+        argDesc.Type = D3D12_INDIRECT_ARGUMENT_TYPE_DRAW;
+        sigDesc.pArgumentDescs = &argDesc;
+        gpDevice->getApiHandle()->CreateCommandSignature(&sigDesc, nullptr, IID_PPV_ARGS(&spDrawCommandSig));
+
+        //Draw index
+        sigDesc.ByteStride = sizeof(D3D12_DRAW_INDEXED_ARGUMENTS);
+        argDesc.Type = D3D12_INDIRECT_ARGUMENT_TYPE_DRAW_INDEXED;
+        sigDesc.pArgumentDescs = &argDesc;
+        gpDevice->getApiHandle()->CreateCommandSignature(&sigDesc, nullptr, IID_PPV_ARGS(&spDrawIndexCommandSig));
     }
 
     void RenderContext::applyProgramVars() {}

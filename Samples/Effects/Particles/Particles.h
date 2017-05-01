@@ -55,40 +55,23 @@ private:
         uint32_t mPixelShaderIndex = 0;
         bool mSortSystem = false;
         int32_t mMaxParticles = 4096;
+        int32_t mMaxEmitPerFrame = 512;
         Gui::DropdownList mTexDropdown;
     } mGuiData;
 
-    union PSData
+    struct PixelShaderData
     {
-        PSData() : color(vec4(1.f, 1.f, 1.f, 1.f)) {}
-        ~PSData() {}
-        PSData(vec4 newColor) : color(newColor) {};
-        PSData(ColorInterpPsPerFrame interpData) : interp(interpData) {};
-        PSData(uint32_t newTexIndex) : texIndex(newTexIndex) {};
-        vec4 color;
-        ColorInterpPsPerFrame interp;
+        PixelShaderData(vec4 color) { type = ExamplePixelShaders::ConstColor; colorData.color1 = color; }
+        PixelShaderData(ColorInterpPsPerFrame data) { type = ExamplePixelShaders::ColorInterp; colorData = data; }
+        PixelShaderData(uint32_t newTexIndex) { type = ExamplePixelShaders::Textured; texIndex = newTexIndex; }
+
+        ExamplePixelShaders type;
+        ColorInterpPsPerFrame colorData;
         uint32_t texIndex;
     };
 
-    struct PixelShaderData
-    {
-        PixelShaderData(const PixelShaderData& rhs) 
-        {
-            type = rhs.type;
-            switch (type)
-            {
-            case ExamplePixelShaders::ConstColor: data.color = rhs.data.color; return;
-            case ExamplePixelShaders::ColorInterp: data.interp = rhs.data.interp; return;
-            case ExamplePixelShaders::Textured: data.texIndex = rhs.data.texIndex; return;
-            default: should_not_get_here();
-            }
-        }
-        PixelShaderData(vec4 color) : type(ExamplePixelShaders::ConstColor), data(color) {}
-        PixelShaderData(ColorInterpPsPerFrame interpData) : type(ExamplePixelShaders::ColorInterp), data(interpData) {}
-        PixelShaderData(uint32_t texIndex) : type(ExamplePixelShaders::Textured), data(texIndex) {}
-        ExamplePixelShaders type;
-        PSData data;
-    };
+    void CreateSystemGui();
+    void EditPropertiesGui();
 
     std::vector<ParticleSystem::SharedPtr> mpParticleSystems;
     Camera::SharedPtr mpCamera;

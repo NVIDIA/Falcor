@@ -53,7 +53,7 @@ namespace Falcor
         \params[in] simulateComputeShader the compute shader used to update the particles
         \params[in] sorted whether or not the particles should be sorted by depth before render
         */
-        static SharedPtr create(RenderContext* pCtx, uint32_t maxParticles,
+        static SharedPtr create(RenderContext* pCtx, uint32_t maxParticles, uint32_t maxEmitPerFrame,
             std::string drawPixelShader = kDefaultPixelShader,
             std::string simulateComputeShader = kDefaultSimulateShader,
             bool sorted = true);
@@ -68,9 +68,6 @@ namespace Falcor
         */
         void renderUi(Gui* pGui);
 
-        /** Returns a ptr to the draw shader
-        */
-        GraphicsProgram::SharedPtr getDrawProgram() { return mDrawResources.pShader; }
         /** Returns a ptr to the gfx vars for drawing
         */
         GraphicsVars::SharedPtr getDrawVars() { return mDrawResources.pVars; }
@@ -133,7 +130,7 @@ namespace Falcor
 
     private:
         ParticleSystem() = delete;
-        ParticleSystem(RenderContext* pCtx, uint32_t maxParticles,
+        ParticleSystem(RenderContext* pCtx, uint32_t maxParticles, uint32_t maxEmitPerFrame,
             std::string drawPixelShader, std::string simulateComputeShader, bool sorted);
         void emit(RenderContext* pCtx, uint32_t num);
 
@@ -179,17 +176,19 @@ namespace Falcor
 
         struct DrawResources
         {
-            GraphicsProgram::SharedPtr pShader;
             GraphicsVars::SharedPtr pVars;
+            GraphicsState::SharedPtr pState;
             Vao::SharedPtr pVao;
         } mDrawResources;
 
         uint32_t mMaxParticles;
+        uint32_t mMaxEmitPerFrame;
         uint32_t mSimulateThreads;
         float mEmitTimer = 0.f;
 
         //buffers
         StructuredBuffer::SharedPtr mpParticlePool;
+        StructuredBuffer::SharedPtr mpEmitList;
         StructuredBuffer::SharedPtr mpDeadList;
         StructuredBuffer::SharedPtr mpAliveList;
         //for draw (0 - Verts Per Instance, 1 - Instance Count, 

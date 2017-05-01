@@ -195,7 +195,7 @@ namespace Falcor
         /** Creates command signatures for DrawIndirect, DrawIndexedIndirect. Also calls
         compute context's initDispatchCommandSignature() to create command signature for dispatchIndirect
         */
-        static void initCommandSignatures();
+        static void initDrawCommandSignatures();
 
         static void initBlitData();
         static void releaseBlitData();
