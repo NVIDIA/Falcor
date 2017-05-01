@@ -176,6 +176,7 @@ namespace Falcor
         { VERTEX_NORMAL_LOC,        VERTEX_NORMAL_NAME,         ResourceFormat::RGB32Float },
         { VERTEX_BITANGENT_LOC,     VERTEX_BITANGENT_NAME,      ResourceFormat::RGB32Float },
         { VERTEX_TEXCOORD_LOC,      VERTEX_TEXCOORD_NAME,       ResourceFormat::RGB32Float }, //for some reason this is rgb
+        { VERTEX_LIGHTMAP_UV_LOC,   VERTEX_LIGHTMAP_UV_NAME,    ResourceFormat::RGB32Float }, //for some reason this is rgb
         { VERTEX_BONE_WEIGHT_LOC,   VERTEX_BONE_WEIGHT_NAME,    ResourceFormat::RGBA32Float },
         { VERTEX_BONE_ID_LOC,       VERTEX_BONE_ID_NAME,        ResourceFormat::RGBA8Uint },
         { VERTEX_DIFFUSE_COLOR_LOC, VERTEX_DIFFUSE_COLOR_NAME,  ResourceFormat::RGBA32Float },
@@ -804,6 +805,8 @@ namespace Falcor
             return pAiMesh->HasVertexColors(0);
         case VERTEX_TEXCOORD_LOC:
             return pAiMesh->HasTextureCoords(0);
+        case VERTEX_LIGHTMAP_UV_LOC:
+            return pAiMesh->HasTextureCoords(1);
         default:
             should_not_get_here();
             return false;
@@ -815,19 +818,14 @@ namespace Falcor
         // Must have position!!!
         if (pAiMesh->HasPositions() == false)
         {
-            logError("Loaded mesh with no positions!");
+            logError("AssimpModelImporter: Loaded mesh with no positions!");
             return nullptr;
         }
 
-        if (pAiMesh->GetNumUVChannels() > 1)
+        // Must at least have texture UV channel
+        if ((pAiMesh->HasTextureCoords(0) == false))
         {
-            logError("Too many texture-coordinate sets when creating model");
-            return nullptr;
-        }
-
-        if ((pAiMesh->GetNumUVChannels()) == 1 && (pAiMesh->HasTextureCoords(0) == false))
-        {
-            logError("AssimpModelImporter: Unsupported texture coordinate set used in model.");
+            logError("AssimpModelImporter: Loaded mesh with no texture UVs!");
             return nullptr;
         }
 
@@ -886,6 +884,10 @@ namespace Falcor
                 case VERTEX_TEXCOORD_LOC:
                     pSrc = (uint8_t*)(&pAiMesh->mTextureCoords[0][vertexID]);
                     size = sizeof(pAiMesh->mTextureCoords[0][vertexID]);
+                    break;
+                case VERTEX_LIGHTMAP_UV_LOC:
+                    pSrc = (uint8_t*)(&pAiMesh->mTextureCoords[1][vertexID]);
+                    size = sizeof(pAiMesh->mTextureCoords[1][vertexID]);
                     break;
                 case VERTEX_BONE_WEIGHT_LOC:
                     pSrc = (uint8_t*)(&pBoneWeights[vertexID]);

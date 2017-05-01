@@ -193,6 +193,10 @@ namespace Falcor
                         {
                             pProg->addDefine("HAS_TEXCRD");
                         }
+                        if (l->getElementShaderLocation(i) == VERTEX_LIGHTMAP_UV_LOC)
+                        {
+                            pProg->addDefine("HAS_LIGHTMAP_UV");
+                        }
                         if (l->getElementShaderLocation(i) == VERTEX_DIFFUSE_COLOR_LOC)
                         {
                             pProg->addDefine("HAS_COLORS");
