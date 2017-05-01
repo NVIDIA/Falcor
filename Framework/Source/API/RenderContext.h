@@ -121,11 +121,11 @@ namespace Falcor
 
         /** Executes a draw call. Args to the draw call are contained in argbuffer
         */
-        void drawIndirect(Resource* argBuffer, uint64_t argBufferOffset);
+        void drawIndirect(Buffer* argBuffer, uint64_t argBufferOffset);
 
         /** Executes a drawIndexed call. Args to the drawIndexed call are contained in argbuffer
         */
-        void drawIndexedIndirect(Resource* argBuffer, uint64_t argBufferOffset);
+        void drawIndexedIndirect(Buffer* argBuffer, uint64_t argBufferOffset);
 
         void blit(ShaderResourceView::SharedPtr pSrc, RenderTargetView::SharedPtr pDst, const uvec4& srcRect = uvec4(-1), const uvec4& dstRect = uvec4(-1), Sampler::Filter = Sampler::Filter::Linear);
 

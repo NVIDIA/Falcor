@@ -167,7 +167,7 @@ namespace Falcor
         gpDevice->getApiHandle()->CreateCommandSignature(&sigDesc, nullptr, IID_PPV_ARGS(&spDispatchCommandSig));
     }
 
-    void ComputeContext::dispatchIndirect(Resource* argBuffer, uint64_t argBufferOffset)
+    void ComputeContext::dispatchIndirect(Buffer* argBuffer, uint64_t argBufferOffset)
     {
         prepareForDispatch();
         resourceBarrier(argBuffer, Resource::State::IndirectArg);

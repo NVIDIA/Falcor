@@ -47,7 +47,7 @@ AppendStructuredBuffer<uint> aliveList;
 #endif
 RWStructuredBuffer<Particle> particlePool;
 RWByteAddressBuffer numDead;
-RWStructuredBuffer<uint> drawArgs;
+RWStructuredBuffer<DrawArguments> drawArgs;
 
 uint getNextPow2(uint n)
 {
@@ -101,11 +101,10 @@ void main(uint3 groupID : SV_GroupID, uint groupIndex : SV_GroupIndex)
     {
         uint numDeadParticles = (uint)(numDead.Load(0));
         uint numAliveParticles = perFrame.maxParticles - numDeadParticles;
-        //todo define num sort threads in header
 #ifdef _SORT
         sortIterationCounter[0] = max(SORT_THREADS, getNextPow2(numAliveParticles));
         sortIterationCounter[1] = sortIterationCounter[0] / SORT_THREADS;
 #endif
-        drawArgs[1] = numAliveParticles;
+        drawArgs[0].instanceCount = numAliveParticles;
     }
 }

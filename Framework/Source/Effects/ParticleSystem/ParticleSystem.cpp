@@ -106,11 +106,9 @@ namespace Falcor
         mpAliveList = StructuredBuffer::create(aliveListReflect, mMaxParticles);
         //indirect args
         uint32_t indirectInitialValues[4] = { 4, 0, 0, 0 };
-        uint32_t indirectArgsSize = sizeof(D3D12_DRAW_ARGUMENTS);
-        mpIndirectArgs = StructuredBuffer::create(pSimulateReflect->
-            getBufferDesc("drawArgs", ProgramReflection::BufferReflection::Type::Structured),
-            indirectArgsSize / sizeof(uint32_t), Resource::BindFlags::UnorderedAccess | Resource::BindFlags::IndirectArg);
-        mpIndirectArgs->setBlob(indirectInitialValues, 0, indirectArgsSize);
+        Resource::BindFlags indirectBindFlags = Resource::BindFlags::IndirectArg | Resource::BindFlags::UnorderedAccess;
+        mpIndirectArgs = StructuredBuffer::create(pSimulateReflect->getBufferDesc("drawArgs", ProgramReflection::BufferReflection::Type::Structured), 1, indirectBindFlags);
+        mpIndirectArgs->setBlob(indirectInitialValues, 0, sizeof(DrawArguments));
 
         //Vars
         //emit
