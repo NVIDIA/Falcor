@@ -244,14 +244,14 @@ namespace Falcor
         drawIndexedInstanced(indexCount, 1, startIndexLocation, baseVertexLocation, 0);
     }
 
-    void RenderContext::drawIndirect(Buffer* argBuffer, uint64_t argBufferOffset)
+    void RenderContext::drawIndirect(const Buffer* argBuffer, uint64_t argBufferOffset)
     {
         prepareForDraw();
         resourceBarrier(argBuffer, Resource::State::IndirectArg);
         mpLowLevelData->getCommandList()->ExecuteIndirect(spDrawCommandSig, 1, argBuffer->getApiHandle(), argBufferOffset, nullptr, 0);
     }
 
-    void RenderContext::drawIndexedIndirect(Buffer* argBuffer, uint64_t argBufferOffset)
+    void RenderContext::drawIndexedIndirect(const Buffer* argBuffer, uint64_t argBufferOffset)
     {
         prepareForDraw();
         resourceBarrier(argBuffer, Resource::State::IndirectArg);

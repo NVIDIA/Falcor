@@ -97,7 +97,7 @@ namespace Falcor
 
         /** Executes a dispatch call. Args to the dispatch call are contained in argbuffer 
         */
-        void dispatchIndirect(Buffer* argBuffer, uint64_t argBufferOffset);
+        void dispatchIndirect(const Buffer* argBuffer, uint64_t argBufferOffset);
 
     protected:
         ComputeContext() = default;

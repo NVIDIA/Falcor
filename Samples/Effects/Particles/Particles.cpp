@@ -38,7 +38,7 @@ const Gui::DropdownList kPixelShaders
 const char* kConstColorPs = "Effects/ParticleConstColor.ps.hlsl";
 const char* kColorInterpPs = "Effects/ParticleInterpColor.ps.hlsl";
 const char* kTexturedPs = "Effects/ParticleTexture.ps.hlsl";
-const std::string kDefaultTexture = "TestParticle.png";
+const std::string kDefaultTexture = "smoke-puff.png";
 
 void Particles::onGuiRender()
 {
@@ -139,8 +139,15 @@ void Particles::CreateSystemGui()
                 ParticleSystem::SharedPtr pSys = ParticleSystem::create(mpRenderContext.get(), mGuiData.mMaxParticles,
                     mGuiData.mMaxEmitPerFrame, kTexturedPs, ParticleSystem::kDefaultSimulateShader, mGuiData.mSortSystem);
                 mpParticleSystems.push_back(pSys);
-                mPsData.push_back(0);
+                ColorInterpPsPerFrame perFrame;
+                perFrame.color1 = vec4(1.f, 1.f, 1.f, 1.f);
+                perFrame.colorT1 = pSys->getParticleDuration();
+                perFrame.color2 = vec4(1.f, 1.f, 1.f, 0.1f);
+                perFrame.colorT2 = 0.f;
+                mPsData.push_back(PixelShaderData(0, perFrame));
                 pSys->getDrawVars()->setSrv(2, mpTextures[0]->getSRV());
+                mpParticleSystems[mpParticleSystems.size() - 1]->getDrawVars()->getConstantBuffer(2)->
+                    setBlob(&mPsData[mPsData.size() - 1].colorData, 0, sizeof(ColorInterpPsPerFrame));
                 break;
             }
             default:
@@ -184,17 +191,7 @@ void Particles::EditPropertiesGui()
         }
         case ExamplePixelShaders::ColorInterp:
         {
-            bool dirty = mpGui->addRgbaColor("Color1", mPsData[mGuiData.mSystemIndex].colorData.color1);
-            dirty |= mpGui->addFloatVar("Color T1", mPsData[mGuiData.mSystemIndex].colorData.colorT1);
-            dirty |= mpGui->addRgbaColor("Color2", mPsData[mGuiData.mSystemIndex].colorData.color2);
-            dirty |= mpGui->addFloatVar("Color T2", mPsData[mGuiData.mSystemIndex].colorData.colorT2);
-
-            if (dirty)
-            {
-                mpParticleSystems[mGuiData.mSystemIndex]->getDrawVars()->getConstantBuffer(2)->
-                    setBlob(&mPsData[mGuiData.mSystemIndex].colorData, 0, sizeof(ColorInterpPsPerFrame));
-            }
-
+            UpdateColorInterpolation();
             break;
         }
         case ExamplePixelShaders::Textured:
@@ -213,6 +210,8 @@ void Particles::EditPropertiesGui()
                 mpParticleSystems[mGuiData.mSystemIndex]->getDrawVars()->setSrv(2, mpTextures[texIndex]->getSRV());
                 mPsData[mGuiData.mSystemIndex].texIndex = texIndex;
             }
+
+            UpdateColorInterpolation();
             break;
         }
         default:
@@ -220,6 +219,20 @@ void Particles::EditPropertiesGui()
         }
 
         mpGui->endGroup();
+    }
+}
+
+void Particles::UpdateColorInterpolation()
+{
+    bool dirty = mpGui->addRgbaColor("Color1", mPsData[mGuiData.mSystemIndex].colorData.color1);
+    dirty |= mpGui->addFloatVar("Color T1", mPsData[mGuiData.mSystemIndex].colorData.colorT1);
+    dirty |= mpGui->addRgbaColor("Color2", mPsData[mGuiData.mSystemIndex].colorData.color2);
+    dirty |= mpGui->addFloatVar("Color T2", mPsData[mGuiData.mSystemIndex].colorData.colorT2);
+
+    if (dirty)
+    {
+        mpParticleSystems[mGuiData.mSystemIndex]->getDrawVars()->getConstantBuffer(2)->
+            setBlob(&mPsData[mGuiData.mSystemIndex].colorData, 0, sizeof(ColorInterpPsPerFrame));
     }
 }
 

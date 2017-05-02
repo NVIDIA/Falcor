@@ -25,7 +25,10 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
+#include "ParticleData.h"
+
 SamplerState gSampler;
+StructuredBuffer<Particle> ParticlePool : register(t1);
 Texture2D gTex : register(t2);
 
 struct VSOut
@@ -35,10 +38,19 @@ struct VSOut
     uint particleIndex : ID;
 };
 
+cbuffer PsPerFrame : register(b2)
+{
+    ColorInterpPsPerFrame perFrame;
+};
+
 float4 main(VSOut vOut) : SV_Target0
 {
-    float4 color = gTex.Sample(gSampler, vOut.texCoords);
-    if (color.w < 0.5f)
+    float life = ParticlePool[vOut.particleIndex].life;
+    float t = saturate((perFrame.colorT1 - life) / (perFrame.colorT1 - perFrame.colorT2));
+    float4 tintColor = (1.0f - t) * perFrame.color1 + t * perFrame.color2;
+
+    float4 color = gTex.Sample(gSampler, vOut.texCoords) * tintColor;
+    if (color.w < 0.05f)
         discard;
     
     return color;

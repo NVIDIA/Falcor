@@ -105,10 +105,11 @@ namespace Falcor
         auto aliveListReflect = pSimulateReflect->getBufferDesc("aliveList", ProgramReflection::BufferReflection::Type::Structured);
         mpAliveList = StructuredBuffer::create(aliveListReflect, mMaxParticles);
         //indirect args
-        uint32_t indirectInitialValues[4] = { 4, 0, 0, 0 };
         Resource::BindFlags indirectBindFlags = Resource::BindFlags::IndirectArg | Resource::BindFlags::UnorderedAccess;
         mpIndirectArgs = StructuredBuffer::create(pSimulateReflect->getBufferDesc("drawArgs", ProgramReflection::BufferReflection::Type::Structured), 1, indirectBindFlags);
-        mpIndirectArgs->setBlob(indirectInitialValues, 0, sizeof(DrawArguments));
+        //initialize the first member of the args, vert count per instance, to be 4 for particle billboards
+        uint32_t vertexCountPerInstance = 4;
+        mpIndirectArgs->setBlob(&vertexCountPerInstance, 0, sizeof(uint32_t));
 
         //Vars
         //emit

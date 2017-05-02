@@ -63,8 +63,13 @@ private:
     {
         PixelShaderData(vec4 color) { type = ExamplePixelShaders::ConstColor; colorData.color1 = color; }
         PixelShaderData(ColorInterpPsPerFrame data) { type = ExamplePixelShaders::ColorInterp; colorData = data; }
-        PixelShaderData(uint32_t newTexIndex) { type = ExamplePixelShaders::Textured; texIndex = newTexIndex; }
-
+        PixelShaderData(uint32_t newTexIndex, ColorInterpPsPerFrame data) 
+        {
+            type = ExamplePixelShaders::Textured; 
+            texIndex = newTexIndex; 
+            colorData = data;
+        }
+       
         ExamplePixelShaders type;
         ColorInterpPsPerFrame colorData;
         uint32_t texIndex;
@@ -72,6 +77,7 @@ private:
 
     void CreateSystemGui();
     void EditPropertiesGui();
+    void UpdateColorInterpolation();
 
     std::vector<ParticleSystem::SharedPtr> mpParticleSystems;
     Camera::SharedPtr mpCamera;
