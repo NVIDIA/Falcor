@@ -34,7 +34,6 @@ namespace Falcor
     struct ShaderData
     {
         ID3DBlobPtr pBlob;
-        ShaderReflectionHandle pReflector;
     };
 
     static const char* kEntryPoint = "main";
@@ -133,7 +132,12 @@ namespace Falcor
         return pCode;
     }
 
-    ID3DBlobPtr Shader::compileSpire(const std::string& source, std::string& errorLog, ShaderReflectionHandle& outReflector)
+#if 0
+    ID3DBlobPtr Shader::compileSpire(
+        const std::string&      source,
+        std::string&            errorLog,
+        DefineList const&       defines,
+        ShaderReflectionHandle& outReflector)
     {
         SpireCompilationContext* spireContext = spCreateCompilationContext(NULL);
         SpireDiagnosticSink* spireSink = spCreateDiagnosticSink(spireContext);
@@ -147,12 +151,10 @@ namespace Falcor
 
         // TODO: Need to pass #define flags down to Spire here, since we aren't doing
         // it in our own preprocessor any more...
-#if 0
-        for(auto shaderDefine : shaderDefines)
+        for(auto shaderDefine : defines)
         {
             spAddPreprocessorDefine(spireContext, shaderDefine.first.c_str(), shaderDefine.second.c_str());
         }
-#endif
 
 #if defined(FALCOR_GL)
         spSetCodeGenTarget(spireContext, SPIRE_GLSL);
@@ -217,6 +219,7 @@ namespace Falcor
         return compiledBlob;
     }
 #endif
+#endif
 
     Shader::Shader(ShaderType type) : mType(type)
     {
@@ -229,15 +232,13 @@ namespace Falcor
         safe_delete(pData);
     }
 
-    bool Shader::init(const std::string& shaderString, std::string& log)
+    bool Shader::init(
+            const std::string&  shaderString,
+            std::string&        log)
     {
         // Compile the shader
         ShaderData* pData = (ShaderData*)mpPrivateData;
-#if FALCOR_USE_SPIRE_AS_COMPILER
-        pData->pBlob= compileSpire(shaderString, log, pData->pReflector);
-#else
         pData->pBlob = compile(shaderString, log);
-#endif
 
         if (pData->pBlob == nullptr)
         {
@@ -279,36 +280,16 @@ namespace Falcor
         mApiHandle = { pData->pBlob->GetBufferPointer(), pData->pBlob->GetBufferSize() };
 #endif
 
-#if FALCOR_USE_SPIRE_AS_COMPILER
-        // Note: when using Spire, reflection data was extracted earlier in `compileShader()`
-#else
-        // Get the reflection object
-        pData->pReflector = createReflection(pData->pBlob);
-#endif
         return true;
     }
 
-    ShaderReflectionHandle Shader::createReflection(ID3DBlobPtr pBlob)
-    {
-#if FALCOR_USE_SPIRE_AS_COMPILER
-        return nullptr;
-#else
-        ShaderReflectionHandle pReflection;
-        d3d_call(D3DReflect(pBlob->GetBufferPointer(), pBlob->GetBufferSize(), IID_PPV_ARGS(&pReflection)));
-        return pReflection;
-#endif
-    }
-
-    Shader::SharedPtr Shader::create(const std::string& shaderString, ShaderType type, std::string& log)
+    Shader::SharedPtr Shader::create(
+        const std::string&          shaderString,
+        ShaderType                  type,
+        std::string&                log)
     {
         SharedPtr pShader = SharedPtr(new Shader(type));
         return pShader->init(shaderString, log) ? pShader : nullptr;
-    }
-
-    ShaderReflectionHandle Shader::getReflectionInterface() const
-    {
-        ShaderData* pData = (ShaderData*)mpPrivateData;
-        return pData->pReflector;
     }
 
     ID3DBlobPtr Shader::getCodeBlob() const

@@ -965,31 +965,19 @@ namespace Falcor
     }
 #endif
 
-    bool ProgramReflection::reflectVertexAttributes(const ReflectionHandleVector& reflectHandles, std::string& log)
+    bool ProgramReflection::reflectVertexAttributes(
+        spire::ShaderReflection*    pSpireReflector,
+        std::string&                log)
     {
-        for (const ShaderReflectionHandle pReflector : reflectHandles)
-        {
-#if FALCOR_USE_SPIRE_AS_COMPILER
-            // TODO(tfoley): Add vertex attribute reflection capability to Spire
-#else
-            D3D_SHADER_DESC shaderDesc;
-            d3d_call(pReflector->GetDesc(&shaderDesc));
-            if(getShaderType(shaderDesc.Version) == ShaderType::Vertex)
-            {
-                for (uint32_t i = 0; i < shaderDesc.InputParameters; i++)
-                {
-                    D3D_SIGNATURE_PARAMETER_DESC inputDesc;
-                    d3d_call(pReflector->GetInputParameterDesc(i, &inputDesc));
-                }
-                return true;
-            }
-#endif
-        }
+        // TODO(tfoley): Add vertex input reflection capability to Spire
         return true;
     }
 
-    bool ProgramReflection::reflectPixelShaderOutputs(const ReflectionHandleVector& reflectHandles, std::string& log)
+    bool ProgramReflection::reflectPixelShaderOutputs(
+        spire::ShaderReflection*    pSpireReflector,
+        std::string&                log)
     {
+        // TODO(tfoley): Add fragment output reflection capability to Spire
         return true;
     }
 
@@ -1265,7 +1253,9 @@ namespace Falcor
         return res;
     }
 
-    bool ProgramReflection::reflectResources(const ReflectionHandleVector& reflectHandles, std::string& log)
+    bool ProgramReflection::reflectResources(
+        spire::ShaderReflection*    pSpireReflector,
+        std::string&                log)
     {
         ReflectionGenerationContext context;
         context.pReflector = this;
@@ -1273,16 +1263,15 @@ namespace Falcor
         context.pLog = &log;
 
         bool res = true;
-        for (auto& pReflection : reflectHandles)
         {
 #if FALCOR_USE_SPIRE_AS_COMPILER
             uint32_t shader = 0; // TODO: fix this up
             context.shaderIndex = shader;
 
-            uint32_t paramCount = pReflection->getParameterCount();
+            uint32_t paramCount = pSpireReflector->getParameterCount();
             for (uint32_t pp = 0; pp < paramCount; ++pp)
             {
-                spire::ParameterReflection* param = pReflection->getParameterByIndex(pp);
+                spire::ParameterReflection* param = pSpireReflector->getParameterByIndex(pp);
                 res = reflectResourcesRec(&context, this, param);
             }
 #else

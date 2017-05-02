@@ -45,12 +45,7 @@ namespace Falcor
         using SharedPtr = std::shared_ptr<Program>;
         using SharedConstPtr = std::shared_ptr<const Program>;
 
-        class DefineList : public std::map<std::string, std::string>
-        {
-        public:
-            void add(const std::string& name, const std::string& val = "") { (*this)[name] = val; }
-            void remove(const std::string& name) {(*this).erase(name); }
-        };
+        using DefineList = Shader::DefineList;
 
         virtual ~Program() = 0;
 

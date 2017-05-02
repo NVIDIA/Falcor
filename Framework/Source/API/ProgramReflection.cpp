@@ -32,10 +32,12 @@
 
 namespace Falcor
 {
-    ProgramReflection::SharedPtr ProgramReflection::create(const ReflectionHandleVector& reflectHandles, std::string& log)
+    ProgramReflection::SharedPtr ProgramReflection::create(
+        spire::ShaderReflection*    pSpireReflector,
+        std::string&                log)
     {
         SharedPtr pReflection = SharedPtr(new ProgramReflection);
-        return pReflection->init(reflectHandles, log) ? pReflection : nullptr;
+        return pReflection->init(pSpireReflector, log) ? pReflection : nullptr;
     }
 
     ProgramReflection::BindLocation ProgramReflection::getBufferBinding(const std::string& name) const
@@ -54,12 +56,14 @@ namespace Falcor
         return invalidBind;
     }
 
-    bool ProgramReflection::init(const ReflectionHandleVector& reflectHandles, std::string& log)
+    bool ProgramReflection::init(
+        spire::ShaderReflection*    pSpireReflector,
+        std::string&                log)
     {
         bool b = true;
-        b = b && reflectResources(reflectHandles, log);
-        b = b && reflectVertexAttributes(reflectHandles, log);
-        b = b && reflectPixelShaderOutputs(reflectHandles, log);
+        b = b && reflectResources(          pSpireReflector, log);
+        b = b && reflectVertexAttributes(   pSpireReflector, log);
+        b = b && reflectPixelShaderOutputs( pSpireReflector, log);
         return b;
     }
 

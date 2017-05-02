@@ -56,7 +56,9 @@ namespace Falcor
             \param[in] DebugName Optional. A meaningful name to use with log messages
             \return New object in case of success, otherwise nullptr
             */
-        static SharedPtr create(const Shader::SharedPtr& pVS,
+        static SharedPtr create(
+            ProgramReflection::SharedPtr const& pReflector,
+            const Shader::SharedPtr& pVS,
             const Shader::SharedPtr& pPS,
             const Shader::SharedPtr& pGS,
             const Shader::SharedPtr& pHS,
@@ -70,7 +72,9 @@ namespace Falcor
         \param[in] DebugName Optional. A meaningful name to use with log messages
         \return New object in case of success, otherwise nullptr
         */
-        static SharedPtr create(const Shader::SharedPtr& pCS,
+        static SharedPtr create(
+            ProgramReflection::SharedPtr const& pReflector,
+            const Shader::SharedPtr& pCS,
             std::string& log,
             const std::string& name = "");
 

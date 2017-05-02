@@ -32,7 +32,7 @@
 
 namespace Falcor
 {
-    Shader::SharedPtr createShaderFromString(const std::string& shaderString, ShaderType shaderType, const Program::DefineList& shaderDefines)
+    Shader::SharedPtr createShaderFromString(const std::string& shaderString, ShaderType shaderType)
     {
         std::string shader = shaderString;
         std::string errorMsg;
@@ -50,8 +50,8 @@ namespace Falcor
         return pShader;
     }
 
-    Shader::SharedPtr createShaderFromFile(const std::string& filename, ShaderType shaderType, const Program::DefineList& shaderDefines)
+    Shader::SharedPtr createShaderFromFile(const std::string& filename, ShaderType shaderType)
     {
-        return createShaderFromFile<Shader>(filename, shaderType, shaderDefines);
+        return createShaderFromFile<Shader>(filename, shaderType);
     }
 }

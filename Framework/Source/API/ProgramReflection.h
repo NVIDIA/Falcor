@@ -306,7 +306,9 @@ namespace Falcor
 
         /** Create a new object
         */
-        static SharedPtr create(const ReflectionHandleVector& reflectHandles, std::string& log);
+        static SharedPtr create(
+            spire::ShaderReflection*    pSpireReflector,
+            std::string&                log);
 
         /** Get a buffer binding index
         \param[in] name The buffer name in the program
@@ -364,11 +366,19 @@ namespace Falcor
 
     // TODO(tfoley): switch this back
     public://private:
-        bool init(const ReflectionHandleVector& reflectHandles, std::string& log);
-        bool reflectVertexAttributes(const ReflectionHandleVector& reflectHandles, std::string& log);       // Input attributes
-        bool reflectPixelShaderOutputs(const ReflectionHandleVector& reflectHandles, std::string& log);        // PS output (if PS exists)
-        bool reflectResources(const ReflectionHandleVector& reflectHandles, std::string& log);              // SRV/UAV/ROV/Buffers and samplers
-       
+        bool init(
+            spire::ShaderReflection*    pSpireReflector,
+            std::string&                log);
+        bool reflectVertexAttributes(
+            spire::ShaderReflection*    pSpireReflector,
+            std::string&                log);       // Input attributes
+        bool reflectPixelShaderOutputs(
+            spire::ShaderReflection*    pSpireReflector,
+            std::string&                log);        // PS output (if PS exists)
+        bool reflectResources(
+            spire::ShaderReflection*    pSpireReflector,
+            std::string&                log);              // SRV/UAV/ROV/Buffers and samplers
+
         BufferData mBuffers[BufferReflection::kTypeCount];
         VariableMap mFragOut;
         VariableMap mVertAttr;

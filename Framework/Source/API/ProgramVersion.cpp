@@ -41,6 +41,7 @@ namespace Falcor
         mpShaders[(uint32_t)ShaderType::Compute] = pCS;
     }
 
+#if 0
     ProgramReflection::SharedPtr createProgramReflection(const Shader::SharedConstPtr pShaders[], std::string& log)
     {
         ProgramReflection::ReflectionHandleVector reflect;
@@ -53,8 +54,11 @@ namespace Falcor
         }
         return ProgramReflection::create(reflect, log);
     }
+#endif
 
-    ProgramVersion::SharedPtr ProgramVersion::create(const Shader::SharedPtr& pVS,
+    ProgramVersion::SharedPtr ProgramVersion::create(
+        ProgramReflection::SharedPtr const& pReflector,
+        const Shader::SharedPtr& pVS,
         const Shader::SharedPtr& pPS,
         const Shader::SharedPtr& pGS,
         const Shader::SharedPtr& pHS,
@@ -75,7 +79,7 @@ namespace Falcor
             return nullptr;
         }
 
-        pProgram->mpReflector = createProgramReflection(pProgram->mpShaders, log);
+        pProgram->mpReflector = pReflector;
         if (pProgram->mpReflector == nullptr)
         {
             return nullptr;
@@ -83,7 +87,11 @@ namespace Falcor
         return pProgram;
     }
 
-    ProgramVersion::SharedPtr ProgramVersion::create(const Shader::SharedPtr& pCS, std::string& log, const std::string& name)
+    ProgramVersion::SharedPtr ProgramVersion::create(
+        ProgramReflection::SharedPtr const& pReflector,
+        const Shader::SharedPtr& pCS,
+        std::string& log,
+        const std::string& name)
     {
         // We must have at least a CS
         if (pCS == nullptr)
@@ -97,7 +105,7 @@ namespace Falcor
         {
             return nullptr;
         }
-        pProgram->mpReflector = createProgramReflection(pProgram->mpShaders, log);
+        pProgram->mpReflector = pReflector;
         if (pProgram->mpReflector == nullptr)
         {
             return nullptr;
