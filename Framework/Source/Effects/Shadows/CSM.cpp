@@ -646,13 +646,13 @@ namespace Falcor
         {
         case CsmFilterPoint:
             pVars->setTexture(varName + ".shadowMap", mShadowPass.pFbo->getDepthStencilTexture());
-            pVars->setSampler(varName + ".csmCompareSampler", mShadowPass.pPointCmpSampler);
+            pVars->setSampler("gCsmCompareSampler", mShadowPass.pPointCmpSampler);
             break;
         case CsmFilterHwPcf:
         case CsmFilterFixedPcf:
         case CsmFilterStochasticPcf:
             pVars->setTexture(varName + ".shadowMap", mShadowPass.pFbo->getDepthStencilTexture());
-            pVars->setSampler(varName + ".csmCompareSampler", mShadowPass.pLinearCmpSampler);
+            pVars->setSampler("gCsmCompareSampler", mShadowPass.pLinearCmpSampler);
             break;
         case CsmFilterVsm:
         case CsmFilterEvsm2:

@@ -65,13 +65,13 @@ struct CsmData
 #ifndef HOST_CODE
     Texture2DArray shadowMap;
     SamplerState csmSampler;
-    SamplerComparisonState csmCompareSampler;
 #endif
 };
 
 #ifdef HOST_CODE
 static_assert(sizeof(CsmData) % sizeof(vec4) == 0, "CsmData size should be aligned on vec4 size");
 #else
+SamplerComparisonState gCsmCompareSampler;
 
 int getCascadeCount(const CsmData csmData)
 {
@@ -172,7 +172,7 @@ vec2 applyEvsmExponents(float depth, vec2 exponents)
 
 float csmFilterUsingHW(const CsmData csmData, const vec2 texC, float depthRef, uint32_t cascadeIndex)
 {
-    float res = csmData.shadowMap.SampleCmpLevelZero(csmData.csmCompareSampler, float3(texC, cascadeIndex), depthRef).r;    
+    float res = csmData.shadowMap.SampleCmpLevelZero(gCsmCompareSampler, float3(texC, cascadeIndex), depthRef).r;
     return saturate(res);
 }
 
@@ -189,7 +189,7 @@ float csmFixedSizePcf(const CsmData csmData, const vec2 texC, float depthRef, ui
         for(int j = -halfKernelSize; j <= halfKernelSize; j++)
         {
             vec2 sampleCrd = texC + vec2(i, j) * pixelSize;
-            res += csmData.shadowMap.SampleCmpLevelZero(csmData.csmCompareSampler, float3(sampleCrd, cascadeIndex), depthRef).r;
+            res += csmData.shadowMap.SampleCmpLevelZero(gCsmCompareSampler, float3(sampleCrd, cascadeIndex), depthRef).r;
         }
     }
 
@@ -231,7 +231,7 @@ float csmStochasticFilter(const CsmData csmData, const vec2 texC, float depthRef
         int idx = int(i + 71 * pos.x + 37 * pos.y) & 3;// Temporal version: (csmData.temporalSampleCount*numStochasticSamples + i)&15;
         vec2 texelOffset = poissonDisk[idx] * halfKernelSize;
         vec2 sampleCrd = texelOffset + texC;
-        res += csmData.shadowMap.SampleCmpLevelZero(csmData.csmCompareSampler, float3(sampleCrd, cascadeIndex), depthRef).r;
+        res += csmData.shadowMap.SampleCmpLevelZero(gCsmCompareSampler, float3(sampleCrd, cascadeIndex), depthRef).r;
     }
 
     return res / float(numStochasticSamples);
