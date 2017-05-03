@@ -35,43 +35,82 @@ namespace Falcor
         return !mTestTasks.empty() || !mTimedTestTasks.empty();
     }
 
-    void SampleTest::initializeTestingArgs(const ArgList& args)
+    void SampleTest::initializeTesting()
     {
-        initFrameTests(args);
-        initTimeTests(args);
-        onInitializeTestingArgs(args);
-    }
-
-    void SampleTest::runTestTask(const FrameRate& frameRate, Sample* pSample)
-    {
-        runFrameTests(frameRate);
-        runTimeTests(frameRate, pSample);
-        onRunTestTask(frameRate);
-    }
-
-    void SampleTest::captureScreen()
-    {
-        std::string filename = getExecutableName();
-
-        // Now we have a folder and a filename, look for an available filename (we don't overwrite existing files)
-        std::string prefix = std::string(filename);
-        std::string executableDir = getExecutableDirectory();
-        std::string pngFile;
-        if (findAvailableFilename(prefix, executableDir, "png", pngFile))
+        if (mArgList.argExists("test"))
         {
-            Texture::SharedPtr pTexture = gpDevice->getSwapChainFbo()->getColorTexture(0);
-            pTexture->captureToFile(0, 0, pngFile);
+            initFrameTests();
+            initTimeTests();
+            onInitializeTesting();
+        }
+    }
+
+    void SampleTest::beginTestFrame()
+    {
+        uint32_t frameId = mFrameRate.getFrameCount();
+        //Check if it's time for a time based task
+        if (mTimedTestTaskIt != mTimedTestTasks.end() && mCurrentTime >= mTimedTestTaskIt->mStartTime)
+        {
+            if (mTimedTestTaskIt->mTask == TestTaskType::ScreenCapture)
+            {
+                //disable text, the fps text will cause image compare failures
+                toggleText(false);
+                //Set the current time to make the screen capture results deterministic 
+                mCurrentTime = mTimedTestTaskIt->mStartTime;
+            }
+            else if (mTimedTestTaskIt->mTask == TestTaskType::MeasureFps)
+            {
+                //mark the start frame. Required for time based perf ranges to know the 
+                //amount of frames that passed in the time range to calculate the avg frame time
+                //across the perf range
+                if (mTimedTestTaskIt->mStartFrame == 0)
+                {
+                    mTimedTestTaskIt->mStartFrame = mFrameRate.getFrameCount();
+                }
+            }
+
+            mCurrentTest = TestTriggerType::Time;
+        }
+        //Check if it's time for a frame based task
+        else if (mTestTaskIt != mTestTasks.end() && frameId >= mTestTaskIt->mStartFrame)
+        {
+            if (mTestTaskIt->mTask == TestTaskType::ScreenCapture)
+            {                
+                //disable text, the fps text will cause image compare failures
+                toggleText(false);
+            }
+
+            mCurrentTest = TestTriggerType::Frame;
         }
         else
         {
-            logError("Could not find available filename when capturing screen");
+            //No test tasks this frame
+            mCurrentTest = TestTriggerType::None;
         }
+
+        onBeginTestFrame();
+    }
+
+    void SampleTest::endTestFrame()
+    {
+        //Begin frame checks against the test tasks and returns a trigger type based
+        //on the testing this frame, which is passed into this function
+        if (mCurrentTest == TestTriggerType::Frame)
+        {
+            runFrameTests();
+        }
+        else if (mCurrentTest == TestTriggerType::Time)
+        {
+            runTimeTests();
+        }
+
+        onEndTestFrame();
     }
 
     void SampleTest::outputXML()
     {
         //only output a file if there was actually testing
-        if (!mTestTasks.empty() || !mTimedTestTasks.empty())
+        if (isTestingEnabled())
         {
             float frameTime = 0.f;
             float loadTime = 0.f;
@@ -141,18 +180,17 @@ namespace Falcor
         }
     }
 
-    void SampleTest::initFrameTests(const ArgList& args)
+    void SampleTest::initFrameTests()
     {
-        //Frame based tests
         //Load time
-        if (args.argExists("loadtime"))
+        if (mArgList.argExists("loadtime"))
         {
             Task newTask(2u, 3u, TestTaskType::LoadTime);
             mTestTasks.push_back(newTask);
         }
 
         //shutdown
-        std::vector<ArgList::Arg> shutdownFrame = args.getValues("shutdown");
+        std::vector<ArgList::Arg> shutdownFrame = mArgList.getValues("shutdown");
         if (!shutdownFrame.empty())
         {
             uint32_t startFame = shutdownFrame[0].asUint();
@@ -161,7 +199,7 @@ namespace Falcor
         }
 
         //screenshot frames
-        std::vector<ArgList::Arg> ssFrames = args.getValues("ssframes");
+        std::vector<ArgList::Arg> ssFrames = mArgList.getValues("ssframes");
         for (uint32_t i = 0; i < ssFrames.size(); ++i)
         {
             uint32_t startFrame = ssFrames[i].asUint();
@@ -170,7 +208,7 @@ namespace Falcor
         }
 
         //fps capture frames
-        std::vector<ArgList::Arg> fpsRange = args.getValues("perfframes");
+        std::vector<ArgList::Arg> fpsRange = mArgList.getValues("perfframes");
         //integer division on purpose, only care about ranges with start and end
         size_t numRanges = fpsRange.size() / 2;
         for (size_t i = 0; i < numRanges; ++i)
@@ -189,6 +227,7 @@ namespace Falcor
             }
         }
 
+        //If there are tests, sort them and fix any overalpping ranges
         if (!mTestTasks.empty())
         {
             //Put the tasks in start frame order
@@ -214,11 +253,10 @@ namespace Falcor
         mTestTaskIt = mTestTasks.begin();
     }
 
-    void SampleTest::initTimeTests(const ArgList& args)
+    void SampleTest::initTimeTests()
     {
-        //Time based tests
         //screenshots
-        std::vector<ArgList::Arg> timedScreenshots = args.getValues("sstimes");
+        std::vector<ArgList::Arg> timedScreenshots = mArgList.getValues("sstimes");
         for (auto it = timedScreenshots.begin(); it != timedScreenshots.end(); ++it)
         {
             float startTime = it->asFloat();
@@ -227,7 +265,7 @@ namespace Falcor
         }
 
         //fps capture times
-        std::vector<ArgList::Arg> fpsTimeRange = args.getValues("perftimes");
+        std::vector<ArgList::Arg> fpsTimeRange = mArgList.getValues("perftimes");
         //integer division on purpose, only care about ranges with start and end
         size_t numTimedRanges = fpsTimeRange.size() / 2;
         for (size_t i = 0; i < numTimedRanges; ++i)
@@ -247,7 +285,7 @@ namespace Falcor
         }
 
         //Shutdown
-        std::vector<ArgList::Arg> shutdownTimeArg = args.getValues("shutdowntime");
+        std::vector<ArgList::Arg> shutdownTimeArg = mArgList.getValues("shutdowntime");
         if (!shutdownTimeArg.empty())
         {
             float shutdownTime = shutdownTimeArg[0].asFloat();
@@ -281,90 +319,74 @@ namespace Falcor
         mTimedTestTaskIt = mTimedTestTasks.begin();
     }
 
-    void SampleTest::runFrameTests(const FrameRate& frameRate)
+    void SampleTest::runFrameTests()
     {
-        uint32_t frameId = frameRate.getFrameCount();
-        if (mTestTaskIt != mTestTasks.end() && frameId >= mTestTaskIt->mStartFrame)
+        if (mFrameRate.getFrameCount() == mTestTaskIt->mEndFrame)
         {
-            if (frameId == mTestTaskIt->mEndFrame)
+            if (mTestTaskIt->mTask == TestTaskType::MeasureFps)
             {
-                if (mTestTaskIt->mTask == TestTaskType::MeasureFps)
-                {
-                    mTestTaskIt->mResult /= (mTestTaskIt->mEndFrame - mTestTaskIt->mStartFrame);
-                }
-
-                ++mTestTaskIt;
+                mTestTaskIt->mResult /= (mTestTaskIt->mEndFrame - mTestTaskIt->mStartFrame);
             }
-            else
+
+            ++mTestTaskIt;
+        }
+        else
+        {
+            switch (mTestTaskIt->mTask)
             {
-                switch (mTestTaskIt->mTask)
-                {
-                case TestTaskType::LoadTime:
-                case TestTaskType::MeasureFps:
-                    mTestTaskIt->mResult += frameRate.getLastFrameTime();
-                    break;
-                case TestTaskType::ScreenCapture:
-                    captureScreen();
-                    break;
-                case TestTaskType::Shutdown:
-                    outputXML();
-                    onTestShutdown();
-                    break;
-                default:
-                    should_not_get_here();
-                }
+            case TestTaskType::LoadTime:
+            case TestTaskType::MeasureFps:
+                mTestTaskIt->mResult += mFrameRate.getLastFrameTime();
+                break;
+            case TestTaskType::ScreenCapture:
+                captureScreen();
+                //re-enable text
+                toggleText(true);
+                break;
+            case TestTaskType::Shutdown:
+                outputXML();
+                onTestShutdown();
+                shutdownApp();
+                break;
+            default:
+                should_not_get_here();
             }
         }
     }
 
-    void SampleTest::runTimeTests(const FrameRate& frameRate, Sample* pSample)
+    void SampleTest::runTimeTests()
     {
-        uint32_t frameId = frameRate.getFrameCount();
-        if (mTimedTestTaskIt != mTimedTestTasks.end() && pSample->mCurrentTime >= mTimedTestTaskIt->mStartTime)
+        switch (mTimedTestTaskIt->mTask)
         {
-            TestTaskType curType = mTimedTestTaskIt->mTask;
-            switch (curType)
-            {
-            case TestTaskType::ScreenCapture:
-            {
-                //Makes sure the ss is taken at the correct time for image compare
-                if (pSample->mFreezeTime)
-                {
-                    captureScreen();
-                    pSample->mFreezeTime = false;
-                    break;
-                }
-                else
-                {
-                    pSample->mCurrentTime = mTimedTestTaskIt->mStartTime;
-                    pSample->mFreezeTime = true;
-                    return;
-                }
-            }
-            case TestTaskType::MeasureFps:
-            {
-                mTimedTestTaskIt->mStartFrame = frameId;
-                if (pSample->mCurrentTime >= mTimedTestTaskIt->mEndTime)
-                {
-                    mTestTaskIt->mResult /= (frameId - mTimedTestTaskIt->mStartFrame);
-                }
-                else
-                {
-                    mTimedTestTaskIt->mResult += frameRate.getLastFrameTime();
-                }
-                break;
-            }
-            case TestTaskType::Shutdown:
-            {
-                outputXML();
-                onTestShutdown();
-                break;
-            }
-            default:
-                should_not_get_here();
-            }
-
-            ++mTimedTestTaskIt;
+        case TestTaskType::ScreenCapture:
+        {
+            captureScreen();
+            toggleText(true);
+            break;
         }
+        case TestTaskType::MeasureFps:
+        {
+            if (mCurrentTime >= mTimedTestTaskIt->mEndTime)
+            {
+                mTestTaskIt->mResult /= (mFrameRate.getFrameCount() - mTimedTestTaskIt->mStartFrame);
+            }
+            else
+            {
+                mTimedTestTaskIt->mResult += mFrameRate.getLastFrameTime();
+            }
+            break;
+        }
+        case TestTaskType::Shutdown:
+        {
+            outputXML();
+            onTestShutdown();
+            shutdownApp();
+            break;
+        }
+        default:
+            should_not_get_here();
+        }
+
+        ++mTimedTestTaskIt;
     }
 }

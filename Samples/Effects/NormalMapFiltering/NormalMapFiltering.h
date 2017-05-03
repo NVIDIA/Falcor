@@ -31,7 +31,7 @@
 
 using namespace Falcor;
 
-class NormalMapFiltering : public Sample, public SampleTest
+class NormalMapFiltering : public SampleTest
 {
 public:
     void onLoad() override;
@@ -54,9 +54,8 @@ private:
     Sampler::SharedPtr mpLinearSampler;
 
     //Testing
-    void onInitializeTestingArgs(const ArgList& args) override;
-    void onRunTestTask(const FrameRate& frameRate) override;
-    void onTestShutdown() override { shutdownApp(); }
+    void onInitializeTesting() override;
+    void onEndTestFrame() override;
     std::vector<uint32_t> mChangeModeFrames;
     std::vector<uint32_t>::iterator mChangeModeIt;
 };

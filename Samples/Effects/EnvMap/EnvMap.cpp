@@ -51,7 +51,7 @@ void EnvMap::onLoad()
 
     mpSkybox = SkyBox::createFromTexture("Cubemaps\\Sorsele3\\Sorsele3.dds", true, mpTriLinearSampler);
 
-    init_tests();
+    initializeTesting();
 }
 
 void EnvMap::loadTexture()
@@ -65,6 +65,8 @@ void EnvMap::loadTexture()
 
 void EnvMap::onFrameRender()
 {
+    beginTestFrame();
+
     const glm::vec4 clearColor(0.38f, 0.52f, 0.10f, 1);
     mpRenderContext->clearFbo(mpDefaultFBO.get(), clearColor, 1.0f, 0, FboAttachmentType::All);
 
@@ -74,7 +76,7 @@ void EnvMap::onFrameRender()
         mpSkybox->render(mpRenderContext.get(), mpCamera.get());
     }
 
-    run_test();
+    endTestFrame();
 }
 
 bool EnvMap::onKeyEvent(const KeyboardEvent& keyEvent)
@@ -114,9 +116,9 @@ void EnvMap::onResizeSwapChain()
     mpCamera->setDepthRange(0.01f, 1000);
 }
 
-void EnvMap::onInitializeTestingArgs(const ArgList& args)
+void EnvMap::onInitializeTesting()
 {
-    std::vector<ArgList::Arg> viewFrames = args.getValues("changeView");
+    std::vector<ArgList::Arg> viewFrames = mArgList.getValues("changeView");
     if (!viewFrames.empty())
     {
         mChangeViewFrames.resize(viewFrames.size());
@@ -129,7 +131,7 @@ void EnvMap::onInitializeTestingArgs(const ArgList& args)
     mChangeViewIt = mChangeViewFrames.begin();
 }
 
-void EnvMap::onRunTestTask(const FrameRate& frameRate)
+void EnvMap::onEndTestFrame()
 {
     //initial target is (0, 0, -1)
     static uint32_t targetIndex = 0;
@@ -142,7 +144,7 @@ void EnvMap::onRunTestTask(const FrameRate& frameRate)
         vec3(-1, 0, 0) 
     };
 
-    uint32_t frameId = frameRate.getFrameCount();
+    uint32_t frameId = frameRate().getFrameCount();
     if (mChangeViewIt != mChangeViewFrames.end() && frameId >= *mChangeViewIt)
     {
         ++mChangeViewIt;
