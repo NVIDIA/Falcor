@@ -31,9 +31,7 @@
 void FeatureDemo::initLightingPass()
 {
     mLightingPass.pProgram = GraphicsProgram::createFromFile("FeatureDemo.vs.hlsl", "FeatureDemo.ps.hlsl");
-    std::string lights;
-    getSceneLightString(mpSceneRenderer->getScene(), lights);
-    mLightingPass.pProgram->addDefine("_LIGHT_SOURCES", lights);
+    mLightingPass.pProgram->addDefine("_LIGHT_COUNT", std::to_string(mpSceneRenderer->getScene()->getLightCount()));
     initControls();
     mLightingPass.pVars = GraphicsVars::create(mLightingPass.pProgram->getActiveVersion()->getReflector());
 }
@@ -173,7 +171,6 @@ void FeatureDemo::lightingPass()
     mpState->setProgram(mLightingPass.pProgram);
     mpRenderContext->setGraphicsVars(mLightingPass.pVars);
     ConstantBuffer::SharedPtr pCB = mLightingPass.pVars->getConstantBuffer("PerFrameCB");
-    setSceneLightsIntoConstantBuffer(mpSceneRenderer->getScene(), pCB.get());
     if(mControls[ControlID::EnableShadows].enabled)
     {
         pCB["camVpAtLastCsmUpdate"] = mShadowPass.camVpAtLastCsmUpdate;

@@ -32,10 +32,6 @@
 
 cbuffer PerFrameCB : register(b0)
 {
-#foreach p in _LIGHT_SOURCES
-    LightData $(p);
-#endforeach
-
 	vec3 gAmbient;
     CsmData gCsmData;
     mat4 camVpAtLastCsmUpdate;

@@ -34,10 +34,6 @@
 
 cbuffer PerFrameCB : register(b0)
 {
-#foreach p in _LIGHT_SOURCES
-    LightData $(p);
-#endforeach
-
 	vec3 gAmbient;
     CsmData gCsmData;
     mat4 camVpAtLastCsmUpdate;
@@ -70,18 +66,19 @@ PsOut main(MainVsOut vOut)
     float4 finalColor = 0;
     float envMapFactor = 1;
 
-    float shadowFactor;
-#foreach p in _LIGHT_SOURCES
-    shadowFactor = 1;
-#ifdef _ENABLE_SHADOWS
-    if($(_valIndex) == 0)
+    [unroll]
+    for (uint l = 0; l < _LIGHT_COUNT; l++)
     {
-        shadowFactor = calcShadowFactor(gCsmData, vOut.shadowsDepthC, shAttr.P, vOut.vsData.posH.xy/vOut.vsData.posH.w);
-        envMapFactor -= 1 - shadowFactor;
-    }
+        float shadowFactor = 1;
+#ifdef _ENABLE_SHADOWS
+        if (l == 0)
+        {
+            shadowFactor = calcShadowFactor(gCsmData, vOut.shadowsDepthC, shAttr.P, vOut.vsData.posH.xy / vOut.vsData.posH.w);
+            envMapFactor -= 1 - shadowFactor;
+        }
 #endif
-    evalMaterial(shAttr, $(p), shadowFactor, result, $(_valIndex) == 0);
-#endforeach
+        evalMaterial(shAttr, gLights[l], shadowFactor, result, l == 0);
+    }
 
     finalColor = vec4(result.finalValue, 1.f);
 
