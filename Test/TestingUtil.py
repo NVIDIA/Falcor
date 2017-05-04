@@ -1,5 +1,6 @@
 import os
 import shutil
+import stat
 
 #average pixel color difference
 gDefaultImageCompareMargin = 5.0
