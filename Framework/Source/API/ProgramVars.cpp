@@ -664,16 +664,15 @@ namespace Falcor
         {
             uint32_t rootOffset = samplerIt.second.rootSigOffset;
             const Sampler* pSampler = samplerIt.second.pSampler.get();
-            if (pSampler)
+            pSampler = pSampler ? pSampler : Sampler::getDefaultSampler().get();
+
+            if (forGraphics)
             {
-                if(forGraphics)
-                {
-                    pList->SetGraphicsRootDescriptorTable(rootOffset, pSampler->getApiHandle()->getGpuHandle());
-                }
-                else
-                {
-                    pList->SetComputeRootDescriptorTable(rootOffset, pSampler->getApiHandle()->getGpuHandle());
-                }
+                pList->SetGraphicsRootDescriptorTable(rootOffset, pSampler->getApiHandle()->getGpuHandle());
+            }
+            else
+            {
+                pList->SetComputeRootDescriptorTable(rootOffset, pSampler->getApiHandle()->getGpuHandle());
             }
         }
     }

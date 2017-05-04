@@ -30,11 +30,23 @@
 
 namespace Falcor
 {
+    uint32_t Sampler::sObjectCount = 0;
+    Sampler::SharedPtr Sampler::spDefaultSampler;
 
     Sampler::Sampler(const Desc& desc) : mDesc(desc)
     {
+        sObjectCount++;
     }
     
+    Sampler::~Sampler()
+    {
+        sObjectCount--;
+        if (sObjectCount == 0)
+        {
+            spDefaultSampler = nullptr;
+        }
+    }
+
     Sampler::Desc& Sampler::Desc::setFilterMode(Filter minFilter, Filter magFilter, Filter mipFilter)
     {
         mMagFilter = magFilter;
@@ -75,5 +87,14 @@ namespace Falcor
     {
         mBorderColor = borderColor;
         return *this;
+    }
+
+    Sampler::SharedPtr Sampler::getDefaultSampler()
+    {
+        if (spDefaultSampler == nullptr)
+        {
+            spDefaultSampler = create(Desc());
+        }
+        return spDefaultSampler;
     }
 }

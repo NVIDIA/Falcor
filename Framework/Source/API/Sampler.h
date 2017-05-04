@@ -175,10 +175,15 @@ namespace Falcor
         */
         const glm::vec4& getBorderColor() const { return mDesc.mBorderColor; }
 
+        /** Get an object that represents a default sampler
+        */
+        static Sampler::SharedPtr getDefaultSampler();
     private:
         Sampler(const Desc& desc);
         Desc mDesc;
         ApiHandle mApiHandle = { 0 };
         static uint32_t getApiMaxAnisotropy();
+        static Sampler::SharedPtr spDefaultSampler;
+        static uint32_t sObjectCount;
     };
 }
