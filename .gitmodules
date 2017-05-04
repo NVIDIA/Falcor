@@ -1,0 +1,4 @@
+[submodule "Framework/Externals/Spire"]
+	path = Framework/Externals/Spire
+	url = https://github.com/tfoleyNV/Spire.git
+	branch = rewriter-dev
