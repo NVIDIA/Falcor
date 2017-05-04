@@ -2,9 +2,11 @@ import subprocess
 import argparse
 import os
 from datetime import date
-import RunAllTests
 import shutil
 import stat
+#custom written modules
+import RunAllTests
+import TestingUtil as testUtil
 
 class TestSetInfo(object):
     def __init__(self, testDir, testList, summaryFile, passedTests, repoSrc, pullBranch, name):
@@ -16,31 +18,12 @@ class TestSetInfo(object):
         self.repoSrc = repoSrc
         self.name = name
 
-def cleanupString(string):
-    string = string.replace('\t', '')
-    return string.replace('\n', '').strip()
-
 def cloneRepo(repoSrc, repoDst, pullBranch):
     # make dir if it doesnt exist, clean dir if it does exist
     if not os.path.isdir(repoDst):
         os.makedirs(repoDst)
-    else:        
-        filesToDelete = [f for f in os.listdir(repoDst)]
-        for f in filesToDelete:
-            path = repoDst + '\\' + f
-            #change permissions to allow deletion 
-            os.chmod(path, stat.S_IWUSR)
-            if os.path.isdir(path):
-                #change permissions to allow deletion in the dir tree
-                for root, subdirs, files in os.walk(path):
-                    for s in subdirs:
-                        os.chmod(os.path.join(root, s), stat.S_IWUSR)
-                    for f in files:
-                        os.chmod(os.path.join(root, f), stat.S_IWUSR)
-                shutil.rmtree(path)
-            else:
-                os.remove(path)
-
+    else:
+        testUtil.removeDirTree(repoDst)
     subprocess.call(['git', 'clone', repoSrc, repoDst, '-b', pullBranch])
 
 def sendEmail(recipientsFile, subject, body, attachments):
@@ -70,15 +53,17 @@ def main():
             print 'Fatal Error, failed to find user specified test config file ' + args.testconfig
             sys.exit(1)
 
+    #Read test config file
     testConfig = open(testConfigFile)
     contents = file.read(testConfig)
     argStartIndex = contents.find('{')
     testResults = []
+    #for each config in the test config file
     while argStartIndex != -1 :
         argEndIndex = contents.find('}')
-        argString = cleanupString(contents[argStartIndex + 1 : argEndIndex])
+        argString = testUtil.cleanupString(contents[argStartIndex + 1 : argEndIndex])
         argList = argString.split(',')
-        if len(argList) < 5:
+        if len(argList) < 6:
             print 'Error: only found ' + str(len(argList)) + ' args. Need at least 5 (refDir, testList, repoSrc, repoDst, repoBranch)'
             continue
 
@@ -109,6 +94,7 @@ def main():
         contents = contents[argEndIndex + 1 :]
         argStartIndex = contents.find('{')
 
+    #prepare data to pass to send email function
     if not args.noemail and not args.generatereference:
         body = 'Ran ' + str(len(testResults)) + ' test sets:\n'
         attachments = []
