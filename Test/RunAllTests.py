@@ -349,7 +349,7 @@ def runTest(testInfo, cmdLine, generateReference, slnInfo):
         p = subprocess.Popen(testPath + ' ' + cmdLine)
         #run test until timeout or return
         start = time.time()
-        while not p.returncode:
+        while p.returncode == None:
             p.poll()
             cur = time.time() - start
             if cur > gDefaultHangTimeDuration:
