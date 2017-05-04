@@ -25,7 +25,7 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#expect _KERNEL_WIDTH
+//#expect _KERNEL_WIDTH
 
 #ifdef _USE_TEX2D_ARRAY
     Texture2DArray gSrcTex;
