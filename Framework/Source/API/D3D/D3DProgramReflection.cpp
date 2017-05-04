@@ -379,6 +379,7 @@ namespace Falcor
     struct ReflectionPath
     {
         ReflectionPath*                     parent = nullptr;
+        spire::ParameterReflection*         parameter = nullptr;
         spire::VariableLayoutReflection*    var = nullptr;
         spire::TypeLayoutReflection*        typeLayout = nullptr;
         size_t                              childIndex = 0;
@@ -389,7 +390,12 @@ namespace Falcor
         size_t offset = 0;
         for(auto pp = path; pp; pp = pp->parent)
         {
-            if(pp->var)
+            if(pp->parameter)
+            {
+                offset += pp->parameter->getOffset(category);
+                continue;
+            }
+            else if(pp->var)
             {
                 offset += pp->var->getOffset(category);
                 continue;
@@ -693,12 +699,16 @@ namespace Falcor
     {
         uint32_t varCount = buffer->getVariableCount();
 
+        ReflectionPath bufferPath;
+        bufferPath.parent = nullptr;
+        bufferPath.parameter = buffer;
+
         for (uint32_t varID = 0; varID < varCount; varID++)
         {
             auto var = buffer->getVariableByIndex(varID);
 
             ReflectionPath path;
-            path.parent = nullptr;
+            path.parent = &bufferPath;
             path.var = var;
 
             reflectVariable(pContext, var, &path);
