@@ -35,7 +35,7 @@ namespace Falcor
     public:
         /** Checks whether testing is enabled, returns true if either Test Task vector isn't empty
         */
-        bool isTestingEnabled() const;
+        bool hasTests() const;
 
         /** Initializes Test Task vectors based on command line arguments
         */
@@ -66,14 +66,15 @@ namespace Falcor
         virtual void onTestShutdown() {};
 
     private:
-        enum class TestTriggerType
+        enum class TriggerType
         {
             Frame,
             Time,
             None,
         };
+        TriggerType mCurrentTrigger = TriggerType::None;
 
-        enum class TestTaskType
+        enum class TaskType
         {
             LoadTime,
             MeasureFps,
@@ -84,24 +85,24 @@ namespace Falcor
 
         struct Task
         {
-            Task() : mStartFrame(0u), mEndFrame(0u), mTask(TestTaskType::Uninitialized), mResult(0.f) {}
-            Task(uint32_t startFrame, uint32_t endFrame, TestTaskType t) :
+            Task() : mStartFrame(0u), mEndFrame(0u), mTask(TaskType::Uninitialized), mResult(0.f) {}
+            Task(uint32_t startFrame, uint32_t endFrame, TaskType t) :
                 mStartFrame(startFrame), mEndFrame(endFrame), mTask(t), mResult(0.f) {}
             bool operator<(const Task& rhs) { return mStartFrame < rhs.mStartFrame; }
 
             uint32_t mStartFrame;
             uint32_t mEndFrame;
             float mResult = 0;
-            TestTaskType mTask;
+            TaskType mTask;
         };
 
         std::vector<Task> mTestTasks;
-        std::vector<Task>::iterator mTestTaskIt;
+        std::vector<Task>::iterator mCurrentFrameTest;
 
         struct TimedTask
         {
-            TimedTask() : mStartTime(0.f), mTask(TestTaskType::Uninitialized), mStartFrame(0) {};
-            TimedTask(float startTime, float endTime, TestTaskType t) : mStartTime(startTime), mEndTime(endTime), mTask(t), mStartFrame(0) {};
+            TimedTask() : mStartTime(0.f), mTask(TaskType::Uninitialized), mStartFrame(0) {};
+            TimedTask(float startTime, float endTime, TaskType t) : mStartTime(startTime), mEndTime(endTime), mTask(t), mStartFrame(0) {};
             bool operator<(const TimedTask& rhs) { return mStartTime < rhs.mStartTime; }
 
             float mStartTime;
@@ -109,8 +110,11 @@ namespace Falcor
             float mResult = 0;
             //used to calc avg fps in a perf range
             uint mStartFrame = 0;
-            TestTaskType mTask;
+            TaskType mTask;
         };
+
+        std::vector<TimedTask> mTimedTestTasks;
+        std::vector<TimedTask>::iterator mCurrentTimeTest;
 
         /** Outputs xml test results file
         */
@@ -128,8 +132,5 @@ namespace Falcor
         */
         void runTimeTests();
 
-        std::vector<TimedTask> mTimedTestTasks;
-        std::vector<TimedTask>::iterator mTimedTestTaskIt;
-        TestTriggerType mCurrentTest = TestTriggerType::None;
     };
 }

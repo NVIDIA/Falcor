@@ -67,8 +67,6 @@ namespace Falcor
     */
     class Sample : public Window::ICallbacks
     {
-        friend class SampleTest;
-
     public:
         Sample();
         virtual ~Sample();
