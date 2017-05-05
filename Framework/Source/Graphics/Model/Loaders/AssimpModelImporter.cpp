@@ -822,11 +822,19 @@ namespace Falcor
             return nullptr;
         }
 
-        // Must at least have texture UV channel
-        if ((pAiMesh->HasTextureCoords(0) == false))
+        if (pAiMesh->GetNumUVChannels() > 2)
         {
-            logError("AssimpModelImporter: Loaded mesh with no texture UVs!");
+            logError("AssimpModelImporter: Loaded mesh with too many UV channels.");
             return nullptr;
+        }
+
+        for (uint32_t i = 0; i < pAiMesh->GetNumUVChannels(); i++)
+        {
+            if (pAiMesh->HasTextureCoords(i) == false)
+            {
+                logError("AssimpModelImporter: Unsupported texture coordinate set used in model.");
+                return nullptr;
+            }
         }
 
         VertexLayout::SharedPtr pLayout = VertexLayout::create();
