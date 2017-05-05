@@ -362,13 +362,15 @@ namespace Falcor
         {
             captureScreen();
             toggleText(true);
+            ++mTimedTestTaskIt;
             break;
         }
         case TestTaskType::MeasureFps:
         {
             if (mCurrentTime >= mTimedTestTaskIt->mEndTime)
             {
-                mTestTaskIt->mResult /= (mFrameRate.getFrameCount() - mTimedTestTaskIt->mStartFrame);
+                mTimedTestTaskIt->mResult /= (mFrameRate.getFrameCount() - mTimedTestTaskIt->mStartFrame);
+                ++mTimedTestTaskIt;
             }
             else
             {
@@ -386,7 +388,5 @@ namespace Falcor
         default:
             should_not_get_here();
         }
-
-        ++mTimedTestTaskIt;
     }
 }
