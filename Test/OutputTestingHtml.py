@@ -65,7 +65,7 @@ def systemTestResultToHTML(result):
         html += '<td></td><td></td><td></td>'
     else:
         html += '<td>' + str(result.FrameErrorMargin * 100) + '</td>\n'
-        compareResult = marginCompare(result.AvgFrameTime, result.RefAvgFrameTime, result.FrameErrorMargin)
+        compareResult = testingUtil.marginCompare(result.AvgFrameTime, result.RefAvgFrameTime, result.FrameErrorMargin)
         if compareResult == 1:
             html += '<td bgcolor="red"><font color="white">'
         elif compareResult == -1:
