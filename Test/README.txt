@@ -46,16 +46,20 @@ C++ / Falcor Side
 				which is the frame duration of frame 1, which is the load time
 			-shutdown X
 				Shuts down the app at frame X
-			-ssframes X 
-				Takes a screenshot at frame X 
-			-perframes X Y 
-				Measures performance between frames X and Y 
+			-ssframes X Y Z
+				Takes a screenshot at frames X, Y, and Z. Any number of 
+				screenshot frames can be supplied.
+			-perframes X Y ... A B 
+				Measures performance between frames X and Y and between frames 
+				A and B. Any number of frame ranges can be supplied.
 			-shutdowntime X 
 				Shuts down the app after X seconds have passed 
-			-sstimes X 
-				Takes a screenshot after X seconds have passed 
-			-perftimes X Y 
-				Measures performance between times X and Y 
+			-sstimes X Y Z
+				Takes a screenshot after X, Y, and Z seconds have passed. Any 
+				number of screenshot times can be supplied. 
+			-perftimes X Y ... A B
+				Measures performance between times X and Y and between times A 
+				and B. Any number of time ranges can be supplied 
 				
 		Integration into Existing Sample 
 			To integrate testing into an existing sample, perform the following actions 
@@ -132,4 +136,57 @@ C++ / Falcor Side
 			The FalcorTest solution still has all the original configurations,
 			so if everything is error'd out, you're probably not in DebugD3D12
 			or ReleaseD3D12 
+
+Python Side
+	RunAllTests.py
+		This script builds and runs tests then checks results against reference
+		results
+		
+		Arguments 
+			-nb (--nobuild) 
+				Assumes all test exes are already built and runs without 
+				building them, this was mostly used for testing the fw 
+			-ss (--showsummary)
+				Automatically opens the testSummary html file after testing
+			-gr (--generatereference)
+				Rather than comparing against reference, saves test results to
+				the reference directory 
+			-ref (--referencedir) X
+				Sets the reference directory to check against to X
+			-tests (--testlist) X 
+				Sets the test list file to run to X 
+		
+	Test List File 
+		The test list file read by RunAllTests.py includes a list of one or 
+		more solutions and the test projects within each solution that should
+		be built and run. It has the following format.... 
+		
+		Test List Structure 
+			[
+			pathToSolution1FromGitDir {config1 pathToConfig1ExeDir ... configN pathToConfigNExeDir}
+			Project1 {-test ... other args,
+					  -test ... other args (for another run of this project)} {config1 ... conifgN}
+			Project2 {-test ... other args } {config1 ... configN}
+			]
+			[
+			pathToSolution2FromGitDir {config1 pathToConfig1ExeDir ... configN pathToConfigNExeDir}
+			Project1 {-test ... other args } {config1 ... conifgN}
+			Project2 {-test ... other args } {config1 ... configN}
+			]
+		
+		Example Test List 
+			[
+			../Falcor.sln {Released3d12 ..\Bin\x64\Release\}
+			ShaderBuffers {-test -ssframes 50 -shutdown 100} {released3d12}
+			FeatureDemo {
+			-test -loadscene san-miguel\SanMiguel.fscene -sstimes 10 20 30 -shutdowntime 35, 
+			-test -loadscene classroom\Classroom.fscene -sstimes 7 15 -shutdowntime 20,
+			-test -loadscene living_room\living_room.fscene -sstimes 10 20 30 -shutdowntime 35}
+			{released3d12}
+			]
+			[
+			FalcorTest.sln {Released3d12 Bin\x64\Release\ Debugd3d12 Bin\x64\Debug\}
+			BlendStateTest {} {released3d12}
+			RasterizerStateTest {} {debugd3d12 released3d12}
+			]
 			
