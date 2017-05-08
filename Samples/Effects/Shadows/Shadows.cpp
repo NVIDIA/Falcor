@@ -98,9 +98,6 @@ void Shadows::createScene(const std::string& filename)
 
     // Create the main effect
     mLightingPass.pProgram = GraphicsProgram::createFromFile("Shadows.vs.hlsl", "Shadows.ps.hlsl");
-    std::string lights;
-    getSceneLightString(mpScene.get(), lights);
-    mLightingPass.pProgram->addDefine("_LIGHT_SOURCES", lights);
     mLightingPass.pProgram->addDefine("_LIGHT_COUNT", std::to_string(mpScene->getLightCount()));
     mLightingPass.pProgram->addDefine("_LIGHT_INDEX", std::to_string(mControls.lightIndex));
     mLightingPass.pProgramVars = GraphicsVars::create(mLightingPass.pProgram->getActiveVersion()->getReflector());
@@ -122,7 +119,6 @@ void Shadows::runMainPass()
 
     //vars
     ConstantBuffer::SharedPtr pPerFrameCB = mLightingPass.pProgramVars->getConstantBuffer(0u);
-    setSceneLightsIntoConstantBuffer(mpScene.get(), pPerFrameCB.get());
     pPerFrameCB->setBlob(&mPerFrameCBData, mOffsets.visualizeCascades, sizeof(mPerFrameCBData));
     mpRenderContext->pushGraphicsVars(mLightingPass.pProgramVars);
     
