@@ -145,7 +145,8 @@ void FeatureDemo::onLoad()
 
     initSkyBox();
     initPostProcess();
-    init_tests();
+
+    initializeTesting();
 }
 
 void FeatureDemo::renderSkyBox()
@@ -225,6 +226,8 @@ void FeatureDemo::ambientOcclusion()
 
 void FeatureDemo::onFrameRender()
 {
+    beginTestFrame();
+
     if(mpSceneRenderer)
     {
         beginFrame();
@@ -243,7 +246,7 @@ void FeatureDemo::onFrameRender()
         mpRenderContext->clearFbo(mpDefaultFBO.get(), vec4(0.2f, 0.4f, 0.5f, 1), 1, 0);
     }
 
-    run_test();
+    endTestFrame();
 }
 
 void FeatureDemo::onShutdown()
@@ -290,41 +293,30 @@ void FeatureDemo::setActiveCameraAspectRatio()
     mpSceneRenderer->getScene()->getActiveCamera()->setAspectRatio((float)w / (float)h);
 }
 
-void FeatureDemo::onInitializeTestingArgs(const ArgList& args)
+void FeatureDemo::onInitializeTesting()
 {
-    mUniformDt = args.argExists("uniformdt");
-
-    std::vector<ArgList::Arg> model = args.getValues("loadmodel");
+    std::vector<ArgList::Arg> model = mArgList.getValues("loadmodel");
     if (!model.empty())
     {
         loadModel(model[0].asString());
     }
 
-    std::vector<ArgList::Arg> scene = args.getValues("loadscene");
+    std::vector<ArgList::Arg> scene = mArgList.getValues("loadscene");
     if (!scene.empty())
     {
         loadScene(scene[0].asString());
     }
 
-    std::vector<ArgList::Arg> cameraPos = args.getValues("camerapos");
+    std::vector<ArgList::Arg> cameraPos = mArgList.getValues("camerapos");
     if (!cameraPos.empty())
     {
         mpSceneRenderer->getScene()->getActiveCamera()->setPosition(glm::vec3(cameraPos[0].asFloat(), cameraPos[1].asFloat(), cameraPos[2].asFloat()));
     }
 
-    std::vector<ArgList::Arg> cameraTarget = args.getValues("cameratarget");
+    std::vector<ArgList::Arg> cameraTarget = mArgList.getValues("cameratarget");
     if (!cameraTarget.empty())
     {
         mpSceneRenderer->getScene()->getActiveCamera()->setTarget(glm::vec3(cameraTarget[0].asFloat(), cameraTarget[1].asFloat(), cameraTarget[2].asFloat()));
-    }
-}
-
-void FeatureDemo::onRunTestTask(const FrameRate&)
-{
-    if (mUniformDt)
-    {
-        mUniformGlobalTime += 0.016f;
-        mCurrentTime = mUniformGlobalTime;
     }
 }
 

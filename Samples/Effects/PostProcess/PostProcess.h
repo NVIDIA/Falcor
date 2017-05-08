@@ -30,7 +30,7 @@
 #include "SampleTest.h"
 using namespace Falcor;
 
-class PostProcess : public Sample, public SampleTest
+class PostProcess : public SampleTest
 {
 public:
     void onLoad() override;
@@ -74,9 +74,8 @@ private:
     void loadImage();
 
     //testing
-    void onInitializeTestingArgs(const ArgList& args) override;
-    void onRunTestTask(const FrameRate& frameRate) override;
-    void onTestShutdown() override { shutdownApp(); }
+    void onInitializeTesting() override;
+    void onEndTestFrame() override;
     std::vector<uint32_t> mChangeModeFrames;
     std::vector<uint32_t>::iterator mChangeModeIt;
     uint32_t mToneMapOperatorIndex;

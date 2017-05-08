@@ -32,7 +32,7 @@
 
 using namespace Falcor;
 
-class ModelViewer : public Sample, public SampleTest
+class ModelViewer : public Sample
 {
 public:
     void onLoad() override;
@@ -99,7 +99,4 @@ private:
 
     float mNearZ;
     float mFarZ;
-
-    //testing
-    void onInitializeTestingArgs(const ArgList& args) override;
 };
