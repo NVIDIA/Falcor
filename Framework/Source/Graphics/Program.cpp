@@ -126,29 +126,15 @@ namespace Falcor
             return false;
         }
 
-        for(uint32_t i = 0; i < arraysize(mShaderStrings); i++)
+        // Have any of the files we depend on changed?
+        for(auto& entry : mFileTimeMap)
         {
-            const Shader* pShader = mpActiveProgram->getShader(ShaderType(i));
-            if(pShader)
-            {
-                if(mCreatedFromFile)
-                {
-                    std::string fullpath;
-                    findFileInDataDirectories(mShaderStrings[i], fullpath);
-                    if(mFileTimeMap[fullpath] != getFileModifiedTime(fullpath))
-                    {
-                        return true;
-                    }
-                }
+            auto& path = entry.first;
+            auto& modifiedTime = entry.second;
 
-                // Loop over the shader's included files
-                for(const auto& include : pShader->getIncludeList())
-                {
-                    if(mFileTimeMap[include] != getFileModifiedTime(include))
-                    {
-                        return true;
-                    }
-                }
+            if( modifiedTime != getFileModifiedTime(path) )
+            {
+                return true;
             }
         }
         return false;
@@ -226,11 +212,13 @@ namespace Falcor
 #if defined(FALCOR_GL)
             spSetCodeGenTarget(spireRequest, SPIRE_GLSL);
             spAddPreprocessorDefine(spireRequest, "FALCOR_GLSL", "1");
+            SpireSourceLanguage sourceLanguage = SPIRE_SOURCE_LANGUAGE_GLSL;
 #elif defined(FALCOR_D3D11) || defined(FALCOR_D3D12)
             // Note: we could compile Spire directly to DXBC (by having Spire invoke the MS compiler for us,
             // but that path seems to have more issues at present, so let's just go to HLSL instead...)
             spSetCodeGenTarget(spireRequest, SPIRE_HLSL);
             spAddPreprocessorDefine(spireRequest, "FALCOR_HLSL", "1");
+            SpireSourceLanguage sourceLanguage = SPIRE_SOURCE_LANGUAGE_HLSL;
 #else
 #error unknown shader compilation target
 #endif
@@ -248,7 +236,7 @@ namespace Falcor
                 if (!mShaderStrings[i].size())
                     continue;
 
-                spAddTranslationUnit(spireRequest, nullptr);
+                spAddTranslationUnit(spireRequest, sourceLanguage, nullptr);
 
                 if (mCreatedFromFile)
                 {
@@ -263,14 +251,7 @@ namespace Falcor
             }
 
             int anySpireErrors = spCompile(spireRequest);
-            int diagnosticsSize = spGetDiagnosticOutput(spireRequest, NULL, 0);
-            if (diagnosticsSize != 0)
-            {
-                char* diagnostics = (char*)malloc(diagnosticsSize);
-                spGetDiagnosticOutput(spireRequest, diagnostics, diagnosticsSize);
-                log += diagnostics;
-                free(diagnostics);
-            }
+            log += spGetDiagnosticOutput(spireRequest);
             if(anySpireErrors)
             {
                 spDestroyCompileRequest(spireRequest);
@@ -289,6 +270,14 @@ namespace Falcor
             // Extract the reflection data
             pReflector = ProgramReflection::create(spire::ShaderReflection::get(spireRequest), log);
 
+            // Extract list of files referenced, for dependency-tracking purposes
+            int depFileCount = spGetDependencyFileCount(spireRequest);
+            for(int ii = 0; ii < depFileCount; ++ii)
+            {
+                std::string depFilePath = spGetDependencyFilePath(spireRequest, ii);
+                mFileTimeMap[depFilePath] = getFileModifiedTime(depFilePath);
+            }
+
             spDestroyCompileRequest(spireRequest);
 
 #if !FALCOR_USE_SINGLE_SPIRE_SESSION
@@ -302,19 +291,8 @@ namespace Falcor
         for (uint32_t i = 0; i < kShaderCount; i++)
         {
             if (translatedShaderStrings[i].size())
-            {
+            { 
                 shaders[i] = createShaderFromString(translatedShaderStrings[i], ShaderType(i));
-
-                if(shaders[i])
-                {
-                    // TODO(tfoley): Need to get dependency info from Spire...
-#if 0
-                    for(const auto& include : shaders[i]->getIncludeList())
-                    {
-                        mFileTimeMap[include] = getFileModifiedTime(include);
-                    }
-#endif
-                }
             }           
         }
 

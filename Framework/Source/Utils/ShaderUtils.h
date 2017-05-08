@@ -74,7 +74,6 @@ namespace Falcor
 
             // Preprocess
             std::string errorMsg;
-            Shader::unordered_string_set includeList;
             {
                 // Preprocessing is good
                 std::string errorLog;
@@ -93,7 +92,6 @@ namespace Falcor
                 }
                 else
                 {
-                    pShader->setIncludeList(includeList);
                     return pShader;
                 }
             }
