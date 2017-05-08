@@ -180,6 +180,8 @@ namespace Falcor
         return mpActiveProgram;
     }
 
+#define FALCOR_USE_SINGLE_SPIRE_SESSION 1
+
     ProgramVersion::SharedPtr Program::createProgramVersion(std::string& log) const
     {
         mFileTimeMap.clear();
@@ -195,9 +197,14 @@ namespace Falcor
 
         std::string translatedShaderStrings[kShaderCount];
         {
-            // Create a Spire compilation context, and a sink for it to dump errors into.
-            SpireCompilationContext* spireContext = spCreateCompilationContext(NULL);
-            SpireDiagnosticSink* spireSink = spCreateDiagnosticSink(spireContext);
+            // Create an instance of the Spire library to interact with
+#if FALCOR_USE_SINGLE_SPIRE_SESSION
+            static
+#endif
+            SpireSession* spireSession = spCreateSession(NULL);
+
+            // Start building a request for compilation
+            SpireCompileRequest* spireRequest = spCreateCompileRequest(spireSession);
 
             // Add our media search paths as `#include` search paths for Spire.
             //
@@ -205,25 +212,25 @@ namespace Falcor
             // rather than having us specify data directories to it...
             for (auto path : getDataDirectoriesList())
             {
-                spAddSearchPath(spireContext, path.c_str());
+                spAddSearchPath(spireRequest, path.c_str());
             }
 
             // Pass any `#define` flags along to Spire, since we aren't doing our
             // own preprocessing any more.
             for(auto shaderDefine : mDefineList)
             {
-                spAddPreprocessorDefine(spireContext, shaderDefine.first.c_str(), shaderDefine.second.c_str());
+                spAddPreprocessorDefine(spireRequest, shaderDefine.first.c_str(), shaderDefine.second.c_str());
             }
 
             // Pick the right target based on the current graphics API
 #if defined(FALCOR_GL)
-            spSetCodeGenTarget(spireContext, SPIRE_GLSL);
-            spAddPreprocessorDefine(spireContext, "FALCOR_GLSL", "1");
+            spSetCodeGenTarget(spireRequest, SPIRE_GLSL);
+            spAddPreprocessorDefine(spireRequest, "FALCOR_GLSL", "1");
 #elif defined(FALCOR_D3D11) || defined(FALCOR_D3D12)
             // Note: we could compile Spire directly to DXBC (by having Spire invoke the MS compiler for us,
             // but that path seems to have more issues at present, so let's just go to HLSL instead...)
-            spSetCodeGenTarget(spireContext, SPIRE_HLSL);
-            spAddPreprocessorDefine(spireContext, "FALCOR_HLSL", "1");
+            spSetCodeGenTarget(spireRequest, SPIRE_HLSL);
+            spAddPreprocessorDefine(spireRequest, "FALCOR_HLSL", "1");
 #else
 #error unknown shader compilation target
 #endif
@@ -233,7 +240,7 @@ namespace Falcor
 
             // Don't actually perform semantic checking: just pass through functions bodies to downstream compiler
             spireFlags |= SPIRE_COMPILE_FLAG_NO_CHECKING;
-            spSetCompileFlags(spireContext, spireFlags);
+            spSetCompileFlags(spireRequest, spireFlags);
 
             // Now lets add all our input shader code, one-by-one
             for (uint32_t i = 0; i < kShaderCount; i++)
@@ -241,33 +248,32 @@ namespace Falcor
                 if (!mShaderStrings[i].size())
                     continue;
 
-                spAddTranslationUnit(spireContext, nullptr);
+                spAddTranslationUnit(spireRequest, nullptr);
 
                 if (mCreatedFromFile)
                 {
                     std::string fullpath;
                     findFileInDataDirectories(mShaderStrings[i], fullpath);
-                    spAddTranslationUnitSourceFile(spireContext, i, fullpath.c_str());
+                    spAddTranslationUnitSourceFile(spireRequest, i, fullpath.c_str());
                 }
                 else
                 {
-                    spAddTranslationUnitSourceString(spireContext, i, "", mShaderStrings[i].c_str());
+                    spAddTranslationUnitSourceString(spireRequest, i, "", mShaderStrings[i].c_str());
                 }
             }
 
-            SpireCompilationResult* result = spCompile(spireContext, spireSink);
-            int diagnosticsSize = spGetDiagnosticOutput(spireSink, NULL, 0);
+            int anySpireErrors = spCompile(spireRequest);
+            int diagnosticsSize = spGetDiagnosticOutput(spireRequest, NULL, 0);
             if (diagnosticsSize != 0)
             {
                 char* diagnostics = (char*)malloc(diagnosticsSize);
-                spGetDiagnosticOutput(spireSink, diagnostics, diagnosticsSize);
+                spGetDiagnosticOutput(spireRequest, diagnostics, diagnosticsSize);
                 log += diagnostics;
                 free(diagnostics);
             }
-            if(spDiagnosticSinkHasAnyErrors(spireSink) != 0)
+            if(anySpireErrors)
             {
-                spDestroyDiagnosticSink(spireSink);
-                spDestroyCompilationContext(spireContext);
+                spDestroyCompileRequest(spireRequest);
                 return nullptr;
             }
 
@@ -277,14 +283,17 @@ namespace Falcor
                 if (!mShaderStrings[i].size())
                     continue;
 
-                translatedShaderStrings[i] = spGetTranslationUnitSource(result, int(i));
+                translatedShaderStrings[i] = spGetTranslationUnitSource(spireRequest, int(i));
             }
 
             // Extract the reflection data
-            pReflector = ProgramReflection::create(spire::ShaderReflection::get(result), log);
+            pReflector = ProgramReflection::create(spire::ShaderReflection::get(spireRequest), log);
 
-            spDestroyDiagnosticSink(spireSink);
-            spDestroyCompilationContext(spireContext);
+            spDestroyCompileRequest(spireRequest);
+
+#if !FALCOR_USE_SINGLE_SPIRE_SESSION
+            spDestroySession(spireSession);
+#endif
         }
 
 
