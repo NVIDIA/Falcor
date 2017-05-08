@@ -68,6 +68,10 @@ namespace Falcor
         /** Check if the logger is enabled
         */
         static constexpr bool enabled() { return _LOG_ENABLED != 0; }
+
+        /** Set the logger verbosity
+        */
+        static void setVerbosity(Level level) { sVerbosity = level; }
     private:
         friend void logInfo(const std::string& msg, const bool forceMsgBox);
         friend void logWarning(const std::string& msg, const bool forceMsgBox);
@@ -80,6 +84,7 @@ namespace Falcor
         static bool sShowErrorBox;
         static FILE* sLogFile;
         static bool sInit;
+        static Level sVerbosity;
     };
 
     inline void logInfo(const std::string& msg, const bool forceMsgBox = false) { Logger::log(Logger::Level::Info, msg, forceMsgBox); }

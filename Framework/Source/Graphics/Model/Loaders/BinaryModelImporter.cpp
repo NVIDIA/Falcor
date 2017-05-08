@@ -479,7 +479,7 @@ namespace Falcor
     {
     }
 
-    bool BinaryModelImporter::import(Model* pModel, const std::string& filename, Model::LoadFlags flags)
+    bool BinaryModelImporter::import(Model& model, const std::string& filename, Model::LoadFlags flags)
     {
         std::string fullpath;
         if(findFileInDataDirectories(filename, fullpath) == false)
@@ -489,7 +489,7 @@ namespace Falcor
         }
 
         BinaryModelImporter loader(fullpath);
-        return loader.importModel(pModel, flags);
+        return loader.importModel(model, flags);
     }
 
     static bool checkVersion(const std::string& formatID, uint32_t version, const std::string& modelName)
@@ -544,7 +544,7 @@ namespace Falcor
         }
     }
     
-    bool BinaryModelImporter::importModel(Model* pModel, Model::LoadFlags flags)
+    bool BinaryModelImporter::importModel(Model& model, Model::LoadFlags flags)
     {
         // Format ID and version.
         char formatID[9];
@@ -934,7 +934,7 @@ namespace Falcor
                 }
                 else
                 {
-                    pModel->addMeshInstance(pMesh, glm::mat4());
+                    model.addMeshInstance(pMesh, glm::mat4());
                 }
             }
         }
@@ -956,7 +956,7 @@ namespace Falcor
                 {
                     for(uint32_t i : meshToSubmeshesID[meshIdx])
                     {
-                        pModel->addMeshInstance(falcorMeshCache[i], transformation);
+                        model.addMeshInstance(falcorMeshCache[i], transformation);
                     }
                 }
             }

@@ -39,6 +39,17 @@
 
 namespace Falcor
 {
+    bool SceneImporter::error(const std::string& msg)
+    {
+        std::string err = "Error when parsing scene file \"" + mFilename + "\".\n" + msg;
+#if _LOG_ENABLED
+        logError(err);
+#else
+        msgBox(err);
+#endif
+        return false;
+    }
+
     template<uint32_t VecSize>
     bool SceneImporter::getFloatVec(const rapidjson::Value& jsonVal, const std::string& desc, float vec[VecSize])
     {
@@ -50,16 +61,14 @@ namespace Falcor
 
         if(jsonVal.Size() != VecSize)
         {
-            error("Trying to load a vector for " + desc + ", but vector size mismatches. Required size is " + std::to_string(VecSize) + ", array size is " + std::to_string(jsonVal.Size()));
-            return false;
+            return error("Trying to load a vector for " + desc + ", but vector size mismatches. Required size is " + std::to_string(VecSize) + ", array size is " + std::to_string(jsonVal.Size()));
         }
 
         for(uint32_t i = 0; i < jsonVal.Size(); i++)
         {
             if(jsonVal[i].IsNumber() == false)
             {
-                error("Trying to load a vector for " + desc + ", but one the elements is not a number.");
-                return false;
+                return error("Trying to load a vector for " + desc + ", but one the elements is not a number.");
             }
 
             vec[i] = (float)(jsonVal[i].GetDouble());
@@ -71,8 +80,7 @@ namespace Falcor
     {
         if (jsonVal.IsArray() == false)
         {
-            error("Trying to load a vector for " + desc + ", but JValue is not an array");
-            return false;
+            return error("Trying to load a vector for " + desc + ", but JValue is not an array");
         }
 
         vec.resize(jsonVal.Size());
@@ -80,8 +88,7 @@ namespace Falcor
         {
             if (jsonVal[i].IsNumber() == false)
             {
-                error("Trying to load a vector for " + desc + ", but one the elements is not a number.");
-                return false;
+                return error("Trying to load a vector for " + desc + ", but one the elements is not a number.");
             }
 
             vec[i] = (float)(jsonVal[i].GetDouble());
@@ -89,30 +96,17 @@ namespace Falcor
         return true;
     }
 
-    Scene::SharedPtr SceneImporter::loadScene(const std::string& filename, Model::LoadFlags modelLoadFlags, Scene::LoadFlags sceneLoadFlags)
+    bool SceneImporter::loadScene(Scene& scene, const std::string& filename, Model::LoadFlags modelLoadFlags, Scene::LoadFlags sceneLoadFlags)
     {
-        SceneImporter importer;
+        SceneImporter importer(scene);
         return importer.load(filename, modelLoadFlags, sceneLoadFlags);
-    }
-
-    Scene* SceneImporter::error(const std::string& msg)
-    {
-        std::string err = "Error when parsing scene file \"" + mFilename + "\".\n" + msg;
-#if _LOG_ENABLED
-        logError(err);
-#else
-        msgBox(err);
-#endif
-        mpScene = nullptr;
-        return nullptr;
     }
 
     bool SceneImporter::createModelInstances(const rapidjson::Value& jsonVal, const Model::SharedPtr& pModel)
     {
         if(jsonVal.IsArray() == false)
         {
-            error("Model instances should be an array of objects");
-            return false;
+            return error("Model instances should be an array of objects");
         }
 
         for(uint32_t i = 0; i < jsonVal.Size(); i++)
@@ -130,8 +124,7 @@ namespace Falcor
                 {
                     if(m->value.IsString() == false)
                     {
-                        error("Model instance name should be a string value.");
-                        return false;
+                        return error("Model instance name should be a string value.");
                     }
                     name = std::string(m->value.GetString());
                 }
@@ -160,8 +153,7 @@ namespace Falcor
                 }
                 else
                 {
-                    error("Unknown key \"" + key + "\" when parsing model instance");
-                    return false;
+                    return error("Unknown key \"" + key + "\" when parsing model instance");
                 }
             }
 
@@ -173,7 +165,7 @@ namespace Falcor
             {
                 auto pInstance = Scene::ModelInstance::create(pModel, translation, rotation, scaling, name);
                 mInstanceMap[pInstance->getName()] = pInstance;
-                mpScene->addModelInstance(pInstance);
+                mScene.addModelInstance(pInstance);
             }
         }
 
@@ -185,14 +177,12 @@ namespace Falcor
         // Model must have at least a filename
         if(jsonModel.HasMember(SceneKeys::kFilename) == false)
         {
-            error("Model must have a filename");
-            return false;
+            return error("Model must have a filename");
         }
         const auto& modelFile = jsonModel[SceneKeys::kFilename];
         if(modelFile.IsString() == false)
         {
-            error("Model filename must be a string");
-            return false;
+            return error("Model filename must be a string");
         }
 
         // Load the model
@@ -218,8 +208,7 @@ namespace Falcor
             {
                 if(jval->value.IsString() == false)
                 {
-                    error("Model name should be a string value.");
-                    return false;
+                    return error("Model name should be a string value.");
                 }
                 pModel->setName(std::string(jval->value.GetString()));
             }
@@ -243,8 +232,7 @@ namespace Falcor
             {
                 if(jval->value.IsUint() == false)
                 {
-                    error("Model active animation should be an unsigned integer");
-                    return false;
+                    return error("Model active animation should be an unsigned integer");
                 }
                 uint32_t activeAnimation = jval->value.GetUint();
                 if(activeAnimation >= pModel->getAnimationsCount())
@@ -260,15 +248,14 @@ namespace Falcor
             }
             else
             {
-                error("Invalid key found in models array. Key == " + keyName + ".");
-                return false;
+                return error("Invalid key found in models array. Key == " + keyName + ".");
             }
         }
 
         // If no instances for the model were loaded from the scene file
         if (instanceAdded == false)
         {
-            mpScene->addModelInstance(pModel, "Instance 0");
+            mScene.addModelInstance(pModel, "Instance 0");
         }
 
         return true;
@@ -278,8 +265,7 @@ namespace Falcor
     {
         if (jsonVal.IsArray() == false)
         {
-            error("Material overrides should be an array of objects");
-            return false;
+            return error("Material overrides should be an array of objects");
         }
 
         // For each override. Each object represents one mesh and one material
@@ -305,20 +291,18 @@ namespace Falcor
                 }
                 else
                 {
-                    error("Unknown key \"" + key + "\" when parsing material overrides for model " + pModel->getFilename());
-                    return false;
+                    return error("Unknown key \"" + key + "\" when parsing material overrides for model " + pModel->getFilename());
                 }
             }
 
             if (meshID == (uint32_t)-1 || materialID == (uint32_t)-1)
             {
-                error("Missing data while parsing when parsing material overrides for model " + pModel->getFilename());
-                return false;
+                return error("Missing data while parsing when parsing material overrides for model " + pModel->getFilename());
             }
 
             // Apply override
             auto& pMesh = pModel->getMesh(meshID);
-            mpScene->getMaterialHistory()->replace(pMesh.get(), mpScene->getMaterial(materialID));
+            mScene.getMaterialHistory()->replace(pMesh.get(), mScene.getMaterial(materialID));
         }
 
         return true;
@@ -328,8 +312,7 @@ namespace Falcor
     {
         if(jsonVal.IsArray() == false)
         {
-            error("models section should be an array of objects.");
-            return false;
+            return error("models section should be an array of objects.");
         }
 
         // Loop over the array
@@ -415,14 +398,13 @@ namespace Falcor
     {
         if(jsonValue.IsString() == false)
         {
-            error("Material layer Type should be string");
+            return error("Material layer Type should be string");
         }
 
         uint32_t type = getMaterialLayerType(jsonValue.GetString());
         if(type == MatNone)
         {
-            error("Unknown material layer Type '" + std::string(jsonValue.GetString()) + "'");
-            return false;
+            return error("Unknown material layer Type '" + std::string(jsonValue.GetString()) + "'");
         }
 
         layerOut.type = (Material::Layer::Type)type;
@@ -433,14 +415,13 @@ namespace Falcor
     {
         if(jsonValue.IsString() == false)
         {
-            error("Material layer NDF should be string");
+            return error("Material layer NDF should be string");
         }
 
         uint32_t ndf = getMaterialLayerNDF(jsonValue.GetString());
         if(ndf == -1)
         {
-            error("Unknown material layer NDF '" + std::string(jsonValue.GetString()) + "'");
-            return false;
+            return error("Unknown material layer NDF '" + std::string(jsonValue.GetString()) + "'");
         }
 
         layerOut.ndf = (Material::Layer::NDF)ndf;
@@ -451,14 +432,13 @@ namespace Falcor
     {
         if(jsonValue.IsString() == false)
         {
-            error("Material layer NDF should be string");
+            return error("Material layer NDF should be string");
         }
 
         uint32_t blending = getMaterialLayerBlend(jsonValue.GetString());
         if(blending == -1)
         {
-            error("Unknown material layer blending '" + std::string(jsonValue.GetString()) + "'");
-            return false;
+            return error("Unknown material layer blending '" + std::string(jsonValue.GetString()) + "'");
         }
 
         layerOut.blend = (Material::Layer::Blend)blending;
@@ -469,8 +449,7 @@ namespace Falcor
     {
         if(jsonValue.IsString() == false)
         {
-            error("Material texture should be a string");
-            return false;
+            return error("Material texture should be a string");
         }
 
         std::string filename = jsonValue.GetString();
@@ -489,8 +468,7 @@ namespace Falcor
     {
         if(jsonLayer.IsObject() == false)
         {
-            error("Material layer should be an object");
-            return false;
+            return error("Material layer should be an object");
         }
 
         bool bOK = true;
@@ -544,14 +522,12 @@ namespace Falcor
     {
         if(jsonLayerArray.IsArray() == false)
         {
-            error("Material layers should be array");
-            return false;
+            return error("Material layers should be array");
         }
 
         if(jsonLayerArray.Size() > MatMaxLayers)
         {
-            error("Material has too many layers.");
-            return false;
+            return error("Material has too many layers.");
         }
 
         for(uint32_t i = 0; i < jsonLayerArray.Size(); i++)
@@ -571,8 +547,7 @@ namespace Falcor
     {
         if(jsonMaterial.IsObject() == false)
         {
-            error("Material should be an object");
-            return false;
+            return error("Material should be an object");
         }
 
         auto pMaterial = Material::create("");
@@ -585,8 +560,7 @@ namespace Falcor
             {
                 if(value.IsString() == false)
                 {
-                    error("Material name should be a string");
-                    return false;
+                    return error("Material name should be a string");
                 }
                 pMaterial->setName(value.GetString());
             }
@@ -594,8 +568,7 @@ namespace Falcor
             {
                 if(value.IsUint() == false)
                 {
-                    error("Material ID should be an unsigned integer");
-                    return false;
+                    return error("Material ID should be an unsigned integer");
                 }
                 pMaterial->setID(value.GetUint());
             }
@@ -603,8 +576,7 @@ namespace Falcor
             {
                 if (value.IsBool() == false)
                 {
-                    error("Material double-sidedness should be a bool");
-                    return false;
+                    return error("Material double-sidedness should be a bool");
                 }
                 pMaterial->setDoubleSided(value.GetBool());
             }
@@ -617,8 +589,7 @@ namespace Falcor
                 }
                 else
                 {
-                    error("Material alpha map could not be loaded");
-                    return false;
+                    return error("Material alpha map could not be loaded");
                 }
             }
             else if(key == SceneKeys::kMaterialNormal)
@@ -630,8 +601,7 @@ namespace Falcor
                 }
                 else
                 {
-                    error("Material normal map could not be loaded");
-                    return false;
+                    return error("Material normal map could not be loaded");
                 }
             }
             else if (key == SceneKeys::kMaterialHeight)
@@ -643,8 +613,7 @@ namespace Falcor
                 }
                 else
                 {
-                    error("Material height map could not be loaded");
-                    return false;
+                    return error("Material height map could not be loaded");
                 }
             }
             else if (key == SceneKeys::kMaterialAO)
@@ -656,8 +625,7 @@ namespace Falcor
                 }
                 else
                 {
-                    error("Material ambient occlusion map could not be loaded");
-                    return false;
+                    return error("Material ambient occlusion map could not be loaded");
                 }
             }
             else if(key == SceneKeys::kMaterialLayers)
@@ -669,12 +637,11 @@ namespace Falcor
             }
             else
             {
-                error("Invalid key found in materials section. Key == " + key + ".");
-                return false;
+                return error("Invalid key found in materials section. Key == " + key + ".");
             }
         }
 
-        mpScene->addMaterial(pMaterial);
+        mScene.addMaterial(pMaterial);
         return true;
     }
 
@@ -682,8 +649,7 @@ namespace Falcor
     {
         if(jsonVal.IsArray() == false)
         {
-            error("Materials section should be an array of objects.");
-            return false;
+            return error("Materials section should be an array of objects.");
         }
 
         // Loop over the array
@@ -709,14 +675,12 @@ namespace Falcor
             {
                 if(value.IsString() == false)
                 {
-                    error("Point light name should be a string");
-                    return false;
+                    return error("Point light name should be a string");
                 }
                 std::string name = value.GetString();
                 if(name.find(' ') != std::string::npos)
                 {
-                    error("Point light name can't have spaces");
-                    return false;
+                    return error("Point light name can't have spaces");
                 }
                 pDirLight->setName(name);
             }
@@ -744,11 +708,10 @@ namespace Falcor
             }
             else
             {
-                error("Invalid key found in directional light object. Key == " + key + ".");
-                return false;
+                return error("Invalid key found in directional light object. Key == " + key + ".");
             }
         }
-        mpScene->addLight(pDirLight);
+        mScene.addLight(pDirLight);
         return true;
     }
 
@@ -764,14 +727,12 @@ namespace Falcor
             {
                 if(value.IsString() == false)
                 {
-                    error("Dir light name should be a string");
-                    return false;
+                    return error("Dir light name should be a string");
                 }
                 std::string name = value.GetString();
                 if(name.find(' ') != std::string::npos)
                 {
-                    error("Dir light name can't have spaces");
-                    return false;
+                    return error("Dir light name can't have spaces");
                 }
                 pPointLight->setName(name);
             }
@@ -783,8 +744,7 @@ namespace Falcor
             {
                 if(value.IsNumber() == false)
                 {
-                    error("Camera's FOV should be a number");
-                    return false;
+                    return error("Camera's FOV should be a number");
                 }
                 float angle = (float)value.GetDouble();
                 // Convert to radiance
@@ -795,8 +755,7 @@ namespace Falcor
             {
                 if(value.IsNumber() == false)
                 {
-                    error("Camera's FOV should be a number");
-                    return false;
+                    return error("Camera's FOV should be a number");
                 }
                 float angle = (float)value.GetDouble();
                 // Convert to radiance
@@ -832,8 +791,7 @@ namespace Falcor
             }
             else
             {
-                error("Invalid key found in point light object. Key == " + key + ".");
-                return false;
+                return error("Invalid key found in point light object. Key == " + key + ".");
             }
         }
 
@@ -844,7 +802,7 @@ namespace Falcor
         else
         {
             mLightMap[pPointLight->getName()] = pPointLight;
-            mpScene->addLight(pPointLight);
+            mScene.addLight(pPointLight);
         }
 
         return true;
@@ -854,8 +812,7 @@ namespace Falcor
     {
         if(jsonVal.IsArray() == false)
         {
-            error("lights section should be an array of objects.");
-            return false;
+            return error("lights section should be an array of objects.");
         }
 
         // Go over all the objects
@@ -865,14 +822,12 @@ namespace Falcor
             const auto& type = light.FindMember(SceneKeys::kType);
             if(type == light.MemberEnd())
             {
-                error("Light source must have a type.");
-                return false;
+                return error("Light source must have a type.");
             }
 
             if(type->value.IsString() == false)
             {
-                error("Light source Type must be a string.");
-                return false;
+                return error("Light source Type must be a string.");
             }
 
             std::string lightType(type->value.GetString());
@@ -887,7 +842,7 @@ namespace Falcor
             }
             else
             {
-                error("Unrecognized light Type \"" + lightType + "\"");
+                return error("Unrecognized light Type \"" + lightType + "\"");
             }
 
             if(b == false)
@@ -904,8 +859,7 @@ namespace Falcor
         // an array of key frames
         if(jsonFramesArray.IsArray() == false)
         {
-            error("Camera path frames should be an array of key-frame objects");
-            return nullptr;
+            return error("Camera path frames should be an array of key-frame objects");
         }
 
         for(uint32_t i = 0; i < jsonFramesArray.Size(); i++)
@@ -1017,8 +971,7 @@ namespace Falcor
     {
         if(jsonVal.IsArray() == false)
         {
-            error("Paths should be an array");
-            return false;
+            return error("Paths should be an array");
         }
 
         for(uint32_t PathID = 0; PathID < jsonVal.Size(); PathID++)
@@ -1026,7 +979,7 @@ namespace Falcor
             auto pPath = createPath(jsonVal[PathID]);
             if(pPath)
             {
-                mpScene->addPath(pPath);
+                mScene.addPath(pPath);
             }
             else
             {
@@ -1038,7 +991,7 @@ namespace Falcor
         
     bool SceneImporter::parseActivePath(const rapidjson::Value& jsonVal)
     {
-        if (mpScene->getVersion() != 1)
+        if (mScene.getVersion() != 1)
         {
             return true;
         }
@@ -1046,25 +999,22 @@ namespace Falcor
         // Paths should already be initialized at this stage
         if(jsonVal.IsString() == false)
         {
-            error("Active path should be a string.");
-            return false;
+            return error("Active path should be a string.");
         }
 
         std::string activePath = jsonVal.GetString();
 
         // Find the path
-        for(uint32_t i = 0; i < mpScene->getPathCount(); i++)
+        for(uint32_t i = 0; i < mScene.getPathCount(); i++)
         {
-            if(activePath == mpScene->getPath(i)->getName())
+            if(activePath == mScene.getPath(i)->getName())
             {
-                mpScene->getPath(i)->attachObject(mpScene->getActiveCamera());
+                mScene.getPath(i)->attachObject(mScene.getActiveCamera());
                 return true;
             }
         }
 
-        error("Active path \"" + activePath + "\" not found." );
-        return false;
-
+        return error("Active path \"" + activePath + "\" not found." );
     }
 
     bool SceneImporter::createCamera(const rapidjson::Value& jsonCamera)
@@ -1082,8 +1032,7 @@ namespace Falcor
                 // Name
                 if(value.IsString() == false)
                 {
-                    error("Camera name should be a string value");
-                    return false;
+                    return error("Camera name should be a string value");
                 }
                 pCamera->setName(value.GetString());
             }
@@ -1116,16 +1065,14 @@ namespace Falcor
             }
             else if(key == SceneKeys::kCamFovY) // Version 1
             {
-                if (mpScene->getVersion() > 1)
+                if (mScene.getVersion() > 1)
                 {
-                    error("Camera FOV is only valid in scene version 1. Ignoring value.");
-                    return false;
+                    return error("Camera FOV is only valid in scene version 1. Ignoring value.");
                 }
 
                 if(value.IsNumber() == false)
                 {
-                    error("Camera's FOV should be a number");
-                    return false;
+                    return error("Camera's FOV should be a number");
                 }
 
                 // Convert to radians
@@ -1134,16 +1081,14 @@ namespace Falcor
             }
             else if (key == SceneKeys::kCamFocalLength) // Version 2
             {
-                if (mpScene->getVersion() != 2)
+                if (mScene.getVersion() != 2)
                 {
-                    error("Camera focal length is only valid in scene version 2. Ignoring value.");
-                    return false;
+                    return error("Camera focal length is only valid in scene version 2. Ignoring value.");
                 }
 
                 if (value.IsNumber() == false)
                 {
-                    error("Camera's focal length should be a number");
-                    return false;
+                    return error("Camera's focal length should be a number");
                 }
 
                 pCamera->setFocalLength((float)value.GetDouble());
@@ -1161,15 +1106,13 @@ namespace Falcor
             {
                 if(value.IsNumber() == false)
                 {
-                    error("Camera's aspect ratio should be a number");
-                    return false;
+                    return error("Camera's aspect ratio should be a number");
                 }
                 pCamera->setAspectRatio((float)value.GetDouble());
             }
             else
             {
-                error("Invalid key found in cameras array. Key == " + key + ".");
-                return false;
+                return error("Invalid key found in cameras array. Key == " + key + ".");
             }
         }
 
@@ -1180,7 +1123,7 @@ namespace Falcor
         else
         {
             mCameraMap[pCamera->getName()] = pCamera;
-            mpScene->addCamera(pCamera);
+            mScene.addCamera(pCamera);
         }
 
         return true;
@@ -1190,8 +1133,7 @@ namespace Falcor
     {
         if(jsonVal.IsArray() == false)
         {
-            error("cameras section should be an array of objects.");
-            return false;
+            return error("cameras section should be an array of objects.");
         }
 
         // Go over all the objects
@@ -1204,13 +1146,13 @@ namespace Falcor
         }
 
         // Set the active camera to camera 0.
-        mpScene->setActiveCamera(0);
+        mScene.setActiveCamera(0);
 
         return true;
     }
 
 
-    Scene::SharedPtr SceneImporter::load(const std::string& filename, Model::LoadFlags modelLoadFlags, Scene::LoadFlags sceneLoadFlags)
+    bool SceneImporter::load(const std::string& filename, Model::LoadFlags modelLoadFlags, Scene::LoadFlags sceneLoadFlags)
     {
         std::string fullpath;
         mFilename = filename;
@@ -1237,34 +1179,29 @@ namespace Falcor
             {
                 size_t line;
                 line = std::count(jsonData.begin(), jsonData.begin() + mJDoc.GetErrorOffset(), '\n');
-                error(std::string("JSON Parse error in line ") + std::to_string(line) + ". " + rapidjson::GetParseError_En(mJDoc.GetParseError()));
-                return nullptr;
+                return error(std::string("JSON Parse error in line ") + std::to_string(line) + ". " + rapidjson::GetParseError_En(mJDoc.GetParseError()));
             }
-
-            // create the scene
-            mpScene = Scene::create();
 
             if(topLevelLoop() == false)
             {
-                return nullptr;
+                return false;
             }
 
             if(is_set(mSceneLoadFlags, Scene::LoadFlags::GenerateAreaLights))
             {
-                mpScene->createAreaLights();
+                mScene.createAreaLights();
             }
 
             if (is_set(mSceneLoadFlags, Scene::LoadFlags::StoreMaterialHistory) == false)
             {
-                mpScene->deleteMaterialHistory();
+                mScene.deleteMaterialHistory();
             }
 
-            return mpScene;
+            return true;
         }
         else
         {
-            error("File not found.");
-            return nullptr;
+            return error("File not found.");
         }
     }
 
@@ -1273,7 +1210,7 @@ namespace Falcor
         glm::vec3 ambient;
         if(getFloatVec<3>(jsonVal, SceneKeys::kAmbientIntensity, &ambient[0]))
         {
-            mpScene->setAmbientIntensity(ambient);
+            mScene.setAmbientIntensity(ambient);
             return true;
         }
         return false;
@@ -1283,12 +1220,11 @@ namespace Falcor
     {
         if(jsonVal.IsNumber() == false)
         {
-            error("Lighting scale should be a number.");
-            return false;
+            return error("Lighting scale should be a number.");
         }
 
         float f = (float)(jsonVal.GetDouble());
-        mpScene->setLightingScale(f);
+        mScene.setLightingScale(f);
         return true;
     }
 
@@ -1296,12 +1232,11 @@ namespace Falcor
     {
         if(jsonVal.IsNumber() == false)
         {
-            error("Camera speed should be a number.");
-            return false;
+            return error("Camera speed should be a number.");
         }
 
         float f = (float)(jsonVal.GetDouble());
-        mpScene->setCameraSpeed(f);
+        mScene.setCameraSpeed(f);
         return true;
     }
 
@@ -1310,34 +1245,31 @@ namespace Falcor
         // Cameras should already be initialized at this stage
         if(jsonVal.IsString() == false)
         {
-            error("Active camera should be a string.");
-            return false;
+            return error("Active camera should be a string.");
         }
 
         std::string activeCamera = jsonVal.GetString();
 
         // Find the camera
-        for(uint32_t i = 0; i < mpScene->getCameraCount(); i++)
+        for(uint32_t i = 0; i < mScene.getCameraCount(); i++)
         {
-            if(activeCamera == mpScene->getCamera(i)->getName())
+            if(activeCamera == mScene.getCamera(i)->getName())
             {
-                mpScene->setActiveCamera(i);
+                mScene.setActiveCamera(i);
                 return true;
             }
         }
 
-        error("Active camera \"" + activeCamera + "\" not found.");
-        return false;
+        return error("Active camera \"" + activeCamera + "\" not found.");
     }
 
     bool SceneImporter::parseVersion(const rapidjson::Value& jsonVal)
     {
         if(jsonVal.IsUint() == false)
         {
-            error("value should be an unsigned integer number");
-            return false;
+            return error("value should be an unsigned integer number");
         }
-        mpScene->setVersion(jsonVal.GetUint());
+        mScene.setVersion(jsonVal.GetUint());
         return true;
     }
 
@@ -1345,8 +1277,7 @@ namespace Falcor
     {
         if(jsonVal.IsObject() == false)
         {
-            error("User defined section should be a JSON object.");
-            return false;
+            return error("User defined section should be a JSON object.");
         }
 
         for(auto& it = jsonVal.MemberBegin(); it != jsonVal.MemberEnd(); it++)
@@ -1362,8 +1293,7 @@ namespace Falcor
                 {
                     if(value[i].IsNumber() == false)
                     {
-                        error("User defined section contains an array, but some of the elements are not numbers.");
-                        return false;
+                        return error("User defined section contains an array, but some of the elements are not numbers.");
                     }
                 }
 
@@ -1432,11 +1362,10 @@ namespace Falcor
                 }
                 else
                 {
-                    error("Error when parsing custom-field \"" + name + "\". Field Type invalid. Must be a literal number, string boolean or an array of 2/3/4 numbers.");
-                    return false;
+                    return error("Error when parsing custom-field \"" + name + "\". Field Type invalid. Must be a literal number, string boolean or an array of 2/3/4 numbers.");
                 }
             }
-            mpScene->addUserVariable(name, userVar);
+            mScene.addUserVariable(name, userVar);
         }
         return true;
     }
@@ -1450,17 +1379,17 @@ namespace Falcor
             // Look in the data directories
             if(findFileInDataDirectories(include, fullpath) == false)
             {
-                error("Can't find include file " + include);
-                return false;
+                return error("Can't find include file " + include);
             }
         }
 
-        Scene::SharedPtr pScene = SceneImporter::loadScene(fullpath, mModelLoadFlags, mSceneLoadFlags);
+        Scene::SharedPtr pScene = Scene::create();
+        SceneImporter::loadScene(*pScene, fullpath, mModelLoadFlags, mSceneLoadFlags);
         if(pScene == nullptr)
         {
             return false;
         }
-        mpScene->merge(pScene.get());
+        mScene.merge(pScene.get());
 
         return true;
     }
@@ -1469,15 +1398,14 @@ namespace Falcor
     {
         if(jsonVal.IsArray() == false)
         {
-            error("Include section should be an array of strings");
+            return error("Include section should be an array of strings");
         }
 
         for(uint32_t i = 0; i < jsonVal.Size(); i++)
         {
             if(jsonVal[i].IsString() == false)
             {
-                error("Include element should be a string");
-                return false;
+                return error("Include element should be a string");
             }
 
             const std::string include = jsonVal[i].GetString();
@@ -1561,8 +1489,7 @@ namespace Falcor
 
             if(found == false)
             {
-                error("Invalid key found in top-level object. Key == " + std::string(it->name.GetString()) + ".");
-                return false;
+                return error("Invalid key found in top-level object. Key == " + std::string(it->name.GetString()) + ".");
             }
         }
         return true;

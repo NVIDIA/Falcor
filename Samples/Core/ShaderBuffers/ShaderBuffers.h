@@ -31,7 +31,7 @@
 
 using namespace Falcor;
 
-class ShaderBuffersSample : public Sample, public SampleTest
+class ShaderBuffersSample : public SampleTest
 {
 public:
     void onLoad() override;

@@ -90,11 +90,13 @@ void NormalMapFiltering::onLoad()
     mCameraController.attachCamera(pScene->getCamera(0));
     mCameraController.setModelParams(pScene->getModel(0)->getCenter(), pScene->getModel(0)->getRadius(), 4);
 
-    init_tests();
+    initializeTesting();
 }
 
 void NormalMapFiltering::onFrameRender()
 {
+    beginTestFrame();
+
     const glm::vec4 clearColor(0.38f, 0.52f, 0.10f, 1);
     mpRenderContext->clearFbo(mpDefaultFBO.get(), clearColor, 1.0f, 0, FboAttachmentType::All);
 
@@ -108,7 +110,7 @@ void NormalMapFiltering::onFrameRender()
     mpRenderer->renderScene(mpRenderContext.get());
     mpRenderContext->popGraphicsVars();
 
-    run_test();
+    endTestFrame();
 }
 
 void NormalMapFiltering::onShutdown()
@@ -132,9 +134,9 @@ void NormalMapFiltering::onResizeSwapChain()
     mpRenderer->getScene()->getActiveCamera()->setAspectRatio(aspect);
 }
 
-void NormalMapFiltering::onInitializeTestingArgs(const ArgList& args)
+void NormalMapFiltering::onInitializeTesting()
 {
-    std::vector<ArgList::Arg> modeFrames = args.getValues("changeMode");
+    std::vector<ArgList::Arg> modeFrames = mArgList.getValues("changeMode");
     if (!modeFrames.empty())
     {
         mChangeModeFrames.resize(modeFrames.size());
@@ -150,14 +152,14 @@ void NormalMapFiltering::onInitializeTestingArgs(const ArgList& args)
     updateProgram();
 }
 
-void NormalMapFiltering::onRunTestTask(const FrameRate& frameRate)
+void NormalMapFiltering::onEndTestFrame()
 {
     static const uint32_t numCombos = 4;
     static const bool useLeanMap[numCombos] = {false, false, true, true };
     static const bool useSpecAA[numCombos] = {false, true, false, true };
     static uint32_t index = 0;
 
-    uint32_t frameId = frameRate.getFrameCount();
+    uint32_t frameId = frameRate().getFrameCount();
     if (mChangeModeIt != mChangeModeFrames.end() && frameId >= *mChangeModeIt)
     {
         ++mChangeModeIt;

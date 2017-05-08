@@ -41,7 +41,12 @@ namespace Falcor
 
     Scene::SharedPtr Scene::loadFromFile(const std::string& filename, Model::LoadFlags modelLoadFlags, Scene::LoadFlags sceneLoadFlags)
     {
-        return SceneImporter::loadScene(filename, modelLoadFlags, sceneLoadFlags);
+        Scene::SharedPtr pScene = create();
+        if (SceneImporter::loadScene(*pScene, filename, modelLoadFlags, sceneLoadFlags) == false)
+        {
+            pScene = false;
+        }
+        return pScene;
     }
 
     Scene::SharedPtr Scene::create()
@@ -61,64 +66,70 @@ namespace Falcor
 
     Scene::~Scene() = default;
 
-//     void Scene::updateExtents()
-//     {
-//         if (mExtentsDirty)
-//         {
-//             mExtentsDirty = false;
-// 
-//             mRadius = 0.f;
-//             float k = 0.f;
-//             mCenter = vec3(0, 0, 0);
-//             for (uint32_t i = 0; i < getModelCount(); ++i)
-//             {
-//                 const auto& model = getModel(i);
-//                 const float r = model->getRadius();
-//                 const vec3 c = model->getCenter();
-//                 for (uint32_t j = 0; j < getModelInstanceCount(i); ++j)
-//                 {
-//                     const auto& inst = getModelInstance(i, j);
-//                     const vec3 instC = vec3(vec4(c, 1.f) * inst.transformMatrix);
-//                     const float instR = r * max(inst.scaling.x, max(inst.scaling.y, inst.scaling.z));
-// 
-//                     if (k == 0.f)
-//                     {
-//                         mCenter = instC;
-//                         mRadius = instR;
-//                     }
-//                     else
-//                     {
-//                         vec3 dir = instC - mCenter;
-//                         if (length(dir) > 1e-6f)
-//                             dir = normalize(dir);
-//                         vec3 a = mCenter - dir * mRadius;
-//                         vec3 b = instC + dir * instR;
-// 
-//                         mCenter = (a + b) * 0.5f;
-//                         mRadius = length(a - b);
-//                     }
-//                     k++;
-//                 }
-//             }
-// 
-//             // Update light extents
-//             for (auto& light : mpLights)
-//             {
-//                 if (light->getType() == LightDirectional)
-//                 {
-//                     auto pDirLight = std::dynamic_pointer_cast<DirectionalLight>(light);
-//                     pDirLight->setWorldParams(getCenter(), getRadius());
-//                 }
-//             }
-//         }
-//     }
+    void Scene::updateExtents()
+    {
+        if (mExtentsDirty)
+        {
+            mExtentsDirty = false;
+ 
+            mRadius = 0.f;
+            float k = 0.f;
+            mCenter = vec3(0, 0, 0);
+            for (uint32_t i = 0; i < getModelCount(); ++i)
+            {
+                const auto& model = getModel(i);
+                const float r = model->getRadius();
+                const vec3 c = model->getCenter();
+                for (uint32_t j = 0; j < getModelInstanceCount(i); ++j)
+                {
+                    const auto& inst = getModelInstance(i, j);
+                    const vec3 instC = vec3(vec4(c, 1.f) * inst->getTransformMatrix());
+                    const vec3 scaling = inst->getScaling();
+                    const float instR = r * max(scaling.x, max(scaling.y, scaling.z));
+ 
+                    if (k == 0.f)
+                    {
+                        mCenter = instC;
+                        mRadius = instR;
+                    }
+                    else
+                    {
+                        vec3 dir = instC - mCenter;
+                        if (length(dir) > 1e-6f)
+                            dir = normalize(dir);
+                        vec3 a = mCenter - dir * mRadius;
+                        vec3 b = instC + dir * instR;
+ 
+                        mCenter = (a + b) * 0.5f;
+                        mRadius = length(a - b);
+                    }
+                    k++;
+                }
+            }
+ 
+            // Update light extents
+            for (auto& light : mpLights)
+            {
+                if (light->getType() == LightDirectional)
+                {
+                    auto pDirLight = std::dynamic_pointer_cast<DirectionalLight>(light);
+                    pDirLight->setWorldParams(getCenter(), getRadius());
+                }
+            }
+        }
+    }
 
     bool Scene::update(double currentTime, CameraController* cameraController)
     {
         for (auto& path : mpPaths)
         {
-            path->animate(currentTime);
+            if (path->animate(currentTime))
+            {
+                mExtentsDirty = true;
+            }
         }
+
+        updateExtents();
 
         // Ignore the elapsed time we got from the user. This will allow camera movement in cases where the time is frozen
         if(cameraController)
@@ -140,11 +151,14 @@ namespace Falcor
 
         // Delete entire vector of instances
         mModels.erase(mModels.begin() + modelID);
+
+        mExtentsDirty = true;
     }
 
     void Scene::deleteAllModels()
     {
         mModels.clear();
+        mExtentsDirty = true;
     }
 
     uint32_t Scene::getModelInstanceCount(uint32_t modelID) const
@@ -154,26 +168,9 @@ namespace Falcor
 
     void Scene::addModelInstance(const Model::SharedPtr& pModel, const std::string& instanceName, const glm::vec3& translation, const glm::vec3& yawPitchRoll, const glm::vec3& scaling)
     {
-        int32_t modelID = -1;
-
-        // Linear search from the end. Instances are usually added in order by model
-        for (int32_t i = (int32_t)mModels.size() - 1; i >= 0; i--)
-        {
-            if (mModels[i][0]->getObject() == pModel)
-            {
-                modelID = i;
-                break;
-            }
-        }
-
-        // If model not found, new model, add new instance vector
-        if (modelID == -1)
-        {
-            mModels.push_back(ModelInstanceList());
-            modelID = (int32_t)mModels.size() - 1;
-        }
-
-        mModels[modelID].push_back(ModelInstance::create(pModel, translation, yawPitchRoll, scaling, instanceName));
+        ModelInstance::SharedPtr pInstance = ModelInstance::create(pModel, translation, yawPitchRoll, scaling, instanceName);
+        addModelInstance(pInstance);
+        mExtentsDirty = true;
     }
 
     void Scene::addModelInstance(const ModelInstance::SharedPtr& pInstance)
@@ -192,6 +189,7 @@ namespace Falcor
         // If not found, add a new list
         mModels.emplace_back();
         mModels.back().push_back(pInstance);
+        mExtentsDirty = true;
     }
 
     void Scene::deleteModelInstance(uint32_t modelID, uint32_t instanceID)
@@ -200,6 +198,7 @@ namespace Falcor
         auto& instances = mModels[modelID];
 
         instances.erase(instances.begin() + instanceID);
+        mExtentsDirty = true;
 
         // If no instances are left, delete the vector
         if (instances.empty())
@@ -242,12 +241,14 @@ namespace Falcor
     uint32_t Scene::addLight(const Light::SharedPtr& pLight)
     {
         mpLights.push_back(pLight);
+        mExtentsDirty = true;
         return (uint32_t)mpLights.size() - 1;
     }
 
     void Scene::deleteLight(uint32_t lightID)
     {
         mpLights.erase(mpLights.begin() + lightID);
+        mExtentsDirty = true;
     }
 
     void Scene::deleteMaterial(uint32_t materialID)
@@ -308,6 +309,7 @@ namespace Falcor
         merge(mCameras);
 #undef merge
         mUserVars.insert(pFrom->mUserVars.begin(), pFrom->mUserVars.end());
+        mExtentsDirty = true;
     }
 
     void Scene::createAreaLights()
@@ -346,6 +348,22 @@ namespace Falcor
             {
                 ++it;
             }
+        }
+    }
+
+    void Scene::bindSamplerToMaterials(Sampler::SharedPtr pSampler)
+    {
+        for (auto& pMat : mpMaterials)
+        {
+            pMat->setSampler(pSampler);
+        }
+    }
+
+    void Scene::bindSamplerToModels(Sampler::SharedPtr pSampler)
+    {
+        for (auto& model : mModels)
+        {
+            model[0]->getObject()->bindSamplerToMaterials(pSampler);
         }
     }
 }

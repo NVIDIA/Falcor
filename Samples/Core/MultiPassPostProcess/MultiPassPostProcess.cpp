@@ -47,22 +47,7 @@ void MultiPassPostProcess::onLoad()
     mpGaussianBlur = GaussianBlur::create(5);
     mpBlit = FullScreenPass::create("Blit.fs");
 
-    init_tests();
-
-    std::vector<ArgList::Arg> filenames = mArgList.getValues("loadimage");
-    if (!filenames.empty())
-    {
-        loadImageFromFile(filenames[0].asString());
-    }
-
-    if (mArgList.argExists("gaussianblur"))
-    {
-        mEnableGaussianBlur = true;
-        if (mArgList.argExists("grayscale"))
-        {
-            mEnableGrayscale = true;
-        }
-    }
+    initializeTesting();
 }
 
 void MultiPassPostProcess::loadImage()
@@ -89,6 +74,8 @@ void MultiPassPostProcess::loadImageFromFile(std::string filename)
 
 void MultiPassPostProcess::onFrameRender()
 {
+    beginTestFrame();
+
     const glm::vec4 clearColor(0.38f, 0.52f, 0.10f, 1);
     mpRenderContext->clearFbo(mpDefaultFBO.get(), clearColor, 0, 0, FboAttachmentType::Color);
 
@@ -113,7 +100,7 @@ void MultiPassPostProcess::onFrameRender()
         }
     }
 
-    run_test();
+    endTestFrame();
 }
 
 void MultiPassPostProcess::onShutdown()
@@ -138,6 +125,24 @@ bool MultiPassPostProcess::onKeyEvent(const KeyboardEvent& keyEvent)
         }
     }
     return false;
+}
+
+void MultiPassPostProcess::onInitializeTesting()
+{
+    std::vector<ArgList::Arg> filenames = mArgList.getValues("loadimage");
+    if (!filenames.empty())
+    {
+        loadImageFromFile(filenames[0].asString());
+    }
+
+    if (mArgList.argExists("gaussianblur"))
+    {
+        mEnableGaussianBlur = true;
+        if (mArgList.argExists("grayscale"))
+        {
+            mEnableGrayscale = true;
+        }
+    }
 }
 
 int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ LPSTR lpCmdLine, _In_ int nShowCmd)

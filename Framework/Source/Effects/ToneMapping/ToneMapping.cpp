@@ -163,9 +163,9 @@ namespace Falcor
         mpLuminanceVars = GraphicsVars::create(mpLuminancePass->getProgram()->getActiveVersion()->getReflector());
     }
 
-    void ToneMapping::renderUI(Gui* pGui, const std::string& uiGroup)
+    void ToneMapping::renderUI(Gui* pGui, const char* uiGroup)
     {
-        if (pGui->beginGroup(uiGroup.c_str()))
+        if((uiGroup == nullptr) || pGui->beginGroup(uiGroup))
         {
             uint32_t opIndex = static_cast<uint32_t>(mOperator);
             if (pGui->addDropdown("Operator", kOperatorList, opIndex))
@@ -186,7 +186,7 @@ namespace Falcor
                 pGui->addFloatVar("Linear White", mConstBufferData.whiteScale, 0, 100, 0.01f);
             }
 
-            pGui->endGroup();
+            if (uiGroup) pGui->endGroup();
         }
     }
 

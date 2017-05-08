@@ -30,11 +30,21 @@
 
 namespace Falcor
 {
+    Sampler::SharedPtr Sampler::sNullSampler;
 
     Sampler::Sampler(const Desc& desc) : mDesc(desc)
     {
     }
     
+    Sampler::SharedPtr Sampler::getDefault()
+    {
+        if (sNullSampler == nullptr)
+        {
+            sNullSampler = Sampler::create(Sampler::Desc());
+        }
+        return sNullSampler;
+    }
+
     Sampler::Desc& Sampler::Desc::setFilterMode(Filter minFilter, Filter magFilter, Filter mipFilter)
     {
         mMagFilter = magFilter;

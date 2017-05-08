@@ -31,7 +31,7 @@
 
 using namespace Falcor;
 
-class FeatureDemo : public Sample, public SampleTest
+class FeatureDemo : public SampleTest
 {
 public:
     void onLoad() override;
@@ -123,10 +123,8 @@ private:
     std::vector<ProgramControl> mControls;
     void applyLightingProgramControl(ControlID controlID);
 
+    bool mShouldUseCameraPath = true;
+
     //Testing 
-    void onInitializeTestingArgs(const ArgList& args) override;
-    void onRunTestTask(const FrameRate&) override;
-    void onTestShutdown() { shutdownApp(); }
-    bool mUniformDt = false;
-    float mUniformGlobalTime = 0.f;
+    void onInitializeTesting() override;
 };

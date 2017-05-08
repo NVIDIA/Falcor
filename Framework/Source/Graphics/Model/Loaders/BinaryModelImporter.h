@@ -44,11 +44,11 @@ namespace Falcor
             \param[in] flags Flags controlling model creation
             returns nullptr if loading failed, otherwise a new Model object
         */
-        static bool import(Model* pModel, const std::string& filename, Model::LoadFlags flags);
+        static bool import(Model& model, const std::string& filename, Model::LoadFlags flags);
 
     private:
         BinaryModelImporter(const std::string& fullpath);
-        bool importModel(Model* pModel, Model::LoadFlags flags);
+        bool importModel(Model& model, Model::LoadFlags flags);
 
         std::string mModelName;
         BinaryFileStream mStream;

@@ -31,7 +31,7 @@
 
 using namespace Falcor;
 
-class ComputeShader : public Sample, public SampleTest
+class ComputeShader : public SampleTest
 {
 public:
     void onLoad() override;
@@ -48,4 +48,7 @@ private:
     Texture::SharedPtr mpTmpTexture;
     void loadImage();
     void loadImageFromFile(std::string file);
+
+    //testing
+    void onInitializeTesting() override;
 };

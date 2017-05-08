@@ -283,6 +283,11 @@ namespace Falcor
             mpApiData->pGenMipsFbo = Fbo::create();
             mpApiData->spGenMips->pState->setFbo(mpApiData->pGenMipsFbo);
         }
+        //sometimes on reload, the fbo exists, but the actual texture in its color target is null
+        else if (mpApiData->spGenMips->pState->getFbo()->getColorTexture(0) == nullptr)
+        {
+            mpApiData->spGenMips->pState->setFbo(mpApiData->pGenMipsFbo);
+        }
 
         for (uint32_t i = 0; i < mMipLevels - 1; i++)
         {

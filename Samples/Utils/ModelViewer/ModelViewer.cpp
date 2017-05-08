@@ -266,9 +266,6 @@ void ModelViewer::onLoad()
     mpProgramVars = GraphicsVars::create(mpProgram->getActiveVersion()->getReflector());
     mpGraphicsState = GraphicsState::create();
     mpGraphicsState->setProgram(mpProgram);
-
-
-    init_tests();
 }
 
 void ModelViewer::onFrameRender()
@@ -323,8 +320,6 @@ void ModelViewer::onFrameRender()
     }
 
     renderText(mModelString, glm::vec2(10, 30));
-
-    run_test();
 }
 
 void ModelViewer::onShutdown()
@@ -387,21 +382,6 @@ void ModelViewer::resetCamera()
 
         mNearZ = std::max(0.1f, mpModel->getRadius() / 750.0f);
         mFarZ = Radius * 10;
-    }
-}
-
-void ModelViewer::onInitializeTestingArgs(const ArgList& args)
-{
-    std::vector<ArgList::Arg> filenames = mArgList.getValues("loadmodel");
-    if (!filenames.empty())
-    {
-        loadModelFromFile(filenames[0].asString());
-    }
-
-    std::vector<ArgList::Arg> cameraRadius = mArgList.getValues("cameraradius");
-    if (!cameraRadius.empty())
-    {
-        mModelViewCameraController.setModelParams(mpModel->getCenter(), cameraRadius[0].asFloat(), 1.f);
     }
 }
 

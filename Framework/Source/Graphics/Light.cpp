@@ -28,6 +28,7 @@
 #include "Framework.h"
 #include "light.h"
 #include "Utils/Gui.h"
+#include "API/Device.h"
 #include "API/ConstantBuffer.h"
 #include "API/Buffer.h"
 #define _USE_MATH_DEFINES
@@ -73,7 +74,7 @@ namespace Falcor
         pBuffer->setBlob(&mData, offset, kDataSize);
         if (mData.type == LightArea)
         {
-            assert(0);
+            //assert(0);
         }
     }
 
@@ -244,6 +245,12 @@ namespace Falcor
     {
     }
 
+    float DirectionalLight::getPower()
+    {
+        const float surfaceArea = (float)M_PI * mDistance * mDistance;
+        return luminance(mData.intensity) * surfaceArea;
+    }
+
     void DirectionalLight::move(const glm::vec3& position, const glm::vec3& target, const glm::vec3& up)
     {
         logError("DirectionalLight::move() is not used and thus not implemented for now.");
@@ -262,6 +269,11 @@ namespace Falcor
     }
 
     PointLight::~PointLight() = default;
+
+    float PointLight::getPower()
+    {
+        return luminance(mData.intensity) * 4.f * (float)M_PI;
+    }
 
     void PointLight::renderUI(Gui* pGui, const char* group)
     {
@@ -323,36 +335,28 @@ namespace Falcor
 
     AreaLight::~AreaLight() = default;
 
+    float AreaLight::getPower()
+    {
+        return luminance(mData.intensity) * (float)M_PI * mSurfaceArea;
+    }
+
     void AreaLight::renderUI(Gui* pGui, const char* group)
     {
-		logError("AreaLight::renderUI() is not used and thus not implemented for now.");
-        return;
-        // DISABLED_FOR_D3D12
-#if 0        
         if(!group || pGui->beginGroup(group))
         {
-            std::string posGroup = "worldPos" + std::to_string(mIndex);
-
-            if (mMeshData.pMesh)
+            if (mpMeshInstance)
             {
-                mat4& mx = (mat4&)mMeshData.pMesh->getInstanceMatrices()[mMeshData.instanceId];
-                pGui->addFloatVar("x", &mx[3].x, posGroup, -FLT_MAX, FLT_MAX);
-                pGui->addFloatVar("y", &mx[3].y, posGroup, -FLT_MAX, FLT_MAX);
-                pGui->addFloatVar("z", &mx[3].z, posGroup, -FLT_MAX, FLT_MAX);
-                pGui->nestGroups(uiGroup, posGroup);
-                pGui->setVarTitle(posGroup, "World Position");
+                mat4& mx = (mat4&)mpMeshInstance->getTransformMatrix();
+                pGui->addFloat3Var("World Position", (vec3&)mx[3], -FLT_MAX, FLT_MAX);
             }
 
-            //pGui->addDir3FVar("Direction", &mData.worldDir, uiGroup);
-            pGui->addRgbColorWithCallback("Color" + std::to_string(mIndex), SetColorCB, GetColorCB, this, uiGroup);
-            pGui->addFloatVarWithCallback("Intensity" + std::to_string(mIndex), SetIntensityCB, GetIntensityCB, this, uiGroup, 0.0f, 1000000.0f, 0.1f);
+            Light::renderUI(pGui);
 
             if (group)
             {
                 pGui->endGroup();
             }
         }
-#endif
     }
 
     void AreaLight::setIntoConstantBuffer(ConstantBuffer* pBuffer, const std::string& varName)
@@ -377,17 +381,17 @@ namespace Falcor
 // 			// Store the mesh CDF buffer id
 // 			mData.meshCDFPtr.ptr = mMeshCDFBuf->makeResident();
 // 		}
-// 		mData.numIndices = uint32_t(mIndexBuf->getSize() / sizeof(glm::ivec3));
-// 
-// 		// Get the surface area of the geometry mesh
-// 		mData.surfaceArea = mSurfaceArea;
-// 
-//		mData.tangent = mTangent;
-//		mData.bitangent = mBitangent;
-//
-// 		// Fetch the mesh instance transformation
-// 		mData.transMat = mMeshData.pMesh->getInstanceMatrix(mMeshData.instanceId);
-// 
+ 		mData.numIndices = uint32_t(mIndexBuf->getSize() / sizeof(glm::ivec3));
+ 
+ 		// Get the surface area of the geometry mesh
+ 		mData.surfaceArea = mSurfaceArea;
+ 
+		mData.tangent = mTangent;
+		mData.bitangent = mBitangent;
+
+ 		// Fetch the mesh instance transformation
+ 		mData.transMat = mpMeshInstance->getTransformMatrix();
+
 // 		// Copy the material data
 // 		const Material::SharedPtr& pMaterial = mMeshData.pMesh->getMaterial();
 // 		if (pMaterial)
@@ -456,17 +460,15 @@ namespace Falcor
             const auto& pMesh = mpMeshInstance->getObject();
             assert(pMesh != nullptr);
 
-            // Read data from the buffers
-            std::vector<glm::ivec3> indices(pMesh->getPrimitiveCount());
-            mIndexBuf->readData(indices.data(), 0, mIndexBuf->getSize());
-            std::vector<vec3> vertices(mVertexBuf->getSize() / sizeof(vec3));
-            mVertexBuf->readData(vertices.data(), 0, mVertexBuf->getSize());
-
 			if (mpMeshInstance->getObject()->getPrimitiveCount() != 2 || mpMeshInstance->getObject()->getVertexCount() != 4)
             {
                 logWarning("Only support sampling of rectangular light sources made of 2 triangles.");
                 return;
             }
+
+            // Read data from the buffers
+            const glm::ivec3* indices = (const glm::ivec3*)mIndexBuf->map(Buffer::MapType::Read);
+            const glm::vec3* vertices = (const glm::vec3*)mVertexBuf->map(Buffer::MapType::Read);
 
             // Calculate surface area of the mesh
             mSurfaceArea = 0.f;
@@ -506,11 +508,11 @@ namespace Falcor
             mMeshCDFBuf = Buffer::create(sizeof(mMeshCDF[0])*mMeshCDF.size(), Buffer::BindFlags::Vertex, Buffer::CpuAccess::None, mMeshCDF.data());
 
             // Set the world position and world direction of this light
-            if (!vertices.empty() && !indices.empty())
+            if (mIndexBuf->getSize() != 0 && mVertexBuf->getSize() != 0)
             {
                 glm::vec3 boxMin = vertices[0];
                 glm::vec3 boxMax = vertices[0];
-                for (uint32_t id = 1; id < vertices.size(); ++id)
+                for (uint32_t id = 1; id < mpMeshInstance->getObject()->getVertexCount(); ++id)
                 {
                     boxMin = glm::min(boxMin, vertices[id]);
                     boxMax = glm::max(boxMax, vertices[id]);
@@ -530,6 +532,9 @@ namespace Falcor
                 mData.aabbMin = boxMin;
                 mData.aabbMax = boxMax;
             }
+
+            mIndexBuf->unmap();
+            mVertexBuf->unmap();
         }
     }
 
@@ -581,6 +586,9 @@ namespace Falcor
 
     void AreaLight::move(const glm::vec3& position, const glm::vec3& target, const glm::vec3& up)
     {
-        mpMeshInstance->move(position, target, up);
+        // Override target and up
+        vec3 stillTarget = position + vec3(0, 0, 1);
+        vec3 stillUp = vec3(0, 1, 0);
+        mpMeshInstance->move(position, stillTarget, stillUp);
     }
 }

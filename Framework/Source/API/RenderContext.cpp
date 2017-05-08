@@ -31,10 +31,13 @@
 #include "DepthStencilState.h"
 #include "BlendState.h"
 #include "FBO.h"
+#include "Device.h"
 
 namespace Falcor
 {
     RenderContext::BlitData RenderContext::sBlitData;
+    CommandSignatureHandle RenderContext::spDrawCommandSig = nullptr;
+    CommandSignatureHandle RenderContext::spDrawIndexCommandSig = nullptr;
 
     RenderContext::~RenderContext()
     {

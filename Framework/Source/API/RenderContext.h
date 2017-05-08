@@ -118,6 +118,15 @@ namespace Falcor
             \param[in] srcRect Source rectangle to blit from, specified by [left, up, right, down]
             \param[in] dstRect Target rectangle to blit to, specified by [left, up, right, down]
         */
+
+        /** Executes a draw call. Args to the draw call are contained in argbuffer
+        */
+        void drawIndirect(const Buffer* argBuffer, uint64_t argBufferOffset);
+
+        /** Executes a drawIndexed call. Args to the drawIndexed call are contained in argbuffer
+        */
+        void drawIndexedIndirect(const Buffer* argBuffer, uint64_t argBufferOffset);
+
         void blit(ShaderResourceView::SharedPtr pSrc, RenderTargetView::SharedPtr pDst, const uvec4& srcRect = uvec4(-1), const uvec4& dstRect = uvec4(-1), Sampler::Filter = Sampler::Filter::Linear);
 
         /** Set the program variables for graphics
@@ -160,6 +169,9 @@ namespace Falcor
         std::stack<GraphicsState::SharedPtr> mPipelineStateStack;
         std::stack<GraphicsVars::SharedPtr> mpGraphicsVarsStack;
 
+        static CommandSignatureHandle spDrawCommandSig;
+        static CommandSignatureHandle spDrawIndexCommandSig;
+
         struct BlitData
         {
             FullScreenPass::UniquePtr pPass;
@@ -179,6 +191,11 @@ namespace Falcor
         };
 
         static BlitData sBlitData;
+
+        /** Creates command signatures for DrawIndirect, DrawIndexedIndirect. Also calls
+        compute context's initDispatchCommandSignature() to create command signature for dispatchIndirect
+        */
+        static void initDrawCommandSignatures();
 
         static void initBlitData();
         static void releaseBlitData();

@@ -74,7 +74,7 @@ If you use Falcor in a research project leading to a publication, please cite th
 The BibTex entry is
 
 @Misc{Benty16,  
-   author =      {Nir Benty},  
+   author =      {Nir Benty and Kai-Hwa Yao and Anton S. Kaplanyan and Conor Lavelle and Chris Wyman},  
    title =       {The {Falcor} Rendering Framework},  
    year =        {2016},  
    month =       {08},  

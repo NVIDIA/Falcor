@@ -214,11 +214,8 @@ namespace Falcor
         }
 
         Device::ApiHandle pDevice = gpDevice->getApiHandle();
-        hr = pDevice->CreateRootSignature(0, pSigBlob->GetBufferPointer(), pSigBlob->GetBufferSize(), IID_PPV_ARGS(&mApiHandle));
-        if (FAILED(hr))
-        {
-            return false;
-        }
+        d3d_call(pDevice->CreateRootSignature(0, pSigBlob->GetBufferPointer(), pSigBlob->GetBufferSize(), IID_PPV_ARGS(&mApiHandle)));
+       
         return true;
     }
 }

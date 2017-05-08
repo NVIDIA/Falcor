@@ -84,11 +84,12 @@ namespace Falcor
         }
     }
 
-    void ObjectPath::animate(double currentTime)
+    bool ObjectPath::animate(double currentTime)
     {
-        if(mKeyFrames.size() == 0)
-            return;
-
+        if(mKeyFrames.size() == 0 || mpObjects.size() == 0)
+        {
+            return false;
+        }
         bool shouldInterpolate = true;
         double animTime = currentTime;
         const auto& firstFrame = mKeyFrames[0];
@@ -138,6 +139,8 @@ namespace Falcor
         {
             pObj->move(mCurrentFrame.position, mCurrentFrame.target, mCurrentFrame.up);
         }
+
+        return true;
     }
 
     void ObjectPath::getFrameAt(uint32_t frameID, float t, Frame& frameOut)

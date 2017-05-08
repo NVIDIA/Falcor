@@ -118,6 +118,21 @@ void FeatureDemo::onGuiRender()
             pScene->getActiveCamera()->setDepthRange(depthRange.x, depthRange.y);
         }
 
+        if (pScene->getPathCount() > 0)
+        {
+            if (mpGui->addCheckBox("Camera Path", mShouldUseCameraPath))
+            {
+                if (mShouldUseCameraPath)
+                {
+                    pScene->getPath(0)->attachObject(pScene->getActiveCamera());
+                }
+                else
+                {
+                    pScene->getPath(0)->detachObject(pScene->getActiveCamera());
+                }
+            }
+        }
+
         for(uint32_t i = 0 ; i < pScene->getLightCount() ; i++)
         {
             Light* pLight = pScene->getLight(i).get();

@@ -175,7 +175,9 @@ namespace Falcor
         */
         const glm::vec4& getBorderColor() const { return mDesc.mBorderColor; }
 
+        static SharedPtr getDefault();
     private:
+        static SharedPtr sNullSampler;
         Sampler(const Desc& desc);
         Desc mDesc;
         ApiHandle mApiHandle = { 0 };

@@ -31,7 +31,7 @@
 
 using namespace Falcor;
 
-class MultiPassPostProcess : public Sample, public SampleTest
+class MultiPassPostProcess : public SampleTest
 {
 public:
     void onLoad() override;
@@ -52,4 +52,7 @@ private:
     bool mEnableGrayscale = false;
     void loadImage();
     void loadImageFromFile(std::string filename);
+    
+    //testing 
+    void onInitializeTesting() override;
 };
