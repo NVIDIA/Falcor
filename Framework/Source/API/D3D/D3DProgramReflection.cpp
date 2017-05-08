@@ -1241,20 +1241,22 @@ namespace Falcor
                     break;
 
                 default:
+                    //
+                    // Okay, let's walk it recursively to bind the sub-pieces...
+                    //
+                    assert(!"unimplemented");
                     break;
                 }
-
-                //
-                // Okay, let's walk it recursively to bind the sub-pieces...
-                //
-
-
             }
             break;
 
         case spire::ParameterCategory::ConstantBuffer:
             res = reflectBuffer(pContext, param->asBuffer(), pReflector->mBuffers[(uint32_t)ProgramReflection::BufferReflection::Type::Constant], ProgramReflection::BufferReflection::Type::Constant, ProgramReflection::ShaderAccess::Read);
             break;
+
+        case spire::ParameterCategory::Uniform:
+            // Ignore uniform parameters during this pass...
+            return true;
 
         default:
             res = reflectResource(pContext, param);
