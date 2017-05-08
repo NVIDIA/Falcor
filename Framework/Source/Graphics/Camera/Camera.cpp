@@ -56,7 +56,7 @@ namespace Falcor
             // Interpret focal length of 0 as 0 FOV. Technically 0 FOV should be focal length of infinity.
             const float fovY = mData.focalLength == 0.0f ? 0.0f : focalLengthToFovY(mData.focalLength, kDefaultFrameHeight);
 
-            mData.prevViewProjMat = mData.viewProjMat;
+            mData.prevViewProjMat = viewProjMatNoJitter;
             mData.rightEyePrevViewProjMat = mData.rightEyeViewProjMat;
 
             if (mEnablePersistentViewMat)
@@ -95,6 +95,7 @@ namespace Falcor
                 0.0f, 0.0f, 1.0f, 0.0f,
                 2.0f * mData.jitterX, 2.0f * mData.jitterY, 0.0f, 1.0f);
             // Apply jitter matrix to the projection matrix
+            viewProjMatNoJitter = mData.projMat * mData.viewMat;
             mData.projMat = jitterMat * mData.projMat;
 
             mData.viewProjMat = mData.projMat * mData.viewMat;

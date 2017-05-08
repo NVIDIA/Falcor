@@ -159,7 +159,19 @@ namespace Falcor
             glm::vec3* pNormals = (glm::vec3*)pMesh->mNormals;
             std::vector<uint32_t> indices = createIndexBufferData(pAiMesh);
 
-            generateSubmeshTangentData<glm::vec3>(indices, pPos, pNormals, nullptr, 0, pBi);
+            uint32_t texCrdCount = 0;
+            std::vector<glm::vec2> texCrd;
+            if (pMesh->mTextureCoords[0] != nullptr)
+            {
+                texCrdCount = 1;
+                texCrd.resize(pMesh->mNumVertices);
+                for (size_t i = 0; i < pMesh->mNumVertices; ++i)
+                {
+                    texCrd[i] = glm::vec2(pMesh->mTextureCoords[0][i].x, pMesh->mTextureCoords[0][i].y);
+                }
+            }
+
+            generateSubmeshTangentData<glm::vec3>(indices, pPos, pNormals, (texCrdCount > 0 ? texCrd.data() : nullptr), texCrdCount, pBi);
         }
     }
 

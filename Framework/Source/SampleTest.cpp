@@ -47,6 +47,8 @@ namespace Falcor
 
     void SampleTest::beginTestFrame()
     {
+        if (!hasTests()) return;
+
         uint32_t frameId = frameRate().getFrameCount();
         //Check if it's time for a time based task
         if (mCurrentTimeTest != mTimedTestTasks.end() && mCurrentTime >= mCurrentTimeTest->mStartTime)
@@ -93,6 +95,8 @@ namespace Falcor
 
     void SampleTest::endTestFrame()
     {
+        if (!hasTests()) return;
+
         //Begin frame checks against the test tasks and returns a trigger type based
         //on the testing this frame, which is passed into this function
         if (mCurrentTrigger == TriggerType::Frame)

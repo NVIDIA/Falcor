@@ -190,6 +190,7 @@ namespace Falcor
 
         void calculateCameraParameters() const;
         mutable CameraData mData;
+        mutable glm::mat4 viewProjMatNoJitter;
 
         struct 
         {

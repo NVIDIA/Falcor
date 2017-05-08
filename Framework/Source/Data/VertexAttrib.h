@@ -96,11 +96,21 @@ struct VS_OUT
 float4x4 getWorldMat(VS_IN vIn)
 {
 #ifdef _VERTEX_BLENDING
-    float4x4 worldMat = blendVertices(vIn.boneWeights, vIn.boneIds);
+    float4x4 worldMat = getBlendedWorldMat(vIn.boneWeights, vIn.boneIds);
 #else
     float4x4 worldMat = gWorldMat[vIn.instanceID];
 #endif
     return worldMat;
+}
+
+float3x3 getWorldInvTransposeMat(VS_IN vIn)
+{
+#ifdef _VERTEX_BLENDING
+    float3x3 worldInvTransposeMat = getBlendedInvTransposeWorldMat(vIn.boneWeights, vIn.boneIds);
+#else
+    float3x3 worldInvTransposeMat = gWorldInvTransposeMat[vIn.instanceID];
+#endif
+    return worldInvTransposeMat;
 }
 
 VS_OUT defaultVS(VS_IN vIn)
@@ -123,7 +133,7 @@ VS_OUT defaultVS(VS_IN vIn)
     vOut.colorV = 0;
 #endif
 
-    vOut.normalW = mul((float3x3)worldMat, vIn.normal).xyz;
+    vOut.normalW = mul(getWorldInvTransposeMat(vIn), vIn.normal).xyz;
     vOut.bitangentW = mul((float3x3)worldMat, vIn.bitangent).xyz;
     vOut.prevPosH = mul(gCam.prevViewProjMat, posW);
 
