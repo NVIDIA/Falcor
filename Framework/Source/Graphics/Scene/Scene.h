@@ -114,9 +114,9 @@ namespace Falcor
         void deleteAllModels();
 
         // Model instances
+        virtual void addModelInstance(const ModelInstance::SharedPtr& pInstance);
         void addModelInstance(const Model::SharedPtr& pModel, const std::string& instanceName, const glm::vec3& translation = glm::vec3(), const glm::vec3& yawPitchRoll = glm::vec3(), const glm::vec3& scaling = glm::vec3(1));
         // Adds a model instance and shares ownership of it
-        void addModelInstance(const ModelInstance::SharedPtr& pInstance);
         uint32_t getModelInstanceCount(uint32_t modelID) const;
         const ModelInstance::SharedPtr& getModelInstance(uint32_t modelID, uint32_t instanceID) const { return mModels[modelID][instanceID]; };
         void deleteModelInstance(uint32_t modelID, uint32_t instanceID);
@@ -183,6 +183,12 @@ namespace Falcor
         void merge(const Scene* pFrom);
 
         /**
+            Return scene extents
+        */
+        const vec3& getCenter() { updateExtents(); return mCenter; }
+        const float getRadius() { updateExtents(); return mRadius; }
+
+        /**
             This routine creates area light(s) in the scene. All meshes that
             have emissive material are treated as area lights.
         */
@@ -193,10 +199,21 @@ namespace Falcor
         */
         void deleteAreaLights();
 
+        /** Bind a sampler to all the scene's global materials
+        */
+        void bindSamplerToMaterials(Sampler::SharedPtr pSampler);
+
+        /** Bind a sampler to all the models
+        */
+        void bindSamplerToModels(Sampler::SharedPtr pSampler);
     protected:
 
         Scene();
-
+        /**
+            Update changed scene extents (radius and center).
+        */
+        void updateExtents();
+        
         static uint32_t sSceneCounter;
 
         uint32_t mId;
@@ -209,11 +226,16 @@ namespace Falcor
 
         MaterialHistory::SharedPtr mpMaterialHistory;
 
-        glm::vec3 mAmbientIntensity;
+        vec3 mAmbientIntensity;
         uint32_t mActiveCameraID = 0;
         float mCameraSpeed = 1;
         float mLightingScale = 1.0f;
-        uint32_t mVersion = 0;
+        uint32_t mVersion = 1;
+
+        float mRadius = -1.f;
+        vec3 mCenter = vec3(0, 0, 0);
+
+        bool mExtentsDirty = true;
 
         using string_uservar_map = std::map<const std::string, UserVariable>;
         string_uservar_map mUserVars;

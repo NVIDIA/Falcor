@@ -89,7 +89,7 @@ namespace Falcor
         return *this;
     }
 
-    Sampler::SharedPtr Sampler::getDefaultSampler()
+    Sampler::SharedPtr Sampler::getDefault()
     {
         if (spDefaultSampler == nullptr)
         {

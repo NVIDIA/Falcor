@@ -177,7 +177,7 @@ namespace Falcor
 
         /** Get an object that represents a default sampler
         */
-        static Sampler::SharedPtr getDefaultSampler();
+        static Sampler::SharedPtr getDefault();
     private:
         Sampler(const Desc& desc);
         Desc mDesc;

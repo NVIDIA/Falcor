@@ -113,6 +113,13 @@ namespace Falcor
             mpGsoGraph->walk((void*)mCachedData.pRootSig);
         }
 
+        const Fbo::Desc* pFboDesc = mpFbo ? &mpFbo->getDesc() : nullptr;
+        if(mCachedData.pFboDesc != pFboDesc)
+        {
+            mpGsoGraph->walk((void*)pFboDesc);
+            mCachedData.pFboDesc = pFboDesc;
+        }
+
         GraphicsStateObject::SharedPtr pGso = mpGsoGraph->getCurrentNode();
         if(pGso == nullptr)
         {
@@ -133,8 +140,6 @@ namespace Falcor
     GraphicsState& GraphicsState::setFbo(const Fbo::SharedPtr& pFbo, bool setVp0Sc0)
     {
         mpFbo = pFbo;
-        const Fbo::Desc* pDesc = pFbo ? &pFbo->getDesc() : nullptr;
-        mpGsoGraph->walk((void*)pDesc);
 
         if (setVp0Sc0 && pFbo)
         {

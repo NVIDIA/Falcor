@@ -215,11 +215,13 @@ void SimpleDeferred::onLoad()
     // Load default model
     loadModelFromFile("Ogre/bs_rest.obj");
 
-    init_tests();
+    initializeTesting();
 }
 
 void SimpleDeferred::onFrameRender()
 {
+    beginTestFrame();
+
     uint32_t width = mpDefaultFBO->getWidth();
     uint32_t height = mpDefaultFBO->getHeight();
 
@@ -284,7 +286,7 @@ void SimpleDeferred::onFrameRender()
         mpLightingPass->execute(mpRenderContext.get());
     }
 
-    run_test();
+    endTestFrame();
 }
 
 void SimpleDeferred::onShutdown()
@@ -354,9 +356,9 @@ void SimpleDeferred::resetCamera()
     }
 }
 
-void SimpleDeferred::onInitializeTestingArgs(const ArgList& args)
+void SimpleDeferred::onInitializeTesting()
 {
-    std::vector<ArgList::Arg> modeFrames = args.getValues("incrementDebugMode");
+    std::vector<ArgList::Arg> modeFrames = mArgList.getValues("incrementDebugMode");
     if (!modeFrames.empty())
     {
         mChangeModeFrames.resize(modeFrames.size());
@@ -369,9 +371,9 @@ void SimpleDeferred::onInitializeTestingArgs(const ArgList& args)
     mChangeModeIt = mChangeModeFrames.begin();
 }
 
-void SimpleDeferred::onRunTestTask(const FrameRate& frameRate)
+void SimpleDeferred::onEndTestFrame()
 {
-    uint32_t frameId = frameRate.getFrameCount();
+    uint32_t frameId = frameRate().getFrameCount();
     if (mChangeModeIt != mChangeModeFrames.end() && frameId >= *mChangeModeIt)
     {
         ++mChangeModeIt;

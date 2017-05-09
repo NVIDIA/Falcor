@@ -63,7 +63,8 @@ void PostProcess::onLoad()
     mLightIntensity = 2.5f;
 
     loadImage();
-    init_tests();
+    
+    initializeTesting();
 }
 
 void PostProcess::loadImage()
@@ -120,6 +121,8 @@ void PostProcess::renderTeapot()
 
 void PostProcess::onFrameRender()
 {
+    beginTestFrame();
+
     const glm::vec4 clearColor(0.38f, 0.52f, 0.10f, 1);
     mpRenderContext->clearFbo(mpHdrFbo.get(), clearColor, 1.0f, 0, FboAttachmentType::All);
     mCameraController.update();
@@ -136,7 +139,8 @@ void PostProcess::onFrameRender()
 
     std::string Txt = getFpsMsg() + '\n';
     renderText(Txt, glm::vec2(10, 10));
-    run_test();
+
+    endTestFrame();
 }
 
 void PostProcess::onShutdown()
@@ -170,9 +174,9 @@ bool PostProcess::onMouseEvent(const MouseEvent& mouseEvent)
     return mCameraController.onMouseEvent(mouseEvent);
 }
 
-void PostProcess::onInitializeTestingArgs(const ArgList& args)
+void PostProcess::onInitializeTesting()
 {
-    std::vector<ArgList::Arg> modeFrames = args.getValues("changeMode");
+    std::vector<ArgList::Arg> modeFrames = mArgList.getValues("changeMode");
     if (!modeFrames.empty())
     {
         mChangeModeFrames.resize(modeFrames.size());
@@ -188,9 +192,9 @@ void PostProcess::onInitializeTestingArgs(const ArgList& args)
     mpToneMapper->setOperator(ToneMapping::Operator::Clamp);
 }
 
-void PostProcess::onRunTestTask(const FrameRate& frameRate)
+void PostProcess::onEndTestFrame()
 {
-    uint32_t frameId = frameRate.getFrameCount();
+    uint32_t frameId = frameRate().getFrameCount();
     if (mChangeModeIt != mChangeModeFrames.end() && frameId >= *mChangeModeIt)
     {
         ++mChangeModeIt;

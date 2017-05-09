@@ -31,7 +31,7 @@
 
 using namespace Falcor;
 
-class Shadows : public Sample, public SampleTest
+class Shadows : public SampleTest
 {
 public:
     void onLoad() override;
@@ -97,8 +97,8 @@ private:
     } mPerFrameCBData;
 
     //Testing 
-    void onInitializeTestingArgs(const ArgList& args) override;
-    void onRunTestTask(const FrameRate&) override;
+    void onInitializeTesting() override;
+    void onEndTestFrame() override;
     std::vector<uint32_t> mFilterFrames;
     std::vector<uint32_t>::iterator mFilterFramesIt;
 };

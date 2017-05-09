@@ -54,13 +54,13 @@ namespace Falcor
             \param[in] flags Flags controlling model creation
             returns nullptr if loading failed, otherwise a new Model object
         */
-        static bool import(Model* pModel, const std::string& filename, Model::LoadFlags flags);
+        static bool import(Model& model, const std::string& filename, Model::LoadFlags flags);
 
     private:
 
         using IdToMesh = std::unordered_map<uint32_t, Mesh::SharedPtr>;
 
-        AssimpModelImporter(Model* pModel, Model::LoadFlags flags);
+        AssimpModelImporter(Model& model, Model::LoadFlags flags);
         AssimpModelImporter(const AssimpModelImporter&) = delete;
         void operator=(const AssimpModelImporter&) = delete;
 
@@ -86,7 +86,7 @@ namespace Falcor
         std::map<std::string, uint32_t> mBoneNameToIdMap;
         std::map<uint32_t, Material::SharedPtr> mAiMaterialToFalcor;
 
-        Model* mpModel;
+        Model& mModel;
 
         std::vector<Bone> mBones;
         Model::LoadFlags mFlags;

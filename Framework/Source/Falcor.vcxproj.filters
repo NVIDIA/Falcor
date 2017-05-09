@@ -477,6 +477,9 @@
     <ClCompile Include="Utils\SpireSupport.cpp">
       <Filter>Utils</Filter>
     </ClCompile>
+    <ClCompile Include="Effects\ParticleSystem\ParticleSystem.cpp">
+      <Filter>Effects\ParticleSystem</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Graphics\Model\Animation.h">
@@ -1573,6 +1576,12 @@
     <ClInclude Include="Utils\PixelZoom.h">
       <Filter>Utils</Filter>
     </ClInclude>
+    <ClInclude Include="Data\Effects\ParticleData.h">
+      <Filter>Data\Effects\Particles</Filter>
+    </ClInclude>
+    <ClInclude Include="Effects\ParticleSystem\ParticleSystem.h">
+      <Filter>Effects\ParticleSystem</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Externals">
@@ -1727,6 +1736,12 @@
     </Filter>
     <Filter Include="Effects\AmbientOcclusion">
       <UniqueIdentifier>{723ff80c-2107-49c1-8a2b-e01f9d4eb6e9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Data\Effects\Particles">
+      <UniqueIdentifier>{113ae44c-7970-429b-ba40-22c457f0003d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Effects\ParticleSystem">
+      <UniqueIdentifier>{be06907b-0403-4c3b-a59a-ec74cbfdfb86}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -2124,6 +2139,31 @@
     </FxCompile>
     <FxCompile Include="Data\Framework\Shaders\Blit.vs.hlsl">
       <Filter>Data\Framework\Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="Data\Framework\Shaders\Blit.hlsl" />
+    <FxCompile Include="Data\Effects\ToneMapping.ps.hlsl">
+      <Filter>Data\Effects</Filter>
+    </FxCompile>
+    <FxCompile Include="Data\Effects\ParticleConstColor.ps.hlsl">
+      <Filter>Data\Effects\Particles</Filter>
+    </FxCompile>
+    <FxCompile Include="Data\Effects\ParticleInterpColor.ps.hlsl">
+      <Filter>Data\Effects\Particles</Filter>
+    </FxCompile>
+    <FxCompile Include="Data\Effects\ParticleTexture.ps.hlsl">
+      <Filter>Data\Effects\Particles</Filter>
+    </FxCompile>
+    <FxCompile Include="Data\Effects\ParticleVertex.vs.hlsl">
+      <Filter>Data\Effects\Particles</Filter>
+    </FxCompile>
+    <FxCompile Include="Data\Effects\ParticleEmit.cs.hlsl">
+      <Filter>Data\Effects\Particles</Filter>
+    </FxCompile>
+    <FxCompile Include="Data\Effects\ParticleSimulate.cs.hlsl">
+      <Filter>Data\Effects\Particles</Filter>
+    </FxCompile>
+    <FxCompile Include="Data\Effects\ParticleSort.cs.hlsl">
+      <Filter>Data\Effects\Particles</Filter>
     </FxCompile>
   </ItemGroup>
 </Project>

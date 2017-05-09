@@ -66,6 +66,11 @@ namespace Falcor
         return UniquePtr(new AnimationController(Bones));
     }
 
+    AnimationController::UniquePtr AnimationController::create(const AnimationController& other)
+    {
+        return UniquePtr(new AnimationController(other.mBones));
+    }
+
     AnimationController::AnimationController(const std::vector<Bone>& Bones)
     {
         mBones = Bones;

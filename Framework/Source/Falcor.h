@@ -137,9 +137,10 @@
 #include "Effects/SkyBox/SkyBox.h"
 #include "Effects/ToneMapping/ToneMapping.h"
 #include "Effects/AmbientOcclusion/SSAO.h"
+#include "Effects/ParticleSystem/ParticleSystem.h"
 
 #define FALCOR_MAJOR_VERSION 2
 #define FALCOR_MINOR_VERSION 0
 #define FALCOR_DEV_STAGE "alpha"
-#define FALCOR_DEV_REVISION 3
-#define FALCOR_VERSION_STRING "2.0a3"
+#define FALCOR_DEV_REVISION 4
+#define FALCOR_VERSION_STRING "2.0a4"

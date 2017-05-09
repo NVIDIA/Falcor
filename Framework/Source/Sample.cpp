@@ -257,7 +257,7 @@ namespace Falcor
 
     void Sample::renderGUI()
     {
-        constexpr char help[] = 
+        constexpr char help[] =
             "  'F1'      - Show\\Hide text\n"
             "  'F2'      - Show\\Hide GUI\n"
             "  'F5'      - Reload shaders\n"
@@ -352,11 +352,11 @@ namespace Falcor
         mpPixelZoom->render(mpRenderContext.get(), gpDevice->getSwapChainFbo().get());
 
         captureVideoFrame();
-        if(mCaptureScreen)
+        printProfileData();
+        if (mCaptureScreen)
         {
             captureScreen();
         }
-        printProfileData();
         {
             PROFILE(present);
             gpDevice->present();

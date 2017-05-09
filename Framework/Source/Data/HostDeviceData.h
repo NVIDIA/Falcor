@@ -524,6 +524,30 @@ inline float _fn computeMichelsonContrast(const float iMin, const float iMax)
     else return (iMax - iMin) / (iMax + iMin);
 }
 
+struct DrawArguments
+{
+    uint vertexCountPerInstance;
+    uint instanceCount;
+    uint startVertexLocation;
+    uint startInstanceLocation;
+};
+
+struct DrawIndexedArguments
+{
+    uint indexCountPerInstance;
+    uint instanceCount;
+    uint startIndexLocation;
+    int baseVertexLocation;
+    uint startInstanceLocation;
+};
+
+struct DispatchArguments
+{
+    uint threadGroupCountX;
+    uint threadGroupCountY;
+    uint threadGroupCountZ;
+};
+
 #ifdef HOST_CODE
 static_assert((sizeof(MaterialValues) % sizeof(vec4)) == 0, "MaterialValue has a wrong size");
 static_assert((sizeof(MaterialLayerDesc) % sizeof(vec4)) == 0, "MaterialLayerDesc has a wrong size");

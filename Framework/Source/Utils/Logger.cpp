@@ -39,6 +39,7 @@ namespace Falcor
 
     bool Logger::sInit = false;
     FILE* Logger::sLogFile = nullptr;
+    Logger::Level Logger::sVerbosity = Logger::Level::Warning;
 
     static FILE* openLogFile()
     {
@@ -107,14 +108,17 @@ namespace Falcor
     void Logger::log(Level L, const std::string& msg, const bool forceMsgBox /* = false*/)
     {
 #if _LOG_ENABLED
-        std::string s = getLogLevelString(L) + std::string("\t") + msg + "\n";
         if(sInit)
         {
-            fprintf_s(sLogFile, "%s", s.c_str());
-            fflush(sLogFile);   // Slows down execution, but ensures that the message will be printed in case of a crash
-            if (isDebuggerPresent())
+            if(L >= sVerbosity)
             {
-                printToDebugWindow(s);
+                std::string s = getLogLevelString(L) + std::string("\t") + msg + "\n";
+                fprintf_s(sLogFile, "%s", s.c_str());
+                fflush(sLogFile);   // Slows down execution, but ensures that the message will be printed in case of a crash
+                if (isDebuggerPresent())
+                {
+                    printToDebugWindow(s);
+                }
             }
         }
 #endif

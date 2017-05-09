@@ -50,6 +50,7 @@ namespace Falcor
             UnorderedAccess = 0x20, ///< The resource will be bound as an UAV
             RenderTarget = 0x40,    ///< The resource will be bound as a render-target
             DepthStencil = 0x80,    ///< The resource will be bound as a depth-stencil buffer
+            IndirectArg = 0x100     ///< The resource will be bound as an indirect argument buffer
         };
 
         /** Resource types. Notice there are no array types. Array are controlled using the array size parameter on texture creation.

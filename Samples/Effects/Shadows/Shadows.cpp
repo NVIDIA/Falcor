@@ -109,7 +109,7 @@ void Shadows::onLoad()
 {
     createScene("Scenes/dragonPlane.fscene");
     createVisualizationProgram();
-    init_tests();
+    initializeTesting();
 }
 
 void Shadows::runMainPass()
@@ -141,6 +141,8 @@ void Shadows::displayShadowMap()
 
 void Shadows::onFrameRender()
 {
+    beginTestFrame();
+
     const glm::vec4 clearColor(0.38f, 0.52f, 0.10f, 1);
     mpRenderContext->clearFbo(mpDefaultFBO.get(), clearColor, 1.0f, 0, FboAttachmentType::All);
 
@@ -177,7 +179,8 @@ void Shadows::onFrameRender()
     }
 
     renderText(getFpsMsg(), glm::vec2(10, 10));
-    run_test();
+    
+    endTestFrame();
 }
 
 void Shadows::onShutdown()
@@ -221,7 +224,7 @@ void Shadows::createVisualizationProgram()
     }
 }
 
-void Shadows::onInitializeTestingArgs(const ArgList& args)
+void Shadows::onInitializeTesting()
 {
     std::vector<ArgList::Arg> filterFrames = mArgList.getValues("incrementFilter");
     if (!filterFrames.empty())
@@ -241,9 +244,9 @@ void Shadows::onInitializeTestingArgs(const ArgList& args)
     }
 }
 
-void Shadows::onRunTestTask(const FrameRate& fr)
+void Shadows:: onEndTestFrame()
 {
-    uint32_t frameId = fr.getFrameCount();
+    uint32_t frameId = frameRate().getFrameCount();
     if (mFilterFramesIt != mFilterFrames.end() && frameId >= *mFilterFramesIt)
     {
         ++mFilterFramesIt;

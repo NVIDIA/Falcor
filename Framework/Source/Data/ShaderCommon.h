@@ -50,12 +50,13 @@ cbuffer InternalPerFrameCB : register(b10)
 cbuffer InternalPerMeshCB : register(b11)
 {
     mat4 gWorldMat[64]; // If the mesh has bones, these are the bones matrices
+    mat3 gWorldInvTransposeMat[64]; // Per-instance matrices for transforming normals
     uint32_t gDrawId[64]; // Zero-based order/ID of Mesh Instances drawn per SceneRenderer::renderScene call.
     uint32_t gMeshId;
 };
 
 #ifdef _VERTEX_BLENDING
-mat4 blendVertices(vec4 weights, uint4 ids)
+mat4 getBlendedWorldMat(vec4 weights, uint4 ids)
 {
     mat4 worldMat = gWorldMat[ids.x] * weights.x;
     worldMat += gWorldMat[ids.y] * weights.y;
@@ -64,6 +65,17 @@ mat4 blendVertices(vec4 weights, uint4 ids)
 
     return worldMat;
 }
+
+mat3 getBlendedInvTransposeWorldMat(vec4 weights, uint4 ids)
+{
+    mat3 mat = gWorldInvTransposeMat[ids.x] * weights.x;
+    mat += gWorldInvTransposeMat[ids.y] * weights.y;
+    mat += gWorldInvTransposeMat[ids.z] * weights.z;
+    mat += gWorldInvTransposeMat[ids.w] * weights.w;
+
+    return mat;
+}
+
 #endif
 
 cbuffer InternalPerMaterialCB : register(b12)

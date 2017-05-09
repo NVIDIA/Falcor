@@ -283,6 +283,7 @@ namespace Falcor
             break;
         default:
             should_not_get_here();
+            break;
         }
     }
 
@@ -295,13 +296,23 @@ namespace Falcor
 
         rapidjson::Value jsonLightsArray(rapidjson::kArrayType);
 
+        uint32_t numLightsSaved = 0;
         for (uint32_t i = 0; i < mpScene->getLightCount(); i++)
         {
+            if (mpScene->getLights()[i]->getType() != LightPoint &&
+                mpScene->getLights()[i]->getType() != LightDirectional)
+            {
+                continue;
+            }
             rapidjson::Value jsonLight;
             createLightValue(mpScene, i, mJDoc.GetAllocator(), jsonLight);
             jsonLightsArray.PushBack(jsonLight, mJDoc.GetAllocator());
+            numLightsSaved++;
         }
-        addJsonValue(mJDoc, mJDoc.GetAllocator(), SceneKeys::kLights, jsonLightsArray);
+        if (numLightsSaved > 0)
+        {
+            addJsonValue(mJDoc, mJDoc.GetAllocator(), SceneKeys::kLights, jsonLightsArray);
+        }
     }
 
     void createCameraValue(const Scene::SharedConstPtr& pScene, uint32_t cameraID, rapidjson::Document::AllocatorType& allocator, rapidjson::Value& jsonCamera)

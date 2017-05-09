@@ -130,7 +130,7 @@ namespace Falcor
             glm::vec4 roughness;
             glm::vec4 extraParam;
             Texture::SharedPtr pTexture;
-            float pmf = 0;
+            float pmf = 1;
         };
         
         /** create a new material

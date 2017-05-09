@@ -110,7 +110,7 @@ namespace Falcor
         /** Begin a collapsible group block
             returns true if the group is expanded, otherwise false. Use it to avoid making unnecessary calls
         */
-        bool beginGroup(const char label[]);
+        bool beginGroup(const char label[], bool beginExpanded = false);
 
         /** End a collapsible group block
         */
@@ -272,6 +272,17 @@ namespace Falcor
             int32_t currentItem = -1;
         };
         std::map<std::string, ComboData> mDropDownValues;
+
+        // This struct is used to cache the mouse events
+        struct MouseEvents
+        {
+            bool buttonPressed[3] = { 0 };
+            bool buttonReleased[3] = { 0 };
+        };
+
+        MouseEvents mMouseEvents;
+        void setIoMouseEvents();
+        void resetMouseEvents();
 
         Vao::SharedPtr mpVao;
         VertexLayout::SharedPtr mpLayout;

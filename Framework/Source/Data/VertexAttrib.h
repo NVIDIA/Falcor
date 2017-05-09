@@ -26,23 +26,25 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 
-#define VERTEX_POSITION_LOC          0
-#define VERTEX_NORMAL_LOC            1
-#define VERTEX_BITANGENT_LOC         2
-#define VERTEX_TEXCOORD_LOC          3
-#define VERTEX_BONE_WEIGHT_LOC       4
-#define VERTEX_BONE_ID_LOC           5
-#define VERTEX_DIFFUSE_COLOR_LOC     6
+#define VERTEX_POSITION_LOC         0
+#define VERTEX_NORMAL_LOC           1
+#define VERTEX_BITANGENT_LOC        2
+#define VERTEX_TEXCOORD_LOC         3
+#define VERTEX_LIGHTMAP_UV_LOC      4
+#define VERTEX_BONE_WEIGHT_LOC      5
+#define VERTEX_BONE_ID_LOC          6
+#define VERTEX_DIFFUSE_COLOR_LOC    7
 
-#define VERTEX_LOCATION_COUNT        7
+#define VERTEX_LOCATION_COUNT       8
 
-#define VERTEX_USER_ELEM_COUNT       4
+#define VERTEX_USER_ELEM_COUNT      4
 #define VERTEX_USER0_LOC            (VERTEX_LOCATION_COUNT)
 
-#define VERTEX_POSITION_NAME 	 	"POSITION"
-#define VERTEX_NORMAL_NAME    	 	"NORMAL"
-#define VERTEX_BITANGENT_NAME     	"BITANGENT"
-#define VERTEX_TEXCOORD_NAME		"TEXCOORD"
+#define VERTEX_POSITION_NAME        "POSITION"
+#define VERTEX_NORMAL_NAME          "NORMAL"
+#define VERTEX_BITANGENT_NAME       "BITANGENT"
+#define VERTEX_TEXCOORD_NAME        "TEXCOORD"
+#define VERTEX_LIGHTMAP_UV_NAME     "LIGHTMAP_UV"
 #define VERTEX_BONE_WEIGHT_NAME     "BONE_WEIGHTS"
 #define VERTEX_BONE_ID_NAME         "BONE_IDS"
 #define VERTEX_DIFFUSE_COLOR_NAME   "DIFFUSE_COLOR"
@@ -57,6 +59,9 @@ struct VS_IN
     float3 bitangent   : BITANGENT;
 #ifdef HAS_TEXCRD
     float2 texC        : TEXCOORD;
+#endif
+#ifdef HAS_LIGHTMAP_UV
+    float2 lightmapC   : LIGHTMAP_UV;
 #endif
 #ifdef HAS_COLORS
     float3 color       : DIFFUSE_COLOR;
@@ -91,11 +96,21 @@ struct VS_OUT
 float4x4 getWorldMat(VS_IN vIn)
 {
 #ifdef _VERTEX_BLENDING
-    float4x4 worldMat = blendVertices(vIn.boneWeights, vIn.boneIds);
+    float4x4 worldMat = getBlendedWorldMat(vIn.boneWeights, vIn.boneIds);
 #else
     float4x4 worldMat = gWorldMat[vIn.instanceID];
 #endif
     return worldMat;
+}
+
+float3x3 getWorldInvTransposeMat(VS_IN vIn)
+{
+#ifdef _VERTEX_BLENDING
+    float3x3 worldInvTransposeMat = getBlendedInvTransposeWorldMat(vIn.boneWeights, vIn.boneIds);
+#else
+    float3x3 worldInvTransposeMat = gWorldInvTransposeMat[vIn.instanceID];
+#endif
+    return worldInvTransposeMat;
 }
 
 VS_OUT defaultVS(VS_IN vIn)
@@ -118,7 +133,7 @@ VS_OUT defaultVS(VS_IN vIn)
     vOut.colorV = 0;
 #endif
 
-    vOut.normalW = mul((float3x3)worldMat, vIn.normal).xyz;
+    vOut.normalW = mul(getWorldInvTransposeMat(vIn), vIn.normal).xyz;
     vOut.bitangentW = mul((float3x3)worldMat, vIn.bitangent).xyz;
     vOut.prevPosH = mul(gCam.prevViewProjMat, posW);
 

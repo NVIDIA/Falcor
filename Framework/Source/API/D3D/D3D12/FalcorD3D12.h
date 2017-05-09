@@ -53,6 +53,7 @@ namespace Falcor
     MAKE_SMART_COM_PTR(ID3D12ShaderReflection);
     MAKE_SMART_COM_PTR(ID3D12RootSignature);
     MAKE_SMART_COM_PTR(ID3D12QueryHeap);
+    MAKE_SMART_COM_PTR(ID3D12CommandSignature);
     MAKE_SMART_COM_PTR(IUnknown);
     
     using ApiObjectHandle = IUnknownPtr;
@@ -67,6 +68,7 @@ namespace Falcor
 	using CommandListHandle = ID3D12GraphicsCommandListPtr;
 	using CommandQueueHandle = ID3D12CommandQueuePtr;
     using CommandAllocatorHandle = ID3D12CommandAllocatorPtr;
+    using CommandSignatureHandle = ID3D12CommandSignaturePtr;
     using FenceHandle = ID3D12FencePtr;
     using ResourceHandle = ID3D12ResourcePtr;
     using RtvHandle = std::shared_ptr<DescriptorHeapEntry>;

@@ -28,54 +28,53 @@
 #pragma once
 #include "Falcor.h"
 
-#define init_tests() if (mArgList.argExists("test")) { toggleText(false); initializeTestingArgs(mArgList); }
-#define run_test() if(isTestingEnabled()) { runTestTask(frameRate()); }
-
-using namespace Falcor;
-
-class SampleTest
+namespace Falcor
 {
-public:
-    /** Checks whether testing is enabled, returns true if Test Tasks vector isn't empty
-    */
-    bool isTestingEnabled() const;
-
-    /** Initializes Test Tasks vector based on command line 
-    \param args ArgList object 
-    */
-    void initializeTestingArgs(const ArgList& args);
-
-    /** Callback for anything the testing sample wants to initialize
-    \param args the arg list object
-    */
-    virtual void onInitializeTestingArgs(const ArgList& args) {};
-
-    /** Checks each frame against testing ranges to see if a testing task should be run and runs it
-    \param frameRate the frame rate object to get frame times and frame count 
-    */
-    void runTestTask(const FrameRate& frameRate);
-    
-    /** Callback for anything the testing sample wants to do each frame 
-    \param frameRate the frame rate object to get frame count
-    */
-    virtual void onRunTestTask(const FrameRate& frameRate) {};
-
-    /** 
-    */
-    virtual void onTestShutdown() { exit(1); }
-
-private:
-    /** Captures screen to a png, very similar to Sample::captureScreen
-    */
-    void captureScreen();
-
-    /** Outputs xml test results file
-    */
-    void outputXML();
-
-    struct Task
+    class SampleTest : public Sample
     {
-        enum class Type
+    public:
+        /** Checks whether testing is enabled, returns true if either Test Task vector isn't empty
+        */
+        bool hasTests() const;
+
+        /** Initializes Test Task vectors based on command line arguments
+        */
+        void initializeTesting();
+
+        /** Callback for anything the testing sample wants to initialize
+        */
+        virtual void onInitializeTesting() {};
+
+        /** Testing actions that need to happen before the frame renders
+        */
+        void beginTestFrame();
+
+        /** Callback for anything the testing sample wants to do before the frame renders
+        */
+        virtual void onBeginTestFrame() {};
+
+        /** Testing actions that need to happen after the frame renders
+        */
+        void endTestFrame();
+
+        /** Callback for anything the testing sample wants to do after the frame renders
+        */
+        virtual void onEndTestFrame() {};
+
+        /** Callback for anything the testing sample wants to do right before shutdown
+        */
+        virtual void onTestShutdown() {};
+
+    private:
+        enum class TriggerType
+        {
+            Frame,
+            Time,
+            None,
+        };
+        TriggerType mCurrentTrigger = TriggerType::None;
+
+        enum class TaskType
         {
             LoadTime,
             MeasureFps,
@@ -84,17 +83,54 @@ private:
             Uninitialized
         };
 
-        Task() : mStartFrame(0u), mEndFrame(0u), mTask(Type::Uninitialized), mResult(0.f) {}
-        Task(uint32_t startFrame, uint32_t endFrame, Task::Type t) :
-            mStartFrame(startFrame), mEndFrame(endFrame), mTask(t), mResult(0.f) {}
-        bool operator<(const Task& rhs) { return mStartFrame < rhs.mStartFrame; }
+        struct Task
+        {
+            Task() : mStartFrame(0u), mEndFrame(0u), mTask(TaskType::Uninitialized), mResult(0.f) {}
+            Task(uint32_t startFrame, uint32_t endFrame, TaskType t) :
+                mStartFrame(startFrame), mEndFrame(endFrame), mTask(t), mResult(0.f) {}
+            bool operator<(const Task& rhs) { return mStartFrame < rhs.mStartFrame; }
 
-        uint32_t mStartFrame;
-        uint32_t mEndFrame;
-        Type mTask;
-        float mResult = 0;
+            uint32_t mStartFrame;
+            uint32_t mEndFrame;
+            float mResult = 0;
+            TaskType mTask;
+        };
+
+        std::vector<Task> mTestTasks;
+        std::vector<Task>::iterator mCurrentFrameTest;
+
+        struct TimedTask
+        {
+            TimedTask() : mStartTime(0.f), mTask(TaskType::Uninitialized), mStartFrame(0) {};
+            TimedTask(float startTime, float endTime, TaskType t) : mStartTime(startTime), mEndTime(endTime), mTask(t), mStartFrame(0) {};
+            bool operator<(const TimedTask& rhs) { return mStartTime < rhs.mStartTime; }
+
+            float mStartTime;
+            float mEndTime;
+            float mResult = 0;
+            //used to calc avg fps in a perf range
+            uint mStartFrame = 0;
+            TaskType mTask;
+        };
+
+        std::vector<TimedTask> mTimedTestTasks;
+        std::vector<TimedTask>::iterator mCurrentTimeTest;
+
+        /** Outputs xml test results file
+        */
+        void outputXML();
+        /** inits tests that start on a particular frame
+        */
+        void initFrameTests();
+        /** inits tests that start at a particular time
+        */
+        void initTimeTests();
+        /** run tests that start on a particular frame
+        */
+        void runFrameTests();
+        /** run tests that start at a particular time
+        */
+        void runTimeTests();
+
     };
-
-    std::vector<Task> mTestTasks;
-    std::vector<Task>::iterator mTestTaskIt;
-};
+}
