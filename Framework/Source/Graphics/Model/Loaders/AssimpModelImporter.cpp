@@ -827,6 +827,7 @@ namespace Falcor
 
     VertexLayout::SharedPtr AssimpModelImporter::createVertexLayout(const aiMesh* pAiMesh)
     {
+        static const uint32_t kMaxSupportedUVs = 2;
         // Must have position!!!
         if (pAiMesh->HasPositions() == false)
         {
@@ -834,13 +835,12 @@ namespace Falcor
             return nullptr;
         }
 
-        if (pAiMesh->GetNumUVChannels() > 2)
+        if (pAiMesh->GetNumUVChannels() > kMaxSupportedUVs)
         {
-            logError("AssimpModelImporter: Loaded mesh with too many UV channels.");
-            return nullptr;
+            logWarning("AssimpModelImporter: Loaded mesh with more then " + std::to_string(kMaxSupportedUVs) + " UV channels. Ignoring extra UVs");
         }
 
-        for (uint32_t i = 0; i < pAiMesh->GetNumUVChannels(); i++)
+        for (uint32_t i = 0; i < min(pAiMesh->GetNumUVChannels(), kMaxSupportedUVs); i++)
         {
             if (pAiMesh->HasTextureCoords(i) == false)
             {

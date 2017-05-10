@@ -670,6 +670,7 @@ namespace Falcor
                 default:
                     res = reflectResource(pReflection, inputDesc, mResources, i, log);
                 }
+                if (!res) return false;
             }
         }
         return res;

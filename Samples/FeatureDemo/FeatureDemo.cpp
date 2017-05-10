@@ -91,6 +91,7 @@ void FeatureDemo::initScene(Scene::SharedPtr pScene)
     samplerDesc.setAddressingMode(Sampler::AddressMode::Wrap, Sampler::AddressMode::Wrap, Sampler::AddressMode::Wrap).setFilterMode(Sampler::Filter::Linear, Sampler::Filter::Linear, Sampler::Filter::Linear);
     Sampler::SharedPtr pSampler = Sampler::create(samplerDesc);
     pScene->bindSamplerToMaterials(pSampler);
+    pScene->bindSamplerToModels(pSampler);
 
     mpSceneRenderer = SceneRenderer::create(pScene);
     mpSceneRenderer->setCameraControllerType(SceneRenderer::CameraControllerType::FirstPerson);
@@ -98,6 +99,7 @@ void FeatureDemo::initScene(Scene::SharedPtr pScene)
     initLightingPass();
     initShadowPass();
     initSSAO();
+    mCurrentTime = 0;
 }
 
 void FeatureDemo::loadModel(const std::string& filename)
