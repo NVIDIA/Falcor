@@ -214,8 +214,6 @@ namespace Falcor
         /** Get the status of single-pass-stereo
         */
         bool isSinglePassStereoEnabled() const { return mEnableSinglePassStereo; }
-
-        static void beginNewFrame();
     private:
         GraphicsState();
         Vao::SharedConstPtr mpVao;
@@ -241,7 +239,6 @@ namespace Falcor
         };
         CachedData mCachedData;
 
-        static std::vector<GraphicsState*> sObjects;
         using StateGraph = Graph<GraphicsStateObject::SharedPtr, void*>;
         StateGraph::SharedPtr mpGsoGraph;
     };

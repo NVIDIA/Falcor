@@ -48,6 +48,7 @@ namespace Falcor
             Desc& setRootSignature(RootSignature::SharedPtr pSignature) { mpRootSignature = pSignature; return *this; }
             Desc& setProgramVersion(ProgramVersion::SharedConstPtr pProgram) { mpProgram = pProgram; return *this; }
             ProgramVersion::SharedConstPtr getProgramVersion() const { return mpProgram; }
+            bool operator==(const Desc& other) const;
         private:
             friend class ComputeStateObject;
             ProgramVersion::SharedConstPtr mpProgram;

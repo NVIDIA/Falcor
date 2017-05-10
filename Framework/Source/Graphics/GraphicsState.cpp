@@ -32,8 +32,6 @@
 
 namespace Falcor
 {
-    std::vector<GraphicsState*> GraphicsState::sObjects;
-
     static GraphicsStateObject::PrimitiveType topology2Type(Vao::Topology t)
     {
         switch (t)
@@ -66,30 +64,9 @@ namespace Falcor
         }
 
         mpGsoGraph = StateGraph::create();
-        sObjects.push_back(this);
     }
 
-    GraphicsState::~GraphicsState()
-    {
-        // Remove the current object from the program vector
-        for (auto it = sObjects.begin(); it != sObjects.end(); it++)
-        {
-            if (*it == this)
-            {
-                sObjects.erase(it);
-                break;;
-            }
-        }
-    }
-
-    void GraphicsState::beginNewFrame()
-    {
-        for (auto& pThis : sObjects)
-        {
-            pThis->mpGsoGraph->gotoStart();
-            pThis->mCachedData.pProgramVersion = nullptr;
-        }
-    }
+    GraphicsState::~GraphicsState() = default;
 
     GraphicsStateObject::SharedPtr GraphicsState::getGSO(const GraphicsVars* pVars)
     {
@@ -131,8 +108,20 @@ namespace Falcor
 
             mDesc.setSinglePassStereoEnable(mEnableSinglePassStereo);
             
-            pGso = GraphicsStateObject::create(mDesc);
-            mpGsoGraph->setCurrentNodeData(pGso);
+            StateGraph::CompareFunc cmpFunc = [&desc = mDesc](GraphicsStateObject::SharedPtr pGso) -> bool
+            {
+                return pGso && (desc == pGso->getDesc());
+            };
+
+            if (mpGsoGraph->scanForMatchingNode(cmpFunc))
+            {
+                pGso = mpGsoGraph->getCurrentNode();
+            }
+            else
+            {
+                pGso = GraphicsStateObject::create(mDesc);
+                mpGsoGraph->setCurrentNodeData(pGso);
+            }
         }
         return pGso;
     }
@@ -170,36 +159,51 @@ namespace Falcor
 
     GraphicsState& GraphicsState::setVao(const Vao::SharedConstPtr& pVao)
     {
-        mpVao = pVao;
-        mpGsoGraph->walk((void*)pVao->getVertexLayout().get());
+        if(mpVao != pVao)
+        {
+            mpVao = pVao;
+            mpGsoGraph->walk((void*)pVao->getVertexLayout().get());
+        }
         return *this;
     }
 
     GraphicsState& GraphicsState::setBlendState(BlendState::SharedPtr pBlendState)
     {
-        mDesc.setBlendState(pBlendState);
-        mpGsoGraph->walk((void*)pBlendState.get());
+        if(mDesc.getBlendState() != pBlendState)
+        {
+            mDesc.setBlendState(pBlendState);
+            mpGsoGraph->walk((void*)pBlendState.get());
+        }
         return *this;
     }
 
     GraphicsState& GraphicsState::setRasterizerState(RasterizerState::SharedPtr pRasterizerState)
     {
-        mDesc.setRasterizerState(pRasterizerState);
-        mpGsoGraph->walk((void*)pRasterizerState.get());
+        if(mDesc.getRasterizerState() != pRasterizerState)
+        {
+            mDesc.setRasterizerState(pRasterizerState);
+            mpGsoGraph->walk((void*)pRasterizerState.get());
+        }
         return *this;
     }
 
     GraphicsState& GraphicsState::setSampleMask(uint32_t sampleMask)
     { 
-        mDesc.setSampleMask(sampleMask); 
-        mpGsoGraph->walk((void*)(uint64_t)sampleMask);
+        if(mDesc.getSampleMask() != sampleMask)
+        {
+            mDesc.setSampleMask(sampleMask);
+            mpGsoGraph->walk((void*)(uint64_t)sampleMask);
+        }
         return *this; 
     }
 
     GraphicsState& GraphicsState::setDepthStencilState(DepthStencilState::SharedPtr pDepthStencilState)
     {
-        mDesc.setDepthStencilState(pDepthStencilState); 
-        mpGsoGraph->walk((void*)pDepthStencilState.get());
+        if(mDesc.getDepthStencilState() != pDepthStencilState)
+        {
+            mDesc.setDepthStencilState(pDepthStencilState);
+            mpGsoGraph->walk((void*)pDepthStencilState.get());
+        }
         return *this;
     }
 

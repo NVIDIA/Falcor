@@ -38,6 +38,47 @@ namespace Falcor
     RasterizerState::SharedPtr GraphicsStateObject::spDefaultRasterizerState;
     DepthStencilState::SharedPtr GraphicsStateObject::spDefaultDepthStencilState;
 
+    bool GraphicsStateObject::Desc::operator==(const GraphicsStateObject::Desc& other) const
+    {
+        bool b = true;
+        b = b && (mpLayout                  == other.mpLayout);
+        b = b && (mFboDesc                  == other.mFboDesc);
+        b = b && (mpProgram                 == other.mpProgram);
+        b = b && (mSampleMask               == other.mSampleMask);
+        b = b && (mpRootSignature           == other.mpRootSignature);
+        b = b && (mPrimType                 == other.mPrimType);
+        b = b && (mSinglePassStereoEnabled  == other.mSinglePassStereoEnabled);
+
+        if (mpRasterizerState)
+        {
+            b = b && (mpRasterizerState == other.mpRasterizerState);
+        }
+        else
+        {
+            b == b && (other.mpRasterizerState == nullptr || other.mpRasterizerState == spDefaultRasterizerState);
+        }
+
+        if (mpBlendState)
+        {
+            b = b && (mpBlendState == other.mpBlendState);
+        }
+        else
+        {
+            b == b && (other.mpBlendState == nullptr || other.mpBlendState == spDefaultBlendState);
+        }
+
+        if (mpDepthStencilState)
+        {
+            b = b && (mpDepthStencilState == other.mpDepthStencilState);
+        }
+        else
+        {
+            b == b && (other.mpDepthStencilState == nullptr || other.mpDepthStencilState == spDefaultDepthStencilState);
+        }
+
+        return b;
+    }
+
     GraphicsStateObject::~GraphicsStateObject()
     {
         gpDevice->releaseResource(mApiHandle);

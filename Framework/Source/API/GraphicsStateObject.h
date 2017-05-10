@@ -83,6 +83,8 @@ namespace Falcor
             const Fbo::Desc& getFboDesc() const { return mFboDesc; }
             ProgramVersion::SharedConstPtr getProgramVersion() const { return mpProgram; }
             bool getSinglePassStereoEnabled() const { return mSinglePassStereoEnabled; }
+
+            bool operator==(const Desc& other) const;
         private:
             friend class GraphicsStateObject;
             VertexLayout::SharedConstPtr mpLayout;
