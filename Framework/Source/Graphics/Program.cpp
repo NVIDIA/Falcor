@@ -231,22 +231,25 @@ namespace Falcor
             spSetCompileFlags(spireRequest, spireFlags);
 
             // Now lets add all our input shader code, one-by-one
+            int translationUnitsAdded = 0;
             for (uint32_t i = 0; i < kShaderCount; i++)
             {
                 if (!mShaderStrings[i].size())
                     continue;
 
-                spAddTranslationUnit(spireRequest, sourceLanguage, nullptr);
+                int translationUnitIndex = spAddTranslationUnit(spireRequest, sourceLanguage, nullptr);
+                assert(translationUnitIndex == translationUnitsAdded);
+                translationUnitsAdded++;
 
                 if (mCreatedFromFile)
                 {
                     std::string fullpath;
                     findFileInDataDirectories(mShaderStrings[i], fullpath);
-                    spAddTranslationUnitSourceFile(spireRequest, i, fullpath.c_str());
+                    spAddTranslationUnitSourceFile(spireRequest, translationUnitIndex, fullpath.c_str());
                 }
                 else
                 {
-                    spAddTranslationUnitSourceString(spireRequest, i, "", mShaderStrings[i].c_str());
+                    spAddTranslationUnitSourceString(spireRequest, translationUnitIndex, "", mShaderStrings[i].c_str());
                 }
             }
 
@@ -259,13 +262,18 @@ namespace Falcor
             }
 
             // Extract the generated code for each stage
+            int translationUnitsExtracted = 0;
             for (uint32_t i = 0; i < kShaderCount; i++)
             {
                 if (!mShaderStrings[i].size())
                     continue;
 
-                translatedShaderStrings[i] = spGetTranslationUnitSource(spireRequest, int(i));
+                int translationUnitIndex = translationUnitsExtracted++;
+                assert(translationUnitIndex < translationUnitsAdded);
+
+                translatedShaderStrings[i] = spGetTranslationUnitSource(spireRequest, translationUnitIndex);
             }
+            assert(translationUnitsExtracted == translationUnitsAdded);
 
             // Extract the reflection data
             pReflector = ProgramReflection::create(spire::ShaderReflection::get(spireRequest), log);
