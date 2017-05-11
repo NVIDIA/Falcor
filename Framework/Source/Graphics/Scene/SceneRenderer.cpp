@@ -74,9 +74,9 @@ namespace Falcor
             {
                 assert(pPerMeshCbData->getVariableData("gWorldMat[0]")->isRowMajor == false); // We copy into CBs as column-major
                 assert(pPerMeshCbData->getVariableData("gWorldInvTransposeMat[0]")->isRowMajor == false);
-                assert(pPerMeshCbData->getVariableData("gWorldMat[0]")->arraySize == pPerMeshCbData->getVariableData("gWorldInvTransposeMat[0]")->arraySize);
+                assert(pPerMeshCbData->getVariableData("gWorldMat")->arraySize == pPerMeshCbData->getVariableData("gWorldInvTransposeMat")->arraySize);
 
-                sWorldMatArraySize = pPerMeshCbData->getVariableData("gWorldMat[0]")->arraySize;
+                sWorldMatArraySize = pPerMeshCbData->getVariableData("gWorldMat")->arraySize;
                 sWorldMatOffset = pPerMeshCbData->getVariableData("gWorldMat[0]")->location;
                 sWorldInvTransposeMatOffset = pPerMeshCbData->getVariableData("gWorldInvTransposeMat[0]")->location;
                 sMeshIdOffset = pPerMeshCbData->getVariableData("gMeshId")->location;

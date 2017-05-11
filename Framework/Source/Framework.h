@@ -68,6 +68,13 @@ using namespace glm;
 #define safe_delete_array(_a) {delete[] _a; _a = nullptr;}
 #define align_to(_alignment, _val) (((_val + _alignment - 1) / _alignment) * _alignment)
 
+#if defined(_MSC_VER)
+#define FALCOR_DEPRECATED(MESSAGE) __declspec(deprecated(MESSAGE))
+#else
+// TODO: add cases for clang/gcc when/if needed
+#define FALCOR_DEPRECATED(MESSAGE) /* emtpy */
+#endif
+
 namespace Falcor
 {
 #define enum_class_operators(e_) inline e_ operator& (e_ a, e_ b){return static_cast<e_>(static_cast<int>(a)& static_cast<int>(b));}  \

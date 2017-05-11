@@ -215,17 +215,32 @@ namespace Falcor
             /** Get variable data
                 \param[in] name The name of the requested variable
                 \param[out] offset The offset of the variable or kInvalidLocation if the variable wasn't found. This is useful in cases where the requested variable is an array element, since the returned result will be different than Variable::offset
-                \param[in] allowNonIndexedArray Optional. By default, getting the first element in an array requires explicit '[0]' at the end of the name. Set this to true to search for the start of an array when the name doesn't contain an index
                 \return Pointer to the variable data, or nullptr if the name wasn't found
             */
-            const Variable* getVariableData(const std::string& name, size_t& offset, bool allowNonIndexedArray = false) const;
+            const Variable* getVariableData(const std::string& name, size_t& offset) const;
+
+            /** Get variable data
+                \param[in] name The name of the requested variable
+                \param[out] offset The offset of the variable or kInvalidLocation if the variable wasn't found. This is useful in cases where the requested variable is an array element, since the returned result will be different than Variable::offset
+                \return Pointer to the variable data, or nullptr if the name wasn't found
+            */
+            FALCOR_DEPRECATED("The `allowNonIndexedArray` parameter has been deprecated. Please use the version of this function without this parameter.")
+            const Variable* getVariableData(const std::string& name, size_t& offset, bool /*allowNonIndexedArray*/) const
+            { return getVariableData(name, offset); }
 
             /** Get variable data
             \param[in] name The name of the requested variable
-            \param[in] allowNonIndexedArray Optional. By default, getting the first element in an array requires explicit '[0]' at the end of the name. Set this to true to search for the start of an array without any index
             \return Pointer to the variable data, or nullptr if the name wasn't found
             */
-            const Variable* getVariableData(const std::string& name, bool allowNonIndexedArray = false) const;
+            const Variable* getVariableData(const std::string& name) const;
+
+            /** Get variable data
+            \param[in] name The name of the requested variable
+            \return Pointer to the variable data, or nullptr if the name wasn't found
+            */
+            FALCOR_DEPRECATED("The `allowNonIndexedArray` parameter has been deprecated. Please use the version of this function without this parameter.")
+            const Variable* getVariableData(const std::string& name, bool /*allowNonIndexedArray*/) const
+            { return getVariableData(name); }
 
             /** Get resource data
             \param[in] name The name of the requested resource

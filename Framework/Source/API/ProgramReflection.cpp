@@ -67,7 +67,7 @@ namespace Falcor
         return b;
     }
 
-    const ProgramReflection::Variable* ProgramReflection::BufferReflection::getVariableData(const std::string& name, size_t& offset, bool allowNonIndexedArray) const
+    const ProgramReflection::Variable* ProgramReflection::BufferReflection::getVariableData(const std::string& name, size_t& offset) const
     {
         const std::string msg = "Error when getting variable data \"" + name + "\" from buffer \"" + mName + "\".\n";
         uint32_t arrayIndex = 0;
@@ -120,22 +120,16 @@ namespace Falcor
                 return nullptr;
             }
         }
-        else if ((allowNonIndexedArray == false) && (var->second.arraySize > 0))
-        {
-            // Variable name should contain an explicit array index (for N-dim arrays, N indices), but the index was missing
-            logError(msg + "Expecting to find explicit array index in variable name (for N-dimensional array, N indices must be specified).");
-            return nullptr;
-        }
 
         const auto* pData = &var->second;
         offset = pData->location + pData->arrayStride * arrayIndex;
         return pData;
     }
 
-    const ProgramReflection::Variable* ProgramReflection::BufferReflection::getVariableData(const std::string& name, bool allowNonIndexedArray) const
+    const ProgramReflection::Variable* ProgramReflection::BufferReflection::getVariableData(const std::string& name) const
     {
         size_t t;
-        return getVariableData(name, t, allowNonIndexedArray);
+        return getVariableData(name, t);
     }
 
     ProgramReflection::BufferReflection::SharedConstPtr ProgramReflection::getBufferDesc(uint32_t bindLocation, ShaderAccess shaderAccess, BufferReflection::Type bufferType) const

@@ -73,6 +73,11 @@ namespace Falcor
     {
         switch(spireScalarType)
         {
+        case spire::TypeReflection::ScalarType::None:
+            // This isn't a scalar/matrix/vector, so it can't
+            // be encoded in the `enum` that Falcor provides.
+            return ProgramReflection::Variable::Type::Unknown;
+
         case spire::TypeReflection::ScalarType::Bool:
             assert(rows == 1);
             switch (columns)
@@ -622,12 +627,71 @@ namespace Falcor
         ReflectionPath*                 path)
     {
         size_t size = type->getSize();
+
+        // For any variable that actually occupies space in
+        // the uniform data, we want to add an entry to
+        // the variables map that can be directly queried:
+        if(size != 0)
+        {
+            ProgramReflection::Variable desc;
+
+            desc.location = getUniformOffset(path);
+            desc.type = getVariableType(type->getScalarType(), type->getRowCount(), type->getColumnCount());
+
+            switch( type->getKind() )
+            {
+            default:
+                break;
+
+            case spire::TypeReflection::Kind::Array:
+                desc.arraySize = (uint32_t) type->getElementCount();
+                desc.arrayStride = (uint32_t) type->getElementStride(SPIRE_PARAMETER_CATEGORY_UNIFORM);
+                break;
+
+            case spire::TypeReflection::Kind::Matrix:
+                // TODO(tfoley): Spire needs to report this information!
+//                desc.isRowMajor = (typeDesc.Class == D3D_SVC_MATRIX_ROWS);
+                break;
+            }
+
+            (*pContext->pVariables)[name] = desc;
+        }
+
+        // For variables with aggregate types (structure or array)
+        // we currently generate additional variables for each
+        // field/element.
+        //
+        // We also use this opportunity to deal with nested fields
+        // that might have an object type (texture, sampler, etc.)
+        // so that we can reflect them properly into the resources
+        // map instead.
+
         switch (type->getKind())
         {
+        default:
+            // We've already handled ordinary uniforms above, so no
+            // special-case logic is needed here.
+            break;
+
+        case spire::TypeReflection::Kind::SamplerState:
+        case spire::TypeReflection::Kind::Texture:
+            // "Object" type field nested inside a structure will
+            // show up here, so we need to re-route them over to
+            // the appropriate logic for resources.
+            reflectResource(pContext, type, name, path);
+            break;
+
+
         case spire::TypeReflection::Kind::Array:
             {
+                // For a variable with array type, we are going to create
+                // entries for each element of the array.
+                //
+                // TODO: This probably isn't a good idea for very large
+                // arrays, and obviously doesn't work for arrays that
+                // aren't statically sized.
+
                 size_t elementCount = type->getElementCount();
-                // size_t stride = type->getElementStride();
                 spire::TypeLayoutReflection* elementType = type->getElementType();
 
                 assert(name.size());
@@ -646,7 +710,14 @@ namespace Falcor
 
         case spire::TypeReflection::Kind::Struct:
             {
-                // Parse the internal variables
+                // For a variable with structure type, we are going
+                // to create entries for each field of the structure.
+                //
+                // TODO: it isn't strictly necessary to do this, but
+                // doing something more clever involves additional
+                // parsing work during lookup, to deal with `.`
+                // operations in the path to a variable.
+
                 uint32_t fieldCount = type->getFieldCount();
                 for(uint32_t ff = 0; ff < fieldCount; ++ff)
                 {
@@ -662,21 +733,6 @@ namespace Falcor
                     reflectType(pContext, field->getType(), fullName, &fieldPath);
                 }
             }
-            break;
-
-        case spire::TypeReflection::Kind::SamplerState:
-        case spire::TypeReflection::Kind::Texture:
-            reflectResource(pContext, type, name, path);
-            // Ignore nested fields with resource types...
-            break;
-
-        default:
-            ProgramReflection::Variable desc;
-//            desc.arraySize = typeDesc.Elements;
-//            desc.isRowMajor = (typeDesc.Class == D3D_SVC_MATRIX_ROWS);
-            desc.location = getUniformOffset(path);
-            desc.type = getVariableType(type->getScalarType(), type->getRowCount(), type->getColumnCount());
-            (*pContext->pVariables)[name] = desc;
             break;
         }
     }

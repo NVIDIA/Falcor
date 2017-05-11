@@ -159,7 +159,7 @@ namespace Falcor
     void StructuredBuffer::getVariable(const std::string& name, size_t elementIndex, VarType& value) const
     {
         size_t offset;
-        const auto* pData = mpReflector->getVariableData(name, offset, false);
+        const auto* pData = mpReflector->getVariableData(name, offset);
         if ((_LOG_ENABLED == 0) || (pData && checkVariableType<VarType>(pData->type, name, mpReflector->getName())))
         {
             getVariable(offset, elementIndex, value);
@@ -262,7 +262,7 @@ namespace Falcor
     void StructuredBuffer::getVariableArray(const std::string& name, size_t count, size_t elementIndex, VarType value[]) const
     {
         size_t offset;
-        const auto* pData = mpReflector->getVariableData(name, offset, true);
+        const auto* pData = mpReflector->getVariableData(name, offset);
         if ((_LOG_ENABLED == 0) || (pData && checkVariableType<VarType>(pData->type, name, mpReflector->getName())))
         {
             getVariableArray(offset, count, elementIndex, value);
