@@ -49,6 +49,7 @@ namespace Falcor
     size_t SceneRenderer::sDrawIDOffset = ConstantBuffer::kInvalidOffset;
     size_t SceneRenderer::sLightCountOffset = ConstantBuffer::kInvalidOffset;
     size_t SceneRenderer::sLightArrayOffset = ConstantBuffer::kInvalidOffset;
+    size_t SceneRenderer::sAmbientLightOffset = ConstantBuffer::kInvalidOffset;
 
     const char* SceneRenderer::kPerMaterialCbName = "InternalPerMaterialCB";
     const char* SceneRenderer::kPerFrameCbName = "InternalPerFrameCB";
@@ -95,6 +96,8 @@ namespace Falcor
                 sLightCountOffset = pCountOffset ? pCountOffset->location : ConstantBuffer::kInvalidOffset;
                 const auto& pLightOffset = pPerFrameCbData->getVariableData("gLights[0].worldPos");
                 sLightArrayOffset = pLightOffset ? pLightOffset->location : ConstantBuffer::kInvalidOffset;
+                const auto& pAmbientOffset = pPerFrameCbData->getVariableData("gAmbientLighting");
+                sAmbientLightOffset = pAmbientOffset ? pAmbientOffset->location : ConstantBuffer::kInvalidOffset;
             }
         }
     }
@@ -122,6 +125,10 @@ namespace Falcor
             if (sLightCountOffset != ConstantBuffer::kInvalidOffset)
             {
                 pCB->setVariable(sLightCountOffset, mpScene->getLightCount());
+            }
+            if (sAmbientLightOffset != ConstantBuffer::kInvalidOffset)
+            {
+                pCB->setVariable(sAmbientLightOffset, mpScene->getAmbientIntensity());
             }
         }
     }

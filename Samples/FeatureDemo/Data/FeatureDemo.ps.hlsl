@@ -34,7 +34,6 @@
 
 cbuffer PerFrameCB : register(b0)
 {
-	vec3 gAmbient;
     CsmData gCsmData;
     mat4 camVpAtLastCsmUpdate;
 };
@@ -97,7 +96,7 @@ PsOut main(MainVsOut vOut)
 #endif
 
     // add ambient
-    finalColor.rgb += gAmbient * getDiffuseColor(shAttr).rgb;
+    finalColor.rgb += gAmbientLighting * getDiffuseColor(shAttr).rgb;
     
     psOut.color = finalColor;
     psOut.normal = float4(vOut.vsData.normalW * 0.5f + 0.5f, 1.0f);

@@ -42,8 +42,8 @@
 cbuffer InternalPerFrameCB : register(b10)
 {
     CameraData gCam;
+    float3 gAmbientLighting;
     uint32_t gLightsCount;
-    vec3 pad;
     LightData gLights[MAX_LIGHT_SOURCES];
 };
 
