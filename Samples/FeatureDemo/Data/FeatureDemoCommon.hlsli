@@ -25,12 +25,20 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#include "FeatureDemoCommon.hlsli"
+#include "ShaderCommon.h"
+#define _COMPILE_DEFAULT_VS
+#include "VertexAttrib.h"
+#include "Effects/CsmData.h"
 
-MainVsOut main(VS_IN vIn)
+cbuffer PerFrameCB : register(b0)
 {
-    MainVsOut vsOut;
-    vsOut.vsData = defaultVS(vIn);
-    vsOut.shadowsDepthC = mul(camVpAtLastCsmUpdate, vec4(vsOut.vsData.posW, 1)).z;
-    return vsOut;
-}
+	vec3 gAmbient;
+    CsmData gCsmData;
+    mat4 camVpAtLastCsmUpdate;
+};
+
+struct MainVsOut
+{
+    VS_OUT vsData;
+    float shadowsDepthC : DEPTH;
+};

@@ -25,27 +25,12 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#include "ShaderCommon.h"
+#include "FeatureDemoCommon.hlsli"
 #include "Shading.h"
-#define _COMPILE_DEFAULT_VS
-#include "VertexAttrib.h"
-#include "Effects/CsmData.h"
 #include "Helpers.h"
-
-cbuffer PerFrameCB : register(b0)
-{
-    CsmData gCsmData;
-    mat4 camVpAtLastCsmUpdate;
-};
 
 Texture2D gEnvMap;
 SamplerState gSampler;
-
-struct MainVsOut
-{
-    VS_OUT vsData;
-    float shadowsDepthC : DEPTH;
-};
 
 struct PsOut
 {
