@@ -499,6 +499,23 @@ namespace Falcor
         }
     }
 
+    bool Gui::addTextBox(const char label[], std::string& text, uint32_t lineCount /*= 1*/)
+    {
+        const ImGuiInputTextFlags flags = ImGuiInputTextFlags_EnterReturnsTrue;
+
+        static const int maxSize = 2048;
+        char buf[maxSize]; strcpy_s(buf, text.c_str());
+
+        if (lineCount > 1)
+        {
+            return ImGui::InputTextMultiline(label, buf, maxSize, ImVec2(-1.0f, ImGui::GetTextLineHeight() * lineCount), flags);
+        }
+        else
+        {
+            return ImGui::InputText(label, buf, maxSize, flags);
+        }
+    }
+
     void Gui::addTooltip(const char tip[], bool sameLine)
     {
         if (sameLine) ImGui::SameLine();

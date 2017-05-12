@@ -121,25 +121,26 @@ namespace Falcor
 
     bool Scene::update(double currentTime, CameraController* cameraController)
     {
+        bool changed = false;
         for (auto& path : mpPaths)
         {
             if (path->animate(currentTime))
             {
-                mExtentsDirty = true;
+                changed = true;
             }
         }
 
-        updateExtents();
+        mExtentsDirty = mExtentsDirty || changed;
 
         // Ignore the elapsed time we got from the user. This will allow camera movement in cases where the time is frozen
         if(cameraController)
         {
             cameraController->attachCamera(getActiveCamera());
             cameraController->setCameraSpeed(getCameraSpeed());
-            return cameraController->update();
+            changed |= cameraController->update();
         }
 
-        return false;
+        return changed;
     }
 
     void Scene::deleteModel(uint32_t modelID)

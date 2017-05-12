@@ -31,7 +31,7 @@
 #include "HostDeviceData.h"
 
 /*******************************************************************
-					Math functions
+					Sampling functions
 *******************************************************************/
 
 #ifndef M_PIf
@@ -42,14 +42,13 @@
 #define M_1_PIf 0.31830988618379f
 #endif
 
-_fn vec3 sample_disk(float rnd1, float rnd2, float minR = 0.0f)
+_fn vec2 sample_disk(float rnd1, float rnd2, float minRSq = 0.0f)
 {
-    vec3 p;
-    const float r = max(sqrt(rnd1), minR);
+    vec2 p;
+    const float r = sqrt(max(minRSq, rnd1));
     const float phi = 2.0f * M_PIf * rnd2;
     p.x = r * cos(phi);
     p.y = r * sin(phi);
-    p.z = 0.0f;
     return p;
 }
 
@@ -101,7 +100,8 @@ _fn inline float eval_cos2_wnd(float x)
 
 _fn vec3 cosine_sample_hemisphere(float rnd1, float rnd2)
 {
-    vec3 p = sample_disk(rnd1, rnd2);
+    vec3 p;
+    p.xy = sample_disk(rnd1, rnd2);
     // Project up to hemisphere.
     p.z = sqrt(max(0.0f, 1.0f - p.x * p.x - p.y * p.y));
     return p;
@@ -153,6 +153,27 @@ _fn float rand_next(_ref(uint) s)
     const uint LCG_C = 1013904223u;
     s = (LCG_A * s + LCG_C);
     return float(s & 0x00FFFFFF) / float(0x01000000);
+}
+
+/*******************************************************************
+					Shading routines
+*******************************************************************/
+
+// Ideal specular refraction
+_fn float3 refract(const float3 I, const float3 N, float eta)
+{
+    float dNI = dot(N, I);
+    float k = 1.0f - eta * eta * (1.0f - dNI * dNI);
+    float3 R;
+    if (k < 0.0f) 
+    {
+        R = v3(0.0f, 0.0f, 0.0f);
+    }
+    else 
+    {
+        R = eta * I - (eta * dNI + sqrt(k)) * N;
+    }
+    return R;
 }
 
 /*******************************************************************

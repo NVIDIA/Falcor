@@ -131,7 +131,7 @@ namespace Falcor
             const Shader* pShader = mpActiveProgram->getShader(ShaderType(i));
             if(pShader)
             {
-                if(mCreatedFromFile)
+                if(mCreatedFromFile && !mShaderStrings[i].empty())
                 {
                     std::string fullpath;
                     findFileInDataDirectories(mShaderStrings[i], fullpath);
@@ -180,6 +180,28 @@ namespace Falcor
         return mpActiveProgram;
     }
 
+    void Program::updateFileTimestamps() const
+    {
+        for (uint32_t i = 0; i < kShaderCount; i++)
+        {
+            const auto pShader = mpActiveProgram->getShader((ShaderType)i);
+            if (pShader)
+            {
+                if (mCreatedFromFile)
+                {
+                    std::string fullpath;
+                    findFileInDataDirectories(mShaderStrings[i], fullpath);
+                    mFileTimeMap[fullpath] = getFileModifiedTime(fullpath);
+                }
+
+                for (const auto& include : pShader->getIncludeList())
+                {
+                    mFileTimeMap[include] = getFileModifiedTime(include);
+                }
+            }
+        }
+    }
+
     ProgramVersion::SharedPtr Program::createProgramVersion(std::string& log) const
     {
         mFileTimeMap.clear();
@@ -194,24 +216,10 @@ namespace Falcor
                 if (mCreatedFromFile)
                 {
                     shaders[i] = createShaderFromFile(mShaderStrings[i], ShaderType(i), mDefineList);
-                    if(shaders[i])
-                    {
-                        std::string fullpath;
-                        findFileInDataDirectories(mShaderStrings[i], fullpath);
-                        mFileTimeMap[fullpath] = getFileModifiedTime(fullpath);
-                    }
                 }
                 else
                 {
                     shaders[i] = createShaderFromString(mShaderStrings[i], ShaderType(i), mDefineList);
-                }
-
-                if(shaders[i])
-                {
-                    for(const auto& include : shaders[i]->getIncludeList())
-                    {
-                        mFileTimeMap[include] = getFileModifiedTime(include);
-                    }
                 }
             }           
         }
@@ -255,6 +263,7 @@ namespace Falcor
             else
             {
                 mpActiveProgram = pProgram;
+                updateFileTimestamps();
                 return true;
             }
         }

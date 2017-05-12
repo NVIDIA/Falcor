@@ -94,6 +94,7 @@ namespace Falcor
 
         bool link() const;
         virtual ProgramVersion::SharedPtr createProgramVersion(std::string& log) const;
+        void updateFileTimestamps() const;
 
         std::string mShaderStrings[kShaderCount]; // Either a filename or a string, depending on the value of mCreatedFromFile
 
