@@ -219,14 +219,13 @@ namespace Falcor
 
             if(mCompileMaterialWithProgram)
             {
-                // DISABLED_FOR_D3D12
-//                 ProgramVersion::SharedConstPtr pPatchedProgram = MaterialSystem::patchActiveProgramVersion(currentData.pProgram, mpLastMaterial);
-//                 pContext->setProgram(pPatchedProgram);
+                MaterialSystem::patchProgram(currentData.pState->getProgram().get(), mpLastMaterial);
             }
         }
 
         executeDraw(currentData, pMesh->getIndexCount(), instanceCount);
         postFlushDraw(currentData);
+        currentData.pState->getProgram()->removeDefine("_MS_STATIC_MATERIAL_DESC");
     }
 
     void SceneRenderer::postFlushDraw(const CurrentWorkingData& currentData)

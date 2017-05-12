@@ -79,33 +79,31 @@ namespace Falcor
             return gMaterialProgramMap[descId];
         }
 
-        ProgramVersion::SharedConstPtr patchActiveProgramVersion(Program* pProgram, const Material* pMaterial)
+        void patchProgram(Program* pProgram, const Material* pMaterial)
         {
-            // Get the active program version
-            const ProgramVersion* pProgVersion = pProgram->getActiveVersion().get();
-
-            // Get the material's program map
-            ProgramVersionMap& programMap = getMaterialProgramMap(pMaterial);
-
-            // Check if it we have data for it
-            ProgramVersion::SharedConstPtr pMaterialProg = findProgramInMap(programMap, pProgVersion);
-            if(pMaterialProg == nullptr)
+//             // Get the active program version
+//             const ProgramVersion* pProgVersion = pProgram->getActiveVersion().get();
+// 
+//             // Get the material's program map
+//             ProgramVersionMap& programMap = getMaterialProgramMap(pMaterial);
+// 
+//             // Check if it we have data for it
+//             ProgramVersion::SharedConstPtr pMaterialProg = findProgramInMap(programMap, pProgVersion);
+//            if(pMaterialProg == nullptr)
             {
                 // Add the material desc
-                std::string materialDesc;
-                pMaterial->getMaterialDescStr(materialDesc);
-                pProgram->addDefine("_MS_STATIC_MATERIAL_DESC", materialDesc);
+                pProgram->addDefine("_MS_STATIC_MATERIAL_DESC", pMaterial->getMaterialDescStr());
 
                
                 // Get the program version and set it into the map
-                pMaterialProg = pProgram->getActiveVersion();
-                programMap[pProgVersion] = pMaterialProg;
+//                 pMaterialProg = pProgram->getActiveVersion();
+//                 programMap[pProgVersion] = pMaterialProg;
 
                 // Restore the previous define string
-                pProgram->removeDefine("_MS_STATIC_MATERIAL_DESC");
+//                pProgram->removeDefine("_MS_STATIC_MATERIAL_DESC");
             }
 
-            return pMaterialProg;
+//            return pMaterialProg;
         }
     }
 }

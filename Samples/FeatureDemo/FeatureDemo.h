@@ -125,6 +125,7 @@ private:
 
     bool mUseCameraPath = true;
     void applyCameraPathState();
+    bool mOptimizedShaders = true;
 
     //Testing 
     void onInitializeTesting() override;

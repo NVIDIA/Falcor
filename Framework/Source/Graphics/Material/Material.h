@@ -294,7 +294,7 @@ namespace Falcor
 
         /** The a string for a MaterialDesc string which can be patched into the shader. It can be used to statically compile the material into a program, resulting in better generated code
         */
-        void getMaterialDescStr(std::string& shaderDcl) const;
+        const std::string& getMaterialDescStr() const { finalize(); return mDescString; }
 
         /** Get an identifier for material desc. This can be used for fast comparison of desc objects. 2 materials will have the same identifier if and only if their desc is exactly the same.
         */
@@ -323,9 +323,11 @@ namespace Falcor
             uint32_t refCount;
         };
         mutable bool mDescDirty = false;
+        mutable std::string mDescString;
         mutable size_t mDescIdentifier;
         void updateDescIdentifier() const;
         void removeDescIdentifier() const;
+        void updateDescString() const;
         static uint32_t sMaterialCounter;
         static std::vector<DescId> sDescIdentifier; // vector is slower then map, but map requires 'less' operator. This vector is only being used when the material is dirty, which shouldn't happen often
     };

@@ -459,6 +459,7 @@ namespace Falcor
             updateDescIdentifier();
             normalize();
             updateTextureCount();
+            updateDescString();
             mDescDirty = false;
         }
     }
@@ -507,37 +508,39 @@ namespace Falcor
         }
     }
 
-    void Material::getMaterialDescStr(std::string& shaderDcl) const
+    static std::string getLayerIdByTypeString(const LayerIdxByType& lid)
     {
-        finalize();
+        std::string s = "{float3(0,0,0),";
+        s += std::to_string(lid.id) + '}';
+        return s;
+    }
 
-//         shaderDcl = "{{";
-//         for(uint32_t layerId = 0; layerId < arraysize(mData.desc.layers); layerId++)
-//         {
-//             const MaterialLayerDesc& layer = mData.desc.layers[layerId];
-//             shaderDcl += '{' + getLayerTypeStr(layer.type) + ',';
-//             shaderDcl += getLayerNdfStr(layer.ndf) + ',';
-//             shaderDcl += getLayerBlendStr(layer.blending) + ',';
-//             shaderDcl += std::to_string(layer.hasAlbedoTexture) + ',' + std::to_string(layer.hasRoughnessTexture) + ',' + std::to_string(layer.hasExtraParamTexture) + ",{" + std::to_string(layer.pad.x) + "," + std::to_string(layer.pad.y) + '}';
-//             shaderDcl += '}';
-//             if(layerId != arraysize(mData.desc.layers) - 1)
-//             {
-//                 shaderDcl += ',';
-//             }
-//         }
-//         shaderDcl += "},";
-//        shaderDcl += std::to_string(mData.desc.hasAlphaMap) + ',' + std::to_string(mData.desc.hasNormalMap) + ',' + std::to_string(mData.desc.hasHeightMap) + ',' + std::to_string(mData.desc.hasAmbientMap);
-//
-//        shaderDcl += "{";
-//        for(uint32_t layerType = 0; layerType < MatNumTypes; layerType++)
-//        {
-//            shaderDcl += "{" + std::to_string(mData.desc.layerIdByType[layerType].id) + "}";
-//            if(layerType != MatNumTypes - 1)
-//                shaderDcl += ',';
-//        }
-//        shaderDcl += "},";
-//        shaderDcl += "0,0"; // Padding
-//         shaderDcl += '}';
+    void Material::updateDescString() const
+    {
+        mDescString = "{{";
+        for (uint32_t layerId = 0; layerId < arraysize(mData.desc.layers); layerId++)
+        {
+            const MaterialLayerDesc& layer = mData.desc.layers[layerId];
+            mDescString += '{' + getLayerTypeStr(layer.type) + ',';
+            mDescString += getLayerNdfStr(layer.ndf) + ',';
+            mDescString += getLayerBlendStr(layer.blending) + ',';
+            mDescString += std::to_string(layer.hasTexture);
+            mDescString += '}';
+            if (layerId != arraysize(mData.desc.layers) - 1)
+            {
+                mDescString += ',';
+            }
+        }
+        mDescString += "},";
+        mDescString += std::to_string(mData.desc.hasAlphaMap) + ',' + std::to_string(mData.desc.hasNormalMap) + ',' + std::to_string(mData.desc.hasHeightMap) + ',' + std::to_string(mData.desc.hasAmbientMap);
+
+        mDescString += ",{";
+        for (uint32_t layerType = 0; layerType < MatNumTypes; layerType++)
+        {
+            mDescString += getLayerIdByTypeString(mData.desc.layerIdByType[layerType]);
+            if (layerType != MatNumTypes - 1) mDescString += ',';
+        }
+        mDescString += "}}";
     }
 
 }

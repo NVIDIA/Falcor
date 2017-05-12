@@ -93,6 +93,7 @@ void FeatureDemo::initScene(Scene::SharedPtr pScene)
 
     mpSceneRenderer = SceneRenderer::create(pScene);
     mpSceneRenderer->setCameraControllerType(SceneRenderer::CameraControllerType::FirstPerson);
+    mpSceneRenderer->toggleStaticMaterialCompilation(mOptimizedShaders);
     setActiveCameraAspectRatio();
     initLightingPass();
     initShadowPass();
@@ -268,11 +269,19 @@ void FeatureDemo::applyCameraPathState()
 
 bool FeatureDemo::onKeyEvent(const KeyboardEvent& keyEvent)
 {
-    if (mpSceneRenderer && keyEvent.type == KeyboardEvent::Type::KeyPressed && keyEvent.key == KeyboardEvent::Key::Minus)
+    if (mpSceneRenderer && keyEvent.type == KeyboardEvent::Type::KeyPressed)
     {
-        mUseCameraPath = !mUseCameraPath;
-        applyCameraPathState();
-        return true;
+        switch (keyEvent.key)
+        {
+        case KeyboardEvent::Key::Minus:
+            mUseCameraPath = !mUseCameraPath;
+            applyCameraPathState();
+            return true;
+        case KeyboardEvent::Key::O:
+            mOptimizedShaders = !mOptimizedShaders;
+            mpSceneRenderer->toggleStaticMaterialCompilation(mOptimizedShaders);
+            return true;
+        }
     }
 
     return mpSceneRenderer ? mpSceneRenderer->onKeyEvent(keyEvent) : false;

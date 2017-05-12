@@ -209,7 +209,7 @@ void _fn sampleLight(in const vec3 shadingHitPos, in const LightData lData, cons
 				vec3 p0 = vertices[pId.x];
 				vec3 p1 = vertices[pId.y];
 				vec3 p2 = vertices[pId.z];
-#elif
+#else
 				int* indices = (int*)(lData.indexPtr.ptr);
 				float* vertices = (float*)(lData.vertexPtr.ptr);
 				// Retrieve indices
