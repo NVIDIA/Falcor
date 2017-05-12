@@ -111,6 +111,7 @@ namespace Falcor
             returns true if the group is expanded, otherwise false. Use it to avoid making unnecessary calls
         */
         bool beginGroup(const char label[], bool beginExpanded = false);
+        bool beginGroup(const std::string& label, bool beginExpanded = false) { return beginGroup(label.c_str(), beginExpanded); }
 
         /** End a collapsible group block
         */
@@ -225,6 +226,14 @@ namespace Falcor
             \return true if the value changed, otherwise false
         */
         bool addTextBox(const char label[], char buf[], size_t bufSize, uint32_t lineCount = 1);
+
+        /** Adds a text box.
+        \param[in] label The name of the variable.
+        \param[in] text A string with the initialize text. The string will be updated if a text is entered.
+        \param[in] lineCount Number of lines in the text-box. If larger then 1 will create a multi-line box
+        \return true if the value changed, otherwise false
+        */
+        bool addTextBox(const char label[], std::string& text, uint32_t lineCount = 1);
 
         using GraphCallback = float(*)(void*, int32_t index);
 

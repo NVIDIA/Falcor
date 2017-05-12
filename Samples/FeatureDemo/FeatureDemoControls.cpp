@@ -120,24 +120,22 @@ void FeatureDemo::onGuiRender()
 
         if (pScene->getPathCount() > 0)
         {
-            if (mpGui->addCheckBox("Camera Path", mShouldUseCameraPath))
+            if (mpGui->addCheckBox("Camera Path", mUseCameraPath))
             {
-                if (mShouldUseCameraPath)
-                {
-                    pScene->getPath(0)->attachObject(pScene->getActiveCamera());
-                }
-                else
-                {
-                    pScene->getPath(0)->detachObject(pScene->getActiveCamera());
-                }
+                applyCameraPathState();
             }
         }
 
-        for(uint32_t i = 0 ; i < pScene->getLightCount() ; i++)
+        if(pScene->getLightCount() && mpGui->beginGroup("Light Sources"))
         {
-            Light* pLight = pScene->getLight(i).get();
-            pLight->renderUI(mpGui.get(), pLight->getName().c_str());
+            for (uint32_t i = 0; i < pScene->getLightCount(); i++)
+            {
+                Light* pLight = pScene->getLight(i).get();
+                pLight->renderUI(mpGui.get(), pLight->getName().c_str());
+            }
+            mpGui->endGroup();
         }
+
         if(mpGui->beginGroup("Shadows"))
         {
             if (mpGui->addCheckBox("Enable Shadows", mControls[ControlID::EnableShadows].enabled))

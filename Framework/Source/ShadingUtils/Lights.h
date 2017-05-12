@@ -41,7 +41,7 @@ inline vec3 _fn getLightPos(in const LightData Light, in const vec3 shadingPosit
     vec3 lightPos = Light.worldPos;
     if(Light.type == LightArea)
     {
-        lightPos = mul(Light.transMat, v4(lightPos, 1.0)).rrr;
+        lightPos = mul(Light.transMat, v4(lightPos, 1.0)).xyz;
     }    
     else if(Light.type == LightDirectional)
     {

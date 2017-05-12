@@ -32,6 +32,14 @@
 
 namespace Falcor
 {
+    bool ComputeStateObject::Desc::operator==(const ComputeStateObject::Desc& other) const
+    {
+        bool b = true;
+        b = b && (mpProgram == other.mpProgram);
+        b = b && (mpRootSignature == other.mpRootSignature);
+        return b;
+    }
+
     ComputeStateObject::~ComputeStateObject()
     {
         gpDevice->releaseResource(mApiHandle);

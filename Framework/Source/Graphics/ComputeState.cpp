@@ -32,26 +32,12 @@
 
 namespace Falcor
 {
-    std::vector<ComputeState*> ComputeState::sObjects;
-
     ComputeState::ComputeState()
     {
-        sObjects.push_back(this);
         mpCsoGraph = StateGraph::create();
     }
 
-    ComputeState::~ComputeState()
-    {
-        // Remove the current object from the program vector
-        for (auto it = sObjects.begin(); it != sObjects.end(); it++)
-        {
-            if (*it == this)
-            {
-                sObjects.erase(it);
-                break;;
-            }
-        }
-    }
+    ComputeState::~ComputeState() = default;
 
     ComputeStateObject::SharedPtr ComputeState::getCSO(const ComputeVars* pVars)
     {
@@ -77,19 +63,23 @@ namespace Falcor
         {
             mDesc.setProgramVersion(pProgVersion);
             mDesc.setRootSignature(pRoot);
-            pCso = ComputeStateObject::create(mDesc);
-            mpCsoGraph->setCurrentNodeData(pCso);
+
+            StateGraph::CompareFunc cmpFunc = [&desc = mDesc](ComputeStateObject::SharedPtr pCso) -> bool
+            {
+                return pCso && (desc == pCso->getDesc());
+            };
+
+            if (mpCsoGraph->scanForMatchingNode(cmpFunc))
+            {
+                pCso = mpCsoGraph->getCurrentNode();
+            }
+            else
+            {
+                pCso = ComputeStateObject::create(mDesc);
+                mpCsoGraph->setCurrentNodeData(pCso);
+            }
         }
 
         return pCso;
-    }
-
-    void ComputeState::beginNewFrame()
-    {
-        for (auto& pState : sObjects)
-        {
-            pState->mpCsoGraph->gotoStart();
-            pState->mCachedData.pProgramVersion = nullptr;
-        }
     }
 }

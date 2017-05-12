@@ -26,6 +26,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 #pragma once
+#include <functional>
 
 namespace Falcor
 {
@@ -35,6 +36,8 @@ namespace Falcor
     public:
         using SharedPtr = std::shared_ptr<Graph>;
         using SharedConstPtr = std::shared_ptr<const Graph>;
+
+        using CompareFunc = std::function<bool(const NodeType& data)>;
 
         static SharedPtr create()
         {
@@ -57,6 +60,7 @@ namespace Falcor
             }
             else
             {
+                // Scan the graph and see if anode w
                 uint32_t newIndex = (uint32_t)mGraph.size();
                 mGraph[mCurrentNode].edges[e] = newIndex;
                 mGraph.push_back(Node());
@@ -74,6 +78,34 @@ namespace Falcor
         {
             mGraph[mCurrentNode].data = data;
         }
+
+        bool scanForMatchingNode(CompareFunc cmpFunc)
+        {
+            for (uint32_t i = 0 ; i < (uint32_t)mGraph.size() ; i++)
+            {
+                if(i != mCurrentNode)
+                {
+                    if (cmpFunc(mGraph[i].data))
+                    {
+                        // Reconnect
+                        for (uint32_t n = 0 ; n < (uint32_t)mGraph.size() ; n++)
+                        {
+                            for (auto& e : mGraph[n].edges)
+                            {
+                                if (e.second == mCurrentNode)
+                                {
+                                    e.second = i;
+                                }
+                            }
+                        }
+                        mCurrentNode = i;
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
     private:
         Graph() : mGraph(1) {}
 

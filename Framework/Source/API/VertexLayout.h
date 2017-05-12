@@ -183,6 +183,8 @@ namespace Falcor
         {
             pProg->removeDefine("HAS_TEXCRD");
             pProg->removeDefine("HAS_COLORS");
+            pProg->removeDefine("HAS_LIGHTMAP_UV");
+
             for (const auto& l : mpBufferLayouts)
             {
                 if(l)

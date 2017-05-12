@@ -89,6 +89,7 @@ void FeatureDemo::initScene(Scene::SharedPtr pScene)
     samplerDesc.setAddressingMode(Sampler::AddressMode::Wrap, Sampler::AddressMode::Wrap, Sampler::AddressMode::Wrap).setFilterMode(Sampler::Filter::Linear, Sampler::Filter::Linear, Sampler::Filter::Linear);
     Sampler::SharedPtr pSampler = Sampler::create(samplerDesc);
     pScene->bindSamplerToMaterials(pSampler);
+    pScene->bindSamplerToModels(pSampler);
 
     mpSceneRenderer = SceneRenderer::create(pScene);
     mpSceneRenderer->setCameraControllerType(SceneRenderer::CameraControllerType::FirstPerson);
@@ -96,6 +97,7 @@ void FeatureDemo::initScene(Scene::SharedPtr pScene)
     initLightingPass();
     initShadowPass();
     initSSAO();
+    mCurrentTime = 0;
 }
 
 void FeatureDemo::loadModel(const std::string& filename)
@@ -251,8 +253,28 @@ void FeatureDemo::onShutdown()
 
 }
 
+void FeatureDemo::applyCameraPathState()
+{
+    const Scene* pScene = mpSceneRenderer->getScene();
+    if (mUseCameraPath)
+    {
+        pScene->getPath(0)->attachObject(pScene->getActiveCamera());
+    }
+    else
+    {
+        pScene->getPath(0)->detachObject(pScene->getActiveCamera());
+    }
+}
+
 bool FeatureDemo::onKeyEvent(const KeyboardEvent& keyEvent)
 {
+    if (mpSceneRenderer && keyEvent.type == KeyboardEvent::Type::KeyPressed && keyEvent.key == KeyboardEvent::Key::Minus)
+    {
+        mUseCameraPath = !mUseCameraPath;
+        applyCameraPathState();
+        return true;
+    }
+
     return mpSceneRenderer ? mpSceneRenderer->onKeyEvent(keyEvent) : false;
 }
 

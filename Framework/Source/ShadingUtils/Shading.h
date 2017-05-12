@@ -735,8 +735,8 @@ void _fn sampleMaterial(
 		// Ideally thp = (\rho / \pi) * |\omega_i . n| / bsdfPdf
 		// By importance sampling the cosine lobe, we can set bsdfPdf = |\omega_i . n| / \pi
 		// Thus, we can simplify thp = \rho
-		result.thp = getDiffuseColor(shAttr).rgb;
-		result.thp = result.diffuseAlbedo;
+        result.thp = getDiffuseColor(shAttr).rgb;
+        result.diffuseAlbedo = result.thp;
 
 		// Probability density function for perfect importance sampling of cosine lobe 
 		result.pdf = M_1_PIf;

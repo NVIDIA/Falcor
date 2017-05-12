@@ -186,7 +186,12 @@ namespace Falcor
         }
 
         // Load the model
-        auto pModel = Model::createFromFile(modelFile.GetString(), mModelLoadFlags);
+        std::string file =  mDirectory + '\\' + modelFile.GetString();
+        if (doesFileExist(file) == false)
+        {
+            file = modelFile.GetString();
+        }
+        auto pModel = Model::createFromFile(file.c_str(), mModelLoadFlags);
         if(pModel == nullptr)
         {
             return false;
@@ -1150,7 +1155,6 @@ namespace Falcor
 
         return true;
     }
-
 
     bool SceneImporter::load(const std::string& filename, Model::LoadFlags modelLoadFlags, Scene::LoadFlags sceneLoadFlags)
     {

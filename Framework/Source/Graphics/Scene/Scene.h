@@ -164,7 +164,7 @@ namespace Falcor
         void setCameraSpeed(float speed) { mCameraSpeed = speed; }
 
         // Camera update
-        bool update(double currentTime, CameraController* cameraController = nullptr);
+        virtual bool update(double currentTime, CameraController* cameraController = nullptr);
 
         // User variables
         uint32_t getVersion() const { return mVersion; }

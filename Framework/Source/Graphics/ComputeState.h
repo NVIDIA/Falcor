@@ -66,7 +66,6 @@ namespace Falcor
         */
         ComputeStateObject::SharedPtr getCSO(const ComputeVars* pVars);
         
-        static void beginNewFrame();
     private:
         ComputeState();
         ComputeProgram::SharedPtr mpProgram;
@@ -79,7 +78,6 @@ namespace Falcor
         };
         CachedData mCachedData;
 
-        static std::vector<ComputeState*> sObjects;
         using StateGraph = Graph<ComputeStateObject::SharedPtr, void*>;
         StateGraph::SharedPtr mpCsoGraph;
     };
