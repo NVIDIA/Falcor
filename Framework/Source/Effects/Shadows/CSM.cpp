@@ -601,8 +601,8 @@ namespace Falcor
 
     void CascadedShadowMaps::setup(RenderContext* pRenderCtx, const Camera* pCamera, Texture::SharedPtr pDepthBuffer)
     {
-        const glm::vec4 clearColor(1);
-        pRenderCtx->clearFbo(mShadowPass.pFbo.get(), clearColor, 1, 0, FboAttachmentType::Depth);
+        const glm::vec4 clearColor(0);
+        pRenderCtx->clearFbo(mShadowPass.pFbo.get(), clearColor, 1, 0, FboAttachmentType::All);
 
         // Calc the bounds
         glm::vec2 distanceRange(0, 0);
