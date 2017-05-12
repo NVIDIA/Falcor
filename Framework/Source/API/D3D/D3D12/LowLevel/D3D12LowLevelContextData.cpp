@@ -1,3 +1,4 @@
+#ifndef FALCOR_VK
 /***************************************************************************
 # Copyright (c) 2015, NVIDIA CORPORATION. All rights reserved.
 #
@@ -120,3 +121,4 @@ namespace Falcor
         mpList->Reset(mpAllocator, nullptr);
     }
 }
+#endif

@@ -1,6 +1,5 @@
-#ifndef FALCOR_VK
 /***************************************************************************
-# Copyright (c) 2015, NVIDIA CORPORATION. All rights reserved.
+# Copyright (c) 2017, NVIDIA CORPORATION. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -29,64 +28,57 @@
 #include "Framework.h"
 #include "API/LowLevel/GpuFence.h"
 #include "API/Device.h"
+#include "API/vulkan/FalcorVK.h"
 
+//TODO: The GPU fence concept seems slightly different on D3D.
+// On Vulkan, we use semaphores. Fences are CPU waits on Vulkan.
+// This class may need some refactoring.
 namespace Falcor
 {
+    static bool createFence()
+    {
+        /*	VkFenceCreateInfo fenceInfo;
+        VkFence drawFence;
+        fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+        fenceInfo.pNext = NULL;
+        fenceInfo.flags = 0;
+        //vkCreateFence(info.device, &fenceInfo, NULL, &drawFence);*/
+        return true;
+    }
+
     GpuFence::~GpuFence()
     {
-        CloseHandle(mEvent);
     }
 
     GpuFence::SharedPtr GpuFence::create()
     {
         SharedPtr pFence = SharedPtr(new GpuFence());
-        pFence->mEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
-        ID3D12Device* pDevice = gpDevice->getApiHandle().GetInterfacePtr();
-
-        HRESULT hr = pDevice->CreateFence(pFence->mCpuValue, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&pFence->mApiHandle));
-        if(FAILED(hr))
-        {
-            d3dTraceHR("Failed to create a fence object", hr);
-            return nullptr;
-        }
+      
+        createFence();
 
         return pFence;
     }
 
     uint64_t GpuFence::gpuSignal(CommandQueueHandle pQueue)
     {
-        mCpuValue++;
-        d3d_call(pQueue->Signal(mApiHandle, mCpuValue));
-        return mCpuValue;
+        return 0;
     }
 
     uint64_t GpuFence::cpuSignal()
     {
-        mCpuValue++;
-        d3d_call(mApiHandle->Signal(mCpuValue));
-        return mCpuValue;
+        return 0;
     }
 
     void GpuFence::syncGpu(CommandQueueHandle pQueue)
     {
-        assert(mCpuValue);
-        d3d_call(pQueue->Wait(mApiHandle, mCpuValue));
     }
 
     void GpuFence::syncCpu()
     {
-        assert(mCpuValue);
-        uint64_t gpuVal = getGpuValue();
-        if (gpuVal < mCpuValue)
-        {
-            d3d_call(mApiHandle->SetEventOnCompletion(mCpuValue, mEvent));
-            WaitForSingleObject(mEvent, INFINITE);
-        }
     }
 
     uint64_t GpuFence::getGpuValue() const
     {
-        return mApiHandle->GetCompletedValue();
+        return 0;
     }
 }
-#endif

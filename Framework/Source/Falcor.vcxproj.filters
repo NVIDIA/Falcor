@@ -480,6 +480,18 @@
     <ClCompile Include="Effects\ParticleSystem\ParticleSystem.cpp">
       <Filter>Effects\ParticleSystem</Filter>
     </ClCompile>
+    <ClCompile Include="API\vulkan\VKDevice.cpp">
+      <Filter>API\Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="API\vulkan\VKRenderContext.cpp">
+      <Filter>API\Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="API\vulkan\VKLowLevelContextData.cpp">
+      <Filter>API\Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="API\vulkan\VKGpuFence.cpp">
+      <Filter>API\Vulkan</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Graphics\Model\Animation.h">
@@ -1582,6 +1594,9 @@
     <ClInclude Include="Data\Effects\ParticleData.h">
       <Filter>Data\Effects\Particles</Filter>
     </ClInclude>
+    <ClInclude Include="API\vulkan\FalcorVK.h">
+      <Filter>API\Vulkan</Filter>
+    </ClInclude>
     <ClInclude Include="Effects\ParticleSystem\ParticleSystem.h">
       <Filter>Effects\ParticleSystem</Filter>
     </ClInclude>
@@ -1739,6 +1754,9 @@
     </Filter>
     <Filter Include="Effects\AmbientOcclusion">
       <UniqueIdentifier>{723ff80c-2107-49c1-8a2b-e01f9d4eb6e9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="API\Vulkan">
+      <UniqueIdentifier>{f191732c-c52a-4867-976e-f96cedcbf908}</UniqueIdentifier>
     </Filter>
     <Filter Include="Data\Effects\Particles">
       <UniqueIdentifier>{113ae44c-7970-429b-ba40-22c457f0003d}</UniqueIdentifier>

@@ -1,4 +1,3 @@
-#ifndef FALCOR_VK
 /***************************************************************************
 # Copyright (c) 2015, NVIDIA CORPORATION. All rights reserved.
 #
@@ -26,67 +25,21 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#include "Framework.h"
-#include "API/LowLevel/GpuFence.h"
-#include "API/Device.h"
+#pragma once
 
-namespace Falcor
+#include <iostream>
+#include <string>
+#include <vector>
+
+//#define VK_USE_PLATFORM_WIN32_KHR
+//#include <vulkan.h>
+
+
+//#define VK_PROTOTYPES
+
+namespace FalcorVK
 {
-    GpuFence::~GpuFence()
-    {
-        CloseHandle(mEvent);
-    }
 
-    GpuFence::SharedPtr GpuFence::create()
-    {
-        SharedPtr pFence = SharedPtr(new GpuFence());
-        pFence->mEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
-        ID3D12Device* pDevice = gpDevice->getApiHandle().GetInterfacePtr();
+	
 
-        HRESULT hr = pDevice->CreateFence(pFence->mCpuValue, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&pFence->mApiHandle));
-        if(FAILED(hr))
-        {
-            d3dTraceHR("Failed to create a fence object", hr);
-            return nullptr;
-        }
-
-        return pFence;
-    }
-
-    uint64_t GpuFence::gpuSignal(CommandQueueHandle pQueue)
-    {
-        mCpuValue++;
-        d3d_call(pQueue->Signal(mApiHandle, mCpuValue));
-        return mCpuValue;
-    }
-
-    uint64_t GpuFence::cpuSignal()
-    {
-        mCpuValue++;
-        d3d_call(mApiHandle->Signal(mCpuValue));
-        return mCpuValue;
-    }
-
-    void GpuFence::syncGpu(CommandQueueHandle pQueue)
-    {
-        assert(mCpuValue);
-        d3d_call(pQueue->Wait(mApiHandle, mCpuValue));
-    }
-
-    void GpuFence::syncCpu()
-    {
-        assert(mCpuValue);
-        uint64_t gpuVal = getGpuValue();
-        if (gpuVal < mCpuValue)
-        {
-            d3d_call(mApiHandle->SetEventOnCompletion(mCpuValue, mEvent));
-            WaitForSingleObject(mEvent, INFINITE);
-        }
-    }
-
-    uint64_t GpuFence::getGpuValue() const
-    {
-        return mApiHandle->GetCompletedValue();
-    }
 }
-#endif

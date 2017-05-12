@@ -1,6 +1,5 @@
-#ifndef FALCOR_VK
 /***************************************************************************
-# Copyright (c) 2015, NVIDIA CORPORATION. All rights reserved.
+# Copyright (c) 2017, NVIDIA CORPORATION. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -31,7 +30,6 @@
 #include "API/LowLevel/DescriptorHeap.h"
 #include "API/Device.h"
 #include "glm/gtc/type_ptr.hpp"
-#include "D3D12Resource.h"
 #include "API/D3D/D3DState.h"
 
 namespace Falcor
@@ -56,7 +54,7 @@ namespace Falcor
     }
     
     void RenderContext::clearFbo(const Fbo* pFbo, const glm::vec4& color, float depth, uint8_t stencil, FboAttachmentType flags)
-	{
+    {
         bool clearDepth = (flags & FboAttachmentType::Depth) != FboAttachmentType::None;
         bool clearColor = (flags & FboAttachmentType::Color) != FboAttachmentType::None;
         bool clearStencil = (flags & FboAttachmentType::Stencil) != FboAttachmentType::None;
@@ -76,7 +74,7 @@ namespace Falcor
         {
             clearDsv(pFbo->getDepthStencilView().get(), depth, stencil, clearDepth, clearStencil);
         }
-	}
+    }
 
     void RenderContext::clearRtv(const RenderTargetView* pRtv, const glm::vec4& color)
     {
@@ -283,4 +281,3 @@ namespace Falcor
     void RenderContext::applyProgramVars() {}
     void RenderContext::applyGraphicsState() {}
 }
-#endif

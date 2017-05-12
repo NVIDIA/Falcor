@@ -1,6 +1,5 @@
-#ifndef FALCOR_VK
 /***************************************************************************
-# Copyright (c) 2015, NVIDIA CORPORATION. All rights reserved.
+# Copyright (c) 2017, NVIDIA CORPORATION. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -27,66 +26,58 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 #include "Framework.h"
-#include "API/LowLevel/GpuFence.h"
+#include "API/LowLevel/LowLevelContextData.h"
 #include "API/Device.h"
+#include "API/vulkan/FalcorVK.h"
+
+// @Kai-Hwa: This is used as a hack for now. There are some build errors I see inside GLM when I define
+// the WIN32 macro.
+#define VK_USE_PLATFORM_WIN32_KHR
+#include <vulkan.h>
 
 namespace Falcor
 {
-    GpuFence::~GpuFence()
+    // TODO: These need to go to a common struct somewhere.
+    static VkCommandPool	 commandPool;
+
+    static bool createCommandPool()
     {
-        CloseHandle(mEvent);
+        VkCommandPoolCreateInfo commandPoolCreateInfo{};
+
+        commandPoolCreateInfo.sType            = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+        commandPoolCreateInfo.flags            = 0;
+        commandPoolCreateInfo.queueFamilyIndex = 0;//dd->queueNodeIndex;
+
+        auto res = vkCreateCommandPool(VK_NULL_HANDLE, &commandPoolCreateInfo, nullptr, &commandPool);
+        return (res == VK_SUCCESS);
     }
 
-    GpuFence::SharedPtr GpuFence::create()
+    LowLevelContextData::SharedPtr LowLevelContextData::create(CommandListType type)
     {
-        SharedPtr pFence = SharedPtr(new GpuFence());
-        pFence->mEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
-        ID3D12Device* pDevice = gpDevice->getApiHandle().GetInterfacePtr();
+        SharedPtr pThis = SharedPtr(new LowLevelContextData);
+        pThis->mpFence = GpuFence::create();
+        
+        //pThis->mpQueue = &pVKData->deviceQueue; // TODO: Actually not even needed. Device has it!
 
-        HRESULT hr = pDevice->CreateFence(pFence->mCpuValue, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&pFence->mApiHandle));
-        if(FAILED(hr))
-        {
-            d3dTraceHR("Failed to create a fence object", hr);
-            return nullptr;
-        }
+        createCommandPool();
 
-        return pFence;
+        // TODO: Check how the allocator maps in Vulkan.
+        // pThis->mpAllocator = pThis->mpAllocatorPool->newObject();
+
+        // TODO: Create a command list
+        // TODO: Is this a command buffer?
+        // if (FAILED(pDevice->CreateCommandList(0, cqDesc.Type, pThis->mpAllocator, nullptr, IID_PPV_ARGS(&pThis->mpList))))
+
+        return pThis;
     }
 
-    uint64_t GpuFence::gpuSignal(CommandQueueHandle pQueue)
+    void LowLevelContextData::reset()
     {
-        mCpuValue++;
-        d3d_call(pQueue->Signal(mApiHandle, mCpuValue));
-        return mCpuValue;
+        return;
     }
 
-    uint64_t GpuFence::cpuSignal()
+    void LowLevelContextData::flush()
     {
-        mCpuValue++;
-        d3d_call(mApiHandle->Signal(mCpuValue));
-        return mCpuValue;
-    }
-
-    void GpuFence::syncGpu(CommandQueueHandle pQueue)
-    {
-        assert(mCpuValue);
-        d3d_call(pQueue->Wait(mApiHandle, mCpuValue));
-    }
-
-    void GpuFence::syncCpu()
-    {
-        assert(mCpuValue);
-        uint64_t gpuVal = getGpuValue();
-        if (gpuVal < mCpuValue)
-        {
-            d3d_call(mApiHandle->SetEventOnCompletion(mCpuValue, mEvent));
-            WaitForSingleObject(mEvent, INFINITE);
-        }
-    }
-
-    uint64_t GpuFence::getGpuValue() const
-    {
-        return mApiHandle->GetCompletedValue();
+        return;
     }
 }
-#endif
