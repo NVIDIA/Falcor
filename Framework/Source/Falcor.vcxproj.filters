@@ -477,6 +477,9 @@
     <ClCompile Include="Utils\PixelZoom.cpp">
       <Filter>Utils</Filter>
     </ClCompile>
+    <ClCompile Include="API\vulkan\VKDevice.cpp">
+      <Filter>API\Vulkan</Filter>
+    </ClCompile>
     <ClCompile Include="Effects\ParticleSystem\ParticleSystem.cpp">
       <Filter>Effects\ParticleSystem</Filter>
     </ClCompile>
@@ -1585,6 +1588,9 @@
     <ClInclude Include="Effects\ParticleSystem\ParticleSystem.h">
       <Filter>Effects\ParticleSystem</Filter>
     </ClInclude>
+    <ClInclude Include="API\vulkan\FalcorVK.h">
+      <Filter>API\Vulkan</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Externals">
@@ -1745,6 +1751,9 @@
     </Filter>
     <Filter Include="Effects\ParticleSystem">
       <UniqueIdentifier>{be06907b-0403-4c3b-a59a-ec74cbfdfb86}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="API\Vulkan">
+      <UniqueIdentifier>{f191732c-c52a-4867-976e-f96cedcbf908}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
