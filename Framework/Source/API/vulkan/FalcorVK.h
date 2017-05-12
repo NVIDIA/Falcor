@@ -26,52 +26,57 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 #pragma once
-
-#include <iostream>
-#include <string>
-#include <vector>
-
-#include <vulkan.h>
+#include <Vulkan/vulkan.h>
 
 #define VK_USE_PLATFORM_WIN32_KHR
 #define VK_PROTOTYPES
 
-// TODO: move to the below namespace!
-// TODO: I don't like the names falcorVKXXX. Try something better.
-struct VKDeviceData
+namespace Falcor
 {
-	VkInstance		 falcorVKInstance;
-	VkPhysicalDevice falcorVKPhysDevice;
-	VkDevice	     falcorVKLogicalDevice;
-	uint32_t		 falcorVKPhysDevCount;
-	uint32_t		 falcorVKQueueFamilyPropsCount;
+    using ApiObjectHandle = void*;
 
-	VkPhysicalDeviceMemoryProperties devMemoryProperties;
-	uint32_t						 graphicsQueueNodeIndex;
-	uint32_t						 presentQueueNodeIndex;
-	VkPhysicalDeviceFeatures		 supportedFeatures;
-	VkQueue							 deviceQueue;
+    using HeapCpuHandle = void*;
+    using HeapGpuHandle = void*;
 
+    class DescriptorHeapEntry;
 
-	std::vector<VkQueueFamilyProperties> falcorVKQueueFamilyProps;
+    using WindowHandle = void*;
+    using DeviceHandle = void*;
+    using CommandListHandle = void*;
+    using CommandQueueHandle = void*;
+    using CommandAllocatorHandle = void*;
+    using FenceHandle = void*;
+    using ResourceHandle = void*;
+    using RtvHandle = void*;
+    using DsvHandle = void*;
+    using SrvHandle = void*;
+    using SamplerHandle = void*;
+    using UavHandle = void*;
+    using GpuAddress = void*;
 
-	//static VkImageView		imageView;
-	//static VkBuffer buffer = VK_NULL_HANDLE;
-	//static VkDeviceMemory imageMemory;
-	//static VkDeviceMemory bufferMemory;
-	//static VkPhysicalDeviceMemoryProperties physicalDeviceMemoryProperties;
-};
+    using PsoHandle = void*;
+    using ComputeStateHandle = void*;
+    using ShaderHandle = void*;
+    using ShaderReflectionHandle = void*;
+    using RootSignatureHandle = void*;
+    using DescriptorHeapHandle = void*;
 
-namespace FalcorVK
-{
-	bool Instance(VKDeviceData *dd);
-	bool PhysicalDevice(VKDeviceData *dd);
-	bool LogicalDevice(VKDeviceData *dd);
-	bool DeviceQueue(VKDeviceData *dd);
+    using VaoHandle = void*;
+    using VertexShaderHandle = void*;
+    using FragmentShaderHandle = void*;
+    using DomainShaderHandle = void*;
+    using HullShaderHandle = void*;
+    using GeometryShaderHandle = void*;
+    using ComputeShaderHandle = void*;
+    using ProgramHandle = void*;
+    using DepthStencilStateHandle = void*;
+    using RasterizerStateHandle = void*;
+    using BlendStateHandle = void*;
 
-
-
-
-	
-
+    static const uint32_t kSwapChainBuffers = 3;
 }
+
+#define DEFAULT_API_MAJOR_VERSION 1
+#define DEFAULT_API_MINOR_VERSION 0
+
+#define VK_FAILED(res) (res != VK_SUCCESS)

@@ -477,10 +477,7 @@
     <ClCompile Include="Utils\PixelZoom.cpp">
       <Filter>Utils</Filter>
     </ClCompile>
-    <ClCompile Include="API\vulkan\VulkanDevice.cpp">
-      <Filter>API\Vulkan</Filter>
-    </ClCompile>
-    <ClCompile Include="API\vulkan\FalcorVK.cpp">
+    <ClCompile Include="API\vulkan\VKDevice.cpp">
       <Filter>API\Vulkan</Filter>
     </ClCompile>
   </ItemGroup>
