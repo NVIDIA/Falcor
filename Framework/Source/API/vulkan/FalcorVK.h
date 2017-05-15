@@ -26,20 +26,62 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 #pragma once
+#define NOMINMAX
+#include "API/Formats.h"
 
-#include <iostream>
-#include <string>
-#include <vector>
+#define VK_USE_PLATFORM_WIN32_KHR
+#define VK_PROTOTYPES
 
-//#define VK_USE_PLATFORM_WIN32_KHR
-//#include <vulkan.h>
+#include <Vulkan/vulkan.h>
 
+#pragma comment(lib, "Lib\vulkan-1.lib")
 
-//#define VK_PROTOTYPES
-
-namespace FalcorVK
+namespace Falcor
 {
+    using ApiObjectHandle = void*;
 
-	
+    using HeapCpuHandle = void*;
+    using HeapGpuHandle = void*;
+    class DescriptorHeapEntry;
 
+    using WindowHandle = HWND;
+    using DeviceHandle = VkDevice;
+    using CommandListHandle = void*;
+    using CommandQueueHandle = void*;
+    using CommandAllocatorHandle = void*;
+    using CommandSignatureHandle = void*;
+    using FenceHandle = void*;
+    using ResourceHandle = void*;
+    using RtvHandle = void*;
+    using DsvHandle = void*;
+    using SrvHandle = void*;
+    using SamplerHandle = void*;
+    using UavHandle = void*;
+    using GpuAddress = void*;
+
+    using PsoHandle = void*;
+    using ComputeStateHandle = void*;
+    using ShaderHandle = void*;
+    using ShaderReflectionHandle = void*;
+    using RootSignatureHandle = void*;
+    using DescriptorHeapHandle = void*;
+
+    using VaoHandle = void*;
+    using VertexShaderHandle = void*;
+    using FragmentShaderHandle = void*;
+    using DomainShaderHandle = void*;
+    using HullShaderHandle = void*;
+    using GeometryShaderHandle = void*;
+    using ComputeShaderHandle = void*;
+    using ProgramHandle = void*;
+    using DepthStencilStateHandle = void*;
+    using RasterizerStateHandle = void*;
+    using BlendStateHandle = void*;
+
+    static const uint32_t kSwapChainBuffers = 3;
 }
+
+#define DEFAULT_API_MAJOR_VERSION 1
+#define DEFAULT_API_MINOR_VERSION 0
+
+#define VK_FAILED(res) (res != VK_SUCCESS)

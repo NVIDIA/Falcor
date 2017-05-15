@@ -30,57 +30,14 @@
 #include "API/Device.h"
 #include "API/LowLevel/DescriptorHeap.h"
 #include "API/LowLevel/GpuFence.h"
-#include "API/vulkan/FalcorVK.h"
-
-
-// @Kai-Hwa: This is used as a hack for now. There are some build errors I see inside GLM when I define
-// the WIN32 macro.
-#define VK_USE_PLATFORM_WIN32_KHR
-#include <vulkan.h>
 
 namespace Falcor
 {
     Device::SharedPtr gpDevice;
 
-    typedef struct _FrameData 
-    {
-        VkImage     image;
-        VkImageView view;
-    } FrameData;
-
-    // TODO: I don't like the names falcorVKXXX. Try something better.
-    struct VKDeviceData
-    {
-        VKDeviceData()
-        {
-            graphicsQueueNodeIndex = UINT32_MAX;
-            presentQueueNodeIndex  = UINT32_MAX;
-        }
-
-        VkInstance                           falcorVKInstance;
-        VkPhysicalDevice                     falcorVKPhysDevice;
-        VkDevice                             falcorVKLogicalDevice;
-        uint32_t                             falcorVKPhysDevCount;
-        uint32_t                             falcorVKQueueFamilyPropsCount;
-
-        VkPhysicalDeviceMemoryProperties     devMemoryProperties;
-        uint32_t                             graphicsQueueNodeIndex;
-        uint32_t                             presentQueueNodeIndex;
-        uint32_t                             queueNodeIndex;
-        VkPhysicalDeviceFeatures             supportedFeatures;
-        VkQueue                              deviceQueue;
-        VkSurfaceKHR                         surface;
-        VkSwapchainKHR                       swapchain;
-        uint32_t                             imageCount;
-
-        std::vector<VkQueueFamilyProperties> falcorVKQueueFamilyProps;
-        std::vector<FrameData>               FrameDatas;
-        std::vector<VkImage>                 swapChainImages;
-    };
-
     struct DeviceData
     {
-        IDXGISwapChain3Ptr pSwapChain = nullptr;
+        VkSwapchainKHR swapchain;
         uint32_t currentBackBufferIndex;
 
         struct ResourceRelease
@@ -89,28 +46,256 @@ namespace Falcor
             ApiObjectHandle pApiObject;
         };
 
+        struct
+        {
+            Fbo::SharedPtr pFbo;
+        } frameData[kSwapChainBuffers];
+
         std::queue<ResourceRelease> deferredReleases;
         uint32_t syncInterval = 0;
         bool isWindowOccluded = false;
         GpuFence::SharedPtr pFrameFence;
+
+        // Vulkan
+        VkInstance          pInstance;
+        VkPhysicalDevice    pPhysicalDevice;
+        VkDevice            pLogicalDevice;
+        VkSurfaceKHR        pSurface;
+        uint32_t            physicalDevCount;
+        uint32_t            queueFamilyPropsCount;
+
+        VkPhysicalDeviceMemoryProperties    devMemoryProperties;
+        uint32_t                            graphicsQueueNodeIndex;
+        uint32_t                            presentQueueNodeIndex;
+        VkPhysicalDeviceFeatures            supportedFeatures;
+
+        std::vector<VkQueueFamilyProperties> falcorVKQueueFamilyProps;
     };
 
-    bool createSwapChain(VKDeviceData *dd, const Window* pWindow)
+    void releaseFboData(DeviceData* pData)
+    {
+        // First, delete all FBOs
+        for (uint32_t i = 0; i < arraysize(pData->frameData); i++)
+        {
+            pData->frameData[i].pFbo->attachColorTarget(nullptr, 0);
+            pData->frameData[i].pFbo->attachDepthStencilTarget(nullptr);
+        }
+
+        // Now execute all deferred releases
+        //decltype(pData->deferredReleases)().swap(pData->deferredReleases);
+    }
+
+    bool Device::updateDefaultFBO(uint32_t width, uint32_t height, ResourceFormat colorFormat, ResourceFormat depthFormat)
+    {
+        DeviceData* pData = (DeviceData*)mpPrivateData;
+
+        for (uint32_t i = 0; i < kSwapChainBuffers; i++)
+        {
+            // Create a texture object
+            auto pColorTex = Texture::SharedPtr(new Texture(width, height, 1, 1, 1, 1, colorFormat, Texture::Type::Texture2D, Texture::BindFlags::RenderTarget));
+            //HRESULT hr = pData->pSwapChain->GetBuffer(i, IID_PPV_ARGS(&pColorTex->mApiHandle));
+            //if (FAILED(hr))
+            //{
+            //	d3dTraceHR("Failed to get back-buffer " + std::to_string(i) + " from the swap-chain", hr);
+            //	return false;
+            //}
+
+            // Create the FBO if it's required
+            if (pData->frameData[i].pFbo == nullptr)
+            {
+                pData->frameData[i].pFbo = Fbo::create();
+            }
+            pData->frameData[i].pFbo->attachColorTarget(pColorTex, 0);
+
+            // Create a depth texture
+            //if (depthFormat != ResourceFormat::Unknown)
+            //{
+            //	auto pDepth = Texture::create2D(width, height, depthFormat, 1, 1, nullptr, Texture::BindFlags::DepthStencil);
+            //	pData->frameData[i].pFbo->attachDepthStencilTarget(pDepth);
+            //}
+
+            //pData->currentBackBufferIndex = pData->pSwapChain->GetCurrentBackBufferIndex();
+        }
+
+        return true;
+    }
+
+    void Device::cleanup()
+    {
+        mpRenderContext->flush(true);
+        // Release all the bound resources. Need to do that before deleting the RenderContext
+        mpRenderContext->setGraphicsState(nullptr);
+        mpRenderContext->setGraphicsVars(nullptr);
+        mpRenderContext->setComputeState(nullptr);
+        mpRenderContext->setComputeVars(nullptr);
+        DeviceData* pData = (DeviceData*)mpPrivateData;
+        //releaseFboData(pData);
+        mpRenderContext.reset();
+        mpResourceAllocator.reset();
+        safe_delete(pData);
+        mpWindow.reset();
+    }
+
+    Device::SharedPtr Device::create(Window::SharedPtr& pWindow, const Device::Desc& desc)
+    {
+        if (gpDevice)
+        {
+            logError("D3D12 backend only supports a single device");
+            return false;
+        }
+        gpDevice = SharedPtr(new Device(pWindow));
+        if (gpDevice->init(desc) == false)
+        {
+            gpDevice = nullptr;
+        }
+        return gpDevice;
+    }
+
+
+    Fbo::SharedPtr Device::getSwapChainFbo() const
+    {
+        DeviceData* pData = (DeviceData*)mpPrivateData;
+        return pData->frameData[pData->currentBackBufferIndex].pFbo;
+    }
+
+    void Device::present()
+    {
+        DeviceData* pData = (DeviceData*)mpPrivateData;
+
+        mpRenderContext->resourceBarrier(pData->frameData[pData->currentBackBufferIndex].pFbo->getColorTexture(0).get(), Resource::State::Present);
+        mpRenderContext->flush();
+        //pData->pSwapChain->Present(pData->syncInterval, 0);
+        //pData->pFrameFence->gpuSignal(mpRenderContext->getLowLevelData()->getCommandQueue().GetInterfacePtr());
+        executeDeferredReleases();
+        mpRenderContext->reset();
+        pData->currentBackBufferIndex = (pData->currentBackBufferIndex + 1) % kSwapChainBuffers;
+        mFrameID++;
+    }
+
+    bool createInstance(DeviceData *pData)
+    {
+        VkInstanceCreateInfo InstanceCreateInfo;
+        InstanceCreateInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
+        InstanceCreateInfo.pNext = NULL;
+        InstanceCreateInfo.pApplicationInfo = NULL;
+        InstanceCreateInfo.enabledExtensionCount = 0;
+        InstanceCreateInfo.ppEnabledExtensionNames = nullptr;
+        InstanceCreateInfo.enabledLayerCount = 0;
+        InstanceCreateInfo.ppEnabledLayerNames = nullptr;
+
+        if (VK_FAILED(vkCreateInstance(&InstanceCreateInfo, nullptr, &pData->pInstance)))
+        {
+            logError("Failed to create Vulkan instance");
+            return false;
+        }
+
+        return true;
+    }
+
+    bool createPhysicalDevice(DeviceData *pData)
+    {
+        // First figure out how many devices are in the system.
+        // By convention, call once to get count, call again to get handles
+        vkEnumeratePhysicalDevices(pData->pInstance, &pData->physicalDevCount, nullptr);
+        vkEnumeratePhysicalDevices(pData->pInstance, &pData->physicalDevCount, &pData->pPhysicalDevice);
+
+        logInfo("Physical devices: " + std::to_string(pData->physicalDevCount));
+
+        vkGetPhysicalDeviceMemoryProperties(pData->pPhysicalDevice, &pData->devMemoryProperties);
+        vkGetPhysicalDeviceQueueFamilyProperties(pData->pPhysicalDevice, &pData->queueFamilyPropsCount, nullptr);
+        pData->falcorVKQueueFamilyProps.resize(pData->queueFamilyPropsCount);
+        vkGetPhysicalDeviceQueueFamilyProperties(pData->pPhysicalDevice, &pData->queueFamilyPropsCount, pData->falcorVKQueueFamilyProps.data());
+
+        // Search for a graphics and a present queue in the array of queue families, try to find one that supports both
+        for (uint32_t i = 0; i < pData->queueFamilyPropsCount; i++)
+        {
+            if ((pData->falcorVKQueueFamilyProps[i].queueFlags & VK_QUEUE_GRAPHICS_BIT) != 0)
+            {
+                if (pData->graphicsQueueNodeIndex == UINT32_MAX)
+                {
+                    pData->graphicsQueueNodeIndex = i;
+                    break;
+                }
+            }
+        }
+        //queueNodeIndex = graphicsQueueNodeIndex;
+
+        return true;
+    }
+
+    bool createLogicalDevice(DeviceData *pData)
+    {
+        VkPhysicalDeviceFeatures requiredFeatures = {};
+        vkGetPhysicalDeviceFeatures(pData->pPhysicalDevice, &pData->supportedFeatures);
+        requiredFeatures.multiDrawIndirect = pData->supportedFeatures.multiDrawIndirect;
+        requiredFeatures.tessellationShader = VK_TRUE;
+        requiredFeatures.geometryShader = VK_TRUE;
+
+        const VkDeviceQueueCreateInfo deviceQueueCreateInfo =
+        {
+            VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
+            nullptr,
+            0,
+            pData->graphicsQueueNodeIndex,
+            1,
+            nullptr
+        };
+
+        const VkDeviceCreateInfo deviceCreateInfo =
+        {
+            VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
+            nullptr,
+            0,
+            1,
+            &deviceQueueCreateInfo,
+            0,
+            nullptr,
+            0,
+            nullptr,
+            &requiredFeatures
+        };
+
+        if (VK_FAILED(vkCreateDevice(pData->pPhysicalDevice, &deviceCreateInfo, nullptr, &pData->pLogicalDevice)))
+        {
+            logError("Could not create Vulkan logical device.");
+            return false;
+        }
+
+        return true;
+    }
+
+    bool createSurface(const Window* pWindow, DeviceData *pData)
+    {
+        VkWin32SurfaceCreateInfoKHR createInfo;
+        createInfo.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
+        createInfo.hwnd = pWindow->getApiHandle();
+        createInfo.hinstance = GetModuleHandle(nullptr);
+
+        if (VK_FAILED(vkCreateWin32SurfaceKHR(pData->pInstance, &createInfo, nullptr, &pData->pSurface)))
+        {
+            logError("Could not create Vulkan surface.");
+            return false;
+        }
+
+        return true;
+    }
+
+    bool createSwapChain(const Window* pWindow, DeviceData *pData)
     {
         VkResult err;
         VkSurfaceCapabilitiesKHR surfCaps;
-        err = vkGetPhysicalDeviceSurfaceCapabilitiesKHR(dd->falcorVKPhysDevice, dd->surface, &surfCaps);
+        err = vkGetPhysicalDeviceSurfaceCapabilitiesKHR(pData->pPhysicalDevice, pData->pSurface, &surfCaps);
 
         uint32_t presentModeCount;
-        err = vkGetPhysicalDeviceSurfacePresentModesKHR(dd->falcorVKPhysDevice, dd->surface, &presentModeCount, NULL);
+        err = vkGetPhysicalDeviceSurfacePresentModesKHR(pData->pPhysicalDevice, pData->pSurface, &presentModeCount, NULL);
 
         std::vector<VkPresentModeKHR> presentModes(presentModeCount);
-        err = vkGetPhysicalDeviceSurfacePresentModesKHR(dd->falcorVKPhysDevice, dd->surface, &presentModeCount, presentModes.data());
+        err = vkGetPhysicalDeviceSurfacePresentModesKHR(pData->pPhysicalDevice, pData->pSurface, &presentModeCount, presentModes.data());
 
         VkExtent2D swapchainExtent = {};
         if (surfCaps.currentExtent.width == -1)
         {
-            swapchainExtent.width  = pWindow->getClientAreaWidth();
+            swapchainExtent.width = pWindow->getClientAreaWidth();
             swapchainExtent.height = pWindow->getClientAreaWidth();
         }
         else
@@ -150,239 +335,114 @@ namespace Falcor
         }
 
         VkSwapchainCreateInfoKHR scCreateInfo;
-        scCreateInfo.sType                 = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-        scCreateInfo.pNext                 = NULL;
-        scCreateInfo.surface               = dd->surface;
-        scCreateInfo.minImageCount         = desiredNumberOfSwapchainImages;
-        scCreateInfo.imageFormat           = VK_FORMAT_B8G8R8A8_UNORM;
-        scCreateInfo.imageColorSpace       = VK_COLORSPACE_SRGB_NONLINEAR_KHR;
-        scCreateInfo.imageExtent           = { swapchainExtent.width, swapchainExtent.height };
-        scCreateInfo.imageUsage            = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-        scCreateInfo.preTransform          = (VkSurfaceTransformFlagBitsKHR)preTransform;
-        scCreateInfo.imageArrayLayers      = 1;
-        scCreateInfo.imageSharingMode      = VK_SHARING_MODE_EXCLUSIVE;
+        scCreateInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
+        scCreateInfo.pNext = NULL;
+        scCreateInfo.surface = pData->pSurface;
+        scCreateInfo.minImageCount = desiredNumberOfSwapchainImages;
+        scCreateInfo.imageFormat = VK_FORMAT_B8G8R8A8_UNORM;
+        scCreateInfo.imageColorSpace = VK_COLORSPACE_SRGB_NONLINEAR_KHR;
+        scCreateInfo.imageExtent = { swapchainExtent.width, swapchainExtent.height };
+        scCreateInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+        scCreateInfo.preTransform = (VkSurfaceTransformFlagBitsKHR)preTransform;
+        scCreateInfo.imageArrayLayers = 1;
+        scCreateInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
         scCreateInfo.queueFamilyIndexCount = 0;
-        scCreateInfo.pQueueFamilyIndices   = NULL;
-        scCreateInfo.presentMode           = presentMode;
-        scCreateInfo.clipped               = true;
-        scCreateInfo.compositeAlpha        = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
-        scCreateInfo.oldSwapchain          = VK_NULL_HANDLE;
-        vkCreateSwapchainKHR(dd->falcorVKLogicalDevice, &scCreateInfo, nullptr, &dd->swapchain);
+        scCreateInfo.pQueueFamilyIndices = NULL;
+        scCreateInfo.presentMode = presentMode;
+        scCreateInfo.clipped = true;
+        scCreateInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
+        scCreateInfo.oldSwapchain = VK_NULL_HANDLE;
 
-        err = vkGetSwapchainImagesKHR(dd->falcorVKLogicalDevice, dd->swapchain, &dd->imageCount, NULL);
-        dd->swapChainImages.resize(dd->imageCount);
-        err = vkGetSwapchainImagesKHR(dd->falcorVKLogicalDevice, dd->swapchain, &dd->imageCount, dd->swapChainImages.data());
 
-        // For each of the Swapchain images, create image views out of them.
-        dd->FrameDatas.resize(dd->imageCount);
-        for (uint32_t i = 0; i < dd->imageCount; i++)
+        if (VK_FAILED(vkCreateSwapchainKHR(pData->pLogicalDevice, &scCreateInfo, nullptr, &pData->swapchain)))
         {
-            VkImageViewCreateInfo colorAttachmentView = {};
-            colorAttachmentView.sType                           = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-            colorAttachmentView.pNext                           = NULL;
-            colorAttachmentView.format                          = VK_FORMAT_B8G8R8A8_UNORM;
-            colorAttachmentView.subresourceRange.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
-            colorAttachmentView.subresourceRange.baseMipLevel   = 0;
-            colorAttachmentView.subresourceRange.levelCount     = 1;
-            colorAttachmentView.subresourceRange.baseArrayLayer = 0;
-            colorAttachmentView.subresourceRange.layerCount     = 1;
-            colorAttachmentView.viewType                        = VK_IMAGE_VIEW_TYPE_2D;
-            colorAttachmentView.flags                           = 0;
-            colorAttachmentView.components = { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A };
-
-            dd->FrameDatas[i].image   = dd->swapChainImages[i];
-            colorAttachmentView.image = dd->FrameDatas[i].image;
-            err = vkCreateImageView(dd->falcorVKLogicalDevice, &colorAttachmentView, nullptr, &dd->FrameDatas[i].view);
-        }
-
-        return err == VK_SUCCESS;
-    }
-
-    bool createInstance(VKDeviceData *devData)
-    {
-        auto err = VK_SUCCESS;
-
-        // Let's have only Win32 for now.
-        std::vector<const char *> extNames;
-        extNames.push_back("VK_KHR_surface");
-        extNames.push_back("VK_KHR_win32_surface");
-
-        VkInstanceCreateInfo InstanceCreateInfo;
-        InstanceCreateInfo.sType                   = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
-        InstanceCreateInfo.pNext                   = NULL;
-        InstanceCreateInfo.pApplicationInfo        = NULL;
-        InstanceCreateInfo.enabledExtensionCount   = static_cast<uint32_t>(extNames.size());
-        InstanceCreateInfo.ppEnabledExtensionNames = extNames.data();
-        InstanceCreateInfo.enabledLayerCount       = 0;
-        InstanceCreateInfo.ppEnabledLayerNames     = nullptr;
-        err = vkCreateInstance(&InstanceCreateInfo, nullptr, &devData->falcorVKInstance);
-
-        return err == VK_SUCCESS;
-    }
-
-    bool createPhysicalDevice(VKDeviceData *dd)
-    {
-        // First figure out how many devices are in the system.
-        uint32_t physicalDeviceCount = 0;
-        vkEnumeratePhysicalDevices(dd->falcorVKInstance, &dd->falcorVKPhysDevCount, nullptr);
-        vkEnumeratePhysicalDevices(dd->falcorVKInstance, &dd->falcorVKPhysDevCount, &dd->falcorVKPhysDevice);
-
-        // TODO: Logger class!
-        std::cout << "Physical devices: " << physicalDeviceCount;
-
-        vkGetPhysicalDeviceMemoryProperties(dd->falcorVKPhysDevice, &dd->devMemoryProperties);
-        vkGetPhysicalDeviceQueueFamilyProperties(dd->falcorVKPhysDevice, &dd->falcorVKQueueFamilyPropsCount, nullptr);
-        dd->falcorVKQueueFamilyProps.resize(dd->falcorVKQueueFamilyPropsCount);
-        vkGetPhysicalDeviceQueueFamilyProperties(dd->falcorVKPhysDevice, &dd->falcorVKQueueFamilyPropsCount, dd->falcorVKQueueFamilyProps.data());
-
-        // Search for a graphics and a present queue in the array of queue families, try to find one that supports both
-        for (uint32_t i = 0; i < dd->falcorVKQueueFamilyPropsCount; i++)
-        {
-            if ((dd->falcorVKQueueFamilyProps[i].queueFlags & VK_QUEUE_GRAPHICS_BIT) != 0)
-            {
-                if (dd->graphicsQueueNodeIndex == UINT32_MAX)
-                {
-                    dd->graphicsQueueNodeIndex = i;
-                    break;
-                }
-            }
-        }
-        
-        return true;
-    }
-
-    bool createLogicalDevice(VKDeviceData *dd)
-    {
-        auto err = VK_SUCCESS;
-
-        VkPhysicalDeviceFeatures requiredFeatures = {};
-        vkGetPhysicalDeviceFeatures(dd->falcorVKPhysDevice, &dd->supportedFeatures);
-        requiredFeatures.multiDrawIndirect  = dd->supportedFeatures.multiDrawIndirect;
-        requiredFeatures.tessellationShader = VK_TRUE;
-        requiredFeatures.geometryShader     = VK_TRUE;
-
-        const VkDeviceQueueCreateInfo deviceQueueCreateInfo =
-        {
-            VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
-            nullptr,
-            0,
-            dd->graphicsQueueNodeIndex,
-            1,
-            nullptr
-        };
-
-        const VkDeviceCreateInfo deviceCreateInfo =
-        {
-            VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
-            nullptr,
-            0,
-            1,
-            &deviceQueueCreateInfo,
-            0,
-            nullptr,
-            0,
-            nullptr,
-            &requiredFeatures
-        };
-
-        err = vkCreateDevice(dd->falcorVKPhysDevice, &deviceCreateInfo, nullptr, &dd->falcorVKLogicalDevice);
-        return true;
-    }
-
-
-    // TODO: This function is too small. Directly calling the VK func now.
-    bool createDeviceQueue(VKDeviceData *dd)
-    {
-        vkGetDeviceQueue(dd->falcorVKLogicalDevice, dd->graphicsQueueNodeIndex, 0, &dd->deviceQueue);
-        return true;
-    }
-
-    bool Device::updateDefaultFBO(uint32_t width, uint32_t height, ResourceFormat colorFormat, ResourceFormat depthFormat)
-    {
-        return true;
-    }
-
-    void Device::cleanup()
-    {
-        mpRenderContext->flush(true);
-        // Release all the bound resources. Need to do that before deleting the RenderContext
-        mpRenderContext->setGraphicsState(nullptr);
-        mpRenderContext->setGraphicsVars(nullptr);
-        mpRenderContext->setComputeState(nullptr);
-        mpRenderContext->setComputeVars(nullptr);
-        DeviceData* pData = (DeviceData*)mpPrivateData;
-        mpRenderContext.reset();
-        mpResourceAllocator.reset();
-        safe_delete(pData);
-        mpWindow.reset();
-    }
-
-    Device::SharedPtr Device::create(Window::SharedPtr& pWindow, const Device::Desc& desc)
-    {        
-        if (gpDevice)
-        {
-            logError("D3D12 backend only supports a single device");
+            logError("Could not create swapchain.");
             return false;
         }
-        gpDevice = SharedPtr(new Device(pWindow));
-        if (gpDevice->init(desc) == false)
-        {
-            gpDevice = nullptr;
-        }
-        return gpDevice;
-    }
 
+        //err = vkGetSwapchainImagesKHR(pData->falcorVKLogicalDevice, pData->swapchain, &pData->imageCount, NULL);
+        //pData->swapChainImages.resize(pData->imageCount);
+        //err = vkGetSwapchainImagesKHR(pData->falcorVKLogicalDevice, pData->swapchain, &pData->imageCount, pData->swapChainImages.data());
 
-    Fbo::SharedPtr Device::getSwapChainFbo() const
-    {
-        return nullptr;
-    }
+        //// For each of the Swapchain images, create image views out of them.
+        //pData->FrameDatas.resize(pData->imageCount);
+        //for (uint32_t i = 0; i < pData->imageCount; i++)
+        //{
+        //    VkImageViewCreateInfo colorAttachmentView = {};
+        //    colorAttachmentView.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+        //    colorAttachmentView.pNext = NULL;
+        //    colorAttachmentView.format = VK_FORMAT_B8G8R8A8_UNORM;
+        //    colorAttachmentView.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        //    colorAttachmentView.subresourceRange.baseMipLevel = 0;
+        //    colorAttachmentView.subresourceRange.levelCount = 1;
+        //    colorAttachmentView.subresourceRange.baseArrayLayer = 0;
+        //    colorAttachmentView.subresourceRange.layerCount = 1;
+        //    colorAttachmentView.viewType = VK_IMAGE_VIEW_TYPE_2D;
+        //    colorAttachmentView.flags = 0;
+        //    colorAttachmentView.components = { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A };
 
-    void Device::present()
-    {
-    }
+        //    pData->FrameDatas[i].image = pData->swapChainImages[i];
+        //    colorAttachmentView.image = pData->FrameDatas[i].image;
+        //    err = vkCreateImageView(pData->falcorVKLogicalDevice, &colorAttachmentView, nullptr, &pData->FrameDatas[i].view);
+        //}
 
-    bool createSurface(const Window* pWindow, VKDeviceData *dd)
-    {
-        VkWin32SurfaceCreateInfoKHR createInfo;
-        createInfo.sType     = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
-        createInfo.hwnd      = pWindow->getApiHandle();
-        createInfo.hinstance = GetModuleHandle(nullptr);
-
-        vkCreateWin32SurfaceKHR(dd->falcorVKInstance, &createInfo, nullptr, &dd->surface);
         return true;
     }
 
     bool Device::init(const Desc& desc)
     {
         DeviceData* pData = new DeviceData;
-        VKDeviceData *pVKData = new VKDeviceData;
-        mpPrivateData = pVKData;
+        mpPrivateData = pData;
 
         if (desc.enableDebugLayer)
         {
             // TODO: add some Vulkan layers here.
         }
+
+        if (createInstance(pData) == false)
+        {
+            return false;
+        }
         
-        bool res = createInstance(pVKData);
-        assert(res);
+        if (createPhysicalDevice(pData) == false)
+        {
+            return false;
+        }
 
-        res = createPhysicalDevice(pVKData);
-        assert(res);
+        if (createLogicalDevice(pData) == false)
+        {
+            return false;
+        }
 
-        res = createLogicalDevice(pVKData);
-        assert(res);
+        if (createSurface(mpWindow.get(), pData) == false)
+        {
+            return false;
+        }
 
-        vkGetDeviceQueue(pVKData->falcorVKLogicalDevice, pVKData->graphicsQueueNodeIndex, 0, &pVKData->deviceQueue);
-        assert(res);
+        mApiHandle = pData->pLogicalDevice;
 
-        res = createSurface(mpWindow.get(), pVKData);
-        assert(res);
+        //// Create the descriptor heaps
+        //mpSrvHeap = DescriptorHeap::create(DescriptorHeap::Type::SRV, 16 * 1024);
+        //mpSamplerHeap = DescriptorHeap::create(DescriptorHeap::Type::Sampler, 2048);
+        //mpRtvHeap = DescriptorHeap::create(DescriptorHeap::Type::RTV, 1024, false);
+        //mpDsvHeap = DescriptorHeap::create(DescriptorHeap::Type::DSV, 1024, false);
+        //mpUavHeap = mpSrvHeap;
+        //mpCpuUavHeap = DescriptorHeap::create(DescriptorHeap::Type::SRV, 2 * 1024, false);
 
-        res = createSwapChain(pVKData, mpWindow.get());
-        assert(res);
-
+        //// Create the swap-chain
         mpRenderContext = RenderContext::create();
+        
+        //mpResourceAllocator = ResourceAllocator::create(1024 * 1024 * 2, mpRenderContext->getLowLevelData()->getFence());
+
+        createSwapChain(mpWindow.get(), pData);
+
+        mVsyncOn = desc.enableVsync;
+
+        //// Update the FBOs
+        //if (updateDefaultFBO(mpWindow->getClientAreaWidth(), mpWindow->getClientAreaHeight(), desc.colorFormat, desc.depthFormat) == false)
+        //{
+        //    return false;
+        //}
 
         //pData->pFrameFence = GpuFence::create();
         return true;
@@ -390,42 +450,66 @@ namespace Falcor
 
     void Device::releaseResource(ApiObjectHandle pResource)
     {
+        if (pResource)
+        {
+            DeviceData* pData = (DeviceData*)mpPrivateData;
+            pData->deferredReleases.push({ pData->pFrameFence->getCpuValue(), pResource });
+        }
     }
 
     void Device::executeDeferredReleases()
     {
+        mpResourceAllocator->executeDeferredReleases();
+        DeviceData* pData = (DeviceData*)mpPrivateData;
+        uint64_t gpuVal = pData->pFrameFence->getGpuValue();
+        while (pData->deferredReleases.size() && pData->deferredReleases.front().frameID < gpuVal)
+        {
+            pData->deferredReleases.pop();
+        }
     }
 
     Fbo::SharedPtr Device::resizeSwapChain(uint32_t width, uint32_t height)
     {
+        //mpRenderContext->flush(true);
+
+        //DeviceData* pData = (DeviceData*)mpPrivateData;
+
+        //// Store the FBO parameters
+        //ResourceFormat colorFormat = pData->frameData[0].pFbo->getColorTexture(0)->getFormat();
+        //const auto& pDepth = pData->frameData[0].pFbo->getDepthStencilTexture();
+        //ResourceFormat depthFormat = pDepth ? pDepth->getFormat() : ResourceFormat::Unknown;
+        //assert(pData->frameData[0].pFbo->getSampleCount() == 1);
+
+        //// Delete all the FBOs
+        //releaseFboData(pData);
+
+        //DXGI_SWAP_CHAIN_DESC desc;
+        //d3d_call(pData->pSwapChain->GetDesc(&desc));
+        //d3d_call(pData->pSwapChain->ResizeBuffers(kSwapChainBuffers, width, height, desc.BufferDesc.Format, desc.Flags));
+        //updateDefaultFBO(width, height, colorFormat, depthFormat);
+
         return getSwapChainFbo();
     }
 
     void Device::setVSync(bool enable)
     {
-
+        DeviceData* pData = (DeviceData*)mpPrivateData;
+        pData->syncInterval = enable ? 1 : 0;
     }
 
     bool Device::isWindowOccluded() const
     {
-
-        return true;
+        //DeviceData* pData = (DeviceData*)mpPrivateData;
+        //if (pData->isWindowOccluded)
+        //{
+        //    pData->isWindowOccluded = (pData->pSwapChain->Present(0, DXGI_PRESENT_TEST) == DXGI_STATUS_OCCLUDED);
+        //}
+        //return pData->isWindowOccluded;
+        return false;
     }
 
     bool Device::isExtensionSupported(const std::string& name)
     {
         return _ENABLE_NVAPI;
-    }
-
-    // TODO: These are stuff that'll be removed for the Vulkan backend. 
-    // They're here for now just to get the code compiled easily.
-    void d3dTraceHR(const std::string& msg, HRESULT hr)
-    {
-
-    }
-
-    D3D_FEATURE_LEVEL getD3DFeatureLevel(uint32_t majorVersion, uint32_t minorVersion)
-    {
-        return (D3D_FEATURE_LEVEL)0;
     }
 }

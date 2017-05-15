@@ -1,4 +1,3 @@
-#ifndef FALCOR_VK
 /***************************************************************************
 # Copyright (c) 2015, NVIDIA CORPORATION. All rights reserved.
 #
@@ -283,4 +282,3 @@ namespace Falcor
     void RenderContext::applyProgramVars() {}
     void RenderContext::applyGraphicsState() {}
 }
-#endif
