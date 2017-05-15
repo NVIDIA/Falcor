@@ -67,13 +67,21 @@ namespace Falcor
         /** Get the included file list
         */
         const unordered_string_set& getIncludeList() const { return mIncludeList; }
+
 #ifdef FALCOR_D3D
         bool init(const std::string& shaderString, std::string& log);
         ShaderReflectionHandle getReflectionInterface() const;
         ID3DBlobPtr getCodeBlob() const;
         virtual ID3DBlobPtr compile(const std::string& source, std::string& errorLog);
         virtual ShaderReflectionHandle createReflection(ID3DBlobPtr pBlob);
+#else
+        bool init(const std::string& shaderString, std::string& log) { return true; }
+        ShaderReflectionHandle getReflectionInterface() const { return ShaderReflectionHandle(); }
+        //ID3DBlobPtr getCodeBlob() const { return ID3DBlobPtr; }
+        //virtual ID3DBlobPtr compile(const std::string& source, std::string& errorLog);
+        //virtual ShaderReflectionHandle createReflection(ID3DBlobPtr pBlob);
 #endif
+
     protected:
         // API handle depends on the shader Type, so it stored be stored as part of the private data
         Shader(ShaderType Type);

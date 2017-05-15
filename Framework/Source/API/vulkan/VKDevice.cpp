@@ -38,7 +38,7 @@ namespace Falcor
 
     struct DeviceData
     {
-        //IDXGISwapChain3Ptr pSwapChain = nullptr;
+        VkSwapchainKHR swapchain;
         uint32_t currentBackBufferIndex;
 
         struct ResourceRelease
@@ -58,11 +58,12 @@ namespace Falcor
         GpuFence::SharedPtr pFrameFence;
 
         // Vulkan
-        VkInstance          falcorVKInstance;
-        VkPhysicalDevice    falcorVKPhysDevice;
-        VkDevice            falcorVKLogicalDevice;
-        uint32_t            falcorVKPhysDevCount;
-        uint32_t            falcorVKQueueFamilyPropsCount;
+        VkInstance          pInstance;
+        VkPhysicalDevice    pPhysicalDevice;
+        VkDevice            pLogicalDevice;
+        VkSurfaceKHR        pSurface;
+        uint32_t            physicalDevCount;
+        uint32_t            queueFamilyPropsCount;
 
         VkPhysicalDeviceMemoryProperties    devMemoryProperties;
         uint32_t                            graphicsQueueNodeIndex;
@@ -185,7 +186,7 @@ namespace Falcor
         InstanceCreateInfo.enabledLayerCount = 0;
         InstanceCreateInfo.ppEnabledLayerNames = nullptr;
 
-        if (VK_FAILED(vkCreateInstance(&InstanceCreateInfo, nullptr, &pData->falcorVKInstance)))
+        if (VK_FAILED(vkCreateInstance(&InstanceCreateInfo, nullptr, &pData->pInstance)))
         {
             logError("Failed to create Vulkan instance");
             return false;
@@ -198,18 +199,18 @@ namespace Falcor
     {
         // First figure out how many devices are in the system.
         // By convention, call once to get count, call again to get handles
-        vkEnumeratePhysicalDevices(pData->falcorVKInstance, &pData->falcorVKPhysDevCount, nullptr);
-        vkEnumeratePhysicalDevices(pData->falcorVKInstance, &pData->falcorVKPhysDevCount, &pData->falcorVKPhysDevice);
+        vkEnumeratePhysicalDevices(pData->pInstance, &pData->physicalDevCount, nullptr);
+        vkEnumeratePhysicalDevices(pData->pInstance, &pData->physicalDevCount, &pData->pPhysicalDevice);
 
-        logInfo("Physical devices: " + std::to_string(pData->falcorVKPhysDevCount));
+        logInfo("Physical devices: " + std::to_string(pData->physicalDevCount));
 
-        vkGetPhysicalDeviceMemoryProperties(pData->falcorVKPhysDevice, &pData->devMemoryProperties);
-        vkGetPhysicalDeviceQueueFamilyProperties(pData->falcorVKPhysDevice, &pData->falcorVKQueueFamilyPropsCount, nullptr);
-        pData->falcorVKQueueFamilyProps.resize(pData->falcorVKQueueFamilyPropsCount);
-        vkGetPhysicalDeviceQueueFamilyProperties(pData->falcorVKPhysDevice, &pData->falcorVKQueueFamilyPropsCount, pData->falcorVKQueueFamilyProps.data());
+        vkGetPhysicalDeviceMemoryProperties(pData->pPhysicalDevice, &pData->devMemoryProperties);
+        vkGetPhysicalDeviceQueueFamilyProperties(pData->pPhysicalDevice, &pData->queueFamilyPropsCount, nullptr);
+        pData->falcorVKQueueFamilyProps.resize(pData->queueFamilyPropsCount);
+        vkGetPhysicalDeviceQueueFamilyProperties(pData->pPhysicalDevice, &pData->queueFamilyPropsCount, pData->falcorVKQueueFamilyProps.data());
 
         // Search for a graphics and a present queue in the array of queue families, try to find one that supports both
-        for (uint32_t i = 0; i < pData->falcorVKQueueFamilyPropsCount; i++)
+        for (uint32_t i = 0; i < pData->queueFamilyPropsCount; i++)
         {
             if ((pData->falcorVKQueueFamilyProps[i].queueFlags & VK_QUEUE_GRAPHICS_BIT) != 0)
             {
@@ -228,7 +229,7 @@ namespace Falcor
     bool createLogicalDevice(DeviceData *pData)
     {
         VkPhysicalDeviceFeatures requiredFeatures = {};
-        vkGetPhysicalDeviceFeatures(pData->falcorVKPhysDevice, &pData->supportedFeatures);
+        vkGetPhysicalDeviceFeatures(pData->pPhysicalDevice, &pData->supportedFeatures);
         requiredFeatures.multiDrawIndirect = pData->supportedFeatures.multiDrawIndirect;
         requiredFeatures.tessellationShader = VK_TRUE;
         requiredFeatures.geometryShader = VK_TRUE;
@@ -257,13 +258,138 @@ namespace Falcor
             &requiredFeatures
         };
 
-        if (VK_FAILED(vkCreateDevice(pData->falcorVKPhysDevice, &deviceCreateInfo, nullptr, &pData->falcorVKLogicalDevice)))
+        if (VK_FAILED(vkCreateDevice(pData->pPhysicalDevice, &deviceCreateInfo, nullptr, &pData->pLogicalDevice)))
         {
             logError("Could not create Vulkan logical device.");
             return false;
         }
 
-        return ;
+        return true;
+    }
+
+    bool createSurface(const Window* pWindow, DeviceData *pData)
+    {
+        VkWin32SurfaceCreateInfoKHR createInfo;
+        createInfo.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
+        createInfo.hwnd = pWindow->getApiHandle();
+        createInfo.hinstance = GetModuleHandle(nullptr);
+
+        if (VK_FAILED(vkCreateWin32SurfaceKHR(pData->pInstance, &createInfo, nullptr, &pData->pSurface)))
+        {
+            logError("Could not create Vulkan surface.");
+            return false;
+        }
+
+        return true;
+    }
+
+    bool createSwapChain(const Window* pWindow, DeviceData *pData)
+    {
+        VkResult err;
+        VkSurfaceCapabilitiesKHR surfCaps;
+        err = vkGetPhysicalDeviceSurfaceCapabilitiesKHR(pData->pPhysicalDevice, pData->pSurface, &surfCaps);
+
+        uint32_t presentModeCount;
+        err = vkGetPhysicalDeviceSurfacePresentModesKHR(pData->pPhysicalDevice, pData->pSurface, &presentModeCount, NULL);
+
+        std::vector<VkPresentModeKHR> presentModes(presentModeCount);
+        err = vkGetPhysicalDeviceSurfacePresentModesKHR(pData->pPhysicalDevice, pData->pSurface, &presentModeCount, presentModes.data());
+
+        VkExtent2D swapchainExtent = {};
+        if (surfCaps.currentExtent.width == -1)
+        {
+            swapchainExtent.width = pWindow->getClientAreaWidth();
+            swapchainExtent.height = pWindow->getClientAreaWidth();
+        }
+        else
+        {
+            swapchainExtent = surfCaps.currentExtent;
+        }
+
+        VkPresentModeKHR presentMode = VK_PRESENT_MODE_FIFO_KHR;
+
+        for (size_t i = 0; i < presentModeCount; i++)
+        {
+            if (presentModes[i] == VK_PRESENT_MODE_MAILBOX_KHR)
+            {
+                presentMode = VK_PRESENT_MODE_MAILBOX_KHR;
+                break;
+            }
+            if ((presentMode != VK_PRESENT_MODE_MAILBOX_KHR) && (presentModes[i] == VK_PRESENT_MODE_IMMEDIATE_KHR))
+            {
+                presentMode = VK_PRESENT_MODE_IMMEDIATE_KHR;
+            }
+        }
+
+        uint32_t desiredNumberOfSwapchainImages = surfCaps.minImageCount + 1;
+        if ((surfCaps.maxImageCount > 0) && (desiredNumberOfSwapchainImages > surfCaps.maxImageCount))
+        {
+            desiredNumberOfSwapchainImages = surfCaps.maxImageCount;
+        }
+
+        VkSurfaceTransformFlagsKHR preTransform;
+        if (surfCaps.supportedTransforms & VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR)
+        {
+            preTransform = VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR;
+        }
+        else
+        {
+            preTransform = surfCaps.currentTransform;
+        }
+
+        VkSwapchainCreateInfoKHR scCreateInfo;
+        scCreateInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
+        scCreateInfo.pNext = NULL;
+        scCreateInfo.surface = pData->pSurface;
+        scCreateInfo.minImageCount = desiredNumberOfSwapchainImages;
+        scCreateInfo.imageFormat = VK_FORMAT_B8G8R8A8_UNORM;
+        scCreateInfo.imageColorSpace = VK_COLORSPACE_SRGB_NONLINEAR_KHR;
+        scCreateInfo.imageExtent = { swapchainExtent.width, swapchainExtent.height };
+        scCreateInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+        scCreateInfo.preTransform = (VkSurfaceTransformFlagBitsKHR)preTransform;
+        scCreateInfo.imageArrayLayers = 1;
+        scCreateInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
+        scCreateInfo.queueFamilyIndexCount = 0;
+        scCreateInfo.pQueueFamilyIndices = NULL;
+        scCreateInfo.presentMode = presentMode;
+        scCreateInfo.clipped = true;
+        scCreateInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
+        scCreateInfo.oldSwapchain = VK_NULL_HANDLE;
+
+
+        if (VK_FAILED(vkCreateSwapchainKHR(pData->pLogicalDevice, &scCreateInfo, nullptr, &pData->swapchain)))
+        {
+            logError("Could not create swapchain.");
+            return false;
+        }
+
+        //err = vkGetSwapchainImagesKHR(pData->falcorVKLogicalDevice, pData->swapchain, &pData->imageCount, NULL);
+        //pData->swapChainImages.resize(pData->imageCount);
+        //err = vkGetSwapchainImagesKHR(pData->falcorVKLogicalDevice, pData->swapchain, &pData->imageCount, pData->swapChainImages.data());
+
+        //// For each of the Swapchain images, create image views out of them.
+        //pData->FrameDatas.resize(pData->imageCount);
+        //for (uint32_t i = 0; i < pData->imageCount; i++)
+        //{
+        //    VkImageViewCreateInfo colorAttachmentView = {};
+        //    colorAttachmentView.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+        //    colorAttachmentView.pNext = NULL;
+        //    colorAttachmentView.format = VK_FORMAT_B8G8R8A8_UNORM;
+        //    colorAttachmentView.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        //    colorAttachmentView.subresourceRange.baseMipLevel = 0;
+        //    colorAttachmentView.subresourceRange.levelCount = 1;
+        //    colorAttachmentView.subresourceRange.baseArrayLayer = 0;
+        //    colorAttachmentView.subresourceRange.layerCount = 1;
+        //    colorAttachmentView.viewType = VK_IMAGE_VIEW_TYPE_2D;
+        //    colorAttachmentView.flags = 0;
+        //    colorAttachmentView.components = { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A };
+
+        //    pData->FrameDatas[i].image = pData->swapChainImages[i];
+        //    colorAttachmentView.image = pData->FrameDatas[i].image;
+        //    err = vkCreateImageView(pData->falcorVKLogicalDevice, &colorAttachmentView, nullptr, &pData->FrameDatas[i].view);
+        //}
+
+        return true;
     }
 
     bool Device::init(const Desc& desc)
@@ -276,21 +402,27 @@ namespace Falcor
             // TODO: add some Vulkan layers here.
         }
 
-        createInstance(pData);
-        createPhysicalDevice(pData);
-        createLogicalDevice(pData);
+        if (createInstance(pData) == false)
+        {
+            return false;
+        }
+        
+        if (createPhysicalDevice(pData) == false)
+        {
+            return false;
+        }
 
+        if (createLogicalDevice(pData) == false)
+        {
+            return false;
+        }
 
-        //// Create the DXGI factory
-        //IDXGIFactory4Ptr pDxgiFactory;
-        //d3d_call(CreateDXGIFactory1(IID_PPV_ARGS(&pDxgiFactory)));
+        if (createSurface(mpWindow.get(), pData) == false)
+        {
+            return false;
+        }
 
-        //// Create the device
-        //mApiHandle = createDevice(pDxgiFactory, getD3DFeatureLevel(desc.apiMajorVersion, desc.apiMinorVersion), desc.createDeviceFunc);
-        //if (mApiHandle == nullptr)
-        //{
-        //    return false;
-        //}
+        mApiHandle = pData->pLogicalDevice;
 
         //// Create the descriptor heaps
         //mpSrvHeap = DescriptorHeap::create(DescriptorHeap::Type::SRV, 16 * 1024);
@@ -301,15 +433,13 @@ namespace Falcor
         //mpCpuUavHeap = DescriptorHeap::create(DescriptorHeap::Type::SRV, 2 * 1024, false);
 
         //// Create the swap-chain
-        //mpRenderContext = RenderContext::create();
+        mpRenderContext = RenderContext::create();
+        
         //mpResourceAllocator = ResourceAllocator::create(1024 * 1024 * 2, mpRenderContext->getLowLevelData()->getFence());
-        //pData->pSwapChain = createSwapChain(pDxgiFactory, mpWindow.get(), mpRenderContext->getLowLevelData()->getCommandQueue(), desc.colorFormat);
-        //if (pData->pSwapChain == nullptr)
-        //{
-        //    return false;
-        //}
 
-        //mVsyncOn = desc.enableVsync;
+        createSwapChain(mpWindow.get(), pData);
+
+        mVsyncOn = desc.enableVsync;
 
         //// Update the FBOs
         //if (updateDefaultFBO(mpWindow->getClientAreaWidth(), mpWindow->getClientAreaHeight(), desc.colorFormat, desc.depthFormat) == false)

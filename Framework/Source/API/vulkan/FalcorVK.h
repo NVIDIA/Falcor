@@ -26,10 +26,13 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 #pragma once
-#include <Vulkan/vulkan.h>
+#define NOMINMAX
+#include "API/Formats.h"
 
 #define VK_USE_PLATFORM_WIN32_KHR
 #define VK_PROTOTYPES
+
+#include <Vulkan/vulkan.h>
 
 #pragma comment(lib, "Lib\vulkan-1.lib")
 
@@ -42,11 +45,12 @@ namespace Falcor
 
     class DescriptorHeapEntry;
 
-    using WindowHandle = void*;
-    using DeviceHandle = void*;
+    using WindowHandle = HWND;
+    using DeviceHandle = VkDevice;
     using CommandListHandle = void*;
     using CommandQueueHandle = void*;
     using CommandAllocatorHandle = void*;
+    using CommandSignatureHandle = void*;
     using FenceHandle = void*;
     using ResourceHandle = void*;
     using RtvHandle = void*;
