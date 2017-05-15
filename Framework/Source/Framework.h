@@ -187,6 +187,8 @@ namespace Falcor
             return "domain";
         case ShaderType::Geometry:
             return "geometry";
+        case ShaderType::Compute:
+            return "compute";
         default:
             should_not_get_here();
             return "";
