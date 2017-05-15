@@ -194,8 +194,6 @@ void StereoRendering::onFrameRender()
     {      
         mpSceneRenderer->update(mCurrentTime);
 
-        setSceneLightsIntoConstantBuffer(mpScene.get(), mpProgramVars->getConstantBuffer(0).get());
-
         switch(mRenderMode)
         {
         case SceneRenderer::RenderMode::Mono:

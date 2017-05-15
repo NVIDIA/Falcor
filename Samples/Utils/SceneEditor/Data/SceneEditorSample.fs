@@ -30,15 +30,6 @@
 #define _COMPILE_DEFAULT_VS
 #include "VertexAttrib.h"
 
-cbuffer PerFrameCB
-{
-#foreach p in _LIGHT_SOURCES
-    LightData $(p);
-#endforeach
-
-    float3 gAmbient;
-};
-
 vec4 main(VS_OUT vOut) : SV_TARGET
 {
     ShadingAttribs shAttr;
@@ -48,13 +39,14 @@ vec4 main(VS_OUT vOut) : SV_TARGET
     result.finalValue = 0;
     float4 finalColor = 0;
 
-#foreach p in _LIGHT_SOURCES
-    evalMaterial(shAttr, $(p), result, $(_valIndex) == 0);
-#endforeach
+    for (uint l = 0; l < gLightsCount; l++)
+    {
+        evalMaterial(shAttr, gLights[l], result, l == 0);
+    }
 
     finalColor = vec4(result.finalValue, 1.f);
 
     // add ambient
-    finalColor.rgb += gAmbient * getDiffuseColor(shAttr).rgb;
+    finalColor.rgb += gAmbientLighting * getDiffuseColor(shAttr).rgb;
     return finalColor;
 }
