@@ -34,7 +34,7 @@
 
 #include <Vulkan/vulkan.h>
 
-#pragma comment(lib, "Lib\vulkan-1.lib")
+#pragma comment(lib, "vulkan-1.lib")
 
 namespace Falcor
 {
@@ -80,9 +80,17 @@ namespace Falcor
     using BlendStateHandle = void*;
 
     static const uint32_t kSwapChainBuffers = 3;
+
+    inline uint32_t getMaxViewportCount()
+    {
+        // #VKTODO we need to get this from querying PhysicalDeviceProperties
+        return 8;
+    }
 }
 
 #define DEFAULT_API_MAJOR_VERSION 1
 #define DEFAULT_API_MINOR_VERSION 0
 
 #define VK_FAILED(res) (res != VK_SUCCESS)
+
+#define VK_DISABLE_UNIMPLEMENTED

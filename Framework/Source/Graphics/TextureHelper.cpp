@@ -35,7 +35,7 @@
 
 #ifdef FALCOR_GL
 static const bool kTopDown = false;
-#elif defined FALCOR_D3D
+#elif defined( FALCOR_D3D ) || defined( FALCOR_VK )
 static const bool kTopDown = true;
 #endif
 

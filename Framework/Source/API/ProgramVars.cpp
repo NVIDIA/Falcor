@@ -628,8 +628,9 @@ namespace Falcor
     template<bool forGraphics>
     void applyProgramVarsCommon(const ProgramVars* pVars, CopyContext* pContext)
     {
-        ID3D12GraphicsCommandList* pList = pContext->getLowLevelData()->getCommandList();
+        CommandListHandle pList = pContext->getLowLevelData()->getCommandList();
 
+#ifndef VK_DISABLE_UNIMPLEMENTED
         if(forGraphics)
         {
             pList->SetGraphicsRootSignature(pVars->getRootSignature()->getApiHandle());
@@ -678,6 +679,7 @@ namespace Falcor
                 pList->SetComputeRootDescriptorTable(rootOffset, pSampler->getApiHandle()->getGpuHandle());
             }
         }
+#endif
     }
 
     void ComputeVars::apply(ComputeContext* pContext) const

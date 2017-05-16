@@ -43,6 +43,8 @@ namespace Falcor
         return Device::isExtensionSupported("GL_NV_viewport_array2");
 #elif defined FALCOR_D3D
         return false;
+#elif defined FALCOR_VK
+        return false;
 #else
 #error Unknown API
 #endif
@@ -57,7 +59,7 @@ namespace Falcor
     Vao::SharedPtr FullScreenPass::spVao;
     uint64_t FullScreenPass::sObjectCount = 0;
 
-#ifdef FALCOR_D3D
+#if defined(FALCOR_D3D) || defined(FALCOR_VK) // #VKTODO I think this is actually correct for Vulkan
 #define INVERT_Y(a) ((a == 1) ? 0 : 1)
 #elif defined FALCOR_GL
 #define INVERT_Y(a) (a)

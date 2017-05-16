@@ -636,12 +636,30 @@
     <ClCompile Include="Utils\Video\VideoEncoder.cpp" />
     <ClCompile Include="Utils\Video\VideoEncoderUI.cpp" />
     <ClCompile Include="Utils\Windows.cpp" />
-    <ClCompile Include="VR\OpenVR\VRController.cpp" />
-    <ClCompile Include="VR\OpenVR\VRDisplay.cpp" />
-    <ClCompile Include="VR\OpenVR\VRPlayArea.cpp" />
-    <ClCompile Include="VR\OpenVR\VRSystem.cpp" />
-    <ClCompile Include="VR\OpenVR\VRTrackerBox.cpp" />
-    <ClCompile Include="VR\VrFbo.cpp" />
+    <ClCompile Include="VR\OpenVR\VRController.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugVK|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseVK|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="VR\OpenVR\VRDisplay.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugVK|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseVK|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="VR\OpenVR\VRPlayArea.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugVK|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseVK|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="VR\OpenVR\VRSystem.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugVK|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseVK|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="VR\OpenVR\VRTrackerBox.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugVK|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseVK|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="VR\VrFbo.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugVK|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseVK|x64'">true</ExcludedFromBuild>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\Externals\dear_imgui\imconfig.h" />
@@ -989,6 +1007,8 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseGL|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugD3D11|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugD3D12|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugVK|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseVK|x64'">true</ExcludedFromBuild>
     </ClInclude>
     <ClInclude Include="Data\Effects\SSAOData.h" />
     <ClInclude Include="Data\HlslGlslCommon.h" />
@@ -1092,12 +1112,30 @@
     <ClInclude Include="Utils\Video\VideoDecoder.h" />
     <ClInclude Include="Utils\Video\VideoEncoder.h" />
     <ClInclude Include="Utils\Video\VideoEncoderUI.h" />
-    <ClInclude Include="VR\OpenVR\VRController.h" />
-    <ClInclude Include="VR\OpenVR\VRDisplay.h" />
-    <ClInclude Include="VR\OpenVR\VRPlayArea.h" />
-    <ClInclude Include="VR\OpenVR\VRSystem.h" />
-    <ClInclude Include="VR\OpenVR\VRTrackerBox.h" />
-    <ClInclude Include="VR\VrFbo.h" />
+    <ClInclude Include="VR\OpenVR\VRController.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugVK|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseVK|x64'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="VR\OpenVR\VRDisplay.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugVK|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseVK|x64'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="VR\OpenVR\VRPlayArea.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugVK|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseVK|x64'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="VR\OpenVR\VRSystem.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugVK|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseVK|x64'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="VR\OpenVR\VRTrackerBox.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugVK|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseVK|x64'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="VR\VrFbo.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugVK|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseVK|x64'">true</ExcludedFromBuild>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\CopyData.bat" />
@@ -1227,7 +1265,10 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseVK|x64'">true</ExcludedFromBuild>
     </None>
     <None Include="Data\Effects\SkyBox.ps.hlsl" />
-    <None Include="Data\Effects\SkyBox.vs.hlsl" />
+    <None Include="Data\Effects\SkyBox.vs.hlsl">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugVK|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseVK|x64'">true</ExcludedFromBuild>
+    </None>
     <None Include="Data\Framework\ParallelReduction.fs" />
     <None Include="Data\Framework\Shaders\FullScreenPass.gs.hlsl" />
     <None Include="Data\Framework\Shaders\FullScreenPass.vs.hlsl" />
@@ -1249,6 +1290,8 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseGL|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugD3D11|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugD3D12|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugVK|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseVK|x64'">true</ExcludedFromBuild>
     </FxCompile>
     <FxCompile Include="Data\Effects\ParticleEmit.cs.hlsl">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseD3D11|x64'">true</ExcludedFromBuild>
@@ -1257,6 +1300,8 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseGL|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugD3D11|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugD3D12|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugVK|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseVK|x64'">true</ExcludedFromBuild>
     </FxCompile>
     <FxCompile Include="Data\Effects\ParticleInterpColor.ps.hlsl">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseD3D11|x64'">true</ExcludedFromBuild>
@@ -1265,6 +1310,8 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseGL|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugD3D11|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugD3D12|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugVK|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseVK|x64'">true</ExcludedFromBuild>
     </FxCompile>
     <FxCompile Include="Data\Effects\ParticleSimulate.cs.hlsl">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseD3D11|x64'">true</ExcludedFromBuild>
@@ -1273,6 +1320,8 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseGL|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugD3D11|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugD3D12|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugVK|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseVK|x64'">true</ExcludedFromBuild>
     </FxCompile>
     <FxCompile Include="Data\Effects\ParticleSort.cs.hlsl">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseD3D11|x64'">true</ExcludedFromBuild>
@@ -1281,6 +1330,8 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseGL|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugD3D11|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugD3D12|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugVK|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseVK|x64'">true</ExcludedFromBuild>
     </FxCompile>
     <FxCompile Include="Data\Effects\ParticleTexture.ps.hlsl">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseD3D11|x64'">true</ExcludedFromBuild>
@@ -1289,6 +1340,8 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseGL|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugD3D11|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugD3D12|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugVK|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseVK|x64'">true</ExcludedFromBuild>
     </FxCompile>
     <FxCompile Include="Data\Effects\ParticleVertex.vs.hlsl">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseD3D11|x64'">true</ExcludedFromBuild>
@@ -1297,6 +1350,8 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseGL|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugD3D11|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugD3D12|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugVK|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseVK|x64'">true</ExcludedFromBuild>
     </FxCompile>
     <FxCompile Include="Data\Effects\ToneMapping.ps.hlsl">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseD3D12|x64'">true</ExcludedFromBuild>
@@ -1305,6 +1360,8 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseGL|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugD3D11|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugD3D12|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugVK|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseVK|x64'">true</ExcludedFromBuild>
     </FxCompile>
     <FxCompile Include="Data\Framework\Shaders\Blit.ps.hlsl">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseD3D11|x64'">true</ExcludedFromBuild>
@@ -1323,6 +1380,8 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseGL|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugD3D11|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugD3D12|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugVK|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseVK|x64'">true</ExcludedFromBuild>
     </FxCompile>
     <FxCompile Include="Data\Framework\Shaders\Blit.vs.hlsl" />
     <FxCompile Include="Data\Framework\Shaders\SceneEditorPS.hlsl">
@@ -1593,7 +1652,9 @@
       <Outputs>needs output to run </Outputs>
     </CustomBuildStep>
     <Lib>
-      <AdditionalDependencies>$(VK_SDK_PATH)</AdditionalDependencies>
+      <AdditionalDependencies>
+      </AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(VK_SDK_PATH)\Lib</AdditionalLibraryDirectories>
     </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseGL|x64'">
@@ -1729,8 +1790,9 @@
       <Outputs>needs output to run </Outputs>
     </CustomBuildStep>
     <Lib>
-      <AdditionalLibraryDirectories>C:\VulkanSDK\1.0.42.2\Lib\vulkan-1.lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>$(VK_SDK_PATH)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(VK_SDK_PATH)\Lib</AdditionalLibraryDirectories>
+      <AdditionalDependencies>
+      </AdditionalDependencies>
     </Lib>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

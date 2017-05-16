@@ -30,11 +30,6 @@
 #include "API/Device.h"
 #include "API/vulkan/FalcorVK.h"
 
-// @Kai-Hwa: This is used as a hack for now. There are some build errors I see inside GLM when I define
-// the WIN32 macro.
-#define VK_USE_PLATFORM_WIN32_KHR
-#include <vulkan.h>
-
 namespace Falcor
 {
     // TODO: These need to go to a common struct somewhere.

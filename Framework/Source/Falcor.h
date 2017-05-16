@@ -128,8 +128,10 @@
 #include "Utils/ProgressBar.h"
 
 // VR
+#ifndef VK_DISABLE_UNIMPLEMENTED
 #include "VR/OpenVR/VRSystem.h"
 #include "VR/VrFbo.h"
+#endif
 
 // Effects
 #include "Effects/NormalMap/LeanMap.h"
