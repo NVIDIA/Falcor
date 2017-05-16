@@ -88,9 +88,12 @@ namespace Falcor
         void init(const std::string& cs, const DefineList& programDefines, bool createdFromFile);
 
         bool link() const;
+        ProgramVersion::SharedPtr preprocessAndCreateProgramVersion(std::string& log) const;
         virtual ProgramVersion::SharedPtr createProgramVersion(std::string& log) const;
 
-        std::string mShaderStrings[kShaderCount]; // Either a filename or a string, depending on the value of mCreatedFromFile
+        std::string mOriginalShaderStrings[kShaderCount]; // Either a filename or a string, depending on the value of mCreatedFromFile
+        mutable std::string mPreprocessedShaderStrings[kShaderCount]; // always strings that have been preprocessed
+        mutable ProgramReflection::SharedPtr mPreprocessedReflector;
 
         DefineList mDefineList;
 
