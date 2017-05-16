@@ -528,8 +528,7 @@
     <ClCompile Include="API\TypedBuffer.cpp" />
     <ClCompile Include="API\VAO.cpp" />
     <ClCompile Include="API\VariablesBuffer.cpp" />
-    <ClCompile Include="API\vulkan\VKBuffer.cpp" />
-    <ClCompile Include="API\vulkan\VKDevice.cpp">
+    <ClCompile Include="API\Vulkan\VKBuffer.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugVK|x64'">false</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseVK|x64'">false</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseD3D11|x64'">true</ExcludedFromBuild>
@@ -537,7 +536,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugD3D11|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugD3D12|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="API\vulkan\VKGpuFence.cpp">
+    <ClCompile Include="API\Vulkan\VKDevice.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugVK|x64'">false</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseVK|x64'">false</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseD3D11|x64'">true</ExcludedFromBuild>
@@ -545,7 +544,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugD3D11|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugD3D12|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="API\vulkan\VKLowLevelContextData.cpp">
+    <ClCompile Include="API\Vulkan\VKGpuFence.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugVK|x64'">false</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseVK|x64'">false</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseD3D11|x64'">true</ExcludedFromBuild>
@@ -553,7 +552,15 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugD3D11|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugD3D12|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="API\vulkan\VKRenderContext.cpp">
+    <ClCompile Include="API\Vulkan\VKLowLevelContextData.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugVK|x64'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseVK|x64'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseD3D11|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseD3D12|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugD3D11|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugD3D12|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="API\Vulkan\VKRenderContext.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugVK|x64'">false</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseVK|x64'">false</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseD3D11|x64'">true</ExcludedFromBuild>
@@ -989,7 +996,7 @@
     <ClInclude Include="API\VAO.h" />
     <ClInclude Include="API\VariablesBuffer.h" />
     <ClInclude Include="API\VertexLayout.h" />
-    <ClInclude Include="API\vulkan\FalcorVK.h">
+    <ClInclude Include="API\Vulkan\FalcorVK.h">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugVK|x64'">false</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseVK|x64'">false</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseD3D11|x64'">true</ExcludedFromBuild>
