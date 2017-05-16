@@ -528,6 +528,7 @@
     <ClCompile Include="API\TypedBuffer.cpp" />
     <ClCompile Include="API\VAO.cpp" />
     <ClCompile Include="API\VariablesBuffer.cpp" />
+    <ClCompile Include="API\vulkan\VKBuffer.cpp" />
     <ClCompile Include="API\vulkan\VKDevice.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugVK|x64'">false</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseVK|x64'">false</ExcludedFromBuild>
