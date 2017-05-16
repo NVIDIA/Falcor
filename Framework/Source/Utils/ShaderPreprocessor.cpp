@@ -901,9 +901,12 @@ namespace Falcor
 #ifdef FALCOR_D3D
         static const std::string api = "FALCOR_HLSL";
         static const std::string extensions;
-#elif defined FALCOR_GL || defined(FALCOR_VK)
+#elif defined FALCOR_GL
         static const std::string api = "FALCOR_GLSL";
         static const std::string extensions("#extension GL_ARB_bindless_texture : enable");
+#elif defined FALCOR_VK // #VKTODO verify correctness
+        static const std::string api = "FALCOR_GLSL";
+        static const std::string extensions;
 #endif
 
         std::string allDefines = "#ifndef " + api + "\n#define " + api + "\n#endif\n" + extensions + "\n";
