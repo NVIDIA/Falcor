@@ -121,7 +121,7 @@ def compareImages(resultObj, testInfo, numScreenshots, slnInfo):
         refScreenshot = testInfo.getReferenceScreenshot(i)
         outFile = testInfo.Name + '_' + str(testInfo.Index) + '_' + str(i) + '_Compare.png'
         command = ['magick', 'compare', '-metric', 'MSE', '-compose', 'Src', '-highlight-color', 'White',
-        '-lowlight-color', 'Black', testScreenshot, refScreenshot, outFile]
+            '-lowlight-color', 'Black', testScreenshot, refScreenshot, outFile]
         p = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
         result = p.communicate()[0]
         spaceIndex = result.find(' ')
@@ -138,18 +138,17 @@ def compareImages(resultObj, testInfo, numScreenshots, slnInfo):
             resultObj.CompareResults.append(-1)
             continue
         resultObj.CompareResults.append(resultVal)
+
+        # Move images to results folder
+        testingUtil.makeDirIfDoesntExist(imagesDir)
+        testingUtil.overwriteMove(testScreenshot, imagesDir)
+        testingUtil.overwriteMove(outFile, imagesDir)
+
         #if the images are sufficiently different, save them in test results
         if resultVal > testingUtil.gDefaultImageCompareMargin:
-            testingUtil.makeDirIfDoesntExist(imagesDir)
-            testingUtil.overwriteMove(testScreenshot, imagesDir)
-            testingUtil.overwriteMove(outFile, imagesDir)
             slnInfo.errorList.append(('For test ' + testInfo.getFullName() + ', screenshot ' +
                 testScreenshot + ' differs from ' + refScreenshot + ' by ' + result +
                 ' average difference per pixel. (Exceeds threshold .01)'))
-        #else just delete them
-        else:
-            os.remove(testScreenshot)
-            os.remove(outFile)
 
 def addSystemTestReferences(testInfo, numScreenshots):
     renameScreenshots(testInfo, numScreenshots)
