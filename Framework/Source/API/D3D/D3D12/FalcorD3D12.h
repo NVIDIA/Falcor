@@ -67,6 +67,8 @@ namespace Falcor
     using CommandSignatureHandle = ID3D12CommandSignaturePtr;
     using FenceHandle = ID3D12FencePtr;
     using ResourceHandle = ID3D12ResourcePtr;
+    using TextureHandle = ID3D12ResourcePtr;
+    using BufferHandle = ID3D12ResourcePtr;
     using RtvHandle = std::shared_ptr<DescriptorHeapEntry>;
     using DsvHandle = std::shared_ptr<DescriptorHeapEntry>;
     using SrvHandle = std::shared_ptr<DescriptorHeapEntry>;

@@ -60,7 +60,7 @@ namespace Falcor
         // Vulkan
         VkInstance          pInstance;
         VkPhysicalDevice    pPhysicalDevice;
-        VkDevice            pLogicalDevice;
+        VkDevice            pDevice;
         VkSurfaceKHR        pSurface;
         uint32_t            physicalDevCount;
         uint32_t            queueFamilyPropsCount;
@@ -135,6 +135,12 @@ namespace Falcor
         //releaseFboData(pData);
         mpRenderContext.reset();
         mpResourceAllocator.reset();
+
+        vkDestroySwapchainKHR(pData->pDevice, pData->swapchain, nullptr);
+        vkDestroySurfaceKHR(pData->pInstance, pData->pSurface, nullptr);
+        vkDestroyDevice(pData->pDevice, nullptr);
+        vkDestroyInstance(pData->pInstance, nullptr);
+
         safe_delete(pData);
         mpWindow.reset();
     }
@@ -258,7 +264,7 @@ namespace Falcor
             &requiredFeatures
         };
 
-        if (VK_FAILED(vkCreateDevice(pData->pPhysicalDevice, &deviceCreateInfo, nullptr, &pData->pLogicalDevice)))
+        if (VK_FAILED(vkCreateDevice(pData->pPhysicalDevice, &deviceCreateInfo, nullptr, &pData->pDevice)))
         {
             logError("Could not create Vulkan logical device.");
             return false;
@@ -357,7 +363,7 @@ namespace Falcor
         scCreateInfo.oldSwapchain = VK_NULL_HANDLE;
 
 
-        if (VK_FAILED(vkCreateSwapchainKHR(pData->pLogicalDevice, &scCreateInfo, nullptr, &pData->swapchain)))
+        if (VK_FAILED(vkCreateSwapchainKHR(pData->pDevice, &scCreateInfo, nullptr, &pData->swapchain)))
         {
             logError("Could not create swapchain.");
             return false;
@@ -422,7 +428,7 @@ namespace Falcor
             return false;
         }
 
-        mApiHandle = pData->pLogicalDevice;
+        mApiHandle = pData->pDevice;
 
         //// Create the descriptor heaps
         //mpSrvHeap = DescriptorHeap::create(DescriptorHeap::Type::SRV, 16 * 1024);

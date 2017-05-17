@@ -498,6 +498,12 @@
     <ClCompile Include="API\vulkan\VKBuffer.cpp">
       <Filter>API\Vulkan</Filter>
     </ClCompile>
+    <ClCompile Include="API\Vulkan\VKTexture.cpp">
+      <Filter>API\Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="API\Vulkan\VKFormats.cpp">
+      <Filter>API\Vulkan</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Graphics\Model\Animation.h">

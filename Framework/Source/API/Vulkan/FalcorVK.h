@@ -38,6 +38,20 @@
 
 namespace Falcor
 {
+    struct VkFormatDesc
+    {
+        ResourceFormat falcorFormat;
+        VkFormat vkFormat;
+    };
+
+    extern const VkFormatDesc kVkFormatDesc[];
+
+    inline VkFormat getVkFormat(ResourceFormat format)
+    {
+        assert(kVkFormatDesc[(uint32_t)format].falcorFormat == format);
+        return kVkFormatDesc[(uint32_t)format].vkFormat;
+    }
+
     using ApiObjectHandle = void*;
 
     using HeapCpuHandle = void*;
@@ -53,6 +67,8 @@ namespace Falcor
     using CommandSignatureHandle = void*;
     using FenceHandle = void*;
     using ResourceHandle = void*;
+    using TextureHandle = VkImage;
+    using BufferHandle = VkBuffer;
     using RtvHandle = void*;
     using DsvHandle = void*;
     using SrvHandle = void*;

@@ -108,10 +108,6 @@ namespace Falcor
         /** Get the resource type
         */
         Type getType() const { return mType; }
-        
-        /** Get the API handle
-        */
-        ApiHandle getApiHandle() const { return mApiHandle; }
 
         /** Get a shader-resource view.
             \param[in] firstArraySlice The first array slice of the view
@@ -165,7 +161,6 @@ namespace Falcor
         Type mType;
         BindFlags mBindFlags;
         mutable State mState = State::Common;
-        ApiHandle mApiHandle;
 
         mutable std::unordered_map<ShaderResourceView::ViewInfo, ShaderResourceView::SharedPtr, ViewInfoHashFunc> mSrvs;
         mutable std::unordered_map<RenderTargetView::ViewInfo, RenderTargetView::SharedPtr, ViewInfoHashFunc> mRtvs;

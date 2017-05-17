@@ -36,6 +36,8 @@ namespace Falcor
     class Buffer : public Resource, public inherit_shared_from_this<Resource, Buffer>
     {
     public:
+        using ApiHandle = BufferHandle;
+
         using SharedPtr = std::shared_ptr<Buffer>;
         using WeakPtr = std::weak_ptr<Buffer>;
         using SharedConstPtr = std::shared_ptr<const Buffer>;
@@ -103,6 +105,10 @@ namespace Falcor
         */
         size_t getSize() const { return mSize; }
 
+        /** Get the API handle
+        */
+        virtual ApiHandle getApiHandle() const { return mApiHandle; }
+
         /** Map the buffer
         */
         void* map(MapType Type) const;
@@ -141,6 +147,8 @@ namespace Falcor
     protected:
         bool init(const void* pInitData);
         Buffer(size_t size, BindFlags bind, CpuAccess update) : Resource(Type::Buffer, bind), mSize(size), mCpuAccess(update){}
+
+        ApiHandle mApiHandle;
         uint64_t mBindlessHandle = 0;
         size_t mSize = 0;
         CpuAccess mCpuAccess;
