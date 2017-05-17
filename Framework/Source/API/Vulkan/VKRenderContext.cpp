@@ -33,6 +33,56 @@
 
 namespace Falcor
 {
+
+    // Helper class to neatly record commands. The commands enclosed within the scope of the object of this class
+    // will be the ones recorded for that particular command buffer.
+    class ScopedCmdBufferRecorder
+    {
+    public:
+        ScopedCmdBufferRecorder(VkDevice dev, VkCommandBuffer cmdBuffer)
+        {
+            assert(cmdBuffer == VK_NULL_HANDLE);
+
+            mCmdBuffer = cmdBuffer;
+
+            static const VkCommandBufferBeginInfo beginInfo =
+            {
+                VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+                nullptr,
+                VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
+                nullptr
+            };
+
+            vkBeginCommandBuffer(cmdBuffer, &beginInfo);
+
+        }
+
+        bool recordViewportCommands()
+        {
+            VkViewport viewport = { 1920.f, 1080.f, 0.f, 1.f };
+            vkCmdSetViewport(mCmdBuffer, 0, 1, &viewport);
+            
+            return true;
+        }
+
+        bool recordScissorCommands()
+        {
+            VkRect2D scissor = { 1920  , 1080  ,   0, 0 };
+            vkCmdSetScissor(mCmdBuffer, 0, 1, &scissor);
+
+            return true;
+        }
+
+        ~ScopedCmdBufferRecorder()
+        {
+            vkEndCommandBuffer(mCmdBuffer);
+        }
+
+    private:
+        VkDevice        mDevice;
+        VkCommandBuffer mCmdBuffer;
+    };
+
     RenderContext::SharedPtr RenderContext::create()
     {
         SharedPtr pCtx = SharedPtr(new RenderContext());
@@ -77,125 +127,33 @@ namespace Falcor
 
     void RenderContext::clearRtv(const RenderTargetView* pRtv, const glm::vec4& color)
     {
-        //resourceBarrier(pRtv->getResource(), Resource::State::RenderTarget);
-        //mpLowLevelData->getCommandList()->ClearRenderTargetView(pRtv->getApiHandle()->getCpuHandle(), glm::value_ptr(color), 0, nullptr);
-        //mCommandsPending = true;
     }
 
     void RenderContext::clearDsv(const DepthStencilView* pDsv, float depth, uint8_t stencil, bool clearDepth, bool clearStencil)
     {
-        //uint32_t flags = clearDepth ? D3D12_CLEAR_FLAG_DEPTH : 0;
-        //flags |= clearStencil ? D3D12_CLEAR_FLAG_STENCIL : 0;
-
-        //resourceBarrier(pDsv->getResource(), Resource::State::DepthStencil);
-        //mpLowLevelData->getCommandList()->ClearDepthStencilView(pDsv->getApiHandle()->getCpuHandle(), D3D12_CLEAR_FLAGS(flags), depth, stencil, 0, nullptr);
-        //mCommandsPending = true;
     }
 
-//    static void D3D12SetVao(CommandListHandle pList, const Vao* pVao)
-//    {
-//        D3D12_VERTEX_BUFFER_VIEW vb[D3D12_IA_VERTEX_INPUT_RESOURCE_SLOT_COUNT] = {};
-//        D3D12_INDEX_BUFFER_VIEW ib = {};
-//
-//        if (pVao)
-//        {
-//            // Get the vertex buffers
-//            for (uint32_t i = 0; i < pVao->getVertexBuffersCount(); i++)
-//            {
-//                const Buffer* pVB = pVao->getVertexBuffer(i).get();
-//                if (pVB)
-//                {
-//                    vb[i].BufferLocation = pVB->getGpuAddress();
-//                    vb[i].SizeInBytes = (uint32_t)pVB->getSize();
-//                    vb[i].StrideInBytes = pVao->getVertexLayout()->getBufferLayout(i)->getStride();
-//                }
-//            }
-//
-//            const Buffer* pIB = pVao->getIndexBuffer().get();
-//            if (pIB)
-//            {
-//                ib.BufferLocation = pIB->getGpuAddress();
-//                ib.SizeInBytes = (uint32_t)pIB->getSize();
-//                ib.Format = getDxgiFormat(pVao->getIndexBufferFormat());
-//            }
-//        }
-//
-//        pList->IASetVertexBuffers(0, arraysize(vb), vb);
-//        pList->IASetIndexBuffer(&ib);
-//    }
-//
-//    static void D3D12SetFbo(RenderContext* pCtx, const Fbo* pFbo)
-//    {
-//        // We are setting the entire RTV array to make sure everything that was previously bound is detached
-//        uint32_t colorTargets = Fbo::getMaxColorTargetCount();
-//        std::vector<DescriptorHeap::CpuHandle> pRTV(colorTargets, RenderTargetView::getNullView()->getApiHandle()->getCpuHandle());
-//        DescriptorHeap::CpuHandle pDSV = DepthStencilView::getNullView()->getApiHandle()->getCpuHandle();
-//
-//        if (pFbo)
-//        {
-//            for (uint32_t i = 0; i < colorTargets; i++)
-//            {
-//                auto& pTexture = pFbo->getColorTexture(i);
-//                if (pTexture)
-//                {
-//                    pRTV[i] = pFbo->getRenderTargetView(i)->getApiHandle()->getCpuHandle();
-//                    pCtx->resourceBarrier(pTexture.get(), Resource::State::RenderTarget);
-//                }
-//            }
-//
-//            auto& pTexture = pFbo->getDepthStencilTexture();
-//            if(pTexture)
-//            {
-//                pDSV = pFbo->getDepthStencilView()->getApiHandle()->getCpuHandle();
-//                if (pTexture)
-//                {
-//                    pCtx->resourceBarrier(pTexture.get(), Resource::State::DepthStencil);
-//                }
-//            }
-//        }
-//
-//        pCtx->getLowLevelData()->getCommandList()->OMSetRenderTargets(colorTargets, pRTV.data(), FALSE, &pDSV);
-//    }
 
     void RenderContext::prepareForDraw()
     {
-//        assert(mpGraphicsState);
-//#if _ENABLE_NVAPI
-//        if(mpGraphicsState->isSinglePassStereoEnabled())
-//        {
-//            NvAPI_Status ret = NvAPI_D3D12_SetSinglePassStereoMode(mpLowLevelData->getCommandList(), 2, 1, false);
-//            assert(ret == NVAPI_OK);
-//    }
-//#else
-//        assert(mpGraphicsState->isSinglePassStereoEnabled() == false);
-//#endif
-//        // Bind the root signature and the root signature data
-//        if (mpGraphicsVars)
-//        {
-//            mpGraphicsVars->apply(const_cast<RenderContext*>(this));
-//        }
-//        else
-//        {
-//            mpLowLevelData->getCommandList()->SetGraphicsRootSignature(RootSignature::getEmpty()->getApiHandle());
-//        }
-//
-//        CommandListHandle pList = mpLowLevelData->getCommandList();
-//        pList->IASetPrimitiveTopology(getD3DPrimitiveTopology(mpGraphicsState->getVao()->getPrimitiveTopology()));
-//        D3D12SetVao(pList, mpGraphicsState->getVao().get());
-//        D3D12SetFbo(this, mpGraphicsState->getFbo().get());
-//        D3D12SetViewports(pList, &mpGraphicsState->getViewport(0));
-//        D3D12SetScissors(pList, &mpGraphicsState->getScissors(0));
-//        pList->SetPipelineState(mpGraphicsState->getGSO(mpGraphicsVars.get())->getApiHandle());
-//        BlendState::SharedPtr blendState = mpGraphicsState->getBlendState();
-//        if (blendState != nullptr)
-//        {
-//            pList->OMSetBlendFactor(glm::value_ptr(blendState->getBlendFactor()));
-//        }
-//
-//        const auto pDsState = mpGraphicsState->getDepthStencilState();
-//        pList->OMSetStencilRef(pDsState == nullptr ? 0 : pDsState->getStencilRef());
-//
-//        mCommandsPending = true;
+        // Record some commands. 
+        // TODO: This step is done at 'init' time and not every frame! This is just for experiment
+        {
+            ScopedCmdBufferRecorder recorder(gpDevice->getApiHandle(), mpLowLevelData->getCommandList());
+            recorder.recordViewportCommands();
+            recorder.recordScissorCommands();
+        }
+
+        // The flow in Vulkan would be something like this:-
+        // * Init:
+        //   - Create render passes, set all necessary static states, etc.
+        //   - Record command buffers
+        // 
+        // * Draw:
+        //   - Acquire the next drawable swapchain image
+        //   - Bind the right command buffer.
+        //   - Submit the command buffer. Store the semaphores that'll be signalled.
+        //   - Present the swapchain to display. 
     }
 
     void RenderContext::drawInstanced(uint32_t vertexCount, uint32_t instanceCount, uint32_t startVertexLocation, uint32_t startInstanceLocation)
@@ -236,23 +194,6 @@ namespace Falcor
 
     void RenderContext::initDrawCommandSignatures()
     {
-        ////Common properties
-        //D3D12_COMMAND_SIGNATURE_DESC sigDesc;
-        //sigDesc.NumArgumentDescs = 1;
-        //sigDesc.NodeMask = 0;
-        //D3D12_INDIRECT_ARGUMENT_DESC argDesc;
-
-        ////Draw 
-        //sigDesc.ByteStride = sizeof(D3D12_DRAW_ARGUMENTS);
-        //argDesc.Type = D3D12_INDIRECT_ARGUMENT_TYPE_DRAW;
-        //sigDesc.pArgumentDescs = &argDesc;
-        //gpDevice->getApiHandle()->CreateCommandSignature(&sigDesc, nullptr, IID_PPV_ARGS(&spDrawCommandSig));
-
-        ////Draw index
-        //sigDesc.ByteStride = sizeof(D3D12_DRAW_INDEXED_ARGUMENTS);
-        //argDesc.Type = D3D12_INDIRECT_ARGUMENT_TYPE_DRAW_INDEXED;
-        //sigDesc.pArgumentDescs = &argDesc;
-        //gpDevice->getApiHandle()->CreateCommandSignature(&sigDesc, nullptr, IID_PPV_ARGS(&spDrawIndexCommandSig));
     }
 
     void RenderContext::applyProgramVars() {}

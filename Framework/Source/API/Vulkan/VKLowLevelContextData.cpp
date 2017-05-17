@@ -27,52 +27,99 @@
 ***************************************************************************/
 #include "Framework.h"
 #include "API/LowLevel/LowLevelContextData.h"
-#include "API/Device.h"
 #include "API/vulkan/FalcorVK.h"
+#include "API/Device.h"
 
 namespace Falcor
 {
-    // TODO: These need to go to a common struct somewhere.
-    static VkCommandPool	 commandPool;
+    extern uint32_t gQueueNodeIndex;
 
-    static bool createCommandPool()
+    static bool createCommandPool(VkDevice device, VkCommandPool *pCommandPool)
     {
         VkCommandPoolCreateInfo commandPoolCreateInfo{};
 
         commandPoolCreateInfo.sType            = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
         commandPoolCreateInfo.flags            = 0;
-        commandPoolCreateInfo.queueFamilyIndex = 0;//dd->queueNodeIndex;
+        commandPoolCreateInfo.queueFamilyIndex = gQueueNodeIndex;
 
-        auto res = vkCreateCommandPool(VK_NULL_HANDLE, &commandPoolCreateInfo, nullptr, &commandPool);
+        auto res = vkCreateCommandPool(device, &commandPoolCreateInfo, nullptr, pCommandPool);
+        assert(res == VK_SUCCESS);
+
         return (res == VK_SUCCESS);
+    }
+
+    static bool createCommandBuffer(VkDevice device, uint32_t pCmdBufferCount, VkCommandBuffer *pCmdBuffer, VkCommandPool commandPool)
+    {
+        VkCommandBufferAllocateInfo cmdBufAllocateInfo = {};
+        cmdBufAllocateInfo.sType              = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+        cmdBufAllocateInfo.commandPool        = commandPool;
+        cmdBufAllocateInfo.level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY; // Allocate only primary now.
+        cmdBufAllocateInfo.commandBufferCount = pCmdBufferCount;
+
+        auto res = vkAllocateCommandBuffers(device, &cmdBufAllocateInfo, pCmdBuffer);
+        assert(res == VK_SUCCESS);
+
+        return res == VK_SUCCESS;
+    }
+
+    static bool getDeviceQueue(VkDevice device, CommandQueueHandle &queue)
+    {
+        vkGetDeviceQueue(device, gQueueNodeIndex, 0, &queue);
+        
+        assert(queue != VK_NULL_HANDLE);
+        return queue != VK_NULL_HANDLE;
     }
 
     LowLevelContextData::SharedPtr LowLevelContextData::create(CommandListType type)
     {
-        SharedPtr pThis = SharedPtr(new LowLevelContextData);
-        pThis->mpFence = GpuFence::create();
-        
-        //pThis->mpQueue = &pVKData->deviceQueue; // TODO: Actually not even needed. Device has it!
+        SharedPtr pThis     = SharedPtr(new LowLevelContextData);
+        pThis->mpFence      = GpuFence::create();
+        DeviceHandle device = gpDevice->getApiHandle();
+            
+        // Get the device queue
+        getDeviceQueue(device, pThis->mpQueue);
 
-        createCommandPool();
+        createCommandPool(device, &pThis->mpAllocator);
+
+        // TODO: Generally, we'd have one per swapchain image. Not sure if that needs to be handled here
+        createCommandBuffer(device, 1, &pThis->mpList, pThis->mpAllocator);
 
         // TODO: Check how the allocator maps in Vulkan.
         // pThis->mpAllocator = pThis->mpAllocatorPool->newObject();
-
-        // TODO: Create a command list
-        // TODO: Is this a command buffer?
-        // if (FAILED(pDevice->CreateCommandList(0, cqDesc.Type, pThis->mpAllocator, nullptr, IID_PPV_ARGS(&pThis->mpList))))
-
+     
         return pThis;
     }
 
     void LowLevelContextData::reset()
     {
+        auto res = vkResetCommandBuffer(mpList, VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT);
+
+        assert(res == VK_SUCCESS);
         return;
     }
 
+    // Submit the recorded command buffers here. 
     void LowLevelContextData::flush()
     {
+        VkSubmitInfo submitInfo =
+        {
+            VK_STRUCTURE_TYPE_SUBMIT_INFO, nullptr,
+            0,
+            nullptr,    // WaitSemaphores
+            nullptr,
+            1,
+            &mpList,
+            0,
+            nullptr     // SignalSemaphores
+        };
+
+        // TODO: The fence has to be reset. This has to be ideally part of the GPUFence class
+        // Add a new interface there? 
+        // vkResetFences(gpDevice->getApiHandle(), 1, &(mpFence->getApiHandle()));
+
+        auto res = vkQueueSubmit(mpQueue, 1, &submitInfo, mpFence->getApiHandle());
+        assert(res == VK_SUCCESS);
+
         return;
     }
 }
