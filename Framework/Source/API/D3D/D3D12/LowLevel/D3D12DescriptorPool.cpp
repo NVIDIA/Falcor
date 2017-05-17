@@ -26,29 +26,52 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 #include "Framework.h"
-#include "D3D12DescriptorHeap.h"
+#include "API/LowLevel/DescriptorHeap.h"
+#include "API/Device.h"
 
 namespace Falcor
 {
-    D3D12DescriptorHeap::D3D12DescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE type, uint32_t descriptorsCount) : mCount(descriptorsCount), mType (type)
+    static D3D12_DESCRIPTOR_HEAP_TYPE getHeapType(DescriptorHeap::Type type)
     {
-		ID3D12DevicePtr pDevice = gpDevice->getApiHandle();
-        mDescriptorSize = pDevice->GetDescriptorHandleIncrementSize(type);
+        switch(type)
+        {
+        case DescriptorHeap::Type::Cbv:
+            return D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+        case DescriptorHeap::Type::Srv:
+            return D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+        case DescriptorHeap::Type::Sampler:
+            return D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER;
+        case DescriptorHeap::Type::Dsv:
+            return D3D12_DESCRIPTOR_HEAP_TYPE_DSV;
+        case DescriptorHeap::Type::Rtv:
+            return D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
+        case DescriptorHeap::Type::Uav:
+            return D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+        default:
+            should_not_get_here();
+            return D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES;
+        }
     }
 
-    D3D12DescriptorHeap::~D3D12DescriptorHeap() = default;
+    DescriptorHeap::DescriptorHeap(Type type, uint32_t descriptorsCount) : mCount(descriptorsCount), mType (type)
+    {
+		ID3D12DevicePtr pDevice = gpDevice->getApiHandle();
+        mDescriptorSize = pDevice->GetDescriptorHandleIncrementSize(getHeapType(type));
+    }
 
-    D3D12DescriptorHeap::SharedPtr D3D12DescriptorHeap::create(Type type, uint32_t descriptorsCount, bool shaderVisible)
+    DescriptorHeap::~DescriptorHeap() = default;
+
+    DescriptorHeap::SharedPtr DescriptorHeap::create(Type type, uint32_t descriptorsCount, bool shaderVisible)
     {
 		ID3D12DevicePtr pDevice = gpDevice->getApiHandle();
 
-        D3D12DescriptorHeap::SharedPtr pHeap = SharedPtr(new D3D12DescriptorHeap(type, descriptorsCount));
+        DescriptorHeap::SharedPtr pHeap = SharedPtr(new DescriptorHeap(type, descriptorsCount));
         D3D12_DESCRIPTOR_HEAP_DESC desc = {};
 
         desc.Flags = shaderVisible ? D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE : D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
         desc.Type = getHeapType(type);
         desc.NumDescriptors = descriptorsCount;
-        if(FAILED(pDevice->CreateD3D12DescriptorHeap(&desc, IID_PPV_ARGS(&pHeap->mApiHandle))))
+        if(FAILED(pDevice->CreateDescriptorHeap(&desc, IID_PPV_ARGS(&pHeap->mApiHandle))))
         {
             logError("Can't create descriptor heap");
             return nullptr;
@@ -66,19 +89,19 @@ namespace Falcor
         return base;
     }
 
-    D3D12DescriptorHeap::CpuHandle D3D12DescriptorHeap::getCpuHandle(uint32_t index) const
+    DescriptorHeap::CpuHandle DescriptorHeap::getCpuHandle(uint32_t index) const
     {
         assert(index < mCurDesc);
         return getHandleCommon(mCpuHeapStart, index, mDescriptorSize);
     }
 
-    D3D12DescriptorHeap::GpuHandle D3D12DescriptorHeap::getGpuHandle(uint32_t index) const
+    DescriptorHeap::GpuHandle DescriptorHeap::getGpuHandle(uint32_t index) const
     {
         assert(index < mCurDesc);
         return getHandleCommon(mGpuHeapStart, index, mDescriptorSize);
     }
 
-    D3D12DescriptorHeapEntry::SharedPtr D3D12DescriptorHeap::allocateEntry()
+    DescriptorHeapEntry::SharedPtr DescriptorHeap::allocateEntry()
     {
         uint32_t entry;
         if (mFreeEntries.empty() == false)
@@ -97,6 +120,6 @@ namespace Falcor
             mCurDesc++;
         }
 
-        return D3D12DescriptorHeapEntry::create(shared_from_this(), entry);
+        return DescriptorHeapEntry::create(shared_from_this(), entry);
     }
 }

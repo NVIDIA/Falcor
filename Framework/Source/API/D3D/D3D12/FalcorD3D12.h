@@ -71,11 +71,11 @@ namespace Falcor
     using CommandSignatureHandle = ID3D12CommandSignaturePtr;
     using FenceHandle = ID3D12FencePtr;
     using ResourceHandle = ID3D12ResourcePtr;
-    using RtvHandle = std::shared_ptr<DescriptorHeapEntry>;
-    using DsvHandle = std::shared_ptr<DescriptorHeapEntry>;
-    using SrvHandle = std::shared_ptr<DescriptorHeapEntry>;
-    using SamplerHandle = std::shared_ptr<DescriptorHeapEntry>;
-    using UavHandle = std::shared_ptr<DescriptorHeapEntry>;
+    using RtvHandle = HeapGpuHandle;
+    using DsvHandle = HeapGpuHandle;
+    using SrvHandle = HeapGpuHandle;
+    using SamplerHandle = HeapGpuHandle;
+    using UavHandle = HeapGpuHandle;
     using GpuAddress = D3D12_GPU_VIRTUAL_ADDRESS;
     
     using PsoHandle = ID3D12PipelineStatePtr;
