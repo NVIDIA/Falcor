@@ -26,20 +26,46 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 #pragma once
-#include "DescriptorHeap.h"
+#include "LowLevel/DescriptorTable.h"
 
 namespace Falcor
 {
-    class DescriptorTable
+    class DescriptorSet
     {
     public:
-        using SharedPtr = std::shared_ptr<DescriptorTable>;
-        using Type = DescriptorHeap::Type;
-        using Desc = DescriptorHeap::Desc;
+        using SharedPtr = std::shared_ptr<DescriptorSet>;
 
-        static SharedPtr create(Type type, uint32_t descCount);
+        struct Desc
+        {
+        public:
+            Desc& setCbvCount(uint32_t cbCount) { mCbCount = cbCount; return *this; }
+            Desc& setSrvCount(uint32_t srvCount) { mSrvCount = srvCount; return *this; }
+            Desc& setUavCount(uint32_t uavCount) { mUavCount = uavCount; return *this; }
+            Desc& setSamplerCount(uint32_t samplerCount) { mSamplerCount = samplerCount; return *this; }
+        private:
+            friend class DescriptorSet;
+            uint32_t mCbCount = 0;
+            uint32_t mSrvCount = 0;
+            uint32_t mUavCount = 0;
+            uint32_t mSamplerCount = 0;
+        };
+
+        static SharedPtr create(const Desc& desc);
+
+        uint32_t getCbCount() const { return mDesc.mCbCount; }
+        uint32_t getSrvCount() const { return mDesc.mSrvCount; }
+        uint32_t getUavCount() const { return mDesc.mUavCount; }
+        uint32_t getSamplerCount() const { return mDesc.mSamplerCount; }
+
+        uint32_t getDescTableCount() const { return (uint32_t)mDescTableVec.size(); }
+        DescriptorTable::SharedPtr getDescriptorTable(uint32_t index) { return mDescTableVec[index]; }
+
     private:
-        DescriptorTable(Type type);
-        Type mType;
+        DescriptorSet(const Desc& desc);
+        void apiInit();
+        Desc mDesc;
+        using DescTableVec = std::vector<DescriptorTable::SharedPtr>;
+
+        DescTableVec mDescTableVec;
     };
 }

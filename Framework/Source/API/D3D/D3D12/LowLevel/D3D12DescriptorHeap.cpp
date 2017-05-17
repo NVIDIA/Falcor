@@ -35,15 +35,17 @@ namespace Falcor
     {
         switch(type)
         {
-        case DescriptorHeap::Type::SRV:
+        case DescriptorHeap::Type::Cbv:
+            return D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+        case DescriptorHeap::Type::Srv:
             return D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
         case DescriptorHeap::Type::Sampler:
             return D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER;
-        case DescriptorHeap::Type::DSV:
+        case DescriptorHeap::Type::Dsv:
             return D3D12_DESCRIPTOR_HEAP_TYPE_DSV;
-        case DescriptorHeap::Type::RTV:
+        case DescriptorHeap::Type::Rtv:
             return D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
-        case DescriptorHeap::Type::UAV:
+        case DescriptorHeap::Type::Uav:
             return D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
         default:
             should_not_get_here();

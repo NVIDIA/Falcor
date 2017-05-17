@@ -269,9 +269,9 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseGL|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="API\DepthStencilState.cpp" />
+    <ClCompile Include="API\DescriptorSet.cpp" />
     <ClCompile Include="API\FBO.cpp" />
     <ClCompile Include="API\Formats.cpp" />
-    <ClCompile Include="API\LowLevel\DescriptorTable.cpp" />
     <ClCompile Include="API\LowLevel\RootSignature.cpp" />
     <ClCompile Include="API\OpenGL\GLBlendState.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseD3D11|x64'">true</ExcludedFromBuild>
@@ -376,6 +376,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugD3D12|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="API\GraphicsStateObject.cpp" />
+    <ClCompile Include="API\ParameterBlock.cpp" />
     <ClCompile Include="API\ProgramReflection.cpp" />
     <ClCompile Include="API\ProgramVars.cpp" />
     <ClCompile Include="API\ProgramVersion.cpp" />
@@ -731,6 +732,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseGL|x64'">true</ExcludedFromBuild>
     </ClInclude>
     <ClInclude Include="API\DepthStencilState.h" />
+    <ClInclude Include="API\DescriptorSet.h" />
     <ClInclude Include="API\Device.h" />
     <ClInclude Include="API\FBO.h" />
     <ClInclude Include="API\Formats.h" />
@@ -755,6 +757,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugD3D12|x64'">true</ExcludedFromBuild>
     </ClInclude>
     <ClInclude Include="API\GraphicsStateObject.h" />
+    <ClInclude Include="API\ParameterBlock.h" />
     <ClInclude Include="API\ProgramReflection.h" />
     <ClInclude Include="API\ProgramVars.h" />
     <ClInclude Include="API\ProgramVersion.h" />

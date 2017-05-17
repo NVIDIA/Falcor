@@ -26,20 +26,16 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 #pragma once
-#include "DescriptorHeap.h"
 
 namespace Falcor
 {
-    class DescriptorTable
+    class ParameterBlock
     {
     public:
-        using SharedPtr = std::shared_ptr<DescriptorTable>;
-        using Type = DescriptorHeap::Type;
-        using Desc = DescriptorHeap::Desc;
+        using SharedPtr = std::shared_ptr<ParameterBlock>;
 
-        static SharedPtr create(Type type, uint32_t descCount);
+        static SharedPtr create();
     private:
-        DescriptorTable(Type type);
-        Type mType;
+        ParameterBlock() = default;
     };
 }

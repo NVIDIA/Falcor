@@ -25,21 +25,10 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#pragma once
-#include "DescriptorHeap.h"
+#include "Framework.h"
+#include "ParameterBlock.h"
 
 namespace Falcor
 {
-    class DescriptorTable
-    {
-    public:
-        using SharedPtr = std::shared_ptr<DescriptorTable>;
-        using Type = DescriptorHeap::Type;
-        using Desc = DescriptorHeap::Desc;
 
-        static SharedPtr create(Type type, uint32_t descCount);
-    private:
-        DescriptorTable(Type type);
-        Type mType;
-    };
 }

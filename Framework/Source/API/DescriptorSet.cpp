@@ -26,12 +26,14 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 #include "Framework.h"
-#include "DescriptorTable.h"
+#include "DescriptorSet.h"
 
 namespace Falcor
 {
-    DescriptorTable::SharedPtr DescriptorTable::create(uint32_t descriptorCount)
+    DescriptorSet::SharedPtr DescriptorSet::create(const Desc& desc)
     {
-        return nullptr;
+        SharedPtr pThis = SharedPtr(new DescriptorSet(desc));
+        pThis->apiInit();
+        return pThis;
     }
 }
