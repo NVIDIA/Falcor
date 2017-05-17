@@ -35,14 +35,36 @@
 // This class may need some refactoring.
 namespace Falcor
 {
-    static bool createFence()
+    struct SyncData
     {
-        /*	VkFenceCreateInfo fenceInfo;
-        VkFence drawFence;
+        SyncData()
+        {
+            semaphore = VK_NULL_HANDLE;
+            fence     = VK_NULL_HANDLE;
+        }
+
+        VkSemaphore semaphore;
+        VkFence     fence;
+    };
+
+    static bool createFence(GpuFence::ApiHandle fence)
+    {
+        VkFenceCreateInfo fenceInfo;
         fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-        fenceInfo.pNext = NULL;
+        fenceInfo.pNext = nullptr;
         fenceInfo.flags = 0;
-        //vkCreateFence(info.device, &fenceInfo, NULL, &drawFence);*/
+        
+        vkCreateFence(gpDevice->getApiHandle(), &fenceInfo, nullptr, &fence);
+        return true;
+    }
+
+    static bool createSemaphore(SyncData &syncData)
+    {
+        VkSemaphoreCreateInfo semCreateInfo = {};
+        semCreateInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+        semCreateInfo.pNext = nullptr;
+
+        vkCreateSemaphore(gpDevice->getApiHandle(), &semCreateInfo, nullptr, &syncData.semaphore);
         return true;
     }
 
@@ -54,7 +76,7 @@ namespace Falcor
     {
         SharedPtr pFence = SharedPtr(new GpuFence());
       
-        createFence();
+        createFence(pFence->getApiHandle());
 
         return pFence;
     }
@@ -69,8 +91,11 @@ namespace Falcor
         return 0;
     }
 
+    // Wait for GPU to complete
     void GpuFence::syncGpu(CommandQueueHandle pQueue)
     {
+        auto res = vkWaitForFences(gpDevice->getApiHandle(), 1, &mApiHandle, VK_TRUE, UINT64_MAX);
+        assert(res == VK_SUCCESS);
     }
 
     void GpuFence::syncCpu()

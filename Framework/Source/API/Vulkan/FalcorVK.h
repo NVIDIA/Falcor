@@ -61,12 +61,12 @@ namespace Falcor
 
     using WindowHandle = HWND;
     using DeviceHandle = VkDevice;
-    using CommandListHandle = void*;
-    using CommandQueueHandle = void*;
-    using CommandAllocatorHandle = void*;
+    using CommandListHandle = VkCommandBuffer;
+    using CommandQueueHandle = VkQueue;
+    using CommandAllocatorHandle = VkCommandPool;
     using CommandSignatureHandle = void*;
-    using FenceHandle = void*;
-    using ResourceHandle = void*;
+    using FenceHandle = VkFence; // #VKTODO Check if we really need a fence or a semaphore!
+    using ResourceHandle = VkBuffer;
     using TextureHandle = VkImage;
     using BufferHandle = VkBuffer;
     using RtvHandle = void*;

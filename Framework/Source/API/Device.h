@@ -151,5 +151,6 @@ namespace Falcor
         size_t mFrameID = 0;
 	};
 
-    extern Device::SharedPtr gpDevice;
+    extern Device::SharedPtr  gpDevice;
+    extern uint32_t           gQueueNodeIndex;
 }

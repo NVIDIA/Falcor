@@ -35,6 +35,7 @@
 namespace Falcor
 {
     Device::SharedPtr gpDevice;
+    uint32_t          gQueueNodeIndex;
 
     struct DeviceData
     {
@@ -227,7 +228,7 @@ namespace Falcor
                 }
             }
         }
-        //queueNodeIndex = graphicsQueueNodeIndex;
+        gQueueNodeIndex = pData->graphicsQueueNodeIndex;
 
         return true;
     }

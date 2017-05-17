@@ -33,16 +33,12 @@
 
 namespace Falcor
 {
-    // TODO: 
+    // #VKTODO
     // These classes need access to the DeviceData struct from VKDevice.cpp
     // D3D seems to do it differently. The below is just temporary. The actual code
-    // will be to replace this with the pLogicalDevice from DeviceData and other
-    // meaningful variables.
-    VkDevice      dev;
-    VkBuffer      buf;
+    // will be to replace this with the right variables.
     VkFlags       memProps;
     VkSharingMode sMode;
-
 
     struct BufferData
     {
@@ -57,7 +53,7 @@ namespace Falcor
         {
             if ((type & 1) == 1)
             {
-                // TODO: This has to be again obtained from the deviceData
+                // #VKTODO This has to be again obtained from the deviceData
                 // if (physicalDeviceMemoryProperties.memoryTypes[i].propertyFlags & memoryProperties)
                 {
                     return i;
@@ -102,7 +98,7 @@ namespace Falcor
             nullptr
         };
 
-        vkCreateBuffer(dev, &bufferCreateInfo, nullptr, &buffer);
+        vkCreateBuffer(gpDevice->getApiHandle(), &bufferCreateInfo, nullptr, &buffer);
         assert(buffer != VK_NULL_HANDLE);
 
         // The allocation of memory is not handled here. Commenting out for now.
@@ -116,7 +112,8 @@ namespace Falcor
         //assert(result == VK_SUCCESS);
         //result = vkBindBufferMemory(vkTutDevice, buffer, bufferMemory, 0);
 
-        return buffer != VK_NULL_HANDLE;
+        assert(buffer != VK_NULL_HANDLE);
+        return (buffer != VK_NULL_HANDLE);
     }
 
     Buffer::~Buffer()
@@ -148,12 +145,12 @@ namespace Falcor
         else if (mCpuAccess == CpuAccess::Read && mBindFlags == BindFlags::None)
         {
             mState = Resource::State::CopyDest;
-            //mApiHandle = createBuffer(buf, mState, mSize, memProps, mBindFlags, sMode);
+            createBuffer(mApiHandle, mState, mSize, memProps, mBindFlags, sMode);
         }
         else
         {
             mState = Resource::State::Common;
-            //mApiHandle = createBuffer(buf, mState, mSize, memProps, mBindFlags, sMode);
+            createBuffer(mApiHandle, mState, mSize, memProps, mBindFlags, sMode);
         }
     
         return true;
@@ -182,10 +179,10 @@ namespace Falcor
         void*       pData = nullptr;
         const unsigned int offset = 0;
 
-        auto res = vkMapMemory(dev, pApiData->bufferMemory, offset, VK_WHOLE_SIZE, 0/*flags*/, &pData);
+        auto res = vkMapMemory(gpDevice->getApiHandle(), pApiData->bufferMemory, offset, VK_WHOLE_SIZE, 0/*flags*/, &pData);
         assert(res == VK_SUCCESS);
 
-        // TODO: These can be used when the flags get updated. For now, the mapping is the same.
+        // #VKTODO These can be used when the flags get updated. For now, the mapping is the same.
         if (type == MapType::WriteDiscard)
         {
         }
@@ -207,7 +204,7 @@ namespace Falcor
         // Only unmap read buffers
         BufferData* pApiData = (BufferData*)mpApiData;
         
-        vkUnmapMemory(dev, pApiData->bufferMemory);
+        vkUnmapMemory(gpDevice->getApiHandle(), pApiData->bufferMemory);
     }
 
     uint64_t Buffer::makeResident(Buffer::GpuAccessFlags flags) const
