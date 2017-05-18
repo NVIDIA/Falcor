@@ -179,6 +179,30 @@ namespace Falcor
         spAddBuiltins(getSpireSession(), name, text);
     }
 
+    static const char* getSpireTargetString(ShaderType type)
+    {
+        // TODO: either pick these based on target API,
+        // or invent some API-neutral target names
+        switch (type)
+        {
+        case ShaderType::Vertex:
+            return "vs_5_0";
+        case ShaderType::Pixel:
+            return "ps_5_0";
+        case ShaderType::Hull:
+            return "hs_5_0";
+        case ShaderType::Domain:
+            return "ds_5_0";
+        case ShaderType::Geometry:
+            return "gs_5_0";
+        case ShaderType::Compute:
+            return "cs_5_0";
+        default:
+            should_not_get_here();
+            return "";
+        }
+    }
+
     ProgramVersion::SharedPtr Program::preprocessAndCreateProgramVersion(std::string& log) const
     {
         mFileTimeMap.clear();
@@ -253,6 +277,12 @@ namespace Falcor
             {
                 spAddTranslationUnitSourceString(spireRequest, translationUnitIndex, "", mOriginalShaderStrings[i].c_str());
             }
+
+            spAddTranslationUnitEntryPoint(
+                spireRequest,
+                translationUnitIndex,
+                "main", // TODO: allow customization of entry point name?
+                spFindProfile(spireSession, getSpireTargetString(ShaderType(i))));
         }
 
         int anySpireErrors = spCompile(spireRequest);
