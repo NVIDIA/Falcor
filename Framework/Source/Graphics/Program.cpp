@@ -166,7 +166,18 @@ namespace Falcor
         return mpActiveProgram;
     }
 
-#define FALCOR_USE_SINGLE_SPIRE_SESSION 1
+    SpireSession* getSpireSession()
+    {
+        // TODO: figure out a strategy for finalizing the Spire session, if desired
+
+        static SpireSession* spireSession = spCreateSession(NULL);
+        return spireSession;
+    }
+
+    void loadSpireBuiltins(char const* name, char const* text)
+    {
+        spAddBuiltins(getSpireSession(), name, text);
+    }
 
     ProgramVersion::SharedPtr Program::preprocessAndCreateProgramVersion(std::string& log) const
     {
@@ -178,11 +189,7 @@ namespace Falcor
         // Note that we provide all the shaders at once, so that automatically
         // generated bindings can be made consistent across the stages.
 
-        // Create an instance of the Spire library to interact with
-#if FALCOR_USE_SINGLE_SPIRE_SESSION
-        static
-#endif
-        SpireSession* spireSession = spCreateSession(NULL);
+        SpireSession* spireSession = getSpireSession();
 
         // Start building a request for compilation
         SpireCompileRequest* spireRequest = spCreateCompileRequest(spireSession);
@@ -282,10 +289,6 @@ namespace Falcor
         }
 
         spDestroyCompileRequest(spireRequest);
-
-#if !FALCOR_USE_SINGLE_SPIRE_SESSION
-        spDestroySession(spireSession);
-#endif
 
         // Now that we've preprocessed things, dispatch to the actual program creation logic,
         // which may vary in subclasses of `Program`
