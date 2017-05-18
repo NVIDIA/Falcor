@@ -101,17 +101,16 @@ namespace Falcor
     // Submit the recorded command buffers here. 
     void LowLevelContextData::flush()
     {
-        VkSubmitInfo submitInfo =
-        {
-            VK_STRUCTURE_TYPE_SUBMIT_INFO, nullptr,
-            0,
-            nullptr,    // WaitSemaphores
-            nullptr,
-            1,
-            &mpList,
-            0,
-            nullptr     // SignalSemaphores
-        };
+        VkSubmitInfo submitInfo = {};
+
+        submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+        submitInfo.waitSemaphoreCount = 0;
+        submitInfo.pWaitSemaphores = nullptr;
+        submitInfo.pWaitDstStageMask = nullptr;
+        submitInfo.commandBufferCount = 1;
+        submitInfo.pCommandBuffers = &mpList;
+        submitInfo.signalSemaphoreCount = 0;
+        submitInfo.pSignalSemaphores = nullptr;
 
         // #VKTODO The fence has to be reset. This has to be ideally part of the GPUFence class
         // Add a new interface there? 

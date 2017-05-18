@@ -86,19 +86,18 @@ namespace Falcor
 
     bool createBuffer(VkBuffer& buffer, Buffer::State initState, size_t size, VkFlags memoryProperties, Buffer::BindFlags bindFlags, VkSharingMode sharingMode)
     {
-        static const VkBufferCreateInfo bufferCreateInfo =
-        {
-            VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
-            nullptr,
-            0,
-            size,
-            getBufferUSageFlag(bindFlags),
-            sharingMode,
-            0,
-            nullptr
-        };
+        VkBufferCreateInfo bufferInfo = {};
 
-        vkCreateBuffer(gpDevice->getApiHandle(), &bufferCreateInfo, nullptr, &buffer);
+        bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+        bufferInfo.flags = 0;
+        bufferInfo.size = size;
+        bufferInfo.usage = getBufferUSageFlag(bindFlags);
+        bufferInfo.sharingMode = sharingMode;
+        bufferInfo.queueFamilyIndexCount = 0;
+        bufferInfo.pQueueFamilyIndices = nullptr;
+        
+
+        vkCreateBuffer(gpDevice->getApiHandle(), &bufferInfo, nullptr, &buffer);
         assert(buffer != VK_NULL_HANDLE);
 
         // The allocation of memory is not handled here. Commenting out for now.

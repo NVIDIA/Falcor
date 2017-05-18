@@ -184,9 +184,8 @@ namespace Falcor
 
     bool createInstance(DeviceData *pData)
     {
-        VkInstanceCreateInfo InstanceCreateInfo;
+        VkInstanceCreateInfo InstanceCreateInfo = {};
         InstanceCreateInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
-        InstanceCreateInfo.pNext = NULL;
         InstanceCreateInfo.pApplicationInfo = NULL;
         InstanceCreateInfo.enabledExtensionCount = 0;
         InstanceCreateInfo.ppEnabledExtensionNames = nullptr;
@@ -241,31 +240,25 @@ namespace Falcor
         requiredFeatures.tessellationShader = VK_TRUE;
         requiredFeatures.geometryShader = VK_TRUE;
 
-        const VkDeviceQueueCreateInfo deviceQueueCreateInfo =
-        {
-            VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
-            nullptr,
-            0,
-            pData->graphicsQueueNodeIndex,
-            1,
-            nullptr
-        };
+        VkDeviceQueueCreateInfo queueInfo = {};
+        queueInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+        queueInfo.flags = 0;
+        queueInfo.queueFamilyIndex = pData->graphicsQueueNodeIndex;
+        queueInfo.queueCount = 1;
+        queueInfo.pQueuePriorities = nullptr;
 
-        const VkDeviceCreateInfo deviceCreateInfo =
-        {
-            VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
-            nullptr,
-            0,
-            1,
-            &deviceQueueCreateInfo,
-            0,
-            nullptr,
-            0,
-            nullptr,
-            &requiredFeatures
-        };
+        VkDeviceCreateInfo deviceInfo = {};
+        deviceInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+        deviceInfo.flags = 0;
+        deviceInfo.queueCreateInfoCount = 1;
+        deviceInfo.pQueueCreateInfos = &queueInfo;
+        deviceInfo.enabledLayerCount = 0;
+        deviceInfo.ppEnabledLayerNames = nullptr;
+        deviceInfo.enabledExtensionCount = 0;
+        deviceInfo.ppEnabledExtensionNames = nullptr;
+        deviceInfo.pEnabledFeatures = &requiredFeatures;
 
-        if (VK_FAILED(vkCreateDevice(pData->pPhysicalDevice, &deviceCreateInfo, nullptr, &pData->pDevice)))
+        if (VK_FAILED(vkCreateDevice(pData->pPhysicalDevice, &deviceInfo, nullptr, &pData->pDevice)))
         {
             logError("Could not create Vulkan logical device.");
             return false;
@@ -344,9 +337,8 @@ namespace Falcor
             preTransform = surfCaps.currentTransform;
         }
 
-        VkSwapchainCreateInfoKHR scCreateInfo;
+        VkSwapchainCreateInfoKHR scCreateInfo = {};
         scCreateInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-        scCreateInfo.pNext = NULL;
         scCreateInfo.surface = pData->pSurface;
         scCreateInfo.minImageCount = desiredNumberOfSwapchainImages;
         scCreateInfo.imageFormat = VK_FORMAT_B8G8R8A8_UNORM;
