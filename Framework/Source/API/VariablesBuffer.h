@@ -31,7 +31,6 @@
 #include "Texture.h"
 #include "Buffer.h"
 #include "Graphics/Program.h"
-#include "API/LowLevel/DescriptorHeap.h"
 
 namespace Falcor
 {

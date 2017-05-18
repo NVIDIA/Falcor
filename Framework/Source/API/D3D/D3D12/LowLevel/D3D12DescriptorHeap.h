@@ -26,6 +26,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 #pragma once
+#include <queue>
 
 namespace Falcor
 {
@@ -39,42 +40,71 @@ namespace Falcor
         using GpuHandle = HeapGpuHandle;
 
         ~D3D12DescriptorHeap();
-        static SharedPtr create(D3D12_DESCRIPTOR_HEAP_TYPE type, uint32_t descriptorsCount, bool shaderVisible = true);
+        static const uint32_t kDescPerChunk = 64;
 
-        class AllocationEntry
+        static SharedPtr create(D3D12_DESCRIPTOR_HEAP_TYPE type, uint32_t chunkCount, bool shaderVisible = true);
+
+    private:
+        struct Chunk;
+
+    public:
+        class Allocation
         {
         public:
-            using SharedPtr = std::shared_ptr<AllocationEntry>;
-            SharedPtr create(D3D12DescriptorHeap::SharedPtr pHeap, uint32_t baseIndex, uint32_t descCount);
-            ~AllocationEntry();
+            using SharedPtr = std::shared_ptr<Allocation>;
+            ~Allocation();
 
-            CpuHandle getCpuHandle(uint32_t index); // Index is relative to the allocation
-            GpuHandle getGpuHandle(uint32_t index);
+            CpuHandle getCpuHandle(uint32_t index) const { assert(index < mDescCount); return mpHeap->getCpuHandle(index + mBaseIndex); }; // Index is relative to the allocation
+            GpuHandle getGpuHandle(uint32_t index) const { assert(index < mDescCount); return mpHeap->getGpuHandle(index + mBaseIndex); }; // Index is relative to the allocation
             
         private:
-            AllocationEntry(D3D12DescriptorHeap::SharedPtr pHeap, uint32_t baseIndex, uint32_t descCount);
+            friend D3D12DescriptorHeap;
+            static SharedPtr create(D3D12DescriptorHeap::SharedPtr pHeap, uint32_t baseIndex, uint32_t descCount, std::shared_ptr<Chunk> pChunk);
+            Allocation(D3D12DescriptorHeap::SharedPtr pHeap, uint32_t baseIndex, uint32_t descCount, std::shared_ptr<Chunk> pChunk);
             D3D12DescriptorHeap::SharedPtr mpHeap;
             uint32_t mBaseIndex;
             uint32_t mDescCount;
+            std::shared_ptr<Chunk> mpChunk;
         };
         
-        AllocationEntry::SharedPtr allocateEntries(uint32_t descCount);
+        Allocation::SharedPtr allocateDescriptors(uint32_t count);
         ApiHandle getApiHandle() const { return mApiHandle; }
         D3D12_DESCRIPTOR_HEAP_TYPE getType() const { return mType; }
 
-        uint32_t getReservedDescCount() const { return mCount; }
+        uint32_t getReservedChunkCount() const { return mChunkCount; }
+        uint32_t getDescriptorSize() const { return mDescriptorSize; }
+        void executeDeferredReleases();
+    private:
+        friend Allocation;
+        D3D12DescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE type, uint32_t chunkCount);
+        
+
         CpuHandle getCpuHandle(uint32_t index) const;
         GpuHandle getGpuHandle(uint32_t index) const;
-        uint32_t getDescriptorSize() const { return mDescriptorSize; }
-    private:
-        D3D12DescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE type, uint32_t descriptorsCount);
 
         CpuHandle mCpuHeapStart = {};
         GpuHandle mGpuHeapStart = {};
         uint32_t mDescriptorSize;
-        uint32_t mCount;
-        uint32_t mCurDesc = 0;
+        uint32_t mChunkCount = 0;
+        uint32_t mCurrentChunk = 0;
         ApiHandle mApiHandle;
         D3D12_DESCRIPTOR_HEAP_TYPE mType;
+
+        struct Chunk
+        {
+            using SharedPtr = std::shared_ptr<Chunk>;
+            uint32_t chunkCount = 1; // For outstanding requests we can allocate more then a single chunk. This is the number of chunks we actually allocated
+            uint32_t allocCount = 0;
+            uint32_t currentDesc = 0;
+            uint64_t releaseFenceValue;
+            bool operator<(const Chunk& other) const { return releaseFenceValue < other.releaseFenceValue; }
+        };
+
+        Chunk::SharedPtr mpCurrentChunk;
+        Chunk::SharedPtr getChunk(uint32_t descCount);
+        Chunk::SharedPtr allocateChunks(uint32_t descCount);
+        void releaseChunk(Chunk::SharedPtr pChunk);
+        std::priority_queue<Chunk::SharedPtr> mDeferredRelease;
+        std::queue<Chunk::SharedPtr> mAvailableChunks;
     };
 }
