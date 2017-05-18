@@ -34,7 +34,7 @@ namespace Falcor
 {
     extern uint32_t gQueueNodeIndex;
 
-    static bool createCommandPool(VkDevice device, VkCommandPool *pCommandPool)
+    bool createCommandPool(VkDevice device, VkCommandPool *pCommandPool)
     {
         VkCommandPoolCreateInfo commandPoolCreateInfo{};
 
@@ -42,13 +42,16 @@ namespace Falcor
         commandPoolCreateInfo.flags            = 0;
         commandPoolCreateInfo.queueFamilyIndex = gQueueNodeIndex;
 
-        auto res = vkCreateCommandPool(device, &commandPoolCreateInfo, nullptr, pCommandPool);
-        assert(res == VK_SUCCESS);
+        if (VK_FAILED(vkCreateCommandPool(device, &commandPoolCreateInfo, nullptr, pCommandPool)))
+        {
+            logError("Could not create command pool");
+            return false;
+        }
 
-        return (res == VK_SUCCESS);
+        return true;
     }
 
-    static bool createCommandBuffer(VkDevice device, uint32_t pCmdBufferCount, VkCommandBuffer *pCmdBuffer, VkCommandPool commandPool)
+    bool createCommandBuffer(VkDevice device, uint32_t pCmdBufferCount, VkCommandBuffer *pCmdBuffer, VkCommandPool commandPool)
     {
         VkCommandBufferAllocateInfo cmdBufAllocateInfo = {};
         cmdBufAllocateInfo.sType              = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
@@ -56,16 +59,19 @@ namespace Falcor
         cmdBufAllocateInfo.level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY; // Allocate only primary now.
         cmdBufAllocateInfo.commandBufferCount = pCmdBufferCount;
 
-        auto res = vkAllocateCommandBuffers(device, &cmdBufAllocateInfo, pCmdBuffer);
-        assert(res == VK_SUCCESS);
+        if (VK_FAILED(vkAllocateCommandBuffers(device, &cmdBufAllocateInfo, pCmdBuffer)))
+        {
+            logError("Could not create command buffer.");
+            return false;
+        }
 
-        return res == VK_SUCCESS;
+        return true;
     }
 
-    static bool getDeviceQueue(VkDevice device, CommandQueueHandle &queue)
+    bool getDeviceQueue(VkDevice device, CommandQueueHandle &queue)
     {
         vkGetDeviceQueue(device, gQueueNodeIndex, 0, &queue);
-        
+
         assert(queue != VK_NULL_HANDLE);
         return queue != VK_NULL_HANDLE;
     }
@@ -75,7 +81,7 @@ namespace Falcor
         SharedPtr pThis     = SharedPtr(new LowLevelContextData);
         pThis->mpFence      = GpuFence::create();
         DeviceHandle device = gpDevice->getApiHandle();
-            
+
         // Get the device queue
         getDeviceQueue(device, pThis->mpQueue);
 
@@ -86,16 +92,16 @@ namespace Falcor
 
         // #VKTODO Check how the allocator maps in Vulkan.
         // pThis->mpAllocator = pThis->mpAllocatorPool->newObject();
-     
+
         return pThis;
     }
 
     void LowLevelContextData::reset()
     {
-        auto res = vkResetCommandBuffer(mpList, VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT);
-
-        assert(res == VK_SUCCESS);
-        return;
+        if (VK_FAILED(vkResetCommandBuffer(mpList, VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT)))
+        {
+            logError("Could not reset command buffer.");
+        }
     }
 
     // Submit the recorded command buffers here. 
@@ -116,9 +122,9 @@ namespace Falcor
         // Add a new interface there? 
         // vkResetFences(gpDevice->getApiHandle(), 1, &(mpFence->getApiHandle()));
 
-        auto res = vkQueueSubmit(mpQueue, 1, &submitInfo, mpFence->getApiHandle());
-        assert(res == VK_SUCCESS);
-
-        return;
+        if (VK_FAILED(vkQueueSubmit(mpQueue, 1, &submitInfo, mpFence->getApiHandle())))
+        {
+            logError("Could not submit command queue.");
+        }
     }
 }

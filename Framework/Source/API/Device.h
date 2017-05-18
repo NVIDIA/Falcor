@@ -48,18 +48,18 @@ namespace Falcor
         using SharedConstPtr = std::shared_ptr<const Device>;
         using ApiHandle = DeviceHandle;
 
-		/** Device configuration
-		*/
+        /** Device configuration
+        */
         struct Desc
         {
-			ResourceFormat colorFormat = ResourceFormat::RGBA8UnormSrgb;    ///< The color buffer format
-			ResourceFormat depthFormat = ResourceFormat::D24UnormS8;        ///< The depth buffer format
-            int apiMajorVersion = DEFAULT_API_MAJOR_VERSION; ///< Requested API major version. Context creation fails if this version is not supported.
-            int apiMinorVersion = DEFAULT_API_MINOR_VERSION; ///< Requested API minor version. Context creation fails if this version is not supported.
-            bool useDebugContext = false;             ///< create a debug context. NOTE: Debug configuration always creates a debug context
-            std::vector<std::string> requiredExtensions; ///< Extensions required by the sample
-			bool enableVsync = false;           ///< Controls vertical-sync
-            bool enableDebugLayer = DEFAULT_ENABLE_DEBUG_LAYER;    ///< Enable the debug layer. The default for release build is false, for debug build it's true.
+            ResourceFormat colorFormat = ResourceFormat::RGBA8UnormSrgb;    ///< The color buffer format
+            ResourceFormat depthFormat = ResourceFormat::D24UnormS8;        ///< The depth buffer format
+            int apiMajorVersion = DEFAULT_API_MAJOR_VERSION;                ///< Requested API major version. Context creation fails if this version is not supported.
+            int apiMinorVersion = DEFAULT_API_MINOR_VERSION;                ///< Requested API minor version. Context creation fails if this version is not supported.
+            bool useDebugContext = false;                                   ///< create a debug context. NOTE: Debug configuration always creates a debug context
+            std::vector<std::string> requiredExtensions;                    ///< Extensions required by the sample
+            bool enableVsync = false;                                       ///< Controls vertical-sync
+            bool enableDebugLayer = DEFAULT_ENABLE_DEBUG_LAYER;             ///< Enable the debug layer. The default for release build is false, for debug build it's true.
             
 #ifdef FALCOR_D3D
             /** The following callback allows the user to create its own device (for example, create a WARP device or choose a specific GPU in a multi-GPU machine)
@@ -69,51 +69,51 @@ namespace Falcor
 #endif
         };
 
-		/** Create a new device.
-		\param[in] pWindow a previously-created window object
-		\param[in] desc Device configuration desctiptor.
-		\return nullptr if the function failed, otherwise a new device object
-		*/
-		static SharedPtr create(Window::SharedPtr& pWindow, const Desc& desc);
+        /** Create a new device.
+        \param[in] pWindow a previously-created window object
+        \param[in] desc Device configuration descriptor.
+        \return nullptr if the function failed, otherwise a new device object
+        */
+        static SharedPtr create(Window::SharedPtr& pWindow, const Desc& desc);
 
         /** Acts as the destructor for Device. Some resources use gpDevice in their cleanup.
             Cleaning up the SharedPtr directly would clear gpDevice before calling destructors.
         */
         void cleanup();
 
-		/** Enable/disable vertical sync
-		*/
-		void setVSync(bool enable);
+        /** Enable/disable vertical sync
+        */
+        void setVSync(bool enable);
 
-		/** Check if the window is occluded
-		*/
-		bool isWindowOccluded() const;
+        /** Check if the window is occluded
+        */
+        bool isWindowOccluded() const;
 
-		/** Check if the device support an extension
-		*/
-		static bool isExtensionSupported(const std::string & name);
+        /** Check if the device support an extension
+        */
+        static bool isExtensionSupported(const std::string & name);
 
-		/** Get the FBO object associated with the swap-chain.
-			This can change each frame, depending on the API used
-		*/
+        /** Get the FBO object associated with the swap-chain.
+            This can change each frame, depending on the API used
+        */
         Fbo::SharedPtr getSwapChainFbo() const;
 
-		/** Get the default render-context.
-			The default render-context is managed completly by the device. The user should just queue commands into it, the device will take care of allocation, submission and synchronization
-		*/
-		RenderContext::SharedPtr getRenderContext() const { return mpRenderContext; }
+        /** Get the default render-context.
+            The default render-context is managed completly by the device. The user should just queue commands into it, the device will take care of allocation, submission and synchronization
+        */
+        RenderContext::SharedPtr getRenderContext() const { return mpRenderContext; }
 
-		/** Get the native API handle
-		*/
-		DeviceHandle getApiHandle() { return mApiHandle; }
+        /** Get the native API handle
+        */
+        DeviceHandle getApiHandle() { return mApiHandle; }
 
-		/** Present the back-buffer to the window
-		*/
-		void present();
+        /** Present the back-buffer to the window
+        */
+        void present();
 
-		/** Check if vertical sync is enabled
-		*/
-		bool isVsyncEnabled() const { return mVsyncOn; }
+        /** Check if vertical sync is enabled
+        */
+        bool isVsyncEnabled() const { return mVsyncOn; }
 
         /** Resize the swap-chain
             \return A new FBO object
@@ -130,8 +130,8 @@ namespace Falcor
         void releaseResource(ApiObjectHandle pResource);
 
     private:
-		Device(Window::SharedPtr pWindow) : mpWindow(pWindow) {}
-		bool init(const Desc& desc);
+        Device(Window::SharedPtr pWindow) : mpWindow(pWindow) {}
+        bool init(const Desc& desc);
         bool updateDefaultFBO(uint32_t width, uint32_t height, ResourceFormat colorFormat, ResourceFormat depthFormat);
         void executeDeferredReleases();
 
@@ -144,12 +144,12 @@ namespace Falcor
         DescriptorHeap::SharedPtr mpUavHeap;
         DescriptorHeap::SharedPtr mpCpuUavHeap; // We need it for clearing UAVs
 
-		Window::SharedPtr mpWindow;
-		void* mpPrivateData;
-		RenderContext::SharedPtr mpRenderContext;
-		bool mVsyncOn;
+        Window::SharedPtr mpWindow;
+        void* mpPrivateData;
+        RenderContext::SharedPtr mpRenderContext;
+        bool mVsyncOn;
         size_t mFrameID = 0;
-	};
+    };
 
     extern Device::SharedPtr  gpDevice;
     extern uint32_t           gQueueNodeIndex;

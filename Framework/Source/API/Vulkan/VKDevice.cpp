@@ -59,21 +59,16 @@ namespace Falcor
         GpuFence::SharedPtr pFrameFence;
 
         // Vulkan
-        VkInstance          pInstance;
-        VkPhysicalDevice    pPhysicalDevice;
-        VkDevice            pDevice;
-        VkSurfaceKHR        pSurface;
-        uint32_t            physicalDevCount;
-        uint32_t            queueFamilyPropsCount;
+        VkInstance          instance;
+        VkPhysicalDevice    physicalDevice;
+        VkDevice            device;
+        VkSurfaceKHR        surface;
 
-        VkPhysicalDeviceMemoryProperties    devMemoryProperties;
-        uint32_t                            graphicsQueueNodeIndex;
-        uint32_t                            presentQueueNodeIndex;
-        VkPhysicalDeviceFeatures            supportedFeatures;
-        VkQueue                             deviceQueue;
+        VkQueue deviceQueue;
 
-        std::vector<VkQueueFamilyProperties> falcorVKQueueFamilyProps;
+        VkPhysicalDeviceFeatures supportedFeatures;
 
+        uint32_t graphicsQueueNodeIndex;
     };
 
     void releaseFboData(DeviceData* pData)
@@ -137,10 +132,10 @@ namespace Falcor
         mpRenderContext.reset();
         mpResourceAllocator.reset();
 
-        vkDestroySwapchainKHR(pData->pDevice, pData->swapchain, nullptr);
-        vkDestroySurfaceKHR(pData->pInstance, pData->pSurface, nullptr);
-        vkDestroyDevice(pData->pDevice, nullptr);
-        vkDestroyInstance(pData->pInstance, nullptr);
+        vkDestroySwapchainKHR(pData->device, pData->swapchain, nullptr);
+        vkDestroySurfaceKHR(pData->instance, pData->surface, nullptr);
+        vkDestroyDevice(pData->device, nullptr);
+        vkDestroyInstance(pData->instance, nullptr);
 
         safe_delete(pData);
         mpWindow.reset();
@@ -160,7 +155,6 @@ namespace Falcor
         }
         return gpDevice;
     }
-
 
     Fbo::SharedPtr Device::getSwapChainFbo() const
     {
@@ -192,7 +186,7 @@ namespace Falcor
         InstanceCreateInfo.enabledLayerCount = 0;
         InstanceCreateInfo.ppEnabledLayerNames = nullptr;
 
-        if (VK_FAILED(vkCreateInstance(&InstanceCreateInfo, nullptr, &pData->pInstance)))
+        if (VK_FAILED(vkCreateInstance(&InstanceCreateInfo, nullptr, &pData->instance)))
         {
             logError("Failed to create Vulkan instance");
             return false;
@@ -201,32 +195,68 @@ namespace Falcor
         return true;
     }
 
-    bool createPhysicalDevice(DeviceData *pData)
+    VkPhysicalDevice selectPhysicalDevice(const std::vector<VkPhysicalDevice>& devices)
     {
-        // First figure out how many devices are in the system.
-        // By convention, call once to get count, call again to get handles
-        vkEnumeratePhysicalDevices(pData->pInstance, &pData->physicalDevCount, nullptr);
-        vkEnumeratePhysicalDevices(pData->pInstance, &pData->physicalDevCount, &pData->pPhysicalDevice);
+        // Find best device using GPU memory as indicator
+        VkPhysicalDevice bestDevice = VK_NULL_HANDLE;
+        uint64_t bestMemory = 0;
 
-        logInfo("Physical devices: " + std::to_string(pData->physicalDevCount));
-
-        vkGetPhysicalDeviceMemoryProperties(pData->pPhysicalDevice, &pData->devMemoryProperties);
-        vkGetPhysicalDeviceQueueFamilyProperties(pData->pPhysicalDevice, &pData->queueFamilyPropsCount, nullptr);
-        pData->falcorVKQueueFamilyProps.resize(pData->queueFamilyPropsCount);
-        vkGetPhysicalDeviceQueueFamilyProperties(pData->pPhysicalDevice, &pData->queueFamilyPropsCount, pData->falcorVKQueueFamilyProps.data());
-
-        // Search for a graphics and a present queue in the array of queue families, try to find one that supports both
-        for (uint32_t i = 0; i < pData->queueFamilyPropsCount; i++)
+        for (const VkPhysicalDevice& device : devices)
         {
-            if ((pData->falcorVKQueueFamilyProps[i].queueFlags & VK_QUEUE_GRAPHICS_BIT) != 0)
+            VkPhysicalDeviceMemoryProperties properties;
+            vkGetPhysicalDeviceMemoryProperties(device, &properties);
+
+            // Get local memory size from device
+            uint64_t deviceMemory = 0;
+            for (uint32_t i = 0; i < properties.memoryHeapCount; i++)
             {
-                if (pData->graphicsQueueNodeIndex == UINT32_MAX)
+                if ((properties.memoryHeaps[i].flags & VK_MEMORY_HEAP_DEVICE_LOCAL_BIT) > 0)
                 {
-                    pData->graphicsQueueNodeIndex = i;
+                    deviceMemory = properties.memoryHeaps[i].size;
                     break;
                 }
             }
+
+            // Save if best found so far
+            if (bestDevice == VK_NULL_HANDLE || deviceMemory > bestMemory)
+            {
+                bestDevice = device;
+                bestMemory = deviceMemory;
+            }
         }
+
+        return bestDevice;
+    }
+
+    bool createPhysicalDevice(DeviceData *pData)
+    {
+        // Enumerate devices
+        uint32_t count = 0;
+        vkEnumeratePhysicalDevices(pData->instance, &count, nullptr);
+        assert(count > 0);
+
+        std::vector<VkPhysicalDevice> devices(count);
+        vkEnumeratePhysicalDevices(pData->instance, &count, devices.data());
+
+        pData->physicalDevice = selectPhysicalDevice(devices);
+        vkGetPhysicalDeviceFeatures(pData->physicalDevice, &pData->supportedFeatures);
+
+        uint32_t queueFamilyCount = 0;
+        vkGetPhysicalDeviceQueueFamilyProperties(pData->physicalDevice, &queueFamilyCount, nullptr);
+        
+        std::vector<VkQueueFamilyProperties> queueFamilyProperties(queueFamilyCount);
+        vkGetPhysicalDeviceQueueFamilyProperties(pData->physicalDevice, &queueFamilyCount, queueFamilyProperties.data());
+
+        // Search for a graphics and a present queue in the array of queue families, try to find one that supports both
+        for (size_t i = 0; i < queueFamilyProperties.size(); i++)
+        {
+            if ((queueFamilyProperties[i].queueFlags & VK_QUEUE_GRAPHICS_BIT) != 0)
+            {
+                pData->graphicsQueueNodeIndex = i;
+                break;
+            }
+        }
+
         gQueueNodeIndex = pData->graphicsQueueNodeIndex;
 
         return true;
@@ -235,7 +265,6 @@ namespace Falcor
     bool createLogicalDevice(DeviceData *pData)
     {
         VkPhysicalDeviceFeatures requiredFeatures = {};
-        vkGetPhysicalDeviceFeatures(pData->pPhysicalDevice, &pData->supportedFeatures);
         requiredFeatures.multiDrawIndirect = pData->supportedFeatures.multiDrawIndirect;
         requiredFeatures.tessellationShader = VK_TRUE;
         requiredFeatures.geometryShader = VK_TRUE;
@@ -258,7 +287,7 @@ namespace Falcor
         deviceInfo.ppEnabledExtensionNames = nullptr;
         deviceInfo.pEnabledFeatures = &requiredFeatures;
 
-        if (VK_FAILED(vkCreateDevice(pData->pPhysicalDevice, &deviceInfo, nullptr, &pData->pDevice)))
+        if (VK_FAILED(vkCreateDevice(pData->physicalDevice, &deviceInfo, nullptr, &pData->device)))
         {
             logError("Could not create Vulkan logical device.");
             return false;
@@ -274,7 +303,7 @@ namespace Falcor
         createInfo.hwnd = pWindow->getApiHandle();
         createInfo.hinstance = GetModuleHandle(nullptr);
 
-        if (VK_FAILED(vkCreateWin32SurfaceKHR(pData->pInstance, &createInfo, nullptr, &pData->pSurface)))
+        if (VK_FAILED(vkCreateWin32SurfaceKHR(pData->instance, &createInfo, nullptr, &pData->surface)))
         {
             logError("Could not create Vulkan surface.");
             return false;
@@ -287,13 +316,13 @@ namespace Falcor
     {
         VkResult err;
         VkSurfaceCapabilitiesKHR surfCaps;
-        err = vkGetPhysicalDeviceSurfaceCapabilitiesKHR(pData->pPhysicalDevice, pData->pSurface, &surfCaps);
+        err = vkGetPhysicalDeviceSurfaceCapabilitiesKHR(pData->physicalDevice, pData->surface, &surfCaps);
 
         uint32_t presentModeCount;
-        err = vkGetPhysicalDeviceSurfacePresentModesKHR(pData->pPhysicalDevice, pData->pSurface, &presentModeCount, NULL);
+        err = vkGetPhysicalDeviceSurfacePresentModesKHR(pData->physicalDevice, pData->surface, &presentModeCount, NULL);
 
         std::vector<VkPresentModeKHR> presentModes(presentModeCount);
-        err = vkGetPhysicalDeviceSurfacePresentModesKHR(pData->pPhysicalDevice, pData->pSurface, &presentModeCount, presentModes.data());
+        err = vkGetPhysicalDeviceSurfacePresentModesKHR(pData->physicalDevice, pData->surface, &presentModeCount, presentModes.data());
 
         VkExtent2D swapchainExtent = {};
         if (surfCaps.currentExtent.width == -1)
@@ -339,7 +368,7 @@ namespace Falcor
 
         VkSwapchainCreateInfoKHR scCreateInfo = {};
         scCreateInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-        scCreateInfo.surface = pData->pSurface;
+        scCreateInfo.surface = pData->surface;
         scCreateInfo.minImageCount = desiredNumberOfSwapchainImages;
         scCreateInfo.imageFormat = VK_FORMAT_B8G8R8A8_UNORM;
         scCreateInfo.imageColorSpace = VK_COLORSPACE_SRGB_NONLINEAR_KHR;
@@ -356,7 +385,7 @@ namespace Falcor
         scCreateInfo.oldSwapchain = VK_NULL_HANDLE;
 
 
-        if (VK_FAILED(vkCreateSwapchainKHR(pData->pDevice, &scCreateInfo, nullptr, &pData->swapchain)))
+        if (VK_FAILED(vkCreateSwapchainKHR(pData->device, &scCreateInfo, nullptr, &pData->swapchain)))
         {
             logError("Could not create swapchain.");
             return false;
@@ -421,7 +450,7 @@ namespace Falcor
             return false;
         }
 
-        mApiHandle = pData->pDevice;
+        mApiHandle = pData->device;
 
         //// Create the descriptor heaps
         //mpSrvHeap = DescriptorHeap::create(DescriptorHeap::Type::SRV, 16 * 1024);
