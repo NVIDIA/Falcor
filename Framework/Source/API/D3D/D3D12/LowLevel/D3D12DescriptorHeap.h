@@ -42,7 +42,7 @@ namespace Falcor
         ~D3D12DescriptorHeap();
         static const uint32_t kDescPerChunk = 64;
 
-        static SharedPtr create(D3D12_DESCRIPTOR_HEAP_TYPE type, uint32_t chunkCount, bool shaderVisible = true);
+        static SharedPtr create(D3D12_DESCRIPTOR_HEAP_TYPE type, uint32_t descCount, bool shaderVisible = true);
 
     private:
         struct Chunk;

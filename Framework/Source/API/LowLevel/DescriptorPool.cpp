@@ -25,45 +25,17 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
+#pragma once
 #include "Framework.h"
-#include "API/LowLevel/DescriptorPool.h"
-#include "D3D12DescriptorHeap.h"
+#include "DescriptorPool.h"
 
 namespace Falcor
 {
-    struct DescriptorPoolApiData
+    DescriptorPool::SharedPtr DescriptorPool::create(const Desc& desc)
     {
-        D3D12DescriptorHeap::SharedPtr pHeaps[D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES];
-    };
-
-    bool DescriptorPool::apiInit()
-    {
-        // Find out how many heaps we need
-        static_assert(DescriptorPool::kTypeCount == 6, "Unexpected desc count, make sure all desc types are supported");
-        uint32_t descCount[D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES] = { 0 };
-
-        descCount[D3D12_DESCRIPTOR_HEAP_TYPE_RTV] = mDesc.mDescCount[(uint32_t)Type::Rtv];
-        descCount[D3D12_DESCRIPTOR_HEAP_TYPE_DSV] = mDesc.mDescCount[(uint32_t)Type::Dsv];
-        descCount[D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER] = mDesc.mDescCount[(uint32_t)Type::Sampler];
-        descCount[D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV] = mDesc.mDescCount[(uint32_t)Type::Cbv];
-        descCount[D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV] += mDesc.mDescCount[(uint32_t)Type::Uav];
-        descCount[D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV] += mDesc.mDescCount[(uint32_t)Type::Srv];
-
-        mpApiData = new DescriptorPoolApiData;
-        for (uint32_t i = 0; i < arraysize(mpApiData->pHeaps); i++)
-        {
-            if (descCount[i])
-            {
-                mpApiData->pHeaps[i] = D3D12DescriptorHeap::create(D3D12_DESCRIPTOR_HEAP_TYPE(i), descCount[i], mDesc.mShaderVisible);
-                if (!mpApiData->pHeaps[i]) return false;
-            }
-        }
-        return true;
+        SharedPtr pThis = SharedPtr(new DescriptorPool(desc));
+        return pThis->apiInit() ? pThis : nullptr;
     }
 
-    DescriptorPool::ApiHandle DescriptorPool::getApiHandle(uint32_t heapIndex) const
-    {
-        assert(index < arraysize(mpApiData->pHeaps));
-        return mpApiData->pHeaps[heapIndex]->getApiHandle();
-    }
+    DescriptorPool::DescriptorPool(const Desc& desc) : mDesc(desc) {}
 }

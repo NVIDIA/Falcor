@@ -31,6 +31,8 @@
 
 namespace Falcor
 {
+    struct DescriptorPoolApiData;
+    
     class DescriptorPool : public std::enable_shared_from_this<DescriptorPool>
     {
     public:
@@ -39,6 +41,7 @@ namespace Falcor
         using ApiHandle = DescriptorHeapHandle;
         using CpuHandle = HeapCpuHandle;
         using GpuHandle = HeapGpuHandle;
+        using ApiData = DescriptorPoolApiData;
 
         ~DescriptorPool();
 
@@ -81,6 +84,7 @@ namespace Falcor
         uint32_t getDescCount(Type type) const { return mDesc.mDescCount[(uint32_t)type]; }
         uint32_t getTotalDescCount() const { return mDesc.mTotalDescCount; }
         bool isShaderVisible() const { return mDesc.mShaderVisible; }
+        ApiHandle getApiHandle(uint32_t heapIndex) const;
 
         class Allocation
         {
@@ -99,17 +103,9 @@ namespace Falcor
         using AllocationPtr = Allocation::SharedPtr;
 
     private:
-        DescriptorPool(Type type, uint32_t descriptorsCount);
+        DescriptorPool(const Desc& desc);
+        bool apiInit();
         Desc mDesc;
-        struct Heap
-        {
-            CpuHandle mCpuHeapStart = {};
-            GpuHandle mGpuHeapStart = {};
-            uint32_t mDescriptorSize;
-            uint32_t mCount;
-            uint32_t mCurDesc = 0;
-            ApiHandle mApiHandle;
-        };
-        std::vector<ApiHandle> mApiHandles;
+        ApiData* mpApiData;
     };
 }
