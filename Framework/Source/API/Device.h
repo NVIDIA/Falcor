@@ -60,7 +60,9 @@ namespace Falcor
             std::vector<std::string> requiredExtensions;                    ///< Extensions required by the sample
             bool enableVsync = false;                                       ///< Controls vertical-sync
             bool enableDebugLayer = DEFAULT_ENABLE_DEBUG_LAYER;             ///< Enable the debug layer. The default for release build is false, for debug build it's true.
-            
+
+            uint32_t additionalQueues[(uint32_t)LowLevelContextData::CommandQueueType::Count] = {};  ///< ADDITIONAL command queues to create. One Direct (Graphics) queue is created by default.
+
 #ifdef FALCOR_D3D
             /** The following callback allows the user to create its own device (for example, create a WARP device or choose a specific GPU in a multi-GPU machine)
             */
@@ -102,6 +104,14 @@ namespace Falcor
             The default render-context is managed completly by the device. The user should just queue commands into it, the device will take care of allocation, submission and synchronization
         */
         RenderContext::SharedPtr getRenderContext() const { return mpRenderContext; }
+
+        /** Get the command queue handle
+        */
+        CommandQueueHandle getCommandQueueHandle(LowLevelContextData::CommandQueueType type, uint32_t index) const;
+
+        /** Convert command queue type to API specific identifier
+        */
+        ApiCommandQueueType getApiCommandQueueType(LowLevelContextData::CommandQueueType type) const;
 
         /** Get the native API handle
         */
@@ -152,5 +162,4 @@ namespace Falcor
     };
 
     extern Device::SharedPtr  gpDevice;
-    extern uint32_t           gQueueNodeIndex;
 }

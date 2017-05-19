@@ -63,6 +63,7 @@ namespace Falcor
     using DeviceHandle = VkDevice;
     using CommandListHandle = VkCommandBuffer;
     using CommandQueueHandle = VkQueue;
+    using ApiCommandQueueType = uint32_t;
     using CommandAllocatorHandle = VkCommandPool;
     using CommandSignatureHandle = void*;
     using FenceHandle = VkFence; // #VKTODO Check if we really need a fence or a semaphore!

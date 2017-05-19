@@ -31,22 +31,6 @@
 
 namespace Falcor
 {
-    D3D12_COMMAND_LIST_TYPE getCommandListType(LowLevelContextData::CommandListType type)
-    {
-        switch (type)
-        {
-        case LowLevelContextData::CommandListType::Copy:
-            return D3D12_COMMAND_LIST_TYPE_COPY;
-        case LowLevelContextData::CommandListType::Compute:
-            return D3D12_COMMAND_LIST_TYPE_COMPUTE;
-        case LowLevelContextData::CommandListType::Direct:
-            return D3D12_COMMAND_LIST_TYPE_DIRECT;
-        default:
-            should_not_get_here();
-            return D3D12_COMMAND_LIST_TYPE_DIRECT;
-        }
-    }
-
     template<D3D12_COMMAND_LIST_TYPE type>
     static ID3D12CommandAllocatorPtr newCommandAllocator()
     {
@@ -59,25 +43,15 @@ namespace Falcor
         return pAllocator;
     }
 
-    LowLevelContextData::SharedPtr LowLevelContextData::create(CommandListType type)
+    LowLevelContextData::SharedPtr LowLevelContextData::create(CommandQueueType type, CommandQueueHandle queue)
     {
         SharedPtr pThis = SharedPtr(new LowLevelContextData);
         pThis->mpFence = GpuFence::create();
-        ID3D12Device* pDevice = gpDevice->getApiHandle().GetInterfacePtr();
-
-        // Create the command queue
-        D3D12_COMMAND_QUEUE_DESC cqDesc = {};
-        cqDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
-        cqDesc.Type = getCommandListType(type);
-
-        if (FAILED(pDevice->CreateCommandQueue(&cqDesc, IID_PPV_ARGS(&pThis->mpQueue))))
-        {
-            logError("Failed to create command queue");
-            return nullptr;
-        }
+        pThis->mpQueue = queue;
 
         // Create a command allocator
-        switch (cqDesc.Type)
+        D3D12_COMMAND_LIST_TYPE cmdListType = gpDevice->getApiCommandQueueType(type);
+        switch (cmdListType)
         {
         case D3D12_COMMAND_LIST_TYPE_DIRECT:
             pThis->mpAllocatorPool = FencedPool<CommandAllocatorHandle>::create(pThis->mpFence, newCommandAllocator<D3D12_COMMAND_LIST_TYPE_DIRECT>);
@@ -94,7 +68,8 @@ namespace Falcor
         pThis->mpAllocator = pThis->mpAllocatorPool->newObject();
 
         // Create a command list
-        if (FAILED(pDevice->CreateCommandList(0, cqDesc.Type, pThis->mpAllocator, nullptr, IID_PPV_ARGS(&pThis->mpList))))
+        ID3D12Device* pDevice = gpDevice->getApiHandle().GetInterfacePtr();
+        if (FAILED(pDevice->CreateCommandList(0, cmdListType, pThis->mpAllocator, nullptr, IID_PPV_ARGS(&pThis->mpList))))
         {
             logError("Failed to create command list for LowLevelContextData");
             return nullptr;

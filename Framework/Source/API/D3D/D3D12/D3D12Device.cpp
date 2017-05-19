@@ -35,10 +35,10 @@ namespace Falcor
 {
     Device::SharedPtr gpDevice;
 
-	struct DeviceData
-	{
-		IDXGISwapChain3Ptr pSwapChain = nullptr;
-		uint32_t currentBackBufferIndex;
+    struct DeviceData
+    {
+        IDXGISwapChain3Ptr pSwapChain = nullptr;
+        uint32_t currentBackBufferIndex;
 
         struct ResourceRelease
         {
@@ -53,9 +53,11 @@ namespace Falcor
 
         std::queue<ResourceRelease> deferredReleases;
         uint32_t syncInterval = 0;
-		bool isWindowOccluded = false;
+        bool isWindowOccluded = false;
         GpuFence::SharedPtr pFrameFence;
-	};
+
+        std::vector<ID3D12CommandQueuePtr> queues[(uint32_t)Device::CommandQueueType::Count];
+    };
 
     void releaseFboData(DeviceData* pData)
     {
@@ -71,13 +73,13 @@ namespace Falcor
     }
 
     void d3dTraceHR(const std::string& msg, HRESULT hr)
-	{
-		char hr_msg[512];
-		FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM, nullptr, hr, 0, hr_msg, ARRAYSIZE(hr_msg), nullptr);
+    {
+        char hr_msg[512];
+        FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM, nullptr, hr, 0, hr_msg, ARRAYSIZE(hr_msg), nullptr);
 
-		std::string error_msg = msg + ".\nError! " + hr_msg;
-		logError(error_msg);
-	}
+        std::string error_msg = msg + ".\nError! " + hr_msg;
+        logError(error_msg);
+    }
 
     D3D_FEATURE_LEVEL getD3DFeatureLevel(uint32_t majorVersion, uint32_t minorVersion)
     {
@@ -126,74 +128,96 @@ namespace Falcor
         return (D3D_FEATURE_LEVEL)0;
     }
 
-	IDXGISwapChain3Ptr createSwapChain(IDXGIFactory4* pFactory, const Window* pWindow, ID3D12CommandQueue* pCommandQueue, ResourceFormat colorFormat)
-	{
-		DXGI_SWAP_CHAIN_DESC1 swapChainDesc = {};
-		swapChainDesc.BufferCount = kSwapChainBuffers;
-		swapChainDesc.Width = pWindow->getClientAreaWidth();
-		swapChainDesc.Height = pWindow->getClientAreaHeight();
-		// Flip mode doesn't support SRGB formats, so we strip them down when creating the resource. We will create the RTV as SRGB instead.
-		// More details at the end of https://msdn.microsoft.com/en-us/library/windows/desktop/bb173064.aspx
-		swapChainDesc.Format = getDxgiFormat(srgbToLinearFormat(colorFormat));
-		swapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-		swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
-		swapChainDesc.SampleDesc.Count = 1;
+    IDXGISwapChain3Ptr createSwapChain(IDXGIFactory4* pFactory, const Window* pWindow, ID3D12CommandQueue* pCommandQueue, ResourceFormat colorFormat)
+    {
+        DXGI_SWAP_CHAIN_DESC1 swapChainDesc = {};
+        swapChainDesc.BufferCount = kSwapChainBuffers;
+        swapChainDesc.Width = pWindow->getClientAreaWidth();
+        swapChainDesc.Height = pWindow->getClientAreaHeight();
+        // Flip mode doesn't support SRGB formats, so we strip them down when creating the resource. We will create the RTV as SRGB instead.
+        // More details at the end of https://msdn.microsoft.com/en-us/library/windows/desktop/bb173064.aspx
+        swapChainDesc.Format = getDxgiFormat(srgbToLinearFormat(colorFormat));
+        swapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
+        swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
+        swapChainDesc.SampleDesc.Count = 1;
 
-		// CreateSwapChainForHwnd() doesn't accept IDXGISwapChain3 (Why MS? Why?)
-		MAKE_SMART_COM_PTR(IDXGISwapChain1);
-		IDXGISwapChain1Ptr pSwapChain;
+        // CreateSwapChainForHwnd() doesn't accept IDXGISwapChain3 (Why MS? Why?)
+        MAKE_SMART_COM_PTR(IDXGISwapChain1);
+        IDXGISwapChain1Ptr pSwapChain;
 
-		HRESULT hr = pFactory->CreateSwapChainForHwnd(pCommandQueue, pWindow->getApiHandle(), &swapChainDesc, nullptr, nullptr, &pSwapChain);
-		if (FAILED(hr))
-		{
-			d3dTraceHR("Failed to create the swap-chain", hr);
-			return false;
-		}
+        HRESULT hr = pFactory->CreateSwapChainForHwnd(pCommandQueue, pWindow->getApiHandle(), &swapChainDesc, nullptr, nullptr, &pSwapChain);
+        if (FAILED(hr))
+        {
+            d3dTraceHR("Failed to create the swap-chain", hr);
+            return false;
+        }
 
-		IDXGISwapChain3Ptr pSwapChain3;
-		d3d_call(pSwapChain->QueryInterface(IID_PPV_ARGS(&pSwapChain3)));
-		return pSwapChain3;
-	}
+        IDXGISwapChain3Ptr pSwapChain3;
+        d3d_call(pSwapChain->QueryInterface(IID_PPV_ARGS(&pSwapChain3)));
+        return pSwapChain3;
+    }
 
-	ID3D12DevicePtr createDevice(IDXGIFactory4* pFactory, D3D_FEATURE_LEVEL featureLevel, Device::Desc::CreateDeviceFunc createFunc)
-	{
-		// Find the HW adapter
-		IDXGIAdapter1Ptr pAdapter;
+    ID3D12DevicePtr createDevice(IDXGIFactory4* pFactory, D3D_FEATURE_LEVEL featureLevel, Device::Desc::CreateDeviceFunc createFunc)
+    {
+        // Find the HW adapter
+        IDXGIAdapter1Ptr pAdapter;
         ID3D12DevicePtr pDevice;
 
-		for (uint32_t i = 0; DXGI_ERROR_NOT_FOUND != pFactory->EnumAdapters1(i, &pAdapter); i++)
-		{
-			DXGI_ADAPTER_DESC1 desc;
-			pAdapter->GetDesc1(&desc);
+        for (uint32_t i = 0; DXGI_ERROR_NOT_FOUND != pFactory->EnumAdapters1(i, &pAdapter); i++)
+        {
+            DXGI_ADAPTER_DESC1 desc;
+            pAdapter->GetDesc1(&desc);
 
-			// Skip SW adapters
-			if (desc.Flags & DXGI_ADAPTER_FLAG_SOFTWARE)
-			{
-				continue;
-			}
+            // Skip SW adapters
+            if (desc.Flags & DXGI_ADAPTER_FLAG_SOFTWARE)
+            {
+                continue;
+            }
 
-			// Try and create a D3D12 device
+            // Try and create a D3D12 device
             if (createFunc)
             {
                 pDevice = createFunc(pAdapter, featureLevel);
                 if (pDevice) return pDevice;
             }
             else if (D3D12CreateDevice(pAdapter, featureLevel, IID_PPV_ARGS(&pDevice)) == S_OK)
-			{
-				return pDevice;
-			}
-		}
+            {
+                return pDevice;
+            }
+        }
 
-		logErrorAndExit("Could not find a GPU that supports D3D12 device");
-		return nullptr;
-	}
+        logErrorAndExit("Could not find a GPU that supports D3D12 device");
+        return nullptr;
+    }
 
-	bool Device::updateDefaultFBO(uint32_t width, uint32_t height, ResourceFormat colorFormat, ResourceFormat depthFormat)
-	{
+    CommandQueueHandle Device::getCommandQueueHandle(CommandQueueType type, uint32_t index) const
+    {
+        DeviceData* pData = (DeviceData*)mpPrivateData;
+        return pData->queues[(uint32_t)type][index];
+    }
+
+    ApiCommandQueueType Device::getApiCommandQueueType(CommandQueueType type) const
+    {
+        switch (type)
+        {
+        case CommandQueueType::Copy:
+            return D3D12_COMMAND_LIST_TYPE_COPY;
+        case CommandQueueType::Compute:
+            return D3D12_COMMAND_LIST_TYPE_COMPUTE;
+        case CommandQueueType::Direct:
+            return D3D12_COMMAND_LIST_TYPE_DIRECT;
+        default:
+            should_not_get_here();
+            return D3D12_COMMAND_LIST_TYPE_DIRECT;
+        }
+    }
+
+    bool Device::updateDefaultFBO(uint32_t width, uint32_t height, ResourceFormat colorFormat, ResourceFormat depthFormat)
+    {
         DeviceData* pData = (DeviceData*)mpPrivateData;
 
-		for (uint32_t i = 0; i < kSwapChainBuffers; i++)
-		{
+        for (uint32_t i = 0; i < kSwapChainBuffers; i++)
+        {
             // Create a texture object
             auto pColorTex = Texture::SharedPtr(new Texture(width, height, 1, 1, 1, 1, colorFormat, Texture::Type::Texture2D, Texture::BindFlags::RenderTarget));            
             HRESULT hr = pData->pSwapChain->GetBuffer(i, IID_PPV_ARGS(&pColorTex->mApiHandle));
@@ -218,10 +242,10 @@ namespace Falcor
             }
 
             pData->currentBackBufferIndex = pData->pSwapChain->GetCurrentBackBufferIndex();
-		}
+        }
 
-		return true;
-	}
+        return true;
+    }
 
     void Device::cleanup()
     {
@@ -239,8 +263,8 @@ namespace Falcor
         mpWindow.reset();
     }
 
-	Device::SharedPtr Device::create(Window::SharedPtr& pWindow, const Device::Desc& desc)
-	{
+    Device::SharedPtr Device::create(Window::SharedPtr& pWindow, const Device::Desc& desc)
+    {
         if(gpDevice)
         {
             logError("D3D12 backend only supports a single device");
@@ -251,19 +275,18 @@ namespace Falcor
         {
             gpDevice = nullptr;
         }
-		return gpDevice;
-	}
+        return gpDevice;
+    }
 
-    
     Fbo::SharedPtr Device::getSwapChainFbo() const
     {
         DeviceData* pData = (DeviceData*)mpPrivateData;
         return pData->frameData[pData->currentBackBufferIndex].pFbo;
     }
 
-	void Device::present()
-	{
-		DeviceData* pData = (DeviceData*)mpPrivateData;
+    void Device::present()
+    {
+        DeviceData* pData = (DeviceData*)mpPrivateData;
 
         mpRenderContext->resourceBarrier(pData->frameData[pData->currentBackBufferIndex].pFbo->getColorTexture(0).get(), Resource::State::Present);
         mpRenderContext->flush();
@@ -275,32 +298,64 @@ namespace Falcor
         mFrameID++;
     }
 
-	bool Device::init(const Desc& desc)
+    bool Device::init(const Desc& desc)
     {
-		DeviceData* pData = new DeviceData;
-		mpPrivateData = pData;
+        DeviceData* pData = new DeviceData;
+        mpPrivateData = pData;
 
         if(desc.enableDebugLayer)
-		{
-			ID3D12DebugPtr pDebug;
-			if (SUCCEEDED(D3D12GetDebugInterface(IID_PPV_ARGS(&pDebug))))
-			{
-				pDebug->EnableDebugLayer();
-			}
-		}
+        {
+            ID3D12DebugPtr pDebug;
+            if (SUCCEEDED(D3D12GetDebugInterface(IID_PPV_ARGS(&pDebug))))
+            {
+                pDebug->EnableDebugLayer();
+            }
+        }
+
+        //
+        // Create the device
+        //
 
         // Create the DXGI factory
-		IDXGIFactory4Ptr pDxgiFactory;
-		d3d_call(CreateDXGIFactory1(IID_PPV_ARGS(&pDxgiFactory)));
+        IDXGIFactory4Ptr pDxgiFactory;
+        d3d_call(CreateDXGIFactory1(IID_PPV_ARGS(&pDxgiFactory)));
 
-		// Create the device
         mApiHandle = createDevice(pDxgiFactory, getD3DFeatureLevel(desc.apiMajorVersion, desc.apiMinorVersion), desc.createDeviceFunc);
-		if (mApiHandle == nullptr)
-		{
-			return false;
-		}
+        if (mApiHandle == nullptr)
+        {
+            return false;
+        }
 
+        //
+        // Create Queues
+        //
+
+        for (uint32_t i = 0; i < (uint32_t)Device::CommandQueueType::Count; i++)
+        {
+            const uint32_t queueCount = (i == (uint32_t)Device::CommandQueueType::Direct) ? desc.additionalQueues[i] + 1 : desc.additionalQueues[i];
+
+            for (uint32_t j = 0; j < queueCount; j++)
+            {
+                // Create the command queue
+                D3D12_COMMAND_QUEUE_DESC cqDesc = {};
+                cqDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
+                cqDesc.Type = getApiCommandQueueType((Device::CommandQueueType)i);
+
+                ID3D12CommandQueuePtr pQueue;
+                if (FAILED(mApiHandle->CreateCommandQueue(&cqDesc, IID_PPV_ARGS(&pQueue))))
+                {
+                    logError("Failed to create command queue");
+                    return nullptr;
+                }
+
+                pData->queues[i].push_back(pQueue);
+            }
+        }
+
+        //
         // Create the descriptor heaps
+        //
+
         mpSrvHeap = DescriptorHeap::create(DescriptorHeap::Type::SRV, 16 * 1024);
         mpSamplerHeap = DescriptorHeap::create(DescriptorHeap::Type::Sampler, 2048);
         mpRtvHeap = DescriptorHeap::create(DescriptorHeap::Type::RTV, 1024, false);
@@ -308,14 +363,17 @@ namespace Falcor
         mpUavHeap = mpSrvHeap;
         mpCpuUavHeap = DescriptorHeap::create(DescriptorHeap::Type::SRV, 2*1024, false);
 
-		// Create the swap-chain
+        //
+        // Create the swap-chain
+        //
+
         mpRenderContext = RenderContext::create();
         mpResourceAllocator = ResourceAllocator::create(1024 * 1024 * 2, mpRenderContext->getLowLevelData()->getFence());
         pData->pSwapChain = createSwapChain(pDxgiFactory, mpWindow.get(), mpRenderContext->getLowLevelData()->getCommandQueue(), desc.colorFormat);
-		if(pData->pSwapChain == nullptr)
-		{
-			return false;
-		}
+        if(pData->pSwapChain == nullptr)
+        {
+            return false;
+        }
 
         mVsyncOn = desc.enableVsync;
 
@@ -326,7 +384,7 @@ namespace Falcor
         }
 
         pData->pFrameFence = GpuFence::create();
-		return true;
+        return true;
     }
 
     void Device::releaseResource(ApiObjectHandle pResource)
@@ -372,18 +430,18 @@ namespace Falcor
         return getSwapChainFbo();
     }
 
-	void Device::setVSync(bool enable)
-	{
-		DeviceData* pData = (DeviceData*)mpPrivateData;
-		pData->syncInterval = enable ? 1 : 0;
-	}
-
-	bool Device::isWindowOccluded() const
+    void Device::setVSync(bool enable)
     {
-		DeviceData* pData = (DeviceData*)mpPrivateData;
+        DeviceData* pData = (DeviceData*)mpPrivateData;
+        pData->syncInterval = enable ? 1 : 0;
+    }
+
+    bool Device::isWindowOccluded() const
+    {
+        DeviceData* pData = (DeviceData*)mpPrivateData;
         if(pData->isWindowOccluded)
         {
-			pData->isWindowOccluded = (pData->pSwapChain->Present(0, DXGI_PRESENT_TEST) == DXGI_STATUS_OCCLUDED);
+            pData->isWindowOccluded = (pData->pSwapChain->Present(0, DXGI_PRESENT_TEST) == DXGI_STATUS_OCCLUDED);
         }
         return pData->isWindowOccluded;
     }

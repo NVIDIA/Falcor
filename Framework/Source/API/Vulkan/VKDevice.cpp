@@ -35,7 +35,6 @@
 namespace Falcor
 {
     Device::SharedPtr gpDevice;
-    uint32_t          gQueueNodeIndex;
 
     struct DeviceData
     {
@@ -64,11 +63,11 @@ namespace Falcor
         VkDevice            device;
         VkSurfaceKHR        surface;
 
-        VkQueue deviceQueue;
-
         VkPhysicalDeviceFeatures supportedFeatures;
 
-        uint32_t graphicsQueueNodeIndex;
+        // Map Falcor command queue type to VK device queue family index
+        uint32_t queueTypeToFamilyIndex[(uint32_t)LowLevelContextData::CommandQueueType::Count];
+        std::vector<VkQueue> queues[(uint32_t)LowLevelContextData::CommandQueueType::Count];
     };
 
     void releaseFboData(DeviceData* pData)
@@ -176,6 +175,18 @@ namespace Falcor
         mFrameID++;
     }
 
+    CommandQueueHandle Device::getCommandQueueHandle(LowLevelContextData::CommandQueueType type, uint32_t index) const
+    {
+        DeviceData* pData = (DeviceData*)mpPrivateData;
+        return pData->queues[(uint32_t)type][index];
+    }
+
+    ApiCommandQueueType Device::getApiCommandQueueType(LowLevelContextData::CommandQueueType type) const
+    {
+        DeviceData* pData = (DeviceData*)mpPrivateData;
+        return pData->queueTypeToFamilyIndex[(uint32_t)type];
+    }
+
     bool createInstance(DeviceData *pData)
     {
         VkInstanceCreateInfo InstanceCreateInfo = {};
@@ -195,9 +206,10 @@ namespace Falcor
         return true;
     }
 
+    /** Select best physical device based on memory
+    */
     VkPhysicalDevice selectPhysicalDevice(const std::vector<VkPhysicalDevice>& devices)
     {
-        // Find best device using GPU memory as indicator
         VkPhysicalDevice bestDevice = VK_NULL_HANDLE;
         uint64_t bestMemory = 0;
 
@@ -230,7 +242,10 @@ namespace Falcor
 
     bool createPhysicalDevice(DeviceData *pData)
     {
+        //
         // Enumerate devices
+        //
+
         uint32_t count = 0;
         vkEnumeratePhysicalDevices(pData->instance, &count, nullptr);
         assert(count > 0);
@@ -238,49 +253,83 @@ namespace Falcor
         std::vector<VkPhysicalDevice> devices(count);
         vkEnumeratePhysicalDevices(pData->instance, &count, devices.data());
 
+        // Pick a device
         pData->physicalDevice = selectPhysicalDevice(devices);
         vkGetPhysicalDeviceFeatures(pData->physicalDevice, &pData->supportedFeatures);
 
+        //
+        // Match queue families to what type they are
+        //
+
         uint32_t queueFamilyCount = 0;
         vkGetPhysicalDeviceQueueFamilyProperties(pData->physicalDevice, &queueFamilyCount, nullptr);
-        
+
         std::vector<VkQueueFamilyProperties> queueFamilyProperties(queueFamilyCount);
         vkGetPhysicalDeviceQueueFamilyProperties(pData->physicalDevice, &queueFamilyCount, queueFamilyProperties.data());
 
-        // Search for a graphics and a present queue in the array of queue families, try to find one that supports both
-        for (size_t i = 0; i < queueFamilyProperties.size(); i++)
+        // Init indices
+        for (auto& index : pData->queueTypeToFamilyIndex)
         {
-            if ((queueFamilyProperties[i].queueFlags & VK_QUEUE_GRAPHICS_BIT) != 0)
-            {
-                pData->graphicsQueueNodeIndex = i;
-                break;
-            }
+            index = (uint32_t)-1;
         }
 
-        gQueueNodeIndex = pData->graphicsQueueNodeIndex;
+        // Determine which queue is what type
+        uint32_t& graphicsQueueIndex = pData->queueTypeToFamilyIndex[(uint32_t)LowLevelContextData::CommandQueueType::Direct];
+        uint32_t& computeQueueIndex = pData->queueTypeToFamilyIndex[(uint32_t)LowLevelContextData::CommandQueueType::Compute];
+        uint32_t& transferQueue = pData->queueTypeToFamilyIndex[(uint32_t)LowLevelContextData::CommandQueueType::Copy];
+
+        for (uint32_t i = 0; i < (uint32_t)queueFamilyProperties.size(); i++)
+        {
+            VkQueueFlags flags = queueFamilyProperties[i].queueFlags;
+
+            if ((flags & VK_QUEUE_GRAPHICS_BIT) != 0 && graphicsQueueIndex == (uint32_t)-1)
+            {
+                graphicsQueueIndex = i;
+            }
+            else if ((flags & VK_QUEUE_COMPUTE_BIT) != 0 && computeQueueIndex == (uint32_t)-1)
+            {
+                computeQueueIndex = i;
+            }
+            else if ((flags & VK_QUEUE_TRANSFER_BIT) != 0 && transferQueue == (uint32_t)-1)
+            {
+                transferQueue = i;
+            }
+        }
 
         return true;
     }
 
-    bool createLogicalDevice(DeviceData *pData)
+    bool createLogicalDevice(DeviceData *pData, const Device::Desc& desc)
     {
+        // Features
         VkPhysicalDeviceFeatures requiredFeatures = {};
         requiredFeatures.multiDrawIndirect = pData->supportedFeatures.multiDrawIndirect;
         requiredFeatures.tessellationShader = VK_TRUE;
         requiredFeatures.geometryShader = VK_TRUE;
 
-        VkDeviceQueueCreateInfo queueInfo = {};
-        queueInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-        queueInfo.flags = 0;
-        queueInfo.queueFamilyIndex = pData->graphicsQueueNodeIndex;
-        queueInfo.queueCount = 1;
-        queueInfo.pQueuePriorities = nullptr;
+        // Queues
+        std::vector<VkDeviceQueueCreateInfo> queueInfos;
+        for (uint32_t i = 0; i < (uint32_t)LowLevelContextData::CommandQueueType::Count; i++)
+        {
+            VkDeviceQueueCreateInfo info = {};
+            info.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+            info.flags = 0;
+            info.queueCount = (i == (uint32_t)LowLevelContextData::CommandQueueType::Direct) ? desc.additionalQueues[i] + 1 : desc.additionalQueues[i];
+            info.queueFamilyIndex = pData->queueTypeToFamilyIndex[i];
+            info.pQueuePriorities = nullptr;
 
+            if (info.queueCount > 0)
+            {
+                queueInfos.push_back(info);
+            }
+        }
+
+        // Logical Device
         VkDeviceCreateInfo deviceInfo = {};
         deviceInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
         deviceInfo.flags = 0;
-        deviceInfo.queueCreateInfoCount = 1;
-        deviceInfo.pQueueCreateInfos = &queueInfo;
+        deviceInfo.queueCreateInfoCount = (uint32_t)queueInfos.size();
+        deviceInfo.pQueueCreateInfos = queueInfos.data();
         deviceInfo.enabledLayerCount = 0;
         deviceInfo.ppEnabledLayerNames = nullptr;
         deviceInfo.enabledExtensionCount = 0;
@@ -296,7 +345,7 @@ namespace Falcor
         return true;
     }
 
-    bool createSurface(const Window* pWindow, DeviceData *pData)
+    bool createSurface(DeviceData *pData, const Window* pWindow)
     {
         VkWin32SurfaceCreateInfoKHR createInfo;
         createInfo.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
@@ -312,20 +361,19 @@ namespace Falcor
         return true;
     }
 
-    bool createSwapChain(const Window* pWindow, DeviceData *pData)
+    bool createSwapChain(DeviceData *pData, const Window* pWindow, ResourceFormat colorFormat)
     {
-        VkResult err;
         VkSurfaceCapabilitiesKHR surfCaps;
-        err = vkGetPhysicalDeviceSurfaceCapabilitiesKHR(pData->physicalDevice, pData->surface, &surfCaps);
+        vkGetPhysicalDeviceSurfaceCapabilitiesKHR(pData->physicalDevice, pData->surface, &surfCaps);
 
-        uint32_t presentModeCount;
-        err = vkGetPhysicalDeviceSurfacePresentModesKHR(pData->physicalDevice, pData->surface, &presentModeCount, NULL);
+        uint32_t presentModeCount = 0;
+        vkGetPhysicalDeviceSurfacePresentModesKHR(pData->physicalDevice, pData->surface, &presentModeCount, nullptr);
 
         std::vector<VkPresentModeKHR> presentModes(presentModeCount);
-        err = vkGetPhysicalDeviceSurfacePresentModesKHR(pData->physicalDevice, pData->surface, &presentModeCount, presentModes.data());
+        vkGetPhysicalDeviceSurfacePresentModesKHR(pData->physicalDevice, pData->surface, &presentModeCount, presentModes.data());
 
         VkExtent2D swapchainExtent = {};
-        if (surfCaps.currentExtent.width == -1)
+        if (surfCaps.currentExtent.width == (uint32_t)-1)
         {
             swapchainExtent.width = pWindow->getClientAreaWidth();
             swapchainExtent.height = pWindow->getClientAreaWidth();
@@ -335,6 +383,7 @@ namespace Falcor
             swapchainExtent = surfCaps.currentExtent;
         }
 
+        // Select present mode, preferring MAILBOX -> IMMEDIATE -> FIFO
         VkPresentModeKHR presentMode = VK_PRESENT_MODE_FIFO_KHR;
 
         for (size_t i = 0; i < presentModeCount; i++)
@@ -344,41 +393,25 @@ namespace Falcor
                 presentMode = VK_PRESENT_MODE_MAILBOX_KHR;
                 break;
             }
-            if ((presentMode != VK_PRESENT_MODE_MAILBOX_KHR) && (presentModes[i] == VK_PRESENT_MODE_IMMEDIATE_KHR))
+            else if (presentModes[i] == VK_PRESENT_MODE_IMMEDIATE_KHR)
             {
                 presentMode = VK_PRESENT_MODE_IMMEDIATE_KHR;
             }
         }
 
-        uint32_t desiredNumberOfSwapchainImages = surfCaps.minImageCount + 1;
-        if ((surfCaps.maxImageCount > 0) && (desiredNumberOfSwapchainImages > surfCaps.maxImageCount))
-        {
-            desiredNumberOfSwapchainImages = surfCaps.maxImageCount;
-        }
-
-        VkSurfaceTransformFlagsKHR preTransform;
-        if (surfCaps.supportedTransforms & VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR)
-        {
-            preTransform = VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR;
-        }
-        else
-        {
-            preTransform = surfCaps.currentTransform;
-        }
-
         VkSwapchainCreateInfoKHR scCreateInfo = {};
         scCreateInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
         scCreateInfo.surface = pData->surface;
-        scCreateInfo.minImageCount = desiredNumberOfSwapchainImages;
-        scCreateInfo.imageFormat = VK_FORMAT_B8G8R8A8_UNORM;
+        scCreateInfo.minImageCount = clamp(kSwapChainBuffers, surfCaps.minImageCount, surfCaps.maxImageCount);
+        scCreateInfo.imageFormat = getVkFormat(srgbToLinearFormat(colorFormat));
         scCreateInfo.imageColorSpace = VK_COLORSPACE_SRGB_NONLINEAR_KHR;
         scCreateInfo.imageExtent = { swapchainExtent.width, swapchainExtent.height };
         scCreateInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-        scCreateInfo.preTransform = (VkSurfaceTransformFlagBitsKHR)preTransform;
+        scCreateInfo.preTransform = surfCaps.currentTransform;
         scCreateInfo.imageArrayLayers = 1;
         scCreateInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
         scCreateInfo.queueFamilyIndexCount = 0;
-        scCreateInfo.pQueueFamilyIndices = NULL;
+        scCreateInfo.pQueueFamilyIndices = nullptr;
         scCreateInfo.presentMode = presentMode;
         scCreateInfo.clipped = true;
         scCreateInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
@@ -440,12 +473,12 @@ namespace Falcor
             return false;
         }
 
-        if (createLogicalDevice(pData) == false)
+        if (createLogicalDevice(pData, desc) == false)
         {
             return false;
         }
 
-        if (createSurface(mpWindow.get(), pData) == false)
+        if (createSurface(pData, mpWindow.get()) == false)
         {
             return false;
         }
@@ -465,7 +498,7 @@ namespace Falcor
         
         //mpResourceAllocator = ResourceAllocator::create(1024 * 1024 * 2, mpRenderContext->getLowLevelData()->getFence());
 
-        createSwapChain(mpWindow.get(), pData);
+        createSwapChain(pData, mpWindow.get(), desc.colorFormat);
 
         mVsyncOn = desc.enableVsync;
 

@@ -27,20 +27,17 @@
 ***************************************************************************/
 #include "Framework.h"
 #include "API/LowLevel/LowLevelContextData.h"
-#include "API/vulkan/FalcorVK.h"
 #include "API/Device.h"
 
 namespace Falcor
 {
-    extern uint32_t gQueueNodeIndex;
-
-    bool createCommandPool(VkDevice device, VkCommandPool *pCommandPool)
+    bool createCommandPool(VkDevice device, uint32_t queueFamilyIndex, VkCommandPool *pCommandPool)
     {
         VkCommandPoolCreateInfo commandPoolCreateInfo{};
 
         commandPoolCreateInfo.sType            = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
         commandPoolCreateInfo.flags            = 0;
-        commandPoolCreateInfo.queueFamilyIndex = gQueueNodeIndex;
+        commandPoolCreateInfo.queueFamilyIndex = queueFamilyIndex;
 
         if (VK_FAILED(vkCreateCommandPool(device, &commandPoolCreateInfo, nullptr, pCommandPool)))
         {
@@ -68,24 +65,15 @@ namespace Falcor
         return true;
     }
 
-    bool getDeviceQueue(VkDevice device, CommandQueueHandle &queue)
+    LowLevelContextData::SharedPtr LowLevelContextData::create(LowLevelContextData::CommandQueueType type, CommandQueueHandle queue)
     {
-        vkGetDeviceQueue(device, gQueueNodeIndex, 0, &queue);
+        SharedPtr pThis = SharedPtr(new LowLevelContextData);
+        pThis->mType = type;
+        pThis->mpFence = GpuFence::create();
+        pThis->mpQueue = queue;
 
-        assert(queue != VK_NULL_HANDLE);
-        return queue != VK_NULL_HANDLE;
-    }
-
-    LowLevelContextData::SharedPtr LowLevelContextData::create(CommandListType type)
-    {
-        SharedPtr pThis     = SharedPtr(new LowLevelContextData);
-        pThis->mpFence      = GpuFence::create();
         DeviceHandle device = gpDevice->getApiHandle();
-
-        // Get the device queue
-        getDeviceQueue(device, pThis->mpQueue);
-
-        createCommandPool(device, &pThis->mpAllocator);
+        createCommandPool(device, gpDevice->getApiCommandQueueType(type), &pThis->mpAllocator);
 
         // #VKTODO Generally, we'd have one per swapchain image. Not sure if that needs to be handled here
         createCommandBuffer(device, 1, &pThis->mpList, pThis->mpAllocator);

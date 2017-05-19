@@ -63,6 +63,7 @@ namespace Falcor
 	using DeviceHandle = ID3D12DevicePtr;
 	using CommandListHandle = ID3D12GraphicsCommandListPtr;
 	using CommandQueueHandle = ID3D12CommandQueuePtr;
+    using ApiCommandQueueType = D3D12_COMMAND_LIST_TYPE;
     using CommandAllocatorHandle = ID3D12CommandAllocatorPtr;
     using CommandSignatureHandle = ID3D12CommandSignaturePtr;
     using FenceHandle = ID3D12FencePtr;
