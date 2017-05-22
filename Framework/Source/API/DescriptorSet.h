@@ -36,6 +36,9 @@ namespace Falcor
     public:
         using SharedPtr = std::shared_ptr<DescriptorSet>;
         using Type = DescriptorPool::Type;
+        using CpuHandle = DescriptorPool::CpuHandle;
+        using GpuHandle = DescriptorPool::GpuHandle;
+
         ~DescriptorSet();
 
         struct Layout
@@ -57,6 +60,9 @@ namespace Falcor
         size_t getRangeCount() const { return mLayout.mRanges.size(); }
         Type getRangeType(uint32_t range) const { return mLayout.mRanges[range].type; }
         uint32_t getRangeDescCount(uint32_t range) const { return mLayout.mRanges[range].count; }
+
+        CpuHandle getCpuHandle(uint32_t rangeIndex, uint32_t descInRange = 0) const;
+        GpuHandle getGpuHandle(uint32_t rangeIndex, uint32_t descInRange = 0) const;
     private:
         using ApiData = DescriptorSetApiData;
         DescriptorSet(DescriptorPool::SharedPtr pPool, const Layout& layout) : mpPool(pPool), mLayout(layout) {}

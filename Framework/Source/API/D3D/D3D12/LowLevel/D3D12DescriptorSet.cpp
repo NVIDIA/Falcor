@@ -57,4 +57,14 @@ namespace Falcor
         }
         return true;
     }
+
+    DescriptorSet::CpuHandle DescriptorSet::getCpuHandle(uint32_t rangeIndex, uint32_t descInRange) const
+    {
+        return mpApiData->allocations[rangeIndex]->getCpuHandle(descInRange);
+    }
+
+    DescriptorSet::GpuHandle DescriptorSet::getGpuHandle(uint32_t rangeIndex, uint32_t descInRange) const
+    {
+        return mpApiData->allocations[rangeIndex]->getGpuHandle(descInRange);
+    }
 }
