@@ -361,7 +361,7 @@ namespace Falcor
         return true;
     }
 
-    bool createSwapChain(DeviceData *pData, const Window* pWindow, ResourceFormat colorFormat)
+    bool createSwapChain(DeviceData *pData, const Window* pWindow, ResourceFormat colorFormat, bool enableVSync)
     {
         VkSurfaceCapabilitiesKHR surfCaps;
         vkGetPhysicalDeviceSurfaceCapabilitiesKHR(pData->physicalDevice, pData->surface, &surfCaps);
@@ -383,19 +383,22 @@ namespace Falcor
             swapchainExtent = surfCaps.currentExtent;
         }
 
-        // Select present mode, preferring MAILBOX -> IMMEDIATE -> FIFO
+        // Select present mode, FIFO for VSync, otherwise preferring MAILBOX -> IMMEDIATE -> FIFO
         VkPresentModeKHR presentMode = VK_PRESENT_MODE_FIFO_KHR;
 
-        for (size_t i = 0; i < presentModeCount; i++)
+        if (enableVSync == false)
         {
-            if (presentModes[i] == VK_PRESENT_MODE_MAILBOX_KHR)
+            for (size_t i = 0; i < presentModeCount; i++)
             {
-                presentMode = VK_PRESENT_MODE_MAILBOX_KHR;
-                break;
-            }
-            else if (presentModes[i] == VK_PRESENT_MODE_IMMEDIATE_KHR)
-            {
-                presentMode = VK_PRESENT_MODE_IMMEDIATE_KHR;
+                if (presentModes[i] == VK_PRESENT_MODE_MAILBOX_KHR)
+                {
+                    presentMode = VK_PRESENT_MODE_MAILBOX_KHR;
+                    break;
+                }
+                else if (presentModes[i] == VK_PRESENT_MODE_IMMEDIATE_KHR)
+                {
+                    presentMode = VK_PRESENT_MODE_IMMEDIATE_KHR;
+                }
             }
         }
 
@@ -498,9 +501,9 @@ namespace Falcor
         
         //mpResourceAllocator = ResourceAllocator::create(1024 * 1024 * 2, mpRenderContext->getLowLevelData()->getFence());
 
-        createSwapChain(pData, mpWindow.get(), desc.colorFormat);
-
         mVsyncOn = desc.enableVsync;
+
+        createSwapChain(pData, mpWindow.get(), desc.colorFormat, mVsyncOn);
 
         //// Update the FBOs
         //if (updateDefaultFBO(mpWindow->getClientAreaWidth(), mpWindow->getClientAreaHeight(), desc.colorFormat, desc.depthFormat) == false)
