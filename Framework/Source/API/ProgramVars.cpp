@@ -77,7 +77,7 @@ namespace Falcor
                 uint32_t regIndex = pReflector->getRegisterIndex();
                 uint32_t regSpace = pReflector->getRegisterSpace();
 
-                ProgramVars::ResourceData<ViewType> data;
+                ResourceData<ViewType> data;
                 
                 // Only create the buffer if needed
                 if (createBuffers)
@@ -161,7 +161,7 @@ namespace Falcor
             return nullptr;
         }
 
-        auto& pDesc = mpReflector->getBufferDesc(name, ProgramReflection::BufferReflection::Type::Constant);
+        const auto& pDesc = mpReflector->getBufferDesc(name, ProgramReflection::BufferReflection::Type::Constant);
 
         if (pDesc->getType() != ProgramReflection::BufferReflection::Type::Constant)
         {
@@ -174,7 +174,7 @@ namespace Falcor
 
     ConstantBuffer::SharedPtr ProgramVars::getConstantBuffer(uint32_t index) const
     {
-        auto& it = mAssignedCbs.find(index);
+        const auto& it = mAssignedCbs.find(index);
         if (it == mAssignedCbs.end())
         {
             logWarning("Can't find constant buffer at index " + std::to_string(index) + ". Ignoring getConstantBuffer() call.");
@@ -567,6 +567,7 @@ namespace Falcor
     template<typename ViewType, bool isUav, bool forGraphics>
     void bindUavSrvCommon(CopyContext* pContext, const ProgramVars::ResourceMap<ViewType>& resMap)
     {
+#ifdef _WIN32
         ID3D12GraphicsCommandList* pList = pContext->getLowLevelData()->getCommandList();
         for (auto& resIt : resMap)
         {
@@ -623,6 +624,7 @@ namespace Falcor
                 pList->SetComputeRootDescriptorTable(rootOffset, handle->getGpuHandle());
             }
         }
+#endif        
     }
 
     template<bool forGraphics>

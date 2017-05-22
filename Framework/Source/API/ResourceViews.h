@@ -37,7 +37,7 @@ namespace Falcor
     class ResourceView
     {
     public:
-        using ApiHandle = typename ApiHandleType;
+        using ApiHandle = ApiHandleType;
         static const uint32_t kMaxPossible = -1;
         struct ViewInfo
         {

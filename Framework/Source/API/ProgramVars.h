@@ -39,6 +39,24 @@ namespace Falcor
 {
     class ProgramVersion;
     class ComputeContext;
+    
+
+    // VC++ somehow allows this to be present in the ProgramVars class. GCC complains though.
+    // This defined inside the class gives an error. So, moving it outside the ProgramVars class.
+    template<typename ViewType>
+    struct ResourceData
+    {
+        typename ViewType::SharedPtr pView;
+        Resource::SharedPtr pResource;
+        uint32_t rootSigOffset = 0;
+    };
+
+    template<>      
+    struct ResourceData<Sampler>
+    {
+        Sampler::SharedPtr pSampler;
+        uint32_t rootSigOffset = 0;
+    };
 
     /** This class manages a program's reflection and variable assignment.
         It's a high-level abstraction of variables-related concepts such as CBs, texture and sampler assignments, root-signature, descriptor tables, etc.
@@ -49,11 +67,12 @@ namespace Falcor
         template<typename T>
         class SharedPtrT : public std::shared_ptr<T>
         {
+        
         public:
             SharedPtrT() : std::shared_ptr<T>() {}
             SharedPtrT(T* pProgVars) : std::shared_ptr<T>(pProgVars) {}
-            ConstantBuffer::SharedPtr operator[](const std::string& cbName) { return get()->getConstantBuffer(cbName); }
-            ConstantBuffer::SharedPtr operator[](uint32_t index) { return get()->getConstantBuffer(index); }
+            ConstantBuffer::SharedPtr operator[](const std::string& cbName) { return std::shared_ptr<T>::get()->getConstantBuffer(cbName); }
+            ConstantBuffer::SharedPtr operator[](uint32_t index) { return std::shared_ptr<T>::get()->getConstantBuffer(index); }
         };
 
         /** Bind a constant buffer object by name.
@@ -191,21 +210,6 @@ namespace Falcor
         /** Get the root signature object
         */
         RootSignature::SharedPtr getRootSignature() const { return mpRootSignature; }
-
-        template<typename ViewType>
-        struct ResourceData
-        {
-            typename ViewType::SharedPtr pView;
-            Resource::SharedPtr pResource;
-            uint32_t rootSigOffset = 0;
-        };
-
-        template<>
-        struct ResourceData<Sampler>
-        {
-            Sampler::SharedPtr pSampler;
-            uint32_t rootSigOffset = 0;
-        };
 
         template<typename T>
         using ResourceMap = std::unordered_map<uint32_t, ResourceData<T>>;
