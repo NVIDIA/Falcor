@@ -48,6 +48,8 @@ namespace Falcor
         using SharedPtr = std::shared_ptr<VariablesBuffer>;
         using SharedConstPtr = std::shared_ptr<const VariablesBuffer>;
 
+        static const size_t kInvalidOffset = ProgramReflection::kInvalidLocation;
+
         VariablesBuffer(const ProgramReflection::BufferReflection::SharedConstPtr& pReflector, size_t elementSize, size_t elementCount, BindFlags bindFlags, CpuAccess cpuAccess);
 
         virtual ~VariablesBuffer() = 0;
@@ -74,8 +76,6 @@ namespace Falcor
         /** Get a variable offset inside the buffer. See notes about naming in the VariablesBuffer class description. Constant name can be provided with an implicit array-index, similar to VariablesBuffer#SetVariableArray.
         */
         size_t getVariableOffset(const std::string& varName) const;
-
-        static const size_t VariablesBuffer::kInvalidOffset = ProgramReflection::kInvalidLocation;
 
         size_t getElementCount() const { return mElementCount; }
 

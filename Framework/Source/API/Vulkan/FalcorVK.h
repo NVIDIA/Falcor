@@ -29,12 +29,15 @@
 #define NOMINMAX
 #include "API/Formats.h"
 
-#define VK_USE_PLATFORM_WIN32_KHR
-#define VK_PROTOTYPES
+#ifdef _WIN32
+    #define VK_USE_PLATFORM_WIN32_KHR
+#endif
 
 #include <Vulkan/vulkan.h>
 
-#pragma comment(lib, "vulkan-1.lib")
+#ifdef _WIN32
+    #pragma comment(lib, "vulkan-1.lib")
+#endif
 
 namespace Falcor
 {
@@ -59,7 +62,12 @@ namespace Falcor
 
     class DescriptorHeapEntry;
 
+#ifdef _WIN32
     using WindowHandle = HWND;
+#else
+    using WindowHandle = void*;
+#endif
+    
     using DeviceHandle = VkDevice;
     using CommandListHandle = VkCommandBuffer;
     using CommandQueueHandle = VkQueue;

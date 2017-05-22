@@ -28,9 +28,9 @@
 #include "Framework.h"
 #include "ConstantBuffer.h"
 #include "ProgramVersion.h"
-#include "buffer.h"
+#include "Buffer.h"
 #include "glm/glm.hpp"
-#include "texture.h"
+#include "Texture.h"
 #include "API/ProgramReflection.h"
 #include "API/Device.h"
 
@@ -50,8 +50,8 @@ namespace Falcor
 
     ConstantBuffer::SharedPtr ConstantBuffer::create(Program::SharedPtr& pProgram, const std::string& name, size_t overrideSize)
     {
-        auto& pProgReflector = pProgram->getActiveVersion()->getReflector();
-        auto& pBufferReflector = pProgReflector->getBufferDesc(name, ProgramReflection::BufferReflection::Type::Constant);
+        const auto& pProgReflector = pProgram->getActiveVersion()->getReflector();
+        const auto& pBufferReflector = pProgReflector->getBufferDesc(name, ProgramReflection::BufferReflection::Type::Constant);
         if (pBufferReflector)
         {
             return create(pBufferReflector, overrideSize);

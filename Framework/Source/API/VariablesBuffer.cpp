@@ -28,9 +28,9 @@
 #include "Framework.h"
 #include "VariablesBuffer.h"
 #include "ProgramVersion.h"
-#include "buffer.h"
+#include "Buffer.h"
 #include "glm/glm.hpp"
-#include "texture.h"
+#include "Texture.h"
 #include "API/ProgramReflection.h"
 #include "API/Device.h"
 

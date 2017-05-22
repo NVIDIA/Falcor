@@ -26,11 +26,10 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 #include "Framework.h"
-#include "Sample.h"
 #include "API/Device.h"
 #include "API/LowLevel/DescriptorHeap.h"
 #include "API/LowLevel/GpuFence.h"
-#include "API/vulkan/FalcorVK.h"
+#include "API/Vulkan/FalcorVK.h"
 
 namespace Falcor
 {

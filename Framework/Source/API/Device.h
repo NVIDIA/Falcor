@@ -30,7 +30,7 @@
 #include "API/Texture.h"
 #include "API/FBO.h"
 #include "API/RenderContext.h"
-#include "Api/LowLevel/DescriptorHeap.h"
+#include "API/LowLevel/DescriptorHeap.h"
 #include "API/LowLevel/ResourceAllocator.h"
 
 namespace Falcor
