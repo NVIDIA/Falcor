@@ -69,7 +69,7 @@ namespace Falcor
 
         bool apiInit();
         Layout mLayout;
-        std::shared_ptr<ApiData> mpApiData = nullptr;
+        std::shared_ptr<ApiData> mpApiData;
         DescriptorPool::SharedPtr mpPool;
     };
 }

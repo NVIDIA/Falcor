@@ -42,6 +42,8 @@ namespace Falcor
         return pHeap;
     }
 
+    DescriptorSet::~DescriptorSet() = default;
+
     bool DescriptorSet::apiInit()
     {
         mpApiData = std::make_shared<DescriptorSetApiData>();
