@@ -502,7 +502,7 @@ namespace Falcor
         const std::string&              name,
         ReflectionPath*                 path)
     {
-        auto resourceType = getResourceType(pSpireType);
+        auto resourceType = getResourceType(pSpireType->getType());
         if( resourceType == ProgramReflection::Resource::ResourceType::StructuredBuffer)
         {
             // reflect this parameter as a buffer
@@ -515,7 +515,7 @@ namespace Falcor
 
         ProgramReflection::Resource falcorDesc;
         falcorDesc.type = resourceType;
-        falcorDesc.shaderAccess = getShaderAccess(pSpireType);
+        falcorDesc.shaderAccess = getShaderAccess(pSpireType->getType());
         if (resourceType == ProgramReflection::Resource::ResourceType::Texture)
         {
             falcorDesc.retType = getReturnType(pSpireType->getResourceResultType());
@@ -667,7 +667,7 @@ namespace Falcor
                 // and arrays-of-samplers specially here.
 
                 auto elementCount = (uint32_t) pSpireType->getElementCount();
-                spire::TypeLayoutReflection* elementType = pSpireType->getElementType();
+                spire::TypeLayoutReflection* elementType = pSpireType->getElementTypeLayout();
 
                 assert(name.size());
 
@@ -705,7 +705,7 @@ namespace Falcor
                     fieldPath.typeLayout = pSpireType;
                     fieldPath.childIndex = ff;
 
-                    reflectType(pContext, field->getType(), fullName, &fieldPath);
+                    reflectType(pContext, field->getTypeLayout(), fullName, &fieldPath);
                 }
             }
             break;
@@ -726,7 +726,7 @@ namespace Falcor
         varPath.var = pSpireVar;
 
         // Reflect the Type
-        reflectType(pContext, pSpireVar->getType(), name, &varPath);
+        reflectType(pContext, pSpireVar->getTypeLayout(), name, &varPath);
     }
 
     static void initializeBufferVariables(
@@ -830,7 +830,7 @@ namespace Falcor
         ProgramReflection::BufferReflection::Type   bufferType,
         ProgramReflection::ShaderAccess             shaderAccess)
     {
-        auto pSpireElementType = pSpireType->getElementType();
+        auto pSpireElementType = pSpireType->getElementTypeLayout();
 
         ProgramReflection::VariableMap varMap;
 
@@ -885,7 +885,7 @@ namespace Falcor
                 bindingIndex,
                 bindingSpace,
                 bufferType,
-                getStructuredBufferType(pSpireType),
+                getStructuredBufferType(pSpireType->getType()),
                 (uint32_t) pSpireElementType->getSize(),
                 varMap,
                 ProgramReflection::ResourceMap(),
@@ -962,7 +962,7 @@ namespace Falcor
     }
 
     // TODO(tfoley): Should try to strictly use type...
-    static ProgramReflection::Resource::ResourceType getResourceType(spire::ParameterReflection* pParameter)
+    static ProgramReflection::Resource::ResourceType getResourceType(spire::VariableLayoutReflection* pParameter)
     {
         switch (pParameter->getCategory())
         {
@@ -1063,7 +1063,7 @@ namespace Falcor
         const std::string&              name,
         ReflectionPath*                 path)
     {
-        auto shaderAccess = getShaderAccess(pSpireType);
+        auto shaderAccess = getShaderAccess(pSpireType->getType());
         return reflectBuffer(
             pContext,
             pSpireType,
@@ -1167,8 +1167,8 @@ namespace Falcor
 #endif
 
     static bool reflectParameter(
-        ReflectionGenerationContext*    pContext,
-        spire::ParameterReflection*     spireParam)
+        ReflectionGenerationContext*        pContext,
+        spire::VariableLayoutReflection*    spireParam)
     {
         reflectVariable(pContext, spireParam, nullptr);
         return true;
@@ -1188,7 +1188,7 @@ namespace Falcor
         uint32_t paramCount = pSpireReflector->getParameterCount();
         for (uint32_t pp = 0; pp < paramCount; ++pp)
         {
-            spire::ParameterReflection* param = pSpireReflector->getParameterByIndex(pp);
+            spire::VariableLayoutReflection* param = pSpireReflector->getParameterByIndex(pp);
             res = reflectParameter(&context, param);
         }
 
