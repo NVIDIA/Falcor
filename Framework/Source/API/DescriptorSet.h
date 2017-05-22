@@ -26,46 +26,44 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 #pragma once
-#include "LowLevel/DescriptorTable.h"
+#include "LowLevel/DescriptorPool.h"
 
 namespace Falcor
 {
+    struct DescriptorSetApiData;
     class DescriptorSet
     {
     public:
         using SharedPtr = std::shared_ptr<DescriptorSet>;
+        using Type = DescriptorPool::Type;
+        ~DescriptorSet();
 
-        struct Desc
+        struct Layout
         {
         public:
-            Desc& setCbvCount(uint32_t cbCount) { mCbCount = cbCount; return *this; }
-            Desc& setSrvCount(uint32_t srvCount) { mSrvCount = srvCount; return *this; }
-            Desc& setUavCount(uint32_t uavCount) { mUavCount = uavCount; return *this; }
-            Desc& setSamplerCount(uint32_t samplerCount) { mSamplerCount = samplerCount; return *this; }
+            Layout& addRange(Type type, uint32_t count) { mRanges.push_back({ type, count }); }
         private:
             friend class DescriptorSet;
-            uint32_t mCbCount = 0;
-            uint32_t mSrvCount = 0;
-            uint32_t mUavCount = 0;
-            uint32_t mSamplerCount = 0;
+            struct Range
+            {
+                Type type;
+                uint32_t count;
+            };
+            std::vector<Range> mRanges;
         };
 
-        static SharedPtr create(const Desc& desc);
+        static SharedPtr create(DescriptorPool::SharedPtr pPool, const Layout& layout);
 
-        uint32_t getCbCount() const { return mDesc.mCbCount; }
-        uint32_t getSrvCount() const { return mDesc.mSrvCount; }
-        uint32_t getUavCount() const { return mDesc.mUavCount; }
-        uint32_t getSamplerCount() const { return mDesc.mSamplerCount; }
-
-        uint32_t getDescTableCount() const { return (uint32_t)mDescTableVec.size(); }
-        DescriptorTable::SharedPtr getDescriptorTable(uint32_t index) { return mDescTableVec[index]; }
-
+        size_t getRangeCount() const { return mLayout.mRanges.size(); }
+        Type getRangeType(uint32_t range) const { return mLayout.mRanges[range].type; }
+        uint32_t getRangeDescCount(uint32_t range) const { return mLayout.mRanges[range].count; }
     private:
-        DescriptorSet(const Desc& desc);
-        void apiInit();
-        Desc mDesc;
-        using DescTableVec = std::vector<DescriptorTable::SharedPtr>;
+        using ApiData = DescriptorSetApiData;
+        DescriptorSet(DescriptorPool::SharedPtr pPool, const Layout& layout) : mpPool(pPool), mLayout(layout) {}
 
-        DescTableVec mDescTableVec;
+        bool apiInit();
+        Layout mLayout;
+        std::shared_ptr<ApiData> mpApiData;
+        DescriptorPool::SharedPtr mpPool;
     };
 }

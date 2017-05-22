@@ -30,10 +30,9 @@
 
 namespace Falcor
 {
-    DescriptorSet::SharedPtr DescriptorSet::create(const Desc& desc)
+    DescriptorSet::SharedPtr DescriptorSet::create(DescriptorPool::SharedPtr pPool, const Layout& layout)
     {
-        SharedPtr pThis = SharedPtr(new DescriptorSet(desc));
-        pThis->apiInit();
-        return pThis;
+        SharedPtr pThis = SharedPtr(new DescriptorSet(pPool, layout));
+        return pThis->apiInit() ? pThis : nullptr;
     }
 }

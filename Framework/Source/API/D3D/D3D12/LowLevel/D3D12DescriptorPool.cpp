@@ -36,6 +36,26 @@ namespace Falcor
         D3D12DescriptorHeap::SharedPtr pHeaps[D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES];
     };
 
+    static D3D12_DESCRIPTOR_HEAP_TYPE falcorToDxDescType(DescriptorPool::Type t)
+    {
+        switch (t)
+        {
+        case DescriptorPool::Type::Srv:
+        case DescriptorPool::Type::Uav:
+        case DescriptorPool::Type::Cbv:
+            return D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+        case DescriptorPool::Type::Dsv:
+            return D3D12_DESCRIPTOR_HEAP_TYPE_DSV;
+        case DescriptorPool::Type::Rtv:
+            return D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
+        case DescriptorPool::Type::Sampler:
+            return D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER;
+        default:
+            should_not_get_here();
+            return D3D12_DESCRIPTOR_HEAP_TYPE(-1);
+        }
+    }
+
     bool DescriptorPool::apiInit()
     {
         // Find out how many heaps we need

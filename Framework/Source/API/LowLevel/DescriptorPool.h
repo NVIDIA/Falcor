@@ -32,7 +32,8 @@
 namespace Falcor
 {
     struct DescriptorPoolApiData;
-    
+    class DescriptorSet;
+
     class DescriptorPool : public std::enable_shared_from_this<DescriptorPool>
     {
     public:
@@ -86,23 +87,8 @@ namespace Falcor
         bool isShaderVisible() const { return mDesc.mShaderVisible; }
         ApiHandle getApiHandle(uint32_t heapIndex) const;
 
-        class Allocation
-        {
-        public:
-            using SharedPtr = std::shared_ptr<Allocation>;
-            ~Allocation();
-
-        private:
-            Allocation() = default;
-            friend DescriptorPool;
-            Desc mDesc;
-            ApiHandle mApiHandle;
-
-        };
-
-        using AllocationPtr = Allocation::SharedPtr;
-
     private:
+        friend DescriptorSet;
         DescriptorPool(const Desc& desc);
         bool apiInit();
         Desc mDesc;
