@@ -1192,6 +1192,30 @@ namespace Falcor
             res = reflectParameter(&context, param);
         }
 
+        // Also extract entry-point stuff
+
+        SpireUInt entryPointCount = pSpireReflector->getEntryPointCount();
+        for( SpireUInt ee = 0; ee < entryPointCount; ++ee )
+        {
+            spire::EntryPointReflection* entryPoint = pSpireReflector->getEntryPointByIndex(ee);
+
+            switch( entryPoint->getStage() )
+            {
+            case SPIRE_STAGE_COMPUTE:
+                {
+                    SpireUInt sizeAlongAxis[3];
+                    entryPoint->getComputeThreadGroupSize(3, &sizeAlongAxis[0]);
+                    mThreadGroupSizeX = (uint32_t) sizeAlongAxis[0];
+                    mThreadGroupSizeY = (uint32_t) sizeAlongAxis[1];
+                    mThreadGroupSizeZ = (uint32_t) sizeAlongAxis[2];
+                }
+                break;
+
+            default:
+                break;
+            }
+        }
+
         return res;
     }
 }

@@ -379,6 +379,11 @@ namespace Falcor
             string_2_bindloc_map nameMap;
         };
 
+        void getThreadGroupSize(
+            uint32_t* outX,
+            uint32_t* outY,
+            uint32_t* outZ) const;
+
     // TODO(tfoley): switch this back
     public://private:
         bool init(
@@ -398,6 +403,7 @@ namespace Falcor
         VariableMap mFragOut;
         VariableMap mVertAttr;
         ResourceMap mResources;
+        uint32_t mThreadGroupSizeX, mThreadGroupSizeY, mThreadGroupSizeZ;
     };
 
 

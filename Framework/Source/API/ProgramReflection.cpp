@@ -208,4 +208,14 @@ namespace Falcor
         }
         return pRes;
     }
+
+    void ProgramReflection::getThreadGroupSize(
+        uint32_t* outX,
+        uint32_t* outY,
+        uint32_t* outZ) const
+    {
+        if(outX) *outX = mThreadGroupSizeX;
+        if(outX) *outY = mThreadGroupSizeY;
+        if(outX) *outZ = mThreadGroupSizeZ;
+    }
 }
