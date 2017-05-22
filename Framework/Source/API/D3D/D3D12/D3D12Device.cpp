@@ -301,11 +301,10 @@ namespace Falcor
 
         // Create the descriptor heaps
         DescriptorPool::Desc poolDesc;
-        poolDesc.setDescCount(DescriptorPool::Type::Srv, 16 * 1024).setDescCount(DescriptorPool::Type::Sampler, 2048).setDescCount(DescriptorPool::Type::Rtv, 1024).setDescCount(DescriptorPool::Type::Dsv, 1024);
-        poolDesc.setShaderVisible(false);
-        mpCpuDescPool = DescriptorPool::create(poolDesc);
-        poolDesc.setShaderVisible(false);
+        poolDesc.setDescCount(DescriptorPool::Type::Srv, 16 * 1024).setDescCount(DescriptorPool::Type::Sampler, 2048).setShaderVisible(true);
         mpGpuDescPool = DescriptorPool::create(poolDesc);
+        poolDesc.setShaderVisible(false).setDescCount(DescriptorPool::Type::Rtv, 1024).setDescCount(DescriptorPool::Type::Dsv, 1024);
+        mpCpuDescPool = DescriptorPool::create(poolDesc);
 
 		// Create the swap-chain
         mpRenderContext = RenderContext::create();

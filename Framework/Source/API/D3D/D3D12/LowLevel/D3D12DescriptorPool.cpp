@@ -79,7 +79,7 @@ namespace Falcor
 
     DescriptorPool::ApiHandle DescriptorPool::getApiHandle(uint32_t heapIndex) const
     {
-        assert(index < arraysize(mpApiData->pHeaps));
+        assert(heapIndex < arraysize(mpApiData->pHeaps));
         return mpApiData->pHeaps[heapIndex]->getApiHandle();
     }
 }

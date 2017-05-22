@@ -38,7 +38,7 @@ namespace Falcor
     {
         auto dxType = falcorToDxDescType(type);
         D3D12DescriptorHeap* pHeap = pPool->getApiData()->pHeaps[dxType].get();
-        assert(pHeap->getType() == type);
+        assert(pHeap->getType() == dxType);
         return pHeap;
     }
 

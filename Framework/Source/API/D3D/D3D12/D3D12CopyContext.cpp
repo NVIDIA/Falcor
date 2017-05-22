@@ -49,11 +49,16 @@ namespace Falcor
         const DescriptorPool* pGpuPool = gpDevice->getGpuDescriptorPool().get();
         const DescriptorPool::ApiData* pData = pGpuPool->getApiData();
         ID3D12DescriptorHeap* pHeaps[arraysize(pData->pHeaps)];
+        uint32_t heapCount = 0;
         for (uint32_t i = 0; i < arraysize(pData->pHeaps); i++)
         {
-            pHeaps[i] = pData->pHeaps[i]->getApiHandle();
+            if (pData->pHeaps[i])
+            {
+                pHeaps[heapCount] = pData->pHeaps[i]->getApiHandle();
+                heapCount++;
+            }
         }
-        mpLowLevelData->getCommandList()->SetDescriptorHeaps(arraysize(pHeaps), pHeaps);
+        mpLowLevelData->getCommandList()->SetDescriptorHeaps(heapCount, pHeaps);
     }
 
     void CopyContext::reset()
