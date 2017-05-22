@@ -28,8 +28,8 @@
 #include "Framework.h"
 #include "API/Buffer.h"
 #include "API/Device.h"
-#include "Api/LowLevel/ResourceAllocator.h"
-#include "API/vulkan/FalcorVK.h"
+#include "API/LowLevel/ResourceAllocator.h"
+#include "API/Vulkan/FalcorVK.h"
 
 namespace Falcor
 {

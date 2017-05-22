@@ -27,6 +27,7 @@
 ***************************************************************************/
 #include "Framework.h"
 #include "API/LowLevel/LowLevelContextData.h"
+#include "API/Vulkan/FalcorVK.h"
 #include "API/Device.h"
 
 namespace Falcor

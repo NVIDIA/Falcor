@@ -75,7 +75,7 @@ namespace Falcor
         */
         size_t getVariableOffset(const std::string& varName) const;
 
-        static const size_t VariablesBuffer::kInvalidOffset = ProgramReflection::kInvalidLocation;
+        static const size_t /*VariablesBuffer::*/kInvalidOffset = ProgramReflection::kInvalidLocation;
 
         size_t getElementCount() const { return mElementCount; }
 

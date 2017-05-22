@@ -57,8 +57,8 @@ namespace Falcor
 
     StructuredBuffer::SharedPtr StructuredBuffer::create(const Program::SharedPtr& pProgram, const std::string& name, size_t elementCount, Resource::BindFlags bindFlags)
     {
-        auto& pProgReflector = pProgram->getActiveVersion()->getReflector();
-        auto& pBufferReflector = pProgReflector->getBufferDesc(name, ProgramReflection::BufferReflection::Type::Structured);
+        const auto& pProgReflector = pProgram->getActiveVersion()->getReflector();
+        const auto& pBufferReflector = pProgReflector->getBufferDesc(name, ProgramReflection::BufferReflection::Type::Structured);
         if (pBufferReflector)
         {
             return create(pBufferReflector, elementCount, bindFlags);

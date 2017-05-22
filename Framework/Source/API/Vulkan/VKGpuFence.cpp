@@ -28,7 +28,7 @@
 #include "Framework.h"
 #include "API/LowLevel/GpuFence.h"
 #include "API/Device.h"
-#include "API/vulkan/FalcorVK.h"
+#include "API/Vulkan/FalcorVK.h"
 
 //TODO: The GPU fence concept seems slightly different on D3D.
 // On Vulkan, we use semaphores. Fences are CPU waits on Vulkan.
