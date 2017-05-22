@@ -27,7 +27,6 @@
 ***************************************************************************/
 #include "Framework.h"
 #include "API/FBO.h"
-#include "Api/LowLevel/DescriptorHeap.h"
 #include "API/D3D/D3DViews.h"
 #include "API/Device.h"
 #include "API/ResourceViews.h"

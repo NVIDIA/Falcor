@@ -31,6 +31,7 @@
 #include "API/Buffer.h"
 #include <queue>
 #include "D3D12Resource.h"
+#include "LowLevel/D3D12DescriptorData.h"
 
 namespace Falcor
 {
@@ -45,7 +46,13 @@ namespace Falcor
 
     void CopyContext::bindDescriptorHeaps()
     {
-        ID3D12DescriptorHeap* pHeaps[] = { gpDevice->getSamplerDescriptorHeap()->getApiHandle(), gpDevice->getSrvDescriptorHeap()->getApiHandle() };
+        const DescriptorPool* pGpuPool = gpDevice->getGpuDescriptorPool().get();
+        const DescriptorPool::ApiData* pData = pGpuPool->getApiData();
+        ID3D12DescriptorHeap* pHeaps[arraysize(pData->pHeaps)];
+        for (uint32_t i = 0; i < arraysize(pData->pHeaps); i++)
+        {
+            pHeaps[i] = pData->pHeaps[i]->getApiHandle();
+        }
         mpLowLevelData->getCommandList()->SetDescriptorHeaps(arraysize(pHeaps), pHeaps);
     }
 

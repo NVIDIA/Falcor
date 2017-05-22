@@ -38,4 +38,6 @@ namespace Falcor
     }
 
     DescriptorPool::DescriptorPool(const Desc& desc) : mDesc(desc) {}
+
+    DescriptorPool::~DescriptorPool() = default;
 }

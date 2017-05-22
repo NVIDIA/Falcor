@@ -100,11 +100,6 @@ namespace Falcor
         using SharedConstPtr = std::shared_ptr<const UnorderedAccessView>;
         static SharedPtr create(ResourceWeakPtr pResource, uint32_t mipLevel, uint32_t firstArraySlice = 0, uint32_t arraySize = kMaxPossible);
         static SharedPtr getNullView();
-#ifdef FALCOR_D3D12
-        UavHandle getHandleForClear() const { return mViewForClear; }
-    private:
-        UavHandle mViewForClear;
-#endif
     private:
         UnorderedAccessView(ResourceWeakPtr& pResource, ApiHandle handle, uint32_t mipLevel, uint32_t firstArraySlice, uint32_t arraySize) :
             ResourceView(pResource, handle, mipLevel, 1, firstArraySlice, arraySize) {}

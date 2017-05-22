@@ -44,7 +44,7 @@ namespace Falcor
         struct Layout
         {
         public:
-            Layout& addRange(Type type, uint32_t count) { mRanges.push_back({ type, count }); }
+            Layout& addRange(Type type, uint32_t count) { mRanges.push_back({ type, count }); return *this; }
         private:
             friend class DescriptorSet;
             struct Range

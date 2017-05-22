@@ -28,7 +28,6 @@
 #include "Framework.h"
 #include "Sample.h"
 #include "API/Device.h"
-#include "API/LowLevel/DescriptorHeap.h"
 #include "API/LowLevel/GpuFence.h"
 
 namespace Falcor
@@ -301,12 +300,12 @@ namespace Falcor
 		}
 
         // Create the descriptor heaps
-        mpSrvHeap = DescriptorHeap::create(DescriptorHeap::Type::SRV, 16 * 1024);
-        mpSamplerHeap = DescriptorHeap::create(DescriptorHeap::Type::Sampler, 2048);
-        mpRtvHeap = DescriptorHeap::create(DescriptorHeap::Type::RTV, 1024, false);
-        mpDsvHeap = DescriptorHeap::create(DescriptorHeap::Type::DSV, 1024, false);
-        mpUavHeap = mpSrvHeap;
-        mpCpuUavHeap = DescriptorHeap::create(DescriptorHeap::Type::SRV, 2*1024, false);
+        DescriptorPool::Desc poolDesc;
+        poolDesc.setDescCount(DescriptorPool::Type::Srv, 16 * 1024).setDescCount(DescriptorPool::Type::Sampler, 2048).setDescCount(DescriptorPool::Type::Rtv, 1024).setDescCount(DescriptorPool::Type::Dsv, 1024);
+        poolDesc.setShaderVisible(false);
+        mpCpuDescPool = DescriptorPool::create(poolDesc);
+        poolDesc.setShaderVisible(false);
+        mpGpuDescPool = DescriptorPool::create(poolDesc);
 
 		// Create the swap-chain
         mpRenderContext = RenderContext::create();

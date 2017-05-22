@@ -65,7 +65,7 @@ namespace Falcor
         descCount[D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV] += mDesc.mDescCount[(uint32_t)Type::Uav];
         descCount[D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV] += mDesc.mDescCount[(uint32_t)Type::Srv];
 
-        mpApiData = new DescriptorPoolApiData;
+        mpApiData = std::make_shared<DescriptorPoolApiData>();
         for (uint32_t i = 0; i < arraysize(mpApiData->pHeaps); i++)
         {
             if (descCount[i])

@@ -66,22 +66,21 @@ namespace Falcor
     void ConstantBuffer::uploadToGPU(size_t offset, size_t size) const
     {
         VariablesBuffer::uploadToGPU(offset, size);
-        mCBV = nullptr;
     }
 
-    DescriptorHeap::Entry ConstantBuffer::getCBV() const
-    {
-        if (mCBV == nullptr)
-        {
-            DescriptorHeap* pHeap = gpDevice->getSrvDescriptorHeap().get();
-
-            mCBV = pHeap->allocateEntry();
-            D3D12_CONSTANT_BUFFER_VIEW_DESC viewDesc = {};
-            viewDesc.BufferLocation = getGpuAddress();
-            viewDesc.SizeInBytes = (uint32_t)getSize();
-            gpDevice->getApiHandle()->CreateConstantBufferView(&viewDesc, mCBV->getCpuHandle());
-        }
-
-        return mCBV;
-    }
+//     DescriptorHeap::Entry ConstantBuffer::getCBV() const
+//     {
+//         if (mCBV == nullptr)
+//         {
+//             DescriptorHeap* pHeap = gpDevice->getSrvDescriptorHeap().get();
+// 
+//             mCBV = pHeap->allocateEntry();
+//             D3D12_CONSTANT_BUFFER_VIEW_DESC viewDesc = {};
+//             viewDesc.BufferLocation = getGpuAddress();
+//             viewDesc.SizeInBytes = (uint32_t)getSize();
+//             gpDevice->getApiHandle()->CreateConstantBufferView(&viewDesc, mCBV->getCpuHandle());
+//         }
+// 
+//         return mCBV;
+//     }
 }

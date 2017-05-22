@@ -86,12 +86,12 @@ namespace Falcor
         uint32_t getTotalDescCount() const { return mDesc.mTotalDescCount; }
         bool isShaderVisible() const { return mDesc.mShaderVisible; }
         ApiHandle getApiHandle(uint32_t heapIndex) const;
-        const ApiData* getApiData() const { return mpApiData; }
+        const ApiData* getApiData() const { return mpApiData.get(); }
     private:
         friend DescriptorSet;
         DescriptorPool(const Desc& desc);
         bool apiInit();
         Desc mDesc;
-        ApiData* mpApiData;
+        std::shared_ptr<ApiData> mpApiData;
     };
 }
