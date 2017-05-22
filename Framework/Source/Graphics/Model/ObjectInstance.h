@@ -41,11 +41,11 @@ namespace Falcor
     class Model;
 
     template<typename ObjectType>
-    class ObjectInstance : public IMovableObject, public inherit_shared_from_this<IMovableObject, ObjectInstance<typename ObjectType>>
+    class ObjectInstance : public IMovableObject, public inherit_shared_from_this<IMovableObject, ObjectInstance<ObjectType>>
     {
     public:
-        using SharedPtr = std::shared_ptr<ObjectInstance<typename ObjectType>>;
-        using SharedConstPtr = std::shared_ptr<const ObjectInstance<typename ObjectType>>;
+        using SharedPtr = std::shared_ptr<ObjectInstance<ObjectType>>;
+        using SharedConstPtr = std::shared_ptr<const ObjectInstance<ObjectType>>;
 
         /** Constructs a object instance with a transform
             \param[in] pObject Object to create an instance of

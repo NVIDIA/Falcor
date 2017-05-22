@@ -34,6 +34,10 @@
 #include "Graphics/Scene/Scene.h"
 #include "Graphics/Scene/SceneExporter.h"
 
+#ifndef _WIN32
+    #define strcpy_s strcpy
+#endif
+
 namespace Falcor
 {
 
@@ -298,7 +302,7 @@ namespace Falcor
     {
         const auto pTexture = mpMaterial->getLayer(layerID).pTexture;
 
-        auto& pNewTexture = changeTexture(pGui, "Texture##" + std::to_string(layerID), pTexture, true);
+        const auto& pNewTexture = changeTexture(pGui, "Texture##" + std::to_string(layerID), pTexture, true);
         if (pNewTexture != pTexture)
         {
             mpMaterial->setLayerTexture(layerID, pNewTexture);
@@ -349,7 +353,7 @@ namespace Falcor
     {
         const auto pTexture = mpMaterial->getNormalMap();
 
-        auto& pNewTexture = changeTexture(pGui, "Normal Map", pTexture, false);
+        auto&& pNewTexture = changeTexture(pGui, "Normal Map", pTexture, false);
         if (pNewTexture != pTexture)
         {
             mpMaterial->setNormalMap(pNewTexture);
@@ -360,7 +364,7 @@ namespace Falcor
     {
         const auto pTexture = mpMaterial->getAlphaMap();
 
-        auto& pNewTexture = changeTexture(pGui, "Alpha Map", pTexture, false);
+        const auto& pNewTexture = changeTexture(pGui, "Alpha Map", pTexture, false);
         if (pNewTexture != pTexture)
         {
             mpMaterial->setAlphaMap(pNewTexture);
@@ -371,7 +375,7 @@ namespace Falcor
     {
         const auto pTexture = mpMaterial->getHeightMap();
 
-        auto& pNewTexture = changeTexture(pGui, "Height Map", pTexture, false);
+        const auto& pNewTexture = changeTexture(pGui, "Height Map", pTexture, false);
         if (pNewTexture != pTexture)
         {
             mpMaterial->setHeightMap(pNewTexture);
@@ -382,7 +386,7 @@ namespace Falcor
     {
         const auto pTexture = mpMaterial->getAmbientOcclusionMap();
 
-        auto& pNewTexture = changeTexture(pGui, "AO Map", pTexture, true);
+        const auto& pNewTexture = changeTexture(pGui, "AO Map", pTexture, true);
         if (pNewTexture != pTexture)
         {
             mpMaterial->setAmbientOcclusionMap(pNewTexture);

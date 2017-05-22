@@ -487,7 +487,7 @@ namespace Falcor
         if (findFileInDataDirectories(filename, fullpath) == false)
         {
             logError(std::string("Can't find model file ") + filename, true);
-            return nullptr;
+            return false;
         }
 
         uint32_t AssimpFlags = aiProcessPreset_TargetRealtime_MaxQuality |

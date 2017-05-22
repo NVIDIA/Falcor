@@ -62,7 +62,7 @@ namespace Falcor {
 #define v3 vec3
 #define v4 vec4
 #define _fn
-#define DEFAULTS(x_) = ##x_
+#define DEFAULTS(x_)
 #define SamplerState std::shared_ptr<Sampler>
 #define Texture2D std::shared_ptr<Texture>
 #elif defined(CUDA_CODE)

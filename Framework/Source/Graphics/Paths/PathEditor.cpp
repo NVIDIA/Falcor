@@ -30,6 +30,10 @@
 #include "PathEditor.h"
 #include "Graphics/Camera/Camera.h"
 
+#ifndef _WIN32
+    #define strcpy_s strcpy
+#endif
+
 namespace Falcor
 {
     bool PathEditor::closeEditor(Gui* pGui)

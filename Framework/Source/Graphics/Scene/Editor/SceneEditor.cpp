@@ -26,7 +26,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 #include "Framework.h"
-#include "Graphics/Scene/scene.h"
+#include "Graphics/Scene/Scene.h"
 #include "Graphics/Scene/Editor/SceneEditor.h"
 #include "Utils/Gui.h"
 #include "glm/detail/func_trigonometric.hpp"
@@ -37,6 +37,11 @@
 #include "Graphics/Model/ModelRenderer.h"
 #include "Utils/Math/FalcorMath.h"
 #include "Data/HostDeviceData.h"
+
+
+#ifndef _WIN32
+    #define strcpy_s strcpy
+#endif
 
 namespace Falcor
 {

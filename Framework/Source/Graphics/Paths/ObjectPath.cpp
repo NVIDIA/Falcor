@@ -232,7 +232,7 @@ namespace Falcor
 
     void ObjectPath::detachObject(const IMovableObject::SharedPtr& pObject)
     {
-        auto& it = std::find(mpObjects.begin(), mpObjects.end(), pObject);
+        auto&& it = std::find(mpObjects.begin(), mpObjects.end(), pObject);
         if(it != mpObjects.end())
         {
             mpObjects.erase(it);

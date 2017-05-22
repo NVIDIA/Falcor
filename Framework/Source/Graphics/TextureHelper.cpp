@@ -25,13 +25,18 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
+// VKTODO
+#ifdef FALCOR_D3D
+ 
+
 #include "Framework.h"
 #include "TextureHelper.h"
 #include "API/Texture.h"
 #include "Utils/Bitmap.h"
-#include "Utils/DDSHeader.h"
 #include "Utils/BinaryFileStream.h"
 #include "Utils/StringUtils.h"
+#include "Utils/DDSHeader.h"
+
 
 #ifdef FALCOR_GL
 static const bool kTopDown = false;
@@ -700,3 +705,5 @@ namespace Falcor
     }
 #undef no_srgb
 }
+
+#endif

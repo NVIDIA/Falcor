@@ -401,7 +401,13 @@ namespace Falcor
         }
     }
 
-    __forceinline float calcPssmPartitionEnd(float nearPlane, float camDepthRange, const glm::vec2& distanceRange, float linearBlend, uint32_t cascade, uint32_t cascadeCount)
+#ifdef _WIN32 
+    #define FORCE_INLINE __forceinline
+#else
+    #define FORCE_INLINE inline
+#endif    
+
+    FORCE_INLINE float calcPssmPartitionEnd(float nearPlane, float camDepthRange, const glm::vec2& distanceRange, float linearBlend, uint32_t cascade, uint32_t cascadeCount)
     {
         // Convert to camera space
         float minDepth = nearPlane + distanceRange.x * camDepthRange;

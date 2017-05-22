@@ -114,6 +114,10 @@ namespace Falcor
         pPass->init(vsFile, psFile, programDefines, disableDepth, disableStencil, viewportMask, enableSPS);
         return pPass;
     }
+    
+#ifndef _WIN32
+    #define __popcnt
+#endif    
 
     void FullScreenPass::init(const std::string& vsFile, const std::string& psFile, const Program::DefineList& programDefines, bool disableDepth, bool disableStencil, uint32_t viewportMask, bool enableSPS)
     {
