@@ -25,45 +25,36 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#pragma once
-#include "LowLevel/DescriptorPool.h"
+#include "Framework.h"
+#include "API/DescriptorSet.h"
+#include "D3D12DescriptorHeap.h"
+#include "D3D12DescriptorData.h"
 
 namespace Falcor
 {
-    struct DescriptorSetApiData;
-    class DescriptorSet
+    D3D12_DESCRIPTOR_HEAP_TYPE falcorToDxDescType(DescriptorPool::Type t);
+
+    static D3D12DescriptorHeap* getHeap(const DescriptorPool* pPool, DescriptorSet::Type type)
     {
-    public:
-        using SharedPtr = std::shared_ptr<DescriptorSet>;
-        using Type = DescriptorPool::Type;
-        ~DescriptorSet();
+        auto dxType = falcorToDxDescType(type);
+        D3D12DescriptorHeap* pHeap = pPool->getApiData()->pHeaps[dxType].get();
+        assert(pHeap->getType() == type);
+        return pHeap;
+    }
 
-        struct Layout
+    bool DescriptorSet::apiInit()
+    {
+        mpApiData = std::make_shared<DescriptorSetApiData>();
+
+        // For each range we need to allocate a table from a heap
+        mpApiData->allocations.resize(mLayout.mRanges.size());
+        for (size_t i = 0; i < mLayout.mRanges.size(); i++)
         {
-        public:
-            Layout& addRange(Type type, uint32_t count) { mRanges.push_back({ type, count }); }
-        private:
-            friend class DescriptorSet;
-            struct Range
-            {
-                Type type;
-                uint32_t count;
-            };
-            std::vector<Range> mRanges;
-        };
-
-        static SharedPtr create(DescriptorPool::SharedPtr pPool, const Layout& layout);
-
-        size_t getRangeCount() const { return mLayout.mRanges.size(); }
-        Type getRangeType(uint32_t range) const { return mLayout.mRanges[range].type; }
-        uint32_t getRangeDescCount(uint32_t range) const { return mLayout.mRanges[range].count; }
-    private:
-        using ApiData = DescriptorSetApiData;
-        DescriptorSet(DescriptorPool::SharedPtr pPool, const Layout& layout) : mpPool(pPool), mLayout(layout) {}
-
-        bool apiInit();
-        Layout mLayout;
-        std::shared_ptr<ApiData> mpApiData = nullptr;
-        DescriptorPool::SharedPtr mpPool;
-    };
+            const auto& range = mLayout.mRanges[i];
+            D3D12DescriptorHeap* pHeap = getHeap(mpPool.get(), range.type);
+            mpApiData->allocations[i] = pHeap->allocateDescriptors(range.count);
+            if (!mpApiData->allocations[i]) return false;
+        }
+        return true;
+    }
 }

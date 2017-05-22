@@ -26,20 +26,17 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 #pragma once
-#include "Api/LowLevel/DescriptorPool.h"
+#include "D3D12DescriptorHeap.h"
 
 namespace Falcor
 {
-    class D3D12DescriptorTable
+    struct DescriptorPoolApiData
     {
-    public:
-        using SharedPtr = std::shared_ptr<D3D12DescriptorTable>;
-        using Type = DescriptorPool::Type;
-        using Desc = DescriptorPool::Desc;
+        D3D12DescriptorHeap::SharedPtr pHeaps[D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES];
+    };
 
-        static SharedPtr create(Type type, uint32_t descCount);
-    private:
-        D3D12DescriptorTable(Type type);
-        Type mType;
+    struct DescriptorSetApiData
+    {
+        std::vector<D3D12DescriptorHeap::Allocation::SharedPtr> allocations;
     };
 }

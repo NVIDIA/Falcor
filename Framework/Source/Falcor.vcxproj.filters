@@ -489,6 +489,9 @@
     <ClCompile Include="API\D3D\D3D12\LowLevel\D3D12DescriptorPool.cpp">
       <Filter>API\D3D\D3D12\LowLevel</Filter>
     </ClCompile>
+    <ClCompile Include="API\D3D\D3D12\LowLevel\D3D12DescriptorSet.cpp">
+      <Filter>API\D3D\D3D12\LowLevel</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Graphics\Model\Animation.h">
@@ -1596,6 +1599,9 @@
     </ClInclude>
     <ClInclude Include="API\LowLevel\DescriptorPool.h">
       <Filter>API\LowLevel</Filter>
+    </ClInclude>
+    <ClInclude Include="API\D3D\D3D12\LowLevel\D3D12DescriptorData.h">
+      <Filter>API\D3D\D3D12\LowLevel</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

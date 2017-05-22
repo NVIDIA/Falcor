@@ -28,15 +28,11 @@
 #include "Framework.h"
 #include "API/LowLevel/DescriptorPool.h"
 #include "D3D12DescriptorHeap.h"
+#include "D3D12DescriptorData.h"
 
 namespace Falcor
 {
-    struct DescriptorPoolApiData
-    {
-        D3D12DescriptorHeap::SharedPtr pHeaps[D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES];
-    };
-
-    static D3D12_DESCRIPTOR_HEAP_TYPE falcorToDxDescType(DescriptorPool::Type t)
+    D3D12_DESCRIPTOR_HEAP_TYPE falcorToDxDescType(DescriptorPool::Type t)
     {
         switch (t)
         {

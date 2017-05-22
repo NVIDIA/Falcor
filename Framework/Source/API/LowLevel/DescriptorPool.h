@@ -86,7 +86,7 @@ namespace Falcor
         uint32_t getTotalDescCount() const { return mDesc.mTotalDescCount; }
         bool isShaderVisible() const { return mDesc.mShaderVisible; }
         ApiHandle getApiHandle(uint32_t heapIndex) const;
-
+        const ApiData* getApiData() const { return mpApiData; }
     private:
         friend DescriptorSet;
         DescriptorPool(const Desc& desc);
