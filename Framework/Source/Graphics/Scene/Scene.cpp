@@ -198,14 +198,21 @@ namespace Falcor
         // Delete instance
         auto& instances = mModels[modelID];
 
-        instances.erase(instances.begin() + instanceID);
-        mExtentsDirty = true;
-
-        // If no instances are left, delete the vector
-        if (instances.empty())
-        {
-            deleteModel(modelID);
-        }
+		//	Check if there is only one instance left.
+		if (instances.size() == 1)
+		{
+			//	Delete the entire model, since it will also erase the corresponding instance.
+            assert(instanceID == 0);
+			deleteModel(modelID);
+		}
+		else
+		{
+			//	Erase the instance.
+	        instances.erase(instances.begin() + instanceID);
+		}
+		
+		//	Extents will be dirty in either case.
+		mExtentsDirty = true;
     }
 
     const Scene::UserVariable& Scene::getUserVariable(const std::string& name)
