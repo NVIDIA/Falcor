@@ -116,28 +116,33 @@ namespace Falcor
         for (const auto& res : pReflector->getResourceMap())
         {
             const auto& desc = res.second;
-            switch (desc.type)
+            uint32_t count = desc.arraySize ? desc.arraySize : 1;
+            for( uint32_t index = 0; index < count; ++index )
             {
-            case ProgramReflection::Resource::ResourceType::Sampler:
-                mAssignedSamplers[desc.regIndex].pSampler = nullptr;
-                mAssignedSamplers[desc.regIndex].rootSigOffset = findRootSignatureOffset<RootSignature::DescType::Sampler>(mpRootSignature.get(), desc.regIndex, desc.registerSpace);
-                break;
-            case ProgramReflection::Resource::ResourceType::Texture:
-            case ProgramReflection::Resource::ResourceType::RawBuffer:
-                if (desc.shaderAccess == ProgramReflection::ShaderAccess::Read)
+                uint32_t regIndex = desc.regIndex + index;
+                switch (desc.type)
                 {
-                    assert(mAssignedSrvs.find(desc.regIndex) == mAssignedSrvs.end());
-                    mAssignedSrvs[desc.regIndex].rootSigOffset = findRootSignatureOffset<RootSignature::DescType::SRV>(mpRootSignature.get(), desc.regIndex, desc.registerSpace);
+                case ProgramReflection::Resource::ResourceType::Sampler:
+                    mAssignedSamplers[regIndex].pSampler = nullptr;
+                    mAssignedSamplers[regIndex].rootSigOffset = findRootSignatureOffset<RootSignature::DescType::Sampler>(mpRootSignature.get(), regIndex, desc.registerSpace);
+                    break;
+                case ProgramReflection::Resource::ResourceType::Texture:
+                case ProgramReflection::Resource::ResourceType::RawBuffer:
+                    if (desc.shaderAccess == ProgramReflection::ShaderAccess::Read)
+                    {
+                        assert(mAssignedSrvs.find(regIndex) == mAssignedSrvs.end());
+                        mAssignedSrvs[regIndex].rootSigOffset = findRootSignatureOffset<RootSignature::DescType::SRV>(mpRootSignature.get(), regIndex, desc.registerSpace);
+                    }
+                    else
+                    {
+                        assert(mAssignedUavs.find(regIndex) == mAssignedUavs.end());
+                        assert(desc.shaderAccess == ProgramReflection::ShaderAccess::ReadWrite);
+                        mAssignedUavs[regIndex].rootSigOffset = findRootSignatureOffset<RootSignature::DescType::UAV>(mpRootSignature.get(), regIndex, desc.registerSpace);
+                    }
+                    break;
+                default:
+                    should_not_get_here();
                 }
-                else
-                {
-                    assert(mAssignedUavs.find(desc.regIndex) == mAssignedUavs.end());
-                    assert(desc.shaderAccess == ProgramReflection::ShaderAccess::ReadWrite);
-                    mAssignedUavs[desc.regIndex].rootSigOffset = findRootSignatureOffset<RootSignature::DescType::UAV>(mpRootSignature.get(), desc.regIndex, desc.registerSpace);
-                }
-                break;
-            default:
-                should_not_get_here();
             }
         }
     }

@@ -49,6 +49,7 @@ namespace Falcor
     size_t SceneRenderer::sDrawIDOffset = ConstantBuffer::kInvalidOffset;
     size_t SceneRenderer::sLightCountOffset = ConstantBuffer::kInvalidOffset;
     size_t SceneRenderer::sLightArrayOffset = ConstantBuffer::kInvalidOffset;
+    size_t SceneRenderer::sAmbientLightOffset = ConstantBuffer::kInvalidOffset;
 
     const char* SceneRenderer::kPerMaterialCbName = "InternalPerMaterialCB";
     const char* SceneRenderer::kPerFrameCbName = "InternalPerFrameCB";
@@ -74,9 +75,9 @@ namespace Falcor
             {
                 assert(pPerMeshCbData->getVariableData("gWorldMat[0]")->isRowMajor == false); // We copy into CBs as column-major
                 assert(pPerMeshCbData->getVariableData("gWorldInvTransposeMat[0]")->isRowMajor == false);
-                assert(pPerMeshCbData->getVariableData("gWorldMat[0]")->arraySize == pPerMeshCbData->getVariableData("gWorldInvTransposeMat[0]")->arraySize);
+                assert(pPerMeshCbData->getVariableData("gWorldMat")->arraySize == pPerMeshCbData->getVariableData("gWorldInvTransposeMat")->arraySize);
 
-                sWorldMatArraySize = pPerMeshCbData->getVariableData("gWorldMat[0]")->arraySize;
+                sWorldMatArraySize = pPerMeshCbData->getVariableData("gWorldMat")->arraySize;
                 sWorldMatOffset = pPerMeshCbData->getVariableData("gWorldMat[0]")->location;
                 sWorldInvTransposeMatOffset = pPerMeshCbData->getVariableData("gWorldInvTransposeMat[0]")->location;
                 sMeshIdOffset = pPerMeshCbData->getVariableData("gMeshId")->location;
@@ -95,6 +96,8 @@ namespace Falcor
                 sLightCountOffset = pCountOffset ? pCountOffset->location : ConstantBuffer::kInvalidOffset;
                 const auto& pLightOffset = pPerFrameCbData->getVariableData("gLights[0].worldPos");
                 sLightArrayOffset = pLightOffset ? pLightOffset->location : ConstantBuffer::kInvalidOffset;
+                const auto& pAmbientOffset = pPerFrameCbData->getVariableData("gAmbientLighting");
+                sAmbientLightOffset = pAmbientOffset ? pAmbientOffset->location : ConstantBuffer::kInvalidOffset;
             }
         }
     }
@@ -122,6 +125,10 @@ namespace Falcor
             if (sLightCountOffset != ConstantBuffer::kInvalidOffset)
             {
                 pCB->setVariable(sLightCountOffset, mpScene->getLightCount());
+            }
+            if (sAmbientLightOffset != ConstantBuffer::kInvalidOffset)
+            {
+                pCB->setVariable(sAmbientLightOffset, mpScene->getAmbientIntensity());
             }
         }
     }
@@ -212,14 +219,13 @@ namespace Falcor
 
             if(mCompileMaterialWithProgram)
             {
-                // DISABLED_FOR_D3D12
-//                 ProgramVersion::SharedConstPtr pPatchedProgram = MaterialSystem::patchActiveProgramVersion(currentData.pProgram, mpLastMaterial);
-//                 pContext->setProgram(pPatchedProgram);
+                MaterialSystem::patchProgram(currentData.pState->getProgram().get(), mpLastMaterial);
             }
         }
 
         executeDraw(currentData, pMesh->getIndexCount(), instanceCount);
         postFlushDraw(currentData);
+        currentData.pState->getProgram()->removeDefine("_MS_STATIC_MATERIAL_DESC");
     }
 
     void SceneRenderer::postFlushDraw(const CurrentWorkingData& currentData)

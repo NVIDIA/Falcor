@@ -86,7 +86,6 @@ namespace Falcor
 
     void GaussianBlur::updateKernel()
     {
-        ConstantBuffer::SharedPtr pCB = mpVars[0];
         uint32_t center = mKernelWidth / 2;
         float sum = 0;
         std::vector<float> weights(center + 1);

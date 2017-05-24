@@ -34,7 +34,6 @@ namespace Falcor
     struct ShaderData
     {
         ID3DBlobPtr pBlob;
-        ShaderReflectionHandle pReflector;
     };
 
     static const char* kEntryPoint = "main";
@@ -60,6 +59,57 @@ namespace Falcor
             return "";
         }
     }
+
+    struct SpireBlob : ID3DBlob
+    {
+        void* buffer;
+        size_t bufferSize;
+        size_t refCount;
+
+        SpireBlob(void* buffer, size_t bufferSize)
+            : buffer(buffer)
+            , bufferSize(bufferSize)
+            , refCount(1)
+        {}
+
+        // IUnknown
+
+        virtual HRESULT STDMETHODCALLTYPE QueryInterface( 
+            /* [in] */ REFIID riid,
+            /* [iid_is][out] */ _COM_Outptr_ void __RPC_FAR *__RPC_FAR *ppvObject) override
+        {
+            *ppvObject = this;
+            return S_OK;
+        }
+
+        virtual ULONG STDMETHODCALLTYPE AddRef( void) override
+        {
+            ++refCount;
+            return (ULONG) refCount;
+        }
+
+        virtual ULONG STDMETHODCALLTYPE Release( void) override
+        {
+            --refCount;
+            if(refCount == 0)
+            {
+                delete this;
+            }
+            return (ULONG) refCount;
+        }
+
+        // ID3DBlob
+
+        virtual LPVOID STDMETHODCALLTYPE GetBufferPointer() override
+        {
+            return buffer;
+        }
+
+        virtual SIZE_T STDMETHODCALLTYPE GetBufferSize() override
+        {
+            return bufferSize;
+        }
+    };
 
     ID3DBlobPtr Shader::compile(const std::string& source, std::string& errorLog)
     {
@@ -92,7 +142,9 @@ namespace Falcor
         safe_delete(pData);
     }
 
-    bool Shader::init(const std::string& shaderString, std::string& log)
+    bool Shader::init(
+            const std::string&  shaderString,
+            std::string&        log)
     {
         // Compile the shader
         ShaderData* pData = (ShaderData*)mpPrivateData;
@@ -137,29 +189,17 @@ namespace Falcor
 #elif defined FALCOR_D3D12
         mApiHandle = { pData->pBlob->GetBufferPointer(), pData->pBlob->GetBufferSize() };
 #endif
-        // Get the reflection object
-        pData->pReflector = createReflection(pData->pBlob);
 
         return true;
     }
 
-    ShaderReflectionHandle Shader::createReflection(ID3DBlobPtr pBlob)
-    {
-        ShaderReflectionHandle pReflection;
-        d3d_call(D3DReflect(pBlob->GetBufferPointer(), pBlob->GetBufferSize(), IID_PPV_ARGS(&pReflection)));
-        return pReflection;
-    }
-
-    Shader::SharedPtr Shader::create(const std::string& shaderString, ShaderType type, std::string& log)
+    Shader::SharedPtr Shader::create(
+        const std::string&          shaderString,
+        ShaderType                  type,
+        std::string&                log)
     {
         SharedPtr pShader = SharedPtr(new Shader(type));
         return pShader->init(shaderString, log) ? pShader : nullptr;
-    }
-
-    ShaderReflectionHandle Shader::getReflectionInterface() const
-    {
-        ShaderData* pData = (ShaderData*)mpPrivateData;
-        return pData->pReflector;
     }
 
     ID3DBlobPtr Shader::getCodeBlob() const

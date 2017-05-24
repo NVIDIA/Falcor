@@ -100,12 +100,6 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseGL|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugD3D12|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="API\D3D\D3D11\D3D11ShaderReflection.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseD3D12|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugGL|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseGL|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugD3D12|x64'">true</ExcludedFromBuild>
-    </ClCompile>
     <ClCompile Include="API\D3D\D3D11\D3D11Texture.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseD3D12|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugGL|x64'">true</ExcludedFromBuild>
@@ -245,10 +239,6 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugD3D11|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="API\D3D\D3DFormats.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugGL|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseGL|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="API\D3D\D3DProgramReflection.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugGL|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseGL|x64'">true</ExcludedFromBuild>
     </ClCompile>
@@ -455,8 +445,8 @@
     <ClCompile Include="Utils\ProgressBarWin.cpp" />
     <ClCompile Include="Utils\Psychophysics\Experiment.cpp" />
     <ClCompile Include="Utils\Psychophysics\SingleThresholdMeasurement.cpp" />
-    <ClCompile Include="Utils\ShaderPreprocessor.cpp" />
     <ClCompile Include="Utils\ShaderUtils.cpp" />
+    <ClCompile Include="Utils\SpireSupport.cpp" />
     <ClCompile Include="Utils\TextRenderer.cpp" />
     <ClCompile Include="Utils\Video\VideoDecoder.cpp" />
     <ClCompile Include="Utils\Video\VideoEncoder.cpp" />
@@ -875,7 +865,6 @@
     <ClInclude Include="Utils\ProgressBar.h" />
     <ClInclude Include="Utils\Psychophysics\Experiment.h" />
     <ClInclude Include="Utils\Psychophysics\SingleThresholdMeasurement.h" />
-    <ClInclude Include="Utils\ShaderPreprocessor.h" />
     <ClInclude Include="Utils\ShaderUtils.h" />
     <ClInclude Include="Utils\StringUtils.h" />
     <ClInclude Include="Utils\TextRenderer.h" />

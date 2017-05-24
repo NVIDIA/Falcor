@@ -31,9 +31,7 @@
 void FeatureDemo::initLightingPass()
 {
     mLightingPass.pProgram = GraphicsProgram::createFromFile("FeatureDemo.vs.hlsl", "FeatureDemo.ps.hlsl");
-    std::string lights;
-    getSceneLightString(mpSceneRenderer->getScene(), lights);
-    mLightingPass.pProgram->addDefine("_LIGHT_SOURCES", lights);
+    mLightingPass.pProgram->addDefine("_LIGHT_COUNT", std::to_string(mpSceneRenderer->getScene()->getLightCount()));
     initControls();
     mLightingPass.pVars = GraphicsVars::create(mLightingPass.pProgram->getActiveVersion()->getReflector());
 }
@@ -95,6 +93,7 @@ void FeatureDemo::initScene(Scene::SharedPtr pScene)
 
     mpSceneRenderer = SceneRenderer::create(pScene);
     mpSceneRenderer->setCameraControllerType(SceneRenderer::CameraControllerType::FirstPerson);
+    mpSceneRenderer->toggleStaticMaterialCompilation(mOptimizedShaders);
     setActiveCameraAspectRatio();
     initLightingPass();
     initShadowPass();
@@ -181,7 +180,6 @@ void FeatureDemo::lightingPass()
     mpState->setProgram(mLightingPass.pProgram);
     mpRenderContext->setGraphicsVars(mLightingPass.pVars);
     ConstantBuffer::SharedPtr pCB = mLightingPass.pVars->getConstantBuffer("PerFrameCB");
-    setSceneLightsIntoConstantBuffer(mpSceneRenderer->getScene(), pCB.get());
     if(mControls[ControlID::EnableShadows].enabled)
     {
         pCB["camVpAtLastCsmUpdate"] = mShadowPass.camVpAtLastCsmUpdate;
@@ -256,8 +254,36 @@ void FeatureDemo::onShutdown()
 
 }
 
+void FeatureDemo::applyCameraPathState()
+{
+    const Scene* pScene = mpSceneRenderer->getScene();
+    if (mUseCameraPath)
+    {
+        pScene->getPath(0)->attachObject(pScene->getActiveCamera());
+    }
+    else
+    {
+        pScene->getPath(0)->detachObject(pScene->getActiveCamera());
+    }
+}
+
 bool FeatureDemo::onKeyEvent(const KeyboardEvent& keyEvent)
 {
+    if (mpSceneRenderer && keyEvent.type == KeyboardEvent::Type::KeyPressed)
+    {
+        switch (keyEvent.key)
+        {
+        case KeyboardEvent::Key::Minus:
+            mUseCameraPath = !mUseCameraPath;
+            applyCameraPathState();
+            return true;
+        case KeyboardEvent::Key::O:
+            mOptimizedShaders = !mOptimizedShaders;
+            mpSceneRenderer->toggleStaticMaterialCompilation(mOptimizedShaders);
+            return true;
+        }
+    }
+
     return mpSceneRenderer ? mpSceneRenderer->onKeyEvent(keyEvent) : false;
 }
 

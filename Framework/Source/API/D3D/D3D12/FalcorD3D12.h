@@ -77,7 +77,6 @@ namespace Falcor
     using PsoHandle = ID3D12PipelineStatePtr;
     using ComputeStateHandle = ID3D12PipelineStatePtr;
     using ShaderHandle = D3D12_SHADER_BYTECODE;
-    using ShaderReflectionHandle = ID3D12ShaderReflectionPtr;
     using RootSignatureHandle = ID3D12RootSignaturePtr;
     using DescriptorHeapHandle = ID3D12DescriptorHeapPtr;
 

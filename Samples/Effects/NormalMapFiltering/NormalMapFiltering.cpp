@@ -50,8 +50,7 @@ void NormalMapFiltering::updateProgram()
 {
     std::string lights;
     mpProgram->clearDefines();
-    getSceneLightString(mpRenderer->getScene(), lights);
-    mpProgram->addDefine("_LIGHT_SOURCES", lights);
+    mpProgram->addDefine("_LIGHT_COUNT", std::to_string(mpRenderer->getScene()->getLightCount()));
     if (mUseLeanMap)
     {
         mpProgram->addDefine("_MS_USER_NORMAL_MAPPING");
@@ -104,7 +103,6 @@ void NormalMapFiltering::onFrameRender()
     pState->setBlendState(nullptr);
     pState->setDepthStencilState(nullptr);
     pState->setProgram(mpProgram);
-    setSceneLightsIntoConstantBuffer(mpRenderer->getScene(), mpVars->getConstantBuffer("PerFrameCB").get());
     mpRenderContext->pushGraphicsVars(mpVars);
     mCameraController.update();
     mpRenderer->renderScene(mpRenderContext.get());

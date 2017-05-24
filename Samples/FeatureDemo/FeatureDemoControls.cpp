@@ -120,16 +120,9 @@ void FeatureDemo::onGuiRender()
 
         if (pScene->getPathCount() > 0)
         {
-            if (mpGui->addCheckBox("Camera Path", mShouldUseCameraPath))
+            if (mpGui->addCheckBox("Camera Path", mUseCameraPath))
             {
-                if (mShouldUseCameraPath)
-                {
-                    pScene->getPath(0)->attachObject(pScene->getActiveCamera());
-                }
-                else
-                {
-                    pScene->getPath(0)->detachObject(pScene->getActiveCamera());
-                }
+                applyCameraPathState();
             }
         }
 

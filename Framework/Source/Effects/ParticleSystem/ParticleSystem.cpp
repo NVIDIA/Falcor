@@ -71,8 +71,9 @@ namespace Falcor
   
         //get num sim threads, required as a define for emit cs
         uint32_t simThreadsX = 1, simThreadsY = 1, simThreadsZ= 1;
-        simulateCs->getActiveVersion()->getShader(ShaderType::Compute)->
-            getReflectionInterface()->GetThreadGroupSize(&simThreadsX, &simThreadsY, &simThreadsZ);
+
+
+        pSimulateReflect->getThreadGroupSize(&simThreadsX, &simThreadsY, &simThreadsZ);
         mSimulateThreads = simThreadsX * simThreadsY * simThreadsZ;
 
         //Emit cs

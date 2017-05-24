@@ -1,0 +1,5 @@
+// test that we can include a file via `using`
+
+using "parser-using-file-a.spireh";
+
+float base( float x ) { return a(x); }

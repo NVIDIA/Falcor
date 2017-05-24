@@ -38,3 +38,10 @@
 #define _PROFILING_LOG_BATCH_SIZE 1024*1 /*This can be used to control how many samples are accumulated before they are dumped to file.*/
 
 #define _ENABLE_NVAPI false // Controls NVIDIA specific DX extensions. If it is set to true, make sure you have the NVAPI package in your 'Externals' directory. View the readme for more information
+
+#define FALCOR_BUILD_SPIRE                  1 /* Set this to 1 to enable Spire compiler to be built into Falcor */
+#define FALCOR_USE_SPIRE_AS_PREPROCESSOR    0 /* Set this to 1 to use Spire as a source-to-source preprocessor */
+
+#if (FALCOR_USE_SPIRE_AS_PREPROCESSOR) && !FALCOR_BUILD_SPIRE
+#error Trying to use Spire without building it
+#endif

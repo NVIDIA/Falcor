@@ -45,12 +45,7 @@ namespace Falcor
         using SharedPtr = std::shared_ptr<Program>;
         using SharedConstPtr = std::shared_ptr<const Program>;
 
-        class DefineList : public std::map<std::string, std::string>
-        {
-        public:
-            void add(const std::string& name, const std::string& val = "") { (*this)[name] = val; }
-            void remove(const std::string& name) {(*this).erase(name); }
-        };
+        using DefineList = Shader::DefineList;
 
         virtual ~Program() = 0;
 
@@ -93,10 +88,12 @@ namespace Falcor
         void init(const std::string& cs, const DefineList& programDefines, bool createdFromFile);
 
         bool link() const;
+        ProgramVersion::SharedPtr preprocessAndCreateProgramVersion(std::string& log) const;
         virtual ProgramVersion::SharedPtr createProgramVersion(std::string& log) const;
-        void updateFileTimestamps() const;
 
-        std::string mShaderStrings[kShaderCount]; // Either a filename or a string, depending on the value of mCreatedFromFile
+        std::string mOriginalShaderStrings[kShaderCount]; // Either a filename or a string, depending on the value of mCreatedFromFile
+        mutable std::string mPreprocessedShaderStrings[kShaderCount]; // always strings that have been preprocessed
+        mutable ProgramReflection::SharedPtr mPreprocessedReflector;
 
         DefineList mDefineList;
 

@@ -25,32 +25,12 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#include "ShaderCommon.h"
+#include "FeatureDemoCommon.hlsli"
 #include "Shading.h"
-#define _COMPILE_DEFAULT_VS
-#include "VertexAttrib.h"
-#include "Effects/CsmData.h"
 #include "Helpers.h"
-
-cbuffer PerFrameCB : register(b0)
-{
-#foreach p in _LIGHT_SOURCES
-    LightData $(p);
-#endforeach
-
-	vec3 gAmbient;
-    CsmData gCsmData;
-    mat4 camVpAtLastCsmUpdate;
-};
 
 Texture2D gEnvMap;
 SamplerState gSampler;
-
-struct MainVsOut
-{
-    VS_OUT vsData;
-    float shadowsDepthC : DEPTH;
-};
 
 struct PsOut
 {
@@ -70,18 +50,19 @@ PsOut main(MainVsOut vOut)
     float4 finalColor = 0;
     float envMapFactor = 1;
 
-    float shadowFactor;
-#foreach p in _LIGHT_SOURCES
-    shadowFactor = 1;
-#ifdef _ENABLE_SHADOWS
-    if($(_valIndex) == 0)
+    [unroll]
+    for (uint l = 0; l < _LIGHT_COUNT; l++)
     {
-        shadowFactor = calcShadowFactor(gCsmData, vOut.shadowsDepthC, shAttr.P, vOut.vsData.posH.xy/vOut.vsData.posH.w);
-        envMapFactor -= 1 - shadowFactor;
-    }
+        float shadowFactor = 1;
+#ifdef _ENABLE_SHADOWS
+        if (l == 0)
+        {
+            shadowFactor = calcShadowFactor(gCsmData, vOut.shadowsDepthC, shAttr.P, vOut.vsData.posH.xy / vOut.vsData.posH.w);
+            envMapFactor -= 1 - shadowFactor;
+        }
 #endif
-    evalMaterial(shAttr, $(p), shadowFactor, result, $(_valIndex) == 0);
-#endforeach
+        evalMaterial(shAttr, gLights[l], shadowFactor, result, l == 0);
+    }
 
     finalColor = vec4(result.finalValue, 1.f);
 
@@ -100,7 +81,7 @@ PsOut main(MainVsOut vOut)
 #endif
 
     // add ambient
-    finalColor.rgb += gAmbient * getDiffuseColor(shAttr).rgb;
+    finalColor.rgb += gAmbientLighting * getDiffuseColor(shAttr).rgb;
     
     psOut.color = finalColor;
     psOut.normal = float4(vOut.vsData.normalW * 0.5f + 0.5f, 1.0f);

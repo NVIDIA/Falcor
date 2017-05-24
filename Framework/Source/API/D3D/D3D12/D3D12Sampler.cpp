@@ -32,8 +32,6 @@
 
 namespace Falcor
 {
-    Sampler::~Sampler() = default;
-
     uint32_t Sampler::getApiMaxAnisotropy()
     {
         return D3D12_MAX_MAXANISOTROPY;

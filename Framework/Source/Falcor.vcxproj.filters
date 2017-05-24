@@ -70,9 +70,6 @@
     <ClCompile Include="Graphics\Camera\Camera.cpp">
       <Filter>Graphics\Camera</Filter>
     </ClCompile>
-    <ClCompile Include="Utils\ShaderPreprocessor.cpp">
-      <Filter>Utils</Filter>
-    </ClCompile>
     <ClCompile Include="Graphics\Scene\SceneExporter.cpp">
       <Filter>Graphics\Scene</Filter>
     </ClCompile>
@@ -256,9 +253,6 @@
     <ClCompile Include="API\D3D\D3DFormats.cpp">
       <Filter>API\D3D</Filter>
     </ClCompile>
-    <ClCompile Include="API\D3D\D3DProgramReflection.cpp">
-      <Filter>API\D3D</Filter>
-    </ClCompile>
     <ClCompile Include="API\D3D\D3DProgramVersion.cpp">
       <Filter>API\D3D</Filter>
     </ClCompile>
@@ -302,9 +296,6 @@
       <Filter>API\D3D\D3D11</Filter>
     </ClCompile>
     <ClCompile Include="API\D3D\D3D11\D3D11Shader.cpp">
-      <Filter>API\D3D\D3D11</Filter>
-    </ClCompile>
-    <ClCompile Include="API\D3D\D3D11\D3D11ShaderReflection.cpp">
       <Filter>API\D3D\D3D11</Filter>
     </ClCompile>
     <ClCompile Include="API\D3D\D3D11\D3D11Texture.cpp">
@@ -477,6 +468,9 @@
     <ClCompile Include="Utils\PixelZoom.cpp">
       <Filter>Utils</Filter>
     </ClCompile>
+    <ClCompile Include="Utils\SpireSupport.cpp">
+      <Filter>Utils</Filter>
+    </ClCompile>
     <ClCompile Include="Effects\ParticleSystem\ParticleSystem.cpp">
       <Filter>Effects\ParticleSystem</Filter>
     </ClCompile>
@@ -583,9 +577,6 @@
     </ClInclude>
     <ClInclude Include="Utils\Math\FalcorMath.h">
       <Filter>Utils\Math</Filter>
-    </ClInclude>
-    <ClInclude Include="Utils\ShaderPreprocessor.h">
-      <Filter>Utils</Filter>
     </ClInclude>
     <ClInclude Include="Graphics\Scene\SceneExporter.h">
       <Filter>Graphics\Scene</Filter>
