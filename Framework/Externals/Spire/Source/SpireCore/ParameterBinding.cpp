@@ -675,8 +675,6 @@ static void processEntryPointParameter(
         {
             processEntryPointParameter(context, arrayType->BaseType, state);
         }
-
-        assert(!"unimplemented");
     }
     // Ignore a bunch of types that don't make sense here...
     else if(auto textureType = type->As<TextureType>()) {}
