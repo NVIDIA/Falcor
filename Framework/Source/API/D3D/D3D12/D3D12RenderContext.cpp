@@ -130,7 +130,8 @@ namespace Falcor
     {
         // We are setting the entire RTV array to make sure everything that was previously bound is detached
         uint32_t colorTargets = Fbo::getMaxColorTargetCount();
-        std::vector<HeapCpuHandle> pRTV(colorTargets, RenderTargetView::getNullView()->getApiHandle()->getCpuHandle(0));
+        auto pNullRtv = RenderTargetView::getNullView();
+        std::vector<HeapCpuHandle> pRTV(colorTargets, pNullRtv->getApiHandle()->getCpuHandle(0));
         HeapCpuHandle pDSV = DepthStencilView::getNullView()->getApiHandle()->getCpuHandle(0);
 
         if (pFbo)

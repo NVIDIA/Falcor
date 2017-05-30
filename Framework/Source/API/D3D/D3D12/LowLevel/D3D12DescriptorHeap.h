@@ -86,25 +86,36 @@ namespace Falcor
         GpuHandle mGpuHeapStart = {};
         uint32_t mDescriptorSize;
         uint32_t mChunkCount = 0;
-        uint32_t mCurrentChunk = 0;
+        uint32_t mAllocatedChunks = 0;
         ApiHandle mApiHandle;
         D3D12_DESCRIPTOR_HEAP_TYPE mType;
 
         struct Chunk
         {
+        public:
             using SharedPtr = std::shared_ptr<Chunk>;
+            Chunk(uint32_t index, uint32_t count) : chunkIndex(index), chunkCount(count) {}
+
+            void reset() { allocCount = 0; currentDesc = 0; }
+            uint32_t getCurrentAbsoluteIndex() const { return chunkIndex * kDescPerChunk + currentDesc; }
+            static bool compareGt(const Chunk::SharedPtr& a, const Chunk::SharedPtr& b) 
+            { 
+                return a->releaseFenceValue > b->releaseFenceValue; 
+            }
+
+        private:
+            uint32_t chunkIndex = 0;
             uint32_t chunkCount = 1; // For outstanding requests we can allocate more then a single chunk. This is the number of chunks we actually allocated
             uint32_t allocCount = 0;
             uint32_t currentDesc = 0;
             uint64_t releaseFenceValue;
-            bool operator<(const Chunk& other) const { return releaseFenceValue < other.releaseFenceValue; }
         };
 
         Chunk::SharedPtr mpCurrentChunk;
         Chunk::SharedPtr getChunk(uint32_t descCount);
         Chunk::SharedPtr allocateChunks(uint32_t descCount);
         void releaseChunk(Chunk::SharedPtr pChunk);
-        std::priority_queue<Chunk::SharedPtr> mDeferredRelease;
+        std::priority_queue<Chunk::SharedPtr, std::vector<Chunk::SharedPtr>, decltype(&Chunk::compareGt)> mDeferredRelease;
         std::queue<Chunk::SharedPtr> mAvailableChunks;
     };
 }

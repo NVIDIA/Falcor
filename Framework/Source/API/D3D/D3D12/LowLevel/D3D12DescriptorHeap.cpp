@@ -31,7 +31,7 @@
 
 namespace Falcor
 {
-    D3D12DescriptorHeap::D3D12DescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE type, uint32_t chunkCount) : mChunkCount(chunkCount), mType (type)
+    D3D12DescriptorHeap::D3D12DescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE type, uint32_t chunkCount) : mChunkCount(chunkCount), mType (type), mDeferredRelease(&Chunk::compareGt)
     {
 		ID3D12DevicePtr pDevice = gpDevice->getApiHandle();
         mDescriptorSize = pDevice->GetDescriptorHandleIncrementSize(type);
@@ -84,7 +84,7 @@ namespace Falcor
         // The chunk is guaranteed to have enough space for us
         assert(pChunk->chunkCount * kDescPerChunk - pChunk->currentDesc >= count);
 
-        Allocation::SharedPtr pAlloc = Allocation::create(shared_from_this(), pChunk->currentDesc, count, pChunk);
+        Allocation::SharedPtr pAlloc = Allocation::create(shared_from_this(), pChunk->getCurrentAbsoluteIndex(), count, pChunk);
 
         // Update the chunk
         pChunk->allocCount++;
@@ -114,15 +114,27 @@ namespace Falcor
         if (chunkCount == 1 && (mAvailableChunks.empty() == false))
         {
             auto pChunk = mAvailableChunks.front();
+            pChunk->reset();
             mAvailableChunks.pop();
             return pChunk;
         }
 
         // Allocate from the heap. TODO: Need to optimize it for the case that chunkCount > 1 - mpFreeChunks can be sorted by offset to find contiguous chunks
-        assert(mCurrentChunk + chunkCount <= mChunkCount);
-        Chunk::SharedPtr pChunk = Chunk::SharedPtr(new Chunk);
+        if (mpCurrentChunk && mpCurrentChunk->allocCount == 0)
+        {
+            mpCurrentChunk->releaseFenceValue = gpDevice->getRenderContext()->getLowLevelData()->getFence()->getCpuValue();
+            mDeferredRelease.push(mpCurrentChunk);
+        }
+
+        if (mAvailableChunks.size() + chunkCount > mChunkCount) FIXME: this Is incorrect, need to find A better predicate to call executeDeferredReleases()
+        {
+            executeDeferredReleases();
+        }
+        assert(mAllocatedChunks + chunkCount <= mChunkCount);
+
+        Chunk::SharedPtr pChunk = Chunk::SharedPtr(new Chunk());
         pChunk->chunkCount = chunkCount;
-        mCurrentChunk += chunkCount;
+        mAllocatedChunks += chunkCount;
         return pChunk;
     }
 

@@ -75,7 +75,11 @@ namespace Falcor
 
     ShaderResourceView::SharedPtr ShaderResourceView::getNullView()
     {
-        return create(ResourceWeakPtr(), 0, 0, 0, 0);
+        if(!sNullView)
+        {
+            sNullView = create(ResourceWeakPtr(), 0, 0, 0, 0);
+        }
+        return sNullView;
     }
     
     DepthStencilView::SharedPtr DepthStencilView::create(ResourceWeakPtr pResource, uint32_t mipLevel, uint32_t firstArraySlice, uint32_t arraySize)
@@ -113,7 +117,11 @@ namespace Falcor
 
     DepthStencilView::SharedPtr DepthStencilView::getNullView()
     {
-        return create(ResourceWeakPtr(), 0, 0, 0);
+        if(!sNullView)
+        {
+            sNullView = create(ResourceWeakPtr(), 0, 0, 0);
+        }
+        return sNullView;
     }
 
     UnorderedAccessView::SharedPtr UnorderedAccessView::create(ResourceWeakPtr pResource, uint32_t mipLevel, uint32_t firstArraySlice, uint32_t arraySize)
@@ -162,7 +170,11 @@ namespace Falcor
 
     UnorderedAccessView::SharedPtr UnorderedAccessView::getNullView()
     {
-        return create(ResourceWeakPtr(), 0, 0, 0);
+        if(!sNullView)
+        {
+            sNullView = create(ResourceWeakPtr(), 0, 0, 0);
+        }
+        return sNullView;
     }
 
 
@@ -203,7 +215,11 @@ namespace Falcor
 
     RenderTargetView::SharedPtr RenderTargetView::getNullView()
     {
-        return create(ResourceWeakPtr(), 0, 0, 0);
+        if (!sNullView)
+        {
+            create(ResourceWeakPtr(), 0, 0, 0);
+        }
+        return sNullView;
     }
 }
 
