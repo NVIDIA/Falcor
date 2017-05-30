@@ -82,7 +82,7 @@ def main():
 
         #run tests
         testingResults = RunAllTests.main(True, args.showsummary, args.generatereference, refDir, testList, pullBranch)
-        #testing results is list of lists 
+        #testing results is list of lists
         for result in testingResults:
             setInfo = TestSetInfo(workingDir, testList, result[1], result[2], repoSrc, pullBranch, result[0])
             testResults.append(setInfo)
