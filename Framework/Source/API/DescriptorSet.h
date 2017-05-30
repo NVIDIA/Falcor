@@ -63,6 +63,8 @@ namespace Falcor
 
         CpuHandle getCpuHandle(uint32_t rangeIndex, uint32_t descInRange = 0) const;
         GpuHandle getGpuHandle(uint32_t rangeIndex, uint32_t descInRange = 0) const;
+
+        void copy(const DescriptorSet* pSrc, uint32_t rangeIndex, uint32_t descCount, uint32_t descOffset);
     private:
         using ApiData = DescriptorSetApiData;
         DescriptorSet(DescriptorPool::SharedPtr pPool, const Layout& layout) : mpPool(pPool), mLayout(layout) {}

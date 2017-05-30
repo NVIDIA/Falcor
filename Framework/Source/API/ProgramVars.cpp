@@ -31,6 +31,7 @@
 #include "API/CopyContext.h"
 #include "API/RenderContext.h"
 #include "API/DescriptorSet.h"
+#include "API/Device.h"
 
 namespace Falcor
 {
@@ -620,13 +621,22 @@ namespace Falcor
                 handle = isUav ? UnorderedAccessView::getNullView()->getApiHandle() : ShaderResourceView::getNullView()->getApiHandle();
             }
 
+            // Allocate a GPU descriptor
+            DescriptorSet::Layout layout;
+            layout.addRange(DescriptorSet::Type::Srv, 1);
+            DescriptorSet::SharedPtr pSet = DescriptorSet::create(gpDevice->getGpuDescriptorPool(), layout);
+
+            auto srcHandle = handle->getCpuHandle(0);
+            auto dstHandle = pSet->getCpuHandle(0);
+            gpDevice->getApiHandle()->CopyDescriptorsSimple(1, dstHandle, srcHandle, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+
             if(forGraphics)
             {
-                pList->SetGraphicsRootDescriptorTable(rootOffset, handle->getGpuHandle(0));
+                pList->SetGraphicsRootDescriptorTable(rootOffset, pSet->getGpuHandle(0));
             }
             else
             {
-                pList->SetComputeRootDescriptorTable(rootOffset, handle->getGpuHandle(0));
+                pList->SetComputeRootDescriptorTable(rootOffset, pSet->getGpuHandle(0));
             }
         }
     }
@@ -675,13 +685,22 @@ namespace Falcor
                 pSampler = Sampler::getDefault().get();
             }
 
+            // Allocate a GPU descriptor
+            DescriptorSet::Layout layout;
+            layout.addRange(DescriptorSet::Type::Sampler, 1);
+            DescriptorSet::SharedPtr pSet = DescriptorSet::create(gpDevice->getGpuDescriptorPool(), layout);
+
+            auto srcHandle = pSampler->getApiHandle()->getCpuHandle(0);
+            auto dstHandle = pSet->getCpuHandle(0);
+            gpDevice->getApiHandle()->CopyDescriptorsSimple(1, dstHandle, srcHandle, D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
+
             if (forGraphics)
             {
-                pList->SetGraphicsRootDescriptorTable(rootOffset, pSampler->getApiHandle()->getGpuHandle(0));
+                pList->SetGraphicsRootDescriptorTable(rootOffset, pSet->getGpuHandle(0));
             }
             else
             {
-                pList->SetComputeRootDescriptorTable(rootOffset, pSampler->getApiHandle()->getGpuHandle(0));
+                pList->SetComputeRootDescriptorTable(rootOffset, pSet->getGpuHandle(0));
             }
         }
     }
