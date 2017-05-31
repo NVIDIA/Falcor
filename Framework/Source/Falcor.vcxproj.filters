@@ -1615,6 +1615,9 @@
     <ClInclude Include="API\vulkan\FalcorVK.h">
       <Filter>API\Vulkan</Filter>
     </ClInclude>
+    <ClInclude Include="API\Vulkan\VKResourceHelper.h">
+      <Filter>API\Vulkan</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Externals">

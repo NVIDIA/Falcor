@@ -39,6 +39,8 @@
     #pragma comment(lib, "vulkan-1.lib")
 #endif
 
+#include "API/Vulkan/VKResourceHelper.h"
+
 namespace Falcor
 {
     struct VkFormatDesc
@@ -67,7 +69,7 @@ namespace Falcor
 #else
     using WindowHandle = void*;
 #endif
-    
+
     using DeviceHandle = VkDevice;
     using CommandListHandle = VkCommandBuffer;
     using CommandQueueHandle = VkQueue;
@@ -75,14 +77,12 @@ namespace Falcor
     using CommandAllocatorHandle = VkCommandPool;
     using CommandSignatureHandle = void*;
     using FenceHandle = VkFence; // #VKTODO Check if we really need a fence or a semaphore!
-    using ResourceHandle = VkBuffer;
-    using TextureHandle = VkImage;
-    using BufferHandle = VkBuffer;
-    using RtvHandle = void*;
-    using DsvHandle = void*;
-    using SrvHandle = void*;
+    using ResourceHandle = VkResource<VkImage, VkBuffer>;
+    using RtvHandle = VkImageView;
+    using DsvHandle = VkImageView;
+    using SrvHandle = VkResource<VkImageView, VkBufferView>;
+    using UavHandle = VkResource<VkImageView, VkBufferView>;
     using SamplerHandle = void*;
-    using UavHandle = void*;
     using GpuAddress = void*;
 
     using PsoHandle = void*;

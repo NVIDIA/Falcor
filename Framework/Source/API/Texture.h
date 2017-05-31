@@ -43,8 +43,6 @@ namespace Falcor
     class Texture : public Resource, public inherit_shared_from_this<Resource, Texture>
     {
     public:
-        using ApiHandle = TextureHandle;
-
         using SharedPtr = std::shared_ptr<Texture>;
         using SharedConstPtr = std::shared_ptr<const Texture>;
         using WeakPtr = std::weak_ptr<Texture>;
@@ -230,8 +228,6 @@ namespace Falcor
         std::string mSourceFilename;
 
         Texture(uint32_t width, uint32_t height, uint32_t depth, uint32_t arraySize, uint32_t mipLevels, uint32_t sampleCount, ResourceFormat format, Type Type, BindFlags bindFlags);
-
-        ApiHandle mApiHandle;
 
         uint32_t mWidth = 0;
         uint32_t mHeight = 0;

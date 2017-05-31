@@ -98,11 +98,13 @@ namespace Falcor
         imageInfo.queueFamilyIndexCount = 0;
         imageInfo.pQueueFamilyIndices = nullptr;
 
-        if (VK_FAILED(vkCreateImage(gpDevice->getApiHandle(), &imageInfo, nullptr, &apiHandle)))
+        VkImage image;
+        if (VK_FAILED(vkCreateImage(gpDevice->getApiHandle(), &imageInfo, nullptr, &image)))
         {
             logError("Failed to create texture.");
             return;
         }
+        apiHandle = image;
 
         if (pData != nullptr)
         {
