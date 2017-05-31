@@ -81,7 +81,7 @@ class TestInfo(object):
         return self.getTestDir() + '\\' + self.Name + '.exe'
     def getRenamedTestScreenshot(self, i):
         return self.getTestDir() + '\\' + self.Name + '_' + str(self.Index) + '_' + str(i) + '.png'
-    def getInitialTestScreenshot(self, i): 
+    def getInitialTestScreenshot(self, i):
         return self.getTestDir() + '\\' + self.Name + '.exe.'+ str(i) + '.png'
     def getReferenceScreenshot(self, i):
         return self.getReferenceDir() + '\\' + self.Name + '_'+ str(self.Index) + '_' + str(i) + '.png'
@@ -95,7 +95,7 @@ class SystemResult(object):
         self.RefAvgFrameTime = 0
         self.LoadErrorMargin = gDefaultLoadTimeMargin
         self.FrameErrorMargin = gDefaultFrameTimeMargin
-        self.CompareResults = []        
+        self.CompareResults = []
 
 class LowLevelResult(object):
     def __init__(self):
@@ -119,9 +119,9 @@ def compareImages(resultObj, testInfo, numScreenshots, slnInfo):
     for i in range(0, numScreenshots):
         testScreenshot = testInfo.getRenamedTestScreenshot(i)
         refScreenshot = testInfo.getReferenceScreenshot(i)
-        outFile = testInfo.Name + str(i) + '_Compare.png'
-        command = ['magick', 'compare', '-metric', 'MSE', '-compose', 'Src', '-highlight-color', 'White', 
-        '-lowlight-color', 'Black', testScreenshot, refScreenshot, outFile]
+        outFile = testInfo.Name + '_' + str(testInfo.Index) + '_' + str(i) + '_Compare.png'
+        command = ['magick', 'compare', '-metric', 'MSE', '-compose', 'Src', '-highlight-color', 'White',
+            '-lowlight-color', 'Black', testScreenshot, refScreenshot, outFile]
         p = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
         result = p.communicate()[0]
         spaceIndex = result.find(' ')
@@ -130,7 +130,7 @@ def compareImages(resultObj, testInfo, numScreenshots, slnInfo):
         try:
             resultVal = float(resultValStr)
         except:
-            slnInfo.errorList.append(('For test ' + testInfo.getFullName() + 
+            slnInfo.errorList.append(('For test ' + testInfo.getFullName() +
                 ' failed to compare screenshot ' + testScreenshot + ' with ref ' + refScreenshot +
                 ' instead of compare result, got \"' + resultValStr + '\" from larger string \"' + result + '\"'))
             testingUtil.makeDirIfDoesntExist(imagesDir)
@@ -138,18 +138,17 @@ def compareImages(resultObj, testInfo, numScreenshots, slnInfo):
             resultObj.CompareResults.append(-1)
             continue
         resultObj.CompareResults.append(resultVal)
+
+        # Move images to results folder
+        testingUtil.makeDirIfDoesntExist(imagesDir)
+        testingUtil.overwriteMove(testScreenshot, imagesDir)
+        testingUtil.overwriteMove(outFile, imagesDir)
+
         #if the images are sufficiently different, save them in test results
         if resultVal > testingUtil.gDefaultImageCompareMargin:
-            testingUtil.makeDirIfDoesntExist(imagesDir)
-            testingUtil.overwriteMove(testScreenshot, imagesDir)
-            testingUtil.overwriteMove(outFile, imagesDir)
             slnInfo.errorList.append(('For test ' + testInfo.getFullName() + ', screenshot ' +
-                testScreenshot + ' differs from ' + refScreenshot + ' by ' + result + 
+                testScreenshot + ' differs from ' + refScreenshot + ' by ' + result +
                 ' average difference per pixel. (Exceeds threshold .01)'))
-        #else just delete them
-        else:
-            os.remove(testScreenshot)
-            os.remove(outFile)
 
 def addSystemTestReferences(testInfo, numScreenshots):
     renameScreenshots(testInfo, numScreenshots)
@@ -224,14 +223,14 @@ def processSystemTest(xmlElement, testInfo, slnInfo):
     newSysResult.Name = testInfo.getFullName()
     newSysResult.LoadTime = float(xmlElement[0].attributes['LoadTime'].value)
     newSysResult.AvgFrameTime = float(xmlElement[0].attributes['FrameTime'].value)
-    newSysResult.LoadErrorMargin = testInfo.LoadErrorMargin 
+    newSysResult.LoadErrorMargin = testInfo.LoadErrorMargin
     newSysResult.FrameErrorMargin = testInfo.FrameErrorMargin
     numScreenshots = int(xmlElement[0].attributes['NumScreenshots'].value)
     referenceFile = testInfo.getReferenceFile()
     resultFile = testInfo.getResultsFile()
     if not os.path.isfile(referenceFile):
         slnInfo.skippedList.append((testInfo.getFullName(), 'Could not find reference file ' + referenceFile + ' for comparison'))
-        return 
+        return
     refResults = getXMLTag(referenceFile, 'Summary')
     if not refResults:
         slnInfo.skippedList.append((testInfo.getFullName(), 'Error getting xml data from reference file ' + referenceFile))
@@ -241,14 +240,14 @@ def processSystemTest(xmlElement, testInfo, slnInfo):
     #check avg fps
     if newSysResult.AvgFrameTime != 0 and newSysResult.RefAvgFrameTime != 0:
         if testingUtil.marginCompare(newSysResult.AvgFrameTime, newSysResult.RefAvgFrameTime, newSysResult.FrameErrorMargin) == 1:
-            slnInfo.errorList.append((testInfo.getFullName() + ': average frame time ' + 
-            str(newSysResult.AvgFrameTime) + ' is larger than reference ' + str(newSysResult.RefAvgFrameTime) + 
+            slnInfo.errorList.append((testInfo.getFullName() + ': average frame time ' +
+            str(newSysResult.AvgFrameTime) + ' is larger than reference ' + str(newSysResult.RefAvgFrameTime) +
             ' considering error margin ' + str(newSysResult.FrameErrorMargin * 100) + '%'))
     #check load time
     if newSysResult.LoadTime != 0 and newSysResult.RefLoadTime != 0:
         if newSysResult.LoadTime > (newSysResult.RefLoadTime + newSysResult.LoadErrorMargin):
             slnInfo.errorList.append(testInfo.getFullName() + ': load time' + (str(newSysResult.LoadTime) +
-            ' is larger than reference ' + str(newSysResult.RefLoadTime) + ' considering error margin ' + 
+            ' is larger than reference ' + str(newSysResult.RefLoadTime) + ' considering error margin ' +
             str(newSysResult.LoadErrorMargin) + ' seconds'))
     compareImages(newSysResult, testInfo, numScreenshots, slnInfo)
     slnInfo.systemResultList.append(newSysResult)
@@ -319,7 +318,7 @@ def readTestList(generateReference, buildTests, pullBranch):
             configList = testingUtil.cleanupString(solutionData[configStartIndex + 1 : configEndIndex]).split(' ')
             #run test for each config and each set of args
             for config in configList:
-                print 'Running ' + testName + ' in config ' + config 
+                print 'Running ' + testName + ' in config ' + config
                 testInfo = TestInfo(testName, config, slnInfo)
                 if generateReference:
                     testingUtil.cleanDir(testInfo.getReferenceDir(), testName, '.png')
@@ -354,7 +353,7 @@ def runTest(testInfo, cmdLine, generateReference, slnInfo):
             cur = time.time() - start
             if cur > gDefaultHangTimeDuration:
                 p.kill()
-                slnInfo.skippedList.append((testInfo.getFullName(), ('Test timed out ( > ' + 
+                slnInfo.skippedList.append((testInfo.getFullName(), ('Test timed out ( > ' +
                     str(gDefaultHangTimeDuration) + ' seconds)')))
                 return
         #ensure results file exists
@@ -436,7 +435,7 @@ def main(build, showSummary, generateReference, referenceDir, testList, pullBran
             for name, skip in sln.skippedList:
                 errorStr += name + ': ' + skip + '\n'
             for reason in sln.errorList:
-                errorStr += reason + '\n' 
+                errorStr += reason + '\n'
             errorFile = open(errorSummary, 'w')
             errorFile.write(errorStr)
             errorFile.close()
@@ -468,5 +467,5 @@ if __name__ == '__main__':
     else:
         testListFile = gTestListFile
 
-    #final arg is pull branch, just to name subdirectories in the same repo folder so results dont overwrite 
+    #final arg is pull branch, just to name subdirectories in the same repo folder so results dont overwrite
     main(not args.nobuild, args.showsummary, args.generatereference, refDir, testListFile, '')
