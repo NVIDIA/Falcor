@@ -35,4 +35,9 @@ namespace Falcor
         SharedPtr pThis = SharedPtr(new DescriptorSet(pPool, layout));
         return pThis->apiInit() ? pThis : nullptr;
     }
+
+    DescriptorSet::~DescriptorSet()
+    {
+        mpPool->releaseAllocation(mpApiData);
+    }
 }

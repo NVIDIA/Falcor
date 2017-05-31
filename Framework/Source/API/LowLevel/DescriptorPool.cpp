@@ -31,13 +31,30 @@
 
 namespace Falcor
 {
-    DescriptorPool::SharedPtr DescriptorPool::create(const Desc& desc)
+    DescriptorPool::SharedPtr DescriptorPool::create(const Desc& desc, GpuFence::SharedPtr pFence)
     {
-        SharedPtr pThis = SharedPtr(new DescriptorPool(desc));
+        SharedPtr pThis = SharedPtr(new DescriptorPool(desc, pFence));
         return pThis->apiInit() ? pThis : nullptr;
     }
 
-    DescriptorPool::DescriptorPool(const Desc& desc) : mDesc(desc) {}
+    DescriptorPool::DescriptorPool(const Desc& desc, GpuFence::SharedPtr pFence) : mDesc(desc), mpFence(pFence) {}
 
     DescriptorPool::~DescriptorPool() = default;
+
+    void DescriptorPool::executeDeferredReleases()
+    {
+        uint64_t gpuVal = mpFence->getGpuValue();
+        while (mpDeferredReleases.size() && mpDeferredReleases.top().fenceValue < gpuVal)
+        {
+            mpDeferredReleases.pop();
+        }
+    }
+
+    void DescriptorPool::releaseAllocation(std::shared_ptr<DescriptorSetApiData> pData)
+    {
+        DeferredRelease d;
+        d.pData = pData;
+        d.fenceValue = mpFence->getCpuValue();
+        mpDeferredReleases.push(d);
+    }
 }

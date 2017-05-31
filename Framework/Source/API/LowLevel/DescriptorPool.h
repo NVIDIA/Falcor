@@ -28,10 +28,13 @@
 #pragma once
 #include "Framework.h"
 #include <queue>
+#include "API/LowLevel/GpuFence.h"
+#include <queue>
 
 namespace Falcor
 {
     struct DescriptorPoolApiData;
+    struct DescriptorSetApiData;
     class DescriptorSet;
 
     class DescriptorPool : public std::enable_shared_from_this<DescriptorPool>
@@ -80,18 +83,30 @@ namespace Falcor
             bool mShaderVisible = false;
         };
 
-        static SharedPtr create(const Desc& desc);
+        static SharedPtr create(const Desc& desc, GpuFence::SharedPtr pFence);
 
         uint32_t getDescCount(Type type) const { return mDesc.mDescCount[(uint32_t)type]; }
         uint32_t getTotalDescCount() const { return mDesc.mTotalDescCount; }
         bool isShaderVisible() const { return mDesc.mShaderVisible; }
         ApiHandle getApiHandle(uint32_t heapIndex) const;
         const ApiData* getApiData() const { return mpApiData.get(); }
+        void executeDeferredReleases();
     private:
         friend DescriptorSet;
-        DescriptorPool(const Desc& desc);
+        DescriptorPool(const Desc& desc, GpuFence::SharedPtr pFence);
         bool apiInit();
+        void releaseAllocation(std::shared_ptr<DescriptorSetApiData> pData);
         Desc mDesc;
         std::shared_ptr<ApiData> mpApiData;
+        GpuFence::SharedPtr mpFence;
+
+        struct DeferredRelease
+        {
+            std::shared_ptr<DescriptorSetApiData> pData;
+            uint64_t fenceValue;
+            bool operator>(const DeferredRelease& other) const { return fenceValue > other.fenceValue; }
+        };
+
+        std::priority_queue<DeferredRelease, std::vector<DeferredRelease>, std::greater<DeferredRelease>> mpDeferredReleases;
     };
 }

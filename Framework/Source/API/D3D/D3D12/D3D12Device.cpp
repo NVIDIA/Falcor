@@ -299,15 +299,17 @@ namespace Falcor
 			return false;
 		}
 
+        mpRenderContext = RenderContext::create();
         // Create the descriptor heaps
         DescriptorPool::Desc poolDesc;
         poolDesc.setDescCount(DescriptorPool::Type::Srv, 16 * 1024).setDescCount(DescriptorPool::Type::Sampler, 2048).setShaderVisible(true);
-        mpGpuDescPool = DescriptorPool::create(poolDesc);
+        mpGpuDescPool = DescriptorPool::create(poolDesc, mpRenderContext->getLowLevelData()->getFence());
         poolDesc.setShaderVisible(false).setDescCount(DescriptorPool::Type::Rtv, 1024).setDescCount(DescriptorPool::Type::Dsv, 1024);
-        mpCpuDescPool = DescriptorPool::create(poolDesc);
+        mpCpuDescPool = DescriptorPool::create(poolDesc, mpRenderContext->getLowLevelData()->getFence());
+
+        mpRenderContext->reset();
 
 		// Create the swap-chain
-        mpRenderContext = RenderContext::create();
         mpResourceAllocator = ResourceAllocator::create(1024 * 1024 * 2, mpRenderContext->getLowLevelData()->getFence());
         pData->pSwapChain = createSwapChain(pDxgiFactory, mpWindow.get(), mpRenderContext->getLowLevelData()->getCommandQueue(), desc.colorFormat);
 		if(pData->pSwapChain == nullptr)
@@ -345,6 +347,8 @@ namespace Falcor
         {
             pData->deferredReleases.pop();
         }
+        mpCpuDescPool->executeDeferredReleases();
+        mpGpuDescPool->executeDeferredReleases();
     }
 
     Fbo::SharedPtr Device::resizeSwapChain(uint32_t width, uint32_t height)

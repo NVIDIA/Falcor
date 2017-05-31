@@ -31,7 +31,7 @@
 
 namespace Falcor
 {
-    D3D12DescriptorHeap::D3D12DescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE type, uint32_t chunkCount) : mChunkCount(chunkCount), mType (type), mDeferredRelease(&Chunk::compareGt)
+    D3D12DescriptorHeap::D3D12DescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE type, uint32_t chunkCount) : mChunkCount(chunkCount), mType (type)
     {
 		ID3D12DevicePtr pDevice = gpDevice->getApiHandle();
         mDescriptorSize = pDevice->GetDescriptorHandleIncrementSize(type);
@@ -80,81 +80,55 @@ namespace Falcor
 
     D3D12DescriptorHeap::Allocation::SharedPtr D3D12DescriptorHeap::allocateDescriptors(uint32_t count)
     {
-        Chunk::SharedPtr pChunk = getChunk(count);
+        setupCurrentChunk(count);
         // The chunk is guaranteed to have enough space for us
-        assert(pChunk->chunkCount * kDescPerChunk - pChunk->currentDesc >= count);
+        assert(mpCurrentChunk->chunkCount * kDescPerChunk - mpCurrentChunk->currentDesc >= count);
 
-        Allocation::SharedPtr pAlloc = Allocation::create(shared_from_this(), pChunk->getCurrentAbsoluteIndex(), count, pChunk);
+        Allocation::SharedPtr pAlloc = Allocation::create(shared_from_this(), mpCurrentChunk->getCurrentAbsoluteIndex(), count, mpCurrentChunk);
 
         // Update the chunk
-        pChunk->allocCount++;
-        pChunk->currentDesc += count;
+        mpCurrentChunk->allocCount++;
+        mpCurrentChunk->currentDesc += count;
         return pAlloc;
     }
 
-    D3D12DescriptorHeap::Chunk::SharedPtr D3D12DescriptorHeap::getChunk(uint32_t descCount)
+    void D3D12DescriptorHeap::setupCurrentChunk(uint32_t descCount)
     {
         if (mpCurrentChunk)
         {
-            // Check if the current chunk has enoug space
-            if (mpCurrentChunk->chunkCount * kDescPerChunk - mpCurrentChunk->currentDesc >= descCount)
-            {
-                return mpCurrentChunk;
-            }
+            // Check if the current chunk has enough space
+            if (mpCurrentChunk->chunkCount * kDescPerChunk - mpCurrentChunk->currentDesc >= descCount) return;
+
+            // Release the chunk
+            auto pCurrent = mpCurrentChunk;
+            mpCurrentChunk = nullptr;
+            releaseChunk(pCurrent);
         }
 
         // Need a new chunk
-        mpCurrentChunk = allocateChunks(descCount);
-        return mpCurrentChunk;
-    }
-
-    D3D12DescriptorHeap::Chunk::SharedPtr D3D12DescriptorHeap::allocateChunks(uint32_t descCount)
-    {
         uint32_t chunkCount = (descCount + kDescPerChunk - 1) / kDescPerChunk;
-        if (chunkCount == 1 && (mAvailableChunks.empty() == false))
+
+        // TODO: Optimize it for the case that chunkCount > 1 - mFreeChunks can be sorted by offset to find contiguous chunks
+        if (chunkCount == 1 && (mFreeChunks.empty() == false))
         {
-            auto pChunk = mAvailableChunks.front();
-            pChunk->reset();
-            mAvailableChunks.pop();
-            return pChunk;
+            mpCurrentChunk = mFreeChunks.front();
+            mFreeChunks.pop();
+            mpCurrentChunk->reset();
+            return;
         }
 
-        // Allocate from the heap. TODO: Need to optimize it for the case that chunkCount > 1 - mpFreeChunks can be sorted by offset to find contiguous chunks
-        if (mpCurrentChunk && mpCurrentChunk->allocCount == 0)
-        {
-            mpCurrentChunk->releaseFenceValue = gpDevice->getRenderContext()->getLowLevelData()->getFence()->getCpuValue();
-            mDeferredRelease.push(mpCurrentChunk);
-        }
-
-        if (mAvailableChunks.size() + chunkCount > mChunkCount) FIXME: this Is incorrect, need to find A better predicate to call executeDeferredReleases()
-        {
-            executeDeferredReleases();
-        }
+        // No free chunks. Allocate
         assert(mAllocatedChunks + chunkCount <= mChunkCount);
-
-        Chunk::SharedPtr pChunk = Chunk::SharedPtr(new Chunk());
-        pChunk->chunkCount = chunkCount;
+        mpCurrentChunk = Chunk::SharedPtr(new Chunk(mAllocatedChunks, chunkCount));
         mAllocatedChunks += chunkCount;
-        return pChunk;
     }
-
+    
     void D3D12DescriptorHeap::releaseChunk(Chunk::SharedPtr pChunk)
     {
         pChunk->allocCount--;
         if(pChunk->allocCount == 0 && (pChunk != mpCurrentChunk))
         {
-            pChunk->releaseFenceValue = gpDevice->getRenderContext()->getLowLevelData()->getFence()->getCpuValue();
-            mDeferredRelease.push(pChunk);
-        }
-    }
-
-    void D3D12DescriptorHeap::executeDeferredReleases()
-    {
-        uint64_t gpuVal = gpDevice->getRenderContext()->getLowLevelData()->getFence()->getGpuValue();
-        while (mDeferredRelease.size() && mDeferredRelease.top()->releaseFenceValue < gpuVal)
-        {
-            mAvailableChunks.push(mDeferredRelease.top());
-            mDeferredRelease.pop();
+            mFreeChunks.push(pChunk);
         }
     }
 
