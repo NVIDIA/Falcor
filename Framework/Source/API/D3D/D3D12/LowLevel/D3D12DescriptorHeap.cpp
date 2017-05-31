@@ -99,10 +99,11 @@ namespace Falcor
             // Check if the current chunk has enough space
             if (mpCurrentChunk->chunkCount * kDescPerChunk - mpCurrentChunk->currentDesc >= descCount) return;
 
-            // Release the chunk
-            auto pCurrent = mpCurrentChunk;
-            mpCurrentChunk = nullptr;
-            releaseChunk(pCurrent);
+            if (mpCurrentChunk->allocCount == 0)
+            {
+                mpCurrentChunk->reset();
+                return;
+            }
         }
 
         // Need a new chunk
