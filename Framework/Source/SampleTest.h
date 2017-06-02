@@ -76,6 +76,7 @@ namespace Falcor
 
         enum class TaskType
         {
+			MemoryCheck,
             LoadTime,
             MeasureFps,
             ScreenCapture,

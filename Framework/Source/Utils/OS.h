@@ -221,5 +221,17 @@ namespace Falcor
     */
     void setThreadPriority(std::thread::native_handle_type thread, ThreadPriorityType priority);
 
-    /*! @} */
+	/** Get the Total Virtual Memory.
+	*/
+	DWORDLONG getTotalVirtualMemory();
+
+	/**	Get the Used Virtual Memory.
+	*/
+	DWORDLONG getUsedVirtualMemory();
+
+	/**	Get the Virtual Memory Used by this Process.
+	*/
+	DWORDLONG getProcessUsedVirtualMemory();
+
+	/*! @} */
 };

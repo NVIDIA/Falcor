@@ -1,5 +1,6 @@
 Test/Bin/*
 Test/TestResults/*
+Test/.vs/*
 Bin/*
 *.user
 *.sdf
@@ -7,6 +8,7 @@ Bin/*
 *.suo
 *.ptx
 Falcor.VC.db
+FalcorTest.VC.db
 FalcorTest/TestResults/*
 Falcor.VC.VC.opendb
 Framework/Externals/NVAPI/

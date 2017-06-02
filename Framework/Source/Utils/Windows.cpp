@@ -35,6 +35,7 @@
 #include <shlobj.h>
 #include <sys/types.h>
 #include "API/Window.h"
+#include "psapi.h"
 
 // Always run in Optimus mode on laptops
 extern "C"
@@ -461,4 +462,36 @@ namespace Falcor
 
         return s.st_mtime;
     }
+
+	DWORDLONG getTotalVirtualMemory()
+	{
+		MEMORYSTATUSEX memInfo;
+		memInfo.dwLength = sizeof(MEMORYSTATUSEX);
+		GlobalMemoryStatusEx(&memInfo);
+		DWORDLONG totalVirtualMem = memInfo.ullTotalPageFile;
+
+		return totalVirtualMem;
+	}
+
+	DWORDLONG getUsedVirtualMemory()
+	{
+		MEMORYSTATUSEX memInfo;
+		memInfo.dwLength = sizeof(MEMORYSTATUSEX);
+		GlobalMemoryStatusEx(&memInfo);
+		DWORDLONG totalVirtualMem = memInfo.ullTotalPageFile;
+		DWORDLONG virtualMemUsed = memInfo.ullTotalPageFile - memInfo.ullAvailPageFile;
+
+		return virtualMemUsed;
+	}
+	
+	DWORDLONG getProcessUsedVirtualMemory()
+	{
+		PROCESS_MEMORY_COUNTERS_EX pmc;
+		GetProcessMemoryInfo(GetCurrentProcess(), (PROCESS_MEMORY_COUNTERS*) &pmc, sizeof(pmc));
+		SIZE_T virtualMemUsedByMe = pmc.PrivateUsage;
+
+		return virtualMemUsedByMe;
+	}
+
+
 }

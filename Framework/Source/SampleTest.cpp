@@ -81,6 +81,24 @@ namespace Falcor
                 //disable text, the fps text will cause image compare failures
                 toggleText(false);
             }
+			else if (frameId == mCurrentFrameTest->mStartFrame && mCurrentFrameTest->mTask == TaskType::MemoryCheck)
+			{
+				//	
+				for (uint32_t i = 0; i < memoryCheckRanges.size(); i++)
+				{
+					if (mCurrentFrameTest->mStartFrame == memoryCheckRanges[i].startCheck.pFrame)
+					{
+						captureMemory(memoryCheckRanges[i].startCheck);
+					}
+					else if(mCurrentFrameTest->mStartFrame == memoryCheckRanges[i].endCheck.pFrame)
+					{
+						captureMemory(memoryCheckRanges[i].endCheck);
+						writeMemoryRange(memoryCheckRanges[i]);
+					}
+				}
+
+				mCurrentTrigger = TriggerType::Frame;
+			}
 
             mCurrentTrigger = TriggerType::Frame;
         }
@@ -120,11 +138,16 @@ namespace Falcor
             float loadTime = 0.f;
             uint32_t numFpsRanges = 0;
             uint32_t numScreenshots = 0;
+			uint32_t numMemCheck = 0;
+
             //frame based tests
             for (auto it = mTestTasks.begin(); it != mTestTasks.end(); ++it)
             {
                 switch (it->mTask)
                 {
+				case TaskType::MemoryCheck:
+					numMemCheck++;
+					break;
                 case TaskType::LoadTime:
                     loadTime = it->mResult;
                     break;
@@ -178,6 +201,7 @@ namespace Falcor
             of << "\tLoadTime=\"" << std::to_string(loadTime) << "\"\n";
             of << "\tFrameTime=\"" << std::to_string(frameTime) << "\"\n";
             of << "\tNumScreenshots=\"" << std::to_string(numScreenshots) << "\"\n";
+			of << "\tNumMemoryChecks=\"" << std::to_string(numMemCheck) << "\"\n";
             of << "/>\n";
             of << "</TestLog>";
             of.close();
@@ -201,6 +225,33 @@ namespace Falcor
             Task newTask(startFame, startFame + 1, TaskType::Shutdown);
             mTestTasks.push_back(newTask);
         }
+
+		std::vector<ArgList::Arg> mCheckFrames = mArgList.getValues("memCheck");
+		for (uint32_t i = 0; i < mCheckFrames.size(); ++i)
+		{
+			std::vector<std::string> frames = splitString(mCheckFrames[i].asString(), "-");
+
+			if (frames.size() > 2)
+			{
+				logWarning("Bad Frame Range : " + mCheckFrames[i].asString() + " Memory Check Ignored.");
+			}
+			if (std::stoul(frames[0]) >= std::stoul(frames[1]))
+			{
+				logWarning("Bad Frame Range : " + mCheckFrames[i].asString() + " Memory Check Ignored.");
+			}
+
+			Task startCheckTask(std::stoul(frames[0]), std::stoul(frames[0]), TaskType::MemoryCheck);
+			mTestTasks.push_back(startCheckTask);
+
+			Task endCheckTask(std::stoul(frames[1]), std::stoul(frames[1]), TaskType::MemoryCheck);
+			mTestTasks.push_back(endCheckTask);
+
+			MemoryCheckRange newCheckRange;
+			newCheckRange.startCheck.pFrame = std::stoul(frames[0]);
+			newCheckRange.endCheck.pFrame = std::stoul(frames[1]);
+
+			memoryCheckRanges.push_back(newCheckRange);
+		}
 
         //screenshot frames
         std::vector<ArgList::Arg> ssFrames = mArgList.getValues("ssframes");
@@ -348,13 +399,14 @@ namespace Falcor
             {
                 mCurrentFrameTest->mResult /= (mCurrentFrameTest->mEndFrame - mCurrentFrameTest->mStartFrame);
             }
-
             ++mCurrentFrameTest;
         }
         else
         {
             switch (mCurrentFrameTest->mTask)
             {
+			case TaskType::MemoryCheck:
+				break;
             case TaskType::LoadTime:
             case TaskType::MeasureFps:
                 mCurrentFrameTest->mResult += frameRate().getLastFrameTime();

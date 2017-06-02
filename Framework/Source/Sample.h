@@ -161,6 +161,24 @@ namespace Falcor
         float mCurrentTime = 0;                           ///< Global time
         ArgList mArgList;
 
+		//	The Memory Check for one frame.
+		struct MemoryCheck
+		{
+			unsigned long pFrame;
+			unsigned long long pTotalVirtualMemory;
+			unsigned long long pTotalUsedVirtualMemory;
+			unsigned long long pCurrentlyUsedVirtualMemory;
+		};
+
+		struct MemoryCheckRange
+		{
+			MemoryCheck startCheck;
+			MemoryCheck endCheck;
+		};
+
+		std::vector<MemoryCheckRange> memoryCheckRanges;
+
+
     protected:
         void renderFrame() override;
         void handleWindowSizeChange() override;
@@ -168,6 +186,8 @@ namespace Falcor
         void handleMouseEvent(const MouseEvent& mouseEvent) override;
         virtual float getTimeScale() final { return mTimeScale; }
         void initVideoCapture();
+		void captureMemory(MemoryCheck & memoryCheck);
+		void writeMemoryRange(const MemoryCheckRange & memoryCheckRange);
         void captureScreen();
         void toggleText(bool enabled);
         uint32_t getFrameID() const { return mFrameRate.getFrameCount(); }
@@ -206,5 +226,7 @@ namespace Falcor
         TextRenderer::UniquePtr mpTextRenderer;
         std::set<KeyboardEvent::Key> mPressedKeys;
         PixelZoom::SharedPtr mpPixelZoom;
+
+
     };
 };

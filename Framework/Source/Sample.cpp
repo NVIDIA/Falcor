@@ -456,7 +456,85 @@ namespace Falcor
         }
     }
 
-    void Sample::startVideoCapture()
+	void Sample::captureMemory(MemoryCheck & memoryCheck)
+	{
+		memoryCheck.pTotalVirtualMemory = getTotalVirtualMemory();
+		memoryCheck.pTotalUsedVirtualMemory = getUsedVirtualMemory();
+		memoryCheck.pCurrentlyUsedVirtualMemory = getProcessUsedVirtualMemory();
+	}
+
+	void Sample::writeMemoryRange(const MemoryCheckRange & memoryCheckRange)
+	{
+		//	
+		std::string startTVM_B = std::to_string(memoryCheckRange.startCheck.pTotalVirtualMemory);
+		std::string startTUVM_B = std::to_string(memoryCheckRange.startCheck.pTotalUsedVirtualMemory);
+		std::string startCUVM_B = std::to_string(memoryCheckRange.startCheck.pCurrentlyUsedVirtualMemory);
+
+		std::string startTVM_MB = std::to_string(memoryCheckRange.startCheck.pTotalVirtualMemory / (1024 * 1024));
+		std::string startTUVM_MB = std::to_string(memoryCheckRange.startCheck.pTotalUsedVirtualMemory / (1024 * 1024));
+		std::string startCUVM_MB = std::to_string(memoryCheckRange.startCheck.pCurrentlyUsedVirtualMemory / (1024 * 1024));
+
+		std::string startCheck = "At the Start Frame, " + std::to_string(memoryCheckRange.startCheck.pFrame) + ", : \n ";
+		startCheck = startCheck + ("Total Virtual Memory : " + startTVM_B + " bytes, " + startTVM_MB + " MB. \n");
+		startCheck = startCheck + ("Total Used Virtual Memory By All Processes : " + startTUVM_B + " bytes, " + startTUVM_MB + " MB. \n");
+		startCheck = startCheck + ("Virtual Memory used by this Process : " + startCUVM_B + " bytes, " + startCUVM_MB + " MB. \n \n");
+	
+		//
+		std::string endTVM_B = std::to_string(memoryCheckRange.endCheck.pTotalVirtualMemory);
+		std::string endTUVM_B = std::to_string(memoryCheckRange.endCheck.pTotalUsedVirtualMemory);
+		std::string endCUVM_B = std::to_string(memoryCheckRange.endCheck.pCurrentlyUsedVirtualMemory);
+
+		std::string endTVM_MB = std::to_string(memoryCheckRange.endCheck.pTotalVirtualMemory / (1024 * 1024));
+		std::string endTUVM_MB = std::to_string(memoryCheckRange.endCheck.pTotalUsedVirtualMemory / (1024 * 1024));
+		std::string endCUVM_MB = std::to_string(memoryCheckRange.endCheck.pCurrentlyUsedVirtualMemory / (1024 * 1024));
+
+		std::string endCheck = "At the End Frame, " + std::to_string(memoryCheckRange.endCheck.pFrame) + ", : \n ";
+		endCheck = endCheck + ("Total Virtual Memory : " + endTVM_B + " bytes, " + endTVM_MB + " MB. \n");
+		endCheck = endCheck + ("Total Used Virtual Memory By All Processes : " + endTUVM_B + " bytes, " + endTUVM_MB + " MB. \n");
+		endCheck = endCheck + ("Virtual Memory used by this Process : " + endCUVM_B + " bytes, " + endCUVM_MB + " MB. \n \n");
+
+		//
+		std::string differenceCheck = "Difference : \n";
+		unsigned long long difference = 0;
+
+		if (memoryCheckRange.startCheck.pCurrentlyUsedVirtualMemory > memoryCheckRange.endCheck.pCurrentlyUsedVirtualMemory)
+		{
+			difference = memoryCheckRange.startCheck.pCurrentlyUsedVirtualMemory - memoryCheckRange.endCheck.pCurrentlyUsedVirtualMemory;
+			differenceCheck = differenceCheck + "-" + std::to_string(difference) + "\n \n";
+		}
+		else
+		{
+			difference = memoryCheckRange.endCheck.pCurrentlyUsedVirtualMemory - memoryCheckRange.startCheck.pCurrentlyUsedVirtualMemory;
+			differenceCheck = differenceCheck + std::to_string(difference) + "\n \n";
+		}
+
+
+		//	
+		std::string filename = getExecutableName();
+
+		// Now we have a folder and a filename, look for an available filename (we don't overwrite existing files)
+		std::string prefix = std::string(filename);
+		std::string executableDir = getExecutableDirectory();
+		std::string txtFile;
+
+		//	
+		if (findAvailableFilename(prefix, executableDir, "txt", txtFile))
+		{
+			std::ofstream of;
+			of.open(txtFile);
+			of << differenceCheck;
+			of << startCheck;
+			of << endCheck;
+			of.close();
+		}
+		else
+		{
+			logError("Could not find available filename when checking memory");
+		}
+
+	}
+
+	void Sample::startVideoCapture()
     {
         // create the capture object and frame buffer
         VideoEncoder::Desc desc;
