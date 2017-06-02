@@ -26,45 +26,55 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 #include "Framework.h"
-#include "ConstantBuffer.h"
-#include "ProgramVersion.h"
-#include "buffer.h"
-#include "glm/glm.hpp"
-#include "texture.h"
-#include "API/ProgramReflection.h"
-#include "API/Device.h"
+#include "API/DescriptorSet.h"
+#include "D3D12DescriptorHeap.h"
+#include "D3D12DescriptorData.h"
 
 namespace Falcor
 {
-    ConstantBuffer::ConstantBuffer(const ProgramReflection::BufferReflection::SharedConstPtr& pReflector, size_t size) :
-        VariablesBuffer(pReflector, size, 1, Buffer::BindFlags::Constant, Buffer::CpuAccess::Write)
+    D3D12_DESCRIPTOR_HEAP_TYPE falcorToDxDescType(DescriptorPool::Type t);
+
+    static D3D12DescriptorHeap* getHeap(const DescriptorPool* pPool, DescriptorSet::Type type)
     {
+        auto dxType = falcorToDxDescType(type);
+        D3D12DescriptorHeap* pHeap = pPool->getApiData()->pHeaps[dxType].get();
+        assert(pHeap->getType() == dxType);
+        return pHeap;
     }
 
-    ConstantBuffer::SharedPtr ConstantBuffer::create(const ProgramReflection::BufferReflection::SharedConstPtr& pReflector, size_t overrideSize)
+    bool DescriptorSet::apiInit()
     {
-        size_t size = (overrideSize == 0) ? pReflector->getRequiredSize() : overrideSize;        
-        SharedPtr pBuffer = SharedPtr(new ConstantBuffer(pReflector, size));
-        return pBuffer;
-    }
+        mpApiData = std::make_shared<DescriptorSetApiData>();
 
-    ConstantBuffer::SharedPtr ConstantBuffer::create(Program::SharedPtr& pProgram, const std::string& name, size_t overrideSize)
-    {
-        auto& pProgReflector = pProgram->getActiveVersion()->getReflector();
-        auto& pBufferReflector = pProgReflector->getBufferDesc(name, ProgramReflection::BufferReflection::Type::Constant);
-        if (pBufferReflector)
+        // For each range we need to allocate a table from a heap
+        mpApiData->allocations.resize(mLayout.mRanges.size());
+        for (size_t i = 0; i < mLayout.mRanges.size(); i++)
         {
-            return create(pBufferReflector, overrideSize);
+            const auto& range = mLayout.mRanges[i];
+            D3D12DescriptorHeap* pHeap = getHeap(mpPool.get(), range.type);
+            mpApiData->allocations[i] = pHeap->allocateDescriptors(range.count);
+            if (mpApiData->allocations[i] == false)
+            {
+                // Execute deferred releases and try again
+                mpPool->executeDeferredReleases();
+                mpApiData->allocations[i] = pHeap->allocateDescriptors(range.count);
+                if (!mpApiData->allocations[i])
+                {
+                    assert(0);
+                    return false;
+                }
+            }
         }
-        else
-        {
-            logError("Can't find a constant buffer named \"" + name + "\" in the program");
-        }
-        return nullptr;
+        return true;
     }
 
-    void ConstantBuffer::uploadToGPU(size_t offset, size_t size) const
+    DescriptorSet::CpuHandle DescriptorSet::getCpuHandle(uint32_t rangeIndex, uint32_t descInRange) const
     {
-        VariablesBuffer::uploadToGPU(offset, size);
+        return mpApiData->allocations[rangeIndex]->getCpuHandle(descInRange);
+    }
+
+    DescriptorSet::GpuHandle DescriptorSet::getGpuHandle(uint32_t rangeIndex, uint32_t descInRange) const
+    {
+        return mpApiData->allocations[rangeIndex]->getGpuHandle(descInRange);
     }
 }

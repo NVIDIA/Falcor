@@ -25,10 +25,51 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#include "Framework.h"
-#include "API/ProgramVars.h"
+#pragma once
+#include "LowLevel/DescriptorPool.h"
 
 namespace Falcor
 {
+    struct DescriptorSetApiData;
+    class DescriptorSet
+    {
+    public:
+        using SharedPtr = std::shared_ptr<DescriptorSet>;
+        using Type = DescriptorPool::Type;
+        using CpuHandle = DescriptorPool::CpuHandle;
+        using GpuHandle = DescriptorPool::GpuHandle;
 
+        ~DescriptorSet();
+
+        struct Layout
+        {
+        public:
+            Layout& addRange(Type type, uint32_t count) { mRanges.push_back({ type, count }); return *this; }
+        private:
+            friend class DescriptorSet;
+            struct Range
+            {
+                Type type;
+                uint32_t count;
+            };
+            std::vector<Range> mRanges;
+        };
+
+        static SharedPtr create(DescriptorPool::SharedPtr pPool, const Layout& layout);
+
+        size_t getRangeCount() const { return mLayout.mRanges.size(); }
+        Type getRangeType(uint32_t range) const { return mLayout.mRanges[range].type; }
+        uint32_t getRangeDescCount(uint32_t range) const { return mLayout.mRanges[range].count; }
+
+        CpuHandle getCpuHandle(uint32_t rangeIndex, uint32_t descInRange = 0) const;
+        GpuHandle getGpuHandle(uint32_t rangeIndex, uint32_t descInRange = 0) const;
+    private:
+        using ApiData = DescriptorSetApiData;
+        DescriptorSet(DescriptorPool::SharedPtr pPool, const Layout& layout) : mpPool(pPool), mLayout(layout) {}
+
+        bool apiInit();
+        Layout mLayout;
+        std::shared_ptr<ApiData> mpApiData;
+        DescriptorPool::SharedPtr mpPool;
+    };
 }

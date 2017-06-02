@@ -26,9 +26,18 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 #include "Framework.h"
-#include "API/ProgramVars.h"
+#include "DescriptorSet.h"
 
 namespace Falcor
 {
+    DescriptorSet::SharedPtr DescriptorSet::create(DescriptorPool::SharedPtr pPool, const Layout& layout)
+    {
+        SharedPtr pThis = SharedPtr(new DescriptorSet(pPool, layout));
+        return pThis->apiInit() ? pThis : nullptr;
+    }
 
+    DescriptorSet::~DescriptorSet()
+    {
+        mpPool->releaseAllocation(mpApiData);
+    }
 }

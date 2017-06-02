@@ -26,12 +26,9 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 #include "Framework.h"
-#include "DescriptorTable.h"
+#include "ParameterBlock.h"
 
 namespace Falcor
 {
-    DescriptorTable::SharedPtr DescriptorTable::create(uint32_t descriptorCount)
-    {
-        return nullptr;
-    }
+
 }

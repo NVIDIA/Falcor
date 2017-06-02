@@ -73,7 +73,7 @@ void FeatureDemo::onGuiRender()
         std::string filename;
         if (openFileDialog(Model::kSupportedFileFormatsStr, filename))
         {
-            loadModel(filename);
+            loadModel(filename, true);
         }
     }
 
@@ -82,7 +82,7 @@ void FeatureDemo::onGuiRender()
         std::string filename;
         if (openFileDialog(Scene::kFileFormatString, filename))
         {
-            loadScene(filename);
+            loadScene(filename, true);
         }
     }
 

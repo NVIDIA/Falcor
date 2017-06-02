@@ -25,10 +25,18 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#include "Framework.h"
-#include "API/ProgramVars.h"
+#pragma once
+#include "D3D12DescriptorHeap.h"
 
 namespace Falcor
 {
+    struct DescriptorPoolApiData
+    {
+        D3D12DescriptorHeap::SharedPtr pHeaps[D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES];
+    };
 
+    struct DescriptorSetApiData
+    {
+        std::vector<D3D12DescriptorHeap::Allocation::SharedPtr> allocations;
+    };
 }

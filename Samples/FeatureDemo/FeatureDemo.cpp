@@ -101,9 +101,13 @@ void FeatureDemo::initScene(Scene::SharedPtr pScene)
     mCurrentTime = 0;
 }
 
-void FeatureDemo::loadModel(const std::string& filename)
+void FeatureDemo::loadModel(const std::string& filename, bool showProgressBar)
 {
-    ProgressBar::SharedPtr pBar = ProgressBar::create("Loading Model");
+    ProgressBar::SharedPtr pBar;
+    if (showProgressBar)
+    {
+        pBar = ProgressBar::create("Loading Model");
+    }
     Model::SharedPtr pModel = Model::createFromFile(filename.c_str());
     if (!pModel) return;
     pModel->bindSamplerToMaterials(mSkyBox.pEffect->getSampler());
@@ -113,9 +117,13 @@ void FeatureDemo::loadModel(const std::string& filename)
     initScene(pScene);
 }
 
-void FeatureDemo::loadScene(const std::string& filename)
+void FeatureDemo::loadScene(const std::string& filename, bool showProgressBar)
 {
-    ProgressBar::SharedPtr pBar = ProgressBar::create("Loading Scene", 100);
+    ProgressBar::SharedPtr pBar;
+    if (showProgressBar)
+    {
+        pBar = ProgressBar::create("Loading Scene", 100);
+    }
     Scene::SharedPtr pScene = Scene::loadFromFile(filename);
 
     if (pScene != nullptr)
@@ -326,13 +334,13 @@ void FeatureDemo::onInitializeTesting()
     std::vector<ArgList::Arg> model = mArgList.getValues("loadmodel");
     if (!model.empty())
     {
-        loadModel(model[0].asString());
+        loadModel(model[0].asString(), false);
     }
 
     std::vector<ArgList::Arg> scene = mArgList.getValues("loadscene");
     if (!scene.empty())
     {
-        loadScene(scene[0].asString());
+        loadScene(scene[0].asString(), false);
     }
 
     std::vector<ArgList::Arg> cameraPos = mArgList.getValues("camerapos");

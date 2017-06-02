@@ -29,6 +29,7 @@
 #include "API/ComputeContext.h"
 #include "glm/gtc/type_ptr.hpp"
 #include "API/Device.h"
+#include "API/DescriptorSet.h"
 
 namespace Falcor
 {
@@ -83,15 +84,14 @@ namespace Falcor
     void clearUavCommon(ComputeContext* pContext, const UnorderedAccessView* pUav, const ClearType& clear, ID3D12GraphicsCommandList* pList)
     {
         pContext->resourceBarrier(pUav->getResource(), Resource::State::UnorderedAccess);
-        UavHandle clearHandle = pUav->getHandleForClear();
         UavHandle uav = pUav->getApiHandle();
         if (typeid(ClearType) == typeid(vec4))
         {
-            pList->ClearUnorderedAccessViewFloat(uav->getGpuHandle(), clearHandle->getCpuHandle(), pUav->getResource()->getApiHandle(), (float*)value_ptr(clear), 0, nullptr);
+            pList->ClearUnorderedAccessViewFloat(uav->getGpuHandle(0), uav->getCpuHandle(0), pUav->getResource()->getApiHandle(), (float*)value_ptr(clear), 0, nullptr);
         }
         else if (typeid(ClearType) == typeid(uvec4))
         {
-            pList->ClearUnorderedAccessViewUint(uav->getGpuHandle(), clearHandle->getCpuHandle(), pUav->getResource()->getApiHandle(), (uint32_t*)value_ptr(clear), 0, nullptr);
+            pList->ClearUnorderedAccessViewUint(uav->getGpuHandle(0), uav->getCpuHandle(0), pUav->getResource()->getApiHandle(), (uint32_t*)value_ptr(clear), 0, nullptr);
         }
         else
         {

@@ -358,9 +358,6 @@
     <ClCompile Include="API\D3D\D3D12\LowLevel\D3D12RootSignature.cpp">
       <Filter>API\D3D\D3D12\LowLevel</Filter>
     </ClCompile>
-    <ClCompile Include="API\LowLevel\DescriptorTable.cpp">
-      <Filter>API\LowLevel</Filter>
-    </ClCompile>
     <ClCompile Include="API\ConstantBuffer.cpp">
       <Filter>API</Filter>
     </ClCompile>
@@ -473,6 +470,21 @@
     </ClCompile>
     <ClCompile Include="Effects\ParticleSystem\ParticleSystem.cpp">
       <Filter>Effects\ParticleSystem</Filter>
+    </ClCompile>
+    <ClCompile Include="API\DescriptorSet.cpp">
+      <Filter>API</Filter>
+    </ClCompile>
+    <ClCompile Include="API\ParameterBlock.cpp">
+      <Filter>API</Filter>
+    </ClCompile>
+    <ClCompile Include="API\LowLevel\DescriptorPool.cpp">
+      <Filter>API\LowLevel</Filter>
+    </ClCompile>
+    <ClCompile Include="API\D3D\D3D12\LowLevel\D3D12DescriptorPool.cpp">
+      <Filter>API\D3D\D3D12\LowLevel</Filter>
+    </ClCompile>
+    <ClCompile Include="API\D3D\D3D12\LowLevel\D3D12DescriptorSet.cpp">
+      <Filter>API\D3D\D3D12\LowLevel</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -754,12 +766,6 @@
     </ClInclude>
     <ClInclude Include="API\ProgramReflection.h">
       <Filter>API</Filter>
-    </ClInclude>
-    <ClInclude Include="API\LowLevel\DescriptorHeap.h">
-      <Filter>API\LowLevel</Filter>
-    </ClInclude>
-    <ClInclude Include="API\LowLevel\DescriptorTable.h">
-      <Filter>API\LowLevel</Filter>
     </ClInclude>
     <ClInclude Include="API\LowLevel\FencedPool.h">
       <Filter>API\LowLevel</Filter>
@@ -1575,6 +1581,21 @@
     </ClInclude>
     <ClInclude Include="Effects\ParticleSystem\ParticleSystem.h">
       <Filter>Effects\ParticleSystem</Filter>
+    </ClInclude>
+    <ClInclude Include="API\DescriptorSet.h">
+      <Filter>API</Filter>
+    </ClInclude>
+    <ClInclude Include="API\ParameterBlock.h">
+      <Filter>API</Filter>
+    </ClInclude>
+    <ClInclude Include="API\LowLevel\DescriptorTable.h">
+      <Filter>API\LowLevel</Filter>
+    </ClInclude>
+    <ClInclude Include="API\LowLevel\DescriptorPool.h">
+      <Filter>API\LowLevel</Filter>
+    </ClInclude>
+    <ClInclude Include="API\D3D\D3D12\LowLevel\D3D12DescriptorData.h">
+      <Filter>API\D3D\D3D12\LowLevel</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
