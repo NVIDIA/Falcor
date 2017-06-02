@@ -83,16 +83,21 @@ namespace Falcor
             }
 			else if (frameId == mCurrentFrameTest->mStartFrame && mCurrentFrameTest->mTask == TaskType::MemoryCheck)
 			{
-				//	
+				//	Iterate over the Memory Check Ranges.
 				for (uint32_t i = 0; i < memoryCheckRanges.size(); i++)
 				{
+					//	Check if this an Start Check Frame.
 					if (mCurrentFrameTest->mStartFrame == memoryCheckRanges[i].startCheck.pFrame)
 					{
 						captureMemory(memoryCheckRanges[i].startCheck);
 					}
-					else if(mCurrentFrameTest->mStartFrame == memoryCheckRanges[i].endCheck.pFrame)
+					
+					//	Check if this is an End Check Frame.
+					if(mCurrentFrameTest->mStartFrame == memoryCheckRanges[i].endCheck.pFrame)
 					{
 						captureMemory(memoryCheckRanges[i].endCheck);
+						
+						//	Write the Rnange to Frame.
 						writeMemoryRange(memoryCheckRanges[i]);
 					}
 				}
@@ -210,14 +215,14 @@ namespace Falcor
 
     void SampleTest::initFrameTests()
     {
-        //Load time
+        //	Load time
         if (mArgList.argExists("loadtime"))
         {
             Task newTask(2u, 3u, TaskType::LoadTime);
             mTestTasks.push_back(newTask);
         }
 
-        //shutdown
+        //	Shutdown
         std::vector<ArgList::Arg> shutdownFrame = mArgList.getValues("shutdown");
         if (!shutdownFrame.empty())
         {
@@ -253,7 +258,7 @@ namespace Falcor
 			memoryCheckRanges.push_back(newCheckRange);
 		}
 
-        //screenshot frames
+        //	Screenshot frames
         std::vector<ArgList::Arg> ssFrames = mArgList.getValues("ssframes");
         for (uint32_t i = 0; i < ssFrames.size(); ++i)
         {
@@ -262,9 +267,10 @@ namespace Falcor
             mTestTasks.push_back(newTask);
         }
 
-        //fps capture frames
+        //	fps capture frames
         std::vector<ArgList::Arg> fpsRange = mArgList.getValues("perfframes");
-        //integer division on purpose, only care about ranges with start and end
+        
+		//	integer division on purpose, only care about ranges with start and end
         size_t numRanges = fpsRange.size() / 2;
         if (fpsRange.size() % 2 != 0)
         {

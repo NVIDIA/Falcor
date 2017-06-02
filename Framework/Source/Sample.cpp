@@ -456,6 +456,7 @@ namespace Falcor
         }
     }
 
+	//	Capture the Current Memory and write it to the provided memory check.
 	void Sample::captureMemory(MemoryCheck & memoryCheck)
 	{
 		memoryCheck.pTotalVirtualMemory = getTotalVirtualMemory();
@@ -463,9 +464,10 @@ namespace Falcor
 		memoryCheck.pCurrentlyUsedVirtualMemory = getProcessUsedVirtualMemory();
 	}
 
+	//	Write the Memory Check Range to a file. Outputs Difference, Start and End Frames.
 	void Sample::writeMemoryRange(const MemoryCheckRange & memoryCheckRange)
 	{
-		//	
+		//	Get the Strings for the Memory in Bytes - Start Frame
 		std::string startTVM_B = std::to_string(memoryCheckRange.startCheck.pTotalVirtualMemory);
 		std::string startTUVM_B = std::to_string(memoryCheckRange.startCheck.pTotalUsedVirtualMemory);
 		std::string startCUVM_B = std::to_string(memoryCheckRange.startCheck.pCurrentlyUsedVirtualMemory);
@@ -479,7 +481,7 @@ namespace Falcor
 		startCheck = startCheck + ("Total Used Virtual Memory By All Processes : " + startTUVM_B + " bytes, " + startTUVM_MB + " MB. \n");
 		startCheck = startCheck + ("Virtual Memory used by this Process : " + startCUVM_B + " bytes, " + startCUVM_MB + " MB. \n \n");
 	
-		//
+		//	Get the Strings for the Memory in Bytes - End Frame
 		std::string endTVM_B = std::to_string(memoryCheckRange.endCheck.pTotalVirtualMemory);
 		std::string endTUVM_B = std::to_string(memoryCheckRange.endCheck.pTotalUsedVirtualMemory);
 		std::string endCUVM_B = std::to_string(memoryCheckRange.endCheck.pCurrentlyUsedVirtualMemory);
@@ -493,7 +495,7 @@ namespace Falcor
 		endCheck = endCheck + ("Total Used Virtual Memory By All Processes : " + endTUVM_B + " bytes, " + endTUVM_MB + " MB. \n");
 		endCheck = endCheck + ("Virtual Memory used by this Process : " + endCUVM_B + " bytes, " + endCUVM_MB + " MB. \n \n");
 
-		//
+		//	Compute the Difference Between the Two.
 		std::string differenceCheck = "Difference : \n";
 		unsigned long long difference = 0;
 
@@ -509,7 +511,7 @@ namespace Falcor
 		}
 
 
-		//	
+		//	Get the name of the current program.
 		std::string filename = getExecutableName();
 
 		// Now we have a folder and a filename, look for an available filename (we don't overwrite existing files)
@@ -517,9 +519,10 @@ namespace Falcor
 		std::string executableDir = getExecutableDirectory();
 		std::string txtFile;
 
-		//	
+		//	Get an available filename.
 		if (findAvailableFilename(prefix, executableDir, "txt", txtFile))
 		{
+			//	Output the memory check.
 			std::ofstream of;
 			of.open(txtFile);
 			of << differenceCheck;
@@ -529,7 +532,8 @@ namespace Falcor
 		}
 		else
 		{
-			logError("Could not find available filename when checking memory");
+			//	Log Error.
+			logError("Could not find available filename when checking memory.");
 		}
 
 	}

@@ -170,12 +170,14 @@ namespace Falcor
 			unsigned long long pCurrentlyUsedVirtualMemory;
 		};
 
+		//	The Memory Check Between Frames.
 		struct MemoryCheckRange
 		{
 			MemoryCheck startCheck;
 			MemoryCheck endCheck;
 		};
 
+		//	The List of Memory Check Ranges.
 		std::vector<MemoryCheckRange> memoryCheckRanges;
 
 
@@ -186,12 +188,18 @@ namespace Falcor
         void handleMouseEvent(const MouseEvent& mouseEvent) override;
         virtual float getTimeScale() final { return mTimeScale; }
         void initVideoCapture();
+	
+		//	Capture the Current Memory and write it to the provided memory check.
 		void captureMemory(MemoryCheck & memoryCheck);
+
+		//	Write the Memory Check Range to a file. Outputs Difference, Start and End Frames.
 		void writeMemoryRange(const MemoryCheckRange & memoryCheckRange);
-        void captureScreen();
+        
+		void captureScreen();
         void toggleText(bool enabled);
         uint32_t getFrameID() const { return mFrameRate.getFrameCount(); }
-    private:
+
+	private:
         // Private functions
         void initUI();
         void printProfileData();
