@@ -46,7 +46,9 @@ namespace Falcor
 	}
 
 	void SampleTest::beginTestFrame()
-	{
+	{	
+		//	Sample Memory Leak : 
+		//	int * n = new int[20000];
 		if (!hasTests()) return;
 
 		uint32_t frameId = frameRate().getFrameCount();
