@@ -194,7 +194,8 @@ def compareMemoryChecks(resultObj, testInfo, countMemoryChecks, slnInfo, typefix
                 values = keystring.split(' ')
                 print keystring
                 percentDifference = 0.0
-            
+
+    
                 if(int(values[2]) == 0.0):
                     currentRange = [float(values[0]), float(values[1]), "NA", float(values[2]), int(values[3]), int(values[4])]
             
