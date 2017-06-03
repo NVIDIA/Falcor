@@ -27,8 +27,6 @@
 ***************************************************************************/
 #include "ParticleData.h"
 
-#expect _SIMULATE_THREADS
-
 cbuffer PerEmit
 {
     EmitData emitData;

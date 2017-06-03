@@ -29,11 +29,10 @@
 #include "API/Sampler.h"
 #include "API/D3D/D3DState.h"
 #include "API/Device.h"
+#include "Api/DescriptorSet.h"
 
 namespace Falcor
 {
-    Sampler::~Sampler() = default;
-
     uint32_t Sampler::getApiMaxAnisotropy()
     {
         return D3D12_MAX_MAXANISOTROPY;
@@ -44,9 +43,10 @@ namespace Falcor
         SharedPtr pSampler = SharedPtr(new Sampler(desc));
         D3D12_SAMPLER_DESC d3dDesc;
         initD3DSamplerDesc(pSampler.get(), d3dDesc);
-        DescriptorHeap* pHeap = gpDevice->getSamplerDescriptorHeap().get();
-        pSampler->mApiHandle = pHeap->allocateEntry();
-        gpDevice->getApiHandle()->CreateSampler(&d3dDesc, pSampler->mApiHandle->getCpuHandle());
+        DescriptorSet::Layout layout;
+        layout.addRange(DescriptorSet::Type::Sampler, 1);
+        pSampler->mApiHandle = DescriptorSet::create(gpDevice->getGpuDescriptorPool(), layout);
+        gpDevice->getApiHandle()->CreateSampler(&d3dDesc, pSampler->mApiHandle->getCpuHandle(0));
 
         return pSampler;
     }

@@ -90,7 +90,7 @@ namespace Falcor
     size_t VariablesBuffer::getVariableOffset(const std::string& varName) const
     {
         size_t offset;
-        mpReflector->getVariableData(varName, offset, true);
+        mpReflector->getVariableData(varName, offset);
         return offset;
     }
 
@@ -247,7 +247,7 @@ namespace Falcor
     void VariablesBuffer::setVariable(const std::string& name, size_t element, const VarType& value)
     {
         size_t offset;
-        const auto* pVar = mpReflector->getVariableData(name, offset, false);
+        const auto* pVar = mpReflector->getVariableData(name, offset);
         bool valid = true;
         if((_LOG_ENABLED == 0) || (offset != ProgramReflection::kInvalidLocation && checkVariableType<VarType>(pVar->type, name, mpReflector->getName())))
         {
@@ -350,7 +350,7 @@ namespace Falcor
     void VariablesBuffer::setVariableArray(const std::string& name, size_t elementIndex, const VarType* pValue, size_t count)
     {
         size_t offset;
-        const auto& pVarDesc = mpReflector->getVariableData(name, offset, true);
+        const auto& pVarDesc = mpReflector->getVariableData(name, offset);
         if( _LOG_ENABLED == 0 || (offset != ProgramReflection::kInvalidLocation && checkVariableType<VarType>(pVarDesc->type, name, mpReflector->getName())))
         {
             setVariableArray(offset, elementIndex, pValue, count);
@@ -568,7 +568,7 @@ namespace Falcor
     void VariablesBuffer::setTexture(const std::string& name, const Texture* pTexture, const Sampler* pSampler)
     {
         size_t offset;
-        const auto& pVarDesc = mpReflector->getVariableData(name, offset, false);
+        const auto& pVarDesc = mpReflector->getVariableData(name, offset);
         if(offset != ProgramReflection::kInvalidLocation)
         {
             bool bOK = true;
@@ -589,7 +589,7 @@ namespace Falcor
     void VariablesBuffer::setTextureArray(const std::string& name, const Texture* pTexture[], const Sampler* pSampler, size_t count)
     {
         size_t offset;
-        const auto& pVarDesc = mpReflector->getVariableData(name, offset, true);
+        const auto& pVarDesc = mpReflector->getVariableData(name, offset);
 
         if(pVarDesc)
         {

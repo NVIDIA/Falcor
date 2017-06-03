@@ -28,7 +28,6 @@
 #include "Framework.h"
 #include "Sample.h"
 #include "API/Device.h"
-#include "API/LowLevel/DescriptorHeap.h"
 #include "API/LowLevel/GpuFence.h"
 
 namespace Falcor
@@ -351,23 +350,25 @@ namespace Falcor
                 pData->queues[i].push_back(pQueue);
             }
         }
-
+        
+        mpRenderContext = RenderContext::create();
+        
         //
         // Create the descriptor heaps
         //
 
-        mpSrvHeap = DescriptorHeap::create(DescriptorHeap::Type::SRV, 16 * 1024);
-        mpSamplerHeap = DescriptorHeap::create(DescriptorHeap::Type::Sampler, 2048);
-        mpRtvHeap = DescriptorHeap::create(DescriptorHeap::Type::RTV, 1024, false);
-        mpDsvHeap = DescriptorHeap::create(DescriptorHeap::Type::DSV, 1024, false);
-        mpUavHeap = mpSrvHeap;
-        mpCpuUavHeap = DescriptorHeap::create(DescriptorHeap::Type::SRV, 2*1024, false);
+        DescriptorPool::Desc poolDesc;
+        poolDesc.setDescCount(DescriptorPool::Type::Srv, 16 * 1024).setDescCount(DescriptorPool::Type::Sampler, 2048).setShaderVisible(true);
+        mpGpuDescPool = DescriptorPool::create(poolDesc, mpRenderContext->getLowLevelData()->getFence());
+        poolDesc.setShaderVisible(false).setDescCount(DescriptorPool::Type::Rtv, 1024).setDescCount(DescriptorPool::Type::Dsv, 1024);
+        mpCpuDescPool = DescriptorPool::create(poolDesc, mpRenderContext->getLowLevelData()->getFence());
+
+        mpRenderContext->reset();
 
         //
         // Create the swap-chain
         //
 
-        mpRenderContext = RenderContext::create();
         mpResourceAllocator = ResourceAllocator::create(1024 * 1024 * 2, mpRenderContext->getLowLevelData()->getFence());
         pData->pSwapChain = createSwapChain(pDxgiFactory, mpWindow.get(), mpRenderContext->getLowLevelData()->getCommandQueue(), desc.colorFormat);
         if(pData->pSwapChain == nullptr)
@@ -405,6 +406,8 @@ namespace Falcor
         {
             pData->deferredReleases.pop();
         }
+        mpCpuDescPool->executeDeferredReleases();
+        mpGpuDescPool->executeDeferredReleases();
     }
 
     Fbo::SharedPtr Device::resizeSwapChain(uint32_t width, uint32_t height)

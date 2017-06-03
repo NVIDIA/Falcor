@@ -130,12 +130,8 @@ namespace Falcor
         */
         Fbo::SharedPtr resizeSwapChain(uint32_t width, uint32_t height);
 
-        DescriptorHeap::SharedPtr getSrvDescriptorHeap() const { return mpSrvHeap; }
-        DescriptorHeap::SharedPtr getDsvDescriptorHeap() const { return mpDsvHeap; }
-        DescriptorHeap::SharedPtr getUavDescriptorHeap() const { return mpUavHeap; }
-        DescriptorHeap::SharedPtr getCpuUavDescriptorHeap() const { return mpCpuUavHeap; }
-        DescriptorHeap::SharedPtr getRtvDescriptorHeap() const { return mpRtvHeap; }
-        DescriptorHeap::SharedPtr getSamplerDescriptorHeap() const { return mpSamplerHeap; }
+        DescriptorPool::SharedPtr getCpuDescriptorPool() const { return mpCpuDescPool; }
+        DescriptorPool::SharedPtr getGpuDescriptorPool() const { return mpGpuDescPool; }
         ResourceAllocator::SharedPtr getResourceAllocator() const { return mpResourceAllocator; }
         void releaseResource(ApiObjectHandle pResource);
 
@@ -147,12 +143,8 @@ namespace Falcor
 
         ApiHandle mApiHandle;
         ResourceAllocator::SharedPtr mpResourceAllocator;
-        DescriptorHeap::SharedPtr mpRtvHeap;
-        DescriptorHeap::SharedPtr mpDsvHeap;
-        DescriptorHeap::SharedPtr mpSamplerHeap;
-        DescriptorHeap::SharedPtr mpSrvHeap;
-        DescriptorHeap::SharedPtr mpUavHeap;
-        DescriptorHeap::SharedPtr mpCpuUavHeap; // We need it for clearing UAVs
+        DescriptorPool::SharedPtr mpCpuDescPool;
+        DescriptorPool::SharedPtr mpGpuDescPool;
 
         Window::SharedPtr mpWindow;
         void* mpPrivateData;

@@ -33,10 +33,6 @@
 
 cbuffer PerFrameCB : register(b0)
 {
-#foreach p in _LIGHT_SOURCES
-    LightData $(p);
-#endforeach
-
     float3 gAmbient;
 };
 
@@ -62,9 +58,11 @@ vec4 main(VS_OUT vOut) : SV_TARGET
 
     ShadingOutput result;
 
-#foreach p in _LIGHT_SOURCES
-    evalMaterial(shAttr, $(p), result, $(_valIndex) == 0);
-#endforeach
+    [unroll]
+    for (uint l = 0; l < _LIGHT_COUNT; l++)
+    {
+        evalMaterial(shAttr, gLights[l], result, l == 0);
+    }
 
     vec4 finalColor = vec4(result.finalValue + gAmbient * result.diffuseAlbedo, 1.f);
     return finalColor;

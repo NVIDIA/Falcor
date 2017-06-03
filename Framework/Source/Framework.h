@@ -68,6 +68,13 @@ using namespace glm;
 #define safe_delete_array(_a) {delete[] _a; _a = nullptr;}
 #define align_to(_alignment, _val) (((_val + _alignment - 1) / _alignment) * _alignment)
 
+#if defined(_MSC_VER)
+#define FALCOR_DEPRECATED(MESSAGE) __declspec(deprecated(MESSAGE))
+#else
+// TODO: add cases for clang/gcc when/if needed
+#define FALCOR_DEPRECATED(MESSAGE) /* emtpy */
+#endif
+
 namespace Falcor
 {
 #define enum_class_operators(e_) inline e_ operator& (e_ a, e_ b){return static_cast<e_>(static_cast<int>(a)& static_cast<int>(b));}  \
@@ -95,6 +102,18 @@ namespace Falcor
         Extended,       ///< An extended, non-standard shader type
 
         Count           ///< Shader Type count
+    };
+
+
+    /** Shading languages. Used for shader cross-compilation.
+    */
+    enum class ShadingLanguage
+    {
+        Unknown,        ///< Unknown language (e.g., for a plain .h file)
+        GLSL,           ///< OpenGL Shading Language (GLSL)
+        VulkanGLSL,     ///< GLSL for Vulkan
+        HLSL,           ///< High-Level Shading Language
+        Spire,          ///< Spire shading language
     };
 
     /** Framebuffer target flags. Used for clears and copy operations
@@ -170,6 +189,8 @@ namespace Falcor
             return "domain";
         case ShaderType::Geometry:
             return "geometry";
+        case ShaderType::Compute:
+            return "compute";
         default:
             should_not_get_here();
             return "";

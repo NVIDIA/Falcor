@@ -69,16 +69,26 @@ namespace Falcor
         static UniquePtr create(const Scene::SharedConstPtr& pScene) { return UniquePtr(new CsmSceneRenderer(pScene)); }
 
     protected:
-        CsmSceneRenderer(const Scene::SharedConstPtr& pScene) : SceneRenderer(std::const_pointer_cast<Scene>(pScene)) { setObjectCullState(false); }
+        CsmSceneRenderer(const Scene::SharedConstPtr& pScene) : SceneRenderer(std::const_pointer_cast<Scene>(pScene)) 
+        { 
+            setObjectCullState(false); 
+            Sampler::Desc desc;
+            desc.setFilterMode(Sampler::Filter::Linear, Sampler::Filter::Linear, Sampler::Filter::Linear);
+            mpAlphaSampler = Sampler::create(desc);
+        }
+
         bool mMaterialChanged = false;
+        Sampler::SharedPtr mpAlphaSampler;
         bool setPerMaterialData(const CurrentWorkingData& currentData, const Material* pMaterial) override
         {
             mMaterialChanged = true;
             if (currentData.pMaterial->getAlphaMap())
             {
                 float alphaThreshold = currentData.pMaterial->getAlphaThreshold();
-                currentData.pContext->getGraphicsVars()->getConstantBuffer(1u)->setBlob(&alphaThreshold, 0u, sizeof(float));
-                currentData.pContext->getGraphicsVars()->setSrv(0u, currentData.pMaterial->getAlphaMap()->getSRV());
+                auto& pVars = currentData.pContext->getGraphicsVars();
+                pVars->getConstantBuffer(1u)->setBlob(&alphaThreshold, 0u, sizeof(float));
+                pVars->setSrv(0u, currentData.pMaterial->getAlphaMap()->getSRV());
+                pVars->setSampler(0, mpAlphaSampler);
                 currentData.pContext->getGraphicsState()->getProgram()->addDefine("TEST_ALPHA");
             }
             else
@@ -601,8 +611,8 @@ namespace Falcor
 
     void CascadedShadowMaps::setup(RenderContext* pRenderCtx, const Camera* pCamera, Texture::SharedPtr pDepthBuffer)
     {
-        const glm::vec4 clearColor(1);
-        pRenderCtx->clearFbo(mShadowPass.pFbo.get(), clearColor, 1, 0, FboAttachmentType::Depth);
+        const glm::vec4 clearColor(0);
+        pRenderCtx->clearFbo(mShadowPass.pFbo.get(), clearColor, 1, 0, FboAttachmentType::All);
 
         // Calc the bounds
         glm::vec2 distanceRange(0, 0);
@@ -646,13 +656,13 @@ namespace Falcor
         {
         case CsmFilterPoint:
             pVars->setTexture(varName + ".shadowMap", mShadowPass.pFbo->getDepthStencilTexture());
-            pVars->setSampler(varName + ".csmCompareSampler", mShadowPass.pPointCmpSampler);
+            pVars->setSampler("gCsmCompareSampler", mShadowPass.pPointCmpSampler);
             break;
         case CsmFilterHwPcf:
         case CsmFilterFixedPcf:
         case CsmFilterStochasticPcf:
             pVars->setTexture(varName + ".shadowMap", mShadowPass.pFbo->getDepthStencilTexture());
-            pVars->setSampler(varName + ".csmCompareSampler", mShadowPass.pLinearCmpSampler);
+            pVars->setSampler("gCsmCompareSampler", mShadowPass.pLinearCmpSampler);
             break;
         case CsmFilterVsm:
         case CsmFilterEvsm2:

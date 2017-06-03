@@ -28,8 +28,8 @@
 #include "ShaderCommon.h"
 #include "csmdata.h"
 
-SamplerState alphaSampler;
-texture2D alphaMap;
+SamplerState alphaSampler : register(s0);
+texture2D alphaMap : register(t0);
 
 cbuffer PerLightCB : register(b0)
 {

@@ -40,6 +40,9 @@ CONSTANT_BUFFER(ToyCB, 0)
     // ivec2 iChannelResolution[4];
 };
 
+#ifdef FALCOR_HLSL
+static
+#endif
 vec3 iMouse = vec3(0, 0, 0);
 
 // ------------------------------------

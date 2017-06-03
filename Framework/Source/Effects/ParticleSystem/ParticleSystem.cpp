@@ -73,8 +73,9 @@ namespace Falcor
         uint32_t simThreadsX = 1, simThreadsY = 1, simThreadsZ= 1;
 
 #ifndef VK_DISABLE_UNIMPLEMENTED
-        simulateCs->getActiveVersion()->getShader(ShaderType::Compute)->
-            getReflectionInterface()->GetThreadGroupSize(&simThreadsX, &simThreadsY, &simThreadsZ);
+
+
+        pSimulateReflect->getThreadGroupSize(&simThreadsX, &simThreadsY, &simThreadsZ);
 #endif
         mSimulateThreads = simThreadsX * simThreadsY * simThreadsZ;
 

@@ -42,13 +42,24 @@ namespace Falcor
         using SharedConstPtr = std::shared_ptr<const Shader>;
         using ApiHandle = ShaderHandle;
 
+        class DefineList : public std::map<std::string, std::string>
+        {
+        public:
+            void add(const std::string& name, const std::string& val = "") { (*this)[name] = val; }
+            void remove(const std::string& name) {(*this).erase(name); }
+        };
+
+
         /** create a shader object
             \param[in] shaderString String containing the shader code.
             \param[in] Type The Type of the shader
             \param[out] log This string will contain the error log message in case shader compilation failed
             \return If success, a new shader object, otherwise nullptr
         */
-        static SharedPtr create(const std::string& shaderString, ShaderType Type, std::string& log);
+        static SharedPtr create(
+            const std::string&  shaderString,
+            ShaderType          type,
+            std::string&        log);
         virtual ~Shader();
 
         /** Get the API handle.
@@ -59,27 +70,14 @@ namespace Falcor
         */
         ShaderType getType() const { return mType; }
 
-        using unordered_string_set = std::unordered_set<std::string>;
-        /** Set the included file list
-        */
-        void setIncludeList(const unordered_string_set& includeList) { mIncludeList = includeList; }
-
-        /** Get the included file list
-        */
-        const unordered_string_set& getIncludeList() const { return mIncludeList; }
-
 #ifdef FALCOR_D3D
-        bool init(const std::string& shaderString, std::string& log);
-        ShaderReflectionHandle getReflectionInterface() const;
+        bool init(
+            const std::string&  shaderString,
+            std::string&        log);
         ID3DBlobPtr getCodeBlob() const;
         virtual ID3DBlobPtr compile(const std::string& source, std::string& errorLog);
-        virtual ShaderReflectionHandle createReflection(ID3DBlobPtr pBlob);
 #else
         bool init(const std::string& shaderString, std::string& log) { return true; }
-        ShaderReflectionHandle getReflectionInterface() const { return ShaderReflectionHandle(); }
-        //ID3DBlobPtr getCodeBlob() const { return ID3DBlobPtr; }
-        //virtual ID3DBlobPtr compile(const std::string& source, std::string& errorLog);
-        //virtual ShaderReflectionHandle createReflection(ID3DBlobPtr pBlob);
 #endif
 
     protected:
@@ -88,6 +86,5 @@ namespace Falcor
         ShaderType mType;
         ApiHandle mApiHandle;
         void* mpPrivateData = nullptr;
-        unordered_string_set mIncludeList;
     };
 }

@@ -1,0 +1,7 @@
+// #include support
+
+int foo() { return 0; }
+
+#include "include-a.spireh"
+
+int baz() { return bar(); }

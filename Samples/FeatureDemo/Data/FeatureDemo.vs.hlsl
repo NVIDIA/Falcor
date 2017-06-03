@@ -25,27 +25,7 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#define _COMPILE_DEFAULT_VS
-#include "VertexAttrib.h"
-#include "ShaderCommon.h"
-#include "Effects/CsmData.h"
-
-cbuffer PerFrameCB : register(b0)
-{
-#foreach p in _LIGHT_SOURCES
-    LightData $(p);
-#endforeach
-
-	vec3 gAmbient;
-    CsmData gCsmData;
-    mat4 camVpAtLastCsmUpdate;
-};
-
-struct MainVsOut
-{
-    VS_OUT vsData;
-    float shadowsDepthC : DEPTH;
-};
+#include "FeatureDemoCommon.hlsli"
 
 MainVsOut main(VS_IN vIn)
 {

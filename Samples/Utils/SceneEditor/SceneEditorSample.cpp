@@ -132,7 +132,6 @@ void SceneEditorSample::onFrameRender()
 
         mpDefaultPipelineState->setBlendState(nullptr);
         mpDefaultPipelineState->setDepthStencilState(nullptr);
-        setSceneLightsIntoConstantBuffer(mpScene.get(), mpVars["PerFrameCB"].get());
         mpRenderContext->setGraphicsVars(mpVars);
         mpDefaultPipelineState->setProgram(mpProgram);
 

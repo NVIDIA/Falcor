@@ -70,9 +70,6 @@
     <ClCompile Include="Graphics\Camera\Camera.cpp">
       <Filter>Graphics\Camera</Filter>
     </ClCompile>
-    <ClCompile Include="Utils\ShaderPreprocessor.cpp">
-      <Filter>Utils</Filter>
-    </ClCompile>
     <ClCompile Include="Graphics\Scene\SceneExporter.cpp">
       <Filter>Graphics\Scene</Filter>
     </ClCompile>
@@ -256,9 +253,6 @@
     <ClCompile Include="API\D3D\D3DFormats.cpp">
       <Filter>API\D3D</Filter>
     </ClCompile>
-    <ClCompile Include="API\D3D\D3DProgramReflection.cpp">
-      <Filter>API\D3D</Filter>
-    </ClCompile>
     <ClCompile Include="API\D3D\D3DProgramVersion.cpp">
       <Filter>API\D3D</Filter>
     </ClCompile>
@@ -302,9 +296,6 @@
       <Filter>API\D3D\D3D11</Filter>
     </ClCompile>
     <ClCompile Include="API\D3D\D3D11\D3D11Shader.cpp">
-      <Filter>API\D3D\D3D11</Filter>
-    </ClCompile>
-    <ClCompile Include="API\D3D\D3D11\D3D11ShaderReflection.cpp">
       <Filter>API\D3D\D3D11</Filter>
     </ClCompile>
     <ClCompile Include="API\D3D\D3D11\D3D11Texture.cpp">
@@ -366,9 +357,6 @@
     </ClCompile>
     <ClCompile Include="API\D3D\D3D12\LowLevel\D3D12RootSignature.cpp">
       <Filter>API\D3D\D3D12\LowLevel</Filter>
-    </ClCompile>
-    <ClCompile Include="API\LowLevel\DescriptorTable.cpp">
-      <Filter>API\LowLevel</Filter>
     </ClCompile>
     <ClCompile Include="API\ConstantBuffer.cpp">
       <Filter>API</Filter>
@@ -477,11 +465,26 @@
     <ClCompile Include="Utils\PixelZoom.cpp">
       <Filter>Utils</Filter>
     </ClCompile>
-    <ClCompile Include="API\vulkan\VKDevice.cpp">
-      <Filter>API\Vulkan</Filter>
+    <ClCompile Include="Utils\SpireSupport.cpp">
+      <Filter>Utils</Filter>
     </ClCompile>
     <ClCompile Include="Effects\ParticleSystem\ParticleSystem.cpp">
       <Filter>Effects\ParticleSystem</Filter>
+    </ClCompile>
+    <ClCompile Include="API\DescriptorSet.cpp">
+      <Filter>API</Filter>
+    </ClCompile>
+    <ClCompile Include="API\ParameterBlock.cpp">
+      <Filter>API</Filter>
+    </ClCompile>
+    <ClCompile Include="API\LowLevel\DescriptorPool.cpp">
+      <Filter>API\LowLevel</Filter>
+    </ClCompile>
+    <ClCompile Include="API\D3D\D3D12\LowLevel\D3D12DescriptorPool.cpp">
+      <Filter>API\D3D\D3D12\LowLevel</Filter>
+    </ClCompile>
+    <ClCompile Include="API\D3D\D3D12\LowLevel\D3D12DescriptorSet.cpp">
+      <Filter>API\D3D\D3D12\LowLevel</Filter>
     </ClCompile>
     <ClCompile Include="API\vulkan\VKDevice.cpp">
       <Filter>API\Vulkan</Filter>
@@ -610,9 +613,6 @@
     </ClInclude>
     <ClInclude Include="Utils\Math\FalcorMath.h">
       <Filter>Utils\Math</Filter>
-    </ClInclude>
-    <ClInclude Include="Utils\ShaderPreprocessor.h">
-      <Filter>Utils</Filter>
     </ClInclude>
     <ClInclude Include="Graphics\Scene\SceneExporter.h">
       <Filter>Graphics\Scene</Filter>
@@ -790,12 +790,6 @@
     </ClInclude>
     <ClInclude Include="API\ProgramReflection.h">
       <Filter>API</Filter>
-    </ClInclude>
-    <ClInclude Include="API\LowLevel\DescriptorHeap.h">
-      <Filter>API\LowLevel</Filter>
-    </ClInclude>
-    <ClInclude Include="API\LowLevel\DescriptorTable.h">
-      <Filter>API\LowLevel</Filter>
     </ClInclude>
     <ClInclude Include="API\LowLevel\FencedPool.h">
       <Filter>API\LowLevel</Filter>
@@ -1615,11 +1609,23 @@
     <ClInclude Include="Effects\ParticleSystem\ParticleSystem.h">
       <Filter>Effects\ParticleSystem</Filter>
     </ClInclude>
-    <ClInclude Include="API\vulkan\FalcorVK.h">
-      <Filter>API\Vulkan</Filter>
-    </ClInclude>
     <ClInclude Include="API\Vulkan\VKResourceHelper.h">
       <Filter>API\Vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="API\DescriptorSet.h">
+      <Filter>API</Filter>
+    </ClInclude>
+    <ClInclude Include="API\ParameterBlock.h">
+      <Filter>API</Filter>
+    </ClInclude>
+    <ClInclude Include="API\LowLevel\DescriptorTable.h">
+      <Filter>API\LowLevel</Filter>
+    </ClInclude>
+    <ClInclude Include="API\LowLevel\DescriptorPool.h">
+      <Filter>API\LowLevel</Filter>
+    </ClInclude>
+    <ClInclude Include="API\D3D\D3D12\LowLevel\D3D12DescriptorData.h">
+      <Filter>API\D3D\D3D12\LowLevel</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

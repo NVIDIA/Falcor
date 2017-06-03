@@ -31,7 +31,6 @@
 #include "Texture.h"
 #include "VariablesBuffer.h"
 #include "Graphics/Program.h"
-#include "API/LowLevel/DescriptorHeap.h"
 
 namespace Falcor
 {
@@ -171,10 +170,8 @@ namespace Falcor
 
         virtual void uploadToGPU(size_t offset = 0, size_t size = -1) const override;
 
-        DescriptorHeap::Entry getCBV() const;
     protected:
         ConstantBuffer(const ProgramReflection::BufferReflection::SharedConstPtr& pReflector, size_t size);
-        mutable DescriptorHeap::Entry mCBV;
 #ifdef FALCOR_D3D11
         friend class RenderContext;
         std::map<uint32_t, ID3D11ShaderResourceViewPtr>* mAssignedResourcesMap;

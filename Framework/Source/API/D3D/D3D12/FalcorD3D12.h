@@ -31,6 +31,7 @@
 
 namespace Falcor
 {
+    class DescriptorSet;
     /*!
     *  \addtogroup Falcor
     *  @{
@@ -68,19 +69,16 @@ namespace Falcor
     using CommandSignatureHandle = ID3D12CommandSignaturePtr;
     using FenceHandle = ID3D12FencePtr;
     using ResourceHandle = ID3D12ResourcePtr;
-    using TextureHandle = ID3D12ResourcePtr;
-    using BufferHandle = ID3D12ResourcePtr;
-    using RtvHandle = std::shared_ptr<DescriptorHeapEntry>;
-    using DsvHandle = std::shared_ptr<DescriptorHeapEntry>;
-    using SrvHandle = std::shared_ptr<DescriptorHeapEntry>;
-    using SamplerHandle = std::shared_ptr<DescriptorHeapEntry>;
-    using UavHandle = std::shared_ptr<DescriptorHeapEntry>;
+    using RtvHandle = std::shared_ptr<DescriptorSet>;
+    using DsvHandle = std::shared_ptr<DescriptorSet>;
+    using SrvHandle = std::shared_ptr<DescriptorSet>;
+    using SamplerHandle = std::shared_ptr<DescriptorSet>;
+    using UavHandle = std::shared_ptr<DescriptorSet>;
     using GpuAddress = D3D12_GPU_VIRTUAL_ADDRESS;
     
     using PsoHandle = ID3D12PipelineStatePtr;
     using ComputeStateHandle = ID3D12PipelineStatePtr;
     using ShaderHandle = D3D12_SHADER_BYTECODE;
-    using ShaderReflectionHandle = ID3D12ShaderReflectionPtr;
     using RootSignatureHandle = ID3D12RootSignaturePtr;
     using DescriptorHeapHandle = ID3D12DescriptorHeapPtr;
 

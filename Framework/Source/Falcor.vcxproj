@@ -130,14 +130,6 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugD3D12|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugVK|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="API\D3D\D3D11\D3D11ShaderReflection.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseD3D12|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseVK|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugGL|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseGL|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugD3D12|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugVK|x64'">true</ExcludedFromBuild>
-    </ClCompile>
     <ClCompile Include="API\D3D\D3D11\D3D11Texture.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseD3D12|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseVK|x64'">true</ExcludedFromBuild>
@@ -310,6 +302,22 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugVK|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseVK|x64'">true</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="API\D3D\D3D12\LowLevel\D3D12DescriptorPool.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseD3D11|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugGL|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseGL|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugD3D11|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugVK|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseVK|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="API\D3D\D3D12\LowLevel\D3D12DescriptorSet.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseD3D11|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugGL|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseGL|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugD3D11|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugVK|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseVK|x64'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="API\D3D\D3D12\LowLevel\D3D12GpuFence.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseD3D11|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugGL|x64'">true</ExcludedFromBuild>
@@ -344,12 +352,6 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugVK|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseVK|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="API\D3D\D3DProgramReflection.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugGL|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseGL|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugVK|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseVK|x64'">true</ExcludedFromBuild>
-    </ClCompile>
     <ClCompile Include="API\D3D\D3DProgramVersion.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugGL|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseGL|x64'">true</ExcludedFromBuild>
@@ -375,9 +377,10 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseVK|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="API\DepthStencilState.cpp" />
+    <ClCompile Include="API\DescriptorSet.cpp" />
     <ClCompile Include="API\FBO.cpp" />
     <ClCompile Include="API\Formats.cpp" />
-    <ClCompile Include="API\LowLevel\DescriptorTable.cpp" />
+    <ClCompile Include="API\LowLevel\DescriptorPool.cpp" />
     <ClCompile Include="API\LowLevel\RootSignature.cpp" />
     <ClCompile Include="API\OpenGL\GLBlendState.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseD3D11|x64'">true</ExcludedFromBuild>
@@ -516,6 +519,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugVK|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="API\GraphicsStateObject.cpp" />
+    <ClCompile Include="API\ParameterBlock.cpp" />
     <ClCompile Include="API\ProgramReflection.cpp" />
     <ClCompile Include="API\ProgramVars.cpp" />
     <ClCompile Include="API\ProgramVersion.cpp" />
@@ -654,8 +658,8 @@
     <ClCompile Include="Utils\ProgressBarWin.cpp" />
     <ClCompile Include="Utils\Psychophysics\Experiment.cpp" />
     <ClCompile Include="Utils\Psychophysics\SingleThresholdMeasurement.cpp" />
-    <ClCompile Include="Utils\ShaderPreprocessor.cpp" />
     <ClCompile Include="Utils\ShaderUtils.cpp" />
+    <ClCompile Include="Utils\SpireSupport.cpp" />
     <ClCompile Include="Utils\TextRenderer.cpp" />
     <ClCompile Include="Utils\Video\VideoDecoder.cpp" />
     <ClCompile Include="Utils\Video\VideoEncoder.cpp" />
@@ -950,6 +954,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugVK|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseVK|x64'">true</ExcludedFromBuild>
     </ClInclude>
+    <ClInclude Include="API\D3D\D3D12\LowLevel\D3D12DescriptorData.h" />
     <ClInclude Include="API\D3D\D3DState.h">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugGL|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseGL|x64'">true</ExcludedFromBuild>
@@ -969,11 +974,12 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseVK|x64'">true</ExcludedFromBuild>
     </ClInclude>
     <ClInclude Include="API\DepthStencilState.h" />
+    <ClInclude Include="API\DescriptorSet.h" />
     <ClInclude Include="API\Device.h" />
     <ClInclude Include="API\FBO.h" />
     <ClInclude Include="API\Formats.h" />
     <ClInclude Include="API\GpuTimer.h" />
-    <ClInclude Include="API\LowLevel\DescriptorHeap.h" />
+    <ClInclude Include="API\LowLevel\DescriptorPool.h" />
     <ClInclude Include="API\LowLevel\DescriptorTable.h" />
     <ClInclude Include="API\LowLevel\FencedPool.h" />
     <ClInclude Include="API\LowLevel\GpuFence.h" />
@@ -997,6 +1003,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugVK|x64'">true</ExcludedFromBuild>
     </ClInclude>
     <ClInclude Include="API\GraphicsStateObject.h" />
+    <ClInclude Include="API\ParameterBlock.h" />
     <ClInclude Include="API\ProgramReflection.h" />
     <ClInclude Include="API\ProgramVars.h" />
     <ClInclude Include="API\ProgramVersion.h" />
@@ -1139,7 +1146,6 @@
     <ClInclude Include="Utils\ProgressBar.h" />
     <ClInclude Include="Utils\Psychophysics\Experiment.h" />
     <ClInclude Include="Utils\Psychophysics\SingleThresholdMeasurement.h" />
-    <ClInclude Include="Utils\ShaderPreprocessor.h" />
     <ClInclude Include="Utils\ShaderUtils.h" />
     <ClInclude Include="Utils\StringUtils.h" />
     <ClInclude Include="Utils\TextRenderer.h" />

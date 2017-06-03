@@ -8,10 +8,6 @@ Copyright (c) 2014, NVIDIA CORPORATION.  All rights reserved.
 
 cbuffer PerFrameCB : register(b0)
 {
-#foreach p in _LIGHT_SOURCES
-    LightData $(p);
-#endforeach
-
 	vec3 gAmbient;
     CsmData gCsmData[_LIGHT_COUNT];
     bool visualizeCascades;
@@ -26,20 +22,20 @@ struct ShadowsVSOut
 
 vec4 main(ShadowsVSOut pIn) : SV_TARGET0
 {
-    float shadowFactor;
     ShadingAttribs shAttr;
     prepareShadingAttribs(gMaterial, pIn.vsData.posW, gCam.position, pIn.vsData.normalW, pIn.vsData.bitangentW, pIn.vsData.texC, 0, shAttr);
     ShadingOutput result;
     float4 fragColor = vec4(0,0,0,1);
     
-#foreach p in _LIGHT_SOURCES
+    [unroll]
+    for(uint l = 0 ; l < _LIGHT_COUNT ; l++)
     {
-        shadowFactor = calcShadowFactor(gCsmData[$(_valIndex)], pIn.shadowsDepthC, shAttr.P, pIn.vsData.posH.xy/pIn.vsData.posH.w);
-        evalMaterial(shAttr, $(p), result, $(_valIndex) == 0);
+        float shadowFactor = calcShadowFactor(gCsmData[l], pIn.shadowsDepthC, shAttr.P, pIn.vsData.posH.xy/pIn.vsData.posH.w);
+        evalMaterial(shAttr, gLights[l], result, l == 0);
         fragColor.rgb += result.diffuseAlbedo * result.diffuseIllumination * shadowFactor;
         fragColor.rgb += result.specularAlbedo * result.specularIllumination * (0.01f + shadowFactor * 0.99f);
     }
-#endforeach
+
     fragColor.rgb += gAmbient * result.diffuseAlbedo * 0.1;
     if(visualizeCascades)
     {

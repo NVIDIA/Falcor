@@ -26,49 +26,30 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 #include "Framework.h"
-#include "API/LowLevel/DescriptorHeap.h"
+#include "D3D12DescriptorHeap.h"
 #include "API/Device.h"
 
 namespace Falcor
 {
-    static D3D12_DESCRIPTOR_HEAP_TYPE getHeapType(DescriptorHeap::Type type)
-    {
-        switch(type)
-        {
-        case DescriptorHeap::Type::SRV:
-            return D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
-        case DescriptorHeap::Type::Sampler:
-            return D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER;
-        case DescriptorHeap::Type::DSV:
-            return D3D12_DESCRIPTOR_HEAP_TYPE_DSV;
-        case DescriptorHeap::Type::RTV:
-            return D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
-        case DescriptorHeap::Type::UAV:
-            return D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
-        default:
-            should_not_get_here();
-            return D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES;
-        }
-    }
-
-    DescriptorHeap::DescriptorHeap(Type type, uint32_t descriptorsCount) : mCount(descriptorsCount), mType (type)
+    D3D12DescriptorHeap::D3D12DescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE type, uint32_t chunkCount) : mChunkCount(chunkCount), mType (type)
     {
 		ID3D12DevicePtr pDevice = gpDevice->getApiHandle();
-        mDescriptorSize = pDevice->GetDescriptorHandleIncrementSize(getHeapType(type));
+        mDescriptorSize = pDevice->GetDescriptorHandleIncrementSize(type);
     }
 
-    DescriptorHeap::~DescriptorHeap() = default;
+    D3D12DescriptorHeap::~D3D12DescriptorHeap() = default;
 
-    DescriptorHeap::SharedPtr DescriptorHeap::create(Type type, uint32_t descriptorsCount, bool shaderVisible)
+    D3D12DescriptorHeap::SharedPtr D3D12DescriptorHeap::create(D3D12_DESCRIPTOR_HEAP_TYPE type, uint32_t descCount, bool shaderVisible)
     {
 		ID3D12DevicePtr pDevice = gpDevice->getApiHandle();
 
-        DescriptorHeap::SharedPtr pHeap = SharedPtr(new DescriptorHeap(type, descriptorsCount));
+        uint32_t chunkCount = (descCount + kDescPerChunk - 1) / kDescPerChunk;
+        D3D12DescriptorHeap::SharedPtr pHeap = SharedPtr(new D3D12DescriptorHeap(type, chunkCount));
         D3D12_DESCRIPTOR_HEAP_DESC desc = {};
 
         desc.Flags = shaderVisible ? D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE : D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
-        desc.Type = getHeapType(type);
-        desc.NumDescriptors = descriptorsCount;
+        desc.Type = type;
+        desc.NumDescriptors = chunkCount * kDescPerChunk;
         if(FAILED(pDevice->CreateDescriptorHeap(&desc, IID_PPV_ARGS(&pHeap->mApiHandle))))
         {
             logError("Can't create descriptor heap");
@@ -87,37 +68,89 @@ namespace Falcor
         return base;
     }
 
-    DescriptorHeap::CpuHandle DescriptorHeap::getCpuHandle(uint32_t index) const
+    D3D12DescriptorHeap::CpuHandle D3D12DescriptorHeap::getCpuHandle(uint32_t index) const
     {
-        assert(index < mCurDesc);
         return getHandleCommon(mCpuHeapStart, index, mDescriptorSize);
     }
 
-    DescriptorHeap::GpuHandle DescriptorHeap::getGpuHandle(uint32_t index) const
+    D3D12DescriptorHeap::GpuHandle D3D12DescriptorHeap::getGpuHandle(uint32_t index) const
     {
-        assert(index < mCurDesc);
         return getHandleCommon(mGpuHeapStart, index, mDescriptorSize);
     }
 
-    DescriptorHeapEntry::SharedPtr DescriptorHeap::allocateEntry()
+    D3D12DescriptorHeap::Allocation::SharedPtr D3D12DescriptorHeap::allocateDescriptors(uint32_t count)
     {
-        uint32_t entry;
-        if (mFreeEntries.empty() == false)
+        if (setupCurrentChunk(count) == false) return nullptr;
+
+        if (mpCurrentChunk->chunkCount * kDescPerChunk - mpCurrentChunk->currentDesc < count)
         {
-            entry = mFreeEntries.front();
-            mFreeEntries.pop();
-        }
-        else
-        {
-            if (mCurDesc >= mCount)
-            {
-                logError("Can't find free CPU handle in descriptor heap");
-                return nullptr;
-            }
-            entry = mCurDesc;
-            mCurDesc++;
+            return nullptr;
         }
 
-        return DescriptorHeapEntry::create(shared_from_this(), entry);
+        Allocation::SharedPtr pAlloc = Allocation::create(shared_from_this(), mpCurrentChunk->getCurrentAbsoluteIndex(), count, mpCurrentChunk);
+
+        // Update the chunk
+        mpCurrentChunk->allocCount++;
+        mpCurrentChunk->currentDesc += count;
+        return pAlloc;
+    }
+
+    bool D3D12DescriptorHeap::setupCurrentChunk(uint32_t descCount)
+    {
+        if (mpCurrentChunk)
+        {
+            // Check if the current chunk has enough space
+            if (mpCurrentChunk->chunkCount * kDescPerChunk - mpCurrentChunk->currentDesc >= descCount) return true;
+
+            if (mpCurrentChunk->allocCount == 0)
+            {
+                mpCurrentChunk->reset();
+                return true;
+            }
+        }
+
+        // Need a new chunk
+        uint32_t chunkCount = (descCount + kDescPerChunk - 1) / kDescPerChunk;
+
+        // TODO: Optimize it for the case that chunkCount > 1 - mFreeChunks can be sorted by offset to find contiguous chunks
+        if (chunkCount == 1 && (mFreeChunks.empty() == false))
+        {
+            mpCurrentChunk = mFreeChunks.front();
+            mFreeChunks.pop();
+            mpCurrentChunk->reset();
+            return true;
+        }
+
+        // No free chunks. Allocate
+        if (mAllocatedChunks + chunkCount > mChunkCount)
+        {
+            return false;
+        }
+
+        mpCurrentChunk = Chunk::SharedPtr(new Chunk(mAllocatedChunks, chunkCount));
+        mAllocatedChunks += chunkCount;
+        return true;
+    }
+    
+    void D3D12DescriptorHeap::releaseChunk(Chunk::SharedPtr pChunk)
+    {
+        pChunk->allocCount--;
+        if(pChunk->allocCount == 0 && (pChunk != mpCurrentChunk))
+        {
+            mFreeChunks.push(pChunk);
+        }
+    }
+
+    D3D12DescriptorHeap::Allocation::SharedPtr D3D12DescriptorHeap::Allocation::create(D3D12DescriptorHeap::SharedPtr pHeap, uint32_t baseIndex, uint32_t descCount, std::shared_ptr<Chunk> pChunk)
+    {
+        return SharedPtr(new Allocation(pHeap, baseIndex, descCount, pChunk));
+    }
+
+    D3D12DescriptorHeap::Allocation::Allocation(D3D12DescriptorHeap::SharedPtr pHeap, uint32_t baseIndex, uint32_t descCount, std::shared_ptr<Chunk> pChunk) :
+        mpHeap(pHeap), mBaseIndex(baseIndex), mDescCount(descCount), mpChunk(pChunk) {}
+
+    D3D12DescriptorHeap::Allocation::~Allocation()
+    {
+        mpHeap->releaseChunk(mpChunk);
     }
 }

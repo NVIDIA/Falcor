@@ -28,6 +28,7 @@
 #pragma once
 #include "Framework.h"
 #include <unordered_map>
+#include "Externals/Spire/Spire.h"
 
 namespace Falcor
 {
@@ -38,7 +39,7 @@ namespace Falcor
     public:
         using SharedPtr = std::shared_ptr<ProgramReflection>;
         using SharedConstPtr = std::shared_ptr<const ProgramReflection>;
-        using ReflectionHandleVector = std::vector<ShaderReflectionHandle>;
+        using ReflectionHandleVector = std::vector<spire::ShaderReflection*>;
 
         enum class ShaderAccess
         {
@@ -215,17 +216,32 @@ namespace Falcor
             /** Get variable data
                 \param[in] name The name of the requested variable
                 \param[out] offset The offset of the variable or kInvalidLocation if the variable wasn't found. This is useful in cases where the requested variable is an array element, since the returned result will be different than Variable::offset
-                \param[in] allowNonIndexedArray Optional. By default, getting the first element in an array requires explicit '[0]' at the end of the name. Set this to true to search for the start of an array when the name doesn't contain an index
                 \return Pointer to the variable data, or nullptr if the name wasn't found
             */
-            const Variable* getVariableData(const std::string& name, size_t& offset, bool allowNonIndexedArray = false) const;
+            const Variable* getVariableData(const std::string& name, size_t& offset) const;
+
+            /** Get variable data
+                \param[in] name The name of the requested variable
+                \param[out] offset The offset of the variable or kInvalidLocation if the variable wasn't found. This is useful in cases where the requested variable is an array element, since the returned result will be different than Variable::offset
+                \return Pointer to the variable data, or nullptr if the name wasn't found
+            */
+            FALCOR_DEPRECATED("The `allowNonIndexedArray` parameter has been deprecated. Please use the version of this function without this parameter.")
+            const Variable* getVariableData(const std::string& name, size_t& offset, bool /*allowNonIndexedArray*/) const
+            { return getVariableData(name, offset); }
 
             /** Get variable data
             \param[in] name The name of the requested variable
-            \param[in] allowNonIndexedArray Optional. By default, getting the first element in an array requires explicit '[0]' at the end of the name. Set this to true to search for the start of an array without any index
             \return Pointer to the variable data, or nullptr if the name wasn't found
             */
-            const Variable* getVariableData(const std::string& name, bool allowNonIndexedArray = false) const;
+            const Variable* getVariableData(const std::string& name) const;
+
+            /** Get variable data
+            \param[in] name The name of the requested variable
+            \return Pointer to the variable data, or nullptr if the name wasn't found
+            */
+            FALCOR_DEPRECATED("The `allowNonIndexedArray` parameter has been deprecated. Please use the version of this function without this parameter.")
+            const Variable* getVariableData(const std::string& name, bool /*allowNonIndexedArray*/) const
+            { return getVariableData(name); }
 
             /** Get resource data
             \param[in] name The name of the requested resource
@@ -306,7 +322,9 @@ namespace Falcor
 
         /** Create a new object
         */
-        static SharedPtr create(const ReflectionHandleVector& reflectHandles, std::string& log);
+        static SharedPtr create(
+            spire::ShaderReflection*    pSpireReflector,
+            std::string&                log);
 
         /** Get a buffer binding index
         \param[in] name The buffer name in the program
@@ -362,16 +380,31 @@ namespace Falcor
             string_2_bindloc_map nameMap;
         };
 
-    private:
-        bool init(const ReflectionHandleVector& reflectHandles, std::string& log);
-        bool reflectVertexAttributes(const ReflectionHandleVector& reflectHandles, std::string& log);       // Input attributes
-        bool reflectPixelShaderOutputs(const ReflectionHandleVector& reflectHandles, std::string& log);        // PS output (if PS exists)
-        bool reflectResources(const ReflectionHandleVector& reflectHandles, std::string& log);              // SRV/UAV/ROV/Buffers and samplers
-       
+        void getThreadGroupSize(
+            uint32_t* outX,
+            uint32_t* outY,
+            uint32_t* outZ) const;
+
+    // TODO(tfoley): switch this back
+    public://private:
+        bool init(
+            spire::ShaderReflection*    pSpireReflector,
+            std::string&                log);
+        bool reflectVertexAttributes(
+            spire::ShaderReflection*    pSpireReflector,
+            std::string&                log);       // Input attributes
+        bool reflectPixelShaderOutputs(
+            spire::ShaderReflection*    pSpireReflector,
+            std::string&                log);        // PS output (if PS exists)
+        bool reflectResources(
+            spire::ShaderReflection*    pSpireReflector,
+            std::string&                log);              // SRV/UAV/ROV/Buffers and samplers
+
         BufferData mBuffers[BufferReflection::kTypeCount];
         VariableMap mFragOut;
         VariableMap mVertAttr;
         ResourceMap mResources;
+        uint32_t mThreadGroupSizeX, mThreadGroupSizeY, mThreadGroupSizeZ;
     };
 
 

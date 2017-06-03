@@ -27,11 +27,11 @@
 ***************************************************************************/
 #include "Framework.h"
 #include "API/RenderContext.h"
-#include "API/LowLevel/DescriptorHeap.h"
 #include "API/Device.h"
 #include "glm/gtc/type_ptr.hpp"
 #include "D3D12Resource.h"
 #include "API/D3D/D3DState.h"
+#include "API/DescriptorSet.h"
 
 namespace Falcor
 {
@@ -43,8 +43,6 @@ namespace Falcor
         {
             return nullptr;
         }
-
-        pCtx->bindDescriptorHeaps();
 
         if (spDrawCommandSig == nullptr)
         {
@@ -80,7 +78,7 @@ namespace Falcor
     void RenderContext::clearRtv(const RenderTargetView* pRtv, const glm::vec4& color)
     {
         resourceBarrier(pRtv->getResource(), Resource::State::RenderTarget);
-        mpLowLevelData->getCommandList()->ClearRenderTargetView(pRtv->getApiHandle()->getCpuHandle(), glm::value_ptr(color), 0, nullptr);
+        mpLowLevelData->getCommandList()->ClearRenderTargetView(pRtv->getApiHandle()->getCpuHandle(0), glm::value_ptr(color), 0, nullptr);
         mCommandsPending = true;
     }
 
@@ -90,7 +88,7 @@ namespace Falcor
         flags |= clearStencil ? D3D12_CLEAR_FLAG_STENCIL : 0;
 
         resourceBarrier(pDsv->getResource(), Resource::State::DepthStencil);
-        mpLowLevelData->getCommandList()->ClearDepthStencilView(pDsv->getApiHandle()->getCpuHandle(), D3D12_CLEAR_FLAGS(flags), depth, stencil, 0, nullptr);
+        mpLowLevelData->getCommandList()->ClearDepthStencilView(pDsv->getApiHandle()->getCpuHandle(0), D3D12_CLEAR_FLAGS(flags), depth, stencil, 0, nullptr);
         mCommandsPending = true;
     }
 
@@ -130,8 +128,9 @@ namespace Falcor
     {
         // We are setting the entire RTV array to make sure everything that was previously bound is detached
         uint32_t colorTargets = Fbo::getMaxColorTargetCount();
-        std::vector<DescriptorHeap::CpuHandle> pRTV(colorTargets, RenderTargetView::getNullView()->getApiHandle()->getCpuHandle());
-        DescriptorHeap::CpuHandle pDSV = DepthStencilView::getNullView()->getApiHandle()->getCpuHandle();
+        auto pNullRtv = RenderTargetView::getNullView();
+        std::vector<HeapCpuHandle> pRTV(colorTargets, pNullRtv->getApiHandle()->getCpuHandle(0));
+        HeapCpuHandle pDSV = DepthStencilView::getNullView()->getApiHandle()->getCpuHandle(0);
 
         if (pFbo)
         {
@@ -140,7 +139,7 @@ namespace Falcor
                 auto& pTexture = pFbo->getColorTexture(i);
                 if (pTexture)
                 {
-                    pRTV[i] = pFbo->getRenderTargetView(i)->getApiHandle()->getCpuHandle();
+                    pRTV[i] = pFbo->getRenderTargetView(i)->getApiHandle()->getCpuHandle(0);
                     pCtx->resourceBarrier(pTexture.get(), Resource::State::RenderTarget);
                 }
             }
@@ -148,7 +147,7 @@ namespace Falcor
             auto& pTexture = pFbo->getDepthStencilTexture();
             if(pTexture)
             {
-                pDSV = pFbo->getDepthStencilView()->getApiHandle()->getCpuHandle();
+                pDSV = pFbo->getDepthStencilView()->getApiHandle()->getCpuHandle(0);
                 if (pTexture)
                 {
                     pCtx->resourceBarrier(pTexture.get(), Resource::State::DepthStencil);

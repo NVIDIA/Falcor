@@ -73,7 +73,7 @@ void FeatureDemo::onGuiRender()
         std::string filename;
         if (openFileDialog(Model::kSupportedFileFormatsStr, filename))
         {
-            loadModel(filename);
+            loadModel(filename, true);
         }
     }
 
@@ -82,7 +82,7 @@ void FeatureDemo::onGuiRender()
         std::string filename;
         if (openFileDialog(Scene::kFileFormatString, filename))
         {
-            loadScene(filename);
+            loadScene(filename, true);
         }
     }
 
@@ -120,16 +120,9 @@ void FeatureDemo::onGuiRender()
 
         if (pScene->getPathCount() > 0)
         {
-            if (mpGui->addCheckBox("Camera Path", mShouldUseCameraPath))
+            if (mpGui->addCheckBox("Camera Path", mUseCameraPath))
             {
-                if (mShouldUseCameraPath)
-                {
-                    pScene->getPath(0)->attachObject(pScene->getActiveCamera());
-                }
-                else
-                {
-                    pScene->getPath(0)->detachObject(pScene->getActiveCamera());
-                }
+                applyCameraPathState();
             }
         }
 

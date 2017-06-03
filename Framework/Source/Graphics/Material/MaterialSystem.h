@@ -36,7 +36,7 @@ namespace Falcor
     namespace MaterialSystem
     {
         void reset();
-        ProgramVersion::SharedConstPtr patchActiveProgramVersion(Program* pProgram, const Material* pMaterial);
+        void patchProgram(Program* pProgram, const Material* pMaterial);
         void removeMaterial(uint64_t descIdentifier);
         void removeProgramVersion(const ProgramVersion* pProgramVersion);
     };

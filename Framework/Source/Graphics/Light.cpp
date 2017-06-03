@@ -66,7 +66,9 @@ namespace Falcor
     void Light::setIntoConstantBuffer(ConstantBuffer* pBuffer, size_t offset)
     {
         static_assert(kDataSize % sizeof(float) * 4 == 0, "LightData size should be a multiple of 16");
+        /*TODO(tfoley) HACK: SPIRE can't handle it
         static_assert(kDataSize == offsetof(LightData, material), "'material' must be the last field in LightData");
+        */
 
         assert(offset + kDataSize <= pBuffer->getSize());
 
@@ -130,10 +132,12 @@ namespace Falcor
         {
             for (int i = 0; i < MatMaxLayers; ++i)
             {
+                /*TODO(tfoley) HACK:SPIRE
                 if (light.material.desc.layers[i].type == MatEmissive)
                 {
                     light.material.values.layers[i].albedo = v4(light.intensity, 0.f);
                 }
+                */
             }
         }
     }

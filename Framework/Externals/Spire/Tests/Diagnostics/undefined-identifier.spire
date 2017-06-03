@@ -1,0 +1,6 @@
+// use of undefined identifier
+
+void foo()
+{
+	int a = b;
+}

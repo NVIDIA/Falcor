@@ -95,8 +95,8 @@ private:
     
     GraphicsState::SharedPtr mpState;
     SceneRenderer::SharedPtr mpSceneRenderer;
-    void loadModel(const std::string& filename);
-    void loadScene(const std::string& filename);
+    void loadModel(const std::string& filename, bool showProgressBar);
+    void loadScene(const std::string& filename, bool showProgressBar);
     void initScene(Scene::SharedPtr pScene);
     void setActiveCameraAspectRatio();
 
@@ -123,7 +123,9 @@ private:
     std::vector<ProgramControl> mControls;
     void applyLightingProgramControl(ControlID controlID);
 
-    bool mShouldUseCameraPath = true;
+    bool mUseCameraPath = true;
+    void applyCameraPathState();
+    bool mOptimizedShaders = true;
 
     //Testing 
     void onInitializeTesting() override;

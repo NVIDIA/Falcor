@@ -171,7 +171,7 @@ namespace Falcor
 
     void LeanMap::setIntoProgramVars(ProgramVars* pVars, const std::string& texName) const
     {
-        size_t regIndex = pVars->getReflection()->getResourceDesc(texName + "[0]")->regIndex;
+        size_t regIndex = pVars->getReflection()->getResourceDesc(texName)->regIndex;
         setIntoProgramVars(pVars, (uint32_t)regIndex);
     }
 }
