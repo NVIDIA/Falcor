@@ -457,7 +457,7 @@ namespace Falcor
     }
 
 	//	Capture the Current Memory and write it to the provided memory check.
-	void Sample::captureMemory(MemoryCheck & memoryCheck)
+	void Sample::getMemoryStatistics(MemoryCheck & memoryCheck)
 	{
 		memoryCheck.pTotalVirtualMemory = getTotalVirtualMemory();
 		memoryCheck.pTotalUsedVirtualMemory = getUsedVirtualMemory();
@@ -497,21 +497,15 @@ namespace Falcor
 
 		//	Compute the Difference Between the Two.
 		std::string differenceCheck = "Difference : \n";
-		unsigned long long difference = 0;
+		long long difference = 0;
 
-		if (memoryCheckRange.startCheck.pCurrentlyUsedVirtualMemory > memoryCheckRange.endCheck.pCurrentlyUsedVirtualMemory)
 		{
-			difference = memoryCheckRange.startCheck.pCurrentlyUsedVirtualMemory - memoryCheckRange.endCheck.pCurrentlyUsedVirtualMemory;
-			differenceCheck = differenceCheck + "-" + std::to_string(difference) + "\n \n";
-		}
-		else
-		{
-			difference = memoryCheckRange.endCheck.pCurrentlyUsedVirtualMemory - memoryCheckRange.startCheck.pCurrentlyUsedVirtualMemory;
+			difference = (long long)memoryCheckRange.endCheck.pCurrentlyUsedVirtualMemory - (long long)memoryCheckRange.startCheck.pCurrentlyUsedVirtualMemory;
 			differenceCheck = differenceCheck + std::to_string(difference) + "\n \n";
 		}
 
 		//	Key string for difference.
-		std::string keystring = std::to_string(memoryCheckRange.startCheck.pFrame) + " " + std::to_string(memoryCheckRange.endCheck.pFrame) + " " + std::to_string(difference) + " " + (startCUVM_B) + " " + (endCUVM_B) + " \n";
+		std::string keystring = std::to_string(memoryCheckRange.startCheck.pFrame) + " " + std::to_string(memoryCheckRange.endCheck.pFrame) + " " + (startCUVM_B) + " " + (endCUVM_B) + " " + std::to_string(difference) + " \n";
 
 		//	Get the name of the current program.
 		std::string filename = getExecutableName();
@@ -554,7 +548,7 @@ namespace Falcor
 		std::string startTUVM_MB = std::to_string(memoryCheckRange.startCheck.pTotalUsedVirtualMemory / (1024 * 1024));
 		std::string startCUVM_MB = std::to_string(memoryCheckRange.startCheck.pCurrentlyUsedVirtualMemory / (1024 * 1024));
 
-		std::string startCheck = "At the Start Time, " + std::to_string(memoryCheckRange.startCheck.pEffectiveTime) + ", : \n ";
+		std::string startCheck = "At the Start Time, " + std::to_string(memoryCheckRange.startCheck.pEffectiveTime) + ", : \n";
 		startCheck = startCheck + ("Total Virtual Memory : " + startTVM_B + " bytes, " + startTVM_MB + " MB. \n");
 		startCheck = startCheck + ("Total Used Virtual Memory By All Processes : " + startTUVM_B + " bytes, " + startTUVM_MB + " MB. \n");
 		startCheck = startCheck + ("Virtual Memory used by this Process : " + startCUVM_B + " bytes, " + startCUVM_MB + " MB. \n \n");
@@ -575,21 +569,14 @@ namespace Falcor
 
 		//	Compute the Difference Between the Two.
 		std::string differenceCheck = "Difference : \n";
-		unsigned long long difference = 0;
+		long long difference = 0;
 
-		if (memoryCheckRange.startCheck.pCurrentlyUsedVirtualMemory > memoryCheckRange.endCheck.pCurrentlyUsedVirtualMemory)
 		{
-			difference = memoryCheckRange.startCheck.pCurrentlyUsedVirtualMemory - memoryCheckRange.endCheck.pCurrentlyUsedVirtualMemory;
-			differenceCheck = differenceCheck + "-" + std::to_string(difference) + "\n \n";
-		}
-		else
-		{
-			difference = memoryCheckRange.endCheck.pCurrentlyUsedVirtualMemory - memoryCheckRange.startCheck.pCurrentlyUsedVirtualMemory;
+			difference = (long long)memoryCheckRange.endCheck.pCurrentlyUsedVirtualMemory - (long long)memoryCheckRange.startCheck.pCurrentlyUsedVirtualMemory;
 			differenceCheck = differenceCheck + std::to_string(difference) + "\n \n";
 		}
-
 		//	Key string for difference.
-		std::string keystring = std::to_string(memoryCheckRange.startCheck.pEffectiveTime) + " " + std::to_string(memoryCheckRange.endCheck.pEffectiveTime) + " " + std::to_string(difference) + " " + (startCUVM_B)+" " + (endCUVM_B)+" \n";
+		std::string keystring = std::to_string(memoryCheckRange.startCheck.pEffectiveTime) + " " + std::to_string(memoryCheckRange.endCheck.pEffectiveTime) + " " + (startCUVM_B)+" " + (endCUVM_B) + " " + std::to_string(difference) + " \n";
 
 		//	Get the name of the current program.
 		std::string filename = getExecutableName();
@@ -620,63 +607,45 @@ namespace Falcor
 	}
 
 
-
-	void Sample::runMemoryFrameCheck(const uint32_t & currentFrameID)
+	//	
+	void Sample::captureMemory(bool frameTest /*= true*/, bool endRange /*= false*/)
 	{
-		//	Iterate over the Memory Check Ranges.
-		for (uint32_t i = 0; i < memoryFrameCheckRanges.size(); i++)
+		if (frameTest && !endRange && !memoryFrameCheckRange.active)
 		{
-			//	Check if this an Start Check Frame.
-			if (!memoryFrameCheckRanges[i].startCheck.checked && currentFrameID >= memoryFrameCheckRanges[i].startCheck.pFrame)
-			{
-				captureMemory(memoryFrameCheckRanges[i].startCheck);
-				memoryFrameCheckRanges[i].startCheck.pFrame = currentFrameID;
-				memoryFrameCheckRanges[i].startCheck.checked = true;
-				memoryFrameCheckRanges[i].startCheck.pEffectiveTime = mCurrentTime;
-			}
+			getMemoryStatistics(memoryFrameCheckRange.startCheck);
+			memoryFrameCheckRange.startCheck.pFrame = frameRate().getFrameCount();
+			memoryFrameCheckRange.startCheck.pEffectiveTime = mCurrentTime;
+			memoryFrameCheckRange.active = true;
+		}
+		else if (frameTest && endRange && memoryFrameCheckRange.active)
+		{
+			getMemoryStatistics(memoryFrameCheckRange.endCheck);
+			memoryFrameCheckRange.endCheck.pFrame = frameRate().getFrameCount();
+			memoryFrameCheckRange.endCheck.pEffectiveTime = mCurrentTime;
+			writeMemoryFrameRange(memoryFrameCheckRange);
+			memoryFrameCheckRange.active = false;
+		}
+		else if(!frameTest && !endRange && !memoryTimeCheckRange.active)
+		{
+			getMemoryStatistics(memoryTimeCheckRange.startCheck);
+			memoryTimeCheckRange.startCheck.pFrame = frameRate().getFrameCount();
+			memoryTimeCheckRange.startCheck.pEffectiveTime = mCurrentTime;
+			memoryTimeCheckRange.active = true;
+		}
+		else if(!frameTest && endRange && memoryTimeCheckRange.active)
+		{
+			getMemoryStatistics(memoryTimeCheckRange.endCheck);
+			memoryTimeCheckRange.endCheck.pFrame = frameRate().getFrameCount();
+			memoryTimeCheckRange.endCheck.pEffectiveTime = mCurrentTime;
+			writeMemoryTimeRange(memoryTimeCheckRange);
+			memoryTimeCheckRange.active = false;
+		}
+		else
+		{
 
-			//	Check if this is an End Check Frame.
-			if (!memoryFrameCheckRanges[i].endCheck.checked && currentFrameID >= memoryFrameCheckRanges[i].endCheck.pFrame)
-			{
-				logWarning(std::to_string(currentFrameID));
-				captureMemory(memoryFrameCheckRanges[i].endCheck);
-				memoryFrameCheckRanges[i].endCheck.pFrame = currentFrameID;
-				memoryFrameCheckRanges[i].endCheck.checked = true;
-				memoryFrameCheckRanges[i].endCheck.pEffectiveTime = mCurrentTime;
-
-				//	Write the Range to Frame.
-				writeMemoryFrameRange(memoryFrameCheckRanges[i]);
-			}
 		}
 	}
 
-	void Sample::runMemoryTimeCheck()
-	{
-		//	Iterate over the Memory Check Ranges.
-		for (uint32_t i = 0; i < memoryTimeCheckRanges.size(); i++)
-		{
-			//	Check if this an Start Check Time.
-			if (!memoryTimeCheckRanges[i].startCheck.checked && mCurrentTime >= memoryTimeCheckRanges[i].startCheck.pTime)
-			{
-				captureMemory(memoryTimeCheckRanges[i].startCheck);
-				memoryTimeCheckRanges[i].startCheck.pFrame = frameRate().getFrameCount();
-				memoryTimeCheckRanges[i].startCheck.pEffectiveTime = mCurrentTime;
-				memoryTimeCheckRanges[i].startCheck.checked = true;
-			}
-
-			//	Check if this is an End Check Time.
-			if (!memoryTimeCheckRanges[i].endCheck.checked && mCurrentTime >= memoryTimeCheckRanges[i].endCheck.pTime)
-			{
-				captureMemory(memoryTimeCheckRanges[i].endCheck);
-				memoryTimeCheckRanges[i].endCheck.pFrame = frameRate().getFrameCount();
-				memoryTimeCheckRanges[i].startCheck.pEffectiveTime = mCurrentTime;
-				memoryTimeCheckRanges[i].endCheck.checked = true;
-
-				//	Write the Range to Frame.
-				writeMemoryTimeRange(memoryTimeCheckRanges[i]);
-			}
-		}
-	}
 
 	void Sample::startVideoCapture()
     {

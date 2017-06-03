@@ -149,28 +149,29 @@ def getMemoryCompareResultsTable(slnInfo):
 
         maxCols = 7
         hasFrameCheck = False 
+        html = ''
 
         for result in slnInfo.systemResultList:
             if len(result.CompareMemoryFrameResults) > 0:
                 hasFrameCheck = True
 
-        html = ''
         if hasFrameCheck :
             html += '<table style="width:100%" border="1">\n'
             html += '<tr>\n'
             html += '<th colspan=\'' + str(maxCols) + '\'> Memory Frame Checks </th> \n'
             html += '</tr>\n'            
-            html += '<th> Test </th> \n' + '<th> Start Frame </th> \n' + '<th> End Frame </th> \n' + '<th> Difference </th> \n' + '<th> Percent Difference </th> \n' + '<th> Start Frame Memory </th> \n' + '<th> End Frame Memory </th> \n'            
-            html += '<tr>\n'
-            html += '<td>' + result.Name + '</td>\n'
+            html += '<th> Test </th> \n' + '<th> Start Frame </th> \n' + '<th> End Frame </th> \n' + '<th> Percent Difference </th> \n' + '<th> Start Frame Memory </th> \n' + '<th> End Frame Memory </th> \n' + '<th> Difference </th> \n'            
 
-            for compare in result.CompareMemoryFrameResults:
-                if(compare[3] > 2.5):
-                    html += '<font color="white">' + '<td bgcolor="red">' + str(compare[0]) + '</td>' + '<td bgcolor="red">' + str(compare[1]) + '</td>' + '<td bgcolor="red">' + str(compare[2]) + '</td>' + '<td bgcolor="red">' + str(compare[3]) + '</td>' + '<td bgcolor="red">' + str(compare[4]) + '</td>' + '<td bgcolor="red">' + str(compare[5]) + '</td>' + '</font>'
-                else:
-                    html += '<td>' + str(compare[0]) + '</td>' + '<td>' + str(compare[1]) + '</td>' + '<td>' + str(compare[2]) + '</td>' + '<td>' + str(compare[3]) + '</td>' + '<td>' + str(compare[4]) + '</td>' + '<td>' + str(compare[5]) + '</td>'
+            for result in slnInfo.systemResultList:
+                html += '<tr>\n'
+                html += '<td>' + result.Name + '</td>\n'
+                for compare in result.CompareMemoryFrameResults:
+                    if(compare[2] > 2.5):
+                        html += '<font color="white">' + '<td bgcolor="red">' + str(compare[0]) + '</td>' + '<td bgcolor="red">' + str(compare[1]) + '</td>' + '<td bgcolor="red">' + str(compare[2]) + '</td>' + '<td bgcolor="red">' + str(compare[3]) + '</td>' + '<td bgcolor="red">' + str(compare[4]) + '</td>' + '<td bgcolor="red">' + str(compare[5]) + '</td>' + '</font>'
+                    else:
+                        html += '<td>' + str(compare[0]) + '</td>' + '<td>' + str(compare[1]) + '</td>' + '<td>' + str(compare[2]) + '</td>' + '<td>' + str(compare[3]) + '</td>' + '<td>' + str(compare[4]) + '</td>' + '<td>' + str(compare[5]) + '</td>'
 
-            html += '</tr>\n'
+                html += '</tr>\n'
         
             html += '</table>\n'
             html += '<br><br>'
@@ -186,17 +187,18 @@ def getMemoryCompareResultsTable(slnInfo):
             html += '<tr>\n'
             html += '<th colspan=\'' + str(maxCols) + '\'> Memory Time Checks </th> \n'
             html += '</tr>\n'            
-            html += '<th> Test </th> \n' + '<th> Start Time </th> \n' + '<th> End Time </th> \n' + '<th> Difference </th> \n' + '<th> Percent Difference </th> \n' + '<th> Start Time Memory </th> \n' + '<th> End Time Memory </th> \n'            
-            html += '<tr>\n'
-            html += '<td>' + result.Name + '</td>\n'
+            html += '<th> Test </th> \n' + '<th> Start Time </th> \n' + '<th> End Time </th> \n' + '<th> Percent Difference </th> \n' + '<th> Start Time Memory </th> \n' + '<th> End Time Memory </th> \n' + '<th> Difference </th> \n'            
 
-            for compare in result.CompareMemoryTimeResults:
-                if(compare[3] > 2.5):
-                    html += '<font color="white">' + '<td bgcolor="red">' + str(compare[0]) + '</td>' + '<td bgcolor="red">' + str(compare[1]) + '</td>' + '<td bgcolor="red">' + str(compare[2]) + '</td>' + '<td bgcolor="red">' + str(compare[3]) + '</td>' + '<td bgcolor="red">' + str(compare[4]) + '</td>' + '<td bgcolor="red">' + str(compare[5]) + '</td>' + '</font>'
-                else:
-                    html += '<td>' + str(compare[0]) + '</td>' + '<td>' + str(compare[1]) + '</td>' + '<td>' + str(compare[2]) + '</td>' + '<td>' + str(compare[3]) + '</td>' + '<td>' + str(compare[4]) + '</td>' + '<td>' + str(compare[5]) + '</td>'
+            for result in slnInfo.systemResultList:
+                for compare in result.CompareMemoryTimeResults:
+                    html += '<tr>\n'
+                    html += '<td>' + result.Name + '</td>\n'
+                    if(compare[2] > 2.5):
+                        html += '<font color="white">' + '<td bgcolor="red">' + str(compare[0]) + '</td>' + '<td bgcolor="red">' + str(compare[1]) + '</td>' + '<td bgcolor="red">' + str(compare[2]) + '</td>' + '<td bgcolor="red">' + str(compare[3]) + '</td>' + '<td bgcolor="red">' + str(compare[4]) + '</td>' + '<td bgcolor="red">' + str(compare[5]) + '</td>' + '</font> \n'
+                    else:
+                        html += '<td>' + str(compare[0]) + '</td>' + '<td>' + str(compare[1]) + '</td>' + '<td>' + str(compare[2]) + '</td>' + '<td>' + str(compare[3]) + '</td>' + '<td>' + str(compare[4]) + '</td>' + '<td>' + str(compare[5]) + '</td> \n'
 
-            html += '</tr>\n'
+                    html += '</tr>\n'
         
             html += '</table>\n'
             html += '<br><br>'

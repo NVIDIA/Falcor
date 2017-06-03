@@ -188,8 +188,8 @@ namespace Falcor
             of << "\tLoadTime=\"" << std::to_string(loadTime) << "\"\n";
             of << "\tFrameTime=\"" << std::to_string(frameTime) << "\"\n";
             of << "\tNumScreenshots=\"" << std::to_string(numScreenshots) << "\"\n";
-			of << "\tNumMemoryFrameChecks=\"" << std::to_string(numMemFrameCheck / 2) << "\"\n";
-			of << "\tNumMemoryTimeChecks=\"" << std::to_string(numMemTimeCheck / 2) << "\"\n";
+			of << "\tNumMemoryFrameChecks=\"" << std::to_string(numMemFrameCheck) << "\"\n";
+			of << "\tNumMemoryTimeChecks=\"" << std::to_string(numMemTimeCheck) << "\"\n";
             of << "/>\n";
             of << "</TestLog>";
             of.close();
@@ -229,17 +229,8 @@ namespace Falcor
 				logWarning("Bad Frame Range : " + mCheckFrames[i].asString() + " Memory Check Ignored.");
 			}
 
-			Task startCheckTask(std::stoul(frames[0]), std::stoul(frames[0]) + 1, TaskType::MemoryCheck);
-			mTestTasks.push_back(startCheckTask);
-
-			Task endCheckTask(std::stoul(frames[1]), std::stoul(frames[1]) + 1, TaskType::MemoryCheck);
-			mTestTasks.push_back(endCheckTask);
-
-			MemoryCheckRange newCheckRange;
-			newCheckRange.startCheck.pFrame = std::stoul(frames[0]);
-			newCheckRange.endCheck.pFrame = std::stoul(frames[1]);
-
-			memoryFrameCheckRanges.push_back(newCheckRange);
+			Task memoryCheckTask(std::stoul(frames[0]), std::stoul(frames[1]), TaskType::MemoryCheck);
+			mTestTasks.push_back(memoryCheckTask);
 		}
 
         //	Screenshot Frames
@@ -332,17 +323,8 @@ namespace Falcor
 				logWarning("Bad Time Range : " + mCheckTimes[i].asString() + " Memory Check Ignored.");
 			}
 
-			TimedTask startCheckTask(std::stof(times[0]), std::stof(times[0]) + 1.0f, TaskType::MemoryCheck);
-			mTimedTestTasks.push_back(startCheckTask);
-
-			TimedTask endCheckTask(std::stof(times[1]), std::stof(times[1]) + 1.0f, TaskType::MemoryCheck);
-			mTimedTestTasks.push_back(endCheckTask);
-
-			MemoryCheckRange newCheckRange;
-			newCheckRange.startCheck.pTime = std::stof(times[0]);
-			newCheckRange.endCheck.pTime = std::stof(times[1]);
-
-			memoryTimeCheckRanges.push_back(newCheckRange);
+			TimedTask memoryCheckTask(std::stof(times[0]), std::stof(times[1]), TaskType::MemoryCheck);
+			mTimedTestTasks.push_back(memoryCheckTask);
 		}
 
 
@@ -418,6 +400,10 @@ namespace Falcor
             {
                 mCurrentFrameTest->mResult /= (mCurrentFrameTest->mEndFrame - mCurrentFrameTest->mStartFrame);
             }
+			else if (mCurrentFrameTest->mTask == TaskType::MemoryCheck)
+			{
+				captureMemory(true, true);
+			}
 
             ++mCurrentFrameTest;
         }
@@ -426,7 +412,7 @@ namespace Falcor
             switch (mCurrentFrameTest->mTask)
             {
 			case TaskType::MemoryCheck:
-				runMemoryFrameCheck(frameRate().getFrameCount());
+				captureMemory(true, false);
 				break;
             case TaskType::LoadTime:
             case TaskType::MeasureFps:
@@ -455,8 +441,15 @@ namespace Falcor
 
 		case TaskType::MemoryCheck:
 		{
-			runMemoryTimeCheck();
-			++mCurrentTimeTest;
+			if (mCurrentTime >= mCurrentTimeTest->mEndTime)
+			{
+				captureMemory(false, true);
+				++mCurrentTimeTest;
+			}
+			else
+			{
+				captureMemory(false, false);
+			}
 			break;
 		}
         case TaskType::ScreenCapture:

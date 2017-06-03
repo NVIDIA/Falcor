@@ -164,8 +164,6 @@ namespace Falcor
 		//	The Memory Check for one frame.
 		struct MemoryCheck
 		{	
-			//	Check if this has already been written.
-			bool checked = false;
 			unsigned long pFrame;
 			float pTime;
 			float pEffectiveTime;
@@ -177,13 +175,14 @@ namespace Falcor
 		//	The Memory Check Between Frames.
 		struct MemoryCheckRange
 		{
+			bool active = false;
 			MemoryCheck startCheck;
 			MemoryCheck endCheck;
 		};
 
 		//	The List of Memory Check Ranges.
-		std::vector<MemoryCheckRange> memoryFrameCheckRanges;
-		std::vector<MemoryCheckRange> memoryTimeCheckRanges;
+		MemoryCheckRange memoryFrameCheckRange;
+		MemoryCheckRange memoryTimeCheckRange;
 
 
     protected:
@@ -196,7 +195,7 @@ namespace Falcor
 	
 		/**	Capture the Current Memory and write it to the provided memory check.
 		*/
-		void captureMemory(MemoryCheck & memoryCheck);
+		void getMemoryStatistics(MemoryCheck & memoryCheck);
 
 		/**	Write the Memory Check Range in terms of Frames to a file. Outputs Difference, Start and End Frames.
 		*/
@@ -206,9 +205,10 @@ namespace Falcor
 		*/
 		void writeMemoryTimeRange(const MemoryCheckRange & memoryCheckRange);
 
+		/** Capture the Memory Snapshot.
+		*/
+		void captureMemory(bool frameTest = true, bool endRange = false);
 
-		void runMemoryFrameCheck(const uint32_t & currentFrameId);
-		void runMemoryTimeCheck();
 
 		void captureScreen();
         void toggleText(bool enabled);

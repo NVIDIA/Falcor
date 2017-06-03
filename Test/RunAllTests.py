@@ -176,6 +176,7 @@ def compareImages(resultObj, testInfo, numScreenshots, slnInfo):
 
 
 def renameMemoryChecks(testInfo, countMemoryChecks, typefix=""):
+    print typefix
     for i in range (0, countMemoryChecks):
         print testInfo.getInitialFileForIndex(i, typefix) + '.txt'
         os.rename(testInfo.getInitialFileForIndex(i, typefix) + '.txt', testInfo.getRenamedFileForIndex(i, typefix) + '.txt')
@@ -194,17 +195,17 @@ def compareMemoryChecks(resultObj, testInfo, countMemoryChecks, slnInfo, typefix
                 print keystring
                 percentDifference = 0.0
             
-                if(int(values[3]) == 0.0):
-                    currentRange = [float(values[0]), float(values[1]), float(values[2]), "NA", int(values[3]), int(values[4])]
+                if(int(values[2]) == 0.0):
+                    currentRange = [float(values[0]), float(values[1]), "NA", float(values[2]), int(values[3]), int(values[4])]
             
                 else:
-                    percentDifference = float(values[2]) / float(values[3]) * 100.0
-                    currentRange = [float(values[0]), float(values[1]), float(values[2]), percentDifference, int(values[3]), int(values[4])]
+                    percentDifference = float(values[4]) / float(values[2]) * 100.0
+                    currentRange = [float(values[0]), float(values[1]), percentDifference, float(values[2]), int(values[3]), int(values[4])]
                 
                 if(typefix == "MemoryFrameCheck"):
                     resultObj.CompareMemoryFrameResults.append(currentRange)
                 
-                if(typefix == "MemoryTestCheck"):
+                if(typefix == "MemoryTimeCheck"):
                     resultObj.CompareMemoryTimeResults.append(currentRange)
 
     else:
