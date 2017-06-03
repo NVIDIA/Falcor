@@ -40,421 +40,421 @@
 
 namespace Falcor
 {
-    Sample::Sample()
-    {
-    };
+	Sample::Sample()
+	{
+	};
 
-    void Sample::handleWindowSizeChange()
-    {
-        // Tell the device to resize the swap chain
-        mpDefaultFBO = gpDevice->resizeSwapChain(mpWindow->getClientAreaWidth(), mpWindow->getClientAreaHeight());
-        mpDefaultPipelineState->setFbo(mpDefaultFBO);
+	void Sample::handleWindowSizeChange()
+	{
+		// Tell the device to resize the swap chain
+		mpDefaultFBO = gpDevice->resizeSwapChain(mpWindow->getClientAreaWidth(), mpWindow->getClientAreaHeight());
+		mpDefaultPipelineState->setFbo(mpDefaultFBO);
 
-        // Tell the GUI the swap-chain size changed
-        mpGui->onWindowResize(mpDefaultFBO->getWidth(), mpDefaultFBO->getHeight());
+		// Tell the GUI the swap-chain size changed
+		mpGui->onWindowResize(mpDefaultFBO->getWidth(), mpDefaultFBO->getHeight());
 
-        // Call the user callback
-        onResizeSwapChain();
+		// Call the user callback
+		onResizeSwapChain();
 
-        // Reset the clock, so that the first frame duration will be correct
-        mFrameRate.resetClock();
-    }
+		// Reset the clock, so that the first frame duration will be correct
+		mFrameRate.resetClock();
+	}
 
-    void Sample::handleKeyboardEvent(const KeyboardEvent& keyEvent)
-    {
-        if (keyEvent.type == KeyboardEvent::Type::KeyPressed)
-        {
-            mPressedKeys.insert(keyEvent.key);
-        }
-        else
-        {
-            mPressedKeys.erase(keyEvent.key);
-        }
+	void Sample::handleKeyboardEvent(const KeyboardEvent& keyEvent)
+	{
+		if (keyEvent.type == KeyboardEvent::Type::KeyPressed)
+		{
+			mPressedKeys.insert(keyEvent.key);
+		}
+		else
+		{
+			mPressedKeys.erase(keyEvent.key);
+		}
 
-        // Check if the GUI consumes it
-        if(mpGui->onKeyboardEvent(keyEvent))
-        {
-            return;
-        }
-        
-        //Checks if should toggle zoom
-        mpPixelZoom->onKeyboardEvent(keyEvent);
+		// Check if the GUI consumes it
+		if (mpGui->onKeyboardEvent(keyEvent))
+		{
+			return;
+		}
 
-        // Consume system messages first
-        if(keyEvent.type == KeyboardEvent::Type::KeyPressed)
-        {
-            if(keyEvent.mods.isShiftDown && keyEvent.key == KeyboardEvent::Key::F12)
-            {
-                initVideoCapture();
-            }
-            else if(!keyEvent.mods.isAltDown && !keyEvent.mods.isCtrlDown && !keyEvent.mods.isShiftDown)
-            {
-                switch(keyEvent.key)
-                {
-                case KeyboardEvent::Key::F12:
-                    mCaptureScreen = true;
-                    break;
+		//Checks if should toggle zoom
+		mpPixelZoom->onKeyboardEvent(keyEvent);
+
+		// Consume system messages first
+		if (keyEvent.type == KeyboardEvent::Type::KeyPressed)
+		{
+			if (keyEvent.mods.isShiftDown && keyEvent.key == KeyboardEvent::Key::F12)
+			{
+				initVideoCapture();
+			}
+			else if (!keyEvent.mods.isAltDown && !keyEvent.mods.isCtrlDown && !keyEvent.mods.isShiftDown)
+			{
+				switch (keyEvent.key)
+				{
+				case KeyboardEvent::Key::F12:
+					mCaptureScreen = true;
+					break;
 #if _PROFILING_ENABLED
-                case KeyboardEvent::Key::P:
-                    gProfileEnabled = !gProfileEnabled;
-                    break;
+				case KeyboardEvent::Key::P:
+					gProfileEnabled = !gProfileEnabled;
+					break;
 #endif
-                case KeyboardEvent::Key::V:
-                    mVsyncOn = !mVsyncOn;
-                    gpDevice->setVSync(mVsyncOn);
-                    mFrameRate.resetClock();
-                    break;
-                case KeyboardEvent::Key::F1:
-                    toggleText(!mShowText);
-                    break;
-                case KeyboardEvent::Key::F2:
-                    toggleUI(!mShowUI);
-                    break;
-                case KeyboardEvent::Key::F5:
-                    Program::reloadAllPrograms();
-                    onDataReload();
-                    break;
-                case KeyboardEvent::Key::Escape:
-                    if(mVideoCapture.pVideoCapture)
-                    {
-                        endVideoCapture();
-                    }
-                    else
-                    {
-                        mpWindow->shutdown();
-                    }
-                    break;
-                case KeyboardEvent::Key::Equal:
-                    mFreezeTime = !mFreezeTime;
-                    break;
-                }
-            }
-        }
+				case KeyboardEvent::Key::V:
+					mVsyncOn = !mVsyncOn;
+					gpDevice->setVSync(mVsyncOn);
+					mFrameRate.resetClock();
+					break;
+				case KeyboardEvent::Key::F1:
+					toggleText(!mShowText);
+					break;
+				case KeyboardEvent::Key::F2:
+					toggleUI(!mShowUI);
+					break;
+				case KeyboardEvent::Key::F5:
+					Program::reloadAllPrograms();
+					onDataReload();
+					break;
+				case KeyboardEvent::Key::Escape:
+					if (mVideoCapture.pVideoCapture)
+					{
+						endVideoCapture();
+					}
+					else
+					{
+						mpWindow->shutdown();
+					}
+					break;
+				case KeyboardEvent::Key::Equal:
+					mFreezeTime = !mFreezeTime;
+					break;
+				}
+			}
+		}
 
-        // If we got here, this is a user specific message
-        onKeyEvent(keyEvent);
-    }
+		// If we got here, this is a user specific message
+		onKeyEvent(keyEvent);
+	}
 
-    void Sample::handleMouseEvent(const MouseEvent& mouseEvent)
-    {
-        if(mpGui->onMouseEvent(mouseEvent))
-        {
-            return;
-        }
-        mpPixelZoom->onMouseEvent(mouseEvent);
-        onMouseEvent(mouseEvent);
-    }
+	void Sample::handleMouseEvent(const MouseEvent& mouseEvent)
+	{
+		if (mpGui->onMouseEvent(mouseEvent))
+		{
+			return;
+		}
+		mpPixelZoom->onMouseEvent(mouseEvent);
+		onMouseEvent(mouseEvent);
+	}
 
 
-    // CSample functions
-    Sample::~Sample()
-    {
-        if(mVideoCapture.pVideoCapture)
-        {
-            endVideoCapture();
-        }
+	// CSample functions
+	Sample::~Sample()
+	{
+		if (mVideoCapture.pVideoCapture)
+		{
+			endVideoCapture();
+		}
 
-        VRSystem::cleanup();
+		VRSystem::cleanup();
 
-        mpGui.reset();
-        mpDefaultPipelineState.reset();
-        mpDefaultFBO.reset();
-        mpTextRenderer.reset();
-        mpPixelZoom.reset();
-        mpRenderContext.reset();
-        gpDevice->cleanup();
-        gpDevice.reset();
-    }
+		mpGui.reset();
+		mpDefaultPipelineState.reset();
+		mpDefaultFBO.reset();
+		mpTextRenderer.reset();
+		mpPixelZoom.reset();
+		mpRenderContext.reset();
+		gpDevice->cleanup();
+		gpDevice.reset();
+	}
 
-    void Sample::run(const SampleConfig& config)
-    {
-        mTimeScale = config.timeScale;
-        mFreezeTime = config.freezeTimeOnStartup;
+	void Sample::run(const SampleConfig& config)
+	{
+		mTimeScale = config.timeScale;
+		mFreezeTime = config.freezeTimeOnStartup;
 
-        // Start the logger
-        Logger::init();
-        Logger::showBoxOnError(config.showMessageBoxOnError);
+		// Start the logger
+		Logger::init();
+		Logger::showBoxOnError(config.showMessageBoxOnError);
 
-        // Show the progress bar
-        ProgressBar::MessageList msgList =
-        {
-            { "Initializing Falcor" },
-            { "Takes a while, doesn't it?" },
-            { "Don't get too bored now" },
-            { "Getting there" },
-            { "Loading. Seriously, loading" },
-            { "Are we there yet?"},
-            { "NI!"}
-        };
+		// Show the progress bar
+		ProgressBar::MessageList msgList =
+		{
+			{ "Initializing Falcor" },
+			{ "Takes a while, doesn't it?" },
+			{ "Don't get too bored now" },
+			{ "Getting there" },
+			{ "Loading. Seriously, loading" },
+			{ "Are we there yet?"},
+			{ "NI!"}
+		};
 
-        ProgressBar::SharedPtr pBar = ProgressBar::create(msgList);
+		ProgressBar::SharedPtr pBar = ProgressBar::create(msgList);
 
-        // Create the window
-        mpWindow = Window::create(config.windowDesc, this);
-        if (mpWindow == nullptr)
-        {
-            logError("Failed to create device and window");
-            return;
-        }
+		// Create the window
+		mpWindow = Window::create(config.windowDesc, this);
+		if (mpWindow == nullptr)
+		{
+			logError("Failed to create device and window");
+			return;
+		}
 
-        gpDevice = Device::create(mpWindow, config.deviceDesc);
-        if (gpDevice == nullptr)
-        {
-            logError("Failed to create device");
-            return;
-        }
+		gpDevice = Device::create(mpWindow, config.deviceDesc);
+		if (gpDevice == nullptr)
+		{
+			logError("Failed to create device");
+			return;
+		}
 
-        if (config.deviceCreatedCallback)
-        {
-            config.deviceCreatedCallback();
-        }
+		if (config.deviceCreatedCallback)
+		{
+			config.deviceCreatedCallback();
+		}
 
-        // Set the icon
-        setWindowIcon("Framework\\Nvidia.ico", mpWindow->getApiHandle());
+		// Set the icon
+		setWindowIcon("Framework\\Nvidia.ico", mpWindow->getApiHandle());
 
-        // Get the default objects before calling onLoad()
-        mpDefaultFBO = gpDevice->getSwapChainFbo();
-        mpDefaultPipelineState = GraphicsState::create();
-        mpDefaultPipelineState->setFbo(mpDefaultFBO);
-        mpRenderContext = gpDevice->getRenderContext();
-        mpRenderContext->setGraphicsState(mpDefaultPipelineState);
+		// Get the default objects before calling onLoad()
+		mpDefaultFBO = gpDevice->getSwapChainFbo();
+		mpDefaultPipelineState = GraphicsState::create();
+		mpDefaultPipelineState->setFbo(mpDefaultFBO);
+		mpRenderContext = gpDevice->getRenderContext();
+		mpRenderContext->setGraphicsState(mpDefaultPipelineState);
 
-        // Init the UI
-        initUI();
+		// Init the UI
+		initUI();
 
-        // Init VR
-        mVrEnabled = config.enableVR;
-        if (mVrEnabled)
-        {
-            VRSystem::start(mpRenderContext);
-        }
+		// Init VR
+		mVrEnabled = config.enableVR;
+		if (mVrEnabled)
+		{
+			VRSystem::start(mpRenderContext);
+		}
 
-        // Load and run
-        mArgList.parseCommandLine(GetCommandLineA());
-        mpPixelZoom = PixelZoom::create();
-        mpPixelZoom->init(mpDefaultFBO.get());
-        onLoad();
-        pBar = nullptr;
-        mpWindow->msgLoop();
+		// Load and run
+		mArgList.parseCommandLine(GetCommandLineA());
+		mpPixelZoom = PixelZoom::create();
+		mpPixelZoom->init(mpDefaultFBO.get());
+		onLoad();
+		pBar = nullptr;
+		mpWindow->msgLoop();
 
-        onShutdown();
-        Logger::shutdown();
-    }
+		onShutdown();
+		Logger::shutdown();
+	}
 
-    void Sample::calculateTime()
-    {
-        if (mVideoCapture.pVideoCapture)
-        {
-            // We are capturing video at a constant FPS
-            mCurrentTime += mVideoCapture.timeDelta * mTimeScale;
-        }
-        else if (mFreezeTime == false)
-        {
-            float elapsedTime = mFrameRate.getLastFrameTime() * mTimeScale;
-            mCurrentTime += elapsedTime;
-        }
-    }
+	void Sample::calculateTime()
+	{
+		if (mVideoCapture.pVideoCapture)
+		{
+			// We are capturing video at a constant FPS
+			mCurrentTime += mVideoCapture.timeDelta * mTimeScale;
+		}
+		else if (mFreezeTime == false)
+		{
+			float elapsedTime = mFrameRate.getLastFrameTime() * mTimeScale;
+			mCurrentTime += elapsedTime;
+		}
+	}
 
-    void Sample::renderGUI()
-    {
-        constexpr char help[] =
-            "  'F1'      - Show\\Hide text\n"
-            "  'F2'      - Show\\Hide GUI\n"
-            "  'F5'      - Reload shaders\n"
-            "  'ESC'     - Quit\n"
-            "  'V'       - Toggle VSync\n"
-            "  'F12'     - Capture screenshot\n"
-            "  'Shift+F12' - Video capture\n"
-            "  '='       - Pause\\resume timer\n"
-            "  'Z'       - Zoom in on a pixel\n"
-            "  'MouseWheel' - Change level of zoom\n"
+	void Sample::renderGUI()
+	{
+		constexpr char help[] =
+			"  'F1'      - Show\\Hide text\n"
+			"  'F2'      - Show\\Hide GUI\n"
+			"  'F5'      - Reload shaders\n"
+			"  'ESC'     - Quit\n"
+			"  'V'       - Toggle VSync\n"
+			"  'F12'     - Capture screenshot\n"
+			"  'Shift+F12' - Video capture\n"
+			"  '='       - Pause\\resume timer\n"
+			"  'Z'       - Zoom in on a pixel\n"
+			"  'MouseWheel' - Change level of zoom\n"
 #if _PROFILING_ENABLED
-            "  'P'       - Enable profiling\n";
+			"  'P'       - Enable profiling\n";
 #else
-            ;
+			;
 #endif
 
-        mpGui->pushWindow("Falcor", 250, 200, 20, 40, false);
-        mpGui->addText("Keyboard Shortcuts");
-        mpGui->addTooltip(help, true);
+		mpGui->pushWindow("Falcor", 250, 200, 20, 40, false);
+		mpGui->addText("Keyboard Shortcuts");
+		mpGui->addTooltip(help, true);
 
-        if(mpGui->beginGroup("Global Controls"))
-        {
-            mpGui->addFloatVar("Time", mCurrentTime, 0, FLT_MAX);
-            mpGui->addFloatVar("Time Scale", mTimeScale, 0, FLT_MAX);
+		if (mpGui->beginGroup("Global Controls"))
+		{
+			mpGui->addFloatVar("Time", mCurrentTime, 0, FLT_MAX);
+			mpGui->addFloatVar("Time Scale", mTimeScale, 0, FLT_MAX);
 
-            if (mpGui->addButton("Reset"))
-            {
-                mCurrentTime = 0.0f;
-            }
+			if (mpGui->addButton("Reset"))
+			{
+				mCurrentTime = 0.0f;
+			}
 
-            if (mpGui->addButton(mFreezeTime ? "Play" : "Pause", true))
-            {
-                mFreezeTime = !mFreezeTime;
-            }
+			if (mpGui->addButton(mFreezeTime ? "Play" : "Pause", true))
+			{
+				mFreezeTime = !mFreezeTime;
+			}
 
-            if (mpGui->addButton("Stop", true))
-            {
-                mFreezeTime = true;
-                mCurrentTime = 0.0f;
-            }
+			if (mpGui->addButton("Stop", true))
+			{
+				mFreezeTime = true;
+				mCurrentTime = 0.0f;
+			}
 
-            mCaptureScreen = mpGui->addButton("Screen Capture");
-            if (mpGui->addButton("Video Capture", true))
-            {
-                initVideoCapture();
-            }
-            mpGui->endGroup();
-        }
+			mCaptureScreen = mpGui->addButton("Screen Capture");
+			if (mpGui->addButton("Video Capture", true))
+			{
+				initVideoCapture();
+			}
+			mpGui->endGroup();
+		}
 
-        onGuiRender();
-        mpGui->popWindow();
+		onGuiRender();
+		mpGui->popWindow();
 
-        if (mVideoCapture.pUI)
-        {
-            mVideoCapture.pUI->render(mpGui.get());
-        }
-        mpGui->render(mpRenderContext.get(), mFrameRate.getLastFrameTime());
-    }
+		if (mVideoCapture.pUI)
+		{
+			mVideoCapture.pUI->render(mpGui.get());
+		}
+		mpGui->render(mpRenderContext.get(), mFrameRate.getLastFrameTime());
+	}
 
-    void Sample::renderFrame()
-    {
-        if (gpDevice->isWindowOccluded())
-        {
-            return;
-        }
+	void Sample::renderFrame()
+	{
+		if (gpDevice->isWindowOccluded())
+		{
+			return;
+		}
 
-        mFrameRate.newFrame();
-        {
-            PROFILE(onFrameRender);
-            // The swap-chain FBO might have changed between frames, so get it
-            mpDefaultFBO = gpDevice->getSwapChainFbo();
-            mpRenderContext = gpDevice->getRenderContext();
-            calculateTime();
+		mFrameRate.newFrame();
+		{
+			PROFILE(onFrameRender);
+			// The swap-chain FBO might have changed between frames, so get it
+			mpDefaultFBO = gpDevice->getSwapChainFbo();
+			mpRenderContext = gpDevice->getRenderContext();
+			calculateTime();
 
-            // Bind the default state
-            mpRenderContext->setGraphicsState(mpDefaultPipelineState);
-            mpDefaultPipelineState->setFbo(mpDefaultFBO);
-            onFrameRender();
-        }
-        {
-            PROFILE(renderGUI);
-            if(mShowUI)
-            {
-                renderGUI();
-            }
-        }
+			// Bind the default state
+			mpRenderContext->setGraphicsState(mpDefaultPipelineState);
+			mpDefaultPipelineState->setFbo(mpDefaultFBO);
+			onFrameRender();
+		}
+		{
+			PROFILE(renderGUI);
+			if (mShowUI)
+			{
+				renderGUI();
+			}
+		}
 
-        renderText(getFpsMsg(), glm::vec2(10, 10));
-        mpPixelZoom->render(mpRenderContext.get(), gpDevice->getSwapChainFbo().get());
+		renderText(getFpsMsg(), glm::vec2(10, 10));
+		mpPixelZoom->render(mpRenderContext.get(), gpDevice->getSwapChainFbo().get());
 
-        captureVideoFrame();
-        printProfileData();
-        if (mCaptureScreen)
-        {
-            captureScreen();
-        }
-        {
-            PROFILE(present);
-            gpDevice->present();
-        }
-    }
+		captureVideoFrame();
+		printProfileData();
+		if (mCaptureScreen)
+		{
+			captureScreen();
+		}
+		{
+			PROFILE(present);
+			gpDevice->present();
+		}
+	}
 
-    void Sample::captureScreen()
-    {
-        std::string filename = getExecutableName();
+	void Sample::captureScreen()
+	{
+		std::string filename = getExecutableName();
 
-        // Now we have a folder and a filename, look for an available filename (we don't overwrite existing files)
-        std::string prefix = std::string(filename);
-        std::string executableDir = getExecutableDirectory();
-        std::string pngFile;
-        if(findAvailableFilename(prefix, executableDir, "png", pngFile))
-        {
-            Texture::SharedPtr pTexture = gpDevice->getSwapChainFbo()->getColorTexture(0);
-            pTexture->captureToFile(0, 0, pngFile);
-        }
-        else
-        {
-            logError("Could not find available filename when capturing screen");
-        }
-        mCaptureScreen = false;
-    }
+		// Now we have a folder and a filename, look for an available filename (we don't overwrite existing files)
+		std::string prefix = std::string(filename);
+		std::string executableDir = getExecutableDirectory();
+		std::string pngFile;
+		if (findAvailableFilename(prefix, executableDir, "png", pngFile))
+		{
+			Texture::SharedPtr pTexture = gpDevice->getSwapChainFbo()->getColorTexture(0);
+			pTexture->captureToFile(0, 0, pngFile);
+		}
+		else
+		{
+			logError("Could not find available filename when capturing screen");
+		}
+		mCaptureScreen = false;
+	}
 
-    void Sample::initUI()
-    {
-        mpGui = Gui::create(mpDefaultFBO->getWidth(), mpDefaultFBO->getHeight());
-        mpTextRenderer = TextRenderer::create();
-    }
+	void Sample::initUI()
+	{
+		mpGui = Gui::create(mpDefaultFBO->getWidth(), mpDefaultFBO->getHeight());
+		mpTextRenderer = TextRenderer::create();
+	}
 
-    const std::string Sample::getFpsMsg() const
-    {
-        std::string s;
-        if(mShowText)
-        {
-            std::stringstream strstr;
-            float msPerFrame = mFrameRate.getAverageFrameTime();
-            std::string msStr = std::to_string(msPerFrame);
-            s = std::to_string(int(ceil(1000 / msPerFrame))) + " FPS (" + msStr.erase(msStr.size() - 4) + " ms/frame)";
-            if (mVsyncOn) s += std::string(", VSync");
-        }
-        return s;
-    }
+	const std::string Sample::getFpsMsg() const
+	{
+		std::string s;
+		if (mShowText)
+		{
+			std::stringstream strstr;
+			float msPerFrame = mFrameRate.getAverageFrameTime();
+			std::string msStr = std::to_string(msPerFrame);
+			s = std::to_string(int(ceil(1000 / msPerFrame))) + " FPS (" + msStr.erase(msStr.size() - 4) + " ms/frame)";
+			if (mVsyncOn) s += std::string(", VSync");
+		}
+		return s;
+	}
 
-    void Sample::toggleText(bool enabled)
-    {
-        mShowText = enabled;
-    }
+	void Sample::toggleText(bool enabled)
+	{
+		mShowText = enabled;
+	}
 
-    void Sample::resizeSwapChain(uint32_t width, uint32_t height)
-    {
-        mpWindow->resize(width, height);
-        mpPixelZoom->init(gpDevice->getSwapChainFbo().get());
-    }
+	void Sample::resizeSwapChain(uint32_t width, uint32_t height)
+	{
+		mpWindow->resize(width, height);
+		mpPixelZoom->init(gpDevice->getSwapChainFbo().get());
+	}
 
-    bool Sample::isKeyPressed(const KeyboardEvent::Key& key) const 
-    {
-        return mPressedKeys.find(key) != mPressedKeys.cend();
-    }
+	bool Sample::isKeyPressed(const KeyboardEvent::Key& key) const
+	{
+		return mPressedKeys.find(key) != mPressedKeys.cend();
+	}
 
-    void Sample::renderText(const std::string& msg, const glm::vec2& position, const glm::vec2 shadowOffset) const
-    {
-        if(mShowText)
-        {
-            // Render outline first
-            if(shadowOffset.x != 0.f || shadowOffset.y != 0)
-            {
-                const glm::vec3 oldColor = mpTextRenderer->getTextColor();
-                mpTextRenderer->setTextColor(glm::vec3(0.f));   // Black outline 
-                mpTextRenderer->begin(mpRenderContext, position + shadowOffset);
-                mpTextRenderer->renderLine(msg);
-                mpTextRenderer->end();
-                mpTextRenderer->setTextColor(oldColor);
-            }
-            mpTextRenderer->begin(mpRenderContext, position);
-            mpTextRenderer->renderLine(msg);
-            mpTextRenderer->end();
-        }
-    }
+	void Sample::renderText(const std::string& msg, const glm::vec2& position, const glm::vec2 shadowOffset) const
+	{
+		if (mShowText)
+		{
+			// Render outline first
+			if (shadowOffset.x != 0.f || shadowOffset.y != 0)
+			{
+				const glm::vec3 oldColor = mpTextRenderer->getTextColor();
+				mpTextRenderer->setTextColor(glm::vec3(0.f));   // Black outline 
+				mpTextRenderer->begin(mpRenderContext, position + shadowOffset);
+				mpTextRenderer->renderLine(msg);
+				mpTextRenderer->end();
+				mpTextRenderer->setTextColor(oldColor);
+			}
+			mpTextRenderer->begin(mpRenderContext, position);
+			mpTextRenderer->renderLine(msg);
+			mpTextRenderer->end();
+		}
+	}
 
-    void Sample::printProfileData()
-    {
+	void Sample::printProfileData()
+	{
 #if _PROFILING_ENABLED
-        if(gProfileEnabled)
-        {
-            std::string profileMsg;
-            Profiler::endFrame(profileMsg);
-            renderText(profileMsg, glm::vec2(10, 300));
-        }
+		if (gProfileEnabled)
+		{
+			std::string profileMsg;
+			Profiler::endFrame(profileMsg);
+			renderText(profileMsg, glm::vec2(10, 300));
+		}
 #endif
-    }
+	}
 
-    void Sample::initVideoCapture()
-    {
-        if(mVideoCapture.pUI == nullptr)
-        {
-            mVideoCapture.pUI = VideoEncoderUI::create(20, 300, 240, 220, [this]() {startVideoCapture(); }, [this]() {endVideoCapture(); });
-        }
-    }
+	void Sample::initVideoCapture()
+	{
+		if (mVideoCapture.pUI == nullptr)
+		{
+			mVideoCapture.pUI = VideoEncoderUI::create(20, 300, 240, 220, [this]() {startVideoCapture(); }, [this]() {endVideoCapture(); });
+		}
+	}
 
 	//	Capture the Current Memory and write it to the provided memory check.
 	void Sample::getMemoryStatistics(MemoryCheck & memoryCheck)
@@ -480,7 +480,7 @@ namespace Falcor
 		startCheck = startCheck + ("Total Virtual Memory : " + startTVM_B + " bytes, " + startTVM_MB + " MB. \n");
 		startCheck = startCheck + ("Total Used Virtual Memory By All Processes : " + startTUVM_B + " bytes, " + startTUVM_MB + " MB. \n");
 		startCheck = startCheck + ("Virtual Memory used by this Process : " + startCUVM_B + " bytes, " + startCUVM_MB + " MB. \n \n");
-	
+
 		//	Get the Strings for the Memory in Bytes - End Frame
 		std::string endTVM_B = std::to_string(memoryCheckRange.endCheck.pTotalVirtualMemory);
 		std::string endTUVM_B = std::to_string(memoryCheckRange.endCheck.pTotalUsedVirtualMemory);
@@ -505,7 +505,7 @@ namespace Falcor
 		}
 
 		//	Key string for difference.
-		std::string keystring = std::to_string(memoryCheckRange.startCheck.pFrame) + " " + std::to_string(memoryCheckRange.endCheck.pFrame) + " " + (startCUVM_B) + " " + (endCUVM_B) + " " + std::to_string(difference) + " \n";
+		std::string keystring = std::to_string(memoryCheckRange.startCheck.pFrame) + " " + std::to_string(memoryCheckRange.endCheck.pFrame) + " " + (startCUVM_B)+" " + (endCUVM_B)+" " + std::to_string(difference) + " \n";
 
 		//	Get the name of the current program.
 		std::string filename = getExecutableName();
@@ -576,7 +576,7 @@ namespace Falcor
 			differenceCheck = differenceCheck + std::to_string(difference) + "\n \n";
 		}
 		//	Key string for difference.
-		std::string keystring = std::to_string(memoryCheckRange.startCheck.pEffectiveTime) + " " + std::to_string(memoryCheckRange.endCheck.pEffectiveTime) + " " + (startCUVM_B)+" " + (endCUVM_B) + " " + std::to_string(difference) + " \n";
+		std::string keystring = std::to_string(memoryCheckRange.startCheck.pEffectiveTime) + " " + std::to_string(memoryCheckRange.endCheck.pEffectiveTime) + " " + (startCUVM_B)+" " + (endCUVM_B)+" " + std::to_string(difference) + " \n";
 
 		//	Get the name of the current program.
 		std::string filename = getExecutableName();
@@ -625,14 +625,14 @@ namespace Falcor
 			writeMemoryFrameRange(memoryFrameCheckRange);
 			memoryFrameCheckRange.active = false;
 		}
-		else if(!frameTest && !endRange && !memoryTimeCheckRange.active)
+		else if (!frameTest && !endRange && !memoryTimeCheckRange.active)
 		{
 			getMemoryStatistics(memoryTimeCheckRange.startCheck);
 			memoryTimeCheckRange.startCheck.pFrame = frameRate().getFrameCount();
 			memoryTimeCheckRange.startCheck.pEffectiveTime = mCurrentTime;
 			memoryTimeCheckRange.active = true;
 		}
-		else if(!frameTest && endRange && memoryTimeCheckRange.active)
+		else if (!frameTest && endRange && memoryTimeCheckRange.active)
 		{
 			getMemoryStatistics(memoryTimeCheckRange.endCheck);
 			memoryTimeCheckRange.endCheck.pFrame = frameRate().getFrameCount();
@@ -648,87 +648,87 @@ namespace Falcor
 
 
 	void Sample::startVideoCapture()
-    {
-        // Create the Capture Object and Framebuffer.
-        VideoEncoder::Desc desc;
-        desc.flipY      = false;
-        desc.codec      = mVideoCapture.pUI->getCodec();
-        desc.filename   = mVideoCapture.pUI->getFilename();
-        desc.format     = VideoEncoder::InputFormat::R8G8B8A8;
-        desc.fps        = mVideoCapture.pUI->getFPS();
-        desc.height     = mpDefaultFBO->getHeight();
-        desc.width      = mpDefaultFBO->getWidth();
-        desc.bitrateMbps = mVideoCapture.pUI->getBitrate();
-        desc.gopSize    = mVideoCapture.pUI->getGopSize();
+	{
+		// Create the Capture Object and Framebuffer.
+		VideoEncoder::Desc desc;
+		desc.flipY = false;
+		desc.codec = mVideoCapture.pUI->getCodec();
+		desc.filename = mVideoCapture.pUI->getFilename();
+		desc.format = VideoEncoder::InputFormat::R8G8B8A8;
+		desc.fps = mVideoCapture.pUI->getFPS();
+		desc.height = mpDefaultFBO->getHeight();
+		desc.width = mpDefaultFBO->getWidth();
+		desc.bitrateMbps = mVideoCapture.pUI->getBitrate();
+		desc.gopSize = mVideoCapture.pUI->getGopSize();
 
-        mVideoCapture.pVideoCapture = VideoEncoder::create(desc);
+		mVideoCapture.pVideoCapture = VideoEncoder::create(desc);
 
-        assert(mVideoCapture.pVideoCapture);
-        mVideoCapture.pFrame = new uint8_t[desc.width*desc.height * 4];
+		assert(mVideoCapture.pVideoCapture);
+		mVideoCapture.pFrame = new uint8_t[desc.width*desc.height * 4];
 
-        mVideoCapture.timeDelta = 1 / (float)desc.fps;
+		mVideoCapture.timeDelta = 1 / (float)desc.fps;
 
-        if(mVideoCapture.pUI->useTimeRange())
-        {
-            if(mVideoCapture.pUI->getStartTime() > mVideoCapture.pUI->getEndTime())
-            {
-                mVideoCapture.timeDelta = -mVideoCapture.timeDelta;
-            }
-            mCurrentTime = mVideoCapture.pUI->getStartTime();
-            if(!mVideoCapture.pUI->captureUI())
-            {
-                mShowUI = false;
-            }
-        }
-    }
+		if (mVideoCapture.pUI->useTimeRange())
+		{
+			if (mVideoCapture.pUI->getStartTime() > mVideoCapture.pUI->getEndTime())
+			{
+				mVideoCapture.timeDelta = -mVideoCapture.timeDelta;
+			}
+			mCurrentTime = mVideoCapture.pUI->getStartTime();
+			if (!mVideoCapture.pUI->captureUI())
+			{
+				mShowUI = false;
+			}
+		}
+	}
 
-    void Sample::endVideoCapture()
-    {
-        if(mVideoCapture.pVideoCapture)
-        {
-            mVideoCapture.pVideoCapture->endCapture();
-            mShowUI = true;
-        }
-        mVideoCapture.pUI = nullptr;
-        mVideoCapture.pVideoCapture = nullptr;
-        safe_delete_array(mVideoCapture.pFrame);
-    }
+	void Sample::endVideoCapture()
+	{
+		if (mVideoCapture.pVideoCapture)
+		{
+			mVideoCapture.pVideoCapture->endCapture();
+			mShowUI = true;
+		}
+		mVideoCapture.pUI = nullptr;
+		mVideoCapture.pVideoCapture = nullptr;
+		safe_delete_array(mVideoCapture.pFrame);
+	}
 
-    void Sample::captureVideoFrame()
-    {
-        if(mVideoCapture.pVideoCapture)
-        {
-            mVideoCapture.pVideoCapture->appendFrame(mpRenderContext->readTextureSubresource(mpDefaultFBO->getColorTexture(0).get(), 0).data());
+	void Sample::captureVideoFrame()
+	{
+		if (mVideoCapture.pVideoCapture)
+		{
+			mVideoCapture.pVideoCapture->appendFrame(mpRenderContext->readTextureSubresource(mpDefaultFBO->getColorTexture(0).get(), 0).data());
 
-            if(mVideoCapture.pUI->useTimeRange())
-            {
-                if(mVideoCapture.timeDelta >= 0)
-                {
-                    if(mCurrentTime >= mVideoCapture.pUI->getEndTime())
-                    {
-                        endVideoCapture();
-                    }
-                }
-                else if(mCurrentTime < mVideoCapture.pUI->getEndTime())
-                {
-                    endVideoCapture();
-                }
-            }
-        }
-    }
+			if (mVideoCapture.pUI->useTimeRange())
+			{
+				if (mVideoCapture.timeDelta >= 0)
+				{
+					if (mCurrentTime >= mVideoCapture.pUI->getEndTime())
+					{
+						endVideoCapture();
+					}
+				}
+				else if (mCurrentTime < mVideoCapture.pUI->getEndTime())
+				{
+					endVideoCapture();
+				}
+			}
+		}
+	}
 
-    void Sample::shutdownApp()
-    {
-        mpWindow->shutdown();
-    }
+	void Sample::shutdownApp()
+	{
+		mpWindow->shutdown();
+	}
 
-    void Sample::pollForEvents()
-    {
-        mpWindow->pollForEvents();
-    }
+	void Sample::pollForEvents()
+	{
+		mpWindow->pollForEvents();
+	}
 
-    void Sample::setWindowTitle(const std::string& title)
-    {
-        mpWindow->setWindowTitle(title);
-    }
+	void Sample::setWindowTitle(const std::string& title)
+	{
+		mpWindow->setWindowTitle(title);
+	}
 }
