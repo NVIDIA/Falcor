@@ -81,10 +81,27 @@ class TestInfo(object):
         return self.getTestDir() + '\\' + self.Name + '.exe'
     def getRenamedTestScreenshot(self, i):
         return self.getTestDir() + '\\' + self.Name + '_' + str(self.Index) + '_' + str(i) + '.png'
-    def getInitialTestScreenshot(self, i): 
+    def getInitialTestScreenshot(self, i):
         return self.getTestDir() + '\\' + self.Name + '.exe.'+ str(i) + '.png'
     def getReferenceScreenshot(self, i):
         return self.getReferenceDir() + '\\' + self.Name + '_'+ str(self.Index) + '_' + str(i) + '.png'
+    
+    def getRenamedFileForIndex(self, i, typefix = ""):
+        if(typefix != ""):
+            return self.getTestDir() + '\\' + self.Name + '_' + str(self.Index) + '_' + typefix + "_" + str(i)
+        else:
+            return self.getTestDir() + '\\' + self.Name + '_' + str(self.Index) + '_' + str(i)
+    
+    def getInitialFileForIndex(self, i, typefix = ""):
+        if(typefix != ""):
+            return self.getTestDir() + '\\' + self.Name + '.exe.' + typefix + '.' + str(i)
+        else:
+            return self.getTestDir() + '\\' + self.Name + '.exe.' + str(i)
+    
+    def getReferenceFileForIndex(self, i, typefix = ""):
+        return self.getReferenceDir() + '\\' + self.Name + '_' + str(self.Index) + '_' + str(i)
+
+
 
 class SystemResult(object):
     def __init__(self):
@@ -95,7 +112,9 @@ class SystemResult(object):
         self.RefAvgFrameTime = 0
         self.LoadErrorMargin = gDefaultLoadTimeMargin
         self.FrameErrorMargin = gDefaultFrameTimeMargin
-        self.CompareResults = []        
+        self.CompareImageResults = []
+        self.CompareMemoryFrameResults = []
+        self.CompareMemoryTimeResults = []
 
 class LowLevelResult(object):
     def __init__(self):
@@ -112,13 +131,13 @@ class LowLevelResult(object):
 
 def renameScreenshots(testInfo, numScreenshots):
     for i in range (0, numScreenshots):
-        os.rename(testInfo.getInitialTestScreenshot(i), testInfo.getRenamedTestScreenshot(i))
+        os.rename(testInfo.getInitialFileForIndex(i) + '.png', testInfo.getRenamedFileForIndex(i) + '.png')
 
 def compareImages(resultObj, testInfo, numScreenshots, slnInfo):
     renameScreenshots(testInfo, numScreenshots)
     for i in range(0, numScreenshots):
-        testScreenshot = testInfo.getRenamedTestScreenshot(i)
-        refScreenshot = testInfo.getReferenceScreenshot(i)
+        testScreenshot = testInfo.getRenamedFileForIndex(i) + '.png'
+        refScreenshot = testInfo.getReferenceFileForIndex(i) + '.png'
         outFile = testInfo.Name + str(i) + '_Compare.png'
         command = ['magick', 'compare', '-metric', 'MSE', '-compose', 'Src', '-highlight-color', 'White', 
         '-lowlight-color', 'Black', testScreenshot, refScreenshot, outFile]
@@ -135,10 +154,14 @@ def compareImages(resultObj, testInfo, numScreenshots, slnInfo):
                 ' instead of compare result, got \"' + resultValStr + '\" from larger string \"' + result + '\"'))
             testingUtil.makeDirIfDoesntExist(imagesDir)
             testingUtil.overwriteMove(testScreenshot, imagesDir)
-            resultObj.CompareResults.append(-1)
+            resultObj.CompareImageResults.append(-1)
             continue
-        resultObj.CompareResults.append(resultVal)
-        #if the images are sufficiently different, save them in test results
+        
+        # Append the Result Value String.
+        resultObj.CompareImageResults.append(resultVal)
+        
+
+        # If the images are sufficiently different, save them in test results.
         if resultVal > testingUtil.gDefaultImageCompareMargin:
             testingUtil.makeDirIfDoesntExist(imagesDir)
             testingUtil.overwriteMove(testScreenshot, imagesDir)
@@ -151,13 +174,55 @@ def compareImages(resultObj, testInfo, numScreenshots, slnInfo):
             os.remove(testScreenshot)
             os.remove(outFile)
 
+
+def renameMemoryChecks(testInfo, countMemoryChecks, typefix=""):
+    for i in range (0, countMemoryChecks):
+        print testInfo.getInitialFileForIndex(i, typefix) + '.txt'
+        os.rename(testInfo.getInitialFileForIndex(i, typefix) + '.txt', testInfo.getRenamedFileForIndex(i, typefix) + '.txt')
+
+
+def compareMemoryChecks(resultObj, testInfo, countMemoryChecks, slnInfo, typefix):    
+
+    if(typefix == "MemoryFrameCheck" or typefix == "MemoryTimeCheck"):
+
+        renameMemoryChecks(testInfo, countMemoryChecks, typefix)
+        for i in range (0, countMemoryChecks):
+            with open(testInfo.getRenamedFileForIndex(i, typefix) + '.txt') as f:
+                content = f.readlines()
+                keystring = content[0].strip()
+                values = keystring.split(' ')
+                print keystring
+                percentDifference = 0.0
+            
+                if(int(values[3]) == 0.0):
+                    currentRange = [float(values[0]), float(values[1]), float(values[2]), "NA", int(values[3]), int(values[4])]
+            
+                else:
+                    percentDifference = float(values[2]) / float(values[3]) * 100.0
+                    currentRange = [float(values[0]), float(values[1]), float(values[2]), percentDifference, int(values[3]), int(values[4])]
+                
+                if(typefix == "MemoryFrameCheck"):
+                    resultObj.CompareMemoryFrameResults.append(currentRange)
+                
+                if(typefix == "MemoryTestCheck"):
+                    resultObj.CompareMemoryTimeResults.append(currentRange)
+
+    else:
+        return
+
+
+
+
+            
+
+
 def addSystemTestReferences(testInfo, numScreenshots):
     renameScreenshots(testInfo, numScreenshots)
     referenceDir = testInfo.getReferenceDir()
     testingUtil.makeDirIfDoesntExist(referenceDir)
     testingUtil.overwriteMove(testInfo.getResultsFile(), referenceDir)
     for i in range(0, numScreenshots):
-        testingUtil.overwriteMove(testInfo.getRenamedTestScreenshot(i), referenceDir)
+        testingUtil.overwriteMove(testInfo.getRenamedFileForIndex(i) + '.png', referenceDir)
 
 #args should be action(build, rebuild, clean), solution, config(debug, release), and optionally project
 #if no project given, performs action on entire solution
@@ -220,38 +285,73 @@ def processLowLevelTest(xmlElement, testInfo, slnInfo):
     testingUtil.overwriteMove(testInfo.getResultsFile(), testInfo.getResultsDir())
 
 def processSystemTest(xmlElement, testInfo, slnInfo):
+
+    # Get the System Test Result/
     newSysResult = SystemResult()
     newSysResult.Name = testInfo.getFullName()
+
+    # Get the Load Time and the Average Frame Time.
     newSysResult.LoadTime = float(xmlElement[0].attributes['LoadTime'].value)
     newSysResult.AvgFrameTime = float(xmlElement[0].attributes['FrameTime'].value)
+
+    # Get the Load Error Margin and the Frame Error Margin.
     newSysResult.LoadErrorMargin = testInfo.LoadErrorMargin 
     newSysResult.FrameErrorMargin = testInfo.FrameErrorMargin
+    
+    # Get the Number of Screen Shots from the XML output.
     numScreenshots = int(xmlElement[0].attributes['NumScreenshots'].value)
+    numMemoryFrameChecks = int(xmlElement[0].attributes['NumMemoryFrameChecks'].value)
+    numMemoryTimeChecks = int(xmlElement[0].attributes['NumMemoryTimeChecks'].value)
+
+    # Get the Reference and Result Files.
     referenceFile = testInfo.getReferenceFile()
     resultFile = testInfo.getResultsFile()
+
+    print referenceFile
+    print resultFile
+
+    # Find the Reference File, and quit if we cannot.
     if not os.path.isfile(referenceFile):
         slnInfo.skippedList.append((testInfo.getFullName(), 'Could not find reference file ' + referenceFile + ' for comparison'))
         return 
     refResults = getXMLTag(referenceFile, 'Summary')
+
+    # Find the Results File, and quit if we cannot.
     if not refResults:
         slnInfo.skippedList.append((testInfo.getFullName(), 'Error getting xml data from reference file ' + referenceFile))
         return
     newSysResult.RefLoadTime = float(refResults[0].attributes['LoadTime'].value)
     newSysResult.RefAvgFrameTime = float(refResults[0].attributes['FrameTime'].value)
-    #check avg fps
+    
+    # Check Average FPS
     if newSysResult.AvgFrameTime != 0 and newSysResult.RefAvgFrameTime != 0:
         if testingUtil.marginCompare(newSysResult.AvgFrameTime, newSysResult.RefAvgFrameTime, newSysResult.FrameErrorMargin) == 1:
             slnInfo.errorList.append((testInfo.getFullName() + ': average frame time ' + 
             str(newSysResult.AvgFrameTime) + ' is larger than reference ' + str(newSysResult.RefAvgFrameTime) + 
             ' considering error margin ' + str(newSysResult.FrameErrorMargin * 100) + '%'))
-    #check load time
+
+    # Check Load Time.
     if newSysResult.LoadTime != 0 and newSysResult.RefLoadTime != 0:
         if newSysResult.LoadTime > (newSysResult.RefLoadTime + newSysResult.LoadErrorMargin):
             slnInfo.errorList.append(testInfo.getFullName() + ': load time' + (str(newSysResult.LoadTime) +
             ' is larger than reference ' + str(newSysResult.RefLoadTime) + ' considering error margin ' + 
             str(newSysResult.LoadErrorMargin) + ' seconds'))
+
+    
+    # Compare the images.
     compareImages(newSysResult, testInfo, numScreenshots, slnInfo)
+
+    # Compare the Memory Checks.
+    if(numMemoryFrameChecks != 0):
+        compareMemoryChecks(newSysResult, testInfo, numMemoryFrameChecks, slnInfo, "MemoryFrameCheck")
+    
+    if(numMemoryTimeChecks != 0):
+        compareMemoryChecks(newSysResult, testInfo, numMemoryTimeChecks, slnInfo, "MemoryTimeCheck")
+
+    # Add it to the System Result List. 
     slnInfo.systemResultList.append(newSysResult)
+    
+    # Make Directory if it does not exist and move the result file to that directory, overwriting any previous version.
     testingUtil.makeDirIfDoesntExist(testInfo.getResultsDir())
     testingUtil.overwriteMove(resultFile, testInfo.getResultsDir())
 
@@ -337,7 +437,7 @@ def readTestList(generateReference, buildTests, pullBranch):
     return slnInfos
 
 def runTest(testInfo, cmdLine, generateReference, slnInfo):
-    #dont generate low level reference
+    # Don't generate the Low Level Reference.
     if generateReference and not cmdLine:
         return
 
@@ -347,7 +447,7 @@ def runTest(testInfo, cmdLine, generateReference, slnInfo):
         return
     try:
         p = subprocess.Popen(testPath + ' ' + cmdLine)
-        #run test until timeout or return
+        # Run test until timeout or return.
         start = time.time()
         while p.returncode == None:
             p.poll()
@@ -357,13 +457,13 @@ def runTest(testInfo, cmdLine, generateReference, slnInfo):
                 slnInfo.skippedList.append((testInfo.getFullName(), ('Test timed out ( > ' + 
                     str(gDefaultHangTimeDuration) + ' seconds)')))
                 return
-        #ensure results file exists
+        # Ensure results file exists
         if not os.path.isfile(testInfo.getResultsFile()):
             slnInfo.skippedList.append((testInfo.getFullName(), 'Failed to open test result file ' + testInfo.getResultsFile()))
             return
-        #check for name conflicts
+        # Check for name conflicts
         testInfo.determineIndex(generateReference)
-        #get xml from results file
+        # Get xml from results file
         summary = getXMLTag(testInfo.getResultsFile(), 'Summary')
         if not summary:
             slnInfo.skippedList.append((testInfo.getFullName(), 'Error getting xml data from ' + testInfo.getResultsFile()))
@@ -374,15 +474,15 @@ def runTest(testInfo, cmdLine, generateReference, slnInfo):
                 testingUtil.makeDirIfDoesntExist(testInfo.getResultsDir())
                 testingUtil.overwriteMove(testInfo.getResultsFile(), testInfo.getResultsDir())
             return
-        #gen system ref
+        # Gen system ref
         if cmdLine and generateReference:
             numScreenshots = int(summary[0].attributes['NumScreenshots'].value)
             addSystemTestReferences(testInfo, numScreenshots)
-        #process system
+        # Process system
         elif cmdLine:
             processSystemTest(summary, testInfo, slnInfo)
 
-        #process low level
+        # Process Low Level
         else:
             processLowLevelTest(summary, testInfo, slnInfo)
     except subprocess.CalledProcessError:

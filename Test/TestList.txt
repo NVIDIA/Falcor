@@ -1,5 +1,3 @@
 [../Falcor.sln {Released3d12 ..\Bin\x64\Release\}
-FeatureDemo {
--test -loadscene D:\Perforce\graphics\media\Main\san-miguel\SanMiguel.fscene -memCheck 100-100100 -shutdown 150000}
-{released3d12}
+ShaderBuffers {-test -memCheckTimes 5-10 -shutdowntime 15} {released3d12}
 ]

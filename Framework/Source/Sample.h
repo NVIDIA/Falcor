@@ -163,8 +163,12 @@ namespace Falcor
 
 		//	The Memory Check for one frame.
 		struct MemoryCheck
-		{
+		{	
+			//	Check if this has already been written.
+			bool checked = false;
 			unsigned long pFrame;
+			float pTime;
+			float pEffectiveTime;
 			unsigned long long pTotalVirtualMemory;
 			unsigned long long pTotalUsedVirtualMemory;
 			unsigned long long pCurrentlyUsedVirtualMemory;
@@ -178,7 +182,8 @@ namespace Falcor
 		};
 
 		//	The List of Memory Check Ranges.
-		std::vector<MemoryCheckRange> memoryCheckRanges;
+		std::vector<MemoryCheckRange> memoryFrameCheckRanges;
+		std::vector<MemoryCheckRange> memoryTimeCheckRanges;
 
 
     protected:
@@ -189,12 +194,22 @@ namespace Falcor
         virtual float getTimeScale() final { return mTimeScale; }
         void initVideoCapture();
 	
-		//	Capture the Current Memory and write it to the provided memory check.
+		/**	Capture the Current Memory and write it to the provided memory check.
+		*/
 		void captureMemory(MemoryCheck & memoryCheck);
 
-		//	Write the Memory Check Range to a file. Outputs Difference, Start and End Frames.
-		void writeMemoryRange(const MemoryCheckRange & memoryCheckRange);
-        
+		/**	Write the Memory Check Range in terms of Frames to a file. Outputs Difference, Start and End Frames.
+		*/
+		void writeMemoryFrameRange(const MemoryCheckRange & memoryCheckRange);
+
+		/**	Write the Memory Check Range in terms of Time to a file. Outputs Difference, Start and End Frames.
+		*/
+		void writeMemoryTimeRange(const MemoryCheckRange & memoryCheckRange);
+
+
+		void runMemoryFrameCheck(const uint32_t & currentFrameId);
+		void runMemoryTimeCheck();
+
 		void captureScreen();
         void toggleText(bool enabled);
         uint32_t getFrameID() const { return mFrameRate.getFrameCount(); }

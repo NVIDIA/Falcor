@@ -50,7 +50,7 @@ namespace Falcor
         if (!hasTests()) return;
 
         uint32_t frameId = frameRate().getFrameCount();
-        //Check if it's time for a time based task
+        //	Check if it's time for a time based task
         if (mCurrentTimeTest != mTimedTestTasks.end() && mCurrentTime >= mCurrentTimeTest->mStartTime)
         {
             if (mCurrentTimeTest->mTask == TaskType::ScreenCapture)
@@ -62,18 +62,19 @@ namespace Falcor
             }
             else if (mCurrentTimeTest->mTask == TaskType::MeasureFps)
             {
-                //mark the start frame. Required for time based perf ranges to know the 
-                //amount of frames that passed in the time range to calculate the avg frame time
-                //across the perf range
+                //	Mark the start frame. Required for time based perf ranges to know the 
+                //	Amount of frames that passed in the time range to calculate the avg frame time
+                //	Across the perf range
                 if (mCurrentTimeTest->mStartFrame == 0)
                 {
                     mCurrentTimeTest->mStartFrame = frameRate().getFrameCount();
                 }
             }
+			
 
             mCurrentTrigger = TriggerType::Time;
         }
-        //Check if it's time for a frame based task
+        //	Check if it's the frame for a frame based task
         else if (mCurrentFrameTest != mTestTasks.end() && frameId >= mCurrentFrameTest->mStartFrame)
         {
             if (mCurrentFrameTest->mTask == TaskType::ScreenCapture)
@@ -81,29 +82,6 @@ namespace Falcor
                 //disable text, the fps text will cause image compare failures
                 toggleText(false);
             }
-			else if (frameId == mCurrentFrameTest->mStartFrame && mCurrentFrameTest->mTask == TaskType::MemoryCheck)
-			{
-				//	Iterate over the Memory Check Ranges.
-				for (uint32_t i = 0; i < memoryCheckRanges.size(); i++)
-				{
-					//	Check if this an Start Check Frame.
-					if (mCurrentFrameTest->mStartFrame == memoryCheckRanges[i].startCheck.pFrame)
-					{
-						captureMemory(memoryCheckRanges[i].startCheck);
-					}
-					
-					//	Check if this is an End Check Frame.
-					if(mCurrentFrameTest->mStartFrame == memoryCheckRanges[i].endCheck.pFrame)
-					{
-						captureMemory(memoryCheckRanges[i].endCheck);
-						
-						//	Write the Rnange to Frame.
-						writeMemoryRange(memoryCheckRanges[i]);
-					}
-				}
-
-				mCurrentTrigger = TriggerType::Frame;
-			}
 
             mCurrentTrigger = TriggerType::Frame;
         }
@@ -143,7 +121,8 @@ namespace Falcor
             float loadTime = 0.f;
             uint32_t numFpsRanges = 0;
             uint32_t numScreenshots = 0;
-			uint32_t numMemCheck = 0;
+			uint32_t numMemFrameCheck = 0;
+			uint32_t numMemTimeCheck = 0;
 
             //frame based tests
             for (auto it = mTestTasks.begin(); it != mTestTasks.end(); ++it)
@@ -151,7 +130,7 @@ namespace Falcor
                 switch (it->mTask)
                 {
 				case TaskType::MemoryCheck:
-					numMemCheck++;
+					++numMemFrameCheck;
 					break;
                 case TaskType::LoadTime:
                     loadTime = it->mResult;
@@ -177,6 +156,9 @@ namespace Falcor
             {
                 switch (it->mTask)
                 {
+				case TaskType::MemoryCheck:
+					++numMemTimeCheck;
+					break;
                 case TaskType::ScreenCapture:
                     ++numScreenshots;
                     break;
@@ -206,7 +188,8 @@ namespace Falcor
             of << "\tLoadTime=\"" << std::to_string(loadTime) << "\"\n";
             of << "\tFrameTime=\"" << std::to_string(frameTime) << "\"\n";
             of << "\tNumScreenshots=\"" << std::to_string(numScreenshots) << "\"\n";
-			of << "\tNumMemoryChecks=\"" << std::to_string(numMemCheck) << "\"\n";
+			of << "\tNumMemoryFrameChecks=\"" << std::to_string(numMemFrameCheck / 2) << "\"\n";
+			of << "\tNumMemoryTimeChecks=\"" << std::to_string(numMemTimeCheck / 2) << "\"\n";
             of << "/>\n";
             of << "</TestLog>";
             of.close();
@@ -231,12 +214,13 @@ namespace Falcor
             mTestTasks.push_back(newTask);
         }
 
+		//	Memory Check Frames.
 		std::vector<ArgList::Arg> mCheckFrames = mArgList.getValues("memCheck");
 		for (uint32_t i = 0; i < mCheckFrames.size(); ++i)
 		{
 			std::vector<std::string> frames = splitString(mCheckFrames[i].asString(), "-");
 
-			if (frames.size() > 2)
+			if (frames.size() != 2)
 			{
 				logWarning("Bad Frame Range : " + mCheckFrames[i].asString() + " Memory Check Ignored.");
 			}
@@ -245,20 +229,20 @@ namespace Falcor
 				logWarning("Bad Frame Range : " + mCheckFrames[i].asString() + " Memory Check Ignored.");
 			}
 
-			Task startCheckTask(std::stoul(frames[0]), std::stoul(frames[0]), TaskType::MemoryCheck);
+			Task startCheckTask(std::stoul(frames[0]), std::stoul(frames[0]) + 1, TaskType::MemoryCheck);
 			mTestTasks.push_back(startCheckTask);
 
-			Task endCheckTask(std::stoul(frames[1]), std::stoul(frames[1]), TaskType::MemoryCheck);
+			Task endCheckTask(std::stoul(frames[1]), std::stoul(frames[1]) + 1, TaskType::MemoryCheck);
 			mTestTasks.push_back(endCheckTask);
 
 			MemoryCheckRange newCheckRange;
 			newCheckRange.startCheck.pFrame = std::stoul(frames[0]);
 			newCheckRange.endCheck.pFrame = std::stoul(frames[1]);
 
-			memoryCheckRanges.push_back(newCheckRange);
+			memoryFrameCheckRanges.push_back(newCheckRange);
 		}
 
-        //	Screenshot frames
+        //	Screenshot Frames
         std::vector<ArgList::Arg> ssFrames = mArgList.getValues("ssframes");
         for (uint32_t i = 0; i < ssFrames.size(); ++i)
         {
@@ -324,7 +308,7 @@ namespace Falcor
 
     void SampleTest::initTimeTests()
     {
-        //screenshots
+        // Screenshots
         std::vector<ArgList::Arg> timedScreenshots = mArgList.getValues("sstimes");
         for (auto it = timedScreenshots.begin(); it != timedScreenshots.end(); ++it)
         {
@@ -332,6 +316,35 @@ namespace Falcor
             TimedTask newTask(startTime, startTime + 1, TaskType::ScreenCapture);
             mTimedTestTasks.push_back(newTask);
         }
+		
+		//	Memory Check Times.
+		std::vector<ArgList::Arg> mCheckTimes = mArgList.getValues("memCheckTimes");
+		for (uint32_t i = 0; i < mCheckTimes.size(); ++i)
+		{
+			std::vector<std::string> times = splitString(mCheckTimes[i].asString(), "-");
+
+			if (times.size() != 2)
+			{
+				logWarning("Bad Time Range : " + mCheckTimes[i].asString() + " Memory Check Ignored.");
+			}
+			if (std::stoul(times[0]) >= std::stoul(times[1]))
+			{
+				logWarning("Bad Time Range : " + mCheckTimes[i].asString() + " Memory Check Ignored.");
+			}
+
+			TimedTask startCheckTask(std::stof(times[0]), std::stof(times[0]) + 1.0f, TaskType::MemoryCheck);
+			mTimedTestTasks.push_back(startCheckTask);
+
+			TimedTask endCheckTask(std::stof(times[1]), std::stof(times[1]) + 1.0f, TaskType::MemoryCheck);
+			mTimedTestTasks.push_back(endCheckTask);
+
+			MemoryCheckRange newCheckRange;
+			newCheckRange.startCheck.pTime = std::stof(times[0]);
+			newCheckRange.endCheck.pTime = std::stof(times[1]);
+
+			memoryTimeCheckRanges.push_back(newCheckRange);
+		}
+
 
         //fps capture times
         std::vector<ArgList::Arg> fpsTimeRange = mArgList.getValues("perftimes");
@@ -405,6 +418,7 @@ namespace Falcor
             {
                 mCurrentFrameTest->mResult /= (mCurrentFrameTest->mEndFrame - mCurrentFrameTest->mStartFrame);
             }
+
             ++mCurrentFrameTest;
         }
         else
@@ -412,6 +426,7 @@ namespace Falcor
             switch (mCurrentFrameTest->mTask)
             {
 			case TaskType::MemoryCheck:
+				runMemoryFrameCheck(frameRate().getFrameCount());
 				break;
             case TaskType::LoadTime:
             case TaskType::MeasureFps:
@@ -437,6 +452,13 @@ namespace Falcor
     {
         switch (mCurrentTimeTest->mTask)
         {
+
+		case TaskType::MemoryCheck:
+		{
+			runMemoryTimeCheck();
+			++mCurrentTimeTest;
+			break;
+		}
         case TaskType::ScreenCapture:
         {
             captureScreen();
