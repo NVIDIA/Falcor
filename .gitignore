@@ -7,6 +7,7 @@ Bin/*
 *.opensdf
 *.suo
 *.ptx
+*.pyc
 Falcor.VC.db
 FalcorTest.VC.db
 FalcorTest/TestResults/*
