@@ -1,9 +1,6 @@
 {
-    \\netapp-wa02\public\Falcor\ReferenceResultsHub\, Test, TestList.txt, https://github.com/NVIDIA/Falcor.git, C:\Users\nvrgfxtest\Desktop\FalcorDest, master
+    \\netapp-wa02\public\Falcor\ReferenceResultsHub\, Test, TestList.txt, https://github.com/NVIDIA/Falcor.git, C:\FalcorDest, master
 }
 {
-    \\netapp-wa02\public\Falcor\ReferenceResultsHubDev\, Test, TestList.txt, https://github.com/NVIDIA/Falcor.git, C:\Users\nvrgfxtest\Desktop\FalcorDestDev, 2.0a4-Testing
-}
-{
-    \\netapp-wa02\public\Falcor\ReferenceResultsLab\, Test, TestList.txt, https://clavelleNV@gtl-gitlab.nvidia.com/NVResearch/Falcor.git, C:\Users\nvrgfxtest\Desktop\FalcorDestLab, master
+    \\netapp-wa02\public\Falcor\ReferenceResultsLab\, Test, TestList.txt, https://gtl-gitlab.nvidia.com/NVResearch/Falcor.git, C:\FalcorDestLab, master
 }

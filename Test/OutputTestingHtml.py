@@ -166,7 +166,7 @@ def getMemoryCompareResultsTable(slnInfo):
                 html += '<tr>\n'
                 html += '<td>' + result.Name + '</td>\n'
                 for compare in result.CompareMemoryFrameResults:
-                    if(compare[2] > 2.5):
+                    if(compare[2] > testingUtil.gMemoryPercentCompareMargin):
                         html += '<font color="white">' + '<td bgcolor="red">' + str(compare[0]) + '</td>' + '<td bgcolor="red">' + str(compare[1]) + '</td>' + '<td bgcolor="red">' + str(compare[2]) + '</td>' + '<td bgcolor="red">' + str(compare[3]) + '</td>' + '<td bgcolor="red">' + str(compare[4]) + '</td>' + '<td bgcolor="red">' + str(compare[5]) + '</td>' + '</font>'
                     else:
                         html += '<td>' + str(compare[0]) + '</td>' + '<td>' + str(compare[1]) + '</td>' + '<td>' + str(compare[2]) + '</td>' + '<td>' + str(compare[3]) + '</td>' + '<td>' + str(compare[4]) + '</td>' + '<td>' + str(compare[5]) + '</td>'
@@ -193,7 +193,7 @@ def getMemoryCompareResultsTable(slnInfo):
                 for compare in result.CompareMemoryTimeResults:
                     html += '<tr>\n'
                     html += '<td>' + result.Name + '</td>\n'
-                    if(compare[2] > 2.5):
+                    if(compare[2] > testingUtil.gMemoryPercentCompareMargin):
                         html += '<font color="white">' + '<td bgcolor="red">' + str(compare[0]) + '</td>' + '<td bgcolor="red">' + str(compare[1]) + '</td>' + '<td bgcolor="red">' + str(compare[2]) + '</td>' + '<td bgcolor="red">' + str(compare[3]) + '</td>' + '<td bgcolor="red">' + str(compare[4]) + '</td>' + '<td bgcolor="red">' + str(compare[5]) + '</td>' + '</font> \n'
                     else:
                         html += '<td>' + str(compare[0]) + '</td>' + '<td>' + str(compare[1]) + '</td>' + '<td>' + str(compare[2]) + '</td>' + '<td>' + str(compare[3]) + '</td>' + '<td>' + str(compare[4]) + '</td>' + '<td>' + str(compare[5]) + '</td> \n'

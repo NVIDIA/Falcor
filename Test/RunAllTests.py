@@ -188,14 +188,16 @@ def compareMemoryChecks(resultObj, testInfo, countMemoryChecks, slnInfo, typefix
 
         renameMemoryChecks(testInfo, countMemoryChecks, typefix)
         for i in range (0, countMemoryChecks):
+            keystring = ""
             with open(testInfo.getRenamedFileForIndex(i, typefix) + '.txt') as f:
                 content = f.readlines()
                 keystring = content[0].strip()
+                
+            if (keystring != ""):
                 values = keystring.split(' ')
-                print keystring
                 percentDifference = 0.0
 
-    
+
                 if(int(values[2]) == 0.0):
                     currentRange = [float(values[0]), float(values[1]), "NA", float(values[2]), int(values[3]), int(values[4])]
             
@@ -205,9 +207,22 @@ def compareMemoryChecks(resultObj, testInfo, countMemoryChecks, slnInfo, typefix
                 
                 if(typefix == "MemoryFrameCheck"):
                     resultObj.CompareMemoryFrameResults.append(currentRange)
-                
+
                 if(typefix == "MemoryTimeCheck"):
                     resultObj.CompareMemoryTimeResults.append(currentRange)
+                
+
+                memoryDir =  testInfo.getResultsDir()
+                if(percentDifference > testingUtil.gMemoryPercentCompareMargin):
+                    memoryDir + "\\" + typefix
+                    testingUtil.makeDirIfDoesntExist(memoryDir)
+                    testingUtil.overwriteMove(testInfo.getRenamedFileForIndex(i, typefix) + '.txt', memoryDir)
+                    slnInfo.errorList.append(('For test ' + testInfo.getFullName() + ' Percent Change in Memory Too High : ' + str(percentDifference) + ' %.'))
+                    
+                else:
+                    os.remove(testInfo.getRenamedFileForIndex(i, typefix) + '.txt')
+
+
 
     else:
         return
