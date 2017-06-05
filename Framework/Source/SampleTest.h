@@ -133,8 +133,6 @@ namespace Falcor
         */
         void runTimeTests();
 
-
-
         //	The Memory Check for one point.
         struct MemoryCheck
         {
@@ -154,12 +152,9 @@ namespace Falcor
             MemoryCheck endCheck;
         };
 
-
         //	The List of Memory Check Ranges.
         MemoryCheckRange mMemoryFrameCheckRange;
         MemoryCheckRange mMemoryTimeCheckRange;
-
-
 
         /**	Capture the Current Memory and write it to the provided memory check.
         */

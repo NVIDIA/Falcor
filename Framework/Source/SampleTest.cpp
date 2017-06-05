@@ -215,7 +215,7 @@ namespace Falcor
         }
 
         //	Memory Check Frames.
-        std::vector<ArgList::Arg> mCheckFrames = mArgList.getValues("memcheck");
+        std::vector<ArgList::Arg> mCheckFrames = mArgList.getValues("memframes");
         for (uint32_t i = 0; i < mCheckFrames.size(); ++i)
         {
             std::vector<std::string> frames = splitString(mCheckFrames[i].asString(), "-");
@@ -309,7 +309,7 @@ namespace Falcor
         }
 
         //	Memory Check Times.
-        std::vector<ArgList::Arg> mCheckTimes = mArgList.getValues("memchecktime");
+        std::vector<ArgList::Arg> mCheckTimes = mArgList.getValues("memtimes");
         for (uint32_t i = 0; i < mCheckTimes.size(); ++i)
         {
             std::vector<std::string> times = splitString(mCheckTimes[i].asString(), "-");

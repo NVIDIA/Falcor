@@ -48,15 +48,15 @@ C++ / Falcor Side
             -ssframes X Y Z
                 Takes a screenshot at frames X, Y, and Z. Any number of 
                 screenshot frames can be supplied.
-            -perframes X Y ... A B 
+            -perfframes X Y ... A B 
                 Measures performance between frames X and Y and between frames 
                 A and B. Any number of frame ranges can be supplied.
-            -memcheck X Y
-                Measures the change in Private Working Set Memory between the end of frame X and the end of frame Y.
+            -memframes X-Y ... A-B
+                Measures the change in Private Working Set Memory between the end of frame X and the end of frame Y, and then between time A and time B.
             -shutdowntime X 
                 Shuts down the app after X seconds have passed 
-            -memchecktime X Y
-                Measures the change in Private Working Set Memory between time X and time Y.
+            -memtimes X-Y ... A-B
+                Measures the change in Private Working Set Memory between time X and time Y, and then between time A and time B.
             -sstimes X Y Z
                 Takes a screenshot after X, Y, and Z seconds have passed. Any 
                 number of screenshot times can be supplied. 
