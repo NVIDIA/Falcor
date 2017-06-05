@@ -35,11 +35,12 @@
 #include <shlobj.h>
 #include <sys/types.h>
 #include "API/Window.h"
+#include "psapi.h"
 
 // Always run in Optimus mode on laptops
 extern "C"
 {
-	_declspec(dllexport) DWORD NvOptimusEnablement = 1;
+    _declspec(dllexport) DWORD NvOptimusEnablement = 1;
 }
 
 namespace Falcor
@@ -47,7 +48,7 @@ namespace Falcor
     MsgBoxButton msgBox(const std::string& msg, MsgBoxType mbType)
     {
         UINT Type = MB_OK;
-        switch(mbType)
+        switch (mbType)
         {
         case MsgBoxType::Ok:
             Type = MB_OK;
@@ -63,8 +64,8 @@ namespace Falcor
             break;
         }
 
-        int value = MessageBoxA(nullptr, msg.c_str(), "Falcor", Type|MB_TOPMOST);
-        switch(value)
+        int value = MessageBoxA(nullptr, msg.c_str(), "Falcor", Type | MB_TOPMOST);
+        switch (value)
         {
         case IDOK:
             return MsgBoxButton::Ok;
@@ -100,7 +101,7 @@ namespace Falcor
     const std::string& getExecutableDirectory()
     {
         static std::string folder;
-        if(folder.size() == 0)
+        if (folder.size() == 0)
         {
             CHAR exeName[MAX_PATH];
             GetModuleFileNameA(nullptr, exeName, ARRAYSIZE(exeName));
@@ -122,7 +123,7 @@ namespace Falcor
     const std::string& getExecutableName()
     {
         static std::string filename;
-        if(filename.size() == 0)
+        if (filename.size() == 0)
         {
             CHAR exeName[MAX_PATH];
             GetModuleFileNameA(nullptr, exeName, ARRAYSIZE(exeName));
@@ -139,7 +140,7 @@ namespace Falcor
         static char buff[4096];
         int numChar = GetEnvironmentVariableA(varName.c_str(), buff, arraysize(buff)); //what is the best way to deal with wchar ?
         assert(numChar < arraysize(buff));
-        if(numChar == 0)
+        if (numChar == 0)
         {
             return false;
         }
@@ -147,7 +148,7 @@ namespace Falcor
         return true;
     }
 
-    std::vector<std::string> gDataDirectories = 
+    std::vector<std::string> gDataDirectories =
     {
         // Ordering matters here, we want that while developing, resources will be loaded from the development media directory
         std::string(getWorkingDirectory()),
@@ -167,7 +168,7 @@ namespace Falcor
     void addDataDirectory(const std::string& dataDir)
     {
         //Insert unique elements
-        if (std::find(gDataDirectories.begin(), gDataDirectories.end(), dataDir) == gDataDirectories.end()) 
+        if (std::find(gDataDirectories.begin(), gDataDirectories.end(), dataDir) == gDataDirectories.end())
         {
             gDataDirectories.push_back(dataDir);
         }
@@ -175,20 +176,20 @@ namespace Falcor
 
     std::string canonicalizeFilename(const std::string& filename)
     {
-        //It might be tempting to try to figure out a nicer bound ourselves, but the documentation says "You must set the
-        //	size of this buffer to MAX_PATH to ensure that it is large enough to hold the returned string.".
+        //  It might be tempting to try to figure out a nicer bound ourselves, but the documentation says "You must set the
+        //  size of this buffer to MAX_PATH to ensure that it is large enough to hold the returned string.".
         char buffer[MAX_PATH];
         PathCanonicalizeA(buffer, filename.c_str());
-        return replaceSubstring(buffer, "/","\\");
+        return replaceSubstring(buffer, "/", "\\");
     }
 
     bool findFileInDataDirectories(const std::string& filename, std::string& fullpath)
     {
         static bool bInit = false;
-        if(bInit == false)
+        if (bInit == false)
         {
             std::string dataDirs;
-            if(getEnvironemntVariable("FALCOR_MEDIA_FOLDERS", dataDirs))
+            if (getEnvironemntVariable("FALCOR_MEDIA_FOLDERS", dataDirs))
             {
                 auto folders = splitString(dataDirs, ";");
                 gDataDirectories.insert(gDataDirectories.end(), folders.begin(), folders.end());
@@ -197,16 +198,16 @@ namespace Falcor
         }
 
         // Check if this is an absolute path
-        if(doesFileExist(filename))
+        if (doesFileExist(filename))
         {
             fullpath = canonicalizeFilename(filename);
             return true;
         }
 
-        for(const auto& Dir : gDataDirectories)
+        for (const auto& Dir : gDataDirectories)
         {
             fullpath = canonicalizeFilename(Dir + '\\' + filename);
-            if(doesFileExist(fullpath))
+            if (doesFileExist(fullpath))
             {
                 return true;
             }
@@ -228,14 +229,14 @@ namespace Falcor
         ofn.lpstrFile = chars;
         ofn.nMaxFile = arraysize(chars);
         ofn.Flags = OFN_HIDEREADONLY | OFN_NOCHANGEDIR;
-        if(bOpen == true)
+        if (bOpen == true)
         {
             ofn.Flags |= OFN_FILEMUSTEXIST;
         }
         ofn.lpstrDefExt = "";
 
         BOOL b = bOpen ? GetOpenFileNameA(&ofn) : GetSaveFileNameA(&ofn);
-        if(b)
+        if (b)
         {
             filename = std::string(chars);
             return true;
@@ -258,7 +259,7 @@ namespace Falcor
     bool readFileToString(const std::string& fullpath, std::string& str)
     {
         std::ifstream t(fullpath.c_str());
-        if((t.rdstate() & std::ifstream::failbit) == 0)
+        if ((t.rdstate() & std::ifstream::failbit) == 0)
         {
             str = std::string((std::istreambuf_iterator<char>(t)), std::istreambuf_iterator<char>());
             return true;
@@ -268,12 +269,12 @@ namespace Falcor
 
     bool findAvailableFilename(const std::string& prefix, const std::string& directory, const std::string& extension, std::string& filename)
     {
-        for(UINT32 i = 0; i < UINT32_MAX; i++)
+        for (UINT32 i = 0; i < UINT32_MAX; i++)
         {
             std::string newPrefix = prefix + '.' + std::to_string(i);
             filename = directory + '\\' + newPrefix + "." + extension;
 
-            if(doesFileExist(filename) == false)
+            if (doesFileExist(filename) == false)
             {
                 return true;
             }
@@ -286,7 +287,7 @@ namespace Falcor
     void setWindowIcon(const std::string& iconFile, Window::ApiHandle windowHandle)
     {
         std::string fullpath;
-        if(findFileInDataDirectories(iconFile, fullpath))
+        if (findFileInDataDirectories(iconFile, fullpath))
         {
             HANDLE hIcon = LoadImageA(GetModuleHandle(NULL), fullpath.c_str(), IMAGE_ICON, 0, 0, LR_DEFAULTSIZE | LR_LOADFROMFILE);
             HWND hWnd = windowHandle ? windowHandle : GetActiveWindow();
@@ -298,15 +299,15 @@ namespace Falcor
         }
     }
 
-	int getDisplayDpi()
-	{
-		::SetProcessDPIAware();
-		HDC screen = GetDC(NULL);
-		double hPixelsPerInch = GetDeviceCaps(screen, LOGPIXELSX);
-		double vPixelsPerInch = GetDeviceCaps(screen, LOGPIXELSY);
-		::ReleaseDC(NULL, screen);
-		return int((hPixelsPerInch + vPixelsPerInch) * 0.5);
-	}
+    int getDisplayDpi()
+    {
+        ::SetProcessDPIAware();
+        HDC screen = GetDC(NULL);
+        double hPixelsPerInch = GetDeviceCaps(screen, LOGPIXELSX);
+        double vPixelsPerInch = GetDeviceCaps(screen, LOGPIXELSY);
+        ::ReleaseDC(NULL, screen);
+        return int((hPixelsPerInch + vPixelsPerInch) * 0.5);
+    }
 
     bool isDebuggerPresent()
     {
@@ -331,15 +332,15 @@ namespace Falcor
     {
         std::string stripped = filename;
         std::string canonFile = canonicalizeFilename(filename);
-        for(const auto& dir : gDataDirectories)
+        for (const auto& dir : gDataDirectories)
         {
             std::string canonDir = canonicalizeFilename(dir);
-            if(hasPrefix(canonFile, canonDir, false))
+            if (hasPrefix(canonFile, canonDir, false))
             {
                 // canonicalizeFilename adds trailing \\ to drive letters and removes them from paths containing folders
                 size_t len = canonDir.back() == '\\' ? canonDir.length() : canonDir.length() + 1;
                 std::string tmp = canonFile.erase(0, len);
-                if(tmp.length() < stripped.length())
+                if (tmp.length() < stripped.length())
                 {
                     stripped = tmp;
                 }
@@ -352,12 +353,12 @@ namespace Falcor
     std::string getDirectoryFromFile(const std::string& filename)
     {
         char *cstr = new char[filename.length() + 1];
-        strcpy_s(cstr, filename.length()+1, filename.c_str());
+        strcpy_s(cstr, filename.length() + 1, filename.c_str());
 
         PathRemoveFileSpecA(cstr);
 
         std::string ret = std::string(cstr);
-        delete [] cstr;
+        delete[] cstr;
         return ret;
     }
 
@@ -398,7 +399,7 @@ namespace Falcor
 
         if (INVALID_HANDLE_VALUE == hFind)
         {
-           return;
+            return;
         }
         else
         {
@@ -417,11 +418,11 @@ namespace Falcor
     void setThreadAffinity(std::thread::native_handle_type thread, uint32_t affinityMask)
     {
         ::SetThreadAffinityMask(thread, affinityMask);
-        if(DWORD dwError = GetLastError() != 0)
+        if (DWORD dwError = GetLastError() != 0)
         {
             LPVOID lpMsgBuf;
             FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
-                            NULL, dwError, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPTSTR)&lpMsgBuf, 0, NULL);
+                NULL, dwError, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPTSTR)&lpMsgBuf, 0, NULL);
             std::wstring err((LPTSTR)lpMsgBuf);
             logWarning("setThreadAffinity failed with error: " + std::string(err.begin(), err.end()));
             LocalFree(lpMsgBuf);
@@ -430,16 +431,16 @@ namespace Falcor
 
     void setThreadPriority(std::thread::native_handle_type thread, ThreadPriorityType priority)
     {
-        if(priority >= ThreadPriorityType::Lowest)
+        if (priority >= ThreadPriorityType::Lowest)
             ::SetThreadPriority(thread, THREAD_BASE_PRIORITY_MIN + (int32_t)priority);
-        else if(priority == ThreadPriorityType::BackgroundBegin)
+        else if (priority == ThreadPriorityType::BackgroundBegin)
             ::SetThreadPriority(thread, THREAD_MODE_BACKGROUND_BEGIN);
-        else if(priority == ThreadPriorityType::BackgroundEnd)
+        else if (priority == ThreadPriorityType::BackgroundEnd)
             ::SetThreadPriority(thread, THREAD_MODE_BACKGROUND_END);
         else
             should_not_get_here();
 
-        if(DWORD dwError = GetLastError() != 0)
+        if (DWORD dwError = GetLastError() != 0)
         {
             LPVOID lpMsgBuf;
             FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
@@ -453,7 +454,7 @@ namespace Falcor
     time_t getFileModifiedTime(const std::string& filename)
     {
         struct stat s;
-        if(stat(filename.c_str(), &s) != 0)
+        if (stat(filename.c_str(), &s) != 0)
         {
             logError("Can't get file time for '" + filename + "'");
             return 0;
@@ -461,4 +462,36 @@ namespace Falcor
 
         return s.st_mtime;
     }
+
+    uint64_t getTotalVirtualMemory()
+    {
+        MEMORYSTATUSEX memInfo;
+        memInfo.dwLength = sizeof(MEMORYSTATUSEX);
+        GlobalMemoryStatusEx(&memInfo);
+        DWORDLONG totalVirtualMem = memInfo.ullTotalPageFile;
+
+        return totalVirtualMem;
+    }
+
+    uint64_t getUsedVirtualMemory()
+    {
+        MEMORYSTATUSEX memInfo;
+        memInfo.dwLength = sizeof(MEMORYSTATUSEX);
+        GlobalMemoryStatusEx(&memInfo);
+        DWORDLONG totalVirtualMem = memInfo.ullTotalPageFile;
+        DWORDLONG virtualMemUsed = memInfo.ullTotalPageFile - memInfo.ullAvailPageFile;
+
+        return virtualMemUsed;
+    }
+
+    uint64_t getProcessUsedVirtualMemory()
+    {
+        PROCESS_MEMORY_COUNTERS_EX pmc;
+        GetProcessMemoryInfo(GetCurrentProcess(), (PROCESS_MEMORY_COUNTERS*)&pmc, sizeof(pmc));
+        SIZE_T virtualMemUsedByMe = pmc.PrivateUsage;
+
+        return virtualMemUsedByMe;
+    }
+
+
 }

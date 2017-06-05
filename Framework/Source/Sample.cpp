@@ -72,24 +72,24 @@ namespace Falcor
         }
 
         // Check if the GUI consumes it
-        if(mpGui->onKeyboardEvent(keyEvent))
+        if (mpGui->onKeyboardEvent(keyEvent))
         {
             return;
         }
-        
+
         //Checks if should toggle zoom
         mpPixelZoom->onKeyboardEvent(keyEvent);
 
         // Consume system messages first
-        if(keyEvent.type == KeyboardEvent::Type::KeyPressed)
+        if (keyEvent.type == KeyboardEvent::Type::KeyPressed)
         {
-            if(keyEvent.mods.isShiftDown && keyEvent.key == KeyboardEvent::Key::F12)
+            if (keyEvent.mods.isShiftDown && keyEvent.key == KeyboardEvent::Key::F12)
             {
                 initVideoCapture();
             }
-            else if(!keyEvent.mods.isAltDown && !keyEvent.mods.isCtrlDown && !keyEvent.mods.isShiftDown)
+            else if (!keyEvent.mods.isAltDown && !keyEvent.mods.isCtrlDown && !keyEvent.mods.isShiftDown)
             {
-                switch(keyEvent.key)
+                switch (keyEvent.key)
                 {
                 case KeyboardEvent::Key::F12:
                     mCaptureScreen = true;
@@ -115,7 +115,7 @@ namespace Falcor
                     onDataReload();
                     break;
                 case KeyboardEvent::Key::Escape:
-                    if(mVideoCapture.pVideoCapture)
+                    if (mVideoCapture.pVideoCapture)
                     {
                         endVideoCapture();
                     }
@@ -137,7 +137,7 @@ namespace Falcor
 
     void Sample::handleMouseEvent(const MouseEvent& mouseEvent)
     {
-        if(mpGui->onMouseEvent(mouseEvent))
+        if (mpGui->onMouseEvent(mouseEvent))
         {
             return;
         }
@@ -149,7 +149,7 @@ namespace Falcor
     // CSample functions
     Sample::~Sample()
     {
-        if(mVideoCapture.pVideoCapture)
+        if (mVideoCapture.pVideoCapture)
         {
             endVideoCapture();
         }
@@ -278,7 +278,7 @@ namespace Falcor
         mpGui->addText("Keyboard Shortcuts");
         mpGui->addTooltip(help, true);
 
-        if(mpGui->beginGroup("Global Controls"))
+        if (mpGui->beginGroup("Global Controls"))
         {
             mpGui->addFloatVar("Time", mCurrentTime, 0, FLT_MAX);
             mpGui->addFloatVar("Time Scale", mTimeScale, 0, FLT_MAX);
@@ -339,7 +339,7 @@ namespace Falcor
         }
         {
             PROFILE(renderGUI);
-            if(mShowUI)
+            if (mShowUI)
             {
                 renderGUI();
             }
@@ -368,7 +368,7 @@ namespace Falcor
         std::string prefix = std::string(filename);
         std::string executableDir = getExecutableDirectory();
         std::string pngFile;
-        if(findAvailableFilename(prefix, executableDir, "png", pngFile))
+        if (findAvailableFilename(prefix, executableDir, "png", pngFile))
         {
             Texture::SharedPtr pTexture = gpDevice->getSwapChainFbo()->getColorTexture(0);
             pTexture->captureToFile(0, 0, pngFile);
@@ -389,7 +389,7 @@ namespace Falcor
     const std::string Sample::getFpsMsg() const
     {
         std::string s;
-        if(mShowText)
+        if (mShowText)
         {
             std::stringstream strstr;
             float msPerFrame = mFrameRate.getAverageFrameTime();
@@ -411,17 +411,17 @@ namespace Falcor
         mpPixelZoom->init(gpDevice->getSwapChainFbo().get());
     }
 
-    bool Sample::isKeyPressed(const KeyboardEvent::Key& key) const 
+    bool Sample::isKeyPressed(const KeyboardEvent::Key& key) const
     {
         return mPressedKeys.find(key) != mPressedKeys.cend();
     }
 
     void Sample::renderText(const std::string& msg, const glm::vec2& position, const glm::vec2 shadowOffset) const
     {
-        if(mShowText)
+        if (mShowText)
         {
             // Render outline first
-            if(shadowOffset.x != 0.f || shadowOffset.y != 0)
+            if (shadowOffset.x != 0.f || shadowOffset.y != 0)
             {
                 const glm::vec3 oldColor = mpTextRenderer->getTextColor();
                 mpTextRenderer->setTextColor(glm::vec3(0.f));   // Black outline 
@@ -439,7 +439,7 @@ namespace Falcor
     void Sample::printProfileData()
     {
 #if _PROFILING_ENABLED
-        if(gProfileEnabled)
+        if (gProfileEnabled)
         {
             std::string profileMsg;
             Profiler::endFrame(profileMsg);
@@ -450,7 +450,7 @@ namespace Falcor
 
     void Sample::initVideoCapture()
     {
-        if(mVideoCapture.pUI == nullptr)
+        if (mVideoCapture.pUI == nullptr)
         {
             mVideoCapture.pUI = VideoEncoderUI::create(20, 300, 240, 220, [this]() {startVideoCapture(); }, [this]() {endVideoCapture(); });
         }
@@ -458,17 +458,17 @@ namespace Falcor
 
     void Sample::startVideoCapture()
     {
-        // create the capture object and frame buffer
+        // Create the Capture Object and Framebuffer.
         VideoEncoder::Desc desc;
-        desc.flipY      = false;
-        desc.codec      = mVideoCapture.pUI->getCodec();
-        desc.filename   = mVideoCapture.pUI->getFilename();
-        desc.format     = VideoEncoder::InputFormat::R8G8B8A8;
-        desc.fps        = mVideoCapture.pUI->getFPS();
-        desc.height     = mpDefaultFBO->getHeight();
-        desc.width      = mpDefaultFBO->getWidth();
+        desc.flipY = false;
+        desc.codec = mVideoCapture.pUI->getCodec();
+        desc.filename = mVideoCapture.pUI->getFilename();
+        desc.format = VideoEncoder::InputFormat::R8G8B8A8;
+        desc.fps = mVideoCapture.pUI->getFPS();
+        desc.height = mpDefaultFBO->getHeight();
+        desc.width = mpDefaultFBO->getWidth();
         desc.bitrateMbps = mVideoCapture.pUI->getBitrate();
-        desc.gopSize    = mVideoCapture.pUI->getGopSize();
+        desc.gopSize = mVideoCapture.pUI->getGopSize();
 
         mVideoCapture.pVideoCapture = VideoEncoder::create(desc);
 
@@ -477,23 +477,23 @@ namespace Falcor
 
         mVideoCapture.timeDelta = 1 / (float)desc.fps;
 
-        if(mVideoCapture.pUI->useTimeRange())
+        if (mVideoCapture.pUI->useTimeRange())
         {
-            if(mVideoCapture.pUI->getStartTime() > mVideoCapture.pUI->getEndTime())
+            if (mVideoCapture.pUI->getStartTime() > mVideoCapture.pUI->getEndTime())
             {
                 mVideoCapture.timeDelta = -mVideoCapture.timeDelta;
             }
             mCurrentTime = mVideoCapture.pUI->getStartTime();
-            if(!mVideoCapture.pUI->captureUI())
+            if (!mVideoCapture.pUI->captureUI())
             {
                 mShowUI = false;
             }
         }
     }
-
+    
     void Sample::endVideoCapture()
     {
-        if(mVideoCapture.pVideoCapture)
+        if (mVideoCapture.pVideoCapture)
         {
             mVideoCapture.pVideoCapture->endCapture();
             mShowUI = true;
@@ -505,32 +505,32 @@ namespace Falcor
 
     void Sample::captureVideoFrame()
     {
-        if(mVideoCapture.pVideoCapture)
+        if (mVideoCapture.pVideoCapture)
         {
             mVideoCapture.pVideoCapture->appendFrame(mpRenderContext->readTextureSubresource(mpDefaultFBO->getColorTexture(0).get(), 0).data());
 
-            if(mVideoCapture.pUI->useTimeRange())
+            if (mVideoCapture.pUI->useTimeRange())
             {
-                if(mVideoCapture.timeDelta >= 0)
+                if (mVideoCapture.timeDelta >= 0)
                 {
-                    if(mCurrentTime >= mVideoCapture.pUI->getEndTime())
+                    if (mCurrentTime >= mVideoCapture.pUI->getEndTime())
                     {
                         endVideoCapture();
                     }
                 }
-                else if(mCurrentTime < mVideoCapture.pUI->getEndTime())
+                else if (mCurrentTime < mVideoCapture.pUI->getEndTime())
                 {
                     endVideoCapture();
                 }
             }
         }
     }
-
+    
     void Sample::shutdownApp()
     {
         mpWindow->shutdown();
     }
-
+    
     void Sample::pollForEvents()
     {
         mpWindow->pollForEvents();

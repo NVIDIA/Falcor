@@ -53,7 +53,7 @@ namespace Falcor
     struct SampleConfig
     {
         Window::Desc windowDesc;            ///< Controls window and creation
-		Device::Desc deviceDesc;			///< Controls device creation;
+        Device::Desc deviceDesc;			///< Controls device creation;
         bool showMessageBoxOnError = _SHOW_MB_BY_DEFAULT; ///< Show message box on framework/API errors.
         float timeScale = 1;                ///< A scaling factor for the time elapsed between frames.
         bool freezeTimeOnStartup = false;   ///< Control whether or not to start the clock when the sample start running.
@@ -161,6 +161,7 @@ namespace Falcor
         float mCurrentTime = 0;                           ///< Global time
         ArgList mArgList;
 
+
     protected:
         void renderFrame() override;
         void handleWindowSizeChange() override;
@@ -168,9 +169,11 @@ namespace Falcor
         void handleMouseEvent(const MouseEvent& mouseEvent) override;
         virtual float getTimeScale() final { return mTimeScale; }
         void initVideoCapture();
+    
         void captureScreen();
         void toggleText(bool enabled);
         uint32_t getFrameID() const { return mFrameRate.getFrameCount(); }
+
     private:
         // Private functions
         void initUI();
@@ -206,5 +209,7 @@ namespace Falcor
         TextRenderer::UniquePtr mpTextRenderer;
         std::set<KeyboardEvent::Key> mPressedKeys;
         PixelZoom::SharedPtr mpPixelZoom;
+
+
     };
 };

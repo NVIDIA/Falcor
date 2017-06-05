@@ -76,6 +76,7 @@ namespace Falcor
 
         enum class TaskType
         {
+            MemoryCheck,
             LoadTime,
             MeasureFps,
             ScreenCapture,
@@ -131,6 +132,41 @@ namespace Falcor
         /** run tests that start at a particular time
         */
         void runTimeTests();
+
+        //  The Memory Check for one point.
+        struct MemoryCheck
+        {
+            float time;
+            float effectiveTime;
+            uint64_t frame;
+            uint64_t totalVirtualMemory;
+            uint64_t totalUsedVirtualMemory;
+            uint64_t currentlyUsedVirtualMemory;
+        };
+
+        //  The Memory Check Between Frames.
+        struct MemoryCheckRange
+        {
+            bool active = false;
+            MemoryCheck startCheck;
+            MemoryCheck endCheck;
+        };
+
+        //  The List of Memory Check Ranges.
+        MemoryCheckRange mMemoryFrameCheckRange;
+        MemoryCheckRange mMemoryTimeCheckRange;
+
+        /** Capture the Current Memory and write it to the provided memory check.
+        */
+        void getMemoryStatistics(MemoryCheck& memoryCheck);
+
+        /** Write the Memory Check Range in terms of Time to a file. Outputs Difference, Start and End Frames.
+        */
+        void writeMemoryRange(const MemoryCheckRange& memoryCheckRange, bool frameTest = true);
+
+        /** Capture the Memory Snapshot.
+        */
+        void captureMemory(uint64_t frameCount, float currentTime, bool frameTest = true, bool endRange = false);
 
     };
 }
