@@ -40,7 +40,7 @@ namespace Falcor
     CopyContext::SharedPtr CopyContext::create()
     {
         SharedPtr pCtx = SharedPtr(new CopyContext());
-        pCtx->mpLowLevelData = LowLevelContextData::create(LowLevelContextData::CommandListType::Copy);
+        pCtx->mpLowLevelData = LowLevelContextData::create(LowLevelContextData::CommandQueueType::Copy);
         return pCtx->mpLowLevelData ? pCtx : nullptr;
     }
 

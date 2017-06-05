@@ -55,7 +55,7 @@ namespace Falcor
         bool isWindowOccluded = false;
         GpuFence::SharedPtr pFrameFence;
 
-        std::vector<ID3D12CommandQueuePtr> queues[(uint32_t)Device::CommandQueueType::Count];
+        std::vector<ID3D12CommandQueuePtr> queues[(uint32_t)LowLevelContextData::CommandQueueType::Count];
     };
 
     void releaseFboData(DeviceData* pData)
@@ -189,21 +189,21 @@ namespace Falcor
         return nullptr;
     }
 
-    CommandQueueHandle Device::getCommandQueueHandle(CommandQueueType type, uint32_t index) const
+    CommandQueueHandle Device::getCommandQueueHandle(LowLevelContextData::CommandQueueType type, uint32_t index) const
     {
         DeviceData* pData = (DeviceData*)mpPrivateData;
         return pData->queues[(uint32_t)type][index];
     }
 
-    ApiCommandQueueType Device::getApiCommandQueueType(CommandQueueType type) const
+    ApiCommandQueueType Device::getApiCommandQueueType(LowLevelContextData::CommandQueueType type) const
     {
         switch (type)
         {
-        case CommandQueueType::Copy:
+        case LowLevelContextData::CommandQueueType::Copy:
             return D3D12_COMMAND_LIST_TYPE_COPY;
-        case CommandQueueType::Compute:
+        case LowLevelContextData::CommandQueueType::Compute:
             return D3D12_COMMAND_LIST_TYPE_COMPUTE;
-        case CommandQueueType::Direct:
+        case LowLevelContextData::CommandQueueType::Direct:
             return D3D12_COMMAND_LIST_TYPE_DIRECT;
         default:
             should_not_get_here();

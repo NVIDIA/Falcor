@@ -38,7 +38,7 @@ namespace Falcor
     RenderContext::SharedPtr RenderContext::create()
     {
         SharedPtr pCtx = SharedPtr(new RenderContext());
-        pCtx->mpLowLevelData = LowLevelContextData::create(LowLevelContextData::CommandListType::Direct);
+        pCtx->mpLowLevelData = LowLevelContextData::create(LowLevelContextData::CommandQueueType::Direct);
         if (pCtx->mpLowLevelData == nullptr)
         {
             return nullptr;
