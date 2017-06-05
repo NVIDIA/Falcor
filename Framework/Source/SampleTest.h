@@ -156,8 +156,8 @@ namespace Falcor
 
 
         //	The List of Memory Check Ranges.
-        MemoryCheckRange memoryFrameCheckRange;
-        MemoryCheckRange memoryTimeCheckRange;
+        MemoryCheckRange mMemoryFrameCheckRange;
+        MemoryCheckRange mMemoryTimeCheckRange;
 
 
 

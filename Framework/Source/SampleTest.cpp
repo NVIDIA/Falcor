@@ -606,35 +606,35 @@ namespace Falcor
     //	Capture the Memory and return a representative string.
     void SampleTest::captureMemory(uint64_t frameCount, float currentTime, bool frameTest /*= true*/, bool endRange /*= false*/)
     {
-        if (frameTest && !endRange && !memoryFrameCheckRange.active)
+        if (frameTest && !endRange && !mMemoryFrameCheckRange.active)
         {
-            getMemoryStatistics(memoryFrameCheckRange.startCheck);
-            memoryFrameCheckRange.startCheck.frame = frameCount;
-            memoryFrameCheckRange.startCheck.effectiveTime = currentTime;
-            memoryFrameCheckRange.active = true;
+            getMemoryStatistics(mMemoryFrameCheckRange.startCheck);
+            mMemoryFrameCheckRange.startCheck.frame = frameCount;
+            mMemoryFrameCheckRange.startCheck.effectiveTime = currentTime;
+            mMemoryFrameCheckRange.active = true;
         }
-        else if (frameTest && endRange && memoryFrameCheckRange.active)
+        else if (frameTest && endRange && mMemoryFrameCheckRange.active)
         {
-            getMemoryStatistics(memoryFrameCheckRange.endCheck);
-            memoryFrameCheckRange.endCheck.frame = frameCount;
-            memoryFrameCheckRange.endCheck.effectiveTime = currentTime;
-            writeMemoryRange(memoryFrameCheckRange, true);
-            memoryFrameCheckRange.active = false;
+            getMemoryStatistics(mMemoryFrameCheckRange.endCheck);
+            mMemoryFrameCheckRange.endCheck.frame = frameCount;
+            mMemoryFrameCheckRange.endCheck.effectiveTime = currentTime;
+            writeMemoryRange(mMemoryFrameCheckRange, true);
+            mMemoryFrameCheckRange.active = false;
         }
-        else if (!frameTest && !endRange && !memoryTimeCheckRange.active)
+        else if (!frameTest && !endRange && !mMemoryTimeCheckRange.active)
         {
-            getMemoryStatistics(memoryTimeCheckRange.startCheck);
-            memoryTimeCheckRange.startCheck.frame = frameCount;
-            memoryTimeCheckRange.startCheck.effectiveTime = currentTime;
-            memoryTimeCheckRange.active = true;
+            getMemoryStatistics(mMemoryTimeCheckRange.startCheck);
+            mMemoryTimeCheckRange.startCheck.frame = frameCount;
+            mMemoryTimeCheckRange.startCheck.effectiveTime = currentTime;
+            mMemoryTimeCheckRange.active = true;
         }
-        else if (!frameTest && endRange && memoryTimeCheckRange.active)
+        else if (!frameTest && endRange && mMemoryTimeCheckRange.active)
         {
-            getMemoryStatistics(memoryTimeCheckRange.endCheck);
-            memoryTimeCheckRange.endCheck.frame = frameCount;
-            memoryTimeCheckRange.endCheck.effectiveTime = currentTime;
-            writeMemoryRange(memoryTimeCheckRange, false);
-            memoryTimeCheckRange.active = false;
+            getMemoryStatistics(mMemoryTimeCheckRange.endCheck);
+            mMemoryTimeCheckRange.endCheck.frame = frameCount;
+            mMemoryTimeCheckRange.endCheck.effectiveTime = currentTime;
+            writeMemoryRange(mMemoryTimeCheckRange, false);
+            mMemoryTimeCheckRange.active = false;
         }
     }
 
