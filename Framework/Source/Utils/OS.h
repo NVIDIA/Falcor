@@ -225,13 +225,13 @@ namespace Falcor
     */
     uint64_t getTotalVirtualMemory();
 
-    /**	Get the Used Virtual Memory.
+    /** Get the Used Virtual Memory.
     */
     uint64_t getUsedVirtualMemory();
 
-    /**	Get the Virtual Memory Used by this Process.
+    /** Get the Virtual Memory Used by this Process.
     */
     uint64_t  getProcessUsedVirtualMemory();
 
-	/*! @} */
+    /*! @} */
 };

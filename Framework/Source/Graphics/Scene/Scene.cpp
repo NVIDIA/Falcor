@@ -201,13 +201,13 @@ namespace Falcor
         //  Check if there is only one instance left.
         if (instances.size() == 1)
         {
-            //	Delete the entire model, since it will also erase the corresponding instance.
+            //  Delete the entire model, since it will also erase the corresponding instance.
             assert(instanceID == 0);
             deleteModel(modelID);
         }
         else
         {
-            //	Erase the instance.
+            //  Erase the instance.
             instances.erase(instances.begin() + instanceID);
         }
 
