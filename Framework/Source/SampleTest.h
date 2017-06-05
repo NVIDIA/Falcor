@@ -133,7 +133,7 @@ namespace Falcor
         */
         void runTimeTests();
 
-        //	The Memory Check for one point.
+        //  The Memory Check for one point.
         struct MemoryCheck
         {
             float time;
@@ -144,7 +144,7 @@ namespace Falcor
             uint64_t currentlyUsedVirtualMemory;
         };
 
-        //	The Memory Check Between Frames.
+        //  The Memory Check Between Frames.
         struct MemoryCheckRange
         {
             bool active = false;
@@ -152,17 +152,17 @@ namespace Falcor
             MemoryCheck endCheck;
         };
 
-        //	The List of Memory Check Ranges.
+        //  The List of Memory Check Ranges.
         MemoryCheckRange mMemoryFrameCheckRange;
         MemoryCheckRange mMemoryTimeCheckRange;
 
-        /**	Capture the Current Memory and write it to the provided memory check.
+        /** Capture the Current Memory and write it to the provided memory check.
         */
-        void getMemoryStatistics(MemoryCheck & memoryCheck);
+        void getMemoryStatistics(MemoryCheck& memoryCheck);
 
-        /**	Write the Memory Check Range in terms of Time to a file. Outputs Difference, Start and End Frames.
+        /** Write the Memory Check Range in terms of Time to a file. Outputs Difference, Start and End Frames.
         */
-        void writeMemoryRange(const MemoryCheckRange & memoryCheckRange, bool frameTest = true);
+        void writeMemoryRange(const MemoryCheckRange& memoryCheckRange, bool frameTest = true);
 
         /** Capture the Memory Snapshot.
         */

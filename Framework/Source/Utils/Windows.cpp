@@ -176,8 +176,8 @@ namespace Falcor
 
     std::string canonicalizeFilename(const std::string& filename)
     {
-        //It might be tempting to try to figure out a nicer bound ourselves, but the documentation says "You must set the
-        //	size of this buffer to MAX_PATH to ensure that it is large enough to hold the returned string.".
+        //  It might be tempting to try to figure out a nicer bound ourselves, but the documentation says "You must set the
+        //  size of this buffer to MAX_PATH to ensure that it is large enough to hold the returned string.".
         char buffer[MAX_PATH];
         PathCanonicalizeA(buffer, filename.c_str());
         return replaceSubstring(buffer, "/", "\\");

@@ -46,11 +46,11 @@ namespace Falcor
     }
 
     void SampleTest::beginTestFrame()
-    {	
+    {   
         if (!hasTests()) return;
 
         uint32_t frameId = frameRate().getFrameCount();
-        //	Check if it's time for a time based task
+        //  Check if it's time for a time based task
         if (mCurrentTimeTest != mTimedTestTasks.end() && mCurrentTime >= mCurrentTimeTest->mStartTime)
         {
             if (mCurrentTimeTest->mTask == TaskType::ScreenCapture)
@@ -62,9 +62,9 @@ namespace Falcor
             }
             else if (mCurrentTimeTest->mTask == TaskType::MeasureFps)
             {
-                //	Mark the start frame. Required for time based perf ranges to know the 
-                //	Amount of frames that passed in the time range to calculate the avg frame time
-                //	Across the perf range
+                //  Mark the start frame. Required for time based perf ranges to know the 
+                //  Amount of frames that passed in the time range to calculate the avg frame time
+                //  Across the perf range
                 if (mCurrentTimeTest->mStartFrame == 0)
                 {
                     mCurrentTimeTest->mStartFrame = frameRate().getFrameCount();
@@ -74,7 +74,7 @@ namespace Falcor
 
             mCurrentTrigger = TriggerType::Time;
         }
-        //	Check if it's the frame for a frame based task
+        //  Check if it's the frame for a frame based task
         else if (mCurrentFrameTest != mTestTasks.end() && frameId >= mCurrentFrameTest->mStartFrame)
         {
             if (mCurrentFrameTest->mTask == TaskType::ScreenCapture)
@@ -198,14 +198,14 @@ namespace Falcor
 
     void SampleTest::initFrameTests()
     {
-        //	Load time
+        //  Load time
         if (mArgList.argExists("loadtime"))
         {
             Task newTask(2u, 3u, TaskType::LoadTime);
             mTestTasks.push_back(newTask);
         }
 
-        //	Shutdown
+        //  Shutdown
         std::vector<ArgList::Arg> shutdownFrame = mArgList.getValues("shutdown");
         if (!shutdownFrame.empty())
         {
@@ -214,7 +214,7 @@ namespace Falcor
             mTestTasks.push_back(newTask);
         }
 
-        //	Memory Check Frames.
+        //  Memory Check Frames.
         std::vector<ArgList::Arg> mCheckFrames = mArgList.getValues("memframes");
         for (uint32_t i = 0; i < mCheckFrames.size(); ++i)
         {
@@ -233,7 +233,7 @@ namespace Falcor
             mTestTasks.push_back(memoryCheckTask);
         }
 
-        //	Screenshot Frames
+        //  Screenshot Frames
         std::vector<ArgList::Arg> ssFrames = mArgList.getValues("ssframes");
         for (uint32_t i = 0; i < ssFrames.size(); ++i)
         {
@@ -242,10 +242,10 @@ namespace Falcor
             mTestTasks.push_back(newTask);
         }
 
-        //	fps capture frames
+        //  fps capture frames
         std::vector<ArgList::Arg> fpsRange = mArgList.getValues("perfframes");
 
-        //	integer division on purpose, only care about ranges with start and end
+        //  integer division on purpose, only care about ranges with start and end
         size_t numRanges = fpsRange.size() / 2;
         if (fpsRange.size() % 2 != 0)
         {
@@ -299,7 +299,7 @@ namespace Falcor
 
     void SampleTest::initTimeTests()
     {
-        // Screenshots
+        //  Screenshots
         std::vector<ArgList::Arg> timedScreenshots = mArgList.getValues("sstimes");
         for (auto it = timedScreenshots.begin(); it != timedScreenshots.end(); ++it)
         {
@@ -308,7 +308,7 @@ namespace Falcor
             mTimedTestTasks.push_back(newTask);
         }
 
-        //	Memory Check Times.
+        //  Memory Check Times.
         std::vector<ArgList::Arg> mCheckTimes = mArgList.getValues("memtimes");
         for (uint32_t i = 0; i < mCheckTimes.size(); ++i)
         {
@@ -499,7 +499,7 @@ namespace Falcor
     //  Write the Memory Check Range, either in terms of Time or Frames to a file. Outputs Difference, Start and End Times and Memories.
     void SampleTest::writeMemoryRange(const MemoryCheckRange & memoryCheckRange, bool frameTest /*= true*/)
     {
-        //	Get the Strings for the Memory in Bytes - Start Frame
+        //  Get the Strings for the Memory in Bytes - Start Frame
         std::string startTVM_B = std::to_string(memoryCheckRange.startCheck.totalVirtualMemory);
         std::string startTUVM_B = std::to_string(memoryCheckRange.startCheck.totalUsedVirtualMemory);
         std::string startCUVM_B = std::to_string(memoryCheckRange.startCheck.currentlyUsedVirtualMemory);
@@ -522,7 +522,7 @@ namespace Falcor
         startCheck = startCheck + ("Total Used Virtual Memory By All Processes : " + startTUVM_B + " bytes, " + startTUVM_MB + " MB. \n");
         startCheck = startCheck + ("Virtual Memory used by this Process : " + startCUVM_B + " bytes, " + startCUVM_MB + " MB. \n \n");
 
-        //	Get the Strings for the Memory in Bytes - End Frame
+        //  Get the Strings for the Memory in Bytes - End Frame
         std::string endTVM_B = std::to_string(memoryCheckRange.endCheck.totalVirtualMemory);
         std::string endTUVM_B = std::to_string(memoryCheckRange.endCheck.totalUsedVirtualMemory);
         std::string endCUVM_B = std::to_string(memoryCheckRange.endCheck.currentlyUsedVirtualMemory);
@@ -582,10 +582,10 @@ namespace Falcor
         }
         std::string executableDir = getExecutableDirectory();
         std::string txtFile;
-        //	Get an available filename.
+        //  Get an available filename.
         if (findAvailableFilename(prefix, executableDir, "txt", txtFile))
         {
-            //	Output the memory check.
+            //  Output the memory check.
             std::ofstream of;
             of.open(txtFile);
             of << keystring;
@@ -603,7 +603,7 @@ namespace Falcor
 
 
 
-    //	Capture the Memory and return a representative string.
+    //  Capture the Memory and return a representative string.
     void SampleTest::captureMemory(uint64_t frameCount, float currentTime, bool frameTest /*= true*/, bool endRange /*= false*/)
     {
         if (frameTest && !endRange && !mMemoryFrameCheckRange.active)
