@@ -75,7 +75,7 @@ namespace Falcor
                 TypedBuffer* mpBuffer;
             };
 
-            TypedElement operator[](uint32_t index) { return TypedElement(get(), index); }
+            TypedElement operator[](uint32_t index) { return TypedElement(std::shared_ptr<TypedBuffer>::get(), index); }
         };
 
         using SharedConstPtr = std::shared_ptr<const TypedBuffer>;

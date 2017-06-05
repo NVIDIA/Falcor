@@ -45,7 +45,7 @@ namespace Falcor
         // Names are unique regardless of buffer type. Search in each map
         for (const auto& desc : mBuffers)
         {
-            auto& it = desc.nameMap.find(name);
+            const auto& it = desc.nameMap.find(name);
             if (it != desc.nameMap.end())
             {
                 return it->second;
@@ -72,7 +72,7 @@ namespace Falcor
         offset = kInvalidLocation;
 
         // Look for the variable
-        auto& var = mVariables.find(name);
+        auto&& var = mVariables.find(name);
 
 #ifdef FALCOR_DX11
         if (var == mVariables.end())
@@ -133,7 +133,7 @@ namespace Falcor
     ProgramReflection::BufferReflection::SharedConstPtr ProgramReflection::getBufferDesc(uint32_t bindLocation, ShaderAccess shaderAccess, BufferReflection::Type bufferType) const
     {
         const auto& descMap = mBuffers[uint32_t(bufferType)].descMap;
-        auto& desc = descMap.find({ bindLocation, shaderAccess });
+        const auto& desc = descMap.find({ bindLocation, shaderAccess });
         if (desc == descMap.end())
         {
             return nullptr;
@@ -153,7 +153,7 @@ namespace Falcor
 
     const ProgramReflection::Resource* ProgramReflection::BufferReflection::getResourceData(const std::string& name) const
     {
-        auto& it = mResources.find(name);
+        const auto& it = mResources.find(name);
         return it == mResources.end() ? nullptr : &(it->second);
     }
 
