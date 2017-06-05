@@ -31,7 +31,6 @@
 #include <memory>
 #include "glm/glm.hpp"
 #include <iostream>
-#include <string>
 #include "Utils/Logger.h"
 
 using namespace glm;

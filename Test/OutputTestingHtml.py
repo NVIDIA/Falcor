@@ -115,8 +115,8 @@ def getImageCompareResultsTable(slnInfo):
         for result in slnInfo.systemResultList:
             if len(result.CompareImageResults) > maxCols:
                 maxCols = len(result.CompareImageResults)
-        
-        if(maxCols > 0):        
+
+        if(maxCols > 0):
             html = '<table style="width:100%" border="1">\n'
             html += '<tr>\n'
             html += '<th colspan=\'' + str(maxCols + 1) + '\'>Image Compare Tests</th>\n'
@@ -143,12 +143,12 @@ def getImageCompareResultsTable(slnInfo):
 
 
 def getMemoryCompareResultsTable(slnInfo):
-    
-    
+
+
     if slnInfo.systemResultList:
 
         maxCols = 7
-        hasFrameCheck = False 
+        hasFrameCheck = False
         html = ''
 
         for result in slnInfo.systemResultList:
@@ -159,8 +159,8 @@ def getMemoryCompareResultsTable(slnInfo):
             html += '<table style="width:100%" border="1">\n'
             html += '<tr>\n'
             html += '<th colspan=\'' + str(maxCols) + '\'> Memory Frame Checks </th> \n'
-            html += '</tr>\n'            
-            html += '<th> Test </th> \n' + '<th> Start Frame </th> \n' + '<th> End Frame </th> \n' + '<th> Percent Difference </th> \n' + '<th> Start Frame Memory </th> \n' + '<th> End Frame Memory </th> \n' + '<th> Difference </th> \n'            
+            html += '</tr>\n'
+            html += '<th> Test </th> \n' + '<th> Start Frame </th> \n' + '<th> End Frame </th> \n' + '<th> Percent Difference </th> \n' + '<th> Start Frame Memory </th> \n' + '<th> End Frame Memory </th> \n' + '<th> Difference </th> \n'
 
             for result in slnInfo.systemResultList:
                 html += '<tr>\n'
@@ -172,11 +172,11 @@ def getMemoryCompareResultsTable(slnInfo):
                         html += '<td>' + str(compare[0]) + '</td>' + '<td>' + str(compare[1]) + '</td>' + '<td>' + str(compare[2]) + '</td>' + '<td>' + str(compare[3]) + '</td>' + '<td>' + str(compare[4]) + '</td>' + '<td>' + str(compare[5]) + '</td>'
 
                 html += '</tr>\n'
-        
+
             html += '</table>\n'
             html += '<br><br>'
 
-        hasTimeCheck = False 
+        hasTimeCheck = False
 
         for result in slnInfo.systemResultList:
             if len(result.CompareMemoryTimeResults) > 0:
@@ -186,8 +186,8 @@ def getMemoryCompareResultsTable(slnInfo):
             html += '<table style="width:100%" border="1">\n'
             html += '<tr>\n'
             html += '<th colspan=\'' + str(maxCols) + '\'> Memory Time Checks </th> \n'
-            html += '</tr>\n'            
-            html += '<th> Test </th> \n' + '<th> Start Time </th> \n' + '<th> End Time </th> \n' + '<th> Percent Difference </th> \n' + '<th> Start Time Memory </th> \n' + '<th> End Time Memory </th> \n' + '<th> Difference </th> \n'            
+            html += '</tr>\n'
+            html += '<th> Test </th> \n' + '<th> Start Time </th> \n' + '<th> End Time </th> \n' + '<th> Percent Difference </th> \n' + '<th> Start Time Memory </th> \n' + '<th> End Time Memory </th> \n' + '<th> Difference </th> \n'
 
             for result in slnInfo.systemResultList:
                 for compare in result.CompareMemoryTimeResults:
@@ -199,15 +199,15 @@ def getMemoryCompareResultsTable(slnInfo):
                         html += '<td>' + str(compare[0]) + '</td>' + '<td>' + str(compare[1]) + '</td>' + '<td>' + str(compare[2]) + '</td>' + '<td>' + str(compare[3]) + '</td>' + '<td>' + str(compare[4]) + '</td>' + '<td>' + str(compare[5]) + '</td> \n'
 
                     html += '</tr>\n'
-        
+
             html += '</table>\n'
             html += '<br><br>'
-            
+
         return html
 
     else:
         return ''
-                    
+
 
 
 

@@ -1,3 +1,0 @@
-[../Falcor.sln {Released3d12 ..\Bin\x64\Release\}
-ShaderBuffers {-test -memchecktimes 240-3840 -ssframes 50 -shutdowntime 4000} {released3d12}
-]

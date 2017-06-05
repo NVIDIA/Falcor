@@ -1,1 +1,0 @@
-call python.exe RunAllTests.py -nb -ss -ref \\netapp-wa02\public\Falcor\ReferenceResultsHub -tests MemoryTestList.txt

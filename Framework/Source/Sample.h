@@ -53,7 +53,7 @@ namespace Falcor
     struct SampleConfig
     {
         Window::Desc windowDesc;            ///< Controls window and creation
-		Device::Desc deviceDesc;			///< Controls device creation;
+        Device::Desc deviceDesc;			///< Controls device creation;
         bool showMessageBoxOnError = _SHOW_MB_BY_DEFAULT; ///< Show message box on framework/API errors.
         float timeScale = 1;                ///< A scaling factor for the time elapsed between frames.
         bool freezeTimeOnStartup = false;   ///< Control whether or not to start the clock when the sample start running.
@@ -161,29 +161,6 @@ namespace Falcor
         float mCurrentTime = 0;                           ///< Global time
         ArgList mArgList;
 
-		//	The Memory Check for one frame.
-		struct MemoryCheck
-		{	
-			unsigned long pFrame;
-			float pTime;
-			float pEffectiveTime;
-			unsigned long long pTotalVirtualMemory;
-			unsigned long long pTotalUsedVirtualMemory;
-			unsigned long long pCurrentlyUsedVirtualMemory;
-		};
-
-		//	The Memory Check Between Frames.
-		struct MemoryCheckRange
-		{
-			bool active = false;
-			MemoryCheck startCheck;
-			MemoryCheck endCheck;
-		};
-
-		//	The List of Memory Check Ranges.
-		MemoryCheckRange memoryFrameCheckRange;
-		MemoryCheckRange memoryTimeCheckRange;
-
 
     protected:
         void renderFrame() override;
@@ -192,29 +169,12 @@ namespace Falcor
         void handleMouseEvent(const MouseEvent& mouseEvent) override;
         virtual float getTimeScale() final { return mTimeScale; }
         void initVideoCapture();
-	
-		/**	Capture the Current Memory and write it to the provided memory check.
-		*/
-		void getMemoryStatistics(MemoryCheck & memoryCheck);
-
-		/**	Write the Memory Check Range in terms of Frames to a file. Outputs Difference, Start and End Frames.
-		*/
-		void writeMemoryFrameRange(const MemoryCheckRange & memoryCheckRange);
-
-		/**	Write the Memory Check Range in terms of Time to a file. Outputs Difference, Start and End Frames.
-		*/
-		void writeMemoryTimeRange(const MemoryCheckRange & memoryCheckRange);
-
-		/** Capture the Memory Snapshot.
-		*/
-		void captureMemory(bool frameTest = true, bool endRange = false);
-
-
-		void captureScreen();
+    
+        void captureScreen();
         void toggleText(bool enabled);
         uint32_t getFrameID() const { return mFrameRate.getFrameCount(); }
 
-	private:
+    private:
         // Private functions
         void initUI();
         void printProfileData();
