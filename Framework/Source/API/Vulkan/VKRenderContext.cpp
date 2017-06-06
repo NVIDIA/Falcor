@@ -83,11 +83,9 @@ namespace Falcor
         VkCommandBuffer mCmdBuffer;
     };
 
-    RenderContext::SharedPtr RenderContext::create()
+    RenderContext::SharedPtr RenderContext::create(CommandQueueHandle queue)
     {
         SharedPtr pCtx = SharedPtr(new RenderContext());
-
-        CommandQueueHandle queue = gpDevice->getCommandQueueHandle(LowLevelContextData::CommandQueueType::Direct, 0);
         pCtx->mpLowLevelData = LowLevelContextData::create(LowLevelContextData::CommandQueueType::Direct, queue);
         if (pCtx->mpLowLevelData == nullptr)
         {

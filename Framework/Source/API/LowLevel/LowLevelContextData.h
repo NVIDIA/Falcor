@@ -36,9 +36,7 @@ namespace Falcor
         using SharedPtr = std::shared_ptr<LowLevelContextData>;
         using SharedConstPtr = std::shared_ptr<const LowLevelContextData>;
 
-
         // #VKTODO Is there a better name for this that isn't specific to pool/allocator, queue, and list?
-        // #VKTODO The creation has been moved to device, but this enum can't be moved to Device then included in this file.
         enum class CommandQueueType
         {
             Copy,

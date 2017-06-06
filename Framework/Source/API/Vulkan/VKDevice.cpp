@@ -496,7 +496,7 @@ namespace Falcor
         //mpCpuUavHeap = DescriptorHeap::create(DescriptorHeap::Type::SRV, 2 * 1024, false);
 
         //// Create the swap-chain
-        mpRenderContext = RenderContext::create();
+        mpRenderContext = RenderContext::create(getCommandQueueHandle(LowLevelContextData::CommandQueueType::Direct, 0));
         
         //mpResourceAllocator = ResourceAllocator::create(1024 * 1024 * 2, mpRenderContext->getLowLevelData()->getFence());
 

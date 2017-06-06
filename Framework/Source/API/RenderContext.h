@@ -55,7 +55,7 @@ namespace Falcor
 
         /** create a new object
         */
-        static SharedPtr create();
+        static SharedPtr create(CommandQueueHandle queue);
 
         /** Clear an FBO
             \param[in] pFbo The FBO to clear

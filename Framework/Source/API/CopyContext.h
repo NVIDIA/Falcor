@@ -43,7 +43,7 @@ namespace Falcor
         using SharedConstPtr = std::shared_ptr<const CopyContext>;
         virtual ~CopyContext();
 
-        static SharedPtr create();
+        static SharedPtr create(CommandQueueHandle queue);
         void updateBuffer(const Buffer* pBuffer, const void* pData, size_t offset = 0, size_t size = 0);
         void updateTexture(const Texture* pTexture, const void* pData);
         void updateTextureSubresource(const Texture* pTexture, uint32_t subresourceIndex, const void* pData);

@@ -329,16 +329,16 @@ namespace Falcor
         // Create Queues
         //
 
-        for (uint32_t i = 0; i < (uint32_t)Device::CommandQueueType::Count; i++)
+        for (uint32_t i = 0; i < (uint32_t)LowLevelContextData::CommandQueueType::Count; i++)
         {
-            const uint32_t queueCount = (i == (uint32_t)Device::CommandQueueType::Direct) ? desc.additionalQueues[i] + 1 : desc.additionalQueues[i];
+            const uint32_t queueCount = (i == (uint32_t)LowLevelContextData::CommandQueueType::Direct) ? desc.additionalQueues[i] + 1 : desc.additionalQueues[i];
 
             for (uint32_t j = 0; j < queueCount; j++)
             {
                 // Create the command queue
                 D3D12_COMMAND_QUEUE_DESC cqDesc = {};
                 cqDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
-                cqDesc.Type = getApiCommandQueueType((Device::CommandQueueType)i);
+                cqDesc.Type = getApiCommandQueueType((LowLevelContextData::CommandQueueType)i);
 
                 ID3D12CommandQueuePtr pQueue;
                 if (FAILED(mApiHandle->CreateCommandQueue(&cqDesc, IID_PPV_ARGS(&pQueue))))
@@ -351,7 +351,7 @@ namespace Falcor
             }
         }
         
-        mpRenderContext = RenderContext::create();
+        mpRenderContext = RenderContext::create(getCommandQueueHandle(LowLevelContextData::CommandQueueType::Direct, 0));
         
         //
         // Create the descriptor heaps

@@ -37,10 +37,10 @@ namespace Falcor
 
     ComputeContext::~ComputeContext() = default;
 
-    ComputeContext::SharedPtr ComputeContext::create(Queue!)
+    ComputeContext::SharedPtr ComputeContext::create(CommandQueueHandle queue)
     {
         SharedPtr pCtx = SharedPtr(new ComputeContext());
-        pCtx->mpLowLevelData = LowLevelContextData::create(LowLevelContextData::CommandQueueType::Compute, Queue!);
+        pCtx->mpLowLevelData = LowLevelContextData::create(LowLevelContextData::CommandQueueType::Compute, queue);
         if (pCtx->mpLowLevelData == nullptr)
         {
             return nullptr;
