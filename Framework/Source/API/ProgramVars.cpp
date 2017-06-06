@@ -234,9 +234,14 @@ namespace Falcor
         {
             auto uavIt = assignedUavs.find(regIndex);
             assert(uavIt != assignedUavs.end());
+            auto resUav = resource ? resource->getUAV() : nullptr;
 
-            uavIt->second.pResource = resource;
-            uavIt->second.pView = resource ? resource->getUAV() : nullptr;
+            if(uavIt->second.pView != resUav)
+            {
+                uavIt->second.pDescSet = nullptr;
+                uavIt->second.pResource = resource;
+                uavIt->second.pView = resUav;
+            }
             break;
         }
 
@@ -245,8 +250,14 @@ namespace Falcor
             auto srvIt = assignedSrvs.find(regIndex);
             assert(srvIt != assignedSrvs.end());
 
-            srvIt->second.pResource = resource;
-            srvIt->second.pView = resource ? resource->getSRV() : nullptr;
+            auto resSrv = resource ? resource->getSRV() : nullptr;
+
+            if(srvIt->second.pView != resSrv)
+            {
+                srvIt->second.pDescSet = nullptr;
+                srvIt->second.pResource = resource;
+                srvIt->second.pView = resSrv;
+            }
             break;
         }
 
@@ -432,7 +443,12 @@ namespace Falcor
 
     bool ProgramVars::setSampler(uint32_t index, const Sampler::SharedPtr& pSampler)
     {
-        mAssignedSamplers.at(index).pSampler = pSampler;
+        auto& it = mAssignedSamplers.at(index);
+        if(it.pSampler != pSampler)
+        {
+            it.pSampler = pSampler;
+            it.pDescSet = nullptr;
+        }
         return true;
     }
 
@@ -538,10 +554,12 @@ namespace Falcor
         auto it = mAssignedSrvs.find(index);
         if (it != mAssignedSrvs.end())
         {
-            it->second.pView = pSrv;
-
-            // TODO: Fix resource/view const-ness so we don't need to do this
-            it->second.pResource = getResourceFromView(pSrv.get());
+            if(it->second.pView != pSrv)
+            {
+                it->second.pDescSet = nullptr;
+                it->second.pView = pSrv;
+                it->second.pResource = getResourceFromView(pSrv.get()); // TODO: Fix resource/view const-ness so we don't need to do this
+            }
         }
         else
         {
@@ -557,10 +575,12 @@ namespace Falcor
         auto it = mAssignedUavs.find(index);
         if (it != mAssignedUavs.end())
         {
-            it->second.pView = pUav;
-
-            // TODO: Fix resource/view const-ness so we don't need to do this
-            it->second.pResource = getResourceFromView(pUav.get());
+            if(it->second.pView != pUav)
+            {
+                it->second.pDescSet = nullptr;
+                it->second.pView = pUav;                
+                it->second.pResource = getResourceFromView(pUav.get()); // TODO: Fix resource/view const-ness so we don't need to do this
+            }
         }
         else
         {
@@ -577,7 +597,7 @@ namespace Falcor
         ID3D12GraphicsCommandList* pList = pContext->getLowLevelData()->getCommandList();
         for (auto& resIt : resMap)
         {
-            const auto& resDesc = resIt.second;
+            auto& resDesc = resIt.second;
             uint32_t rootOffset = resDesc.rootSigOffset;
             const Resource* pResource = resDesc.pResource.get();
 
@@ -622,23 +642,17 @@ namespace Falcor
             }
 
             // Allocate a GPU descriptor
-            HeapGpuHandle viewHandle;
-            if (isUav)
+            if (resDesc.pDescSet == nullptr)
             {
                 DescriptorSet::Layout layout;
-                layout.addRange(DescriptorSet::Type::Srv, 1);
-                DescriptorSet::SharedPtr pSet = DescriptorSet::create(gpDevice->getGpuDescriptorPool(), layout);
+                layout.addRange(isUav ? DescriptorSet::Type::Uav : DescriptorSet::Type::Srv, 1);
+                resDesc.pDescSet = DescriptorSet::create(gpDevice->getGpuDescriptorPool(), layout);
                 auto srcHandle = handle->getCpuHandle(0);
-                auto dstHandle = pSet->getCpuHandle(0);
+                auto dstHandle = resDesc.pDescSet->getCpuHandle(0);
                 gpDevice->getApiHandle()->CopyDescriptorsSimple(1, dstHandle, srcHandle, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-                viewHandle = pSet->getGpuHandle(0);
-            }
-            else
-            {
-                viewHandle = handle->getGpuHandle(0);
             }
 
-
+            auto viewHandle = resDesc.pDescSet->getGpuHandle(0);
             if(forGraphics)
             {
                 pList->SetGraphicsRootDescriptorTable(rootOffset, viewHandle);
@@ -694,7 +708,18 @@ namespace Falcor
                 pSampler = Sampler::getDefault().get();
             }
 
-            auto samplerHandler = pSampler->getApiHandle()->getGpuHandle(0);
+            // Allocate a GPU descriptor
+            if (samplerIt.second.pDescSet == nullptr)
+            {
+                DescriptorSet::Layout layout;
+                layout.addRange(DescriptorSet::Type::Sampler, 1);
+                samplerIt.second.pDescSet = DescriptorSet::create(gpDevice->getGpuDescriptorPool(), layout);
+                auto srcHandle = pSampler->getApiHandle()->getCpuHandle(0);
+                auto dstHandle = samplerIt.second.pDescSet->getCpuHandle(0);
+                gpDevice->getApiHandle()->CopyDescriptorsSimple(1, dstHandle, srcHandle, D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
+            }
+
+            auto samplerHandler = samplerIt.second.pDescSet->getGpuHandle(0);
 
             if (forGraphics)
             {

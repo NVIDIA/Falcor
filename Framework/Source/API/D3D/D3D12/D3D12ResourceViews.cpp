@@ -66,7 +66,7 @@ namespace Falcor
 
         DescriptorSet::Layout layout;
         layout.addRange(DescriptorSet::Type::Srv, 1);
-        ApiHandle handle = DescriptorSet::create(gpDevice->getGpuDescriptorPool(), layout);
+        ApiHandle handle = DescriptorSet::create(gpDevice->getCpuDescriptorPool(), layout);
         gpDevice->getApiHandle()->CreateShaderResourceView(pSharedPtr ? pSharedPtr->getApiHandle() : nullptr, &desc, handle->getCpuHandle(0));
 
         pObj = SharedPtr(new ShaderResourceView(pResource, handle, mostDetailedMip, mipCount, firstArraySlice, arraySize));

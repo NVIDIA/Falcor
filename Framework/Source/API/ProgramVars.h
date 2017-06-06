@@ -39,6 +39,7 @@ namespace Falcor
 {
     class ProgramVersion;
     class ComputeContext;
+    class DescriptorSet;
 
     /** This class manages a program's reflection and variable assignment.
         It's a high-level abstraction of variables-related concepts such as CBs, texture and sampler assignments, root-signature, descriptor tables, etc.
@@ -198,6 +199,7 @@ namespace Falcor
             typename ViewType::SharedPtr pView;
             Resource::SharedPtr pResource;
             uint32_t rootSigOffset = 0;
+            mutable std::shared_ptr<DescriptorSet> pDescSet;
         };
 
         template<>
@@ -205,6 +207,7 @@ namespace Falcor
         {
             Sampler::SharedPtr pSampler;
             uint32_t rootSigOffset = 0;
+            mutable std::shared_ptr<DescriptorSet> pDescSet;
         };
 
         template<typename T>

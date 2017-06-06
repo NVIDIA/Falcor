@@ -129,4 +129,5 @@ private:
 
     //Testing 
     void onInitializeTesting() override;
+    void onBeginTestFrame() override;
 };

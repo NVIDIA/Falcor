@@ -1,1 +1,1 @@
-call python.exe RunAllTests.py -ss -ref \\netapp-wa02\public\Falcor\ReferenceResultsHub -tests TestList.txt
+call python.exe RunAllTests.py -ss -ref \\netapp-wa02\public\Falcor\ReferenceResultsHub -tests TestListSamplesOnly.txt

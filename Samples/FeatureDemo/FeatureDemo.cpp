@@ -232,6 +232,15 @@ void FeatureDemo::ambientOcclusion()
     }
 }
 
+void FeatureDemo::onBeginTestFrame()
+{
+    if (mCurrentTrigger == SampleTest::TriggerType::None)
+    {
+        auto task = (mCurrentTrigger == SampleTest::TriggerType::Frame) ? mCurrentFrameTest->mTask : mCurrentTimeTest->mTask;
+        mShadowPass.pCsm->setSdsmReadbackLatency(task == SampleTest::TaskType::ScreenCapture ? 0 : 1);
+    }
+}
+
 void FeatureDemo::onFrameRender()
 {
     beginTestFrame();
