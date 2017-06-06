@@ -3,7 +3,7 @@ import shutil
 import stat
 
 #average pixel color difference
-gDefaultImageCompareMargin = 5.0
+gDefaultImageCompareMargin = 0.0
 gMemoryPercentCompareMargin = 2.5
 
 # -1 smaller, 0 same, 1 larger
