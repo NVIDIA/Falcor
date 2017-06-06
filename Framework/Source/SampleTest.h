@@ -65,7 +65,7 @@ namespace Falcor
         */
         virtual void onTestShutdown() {};
 
-    private:
+    protected:
         enum class TriggerType
         {
             Frame,
