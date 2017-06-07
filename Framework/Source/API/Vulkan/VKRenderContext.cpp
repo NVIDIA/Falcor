@@ -27,7 +27,7 @@
 ***************************************************************************/
 #include "Framework.h"
 #include "API/RenderContext.h"
-#include "API/LowLevel/DescriptorHeap.h"
+#include "API/LowLevel/DescriptorPool.h"
 #include "API/Device.h"
 #include "glm/gtc/type_ptr.hpp"
 

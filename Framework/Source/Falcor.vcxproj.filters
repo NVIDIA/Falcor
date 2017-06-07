@@ -510,6 +510,9 @@
     <ClCompile Include="API\Vulkan\VKResourceViews.cpp">
       <Filter>API\Vulkan</Filter>
     </ClCompile>
+    <ClCompile Include="API\Vulkan\VKShader.cpp">
+      <Filter>API\Vulkan</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Graphics\Model\Animation.h">

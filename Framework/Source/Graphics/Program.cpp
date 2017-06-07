@@ -235,7 +235,7 @@ namespace Falcor
         }
 
         // Pick the right target based on the current graphics API
-#if defined(FALCOR_GL)
+#if defined(FALCOR_GL) || defined(FALCOR_VK)
         spSetCodeGenTarget(spireRequest, SPIRE_GLSL);
         spAddPreprocessorDefine(spireRequest, "FALCOR_GLSL", "1");
         SpireSourceLanguage sourceLanguage = SPIRE_SOURCE_LANGUAGE_GLSL;

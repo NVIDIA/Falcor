@@ -27,7 +27,7 @@
 ***************************************************************************/
 #include "Framework.h"
 #include "API/Device.h"
-#include "API/LowLevel/DescriptorHeap.h"
+#include "API/LowLevel/DescriptorPool.h"
 #include "API/LowLevel/GpuFence.h"
 #include "API/Vulkan/FalcorVK.h"
 

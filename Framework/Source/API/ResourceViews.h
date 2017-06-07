@@ -108,7 +108,7 @@ namespace Falcor
         static SharedPtr sNullView;
     };
 
-    class RenderTargetView : public ResourceView<UavHandle>
+    class RenderTargetView : public ResourceView<RtvHandle>
     {
     public:
         using SharedPtr = std::shared_ptr<RenderTargetView>;

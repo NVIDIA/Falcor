@@ -163,7 +163,7 @@ namespace Falcor
         }
 
         auto view = createViewCommon(pSharedPtr, mipLevel, 1, firstArraySlice, arraySize);
-        return SharedPtr(new DepthStencilView(pResource, view, mipLevel, firstArraySlice, arraySize));
+        return SharedPtr(new DepthStencilView(pResource, view.getImage(), mipLevel, firstArraySlice, arraySize));
     }
 
     DepthStencilView::SharedPtr DepthStencilView::getNullView()
@@ -205,7 +205,7 @@ namespace Falcor
         }
 
         auto view = createViewCommon(pSharedPtr, mipLevel, 1, firstArraySlice, arraySize);
-        return SharedPtr(new RenderTargetView(pResource, view, mipLevel, firstArraySlice, arraySize));
+        return SharedPtr(new RenderTargetView(pResource, view.getImage(), mipLevel, firstArraySlice, arraySize));
     }
 
     RenderTargetView::SharedPtr RenderTargetView::getNullView()

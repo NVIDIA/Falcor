@@ -216,6 +216,7 @@ namespace Falcor
         // Set the icon
         setWindowIcon("Framework\\Nvidia.ico", mpWindow->getApiHandle());
 
+#ifndef VK_DISABLE_UNIMPLEMENTED
         // Get the default objects before calling onLoad()
         mpDefaultFBO = gpDevice->getSwapChainFbo();
         mpDefaultPipelineState = GraphicsState::create();
@@ -227,18 +228,18 @@ namespace Falcor
         initUI();
 
         // Init VR
-#ifndef VK_DISABLE_UNIMPLEMENTED
         mVrEnabled = config.enableVR;
         if (mVrEnabled)
         {
             VRSystem::start(mpRenderContext);
         }
-#endif
 
         // Load and run
         mArgList.parseCommandLine(GetCommandLineA());
         mpPixelZoom = PixelZoom::create();
         mpPixelZoom->init(mpDefaultFBO.get());
+#endif
+
         onLoad();
         pBar = nullptr;
         mpWindow->msgLoop();
@@ -325,6 +326,7 @@ namespace Falcor
 
     void Sample::renderFrame()
     {
+#ifndef VK_DISABLE_UNIMPLEMENTED
         if (gpDevice->isWindowOccluded())
         {
             return;
@@ -364,6 +366,7 @@ namespace Falcor
             PROFILE(present);
             gpDevice->present();
         }
+#endif
     }
 
     void Sample::captureScreen()

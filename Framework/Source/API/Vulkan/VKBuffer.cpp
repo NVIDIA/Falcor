@@ -120,7 +120,7 @@ namespace Falcor
         BufferData* pApiData = (BufferData*)mpApiData;
         gpDevice->getResourceAllocator()->release(pApiData->dynamicData);
         safe_delete(pApiData);
-        gpDevice->releaseResource(mApiHandle);
+        gpDevice->releaseResource(mApiHandle.getBuffer());
     }
 
 
@@ -135,6 +135,7 @@ namespace Falcor
         BufferData* pApiData = new BufferData;
         mpApiData = pApiData;
 
+        VkBuffer buffer;
         if (mCpuAccess == CpuAccess::Write)
         {
             mState = Resource::State::GenericRead;
@@ -144,13 +145,18 @@ namespace Falcor
         else if (mCpuAccess == CpuAccess::Read && mBindFlags == BindFlags::None)
         {
             mState = Resource::State::CopyDest;
-            createBuffer(mApiHandle, mState, mSize, memProps, mBindFlags, sMode);
+
+            createBuffer(buffer, mState, mSize, memProps, mBindFlags, sMode);
         }
         else
         {
             mState = Resource::State::Common;
-            createBuffer(mApiHandle, mState, mSize, memProps, mBindFlags, sMode);
+
+            VkBuffer buffer;
+            createBuffer(buffer, mState, mSize, memProps, mBindFlags, sMode);
         }
+
+        mApiHandle = buffer;
     
         return true;
     }
