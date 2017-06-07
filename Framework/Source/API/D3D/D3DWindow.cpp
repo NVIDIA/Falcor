@@ -36,6 +36,8 @@
 #include <Windowsx.h>
 #include "Utils/StringUtils.h"
 
+// #VKTODO This probably makes more sense as "WindowsWindow" rather than specifically D3D
+
 namespace Falcor
 {
 	class ApiCallbacks
@@ -392,7 +394,9 @@ namespace Falcor
         AdjustWindowRect(&r, style, false);
         uint32_t adjWidth = r.right - r.left;
         uint32_t adjHeight = r.bottom - r.top;
-        d3d_call(SetWindowPos(mApiHandle, nullptr, 0, 0, adjWidth , adjHeight, SWP_NOACTIVATE | SWP_NOOWNERZORDER | SWP_NOMOVE | SWP_NOZORDER));
+
+        // #HACK temporarily removing d3d_call so Window implementation links/works for Vulkan
+        /*d3d_call(*/SetWindowPos(mApiHandle, nullptr, 0, 0, adjWidth , adjHeight, SWP_NOACTIVATE | SWP_NOOWNERZORDER | SWP_NOMOVE | SWP_NOZORDER)/*)*/;
 
         mMouseScale.x = 1 / float(width);
         mMouseScale.y = 1 / float(height);

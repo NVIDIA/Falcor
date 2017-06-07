@@ -33,6 +33,7 @@ void VKDev::onGuiRender()
 
 void VKDev::onLoad()
 {
+    GraphicsProgram::createFromFile("TestVertex.vs.glsl", "TestFragment.fs.glsl");
 }
 
 void VKDev::onFrameRender()

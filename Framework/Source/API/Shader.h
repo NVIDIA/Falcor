@@ -70,14 +70,11 @@ namespace Falcor
         */
         ShaderType getType() const { return mType; }
 
+        bool init(const std::string& shaderString, std::string& log);
+
 #ifdef FALCOR_D3D
-        bool init(
-            const std::string&  shaderString,
-            std::string&        log);
         ID3DBlobPtr getCodeBlob() const;
         virtual ID3DBlobPtr compile(const std::string& source, std::string& errorLog);
-#else
-        bool init(const std::string& shaderString, std::string& log) { return true; }
 #endif
 
     protected:
