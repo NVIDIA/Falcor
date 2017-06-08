@@ -1,5 +1,5 @@
 /***************************************************************************
-# Copyright (c) 2017, NVIDIA CORPORATION. All rights reserved.
+# Copyright (c) 2015, NVIDIA CORPORATION. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -26,57 +26,20 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 #include "Framework.h"
-#include "API/Shader.h"
-#include "API/Device.h"
+#include "API/BlendState.h"
 
 namespace Falcor
 {
-    struct ShaderData
-    {
-        std::vector<uint8_t> compiledData;
-    };
+    BlendState::~BlendState() = default;
 
-    Shader::SharedPtr Shader::create(const std::string& shaderString, ShaderType type, std::string& log)
+    // #VKTODO Does this have to be in API specific implementation?
+    BlendState::SharedPtr BlendState::create(const Desc& desc)
     {
-        SharedPtr pShader = SharedPtr(new Shader(type));
-        return pShader->init(shaderString, log) ? pShader : nullptr;
+        return SharedPtr(new BlendState(desc));
     }
 
-    Shader::Shader(ShaderType type) : mType(type)
+    BlendStateHandle BlendState::getApiHandle() const
     {
-        mpPrivateData = new ShaderData;
-    }
-
-    Shader::~Shader()
-    {
-        ShaderData* pData = (ShaderData*)mpPrivateData;
-        safe_delete(pData);
-    }
-
-    bool Shader::init(const std::string& shaderString, std::string& log)
-    {
-        // Compile the shader
-        ShaderData* pData = (ShaderData*)mpPrivateData;
-
-        //
-        // Create Shader Module
-        //
-
-        VkShaderModuleCreateInfo moduleCreateInfo = {};
-        moduleCreateInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-
-        assert(VK_NV_glsl_shader);
-
-        moduleCreateInfo.codeSize = shaderString.size();
-        moduleCreateInfo.pCode = (uint32_t*)shaderString.data();
-
-        VkShaderModule shader;
-        if (VK_FAILED(vkCreateShaderModule(gpDevice->getApiHandle(), &moduleCreateInfo, nullptr, &shader)))
-        {
-            logError("Could not create shader!");
-            return false;
-        }
-
-        return true;
+        return mApiHandle;
     }
 }

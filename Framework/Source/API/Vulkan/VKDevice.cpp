@@ -188,13 +188,23 @@ namespace Falcor
 
     bool createInstance(DeviceData *pData)
     {
+        uint32_t extensionCount = 0;
+        vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, nullptr);
+        std::vector<VkExtensionProperties> extensions(extensionCount);
+        vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, extensions.data());
+
+        for (VkExtensionProperties& prop : extensions)
+        {
+            logInfo("Supported VK Extension: " + std::string(prop.extensionName));
+        }
+
+        const char *requiredExtensions[] = { "VK_KHR_win32_surface" };
+
         VkInstanceCreateInfo InstanceCreateInfo = {};
         InstanceCreateInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
         InstanceCreateInfo.pApplicationInfo = NULL;
-        InstanceCreateInfo.enabledExtensionCount = 0;
-        InstanceCreateInfo.ppEnabledExtensionNames = nullptr;
-        InstanceCreateInfo.enabledLayerCount = 0;
-        InstanceCreateInfo.ppEnabledLayerNames = nullptr;
+        InstanceCreateInfo.enabledExtensionCount = 1;
+        InstanceCreateInfo.ppEnabledExtensionNames = requiredExtensions;
 
         if (VK_FAILED(vkCreateInstance(&InstanceCreateInfo, nullptr, &pData->instance)))
         {
@@ -341,17 +351,21 @@ namespace Falcor
             return false;
         }
 
+        // #VKTODO Get Queues
+        
+
         return true;
     }
 
     bool createSurface(DeviceData *pData, const Window* pWindow)
     {
-        VkWin32SurfaceCreateInfoKHR createInfo;
+        VkWin32SurfaceCreateInfoKHR createInfo = {};
         createInfo.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
         createInfo.hwnd = pWindow->getApiHandle();
         createInfo.hinstance = GetModuleHandle(nullptr);
 
-        if (VK_FAILED(vkCreateWin32SurfaceKHR(pData->instance, &createInfo, nullptr, &pData->surface)))
+        VkResult result = vkCreateWin32SurfaceKHR(pData->instance, &createInfo, nullptr, &pData->surface);
+        if (VK_FAILED(result))
         {
             logError("Could not create Vulkan surface.");
             return false;
@@ -420,11 +434,13 @@ namespace Falcor
         scCreateInfo.oldSwapchain = VK_NULL_HANDLE;
 
 
-        if (VK_FAILED(vkCreateSwapchainKHR(pData->device, &scCreateInfo, nullptr, &pData->swapchain)))
-        {
-            logError("Could not create swapchain.");
-            return false;
-        }
+        // #VKTODO Fix validation
+        //VkResult result = vkCreateSwapchainKHR(pData->device, &scCreateInfo, nullptr, &pData->swapchain);
+        //if (VK_FAILED(result))
+        //{
+        //    logError("Could not create swapchain.");
+        //    return false;
+        //}
 
         //err = vkGetSwapchainImagesKHR(pData->falcorVKLogicalDevice, pData->swapchain, &pData->imageCount, NULL);
         //pData->swapChainImages.resize(pData->imageCount);
@@ -469,6 +485,12 @@ namespace Falcor
         {
             return false;
         }
+
+        // This comes right after surface because it can apparently affect device creation
+        if (createSurface(pData, mpWindow.get()) == false)
+        {
+            return false;
+        }
         
         if (createPhysicalDevice(pData) == false)
         {
@@ -480,14 +502,9 @@ namespace Falcor
             return false;
         }
 
-        if (createSurface(pData, mpWindow.get()) == false)
-        {
-            return false;
-        }
-
         mApiHandle = pData->device;
 
-        //// Create the descriptor heaps
+        // Create the descriptor heaps
         //mpSrvHeap = DescriptorHeap::create(DescriptorHeap::Type::SRV, 16 * 1024);
         //mpSamplerHeap = DescriptorHeap::create(DescriptorHeap::Type::Sampler, 2048);
         //mpRtvHeap = DescriptorHeap::create(DescriptorHeap::Type::RTV, 1024, false);
@@ -495,13 +512,13 @@ namespace Falcor
         //mpUavHeap = mpSrvHeap;
         //mpCpuUavHeap = DescriptorHeap::create(DescriptorHeap::Type::SRV, 2 * 1024, false);
 
-        //// Create the swap-chain
-        mpRenderContext = RenderContext::create(getCommandQueueHandle(LowLevelContextData::CommandQueueType::Direct, 0));
-        
+        //mpRenderContext = RenderContext::create(getCommandQueueHandle(LowLevelContextData::CommandQueueType::Direct, 0));
+
         //mpResourceAllocator = ResourceAllocator::create(1024 * 1024 * 2, mpRenderContext->getLowLevelData()->getFence());
 
         mVsyncOn = desc.enableVsync;
 
+        // Create the swap-chain
         createSwapChain(pData, mpWindow.get(), desc.colorFormat, mVsyncOn);
 
         //// Update the FBOs

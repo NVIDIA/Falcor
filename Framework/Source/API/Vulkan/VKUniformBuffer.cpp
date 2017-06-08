@@ -26,57 +26,9 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 #include "Framework.h"
-#include "API/Shader.h"
-#include "API/Device.h"
+#include "API/ConstantBuffer.h"
 
 namespace Falcor
 {
-    struct ShaderData
-    {
-        std::vector<uint8_t> compiledData;
-    };
-
-    Shader::SharedPtr Shader::create(const std::string& shaderString, ShaderType type, std::string& log)
-    {
-        SharedPtr pShader = SharedPtr(new Shader(type));
-        return pShader->init(shaderString, log) ? pShader : nullptr;
-    }
-
-    Shader::Shader(ShaderType type) : mType(type)
-    {
-        mpPrivateData = new ShaderData;
-    }
-
-    Shader::~Shader()
-    {
-        ShaderData* pData = (ShaderData*)mpPrivateData;
-        safe_delete(pData);
-    }
-
-    bool Shader::init(const std::string& shaderString, std::string& log)
-    {
-        // Compile the shader
-        ShaderData* pData = (ShaderData*)mpPrivateData;
-
-        //
-        // Create Shader Module
-        //
-
-        VkShaderModuleCreateInfo moduleCreateInfo = {};
-        moduleCreateInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-
-        assert(VK_NV_glsl_shader);
-
-        moduleCreateInfo.codeSize = shaderString.size();
-        moduleCreateInfo.pCode = (uint32_t*)shaderString.data();
-
-        VkShaderModule shader;
-        if (VK_FAILED(vkCreateShaderModule(gpDevice->getApiHandle(), &moduleCreateInfo, nullptr, &shader)))
-        {
-            logError("Could not create shader!");
-            return false;
-        }
-
-        return true;
-    }
+    ConstantBuffer::~ConstantBuffer() = default;
 }

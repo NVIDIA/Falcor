@@ -148,10 +148,9 @@ namespace Falcor
         */
         const Desc& getDesc() const { checkStatus();  return *mpDesc; }
 
-#ifdef FALCOR_D3D
         DepthStencilView::SharedPtr getDepthStencilView() const;
         RenderTargetView::SharedPtr getRenderTargetView(uint32_t rtIndex) const;
-#endif
+
         struct Attachment
         {
             Texture::SharedPtr pTexture = nullptr;

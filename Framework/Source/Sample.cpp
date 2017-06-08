@@ -208,10 +208,11 @@ namespace Falcor
             return;
         }
 
-        if (config.deviceCreatedCallback)
-        {
-            config.deviceCreatedCallback();
-        }
+        // #VKTODO why is this calling on null?
+        //if (config.deviceCreatedCallback)
+        //{
+        //    config.deviceCreatedCallback();
+        //}
 
         // Set the icon
         setWindowIcon("Framework\\Nvidia.ico", mpWindow->getApiHandle());

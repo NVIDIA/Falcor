@@ -33,8 +33,26 @@
 
 namespace Falcor
 {
+    struct TextureApiData
+    {
+    //    TextureApiData() { sObjCount++; }
+    //    ~TextureApiData() { sObjCount--; if (sObjCount == 0) spGenMips = nullptr; }
+
+    //    static std::unique_ptr<GenMipsData> spGenMips;
+    //    Fbo::SharedPtr pGenMipsFbo;
+
+    //private:
+    //    static uint64_t sObjCount;
+    };
+
     void Texture::apiInit()
     {
+    }
+
+    Texture::~Texture()
+    {
+        safe_delete(mpApiData);
+        //gpDevice->releaseResource(mApiHandle);
     }
 
     // Like getD3D12ResourceFlags but for Images specifically
@@ -75,6 +93,15 @@ namespace Falcor
         return 1 + uint32_t(glm::log2(float(glm::max(glm::max(size.width, size.height), size.depth))));
     }
 
+    uint32_t Texture::getMipLevelDataSize(uint32_t mipLevel) const
+    {
+        return 0;
+    }
+
+    void Texture::evict(const Sampler* pSampler) const
+    {
+    }
+
     void createTextureCommon(const Texture* pTexture, Texture::ApiHandle& apiHandle, const void* pData, VkImageType imageType, bool autoGenMips, Texture::BindFlags bindFlags)
     {
         ResourceFormat texFormat = pTexture->getFormat();
@@ -82,7 +109,7 @@ namespace Falcor
         VkImageCreateInfo imageInfo = {};
 
         imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-        imageInfo.imageType = VK_IMAGE_TYPE_2D;
+        imageInfo.imageType = imageType;
         imageInfo.format = getVkFormat(texFormat);
         imageInfo.flags = pTexture->getType() == Texture::Type::TextureCube ? VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT : 0;
         imageInfo.extent.width = align_to(getFormatWidthCompressionRatio(texFormat), pTexture->getWidth());
@@ -124,11 +151,44 @@ namespace Falcor
         return flags;
     }
 
+    Texture::SharedPtr Texture::create1D(uint32_t width, ResourceFormat format, uint32_t arraySize, uint32_t mipLevels, const void* pData, BindFlags bindFlags)
+    {
+        bindFlags = updateBindFlags(bindFlags, pData != nullptr, mipLevels);
+        Texture::SharedPtr pTexture = SharedPtr(new Texture(width, 1, 1, arraySize, mipLevels, 1, format, Type::Texture1D, bindFlags));
+        createTextureCommon(pTexture.get(), pTexture->mApiHandle, pData, VK_IMAGE_TYPE_1D, (mipLevels == kMaxPossible), bindFlags);
+        return pTexture->mApiHandle ? pTexture : nullptr;
+    }
+
+
     Texture::SharedPtr Texture::create2D(uint32_t width, uint32_t height, ResourceFormat format, uint32_t arraySize, uint32_t mipLevels, const void* pData, BindFlags bindFlags)
     {
         bindFlags = updateBindFlags(bindFlags, pData != nullptr, mipLevels);
         Texture::SharedPtr pTexture = SharedPtr(new Texture(width, height, 1, arraySize, mipLevels, 1, format, Type::Texture2D, bindFlags));
         createTextureCommon(pTexture.get(), pTexture->mApiHandle, pData, VK_IMAGE_TYPE_2D, (mipLevels == kMaxPossible), bindFlags);
+        return pTexture->mApiHandle ? pTexture : nullptr;
+    }
+
+    Texture::SharedPtr Texture::create3D(uint32_t width, uint32_t height, uint32_t depth, ResourceFormat format, uint32_t mipLevels, const void* pData, BindFlags bindFlags, bool isSparse)
+    {
+        bindFlags = updateBindFlags(bindFlags, pData != nullptr, mipLevels);
+        Texture::SharedPtr pTexture = SharedPtr(new Texture(width, height, depth, 1, mipLevels, 1, format, Type::Texture3D, bindFlags));
+        createTextureCommon(pTexture.get(), pTexture->mApiHandle, pData, VK_IMAGE_TYPE_3D, (mipLevels == kMaxPossible), bindFlags);
+        return pTexture->mApiHandle ? pTexture : nullptr;
+    }
+
+    // Texture Cube
+    Texture::SharedPtr Texture::createCube(uint32_t width, uint32_t height, ResourceFormat format, uint32_t arraySize, uint32_t mipLevels, const void* pData, BindFlags bindFlags)
+    {
+        bindFlags = updateBindFlags(bindFlags, pData != nullptr, mipLevels);
+        Texture::SharedPtr pTexture = SharedPtr(new Texture(width, height, 1, arraySize, mipLevels, 1, format, Type::TextureCube, bindFlags));
+        createTextureCommon(pTexture.get(), pTexture->mApiHandle, pData, VK_IMAGE_TYPE_2D, (mipLevels == kMaxPossible), bindFlags);
+        return pTexture->mApiHandle ? pTexture : nullptr;
+    }
+
+    Texture::SharedPtr Texture::create2DMS(uint32_t width, uint32_t height, ResourceFormat format, uint32_t sampleCount, uint32_t arraySize, BindFlags bindFlags)
+    {
+        Texture::SharedPtr pTexture = SharedPtr(new Texture(width, height, 1, arraySize, 1, sampleCount, format, Type::Texture2DMultisample, bindFlags));
+        createTextureCommon(pTexture.get(), pTexture->mApiHandle, nullptr, VK_IMAGE_TYPE_2D, false, bindFlags);
         return pTexture->mApiHandle ? pTexture : nullptr;
     }
 

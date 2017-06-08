@@ -492,12 +492,6 @@
     <ClCompile Include="API\vulkan\VKRenderContext.cpp">
       <Filter>API\Vulkan</Filter>
     </ClCompile>
-    <ClCompile Include="API\vulkan\VKLowLevelContextData.cpp">
-      <Filter>API\Vulkan</Filter>
-    </ClCompile>
-    <ClCompile Include="API\vulkan\VKGpuFence.cpp">
-      <Filter>API\Vulkan</Filter>
-    </ClCompile>
     <ClCompile Include="API\vulkan\VKBuffer.cpp">
       <Filter>API\Vulkan</Filter>
     </ClCompile>
@@ -512,6 +506,54 @@
     </ClCompile>
     <ClCompile Include="API\Vulkan\VKShader.cpp">
       <Filter>API\Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="API\Vulkan\VKFbo.cpp">
+      <Filter>API\Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="API\Vulkan\VKCopyContext.cpp">
+      <Filter>API\Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="API\Vulkan\VKGpuTimer.cpp">
+      <Filter>API\Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="API\Vulkan\VKComputeContext.cpp">
+      <Filter>API\Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="API\Vulkan\VKDepthStencilState.cpp">
+      <Filter>API\Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="API\Vulkan\LowLevel\VKGpuFence.cpp">
+      <Filter>API\Vulkan\LowLevel</Filter>
+    </ClCompile>
+    <ClCompile Include="API\Vulkan\LowLevel\VKLowLevelContextData.cpp">
+      <Filter>API\Vulkan\LowLevel</Filter>
+    </ClCompile>
+    <ClCompile Include="API\Vulkan\LowLevel\VKRootSignature.cpp">
+      <Filter>API\Vulkan\LowLevel</Filter>
+    </ClCompile>
+    <ClCompile Include="API\Vulkan\VKRasterizerState.cpp">
+      <Filter>API\Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="API\Vulkan\VKProgramVersion.cpp">
+      <Filter>API\Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="API\Vulkan\VKVao.cpp">
+      <Filter>API\Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="API\Vulkan\VKBlendState.cpp">
+      <Filter>API\Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="API\Vulkan\VKSampler.cpp">
+      <Filter>API\Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="API\Vulkan\VKUniformBuffer.cpp">
+      <Filter>API\Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="API\Vulkan\VKGraphicsStateObject.cpp">
+      <Filter>API\Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="API\Vulkan\LowLevel\VKResourceAllocator.cpp">
+      <Filter>API\Vulkan\LowLevel</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -1796,6 +1838,9 @@
     </Filter>
     <Filter Include="API\Vulkan">
       <UniqueIdentifier>{f191732c-c52a-4867-976e-f96cedcbf908}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="API\Vulkan\LowLevel">
+      <UniqueIdentifier>{230e7726-da32-47d7-bdf6-c77e62c21ada}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>

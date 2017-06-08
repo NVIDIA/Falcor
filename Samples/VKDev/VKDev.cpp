@@ -33,7 +33,8 @@ void VKDev::onGuiRender()
 
 void VKDev::onLoad()
 {
-    GraphicsProgram::createFromFile("TestVertex.vs.glsl", "TestFragment.fs.glsl");
+    GraphicsProgram::SharedPtr pProgram =  GraphicsProgram::createFromFile("TestVertex.vs.glsl", "TestFragment.fs.glsl");
+    ProgramVersion::SharedConstPtr pVersion = pProgram->getActiveVersion();
 }
 
 void VKDev::onFrameRender()

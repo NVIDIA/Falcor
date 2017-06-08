@@ -26,57 +26,68 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 #include "Framework.h"
-#include "API/Shader.h"
-#include "API/Device.h"
+#include "API/FBO.h"
 
 namespace Falcor
 {
-    struct ShaderData
+    Fbo::Fbo(bool initApiHandle)
     {
-        std::vector<uint8_t> compiledData;
-    };
-
-    Shader::SharedPtr Shader::create(const std::string& shaderString, ShaderType type, std::string& log)
-    {
-        SharedPtr pShader = SharedPtr(new Shader(type));
-        return pShader->init(shaderString, log) ? pShader : nullptr;
+        mApiHandle = -1;
+        mColorAttachments.resize(getMaxColorTargetCount());
     }
 
-    Shader::Shader(ShaderType type) : mType(type)
+    Fbo::~Fbo() = default;
+
+    uint32_t Fbo::getApiHandle() const
     {
-        mpPrivateData = new ShaderData;
+        return mApiHandle;
     }
 
-    Shader::~Shader()
+    uint32_t Fbo::getMaxColorTargetCount()
     {
-        ShaderData* pData = (ShaderData*)mpPrivateData;
-        safe_delete(pData);
+        //return D3D12_SIMULTANEOUS_RENDER_TARGET_COUNT;
+        return 8;
     }
 
-    bool Shader::init(const std::string& shaderString, std::string& log)
+    void Fbo::applyColorAttachment(uint32_t rtIndex)
     {
-        // Compile the shader
-        ShaderData* pData = (ShaderData*)mpPrivateData;
+    }
 
-        //
-        // Create Shader Module
-        //
+    void Fbo::applyDepthAttachment()
+    {
+    }
 
-        VkShaderModuleCreateInfo moduleCreateInfo = {};
-        moduleCreateInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-
-        assert(VK_NV_glsl_shader);
-
-        moduleCreateInfo.codeSize = shaderString.size();
-        moduleCreateInfo.pCode = (uint32_t*)shaderString.data();
-
-        VkShaderModule shader;
-        if (VK_FAILED(vkCreateShaderModule(gpDevice->getApiHandle(), &moduleCreateInfo, nullptr, &shader)))
+    bool Fbo::checkStatus() const
+    {
+        if (mpDesc == nullptr)
         {
-            logError("Could not create shader!");
-            return false;
+            return calcAndValidateProperties();
         }
-
         return true;
+    }
+
+    RenderTargetView::SharedPtr Fbo::getRenderTargetView(uint32_t rtIndex) const
+    {
+        const auto& rt = mColorAttachments[rtIndex];
+        if (rt.pTexture)
+        {
+            return rt.pTexture->getRTV(rt.mipLevel, rt.firstArraySlice, rt.arraySize);
+        }
+        else
+        {
+            return RenderTargetView::getNullView();
+        }
+    }
+
+    DepthStencilView::SharedPtr Fbo::getDepthStencilView() const
+    {
+        if (mDepthStencil.pTexture)
+        {
+            return mDepthStencil.pTexture->getDSV(mDepthStencil.mipLevel, mDepthStencil.firstArraySlice, mDepthStencil.arraySize);
+        }
+        else
+        {
+            return DepthStencilView::getNullView();
+        }
     }
 }

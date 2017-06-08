@@ -26,57 +26,80 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 #include "Framework.h"
-#include "API/Shader.h"
-#include "API/Device.h"
+#include "API/GpuTimer.h"
 
 namespace Falcor
 {
-    struct ShaderData
+    struct QueryData
     {
-        std::vector<uint8_t> compiledData;
+
     };
 
-    Shader::SharedPtr Shader::create(const std::string& shaderString, ShaderType type, std::string& log)
+    GpuTimer::SharedPtr GpuTimer::create()
     {
-        SharedPtr pShader = SharedPtr(new Shader(type));
-        return pShader->init(shaderString, log) ? pShader : nullptr;
+        return SharedPtr(new GpuTimer());
     }
 
-    Shader::Shader(ShaderType type) : mType(type)
+    GpuTimer::GpuTimer()
     {
-        mpPrivateData = new ShaderData;
+        QueryData* pData = new QueryData;
+        mpApiData = pData;
     }
 
-    Shader::~Shader()
+    GpuTimer::~GpuTimer()
     {
-        ShaderData* pData = (ShaderData*)mpPrivateData;
-        safe_delete(pData);
+        QueryData* pData = (QueryData*)mpApiData;
+        delete pData;
     }
 
-    bool Shader::init(const std::string& shaderString, std::string& log)
+    void GpuTimer::begin()
     {
-        // Compile the shader
-        ShaderData* pData = (ShaderData*)mpPrivateData;
-
-        //
-        // Create Shader Module
-        //
-
-        VkShaderModuleCreateInfo moduleCreateInfo = {};
-        moduleCreateInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-
-        assert(VK_NV_glsl_shader);
-
-        moduleCreateInfo.codeSize = shaderString.size();
-        moduleCreateInfo.pCode = (uint32_t*)shaderString.data();
-
-        VkShaderModule shader;
-        if (VK_FAILED(vkCreateShaderModule(gpDevice->getApiHandle(), &moduleCreateInfo, nullptr, &shader)))
+        if (mStatus == Status::Begin)
         {
-            logError("Could not create shader!");
+            logWarning("GpuTimer::begin() was followed by another call to GpuTimer::begin() without a GpuTimer::end() in-between. Ignoring call.");
+            return;
+        }
+
+        if (mStatus == Status::End)
+        {
+            logWarning("GpuTimer::begin() was followed by a call to GpuTimer::end() without querying the data first. The previous results will be discarded.");
+        }
+
+        QueryData* pData = (QueryData*)mpApiData;
+
+        // Code
+
+        mStatus = Status::Begin;
+    }
+
+    void GpuTimer::end()
+    {
+        if (mStatus != Status::Begin)
+        {
+            logWarning("GpuTimer::end() was called without a preciding GpuTimer::begin(). Ignoring call.");
+            return;
+        }
+        QueryData* pData = (QueryData*)mpApiData;
+
+        // Code
+
+        mStatus = Status::End;
+    }
+
+    bool GpuTimer::getElapsedTime(bool waitForResult, double& elapsedTime)
+    {
+        if (mStatus != Status::End)
+        {
+            logWarning("GpuTimer::getElapsedTime() was called but the GpuTimer::end() wasn't called. No data to fetch.");
             return false;
         }
 
+        QueryData* pData = (QueryData*)mpApiData;
+
+        // Code
+
         return true;
     }
+
+
 }
