@@ -361,7 +361,7 @@ struct LightData
 // 	BufPtr          texCoordPtr;                                  ///< Buffer id for texcoord
 // 	BufPtr          meshCDFPtr;                                   ///< Pointer to probability distributions of triangle meshes
 
-    /*TODO(tfoley) HACK: Spire can't hanlde this
+    /*TODO(tfoley) HACK: Slang can't hanlde this
     // Keep that last
     MaterialData    material;                                     ///< Emissive material of the geometry mesh
     */

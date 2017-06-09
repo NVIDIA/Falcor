@@ -166,20 +166,20 @@ namespace Falcor
         return mpActiveProgram;
     }
 
-    SpireSession* getSpireSession()
+    SlangSession* getSlangSession()
     {
-        // TODO: figure out a strategy for finalizing the Spire session, if desired
+        // TODO: figure out a strategy for finalizing the Slang session, if desired
 
-        static SpireSession* spireSession = spCreateSession(NULL);
-        return spireSession;
+        static SlangSession* slangSession = spCreateSession(NULL);
+        return slangSession;
     }
 
-    void loadSpireBuiltins(char const* name, char const* text)
+    void loadSlangBuiltins(char const* name, char const* text)
     {
-        spAddBuiltins(getSpireSession(), name, text);
+        spAddBuiltins(getSlangSession(), name, text);
     }
 
-    static const char* getSpireTargetString(ShaderType type)
+    static const char* getSlangTargetString(ShaderType type)
     {
         // TODO: either pick these based on target API,
         // or invent some API-neutral target names
@@ -207,54 +207,54 @@ namespace Falcor
     {
         mFileTimeMap.clear();
 
-        // Run all of the shaders through Spire, so that we can get final code,
+        // Run all of the shaders through Slang, so that we can get final code,
         // reflection data, etc.
         //
         // Note that we provide all the shaders at once, so that automatically
         // generated bindings can be made consistent across the stages.
 
-        SpireSession* spireSession = getSpireSession();
+        SlangSession* slangSession = getSlangSession();
 
         // Start building a request for compilation
-        SpireCompileRequest* spireRequest = spCreateCompileRequest(spireSession);
+        SlangCompileRequest* slangRequest = spCreateCompileRequest(slangSession);
 
-        // Add our media search paths as `#include` search paths for Spire.
+        // Add our media search paths as `#include` search paths for Slang.
         //
-        // TODO: Spire should probably support a callback API for all file I/O,
+        // TODO: Slang should probably support a callback API for all file I/O,
         // rather than having us specify data directories to it...
         for (auto path : getDataDirectoriesList())
         {
-            spAddSearchPath(spireRequest, path.c_str());
+            spAddSearchPath(slangRequest, path.c_str());
         }
 
-        // Pass any `#define` flags along to Spire, since we aren't doing our
+        // Pass any `#define` flags along to Slang, since we aren't doing our
         // own preprocessing any more.
         for(auto shaderDefine : mDefineList)
         {
-            spAddPreprocessorDefine(spireRequest, shaderDefine.first.c_str(), shaderDefine.second.c_str());
+            spAddPreprocessorDefine(slangRequest, shaderDefine.first.c_str(), shaderDefine.second.c_str());
         }
 
         // Pick the right target based on the current graphics API
 #if defined(FALCOR_GL) || defined(FALCOR_VK)
-        spSetCodeGenTarget(spireRequest, SPIRE_GLSL);
-        spAddPreprocessorDefine(spireRequest, "FALCOR_GLSL", "1");
-        SpireSourceLanguage sourceLanguage = SPIRE_SOURCE_LANGUAGE_GLSL;
+        spSetCodeGenTarget(slangRequest, SLANG_GLSL);
+        spAddPreprocessorDefine(slangRequest, "FALCOR_GLSL", "1");
+        SlangSourceLanguage sourceLanguage = SLANG_SOURCE_LANGUAGE_GLSL;
 #elif defined(FALCOR_D3D11) || defined(FALCOR_D3D12)
-        // Note: we could compile Spire directly to DXBC (by having Spire invoke the MS compiler for us,
+        // Note: we could compile Slang directly to DXBC (by having Slang invoke the MS compiler for us,
         // but that path seems to have more issues at present, so let's just go to HLSL instead...)
-        spSetCodeGenTarget(spireRequest, SPIRE_HLSL);
-        spAddPreprocessorDefine(spireRequest, "FALCOR_HLSL", "1");
-        SpireSourceLanguage sourceLanguage = SPIRE_SOURCE_LANGUAGE_HLSL;
+        spSetCodeGenTarget(slangRequest, SLANG_HLSL);
+        spAddPreprocessorDefine(slangRequest, "FALCOR_HLSL", "1");
+        SlangSourceLanguage sourceLanguage = SLANG_SOURCE_LANGUAGE_HLSL;
 #else
 #error unknown shader compilation target
 #endif
 
-        // Configure any flags for the Spire compilation step
-        SpireCompileFlags spireFlags = 0;
+        // Configure any flags for the Slang compilation step
+        SlangCompileFlags slangFlags = 0;
 
         // Don't actually perform semantic checking: just pass through functions bodies to downstream compiler
-        spireFlags |= SPIRE_COMPILE_FLAG_NO_CHECKING;
-        spSetCompileFlags(spireRequest, spireFlags);
+        slangFlags |= SLANG_COMPILE_FLAG_NO_CHECKING;
+        spSetCompileFlags(slangRequest, slangFlags);
 
         // Now lets add all our input shader code, one-by-one
         int translationUnitsAdded = 0;
@@ -263,7 +263,7 @@ namespace Falcor
             if (!mOriginalShaderStrings[i].size())
                 continue;
 
-            int translationUnitIndex = spAddTranslationUnit(spireRequest, sourceLanguage, nullptr);
+            int translationUnitIndex = spAddTranslationUnit(slangRequest, sourceLanguage, nullptr);
             assert(translationUnitIndex == translationUnitsAdded);
             translationUnitsAdded++;
 
@@ -271,25 +271,25 @@ namespace Falcor
             {
                 std::string fullpath;
                 findFileInDataDirectories(mOriginalShaderStrings[i], fullpath);
-                spAddTranslationUnitSourceFile(spireRequest, translationUnitIndex, fullpath.c_str());
+                spAddTranslationUnitSourceFile(slangRequest, translationUnitIndex, fullpath.c_str());
             }
             else
             {
-                spAddTranslationUnitSourceString(spireRequest, translationUnitIndex, "", mOriginalShaderStrings[i].c_str());
+                spAddTranslationUnitSourceString(slangRequest, translationUnitIndex, "", mOriginalShaderStrings[i].c_str());
             }
 
             spAddTranslationUnitEntryPoint(
-                spireRequest,
+                slangRequest,
                 translationUnitIndex,
                 "main", // TODO: allow customization of entry point name?
-                spFindProfile(spireSession, getSpireTargetString(ShaderType(i))));
+                spFindProfile(slangSession, getSlangTargetString(ShaderType(i))));
         }
 
-        int anySpireErrors = spCompile(spireRequest);
-        log += spGetDiagnosticOutput(spireRequest);
-        if(anySpireErrors)
+        int anySlangErrors = spCompile(slangRequest);
+        log += spGetDiagnosticOutput(slangRequest);
+        if(anySlangErrors)
         {
-            spDestroyCompileRequest(spireRequest);
+            spDestroyCompileRequest(slangRequest);
             return nullptr;
         }
 
@@ -303,22 +303,22 @@ namespace Falcor
             int translationUnitIndex = translationUnitsExtracted++;
             assert(translationUnitIndex < translationUnitsAdded);
 
-            mPreprocessedShaderStrings[i] = spGetTranslationUnitSource(spireRequest, translationUnitIndex);
+            mPreprocessedShaderStrings[i] = spGetTranslationUnitSource(slangRequest, translationUnitIndex);
         }
         assert(translationUnitsExtracted == translationUnitsAdded);
 
         // Extract the reflection data
-        mPreprocessedReflector = ProgramReflection::create(spire::ShaderReflection::get(spireRequest), log);
+        mPreprocessedReflector = ProgramReflection::create(slang::ShaderReflection::get(slangRequest), log);
 
         // Extract list of files referenced, for dependency-tracking purposes
-        int depFileCount = spGetDependencyFileCount(spireRequest);
+        int depFileCount = spGetDependencyFileCount(slangRequest);
         for(int ii = 0; ii < depFileCount; ++ii)
         {
-            std::string depFilePath = spGetDependencyFilePath(spireRequest, ii);
+            std::string depFilePath = spGetDependencyFilePath(slangRequest, ii);
             mFileTimeMap[depFilePath] = getFileModifiedTime(depFilePath);
         }
 
-        spDestroyCompileRequest(spireRequest);
+        spDestroyCompileRequest(slangRequest);
 
         // Now that we've preprocessed things, dispatch to the actual program creation logic,
         // which may vary in subclasses of `Program`
