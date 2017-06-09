@@ -1,3 +1,0 @@
-// `break` where it isn't allowed
-
-void foo() { break; }
