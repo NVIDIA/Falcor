@@ -465,9 +465,6 @@
     <ClCompile Include="Utils\PixelZoom.cpp">
       <Filter>Utils</Filter>
     </ClCompile>
-    <ClCompile Include="Utils\SpireSupport.cpp">
-      <Filter>Utils</Filter>
-    </ClCompile>
     <ClCompile Include="Effects\ParticleSystem\ParticleSystem.cpp">
       <Filter>Effects\ParticleSystem</Filter>
     </ClCompile>

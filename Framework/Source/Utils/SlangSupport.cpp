@@ -28,6 +28,5 @@
 
 #include "FalcorConfig.h"
 
-#if FALCOR_BUILD_SPIRE
-#include "Externals/Spire/SpireAllSource.h"
-#endif
+#define SLANG_INCLUDE_IMPLEMENTATION
+#include "Externals/slang/slang.h"
