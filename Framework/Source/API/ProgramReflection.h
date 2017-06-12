@@ -28,7 +28,7 @@
 #pragma once
 #include "Framework.h"
 #include <unordered_map>
-#include "Externals/Spire/Spire.h"
+#include "Externals/slang/slang.h"
 
 namespace Falcor
 {
@@ -39,7 +39,7 @@ namespace Falcor
     public:
         using SharedPtr = std::shared_ptr<ProgramReflection>;
         using SharedConstPtr = std::shared_ptr<const ProgramReflection>;
-        using ReflectionHandleVector = std::vector<spire::ShaderReflection*>;
+        using ReflectionHandleVector = std::vector<slang::ShaderReflection*>;
 
         enum class ShaderAccess
         {
@@ -323,7 +323,7 @@ namespace Falcor
         /** Create a new object
         */
         static SharedPtr create(
-            spire::ShaderReflection*    pSpireReflector,
+            slang::ShaderReflection*    pSlangReflector,
             std::string&                log);
 
         /** Get a buffer binding index
@@ -388,16 +388,16 @@ namespace Falcor
     // TODO(tfoley): switch this back
     public://private:
         bool init(
-            spire::ShaderReflection*    pSpireReflector,
+            slang::ShaderReflection*    pSlangReflector,
             std::string&                log);
         bool reflectVertexAttributes(
-            spire::ShaderReflection*    pSpireReflector,
+            slang::ShaderReflection*    pSlangReflector,
             std::string&                log);       // Input attributes
         bool reflectPixelShaderOutputs(
-            spire::ShaderReflection*    pSpireReflector,
+            slang::ShaderReflection*    pSlangReflector,
             std::string&                log);        // PS output (if PS exists)
         bool reflectResources(
-            spire::ShaderReflection*    pSpireReflector,
+            slang::ShaderReflection*    pSlangReflector,
             std::string&                log);              // SRV/UAV/ROV/Buffers and samplers
 
         BufferData mBuffers[BufferReflection::kTypeCount];
