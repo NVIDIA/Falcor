@@ -770,6 +770,13 @@ namespace Falcor
             // TODO: If we ever start using arrays of constant buffers,
             // we'd probably want to handle them here too...
 
+        // Explicitly skip constant buffers at this step, because
+        // otherwise the test below for resources would catch then
+        // when using Vulkan (because constant buffers use the same
+        // binding space as texture/sampler parameters).
+        case TypeReflection::Kind::ConstantBuffer:
+            break;
+
         default:
             // This might be a resource, or an array of resources.
             // To find out, let's ask what category of resource
@@ -779,6 +786,7 @@ namespace Falcor
             case ParameterCategory::ShaderResource:
             case ParameterCategory::UnorderedAccess:
             case ParameterCategory::SamplerState:
+            case ParameterCategory::DescriptorTableSlot:
                 // This is a resource, or an array of them (or an array of arrays ...)
                 reflectResource(
                     pContext,
