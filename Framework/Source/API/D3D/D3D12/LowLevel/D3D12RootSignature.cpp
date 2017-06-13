@@ -66,7 +66,7 @@ namespace Falcor
         return (D3D12_SHADER_VISIBILITY)-1;
     }
 
-    void convertSamplerDesc(const RootSignature::SamplerDesc& falcorDesc, D3D12_STATIC_SAMPLER_DESC& desc)
+    void convertSampler(const RootSignature::SamplerDesc& falcorDesc, D3D12_STATIC_SAMPLER_DESC& desc)
     {
         initD3DSamplerDesc(falcorDesc.pSampler.get(), falcorDesc.borderColor, desc);
         desc.ShaderRegister = falcorDesc.regIndex;
@@ -149,7 +149,7 @@ namespace Falcor
         StaticSamplerVec samplerVec(mDesc.mSamplers.size());
         for (size_t i = 0 ; i < samplerVec.size() ; i++)
         {
-            convertSamplerDesc(mDesc.mSamplers[i], samplerVec[i]);
+            convertSampler(mDesc.mSamplers[i], samplerVec[i]);
         }
         size_t rootParamsCount = mDesc.mConstants.size() + mDesc.mDescriptorTables.size() + mDesc.mRootDescriptors.size();
         RootParameterVec rootParams(rootParamsCount);

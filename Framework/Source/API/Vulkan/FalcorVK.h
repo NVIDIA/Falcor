@@ -82,14 +82,14 @@ namespace Falcor
     using DsvHandle = VkImageView;
     using SrvHandle = VkResource<VkImageView, VkBufferView>;
     using UavHandle = VkResource<VkImageView, VkBufferView>;
-    using SamplerHandle = void*;
+    using SamplerHandle = VkSampler;
     using GpuAddress = void*;
 
     using PsoHandle = void*;
     using ComputeStateHandle = void*;
     using ShaderHandle = void*;
     using ShaderReflectionHandle = void*;
-    using RootSignatureHandle = void*;
+    using RootSignatureHandle = VkPipelineLayout;
     using DescriptorHeapHandle = void*;
 
     using VaoHandle = void*;
