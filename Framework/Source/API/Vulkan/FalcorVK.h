@@ -85,7 +85,7 @@ namespace Falcor
     using SamplerHandle = VkSampler;
     using GpuAddress = void*;
 
-    using PsoHandle = void*;
+    using PsoHandle = VkPipeline;
     using ComputeStateHandle = void*;
     using ShaderHandle = void*;
     using ShaderReflectionHandle = void*;

@@ -31,11 +31,165 @@
 #include "API/FBO.h"
 #include "API/Texture.h"
 #include "API/Device.h"
+#include "API/Vulkan/FalcorVK.h"
 
 namespace Falcor
 {
+    bool setViewportState(VkPipelineViewportStateCreateInfo& vpState, GraphicsStateObject::Desc& desc)
+    {
+        vpState.sType         = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+        vpState.viewportCount = 1;
+        vpState.scissorCount  = 1;
+
+        return true;
+    }
+
+    bool setDepthStencilState(VkPipelineDepthStencilStateCreateInfo& dsState, GraphicsStateObject::Desc& desc)
+    {
+        dsState.sType            = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+        dsState.depthTestEnable  = VK_TRUE;
+        dsState.depthWriteEnable = VK_TRUE;
+
+        return true;
+    }
+
+    // VKTODO: add later
+    bool setDynamicStates()
+    {
+        return true;
+    }
+
+    bool setVertexInputState(VkPipelineVertexInputStateCreateInfo& vertexState, GraphicsStateObject::Desc& desc)
+    {
+        vertexState.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+        
+        // VKTODO: Fill these when using vertices
+
+        //vertexState.vertexBindingDescriptionCount
+        //vertexState.pVertexBindingDescriptions
+        //vertexState.vertexAttributeDescriptionCount
+        //vertexState.pVertexAttributeDescriptions
+
+        return true;
+    }
+
+    bool setShaderStages(VkPipelineShaderStageCreateInfo& shaderStage, GraphicsStateObject::Desc& desc)
+    {
+        return true;
+    }
+
+    bool createPipelineLayout(VkPipelineLayoutCreateInfo& pipelineLayoutCreateInfo, VkPipelineLayout& pipelineLayout, GraphicsStateObject::Desc& desc)
+    {
+        /*pipelineLayoutCreateInfo.sType        = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+        pipelineLayoutCreateInfo.pNext          = nullptr;
+        pipelineLayoutCreateInfo.setLayoutCount = 1;
+        pipelineLayoutCreateInfo.pSetLayouts    = &descriptorSetLayout;
+
+        vkCreatePipelineLayout(device, &pPipelineLayoutCreateInfo, nullptr, &pipelineLayout);*/
+
+        if (VK_FAILED(vkCreatePipelineLayout(gpDevice->getApiHandle(), &pipelineLayoutCreateInfo, nullptr, &pipelineLayout)))
+        {
+            logError("Could not create Pipeline layout.");
+            return false;
+        }
+
+        return true;
+    }
+
+
+    bool setRasterizationState(VkPipelineRasterizationStateCreateInfo& rasterState, GraphicsStateObject::Desc& desc)
+    {
+        rasterState.sType                   = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+        rasterState.frontFace               = VK_FRONT_FACE_COUNTER_CLOCKWISE;
+        rasterState.depthClampEnable        = VK_FALSE;
+        rasterState.rasterizerDiscardEnable = VK_FALSE;
+        rasterState.depthBiasEnable         = VK_FALSE;
+        rasterState.lineWidth               = 1.0f;
+
+        switch (desc.getRasterizerState()->getFillMode())
+        {
+        case RasterizerState::FillMode::Solid: rasterState.polygonMode = VK_POLYGON_MODE_FILL; break;
+        case RasterizerState::FillMode::Wireframe: rasterState.polygonMode = VK_POLYGON_MODE_LINE; break;
+        }
+
+        switch (desc.getRasterizerState()->getCullMode())
+        {
+        case RasterizerState::CullMode::Front:  rasterState.cullMode = VK_CULL_MODE_FRONT_BIT; break;
+        case RasterizerState::CullMode::Back:   rasterState.cullMode = VK_CULL_MODE_BACK_BIT; break;
+        }
+
+        return true;
+    }
+
+    bool setMultiSampleState(VkPipelineMultisampleStateCreateInfo &msState, GraphicsStateObject::Desc& desc)
+    {
+        msState.sType                = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+        msState.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+        msState.pSampleMask          = nullptr;
+
+        return true;
+    }
+
+    bool setInputAssemblyState(VkPipelineInputAssemblyStateCreateInfo& inputAssemblyState, GraphicsStateObject::Desc& desc)
+    {
+        inputAssemblyState.sType    = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
+        inputAssemblyState.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+
+        return true;
+    }
+
+    bool createGraphicsPipeline(VkPipeline& graphicsPipeline, GraphicsStateObject::Desc& desc)
+    {
+        VkPipelineVertexInputStateCreateInfo   vertexInputState;
+        VkPipelineRasterizationStateCreateInfo rasterState;
+        VkPipelineMultisampleStateCreateInfo   msState;
+        VkPipelineViewportStateCreateInfo      vpState;
+        VkPipelineDepthStencilStateCreateInfo  dsState;
+        VkPipelineInputAssemblyStateCreateInfo inputAssemblyState;
+        VkPipelineLayoutCreateInfo             pipelineLayoutCreateInfo;
+             
+        // VKTODO: create these here, or do they belong elsewhere?
+        //VkRenderPass                         renderPass;
+        //VkPipelineCache                      pipelineCache;
+        VkPipelineLayout                       pipelineLayout;
+
+        // Set all states. VKTODO: set all needed!
+        setVertexInputState(vertexInputState, desc);
+        setRasterizationState(rasterState, desc);
+        createPipelineLayout(pipelineLayoutCreateInfo, pipelineLayout, desc);
+
+        VkGraphicsPipelineCreateInfo pipelineCreateInfo;
+        pipelineCreateInfo.sType               = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+        pipelineCreateInfo.layout              = pipelineLayout;        
+        pipelineCreateInfo.pVertexInputState   = &vertexInputState;
+        pipelineCreateInfo.pInputAssemblyState = &inputAssemblyState;
+        pipelineCreateInfo.pRasterizationState = &rasterState;        
+        pipelineCreateInfo.pMultisampleState   = &msState;
+        pipelineCreateInfo.pViewportState      = &vpState;
+        pipelineCreateInfo.pDepthStencilState  = &dsState;
+        //pipelineCreateInfo.renderPass        = &renderPass;
+        //pipelineCreateInfo.pColorBlendState  = &colorBlendState;
+        //pipelineCreateInfo.pDynamicState     = &dynamicState;
+
+   
+        /*if (VK_FAILED(vkCreateGraphicsPipelines(gpDevice->getApiHandle(), pipelineCache, 1, &pipelineCreateInfo, nullptr, &graphicsPipeline)))
+        {
+            logError("Could not create Pipeline.");
+            return false;
+        } */
+
+        return true;
+    }
+
+    bool createRenderPass()
+    {
+        return true;
+    }
+
     bool GraphicsStateObject::apiInit()
     {
+        createGraphicsPipeline(mApiHandle, mDesc);
+
         return true;
     }
 }
