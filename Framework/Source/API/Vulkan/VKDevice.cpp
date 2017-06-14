@@ -358,18 +358,21 @@ namespace Falcor
         std::vector<VkDeviceQueueCreateInfo> queueInfos;
         std::vector<std::vector<float>> queuePriorities((uint32_t)LowLevelContextData::CommandQueueType::Count);
 
-        // Create queues for each type
-        for (uint32_t i = 0; i < (uint32_t)LowLevelContextData::CommandQueueType::Count; i++)
+        // Set up info to create queues for each type
+        for (uint32_t type = 0; type < (uint32_t)LowLevelContextData::CommandQueueType::Count; type++)
         {
             // Default 1 Direct queue
-            const uint32_t queueCount = (i == (uint32_t)LowLevelContextData::CommandQueueType::Direct) ? desc.additionalQueues[i] + 1 : desc.additionalQueues[i];
-            queuePriorities[i].resize(queueCount, 1.0f); // Setting all priority at max for now 
+            const uint32_t queueCount = (type == (uint32_t)LowLevelContextData::CommandQueueType::Direct) ? desc.additionalQueues[type] + 1 : desc.additionalQueues[type];
+            queuePriorities[type].resize(queueCount, 1.0f); // Setting all priority at max for now
+
+            // Save how many queues of each type there will be so we can retrieve them easier after device creation
+            pData->queues[type].resize(queueCount);
 
             VkDeviceQueueCreateInfo info = {};
             info.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
             info.queueCount = queueCount;
-            info.queueFamilyIndex = pData->queueTypeToFamilyIndex[i];
-            info.pQueuePriorities = queuePriorities[i].data();
+            info.queueFamilyIndex = pData->queueTypeToFamilyIndex[type];
+            info.pQueuePriorities = queuePriorities[type].data();
 
             if (info.queueCount > 0)
             {
@@ -415,8 +418,14 @@ namespace Falcor
             return false;
         }
 
-        // #VKTODO Get Queues
-        
+        // Get the queues we created
+        for (uint32_t type = 0; type < (uint32_t)LowLevelContextData::CommandQueueType::Count; type++)
+        {
+            for (uint32_t i = 0; i < (uint32_t)pData->queues[type].size(); i++)
+            {
+                vkGetDeviceQueue(pData->device, pData->queueTypeToFamilyIndex[type], i, &pData->queues[type][i]);
+            }
+        }
 
         return true;
     }
