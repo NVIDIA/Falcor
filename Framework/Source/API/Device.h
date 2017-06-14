@@ -52,7 +52,8 @@ namespace Falcor
         */
         struct Desc
         {
-            ResourceFormat colorFormat = ResourceFormat::RGBA8UnormSrgb;    ///< The color buffer format
+            // #HACK VK surface validation only allows BGRA8 on my machine - KY
+            ResourceFormat colorFormat = ResourceFormat::BGRA8UnormSrgb;    ///< The color buffer format
             ResourceFormat depthFormat = ResourceFormat::D24UnormS8;        ///< The depth buffer format
             int apiMajorVersion = DEFAULT_API_MAJOR_VERSION;                ///< Requested API major version. Context creation fails if this version is not supported.
             int apiMinorVersion = DEFAULT_API_MINOR_VERSION;                ///< Requested API minor version. Context creation fails if this version is not supported.

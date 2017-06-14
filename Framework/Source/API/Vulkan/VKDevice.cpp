@@ -30,6 +30,7 @@
 #include "API/LowLevel/DescriptorPool.h"
 #include "API/LowLevel/GpuFence.h"
 #include "API/Vulkan/FalcorVK.h"
+#include <set>
 
 namespace Falcor
 {
@@ -186,27 +187,58 @@ namespace Falcor
         return pData->queueTypeToFamilyIndex[(uint32_t)type];
     }
 
-    bool createInstance(DeviceData *pData)
+    bool createInstance(DeviceData *pData, bool enableDebugLayers)
     {
-        uint32_t extensionCount = 0;
-        vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, nullptr);
-        std::vector<VkExtensionProperties> extensions(extensionCount);
-        vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, extensions.data());
+        // Layers
+        uint32_t layerCount = 0;
+        vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
+        std::vector<VkLayerProperties> allLayers(layerCount);
+        vkEnumerateInstanceLayerProperties(&layerCount, allLayers.data());
 
-        for (VkExtensionProperties& prop : extensions)
+        for (const VkLayerProperties& layer : allLayers)
         {
-            logInfo("Supported VK Extension: " + std::string(prop.extensionName));
+            logInfo("Available Vulkan Layer: " + std::string(layer.layerName) + " - VK Spec Version: " + std::to_string(layer.specVersion) + " - Implementation Version: " + std::to_string(layer.implementationVersion));
         }
 
-        const char *requiredExtensions[] = { "VK_KHR_win32_surface" };
+        // Layers to use when creating instance
+        std::vector<const char*> layerNames = { "VK_LAYER_LUNARG_swapchain" };
+        if (enableDebugLayers)
+        {
+            layerNames.push_back("VK_LAYER_LUNARG_core_validation");
+            layerNames.push_back("VK_LAYER_LUNARG_object_tracker");
+            layerNames.push_back("VK_LAYER_LUNARG_parameter_validation");
+            layerNames.push_back("VK_LAYER_GOOGLE_threading");
+            layerNames.push_back("VK_LAYER_NV_nsight");
+        }
 
-        VkInstanceCreateInfo InstanceCreateInfo = {};
-        InstanceCreateInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
-        InstanceCreateInfo.pApplicationInfo = NULL;
-        InstanceCreateInfo.enabledExtensionCount = 1;
-        InstanceCreateInfo.ppEnabledExtensionNames = requiredExtensions;
+        // Enumerate implicitly available extensions. The debug layers above just have VK_EXT_debug_report
+        uint32_t extensionCount = 0;
+        vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, nullptr);
+        std::vector<VkExtensionProperties> defaultExtensions(extensionCount);
+        vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, defaultExtensions.data());
 
-        if (VK_FAILED(vkCreateInstance(&InstanceCreateInfo, nullptr, &pData->instance)))
+        for (const VkExtensionProperties& extension : defaultExtensions)
+        {
+            logInfo("Available Instance Extension: " + std::string(extension.extensionName) + " - VK Spec Version: " + std::to_string(extension.specVersion));
+        }
+
+        // Extensions to use when creating instance
+        std::vector<const char*> extensionNames = { "VK_KHR_surface", "VK_KHR_win32_surface" };
+        
+        if(enableDebugLayers)
+        {
+            extensionNames.push_back("VK_EXT_debug_report");
+        }
+
+        VkInstanceCreateInfo instanceCreateInfo = {};
+        instanceCreateInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
+        instanceCreateInfo.pApplicationInfo = nullptr;
+        instanceCreateInfo.enabledLayerCount = (uint32_t)layerNames.size();
+        instanceCreateInfo.ppEnabledLayerNames = layerNames.data();
+        instanceCreateInfo.enabledExtensionCount = (uint32_t)extensionNames.size();
+        instanceCreateInfo.ppEnabledExtensionNames = extensionNames.data();
+
+        if (VK_FAILED(vkCreateInstance(&instanceCreateInfo, nullptr, &pData->instance)))
         {
             logError("Failed to create Vulkan instance");
             return false;
@@ -249,7 +281,7 @@ namespace Falcor
         return bestDevice;
     }
 
-    bool createPhysicalDevice(DeviceData *pData)
+    bool initPhysicalDevice(DeviceData *pData)
     {
         //
         // Enumerate devices
@@ -267,7 +299,7 @@ namespace Falcor
         vkGetPhysicalDeviceFeatures(pData->physicalDevice, &pData->supportedFeatures);
 
         //
-        // Match queue families to what type they are
+        // Get queue families and match them to what type they are
         //
 
         uint32_t queueFamilyCount = 0;
@@ -310,22 +342,34 @@ namespace Falcor
 
     bool createLogicalDevice(DeviceData *pData, const Device::Desc& desc)
     {
+        //
         // Features
+        //
+
         VkPhysicalDeviceFeatures requiredFeatures = {};
         requiredFeatures.multiDrawIndirect = pData->supportedFeatures.multiDrawIndirect;
         requiredFeatures.tessellationShader = VK_TRUE;
         requiredFeatures.geometryShader = VK_TRUE;
 
+        //
         // Queues
+        //
+
         std::vector<VkDeviceQueueCreateInfo> queueInfos;
+        std::vector<std::vector<float>> queuePriorities((uint32_t)LowLevelContextData::CommandQueueType::Count);
+
+        // Create queues for each type
         for (uint32_t i = 0; i < (uint32_t)LowLevelContextData::CommandQueueType::Count; i++)
         {
+            // Default 1 Direct queue
+            const uint32_t queueCount = (i == (uint32_t)LowLevelContextData::CommandQueueType::Direct) ? desc.additionalQueues[i] + 1 : desc.additionalQueues[i];
+            queuePriorities[i].resize(queueCount, 1.0f); // Setting all priority at max for now 
+
             VkDeviceQueueCreateInfo info = {};
             info.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-            info.flags = 0;
-            info.queueCount = (i == (uint32_t)LowLevelContextData::CommandQueueType::Direct) ? desc.additionalQueues[i] + 1 : desc.additionalQueues[i];
+            info.queueCount = queueCount;
             info.queueFamilyIndex = pData->queueTypeToFamilyIndex[i];
-            info.pQueuePriorities = nullptr;
+            info.pQueuePriorities = queuePriorities[i].data();
 
             if (info.queueCount > 0)
             {
@@ -333,16 +377,36 @@ namespace Falcor
             }
         }
 
+        //
+        // Extensions
+        //
+
+        uint32_t extensionCount = 0;
+        vkEnumerateDeviceExtensionProperties(pData->physicalDevice, nullptr, &extensionCount, nullptr);
+        std::vector<VkExtensionProperties> deviceExtensions(extensionCount);
+        vkEnumerateDeviceExtensionProperties(pData->physicalDevice, nullptr, &extensionCount, deviceExtensions.data());
+
+        for (const VkExtensionProperties& extension : deviceExtensions)
+        {
+            logInfo("Available Device Extension: " + std::string(extension.extensionName) + " - VK Spec Version: " + std::to_string(extension.specVersion));
+        }
+
+        const char* extensionNames[] =
+        {
+            "VK_KHR_swapchain",
+            "VK_NV_glsl_shader"
+        };
+
+        //
         // Logical Device
+        //
+
         VkDeviceCreateInfo deviceInfo = {};
         deviceInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-        deviceInfo.flags = 0;
         deviceInfo.queueCreateInfoCount = (uint32_t)queueInfos.size();
         deviceInfo.pQueueCreateInfos = queueInfos.data();
-        deviceInfo.enabledLayerCount = 0;
-        deviceInfo.ppEnabledLayerNames = nullptr;
-        deviceInfo.enabledExtensionCount = 0;
-        deviceInfo.ppEnabledExtensionNames = nullptr;
+        deviceInfo.enabledExtensionCount = arraysize(extensionNames);
+        deviceInfo.ppEnabledExtensionNames = extensionNames;
         deviceInfo.pEnabledFeatures = &requiredFeatures;
 
         if (VK_FAILED(vkCreateDevice(pData->physicalDevice, &deviceInfo, nullptr, &pData->device)))
@@ -364,41 +428,79 @@ namespace Falcor
         createInfo.hwnd = pWindow->getApiHandle();
         createInfo.hinstance = GetModuleHandle(nullptr);
 
-        VkResult result = vkCreateWin32SurfaceKHR(pData->instance, &createInfo, nullptr, &pData->surface);
-        if (VK_FAILED(result))
+        if (VK_FAILED(vkCreateWin32SurfaceKHR(pData->instance, &createInfo, nullptr, &pData->surface)))
         {
             logError("Could not create Vulkan surface.");
             return false;
         }
+
+        VkBool32 bSupported = VK_FALSE;
+        vkGetPhysicalDeviceSurfaceSupportKHR(pData->physicalDevice, gpDevice->getApiCommandQueueType(LowLevelContextData::CommandQueueType::Direct), pData->surface, &bSupported);
+        assert(bSupported);
 
         return true;
     }
 
     bool createSwapChain(DeviceData *pData, const Window* pWindow, ResourceFormat colorFormat, bool enableVSync)
     {
-        VkSurfaceCapabilitiesKHR surfCaps;
-        vkGetPhysicalDeviceSurfaceCapabilitiesKHR(pData->physicalDevice, pData->surface, &surfCaps);
+        //
+        // Select/Validate SwapChain creation settings
+        //
 
-        uint32_t presentModeCount = 0;
-        vkGetPhysicalDeviceSurfacePresentModesKHR(pData->physicalDevice, pData->surface, &presentModeCount, nullptr);
-
-        std::vector<VkPresentModeKHR> presentModes(presentModeCount);
-        vkGetPhysicalDeviceSurfacePresentModesKHR(pData->physicalDevice, pData->surface, &presentModeCount, presentModes.data());
+        // Surface size
+        VkSurfaceCapabilitiesKHR surfaceCapabilities;
+        vkGetPhysicalDeviceSurfaceCapabilitiesKHR(pData->physicalDevice, pData->surface, &surfaceCapabilities);
 
         VkExtent2D swapchainExtent = {};
-        if (surfCaps.currentExtent.width == (uint32_t)-1)
+        if (surfaceCapabilities.currentExtent.width == (uint32_t)-1)
         {
             swapchainExtent.width = pWindow->getClientAreaWidth();
             swapchainExtent.height = pWindow->getClientAreaWidth();
         }
         else
         {
-            swapchainExtent = surfCaps.currentExtent;
+            swapchainExtent = surfaceCapabilities.currentExtent;
         }
+
+        //
+        // Validate Surface format
+        //
+
+        const VkFormat requestedFormat = getVkFormat(srgbToLinearFormat(colorFormat));
+        const VkColorSpaceKHR requestedColorSpace = VK_COLORSPACE_SRGB_NONLINEAR_KHR;
+
+        uint32_t formatCount = 0;
+        vkGetPhysicalDeviceSurfaceFormatsKHR(pData->physicalDevice, pData->surface, &formatCount, nullptr);
+        std::vector<VkSurfaceFormatKHR> surfaceFormats(formatCount);
+        vkGetPhysicalDeviceSurfaceFormatsKHR(pData->physicalDevice, pData->surface, &formatCount, surfaceFormats.data());
+
+        bool formatValid = false;
+        for (const VkSurfaceFormatKHR& format : surfaceFormats)
+        {
+            if (format.format == requestedFormat && format.colorSpace == requestedColorSpace)
+            {
+                formatValid = true;
+                break;
+            }
+        }
+
+        if (formatValid == false)
+        {
+            logError("Requested Swapchain format is not available");
+            return false;
+        }
+
+        //
+        // Select present mode
+        //
+
+        uint32_t presentModeCount = 0;
+        vkGetPhysicalDeviceSurfacePresentModesKHR(pData->physicalDevice, pData->surface, &presentModeCount, nullptr);
+        std::vector<VkPresentModeKHR> presentModes(presentModeCount);
+        vkGetPhysicalDeviceSurfacePresentModesKHR(pData->physicalDevice, pData->surface, &presentModeCount, presentModes.data());
 
         // Select present mode, FIFO for VSync, otherwise preferring MAILBOX -> IMMEDIATE -> FIFO
         VkPresentModeKHR presentMode = VK_PRESENT_MODE_FIFO_KHR;
-
         if (enableVSync == false)
         {
             for (size_t i = 0; i < presentModeCount; i++)
@@ -415,36 +517,37 @@ namespace Falcor
             }
         }
 
-        VkSwapchainCreateInfoKHR scCreateInfo = {};
-        scCreateInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-        scCreateInfo.surface = pData->surface;
-        scCreateInfo.minImageCount = clamp(kSwapChainBuffers, surfCaps.minImageCount, surfCaps.maxImageCount);
-        scCreateInfo.imageFormat = getVkFormat(srgbToLinearFormat(colorFormat));
-        scCreateInfo.imageColorSpace = VK_COLORSPACE_SRGB_NONLINEAR_KHR;
-        scCreateInfo.imageExtent = { swapchainExtent.width, swapchainExtent.height };
-        scCreateInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-        scCreateInfo.preTransform = surfCaps.currentTransform;
-        scCreateInfo.imageArrayLayers = 1;
-        scCreateInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
-        scCreateInfo.queueFamilyIndexCount = 0;
-        scCreateInfo.pQueueFamilyIndices = nullptr;
-        scCreateInfo.presentMode = presentMode;
-        scCreateInfo.clipped = true;
-        scCreateInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
-        scCreateInfo.oldSwapchain = VK_NULL_HANDLE;
+        //
+        // Swapchain Creation
+        //
 
+        VkSwapchainCreateInfoKHR info = {};
+        info.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
+        info.surface = pData->surface;
+        info.minImageCount = clamp(kSwapChainBuffers, surfaceCapabilities.minImageCount, surfaceCapabilities.maxImageCount);
+        info.imageFormat = requestedFormat;
+        info.imageColorSpace = requestedColorSpace;
+        info.imageExtent = { swapchainExtent.width, swapchainExtent.height };
+        info.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+        info.preTransform = surfaceCapabilities.currentTransform;
+        info.imageArrayLayers = 1;
+        info.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
+        info.queueFamilyIndexCount = 0;     // Only needed if VK_SHARING_MODE_CONCURRENT
+        info.pQueueFamilyIndices = nullptr; // Only needed if VK_SHARING_MODE_CONCURRENT
+        info.presentMode = presentMode;
+        info.clipped = true;
+        info.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
+        info.oldSwapchain = VK_NULL_HANDLE;
 
-        // #VKTODO Fix validation
-        //VkResult result = vkCreateSwapchainKHR(pData->device, &scCreateInfo, nullptr, &pData->swapchain);
-        //if (VK_FAILED(result))
-        //{
-        //    logError("Could not create swapchain.");
-        //    return false;
-        //}
+        if (VK_FAILED(vkCreateSwapchainKHR(pData->device, &info, nullptr, &pData->swapchain)))
+        {
+            logError("Could not create swapchain.");
+            return false;
+        }
 
-        //err = vkGetSwapchainImagesKHR(pData->falcorVKLogicalDevice, pData->swapchain, &pData->imageCount, NULL);
+        //result = vkGetSwapchainImagesKHR(pData->falcorVKLogicalDevice, pData->swapchain, &pData->imageCount, NULL);
         //pData->swapChainImages.resize(pData->imageCount);
-        //err = vkGetSwapchainImagesKHR(pData->falcorVKLogicalDevice, pData->swapchain, &pData->imageCount, pData->swapChainImages.data());
+        //result = vkGetSwapchainImagesKHR(pData->falcorVKLogicalDevice, pData->swapchain, &pData->imageCount, pData->swapChainImages.data());
 
         //// For each of the Swapchain images, create image views out of them.
         //pData->FrameDatas.resize(pData->imageCount);
@@ -465,7 +568,7 @@ namespace Falcor
 
         //    pData->FrameDatas[i].image = pData->swapChainImages[i];
         //    colorAttachmentView.image = pData->FrameDatas[i].image;
-        //    err = vkCreateImageView(pData->falcorVKLogicalDevice, &colorAttachmentView, nullptr, &pData->FrameDatas[i].view);
+        //    result = vkCreateImageView(pData->falcorVKLogicalDevice, &colorAttachmentView, nullptr, &pData->FrameDatas[i].view);
         //}
 
         return true;
@@ -476,23 +579,17 @@ namespace Falcor
         DeviceData* pData = new DeviceData;
         mpPrivateData = pData;
 
-        if (desc.enableDebugLayer)
-        {
-            // TODO: add some Vulkan layers here.
-        }
-
-        if (createInstance(pData) == false)
+        if (createInstance(pData, desc.enableDebugLayer) == false)
         {
             return false;
         }
 
-        // This comes right after surface because it can apparently affect device creation
+        if (initPhysicalDevice(pData) == false)
+        {
+            return false;
+        }
+
         if (createSurface(pData, mpWindow.get()) == false)
-        {
-            return false;
-        }
-        
-        if (createPhysicalDevice(pData) == false)
         {
             return false;
         }
