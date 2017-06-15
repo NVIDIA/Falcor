@@ -87,33 +87,36 @@ namespace Falcor
     {
         DeviceData* pData = (DeviceData*)mpPrivateData;
 
+        uint32_t imageCount = 0;
+        vkGetSwapchainImagesKHR(pData->device, pData->swapchain, &imageCount, nullptr);
+        assert(imageCount == kSwapChainBuffers);
+
+        std::vector<VkImage> swapchainImages(imageCount);
+        vkGetSwapchainImagesKHR(pData->device, pData->swapchain, &imageCount, swapchainImages.data());
+
         for (uint32_t i = 0; i < kSwapChainBuffers; i++)
         {
             // Create a texture object
             auto pColorTex = Texture::SharedPtr(new Texture(width, height, 1, 1, 1, 1, colorFormat, Texture::Type::Texture2D, Texture::BindFlags::RenderTarget));
-            //HRESULT hr = pData->pSwapChain->GetBuffer(i, IID_PPV_ARGS(&pColorTex->mApiHandle));
-            //if (FAILED(hr))
-            //{
-            //	d3dTraceHR("Failed to get back-buffer " + std::to_string(i) + " from the swap-chain", hr);
-            //	return false;
-            //}
+            pColorTex->mApiHandle = swapchainImages[i];
 
             // Create the FBO if it's required
             if (pData->frameData[i].pFbo == nullptr)
             {
                 pData->frameData[i].pFbo = Fbo::create();
             }
+
             pData->frameData[i].pFbo->attachColorTarget(pColorTex, 0);
 
             // Create a depth texture
-            //if (depthFormat != ResourceFormat::Unknown)
-            //{
-            //	auto pDepth = Texture::create2D(width, height, depthFormat, 1, 1, nullptr, Texture::BindFlags::DepthStencil);
-            //	pData->frameData[i].pFbo->attachDepthStencilTarget(pDepth);
-            //}
-
-            //pData->currentBackBufferIndex = pData->pSwapChain->GetCurrentBackBufferIndex();
+            if (depthFormat != ResourceFormat::Unknown)
+            {
+                auto pDepth = Texture::create2D(width, height, depthFormat, 1, 1, nullptr, Texture::BindFlags::DepthStencil);
+                pData->frameData[i].pFbo->attachDepthStencilTarget(pDepth);
+            }
         }
+
+        pData->currentBackBufferIndex = 0;
 
         return true;
     }
@@ -553,33 +556,6 @@ namespace Falcor
             return false;
         }
 
-        
-        //result = vkGetSwapchainImagesKHR(pData->falcorVKLogicalDevice, pData->swapchain, &pData->imageCount, NULL);
-        //pData->swapChainImages.resize(pData->imageCount);
-        //result = vkGetSwapchainImagesKHR(pData->falcorVKLogicalDevice, pData->swapchain, &pData->imageCount, pData->swapChainImages.data());
-
-        //// For each of the Swapchain images, create image views out of them.
-        //pData->FrameDatas.resize(pData->imageCount);
-        //for (uint32_t i = 0; i < pData->imageCount; i++)
-        //{
-        //    VkImageViewCreateInfo colorAttachmentView = {};
-        //    colorAttachmentView.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-        //    colorAttachmentView.pNext = NULL;
-        //    colorAttachmentView.format = VK_FORMAT_B8G8R8A8_UNORM;
-        //    colorAttachmentView.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-        //    colorAttachmentView.subresourceRange.baseMipLevel = 0;
-        //    colorAttachmentView.subresourceRange.levelCount = 1;
-        //    colorAttachmentView.subresourceRange.baseArrayLayer = 0;
-        //    colorAttachmentView.subresourceRange.layerCount = 1;
-        //    colorAttachmentView.viewType = VK_IMAGE_VIEW_TYPE_2D;
-        //    colorAttachmentView.flags = 0;
-        //    colorAttachmentView.components = { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A };
-
-        //    pData->FrameDatas[i].image = pData->swapChainImages[i];
-        //    colorAttachmentView.image = pData->FrameDatas[i].image;
-        //    result = vkCreateImageView(pData->falcorVKLogicalDevice, &colorAttachmentView, nullptr, &pData->FrameDatas[i].view);
-        //}
-
         return true;
     }
 
@@ -627,11 +603,11 @@ namespace Falcor
         // Create the swap-chain
         createSwapChain(pData, mpWindow.get(), desc.colorFormat, mVsyncOn);
 
-        //// Update the FBOs
-        //if (updateDefaultFBO(mpWindow->getClientAreaWidth(), mpWindow->getClientAreaHeight(), desc.colorFormat, desc.depthFormat) == false)
-        //{
-        //    return false;
-        //}
+        // Update the FBOs
+        if (updateDefaultFBO(mpWindow->getClientAreaWidth(), mpWindow->getClientAreaHeight(), desc.colorFormat, desc.depthFormat) == false)
+        {
+            return false;
+        }
 
         //pData->pFrameFence = GpuFence::create();
         return true;
