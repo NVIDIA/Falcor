@@ -63,7 +63,7 @@ namespace Falcor
         VkDevice            device;
         VkSurfaceKHR        surface;
 
-        VkPhysicalDeviceFeatures supportedFeatures;
+        VkPhysicalDeviceProperties properties;
 
         // Map Falcor command queue type to VK device queue family index
         uint32_t queueTypeToFamilyIndex[(uint32_t)LowLevelContextData::CommandQueueType::Count];
@@ -296,7 +296,7 @@ namespace Falcor
 
         // Pick a device
         pData->physicalDevice = selectPhysicalDevice(devices);
-        vkGetPhysicalDeviceFeatures(pData->physicalDevice, &pData->supportedFeatures);
+        vkGetPhysicalDeviceProperties(pData->physicalDevice, &pData->properties);
 
         //
         // Get queue families and match them to what type they are
@@ -347,7 +347,6 @@ namespace Falcor
         //
 
         VkPhysicalDeviceFeatures requiredFeatures = {};
-        requiredFeatures.multiDrawIndirect = pData->supportedFeatures.multiDrawIndirect;
         requiredFeatures.tessellationShader = VK_TRUE;
         requiredFeatures.geometryShader = VK_TRUE;
 
@@ -554,6 +553,7 @@ namespace Falcor
             return false;
         }
 
+        
         //result = vkGetSwapchainImagesKHR(pData->falcorVKLogicalDevice, pData->swapchain, &pData->imageCount, NULL);
         //pData->swapChainImages.resize(pData->imageCount);
         //result = vkGetSwapchainImagesKHR(pData->falcorVKLogicalDevice, pData->swapchain, &pData->imageCount, pData->swapChainImages.data());
