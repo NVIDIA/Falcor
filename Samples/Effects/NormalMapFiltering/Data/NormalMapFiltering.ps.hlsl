@@ -29,7 +29,7 @@
 #include "Shading.h"
 #define _COMPILE_DEFAULT_VS
 #include "VertexAttrib.h"
-#include "Effects/LeanMapData.hlsli"
+#include "Effects/LeanMapData.slang.h"
 
 cbuffer PerFrameCB : register(b0)
 {

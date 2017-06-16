@@ -78,7 +78,7 @@ namespace Falcor
 
     void Program::init(const std::string& VS, const std::string& FS, const std::string& GS, const std::string& HS, const std::string& DS, const DefineList& programDefines, bool createdFromFile)
     {
-        mOriginalShaderStrings[(uint32_t)ShaderType::Vertex] = VS.size() ? VS : "DefaultVS.hlsl";
+        mOriginalShaderStrings[(uint32_t)ShaderType::Vertex] = VS.size() ? VS : "DefaultVS.slang";
         mOriginalShaderStrings[(uint32_t)ShaderType::Pixel] = FS;
         mOriginalShaderStrings[(uint32_t)ShaderType::Geometry] = GS;
         mOriginalShaderStrings[(uint32_t)ShaderType::Hull] = HS;
