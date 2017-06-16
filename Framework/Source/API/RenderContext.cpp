@@ -84,7 +84,7 @@ namespace Falcor
     {
         if (sBlitData.pVars == nullptr)
         {
-            sBlitData.pPass = FullScreenPass::create("Framework/Shaders/Blit.vs.hlsl", "Framework/Shaders/Blit.ps.hlsl");
+            sBlitData.pPass = FullScreenPass::create("Framework/Shaders/Blit.vs.slang", "Framework/Shaders/Blit.ps.slang");
             sBlitData.pVars = GraphicsVars::create(sBlitData.pPass->getProgram()->getActiveVersion()->getReflector());
             sBlitData.pState = GraphicsState::create();
 
