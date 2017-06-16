@@ -90,7 +90,7 @@ namespace Falcor
     using ShaderHandle = void*;
     using ShaderReflectionHandle = void*;
     using RootSignatureHandle = VkPipelineLayout;
-    using DescriptorHeapHandle = void*;
+    using DescriptorHeapHandle = VkDescriptorPool;
 
     using VaoHandle = void*;
     using VertexShaderHandle = void*;
