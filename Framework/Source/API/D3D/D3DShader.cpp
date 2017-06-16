@@ -60,13 +60,13 @@ namespace Falcor
         }
     }
 
-    struct SpireBlob : ID3DBlob
+    struct SlangBlob : ID3DBlob
     {
         void* buffer;
         size_t bufferSize;
         size_t refCount;
 
-        SpireBlob(void* buffer, size_t bufferSize)
+        SlangBlob(void* buffer, size_t bufferSize)
             : buffer(buffer)
             , bufferSize(bufferSize)
             , refCount(1)

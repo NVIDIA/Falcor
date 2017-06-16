@@ -13,6 +13,10 @@ FalcorTest.VC.db
 FalcorTest/TestResults/*
 Falcor.VC.VC.opendb
 Framework/Externals/NVAPI/
+Framework/Externals/slang/*
+!Framework/Externals/slang/source/**/*.h
+!Framework/Externals/slang/source/**/*.cpp
+.vs/*
 Test/OutputTestingHtml.pyc
 Test/TestingUtil.pyc
 Test/RunAllTests.pyc

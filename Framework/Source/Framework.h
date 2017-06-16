@@ -113,7 +113,7 @@ namespace Falcor
         GLSL,           ///< OpenGL Shading Language (GLSL)
         VulkanGLSL,     ///< GLSL for Vulkan
         HLSL,           ///< High-Level Shading Language
-        Spire,          ///< Spire shading language
+        Slang,          ///< Slang shading language
     };
 
     /** Framebuffer target flags. Used for clears and copy operations

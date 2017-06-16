@@ -30,14 +30,14 @@
 #include "ProgramReflection.h"
 #include "Utils/StringUtils.h"
 
-using namespace spire;
+using namespace slang;
 
 namespace Falcor
 {
-    ProgramReflection::SharedPtr ProgramReflection::create(ShaderReflection* pSpireReflector, std::string& log)
+    ProgramReflection::SharedPtr ProgramReflection::create(ShaderReflection* pSlangReflector, std::string& log)
     {
         SharedPtr pReflection = SharedPtr(new ProgramReflection);
-        return pReflection->init(pSpireReflector, log) ? pReflection : nullptr;
+        return pReflection->init(pSlangReflector, log) ? pReflection : nullptr;
     }
 
     ProgramReflection::BindLocation ProgramReflection::getBufferBinding(const std::string& name) const
@@ -56,12 +56,12 @@ namespace Falcor
         return invalidBind;
     }
 
-    bool ProgramReflection::init(ShaderReflection* pSpireReflector, std::string& log)
+    bool ProgramReflection::init(ShaderReflection* pSlangReflector, std::string& log)
     {
         bool b = true;
-        b = b && reflectResources(          pSpireReflector, log);
-        b = b && reflectVertexAttributes(   pSpireReflector, log);
-        b = b && reflectPixelShaderOutputs( pSpireReflector, log);
+        b = b && reflectResources(          pSlangReflector, log);
+        b = b && reflectVertexAttributes(   pSlangReflector, log);
+        b = b && reflectPixelShaderOutputs( pSlangReflector, log);
         return b;
     }
 
@@ -220,9 +220,9 @@ namespace Falcor
     /************************************************************************/
     /*  SPIRE Reflection                                                    */
     /************************************************************************/
-    ProgramReflection::Variable::Type getVariableType(TypeReflection::ScalarType spireScalarType, uint32_t rows, uint32_t columns)
+    ProgramReflection::Variable::Type getVariableType(TypeReflection::ScalarType slangScalarType, uint32_t rows, uint32_t columns)
     {
-        switch (spireScalarType)
+        switch (slangScalarType)
         {
         case TypeReflection::ScalarType::None:
             // This isn't a scalar/matrix/vector, so it can't
@@ -412,7 +412,7 @@ namespace Falcor
 
     }
 
-    // Information we need to track when converting Spire reflection
+    // Information we need to track when converting Slang reflection
     // information over to the Falcor equivalent
     struct ReflectionGenerationContext
     {
@@ -455,7 +455,7 @@ namespace Falcor
     // Once we've found the path from the root down to a particular leaf
     // variable, `getBindingIndex` can be used to find the final summed-up
     // index (or byte offset, in the case of a uniform).
-    uint32_t getBindingIndex(ReflectionPath* path, SpireParameterCategory category)
+    uint32_t getBindingIndex(ReflectionPath* path, SlangParameterCategory category)
     {
         uint32_t offset = 0;
         for (auto pp = path; pp; pp = pp->parent)
@@ -490,29 +490,29 @@ namespace Falcor
 
     size_t getUniformOffset(ReflectionPath* path)
     {
-        return getBindingIndex(path, SPIRE_PARAMETER_CATEGORY_UNIFORM);
+        return getBindingIndex(path, SLANG_PARAMETER_CATEGORY_UNIFORM);
     }
 
-    uint32_t getBindingSpace(ReflectionPath* path, SpireParameterCategory category)
+    uint32_t getBindingSpace(ReflectionPath* path, SlangParameterCategory category)
     {
         // TODO: implement
         return 0;
     }
 
-    static ProgramReflection::Resource::ResourceType getResourceType(TypeReflection* pSpireType)
+    static ProgramReflection::Resource::ResourceType getResourceType(TypeReflection* pSlangType)
     {
-        switch (pSpireType->unwrapArray()->getKind())
+        switch (pSlangType->unwrapArray()->getKind())
         {
         case TypeReflection::Kind::SamplerState:
             return ProgramReflection::Resource::ResourceType::Sampler;
 
         case TypeReflection::Kind::Resource:
-            switch (pSpireType->getResourceShape() & SPIRE_RESOURCE_BASE_SHAPE_MASK)
+            switch (pSlangType->getResourceShape() & SLANG_RESOURCE_BASE_SHAPE_MASK)
             {
-            case SPIRE_STRUCTURED_BUFFER:
+            case SLANG_STRUCTURED_BUFFER:
                 return ProgramReflection::Resource::ResourceType::StructuredBuffer;
 
-            case SPIRE_BYTE_ADDRESS_BUFFER:
+            case SLANG_BYTE_ADDRESS_BUFFER:
                 return ProgramReflection::Resource::ResourceType::RawBuffer;
 
             default:
@@ -527,12 +527,12 @@ namespace Falcor
         return ProgramReflection::Resource::ResourceType::Unknown;
     }
 
-    static ProgramReflection::ShaderAccess getShaderAccess(TypeReflection* pSpireType)
+    static ProgramReflection::ShaderAccess getShaderAccess(TypeReflection* pSlangType)
     {
         // Compute access for an array using the underlying type...
-        pSpireType = pSpireType->unwrapArray();
+        pSlangType = pSlangType->unwrapArray();
 
-        switch (pSpireType->getKind())
+        switch (pSlangType->getKind())
         {
         case TypeReflection::Kind::SamplerState:
         case TypeReflection::Kind::ConstantBuffer:
@@ -540,12 +540,12 @@ namespace Falcor
             break;
 
         case TypeReflection::Kind::Resource:
-            switch (pSpireType->getResourceAccess())
+            switch (pSlangType->getResourceAccess())
             {
-            case SPIRE_RESOURCE_ACCESS_NONE:
+            case SLANG_RESOURCE_ACCESS_NONE:
                 return ProgramReflection::ShaderAccess::Undefined;
 
-            case SPIRE_RESOURCE_ACCESS_READ:
+            case SLANG_RESOURCE_ACCESS_READ:
                 return ProgramReflection::ShaderAccess::Read;
 
             default:
@@ -586,32 +586,32 @@ namespace Falcor
         }
     }
 
-    static ProgramReflection::Resource::Dimensions getResourceDimensions(SpireResourceShape shape)
+    static ProgramReflection::Resource::Dimensions getResourceDimensions(SlangResourceShape shape)
     {
         switch (shape)
         {
-        case SPIRE_TEXTURE_1D:
+        case SLANG_TEXTURE_1D:
             return ProgramReflection::Resource::Dimensions::Texture1D;
-        case SPIRE_TEXTURE_1D_ARRAY:
+        case SLANG_TEXTURE_1D_ARRAY:
             return ProgramReflection::Resource::Dimensions::Texture1DArray;
-        case SPIRE_TEXTURE_2D:
+        case SLANG_TEXTURE_2D:
             return ProgramReflection::Resource::Dimensions::Texture2D;
-        case SPIRE_TEXTURE_2D_ARRAY:
+        case SLANG_TEXTURE_2D_ARRAY:
             return ProgramReflection::Resource::Dimensions::Texture2DArray;
-        case SPIRE_TEXTURE_2D_MULTISAMPLE:
+        case SLANG_TEXTURE_2D_MULTISAMPLE:
             return ProgramReflection::Resource::Dimensions::Texture2DMS;
-        case SPIRE_TEXTURE_2D_MULTISAMPLE_ARRAY:
+        case SLANG_TEXTURE_2D_MULTISAMPLE_ARRAY:
             return ProgramReflection::Resource::Dimensions::Texture2DMSArray;
-        case SPIRE_TEXTURE_3D:
+        case SLANG_TEXTURE_3D:
             return ProgramReflection::Resource::Dimensions::Texture3D;
-        case SPIRE_TEXTURE_CUBE:
+        case SLANG_TEXTURE_CUBE:
             return ProgramReflection::Resource::Dimensions::TextureCube;
-        case SPIRE_TEXTURE_CUBE_ARRAY:
+        case SLANG_TEXTURE_CUBE_ARRAY:
             return ProgramReflection::Resource::Dimensions::TextureCubeArray;
 
-        case SPIRE_TEXTURE_BUFFER:
-        case SPIRE_STRUCTURED_BUFFER:
-        case SPIRE_BYTE_ADDRESS_BUFFER:
+        case SLANG_TEXTURE_BUFFER:
+        case SLANG_STRUCTURED_BUFFER:
+        case SLANG_BYTE_ADDRESS_BUFFER:
             return ProgramReflection::Resource::Dimensions::Buffer;
 
         default:
@@ -645,13 +645,13 @@ namespace Falcor
 
     static bool reflectStructuredBuffer(
         ReflectionGenerationContext*    pContext,
-        TypeLayoutReflection*    pSpireType,
+        TypeLayoutReflection*    pSlangType,
         const std::string&              name,
         ReflectionPath*                 path);
 
     static bool reflectConstantBuffer(
         ReflectionGenerationContext*    pContext,
-        TypeLayoutReflection*    pSpireType,
+        TypeLayoutReflection*    pSlangType,
         const std::string&              name,
         ReflectionPath*                 path);
 
@@ -659,34 +659,34 @@ namespace Falcor
     // Generate reflection data for a single variable
     static bool reflectResource(
         ReflectionGenerationContext*    pContext,
-        TypeLayoutReflection*    pSpireType,
+        TypeLayoutReflection*    pSlangType,
         const std::string&              name,
         ReflectionPath*                 path)
     {
-        auto resourceType = getResourceType(pSpireType->getType());
+        auto resourceType = getResourceType(pSlangType->getType());
         if (resourceType == ProgramReflection::Resource::ResourceType::StructuredBuffer)
         {
             // reflect this parameter as a buffer
             return reflectStructuredBuffer(
                 pContext,
-                pSpireType,
+                pSlangType,
                 name,
                 path);
         }
 
         ProgramReflection::Resource falcorDesc;
         falcorDesc.type = resourceType;
-        falcorDesc.shaderAccess = getShaderAccess(pSpireType->getType());
+        falcorDesc.shaderAccess = getShaderAccess(pSlangType->getType());
         if (resourceType == ProgramReflection::Resource::ResourceType::Texture)
         {
-            falcorDesc.retType = getReturnType(pSpireType->getResourceResultType());
-            falcorDesc.dims = getResourceDimensions(pSpireType->getResourceShape());
+            falcorDesc.retType = getReturnType(pSlangType->getResourceResultType());
+            falcorDesc.dims = getResourceDimensions(pSlangType->getResourceShape());
         }
-        bool isArray = pSpireType->isArray();
-        falcorDesc.regIndex = (uint32_t)getBindingIndex(path, pSpireType->getParameterCategory());
-        falcorDesc.registerSpace = (uint32_t)getBindingSpace(path, pSpireType->getParameterCategory());
+        bool isArray = pSlangType->isArray();
+        falcorDesc.regIndex = (uint32_t)getBindingIndex(path, pSlangType->getParameterCategory());
+        falcorDesc.registerSpace = (uint32_t)getBindingSpace(path, pSlangType->getParameterCategory());
         assert(falcorDesc.registerSpace == 0);
-        falcorDesc.arraySize = isArray ? (uint32_t)pSpireType->getTotalArrayElementCount() : 0;
+        falcorDesc.arraySize = isArray ? (uint32_t)pSlangType->getTotalArrayElementCount() : 0;
 
         // If this already exists, definitions should match
         auto& resourceMap = *pContext->pResourceMap;
@@ -713,11 +713,11 @@ namespace Falcor
 
     static void reflectType(
         ReflectionGenerationContext*    pContext,
-        TypeLayoutReflection*    pSpireType,
+        TypeLayoutReflection*    pSlangType,
         const std::string&              name,
         ReflectionPath*                 pPath)
     {
-        size_t uniformSize = pSpireType->getSize();
+        size_t uniformSize = pSlangType->getSize();
 
         // For any variable that actually occupies space in
         // uniform data, we want to add an entry to
@@ -728,22 +728,22 @@ namespace Falcor
 
             desc.location = getUniformOffset(pPath);
             desc.type = getVariableType(
-                pSpireType->getScalarType(),
-                pSpireType->getRowCount(),
-                pSpireType->getColumnCount());
+                pSlangType->getScalarType(),
+                pSlangType->getRowCount(),
+                pSlangType->getColumnCount());
 
-            switch (pSpireType->getKind())
+            switch (pSlangType->getKind())
             {
             default:
                 break;
 
             case TypeReflection::Kind::Array:
-                desc.arraySize = (uint32_t)pSpireType->getElementCount();
-                desc.arrayStride = (uint32_t)pSpireType->getElementStride(SPIRE_PARAMETER_CATEGORY_UNIFORM);
+                desc.arraySize = (uint32_t)pSlangType->getElementCount();
+                desc.arrayStride = (uint32_t)pSlangType->getElementStride(SLANG_PARAMETER_CATEGORY_UNIFORM);
                 break;
 
             case TypeReflection::Kind::Matrix:
-                // TODO(tfoley): Spire needs to report this information!
+                // TODO(tfoley): Slang needs to report this information!
                 //                desc.isRowMajor = (typeDesc.Class == D3D_SVC_MATRIX_ROWS);
                 break;
             }
@@ -761,7 +761,7 @@ namespace Falcor
         //
         // That is, we will look through any number of levels of array-ness
         // to see the type underneath:
-        switch (pSpireType->unwrapArray()->getKind())
+        switch (pSlangType->unwrapArray()->getKind())
         {
         case TypeReflection::Kind::Struct:
             // A `struct` type obviously isn't a resource
@@ -770,19 +770,27 @@ namespace Falcor
             // TODO: If we ever start using arrays of constant buffers,
             // we'd probably want to handle them here too...
 
+        // Explicitly skip constant buffers at this step, because
+        // otherwise the test below for resources would catch then
+        // when using Vulkan (because constant buffers use the same
+        // binding space as texture/sampler parameters).
+        case TypeReflection::Kind::ConstantBuffer:
+            break;
+
         default:
             // This might be a resource, or an array of resources.
             // To find out, let's ask what category of resource
             // it consumes.
-            switch (pSpireType->getParameterCategory())
+            switch (pSlangType->getParameterCategory())
             {
             case ParameterCategory::ShaderResource:
             case ParameterCategory::UnorderedAccess:
             case ParameterCategory::SamplerState:
+            case ParameterCategory::DescriptorTableSlot:
                 // This is a resource, or an array of them (or an array of arrays ...)
                 reflectResource(
                     pContext,
-                    pSpireType,
+                    pSlangType,
                     name,
                     pPath);
 
@@ -799,7 +807,7 @@ namespace Falcor
         // If we didn't early exit in the resource case above, then we
         // will go ahead and recurse into the sub-elements of the type
         // (fields of a struct, elements of an array, etc.)
-        switch (pSpireType->getKind())
+        switch (pSlangType->getKind())
         {
         default:
             // All the interesting cases for non-aggregate values
@@ -810,7 +818,7 @@ namespace Falcor
             // We've found a constant buffer, so reflect it as a top-level buffer
             reflectConstantBuffer(
                 pContext,
-                pSpireType,
+                pSlangType,
                 name,
                 pPath);
             break;
@@ -827,8 +835,8 @@ namespace Falcor
             // TODO: we should probably also handle arrays-of-textures
             // and arrays-of-samplers specially here.
 
-            auto elementCount = (uint32_t)pSpireType->getElementCount();
-            TypeLayoutReflection* elementType = pSpireType->getElementTypeLayout();
+            auto elementCount = (uint32_t)pSlangType->getElementCount();
+            TypeLayoutReflection* elementType = pSlangType->getElementTypeLayout();
 
             assert(name.size());
 
@@ -836,7 +844,7 @@ namespace Falcor
             {
                 ReflectionPath elementPath;
                 elementPath.parent = pPath;
-                elementPath.typeLayout = pSpireType;
+                elementPath.typeLayout = pSlangType;
                 elementPath.childIndex = ee;
 
                 reflectType(pContext, elementType, name + '[' + std::to_string(ee) + "]", &elementPath);
@@ -854,16 +862,16 @@ namespace Falcor
             // parsing work during lookup, to deal with `.`
             // operations in the path to a variable.
 
-            uint32_t fieldCount = pSpireType->getFieldCount();
+            uint32_t fieldCount = pSlangType->getFieldCount();
             for (uint32_t ff = 0; ff < fieldCount; ++ff)
             {
-                VariableLayoutReflection* field = pSpireType->getFieldByIndex(ff);
+                VariableLayoutReflection* field = pSlangType->getFieldByIndex(ff);
                 std::string memberName(field->getName());
                 std::string fullName = name.size() ? name + '.' + memberName : memberName;
 
                 ReflectionPath fieldPath;
                 fieldPath.parent = pPath;
-                fieldPath.typeLayout = pSpireType;
+                fieldPath.typeLayout = pSlangType;
                 fieldPath.childIndex = ff;
 
                 reflectType(pContext, field->getTypeLayout(), fullName, &fieldPath);
@@ -875,36 +883,36 @@ namespace Falcor
 
     static void reflectVariable(
         ReflectionGenerationContext*        pContext,
-        VariableLayoutReflection*    pSpireVar,
+        VariableLayoutReflection*    pSlangVar,
         ReflectionPath*                     pParentPath)
     {
         // Get the variable name
-        std::string name(pSpireVar->getName());
+        std::string name(pSlangVar->getName());
 
         // Create a path element for the variable
         ReflectionPath varPath;
         varPath.parent = pParentPath;
-        varPath.var = pSpireVar;
+        varPath.var = pSlangVar;
 
         // Reflect the Type
-        reflectType(pContext, pSpireVar->getTypeLayout(), name, &varPath);
+        reflectType(pContext, pSlangVar->getTypeLayout(), name, &varPath);
     }
 
     static void initializeBufferVariables(
         ReflectionGenerationContext*    pContext,
         ReflectionPath*                 pBufferPath,
-        TypeLayoutReflection*    pSpireElementType)
+        TypeLayoutReflection*    pSlangElementType)
     {
         // Element type of a structured buffer need not be a structured type,
         // so don't recurse unless needed...
-        if (pSpireElementType->getKind() != TypeReflection::Kind::Struct)
+        if (pSlangElementType->getKind() != TypeReflection::Kind::Struct)
             return;
 
-        uint32_t fieldCount = pSpireElementType->getFieldCount();
+        uint32_t fieldCount = pSlangElementType->getFieldCount();
 
         for (uint32_t ff = 0; ff < fieldCount; ff++)
         {
-            auto var = pSpireElementType->getFieldByIndex(ff);
+            auto var = pSlangElementType->getFieldByIndex(ff);
 
             reflectVariable(pContext, var, pBufferPath);
         }
@@ -952,45 +960,45 @@ namespace Falcor
     }
 
     static ProgramReflection::BufferReflection::StructuredType getStructuredBufferType(
-        TypeReflection* pSpireType)
+        TypeReflection* pSlangType)
     {
         auto invalid = ProgramReflection::BufferReflection::StructuredType::Invalid;
 
-        if (pSpireType->getKind() != TypeReflection::Kind::Resource)
+        if (pSlangType->getKind() != TypeReflection::Kind::Resource)
             return invalid; // not a structured buffer
 
-        if (pSpireType->getResourceShape() != SPIRE_STRUCTURED_BUFFER)
+        if (pSlangType->getResourceShape() != SLANG_STRUCTURED_BUFFER)
             return invalid; // not a structured buffer
 
-        switch (pSpireType->getResourceAccess())
+        switch (pSlangType->getResourceAccess())
         {
         default:
             should_not_get_here();
             return invalid;
 
-        case SPIRE_RESOURCE_ACCESS_READ:
+        case SLANG_RESOURCE_ACCESS_READ:
             return ProgramReflection::BufferReflection::StructuredType::Default;
 
-        case SPIRE_RESOURCE_ACCESS_READ_WRITE:
-        case SPIRE_RESOURCE_ACCESS_RASTER_ORDERED:
+        case SLANG_RESOURCE_ACCESS_READ_WRITE:
+        case SLANG_RESOURCE_ACCESS_RASTER_ORDERED:
             return ProgramReflection::BufferReflection::StructuredType::Counter;
-        case SPIRE_RESOURCE_ACCESS_APPEND:
+        case SLANG_RESOURCE_ACCESS_APPEND:
             return ProgramReflection::BufferReflection::StructuredType::Append;
-        case SPIRE_RESOURCE_ACCESS_CONSUME:
+        case SLANG_RESOURCE_ACCESS_CONSUME:
             return ProgramReflection::BufferReflection::StructuredType::Consume;
         }
     }
 
     static bool reflectBuffer(
         ReflectionGenerationContext*                pContext,
-        TypeLayoutReflection*                pSpireType,
+        TypeLayoutReflection*                pSlangType,
         const std::string&                          name,
         ReflectionPath*                             pPath,
         ProgramReflection::BufferData&              bufferDesc,
         ProgramReflection::BufferReflection::Type   bufferType,
         ProgramReflection::ShaderAccess             shaderAccess)
     {
-        auto pSpireElementType = pSpireType->getElementTypeLayout();
+        auto pSlangElementType = pSlangType->getElementTypeLayout();
 
         ProgramReflection::VariableMap varMap;
 
@@ -1000,14 +1008,14 @@ namespace Falcor
         initializeBufferVariables(
             &context,
             pPath,
-            pSpireElementType);
+            pSlangElementType);
 
         // TODO(tfoley): This is a bit of an ugly workaround, and it would
-        // be good for the Spire API to make it unnecessary...
-        auto category = pSpireType->getParameterCategory();
+        // be good for the Slang API to make it unnecessary...
+        auto category = pSlangType->getParameterCategory();
         if (category == ParameterCategory::Mixed)
         {
-            if (pSpireType->getKind() == TypeReflection::Kind::ConstantBuffer)
+            if (pSlangType->getKind() == TypeReflection::Kind::ConstantBuffer)
             {
                 category = ParameterCategory::ConstantBuffer;
             }
@@ -1045,8 +1053,8 @@ namespace Falcor
                 bindingIndex,
                 bindingSpace,
                 bufferType,
-                getStructuredBufferType(pSpireType->getType()),
-                (uint32_t)pSpireElementType->getSize(),
+                getStructuredBufferType(pSlangType->getType()),
+                (uint32_t)pSlangElementType->getSize(),
                 varMap,
                 ProgramReflection::ResourceMap(),
                 shaderAccess);
@@ -1060,18 +1068,18 @@ namespace Falcor
     }
 
     bool ProgramReflection::reflectVertexAttributes(
-        ShaderReflection*    pSpireReflector,
+        ShaderReflection*    pSlangReflector,
         std::string&                log)
     {
-        // TODO(tfoley): Add vertex input reflection capability to Spire
+        // TODO(tfoley): Add vertex input reflection capability to Slang
         return true;
     }
 
     bool ProgramReflection::reflectPixelShaderOutputs(
-        ShaderReflection*    pSpireReflector,
+        ShaderReflection*    pSlangReflector,
         std::string&                log)
     {
-        // TODO(tfoley): Add fragment output reflection capability to Spire
+        // TODO(tfoley): Add fragment output reflection capability to Slang
         return true;
     }
 
@@ -1084,18 +1092,18 @@ namespace Falcor
             return ProgramReflection::Resource::ResourceType::Sampler;
         case ParameterCategory::ShaderResource:
         case ParameterCategory::UnorderedAccess:
-            switch (pParameter->getType()->getResourceShape() & SPIRE_RESOURCE_BASE_SHAPE_MASK)
+            switch (pParameter->getType()->getResourceShape() & SLANG_RESOURCE_BASE_SHAPE_MASK)
             {
-            case SPIRE_BYTE_ADDRESS_BUFFER:
+            case SLANG_BYTE_ADDRESS_BUFFER:
                 return ProgramReflection::Resource::ResourceType::RawBuffer;
 
-            case SPIRE_STRUCTURED_BUFFER:
+            case SLANG_STRUCTURED_BUFFER:
                 return ProgramReflection::Resource::ResourceType::StructuredBuffer;
 
             default:
                 return ProgramReflection::Resource::ResourceType::Texture;
 
-            case SPIRE_RESOURCE_NONE:
+            case SLANG_RESOURCE_NONE:
                 break;
             }
             break;
@@ -1173,14 +1181,14 @@ namespace Falcor
 
     static bool reflectStructuredBuffer(
         ReflectionGenerationContext*    pContext,
-        TypeLayoutReflection*    pSpireType,
+        TypeLayoutReflection*    pSlangType,
         const std::string&              name,
         ReflectionPath*                 path)
     {
-        auto shaderAccess = getShaderAccess(pSpireType->getType());
+        auto shaderAccess = getShaderAccess(pSlangType->getType());
         return reflectBuffer(
             pContext,
-            pSpireType,
+            pSlangType,
             name,
             path,
             pContext->pReflector->mBuffers[(uint32_t)ProgramReflection::BufferReflection::Type::Structured],
@@ -1190,13 +1198,13 @@ namespace Falcor
 
     static bool reflectConstantBuffer(
         ReflectionGenerationContext*    pContext,
-        TypeLayoutReflection*    pSpireType,
+        TypeLayoutReflection*    pSlangType,
         const std::string&              name,
         ReflectionPath*                 path)
     {
         return reflectBuffer(
             pContext,
-            pSpireType,
+            pSlangType,
             name,
             path,
             pContext->pReflector->mBuffers[(uint32_t)ProgramReflection::BufferReflection::Type::Constant],
@@ -1207,12 +1215,12 @@ namespace Falcor
 #if 0
     static bool reflectStructuredBuffer(
         ReflectionGenerationContext*    pContext,
-        BufferReflection*        spireParam)
+        BufferReflection*        slangParam)
     {
-        auto shaderAccess = getShaderAccess(spireParam->getCategory());
+        auto shaderAccess = getShaderAccess(slangParam->getCategory());
         return reflectBuffer(
             pContext,
-            spireParam,
+            slangParam,
             pContext->pReflector->mBuffers[(uint32_t)ProgramReflection::BufferReflection::Type::Structured],
             ProgramReflection::BufferReflection::Type::Structured,
             ProgramReflection::ShaderAccess::Read);
@@ -1220,11 +1228,11 @@ namespace Falcor
 
     static bool reflectConstantBuffer(
         ReflectionGenerationContext*    pContext,
-        BufferReflection*        spireParam)
+        BufferReflection*        slangParam)
     {
         return reflectBuffer(
             pContext,
-            spireParam,
+            slangParam,
             pContext->pReflector->mBuffers[(uint32_t)ProgramReflection::BufferReflection::Type::Constant],
             ProgramReflection::BufferReflection::Type::Constant,
             ProgramReflection::ShaderAccess::Read);
@@ -1232,17 +1240,17 @@ namespace Falcor
 
     static bool reflectVariable(
         ReflectionGenerationContext*        pContext,
-        VariableLayoutReflection*    spireVar)
+        VariableLayoutReflection*    slangVar)
     {
-        switch (spireVar->getCategory())
+        switch (slangVar->getCategory())
         {
         case ParameterCategory::ConstantBuffer:
-            return reflectConstantBuffer(pContext, spireVar->asBuffer());
+            return reflectConstantBuffer(pContext, slangVar->asBuffer());
 
         case ParameterCategory::ShaderResource:
         case ParameterCategory::UnorderedAccess:
         case ParameterCategory::SamplerState:
-            return reflectResource(pContext, spireVar);
+            return reflectResource(pContext, slangVar);
 
         case ParameterCategory::Mixed:
         {
@@ -1253,10 +1261,10 @@ namespace Falcor
             // Also, the parameter may have been declared as a constant buffer, so
             // we need to reflect it directly in that case:
             //
-            switch (spireVar->getType()->getKind())
+            switch (slangVar->getType()->getKind())
             {
             case TypeReflection::Kind::ConstantBuffer:
-                return reflectConstantBuffer(pContext, spireVar->asBuffer());
+                return reflectConstantBuffer(pContext, slangVar->asBuffer());
 
             default:
                 //
@@ -1282,14 +1290,14 @@ namespace Falcor
 
     static bool reflectParameter(
         ReflectionGenerationContext*        pContext,
-        VariableLayoutReflection*    spireParam)
+        VariableLayoutReflection*    slangParam)
     {
-        reflectVariable(pContext, spireParam, nullptr);
+        reflectVariable(pContext, slangParam, nullptr);
         return true;
     }
 
     bool ProgramReflection::reflectResources(
-        ShaderReflection*    pSpireReflector,
+        ShaderReflection*    pSlangReflector,
         std::string&                log)
     {
         ReflectionGenerationContext context;
@@ -1299,25 +1307,25 @@ namespace Falcor
 
         bool res = true;
 
-        uint32_t paramCount = pSpireReflector->getParameterCount();
+        uint32_t paramCount = pSlangReflector->getParameterCount();
         for (uint32_t pp = 0; pp < paramCount; ++pp)
         {
-            VariableLayoutReflection* param = pSpireReflector->getParameterByIndex(pp);
+            VariableLayoutReflection* param = pSlangReflector->getParameterByIndex(pp);
             res = reflectParameter(&context, param);
         }
 
         // Also extract entry-point stuff
 
-        SpireUInt entryPointCount = pSpireReflector->getEntryPointCount();
-        for (SpireUInt ee = 0; ee < entryPointCount; ++ee)
+        SlangUInt entryPointCount = pSlangReflector->getEntryPointCount();
+        for (SlangUInt ee = 0; ee < entryPointCount; ++ee)
         {
-            EntryPointReflection* entryPoint = pSpireReflector->getEntryPointByIndex(ee);
+            EntryPointReflection* entryPoint = pSlangReflector->getEntryPointByIndex(ee);
 
             switch (entryPoint->getStage())
             {
-            case SPIRE_STAGE_COMPUTE:
+            case SLANG_STAGE_COMPUTE:
             {
-                SpireUInt sizeAlongAxis[3];
+                SlangUInt sizeAlongAxis[3];
                 entryPoint->getComputeThreadGroupSize(3, &sizeAlongAxis[0]);
                 mThreadGroupSizeX = (uint32_t)sizeAlongAxis[0];
                 mThreadGroupSizeY = (uint32_t)sizeAlongAxis[1];
