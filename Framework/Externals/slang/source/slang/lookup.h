@@ -4,7 +4,6 @@
 #include "Syntax.h"
 
 namespace Slang {
-namespace Compiler {
 
 // Take an existing lookup result and refine it to only include
 // results that pass the given `LookupMask`.
@@ -20,8 +19,7 @@ LookupResult LookUp(String const& name, RefPtr<Scope> scope);
 
 // perform lookup within the context of a particular container declaration,
 // and do *not* look further up the chain
-LookupResult LookUpLocal(String const& name, ContainerDeclRef containerDeclRef);
-LookupResult LookUpLocal(String const& name, ContainerDecl* containerDecl);
+LookupResult LookUpLocal(String const& name, DeclRef<ContainerDecl> containerDeclRef);
 
 // TODO: this belongs somewhere else
 
@@ -29,13 +27,13 @@ class SemanticsVisitor;
 QualType getTypeForDeclRef(
     SemanticsVisitor*       sema,
     DiagnosticSink*         sink,
-    DeclRef                 declRef,
+    DeclRef<Decl>                 declRef,
     RefPtr<ExpressionType>* outTypeResult);
 
 QualType getTypeForDeclRef(
-    DeclRef                 declRef);
+    DeclRef<Decl>                 declRef);
 
 
-}}
+}
 
 #endif

@@ -9,7 +9,6 @@
 // Implementation to back public-facing reflection API
 
 using namespace Slang;
-using namespace Slang::Compiler;
 
 
 // Conversion routines to help with strongly-typed reflection API
@@ -136,7 +135,7 @@ SLANG_API SlangTypeKind spReflectionType_GetKind(SlangReflectionType* inType)
     else if( auto declRefType = type->As<DeclRefType>() )
     {
         auto declRef = declRefType->declRef;
-        if( auto structDeclRef = declRef.As<StructDeclRef>() )
+        if( auto structDeclRef = declRef.As<StructSyntaxNode>() )
         {
             return SLANG_TYPE_KIND_STRUCT;
         }
@@ -156,9 +155,9 @@ SLANG_API unsigned int spReflectionType_GetFieldCount(SlangReflectionType* inTyp
     if(auto declRefType = dynamic_cast<DeclRefType*>(type))
     {
         auto declRef = declRefType->declRef;
-        if( auto structDeclRef = declRef.As<StructDeclRef>())
+        if( auto structDeclRef = declRef.As<StructSyntaxNode>())
         {
-            return structDeclRef.GetFields().Count();
+            return GetFields(structDeclRef).Count();
         }
     }
 
@@ -175,10 +174,10 @@ SLANG_API SlangReflectionVariable* spReflectionType_GetFieldByIndex(SlangReflect
     if(auto declRefType = dynamic_cast<DeclRefType*>(type))
     {
         auto declRef = declRefType->declRef;
-        if( auto structDeclRef = declRef.As<StructDeclRef>())
+        if( auto structDeclRef = declRef.As<StructSyntaxNode>())
         {
-            auto fieldDeclRef = structDeclRef.GetFields().ToArray()[index];
-            return (SlangReflectionVariable*) fieldDeclRef.GetDecl();
+            auto fieldDeclRef = GetFields(structDeclRef).ToArray()[index];
+            return (SlangReflectionVariable*) fieldDeclRef.getDecl();
         }
     }
 
@@ -574,7 +573,7 @@ SLANG_API SlangReflectionVariable* spReflectionVariableLayout_GetVariable(SlangR
     auto varLayout = convert(inVarLayout);
     if(!varLayout) return nullptr;
 
-    return convert(varLayout->varDecl.GetDecl());
+    return convert(varLayout->varDecl.getDecl());
 }
 
 SLANG_API SlangReflectionTypeLayout* spReflectionVariableLayout_GetTypeLayout(SlangReflectionVariableLayout* inVarLayout)
@@ -750,13 +749,6 @@ SLANG_API SlangReflectionEntryPoint* spReflection_getEntryPointByIndex(SlangRefl
 
 
 namespace Slang {
-namespace Compiler {
-
-
-
-
-
-
 
 // Debug helper code: dump reflection data after generation
 
@@ -1401,4 +1393,4 @@ String emitReflectionJSON(
     return writer.sb.ProduceString();
 }
 
-}}
+}
