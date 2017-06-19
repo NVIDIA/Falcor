@@ -54,6 +54,16 @@ void FeatureDemo::initSSAO()
     mSSAO.pVars->setSampler("gSampler", Sampler::create(desc));
 }
 
+void FeatureDemo::setSceneSampler(uint32_t maxAniso)
+{
+    Scene* pScene = const_cast<Scene*>(mpSceneRenderer->getScene());
+    Sampler::Desc samplerDesc;
+    samplerDesc.setAddressingMode(Sampler::AddressMode::Wrap, Sampler::AddressMode::Wrap, Sampler::AddressMode::Wrap).setFilterMode(Sampler::Filter::Linear, Sampler::Filter::Linear, Sampler::Filter::Linear).setMaxAnisotropy(maxAniso);
+    mpSceneSampler = Sampler::create(samplerDesc);
+    pScene->bindSamplerToMaterials(mpSceneSampler);
+    pScene->bindSamplerToModels(mpSceneSampler);
+}
+
 void FeatureDemo::initScene(Scene::SharedPtr pScene)
 {
     if (pScene->getCameraCount() == 0)
@@ -85,15 +95,10 @@ void FeatureDemo::initScene(Scene::SharedPtr pScene)
         pScene->setAmbientIntensity(vec3(0.1f));
     }
 
-    Sampler::Desc samplerDesc;
-    samplerDesc.setAddressingMode(Sampler::AddressMode::Wrap, Sampler::AddressMode::Wrap, Sampler::AddressMode::Wrap).setFilterMode(Sampler::Filter::Linear, Sampler::Filter::Linear, Sampler::Filter::Linear);
-    Sampler::SharedPtr pSampler = Sampler::create(samplerDesc);
-    pScene->bindSamplerToMaterials(pSampler);
-    pScene->bindSamplerToModels(pSampler);
-
     mpSceneRenderer = SceneRenderer::create(pScene);
     mpSceneRenderer->setCameraControllerType(SceneRenderer::CameraControllerType::FirstPerson);
     mpSceneRenderer->toggleStaticMaterialCompilation(mOptimizedShaders);
+    setSceneSampler(mpSceneSampler ? mpSceneSampler->getMaxAnisotropy() : 4);
     setActiveCameraAspectRatio();
     initLightingPass();
     initShadowPass();
@@ -110,7 +115,6 @@ void FeatureDemo::loadModel(const std::string& filename, bool showProgressBar)
     }
     Model::SharedPtr pModel = Model::createFromFile(filename.c_str());
     if (!pModel) return;
-    pModel->bindSamplerToMaterials(mSkyBox.pEffect->getSampler());
     Scene::SharedPtr pScene = Scene::create();
     pScene->addModelInstance(pModel, "instance");
 
@@ -132,15 +136,25 @@ void FeatureDemo::loadScene(const std::string& filename, bool showProgressBar)
     }
 }
 
-void FeatureDemo::initSkyBox()
+void FeatureDemo::initSkyBox(const std::string& name)
 {
     Sampler::Desc samplerDesc;
     samplerDesc.setFilterMode(Sampler::Filter::Linear, Sampler::Filter::Linear, Sampler::Filter::Linear);
     mSkyBox.pSampler = Sampler::create(samplerDesc);
-    mSkyBox.pEffect = SkyBox::createFromTexture("LightProbes\\10-Shiodome_Stairs_3k.dds", true, mSkyBox.pSampler);
+    mSkyBox.pEffect = SkyBox::createFromTexture(name, true, mSkyBox.pSampler);
     DepthStencilState::Desc dsDesc;
     dsDesc.setDepthFunc(DepthStencilState::Func::Always);
     mSkyBox.pDS = DepthStencilState::create(dsDesc);
+}
+
+void FeatureDemo::initEnvMap(const std::string& name)
+{
+    mpEnvMap = createTextureFromFile(name, false, isSrgbFormat(mpDefaultFBO->getColorTexture(0)->getFormat()));
+    if (mpEnvMap->getType() != Texture::Type::Texture2D)
+    {
+        logError("Environment map must be a 2D texture");
+        mpEnvMap = nullptr;
+    }
 }
 
 void FeatureDemo::initPostProcess()
@@ -152,7 +166,8 @@ void FeatureDemo::onLoad()
 {
     mpState = GraphicsState::create();
 
-    initSkyBox();
+    initSkyBox("LightProbes\\10-Shiodome_Stairs_3k.dds");
+    initEnvMap("LightProbes\\10-Shiodome_Stairs_3k.dds");
     initPostProcess();
 
     initializeTesting();
@@ -195,8 +210,8 @@ void FeatureDemo::lightingPass()
     }
     if (mControls[EnableReflections].enabled)
     {
-        mLightingPass.pVars->setTexture("gEnvMap", mSkyBox.pEffect->getTexture());
-        mLightingPass.pVars->setSampler("gSampler", mSkyBox.pEffect->getSampler());
+        mLightingPass.pVars->setTexture("gEnvMap", mpEnvMap);
+        mLightingPass.pVars->setSampler("gSampler", mpSceneSampler);
     }
     mpSceneRenderer->renderScene(mpRenderContext.get());
 }
