@@ -118,8 +118,8 @@ namespace Falcor
 
         mCommandsPending = true;
         // Allocate a buffer on the upload heap
-        Buffer::SharedPtr pUploadBuffer = Buffer::create(size, Buffer::BindFlags::None, Buffer::CpuAccess::Write, nullptr);
-        pUploadBuffer->updateData(pData, offset, size);
+        uint8_t* pInitData = (uint8_t*)pData + offset;
+        Buffer::SharedPtr pUploadBuffer = Buffer::create(size, Buffer::BindFlags::None, Buffer::CpuAccess::Write, pInitData);
         ID3D12ResourcePtr pResource = pUploadBuffer->getApiHandle();
 
         resourceBarrier(pBuffer, Resource::State::CopyDest);

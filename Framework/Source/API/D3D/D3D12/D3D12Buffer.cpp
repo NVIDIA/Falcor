@@ -104,8 +104,11 @@ namespace Falcor
         if (mCpuAccess == CpuAccess::Write)
         {
             mState = Resource::State::GenericRead;
-            pApiData->dynamicData = gpDevice->getResourceAllocator()->allocate(mSize, getDataAlignmentFromUsage(mBindFlags));
-            mApiHandle = pApiData->dynamicData.pResourceHandle;
+            if(pInitData == nullptr) // Else the allocation will happen when updating the data
+            {
+                pApiData->dynamicData = gpDevice->getResourceAllocator()->allocate(mSize, getDataAlignmentFromUsage(mBindFlags));
+                mApiHandle = pApiData->dynamicData.pResourceHandle;
+            }
         }
         else if (mCpuAccess == CpuAccess::Read && mBindFlags == BindFlags::None)
         {
@@ -164,7 +167,10 @@ namespace Falcor
             }
 
             // Allocate a new buffer
-            gpDevice->getResourceAllocator()->release(pApiData->dynamicData);
+            if(pApiData->dynamicData.pResourceHandle)
+            {
+                gpDevice->getResourceAllocator()->release(pApiData->dynamicData);
+            }
             pApiData->dynamicData = gpDevice->getResourceAllocator()->allocate(mSize, getDataAlignmentFromUsage(mBindFlags));
 
             // I don't want to make mApiHandle mutable, so let's just const_cast here. This is D3D12 specific case
