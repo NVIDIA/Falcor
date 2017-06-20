@@ -839,11 +839,6 @@
     <ClInclude Include="Graphics\TextureHelper.h" />
     <ClInclude Include="Sample.h" />
     <ClInclude Include="SampleTest.h" />
-    <ClInclude Include="ShadingUtils\BSDFs.h" />
-    <ClInclude Include="ShadingUtils\Cameras.h" />
-    <ClInclude Include="ShadingUtils\Helpers.h" />
-    <ClInclude Include="ShadingUtils\Lights.h" />
-    <ClInclude Include="ShadingUtils\Shading.h" />
     <ClInclude Include="Utils\AABB.h" />
     <ClInclude Include="Utils\BinaryFileStream.h" />
     <ClInclude Include="Utils\Bitmap.h" />
@@ -1022,6 +1017,11 @@
     <None Include="Data\Framework\Shaders\SceneEditorVS.slang" />
     <None Include="Data\Framework\Shaders\TextRenderer.fs.slang" />
     <None Include="Data\Framework\Shaders\TextRenderer.vs.slang" />
+    <None Include="ShadingUtils\BSDFs.slang" />
+    <None Include="ShadingUtils\Cameras.slang" />
+    <None Include="ShadingUtils\Helpers.slang" />
+    <None Include="ShadingUtils\Lights.slang" />
+    <None Include="ShadingUtils\Shading.slang" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Data\Effects\SSAO.ps.hlsl">

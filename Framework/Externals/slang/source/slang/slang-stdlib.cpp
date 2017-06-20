@@ -1022,7 +1022,7 @@ namespace Slang
         OpInfo unaryOps[] = {
             { IntrinsicOp::Neg,     "-",    ARITHMETIC_MASK },
             { IntrinsicOp::Not,     "!",    ANY_MASK        },
-            { IntrinsicOp::Not,     "~",    INT_MASK        },
+            { IntrinsicOp::BitNot,  "~",    INT_MASK        },
             { IntrinsicOp::PreInc,  "++",   ARITHMETIC_MASK | ASSIGNMENT },
             { IntrinsicOp::PreDec,  "--",   ARITHMETIC_MASK | ASSIGNMENT },
             { IntrinsicOp::PostInc, "++",   ARITHMETIC_MASK | ASSIGNMENT | POSTFIX },
@@ -1385,6 +1385,11 @@ namespace Slang
                             sb << ", " << t << "elements";
                         }
 
+                        if(isMultisample)
+                        {
+                            sb << ", " << t << "sampleCount";
+                        }
+
                         if(includeMipInfo)
                             sb << ", " << t << "numberOfLevels";
 
@@ -1401,22 +1406,35 @@ namespace Slang
 
                     if( kBaseTextureTypes[tt].coordCount + isArray < 4 )
                     {
-                        sb << "T Load(";
-                        sb << "int" << kBaseTextureTypes[tt].coordCount + isArray + 1 << " location);\n";
+                        int loadCoordCount = kBaseTextureTypes[tt].coordCount + isArray + (isMultisample?0:1);
 
-                        if( !isMultisample )
+                        sb << "T Load(";
+                        sb << "int" << loadCoordCount << " location";
+                        if(isMultisample)
                         {
-                            sb << "T Load(";
-                            sb << "int" << kBaseTextureTypes[tt].coordCount + isArray + 1 << " location, ";
-                            sb << "int" << kBaseTextureTypes[tt].coordCount << " offset);\n";
+                            sb << ", int sampleIndex";
                         }
-                        else
+                        sb << ");\n";
+
+                        sb << "T Load(";
+                        sb << "int" << loadCoordCount << " location";
+                        if(isMultisample)
                         {
-                            sb << "T Load(";
-                            sb << "int" << kBaseTextureTypes[tt].coordCount + isArray + 1 << " location, ";
-                            sb << "int sampleIndex, ";
-                            sb << "int" << kBaseTextureTypes[tt].coordCount << " offset);\n";
+                            sb << ", int sampleIndex";
                         }
+                        sb << ", int" << loadCoordCount << " offset";
+                        sb << ");\n";
+
+
+                        sb << "T Load(";
+                        sb << "int" << loadCoordCount << " location";
+                        if(isMultisample)
+                        {
+                            sb << ", int sampleIndex";
+                        }
+                        sb << ", int" << kBaseTextureTypes[tt].coordCount << " offset";
+                        sb << ", out uint status";
+                        sb << ");\n";
                     }
 
                     if(baseShape != TextureType::ShapeCube)

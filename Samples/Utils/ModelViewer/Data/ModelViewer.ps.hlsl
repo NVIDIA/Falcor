@@ -26,7 +26,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 #include "ShaderCommon.h"
-#include "Shading.h"
+__import Shading;
 #define _COMPILE_DEFAULT_VS
 #include "VertexAttrib.h"
 

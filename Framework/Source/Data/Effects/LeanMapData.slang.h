@@ -29,7 +29,8 @@
 #define LEAN_MAP_DATA_H
 
 #include "Data/HostDeviceData.h"
-#include "Helpers.h"
+
+__import Helpers;
 
 void applyLeanMap(in Texture2D leanMap, in SamplerState samplerState, inout ShadingAttribs shAttr)
 {

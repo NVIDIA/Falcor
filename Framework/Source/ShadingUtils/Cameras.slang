@@ -29,5 +29,8 @@
 #ifndef _FALCOR_CAMERA_SHADERS_H_
 #define _FALCOR_CAMERA_SHADERS_H_
 
+// Make sure we get the macros like `_fn` and `_ref`
+// TODO: just eliminate these since we know this is pure Slang.
+#include "HostDeviceData.h"
 
 #endif	// _FALCOR_CAMERA_SHADERS_H_
