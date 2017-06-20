@@ -40,6 +40,14 @@ namespace Falcor
 
         ~GraphicsProgram() = default;
 
+        /** Create a new program object.
+            \param[in] desc Description of the source files and entry points to use.
+            \return A new object, or nullptr if creation failed.
+
+            Note that this call merely creates a program object. The actual compilation and link happens when calling Program#getActiveVersion().
+        */
+        static SharedPtr create(Desc const& desc, const Program::DefineList& programDefines = DefineList());
+
         /** create a new program object.
             \param[in] vertexFile Vertex shader filename. If this string is empty (""), it will use a default vertex shader which transforms and outputs all the vertex attributes.
             \param[in] fragmentFile Fragment shader filename.

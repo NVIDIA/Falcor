@@ -41,11 +41,126 @@ namespace Falcor
     */
     class Program : public std::enable_shared_from_this<Program>
     {
+    protected:
+        static const uint32_t kShaderCount = (uint32_t)ShaderType::Count;
+
     public:
         using SharedPtr = std::shared_ptr<Program>;
         using SharedConstPtr = std::shared_ptr<const Program>;
 
         using DefineList = Shader::DefineList;
+
+        /** Description of a program to be created.
+        */
+        class Desc
+        {
+        public:
+            /** Begin building a description, that initially has no source files or entry points.
+            */
+            Desc();
+
+            /** Begin building a description, based on a single path for source code.
+            This is equivalent to: `Desc().sourceFile(path)`
+            */
+            explicit Desc(std::string const& path);
+
+            /** Add a file of course code to use.
+            This also sets the given file as the "active" source for subsequent entry points.
+            */
+            Desc& sourceFile(std::string const& path);
+
+            /** Add a string of course code to use.
+            This also sets the given file as the "active" source for subsequent entry points.
+            */
+            Desc& sourceString(std::string const& code);
+
+            /** Adds an entry point based on the "active" source.
+            */
+            Desc& entryPoint(ShaderType shaderType, std::string const& name = "main");
+
+            inline Desc& vertexEntryPoint()     { return entryPoint(ShaderType::Vertex); }
+            inline Desc& hullEntryPoint()       { return entryPoint(ShaderType::Hull); }
+            inline Desc& domainEntryPoint()     { return entryPoint(ShaderType::Domain); }
+            inline Desc& geometryEntryPoint()   { return entryPoint(ShaderType::Geometry); }
+
+            inline Desc& fragmentEntryPoint()   { return entryPoint(ShaderType::Pixel); }
+            inline Desc& pixelEntryPoint()      { return entryPoint(ShaderType::Pixel); }
+
+            inline Desc& computeEntryPoint()      { return entryPoint(ShaderType::Compute); }
+
+        private:
+            friend class Program;
+            friend class GraphicsProgram;
+
+            /** Convenience routine that optionally adds a source file and entry point.
+            If `path` is empty, this function does nothing.
+            Otherwise, is equivalent to:
+            
+                sourceFile(path).entryPoint(shaderType)
+            */
+            Desc& maybeSourceFile(std::string const& path, ShaderType shaderType);
+
+            /** Convenience routine that optionally adds a source file and entry point.
+            If `code` is empty, this function does nothing.
+            Otherwise, is equivalent to:
+            
+                sourceString(code).entryPoint(shaderType)
+            */
+            Desc& maybeSourceString(std::string const& code, ShaderType shaderType);
+
+            /** Add the default version shader if there is no vertex shader specified
+            */
+            Desc& addDefaultVertexShaderIfNeeded();
+
+            /** A chunk of course code, either from a file or a string
+            */
+            struct Source
+            {
+                enum class Kind { File, String };
+
+                /** The input path or source text
+                If `kind` is `File`, this is the path to the file.
+                If `kind` is `String`, this is the raw text.
+                */
+                std::string value;
+
+                /** The kind of input source code
+                */
+                Kind kind;
+            };
+
+            typedef std::vector<Source> SourceList;
+
+            /** An entry point to be compiled
+            */
+            struct EntryPoint
+            {
+                // The name of the entry-point function
+                std::string name;
+
+                // The index of the source file/string that
+                // this entry point will use, or `-1` to
+                // indicate that this entry point is disabled.
+                int sourceIndex = -1;
+
+                bool isValid() { return sourceIndex >= 0; }
+            };
+
+            /** The input files/strings of source code that make up the program
+            */
+            SourceList mSources;
+
+            /** The entry points that need to be compiled
+            */
+            EntryPoint mEntryPoints[kShaderCount];
+
+            /** Index of the "active" source file/string.
+            This is the file/string that will be used for subsequent entry points.
+            By default, this is invalid, as there are no sources at first.
+            */
+            int activeSourceIndex = -1;
+        };
+
 
         virtual ~Program() = 0;
 
@@ -80,19 +195,23 @@ namespace Falcor
         /** update define list
         */
         void replaceAllDefines(const DefineList& dl) { mDefineList = dl; }
-    protected:
-        static const uint32_t kShaderCount = (uint32_t)ShaderType::Count;
 
+    protected:
         Program();
-        void init(const std::string& vs, const std::string& fs, const std::string& gs, const std::string& hs, const std::string& ds, const DefineList& programDefines, bool createdFromFile);
-        void init(const std::string& cs, const DefineList& programDefines, bool createdFromFile);
+
+        void init(Desc const& desc, DefineList const& programDefines);
 
         bool link() const;
         ProgramVersion::SharedPtr preprocessAndCreateProgramVersion(std::string& log) const;
         virtual ProgramVersion::SharedPtr createProgramVersion(std::string& log) const;
 
-        std::string mOriginalShaderStrings[kShaderCount]; // Either a filename or a string, depending on the value of mCreatedFromFile
-        mutable std::string mPreprocessedShaderStrings[kShaderCount]; // always strings that have been preprocessed
+        // The description used to create this program
+        Desc mDesc;
+
+        // Shader strings after being preprocessed for a particular version
+        mutable std::string mPreprocessedShaderStrings[kShaderCount];
+
+        // Reflector for a particular version
         mutable ProgramReflection::SharedPtr mPreprocessedReflector;
 
         DefineList mDefineList;
