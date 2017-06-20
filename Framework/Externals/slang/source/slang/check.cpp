@@ -4834,12 +4834,6 @@ namespace Slang
                     // Checking of the type must be complete before we can reference its members safely
                     EnsureDecl(aggTypeDeclRef.getDecl(), DeclCheckState::Checked);
 
-                    // DEBUGGING
-                    if( expr->name == "GatherRed" )
-                    {
-                        int f = 9;
-                    }
-
                     LookupResult lookupResult = LookUpLocal(this, expr->name, aggTypeDeclRef);
                     if (!lookupResult.isValid())
                     {

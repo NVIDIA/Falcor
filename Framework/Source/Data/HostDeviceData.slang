@@ -25,23 +25,7 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#include "ShaderCommon.h"
-__import Shading;
-#define _COMPILE_DEFAULT_VS
-#include "VertexAttrib.h"
 
-struct PSOut
-{
-    float4 color : SV_TARGET0;
-    float4 normal: SV_TARGET1;
-};
+#include "HostDeviceSharedMacros.h"
 
-PSOut main(VS_OUT vsOut)
-{
-    PSOut psOut;
-
-    psOut.color = 1.0.xxxx;
-    psOut.normal = float4(vsOut.normalW * 0.5f + 0.5f, 1.0f);
-
-    return psOut;
-}
+#include "HostDeviceSharedCode.h"

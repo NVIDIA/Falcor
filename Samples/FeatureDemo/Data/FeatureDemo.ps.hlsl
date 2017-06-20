@@ -26,8 +26,9 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 #include "FeatureDemoCommon.hlsli"
-#include "Shading.h"
-#include "Helpers.h"
+
+__import Shading;
+__import Helpers;
 
 Texture2D gEnvMap;
 SamplerState gSampler;

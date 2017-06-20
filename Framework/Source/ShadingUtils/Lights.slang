@@ -29,9 +29,33 @@
 #ifndef _FALCOR_LIGHTS_H_
 #define _FALCOR_LIGHTS_H_
 
+__import Helpers;
+
+// Make sure we get the macros like `_fn` and `_ref`
+// TODO: just eliminate these since we know this is pure Slang.
+#include "HostDeviceData.h"
+
 /*******************************************************************
 					Lights
 *******************************************************************/
+
+/**
+This stores the information about the current light source at the shading point.
+This includes a direction from a shading point towards the light,
+radiance emitted from the light souce, which is *received* at the shading point.
+*/
+struct LightAttribs
+{
+    vec3	L;				///< Normalized direction to the light at shading hit
+    float   shadowFactor;   ///< Shadow factor
+    vec3	lightIntensity;	///< Radiance of the emitted light at shading hit
+
+    vec3    P;              ///< Sampled point on the light source
+    vec3    N;              ///< Normal of the sampled point on the light source
+	float   pdf;            ///< Probability density function of sampling the light source
+
+    vec3    points[4];
+};
 
 /**
 	This routine computes the position of the the light based on the point 'shadingPosition'.

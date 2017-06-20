@@ -606,21 +606,6 @@
     <ClInclude Include="Graphics\Paths\PathEditor.h">
       <Filter>Graphics\Paths</Filter>
     </ClInclude>
-    <ClInclude Include="ShadingUtils\BSDFs.h">
-      <Filter>ShadingUtils</Filter>
-    </ClInclude>
-    <ClInclude Include="ShadingUtils\Cameras.h">
-      <Filter>ShadingUtils</Filter>
-    </ClInclude>
-    <ClInclude Include="ShadingUtils\Helpers.h">
-      <Filter>ShadingUtils</Filter>
-    </ClInclude>
-    <ClInclude Include="ShadingUtils\Lights.h">
-      <Filter>ShadingUtils</Filter>
-    </ClInclude>
-    <ClInclude Include="ShadingUtils\Shading.h">
-      <Filter>ShadingUtils</Filter>
-    </ClInclude>
     <ClInclude Include="Utils\ShaderUtils.h">
       <Filter>Utils</Filter>
     </ClInclude>
@@ -2180,6 +2165,21 @@
     </None>
     <None Include="Data\DefaultVS.slang">
       <Filter>Data</Filter>
+    </None>
+    <None Include="ShadingUtils\BSDFs.slang">
+      <Filter>ShadingUtils</Filter>
+    </None>
+    <None Include="ShadingUtils\Cameras.slang">
+      <Filter>ShadingUtils</Filter>
+    </None>
+    <None Include="ShadingUtils\Helpers.slang">
+      <Filter>ShadingUtils</Filter>
+    </None>
+    <None Include="ShadingUtils\Lights.slang">
+      <Filter>ShadingUtils</Filter>
+    </None>
+    <None Include="ShadingUtils\Shading.slang">
+      <Filter>ShadingUtils</Filter>
     </None>
   </ItemGroup>
 </Project>

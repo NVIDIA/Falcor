@@ -26,7 +26,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 #include "ShaderCommon.h"
-#include "Shading.h"
+__import Shading;
 #define _COMPILE_DEFAULT_VS
 #include "VertexAttrib.h"
 #include "Effects/LeanMapData.slang.h"
@@ -49,7 +49,7 @@ void perturbNormal(in const MaterialData mat, inout ShadingAttribs shAttr, bool 
 }
 #endif
 
-#include "shading.h"
+__import Shading;
 
 vec4 main(VS_OUT vOut) : SV_TARGET
 {
