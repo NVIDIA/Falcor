@@ -44,29 +44,27 @@ namespace Slang
 
     class SemanticsVisitor : public SyntaxVisitor
     {
-        ProgramSyntaxNode * program = nullptr;
+//        ProgramSyntaxNode * program = nullptr;
         FunctionSyntaxNode * function = nullptr;
-        CompileOptions const* options = nullptr;
-        TranslationUnitOptions const* translationUnitOptions = nullptr;
+
         CompileRequest* request = nullptr;
+        TranslationUnitRequest* translationUnit = nullptr;
 
         // lexical outer statements
         List<StatementSyntaxNode*> outerStmts;
     public:
         SemanticsVisitor(
             DiagnosticSink * pErr,
-            CompileOptions const& options,
-            TranslationUnitOptions const& translationUnitOptions,
-            CompileRequest* request)
+            CompileRequest*         request,
+            TranslationUnitRequest* translationUnit)
             : SyntaxVisitor(pErr)
-            , options(&options)
-            , translationUnitOptions(&translationUnitOptions)
             , request(request)
+            , translationUnit(translationUnit)
         {
         }
 
-        CompileOptions const& getOptions() { return *options; }
-        TranslationUnitOptions const& getTranslationUnitOptions() { return *translationUnitOptions; }
+        CompileRequest* getCompileRequest() { return request; }
+        TranslationUnitRequest* getTranslationUnit() { return translationUnit; }
 
     public:
         // Translate Types
@@ -969,7 +967,7 @@ namespace Slang
             // expressions without a type, and we need to ignore them.
             if( !fromExpr->Type.type )
             {
-                if(getTranslationUnitOptions().compileFlags & SLANG_COMPILE_FLAG_NO_CHECKING )
+                if(getTranslationUnit()->compileFlags & SLANG_COMPILE_FLAG_NO_CHECKING )
                     return fromExpr;
             }
 
@@ -981,7 +979,7 @@ namespace Slang
                 fromExpr.Ptr(),
                 nullptr))
             {
-                if(!(getTranslationUnitOptions().compileFlags & SLANG_COMPILE_FLAG_NO_CHECKING))
+                if(!(getTranslationUnit()->compileFlags & SLANG_COMPILE_FLAG_NO_CHECKING))
                 {
                     getSink()->diagnose(fromExpr->Position, Diagnostics::typeMismatch, toType, fromExpr->Type);
                 }
@@ -1241,37 +1239,40 @@ namespace Slang
                 }
             }
 
+            // We need/want to visit any `import` declarations before
+            // anything else, to make sure that scoping works.
+            for(auto& importDecl : programNode->getMembersOfType<ImportDecl>())
+            {
+                EnsureDecl(importDecl);
+            }
+
             //
 
-            HashSet<String> funcNames;
-            this->program = programNode;
-            this->function = nullptr;
-
-            for (auto & s : program->GetTypeDefs())
+            for (auto & s : programNode->GetTypeDefs())
                 VisitTypeDefDecl(s.Ptr());
-            for (auto & s : program->GetStructs())
+            for (auto & s : programNode->GetStructs())
             {
                 VisitStruct(s.Ptr());
             }
-			for (auto & s : program->GetClasses())
+			for (auto & s : programNode->GetClasses())
 			{
 				VisitClass(s.Ptr());
 			}
             // HACK(tfoley): Visiting all generic declarations here,
             // because otherwise they won't get visited.
-            for (auto & g : program->getMembersOfType<GenericDecl>())
+            for (auto & g : programNode->getMembersOfType<GenericDecl>())
             {
                 VisitGenericDecl(g.Ptr());
             }
 
-            for (auto & func : program->GetFunctions())
+            for (auto & func : programNode->GetFunctions())
             {
                 if (!func->IsChecked(DeclCheckState::Checked))
                 {
                     VisitFunctionDeclaration(func.Ptr());
                 }
             }
-            for (auto & func : program->GetFunctions())
+            for (auto & func : programNode->GetFunctions())
             {
                 EnsureDecl(func);
             }
@@ -2268,7 +2269,7 @@ namespace Slang
 
                     // Note(tfoley): The name used for lookup here is a bit magical, since
                     // it must match what the parser installed in subscript declarations.
-                    LookupResult lookupResult = LookUpLocal("operator[]", aggTypeDeclRef);
+                    LookupResult lookupResult = LookUpLocal(this, "operator[]", aggTypeDeclRef);
                     if (!lookupResult.isValid())
                     {
                         goto fail;
@@ -4551,7 +4552,7 @@ namespace Slang
 
             expr->Type = ExpressionType::Error;
 
-            auto lookupResult = LookUp(expr->name, expr->scope);
+            auto lookupResult = LookUp(this, expr->name, expr->scope);
             if (lookupResult.isValid())
             {
                 return createLookupResultExpr(
@@ -4794,6 +4795,38 @@ namespace Slang
                     baseScalarType,
                     1);
             }
+            else if(auto typeType = baseType->As<TypeType>())
+            {
+                // We are looking up a member inside a type.
+                // We want to be careful here because we should only find members
+                // that are implicitly or explicitly `static`.
+                //
+                // TODO: this duplicates a *lot* of logic with the case below.
+                // We need to fix that.
+                auto type = typeType->type;
+                if(auto declRefType = type->AsDeclRefType())
+                {
+                    if (auto aggTypeDeclRef = declRefType->declRef.As<AggTypeDecl>())
+                    {
+                        // Checking of the type must be complete before we can reference its members safely
+                        EnsureDecl(aggTypeDeclRef.getDecl(), DeclCheckState::Checked);
+
+                        LookupResult lookupResult = LookUpLocal(this, expr->name, aggTypeDeclRef);
+                        if (!lookupResult.isValid())
+                        {
+                            goto fail;
+                        }
+
+                        // TODO: need to filter for declarations that are valid to refer
+                        // to in this context...
+
+                        return createLookupResultExpr(
+                            lookupResult,
+                            expr->BaseExpression,
+                            expr);
+                    }
+                }
+            }
             else if (auto declRefType = baseType->AsDeclRefType())
             {
                 if (auto aggTypeDeclRef = declRefType->declRef.As<AggTypeDecl>())
@@ -4801,8 +4834,13 @@ namespace Slang
                     // Checking of the type must be complete before we can reference its members safely
                     EnsureDecl(aggTypeDeclRef.getDecl(), DeclCheckState::Checked);
 
+                    // DEBUGGING
+                    if( expr->name == "GatherRed" )
+                    {
+                        int f = 9;
+                    }
 
-                    LookupResult lookupResult = LookUpLocal(expr->name, aggTypeDeclRef);
+                    LookupResult lookupResult = LookUpLocal(this, expr->name, aggTypeDeclRef);
                     if (!lookupResult.isValid())
                     {
                         goto fail;
@@ -4812,88 +4850,6 @@ namespace Slang
                         lookupResult,
                         expr->BaseExpression,
                         expr);
-#if 0
-                    DeclRef<Decl> memberDeclRef(lookupResult.decl, aggTypeDeclRef.substitutions);
-                    return ConstructDeclRefExpr(memberDeclRef, expr->BaseExpression, expr);
-#endif
-
-#if 0
-
-
-                    // TODO(tfoley): It is unfortunate that the lookup strategy
-                    // here isn't unified with the ordinary `Scope` case.
-                    // In particular, if we add support for "transparent" declarations,
-                    // etc. here then we would need to add them in ordinary lookup
-                    // as well.
-
-                    Decl* memberDecl = nullptr; // The first declaration we found, if any
-                    Decl* secondDecl = nullptr; // Another declaration with the same name, if any
-                    for (auto m : aggTypeDeclRef.GetMembers())
-                    {
-                        if (m.GetName() != expr->MemberName)
-                            continue;
-
-                        if (!memberDecl)
-                        {
-                            memberDecl = m.getDecl();
-                        }
-                        else
-                        {
-                            secondDecl = m.getDecl();
-                            break;
-                        }
-                    }
-
-                    // If we didn't find any member, then we signal an error
-                    if (!memberDecl)
-                    {
-                        expr->Type = ExpressionType::Error;
-                        getSink()->diagnose(expr, Diagnostics::noMemberOfNameInType, expr->MemberName, baseType);
-                        return expr;
-                    }
-
-                    // If we found only a single member, then we are fine
-                    if (!secondDecl)
-                    {
-                        // TODO: need to
-                        DeclRef<Decl> memberDeclRef(memberDecl, aggTypeDeclRef.substitutions);
-
-                        expr->declRef = memberDeclRef;
-                        expr->Type = GetTypeForDeclRef(memberDeclRef);
-
-                        // When referencing a member variable, the result is an l-value
-                        // if and only if the base expression was.
-                        if (auto memberVarDecl = dynamic_cast<VarDeclBase*>(memberDecl))
-                        {
-                            expr->Type.IsLeftValue = expr->BaseExpression->Type.IsLeftValue;
-                        }
-                        return expr;
-                    }
-
-                    // We found multiple members with the same name, and need
-                    // to resolve the embiguity at some point...
-                    expr->Type = ExpressionType::Error;
-                    getSink()->diagnose(expr, Diagnostics::unimplemented, "ambiguous member reference");
-                    return expr;
-
-#endif
-
-#if 0
-
-                    StructField* field = structDecl->FindField(expr->MemberName);
-                    if (!field)
-                    {
-                        expr->Type = ExpressionType::Error;
-                        getSink()->diagnose(expr, Diagnostics::noMemberOfNameInType, expr->MemberName, baseType);
-                    }
-                    else
-                        expr->Type = field->Type;
-
-                    // A reference to a struct member is an l-value if the reference to the struct
-                    // value was also an l-value.
-                    expr->Type.IsLeftValue = expr->BaseExpression->Type.IsLeftValue;
-                    return expr;
-#endif
                 }
 
                 // catch-all
@@ -4937,6 +4893,9 @@ namespace Slang
 
         virtual void visitImportDecl(ImportDecl* decl) override
         {
+            if(decl->IsChecked(DeclCheckState::Checked))
+                return;
+
             // We need to look for a module with the specified name
             // (whether it has already been loaded, or needs to
             // be loaded), and then put its declarations into
@@ -4963,16 +4922,17 @@ namespace Slang
 
             subScope->nextSibling = scope->nextSibling;
             scope->nextSibling = subScope;
+
+            decl->SetCheckState(DeclCheckState::Checked);
         }
     };
 
     SyntaxVisitor* CreateSemanticsVisitor(
-        DiagnosticSink*                 err,
-        CompileOptions const&           options,
-        TranslationUnitOptions const&   translationUnitOptions,
-        CompileRequest*                 request)
+        DiagnosticSink*         err,
+        CompileRequest*         request,
+        TranslationUnitRequest* translationUnit)
     {
-        return new SemanticsVisitor(err, options, translationUnitOptions, request);
+        return new SemanticsVisitor(err, request, translationUnit);
     }
 
     //
@@ -5041,6 +5001,17 @@ namespace Slang
     {
         RefPtr<ExpressionType> typeResult;
         return getTypeForDeclRef(nullptr, nullptr, declRef, &typeResult);
+    }
+
+    DeclRef<ExtensionDecl> ApplyExtensionToType(
+        SemanticsVisitor*       semantics,
+        ExtensionDecl*          extDecl,
+        RefPtr<ExpressionType>  type)
+    {
+        if(!semantics)
+            return DeclRef<ExtensionDecl>();
+
+        return semantics->ApplyExtensionToType(extDecl, type);
     }
 
 }
