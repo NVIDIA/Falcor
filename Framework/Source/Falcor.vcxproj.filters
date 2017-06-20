@@ -558,6 +558,9 @@
     <ClCompile Include="API\Vulkan\LowLevel\VKDescriptorPool.cpp">
       <Filter>API\Vulkan\LowLevel</Filter>
     </ClCompile>
+    <ClCompile Include="API\Vulkan\VKState.cpp">
+      <Filter>API\Vulkan</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Graphics\Model\Animation.h">
@@ -1674,6 +1677,9 @@
     </ClInclude>
     <ClInclude Include="API\Vulkan\LowLevel\VKDescriptorData.h">
       <Filter>API\Vulkan\LowLevel</Filter>
+    </ClInclude>
+    <ClInclude Include="API\Vulkan\VKState.h">
+      <Filter>API\Vulkan</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

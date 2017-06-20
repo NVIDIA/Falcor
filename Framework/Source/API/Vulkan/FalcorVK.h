@@ -41,6 +41,8 @@
 
 #include "API/Vulkan/VKResourceHelper.h"
 
+__forceinline BOOL vkBool(bool b) { return b ? VK_TRUE : VK_FALSE; }
+
 namespace Falcor
 {
     struct VkFormatDesc
