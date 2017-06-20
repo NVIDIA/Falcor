@@ -169,9 +169,89 @@ namespace Falcor
         infoOut.lineWidth = 1.0f;
     }
 
-    void initD3DDepthStencilInfo(const DepthStencilState* pState, VkPipelineDepthStencilStateCreateInfo& infoOut)
+    template<typename FalcorOp>
+    VkCompareOp getVkCompareOp(FalcorOp op)
     {
+        switch (op)
+        {
+        case FalcorOp::Disabled:
+            return VK_COMPARE_OP_ALWAYS;
+        case FalcorOp::Never:
+            return VK_COMPARE_OP_NEVER;
+        case FalcorOp::Always:
+            return VK_COMPARE_OP_ALWAYS;
+        case FalcorOp::Less:
+            return VK_COMPARE_OP_LESS;
+        case FalcorOp::Equal:
+            return VK_COMPARE_OP_EQUAL;
+        case FalcorOp::NotEqual:
+            return VK_COMPARE_OP_NOT_EQUAL;
+        case FalcorOp::LessEqual:
+            return VK_COMPARE_OP_LESS_OR_EQUAL;
+        case FalcorOp::Greater:
+            return VK_COMPARE_OP_GREATER;
+        case FalcorOp::GreaterEqual:
+            return VK_COMPARE_OP_GREATER_OR_EQUAL;
+        default:
+            should_not_get_here();
+            return VK_COMPARE_OP_ALWAYS;
+        }
+    }
 
+    VkStencilOp getVkStencilOp(DepthStencilState::StencilOp op)
+    {
+        switch (op)
+        {
+        case DepthStencilState::StencilOp::Keep:
+            return VK_STENCIL_OP_KEEP;
+        case DepthStencilState::StencilOp::Zero:
+            return VK_STENCIL_OP_ZERO;
+        case DepthStencilState::StencilOp::Replace:
+            return VK_STENCIL_OP_REPLACE;
+        case DepthStencilState::StencilOp::Increase:
+            return VK_STENCIL_OP_INCREMENT_AND_WRAP;
+        case DepthStencilState::StencilOp::IncreaseSaturate:
+            return VK_STENCIL_OP_INCREMENT_AND_CLAMP;
+        case DepthStencilState::StencilOp::Decrease:
+            return VK_STENCIL_OP_DECREMENT_AND_WRAP;
+        case DepthStencilState::StencilOp::DecreaseSaturate:
+            return VK_STENCIL_OP_DECREMENT_AND_CLAMP;
+        case DepthStencilState::StencilOp::Invert:
+            return VK_STENCIL_OP_INVERT;
+        default:
+            should_not_get_here();
+            return VK_STENCIL_OP_KEEP;
+        }
+    }
+
+    VkStencilOpState getVkStencilOpState(const DepthStencilState::StencilDesc& desc, uint8_t readMask, uint8_t writeMask, uint8_t stencilRef)
+    {
+        VkStencilOpState opState = {};
+        opState.failOp = getVkStencilOp(desc.stencilFailOp);
+        opState.passOp = getVkStencilOp(desc.depthStencilPassOp);
+        opState.depthFailOp = getVkStencilOp(desc.depthFailOp);
+        opState.compareOp = getVkCompareOp(desc.func);
+        opState.compareMask = readMask;
+        opState.writeMask = writeMask;
+        opState.reference = stencilRef;
+
+        return opState;
+    }
+
+    void initVkDepthStencilInfo(const DepthStencilState* pState, VkPipelineDepthStencilStateCreateInfo& infoOut)
+    {
+        infoOut = {};
+
+        infoOut.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+        infoOut.depthTestEnable = vkBool(pState->isDepthTestEnabled());
+        infoOut.depthWriteEnable = vkBool(pState->isDepthWriteEnabled());
+        infoOut.depthCompareOp = getVkCompareOp(pState->getDepthFunc());
+        infoOut.stencilTestEnable = vkBool(pState->isStencilTestEnabled());
+        infoOut.front = getVkStencilOpState(pState->getStencilDesc(DepthStencilState::Face::Front), pState->getStencilReadMask(), pState->getStencilWriteMask(), pState->getStencilRef());
+        infoOut.back = getVkStencilOpState(pState->getStencilDesc(DepthStencilState::Face::Back), pState->getStencilReadMask(), pState->getStencilWriteMask(), pState->getStencilRef());
+
+        // #VKTODO do we need this?
+        infoOut.depthBoundsTestEnable = VK_FALSE;
     }
 
     void initVkVertexLayoutInfo(const VertexLayout* pLayout, VkPipelineVertexInputStateCreateInfo& infoOut)
@@ -224,34 +304,6 @@ namespace Falcor
         default:
             should_not_get_here();
             return VK_SAMPLER_ADDRESS_MODE_REPEAT;
-        }
-    }
-
-    VkCompareOp getVkCompareOp(Sampler::ComparisonMode mode)
-    {
-        switch (mode)
-        {
-        case Sampler::ComparisonMode::Disabled:
-            return VK_COMPARE_OP_ALWAYS;
-        case Sampler::ComparisonMode::Never:
-            return VK_COMPARE_OP_NEVER;
-        case Sampler::ComparisonMode::Always:
-            return VK_COMPARE_OP_ALWAYS;
-        case Sampler::ComparisonMode::Less:
-            return VK_COMPARE_OP_LESS;
-        case Sampler::ComparisonMode::Equal:
-            return VK_COMPARE_OP_EQUAL;
-        case Sampler::ComparisonMode::NotEqual:
-            return VK_COMPARE_OP_NOT_EQUAL;
-        case Sampler::ComparisonMode::LessEqual:
-            return VK_COMPARE_OP_LESS_OR_EQUAL;
-        case Sampler::ComparisonMode::Greater:
-            return VK_COMPARE_OP_GREATER;
-        case Sampler::ComparisonMode::GreaterEqual:
-            return VK_COMPARE_OP_GREATER_OR_EQUAL;
-        default:
-            should_not_get_here();
-            return VK_COMPARE_OP_ALWAYS;
         }
     }
 
