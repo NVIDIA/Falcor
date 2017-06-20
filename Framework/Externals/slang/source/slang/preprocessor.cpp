@@ -16,7 +16,16 @@
 // idioms for using the preprocessor, found in shader code in the wild.
 
 
-namespace Slang{
+namespace Slang {
+
+// Forward declaration for code provided in `slang.cpp`
+//
+// TODO: Need an appropriate header for this.
+String autoImportModule(
+    CompileRequest*     request,
+    String const&       path,
+    String const&       source,
+    CodePosition const& loc);
 
 // State of a preprocessor conditional, which can change when
 // we encounter directives like `#elif` or `#endif`
@@ -170,6 +179,9 @@ struct Preprocessor
 
     // Syntax for the program we are trying to parse
     ProgramSyntaxNode*                      syntax;
+
+    // The over-arching compile request taht is invoking us
+    CompileRequest*                         compileRequest;
 };
 
 // Convenience routine to access the diagnostic sink
@@ -996,10 +1008,12 @@ static void DestroyConditional(PreprocessorConditional* conditional)
 }
 
 // Start a preprocessor conditional, with an initial enable/disable state.
-static void BeginConditional(PreprocessorDirectiveContext* context, bool enable)
+static void beginConditional(
+    PreprocessorDirectiveContext*   context,
+    PreprocessorInputStream*        inputStream,
+    bool                            enable)
 {
     Preprocessor* preprocessor = context->preprocessor;
-    PreprocessorInputStream* inputStream = preprocessor->inputStream;
     assert(inputStream);
 
     PreprocessorConditional* conditional = CreateConditional(preprocessor);
@@ -1029,6 +1043,14 @@ static void BeginConditional(PreprocessorDirectiveContext* context, bool enable)
     // Push conditional onto the stack
     conditional->parent = inputStream->conditional;
     inputStream->conditional = conditional;
+}
+
+// Start a preprocessor conditional, with an initial enable/disable state.
+static void beginConditional(
+    PreprocessorDirectiveContext*   context,
+    bool                            enable)
+{
+    beginConditional(context, context->preprocessor->inputStream, enable);
 }
 
 //
@@ -1290,11 +1312,16 @@ static PreprocessorExpressionValue ParseAndEvaluateExpression(PreprocessorDirect
 // Handle a `#if` directive
 static void HandleIfDirective(PreprocessorDirectiveContext* context)
 {
+    // Record current inpu stream in case preprocessor expression
+    // changes the input stream to a macro expansion while we
+    // are parsing.
+    auto inputStream = context->preprocessor->inputStream;
+
     // Parse a preprocessor expression.
     PreprocessorExpressionValue value = ParseAndEvaluateExpression(context);
 
     // Begin a preprocessor block, enabled based on the expression.
-    BeginConditional(context, value != 0);
+    beginConditional(context, inputStream, value != 0);
 }
 
 // Handle a `#ifdef` directive
@@ -1307,7 +1334,7 @@ static void HandleIfDefDirective(PreprocessorDirectiveContext* context)
     String name = nameToken.Content;
 
     // Check if the name is defined.
-    BeginConditional(context, LookupMacro(context, name) != NULL);
+    beginConditional(context, LookupMacro(context, name) != NULL);
 }
 
 // Handle a `#ifndef` directive
@@ -1320,7 +1347,7 @@ static void HandleIfNDefDirective(PreprocessorDirectiveContext* context)
     String name = nameToken.Content;
 
     // Check if the name is defined.
-    BeginConditional(context, LookupMacro(context, name) == NULL);
+    beginConditional(context, LookupMacro(context, name) == NULL);
 }
 
 // Handle a `#else` directive
@@ -1364,6 +1391,11 @@ static void HandleElseDirective(PreprocessorDirectiveContext* context)
 // Handle a `#elif` directive
 static void HandleElifDirective(PreprocessorDirectiveContext* context)
 {
+    // Need to grab current input stream *before* we try to parse
+    // the conditional expression.
+    PreprocessorInputStream* inputStream = context->preprocessor->inputStream;
+    assert(inputStream);
+
     // HACK(tfoley): handle an empty `elif` like an `else` directive
     //
     // This is the behavior expected by at least one input program.
@@ -1377,9 +1409,6 @@ static void HandleElifDirective(PreprocessorDirectiveContext* context)
     }
 
     PreprocessorExpressionValue value = ParseAndEvaluateExpression(context);
-
-    PreprocessorInputStream* inputStream = context->preprocessor->inputStream;
-    assert(inputStream);
 
     // if we aren't inside a conditional, then error
     PreprocessorConditional* conditional = inputStream->conditional;
@@ -1475,7 +1504,6 @@ static void HandleIncludeDirective(PreprocessorDirectiveContext* context)
     String foundPath;
     String foundSource;
 
-
     IncludeHandler* includeHandler = context->preprocessor->includeHandler;
     if (!includeHandler)
     {
@@ -1483,10 +1511,17 @@ static void HandleIncludeDirective(PreprocessorDirectiveContext* context)
         GetSink(context)->diagnose(pathToken.Position, Diagnostics::noIncludeHandlerSpecified);
         return;
     }
-    if (!includeHandler->TryToFindIncludeFile(path, pathIncludedFrom, &foundPath, &foundSource))
+    auto includeResult = includeHandler->TryToFindIncludeFile(path, pathIncludedFrom, &foundPath, &foundSource);
+
+    switch (includeResult)
     {
+    case IncludeResult::NotFound:
+    case IncludeResult::Error:
         GetSink(context)->diagnose(pathToken.Position, Diagnostics::includeFailed, path);
         return;
+
+    case IncludeResult::FoundIncludeFile:
+        break;
     }
 
     // Do all checking related to the end of this directive before we push a new stream,
@@ -1494,12 +1529,50 @@ static void HandleIncludeDirective(PreprocessorDirectiveContext* context)
     // a switch of input stream
     expectEndOfDirective(context);
 
-    // Push the new file onto our stack of input streams
-    // TODO(tfoley): check if we have made our include stack too deep
-    PreprocessorInputStream* inputStream = CreateInputStreamForSource(context->preprocessor, foundSource, foundPath);
-    inputStream->parent = context->preprocessor->inputStream;
-    context->preprocessor->inputStream = inputStream;
-}
+    switch( includeResult )
+    {
+    case IncludeResult::FoundIncludeFile:
+        {
+            // Push the new file onto our stack of input streams
+            // TODO(tfoley): check if we have made our include stack too deep
+            PreprocessorInputStream* inputStream = CreateInputStreamForSource(context->preprocessor, foundSource, foundPath);
+            inputStream->parent = context->preprocessor->inputStream;
+            context->preprocessor->inputStream = inputStream;
+        }
+        break;
+ 
+    case IncludeResult::FoundAutoImportFile:
+        {
+            //
+ 
+            String autoImportName = autoImportModule(
+                context->preprocessor->compileRequest,
+                foundPath,
+                foundSource,
+                GetDirectiveLoc(context));
+ 
+            SourceTextInputStream* inputStream = new SourceTextInputStream();
+ 
+            Token token;
+            token.Type = TokenType::AutoImport;
+            token.Position = GetDirectiveLoc(context);
+            token.flags = 0;
+            token.Content = autoImportName;
+ 
+            inputStream->lexedTokens.mTokens.Add(token);
+ 
+            token.Type = TokenType::EndOfFile;
+            token.flags = TokenFlag::AfterWhitespace | TokenFlag::AtStartOfLine;
+            inputStream->lexedTokens.mTokens.Add(token);
+ 
+            inputStream->tokenReader = TokenReader(inputStream->lexedTokens);
+ 
+            inputStream->parent = context->preprocessor->inputStream;
+            context->preprocessor->inputStream = inputStream;
+        }
+        break;
+    }
+ }
 
 // Handle a `#define` directive
 static void HandleDefineDirective(PreprocessorDirectiveContext* context)
@@ -2007,16 +2080,18 @@ static TokenList ReadAllTokens(
 }
 
 TokenList preprocessSource(
-    String const& source,
-    String const& fileName,
-    DiagnosticSink* sink,
-    IncludeHandler* includeHandler,
-    Dictionary<String, String>  defines,
-    ProgramSyntaxNode*  syntax)
+    String const&               source,
+    String const&               fileName,
+    DiagnosticSink*             sink,
+    IncludeHandler*             includeHandler,
+     Dictionary<String, String> defines,
+    ProgramSyntaxNode*          syntax,
+    CompileRequest*             compileRequest)
 {
     Preprocessor preprocessor;
     InitializePreprocessor(&preprocessor, sink);
     preprocessor.syntax = syntax;
+    preprocessor.compileRequest = compileRequest;
 
     preprocessor.includeHandler = includeHandler;
     for (auto p : defines)

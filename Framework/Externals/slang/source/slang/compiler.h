@@ -89,6 +89,29 @@ namespace Slang
         // Preprocessor definitions to use for this translation unit only
         // (whereas the ones on `CompileOptions` will be shared)
         Dictionary<String, String> preprocessorDefinitions;
+
+        // Compile flags for this translation unit
+        SlangCompileFlags compileFlags = 0;
+    };
+
+
+    struct SearchDirectory
+    {
+        enum Kind
+        {
+            Default,
+            AutoImport,
+        };
+
+        SearchDirectory() = default;
+        SearchDirectory(SearchDirectory const& other) = default;
+        SearchDirectory(String const& path, Kind kind)
+            : path(path)
+            , kind(kind)
+        {}
+
+        String  path;
+        Kind    kind;
     };
 
     class CompileOptions
@@ -98,7 +121,7 @@ namespace Slang
         CodeGenTarget Target = CodeGenTarget::Unknown;
 
         // Directories to search for `#include` files or `import`ed modules
-        List<String> SearchDirectories;
+        List<SearchDirectory> searchDirectories;
 
         // Definitions to provide during preprocessing
         Dictionary<String, String> preprocessorDefinitions;
@@ -112,8 +135,8 @@ namespace Slang
         // Should we just pass the input to another compiler?
         PassThroughMode passThrough = PassThroughMode::None;
 
-        // Flags supplied through the API
-        SlangCompileFlags flags = 0;
+        // Compile flags to be shared by all translation units
+        SlangCompileFlags compileFlags = 0;
     };
 
     // This is the representation of a given translation unit

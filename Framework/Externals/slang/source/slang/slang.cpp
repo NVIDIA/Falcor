@@ -130,9 +130,9 @@ struct CompileRequest
     {
         CompileRequest* request;
 
-        List<String> searchDirs;
+        List<SearchDirectory> searchDirs;
 
-        virtual bool TryToFindIncludeFile(
+        virtual IncludeResult TryToFindIncludeFile(
             String const& pathToInclude,
             String const& pathIncludedFrom,
             String* outFoundPath,
@@ -146,12 +146,26 @@ struct CompileRequest
 
                 request->mDependencyFilePaths.Add(path);
 
-                return true;
+                // HACK(tfoley): We might have found the file in the same directory,
+                // but what if this is also inside an auto-import path?
+                for (auto & dir : searchDirs)
+                {
+                    // Only consider auto-import paths
+                    if(dir.kind != SearchDirectory::Kind::AutoImport)
+                        continue;
+
+                    String otherPath = Path::Combine(dir.path, pathToInclude);
+
+                    if(otherPath == path)
+                        return IncludeResult::FoundAutoImportFile;
+                }
+
+                return IncludeResult::FoundIncludeFile;
             }
 
             for (auto & dir : searchDirs)
             {
-                path = Path::Combine(dir, pathToInclude);
+                path = Path::Combine(dir.path, pathToInclude);
                 if (File::Exists(path))
                 {
                     *outFoundPath = path;
@@ -159,10 +173,17 @@ struct CompileRequest
 
                     request->mDependencyFilePaths.Add(path);
 
-                    return true;
+                    switch( dir.kind )
+                    {
+                    case SearchDirectory::Kind::Default:
+                        return IncludeResult::FoundIncludeFile;
+
+                    case SearchDirectory::Kind::AutoImport:
+                        return IncludeResult::FoundAutoImportFile;
+                    }
                 }
             }
-            return false;
+            return IncludeResult::NotFound;
         }
     };
 
@@ -205,9 +226,9 @@ struct CompileRequest
         {
             auto sourceFilePath = sourceFile->path;
 
-            auto searchDirs = options.SearchDirectories;
+            auto searchDirs = options.searchDirectories;
             searchDirs.Reverse();
-            searchDirs.Add(Path::GetDirectoryName(sourceFilePath));
+            searchDirs.Add(SearchDirectory(Path::GetDirectoryName(sourceFilePath), SearchDirectory::Kind::Default));
             searchDirs.Reverse();
             includeHandler.searchDirs = searchDirs;
 
@@ -219,11 +240,13 @@ struct CompileRequest
                 mResult.GetErrorWriter(),
                 &includeHandler,
                 preprocessorDefinitions,
-                translationUnitSyntax.Ptr());
+                translationUnitSyntax.Ptr(),
+                this);
 
             parseSourceFile(
                 translationUnitSyntax.Ptr(),
                 options,
+                translationUnitOptions,
                 tokens,
                 mResult.GetErrorWriter(),
                 sourceFilePath,
@@ -257,6 +280,7 @@ struct CompileRequest
         RefPtr<SyntaxVisitor> visitor = CreateSemanticsVisitor(
             mResult.GetErrorWriter(),
             options,
+            translationUnit.options,
             this);
 
         checkTranslationUnit(translationUnit, visitor);
@@ -265,14 +289,9 @@ struct CompileRequest
     void checkCollectionOfTranslationUnits(
         RefPtr<CollectionOfTranslationUnits>    collectionOfTranslationUnits)
     {
-        RefPtr<SyntaxVisitor> visitor = CreateSemanticsVisitor(
-            mResult.GetErrorWriter(),
-            Options,
-            this);
-
         for( auto& translationUnit : collectionOfTranslationUnits->translationUnits )
         {
-            checkTranslationUnit(translationUnit, visitor);
+            checkTranslationUnit(translationUnit, Options);
         }
     }
 
@@ -300,6 +319,21 @@ struct CompileRequest
 
     int executeCompilerDriverActions()
     {
+        // Do some cleanup on settings specified by user.
+        // In particular, we want to propagate flags from the overall request down to
+        // each translation unit.
+        for( auto& translationUnitOptions : Options.translationUnits )
+        {
+            translationUnitOptions.compileFlags |= Options.compileFlags;
+
+            // However, the "no checking" flag shouldn't be applied to
+            // any translation unit that is native Slang code.
+            if( translationUnitOptions.sourceLanguage == SourceLanguage::Slang )
+            {
+                translationUnitOptions.compileFlags &= SLANG_COMPILE_FLAG_NO_CHECKING;
+            }
+        }
+
         // If we are being asked to do pass-through, then we need to do that here...
         if (Options.passThrough != PassThroughMode::None)
         {
@@ -448,6 +482,63 @@ struct CompileRequest
 
     Dictionary<String, RefPtr<ProgramSyntaxNode>> loadedModules;
 
+    RefPtr<ProgramSyntaxNode> loadModule(
+        String const&       name,
+        String const&       path,
+        String const&       source,
+        CodePosition const& loc)
+    {
+        // now we need to try compiling it, etc.
+
+        // We don't want to use the same options that the user specified
+        // for loading modules on-demand. In particular, we always want
+        // semantic checking to be enabled.
+        CompileOptions moduleOptions;
+        moduleOptions.searchDirectories = Options.searchDirectories;
+        moduleOptions.profile = Options.profile;
+
+        RefPtr<SourceFile> sourceFile = new SourceFile();
+        sourceFile->path = path;
+        sourceFile->content = source;
+
+        TranslationUnitOptions translationUnitOptions;
+        translationUnitOptions.sourceFiles.Add(sourceFile);
+
+        CompileUnit translationUnit = parseTranslationUnit(translationUnitOptions, moduleOptions);
+
+        // TODO: handle errors
+
+        checkTranslationUnit(translationUnit, moduleOptions);
+
+        // Skip code generation
+
+        //
+
+        RefPtr<ProgramSyntaxNode> moduleDecl = translationUnit.SyntaxNode;
+
+        loadedModules.Add(name, moduleDecl);
+
+        return moduleDecl;
+
+    }
+
+    String autoImportModule(
+        String const&       path,
+        String const&       source,
+        CodePosition const& loc)
+    {
+        // TODO: may want to have some kind of canonicalization step here
+        String name = path;
+
+        // Have we already loaded a module matching this name?
+        if (loadedModules.TryGetValue(name))
+            return name;
+
+        loadModule(name, path, source, loc);
+
+        return name;
+    }
+
     RefPtr<ProgramSyntaxNode> findOrImportModule(
         String const&       name,
         CodePosition const& loc)
@@ -486,47 +577,30 @@ struct CompileRequest
 
         String foundPath;
         String foundSource;
-        bool found = includeHandler.TryToFindIncludeFile(fileName, pathIncludedFrom, &foundPath, &foundSource);
-        if (!found)
+        IncludeResult includeResult = includeHandler.TryToFindIncludeFile(fileName, pathIncludedFrom, &foundPath, &foundSource);
+        switch( includeResult )
         {
-            this->mSink.diagnose(loc, Diagnostics::cannotFindFile, fileName);
+        case IncludeResult::NotFound:
+        case IncludeResult::Error:
+            {
+                this->mSink.diagnose(loc, Diagnostics::cannotFindFile, fileName);
 
-            loadedModules[name] = nullptr;
-            return nullptr;
+                loadedModules[name] = nullptr;
+                return nullptr;
+            }
+            break;
+
+        default:
+            break;
         }
 
         // We've found a file that we can load for the given module, so
-        // now we need to try compiling it, etc.
-
-        // We don't want to use the same options that the user specified
-        // for loading modules on-demand. In particular, we always want
-        // semantic checking to be enabled.
-        CompileOptions moduleOptions;
-        moduleOptions.SearchDirectories = Options.SearchDirectories;
-        moduleOptions.profile = Options.profile;
-
-        RefPtr<SourceFile> sourceFile = new SourceFile();
-        sourceFile->path = foundPath;
-        sourceFile->content = foundSource;
-
-        TranslationUnitOptions translationUnitOptions;
-        translationUnitOptions.sourceFiles.Add(sourceFile);
-
-        CompileUnit translationUnit = parseTranslationUnit(translationUnitOptions, moduleOptions);
-
-        // TODO: handle errors
-
-        checkTranslationUnit(translationUnit, moduleOptions);
-
-        // Skip code generation
-
-        //
-
-        moduleDecl = translationUnit.SyntaxNode;
-
-        loadedModules.Add(name, moduleDecl);
-
-        return moduleDecl;
+        // go ahead and perform the module-load action
+        return loadModule(
+            name,
+            foundPath,
+            foundSource,
+            loc);
     }
 
 };
@@ -537,6 +611,15 @@ RefPtr<ProgramSyntaxNode> findOrImportModule(
     CodePosition const& loc)
 {
     return request->findOrImportModule(name, loc);
+}
+
+String autoImportModule(
+    CompileRequest*     request,
+    String const&       path,
+    String const&       source,
+    CodePosition const& loc)
+{
+    return request->autoImportModule(path, source, loc);
 }
 
 void Session::addBuiltinSource(
@@ -656,7 +739,7 @@ SLANG_API void spSetCompileFlags(
     SlangCompileRequest*    request,
     SlangCompileFlags       flags)
 {
-    REQ(request)->Options.flags = flags;
+    REQ(request)->Options.compileFlags = flags;
 }
 
 SLANG_API void spSetCodeGenTarget(
@@ -687,9 +770,16 @@ SLANG_API void spSetDiagnosticCallback(
 
 SLANG_API void spAddSearchPath(
         SlangCompileRequest*    request,
-        const char*             searchDir)
+        const char*             path)
 {
-    REQ(request)->Options.SearchDirectories.Add(searchDir);
+    REQ(request)->Options.searchDirectories.Add(Slang::SearchDirectory(path, Slang::SearchDirectory::Kind::Default));
+}
+
+SLANG_API void spAddAutoImportPath(
+    SlangCompileRequest*    request,
+    const char*             path)
+{
+    REQ(request)->Options.searchDirectories.Add(Slang::SearchDirectory(path, Slang::SearchDirectory::Kind::AutoImport));
 }
 
 SLANG_API void spAddPreprocessorDefine(
