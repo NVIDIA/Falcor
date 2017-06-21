@@ -51,7 +51,7 @@ namespace Falcor
 
         /** Get the API handle of the active program
         */
-        ProgramVersion::SharedConstPtr getActiveVersion() const;
+        ProgramVersion::SharedConstPtr getActiveVersion(bool isSilentFail = false) const;
 
         /** Adds a macro definition to the program. If the macro already exists, its will be replaced.
 
@@ -87,7 +87,7 @@ namespace Falcor
         void init(const std::string& vs, const std::string& fs, const std::string& gs, const std::string& hs, const std::string& ds, const DefineList& programDefines, bool createdFromFile);
         void init(const std::string& cs, const DefineList& programDefines, bool createdFromFile);
 
-        bool link() const;
+        bool link(bool isSilentFail = false) const;
         ProgramVersion::SharedPtr preprocessAndCreateProgramVersion(std::string& log) const;
         virtual ProgramVersion::SharedPtr createProgramVersion(std::string& log) const;
 

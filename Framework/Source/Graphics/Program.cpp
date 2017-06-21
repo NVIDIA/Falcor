@@ -140,7 +140,7 @@ namespace Falcor
         return false;
     }
 
-    ProgramVersion::SharedConstPtr Program::getActiveVersion() const
+    ProgramVersion::SharedConstPtr Program::getActiveVersion(bool isSilentFail) const
     {
         if(mLinkRequired)
         {
@@ -148,9 +148,9 @@ namespace Falcor
             ProgramVersion::SharedConstPtr pVersion = nullptr;
             if(it == mProgramVersions.end())
             {
-                if(link() == false)
+                if(link(isSilentFail) == false)
                 {
-                    return false;
+                    return nullptr;
                 }
                 else
                 {
@@ -358,7 +358,7 @@ namespace Falcor
     }
 
 
-    bool Program::link() const
+    bool Program::link(bool isSilentFail) const
     {
         while(1)
         {
@@ -371,12 +371,20 @@ namespace Falcor
                 std::string error = std::string("Program Linkage failed.\n\n");
                 error += getProgramDescString() + "\n";
                 error += log;
-
-                if(msgBox(error, MsgBoxType::RetryCancel) == MsgBoxButton::Cancel)
+                
+                if (!isSilentFail)
                 {
-                    logError(error);
+                    if (msgBox(error, MsgBoxType::RetryCancel) == MsgBoxButton::Cancel)
+                    {
+                        logError(error);
+                        return false;
+                    }
+                }
+                else
+                {
                     return false;
                 }
+
             }
             else
             {
