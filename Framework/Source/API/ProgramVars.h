@@ -193,12 +193,18 @@ namespace Falcor
         */
         RootSignature::SharedPtr getRootSignature() const { return mpRootSignature; }
 
+        struct RootData
+        {
+            uint32_t rootIndex;
+            uint32_t descIndex;
+        };
+
         template<typename ViewType>
         struct ResourceData
         {
             typename ViewType::SharedPtr pView;
             Resource::SharedPtr pResource;
-            uint32_t rootIndex = 0;
+            RootData rootData;
             mutable std::shared_ptr<DescriptorSet> pDescSet;
         };
 
@@ -206,7 +212,7 @@ namespace Falcor
         struct ResourceData<Sampler>
         {
             Sampler::SharedPtr pSampler;
-            uint32_t rootIndex = 0;
+            RootData rootData;
             mutable std::shared_ptr<DescriptorSet> pDescSet;
         };
 

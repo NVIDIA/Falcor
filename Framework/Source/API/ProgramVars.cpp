@@ -36,25 +36,24 @@
 namespace Falcor
 {
     template<RootSignature::DescType descType>
-    uint32_t findRootIndex(const RootSignature* pRootSig, uint32_t regIndex, uint32_t regSpace)
+    ProgramVars::RootData findRootData(const RootSignature* pRootSig, uint32_t regIndex, uint32_t regSpace)
     {
-        // Find the bind-index in the root descriptor
-        bool found = false;
-
         // Search the descriptor-tables
         for (size_t i = 0; i < pRootSig->getDescriptorSetCount(); i++)
         {
             const RootSignature::DescriptorSet& set = pRootSig->getDescriptorSet(i);
             assert(set.getRangeCount() == 1);
             const RootSignature::DescriptorSet::Range& range = set.getRange(0);
-            assert(range.descCount == 1);
-            if (range.type == descType && range.firstRegIndex == regIndex && range.regSpace == regSpace)
+            if (range.type == descType && range.regSpace == regSpace)
             {
-                return (uint32_t)i;
+                if(range.firstRegIndex <= regIndex && (range.firstRegIndex + range.descCount) > regIndex)
+                {
+                    return{ (uint32_t)i, regIndex - range.firstRegIndex };
+                }
             }
         }
         should_not_get_here();
-        return -1;
+        return{ (uint32_t)-1, (uint32_t)-1 };
     }
 
     template<typename BufferType, typename ViewType, RootSignature::DescType descType, typename ViewInitFunc>
@@ -77,8 +76,8 @@ namespace Falcor
                     data.pView = viewInitFunc(data.pResource);
                 }
 
-                data.rootIndex = findRootIndex<descType>(pRootSig, regIndex, regSpace);
-                if (data.rootIndex == -1)
+                data.rootData = findRootData<descType>(pRootSig, regIndex, regSpace);
+                if (data.rootData.rootIndex == -1)
                 {
                     logError("Can't find a root-signature information matching buffer '" + pReflector->getName() + " when creating ProgramVars");
                     return false;
@@ -115,20 +114,20 @@ namespace Falcor
                 {
                 case ProgramReflection::Resource::ResourceType::Sampler:
                     mAssignedSamplers[regIndex].pSampler = nullptr;
-                    mAssignedSamplers[regIndex].rootIndex = findRootIndex<RootSignature::DescType::Sampler>(mpRootSignature.get(), regIndex, desc.registerSpace);
+                    mAssignedSamplers[regIndex].rootData = findRootData<RootSignature::DescType::Sampler>(mpRootSignature.get(), regIndex, desc.registerSpace);
                     break;
                 case ProgramReflection::Resource::ResourceType::Texture:
                 case ProgramReflection::Resource::ResourceType::RawBuffer:
                     if (desc.shaderAccess == ProgramReflection::ShaderAccess::Read)
                     {
                         assert(mAssignedSrvs.find(regIndex) == mAssignedSrvs.end());
-                        mAssignedSrvs[regIndex].rootIndex = findRootIndex<RootSignature::DescType::SRV>(mpRootSignature.get(), regIndex, desc.registerSpace);
+                        mAssignedSrvs[regIndex].rootData = findRootData<RootSignature::DescType::SRV>(mpRootSignature.get(), regIndex, desc.registerSpace);
                     }
                     else
                     {
                         assert(mAssignedUavs.find(regIndex) == mAssignedUavs.end());
                         assert(desc.shaderAccess == ProgramReflection::ShaderAccess::ReadWrite);
-                        mAssignedUavs[regIndex].rootIndex = findRootIndex<RootSignature::DescType::UAV>(mpRootSignature.get(), regIndex, desc.registerSpace);
+                        mAssignedUavs[regIndex].rootData = findRootData<RootSignature::DescType::UAV>(mpRootSignature.get(), regIndex, desc.registerSpace);
                     }
                     break;
                 default:
@@ -587,7 +586,7 @@ namespace Falcor
         for (auto& resIt : resMap)
         {
             auto& resDesc = resIt.second;
-            uint32_t rootIndex = resDesc.rootIndex;
+            uint32_t rootIndex = resDesc.rootData.rootIndex;
             const Resource* pResource = resDesc.pResource.get();
 
             ViewType::ApiHandle handle;
@@ -670,7 +669,8 @@ namespace Falcor
         // Bind the constant-buffers
         for (auto& bufIt : pVars->getAssignedCbs())
         {
-            uint32_t rootIndex = bufIt.second.rootIndex;
+            uint32_t rootIndex = bufIt.second.rootData.rootIndex;
+            assert(bufIt.second.rootData.descIndex == 0);
             const ConstantBuffer* pCB = dynamic_cast<const ConstantBuffer*>(bufIt.second.pResource.get());
             pCB->uploadToGPU();
             if(forGraphics)
@@ -690,7 +690,7 @@ namespace Falcor
         // Bind the samplers
         for (auto& samplerIt : pVars->getAssignedSamplers())
         {
-            uint32_t rootIndex = samplerIt.second.rootIndex;
+            uint32_t rootIndex = samplerIt.second.rootData.rootIndex;
             const Sampler* pSampler = samplerIt.second.pSampler.get();
             if (pSampler == nullptr)
             {
