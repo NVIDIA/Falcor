@@ -168,10 +168,12 @@ namespace Falcor
             return VariablesBuffer::setTexture(Offset, pTexture, pSampler);
         }
 
-        virtual void uploadToGPU(size_t offset = 0, size_t size = -1) const override;
+        virtual bool uploadToGPU(size_t offset = 0, size_t size = -1) const override;
 
+        ConstantBufferView::SharedPtr getCbv();
     protected:
         ConstantBuffer(const ProgramReflection::BufferReflection::SharedConstPtr& pReflector, size_t size);
+        mutable ConstantBufferView::SharedPtr mpCbv;
 #ifdef FALCOR_D3D11
         friend class RenderContext;
         std::map<uint32_t, ID3D11ShaderResourceViewPtr>* mAssignedResourcesMap;

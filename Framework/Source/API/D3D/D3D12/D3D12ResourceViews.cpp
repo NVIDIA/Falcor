@@ -38,6 +38,7 @@ namespace Falcor
     RenderTargetView::SharedPtr RenderTargetView::sNullView;
     UnorderedAccessView::SharedPtr UnorderedAccessView::sNullView;
     ShaderResourceView::SharedPtr ShaderResourceView::sNullView;
+    ConstantBufferView::SharedPtr ConstantBufferView::sNullView;
 
     ShaderResourceView::SharedPtr ShaderResourceView::create(ResourceWeakPtr pResource, uint32_t mostDetailedMip, uint32_t mipCount, uint32_t firstArraySlice, uint32_t arraySize)
     {
@@ -218,6 +219,50 @@ namespace Falcor
         if (!sNullView)
         {
             create(ResourceWeakPtr(), 0, 0, 0);
+        }
+        return sNullView;
+    }
+
+    ConstantBufferView::SharedPtr ConstantBufferView::create(ResourceWeakPtr pResource)
+    {
+        Resource::SharedConstPtr pSharedPtr = pResource.lock();
+
+        if (!pSharedPtr && sNullView)
+        {
+            return sNullView;
+        }
+
+        D3D12_CONSTANT_BUFFER_VIEW_DESC desc;
+        Resource::ApiHandle resHandle = nullptr;
+        if (pSharedPtr)
+        {
+            ConstantBuffer* pBuffer = dynamic_cast<ConstantBuffer*>(const_cast<Resource*>(pSharedPtr.get()));
+            desc.BufferLocation = pBuffer->getGpuAddress();
+            desc.SizeInBytes = (uint32_t)pBuffer->getSize();
+            resHandle = pSharedPtr->getApiHandle();
+        }
+        else
+        {
+            desc = {};
+        }
+
+        DescriptorSet::Layout layout;
+        layout.addRange(DescriptorSet::Type::Cbv, 1);
+        ApiHandle handle = DescriptorSet::create(gpDevice->getCpuDescriptorPool(), layout);
+        gpDevice->getApiHandle()->CreateConstantBufferView(&desc, handle->getCpuHandle(0));
+
+        SharedPtr pNewObj;
+        SharedPtr& pObj = pSharedPtr ? pNewObj : sNullView;
+
+        pObj = SharedPtr(new ConstantBufferView(pResource, handle));
+        return pObj;
+    }
+
+    ConstantBufferView::SharedPtr ConstantBufferView::getNullView()
+    {
+        if (!sNullView)
+        {
+            create(ResourceWeakPtr());
         }
         return sNullView;
     }
