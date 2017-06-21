@@ -41,27 +41,16 @@ namespace Falcor
         // Find the bind-index in the root descriptor
         bool found = false;
 
-        // First search the root-descriptors
-        for (size_t i = 0; i < pRootSig->getRootDescriptorCount(); i++)
-        {
-            const RootSignature::DescriptorDesc& desc = pRootSig->getRootDescriptor(i);
-            found = (desc.type == descType) && (desc.regIndex == regIndex) && (desc.regSpace == regSpace);
-            if (found)
-            {
-                return pRootSig->getDescriptorRootIndex(i);
-            }
-        }
-
         // Search the descriptor-tables
-        for (size_t i = 0; i < pRootSig->getDescriptorTableCount(); i++)
+        for (size_t i = 0; i < pRootSig->getDescriptorSetCount(); i++)
         {
-            const RootSignature::DescriptorTable& table = pRootSig->getDescriptorTable(i);
-            assert(table.getRangeCount() == 1);
-            const RootSignature::DescriptorTable::Range& range = table.getRange(0);
+            const RootSignature::DescriptorSet& set = pRootSig->getDescriptorSet(i);
+            assert(set.getRangeCount() == 1);
+            const RootSignature::DescriptorSet::Range& range = set.getRange(0);
             assert(range.descCount == 1);
             if (range.type == descType && range.firstRegIndex == regIndex && range.regSpace == regSpace)
             {
-                return pRootSig->getDescriptorTableRootIndex(i);
+                return (uint32_t)i;
             }
         }
         should_not_get_here();
