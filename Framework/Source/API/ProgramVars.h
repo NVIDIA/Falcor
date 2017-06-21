@@ -205,7 +205,6 @@ namespace Falcor
             typename ViewType::SharedPtr pView;
             Resource::SharedPtr pResource;
             RootData rootData;
-            mutable std::shared_ptr<DescriptorSet> pDescSet;
         };
 
         template<>
@@ -213,18 +212,25 @@ namespace Falcor
         {
             Sampler::SharedPtr pSampler;
             RootData rootData;
-            mutable std::shared_ptr<DescriptorSet> pDescSet;
         };
 
+
+        struct RootSet
+        {
+            bool active = false;
+            mutable std::shared_ptr<DescriptorSet> pDescSet;
+        };
+        
         template<typename T>
         using ResourceMap = std::unordered_map<uint32_t, ResourceData<T>>;
         using SamplerMap = std::map<uint32_t, ResourceData<Sampler::SharedConstPtr>>;
+        using RootSetVec = std::vector<RootSet>;
 
         const ResourceMap<ConstantBuffer>& getAssignedCbs() const { return mAssignedCbs; }
         const ResourceMap<ShaderResourceView>& getAssignedSrvs() const { return mAssignedSrvs; }
         const ResourceMap<UnorderedAccessView>& getAssignedUavs() const { return mAssignedUavs; }
         const ResourceMap<Sampler>& getAssignedSamplers() const { return mAssignedSamplers; }
-
+        const RootSetVec getRootSets() const { return mRootSets; }
     protected:
         template<bool forGraphics, typename ContextType>
         void applyCommon(ContextType* pContext) const;
@@ -238,6 +244,8 @@ namespace Falcor
         ResourceMap<ShaderResourceView> mAssignedSrvs;   // HLSL 't' registers
         ResourceMap<UnorderedAccessView> mAssignedUavs;  // HLSL 'u' registers
         ResourceMap<Sampler> mAssignedSamplers;    // HLSL 's' registers
+
+        RootSetVec mRootSets;
     };
 
     class GraphicsVars : public ProgramVars, public std::enable_shared_from_this<ProgramVars>

@@ -92,11 +92,11 @@ namespace Falcor
     {
         switch (type)
         {
-        case Falcor::RootSignature::DescType::SRV:
-        case Falcor::RootSignature::DescType::CBV:
+        case Falcor::RootSignature::DescType::Srv:
+        case Falcor::RootSignature::DescType::Cbv:
         case Falcor::RootSignature::DescType::Sampler:
             return ProgramReflection::ShaderAccess::Read;
-        case Falcor::RootSignature::DescType::UAV:
+        case Falcor::RootSignature::DescType::Uav:
             return ProgramReflection::ShaderAccess::ReadWrite;
         default:
             should_not_get_here();
@@ -127,9 +127,9 @@ namespace Falcor
         uint32_t cost = 0;
         RootSignature::Desc d;
 
-        cost += initializeBufferDescriptors(pReflector, d, ProgramReflection::BufferReflection::Type::Constant, RootSignature::DescType::CBV);
-        cost += initializeBufferDescriptors(pReflector, d, ProgramReflection::BufferReflection::Type::Structured, RootSignature::DescType::SRV);
-        cost += initializeBufferDescriptors(pReflector, d, ProgramReflection::BufferReflection::Type::Structured, RootSignature::DescType::UAV);
+        cost += initializeBufferDescriptors(pReflector, d, ProgramReflection::BufferReflection::Type::Constant, RootSignature::DescType::Cbv);
+        cost += initializeBufferDescriptors(pReflector, d, ProgramReflection::BufferReflection::Type::Structured, RootSignature::DescType::Srv);
+        cost += initializeBufferDescriptors(pReflector, d, ProgramReflection::BufferReflection::Type::Structured, RootSignature::DescType::Uav);
 
         const ProgramReflection::ResourceMap& resMap = pReflector->getResourceMap();
         for (auto& resIt : resMap)
@@ -145,10 +145,10 @@ namespace Falcor
                 switch (resource.shaderAccess)
                 {
                 case ProgramReflection::ShaderAccess::ReadWrite:
-                    descType = RootSignature::DescType::UAV;
+                    descType = RootSignature::DescType::Uav;
                     break;
                 case ProgramReflection::ShaderAccess::Read:
-                    descType = RootSignature::DescType::SRV;
+                    descType = RootSignature::DescType::Srv;
                     break;
                 default:
                     should_not_get_here();

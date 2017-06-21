@@ -69,11 +69,11 @@ namespace Falcor
     {
         switch (type)
         {
-        case RootSignature::DescType::SRV:
+        case RootSignature::DescType::Srv:
             return D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
-        case RootSignature::DescType::UAV:
+        case RootSignature::DescType::Uav:
             return D3D12_DESCRIPTOR_RANGE_TYPE_UAV;
-        case RootSignature::DescType::CBV:
+        case RootSignature::DescType::Cbv:
             return D3D12_DESCRIPTOR_RANGE_TYPE_CBV;
         case RootSignature::DescType::Sampler:
             return D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER;
@@ -87,7 +87,7 @@ namespace Falcor
     {
         assert(set.getRangeCount() == 1);
         const auto& range = set.getRange(0);
-        assert(range.type == RootSignature::DescType::CBV && range.descCount == 1);
+        assert(range.type == RootSignature::DescType::Cbv && range.descCount == 1);
 
         desc.ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
         desc.Descriptor.RegisterSpace = range.regSpace;
@@ -126,7 +126,7 @@ namespace Falcor
         {
             const auto& set = mDesc.mSets[i];
             assert(set.getRangeCount() == 1);
-            if (set.getRangeCount() == 1 && set.getRange(0).type == DescType::CBV)
+            if (set.getRangeCount() == 1 && set.getRange(0).type == DescType::Cbv)
             {
                 convertCbvSet(set, rootParams[i]);
             }

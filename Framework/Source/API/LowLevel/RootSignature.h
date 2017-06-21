@@ -27,6 +27,7 @@
 ***************************************************************************/
 #pragma once
 #include "API/Sampler.h"
+#include "API/DescriptorSet.h"
 
 namespace Falcor
 {
@@ -54,13 +55,7 @@ namespace Falcor
         using SharedConstPtr = std::shared_ptr<const RootSignature>;
         using ApiHandle = RootSignatureHandle;
         
-        enum class DescType
-        {
-            SRV,
-            UAV,
-            CBV,
-            Sampler
-        };
+        using DescType = Falcor::DescriptorSet::Type;
 
         class Desc;
 
