@@ -608,7 +608,7 @@ namespace Falcor
             const auto& pDescSet = rootSets[rootData.rootIndex].pDescSet;
             assert(pDescSet);
             auto srcHandle = pSampler->getApiHandle()->getCpuHandle(0);
-            auto dstHandle = pDescSet->getCpuHandle(rootData.descIndex);            
+            auto dstHandle = pDescSet->getCpuHandle(0, rootData.descIndex);            
             gpDevice->getApiHandle()->CopyDescriptorsSimple(1, dstHandle, srcHandle, D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
         }
     }
@@ -666,7 +666,7 @@ namespace Falcor
             const auto& pDescSet = rootSets[rootData.rootIndex].pDescSet;
             assert(pDescSet);
             auto srcHandle = handle->getCpuHandle(0);
-            auto dstHandle = pDescSet->getCpuHandle(resDesc.rootData.descIndex);
+            auto dstHandle = pDescSet->getCpuHandle(0, resDesc.rootData.descIndex);
             gpDevice->getApiHandle()->CopyDescriptorsSimple(1, dstHandle, srcHandle, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
         }
     }

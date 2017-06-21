@@ -155,17 +155,11 @@ namespace Falcor
                 }
             }
 
-            // For now, we will deal with arrays by just creating one root table per entry.
-            // Eventually we will want to create a single root table for the array, but
-            // that is something we can do later.
             uint32_t count = resource.arraySize ? resource.arraySize : 1;
-            for( uint32_t ii = 0; ii < count; ++ii )
-            {
-                RootSignature::DescriptorSet descTable;
-                descTable.addRange(descType, resource.regIndex + ii, 1, resource.registerSpace);
-                d.addDescriptorSet(descTable);
-                cost += 1;
-            }
+            RootSignature::DescriptorSet descTable;
+            descTable.addRange(descType, resource.regIndex, count, resource.registerSpace);
+            d.addDescriptorSet(descTable);
+            cost += 1;
         }
 
         if (cost > 64)
