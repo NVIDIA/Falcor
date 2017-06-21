@@ -48,7 +48,7 @@ cbuffer ConstColorCB : register(b0)
 #ifdef PICKING
 #define PSOut uint
 #else
-#define PSOut vec4
+#define PSOut float4
 #endif
 
 PSOut main(EditorVSOut vOut) : SV_TARGET
@@ -67,9 +67,9 @@ PSOut main(EditorVSOut vOut) : SV_TARGET
 #else
     #ifdef SHADING
         float shading = lerp(0.5, 1, dot(toCamera, vOut.vOut.normalW));
-        return vec4(gColor * shading, 1);
+        return float4(gColor * shading, 1);
     #else
-        return vec4(gColor, 1);
+        return float4(gColor, 1);
     #endif
 #endif
 }

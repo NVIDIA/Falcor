@@ -25,34 +25,22 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#version 440
-#include "HlslGlslCommon.h"
 
-CONSTANT_BUFFER(PerFrameCB, 0)
+cbuffer PerFrameCB : register(b0)
 {
-	mat4 gvpTransform;
-	vec3 gFontColor;
+	float4x4 gvpTransform;
+	float3 gFontColor;
 };
 
-vec4 transform(vec2 posS)
+float4 transform(float2 posS)
 {
-	return mul(gvpTransform, vec4(posS, 0.5f, 1));
+	return mul(gvpTransform, float4(posS, 0.5f, 1));
 }
 
-#ifdef FALCOR_HLSL
-void main(float2 posS : POSITION, inout float2 texC : TEXCOORD, out float4 posSV : SV_POSITION)
+void main(
+	float2 posS : POSITION,
+	inout float2 texC : TEXCOORD,
+	out float4 posSV : SV_POSITION)
 {
 	posSV = transform(posS);
 }
-
-#elif defined FALCOR_GLSL
-layout (location = 0) in vec2 posS;
-layout (location = 1) in vec2 texCIn;
-out vec2 texC;
-
-void main()
-{
-	gl_Position = transform(posS);
-	texC = texCIn;
-}
-#endif

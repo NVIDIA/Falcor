@@ -35,15 +35,15 @@
 
 struct Particle
 {
-    vec3 pos;
+    float3 pos;
     float scale;
-    vec3 vel;    
+    float3 vel;    
     float life;
-    vec3 accel;
+    float3 accel;
     float growth;
     float rot; 
     float rotVel;
-    vec2 padding1;
+    float2 padding1;
     //id?
 };
 
@@ -51,7 +51,7 @@ struct EmitData
 {
     uint numEmit;
     uint maxParticles;
-    vec2 padding;
+    float2 padding;
 };
 
 struct SortData
@@ -62,8 +62,8 @@ struct SortData
 
 struct ColorInterpPsPerFrame
 {
-    vec4 color1;
-    vec4 color2;
+    float4 color1;
+    float4 color2;
     float colorT1;
     float colorT2;
 };
@@ -76,16 +76,16 @@ struct SimulatePerFrame
 
 struct VSPerFrame
 {
-    mat4 view;
-    mat4 proj;
+    float4x4 view;
+    float4x4 proj;
 };
 
 struct SimulateWithSortPerFrame
 {
-    mat4 view;
+    float4x4 view;
     float dt;
     uint maxParticles;
-    vec2 padding;
+    float2 padding;
 };
 
 #ifndef HOST_CODE

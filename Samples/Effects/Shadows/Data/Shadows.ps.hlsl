@@ -8,10 +8,10 @@ __import Shading;
 
 cbuffer PerFrameCB : register(b0)
 {
-	vec3 gAmbient;
+	float3 gAmbient;
     CsmData gCsmData[_LIGHT_COUNT];
     bool visualizeCascades;
-    mat4 camVpAtLastCsmUpdate;
+    float4x4 camVpAtLastCsmUpdate;
 };
 
 struct ShadowsVSOut
@@ -20,12 +20,12 @@ struct ShadowsVSOut
     float shadowsDepthC : DEPTH;
 };
 
-vec4 main(ShadowsVSOut pIn) : SV_TARGET0
+float4 main(ShadowsVSOut pIn) : SV_TARGET0
 {
     ShadingAttribs shAttr;
     prepareShadingAttribs(gMaterial, pIn.vsData.posW, gCam.position, pIn.vsData.normalW, pIn.vsData.bitangentW, pIn.vsData.texC, 0, shAttr);
     ShadingOutput result;
-    float4 fragColor = vec4(0,0,0,1);
+    float4 fragColor = float4(0,0,0,1);
     
     [unroll]
     for(uint l = 0 ; l < _LIGHT_COUNT ; l++)

@@ -51,7 +51,7 @@ void perturbNormal(in const MaterialData mat, inout ShadingAttribs shAttr, bool 
 
 __import Shading;
 
-vec4 main(VS_OUT vOut) : SV_TARGET
+float4 main(VS_OUT vOut) : SV_TARGET
 {
     ShadingAttribs shAttr;
     prepareShadingAttribs(gMaterial, vOut.posW, gCam.position, vOut.normalW, vOut.bitangentW, vOut.texC, shAttr);
@@ -64,6 +64,6 @@ vec4 main(VS_OUT vOut) : SV_TARGET
         evalMaterial(shAttr, gLights[l], result, l == 0);
     }
 
-    vec4 finalColor = vec4(result.finalValue + gAmbient * result.diffuseAlbedo, 1.f);
+    float4 finalColor = float4(result.finalValue + gAmbient * result.diffuseAlbedo, 1.f);
     return finalColor;
 }

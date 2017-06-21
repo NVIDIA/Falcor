@@ -65,7 +65,7 @@ PsOut main(MainVsOut vOut)
         evalMaterial(shAttr, gLights[l], shadowFactor, result, l == 0);
     }
 
-    finalColor = vec4(result.finalValue, 1.f);
+    finalColor = float4(result.finalValue, 1.f);
 
 #ifdef _ENABLE_REFLECTIONS
     // Calculate the view vector
