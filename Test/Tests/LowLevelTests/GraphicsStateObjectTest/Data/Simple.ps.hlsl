@@ -32,10 +32,10 @@ __import Shading;
 
 cbuffer PerFrameCB : register(b0)
 {
-    vec3 color;
+    float3 color;
 };
 
-vec4 main(VS_OUT vOut) : SV_TARGET
+float4 main(VS_OUT vOut) : SV_TARGET
 {
 	vOut.posW += vOut.normalW + vOut.bitangentW;
 	vOut.posW = normalize(vOut.posW);

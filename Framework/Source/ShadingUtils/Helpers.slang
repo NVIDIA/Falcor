@@ -40,9 +40,9 @@
 static const float M_PIf = 3.14159265359f;
 static const float M_1_PIf = 0.31830988618379f;
 
-_fn vec2 sample_disk(float rnd1, float rnd2, float minRSq = 0.0f)
+_fn float2 sample_disk(float rnd1, float rnd2, float minRSq = 0.0f)
 {
-    vec2 p;
+    float2 p;
     const float r = sqrt(max(minRSq, rnd1));
     const float phi = 2.0f * M_PIf * rnd2;
     p.x = r * cos(phi);
@@ -50,9 +50,9 @@ _fn vec2 sample_disk(float rnd1, float rnd2, float minRSq = 0.0f)
     return p;
 }
 
-_fn vec3 sample_gauss(float rnd1, float rnd2)
+_fn float3 sample_gauss(float rnd1, float rnd2)
 {
-    vec3 p;
+    float3 p;
     const float r = sqrt(-2.f * log(1.f - rnd1));
     const float phi = 2.0f * M_PIf * rnd2;
     p.x = r * cos(phi);
@@ -78,11 +78,11 @@ _fn inline float eval_gauss_1d(float x)
 {
     return eval_gauss2_1d(x * x);
 }
-_fn inline float eval_gauss_2d(vec3 x)
+_fn inline float eval_gauss_2d(float3 x)
 {
     return eval_gauss2_2d(x.x * x.x + x.y * x.y);
 }
-_fn inline float eval_gauss_3d(vec3 x)
+_fn inline float eval_gauss_3d(float3 x)
 {
     return eval_gauss2_3d(x.x * x.x + x.y * x.y + x.z * x.z);
 }
@@ -96,18 +96,18 @@ _fn inline float eval_cos2_wnd(float x)
     return c * c;
 }
 
-_fn vec3 cosine_sample_hemisphere(float rnd1, float rnd2)
+_fn float3 cosine_sample_hemisphere(float rnd1, float rnd2)
 {
-    vec3 p;
+    float3 p;
     p.xy = sample_disk(rnd1, rnd2);
     // Project up to hemisphere.
     p.z = sqrt(max(0.0f, 1.0f - p.x * p.x - p.y * p.y));
     return p;
 }
 
-_fn vec3 uniform_sample_sphere(float rnd1, float rnd2)
+_fn float3 uniform_sample_sphere(float rnd1, float rnd2)
 {
-    vec3 p;
+    float3 p;
     p.z = 2.0f * rnd1 - 1.0f;
     const float r = sqrt(max(0.0f, 1.0f - p.z * p.z));
     const float phi = 2.0f * M_PIf * rnd2;
@@ -116,9 +116,9 @@ _fn vec3 uniform_sample_sphere(float rnd1, float rnd2)
     return p;
 }
 
-_fn vec3 uniform_sample_hemisphere(float rnd1, float rnd2)
+_fn float3 uniform_sample_hemisphere(float rnd1, float rnd2)
 {
-    vec3 p;
+    float3 p;
     p.z = rnd1;
     const float r = sqrt(max(0.0f, 1.0f - p.z * p.z));
     const float phi = 2.0f * M_PIf * rnd2;
@@ -165,7 +165,7 @@ _fn float3 refract(const float3 I, const float3 N, float eta)
     float3 R;
     if (k < 0.0f) 
     {
-        R = v3(0.0f, 0.0f, 0.0f);
+        R = float3(0.0f, 0.0f, 0.0f);
     }
     else 
     {
@@ -178,18 +178,18 @@ _fn float3 refract(const float3 I, const float3 N, float eta)
 					Geometric routines
 *******************************************************************/
 
-void _fn createTangentFrame(in const vec3 normal, _ref(vec3) bitangent)
+void _fn createTangentFrame(in const float3 normal, _ref(float3) bitangent)
 {
 	if(abs(normal.x) > abs(normal.y))
-		bitangent = v3(normal.z, 0.f, -normal.x) / length(v2(normal.x, normal.z));
+		bitangent = float3(normal.z, 0.f, -normal.x) / length(float2(normal.x, normal.z));
 	else
-		bitangent = v3(0.f, normal.z, -normal.y) / length(v2(normal.y, normal.z));
+		bitangent = float3(0.f, normal.z, -normal.y) / length(float2(normal.y, normal.z));
 }
 
-void _fn reflectFrame(vec3 n, vec3 reflect, _ref(vec3) t, _ref(vec3) b)
+void _fn reflectFrame(float3 n, float3 reflect, _ref(float3) t, _ref(float3) b)
 {
     if(abs(dot(n, reflect)) > 0.999f)
-        reflect = abs(n.z) < .8f ? v3(0.f, 0.f, 1.f) : v3(1.f, 0.f, 0.f);
+        reflect = abs(n.z) < .8f ? float3(0.f, 0.f, 1.f) : float3(1.f, 0.f, 0.f);
     b = normalize(cross(n, reflect));
     t = cross(b, n);
 }
@@ -198,7 +198,7 @@ void _fn reflectFrame(vec3 n, vec3 reflect, _ref(vec3) t, _ref(vec3) b)
 					Texturing routines
 *******************************************************************/
 
-vec4 _fn sampleTexture(Texture2D t, SamplerState s, const ShadingAttribs attr)
+float4 _fn sampleTexture(Texture2D t, SamplerState s, const ShadingAttribs attr)
 {
 #ifndef _MS_USER_DERIVATIVES
     return t.SampleBias(s, attr.UV, attr.lodBias);
@@ -208,17 +208,17 @@ vec4 _fn sampleTexture(Texture2D t, SamplerState s, const ShadingAttribs attr)
 }
 
 #ifndef CUDA_CODE
-vec4 _fn sampleTexture(Texture2DArray t, SamplerState s, const ShadingAttribs attr, int arrayIndex)
+float4 _fn sampleTexture(Texture2DArray t, SamplerState s, const ShadingAttribs attr, int arrayIndex)
 {
 #ifndef _MS_USER_DERIVATIVES
-    return t.SampleBias(s, vec3(attr.UV, arrayIndex), attr.lodBias);
+    return t.SampleBias(s, float3(attr.UV, arrayIndex), attr.lodBias);
 #else
-    return t.SampleGrad(s, vec3(attr.UV, arrayIndex), attr.DPDX, attr.DPDY);
+    return t.SampleGrad(s, float3(attr.UV, arrayIndex), attr.DPDX, attr.DPDY);
 #endif
 }
 #endif
 
-vec4 _fn evalTex(in uint32_t hasTexture, in const Texture2D tex, SamplerState s, in const ShadingAttribs attr, in vec4 defaultValue)
+float4 _fn evalTex(in uint32_t hasTexture, in const Texture2D tex, SamplerState s, in const ShadingAttribs attr, in float4 defaultValue)
 {
 #ifndef _MS_DISABLE_TEXTURES
 	if(hasTexture != 0)
@@ -230,7 +230,7 @@ vec4 _fn evalTex(in uint32_t hasTexture, in const Texture2D tex, SamplerState s,
 	return defaultValue;
 }
 
-vec4 _fn evalWithColor(in uint32_t hasTexture, in const Texture2D tex, SamplerState s, float4 color, in const ShadingAttribs attr)
+float4 _fn evalWithColor(in uint32_t hasTexture, in const Texture2D tex, SamplerState s, float4 color, in const ShadingAttribs attr)
 {
 	return evalTex(hasTexture, tex, s, attr, color);
 }
@@ -239,29 +239,29 @@ vec4 _fn evalWithColor(in uint32_t hasTexture, in const Texture2D tex, SamplerSt
 					Normal mapping
 *******************************************************************/
 
-vec3 _fn normalToRGB(in const vec3 normal)
+float3 _fn normalToRGB(in const float3 normal)
 {
 	return normal * 0.5f + 0.5f;
 }
 
-vec3 _fn RGBToNormal(in const vec3 rgbval)
+float3 _fn RGBToNormal(in const float3 rgbval)
 {
     return rgbval * 2.f - 1.f;
 }
 
-vec3 _fn fromLocal(in vec3 v, in vec3 t, in vec3 b, in vec3 n)
+float3 _fn fromLocal(in float3 v, in float3 t, in float3 b, in float3 n)
 {
     return t * v.x + b * v.y + n * v.z;
 }
 
-vec3 _fn toLocal(in vec3 v, in vec3 t, in vec3 b, in vec3 n)
+float3 _fn toLocal(in float3 v, in float3 t, in float3 b, in float3 n)
 {
-    return v3(dot(v, t), dot(v, b), dot(v, n));
+    return float3(dot(v, t), dot(v, b), dot(v, n));
 }
 
-void _fn applyNormalMap(in vec3 texValue, _ref(vec3) n, _ref(vec3) t, _ref(vec3) b)
+void _fn applyNormalMap(in float3 texValue, _ref(float3) n, _ref(float3) t, _ref(float3) b)
 {
-	const vec3 normalMap = normalize(texValue);
+	const float3 normalMap = normalize(texValue);
 	n = fromLocal(normalMap, normalize(t), normalize(b), normalize(n));
     // Orthogonalize tangent frame
     b = normalize(b - n * dot(b, n));
@@ -276,7 +276,7 @@ void _fn perturbNormal(in const MaterialData mat, _ref(ShadingAttribs) attr, boo
 {
 	if(forceSample || mat.desc.hasNormalMap != 0)
 	{
-		vec3 texValue = sampleTexture(mat.textures.normalMap, mat.samplerState, attr).rgb;
+		float3 texValue = sampleTexture(mat.textures.normalMap, mat.samplerState, attr).rgb;
         applyNormalMap(RGBToNormal(texValue), attr.N, attr.T, attr.B);
 	}
 }
@@ -328,7 +328,7 @@ float2 dirToSphericalCrd(float3 direction)
 					Color conversion
 *******************************************************************/
 
-vec4 _fn applyAmbientOcclusion(vec4 color, Texture2D aoTex, SamplerState s, vec2 texC)
+float4 _fn applyAmbientOcclusion(float4 color, Texture2D aoTex, SamplerState s, float2 texC)
 {
     float aoFactor = aoTex.SampleLevel(s, texC, 0).r;
     return float4(color.rgb * aoFactor, color.a);

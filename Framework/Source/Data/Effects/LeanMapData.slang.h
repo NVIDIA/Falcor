@@ -34,16 +34,16 @@ __import Helpers;
 
 void applyLeanMap(in Texture2D leanMap, in SamplerState samplerState, inout ShadingAttribs shAttr)
 {
-    vec4 t = sampleTexture(leanMap, samplerState, shAttr);
+    float4 t = sampleTexture(leanMap, samplerState, shAttr);
     // Reconstruct B 
-    vec2 B = 2 * t.xy - 1;
-    vec2 M = t.zw;
+    float2 B = 2 * t.xy - 1;
+    float2 M = t.zw;
 
     // Apply normal
-    vec3 unnormalizedNormal = vec3(B, 1);
+    float3 unnormalizedNormal = float3(B, 1);
     applyNormalMap(unnormalizedNormal, shAttr.N, shAttr.T, shAttr.B);
     // Reconstruct the diagonal covariance matrix
-    vec2 maxCov = max((0), M - B*B);     // Use only diagonal of covariance due to vec2 aniso roughness
+    float2 maxCov = max((0), M - B*B);     // Use only diagonal of covariance due to float2 aniso roughness
 
     [unroll]
     for (uint iLayer = 0; iLayer < MatMaxLayers; iLayer++)

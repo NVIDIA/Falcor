@@ -46,26 +46,26 @@ radiance emitted from the light souce, which is *received* at the shading point.
 */
 struct LightAttribs
 {
-    vec3	L;				///< Normalized direction to the light at shading hit
+    float3	L;				///< Normalized direction to the light at shading hit
     float   shadowFactor;   ///< Shadow factor
-    vec3	lightIntensity;	///< Radiance of the emitted light at shading hit
+    float3	lightIntensity;	///< Radiance of the emitted light at shading hit
 
-    vec3    P;              ///< Sampled point on the light source
-    vec3    N;              ///< Normal of the sampled point on the light source
+    float3    P;              ///< Sampled point on the light source
+    float3    N;              ///< Normal of the sampled point on the light source
 	float   pdf;            ///< Probability density function of sampling the light source
 
-    vec3    points[4];
+    float3    points[4];
 };
 
 /**
 	This routine computes the position of the the light based on the point 'shadingPosition'.
 */
-inline vec3 _fn getLightPos(in const LightData Light, in const vec3 shadingPosition)
+inline float3 _fn getLightPos(in const LightData Light, in const float3 shadingPosition)
 {
-    vec3 lightPos = Light.worldPos;
+    float3 lightPos = Light.worldPos;
     if(Light.type == LightArea)
     {
-        lightPos = mul(Light.transMat, v4(lightPos, 1.0)).xyz;
+        lightPos = mul(Light.transMat, float4(lightPos, 1.0)).xyz;
     }    
     else if(Light.type == LightDirectional)
     {
@@ -78,13 +78,13 @@ inline vec3 _fn getLightPos(in const LightData Light, in const vec3 shadingPosit
 /**
 	This routine computes the radiance from the light at the point 'shadingPosition'.
 */
-inline vec3 _fn getLightRadiance(in const LightData Light, in const vec3 shadingPosition)
+inline float3 _fn getLightRadiance(in const LightData Light, in const float3 shadingPosition)
 {
-    vec3 lightRadiance = Light.intensity;
+    float3 lightRadiance = Light.intensity;
     if(Light.type == LightPoint || Light.type == LightArea)
     {
         // TODO: add point on the light for area lights
-        vec3 lightDir = shadingPosition - getLightPos(Light, shadingPosition);
+        float3 lightDir = shadingPosition - getLightPos(Light, shadingPosition);
         lightRadiance *= 1.0f / (4.0f * M_PIf);    // per steradian
         lightRadiance /= dot(lightDir, lightDir);        // per square meter
     }
@@ -109,7 +109,7 @@ inline void _fn prepareLightAttribs(in const LightData Light, in const ShadingAt
     {
         LightAttr.points[i] = 0;
     }
-    vec3 PosToLight = LightAttr.P - ShAttr.P;
+    float3 PosToLight = LightAttr.P - ShAttr.P;
     if(dot(PosToLight, PosToLight) > 1e-3f)
     {
 	    LightAttr.L = normalize(PosToLight);
@@ -158,16 +158,16 @@ inline void _fn prepareLightAttribs(in const LightData Light, in const ShadingAt
 		{
 			// Access the geometry buffers
 #ifdef CUDA_CODE
-			optix::bufferId<vec3, 1> vertices(Light.vertexPtr.ptr);
+			optix::bufferId<float3, 1> vertices(Light.vertexPtr.ptr);
 			// Get vertices pointed by the corresponding index
-			vec3 p0 = vertices[index];
+			float3 p0 = vertices[index];
 #else
 			float* vertices = (float*)(Light.vertexPtr.ptr);
 			// Get vertices pointed by the corresponding index
-			vec3 p0 = vec3(vertices[index * 3 + 0], vertices[index * 3 + 1], vertices[index * 3 + 2]);
+			float3 p0 = float3(vertices[index * 3 + 0], vertices[index * 3 + 1], vertices[index * 3 + 2]);
 #endif
 			// Apply model instance transformation matrix
-			LightAttr.points[index] = v3(mul(Light.transMat, v4(p0, 1.0)));
+			LightAttr.points[index] = float3(mul(Light.transMat, float4(p0, 1.0)));
 		}
 	}
 #endif
@@ -176,7 +176,7 @@ inline void _fn prepareLightAttribs(in const LightData Light, in const ShadingAt
 /**
     This routine samples the light source.
 */
-void _fn sampleLight(in const vec3 shadingHitPos, in const LightData lData, const vec3 rSample, _ref(LightAttribs) lAttr)
+void _fn sampleLight(in const float3 shadingHitPos, in const LightData lData, const float3 rSample, _ref(LightAttribs) lAttr)
 {
 	// Sample the light based on its type: point, directional, or area
 	switch (lData.type)
@@ -186,7 +186,7 @@ void _fn sampleLight(in const vec3 shadingHitPos, in const LightData lData, cons
 			// Get the position
             lAttr.P = getLightPos(lData, shadingHitPos);
 
-			vec3 PosToLight = lAttr.P - shadingHitPos;
+			float3 PosToLight = lAttr.P - shadingHitPos;
             float lDist = length(PosToLight);
             lAttr.L = PosToLight / max(1e-3f, lDist);
 
@@ -226,39 +226,39 @@ void _fn sampleLight(in const vec3 shadingHitPos, in const LightData lData, cons
 				// Access the geometry buffers
 #ifdef CUDA_CODE
 				optix::bufferId<int3, 1> indices(lData.indexPtr.ptr);
-				optix::bufferId<vec3, 1> vertices(lData.vertexPtr.ptr);
+				optix::bufferId<float3, 1> vertices(lData.vertexPtr.ptr);
 				// Retrieve indices
-				const ivec3 pId = indices[index];
+				const int3 pId = indices[index];
 				// Get vertices pointed by the corresponding index
-				vec3 p0 = vertices[pId.x];
-				vec3 p1 = vertices[pId.y];
-				vec3 p2 = vertices[pId.z];
+				float3 p0 = vertices[pId.x];
+				float3 p1 = vertices[pId.y];
+				float3 p2 = vertices[pId.z];
 #else
 				int* indices = (int*)(lData.indexPtr.ptr);
 				float* vertices = (float*)(lData.vertexPtr.ptr);
 				// Retrieve indices
-				const ivec3 pId = ivec3(indices[index * 3 + 0], indices[index * 3 + 1], indices[index * 3 + 2]);
+				const int3 pId = int3(indices[index * 3 + 0], indices[index * 3 + 1], indices[index * 3 + 2]);
 				// Get vertices pointed by the corresponding index
-				vec3 p0 = vec3(vertices[pId.x * 3 + 0], vertices[pId.x * 3 + 1], vertices[pId.x * 3 + 2]);
-				vec3 p1 = vec3(vertices[pId.y * 3 + 0], vertices[pId.y * 3 + 1], vertices[pId.y * 3 + 2]);
-				vec3 p2 = vec3(vertices[pId.z * 3 + 0], vertices[pId.z * 3 + 1], vertices[pId.z * 3 + 2]);
+				float3 p0 = float3(vertices[pId.x * 3 + 0], vertices[pId.x * 3 + 1], vertices[pId.x * 3 + 2]);
+				float3 p1 = float3(vertices[pId.y * 3 + 0], vertices[pId.y * 3 + 1], vertices[pId.y * 3 + 2]);
+				float3 p2 = float3(vertices[pId.z * 3 + 0], vertices[pId.z * 3 + 1], vertices[pId.z * 3 + 2]);
 #endif
 
 				// Apply model instance transformation matrix
-				p0 = v3(mul(lData.transMat, v4(p0, 1.0)));
-				p1 = v3(mul(lData.transMat, v4(p1, 1.0)));
-				p2 = v3(mul(lData.transMat, v4(p2, 1.0)));
+				p0 = float3(mul(lData.transMat, float4(p0, 1.0)));
+				p1 = float3(mul(lData.transMat, float4(p1, 1.0)));
+				p2 = float3(mul(lData.transMat, float4(p2, 1.0)));
 
 				// Sample a point on the triangle mesh using barycentric coordinates
 				float a = sqrt(rSample.x);
-				const vec2 bary = v2(1.f - a, a * rSample.y);
+				const float2 bary = float2(1.f - a, a * rSample.y);
 
 				lAttr.P = p0 * bary.x + p1 * bary.y + p2 * (1.f - bary.x - bary.y);
 
 				lAttr.N = normalize(cross(p1 - p0, p2 - p0));
 			}
 
-			vec3 PosToLight = lAttr.P - shadingHitPos;
+			float3 PosToLight = lAttr.P - shadingHitPos;
             float lDist = length(PosToLight);
             lAttr.L = PosToLight / max(1e-3f, lDist);
 
@@ -271,7 +271,7 @@ void _fn sampleLight(in const vec3 shadingHitPos, in const LightData lData, cons
 			if (lAttr.pdf > 0.f && dot(lAttr.N, lAttr.L) < 0.f)
 				lAttr.lightIntensity /= lAttr.pdf;
 			else
-				lAttr.lightIntensity = v3(0.f);
+				lAttr.lightIntensity = float3(0.f);
 		}
 		break;
 #endif
@@ -281,18 +281,18 @@ void _fn sampleLight(in const vec3 shadingHitPos, in const LightData lData, cons
 /**
 This routine samples a rectangular area light source in a stratified way.
 */
-void _fn stratifiedSampleRectangularAreaLight(in const vec3 shadingHitPos, in const LightData lData, const vec2 rSample, int x, int y, int numStrataX, int numStrataY, _ref(LightAttribs) lAttr)
+void _fn stratifiedSampleRectangularAreaLight(in const float3 shadingHitPos, in const LightData lData, const float2 rSample, int x, int y, int numStrataX, int numStrataY, _ref(LightAttribs) lAttr)
 {
 	if (lData.type != LightArea)
 		return;
 
 	// Transform light position and light normal
-	vec3 lightPos = mul(lData.transMat, v4(lData.worldPos, 1.0f)).rgb;
-	lAttr.N = mul(lData.transMat, v4(lData.worldDir, 0.0f)).rgb;
+	float3 lightPos = mul(lData.transMat, float4(lData.worldPos, 1.0f)).rgb;
+	lAttr.N = mul(lData.transMat, float4(lData.worldDir, 0.0f)).rgb;
 
 	// Transform tangent frame
-	vec3 transformedTangent = mul(lData.transMat, v4(lData.tangent, 0.0f)).rgb;
-	vec3 transformedBitangent = mul(lData.transMat, v4(lData.bitangent, 0.0f)).rgb;
+	float3 transformedTangent = mul(lData.transMat, float4(lData.tangent, 0.0f)).rgb;
+	float3 transformedBitangent = mul(lData.transMat, float4(lData.bitangent, 0.0f)).rgb;
 
 	float lightSizeY1 = length(transformedTangent);
 	float lightSizeY2 = length(transformedBitangent);
@@ -303,7 +303,7 @@ void _fn stratifiedSampleRectangularAreaLight(in const vec3 shadingHitPos, in co
 
 	lAttr.P = lightPos + y1 * normalize(transformedTangent) + y2 * normalize(transformedBitangent);
 
-	vec3 PosToLight = lAttr.P - shadingHitPos;
+	float3 PosToLight = lAttr.P - shadingHitPos;
 	float lDist = length(PosToLight);
 	lAttr.L = PosToLight / max(1e-3f, lDist);
 

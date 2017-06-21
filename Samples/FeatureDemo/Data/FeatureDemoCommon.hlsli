@@ -32,9 +32,9 @@
 
 cbuffer PerFrameCB : register(b0)
 {
-	vec3 gAmbient;
+	float3 gAmbient;
     CsmData gCsmData;
-    mat4 camVpAtLastCsmUpdate;
+    float4x4 camVpAtLastCsmUpdate;
 };
 
 struct MainVsOut

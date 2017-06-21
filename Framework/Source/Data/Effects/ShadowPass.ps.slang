@@ -49,9 +49,9 @@ struct ShadowPassPSIn
 };
 
 #if defined(_VSM) || defined(_EVSM2)
-vec2 main(ShadowPassPSIn pIn) : SV_TARGET0
+float2 main(ShadowPassPSIn pIn) : SV_TARGET0
 #elif defined(_EVSM4)
-vec4 main(ShadowPassPSIn pIn) : SV_TARGET0
+float4 main(ShadowPassPSIn pIn) : SV_TARGET0
 #else
 void main(ShadowPassPSIn pIn)
 #endif
@@ -64,12 +64,12 @@ void main(ShadowPassPSIn pIn)
     }
 #endif
 
-    vec2 depth = pIn.pos.zz;
+    float2 depth = pIn.pos.zz;
 
 #if defined(_EVSM2) || defined(_EVSM4)
     depth = applyEvsmExponents(depth.x, gCsmData.evsmExponents);
 #endif
-    vec4 outDepth = vec4(depth, depth*depth);
+    float4 outDepth = float4(depth, depth*depth);
 
 #ifdef _EVSM4
     return outDepth.xzyw;

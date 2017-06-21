@@ -42,7 +42,7 @@ struct ShadowPassVSOut
 ShadowPassVSOut main(VS_IN vIn)
 {
     ShadowPassVSOut vOut; 
-    mat4 worldMat = getWorldMat(vIn);
+    float4x4 worldMat = getWorldMat(vIn);
     vOut.pos = mul(worldMat, vIn.pos);
 #ifdef _APPLY_PROJECTION
     vOut.pos = mul(gCam.viewProjMat, vOut.pos);

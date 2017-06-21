@@ -35,14 +35,14 @@ cbuffer PerFrameCB : register(b0)
     LightData gDirLight;
     LightData gPointLight;
     bool gConstColor;
-    vec3 gAmbient;
+    float3 gAmbient;
 };
 
-vec4 main(VS_OUT vOut) : SV_TARGET
+float4 main(VS_OUT vOut) : SV_TARGET
 {
     if(gConstColor)
     {
-        return vec4(0, 1, 0, 1);
+        return float4(0, 1, 0, 1);
     }
     else
     {
@@ -57,7 +57,7 @@ vec4 main(VS_OUT vOut) : SV_TARGET
         // Point light
         evalMaterial(shAttr, gPointLight, result, false);
 
-        vec4 finalColor = vec4(result.finalValue + gAmbient * result.diffuseAlbedo, 1.f);
+        float4 finalColor = float4(result.finalValue + gAmbient * result.diffuseAlbedo, 1.f);
         return finalColor;
     }
 }
