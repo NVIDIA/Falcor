@@ -73,6 +73,7 @@ namespace Falcor
     using SrvHandle = std::shared_ptr<DescriptorSet>;
     using SamplerHandle = std::shared_ptr<DescriptorSet>;
     using UavHandle = std::shared_ptr<DescriptorSet>;
+    using CbvHandle = std::shared_ptr<DescriptorSet>;
     using GpuAddress = D3D12_GPU_VIRTUAL_ADDRESS;
     
     using PsoHandle = ID3D12PipelineStatePtr;

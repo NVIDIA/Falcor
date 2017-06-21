@@ -94,11 +94,11 @@ namespace Falcor
         return offset;
     }
 
-    void VariablesBuffer::uploadToGPU(size_t offset, size_t size) const
+    bool VariablesBuffer::uploadToGPU(size_t offset, size_t size) const
     {
         if(mDirty == false)
         {
-            return;
+            return false;
         }
 
         if(size == -1)
@@ -109,11 +109,12 @@ namespace Falcor
         if(size + offset > mSize)
         {
             logWarning("VariablesBuffer::uploadToGPU() - trying to upload more data than what the buffer contains. Call is ignored.");
-            return;
+            return false;
         }
 
         updateData(mData.data(), offset, size);
         mDirty = false;
+        return true;
     }
 
     template<typename VarType>
