@@ -198,7 +198,7 @@ namespace Falcor
         {
             typename ViewType::SharedPtr pView;
             Resource::SharedPtr pResource;
-            uint32_t rootSigOffset = 0;
+            uint32_t rootIndex = 0;
             mutable std::shared_ptr<DescriptorSet> pDescSet;
         };
 
@@ -206,7 +206,7 @@ namespace Falcor
         struct ResourceData<Sampler>
         {
             Sampler::SharedPtr pSampler;
-            uint32_t rootSigOffset = 0;
+            uint32_t rootIndex = 0;
             mutable std::shared_ptr<DescriptorSet> pDescSet;
         };
 
