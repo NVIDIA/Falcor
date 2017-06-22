@@ -37,17 +37,17 @@ std::string TestShaderWriter::getVertexShaderCode() const
 
 std::string TestShaderWriter::getHullShaderCode() const
 {
-    return "";
+    return writeHSShaderCode(mHSData);
 }
 
 std::string TestShaderWriter::getDomainShaderCode() const
 {
-    return "";
+    return writeDSShaderCode(mDSData);
 }
 
 std::string TestShaderWriter::getGeometryShaderCode() const
 {
-    return "";
+    return writeGSShaderCode(mGSData);
 }
 
 //  Return the Pixel Shader Code.
@@ -56,64 +56,82 @@ std::string TestShaderWriter::getPixelShaderCode() const
     return writePSShaderCode(mPSData);
 }
 
+//  Return the Compute Shader Code.
+std::string TestShaderWriter::getComputeShaderCode() const
+{
+    return writeCSShaderCode(mCSData);
+}
+
 //  Return the Vertex Shader Data.
-TestShaderWriter::ShaderResourcesData * TestShaderWriter::getVSResourceMetaData()
+TestShaderWriter::ShaderResourcesData * TestShaderWriter::getVSResourceData()
 {
     return &mVSData;
 }
 
 //  Return the Hull Shader Data.
-TestShaderWriter::ShaderResourcesData * TestShaderWriter::getHSResourceMetaData()
+TestShaderWriter::ShaderResourcesData * TestShaderWriter::getHSResourceData()
 {
     return &mHSData;
 }
 
 //  Return the Domain Shader Data.
-TestShaderWriter::ShaderResourcesData * TestShaderWriter::getDSResourceMetaData()
+TestShaderWriter::ShaderResourcesData * TestShaderWriter::getDSResourceData()
 {
     return &mDSData;
 }
 
 //  Return the Geometry Shader Data.
-TestShaderWriter::ShaderResourcesData * TestShaderWriter::getGSResourceMetaData()
+TestShaderWriter::ShaderResourcesData * TestShaderWriter::getGSResourceData()
 {
     return &mGSData;
 }
 
-//  Return the Pixel Shader Meta Data.
-TestShaderWriter::ShaderResourcesData * TestShaderWriter::getPSResourceMetaData()
+//  Return the Pixel Shader Data.
+TestShaderWriter::ShaderResourcesData * TestShaderWriter::getPSResourceData()
 {
     return &mPSData;
 }
 
+//  Return the Compute Shader Data.
+TestShaderWriter::ShaderResourcesData * TestShaderWriter::getCSResourceData()
+{
+    return &mCSData;
+}
+
 //  Return the Vertex Shader Data.
-const TestShaderWriter::ShaderResourcesData & TestShaderWriter::viewVSResourceMetaData() const
+const TestShaderWriter::ShaderResourcesData & TestShaderWriter::viewVSResourceData() const
 {
     return mVSData;
 }
 
 //  Return the Hull Shader Data.
-const TestShaderWriter::ShaderResourcesData & TestShaderWriter::viewHSResourceMetaData() const
+const TestShaderWriter::ShaderResourcesData & TestShaderWriter::viewHSResourceData() const
 {
     return mHSData;
 }
 
 //  Return the Domain Shader Data.
-const TestShaderWriter::ShaderResourcesData & TestShaderWriter::viewDSResourceMetaData() const
+const TestShaderWriter::ShaderResourcesData & TestShaderWriter::viewDSResourceData() const
 {
     return mDSData;
 }
 
 //  Return the Geometry Shader Data.
-const TestShaderWriter::ShaderResourcesData & TestShaderWriter::viewGSResourceMetaData() const
+const TestShaderWriter::ShaderResourcesData & TestShaderWriter::viewGSResourceData() const
 {
     return mGSData;
 }
 
-//  Return the Pixel Shader Meta Data.
-const TestShaderWriter::ShaderResourcesData & TestShaderWriter::viewPSResourceMetaData() const
+//  Return the Pixel Shader Data.
+const TestShaderWriter::ShaderResourcesData & TestShaderWriter::viewPSResourceData() const
 {
     return mPSData;
+}
+
+//  Return the Compute Shader Data.
+const TestShaderWriter::ShaderResourcesData & TestShaderWriter::viewCSResourceData() const
+{
+    return mCSData;
 }
 
 //  Return the Vertex Shader Code.

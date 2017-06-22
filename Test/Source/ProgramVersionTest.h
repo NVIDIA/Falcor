@@ -37,4 +37,8 @@ private:
 
     //  
     void onInit() override {};
+    
+    //  
+    register_testing_func(TestBasicCreate);
+
 };

@@ -270,40 +270,46 @@ public:
     //  Get the Pixel Shader Code.
     std::string getPixelShaderCode() const;
 
-
-    //  Return the Vertex Shader Data.
-    ShaderResourcesData * getVSResourceMetaData();
-
-    //  Return the Hull Shader Data.
-    ShaderResourcesData * getHSResourceMetaData();
-
-    //  Return the Domain Shader Data.
-    ShaderResourcesData * getDSResourceMetaData();
-
-    //  Return the Geometry Shader Data.
-    ShaderResourcesData * getGSResourceMetaData();
-
-    //  Return the Pixel Shader Data.
-    ShaderResourcesData * getPSResourceMetaData();
+    //  Get the Compute Shader Code.
+    std::string getComputeShaderCode() const;
 
 
     //  Return the Vertex Shader Data.
-    const ShaderResourcesData & viewVSResourceMetaData() const;
+    ShaderResourcesData * getVSResourceData();
 
     //  Return the Hull Shader Data.
-    const ShaderResourcesData & viewHSResourceMetaData() const;
+    ShaderResourcesData * getHSResourceData();
 
     //  Return the Domain Shader Data.
-    const ShaderResourcesData & viewDSResourceMetaData() const;
+    ShaderResourcesData * getDSResourceData();
 
     //  Return the Geometry Shader Data.
-    const ShaderResourcesData & viewGSResourceMetaData() const;
+    ShaderResourcesData * getGSResourceData();
 
     //  Return the Pixel Shader Data.
-    const ShaderResourcesData & viewPSResourceMetaData() const;
+    ShaderResourcesData * getPSResourceData();
+
+    //  Return the Compute Shader Data.
+    ShaderResourcesData * getCSResourceData();
+
+
+    //  Return the Vertex Shader Data.
+    const ShaderResourcesData & viewVSResourceData() const;
+
+    //  Return the Hull Shader Data.
+    const ShaderResourcesData & viewHSResourceData() const;
+
+    //  Return the Domain Shader Data.
+    const ShaderResourcesData & viewDSResourceData() const;
+
+    //  Return the Geometry Shader Data.
+    const ShaderResourcesData & viewGSResourceData() const;
+
+    //  Return the Pixel Shader Data.
+    const ShaderResourcesData & viewPSResourceData() const;
     
     //  Return the Compute Shader Data.
-    const ShaderResourcesData & viewCSResourceMetaData() const;
+    const ShaderResourcesData & viewCSResourceData() const;
 
 
 

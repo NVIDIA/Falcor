@@ -344,6 +344,12 @@ std::string TestShaderMaker::getPixelShaderCode() const
     return mShaderMaker.getPixelShaderCode();
 }
 
+//  Return the Compute Shader Code.
+std::string TestShaderMaker::getComputeShaderCode() const
+{
+    return mShaderMaker.getComputeShaderCode();
+}
+
 //  Verify the Program Resources.
 bool TestShaderMaker::verifyProgramResources(const TestShaderWriter::ShaderResourcesData & rsData, const GraphicsVars::SharedPtr & graphicsProgramVars)
 {
@@ -356,17 +362,47 @@ bool TestShaderMaker::verifyProgramResources(const TestShaderWriter::ShaderResou
 bool TestShaderMaker::verifyProgramResources(const GraphicsVars::SharedPtr & graphicsProgramVars)
 {
     //  Verify the Stages.
-    bool vsVerify = verifyProgramResources(mShaderMaker.viewVSResourceMetaData(), graphicsProgramVars);
-    bool hsVerify = verifyProgramResources(mShaderMaker.viewHSResourceMetaData(), graphicsProgramVars);
-    bool dsVerify = verifyProgramResources(mShaderMaker.viewDSResourceMetaData(), graphicsProgramVars);
-    bool gsVerify = verifyProgramResources(mShaderMaker.viewGSResourceMetaData(), graphicsProgramVars);
-    bool psVerify = verifyProgramResources(mShaderMaker.viewPSResourceMetaData(), graphicsProgramVars);
+    bool vsVerify = true;
+    if (mShaderTestLayout.hasVertexShader)
+    {
+        vsVerify = verifyProgramResources(mShaderMaker.viewVSResourceData(), graphicsProgramVars);
+    }
 
-    //
-    bool csVerify = verifyProgramResources(mShaderMaker.viewCSResourceMetaData(), graphicsProgramVars);
+    bool hsVerify = true;
+    if (mShaderTestLayout.hasHullShader)
+    {
+        hsVerify = verifyProgramResources(mShaderMaker.viewHSResourceData(), graphicsProgramVars);
+    }
+
+
+    bool dsVerify = true;
+    if (mShaderTestLayout.hasDomainShader)
+    {
+        dsVerify = verifyProgramResources(mShaderMaker.viewDSResourceData(), graphicsProgramVars);
+    }
+
+
+    bool gsVerify = true;
+    if (mShaderTestLayout.hasGeometryShader)
+    {
+        gsVerify = verifyProgramResources(mShaderMaker.viewGSResourceData(), graphicsProgramVars);
+    }
+ 
+    
+    bool psVerify = true;
+    if (mShaderTestLayout.hasPixelShader)
+    {
+        psVerify = verifyProgramResources(mShaderMaker.viewPSResourceData(), graphicsProgramVars);
+    }
+
+    bool csVerify = true;
+    if (mShaderTestLayout.hasComputeShader)
+    {
+        csVerify = verifyProgramResources(mShaderMaker.viewCSResourceData(), graphicsProgramVars);
+    }
 
     //  
-    return vsVerify && hsVerify && dsVerify && gsVerify && psVerify;
+    return vsVerify && hsVerify && dsVerify && gsVerify && psVerify && csVerify;
 }
 
 //  Generate the Shader Program.
@@ -854,23 +890,23 @@ TestShaderWriter::ShaderResourcesData * TestShaderMaker::getShaderResourceData(c
 {
     if (stage == "vs")
     {
-        return mShaderMaker.getVSResourceMetaData();
+        return mShaderMaker.getVSResourceData();
     }
     else if (stage == "hs")
     {
-        return mShaderMaker.getHSResourceMetaData();
+        return mShaderMaker.getHSResourceData();
     }
     else if (stage == "ds")
     {
-        return mShaderMaker.getDSResourceMetaData();
+        return mShaderMaker.getDSResourceData();
     }
     else if (stage == "gs")
     {
-        return mShaderMaker.getGSResourceMetaData();
+        return mShaderMaker.getGSResourceData();
     }
     else if (stage == "ps")
     {
-        return mShaderMaker.getPSResourceMetaData();
+        return mShaderMaker.getPSResourceData();
     }
     else
     {

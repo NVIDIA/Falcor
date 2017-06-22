@@ -71,7 +71,7 @@ testing_func(ShaderRewriterTest, TestBasicShaderRewriter)
     std::string dsCode = "";
     std::string gsCode = "";
     std::string psCode = "";
-
+    std::string csCode = "";
 
     if (shaderTestMaker.viewShaderTestLayout().hasVertexShader && shaderTestMaker.viewShaderTestLayout().hasHullShader && shaderTestMaker.viewShaderTestLayout().hasDomainShader && shaderTestMaker.viewShaderTestLayout().hasGeometryShader && shaderTestMaker.viewShaderTestLayout().hasPixelShader)
     {
@@ -91,8 +91,7 @@ testing_func(ShaderRewriterTest, TestBasicShaderRewriter)
     }
     else if (shaderTestMaker.viewShaderTestLayout().hasComputeShader)
     {
-        //  Don't yet support
-        test_fail("Compute Not Yet Tested!")
+        csCode = shaderTestMaker.getComputeShaderCode();
     }
     else
     {

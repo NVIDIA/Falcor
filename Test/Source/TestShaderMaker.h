@@ -183,6 +183,9 @@ public:
     //  Get Pixel Shader Code.
     std::string getPixelShaderCode() const;
 
+    //  Get Compute Shader Code.
+    std::string getComputeShaderCode() const;
+
     
     //  Verify that the Resources are in keeping with the Program Creation.
     bool verifyProgramResources(const GraphicsVars::SharedPtr & graphicsProgramVars);
