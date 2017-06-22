@@ -195,13 +195,13 @@ namespace Falcor
         // Bind the root signature and the root signature data
         if (mpGraphicsVars)
         {
-            mpGraphicsVars->apply(const_cast<RenderContext*>(this), mGraphicsVarsChanged);
+            mpGraphicsVars->apply(const_cast<RenderContext*>(this), mBindComputeRootSig);
         }
         else
         {
             mpLowLevelData->getCommandList()->SetGraphicsRootSignature(RootSignature::getEmpty()->getApiHandle());
         }
-        mGraphicsVarsChanged = false;
+        mBindComputeRootSig = false;
 
         CommandListHandle pList = mpLowLevelData->getCommandList();
         pList->IASetPrimitiveTopology(getD3DPrimitiveTopology(mpGraphicsState->getVao()->getPrimitiveTopology()));
@@ -277,6 +277,12 @@ namespace Falcor
         argDesc.Type = D3D12_INDIRECT_ARGUMENT_TYPE_DRAW_INDEXED;
         sigDesc.pArgumentDescs = &argDesc;
         gpDevice->getApiHandle()->CreateCommandSignature(&sigDesc, nullptr, IID_PPV_ARGS(&spDrawIndexCommandSig));
+    }
+
+    void RenderContext::reset()
+    {
+        ComputeContext::reset();
+        mBindComputeRootSig = true;
     }
 
     void RenderContext::applyProgramVars() {}

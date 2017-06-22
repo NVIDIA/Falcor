@@ -678,11 +678,11 @@ namespace Falcor
     }
 
     template<bool forGraphics>
-    void applyProgramVarsCommon(const ProgramVars* pVars, CopyContext* pContext, bool rebindRootSig)
+    void applyProgramVarsCommon(const ProgramVars* pVars, CopyContext* pContext, bool bindRootSig)
     {
         ID3D12GraphicsCommandList* pList = pContext->getLowLevelData()->getCommandList();
         
-        if(rebindRootSig)
+        if(bindRootSig)
         {
             if (forGraphics)
             {
@@ -700,7 +700,7 @@ namespace Falcor
             uint32_t rootIndex = bufIt.second.rootData.rootIndex;
             assert(bufIt.second.rootData.descIndex == 0);
             const ConstantBuffer* pCB = dynamic_cast<const ConstantBuffer*>(bufIt.second.pResource.get());
-            if(pCB->uploadToGPU() || rebindRootSig)
+            if(pCB->uploadToGPU() || bindRootSig)
             {
                 if (forGraphics)
                 {
@@ -719,7 +719,7 @@ namespace Falcor
         {
             if (rootSets[i].active)
             {
-                rootSets[i].dirty = rebindRootSig || (rootSets[i].pDescSet == nullptr);
+                rootSets[i].dirty = bindRootSig || (rootSets[i].pDescSet == nullptr);
                 if (rootSets[i].pDescSet == nullptr)
                 {
                     DescriptorSet::Layout layout;
@@ -758,13 +758,13 @@ namespace Falcor
         }
     }
 
-    void ComputeVars::apply(ComputeContext* pContext, bool rebindRootSig) const
+    void ComputeVars::apply(ComputeContext* pContext, bool bindRootSig) const
     {
-        applyProgramVarsCommon<false>(this, pContext, rebindRootSig);
+        applyProgramVarsCommon<false>(this, pContext, bindRootSig);
     }
 
-    void GraphicsVars::apply(RenderContext* pContext, bool rebindRootSig) const
+    void GraphicsVars::apply(RenderContext* pContext, bool bindRootSig) const
     {
-        applyProgramVarsCommon<true>(this, pContext, rebindRootSig);
+        applyProgramVarsCommon<true>(this, pContext, bindRootSig);
     }
 }
