@@ -219,6 +219,7 @@ namespace Falcor
         {
             bool active = false;
             mutable std::shared_ptr<DescriptorSet> pDescSet;
+            mutable bool dirty = false;
         };
         
         template<typename T>

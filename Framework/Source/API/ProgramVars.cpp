@@ -598,18 +598,21 @@ namespace Falcor
         for (auto& samplerIt : samplers)
         {
             const auto& rootData = samplerIt.second.rootData;
-            const Sampler* pSampler = samplerIt.second.pSampler.get();
-            if (pSampler == nullptr)
+            if(rootSets[rootData.rootIndex].dirty)
             {
-                pSampler = Sampler::getDefault().get();
-            }
+                const Sampler* pSampler = samplerIt.second.pSampler.get();
+                if (pSampler == nullptr)
+                {
+                    pSampler = Sampler::getDefault().get();
+                }
 
-            // Allocate a GPU descriptor
-            const auto& pDescSet = rootSets[rootData.rootIndex].pDescSet;
-            assert(pDescSet);
-            auto srcHandle = pSampler->getApiHandle()->getCpuHandle(0);
-            auto dstHandle = pDescSet->getCpuHandle(0, rootData.descIndex);            
-            gpDevice->getApiHandle()->CopyDescriptorsSimple(1, dstHandle, srcHandle, D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
+                // Allocate a GPU descriptor
+                const auto& pDescSet = rootSets[rootData.rootIndex].pDescSet;
+                assert(pDescSet);
+                auto srcHandle = pSampler->getApiHandle()->getCpuHandle(0);
+                auto dstHandle = pDescSet->getCpuHandle(0, rootData.descIndex);
+                gpDevice->getApiHandle()->CopyDescriptorsSimple(1, dstHandle, srcHandle, D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
+            }
         }
     }
 
@@ -707,12 +710,13 @@ namespace Falcor
             }
         }
 
-        // Allocate and bind the descriptor-sets
+        // Allocate and mark the dirty sets
         auto& rootSets = pVars->getRootSets();
         for (uint32_t i = 0; i < rootSets.size(); i++)
         {
             if (rootSets[i].active)
             {
+                rootSets[i].dirty = rebindRootSig || (rootSets[i].pDescSet == nullptr);
                 if (rootSets[i].pDescSet == nullptr)
                 {
                     DescriptorSet::Layout layout;
@@ -721,8 +725,22 @@ namespace Falcor
                     {
                         layout.addRange(set.getRange(r).type, set.getRange(r).descCount);
                     }
-                    rootSets[i].pDescSet = DescriptorSet::create(gpDevice->getGpuDescriptorPool(), layout);            
+                    rootSets[i].pDescSet = DescriptorSet::create(gpDevice->getGpuDescriptorPool(), layout);
                 }
+            }
+        }
+
+        // Bind the SRVs and UAVs
+        bindUavSrvCommon<ShaderResourceView, false, forGraphics>(pContext, pVars->getAssignedSrvs(), rootSets);
+        bindUavSrvCommon<UnorderedAccessView, true, forGraphics>(pContext, pVars->getAssignedUavs(), rootSets);
+        bindSamplers(pVars->getAssignedSamplers(), rootSets);
+
+        // Bind the sets
+        for (uint32_t i = 0; i < rootSets.size(); i++)
+        {
+            if (rootSets[i].dirty)
+            {
+                rootSets[i].dirty = false;
                 // Bind it
                 if (forGraphics)
                 {
@@ -734,11 +752,6 @@ namespace Falcor
                 }
             }
         }
-
-        // Bind the SRVs and UAVs
-        bindUavSrvCommon<ShaderResourceView, false, forGraphics>(pContext, pVars->getAssignedSrvs(), rootSets);
-        bindUavSrvCommon<UnorderedAccessView, true, forGraphics>(pContext, pVars->getAssignedUavs(), rootSets);
-        bindSamplers(pVars->getAssignedSamplers(), rootSets);
     }
 
     void ComputeVars::apply(ComputeContext* pContext, bool rebindRootSig) const
