@@ -29,8 +29,15 @@
 
 void ComputeStateObjectTest::addTests()
 {
+    addTestToList<TestAll>();
+
+}
 
 
+testing_func(ComputeStateObjectTest, TestAll)
+{
+    ComputeStateObject::Desc csd = ComputeStateObject::Desc();
+    
 }
 
 int main()

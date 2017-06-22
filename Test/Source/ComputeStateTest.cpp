@@ -34,6 +34,12 @@ void ComputeStateTest::addTests()
 }
 
 
+testing_func(ComputeStateTest, TestAll)
+{
+
+}
+
+
 int main()
 {
     ComputeStateTest csT;

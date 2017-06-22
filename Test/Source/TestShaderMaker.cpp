@@ -733,6 +733,104 @@ void TestShaderMaker::generateStructuredBufferResources(std::vector<TestShaderWr
         sbs.push_back(sbResource);
     }
 
+
+    //  Generate the RW Structured Buffers.
+    for (uint32_t i = 0; i < mShaderTestLayout.rwStructuredBuffers; i++)
+    {
+        //  
+        TestShaderWriter::StructuredBufferResource sbResource;
+        sbResource.usesExternalStructVariables = false;
+        sbResource.isArray = false;
+        sbResource.variable = "rwSBR" + std::to_string(i);
+        sbResource.bufferType = ProgramReflection::BufferReflection::StructuredType::Default;
+        sbResource.sbType = ProgramReflection::Variable::Type::Float4;
+        sbResource.shaderAccess = ProgramReflection::ShaderAccess::ReadWrite;
+
+        //  The chance of it being used.
+        uint32_t useChance = rand() % 2;
+        if (useChance)
+        {
+            sbResource.isUsedResource = true;
+        }
+
+
+        //  Chance for Explicit Index and Spaces.
+        bool isExplicitIndex = ((rand() % 2) == 0);
+        bool isExplicitSpace = ((rand() % 2) == 0) && mShaderTestLayout.allowExplicitSpaces;
+
+        //  
+        if (isExplicitSpace || isExplicitIndex)
+        {
+            bool findSpace = false;
+            uint32_t availableRegisterIndex;
+            uint32_t availableSpaceIndex;
+
+            uint32_t lastSpaceIndex = 0;
+
+            for (auto & currentSpace : tSpaces)
+            {
+                if (!currentSpace.second.isMaxed)
+                {
+                    availableRegisterIndex = currentSpace.second.lastRegisterIndex;
+                    availableSpaceIndex = currentSpace.first;
+                    findSpace = true;
+                    break;
+                }
+
+                lastSpaceIndex++;
+            }
+
+            //  
+            if (findSpace == false)
+            {
+                tSpaces[lastSpaceIndex].isMaxed = false;
+                tSpaces[lastSpaceIndex].lastRegisterIndex = 0;
+
+                availableRegisterIndex = tSpaces[lastSpaceIndex].lastRegisterIndex;
+                availableSpaceIndex = lastSpaceIndex;
+            }
+
+
+            //
+            if (isExplicitIndex)
+            {
+                sbResource.isExplicitIndex = true;
+                sbResource.regIndex = availableRegisterIndex;
+
+                //  
+                if (mShaderTestLayout.allowUnboundedResourceArrays)
+                {
+
+                }
+                else
+                {
+                    tSpaces[availableSpaceIndex].lastRegisterIndex++;
+                }
+            }
+
+            //  
+            if (isExplicitSpace)
+            {
+                sbResource.isExplicitSpace = true;
+                sbResource.regSpace = availableSpaceIndex;
+
+                //
+                if (mShaderTestLayout.allowUnboundedResourceArrays)
+                {
+
+                }
+                else
+                {
+                    tSpaces[availableSpaceIndex].lastRegisterIndex++;
+                }
+            }
+        }
+
+
+        //  
+        rwSBs.push_back(sbResource);
+    }
+
 }
 
 
@@ -1059,9 +1157,44 @@ void TestShaderMaker::distributeStructuredBuffers(std::vector<TestShaderWriter::
     }
 
 
-    //  Distribute the Read Write Textures.
+    //  Distribute the Read Write Structured Buffers.
     for (uint32_t currentStructuredBufferIndex = 0; currentStructuredBufferIndex < rwSBs.size(); currentStructuredBufferIndex++)
     {
+        std::vector<uint32_t> selectedStages = generateRandomizedStages();
+
+        uint32_t declareExplicitStage = 0;
+
+        if (selectedStages.size() <= 1)
+        {
+            declareExplicitStage = (uint32_t)selectedStages.size();
+        }
+        else
+        {
+            declareExplicitStage = (rand() % selectedStages.size());
+        }
+
+        for (uint32_t stageIndex = 0; stageIndex < selectedStages.size(); stageIndex++)
+        {
+            TestShaderWriter::StructuredBufferResource currentSB(rwSBs[currentStructuredBufferIndex]);
+
+            if (stageIndex == declareExplicitStage)
+            {
+                currentSB.isExplicitIndex = true && currentSB.isExplicitIndex;
+            }
+            else
+            {
+                currentSB.isExplicitIndex = false;
+                currentSB.isExplicitSpace = false;
+            }
+
+            //  
+            TestShaderWriter::ShaderResourcesData * sRD = getShaderResourceData(mShaderTestLayout.stages[selectedStages[stageIndex]]);
+
+            if (sRD)
+            {
+                sRD->sbs.push_back(currentSB);
+            }
+        }
 
 
     }

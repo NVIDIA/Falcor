@@ -30,29 +30,103 @@
 //  
 void GraphicsStateTest::addTests()
 {
-    addTestToList<TestSimpleCreate>();
+    addTestToList<TestAll>();
 
 }
 
 //
-testing_func(GraphicsStateTest, TestSimpleCreate)
+testing_func(GraphicsStateTest, TestAll)
 {
-    GraphicsProgram::SharedPtr gp = GraphicsProgram::createFromFile("VS.vs.hlsl", "PS.ps.hlsl");
+    //  Create the Graphics State.
+    GraphicsState::SharedPtr gps = GraphicsState::create();
+
+
+    //
+    Texture::SharedPtr colorTarget1 = Texture::create2D(1920, 1080, ResourceFormat::RGBA32Float, 1U, Texture::kMaxPossible, nullptr, Texture::BindFlags::RenderTarget);
+    Texture::SharedPtr dsTarget1 = Texture::create2D(1920, 1080, ResourceFormat::D24UnormS8, 1U, Texture::kMaxPossible, nullptr, Texture::BindFlags::DepthStencil);
     
+    //
+    Texture::SharedPtr colorTarget2 = Texture::create2D(2560, 1440, ResourceFormat::RGBA32Float, 1U, Texture::kMaxPossible, nullptr, Texture::BindFlags::RenderTarget);
+    Texture::SharedPtr dsTarget2 = Texture::create2D(2560, 1440, ResourceFormat::D24UnormS8, 1U, Texture::kMaxPossible, nullptr, Texture::BindFlags::DepthStencil);
+
     //  
-    if (gp->getActiveDefinesList().size() != 0)
+    Fbo::SharedPtr fbo1 = Fbo::create();
+    fbo1->attachColorTarget(colorTarget1, 0);
+    fbo1->attachDepthStencilTarget(dsTarget1);
+
+    //
+    Fbo::SharedPtr fbo2 = Fbo::create();
+    fbo1->attachColorTarget(colorTarget2, 0);
+    fbo1->attachDepthStencilTarget(dsTarget2);
+
+    bool fbo1set = false;
+    bool fbo2set = false;
+
+    //  
+    gps->setFbo(fbo1);
+    fbo1set = gps->getFbo()->getApiHandle() == fbo1->getApiHandle();
+
+    //  
+    fbo2set = gps->getFbo()->getApiHandle() == fbo2->getApiHandle();
+    gps->setFbo(fbo2);
+
+    //  
+    if (!fbo1set || !fbo2set)
     {
-        return test_fail("Error : Active Defines List is Non - Zero.");
+        test_fail("Error : Setting FBO State Failed.");
     }
 
-    //  Compile and Link.
-    ProgramVersion::SharedConstPtr agp = gp->getActiveVersion(true);
+    fbo1set = false;
+    fbo2set = false;
 
-    if (!agp)
+    //  
+    gps->pushFbo(fbo1);
+    gps->pushFbo(fbo2);
+    fbo2set = gps->getFbo()->getApiHandle() == fbo2->getApiHandle();
+    gps->popFbo();
+    fbo1set = gps->getFbo()->getApiHandle() == fbo1->getApiHandle();
+    gps->popFbo();
+
+
+    if (!fbo1set || !fbo2set)
     {
-        return test_fail("Error : Failed To Compile Shader.");
+        test_fail("Error : Push pop FBO State Failed.");
     }
-    
+
+
+    //
+    glm::vec4 vf(0.5, 0.5, 0.5, 1.0);
+    //
+    std::vector<Buffer::SharedPtr> buffs;
+    Buffer::SharedPtr newBuffs = Buffer::create(sizeof(glm::vec4), Resource::BindFlags::Constant, Buffer::CpuAccess::Write, &vf);
+    buffs.push_back(newBuffs);
+
+    VertexLayout::SharedPtr vl = VertexLayout::create();
+    Vao::SharedPtr vao = Vao::create(buffs, vl, nullptr, ResourceFormat::RG32Uint, Vao::Topology::PointList);
+
+
+    //
+    glm::vec4 bf(0.0, 1.0, 0.3, 1.0);
+    BlendState::Desc bsd = BlendState::Desc();
+    bsd.setBlendFactor(glm::vec4(0.0, 1.0, 0.0, 0));
+
+    //
+    bool bsset = true;
+
+    //  
+    BlendState::SharedPtr bs = BlendState::create(bsd);
+    gps->setBlendState(bs);
+    bsset = bsset && gps->getBlendState()->getBlendFactor() == bf;
+    bsset = bsset && gps->getBlendState()->getApiHandle() == bs->getApiHandle();
+
+    if (!bsset)
+    {
+        test_fail("Error : Set Blend State Failed.");
+    }
+
+
+
+
 
     return test_pass();
 }

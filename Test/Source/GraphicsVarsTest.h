@@ -28,6 +28,11 @@
 #pragma once
 #include "TestBase.h"
 
+
+
+/** This tests the Shader program variables assignment.
+*/
+
 class GraphicsVarsTest : public TestBase
 {
 private:
@@ -37,5 +42,8 @@ private:
 
     //  
     void onInit() override {};
+
+    //
+    register_testing_func(TestAll);
 
 };

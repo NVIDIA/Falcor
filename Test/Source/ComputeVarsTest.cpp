@@ -30,9 +30,16 @@
 
 void ComputeVarsTest::addTests()
 {
-
+    addTestToList<TestAll>();
 }
 
+
+testing_func(ComputeVarsTest, TestAll)
+{
+    
+    
+    
+}
 
 int main()
 {

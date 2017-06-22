@@ -30,12 +30,13 @@
 //  
 void ProgramVersionTest::addTests()
 {
-    addTestToList<TestBasicCreate>();
+    addTestToList<TestAll>();
 }
 
 
-testing_func(ProgramVersionTest, TestBasicCreate)
+testing_func(ProgramVersionTest, TestAll)
 {
+
     return test_pass();
 }
 

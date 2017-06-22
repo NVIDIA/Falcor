@@ -30,9 +30,16 @@
 //  
 void ProgramReflectionTest::addTests()
 {
-
+    addTestToList<TestAll>();
 }
 
+//  
+testing_func(ProgramReflectionTest, TestAll)
+{
+
+
+
+}
 
 
 int main()

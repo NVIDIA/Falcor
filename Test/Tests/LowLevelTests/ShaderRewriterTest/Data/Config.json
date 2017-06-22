@@ -1,0 +1,24 @@
+{
+    "version" : "DX5.0", 
+    "stages" : "vs/ps", 
+    "random seed" : 204,
+
+    "limitVertexShaderTargets" : 5,
+    "limitPixelShaderTargets": 4,
+
+    "constant buffers" : 4,
+    "texture buffers" : 0,
+
+    "rw structured buffers" : 3,
+    "structured buffers" : 5,
+
+    "rw raw buffers" : 0,
+    "raw buffers" : 0,
+
+    "rw textures" : 0,
+    "textures" : 2,
+
+    "samplers" : 5,
+
+    "mode" : "invalid"
+}

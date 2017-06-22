@@ -87,12 +87,12 @@ public:
         uint32_t maxStructVariablesCount = 3;
 
 
+        //
         //  Maximum UAV Targets.
         uint32_t maxUAVTargets = 8;
 
         //  Maximum Pixel Shader Output.
         uint32_t maxPixelShaderOutput = 8;
-
 
         //  Maximum Constant Buffer Count.
         uint32_t maximumConstantBufferCount = 15;
@@ -102,6 +102,8 @@ public:
 
         //  Allow Unbounded Constant Buffers.
         bool allowUnboundedConstantBuffers = false;
+        
+        //  Allow Constant Buffers Array.
         bool allowConstantBuffersArray = false;
         
         //  Allow Struct Constant Buffers.
@@ -113,11 +115,19 @@ public:
         //  Allow Explicit Spaces.
         bool allowExplicitSpaces = false;
         
-
-        //  
+        //  The Vertex Shader Outputs.
         std::vector<uint32_t> vertexShaderOutputs;
+        
+        //  The Pixel Shader Inputs.
         std::vector<uint32_t> pixelShaderInputs;
+        
+        //  The Pixel Shader Outputs.
         std::vector<uint32_t> pixelShaderOutputs;
+
+
+
+        //  The Maximum Number of Threads in the Compute Shader.
+        uint32_t maxComputeThreads = 768;
     };
 
 
@@ -190,7 +200,7 @@ public:
     //  Verify that the Resources are in keeping with the Program Creation.
     bool verifyProgramResources(const GraphicsVars::SharedPtr & graphicsProgramVars);
 
-    //  Verify that the Resources are in keepign with the Shader Stage.
+    //  Verify that the Resources are in keeping with the Shader Stage.
     bool verifyProgramResources(const TestShaderWriter::ShaderResourcesData & rsData, const GraphicsVars::SharedPtr & graphicsProgramVars);
 
 

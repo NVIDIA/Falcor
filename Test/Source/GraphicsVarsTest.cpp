@@ -30,7 +30,13 @@
 //  
 void GraphicsVarsTest::addTests()
 {
+    addTestToList<TestAll>();
+}
 
+//  
+testing_func(GraphicsVarsTest, TestAll)
+{
+    
 }
 
 
