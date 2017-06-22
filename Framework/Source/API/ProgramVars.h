@@ -39,23 +39,7 @@ namespace Falcor
 {
     class ProgramVersion;
     class ComputeContext;
-
-    // VC++ somehow allows this to be present in the ProgramVars class. GCC complains though.
-    // This defined inside the class gives an error. So, moving it outside the ProgramVars class.
-    template<typename ViewType>
-    struct ResourceData
-    {
-        typename ViewType::SharedPtr pView;
-        Resource::SharedPtr pResource;
-        uint32_t rootSigOffset = 0;
-    };
-
-    template<>
-    struct ResourceData<Sampler>
-    {
-        Sampler::SharedPtr pSampler;
-        uint32_t rootSigOffset = 0;
-    };
+    class DescriptorSet;
 
     /** This class manages a program's reflection and variable assignment.
         It's a high-level abstraction of variables-related concepts such as CBs, texture and sampler assignments, root-signature, descriptor tables, etc.
@@ -66,12 +50,11 @@ namespace Falcor
         template<typename T>
         class SharedPtrT : public std::shared_ptr<T>
         {
-        
         public:
             SharedPtrT() : std::shared_ptr<T>() {}
             SharedPtrT(T* pProgVars) : std::shared_ptr<T>(pProgVars) {}
-            ConstantBuffer::SharedPtr operator[](const std::string& cbName) { return std::shared_ptr<T>::get()->getConstantBuffer(cbName); }
-            ConstantBuffer::SharedPtr operator[](uint32_t index) { return std::shared_ptr<T>::get()->getConstantBuffer(index); }
+            ConstantBuffer::SharedPtr operator[](const std::string& cbName) { return get()->getConstantBuffer(cbName); }
+            ConstantBuffer::SharedPtr operator[](uint32_t index) { return get()->getConstantBuffer(index); }
         };
 
         /** Bind a constant buffer object by name.
@@ -210,15 +193,45 @@ namespace Falcor
         */
         RootSignature::SharedPtr getRootSignature() const { return mpRootSignature; }
 
+        struct RootData
+        {
+            uint32_t rootIndex;
+            uint32_t descIndex;
+        };
+
+        template<typename ViewType>
+        struct ResourceData
+        {
+            typename ViewType::SharedPtr pView;
+            Resource::SharedPtr pResource;
+            RootData rootData;
+        };
+
+        template<>
+        struct ResourceData<Sampler>
+        {
+            Sampler::SharedPtr pSampler;
+            RootData rootData;
+        };
+
+
+        struct RootSet
+        {
+            bool active = false;
+            mutable std::shared_ptr<DescriptorSet> pDescSet;
+            mutable bool dirty = false;
+        };
+        
         template<typename T>
         using ResourceMap = std::unordered_map<uint32_t, ResourceData<T>>;
         using SamplerMap = std::map<uint32_t, ResourceData<Sampler::SharedConstPtr>>;
+        using RootSetVec = std::vector<RootSet>;
 
         const ResourceMap<ConstantBuffer>& getAssignedCbs() const { return mAssignedCbs; }
         const ResourceMap<ShaderResourceView>& getAssignedSrvs() const { return mAssignedSrvs; }
         const ResourceMap<UnorderedAccessView>& getAssignedUavs() const { return mAssignedUavs; }
         const ResourceMap<Sampler>& getAssignedSamplers() const { return mAssignedSamplers; }
-
+        const RootSetVec getRootSets() const { return mRootSets; }
     protected:
         template<bool forGraphics, typename ContextType>
         void applyCommon(ContextType* pContext) const;
@@ -232,6 +245,8 @@ namespace Falcor
         ResourceMap<ShaderResourceView> mAssignedSrvs;   // HLSL 't' registers
         ResourceMap<UnorderedAccessView> mAssignedUavs;  // HLSL 'u' registers
         ResourceMap<Sampler> mAssignedSamplers;    // HLSL 's' registers
+
+        RootSetVec mRootSets;
     };
 
     class GraphicsVars : public ProgramVars, public std::enable_shared_from_this<ProgramVars>
@@ -246,7 +261,7 @@ namespace Falcor
             \param[in] pRootSignature A root-signature describing how to bind resources into the shader. If this parameter is nullptr, a root-signature object will be created from the program reflection object
         */
         static SharedPtr create(const ProgramReflection::SharedConstPtr& pReflector, bool createBuffers = true, const RootSignature::SharedPtr& pRootSig = nullptr);
-        void apply(RenderContext* pContext) const;
+        void apply(RenderContext* pContext, bool bindRootSig) const;
     private:
         GraphicsVars(const ProgramReflection::SharedConstPtr& pReflector, bool createBuffers, const RootSignature::SharedPtr& pRootSig) :
             ProgramVars(pReflector, createBuffers, pRootSig) {}
@@ -264,7 +279,7 @@ namespace Falcor
             \param[in] pRootSignature A root-signature describing how to bind resources into the shader. If this parameter is nullptr, a root-signature object will be created from the program reflection object
         */
         static SharedPtr create(const ProgramReflection::SharedConstPtr& pReflector, bool createBuffers = true, const RootSignature::SharedPtr& pRootSig = nullptr);
-        void apply(ComputeContext* pContext) const;
+        void apply(ComputeContext* pContext, bool bindRootSig) const;
     private:
         ComputeVars(const ProgramReflection::SharedConstPtr& pReflector, bool createBuffers, const RootSignature::SharedPtr& pRootSig) :
             ProgramVars(pReflector, createBuffers, pRootSig) {}

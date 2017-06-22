@@ -131,7 +131,7 @@ namespace Falcor
 
         /** Set the program variables for graphics
         */
-        void setGraphicsVars(const GraphicsVars::SharedPtr& pVars) { mpGraphicsVars = pVars; applyProgramVars(); }
+        void setGraphicsVars(const GraphicsVars::SharedPtr& pVars) { mBindComputeRootSig = mBindComputeRootSig || (mpGraphicsVars != pVars); mpGraphicsVars = pVars; applyProgramVars(); }
         
         /** Get the bound graphics program variables object
         */
@@ -161,10 +161,14 @@ namespace Falcor
         */
         void popGraphicsState();
         
+        /** Reset the context
+        */
+        void reset() override;
     private:
         RenderContext() = default;
         GraphicsVars::SharedPtr mpGraphicsVars;
         GraphicsState::SharedPtr mpGraphicsState;
+        bool mBindComputeRootSig = true;
 
         std::stack<GraphicsState::SharedPtr> mPipelineStateStack;
         std::stack<GraphicsVars::SharedPtr> mpGraphicsVarsStack;

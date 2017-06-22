@@ -66,8 +66,8 @@ namespace Falcor
         SharedPtr& pObj = pSharedPtr ? pNewObj : sNullView;
 
         DescriptorSet::Layout layout;
-        layout.addRange(DescriptorSet::Type::Srv, 1);
-        ApiHandle handle = DescriptorSet::create(gpDevice->getGpuDescriptorPool(), layout);
+        layout.addRange(DescriptorSet::Type::Srv, 0, 1);
+        ApiHandle handle = DescriptorSet::create(gpDevice->getCpuDescriptorPool(), layout);
         gpDevice->getApiHandle()->CreateShaderResourceView(pSharedPtr ? pSharedPtr->getApiHandle() : nullptr, &desc, handle->getCpuHandle(0));
 
         pObj = SharedPtr(new ShaderResourceView(pResource, handle, mostDetailedMip, mipCount, firstArraySlice, arraySize));
@@ -108,7 +108,7 @@ namespace Falcor
         SharedPtr& pObj = pSharedPtr ? pNewObj : sNullView;
 
         DescriptorSet::Layout layout;
-        layout.addRange(DescriptorSet::Type::Dsv, 1);
+        layout.addRange(DescriptorSet::Type::Dsv, 0, 1);
         ApiHandle handle = DescriptorSet::create(gpDevice->getCpuDescriptorPool(), layout);
         gpDevice->getApiHandle()->CreateDepthStencilView(resHandle, &desc, handle->getCpuHandle(0));
 
@@ -160,7 +160,7 @@ namespace Falcor
         SharedPtr& pObj = pSharedPtr ? pNewObj : sNullView;
 
         DescriptorSet::Layout layout;
-        layout.addRange(DescriptorSet::Type::Uav, 1);
+        layout.addRange(DescriptorSet::Type::Uav, 0, 1);
         ApiHandle handle = DescriptorSet::create(gpDevice->getCpuDescriptorPool(), layout);
         gpDevice->getApiHandle()->CreateUnorderedAccessView(resHandle, counterHandle, &desc, handle->getCpuHandle(0));
 
@@ -203,7 +203,7 @@ namespace Falcor
         }
 
         DescriptorSet::Layout layout;
-        layout.addRange(DescriptorSet::Type::Rtv, 1);
+        layout.addRange(DescriptorSet::Type::Rtv, 0, 1);
         ApiHandle handle = DescriptorSet::create(gpDevice->getCpuDescriptorPool(), layout);
         gpDevice->getApiHandle()->CreateRenderTargetView(resHandle, &desc, handle->getCpuHandle(0));
 
@@ -247,7 +247,6 @@ namespace Falcor
         }
 
         DescriptorSet::Layout layout;
-        layout.addRange(DescriptorSet::Type::Cbv, 1);
         ApiHandle handle = DescriptorSet::create(gpDevice->getCpuDescriptorPool(), layout);
         gpDevice->getApiHandle()->CreateConstantBufferView(&desc, handle->getCpuHandle(0));
 

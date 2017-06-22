@@ -38,7 +38,7 @@ namespace Falcor
         using SharedPtr = std::shared_ptr<TypedBufferBase>;
         using SharedConstPtr = std::shared_ptr<const TypedBufferBase>;
 
-        void uploadToGPU() const;
+        bool uploadToGPU() const;
         uint32_t getElementCount() const { return mElementCount; }
         void setGpuCopyDirty() const { mGpuDirty = true; }
         ResourceFormat getResourceFormat() const { return mFormat; }

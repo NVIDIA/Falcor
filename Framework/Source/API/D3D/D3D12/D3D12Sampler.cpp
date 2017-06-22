@@ -44,8 +44,8 @@ namespace Falcor
         D3D12_SAMPLER_DESC d3dDesc;
         initD3DSamplerDesc(pSampler.get(), d3dDesc);
         DescriptorSet::Layout layout;
-        layout.addRange(DescriptorSet::Type::Sampler, 1);
-        pSampler->mApiHandle = DescriptorSet::create(gpDevice->getGpuDescriptorPool(), layout);
+        layout.addRange(DescriptorSet::Type::Sampler, 0, 1);
+        pSampler->mApiHandle = DescriptorSet::create(gpDevice->getCpuDescriptorPool(), layout);
         gpDevice->getApiHandle()->CreateSampler(&d3dDesc, pSampler->mApiHandle->getCpuHandle(0));
 
         return pSampler;

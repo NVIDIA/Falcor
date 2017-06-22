@@ -36,36 +36,24 @@
 namespace Falcor
 {
     template<RootSignature::DescType descType>
-    uint32_t findRootSignatureOffset(const RootSignature* pRootSig, uint32_t regIndex, uint32_t regSpace)
+    ProgramVars::RootData findRootData(const RootSignature* pRootSig, uint32_t regIndex, uint32_t regSpace)
     {
-        // Find the bind-index in the root descriptor
-        bool found = false;
-
-        // First search the root-descriptors
-        for (size_t i = 0; i < pRootSig->getRootDescriptorCount(); i++)
-        {
-            const RootSignature::DescriptorDesc& desc = pRootSig->getRootDescriptor(i);
-            found = (desc.type == descType) && (desc.regIndex == regIndex) && (desc.regSpace == regSpace);
-            if (found)
-            {
-                return pRootSig->getDescriptorRootIndex(i);
-            }
-        }
-
         // Search the descriptor-tables
-        for (size_t i = 0; i < pRootSig->getDescriptorTableCount(); i++)
+        for (size_t i = 0; i < pRootSig->getDescriptorSetCount(); i++)
         {
-            const RootSignature::DescriptorTable& table = pRootSig->getDescriptorTable(i);
-            assert(table.getRangeCount() == 1);
-            const RootSignature::DescriptorTable::Range& range = table.getRange(0);
-            assert(range.descCount == 1);
-            if (range.type == descType && range.firstRegIndex == regIndex && range.regSpace == regSpace)
+            const RootSignature::DescriptorSetLayout& set = pRootSig->getDescriptorSet(i);
+            assert(set.getRangeCount() == 1);
+            const RootSignature::DescriptorSetLayout::Range& range = set.getRange(0);
+            if (range.type == descType && range.regSpace == regSpace)
             {
-                return pRootSig->getDescriptorTableRootIndex(i);
+                if(range.baseRegIndex <= regIndex && (range.baseRegIndex + range.descCount) > regIndex)
+                {
+                    return{ (uint32_t)i, regIndex - range.baseRegIndex };
+                }
             }
         }
         should_not_get_here();
-        return -1;
+        return{ (uint32_t)-1, (uint32_t)-1 };
     }
 
     template<typename BufferType, typename ViewType, RootSignature::DescType descType, typename ViewInitFunc>
@@ -79,7 +67,7 @@ namespace Falcor
                 uint32_t regIndex = pReflector->getRegisterIndex();
                 uint32_t regSpace = pReflector->getRegisterSpace();
 
-                ResourceData<ViewType> data;
+                ProgramVars::ResourceData<ViewType> data;
                 
                 // Only create the buffer if needed
                 if (createBuffers)
@@ -88,8 +76,8 @@ namespace Falcor
                     data.pView = viewInitFunc(data.pResource);
                 }
 
-                data.rootSigOffset = findRootSignatureOffset<descType>(pRootSig, regIndex, regSpace);
-                if (data.rootSigOffset == -1)
+                data.rootData = findRootData<descType>(pRootSig, regIndex, regSpace);
+                if (data.rootData.rootIndex == -1)
                 {
                     logError("Can't find a root-signature information matching buffer '" + pReflector->getName() + " when creating ProgramVars");
                     return false;
@@ -110,9 +98,9 @@ namespace Falcor
         auto getSrvFunc = [](const Resource::SharedPtr& pResource) { return pResource->getSRV(0, 1, 0, 1); };
         auto getUavFunc = [](const Resource::SharedPtr& pResource) { return pResource->getUAV(0, 0, 1); };
 
-        initializeBuffersMap<ConstantBuffer, ConstantBuffer, RootSignature::DescType::CBV>(mAssignedCbs, createBuffers, getNullptrFunc, mpReflector->getBufferMap(ProgramReflection::BufferReflection::Type::Constant), ProgramReflection::ShaderAccess::Read, mpRootSignature.get());
-        initializeBuffersMap<StructuredBuffer, ShaderResourceView, RootSignature::DescType::SRV>(mAssignedSrvs, createBuffers, getSrvFunc, mpReflector->getBufferMap(ProgramReflection::BufferReflection::Type::Structured), ProgramReflection::ShaderAccess::Read, mpRootSignature.get());
-        initializeBuffersMap<StructuredBuffer, UnorderedAccessView, RootSignature::DescType::UAV>(mAssignedUavs, createBuffers, getUavFunc, mpReflector->getBufferMap(ProgramReflection::BufferReflection::Type::Structured), ProgramReflection::ShaderAccess::ReadWrite, mpRootSignature.get());
+        initializeBuffersMap<ConstantBuffer, ConstantBuffer, RootSignature::DescType::Cbv>(mAssignedCbs, createBuffers, getNullptrFunc, mpReflector->getBufferMap(ProgramReflection::BufferReflection::Type::Constant), ProgramReflection::ShaderAccess::Read, mpRootSignature.get());
+        initializeBuffersMap<StructuredBuffer, ShaderResourceView, RootSignature::DescType::Srv>(mAssignedSrvs, createBuffers, getSrvFunc, mpReflector->getBufferMap(ProgramReflection::BufferReflection::Type::Structured), ProgramReflection::ShaderAccess::Read, mpRootSignature.get());
+        initializeBuffersMap<StructuredBuffer, UnorderedAccessView, RootSignature::DescType::Uav>(mAssignedUavs, createBuffers, getUavFunc, mpReflector->getBufferMap(ProgramReflection::BufferReflection::Type::Structured), ProgramReflection::ShaderAccess::ReadWrite, mpRootSignature.get());
 
         // Initialize the textures and samplers map
         for (const auto& res : pReflector->getResourceMap())
@@ -126,25 +114,37 @@ namespace Falcor
                 {
                 case ProgramReflection::Resource::ResourceType::Sampler:
                     mAssignedSamplers[regIndex].pSampler = nullptr;
-                    mAssignedSamplers[regIndex].rootSigOffset = findRootSignatureOffset<RootSignature::DescType::Sampler>(mpRootSignature.get(), regIndex, desc.registerSpace);
+                    mAssignedSamplers[regIndex].rootData = findRootData<RootSignature::DescType::Sampler>(mpRootSignature.get(), regIndex, desc.registerSpace);
                     break;
                 case ProgramReflection::Resource::ResourceType::Texture:
                 case ProgramReflection::Resource::ResourceType::RawBuffer:
                     if (desc.shaderAccess == ProgramReflection::ShaderAccess::Read)
                     {
                         assert(mAssignedSrvs.find(regIndex) == mAssignedSrvs.end());
-                        mAssignedSrvs[regIndex].rootSigOffset = findRootSignatureOffset<RootSignature::DescType::SRV>(mpRootSignature.get(), regIndex, desc.registerSpace);
+                        mAssignedSrvs[regIndex].rootData = findRootData<RootSignature::DescType::Srv>(mpRootSignature.get(), regIndex, desc.registerSpace);
                     }
                     else
                     {
                         assert(mAssignedUavs.find(regIndex) == mAssignedUavs.end());
                         assert(desc.shaderAccess == ProgramReflection::ShaderAccess::ReadWrite);
-                        mAssignedUavs[regIndex].rootSigOffset = findRootSignatureOffset<RootSignature::DescType::UAV>(mpRootSignature.get(), regIndex, desc.registerSpace);
+                        mAssignedUavs[regIndex].rootData = findRootData<RootSignature::DescType::Uav>(mpRootSignature.get(), regIndex, desc.registerSpace);
                     }
                     break;
                 default:
                     should_not_get_here();
                 }
+            }
+        }
+
+        mRootSets = RootSetVec(mpRootSignature->getDescriptorSetCount());
+
+        // Mark the active descs (not empty, not CBs)
+        for (size_t i = 0; i < mpRootSignature->getDescriptorSetCount(); i++)
+        {
+            const auto& set = mpRootSignature->getDescriptorSet(i);
+            if (set.getRangeCount() >= 1 && set.getRange(0).type != RootSignature::DescType::Cbv)
+            {
+                mRootSets[i].active = true;
             }
         }
     }
@@ -168,7 +168,7 @@ namespace Falcor
             return nullptr;
         }
 
-        const auto& pDesc = mpReflector->getBufferDesc(name, ProgramReflection::BufferReflection::Type::Constant);
+        auto& pDesc = mpReflector->getBufferDesc(name, ProgramReflection::BufferReflection::Type::Constant);
 
         if (pDesc->getType() != ProgramReflection::BufferReflection::Type::Constant)
         {
@@ -181,7 +181,7 @@ namespace Falcor
 
     ConstantBuffer::SharedPtr ProgramVars::getConstantBuffer(uint32_t index) const
     {
-        const auto& it = mAssignedCbs.find(index);
+        auto& it = mAssignedCbs.find(index);
         if (it == mAssignedCbs.end())
         {
             logWarning("Can't find constant buffer at index " + std::to_string(index) + ". Ignoring getConstantBuffer() call.");
@@ -226,7 +226,8 @@ namespace Falcor
         return setConstantBuffer(loc, pCB);
     }
 
-    void setResourceSrvUavCommon(uint32_t regIndex, ProgramReflection::ShaderAccess shaderAccess, const Resource::SharedPtr& resource, ProgramVars::ResourceMap<ShaderResourceView>& assignedSrvs, ProgramVars::ResourceMap<UnorderedAccessView>& assignedUavs)
+    void setResourceSrvUavCommon(uint32_t regIndex, ProgramReflection::ShaderAccess shaderAccess, const Resource::SharedPtr& resource, ProgramVars::ResourceMap<ShaderResourceView>& assignedSrvs, ProgramVars::ResourceMap<UnorderedAccessView>& assignedUavs, 
+        std::vector<ProgramVars::RootSet>& rootSets)
     {
         switch (shaderAccess)
         {
@@ -234,9 +235,14 @@ namespace Falcor
         {
             auto uavIt = assignedUavs.find(regIndex);
             assert(uavIt != assignedUavs.end());
+            auto resUav = resource ? resource->getUAV() : nullptr;
 
-            uavIt->second.pResource = resource;
-            uavIt->second.pView = resource ? resource->getUAV() : nullptr;
+            if(uavIt->second.pView != resUav)
+            {
+                rootSets[uavIt->second.rootData.rootIndex].pDescSet = nullptr;
+                uavIt->second.pResource = resource;
+                uavIt->second.pView = resUav;
+            }
             break;
         }
 
@@ -245,8 +251,14 @@ namespace Falcor
             auto srvIt = assignedSrvs.find(regIndex);
             assert(srvIt != assignedSrvs.end());
 
-            srvIt->second.pResource = resource;
-            srvIt->second.pView = resource ? resource->getSRV() : nullptr;
+            auto resSrv = resource ? resource->getSRV() : nullptr;
+
+            if(srvIt->second.pView != resSrv)
+            {
+                rootSets[srvIt->second.rootData.rootIndex].pDescSet = nullptr;
+                srvIt->second.pResource = resource;
+                srvIt->second.pView = resSrv;
+            }
             break;
         }
 
@@ -255,14 +267,14 @@ namespace Falcor
         }
     }
 
-    void setResourceSrvUavCommon(const ProgramReflection::Resource* pDesc, const Resource::SharedPtr& resource, ProgramVars::ResourceMap<ShaderResourceView>& assignedSrvs, ProgramVars::ResourceMap<UnorderedAccessView>& assignedUavs)
+    void setResourceSrvUavCommon(const ProgramReflection::Resource* pDesc, const Resource::SharedPtr& resource, ProgramVars::ResourceMap<ShaderResourceView>& assignedSrvs, ProgramVars::ResourceMap<UnorderedAccessView>& assignedUavs, std::vector<ProgramVars::RootSet>& rootSets)
     {
-        setResourceSrvUavCommon(pDesc->regIndex, pDesc->shaderAccess, resource, assignedSrvs, assignedUavs);
+        setResourceSrvUavCommon(pDesc->regIndex, pDesc->shaderAccess, resource, assignedSrvs, assignedUavs, rootSets);
     }
 
-    void setResourceSrvUavCommon(const ProgramReflection::BufferReflection *pDesc, const Resource::SharedPtr& resource, ProgramVars::ResourceMap<ShaderResourceView>& assignedSrvs, ProgramVars::ResourceMap<UnorderedAccessView>& assignedUavs)
+    void setResourceSrvUavCommon(const ProgramReflection::BufferReflection *pDesc, const Resource::SharedPtr& resource, ProgramVars::ResourceMap<ShaderResourceView>& assignedSrvs, ProgramVars::ResourceMap<UnorderedAccessView>& assignedUavs, std::vector<ProgramVars::RootSet>& rootSets)
     {
-        setResourceSrvUavCommon(pDesc->getRegisterIndex(), pDesc->getShaderAccess(), resource, assignedSrvs, assignedUavs);
+        setResourceSrvUavCommon(pDesc->getRegisterIndex(), pDesc->getShaderAccess(), resource, assignedSrvs, assignedUavs, rootSets);
     }
 
     bool verifyBufferResourceDesc(const ProgramReflection::Resource *pDesc, const std::string& name, ProgramReflection::Resource::ResourceType expectedType, ProgramReflection::Resource::Dimensions expectedDims, const std::string& funcName)
@@ -292,7 +304,7 @@ namespace Falcor
             return false;
         }
 
-        setResourceSrvUavCommon(pDesc, pBuf, mAssignedSrvs, mAssignedUavs);
+        setResourceSrvUavCommon(pDesc, pBuf, mAssignedSrvs, mAssignedUavs, mRootSets);
 
         return true;
     }
@@ -307,7 +319,7 @@ namespace Falcor
             return false;
         }
 
-        setResourceSrvUavCommon(pDesc, pBuf, mAssignedSrvs, mAssignedUavs);
+        setResourceSrvUavCommon(pDesc, pBuf, mAssignedSrvs, mAssignedUavs, mRootSets);
 
         return true;
     }
@@ -323,7 +335,7 @@ namespace Falcor
             return false;
         }
 
-        setResourceSrvUavCommon(pBufDesc, pBuf, mAssignedSrvs, mAssignedUavs);
+        setResourceSrvUavCommon(pBufDesc, pBuf, mAssignedSrvs, mAssignedUavs, mRootSets);
 
         return true;
     }
@@ -432,7 +444,12 @@ namespace Falcor
 
     bool ProgramVars::setSampler(uint32_t index, const Sampler::SharedPtr& pSampler)
     {
-        mAssignedSamplers.at(index).pSampler = pSampler;
+        auto& it = mAssignedSamplers.at(index);
+        if(it.pSampler != pSampler)
+        {
+            it.pSampler = pSampler;
+            mRootSets[it.rootData.rootIndex].pDescSet = nullptr;
+        }
         return true;
     }
 
@@ -503,7 +520,7 @@ namespace Falcor
             return false;
         }
 
-        setResourceSrvUavCommon(pDesc, pTexture, mAssignedSrvs, mAssignedUavs);
+        setResourceSrvUavCommon(pDesc, pTexture, mAssignedSrvs, mAssignedUavs, mRootSets);
 
         return true;
     }
@@ -538,10 +555,12 @@ namespace Falcor
         auto it = mAssignedSrvs.find(index);
         if (it != mAssignedSrvs.end())
         {
-            it->second.pView = pSrv;
-
-            // TODO: Fix resource/view const-ness so we don't need to do this
-            it->second.pResource = getResourceFromView(pSrv.get());
+            if(it->second.pView != pSrv)
+            {
+                mRootSets[it->second.rootData.rootIndex].pDescSet = nullptr;
+                it->second.pView = pSrv;
+                it->second.pResource = getResourceFromView(pSrv.get()); // TODO: Fix resource/view const-ness so we don't need to do this
+            }
         }
         else
         {
@@ -557,10 +576,12 @@ namespace Falcor
         auto it = mAssignedUavs.find(index);
         if (it != mAssignedUavs.end())
         {
-            it->second.pView = pUav;
-
-            // TODO: Fix resource/view const-ness so we don't need to do this
-            it->second.pResource = getResourceFromView(pUav.get());
+            if(it->second.pView != pUav)
+            {
+                mRootSets[it->second.rootData.rootIndex].pDescSet = nullptr;
+                it->second.pView = pUav;                
+                it->second.pResource = getResourceFromView(pUav.get()); // TODO: Fix resource/view const-ness so we don't need to do this
+            }
         }
         else
         {
@@ -571,15 +592,37 @@ namespace Falcor
         return true;
     }
 
-    template<typename ViewType, bool isUav, bool forGraphics>
-    void bindUavSrvCommon(CopyContext* pContext, const ProgramVars::ResourceMap<ViewType>& resMap)
+    void bindSamplers(const ProgramVars::ResourceMap<Sampler>& samplers, const ProgramVars::RootSetVec& rootSets)
     {
-#ifdef _WIN32
-        ID3D12GraphicsCommandList* pList = pContext->getLowLevelData()->getCommandList();
+        // Bind the samplers
+        for (auto& samplerIt : samplers)
+        {
+            const auto& rootData = samplerIt.second.rootData;
+            if(rootSets[rootData.rootIndex].dirty)
+            {
+                const Sampler* pSampler = samplerIt.second.pSampler.get();
+                if (pSampler == nullptr)
+                {
+                    pSampler = Sampler::getDefault().get();
+                }
+
+                // Allocate a GPU descriptor
+                const auto& pDescSet = rootSets[rootData.rootIndex].pDescSet;
+                assert(pDescSet);
+                auto srcHandle = pSampler->getApiHandle()->getCpuHandle(0);
+                auto dstHandle = pDescSet->getCpuHandle(0, rootData.descIndex);
+                gpDevice->getApiHandle()->CopyDescriptorsSimple(1, dstHandle, srcHandle, D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
+            }
+        }
+    }
+
+    template<typename ViewType, bool isUav, bool forGraphics>
+    void bindUavSrvCommon(CopyContext* pContext, const ProgramVars::ResourceMap<ViewType>& resMap, const ProgramVars::RootSetVec& rootSets)
+    {
         for (auto& resIt : resMap)
         {
-            const auto& resDesc = resIt.second;
-            uint32_t rootOffset = resDesc.rootSigOffset;
+            auto& resDesc = resIt.second;
+            auto& rootData = resDesc.rootData;
             const Resource* pResource = resDesc.pResource.get();
 
             ViewType::ApiHandle handle;
@@ -622,102 +665,106 @@ namespace Falcor
                 handle = isUav ? UnorderedAccessView::getNullView()->getApiHandle() : ShaderResourceView::getNullView()->getApiHandle();
             }
 
-            // Allocate a GPU descriptor
-            HeapGpuHandle viewHandle;
-            if (isUav)
+            if(rootSets[rootData.rootIndex].dirty)
             {
-                DescriptorSet::Layout layout;
-                layout.addRange(DescriptorSet::Type::Srv, 1);
-                DescriptorSet::SharedPtr pSet = DescriptorSet::create(gpDevice->getGpuDescriptorPool(), layout);
+                // Get the set and copy the GPU handle
+                const auto& pDescSet = rootSets[rootData.rootIndex].pDescSet;
+                assert(pDescSet);
                 auto srcHandle = handle->getCpuHandle(0);
-                auto dstHandle = pSet->getCpuHandle(0);
+                auto dstHandle = pDescSet->getCpuHandle(0, rootData.descIndex);
                 gpDevice->getApiHandle()->CopyDescriptorsSimple(1, dstHandle, srcHandle, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-                viewHandle = pSet->getGpuHandle(0);
-            }
-            else
-            {
-                viewHandle = handle->getGpuHandle(0);
-            }
-
-
-            if(forGraphics)
-            {
-                pList->SetGraphicsRootDescriptorTable(rootOffset, viewHandle);
-            }
-            else
-            {
-                pList->SetComputeRootDescriptorTable(rootOffset, viewHandle);
             }
         }
-#endif        
     }
 
     template<bool forGraphics>
-    void applyProgramVarsCommon(const ProgramVars* pVars, CopyContext* pContext)
+    void applyProgramVarsCommon(const ProgramVars* pVars, CopyContext* pContext, bool bindRootSig)
     {
-        CommandListHandle pList = pContext->getLowLevelData()->getCommandList();
-
-#ifndef VK_DISABLE_UNIMPLEMENTED
-        if(forGraphics)
+        ID3D12GraphicsCommandList* pList = pContext->getLowLevelData()->getCommandList();
+        
+        if(bindRootSig)
         {
-            pList->SetGraphicsRootSignature(pVars->getRootSignature()->getApiHandle());
-        }
-        else
-        {
-            pList->SetComputeRootSignature(pVars->getRootSignature()->getApiHandle());
+            if (forGraphics)
+            {
+                pList->SetGraphicsRootSignature(pVars->getRootSignature()->getApiHandle());
+            }
+            else
+            {
+                pList->SetComputeRootSignature(pVars->getRootSignature()->getApiHandle());
+            }
         }
 
         // Bind the constant-buffers
         for (auto& bufIt : pVars->getAssignedCbs())
         {
-            uint32_t rootOffset = bufIt.second.rootSigOffset;
+            uint32_t rootIndex = bufIt.second.rootData.rootIndex;
+            assert(bufIt.second.rootData.descIndex == 0);
             const ConstantBuffer* pCB = dynamic_cast<const ConstantBuffer*>(bufIt.second.pResource.get());
-            pCB->uploadToGPU();
-            if(forGraphics)
+            if(pCB->uploadToGPU() || bindRootSig)
             {
-                pList->SetGraphicsRootConstantBufferView(rootOffset, pCB->getGpuAddress());
+                if (forGraphics)
+                {
+                    pList->SetGraphicsRootConstantBufferView(rootIndex, pCB->getGpuAddress());
+                }
+                else
+                {
+                    pList->SetComputeRootConstantBufferView(rootIndex, pCB->getGpuAddress());
+                }
             }
-            else
+        }
+
+        // Allocate and mark the dirty sets
+        auto& rootSets = pVars->getRootSets();
+        for (uint32_t i = 0; i < rootSets.size(); i++)
+        {
+            if (rootSets[i].active)
             {
-                pList->SetComputeRootConstantBufferView(rootOffset, pCB->getGpuAddress());
+                rootSets[i].dirty = bindRootSig || (rootSets[i].pDescSet == nullptr);
+                if (rootSets[i].pDescSet == nullptr)
+                {
+                    DescriptorSet::Layout layout;
+                    const auto& set = pVars->getRootSignature()->getDescriptorSet(i);
+                    for (uint32_t r = 0; r < set.getRangeCount(); r++)
+                    {
+                        const auto& range = set.getRange(r);
+                        layout.addRange(range.type, range.baseRegIndex, range.descCount, range.regSpace);
+                    }
+                    rootSets[i].pDescSet = DescriptorSet::create(gpDevice->getGpuDescriptorPool(), layout);
+                }
             }
         }
 
         // Bind the SRVs and UAVs
-        bindUavSrvCommon<ShaderResourceView, false, forGraphics>(pContext, pVars->getAssignedSrvs());
-        bindUavSrvCommon<UnorderedAccessView, true, forGraphics>(pContext, pVars->getAssignedUavs());
+        bindUavSrvCommon<ShaderResourceView, false, forGraphics>(pContext, pVars->getAssignedSrvs(), rootSets);
+        bindUavSrvCommon<UnorderedAccessView, true, forGraphics>(pContext, pVars->getAssignedUavs(), rootSets);
+        bindSamplers(pVars->getAssignedSamplers(), rootSets);
 
-        // Bind the samplers
-        for (auto& samplerIt : pVars->getAssignedSamplers())
+        // Bind the sets
+        for (uint32_t i = 0; i < rootSets.size(); i++)
         {
-            uint32_t rootOffset = samplerIt.second.rootSigOffset;
-            const Sampler* pSampler = samplerIt.second.pSampler.get();
-            if (pSampler == nullptr)
+            if (rootSets[i].dirty)
             {
-                pSampler = Sampler::getDefault().get();
-            }
-
-            auto samplerHandler = pSampler->getApiHandle()->getGpuHandle(0);
-
-            if (forGraphics)
-            {
-                pList->SetGraphicsRootDescriptorTable(rootOffset, samplerHandler);
-            }
-            else
-            {
-                pList->SetComputeRootDescriptorTable(rootOffset, samplerHandler);
+                rootSets[i].dirty = false;
+                // Bind it
+                if (forGraphics)
+                {
+                    pList->SetGraphicsRootDescriptorTable(i, rootSets[i].pDescSet->getGpuHandle(0));
+                }
+                else
+                {
+                    pList->SetComputeRootDescriptorTable(i, rootSets[i].pDescSet->getGpuHandle(0));
+                }
             }
         }
-#endif
     }
 
-    void ComputeVars::apply(ComputeContext* pContext) const
+    void ComputeVars::apply(ComputeContext* pContext, bool bindRootSig) const
     {
-        applyProgramVarsCommon<false>(this, pContext);
+        applyProgramVarsCommon<false>(this, pContext, bindRootSig);
     }
 
-    void GraphicsVars::apply(RenderContext* pContext) const
+    void GraphicsVars::apply(RenderContext* pContext, bool bindRootSig) const
     {
-        applyProgramVarsCommon<true>(this, pContext);
+        applyProgramVarsCommon<true>(this, pContext, bindRootSig);
     }
 }

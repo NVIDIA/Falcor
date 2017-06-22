@@ -40,4 +40,17 @@ namespace Falcor
     {
         mpPool->releaseAllocation(mpApiData);
     }
+
+    DescriptorSet::Layout& DescriptorSet::Layout::addRange(DescriptorSet::Type type, uint32_t baseRegIndex, uint32_t descriptorCount, uint32_t regSpace)
+    {
+        Range r;
+        r.descCount = descriptorCount;
+        r.baseRegIndex = baseRegIndex;
+        r.regSpace = regSpace;
+        r.type = type;
+
+        mRanges.push_back(r);
+        return *this;
+    }
+
 }

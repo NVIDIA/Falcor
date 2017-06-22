@@ -405,26 +405,4 @@ namespace Falcor
         const glm::vec4& borderColor = pSampler->getBorderColor();
         memcpy(desc.BorderColor, glm::value_ptr(borderColor), sizeof(borderColor));
     }
-
-#ifdef FALCOR_D3D12
-    void initD3DSamplerDesc(const Sampler* pSampler, RootSignature::BorderColor borderColor, D3D12_STATIC_SAMPLER_DESC& desc)
-    {
-        initD3DSamplerDescCommon(pSampler, desc);
-        switch (borderColor)
-        {
-        case RootSignature::BorderColor::OpaqueBlack:
-            desc.BorderColor = D3D12_STATIC_BORDER_COLOR_OPAQUE_BLACK;
-            break;
-        case RootSignature::BorderColor::OpaqueWhite:
-            desc.BorderColor = D3D12_STATIC_BORDER_COLOR_OPAQUE_WHITE;
-            break;
-        case RootSignature::BorderColor::TransparentBlack:
-            desc.BorderColor = D3D12_STATIC_BORDER_COLOR_TRANSPARENT_BLACK;
-            break;
-        default:
-            should_not_get_here();
-            desc.BorderColor = (D3D12_STATIC_BORDER_COLOR)-1;
-        }
-    }
-#endif
 }
