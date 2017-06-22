@@ -41,14 +41,14 @@ namespace Falcor
         // Search the descriptor-tables
         for (size_t i = 0; i < pRootSig->getDescriptorSetCount(); i++)
         {
-            const RootSignature::DescriptorSet& set = pRootSig->getDescriptorSet(i);
+            const RootSignature::DescriptorSetLayout& set = pRootSig->getDescriptorSet(i);
             assert(set.getRangeCount() == 1);
-            const RootSignature::DescriptorSet::Range& range = set.getRange(0);
+            const RootSignature::DescriptorSetLayout::Range& range = set.getRange(0);
             if (range.type == descType && range.regSpace == regSpace)
             {
-                if(range.firstRegIndex <= regIndex && (range.firstRegIndex + range.descCount) > regIndex)
+                if(range.baseRegIndex <= regIndex && (range.baseRegIndex + range.descCount) > regIndex)
                 {
-                    return{ (uint32_t)i, regIndex - range.firstRegIndex };
+                    return{ (uint32_t)i, regIndex - range.baseRegIndex };
                 }
             }
         }
@@ -726,7 +726,8 @@ namespace Falcor
                     const auto& set = pVars->getRootSignature()->getDescriptorSet(i);
                     for (uint32_t r = 0; r < set.getRangeCount(); r++)
                     {
-                        layout.addRange(set.getRange(r).type, set.getRange(r).descCount);
+                        const auto& range = set.getRange(r);
+                        layout.addRange(range.type, range.baseRegIndex, range.descCount, range.regSpace);
                     }
                     rootSets[i].pDescSet = DescriptorSet::create(gpDevice->getGpuDescriptorPool(), layout);
                 }

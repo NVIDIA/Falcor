@@ -33,21 +33,6 @@ namespace Falcor
 {
     class ProgramReflection;
 
-    enum class ShaderVisibility
-    {
-        None = 0,
-        Vertex = (1 << (uint32_t)ShaderType::Vertex),
-        Pixel = (1 << (uint32_t)ShaderType::Pixel),
-        Hull = (1 << (uint32_t)ShaderType::Hull),
-        Domain = (1 << (uint32_t)ShaderType::Domain),
-        Geometry = (1 << (uint32_t)ShaderType::Geometry),
-
-        All = (1 << (uint32_t)ShaderType::Count) - 1,
-
-    };
-
-    enum_class_operators(ShaderVisibility);
-
     class RootSignature
     {
     public:
@@ -56,40 +41,15 @@ namespace Falcor
         using ApiHandle = RootSignatureHandle;
         
         using DescType = Falcor::DescriptorSet::Type;
-
-        class Desc;
-
-        class DescriptorSet
-        {
-        public:
-            struct Range
-            {
-                DescType type;
-                uint32_t firstRegIndex;
-                uint32_t descCount;
-                uint32_t regSpace;
-                uint32_t offsetFromTableStart;
-            };
-
-            DescriptorSet(ShaderVisibility visibility = ShaderVisibility::All) : mVisibility(visibility) {}
-            static uint32_t const kAppendOffset = uint32_t(-1);
-            DescriptorSet& addRange(DescType type, uint32_t firstRegIndex, uint32_t descriptorCount, uint32_t regSpace = 0, uint32_t offsetFromTableStart = kAppendOffset);
-            size_t getRangeCount() const { return mRanges.size(); }
-            const Range& getRange(size_t index) const { return mRanges[index]; }
-            ShaderVisibility getVisibility() const { return mVisibility; }
-        private:
-            friend class RootSignature::Desc;
-            std::vector<Range> mRanges;
-            ShaderVisibility mVisibility;
-        };
-
+        using DescriptorSetLayout = DescriptorSet::Layout;
+        
         class Desc
         {
         public:
-            Desc& addDescriptorSet(const DescriptorSet& set);
+            Desc& addDescriptorSet(const DescriptorSetLayout& setLayout);
         private:
             friend class RootSignature;
-            std::vector<DescriptorSet> mSets;
+            std::vector<DescriptorSetLayout> mSets;
         };
 
         ~RootSignature();
@@ -100,7 +60,7 @@ namespace Falcor
         ApiHandle getApiHandle() const { return mApiHandle; }
 
         size_t getDescriptorSetCount() const { return mDesc.mSets.size(); }
-        const DescriptorSet& getDescriptorSet(size_t index) const { return mDesc.mSets[index]; }
+        const DescriptorSetLayout& getDescriptorSet(size_t index) const { return mDesc.mSets[index]; }
 
         uint32_t getSizeInBytes() const { return mSizeInBytes; }
         uint32_t getElementByteOffset(uint32_t elementIndex) { return mElementByteOffset[elementIndex]; }

@@ -83,7 +83,7 @@ namespace Falcor
         }
     }
 
-    void convertCbvSet(const RootSignature::DescriptorSet& set, D3D12_ROOT_PARAMETER& desc)
+    void convertCbvSet(const RootSignature::DescriptorSetLayout& set, D3D12_ROOT_PARAMETER& desc)
     {
         assert(set.getRangeCount() == 1);
         const auto& range = set.getRange(0);
@@ -91,11 +91,11 @@ namespace Falcor
 
         desc.ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
         desc.Descriptor.RegisterSpace = range.regSpace;
-        desc.Descriptor.ShaderRegister = range.firstRegIndex;
+        desc.Descriptor.ShaderRegister = range.baseRegIndex;
         desc.ShaderVisibility = getShaderVisibility(set.getVisibility());
     }
 
-    void convertDescTable(const RootSignature::DescriptorSet& falcorSet, D3D12_ROOT_PARAMETER& desc, std::vector<D3D12_DESCRIPTOR_RANGE>& d3dRange)
+    void convertDescTable(const RootSignature::DescriptorSetLayout& falcorSet, D3D12_ROOT_PARAMETER& desc, std::vector<D3D12_DESCRIPTOR_RANGE>& d3dRange)
     {
         desc.ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
         desc.ShaderVisibility = getShaderVisibility(falcorSet.getVisibility());
@@ -106,9 +106,9 @@ namespace Falcor
         for (size_t i = 0; i < falcorSet.getRangeCount(); i++)
         {
             const auto& falcorRange = falcorSet.getRange(i);
-            d3dRange[i].BaseShaderRegister = falcorRange.firstRegIndex;
+            d3dRange[i].BaseShaderRegister = falcorRange.baseRegIndex;
             d3dRange[i].NumDescriptors = falcorRange.descCount;
-            d3dRange[i].OffsetInDescriptorsFromTableStart = (falcorRange.offsetFromTableStart == RootSignature::DescriptorSet::kAppendOffset) ? D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND : falcorRange.offsetFromTableStart;
+            d3dRange[i].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
             d3dRange[i].RangeType = getDescRangeType(falcorRange.type);
             d3dRange[i].RegisterSpace = falcorRange.regSpace;
         }
