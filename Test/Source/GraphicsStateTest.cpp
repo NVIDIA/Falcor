@@ -25,19 +25,43 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#pragma once
-#include "TestBase.h"
+#include "GraphicsStateTest.h"
 
-class GraphicsStateObjectTest : public TestBase
+//  
+void GraphicsStateTest::addTests()
 {
-private:
-    
-    //  Add the Tests.
-    void addTests() override;
+    addTestToList<TestSimpleCreate>();
+
+}
+
+//
+testing_func(GraphicsStateTest, TestSimpleCreate)
+{
+    GraphicsProgram::SharedPtr gp = GraphicsProgram::createFromFile("VS.vs.hlsl", "PS.ps.hlsl");
     
     //  
-    void onInit() override {};
+    if (gp->getActiveDefinesList().size() != 0)
+    {
+        return test_fail("Error : Active Defines List is Non - Zero.");
+    }
+
+    //  Compile and Link.
+    ProgramVersion::SharedConstPtr agp = gp->getActiveVersion(true);
+
+    if (!agp)
+    {
+        return test_fail("Error : Failed To Compile Shader.");
+    }
     
-    //
-    register_testing_func(TestCreate)
-};
+
+    return test_pass();
+}
+
+
+int main()
+{
+    GraphicsStateTest gpT;
+    gpT.init(true);
+    gpT.run();
+    return 0;
+}

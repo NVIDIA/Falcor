@@ -25,19 +25,19 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#pragma once
-#include "TestBase.h"
+#include "ShaderCommon.h"
+#include "Shading.h"
+#define _COMPILE_DEFAULT_VS
+#include "VertexAttrib.h"
 
-class GraphicsStateObjectTest : public TestBase
+cbuffer PerFrameCB : register(b0)
 {
-private:
-    
-    //  Add the Tests.
-    void addTests() override;
-    
-    //  
-    void onInit() override {};
-    
-    //
-    register_testing_func(TestCreate)
+    vec3 color;
 };
+
+vec4 main(VS_OUT vOut) : SV_TARGET
+{
+	vOut.posW += vOut.normalW + vOut.bitangentW;
+	vOut.posW = normalize(vOut.posW);
+    return float4(vOut.posW, 1.0f);
+}

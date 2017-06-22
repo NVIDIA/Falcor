@@ -28,16 +28,14 @@
 #pragma once
 #include "TestBase.h"
 
-class GraphicsStateObjectTest : public TestBase
+class ComputeStateTest : public TestBase
 {
 private:
-    
+
     //  Add the Tests.
     void addTests() override;
     
     //  
     void onInit() override {};
-    
-    //
-    register_testing_func(TestCreate)
+
 };

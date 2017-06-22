@@ -11,9 +11,10 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{CE2DADEE-2D7F-4554-B763-A8E7488CE2BF}</ProjectGuid>
+    <ProjectGuid>{CE2DADEE-2D7F-4554-B763-A4E3231CE1BF}</ProjectGuid>
     <RootNamespace>GraphicsProgramTest</RootNamespace>
     <WindowsTargetPlatformVersion>10.0.14393.0</WindowsTargetPlatformVersion>
+    <ProjectName>GraphicsProgramTest</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
@@ -73,10 +74,10 @@
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\..\Source\GraphicsProgramTest.cpp" />
+    <ClCompile Include="..\..\..\Source\ComputeProgramTest.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\..\Source\GraphicsProgramTest.h" />
+    <ClInclude Include="..\..\..\Source\ComputeProgramTest.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\..\Framework\Source\Falcor.vcxproj">

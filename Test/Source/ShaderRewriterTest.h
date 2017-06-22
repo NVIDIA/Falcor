@@ -26,18 +26,41 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 #pragma once
-#include "TestBase.h"
 
-class GraphicsStateObjectTest : public TestBase
+#include "Testbase.h"
+#include "TestShaderWriter.h"
+#include "TestShaderMaker.h"
+#include <string.h>
+#include <map>
+#include <vector>
+#include <set>
+#include <random>
+#include <algorithm>
+#include <ctime>
+#include <cstdlib>
+
+#include "Utils/OS.h"
+#include "Externals/RapidJson/include/rapidjson/document.h"
+#include "Externals/RapidJson/include/rapidjson/stringbuffer.h"
+#include "Externals/RapidJson/include/rapidjson/prettywriter.h"
+#include "Externals/RapidJson/include/rapidjson/error/en.h"
+#include <sstream>
+#include <fstream>
+
+
+using namespace Falcor;
+
+class ShaderRewriterTest : public TestBase
 {
 private:
-    
+
     //  Add the Tests.
     void addTests() override;
-    
+
     //  
     void onInit() override {};
-    
-    //
-    register_testing_func(TestCreate)
+
+    //  
+    register_testing_func(TestBasicShaderRewriter);
+
 };

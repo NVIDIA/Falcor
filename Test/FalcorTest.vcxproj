@@ -85,10 +85,14 @@
   <ItemGroup>
     <ClCompile Include="Source\TestBase.cpp" />
     <ClCompile Include="Source\TestHelper.cpp" />
+    <ClCompile Include="Source\TestShaderMaker.cpp" />
+    <ClCompile Include="Source\TestShaderWriter.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\TestBase.h" />
     <ClInclude Include="Source\TestHelper.h" />
+    <ClInclude Include="Source\TestShaderMaker.h" />
+    <ClInclude Include="Source\TestShaderWriter.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

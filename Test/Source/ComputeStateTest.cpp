@@ -25,19 +25,19 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#pragma once
-#include "TestBase.h"
+#include "ComputeStateTest.h"
 
-class GraphicsStateObjectTest : public TestBase
+
+void ComputeStateTest::addTests()
 {
-private:
-    
-    //  Add the Tests.
-    void addTests() override;
-    
-    //  
-    void onInit() override {};
-    
-    //
-    register_testing_func(TestCreate)
-};
+
+}
+
+
+int main()
+{
+    ComputeStateTest csT;
+    csT.init(true);
+    csT.run();
+    return 0;
+}

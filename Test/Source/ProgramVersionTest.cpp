@@ -25,19 +25,20 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#pragma once
-#include "TestBase.h"
+#include "ProgramVersionTest.h"
 
-class GraphicsStateObjectTest : public TestBase
+//  
+void ProgramVersionTest::addTests()
 {
-private:
-    
-    //  Add the Tests.
-    void addTests() override;
-    
-    //  
-    void onInit() override {};
-    
-    //
-    register_testing_func(TestCreate)
-};
+
+}
+
+
+
+int main()
+{
+    ProgramVersionTest pvT;
+    pvT.init(true);
+    pvT.run();
+    return 0;
+}

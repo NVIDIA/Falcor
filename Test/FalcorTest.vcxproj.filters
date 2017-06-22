@@ -3,9 +3,26 @@
   <ItemGroup>
     <ClCompile Include="Source\TestBase.cpp" />
     <ClCompile Include="Source\TestHelper.cpp" />
+    <ClCompile Include="Source\TestShaderMaker.cpp">
+      <Filter>TestShader</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\TestShaderWriter.cpp">
+      <Filter>TestShader</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\TestBase.h" />
     <ClInclude Include="Source\TestHelper.h" />
+    <ClInclude Include="Source\TestShaderMaker.h">
+      <Filter>TestShader</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\TestShaderWriter.h">
+      <Filter>TestShader</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="TestShader">
+      <UniqueIdentifier>{8e35bbde-12e3-4049-8167-e525258526f6}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
 </Project>

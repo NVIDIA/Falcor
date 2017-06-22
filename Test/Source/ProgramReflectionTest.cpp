@@ -25,19 +25,20 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#pragma once
-#include "TestBase.h"
+#include "ProgramReflectionTest.h"
 
-class GraphicsStateObjectTest : public TestBase
+//  
+void ProgramReflectionTest::addTests()
 {
-private:
-    
-    //  Add the Tests.
-    void addTests() override;
-    
-    //  
-    void onInit() override {};
-    
-    //
-    register_testing_func(TestCreate)
-};
+
+}
+
+
+
+int main()
+{
+    ProgramReflectionTest prT;
+    prT.init(true);
+    prT.run();
+    return 0;
+}

@@ -25,19 +25,10 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#pragma once
-#include "TestBase.h"
+#define _COMPILE_DEFAULT_VS
+#include "VertexAttrib.h"
 
-class GraphicsStateObjectTest : public TestBase
+VS_OUT main(VS_IN vIn)
 {
-private:
-    
-    //  Add the Tests.
-    void addTests() override;
-    
-    //  
-    void onInit() override {};
-    
-    //
-    register_testing_func(TestCreate)
-};
+    return defaultVS(vIn);
+}
