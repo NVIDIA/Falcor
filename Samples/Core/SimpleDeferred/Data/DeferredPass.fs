@@ -29,8 +29,8 @@
 #define _COMPILE_DEFAULT_VS
 #include "VertexAttrib.h"
 #include "ShaderCommon.h"
-#include "Shading.h"
 
+__import Shading;
 
 struct PS_OUT
 {
