@@ -32,7 +32,6 @@
 
 namespace Falcor
 {
-    using StaticSamplerVec = std::vector<D3D12_STATIC_SAMPLER_DESC>;
     using RootParameterVec = std::vector<D3D12_ROOT_PARAMETER>;
 
     D3D12_SHADER_VISIBILITY getShaderVisibility(ShaderVisibility visibility)
@@ -66,55 +65,15 @@ namespace Falcor
         return (D3D12_SHADER_VISIBILITY)-1;
     }
 
-    void convertSamplerDesc(const RootSignature::SamplerDesc& falcorDesc, D3D12_STATIC_SAMPLER_DESC& desc)
-    {
-        initD3DSamplerDesc(falcorDesc.pSampler.get(), falcorDesc.borderColor, desc);
-        desc.ShaderRegister = falcorDesc.regIndex;
-        desc.RegisterSpace = falcorDesc.regSpace;
-        desc.ShaderVisibility = getShaderVisibility(falcorDesc.visibility);
-    }
-
-    void convertRootConstant(const RootSignature::ConstantDesc& falcorDesc, D3D12_ROOT_PARAMETER& desc)
-    {
-        desc.ParameterType = D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS;
-        desc.Constants.Num32BitValues = falcorDesc.dwordCount;
-        desc.Constants.RegisterSpace = falcorDesc.regSpace;
-        desc.Constants.ShaderRegister = falcorDesc.regIndex;
-        desc.ShaderVisibility = getShaderVisibility(falcorDesc.visibility);
-    }
-
-    void convertRootDescriptor(const RootSignature::DescriptorDesc& falcorDesc, D3D12_ROOT_PARAMETER& desc)
-    {
-        switch (falcorDesc.type)
-        {
-        case RootSignature::DescType::CBV:
-            desc.ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
-            break;
-        case RootSignature::DescType::SRV:
-            desc.ParameterType = D3D12_ROOT_PARAMETER_TYPE_SRV;
-            break;
-        case RootSignature::DescType::UAV:
-            desc.ParameterType = D3D12_ROOT_PARAMETER_TYPE_UAV;
-            break;
-        default:
-            should_not_get_here();
-            return;
-        }
-
-        desc.Descriptor.RegisterSpace = falcorDesc.regSpace;
-        desc.Descriptor.ShaderRegister = falcorDesc.regIndex;
-        desc.ShaderVisibility = getShaderVisibility(falcorDesc.visibility);
-    }
-
     D3D12_DESCRIPTOR_RANGE_TYPE getDescRangeType(RootSignature::DescType type)
     {
         switch (type)
         {
-        case RootSignature::DescType::SRV:
+        case RootSignature::DescType::Srv:
             return D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
-        case RootSignature::DescType::UAV:
+        case RootSignature::DescType::Uav:
             return D3D12_DESCRIPTOR_RANGE_TYPE_UAV;
-        case RootSignature::DescType::CBV:
+        case RootSignature::DescType::Cbv:
             return D3D12_DESCRIPTOR_RANGE_TYPE_CBV;
         case RootSignature::DescType::Sampler:
             return D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER;
@@ -124,20 +83,32 @@ namespace Falcor
         }
     }
 
-    void convertDescTable(const RootSignature::DescriptorTable& falcorTable, D3D12_ROOT_PARAMETER& desc, std::vector<D3D12_DESCRIPTOR_RANGE>& d3dRange)
+    void convertCbvSet(const RootSignature::DescriptorSetLayout& set, D3D12_ROOT_PARAMETER& desc)
+    {
+        assert(set.getRangeCount() == 1);
+        const auto& range = set.getRange(0);
+        assert(range.type == RootSignature::DescType::Cbv && range.descCount == 1);
+
+        desc.ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
+        desc.Descriptor.RegisterSpace = range.regSpace;
+        desc.Descriptor.ShaderRegister = range.baseRegIndex;
+        desc.ShaderVisibility = getShaderVisibility(set.getVisibility());
+    }
+
+    void convertDescTable(const RootSignature::DescriptorSetLayout& falcorSet, D3D12_ROOT_PARAMETER& desc, std::vector<D3D12_DESCRIPTOR_RANGE>& d3dRange)
     {
         desc.ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
-        desc.ShaderVisibility = getShaderVisibility(falcorTable.getVisibility());
-        d3dRange.resize(falcorTable.getRangeCount());
-        desc.DescriptorTable.NumDescriptorRanges = (uint32_t)falcorTable.getRangeCount();
+        desc.ShaderVisibility = getShaderVisibility(falcorSet.getVisibility());
+        d3dRange.resize(falcorSet.getRangeCount());
+        desc.DescriptorTable.NumDescriptorRanges = (uint32_t)falcorSet.getRangeCount();
         desc.DescriptorTable.pDescriptorRanges = d3dRange.data();
 
-        for (size_t i = 0; i < falcorTable.getRangeCount(); i++)
+        for (size_t i = 0; i < falcorSet.getRangeCount(); i++)
         {
-            const auto& falcorRange = falcorTable.getRange(i);
-            d3dRange[i].BaseShaderRegister = falcorRange.firstRegIndex;
+            const auto& falcorRange = falcorSet.getRange(i);
+            d3dRange[i].BaseShaderRegister = falcorRange.baseRegIndex;
             d3dRange[i].NumDescriptors = falcorRange.descCount;
-            d3dRange[i].OffsetInDescriptorsFromTableStart = (falcorRange.offsetFromTableStart == RootSignature::DescriptorTable::kAppendOffset) ? D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND : falcorRange.offsetFromTableStart;
+            d3dRange[i].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
             d3dRange[i].RangeType = getDescRangeType(falcorRange.type);
             d3dRange[i].RegisterSpace = falcorRange.regSpace;
         }
@@ -146,46 +117,24 @@ namespace Falcor
     bool RootSignature::apiInit()
     {
         mSizeInBytes = 0;
-        StaticSamplerVec samplerVec(mDesc.mSamplers.size());
-        for (size_t i = 0 ; i < samplerVec.size() ; i++)
-        {
-            convertSamplerDesc(mDesc.mSamplers[i], samplerVec[i]);
-        }
-        size_t rootParamsCount = mDesc.mConstants.size() + mDesc.mDescriptorTables.size() + mDesc.mRootDescriptors.size();
-        RootParameterVec rootParams(rootParamsCount);
-        mElementByteOffset.resize(rootParamsCount);
+        RootParameterVec rootParams(mDesc.mSets.size());
+        mElementByteOffset.resize(mDesc.mSets.size());
 
-        mConstantIndices.resize(mDesc.mConstants.size());
-        
-        uint32_t elementIndex = 0;
-
-        // Root descriptors
-        mDescriptorIndices.resize(mDesc.mRootDescriptors.size());
-        for (size_t i = 0; i < mDesc.mRootDescriptors.size(); i++, elementIndex++)
+        // Descriptor sets. Need to allocate some space for the D3D12 tables
+        std::vector<std::vector<D3D12_DESCRIPTOR_RANGE>> d3dRanges(mDesc.mSets.size());
+        for (size_t i = 0 ; i < mDesc.mSets.size() ; i++)
         {
-            mDescriptorIndices[i] = elementIndex;
-            convertRootDescriptor(mDesc.mRootDescriptors[i], rootParams[elementIndex]);
-            mElementByteOffset[elementIndex] = mSizeInBytes;
-            mSizeInBytes += 8;
-        }
-
-        // Constants
-        for (size_t i = 0; i < mDesc.mConstants.size(); i++, elementIndex++)
-        {
-            mConstantIndices[i] = elementIndex;
-            convertRootConstant(mDesc.mConstants[i], rootParams[elementIndex]);
-            mElementByteOffset[elementIndex] = mSizeInBytes;
-            mSizeInBytes += 4;
-        }
-
-        // Descriptor tables. Need to allocate some space for the D3D12 tables
-        std::vector<std::vector<D3D12_DESCRIPTOR_RANGE>> d3dRanges(mDesc.mDescriptorTables.size());
-        mDescTableIndices.resize(mDesc.mDescriptorTables.size());
-        for (size_t i = 0 ; i < mDesc.mDescriptorTables.size() ; i++, elementIndex++)
-        {
-            mDescTableIndices[i] = elementIndex;
-            convertDescTable(mDesc.mDescriptorTables[i], rootParams[elementIndex], d3dRanges[i]);
-            mElementByteOffset[elementIndex] = mSizeInBytes;
+            const auto& set = mDesc.mSets[i];
+            assert(set.getRangeCount() == 1);
+            if (set.getRangeCount() == 1 && set.getRange(0).type == DescType::Cbv)
+            {
+                convertCbvSet(set, rootParams[i]);
+            }
+            else
+            {
+                convertDescTable(mDesc.mSets[i], rootParams[i], d3dRanges[i]);
+            }
+            mElementByteOffset[i] = mSizeInBytes;
             mSizeInBytes += 4;
         }
 
@@ -194,8 +143,8 @@ namespace Falcor
         desc.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
         desc.pParameters = rootParams.data();
         desc.NumParameters = (uint32_t)rootParams.size();
-        desc.pStaticSamplers = samplerVec.data();
-        desc.NumStaticSamplers = (uint32_t)samplerVec.size();
+        desc.pStaticSamplers = nullptr;
+        desc.NumStaticSamplers = 0;
 
         ID3DBlobPtr pSigBlob;
         ID3DBlobPtr pErrorBlob;

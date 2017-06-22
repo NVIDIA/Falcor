@@ -43,7 +43,7 @@ namespace Falcor
 
         /** Set the compute variables
         */
-        void setComputeVars(const ComputeVars::SharedPtr& pVars) { mpComputeVars = pVars; applyComputeVars(); }
+        void setComputeVars(const ComputeVars::SharedPtr& pVars) { mBindComputeRootSig = mBindComputeRootSig || (mpComputeVars != pVars); mpComputeVars = pVars; applyComputeVars(); }
 
         /** Get the bound program variables object
         */
@@ -99,6 +99,9 @@ namespace Falcor
         */
         void dispatchIndirect(const Buffer* argBuffer, uint64_t argBufferOffset);
 
+        /** Reset the context
+        */
+        virtual void reset() override;
     protected:
         ComputeContext() = default;
         void prepareForDispatch();
@@ -107,6 +110,7 @@ namespace Falcor
 
         std::stack<ComputeState::SharedPtr> mpComputeStateStack;
         std::stack<ComputeVars::SharedPtr> mpComputeVarsStack;
+        bool mBindComputeRootSig = true;
 
         ComputeVars::SharedPtr mpComputeVars;
         ComputeState::SharedPtr mpComputeState;

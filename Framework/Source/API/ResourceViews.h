@@ -120,4 +120,19 @@ namespace Falcor
 
         static SharedPtr sNullView;
     };
+
+    class ConstantBufferView : public ResourceView<CbvHandle>
+    {
+    public:
+        using SharedPtr = std::shared_ptr<ConstantBufferView>;
+        using SharedConstPtr = std::shared_ptr<const ConstantBufferView>;
+        static SharedPtr create(ResourceWeakPtr pResource);
+        static SharedPtr getNullView();
+
+    private:
+        ConstantBufferView(ResourceWeakPtr& pResource, ApiHandle handle) :
+            ResourceView(pResource, handle, 0, 1, 0, 1) {}
+        
+        static SharedPtr sNullView;
+    };
 }

@@ -47,17 +47,17 @@ namespace Falcor
         mpApiData = std::make_shared<DescriptorSetApiData>();
 
         // For each range we need to allocate a table from a heap
-        mpApiData->allocations.resize(mLayout.mRanges.size());
-        for (size_t i = 0; i < mLayout.mRanges.size(); i++)
+        mpApiData->allocations.resize(mLayout.getRangeCount());
+        for (size_t i = 0; i < mpApiData->allocations.size(); i++)
         {
-            const auto& range = mLayout.mRanges[i];
+            const auto& range = mLayout.getRange(i);
             D3D12DescriptorHeap* pHeap = getHeap(mpPool.get(), range.type);
-            mpApiData->allocations[i] = pHeap->allocateDescriptors(range.count);
+            mpApiData->allocations[i] = pHeap->allocateDescriptors(range.descCount);
             if (mpApiData->allocations[i] == false)
             {
                 // Execute deferred releases and try again
                 mpPool->executeDeferredReleases();
-                mpApiData->allocations[i] = pHeap->allocateDescriptors(range.count);
+                mpApiData->allocations[i] = pHeap->allocateDescriptors(range.descCount);
                 if (!mpApiData->allocations[i])
                 {
                     assert(0);

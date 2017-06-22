@@ -31,6 +31,22 @@
 namespace Falcor
 {
     struct DescriptorSetApiData;
+
+    enum class ShaderVisibility
+    {
+        None = 0,
+        Vertex = (1 << (uint32_t)ShaderType::Vertex),
+        Pixel = (1 << (uint32_t)ShaderType::Pixel),
+        Hull = (1 << (uint32_t)ShaderType::Hull),
+        Domain = (1 << (uint32_t)ShaderType::Domain),
+        Geometry = (1 << (uint32_t)ShaderType::Geometry),
+
+        All = (1 << (uint32_t)ShaderType::Count) - 1,
+
+    };
+
+    enum_class_operators(ShaderVisibility);
+
     class DescriptorSet
     {
     public:
@@ -41,25 +57,32 @@ namespace Falcor
 
         ~DescriptorSet();
 
-        struct Layout
+        class Layout
         {
         public:
-            Layout& addRange(Type type, uint32_t count) { mRanges.push_back({ type, count }); return *this; }
-        private:
-            friend class DescriptorSet;
             struct Range
             {
                 Type type;
-                uint32_t count;
+                uint32_t baseRegIndex;
+                uint32_t descCount;
+                uint32_t regSpace;
             };
+
+            Layout(ShaderVisibility visibility = ShaderVisibility::All) : mVisibility(visibility) {}
+            Layout& addRange(Type type, uint32_t baseRegIndex, uint32_t descriptorCount, uint32_t regSpace = 0);
+            size_t getRangeCount() const { return mRanges.size(); }
+            const Range& getRange(size_t index) const { return mRanges[index]; }
+            ShaderVisibility getVisibility() const { return mVisibility; }
+        private:
             std::vector<Range> mRanges;
+            ShaderVisibility mVisibility;
         };
 
         static SharedPtr create(DescriptorPool::SharedPtr pPool, const Layout& layout);
 
-        size_t getRangeCount() const { return mLayout.mRanges.size(); }
-        Type getRangeType(uint32_t range) const { return mLayout.mRanges[range].type; }
-        uint32_t getRangeDescCount(uint32_t range) const { return mLayout.mRanges[range].count; }
+        size_t getRangeCount() const { return mLayout.getRangeCount(); }
+        const Layout::Range& getRange(uint32_t range) const { return mLayout.getRange(range); }
+        ShaderVisibility getVisibility() const { return mLayout.getVisibility(); }
 
         CpuHandle getCpuHandle(uint32_t rangeIndex, uint32_t descInRange = 0) const;
         GpuHandle getGpuHandle(uint32_t rangeIndex, uint32_t descInRange = 0) const;
