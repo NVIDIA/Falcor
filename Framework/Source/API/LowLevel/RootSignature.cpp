@@ -37,7 +37,7 @@ namespace Falcor
 
     RootSignature::Desc& RootSignature::Desc::addDescriptorSet(const DescriptorSetLayout& setLayout)
     {
-        assert(set.getRangeCount());
+        assert(setLayout.getRangeCount());
         mSets.push_back(setLayout);
         return *this; 
     }
