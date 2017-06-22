@@ -260,7 +260,7 @@ namespace Falcor
             \param[in] pRootSignature A root-signature describing how to bind resources into the shader. If this parameter is nullptr, a root-signature object will be created from the program reflection object
         */
         static SharedPtr create(const ProgramReflection::SharedConstPtr& pReflector, bool createBuffers = true, const RootSignature::SharedPtr& pRootSig = nullptr);
-        void apply(RenderContext* pContext) const;
+        void apply(RenderContext* pContext, bool rebindRootSig) const;
     private:
         GraphicsVars(const ProgramReflection::SharedConstPtr& pReflector, bool createBuffers, const RootSignature::SharedPtr& pRootSig) :
             ProgramVars(pReflector, createBuffers, pRootSig) {}
@@ -278,7 +278,7 @@ namespace Falcor
             \param[in] pRootSignature A root-signature describing how to bind resources into the shader. If this parameter is nullptr, a root-signature object will be created from the program reflection object
         */
         static SharedPtr create(const ProgramReflection::SharedConstPtr& pReflector, bool createBuffers = true, const RootSignature::SharedPtr& pRootSig = nullptr);
-        void apply(ComputeContext* pContext) const;
+        void apply(ComputeContext* pContext, bool rebindRootSig) const;
     private:
         ComputeVars(const ProgramReflection::SharedConstPtr& pReflector, bool createBuffers, const RootSignature::SharedPtr& pRootSig) :
             ProgramVars(pReflector, createBuffers, pRootSig) {}

@@ -131,7 +131,7 @@ namespace Falcor
 
         /** Set the program variables for graphics
         */
-        void setGraphicsVars(const GraphicsVars::SharedPtr& pVars) { mpGraphicsVars = pVars; applyProgramVars(); }
+        void setGraphicsVars(const GraphicsVars::SharedPtr& pVars) { mGraphicsVarsChanged = (mpGraphicsVars != pVars); mpGraphicsVars = pVars; applyProgramVars(); }
         
         /** Get the bound graphics program variables object
         */
@@ -165,6 +165,7 @@ namespace Falcor
         RenderContext() = default;
         GraphicsVars::SharedPtr mpGraphicsVars;
         GraphicsState::SharedPtr mpGraphicsState;
+        bool mGraphicsVarsChanged = true;
 
         std::stack<GraphicsState::SharedPtr> mPipelineStateStack;
         std::stack<GraphicsVars::SharedPtr> mpGraphicsVarsStack;

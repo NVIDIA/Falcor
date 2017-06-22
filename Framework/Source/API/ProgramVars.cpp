@@ -672,17 +672,20 @@ namespace Falcor
     }
 
     template<bool forGraphics>
-    void applyProgramVarsCommon(const ProgramVars* pVars, CopyContext* pContext)
+    void applyProgramVarsCommon(const ProgramVars* pVars, CopyContext* pContext, bool rebindRootSig)
     {
         ID3D12GraphicsCommandList* pList = pContext->getLowLevelData()->getCommandList();
         
-        if(forGraphics)
+        if(rebindRootSig)
         {
-            pList->SetGraphicsRootSignature(pVars->getRootSignature()->getApiHandle());
-        }
-        else
-        {
-            pList->SetComputeRootSignature(pVars->getRootSignature()->getApiHandle());
+            if (forGraphics)
+            {
+                pList->SetGraphicsRootSignature(pVars->getRootSignature()->getApiHandle());
+            }
+            else
+            {
+                pList->SetComputeRootSignature(pVars->getRootSignature()->getApiHandle());
+            }
         }
 
         // Bind the constant-buffers
@@ -691,14 +694,16 @@ namespace Falcor
             uint32_t rootIndex = bufIt.second.rootData.rootIndex;
             assert(bufIt.second.rootData.descIndex == 0);
             const ConstantBuffer* pCB = dynamic_cast<const ConstantBuffer*>(bufIt.second.pResource.get());
-            pCB->uploadToGPU();
-            if(forGraphics)
+            if(pCB->uploadToGPU() || rebindRootSig)
             {
-                pList->SetGraphicsRootConstantBufferView(rootIndex, pCB->getGpuAddress());
-            }
-            else
-            {
-                pList->SetComputeRootConstantBufferView(rootIndex, pCB->getGpuAddress());
+                if (forGraphics)
+                {
+                    pList->SetGraphicsRootConstantBufferView(rootIndex, pCB->getGpuAddress());
+                }
+                else
+                {
+                    pList->SetComputeRootConstantBufferView(rootIndex, pCB->getGpuAddress());
+                }
             }
         }
 
@@ -736,13 +741,13 @@ namespace Falcor
         bindSamplers(pVars->getAssignedSamplers(), rootSets);
     }
 
-    void ComputeVars::apply(ComputeContext* pContext) const
+    void ComputeVars::apply(ComputeContext* pContext, bool rebindRootSig) const
     {
-        applyProgramVarsCommon<false>(this, pContext);
+        applyProgramVarsCommon<false>(this, pContext, rebindRootSig);
     }
 
-    void GraphicsVars::apply(RenderContext* pContext) const
+    void GraphicsVars::apply(RenderContext* pContext, bool rebindRootSig) const
     {
-        applyProgramVarsCommon<true>(this, pContext);
+        applyProgramVarsCommon<true>(this, pContext, rebindRootSig);
     }
 }

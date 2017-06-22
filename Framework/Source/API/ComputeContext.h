@@ -43,7 +43,7 @@ namespace Falcor
 
         /** Set the compute variables
         */
-        void setComputeVars(const ComputeVars::SharedPtr& pVars) { mpComputeVars = pVars; applyComputeVars(); }
+        void setComputeVars(const ComputeVars::SharedPtr& pVars) { mComputeVarsChanged = (mpComputeVars != pVars); mpComputeVars = pVars; applyComputeVars(); }
 
         /** Get the bound program variables object
         */
@@ -107,6 +107,7 @@ namespace Falcor
 
         std::stack<ComputeState::SharedPtr> mpComputeStateStack;
         std::stack<ComputeVars::SharedPtr> mpComputeVarsStack;
+        bool mComputeVarsChanged = true;
 
         ComputeVars::SharedPtr mpComputeVars;
         ComputeState::SharedPtr mpComputeState;

@@ -62,13 +62,13 @@ namespace Falcor
         // Bind the root signature and the root signature data
         if (mpComputeVars)
         {
-            mpComputeVars->apply(const_cast<ComputeContext*>(this));
+            mpComputeVars->apply(const_cast<ComputeContext*>(this), mComputeVarsChanged);
         }
         else
         {
             mpLowLevelData->getCommandList()->SetComputeRootSignature(RootSignature::getEmpty()->getApiHandle());
         }
-
+        mComputeVarsChanged = false;
         mpLowLevelData->getCommandList()->SetPipelineState(mpComputeState->getCSO(mpComputeVars.get())->getApiHandle());
         mCommandsPending = true;
     }
