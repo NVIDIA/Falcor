@@ -254,9 +254,70 @@ namespace Falcor
         infoOut.depthBoundsTestEnable = VK_FALSE;
     }
 
-    void initVkVertexLayoutInfo(const VertexLayout* pLayout, VkPipelineVertexInputStateCreateInfo& infoOut)
+    VkVertexInputRate getVkInputRate(VertexBufferLayout::InputClass falcorClass)
     {
+        switch (falcorClass)
+        {
+        case VertexBufferLayout::InputClass::PerVertexData:
+            return VK_VERTEX_INPUT_RATE_VERTEX;
+        case VertexBufferLayout::InputClass::PerInstanceData:
+            return VK_VERTEX_INPUT_RATE_INSTANCE;
+        default:
+            should_not_get_here();
+            return VK_VERTEX_INPUT_RATE_VERTEX;
+        }
+    }
 
+    void initVkVertexLayoutInfo(const VertexLayout* pLayout, std::vector<VkVertexInputBindingDescription>& bindingDescs, std::vector<VkVertexInputAttributeDescription>& attribDescs, VkPipelineVertexInputStateCreateInfo& infoOut)
+    {
+        //
+        // Build Vertex input and binding info
+        //
+
+        bindingDescs.clear();
+        attribDescs.clear();
+
+        for (size_t vb = 0; vb < pLayout->getBufferCount(); vb++)
+        {
+            const auto& pVB = pLayout->getBufferLayout(vb);
+            if (pVB)
+            {
+                // Per buffer binding
+                VkVertexInputBindingDescription& bindingDesc = bindingDescs[vb];
+                bindingDesc.binding = (uint32_t)vb;
+                bindingDesc.stride = pVB->getStride();
+                bindingDesc.inputRate = getVkInputRate(pVB->getInputClass());
+                bindingDescs.push_back(bindingDesc);
+
+                for (uint32_t elemID = 0; elemID < pVB->getElementCount(); elemID++)
+                {
+                    // Per shader location specified
+                    VkVertexInputAttributeDescription& attribDesc = {};
+                    attribDesc.location = pVB->getElementShaderLocation(elemID);
+                    attribDesc.binding = (uint32_t)vb;
+                    attribDesc.format = getVkFormat(pVB->getElementFormat(elemID));
+                    attribDesc.offset = pVB->getElementOffset(elemID);
+
+                    for (uint32_t i = 0; i < pVB->getElementArraySize(elemID); i++)
+                    {
+                        attribDescs.push_back(attribDesc);
+                        attribDesc.offset += getFormatBytesPerBlock(pVB->getElementFormat(elemID));
+                    }
+                }
+            }
+        }
+
+        //
+        // Now put together the actual layout create info
+        //
+
+        infoOut = {};
+
+        infoOut.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+        infoOut.vertexBindingDescriptionCount = bindingDescs.size();
+        infoOut.pVertexBindingDescriptions = bindingDescs.data();
+        infoOut.vertexAttributeDescriptionCount = attribDescs.size();
+        infoOut.pVertexAttributeDescriptions = attribDescs.data();
     }
 
     VkFilter getVkFilter(Sampler::Filter filter)
