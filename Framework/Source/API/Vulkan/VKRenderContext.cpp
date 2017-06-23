@@ -196,6 +196,11 @@ namespace Falcor
     {
     }
 
+    void RenderContext::reset()
+    {
+
+    }
+
     void RenderContext::applyProgramVars() {}
     void RenderContext::applyGraphicsState() {}
 }

@@ -292,7 +292,7 @@ namespace Falcor
                 for (uint32_t elemID = 0; elemID < pVB->getElementCount(); elemID++)
                 {
                     // Per shader location specified
-                    VkVertexInputAttributeDescription& attribDesc = {};
+                    VkVertexInputAttributeDescription attribDesc = {};
                     attribDesc.location = pVB->getElementShaderLocation(elemID);
                     attribDesc.binding = (uint32_t)vb;
                     attribDesc.format = getVkFormat(pVB->getElementFormat(elemID));

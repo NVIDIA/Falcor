@@ -46,7 +46,7 @@ namespace Falcor
             const RootSignature::DescriptorSetLayout::Range& range = set.getRange(0);
             if (range.type == descType && range.regSpace == regSpace)
             {
-                if(range.baseRegIndex <= regIndex && (range.baseRegIndex + range.descCount) > regIndex)
+                if (range.baseRegIndex <= regIndex && (range.baseRegIndex + range.descCount) > regIndex)
                 {
                     return{ (uint32_t)i, regIndex - range.baseRegIndex };
                 }
@@ -62,13 +62,13 @@ namespace Falcor
         for (auto& buf : reflectionMap)
         {
             const ProgramReflection::BufferReflection* pReflector = buf.second.get();
-            if(pReflector->getShaderAccess() == shaderAccess)
+            if (pReflector->getShaderAccess() == shaderAccess)
             {
                 uint32_t regIndex = pReflector->getRegisterIndex();
                 uint32_t regSpace = pReflector->getRegisterSpace();
 
                 ProgramVars::ResourceData<ViewType> data;
-                
+
                 // Only create the buffer if needed
                 if (createBuffers)
                 {
@@ -107,7 +107,7 @@ namespace Falcor
         {
             const auto& desc = res.second;
             uint32_t count = desc.arraySize ? desc.arraySize : 1;
-            for( uint32_t index = 0; index < count; ++index )
+            for (uint32_t index = 0; index < count; ++index)
             {
                 uint32_t regIndex = desc.regIndex + index;
                 switch (desc.type)
@@ -226,7 +226,7 @@ namespace Falcor
         return setConstantBuffer(loc, pCB);
     }
 
-    void setResourceSrvUavCommon(uint32_t regIndex, ProgramReflection::ShaderAccess shaderAccess, const Resource::SharedPtr& resource, ProgramVars::ResourceMap<ShaderResourceView>& assignedSrvs, ProgramVars::ResourceMap<UnorderedAccessView>& assignedUavs, 
+    void setResourceSrvUavCommon(uint32_t regIndex, ProgramReflection::ShaderAccess shaderAccess, const Resource::SharedPtr& resource, ProgramVars::ResourceMap<ShaderResourceView>& assignedSrvs, ProgramVars::ResourceMap<UnorderedAccessView>& assignedUavs,
         std::vector<ProgramVars::RootSet>& rootSets)
     {
         switch (shaderAccess)
@@ -237,7 +237,7 @@ namespace Falcor
             assert(uavIt != assignedUavs.end());
             auto resUav = resource ? resource->getUAV() : nullptr;
 
-            if(uavIt->second.pView != resUav)
+            if (uavIt->second.pView != resUav)
             {
                 rootSets[uavIt->second.rootData.rootIndex].pDescSet = nullptr;
                 uavIt->second.pResource = resource;
@@ -253,7 +253,7 @@ namespace Falcor
 
             auto resSrv = resource ? resource->getSRV() : nullptr;
 
-            if(srvIt->second.pView != resSrv)
+            if (srvIt->second.pView != resSrv)
             {
                 rootSets[srvIt->second.rootData.rootIndex].pDescSet = nullptr;
                 srvIt->second.pResource = resource;
@@ -415,7 +415,7 @@ namespace Falcor
             logWarning("Structured buffer \"" + name + "\" was not found. Ignoring getStructuredBuffer() call.");
             return false;
         }
-        
+
         return getResourceFromSrvUavCommon<StructuredBuffer>(pBufDesc, mAssignedSrvs, mAssignedUavs, name, "getStructuredBuffer()");
     }
 
@@ -445,7 +445,7 @@ namespace Falcor
     bool ProgramVars::setSampler(uint32_t index, const Sampler::SharedPtr& pSampler)
     {
         auto& it = mAssignedSamplers.at(index);
-        if(it.pSampler != pSampler)
+        if (it.pSampler != pSampler)
         {
             it.pSampler = pSampler;
             mRootSets[it.rootData.rootIndex].pDescSet = nullptr;
@@ -555,7 +555,7 @@ namespace Falcor
         auto it = mAssignedSrvs.find(index);
         if (it != mAssignedSrvs.end())
         {
-            if(it->second.pView != pSrv)
+            if (it->second.pView != pSrv)
             {
                 mRootSets[it->second.rootData.rootIndex].pDescSet = nullptr;
                 it->second.pView = pSrv;
@@ -576,10 +576,10 @@ namespace Falcor
         auto it = mAssignedUavs.find(index);
         if (it != mAssignedUavs.end())
         {
-            if(it->second.pView != pUav)
+            if (it->second.pView != pUav)
             {
                 mRootSets[it->second.rootData.rootIndex].pDescSet = nullptr;
-                it->second.pView = pUav;                
+                it->second.pView = pUav;
                 it->second.pResource = getResourceFromView(pUav.get()); // TODO: Fix resource/view const-ness so we don't need to do this
             }
         }
@@ -598,7 +598,7 @@ namespace Falcor
         for (auto& samplerIt : samplers)
         {
             const auto& rootData = samplerIt.second.rootData;
-            if(rootSets[rootData.rootIndex].dirty)
+            if (rootSets[rootData.rootIndex].dirty)
             {
                 const Sampler* pSampler = samplerIt.second.pSampler.get();
                 if (pSampler == nullptr)
@@ -666,7 +666,7 @@ namespace Falcor
                 handle = isUav ? UnorderedAccessView::getNullView()->getApiHandle() : ShaderResourceView::getNullView()->getApiHandle();
             }
 
-            if(rootSets[rootData.rootIndex].dirty)
+            if (rootSets[rootData.rootIndex].dirty)
             {
 #ifdef FALCOR_D3D12
                 // Get the set and copy the GPU handle
@@ -685,8 +685,8 @@ namespace Falcor
     {
 #ifdef FALCOR_D3D12
         ID3D12GraphicsCommandList* pList = pContext->getLowLevelData()->getCommandList();
-        
-        if(bindRootSig)
+
+        if (bindRootSig)
         {
             if (forGraphics)
             {
@@ -704,7 +704,7 @@ namespace Falcor
             uint32_t rootIndex = bufIt.second.rootData.rootIndex;
             assert(bufIt.second.rootData.descIndex == 0);
             const ConstantBuffer* pCB = dynamic_cast<const ConstantBuffer*>(bufIt.second.pResource.get());
-            if(pCB->uploadToGPU() || bindRootSig)
+            if (pCB->uploadToGPU() || bindRootSig)
             {
                 if (forGraphics)
                 {

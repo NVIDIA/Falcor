@@ -126,16 +126,19 @@ namespace Falcor
         {
             const auto& set = mDesc.mSets[i];
             assert(set.getRangeCount() == 1);
+            uint32_t byteOffset;
             if (set.getRangeCount() == 1 && set.getRange(0).type == DescType::Cbv)
             {
                 convertCbvSet(set, rootParams[i]);
+                byteOffset = 8;
             }
             else
             {
                 convertDescTable(mDesc.mSets[i], rootParams[i], d3dRanges[i]);
+                byteOffset = 4;
             }
             mElementByteOffset[i] = mSizeInBytes;
-            mSizeInBytes += 4;
+            mSizeInBytes += byteOffset;
         }
 
         // Create the root signature

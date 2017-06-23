@@ -247,6 +247,7 @@ namespace Falcor
         }
 
         DescriptorSet::Layout layout;
+        layout.addRange(DescriptorSet::Type::Cbv, 0, 1);
         ApiHandle handle = DescriptorSet::create(gpDevice->getCpuDescriptorPool(), layout);
         gpDevice->getApiHandle()->CreateConstantBufferView(&desc, handle->getCpuHandle(0));
 

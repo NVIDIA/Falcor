@@ -37,6 +37,7 @@ namespace Falcor
     RenderTargetView::SharedPtr RenderTargetView::sNullView;
     UnorderedAccessView::SharedPtr UnorderedAccessView::sNullView;
     ShaderResourceView::SharedPtr ShaderResourceView::sNullView;
+    ConstantBufferView::SharedPtr ConstantBufferView::sNullView;
 
     VkImageViewType getViewType(Resource::Type type, bool isArray)
     {
@@ -211,6 +212,20 @@ namespace Falcor
     RenderTargetView::SharedPtr RenderTargetView::getNullView()
     {
         return create(ResourceWeakPtr(), 0, 0, 0);
+    }
+
+    ConstantBufferView::SharedPtr ConstantBufferView::create(ResourceWeakPtr pResource)
+    {
+        return nullptr;
+    }
+
+    ConstantBufferView::SharedPtr ConstantBufferView::getNullView()
+    {
+        if (!sNullView)
+        {
+            create(ResourceWeakPtr());
+        }
+        return sNullView;
     }
 }
 

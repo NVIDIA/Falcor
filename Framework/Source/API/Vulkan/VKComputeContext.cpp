@@ -62,7 +62,7 @@ namespace Falcor
         // Bind the root signature and the root signature data
         if (mpComputeVars)
         {
-            mpComputeVars->apply(const_cast<ComputeContext*>(this));
+            mpComputeVars->apply(const_cast<ComputeContext*>(this), mBindComputeRootSig);
         }
         else
         {
@@ -150,6 +150,11 @@ namespace Falcor
         resourceBarrier(argBuffer, Resource::State::IndirectArg);
 
         // Code
+    }
+
+    void ComputeContext::reset()
+    {
+
     }
 
     void ComputeContext::applyComputeVars() {}

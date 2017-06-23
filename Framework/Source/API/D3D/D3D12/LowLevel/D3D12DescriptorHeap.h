@@ -43,7 +43,8 @@ namespace Falcor
         static const uint32_t kDescPerChunk = 64;
 
         static SharedPtr create(D3D12_DESCRIPTOR_HEAP_TYPE type, uint32_t descCount, bool shaderVisible = true);
-
+        GpuHandle getBaseGpuHandle() const { return mGpuHeapStart; }
+        CpuHandle getBaseCpuHandle() const { return mCpuHeapStart; }
     private:
         struct Chunk;
 

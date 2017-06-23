@@ -71,7 +71,7 @@ namespace Falcor
         if (mExtentsDirty)
         {
             mExtentsDirty = false;
- 
+
             mRadius = 0.f;
             float k = 0.f;
             mCenter = vec3(0, 0, 0);
@@ -86,7 +86,7 @@ namespace Falcor
                     const vec3 instC = vec3(vec4(c, 1.f) * inst->getTransformMatrix());
                     const vec3 scaling = inst->getScaling();
                     const float instR = r * max(scaling.x, max(scaling.y, scaling.z));
- 
+
                     if (k == 0.f)
                     {
                         mCenter = instC;
@@ -99,14 +99,14 @@ namespace Falcor
                             dir = normalize(dir);
                         vec3 a = mCenter - dir * mRadius;
                         vec3 b = instC + dir * instR;
- 
+
                         mCenter = (a + b) * 0.5f;
                         mRadius = length(a - b);
                     }
                     k++;
                 }
             }
- 
+
             // Update light extents
             for (auto& light : mpLights)
             {
@@ -133,7 +133,7 @@ namespace Falcor
         mExtentsDirty = mExtentsDirty || changed;
 
         // Ignore the elapsed time we got from the user. This will allow camera movement in cases where the time is frozen
-        if(cameraController)
+        if (cameraController)
         {
             cameraController->attachCamera(getActiveCamera());
             cameraController->setCameraSpeed(getCameraSpeed());
@@ -198,27 +198,27 @@ namespace Falcor
         // Delete instance
         auto& instances = mModels[modelID];
 
-		//	Check if there is only one instance left.
-		if (instances.size() == 1)
-		{
-			//	Delete the entire model, since it will also erase the corresponding instance.
+        //  Check if there is only one instance left.
+        if (instances.size() == 1)
+        {
+            //  Delete the entire model, since it will also erase the corresponding instance.
             assert(instanceID == 0);
-			deleteModel(modelID);
-		}
-		else
-		{
-			//	Erase the instance.
-	        instances.erase(instances.begin() + instanceID);
-		}
-		
-		//	Extents will be dirty in either case.
-		mExtentsDirty = true;
+            deleteModel(modelID);
+        }
+        else
+        {
+            //  Erase the instance.
+            instances.erase(instances.begin() + instanceID);
+        }
+
+        //  Extents will be dirty in either case.
+        mExtentsDirty = true;
     }
 
     const Scene::UserVariable& Scene::getUserVariable(const std::string& name)
     {
         const auto& a = mUserVars.find(name);
-        if(a == mUserVars.end())
+        if (a == mUserVars.end())
         {
             logWarning("Can't find user variable " + name + " in scene.");
             return kInvalidVar;
@@ -231,9 +231,9 @@ namespace Falcor
 
     const Scene::UserVariable& Scene::getUserVariable(uint32_t varID, std::string& varName) const
     {
-        for(const auto& a : mUserVars)
+        for (const auto& a : mUserVars)
         {
-            if(varID == 0)
+            if (varID == 0)
             {
                 varName = a.first;
                 return a.second;
@@ -275,9 +275,9 @@ namespace Falcor
     }
 
     uint32_t Scene::addPath(const ObjectPath::SharedPtr& pPath)
-    { 
-        mpPaths.push_back(pPath); 
-        return (uint32_t)mpPaths.size() - 1; 
+    {
+        mpPaths.push_back(pPath);
+        return (uint32_t)mpPaths.size() - 1;
     }
 
     void Scene::deletePath(uint32_t pathID)
@@ -287,7 +287,7 @@ namespace Falcor
 
     uint32_t Scene::addCamera(const Camera::SharedPtr& pCamera)
     {
-        mCameras.push_back(pCamera); 
+        mCameras.push_back(pCamera);
         return (uint32_t)mCameras.size() - 1;
     }
 
@@ -295,7 +295,7 @@ namespace Falcor
     {
         mCameras.erase(mCameras.begin() + cameraID);
 
-        if(cameraID == mActiveCameraID)
+        if (cameraID == mActiveCameraID)
         {
             mActiveCameraID = 0;
         }

@@ -85,11 +85,12 @@ private:
     void shadowPass();
     void ambientOcclusion();
 
-    void initSkyBox();
+    void initSkyBox(const std::string& name);
     void initPostProcess();
     void initLightingPass();
     void initShadowPass();
     void initSSAO();
+    void initEnvMap(const std::string& name);
 
     void initControls();
     
@@ -99,8 +100,11 @@ private:
     void loadScene(const std::string& filename, bool showProgressBar);
     void initScene(Scene::SharedPtr pScene);
     void setActiveCameraAspectRatio();
+    void setSceneSampler(uint32_t maxAniso);
 
     uint32_t mSampleCount = 4;
+    Texture::SharedPtr mpEnvMap;
+    Sampler::SharedPtr mpSceneSampler;
 
     struct ProgramControl
     {
@@ -129,4 +133,5 @@ private:
 
     //Testing 
     void onInitializeTesting() override;
+    void onBeginTestFrame() override;
 };

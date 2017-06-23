@@ -201,6 +201,15 @@ namespace Falcor
         return CascadedShadowMaps::UniquePtr(pCsm);
     }
 
+    void CascadedShadowMaps::setSdsmReadbackLatency(uint32_t latency)
+    {
+        if(mSdsmData.readbackLatency != latency)
+        {
+            mSdsmData.readbackLatency = latency;
+            createSdsmData(nullptr);
+        }
+    }
+
     void CascadedShadowMaps::createSdsmData(Texture::SharedPtr pTexture)
     {
         // Check if we actually need to create it

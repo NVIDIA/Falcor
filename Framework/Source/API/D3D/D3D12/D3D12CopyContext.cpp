@@ -118,8 +118,8 @@ namespace Falcor
 
         mCommandsPending = true;
         // Allocate a buffer on the upload heap
-        Buffer::SharedPtr pUploadBuffer = Buffer::create(size, Buffer::BindFlags::None, Buffer::CpuAccess::Write, nullptr);
-        pUploadBuffer->updateData(pData, offset, size);
+        uint8_t* pInitData = (uint8_t*)pData + offset;
+        Buffer::SharedPtr pUploadBuffer = Buffer::create(size, Buffer::BindFlags::None, Buffer::CpuAccess::Write, pInitData);
         ID3D12ResourcePtr pResource = pUploadBuffer->getApiHandle();
 
         resourceBarrier(pBuffer, Resource::State::CopyDest);
@@ -243,6 +243,10 @@ namespace Falcor
 
     void CopyContext::resourceBarrier(const Resource* pResource, Resource::State newState)
     {
+        // If the resource is a buffer with CPU access, no need to do anything
+        const Buffer* pBuffer = dynamic_cast<const Buffer*>(pResource);
+        if (pBuffer && pBuffer->getCpuAccess() != Buffer::CpuAccess::None) return;
+
         if (pResource->getState() != newState)
         {
             D3D12_RESOURCE_BARRIER barrier;

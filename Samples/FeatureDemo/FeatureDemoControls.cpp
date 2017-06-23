@@ -68,6 +68,7 @@ void FeatureDemo::applyLightingProgramControl(ControlID controlId)
 
 void FeatureDemo::onGuiRender()
 {
+    static const char* kImageFileString = "Image files\0*.jpg;*.bmp;*.dds;*.png;*.tiff;*.tif;*.tga\0\0";
     if (mpGui->addButton("Load Model"))
     {
         std::string filename;
@@ -93,10 +94,26 @@ void FeatureDemo::onGuiRender()
             onResizeSwapChain();
         }
 
+        uint32_t maxAniso = mpSceneSampler->getMaxAnisotropy();
+        if (mpGui->addIntVar("Max Anisotropy", (int&)maxAniso, 1, 16))
+        {
+            setSceneSampler(maxAniso);
+        }
+
+        if (mpGui->addButton("Load SkyBox Texture"))
+        {
+            std::string filename;
+            if (openFileDialog(kImageFileString, filename))
+            {
+                initSkyBox(filename);
+            }
+        }
+
         if (mpGui->addCheckBox("Super Sampling", mControls[ControlID::SuperSampling].enabled))
         {
             applyLightingProgramControl(ControlID::SuperSampling);
         }
+
 
         bool saaEnabled = !mControls[ControlID::DisableSpecAA].enabled;
         if (mpGui->addCheckBox("Specular AA", saaEnabled))
@@ -108,6 +125,15 @@ void FeatureDemo::onGuiRender()
         if (mpGui->addCheckBox("Reflections", mControls[ControlID::EnableReflections].enabled))
         {
             applyLightingProgramControl(ControlID::EnableReflections);
+        }
+
+        if (mpGui->addButton("Load Reflection Texture"))
+        {
+            std::string filename;
+            if (openFileDialog(kImageFileString, filename))
+            {
+                initEnvMap(filename);
+            }
         }
 
         const Scene* pScene = mpSceneRenderer->getScene();
