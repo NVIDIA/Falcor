@@ -605,13 +605,14 @@ namespace Falcor
                 {
                     pSampler = Sampler::getDefault().get();
                 }
-
+#ifdef FALCOR_D3D12
                 // Allocate a GPU descriptor
                 const auto& pDescSet = rootSets[rootData.rootIndex].pDescSet;
                 assert(pDescSet);
                 auto srcHandle = pSampler->getApiHandle()->getCpuHandle(0);
                 auto dstHandle = pDescSet->getCpuHandle(0, rootData.descIndex);
                 gpDevice->getApiHandle()->CopyDescriptorsSimple(1, dstHandle, srcHandle, D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
+#endif
             }
         }
     }
@@ -667,12 +668,14 @@ namespace Falcor
 
             if(rootSets[rootData.rootIndex].dirty)
             {
+#ifdef FALCOR_D3D12
                 // Get the set and copy the GPU handle
                 const auto& pDescSet = rootSets[rootData.rootIndex].pDescSet;
                 assert(pDescSet);
                 auto srcHandle = handle->getCpuHandle(0);
                 auto dstHandle = pDescSet->getCpuHandle(0, rootData.descIndex);
                 gpDevice->getApiHandle()->CopyDescriptorsSimple(1, dstHandle, srcHandle, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+#endif
             }
         }
     }
@@ -680,6 +683,7 @@ namespace Falcor
     template<bool forGraphics>
     void applyProgramVarsCommon(const ProgramVars* pVars, CopyContext* pContext, bool bindRootSig)
     {
+#ifdef FALCOR_D3D12
         ID3D12GraphicsCommandList* pList = pContext->getLowLevelData()->getCommandList();
         
         if(bindRootSig)
@@ -756,6 +760,7 @@ namespace Falcor
                 }
             }
         }
+#endif
     }
 
     void ComputeVars::apply(ComputeContext* pContext, bool bindRootSig) const
