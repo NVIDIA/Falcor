@@ -138,6 +138,10 @@ namespace Falcor
             return true;
         }
 
+        /** Get the CPU access flags
+        */
+        CpuAccess getCpuAccess() const { return mCpuAccess; }
+
     protected:
         bool init(const void* pInitData);
         Buffer(size_t size, BindFlags bind, CpuAccess update) : Resource(Type::Buffer, bind), mSize(size), mCpuAccess(update){}

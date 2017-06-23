@@ -169,7 +169,6 @@ void FeatureDemo::onLoad()
     initSkyBox("LightProbes\\10-Shiodome_Stairs_3k.dds");
     initEnvMap("LightProbes\\10-Shiodome_Stairs_3k.dds");
     initPostProcess();
-
     initializeTesting();
 }
 
