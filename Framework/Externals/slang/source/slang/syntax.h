@@ -632,7 +632,7 @@ namespace Slang
     class Decl : public DeclBase
     {
     public:
-        ContainerDecl*  ParentDecl = nullptr;
+        ContainerDecl*  ParentDecl;
 
         Token Name;
         String const& getName() { return Name.Content; }
@@ -1883,16 +1883,12 @@ namespace Slang
         bool isOverloaded() const { return items.Count() > 1; }
     };
 
-    class SemanticsVisitor;
-
     struct LookupRequest
     {
-        SemanticsVisitor*   semantics   = nullptr;
+        RefPtr<Scope>   scope       = nullptr;
+        RefPtr<Scope>   endScope    = nullptr;
 
-        RefPtr<Scope>       scope       = nullptr;
-        RefPtr<Scope>       endScope    = nullptr;
-
-        LookupMask          mask        = LookupMask::All;
+        LookupMask      mask        = LookupMask::All;
     };
 
     // An expression that references an overloaded set of declarations

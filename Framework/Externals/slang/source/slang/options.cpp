@@ -520,7 +520,7 @@ struct OptionsParser
             // Now place all those entry points where they belong
             for( auto& entryPoint : rawEntryPoints )
             {
-                spAddEntryPoint(
+                spAddTranslationUnitEntryPoint(
                     compileRequest,
                     entryPoint.translationUnitIndex,
                     entryPoint.name.begin(),

@@ -25,7 +25,22 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
+#include "Helpers.h"
 
-#include "HostDeviceSharedMacros.h"
+#ifdef _SPHERICAL_MAP
+Texture2D gTexture;
+#else
+TextureCube gTexture;
+#endif
+SamplerState gSampler;
 
-#include "HostDeviceSharedCode.h"
+float4 main(float3 dir : NORMAL) : SV_TARGET
+{
+#ifdef _SPHERICAL_MAP
+    float2 uv = dirToSphericalCrd(dir) ;
+    float4 color = gTexture.Sample(gSampler, uv);
+    return color;
+#else
+	return gTexture.Sample(gSampler, normalize(dir), 0);
+#endif
+}

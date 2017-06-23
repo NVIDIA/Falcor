@@ -79,50 +79,66 @@ public:
         ExpressionType::Finalize();
     }
 
+    CompileUnit createPredefUnit()
+    {
+        CompileUnit translationUnit;
+
+
+        RefPtr<ProgramSyntaxNode> translationUnitSyntax = new ProgramSyntaxNode();
+
+        TranslationUnitOptions translationUnitOptions;
+        translationUnit.options = translationUnitOptions;
+        translationUnit.SyntaxNode = translationUnitSyntax;
+
+        return translationUnit;
+    }
+
     void addBuiltinSource(
         RefPtr<Scope> const&    scope,
         String const&           path,
         String const&           source);
 };
 
-struct IncludeHandlerImpl : IncludeHandler
+struct CompileRequest
 {
-    CompileRequest* request;
+    // Pointer to parent session
+    Session* mSession;
 
-    virtual IncludeResult TryToFindIncludeFile(
-        String const& pathToInclude,
-        String const& pathIncludedFrom,
-        String* outFoundPath,
-        String* outFoundSource) override
+    // Input options
+    CompileOptions Options;
+
+    // Output stuff
+    DiagnosticSink mSink;
+    String mDiagnosticOutput;
+
+    RefPtr<CollectionOfTranslationUnits> mCollectionOfTranslationUnits;
+
+    RefPtr<ProgramLayout> mReflectionData;
+
+    CompileResult mResult;
+
+    List<String> mDependencyFilePaths;
+
+    CompileRequest(Session* session)
+        : mSession(session)
+    {}
+
+    ~CompileRequest()
+    {}
+
+    struct IncludeHandlerImpl : IncludeHandler
     {
-        String path = Path::Combine(Path::GetDirectoryName(pathIncludedFrom), pathToInclude);
-        if (File::Exists(path))
+        CompileRequest* request;
+
+        List<SearchDirectory> searchDirs;
+
+        virtual IncludeResult TryToFindIncludeFile(
+            String const& pathToInclude,
+            String const& pathIncludedFrom,
+            String* outFoundPath,
+            String* outFoundSource) override
         {
-            *outFoundPath = path;
-            *outFoundSource = File::ReadAllText(path);
-
-            request->mDependencyFilePaths.Add(path);
-
-            // HACK(tfoley): We might have found the file in the same directory,
-            // but what if this is also inside an auto-import path?
-            for (auto & dir : request->searchDirectories)
-            {
-                // Only consider auto-import paths
-                if(dir.kind != SearchDirectory::Kind::AutoImport)
-                    continue;
-
-                String otherPath = Path::Combine(dir.path, pathToInclude);
-
-                if(otherPath == path)
-                    return IncludeResult::FoundAutoImportFile;
-            }
-
-            return IncludeResult::FoundIncludeFile;
-        }
-
-        for (auto & dir : request->searchDirectories)
-        {
-            path = Path::Combine(dir.path, pathToInclude);
+            String path = Path::Combine(Path::GetDirectoryName(pathIncludedFrom), pathToInclude);
             if (File::Exists(path))
             {
                 *outFoundPath = path;
@@ -130,381 +146,464 @@ struct IncludeHandlerImpl : IncludeHandler
 
                 request->mDependencyFilePaths.Add(path);
 
-                switch( dir.kind )
+                // HACK(tfoley): We might have found the file in the same directory,
+                // but what if this is also inside an auto-import path?
+                for (auto & dir : searchDirs)
                 {
-                case SearchDirectory::Kind::Default:
-                    return IncludeResult::FoundIncludeFile;
+                    // Only consider auto-import paths
+                    if(dir.kind != SearchDirectory::Kind::AutoImport)
+                        continue;
 
-                case SearchDirectory::Kind::AutoImport:
-                    return IncludeResult::FoundAutoImportFile;
+                    String otherPath = Path::Combine(dir.path, pathToInclude);
+
+                    if(otherPath == path)
+                        return IncludeResult::FoundAutoImportFile;
+                }
+
+                return IncludeResult::FoundIncludeFile;
+            }
+
+            for (auto & dir : searchDirs)
+            {
+                path = Path::Combine(dir.path, pathToInclude);
+                if (File::Exists(path))
+                {
+                    *outFoundPath = path;
+                    *outFoundSource = File::ReadAllText(path);
+
+                    request->mDependencyFilePaths.Add(path);
+
+                    switch( dir.kind )
+                    {
+                    case SearchDirectory::Kind::Default:
+                        return IncludeResult::FoundIncludeFile;
+
+                    case SearchDirectory::Kind::AutoImport:
+                        return IncludeResult::FoundAutoImportFile;
+                    }
                 }
             }
+            return IncludeResult::NotFound;
         }
-        return IncludeResult::NotFound;
-    }
-};
+    };
 
 
-void CompileRequest::parseTranslationUnit(
-    TranslationUnitRequest* translationUnit)
-{
-    IncludeHandlerImpl includeHandler;
-    includeHandler.request = this;
-
-    RefPtr<Scope> languageScope;
-    switch (translationUnit->sourceLanguage)
+    CompileUnit parseTranslationUnit(
+        TranslationUnitOptions const&   translationUnitOptions,
+        CompileOptions&                 options)
     {
-    case SourceLanguage::HLSL:
-        languageScope = mSession->hlslLanguageScope;
-        break;
+        IncludeHandlerImpl includeHandler;
+        includeHandler.request = this;
 
-    case SourceLanguage::GLSL:
-        languageScope = mSession->glslLanguageScope;
-        break;
+        CompileUnit translationUnit;
 
-    case SourceLanguage::Slang:
-    default:
-        languageScope = mSession->slangLanguageScope;
-        break;
-    }
-
-    Dictionary<String, String> combinedPreprocessorDefinitions;
-    for(auto& def : preprocessorDefinitions)
-        combinedPreprocessorDefinitions.Add(def.Key, def.Value);
-    for(auto& def : translationUnit->preprocessorDefinitions)
-        combinedPreprocessorDefinitions.Add(def.Key, def.Value);
-
-    RefPtr<ProgramSyntaxNode> translationUnitSyntax = new ProgramSyntaxNode();
-    translationUnit->SyntaxNode = translationUnitSyntax;
-
-    for (auto sourceFile : translationUnit->sourceFiles)
-    {
-        auto sourceFilePath = sourceFile->path;
-        String source = sourceFile->content;
-
-        auto tokens = preprocessSource(
-            source,
-            sourceFilePath,
-            &mSink,
-            &includeHandler,
-            combinedPreprocessorDefinitions,
-            translationUnitSyntax.Ptr(),
-            this);
-
-        parseSourceFile(
-            translationUnit,
-            tokens,
-            &mSink,
-            sourceFilePath,
-            languageScope);
-    }
-}
-
-void CompileRequest::checkTranslationUnit(
-    TranslationUnitRequest* translationUnit)
-{
-    RefPtr<SyntaxVisitor> visitor = CreateSemanticsVisitor(
-        &mSink,
-        this,
-        translationUnit);
-
-    visitor->setSourceLanguage(translationUnit->sourceLanguage);
-    translationUnit->SyntaxNode->Accept(visitor.Ptr());
-}
-
-void CompileRequest::checkAllTranslationUnits()
-{
-    for( auto& translationUnit : translationUnits )
-    {
-        checkTranslationUnit(translationUnit.Ptr());
-    }
-}
-
-int CompileRequest::executeActionsInner()
-{
-    // Do some cleanup on settings specified by user.
-    // In particular, we want to propagate flags from the overall request down to
-    // each translation unit.
-    for( auto& translationUnit : translationUnits )
-    {
-        translationUnit->compileFlags |= compileFlags;
-
-        // However, the "no checking" flag shouldn't be applied to
-        // any translation unit that is native Slang code.
-        if( translationUnit->sourceLanguage == SourceLanguage::Slang )
+        RefPtr<Scope> languageScope;
+        switch (translationUnitOptions.sourceLanguage)
         {
-            translationUnit->compileFlags &= ~SLANG_COMPILE_FLAG_NO_CHECKING;
+        case SourceLanguage::HLSL:
+            languageScope = mSession->hlslLanguageScope;
+            break;
+
+        case SourceLanguage::GLSL:
+            languageScope = mSession->glslLanguageScope;
+            break;
+
+        case SourceLanguage::Slang:
+        default:
+            languageScope = mSession->slangLanguageScope;
+            break;
         }
-    }
 
-#if 0
-    // If we are being asked to do pass-through, then we need to do that here...
-    if (passThrough != PassThroughMode::None)
-    {
-        for (auto& translationUnitOptions : Options.translationUnits)
+        Dictionary<String, String> preprocessorDefinitions;
+        for(auto& def : options.preprocessorDefinitions)
+            preprocessorDefinitions.Add(def.Key, def.Value);
+        for(auto& def : translationUnitOptions.preprocessorDefinitions)
+            preprocessorDefinitions.Add(def.Key, def.Value);
+
+        RefPtr<ProgramSyntaxNode> translationUnitSyntax = new ProgramSyntaxNode();
+
+        for (auto sourceFile : translationUnitOptions.sourceFiles)
         {
-            switch (translationUnitOptions.sourceLanguage)
-            {
-                // We can pass-through code written in a native shading language
-            case SourceLanguage::GLSL:
-            case SourceLanguage::HLSL:
-                break;
-
-                // All other translation units need to be skipped
-            default:
-                continue;
-            }
-
-            auto sourceFile = translationUnitOptions.sourceFiles[0];
             auto sourceFilePath = sourceFile->path;
+
+            auto searchDirs = options.searchDirectories;
+            searchDirs.Reverse();
+            searchDirs.Add(SearchDirectory(Path::GetDirectoryName(sourceFilePath), SearchDirectory::Kind::Default));
+            searchDirs.Reverse();
+            includeHandler.searchDirs = searchDirs;
+
             String source = sourceFile->content;
 
-            auto translationUnitResult = passThrough(
+            auto tokens = preprocessSource(
                 source,
                 sourceFilePath,
-                Options,
-                translationUnitOptions);
+                mResult.GetErrorWriter(),
+                &includeHandler,
+                preprocessorDefinitions,
+                translationUnitSyntax.Ptr(),
+                this);
 
-            mResult.translationUnits.Add(translationUnitResult);
+            parseSourceFile(
+                translationUnitSyntax.Ptr(),
+                options,
+                translationUnitOptions,
+                tokens,
+                mResult.GetErrorWriter(),
+                sourceFilePath,
+                languageScope);
         }
-        return 0;
+
+        translationUnit.options = translationUnitOptions;
+        translationUnit.SyntaxNode = translationUnitSyntax;
+
+        return translationUnit;
     }
-#endif
 
-    // We only do parsing and semantic checking if we *aren't* doing
-    // a pass-through compilation.
-    //
-    // Note that we *do* perform output generation as normal in pass-through mode.
-    if( passThrough == PassThroughMode::None )
+    CompileUnit parseTranslationUnit(
+        TranslationUnitOptions const&   translationUnitOptions)
     {
-        // Parse everything from the input files requested
-        for (auto& translationUnit : translationUnits)
+        return parseTranslationUnit(translationUnitOptions, Options);
+    }
+
+    void checkTranslationUnit(
+        CompileUnit&            translationUnit,
+        RefPtr<SyntaxVisitor>   visitor)
+    {
+        visitor->setSourceLanguage(translationUnit.options.sourceLanguage);
+        translationUnit.SyntaxNode->Accept(visitor.Ptr());
+    }
+
+    void checkTranslationUnit(
+        CompileUnit&    translationUnit,
+        CompileOptions& options)
+    {
+        RefPtr<SyntaxVisitor> visitor = CreateSemanticsVisitor(
+            mResult.GetErrorWriter(),
+            options,
+            translationUnit.options,
+            this);
+
+        checkTranslationUnit(translationUnit, visitor);
+    }
+
+    void checkCollectionOfTranslationUnits(
+        RefPtr<CollectionOfTranslationUnits>    collectionOfTranslationUnits)
+    {
+        for( auto& translationUnit : collectionOfTranslationUnits->translationUnits )
         {
-            parseTranslationUnit(translationUnit.Ptr());
+            checkTranslationUnit(translationUnit, Options);
         }
-        if (mSink.GetErrorCount() != 0)
+    }
+
+    void generateOutputForCollectionOfTranslationUnits(
+        RefPtr<CollectionOfTranslationUnits>    collectionOfTranslationUnits)
+    {
+        // Do binding generation, and then reflection (globally)
+        // before we move on to any code-generation activites.
+        GenerateParameterBindings(collectionOfTranslationUnits.Ptr());
+
+
+        // HACK(tfoley): for right now I just want to pretty-print an AST
+        // into another language, so the whole compiler back-end is just
+        // getting in the way.
+        //
+        // I'm going to bypass it for now and see what I can do:
+
+        ExtraContext extra;
+        extra.options = &Options;
+        extra.programLayout = collectionOfTranslationUnits->layout.Ptr();
+        extra.compileResult = &mResult;
+
+        generateOutput(extra, collectionOfTranslationUnits.Ptr());
+    }
+
+    int executeCompilerDriverActions()
+    {
+        // Do some cleanup on settings specified by user.
+        // In particular, we want to propagate flags from the overall request down to
+        // each translation unit.
+        for( auto& translationUnitOptions : Options.translationUnits )
+        {
+            translationUnitOptions.compileFlags |= Options.compileFlags;
+
+            // However, the "no checking" flag shouldn't be applied to
+            // any translation unit that is native Slang code.
+            if( translationUnitOptions.sourceLanguage == SourceLanguage::Slang )
+            {
+                translationUnitOptions.compileFlags &= SLANG_COMPILE_FLAG_NO_CHECKING;
+            }
+        }
+
+        // If we are being asked to do pass-through, then we need to do that here...
+        if (Options.passThrough != PassThroughMode::None)
+        {
+            for (auto& translationUnitOptions : Options.translationUnits)
+            {
+                switch (translationUnitOptions.sourceLanguage)
+                {
+                    // We can pass-through code written in a native shading language
+                case SourceLanguage::GLSL:
+                case SourceLanguage::HLSL:
+                    break;
+
+                    // All other translation units need to be skipped
+                default:
+                    continue;
+                }
+
+                auto sourceFile = translationUnitOptions.sourceFiles[0];
+                auto sourceFilePath = sourceFile->path;
+                String source = sourceFile->content;
+
+                auto translationUnitResult = passThrough(
+                    source,
+                    sourceFilePath,
+                    Options,
+                    translationUnitOptions);
+
+                mResult.translationUnits.Add(translationUnitResult);
+            }
+            return 0;
+        }
+
+        // TODO: load the stdlib
+
+        mCollectionOfTranslationUnits = new CollectionOfTranslationUnits();
+
+        // Parse everything from the input files requested
+        //
+        // TODO: this may trigger the loading and/or compilation of additional modules.
+        for (auto& translationUnitOptions : Options.translationUnits)
+        {
+            auto translationUnit = parseTranslationUnit(translationUnitOptions);
+            mCollectionOfTranslationUnits->translationUnits.Add(translationUnit);
+        }
+        if (mResult.GetErrorCount() != 0)
             return 1;
 
         // Perform semantic checking on the whole collection
-        checkAllTranslationUnits();
-        if (mSink.GetErrorCount() != 0)
+        checkCollectionOfTranslationUnits(mCollectionOfTranslationUnits);
+        if (mResult.GetErrorCount() != 0)
             return 1;
 
-        // Now do shader parameter binding generation, which
-        // needs to be performed globally.
-        generateParameterBindings(this);
-        if (mSink.GetErrorCount() != 0)
+        // Generate output code, in whatever format was requested
+        generateOutputForCollectionOfTranslationUnits(mCollectionOfTranslationUnits);
+        if (mResult.GetErrorCount() != 0)
             return 1;
+
+        // Extract the reflection layout information so that users
+        // can easily query it.
+        mReflectionData = mCollectionOfTranslationUnits->layout;
+
+        return 0;
     }
 
-    // Generate output code, in whatever format was requested
-    generateOutput(this);
-    if (mSink.GetErrorCount() != 0)
-        return 1;
-
-    return 0;
-}
-
-// Act as expected of the API-based compiler
-int CompileRequest::executeActions()
-{
-    int err = executeActionsInner();
-
-    mDiagnosticOutput = mSink.outputBuffer.ProduceString();
-
-    return err;
-}
-
-int CompileRequest::addTranslationUnit(SourceLanguage language, String const& name)
-{
-    int result = translationUnits.Count();
-
-    RefPtr<TranslationUnitRequest> translationUnit = new TranslationUnitRequest();
-    translationUnit->compileRequest = this;
-    translationUnit->sourceLanguage = SourceLanguage(language);
-
-    translationUnits.Add(translationUnit);
-
-    return result;
-}
-
-void CompileRequest::addTranslationUnitSourceString(
-    int             translationUnitIndex,
-    String const&   path,
-    String const&   source)
-{
-    RefPtr<SourceFile> sourceFile = new SourceFile();
-    sourceFile->path = path;
-    sourceFile->content = source;
-
-    translationUnits[translationUnitIndex]->sourceFiles.Add(sourceFile);
-}
-
-void CompileRequest::addTranslationUnitSourceFile(
-    int             translationUnitIndex,
-    String const&   path)
-{
-    String source;
-    try
+    // Act as expected of the API-based compiler
+    int executeAPIActions()
     {
-        source = File::ReadAllText(path);
+        mResult.mSink = &mSink;
+
+        int err = executeCompilerDriverActions();
+
+        mDiagnosticOutput = mSink.outputBuffer.ProduceString();
+
+        if (mSink.GetErrorCount() != 0)
+            return mSink.GetErrorCount();
+
+        return err;
     }
-    catch (...)
+
+    int addTranslationUnit(SourceLanguage language, String const& name)
     {
-        // Emit a diagnostic!
-        mSink.diagnose(
-            CodePosition(0, 0, 0, path),
-            Diagnostics::cannotOpenFile,
-            path);
-        return;
+        int result = Options.translationUnits.Count();
+
+        TranslationUnitOptions translationUnit;
+        translationUnit.sourceLanguage = SourceLanguage(language);
+
+        Options.translationUnits.Add(translationUnit);
+
+        return result;
     }
 
-    addTranslationUnitSourceString(
-        translationUnitIndex,
-        path,
-        source);
+    void addTranslationUnitSourceString(
+        int             translationUnitIndex,
+        String const&   path,
+        String const&   source)
+    {
+        RefPtr<SourceFile> sourceFile = new SourceFile();
+        sourceFile->path = path;
+        sourceFile->content = source;
 
-    mDependencyFilePaths.Add(path);
-}
+        Options.translationUnits[translationUnitIndex].sourceFiles.Add(sourceFile);
+    }
 
-int CompileRequest::addEntryPoint(
-    int                     translationUnitIndex,
-    String const&           name,
-    Profile                 profile)
-{
-    RefPtr<EntryPointRequest> entryPoint = new EntryPointRequest();
-    entryPoint->compileRequest = this;
-    entryPoint->name = name;
-    entryPoint->profile = profile;
-    entryPoint->translationUnitIndex = translationUnitIndex;
+    void addTranslationUnitSourceFile(
+        int             translationUnitIndex,
+        String const&   path)
+    {
+        String source;
+        try
+        {
+            source = File::ReadAllText(path);
+        }
+        catch (...)
+        {
+            // Emit a diagnostic!
+            mSink.diagnose(
+                CodePosition(0, 0, 0, path),
+                Diagnostics::cannotOpenFile,
+                path);
+            return;
+        }
 
-    auto translationUnit = translationUnits[translationUnitIndex].Ptr();
-    translationUnit->entryPoints.Add(entryPoint);
+        addTranslationUnitSourceString(
+            translationUnitIndex,
+            path,
+            source);
 
-    int result = entryPoints.Count();
-    entryPoints.Add(entryPoint);
-    return result;
-}
+        mDependencyFilePaths.Add(path);
+    }
 
-RefPtr<ProgramSyntaxNode> CompileRequest::loadModule(
-    String const&       name,
-    String const&       path,
-    String const&       source,
-    CodePosition const& loc)
-{
-    RefPtr<TranslationUnitRequest> translationUnit = new TranslationUnitRequest();
-    translationUnit->compileRequest = this;
+    int addTranslationUnitEntryPoint(
+        int                     translationUnitIndex,
+        String const&           name,
+        Profile                 profile)
+    {
+        EntryPointOption entryPoint;
+        entryPoint.name = name;
+        entryPoint.profile = profile;
 
-    // We don't want to use the same options that the user specified
-    // for loading modules on-demand. In particular, we always want
-    // semantic checking to be enabled.
-    //
-    // TODO: decide which options, if any, should be inherited.
+        // TODO: realistically want this to be global across all TUs...
+        int result = Options.translationUnits[translationUnitIndex].entryPoints.Count();
 
-    RefPtr<SourceFile> sourceFile = new SourceFile();
-    sourceFile->path = path;
-    sourceFile->content = source;
+        Options.translationUnits[translationUnitIndex].entryPoints.Add(entryPoint);
+        return result;
+    }
 
-    translationUnit->sourceFiles.Add(sourceFile);
+    Dictionary<String, RefPtr<ProgramSyntaxNode>> loadedModules;
 
-    parseTranslationUnit(translationUnit.Ptr());
+    RefPtr<ProgramSyntaxNode> loadModule(
+        String const&       name,
+        String const&       path,
+        String const&       source,
+        CodePosition const& loc)
+    {
+        // now we need to try compiling it, etc.
 
-    // TODO: handle errors
+        // We don't want to use the same options that the user specified
+        // for loading modules on-demand. In particular, we always want
+        // semantic checking to be enabled.
+        CompileOptions moduleOptions;
+        moduleOptions.searchDirectories = Options.searchDirectories;
+        moduleOptions.profile = Options.profile;
 
-    checkTranslationUnit(translationUnit.Ptr());
+        RefPtr<SourceFile> sourceFile = new SourceFile();
+        sourceFile->path = path;
+        sourceFile->content = source;
 
-    // Skip code generation
+        TranslationUnitOptions translationUnitOptions;
+        translationUnitOptions.sourceFiles.Add(sourceFile);
 
-    //
+        CompileUnit translationUnit = parseTranslationUnit(translationUnitOptions, moduleOptions);
 
-    RefPtr<ProgramSyntaxNode> moduleDecl = translationUnit->SyntaxNode;
+        // TODO: handle errors
 
-    loadedModules.Add(name, moduleDecl);
+        checkTranslationUnit(translationUnit, moduleOptions);
 
-    return moduleDecl;
+        // Skip code generation
 
-}
+        //
 
-String CompileRequest::autoImportModule(
-    String const&       path,
-    String const&       source,
-    CodePosition const& loc)
-{
-    // TODO: may want to have some kind of canonicalization step here
-    String name = path;
+        RefPtr<ProgramSyntaxNode> moduleDecl = translationUnit.SyntaxNode;
 
-    // Have we already loaded a module matching this name?
-    if (loadedModules.TryGetValue(name))
-        return name;
+        loadedModules.Add(name, moduleDecl);
 
-    loadModule(name, path, source, loc);
-
-    return name;
-}
-
-RefPtr<ProgramSyntaxNode> CompileRequest::findOrImportModule(
-    String const&       name,
-    CodePosition const& loc)
-{
-    // Have we already loaded a module matching this name?
-    // If so, return it.
-    RefPtr<ProgramSyntaxNode> moduleDecl;
-    if (loadedModules.TryGetValue(name, moduleDecl))
         return moduleDecl;
 
-    // Derive a file name for the module, by taking the given
-    // identifier, replacing all occurences of `_` with `-`,
-    // and then appending `.slang`.
-    //
-    // For example, `foo_bar` becomes `foo-bar.slang`.
-
-    StringBuilder sb;
-    for (auto c : name)
-    {
-        if (c == '_')
-            c = '-';
-
-        sb.Append(c);
     }
-    sb.Append(".slang");
 
-    String fileName = sb.ProduceString();
-
-    // Next, try to find the file of the given name,
-    // using our ordinary include-handling logic.
-
-    IncludeHandlerImpl includeHandler;
-    includeHandler.request = this;
-
-    String pathIncludedFrom = loc.FileName;
-
-    String foundPath;
-    String foundSource;
-    IncludeResult includeResult = includeHandler.TryToFindIncludeFile(fileName, pathIncludedFrom, &foundPath, &foundSource);
-    switch( includeResult )
+    String autoImportModule(
+        String const&       path,
+        String const&       source,
+        CodePosition const& loc)
     {
-    case IncludeResult::NotFound:
-    case IncludeResult::Error:
+        // TODO: may want to have some kind of canonicalization step here
+        String name = path;
+
+        // Have we already loaded a module matching this name?
+        if (loadedModules.TryGetValue(name))
+            return name;
+
+        loadModule(name, path, source, loc);
+
+        return name;
+    }
+
+    RefPtr<ProgramSyntaxNode> findOrImportModule(
+        String const&       name,
+        CodePosition const& loc)
+    {
+        // Have we already loaded a module matching this name?
+        // If so, return it.
+        RefPtr<ProgramSyntaxNode> moduleDecl;
+        if (loadedModules.TryGetValue(name, moduleDecl))
+            return moduleDecl;
+
+        // Derive a file name for the module, by taking the given
+        // identifier, replacing all occurences of `_` with `-`,
+        // and then appending `.slang`.
+        //
+        // For example, `foo_bar` becomes `foo-bar.slang`.
+
+        StringBuilder sb;
+        for (auto c : name)
         {
-            this->mSink.diagnose(loc, Diagnostics::cannotFindFile, fileName);
+            if (c == '_')
+                c = '-';
 
-            loadedModules[name] = nullptr;
-            return nullptr;
+            sb.Append(c);
         }
-        break;
+        sb.Append(".slang");
 
-    default:
-        break;
+        String fileName = sb.ProduceString();
+
+        // Next, try to find the file of the given name,
+        // using our ordinary include-handling logic.
+
+        IncludeHandlerImpl includeHandler;
+        includeHandler.request = this;
+
+        String pathIncludedFrom = loc.FileName;
+
+        String foundPath;
+        String foundSource;
+        IncludeResult includeResult = includeHandler.TryToFindIncludeFile(fileName, pathIncludedFrom, &foundPath, &foundSource);
+        switch( includeResult )
+        {
+        case IncludeResult::NotFound:
+        case IncludeResult::Error:
+            {
+                this->mSink.diagnose(loc, Diagnostics::cannotFindFile, fileName);
+
+                loadedModules[name] = nullptr;
+                return nullptr;
+            }
+            break;
+
+        default:
+            break;
+        }
+
+        // We've found a file that we can load for the given module, so
+        // go ahead and perform the module-load action
+        return loadModule(
+            name,
+            foundPath,
+            foundSource,
+            loc);
     }
 
-    // We've found a file that we can load for the given module, so
-    // go ahead and perform the module-load action
-    return loadModule(
-        name,
-        foundPath,
-        foundSource,
-        loc);
-}
+};
 
 RefPtr<ProgramSyntaxNode> findOrImportModule(
     CompileRequest*     request,
@@ -528,29 +627,29 @@ void Session::addBuiltinSource(
     String const&           path,
     String const&           source)
 {
-    RefPtr<CompileRequest> compileRequest = new CompileRequest(this);
+    CompileRequest compileRequest(this);
 
-    auto translationUnitIndex = compileRequest->addTranslationUnit(SourceLanguage::Slang, path);
+    auto translationUnitIndex = compileRequest.addTranslationUnit(SourceLanguage::Slang, path);
 
-    compileRequest->addTranslationUnitSourceString(
+    compileRequest.addTranslationUnitSourceString(
         translationUnitIndex,
         path,
         source);
 
-    int err = compileRequest->executeActions();
+    int err = compileRequest.executeAPIActions();
     if (err)
     {
-        fprintf(stderr, "%s", compileRequest->mDiagnosticOutput.Buffer());
+        fprintf(stderr, "%s", compileRequest.mDiagnosticOutput.Buffer());
 
 #ifdef _WIN32
-        OutputDebugStringA(compileRequest->mDiagnosticOutput.Buffer());
+        OutputDebugStringA(compileRequest.mDiagnosticOutput.Buffer());
 #endif
 
         assert(!"error in stdlib");
     }
 
     // Extract the AST for the code we just parsed
-    auto syntax = compileRequest->translationUnits[translationUnitIndex]->SyntaxNode;
+    auto syntax = compileRequest.mCollectionOfTranslationUnits->translationUnits[translationUnitIndex].SyntaxNode;
 
     // HACK(tfoley): mark all declarations in the "stdlib" so
     // that we can detect them later (e.g., so we don't emit them)
@@ -640,21 +739,21 @@ SLANG_API void spSetCompileFlags(
     SlangCompileRequest*    request,
     SlangCompileFlags       flags)
 {
-    REQ(request)->compileFlags = flags;
+    REQ(request)->Options.compileFlags = flags;
 }
 
 SLANG_API void spSetCodeGenTarget(
         SlangCompileRequest*    request,
         int target)
 {
-    REQ(request)->Target = (Slang::CodeGenTarget)target;
+    REQ(request)->Options.Target = (Slang::CodeGenTarget)target;
 }
 
 SLANG_API void spSetPassThrough(
     SlangCompileRequest*    request,
     SlangPassThrough        passThrough)
 {
-    REQ(request)->passThrough = Slang::PassThroughMode(passThrough);
+    REQ(request)->Options.passThrough = Slang::PassThroughMode(passThrough);
 }
 
 SLANG_API void spSetDiagnosticCallback(
@@ -673,14 +772,14 @@ SLANG_API void spAddSearchPath(
         SlangCompileRequest*    request,
         const char*             path)
 {
-    REQ(request)->searchDirectories.Add(Slang::SearchDirectory(path, Slang::SearchDirectory::Kind::Default));
+    REQ(request)->Options.searchDirectories.Add(Slang::SearchDirectory(path, Slang::SearchDirectory::Kind::Default));
 }
 
 SLANG_API void spAddAutoImportPath(
     SlangCompileRequest*    request,
     const char*             path)
 {
-    REQ(request)->searchDirectories.Add(Slang::SearchDirectory(path, Slang::SearchDirectory::Kind::AutoImport));
+    REQ(request)->Options.searchDirectories.Add(Slang::SearchDirectory(path, Slang::SearchDirectory::Kind::AutoImport));
 }
 
 SLANG_API void spAddPreprocessorDefine(
@@ -688,7 +787,7 @@ SLANG_API void spAddPreprocessorDefine(
     const char*             key,
     const char*             value)
 {
-    REQ(request)->preprocessorDefinitions[key] = value;
+    REQ(request)->Options.preprocessorDefinitions[key] = value;
 }
 
 SLANG_API char const* spGetDiagnosticOutput(
@@ -721,7 +820,7 @@ SLANG_API void spTranslationUnit_addPreprocessorDefine(
 {
     auto req = REQ(request);
 
-    req->translationUnits[translationUnitIndex]->preprocessorDefinitions[key] = value;
+    req->Options.translationUnits[translationUnitIndex].preprocessorDefinitions[key] = value;
 
 }
 
@@ -734,7 +833,7 @@ SLANG_API void spAddTranslationUnitSourceFile(
     auto req = REQ(request);
     if(!path) return;
     if(translationUnitIndex < 0) return;
-    if(translationUnitIndex >= req->translationUnits.Count()) return;
+    if(translationUnitIndex >= req->Options.translationUnits.Count()) return;
 
     req->addTranslationUnitSourceFile(
         translationUnitIndex,
@@ -752,7 +851,7 @@ SLANG_API void spAddTranslationUnitSourceString(
     auto req = REQ(request);
     if(!source) return;
     if(translationUnitIndex < 0) return;
-    if(translationUnitIndex >= req->translationUnits.Count()) return;
+    if(translationUnitIndex >= req->Options.translationUnits.Count()) return;
 
     if(!path) path = "";
 
@@ -770,7 +869,7 @@ SLANG_API SlangProfileID spFindProfile(
     return Slang::Profile::LookUp(name).raw;
 }
 
-SLANG_API int spAddEntryPoint(
+SLANG_API int spAddTranslationUnitEntryPoint(
     SlangCompileRequest*    request,
     int                     translationUnitIndex,
     char const*             name,
@@ -780,9 +879,10 @@ SLANG_API int spAddEntryPoint(
     auto req = REQ(request);
     if(!name) return -1;
     if(translationUnitIndex < 0) return -1;
-    if(translationUnitIndex >= req->translationUnits.Count()) return -1;
+    if(translationUnitIndex >= req->Options.translationUnits.Count()) return -1;
 
-    return req->addEntryPoint(
+
+    return req->addTranslationUnitEntryPoint(
         translationUnitIndex,
         name,
         Slang::Profile(Slang::Profile::RawVal(profile)));
@@ -795,7 +895,7 @@ SLANG_API int spCompile(
 {
     auto req = REQ(request);
 
-    int anyErrors = req->executeActions();
+    int anyErrors = req->executeAPIActions();
     return anyErrors;
 }
 
@@ -825,7 +925,7 @@ spGetTranslationUnitCount(
     SlangCompileRequest*    request)
 {
     auto req = REQ(request);
-    return req->translationUnits.Count();
+    return req->mResult.translationUnits.Count();
 }
 
 // Get the output code associated with a specific translation unit
@@ -834,15 +934,16 @@ SLANG_API char const* spGetTranslationUnitSource(
     int                     translationUnitIndex)
 {
     auto req = REQ(request);
-    return req->translationUnits[translationUnitIndex]->result.outputSource.Buffer();
+    return req->mResult.translationUnits[translationUnitIndex].outputSource.Buffer();
 }
 
 SLANG_API char const* spGetEntryPointSource(
     SlangCompileRequest*    request,
+    int                     translationUnitIndex,
     int                     entryPointIndex)
 {
     auto req = REQ(request);
-    return req->entryPoints[entryPointIndex]->result.outputSource.Buffer();
+    return req->mResult.translationUnits[translationUnitIndex].entryPoints[entryPointIndex].outputSource.Buffer();
 
 }
 
@@ -854,7 +955,7 @@ SLANG_API SlangReflection* spGetReflection(
     if( !request ) return 0;
 
     auto req = REQ(request);
-    return (SlangReflection*) req->layout.Ptr();
+    return (SlangReflection*) req->mReflectionData.Ptr();
 }
 
 

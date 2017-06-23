@@ -3,7 +3,7 @@ Copyright (c) 2014, NVIDIA CORPORATION.  All rights reserved.
 ***************************************************************************/
 #define _COMPILE_DEFAULT_VS
 #include "VertexAttrib.h"
-__import Shading;
+#include "shading.h"
 #include "Effects/CsmData.h"
 
 cbuffer PerFrameCB : register(b0)

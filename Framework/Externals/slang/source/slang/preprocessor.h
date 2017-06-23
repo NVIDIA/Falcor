@@ -7,7 +7,7 @@
 
 namespace Slang {
 
-class CompileRequest;
+struct CompileRequest;
 class DiagnosticSink;
 class ProgramSyntaxNode;
 

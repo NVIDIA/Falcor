@@ -12,7 +12,7 @@ using namespace Slang;
 
 static void diagnosticCallback(
     char const* message,
-    void*       /*userData*/)
+    void*       userData)
 {
     fputs(message, stderr);
     fflush(stderr);
@@ -89,36 +89,29 @@ int MAIN(int argc, char** argv)
     }
 #endif
 
+#ifdef _MSC_VER
+    _CrtDumpMemoryLeaks();
+#endif
     return 0;
 }
 
 #ifdef _WIN32
 int wmain(int argc, wchar_t** argv)
 {
-    int result = 0;
+    // Conver the wide-character Unicode arguments to UTF-8,
+    // since that is what Slang expects on the API side.
 
+    List<String> args;
+    for(int ii = 0; ii < argc; ++ii)
     {
-        // Conver the wide-character Unicode arguments to UTF-8,
-        // since that is what Slang expects on the API side.
-
-        List<String> args;
-        for(int ii = 0; ii < argc; ++ii)
-        {
-            args.Add(String::FromWString(argv[ii]));
-        }
-        List<char const*> argBuffers;
-        for(int ii = 0; ii < argc; ++ii)
-        {
-            argBuffers.Add(args[ii].Buffer());
-        }
-
-        result = MAIN(argc, (char**) &argBuffers[0]);
+        args.Add(String::FromWString(argv[ii]));
+    }
+    List<char const*> argBuffers;
+    for(int ii = 0; ii < argc; ++ii)
+    {
+        argBuffers.Add(args[ii].Buffer());
     }
 
-#ifdef _MSC_VER
-    _CrtDumpMemoryLeaks();
-#endif
-
-    return result;
+    return MAIN(argc, (char**) &argBuffers[0]);
 }
 #endif

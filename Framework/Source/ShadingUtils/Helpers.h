@@ -28,17 +28,19 @@
 
 #ifndef _FALCOR_SHADING_HELPERS_H_
 #define _FALCOR_SHADING_HELPERS_H_
-
-// Make sure we get the macros like `_fn` and `_ref`
-// TODO: just eliminate these since we know this is pure Slang.
 #include "HostDeviceData.h"
 
 /*******************************************************************
 					Sampling functions
 *******************************************************************/
 
-static const float M_PIf = 3.14159265359f;
-static const float M_1_PIf = 0.31830988618379f;
+#ifndef M_PIf
+#define M_PIf 3.14159265359f
+#endif
+
+#ifndef M_1_PIf
+#define M_1_PIf 0.31830988618379f
+#endif
 
 _fn vec2 sample_disk(float rnd1, float rnd2, float minRSq = 0.0f)
 {

@@ -14,7 +14,7 @@
 namespace Slang
 {
     struct IncludeHandler;
-    class CompileRequest;
+    struct CompileRequest;
 
     enum class CompilerMode
     {
@@ -48,42 +48,11 @@ namespace Slang
         ReflectionJSON      = SLANG_REFLECTION_JSON,
     };
 
-    class CompileRequest;
-    class TranslationUnitRequest;
-
-    // Result of compiling an entry point
-    struct EntryPointResult
-    {
-        String outputSource;
-    };
-
     // Describes an entry point that we've been requested to compile
-    class EntryPointRequest : public RefObject
+    struct EntryPointOption
     {
-    public:
-        // The parent compile request
-        CompileRequest* compileRequest = nullptr;
-
-        // The name of the entry point function (e.g., `main`)
         String name;
-
-        // The profile that the entry point will be compiled for
-        // (this is a combination of the target state, and also
-        // a feature level that sets capabilities)
         Profile profile;
-
-        // The index of the translation unit (within the parent
-        // compile request) that the entry point function is
-        // supposed to be defined in.
-        int translationUnitIndex;
-
-        // The resulting output for the enry point
-        //
-        // TODO: low-level code generation should be a distinct step
-        EntryPointResult result;
-
-        // The translation unit that this entry point came from
-        TranslationUnitRequest* getTranslationUnit();
     };
 
     enum class PassThroughMode : SlangPassThrough
@@ -105,31 +74,17 @@ namespace Slang
         String content;
     };
 
-    // Result of compiling a translation unit
-    struct TranslationUnitResult
-    {
-        String outputSource;
-    };
-
-    // A single translation unit requested to be compiled.
-    //
-    class TranslationUnitRequest : public RefObject
+    // Options for a single translation unit being requested by the user
+    class TranslationUnitOptions
     {
     public:
-        // The parent compile request
-        CompileRequest* compileRequest = nullptr;
-
-        // The language in which the source file(s)
-        // are assumed to be written
         SourceLanguage sourceLanguage = SourceLanguage::Unknown;
 
-        // The source file(s) that will be compiled to form this translation unit
-        //
-        // Usually, for HLSL or GLSL there will be only one file.
-        List<RefPtr<SourceFile> > sourceFiles;
+        // All entry points we've been asked to compile for this translation unit
+        List<EntryPointOption> entryPoints;
 
-        // The entry points associated with this translation unit
-        List<RefPtr<EntryPointRequest> > entryPoints;
+        // The source file(s) that will be compiled to form this translation unit
+        List<RefPtr<SourceFile> > sourceFiles;
 
         // Preprocessor definitions to use for this translation unit only
         // (whereas the ones on `CompileOptions` will be shared)
@@ -137,17 +92,9 @@ namespace Slang
 
         // Compile flags for this translation unit
         SlangCompileFlags compileFlags = 0;
-
-        // The parsed syntax for the translation unit
-        RefPtr<ProgramSyntaxNode>   SyntaxNode;
-
-        // The resulting output for the translation unit
-        //
-        // TODO: low-level code generation should be a distinct step
-        TranslationUnitResult result;
     };
 
-    // A directory to be searched when looking for files (e.g., `#include`)
+
     struct SearchDirectory
     {
         enum Kind
@@ -167,14 +114,9 @@ namespace Slang
         Kind    kind;
     };
 
-    class Session;
-
-    class CompileRequest : public RefObject
+    class CompileOptions
     {
     public:
-        // Pointer to parent session
-        Session* mSession;
-
         // What target language are we compiling to?
         CodeGenTarget Target = CodeGenTarget::Unknown;
 
@@ -185,11 +127,7 @@ namespace Slang
         Dictionary<String, String> preprocessorDefinitions;
 
         // Translation units we are being asked to compile
-        List<RefPtr<TranslationUnitRequest> > translationUnits;
-
-        // Entry points we've been asked to compile (each
-        // assocaited with a translation unit).
-        List<RefPtr<EntryPointRequest> > entryPoints;
+        List<TranslationUnitOptions> translationUnits;
 
         // The code generation profile we've been asked to use.
         Profile profile;
@@ -199,73 +137,53 @@ namespace Slang
 
         // Compile flags to be shared by all translation units
         SlangCompileFlags compileFlags = 0;
-
-        // Output stuff
-        DiagnosticSink mSink;
-        String mDiagnosticOutput;
-
-        // Files that compilation depended on
-        List<String> mDependencyFilePaths;
-
-        // The resulting reflection layout information
-        RefPtr<ProgramLayout> layout;
-
-        // Modules that have been dynamically loaded via `import`
-        Dictionary<String, RefPtr<ProgramSyntaxNode>> loadedModules;
-
-
-        CompileRequest(Session* session)
-            : mSession(session)
-        {}
-
-        ~CompileRequest()
-        {}
-
-        void parseTranslationUnit(
-            TranslationUnitRequest* translationUnit);
-
-        void CompileRequest::checkTranslationUnit(
-            TranslationUnitRequest* translationUnit);
-
-        void checkAllTranslationUnits();
-
-        int executeActionsInner();
-        int executeActions();
-
-        int addTranslationUnit(SourceLanguage language, String const& name);
-
-        void addTranslationUnitSourceString(
-            int             translationUnitIndex,
-            String const&   path,
-            String const&   source);
-
-        void addTranslationUnitSourceFile(
-            int             translationUnitIndex,
-            String const&   path);
-
-        int addEntryPoint(
-            int                     translationUnitIndex,
-            String const&           name,
-            Profile                 profile);
-
-        RefPtr<ProgramSyntaxNode> loadModule(
-            String const&       name,
-            String const&       path,
-            String const&       source,
-            CodePosition const& loc);
-
-        String autoImportModule(
-            String const&       path,
-            String const&       source,
-            CodePosition const& loc);
-
-        RefPtr<ProgramSyntaxNode> findOrImportModule(
-            String const&       name,
-            CodePosition const& loc);
     };
 
+    // This is the representation of a given translation unit
+    class CompileUnit
+    {
+    public:
+        TranslationUnitOptions      options;
+        RefPtr<ProgramSyntaxNode>   SyntaxNode;
+    };
+
+    // TODO: pick an appropriate name for this...
+    class CollectionOfTranslationUnits : public RefObject
+    {
+    public:
+        List<CompileUnit> translationUnits;
+
+        // TODO: this is more output-oriented, but maybe okay to have here...
+        RefPtr<ProgramLayout> layout;
+    };
+
+    // Context information for code generation
+    struct ExtraContext
+    {
+        CompileOptions const* options = nullptr;
+        TranslationUnitOptions const* translationUnitOptions = nullptr;
+
+        CompileResult* compileResult = nullptr;
+
+        RefPtr<ProgramSyntaxNode>   programSyntax;
+        ProgramLayout*              programLayout;
+
+        String sourceText;
+        String sourcePath;
+
+        CompileOptions const& getOptions() { return *options; }
+        TranslationUnitOptions const& getTranslationUnitOptions() { return *translationUnitOptions; }
+    };
+
+    TranslationUnitResult passThrough(
+        String const&			sourceText,
+        String const&			sourcePath,
+        const CompileOptions &	options,
+        TranslationUnitOptions const& translationUnitOptions);
+
     void generateOutput(
-        CompileRequest* compileRequest);
+        ExtraContext&                   context,
+        CollectionOfTranslationUnits*   collectionOfTranslationUnits);
 }
 
 #endif

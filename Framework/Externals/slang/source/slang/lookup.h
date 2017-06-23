@@ -5,8 +5,6 @@
 
 namespace Slang {
 
-class SemanticsVisitor;
-
 // Take an existing lookup result and refine it to only include
 // results that pass the given `LookupMask`.
 LookupResult refineLookup(LookupResult const& inResult, LookupMask mask);
@@ -17,17 +15,11 @@ void buildMemberDictionary(ContainerDecl* decl);
 
 // Look up a name in the given scope, proceeding up through
 // parent scopes as needed.
-LookupResult LookUp(
-    SemanticsVisitor*   semantics,
-    String const&       name,
-    RefPtr<Scope>       scope);
+LookupResult LookUp(String const& name, RefPtr<Scope> scope);
 
 // perform lookup within the context of a particular container declaration,
 // and do *not* look further up the chain
-LookupResult LookUpLocal(
-    SemanticsVisitor*       semantics,
-    String const&           name,
-    DeclRef<ContainerDecl>  containerDeclRef);
+LookupResult LookUpLocal(String const& name, DeclRef<ContainerDecl> containerDeclRef);
 
 // TODO: this belongs somewhere else
 

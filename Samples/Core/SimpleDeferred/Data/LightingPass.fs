@@ -28,7 +28,7 @@
 #version 420
 
 #include "ShaderCommon.h"
-__import Shading;
+#include "Shading.h"
 
 // Debug modes
 #define ShowPos         1

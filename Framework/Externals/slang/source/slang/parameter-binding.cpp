@@ -941,7 +941,7 @@ static void processEntryPointParameter(
 
 static void collectEntryPointParameters(
     ParameterBindingContext*        context,
-    EntryPointRequest*              entryPoint,
+    EntryPointOption const&         entryPoint,
     ProgramSyntaxNode*              translationUnitSyntax)
 {
     // First, look for the entry point with the specified name
@@ -950,7 +950,7 @@ static void collectEntryPointParameters(
     buildMemberDictionary(translationUnitSyntax);
 
     Decl* entryPointDecl;
-    if( !translationUnitSyntax->memberDictionary.TryGetValue(entryPoint->name, entryPointDecl) )
+    if( !translationUnitSyntax->memberDictionary.TryGetValue(entryPoint.name, entryPointDecl) )
     {
         // No such entry point!
         return;
@@ -970,7 +970,7 @@ static void collectEntryPointParameters(
 
     // Create the layout object here
     auto entryPointLayout = new EntryPointLayout();
-    entryPointLayout->profile = entryPoint->profile;
+    entryPointLayout->profile = entryPoint.profile;
     entryPointLayout->entryPoint = entryPointFuncDecl;
 
 
@@ -1043,18 +1043,18 @@ static void collectEntryPointParameters(
 // inputs and outputs).
 static Stage
 inferStageForTranslationUnit(
-    TranslationUnitRequest* translationUnit)
+    CompileUnit const&  translationUnit)
 {
     // In the specific case where we are compiling GLSL input,
     // and have only a single entry point, use the stage
     // of the entry point.
     //
     // TODO: can we generalize this at all?
-    if( translationUnit->sourceLanguage == SourceLanguage::GLSL )
+    if( translationUnit.options.sourceLanguage == SourceLanguage::GLSL )
     {
-        if( translationUnit->entryPoints.Count() == 1 )
+        if( translationUnit.options.entryPoints.Count() == 1 )
         {
-            return translationUnit->entryPoints[0]->profile.GetStage();
+            return translationUnit.options.entryPoints[0].profile.GetStage();
         }
     }
 
@@ -1063,36 +1063,36 @@ inferStageForTranslationUnit(
 
 static void collectParameters(
     ParameterBindingContext*        inContext,
-    CompileRequest*                 request)
+    CollectionOfTranslationUnits*   program)
 {
     ParameterBindingContext contextData = *inContext;
     auto context = &contextData;
 
-    for( auto& translationUnit : request->translationUnits )
+    for( auto& translationUnit : program->translationUnits )
     {
-        context->stage = inferStageForTranslationUnit(translationUnit.Ptr());
+        context->stage = inferStageForTranslationUnit(translationUnit);
 
         // First look at global-scope parameters
-        collectGlobalScopeParameters(context, translationUnit->SyntaxNode.Ptr());
+        collectGlobalScopeParameters(context, translationUnit.SyntaxNode.Ptr());
 
         // Next consider parameters for entry points
-        for( auto& entryPoint : translationUnit->entryPoints )
+        for( auto& entryPoint : translationUnit.options.entryPoints )
         {
-            context->stage = entryPoint->profile.GetStage();
-            collectEntryPointParameters(context, entryPoint.Ptr(), translationUnit->SyntaxNode.Ptr());
+            context->stage = entryPoint.profile.GetStage();
+            collectEntryPointParameters(context, entryPoint, translationUnit.SyntaxNode.Ptr());
         }
     }
 }
 
-void generateParameterBindings(
-    CompileRequest*                 request)
+void GenerateParameterBindings(
+    CollectionOfTranslationUnits*   program)
 {
     // TODO: infer a language or set of language rules to use based on the
     // source files and entry points given
     auto language = SourceLanguage::Unknown;
-    for( auto& translationUnit : request->translationUnits )
+    for( auto& translationUnit : program->translationUnits )
     {
-        auto translationUnitLanguage = translationUnit->sourceLanguage;
+        auto translationUnitLanguage = translationUnit.options.sourceLanguage;
         if( language == SourceLanguage::Unknown )
         {
             language = translationUnitLanguage;
@@ -1129,7 +1129,7 @@ void generateParameterBindings(
     context.layoutRules = sharedContext.defaultLayoutRules;
 
     // Walk through AST to discover all the parameters
-    collectParameters(&context, request);
+    collectParameters(&context, program);
 
     // Now walk through the parameters to generate initial binding information
     for( auto& parameter : sharedContext.parameters )
@@ -1245,7 +1245,7 @@ void generateParameterBindings(
     // We now have a bunch of layout information, which we should
     // record into a suitable object that represents the program
     programLayout->globalScopeLayout = globalScopeLayout;
-    request->layout = programLayout;
+    program->layout = programLayout;
 }
 
 }

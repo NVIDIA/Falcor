@@ -29,12 +29,6 @@
 #ifndef _FALCOR_BSDFS_H_
 #define _FALCOR_BSDFS_H_
 
-// Make sure we get the macros like `_fn` and `_ref`
-// TODO: just eliminate these since we know this is pure Slang.
-#include "HostDeviceData.h"
-
-__import Helpers;
-
 /**********************************************************************************
 BRDF helpers
 **********************************************************************************/

@@ -26,7 +26,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 
-#include "SceneEditorCommon.slang.h"
+#include "SceneEditorCommon.hlsli"
 
 #ifdef DEBUG_DRAW
 
