@@ -13,144 +13,177 @@
 
 namespace Slang
 {
-    namespace Compiler
+    struct IncludeHandler;
+    struct CompileRequest;
+
+    enum class CompilerMode
     {
-        class ILConstOperand;
-        struct IncludeHandler;
+        ProduceLibrary,
+        ProduceShader,
+        GenerateChoice
+    };
 
-        enum class CompilerMode
-        {
-            ProduceLibrary,
-            ProduceShader,
-            GenerateChoice
-        };
+    enum class StageTarget
+    {
+        Unknown,
+        VertexShader,
+        HullShader,
+        DomainShader,
+        GeometryShader,
+        FragmentShader,
+        ComputeShader,
+    };
 
-        enum class StageTarget
-        {
-            Unknown,
-            VertexShader,
-            HullShader,
-            DomainShader,
-            GeometryShader,
-            FragmentShader,
-            ComputeShader,
-        };
+    enum class CodeGenTarget
+    {
+        Unknown             = SLANG_TARGET_UNKNOWN,
+        GLSL                = SLANG_GLSL,
+        GLSL_Vulkan         = SLANG_GLSL_VULKAN,
+        GLSL_Vulkan_OneDesc = SLANG_GLSL_VULKAN_ONE_DESC,
+        HLSL                = SLANG_HLSL,
+        SPIRV               = SLANG_SPIRV,
+        SPIRVAssembly       = SLANG_SPIRV_ASM,
+        DXBytecode          = SLANG_DXBC,
+        DXBytecodeAssembly  = SLANG_DXBC_ASM,
+        ReflectionJSON      = SLANG_REFLECTION_JSON,
+    };
 
-        enum class CodeGenTarget
-        {
-            Unknown             = SLANG_TARGET_UNKNOWN,
-            GLSL                = SLANG_GLSL,
-            GLSL_Vulkan         = SLANG_GLSL_VULKAN,
-            GLSL_Vulkan_OneDesc = SLANG_GLSL_VULKAN_ONE_DESC,
-            HLSL                = SLANG_HLSL,
-            SPIRV               = SLANG_SPIRV,
-            SPIRVAssembly       = SLANG_SPIRV_ASM,
-            DXBytecode          = SLANG_DXBC,
-            DXBytecodeAssembly  = SLANG_DXBC_ASM,
-            ReflectionJSON      = SLANG_REFLECTION_JSON,
-        };
+    // Describes an entry point that we've been requested to compile
+    struct EntryPointOption
+    {
+        String name;
+        Profile profile;
+    };
 
-        // Describes an entry point that we've been requested to compile
-        struct EntryPointOption
-        {
-            String name;
-            Profile profile;
-        };
-
-        enum class PassThroughMode : SlangPassThrough
-        {
-            None = SLANG_PASS_THROUGH_NONE,	// don't pass through: use Slang compiler
-            HLSL = SLANG_PASS_THROUGH_FXC,	// pass through HLSL to `D3DCompile` API
+    enum class PassThroughMode : SlangPassThrough
+    {
+        None = SLANG_PASS_THROUGH_NONE,	// don't pass through: use Slang compiler
+        HLSL = SLANG_PASS_THROUGH_FXC,	// pass through HLSL to `D3DCompile` API
 //			GLSL,	// pass through GLSL to `glslang` library
-        };
+    };
 
-        // Represents a single source file (either an on-disk file, or a
-        // "virtual" file passed in as a string)
-        class SourceFile : public RefObject
+    // Represents a single source file (either an on-disk file, or a
+    // "virtual" file passed in as a string)
+    class SourceFile : public RefObject
+    {
+    public:
+        // The file path for a real file, or the nominal path for a virtual file
+        String path;
+
+        // The actual contents of the file
+        String content;
+    };
+
+    // Options for a single translation unit being requested by the user
+    class TranslationUnitOptions
+    {
+    public:
+        SourceLanguage sourceLanguage = SourceLanguage::Unknown;
+
+        // All entry points we've been asked to compile for this translation unit
+        List<EntryPointOption> entryPoints;
+
+        // The source file(s) that will be compiled to form this translation unit
+        List<RefPtr<SourceFile> > sourceFiles;
+
+        // Preprocessor definitions to use for this translation unit only
+        // (whereas the ones on `CompileOptions` will be shared)
+        Dictionary<String, String> preprocessorDefinitions;
+
+        // Compile flags for this translation unit
+        SlangCompileFlags compileFlags = 0;
+    };
+
+
+    struct SearchDirectory
+    {
+        enum Kind
         {
-        public:
-            // The file path for a real file, or the nominal path for a virtual file
-            String path;
-
-            // The actual contents of the file
-            String content;
+            Default,
+            AutoImport,
         };
 
-        // Options for a single translation unit being requested by the user
-        class TranslationUnitOptions
-        {
-        public:
-            SourceLanguage sourceLanguage = SourceLanguage::Unknown;
+        SearchDirectory() = default;
+        SearchDirectory(SearchDirectory const& other) = default;
+        SearchDirectory(String const& path, Kind kind)
+            : path(path)
+            , kind(kind)
+        {}
 
-            // All entry points we've been asked to compile for this translation unit
-            List<EntryPointOption> entryPoints;
+        String  path;
+        Kind    kind;
+    };
 
-            // The source file(s) that will be compiled to form this translation unit
-            List<RefPtr<SourceFile> > sourceFiles;
-        };
+    class CompileOptions
+    {
+    public:
+        // What target language are we compiling to?
+        CodeGenTarget Target = CodeGenTarget::Unknown;
 
-        class CompileOptions
-        {
-        public:
-            CompilerMode Mode = CompilerMode::ProduceShader;
-            CodeGenTarget Target = CodeGenTarget::Unknown;
-            StageTarget stage = StageTarget::Unknown;
-            EnumerableDictionary<String, String> BackendArguments;
+        // Directories to search for `#include` files or `import`ed modules
+        List<SearchDirectory> searchDirectories;
 
-            String SymbolToCompile;
-            String outputName;
-            List<String> TemplateShaderArguments;
-            List<String> SearchDirectories;
-            Dictionary<String, String> PreprocessorDefinitions;
+        // Definitions to provide during preprocessing
+        Dictionary<String, String> preprocessorDefinitions;
 
-            List<TranslationUnitOptions> translationUnits;
+        // Translation units we are being asked to compile
+        List<TranslationUnitOptions> translationUnits;
 
-            // the code generation profile we've been asked to use
-            Profile profile;
+        // The code generation profile we've been asked to use.
+        Profile profile;
 
-            // should we just pass the input to another compiler?
-            PassThroughMode passThrough = PassThroughMode::None;
+        // Should we just pass the input to another compiler?
+        PassThroughMode passThrough = PassThroughMode::None;
 
-            // Flags supplied through the API
-            SlangCompileFlags flags = 0;
-        };
+        // Compile flags to be shared by all translation units
+        SlangCompileFlags compileFlags = 0;
+    };
 
-        // This is the representation of a given translation unit
-        class CompileUnit
-        {
-        public:
-            TranslationUnitOptions      options;
-            RefPtr<ProgramSyntaxNode>   SyntaxNode;
-        };
+    // This is the representation of a given translation unit
+    class CompileUnit
+    {
+    public:
+        TranslationUnitOptions      options;
+        RefPtr<ProgramSyntaxNode>   SyntaxNode;
+    };
 
-        // TODO: pick an appropriate name for this...
-        class CollectionOfTranslationUnits : public RefObject
-        {
-        public:
-            List<CompileUnit> translationUnits;
+    // TODO: pick an appropriate name for this...
+    class CollectionOfTranslationUnits : public RefObject
+    {
+    public:
+        List<CompileUnit> translationUnits;
 
-            // TODO: this is more output-oriented, but maybe okay to have here...
-            RefPtr<ProgramLayout> layout;
-        };
+        // TODO: this is more output-oriented, but maybe okay to have here...
+        RefPtr<ProgramLayout> layout;
+    };
 
-        class ShaderCompiler : public CoreLib::Basic::Object
-        {
-        public:
-            virtual void Compile(
-                CompileResult&                  result,
-                CollectionOfTranslationUnits*   collectionOfTranslationUnits,
-                const CompileOptions&           options) = 0;
+    // Context information for code generation
+    struct ExtraContext
+    {
+        CompileOptions const* options = nullptr;
+        TranslationUnitOptions const* translationUnitOptions = nullptr;
 
-            virtual TranslationUnitResult PassThrough(
-                String const&			sourceText,
-                String const&			sourcePath,
-                const CompileOptions &	options,
-                TranslationUnitOptions const& translationUnitOptions) = 0;
+        CompileResult* compileResult = nullptr;
 
-        };
+        RefPtr<ProgramSyntaxNode>   programSyntax;
+        ProgramLayout*              programLayout;
 
-        ShaderCompiler * CreateShaderCompiler();
-    }
+        String sourceText;
+        String sourcePath;
+
+        CompileOptions const& getOptions() { return *options; }
+        TranslationUnitOptions const& getTranslationUnitOptions() { return *translationUnitOptions; }
+    };
+
+    TranslationUnitResult passThrough(
+        String const&			sourceText,
+        String const&			sourcePath,
+        const CompileOptions &	options,
+        TranslationUnitOptions const& translationUnitOptions);
+
+    void generateOutput(
+        ExtraContext&                   context,
+        CollectionOfTranslationUnits*   collectionOfTranslationUnits);
 }
 
 #endif

@@ -10,7 +10,6 @@
 #define SLANG_EXHAUSTIVE_SWITCH() default: assert(!"unexpected"); break;
 
 namespace Slang {
-namespace Compiler {
 
 // Information on ranges of registers already claimed/used
 struct UsedRange
@@ -263,10 +262,10 @@ static bool findLayoutArg(
 
 template<typename T>
 static bool findLayoutArg(
-    DeclRef declRef,
+    DeclRef<Decl> declRef,
     int*    outVal)
 {
-    return findLayoutArg<T>(declRef.GetDecl(), outVal);
+    return findLayoutArg<T>(declRef.getDecl(), outVal);
 }
 
 //
@@ -438,7 +437,7 @@ static void collectGlobalScopeParameter(
     // Now create a variable layout that we can use
     RefPtr<VarLayout> varLayout = new VarLayout();
     varLayout->typeLayout = typeLayout;
-    varLayout->varDecl = DeclRef(varDecl.Ptr(), nullptr).As<VarDeclBaseRef>();
+    varLayout->varDecl = DeclRef<Decl>(varDecl.Ptr(), nullptr).As<VarDeclBase>();
 
     // This declaration may represent the same logical parameter
     // as a declaration that came from a different translation unit.
@@ -529,7 +528,7 @@ static void addExplicitParameterBindings_HLSL(
     // here is where we want to extract and apply them...
 
     // Look for HLSL `register` or `packoffset` semantics.
-    for (auto semantic : varDecl.GetDecl()->GetModifiersOfType<HLSLLayoutSemantic>())
+    for (auto semantic : varDecl.getDecl()->GetModifiersOfType<HLSLLayoutSemantic>())
     {
         // Need to extract the information encoded in the semantic
         LayoutSemanticInfo semanticInfo = ExtractLayoutSemanticInfo(context, semantic);
@@ -917,15 +916,15 @@ static void processEntryPointParameter(
     {
         auto declRef = declRefType->declRef;
 
-        if (auto structDeclRef = declRef.As<StructDeclRef>())
+        if (auto structDeclRef = declRef.As<StructSyntaxNode>())
         {
             // Need to recursively walk the fields of the structure now...
-            for( auto field : structDeclRef.GetFields() )
+            for( auto field : GetFields(structDeclRef) )
             {
                 processEntryPointParameterWithPossibleSemantic(
                     context,
-                    field.GetDecl(),
-                    field.GetType(),
+                    field.getDecl(),
+                    GetType(field),
                     state);
             }
         }
@@ -1224,7 +1223,7 @@ void GenerateParameterBindings(
 
         for( auto& varLayout : parameterInfo->varLayouts )
         {
-            globalScopeStructLayout->mapVarToLayout.Add(varLayout->varDecl.GetDecl(), varLayout);
+            globalScopeStructLayout->mapVarToLayout.Add(varLayout->varDecl.getDecl(), varLayout);
         }
     }
     globalScopeRules->EndStructLayout(&structLayoutInfo);
@@ -1249,4 +1248,4 @@ void GenerateParameterBindings(
     program->layout = programLayout;
 }
 
-}}
+}

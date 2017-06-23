@@ -7,17 +7,16 @@
 
 namespace Slang
 {
-    namespace Compiler
-    {
-        // Parse a source file into an existing translation unit
-        void parseSourceFile(
-            ProgramSyntaxNode*  translationUnitSyntax,
-            CompileOptions&     options,
-            TokenSpan const&    tokens,
-            DiagnosticSink*     sink,
-            String const&       fileName,
-            RefPtr<Scope> const&outerScope);
-    }
+    // Parse a source file into an existing translation unit
+    void parseSourceFile(
+        ProgramSyntaxNode*              translationUnitSyntax,
+        CompileOptions const&           options,
+        TranslationUnitOptions const&   translationUnitOptions,
+        TokenSpan const&                tokens,
+        DiagnosticSink*                 sink,
+        String const&                   fileName,
+        RefPtr<Scope> const&            outerScope);
+;
 }
 
 #endif

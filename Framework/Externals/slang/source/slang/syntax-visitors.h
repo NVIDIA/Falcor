@@ -7,15 +7,30 @@
 
 namespace Slang
 {
-    namespace Compiler
-    {
-        class CompileOptions;
-        class ShaderCompiler;
-        class ShaderLinkInfo;
-        class ShaderSymbol;
+    class CompileOptions;
+    struct CompileRequest;
+    class ShaderCompiler;
+    class ShaderLinkInfo;
+    class ShaderSymbol;
+    class TranslationUnitOptions;
 
-        SyntaxVisitor * CreateSemanticsVisitor(DiagnosticSink * err, CompileOptions const& options);
-    }
+    SyntaxVisitor* CreateSemanticsVisitor(
+        DiagnosticSink*                 err,
+        CompileOptions const&           options,
+        TranslationUnitOptions const&   translationUnitOptions,
+        CompileRequest*                 request);
+
+    // Look for a module that matches the given name:
+    // either one we've loaded already, or one we
+    // can find vai the search paths available to us.
+    //
+    // Needed by import declaration checking.
+    //
+    // TODO: need a better location to declare this.
+    RefPtr<ProgramSyntaxNode> findOrImportModule(
+        CompileRequest*     request,
+        String const&       name,
+        CodePosition const& loc);
 }
 
 #endif

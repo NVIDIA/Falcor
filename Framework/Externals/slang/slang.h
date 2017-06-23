@@ -194,8 +194,8 @@ extern "C"
         void const*             userData);
 
     /*!
-    @brief Add a path in which source files are being search. When the programmer specifies @code using <file_name> @endcode in code, the compiler searches the file
-    in all search pathes in order.
+    @brief Add a path to use when searching for referenced files.
+    This will be used for both `#include` directives and also for explicit `__import` declarations.
     @param ctx The compilation context.
     @param searchDir The additional search directory.
     */
@@ -203,6 +203,16 @@ extern "C"
         SlangCompileRequest*    request,
         const char*             searchDir);
 
+    /*!
+    @brief Add a path to use when searching for referenced files, that automatically treats `#include` as `__import`
+    This behaves just like `spAddSearchPath()` except that any `#include` file found through this path
+    will be treated as if it was referenced with `__import`.
+    @param ctx The compilation context.
+    @param searchDir The additional search directory.
+    */
+    SLANG_API void spAddAutoImportPath(
+        SlangCompileRequest*    request,
+        const char*             searchDir);
     /*!
     @brief Add a macro definition to be used during preprocessing.
     @param key The name of the macro to define.
@@ -213,6 +223,13 @@ extern "C"
         const char*             key,
         const char*             value);
 
+    /*!
+    @brief Set options using arguments as if specified via command line.
+    */
+    SLANG_API int spProcessCommandLineArguments(
+        SlangCompileRequest*    request,
+        char const* const*      args,
+        int                     argCount);
 
     /** Add a distinct translation unit to the compilation request
 
@@ -223,6 +240,19 @@ extern "C"
         SlangCompileRequest*    request,
         SlangSourceLanguage     language,
         char const*             name);
+
+    /** Add a preprocessor definition that is scoped to a single translation unit.
+
+    @param translationUnitIndex The index of the translation unit to get the definition.
+    @param key The name of the macro to define.
+    @param value The value of the macro to define.
+    */
+    SLANG_API void spTranslationUnit_addPreprocessorDefine(
+        SlangCompileRequest*    request,
+        int                     translationUnitIndex,
+        const char*             key,
+        const char*             value);
+
 
     /** Add a source file to the given translation unit
     */
@@ -871,13 +901,13 @@ namespace slang
 #ifdef SLANG_INCLUDE_IMPLEMENTATION
 
 #include "source/core/slang-io.cpp"
-#include "source/core/slang-math.cpp"
 #include "source/core/slang-string.cpp"
 #include "source/core/stream.cpp"
 #include "source/core/text-io.cpp"
 #include "source/slang/diagnostics.cpp"
 #include "source/slang/emit.cpp"
 #include "source/slang/lexer.cpp"
+#include "source/slang/options.cpp"
 #include "source/slang/parameter-binding.cpp"
 #include "source/slang/parser.cpp"
 #include "source/slang/preprocessor.cpp"
