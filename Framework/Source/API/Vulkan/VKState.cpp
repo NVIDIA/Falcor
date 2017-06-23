@@ -100,7 +100,7 @@ namespace Falcor
 
         infoOut.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
         infoOut.logicOpEnable = VK_FALSE;
-        infoOut.attachmentCount = pState->getRtCount();
+        infoOut.attachmentCount = (uint32_t)pState->getRtCount();
 
         attachmentStateOut.resize(infoOut.attachmentCount);
         for (uint32_t i = 0; i < infoOut.attachmentCount; i++)
@@ -314,9 +314,9 @@ namespace Falcor
         infoOut = {};
 
         infoOut.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-        infoOut.vertexBindingDescriptionCount = bindingDescs.size();
+        infoOut.vertexBindingDescriptionCount = (uint32_t)bindingDescs.size();
         infoOut.pVertexBindingDescriptions = bindingDescs.data();
-        infoOut.vertexAttributeDescriptionCount = attribDescs.size();
+        infoOut.vertexAttributeDescriptionCount = (uint32_t)attribDescs.size();
         infoOut.pVertexAttributeDescriptions = attribDescs.data();
     }
 
@@ -381,7 +381,7 @@ namespace Falcor
         infoOut.addressModeW = getVkAddressMode(pSampler->getAddressModeW());
         infoOut.mipLodBias = pSampler->getLodBias();
         infoOut.anisotropyEnable = vkBool(pSampler->getMaxAnisotropy() > 1);
-        infoOut.maxAnisotropy = pSampler->getMaxAnisotropy();
+        infoOut.maxAnisotropy = (float)pSampler->getMaxAnisotropy();
         infoOut.compareEnable = vkBool(pSampler->getComparisonMode() != Sampler::ComparisonMode::Disabled);
         infoOut.compareOp = getVkCompareOp(pSampler->getComparisonMode());
         infoOut.minLod = pSampler->getMinLod();
