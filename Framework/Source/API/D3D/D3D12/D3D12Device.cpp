@@ -34,7 +34,7 @@ namespace Falcor
 {
     Device::SharedPtr gpDevice;
 
-    struct DeviceData
+    struct DeviceApiData
     {
         IDXGISwapChain3Ptr pSwapChain = nullptr;
         uint32_t currentBackBufferIndex;
@@ -191,7 +191,7 @@ namespace Falcor
 
     CommandQueueHandle Device::getCommandQueueHandle(LowLevelContextData::CommandQueueType type, uint32_t index) const
     {
-        DeviceData* pData = (DeviceData*)mpPrivateData;
+        DeviceData* pData = (DeviceData*)mpApiData;
         return pData->queues[(uint32_t)type][index];
     }
 
@@ -213,7 +213,7 @@ namespace Falcor
 
     bool Device::updateDefaultFBO(uint32_t width, uint32_t height, ResourceFormat colorFormat, ResourceFormat depthFormat)
     {
-        DeviceData* pData = (DeviceData*)mpPrivateData;
+        DeviceData* pData = (DeviceData*)mpApiData;
 
         for (uint32_t i = 0; i < kSwapChainBuffers; i++)
         {
@@ -254,7 +254,7 @@ namespace Falcor
         mpRenderContext->setGraphicsVars(nullptr);
         mpRenderContext->setComputeState(nullptr);
         mpRenderContext->setComputeVars(nullptr);
-        DeviceData* pData = (DeviceData*)mpPrivateData;
+        DeviceData* pData = (DeviceData*)mpApiData;
         releaseFboData(pData);
         mpRenderContext.reset();
         mpResourceAllocator.reset();
@@ -279,13 +279,13 @@ namespace Falcor
 
     Fbo::SharedPtr Device::getSwapChainFbo() const
     {
-        DeviceData* pData = (DeviceData*)mpPrivateData;
+        DeviceData* pData = (DeviceData*)mpApiData;
         return pData->frameData[pData->currentBackBufferIndex].pFbo;
     }
 
     void Device::present()
     {
-        DeviceData* pData = (DeviceData*)mpPrivateData;
+        DeviceData* pData = (DeviceData*)mpApiData;
 
         mpRenderContext->resourceBarrier(pData->frameData[pData->currentBackBufferIndex].pFbo->getColorTexture(0).get(), Resource::State::Present);
         mpRenderContext->flush();
@@ -300,7 +300,7 @@ namespace Falcor
     bool Device::init(const Desc& desc)
     {
         DeviceData* pData = new DeviceData;
-        mpPrivateData = pData;
+        mpApiData = pData;
 
         if(desc.enableDebugLayer)
         {
@@ -392,7 +392,7 @@ namespace Falcor
     {
         if(pResource)
         {
-            DeviceData* pData = (DeviceData*)mpPrivateData;
+            DeviceData* pData = (DeviceData*)mpApiData;
             pData->deferredReleases.push({ pData->pFrameFence->getCpuValue(), pResource });
         }
     }
@@ -400,7 +400,7 @@ namespace Falcor
     void Device::executeDeferredReleases()
     {
         mpResourceAllocator->executeDeferredReleases();
-        DeviceData* pData = (DeviceData*)mpPrivateData;
+        DeviceData* pData = (DeviceData*)mpApiData;
         uint64_t gpuVal = pData->pFrameFence->getGpuValue();
         while (pData->deferredReleases.size() && pData->deferredReleases.front().frameID < gpuVal)
         {
@@ -414,7 +414,7 @@ namespace Falcor
     {
         mpRenderContext->flush(true);
         
-        DeviceData* pData = (DeviceData*)mpPrivateData;
+        DeviceData* pData = (DeviceData*)mpApiData;
 
         // Store the FBO parameters
         ResourceFormat colorFormat = pData->frameData[0].pFbo->getColorTexture(0)->getFormat();
@@ -435,13 +435,13 @@ namespace Falcor
 
     void Device::setVSync(bool enable)
     {
-        DeviceData* pData = (DeviceData*)mpPrivateData;
+        DeviceData* pData = (DeviceData*)mpApiData;
         pData->syncInterval = enable ? 1 : 0;
     }
 
     bool Device::isWindowOccluded() const
     {
-        DeviceData* pData = (DeviceData*)mpPrivateData;
+        DeviceData* pData = (DeviceData*)mpApiData;
         if(pData->isWindowOccluded)
         {
             pData->isWindowOccluded = (pData->pSwapChain->Present(0, DXGI_PRESENT_TEST) == DXGI_STATUS_OCCLUDED);

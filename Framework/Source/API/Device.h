@@ -41,6 +41,8 @@ namespace Falcor
 #define DEFAULT_ENABLE_DEBUG_LAYER false
 #endif
 
+    struct DeviceApiData;
+
     class Device
     {
     public:
@@ -148,7 +150,7 @@ namespace Falcor
         DescriptorPool::SharedPtr mpGpuDescPool;
 
         Window::SharedPtr mpWindow;
-        void* mpPrivateData;
+        DeviceApiData* mpApiData;
         RenderContext::SharedPtr mpRenderContext;
         bool mVsyncOn;
         size_t mFrameID = 0;

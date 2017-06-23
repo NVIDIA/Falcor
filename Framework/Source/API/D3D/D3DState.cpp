@@ -102,7 +102,7 @@ namespace Falcor
     {
         desc.AlphaToCoverageEnable = dxBool(pState->isAlphaToCoverageEnabled());
         desc.IndependentBlendEnable = dxBool(pState->isIndependentBlendEnabled());
-        for (size_t rt = 0; rt < pState->getRtCount(); rt++)
+        for (uint32_t rt = 0; rt < pState->getRtCount(); rt++)
         {
             const BlendState::Desc::RenderTargetDesc& rtDesc = pState->getRtDesc(rt);
             D3Dx(RENDER_TARGET_BLEND_DESC)& d3dRtDesc = desc.RenderTarget[rt];

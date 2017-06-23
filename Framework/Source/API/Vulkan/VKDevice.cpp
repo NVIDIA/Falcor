@@ -36,7 +36,7 @@ namespace Falcor
 {
     Device::SharedPtr gpDevice;
 
-    struct DeviceData
+    struct DeviceApiData
     {
         VkSwapchainKHR swapchain;
         uint32_t currentBackBufferIndex;
@@ -70,7 +70,7 @@ namespace Falcor
         std::vector<VkQueue> queues[(uint32_t)LowLevelContextData::CommandQueueType::Count];
     };
 
-    void releaseFboData(DeviceData* pData)
+    void releaseFboData(DeviceApiData* pData)
     {
         // First, delete all FBOs
         for (uint32_t i = 0; i < arraysize(pData->frameData); i++)
@@ -85,14 +85,12 @@ namespace Falcor
 
     bool Device::updateDefaultFBO(uint32_t width, uint32_t height, ResourceFormat colorFormat, ResourceFormat depthFormat)
     {
-        DeviceData* pData = (DeviceData*)mpPrivateData;
-
         uint32_t imageCount = 0;
-        vkGetSwapchainImagesKHR(pData->device, pData->swapchain, &imageCount, nullptr);
+        vkGetSwapchainImagesKHR(mpApiData->device, mpApiData->swapchain, &imageCount, nullptr);
         assert(imageCount == kSwapChainBuffers);
 
         std::vector<VkImage> swapchainImages(imageCount);
-        vkGetSwapchainImagesKHR(pData->device, pData->swapchain, &imageCount, swapchainImages.data());
+        vkGetSwapchainImagesKHR(mpApiData->device, mpApiData->swapchain, &imageCount, swapchainImages.data());
 
         for (uint32_t i = 0; i < kSwapChainBuffers; i++)
         {
@@ -101,22 +99,22 @@ namespace Falcor
             pColorTex->mApiHandle = swapchainImages[i];
 
             // Create the FBO if it's required
-            if (pData->frameData[i].pFbo == nullptr)
+            if (mpApiData->frameData[i].pFbo == nullptr)
             {
-                pData->frameData[i].pFbo = Fbo::create();
+                mpApiData->frameData[i].pFbo = Fbo::create();
             }
 
-            pData->frameData[i].pFbo->attachColorTarget(pColorTex, 0);
+            mpApiData->frameData[i].pFbo->attachColorTarget(pColorTex, 0);
 
             // Create a depth texture
             if (depthFormat != ResourceFormat::Unknown)
             {
                 auto pDepth = Texture::create2D(width, height, depthFormat, 1, 1, nullptr, Texture::BindFlags::DepthStencil);
-                pData->frameData[i].pFbo->attachDepthStencilTarget(pDepth);
+                mpApiData->frameData[i].pFbo->attachDepthStencilTarget(pDepth);
             }
         }
 
-        pData->currentBackBufferIndex = 0;
+        mpApiData->currentBackBufferIndex = 0;
 
         return true;
     }
@@ -129,17 +127,16 @@ namespace Falcor
         mpRenderContext->setGraphicsVars(nullptr);
         mpRenderContext->setComputeState(nullptr);
         mpRenderContext->setComputeVars(nullptr);
-        DeviceData* pData = (DeviceData*)mpPrivateData;
         //releaseFboData(pData);
         mpRenderContext.reset();
         mpResourceAllocator.reset();
 
-        vkDestroySwapchainKHR(pData->device, pData->swapchain, nullptr);
-        vkDestroySurfaceKHR(pData->instance, pData->surface, nullptr);
-        vkDestroyDevice(pData->device, nullptr);
-        vkDestroyInstance(pData->instance, nullptr);
+        vkDestroySwapchainKHR(mpApiData->device, mpApiData->swapchain, nullptr);
+        vkDestroySurfaceKHR(mpApiData->instance, mpApiData->surface, nullptr);
+        vkDestroyDevice(mpApiData->device, nullptr);
+        vkDestroyInstance(mpApiData->instance, nullptr);
 
-        safe_delete(pData);
+        safe_delete(mpApiData);
         mpWindow.reset();
     }
 
@@ -160,37 +157,32 @@ namespace Falcor
 
     Fbo::SharedPtr Device::getSwapChainFbo() const
     {
-        DeviceData* pData = (DeviceData*)mpPrivateData;
-        return pData->frameData[pData->currentBackBufferIndex].pFbo;
+        return mpApiData->frameData[mpApiData->currentBackBufferIndex].pFbo;
     }
 
     void Device::present()
     {
-        DeviceData* pData = (DeviceData*)mpPrivateData;
-
-        mpRenderContext->resourceBarrier(pData->frameData[pData->currentBackBufferIndex].pFbo->getColorTexture(0).get(), Resource::State::Present);
+        mpRenderContext->resourceBarrier(mpApiData->frameData[mpApiData->currentBackBufferIndex].pFbo->getColorTexture(0).get(), Resource::State::Present);
         mpRenderContext->flush();
         //pData->pSwapChain->Present(pData->syncInterval, 0);
         //pData->pFrameFence->gpuSignal(mpRenderContext->getLowLevelData()->getCommandQueue().GetInterfacePtr());
         executeDeferredReleases();
         mpRenderContext->reset();
-        pData->currentBackBufferIndex = (pData->currentBackBufferIndex + 1) % kSwapChainBuffers;
+        mpApiData->currentBackBufferIndex = (mpApiData->currentBackBufferIndex + 1) % kSwapChainBuffers;
         mFrameID++;
     }
 
     CommandQueueHandle Device::getCommandQueueHandle(LowLevelContextData::CommandQueueType type, uint32_t index) const
     {
-        DeviceData* pData = (DeviceData*)mpPrivateData;
-        return pData->queues[(uint32_t)type][index];
+        return mpApiData->queues[(uint32_t)type][index];
     }
 
     ApiCommandQueueType Device::getApiCommandQueueType(LowLevelContextData::CommandQueueType type) const
     {
-        DeviceData* pData = (DeviceData*)mpPrivateData;
-        return pData->queueTypeToFamilyIndex[(uint32_t)type];
+        return mpApiData->queueTypeToFamilyIndex[(uint32_t)type];
     }
 
-    bool createInstance(DeviceData *pData, bool enableDebugLayers)
+    bool createInstance(DeviceApiData *pData, bool enableDebugLayers)
     {
         // Layers
         uint32_t layerCount = 0;
@@ -204,14 +196,30 @@ namespace Falcor
         }
 
         // Layers to use when creating instance
-        std::vector<const char*> layerNames = { "VK_LAYER_LUNARG_swapchain" };
+        std::vector<const char*> layerNames;
+        auto findLayer = [allLayers](const std::string& layer) 
+        {
+            for (const auto& l : allLayers)
+            {
+                if (std::string(l.layerName) == layer)
+                {
+                    return true;
+                }
+            }
+            return false;
+        };
+
+#define enable_layer_if_present(_layer) if(findLayer(_layer)) layerNames.push_back(_layer)
+
         if (enableDebugLayers)
         {
-            layerNames.push_back("VK_LAYER_LUNARG_core_validation");
-            layerNames.push_back("VK_LAYER_LUNARG_object_tracker");
-            layerNames.push_back("VK_LAYER_LUNARG_parameter_validation");
-            layerNames.push_back("VK_LAYER_GOOGLE_threading");
-            layerNames.push_back("VK_LAYER_NV_nsight");
+            if (!findLayer("VK_LAYER_LUNARG_standard_validation"))
+            {
+                logError("Can't enable the Vulkan debug layer. Please install the Vulkan SDK or use non-debug device");
+                return false;
+            }
+            layerNames.push_back("VK_LAYER_LUNARG_standard_validation");
+            enable_layer_if_present("VK_LAYER_NV_nsight");
         }
 
         // Enumerate implicitly available extensions. The debug layers above just have VK_EXT_debug_report
@@ -284,7 +292,7 @@ namespace Falcor
         return bestDevice;
     }
 
-    bool initPhysicalDevice(DeviceData *pData)
+    bool initPhysicalDevice(DeviceApiData *pData)
     {
         //
         // Enumerate devices
@@ -343,7 +351,7 @@ namespace Falcor
         return true;
     }
 
-    bool createLogicalDevice(DeviceData *pData, const Device::Desc& desc)
+    bool createLogicalDevice(DeviceApiData *pData, const Device::Desc& desc)
     {
         //
         // Features
@@ -432,7 +440,7 @@ namespace Falcor
         return true;
     }
 
-    bool createSurface(DeviceData *pData, const Window* pWindow)
+    bool createSurface(DeviceApiData *pData, const Window* pWindow)
     {
         VkWin32SurfaceCreateInfoKHR createInfo = {};
         createInfo.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
@@ -452,7 +460,7 @@ namespace Falcor
         return true;
     }
 
-    bool createSwapChain(DeviceData *pData, const Window* pWindow, ResourceFormat colorFormat, bool enableVSync)
+    bool createSwapChain(DeviceApiData *pData, const Window* pWindow, ResourceFormat colorFormat, bool enableVSync)
     {
         //
         // Select/Validate SwapChain creation settings
@@ -476,6 +484,11 @@ namespace Falcor
         //
         // Validate Surface format
         //
+        if (isSrgbFormat(colorFormat) == false)
+        {
+            logError("Can't create a swap-chain with linear-space color format");
+            return false;
+        }
 
         const VkFormat requestedFormat = getVkFormat(srgbToLinearFormat(colorFormat));
         const VkColorSpaceKHR requestedColorSpace = VK_COLORSPACE_SRGB_NONLINEAR_KHR;
@@ -561,30 +574,29 @@ namespace Falcor
 
     bool Device::init(const Desc& desc)
     {
-        DeviceData* pData = new DeviceData;
-        mpPrivateData = pData;
+        mpApiData = new DeviceApiData;
 
-        if (createInstance(pData, desc.enableDebugLayer) == false)
+        if (createInstance(mpApiData, desc.enableDebugLayer) == false)
         {
             return false;
         }
 
-        if (initPhysicalDevice(pData) == false)
+        if (initPhysicalDevice(mpApiData) == false)
         {
             return false;
         }
 
-        if (createSurface(pData, mpWindow.get()) == false)
+        if (createSurface(mpApiData, mpWindow.get()) == false)
         {
             return false;
         }
 
-        if (createLogicalDevice(pData, desc) == false)
+        if (createLogicalDevice(mpApiData, desc) == false)
         {
             return false;
         }
 
-        mApiHandle = pData->device;
+        mApiHandle = mpApiData->device;
 
         // Create the descriptor heaps
         //mpSrvHeap = DescriptorHeap::create(DescriptorHeap::Type::SRV, 16 * 1024);
@@ -601,7 +613,7 @@ namespace Falcor
         mVsyncOn = desc.enableVsync;
 
         // Create the swap-chain
-        createSwapChain(pData, mpWindow.get(), desc.colorFormat, mVsyncOn);
+        createSwapChain(mpApiData, mpWindow.get(), desc.colorFormat, mVsyncOn);
 
         // Update the FBOs
         if (updateDefaultFBO(mpWindow->getClientAreaWidth(), mpWindow->getClientAreaHeight(), desc.colorFormat, desc.depthFormat) == false)
@@ -617,19 +629,17 @@ namespace Falcor
     {
         if (pResource)
         {
-            DeviceData* pData = (DeviceData*)mpPrivateData;
-            pData->deferredReleases.push({ pData->pFrameFence->getCpuValue(), pResource });
+            mpApiData->deferredReleases.push({ mpApiData->pFrameFence->getCpuValue(), pResource });
         }
     }
 
     void Device::executeDeferredReleases()
     {
         mpResourceAllocator->executeDeferredReleases();
-        DeviceData* pData = (DeviceData*)mpPrivateData;
-        uint64_t gpuVal = pData->pFrameFence->getGpuValue();
-        while (pData->deferredReleases.size() && pData->deferredReleases.front().frameID < gpuVal)
+        uint64_t gpuVal = mpApiData->pFrameFence->getGpuValue();
+        while (mpApiData->deferredReleases.size() && mpApiData->deferredReleases.front().frameID < gpuVal)
         {
-            pData->deferredReleases.pop();
+            mpApiData->deferredReleases.pop();
         }
     }
 
@@ -658,8 +668,7 @@ namespace Falcor
 
     void Device::setVSync(bool enable)
     {
-        DeviceData* pData = (DeviceData*)mpPrivateData;
-        pData->syncInterval = enable ? 1 : 0;
+        mpApiData->syncInterval = enable ? 1 : 0;
     }
 
     bool Device::isWindowOccluded() const
