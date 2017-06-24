@@ -58,7 +58,7 @@ namespace Falcor
         std::vector<ID3D12CommandQueuePtr> queues[(uint32_t)LowLevelContextData::CommandQueueType::Count];
     };
 
-    void releaseFboData(DeviceData* pData)
+    void releaseFboData(DeviceApiData* pData)
     {
         // First, delete all FBOs
         for (uint32_t i = 0; i < arraysize(pData->frameData); i++)
@@ -191,7 +191,7 @@ namespace Falcor
 
     CommandQueueHandle Device::getCommandQueueHandle(LowLevelContextData::CommandQueueType type, uint32_t index) const
     {
-        DeviceData* pData = (DeviceData*)mpApiData;
+        DeviceApiData* pData = (DeviceApiData*)mpApiData;
         return pData->queues[(uint32_t)type][index];
     }
 
@@ -213,12 +213,12 @@ namespace Falcor
 
     bool Device::updateDefaultFBO(uint32_t width, uint32_t height, ResourceFormat colorFormat, ResourceFormat depthFormat)
     {
-        DeviceData* pData = (DeviceData*)mpApiData;
+        DeviceApiData* pData = (DeviceApiData*)mpApiData;
 
         for (uint32_t i = 0; i < kSwapChainBuffers; i++)
         {
             // Create a texture object
-            auto pColorTex = Texture::SharedPtr(new Texture(width, height, 1, 1, 1, 1, colorFormat, Texture::Type::Texture2D, Texture::BindFlags::RenderTarget));            
+            auto pColorTex = Texture::SharedPtr(new Texture(width, height, 1, 1, 1, 1, colorFormat, Texture::Type::Texture2D, Texture::BindFlags::RenderTarget));
             HRESULT hr = pData->pSwapChain->GetBuffer(i, IID_PPV_ARGS(&pColorTex->mApiHandle));
             if(FAILED(hr))
             {
@@ -254,7 +254,7 @@ namespace Falcor
         mpRenderContext->setGraphicsVars(nullptr);
         mpRenderContext->setComputeState(nullptr);
         mpRenderContext->setComputeVars(nullptr);
-        DeviceData* pData = (DeviceData*)mpApiData;
+        DeviceApiData* pData = (DeviceApiData*)mpApiData;
         releaseFboData(pData);
         mpRenderContext.reset();
         mpResourceAllocator.reset();
@@ -279,13 +279,13 @@ namespace Falcor
 
     Fbo::SharedPtr Device::getSwapChainFbo() const
     {
-        DeviceData* pData = (DeviceData*)mpApiData;
+        DeviceApiData* pData = (DeviceApiData*)mpApiData;
         return pData->frameData[pData->currentBackBufferIndex].pFbo;
     }
 
     void Device::present()
     {
-        DeviceData* pData = (DeviceData*)mpApiData;
+        DeviceApiData* pData = (DeviceApiData*)mpApiData;
 
         mpRenderContext->resourceBarrier(pData->frameData[pData->currentBackBufferIndex].pFbo->getColorTexture(0).get(), Resource::State::Present);
         mpRenderContext->flush();
@@ -299,7 +299,7 @@ namespace Falcor
 
     bool Device::init(const Desc& desc)
     {
-        DeviceData* pData = new DeviceData;
+        DeviceApiData* pData = new DeviceApiData;
         mpApiData = pData;
 
         if(desc.enableDebugLayer)
@@ -392,7 +392,7 @@ namespace Falcor
     {
         if(pResource)
         {
-            DeviceData* pData = (DeviceData*)mpApiData;
+            DeviceApiData* pData = (DeviceApiData*)mpApiData;
             pData->deferredReleases.push({ pData->pFrameFence->getCpuValue(), pResource });
         }
     }
@@ -400,7 +400,7 @@ namespace Falcor
     void Device::executeDeferredReleases()
     {
         mpResourceAllocator->executeDeferredReleases();
-        DeviceData* pData = (DeviceData*)mpApiData;
+        DeviceApiData* pData = (DeviceApiData*)mpApiData;
         uint64_t gpuVal = pData->pFrameFence->getGpuValue();
         while (pData->deferredReleases.size() && pData->deferredReleases.front().frameID < gpuVal)
         {
@@ -414,7 +414,7 @@ namespace Falcor
     {
         mpRenderContext->flush(true);
         
-        DeviceData* pData = (DeviceData*)mpApiData;
+        DeviceApiData* pData = (DeviceApiData*)mpApiData;
 
         // Store the FBO parameters
         ResourceFormat colorFormat = pData->frameData[0].pFbo->getColorTexture(0)->getFormat();
@@ -435,13 +435,13 @@ namespace Falcor
 
     void Device::setVSync(bool enable)
     {
-        DeviceData* pData = (DeviceData*)mpApiData;
+        DeviceApiData* pData = (DeviceApiData*)mpApiData;
         pData->syncInterval = enable ? 1 : 0;
     }
 
     bool Device::isWindowOccluded() const
     {
-        DeviceData* pData = (DeviceData*)mpApiData;
+        DeviceApiData* pData = (DeviceApiData*)mpApiData;
         if(pData->isWindowOccluded)
         {
             pData->isWindowOccluded = (pData->pSwapChain->Present(0, DXGI_PRESENT_TEST) == DXGI_STATUS_OCCLUDED);
