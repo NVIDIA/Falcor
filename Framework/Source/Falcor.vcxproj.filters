@@ -331,13 +331,7 @@
     <ClCompile Include="API\D3D\D3D12\D3D12Vao.cpp">
       <Filter>API\D3D\D3D12</Filter>
     </ClCompile>
-    <ClCompile Include="API\D3D\D3D12\D3D12BlendState.cpp">
-      <Filter>API\D3D\D3D12</Filter>
-    </ClCompile>
     <ClCompile Include="API\D3D\D3D12\D3D12Buffer.cpp">
-      <Filter>API\D3D\D3D12</Filter>
-    </ClCompile>
-    <ClCompile Include="API\D3D\D3D12\D3D12DepthStencilState.cpp">
       <Filter>API\D3D\D3D12</Filter>
     </ClCompile>
     <ClCompile Include="API\D3D\D3D12\D3D12Device.cpp">
@@ -516,9 +510,6 @@
     <ClCompile Include="API\Vulkan\VKComputeContext.cpp">
       <Filter>API\Vulkan</Filter>
     </ClCompile>
-    <ClCompile Include="API\Vulkan\VKDepthStencilState.cpp">
-      <Filter>API\Vulkan</Filter>
-    </ClCompile>
     <ClCompile Include="API\Vulkan\LowLevel\VKGpuFence.cpp">
       <Filter>API\Vulkan\LowLevel</Filter>
     </ClCompile>
@@ -535,9 +526,6 @@
       <Filter>API\Vulkan</Filter>
     </ClCompile>
     <ClCompile Include="API\Vulkan\VKVao.cpp">
-      <Filter>API\Vulkan</Filter>
-    </ClCompile>
-    <ClCompile Include="API\Vulkan\VKBlendState.cpp">
       <Filter>API\Vulkan</Filter>
     </ClCompile>
     <ClCompile Include="API\Vulkan\VKSampler.cpp">

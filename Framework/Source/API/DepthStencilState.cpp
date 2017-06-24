@@ -30,6 +30,13 @@
 
 namespace Falcor
 {
+    DepthStencilState::SharedPtr DepthStencilState::create(const Desc& desc)
+    {
+        return SharedPtr(new DepthStencilState(desc));
+    }
+
+    DepthStencilState::~DepthStencilState() = default;
+
     DepthStencilState::Desc& DepthStencilState::Desc::setStencilWriteMask(uint8_t mask)
     {
         mStencilWriteMask = mask;
