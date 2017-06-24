@@ -27,12 +27,31 @@
 ***************************************************************************/
 #pragma once
 #include "API/GraphicsStateObject.h"
+#include "API/VAO.h"
 
 namespace Falcor
 {
     void initVkBlendInfo(const BlendState* pState, std::vector<VkPipelineColorBlendAttachmentState>& attachmentStateOut, VkPipelineColorBlendStateCreateInfo& infoOut);
     void initVkRasterizerInfo(const RasterizerState* pState, VkPipelineRasterizationStateCreateInfo& infoOut);
-    void initD3DDepthStencilInfo(const DepthStencilState* pState, VkPipelineDepthStencilStateCreateInfo& infoOut);
-    void initVkVertexLayoutInfo(const VertexLayout* pLayout, VkPipelineVertexInputStateCreateInfo& infoOut);
+    void initVkDepthStencilInfo(const DepthStencilState* pState, VkPipelineDepthStencilStateCreateInfo& infoOut);
+    void initVkVertexLayoutInfo(const VertexLayout* pLayout, std::vector<VkVertexInputBindingDescription>& bindingDescs, std::vector<VkVertexInputAttributeDescription>& attribDescs, VkPipelineVertexInputStateCreateInfo& infoOut);
     void initVkSamplerInfo(const Sampler* pSampler, VkSamplerCreateInfo& infoOut);
+
+    inline VkPrimitiveTopology getVkPrimitiveTopology(Vao::Topology topology)
+    {
+        switch (topology)
+        {
+        case Vao::Topology::PointList:
+            return VK_PRIMITIVE_TOPOLOGY_POINT_LIST;
+        case Vao::Topology::LineList:
+            return VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
+        case Vao::Topology::TriangleList:
+            return VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+        case Vao::Topology::TriangleStrip:
+            return VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
+        default:
+            should_not_get_here();
+            return VK_PRIMITIVE_TOPOLOGY_POINT_LIST;
+        }
+    }
 }
