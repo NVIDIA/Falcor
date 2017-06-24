@@ -31,10 +31,61 @@
 
 namespace Falcor
 {
-	uint32_t Texture::tempDefaultUint = 0;
+    uint32_t Texture::tempDefaultUint = 0;
 
-    Texture::Texture(uint32_t width, uint32_t height, uint32_t depth, uint32_t arraySize, uint32_t mipLevels, uint32_t sampleCount, ResourceFormat format, Type type, BindFlags bindFlags) :
-        Resource(type, bindFlags), mWidth(width), mHeight(height), mDepth(depth), mMipLevels(mipLevels), mSampleCount(sampleCount), mArraySize(arraySize), mFormat(format)
+    Texture::BindFlags updateBindFlags(Texture::BindFlags flags, bool hasInitData, uint32_t mipLevels)
+    {
+        if ((mipLevels != Texture::kMaxPossible) || (hasInitData == false))
+        {
+            return flags;
+        }
+
+        flags |= Texture::BindFlags::RenderTarget;
+        return flags;
+    }
+
+    Texture::SharedPtr Texture::create1D(uint32_t width, ResourceFormat format, uint32_t arraySize, uint32_t mipLevels, const void* pData, BindFlags bindFlags)
+    {
+        bindFlags = updateBindFlags(bindFlags, pData != nullptr, mipLevels);
+        Texture::SharedPtr pTexture = SharedPtr(new Texture(width, 1, 1, arraySize, mipLevels, 1, format, Type::Texture1D, bindFlags));
+        pTexture->initResource(pData, (mipLevels == kMaxPossible));
+        return pTexture->mApiHandle ? pTexture : nullptr;
+    }
+
+    Texture::SharedPtr Texture::create2D(uint32_t width, uint32_t height, ResourceFormat format, uint32_t arraySize, uint32_t mipLevels, const void* pData, BindFlags bindFlags)
+    {
+        bindFlags = updateBindFlags(bindFlags, pData != nullptr, mipLevels);
+        Texture::SharedPtr pTexture = SharedPtr(new Texture(width, height, 1, arraySize, mipLevels, 1, format, Type::Texture2D, bindFlags));
+        pTexture->initResource(pData, (mipLevels == kMaxPossible));
+        return pTexture->mApiHandle ? pTexture : nullptr;
+    }
+
+    Texture::SharedPtr Texture::create3D(uint32_t width, uint32_t height, uint32_t depth, ResourceFormat format, uint32_t mipLevels, const void* pData, BindFlags bindFlags, bool isSparse)
+    {
+        bindFlags = updateBindFlags(bindFlags, pData != nullptr, mipLevels);
+        Texture::SharedPtr pTexture = SharedPtr(new Texture(width, height, depth, 1, mipLevels, 1, format, Type::Texture3D, bindFlags));
+        pTexture->initResource(pData, (mipLevels == kMaxPossible));
+        return pTexture->mApiHandle ? pTexture : nullptr;
+    }
+
+    // Texture Cube
+    Texture::SharedPtr Texture::createCube(uint32_t width, uint32_t height, ResourceFormat format, uint32_t arraySize, uint32_t mipLevels, const void* pData, BindFlags bindFlags)
+    {
+        bindFlags = updateBindFlags(bindFlags, pData != nullptr, mipLevels);
+        Texture::SharedPtr pTexture = SharedPtr(new Texture(width, height, 1, arraySize, mipLevels, 1, format, Type::TextureCube, bindFlags));
+        pTexture->initResource(pData, (mipLevels == kMaxPossible));
+        return pTexture->mApiHandle ? pTexture : nullptr;
+    }
+
+    Texture::SharedPtr Texture::create2DMS(uint32_t width, uint32_t height, ResourceFormat format, uint32_t sampleCount, uint32_t arraySize, BindFlags bindFlags)
+    {
+        Texture::SharedPtr pTexture = SharedPtr(new Texture(width, height, 1, arraySize, 1, sampleCount, format, Type::Texture2DMultisample, bindFlags));
+        pTexture->initResource(nullptr, false);
+        return pTexture->mApiHandle ? pTexture : nullptr;
+    }
+
+    Texture::Texture(uint32_t width, uint32_t height, uint32_t depth, uint32_t arraySize, uint32_t mipLevels, uint32_t sampleCount, ResourceFormat format, Type type, BindFlags bindFlags)
+        : Resource(type, bindFlags), mWidth(width), mHeight(height), mDepth(depth), mMipLevels(mipLevels), mSampleCount(sampleCount), mArraySize(arraySize), mFormat(format)
     {
         if(mMipLevels == kMaxPossible)
         {
@@ -43,6 +94,7 @@ namespace Falcor
             _BitScanReverse(&bits, dims);
             mMipLevels = (uint32_t)bits + 1;
         }
+
         apiInit();
     }
 

@@ -102,9 +102,95 @@ namespace Falcor
         }
     }
 
+    D3D12_RESOURCE_DIMENSION getResourceDimension(Texture::Type type)
+    {
+        switch (type)
+        {
+        case Texture::Type::Texture1D:
+            return D3D12_RESOURCE_DIMENSION_TEXTURE1D;
+
+        case Texture::Type::Texture2D:
+        case Texture::Type::Texture2DMultisample:
+        case Texture::Type::TextureCube:
+            return D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+
+        case Texture::Type::Texture3D:
+            return D3D12_RESOURCE_DIMENSION_TEXTURE3D;
+        default:
+            should_not_get_here();
+            return D3D12_RESOURCE_DIMENSION_UNKNOWN;
+        }
+    }
+
     void Texture::apiInit()
     {
         mpApiData = new TextureApiData();
+    }
+
+    void Texture::initResource(const void* pData, bool autoGenMips)
+    {
+        D3D12_RESOURCE_DESC desc = {};
+
+        desc.MipLevels = mMipLevels;
+        desc.Format = getDxgiFormat(mFormat);
+        desc.Width = align_to(getFormatWidthCompressionRatio(mFormat), mWidth);
+        desc.Height = align_to(getFormatHeightCompressionRatio(mFormat), mHeight);
+        desc.Flags = getD3D12ResourceFlags(mBindFlags);
+        desc.DepthOrArraySize = (mType == Texture::Type::TextureCube) ? mArraySize * 6 : mArraySize;
+        desc.SampleDesc.Count = mSampleCount;
+        desc.SampleDesc.Quality = 0;
+        desc.Dimension = getResourceDimension(mType);
+        desc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
+        desc.Alignment = 0;
+
+        D3D12_CLEAR_VALUE clearValue = {};
+        D3D12_CLEAR_VALUE* pClearVal = nullptr;
+        if ((mBindFlags & (Texture::BindFlags::RenderTarget | Texture::BindFlags::DepthStencil)) != Texture::BindFlags::None)
+        {
+            clearValue.Format = desc.Format;
+            if ((mBindFlags & Texture::BindFlags::DepthStencil) != Texture::BindFlags::None)
+            {
+                clearValue.DepthStencil.Depth = 1.0f;
+            }
+            pClearVal = &clearValue;
+        }
+
+        //If depth and either ua or sr, set to typeless
+        if (isDepthFormat(mFormat) && is_set(mBindFlags, Texture::BindFlags::ShaderResource | Texture::BindFlags::UnorderedAccess))
+        {
+            desc.Format = getTypelessFormatFromDepthFormat(mFormat);
+            pClearVal = nullptr;
+        }
+
+        d3d_call(gpDevice->getApiHandle()->CreateCommittedResource(&kDefaultHeapProps, D3D12_HEAP_FLAG_NONE, &desc, D3D12_RESOURCE_STATE_COMMON, pClearVal, IID_PPV_ARGS(&mApiHandle)));
+
+        if (pData)
+        {
+            auto& pRenderContext = gpDevice->getRenderContext();
+            if (autoGenMips)
+            {
+                // Upload just the first mip-level
+                size_t arraySliceSize = mWidth * mHeight * getFormatBytesPerBlock(mFormat);
+                const uint8_t* pSrc = (uint8_t*)pData;
+                uint32_t numFaces = (mType == Texture::Type::TextureCube) ? 6 : 1;
+                for (uint32_t i = 0; i < mArraySize * numFaces; i++)
+                {
+                    uint32_t subresource = getSubresourceIndex(i, 0);
+                    pRenderContext->updateTextureSubresource(this, subresource, pSrc);
+                    pSrc += arraySliceSize;
+                }
+            }
+            else
+            {
+                pRenderContext->updateTexture(this, pData);
+            }
+
+            if (autoGenMips)
+            {
+                generateMips();
+                invalidateViews();
+            }
+        }
     }
 
     Texture::~Texture()
@@ -122,126 +208,6 @@ namespace Falcor
     void Texture::evict(const Sampler* pSampler) const
     {
         UNSUPPORTED_IN_D3D12("Texture::evict()");
-    }
-
-    void createTextureCommon(const Texture* pTexture, Texture::ApiHandle& apiHandle, const void* pData, D3D12_RESOURCE_DIMENSION dim, bool autoGenMips, Texture::BindFlags bindFlags)
-    {
-        ResourceFormat texFormat = pTexture->getFormat();
-
-        D3D12_RESOURCE_DESC desc = {};
-
-        desc.MipLevels = pTexture->getMipCount();
-        desc.Format = getDxgiFormat(texFormat);
-        desc.Width = align_to(getFormatWidthCompressionRatio(texFormat), pTexture->getWidth());
-        desc.Height = align_to(getFormatHeightCompressionRatio(texFormat), pTexture->getHeight());
-        desc.Flags = getD3D12ResourceFlags(bindFlags);
-        desc.DepthOrArraySize = (pTexture->getType() == Texture::Type::TextureCube) ? pTexture->getArraySize() * 6 : pTexture->getArraySize();
-        desc.SampleDesc.Count = pTexture->getSampleCount();
-        desc.SampleDesc.Quality = 0;
-        desc.Dimension = dim;
-        desc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
-        desc.Alignment = 0;
-
-        D3D12_CLEAR_VALUE clearValue = {};
-        D3D12_CLEAR_VALUE* pClearVal = nullptr;
-        if ((bindFlags & (Texture::BindFlags::RenderTarget | Texture::BindFlags::DepthStencil)) != Texture::BindFlags::None)
-        {
-            clearValue.Format = desc.Format;
-            if ((bindFlags & Texture::BindFlags::DepthStencil) != Texture::BindFlags::None)
-            {
-                clearValue.DepthStencil.Depth = 1.0f;
-            }
-            pClearVal = &clearValue;
-        }
-
-        //If depth and either ua or sr, set to typeless
-        if (isDepthFormat(texFormat) && is_set(bindFlags, Texture::BindFlags::ShaderResource | Texture::BindFlags::UnorderedAccess))
-        {
-            desc.Format = getTypelessFormatFromDepthFormat(texFormat);
-            pClearVal = nullptr;
-        }
-
-        d3d_call(gpDevice->getApiHandle()->CreateCommittedResource(&kDefaultHeapProps, D3D12_HEAP_FLAG_NONE, &desc, D3D12_RESOURCE_STATE_COMMON, pClearVal, IID_PPV_ARGS(&apiHandle)));
-
-        if (pData)
-        {
-            auto& pRenderContext = gpDevice->getRenderContext();
-            if (autoGenMips)
-            {
-                // Upload just the first mip-level
-                size_t arraySliceSize = pTexture->getWidth() * pTexture->getHeight() * getFormatBytesPerBlock(pTexture->getFormat());
-                const uint8_t* pSrc = (uint8_t*)pData;
-                uint32_t numFaces = (pTexture->getType() == Texture::Type::TextureCube) ? 6 : 1;
-                for (uint32_t i = 0; i < pTexture->getArraySize() * numFaces; i++)
-                {
-                    uint32_t subresource = pTexture->getSubresourceIndex(i, 0);
-                    pRenderContext->updateTextureSubresource(pTexture, subresource, pSrc);
-                    pSrc += arraySliceSize;
-                }
-            }
-            else
-            {
-                pRenderContext->updateTexture(pTexture, pData);
-            }
-
-            if (autoGenMips)
-            {
-                pTexture->generateMips();
-                pTexture->invalidateViews();
-            }
-        }
-    }
-
-    Texture::BindFlags updateBindFlags(Texture::BindFlags flags, bool hasInitData, uint32_t mipLevels)
-    {
-        if ((mipLevels != Texture::kMaxPossible) || (hasInitData == false))
-        {
-            return flags;
-        }
-
-        flags |= Texture::BindFlags::RenderTarget;
-        return flags;
-    }
-
-    Texture::SharedPtr Texture::create1D(uint32_t width, ResourceFormat format, uint32_t arraySize, uint32_t mipLevels, const void* pData, BindFlags bindFlags)
-    {
-        bindFlags = updateBindFlags(bindFlags, pData != nullptr, mipLevels);
-        Texture::SharedPtr pTexture = SharedPtr(new Texture(width, 1, 1, arraySize, mipLevels, 1, format, Type::Texture1D, bindFlags));
-        createTextureCommon(pTexture.get(), pTexture->mApiHandle, pData, D3D12_RESOURCE_DIMENSION_TEXTURE1D, (mipLevels == kMaxPossible), bindFlags);
-        return pTexture->mApiHandle ? pTexture : nullptr;
-    }
-    
-    Texture::SharedPtr Texture::create2D(uint32_t width, uint32_t height, ResourceFormat format, uint32_t arraySize, uint32_t mipLevels, const void* pData, BindFlags bindFlags)
-    {
-        bindFlags = updateBindFlags(bindFlags, pData != nullptr, mipLevels);
-        Texture::SharedPtr pTexture = SharedPtr(new Texture(width, height, 1, arraySize, mipLevels, 1, format, Type::Texture2D, bindFlags));
-        createTextureCommon(pTexture.get(), pTexture->mApiHandle, pData, D3D12_RESOURCE_DIMENSION_TEXTURE2D, (mipLevels == kMaxPossible), bindFlags);
-        return pTexture->mApiHandle ? pTexture : nullptr;
-    }
-
-    Texture::SharedPtr Texture::create3D(uint32_t width, uint32_t height, uint32_t depth, ResourceFormat format, uint32_t mipLevels, const void* pData, BindFlags bindFlags, bool isSparse)
-    {
-        bindFlags = updateBindFlags(bindFlags, pData != nullptr, mipLevels);
-        Texture::SharedPtr pTexture = SharedPtr(new Texture(width, height, depth, 1, mipLevels, 1, format, Type::Texture3D, bindFlags));
-        createTextureCommon(pTexture.get(), pTexture->mApiHandle, pData, D3D12_RESOURCE_DIMENSION_TEXTURE3D, (mipLevels == kMaxPossible), bindFlags);
-        return pTexture->mApiHandle ? pTexture : nullptr;
-        return nullptr;
-    }
-
-    // Texture Cube
-    Texture::SharedPtr Texture::createCube(uint32_t width, uint32_t height, ResourceFormat format, uint32_t arraySize, uint32_t mipLevels, const void* pData, BindFlags bindFlags)
-    {
-        bindFlags = updateBindFlags(bindFlags, pData != nullptr, mipLevels);
-        Texture::SharedPtr pTexture = SharedPtr(new Texture(width, height, 1, arraySize, mipLevels, 1, format, Type::TextureCube, bindFlags));
-        createTextureCommon(pTexture.get(), pTexture->mApiHandle, pData, D3D12_RESOURCE_DIMENSION_TEXTURE2D, (mipLevels == kMaxPossible), bindFlags);
-        return pTexture->mApiHandle ? pTexture : nullptr;
-    }
-
-    Texture::SharedPtr Texture::create2DMS(uint32_t width, uint32_t height, ResourceFormat format, uint32_t sampleCount, uint32_t arraySize, BindFlags bindFlags)
-    {
-        Texture::SharedPtr pTexture = SharedPtr(new Texture(width, height, 1, arraySize, 1, sampleCount, format, Type::Texture2DMultisample, bindFlags));
-        createTextureCommon(pTexture.get(), pTexture->mApiHandle, nullptr, D3D12_RESOURCE_DIMENSION_TEXTURE2D, false, bindFlags);
-        return pTexture->mApiHandle ? pTexture : nullptr;
     }
 
     uint32_t Texture::getMipLevelDataSize(uint32_t mipLevel) const

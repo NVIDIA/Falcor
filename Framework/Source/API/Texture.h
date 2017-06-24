@@ -218,7 +218,12 @@ namespace Falcor
     protected:
         friend class Device;
         TextureApiData* mpApiData = nullptr;
+
         void apiInit();
+
+        // Can't create resource in apiInit because shared_from_this can be called in constructor when generating mips
+        void initResource(const void* pData, bool autoGenMips);
+
         static RtvHandle spNullRTV;
         static DsvHandle spNullDSV;
 
