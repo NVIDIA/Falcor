@@ -37,8 +37,6 @@ namespace Falcor
 {
     bool createGraphicsPipeline(VkPipeline& graphicsPipeline, GraphicsStateObject::Desc& desc)
     {
-        VkPipelineShaderStageCreateInfo shaderStageInfo;
-
         VkPipelineVertexInputStateCreateInfo vertexInputInfo;
         std::vector<VkVertexInputBindingDescription> bindingDescs;
         std::vector<VkVertexInputAttributeDescription> attribDescs;
@@ -73,8 +71,7 @@ namespace Falcor
         // VKTODO: create these here, or do they belong elsewhere?
         //VkRenderPass                         renderPass;
         //VkPipelineCache                      pipelineCache;
-        VkPipelineLayoutCreateInfo             pipelineLayoutCreateInfo;
-        VkPipelineLayout                       pipelineLayout;
+        VkPipelineLayout                       pipelineLayout = {};
 
         VkGraphicsPipelineCreateInfo pipelineCreateInfo;
         pipelineCreateInfo.sType               = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;

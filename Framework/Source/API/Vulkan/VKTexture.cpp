@@ -58,12 +58,12 @@ namespace Falcor
     // Like getD3D12ResourceFlags but for Images specifically
     VkImageUsageFlags getVkImageUsageFlags(Resource::BindFlags bindFlags)
     {
-        VkImageUsageFlags vkFlags;
+        VkImageUsageFlags vkFlags = 0;
 
-        //if (is_set(bindFlags, Resource::BindFlags::UnorderedAccess))
-        //{
-        //    vkFlags |= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
-        //}
+        if (is_set(bindFlags, Resource::BindFlags::UnorderedAccess))
+        {
+            vkFlags |= VK_IMAGE_USAGE_STORAGE_BIT;
+        }
 
         if (is_set(bindFlags, Resource::BindFlags::DepthStencil))
         {
@@ -126,23 +126,22 @@ namespace Falcor
     {
         VkImageCreateInfo imageInfo = {};
 
-        imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-        imageInfo.imageType = getVkImageType(mType);
-        imageInfo.format = getVkFormat(mFormat);
-        imageInfo.flags = (mType == Texture::Type::TextureCube) ? VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT : 0;
-        imageInfo.extent.width = align_to(getFormatWidthCompressionRatio(mFormat), mWidth);
-        imageInfo.extent.height = align_to(getFormatHeightCompressionRatio(mFormat), mHeight);
-        imageInfo.extent.depth = mDepth;
         imageInfo.arrayLayers = mArraySize;
-        imageInfo.mipLevels = glm::min(mMipLevels, getMaxMipCount(imageInfo.extent));
-        imageInfo.samples = (VkSampleCountFlagBits)mSampleCount;
-        imageInfo.tiling = VK_IMAGE_TILING_LINEAR;
-        imageInfo.usage = getVkImageUsageFlags(mBindFlags);
-        imageInfo.initialLayout = pData != nullptr ? VK_IMAGE_LAYOUT_PREINITIALIZED : VK_IMAGE_LAYOUT_UNDEFINED;
-
-        imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-        imageInfo.queueFamilyIndexCount = 0;
+        imageInfo.extent.depth = mDepth;
+        imageInfo.extent.height = align_to(getFormatHeightCompressionRatio(mFormat), mHeight);
+        imageInfo.extent.width = align_to(getFormatWidthCompressionRatio(mFormat), mWidth);
+        imageInfo.flags = (mType == Texture::Type::TextureCube) ? VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT : 0;
+        imageInfo.format = getVkFormat(mFormat);
+        imageInfo.imageType = getVkImageType(mType);
+        imageInfo.initialLayout = pData ? VK_IMAGE_LAYOUT_PREINITIALIZED : VK_IMAGE_LAYOUT_UNDEFINED;
+        imageInfo.mipLevels = min(mMipLevels, getMaxMipCount(imageInfo.extent));
         imageInfo.pQueueFamilyIndices = nullptr;
+        imageInfo.queueFamilyIndexCount = 0;
+        imageInfo.samples = (VkSampleCountFlagBits)mSampleCount;
+        imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+        imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+        imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+        imageInfo.usage = getVkImageUsageFlags(mBindFlags);
 
         VkImage image;
         if (VK_FAILED(vkCreateImage(gpDevice->getApiHandle(), &imageInfo, nullptr, &image)))
