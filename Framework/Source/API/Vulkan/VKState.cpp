@@ -27,6 +27,7 @@
 ***************************************************************************/
 #include "Framework.h"
 #include "VKState.h"
+#include "API/FBO.h"
 
 namespace Falcor
 {
@@ -429,6 +430,19 @@ namespace Falcor
         {
             convertVkScissor(scissors[i], vkScissorsOut[i]);
         }
+    }
+
+    void initVkMultiSampleInfo(const BlendState* pState, const Fbo::Desc& fboDesc, const uint32_t& sampleMask, VkPipelineMultisampleStateCreateInfo& infoOut)
+    {
+        infoOut = {};
+
+        infoOut.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+        infoOut.rasterizationSamples = (VkSampleCountFlagBits)fboDesc.getSampleCount();
+        infoOut.sampleShadingEnable = VK_FALSE;
+        infoOut.minSampleShading = 0.0f;
+        infoOut.pSampleMask = &sampleMask;
+        infoOut.alphaToCoverageEnable = vkBool(pState->isAlphaToCoverageEnabled());
+        infoOut.alphaToOneEnable = VK_FALSE;
     }
 
 }

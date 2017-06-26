@@ -58,7 +58,7 @@ namespace Falcor
         initVkRasterizerInfo(desc.getRasterizerState().get(), rasterizerInfo);
 
         VkPipelineMultisampleStateCreateInfo multisampleInfo;
-
+        initVkMultiSampleInfo(desc.getBlendState().get(), desc.getFboDesc(), desc.getSampleMask(), multisampleInfo);
 
         VkPipelineDepthStencilStateCreateInfo depthStencilInfo;
         initVkDepthStencilInfo(desc.getDepthStencilState().get(), depthStencilInfo);
