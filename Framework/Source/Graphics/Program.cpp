@@ -78,7 +78,7 @@ namespace Falcor
 
     void Program::init(const std::string& VS, const std::string& FS, const std::string& GS, const std::string& HS, const std::string& DS, const DefineList& programDefines, bool createdFromFile)
     {
-        mOriginalShaderStrings[(uint32_t)ShaderType::Vertex] = VS.size() ? VS : "DefaultVS.hlsl";
+        mOriginalShaderStrings[(uint32_t)ShaderType::Vertex] = VS.size() ? VS : "DefaultVS.slang";
         mOriginalShaderStrings[(uint32_t)ShaderType::Pixel] = FS;
         mOriginalShaderStrings[(uint32_t)ShaderType::Geometry] = GS;
         mOriginalShaderStrings[(uint32_t)ShaderType::Hull] = HS;
@@ -203,6 +203,15 @@ namespace Falcor
         }
     }
 
+    static bool endsWith(std::string const& text, char const* suffix)
+    {
+        auto textLength = text.length();
+        auto suffixLength = strlen(suffix);
+        if(suffixLength > textLength) return false;
+
+        return strcmp(text.c_str() + (textLength - suffixLength), suffix) == 0;
+    }
+
     ProgramVersion::SharedPtr Program::preprocessAndCreateProgramVersion(std::string& log) const
     {
         mFileTimeMap.clear();
@@ -263,10 +272,39 @@ namespace Falcor
             if (!mOriginalShaderStrings[i].size())
                 continue;
 
-            int translationUnitIndex = spAddTranslationUnit(slangRequest, sourceLanguage, nullptr);
+            // In the case where the shader code is being loaded from a file,
+            // we may be able to use the file's extension to discover the
+            // language that the shader code is written in (rather than
+            // assuming it is a match for the target graphics API).
+            SlangSourceLanguage translationUnitSourceLanguage = sourceLanguage;
+            if( mCreatedFromFile )
+            {
+                static const struct
+                {
+                    char const*         extension;
+                    SlangSourceLanguage language;
+                } kInferLanguageFromExtension[] = {
+                    { ".hlsl", SLANG_SOURCE_LANGUAGE_HLSL },
+                    { ".glsl", SLANG_SOURCE_LANGUAGE_GLSL },
+                    { ".slang", SLANG_SOURCE_LANGUAGE_SLANG },
+                    { nullptr, SLANG_SOURCE_LANGUAGE_UNKNOWN },
+                };
+                for( auto ii = kInferLanguageFromExtension; ii->extension; ++ii )
+                {
+                    if( endsWith(mOriginalShaderStrings[i], ii->extension) )
+                    {
+                        translationUnitSourceLanguage = ii->language;
+                        break;
+                    }
+                }
+            }
+
+            // Register the translation unit with Slang
+            int translationUnitIndex = spAddTranslationUnit(slangRequest, translationUnitSourceLanguage, nullptr);
             assert(translationUnitIndex == translationUnitsAdded);
             translationUnitsAdded++;
 
+            // Add source code to the translation unit
             if (mCreatedFromFile)
             {
                 std::string fullpath;
@@ -275,10 +313,14 @@ namespace Falcor
             }
             else
             {
+                // Note: Slang would *like* for us to specify a logical path
+                // for the code, even when loading from a string, but
+                // we don't have that info so we just provide an empty string.
+                //
                 spAddTranslationUnitSourceString(slangRequest, translationUnitIndex, "", mOriginalShaderStrings[i].c_str());
             }
 
-            spAddTranslationUnitEntryPoint(
+            spAddEntryPoint(
                 slangRequest,
                 translationUnitIndex,
                 "main", // TODO: allow customization of entry point name?

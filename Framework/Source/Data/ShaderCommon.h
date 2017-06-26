@@ -49,16 +49,16 @@ cbuffer InternalPerFrameCB : register(b10)
 
 cbuffer InternalPerMeshCB : register(b11)
 {
-    mat4 gWorldMat[64]; // If the mesh has bones, these are the bones matrices
-    mat3 gWorldInvTransposeMat[64]; // Per-instance matrices for transforming normals
+    float4x4 gWorldMat[64]; // If the mesh has bones, these are the bones matrices
+    float3x3 gWorldInvTransposeMat[64]; // Per-instance matrices for transforming normals
     uint32_t gDrawId[64]; // Zero-based order/ID of Mesh Instances drawn per SceneRenderer::renderScene call.
     uint32_t gMeshId;
 };
 
 #ifdef _VERTEX_BLENDING
-mat4 getBlendedWorldMat(vec4 weights, uint4 ids)
+float4x4 getBlendedWorldMat(float4 weights, uint4 ids)
 {
-    mat4 worldMat = gWorldMat[ids.x] * weights.x;
+    float4x4 worldMat = gWorldMat[ids.x] * weights.x;
     worldMat += gWorldMat[ids.y] * weights.y;
     worldMat += gWorldMat[ids.z] * weights.z;
     worldMat += gWorldMat[ids.w] * weights.w;
@@ -66,9 +66,9 @@ mat4 getBlendedWorldMat(vec4 weights, uint4 ids)
     return worldMat;
 }
 
-mat3 getBlendedInvTransposeWorldMat(vec4 weights, uint4 ids)
+float3x3 getBlendedInvTransposeWorldMat(float4 weights, uint4 ids)
 {
-    mat3 mat = gWorldInvTransposeMat[ids.x] * weights.x;
+    float3x3 mat = gWorldInvTransposeMat[ids.x] * weights.x;
     mat += gWorldInvTransposeMat[ids.y] * weights.y;
     mat += gWorldInvTransposeMat[ids.z] * weights.z;
     mat += gWorldInvTransposeMat[ids.w] * weights.w;
@@ -102,12 +102,12 @@ float2 calcMotionVector(float2 pixelCrd, float4 prevPosH, float2 renderTargetDim
 #if defined(FALCOR_GL) || defined(FALCOR_GLSL)
 bool isSamplerBound(in sampler2D sampler)
 {
-    return any(uvec2(sampler) != 0);
+    return any(ufloat2(sampler) != 0);
 }
 
-vec4 fetchTextureIfFound(in sampler2D sampler, in vec2 uv, in vec2 duvdx, in vec2 duvdy)
+float4 fetchTextureIfFound(in sampler2D sampler, in float2 uv, in float2 duvdx, in float2 duvdy)
 {
-    vec4 ret = vec4(1.0f);
+    float4 ret = float4(1.0f);
     if(isSamplerBound(sampler)) 
     {
         ret = textureGrad(sampler, uv, duvdx, duvdy);

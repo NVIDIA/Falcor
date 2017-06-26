@@ -1,5 +1,5 @@
 /***************************************************************************
-# Copyright (c) 2017, NVIDIA CORPORATION. All rights reserved.
+# Copyright (c) 2015, NVIDIA CORPORATION. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -14,7 +14,7 @@
 #    from this software without specific prior written permission.
 #
 # THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS ``AS IS'' AND ANY
-# EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THEa
+# EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
 # IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
 # PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR
 # CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
@@ -25,53 +25,38 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
+#ifndef LEAN_MAP_DATA_H
+#define LEAN_MAP_DATA_H
 
-#include "SceneEditorCommon.hlsli"
+#include "Data/HostDeviceData.h"
 
-#ifdef DEBUG_DRAW
+__import Helpers;
 
-float4 main(DebugDrawVSOut vOut) : SV_TARGET
+void applyLeanMap(in Texture2D leanMap, in SamplerState samplerState, inout ShadingAttribs shAttr)
 {
-    return float4(vOut.color, 1);
-}
+    float4 t = sampleTexture(leanMap, samplerState, shAttr);
+    // Reconstruct B 
+    float2 B = 2 * t.xy - 1;
+    float2 M = t.zw;
 
-#else //////////////////////////////////////////////////////////////////////////////////////
+    // Apply normal
+    float3 unnormalizedNormal = float3(B, 1);
+    applyNormalMap(unnormalizedNormal, shAttr.N, shAttr.T, shAttr.B);
+    // Reconstruct the diagonal covariance matrix
+    float2 maxCov = max((0), M - B*B);     // Use only diagonal of covariance due to float2 aniso roughness
 
-#ifndef PICKING
-cbuffer ConstColorCB : register(b0)
-{
-    float3 gColor;
-};
-#endif
-
-// PS Output
-#ifdef PICKING
-#define PSOut uint
-#else
-#define PSOut vec4
-#endif
-
-PSOut main(EditorVSOut vOut) : SV_TARGET
-{
-    float3 toCamera = normalize(gCam.position - vOut.vOut.posW);
-
-#ifdef CULL_REAR_SECTION
-    if(dot(toCamera, vOut.toVertex) < -0.1)
+    [unroll]
+    for (uint iLayer = 0; iLayer < MatMaxLayers; iLayer++)
     {
-        discard;
-    }
-#endif
+        if (shAttr.preparedMat.desc.layers[iLayer].type == MatNone) break;
 
-#ifdef PICKING
-    return vOut.drawID;
-#else
-    #ifdef SHADING
-        float shading = lerp(0.5, 1, dot(toCamera, vOut.vOut.normalW));
-        return vec4(gColor * shading, 1);
-    #else
-        return vec4(gColor, 1);
-    #endif
-#endif
+        if (shAttr.preparedMat.desc.layers[iLayer].type != MatLambert)
+        {
+            float2 roughness = shAttr.preparedMat.values.layers[iLayer].roughness.xy;
+            roughness = sqrt(roughness*roughness + maxCov); // Approximate convolution that works for all
+            shAttr.preparedMat.values.layers[iLayer].roughness.rg = roughness;
+        }
+    }
 }
 
 #endif

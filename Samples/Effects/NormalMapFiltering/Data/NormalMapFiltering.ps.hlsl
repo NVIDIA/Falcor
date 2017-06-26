@@ -26,10 +26,10 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 #include "ShaderCommon.h"
-#include "Shading.h"
+__import Shading;
 #define _COMPILE_DEFAULT_VS
 #include "VertexAttrib.h"
-#include "Effects/LeanMapData.hlsli"
+#include "Effects/LeanMapData.slang.h"
 
 cbuffer PerFrameCB : register(b0)
 {
@@ -49,9 +49,9 @@ void perturbNormal(in const MaterialData mat, inout ShadingAttribs shAttr, bool 
 }
 #endif
 
-#include "shading.h"
+__import Shading;
 
-vec4 main(VS_OUT vOut) : SV_TARGET
+float4 main(VS_OUT vOut) : SV_TARGET
 {
     ShadingAttribs shAttr;
     prepareShadingAttribs(gMaterial, vOut.posW, gCam.position, vOut.normalW, vOut.bitangentW, vOut.texC, shAttr);
@@ -64,6 +64,6 @@ vec4 main(VS_OUT vOut) : SV_TARGET
         evalMaterial(shAttr, gLights[l], result, l == 0);
     }
 
-    vec4 finalColor = vec4(result.finalValue + gAmbient * result.diffuseAlbedo, 1.f);
+    float4 finalColor = float4(result.finalValue + gAmbient * result.diffuseAlbedo, 1.f);
     return finalColor;
 }

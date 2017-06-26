@@ -25,23 +25,23 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#include "ShaderCommon.h"
-__import Shading;
-#define _COMPILE_DEFAULT_VS
-#include "VertexAttrib.h"
 
-struct PSOut
+cbuffer PerFrameCB : register(b0)
 {
-    float4 color : SV_TARGET0;
-    float4 normal: SV_TARGET1;
+	float4x4 gvpTransform;
+	float3 gFontColor;
 };
 
-PSOut main(VS_OUT vsOut)
+Texture2D gFontTex;
+
+float4 calcColor(float2 texC)
 {
-    PSOut psOut;
+	float4 color = gFontTex.Load(int3(texC, 0));
+	color.rgb = gFontColor;
+	return color;
+}
 
-    psOut.color = 1.0.xxxx;
-    psOut.normal = float4(vsOut.normalW * 0.5f + 0.5f, 1.0f);
-
-    return psOut;
+float4 main(float2 texC  : TEXCOORD) : SV_TARGET0
+{
+	return calcColor(texC);
 }
