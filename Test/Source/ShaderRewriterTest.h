@@ -61,6 +61,6 @@ private:
     void onInit() override {};
 
     //  
-    register_testing_func(TestBasicShaderRewriter);
+    register_testing_func(TestShaderRewriter);
 
 };

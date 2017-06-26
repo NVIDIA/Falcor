@@ -36,8 +36,7 @@ void ComputeStateObjectTest::addTests()
 
 testing_func(ComputeStateObjectTest, TestAll)
 {
-    ComputeStateObject::Desc csd = ComputeStateObject::Desc();
-    
+    return test_pass();
 }
 
 int main()

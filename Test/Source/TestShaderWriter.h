@@ -88,6 +88,16 @@ public:
         //  The Space Index.
         uint32_t regSpace = 0;
 
+
+        //  Whether this is an array.
+        bool isArray = false;
+
+        //  Whether the array is Unbounded.
+        bool isUnbounded = false;
+
+        //  Array Sizes.
+        std::vector<uint32_t> arrayDimensions;
+
         //  Whether it is within a Constant Buffer.
         bool isWithinConstantBuffer = false;
 
@@ -119,14 +129,6 @@ public:
         //  The Sampler is associated with this texture.
         std::string samplerVariable = "";
   
-        //  Whether this is an array.
-        bool isArray = false;
-
-        //  Whether the array is Unbounded.
-        bool isUnbounded = false;
-
-        //  Array Sizes.
-        std::vector<uint32_t> arrayDimensions;
     };
     
     //  Structured Buffer Resource.
@@ -150,24 +152,13 @@ public:
         //  The Type of the Structured Buffer.
         ProgramReflection::BufferReflection::StructuredType bufferType;
 
-        //  Whether this is an array.
-        bool isArray = false;
-
-        //  Whether the array is Unbounded.
-        bool isUnbounded = false;
-
-        //  Array Sizes.
-        std::vector<uint32_t> arrayDimensions;
     };
 
     //  Raw Buffer Resource.
     struct RawBufferResource : public ShaderResource
     {
-        //  Whether this is an array.
-        bool isArray = false;
-        
-        //  Whether the array is Unbounded.
-        bool isUnbounded = false;
+        //  Shader Access.
+        ProgramReflection::ShaderAccess shaderAccess;
   
     };
 
@@ -252,7 +243,6 @@ public:
         //  Sampler Resources.
         std::vector<SamplerResource> samplers;
     };
-
 
  
     //  Get the Vertex Shader Code.
@@ -342,13 +332,14 @@ private:
     static std::string writeShaderOutputStruct(const ShaderResourcesData & rsMetaData, const std::string & outputStructName, const std::string & semanticPrefix);
 
     //  Return the Vertex Shader Code for the Output Lines.
-    static std::string writeShaderReturnCode(const ShaderResourcesData & rsMetaData, const std::string & outputStruct);
+    static std::string writeShaderReturnCode(const ShaderResourcesData & rsMetaData, const std::string & inputStruct, const std::string & outputStruct);
 
     //  Return in the requested type.
     static std::string convertToType(const std::string & variable, const ProgramReflection::Variable::Type & startType, const ProgramReflection::Variable::Type & requestedType);
 
 
     //  Write the Declare and Use the Resources.
+    static std::string writeDeclareResources(const ShaderResourcesData & shaderResourcesData);
 
 
     //  Write Declare Constant Buffer Resources.

@@ -7,7 +7,7 @@
 	CrashedTests="0"
 />
 <TestResult
-	TestName="TestBasicShaderRewriter"
+	TestName="TestShaderRewriter"
 	Passed="1"
 	ErrorMessage=""
 />

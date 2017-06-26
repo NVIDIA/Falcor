@@ -41,4 +41,5 @@ FboTest {} {debugd3d12 released3d12}
 SamplerTest {} {debugd3d12 released3d12}
 VaoTest {} {debugd3d12 released3d12}
 GraphicsStateObjectTest {} {debugd3d12 released3d12}
+ShaderRewriterTest {} {debugd3d12 released3d12}
 ]

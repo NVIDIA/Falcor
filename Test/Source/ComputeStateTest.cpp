@@ -36,7 +36,7 @@ void ComputeStateTest::addTests()
 
 testing_func(ComputeStateTest, TestAll)
 {
-
+    return test_pass();
 }
 
 

@@ -33,17 +33,18 @@
 //  Add the Tests to the Shader Test List.
 void ShaderRewriterTest::addTests()
 {
-    addTestToList<TestBasicShaderRewriter>();
+    addTestToList<TestShaderRewriter>();
 }
 
 
 //
-testing_func(ShaderRewriterTest, TestBasicShaderRewriter)
+testing_func(ShaderRewriterTest, TestShaderRewriter)
 {
     //  
     std::string configFile = "config.json";
     std::string errorMessage = "";
 
+    
     //  Create the Shader Test Maker.
     TestShaderMaker shaderTestMaker;
 
@@ -58,68 +59,229 @@ testing_func(ShaderRewriterTest, TestBasicShaderRewriter)
     //  Seed the Random Number Generator.
     std::srand(shaderTestMaker.viewShaderTestLayout().randomseed);
 
-    shaderTestMaker.getShaderTestLayout().vertexShaderOutputs = { 0, 1, 4 };
-    shaderTestMaker.getShaderTestLayout().pixelShaderInputs = { 0, 1, 4, 2 };
-    shaderTestMaker.getShaderTestLayout().pixelShaderOutputs = { 0, 3, 5, 7 };
-
     //  Generate the Shader Program.
     shaderTestMaker.generateShaderProgram();
 
     //  
-    std::string vsCode = "";
-    std::string hsCode = "";
-    std::string dsCode = "";
-    std::string gsCode = "";
-    std::string psCode = "";
-    std::string csCode = "";
+    bool resourceVerify = false;
 
     if (shaderTestMaker.viewShaderTestLayout().hasVertexShader && shaderTestMaker.viewShaderTestLayout().hasHullShader && shaderTestMaker.viewShaderTestLayout().hasDomainShader && shaderTestMaker.viewShaderTestLayout().hasGeometryShader && shaderTestMaker.viewShaderTestLayout().hasPixelShader)
     {
+
         //  Check for a Complete Rendering pipeline.
-        vsCode = shaderTestMaker.getVertexShaderCode();
-        hsCode = shaderTestMaker.getHullShaderCode();
-        dsCode = shaderTestMaker.getDomainShaderCode();
-        gsCode = shaderTestMaker.getGeometryShaderCode();
-        psCode = shaderTestMaker.getPixelShaderCode();
+        std::string vsCode = shaderTestMaker.getVertexShaderCode();
+        std::string hsCode = shaderTestMaker.getHullShaderCode();
+        std::string dsCode = shaderTestMaker.getDomainShaderCode();
+        std::string gsCode = shaderTestMaker.getGeometryShaderCode();
+        std::string psCode = shaderTestMaker.getPixelShaderCode();
+
+        std::ofstream ofvs;
+        ofvs.open("Data/VS.vs.hlsl", std::ofstream::trunc);
+        ofvs << vsCode;
+        ofvs.close();
+
+        std::ofstream ofps;
+        ofps.open("Data/PS.ps.hlsl", std::ofstream::trunc);
+        ofps << psCode;
+        ofps.close();
+
+        std::ofstream ofgs;
+        ofgs.open("Data/GS.gs.hlsl", std::ofstream::trunc);
+        ofgs << gsCode;
+        ofgs.close();
+
+        //std::ofstream ofhs;
+        //ofhs.open("Data/HS.hs.hlsl", std::ofstream::trunc);
+        //ofhs << hsCode;
+        //ofhs.close();
+
+        //std::ofstream ofds;
+        //ofds.open("Data/DS.ds.hlsl", std::ofstream::trunc);
+        //ofds << dsCode;
+        //ofds.close();
+
+        //  Create the Graphics Program.
+        GraphicsProgram::SharedPtr graphicsProgram = GraphicsProgram::createFromFile("VS.vs.hlsl", "PS.ps.hlsl", "GS.gs.hlsl", "HS.hs.hlsl", "DS.ds.hlsl");
+
+        //
+        ProgramVersion::SharedConstPtr graphicsProgramVersion = (graphicsProgram->getActiveVersion());
+
+        if (graphicsProgramVersion)
+        {
+            //  Create the Graphics Program.
+            GraphicsVars::SharedPtr graphicsProgramVars = GraphicsVars::create(graphicsProgram->getActiveVersion()->getReflector());
+          
+            //  Verify the Program Resources.
+            resourceVerify = shaderTestMaker.verifyProgramResources(graphicsProgramVars);
+        }
+        else
+        {
+            if (shaderTestMaker.viewShaderTestLayout().mode == "invalid")
+            {
+                return test_pass();
+            }
+            else
+            {
+                return test_fail("Error - Could not compile shaders!");
+            }
+        }
+
+    }
+    else if (shaderTestMaker.viewShaderTestLayout().hasVertexShader && shaderTestMaker.viewShaderTestLayout().hasGeometryShader && shaderTestMaker.viewShaderTestLayout().hasPixelShader)
+    {
+
+        //  Get the Vertex Shader Code.
+        std::string vsCode = shaderTestMaker.getVertexShaderCode();
+        
+        //  Get the Pixel Shader Code.
+        std::string psCode = shaderTestMaker.getPixelShaderCode();
+        
+        //  Get the Geometry Shader Code.
+        std::string gsCode = shaderTestMaker.getGeometryShaderCode();
+
+        std::ofstream ofvs;
+        ofvs.open("Data/VS.vs.hlsl", std::ofstream::trunc);
+        ofvs << vsCode;
+        ofvs.close();
+
+        std::ofstream ofps;
+        ofps.open("Data/PS.ps.hlsl", std::ofstream::trunc);
+        ofps << psCode;
+        ofps.close();
+
+        std::ofstream ofgs;
+        ofgs.open("Data/GS.gs.hlsl", std::ofstream::trunc);
+        ofgs << gsCode;
+        ofgs.close();
+
+        //  Create the Graphics Program.
+        GraphicsProgram::SharedPtr graphicsProgram = GraphicsProgram::createFromFile("VS.vs.hlsl", "PS.ps.hlsl", "GS.gs.hlsl", "", "");
+
+        //
+        ProgramVersion::SharedConstPtr graphicsProgramVersion = (graphicsProgram->getActiveVersion(true));
+
+        if (graphicsProgramVersion)
+        {
+            if (shaderTestMaker.viewShaderTestLayout().mode == "invalid")
+            {
+                return test_fail("Error - Complied Invalid Shaders!");
+            }
+
+            //  Create the Graphics Program.
+            GraphicsVars::SharedPtr graphicsProgramVars = GraphicsVars::create(graphicsProgramVersion->getReflector());
+
+            //  Verify the Program Resources.
+            resourceVerify = shaderTestMaker.verifyProgramResources(graphicsProgramVars);
+        }
+        else
+        {
+            if (shaderTestMaker.viewShaderTestLayout().mode == "invalid")
+            {
+                return test_pass();
+            }
+            else
+            {
+                return test_fail("Error - Could not compile shaders!");
+            }
+        }
 
     }
     else if (shaderTestMaker.viewShaderTestLayout().hasVertexShader && shaderTestMaker.viewShaderTestLayout().hasPixelShader)
     {
         //  Check if we have a VS and PS pipeline.
-        vsCode = shaderTestMaker.getVertexShaderCode();
-        psCode = shaderTestMaker.getPixelShaderCode();
+        std::string vsCode = shaderTestMaker.getVertexShaderCode();
+        std::string psCode = shaderTestMaker.getPixelShaderCode();
+
+        //  Write the Pixel Shader to file, for further review.
+        std::ofstream ofvs;
+        ofvs.open("Data/VS.vs.hlsl", std::ofstream::trunc);
+        ofvs << vsCode;
+        ofvs.close();
+
+        //  Write the Pixel Shader to file, for further review.
+        std::ofstream ofps;
+        ofps.open("Data/PS.ps.hlsl", std::ofstream::trunc);
+        ofps << psCode;
+        ofps.close();
+
+        //  Create the Graphics Program.
+        GraphicsProgram::SharedPtr graphicsProgram = GraphicsProgram::createFromFile("VS.vs.hlsl", "PS.ps.hlsl");
+
+        //
+        ProgramVersion::SharedConstPtr graphicsProgramVersion = (graphicsProgram->getActiveVersion(true));
+
+        if (graphicsProgramVersion)
+        {
+            if (shaderTestMaker.viewShaderTestLayout().mode == "invalid")
+            {
+                return test_fail("Error - Complied Invalid Shaders!");
+            }
+
+            //  Create the Graphics Program.
+            GraphicsVars::SharedPtr graphicsProgramVars = GraphicsVars::create(graphicsProgramVersion->getReflector());
+
+            //  Verify the Program Resources.
+            resourceVerify = shaderTestMaker.verifyProgramResources(graphicsProgramVars);
+        }
+        else
+        {
+            if (shaderTestMaker.viewShaderTestLayout().mode == "invalid")
+            {
+                return test_pass();
+            }
+            else
+            {
+                return test_fail("Error - Could not compile shaders!");
+            }
+        }
     }
     else if (shaderTestMaker.viewShaderTestLayout().hasComputeShader)
     {
-        csCode = shaderTestMaker.getComputeShaderCode();
+        std::string csCode = shaderTestMaker.getComputeShaderCode();
+
+        //  Write the Compute Shader to file, for further review.
+        std::ofstream ofvs;
+        ofvs.open("Data/CS.cs.hlsl", std::ofstream::trunc);
+        ofvs << csCode;
+        ofvs.close();
+ 
+    
+        //  Create the Compute Program.
+        ComputeProgram::SharedPtr computeProgram = ComputeProgram::createFromFile("CS.cs.hlsl");
+
+        //
+        ProgramVersion::SharedConstPtr computeProgramVersion = (computeProgram->getActiveVersion(true));
+
+        if (computeProgramVersion)
+        {
+            if (shaderTestMaker.viewShaderTestLayout().mode == "invalid")
+            {
+                return test_fail("Error - Complied Invalid Shaders!");
+            }
+
+            //  Create the Graphics Program.
+            ComputeVars::SharedPtr graphicsProgramVars = ComputeVars::create(computeProgramVersion->getReflector());
+
+            //  Verify the Program Resources.
+            resourceVerify = shaderTestMaker.verifyProgramResources(graphicsProgramVars);
+        }
+        else
+        {
+            if (shaderTestMaker.viewShaderTestLayout().mode == "invalid")
+            {
+                return test_pass();
+            }
+            else
+            {
+                return test_fail("Error - Could not compile shaders!");
+            }
+        }
     }
     else
     {
         test_fail("Test Case does not have a valid Shader Stage Set!")
     }
 
-
-    //  Write the Pixel Shader to file, for further review.
-    std::ofstream ofvs;
-    ofvs.open("Data/VS.vs.hlsl", std::ofstream::trunc);
-    ofvs << vsCode;
-    ofvs.close();
-
-    //  Write the Pixel Shader to file, for further review.
-    std::ofstream ofps;
-    ofps.open("Data/PS.ps.hlsl", std::ofstream::trunc);
-    ofps << psCode;
-    ofps.close();
-
-
-    //  Create the Graphics Program.
-    GraphicsProgram::SharedPtr graphicsProgram = GraphicsProgram::createFromFile("VS.vs.hlsl", "PS.ps.hlsl");
-
-    //  Create the Graphics Program.
-    GraphicsVars::SharedPtr graphicsProgramVars = GraphicsVars::create(graphicsProgram->getActiveVersion()->getReflector());
-
-    //  
-    bool resourceVerify = shaderTestMaker.verifyProgramResources(graphicsProgramVars);
 
     //  
     if (resourceVerify)
@@ -129,7 +291,7 @@ testing_func(ShaderRewriterTest, TestBasicShaderRewriter)
     }
     else
     {
-        return test_fail("Error - Could not verify.");
+        return test_fail("Error - Could not verify resources.");
     }
 
 }

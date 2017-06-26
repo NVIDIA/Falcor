@@ -325,7 +325,7 @@ namespace Falcor
 
     void debugBreak()
     {
-        __debugbreak();
+        //__debugbreak();
     }
 
     std::string stripDataDirectories(const std::string& filename)

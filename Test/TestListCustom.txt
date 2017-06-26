@@ -1,0 +1,4 @@
+[
+FalcorTest.sln {Released3d12 Bin\x64\Release\ Debugd3d12 Bin\x64\Debug\}
+ShaderRewriterTest {} {debugd3d12 released3d12}
+]

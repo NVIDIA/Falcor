@@ -148,26 +148,7 @@ std::string TestShaderWriter::writeVSShaderCode(const ShaderResourcesData & vsMe
     //  Write the Vertex Shader Resource Code.
     vertexShader = vertexShader + "\n";
 
-
-    std::string cbResourcesCode = writeDeclareConstantBufferResources(vsMetaData);
-    vertexShader = vertexShader + cbResourcesCode;
-    vertexShader = vertexShader + "\n";
-
-    std::string sbResourcesCode = writeDeclareStructuredBufferResources(vsMetaData.sbs);
-    vertexShader = vertexShader + sbResourcesCode;
-    vertexShader = vertexShader + "\n";
-
-    std::string samplersResourcesCode = writeDeclareSamplerResources(vsMetaData.samplers);
-    vertexShader = vertexShader + samplersResourcesCode;
-    vertexShader = vertexShader + "\n";
-
-    std::string textureResourcesCode = writeDeclareTextureResources(vsMetaData.textures);
-    vertexShader = vertexShader + textureResourcesCode;
-    vertexShader = vertexShader + "\n";
-
-    std::string rbResourcesCode = writeDeclareRawBufferResources(vsMetaData.rbs);
-    vertexShader = vertexShader + rbResourcesCode;
-    vertexShader = vertexShader + "\n";
+    vertexShader = vertexShader + writeDeclareResources(vsMetaData);
 
     //  Create the Shader body for the Vertex Shader.
     vertexShader = vertexShader + "VS_OUT main(float4 pos : POSITION) \n";
@@ -179,7 +160,7 @@ std::string TestShaderWriter::writeVSShaderCode(const ShaderResourcesData & vsMe
 
 
     //  Create the Return Lines Shader Code.
-    std::string returnLines = writeShaderReturnCode(vsMetaData, "vsOut");
+    std::string returnLines = writeShaderReturnCode(vsMetaData, "", "vsOut");
     vertexShader = vertexShader + returnLines;
     vertexShader = vertexShader + "\n";
 
@@ -194,19 +175,64 @@ std::string TestShaderWriter::writeVSShaderCode(const ShaderResourcesData & vsMe
 //  Return the Hull Shader Code.
 std::string TestShaderWriter::writeHSShaderCode(const ShaderResourcesData & hsMetaData)
 {
-    return "";
+    //  
+    std::string hullShader = "\n";
+    
+    //  
+    hullShader = hullShader + writeDeclareResources(hsMetaData);
+
+    //  
+    return hullShader;
 }
 
 //  Return the Domain Shader Code.
 std::string TestShaderWriter::writeDSShaderCode(const ShaderResourcesData & dsMetaData)
 {
-    return "";
+    //  
+    std::string domainShader = "\n";
+
+    //
+    domainShader = domainShader + writeDeclareResources(dsMetaData);
+    
+    //
+    return domainShader;
 }
 
 //  Return the Geometry Shader Code.
 std::string TestShaderWriter::writeGSShaderCode(const ShaderResourcesData & gsMetaData)
 {
-    return "";
+    //  
+    std::string geometryShader = "\n";
+
+    std::string gsIn = writeShaderInputStruct(gsMetaData, "GS_IN", "INPUT");
+    geometryShader = geometryShader + gsIn;
+    geometryShader = geometryShader + "\n";
+
+    //  Get the Vertex Shader Output Shader Code.
+    std::string gsOut = writeShaderOutputStruct(gsMetaData, "GS_OUT", "OUTPUT");
+    geometryShader = geometryShader + gsOut;
+    geometryShader = geometryShader + "\n";
+
+    //  
+    geometryShader = geometryShader + writeDeclareResources(gsMetaData);
+    geometryShader = geometryShader + "\n";
+
+    //  
+    geometryShader = geometryShader + "[maxvertexcount(3)] \n \n";
+    geometryShader = geometryShader + "void main(triangle GS_IN input[3], inout TriangleStream<GS_OUT> triStream) \n";
+    geometryShader = geometryShader + "{ \n";
+    geometryShader = geometryShader + "GS_OUT gsOut; \n";
+
+    std::string returnLines = writeShaderReturnCode(gsMetaData, "", "gsOut");
+    geometryShader = geometryShader + returnLines;
+    geometryShader = geometryShader + "\n";
+
+    geometryShader = geometryShader + "} \n";
+
+
+
+    //
+    return geometryShader;
 }
 
 //  Return the Pixel Shader Code.
@@ -226,26 +252,8 @@ std::string TestShaderWriter::writePSShaderCode(const ShaderResourcesData & psMe
     pixelShader = pixelShader + psOut;
     pixelShader = pixelShader + "\n";
 
-
-    std::string cbResourcesCode = writeDeclareConstantBufferResources(psMetaData);
-    pixelShader = pixelShader + cbResourcesCode;
-    pixelShader = pixelShader + "\n";
-
-    std::string sbResourcesCode = writeDeclareStructuredBufferResources(psMetaData.sbs);
-    pixelShader = pixelShader + sbResourcesCode;
-    pixelShader = pixelShader + "\n";
-
-    std::string samplersResourcesCode = writeDeclareSamplerResources(psMetaData.samplers);
-    pixelShader = pixelShader + samplersResourcesCode;
-    pixelShader = pixelShader + "\n";
-
-    std::string textureResourcesCode = writeDeclareTextureResources(psMetaData.textures);
-    pixelShader = pixelShader + textureResourcesCode;
-    pixelShader = pixelShader + "\n";
-
-    std::string rbResourcesCode = writeDeclareRawBufferResources(psMetaData.rbs);
-    pixelShader = pixelShader + rbResourcesCode;
-    pixelShader = pixelShader + "\n";
+    //  
+    pixelShader = pixelShader + writeDeclareResources(psMetaData);
 
 
     //
@@ -258,7 +266,7 @@ std::string TestShaderWriter::writePSShaderCode(const ShaderResourcesData & psMe
     pixelShader = pixelShader + "PS_OUT psOut; \n";
 
     //  Create the Return Lines Shader Code.
-    std::string returnLines = writeShaderReturnCode(psMetaData, "psOut");
+    std::string returnLines = writeShaderReturnCode(psMetaData, "vOut", "psOut");
     pixelShader = pixelShader + returnLines;
     pixelShader = pixelShader + "\n";
 
@@ -275,7 +283,24 @@ std::string TestShaderWriter::writePSShaderCode(const ShaderResourcesData & psMe
 //  Return the Compute Shader Code.
 std::string TestShaderWriter::writeCSShaderCode(const ShaderResourcesData & csMetaData)
 {
-    return "";
+    std::string computeShader = "\n";
+
+    //  
+    computeShader = computeShader + writeDeclareResources(csMetaData);
+
+    computeShader = computeShader + "\n";
+    computeShader = computeShader + "[numthreads(4, 4, 4)] \n";
+    computeShader = computeShader + "void main() \n";
+    computeShader = computeShader + "{ \n";
+
+
+    //  std::string returnLines = writeComputeShaderReturnCode();
+    //
+
+    computeShader = computeShader + "} \n";
+
+
+    return computeShader;
 }
 
 //  Write the Shader Input Struct.
@@ -293,7 +318,7 @@ std::string TestShaderWriter::writeShaderInputStruct(const ShaderResourcesData &
     //  Add in the active Render Targets.
     for (const auto & currentOutput : rsMetaData.inTargets)
     {
-        inputStruct = inputStruct + "float4 output" + std::to_string(currentOutput) + " : " + semanticPrefix + std::to_string(currentOutput) + "; \n";
+        inputStruct = inputStruct + "float4 input" + std::to_string(currentOutput) + " : " + semanticPrefix + std::to_string(currentOutput) + "; \n";
     }
 
     //  
@@ -334,7 +359,7 @@ std::string TestShaderWriter::writeShaderOutputStruct(const ShaderResourcesData 
 
 
 //  Return the Vertex Shader Code for the Output Lines.
-std::string TestShaderWriter::writeShaderReturnCode(const ShaderResourcesData & rsMetaData, const std::string & outputStruct)
+std::string TestShaderWriter::writeShaderReturnCode(const ShaderResourcesData & rsMetaData, const std::string & inputStruct, const std::string & outputStruct)
 {
     std::string outputLines = "";
     outputLines = "\n";
@@ -360,6 +385,15 @@ std::string TestShaderWriter::writeShaderReturnCode(const ShaderResourcesData & 
         {
             outputLines = outputLines + writeUseRawBufferResource(currentResource);
         }
+
+        if (inputStruct != "")
+        {
+            for (const auto & currentOutput : rsMetaData.inTargets)
+            {
+                outputLines = outputLines + inputStruct + "." + "input" + std::to_string(currentOutput) + " + ";
+            }
+        }
+
 
         outputLines = outputLines + "float4(0.05, 0.05, 0.05, 0.05);";
 
@@ -440,6 +474,34 @@ std::string TestShaderWriter::convertToType(const std::string & variable, const 
     return variableConversion;
 }
 
+
+//  Write the Declare Resources.
+std::string TestShaderWriter::writeDeclareResources(const ShaderResourcesData & shaderResourcesData)
+{
+    std::string declareResource = "\n";
+
+    std::string cbResourcesCode = writeDeclareConstantBufferResources(shaderResourcesData);
+    declareResource = declareResource + cbResourcesCode;
+    declareResource = declareResource + "\n";
+
+    std::string sbResourcesCode = writeDeclareStructuredBufferResources(shaderResourcesData.sbs);
+    declareResource = declareResource + sbResourcesCode;
+    declareResource = declareResource + "\n";
+
+    std::string samplersResourcesCode = writeDeclareSamplerResources(shaderResourcesData.samplers);
+    declareResource = declareResource + samplersResourcesCode;
+    declareResource = declareResource + "\n";
+
+    std::string textureResourcesCode = writeDeclareTextureResources(shaderResourcesData.textures);
+    declareResource = declareResource + textureResourcesCode;
+    declareResource = declareResource + "\n";
+
+    std::string rbResourcesCode = writeDeclareRawBufferResources(shaderResourcesData.rbs);
+    declareResource = declareResource + rbResourcesCode;
+    declareResource = declareResource + "\n";
+
+    return declareResource;
+}
 
 //
 std::string TestShaderWriter::writeDeclareConstantBufferResources(const ShaderResourcesData & shaderResourcesData)
@@ -819,7 +881,7 @@ std::string TestShaderWriter::writeDeclareSamplerResources(const std::vector<Sam
         //  
         if (currentSamplerCode != "")
         {
-            samplersCode = currentSamplerCode + "\n\n";
+            samplersCode = samplersCode + currentSamplerCode + "\n\n";
         }
     }
 
@@ -892,13 +954,21 @@ std::string TestShaderWriter::writeUseTextureResource(const TextureResource & gi
 
     }
 
-    if (givenTexture.isSampled && givenTexture.samplerVariable != "")
+
+    if (givenTexture.shaderAccess != ProgramReflection::ShaderAccess::ReadWrite)
     {
-        useTextureResource = useTextureResource + writeSamplerTextureAccessCode(givenTexture);
+        if (givenTexture.isSampled && givenTexture.samplerVariable != "")
+        {
+            useTextureResource = useTextureResource + writeSamplerTextureAccessCode(givenTexture);
+        }
+        else
+        {
+            useTextureResource = useTextureResource + writeNonSampleTextureAccessCode(givenTexture);
+        }
     }
     else
     {
-        useTextureResource = useTextureResource + writeNonSampleTextureAccessCode(givenTexture);
+        useTextureResource = useTextureResource + ".Load(0)";
     }
 
     //  
@@ -942,19 +1012,19 @@ std::string TestShaderWriter::writeSamplerTextureAccessCode(const TextureResourc
     //  Write the Access Code Based on the Current Texture Resource Dimensions.
     if (textureResource.textureResourceType == ProgramReflection::Resource::Dimensions::Buffer)
     {
-        texAccess = texAccess + ".Sample(" + textureResource.samplerVariable + ", 0)";
+        texAccess = texAccess + ".SampleLevel(" + textureResource.samplerVariable + ", 0, 0)";
     }
     else if (textureResource.textureResourceType == ProgramReflection::Resource::Dimensions::Texture1DArray || textureResource.textureResourceType == ProgramReflection::Resource::Dimensions::Texture2D)
     {
-        texAccess = texAccess + ".Sample(" + textureResource.samplerVariable + ", float2(0,0))";
+        texAccess = texAccess + ".SampleLevel(" + textureResource.samplerVariable + ", float2(0,0), 0)";
     }
     else if (textureResource.textureResourceType == ProgramReflection::Resource::Dimensions::Texture2DArray || textureResource.textureResourceType == ProgramReflection::Resource::Dimensions::Texture3D || textureResource.textureResourceType == ProgramReflection::Resource::Dimensions::TextureCube)
     {
-        texAccess = texAccess + ".Sample(" + textureResource.samplerVariable + ", float3(0, 0, 0))";
+        texAccess = texAccess + ".SampleLevel(" + textureResource.samplerVariable + ", float3(0, 0, 0), 0)";
     }
     else if (textureResource.textureResourceType == ProgramReflection::Resource::Dimensions::TextureCubeArray)
     {
-        texAccess = texAccess + ".Sample(" + textureResource.samplerVariable + ", float4(0, 0, 0, 0))";
+        texAccess = texAccess + ".SampleLevel(" + textureResource.samplerVariable + ", float4(0, 0, 0, 0), 0)";
     }
 
     return texAccess;
@@ -975,17 +1045,29 @@ std::string TestShaderWriter::writeDeclareRawBufferResources(const std::vector<R
 
         if (currentRawBufferCode != "")
         {
-            rawBuffersCode = currentRawBufferCode + "\n\n";
+            rawBuffersCode = rawBuffersCode + currentRawBufferCode + "\n\n";
         }
     }
     
     return rawBuffersCode;
 }
 
-
+//  
 std::string TestShaderWriter::writeDeclareRawBufferResource(const RawBufferResource & givenRawBuffers)
 {
-    return "";
+    //  
+    std::string declareType = "ByteAddressBuffer ";
+
+    //
+    if (givenRawBuffers.shaderAccess == ProgramReflection::ShaderAccess::ReadWrite)
+    {
+        declareType = "RW" + declareType;
+    }
+
+    //  
+    std::string currentRawBufferCode = writeCombinedResourceCode(givenRawBuffers, declareType, "t", givenRawBuffers.shaderAccess, givenRawBuffers.isArray, givenRawBuffers.isUnbounded, std::vector<uint32_t>());
+
+    return currentRawBufferCode;
 }
 
 //  
@@ -997,7 +1079,6 @@ std::string TestShaderWriter::writeUseRawBufferResource(const RawBufferResource 
     {
         rawBufferUseCode = givenRawBuffers.variable + ".Load4(0) + ";
     }
-
 
     return rawBufferUseCode;
 }

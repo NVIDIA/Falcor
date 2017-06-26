@@ -13,6 +13,7 @@
 
     //  Shader Stages.    
     //  "vs/ps"
+    //  "vs/gs/ps"
     //  "vs/hs/ds/gs/ps"
     //  "cs"
     "stages" : "vs/ps", 

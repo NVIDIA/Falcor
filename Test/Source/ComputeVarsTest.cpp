@@ -37,8 +37,7 @@ void ComputeVarsTest::addTests()
 testing_func(ComputeVarsTest, TestAll)
 {
     
-    
-    
+    return test_pass();    
 }
 
 int main()

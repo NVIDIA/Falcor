@@ -63,6 +63,10 @@ public:
         //  The Mode.
         std::string mode;
 
+        //  
+        std::string invalidResourceType;
+
+
         //  Whether or not we have a Vertex Shader.
         bool hasVertexShader;
 
@@ -86,19 +90,11 @@ public:
         //  Maximum number of Struct Variables.
         uint32_t maxStructVariablesCount = 3;
 
-
-        //
+        
         //  Maximum UAV Targets.
         uint32_t maxUAVTargets = 8;
 
-        //  Maximum Pixel Shader Output.
-        uint32_t maxPixelShaderOutput = 8;
 
-        //  Maximum Constant Buffer Count.
-        uint32_t maximumConstantBufferCount = 15;
-
-        //  Maximum Sampler Count.
-        uint32_t maximumSamplerCount = 15;
 
         //  Allow Unbounded Constant Buffers.
         bool allowUnboundedConstantBuffers = false;
@@ -115,19 +111,38 @@ public:
         //  Allow Explicit Spaces.
         bool allowExplicitSpaces = false;
         
-        //  The Vertex Shader Outputs.
-        std::vector<uint32_t> vertexShaderOutputs;
         
-        //  The Pixel Shader Inputs.
-        std::vector<uint32_t> pixelShaderInputs;
+        //  Vertex Shader Outputs.
+        std::vector<uint32_t> vsOutputs;
         
-        //  The Pixel Shader Outputs.
-        std::vector<uint32_t> pixelShaderOutputs;
+        //  Hull Shader Inputs.
+        std::vector<uint32_t> hsInputs;
+        
+        //  Hull Shader Outputs.
+        std::vector<uint32_t> hsOutputs;
+        
+        //  Domain Shader Inputs.
+        std::vector<uint32_t> dsInputs;
+        
+        //  Domain Shader Outputs.
+        std::vector<uint32_t> dsOutputs;
+        
+        //  Geometry Shader Inputs.
+        std::vector<uint32_t> gsInputs;
+        
+        //  Geometry Shader Outputs.
+        std::vector<uint32_t> gsOutputs;
 
+        //  Pixel Shader Inputs.
+        std::vector<uint32_t> psInputs;
+        
+        //  Pixel Shader Outputs.
+        std::vector<uint32_t> psOutputs;
 
 
         //  The Maximum Number of Threads in the Compute Shader.
-        uint32_t maxComputeThreads = 768;
+        uint32_t maxComputeThreads = 1024;
+
     };
 
 
@@ -140,8 +155,8 @@ public:
     //  Samplers - Redefinition / Overlapping Registers.
     enum class Mode : int
     {
-        VALID = 0, 
-        INVALID = 1
+        Valid = 0, 
+        Invalid = 1
     };
 
     struct TestInstance
@@ -154,12 +169,22 @@ public:
         Mode samplers;
     };
 
+    struct ReservedResources
+    {
+        uint32_t reservedCBS = 0;
+        uint32_t reservedTBs = 0;
+        uint32_t reservedSBS = 0;
+        uint32_t reservedTextures = 0;
+        uint32_t reservedSamplers = 0;
+    };
+
+
 
     //  
     struct RegisterCount
     {
         bool isMaxed = false;
-        uint32_t lastRegisterIndex = 0;
+        uint32_t nextRegisterIndex = 0;
     };
 
 
@@ -167,7 +192,7 @@ public:
     bool loadConfigFile(const std::string & configFile, std::string errorMessage);
 
     //  Set the Version Restricted Constants.
-    void setVersionRestrictedConstants();
+    void generateVersionRestrictedConstants();
 
     //  Return the Shader Test Layout in a const format.
     const TestShaderLayout & viewShaderTestLayout() const;
@@ -199,38 +224,56 @@ public:
     
     //  Verify that the Resources are in keeping with the Program Creation.
     bool verifyProgramResources(const GraphicsVars::SharedPtr & graphicsProgramVars);
+    bool verifyProgramResources(const ComputeVars::SharedPtr & computeProgramVars);
 
     //  Verify that the Resources are in keeping with the Shader Stage.
     bool verifyProgramResources(const TestShaderWriter::ShaderResourcesData & rsData, const GraphicsVars::SharedPtr & graphicsProgramVars);
+    bool verifyProgramResources(const TestShaderWriter::ShaderResourcesData & rsData, const ComputeVars::SharedPtr & computeProgramVars);
 
 
 private:
 
+    //  Generate the Constant Buffer Resources that cause an error.
+    void generateErrorConstantBufferResources(std::vector<TestShaderWriter::ConstantBufferResource> & cbs, const Mode & mode);
 
-    
+    //  Generate the Texture Buffer Resources that cause an error.
+    void generateErrorTextureBufferResources(std::vector<TestShaderWriter::TextureBufferResource> & tbs, const Mode & mode);
+
+    //  Generate the Structured Buffer Resources that cause an error.
+    void generateErrorStructuredBufferResources(std::vector<TestShaderWriter::StructuredBufferResource> & sbs, std::vector<TestShaderWriter::StructuredBufferResource> & rwSBs, const Mode & mode);
+
+    //  Generate the Raw Buffer Resources that cause an error.
+    void generateErrorRawBufferResources(std::vector<TestShaderWriter::RawBufferResource> & rbs, std::vector<TestShaderWriter::RawBufferResource> & rwRBs, const Mode & mode);
+
+    //  Generate the Texture Resources that cause an error.
+    void generateErrorTextureResources(std::vector<TestShaderWriter::TextureResource> & texs, std::vector<TestShaderWriter::TextureResource> & rwTexs, const Mode & mode);
+
+    //  Generate the Sampler Resources that cause an error.
+    void generateErrorSamplersResources(std::vector<TestShaderWriter::SamplerResource> & samps, const Mode & mode);
+
     //  Generate the Constant Buffer Resources.
-    void generateConstantBufferResources(std::vector<TestShaderWriter::ConstantBufferResource> & cbs, const Mode & mode);
+    void generateConstantBufferResources(std::vector<TestShaderWriter::ConstantBufferResource> & cbs);
 
     //  Generate the Texture Buffer Resources.
-    void generateTextureBufferResources(std::vector<TestShaderWriter::TextureBufferResource> & tbs, const Mode & mode);
+    void generateTextureBufferResources(std::vector<TestShaderWriter::TextureBufferResource> & tbs);
 
     //  Generate the Structured Buffer Resources.
-    void generateStructuredBufferResources(std::vector<TestShaderWriter::StructuredBufferResource> & sbs, std::vector<TestShaderWriter::StructuredBufferResource> & rwSBs, const Mode & mode);
+    void generateStructuredBufferResources(std::vector<TestShaderWriter::StructuredBufferResource> & sbs, std::vector<TestShaderWriter::StructuredBufferResource> & rwSBs);
 
     //  Generate the Raw Buffer Resources.
-    void generateRawBufferResources(std::vector<TestShaderWriter::RawBufferResource> & rbs, std::vector<TestShaderWriter::RawBufferResource> & rwRBs, const Mode & mode);
+    void generateRawBufferResources(std::vector<TestShaderWriter::RawBufferResource> & rbs, std::vector<TestShaderWriter::RawBufferResource> & rwRBs);
 
     //  Generate the Sampler Resources.
-    void generateSamplersResources(std::vector<TestShaderWriter::SamplerResource> & samps, const Mode & mode);
+    void generateSamplersResources(std::vector<TestShaderWriter::SamplerResource> & samps);
 
     //  Generate the Texture Resources.
-    void generateTextureResources(std::vector<TestShaderWriter::TextureResource> & texs, std::vector<TestShaderWriter::TextureResource> & rwTexs, const Mode & mode);
-
-    //  Get the Resource Distribution amongst the stages.
-    void getResourceDistribution(std::vector<uint32_t> & declareAll, std::vector<uint32_t> & declareMixed, std::vector<uint32_t> & declareNone);
+    void generateTextureResources(std::vector<TestShaderWriter::TextureResource> & texs, std::vector<TestShaderWriter::TextureResource> & rwTexs);
 
     //  Return a pointer to the Resource Meta Data of the specified Stage. 
     TestShaderWriter::ShaderResourcesData * getShaderResourceData(const std::string & stage);
+
+    //  
+    void getRegisterIndexAndSpace(bool isUsingExplicitSpace, bool isExplicitIndex, bool isExplicitSpace, bool isArray, bool isUnboundedArray, std::vector<uint32_t> arrayDiemsions, std::map<uint32_t, RegisterCount> & spaceRegisterIndexes, std::vector<uint32_t> & spaces, uint32_t & maxSpace, uint32_t & newIndex, uint32_t & newSpace);
 
     //  Return a Randomized Selection of Stages.
     std::vector<uint32_t> generateRandomizedStages();
@@ -256,6 +299,9 @@ private:
     //  Verify All Resources.
     bool verifyAllResources(const TestShaderWriter::ShaderResourcesData & rsData, const GraphicsVars::SharedPtr & graphicsProgramVars);
 
+    //  Verify Common Resource.
+    bool verifyCommonResourceMatch(const TestShaderWriter::ShaderResource & srData, ProgramReflection::Resource::ResourceType resourceType, ProgramReflection::SharedConstPtr  graphicsReflection);
+
 
     //  JSON Document.
     rapidjson::Document mJDoc;
@@ -267,16 +313,24 @@ private:
     TestShaderLayout mShaderTestLayout;
 
     //  b Registers.
-    std::map<uint32_t, RegisterCount> bSpaces;
+    std::map<uint32_t, RegisterCount> bSpacesIndexes;
+    std::vector<uint32_t> bSpaces;
+    uint32_t maxBSpace;
 
     //  s Register.
-    std::map<uint32_t, RegisterCount> sSpaces;
+    std::map<uint32_t, RegisterCount> sSpacesIndexes;
+    std::vector<uint32_t> sSpaces;
+    uint32_t maxSSpace;
 
     //  t Registers.
-    std::map<uint32_t, RegisterCount> tSpaces;
+    std::map<uint32_t, RegisterCount> tSpacesIndexes;
+    std::vector<uint32_t> tSpaces;
+    uint32_t maxTSpace;
 
     //  u Registers.
-    std::map<uint32_t, RegisterCount> uSpaces;
+    std::map<uint32_t, RegisterCount> uSpacesIndexes;
+    std::vector<uint32_t> uSpaces;
+    uint32_t maxUSpace;
 
 };
 

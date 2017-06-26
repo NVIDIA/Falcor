@@ -37,6 +37,7 @@ void GraphicsVarsTest::addTests()
 testing_func(GraphicsVarsTest, TestAll)
 {
     
+    return test_pass();
 }
 
 

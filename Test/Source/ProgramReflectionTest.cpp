@@ -38,7 +38,7 @@ testing_func(ProgramReflectionTest, TestAll)
 {
 
 
-
+    return test_pass();
 }
 
 
