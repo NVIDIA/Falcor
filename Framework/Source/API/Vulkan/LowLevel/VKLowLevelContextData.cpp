@@ -32,12 +32,14 @@
 
 namespace Falcor
 {
+    VkFence gFence; // #VKTODO Need to replace this with a proper fence
+
     bool createCommandPool(VkDevice device, uint32_t queueFamilyIndex, VkCommandPool *pCommandPool)
     {
         VkCommandPoolCreateInfo commandPoolCreateInfo{};
 
         commandPoolCreateInfo.sType            = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-        commandPoolCreateInfo.flags            = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
+        commandPoolCreateInfo.flags            = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT | VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
         commandPoolCreateInfo.queueFamilyIndex = queueFamilyIndex;
 
         if (VK_FAILED(vkCreateCommandPool(device, &commandPoolCreateInfo, nullptr, pCommandPool)))
@@ -76,12 +78,16 @@ namespace Falcor
         DeviceHandle device = gpDevice->getApiHandle();
         createCommandPool(device, gpDevice->getApiCommandQueueType(type), &pThis->mpAllocator);
 
-        // #VKTODO Generally, we'd have one per swapchain image. Not sure if that needs to be handled here
+        // #VKTODO We need a buffer per swap-chain image. We can probably hijack the allocator pool to achieve it (the allocator pool will actually be a pool of command-buffers, and mpList will be the active buffer)
         createCommandBuffer(device, 1, &pThis->mpList, pThis->mpAllocator);
 
         // #VKTODO Check how the allocator maps in Vulkan.
         // pThis->mpAllocator = pThis->mpAllocatorPool->newObject();
 
+        VkFenceCreateInfo info = {};
+        info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+        info.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+        vkCreateFence(gpDevice->getApiHandle(), &info, nullptr, &gFence);
         return pThis;
     }
 
@@ -91,8 +97,12 @@ namespace Falcor
         beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
         beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
         beginInfo.pInheritanceInfo = nullptr;
+        vkWaitForFences(gpDevice->getApiHandle(), 1, &gFence, false, -1);   // #VKTODO Remove this once we have support for multiple command buffers
         vk_call(vkBeginCommandBuffer(mpList, &beginInfo));
+        vkResetFences(gpDevice->getApiHandle(), 1, &gFence);
     }
+
+    extern VkSemaphore gFrameSemaphore;
 
     // Submit the recorded command buffers here. 
     void LowLevelContextData::flush()
@@ -100,10 +110,12 @@ namespace Falcor
         vk_call(vkEndCommandBuffer(mpList));
         VkSubmitInfo submitInfo = {};
 
+        VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
+
         submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-        submitInfo.waitSemaphoreCount = 0;
-        submitInfo.pWaitSemaphores = nullptr;
-        submitInfo.pWaitDstStageMask = nullptr;
+        submitInfo.waitSemaphoreCount = 1;
+        submitInfo.pWaitSemaphores = &gFrameSemaphore;
+        submitInfo.pWaitDstStageMask = waitStages;
         submitInfo.commandBufferCount = 1;
         submitInfo.pCommandBuffers = &mpList;
         submitInfo.signalSemaphoreCount = 0;
@@ -113,7 +125,7 @@ namespace Falcor
         // Add a new interface there? 
         // vkResetFences(gpDevice->getApiHandle(), 1, &(mpFence->getApiHandle()));
 
-        if (VK_FAILED(vkQueueSubmit(mpQueue, 1, &submitInfo, VK_NULL_HANDLE/*mpFence->getApiHandle()*/)))
+        if (VK_FAILED(vkQueueSubmit(mpQueue, 1, &submitInfo, gFence)))
         {
             logError("Could not submit command queue.");
         }
