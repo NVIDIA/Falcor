@@ -58,19 +58,6 @@ namespace Falcor
         std::vector<ID3D12CommandQueuePtr> queues[(uint32_t)LowLevelContextData::CommandQueueType::Count];
     };
 
-    void releaseFboData(DeviceApiData* pData)
-    {
-        // First, delete all FBOs
-        for (uint32_t i = 0; i < arraysize(pData->frameData); i++)
-        {
-            pData->frameData[i].pFbo->attachColorTarget(nullptr, 0);
-            pData->frameData[i].pFbo->attachDepthStencilTarget(nullptr);
-        }
-
-        // Now execute all deferred releases
-        decltype(pData->deferredReleases)().swap(pData->deferredReleases);
-    }
-
     void d3dTraceHR(const std::string& msg, HRESULT hr)
     {
         char hr_msg[512];
@@ -214,36 +201,18 @@ namespace Falcor
     bool Device::updateDefaultFBO(uint32_t width, uint32_t height, ResourceFormat colorFormat, ResourceFormat depthFormat)
     {
         DeviceApiData* pData = (DeviceApiData*)mpApiData;
-
+        std::vector<ResourceHandle> apiHandles;
         for (uint32_t i = 0; i < kSwapChainBuffers; i++)
         {
-            // Create a texture object
-            auto pColorTex = Texture::SharedPtr(new Texture(width, height, 1, 1, 1, 1, colorFormat, Texture::Type::Texture2D, Texture::BindFlags::RenderTarget));
-            HRESULT hr = pData->pSwapChain->GetBuffer(i, IID_PPV_ARGS(&pColorTex->mApiHandle));
-            if(FAILED(hr))
+            HRESULT hr = pData->pSwapChain->GetBuffer(i, IID_PPV_ARGS(&apiHandles[i]));
+            if (FAILED(hr))
             {
                 d3dTraceHR("Failed to get back-buffer " + std::to_string(i) + " from the swap-chain", hr);
                 return false;
             }
-
-            // Create the FBO if it's required
-            if (pData->frameData[i].pFbo == nullptr)
-            {
-                pData->frameData[i].pFbo = Fbo::create();
-            }
-            pData->frameData[i].pFbo->attachColorTarget(pColorTex, 0);
-
-            // Create a depth texture
-            if(depthFormat != ResourceFormat::Unknown)
-            {
-                auto pDepth = Texture::create2D(width, height, depthFormat, 1, 1, nullptr, Texture::BindFlags::DepthStencil);
-                pData->frameData[i].pFbo->attachDepthStencilTarget(pDepth);
-            }
-
-            pData->currentBackBufferIndex = pData->pSwapChain->GetCurrentBackBufferIndex();
         }
 
-        return true;
+        return initDefaultFboCommon(width, height, colorFormat, depthFormat, apiHandles, pData->pSwapChain->GetCurrentBackBufferIndex());
     }
 
     void Device::cleanup()
@@ -350,41 +319,7 @@ namespace Falcor
                 pData->queues[i].push_back(pQueue);
             }
         }
-        
-        mpRenderContext = RenderContext::create(getCommandQueueHandle(LowLevelContextData::CommandQueueType::Direct, 0));
-        
-        //
-        // Create the descriptor heaps
-        //
-
-        DescriptorPool::Desc poolDesc;
-        poolDesc.setDescCount(DescriptorPool::Type::Srv, 16 * 1024).setDescCount(DescriptorPool::Type::Sampler, 2048).setShaderVisible(true);
-        mpGpuDescPool = DescriptorPool::create(poolDesc, mpRenderContext->getLowLevelData()->getFence());
-        poolDesc.setShaderVisible(false).setDescCount(DescriptorPool::Type::Rtv, 1024).setDescCount(DescriptorPool::Type::Dsv, 1024);
-        mpCpuDescPool = DescriptorPool::create(poolDesc, mpRenderContext->getLowLevelData()->getFence());
-
-        mpRenderContext->reset();
-
-        //
-        // Create the swap-chain
-        //
-
-        mpResourceAllocator = ResourceAllocator::create(1024 * 1024 * 2, mpRenderContext->getLowLevelData()->getFence());
-        pData->pSwapChain = createSwapChain(pDxgiFactory, mpWindow.get(), mpRenderContext->getLowLevelData()->getCommandQueue(), desc.colorFormat);
-        if(pData->pSwapChain == nullptr)
-        {
-            return false;
-        }
-
-        mVsyncOn = desc.enableVsync;
-
-        // Update the FBOs
-        if (updateDefaultFBO(mpWindow->getClientAreaWidth(), mpWindow->getClientAreaHeight(), desc.colorFormat, desc.depthFormat) == false)
-        {
-            return false;
-        }
-
-        pData->pFrameFence = GpuFence::create();
+       
         return true;
     }
 
@@ -433,7 +368,7 @@ namespace Falcor
         return getSwapChainFbo();
     }
 
-    void Device::setVSync(bool enable)
+    void Device::toggleVSync(bool enable)
     {
         DeviceApiData* pData = (DeviceApiData*)mpApiData;
         pData->syncInterval = enable ? 1 : 0;

@@ -362,6 +362,7 @@
     </ClCompile>
     <ClCompile Include="API\DepthStencilState.cpp" />
     <ClCompile Include="API\DescriptorSet.cpp" />
+    <ClCompile Include="API\Device.cpp" />
     <ClCompile Include="API\FBO.cpp" />
     <ClCompile Include="API\Formats.cpp" />
     <ClCompile Include="API\LowLevel\DescriptorPool.cpp" />

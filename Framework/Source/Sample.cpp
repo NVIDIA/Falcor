@@ -103,7 +103,7 @@ namespace Falcor
 #endif
                 case KeyboardEvent::Key::V:
                     mVsyncOn = !mVsyncOn;
-                    gpDevice->setVSync(mVsyncOn);
+                    gpDevice->toggleVSync(mVsyncOn);
                     mFrameRate.resetClock();
                     break;
                 case KeyboardEvent::Key::F1:

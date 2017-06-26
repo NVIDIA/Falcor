@@ -34,56 +34,18 @@
 
 namespace Falcor
 {
-    Device::SharedPtr gpDevice;
-
     struct DeviceApiData
     {
         VkSwapchainKHR swapchain;
-        uint32_t currentBackBufferIndex;
-
-        struct ResourceRelease
-        {
-            size_t frameID;
-            ApiObjectHandle pApiObject;
-        };
-
-        struct
-        {
-            Fbo::SharedPtr pFbo;
-        } frameData[kSwapChainBuffers];
-
-        std::queue<ResourceRelease> deferredReleases;
-        uint32_t syncInterval = 0;
-        bool isWindowOccluded = false;
-        GpuFence::SharedPtr pFrameFence;
-
-        // Vulkan
         VkInstance          instance;
         VkPhysicalDevice    physicalDevice;
         VkDevice            device;
         VkSurfaceKHR        surface;
-
         VkPhysicalDeviceProperties properties;
-
-        // Map Falcor command queue type to VK device queue family index
-        uint32_t queueTypeToFamilyIndex[(uint32_t)LowLevelContextData::CommandQueueType::Count];
-        std::vector<VkQueue> queues[(uint32_t)LowLevelContextData::CommandQueueType::Count];
+        uint32_t falcorToVulkanQueueType[Device::kQueueTypeCount];
     };
 
-    void releaseFboData(DeviceApiData* pData)
-    {
-        // First, delete all FBOs
-        for (uint32_t i = 0; i < arraysize(pData->frameData); i++)
-        {
-            pData->frameData[i].pFbo->attachColorTarget(nullptr, 0);
-            pData->frameData[i].pFbo->attachDepthStencilTarget(nullptr);
-        }
-
-        // Now execute all deferred releases
-        //decltype(pData->deferredReleases)().swap(pData->deferredReleases);
-    }
-
-    bool Device::updateDefaultFBO(uint32_t width, uint32_t height, ResourceFormat colorFormat, ResourceFormat depthFormat)
+    bool Device::getApiFboData(uint32_t width, uint32_t height, ResourceFormat colorFormat, ResourceFormat depthFormat, std::vector<ResourceHandle>& apiHandles, uint32_t& currentBackBufferIndex)
     {
         uint32_t imageCount = 0;
         vkGetSwapchainImagesKHR(mpApiData->device, mpApiData->swapchain, &imageCount, nullptr);
@@ -91,100 +53,26 @@ namespace Falcor
 
         std::vector<VkImage> swapchainImages(imageCount);
         vkGetSwapchainImagesKHR(mpApiData->device, mpApiData->swapchain, &imageCount, swapchainImages.data());
-
-        for (uint32_t i = 0; i < kSwapChainBuffers; i++)
+        std::vector<ResourceHandle> handles(swapchainImages.size());
+        for (size_t i = 0; i < swapchainImages.size(); i++)
         {
-            // Create a texture object
-            auto pColorTex = Texture::SharedPtr(new Texture(width, height, 1, 1, 1, 1, colorFormat, Texture::Type::Texture2D, Texture::BindFlags::RenderTarget));
-            pColorTex->mApiHandle = swapchainImages[i];
-
-            // Create the FBO if it's required
-            if (mpApiData->frameData[i].pFbo == nullptr)
-            {
-                mpApiData->frameData[i].pFbo = Fbo::create();
-            }
-
-            mpApiData->frameData[i].pFbo->attachColorTarget(pColorTex, 0);
-
-            // Create a depth texture
-            if (depthFormat != ResourceFormat::Unknown)
-            {
-                auto pDepth = Texture::create2D(width, height, depthFormat, 1, 1, nullptr, Texture::BindFlags::DepthStencil);
-                mpApiData->frameData[i].pFbo->attachDepthStencilTarget(pDepth);
-            }
+            handles[i] = swapchainImages[i];
         }
-
-        mpApiData->currentBackBufferIndex = 0;
-
         return true;
     }
 
-    void Device::cleanup()
+    void Device::destroyApiObjects()
     {
-        mpRenderContext->flush(true);
-        // Release all the bound resources. Need to do that before deleting the RenderContext
-        mpRenderContext->setGraphicsState(nullptr);
-        mpRenderContext->setGraphicsVars(nullptr);
-        mpRenderContext->setComputeState(nullptr);
-        mpRenderContext->setComputeVars(nullptr);
-        //releaseFboData(pData);
-        mpRenderContext.reset();
-        mpResourceAllocator.reset();
-
         vkDestroySwapchainKHR(mpApiData->device, mpApiData->swapchain, nullptr);
         vkDestroySurfaceKHR(mpApiData->instance, mpApiData->surface, nullptr);
         vkDestroyDevice(mpApiData->device, nullptr);
         vkDestroyInstance(mpApiData->instance, nullptr);
-
         safe_delete(mpApiData);
-        mpWindow.reset();
-    }
-
-    Device::SharedPtr Device::create(Window::SharedPtr& pWindow, const Device::Desc& desc)
-    {
-        if (gpDevice)
-        {
-            logError("D3D12 backend only supports a single device");
-            return false;
-        }
-        gpDevice = SharedPtr(new Device(pWindow));
-        if (gpDevice->init(desc) == false)
-        {
-            gpDevice = nullptr;
-        }
-        return gpDevice;
-    }
-
-    Fbo::SharedPtr Device::getSwapChainFbo() const
-    {
-        return mpApiData->frameData[mpApiData->currentBackBufferIndex].pFbo;
-    }
-
-    void Device::present()
-    {
-        mpRenderContext->resourceBarrier(mpApiData->frameData[mpApiData->currentBackBufferIndex].pFbo->getColorTexture(0).get(), Resource::State::Present);
-        mpRenderContext->flush();
-        //pData->pSwapChain->Present(pData->syncInterval, 0);
-        //pData->pFrameFence->gpuSignal(mpRenderContext->getLowLevelData()->getCommandQueue().GetInterfacePtr());
-        executeDeferredReleases();
-        mpRenderContext->reset();
-        mpApiData->currentBackBufferIndex = (mpApiData->currentBackBufferIndex + 1) % kSwapChainBuffers;
-        mFrameID++;
-    }
-
-    CommandQueueHandle Device::getCommandQueueHandle(LowLevelContextData::CommandQueueType type, uint32_t index) const
-    {
-        return mpApiData->queues[(uint32_t)type][index];
-    }
-
-    ApiCommandQueueType Device::getApiCommandQueueType(LowLevelContextData::CommandQueueType type) const
-    {
-        return mpApiData->queueTypeToFamilyIndex[(uint32_t)type];
     }
 
     bool createInstance(DeviceApiData *pData, bool enableDebugLayers)
     {
-        // Layers
+        // Find out which layers are supported
         uint32_t layerCount = 0;
         vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
         std::vector<VkLayerProperties> allLayers(layerCount);
@@ -201,10 +89,7 @@ namespace Falcor
         {
             for (const auto& l : allLayers)
             {
-                if (std::string(l.layerName) == layer)
-                {
-                    return true;
-                }
+                if (std::string(l.layerName) == layer) return true;
             }
             return false;
         };
@@ -292,12 +177,9 @@ namespace Falcor
         return bestDevice;
     }
 
-    bool initPhysicalDevice(DeviceApiData *pData)
+    bool initPhysicalDevice(DeviceApiData* pData)
     {
-        //
         // Enumerate devices
-        //
-
         uint32_t count = 0;
         vkEnumeratePhysicalDevices(pData->instance, &count, nullptr);
         assert(count > 0);
@@ -309,10 +191,7 @@ namespace Falcor
         pData->physicalDevice = selectPhysicalDevice(devices);
         vkGetPhysicalDeviceProperties(pData->physicalDevice, &pData->properties);
 
-        //
         // Get queue families and match them to what type they are
-        //
-
         uint32_t queueFamilyCount = 0;
         vkGetPhysicalDeviceQueueFamilyProperties(pData->physicalDevice, &queueFamilyCount, nullptr);
 
@@ -320,15 +199,15 @@ namespace Falcor
         vkGetPhysicalDeviceQueueFamilyProperties(pData->physicalDevice, &queueFamilyCount, queueFamilyProperties.data());
 
         // Init indices
-        for (auto& index : pData->queueTypeToFamilyIndex)
+        for (uint32_t i = 0 ; i < arraysize(pData->falcorToVulkanQueueType) ; i++)
         {
-            index = (uint32_t)-1;
+            pData->falcorToVulkanQueueType[i]= (uint32_t)-1;
         }
 
         // Determine which queue is what type
-        uint32_t& graphicsQueueIndex = pData->queueTypeToFamilyIndex[(uint32_t)LowLevelContextData::CommandQueueType::Direct];
-        uint32_t& computeQueueIndex = pData->queueTypeToFamilyIndex[(uint32_t)LowLevelContextData::CommandQueueType::Compute];
-        uint32_t& transferQueue = pData->queueTypeToFamilyIndex[(uint32_t)LowLevelContextData::CommandQueueType::Copy];
+        uint32_t& graphicsQueueIndex = pData->falcorToVulkanQueueType[(uint32_t)LowLevelContextData::CommandQueueType::Direct];
+        uint32_t& computeQueueIndex = pData->falcorToVulkanQueueType[(uint32_t)LowLevelContextData::CommandQueueType::Compute];
+        uint32_t& transferQueue = pData->falcorToVulkanQueueType[(uint32_t)LowLevelContextData::CommandQueueType::Copy];
 
         for (uint32_t i = 0; i < (uint32_t)queueFamilyProperties.size(); i++)
         {
@@ -351,37 +230,28 @@ namespace Falcor
         return true;
     }
 
-    bool createLogicalDevice(DeviceApiData *pData, const Device::Desc& desc)
+    bool createLogicalDevice(DeviceApiData *pData, const Device::Desc& desc, std::vector<CommandQueueHandle> cmdQueues[Device::kQueueTypeCount])
     {
-        //
         // Features
-        //
-
         VkPhysicalDeviceFeatures requiredFeatures = {};
         requiredFeatures.tessellationShader = VK_TRUE;
         requiredFeatures.geometryShader = VK_TRUE;
 
-        //
         // Queues
-        //
-
         std::vector<VkDeviceQueueCreateInfo> queueInfos;
-        std::vector<std::vector<float>> queuePriorities((uint32_t)LowLevelContextData::CommandQueueType::Count);
+        std::vector<std::vector<float>> queuePriorities(arraysize(pData->falcorToVulkanQueueType));
 
         // Set up info to create queues for each type
-        for (uint32_t type = 0; type < (uint32_t)LowLevelContextData::CommandQueueType::Count; type++)
+        for (uint32_t type = 0; type < arraysize(pData->falcorToVulkanQueueType); type++)
         {
-            // Default 1 Direct queue
-            const uint32_t queueCount = (type == (uint32_t)LowLevelContextData::CommandQueueType::Direct) ? desc.additionalQueues[type] + 1 : desc.additionalQueues[type];
-            queuePriorities[type].resize(queueCount, 1.0f); // Setting all priority at max for now
-
-            // Save how many queues of each type there will be so we can retrieve them easier after device creation
-            pData->queues[type].resize(queueCount);
+            const uint32_t queueCount = desc.cmdQueues[type];
+            queuePriorities[type].resize(queueCount, 1.0f); // Setting all priority at max for now            
+            cmdQueues[type].resize(queueCount); // Save how many queues of each type there will be so we can retrieve them easier after device creation
 
             VkDeviceQueueCreateInfo info = {};
             info.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
             info.queueCount = queueCount;
-            info.queueFamilyIndex = pData->queueTypeToFamilyIndex[type];
+            info.queueFamilyIndex = pData->falcorToVulkanQueueType[type];
             info.pQueuePriorities = queuePriorities[type].data();
 
             if (info.queueCount > 0)
@@ -390,10 +260,7 @@ namespace Falcor
             }
         }
 
-        //
         // Extensions
-        //
-
         uint32_t extensionCount = 0;
         vkEnumerateDeviceExtensionProperties(pData->physicalDevice, nullptr, &extensionCount, nullptr);
         std::vector<VkExtensionProperties> deviceExtensions(extensionCount);
@@ -410,10 +277,7 @@ namespace Falcor
             "VK_NV_glsl_shader"
         };
 
-        //
         // Logical Device
-        //
-
         VkDeviceCreateInfo deviceInfo = {};
         deviceInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
         deviceInfo.queueCreateInfoCount = (uint32_t)queueInfos.size();
@@ -429,11 +293,11 @@ namespace Falcor
         }
 
         // Get the queues we created
-        for (uint32_t type = 0; type < (uint32_t)LowLevelContextData::CommandQueueType::Count; type++)
+        for (uint32_t type = 0; type < arraysize(pData->falcorToVulkanQueueType); type++)
         {
-            for (uint32_t i = 0; i < (uint32_t)pData->queues[type].size(); i++)
+            for (uint32_t i = 0; i < (uint32_t)cmdQueues[type].size(); i++)
             {
-                vkGetDeviceQueue(pData->device, pData->queueTypeToFamilyIndex[type], i, &pData->queues[type][i]);
+                vkGetDeviceQueue(pData->device, pData->falcorToVulkanQueueType[type], i, &cmdQueues[type][i]);
             }
         }
 
@@ -453,37 +317,32 @@ namespace Falcor
             return false;
         }
 
-        VkBool32 bSupported = VK_FALSE;
-        vkGetPhysicalDeviceSurfaceSupportKHR(pData->physicalDevice, gpDevice->getApiCommandQueueType(LowLevelContextData::CommandQueueType::Direct), pData->surface, &bSupported);
-        assert(bSupported);
+        VkBool32 supported = VK_FALSE;
+        vkGetPhysicalDeviceSurfaceSupportKHR(pData->physicalDevice, pData->falcorToVulkanQueueType[uint32_t(LowLevelContextData::CommandQueueType::Direct)], pData->surface, &supported);
+        assert(supported);
 
         return true;
     }
 
-    bool createSwapChain(DeviceApiData *pData, const Window* pWindow, ResourceFormat colorFormat, bool enableVSync)
+    bool Device::createSwapChain(ResourceFormat colorFormat)
     {
-        //
         // Select/Validate SwapChain creation settings
-        //
-
         // Surface size
         VkSurfaceCapabilitiesKHR surfaceCapabilities;
-        vkGetPhysicalDeviceSurfaceCapabilitiesKHR(pData->physicalDevice, pData->surface, &surfaceCapabilities);
+        vkGetPhysicalDeviceSurfaceCapabilitiesKHR(mpApiData->physicalDevice, mpApiData->surface, &surfaceCapabilities);
 
         VkExtent2D swapchainExtent = {};
         if (surfaceCapabilities.currentExtent.width == (uint32_t)-1)
         {
-            swapchainExtent.width = pWindow->getClientAreaWidth();
-            swapchainExtent.height = pWindow->getClientAreaWidth();
+            swapchainExtent.width = mpWindow->getClientAreaWidth();
+            swapchainExtent.height = mpWindow->getClientAreaWidth();
         }
         else
         {
             swapchainExtent = surfaceCapabilities.currentExtent;
         }
 
-        //
         // Validate Surface format
-        //
         if (isSrgbFormat(colorFormat) == false)
         {
             logError("Can't create a swap-chain with linear-space color format");
@@ -494,9 +353,9 @@ namespace Falcor
         const VkColorSpaceKHR requestedColorSpace = VK_COLORSPACE_SRGB_NONLINEAR_KHR;
 
         uint32_t formatCount = 0;
-        vkGetPhysicalDeviceSurfaceFormatsKHR(pData->physicalDevice, pData->surface, &formatCount, nullptr);
+        vkGetPhysicalDeviceSurfaceFormatsKHR(mpApiData->physicalDevice, mpApiData->surface, &formatCount, nullptr);
         std::vector<VkSurfaceFormatKHR> surfaceFormats(formatCount);
-        vkGetPhysicalDeviceSurfaceFormatsKHR(pData->physicalDevice, pData->surface, &formatCount, surfaceFormats.data());
+        vkGetPhysicalDeviceSurfaceFormatsKHR(mpApiData->physicalDevice, mpApiData->surface, &formatCount, surfaceFormats.data());
 
         bool formatValid = false;
         for (const VkSurfaceFormatKHR& format : surfaceFormats)
@@ -514,18 +373,15 @@ namespace Falcor
             return false;
         }
 
-        //
         // Select present mode
-        //
-
         uint32_t presentModeCount = 0;
-        vkGetPhysicalDeviceSurfacePresentModesKHR(pData->physicalDevice, pData->surface, &presentModeCount, nullptr);
+        vkGetPhysicalDeviceSurfacePresentModesKHR(mpApiData->physicalDevice, mpApiData->surface, &presentModeCount, nullptr);
         std::vector<VkPresentModeKHR> presentModes(presentModeCount);
-        vkGetPhysicalDeviceSurfacePresentModesKHR(pData->physicalDevice, pData->surface, &presentModeCount, presentModes.data());
+        vkGetPhysicalDeviceSurfacePresentModesKHR(mpApiData->physicalDevice, mpApiData->surface, &presentModeCount, presentModes.data());
 
         // Select present mode, FIFO for VSync, otherwise preferring MAILBOX -> IMMEDIATE -> FIFO
         VkPresentModeKHR presentMode = VK_PRESENT_MODE_FIFO_KHR;
-        if (enableVSync == false)
+        if (mVsyncOn == false)
         {
             for (size_t i = 0; i < presentModeCount; i++)
             {
@@ -541,13 +397,10 @@ namespace Falcor
             }
         }
 
-        //
         // Swapchain Creation
-        //
-
         VkSwapchainCreateInfoKHR info = {};
         info.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-        info.surface = pData->surface;
+        info.surface = mpApiData->surface;
         info.minImageCount = clamp(kSwapChainBuffers, surfaceCapabilities.minImageCount, surfaceCapabilities.maxImageCount);
         info.imageFormat = requestedFormat;
         info.imageColorSpace = requestedColorSpace;
@@ -563,7 +416,7 @@ namespace Falcor
         info.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
         info.oldSwapchain = VK_NULL_HANDLE;
 
-        if (VK_FAILED(vkCreateSwapchainKHR(pData->device, &info, nullptr, &pData->swapchain)))
+        if (VK_FAILED(vkCreateSwapchainKHR(mpApiData->device, &info, nullptr, &mpApiData->swapchain)))
         {
             logError("Could not create swapchain.");
             return false;
@@ -572,7 +425,12 @@ namespace Falcor
         return true;
     }
 
-    bool Device::init(const Desc& desc)
+    void Device::apiPresent()
+    {
+
+    }
+
+    bool Device::apiInit(const Desc& desc)
     {
         mpApiData = new DeviceApiData;
 
@@ -591,56 +449,13 @@ namespace Falcor
             return false;
         }
 
-        if (createLogicalDevice(mpApiData, desc) == false)
+        if (createLogicalDevice(mpApiData, desc, mCmdQueues) == false)
         {
             return false;
         }
 
         mApiHandle = mpApiData->device;
-
-        // Create the descriptor heaps
-        //mpSrvHeap = DescriptorHeap::create(DescriptorHeap::Type::SRV, 16 * 1024);
-        //mpSamplerHeap = DescriptorHeap::create(DescriptorHeap::Type::Sampler, 2048);
-        //mpRtvHeap = DescriptorHeap::create(DescriptorHeap::Type::RTV, 1024, false);
-        //mpDsvHeap = DescriptorHeap::create(DescriptorHeap::Type::DSV, 1024, false);
-        //mpUavHeap = mpSrvHeap;
-        //mpCpuUavHeap = DescriptorHeap::create(DescriptorHeap::Type::SRV, 2 * 1024, false);
-
-        //mpRenderContext = RenderContext::create(getCommandQueueHandle(LowLevelContextData::CommandQueueType::Direct, 0));
-
-        //mpResourceAllocator = ResourceAllocator::create(1024 * 1024 * 2, mpRenderContext->getLowLevelData()->getFence());
-
-        mVsyncOn = desc.enableVsync;
-
-        // Create the swap-chain
-        createSwapChain(mpApiData, mpWindow.get(), desc.colorFormat, mVsyncOn);
-
-        // Update the FBOs
-        if (updateDefaultFBO(mpWindow->getClientAreaWidth(), mpWindow->getClientAreaHeight(), desc.colorFormat, desc.depthFormat) == false)
-        {
-            return false;
-        }
-
-        //pData->pFrameFence = GpuFence::create();
         return true;
-    }
-
-    void Device::releaseResource(ApiObjectHandle pResource)
-    {
-        if (pResource)
-        {
-            mpApiData->deferredReleases.push({ mpApiData->pFrameFence->getCpuValue(), pResource });
-        }
-    }
-
-    void Device::executeDeferredReleases()
-    {
-        mpResourceAllocator->executeDeferredReleases();
-        uint64_t gpuVal = mpApiData->pFrameFence->getGpuValue();
-        while (mpApiData->deferredReleases.size() && mpApiData->deferredReleases.front().frameID < gpuVal)
-        {
-            mpApiData->deferredReleases.pop();
-        }
     }
 
     Fbo::SharedPtr Device::resizeSwapChain(uint32_t width, uint32_t height)
@@ -666,11 +481,6 @@ namespace Falcor
         return getSwapChainFbo();
     }
 
-    void Device::setVSync(bool enable)
-    {
-        mpApiData->syncInterval = enable ? 1 : 0;
-    }
-
     bool Device::isWindowOccluded() const
     {
         //DeviceData* pData = (DeviceData*)mpPrivateData;
@@ -685,5 +495,10 @@ namespace Falcor
     bool Device::isExtensionSupported(const std::string& name)
     {
         return _ENABLE_NVAPI;
+    }
+
+    ApiCommandQueueType Device::getApiCommandQueueType(LowLevelContextData::CommandQueueType type) const
+    {
+        return mpApiData->falcorToVulkanQueueType[(uint32_t)type];
     }
 }

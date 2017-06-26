@@ -552,6 +552,7 @@
     <ClCompile Include="API\Vulkan\LowLevel\VKDescriptorSet.cpp">
       <Filter>API\Vulkan\LowLevel</Filter>
     </ClCompile>
+    <ClCompile Include="API\Device.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Graphics\Model\Animation.h">

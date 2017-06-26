@@ -49,6 +49,7 @@ namespace Falcor
         using SharedPtr = std::shared_ptr<Device>;
         using SharedConstPtr = std::shared_ptr<const Device>;
         using ApiHandle = DeviceHandle;
+        static const uint32_t kQueueTypeCount = (uint32_t)LowLevelContextData::CommandQueueType::Count;
 
         /** Device configuration
         */
@@ -64,7 +65,8 @@ namespace Falcor
             bool enableVsync = false;                                       ///< Controls vertical-sync
             bool enableDebugLayer = DEFAULT_ENABLE_DEBUG_LAYER;             ///< Enable the debug layer. The default for release build is false, for debug build it's true.
 
-            uint32_t additionalQueues[(uint32_t)LowLevelContextData::CommandQueueType::Count] = {};  ///< ADDITIONAL command queues to create. One Direct (Graphics) queue is created by default.
+            static_assert((uint32_t)LowLevelContextData::CommandQueueType::Direct == 2, "Default initialization of cmdQueues assumes that Direct queue index is 0");
+            uint32_t cmdQueues[kQueueTypeCount] = { 0, 0, 1 };  ///< Command queues to create. If not direct-queues are created, mpRenderContext will not be initialized
 
 #ifdef FALCOR_D3D
             /** The following callback allows the user to create its own device (for example, create a WARP device or choose a specific GPU in a multi-GPU machine)
@@ -88,7 +90,7 @@ namespace Falcor
 
         /** Enable/disable vertical sync
         */
-        void setVSync(bool enable);
+        void toggleVSync(bool enable);
 
         /** Check if the window is occluded
         */
@@ -112,7 +114,7 @@ namespace Falcor
         */
         CommandQueueHandle getCommandQueueHandle(LowLevelContextData::CommandQueueType type, uint32_t index) const;
 
-        /** Convert command queue type to API specific identifier
+        /** Get the API queue type
         */
         ApiCommandQueueType getApiCommandQueueType(LowLevelContextData::CommandQueueType type) const;
 
@@ -137,24 +139,48 @@ namespace Falcor
         DescriptorPool::SharedPtr getGpuDescriptorPool() const { return mpGpuDescPool; }
         ResourceAllocator::SharedPtr getResourceAllocator() const { return mpResourceAllocator; }
         void releaseResource(ApiObjectHandle pResource);
-
     private:
+        struct ResourceRelease
+        {
+            size_t frameID;
+            ApiObjectHandle pApiObject;
+        };
+        std::queue<ResourceRelease> mDeferredReleases;
+
+        uint32_t mCurrentBackBufferIndex;
+        struct
+        {
+            Fbo::SharedPtr pFbo;
+        } mFrameData[kSwapChainBuffers];
+
         Device(Window::SharedPtr pWindow) : mpWindow(pWindow) {}
         bool init(const Desc& desc);
-        bool updateDefaultFBO(uint32_t width, uint32_t height, ResourceFormat colorFormat, ResourceFormat depthFormat);
         void executeDeferredReleases();
+        void releaseFboData();
+        bool updateDefaultFBO(uint32_t width, uint32_t height, ResourceFormat colorFormat, ResourceFormat depthFormat);
 
         ApiHandle mApiHandle;
         ResourceAllocator::SharedPtr mpResourceAllocator;
         DescriptorPool::SharedPtr mpCpuDescPool;
         DescriptorPool::SharedPtr mpGpuDescPool;
+        bool mIsWindowOccluded = false;
+        GpuFence::SharedPtr mpFrameFence;
 
         Window::SharedPtr mpWindow;
         DeviceApiData* mpApiData;
         RenderContext::SharedPtr mpRenderContext;
         bool mVsyncOn;
         size_t mFrameID = 0;
+
+        std::vector<CommandQueueHandle> mCmdQueues[kQueueTypeCount];
+
+        // API specific functions
+        bool getApiFboData(uint32_t width, uint32_t height, ResourceFormat colorFormat, ResourceFormat depthFormat, std::vector<ResourceHandle>& apiHandles, uint32_t& currentBackBufferIndex);
+        void destroyApiObjects();
+        void apiPresent();
+        bool apiInit(const Desc& desc);
+        bool createSwapChain(ResourceFormat colorFormat);
     };
 
-    extern Device::SharedPtr  gpDevice;
+    extern Device::SharedPtr gpDevice;
 }
