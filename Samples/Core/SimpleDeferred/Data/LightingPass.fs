@@ -27,7 +27,7 @@
 ***************************************************************************/
 #version 420
 
-#include "ShaderCommon.h"
+__import ShaderCommon;
 __import Shading;
 
 // Debug modes

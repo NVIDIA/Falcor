@@ -32,7 +32,7 @@
 
 #ifdef FALCOR_SHADER_CODE
 
-__import HostDeviceData;
+__exported __import HostDeviceData;
 
 #else
 

@@ -26,7 +26,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 #include "VertexAttrib.h"
-#include "ShaderCommon.h"
+__import ShaderCommon;
 #include "csmdata.h"
 
 cbuffer PerLightCB : register(b0)

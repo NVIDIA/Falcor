@@ -777,7 +777,8 @@
     <ClInclude Include="Data\Framework\Shaders\SceneEditorCommon.slang.h" />
     <ClInclude Include="Data\HlslGlslCommon.h" />
     <ClInclude Include="Data\HostDeviceData.h" />
-    <ClInclude Include="Data\ShaderCommon.h" />
+    <ClInclude Include="Data\HostDeviceSharedCode.h" />
+    <ClInclude Include="Data\HostDeviceSharedMacros.h" />
     <ClInclude Include="Data\VertexAttrib.h" />
     <ClInclude Include="Effects\AmbientOcclusion\SSAO.h" />
     <ClInclude Include="Effects\NormalMap\LeanMap.h" />
@@ -1017,6 +1018,8 @@
     <None Include="Data\Framework\Shaders\SceneEditorVS.slang" />
     <None Include="Data\Framework\Shaders\TextRenderer.fs.slang" />
     <None Include="Data\Framework\Shaders\TextRenderer.vs.slang" />
+    <None Include="Data\HostDeviceData.slang" />
+    <None Include="Data\ShaderCommon.slang" />
     <None Include="ShadingUtils\BSDFs.slang" />
     <None Include="ShadingUtils\Cameras.slang" />
     <None Include="ShadingUtils\Helpers.slang" />

@@ -25,10 +25,99 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#define _COMPILE_DEFAULT_VS
 #include "VertexAttrib.h"
 
-VS_OUT main(VS_IN vIn)
+__import ShaderCommon;
+
+struct VS_IN
 {
-    return defaultVS(vIn);
+    float4 pos         : POSITION;
+    float3 normal      : NORMAL;
+    float3 bitangent   : BITANGENT;
+#ifdef HAS_TEXCRD
+    float2 texC        : TEXCOORD;
+#endif
+#ifdef HAS_LIGHTMAP_UV
+    float2 lightmapC   : LIGHTMAP_UV;
+#endif
+#ifdef HAS_COLORS
+    float3 color       : DIFFUSE_COLOR;
+#endif
+#ifdef _VERTEX_BLENDING
+    float4 boneWeights : BONE_WEIGHTS;
+    uint4  boneIds     : BONE_IDS;
+#endif
+    uint instanceID : SV_INSTANCEID;
+};
+
+#ifndef INTERPOLATION_MODE
+#define INTERPOLATION_MODE linear
+#endif
+
+struct VS_OUT
+{
+    INTERPOLATION_MODE float3 normalW    : NORMAL;
+    INTERPOLATION_MODE float3 bitangentW : BITANGENT;
+    INTERPOLATION_MODE float2 texC       : TEXCRD;
+    INTERPOLATION_MODE float3 posW       : POSW;
+    INTERPOLATION_MODE float3 colorV     : COLOR;
+    INTERPOLATION_MODE float4 prevPosH : PREVPOSH;
+    float4 posH : SV_POSITION;
+#ifdef _SINGLE_PASS_STEREO
+    INTERPOLATION_MODE float4 rightEyePosS : NV_X_RIGHT;
+    uint4 viewportMask : NV_VIEWPORT_MASK;
+    uint renderTargetIndex : SV_RenderTargetArrayIndex;
+#endif
+};
+
+float4x4 getWorldMat(VS_IN vIn)
+{
+#ifdef _VERTEX_BLENDING
+    float4x4 worldMat = getBlendedWorldMat(vIn.boneWeights, vIn.boneIds);
+#else
+    float4x4 worldMat = gWorldMat[vIn.instanceID];
+#endif
+    return worldMat;
+}
+
+float3x3 getWorldInvTransposeMat(VS_IN vIn)
+{
+#ifdef _VERTEX_BLENDING
+    float3x3 worldInvTransposeMat = getBlendedInvTransposeWorldMat(vIn.boneWeights, vIn.boneIds);
+#else
+    float3x3 worldInvTransposeMat = gWorldInvTransposeMat[vIn.instanceID];
+#endif
+    return worldInvTransposeMat;
+}
+
+VS_OUT defaultVS(VS_IN vIn)
+{
+    VS_OUT vOut;
+    float4x4 worldMat = getWorldMat(vIn);
+    float4 posW = mul(worldMat, vIn.pos);
+    vOut.posW = posW.xyz;
+    vOut.posH = mul(gCam.viewProjMat, posW);
+
+#ifdef HAS_TEXCRD
+    vOut.texC = vIn.texC;
+#else
+    vOut.texC = 0;
+#endif
+
+#ifdef HAS_COLORS
+    vOut.colorV = vIn.color;
+#else
+    vOut.colorV = 0;
+#endif
+
+    vOut.normalW = mul(getWorldInvTransposeMat(vIn), vIn.normal).xyz;
+    vOut.bitangentW = mul((float3x3)worldMat, vIn.bitangent).xyz;
+    vOut.prevPosH = mul(gCam.prevViewProjMat, posW);
+
+#ifdef _SINGLE_PASS_STEREO
+    vOut.rightEyePosS = mul(gCam.rightEyeViewProjMat, posW).x;
+    vOut.viewportMask = 0x00000001;
+    vOut.renderTargetIndex = 0;
+#endif
+  return vOut;
 }

@@ -534,9 +534,6 @@
     <ClInclude Include="Utils\Profiler.h">
       <Filter>Utils</Filter>
     </ClInclude>
-    <ClInclude Include="Data\ShaderCommon.h">
-      <Filter>Data</Filter>
-    </ClInclude>
     <ClInclude Include="Data\VertexAttrib.h">
       <Filter>Data</Filter>
     </ClInclude>
@@ -1583,6 +1580,12 @@
     <ClInclude Include="Data\Effects\ParticleData.h">
       <Filter>Data\Effects\Particles</Filter>
     </ClInclude>
+    <ClInclude Include="Data\HostDeviceSharedCode.h">
+      <Filter>Data</Filter>
+    </ClInclude>
+    <ClInclude Include="Data\HostDeviceSharedMacros.h">
+      <Filter>Data</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Externals">
@@ -2180,6 +2183,12 @@
     </None>
     <None Include="ShadingUtils\Shading.slang">
       <Filter>ShadingUtils</Filter>
+    </None>
+    <None Include="Data\ShaderCommon.slang">
+      <Filter>Data</Filter>
+    </None>
+    <None Include="Data\HostDeviceData.slang">
+      <Filter>Data</Filter>
     </None>
   </ItemGroup>
 </Project>

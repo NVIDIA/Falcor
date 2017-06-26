@@ -29,7 +29,7 @@
 fixme
 #endif
 
-#include "ShaderCommon.h"
+__import ShaderCommon;
 
 cbuffer PerFrameCB : register(b0)
 {

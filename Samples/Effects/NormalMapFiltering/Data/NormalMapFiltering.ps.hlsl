@@ -25,10 +25,9 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#include "ShaderCommon.h"
+__import ShaderCommon;
 __import Shading;
-#define _COMPILE_DEFAULT_VS
-#include "VertexAttrib.h"
+__import DefaultVS;
 #include "Effects/LeanMapData.slang.h"
 
 cbuffer PerFrameCB : register(b0)

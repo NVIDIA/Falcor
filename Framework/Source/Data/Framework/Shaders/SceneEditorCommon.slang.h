@@ -25,9 +25,8 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#include "ShaderCommon.h"
-#define _COMPILE_DEFAULT_VS
-#include "VertexAttrib.h"
+__import ShaderCommon;
+__import DefaultVS;
 
 struct EditorVSOut
 {
