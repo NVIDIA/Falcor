@@ -179,7 +179,6 @@ namespace Falcor
         apiPresent();
         executeDeferredReleases();
         mpRenderContext->reset();
-        mCurrentBackBufferIndex = (mCurrentBackBufferIndex + 1) % kSwapChainBuffers;
         mFrameID++;
     }
 }

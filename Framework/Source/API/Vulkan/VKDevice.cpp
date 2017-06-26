@@ -53,11 +53,12 @@ namespace Falcor
 
         std::vector<VkImage> swapchainImages(imageCount);
         vkGetSwapchainImagesKHR(mpApiData->device, mpApiData->swapchain, &imageCount, swapchainImages.data());
-        std::vector<ResourceHandle> handles(swapchainImages.size());
+        apiHandles.resize(swapchainImages.size());
         for (size_t i = 0; i < swapchainImages.size(); i++)
         {
-            handles[i] = swapchainImages[i];
+            apiHandles[i] = swapchainImages[i];
         }
+        currentBackBufferIndex = 0;
         return true;
     }
 
@@ -427,7 +428,14 @@ namespace Falcor
 
     void Device::apiPresent()
     {
+        VkPresentInfoKHR info = { VK_STRUCTURE_TYPE_PRESENT_INFO_KHR };
+        info.swapchainCount = 1;
+        info.pSwapchains = &mpApiData->swapchain;
+        info.pImageIndices = &mCurrentBackBufferIndex;
+        vk_call(vkQueuePresentKHR(mpRenderContext->getLowLevelData()->getCommandQueue(), &info));
 
+        // Get the next back-buffer
+        vk_call(vkAcquireNextImageKHR(mApiHandle, mpApiData->swapchain, std::numeric_limits<uint64_t>::max(), VK_NULL_HANDLE, VK_NULL_HANDLE, &mCurrentBackBufferIndex));
     }
 
     bool Device::apiInit(const Desc& desc)

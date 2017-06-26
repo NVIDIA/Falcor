@@ -252,18 +252,11 @@ namespace Falcor
         return pData->frameData[pData->currentBackBufferIndex].pFbo;
     }
 
-    void Device::present()
+    void Device::apiPresent()
     {
         DeviceApiData* pData = (DeviceApiData*)mpApiData;
-
-        mpRenderContext->resourceBarrier(pData->frameData[pData->currentBackBufferIndex].pFbo->getColorTexture(0).get(), Resource::State::Present);
-        mpRenderContext->flush();
         pData->pSwapChain->Present(pData->syncInterval, 0);
-        pData->pFrameFence->gpuSignal(mpRenderContext->getLowLevelData()->getCommandQueue().GetInterfacePtr());
-        executeDeferredReleases();
-        mpRenderContext->reset();
-        pData->currentBackBufferIndex = (pData->currentBackBufferIndex + 1) % kSwapChainBuffers;
-        mFrameID++;
+        mCurrentBackBufferIndex = (pData->currentBackBufferIndex + 1) % kSwapChainBuffers;
     }
 
     bool Device::init(const Desc& desc)

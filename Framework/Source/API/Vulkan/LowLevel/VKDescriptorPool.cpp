@@ -54,6 +54,7 @@ namespace Falcor
 
     bool DescriptorPool::apiInit()
     {
+        mpApiData = std::make_shared<DescriptorPool::ApiData>();
         uint32_t totalDescCount = 0;
         VkDescriptorPoolSize poolSizeForType[kTypeCount];
 
