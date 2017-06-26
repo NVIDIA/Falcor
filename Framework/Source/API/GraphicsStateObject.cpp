@@ -79,6 +79,15 @@ namespace Falcor
         return b;
     }
 
+#ifdef FALCOR_VK
+    GraphicsStateObject::Desc::Desc()
+    {
+        uint32_t vpCount = getMaxViewportCount();
+        mViewports.resize(vpCount);
+        mScissors.resize(vpCount);
+    }
+#endif
+
     GraphicsStateObject::~GraphicsStateObject()
     {
 //        gpDevice->releaseResource(mApiHandle); // #VKTODO fixme

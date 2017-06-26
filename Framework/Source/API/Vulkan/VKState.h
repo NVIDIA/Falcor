@@ -36,6 +36,8 @@ namespace Falcor
     void initVkDepthStencilInfo(const DepthStencilState* pState, VkPipelineDepthStencilStateCreateInfo& infoOut);
     void initVkVertexLayoutInfo(const VertexLayout* pLayout, std::vector<VkVertexInputBindingDescription>& bindingDescs, std::vector<VkVertexInputAttributeDescription>& attribDescs, VkPipelineVertexInputStateCreateInfo& infoOut);
     void initVkSamplerInfo(const Sampler* pSampler, VkSamplerCreateInfo& infoOut);
+    void initVkViewportInfo(const std::vector<GraphicsStateObject::Viewport>& viewports, const std::vector<GraphicsStateObject::Scissor>& scissors, std::vector<VkViewport>& vkViewportsOut, std::vector<VkRect2D>& vkScissorsOut, VkPipelineViewportStateCreateInfo& infoOut);
+
 
     inline VkPrimitiveTopology getVkPrimitiveTopology(Vao::Topology topology)
     {

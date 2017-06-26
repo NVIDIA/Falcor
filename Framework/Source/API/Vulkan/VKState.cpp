@@ -390,4 +390,45 @@ namespace Falcor
         infoOut.unnormalizedCoordinates = VK_FALSE;
     }
 
+    void convertVkViewport(const GraphicsStateObject::Viewport& falcorViewport, VkViewport& vkViewportOut)
+    {
+        vkViewportOut.x = falcorViewport.originX;
+        vkViewportOut.y = falcorViewport.originY;
+        vkViewportOut.width = falcorViewport.width;
+        vkViewportOut.height = falcorViewport.height;
+        vkViewportOut.minDepth = falcorViewport.minDepth;
+        vkViewportOut.maxDepth = falcorViewport.maxDepth;
+    }
+
+    void convertVkScissor(const GraphicsStateObject::Scissor& falcorScissor, VkRect2D& vkScissorOut)
+    {
+        vkScissorOut.offset.x = falcorScissor.left;
+        vkScissorOut.offset.y = falcorScissor.top;
+        vkScissorOut.extent.width = falcorScissor.right - falcorScissor.left;
+        vkScissorOut.extent.height = falcorScissor.bottom - falcorScissor.top;
+    }
+
+    void initVkViewportInfo(
+        const std::vector<GraphicsStateObject::Viewport>& viewports, const std::vector<GraphicsStateObject::Scissor>& scissors,
+        std::vector<VkViewport>& vkViewportsOut, std::vector<VkRect2D>& vkScissorsOut,
+        VkPipelineViewportStateCreateInfo& infoOut)
+    {
+        vkViewportsOut.resize(viewports.size());
+        vkScissorsOut.resize(scissors.size());
+
+        infoOut = {};
+
+        infoOut.viewportCount = (uint32_t)viewports.size();
+        for (uint32_t i = 0; i < infoOut.viewportCount; i++)
+        {
+            convertVkViewport(viewports[i], vkViewportsOut[i]);
+        }
+        
+        infoOut.scissorCount = (uint32_t)scissors.size();
+        for (uint32_t i = 0; i < infoOut.scissorCount; i++)
+        {
+            convertVkScissor(scissors[i], vkScissorsOut[i]);
+        }
+    }
+
 }

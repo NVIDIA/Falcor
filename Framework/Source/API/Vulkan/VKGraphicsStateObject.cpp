@@ -45,11 +45,14 @@ namespace Falcor
         VkPipelineInputAssemblyStateCreateInfo inputAssemblyInfo;
 
 
-        VkPipelineTessellationStateCreateInfo tessellationInfo;
+
+        VkPipelineTessellationStateCreateInfo tessellationInfo = {};
 
 
         VkPipelineViewportStateCreateInfo viewportInfo;
-
+        std::vector<VkViewport> vkViewports;
+        std::vector<VkRect2D> vkScissors;
+        initVkViewportInfo(desc.getViewports(), desc.getScissors(), vkViewports, vkScissors, viewportInfo);
 
         VkPipelineRasterizationStateCreateInfo rasterizerInfo;
         initVkRasterizerInfo(desc.getRasterizerState().get(), rasterizerInfo);
@@ -64,7 +67,7 @@ namespace Falcor
         std::vector<VkPipelineColorBlendAttachmentState> attachmentStates;
         initVkBlendInfo(desc.getBlendState().get(), attachmentStates, blendInfo);
 
-        VkPipelineDynamicStateCreateInfo dynamicInfo;
+        VkPipelineDynamicStateCreateInfo dynamicInfo = {};
 
 
 

@@ -610,7 +610,7 @@ namespace Falcor
         glm::vec2 distanceRange(0, 0);
         calcDistanceRange(pRenderCtx, pCamera, pDepthBuffer, distanceRange);
 
-        GraphicsState::Viewport VP;
+        GraphicsStateObject::Viewport VP;
         VP.originX = 0;
         VP.originY = 0;
         VP.minDepth = 0;

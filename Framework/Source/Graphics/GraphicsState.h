@@ -51,28 +51,6 @@ namespace Falcor
         using SharedConstPtr = std::shared_ptr<const GraphicsState>;
         ~GraphicsState();
 
-        struct Viewport
-        {
-            Viewport() = default;
-            Viewport(float x, float y, float w, float h, float minZ, float maxZ) : originX(x), originY(y), width(w), height(h), minDepth(minZ), maxDepth(maxZ) {}
-            float originX = 0;
-            float originY = 0;
-            float width = 0;
-            float height = 0;
-            float minDepth = 0;
-            float maxDepth = 1;
-        };
-
-        struct Scissor
-        {
-            Scissor() = default;
-            Scissor(int32_t l, int32_t t, int32_t r, int32_t b) : left(l), top(t), right(r), bottom(b) {}
-            int32_t left  = 0;
-            int32_t top    = 0;
-            int32_t right   = 0;
-            int32_t bottom = 0;
-        };
-
         /** Create a new object
         */
         static SharedPtr create() { return SharedPtr(new GraphicsState()); }
@@ -124,19 +102,19 @@ namespace Falcor
         \param[in] vp Viewport to set
         \param[in] setScissors If true, will set the corresponding scissors entry
         */
-        void setViewport(uint32_t index, const Viewport& vp, bool setScissors = true);
+        void setViewport(uint32_t index, const GraphicsStateObject::Viewport& vp, bool setScissors = true);
 
         /** Get a viewport.
         \param[in] index Viewport index
         */
-        const Viewport& getViewport(uint32_t index) const { return mViewports[index]; }
+        const GraphicsStateObject::Viewport& getViewport(uint32_t index) const { return mViewports[index]; }
 
         /** Push the current viewport and sets a new one
         \param[in] index Viewport index
         \param[in] vp Viewport to set
         \param[in] setScissors If true, will set the corresponding scissors entry
         */
-        void pushViewport(uint32_t index, const Viewport& vp, bool setScissors = true);
+        void pushViewport(uint32_t index, const GraphicsStateObject::Viewport& vp, bool setScissors = true);
 
         /** Pops the last viewport from the stack and sets it
         \param[in] index Viewport index
@@ -148,16 +126,16 @@ namespace Falcor
         \param[in] index Scissor index
         \param[in] sc Scissor to set
         */
-        void setScissors(uint32_t index, const Scissor& sc);
+        void setScissors(uint32_t index, const GraphicsStateObject::Scissor& sc);
 
         /** Get a Scissor.
         \param[in] index scissor index
         */
-        const Scissor& getScissors(uint32_t index) const { return mScissors[index]; }
+        const GraphicsStateObject::Scissor& getScissors(uint32_t index) const { return mScissors[index]; }
 
         /** Push the current Scissor and sets a new one
         */
-        void pushScissors(uint32_t index, const Scissor& sc);
+        void pushScissors(uint32_t index, const GraphicsStateObject::Scissor& sc);
 
         /** Pops the last Scissor from the stack and sets it
         */
@@ -222,12 +200,12 @@ namespace Falcor
         RootSignature::SharedPtr mpRootSignature;
         GraphicsStateObject::Desc mDesc;
         uint8_t mStencilRef = 0;
-        std::vector<Viewport> mViewports;
-        std::vector<Scissor> mScissors;
+        std::vector<GraphicsStateObject::Viewport> mViewports;
+        std::vector<GraphicsStateObject::Scissor> mScissors;
 
         std::stack<Fbo::SharedPtr> mFboStack;
-        std::vector<std::stack<Viewport>> mVpStack;
-        std::vector<std::stack<Scissor>> mScStack;
+        std::vector<std::stack<GraphicsStateObject::Viewport>> mVpStack;
+        std::vector<std::stack<GraphicsStateObject::Scissor>> mScStack;
 
         bool mEnableSinglePassStereo = false;
 
