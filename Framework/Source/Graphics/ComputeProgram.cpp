@@ -34,14 +34,14 @@ namespace Falcor
     ComputeProgram::SharedPtr ComputeProgram::createFromFile(const std::string& filename, const DefineList& programDefines)
     {
         SharedPtr pProg = SharedPtr(new ComputeProgram);
-        pProg->init(filename, programDefines, true);
+        pProg->init(Desc().sourceFile(filename).computeEntryPoint(), programDefines);
         return pProg;
     }
 
-    ComputeProgram::SharedPtr ComputeProgram::createFromString(const std::string& filename, const DefineList& programDefines)
+    ComputeProgram::SharedPtr ComputeProgram::createFromString(const std::string& code, const DefineList& programDefines)
     {
         SharedPtr pProg = SharedPtr(new ComputeProgram);
-        pProg->init(filename, programDefines, false);
+        pProg->init(Desc().sourceString(code).computeEntryPoint(), programDefines);
         return pProg;
     }
 }

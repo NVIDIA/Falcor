@@ -483,6 +483,7 @@
     <ClCompile Include="API\D3D\D3D12\LowLevel\D3D12DescriptorSet.cpp">
       <Filter>API\D3D\D3D12\LowLevel</Filter>
     </ClCompile>
+    <ClCompile Include="Utils\SlangSupport.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Graphics\Model\Animation.h">
@@ -697,9 +698,6 @@
     </ClInclude>
     <ClInclude Include="Effects\ToneMapping\ToneMapping.h">
       <Filter>Effects\ToneMapping</Filter>
-    </ClInclude>
-    <ClInclude Include="Data\Effects\CsmData.h">
-      <Filter>Data\Effects</Filter>
     </ClInclude>
     <ClInclude Include="Graphics\Model\Loaders\BinaryImage.hpp">
       <Filter>Graphics\Model\Loaders</Filter>
@@ -1552,17 +1550,11 @@
     <ClInclude Include="Utils\DebugDrawer.h">
       <Filter>Utils</Filter>
     </ClInclude>
-    <ClInclude Include="Data\Effects\LeanMapData.hlsli">
-      <Filter>Data\Effects</Filter>
-    </ClInclude>
     <ClInclude Include="Graphics\Material\MaterialHistory.h">
       <Filter>Graphics\Material</Filter>
     </ClInclude>
     <ClInclude Include="Effects\AmbientOcclusion\SSAO.h">
       <Filter>Effects\AmbientOcclusion</Filter>
-    </ClInclude>
-    <ClInclude Include="Data\Effects\SSAOData.h">
-      <Filter>Data\Effects</Filter>
     </ClInclude>
     <ClInclude Include="Utils\ProgressBar.h">
       <Filter>Utils</Filter>
@@ -1572,9 +1564,6 @@
     </ClInclude>
     <ClInclude Include="Utils\PixelZoom.h">
       <Filter>Utils</Filter>
-    </ClInclude>
-    <ClInclude Include="Data\Effects\ParticleData.h">
-      <Filter>Data\Effects\Particles</Filter>
     </ClInclude>
     <ClInclude Include="Effects\ParticleSystem\ParticleSystem.h">
       <Filter>Effects\ParticleSystem</Filter>
@@ -1593,6 +1582,21 @@
     </ClInclude>
     <ClInclude Include="API\D3D\D3D12\LowLevel\D3D12DescriptorData.h">
       <Filter>API\D3D\D3D12\LowLevel</Filter>
+    </ClInclude>
+    <ClInclude Include="Data\Framework\Shaders\SceneEditorCommon.slang.h">
+      <Filter>Data\Framework\Shaders</Filter>
+    </ClInclude>
+    <ClInclude Include="Data\Effects\CsmData.h">
+      <Filter>Data\Effects</Filter>
+    </ClInclude>
+    <ClInclude Include="Data\Effects\LeanMapData.slang.h">
+      <Filter>Data\Effects</Filter>
+    </ClInclude>
+    <ClInclude Include="Data\Effects\SSAOData.h">
+      <Filter>Data\Effects</Filter>
+    </ClInclude>
+    <ClInclude Include="Data\Effects\ParticleData.h">
+      <Filter>Data\Effects\Particles</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -2095,87 +2099,87 @@
     <None Include="..\Externals\GLM\glm\gtx\closest_point.inl">
       <Filter>Externals\GLM\gtx</Filter>
     </None>
-    <None Include="Data\Framework\Shaders\Gui.ps">
-      <Filter>Data\Framework\Shaders</Filter>
-    </None>
-    <None Include="Data\Framework\Shaders\Gui.vs">
-      <Filter>Data\Framework\Shaders</Filter>
-    </None>
-    <None Include="Data\Framework\Shaders\ParallelReduction.fs">
-      <Filter>Data\Framework\Shaders</Filter>
-    </None>
-    <None Include="Data\Framework\Shaders\SceneEditorCommon.hlsli">
-      <Filter>Data\Framework\Shaders</Filter>
-    </None>
-    <None Include="Data\Framework\Shaders\TextRenderer.fs">
-      <Filter>Data\Framework\Shaders</Filter>
-    </None>
-    <None Include="Data\Framework\Shaders\TextRenderer.vs">
-      <Filter>Data\Framework\Shaders</Filter>
-    </None>
-    <None Include="Data\Effects\ShadowPass.ps.hlsl">
-      <Filter>Data\Effects</Filter>
-    </None>
-    <None Include="Data\Effects\ShadowPass.gs.hlsl">
-      <Filter>Data\Effects</Filter>
-    </None>
-    <None Include="Data\Effects\ShadowPass.vs.hlsl">
-      <Filter>Data\Effects</Filter>
-    </None>
-    <None Include="Data\Effects\SkyBox.ps.hlsl">
-      <Filter>Data\Effects</Filter>
-    </None>
-    <None Include="Data\Effects\SkyBox.vs.hlsl">
-      <Filter>Data\Effects</Filter>
-    </None>
-    <None Include="Data\Framework\Shaders\FullScreenPass.gs.hlsl">
-      <Filter>Data\Framework\Shaders</Filter>
-    </None>
-    <None Include="Data\Framework\Shaders\FullScreenPass.vs.hlsl">
-      <Filter>Data\Framework\Shaders</Filter>
-    </None>
     <None Include="Data\Effects\SSAO.ps.hlsl" />
-    <None Include="Data\Effects\GaussianBlur.ps.hlsl">
+    <None Include="Data\Framework\Shaders\Blit.ps.slang">
+      <Filter>Data\Framework\Shaders</Filter>
+    </None>
+    <None Include="Data\Framework\Shaders\Blit.vs.slang">
+      <Filter>Data\Framework\Shaders</Filter>
+    </None>
+    <None Include="Data\Framework\Shaders\FullScreenPass.gs.slang">
+      <Filter>Data\Framework\Shaders</Filter>
+    </None>
+    <None Include="Data\Framework\Shaders\FullScreenPass.vs.slang">
+      <Filter>Data\Framework\Shaders</Filter>
+    </None>
+    <None Include="Data\Framework\Shaders\Gui.ps.slang">
+      <Filter>Data\Framework\Shaders</Filter>
+    </None>
+    <None Include="Data\Framework\Shaders\Gui.vs.slang">
+      <Filter>Data\Framework\Shaders</Filter>
+    </None>
+    <None Include="Data\Framework\Shaders\ParallelReduction.fs.slang">
+      <Filter>Data\Framework\Shaders</Filter>
+    </None>
+    <None Include="Data\Framework\Shaders\SceneEditorPS.slang">
+      <Filter>Data\Framework\Shaders</Filter>
+    </None>
+    <None Include="Data\Framework\Shaders\SceneEditorVS.slang">
+      <Filter>Data\Framework\Shaders</Filter>
+    </None>
+    <None Include="Data\Framework\Shaders\TextRenderer.fs.slang">
+      <Filter>Data\Framework\Shaders</Filter>
+    </None>
+    <None Include="Data\Framework\Shaders\TextRenderer.vs.slang">
+      <Filter>Data\Framework\Shaders</Filter>
+    </None>
+    <None Include="Data\Effects\GaussianBlur.ps.slang">
       <Filter>Data\Effects</Filter>
     </None>
-  </ItemGroup>
-  <ItemGroup>
-    <FxCompile Include="Data\Framework\Shaders\SceneEditorPS.hlsl">
-      <Filter>Data\Framework\Shaders</Filter>
-    </FxCompile>
-    <FxCompile Include="Data\Framework\Shaders\SceneEditorVS.hlsl">
-      <Filter>Data\Framework\Shaders</Filter>
-    </FxCompile>
-    <FxCompile Include="Data\Framework\Shaders\Blit.ps.hlsl">
-      <Filter>Data\Framework\Shaders</Filter>
-    </FxCompile>
-    <FxCompile Include="Data\Framework\Shaders\Blit.vs.hlsl">
-      <Filter>Data\Framework\Shaders</Filter>
-    </FxCompile>
-    <FxCompile Include="Data\Framework\Shaders\Blit.hlsl" />
-    <FxCompile Include="Data\Effects\ToneMapping.ps.hlsl">
+    <None Include="Data\Effects\ParticleConstColor.ps.slang">
       <Filter>Data\Effects</Filter>
-    </FxCompile>
-    <FxCompile Include="Data\Effects\ParticleConstColor.ps.hlsl">
+    </None>
+    <None Include="Data\Effects\ShadowPass.gs.slang">
+      <Filter>Data\Effects</Filter>
+    </None>
+    <None Include="Data\Effects\ShadowPass.ps.slang">
+      <Filter>Data\Effects</Filter>
+    </None>
+    <None Include="Data\Effects\ShadowPass.vs.slang">
+      <Filter>Data\Effects</Filter>
+    </None>
+    <None Include="Data\Effects\SkyBox.ps.slang">
+      <Filter>Data\Effects</Filter>
+    </None>
+    <None Include="Data\Effects\SkyBox.vs.slang">
+      <Filter>Data\Effects</Filter>
+    </None>
+    <None Include="Data\Effects\SSAO.ps.slang">
+      <Filter>Data\Effects</Filter>
+    </None>
+    <None Include="Data\Effects\ToneMapping.ps.slang">
+      <Filter>Data\Effects</Filter>
+    </None>
+    <None Include="Data\Effects\ParticleEmit.cs.slang">
       <Filter>Data\Effects\Particles</Filter>
-    </FxCompile>
-    <FxCompile Include="Data\Effects\ParticleInterpColor.ps.hlsl">
+    </None>
+    <None Include="Data\Effects\ParticleInterpColor.ps.slang">
       <Filter>Data\Effects\Particles</Filter>
-    </FxCompile>
-    <FxCompile Include="Data\Effects\ParticleTexture.ps.hlsl">
+    </None>
+    <None Include="Data\Effects\ParticleSimulate.cs.slang">
       <Filter>Data\Effects\Particles</Filter>
-    </FxCompile>
-    <FxCompile Include="Data\Effects\ParticleVertex.vs.hlsl">
+    </None>
+    <None Include="Data\Effects\ParticleSort.cs.slang">
       <Filter>Data\Effects\Particles</Filter>
-    </FxCompile>
-    <FxCompile Include="Data\Effects\ParticleEmit.cs.hlsl">
+    </None>
+    <None Include="Data\Effects\ParticleTexture.ps.slang">
       <Filter>Data\Effects\Particles</Filter>
-    </FxCompile>
-    <FxCompile Include="Data\Effects\ParticleSimulate.cs.hlsl">
+    </None>
+    <None Include="Data\Effects\ParticleVertex.vs.slang">
       <Filter>Data\Effects\Particles</Filter>
-    </FxCompile>
-    <FxCompile Include="Data\Effects\ParticleSort.cs.hlsl">
-      <Filter>Data\Effects\Particles</Filter>
-    </FxCompile>
+    </None>
+    <None Include="Data\DefaultVS.slang">
+      <Filter>Data</Filter>
+    </None>
   </ItemGroup>
 </Project>
