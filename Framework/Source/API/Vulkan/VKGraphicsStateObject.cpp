@@ -43,8 +43,7 @@ namespace Falcor
         initVkVertexLayoutInfo(desc.getVertexLayout().get(), bindingDescs, attribDescs, vertexInputInfo);
 
         VkPipelineInputAssemblyStateCreateInfo inputAssemblyInfo;
-
-
+        initVkInputAssemblyInfo(desc.getVao().get(), inputAssemblyInfo);
 
         VkPipelineTessellationStateCreateInfo tessellationInfo = {};
 

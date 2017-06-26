@@ -27,7 +27,6 @@
 ***************************************************************************/
 #pragma once
 #include "API/GraphicsStateObject.h"
-#include "API/VAO.h"
 
 namespace Falcor
 {
@@ -38,22 +37,5 @@ namespace Falcor
     void initVkSamplerInfo(const Sampler* pSampler, VkSamplerCreateInfo& infoOut);
     void initVkViewportInfo(const std::vector<GraphicsStateObject::Viewport>& viewports, const std::vector<GraphicsStateObject::Scissor>& scissors, std::vector<VkViewport>& vkViewportsOut, std::vector<VkRect2D>& vkScissorsOut, VkPipelineViewportStateCreateInfo& infoOut);
     void initVkMultiSampleInfo(const BlendState* pState, const Fbo::Desc& fboDesc, const uint32_t& sampleMask, VkPipelineMultisampleStateCreateInfo& infoOut);
-
-    inline VkPrimitiveTopology getVkPrimitiveTopology(Vao::Topology topology)
-    {
-        switch (topology)
-        {
-        case Vao::Topology::PointList:
-            return VK_PRIMITIVE_TOPOLOGY_POINT_LIST;
-        case Vao::Topology::LineList:
-            return VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
-        case Vao::Topology::TriangleList:
-            return VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-        case Vao::Topology::TriangleStrip:
-            return VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
-        default:
-            should_not_get_here();
-            return VK_PRIMITIVE_TOPOLOGY_POINT_LIST;
-        }
-    }
+    void initVkInputAssemblyInfo(const Vao* pVao, VkPipelineInputAssemblyStateCreateInfo& infoOut);
 }

@@ -445,4 +445,30 @@ namespace Falcor
         infoOut.alphaToOneEnable = VK_FALSE;
     }
 
+    VkPrimitiveTopology getVkPrimitiveTopology(Vao::Topology topology)
+    {
+        switch (topology)
+        {
+        case Vao::Topology::PointList:
+            return VK_PRIMITIVE_TOPOLOGY_POINT_LIST;
+        case Vao::Topology::LineList:
+            return VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
+        case Vao::Topology::TriangleList:
+            return VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+        case Vao::Topology::TriangleStrip:
+            return VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
+        default:
+            should_not_get_here();
+            return VK_PRIMITIVE_TOPOLOGY_POINT_LIST;
+        }
+    }
+
+    void initVkInputAssemblyInfo(const Vao* pVao, VkPipelineInputAssemblyStateCreateInfo& infoOut)
+    {
+        infoOut = {};
+
+        infoOut.topology = getVkPrimitiveTopology(pVao->getPrimitiveTopology());
+        infoOut.primitiveRestartEnable = VK_FALSE;
+    }
+
 }

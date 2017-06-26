@@ -162,6 +162,11 @@ namespace Falcor
         if(mpVao != pVao)
         {
             mpVao = pVao;
+
+#ifdef FALCOR_VK
+            mDesc.setVao(pVao);
+#endif
+
             mpGsoGraph->walk((void*)pVao->getVertexLayout().get());
         }
         return *this;

@@ -33,6 +33,7 @@
 #include "API/DepthStencilState.h"
 #include "API/BlendState.h"
 #include "API/LowLevel/RootSignature.h"
+#include "API/VAO.h"
 
 namespace Falcor
 {
@@ -117,8 +118,11 @@ namespace Falcor
 #ifdef FALCOR_VK
             Desc& setViewport(uint32_t index, const Viewport& vp) { mViewports[index] = vp; return *this; }
             Desc& setScissor(uint32_t index, const Scissor& sc) { mScissors[index] = sc; return *this; }
+            Desc& setVao(const Vao::SharedConstPtr& pVao) { mpVao = pVao; return *this; }
+
             const Viewport& getViewport(uint32_t index) const { return mViewports[index]; }
             const Scissor& getScissor(uint32_t index) const { return mScissors[index]; }
+            const Vao::SharedConstPtr& getVao() const { return mpVao; }
 
             const std::vector<Viewport>& getViewports() const { return mViewports; }
             const std::vector<Scissor>& getScissors() const { return mScissors; }
@@ -138,6 +142,8 @@ namespace Falcor
 #ifdef FALCOR_VK
             std::vector<Viewport> mViewports;
             std::vector<Scissor> mScissors;
+
+            Vao::SharedConstPtr mpVao;
 #endif
 
             bool mSinglePassStereoEnabled = false;
