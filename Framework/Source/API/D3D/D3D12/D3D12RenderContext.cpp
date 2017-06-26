@@ -92,7 +92,7 @@ namespace Falcor
         mCommandsPending = true;
     }
 
-    static void D3D12SetVao(CommandListHandle pList, const Vao* pVao)
+    static void D3D12SetVao(RenderContext* pCtx, CommandListHandle pList, const Vao* pVao)
     {
         D3D12_VERTEX_BUFFER_VIEW vb[D3D12_IA_VERTEX_INPUT_RESOURCE_SLOT_COUNT] = {};
         D3D12_INDEX_BUFFER_VIEW ib = {};
@@ -108,6 +108,7 @@ namespace Falcor
                     vb[i].BufferLocation = pVB->getGpuAddress();
                     vb[i].SizeInBytes = (uint32_t)pVB->getSize();
                     vb[i].StrideInBytes = pVao->getVertexLayout()->getBufferLayout(i)->getStride();
+                    pCtx->resourceBarrier(pVB, Resource::State::VertexBuffer);
                 }
             }
 
@@ -117,6 +118,7 @@ namespace Falcor
                 ib.BufferLocation = pIB->getGpuAddress();
                 ib.SizeInBytes = (uint32_t)pIB->getSize();
                 ib.Format = getDxgiFormat(pVao->getIndexBufferFormat());
+                pCtx->resourceBarrier(pIB, Resource::State::IndexBuffer);
             }
         }
 
@@ -195,16 +197,17 @@ namespace Falcor
         // Bind the root signature and the root signature data
         if (mpGraphicsVars)
         {
-            mpGraphicsVars->apply(const_cast<RenderContext*>(this));
+            mpGraphicsVars->apply(const_cast<RenderContext*>(this), mBindComputeRootSig);
         }
         else
         {
             mpLowLevelData->getCommandList()->SetGraphicsRootSignature(RootSignature::getEmpty()->getApiHandle());
         }
+        mBindComputeRootSig = false;
 
         CommandListHandle pList = mpLowLevelData->getCommandList();
         pList->IASetPrimitiveTopology(getD3DPrimitiveTopology(mpGraphicsState->getVao()->getPrimitiveTopology()));
-        D3D12SetVao(pList, mpGraphicsState->getVao().get());
+        D3D12SetVao(this, pList, mpGraphicsState->getVao().get());
         D3D12SetFbo(this, mpGraphicsState->getFbo().get());
         D3D12SetViewports(pList, &mpGraphicsState->getViewport(0));
         D3D12SetScissors(pList, &mpGraphicsState->getScissors(0));
@@ -276,6 +279,12 @@ namespace Falcor
         argDesc.Type = D3D12_INDIRECT_ARGUMENT_TYPE_DRAW_INDEXED;
         sigDesc.pArgumentDescs = &argDesc;
         gpDevice->getApiHandle()->CreateCommandSignature(&sigDesc, nullptr, IID_PPV_ARGS(&spDrawIndexCommandSig));
+    }
+
+    void RenderContext::reset()
+    {
+        ComputeContext::reset();
+        mBindComputeRootSig = true;
     }
 
     void RenderContext::applyProgramVars() {}

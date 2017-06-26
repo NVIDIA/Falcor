@@ -35,51 +35,11 @@ namespace Falcor
     RootSignature::SharedPtr RootSignature::spEmptySig;
     uint64_t RootSignature::sObjCount = 0;
 
-    RootSignature::Desc& RootSignature::Desc::addSampler(uint32_t regIndex, Sampler::SharedConstPtr pSampler, ShaderVisibility visiblityMask, BorderColor borderColor, uint32_t regSpace)
+    RootSignature::Desc& RootSignature::Desc::addDescriptorSet(const DescriptorSetLayout& setLayout)
     {
-        SamplerDesc sd;
-        sd.pSampler = pSampler;
-        sd.regIndex = regIndex;
-        sd.regSpace = regSpace;
-        sd.visibility = visiblityMask;
-        sd.borderColor = borderColor;
-        mSamplers.push_back(sd);
-        return *this;
-    }
-
-    RootSignature::Desc& RootSignature::Desc::addConstant(uint32_t regIndex, uint32_t dwordCount, ShaderVisibility visiblityMask, uint32_t regSpace)
-    {
-        ConstantDesc cd;
-        cd.dwordCount = dwordCount;
-        cd.regIndex = regIndex;
-        cd.regSpace = regSpace;
-        cd.visibility = visiblityMask;
-        mConstants.push_back(cd);
-        return *this;
-    }
-
-    RootSignature::Desc& RootSignature::Desc::addDescriptor(uint32_t regIndex, DescType type, ShaderVisibility visiblityMask, uint32_t regSpace)
-    {
-        DescriptorDesc rd;
-        rd.regIndex = regIndex;
-        rd.regSpace = regSpace;
-        rd.visibility = visiblityMask;
-        rd.type = type;
-        mRootDescriptors.push_back(rd);
-        return *this;
-    }
-
-    RootSignature::DescriptorTable& RootSignature::DescriptorTable::addRange(DescType type, uint32_t firstRegIndex, uint32_t descriptorCount, uint32_t regSpace, uint32_t offsetFromTableStart)
-    {
-        Range r;
-        r.descCount = descriptorCount;
-        r.firstRegIndex = firstRegIndex;
-        r.regSpace = regSpace;
-        r.type = type;
-        r.offsetFromTableStart = offsetFromTableStart;
-
-        mRanges.push_back(r);
-        return *this;
+        assert(setLayout.getRangeCount());
+        mSets.push_back(setLayout);
+        return *this; 
     }
 
     RootSignature::RootSignature(const Desc& desc) : mDesc(desc)
@@ -119,11 +79,11 @@ namespace Falcor
     {
         switch (type)
         {
-        case Falcor::RootSignature::DescType::SRV:
-        case Falcor::RootSignature::DescType::CBV:
+        case Falcor::RootSignature::DescType::Srv:
+        case Falcor::RootSignature::DescType::Cbv:
         case Falcor::RootSignature::DescType::Sampler:
             return ProgramReflection::ShaderAccess::Read;
-        case Falcor::RootSignature::DescType::UAV:
+        case Falcor::RootSignature::DescType::Uav:
             return ProgramReflection::ShaderAccess::ReadWrite;
         default:
             should_not_get_here();
@@ -138,21 +98,12 @@ namespace Falcor
         for (const auto& buf : bufMap)
         {
             const ProgramReflection::BufferReflection* pBuffer = buf.second.get();
-            if (descType == RootSignature::DescType::CBV)
+            if (pBuffer->getShaderAccess() == getRequiredShaderAccess(descType))
             {
-                desc.addDescriptor(pBuffer->getRegisterIndex(), descType, ShaderVisibility::All, pBuffer->getRegisterSpace());
-                cost += 2;
-            }
-            else
-            {
-                assert(descType == RootSignature::DescType::SRV || descType == RootSignature::DescType::UAV);
-                if(pBuffer->getShaderAccess() == getRequiredShaderAccess(descType))
-                {
-                    RootSignature::DescriptorTable descTable;
-                    descTable.addRange(descType, pBuffer->getRegisterIndex(), 1, pBuffer->getRegisterSpace());
-                    cost += 1;
-                    desc.addDescriptorTable(descTable);
-                }
+                RootSignature::DescriptorSetLayout descTable;
+                descTable.addRange(descType, pBuffer->getRegisterIndex(), 1, pBuffer->getRegisterSpace());
+                cost += 1;
+                desc.addDescriptorSet(descTable);
             }
         }
         return cost;
@@ -163,9 +114,9 @@ namespace Falcor
         uint32_t cost = 0;
         RootSignature::Desc d;
 
-        cost += initializeBufferDescriptors(pReflector, d, ProgramReflection::BufferReflection::Type::Constant, RootSignature::DescType::CBV);
-        cost += initializeBufferDescriptors(pReflector, d, ProgramReflection::BufferReflection::Type::Structured, RootSignature::DescType::SRV);
-        cost += initializeBufferDescriptors(pReflector, d, ProgramReflection::BufferReflection::Type::Structured, RootSignature::DescType::UAV);
+        cost += initializeBufferDescriptors(pReflector, d, ProgramReflection::BufferReflection::Type::Constant, RootSignature::DescType::Cbv);
+        cost += initializeBufferDescriptors(pReflector, d, ProgramReflection::BufferReflection::Type::Structured, RootSignature::DescType::Srv);
+        cost += initializeBufferDescriptors(pReflector, d, ProgramReflection::BufferReflection::Type::Structured, RootSignature::DescType::Uav);
 
         const ProgramReflection::ResourceMap& resMap = pReflector->getResourceMap();
         for (auto& resIt : resMap)
@@ -181,27 +132,21 @@ namespace Falcor
                 switch (resource.shaderAccess)
                 {
                 case ProgramReflection::ShaderAccess::ReadWrite:
-                    descType = RootSignature::DescType::UAV;
+                    descType = RootSignature::DescType::Uav;
                     break;
                 case ProgramReflection::ShaderAccess::Read:
-                    descType = RootSignature::DescType::SRV;
+                    descType = RootSignature::DescType::Srv;
                     break;
                 default:
                     should_not_get_here();
                 }
             }
 
-            // For now, we will deal with arrays by just creating one root table per entry.
-            // Eventually we will want to create a single root table for the array, but
-            // that is something we can do later.
             uint32_t count = resource.arraySize ? resource.arraySize : 1;
-            for( uint32_t ii = 0; ii < count; ++ii )
-            {
-                RootSignature::DescriptorTable descTable;
-                descTable.addRange(descType, resource.regIndex + ii, 1, resource.registerSpace);
-                d.addDescriptorTable(descTable);
-                cost += 1;
-            }
+            RootSignature::DescriptorSetLayout descTable;
+            descTable.addRange(descType, resource.regIndex, count, resource.registerSpace);
+            d.addDescriptorSet(descTable);
+            cost += 1;
         }
 
         if (cost > 64)

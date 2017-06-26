@@ -243,6 +243,10 @@ namespace Falcor
 
     void CopyContext::resourceBarrier(const Resource* pResource, Resource::State newState)
     {
+        // If the resource is a buffer with CPU access, no need to do anything
+        const Buffer* pBuffer = dynamic_cast<const Buffer*>(pResource);
+        if (pBuffer && pBuffer->getCpuAccess() != Buffer::CpuAccess::None) return;
+
         if (pResource->getState() != newState)
         {
             D3D12_RESOURCE_BARRIER barrier;
