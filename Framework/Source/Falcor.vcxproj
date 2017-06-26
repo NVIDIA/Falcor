@@ -41,7 +41,9 @@
     <ClCompile Include="..\Externals\GLM\glm\detail\dummy.cpp" />
     <ClCompile Include="..\Externals\GLM\glm\detail\glm.cpp" />
     <ClCompile Include="API\BlendState.cpp" />
+    <ClCompile Include="API\ComputeContext.cpp" />
     <ClCompile Include="API\ComputeStateObject.cpp" />
+    <ClCompile Include="API\CopyContext.cpp" />
     <ClCompile Include="API\D3D\D3D11\D3D11BlendState.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseD3D12|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseVK|x64'">true</ExcludedFromBuild>

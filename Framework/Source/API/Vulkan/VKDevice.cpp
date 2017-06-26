@@ -337,6 +337,7 @@ namespace Falcor
         // Surface size
         VkSurfaceCapabilitiesKHR surfaceCapabilities;
         vkGetPhysicalDeviceSurfaceCapabilitiesKHR(mpApiData->physicalDevice, mpApiData->surface, &surfaceCapabilities);
+        assert(surfaceCapabilities.supportedUsageFlags & VK_IMAGE_USAGE_TRANSFER_DST_BIT);
 
         VkExtent2D swapchainExtent = {};
         if (surfaceCapabilities.currentExtent.width == (uint32_t)-1)
@@ -356,7 +357,7 @@ namespace Falcor
             return false;
         }
 
-        const VkFormat requestedFormat = getVkFormat(srgbToLinearFormat(colorFormat));
+        const VkFormat requestedFormat = getVkFormat(colorFormat);
         const VkColorSpaceKHR requestedColorSpace = VK_COLORSPACE_SRGB_NONLINEAR_KHR;
 
         uint32_t formatCount = 0;
@@ -412,7 +413,7 @@ namespace Falcor
         info.imageFormat = requestedFormat;
         info.imageColorSpace = requestedColorSpace;
         info.imageExtent = { swapchainExtent.width, swapchainExtent.height };
-        info.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+        info.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
         info.preTransform = surfaceCapabilities.currentTransform;
         info.imageArrayLayers = 1;
         info.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
@@ -514,5 +515,24 @@ namespace Falcor
     ApiCommandQueueType Device::getApiCommandQueueType(LowLevelContextData::CommandQueueType type) const
     {
         return mpApiData->falcorToVulkanQueueType[(uint32_t)type];
+    }
+
+    uint32_t Device::findMemoryType(uint32_t typeBits, VkMemoryPropertyFlagBits flags)
+    {
+        VkPhysicalDeviceMemoryProperties memProperties;
+        vkGetPhysicalDeviceMemoryProperties(mpApiData->physicalDevice, &memProperties);
+
+        for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++) 
+        {
+            if (typeBits & (1 << i))
+            {
+                if((memProperties.memoryTypes[i].propertyFlags & flags) == flags)
+                {
+                    return i;
+                }
+            }
+        }
+        should_not_get_here();
+        return 0;
     }
 }

@@ -1,5 +1,5 @@
 /***************************************************************************
-# Copyright (c) 2017, NVIDIA CORPORATION. All rights reserved.
+# Copyright (c) 2015, NVIDIA CORPORATION. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -27,69 +27,72 @@
 ***************************************************************************/
 #include "Framework.h"
 #include "API/ComputeContext.h"
-#include "API/Device.h"
-#include "API/DescriptorSet.h"
 
 namespace Falcor
 {
-    void ComputeContext::prepareForDispatch()
-    {
-        assert(mpComputeState);
+    ComputeContext::~ComputeContext() = default;
+    CommandSignatureHandle ComputeContext::spDispatchCommandSig = nullptr;
 
-        // Bind the root signature and the root signature data
-        if (mpComputeVars)
+    ComputeContext::SharedPtr ComputeContext::create(CommandQueueHandle queue)
+    {
+        SharedPtr pCtx = SharedPtr(new ComputeContext());
+        pCtx->mpLowLevelData = LowLevelContextData::create(LowLevelContextData::CommandQueueType::Compute, queue);
+        if (pCtx->mpLowLevelData == nullptr)
         {
-            mpComputeVars->apply(const_cast<ComputeContext*>(this), mBindComputeRootSig);
+            return nullptr;
         }
-        else
+        pCtx->bindDescriptorHeaps();
+
+        if (spDispatchCommandSig == nullptr)
         {
-            // Set null/empty
+            initDispatchCommandSignature();
         }
 
-        // Set pipeline state
-
-        mCommandsPending = true;
+        return pCtx;
+    }
+    
+    void ComputeContext::pushComputeVars(const ComputeVars::SharedPtr& pVars)
+    {
+        mpComputeVarsStack.push(mpComputeVars);
+        setComputeVars(pVars);
     }
 
-    void ComputeContext::dispatch(uint32_t groupSizeX, uint32_t groupSizeY, uint32_t groupSizeZ)
+    void ComputeContext::popComputeVars()
     {
-        prepareForDispatch();
-
-        // Code
-    }
-
-    void ComputeContext::clearUAV(const UnorderedAccessView* pUav, const vec4& value)
-    {
-        // Code
-
-        mCommandsPending = true;
-    }
-
-    void ComputeContext::clearUAV(const UnorderedAccessView* pUav, const uvec4& value)
-    {
-        // Code
-
-        mCommandsPending = true;
-    }
-
-    void ComputeContext::clearUAVCounter(const StructuredBuffer::SharedPtr& pBuffer, uint32_t value)
-    {
-        if (pBuffer->hasUAVCounter())
+        if (mpComputeVarsStack.empty())
         {
-            clearUAV(pBuffer->getUAVCounter()->getUAV().get(), uvec4(value));
+            logWarning("Can't pop from the compute vars stack. The stack is empty");
+            return;
         }
+
+        setComputeVars(mpComputeVarsStack.top());
+        mpComputeVarsStack.pop();
     }
 
-    void ComputeContext::initDispatchCommandSignature()
+    void ComputeContext::pushComputeState(const ComputeState::SharedPtr& pState)
     {
-        
+        mpComputeStateStack.push(mpComputeState);
+        setComputeState(pState);
     }
 
-    void ComputeContext::dispatchIndirect(const Buffer* argBuffer, uint64_t argBufferOffset)
+    void ComputeContext::popComputeState()
     {
-        prepareForDispatch();
-        resourceBarrier(argBuffer, Resource::State::IndirectArg);
+        if (mpComputeStateStack.empty())
+        {
+            logWarning("Can't pop from the compute state stack. The stack is empty");
+            return;
+        }
 
-        // Code
+        setComputeState(mpComputeStateStack.top());
+        mpComputeStateStack.pop();
     }
+
+    void ComputeContext::reset()
+    {
+        CopyContext::reset();
+        mBindComputeRootSig = true;
+    }
+
+    void ComputeContext::applyComputeVars() {}
+    void ComputeContext::applyComputeState() {}
 }

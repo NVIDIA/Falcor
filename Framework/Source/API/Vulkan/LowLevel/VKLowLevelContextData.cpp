@@ -37,7 +37,7 @@ namespace Falcor
         VkCommandPoolCreateInfo commandPoolCreateInfo{};
 
         commandPoolCreateInfo.sType            = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-        commandPoolCreateInfo.flags            = 0;
+        commandPoolCreateInfo.flags            = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
         commandPoolCreateInfo.queueFamilyIndex = queueFamilyIndex;
 
         if (VK_FAILED(vkCreateCommandPool(device, &commandPoolCreateInfo, nullptr, pCommandPool)))
@@ -49,13 +49,13 @@ namespace Falcor
         return true;
     }
 
-    bool createCommandBuffer(VkDevice device, uint32_t pCmdBufferCount, VkCommandBuffer *pCmdBuffer, VkCommandPool commandPool)
+    bool createCommandBuffer(VkDevice device, uint32_t cmdBufferCount, VkCommandBuffer *pCmdBuffer, VkCommandPool commandPool)
     {
         VkCommandBufferAllocateInfo cmdBufAllocateInfo = {};
         cmdBufAllocateInfo.sType              = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
         cmdBufAllocateInfo.commandPool        = commandPool;
         cmdBufAllocateInfo.level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY; // Allocate only primary now.
-        cmdBufAllocateInfo.commandBufferCount = pCmdBufferCount;
+        cmdBufAllocateInfo.commandBufferCount = cmdBufferCount;
 
         if (VK_FAILED(vkAllocateCommandBuffers(device, &cmdBufAllocateInfo, pCmdBuffer)))
         {
@@ -87,15 +87,17 @@ namespace Falcor
 
     void LowLevelContextData::reset()
     {
-        if (VK_FAILED(vkResetCommandBuffer(mpList, VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT)))
-        {
-            logError("Could not reset command buffer.");
-        }
+        VkCommandBufferBeginInfo beginInfo = {};
+        beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+        beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
+        beginInfo.pInheritanceInfo = nullptr;
+        vk_call(vkBeginCommandBuffer(mpList, &beginInfo));
     }
 
     // Submit the recorded command buffers here. 
     void LowLevelContextData::flush()
     {
+        vk_call(vkEndCommandBuffer(mpList));
         VkSubmitInfo submitInfo = {};
 
         submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -111,7 +113,7 @@ namespace Falcor
         // Add a new interface there? 
         // vkResetFences(gpDevice->getApiHandle(), 1, &(mpFence->getApiHandle()));
 
-        if (VK_FAILED(vkQueueSubmit(mpQueue, 1, &submitInfo, mpFence->getApiHandle())))
+        if (VK_FAILED(vkQueueSubmit(mpQueue, 1, &submitInfo, VK_NULL_HANDLE/*mpFence->getApiHandle()*/)))
         {
             logError("Could not submit command queue.");
         }

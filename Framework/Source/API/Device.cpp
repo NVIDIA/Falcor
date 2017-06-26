@@ -147,6 +147,7 @@ namespace Falcor
         uint64_t gpuVal = mpFrameFence->getGpuValue();
         while (mDeferredReleases.size() && mDeferredReleases.front().frameID < gpuVal)
         {
+            mDeferredReleases.front().pApiObject.Release();
             mDeferredReleases.pop();
         }
     }

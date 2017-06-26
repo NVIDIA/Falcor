@@ -28,47 +28,85 @@
 #include "Framework.h"
 #include "API/CopyContext.h"
 #include "API/Buffer.h"
+#include "API/Texture.h"
 
 namespace Falcor
 {
-    CopyContext::~CopyContext() = default;
-
-    CopyContext::SharedPtr CopyContext::create(CommandQueueHandle queue)
+    static VkImageLayout getImageLayout(Resource::State state)
     {
-        SharedPtr pCtx = SharedPtr(new CopyContext());
-        pCtx->mpLowLevelData = LowLevelContextData::create(LowLevelContextData::CommandQueueType::Copy, queue);
-        return pCtx->mpLowLevelData ? pCtx : nullptr;
+        switch (state)
+        {
+        case Resource::State::Undefined:
+            return VK_IMAGE_LAYOUT_UNDEFINED;
+        case Resource::State::Common:
+        case Resource::State::UnorderedAccess:
+            return VK_IMAGE_LAYOUT_GENERAL;
+        case Resource::State::RenderTarget:
+        case Resource::State::ResolveDest:
+            return VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;            
+        case Resource::State::DepthStencil:
+            return VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+        case Resource::State::ShaderResource:
+        case Resource::State::ResolveSource:
+            return VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        case Resource::State::CopyDest:
+            return VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+        case Resource::State::CopySource:
+            return VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+            break;
+        case Resource::State::Present:
+            return VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+        default:
+            should_not_get_here();
+            return VkImageLayout (-1);
+        }
+    }
+
+    static VkAccessFlagBits getImageAccessMask(Resource::State state)
+    {
+        switch (state)
+        {
+        case Resource::State::Undefined:
+        case Resource::State::Present:
+        case Resource::State::Common:
+            return VkAccessFlagBits(0);
+        case Resource::State::VertexBuffer:
+            return VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT;
+        case Resource::State::ConstantBuffer:
+            return VK_ACCESS_UNIFORM_READ_BIT;
+        case Resource::State::IndexBuffer:
+            return VK_ACCESS_INDEX_READ_BIT;
+        case Resource::State::RenderTarget:
+            return VkAccessFlagBits(VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_COLOR_ATTACHMENT_READ_BIT);
+        case Resource::State::UnorderedAccess:
+            return VK_ACCESS_SHADER_WRITE_BIT;
+        case Resource::State::DepthStencil:
+            return VkAccessFlagBits(VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT);
+        case Resource::State::ShaderResource:
+            return VK_ACCESS_INPUT_ATTACHMENT_READ_BIT;
+        case Resource::State::IndirectArg:
+            return VK_ACCESS_INDIRECT_COMMAND_READ_BIT;
+        case Resource::State::CopyDest:
+            return VK_ACCESS_TRANSFER_WRITE_BIT;
+        case Resource::State::CopySource:
+            return VK_ACCESS_TRANSFER_READ_BIT;
+        case Resource::State::ResolveDest:
+            return VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+        case Resource::State::ResolveSource:
+            return VK_ACCESS_COLOR_ATTACHMENT_READ_BIT;
+        default:
+            should_not_get_here();
+            return VkAccessFlagBits(-1);
+        }
     }
 
     void CopyContext::bindDescriptorHeaps()
     {
     }
 
-    void CopyContext::reset()
-    {
-        flush();
-        mpLowLevelData->reset();
-        bindDescriptorHeaps();
-    }
-
     void copySubresourceData(/*const D3D12_SUBRESOURCE_DATA& srcData, const D3D12_PLACED_SUBRESOURCE_FOOTPRINT& dstFootprint, */uint8_t* pDstStart, uint64_t rowSize, uint64_t rowsToCopy)
     {
 
-    }
-
-    void CopyContext::flush(bool wait)
-    {
-        if (mCommandsPending)
-        {
-            mpLowLevelData->flush();
-            mCommandsPending = false;
-            bindDescriptorHeaps();
-        }
-
-        if (wait)
-        {
-            mpLowLevelData->getFence()->syncCpu();
-        }
     }
 
     void CopyContext::updateBuffer(const Buffer* pBuffer, const void* pData, size_t offset, size_t size)
@@ -108,19 +146,37 @@ namespace Falcor
         return result;
     }
 
-    void CopyContext::updateTexture(const Texture* pTexture, const void* pData)
-    {
-        mCommandsPending = true;
-
-
-        //updateTextureSubresources(pTexture, 0, subresourceCount, pData);
-    }
-
     void CopyContext::resourceBarrier(const Resource* pResource, Resource::State newState)
     {
         if (pResource->getState() != newState)
         {
+            if(pResource->getApiHandle().getType() == VkResourceType::Image)
+            {
+                const Texture* pTexture = dynamic_cast<const Texture*>(pResource);
+                VkImageMemoryBarrier barrier = {};
+                barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+                barrier.newLayout = getImageLayout(newState);
+                barrier.oldLayout = getImageLayout(pResource->mState);
+                barrier.image = pResource->getApiHandle().getImage();
+                barrier.subresourceRange.aspectMask = isDepthStencilFormat(pTexture->getFormat()) ? (VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT) : VK_IMAGE_ASPECT_COLOR_BIT;
+                barrier.subresourceRange.baseArrayLayer = 0;
+                barrier.subresourceRange.baseMipLevel = 0;
+                barrier.subresourceRange.layerCount = pTexture->getArraySize();
+                barrier.subresourceRange.levelCount = pTexture->getMipCount();
+                barrier.srcAccessMask = getImageAccessMask(pResource->mState);
+                barrier.dstAccessMask = getImageAccessMask(newState);
 
+                // OPTME: Group barriers into a single call. Do we always need to use VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT?
+                vkCmdPipelineBarrier(mpLowLevelData->getCommandList(), VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, 0, 0, nullptr, 0, nullptr, 1, &barrier);
+            }
+            else
+            {
+                assert(pResource->getApiHandle().getType() == VkResourceType::Buffer);
+                should_not_get_here();
+            }
+
+
+            pResource->mState = newState;
             mCommandsPending = true;
         }
     }

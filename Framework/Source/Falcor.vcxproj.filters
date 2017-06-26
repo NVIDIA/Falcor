@@ -553,6 +553,8 @@
       <Filter>API\Vulkan\LowLevel</Filter>
     </ClCompile>
     <ClCompile Include="API\Device.cpp" />
+    <ClCompile Include="API\CopyContext.cpp" />
+    <ClCompile Include="API\ComputeContext.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Graphics\Model\Animation.h">

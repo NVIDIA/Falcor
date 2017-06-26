@@ -25,34 +25,53 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#pragma once
 #include "Framework.h"
-#include "ComputeStateObject.h"
-#include "Device.h"
+#include "API/CopyContext.h"
+#include "API/Device.h"
+#include "API/Buffer.h"
+#include <queue>
 
 namespace Falcor
 {
-    bool ComputeStateObject::Desc::operator==(const ComputeStateObject::Desc& other) const
+    CopyContext::~CopyContext() = default;
+
+    CopyContext::SharedPtr CopyContext::create(CommandQueueHandle queue)
     {
-        bool b = true;
-        b = b && (mpProgram == other.mpProgram);
-        b = b && (mpRootSignature == other.mpRootSignature);
-        return b;
+        SharedPtr pCtx = SharedPtr(new CopyContext());
+        pCtx->mpLowLevelData = LowLevelContextData::create(LowLevelContextData::CommandQueueType::Copy, queue);
+        return pCtx->mpLowLevelData ? pCtx : nullptr;
     }
 
-    ComputeStateObject::~ComputeStateObject()
+    void CopyContext::reset()
     {
-//        gpDevice->releaseResource(mApiHandle); // #VKTODO fixme
+        flush();
+        mpLowLevelData->reset();
+        bindDescriptorHeaps();
     }
 
-    ComputeStateObject::SharedPtr ComputeStateObject::create(const Desc& desc)
+    void CopyContext::flush(bool wait)
     {
-        SharedPtr pState = SharedPtr(new ComputeStateObject(desc));
-
-        if (pState->apiInit() == false)
+        if (mCommandsPending)
         {
-            pState = nullptr;
+            mpLowLevelData->flush();
+            mCommandsPending = false;
+            bindDescriptorHeaps();
         }
-        return pState;
+
+        if (wait)
+        {
+            mpLowLevelData->getFence()->syncCpu();
+        }
+    }
+    
+    void CopyContext::updateTexture(const Texture* pTexture, const void* pData)
+    {
+        mCommandsPending = true;
+        uint32_t subresourceCount = pTexture->getArraySize() * pTexture->getMipCount();
+        if (pTexture->getType() == Texture::Type::TextureCube)
+        {
+            subresourceCount *= 6;
+        }
+        updateTextureSubresources(pTexture, 0, subresourceCount, pData);
     }
 }

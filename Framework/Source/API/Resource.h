@@ -69,6 +69,7 @@ namespace Falcor
         */
         enum class State : uint32_t
         {
+            Undefined,
             Common,
             VertexBuffer,
             ConstantBuffer,

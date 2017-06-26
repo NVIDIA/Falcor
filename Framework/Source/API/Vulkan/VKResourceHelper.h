@@ -41,7 +41,22 @@ namespace Falcor
     {
     public:
 
-        VkResource() {}
+        VkResource() = default;
+
+        ~VkResource()
+        {
+            switch (mType)
+            {
+            case Falcor::VkResourceType::None:
+                break;
+            case Falcor::VkResourceType::Image:
+                break;
+            case Falcor::VkResourceType::Buffer:
+                break;
+            default:
+                break;
+            }
+        }
 
         VkResource(ImageType image) : mType(VkResourceType::Image), mImage(image) {}
 
@@ -70,8 +85,28 @@ namespace Falcor
             mBuffer = VK_NULL_HANDLE;
         }
 
+        void setDeviceMem(VkDeviceMemory deviceMem) { mDeviceMem = deviceMem; }
+
+        VkResource& operator=(const VkResource& rhs) = default;
+
+        void Release()
+        {
+            switch (mType)
+            {
+            case VkResourceType::Image:
+                vkDestroyImage(gpDevice->getApiHandle(), mImage, nullptr);
+                break;
+            case VkResourceType::Buffer:
+                vkDestroyBuffer(gpDevice->getApiHandle(), mBuffer, nullptr);
+                break;
+            default:
+                should_not_get_here();
+            }
+            vkFreeMemory(gpDevice->getApiHandle(), mDeviceMem, nullptr);
+        }
     private:
 
+        VkDeviceMemory mDeviceMem;
         VkResourceType mType = VkResourceType::None;
         ImageType mImage = VK_NULL_HANDLE;
         BufferType mBuffer = VK_NULL_HANDLE;

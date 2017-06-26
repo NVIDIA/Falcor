@@ -63,8 +63,8 @@ namespace Falcor
     {
         outInfo = {};
 
-        ResourceFormat colorFormat = depthToColorFormat(pTexture->getFormat());
-        bool isDepth = isDepthFormat(colorFormat);
+        ResourceFormat colorFormat = pTexture->getFormat();
+        bool isDepth = isDepthFormat(pTexture->getFormat());
 
         outInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
         outInfo.image = pTexture->getApiHandle().getImage();
@@ -113,7 +113,6 @@ namespace Falcor
             initializeImageViewInfo(std::static_pointer_cast<const Texture>(pSharedPtr), firstArraySlice, arraySize, mostDetailedMip, mipCount, info);
             vkCreateImageView(gpDevice->getApiHandle(), &info, nullptr, &imageView);
             return imageView;
-            //return SharedPtr(new View(pResource, view, mostDetailedMip, mipCount, firstArraySlice, arraySize));
         }
 
         case VkResourceType::Buffer:
@@ -123,7 +122,6 @@ namespace Falcor
             initializeBufferViewInfo(std::static_pointer_cast<const Buffer>(pSharedPtr), info);
             vkCreateBufferView(gpDevice->getApiHandle(), &info, nullptr, &bufferView);
             return bufferView;
-            //return SharedPtr(new View(pResource, view, mostDetailedMip, mipCount, firstArraySlice, arraySize));
         }
 
         default:

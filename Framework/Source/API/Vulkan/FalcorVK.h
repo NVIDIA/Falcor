@@ -59,8 +59,6 @@ namespace Falcor
         return kVkFormatDesc[(uint32_t)format].vkFormat;
     }
 
-    using ApiObjectHandle = void*;
-
     using HeapCpuHandle = void*;
     using HeapGpuHandle = void*;
 
@@ -108,6 +106,8 @@ namespace Falcor
     using BlendStateHandle = void*;
 
     static const uint32_t kSwapChainBuffers = 3;
+
+    using ApiObjectHandle = ResourceHandle;
 
     inline uint32_t getMaxViewportCount()
     {

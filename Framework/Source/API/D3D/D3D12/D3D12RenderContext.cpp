@@ -281,12 +281,6 @@ namespace Falcor
         gpDevice->getApiHandle()->CreateCommandSignature(&sigDesc, nullptr, IID_PPV_ARGS(&spDrawIndexCommandSig));
     }
 
-    void RenderContext::reset()
-    {
-        ComputeContext::reset();
-        mBindComputeRootSig = true;
-    }
-
     void RenderContext::applyProgramVars() {}
     void RenderContext::applyGraphicsState() {}
 }

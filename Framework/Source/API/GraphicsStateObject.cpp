@@ -81,7 +81,7 @@ namespace Falcor
 
     GraphicsStateObject::~GraphicsStateObject()
     {
-        gpDevice->releaseResource(mApiHandle);
+//        gpDevice->releaseResource(mApiHandle); // #VKTODO fixme
     }
 
     GraphicsStateObject::SharedPtr GraphicsStateObject::create(const Desc& desc)

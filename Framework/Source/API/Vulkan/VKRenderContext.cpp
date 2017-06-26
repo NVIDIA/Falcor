@@ -33,56 +33,6 @@
 
 namespace Falcor
 {
-
-    // Helper class to neatly record commands. The commands enclosed within the scope of the object of this class
-    // will be the ones recorded for that particular command buffer.
-    class ScopedCmdBufferRecorder
-    {
-    public:
-        ScopedCmdBufferRecorder(VkDevice dev, VkCommandBuffer cmdBuffer)
-        {
-            assert(cmdBuffer == VK_NULL_HANDLE);
-
-            mCmdBuffer = cmdBuffer;
-
-            static const VkCommandBufferBeginInfo beginInfo =
-            {
-                VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-                nullptr,
-                VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
-                nullptr
-            };
-
-            vkBeginCommandBuffer(cmdBuffer, &beginInfo);
-
-        }
-
-        bool recordViewportCommands()
-        {
-            VkViewport viewport = { 1920.f, 1080.f, 0.f, 1.f };
-            vkCmdSetViewport(mCmdBuffer, 0, 1, &viewport);
-            
-            return true;
-        }
-
-        bool recordScissorCommands()
-        {
-            VkRect2D scissor = { 1920  , 1080  ,   0, 0 };
-            vkCmdSetScissor(mCmdBuffer, 0, 1, &scissor);
-
-            return true;
-        }
-
-        ~ScopedCmdBufferRecorder()
-        {
-            vkEndCommandBuffer(mCmdBuffer);
-        }
-
-    private:
-        VkDevice        mDevice;
-        VkCommandBuffer mCmdBuffer;
-    };
-
     RenderContext::SharedPtr RenderContext::create(CommandQueueHandle queue)
     {
         SharedPtr pCtx = SharedPtr(new RenderContext());
@@ -101,59 +51,49 @@ namespace Falcor
 
         return pCtx;
     }
-    
-    void RenderContext::clearFbo(const Fbo* pFbo, const glm::vec4& color, float depth, uint8_t stencil, FboAttachmentType flags)
-    {
-        bool clearDepth = (flags & FboAttachmentType::Depth) != FboAttachmentType::None;
-        bool clearColor = (flags & FboAttachmentType::Color) != FboAttachmentType::None;
-        bool clearStencil = (flags & FboAttachmentType::Stencil) != FboAttachmentType::None;
-
-        if(clearColor)
-        {
-            for(uint32_t i = 0 ; i < Fbo::getMaxColorTargetCount() ; i++)
-            {
-                if(pFbo->getColorTexture(i))
-                {
-                    //clearRtv(pFbo->getRenderTargetView(i).get(), color);
-                }
-            }
-        }
-
-        if(clearDepth | clearStencil)
-        {
-            //clearDsv(pFbo->getDepthStencilView().get(), depth, stencil, clearDepth, clearStencil);
-        }
-    }
 
     void RenderContext::clearRtv(const RenderTargetView* pRtv, const glm::vec4& color)
     {
+        resourceBarrier(pRtv->getResource(), Resource::State::CopyDest);
+
+        VkClearColorValue colVal;
+        memcpy_s(colVal.float32, sizeof(colVal.float32), &color, sizeof(color));
+        VkImageSubresourceRange range;
+        const auto& viewInfo = pRtv->getViewInfo();
+        range.baseArrayLayer = viewInfo.firstArraySlice;
+        range.baseMipLevel = viewInfo.mostDetailedMip;
+        range.layerCount = viewInfo.arraySize;
+        range.levelCount = viewInfo.mipCount;
+        range.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+
+        vkCmdClearColorImage(mpLowLevelData->getCommandList(), pRtv->getResource()->getApiHandle().getImage(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &colVal, 1, &range);
+        mCommandsPending = true;
     }
 
     void RenderContext::clearDsv(const DepthStencilView* pDsv, float depth, uint8_t stencil, bool clearDepth, bool clearStencil)
     {
+        resourceBarrier(pDsv->getResource(), Resource::State::CopyDest);
+
+        VkClearDepthStencilValue val;
+        val.depth = depth;
+        val.stencil = stencil;
+
+        VkImageSubresourceRange range;
+        const auto& viewInfo = pDsv->getViewInfo();
+        range.baseArrayLayer = viewInfo.firstArraySlice;
+        range.baseMipLevel = viewInfo.mostDetailedMip;
+        range.layerCount = viewInfo.arraySize;
+        range.levelCount = viewInfo.mipCount;
+        range.aspectMask = clearDepth ? VK_IMAGE_ASPECT_DEPTH_BIT : 0;
+        range.aspectMask |= clearStencil ? VK_IMAGE_ASPECT_STENCIL_BIT : 0;
+
+        vkCmdClearDepthStencilImage(mpLowLevelData->getCommandList(), pDsv->getResource()->getApiHandle().getImage(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &val, 1, &range);
+        mCommandsPending = true;
     }
 
 
     void RenderContext::prepareForDraw()
     {
-        // Record some commands. 
-        // TODO: This step is done at 'init' time and not every frame! This is just for experiment
-        {
-            ScopedCmdBufferRecorder recorder(gpDevice->getApiHandle(), mpLowLevelData->getCommandList());
-            recorder.recordViewportCommands();
-            recorder.recordScissorCommands();
-        }
-
-        // The flow in Vulkan would be something like this:-
-        // * Init:
-        //   - Create render passes, set all necessary static states, etc.
-        //   - Record command buffers
-        // 
-        // * Draw:
-        //   - Acquire the next drawable swapchain image
-        //   - Bind the right command buffer.
-        //   - Submit the command buffer. Store the semaphores that'll be signalled.
-        //   - Present the swapchain to display. 
     }
 
     void RenderContext::drawInstanced(uint32_t vertexCount, uint32_t instanceCount, uint32_t startVertexLocation, uint32_t startInstanceLocation)
@@ -195,12 +135,7 @@ namespace Falcor
     void RenderContext::initDrawCommandSignatures()
     {
     }
-
-    void RenderContext::reset()
-    {
-
-    }
-
+    
     void RenderContext::applyProgramVars() {}
     void RenderContext::applyGraphicsState() {}
 }

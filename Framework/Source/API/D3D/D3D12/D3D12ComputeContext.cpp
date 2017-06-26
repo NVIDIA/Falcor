@@ -33,7 +33,7 @@
 
 namespace Falcor
 {
-    CommandSignatureHandle RenderContext::spDispatchCommandSig = nullptr;
+    CommandSignatureHandle ComputeContext::spDispatchCommandSig = nullptr;
 
     ComputeContext::~ComputeContext() = default;
 

@@ -139,6 +139,10 @@ namespace Falcor
         DescriptorPool::SharedPtr getGpuDescriptorPool() const { return mpGpuDescPool; }
         ResourceAllocator::SharedPtr getResourceAllocator() const { return mpResourceAllocator; }
         void releaseResource(ApiObjectHandle pResource);
+
+#ifdef FALCOR_VK
+        uint32_t findMemoryType(uint32_t typeBits, VkMemoryPropertyFlagBits flags);
+#endif
     private:
         struct ResourceRelease
         {

@@ -35,14 +35,6 @@ namespace Falcor
 {
     struct TextureApiData
     {
-    //    TextureApiData() { sObjCount++; }
-    //    ~TextureApiData() { sObjCount--; if (sObjCount == 0) spGenMips = nullptr; }
-
-    //    static std::unique_ptr<GenMipsData> spGenMips;
-    //    Fbo::SharedPtr pGenMipsFbo;
-
-    //private:
-    //    static uint64_t sObjCount;
     };
 
     void Texture::apiInit()
@@ -51,8 +43,10 @@ namespace Falcor
 
     Texture::~Texture()
     {
-        safe_delete(mpApiData);
-        //gpDevice->releaseResource(mApiHandle);
+        if(gpDevice) // #VKTODO This shouldn't be here
+        {
+            gpDevice->releaseResource(mApiHandle);
+        }
     }
 
     // Like getD3D12ResourceFlags but for Images specifically
@@ -62,13 +56,13 @@ namespace Falcor
 
         if (is_set(bindFlags, Resource::BindFlags::UnorderedAccess))
         {
-            vkFlags |= VK_IMAGE_USAGE_STORAGE_BIT;
+            vkFlags |= VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
         }
 
         if (is_set(bindFlags, Resource::BindFlags::DepthStencil))
         {
 
-            vkFlags |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+            vkFlags |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
         }
 
         if (is_set(bindFlags, Resource::BindFlags::ShaderResource) == false)
@@ -79,7 +73,7 @@ namespace Falcor
 
         if (is_set(bindFlags, Resource::BindFlags::RenderTarget))
         {
-            vkFlags |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+            vkFlags |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
         }
 
         // According to spec, must not be 0
@@ -133,7 +127,7 @@ namespace Falcor
         imageInfo.flags = (mType == Texture::Type::TextureCube) ? VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT : 0;
         imageInfo.format = getVkFormat(mFormat);
         imageInfo.imageType = getVkImageType(mType);
-        imageInfo.initialLayout = pData ? VK_IMAGE_LAYOUT_PREINITIALIZED : VK_IMAGE_LAYOUT_UNDEFINED;
+        imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
         imageInfo.mipLevels = min(mMipLevels, getMaxMipCount(imageInfo.extent));
         imageInfo.pQueueFamilyIndices = nullptr;
         imageInfo.queueFamilyIndexCount = 0;
@@ -143,6 +137,8 @@ namespace Falcor
         imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
         imageInfo.usage = getVkImageUsageFlags(mBindFlags);
 
+        mState = Resource::State::Undefined; // Default is common, which is not what we want
+
         VkImage image;
         if (VK_FAILED(vkCreateImage(gpDevice->getApiHandle(), &imageInfo, nullptr, &image)))
         {
@@ -151,6 +147,24 @@ namespace Falcor
         }
         mApiHandle = image;
 
+        // Allocate the GPU memory
+        VkMemoryRequirements memRequirements;
+        vkGetImageMemoryRequirements(gpDevice->getApiHandle(), image, &memRequirements);
+
+        VkMemoryAllocateInfo allocInfo = {};
+        allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+        allocInfo.allocationSize = memRequirements.size;
+        allocInfo.memoryTypeIndex = gpDevice->findMemoryType(memRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+        
+        VkDeviceMemory deviceMem;
+        if (vkAllocateMemory(gpDevice->getApiHandle(), &allocInfo, nullptr, &deviceMem) != VK_SUCCESS)
+        {
+            throw std::runtime_error("failed to allocate image memory!");
+        }
+
+        vkBindImageMemory(gpDevice->getApiHandle(), image, deviceMem, 0);
+
+        mApiHandle.setDeviceMem(deviceMem);
         if (pData != nullptr)
         {
 
