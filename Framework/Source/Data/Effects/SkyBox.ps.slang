@@ -25,23 +25,22 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#include "ShaderCommon.h"
-__import Shading;
-#define _COMPILE_DEFAULT_VS
-#include "VertexAttrib.h"
+__import Helpers;
 
-struct PSOut
+#ifdef _SPHERICAL_MAP
+Texture2D gTexture;
+#else
+TextureCube gTexture;
+#endif
+SamplerState gSampler;
+
+float4 main(float3 dir : NORMAL) : SV_TARGET
 {
-    float4 color : SV_TARGET0;
-    float4 normal: SV_TARGET1;
-};
-
-PSOut main(VS_OUT vsOut)
-{
-    PSOut psOut;
-
-    psOut.color = 1.0.xxxx;
-    psOut.normal = float4(vsOut.normalW * 0.5f + 0.5f, 1.0f);
-
-    return psOut;
+#ifdef _SPHERICAL_MAP
+    float2 uv = dirToSphericalCrd(dir) ;
+    float4 color = gTexture.Sample(gSampler, uv);
+    return color;
+#else
+	return gTexture.Sample(gSampler, normalize(dir), 0);
+#endif
 }

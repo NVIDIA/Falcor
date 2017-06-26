@@ -27,7 +27,7 @@
 ***************************************************************************/
 
 #include "ShaderCommon.h"
-#include "Shading.h"
+__import Shading;
 #define _COMPILE_DEFAULT_VS
 #include "VertexAttrib.h"
 
