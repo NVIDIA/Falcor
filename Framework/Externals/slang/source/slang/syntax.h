@@ -632,7 +632,7 @@ namespace Slang
     class Decl : public DeclBase
     {
     public:
-        ContainerDecl*  ParentDecl;
+        ContainerDecl*  ParentDecl = nullptr;
 
         Token Name;
         String const& getName() { return Name.Content; }
@@ -1883,12 +1883,16 @@ namespace Slang
         bool isOverloaded() const { return items.Count() > 1; }
     };
 
+    class SemanticsVisitor;
+
     struct LookupRequest
     {
-        RefPtr<Scope>   scope       = nullptr;
-        RefPtr<Scope>   endScope    = nullptr;
+        SemanticsVisitor*   semantics   = nullptr;
 
-        LookupMask      mask        = LookupMask::All;
+        RefPtr<Scope>       scope       = nullptr;
+        RefPtr<Scope>       endScope    = nullptr;
+
+        LookupMask          mask        = LookupMask::All;
     };
 
     // An expression that references an overloaded set of declarations
@@ -1913,7 +1917,10 @@ namespace Slang
     public:
         enum class ConstantType
         {
-            Int, Bool, Float
+            Int,
+            Bool,
+            Float,
+            String,
         };
         ConstantType ConstType;
         union
@@ -1921,6 +1928,7 @@ namespace Slang
             int IntValue;
             FloatingPointLiteralValue FloatValue;
         };
+        String stringValue;
         virtual RefPtr<SyntaxNode> Accept(SyntaxVisitor * visitor) override;
     };
 

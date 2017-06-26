@@ -278,7 +278,7 @@ namespace Falcor
                 spAddTranslationUnitSourceString(slangRequest, translationUnitIndex, "", mOriginalShaderStrings[i].c_str());
             }
 
-            spAddTranslationUnitEntryPoint(
+            spAddEntryPoint(
                 slangRequest,
                 translationUnitIndex,
                 "main", // TODO: allow customization of entry point name?

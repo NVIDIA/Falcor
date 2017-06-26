@@ -34,6 +34,8 @@ struct EmitContext
     // instead.
     Dictionary<String, int> mapGLSLSourcePathToID;
     int glslSourceIDCount = 0;
+
+    HashSet<ProgramSyntaxNode*> modulesAlreadyEmitted;
 };
 
 //
@@ -763,6 +765,34 @@ static void emitCallExpr(
     emitSimpleCallExpr(context, callExpr, outerPrec);
 }
 
+static void emitStringLiteral(
+    EmitContext*    context,
+    String const&   value)
+{
+    emit(context, "\"");
+    for (auto c : value)
+    {
+        // TODO: This needs a more complete implementation,
+        // especially if we want to support Unicode.
+
+        char buffer[] = { c, 0 };
+        switch (c)
+        {
+        default:
+            emit(context, buffer);
+            break;
+
+        case '\"': emit(context, "\\\"");
+        case '\'': emit(context, "\\\'");
+        case '\\': emit(context, "\\\\");
+        case '\n': emit(context, "\\n");
+        case '\r': emit(context, "\\r");
+        case '\t': emit(context, "\\t");
+        }
+    }
+    emit(context, "\"");
+}
+
 static void EmitExprWithPrecedence(EmitContext* context, RefPtr<ExpressionSyntaxNode> expr, int outerPrec)
 {
     bool needClose = false;
@@ -871,6 +901,9 @@ static void EmitExprWithPrecedence(EmitContext* context, RefPtr<ExpressionSyntax
             break;
         case ConstantExpressionSyntaxNode::ConstantType::Bool:
             Emit(context, litExpr->IntValue ? "true" : "false");
+            break;
+        case ConstantExpressionSyntaxNode::ConstantType::String:
+            emitStringLiteral(context, litExpr->stringValue);
             break;
         default:
             assert(!"unreachable");
@@ -1715,6 +1748,27 @@ static void EmitStmt(EmitContext* context, RefPtr<StatementSyntaxNode> stmt)
         }
         Emit(context, ")\n");
         EmitBlockStmt(context, forStmt->Statement);
+        return;
+    }
+    else if (auto whileStmt = stmt.As<WhileStatementSyntaxNode>())
+    {
+        EmitLoopAttributes(context, whileStmt);
+
+        Emit(context, "while(");
+        EmitExpr(context, whileStmt->Predicate);
+        Emit(context, ")\n");
+        EmitBlockStmt(context, whileStmt->Statement);
+        return;
+    }
+    else if (auto doWhileStmt = stmt.As<DoWhileStatementSyntaxNode>())
+    {
+        EmitLoopAttributes(context, doWhileStmt);
+
+        Emit(context, "do(");
+        EmitBlockStmt(context, doWhileStmt->Statement);
+        Emit(context, " while(");
+        EmitExpr(context, doWhileStmt->Predicate);
+        Emit(context, ")\n");
         return;
     }
     else if (auto discardStmt = stmt.As<DiscardStatementSyntaxNode>())
@@ -2662,16 +2716,24 @@ static void EmitDeclImpl(EmitContext* context, RefPtr<Decl> decl, RefPtr<VarLayo
         // When in "rewriter" mode, we need to emit the code of the imported
         // module in-place at the `import` site.
 
-        auto moduleDecl = importDecl->importedModuleDecl;
+        auto moduleDecl = importDecl->importedModuleDecl.Ptr();
 
-        // TODO: do we need to modify the code generation environment at
-        // all when doing this recursive emit?
-        //
-        // TODO: what if we import the same module along two different
-        // paths? Probably need  logic to avoid emitting the same
-        // module more than once.
+        // We might import the same module along two different paths,
+        // so we need to be careful to only emit each module once
+        // per output.
+        if(!context->modulesAlreadyEmitted.Contains(moduleDecl))
+        {
+            // Add the module to our set before emitting it, just
+            // in case a circular reference would lead us to
+            // infinite recursion (but that shouldn't be allowed
+            // in the first place).
+            context->modulesAlreadyEmitted.Add(moduleDecl);
 
-        EmitDeclsInContainer(context, moduleDecl);
+            // TODO: do we need to modify the code generation environment at
+            // all when doing this recursive emit?
+
+            EmitDeclsInContainer(context, moduleDecl);
+        }
 
         return;
     }
