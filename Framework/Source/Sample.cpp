@@ -211,10 +211,10 @@ namespace Falcor
             return;
         }
 
-//         if (config.deviceCreatedCallback != nullptr)
-//         {
-//             config.deviceCreatedCallback();
-//         }
+        if (config.deviceCreatedCallback != nullptr)
+        {
+            config.deviceCreatedCallback();
+        }
 
         // Set the icon
         setWindowIcon("Framework\\Nvidia.ico", mpWindow->getApiHandle());

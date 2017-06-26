@@ -31,6 +31,7 @@
 #include "API/LowLevel/GpuFence.h"
 #include "API/Vulkan/FalcorVK.h"
 #include <set>
+#include "Falcor.h"
 
 namespace Falcor
 {
@@ -71,7 +72,7 @@ namespace Falcor
         safe_delete(mpApiData);
     }
 
-    bool createInstance(DeviceApiData *pData, bool enableDebugLayers)
+    bool createInstance(DeviceApiData* pData, bool enableDebugLayers, uint32_t apiMajorVersion, uint32_t apiMinorVersion)
     {
         // Find out which layers are supported
         uint32_t layerCount = 0;
@@ -127,9 +128,14 @@ namespace Falcor
             extensionNames.push_back("VK_EXT_debug_report");
         }
 
+        VkApplicationInfo appInfo = {};
+        appInfo.pEngineName = "Falcor";
+        appInfo.engineVersion = VK_MAKE_VERSION(FALCOR_MAJOR_VERSION, FALCOR_MINOR_VERSION, 0);
+        appInfo.apiVersion = VK_MAKE_VERSION(apiMajorVersion, apiMinorVersion, 0);
+
         VkInstanceCreateInfo instanceCreateInfo = {};
         instanceCreateInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
-        instanceCreateInfo.pApplicationInfo = nullptr;
+        instanceCreateInfo.pApplicationInfo = &appInfo;
         instanceCreateInfo.enabledLayerCount = (uint32_t)layerNames.size();
         instanceCreateInfo.ppEnabledLayerNames = layerNames.data();
         instanceCreateInfo.enabledExtensionCount = (uint32_t)extensionNames.size();
@@ -442,7 +448,7 @@ namespace Falcor
     {
         mpApiData = new DeviceApiData;
 
-        if (createInstance(mpApiData, desc.enableDebugLayer) == false)
+        if (createInstance(mpApiData, desc.enableDebugLayer, desc.apiMajorVersion, desc.apiMinorVersion) == false)
         {
             return false;
         }
