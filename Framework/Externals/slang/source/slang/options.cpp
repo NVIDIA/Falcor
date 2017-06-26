@@ -375,14 +375,6 @@ struct OptionsParser
                         compileRequest,
                         String(includeDirStr).begin());
                 }
-                else if (argStr == "-auto-import-dir")
-                {
-                    char const* importDirStr = tryReadCommandLineArgumentRaw(arg, &argCursor, argEnd);
-
-                    spAddAutoImportPath(
-                        compileRequest,
-                        String(importDirStr).begin());
-                }
                 else if (argStr == "--")
                 {
                     // The `--` option causes us to stop trying to parse options,
@@ -520,7 +512,7 @@ struct OptionsParser
             // Now place all those entry points where they belong
             for( auto& entryPoint : rawEntryPoints )
             {
-                spAddTranslationUnitEntryPoint(
+                spAddEntryPoint(
                     compileRequest,
                     entryPoint.translationUnitIndex,
                     entryPoint.name.begin(),

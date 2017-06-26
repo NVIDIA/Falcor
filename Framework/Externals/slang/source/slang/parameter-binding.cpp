@@ -134,9 +134,6 @@ struct SharedParameterBindingContext
     // All shader parameters we've discovered so far, and started to lay out...
     List<RefPtr<ParameterInfo>> parameters;
 
-    // A dictionary to accellerate looking up parameters by name
-    Dictionary<String, ParameterInfo*> mapNameToParameterInfo;
-
     // The program layout we are trying to construct
     RefPtr<ProgramLayout> programLayout;
 
@@ -157,6 +154,9 @@ struct ParameterBindingContext
 
     // The layout rules to use while computing usage...
     LayoutRulesFamilyImpl* layoutRules;
+
+    // A dictionary to accellerate looking up parameters by name
+    Dictionary<String, ParameterInfo*> mapNameToParameterInfo;
 
     // What stage (if any) are we compiling for?
     Stage stage;
@@ -448,7 +448,7 @@ static void collectGlobalScopeParameter(
     // of this parameter:
     auto parameterName = varDecl->Name.Content;
     ParameterInfo* parameterInfo = nullptr;
-    if( context->shared->mapNameToParameterInfo.TryGetValue(parameterName, parameterInfo) )
+    if( context->mapNameToParameterInfo.TryGetValue(parameterName, parameterInfo) )
     {
         // If the parameters have the same name, but don't "match" according to some reasonable rules,
         // then we need to bail out.
@@ -463,7 +463,7 @@ static void collectGlobalScopeParameter(
     {
         parameterInfo = new ParameterInfo();
         context->shared->parameters.Add(parameterInfo);
-        context->shared->mapNameToParameterInfo.Add(parameterName, parameterInfo);
+        context->mapNameToParameterInfo.Add(parameterName, parameterInfo);
     }
     else
     {
@@ -941,7 +941,7 @@ static void processEntryPointParameter(
 
 static void collectEntryPointParameters(
     ParameterBindingContext*        context,
-    EntryPointOption const&         entryPoint,
+    EntryPointRequest*              entryPoint,
     ProgramSyntaxNode*              translationUnitSyntax)
 {
     // First, look for the entry point with the specified name
@@ -950,7 +950,7 @@ static void collectEntryPointParameters(
     buildMemberDictionary(translationUnitSyntax);
 
     Decl* entryPointDecl;
-    if( !translationUnitSyntax->memberDictionary.TryGetValue(entryPoint.name, entryPointDecl) )
+    if( !translationUnitSyntax->memberDictionary.TryGetValue(entryPoint->name, entryPointDecl) )
     {
         // No such entry point!
         return;
@@ -970,7 +970,7 @@ static void collectEntryPointParameters(
 
     // Create the layout object here
     auto entryPointLayout = new EntryPointLayout();
-    entryPointLayout->profile = entryPoint.profile;
+    entryPointLayout->profile = entryPoint->profile;
     entryPointLayout->entryPoint = entryPointFuncDecl;
 
 
@@ -1043,56 +1043,86 @@ static void collectEntryPointParameters(
 // inputs and outputs).
 static Stage
 inferStageForTranslationUnit(
-    CompileUnit const&  translationUnit)
+    TranslationUnitRequest* translationUnit)
 {
     // In the specific case where we are compiling GLSL input,
     // and have only a single entry point, use the stage
     // of the entry point.
     //
     // TODO: can we generalize this at all?
-    if( translationUnit.options.sourceLanguage == SourceLanguage::GLSL )
+    if( translationUnit->sourceLanguage == SourceLanguage::GLSL )
     {
-        if( translationUnit.options.entryPoints.Count() == 1 )
+        if( translationUnit->entryPoints.Count() == 1 )
         {
-            return translationUnit.options.entryPoints[0].profile.GetStage();
+            return translationUnit->entryPoints[0]->profile.GetStage();
         }
     }
 
     return Stage::Unknown;
 }
 
-static void collectParameters(
-    ParameterBindingContext*        inContext,
-    CollectionOfTranslationUnits*   program)
+static void collectModuleParameters(
+    ParameterBindingContext*    inContext,
+    ProgramSyntaxNode*          module)
 {
+    // Each loaded module provides a separate (logical) namespace for
+    // parameters, so that two parameters with the same name, in
+    // distinct modules, should yield different bindings.
+    //
     ParameterBindingContext contextData = *inContext;
     auto context = &contextData;
 
-    for( auto& translationUnit : program->translationUnits )
+    context->stage = Stage::Unknown;
+
+    // A loaded module cannot define entry points that
+    // we'll expose (for now), so we just need to
+    // consider global-scope parameters.
+    collectGlobalScopeParameters(context, module);
+}
+
+static void collectParameters(
+    ParameterBindingContext*        inContext,
+    CompileRequest*                 request)
+{
+    // All of the parameters in translation units directly
+    // referenced in the compile request are part of one
+    // logical namespace/"linkage" so that two parameters
+    // with the same name should represent the same
+    // parameter, and get the same binding(s)
+    ParameterBindingContext contextData = *inContext;
+    auto context = &contextData;
+
+    for( auto& translationUnit : request->translationUnits )
     {
-        context->stage = inferStageForTranslationUnit(translationUnit);
+        context->stage = inferStageForTranslationUnit(translationUnit.Ptr());
 
         // First look at global-scope parameters
-        collectGlobalScopeParameters(context, translationUnit.SyntaxNode.Ptr());
+        collectGlobalScopeParameters(context, translationUnit->SyntaxNode.Ptr());
 
         // Next consider parameters for entry points
-        for( auto& entryPoint : translationUnit.options.entryPoints )
+        for( auto& entryPoint : translationUnit->entryPoints )
         {
-            context->stage = entryPoint.profile.GetStage();
-            collectEntryPointParameters(context, entryPoint, translationUnit.SyntaxNode.Ptr());
+            context->stage = entryPoint->profile.GetStage();
+            collectEntryPointParameters(context, entryPoint.Ptr(), translationUnit->SyntaxNode.Ptr());
         }
+    }
+
+    // Now collect parameters from loaded modules
+    for (auto& module : request->loadedModulesList)
+    {
+        collectModuleParameters(context, module.Ptr());
     }
 }
 
-void GenerateParameterBindings(
-    CollectionOfTranslationUnits*   program)
+void generateParameterBindings(
+    CompileRequest*                 request)
 {
     // TODO: infer a language or set of language rules to use based on the
     // source files and entry points given
     auto language = SourceLanguage::Unknown;
-    for( auto& translationUnit : program->translationUnits )
+    for( auto& translationUnit : request->translationUnits )
     {
-        auto translationUnitLanguage = translationUnit.options.sourceLanguage;
+        auto translationUnitLanguage = translationUnit->sourceLanguage;
         if( language == SourceLanguage::Unknown )
         {
             language = translationUnitLanguage;
@@ -1129,7 +1159,7 @@ void GenerateParameterBindings(
     context.layoutRules = sharedContext.defaultLayoutRules;
 
     // Walk through AST to discover all the parameters
-    collectParameters(&context, program);
+    collectParameters(&context, request);
 
     // Now walk through the parameters to generate initial binding information
     for( auto& parameter : sharedContext.parameters )
@@ -1245,7 +1275,7 @@ void GenerateParameterBindings(
     // We now have a bunch of layout information, which we should
     // record into a suitable object that represents the program
     programLayout->globalScopeLayout = globalScopeLayout;
-    program->layout = programLayout;
+    request->layout = programLayout;
 }
 
 }
