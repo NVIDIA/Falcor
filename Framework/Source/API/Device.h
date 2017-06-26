@@ -141,7 +141,14 @@ namespace Falcor
         void releaseResource(ApiObjectHandle pResource);
 
 #ifdef FALCOR_VK
-        uint32_t findMemoryType(uint32_t typeBits, VkMemoryPropertyFlagBits flags);
+        enum class MemoryType
+        {
+            Default,
+            Upload,
+            Readback,
+            Count
+        };
+        uint32_t getVkMemoryType(MemoryType falcorType);
 #endif
     private:
         struct ResourceRelease

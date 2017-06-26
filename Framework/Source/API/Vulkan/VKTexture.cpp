@@ -154,7 +154,7 @@ namespace Falcor
         VkMemoryAllocateInfo allocInfo = {};
         allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
         allocInfo.allocationSize = memRequirements.size;
-        allocInfo.memoryTypeIndex = gpDevice->findMemoryType(memRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+        allocInfo.memoryTypeIndex = gpDevice->getVkMemoryType(Device::MemoryType::Default);
         
         VkDeviceMemory deviceMem;
         if (vkAllocateMemory(gpDevice->getApiHandle(), &allocInfo, nullptr, &deviceMem) != VK_SUCCESS)

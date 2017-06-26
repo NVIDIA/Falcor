@@ -46,7 +46,42 @@ namespace Falcor
         VkSurfaceKHR        surface;
         VkPhysicalDeviceProperties properties;
         uint32_t falcorToVulkanQueueType[Device::kQueueTypeCount];
+        uint32_t falcorToVkMemoryType[(uint32_t)Device::MemoryType::Count];
     };
+
+    static uint32_t findMemoryType(VkPhysicalDevice physicalDevice, VkMemoryPropertyFlagBits memFlagBits)
+    {
+        VkPhysicalDeviceMemoryProperties memProperties;
+        vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memProperties);
+
+        for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++)
+        {
+            if ((memProperties.memoryTypes[i].propertyFlags & memFlagBits) == memFlagBits)
+            {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    static bool initMemoryTypes(DeviceApiData* pApiData)
+    {
+        VkMemoryPropertyFlagBits bits[(uint32_t)Device::MemoryType::Count];
+        bits[(uint32_t)Device::MemoryType::Default] = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+        bits[(uint32_t)Device::MemoryType::Upload] = VkMemoryPropertyFlagBits(VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+        bits[(uint32_t)Device::MemoryType::Readback] = VkMemoryPropertyFlagBits(VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_CACHED_BIT);
+
+        for(uint32_t i = 0 ; i < arraysize(bits) ; i++)
+        {
+            pApiData->falcorToVkMemoryType[i] = findMemoryType(pApiData->physicalDevice, bits[i]);
+            if (pApiData->falcorToVkMemoryType[i] == -1)
+            {
+                logError("Missing memory type " + std::to_string(i));
+                return false;
+            }
+        }
+        return true;
+    }
 
     bool Device::getApiFboData(uint32_t width, uint32_t height, ResourceFormat colorFormat, ResourceFormat depthFormat, std::vector<ResourceHandle>& apiHandles, uint32_t& currentBackBufferIndex)
     {
@@ -459,26 +494,11 @@ namespace Falcor
     {
         mpApiData = new DeviceApiData;
 
-        if (createInstance(mpApiData, desc.enableDebugLayer, desc.apiMajorVersion, desc.apiMinorVersion) == false)
-        {
-            return false;
-        }
-
-        if (initPhysicalDevice(mpApiData) == false)
-        {
-            return false;
-        }
-
-        if (createSurface(mpApiData, mpWindow.get()) == false)
-        {
-            return false;
-        }
-
-        if (createLogicalDevice(mpApiData, desc, mCmdQueues) == false)
-        {
-            return false;
-        }
-
+        if (createInstance(mpApiData, desc.enableDebugLayer, desc.apiMajorVersion, desc.apiMinorVersion) == false)  return false;
+        if (initPhysicalDevice(mpApiData) == false)                                                                 return false;
+        if (createSurface(mpApiData, mpWindow.get()) == false)                                                      return false;
+        if (createLogicalDevice(mpApiData, desc, mCmdQueues) == false)                                              return false;
+        if (initMemoryTypes(mpApiData) == false)                                                                    return false;
         mApiHandle = mpApiData->device;
         return true;
     }
@@ -527,22 +547,8 @@ namespace Falcor
         return mpApiData->falcorToVulkanQueueType[(uint32_t)type];
     }
 
-    uint32_t Device::findMemoryType(uint32_t typeBits, VkMemoryPropertyFlagBits flags)
+    uint32_t Device::getVkMemoryType(MemoryType falcorType)
     {
-        VkPhysicalDeviceMemoryProperties memProperties;
-        vkGetPhysicalDeviceMemoryProperties(mpApiData->physicalDevice, &memProperties);
-
-        for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++) 
-        {
-            if (typeBits & (1 << i))
-            {
-                if((memProperties.memoryTypes[i].propertyFlags & flags) == flags)
-                {
-                    return i;
-                }
-            }
-        }
-        should_not_get_here();
-        return 0;
+        return mpApiData->falcorToVkMemoryType[(uint32_t)falcorType];
     }
 }

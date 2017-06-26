@@ -33,12 +33,6 @@
 
 namespace Falcor
 {
-    // #VKTODO
-    // These classes need access to the DeviceData struct from VKDevice.cpp
-    // D3D seems to do it differently. The below is just temporary. The actual code
-    // will be to replace this with the right variables.
-    VkFlags       memProps;
-    VkSharingMode sMode;
 
     struct BufferData
     {
@@ -46,25 +40,6 @@ namespace Falcor
         Buffer::SharedPtr                 pStagingResource; // For buffers that have both CPU read flag and can be used by the GPU
         VkDeviceMemory                    bufferMemory;     // This is the actual backing store for the buffer.
     };
-
-    inline uint32_t getMemoryType(uint32_t type, VkFlags memoryProperties)
-    {
-        for (uint32_t i = 0; i < 32; i++)
-        {
-            if ((type & 1) == 1)
-            {
-                // #VKTODO This has to be again obtained from the deviceData
-                // if (physicalDeviceMemoryProperties.memoryTypes[i].propertyFlags & memoryProperties)
-                {
-                    return i;
-                }
-            }
-            type >>= 1;
-        }
-
-        assert(0);
-        return 0;
-    }
 
     VkBufferUsageFlags getBufferUSageFlag(Buffer::BindFlags bindFlags)
     {       
@@ -80,11 +55,13 @@ namespace Falcor
             case  Buffer::BindFlags::StreamOutput:    return VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
             case  Buffer::BindFlags::RenderTarget:    return VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
             case  Buffer::BindFlags::DepthStencil:    return VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
-            default:                                  return VK_BUFFER_USAGE_FLAG_BITS_MAX_ENUM;
+            default:
+                should_not_get_here(); 
+                return VK_BUFFER_USAGE_FLAG_BITS_MAX_ENUM;
         }
     }
 
-    bool createBuffer(VkBuffer& buffer, Buffer::State initState, size_t size, VkFlags memoryProperties, Buffer::BindFlags bindFlags, VkSharingMode sharingMode)
+    bool createBuffer(VkBuffer& buffer, Buffer::State initState, size_t size, Buffer::BindFlags bindFlags)
     {
         VkBufferCreateInfo bufferInfo = {};
 
@@ -92,7 +69,7 @@ namespace Falcor
         bufferInfo.flags = 0;
         bufferInfo.size = size;
         bufferInfo.usage = getBufferUSageFlag(bindFlags);
-        bufferInfo.sharingMode = sharingMode;
+        bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
         bufferInfo.queueFamilyIndexCount = 0;
         bufferInfo.pQueueFamilyIndices = nullptr;
         
@@ -122,14 +99,7 @@ namespace Falcor
         safe_delete(pApiData);
         gpDevice->releaseResource(mApiHandle.getBuffer());
     }
-
-
-    Buffer::SharedPtr Buffer::create(size_t size, BindFlags usage, CpuAccess cpuAccess, const void* pInitData)
-    {
-        Buffer::SharedPtr pBuffer = SharedPtr(new Buffer(size, usage, cpuAccess));
-        return pBuffer->init(pInitData) ? pBuffer : nullptr;
-    }
-
+    
     bool Buffer::init(const void* pInitData)
     {
         BufferData* pApiData = new BufferData;
@@ -145,33 +115,18 @@ namespace Falcor
         else if (mCpuAccess == CpuAccess::Read && mBindFlags == BindFlags::None)
         {
             mState = Resource::State::CopyDest;
-
-            createBuffer(buffer, mState, mSize, memProps, mBindFlags, sMode);
+            createBuffer(buffer, mState, mSize, mBindFlags);
         }
         else
         {
             mState = Resource::State::Common;
-
             VkBuffer buffer;
-            createBuffer(buffer, mState, mSize, memProps, mBindFlags, sMode);
+            createBuffer(buffer, mState, mSize, mBindFlags);
         }
 
         mApiHandle = buffer;
     
         return true;
-    }
-
-    void Buffer::updateData(const void* pData, size_t offset, size_t size) const
-    {
-        if (mCpuAccess == CpuAccess::Write)
-        {
-            uint8_t* pDst = (uint8_t*)map(MapType::WriteDiscard) + offset;
-            memcpy(pDst, pData, size);
-        }
-        else
-        {
-            gpDevice->getRenderContext()->updateBuffer(this, pData, offset, size);
-        }
     }
 
     void Buffer::readData(void* pData, size_t offset, size_t size) const

@@ -226,10 +226,10 @@ namespace Falcor
         mpRenderContext = gpDevice->getRenderContext();
         mpRenderContext->setGraphicsState(mpDefaultPipelineState);
 
-#ifndef VK_DISABLE_UNIMPLEMENTED
         // Init the UI
         initUI();
 
+#ifndef VK_DISABLE_UNIMPLEMENTED
         // Init VR
         mVrEnabled = config.enableVR;
         if (mVrEnabled)
@@ -357,8 +357,8 @@ namespace Falcor
 #endif        
         }
 
-#ifndef VK_DISABLE_UNIMPLEMENTED
         renderText(getFpsMsg(), glm::vec2(10, 10));
+#ifndef VK_DISABLE_UNIMPLEMENTED
         mpPixelZoom->render(mpRenderContext.get(), gpDevice->getSwapChainFbo().get());
 #endif
 
@@ -396,7 +396,9 @@ namespace Falcor
 
     void Sample::initUI()
     {
+#ifndef VK_DISABLE_UNIMPLEMENTED
         mpGui = Gui::create(mpDefaultFBO->getWidth(), mpDefaultFBO->getHeight());
+#endif
         mpTextRenderer = TextRenderer::create();
     }
 
