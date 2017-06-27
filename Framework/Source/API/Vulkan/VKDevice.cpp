@@ -47,6 +47,7 @@ namespace Falcor
         VkPhysicalDeviceProperties properties;
         uint32_t falcorToVulkanQueueType[Device::kQueueTypeCount];
         uint32_t falcorToVkMemoryType[(uint32_t)Device::MemoryType::Count];
+        VkPhysicalDeviceLimits deviceLimits;
     };
 
     static uint32_t findMemoryType(VkPhysicalDevice physicalDevice, VkMemoryPropertyFlagBits memFlagBits)
@@ -241,6 +242,7 @@ namespace Falcor
         // Pick a device
         pData->physicalDevice = selectPhysicalDevice(devices);
         vkGetPhysicalDeviceProperties(pData->physicalDevice, &pData->properties);
+        pData->deviceLimits = pData->properties.limits;
 
         // Get queue families and match them to what type they are
         uint32_t queueFamilyCount = 0;
@@ -550,5 +552,10 @@ namespace Falcor
     uint32_t Device::getVkMemoryType(MemoryType falcorType)
     {
         return mpApiData->falcorToVkMemoryType[(uint32_t)falcorType];
+    }
+
+    const VkPhysicalDeviceLimits& Device::getPhysicalDeviceLimits() const
+    {
+        return mpApiData->deviceLimits;
     }
 }

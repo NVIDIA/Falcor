@@ -27,6 +27,7 @@
 ***************************************************************************/
 #pragma once
 #include "Resource.h"
+#include "LowLevel/ResourceAllocator.h"
 
 namespace Falcor
 {
@@ -85,15 +86,7 @@ namespace Falcor
             \param[in] size Number of bytes to copy.
             If offset and size will cause an out-of-bound access to the buffer, an error will be logged and the update will fail.
         */
-        void updateData(const void* pData, size_t offset, size_t size) const;
-
-        /** Read the buffer's data to a user supplied buffer
-            \param[in] pData Pointer to the destination buffer.
-            \param[in] offset Byte offset into the destination buffer, indicating where to start copy into.
-            \param[in] size Number of bytes to copy. Destination buffer should be at least Size bytes.
-            If offset and size will cause an out-of-bound access to the buffer, an error will be logged and the read will fail.
-        */
-        void readData(void* pData, size_t offset, size_t size) const;
+        void updateData(const void* pData, size_t offset, size_t size);
 
         /** Get the GPU address
         */
@@ -105,11 +98,11 @@ namespace Falcor
 
         /** Map the buffer
         */
-        void* map(MapType Type) const;
+        void* map(MapType Type);
 
         /** Unmap the buffer
         */
-        void unmap() const;
+        void unmap();
 
         /** Load the buffer to the GPU memory.
             \return The GPU address, which can be used as a pointer in shaders.
@@ -143,12 +136,12 @@ namespace Falcor
         CpuAccess getCpuAccess() const { return mCpuAccess; }
 
     protected:
-        bool init(const void* pInitData);
+        bool apiInit();
         Buffer(size_t size, BindFlags bind, CpuAccess update) : Resource(Type::Buffer, bind), mSize(size), mCpuAccess(update){}
 
-        uint64_t mBindlessHandle = 0;
         size_t mSize = 0;
         CpuAccess mCpuAccess;
-        void* mpApiData = nullptr;
+        ResourceAllocator::AllocationData mDynamicData;
+        Buffer::SharedPtr mpStagingResource; // For buffers that have both CPU read flag and can be used by the GPU
     };
 }

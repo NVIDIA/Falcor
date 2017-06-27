@@ -31,14 +31,22 @@
 
 namespace Falcor
 {
+    size_t getBufferDataAlignment(const Buffer* pBuffer);
+    void bindBufferMemory(Buffer::ApiHandle& apiHandle, const ResourceAllocator::AllocationData& allocationData);
+    void* mapBufferApi(const Buffer::ApiHandle& apiHandle, size_t size);
 
     Buffer::SharedPtr Buffer::create(size_t size, BindFlags usage, CpuAccess cpuAccess, const void* pInitData)
     {
         Buffer::SharedPtr pBuffer = SharedPtr(new Buffer(size, usage, cpuAccess));
-        return pBuffer->init(pInitData) ? pBuffer : nullptr;
+        if (pBuffer->apiInit())
+        {
+            if (pInitData) pBuffer->updateData(pInitData, 0, size);
+            return pBuffer;
+        }
+        else return nullptr;
     }
 
-    void Buffer::updateData(const void* pData, size_t offset, size_t size) const
+    void Buffer::updateData(const void* pData, size_t offset, size_t size)
     {
         if (mCpuAccess == CpuAccess::Write)
         {
@@ -48,6 +56,51 @@ namespace Falcor
         else
         {
             gpDevice->getRenderContext()->updateBuffer(this, pData, offset, size);
+        }
+    }
+
+    void* Buffer::map(MapType type)
+    {
+        if (type == MapType::WriteDiscard)
+        {
+            if (mCpuAccess != CpuAccess::Write)
+            {
+                logError("Trying to map a buffer for write, but it wasn't created with the write permissions");
+                return nullptr;
+            }
+
+            // Allocate a new buffer
+            if (mDynamicData.common.pResourceHandle)
+            {
+                gpDevice->getResourceAllocator()->release(mDynamicData);
+            }
+            mDynamicData = gpDevice->getResourceAllocator()->allocate(mSize, getBufferDataAlignment(this));
+            bindBufferMemory(mApiHandle, mDynamicData);
+            invalidateViews();
+            return mDynamicData.common.pData;
+        }
+        else
+        {
+            assert(type == MapType::Read);
+
+            if (mBindFlags == BindFlags::None)
+            {
+                return mapBufferApi(mApiHandle, mSize);
+            }
+            else
+            {
+                logWarning("Buffer::map() performance warning - using staging resource which require us to flush the pipeline and wait for the GPU to finish its work");
+                if (mpStagingResource == nullptr)
+                {
+                    mpStagingResource = Buffer::create(mSize, Buffer::BindFlags::None, Buffer::CpuAccess::Read, nullptr);
+                }
+
+                // Copy the buffer and flush the pipeline
+                RenderContext* pContext = gpDevice->getRenderContext().get();
+                pContext->copyResource(mpStagingResource.get(), this);
+                pContext->flush(true);
+                return mpStagingResource->map(MapType::Read);
+            }
         }
     }
 }

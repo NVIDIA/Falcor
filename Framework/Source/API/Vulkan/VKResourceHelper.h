@@ -106,8 +106,9 @@ namespace Falcor
             }
             vkFreeMemory(gpDevice->getApiHandle(), mDeviceMem, nullptr);
         }
-    private:
 
+        operator bool() const { return mDeviceMem != VK_NULL_HANDLE; }
+    private:
         VkDeviceMemory mDeviceMem;
         VkResourceType mType = VkResourceType::None;
         ImageType mImage = VK_NULL_HANDLE;

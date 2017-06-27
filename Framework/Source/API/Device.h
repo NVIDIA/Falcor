@@ -149,6 +149,7 @@ namespace Falcor
             Count
         };
         uint32_t getVkMemoryType(MemoryType falcorType);
+        const VkPhysicalDeviceLimits& getPhysicalDeviceLimits() const;
 #endif
     private:
         struct ResourceRelease

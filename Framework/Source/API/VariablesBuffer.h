@@ -58,7 +58,7 @@ namespace Falcor
         \param[in] offset Offset into the buffer to write to
         \param[in] size   Number of bytes to upload. If this value is -1, will update the [Offset, EndOfBuffer] range.
         */
-        virtual bool uploadToGPU(size_t offset = 0, size_t size = -1) const;
+        virtual bool uploadToGPU(size_t offset = 0, size_t size = -1);
 
         /** Get the reflection object describing the CB
         */

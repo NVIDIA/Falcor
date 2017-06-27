@@ -33,146 +33,117 @@
 
 namespace Falcor
 {
+    VkDeviceMemory allocateDeviceMemory(Device::MemoryType memType, size_t size);
 
-    struct BufferData
+    void bindBufferMemory(Buffer::ApiHandle& apiHandle, const ResourceAllocator::AllocationData& allocationData)
     {
-        ResourceAllocator::AllocationData dynamicData;
-        Buffer::SharedPtr                 pStagingResource; // For buffers that have both CPU read flag and can be used by the GPU
-        VkDeviceMemory                    bufferMemory;     // This is the actual backing store for the buffer.
-    };
-
-    VkBufferUsageFlags getBufferUSageFlag(Buffer::BindFlags bindFlags)
-    {       
-        switch (bindFlags)
-        {
-            case  Buffer::BindFlags::Vertex:          return VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
-            case  Buffer::BindFlags::Index:           return VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
-            case  Buffer::BindFlags::UnorderedAccess: return VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
-            case  Buffer::BindFlags::ShaderResource:  return VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
-            case  Buffer::BindFlags::IndirectArg:     return VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT;
-
-            // TODO: The below ones need to be assigned the right flags.
-            case  Buffer::BindFlags::StreamOutput:    return VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
-            case  Buffer::BindFlags::RenderTarget:    return VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
-            case  Buffer::BindFlags::DepthStencil:    return VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
-            default:
-                should_not_get_here(); 
-                return VK_BUFFER_USAGE_FLAG_BITS_MAX_ENUM;
-        }
+        apiHandle = allocationData.common.pResourceHandle;
     }
 
-    bool createBuffer(VkBuffer& buffer, Buffer::State initState, size_t size, Buffer::BindFlags bindFlags)
+    void* mapBufferApi(const Buffer::ApiHandle& apiHandle, size_t size)
+    {
+        void* pData;
+        vk_call(vkMapMemory(gpDevice->getApiHandle(), apiHandle.getDeviceMem(), 0, size, 0, &pData));
+        return pData;
+    }
+
+    VkBufferUsageFlags getBufferUsageFlag(Buffer::BindFlags bindFlags)
+    {       
+        VkBufferUsageFlags flags = 0;
+        auto setBit = [&flags, &bindFlags](Buffer::BindFlags f, VkBufferUsageFlags vkBit) {if (is_set(bindFlags, f)) flags |= vkBit; };
+        setBit(Buffer::BindFlags::Vertex,           VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
+        setBit(Buffer::BindFlags::Index,            VK_BUFFER_USAGE_INDEX_BUFFER_BIT);
+        setBit(Buffer::BindFlags::UnorderedAccess,  VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT);
+        setBit(Buffer::BindFlags::ShaderResource,   VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT);
+        setBit(Buffer::BindFlags::IndirectArg,      VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT);
+        setBit(Buffer::BindFlags::Constant,         VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
+
+        return flags;
+    }
+
+    size_t getBufferDataAlignment(const Buffer* pBuffer)
+    {
+        VkMemoryRequirements reqs;
+        vkGetBufferMemoryRequirements(gpDevice->getApiHandle(), pBuffer->getApiHandle().getBuffer(), &reqs);
+        return reqs.alignment;
+    }
+
+    VkBuffer createBuffer(size_t size, Buffer::BindFlags bindFlags)
     {
         VkBufferCreateInfo bufferInfo = {};
 
         bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
         bufferInfo.flags = 0;
         bufferInfo.size = size;
-        bufferInfo.usage = getBufferUSageFlag(bindFlags);
+        bufferInfo.usage = getBufferUsageFlag(bindFlags);
         bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
         bufferInfo.queueFamilyIndexCount = 0;
         bufferInfo.pQueueFamilyIndices = nullptr;
         
-
-        vkCreateBuffer(gpDevice->getApiHandle(), &bufferInfo, nullptr, &buffer);
-        assert(buffer != VK_NULL_HANDLE);
-
-        // The allocation of memory is not handled here. Commenting out for now.
-        //VkMemoryAllocateInfo memAlloc = {};
-        //VkMemoryRequirements memReqs;
-        //vkGetBufferMemoryRequirements(dev, buffer, &memReqs);
-        //memAlloc.sType           = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-        //memAlloc.allocationSize  = memReqs.size;
-        //memAlloc.memoryTypeIndex = getMemoryType(memReqs.memoryTypeBits, memoryProperties);        
-        //auto result = vkAllocateMemory(vkTutDevice, &memAlloc, nullptr, &bufferMemory);
-        //assert(result == VK_SUCCESS);
-        //result = vkBindBufferMemory(vkTutDevice, buffer, bufferMemory, 0);
-
-        assert(buffer != VK_NULL_HANDLE);
-        return (buffer != VK_NULL_HANDLE);
+        VkBuffer buffer;
+        vk_call(vkCreateBuffer(gpDevice->getApiHandle(), &bufferInfo, nullptr, &buffer));
+        return buffer;
     }
 
     Buffer::~Buffer()
     {
-        BufferData* pApiData = (BufferData*)mpApiData;
-        gpDevice->getResourceAllocator()->release(pApiData->dynamicData);
-        safe_delete(pApiData);
+        if(mCpuAccess == CpuAccess::Write)
+        {
+            gpDevice->getResourceAllocator()->release(mDynamicData);
+        }
         gpDevice->releaseResource(mApiHandle.getBuffer());
     }
     
-    bool Buffer::init(const void* pInitData)
+    bool Buffer::apiInit()
     {
-        BufferData* pApiData = new BufferData;
-        mpApiData = pApiData;
-
-        VkBuffer buffer;
+        // Allocate the backing memory
         if (mCpuAccess == CpuAccess::Write)
         {
-            mState = Resource::State::GenericRead;
-            //pApiData->dynamicData = gpDevice->getResourceAllocator()->allocate(mSize, getDataAlignmentFromUsage(mBindFlags));
-            //mApiHandle = pApiData->dynamicData.pResourceHandle;
-        }
-        else if (mCpuAccess == CpuAccess::Read && mBindFlags == BindFlags::None)
-        {
-            mState = Resource::State::CopyDest;
-            createBuffer(buffer, mState, mSize, mBindFlags);
+            mDynamicData = gpDevice->getResourceAllocator()->allocate(mSize);
+            bindBufferMemory(mApiHandle, mDynamicData);
         }
         else
         {
-            mState = Resource::State::Common;
-            VkBuffer buffer;
-            createBuffer(buffer, mState, mSize, mBindFlags);
-        }
+            VkBuffer buffer = createBuffer(mSize, mBindFlags);
+            mApiHandle = buffer;
+            VkDeviceMemory deviceMem;
+            size_t offset = 0;
 
-        mApiHandle = buffer;
-    
+            if (mCpuAccess == CpuAccess::Read && mBindFlags == BindFlags::None)
+            {
+                deviceMem = allocateDeviceMemory(Device::MemoryType::Readback, mSize);
+                mApiHandle.setDeviceMem(deviceMem);
+            }
+            else
+            {
+                deviceMem = allocateDeviceMemory(Device::MemoryType::Default, mSize);
+                mApiHandle.setDeviceMem(deviceMem);
+            }
+
+            vkBindBufferMemory(gpDevice->getApiHandle(), buffer, deviceMem, offset);
+        }
         return true;
     }
 
-    void Buffer::readData(void* pData, size_t offset, size_t size) const
-    {
-    }
-
-    void* Buffer::map(MapType type) const
-    {
-        BufferData* pApiData = (BufferData*)mpApiData;
-        void*       pData = nullptr;
-        const unsigned int offset = 0;
-
-        auto res = vkMapMemory(gpDevice->getApiHandle(), pApiData->bufferMemory, offset, VK_WHOLE_SIZE, 0/*flags*/, &pData);
-        assert(res == VK_SUCCESS);
-
-        // #VKTODO These can be used when the flags get updated. For now, the mapping is the same.
-        if (type == MapType::WriteDiscard)
-        {
-        }
-        else
-        {
-
-        }
-
-        return pData;
-    }
 
     uint64_t Buffer::getGpuAddress() const
     {
+        UNSUPPORTED_IN_VULKAN(__FUNCTION__);
         return 0;
     }
 
-    void Buffer::unmap() const
+    void Buffer::unmap()
     {
-        // Only unmap read buffers
-        BufferData* pApiData = (BufferData*)mpApiData;
-        
-        vkUnmapMemory(gpDevice->getApiHandle(), pApiData->bufferMemory);
     }
 
     uint64_t Buffer::makeResident(Buffer::GpuAccessFlags flags) const
     {
+        UNSUPPORTED_IN_VULKAN(__FUNCTION__);
         return 0;
     }
 
     void Buffer::evict() const
     {
+        UNSUPPORTED_IN_VULKAN(__FUNCTION__);
     }
 }

@@ -32,6 +32,8 @@
 
 namespace Falcor
 {
+    VkBuffer createBuffer(size_t size, Buffer::BindFlags bindFlags);
+
     VkDeviceMemory allocateDeviceMemory(Device::MemoryType memType, size_t size)
     {
         VkMemoryAllocateInfo allocInfo = {};
@@ -46,8 +48,11 @@ namespace Falcor
 
     void ResourceAllocator::initCommonPageData(CommonData& data, size_t size)
     {
+        // Create a buffer
+        data.pResourceHandle = createBuffer(size, Buffer::BindFlags::Constant | Buffer::BindFlags::Vertex);
         data.pResourceHandle.setDeviceMem(allocateDeviceMemory(Device::MemoryType::Upload, size));
-        data.gpuAddress = nullptr;
+        data.gpuAddress = 0;
         vk_call(vkMapMemory(gpDevice->getApiHandle(), data.pResourceHandle.getDeviceMem(), 0, VK_WHOLE_SIZE, 0, (void**)&data.pData));
+        vk_call(vkBindBufferMemory(gpDevice->getApiHandle(), data.pResourceHandle.getBuffer(), data.pResourceHandle.getDeviceMem(), 0));
     }
 }

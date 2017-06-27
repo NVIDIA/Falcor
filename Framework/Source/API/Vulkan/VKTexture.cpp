@@ -63,7 +63,7 @@ namespace Falcor
             vkFlags |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
         }
 
-        if (is_set(bindFlags, Resource::BindFlags::ShaderResource) == false)
+        if (is_set(bindFlags, Resource::BindFlags::ShaderResource))
         {
             // #VKTODO what does VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT mean?
             vkFlags |= VK_IMAGE_USAGE_SAMPLED_BIT;

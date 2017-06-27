@@ -63,7 +63,7 @@ namespace Falcor
         return nullptr;
     }
 
-    bool ConstantBuffer::uploadToGPU(size_t offset, size_t size) const
+    bool ConstantBuffer::uploadToGPU(size_t offset, size_t size)
     {
         if (mDirty) mpCbv = nullptr;
         return VariablesBuffer::uploadToGPU(offset, size);

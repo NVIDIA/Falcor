@@ -84,7 +84,7 @@ namespace Falcor
     using UavHandle = VkResource<VkImageView, VkBufferView>;
     using CbvHandle = VkBufferView;
     using SamplerHandle = VkSampler;
-    using GpuAddress = uint8_t*;
+    using GpuAddress = size_t;
 
     using PsoHandle = VkPipeline;
     using ComputeStateHandle = void*;
@@ -128,3 +128,5 @@ namespace Falcor
 #else
 #define vk_call(a) a
 #endif
+
+#define UNSUPPORTED_IN_VULKAN(msg_) {logWarning(msg_ + std::string(" is not supported in Vulkan. Ignoring call."));}

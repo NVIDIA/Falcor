@@ -140,11 +140,11 @@ namespace Falcor
 
     void Sample::handleMouseEvent(const MouseEvent& mouseEvent)
     {
+#ifndef VK_DISABLE_UNIMPLEMENTED
         if (mpGui->onMouseEvent(mouseEvent))
         {
             return;
         }
-#ifndef VK_DISABLE_UNIMPLEMENTED
         mpPixelZoom->onMouseEvent(mouseEvent);
 #endif
         onMouseEvent(mouseEvent);
