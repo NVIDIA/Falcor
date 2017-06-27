@@ -87,6 +87,8 @@ namespace Falcor
 
         void setDeviceMem(VkDeviceMemory deviceMem) { mDeviceMem = deviceMem; }
 
+        VkDeviceMemory getDeviceMem() const { return mDeviceMem; }
+
         VkResource& operator=(const VkResource& rhs) = default;
 
         void Release()

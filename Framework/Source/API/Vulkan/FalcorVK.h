@@ -84,7 +84,7 @@ namespace Falcor
     using UavHandle = VkResource<VkImageView, VkBufferView>;
     using CbvHandle = VkBufferView;
     using SamplerHandle = VkSampler;
-    using GpuAddress = void*;
+    using GpuAddress = uint8_t*;
 
     using PsoHandle = VkPipeline;
     using ComputeStateHandle = void*;

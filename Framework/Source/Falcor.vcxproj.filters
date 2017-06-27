@@ -558,6 +558,7 @@
     <ClCompile Include="API\Buffer.cpp">
       <Filter>API</Filter>
     </ClCompile>
+    <ClCompile Include="API\LowLevel\ResourceAllocator.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Graphics\Model\Animation.h">

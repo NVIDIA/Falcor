@@ -33,13 +33,11 @@
 
 namespace Falcor
 {
+    VkDeviceMemory allocateDeviceMemory(Device::MemoryType memType, size_t size);
+
     struct TextureApiData
     {
     };
-
-    void Texture::apiInit()
-    {
-    }
 
     Texture::~Texture()
     {
@@ -116,7 +114,7 @@ namespace Falcor
         }
     }
 
-    void Texture::initResource(const void* pData, bool autoGenMips)
+    void Texture::apinit(const void* pData, bool autoGenMips)
     {
         VkImageCreateInfo imageInfo = {};
 
@@ -127,7 +125,7 @@ namespace Falcor
         imageInfo.flags = (mType == Texture::Type::TextureCube) ? VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT : 0;
         imageInfo.format = getVkFormat(mFormat);
         imageInfo.imageType = getVkImageType(mType);
-        imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+        imageInfo.initialLayout = pData ? VK_IMAGE_LAYOUT_PREINITIALIZED : VK_IMAGE_LAYOUT_UNDEFINED;
         imageInfo.mipLevels = min(mMipLevels, getMaxMipCount(imageInfo.extent));
         imageInfo.pQueueFamilyIndices = nullptr;
         imageInfo.queueFamilyIndexCount = 0;
@@ -147,27 +145,16 @@ namespace Falcor
         }
         mApiHandle = image;
 
-        // Allocate the GPU memory
+        // Allocate the GPU memory                
         VkMemoryRequirements memRequirements;
         vkGetImageMemoryRequirements(gpDevice->getApiHandle(), image, &memRequirements);
-
-        VkMemoryAllocateInfo allocInfo = {};
-        allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-        allocInfo.allocationSize = memRequirements.size;
-        allocInfo.memoryTypeIndex = gpDevice->getVkMemoryType(Device::MemoryType::Default);
-        
-        VkDeviceMemory deviceMem;
-        if (vkAllocateMemory(gpDevice->getApiHandle(), &allocInfo, nullptr, &deviceMem) != VK_SUCCESS)
-        {
-            throw std::runtime_error("failed to allocate image memory!");
-        }
-
+        VkDeviceMemory deviceMem = allocateDeviceMemory(Device::MemoryType::Default, memRequirements.size);
         vkBindImageMemory(gpDevice->getApiHandle(), image, deviceMem, 0);
 
         mApiHandle.setDeviceMem(deviceMem);
         if (pData != nullptr)
         {
-
+            uploadInitData(pData, autoGenMips);
         }
     }
 }

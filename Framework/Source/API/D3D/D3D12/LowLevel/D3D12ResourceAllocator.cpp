@@ -33,122 +33,12 @@
 namespace Falcor
 {
     ID3D12ResourcePtr createBuffer(Buffer::State initState, size_t size, const D3D12_HEAP_PROPERTIES& heapProps, Buffer::BindFlags bindFlags);
-
-    ResourceAllocator::~ResourceAllocator()
+    
+    void ResourceAllocator::initPageCommnData(CommonData& data, size_t size)
     {
-        executeDeferredReleases();
-    }
-
-    ResourceAllocator::SharedPtr ResourceAllocator::create(size_t pageSize, GpuFence::SharedPtr pFence)
-    {
-        SharedPtr pAllocator = SharedPtr(new ResourceAllocator(pageSize, pFence));
-        pAllocator->allocateNewPage();
-        return pAllocator;
-    }
-
-    void ResourceAllocator::allocateNewPage()
-    {
-        if (mpActivePage)
-        {
-            mUsedPages[mCurrentPageId] = std::move(mpActivePage);
-        }
-
-        if (mAvailablePages.size())
-        {
-            mpActivePage = std::move(mAvailablePages.front());
-            mAvailablePages.pop();
-            mpActivePage->allocationsCount = 0;
-            mpActivePage->currentOffset = 0;
-        }
-        else
-        {
-            mpActivePage = std::make_unique<PageData>();
-            mpActivePage->pResourceHandle = createBuffer(Buffer::State::GenericRead, mPageSize, kUploadHeapProps, Buffer::BindFlags::None);
-            mpActivePage->gpuAddress = mpActivePage->pResourceHandle->GetGPUVirtualAddress();
-            D3D12_RANGE readRange = {};
-            d3d_call(mpActivePage->pResourceHandle->Map(0, &readRange, (void**)&mpActivePage->pData));
-        }
-
-        mpActivePage->currentOffset = 0;
-        mCurrentPageId++;
-    }
-
-    void allocateMegaPage(size_t size, ResourceAllocator::AllocationData& data)
-    {
-        data.pageID = ResourceAllocator::AllocationData::kMegaPageId;
-
         data.pResourceHandle = createBuffer(Buffer::State::GenericRead, size, kUploadHeapProps, Buffer::BindFlags::None);
         data.gpuAddress = data.pResourceHandle->GetGPUVirtualAddress();
         D3D12_RANGE readRange = {};
         d3d_call(data.pResourceHandle->Map(0, &readRange, (void**)&data.pData));
-    }
-
-    ResourceAllocator::AllocationData ResourceAllocator::allocate(size_t size, size_t alignment)
-    {
-        AllocationData data;
-        if (size > mPageSize)
-        {
-            allocateMegaPage(size, data);
-        }
-        else
-        {
-            // Calculate the start
-            size_t currentOffset = align_to(alignment, mpActivePage->currentOffset);
-            if (currentOffset + size > mPageSize)
-            {
-                currentOffset = 0;
-                allocateNewPage();
-            }
-
-            data.pageID = mCurrentPageId;
-            data.gpuAddress = mpActivePage->gpuAddress + currentOffset;
-            data.pData = mpActivePage->pData + currentOffset;
-            data.pResourceHandle = mpActivePage->pResourceHandle;
-            mpActivePage->currentOffset = currentOffset + size;
-            mpActivePage->allocationsCount++;
-        }
-
-        data.fenceValue = mpFence->getCpuValue();
-        return data;
-    }
-
-    void ResourceAllocator::release(AllocationData& data)
-    {
-        if(data.pResourceHandle)
-        {
-            mDeferredReleases.push(data);
-        }
-    }
-
-    void ResourceAllocator::executeDeferredReleases()
-    {
-        uint64_t gpuVal = mpFence->getGpuValue();
-        while (mDeferredReleases.size() && mDeferredReleases.top().fenceValue <= gpuVal)
-        {
-            const AllocationData& data = mDeferredReleases.top();
-            if (data.pageID == mCurrentPageId)
-            {
-                mpActivePage->allocationsCount--;
-                if (mpActivePage->allocationsCount == 0)
-                {
-                    mpActivePage->currentOffset = 0;
-                }
-            }
-            else
-            {
-                if(data.pageID != AllocationData::kMegaPageId)
-                {
-                    auto& pData = mUsedPages[data.pageID];
-                    pData->allocationsCount--;
-                    if (pData->allocationsCount == 0)
-                    {
-                        mAvailablePages.push(std::move(pData));
-                        mUsedPages.erase(data.pageID);
-                    }
-                }
-                // else it's a mega-page. Popping it will release the resource
-            }
-            mDeferredReleases.pop();
-        }
     }
 }
