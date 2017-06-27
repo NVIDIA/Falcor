@@ -163,7 +163,7 @@ public:
     {
         Mode constantBuffer;
         Mode textureBuffer;
-        Mode structredBuffer;
+        Mode structuredBuffer;
         Mode textures;
         Mode rawBuffers;
         Mode samplers;
@@ -223,33 +223,36 @@ public:
 
     
     //  Verify that the Resources are in keeping with the Program Creation.
-    bool verifyProgramResources(const GraphicsVars::SharedPtr & graphicsProgramVars);
-    bool verifyProgramResources(const ComputeVars::SharedPtr & computeProgramVars);
+    bool verifyProgramResources(const GraphicsVars::SharedPtr & graphicsProgramVars, std::string & errorMessage);
+    bool verifyProgramResources(const ComputeVars::SharedPtr & computeProgramVars, std::string & errorMessage);
 
     //  Verify that the Resources are in keeping with the Shader Stage.
-    bool verifyProgramResources(const TestShaderWriter::ShaderResourcesData & rsData, const GraphicsVars::SharedPtr & graphicsProgramVars);
-    bool verifyProgramResources(const TestShaderWriter::ShaderResourcesData & rsData, const ComputeVars::SharedPtr & computeProgramVars);
+    bool verifyProgramResources(const TestShaderWriter::ShaderResourcesData & rsData, const GraphicsVars::SharedPtr & graphicsProgramVars, std::string & errorMessage);
+    bool verifyProgramResources(const TestShaderWriter::ShaderResourcesData & rsData, const ComputeVars::SharedPtr & computeProgramVars, std::string & errorMessage);
 
 
 private:
 
     //  Generate the Constant Buffer Resources that cause an error.
-    void generateErrorConstantBufferResources(std::vector<TestShaderWriter::ConstantBufferResource> & cbs, const Mode & mode);
+    void generateErrorConstantBufferResources(std::vector<TestShaderWriter::ConstantBufferResource> & cbs);
 
     //  Generate the Texture Buffer Resources that cause an error.
-    void generateErrorTextureBufferResources(std::vector<TestShaderWriter::TextureBufferResource> & tbs, const Mode & mode);
+    void generateErrorTextureBufferResources(std::vector<TestShaderWriter::TextureBufferResource> & tbs);
 
     //  Generate the Structured Buffer Resources that cause an error.
-    void generateErrorStructuredBufferResources(std::vector<TestShaderWriter::StructuredBufferResource> & sbs, std::vector<TestShaderWriter::StructuredBufferResource> & rwSBs, const Mode & mode);
+    void generateErrorStructuredBufferResources(std::vector<TestShaderWriter::StructuredBufferResource> & sbs);
 
     //  Generate the Raw Buffer Resources that cause an error.
-    void generateErrorRawBufferResources(std::vector<TestShaderWriter::RawBufferResource> & rbs, std::vector<TestShaderWriter::RawBufferResource> & rwRBs, const Mode & mode);
+    void generateErrorRawBufferResources(std::vector<TestShaderWriter::RawBufferResource> & rbs);
 
     //  Generate the Texture Resources that cause an error.
-    void generateErrorTextureResources(std::vector<TestShaderWriter::TextureResource> & texs, std::vector<TestShaderWriter::TextureResource> & rwTexs, const Mode & mode);
+    void generateErrorTextureResources(std::vector<TestShaderWriter::TextureResource> & texs);
 
     //  Generate the Sampler Resources that cause an error.
-    void generateErrorSamplersResources(std::vector<TestShaderWriter::SamplerResource> & samps, const Mode & mode);
+    void generateErrorSamplersResources(std::vector<TestShaderWriter::SamplerResource> & samps);
+
+    //  Generate the UAV Resources that cause an error.
+    void generateErrorUAVResources(std::vector<TestShaderWriter::StructuredBufferResource> & rwSBs, std::vector<TestShaderWriter::RawBufferResource> & rwRBs, std::vector<TestShaderWriter::TextureResource> & rwTexs);
 
     //  Generate the Constant Buffer Resources.
     void generateConstantBufferResources(std::vector<TestShaderWriter::ConstantBufferResource> & cbs);
@@ -270,7 +273,7 @@ private:
     void generateTextureResources(std::vector<TestShaderWriter::TextureResource> & texs, std::vector<TestShaderWriter::TextureResource> & rwTexs);
 
     //  Return a pointer to the Resource Meta Data of the specified Stage. 
-    TestShaderWriter::ShaderResourcesData * getShaderResourceData(const std::string & stage);
+    TestShaderWriter::ShaderResourcesData * getShaderStageResourceData(const std::string & stage);
 
     //  
     void getRegisterIndexAndSpace(bool isUsingExplicitSpace, bool isExplicitIndex, bool isExplicitSpace, bool isArray, bool isUnboundedArray, std::vector<uint32_t> arrayDiemsions, std::map<uint32_t, RegisterCount> & spaceRegisterIndexes, std::vector<uint32_t> & spaces, uint32_t & maxSpace, uint32_t & newIndex, uint32_t & newSpace);
@@ -297,10 +300,10 @@ private:
     void distributeRawBuffers(std::vector<TestShaderWriter::RawBufferResource> & rBs, std::vector<TestShaderWriter::RawBufferResource> & rwRBs);
 
     //  Verify All Resources.
-    bool verifyAllResources(const TestShaderWriter::ShaderResourcesData & rsData, const GraphicsVars::SharedPtr & graphicsProgramVars);
+    bool verifyAllResources(const TestShaderWriter::ShaderResourcesData & rsData, const GraphicsVars::SharedPtr & graphicsProgramVars, std::string & errorMessage);
 
     //  Verify Common Resource.
-    bool verifyCommonResourceMatch(const TestShaderWriter::ShaderResource & srData, ProgramReflection::Resource::ResourceType resourceType, ProgramReflection::SharedConstPtr  graphicsReflection);
+    bool verifyCommonResourceMatch(const TestShaderWriter::ShaderResource & srData, ProgramReflection::Resource::ResourceType resourceType, ProgramReflection::SharedConstPtr  graphicsReflection, std::string & errorMessage);
 
 
     //  JSON Document.
@@ -313,24 +316,24 @@ private:
     TestShaderLayout mShaderTestLayout;
 
     //  b Registers.
-    std::map<uint32_t, RegisterCount> bSpacesIndexes;
-    std::vector<uint32_t> bSpaces;
-    uint32_t maxBSpace;
+    std::map<uint32_t, RegisterCount> mBSpacesIndexes;
+    std::vector<uint32_t> mBSpaces;
+    uint32_t mMaxBSpace;
 
     //  s Register.
-    std::map<uint32_t, RegisterCount> sSpacesIndexes;
-    std::vector<uint32_t> sSpaces;
-    uint32_t maxSSpace;
+    std::map<uint32_t, RegisterCount> mSSpacesIndexes;
+    std::vector<uint32_t> mSSpaces;
+    uint32_t mMaxSSpace;
 
     //  t Registers.
-    std::map<uint32_t, RegisterCount> tSpacesIndexes;
-    std::vector<uint32_t> tSpaces;
-    uint32_t maxTSpace;
+    std::map<uint32_t, RegisterCount> mTSpacesIndexes;
+    std::vector<uint32_t> mTSpaces;
+    uint32_t mMaxTSpace;
 
     //  u Registers.
-    std::map<uint32_t, RegisterCount> uSpacesIndexes;
-    std::vector<uint32_t> uSpaces;
-    uint32_t maxUSpace;
+    std::map<uint32_t, RegisterCount> mUSpacesIndexes;
+    std::vector<uint32_t> mUSpaces;
+    uint32_t mMaxUSpace;
 
 };
 

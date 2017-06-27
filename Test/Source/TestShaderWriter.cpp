@@ -26,7 +26,9 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 #include "TestShaderWriter.h"
-
+#include <string>
+#include <iostream>
+#include <sstream>
 
 
 //  Return the Vertex Shader Code.
@@ -177,9 +179,49 @@ std::string TestShaderWriter::writeHSShaderCode(const ShaderResourcesData & hsMe
 {
     //  
     std::string hullShader = "\n";
-    
-    //  
+    std::string templateShaderSource = "";
+
+    //
     hullShader = hullShader + writeDeclareResources(hsMetaData);
+
+    //  Get the Vertex Shader Output Shader Code.
+    std::string hsOut = writeShaderOutputStruct(hsMetaData, "HS_OUT", "OUTPUT");
+    hullShader = hullShader + hsOut;
+    hullShader = hullShader + "\n";
+
+    //
+    std::ifstream templateStream("Data/HSTemplate.hs.hlsl");    
+    if (templateStream.is_open())
+    {
+        std::string line;
+        while (getline(templateStream, line))
+        {
+            templateShaderSource = templateShaderSource + line + "\n";
+        }
+        templateStream.close();
+    }
+
+    //  
+    hullShader = hullShader + templateShaderSource;
+    hullShader = hullShader + "\n";
+
+
+    hullShader = hullShader + "[domain(\"quad\")]" + "\n";
+    hullShader = hullShader + "[partitioning(\"integer\")]" + "\n";
+    hullShader = hullShader + "[outputtopology(\"triangle_cw\")]" + "\n";
+    hullShader = hullShader + "[outputcontrolpoints(16)]" + "\n";
+    hullShader = hullShader + "[patchconstantfunc(\"patchConstantFunction\")]" + "\n";
+    hullShader = hullShader + "HS_OUT main(InputPatch<VS_CONTROL_POINT_OUTPUT, MAX_POINTS> ip, uint i : SV_OutputControlPointID, uint PatchID : SV_PrimitiveID )" + "\n";
+    hullShader = hullShader + "{ \n\n";
+    hullShader = hullShader + "HS_OUT hsOut; \n";
+
+    //  Create the Return Lines Shader Code.
+    std::string returnLines = writeShaderReturnCode(hsMetaData, "", "hsOut");
+    hullShader = hullShader + returnLines;
+    hullShader = hullShader + "\n";
+
+    hullShader = hullShader + "return hsOut; \n";
+    hullShader = hullShader + "} \n\n";
 
     //  
     return hullShader;
@@ -190,10 +232,46 @@ std::string TestShaderWriter::writeDSShaderCode(const ShaderResourcesData & dsMe
 {
     //  
     std::string domainShader = "\n";
+    std::string templateShaderSource = "";
+
+    //
+    std::ifstream templateStream("Data/DSTemplate.ds.hlsl");
+    if (templateStream.is_open())
+    {
+        std::string line;
+        while (getline(templateStream, line))
+        {
+            templateShaderSource = templateShaderSource + line + "\n";
+        }
+        templateStream.close();
+    }
+
+    //  
+    domainShader = domainShader + templateShaderSource;
+    domainShader = domainShader + "\n";
+
 
     //
     domainShader = domainShader + writeDeclareResources(dsMetaData);
+
+    //  Get the Shader Output Shader Code.
+    std::string dsOut = writeShaderOutputStruct(dsMetaData, "DS_OUT", "DS_OUTPUT");
+    domainShader = domainShader + dsOut;
+    domainShader = domainShader + "\n";
+
     
+    domainShader = domainShader + "[domain(\"quad\")] \n";
+    domainShader = domainShader + "DS_OUT main( HS_CONSTANT_DATA_OUTPUT input,  float2 UV : SV_DomainLocation, const OutputPatch<DS_OUT, 16> bezpatch) \n";
+    domainShader = domainShader + "{ \n \n";
+    domainShader = domainShader + "DS_OUT dsOut; \n\n";
+
+    std::string returnLines = writeShaderReturnCode(dsMetaData, "", "dsOut");
+    domainShader = domainShader + returnLines;
+    domainShader = domainShader + "\n";
+
+    domainShader = domainShader + "return dsOut; \n\n";
+    domainShader = domainShader + "} \n \n";
+
     //
     return domainShader;
 }
@@ -242,7 +320,7 @@ std::string TestShaderWriter::writePSShaderCode(const ShaderResourcesData & psMe
     std::string pixelShader = "\n";
 
     //  Get the Vertex Shader Output Shader Code.
-    std::string psIn = writeShaderInputStruct(psMetaData, "VS_OUT", "OUTPUT");
+    std::string psIn = writeShaderInputStruct(psMetaData, "PS_IN", "OUTPUT");
 
     //  
     pixelShader = pixelShader + psIn;
@@ -258,7 +336,7 @@ std::string TestShaderWriter::writePSShaderCode(const ShaderResourcesData & psMe
 
     //
     //  Create the Shader body for the Pixel Shader.
-    pixelShader = pixelShader + "PS_OUT main(VS_OUT vOut) \n";
+    pixelShader = pixelShader + "PS_OUT main(PS_IN psIn) \n";
     pixelShader = pixelShader + "{ \n";
     pixelShader = pixelShader + "\n";
 
@@ -266,7 +344,7 @@ std::string TestShaderWriter::writePSShaderCode(const ShaderResourcesData & psMe
     pixelShader = pixelShader + "PS_OUT psOut; \n";
 
     //  Create the Return Lines Shader Code.
-    std::string returnLines = writeShaderReturnCode(psMetaData, "vOut", "psOut");
+    std::string returnLines = writeShaderReturnCode(psMetaData, "psIn", "psOut");
     pixelShader = pixelShader + returnLines;
     pixelShader = pixelShader + "\n";
 
@@ -804,7 +882,7 @@ std::string TestShaderWriter::writeDeclaredStructuredBufferResource(const Struct
     //  
     if (completeStructuredBufferDeclaration != "")
     {
-        currentStructuredBufferCode = completeStructuredBufferDeclaration + "\n\n";
+        currentStructuredBufferCode = currentStructuredBufferCode + completeStructuredBufferDeclaration + "\n\n";
     }
 
     //  

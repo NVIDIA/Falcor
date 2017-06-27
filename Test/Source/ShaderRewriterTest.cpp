@@ -90,15 +90,15 @@ testing_func(ShaderRewriterTest, TestShaderRewriter)
         ofgs << gsCode;
         ofgs.close();
 
-        //std::ofstream ofhs;
-        //ofhs.open("Data/HS.hs.hlsl", std::ofstream::trunc);
-        //ofhs << hsCode;
-        //ofhs.close();
+        std::ofstream ofhs;
+        ofhs.open("Data/HS.hs.hlsl", std::ofstream::trunc);
+        ofhs << hsCode;
+        ofhs.close();
 
-        //std::ofstream ofds;
-        //ofds.open("Data/DS.ds.hlsl", std::ofstream::trunc);
-        //ofds << dsCode;
-        //ofds.close();
+        std::ofstream ofds;
+        ofds.open("Data/DS.ds.hlsl", std::ofstream::trunc);
+        ofds << dsCode;
+        ofds.close();
 
         //  Create the Graphics Program.
         GraphicsProgram::SharedPtr graphicsProgram = GraphicsProgram::createFromFile("VS.vs.hlsl", "PS.ps.hlsl", "GS.gs.hlsl", "HS.hs.hlsl", "DS.ds.hlsl");
@@ -111,8 +111,16 @@ testing_func(ShaderRewriterTest, TestShaderRewriter)
             //  Create the Graphics Program.
             GraphicsVars::SharedPtr graphicsProgramVars = GraphicsVars::create(graphicsProgram->getActiveVersion()->getReflector());
           
+            std::string errorMessage = "";
+
             //  Verify the Program Resources.
-            resourceVerify = shaderTestMaker.verifyProgramResources(graphicsProgramVars);
+            resourceVerify = shaderTestMaker.verifyProgramResources(graphicsProgramVars, errorMessage);
+
+            //
+            if (!resourceVerify)
+            {
+                test_fail(errorMessage);
+            }
         }
         else
         {
@@ -158,20 +166,28 @@ testing_func(ShaderRewriterTest, TestShaderRewriter)
         GraphicsProgram::SharedPtr graphicsProgram = GraphicsProgram::createFromFile("VS.vs.hlsl", "PS.ps.hlsl", "GS.gs.hlsl", "", "");
 
         //
-        ProgramVersion::SharedConstPtr graphicsProgramVersion = (graphicsProgram->getActiveVersion(true));
+        ProgramVersion::SharedConstPtr graphicsProgramVersion = (graphicsProgram->getActiveVersion());
 
         if (graphicsProgramVersion)
         {
             if (shaderTestMaker.viewShaderTestLayout().mode == "invalid")
             {
-                return test_fail("Error - Complied Invalid Shaders!");
+                return test_fail("Error - Compiled Invalid Shaders!");
             }
 
             //  Create the Graphics Program.
             GraphicsVars::SharedPtr graphicsProgramVars = GraphicsVars::create(graphicsProgramVersion->getReflector());
 
+            std::string errorMessage = "";
+
             //  Verify the Program Resources.
-            resourceVerify = shaderTestMaker.verifyProgramResources(graphicsProgramVars);
+            resourceVerify = shaderTestMaker.verifyProgramResources(graphicsProgramVars, errorMessage);
+            
+            //
+            if (!resourceVerify)
+            {
+                test_fail(errorMessage);
+            }
         }
         else
         {
@@ -214,14 +230,22 @@ testing_func(ShaderRewriterTest, TestShaderRewriter)
         {
             if (shaderTestMaker.viewShaderTestLayout().mode == "invalid")
             {
-                return test_fail("Error - Complied Invalid Shaders!");
+                return test_fail("Error - Compiled Invalid Shaders!");
             }
 
             //  Create the Graphics Program.
             GraphicsVars::SharedPtr graphicsProgramVars = GraphicsVars::create(graphicsProgramVersion->getReflector());
 
+            std::string errorMessage;
+
             //  Verify the Program Resources.
-            resourceVerify = shaderTestMaker.verifyProgramResources(graphicsProgramVars);
+            resourceVerify = shaderTestMaker.verifyProgramResources(graphicsProgramVars, errorMessage);
+
+            //
+            if (!resourceVerify)
+            {
+                return test_fail(errorMessage);
+            }
         }
         else
         {
@@ -256,14 +280,22 @@ testing_func(ShaderRewriterTest, TestShaderRewriter)
         {
             if (shaderTestMaker.viewShaderTestLayout().mode == "invalid")
             {
-                return test_fail("Error - Complied Invalid Shaders!");
+                return test_fail("Error - Compiled Invalid Shaders!");
             }
 
             //  Create the Graphics Program.
             ComputeVars::SharedPtr graphicsProgramVars = ComputeVars::create(computeProgramVersion->getReflector());
 
+            std::string errorMessage;
+
             //  Verify the Program Resources.
-            resourceVerify = shaderTestMaker.verifyProgramResources(graphicsProgramVars);
+            resourceVerify = shaderTestMaker.verifyProgramResources(graphicsProgramVars, errorMessage);
+
+            //
+            if (!resourceVerify)
+            {
+                test_fail(errorMessage);
+            }
         }
         else
         {

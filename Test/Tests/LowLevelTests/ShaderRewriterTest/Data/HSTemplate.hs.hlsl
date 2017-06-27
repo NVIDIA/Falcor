@@ -1,69 +1,4 @@
 
-
-
-
-
-cbuffer cbR2 
-{ 
-float4 cbR2_sv0;
-float4 cbR2_sv1;
-
-
-}; 
-
-cbuffer cbR3 
-{ 
-float4 cbR3_sv0;
-float4 cbR3_sv1;
-
-
-}; 
-
-StructuredBuffer<float4> sbR1;
-
-RWStructuredBuffer<float4> rwSBR2;
-
-RWStructuredBuffer<float4> rwSBR3;
-
-
-SamplerState samplerR0;
-
-SamplerState samplerR2 : register ( s0 );
-
-SamplerState samplerR3;
-
-SamplerState samplerR4 : register ( s1 );
-
-
-Texture2D<float4> textureR1 : register ( t4 );
-
-Texture2D<float4> textureR2;
-
-Texture2D<float4> textureR3;
-
-Texture2D<float4> textureR4;
-
-RWTexture2D<float4> rwTextureR0 : register ( u6 );
-
-RWTexture2D<float4> rwTextureR1;
-
-RWTexture2D<float4> rwTextureR3;
-
-
-ByteAddressBuffer  rbR1;
-
-ByteAddressBuffer  rbR2;
-
-ByteAddressBuffer  rbR3 : register ( t2 );
-
-
-
-struct HS_OUT 
-{ 
-}; 
-
-
-
 struct VS_CONTROL_POINT_OUTPUT
 {
     float3 vPosition : WORLDPOS;
@@ -118,19 +53,3 @@ HS_CONSTANT_DATA_OUTPUT patchConstantFunction(InputPatch<VS_CONTROL_POINT_OUTPUT
     
     return hscOut;
 }
-
-[domain("quad")]
-[partitioning("integer")]
-[outputtopology("triangle_cw")]
-[outputcontrolpoints(16)]
-[patchconstantfunc("patchConstantFunction")]
-HS_OUT main(InputPatch<VS_CONTROL_POINT_OUTPUT, MAX_POINTS> ip, uint i : SV_OutputControlPointID, uint PatchID : SV_PrimitiveID )
-{ 
-
-HS_OUT hsOut; 
-
-
-
-return hsOut; 
-} 
-

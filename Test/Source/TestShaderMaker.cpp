@@ -69,19 +69,19 @@ bool TestShaderMaker::loadConfigFile(const std::string & configFile, std::string
         {
             mShaderTestLayout.hasVertexShader = true;
             mShaderTestLayout.stages.push_back("vs");
-            mShaderTestLayout.hasGeometryShader = true;
-            mShaderTestLayout.stages.push_back("gs");
             mShaderTestLayout.hasPixelShader = true;
             mShaderTestLayout.stages.push_back("ps");
+            mShaderTestLayout.hasGeometryShader = true;
+            mShaderTestLayout.stages.push_back("gs");
         }
         else if (stagesString == "vs/hs/ds/gs/ps")
         {
             mShaderTestLayout.hasVertexShader = true;
             mShaderTestLayout.stages.push_back("vs");
-            mShaderTestLayout.hasGeometryShader = true;
-            mShaderTestLayout.stages.push_back("gs");
             mShaderTestLayout.hasPixelShader = true;
             mShaderTestLayout.stages.push_back("ps");
+            mShaderTestLayout.hasGeometryShader = true;
+            mShaderTestLayout.stages.push_back("gs");
             mShaderTestLayout.hasHullShader = true;
             mShaderTestLayout.stages.push_back("hs");
             mShaderTestLayout.hasDomainShader = true;
@@ -304,6 +304,17 @@ bool TestShaderMaker::loadConfigFile(const std::string & configFile, std::string
         mShaderTestLayout.mode = "both";
     }
 
+    //  
+    Value::MemberIterator iRT = mJDoc.FindMember("invalidResourceType");
+    if (iRT != mJDoc.MemberEnd())
+    {
+        mShaderTestLayout.invalidResourceType = iRT->value.GetString();
+    }
+    else
+    {
+        mShaderTestLayout.invalidResourceType = "constant buffer";
+    }
+
     return true;
 }
 
@@ -321,11 +332,11 @@ void TestShaderMaker::generateVersionRestrictedConstants()
         mShaderTestLayout.allowStructConstantBuffers = false;
         mShaderTestLayout.allowUnboundedConstantBuffers = false;
         mShaderTestLayout.allowUnboundedResourceArrays = false;
-        
+
         if (mShaderTestLayout.hasVertexShader)
-        {    
+        {
             //  Get the Vertex Shader Stage Data, and set the VS Data.
-            TestShaderWriter::ShaderResourcesData * vsstage = getShaderResourceData("vs");
+            TestShaderWriter::ShaderResourcesData * vsstage = getShaderStageResourceData("vs");
 
             uint32_t vertexOutCount = (rand() % 8) + 1;
             for (uint32_t i = 0; i < vertexOutCount; i++)
@@ -346,7 +357,7 @@ void TestShaderMaker::generateVersionRestrictedConstants()
 
         if (mShaderTestLayout.hasGeometryShader)
         {
-            TestShaderWriter::ShaderResourcesData * gsstage = getShaderResourceData("gs");
+            TestShaderWriter::ShaderResourcesData * gsstage = getShaderStageResourceData("gs");
 
             uint32_t gsInCount = (rand() % 8) + 1;
             for (uint32_t i = 0; i < gsInCount; i++)
@@ -364,7 +375,7 @@ void TestShaderMaker::generateVersionRestrictedConstants()
 
         if (mShaderTestLayout.hasPixelShader)
         {
-            TestShaderWriter::ShaderResourcesData * psstage = getShaderResourceData("ps");
+            TestShaderWriter::ShaderResourcesData * psstage = getShaderStageResourceData("ps");
 
             uint32_t pixelInCount = (rand() % 8) + 1;
             for (uint32_t i = 0; i < pixelInCount; i++)
@@ -379,11 +390,11 @@ void TestShaderMaker::generateVersionRestrictedConstants()
             {
                 psstage->outTargets.push_back(i);
 
-                uSpacesIndexes[0].nextRegisterIndex++;
+                mUSpacesIndexes[0].nextRegisterIndex++;
             }
 
         }
-        
+
         //  
         if (mShaderTestLayout.hasComputeShader)
         {
@@ -404,7 +415,7 @@ void TestShaderMaker::generateVersionRestrictedConstants()
         if (mShaderTestLayout.hasVertexShader)
         {
             //  Get the Vertex Shader Stage Data, and set the VS Data.
-            TestShaderWriter::ShaderResourcesData * vsstage = getShaderResourceData("vs");
+            TestShaderWriter::ShaderResourcesData * vsstage = getShaderStageResourceData("vs");
 
             uint32_t vertexOutCount = (rand() % 8) + 1;
             for (uint32_t i = 0; i < vertexOutCount; i++)
@@ -425,7 +436,7 @@ void TestShaderMaker::generateVersionRestrictedConstants()
 
         if (mShaderTestLayout.hasGeometryShader)
         {
-            TestShaderWriter::ShaderResourcesData * gsstage = getShaderResourceData("gs");
+            TestShaderWriter::ShaderResourcesData * gsstage = getShaderStageResourceData("gs");
 
             uint32_t gsInCount = (rand() % 8) + 1;
             for (uint32_t i = 0; i < gsInCount; i++)
@@ -443,7 +454,7 @@ void TestShaderMaker::generateVersionRestrictedConstants()
 
         if (mShaderTestLayout.hasPixelShader)
         {
-            TestShaderWriter::ShaderResourcesData * psstage = getShaderResourceData("ps");
+            TestShaderWriter::ShaderResourcesData * psstage = getShaderStageResourceData("ps");
 
             uint32_t pixelInCount = (rand() % 8) + 1;
             for (uint32_t i = 0; i < pixelInCount; i++)
@@ -516,49 +527,43 @@ std::string TestShaderMaker::getComputeShaderCode() const
     return mShaderMaker.getComputeShaderCode();
 }
 
-//  Verify the Program Resources.
-bool TestShaderMaker::verifyProgramResources(const TestShaderWriter::ShaderResourcesData & rsData, const GraphicsVars::SharedPtr & graphicsProgramVars)
-{
-    bool verifiedResources = verifyAllResources(rsData, graphicsProgramVars);
-
-    return verifiedResources;
-}
 
 //  
-bool TestShaderMaker::verifyProgramResources(const GraphicsVars::SharedPtr & graphicsProgramVars)
+bool TestShaderMaker::verifyProgramResources(const GraphicsVars::SharedPtr & graphicsProgramVars, std::string & errorMessage)
 {
+
     //  Verify the Stages.
     bool vsVerify = true;
     if (mShaderTestLayout.hasVertexShader)
     {
-        vsVerify = verifyProgramResources(mShaderMaker.viewVSResourceData(), graphicsProgramVars);
+        vsVerify = verifyAllResources(mShaderMaker.viewVSResourceData(), graphicsProgramVars, errorMessage);
     }
 
     bool hsVerify = true;
     if (mShaderTestLayout.hasHullShader)
     {
-        hsVerify = verifyProgramResources(mShaderMaker.viewHSResourceData(), graphicsProgramVars);
+        hsVerify = verifyAllResources(mShaderMaker.viewHSResourceData(), graphicsProgramVars, errorMessage);
     }
 
 
     bool dsVerify = true;
     if (mShaderTestLayout.hasDomainShader)
     {
-        dsVerify = verifyProgramResources(mShaderMaker.viewDSResourceData(), graphicsProgramVars);
+        dsVerify = verifyAllResources(mShaderMaker.viewDSResourceData(), graphicsProgramVars, errorMessage);
     }
 
 
     bool gsVerify = true;
     if (mShaderTestLayout.hasGeometryShader)
     {
-        gsVerify = verifyProgramResources(mShaderMaker.viewGSResourceData(), graphicsProgramVars);
+        gsVerify = verifyAllResources(mShaderMaker.viewGSResourceData(), graphicsProgramVars, errorMessage);
     }
- 
-    
+
+
     bool psVerify = true;
     if (mShaderTestLayout.hasPixelShader)
     {
-        psVerify = verifyProgramResources(mShaderMaker.viewPSResourceData(), graphicsProgramVars);
+        psVerify = verifyAllResources(mShaderMaker.viewPSResourceData(), graphicsProgramVars, errorMessage);
     }
 
 
@@ -566,18 +571,18 @@ bool TestShaderMaker::verifyProgramResources(const GraphicsVars::SharedPtr & gra
     return vsVerify && hsVerify && dsVerify && gsVerify && psVerify;
 }
 
-bool TestShaderMaker::verifyProgramResources(const ComputeVars::SharedPtr & computeProgramVars)
+bool TestShaderMaker::verifyProgramResources(const ComputeVars::SharedPtr & computeProgramVars, std::string & errorMessage)
 {
     bool csVerify = true;
     if (mShaderTestLayout.hasComputeShader)
     {
-        csVerify = verifyProgramResources(mShaderMaker.viewCSResourceData(), computeProgramVars);
+        csVerify = verifyProgramResources(mShaderMaker.viewCSResourceData(), computeProgramVars, errorMessage);
     }
 
     return csVerify;
 }
 
-bool TestShaderMaker::verifyProgramResources(const TestShaderWriter::ShaderResourcesData & rsData, const ComputeVars::SharedPtr & computeProgramVars)
+bool TestShaderMaker::verifyProgramResources(const TestShaderWriter::ShaderResourcesData & rsData, const ComputeVars::SharedPtr & computeProgramVars, std::string & errorMessage)
 {
     return true;
 }
@@ -590,31 +595,27 @@ void TestShaderMaker::generateShaderProgram()
 
     for (uint32_t i = 0; i < 20; i++)
     {
-        bSpacesIndexes[i] = initialRegisters;
-        bSpaces.push_back(i);
+        mBSpacesIndexes[i] = initialRegisters;
+        mBSpaces.push_back(i);
 
-        sSpacesIndexes[i] = initialRegisters;
-        sSpaces.push_back(i);
+        mSSpacesIndexes[i] = initialRegisters;
+        mSSpaces.push_back(i);
 
-        tSpacesIndexes[i] = initialRegisters;
-        tSpaces.push_back(i);
+        mTSpacesIndexes[i] = initialRegisters;
+        mTSpaces.push_back(i);
 
-        uSpacesIndexes[i] = initialRegisters;
-        uSpaces.push_back(i);
+        mUSpacesIndexes[i] = initialRegisters;
+        mUSpaces.push_back(i);
     }
 
-    maxBSpace = 20;
-    maxUSpace = 20;
-    maxSSpace = 20;
-    maxTSpace = 20;
+    mMaxBSpace = 20;
+    mMaxUSpace = 20;
+    mMaxSSpace = 20;
+    mMaxTSpace = 20;
 
 
     //  Set up some generation constants.
     generateVersionRestrictedConstants();
-
-
-    TestInstance testInstance;
-
 
     //      
     std::vector<TestShaderWriter::ConstantBufferResource> cbs;
@@ -641,29 +642,29 @@ void TestShaderMaker::generateShaderProgram()
 
     if (mShaderTestLayout.mode == "invalid")
     {
-        if (mShaderTestLayout.invalidResourceType == "Constant Buffer")
+        if (mShaderTestLayout.invalidResourceType == "constant buffer")
         {
-            generateErrorConstantBufferResources(cbs, testInstance.constantBuffer);
+            generateErrorConstantBufferResources(cbs);
         }
-        else if (mShaderTestLayout.invalidResourceType == "Constant Buffer")
+        else if (mShaderTestLayout.invalidResourceType == "texture buffer")
         {
-            generateErrorTextureBufferResources(tbs, testInstance.textureBuffer);
+            generateErrorTextureBufferResources(tbs);
         }
-        else if (mShaderTestLayout.invalidResourceType == "Structured Buffers")
+        else if (mShaderTestLayout.invalidResourceType == "structured buffer")
         {
-            generateErrorStructuredBufferResources(sbs, rwSBs, testInstance.structredBuffer);
+            generateErrorStructuredBufferResources(sbs);
         }
-        else if (mShaderTestLayout.invalidResourceType == "Raw Buffers")
+        else if (mShaderTestLayout.invalidResourceType == "raw buffers")
         {
-            generateErrorRawBufferResources(rbs, rwRBs, testInstance.rawBuffers);
+            generateErrorRawBufferResources(rbs, rwRBs);
         }
-        else if (mShaderTestLayout.invalidResourceType == "Textures")
+        else if (mShaderTestLayout.invalidResourceType == "textures")
         {
-            generateErrorTextureResources(texs, rwTexs, testInstance.textures);
+            generateErrorTextureResources(texs, rwTexs);
         }
-        else if (mShaderTestLayout.invalidResourceType == "Samplers")
+        else if (mShaderTestLayout.invalidResourceType == "samplers")
         {
-            generateErrorSamplersResources(samps, testInstance.samplers);
+            generateErrorSamplersResources(samps);
         }
     }
 
@@ -689,105 +690,465 @@ void TestShaderMaker::generateShaderProgram()
 
 
 //  Generate the Constant Buffer Resources that cause an error.
-void TestShaderMaker::generateErrorConstantBufferResources(std::vector<TestShaderWriter::ConstantBufferResource> & cbs, const Mode & mode)
+void TestShaderMaker::generateErrorConstantBufferResources(std::vector<TestShaderWriter::ConstantBufferResource> & cbs)
 {
-    if (mode == Mode::Invalid)
-    {
-        std::vector<uint32_t> selectedStages = generateRandomizedStages();
+        uint32_t stageCount = (uint32_t)mShaderTestLayout.stages.size();
 
-        for (uint32_t i = 0; i < selectedStages.size(); i++)
+        //  Multiple stages.
+        TestShaderWriter::ConstantBufferResource erCBR0;
+        erCBR0.variable = "erCBR";
+        erCBR0.isUsedResource = true;
+
+        TestShaderWriter::ConstantBufferResource erCBR1;
+        erCBR1.variable = "erCBR";
+        erCBR1.isUsedResource = true;
+
+        uint32_t structVariableCount = 0;
+        uint32_t selectVariable = 0;
+
+
+        structVariableCount = (rand() % (mShaderTestLayout.maxStructVariablesCount)) + 1;
+        selectVariable = rand() % structVariableCount;
+
+        //  
+        for (uint32_t svIndex = 0; svIndex < structVariableCount; svIndex++)
+        {
+            TestShaderWriter::StructVariable sv;
+
+            if (svIndex == selectVariable)
+            {
+                sv.isUsed = true;
+            }
+            else
+            {
+                sv.isUsed = false;
+            }
+
+            sv.structVariable = "erCBR_sv" + std::to_string(svIndex);
+            sv.useStructVariable = "use_" + sv.structVariable;
+            sv.variableType = ProgramReflection::Variable::Type::Float4;
+            erCBR0.structVariables.push_back(sv);
+        }
+
+
+        structVariableCount = structVariableCount + 3;
+        selectVariable = rand() % structVariableCount;
+
+        //  
+        for (uint32_t svIndex = 0; svIndex < structVariableCount; svIndex++)
+        {
+            TestShaderWriter::StructVariable sv;
+
+            if (svIndex == selectVariable)
+            {
+                sv.isUsed = true;
+            }
+            else
+            {
+                sv.isUsed = false;
+            }
+
+            sv.structVariable = "erCBR_sv" + std::to_string(svIndex);
+            sv.useStructVariable = "use_" + sv.structVariable;
+            sv.variableType = ProgramReflection::Variable::Type::Float4;
+            erCBR1.structVariables.push_back(sv);
+        }
+
+
+        //  
+        if (stageCount == 1)
+        {
+            //  We have one stage, in which case we have to go for straight redefinition.
+            TestShaderWriter::ShaderResourcesData * sRD = getShaderStageResourceData(mShaderTestLayout.stages[0]);
+
+            sRD->cbs.push_back(erCBR0);
+            sRD->cbs.push_back(erCBR1);
+        }
+        else
         {
 
+            uint32_t errorType = rand() % 2;
 
+            if (errorType)
+            {
+                //  Two buffers with the same name, in different stages, with different layouts.
+                erCBR0.isExplicitIndex = true;
+                erCBR0.regIndex = 0;
+                erCBR0.isExplicitSpace = true && mShaderTestLayout.allowExplicitSpaces;
+                erCBR0.regSpace = 0;
+
+                erCBR1.isExplicitIndex = true;
+                erCBR1.regIndex = 0;
+                erCBR1.isExplicitSpace = true && mShaderTestLayout.allowExplicitSpaces;
+                erCBR1.regSpace = 0;
+
+                mBSpacesIndexes[0].nextRegisterIndex++;
+            }
+            else
+            {
+                erCBR0.isExplicitIndex = true;
+                erCBR0.regIndex = 0;
+                erCBR0.isExplicitSpace = true && mShaderTestLayout.allowExplicitSpaces;
+                erCBR0.regSpace = 0;
+
+                erCBR1.isExplicitIndex = true;
+                erCBR1.regIndex = 1;
+                erCBR1.isExplicitSpace = true && mShaderTestLayout.allowExplicitSpaces;
+                erCBR1.regSpace = 0;
+
+                mBSpacesIndexes[0].nextRegisterIndex++;
+                mBSpacesIndexes[0].nextRegisterIndex++;
+            }
+
+            for (uint32_t stageIndex = 0; stageIndex < stageCount; stageIndex++)
+            {
+                TestShaderWriter::ShaderResourcesData * sRD = getShaderStageResourceData(mShaderTestLayout.stages[stageIndex]);
+
+                //  
+                if (stageIndex % 2 == 0)
+                {
+                    sRD->cbs.push_back(erCBR0);
+                }
+                else
+                {
+                    sRD->cbs.push_back(erCBR1);
+                }
+            }
         }
-    }
 }
 
 //  Generate the Error Texture Buffer Resources.
-void TestShaderMaker::generateErrorTextureBufferResources(std::vector<TestShaderWriter::TextureBufferResource> & tbs, const Mode & mode)
+void TestShaderMaker::generateErrorTextureBufferResources(std::vector<TestShaderWriter::TextureBufferResource> & tbs)
 {
-    if (mode == Mode::Invalid)
-    {
-        std::vector<uint32_t> selectedStages = generateRandomizedStages();
-
-        for (uint32_t i = 0; i < selectedStages.size(); i++)
-        {
 
 
-        }
-    }
+
+
 }
 
 //  Generate the Error Structured Buffer Resources.
-void TestShaderMaker::generateErrorStructuredBufferResources(std::vector<TestShaderWriter::StructuredBufferResource> & sbs, std::vector<TestShaderWriter::StructuredBufferResource> & rwSBs, const Mode & mode)
+void TestShaderMaker::generateErrorStructuredBufferResources(std::vector<TestShaderWriter::StructuredBufferResource> & sbs)
 {
-    if (mode == Mode::Invalid)
+    uint32_t stageCount = (uint32_t)mShaderTestLayout.stages.size();
+
+    //  Multiple stages.
+    TestShaderWriter::StructuredBufferResource erSBR0;
+    erSBR0.variable = "erSBR";
+    erSBR0.structVariable = "erSBR0s";
+    erSBR0.isUsedResource = true;
+    erSBR0.usesExternalStructVariables = true;
+
+    TestShaderWriter::StructuredBufferResource erSBR1;
+    erSBR1.variable = "erSBR";
+    erSBR1.structVariable = "erSBR1s";
+    erSBR1.isUsedResource = true;
+    erSBR1.usesExternalStructVariables = true;
+
+    uint32_t structVariableCount = 0;
+    uint32_t selectVariable = 0;
+
+
+    structVariableCount = (rand() % (mShaderTestLayout.maxStructVariablesCount)) + 1;
+    selectVariable = rand() % structVariableCount;
+
+    //  
+    for (uint32_t svIndex = 0; svIndex < structVariableCount; svIndex++)
     {
-        std::vector<uint32_t> selectedStages = generateRandomizedStages();
+        TestShaderWriter::StructVariable sv;
 
-        for (uint32_t i = 0; i < selectedStages.size(); i++)
+        if (svIndex == selectVariable)
         {
+            sv.isUsed = true;
+        }
+        else
+        {
+            sv.isUsed = false;
+        }
+
+        sv.structVariable = "erSBR_sv_0_" + std::to_string(svIndex);
+        sv.useStructVariable = "use_" + sv.structVariable;
+        sv.variableType = ProgramReflection::Variable::Type::Float4;
+        erSBR0.externalStructVariables.push_back(sv);
+    }
 
 
+    structVariableCount = structVariableCount + 3;
+    selectVariable = rand() % structVariableCount;
+
+    //  
+    for (uint32_t svIndex = 0; svIndex < structVariableCount; svIndex++)
+    {
+        TestShaderWriter::StructVariable sv;
+
+        if (svIndex == selectVariable)
+        {
+            sv.isUsed = true;
+        }
+        else
+        {
+            sv.isUsed = false;
+        }
+
+        sv.structVariable = "erSBR_sv_1_" + std::to_string(svIndex);
+        sv.useStructVariable = "use_" + sv.structVariable;
+        sv.variableType = ProgramReflection::Variable::Type::Float4;
+        erSBR1.externalStructVariables.push_back(sv);
+    }
+
+
+    //  
+    if (stageCount == 1)
+    {
+        //  We have one stage, in which case we have to go for straight redefinition.
+        TestShaderWriter::ShaderResourcesData * sRD = getShaderStageResourceData(mShaderTestLayout.stages[0]);
+
+        sRD->sbs.push_back(erSBR0);
+        sRD->sbs.push_back(erSBR1);
+    }
+    else
+    {
+
+        uint32_t errorType = rand() % 2;
+
+        if (errorType)
+        {
+            //  Two buffers with the same name, in different stages, with different layouts using the same register.
+            erSBR0.isExplicitIndex = true;
+            erSBR0.regIndex = 0;
+            erSBR0.isExplicitSpace = true && mShaderTestLayout.allowExplicitSpaces;
+            erSBR0.regSpace = 0;
+
+            erSBR1.isExplicitIndex = true;
+            erSBR1.regIndex = 0;
+            erSBR1.isExplicitSpace = true && mShaderTestLayout.allowExplicitSpaces;
+            erSBR1.regSpace = 0;
+
+            mTSpacesIndexes[0].nextRegisterIndex++;
+        }
+        else
+        {
+            //  Two buffers with the same name, in different stages, with different layouts.
+            erSBR0.isExplicitIndex = true;
+            erSBR0.regIndex = 0;
+            erSBR0.isExplicitSpace = true && mShaderTestLayout.allowExplicitSpaces;
+            erSBR0.regSpace = 0;
+
+            mTSpacesIndexes[0].nextRegisterIndex++;
+
+            erSBR1.isExplicitIndex = true;
+            erSBR1.regIndex = 1;
+            erSBR1.isExplicitSpace = true && mShaderTestLayout.allowExplicitSpaces;
+            erSBR1.regSpace = 0;
+
+            mTSpacesIndexes[0].nextRegisterIndex++;
+        }
+
+        for (uint32_t stageIndex = 0; stageIndex < stageCount; stageIndex++)
+        {
+            TestShaderWriter::ShaderResourcesData * sRD = getShaderStageResourceData(mShaderTestLayout.stages[stageIndex]);
+
+            //  
+            if (stageIndex % 2 == 0)
+            {
+                sRD->sbs.push_back(erSBR0);
+            }
+            else
+            {
+                sRD->sbs.push_back(erSBR1);
+            }
         }
     }
+
 }
 
 //  Generate the Error Raw Buffer Resources.
-void TestShaderMaker::generateErrorRawBufferResources(std::vector<TestShaderWriter::RawBufferResource> & rbs, std::vector<TestShaderWriter::RawBufferResource> & rwRBs, const Mode & mode)
+void TestShaderMaker::generateErrorRawBufferResources(std::vector<TestShaderWriter::RawBufferResource> & rbs)
 {
-    if (mode == Mode::Invalid)
+    uint32_t stageCount = (uint32_t)mShaderTestLayout.stages.size();
+
+    //  Multiple stages.
+    TestShaderWriter::RawBufferResource erRB0;
+    erRB0.variable = "erRB";
+    erRB0.isUsedResource = true;
+
+
+    TestShaderWriter::RawBufferResource erRB1;
+    erRB1.variable = "erRB";
+    erRB1.isUsedResource = true;
+
+    //  Two buffers with the same name, in different stages with different registers.
+    erRB0.isExplicitIndex = true;
+    erRB0.regIndex = 0;
+    erRB0.isExplicitSpace = true && mShaderTestLayout.allowExplicitSpaces;
+    erRB0.regSpace = 0;
+
+    mTSpacesIndexes[0].nextRegisterIndex++;
+
+    erRB1.isExplicitIndex = true;
+    erRB1.regIndex = 1;
+    erRB1.isExplicitSpace = true && mShaderTestLayout.allowExplicitSpaces;
+    erRB1.regSpace = 0;
+
+    mTSpacesIndexes[0].nextRegisterIndex++;
+
+    //  
+    if (stageCount == 1)
     {
-        std::vector<uint32_t> selectedStages = generateRandomizedStages();
+        //  We have one stage, in which case we have to go for straight redefinition.
+        TestShaderWriter::ShaderResourcesData * sRD = getShaderStageResourceData(mShaderTestLayout.stages[0]);
 
-        for (uint32_t i = 0; i < selectedStages.size(); i++)
+        sRD->rbs.push_back(erRB0);
+        sRD->rbs.push_back(erRB1);
+    }
+    else
+    {
+        for (uint32_t stageIndex = 0; stageIndex < stageCount; stageIndex++)
         {
+            TestShaderWriter::ShaderResourcesData * sRD = getShaderStageResourceData(mShaderTestLayout.stages[stageIndex]);
 
-
+            //  
+            if (stageIndex % 2 == 0)
+            {
+                sRD->rbs.push_back(erRB0);
+            }
+            else
+            {
+                sRD->rbs.push_back(erRB1);
+            }
         }
     }
 }
 
 //  Generate the Error Texture Resources.
-void TestShaderMaker::generateErrorTextureResources(std::vector<TestShaderWriter::TextureResource> & texs, std::vector<TestShaderWriter::TextureResource> & rwTexs, const Mode & mode)
+void TestShaderMaker::generateErrorTextureResources(std::vector<TestShaderWriter::TextureResource> & texs)
 {
-    if (mode == Mode::Invalid)
+    uint32_t stageCount = (uint32_t)mShaderTestLayout.stages.size();
+
+    TestShaderWriter::TextureResource erTex0;
+    erTex0.variable = "erTex";
+    erTex0.isUsedResource = true;
+    erTex0.textureType = ProgramReflection::Variable::Type::Float4;
+    erTex0.textureResourceType = ProgramReflection::Resource::Dimensions::Texture2D;
+
+    TestShaderWriter::TextureResource erTex1;
+    erTex1.variable = "erTex";
+    erTex1.isUsedResource = true;
+    erTex1.textureType = ProgramReflection::Variable::Type::Float4;
+    erTex1.textureResourceType = ProgramReflection::Resource::Dimensions::Texture2D;
+
+    erTex0.isExplicitIndex = true;
+    erTex0.regIndex = 0;
+    erTex0.isExplicitSpace = true && mShaderTestLayout.allowExplicitSpaces;
+    erTex0.regSpace = 0;
+    mTSpacesIndexes[0].nextRegisterIndex++;
+
+    erTex1.isExplicitIndex = true;
+    erTex1.regIndex = 1;
+    erTex1.isExplicitSpace = true && mShaderTestLayout.allowExplicitSpaces;
+    erTex1.regSpace = 0;
+    mTSpacesIndexes[0].nextRegisterIndex++;
+
+    if (stageCount == 1)
     {
-        std::vector<uint32_t> selectedStages = generateRandomizedStages();
+        //  We have one stage, in which case we have to go for straight redefinition.
+        TestShaderWriter::ShaderResourcesData * sRD = getShaderStageResourceData(mShaderTestLayout.stages[0]);
 
-        for (uint32_t i = 0; i < selectedStages.size(); i++)
+        sRD->textures.push_back(erTex0);
+        sRD->textures.push_back(erTex1);
+    }
+    else
+    {
+        for (uint32_t stageIndex = 0; stageIndex < stageCount; stageIndex++)
         {
+            TestShaderWriter::ShaderResourcesData * sRD = getShaderStageResourceData(mShaderTestLayout.stages[stageIndex]);
 
-
+            //  
+            if (stageIndex % 2 == 0)
+            {
+                sRD->textures.push_back(erTex0);
+            }
+            else
+            {
+                sRD->textures.push_back(erTex1);
+            }
         }
     }
 }
 
 //  Generate Error Sampler Resources.
-void TestShaderMaker::generateErrorSamplersResources(std::vector<TestShaderWriter::SamplerResource> & samps, const Mode & mode)
+void TestShaderMaker::generateErrorSamplersResources(std::vector<TestShaderWriter::SamplerResource> & samps)
 {
-    if (mode == Mode::Invalid)
+    uint32_t stageCount = (uint32_t)mShaderTestLayout.stages.size();
+
+    TestShaderWriter::SamplerResource erSampler0;
+    erSampler0.variable = "erTex";
+    erSampler0.isUsedResource = true;
+
+    TestShaderWriter::SamplerResource erSampler1;
+    erSampler1.variable = "erTex";
+    erSampler1.isUsedResource = true;
+
+
+    erSampler0.isExplicitIndex = true;
+    erSampler0.regIndex = 0;
+    erSampler0.isExplicitSpace = true && mShaderTestLayout.allowExplicitSpaces;
+    erSampler0.regSpace = 0;
+    mBSpacesIndexes[0].nextRegisterIndex++;
+
+    erSampler1.isExplicitIndex = true;
+    erSampler1.regIndex = 1;
+    erSampler1.isExplicitSpace = true && mShaderTestLayout.allowExplicitSpaces;
+    erSampler1.regSpace = 0;
+    mBSpacesIndexes[0].nextRegisterIndex++;
+
+    if (stageCount == 1)
     {
-        std::vector<uint32_t> selectedStages = generateRandomizedStages();
+        //  We have one stage, in which case we have to go for straight redefinition.
+        TestShaderWriter::ShaderResourcesData * sRD = getShaderStageResourceData(mShaderTestLayout.stages[0]);
 
-        for (uint32_t i = 0; i < selectedStages.size(); i++)
+        sRD->samplers.push_back(erSampler0);
+        sRD->samplers.push_back(erSampler1);
+    }
+    else
+    {
+        for (uint32_t stageIndex = 0; stageIndex < stageCount; stageIndex++)
         {
+            TestShaderWriter::ShaderResourcesData * sRD = getShaderStageResourceData(mShaderTestLayout.stages[stageIndex]);
 
-
+            //  
+            if (stageIndex % 2 == 0)
+            {
+                sRD->samplers.push_back(erSampler0);
+            }
+            else
+            {
+                sRD->samplers.push_back(erSampler1);
+            }
         }
     }
+}
+
+//  Generate the Error UAV Resources.
+void TestShaderMaker::generateErrorUAVResources(std::vector<TestShaderWriter::StructuredBufferResource> & rwSBs, std::vector<TestShaderWriter::RawBufferResource> & rwRBs, std::vector<TestShaderWriter::TextureResource> & rwTexs)
+{
+
+
+
+
+
+
+
 }
 
 //  Generate the Constant Buffer Resources.
 void TestShaderMaker::generateConstantBufferResources(std::vector<TestShaderWriter::ConstantBufferResource> & cbs)
 {
-
     //  Generate the Constant Buffers.
-    for (uint32_t i = 0; i < mShaderTestLayout.constantbuffers; i++)
+    for (uint32_t cbIndex = 0; cbIndex < mShaderTestLayout.constantbuffers; cbIndex++)
     {
         //  
         TestShaderWriter::ConstantBufferResource cbResource;
-        cbResource.variable = "cbR" + std::to_string(i);
+        cbResource.variable = "cbR" + std::to_string(cbIndex);
 
         //  Check whether we use the resource.
         uint32_t useChance = rand() % 2;
@@ -802,7 +1163,7 @@ void TestShaderMaker::generateConstantBufferResources(std::vector<TestShaderWrit
         cbResource.isExplicitSpace = ((rand() % 2) == 0) && mShaderTestLayout.allowExplicitSpaces;
 
         //  
-        getRegisterIndexAndSpace(mShaderTestLayout.allowExplicitSpaces, cbResource.isExplicitIndex, cbResource.isExplicitSpace, cbResource.isArray, cbResource.isUnbounded, std::vector<uint32_t>(), bSpacesIndexes, bSpaces, maxBSpace, cbResource.regIndex, cbResource.regSpace);
+        getRegisterIndexAndSpace(mShaderTestLayout.allowExplicitSpaces, cbResource.isExplicitIndex, cbResource.isExplicitSpace, cbResource.isArray, cbResource.isUnbounded, std::vector<uint32_t>(), mBSpacesIndexes, mBSpaces, mMaxBSpace, cbResource.regIndex, cbResource.regSpace);
 
         //  Struct Variable Count.
         uint32_t structVariableCount = (rand() % (mShaderTestLayout.maxStructVariablesCount)) + 1;
@@ -811,11 +1172,11 @@ void TestShaderMaker::generateConstantBufferResources(std::vector<TestShaderWrit
         uint32_t selectVariable = rand() % structVariableCount;
 
         //  
-        for (uint32_t j = 0; j < structVariableCount; j++)
+        for (uint32_t svIndex = 0; svIndex < structVariableCount; svIndex++)
         {
             TestShaderWriter::StructVariable sv;
 
-            if (j == selectVariable)
+            if (svIndex == selectVariable)
             {
                 sv.isUsed = true;
             }
@@ -824,7 +1185,7 @@ void TestShaderMaker::generateConstantBufferResources(std::vector<TestShaderWrit
                 sv.isUsed = false;
             }
 
-            sv.structVariable = "cbR" + std::to_string(i) + "_sv" + std::to_string(j);
+            sv.structVariable = "cbR" + std::to_string(cbIndex) + "_sv" + std::to_string(svIndex);
             sv.useStructVariable = "use_" + sv.structVariable;
             sv.variableType = ProgramReflection::Variable::Type::Float4;
             cbResource.structVariables.push_back(sv);
@@ -877,7 +1238,7 @@ void TestShaderMaker::generateStructuredBufferResources(std::vector<TestShaderWr
         sbResource.isExplicitSpace = ((rand() % 2) == 0) && mShaderTestLayout.allowExplicitSpaces;
 
 
-        getRegisterIndexAndSpace(mShaderTestLayout.allowExplicitSpaces, sbResource.isExplicitIndex, sbResource.isExplicitSpace, sbResource.isArray, sbResource.isUnbounded, sbResource.arrayDimensions, tSpacesIndexes, tSpaces, maxTSpace, sbResource.regIndex, sbResource.regSpace);
+        getRegisterIndexAndSpace(mShaderTestLayout.allowExplicitSpaces, sbResource.isExplicitIndex, sbResource.isExplicitSpace, sbResource.isArray, sbResource.isUnbounded, sbResource.arrayDimensions, mTSpacesIndexes, mTSpaces, mMaxTSpace, sbResource.regIndex, sbResource.regSpace);
 
 
         //  
@@ -908,8 +1269,8 @@ void TestShaderMaker::generateStructuredBufferResources(std::vector<TestShaderWr
         //  Chance for Explicit Index and Spaces.
         sbResource.isExplicitIndex = ((i % 2) == 0);
         sbResource.isExplicitSpace = ((i % 2) == 0) && mShaderTestLayout.allowExplicitSpaces;
-    
-        getRegisterIndexAndSpace(mShaderTestLayout.allowExplicitSpaces, sbResource.isExplicitIndex, sbResource.isExplicitSpace, sbResource.isArray, sbResource.isUnbounded, sbResource.arrayDimensions, uSpacesIndexes, uSpaces, maxUSpace, sbResource.regIndex, sbResource.regSpace);
+
+        getRegisterIndexAndSpace(mShaderTestLayout.allowExplicitSpaces, sbResource.isExplicitIndex, sbResource.isExplicitSpace, sbResource.isArray, sbResource.isUnbounded, sbResource.arrayDimensions, mUSpacesIndexes, mUSpaces, mMaxUSpace, sbResource.regIndex, sbResource.regSpace);
 
         //  
         rwSBs.push_back(sbResource);
@@ -942,7 +1303,7 @@ void TestShaderMaker::generateRawBufferResources(std::vector<TestShaderWriter::R
         rbResource.isExplicitIndex = ((rand() % 2) == 0);
         rbResource.isExplicitSpace = ((rand() % 2) == 0) && mShaderTestLayout.allowExplicitSpaces;
 
-        getRegisterIndexAndSpace(mShaderTestLayout.allowExplicitSpaces, rbResource.isExplicitIndex, rbResource.isExplicitSpace, rbResource.isArray, rbResource.isUnbounded, rbResource.arrayDimensions, tSpacesIndexes, tSpaces, maxTSpace, rbResource.regIndex, rbResource.regSpace);
+        getRegisterIndexAndSpace(mShaderTestLayout.allowExplicitSpaces, rbResource.isExplicitIndex, rbResource.isExplicitSpace, rbResource.isArray, rbResource.isUnbounded, rbResource.arrayDimensions, mTSpacesIndexes, mTSpaces, mMaxTSpace, rbResource.regIndex, rbResource.regSpace);
 
         rbs.push_back(rbResource);
     }
@@ -961,7 +1322,7 @@ void TestShaderMaker::generateRawBufferResources(std::vector<TestShaderWriter::R
         rbResource.isExplicitSpace = ((rand() % 2) == 0) && mShaderTestLayout.allowExplicitSpaces;
 
 
-        getRegisterIndexAndSpace(mShaderTestLayout.allowExplicitSpaces, rbResource.isExplicitIndex, rbResource.isExplicitSpace, rbResource.isArray, rbResource.isUnbounded, rbResource.arrayDimensions, uSpacesIndexes, uSpaces, maxUSpace, rbResource.regIndex, rbResource.regSpace);
+        getRegisterIndexAndSpace(mShaderTestLayout.allowExplicitSpaces, rbResource.isExplicitIndex, rbResource.isExplicitSpace, rbResource.isArray, rbResource.isUnbounded, rbResource.arrayDimensions, mUSpacesIndexes, mUSpaces, mMaxUSpace, rbResource.regIndex, rbResource.regSpace);
 
 
         rwRbs.push_back(rbResource);
@@ -981,7 +1342,7 @@ void TestShaderMaker::generateTextureResources(std::vector<TestShaderWriter::Tex
         textureResource.textureType = ProgramReflection::Variable::Type::Float4;
         textureResource.variable = "textureR" + std::to_string(i);
 
-        
+
         //  The chance of it being used.
         uint32_t useChance = rand() % 2;
 
@@ -995,7 +1356,7 @@ void TestShaderMaker::generateTextureResources(std::vector<TestShaderWriter::Tex
         textureResource.isExplicitIndex = ((rand() % 2) == 0);
         textureResource.isExplicitSpace = ((rand() % 2) == 0) && mShaderTestLayout.allowExplicitSpaces;
 
-        getRegisterIndexAndSpace(mShaderTestLayout.allowExplicitSpaces, textureResource.isExplicitIndex, textureResource.isExplicitSpace, textureResource.isArray, textureResource.isUnbounded, textureResource.arrayDimensions, tSpacesIndexes, tSpaces, maxTSpace, textureResource.regIndex, textureResource.regSpace);
+        getRegisterIndexAndSpace(mShaderTestLayout.allowExplicitSpaces, textureResource.isExplicitIndex, textureResource.isExplicitSpace, textureResource.isArray, textureResource.isUnbounded, textureResource.arrayDimensions, mTSpacesIndexes, mTSpaces, mMaxTSpace, textureResource.regIndex, textureResource.regSpace);
 
         texs.push_back(textureResource);
     }
@@ -1023,7 +1384,7 @@ void TestShaderMaker::generateTextureResources(std::vector<TestShaderWriter::Tex
         textureResource.isExplicitIndex = ((rand() % 2) == 0);
         textureResource.isExplicitSpace = ((rand() % 2) == 0) && mShaderTestLayout.allowExplicitSpaces;
 
-        getRegisterIndexAndSpace(mShaderTestLayout.allowExplicitSpaces, textureResource.isExplicitIndex, textureResource.isExplicitSpace, textureResource.isArray, textureResource.isUnbounded, textureResource.arrayDimensions, uSpacesIndexes, uSpaces, maxUSpace, textureResource.regIndex, textureResource.regSpace);
+        getRegisterIndexAndSpace(mShaderTestLayout.allowExplicitSpaces, textureResource.isExplicitIndex, textureResource.isExplicitSpace, textureResource.isArray, textureResource.isUnbounded, textureResource.arrayDimensions, mUSpacesIndexes, mUSpaces, mMaxUSpace, textureResource.regIndex, textureResource.regSpace);
 
         rwTexs.push_back(textureResource);
     }
@@ -1047,7 +1408,7 @@ void TestShaderMaker::generateSamplersResources(std::vector<TestShaderWriter::Sa
         samplerResource.isExplicitSpace = ((rand() % 2) == 0) && mShaderTestLayout.allowExplicitSpaces;
 
         //  
-        getRegisterIndexAndSpace(mShaderTestLayout.allowExplicitSpaces, samplerResource.isExplicitIndex, samplerResource.isExplicitSpace, samplerResource.isArray, samplerResource.isUnbounded, samplerResource.arrayDimensions, sSpacesIndexes, sSpaces, maxSSpace, samplerResource.regIndex, samplerResource.regSpace);
+        getRegisterIndexAndSpace(mShaderTestLayout.allowExplicitSpaces, samplerResource.isExplicitIndex, samplerResource.isExplicitSpace, samplerResource.isArray, samplerResource.isUnbounded, samplerResource.arrayDimensions, mSSpacesIndexes, mSSpaces, mMaxSSpace, samplerResource.regIndex, samplerResource.regSpace);
 
         //  Push back the Sampler Resource.
         samps.push_back(samplerResource);
@@ -1057,7 +1418,7 @@ void TestShaderMaker::generateSamplersResources(std::vector<TestShaderWriter::Sa
 
 
 //  Get the Shader Resource Data.
-TestShaderWriter::ShaderResourcesData * TestShaderMaker::getShaderResourceData(const std::string & stage)
+TestShaderWriter::ShaderResourcesData * TestShaderMaker::getShaderStageResourceData(const std::string & stage)
 {
     if (stage == "vs")
     {
@@ -1107,7 +1468,7 @@ void TestShaderMaker::getRegisterIndexAndSpace(bool isUsingExplicitSpace, bool i
                 if (isUnboundedArray)
                 {
                     spaceRegisterIndexes[spaceIndex].isMaxed = true;
-                    spacesArray[spaceIndex] = sSpaces[spacesArray.size() - 1];
+                    spacesArray[spaceIndex] = mSSpaces[spacesArray.size() - 1];
                     spacesArray.pop_back();
                     spacesArray.push_back(maxSpace);
                     maxSpace++;
@@ -1122,7 +1483,7 @@ void TestShaderMaker::getRegisterIndexAndSpace(bool isUsingExplicitSpace, bool i
                 spaceRegisterIndexes[spacesArray[spaceIndex]].nextRegisterIndex++;
             }
 
-        }    
+        }
     }
     else
     {
@@ -1167,7 +1528,7 @@ std::vector<uint32_t> TestShaderMaker::generateRandomizedStages()
         allStagesIndices[selectStage] = allStagesIndices[allStagesIndices.size() - 1];
         allStagesIndices.pop_back();
     }
-    
+
     //  
     return selectedStages;
 }
@@ -1206,7 +1567,7 @@ void TestShaderMaker::distributeConstantBuffers(std::vector<TestShaderWriter::Co
             }
 
             //  
-            TestShaderWriter::ShaderResourcesData * sRD = getShaderResourceData(mShaderTestLayout.stages[selectedStages[stageIndex]]);
+            TestShaderWriter::ShaderResourcesData * sRD = getShaderStageResourceData(mShaderTestLayout.stages[selectedStages[stageIndex]]);
 
             if (sRD)
             {
@@ -1262,7 +1623,7 @@ void TestShaderMaker::distributeStructuredBuffers(std::vector<TestShaderWriter::
             }
 
             //  
-            TestShaderWriter::ShaderResourcesData * sRD = getShaderResourceData(mShaderTestLayout.stages[selectedStages[stageIndex]]);
+            TestShaderWriter::ShaderResourcesData * sRD = getShaderStageResourceData(mShaderTestLayout.stages[selectedStages[stageIndex]]);
 
             if (sRD)
             {
@@ -1304,7 +1665,7 @@ void TestShaderMaker::distributeStructuredBuffers(std::vector<TestShaderWriter::
             }
 
             //  
-            TestShaderWriter::ShaderResourcesData * sRD = getShaderResourceData(mShaderTestLayout.stages[selectedStages[stageIndex]]);
+            TestShaderWriter::ShaderResourcesData * sRD = getShaderStageResourceData(mShaderTestLayout.stages[selectedStages[stageIndex]]);
 
             if (sRD)
             {
@@ -1322,7 +1683,7 @@ void TestShaderMaker::distributeStructuredBuffers(std::vector<TestShaderWriter::
 void TestShaderMaker::distributeSamplers(std::vector<TestShaderWriter::SamplerResource> & samplerResources)
 {
     //  
-    for (uint32_t currentSamplerIndex = 0; currentSamplerIndex  < samplerResources.size(); currentSamplerIndex++)
+    for (uint32_t currentSamplerIndex = 0; currentSamplerIndex < samplerResources.size(); currentSamplerIndex++)
     {
         std::vector<uint32_t> selectedStages = generateRandomizedStages();
 
@@ -1352,7 +1713,7 @@ void TestShaderMaker::distributeSamplers(std::vector<TestShaderWriter::SamplerRe
             }
 
             //  
-            TestShaderWriter::ShaderResourcesData * sRD = getShaderResourceData(mShaderTestLayout.stages[selectedStages[stageIndex]]);
+            TestShaderWriter::ShaderResourcesData * sRD = getShaderStageResourceData(mShaderTestLayout.stages[selectedStages[stageIndex]]);
 
             if (sRD)
             {
@@ -1414,7 +1775,7 @@ void TestShaderMaker::distributeTextures(std::vector<TestShaderWriter::TextureRe
             }
 
             //  
-            TestShaderWriter::ShaderResourcesData * sRD = getShaderResourceData(mShaderTestLayout.stages[selectedStages[stageIndex]]);
+            TestShaderWriter::ShaderResourcesData * sRD = getShaderStageResourceData(mShaderTestLayout.stages[selectedStages[stageIndex]]);
 
             if (sRD)
             {
@@ -1455,7 +1816,7 @@ void TestShaderMaker::distributeTextures(std::vector<TestShaderWriter::TextureRe
             }
 
             //  
-            TestShaderWriter::ShaderResourcesData * sRD = getShaderResourceData(mShaderTestLayout.stages[selectedStages[stageIndex]]);
+            TestShaderWriter::ShaderResourcesData * sRD = getShaderStageResourceData(mShaderTestLayout.stages[selectedStages[stageIndex]]);
 
             if (sRD)
             {
@@ -1500,7 +1861,7 @@ void TestShaderMaker::distributeRawBuffers(std::vector<TestShaderWriter::RawBuff
             }
 
             //  
-            TestShaderWriter::ShaderResourcesData * sRD = getShaderResourceData(mShaderTestLayout.stages[selectedStages[stageIndex]]);
+            TestShaderWriter::ShaderResourcesData * sRD = getShaderStageResourceData(mShaderTestLayout.stages[selectedStages[stageIndex]]);
 
             if (sRD)
             {
@@ -1541,7 +1902,7 @@ void TestShaderMaker::distributeRawBuffers(std::vector<TestShaderWriter::RawBuff
             }
 
             //  
-            TestShaderWriter::ShaderResourcesData * sRD = getShaderResourceData(mShaderTestLayout.stages[selectedStages[stageIndex]]);
+            TestShaderWriter::ShaderResourcesData * sRD = getShaderStageResourceData(mShaderTestLayout.stages[selectedStages[stageIndex]]);
 
             if (sRD)
             {
@@ -1553,7 +1914,7 @@ void TestShaderMaker::distributeRawBuffers(std::vector<TestShaderWriter::RawBuff
 
 
 //  Verify All the Resources.
-bool TestShaderMaker::verifyAllResources(const TestShaderWriter::ShaderResourcesData & rsData, const GraphicsVars::SharedPtr & graphicsProgramVars)
+bool TestShaderMaker::verifyAllResources(const TestShaderWriter::ShaderResourcesData & rsData, const GraphicsVars::SharedPtr & graphicsProgramVars, std::string & errorMessage)
 {
     //  Program Reflection.
     ProgramReflection::SharedConstPtr graphicsReflection = graphicsProgramVars->getReflection();
@@ -1570,13 +1931,17 @@ bool TestShaderMaker::verifyAllResources(const TestShaderWriter::ShaderResources
                 if (firstCurrentCB.second->getRegisterSpace() == secondCurrentCB.second->getRegisterSpace())
                 {
                     //  Need to check for full overlap.
-                    bool overlap = firstCurrentCB.second->getRegisterIndex() == secondCurrentCB.second->getRegisterIndex();
+                    bool overlap = firstCurrentCB.second->getRegisterIndex() == secondCurrentCB.second->getRegisterIndex() && secondCurrentCB.second->getShaderAccess() == firstCurrentCB.second->getShaderAccess();
 
                     if (overlap)
                     {
+                        //  Construct the error messsage.
+                        errorMessage = "Error : " + firstCurrentCB.second->getName() + " conflicts, with ( Index : " + std::to_string(firstCurrentCB.second->getRegisterIndex()) + ", Space : " + std::to_string(firstCurrentCB.second->getRegisterSpace()) + ")  , ";
+                        errorMessage = errorMessage + secondCurrentCB.second->getName() + " ( Index : " + std::to_string(secondCurrentCB.second->getRegisterIndex()) + ", Space : " + std::to_string(secondCurrentCB.second->getRegisterSpace()) + ").";
+
                         return false;
                     }
-                }                
+                }
             }
         }
     }
@@ -1604,12 +1969,25 @@ bool TestShaderMaker::verifyAllResources(const TestShaderWriter::ShaderResources
 
             if (!verify)
             {
+                errorMessage = "Constant Buffer : " + currentCBR.variable + " expected (index, space) does not match with reflection (index, space).";
                 return false;
             }
 
+            //  
+            for (uint32_t i = 0; i < currentCBR.structVariables.size(); i++)
+            {
+                const ProgramReflection::Variable * cV = buffRef->getVariableData(currentCBR.structVariables[i].structVariable);
+
+                if (!cV)
+                {
+                    errorMessage = "Constant Buffer : " + currentCBR.variable + " expected to contain variable : " + currentCBR.structVariables[i].structVariable;
+                    return false;
+                }
+            }
         }
         else
         {
+            errorMessage = "Constant Buffer : " + currentCBR.variable + " is not found in reflection!";
             return false;
         }
     }
@@ -1626,10 +2004,15 @@ bool TestShaderMaker::verifyAllResources(const TestShaderWriter::ShaderResources
                 if (firstCurrentSB.second->getRegisterSpace() == secondCurrentSB.second->getRegisterSpace())
                 {
                     //  Need to check for full overlap.
-                    bool overlap = firstCurrentSB.second->getRegisterIndex() == secondCurrentSB.second->getRegisterIndex();
+                    bool overlap = firstCurrentSB.second->getRegisterIndex() == secondCurrentSB.second->getRegisterIndex() && firstCurrentSB.second->getShaderAccess() == secondCurrentSB.second->getShaderAccess();
 
+                    //  
                     if (overlap)
                     {
+                        //  Construct the error message.
+                        errorMessage = "Error : " + firstCurrentSB.second->getName() + " conflicts, with ( Index : " + std::to_string(firstCurrentSB.second->getRegisterIndex()) + ", Space : " + std::to_string(firstCurrentSB.second->getRegisterSpace()) + ")  , ";
+                        errorMessage = errorMessage + secondCurrentSB.second->getName() + " ( Index : " + std::to_string(secondCurrentSB.second->getRegisterIndex()) + ", Space : " + std::to_string(secondCurrentSB.second->getRegisterSpace()) + ").";
+
                         return false;
                     }
                 }
@@ -1661,12 +2044,29 @@ bool TestShaderMaker::verifyAllResources(const TestShaderWriter::ShaderResources
 
             if (!verify)
             {
+                errorMessage = "Structured Buffer : " + currentSBR.variable + " expected (index, space) does not match with reflection (index, space).";
                 return false;
             }
 
+
+            if (currentSBR.usesExternalStructVariables)
+            {
+                // 
+                for (uint32_t i = 0; i < currentSBR.externalStructVariables.size(); i++)
+                {
+                    const ProgramReflection::Variable * cV = buffRef->getVariableData(currentSBR.externalStructVariables[i].structVariable);
+
+                    if (!cV)
+                    {
+                        errorMessage = "Structured Buffer : " + currentSBR.variable + " expected to contain variable : " + currentSBR.externalStructVariables[i].structVariable;
+                        return false;
+                    }
+                }
+            }
         }
         else
         {
+            errorMessage = "Structured Buffer : " + currentSBR.variable + " is not found in reflection!";
             return false;
         }
     }
@@ -1675,10 +2075,11 @@ bool TestShaderMaker::verifyAllResources(const TestShaderWriter::ShaderResources
     //  Verify the Raw Buffers
     for (const auto & currentRBs : rsData.rbs)
     {
-        bool rbVerify = verifyCommonResourceMatch(currentRBs, ProgramReflection::Resource::ResourceType::RawBuffer, graphicsReflection);
+        bool rbVerify = verifyCommonResourceMatch(currentRBs, ProgramReflection::Resource::ResourceType::RawBuffer, graphicsReflection, errorMessage);
 
         if (!rbVerify)
         {
+            errorMessage = "Error : Failed to verify Texture " + currentRBs.variable;
             return false;
         }
     }
@@ -1687,10 +2088,11 @@ bool TestShaderMaker::verifyAllResources(const TestShaderWriter::ShaderResources
     //  Verify the Samplers.
     for (const auto & currentSampler : rsData.samplers)
     {
-        bool sVerify = verifyCommonResourceMatch(currentSampler, ProgramReflection::Resource::ResourceType::Sampler, graphicsReflection);
+        bool sVerify = verifyCommonResourceMatch(currentSampler, ProgramReflection::Resource::ResourceType::Sampler, graphicsReflection, errorMessage);
 
         if (!sVerify)
         {
+            errorMessage = "Error : Failed to verify Sampler " + currentSampler.variable;
             return false;
         }
     }
@@ -1698,10 +2100,11 @@ bool TestShaderMaker::verifyAllResources(const TestShaderWriter::ShaderResources
     //  Verify the Textures.
     for (const auto & currentTexture : rsData.textures)
     {
-        bool sVerify = verifyCommonResourceMatch(currentTexture, ProgramReflection::Resource::ResourceType::Texture, graphicsReflection);
+        bool sVerify = verifyCommonResourceMatch(currentTexture, ProgramReflection::Resource::ResourceType::Texture, graphicsReflection, errorMessage);
 
         if (!sVerify)
         {
+            errorMessage = "Error : Failed to verify Texture " + currentTexture.variable;
             return false;
         }
     }
@@ -1711,7 +2114,7 @@ bool TestShaderMaker::verifyAllResources(const TestShaderWriter::ShaderResources
 
 
 //  Verify Common Resource.
-bool TestShaderMaker::verifyCommonResourceMatch(const TestShaderWriter::ShaderResource & srData, ProgramReflection::Resource::ResourceType resourceType, ProgramReflection::SharedConstPtr graphicsReflection)
+bool TestShaderMaker::verifyCommonResourceMatch(const TestShaderWriter::ShaderResource & srData, ProgramReflection::Resource::ResourceType resourceType, ProgramReflection::SharedConstPtr graphicsReflection, std::string & errorMessage)
 {
     //  
     const ProgramReflection::Resource * currentResourceRef = graphicsReflection->getResourceDesc(srData.variable);
@@ -1731,7 +2134,12 @@ bool TestShaderMaker::verifyCommonResourceMatch(const TestShaderWriter::ShaderRe
         {
             verify = verify && (currentResourceRef->registerSpace == srData.regSpace);
         }
-    }    
+
+        if (srData.isArray)
+        {
+            verify = verify && (currentResourceRef->arraySize == srData.arrayDimensions[0]);
+        }
+    }
     else
     {
         verify = false;

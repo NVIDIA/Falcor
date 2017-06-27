@@ -1,6 +1,6 @@
 {
     "version" : "DX5.0", 
-    "stages" : "vs/hs/ds/gs/ps", 
+    "stages" : "vs/gs/ps", 
     "random seed" : 203,
 
     "limitVertexShaderTargets" : 5,
@@ -20,5 +20,6 @@
 
     "samplers" : 5,
 
-    "mode" : "invalid"
+    "mode" : "invalid",
+    "invalidResourceType" : "textures"
 }
