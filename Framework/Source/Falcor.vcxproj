@@ -991,6 +991,7 @@
     <None Include="..\Externals\GLM\glm\gtx\vector_query.inl" />
     <None Include="..\Externals\GLM\glm\gtx\wrap.inl" />
     <None Include="Data\DefaultVS.slang" />
+    <None Include="Data\Effects\CascadedShdowMap.slang" />
     <None Include="Data\Effects\GaussianBlur.ps.slang" />
     <None Include="Data\Effects\ParticleConstColor.ps.slang" />
     <None Include="Data\Effects\ParticleEmit.cs.slang" />

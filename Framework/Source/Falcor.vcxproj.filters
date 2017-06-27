@@ -2190,5 +2190,8 @@
     <None Include="Data\HostDeviceData.slang">
       <Filter>Data</Filter>
     </None>
+    <None Include="Data\Effects\CascadedShdowMap.slang">
+      <Filter>Data\Effects</Filter>
+    </None>
   </ItemGroup>
 </Project>

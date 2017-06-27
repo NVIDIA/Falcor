@@ -26,7 +26,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 __import ShaderCommon;
-#include "csmdata.h"
+__import Effects.CascadedShadowMap;
 
 SamplerState alphaSampler : register(s0);
 texture2D alphaMap : register(t0);

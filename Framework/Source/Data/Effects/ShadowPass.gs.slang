@@ -27,7 +27,7 @@
 ***************************************************************************/
 #include "VertexAttrib.h"
 __import ShaderCommon;
-#include "csmdata.h"
+__import Effects.CascadedShadowMap;
 
 cbuffer PerLightCB : register(b0)
 {

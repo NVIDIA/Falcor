@@ -3,7 +3,7 @@ Copyright (c) 2014, NVIDIA CORPORATION.  All rights reserved.
 ***************************************************************************/
 __import DefaultVS;
 __import Shading;
-#include "Effects/CsmData.h"
+__import Effects.CascadedShadowMap;
 
 cbuffer PerFrameCB : register(b0)
 {

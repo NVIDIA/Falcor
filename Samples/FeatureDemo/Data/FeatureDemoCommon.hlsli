@@ -27,7 +27,7 @@
 ***************************************************************************/
 __import ShaderCommon;
 __import DefaultVS;
-#include "Effects/CsmData.h"
+__import Effects.CascadedShadowMap;
 
 cbuffer PerFrameCB : register(b0)
 {
