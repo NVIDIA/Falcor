@@ -310,9 +310,6 @@
     <ClCompile Include="API\D3D\D3D11\D3D11Window.cpp">
       <Filter>API\D3D\D3D11</Filter>
     </ClCompile>
-    <ClCompile Include="API\D3D\D3D12\D3D12ProgramVars.cpp">
-      <Filter>API\D3D\D3D12</Filter>
-    </ClCompile>
     <ClCompile Include="API\D3D\D3D12\D3D12RasterizerState.cpp">
       <Filter>API\D3D\D3D12</Filter>
     </ClCompile>
@@ -463,9 +460,6 @@
       <Filter>Effects\ParticleSystem</Filter>
     </ClCompile>
     <ClCompile Include="API\DescriptorSet.cpp">
-      <Filter>API</Filter>
-    </ClCompile>
-    <ClCompile Include="API\ParameterBlock.cpp">
       <Filter>API</Filter>
     </ClCompile>
     <ClCompile Include="API\LowLevel\DescriptorPool.cpp">
@@ -1662,9 +1656,6 @@
       <Filter>API\Vulkan</Filter>
     </ClInclude>
     <ClInclude Include="API\DescriptorSet.h">
-      <Filter>API</Filter>
-    </ClInclude>
-    <ClInclude Include="API\ParameterBlock.h">
       <Filter>API</Filter>
     </ClInclude>
     <ClInclude Include="API\LowLevel\DescriptorPool.h">

@@ -34,7 +34,7 @@ namespace Falcor
 {
     ID3D12ResourcePtr createBuffer(Buffer::State initState, size_t size, const D3D12_HEAP_PROPERTIES& heapProps, Buffer::BindFlags bindFlags);
     
-    void ResourceAllocator::initPageCommnData(CommonData& data, size_t size)
+    void ResourceAllocator::initCommonPageData(CommonData& data, size_t size)
     {
         data.pResourceHandle = createBuffer(Buffer::State::GenericRead, size, kUploadHeapProps, Buffer::BindFlags::None);
         data.gpuAddress = data.pResourceHandle->GetGPUVirtualAddress();

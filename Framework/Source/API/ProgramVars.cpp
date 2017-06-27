@@ -624,18 +624,18 @@ namespace Falcor
         {
             auto& resDesc = resIt.second;
             auto& rootData = resDesc.rootData;
-            const Resource* pResource = resDesc.pResource.get();
+            Resource* pResource = resDesc.pResource.get();
 
             ViewType::ApiHandle handle;
             if (pResource)
             {
                 // If it's a typed buffer, upload it to the GPU
-                const TypedBufferBase* pTypedBuffer = dynamic_cast<const TypedBufferBase*>(pResource);
+                TypedBufferBase* pTypedBuffer = dynamic_cast<TypedBufferBase*>(pResource);
                 if (pTypedBuffer)
                 {
                     pTypedBuffer->uploadToGPU();
                 }
-                const StructuredBuffer* pStructured = dynamic_cast<const StructuredBuffer*>(pResource);
+                StructuredBuffer* pStructured = dynamic_cast<StructuredBuffer*>(pResource);
                 if (pStructured)
                 {
                     pStructured->uploadToGPU();
@@ -703,7 +703,7 @@ namespace Falcor
         {
             uint32_t rootIndex = bufIt.second.rootData.rootIndex;
             assert(bufIt.second.rootData.descIndex == 0);
-            const ConstantBuffer* pCB = dynamic_cast<const ConstantBuffer*>(bufIt.second.pResource.get());
+            ConstantBuffer* pCB = dynamic_cast<ConstantBuffer*>(bufIt.second.pResource.get());
             if (pCB->uploadToGPU() || bindRootSig)
             {
                 if (forGraphics)

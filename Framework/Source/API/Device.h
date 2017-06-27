@@ -160,10 +160,7 @@ namespace Falcor
         std::queue<ResourceRelease> mDeferredReleases;
 
         uint32_t mCurrentBackBufferIndex;
-        struct
-        {
-            Fbo::SharedPtr pFbo;
-        } mFrameData[kSwapChainBuffers];
+        Fbo::SharedPtr mpSwapChainFbos[kSwapChainBuffers];
 
         Device(Window::SharedPtr pWindow) : mpWindow(pWindow) {}
         bool init(const Desc& desc);

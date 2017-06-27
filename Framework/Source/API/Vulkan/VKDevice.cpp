@@ -88,11 +88,10 @@ namespace Falcor
     {
         uint32_t imageCount = 0;
         vkGetSwapchainImagesKHR(mpApiData->device, mpApiData->swapchain, &imageCount, nullptr);
-        assert(imageCount == kSwapChainBuffers);
+        assert(imageCount == apiHandles.size());
 
         std::vector<VkImage> swapchainImages(imageCount);
         vkGetSwapchainImagesKHR(mpApiData->device, mpApiData->swapchain, &imageCount, swapchainImages.data());
-        apiHandles.resize(swapchainImages.size());
         for (size_t i = 0; i < swapchainImages.size(); i++)
         {
             apiHandles[i] = swapchainImages[i];

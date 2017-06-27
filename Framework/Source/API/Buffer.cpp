@@ -32,18 +32,26 @@
 namespace Falcor
 {
     size_t getBufferDataAlignment(const Buffer* pBuffer);
-    void bindBufferMemory(Buffer::ApiHandle& apiHandle, const ResourceAllocator::AllocationData& allocationData);
     void* mapBufferApi(const Buffer::ApiHandle& apiHandle, size_t size);
 
     Buffer::SharedPtr Buffer::create(size_t size, BindFlags usage, CpuAccess cpuAccess, const void* pInitData)
     {
         Buffer::SharedPtr pBuffer = SharedPtr(new Buffer(size, usage, cpuAccess));
-        if (pBuffer->apiInit())
+        if (pBuffer->apiInit(pInitData != nullptr))
         {
             if (pInitData) pBuffer->updateData(pInitData, 0, size);
             return pBuffer;
         }
         else return nullptr;
+    }
+
+    Buffer::~Buffer()
+    {
+        if (mCpuAccess == CpuAccess::Write)
+        {
+            gpDevice->getResourceAllocator()->release(mDynamicData);
+        }
+        gpDevice->releaseResource(mApiHandle);
     }
 
     void Buffer::updateData(const void* pData, size_t offset, size_t size)
