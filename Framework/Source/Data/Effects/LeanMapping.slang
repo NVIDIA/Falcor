@@ -25,8 +25,6 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#ifndef LEAN_MAP_DATA_H
-#define LEAN_MAP_DATA_H
 
 #include "Data/HostDeviceData.h"
 
@@ -58,5 +56,3 @@ void applyLeanMap(in Texture2D leanMap, in SamplerState samplerState, inout Shad
         }
     }
 }
-
-#endif

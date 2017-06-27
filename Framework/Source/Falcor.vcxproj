@@ -771,7 +771,6 @@
     <ClInclude Include="API\Window.h" />
     <ClInclude Include="ArgList.h" />
     <ClInclude Include="Data\Effects\CsmData.h" />
-    <ClInclude Include="Data\Effects\LeanMapData.slang.h" />
     <ClInclude Include="Data\Effects\ParticleData.h" />
     <ClInclude Include="Data\Effects\SSAOData.h" />
     <ClInclude Include="Data\Framework\Shaders\SceneEditorCommon.slang.h" />
@@ -993,6 +992,7 @@
     <None Include="Data\DefaultVS.slang" />
     <None Include="Data\Effects\CascadedShdowMap.slang" />
     <None Include="Data\Effects\GaussianBlur.ps.slang" />
+    <None Include="Data\Effects\LeanMapping.slang" />
     <None Include="Data\Effects\ParticleConstColor.ps.slang" />
     <None Include="Data\Effects\ParticleEmit.cs.slang" />
     <None Include="Data\Effects\ParticleInterpColor.ps.slang" />

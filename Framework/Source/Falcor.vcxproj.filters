@@ -1571,9 +1571,6 @@
     <ClInclude Include="Data\Effects\CsmData.h">
       <Filter>Data\Effects</Filter>
     </ClInclude>
-    <ClInclude Include="Data\Effects\LeanMapData.slang.h">
-      <Filter>Data\Effects</Filter>
-    </ClInclude>
     <ClInclude Include="Data\Effects\SSAOData.h">
       <Filter>Data\Effects</Filter>
     </ClInclude>
@@ -2191,6 +2188,9 @@
       <Filter>Data</Filter>
     </None>
     <None Include="Data\Effects\CascadedShdowMap.slang">
+      <Filter>Data\Effects</Filter>
+    </None>
+    <None Include="Data\Effects\LeanMapping.slang">
       <Filter>Data\Effects</Filter>
     </None>
   </ItemGroup>

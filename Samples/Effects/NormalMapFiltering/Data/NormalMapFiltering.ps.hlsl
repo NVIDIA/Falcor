@@ -28,7 +28,7 @@
 __import ShaderCommon;
 __import Shading;
 __import DefaultVS;
-#include "Effects/LeanMapData.slang.h"
+__import Effects.LeanMapping;
 
 cbuffer PerFrameCB : register(b0)
 {
