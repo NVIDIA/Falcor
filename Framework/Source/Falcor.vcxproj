@@ -41,6 +41,7 @@
     <ClCompile Include="..\Externals\GLM\glm\detail\dummy.cpp" />
     <ClCompile Include="..\Externals\GLM\glm\detail\glm.cpp" />
     <ClCompile Include="API\BlendState.cpp" />
+    <ClCompile Include="API\Buffer.cpp" />
     <ClCompile Include="API\ComputeContext.cpp" />
     <ClCompile Include="API\ComputeStateObject.cpp" />
     <ClCompile Include="API\CopyContext.cpp" />
@@ -368,6 +369,7 @@
     <ClCompile Include="API\FBO.cpp" />
     <ClCompile Include="API\Formats.cpp" />
     <ClCompile Include="API\LowLevel\DescriptorPool.cpp" />
+    <ClCompile Include="API\LowLevel\ResourceAllocator.cpp" />
     <ClCompile Include="API\LowLevel\RootSignature.cpp" />
     <ClCompile Include="API\OpenGL\GLBlendState.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseD3D11|x64'">true</ExcludedFromBuild>

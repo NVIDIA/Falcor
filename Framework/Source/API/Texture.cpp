@@ -48,7 +48,7 @@ namespace Falcor
     {
         bindFlags = updateBindFlags(bindFlags, pData != nullptr, mipLevels);
         Texture::SharedPtr pTexture = SharedPtr(new Texture(width, 1, 1, arraySize, mipLevels, 1, format, Type::Texture1D, bindFlags));
-        pTexture->initResource(pData, (mipLevels == kMaxPossible));
+        pTexture->apinit(pData, (mipLevels == kMaxPossible));
         return pTexture->mApiHandle ? pTexture : nullptr;
     }
 
@@ -56,7 +56,7 @@ namespace Falcor
     {
         bindFlags = updateBindFlags(bindFlags, pData != nullptr, mipLevels);
         Texture::SharedPtr pTexture = SharedPtr(new Texture(width, height, 1, arraySize, mipLevels, 1, format, Type::Texture2D, bindFlags));
-        pTexture->initResource(pData, (mipLevels == kMaxPossible));
+        pTexture->apinit(pData, (mipLevels == kMaxPossible));
         return pTexture->mApiHandle ? pTexture : nullptr;
     }
 
@@ -64,7 +64,7 @@ namespace Falcor
     {
         bindFlags = updateBindFlags(bindFlags, pData != nullptr, mipLevels);
         Texture::SharedPtr pTexture = SharedPtr(new Texture(width, height, depth, 1, mipLevels, 1, format, Type::Texture3D, bindFlags));
-        pTexture->initResource(pData, (mipLevels == kMaxPossible));
+        pTexture->apinit(pData, (mipLevels == kMaxPossible));
         return pTexture->mApiHandle ? pTexture : nullptr;
     }
 
@@ -73,14 +73,14 @@ namespace Falcor
     {
         bindFlags = updateBindFlags(bindFlags, pData != nullptr, mipLevels);
         Texture::SharedPtr pTexture = SharedPtr(new Texture(width, height, 1, arraySize, mipLevels, 1, format, Type::TextureCube, bindFlags));
-        pTexture->initResource(pData, (mipLevels == kMaxPossible));
+        pTexture->apinit(pData, (mipLevels == kMaxPossible));
         return pTexture->mApiHandle ? pTexture : nullptr;
     }
 
     Texture::SharedPtr Texture::create2DMS(uint32_t width, uint32_t height, ResourceFormat format, uint32_t sampleCount, uint32_t arraySize, BindFlags bindFlags)
     {
         Texture::SharedPtr pTexture = SharedPtr(new Texture(width, height, 1, arraySize, 1, sampleCount, format, Type::Texture2DMultisample, bindFlags));
-        pTexture->initResource(nullptr, false);
+        pTexture->apinit(nullptr, false);
         return pTexture->mApiHandle ? pTexture : nullptr;
     }
 
@@ -94,8 +94,6 @@ namespace Falcor
             _BitScanReverse(&bits, dims);
             mMipLevels = (uint32_t)bits + 1;
         }
-
-        apiInit();
     }
 
     uint32_t Texture::getDataSize() const
@@ -113,5 +111,54 @@ namespace Falcor
         uint32_t subresource = getSubresourceIndex(arraySlice, mipLevel);
         std::vector<uint8> textureData = gpDevice->getRenderContext()->readTextureSubresource(this, subresource);
         Bitmap::saveImage(filename, getWidth(mipLevel), getHeight(mipLevel), format, exportFlags, getFormat(), true, textureData.data());
+    }
+
+    void Texture::uploadInitData(const void* pData, bool autoGenMips)
+    {
+        auto& pRenderContext = gpDevice->getRenderContext();
+        if (autoGenMips)
+        {
+            // Upload just the first mip-level
+            size_t arraySliceSize = mWidth * mHeight * getFormatBytesPerBlock(mFormat);
+            const uint8_t* pSrc = (uint8_t*)pData;
+            uint32_t numFaces = (mType == Texture::Type::TextureCube) ? 6 : 1;
+            for (uint32_t i = 0; i < mArraySize * numFaces; i++)
+            {
+                uint32_t subresource = getSubresourceIndex(i, 0);
+                pRenderContext->updateTextureSubresource(this, subresource, pSrc);
+                pSrc += arraySliceSize;
+            }
+        }
+        else
+        {
+            pRenderContext->updateTexture(this, pData);
+        }
+
+        if (autoGenMips)
+        {
+            generateMips();
+            invalidateViews();
+        }
+    }
+
+    void Texture::generateMips() const
+    {
+        if (mType != Type::Texture2D)
+        {
+            logWarning("Texture::generateMips() was only tested with Texture2Ds");
+        }
+
+        RenderContext* pContext = gpDevice->getRenderContext().get();
+
+        for (uint32_t i = 0; i < mMipLevels - 1; i++)
+        {
+            auto srv = getSRV(i, 1, 0, mArraySize);
+            auto rtv = getRTV(i + 1, 0, mArraySize);
+            pContext->blit(srv, rtv);
+        }
+
+        logInfo("Releasing RTVs after Texture::generateMips() to save space in the descriptor-pool");
+        mRtvs.clear();
+        pContext->flush(true); // This shouldn't be here. GitLab issue #69
     }
 }

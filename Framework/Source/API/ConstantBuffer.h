@@ -168,7 +168,7 @@ namespace Falcor
             return VariablesBuffer::setTexture(Offset, pTexture, pSampler);
         }
 
-        virtual bool uploadToGPU(size_t offset = 0, size_t size = -1) const override;
+        virtual bool uploadToGPU(size_t offset = 0, size_t size = -1) override;
 
         ConstantBufferView::SharedPtr getCbv();
     protected:

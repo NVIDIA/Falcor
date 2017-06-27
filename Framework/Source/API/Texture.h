@@ -36,8 +36,6 @@ namespace Falcor
     class Sampler;
     class Device;
 
-    struct TextureApiData;
-
     /** Abstracts the API texture objects
     */
     class Texture : public Resource, public inherit_shared_from_this<Resource, Texture>
@@ -217,12 +215,8 @@ namespace Falcor
 
     protected:
         friend class Device;
-        TextureApiData* mpApiData = nullptr;
-
-        void apiInit();
-
-        // Can't create resource in apiInit because shared_from_this can be called in constructor when generating mips
-        void initResource(const void* pData, bool autoGenMips);
+        void apinit(const void* pData, bool autoGenMips);
+        void uploadInitData(const void* pData, bool autoGenMips);
 
         static RtvHandle spNullRTV;
         static DsvHandle spNullDSV;

@@ -127,7 +127,7 @@ namespace Falcor
         mpApiData = new TextureApiData();
     }
 
-    void Texture::initResource(const void* pData, bool autoGenMips)
+    void Texture::apinit(const void* pData, bool autoGenMips)
     {
         D3D12_RESOURCE_DESC desc = {};
 
@@ -166,30 +166,7 @@ namespace Falcor
 
         if (pData)
         {
-            auto& pRenderContext = gpDevice->getRenderContext();
-            if (autoGenMips)
-            {
-                // Upload just the first mip-level
-                size_t arraySliceSize = mWidth * mHeight * getFormatBytesPerBlock(mFormat);
-                const uint8_t* pSrc = (uint8_t*)pData;
-                uint32_t numFaces = (mType == Texture::Type::TextureCube) ? 6 : 1;
-                for (uint32_t i = 0; i < mArraySize * numFaces; i++)
-                {
-                    uint32_t subresource = getSubresourceIndex(i, 0);
-                    pRenderContext->updateTextureSubresource(this, subresource, pSrc);
-                    pSrc += arraySliceSize;
-                }
-            }
-            else
-            {
-                pRenderContext->updateTexture(this, pData);
-            }
-
-            if (autoGenMips)
-            {
-                generateMips();
-                invalidateViews();
-            }
+            uploadInitData(pData, autoGenMips);
         }
     }
 
@@ -219,71 +196,5 @@ namespace Falcor
     void Texture::compress2DTexture()
     {
         UNSUPPORTED_IN_D3D12("Texture::compress2DTexture");
-    }
-
-    void Texture::generateMips() const
-    {
-        if (mType != Type::Texture2D)
-        {
-            logWarning("Texture::generateMips() only supports 2D textures");
-            return;
-        }
-
-        if (mpApiData->spGenMips == nullptr)
-        {
-            mpApiData->spGenMips = std::make_unique<GenMipsData>();
-            mpApiData->spGenMips->pFullScreenPass = FullScreenPass::create("Framework/Shaders/Blit.ps.hlsl");
-            mpApiData->spGenMips->pVars = GraphicsVars::create(mpApiData->spGenMips->pFullScreenPass->getProgram()->getActiveVersion()->getReflector());
-            mpApiData->spGenMips->pState = GraphicsState::create();
-            Sampler::Desc desc;
-            desc.setFilterMode(Sampler::Filter::Linear, Sampler::Filter::Linear, Sampler::Filter::Point).setAddressingMode(Sampler::AddressMode::Clamp, Sampler::AddressMode::Clamp, Sampler::AddressMode::Clamp);
-            mpApiData->spGenMips->pVars->setSampler("gSampler", Sampler::create(desc));
-        }
-
-        RenderContext* pContext = gpDevice->getRenderContext().get();
-        pContext->pushGraphicsState(mpApiData->spGenMips->pState);
-        pContext->pushGraphicsVars(mpApiData->spGenMips->pVars);
-
-        if(mpApiData->pGenMipsFbo == nullptr)
-        {
-            mpApiData->pGenMipsFbo = Fbo::create();
-            mpApiData->spGenMips->pState->setFbo(mpApiData->pGenMipsFbo);
-        }
-        //sometimes on reload, the fbo exists, but the actual texture in its color target is null
-        else if (mpApiData->spGenMips->pState->getFbo()->getColorTexture(0) == nullptr)
-        {
-            mpApiData->spGenMips->pState->setFbo(mpApiData->pGenMipsFbo);
-        }
-
-        for (uint32_t i = 0; i < mMipLevels - 1; i++)
-        {
-            // Create an FBO for the next mip level
-            SharedPtr pNonConst = const_cast<Texture*>(this)->shared_from_this();
-            mpApiData->pGenMipsFbo->attachColorTarget(pNonConst, 0, i + 1, 0);
-
-            const float width = (float)mpApiData->pGenMipsFbo->getWidth();
-            const float height = (float)mpApiData->pGenMipsFbo->getHeight();
-            mpApiData->spGenMips->pState->setViewport(0, GraphicsState::Viewport(0.0f, 0.0f, width, height, 0.0f, 1.0f));
-
-            // Create the resource view
-            mpApiData->spGenMips->pVars->setSrv(0, pNonConst->getSRV(i, 1, 0, mArraySize));
-
-            // Run the program
-            mpApiData->spGenMips->pFullScreenPass->execute(pContext);
-        }
-
-        pContext->popGraphicsState();
-        pContext->popGraphicsVars();
-
-        logInfo("Releasing RTVs after Texture::generateMips()");
-        mRtvs.clear();
-
-        // Detach from circular reference (this -> this->pFbo -> this -> ...)
-        mpApiData->pGenMipsFbo->attachColorTarget(nullptr, 0);
-
-        // Detach from shared static state so it doesn't keep our resource alive
-        mpApiData->spGenMips->pVars->setSrv(0, nullptr);
-
-        pContext->flush(true); // This shouldn't be here. GitLab issue #69
     }
 }

@@ -87,6 +87,8 @@ namespace Falcor
 
         void setDeviceMem(VkDeviceMemory deviceMem) { mDeviceMem = deviceMem; }
 
+        VkDeviceMemory getDeviceMem() const { return mDeviceMem; }
+
         VkResource& operator=(const VkResource& rhs) = default;
 
         void Release()
@@ -104,8 +106,9 @@ namespace Falcor
             }
             vkFreeMemory(gpDevice->getApiHandle(), mDeviceMem, nullptr);
         }
-    private:
 
+        operator bool() const { return mDeviceMem != VK_NULL_HANDLE; }
+    private:
         VkDeviceMemory mDeviceMem;
         VkResourceType mType = VkResourceType::None;
         ImageType mImage = VK_NULL_HANDLE;

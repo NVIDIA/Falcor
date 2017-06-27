@@ -38,9 +38,9 @@ namespace Falcor
         using SharedPtr = std::shared_ptr<TypedBufferBase>;
         using SharedConstPtr = std::shared_ptr<const TypedBufferBase>;
 
-        bool uploadToGPU() const;
+        bool uploadToGPU();
         uint32_t getElementCount() const { return mElementCount; }
-        void setGpuCopyDirty() const { mGpuDirty = true; }
+        void setGpuCopyDirty() { mGpuDirty = true; }
         ResourceFormat getResourceFormat() const { return mFormat; }
     protected:
         TypedBufferBase(uint32_t elementCount, ResourceFormat format, Resource::BindFlags bindFlags);
@@ -48,8 +48,8 @@ namespace Falcor
         uint32_t mElementCount = 0;
         std::vector<uint8_t> mData;
         mutable ShaderResourceView::SharedPtr mpSrv;
-        mutable bool mCpuDirty = false;
-        mutable bool mGpuDirty = false;
+        bool mCpuDirty = false;
+        bool mGpuDirty = false;
         ResourceFormat mFormat;
     };
 

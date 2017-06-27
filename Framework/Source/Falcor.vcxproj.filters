@@ -555,6 +555,10 @@
     <ClCompile Include="API\Device.cpp" />
     <ClCompile Include="API\CopyContext.cpp" />
     <ClCompile Include="API\ComputeContext.cpp" />
+    <ClCompile Include="API\Buffer.cpp">
+      <Filter>API</Filter>
+    </ClCompile>
+    <ClCompile Include="API\LowLevel\ResourceAllocator.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Graphics\Model\Animation.h">
