@@ -96,17 +96,8 @@ namespace Falcor
 
         return apiHandle;
     }
-
-    Buffer::~Buffer()
-    {
-        if(mCpuAccess == CpuAccess::Write)
-        {
-            gpDevice->getResourceAllocator()->release(mDynamicData);
-        }
-        gpDevice->releaseResource(mApiHandle.getBuffer());
-    }
     
-    bool Buffer::apiInit()
+    bool Buffer::apiInit(bool hasInitData)
     {
         // Allocate the backing memory
         if (mCpuAccess == CpuAccess::Write)

@@ -136,7 +136,7 @@ namespace Falcor
         CpuAccess getCpuAccess() const { return mCpuAccess; }
 
     protected:
-        bool apiInit();
+        bool apiInit(bool hasInitData);
         Buffer(size_t size, BindFlags bind, CpuAccess update) : Resource(Type::Buffer, bind), mSize(size), mCpuAccess(update){}
 
         size_t mSize = 0;

@@ -83,7 +83,7 @@ namespace Falcor
     VariablesBuffer::VariablesBuffer(const ProgramReflection::BufferReflection::SharedConstPtr& pReflector, size_t elementSize, size_t elementCount, BindFlags bindFlags, CpuAccess cpuAccess) :
         mpReflector(pReflector), Buffer(elementSize * elementCount, bindFlags, cpuAccess), mElementCount(elementCount), mElementSize(elementSize)
     {
-        Buffer::apiInit();
+        Buffer::apiInit(false);
         mData.assign(mSize, 0);
     }
 

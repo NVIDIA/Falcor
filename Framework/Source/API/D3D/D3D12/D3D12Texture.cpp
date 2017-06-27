@@ -122,11 +122,6 @@ namespace Falcor
         }
     }
 
-    void Texture::apiInit()
-    {
-        mpApiData = new TextureApiData();
-    }
-
     void Texture::apinit(const void* pData, bool autoGenMips)
     {
         D3D12_RESOURCE_DESC desc = {};
@@ -172,7 +167,6 @@ namespace Falcor
 
     Texture::~Texture()
     {
-        safe_delete(mpApiData);
         gpDevice->releaseResource(mApiHandle);
     }
 

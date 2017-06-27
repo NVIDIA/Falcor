@@ -35,15 +35,6 @@
 
 namespace Falcor
 {
-    CopyContext::~CopyContext() = default;
-
-    CopyContext::SharedPtr CopyContext::create(CommandQueueHandle queue)
-    {
-        SharedPtr pCtx = SharedPtr(new CopyContext());
-        pCtx->mpLowLevelData = LowLevelContextData::create(LowLevelContextData::CommandQueueType::Copy, queue);
-        return pCtx->mpLowLevelData ? pCtx : nullptr;
-    }
-
     void CopyContext::bindDescriptorHeaps()
     {
         const DescriptorPool* pGpuPool = gpDevice->getGpuDescriptorPool().get();
@@ -60,14 +51,7 @@ namespace Falcor
         }
         mpLowLevelData->getCommandList()->SetDescriptorHeaps(heapCount, pHeaps);
     }
-
-    void CopyContext::reset()
-    {
-        flush();
-        mpLowLevelData->reset();
-        bindDescriptorHeaps();
-    }
-
+    
     void copySubresourceData(const D3D12_SUBRESOURCE_DATA& srcData, const D3D12_PLACED_SUBRESOURCE_FOOTPRINT& dstFootprint, uint8_t* pDstStart, uint64_t rowSize, uint64_t rowsToCopy)
     {
         const uint8_t* pSrc = (uint8_t*)srcData.pData;
@@ -87,22 +71,7 @@ namespace Falcor
             }
         }
     }
-
-    void CopyContext::flush(bool wait)
-    {
-        if (mCommandsPending)
-        {
-            mpLowLevelData->flush();
-            mCommandsPending = false;
-            bindDescriptorHeaps();
-        }
-
-        if (wait)
-        {
-            mpLowLevelData->getFence()->syncCpu();
-        }
-    }
-
+    
     void CopyContext::updateBuffer(const Buffer* pBuffer, const void* pData, size_t offset, size_t size)
     {
         if (size == 0)
@@ -229,18 +198,7 @@ namespace Falcor
         pBuffer->unmap();
         return result;
     }
-
-    void CopyContext::updateTexture(const Texture* pTexture, const void* pData)
-    {
-        mCommandsPending = true;
-        uint32_t subresourceCount = pTexture->getArraySize() * pTexture->getMipCount();
-        if (pTexture->getType() == Texture::Type::TextureCube)
-        {
-            subresourceCount *= 6;
-        }
-        updateTextureSubresources(pTexture, 0, subresourceCount, pData);
-    }
-
+    
     void CopyContext::resourceBarrier(const Resource* pResource, Resource::State newState)
     {
         // If the resource is a buffer with CPU access, no need to do anything

@@ -50,13 +50,11 @@ namespace Falcor
 
     bool Device::init(const Desc& desc)
     {
+        const uint32_t kDirectQueueIndex = (uint32_t)LowLevelContextData::CommandQueueType::Direct;
+        assert(desc.cmdQueues[kDirectQueueIndex] > 0);
         if (apiInit(desc) == false) return false;
 
-        const uint32_t kDirectQueueIndex = (uint32_t)LowLevelContextData::CommandQueueType::Direct;
-        if(mCmdQueues[kDirectQueueIndex].size())
-        {
-            mpRenderContext = RenderContext::create(mCmdQueues[kDirectQueueIndex][0]);
-        }
+        mpRenderContext = RenderContext::create(mCmdQueues[kDirectQueueIndex][0]);
 
         // Create the descriptor pools
         DescriptorPool::Desc poolDesc;
@@ -76,23 +74,24 @@ namespace Falcor
             return false;
         }
 
+        mpFrameFence = GpuFence::create();
+
         // Update the FBOs
         if (updateDefaultFBO(mpWindow->getClientAreaWidth(), mpWindow->getClientAreaHeight(), desc.colorFormat, desc.depthFormat) == false)
         {
             return false;
         }
 
-        mpFrameFence = GpuFence::create();
         return true;
     }
 
     void Device::releaseFboData()
     {
         // First, delete all FBOs
-        for (uint32_t i = 0; i < arraysize(mFrameData); i++)
+        for (uint32_t i = 0; i < arraysize(mpSwapChainFbos); i++)
         {
-            mFrameData[i].pFbo->attachColorTarget(nullptr, 0);
-            mFrameData[i].pFbo->attachDepthStencilTarget(nullptr);
+            mpSwapChainFbos[i]->attachColorTarget(nullptr, 0);
+            mpSwapChainFbos[i]->attachDepthStencilTarget(nullptr);
         }
 
         // Now execute all deferred releases
@@ -101,7 +100,7 @@ namespace Falcor
 
     bool Device::updateDefaultFBO(uint32_t width, uint32_t height, ResourceFormat colorFormat, ResourceFormat depthFormat)
     {
-        std::vector<ResourceHandle> apiHandles;
+        std::vector<ResourceHandle> apiHandles(kSwapChainBuffers);
         getApiFboData(width, height, colorFormat, depthFormat, apiHandles, mCurrentBackBufferIndex);
 
         for (uint32_t i = 0; i < kSwapChainBuffers; i++)
@@ -111,18 +110,18 @@ namespace Falcor
             pColorTex->mApiHandle = apiHandles[i];
 
             // Create the FBO if it's required
-            if (mFrameData[i].pFbo == nullptr)
+            if (mpSwapChainFbos[i] == nullptr)
             {
-                mFrameData[i].pFbo = Fbo::create();
+                mpSwapChainFbos[i] = Fbo::create();
             }
 
-            mFrameData[i].pFbo->attachColorTarget(pColorTex, 0);
+            mpSwapChainFbos[i]->attachColorTarget(pColorTex, 0);
 
             // Create a depth texture
             if (depthFormat != ResourceFormat::Unknown)
             {
                 auto pDepth = Texture::create2D(width, height, depthFormat, 1, 1, nullptr, Texture::BindFlags::DepthStencil);
-                mFrameData[i].pFbo->attachDepthStencilTarget(pDepth);
+                mpSwapChainFbos[i]->attachDepthStencilTarget(pDepth);
             }
         }
         return true;
@@ -130,7 +129,7 @@ namespace Falcor
 
     Fbo::SharedPtr Device::getSwapChainFbo() const
     {
-        return mFrameData[mCurrentBackBufferIndex].pFbo;
+        return mpSwapChainFbos[mCurrentBackBufferIndex];
     }
 
     void Device::releaseResource(ApiObjectHandle pResource)
@@ -165,9 +164,15 @@ namespace Falcor
         mpRenderContext->setGraphicsVars(nullptr);
         mpRenderContext->setComputeState(nullptr);
         mpRenderContext->setComputeVars(nullptr);
-        //releaseFboData(pData);
+
+        for (uint32_t i = 0; i < arraysize(mCmdQueues); i++) mCmdQueues[i].clear();
+        for (uint32_t i = 0; i < arraysize(mpSwapChainFbos); i++) mpSwapChainFbos[i].reset();
+
         mpRenderContext.reset();
         mpResourceAllocator.reset();
+        mpCpuDescPool.reset();
+        mpGpuDescPool.reset();
+        mpFrameFence.reset();
 
         destroyApiObjects();
         mpWindow.reset();
@@ -175,7 +180,7 @@ namespace Falcor
 
     void Device::present()
     {
-        mpRenderContext->resourceBarrier(mFrameData[mCurrentBackBufferIndex].pFbo->getColorTexture(0).get(), Resource::State::Present);
+        mpRenderContext->resourceBarrier(mpSwapChainFbos[mCurrentBackBufferIndex]->getColorTexture(0).get(), Resource::State::Present);
         mpRenderContext->flush();
         apiPresent();
         executeDeferredReleases();

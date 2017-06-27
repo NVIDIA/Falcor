@@ -32,30 +32,11 @@
 
 namespace Falcor
 {
-    Device::SharedPtr gpDevice;
-
     struct DeviceApiData
     {
+        IDXGIFactory4Ptr pDxgiFactory = nullptr;
         IDXGISwapChain3Ptr pSwapChain = nullptr;
-        uint32_t currentBackBufferIndex;
-
-        struct ResourceRelease
-        {
-            size_t frameID;
-            ApiObjectHandle pApiObject;
-        };
-
-        struct
-        {
-            Fbo::SharedPtr pFbo;
-        } frameData[kSwapChainBuffers];
-
-        std::queue<ResourceRelease> deferredReleases;
-        uint32_t syncInterval = 0;
         bool isWindowOccluded = false;
-        GpuFence::SharedPtr pFrameFence;
-
-        std::vector<ID3D12CommandQueuePtr> queues[(uint32_t)LowLevelContextData::CommandQueueType::Count];
     };
 
     void d3dTraceHR(const std::string& msg, HRESULT hr)
@@ -114,7 +95,7 @@ namespace Falcor
         return (D3D_FEATURE_LEVEL)0;
     }
 
-    IDXGISwapChain3Ptr createSwapChain(IDXGIFactory4* pFactory, const Window* pWindow, ID3D12CommandQueue* pCommandQueue, ResourceFormat colorFormat)
+    IDXGISwapChain3Ptr createDxgiSwapChain(IDXGIFactory4* pFactory, const Window* pWindow, ID3D12CommandQueue* pCommandQueue, ResourceFormat colorFormat)
     {
         DXGI_SWAP_CHAIN_DESC1 swapChainDesc = {};
         swapChainDesc.BufferCount = kSwapChainBuffers;
@@ -179,7 +160,7 @@ namespace Falcor
     CommandQueueHandle Device::getCommandQueueHandle(LowLevelContextData::CommandQueueType type, uint32_t index) const
     {
         DeviceApiData* pData = (DeviceApiData*)mpApiData;
-        return pData->queues[(uint32_t)type][index];
+        return mCmdQueues[(uint32_t)type][index];
     }
 
     ApiCommandQueueType Device::getApiCommandQueueType(LowLevelContextData::CommandQueueType type) const
@@ -198,10 +179,9 @@ namespace Falcor
         }
     }
 
-    bool Device::updateDefaultFBO(uint32_t width, uint32_t height, ResourceFormat colorFormat, ResourceFormat depthFormat)
+    bool Device::getApiFboData(uint32_t width, uint32_t height, ResourceFormat colorFormat, ResourceFormat depthFormat, std::vector<ResourceHandle>& apiHandles, uint32_t& currentBackBufferIndex)
     {
         DeviceApiData* pData = (DeviceApiData*)mpApiData;
-        std::vector<ResourceHandle> apiHandles;
         for (uint32_t i = 0; i < kSwapChainBuffers; i++)
         {
             HRESULT hr = pData->pSwapChain->GetBuffer(i, IID_PPV_ARGS(&apiHandles[i]));
@@ -211,55 +191,24 @@ namespace Falcor
                 return false;
             }
         }
-
-        return initDefaultFboCommon(width, height, colorFormat, depthFormat, apiHandles, pData->pSwapChain->GetCurrentBackBufferIndex());
+        currentBackBufferIndex = pData->pSwapChain->GetCurrentBackBufferIndex();
+        return true;
     }
 
-    void Device::cleanup()
+    void Device::destroyApiObjects()
     {
-        mpRenderContext->flush(true);
-        // Release all the bound resources. Need to do that before deleting the RenderContext
-        mpRenderContext->setGraphicsState(nullptr);
-        mpRenderContext->setGraphicsVars(nullptr);
-        mpRenderContext->setComputeState(nullptr);
-        mpRenderContext->setComputeVars(nullptr);
-        DeviceApiData* pData = (DeviceApiData*)mpApiData;
-        releaseFboData(pData);
-        mpRenderContext.reset();
-        mpResourceAllocator.reset();
-        safe_delete(pData);
+        safe_delete(mpApiData);
         mpWindow.reset();
-    }
-
-    Device::SharedPtr Device::create(Window::SharedPtr& pWindow, const Device::Desc& desc)
-    {
-        if(gpDevice)
-        {
-            logError("D3D12 backend only supports a single device");
-            return false;
-        }
-        gpDevice = SharedPtr(new Device(pWindow));
-        if(gpDevice->init(desc) == false)
-        {
-            gpDevice = nullptr;
-        }
-        return gpDevice;
-    }
-
-    Fbo::SharedPtr Device::getSwapChainFbo() const
-    {
-        DeviceApiData* pData = (DeviceApiData*)mpApiData;
-        return pData->frameData[pData->currentBackBufferIndex].pFbo;
     }
 
     void Device::apiPresent()
     {
         DeviceApiData* pData = (DeviceApiData*)mpApiData;
-        pData->pSwapChain->Present(pData->syncInterval, 0);
-        mCurrentBackBufferIndex = (pData->currentBackBufferIndex + 1) % kSwapChainBuffers;
+        pData->pSwapChain->Present(mVsyncOn ? 1 : 0, 0);
+        mCurrentBackBufferIndex = (mCurrentBackBufferIndex + 1) % kSwapChainBuffers;
     }
 
-    bool Device::init(const Desc& desc)
+    bool Device::apiInit(const Desc& desc)
     {
         DeviceApiData* pData = new DeviceApiData;
         mpApiData = pData;
@@ -273,29 +222,18 @@ namespace Falcor
             }
         }
 
-        //
-        // Create the device
-        //
-
         // Create the DXGI factory
-        IDXGIFactory4Ptr pDxgiFactory;
-        d3d_call(CreateDXGIFactory1(IID_PPV_ARGS(&pDxgiFactory)));
+        d3d_call(CreateDXGIFactory1(IID_PPV_ARGS(&mpApiData->pDxgiFactory)));
 
-        mApiHandle = createDevice(pDxgiFactory, getD3DFeatureLevel(desc.apiMajorVersion, desc.apiMinorVersion), desc.createDeviceFunc);
+        mApiHandle = createDevice(mpApiData->pDxgiFactory, getD3DFeatureLevel(desc.apiMajorVersion, desc.apiMinorVersion), desc.createDeviceFunc);
         if (mApiHandle == nullptr)
         {
             return false;
         }
 
-        //
-        // Create Queues
-        //
-
-        for (uint32_t i = 0; i < (uint32_t)LowLevelContextData::CommandQueueType::Count; i++)
+        for (uint32_t i = 0; i < kQueueTypeCount; i++)
         {
-            const uint32_t queueCount = (i == (uint32_t)LowLevelContextData::CommandQueueType::Direct) ? desc.additionalQueues[i] + 1 : desc.additionalQueues[i];
-
-            for (uint32_t j = 0; j < queueCount; j++)
+            for (uint32_t j = 0; j < desc.cmdQueues[i]; j++)
             {
                 // Create the command queue
                 D3D12_COMMAND_QUEUE_DESC cqDesc = {};
@@ -309,33 +247,21 @@ namespace Falcor
                     return nullptr;
                 }
 
-                pData->queues[i].push_back(pQueue);
+                mCmdQueues[i].push_back(pQueue);
             }
         }
        
         return true;
     }
 
-    void Device::releaseResource(ApiObjectHandle pResource)
+    bool Device::createSwapChain(ResourceFormat colorFormat)
     {
-        if(pResource)
+        mpApiData->pSwapChain = createDxgiSwapChain(mpApiData->pDxgiFactory, mpWindow.get(), mpRenderContext->getLowLevelData()->getCommandQueue(), colorFormat);
+        if (mpApiData->pSwapChain == nullptr)
         {
-            DeviceApiData* pData = (DeviceApiData*)mpApiData;
-            pData->deferredReleases.push({ pData->pFrameFence->getCpuValue(), pResource });
+            return false;
         }
-    }
-
-    void Device::executeDeferredReleases()
-    {
-        mpResourceAllocator->executeDeferredReleases();
-        DeviceApiData* pData = (DeviceApiData*)mpApiData;
-        uint64_t gpuVal = pData->pFrameFence->getGpuValue();
-        while (pData->deferredReleases.size() && pData->deferredReleases.front().frameID < gpuVal)
-        {
-            pData->deferredReleases.pop();
-        }
-        mpCpuDescPool->executeDeferredReleases();
-        mpGpuDescPool->executeDeferredReleases();
+        return true;
     }
 
     Fbo::SharedPtr Device::resizeSwapChain(uint32_t width, uint32_t height)
@@ -345,13 +271,13 @@ namespace Falcor
         DeviceApiData* pData = (DeviceApiData*)mpApiData;
 
         // Store the FBO parameters
-        ResourceFormat colorFormat = pData->frameData[0].pFbo->getColorTexture(0)->getFormat();
-        const auto& pDepth = pData->frameData[0].pFbo->getDepthStencilTexture();
+        ResourceFormat colorFormat = mpSwapChainFbos[0]->getColorTexture(0)->getFormat();
+        const auto& pDepth = mpSwapChainFbos[0]->getDepthStencilTexture();
         ResourceFormat depthFormat = pDepth ? pDepth->getFormat() : ResourceFormat::Unknown;
-        assert(pData->frameData[0].pFbo->getSampleCount() == 1);
+        assert(mpSwapChainFbos[0]->getSampleCount() == 1);
 
         // Delete all the FBOs
-        releaseFboData(pData);
+        releaseFboData();
 
         DXGI_SWAP_CHAIN_DESC desc;
         d3d_call(pData->pSwapChain->GetDesc(&desc));
@@ -359,12 +285,6 @@ namespace Falcor
         updateDefaultFBO(width, height, colorFormat, depthFormat);
 
         return getSwapChainFbo();
-    }
-
-    void Device::toggleVSync(bool enable)
-    {
-        DeviceApiData* pData = (DeviceApiData*)mpApiData;
-        pData->syncInterval = enable ? 1 : 0;
     }
 
     bool Device::isWindowOccluded() const

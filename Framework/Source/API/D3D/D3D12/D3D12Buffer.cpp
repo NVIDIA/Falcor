@@ -60,14 +60,6 @@ namespace Falcor
         return pApiHandle;
     }
 
-    Buffer::~Buffer()
-    {
-        BufferData* pApiData = (BufferData*)mpApiData;
-        gpDevice->getResourceAllocator()->release(pApiData->dynamicData);
-        safe_delete(pApiData);
-        gpDevice->releaseResource(mApiHandle);
-    }
-
     size_t getBufferDataAlignment(const Buffer* pBuffer)
     {
         switch (pBuffer->getBindFlags())
@@ -81,12 +73,6 @@ namespace Falcor
         }
     }
 
-    Buffer::SharedPtr Buffer::create(size_t size, BindFlags usage, CpuAccess cpuAccess, const void* pInitData)
-    {
-        Buffer::SharedPtr pBuffer = SharedPtr(new Buffer(size, usage, cpuAccess));
-        return pBuffer->apiInit(pInitData) ? pBuffer : nullptr;
-    }
-
     void* mapBufferApi(const Buffer::ApiHandle& apiHandle, size_t size)
     {
         D3D12_RANGE r{ 0, size };
@@ -95,7 +81,7 @@ namespace Falcor
         return pData;
     }
 
-    bool Buffer::apiInit()
+    bool Buffer::apiInit(bool hasInitData)
     {
         if (mBindFlags == BindFlags::Constant)
         {
@@ -105,10 +91,10 @@ namespace Falcor
         if (mCpuAccess == CpuAccess::Write)
         {
             mState = Resource::State::GenericRead;
-            if(pInitData == nullptr) // Else the allocation will happen when updating the data
+            if(hasInitData == false) // Else the allocation will happen when updating the data
             {
-                pApiData->dynamicData = gpDevice->getResourceAllocator()->allocate(mSize, getDataAlignmentFromUsage(mBindFlags));
-                mApiHandle = pApiData->dynamicData.pResourceHandle;
+                mDynamicData = gpDevice->getResourceAllocator()->allocate(mSize, getBufferDataAlignment(this));
+                mApiHandle = mDynamicData.common.pResourceHandle;
             }
         }
         else if (mCpuAccess == CpuAccess::Read && mBindFlags == BindFlags::None)
@@ -129,8 +115,7 @@ namespace Falcor
     {
         if (mCpuAccess == CpuAccess::Write)
         {
-            BufferData* pApiData = (BufferData*)mpApiData;
-            return pApiData->dynamicData.gpuAddress;
+            return mDynamicData.common.gpuAddress;
         }
         else
         {
@@ -138,14 +123,13 @@ namespace Falcor
         }
     }
 
-    void Buffer::unmap() const
+    void Buffer::unmap()
     {
         // Only unmap read buffers
-        BufferData* pApiData = (BufferData*)mpApiData;
         D3D12_RANGE r{};
-        if (pApiData->pStagingResource)
+        if (mpStagingResource)
         {
-            pApiData->pStagingResource->mApiHandle->Unmap(0, &r);
+            mpStagingResource->mApiHandle->Unmap(0, &r);
         }
         else if (mCpuAccess == CpuAccess::Read)
         {

@@ -132,12 +132,14 @@ namespace Falcor
 
         vec2 srcRectOffset(0.0f);
         vec2 srcRectScale(1.0f);
-        GraphicsState::Viewport dstViewport(0.0f, 0.0f, (float)pDstTexture->getWidth(), (float)pDstTexture->getHeight(), 0.0f, 1.0f);
+        uint32_t srcMipLevel = pSrc->getViewInfo().mostDetailedMip;
+        uint32_t dstMipLevel = pDst->getViewInfo().mostDetailedMip;
+        GraphicsState::Viewport dstViewport(0.0f, 0.0f, (float)pDstTexture->getWidth(dstMipLevel), (float)pDstTexture->getHeight(dstMipLevel), 0.0f, 1.0f);
 
         // If src rect specified
         if (srcRect.x != (uint32_t)-1)
         {
-            const vec2 srcSize(pSrcTexture->getWidth(), pSrcTexture->getHeight());
+            const vec2 srcSize(pSrcTexture->getWidth(srcMipLevel), pSrcTexture->getHeight(srcMipLevel));
             srcRectOffset = vec2(srcRect.x, srcRect.y) / srcSize;
             srcRectScale = vec2(srcRect.z - srcRect.x, srcRect.w - srcRect.y) / srcSize;
         }

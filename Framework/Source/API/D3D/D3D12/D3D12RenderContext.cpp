@@ -52,29 +52,6 @@ namespace Falcor
         return pCtx;
     }
     
-    void RenderContext::clearFbo(const Fbo* pFbo, const glm::vec4& color, float depth, uint8_t stencil, FboAttachmentType flags)
-	{
-        bool clearDepth = (flags & FboAttachmentType::Depth) != FboAttachmentType::None;
-        bool clearColor = (flags & FboAttachmentType::Color) != FboAttachmentType::None;
-        bool clearStencil = (flags & FboAttachmentType::Stencil) != FboAttachmentType::None;
-
-        if(clearColor)
-        {
-            for(uint32_t i = 0 ; i < Fbo::getMaxColorTargetCount() ; i++)
-            {
-                if(pFbo->getColorTexture(i))
-                {
-                    clearRtv(pFbo->getRenderTargetView(i).get(), color);
-                }
-            }
-        }
-
-        if(clearDepth | clearStencil)
-        {
-            clearDsv(pFbo->getDepthStencilView().get(), depth, stencil, clearDepth, clearStencil);
-        }
-	}
-
     void RenderContext::clearRtv(const RenderTargetView* pRtv, const glm::vec4& color)
     {
         resourceBarrier(pRtv->getResource(), Resource::State::RenderTarget);
