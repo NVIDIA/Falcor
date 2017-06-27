@@ -30,14 +30,20 @@
 #include "API/Device.h"
 #include "API/LowLevel/ResourceAllocator.h"
 #include "API/Vulkan/FalcorVK.h"
+#include "API/Device.h"
 
 namespace Falcor
 {
-    VkDeviceMemory allocateDeviceMemory(Device::MemoryType memType, size_t size);
-
-    void bindBufferMemory(Buffer::ApiHandle& apiHandle, const ResourceAllocator::AllocationData& allocationData)
+    VkDeviceMemory allocateDeviceMemory(Device::MemoryType memType, size_t size)
     {
-        apiHandle = allocationData.common.pResourceHandle;
+        VkMemoryAllocateInfo allocInfo = {};
+        allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+        allocInfo.allocationSize = size;
+        allocInfo.memoryTypeIndex = gpDevice->getVkMemoryType(memType);
+
+        VkDeviceMemory deviceMem;
+        vk_call(vkAllocateMemory(gpDevice->getApiHandle(), &allocInfo, nullptr, &deviceMem));
+        return deviceMem;
     }
 
     void* mapBufferApi(const Buffer::ApiHandle& apiHandle, size_t size)
@@ -68,7 +74,7 @@ namespace Falcor
         return reqs.alignment;
     }
 
-    VkBuffer createBuffer(size_t size, Buffer::BindFlags bindFlags)
+    Buffer::ApiHandle createBuffer(size_t size, Buffer::BindFlags bindFlags, Device::MemoryType memType)
     {
         VkBufferCreateInfo bufferInfo = {};
 
@@ -82,7 +88,13 @@ namespace Falcor
         
         VkBuffer buffer;
         vk_call(vkCreateBuffer(gpDevice->getApiHandle(), &bufferInfo, nullptr, &buffer));
-        return buffer;
+
+        Buffer::ApiHandle apiHandle = buffer;
+        VkDeviceMemory mem = allocateDeviceMemory(memType, size);
+        apiHandle.setDeviceMem(mem);
+        vk_call(vkBindBufferMemory(gpDevice->getApiHandle(), buffer, mem, 0));
+
+        return apiHandle;
     }
 
     Buffer::~Buffer()
@@ -100,27 +112,18 @@ namespace Falcor
         if (mCpuAccess == CpuAccess::Write)
         {
             mDynamicData = gpDevice->getResourceAllocator()->allocate(mSize);
-            bindBufferMemory(mApiHandle, mDynamicData);
+            mApiHandle = mDynamicData.common.pResourceHandle;
         }
         else
         {
-            VkBuffer buffer = createBuffer(mSize, mBindFlags);
-            mApiHandle = buffer;
-            VkDeviceMemory deviceMem;
-            size_t offset = 0;
-
             if (mCpuAccess == CpuAccess::Read && mBindFlags == BindFlags::None)
             {
-                deviceMem = allocateDeviceMemory(Device::MemoryType::Readback, mSize);
-                mApiHandle.setDeviceMem(deviceMem);
+                mApiHandle = createBuffer(mSize, mBindFlags, Device::MemoryType::Readback);
             }
             else
             {
-                deviceMem = allocateDeviceMemory(Device::MemoryType::Default, mSize);
-                mApiHandle.setDeviceMem(deviceMem);
+                mApiHandle = createBuffer(mSize, mBindFlags, Device::MemoryType::Upload);
             }
-
-            vkBindBufferMemory(gpDevice->getApiHandle(), buffer, deviceMem, offset);
         }
         return true;
     }

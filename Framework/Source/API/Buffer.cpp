@@ -75,7 +75,7 @@ namespace Falcor
                 gpDevice->getResourceAllocator()->release(mDynamicData);
             }
             mDynamicData = gpDevice->getResourceAllocator()->allocate(mSize, getBufferDataAlignment(this));
-            bindBufferMemory(mApiHandle, mDynamicData);
+            mApiHandle = mDynamicData.common.pResourceHandle;
             invalidateViews();
             return mDynamicData.common.pData;
         }

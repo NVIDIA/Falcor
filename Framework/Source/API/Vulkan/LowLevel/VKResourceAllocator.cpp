@@ -32,27 +32,13 @@
 
 namespace Falcor
 {
-    VkBuffer createBuffer(size_t size, Buffer::BindFlags bindFlags);
-
-    VkDeviceMemory allocateDeviceMemory(Device::MemoryType memType, size_t size)
-    {
-        VkMemoryAllocateInfo allocInfo = {};
-        allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-        allocInfo.allocationSize = size;
-        allocInfo.memoryTypeIndex = gpDevice->getVkMemoryType(memType);
-
-        VkDeviceMemory deviceMem;
-        vk_call(vkAllocateMemory(gpDevice->getApiHandle(), &allocInfo, nullptr, &deviceMem));
-        return deviceMem;
-    }
+    Buffer::ApiHandle createBuffer(size_t size, Buffer::BindFlags bindFlags, Device::MemoryType memType);
 
     void ResourceAllocator::initCommonPageData(CommonData& data, size_t size)
     {
         // Create a buffer
-        data.pResourceHandle = createBuffer(size, Buffer::BindFlags::Constant | Buffer::BindFlags::Vertex);
-        data.pResourceHandle.setDeviceMem(allocateDeviceMemory(Device::MemoryType::Upload, size));
+        data.pResourceHandle = createBuffer(size, Buffer::BindFlags::Constant | Buffer::BindFlags::Vertex, Device::MemoryType::Upload);
         data.gpuAddress = 0;
         vk_call(vkMapMemory(gpDevice->getApiHandle(), data.pResourceHandle.getDeviceMem(), 0, VK_WHOLE_SIZE, 0, (void**)&data.pData));
-        vk_call(vkBindBufferMemory(gpDevice->getApiHandle(), data.pResourceHandle.getBuffer(), data.pResourceHandle.getDeviceMem(), 0));
     }
 }
