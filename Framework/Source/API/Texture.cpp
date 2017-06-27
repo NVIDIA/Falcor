@@ -159,6 +159,5 @@ namespace Falcor
 
         logInfo("Releasing RTVs after Texture::generateMips() to save space in the descriptor-pool");
         mRtvs.clear();
-        pContext->flush(true); // This shouldn't be here. GitLab issue #69
     }
 }

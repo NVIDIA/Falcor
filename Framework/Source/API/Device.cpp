@@ -74,13 +74,14 @@ namespace Falcor
             return false;
         }
 
+        mpFrameFence = GpuFence::create();
+
         // Update the FBOs
         if (updateDefaultFBO(mpWindow->getClientAreaWidth(), mpWindow->getClientAreaHeight(), desc.colorFormat, desc.depthFormat) == false)
         {
             return false;
         }
 
-        mpFrameFence = GpuFence::create();
         return true;
     }
 

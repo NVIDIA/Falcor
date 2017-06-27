@@ -159,10 +159,6 @@ namespace Falcor
 
         static SharedPtr create2DMS(uint32_t width, uint32_t height, ResourceFormat format, uint32_t sampleCount, uint32_t arraySize = 1, BindFlags bindFlags = BindFlags::ShaderResource);
 
-        /** Get the image size for a single array slice in a mip-level
-        */
-        void getMipLevelImageSize(uint32_t mipLevel, uint32_t& width, uint32_t& height, uint32_t& depth = tempDefaultUint) const;
-
         /** Get the required buffer size for a single array slice in a mip-level
         */
         uint32_t getMipLevelDataSize(uint32_t mipLevel) const;
