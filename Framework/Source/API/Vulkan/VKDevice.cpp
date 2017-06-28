@@ -285,9 +285,8 @@ namespace Falcor
     bool createLogicalDevice(DeviceApiData *pData, const Device::Desc& desc, std::vector<CommandQueueHandle> cmdQueues[Device::kQueueTypeCount])
     {
         // Features
-        VkPhysicalDeviceFeatures requiredFeatures = {};
-        requiredFeatures.tessellationShader = VK_TRUE;
-        requiredFeatures.geometryShader = VK_TRUE;
+        VkPhysicalDeviceFeatures requiredFeatures;
+        vkGetPhysicalDeviceFeatures(pData->physicalDevice, &requiredFeatures);
 
         // Queues
         std::vector<VkDeviceQueueCreateInfo> queueInfos;
@@ -382,7 +381,7 @@ namespace Falcor
         // Surface size
         VkSurfaceCapabilitiesKHR surfaceCapabilities;
         vkGetPhysicalDeviceSurfaceCapabilitiesKHR(mpApiData->physicalDevice, mpApiData->surface, &surfaceCapabilities);
-        assert(surfaceCapabilities.supportedUsageFlags & VK_IMAGE_USAGE_TRANSFER_DST_BIT);
+        assert(surfaceCapabilities.supportedUsageFlags & (VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT));
 
         VkExtent2D swapchainExtent = {};
         if (surfaceCapabilities.currentExtent.width == (uint32_t)-1)
@@ -458,7 +457,7 @@ namespace Falcor
         info.imageFormat = requestedFormat;
         info.imageColorSpace = requestedColorSpace;
         info.imageExtent = { swapchainExtent.width, swapchainExtent.height };
-        info.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+        info.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
         info.preTransform = surfaceCapabilities.currentTransform;
         info.imageArrayLayers = 1;
         info.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
