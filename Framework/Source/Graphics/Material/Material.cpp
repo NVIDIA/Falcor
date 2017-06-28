@@ -361,18 +361,6 @@ namespace Falcor
         return memcmp(&mData, &other.mData, sizeof(mData)) == 0 && mData.samplerState == other.mData.samplerState;
     }
 
-    void Material::evictTextures() const
-    {
-        Texture::SharedPtr* pTextures = (Texture::SharedPtr*)&mData.textures;
-        for(uint32_t i = 0; i < kTexCount ; i++)
-        {
-            if(pTextures[i])
-            {
-                pTextures[i]->evict(mData.samplerState.get());
-            }
-        }
-    }
-
     void Material::setLayerTexture(uint32_t layerId, const Texture::SharedPtr& pTexture)
     {
         mData.textures.layers[layerId] = pTexture;

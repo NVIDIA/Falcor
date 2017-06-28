@@ -55,7 +55,8 @@ namespace Falcor
 
     VkBufferUsageFlags getBufferUsageFlag(Buffer::BindFlags bindFlags)
     {       
-        VkBufferUsageFlags flags = 0;
+        // Assume every buffer can be read from and written into
+        VkBufferUsageFlags flags = VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
         auto setBit = [&flags, &bindFlags](Buffer::BindFlags f, VkBufferUsageFlags vkBit) {if (is_set(bindFlags, f)) flags |= vkBit; };
         setBit(Buffer::BindFlags::Vertex,           VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
         setBit(Buffer::BindFlags::Index,            VK_BUFFER_USAGE_INDEX_BUFFER_BIT);
@@ -99,11 +100,10 @@ namespace Falcor
     
     bool Buffer::apiInit(bool hasInitData)
     {
-        // Allocate the backing memory
         if (mCpuAccess == CpuAccess::Write)
         {
             mDynamicData = gpDevice->getResourceAllocator()->allocate(mSize);
-            mApiHandle = mDynamicData.common.pResourceHandle;
+            mApiHandle = mDynamicData.pResourceHandle;
         }
         else
         {

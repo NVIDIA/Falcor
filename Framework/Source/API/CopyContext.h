@@ -44,7 +44,7 @@ namespace Falcor
         virtual ~CopyContext();
 
         static SharedPtr create(CommandQueueHandle queue);
-        void updateBuffer(const Buffer* pBuffer, const void* pData, size_t offset = 0, size_t size = 0);
+        void updateBuffer(const Buffer* pBuffer, const void* pData, size_t offset = 0, size_t numBytes = 0);
         void updateTexture(const Texture* pTexture, const void* pData);
         void updateTextureSubresource(const Texture* pTexture, uint32_t subresourceIndex, const void* pData);
         void updateTextureSubresources(const Texture* pTexture, uint32_t firstSubresource, uint32_t subresourceCount, const void* pData);
@@ -77,11 +77,11 @@ namespace Falcor
 
         /** Copy a subresource
         */
-        void copySubresource(const Resource* pDst, uint32_t dstSubresourceIdx, const Resource* pSrc, uint32_t srcSubresourceIdx);
+        void copySubresource(const Texture* pDst, uint32_t dstSubresourceIdx, const Texture* pSrc, uint32_t srcSubresourceIdx);
 
         /** Copy part of a buffer 
         */
-        void copyBufferRegion(const Resource* pDst, uint64_t dstOffset, const Resource* pSrc, uint64_t srcOffset, uint64_t numBytes);
+        void copyBufferRegion(const Buffer* pDst, uint64_t dstOffset, const Buffer* pSrc, uint64_t srcOffset, uint64_t numBytes);
 
 #ifdef FALCOR_LOW_LEVEL_API
         /** Get the low-level context data

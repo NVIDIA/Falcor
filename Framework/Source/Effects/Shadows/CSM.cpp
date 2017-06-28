@@ -98,15 +98,6 @@ namespace Falcor
             
             return true;
         };
-
-        void postFlushDraw(const CurrentWorkingData& currentData) override
-        {
-            if(mUnloadTexturesOnMaterialChange && mMaterialChanged)
-            {
-                mpLastMaterial = currentData.pMaterial;
-                mMaterialChanged = false;
-            }
-        }
     };
 
     void createShadowMatrix(const DirectionalLight* pLight, const glm::vec3& center, float radius, glm::mat4& shadowVP)
@@ -564,14 +555,6 @@ namespace Falcor
 
     void CascadedShadowMaps::createVsmSampleState(uint32_t maxAnisotropy)
     {
-        if(mShadowPass.pVSMTrilinearSampler)
-        {
-            const auto pTexture = mShadowPass.pFbo->getColorTexture(0);
-            if(pTexture)
-            {
-                pTexture->evict(mShadowPass.pVSMTrilinearSampler.get());
-            }
-        }
         Sampler::Desc samplerDesc;
         samplerDesc.setFilterMode(Sampler::Filter::Linear, Sampler::Filter::Linear, Sampler::Filter::Linear);
         samplerDesc.setAddressingMode(Sampler::AddressMode::Clamp, Sampler::AddressMode::Clamp, Sampler::AddressMode::Clamp);

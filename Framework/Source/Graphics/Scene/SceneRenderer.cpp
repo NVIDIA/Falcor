@@ -212,10 +212,6 @@ namespace Falcor
         // Bind material
         if(mpLastMaterial != pMesh->getMaterial().get())
         {
-            if(mUnloadTexturesOnMaterialChange && mpLastMaterial)
-            {
-                mpLastMaterial->evictTextures();
-            }
             setPerMaterialData(currentData, currentData.pMaterial);
             mpLastMaterial = pMesh->getMaterial().get();
 

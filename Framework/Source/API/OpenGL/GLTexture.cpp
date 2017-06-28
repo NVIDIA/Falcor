@@ -407,7 +407,7 @@ namespace Falcor
         }
     }
 
-    uint32_t Texture::getMipLevelDataSize(uint32_t mipLevel) const
+    uint32_t Texture::getMipLevelPackedDataSize(uint32_t mipLevel) const
     {
         if(mipLevel >= mMipLevels)
         {
@@ -459,7 +459,7 @@ namespace Falcor
         // Check that there is enough data in the buffer.
         // We check for equality, since we want to make sure that the user understands what he is doing
 #if _LOG_ENABLED
-        if(dataSize != getMipLevelDataSize(mipLevel))
+        if(dataSize != getMipLevelPackedDataSize(mipLevel))
         {
             logError("Error when reading texture data. Buffer size should be equal to Texture::getMipLevelDataSize(). Ignoring call.");
             return;
@@ -516,7 +516,7 @@ namespace Falcor
         // Check that there is enough data in the buffer.
         // We check for equality, since we want to make sure that the user understands what he is doing
 #if _LOG_ENABLED
-        if(dataSize != getMipLevelDataSize(mipLevel))
+        if(dataSize != getMipLevelPackedDataSize(mipLevel))
         {
             logError("Error when uploading texture data. Buffer size should be equal to Texture::getMipLevelDataSize(). Ignoring call.");
             return;
@@ -573,7 +573,7 @@ namespace Falcor
 
     void Texture::captureToFile(uint32_t mipLevel, uint32_t arraySlice, const std::string& filename, Bitmap::FileFormat format, uint32_t saveFlags) const
     {
-        auto dataSize = getMipLevelDataSize(mipLevel);
+        auto dataSize = getMipLevelPackedDataSize(mipLevel);
         uint32_t bytesPerPixel = getFormatBytesPerBlock(mFormat);
 
         uint32_t mipWidth, mipHeight;
@@ -616,7 +616,7 @@ namespace Falcor
 
         // Read the old data
         std::vector<uint8_t> data;
-        uint32_t requiredSize = getMipLevelDataSize(0);
+        uint32_t requiredSize = getMipLevelPackedDataSize(0);
         data.resize(requiredSize);
 
         readSubresourceData(data.data(), requiredSize, 0, 0);

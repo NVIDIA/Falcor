@@ -96,12 +96,12 @@ namespace Falcor
         }
     }
 
-    uint32_t Texture::getDataSize() const
+    uint32_t Texture::getPackedDataSize() const
     {
         uint32_t res = 0;
         for(uint32_t l = 0; l < mMipLevels; l++)
         {
-            res += getMipLevelDataSize(l);
+            res += getMipLevelPackedDataSize(l);
         }
         return res;
     }
@@ -159,5 +159,11 @@ namespace Falcor
 
         logInfo("Releasing RTVs after Texture::generateMips() to save space in the descriptor-pool");
         mRtvs.clear();
+    }
+
+    uint32_t Texture::getMipLevelPackedDataSize(uint32_t mipLevel) const
+    {
+        assert(mipLevel < mMipLevels);
+        return getWidth(mipLevel) * getHeight(mipLevel) * getDepth(mipLevel) * getFormatBytesPerBlock(mFormat);
     }
 }

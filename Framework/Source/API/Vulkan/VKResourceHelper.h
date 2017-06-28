@@ -108,6 +108,8 @@ namespace Falcor
         }
 
         operator bool() const { return mDeviceMem != VK_NULL_HANDLE; }
+        operator ImageType() const { return getImage(); }
+        operator BufferType() const { return getBuffer(); }
     private:
         VkDeviceMemory mDeviceMem;
         VkResourceType mType = VkResourceType::None;

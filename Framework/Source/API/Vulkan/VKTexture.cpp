@@ -50,7 +50,8 @@ namespace Falcor
     // Like getD3D12ResourceFlags but for Images specifically
     VkImageUsageFlags getVkImageUsageFlags(Resource::BindFlags bindFlags)
     {
-        VkImageUsageFlags vkFlags = 0;
+        // Assume that every resource in the system can be updated or read from
+        VkImageUsageFlags vkFlags = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL | VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
 
         if (is_set(bindFlags, Resource::BindFlags::UnorderedAccess))
         {
@@ -83,15 +84,6 @@ namespace Falcor
     uint32_t getMaxMipCount(const VkExtent3D& size)
     {
         return 1 + uint32_t(glm::log2(float(glm::max(glm::max(size.width, size.height), size.depth))));
-    }
-
-    uint32_t Texture::getMipLevelDataSize(uint32_t mipLevel) const
-    {
-        return 0;
-    }
-
-    void Texture::evict(const Sampler* pSampler) const
-    {
     }
 
     VkImageType getVkImageType(Texture::Type type)
@@ -135,7 +127,7 @@ namespace Falcor
         imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
         imageInfo.usage = getVkImageUsageFlags(mBindFlags);
 
-        mState = Resource::State::Undefined; // Default is common, which is not what we want
+        mState = pData ? Resource::State::PreInitialized : Resource::State::Undefined;
 
         VkImage image;
         if (VK_FAILED(vkCreateImage(gpDevice->getApiHandle(), &imageInfo, nullptr, &image)))

@@ -277,7 +277,7 @@ namespace Falcor
         return mpSRV;
     }
 
-    uint32_t Texture::getMipLevelDataSize(uint32_t mipLevel) const
+    uint32_t Texture::getMipLevelPackedDataSize(uint32_t mipLevel) const
     {
         UNSUPPORTED_IN_D3D11("Texture::getMipLevelDataSize");
         return 0;

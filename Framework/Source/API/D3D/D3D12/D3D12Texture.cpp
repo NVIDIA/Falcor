@@ -169,26 +169,4 @@ namespace Falcor
     {
         gpDevice->releaseResource(mApiHandle);
     }
-
-    uint64_t Texture::makeResident(const Sampler* pSampler) const
-    {
-        UNSUPPORTED_IN_D3D12("Texture::makeResident()");
-        return 0;
-    }
-
-    void Texture::evict(const Sampler* pSampler) const
-    {
-        UNSUPPORTED_IN_D3D12("Texture::evict()");
-    }
-
-    uint32_t Texture::getMipLevelDataSize(uint32_t mipLevel) const
-    {
-        UNSUPPORTED_IN_D3D12("Texture::getMipLevelDataSize");
-        return 0;
-    }
-
-    void Texture::compress2DTexture()
-    {
-        UNSUPPORTED_IN_D3D12("Texture::compress2DTexture");
-    }
 }
