@@ -39,10 +39,8 @@ namespace Falcor
     bool GraphicsStateObject::apiInit()
     {
         // Vertex Input State
-        VkPipelineVertexInputStateCreateInfo vertexInputInfo;
-        std::vector<VkVertexInputBindingDescription> bindingDescs;
-        std::vector<VkVertexInputAttributeDescription> attribDescs;
-        initVkVertexLayoutInfo(mDesc.getVertexLayout().get(), bindingDescs, attribDescs, vertexInputInfo);
+        VertexInputStateCreateInfo vertexInputInfo;
+        initVkVertexLayoutInfo(mDesc.getVertexLayout().get(), vertexInputInfo);
 
         // Input Assembly State
         VkPipelineInputAssemblyStateCreateInfo inputAssemblyInfo;
@@ -52,10 +50,8 @@ namespace Falcor
         VkPipelineTessellationStateCreateInfo tessellationInfo = {};
 
         // Viewport State
-        VkPipelineViewportStateCreateInfo viewportInfo;
-        std::vector<VkViewport> vkViewports;
-        std::vector<VkRect2D> vkScissors;
-        initVkViewportInfo(mDesc.getViewports(), mDesc.getScissors(), vkViewports, vkScissors, viewportInfo);
+        ViewportStateCreateInfo viewportInfo;
+        initVkViewportInfo(mDesc.getViewports(), mDesc.getScissors(), viewportInfo);
 
         // Rasterizerization State
         VkPipelineRasterizationStateCreateInfo rasterizerInfo;
@@ -70,21 +66,17 @@ namespace Falcor
         initVkDepthStencilInfo(mDesc.getDepthStencilState().get(), depthStencilInfo);
 
         // Color Blend State
-        VkPipelineColorBlendStateCreateInfo blendInfo;
-        std::vector<VkPipelineColorBlendAttachmentState> attachmentStates;
-        initVkBlendInfo(mDesc.getBlendState().get(), attachmentStates, blendInfo);
+        BlendStateCreateInfo blendInfo;
+        initVkBlendInfo(mDesc.getBlendState().get(), blendInfo);
 
         // Dynamic State
         VkPipelineDynamicStateCreateInfo dynamicInfo = {};
 
         // Render Pass
-        VkRenderPassCreateInfo renderPassInfo;
-        std::vector<VkAttachmentDescription> attachmentDescs;
-        std::vector<VkAttachmentReference> attachmentRefs;
-        VkSubpassDescription subpassDesc;
+        RenderPassCreateInfo renderPassInfo;
         VkRenderPass renderPass;
-        initVkRenderPassInfo(mDesc.getFboDesc(), mDesc.getDepthStencilState().get(), attachmentDescs, attachmentRefs, subpassDesc, renderPassInfo);
-        vkCreateRenderPass(gpDevice->getApiHandle(), &renderPassInfo, nullptr, &renderPass);
+        initVkRenderPassInfo(mDesc.getFboDesc(), mDesc.getDepthStencilState().get(), renderPassInfo);
+        vkCreateRenderPass(gpDevice->getApiHandle(), &renderPassInfo.info, nullptr, &renderPass);
 
         // #VKTODO get this from somewhere
         VkPipelineLayout pipelineLayout = {};
@@ -92,14 +84,14 @@ namespace Falcor
         VkGraphicsPipelineCreateInfo pipelineCreateInfo = {};
         pipelineCreateInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
         pipelineCreateInfo.layout = pipelineLayout;
-        pipelineCreateInfo.pVertexInputState = &vertexInputInfo;
+        pipelineCreateInfo.pVertexInputState = &vertexInputInfo.info;
         pipelineCreateInfo.pInputAssemblyState = &inputAssemblyInfo;
         pipelineCreateInfo.pTessellationState = &tessellationInfo;
-        pipelineCreateInfo.pViewportState = &viewportInfo;
+        pipelineCreateInfo.pViewportState = &viewportInfo.info;
         pipelineCreateInfo.pRasterizationState = &rasterizerInfo;
         pipelineCreateInfo.pMultisampleState = &multisampleInfo;
         pipelineCreateInfo.pDepthStencilState = &depthStencilInfo;
-        pipelineCreateInfo.pColorBlendState = &blendInfo;
+        pipelineCreateInfo.pColorBlendState = &blendInfo.info;
         pipelineCreateInfo.pDynamicState = &dynamicInfo;
         pipelineCreateInfo.renderPass = renderPass;
 

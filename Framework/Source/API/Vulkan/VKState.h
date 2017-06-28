@@ -30,13 +30,42 @@
 
 namespace Falcor
 {
-    void initVkBlendInfo(const BlendState* pState, std::vector<VkPipelineColorBlendAttachmentState>& attachmentStateOut, VkPipelineColorBlendStateCreateInfo& infoOut);
+    struct BlendStateCreateInfo
+    {
+        std::vector<VkPipelineColorBlendAttachmentState> attachmentStates;
+        VkPipelineColorBlendStateCreateInfo info;
+    };
+
+    struct VertexInputStateCreateInfo
+    {
+        std::vector<VkVertexInputBindingDescription> bindingDescs;
+        std::vector<VkVertexInputAttributeDescription> attribDescs;
+        VkPipelineVertexInputStateCreateInfo info;
+    };
+
+    struct ViewportStateCreateInfo
+    {
+        std::vector<VkViewport> viewports;
+        std::vector<VkRect2D> scissors;
+        VkPipelineViewportStateCreateInfo info;
+    };
+
+    struct RenderPassCreateInfo
+    {
+        std::vector<VkAttachmentDescription> attachmentDescs;
+        std::vector<VkAttachmentReference> attachmentRefs;
+        std::vector<VkSubpassDescription> subpassDescs;
+        std::vector<VkSubpassDependency> subpassDependencies;
+        VkRenderPassCreateInfo info;
+    };
+
+    void initVkBlendInfo(const BlendState* pState, BlendStateCreateInfo& infoOut);
     void initVkRasterizerInfo(const RasterizerState* pState, VkPipelineRasterizationStateCreateInfo& infoOut);
     void initVkDepthStencilInfo(const DepthStencilState* pState, VkPipelineDepthStencilStateCreateInfo& infoOut);
-    void initVkVertexLayoutInfo(const VertexLayout* pLayout, std::vector<VkVertexInputBindingDescription>& bindingDescs, std::vector<VkVertexInputAttributeDescription>& attribDescs, VkPipelineVertexInputStateCreateInfo& infoOut);
+    void initVkVertexLayoutInfo(const VertexLayout* pLayout, VertexInputStateCreateInfo& infoOut);
     void initVkSamplerInfo(const Sampler* pSampler, VkSamplerCreateInfo& infoOut);
-    void initVkViewportInfo(const std::vector<GraphicsStateObject::Viewport>& viewports, const std::vector<GraphicsStateObject::Scissor>& scissors, std::vector<VkViewport>& vkViewportsOut, std::vector<VkRect2D>& vkScissorsOut, VkPipelineViewportStateCreateInfo& infoOut);
+    void initVkViewportInfo(const std::vector<GraphicsStateObject::Viewport>& viewports, const std::vector<GraphicsStateObject::Scissor>& scissors, ViewportStateCreateInfo& infoOut);
     void initVkMultiSampleInfo(const BlendState* pState, const Fbo::Desc& fboDesc, const uint32_t& sampleMask, VkPipelineMultisampleStateCreateInfo& infoOut);
     void initVkInputAssemblyInfo(const Vao* pVao, VkPipelineInputAssemblyStateCreateInfo& infoOut);
-    void initVkRenderPassInfo(const Fbo::Desc& fboDesc, const DepthStencilState* pDsState, std::vector<VkAttachmentDescription>& attachmentDescs, std::vector<VkAttachmentReference>& attachmentRefs, VkSubpassDescription& subpassDesc, VkRenderPassCreateInfo& infoOut);
+    void initVkRenderPassInfo(const Fbo::Desc& fboDesc, const DepthStencilState* pDsState, RenderPassCreateInfo& infoOut);
 }

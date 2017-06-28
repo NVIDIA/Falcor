@@ -95,19 +95,19 @@ namespace Falcor
         }
     }
 
-    void initVkBlendInfo(const BlendState* pState, std::vector<VkPipelineColorBlendAttachmentState>& attachmentStateOut, VkPipelineColorBlendStateCreateInfo& infoOut)
+    void initVkBlendInfo(const BlendState* pState, BlendStateCreateInfo& infoOut)
     {
-        infoOut = {};
+        infoOut.info = {};
 
-        infoOut.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
-        infoOut.logicOpEnable = VK_FALSE;
-        infoOut.attachmentCount = (uint32_t)pState->getRtCount();
+        infoOut.info.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+        infoOut.info.logicOpEnable = VK_FALSE;
+        infoOut.info.attachmentCount = (uint32_t)pState->getRtCount();
 
-        attachmentStateOut.resize(infoOut.attachmentCount);
-        for (uint32_t i = 0; i < infoOut.attachmentCount; i++)
+        infoOut.attachmentStates.resize(infoOut.info.attachmentCount);
+        for (uint32_t i = 0; i < infoOut.info.attachmentCount; i++)
         {
             const BlendState::Desc::RenderTargetDesc& rtDesc = pState->getRtDesc(i);
-            VkPipelineColorBlendAttachmentState& state = attachmentStateOut[i];
+            VkPipelineColorBlendAttachmentState& state = infoOut.attachmentStates[i];
             state.blendEnable = vkBool(rtDesc.blendEnabled);
             state.srcColorBlendFactor = getVkBlendFactor(rtDesc.srcRgbFunc);
             state.dstColorBlendFactor = getVkBlendFactor(rtDesc.dstRgbFunc);
@@ -269,14 +269,14 @@ namespace Falcor
         }
     }
 
-    void initVkVertexLayoutInfo(const VertexLayout* pLayout, std::vector<VkVertexInputBindingDescription>& bindingDescs, std::vector<VkVertexInputAttributeDescription>& attribDescs, VkPipelineVertexInputStateCreateInfo& infoOut)
+    void initVkVertexLayoutInfo(const VertexLayout* pLayout, VertexInputStateCreateInfo& infoOut)
     {
         //
         // Build Vertex input and binding info
         //
 
-        bindingDescs.clear();
-        attribDescs.clear();
+        infoOut.bindingDescs.clear();
+        infoOut.attribDescs.clear();
 
         for (size_t vb = 0; vb < pLayout->getBufferCount(); vb++)
         {
@@ -284,11 +284,12 @@ namespace Falcor
             if (pVB)
             {
                 // Per buffer binding
-                VkVertexInputBindingDescription& bindingDesc = bindingDescs[vb];
+                VkVertexInputBindingDescription& bindingDesc = infoOut.bindingDescs[vb];
                 bindingDesc.binding = (uint32_t)vb;
                 bindingDesc.stride = pVB->getStride();
                 bindingDesc.inputRate = getVkInputRate(pVB->getInputClass());
-                bindingDescs.push_back(bindingDesc);
+
+                infoOut.bindingDescs.push_back(bindingDesc);
 
                 for (uint32_t elemID = 0; elemID < pVB->getElementCount(); elemID++)
                 {
@@ -301,7 +302,7 @@ namespace Falcor
 
                     for (uint32_t i = 0; i < pVB->getElementArraySize(elemID); i++)
                     {
-                        attribDescs.push_back(attribDesc);
+                        infoOut.attribDescs.push_back(attribDesc);
                         attribDesc.offset += getFormatBytesPerBlock(pVB->getElementFormat(elemID));
                     }
                 }
@@ -312,13 +313,13 @@ namespace Falcor
         // Now put together the actual layout create info
         //
 
-        infoOut = {};
+        infoOut.info = {};
 
-        infoOut.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-        infoOut.vertexBindingDescriptionCount = (uint32_t)bindingDescs.size();
-        infoOut.pVertexBindingDescriptions = bindingDescs.data();
-        infoOut.vertexAttributeDescriptionCount = (uint32_t)attribDescs.size();
-        infoOut.pVertexAttributeDescriptions = attribDescs.data();
+        infoOut.info.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+        infoOut.info.vertexBindingDescriptionCount = (uint32_t)infoOut.bindingDescs.size();
+        infoOut.info.pVertexBindingDescriptions = infoOut.bindingDescs.data();
+        infoOut.info.vertexAttributeDescriptionCount = (uint32_t)infoOut.attribDescs.size();
+        infoOut.info.pVertexAttributeDescriptions = infoOut.attribDescs.data();
     }
 
     VkFilter getVkFilter(Sampler::Filter filter)
@@ -409,26 +410,23 @@ namespace Falcor
         vkScissorOut.extent.height = falcorScissor.bottom - falcorScissor.top;
     }
 
-    void initVkViewportInfo(
-        const std::vector<GraphicsStateObject::Viewport>& viewports, const std::vector<GraphicsStateObject::Scissor>& scissors,
-        std::vector<VkViewport>& vkViewportsOut, std::vector<VkRect2D>& vkScissorsOut,
-        VkPipelineViewportStateCreateInfo& infoOut)
+    void initVkViewportInfo(const std::vector<GraphicsStateObject::Viewport>& viewports, const std::vector<GraphicsStateObject::Scissor>& scissors, ViewportStateCreateInfo& infoOut)
     {
-        vkViewportsOut.resize(viewports.size());
-        vkScissorsOut.resize(scissors.size());
+        infoOut.viewports.resize(viewports.size());
+        infoOut.scissors.resize(scissors.size());
 
-        infoOut = {};
+        infoOut.info = {};
+        infoOut.info.viewportCount = (uint32_t)viewports.size();
 
-        infoOut.viewportCount = (uint32_t)viewports.size();
-        for (uint32_t i = 0; i < infoOut.viewportCount; i++)
+        for (uint32_t i = 0; i < (uint32_t)viewports.size(); i++)
         {
-            convertVkViewport(viewports[i], vkViewportsOut[i]);
+            convertVkViewport(viewports[i], infoOut.viewports[i]);
         }
         
-        infoOut.scissorCount = (uint32_t)scissors.size();
-        for (uint32_t i = 0; i < infoOut.scissorCount; i++)
+        infoOut.info.scissorCount = (uint32_t)scissors.size();
+        for (uint32_t i = 0; i < (uint32_t)scissors.size(); i++)
         {
-            convertVkScissor(scissors[i], vkScissorsOut[i]);
+            convertVkScissor(scissors[i], infoOut.scissors[i]);
         }
     }
 
@@ -471,19 +469,19 @@ namespace Falcor
         infoOut.primitiveRestartEnable = VK_FALSE;
     }
 
-    void initVkRenderPassInfo(const Fbo::Desc& fboDesc, const DepthStencilState* pDsState, std::vector<VkAttachmentDescription>& attachmentDescs, std::vector<VkAttachmentReference>& attachmentRefs, VkSubpassDescription& subpassDesc, VkRenderPassCreateInfo& infoOut)
+    void initVkRenderPassInfo(const Fbo::Desc& fboDesc, const DepthStencilState* pDsState, RenderPassCreateInfo& infoOut)
     {
         //
         // Init Color and Depth Attachment Info
         //
 
-        attachmentDescs.resize(Fbo::getMaxColorTargetCount() + 1); // Color + Depth
+        infoOut.attachmentDescs.resize(Fbo::getMaxColorTargetCount() + 1); // Color + Depth
 
         // Color attachments
         for (uint32_t i = 0; i < Fbo::getMaxColorTargetCount(); i++)
         {
             // #VKTODO: Render Pass setup should be a place to look into when looking into performance
-            VkAttachmentDescription& desc = attachmentDescs[i];
+            VkAttachmentDescription& desc = infoOut.attachmentDescs[i];
             desc.flags = 0;
             desc.format = getVkFormat(fboDesc.getColorTargetFormat(i));
             desc.samples = (VkSampleCountFlagBits)fboDesc.getSampleCount();
@@ -496,7 +494,7 @@ namespace Falcor
         }
 
         // Depth
-        VkAttachmentDescription& depthDesc = attachmentDescs.back();
+        VkAttachmentDescription& depthDesc = infoOut.attachmentDescs.back();
         depthDesc.flags = 0;
         depthDesc.format = getVkFormat(fboDesc.getDepthStencilFormat());
         depthDesc.samples = (VkSampleCountFlagBits)fboDesc.getSampleCount();
@@ -511,7 +509,10 @@ namespace Falcor
         // Init Subpass info
         //
 
-        attachmentRefs.resize(Fbo::getMaxColorTargetCount() + 1); // Color + Depth
+        infoOut.attachmentRefs.resize(Fbo::getMaxColorTargetCount() + 1); // Color + Depth
+        infoOut.subpassDescs.resize(1);
+
+        VkSubpassDescription& subpassDesc = infoOut.subpassDescs[0];
 
         subpassDesc = {};
         subpassDesc.colorAttachmentCount = Fbo::getMaxColorTargetCount();
@@ -519,29 +520,32 @@ namespace Falcor
         // Color attachments
         for (uint32_t i = 0; i < Fbo::getMaxColorTargetCount(); i++)
         {
-            VkAttachmentReference& ref = attachmentRefs[i];
+            VkAttachmentReference& ref = infoOut.attachmentRefs[i];
             ref.attachment = i;
             ref.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
         }
 
         // Depth
-        VkAttachmentReference& depthRef = attachmentRefs.back();
+        VkAttachmentReference& depthRef = infoOut.attachmentRefs.back();
         depthRef.attachment = 0; // #VKTODO does attachment number for depth mean all attachments are bound at once and identifying which one is depth is through an index?
         depthRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
+        subpassDesc.colorAttachmentCount = Fbo::getMaxColorTargetCount();
+        subpassDesc.pColorAttachments = infoOut.attachmentRefs.data();
+        subpassDesc.pDepthStencilAttachment = &infoOut.attachmentRefs.back();
 
         //
         // Assemble RenderPass info
         //
 
-        infoOut = {};
-        infoOut.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-        infoOut.attachmentCount = (uint32_t)attachmentDescs.size();
-        infoOut.pAttachments = attachmentDescs.data();
-        infoOut.subpassCount = 1;
-        infoOut.pSubpasses = &subpassDesc;
-        infoOut.dependencyCount = 0;
-        infoOut.pDependencies = nullptr;
+        infoOut.info = {};
+        infoOut.info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+        infoOut.info.attachmentCount = (uint32_t)infoOut.attachmentDescs.size();
+        infoOut.info.pAttachments = infoOut.attachmentDescs.data();
+        infoOut.info.subpassCount = (uint32_t)infoOut.subpassDescs.size();
+        infoOut.info.pSubpasses = infoOut.subpassDescs.data();
+        infoOut.info.dependencyCount = 0;
+        infoOut.info.pDependencies = nullptr;
     }
 
 }
