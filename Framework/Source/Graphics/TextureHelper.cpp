@@ -33,11 +33,7 @@
 #include "Utils/BinaryFileStream.h"
 #include "Utils/StringUtils.h"
 
-#ifdef FALCOR_GL
-static const bool kTopDown = false;
-#elif defined( FALCOR_D3D ) || defined( FALCOR_VK ) // #VKTODO verify correctness
-static const bool kTopDown = true;
-#endif
+static const bool kTopDown = true; // #VKTODO verify correctness
 
 namespace Falcor
 {

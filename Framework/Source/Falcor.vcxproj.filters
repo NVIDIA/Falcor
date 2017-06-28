@@ -199,57 +199,6 @@
     <ClCompile Include="API\LowLevel\RootSignature.cpp">
       <Filter>API\LowLevel</Filter>
     </ClCompile>
-    <ClCompile Include="API\OpenGL\GLBlendState.cpp">
-      <Filter>API\OpenGL</Filter>
-    </ClCompile>
-    <ClCompile Include="API\OpenGL\GLBuffer.cpp">
-      <Filter>API\OpenGL</Filter>
-    </ClCompile>
-    <ClCompile Include="API\OpenGL\GLDepthStencilState.cpp">
-      <Filter>API\OpenGL</Filter>
-    </ClCompile>
-    <ClCompile Include="API\OpenGL\GLFbo.cpp">
-      <Filter>API\OpenGL</Filter>
-    </ClCompile>
-    <ClCompile Include="API\OpenGL\GLFormats.cpp">
-      <Filter>API\OpenGL</Filter>
-    </ClCompile>
-    <ClCompile Include="API\OpenGL\GLGpuTimer.cpp">
-      <Filter>API\OpenGL</Filter>
-    </ClCompile>
-    <ClCompile Include="API\OpenGL\GLProgramReflection.cpp">
-      <Filter>API\OpenGL</Filter>
-    </ClCompile>
-    <ClCompile Include="API\OpenGL\GLProgramVersion.cpp">
-      <Filter>API\OpenGL</Filter>
-    </ClCompile>
-    <ClCompile Include="API\OpenGL\GLRasterizerState.cpp">
-      <Filter>API\OpenGL</Filter>
-    </ClCompile>
-    <ClCompile Include="API\OpenGL\GLRenderContext.cpp">
-      <Filter>API\OpenGL</Filter>
-    </ClCompile>
-    <ClCompile Include="API\OpenGL\GLSampler.cpp">
-      <Filter>API\OpenGL</Filter>
-    </ClCompile>
-    <ClCompile Include="API\OpenGL\GLScreenCapture.cpp">
-      <Filter>API\OpenGL</Filter>
-    </ClCompile>
-    <ClCompile Include="API\OpenGL\GLShader.cpp">
-      <Filter>API\OpenGL</Filter>
-    </ClCompile>
-    <ClCompile Include="API\OpenGL\GLTexture.cpp">
-      <Filter>API\OpenGL</Filter>
-    </ClCompile>
-    <ClCompile Include="API\OpenGL\GLUniformBuffer.cpp">
-      <Filter>API\OpenGL</Filter>
-    </ClCompile>
-    <ClCompile Include="API\OpenGL\GLVao.cpp">
-      <Filter>API\OpenGL</Filter>
-    </ClCompile>
-    <ClCompile Include="API\OpenGL\GLWindow.cpp">
-      <Filter>API\OpenGL</Filter>
-    </ClCompile>
     <ClCompile Include="API\D3D\D3DFormats.cpp">
       <Filter>API\D3D</Filter>
     </ClCompile>
@@ -842,12 +791,6 @@
     </ClInclude>
     <ClInclude Include="API\LowLevel\RootSignature.h">
       <Filter>API\LowLevel</Filter>
-    </ClInclude>
-    <ClInclude Include="API\OpenGL\FalcorGL.h">
-      <Filter>API\OpenGL</Filter>
-    </ClInclude>
-    <ClInclude Include="API\OpenGL\GlEnum2Str.h">
-      <Filter>API\OpenGL</Filter>
     </ClInclude>
     <ClInclude Include="API\D3D\D3DState.h">
       <Filter>API\D3D</Filter>
@@ -1794,9 +1737,6 @@
     </Filter>
     <Filter Include="API\LowLevel">
       <UniqueIdentifier>{8bb5d38b-eb7d-40a8-a5aa-c934669015b5}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="API\OpenGL">
-      <UniqueIdentifier>{61d7bfbe-a0dc-47c5-b185-6811de4040c5}</UniqueIdentifier>
     </Filter>
     <Filter Include="API\D3D">
       <UniqueIdentifier>{60aa2a7f-98dc-4717-99f2-a4fd141ad6b4}</UniqueIdentifier>

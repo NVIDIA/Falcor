@@ -330,10 +330,6 @@ namespace Falcor
 
         pCB->setBlob(&mData, offset, dataSize);
 
-#ifdef FALCOR_GL
-#pragma error Fix material texture bindings for OpenGL
-#endif
-
         // Now set the textures
         std::string resourceName = std::string(varName) + ".textures.layers";
         const auto pResourceDesc = pVars->getReflection()->getResourceDesc(resourceName);

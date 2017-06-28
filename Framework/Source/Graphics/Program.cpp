@@ -235,11 +235,11 @@ namespace Falcor
         }
 
         // Pick the right target based on the current graphics API
-#if defined(FALCOR_GL) || defined(FALCOR_VK)
+#ifdef FALCOR_VK
         spSetCodeGenTarget(slangRequest, SLANG_GLSL);
         spAddPreprocessorDefine(slangRequest, "FALCOR_GLSL", "1");
         SlangSourceLanguage sourceLanguage = SLANG_SOURCE_LANGUAGE_GLSL;
-#elif defined(FALCOR_D3D11) || defined(FALCOR_D3D12)
+#elif defined FALCOR_D3D
         // Note: we could compile Slang directly to DXBC (by having Slang invoke the MS compiler for us,
         // but that path seems to have more issues at present, so let's just go to HLSL instead...)
         spSetCodeGenTarget(slangRequest, SLANG_HLSL);
