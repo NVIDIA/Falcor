@@ -3,6 +3,21 @@
 
 
 
+cbuffer cbR0  : register ( b0 )
+{ 
+float4 cbR0_sv0;
+float4 cbR0_sv1;
+
+
+}; 
+
+cbuffer cbR1 
+{ 
+float4 cbR1_sv0;
+
+
+}; 
+
 cbuffer cbR2 
 { 
 float4 cbR2_sv0;
@@ -11,55 +26,32 @@ float4 cbR2_sv1;
 
 }; 
 
-cbuffer cbR3 
+cbuffer cbR3  : register ( b1 )
 { 
 float4 cbR3_sv0;
-float4 cbR3_sv1;
 
 
 }; 
 
-StructuredBuffer<float4> sbR1;
-
-RWStructuredBuffer<float4> rwSBR2;
-
-RWStructuredBuffer<float4> rwSBR3;
+RWStructuredBuffer<float4> rwSBR1;
 
 
-SamplerState samplerR0;
 
-SamplerState samplerR2 : register ( s0 );
+RWTexture2D<float4> erTex : register ( u7 );
 
-SamplerState samplerR3;
-
-SamplerState samplerR4 : register ( s1 );
-
-
-Texture2D<float4> textureR1 : register ( t4 );
-
-Texture2D<float4> textureR2;
-
-Texture2D<float4> textureR3;
-
-Texture2D<float4> textureR4;
-
-RWTexture2D<float4> rwTextureR0 : register ( u6 );
+RWTexture2D<float4> rwTextureR0;
 
 RWTexture2D<float4> rwTextureR1;
 
-RWTexture2D<float4> rwTextureR3;
 
-
-ByteAddressBuffer  rbR1;
-
-ByteAddressBuffer  rbR2;
-
-ByteAddressBuffer  rbR3 : register ( t2 );
+RWByteAddressBuffer  rwRBR1;
 
 
 
 struct HS_OUT 
 { 
+float4 output0 : OUTPUT0; 
+float4 output1 : OUTPUT1; 
 }; 
 
 
@@ -129,6 +121,8 @@ HS_OUT main(InputPatch<VS_CONTROL_POINT_OUTPUT, MAX_POINTS> ip, uint i : SV_Outp
 
 HS_OUT hsOut; 
 
+hsOut.output0 = cbR1_sv0 + cbR2_sv1 + erTex.Load(0) + rwTextureR0.Load(0) + rwTextureR1.Load(0) + float4(0.05, 0.05, 0.05, 0.05);
+hsOut.output1 = cbR1_sv0 + cbR2_sv1 + erTex.Load(0) + rwTextureR0.Load(0) + rwTextureR1.Load(0) + float4(0.05, 0.05, 0.05, 0.05);
 
 
 return hsOut; 

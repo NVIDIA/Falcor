@@ -1,25 +1,23 @@
 {
     "version" : "DX5.0", 
-    "stages" : "vs/gs/ps", 
+    "stages" : "vs/hs/ds/gs/ps", 
     "random seed" : 203,
 
-    "limitVertexShaderTargets" : 5,
-    "limitPixelShaderTargets": 4,
+    "allowUAVRegisterOverlap" : "false", 
 
     "constant buffers" : 4,
-    "texture buffers" : 0,
 
-    "rw structured buffers" : 5,
-    "structured buffers" : 2,
+    "rw structured buffers" : 2,
+    "structured buffers" : 1,
 
     "rw raw buffers" : 2,
-    "raw buffers" : 4,
+    "raw buffers" : 1,
 
     "rw textures" : 4,
-    "textures" : 6,
+    "textures" : 2,
 
-    "samplers" : 5,
+    "samplers" : 0,
 
     "mode" : "invalid",
-    "invalidResourceType" : "textures"
+    "invalidResourceType" : "uavs"
 }

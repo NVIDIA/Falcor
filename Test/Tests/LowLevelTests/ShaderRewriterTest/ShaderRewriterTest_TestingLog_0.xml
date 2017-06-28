@@ -2,13 +2,13 @@
 <TestLog>
 <Summary
 	TotalTests="1"
-	PassedTests="0"
-	FailedTests="1"
+	PassedTests="1"
+	FailedTests="0"
 	CrashedTests="0"
 />
 <TestResult
 	TestName="TestShaderRewriter"
-	Passed="0"
-	ErrorMessage="Error - Compiled Invalid Shaders!"
+	Passed="1"
+	ErrorMessage=""
 />
 </TestLog>

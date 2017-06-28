@@ -146,40 +146,6 @@ public:
     };
 
 
-    //  Types of Invalid Configurations.
-    //  Constant Buffer Invalid - Redefinition / Overlapping Registers.
-    //  Texture Buffer Invalid - Redefinition / Overlapping Registers.
-    //  StructuredBuffer Invalid - Redefinition / Overlapping Registers.
-    //  Textures - Redefinition / Overlapping Registers.
-    //  RawBuffer - Redefinition / Overlapping Registers.
-    //  Samplers - Redefinition / Overlapping Registers.
-    enum class Mode : int
-    {
-        Valid = 0, 
-        Invalid = 1
-    };
-
-    struct TestInstance
-    {
-        Mode constantBuffer;
-        Mode textureBuffer;
-        Mode structuredBuffer;
-        Mode textures;
-        Mode rawBuffers;
-        Mode samplers;
-    };
-
-    struct ReservedResources
-    {
-        uint32_t reservedCBS = 0;
-        uint32_t reservedTBs = 0;
-        uint32_t reservedSBS = 0;
-        uint32_t reservedTextures = 0;
-        uint32_t reservedSamplers = 0;
-    };
-
-
-
     //  
     struct RegisterCount
     {
@@ -223,21 +189,13 @@ public:
 
     
     //  Verify that the Resources are in keeping with the Program Creation.
-    bool verifyProgramResources(const GraphicsVars::SharedPtr & graphicsProgramVars, std::string & errorMessage);
-    bool verifyProgramResources(const ComputeVars::SharedPtr & computeProgramVars, std::string & errorMessage);
-
-    //  Verify that the Resources are in keeping with the Shader Stage.
-    bool verifyProgramResources(const TestShaderWriter::ShaderResourcesData & rsData, const GraphicsVars::SharedPtr & graphicsProgramVars, std::string & errorMessage);
-    bool verifyProgramResources(const TestShaderWriter::ShaderResourcesData & rsData, const ComputeVars::SharedPtr & computeProgramVars, std::string & errorMessage);
+    bool verifyProgramResources(ProgramReflection::SharedConstPtr programReflection, std::string & errorMessage);
 
 
 private:
 
     //  Generate the Constant Buffer Resources that cause an error.
     void generateErrorConstantBufferResources(std::vector<TestShaderWriter::ConstantBufferResource> & cbs);
-
-    //  Generate the Texture Buffer Resources that cause an error.
-    void generateErrorTextureBufferResources(std::vector<TestShaderWriter::TextureBufferResource> & tbs);
 
     //  Generate the Structured Buffer Resources that cause an error.
     void generateErrorStructuredBufferResources(std::vector<TestShaderWriter::StructuredBufferResource> & sbs);
@@ -252,13 +210,12 @@ private:
     void generateErrorSamplersResources(std::vector<TestShaderWriter::SamplerResource> & samps);
 
     //  Generate the UAV Resources that cause an error.
-    void generateErrorUAVResources(std::vector<TestShaderWriter::StructuredBufferResource> & rwSBs, std::vector<TestShaderWriter::RawBufferResource> & rwRBs, std::vector<TestShaderWriter::TextureResource> & rwTexs);
+    void generateErrorUAVResources(std::vector<TestShaderWriter::StructuredBufferResource> & rwSBs, std::vector<TestShaderWriter::TextureResource> & rwTexs);
 
     //  Generate the Constant Buffer Resources.
     void generateConstantBufferResources(std::vector<TestShaderWriter::ConstantBufferResource> & cbs);
 
     //  Generate the Texture Buffer Resources.
-    void generateTextureBufferResources(std::vector<TestShaderWriter::TextureBufferResource> & tbs);
 
     //  Generate the Structured Buffer Resources.
     void generateStructuredBufferResources(std::vector<TestShaderWriter::StructuredBufferResource> & sbs, std::vector<TestShaderWriter::StructuredBufferResource> & rwSBs);
@@ -284,9 +241,6 @@ private:
     //  Distribute the Constant Buffer Resources.
     void distributeConstantBuffers(std::vector<TestShaderWriter::ConstantBufferResource> & cbs);
 
-    //   Distribute the Texture BUffer Resources.
-    void distributeTextureBuffers(std::vector<TestShaderWriter::TextureBufferResource> & tbs);
-
     //  Distribute the Structured Buffers.
     void distributeStructuredBuffers(std::vector<TestShaderWriter::StructuredBufferResource> & sbs, std::vector<TestShaderWriter::StructuredBufferResource> & rwSBs);
 
@@ -300,7 +254,7 @@ private:
     void distributeRawBuffers(std::vector<TestShaderWriter::RawBufferResource> & rBs, std::vector<TestShaderWriter::RawBufferResource> & rwRBs);
 
     //  Verify All Resources.
-    bool verifyAllResources(const TestShaderWriter::ShaderResourcesData & rsData, const GraphicsVars::SharedPtr & graphicsProgramVars, std::string & errorMessage);
+    bool verifyAllResources(const TestShaderWriter::ShaderResourcesData & rsData, ProgramReflection::SharedConstPtr graphicsReflection, std::string & errorMessage);
 
     //  Verify Common Resource.
     bool verifyCommonResourceMatch(const TestShaderWriter::ShaderResource & srData, ProgramReflection::Resource::ResourceType resourceType, ProgramReflection::SharedConstPtr  graphicsReflection, std::string & errorMessage);

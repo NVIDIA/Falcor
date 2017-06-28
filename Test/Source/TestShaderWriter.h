@@ -170,13 +170,6 @@ public:
     };
 
 
-    //  Texture Buffer Resource.
-    struct TextureBufferResource
-    {
-
-    };
-
-
     //  Constant Buffer Resource.
     struct ConstantBufferResource
     {
@@ -227,9 +220,6 @@ public:
         
         //  Constant Buffer Resources.
         std::vector<ConstantBufferResource> cbs;
-
-        //  Texture Buffer Resources.
-        std::vector<TextureBufferResource> tbs;
         
         //  Structured Buffer Resources.
         std::vector<StructuredBufferResource> sbs;
@@ -345,9 +335,6 @@ private:
     //  Write Declare Constant Buffer Resources.
     static std::string writeDeclareConstantBufferResources(const ShaderResourcesData & shaderResourcesData);
     static std::string writeUseConstantBufferResources(const ShaderResourcesData & shaderResourcesData);
-
-    //  Write Declare Texture Buffer Resources.
-    static std::string writeDeclareTextureBufferResources(const ShaderResourcesData & shaderResourcesData);
 
     //  Write Declare Structured Buffer Resources.
     static std::string writeDeclareStructuredBufferResources(const std::vector<StructuredBufferResource> & givenStructuredBufferResources);

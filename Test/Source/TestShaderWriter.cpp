@@ -787,12 +787,6 @@ std::string TestShaderWriter::writeUseConstantBufferResources(const ShaderResour
     return useConstantBuffersCode;
 }
 
-//
-std::string TestShaderWriter::writeDeclareTextureBufferResources(const ShaderResourcesData & shaderResourcesData)
-{
-
-    return "";
-}
 
 //  
 std::string TestShaderWriter::writeDeclareStructuredBufferResources(const std::vector<StructuredBufferResource> & givenStructuredBufferResources)

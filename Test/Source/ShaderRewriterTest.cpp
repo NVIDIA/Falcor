@@ -108,13 +108,18 @@ testing_func(ShaderRewriterTest, TestShaderRewriter)
 
         if (graphicsProgramVersion)
         {
+            if (shaderTestMaker.viewShaderTestLayout().mode == "invalid")
+            {
+                return test_fail("Error - Compiled Invalid Shaders!");
+            }
+
             //  Create the Graphics Program.
             GraphicsVars::SharedPtr graphicsProgramVars = GraphicsVars::create(graphicsProgram->getActiveVersion()->getReflector());
           
             std::string errorMessage = "";
 
             //  Verify the Program Resources.
-            resourceVerify = shaderTestMaker.verifyProgramResources(graphicsProgramVars, errorMessage);
+            resourceVerify = shaderTestMaker.verifyProgramResources(graphicsProgramVars->getReflection(), errorMessage);
 
             //
             if (!resourceVerify)
@@ -181,7 +186,7 @@ testing_func(ShaderRewriterTest, TestShaderRewriter)
             std::string errorMessage = "";
 
             //  Verify the Program Resources.
-            resourceVerify = shaderTestMaker.verifyProgramResources(graphicsProgramVars, errorMessage);
+            resourceVerify = shaderTestMaker.verifyProgramResources(graphicsProgramVars->getReflection(), errorMessage);
             
             //
             if (!resourceVerify)
@@ -224,7 +229,7 @@ testing_func(ShaderRewriterTest, TestShaderRewriter)
         GraphicsProgram::SharedPtr graphicsProgram = GraphicsProgram::createFromFile("VS.vs.hlsl", "PS.ps.hlsl");
 
         //
-        ProgramVersion::SharedConstPtr graphicsProgramVersion = (graphicsProgram->getActiveVersion(true));
+        ProgramVersion::SharedConstPtr graphicsProgramVersion = (graphicsProgram->getActiveVersion());
 
         if (graphicsProgramVersion)
         {
@@ -239,7 +244,7 @@ testing_func(ShaderRewriterTest, TestShaderRewriter)
             std::string errorMessage;
 
             //  Verify the Program Resources.
-            resourceVerify = shaderTestMaker.verifyProgramResources(graphicsProgramVars, errorMessage);
+            resourceVerify = shaderTestMaker.verifyProgramResources(graphicsProgramVars->getReflection(), errorMessage);
 
             //
             if (!resourceVerify)
@@ -274,7 +279,7 @@ testing_func(ShaderRewriterTest, TestShaderRewriter)
         ComputeProgram::SharedPtr computeProgram = ComputeProgram::createFromFile("CS.cs.hlsl");
 
         //
-        ProgramVersion::SharedConstPtr computeProgramVersion = (computeProgram->getActiveVersion(true));
+        ProgramVersion::SharedConstPtr computeProgramVersion = (computeProgram->getActiveVersion());
 
         if (computeProgramVersion)
         {
@@ -284,12 +289,12 @@ testing_func(ShaderRewriterTest, TestShaderRewriter)
             }
 
             //  Create the Graphics Program.
-            ComputeVars::SharedPtr graphicsProgramVars = ComputeVars::create(computeProgramVersion->getReflector());
+            ComputeVars::SharedPtr computeProgramVars = ComputeVars::create(computeProgramVersion->getReflector());
 
             std::string errorMessage;
 
             //  Verify the Program Resources.
-            resourceVerify = shaderTestMaker.verifyProgramResources(graphicsProgramVars, errorMessage);
+            resourceVerify = shaderTestMaker.verifyProgramResources(computeProgramVars->getReflection(), errorMessage);
 
             //
             if (!resourceVerify)

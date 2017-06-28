@@ -4,6 +4,10 @@ struct PS_IN
 { 
 float4 input0 : OUTPUT0; 
 float4 input1 : OUTPUT1; 
+float4 input2 : OUTPUT2; 
+float4 input3 : OUTPUT3; 
+float4 input4 : OUTPUT4; 
+float4 input5 : OUTPUT5; 
 }; 
 
 
@@ -11,6 +15,11 @@ struct PS_OUT
 { 
 float4 output0 : SV_TARGET0; 
 float4 output1 : SV_TARGET1; 
+float4 output2 : SV_TARGET2; 
+float4 output3 : SV_TARGET3; 
+float4 output4 : SV_TARGET4; 
+float4 output5 : SV_TARGET5; 
+float4 output6 : SV_TARGET6; 
 }; 
 
 
@@ -22,15 +31,6 @@ cbuffer cbR0
 { 
 float4 cbR0_sv0;
 float4 cbR0_sv1;
-float4 cbR0_sv2;
-
-
-}; 
-
-cbuffer cbR1  : register ( b0 )
-{ 
-float4 cbR1_sv0;
-float4 cbR1_sv1;
 
 
 }; 
@@ -46,43 +46,22 @@ float4 cbR2_sv1;
 cbuffer cbR3 
 { 
 float4 cbR3_sv0;
-float4 cbR3_sv1;
 
 
 }; 
 
 StructuredBuffer<float4> sbR0;
 
-RWStructuredBuffer<float4> rwSBR0 : register ( u2 );
-
-RWStructuredBuffer<float4> rwSBR2;
-
-RWStructuredBuffer<float4> rwSBR3;
-
-RWStructuredBuffer<float4> rwSBR4 : register ( u4 );
 
 
-SamplerState samplerR4;
+RWTexture2D<float4> erTex : register ( u7 );
+
+RWTexture2D<float4> rwTextureR1;
+
+RWTexture2D<float4> rwTextureR2;
 
 
-Texture2D<float4> erTex : register ( t1 );
-
-Texture2D<float4> textureR2;
-
-Texture2D<float4> textureR4;
-
-Texture2D<float4> textureR5;
-
-RWTexture2D<float4> rwTextureR0;
-
-RWTexture2D<float4> rwTextureR1 : register ( u6 );
-
-RWTexture2D<float4> rwTextureR3;
-
-
-ByteAddressBuffer  rbR0 : register ( t2 );
-
-ByteAddressBuffer  rbR1;
+ByteAddressBuffer  rbR0;
 
 RWByteAddressBuffer  rwRBR0;
 
@@ -94,8 +73,13 @@ PS_OUT main(PS_IN psIn)
 
 PS_OUT psOut; 
 
-psOut.output0 = cbR0_sv0 + cbR2_sv0 + cbR3_sv1 + erTex.Load(int3(0, 0, 0)) + textureR2.Load(int3(0, 0, 0)) + textureR4.Load(int3(0, 0, 0)) + textureR5.Load(int3(0, 0, 0)) + rwTextureR0.Load(0) + rwTextureR1.Load(0) + rwTextureR3.Load(0) + rwSBR3[0] + rwSBR4[0] + rbR0.Load4(0) + psIn.input0 + psIn.input1 + float4(0.05, 0.05, 0.05, 0.05);
-psOut.output1 = cbR0_sv0 + cbR2_sv0 + cbR3_sv1 + erTex.Load(int3(0, 0, 0)) + textureR2.Load(int3(0, 0, 0)) + textureR4.Load(int3(0, 0, 0)) + textureR5.Load(int3(0, 0, 0)) + rwTextureR0.Load(0) + rwTextureR1.Load(0) + rwTextureR3.Load(0) + rwSBR3[0] + rwSBR4[0] + rbR0.Load4(0) + psIn.input0 + psIn.input1 + float4(0.05, 0.05, 0.05, 0.05);
+psOut.output0 = cbR2_sv1 + erTex.Load(0) + rwTextureR1.Load(0) + rwTextureR2.Load(0) + rbR0.Load4(0) + psIn.input0 + psIn.input1 + psIn.input2 + psIn.input3 + psIn.input4 + psIn.input5 + float4(0.05, 0.05, 0.05, 0.05);
+psOut.output1 = cbR2_sv1 + erTex.Load(0) + rwTextureR1.Load(0) + rwTextureR2.Load(0) + rbR0.Load4(0) + psIn.input0 + psIn.input1 + psIn.input2 + psIn.input3 + psIn.input4 + psIn.input5 + float4(0.05, 0.05, 0.05, 0.05);
+psOut.output2 = cbR2_sv1 + erTex.Load(0) + rwTextureR1.Load(0) + rwTextureR2.Load(0) + rbR0.Load4(0) + psIn.input0 + psIn.input1 + psIn.input2 + psIn.input3 + psIn.input4 + psIn.input5 + float4(0.05, 0.05, 0.05, 0.05);
+psOut.output3 = cbR2_sv1 + erTex.Load(0) + rwTextureR1.Load(0) + rwTextureR2.Load(0) + rbR0.Load4(0) + psIn.input0 + psIn.input1 + psIn.input2 + psIn.input3 + psIn.input4 + psIn.input5 + float4(0.05, 0.05, 0.05, 0.05);
+psOut.output4 = cbR2_sv1 + erTex.Load(0) + rwTextureR1.Load(0) + rwTextureR2.Load(0) + rbR0.Load4(0) + psIn.input0 + psIn.input1 + psIn.input2 + psIn.input3 + psIn.input4 + psIn.input5 + float4(0.05, 0.05, 0.05, 0.05);
+psOut.output5 = cbR2_sv1 + erTex.Load(0) + rwTextureR1.Load(0) + rwTextureR2.Load(0) + rbR0.Load4(0) + psIn.input0 + psIn.input1 + psIn.input2 + psIn.input3 + psIn.input4 + psIn.input5 + float4(0.05, 0.05, 0.05, 0.05);
+psOut.output6 = cbR2_sv1 + erTex.Load(0) + rwTextureR1.Load(0) + rwTextureR2.Load(0) + rbR0.Load4(0) + psIn.input0 + psIn.input1 + psIn.input2 + psIn.input3 + psIn.input4 + psIn.input5 + float4(0.05, 0.05, 0.05, 0.05);
 
 
 return psOut; 
