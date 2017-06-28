@@ -176,33 +176,10 @@ namespace Falcor
         static CommandSignatureHandle spDrawCommandSig;
         static CommandSignatureHandle spDrawIndexCommandSig;
 
-        struct BlitData
-        {
-            FullScreenPass::UniquePtr pPass;
-            GraphicsVars::SharedPtr pVars;
-            GraphicsState::SharedPtr pState;
-
-            Sampler::SharedPtr pLinearSampler;
-            Sampler::SharedPtr pPointSampler;
-
-            ConstantBuffer::SharedPtr pSrcRectBuffer;
-            vec2 prevSrcRectOffset;
-            vec2 prevSrcReftScale;
-
-            // Variable offsets in constant buffer
-            size_t offsetVarOffset;
-            size_t scaleVarOffset;
-        };
-
-        static BlitData sBlitData;
-
         /** Creates command signatures for DrawIndirect, DrawIndexedIndirect. Also calls
         compute context's initDispatchCommandSignature() to create command signature for dispatchIndirect
         */
         static void initDrawCommandSignatures();
-
-        static void initBlitData();
-        static void releaseBlitData();
 
         // Internal functions used by the API layers
         void applyProgramVars();

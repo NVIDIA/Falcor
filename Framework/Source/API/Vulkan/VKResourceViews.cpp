@@ -33,6 +33,8 @@
 
 namespace Falcor
 {
+    VkImageAspectFlags getAspectFlagsFromFormat(ResourceFormat format);
+
     DepthStencilView::SharedPtr DepthStencilView::sNullView;
     RenderTargetView::SharedPtr RenderTargetView::sNullView;
     UnorderedAccessView::SharedPtr UnorderedAccessView::sNullView;
@@ -63,14 +65,13 @@ namespace Falcor
     {
         outInfo = {};
 
-        ResourceFormat colorFormat = pTexture->getFormat();
-        bool isDepth = isDepthFormat(pTexture->getFormat());
+        ResourceFormat texFormat = pTexture->getFormat();
 
         outInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
         outInfo.image = pTexture->getApiHandle().getImage();
         outInfo.viewType = getViewType(pTexture->getType(), pTexture->getArraySize() > 1);
-        outInfo.format = getVkFormat(colorFormat);
-        outInfo.subresourceRange.aspectMask = isDepth ? VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT : VK_IMAGE_ASPECT_COLOR_BIT;
+        outInfo.format = getVkFormat(texFormat);
+        outInfo.subresourceRange.aspectMask = getAspectFlagsFromFormat(texFormat);
         outInfo.subresourceRange.baseMipLevel = mostDetailedMip;
         outInfo.subresourceRange.levelCount = mipCount;
         outInfo.subresourceRange.baseArrayLayer = firstArraySlice;

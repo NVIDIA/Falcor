@@ -143,7 +143,7 @@ namespace Falcor
         vkCopy.bufferOffset = pStaging->getGpuAddressOffset();
         vkCopy.bufferRowLength = 0;
         vkCopy.bufferImageHeight = 0;
-        vkCopy.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        vkCopy.imageSubresource.aspectMask = getAspectFlagsFromFormat(pTexture->getFormat());
         vkCopy.imageSubresource.baseArrayLayer = pTexture->getSubresourceArraySlice(subresourceIndex);
         vkCopy.imageSubresource.layerCount = 1;
         vkCopy.imageSubresource.mipLevel = mipLevel;
@@ -201,7 +201,7 @@ namespace Falcor
                 barrier.newLayout = getImageLayout(newState);
                 barrier.oldLayout = getImageLayout(pResource->mState);
                 barrier.image = pResource->getApiHandle().getImage();
-                barrier.subresourceRange.aspectMask = isDepthStencilFormat(pTexture->getFormat()) ? (VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT) : VK_IMAGE_ASPECT_COLOR_BIT;
+                barrier.subresourceRange.aspectMask = getAspectFlagsFromFormat(pTexture->getFormat());
                 barrier.subresourceRange.baseArrayLayer = 0;
                 barrier.subresourceRange.baseMipLevel = 0;
                 barrier.subresourceRange.layerCount = pTexture->getArraySize();
