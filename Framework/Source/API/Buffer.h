@@ -88,7 +88,11 @@ namespace Falcor
         */
         void updateData(const void* pData, size_t offset, size_t size);
 
-        /** Get the GPU address
+        /** Get the offset from the beginning of the GPU resource
+        */
+        uint64_t getGpuAddressOffset() const { return mDynamicData.offset; };
+
+        /** Get the GPU address (this includes the offset)
         */
         uint64_t getGpuAddress() const;
 

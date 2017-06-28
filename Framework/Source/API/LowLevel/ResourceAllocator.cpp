@@ -60,7 +60,7 @@ namespace Falcor
         else
         {
             mpActivePage = std::make_unique<PageData>();
-            initCommonPageData(mpActivePage->common, mPageSize);
+            initBasePageData((*mpActivePage), mPageSize);
         }
 
         mpActivePage->currentOffset = 0;
@@ -73,7 +73,7 @@ namespace Falcor
         if (size > mPageSize)
         {
             data.pageID = ResourceAllocator::AllocationData::kMegaPageId;
-            initCommonPageData(data.common, size);
+            initBasePageData(data, size);
         }
         else
         {
@@ -86,9 +86,9 @@ namespace Falcor
             }
 
             data.pageID = mCurrentPageId;
-            data.common.gpuAddress = mpActivePage->common.gpuAddress + currentOffset;
-            data.common.pData = mpActivePage->common.pData + currentOffset;
-            data.common.pResourceHandle = mpActivePage->common.pResourceHandle;
+            data.offset = currentOffset;
+            data.pData = mpActivePage->pData + currentOffset;
+            data.pResourceHandle = mpActivePage->pResourceHandle;
             mpActivePage->currentOffset = currentOffset + size;
             mpActivePage->allocationsCount++;
         }
@@ -99,7 +99,7 @@ namespace Falcor
 
     void ResourceAllocator::release(AllocationData& data)
     {
-        if (data.common.pResourceHandle) // #VKTODO this is always true, need to figure out how to handle VK deferred releases
+        if (data.pResourceHandle) // #VKTODO this is always true, need to figure out how to handle VK deferred releases
         {
             mDeferredReleases.push(data);
         }

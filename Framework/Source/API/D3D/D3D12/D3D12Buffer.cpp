@@ -94,7 +94,7 @@ namespace Falcor
             if(hasInitData == false) // Else the allocation will happen when updating the data
             {
                 mDynamicData = gpDevice->getResourceAllocator()->allocate(mSize, getBufferDataAlignment(this));
-                mApiHandle = mDynamicData.common.pResourceHandle;
+                mApiHandle = mDynamicData.pResourceHandle;
             }
         }
         else if (mCpuAccess == CpuAccess::Read && mBindFlags == BindFlags::None)
@@ -113,14 +113,7 @@ namespace Falcor
 
     uint64_t Buffer::getGpuAddress() const
     {
-        if (mCpuAccess == CpuAccess::Write)
-        {
-            return mDynamicData.common.gpuAddress;
-        }
-        else
-        {
-            return mApiHandle->GetGPUVirtualAddress();
-        }
+        return mDynamicData.offset + mApiHandle->GetGPUVirtualAddress();
     }
 
     void Buffer::unmap()

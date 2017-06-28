@@ -93,8 +93,7 @@ namespace Falcor
 
         resourceBarrier(pBuffer, Resource::State::CopyDest);
 
-        offset = pUploadBuffer->getGpuAddress() - pResource->GetGPUVirtualAddress();
-        mpLowLevelData->getCommandList()->CopyBufferRegion(pBuffer->getApiHandle(), 0, pResource, offset, size);
+        mpLowLevelData->getCommandList()->CopyBufferRegion(pBuffer->getApiHandle(), 0, pResource, pUploadBuffer->getGpuAddressOffset(), size);
     }
 
     void CopyContext::updateTextureSubresources(const Texture* pTexture, uint32_t firstSubresource, uint32_t subresourceCount, const void* pData)
@@ -121,8 +120,7 @@ namespace Falcor
         ID3D12ResourcePtr pResource = pBuffer->getApiHandle();
 
         // Get the offset from the beginning of the resource
-        uint64_t offset = pBuffer->getGpuAddress() - pResource->GetGPUVirtualAddress();
-
+        uint64_t offset = pBuffer->getGpuAddressOffset();
         resourceBarrier(pTexture, Resource::State::CopyDest);
 
         const uint8_t* pSrc = (uint8_t*)pData;

@@ -78,14 +78,14 @@ namespace Falcor
             }
 
             // Allocate a new buffer
-            if (mDynamicData.common.pResourceHandle)
+            if (mDynamicData.pResourceHandle)
             {
                 gpDevice->getResourceAllocator()->release(mDynamicData);
             }
             mDynamicData = gpDevice->getResourceAllocator()->allocate(mSize, getBufferDataAlignment(this));
-            mApiHandle = mDynamicData.common.pResourceHandle;
+            mApiHandle = mDynamicData.pResourceHandle;
             invalidateViews();
-            return mDynamicData.common.pData;
+            return mDynamicData.pData;
         }
         else
         {

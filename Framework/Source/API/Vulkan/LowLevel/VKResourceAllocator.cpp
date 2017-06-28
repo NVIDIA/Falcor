@@ -34,7 +34,7 @@ namespace Falcor
 {
     Buffer::ApiHandle createBuffer(size_t size, Buffer::BindFlags bindFlags, Device::MemoryType memType);
 
-    void ResourceAllocator::initCommonPageData(CommonData& data, size_t size)
+    void ResourceAllocator::initBasePageData(BaseData& data, size_t size)
     {
         // Create a buffer
         data.pResourceHandle = createBuffer(size, Buffer::BindFlags::Constant | Buffer::BindFlags::Vertex, Device::MemoryType::Upload);
