@@ -38,4 +38,5 @@ namespace Falcor
     void initVkViewportInfo(const std::vector<GraphicsStateObject::Viewport>& viewports, const std::vector<GraphicsStateObject::Scissor>& scissors, std::vector<VkViewport>& vkViewportsOut, std::vector<VkRect2D>& vkScissorsOut, VkPipelineViewportStateCreateInfo& infoOut);
     void initVkMultiSampleInfo(const BlendState* pState, const Fbo::Desc& fboDesc, const uint32_t& sampleMask, VkPipelineMultisampleStateCreateInfo& infoOut);
     void initVkInputAssemblyInfo(const Vao* pVao, VkPipelineInputAssemblyStateCreateInfo& infoOut);
+    void initVkRenderPassInfo(const Fbo::Desc& fboDesc, const DepthStencilState* pDsState, std::vector<VkAttachmentDescription>& attachmentDescs, std::vector<VkAttachmentReference>& attachmentRefs, VkSubpassDescription& subpassDesc, VkRenderPassCreateInfo& infoOut);
 }

@@ -471,4 +471,77 @@ namespace Falcor
         infoOut.primitiveRestartEnable = VK_FALSE;
     }
 
+    void initVkRenderPassInfo(const Fbo::Desc& fboDesc, const DepthStencilState* pDsState, std::vector<VkAttachmentDescription>& attachmentDescs, std::vector<VkAttachmentReference>& attachmentRefs, VkSubpassDescription& subpassDesc, VkRenderPassCreateInfo& infoOut)
+    {
+        //
+        // Init Color and Depth Attachment Info
+        //
+
+        attachmentDescs.resize(Fbo::getMaxColorTargetCount() + 1); // Color + Depth
+
+        // Color attachments
+        for (uint32_t i = 0; i < Fbo::getMaxColorTargetCount(); i++)
+        {
+            // #VKTODO: Render Pass setup should be a place to look into when looking into performance
+            VkAttachmentDescription& desc = attachmentDescs[i];
+            desc.flags = 0;
+            desc.format = getVkFormat(fboDesc.getColorTargetFormat(i));
+            desc.samples = (VkSampleCountFlagBits)fboDesc.getSampleCount();
+            desc.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
+            desc.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+            desc.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE; // This is a color attachment
+            desc.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE; // This is a color attachment
+            desc.initialLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+            desc.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+        }
+
+        // Depth
+        VkAttachmentDescription& depthDesc = attachmentDescs.back();
+        depthDesc.flags = 0;
+        depthDesc.format = getVkFormat(fboDesc.getDepthStencilFormat());
+        depthDesc.samples = (VkSampleCountFlagBits)fboDesc.getSampleCount();
+        depthDesc.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
+        depthDesc.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+        depthDesc.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
+        depthDesc.stencilStoreOp = VK_ATTACHMENT_STORE_OP_STORE;
+        depthDesc.initialLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+        depthDesc.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+        //
+        // Init Subpass info
+        //
+
+        attachmentRefs.resize(Fbo::getMaxColorTargetCount() + 1); // Color + Depth
+
+        subpassDesc = {};
+        subpassDesc.colorAttachmentCount = Fbo::getMaxColorTargetCount();
+
+        // Color attachments
+        for (uint32_t i = 0; i < Fbo::getMaxColorTargetCount(); i++)
+        {
+            VkAttachmentReference& ref = attachmentRefs[i];
+            ref.attachment = i;
+            ref.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+        }
+
+        // Depth
+        VkAttachmentReference& depthRef = attachmentRefs.back();
+        depthRef.attachment = 0; // #VKTODO does attachment number for depth mean all attachments are bound at once and identifying which one is depth is through an index?
+        depthRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+
+        //
+        // Assemble RenderPass info
+        //
+
+        infoOut = {};
+        infoOut.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+        infoOut.attachmentCount = (uint32_t)attachmentDescs.size();
+        infoOut.pAttachments = attachmentDescs.data();
+        infoOut.subpassCount = 1;
+        infoOut.pSubpasses = &subpassDesc;
+        infoOut.dependencyCount = 0;
+        infoOut.pDependencies = nullptr;
+    }
+
 }
