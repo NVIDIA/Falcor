@@ -117,6 +117,6 @@ namespace Falcor
         DepthStencilState::SharedPtr mpSetStencilDS;
         DepthStencilState::SharedPtr mpExcludeStencilDS;
 
-        GraphicsStateObject::Scissor mScissor;
+        GraphicsState::Scissor mScissor;
     };
 }

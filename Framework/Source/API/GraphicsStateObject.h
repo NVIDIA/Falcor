@@ -62,35 +62,9 @@ namespace Falcor
             Patch,
         };
 
-        struct Viewport
-        {
-            Viewport() = default;
-            Viewport(float x, float y, float w, float h, float minZ, float maxZ) : originX(x), originY(y), width(w), height(h), minDepth(minZ), maxDepth(maxZ) {}
-            float originX = 0;
-            float originY = 0;
-            float width = 0;
-            float height = 0;
-            float minDepth = 0;
-            float maxDepth = 1;
-        };
-
-        struct Scissor
-        {
-            Scissor() = default;
-            Scissor(int32_t l, int32_t t, int32_t r, int32_t b) : left(l), top(t), right(r), bottom(b) {}
-            int32_t left = 0;
-            int32_t top = 0;
-            int32_t right = 0;
-            int32_t bottom = 0;
-        };
-
         class Desc
         {
         public:
-#ifdef FALCOR_VK
-            Desc();
-#endif
-
             Desc& setRootSignature(RootSignature::SharedPtr pSignature) { mpRootSignature = pSignature; return *this; }
             Desc& setVertexLayout(VertexLayout::SharedConstPtr pLayout) { mpLayout = pLayout; return *this; }
             Desc& setFboFormats(const Fbo::Desc& fboFormats) { mFboDesc = fboFormats; return *this; }
@@ -116,16 +90,8 @@ namespace Falcor
             bool operator==(const Desc& other) const;
 
 #ifdef FALCOR_VK
-            Desc& setViewport(uint32_t index, const Viewport& vp) { mViewports[index] = vp; return *this; }
-            Desc& setScissor(uint32_t index, const Scissor& sc) { mScissors[index] = sc; return *this; }
             Desc& setVao(const Vao::SharedConstPtr& pVao) { mpVao = pVao; return *this; }
-
-            const Viewport& getViewport(uint32_t index) const { return mViewports[index]; }
-            const Scissor& getScissor(uint32_t index) const { return mScissors[index]; }
             const Vao::SharedConstPtr& getVao() const { return mpVao; }
-
-            const std::vector<Viewport>& getViewports() const { return mViewports; }
-            const std::vector<Scissor>& getScissors() const { return mScissors; }
 #endif
         private:
             friend class GraphicsStateObject;
@@ -140,9 +106,6 @@ namespace Falcor
             PrimitiveType mPrimType = PrimitiveType::Undefined;
 
 #ifdef FALCOR_VK
-            std::vector<Viewport> mViewports;
-            std::vector<Scissor> mScissors;
-
             Vao::SharedConstPtr mpVao;
 #endif
 

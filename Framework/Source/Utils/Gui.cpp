@@ -212,7 +212,7 @@ namespace Falcor
         pContext->pushGraphicsState(mpPipelineState);
 
         // Setup viewport
-        GraphicsStateObject::Viewport vp;
+        GraphicsState::Viewport vp;
         vp.originX = 0;
         vp.originY = 0;
         vp.width = ImGui::GetIO().DisplaySize.x;
@@ -231,7 +231,7 @@ namespace Falcor
             for (int32_t cmd = 0; cmd < pCmdList->CmdBuffer.Size; cmd++)
             {
                 const ImDrawCmd* pCmd = &pCmdList->CmdBuffer[cmd];
-                GraphicsStateObject::Scissor scissor((int32_t)pCmd->ClipRect.x, (int32_t)pCmd->ClipRect.y, (int32_t)pCmd->ClipRect.z, (int32_t)pCmd->ClipRect.w);
+                GraphicsState::Scissor scissor((int32_t)pCmd->ClipRect.x, (int32_t)pCmd->ClipRect.y, (int32_t)pCmd->ClipRect.z, (int32_t)pCmd->ClipRect.w);
                 mpPipelineState->setScissors(0, scissor);
                 pContext->drawIndexed(pCmd->ElemCount, idxOffset, vtxOffset);
                 idxOffset += pCmd->ElemCount;

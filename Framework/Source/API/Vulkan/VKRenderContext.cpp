@@ -95,15 +95,40 @@ namespace Falcor
         mCommandsPending = true;
     }
 
+    void setViewports(CommandListHandle cmdList, const std::vector<GraphicsState::Viewport>& viewports)
+    {
+        static_assert(offsetof(GraphicsState::Viewport, originX) == offsetof(VkViewport, x), "VP originX offset");
+        static_assert(offsetof(GraphicsState::Viewport, originY) == offsetof(VkViewport, y), "VP originY offset");
+        static_assert(offsetof(GraphicsState::Viewport, width) == offsetof(VkViewport, width), "VP width offset");
+        static_assert(offsetof(GraphicsState::Viewport, height) == offsetof(VkViewport, height), "VP height offset");
+        static_assert(offsetof(GraphicsState::Viewport, minDepth) == offsetof(VkViewport, minDepth), "VP minDepth offset");
+        static_assert(offsetof(GraphicsState::Viewport, maxDepth) == offsetof(VkViewport, maxDepth), "VP maxDepth offset");
+
+        vkCmdSetViewport(cmdList, 0, (uint32_t)viewports.size(), (VkViewport*)viewports.data());
+    }
+
+    void setScissors(CommandListHandle cmdList, const std::vector<GraphicsState::Scissor>& scissors)
+    {
+        std::vector<VkRect2D> vkScissors(scissors.size());
+        for (size_t i = 0; i < scissors.size(); i++)
+        {
+            vkScissors[i].offset.x = scissors[i].left;
+            vkScissors[i].offset.y = scissors[i].top;
+            vkScissors[i].extent.width = scissors[i].right - scissors[i].left;
+            vkScissors[i].extent.height = scissors[i].bottom - scissors[i].top;
+        }
+    }
 
     void RenderContext::prepareForDraw()
     {
+        setViewports(mpLowLevelData->getCommandList(), mpGraphicsState->getViewports());
+        setScissors(mpLowLevelData->getCommandList(), mpGraphicsState->getScissors());
     }
 
     void RenderContext::drawInstanced(uint32_t vertexCount, uint32_t instanceCount, uint32_t startVertexLocation, uint32_t startInstanceLocation)
     {
         prepareForDraw();
-        //mpLowLevelData->getCommandList()->DrawInstanced(vertexCount, instanceCount, startVertexLocation, startInstanceLocation);
+        vkCmdDraw(mpLowLevelData->getCommandList(), vertexCount, instanceCount, startVertexLocation, startInstanceLocation);
     }
 
     void RenderContext::draw(uint32_t vertexCount, uint32_t startVertexLocation)
@@ -111,13 +136,13 @@ namespace Falcor
         drawInstanced(vertexCount, 1, startVertexLocation, 0);
     }
 
-    void RenderContext::drawIndexedInstanced(uint32_t indexCount, uint32_t instanceCount, uint32_t startIndexLocation, int baseVertexLocation, uint32_t startInstanceLocation)
+    void RenderContext::drawIndexedInstanced(uint32_t indexCount, uint32_t instanceCount, uint32_t startIndexLocation, int32_t baseVertexLocation, uint32_t startInstanceLocation)
     {
         prepareForDraw();
-        //mpLowLevelData->getCommandList()->DrawIndexedInstanced(indexCount, instanceCount, startIndexLocation, baseVertexLocation, startInstanceLocation);
+        vkCmdDrawIndexed(mpLowLevelData->getCommandList(), indexCount, instanceCount, startIndexLocation, baseVertexLocation, startIndexLocation);
     }
 
-    void RenderContext::drawIndexed(uint32_t indexCount, uint32_t startIndexLocation, int baseVertexLocation)
+    void RenderContext::drawIndexed(uint32_t indexCount, uint32_t startIndexLocation, int32_t baseVertexLocation)
     {
         drawIndexedInstanced(indexCount, 1, startIndexLocation, baseVertexLocation, 0);
     }

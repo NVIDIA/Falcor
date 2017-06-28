@@ -172,7 +172,7 @@ void StereoRendering::blitTexture(Texture::SharedPtr pTexture, uint32_t xStart)
     {
         uint32_t w = mpDefaultFBO->getWidth() / 2;
         uint32_t h = mpDefaultFBO->getHeight();
-        GraphicsStateObject::Viewport vp(float(xStart), 0, float(w), float(h), 0, 1);
+        GraphicsState::Viewport vp(float(xStart), 0, float(w), float(h), 0, 1);
         mpGraphicsState->setViewport(0, vp, true);
         
         mpGraphicsState->setFbo(mpDefaultFBO, false);

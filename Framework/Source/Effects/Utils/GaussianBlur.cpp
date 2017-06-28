@@ -157,7 +157,7 @@ namespace Falcor
         }
 
         uint32_t arraySize = pSrc->getArraySize();
-        GraphicsStateObject::Viewport vp;
+        GraphicsState::Viewport vp;
         vp.originX = 0;
         vp.originY = 0;
         vp.height = (float)mpTmpFbo->getHeight();

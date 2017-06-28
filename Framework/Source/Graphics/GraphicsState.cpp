@@ -134,7 +134,7 @@ namespace Falcor
         {
             uint32_t w = pFbo->getWidth();
             uint32_t h = pFbo->getHeight();
-            GraphicsStateObject::Viewport vp(0, 0, float(w), float(h), 0, 1);
+            GraphicsState::Viewport vp(0, 0, float(w), float(h), 0, 1);
             setViewport(0, vp, true);
         }
         return *this;
@@ -162,11 +162,6 @@ namespace Falcor
         if(mpVao != pVao)
         {
             mpVao = pVao;
-
-#ifdef FALCOR_VK
-            mDesc.setVao(pVao);
-#endif
-
             mpGsoGraph->walk((void*)pVao->getVertexLayout().get());
         }
         return *this;
@@ -212,7 +207,7 @@ namespace Falcor
         return *this;
     }
 
-    void GraphicsState::pushViewport(uint32_t index, const GraphicsStateObject::Viewport& vp, bool setScissors)
+    void GraphicsState::pushViewport(uint32_t index, const GraphicsState::Viewport& vp, bool setScissors)
     {
         mVpStack[index].push(mViewports[index]);
         setViewport(index, vp, setScissors);
@@ -230,7 +225,7 @@ namespace Falcor
         mVpStack[index].pop();
     }
 
-    void GraphicsState::pushScissors(uint32_t index, const GraphicsStateObject::Scissor& sc)
+    void GraphicsState::pushScissors(uint32_t index, const GraphicsState::Scissor& sc)
     {
         mScStack[index].push(mScissors[index]);
         setScissors(index, sc);
@@ -248,17 +243,13 @@ namespace Falcor
         mScStack[index].pop();
     }
 
-    void GraphicsState::setViewport(uint32_t index, const GraphicsStateObject::Viewport& vp, bool setScissors)
+    void GraphicsState::setViewport(uint32_t index, const GraphicsState::Viewport& vp, bool setScissors)
     {
         mViewports[index] = vp;
 
-#ifdef FALCOR_VK
-        mDesc.setViewport(index, vp);
-#endif
-
         if (setScissors)
         {
-            GraphicsStateObject::Scissor sc;
+            GraphicsState::Scissor sc;
             sc.left = (int32_t)vp.originX;
             sc.right = sc.left + (int32_t)vp.width;
             sc.top = (int32_t)vp.originY;
@@ -267,13 +258,9 @@ namespace Falcor
         }
     }
 
-    void GraphicsState::setScissors(uint32_t index, const GraphicsStateObject::Scissor& sc)
+    void GraphicsState::setScissors(uint32_t index, const GraphicsState::Scissor& sc)
     {
         mScissors[index] = sc;
-
-#ifdef FALCOR_VK
-        mDesc.setScissor(index, sc);
-#endif
     }
 
     void GraphicsState::toggleSinglePassStereo(bool enable)

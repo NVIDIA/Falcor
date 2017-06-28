@@ -43,13 +43,6 @@ namespace Falcor
         VkPipelineVertexInputStateCreateInfo info;
     };
 
-    struct ViewportStateCreateInfo
-    {
-        std::vector<VkViewport> viewports;
-        std::vector<VkRect2D> scissors;
-        VkPipelineViewportStateCreateInfo info;
-    };
-
     struct RenderPassCreateInfo
     {
         std::vector<VkAttachmentDescription> attachmentDescs;
@@ -64,7 +57,6 @@ namespace Falcor
     void initVkDepthStencilInfo(const DepthStencilState* pState, VkPipelineDepthStencilStateCreateInfo& infoOut);
     void initVkVertexLayoutInfo(const VertexLayout* pLayout, VertexInputStateCreateInfo& infoOut);
     void initVkSamplerInfo(const Sampler* pSampler, VkSamplerCreateInfo& infoOut);
-    void initVkViewportInfo(const std::vector<GraphicsStateObject::Viewport>& viewports, const std::vector<GraphicsStateObject::Scissor>& scissors, ViewportStateCreateInfo& infoOut);
     void initVkMultiSampleInfo(const BlendState* pState, const Fbo::Desc& fboDesc, const uint32_t& sampleMask, VkPipelineMultisampleStateCreateInfo& infoOut);
     void initVkInputAssemblyInfo(const Vao* pVao, VkPipelineInputAssemblyStateCreateInfo& infoOut);
     void initVkRenderPassInfo(const Fbo::Desc& fboDesc, const DepthStencilState* pDsState, RenderPassCreateInfo& infoOut);

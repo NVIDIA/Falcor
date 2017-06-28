@@ -121,7 +121,7 @@ namespace Falcor
         mpPipelineState->setFbo(pState->getFbo());
         mpRenderContext->pushGraphicsState(mpPipelineState);
 
-        GraphicsStateObject::Viewport VP(0, 0, (float)pState->getFbo()->getWidth(), (float)pState->getFbo()->getHeight(), 0, 1);
+        GraphicsState::Viewport VP(0, 0, (float)pState->getFbo()->getWidth(), (float)pState->getFbo()->getHeight(), 0, 1);
         mpPipelineState->setViewport(0, VP);
 
         // Set the matrix

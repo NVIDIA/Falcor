@@ -193,24 +193,24 @@ namespace Falcor
         pCtx->getLowLevelData()->getCommandList()->OMSetRenderTargets(colorTargets, pRTV.data(), FALSE, &pDSV);
     }
 
-    static void D3D12SetViewports(CommandListHandle pList, const GraphicsStateObject::Viewport* vp)
+    static void D3D12SetViewports(CommandListHandle pList, const GraphicsState::Viewport* vp)
     {
-        static_assert(offsetof(GraphicsStateObject::Viewport, originX) == offsetof(D3D12_VIEWPORT, TopLeftX), "VP originX offset");
-        static_assert(offsetof(GraphicsStateObject::Viewport, originY) == offsetof(D3D12_VIEWPORT, TopLeftY), "VP originY offset");
-        static_assert(offsetof(GraphicsStateObject::Viewport, width) == offsetof(D3D12_VIEWPORT, Width), "VP Width offset");
-        static_assert(offsetof(GraphicsStateObject::Viewport, height) == offsetof(D3D12_VIEWPORT, Height), "VP Height offset");
-        static_assert(offsetof(GraphicsStateObject::Viewport, minDepth) == offsetof(D3D12_VIEWPORT, MinDepth), "VP MinDepth offset");
-        static_assert(offsetof(GraphicsStateObject::Viewport, maxDepth) == offsetof(D3D12_VIEWPORT, MaxDepth), "VP TopLeftX offset");
+        static_assert(offsetof(GraphicsState::Viewport, originX) == offsetof(D3D12_VIEWPORT, TopLeftX), "VP originX offset");
+        static_assert(offsetof(GraphicsState::Viewport, originY) == offsetof(D3D12_VIEWPORT, TopLeftY), "VP originY offset");
+        static_assert(offsetof(GraphicsState::Viewport, width) == offsetof(D3D12_VIEWPORT, Width), "VP Width offset");
+        static_assert(offsetof(GraphicsState::Viewport, height) == offsetof(D3D12_VIEWPORT, Height), "VP Height offset");
+        static_assert(offsetof(GraphicsState::Viewport, minDepth) == offsetof(D3D12_VIEWPORT, MinDepth), "VP MinDepth offset");
+        static_assert(offsetof(GraphicsState::Viewport, maxDepth) == offsetof(D3D12_VIEWPORT, MaxDepth), "VP TopLeftX offset");
 
         pList->RSSetViewports(D3D12_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE, (D3D12_VIEWPORT*)vp);
     }
 
-    static void D3D12SetScissors(CommandListHandle pList, const GraphicsStateObject::Scissor* sc)
+    static void D3D12SetScissors(CommandListHandle pList, const GraphicsState::Scissor* sc)
     {
-        static_assert(offsetof(GraphicsStateObject::Scissor, left) == offsetof(D3D12_RECT, left), "Scissor.left offset");
-        static_assert(offsetof(GraphicsStateObject::Scissor, top) == offsetof(D3D12_RECT, top), "Scissor.top offset");
-        static_assert(offsetof(GraphicsStateObject::Scissor, right) == offsetof(D3D12_RECT, right), "Scissor.right offset");
-        static_assert(offsetof(GraphicsStateObject::Scissor, bottom) == offsetof(D3D12_RECT, bottom), "Scissor.bottom offset");
+        static_assert(offsetof(GraphicsState::Scissor, left) == offsetof(D3D12_RECT, left), "Scissor.left offset");
+        static_assert(offsetof(GraphicsState::Scissor, top) == offsetof(D3D12_RECT, top), "Scissor.top offset");
+        static_assert(offsetof(GraphicsState::Scissor, right) == offsetof(D3D12_RECT, right), "Scissor.right offset");
+        static_assert(offsetof(GraphicsState::Scissor, bottom) == offsetof(D3D12_RECT, bottom), "Scissor.bottom offset");
 
         pList->RSSetScissorRects(D3D12_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE, (D3D12_RECT*)sc);
     }
@@ -268,13 +268,13 @@ namespace Falcor
         drawInstanced(vertexCount, 1, startVertexLocation, 0);
     }
 
-    void RenderContext::drawIndexedInstanced(uint32_t indexCount, uint32_t instanceCount, uint32_t startIndexLocation, int baseVertexLocation, uint32_t startInstanceLocation)
+    void RenderContext::drawIndexedInstanced(uint32_t indexCount, uint32_t instanceCount, uint32_t startIndexLocation, int32_t baseVertexLocation, uint32_t startInstanceLocation)
     {
         prepareForDraw();
         mpLowLevelData->getCommandList()->DrawIndexedInstanced(indexCount, instanceCount, startIndexLocation, baseVertexLocation, startInstanceLocation);
     }
 
-    void RenderContext::drawIndexed(uint32_t indexCount, uint32_t startIndexLocation, int baseVertexLocation)
+    void RenderContext::drawIndexed(uint32_t indexCount, uint32_t startIndexLocation, int32_t baseVertexLocation)
     {
         drawIndexedInstanced(indexCount, 1, startIndexLocation, baseVertexLocation, 0);
     }

@@ -50,8 +50,11 @@ namespace Falcor
         VkPipelineTessellationStateCreateInfo tessellationInfo = {};
 
         // Viewport State
-        ViewportStateCreateInfo viewportInfo;
-        initVkViewportInfo(mDesc.getViewports(), mDesc.getScissors(), viewportInfo);
+        // Viewport and Scissors will be dynamic, but the count is still described here in the info struct
+        VkPipelineViewportStateCreateInfo viewportStateInfo = {};
+        viewportStateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+        viewportStateInfo.viewportCount = getMaxViewportCount();
+        viewportStateInfo.scissorCount = getMaxViewportCount();
 
         // Rasterizerization State
         VkPipelineRasterizationStateCreateInfo rasterizerInfo;
@@ -71,6 +74,10 @@ namespace Falcor
 
         // Dynamic State
         VkPipelineDynamicStateCreateInfo dynamicInfo = {};
+        VkDynamicState dynamicStates[] = { VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR };
+        dynamicInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
+        dynamicInfo.dynamicStateCount = arraysize(dynamicStates);
+        dynamicInfo.pDynamicStates = dynamicStates;
 
         // Render Pass
         RenderPassCreateInfo renderPassInfo;
@@ -87,7 +94,7 @@ namespace Falcor
         pipelineCreateInfo.pVertexInputState = &vertexInputInfo.info;
         pipelineCreateInfo.pInputAssemblyState = &inputAssemblyInfo;
         pipelineCreateInfo.pTessellationState = &tessellationInfo;
-        pipelineCreateInfo.pViewportState = &viewportInfo.info;
+        pipelineCreateInfo.pViewportState = &viewportStateInfo;
         pipelineCreateInfo.pRasterizationState = &rasterizerInfo;
         pipelineCreateInfo.pMultisampleState = &multisampleInfo;
         pipelineCreateInfo.pDepthStencilState = &depthStencilInfo;
