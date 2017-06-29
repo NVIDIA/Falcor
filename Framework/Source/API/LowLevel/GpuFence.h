@@ -70,10 +70,6 @@ namespace Falcor
         /** Insert a signal command into the command queue. This will increase the internal value
         */
         uint64_t gpuSignal(CommandQueueHandle pQueue);
-
-        /** Send a CPU signal, increasing the internal fence value
-        */
-        uint64_t cpuSignal();
     private:
         GpuFence() : mCpuValue(0) {}
         uint64_t mCpuValue;
