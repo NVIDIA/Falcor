@@ -193,19 +193,30 @@ namespace Falcor
     RenderTargetView::SharedPtr RenderTargetView::create(ResourceWeakPtr pResource, uint32_t mipLevel, uint32_t firstArraySlice, uint32_t arraySize)
     {
         Resource::SharedConstPtr pSharedPtr = pResource.lock();
-        if (!pSharedPtr && sNullView)
+
+        // Create sNullView if we need to return it and it doesn't exist yet
+        if (pSharedPtr == nullptr && sNullView== nullptr)
+        {
+            sNullView = SharedPtr(new RenderTargetView(pResource, VK_NULL_HANDLE, mipLevel, firstArraySlice, arraySize));
+        }
+
+        if (pSharedPtr != nullptr)
+        {
+            // Check type
+            if (pSharedPtr->getApiHandle().getType() == VkResourceType::Buffer)
+            {
+                logWarning("Cannot create RenderTargetView from a buffer!");
+                return sNullView;
+            }
+
+            // Create view
+            auto view = createViewCommon(pSharedPtr, mipLevel, 1, firstArraySlice, arraySize);
+            return SharedPtr(new RenderTargetView(pResource, view.getImage(), mipLevel, firstArraySlice, arraySize));
+        }
+        else
         {
             return sNullView;
         }
-
-        if (pSharedPtr->getApiHandle().getType() == VkResourceType::Buffer)
-        {
-            logWarning("Cannot create RenderTargetView from a buffer!");
-            return sNullView;
-        }
-
-        auto view = createViewCommon(pSharedPtr, mipLevel, 1, firstArraySlice, arraySize);
-        return SharedPtr(new RenderTargetView(pResource, view.getImage(), mipLevel, firstArraySlice, arraySize));
     }
 
     RenderTargetView::SharedPtr RenderTargetView::getNullView()

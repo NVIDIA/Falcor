@@ -119,6 +119,14 @@ namespace Falcor
         }
     }
 
+    void setVao(CommandListHandle cmdList, const Vao* pVao)
+    {
+        // #VKTODO setVao() - Implement me properly
+        VkDeviceSize offset = 0;
+        VkBuffer vertexbuffer = pVao->getVertexBuffer(0)->getApiHandle().getBuffer();
+        vkCmdBindVertexBuffers(cmdList, 0, 1, &vertexbuffer, &offset);
+    }
+
     void beginRenderPass(CommandListHandle cmdList, const Fbo* pFbo, VkRenderPass renderPass)
     {
         // #VKTODO Where should we make and store the frame buffer handle? It requires both the renderPass and FBO views.
@@ -127,8 +135,10 @@ namespace Falcor
         // Create and bind frame buffer
         //
 
-        std::vector<VkImageView> attachments(pFbo->getMaxColorTargetCount() + 1);
-        for (uint32_t i = 0; i < (uint32_t)attachments.size(); i++)
+        // #VKFRAMEBUFFER beginRenderPass()
+
+        std::vector<VkImageView> attachments(1/*Fbo::getMaxColorTargetCount()*/ + 1);
+        for (uint32_t i = 0; i < 1/*Fbo::getMaxColorTargetCount()*/; i++)
         {
             attachments[i] = pFbo->getRenderTargetView(i)->getApiHandle();
         }
@@ -166,12 +176,14 @@ namespace Falcor
 
     void RenderContext::prepareForDraw()
     {
-        setViewports(mpLowLevelData->getCommandList(), mpGraphicsState->getViewports());
-        setScissors(mpLowLevelData->getCommandList(), mpGraphicsState->getScissors());
-
         GraphicsStateObject::SharedPtr pGSO = mpGraphicsState->getGSO(mpGraphicsVars.get());
         vkCmdBindPipeline(mpLowLevelData->getCommandList(), VK_PIPELINE_BIND_POINT_GRAPHICS, pGSO->getApiHandle());
 
+        setViewports(mpLowLevelData->getCommandList(), mpGraphicsState->getViewports());
+        setScissors(mpLowLevelData->getCommandList(), mpGraphicsState->getScissors());
+
+        setVao(mpLowLevelData->getCommandList(), pGSO->getDesc().getVao().get());
+        
         beginRenderPass(mpLowLevelData->getCommandList(), mpGraphicsState->getFbo().get(), pGSO->getRenderPass());
     }
 

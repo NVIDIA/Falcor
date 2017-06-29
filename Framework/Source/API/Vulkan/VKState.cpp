@@ -491,10 +491,12 @@ namespace Falcor
         // Init Color and Depth Attachment Info
         //
 
-        infoOut.attachmentDescs.resize(Fbo::getMaxColorTargetCount() + 1); // Color + Depth
+        // #VKFRAMEBUFFER initVkRenderPassInfo
+
+        infoOut.attachmentDescs.resize(1/*Fbo::getMaxColorTargetCount()*/ + 1); // Color + Depth
 
         // Color attachments
-        for (uint32_t i = 0; i < Fbo::getMaxColorTargetCount(); i++)
+        for (uint32_t i = 0; i < 1/*Fbo::getMaxColorTargetCount()*/; i++)
         {
             // #VKTODO: Render Pass setup should be a place to look into when looking into performance
             VkAttachmentDescription& desc = infoOut.attachmentDescs[i];
@@ -505,7 +507,7 @@ namespace Falcor
             desc.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
             desc.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE; // This is a color attachment
             desc.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE; // This is a color attachment
-            desc.initialLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+            desc.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
             desc.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
         }
 
@@ -518,23 +520,23 @@ namespace Falcor
         depthDesc.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
         depthDesc.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
         depthDesc.stencilStoreOp = VK_ATTACHMENT_STORE_OP_STORE;
-        depthDesc.initialLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+        depthDesc.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
         depthDesc.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
         //
         // Init Subpass info
         //
 
-        infoOut.attachmentRefs.resize(Fbo::getMaxColorTargetCount() + 1); // Color + Depth
         infoOut.subpassDescs.resize(1);
+        infoOut.attachmentRefs.resize(infoOut.attachmentDescs.size()); // Both same size, each subpass ref matches an attachment
 
         VkSubpassDescription& subpassDesc = infoOut.subpassDescs[0];
 
         subpassDesc = {};
-        subpassDesc.colorAttachmentCount = Fbo::getMaxColorTargetCount();
+        subpassDesc.colorAttachmentCount = (uint32_t)infoOut.attachmentDescs.size();
 
         // Color attachments
-        for (uint32_t i = 0; i < Fbo::getMaxColorTargetCount(); i++)
+        for (uint32_t i = 0; i < 1/*Fbo::getMaxColorTargetCount()*/; i++)
         {
             VkAttachmentReference& ref = infoOut.attachmentRefs[i];
             ref.attachment = i;
@@ -543,10 +545,10 @@ namespace Falcor
 
         // Depth
         VkAttachmentReference& depthRef = infoOut.attachmentRefs.back();
-        depthRef.attachment = Fbo::getMaxColorTargetCount(); // Depth attachment INDEX is right after the color attachments
+        depthRef.attachment = (uint32_t)infoOut.attachmentRefs.size() - 1; // Depth attachment INDEX is right after the color attachments
         depthRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
-        subpassDesc.colorAttachmentCount = Fbo::getMaxColorTargetCount();
+        subpassDesc.colorAttachmentCount = 1/*Fbo::getMaxColorTargetCount()*/;
         subpassDesc.pColorAttachments = infoOut.attachmentRefs.data();
         subpassDesc.pDepthStencilAttachment = &infoOut.attachmentRefs.back();
 
