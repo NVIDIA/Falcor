@@ -30,60 +30,62 @@
 #include "API/Device.h"
 #include "API/Vulkan/FalcorVK.h"
 
-//TODO: The GPU fence concept seems slightly different on D3D.
-// On Vulkan, we use semaphores. Fences are CPU waits on Vulkan.
-// This class may need some refactoring.
 namespace Falcor
 {
-    struct SyncData
+    struct FenceApiData
     {
-        SyncData()
-        {
-            semaphore = VK_NULL_HANDLE;
-            fence     = VK_NULL_HANDLE;
-        }
-
-        VkSemaphore semaphore;
-        VkFence     fence;
+        VkFence fence = nullptr;
     };
 
-    static bool createFence(GpuFence::ApiHandle fence)
+    static VkFence createFence(bool signaled)
     {
-        VkFenceCreateInfo fenceInfo;
-        fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-        fenceInfo.pNext = nullptr;
-        fenceInfo.flags = 0;
-        
-        vkCreateFence(gpDevice->getApiHandle(), &fenceInfo, nullptr, &fence);
-        return true;
+        VkFenceCreateInfo info = {};
+        info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+        if (signaled) info.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+        VkFence fence;
+        vkCreateFence(gpDevice->getApiHandle(), &info, nullptr, &fence);
+        return fence;
     }
 
-    static bool createSemaphore(SyncData &syncData)
+    static VkFence getFence(FenceApiData* pApiData)
     {
-        VkSemaphoreCreateInfo semCreateInfo = {};
-        semCreateInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-        semCreateInfo.pNext = nullptr;
-
-        vkCreateSemaphore(gpDevice->getApiHandle(), &semCreateInfo, nullptr, &syncData.semaphore);
-        return true;
+        Device::ApiHandle device = gpDevice->getApiHandle();
+        if (vkGetFenceStatus(device, pApiData->fence) == VK_SUCCESS)
+        {
+            // Fence is signaled, just reset it
+            vkResetFences(device, 1, &pApiData->fence);
+        }
+        else
+        {
+            // Fence is not ready, create a new one
+            vkDestroyFence(device, pApiData->fence, nullptr);
+            pApiData->fence = createFence(false);
+        }
+        return pApiData->fence;
     }
 
     GpuFence::~GpuFence()
     {
+        Device::ApiHandle device = gpDevice->getApiHandle();
+        if (mpApiData->fence) vkDestroyFence(device, mpApiData->fence, nullptr);
+
+        safe_delete(mpApiData);
     }
 
     GpuFence::SharedPtr GpuFence::create()
     {
         SharedPtr pFence = SharedPtr(new GpuFence());
-      
-        createFence(pFence->getApiHandle());
-
+        pFence->mpApiData = new FenceApiData;
+        pFence->mpApiData->fence = createFence(true);
         return pFence;
     }
 
     uint64_t GpuFence::gpuSignal(CommandQueueHandle pQueue)
     {
-        return 0;
+        mCpuValue++;
+        VkFence fence = getFence(mpApiData);
+        vk_call(vkQueueSubmit(pQueue, 0, nullptr, fence));
+        return mCpuValue;
     }
 
     uint64_t GpuFence::cpuSignal()
@@ -91,15 +93,13 @@ namespace Falcor
         return 0;
     }
 
-    // Wait for GPU to complete
     void GpuFence::syncGpu(CommandQueueHandle pQueue)
     {
-        auto res = vkWaitForFences(gpDevice->getApiHandle(), 1, &mApiHandle, VK_TRUE, UINT64_MAX);
-        assert(res == VK_SUCCESS);
     }
 
     void GpuFence::syncCpu()
     {
+        vk_call(vkWaitForFences(gpDevice->getApiHandle(), 1, &mpApiData->fence, false, UINT64_MAX));
     }
 
     uint64_t GpuFence::getGpuValue() const
