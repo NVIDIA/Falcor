@@ -37,6 +37,27 @@ namespace Falcor
 {
     VkSemaphore gFrameSemaphore; // #VKTODO need proper fence
 
+    //
+    // #VKTODO MOVEME - Temporary placement for debug report callback(s)
+    //
+
+#ifdef DEFAULT_ENABLE_DEBUG_LAYER
+    VKAPI_ATTR VkBool32 VKAPI_CALL debugReportCallback(
+        VkDebugReportFlagsEXT       flags,
+        VkDebugReportObjectTypeEXT  objectType,
+        uint64_t                    object,
+        size_t                      location,
+        int32_t                     messageCode,
+        const char*                 pLayerPrefix,
+        const char*                 pMessage,
+        void*                       pUserData)
+    {
+        printToDebugWindow(std::string(pMessage) + "\n");
+        return VK_FALSE;
+    }
+
+#endif
+
     struct DeviceApiData
     {
         VkSwapchainKHR swapchain;
@@ -48,6 +69,10 @@ namespace Falcor
         uint32_t falcorToVulkanQueueType[Device::kQueueTypeCount];
         uint32_t falcorToVkMemoryType[(uint32_t)Device::MemoryType::Count];
         VkPhysicalDeviceLimits deviceLimits;
+
+#ifdef DEFAULT_ENABLE_DEBUG_LAYER
+        VkDebugReportCallbackEXT debugReportCallbackHandle;
+#endif
     };
 
     static uint32_t findMemoryType(VkPhysicalDevice physicalDevice, VkMemoryPropertyFlagBits memFlagBits)
@@ -189,6 +214,25 @@ namespace Falcor
         {
             logError("Failed to create Vulkan instance");
             return false;
+        }
+
+        // Hook up callbacks for VK_EXT_debug_report
+        if (enableDebugLayers)
+        {
+            VkDebugReportCallbackCreateInfoEXT callbackCreateInfo = {};
+            callbackCreateInfo.sType = VK_STRUCTURE_TYPE_DEBUG_REPORT_CREATE_INFO_EXT;
+            callbackCreateInfo.flags = VK_DEBUG_REPORT_ERROR_BIT_EXT | VK_DEBUG_REPORT_WARNING_BIT_EXT | VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT;
+            callbackCreateInfo.pfnCallback = &debugReportCallback;
+            callbackCreateInfo.pUserData = nullptr;
+
+            // Function to create a debug callback has to be dynamically queried from the instance...
+            PFN_vkCreateDebugReportCallbackEXT CreateDebugReportCallback = VK_NULL_HANDLE;
+            CreateDebugReportCallback = (PFN_vkCreateDebugReportCallbackEXT)vkGetInstanceProcAddr(pData->instance, "vkCreateDebugReportCallbackEXT");
+
+            if (VK_FAILED(CreateDebugReportCallback(pData->instance, &callbackCreateInfo, nullptr, &pData->debugReportCallbackHandle)))
+            {
+                logWarning("Could not initialize debug report callbacks.");
+            }
         }
 
         return true;
