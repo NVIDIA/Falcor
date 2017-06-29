@@ -431,7 +431,7 @@ namespace Falcor
         infoOut.primitiveRestartEnable = VK_FALSE;
     }
 
-    void initVkRenderPassInfo(const Fbo::Desc& fboDesc, const DepthStencilState* pDsState, RenderPassCreateInfo& infoOut)
+    void initVkRenderPassInfo(const Fbo::Desc& fboDesc, RenderPassCreateInfo& infoOut)
     {
         //
         // Init Color and Depth Attachment Info
@@ -489,7 +489,7 @@ namespace Falcor
 
         // Depth
         VkAttachmentReference& depthRef = infoOut.attachmentRefs.back();
-        depthRef.attachment = 0; // #VKTODO does attachment number for depth mean all attachments are bound at once and identifying which one is depth is through an index?
+        depthRef.attachment = Fbo::getMaxColorTargetCount(); // Depth attachment INDEX is right after the color attachments
         depthRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
         subpassDesc.colorAttachmentCount = Fbo::getMaxColorTargetCount();

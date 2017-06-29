@@ -119,10 +119,59 @@ namespace Falcor
         }
     }
 
+    void beginRenderPass(CommandListHandle cmdList, const Fbo* pFbo, VkRenderPass renderPass)
+    {
+        // #VKTODO Where should we make and store the frame buffer handle? It requires both the renderPass and FBO views.
+
+        //
+        // Create and bind frame buffer
+        //
+
+        std::vector<VkImageView> attachments(pFbo->getMaxColorTargetCount() + 1);
+        for (uint32_t i = 0; i < (uint32_t)attachments.size(); i++)
+        {
+            attachments[i] = pFbo->getRenderTargetView(i)->getApiHandle();
+        }
+
+        attachments.back() = pFbo->getDepthStencilView()->getApiHandle();
+
+        VkFramebufferCreateInfo frameBufferInfo = {};
+        frameBufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+        frameBufferInfo.renderPass = renderPass;
+        frameBufferInfo.attachmentCount = (uint32_t)attachments.size();
+        frameBufferInfo.pAttachments = attachments.data();
+        frameBufferInfo.width = pFbo->getWidth();
+        frameBufferInfo.height = pFbo->getHeight();
+        frameBufferInfo.layers = 1; // #VKTODO what are frame buffer "layers?"
+
+        VkFramebuffer frameBuffer;
+        vkCreateFramebuffer(gpDevice->getApiHandle(), &frameBufferInfo, nullptr, &frameBuffer);
+
+        //
+        // Begin Render Pass
+        //
+        VkRenderPassBeginInfo beginInfo = {};
+        beginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+        beginInfo.renderPass = renderPass;
+        beginInfo.framebuffer = frameBuffer;
+        beginInfo.renderArea.offset = { 0, 0 };
+        beginInfo.renderArea.extent = { pFbo->getWidth(), pFbo->getHeight() };
+
+        // Only needed if attachments use VK_ATTACHMENT_LOAD_OP_CLEAR
+        beginInfo.clearValueCount = 0;
+        beginInfo.pClearValues = nullptr;
+
+        vkCmdBeginRenderPass(cmdList, &beginInfo, VK_SUBPASS_CONTENTS_INLINE);
+    }
+
     void RenderContext::prepareForDraw()
     {
         setViewports(mpLowLevelData->getCommandList(), mpGraphicsState->getViewports());
         setScissors(mpLowLevelData->getCommandList(), mpGraphicsState->getScissors());
+
+        GraphicsStateObject::SharedPtr pGSO = mpGraphicsState->getGSO(mpGraphicsVars.get());
+        beginRenderPass(mpLowLevelData->getCommandList(), mpGraphicsState->getFbo().get(), pGSO->getRenderPass());
+
     }
 
     void RenderContext::drawInstanced(uint32_t vertexCount, uint32_t instanceCount, uint32_t startVertexLocation, uint32_t startInstanceLocation)

@@ -83,6 +83,7 @@ namespace Falcor
     using SrvHandle = VkResource<VkImageView, VkBufferView>;
     using UavHandle = VkResource<VkImageView, VkBufferView>;
     using CbvHandle = VkBufferView;
+    using FboHandle = VkFramebuffer;
     using SamplerHandle = VkSampler;
     using GpuAddress = size_t;
 

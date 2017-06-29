@@ -89,10 +89,6 @@ namespace Falcor
 
             bool operator==(const Desc& other) const;
 
-#ifdef FALCOR_VK
-            Desc& setVao(const Vao::SharedConstPtr& pVao) { mpVao = pVao; return *this; }
-            const Vao::SharedConstPtr& getVao() const { return mpVao; }
-#endif
         private:
             friend class GraphicsStateObject;
             VertexLayout::SharedConstPtr mpLayout;
@@ -104,12 +100,15 @@ namespace Falcor
             uint32_t mSampleMask = kSampleMaskAll;
             RootSignature::SharedPtr mpRootSignature;
             PrimitiveType mPrimType = PrimitiveType::Undefined;
+            bool mSinglePassStereoEnabled = false;
 
 #ifdef FALCOR_VK
+        public:
+            Desc& setVao(const Vao::SharedConstPtr& pVao) { mpVao = pVao; return *this; }
+            const Vao::SharedConstPtr& getVao() const { return mpVao; }
+        private:
             Vao::SharedConstPtr mpVao;
 #endif
-
-            bool mSinglePassStereoEnabled = false;
         };
 
         static SharedPtr create(const Desc& desc);
@@ -117,6 +116,7 @@ namespace Falcor
         ApiHandle getApiHandle() { return mApiHandle; }
 
         const Desc& getDesc() const { return mDesc; }
+
     private:
         GraphicsStateObject(const Desc& desc) : mDesc(desc) {}
         Desc mDesc;
@@ -128,5 +128,12 @@ namespace Falcor
         static DepthStencilState::SharedPtr spDefaultDepthStencilState;
 
         bool apiInit();
+
+#ifdef FALCOR_VK
+    public:
+        VkRenderPass getRenderPass() const { return mRenderPassHandle; }
+    private:
+        VkRenderPass mRenderPassHandle;
+#endif
     };
 }

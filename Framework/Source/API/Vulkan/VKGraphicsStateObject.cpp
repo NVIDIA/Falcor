@@ -82,7 +82,7 @@ namespace Falcor
         // Render Pass
         RenderPassCreateInfo renderPassInfo;
         VkRenderPass renderPass;
-        initVkRenderPassInfo(mDesc.getFboDesc(), mDesc.getDepthStencilState().get(), renderPassInfo);
+        initVkRenderPassInfo(mDesc.getFboDesc(), renderPassInfo);
         vkCreateRenderPass(gpDevice->getApiHandle(), &renderPassInfo.info, nullptr, &renderPass);
 
         // #VKTODO get this from somewhere
