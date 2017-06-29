@@ -32,43 +32,50 @@
 
 namespace Falcor
 {
+    // #VKTODO This entire class seems overly complicated. Need to make sure that there are no performance issues
     struct FenceApiData
     {
-        VkFence fence = nullptr;
+        std::queue<VkFence> fenceQueue;
+        std::vector<VkFence> availableFences;
+        uint64_t gpuValue = 0;
     };
-
-    static VkFence createFence(bool signaled)
-    {
-        VkFenceCreateInfo info = {};
-        info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-        if (signaled) info.flags = VK_FENCE_CREATE_SIGNALED_BIT;
-        VkFence fence;
-        vkCreateFence(gpDevice->getApiHandle(), &info, nullptr, &fence);
-        return fence;
-    }
 
     static VkFence getFence(FenceApiData* pApiData)
     {
-        Device::ApiHandle device = gpDevice->getApiHandle();
-        if (vkGetFenceStatus(device, pApiData->fence) == VK_SUCCESS)
+        if (pApiData->availableFences.size())
         {
-            // Fence is signaled, just reset it
-            vkResetFences(device, 1, &pApiData->fence);
+            VkFence fence = pApiData->availableFences.back();
+            pApiData->availableFences.pop_back();
+            vkResetFences(gpDevice->getApiHandle(), 1, &fence);
+            return fence;
         }
         else
         {
-            // Fence is not ready, create a new one
-            vkDestroyFence(device, pApiData->fence, nullptr);
-            pApiData->fence = createFence(false);
+            VkFenceCreateInfo info = {};
+            info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+            VkFence fence;
+            vkCreateFence(gpDevice->getApiHandle(), &info, nullptr, &fence);
+            return fence;
         }
-        return pApiData->fence;
+    }
+
+    static void moveFencesToVec(std::queue<VkFence>& queue, std::vector<VkFence>& vec)
+    {
+        while (queue.size())
+        {
+            vec.push_back(queue.front());
+            queue.pop();
+        }
     }
 
     GpuFence::~GpuFence()
     {
         Device::ApiHandle device = gpDevice->getApiHandle();
-        if (mpApiData->fence) vkDestroyFence(device, mpApiData->fence, nullptr);
-
+        while (mpApiData->fenceQueue.size())
+        {
+            vkDestroyFence(device, mpApiData->fenceQueue.front(), nullptr);
+            mpApiData->fenceQueue.pop();
+        }
         safe_delete(mpApiData);
     }
 
@@ -76,7 +83,6 @@ namespace Falcor
     {
         SharedPtr pFence = SharedPtr(new GpuFence());
         pFence->mpApiData = new FenceApiData;
-        pFence->mpApiData->fence = createFence(true);
         return pFence;
     }
 
@@ -84,6 +90,7 @@ namespace Falcor
     {
         mCpuValue++;
         VkFence fence = getFence(mpApiData);
+        mpApiData->fenceQueue.push(fence);
         vk_call(vkQueueSubmit(pQueue, 0, nullptr, fence));
         return mCpuValue;
     }
@@ -99,11 +106,33 @@ namespace Falcor
 
     void GpuFence::syncCpu()
     {
-        vk_call(vkWaitForFences(gpDevice->getApiHandle(), 1, &mpApiData->fence, false, UINT64_MAX));
+        if (mpApiData->fenceQueue.empty()) return;
+        std::vector<VkFence> fenceVec;
+        fenceVec.reserve((mpApiData->fenceQueue.size()));
+        moveFencesToVec(mpApiData->fenceQueue, fenceVec);
+
+        vk_call(vkWaitForFences(gpDevice->getApiHandle(), (uint32_t)fenceVec.size(), fenceVec.data(), true, UINT64_MAX));
+        mpApiData->gpuValue += fenceVec.size();
+        mpApiData->availableFences.insert(mpApiData->availableFences.end(), fenceVec.begin(), fenceVec.end());
     }
 
     uint64_t GpuFence::getGpuValue() const
     {
-        return 0;
+        while (mpApiData->fenceQueue.size())
+        {
+            VkFence fence = mpApiData->fenceQueue.front();
+            if (vkGetFenceStatus(gpDevice->getApiHandle(), fence) == VK_SUCCESS)
+            {
+                mpApiData->availableFences.push_back(fence);
+                mpApiData->fenceQueue.pop();
+                mpApiData->gpuValue++;
+            }
+            else
+            {
+                break;
+            }
+        }
+
+        return mpApiData->gpuValue;
     }
 }
