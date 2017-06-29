@@ -1,7 +1,8 @@
-#version 400
+#version 450
+#extension GL_ARB_separate_shader_objects : enable
 
-layout (location = 0) in vec4 pos;
-layout (location = 1) in vec4 texC;
+layout (location = 0) in vec2 pos;
+layout (location = 1) in vec2 texC;
 
 out gl_PerVertex
 {
@@ -10,5 +11,5 @@ out gl_PerVertex
 
 void main()
 {
-   gl_Position = pos;
+   gl_Position = vec4(pos, 0.0, 0.0);
 }
