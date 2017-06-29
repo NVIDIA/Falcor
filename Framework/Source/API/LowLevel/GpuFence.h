@@ -30,13 +30,15 @@
 
 namespace Falcor
 {
+    struct FenceApiData;
+
     /** This class can be used to synchronize GPU and CPU execution
         It's value monotonically increasing - every time a signal is sent, it will change the value first
     */
     class GpuFence : public std::enable_shared_from_this<GpuFence>
     {
     public:
-		using SharedPtr = std::shared_ptr<GpuFence>;
+        using SharedPtr = std::shared_ptr<GpuFence>;
         using SharedConstPtr = std::shared_ptr<const GpuFence>;
         using ApiHandle = FenceHandle;
 
@@ -47,7 +49,7 @@ namespace Falcor
 
         /** Get the internal API handle
         */
-        ApiHandle getApiHandle() const { return mApiHandle; }
+        ApiHandle getApiHandle() const;
 
         /** Get the last value the GPU has signaled
         */
@@ -55,7 +57,7 @@ namespace Falcor
 
         /** Get the current CPU value
         */
-		uint64_t getCpuValue() const { return mCpuValue; }
+        uint64_t getCpuValue() const { return mCpuValue; }
 
         /** Tell the GPU to wait until the fence reaches the current value
         */
@@ -68,14 +70,11 @@ namespace Falcor
         /** Insert a signal command into the command queue. This will increase the internal value
         */
         uint64_t gpuSignal(CommandQueueHandle pQueue);
-
-        /** Send a CPU signal, increasing the internal fence value
-        */
-        uint64_t cpuSignal();
     private:
-		GpuFence() : mCpuValue(0) {}
-		uint64_t mCpuValue;
+        GpuFence() : mCpuValue(0) {}
+        uint64_t mCpuValue;
         HANDLE mEvent = INVALID_HANDLE_VALUE;
         ApiHandle mApiHandle;
+        FenceApiData* mpApiData = nullptr;
     };
 }

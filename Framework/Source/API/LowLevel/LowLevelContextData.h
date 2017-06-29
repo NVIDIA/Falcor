@@ -30,6 +30,8 @@
 
 namespace Falcor
 {
+    struct LowLevelContextApiData;
+
     class LowLevelContextData : public std::enable_shared_from_this<LowLevelContextData>
     {
     public:
@@ -44,6 +46,7 @@ namespace Falcor
             Direct,
             Count
         };
+        ~LowLevelContextData();
 
         static SharedPtr create(CommandQueueType type, CommandQueueHandle queue);
         void reset();
@@ -51,7 +54,6 @@ namespace Falcor
 
         CommandListHandle getCommandList() const { return mpList; }
         CommandQueueHandle getCommandQueue() const { return mpQueue; }
-        FencedPool<CommandAllocatorHandle>::SharedPtr getAllocatorPool() const { return mpAllocatorPool; }
         CommandAllocatorHandle getCommandAllocator() const { return mpAllocator; }
         GpuFence::SharedPtr getFence() const { return mpFence; }
 
@@ -60,9 +62,9 @@ namespace Falcor
     protected:
 
         LowLevelContextData() = default;
+        LowLevelContextApiData* mpApiData = nullptr;
 
         CommandQueueType mType;
-        FencedPool<CommandAllocatorHandle>::SharedPtr mpAllocatorPool;
         CommandListHandle mpList;
         CommandQueueHandle mpQueue;
         CommandAllocatorHandle mpAllocator;
