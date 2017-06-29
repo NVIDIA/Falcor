@@ -74,6 +74,11 @@ namespace Falcor
         return pThis;
     }
 
+    LowLevelContextData::~LowLevelContextData()
+    {
+        safe_delete(mpApiData);
+    }
+
     void LowLevelContextData::reset()
     {
         VkCommandBufferBeginInfo beginInfo = {};

@@ -31,8 +31,13 @@
 
 namespace Falcor
 {
+    struct LowLevelContextApiData
+    {
+        FencedPool<CommandAllocatorHandle>::SharedPtr pAllocatorPool;
+    };
+
     template<D3D12_COMMAND_LIST_TYPE type>
-    static ID3D12CommandAllocatorPtr newCommandAllocator()
+    static ID3D12CommandAllocatorPtr newCommandAllocator(void* pUserData)
     {
         ID3D12CommandAllocatorPtr pAllocator;
         if (FAILED(gpDevice->getApiHandle()->CreateCommandAllocator(type, IID_PPV_ARGS(&pAllocator))))
@@ -48,24 +53,25 @@ namespace Falcor
         SharedPtr pThis = SharedPtr(new LowLevelContextData);
         pThis->mpFence = GpuFence::create();
         pThis->mpQueue = queue;
+        pThis->mpApiData = new LowLevelContextApiData;
 
         // Create a command allocator
         D3D12_COMMAND_LIST_TYPE cmdListType = gpDevice->getApiCommandQueueType(type);
         switch (cmdListType)
         {
         case D3D12_COMMAND_LIST_TYPE_DIRECT:
-            pThis->mpAllocatorPool = FencedPool<CommandAllocatorHandle>::create(pThis->mpFence, newCommandAllocator<D3D12_COMMAND_LIST_TYPE_DIRECT>);
+            pThis->mpApiData->pAllocatorPool = FencedPool<CommandAllocatorHandle>::create(pThis->mpFence, newCommandAllocator<D3D12_COMMAND_LIST_TYPE_DIRECT>);
             break;
         case D3D12_COMMAND_LIST_TYPE_COMPUTE:
-            pThis->mpAllocatorPool = FencedPool<CommandAllocatorHandle>::create(pThis->mpFence, newCommandAllocator<D3D12_COMMAND_LIST_TYPE_COMPUTE>);
+            pThis->mpApiData->pAllocatorPool = FencedPool<CommandAllocatorHandle>::create(pThis->mpFence, newCommandAllocator<D3D12_COMMAND_LIST_TYPE_COMPUTE>);
             break;
         case D3D12_COMMAND_LIST_TYPE_COPY:
-            pThis->mpAllocatorPool = FencedPool<CommandAllocatorHandle>::create(pThis->mpFence, newCommandAllocator<D3D12_COMMAND_LIST_TYPE_COPY>);
+            pThis->mpApiData->pAllocatorPool = FencedPool<CommandAllocatorHandle>::create(pThis->mpFence, newCommandAllocator<D3D12_COMMAND_LIST_TYPE_COPY>);
             break;
         default:
             should_not_get_here();
         }
-        pThis->mpAllocator = pThis->mpAllocatorPool->newObject();
+        pThis->mpAllocator = pThis->mpApiData->pAllocatorPool->newObject();
 
         // Create a command list
         ID3D12Device* pDevice = gpDevice->getApiHandle().GetInterfacePtr();
@@ -77,10 +83,15 @@ namespace Falcor
         return pThis;
     }
 
+    LowLevelContextData::~LowLevelContextData()
+    {
+        safe_delete(mpApiData);
+    }
+
     void LowLevelContextData::reset()
     {
         mpFence->gpuSignal(mpQueue);
-        mpAllocator = mpAllocatorPool->newObject();
+        mpAllocator = mpApiData->pAllocatorPool->newObject();
         d3d_call(mpList->Close());
         d3d_call(mpAllocator->Reset());
         d3d_call(mpList->Reset(mpAllocator, nullptr));

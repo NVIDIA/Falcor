@@ -59,13 +59,6 @@ namespace Falcor
         return mCpuValue;
     }
 
-    uint64_t GpuFence::cpuSignal()
-    {
-        mCpuValue++;
-        d3d_call(mApiHandle->Signal(mCpuValue));
-        return mCpuValue;
-    }
-
     void GpuFence::syncGpu(CommandQueueHandle pQueue)
     {
         assert(mCpuValue);
