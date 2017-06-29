@@ -30,6 +30,8 @@
 
 namespace Falcor
 {
+    struct LowLevelContextApiData;
+
     class LowLevelContextData : public std::enable_shared_from_this<LowLevelContextData>
     {
     public:
@@ -60,6 +62,7 @@ namespace Falcor
     protected:
 
         LowLevelContextData() = default;
+        LowLevelContextApiData* mpApiData = nullptr;
 
         CommandQueueType mType;
         FencedPool<CommandAllocatorHandle>::SharedPtr mpAllocatorPool;

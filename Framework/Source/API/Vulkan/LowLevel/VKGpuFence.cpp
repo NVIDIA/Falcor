@@ -182,9 +182,15 @@ namespace Falcor
         return mCpuValue;
     }
 
+    FenceHandle GpuFence::getApiHandle() const
+    {
+        auto fence = mpApiData->semaphoreQueue.getObject(); // #VKTODO Figure this out. It is implemented like this based on the internal usage in VkDevice.cpp, but might not be what the user expects
+        mpApiData->semaphoreWaitList.push_back(fence);
+        return fence;
+    }
+
     void GpuFence::syncGpu(CommandQueueHandle pQueue)
     {
-        // We need to wait on all the semaphores that haven't been signaled yet
         VkSemaphore sem = mpApiData->semaphoreQueue.front();
         VkSubmitInfo submit = {};
         submit.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
