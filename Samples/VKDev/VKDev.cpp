@@ -33,12 +33,15 @@ void VKDev::onGuiRender()
 
 void VKDev::onLoad()
 {
-    GraphicsProgram::SharedPtr pProgram =  GraphicsProgram::createFromFile("TestVertex.vs.glsl", "TestFragment.fs.glsl");
-    ProgramVersion::SharedConstPtr pVersion = pProgram->getActiveVersion();
+    mpPass = FullScreenPass::create("FullScreenPass.vs.glsl", "FullScreenPass.fs.glsl");
 }
 
 void VKDev::onFrameRender()
 {
+    const glm::vec4 clearColor(0.38f, 0.52f, 0.10f, 1);
+    mpRenderContext->clearFbo(mpDefaultFBO.get(), clearColor, 1.0f, 0, FboAttachmentType::All);
+
+    mpPass->execute(mpRenderContext.get());
 }
 
 void VKDev::onShutdown()

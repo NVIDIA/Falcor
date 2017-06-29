@@ -11,4 +11,12 @@
       <UniqueIdentifier>{051eaa1c-fe66-4206-9224-d3aedfb40a16}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
+  <ItemGroup>
+    <None Include="Data\FullScreenPass.fs.glsl">
+      <Filter>Data</Filter>
+    </None>
+    <None Include="Data\FullScreenPass.vs.glsl">
+      <Filter>Data</Filter>
+    </None>
+  </ItemGroup>
 </Project>

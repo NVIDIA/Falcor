@@ -43,4 +43,5 @@ public:
     void onGuiRender() override;
 
 private:
+    FullScreenPass::UniquePtr mpPass;
 };

@@ -21,6 +21,10 @@
       <Project>{3b602f0e-3834-4f73-b97d-7dfc91597a98}</Project>
     </ProjectReference>
   </ItemGroup>
+  <ItemGroup>
+    <None Include="Data\FullScreenPass.fs.glsl" />
+    <None Include="Data\FullScreenPass.vs.glsl" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{C84BC973-15EB-46E1-ABCC-0A81C5832A5D}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>

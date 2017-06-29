@@ -170,8 +170,9 @@ namespace Falcor
         setScissors(mpLowLevelData->getCommandList(), mpGraphicsState->getScissors());
 
         GraphicsStateObject::SharedPtr pGSO = mpGraphicsState->getGSO(mpGraphicsVars.get());
-        beginRenderPass(mpLowLevelData->getCommandList(), mpGraphicsState->getFbo().get(), pGSO->getRenderPass());
+        vkCmdBindPipeline(mpLowLevelData->getCommandList(), VK_PIPELINE_BIND_POINT_GRAPHICS, pGSO->getApiHandle());
 
+        beginRenderPass(mpLowLevelData->getCommandList(), mpGraphicsState->getFbo().get(), pGSO->getRenderPass());
     }
 
     void RenderContext::drawInstanced(uint32_t vertexCount, uint32_t instanceCount, uint32_t startVertexLocation, uint32_t startInstanceLocation)
