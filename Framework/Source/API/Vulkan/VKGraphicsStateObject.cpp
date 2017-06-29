@@ -38,6 +38,10 @@ namespace Falcor
 
     bool GraphicsStateObject::apiInit()
     {
+        // Shader Stages
+        std::vector<VkPipelineShaderStageCreateInfo> shaderStageInfos;
+        initVkShaderStageInfo(mDesc.getProgramVersion().get(), shaderStageInfos);
+
         // Vertex Input State
         VertexInputStateCreateInfo vertexInputInfo;
         initVkVertexLayoutInfo(mDesc.getVertexLayout().get(), vertexInputInfo);
@@ -48,6 +52,8 @@ namespace Falcor
 
         // Tessellation State
         VkPipelineTessellationStateCreateInfo tessellationInfo = {};
+        tessellationInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_TESSELLATION_STATE_CREATE_INFO;
+        tessellationInfo.patchControlPoints = 1;
 
         // Viewport State
         // Viewport and Scissors will be dynamic, but the count is still described here in the info struct
@@ -69,7 +75,7 @@ namespace Falcor
         initVkDepthStencilInfo(mDesc.getDepthStencilState().get(), depthStencilInfo);
 
         // Color Blend State
-        BlendStateCreateInfo blendInfo;
+        ColorBlendStateCreateInfo blendInfo;
         initVkBlendInfo(mDesc.getBlendState().get(), blendInfo);
 
         // Dynamic State
@@ -81,16 +87,20 @@ namespace Falcor
 
         // Render Pass
         RenderPassCreateInfo renderPassInfo;
-        VkRenderPass renderPass;
         initVkRenderPassInfo(mDesc.getFboDesc(), renderPassInfo);
-        vkCreateRenderPass(gpDevice->getApiHandle(), &renderPassInfo.info, nullptr, &renderPass);
+        vkCreateRenderPass(gpDevice->getApiHandle(), &renderPassInfo.info, nullptr, &mRenderPassHandle);
 
         // #VKTODO get this from somewhere
+        // PipelineLayout cannot be a NULL handle so we have to make an "empty" one
         VkPipelineLayout pipelineLayout = {};
+        VkPipelineLayoutCreateInfo pipelineLayoutInfo = {};
+        pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+        vkCreatePipelineLayout(gpDevice->getApiHandle(), &pipelineLayoutInfo, nullptr, &pipelineLayout);
 
         VkGraphicsPipelineCreateInfo pipelineCreateInfo = {};
         pipelineCreateInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-        pipelineCreateInfo.layout = pipelineLayout;
+        pipelineCreateInfo.stageCount = (uint32_t)shaderStageInfos.size();
+        pipelineCreateInfo.pStages = shaderStageInfos.data();
         pipelineCreateInfo.pVertexInputState = &vertexInputInfo.info;
         pipelineCreateInfo.pInputAssemblyState = &inputAssemblyInfo;
         pipelineCreateInfo.pTessellationState = &tessellationInfo;
@@ -100,7 +110,9 @@ namespace Falcor
         pipelineCreateInfo.pDepthStencilState = &depthStencilInfo;
         pipelineCreateInfo.pColorBlendState = &blendInfo.info;
         pipelineCreateInfo.pDynamicState = &dynamicInfo;
-        pipelineCreateInfo.renderPass = renderPass;
+        pipelineCreateInfo.layout = pipelineLayout;
+        pipelineCreateInfo.renderPass = mRenderPassHandle;
+        pipelineCreateInfo.subpass = 0;
 
         if (VK_FAILED(vkCreateGraphicsPipelines(gpDevice->getApiHandle(), VK_NULL_HANDLE, 1, &pipelineCreateInfo, nullptr, &mApiHandle)))
         {

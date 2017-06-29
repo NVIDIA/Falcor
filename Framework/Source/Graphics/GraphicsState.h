@@ -57,8 +57,8 @@ namespace Falcor
             Viewport(float x, float y, float w, float h, float minZ, float maxZ) : originX(x), originY(y), width(w), height(h), minDepth(minZ), maxDepth(maxZ) {}
             float originX = 0;
             float originY = 0;
-            float width = 0;
-            float height = 0;
+            float width = 1.0f;  // Cannot be 0 in Vulkan
+            float height = 1.0f; // Cannot be 0 in Vulkan
             float minDepth = 0;
             float maxDepth = 1;
         };

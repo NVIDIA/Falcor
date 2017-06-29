@@ -31,6 +31,50 @@
 
 namespace Falcor
 {
+
+    VkShaderStageFlagBits getVkShaderStage(ShaderType type)
+    {
+        switch (type)
+        {
+        case ShaderType::Vertex:
+            return VK_SHADER_STAGE_VERTEX_BIT;
+        case ShaderType::Pixel:
+            return VK_SHADER_STAGE_FRAGMENT_BIT;
+        case ShaderType::Geometry:
+            return VK_SHADER_STAGE_GEOMETRY_BIT;
+        case ShaderType::Hull:
+            return VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT;
+        case ShaderType::Domain:
+            return VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT;
+        case ShaderType::Compute:
+            return VK_SHADER_STAGE_COMPUTE_BIT;
+        default:
+            should_not_get_here();
+            return (VkShaderStageFlagBits)0;
+        }
+    }
+
+    void initVkShaderStageInfo(const ProgramVersion* pProgram, std::vector<VkPipelineShaderStageCreateInfo>& infosOut)
+    {
+        infosOut.clear();
+
+        for (uint32_t i = 0; i < (uint32_t)ShaderType::Count; i++)
+        {
+            ShaderType type = (ShaderType)i;
+            const Shader* pShader = pProgram->getShader(type);
+
+            if (pShader != nullptr)
+            {
+                VkPipelineShaderStageCreateInfo info = {};
+                info.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+                info.stage = getVkShaderStage(type);
+                info.module = pShader->getApiHandle();
+                info.pName = "main";
+                infosOut.push_back(info);
+            }
+        }
+    }
+
     VkBlendFactor getVkBlendFactor(BlendState::BlendFunc func)
     {
         switch (func)
@@ -95,16 +139,12 @@ namespace Falcor
         }
     }
 
-    void initVkBlendInfo(const BlendState* pState, BlendStateCreateInfo& infoOut)
+    void initVkBlendInfo(const BlendState* pState, ColorBlendStateCreateInfo& infoOut)
     {
-        infoOut.info = {};
+        // Fill out attachment blend info
+        infoOut.attachmentStates.resize((uint32_t)pState->getRtCount());
 
-        infoOut.info.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
-        infoOut.info.logicOpEnable = VK_FALSE;
-        infoOut.info.attachmentCount = (uint32_t)pState->getRtCount();
-
-        infoOut.attachmentStates.resize(infoOut.info.attachmentCount);
-        for (uint32_t i = 0; i < infoOut.info.attachmentCount; i++)
+        for (uint32_t i = 0; i < (uint32_t)infoOut.attachmentStates.size(); i++)
         {
             const BlendState::Desc::RenderTargetDesc& rtDesc = pState->getRtDesc(i);
             VkPipelineColorBlendAttachmentState& state = infoOut.attachmentStates[i];
@@ -121,6 +161,19 @@ namespace Falcor
             state.colorWriteMask |= rtDesc.writeMask.writeBlue ? VK_COLOR_COMPONENT_B_BIT : 0;
             state.colorWriteMask |= rtDesc.writeMask.writeAlpha ? VK_COLOR_COMPONENT_A_BIT : 0;
         }
+
+        // Fill out create info
+        infoOut.info = {};
+        infoOut.info.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+        infoOut.info.logicOpEnable = VK_FALSE;
+        infoOut.info.attachmentCount = (uint32_t)infoOut.attachmentStates.size();
+        infoOut.info.pAttachments = infoOut.attachmentStates.data();
+
+        const vec4 blendColor = pState->getBlendFactor();
+        infoOut.info.blendConstants[0] = blendColor.r;
+        infoOut.info.blendConstants[1] = blendColor.g;
+        infoOut.info.blendConstants[2] = blendColor.b;
+        infoOut.info.blendConstants[3] = blendColor.a;
     }
 
     VkPolygonMode getVkPolygonMode(RasterizerState::FillMode fill)
@@ -284,7 +337,7 @@ namespace Falcor
             if (pVB)
             {
                 // Per buffer binding
-                VkVertexInputBindingDescription& bindingDesc = infoOut.bindingDescs[vb];
+                VkVertexInputBindingDescription bindingDesc = {};
                 bindingDesc.binding = (uint32_t)vb;
                 bindingDesc.stride = pVB->getStride();
                 bindingDesc.inputRate = getVkInputRate(pVB->getInputClass());
@@ -427,6 +480,7 @@ namespace Falcor
     {
         infoOut = {};
 
+        infoOut.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
         infoOut.topology = getVkPrimitiveTopology(pVao->getPrimitiveTopology());
         infoOut.primitiveRestartEnable = VK_FALSE;
     }

@@ -30,7 +30,7 @@
 
 namespace Falcor
 {
-    struct BlendStateCreateInfo
+    struct ColorBlendStateCreateInfo
     {
         std::vector<VkPipelineColorBlendAttachmentState> attachmentStates;
         VkPipelineColorBlendStateCreateInfo info;
@@ -52,7 +52,8 @@ namespace Falcor
         VkRenderPassCreateInfo info;
     };
 
-    void initVkBlendInfo(const BlendState* pState, BlendStateCreateInfo& infoOut);
+    void initVkShaderStageInfo(const ProgramVersion* pProgram, std::vector<VkPipelineShaderStageCreateInfo>& infosOut);
+    void initVkBlendInfo(const BlendState* pState, ColorBlendStateCreateInfo& infoOut);
     void initVkRasterizerInfo(const RasterizerState* pState, VkPipelineRasterizationStateCreateInfo& infoOut);
     void initVkDepthStencilInfo(const DepthStencilState* pState, VkPipelineDepthStencilStateCreateInfo& infoOut);
     void initVkVertexLayoutInfo(const VertexLayout* pLayout, VertexInputStateCreateInfo& infoOut);
