@@ -27,26 +27,59 @@
 ***************************************************************************/
 #include "Framework.h"
 #include "API/FBO.h"
+#include "VKState.h"
+#include "API/Device.h"
 
 namespace Falcor
 {
-    Fbo::Fbo(bool initApiHandle)
+    Fbo::Fbo()
     {
-        mApiHandle = -1;
         mColorAttachments.resize(getMaxColorTargetCount());
     }
 
     Fbo::~Fbo() = default;
 
-    uint32_t Fbo::getApiHandle() const
+    Fbo::ApiHandle Fbo::getApiHandle() const
     {
+        checkStatus();
         return mApiHandle;
     }
 
     uint32_t Fbo::getMaxColorTargetCount()
     {
-        //return D3D12_SIMULTANEOUS_RENDER_TARGET_COUNT;
-        return 8;
+        return gpDevice->getPhysicalDeviceLimits().maxFragmentOutputAttachments; // #VKTODO Is that correct?
+    }
+
+    void Fbo::initApiHandle() const
+    {
+        // Render Pass
+        RenderPassCreateInfo renderPassInfo;
+        initVkRenderPassInfo(*mpDesc, renderPassInfo);
+        VkRenderPass pass;
+        vkCreateRenderPass(gpDevice->getApiHandle(), &renderPassInfo.info, nullptr, &pass);
+        mApiHandle = pass;
+
+        // FBO handle
+        std::vector<VkImageView> attachments(1/*Fbo::getMaxColorTargetCount()*/ + 1);
+        for (uint32_t i = 0; i < 1/*Fbo::getMaxColorTargetCount()*/; i++)
+        {
+            attachments[i] = getRenderTargetView(i)->getApiHandle();
+        }
+
+        attachments.back() = getDepthStencilView()->getApiHandle();
+
+        VkFramebufferCreateInfo frameBufferInfo = {};
+        frameBufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+        frameBufferInfo.renderPass = mApiHandle;
+        frameBufferInfo.attachmentCount = (uint32_t)attachments.size();
+        frameBufferInfo.pAttachments = attachments.data();
+        frameBufferInfo.width = getWidth();
+        frameBufferInfo.height = getHeight();
+        frameBufferInfo.layers = 1; // #VKTODO what are frame buffer "layers?"
+
+        VkFramebuffer frameBuffer;
+        vkCreateFramebuffer(gpDevice->getApiHandle(), &frameBufferInfo, nullptr, &frameBuffer);
+        mApiHandle = frameBuffer;
     }
 
     void Fbo::applyColorAttachment(uint32_t rtIndex)
@@ -55,15 +88,6 @@ namespace Falcor
 
     void Fbo::applyDepthAttachment()
     {
-    }
-
-    bool Fbo::checkStatus() const
-    {
-        if (mpDesc == nullptr)
-        {
-            return calcAndValidateProperties();
-        }
-        return true;
     }
 
     RenderTargetView::SharedPtr Fbo::getRenderTargetView(uint32_t rtIndex) const

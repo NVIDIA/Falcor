@@ -105,9 +105,12 @@ namespace Falcor
 #ifdef FALCOR_VK
         public:
             Desc& setVao(const Vao::SharedConstPtr& pVao) { mpVao = pVao; return *this; }
+            Desc& setRenderPass(VkRenderPass renderPass) { mRenderPass = renderPass; return *this; }
             const Vao::SharedConstPtr& getVao() const { return mpVao; }
+            VkRenderPass getRenderPass() const {return mRenderPass;}
         private:
             Vao::SharedConstPtr mpVao;
+            VkRenderPass mRenderPass;
 #endif
         };
 
@@ -128,12 +131,5 @@ namespace Falcor
         static DepthStencilState::SharedPtr spDefaultDepthStencilState;
 
         bool apiInit();
-
-#ifdef FALCOR_VK
-    public:
-        VkRenderPass getRenderPass() const { return mRenderPassHandle; }
-    private:
-        VkRenderPass mRenderPassHandle;
-#endif
     };
 }

@@ -101,15 +101,6 @@ namespace Falcor
     {
     }
 
-    bool Fbo::checkStatus() const
-    {
-        if (mpDesc == nullptr)
-        {
-            return calcAndValidateProperties();
-        }
-        return true;
-    }
-
     RenderTargetView::SharedPtr Fbo::getRenderTargetView(uint32_t rtIndex) const
     {
         const auto& rt = mColorAttachments[rtIndex];

@@ -35,7 +35,6 @@
 
 namespace Falcor
 {
-
     bool GraphicsStateObject::apiInit()
     {
         // Shader Stages
@@ -80,11 +79,6 @@ namespace Falcor
         dynamicInfo.dynamicStateCount = arraysize(dynamicStates);
         dynamicInfo.pDynamicStates = dynamicStates;
 
-        // Render Pass
-        RenderPassCreateInfo renderPassInfo;
-        initVkRenderPassInfo(mDesc.getFboDesc(), renderPassInfo);
-        vkCreateRenderPass(gpDevice->getApiHandle(), &renderPassInfo.info, nullptr, &mRenderPassHandle);
-
         // #VKTODO get this from somewhere
         // PipelineLayout cannot be a NULL handle so we have to make an "empty" one
         VkPipelineLayout pipelineLayout = {};
@@ -105,7 +99,7 @@ namespace Falcor
         pipelineCreateInfo.pColorBlendState = &blendInfo.info;
         pipelineCreateInfo.pDynamicState = &dynamicInfo;
         pipelineCreateInfo.layout = pipelineLayout;
-        pipelineCreateInfo.renderPass = mRenderPassHandle;
+        pipelineCreateInfo.renderPass = mDesc.getRenderPass();
         pipelineCreateInfo.subpass = 0;
 
         if (VK_FAILED(vkCreateGraphicsPipelines(gpDevice->getApiHandle(), VK_NULL_HANDLE, 1, &pipelineCreateInfo, nullptr, &mApiHandle)))

@@ -128,43 +128,14 @@ namespace Falcor
         vkCmdBindVertexBuffers(cmdList, 0, 1, &vertexbuffer, &offset);
     }
 
-    void beginRenderPass(CommandListHandle cmdList, const Fbo* pFbo, VkRenderPass renderPass)
+    void beginRenderPass(CommandListHandle cmdList, const Fbo* pFbo)
     {
-        // #VKTODO Where should we make and store the frame buffer handle? It requires both the renderPass and FBO views.
-
-        //
-        // Create and bind frame buffer
-        //
-
-        // #VKFRAMEBUFFER beginRenderPass()
-
-        std::vector<VkImageView> attachments(1/*Fbo::getMaxColorTargetCount()*/ + 1);
-        for (uint32_t i = 0; i < 1/*Fbo::getMaxColorTargetCount()*/; i++)
-        {
-            attachments[i] = pFbo->getRenderTargetView(i)->getApiHandle();
-        }
-
-        attachments.back() = pFbo->getDepthStencilView()->getApiHandle();
-
-        VkFramebufferCreateInfo frameBufferInfo = {};
-        frameBufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-        frameBufferInfo.renderPass = renderPass;
-        frameBufferInfo.attachmentCount = (uint32_t)attachments.size();
-        frameBufferInfo.pAttachments = attachments.data();
-        frameBufferInfo.width = pFbo->getWidth();
-        frameBufferInfo.height = pFbo->getHeight();
-        frameBufferInfo.layers = 1; // #VKTODO what are frame buffer "layers?"
-
-        VkFramebuffer frameBuffer;
-        vkCreateFramebuffer(gpDevice->getApiHandle(), &frameBufferInfo, nullptr, &frameBuffer);
-
-        //
         // Begin Render Pass
-        //
+        const auto& fboHandle = pFbo->getApiHandle();
         VkRenderPassBeginInfo beginInfo = {};
         beginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-        beginInfo.renderPass = renderPass;
-        beginInfo.framebuffer = frameBuffer;
+        beginInfo.renderPass = fboHandle;
+        beginInfo.framebuffer = fboHandle;
         beginInfo.renderArea.offset = { 0, 0 };
         beginInfo.renderArea.extent = { pFbo->getWidth(), pFbo->getHeight() };
 
@@ -179,13 +150,10 @@ namespace Falcor
     {
         GraphicsStateObject::SharedPtr pGSO = mpGraphicsState->getGSO(mpGraphicsVars.get());
         vkCmdBindPipeline(mpLowLevelData->getCommandList(), VK_PIPELINE_BIND_POINT_GRAPHICS, pGSO->getApiHandle());
-
         setViewports(mpLowLevelData->getCommandList(), mpGraphicsState->getViewports());
         setScissors(mpLowLevelData->getCommandList(), mpGraphicsState->getScissors());
-
-        setVao(mpLowLevelData->getCommandList(), pGSO->getDesc().getVao().get());
-        
-        beginRenderPass(mpLowLevelData->getCommandList(), mpGraphicsState->getFbo().get(), pGSO->getRenderPass());
+        setVao(mpLowLevelData->getCommandList(), pGSO->getDesc().getVao().get());        
+        beginRenderPass(mpLowLevelData->getCommandList(), mpGraphicsState->getFbo().get());
     }
 
     void RenderContext::drawInstanced(uint32_t vertexCount, uint32_t instanceCount, uint32_t startVertexLocation, uint32_t startInstanceLocation)

@@ -102,6 +102,7 @@ namespace Falcor
         {
             mDesc.setProgramVersion(pProgVersion);
             mDesc.setFboFormats(mpFbo ? mpFbo->getDesc() : Fbo::Desc());
+            mDesc.setRenderPass(mpFbo ? (VkRenderPass)mpFbo->getApiHandle() : VK_NULL_HANDLE);
             mDesc.setVertexLayout(mpVao->getVertexLayout());
             mDesc.setPrimitiveType(topology2Type(mpVao->getPrimitiveTopology()));
             mDesc.setRootSignature(pRoot);
