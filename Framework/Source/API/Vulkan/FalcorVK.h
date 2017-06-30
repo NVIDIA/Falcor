@@ -76,7 +76,7 @@ namespace Falcor
     using ApiCommandQueueType = uint32_t;
     using CommandAllocatorHandle = VkCommandPool;
     using CommandSignatureHandle = void*;
-    using FenceHandle = VkFence; // #VKTODO Check if we really need a fence or a semaphore!
+    using FenceHandle = VkSemaphore;
     using ResourceHandle = VkResource<VkImage, VkBuffer>;
     using RtvHandle = VkImageView;
     using DsvHandle = VkImageView;

@@ -35,8 +35,6 @@
 
 namespace Falcor
 {
-    VkSemaphore gFrameSemaphore; // #VKTODO need proper fence
-
     //
     // #VKTODO MOVEME - Temporary placement for debug report callback(s)
     //
@@ -122,12 +120,8 @@ namespace Falcor
             apiHandles[i] = swapchainImages[i];
         }
 
-        VkSemaphoreCreateInfo semaphoreInfo = {};
-        semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-        vkCreateSemaphore(mApiHandle, &semaphoreInfo, nullptr, &gFrameSemaphore);
-
         // Get the back-buffer
-        vk_call(vkAcquireNextImageKHR(mApiHandle, mpApiData->swapchain, std::numeric_limits<uint64_t>::max(), gFrameSemaphore, VK_NULL_HANDLE, &currentBackBufferIndex));
+        vk_call(vkAcquireNextImageKHR(mApiHandle, mpApiData->swapchain, std::numeric_limits<uint64_t>::max(), mpFrameFence->getApiHandle(), VK_NULL_HANDLE, &currentBackBufferIndex));
 
         return true;
     }
@@ -529,9 +523,8 @@ namespace Falcor
         info.pImageIndices = &mCurrentBackBufferIndex;
         vk_call(vkQueuePresentKHR(mpRenderContext->getLowLevelData()->getCommandQueue(), &info));
 
-        // Get the next back-buffer        
-        vk_call(vkAcquireNextImageKHR(mApiHandle, mpApiData->swapchain, std::numeric_limits<uint64_t>::max(), gFrameSemaphore, VK_NULL_HANDLE, &mCurrentBackBufferIndex));
-        
+        // Get the next back-buffer
+        vk_call(vkAcquireNextImageKHR(mApiHandle, mpApiData->swapchain, std::numeric_limits<uint64_t>::max(), mpFrameFence->getApiHandle(), VK_NULL_HANDLE, &mCurrentBackBufferIndex));        
     }
 
     bool Device::apiInit(const Desc& desc)
