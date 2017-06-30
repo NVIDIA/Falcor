@@ -74,15 +74,14 @@ namespace Falcor
         }
     }
 
-    Fbo::Fbo(bool initApiHandle)
+    Fbo::Fbo()
     {
-        mApiHandle = -1;
         mColorAttachments.resize(getMaxColorTargetCount());
     }
 
     Fbo::~Fbo() = default;
 
-    uint32_t Fbo::getApiHandle() const
+    Fbo::ApiHandle Fbo::getApiHandle() const
     {
         UNSUPPORTED_IN_D3D12("Fbo::getApiHandle()");
         return mApiHandle;
@@ -100,6 +99,8 @@ namespace Falcor
     void Fbo::applyDepthAttachment()
     {
     }
+
+    void Fbo::initApiHandle() const {}
 
     RenderTargetView::SharedPtr Fbo::getRenderTargetView(uint32_t rtIndex) const
     {
