@@ -487,78 +487,82 @@ namespace Falcor
 
     void initVkRenderPassInfo(const Fbo::Desc& fboDesc, RenderPassCreateInfo& infoOut)
     {
-        //
         // Init Color and Depth Attachment Info
-        //
-
-        // #VKFRAMEBUFFER initVkRenderPassInfo
-
-        infoOut.attachmentDescs.resize(1/*Fbo::getMaxColorTargetCount()*/ + 1); // Color + Depth
+        infoOut.attachmentDescs.resize(Fbo::getMaxColorTargetCount() + 1); // Color + Depth
+        std::vector<uint32_t> regToAttachmentIndex(infoOut.attachmentDescs.size(), VK_ATTACHMENT_UNUSED);
+        uint32_t rtCount = 0;
 
         // Color attachments
-        for (uint32_t i = 0; i < 1/*Fbo::getMaxColorTargetCount()*/; i++)
+        for (uint32_t i = 0; i < Fbo::getMaxColorTargetCount(); i++)
         {
-            // #VKTODO: Render Pass setup should be a place to look into when looking into performance
-            VkAttachmentDescription& desc = infoOut.attachmentDescs[i];
-            desc.flags = 0;
-            desc.format = getVkFormat(fboDesc.getColorTargetFormat(i));
-            desc.samples = (VkSampleCountFlagBits)fboDesc.getSampleCount();
-            desc.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
-            desc.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-            desc.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE; // This is a color attachment
-            desc.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE; // This is a color attachment
-            desc.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-            desc.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+            ResourceFormat format = fboDesc.getColorTargetFormat(i);
+            if(format != ResourceFormat::Unknown)
+            {
+                VkAttachmentDescription& desc = infoOut.attachmentDescs[rtCount];
+                regToAttachmentIndex[i] = rtCount;
+                rtCount++;
+
+                desc.flags = 0;
+                desc.format = getVkFormat(format);
+                desc.samples = (VkSampleCountFlagBits)fboDesc.getSampleCount();
+                desc.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
+                desc.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+                desc.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE; // This is a color attachment
+                desc.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE; // This is a color attachment
+                desc.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+                desc.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+            }
         }
 
         // Depth
-        VkAttachmentDescription& depthDesc = infoOut.attachmentDescs.back();
-        depthDesc.flags = 0;
-        depthDesc.format = getVkFormat(fboDesc.getDepthStencilFormat());
-        depthDesc.samples = (VkSampleCountFlagBits)fboDesc.getSampleCount();
-        depthDesc.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
-        depthDesc.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-        depthDesc.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
-        depthDesc.stencilStoreOp = VK_ATTACHMENT_STORE_OP_STORE;
-        depthDesc.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-        depthDesc.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+        ResourceFormat format = fboDesc.getDepthStencilFormat();
+        if(format != ResourceFormat::Unknown)
+        {
+            VkAttachmentDescription& depthDesc = infoOut.attachmentDescs[rtCount];
+            regToAttachmentIndex.back() = rtCount;
+            rtCount++;
 
-        //
+            depthDesc.flags = 0;
+            depthDesc.format = getVkFormat(fboDesc.getDepthStencilFormat());
+            depthDesc.samples = (VkSampleCountFlagBits)fboDesc.getSampleCount();
+            depthDesc.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
+            depthDesc.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+            depthDesc.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
+            depthDesc.stencilStoreOp = VK_ATTACHMENT_STORE_OP_STORE;
+            depthDesc.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+            depthDesc.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+        }
+
         // Init Subpass info
-        //
-
         infoOut.subpassDescs.resize(1);
         infoOut.attachmentRefs.resize(infoOut.attachmentDescs.size()); // Both same size, each subpass ref matches an attachment
 
         VkSubpassDescription& subpassDesc = infoOut.subpassDescs[0];
 
         subpassDesc = {};
-        subpassDesc.colorAttachmentCount = (uint32_t)infoOut.attachmentDescs.size();
+        subpassDesc.colorAttachmentCount = rtCount;
 
         // Color attachments
-        for (uint32_t i = 0; i < 1/*Fbo::getMaxColorTargetCount()*/; i++)
+        for (size_t i = 0; i < Fbo::getMaxColorTargetCount(); i++)
         {
             VkAttachmentReference& ref = infoOut.attachmentRefs[i];
-            ref.attachment = i;
+            ref.attachment = regToAttachmentIndex[i];
             ref.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
         }
 
         // Depth
         VkAttachmentReference& depthRef = infoOut.attachmentRefs.back();
-        depthRef.attachment = (uint32_t)infoOut.attachmentRefs.size() - 1; // Depth attachment INDEX is right after the color attachments
+        depthRef.attachment = regToAttachmentIndex.back();
         depthRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
-        subpassDesc.colorAttachmentCount = 1/*Fbo::getMaxColorTargetCount()*/;
+        subpassDesc.colorAttachmentCount = Fbo::getMaxColorTargetCount();
         subpassDesc.pColorAttachments = infoOut.attachmentRefs.data();
         subpassDesc.pDepthStencilAttachment = &infoOut.attachmentRefs.back();
 
-        //
         // Assemble RenderPass info
-        //
-
         infoOut.info = {};
         infoOut.info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-        infoOut.info.attachmentCount = (uint32_t)infoOut.attachmentDescs.size();
+        infoOut.info.attachmentCount = rtCount;
         infoOut.info.pAttachments = infoOut.attachmentDescs.data();
         infoOut.info.subpassCount = (uint32_t)infoOut.subpassDescs.size();
         infoOut.info.pSubpasses = infoOut.subpassDescs.data();

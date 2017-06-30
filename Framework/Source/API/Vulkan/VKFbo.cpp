@@ -60,18 +60,27 @@ namespace Falcor
         mApiHandle = pass;
 
         // FBO handle
-        std::vector<VkImageView> attachments(1/*Fbo::getMaxColorTargetCount()*/ + 1);
-        for (uint32_t i = 0; i < 1/*Fbo::getMaxColorTargetCount()*/; i++)
+        std::vector<VkImageView> attachments(Fbo::getMaxColorTargetCount() + 1); // 1 if for the depth
+        uint32_t rtCount = 0;
+        for (uint32_t i = 0; i < Fbo::getMaxColorTargetCount(); i++)
         {
-            attachments[i] = getRenderTargetView(i)->getApiHandle();
+            if(mColorAttachments[i].pTexture)
+            {
+                attachments[rtCount] = getRenderTargetView(i)->getApiHandle();
+                rtCount++;
+            }
         }
 
-        attachments.back() = getDepthStencilView()->getApiHandle();
+        if(mDepthStencil.pTexture)
+        {
+            attachments[rtCount] = getDepthStencilView()->getApiHandle();
+            rtCount++;
+        }
 
         VkFramebufferCreateInfo frameBufferInfo = {};
         frameBufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
         frameBufferInfo.renderPass = mApiHandle;
-        frameBufferInfo.attachmentCount = (uint32_t)attachments.size();
+        frameBufferInfo.attachmentCount = rtCount;
         frameBufferInfo.pAttachments = attachments.data();
         frameBufferInfo.width = getWidth();
         frameBufferInfo.height = getHeight();
