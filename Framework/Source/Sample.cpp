@@ -357,8 +357,8 @@ namespace Falcor
 #endif        
         }
 
-        renderText(getFpsMsg(), glm::vec2(10, 10));
 #ifndef VK_DISABLE_UNIMPLEMENTED
+        renderText(getFpsMsg(), glm::vec2(10, 10));
         mpPixelZoom->render(mpRenderContext.get(), gpDevice->getSwapChainFbo().get());
 #endif
 

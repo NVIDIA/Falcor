@@ -27,31 +27,38 @@
 ***************************************************************************/
 #pragma once
 #include "API/GraphicsStateObject.h"
-#include "API/VAO.h"
 
 namespace Falcor
 {
-    void initVkBlendInfo(const BlendState* pState, std::vector<VkPipelineColorBlendAttachmentState>& attachmentStateOut, VkPipelineColorBlendStateCreateInfo& infoOut);
+    struct ColorBlendStateCreateInfo
+    {
+        std::vector<VkPipelineColorBlendAttachmentState> attachmentStates;
+        VkPipelineColorBlendStateCreateInfo info;
+    };
+
+    struct VertexInputStateCreateInfo
+    {
+        std::vector<VkVertexInputBindingDescription> bindingDescs;
+        std::vector<VkVertexInputAttributeDescription> attribDescs;
+        VkPipelineVertexInputStateCreateInfo info;
+    };
+
+    struct RenderPassCreateInfo
+    {
+        std::vector<VkAttachmentDescription> attachmentDescs;
+        std::vector<VkAttachmentReference> attachmentRefs;
+        std::vector<VkSubpassDescription> subpassDescs;
+        std::vector<VkSubpassDependency> subpassDependencies;
+        VkRenderPassCreateInfo info;
+    };
+
+    void initVkShaderStageInfo(const ProgramVersion* pProgram, std::vector<VkPipelineShaderStageCreateInfo>& infosOut);
+    void initVkBlendInfo(const BlendState* pState, ColorBlendStateCreateInfo& infoOut);
     void initVkRasterizerInfo(const RasterizerState* pState, VkPipelineRasterizationStateCreateInfo& infoOut);
     void initVkDepthStencilInfo(const DepthStencilState* pState, VkPipelineDepthStencilStateCreateInfo& infoOut);
-    void initVkVertexLayoutInfo(const VertexLayout* pLayout, std::vector<VkVertexInputBindingDescription>& bindingDescs, std::vector<VkVertexInputAttributeDescription>& attribDescs, VkPipelineVertexInputStateCreateInfo& infoOut);
+    void initVkVertexLayoutInfo(const VertexLayout* pLayout, VertexInputStateCreateInfo& infoOut);
     void initVkSamplerInfo(const Sampler* pSampler, VkSamplerCreateInfo& infoOut);
-
-    inline VkPrimitiveTopology getVkPrimitiveTopology(Vao::Topology topology)
-    {
-        switch (topology)
-        {
-        case Vao::Topology::PointList:
-            return VK_PRIMITIVE_TOPOLOGY_POINT_LIST;
-        case Vao::Topology::LineList:
-            return VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
-        case Vao::Topology::TriangleList:
-            return VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-        case Vao::Topology::TriangleStrip:
-            return VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
-        default:
-            should_not_get_here();
-            return VK_PRIMITIVE_TOPOLOGY_POINT_LIST;
-        }
-    }
+    void initVkMultiSampleInfo(const BlendState* pState, const Fbo::Desc& fboDesc, const uint32_t& sampleMask, VkPipelineMultisampleStateCreateInfo& infoOut);
+    void initVkInputAssemblyInfo(const Vao* pVao, VkPipelineInputAssemblyStateCreateInfo& infoOut);
+    void initVkRenderPassInfo(const Fbo::Desc& fboDesc, RenderPassCreateInfo& infoOut);
 }

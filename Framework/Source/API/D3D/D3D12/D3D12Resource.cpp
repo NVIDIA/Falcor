@@ -87,6 +87,7 @@ namespace Falcor
     {
         switch (s)
         {
+        case Resource::State::Undefined:
         case Resource::State::Common:
             return D3D12_RESOURCE_STATE_COMMON;
         case Resource::State::ConstantBuffer:

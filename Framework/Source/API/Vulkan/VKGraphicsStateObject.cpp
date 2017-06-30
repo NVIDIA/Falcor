@@ -35,71 +35,78 @@
 
 namespace Falcor
 {
-    bool createGraphicsPipeline(VkPipeline& graphicsPipeline, GraphicsStateObject::Desc& desc)
-    {
-        VkPipelineVertexInputStateCreateInfo vertexInputInfo;
-        std::vector<VkVertexInputBindingDescription> bindingDescs;
-        std::vector<VkVertexInputAttributeDescription> attribDescs;
-        initVkVertexLayoutInfo(desc.getVertexLayout().get(), bindingDescs, attribDescs, vertexInputInfo);
-
-        VkPipelineInputAssemblyStateCreateInfo inputAssemblyInfo;
-
-
-        VkPipelineTessellationStateCreateInfo tessellationInfo;
-
-
-        VkPipelineViewportStateCreateInfo viewportInfo;
-
-
-        VkPipelineRasterizationStateCreateInfo rasterizerInfo;
-        initVkRasterizerInfo(desc.getRasterizerState().get(), rasterizerInfo);
-
-        VkPipelineMultisampleStateCreateInfo multisampleInfo;
-
-
-        VkPipelineDepthStencilStateCreateInfo depthStencilInfo;
-        initVkDepthStencilInfo(desc.getDepthStencilState().get(), depthStencilInfo);
-
-        VkPipelineColorBlendStateCreateInfo blendInfo;
-        std::vector<VkPipelineColorBlendAttachmentState> attachmentStates;
-        initVkBlendInfo(desc.getBlendState().get(), attachmentStates, blendInfo);
-
-        VkPipelineDynamicStateCreateInfo dynamicInfo;
-
-
-
-        // VKTODO: create these here, or do they belong elsewhere?
-        //VkRenderPass                         renderPass;
-        //VkPipelineCache                      pipelineCache;
-        VkPipelineLayout                       pipelineLayout = {};
-
-        VkGraphicsPipelineCreateInfo pipelineCreateInfo;
-        pipelineCreateInfo.sType               = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-        pipelineCreateInfo.layout              = pipelineLayout;
-        pipelineCreateInfo.pVertexInputState   = &vertexInputInfo;
-        pipelineCreateInfo.pInputAssemblyState = &inputAssemblyInfo;
-        pipelineCreateInfo.pTessellationState  = &tessellationInfo;
-        pipelineCreateInfo.pViewportState      = &viewportInfo;
-        pipelineCreateInfo.pRasterizationState = &rasterizerInfo;
-        pipelineCreateInfo.pMultisampleState   = &multisampleInfo;
-        pipelineCreateInfo.pDepthStencilState  = &depthStencilInfo;
-        pipelineCreateInfo.pColorBlendState    = &blendInfo;
-        pipelineCreateInfo.pDynamicState       = &dynamicInfo;
-        //pipelineCreateInfo.renderPass        = &renderPass;
-
-   
-        /*if (VK_FAILED(vkCreateGraphicsPipelines(gpDevice->getApiHandle(), pipelineCache, 1, &pipelineCreateInfo, nullptr, &graphicsPipeline)))
-        {
-            logError("Could not create Pipeline.");
-            return false;
-        } */
-
-        return true;
-    }
-
     bool GraphicsStateObject::apiInit()
     {
-        createGraphicsPipeline(mApiHandle, mDesc);
+        // Shader Stages
+        std::vector<VkPipelineShaderStageCreateInfo> shaderStageInfos;
+        initVkShaderStageInfo(mDesc.getProgramVersion().get(), shaderStageInfos);
+
+        // Vertex Input State
+        VertexInputStateCreateInfo vertexInputInfo;
+        initVkVertexLayoutInfo(mDesc.getVertexLayout().get(), vertexInputInfo);
+
+        // Input Assembly State
+        VkPipelineInputAssemblyStateCreateInfo inputAssemblyInfo;
+        initVkInputAssemblyInfo(mDesc.getVao().get(), inputAssemblyInfo);
+        
+        // Viewport State
+        // Viewport and Scissors will be dynamic, but the count is still described here in the info struct
+        VkPipelineViewportStateCreateInfo viewportStateInfo = {};
+        viewportStateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+        viewportStateInfo.viewportCount = getMaxViewportCount();
+        viewportStateInfo.scissorCount = getMaxViewportCount();
+
+        // Rasterizerization State
+        VkPipelineRasterizationStateCreateInfo rasterizerInfo;
+        initVkRasterizerInfo(mDesc.getRasterizerState().get(), rasterizerInfo);
+
+        // Multisample State
+        VkPipelineMultisampleStateCreateInfo multisampleInfo;
+        initVkMultiSampleInfo(mDesc.getBlendState().get(), mDesc.getFboDesc(), mDesc.getSampleMask(), multisampleInfo);
+
+        // Depth Stencil State
+        VkPipelineDepthStencilStateCreateInfo depthStencilInfo;
+        initVkDepthStencilInfo(mDesc.getDepthStencilState().get(), depthStencilInfo);
+
+        // Color Blend State
+        ColorBlendStateCreateInfo blendInfo;
+        initVkBlendInfo(mDesc.getBlendState().get(), blendInfo);
+
+        // Dynamic State
+        VkPipelineDynamicStateCreateInfo dynamicInfo = {};
+        VkDynamicState dynamicStates[] = { VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR };
+        dynamicInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
+        dynamicInfo.dynamicStateCount = arraysize(dynamicStates);
+        dynamicInfo.pDynamicStates = dynamicStates;
+
+        // #VKTODO get this from somewhere
+        // PipelineLayout cannot be a NULL handle so we have to make an "empty" one
+        VkPipelineLayout pipelineLayout = {};
+        VkPipelineLayoutCreateInfo pipelineLayoutInfo = {};
+        pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+        vkCreatePipelineLayout(gpDevice->getApiHandle(), &pipelineLayoutInfo, nullptr, &pipelineLayout);
+
+        VkGraphicsPipelineCreateInfo pipelineCreateInfo = {};
+        pipelineCreateInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+        pipelineCreateInfo.stageCount = (uint32_t)shaderStageInfos.size();
+        pipelineCreateInfo.pStages = shaderStageInfos.data();
+        pipelineCreateInfo.pVertexInputState = &vertexInputInfo.info;
+        pipelineCreateInfo.pInputAssemblyState = &inputAssemblyInfo;
+        pipelineCreateInfo.pViewportState = &viewportStateInfo;
+        pipelineCreateInfo.pRasterizationState = &rasterizerInfo;
+        pipelineCreateInfo.pMultisampleState = &multisampleInfo;
+        pipelineCreateInfo.pDepthStencilState = &depthStencilInfo;
+        pipelineCreateInfo.pColorBlendState = &blendInfo.info;
+        pipelineCreateInfo.pDynamicState = &dynamicInfo;
+        pipelineCreateInfo.layout = pipelineLayout;
+        pipelineCreateInfo.renderPass = mDesc.getRenderPass();
+        pipelineCreateInfo.subpass = 0;
+
+        if (VK_FAILED(vkCreateGraphicsPipelines(gpDevice->getApiHandle(), VK_NULL_HANDLE, 1, &pipelineCreateInfo, nullptr, &mApiHandle)))
+        {
+            logError("Could not create graphics pipeline.");
+            return false;
+        }
 
         return true;
     }

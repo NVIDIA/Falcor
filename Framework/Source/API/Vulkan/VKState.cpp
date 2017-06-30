@@ -27,9 +27,54 @@
 ***************************************************************************/
 #include "Framework.h"
 #include "VKState.h"
+#include "API/FBO.h"
 
 namespace Falcor
 {
+
+    VkShaderStageFlagBits getVkShaderStage(ShaderType type)
+    {
+        switch (type)
+        {
+        case ShaderType::Vertex:
+            return VK_SHADER_STAGE_VERTEX_BIT;
+        case ShaderType::Pixel:
+            return VK_SHADER_STAGE_FRAGMENT_BIT;
+        case ShaderType::Geometry:
+            return VK_SHADER_STAGE_GEOMETRY_BIT;
+        case ShaderType::Hull:
+            return VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT;
+        case ShaderType::Domain:
+            return VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT;
+        case ShaderType::Compute:
+            return VK_SHADER_STAGE_COMPUTE_BIT;
+        default:
+            should_not_get_here();
+            return (VkShaderStageFlagBits)0;
+        }
+    }
+
+    void initVkShaderStageInfo(const ProgramVersion* pProgram, std::vector<VkPipelineShaderStageCreateInfo>& infosOut)
+    {
+        infosOut.clear();
+
+        for (uint32_t i = 0; i < (uint32_t)ShaderType::Count; i++)
+        {
+            ShaderType type = (ShaderType)i;
+            const Shader* pShader = pProgram->getShader(type);
+
+            if (pShader != nullptr)
+            {
+                VkPipelineShaderStageCreateInfo info = {};
+                info.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+                info.stage = getVkShaderStage(type);
+                info.module = pShader->getApiHandle();
+                info.pName = "main";
+                infosOut.push_back(info);
+            }
+        }
+    }
+
     VkBlendFactor getVkBlendFactor(BlendState::BlendFunc func)
     {
         switch (func)
@@ -94,19 +139,15 @@ namespace Falcor
         }
     }
 
-    void initVkBlendInfo(const BlendState* pState, std::vector<VkPipelineColorBlendAttachmentState>& attachmentStateOut, VkPipelineColorBlendStateCreateInfo& infoOut)
+    void initVkBlendInfo(const BlendState* pState, ColorBlendStateCreateInfo& infoOut)
     {
-        infoOut = {};
+        // Fill out attachment blend info
+        infoOut.attachmentStates.resize((uint32_t)pState->getRtCount());
 
-        infoOut.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
-        infoOut.logicOpEnable = VK_FALSE;
-        infoOut.attachmentCount = (uint32_t)pState->getRtCount();
-
-        attachmentStateOut.resize(infoOut.attachmentCount);
-        for (uint32_t i = 0; i < infoOut.attachmentCount; i++)
+        for (uint32_t i = 0; i < (uint32_t)infoOut.attachmentStates.size(); i++)
         {
             const BlendState::Desc::RenderTargetDesc& rtDesc = pState->getRtDesc(i);
-            VkPipelineColorBlendAttachmentState& state = attachmentStateOut[i];
+            VkPipelineColorBlendAttachmentState& state = infoOut.attachmentStates[i];
             state.blendEnable = vkBool(rtDesc.blendEnabled);
             state.srcColorBlendFactor = getVkBlendFactor(rtDesc.srcRgbFunc);
             state.dstColorBlendFactor = getVkBlendFactor(rtDesc.dstRgbFunc);
@@ -120,6 +161,19 @@ namespace Falcor
             state.colorWriteMask |= rtDesc.writeMask.writeBlue ? VK_COLOR_COMPONENT_B_BIT : 0;
             state.colorWriteMask |= rtDesc.writeMask.writeAlpha ? VK_COLOR_COMPONENT_A_BIT : 0;
         }
+
+        // Fill out create info
+        infoOut.info = {};
+        infoOut.info.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+        infoOut.info.logicOpEnable = VK_FALSE;
+        infoOut.info.attachmentCount = (uint32_t)infoOut.attachmentStates.size();
+        infoOut.info.pAttachments = infoOut.attachmentStates.data();
+
+        const vec4 blendColor = pState->getBlendFactor();
+        infoOut.info.blendConstants[0] = blendColor.r;
+        infoOut.info.blendConstants[1] = blendColor.g;
+        infoOut.info.blendConstants[2] = blendColor.b;
+        infoOut.info.blendConstants[3] = blendColor.a;
     }
 
     VkPolygonMode getVkPolygonMode(RasterizerState::FillMode fill)
@@ -158,7 +212,7 @@ namespace Falcor
 
         infoOut.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
         infoOut.depthClampEnable = VK_FALSE;
-        infoOut.rasterizerDiscardEnable = VK_TRUE;
+        infoOut.rasterizerDiscardEnable = VK_FALSE;
         infoOut.polygonMode = getVkPolygonMode(pState->getFillMode());
         infoOut.cullMode = getVkCullMode(pState->getCullMode());
         infoOut.frontFace = pState->isFrontCounterCW() ? VK_FRONT_FACE_CLOCKWISE : VK_FRONT_FACE_COUNTER_CLOCKWISE;
@@ -268,14 +322,14 @@ namespace Falcor
         }
     }
 
-    void initVkVertexLayoutInfo(const VertexLayout* pLayout, std::vector<VkVertexInputBindingDescription>& bindingDescs, std::vector<VkVertexInputAttributeDescription>& attribDescs, VkPipelineVertexInputStateCreateInfo& infoOut)
+    void initVkVertexLayoutInfo(const VertexLayout* pLayout, VertexInputStateCreateInfo& infoOut)
     {
         //
         // Build Vertex input and binding info
         //
 
-        bindingDescs.clear();
-        attribDescs.clear();
+        infoOut.bindingDescs.clear();
+        infoOut.attribDescs.clear();
 
         for (size_t vb = 0; vb < pLayout->getBufferCount(); vb++)
         {
@@ -283,11 +337,12 @@ namespace Falcor
             if (pVB)
             {
                 // Per buffer binding
-                VkVertexInputBindingDescription& bindingDesc = bindingDescs[vb];
+                VkVertexInputBindingDescription bindingDesc = {};
                 bindingDesc.binding = (uint32_t)vb;
                 bindingDesc.stride = pVB->getStride();
                 bindingDesc.inputRate = getVkInputRate(pVB->getInputClass());
-                bindingDescs.push_back(bindingDesc);
+
+                infoOut.bindingDescs.push_back(bindingDesc);
 
                 for (uint32_t elemID = 0; elemID < pVB->getElementCount(); elemID++)
                 {
@@ -300,7 +355,7 @@ namespace Falcor
 
                     for (uint32_t i = 0; i < pVB->getElementArraySize(elemID); i++)
                     {
-                        attribDescs.push_back(attribDesc);
+                        infoOut.attribDescs.push_back(attribDesc);
                         attribDesc.offset += getFormatBytesPerBlock(pVB->getElementFormat(elemID));
                     }
                 }
@@ -311,13 +366,13 @@ namespace Falcor
         // Now put together the actual layout create info
         //
 
-        infoOut = {};
+        infoOut.info = {};
 
-        infoOut.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-        infoOut.vertexBindingDescriptionCount = (uint32_t)bindingDescs.size();
-        infoOut.pVertexBindingDescriptions = bindingDescs.data();
-        infoOut.vertexAttributeDescriptionCount = (uint32_t)attribDescs.size();
-        infoOut.pVertexAttributeDescriptions = attribDescs.data();
+        infoOut.info.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+        infoOut.info.vertexBindingDescriptionCount = (uint32_t)infoOut.bindingDescs.size();
+        infoOut.info.pVertexBindingDescriptions = infoOut.bindingDescs.data();
+        infoOut.info.vertexAttributeDescriptionCount = (uint32_t)infoOut.attribDescs.size();
+        infoOut.info.pVertexAttributeDescriptions = infoOut.attribDescs.data();
     }
 
     VkFilter getVkFilter(Sampler::Filter filter)
@@ -388,6 +443,130 @@ namespace Falcor
         infoOut.maxLod = pSampler->getMaxLod();
         infoOut.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_BLACK;
         infoOut.unnormalizedCoordinates = VK_FALSE;
+    }
+
+    void initVkMultiSampleInfo(const BlendState* pState, const Fbo::Desc& fboDesc, const uint32_t& sampleMask, VkPipelineMultisampleStateCreateInfo& infoOut)
+    {
+        infoOut = {};
+
+        infoOut.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+        infoOut.rasterizationSamples = (VkSampleCountFlagBits)fboDesc.getSampleCount();
+        infoOut.sampleShadingEnable = VK_FALSE;
+        infoOut.minSampleShading = 0.0f;
+        infoOut.pSampleMask = &sampleMask;
+        infoOut.alphaToCoverageEnable = vkBool(pState->isAlphaToCoverageEnabled());
+        infoOut.alphaToOneEnable = VK_FALSE;
+    }
+
+    VkPrimitiveTopology getVkPrimitiveTopology(Vao::Topology topology)
+    {
+        switch (topology)
+        {
+        case Vao::Topology::PointList:
+            return VK_PRIMITIVE_TOPOLOGY_POINT_LIST;
+        case Vao::Topology::LineList:
+            return VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
+        case Vao::Topology::TriangleList:
+            return VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+        case Vao::Topology::TriangleStrip:
+            return VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
+        default:
+            should_not_get_here();
+            return VK_PRIMITIVE_TOPOLOGY_POINT_LIST;
+        }
+    }
+
+    void initVkInputAssemblyInfo(const Vao* pVao, VkPipelineInputAssemblyStateCreateInfo& infoOut)
+    {
+        infoOut = {};
+
+        infoOut.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
+        infoOut.topology = getVkPrimitiveTopology(pVao->getPrimitiveTopology());
+        infoOut.primitiveRestartEnable = VK_FALSE;
+    }
+
+    void initVkRenderPassInfo(const Fbo::Desc& fboDesc, RenderPassCreateInfo& infoOut)
+    {
+        // Init Color and Depth Attachment Info
+        infoOut.attachmentDescs.resize(Fbo::getMaxColorTargetCount() + 1); // Color + Depth
+        std::vector<uint32_t> regToAttachmentIndex(infoOut.attachmentDescs.size(), VK_ATTACHMENT_UNUSED);
+        uint32_t rtCount = 0;
+
+        // Color attachments. We're only attaching textures which are actually bound (non-null)
+        for (uint32_t i = 0; i < Fbo::getMaxColorTargetCount(); i++)
+        {
+            ResourceFormat format = fboDesc.getColorTargetFormat(i);
+            if(format != ResourceFormat::Unknown)
+            {
+                VkAttachmentDescription& desc = infoOut.attachmentDescs[rtCount];
+                regToAttachmentIndex[i] = rtCount;
+                rtCount++;
+
+                desc.flags = 0;
+                desc.format = getVkFormat(format);
+                desc.samples = (VkSampleCountFlagBits)fboDesc.getSampleCount();
+                desc.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
+                desc.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+                desc.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE; // This is a color attachment
+                desc.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE; // This is a color attachment
+                desc.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+                desc.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+            }
+        }
+
+        // Depth. No need to attach if the texture is null
+        ResourceFormat format = fboDesc.getDepthStencilFormat();
+        if(format != ResourceFormat::Unknown)
+        {
+            VkAttachmentDescription& depthDesc = infoOut.attachmentDescs[rtCount];
+            regToAttachmentIndex.back() = rtCount;
+            rtCount++;
+
+            depthDesc.flags = 0;
+            depthDesc.format = getVkFormat(fboDesc.getDepthStencilFormat());
+            depthDesc.samples = (VkSampleCountFlagBits)fboDesc.getSampleCount();
+            depthDesc.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
+            depthDesc.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+            depthDesc.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
+            depthDesc.stencilStoreOp = VK_ATTACHMENT_STORE_OP_STORE;
+            depthDesc.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+            depthDesc.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+        }
+
+        // Init Subpass info
+        infoOut.subpassDescs.resize(1);
+        infoOut.attachmentRefs.resize(infoOut.attachmentDescs.size());
+        VkSubpassDescription& subpassDesc = infoOut.subpassDescs[0];
+
+        subpassDesc = {};
+        subpassDesc.colorAttachmentCount = rtCount;
+
+        // Color attachments. This is where we create the indirection between the attachment in the RenderPass and the shader output-register index
+        for (size_t i = 0; i < Fbo::getMaxColorTargetCount(); i++)
+        {
+            VkAttachmentReference& ref = infoOut.attachmentRefs[i];
+            ref.attachment = regToAttachmentIndex[i];
+            ref.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+        }
+
+        // Depth
+        VkAttachmentReference& depthRef = infoOut.attachmentRefs.back();
+        depthRef.attachment = regToAttachmentIndex.back();
+        depthRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+        subpassDesc.colorAttachmentCount = Fbo::getMaxColorTargetCount();
+        subpassDesc.pColorAttachments = infoOut.attachmentRefs.data();
+        subpassDesc.pDepthStencilAttachment = &infoOut.attachmentRefs.back();
+
+        // Assemble RenderPass info
+        infoOut.info = {};
+        infoOut.info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+        infoOut.info.attachmentCount = rtCount;
+        infoOut.info.pAttachments = infoOut.attachmentDescs.data();
+        infoOut.info.subpassCount = (uint32_t)infoOut.subpassDescs.size();
+        infoOut.info.pSubpasses = infoOut.subpassDescs.data();
+        infoOut.info.dependencyCount = 0;
+        infoOut.info.pDependencies = nullptr;
     }
 
 }

@@ -59,6 +59,18 @@ namespace Falcor
         return kVkFormatDesc[(uint32_t)format].vkFormat;
     }
 
+    class VkFboHandle
+    {
+    public:
+        VkFboHandle& operator=(VkRenderPass pass) { mVkRenderPass = pass; return *this; }
+        VkFboHandle& operator=(VkFramebuffer fb) { mVkFbo = fb; return *this; }
+        operator VkRenderPass() const { return mVkRenderPass; }
+        operator VkFramebuffer() const { return mVkFbo; }
+    private:
+        VkRenderPass mVkRenderPass = VK_NULL_HANDLE;
+        VkFramebuffer mVkFbo = VK_NULL_HANDLE;
+    };
+
     using HeapCpuHandle = void*;
     using HeapGpuHandle = void*;
 
@@ -83,12 +95,13 @@ namespace Falcor
     using SrvHandle = VkResource<VkImageView, VkBufferView>;
     using UavHandle = VkResource<VkImageView, VkBufferView>;
     using CbvHandle = VkBufferView;
+    using FboHandle = VkFboHandle;
     using SamplerHandle = VkSampler;
     using GpuAddress = size_t;
 
     using PsoHandle = VkPipeline;
     using ComputeStateHandle = void*;
-    using ShaderHandle = void*;
+    using ShaderHandle = VkShaderModule;
     using ShaderReflectionHandle = void*;
     using RootSignatureHandle = VkPipelineLayout;
     using DescriptorHeapHandle = VkDescriptorPool;

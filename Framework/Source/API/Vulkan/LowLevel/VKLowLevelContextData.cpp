@@ -35,6 +35,7 @@ namespace Falcor
     struct LowLevelContextApiData
     {
         FencedPool<VkCommandBuffer>::SharedPtr pCmdBufferAllocator;
+        bool recordingCmds = false;
     };
 
     VkCommandBuffer createCommandBuffer(void* pUserData)
@@ -81,17 +82,22 @@ namespace Falcor
 
     void LowLevelContextData::reset()
     {
-        VkCommandBufferBeginInfo beginInfo = {};
-        beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-        beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
-        beginInfo.pInheritanceInfo = nullptr;
-        mpList = mpApiData->pCmdBufferAllocator->newObject();
-        vk_call(vkBeginCommandBuffer(mpList, &beginInfo));
+        if(mpApiData->recordingCmds == false)
+        {
+            VkCommandBufferBeginInfo beginInfo = {};
+            beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+            beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
+            beginInfo.pInheritanceInfo = nullptr;
+            mpList = mpApiData->pCmdBufferAllocator->newObject();
+            vk_call(vkBeginCommandBuffer(mpList, &beginInfo));
+            mpApiData->recordingCmds = true;
+        }
     }
 
     // Submit the recorded command buffers here. 
     void LowLevelContextData::flush()
     {
+        mpApiData->recordingCmds = false;
         vk_call(vkEndCommandBuffer(mpList));
         VkSubmitInfo submitInfo = {};
 
@@ -104,5 +110,6 @@ namespace Falcor
         submitInfo.pSignalSemaphores = nullptr;
         vk_call(vkQueueSubmit(mpQueue, 1, &submitInfo, nullptr));
         mpFence->gpuSignal(mpQueue);
+        reset();    // Need to call vkBeginCommandBuffer()
     }
 }

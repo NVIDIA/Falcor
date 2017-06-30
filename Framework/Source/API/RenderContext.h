@@ -101,7 +101,7 @@ namespace Falcor
             \param[in] startIndexLocation The location of the first index to read from the index buffer (offset in indices)
             \param[in] baseVertexLocation A value which is added to each index before reading a vertex from the vertex buffer
         */
-        void drawIndexed(uint32_t indexCount, uint32_t startIndexLocation, int baseVertexLocation);
+        void drawIndexed(uint32_t indexCount, uint32_t startIndexLocation, int32_t baseVertexLocation);
 
         /** Indexed instanced draw call
             \param[in] indexCount Number of indices to draw per instance
@@ -110,7 +110,7 @@ namespace Falcor
             \param[in] baseVertexLocation A value which is added to each index before reading a vertex from the vertex buffer
             \param[in] startInstanceLocation A value which is added to each index before reading per-instance data from the vertex buffer
         */
-        void drawIndexedInstanced(uint32_t indexCount, uint32_t instanceCount, uint32_t startIndexLocation, int baseVertexLocation, uint32_t startInstanceLocation);
+        void drawIndexedInstanced(uint32_t indexCount, uint32_t instanceCount, uint32_t startIndexLocation, int32_t baseVertexLocation, uint32_t startInstanceLocation);
 
         /** Blits (low-level copy) an SRV into an RTV
             \param[in] pSrc Source view to copy from
