@@ -492,7 +492,7 @@ namespace Falcor
         std::vector<uint32_t> regToAttachmentIndex(infoOut.attachmentDescs.size(), VK_ATTACHMENT_UNUSED);
         uint32_t rtCount = 0;
 
-        // Color attachments
+        // Color attachments. We're only attaching textures which are actually bound (non-null)
         for (uint32_t i = 0; i < Fbo::getMaxColorTargetCount(); i++)
         {
             ResourceFormat format = fboDesc.getColorTargetFormat(i);
@@ -514,7 +514,7 @@ namespace Falcor
             }
         }
 
-        // Depth
+        // Depth. No need to attach if the texture is null
         ResourceFormat format = fboDesc.getDepthStencilFormat();
         if(format != ResourceFormat::Unknown)
         {
@@ -535,14 +535,13 @@ namespace Falcor
 
         // Init Subpass info
         infoOut.subpassDescs.resize(1);
-        infoOut.attachmentRefs.resize(infoOut.attachmentDescs.size()); // Both same size, each subpass ref matches an attachment
-
+        infoOut.attachmentRefs.resize(infoOut.attachmentDescs.size());
         VkSubpassDescription& subpassDesc = infoOut.subpassDescs[0];
 
         subpassDesc = {};
         subpassDesc.colorAttachmentCount = rtCount;
 
-        // Color attachments
+        // Color attachments. This is where we create the indirection between the attachment in the RenderPass and the shader output-register index
         for (size_t i = 0; i < Fbo::getMaxColorTargetCount(); i++)
         {
             VkAttachmentReference& ref = infoOut.attachmentRefs[i];
