@@ -123,7 +123,7 @@ namespace Falcor
     void setVao(CommandListHandle cmdList, const Vao* pVao)
     {
         // #VKTODO setVao() - Implement me properly
-        VkDeviceSize offset = 0;
+        VkDeviceSize offset = pVao->getVertexBuffer(0)->getGpuAddressOffset();
         VkBuffer vertexbuffer = pVao->getVertexBuffer(0)->getApiHandle().getBuffer();
         vkCmdBindVertexBuffers(cmdList, 0, 1, &vertexbuffer, &offset);
     }
