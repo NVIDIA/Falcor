@@ -117,6 +117,7 @@ namespace Falcor
             vkScissors[i].extent.width = scissors[i].right - scissors[i].left;
             vkScissors[i].extent.height = scissors[i].bottom - scissors[i].top;
         }
+        vkCmdSetScissor(cmdList, 0, (uint32_t)scissors.size(), vkScissors.data());
     }
 
     void setVao(CommandListHandle cmdList, const Vao* pVao)
@@ -189,8 +190,11 @@ namespace Falcor
 
     void RenderContext::drawInstanced(uint32_t vertexCount, uint32_t instanceCount, uint32_t startVertexLocation, uint32_t startInstanceLocation)
     {
+        resourceBarrier(mpGraphicsState->getFbo()->getDepthStencilTexture().get(), Resource::State::DepthStencil);
+        resourceBarrier(mpGraphicsState->getFbo()->getColorTexture(0).get(), Resource::State::RenderTarget);
         prepareForDraw();
         vkCmdDraw(mpLowLevelData->getCommandList(), vertexCount, instanceCount, startVertexLocation, startInstanceLocation);
+        vkCmdEndRenderPass(mpLowLevelData->getCommandList());
     }
 
     void RenderContext::draw(uint32_t vertexCount, uint32_t startVertexLocation)

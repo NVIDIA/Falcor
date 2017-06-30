@@ -166,7 +166,7 @@ namespace Falcor
 
         Type mType;
         BindFlags mBindFlags;
-        mutable State mState = State::Common;
+        mutable State mState = State::Undefined;
         ApiHandle mApiHandle;
 
         mutable std::unordered_map<ResourceViewInfo, ShaderResourceView::SharedPtr, ViewInfoHashFunc> mSrvs;

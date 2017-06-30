@@ -49,12 +49,7 @@ namespace Falcor
         // Input Assembly State
         VkPipelineInputAssemblyStateCreateInfo inputAssemblyInfo;
         initVkInputAssemblyInfo(mDesc.getVao().get(), inputAssemblyInfo);
-
-        // Tessellation State
-        VkPipelineTessellationStateCreateInfo tessellationInfo = {};
-        tessellationInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_TESSELLATION_STATE_CREATE_INFO;
-        tessellationInfo.patchControlPoints = 1;
-
+        
         // Viewport State
         // Viewport and Scissors will be dynamic, but the count is still described here in the info struct
         VkPipelineViewportStateCreateInfo viewportStateInfo = {};
@@ -103,7 +98,6 @@ namespace Falcor
         pipelineCreateInfo.pStages = shaderStageInfos.data();
         pipelineCreateInfo.pVertexInputState = &vertexInputInfo.info;
         pipelineCreateInfo.pInputAssemblyState = &inputAssemblyInfo;
-        pipelineCreateInfo.pTessellationState = &tessellationInfo;
         pipelineCreateInfo.pViewportState = &viewportStateInfo;
         pipelineCreateInfo.pRasterizationState = &rasterizerInfo;
         pipelineCreateInfo.pMultisampleState = &multisampleInfo;
