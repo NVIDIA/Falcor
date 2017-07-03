@@ -211,8 +211,8 @@ namespace Falcor
         infoOut = {};
 
         infoOut.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
-        infoOut.depthClampEnable = VK_FALSE;
-        infoOut.rasterizerDiscardEnable = VK_FALSE;
+        infoOut.depthClampEnable = vkBool(pState->isDepthClampEnabled());
+        infoOut.rasterizerDiscardEnable = VK_FALSE; // #VKTODO We can set it to true if the PS and depth are disabled
         infoOut.polygonMode = getVkPolygonMode(pState->getFillMode());
         infoOut.cullMode = getVkCullMode(pState->getCullMode());
         infoOut.frontFace = pState->isFrontCounterCW() ? VK_FRONT_FACE_CLOCKWISE : VK_FRONT_FACE_COUNTER_CLOCKWISE;
@@ -324,10 +324,7 @@ namespace Falcor
 
     void initVkVertexLayoutInfo(const VertexLayout* pLayout, VertexInputStateCreateInfo& infoOut)
     {
-        //
         // Build Vertex input and binding info
-        //
-
         infoOut.bindingDescs.clear();
         infoOut.attribDescs.clear();
 
@@ -357,17 +354,14 @@ namespace Falcor
                     {
                         infoOut.attribDescs.push_back(attribDesc);
                         attribDesc.offset += getFormatBytesPerBlock(pVB->getElementFormat(elemID));
+                        attribDesc.binding++;
                     }
                 }
             }
         }
 
-        //
         // Now put together the actual layout create info
-        //
-
         infoOut.info = {};
-
         infoOut.info.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
         infoOut.info.vertexBindingDescriptionCount = (uint32_t)infoOut.bindingDescs.size();
         infoOut.info.pVertexBindingDescriptions = infoOut.bindingDescs.data();
@@ -451,8 +445,8 @@ namespace Falcor
 
         infoOut.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
         infoOut.rasterizationSamples = (VkSampleCountFlagBits)fboDesc.getSampleCount();
-        infoOut.sampleShadingEnable = VK_FALSE;
-        infoOut.minSampleShading = 0.0f;
+        infoOut.sampleShadingEnable = VK_FALSE; // #VKTODO Figure out how to abstract it
+        infoOut.minSampleShading = 1.0f;
         infoOut.pSampleMask = &sampleMask;
         infoOut.alphaToCoverageEnable = vkBool(pState->isAlphaToCoverageEnabled());
         infoOut.alphaToOneEnable = VK_FALSE;
@@ -479,10 +473,9 @@ namespace Falcor
     void initVkInputAssemblyInfo(const Vao* pVao, VkPipelineInputAssemblyStateCreateInfo& infoOut)
     {
         infoOut = {};
-
         infoOut.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
         infoOut.topology = getVkPrimitiveTopology(pVao->getPrimitiveTopology());
-        infoOut.primitiveRestartEnable = VK_FALSE;
+        infoOut.primitiveRestartEnable = (pVao->getPrimitiveTopology() == Vao::Topology::TriangleStrip); // Following the DX convention
     }
 
     void initVkRenderPassInfo(const Fbo::Desc& fboDesc, RenderPassCreateInfo& infoOut)

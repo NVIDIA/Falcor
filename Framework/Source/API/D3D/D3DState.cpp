@@ -228,7 +228,7 @@ namespace Falcor
                     for (uint32_t arrayIndex = 0; arrayIndex < pVB->getElementArraySize(elemID); arrayIndex++)
                     {
                         // Reallocating name for each array index simplifies the destructor
-                        char* name = new char[SemanticName.size() + 1];
+                        char* name = new char[SemanticName.size() + 1]; // #FIXME Mem leak
                         memcpy(name, SemanticName.c_str(), SemanticName.size());
                         name[SemanticName.size()] = 0;
                         element.SemanticName = name;
