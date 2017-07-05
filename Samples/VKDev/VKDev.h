@@ -44,4 +44,6 @@ public:
 
 private:
     FullScreenPass::UniquePtr mpPass;
+    GraphicsVars::SharedPtr mpVars;
+    vec2 mTexOffset;
 };

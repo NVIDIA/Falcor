@@ -420,6 +420,7 @@ namespace Falcor
     void initVkSamplerInfo(const Sampler* pSampler, VkSamplerCreateInfo& infoOut)
     {
         infoOut = {};
+        // #VKTODO handle border color
 
         infoOut.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
         infoOut.magFilter = getVkFilter(pSampler->getMagFilter());

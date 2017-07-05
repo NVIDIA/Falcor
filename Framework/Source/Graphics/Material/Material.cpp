@@ -345,7 +345,7 @@ namespace Falcor
         {
             if (pTextures[i] != nullptr)
             {
-                pVars->setSrv(pResourceDesc->regIndex + i, pTextures[i]->getSRV());
+                pVars->setSrv(pResourceDesc->regIndex + i, pResourceDesc->regSpace, pTextures[i]->getSRV());
             }
         }
 

@@ -150,6 +150,12 @@ namespace Falcor
     {
         GraphicsStateObject::SharedPtr pGSO = mpGraphicsState->getGSO(mpGraphicsVars.get());
         vkCmdBindPipeline(mpLowLevelData->getCommandList(), VK_PIPELINE_BIND_POINT_GRAPHICS, pGSO->getApiHandle());
+        if (mpGraphicsVars)
+        {
+            mpGraphicsVars->apply(const_cast<RenderContext*>(this), mBindGraphicsRootSig);
+            mBindGraphicsRootSig = false;
+        }
+        
         setViewports(mpLowLevelData->getCommandList(), mpGraphicsState->getViewports());
         setScissors(mpLowLevelData->getCommandList(), mpGraphicsState->getScissors());
         setVao(mpLowLevelData->getCommandList(), pGSO->getDesc().getVao().get());        

@@ -170,4 +170,95 @@ namespace Falcor
        
         return true;
     }
+
+    ProgramReflection::ShaderAccess getRequiredShaderAccess(RootSignature::DescType type);
+
+    static uint32_t initializeBufferDescriptors(const ProgramReflection* pReflector, RootSignature::Desc& desc, ProgramReflection::BufferReflection::Type bufferType, RootSignature::DescType descType)
+    {
+        uint32_t cost = 0;
+        const auto& bufMap = pReflector->getBufferMap(bufferType);
+        for (const auto& buf : bufMap)
+        {
+            const ProgramReflection::BufferReflection* pBuffer = buf.second.get();
+            if (pBuffer->getShaderAccess() == getRequiredShaderAccess(descType))
+            {
+                RootSignature::DescriptorSetLayout descTable;
+                descTable.addRange(descType, pBuffer->getRegisterIndex(), 1, pBuffer->getRegisterSpace());
+                cost += 1;
+                desc.addDescriptorSet(descTable);
+            }
+        }
+        return cost;
+    }
+
+    RootSignature::SharedPtr RootSignature::create(const ProgramReflection* pReflector)
+    {
+        uint32_t cost = 0;
+        RootSignature::Desc d;
+
+        cost += initializeBufferDescriptors(pReflector, d, ProgramReflection::BufferReflection::Type::Constant, RootSignature::DescType::Cbv);
+        cost += initializeBufferDescriptors(pReflector, d, ProgramReflection::BufferReflection::Type::Structured, RootSignature::DescType::Srv);
+        cost += initializeBufferDescriptors(pReflector, d, ProgramReflection::BufferReflection::Type::Structured, RootSignature::DescType::Uav);
+
+        const ProgramReflection::ResourceMap& resMap = pReflector->getResourceMap();
+        for (auto& resIt : resMap)
+        {
+            const ProgramReflection::Resource& resource = resIt.second;
+            RootSignature::DescType descType;
+            if (resource.type == ProgramReflection::Resource::ResourceType::Sampler)
+            {
+                descType = RootSignature::DescType::Sampler;
+            }
+            else
+            {
+                switch (resource.shaderAccess)
+                {
+                case ProgramReflection::ShaderAccess::ReadWrite:
+                    descType = RootSignature::DescType::Uav;
+                    break;
+                case ProgramReflection::ShaderAccess::Read:
+                    descType = RootSignature::DescType::Srv;
+                    break;
+                default:
+                    should_not_get_here();
+                }
+            }
+
+            uint32_t count = resource.arraySize ? resource.arraySize : 1;
+            RootSignature::DescriptorSetLayout descTable;
+            descTable.addRange(descType, resource.regIndex, count, resource.regSpace);
+            d.addDescriptorSet(descTable);
+            cost += 1;
+        }
+
+        if (cost > 64)
+        {
+            logError("RootSignature::create(): The required storage cost is " + std::to_string(cost) + " DWORDS, which is larger then the max allowed cost of 64 DWORDS");
+            return nullptr;
+        }
+        return (cost != 0) ? RootSignature::create(d) : RootSignature::getEmpty();
+    }
+
+    template<bool forGraphics>
+    static void bindRootSigCommon(CopyContext* pCtx, RootSignature::ApiHandle rootSig)
+    {
+        if (forGraphics)
+        {
+            pCtx->getLowLevelData()->getCommandList()->SetGraphicsRootSignature(rootSig);
+        }
+        else
+        {
+            pCtx->getLowLevelData()->getCommandList()->SetComputeRootSignature(rootSig);
+        }
+    }
+
+    void RootSignature::bindForCompute(CopyContext* pCtx)
+    {
+        bindRootSigCommon<false>(pCtx, mApiHandle);
+    }
+
+    void RootSignature::bindForGraphics(CopyContext* pCtx)
+    {
+        bindRootSigCommon<true>(pCtx, mApiHandle);
+    }
 }

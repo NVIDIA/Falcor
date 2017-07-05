@@ -26,32 +26,26 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 #include "Framework.h"
-#include "DescriptorSet.h"
-#include "API/Device.h"
+#include "API/CopyContext.h"
+#include "API/ProgramVars.h"
 
 namespace Falcor
 {
-    DescriptorSet::SharedPtr DescriptorSet::create(DescriptorPool::SharedPtr pPool, const Layout& layout)
+    template<bool forGraphics>
+    void bindConstantBuffers(CopyContext* pContext, const ProgramVars::ResourceMap<ConstantBuffer>& cbMap, const ProgramVars::RootSetVec& rootSets, bool forceBind)
     {
-        SharedPtr pThis = SharedPtr(new DescriptorSet(pPool, layout));
-        return pThis->apiInit() ? pThis : nullptr;
+        for (auto& bufIt : cbMap)
+        {
+            const auto& rootData = bufIt.second.rootData;
+            ConstantBuffer* pCB = dynamic_cast<ConstantBuffer*>(bufIt.second.pResource.get());
+
+            if (pCB->uploadToGPU() || rootSets[rootData.rootIndex].dirty)
+            {
+                rootSets[rootData.rootIndex].pDescSet->setCb(rootData.rangeIndex, rootData.descIndex, bufIt.first.regIndex, pCB);
+            }
+        }
     }
 
-    DescriptorSet::~DescriptorSet()
-    {
-        mpPool->releaseAllocation(mpApiData);
-    }
-
-    DescriptorSet::Layout& DescriptorSet::Layout::addRange(DescriptorSet::Type type, uint32_t baseRegIndex, uint32_t descriptorCount, uint32_t regSpace)
-    {
-        Range r;
-        r.descCount = descriptorCount;
-        r.baseRegIndex = baseRegIndex;
-        r.regSpace = regSpace;
-        r.type = type;
-
-        mRanges.push_back(r);
-        return *this;
-    }
-
+    template void bindConstantBuffers<true>(CopyContext* pContext, const ProgramVars::ResourceMap<ConstantBuffer>& cbMap, const ProgramVars::RootSetVec& rootSets, bool forceBind);
+    template void bindConstantBuffers<false>(CopyContext* pContext, const ProgramVars::ResourceMap<ConstantBuffer>& cbMap, const ProgramVars::RootSetVec& rootSets, bool forceBind);
 }

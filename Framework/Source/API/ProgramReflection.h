@@ -143,24 +143,25 @@ namespace Falcor
             uint32_t regIndex = -1;                         ///< In case the resource was defined as part of a CB, the offset inside the CB, otherwise the resource index in the program
             uint32_t arraySize = 0;                         ///< Array size , or 0 if not an array
             uint32_t shaderMask = 0;                        ///< A mask indicating in which shader stages the buffer is used
-            uint32_t registerSpace = 0;                     ///< The register space
+            uint32_t regSpace = 0;                          ///< The register space
             Resource(Dimensions d, ReturnType r, ResourceType t, ShaderAccess s) : dims(d), retType(r), type(t), shaderAccess(s) {}
             Resource() {}
         };
 
-        union BindLocation
+        struct BindLocation
         {
-            BindLocation() : u64(0) {}
-            BindLocation(uint32_t r, ShaderAccess s) : regIndex(r), shaderAccess(s) {}
-            struct
-            {
-                uint32_t regIndex;
-                ShaderAccess shaderAccess;
-            };
-            uint64_t u64;
+            BindLocation() = default;
+            BindLocation(uint32_t index, uint32_t space, ShaderAccess access) : regIndex(index), regSpace(space), shaderAccess(access) {}
+            uint32_t regIndex = -1;
+            uint32_t regSpace = -1;
+            ShaderAccess shaderAccess = ShaderAccess(-1);
 
-            std::size_t operator()(BindLocation b) const {return std::hash<uint64_t>{}(u64);}
-            bool operator==(const BindLocation& other) const { return u64 == other.u64;}
+            std::size_t operator()(BindLocation b) const {
+                return ((std::hash<uint32_t>()(regIndex)
+                    ^ (std::hash<uint32_t>()(regSpace) << 1)) >> 1)
+                    ^ (std::hash<uint32_t>()((uint32_t)shaderAccess) << 1);
+            }
+            bool operator==(const BindLocation& other) const { return (regIndex == other.regIndex) && (regSpace == other.regSpace) && (shaderAccess == other.shaderAccess); }
             bool operator!=(const BindLocation& other) const { return !(*this == other); }
         };
 
@@ -306,8 +307,7 @@ namespace Falcor
             ShaderAccess getShaderAccess() const { return mShaderAccess; }
 
         private:
-
-            BufferReflection(const std::string& name, uint32_t registerIndex, uint32_t regSpace, Type type, StructuredType structuredType, size_t size, const VariableMap& varMap, const ResourceMap& resourceMap, ShaderAccess shaderAccess);
+            BufferReflection(const std::string& name, uint32_t regIndex, uint32_t regSpace, Type type, StructuredType structuredType, size_t size, const VariableMap& varMap, const ResourceMap& resourceMap, ShaderAccess shaderAccess);
             std::string mName;
             size_t mSizeInBytes = 0;
             Type mType;
@@ -342,7 +342,7 @@ namespace Falcor
             \param[in] bindLocation The bindLocation of the requested buffer
             \return The buffer descriptor or nullptr, if the bind location isn't used
         */
-        BufferReflection::SharedConstPtr getBufferDesc(uint32_t bindLocation, ShaderAccess shaderAccess, BufferReflection::Type bufferType) const;
+        BufferReflection::SharedConstPtr getBufferDesc(uint32_t regIndex, uint32_t regSpace, ShaderAccess shaderAccess, BufferReflection::Type bufferType) const;
 
         /** Get a buffer descriptor
         \param[in] name The name of the requested buffer

@@ -75,7 +75,7 @@ namespace Falcor
         return pSig;
     }
 
-    static ProgramReflection::ShaderAccess getRequiredShaderAccess(RootSignature::DescType type)
+    ProgramReflection::ShaderAccess getRequiredShaderAccess(RootSignature::DescType type)
     {
         switch (type)
         {
@@ -89,71 +89,5 @@ namespace Falcor
             should_not_get_here();
             return ProgramReflection::ShaderAccess(-1);
         }
-    }
-
-    uint32_t initializeBufferDescriptors(const ProgramReflection* pReflector, RootSignature::Desc& desc, ProgramReflection::BufferReflection::Type bufferType, RootSignature::DescType descType)
-    {
-        uint32_t cost = 0;
-        const auto& bufMap = pReflector->getBufferMap(bufferType);
-        for (const auto& buf : bufMap)
-        {
-            const ProgramReflection::BufferReflection* pBuffer = buf.second.get();
-            if (pBuffer->getShaderAccess() == getRequiredShaderAccess(descType))
-            {
-                RootSignature::DescriptorSetLayout descTable;
-                descTable.addRange(descType, pBuffer->getRegisterIndex(), 1, pBuffer->getRegisterSpace());
-                cost += 1;
-                desc.addDescriptorSet(descTable);
-            }
-        }
-        return cost;
-    }
-
-    RootSignature::SharedPtr RootSignature::create(const ProgramReflection* pReflector)
-    {
-        uint32_t cost = 0;
-        RootSignature::Desc d;
-
-        cost += initializeBufferDescriptors(pReflector, d, ProgramReflection::BufferReflection::Type::Constant, RootSignature::DescType::Cbv);
-        cost += initializeBufferDescriptors(pReflector, d, ProgramReflection::BufferReflection::Type::Structured, RootSignature::DescType::Srv);
-        cost += initializeBufferDescriptors(pReflector, d, ProgramReflection::BufferReflection::Type::Structured, RootSignature::DescType::Uav);
-
-        const ProgramReflection::ResourceMap& resMap = pReflector->getResourceMap();
-        for (auto& resIt : resMap)
-        {
-            const ProgramReflection::Resource& resource = resIt.second;
-            RootSignature::DescType descType;
-            if (resource.type == ProgramReflection::Resource::ResourceType::Sampler)
-            {
-                descType = RootSignature::DescType::Sampler;
-            }
-            else
-            {
-                switch (resource.shaderAccess)
-                {
-                case ProgramReflection::ShaderAccess::ReadWrite:
-                    descType = RootSignature::DescType::Uav;
-                    break;
-                case ProgramReflection::ShaderAccess::Read:
-                    descType = RootSignature::DescType::Srv;
-                    break;
-                default:
-                    should_not_get_here();
-                }
-            }
-
-            uint32_t count = resource.arraySize ? resource.arraySize : 1;
-            RootSignature::DescriptorSetLayout descTable;
-            descTable.addRange(descType, resource.regIndex, count, resource.registerSpace);
-            d.addDescriptorSet(descTable);
-            cost += 1;
-        }
-
-        if (cost > 64)
-        {
-            logError("RootSignature::create(): The required storage cost is " + std::to_string(cost) + " DWORDS, which is larger then the max allowed cost of 64 DWORDS");
-            return nullptr;
-        }
-        return (cost != 0) ? RootSignature::create(d) : RootSignature::getEmpty();
     }
 }

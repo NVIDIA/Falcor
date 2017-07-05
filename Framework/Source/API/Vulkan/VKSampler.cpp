@@ -27,19 +27,23 @@
 ***************************************************************************/
 #include "Framework.h"
 #include "API/Sampler.h"
+#include "API/Device.h"
+#include "VKState.h"
 
 namespace Falcor
 {
     uint32_t Sampler::getApiMaxAnisotropy()
     {
-        return 16;
+        return (uint32_t)gpDevice->getPhysicalDeviceLimits().maxSamplerAnisotropy;
     }
 
     Sampler::SharedPtr Sampler::create(const Desc& desc)
     {
         SharedPtr pSampler = SharedPtr(new Sampler(desc));
 
-        // Code
+        VkSamplerCreateInfo info;
+        initVkSamplerInfo(pSampler.get(), info);
+        vk_call(vkCreateSampler(gpDevice->getApiHandle(), &info, nullptr, &pSampler->mApiHandle));
 
         return pSampler;
     }

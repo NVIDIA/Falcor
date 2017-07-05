@@ -79,13 +79,7 @@ namespace Falcor
         dynamicInfo.dynamicStateCount = arraysize(dynamicStates);
         dynamicInfo.pDynamicStates = dynamicStates;
 
-        // #VKTODO get this from somewhere
-        // PipelineLayout cannot be a NULL handle so we have to make an "empty" one
-        VkPipelineLayout pipelineLayout = {};
-        VkPipelineLayoutCreateInfo pipelineLayoutInfo = {};
-        pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-        vkCreatePipelineLayout(gpDevice->getApiHandle(), &pipelineLayoutInfo, nullptr, &pipelineLayout);
-
+        // Create the pipeline object
         VkGraphicsPipelineCreateInfo pipelineCreateInfo = {};
         pipelineCreateInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
         pipelineCreateInfo.stageCount = (uint32_t)shaderStageInfos.size();
@@ -98,7 +92,7 @@ namespace Falcor
         pipelineCreateInfo.pDepthStencilState = &depthStencilInfo;
         pipelineCreateInfo.pColorBlendState = &blendInfo.info;
         pipelineCreateInfo.pDynamicState = &dynamicInfo;
-        pipelineCreateInfo.layout = pipelineLayout;
+        pipelineCreateInfo.layout = mDesc.mpRootSignature->getApiHandle();
         pipelineCreateInfo.renderPass = mDesc.getRenderPass();
         pipelineCreateInfo.subpass = 0;
 

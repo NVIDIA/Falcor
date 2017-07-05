@@ -34,13 +34,20 @@ void VKDev::onGuiRender()
 void VKDev::onLoad()
 {
     mpPass = FullScreenPass::create("FullScreenPass.vs.glsl", "FullScreenPass.fs.glsl");
+    mpVars = GraphicsVars::create(mpPass->getProgram()->getActiveVersion()->getReflector());
+
+    Sampler::Desc sampler;
+    sampler.setFilterMode(Sampler::Filter::Point, Sampler::Filter::Point, Sampler::Filter::Point);
+    mpVars->setSampler("gSampler", Sampler::create(sampler));
+    mpVars->setTexture("gTex", createTextureFromFile("C:\\Users\\nbenty\\Pictures\\ff7.jpg", false, true));
 }
 
 void VKDev::onFrameRender()
 {
     const glm::vec4 clearColor(0.38f, 0.52f, 0.10f, 1);
     mpRenderContext->clearFbo(mpDefaultFBO.get(), clearColor, 1.0f, 0, FboAttachmentType::All);
-
+    mpVars["PerFrameCB"]["offset"] = mTexOffset;
+    mpRenderContext->setGraphicsVars(mpVars);
     mpPass->execute(mpRenderContext.get());
 }
 
@@ -51,6 +58,27 @@ void VKDev::onShutdown()
 
 bool VKDev::onKeyEvent(const KeyboardEvent& keyEvent)
 {
+    if (keyEvent.type == KeyboardEvent::Type::KeyPressed)
+    {
+        switch (keyEvent.key)
+        {
+        case KeyboardEvent::Key::W:
+            mTexOffset.y += 0.1f;
+            break;
+        case KeyboardEvent::Key::S:
+            mTexOffset.y -= 0.1f;
+            break;
+        case KeyboardEvent::Key::D:
+            mTexOffset.x += 0.1f;
+            break;
+        case KeyboardEvent::Key::A:
+            mTexOffset.x -= 0.1f;
+            break;
+        default:
+            return false;
+        }
+        return true;
+    }
     return false;
 }
 

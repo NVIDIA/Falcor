@@ -56,15 +56,21 @@ namespace Falcor
     Buffer::SharedPtr FullScreenPass::spVertexBuffer;
     Vao::SharedPtr FullScreenPass::spVao;
     uint64_t FullScreenPass::sObjectCount = 0;
-    
-    // #VKTODO Should we invert the y?
+
+#ifdef FALCOR_VK
+#define ADJUST_Y(a) (1 - a)
+#else
+#define ADJUST_Y(a) a
+#endif
+
     static const Vertex kVertices[] =
     {
-        {glm::vec2(-1,  1), glm::vec2(0, 0)},
-        {glm::vec2(-1, -1), glm::vec2(0, 1)},
-        {glm::vec2( 1,  1), glm::vec2(1, 0)},
-        {glm::vec2( 1, -1), glm::vec2(1, 1)},
+        {glm::vec2(-1,  1), glm::vec2(0, ADJUST_Y(0))},
+        {glm::vec2(-1, -1), glm::vec2(0, ADJUST_Y(1))},
+        {glm::vec2( 1,  1), glm::vec2(1, ADJUST_Y(0))},
+        {glm::vec2( 1, -1), glm::vec2(1, ADJUST_Y(1))},
     };
+#undef ADJUST_Y
 
     static void initStaticObjects(Buffer::SharedPtr& pVB, Vao::SharedPtr& pVao)
     {
