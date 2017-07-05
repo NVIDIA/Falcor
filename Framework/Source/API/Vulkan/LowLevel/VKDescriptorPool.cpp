@@ -71,6 +71,7 @@ namespace Falcor
         info.maxSets = totalDescCount;
         info.poolSizeCount = kTypeCount;
         info.pPoolSizes = poolSizeForType;
+        info.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
 
         if (VK_FAILED(vkCreateDescriptorPool(gpDevice->getApiHandle(), &info, nullptr, &mpApiData->descriptorPool)))
         {

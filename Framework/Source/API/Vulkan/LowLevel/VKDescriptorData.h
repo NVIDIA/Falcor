@@ -27,6 +27,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 #pragma once
+#include "API/Device.h"
 
 namespace Falcor
 {
@@ -35,8 +36,17 @@ namespace Falcor
         VkDescriptorPool descriptorPool;
     };
 
-    //struct DescriptorSetApiData
-    //{
-    //    std::vector<D3D12DescriptorHeap::Allocation::SharedPtr> allocations;
-    //};
+    struct DescriptorSetApiData
+    {
+        DescriptorSetApiData(VkDescriptorSetLayout l, VkDescriptorPool p, VkDescriptorSet s) : layout(l), set(s), pool(p) {}
+        VkDescriptorSetLayout layout;
+        VkDescriptorPool pool;
+        VkDescriptorSet set;
+
+        ~DescriptorSetApiData()
+        {
+            vkFreeDescriptorSets(gpDevice->getApiHandle(), pool, 1, &set);
+            vkDestroyDescriptorSetLayout(gpDevice->getApiHandle(), layout, nullptr);
+        }
+    };
 }

@@ -27,6 +27,7 @@
 ***************************************************************************/
 #include "Framework.h"
 #include "API/DescriptorSet.h"
+#include "VKDescriptorData.h"
 #include "API/Device.h"
 
 namespace Falcor
@@ -35,13 +36,14 @@ namespace Falcor
 
     bool DescriptorSet::apiInit()
     {
-        VkDescriptorSetLayout layout = createDescriptorSetLayout(mLayout);
+        auto layout = createDescriptorSetLayout(mLayout);
         VkDescriptorSetAllocateInfo allocInfo = {};
         allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
         allocInfo.descriptorPool = mpPool->getApiHandle(0);
         allocInfo.descriptorSetCount = 1;
         allocInfo.pSetLayouts = &layout;
         vk_call(vkAllocateDescriptorSets(gpDevice->getApiHandle(), &allocInfo, &mApiHandle));
+        mpApiData = mpApiData = std::make_shared<DescriptorSetApiData>(layout, mpPool->getApiHandle(0), mApiHandle);
 
         return true;
     }

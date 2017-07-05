@@ -149,6 +149,8 @@ namespace Falcor
             mDeferredReleases.front().pApiObject.Release();
             mDeferredReleases.pop();
         }
+        mpCpuDescPool->executeDeferredReleases();
+        mpGpuDescPool->executeDeferredReleases();
     }
 
     void Device::toggleVSync(bool enable)
