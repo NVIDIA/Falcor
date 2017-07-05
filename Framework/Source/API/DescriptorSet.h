@@ -35,6 +35,7 @@ namespace Falcor
     struct DescriptorSetApiData;
     class CopyContext;
     class RootSignature;
+    class Buffer;
 
     enum class ShaderVisibility
     {
@@ -96,6 +97,7 @@ namespace Falcor
         void setSrv(uint32_t rangeIndex, uint32_t descIndex, uint32_t regIndex, const ShaderResourceView::ApiHandle& srv);
         void setUav(uint32_t rangeIndex, uint32_t descIndex, uint32_t regIndex, const UnorderedAccessView::ApiHandle& uav);
         void setSampler(uint32_t rangeIndex, uint32_t descIndex, uint32_t regIndex, const Sampler::ApiHandle& sampler);
+        void setCb(uint32_t rangeIndex, uint32_t descIndex, uint32_t regIndex, const Buffer* pBuffer);
 
         void bindForGraphics(CopyContext* pCtx, const RootSignature* pRootSig, uint32_t bindLocation);
         void bindForCompute(CopyContext* pCtx, const RootSignature* pRootSig, uint32_t bindLocation);

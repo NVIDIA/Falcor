@@ -95,6 +95,7 @@ namespace Falcor
     using DepthStencilStateHandle = void*;
     using RasterizerStateHandle = void*;
     using BlendStateHandle = void*;
+    using DescriptorSetApiHandle = void*;
 
     static const uint32_t kSwapChainBuffers = 3;
 

@@ -29,6 +29,7 @@
 #include "API/DescriptorSet.h"
 #include "VKDescriptorData.h"
 #include "API/Device.h"
+#include "API/Buffer.h"
 
 namespace Falcor
 {
@@ -118,6 +119,24 @@ namespace Falcor
         write.descriptorCount = 1;
         write.pImageInfo = &info;
 
+        vkUpdateDescriptorSets(gpDevice->getApiHandle(), 1, &write, 0, nullptr);
+    }
+
+    void DescriptorSet::setCb(uint32_t rangeIndex, uint32_t descIndex, uint32_t regIndex, const Buffer* pBuffer)
+    {
+        VkDescriptorBufferInfo info;
+        info.buffer = pBuffer->getApiHandle();
+        info.offset = pBuffer->getGpuAddressOffset();
+        info.range = pBuffer->getSize();
+
+        VkWriteDescriptorSet write = {};
+        write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        write.dstSet = mApiHandle;
+        write.dstBinding = regIndex;
+        write.dstArrayElement = 0;
+        write.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        write.descriptorCount = 1;
+        write.pBufferInfo = &info;
         vkUpdateDescriptorSets(gpDevice->getApiHandle(), 1, &write, 0, nullptr);
     }
 

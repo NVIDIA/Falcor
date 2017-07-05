@@ -25,25 +25,27 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#pragma once
-#include "Falcor.h"
+#include "Framework.h"
+#include "API/CopyContext.h"
+#include "API/ProgramVars.h"
 
-using namespace Falcor;
-
-class VKDev : public Sample
+namespace Falcor
 {
-public:
-    void onLoad() override;
-    void onFrameRender() override;
-    void onShutdown() override;
-    void onResizeSwapChain() override;
-    bool onKeyEvent(const KeyboardEvent& keyEvent) override;
-    bool onMouseEvent(const MouseEvent& mouseEvent) override;
-    void onDataReload() override;
-    void onGuiRender() override;
+    template<bool forGraphics>
+    void bindConstantBuffers(CopyContext* pContext, const ProgramVars::ResourceMap<ConstantBuffer>& cbMap, const ProgramVars::RootSetVec& rootSets, bool forceBind)
+    {
+        for (auto& bufIt : cbMap)
+        {
+            const auto& rootData = bufIt.second.rootData;
+            ConstantBuffer* pCB = dynamic_cast<ConstantBuffer*>(bufIt.second.pResource.get());
 
-private:
-    FullScreenPass::UniquePtr mpPass;
-    GraphicsVars::SharedPtr mpVars;
-    vec2 mTexOffset;
-};
+            if (pCB->uploadToGPU() || rootSets[rootData.rootIndex].dirty)
+            {
+                rootSets[rootData.rootIndex].pDescSet->setCb(rootData.rangeIndex, rootData.descIndex, bufIt.first, pCB);
+            }
+        }
+    }
+
+    template void bindConstantBuffers<true>(CopyContext* pContext, const ProgramVars::ResourceMap<ConstantBuffer>& cbMap, const ProgramVars::RootSetVec& rootSets, bool forceBind);
+    template void bindConstantBuffers<false>(CopyContext* pContext, const ProgramVars::ResourceMap<ConstantBuffer>& cbMap, const ProgramVars::RootSetVec& rootSets, bool forceBind);
+}

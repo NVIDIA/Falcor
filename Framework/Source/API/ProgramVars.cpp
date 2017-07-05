@@ -35,6 +35,9 @@
 
 namespace Falcor
 {
+    template<bool forGraphics>
+    void bindConstantBuffers(CopyContext* pContext, const ProgramVars::ResourceMap<ConstantBuffer>& cbMap, const ProgramVars::RootSetVec& rootSets, bool forceBind);
+
     template<RootSignature::DescType descType>
     ProgramVars::RootData findRootData(const RootSignature* pRootSig, uint32_t regIndex, uint32_t regSpace)
     {
@@ -710,11 +713,11 @@ namespace Falcor
                 }
             }
         }
-
-        // Bind the SRVs and UAVs
+        
         bindUavSrvCommon<ShaderResourceView, false, forGraphics>(pContext, pVars->getAssignedSrvs(), rootSets);
         bindUavSrvCommon<UnorderedAccessView, true, forGraphics>(pContext, pVars->getAssignedUavs(), rootSets);
         bindSamplers(pVars->getAssignedSamplers(), rootSets);
+        bindConstantBuffers<forGraphics>(pContext, pVars->getAssignedCbs(), rootSets, bindRootSig);
 
         // Bind the sets
         VkCommandBuffer cmdBuffer = pContext->getLowLevelData()->getCommandList();

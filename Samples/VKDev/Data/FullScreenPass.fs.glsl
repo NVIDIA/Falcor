@@ -7,7 +7,12 @@ layout(set = 0, binding = 2) uniform sampler gSampler;
 layout(location = 0) in vec2 texC;
 layout (location = 0) out vec4 outColor;
 
+layout(set = 0, binding = 3) uniform PerFrameCB
+{
+    vec2 offset;
+};
+
 void main()
 {
-    outColor = texture(sampler2D(gTex, gSampler), texC);
+    outColor = texture(sampler2D(gTex, gSampler), texC + offset);
 }
