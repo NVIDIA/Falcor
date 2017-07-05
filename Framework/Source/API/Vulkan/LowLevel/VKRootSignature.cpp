@@ -32,6 +32,8 @@
 
 namespace Falcor
 {
+    VkDescriptorType falcorToVkDescType(DescriptorPool::Type type);
+
     VkShaderStageFlags getShaderVisibility(ShaderVisibility visibility)
     {
         VkShaderStageFlags flags = 0;
@@ -59,113 +61,40 @@ namespace Falcor
 
         return flags;
     }
-
-    //void createSamplerSetLayout(const std::vector<RootSignature::SamplerDesc>& falcorDesc, VkDescriptorSetLayout& setLayoutOut)
-    //{
-    //    // #VKTODO Fill in when descriptors and sampler creation is implemented
-    //}
-
-    //void convertRootConstant(const RootSignature::ConstantDesc& falcorDesc, VkPushConstantRange& desc)
-    //{
-    //    desc.stageFlags = getShaderVisibility(falcorDesc.visibility);
-    //    desc.offset = 0;
-    //    desc.size = 4;
-    //}
-
-    VkDescriptorType getDescriptorType(RootSignature::DescType type)
-    {
-        //switch (type)
-        //{
-        //case RootSignature::DescType::CBV:
-        //    return VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER; // #VKTODO what about BUFFER_DYNAMIC?
-        //case RootSignature::DescType::SRV:
-        //    return VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
-        //case RootSignature::DescType::UAV:
-        //    return VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-        //default:
-        //    should_not_get_here();
-        //    return VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
-        //}
-
-        return VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
-    }
-
-    //void convertRootDescriptor(const RootSignature::DescriptorDesc& falcorDesc, VkDescriptorSetLayout& setLayoutOut)
-    //{
-    //    VkDescriptorSetLayoutBinding info = {};
-    //    info.descriptorType = getDescriptorType(falcorDesc.type);
-    //    info.stageFlags = getShaderVisibility(falcorDesc.visibility);
-    //    info.binding = falcorDesc.regIndex;
-    //    info.descriptorCount = 1;
-    //    info.pImmutableSamplers = nullptr;
-
-    //    VkDescriptorSetLayoutCreateInfo setLayoutInfo = {};
-    //    setLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-    //    setLayoutInfo.bindingCount = 1;
-    //    setLayoutInfo.pBindings = &info;
-
-    //    vkCreateDescriptorSetLayout(gpDevice->getApiHandle(), &setLayoutInfo, nullptr, &setLayoutOut);
-    //}
-
-    //void convertDescriptorTable(const RootSignature::DescriptorTable& falcorTable, VkDescriptorSetLayout& setLayoutOut)
-    //{
-    //    std::vector<VkDescriptorSetLayoutBinding> bindingsInfo(falcorTable.getRangeCount());
-
-    //    for (size_t i = 0; i < falcorTable.getRangeCount(); i++)
-    //    {
-    //        const auto& falcorRange = falcorTable.getRange(i);
-
-    //        VkDescriptorSetLayoutBinding& info = bindingsInfo[i];
-    //        info.descriptorType = getDescriptorType(falcorRange.type);
-    //        info.stageFlags = getShaderVisibility(falcorTable.getVisibility());
-    //        info.binding = falcorRange.firstRegIndex;
-    //        info.descriptorCount = falcorRange.descCount;
-    //        info.pImmutableSamplers = nullptr;
-    //    }
-
-    //    VkDescriptorSetLayoutCreateInfo setLayoutInfo = {};
-    //    setLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-    //    setLayoutInfo.bindingCount = (uint32_t)bindingsInfo.size();
-    //    setLayoutInfo.pBindings = bindingsInfo.data();
-
-    //    vkCreateDescriptorSetLayout(gpDevice->getApiHandle(), &setLayoutInfo, nullptr, &setLayoutOut);
-    //}
-
+    
     bool RootSignature::apiInit()
     {
-        //// Push Constants
-        //std::vector<VkPushConstantRange> rootConstants(mDesc.mConstants.size());
-        //for (size_t i = 0; i < mDesc.mConstants.size(); i++)
-        //{
-        //    convertRootConstant(mDesc.mConstants[i], rootConstants[i]);
-        //}
+        std::vector<VkDescriptorSetLayout> vkSetLayouts(mDesc.mSets.size());
 
-        //uint32_t elementIndex = 0;
-        //std::vector<VkDescriptorSetLayout> rootParams(mDesc.mRootDescriptors.size() + mDesc.mDescriptorTables.size() + mDesc.mSamplers.size());
+        for (size_t set = 0 ; set < mDesc.mSets.size() ; set++)
+        {
+            const auto& layout = mDesc.mSets[set];
+            std::vector<VkDescriptorSetLayoutBinding> bindings(layout.getRangeCount());
 
-        //// Samplers
-        //createSamplerSetLayout(mDesc.mSamplers, rootParams[elementIndex++]);
+            for (uint32_t r = 0; r < layout.getRangeCount(); r++)
+            {
+                VkDescriptorSetLayoutBinding& b = bindings[r];
+                const auto& range = layout.getRange(r);
+                assert(range.regSpace == 0);
+                b.binding = range.baseRegIndex;
+                b.descriptorCount = range.descCount;
+                b.descriptorType = falcorToVkDescType(range.type);
+                b.pImmutableSamplers = nullptr;
+                b.stageFlags = getShaderVisibility(layout.getVisibility());
+            }
 
-        //// Root descriptors
-        //for (size_t i = 0; i < mDesc.mRootDescriptors.size(); i++, elementIndex++)
-        //{
-        //    convertRootDescriptor(mDesc.mRootDescriptors[i], rootParams[i]);
-        //}
+            VkDescriptorSetLayoutCreateInfo layoutInfo = {};
+            layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+            layoutInfo.bindingCount = (uint32_t)bindings.size();
+            layoutInfo.pBindings = bindings.data();
+            vk_call(vkCreateDescriptorSetLayout(gpDevice->getApiHandle(), &layoutInfo, nullptr, &vkSetLayouts[set]));
+        }
 
-        //// Desc Table
-        //for (size_t i = 0; i < mDesc.mDescriptorTables.size(); i++, elementIndex++)
-        //{
-        //    convertDescriptorTable(mDesc.mDescriptorTables[i], rootParams[elementIndex]);
-        //}
-
-        //VkPipelineLayoutCreateInfo pipelineLayoutInfo = {};
-        //pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-        //pipelineLayoutInfo.setLayoutCount = (uint32_t)rootParams.size();
-        //pipelineLayoutInfo.pSetLayouts = rootParams.data();
-        //pipelineLayoutInfo.pushConstantRangeCount = (uint32_t)rootConstants.size();
-        //pipelineLayoutInfo.pPushConstantRanges = rootConstants.data();
-
-        //vkCreatePipelineLayout(gpDevice->getApiHandle(), &pipelineLayoutInfo, nullptr, &mApiHandle);
+        VkPipelineLayoutCreateInfo pipelineLayoutInfo = {};
+        pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+        pipelineLayoutInfo.pSetLayouts = vkSetLayouts.data();
+        pipelineLayoutInfo.setLayoutCount = (uint32_t)vkSetLayouts.size();
+        vk_call(vkCreatePipelineLayout(gpDevice->getApiHandle(), &pipelineLayoutInfo, nullptr, &mApiHandle));
 
         return true;
     }
