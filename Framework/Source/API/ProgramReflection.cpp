@@ -52,7 +52,7 @@ namespace Falcor
             }
         }
 
-        static const BindLocation invalidBind(kInvalidLocation, ShaderAccess::Undefined);
+        static const BindLocation invalidBind(kInvalidLocation, kInvalidLocation, ShaderAccess::Undefined);
         return invalidBind;
     }
 
@@ -130,10 +130,10 @@ namespace Falcor
         return getVariableData(name, t);
     }
 
-    ProgramReflection::BufferReflection::SharedConstPtr ProgramReflection::getBufferDesc(uint32_t bindLocation, ShaderAccess shaderAccess, BufferReflection::Type bufferType) const
+    ProgramReflection::BufferReflection::SharedConstPtr ProgramReflection::getBufferDesc(uint32_t regIndex, uint32_t regSpace, ShaderAccess shaderAccess, BufferReflection::Type bufferType) const
     {
         const auto& descMap = mBuffers[uint32_t(bufferType)].descMap;
-        const auto& desc = descMap.find({ bindLocation, shaderAccess });
+        const auto& desc = descMap.find({ regIndex, regSpace, shaderAccess });
         if (desc == descMap.end())
         {
             return nullptr;
@@ -146,7 +146,7 @@ namespace Falcor
         BindLocation bindLoc = getBufferBinding(name);
         if (bindLoc.regIndex != kInvalidLocation)
         {
-            return getBufferDesc(bindLoc.regIndex, bindLoc.shaderAccess, bufferType);
+            return getBufferDesc(bindLoc.regIndex, bindLoc.regSpace, bindLoc.shaderAccess, bufferType);
         }
         return nullptr;
     }
@@ -165,13 +165,13 @@ namespace Falcor
         mVariables(varMap),
         mResources(resourceMap),
         mRegIndex(registerIndex),
+        mRegSpace(regSpace),
         mShaderAccess(shaderAccess)
     {
     }
 
     ProgramReflection::BufferReflection::SharedPtr ProgramReflection::BufferReflection::create(const std::string& name, uint32_t regIndex, uint32_t regSpace, Type type, StructuredType structuredType, size_t size, const VariableMap& varMap, const ResourceMap& resourceMap, ShaderAccess shaderAccess)
     {
-        assert(regSpace == 0);
         return SharedPtr(new BufferReflection(name, regIndex, regSpace, type, structuredType, size, varMap, resourceMap, shaderAccess));
     }
 
@@ -495,8 +495,7 @@ namespace Falcor
 
     uint32_t getBindingSpace(ReflectionPath* path, SlangParameterCategory category)
     {
-        // TODO: implement
-        return 0;
+        return (uint32_t)path->var->getBindingSpace(category);
     }
 
     static ProgramReflection::Resource::ResourceType getResourceType(TypeReflection* pSlangType)
@@ -635,7 +634,7 @@ namespace Falcor
         test_field(dims);
         test_field(retType);
         test_field(regIndex);
-        test_field(registerSpace);
+        test_field(regSpace);
         test_field(arraySize);
 #undef test_field
 #undef error_msg
@@ -684,8 +683,7 @@ namespace Falcor
         }
         bool isArray = pSlangType->isArray();
         falcorDesc.regIndex = (uint32_t)getBindingIndex(path, pSlangType->getParameterCategory());
-        falcorDesc.registerSpace = (uint32_t)getBindingSpace(path, pSlangType->getParameterCategory());
-        assert(falcorDesc.registerSpace == 0);
+        falcorDesc.regSpace = (uint32_t)getBindingSpace(path, pSlangType->getParameterCategory());
         falcorDesc.arraySize = isArray ? (uint32_t)pSlangType->getTotalArrayElementCount() : 0;
 
         // If this already exists, definitions should match
@@ -1025,6 +1023,7 @@ namespace Falcor
         auto bindingSpace = getBindingSpace(pPath, category);
         ProgramReflection::BindLocation bindLocation(
             bindingIndex,
+            bindingSpace,
             shaderAccess);
         // If the buffer already exists in the program, make sure the definitions match
         const auto& prevDef = bufferDesc.nameMap.find(name);

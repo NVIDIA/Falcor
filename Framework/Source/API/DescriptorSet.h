@@ -99,8 +99,8 @@ namespace Falcor
         void setSampler(uint32_t rangeIndex, uint32_t descIndex, uint32_t regIndex, const Sampler::ApiHandle& sampler);
         void setCb(uint32_t rangeIndex, uint32_t descIndex, uint32_t regIndex, const Buffer* pBuffer);
 
-        void bindForGraphics(CopyContext* pCtx, const RootSignature* pRootSig, uint32_t bindLocation);
-        void bindForCompute(CopyContext* pCtx, const RootSignature* pRootSig, uint32_t bindLocation);
+        void bindForGraphics(CopyContext* pCtx, const RootSignature* pRootSig);
+        void bindForCompute(CopyContext* pCtx, const RootSignature* pRootSig);
     private:
         using ApiData = DescriptorSetApiData;
         DescriptorSet(DescriptorPool::SharedPtr pPool, const Layout& layout) : mpPool(pPool), mLayout(layout) {}

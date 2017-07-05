@@ -73,8 +73,6 @@ namespace Falcor
         bool apiInit();
         ApiHandle mApiHandle;
         Desc mDesc;
-        std::vector<uint32_t> mDescriptorIndices;
-        std::vector<uint32_t> mConstantIndices;
         static SharedPtr spEmptySig;
         static uint64_t sObjCount;
 

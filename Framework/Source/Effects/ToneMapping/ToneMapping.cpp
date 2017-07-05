@@ -96,8 +96,8 @@ namespace Falcor
         //Set shared vars
         mpToneMapVars->setTexture("gColorTex", pSrc->getColorTexture(0));
         mpLuminanceVars->setTexture("gColorTex", pSrc->getColorTexture(0));
-        mpToneMapVars->setSampler(1u, mpPointSampler);
-        mpLuminanceVars->setSampler(1u, mpLinearSampler);
+        mpToneMapVars->setSampler(1u, 0, mpPointSampler);
+        mpLuminanceVars->setSampler(1u, 0, mpLinearSampler);
 
         //Calculate luminance
         pRenderContext->setGraphicsVars(mpLuminanceVars);
@@ -109,7 +109,7 @@ namespace Falcor
         if (mOperator != Operator::Clamp)
         {
             mpToneMapCBuffer->setBlob(&mConstBufferData, 0u, sizeof(mConstBufferData));
-            mpToneMapVars->setSampler(0u, mpLinearSampler);
+            mpToneMapVars->setSampler(0u, 0, mpLinearSampler);
             mpToneMapVars->setTexture("gLuminanceTex", mpLuminanceFbo->getColorTexture(0));
         }
 

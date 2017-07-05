@@ -165,7 +165,7 @@ namespace Falcor
             uint32_t id = pMap.first;
             uint32_t regIndex = id + texIndex;
             Texture::SharedPtr pTex = pMap.second;
-            pVars->setSrv(regIndex, pTex->getSRV());
+            pVars->setSrv(regIndex, 0, pTex->getSRV());
         }
     }
 

@@ -147,13 +147,13 @@ namespace Falcor
         vkCmdBindDescriptorSets(pCtx->getLowLevelData()->getCommandList(), bindPoint, pRootSig->getApiHandle(), bindLocation, 1, &set, 0, nullptr);
     }
 
-    void DescriptorSet::bindForGraphics(CopyContext* pCtx, const RootSignature* pRootSig, uint32_t bindLocation)
+    void DescriptorSet::bindForGraphics(CopyContext* pCtx, const RootSignature* pRootSig)
     {
-        bindCommon<true>(mApiHandle, pCtx, pRootSig, bindLocation);
+        bindCommon<true>(mApiHandle, pCtx, pRootSig, mLayout.getRange(0).regSpace);
     }
 
-    void DescriptorSet::bindForCompute(CopyContext* pCtx, const RootSignature* pRootSig, uint32_t bindLocation)
+    void DescriptorSet::bindForCompute(CopyContext* pCtx, const RootSignature* pRootSig)
     {
-        bindCommon<false>(mApiHandle, pCtx, pRootSig, bindLocation);
+        bindCommon<false>(mApiHandle, pCtx, pRootSig, mLayout.getRange(0).regSpace);
     }
 }

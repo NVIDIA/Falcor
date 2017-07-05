@@ -41,7 +41,7 @@ namespace Falcor
 
             if (pCB->uploadToGPU() || rootSets[rootData.rootIndex].dirty)
             {
-                rootSets[rootData.rootIndex].pDescSet->setCb(rootData.rangeIndex, rootData.descIndex, bufIt.first, pCB);
+                rootSets[rootData.rootIndex].pDescSet->setCb(rootData.rangeIndex, rootData.descIndex, bufIt.first.regIndex, pCB);
             }
         }
     }

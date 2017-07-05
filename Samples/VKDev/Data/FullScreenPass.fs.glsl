@@ -2,12 +2,12 @@
 #extension GL_ARB_separate_shader_objects : enable
 
 
-layout(set = 0, binding = 1) uniform texture2D gTex;
-layout(set = 0, binding = 2) uniform sampler gSampler;
+layout(set = 1, binding = 1) uniform texture2D gTex;
+layout(set = 4, binding = 2) uniform sampler gSampler;
 layout(location = 0) in vec2 texC;
 layout (location = 0) out vec4 outColor;
 
-layout(set = 0, binding = 3) uniform PerFrameCB
+layout(set = 7, binding = 10) uniform PerFrameCB
 {
     vec2 offset;
 };

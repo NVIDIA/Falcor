@@ -66,11 +66,13 @@ namespace Falcor
     {
         std::vector<VkDescriptorSetLayoutBinding> bindings(layout.getRangeCount());
 
+        uint32_t space;
         for (uint32_t r = 0; r < layout.getRangeCount(); r++)
         {
             VkDescriptorSetLayoutBinding& b = bindings[r];
             const auto& range = layout.getRange(r);
-            assert(range.regSpace == 0);
+            assert(r == 0 || space == range.regSpace);
+            space = range.regSpace;
             b.binding = range.baseRegIndex;
             b.descriptorCount = range.descCount;
             b.descriptorType = falcorToVkDescType(range.type);
@@ -89,11 +91,18 @@ namespace Falcor
 
     bool RootSignature::apiInit()
     {
-        std::vector<VkDescriptorSetLayout> vkSetLayouts(mDesc.mSets.size());
-
-        for (size_t set = 0 ; set < mDesc.mSets.size() ; set++)
+        // Find the max set index
+        uint32_t maxIndex = 0;
+        for (const auto& set : mDesc.mSets)
         {
-            vkSetLayouts[set] = createDescriptorSetLayout(mDesc.mSets[set]);
+            maxIndex = max(set.getRange(0).regSpace, maxIndex);
+        }
+
+        static VkDescriptorSetLayout emptyLayout = createDescriptorSetLayout({});
+        std::vector<VkDescriptorSetLayout> vkSetLayouts(maxIndex + 1, emptyLayout);
+        for (const auto& set : mDesc.mSets)
+        {
+            vkSetLayouts[set.getRange(0).regSpace] = createDescriptorSetLayout(set); //createDescriptorSetLayout() verifies that all ranges use the same register space
         }
 
         VkPipelineLayoutCreateInfo pipelineLayoutInfo = {};
@@ -147,7 +156,7 @@ namespace Falcor
 
         data.count = resource.arraySize ? resource.arraySize : 1;
         data.regIndex = resource.regIndex;
-        data.regSpace = resource.registerSpace;
+        data.regSpace = resource.regSpace;
         return data;
     }
 
