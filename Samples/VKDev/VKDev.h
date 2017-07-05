@@ -44,4 +44,5 @@ public:
 
 private:
     FullScreenPass::UniquePtr mpPass;
+    GraphicsVars::SharedPtr mpVars;
 };

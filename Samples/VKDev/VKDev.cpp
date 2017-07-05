@@ -34,13 +34,19 @@ void VKDev::onGuiRender()
 void VKDev::onLoad()
 {
     mpPass = FullScreenPass::create("FullScreenPass.vs.glsl", "FullScreenPass.fs.glsl");
+    mpVars = GraphicsVars::create(mpPass->getProgram()->getActiveVersion()->getReflector());
+
+    Sampler::Desc sampler;
+    sampler.setFilterMode(Sampler::Filter::Point, Sampler::Filter::Point, Sampler::Filter::Point);
+    mpVars->setSampler("gSampler", Sampler::create(sampler));
+    mpVars->setTexture("gTex", createTextureFromFile("smoke-puff.png", false, true));
 }
 
 void VKDev::onFrameRender()
 {
     const glm::vec4 clearColor(0.38f, 0.52f, 0.10f, 1);
     mpRenderContext->clearFbo(mpDefaultFBO.get(), clearColor, 1.0f, 0, FboAttachmentType::All);
-
+    mpRenderContext->setGraphicsVars(mpVars);
     mpPass->execute(mpRenderContext.get());
 }
 

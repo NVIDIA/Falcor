@@ -29,6 +29,7 @@
 #include "API/DescriptorSet.h"
 #include "D3D12DescriptorHeap.h"
 #include "D3D12DescriptorData.h"
+#include "API/Device.h"
 
 namespace Falcor
 {
@@ -76,5 +77,11 @@ namespace Falcor
     DescriptorSet::GpuHandle DescriptorSet::getGpuHandle(uint32_t rangeIndex, uint32_t descInRange) const
     {
         return mpApiData->allocations[rangeIndex]->getGpuHandle(descInRange);
+    }
+
+    void DescriptorSet::setCpuHandle(uint32_t rangeIndex, uint32_t descIndex, const CpuHandle& handle)
+    {
+        auto dstHandle = getCpuHandle(rangeIndex, descIndex);
+        gpDevice->getApiHandle()->CopyDescriptorsSimple(1, dstHandle, handle, falcorToDxDescType(getRange(rangeIndex).type));
     }
 }

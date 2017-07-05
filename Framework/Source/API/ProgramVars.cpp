@@ -42,18 +42,20 @@ namespace Falcor
         for (size_t i = 0; i < pRootSig->getDescriptorSetCount(); i++)
         {
             const RootSignature::DescriptorSetLayout& set = pRootSig->getDescriptorSet(i);
-            assert(set.getRangeCount() == 1);
-            const RootSignature::DescriptorSetLayout::Range& range = set.getRange(0);
-            if (range.type == descType && range.regSpace == regSpace)
+            for(uint32_t r = 0 ; r < set.getRangeCount() ; r++)
             {
-                if (range.baseRegIndex <= regIndex && (range.baseRegIndex + range.descCount) > regIndex)
+                const RootSignature::DescriptorSetLayout::Range& range = set.getRange(r);
+                if (range.type == descType && range.regSpace == regSpace)
                 {
-                    return{ (uint32_t)i, regIndex - range.baseRegIndex };
+                    if (range.baseRegIndex <= regIndex && (range.baseRegIndex + range.descCount) > regIndex)
+                    {
+                        return{ (uint32_t)i, r, regIndex - range.baseRegIndex };
+                    }
                 }
             }
         }
         should_not_get_here();
-        return{ (uint32_t)-1, (uint32_t)-1 };
+        return{ (uint32_t)-1, (uint32_t)-1, (uint32_t)-1 };
     }
 
     template<typename BufferType, typename ViewType, RootSignature::DescType descType, typename ViewInitFunc>
@@ -605,14 +607,11 @@ namespace Falcor
                 {
                     pSampler = Sampler::getDefault().get();
                 }
-#ifdef FALCOR_D3D12
                 // Allocate a GPU descriptor
                 const auto& pDescSet = rootSets[rootData.rootIndex].pDescSet;
                 assert(pDescSet);
-                auto srcHandle = pSampler->getApiHandle()->getCpuHandle(0);
-                auto dstHandle = pDescSet->getCpuHandle(0, rootData.descIndex);
-                gpDevice->getApiHandle()->CopyDescriptorsSimple(1, dstHandle, srcHandle, D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
-#endif
+//                 auto srcHandle = pSampler->getApiHandle()->getCpuHandle(0);  // #VKTODO
+//                 pDescSet->setCpuHandle(rootData.rangeIndex, rootData.descIndex, srcHandle);
             }
         }
     }
@@ -668,14 +667,11 @@ namespace Falcor
 
             if (rootSets[rootData.rootIndex].dirty)
             {
-#ifdef FALCOR_D3D12
                 // Get the set and copy the GPU handle
                 const auto& pDescSet = rootSets[rootData.rootIndex].pDescSet;
                 assert(pDescSet);
                 auto srcHandle = handle->getCpuHandle(0);
-                auto dstHandle = pDescSet->getCpuHandle(0, rootData.descIndex);
-                gpDevice->getApiHandle()->CopyDescriptorsSimple(1, dstHandle, srcHandle, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-#endif
+                pDescSet->setCpuHandle(rootData.rangeIndex, rootData.descIndex, srcHandle);
             }
         }
     }
@@ -703,6 +699,7 @@ namespace Falcor
         {
             uint32_t rootIndex = bufIt.second.rootData.rootIndex;
             assert(bufIt.second.rootData.descIndex == 0);
+            assert(bufIt.second.rootData.rangeIndex == 0);
             ConstantBuffer* pCB = dynamic_cast<ConstantBuffer*>(bufIt.second.pResource.get());
             if (pCB->uploadToGPU() || bindRootSig)
             {

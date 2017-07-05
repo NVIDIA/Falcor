@@ -196,6 +196,7 @@ namespace Falcor
         struct RootData
         {
             uint32_t rootIndex;
+            uint32_t rangeIndex;
             uint32_t descIndex;
         };
 
