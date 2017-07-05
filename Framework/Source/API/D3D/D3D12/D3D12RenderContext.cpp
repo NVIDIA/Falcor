@@ -230,13 +230,13 @@ namespace Falcor
         // Bind the root signature and the root signature data
         if (mpGraphicsVars)
         {
-            mpGraphicsVars->apply(const_cast<RenderContext*>(this), mBindComputeRootSig);
+            mpGraphicsVars->apply(const_cast<RenderContext*>(this), mBindGraphicsRootSig);
         }
         else
         {
             mpLowLevelData->getCommandList()->SetGraphicsRootSignature(RootSignature::getEmpty()->getApiHandle());
         }
-        mBindComputeRootSig = false;
+        mBindGraphicsRootSig = false;
 
         CommandListHandle pList = mpLowLevelData->getCommandList();
         pList->IASetPrimitiveTopology(getD3DPrimitiveTopology(mpGraphicsState->getVao()->getPrimitiveTopology()));

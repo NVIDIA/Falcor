@@ -62,32 +62,38 @@ namespace Falcor
         return flags;
     }
     
+    VkDescriptorSetLayout createDescriptorSetLayout(const DescriptorSet::Layout& layout)
+    {
+        std::vector<VkDescriptorSetLayoutBinding> bindings(layout.getRangeCount());
+
+        for (uint32_t r = 0; r < layout.getRangeCount(); r++)
+        {
+            VkDescriptorSetLayoutBinding& b = bindings[r];
+            const auto& range = layout.getRange(r);
+            assert(range.regSpace == 0);
+            b.binding = range.baseRegIndex;
+            b.descriptorCount = range.descCount;
+            b.descriptorType = falcorToVkDescType(range.type);
+            b.pImmutableSamplers = nullptr;
+            b.stageFlags = getShaderVisibility(layout.getVisibility());
+        }
+
+        VkDescriptorSetLayoutCreateInfo layoutInfo = {};
+        layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+        layoutInfo.bindingCount = (uint32_t)bindings.size();
+        layoutInfo.pBindings = bindings.data();
+        VkDescriptorSetLayout vkHandle;
+        vk_call(vkCreateDescriptorSetLayout(gpDevice->getApiHandle(), &layoutInfo, nullptr, &vkHandle));
+        return vkHandle;
+    }
+
     bool RootSignature::apiInit()
     {
         std::vector<VkDescriptorSetLayout> vkSetLayouts(mDesc.mSets.size());
 
         for (size_t set = 0 ; set < mDesc.mSets.size() ; set++)
         {
-            const auto& layout = mDesc.mSets[set];
-            std::vector<VkDescriptorSetLayoutBinding> bindings(layout.getRangeCount());
-
-            for (uint32_t r = 0; r < layout.getRangeCount(); r++)
-            {
-                VkDescriptorSetLayoutBinding& b = bindings[r];
-                const auto& range = layout.getRange(r);
-                assert(range.regSpace == 0);
-                b.binding = range.baseRegIndex;
-                b.descriptorCount = range.descCount;
-                b.descriptorType = falcorToVkDescType(range.type);
-                b.pImmutableSamplers = nullptr;
-                b.stageFlags = getShaderVisibility(layout.getVisibility());
-            }
-
-            VkDescriptorSetLayoutCreateInfo layoutInfo = {};
-            layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-            layoutInfo.bindingCount = (uint32_t)bindings.size();
-            layoutInfo.pBindings = bindings.data();
-            vk_call(vkCreateDescriptorSetLayout(gpDevice->getApiHandle(), &layoutInfo, nullptr, &vkSetLayouts[set]));
+            vkSetLayouts[set] = createDescriptorSetLayout(mDesc.mSets[set]);
         }
 
         VkPipelineLayoutCreateInfo pipelineLayoutInfo = {};

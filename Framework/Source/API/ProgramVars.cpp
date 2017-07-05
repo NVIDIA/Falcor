@@ -610,6 +610,21 @@ namespace Falcor
                 // Allocate a GPU descriptor
                 const auto& pDescSet = rootSets[rootData.rootIndex].pDescSet;
                 assert(pDescSet);
+                VkDescriptorImageInfo info;
+                info.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
+                info.imageView = nullptr;
+                info.sampler = pSampler->getApiHandle();
+
+                VkWriteDescriptorSet write = {};
+                write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+                write.dstSet = pDescSet->getApiHandle();
+                write.dstBinding = samplerIt.first;
+                write.dstArrayElement = 0;
+                write.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER;
+                write.descriptorCount = 1;
+                write.pImageInfo = &info;
+
+                vkUpdateDescriptorSets(gpDevice->getApiHandle(), 1, &write, 0, nullptr);
 //                 auto srcHandle = pSampler->getApiHandle()->getCpuHandle(0);  // #VKTODO
 //                 pDescSet->setCpuHandle(rootData.rangeIndex, rootData.descIndex, srcHandle);
             }
@@ -670,8 +685,23 @@ namespace Falcor
                 // Get the set and copy the GPU handle
                 const auto& pDescSet = rootSets[rootData.rootIndex].pDescSet;
                 assert(pDescSet);
-                auto srcHandle = handle->getCpuHandle(0);
-                pDescSet->setCpuHandle(rootData.rangeIndex, rootData.descIndex, srcHandle);
+                VkDescriptorImageInfo info;
+                info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+                info.imageView = handle;
+                info.sampler = nullptr;
+
+                VkWriteDescriptorSet write = {};
+                write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+                write.dstSet = pDescSet->getApiHandle();
+                write.dstBinding = resIt.first;
+                write.dstArrayElement = 0;
+                write.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+                write.descriptorCount = 1;
+                write.pImageInfo = &info;
+
+                vkUpdateDescriptorSets(gpDevice->getApiHandle(), 1, &write, 0, nullptr);
+//                 auto srcHandle = handle->getCpuHandle(0);
+//                 pDescSet->setCpuHandle(rootData.rangeIndex, rootData.descIndex, srcHandle);
             }
         }
     }
@@ -679,41 +709,6 @@ namespace Falcor
     template<bool forGraphics>
     void applyProgramVarsCommon(const ProgramVars* pVars, CopyContext* pContext, bool bindRootSig)
     {
-#ifdef FALCOR_D3D12
-        ID3D12GraphicsCommandList* pList = pContext->getLowLevelData()->getCommandList();
-
-        if (bindRootSig)
-        {
-            if (forGraphics)
-            {
-                pList->SetGraphicsRootSignature(pVars->getRootSignature()->getApiHandle());
-            }
-            else
-            {
-                pList->SetComputeRootSignature(pVars->getRootSignature()->getApiHandle());
-            }
-        }
-
-        // Bind the constant-buffers
-        for (auto& bufIt : pVars->getAssignedCbs())
-        {
-            uint32_t rootIndex = bufIt.second.rootData.rootIndex;
-            assert(bufIt.second.rootData.descIndex == 0);
-            assert(bufIt.second.rootData.rangeIndex == 0);
-            ConstantBuffer* pCB = dynamic_cast<ConstantBuffer*>(bufIt.second.pResource.get());
-            if (pCB->uploadToGPU() || bindRootSig)
-            {
-                if (forGraphics)
-                {
-                    pList->SetGraphicsRootConstantBufferView(rootIndex, pCB->getGpuAddress());
-                }
-                else
-                {
-                    pList->SetComputeRootConstantBufferView(rootIndex, pCB->getGpuAddress());
-                }
-            }
-        }
-
         // Allocate and mark the dirty sets
         auto& rootSets = pVars->getRootSets();
         for (uint32_t i = 0; i < rootSets.size(); i++)
@@ -725,12 +720,7 @@ namespace Falcor
                 {
                     DescriptorSet::Layout layout;
                     const auto& set = pVars->getRootSignature()->getDescriptorSet(i);
-                    for (uint32_t r = 0; r < set.getRangeCount(); r++)
-                    {
-                        const auto& range = set.getRange(r);
-                        layout.addRange(range.type, range.baseRegIndex, range.descCount, range.regSpace);
-                    }
-                    rootSets[i].pDescSet = DescriptorSet::create(gpDevice->getGpuDescriptorPool(), layout);
+                    rootSets[i].pDescSet = DescriptorSet::create(gpDevice->getGpuDescriptorPool(), set);
                 }
             }
         }
@@ -741,23 +731,17 @@ namespace Falcor
         bindSamplers(pVars->getAssignedSamplers(), rootSets);
 
         // Bind the sets
+        VkCommandBuffer cmdBuffer = pContext->getLowLevelData()->getCommandList();
         for (uint32_t i = 0; i < rootSets.size(); i++)
         {
             if (rootSets[i].dirty)
             {
                 rootSets[i].dirty = false;
-                // Bind it
-                if (forGraphics)
-                {
-                    pList->SetGraphicsRootDescriptorTable(i, rootSets[i].pDescSet->getGpuHandle(0));
-                }
-                else
-                {
-                    pList->SetComputeRootDescriptorTable(i, rootSets[i].pDescSet->getGpuHandle(0));
-                }
+                VkPipelineBindPoint bindPoint = forGraphics ? VK_PIPELINE_BIND_POINT_GRAPHICS : VK_PIPELINE_BIND_POINT_COMPUTE;
+                VkDescriptorSet set = rootSets[i].pDescSet->getApiHandle();
+                vkCmdBindDescriptorSets(cmdBuffer, bindPoint, pVars->getRootSignature()->getApiHandle(), i, 1, &set, 0, nullptr);
             }
         }
-#endif
     }
 
     void ComputeVars::apply(ComputeContext* pContext, bool bindRootSig) const

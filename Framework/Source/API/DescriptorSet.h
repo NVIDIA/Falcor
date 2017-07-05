@@ -54,6 +54,7 @@ namespace Falcor
         using Type = DescriptorPool::Type;
         using CpuHandle = DescriptorPool::CpuHandle;
         using GpuHandle = DescriptorPool::GpuHandle;
+        using ApiHandle = DescriptorSetApiHandle;
 
         ~DescriptorSet();
 
@@ -88,6 +89,8 @@ namespace Falcor
         GpuHandle getGpuHandle(uint32_t rangeIndex, uint32_t descInRange = 0) const;
 
         void setCpuHandle(uint32_t rangeIndex, uint32_t descIndex, const CpuHandle& handle);
+
+        ApiHandle getApiHandle() const { return mApiHandle; }
     private:
         using ApiData = DescriptorSetApiData;
         DescriptorSet(DescriptorPool::SharedPtr pPool, const Layout& layout) : mpPool(pPool), mLayout(layout) {}
@@ -96,5 +99,6 @@ namespace Falcor
         Layout mLayout;
         std::shared_ptr<ApiData> mpApiData;
         DescriptorPool::SharedPtr mpPool;
+        ApiHandle mApiHandle = {};
     };
 }

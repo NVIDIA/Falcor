@@ -27,11 +27,22 @@
 ***************************************************************************/
 #include "Framework.h"
 #include "API/DescriptorSet.h"
+#include "API/Device.h"
 
 namespace Falcor
 {
+    VkDescriptorSetLayout createDescriptorSetLayout(const DescriptorSet::Layout& layout);
+
     bool DescriptorSet::apiInit()
     {
+        VkDescriptorSetLayout layout = createDescriptorSetLayout(mLayout);
+        VkDescriptorSetAllocateInfo allocInfo = {};
+        allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+        allocInfo.descriptorPool = mpPool->getApiHandle(0);
+        allocInfo.descriptorSetCount = 1;
+        allocInfo.pSetLayouts = &layout;
+        vk_call(vkAllocateDescriptorSets(gpDevice->getApiHandle(), &allocInfo, &mApiHandle));
+
         return true;
     }
 

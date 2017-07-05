@@ -56,6 +56,7 @@ namespace Falcor
     inline VkFormat getVkFormat(ResourceFormat format)
     {
         assert(kVkFormatDesc[(uint32_t)format].falcorFormat == format);
+        assert(kVkFormatDesc[(uint32_t)format].vkFormat != VK_FORMAT_UNDEFINED);
         return kVkFormatDesc[(uint32_t)format].vkFormat;
     }
 
@@ -98,6 +99,7 @@ namespace Falcor
     using FboHandle = VkFboHandle;
     using SamplerHandle = VkSampler;
     using GpuAddress = size_t;
+    using DescriptorSetApiHandle = VkDescriptorSet;
 
     using PsoHandle = VkPipeline;
     using ComputeStateHandle = void*;

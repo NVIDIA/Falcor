@@ -39,7 +39,7 @@ void VKDev::onLoad()
     Sampler::Desc sampler;
     sampler.setFilterMode(Sampler::Filter::Point, Sampler::Filter::Point, Sampler::Filter::Point);
     mpVars->setSampler("gSampler", Sampler::create(sampler));
-    mpVars->setTexture("gTex", createTextureFromFile("smoke-puff.png", false, true));
+    mpVars->setTexture("gTex", createTextureFromFile("C:\\Users\\nbenty\\Pictures\\ff7.jpg", false, true));
 }
 
 void VKDev::onFrameRender()

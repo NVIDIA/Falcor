@@ -168,7 +168,7 @@ namespace Falcor
         RenderContext() = default;
         GraphicsVars::SharedPtr mpGraphicsVars;
         GraphicsState::SharedPtr mpGraphicsState;
-        bool mBindComputeRootSig = true;
+        bool mBindGraphicsRootSig = true;
 
         std::stack<GraphicsState::SharedPtr> mPipelineStateStack;
         std::stack<GraphicsVars::SharedPtr> mpGraphicsVarsStack;
