@@ -27,10 +27,14 @@
 ***************************************************************************/
 #pragma once
 #include "LowLevel/DescriptorPool.h"
+#include "ResourceViews.h"
+#include "Sampler.h"
 
 namespace Falcor
 {
     struct DescriptorSetApiData;
+    class CopyContext;
+    class RootSignature;
 
     enum class ShaderVisibility
     {
@@ -87,10 +91,14 @@ namespace Falcor
 
         CpuHandle getCpuHandle(uint32_t rangeIndex, uint32_t descInRange = 0) const;
         GpuHandle getGpuHandle(uint32_t rangeIndex, uint32_t descInRange = 0) const;
-
-        void setCpuHandle(uint32_t rangeIndex, uint32_t descIndex, const CpuHandle& handle);
-
         ApiHandle getApiHandle() const { return mApiHandle; }
+
+        void setSrv(uint32_t rangeIndex, uint32_t descIndex, uint32_t regIndex, const ShaderResourceView::ApiHandle& srv);
+        void setUav(uint32_t rangeIndex, uint32_t descIndex, uint32_t regIndex, const UnorderedAccessView::ApiHandle& uav);
+        void setSampler(uint32_t rangeIndex, uint32_t descIndex, uint32_t regIndex, const Sampler::ApiHandle& sampler);
+
+        void bindForGraphics(CopyContext* pCtx, const RootSignature* pRootSig, uint32_t bindLocation);
+        void bindForCompute(CopyContext* pCtx, const RootSignature* pRootSig, uint32_t bindLocation);
     private:
         using ApiData = DescriptorSetApiData;
         DescriptorSet(DescriptorPool::SharedPtr pPool, const Layout& layout) : mpPool(pPool), mLayout(layout) {}

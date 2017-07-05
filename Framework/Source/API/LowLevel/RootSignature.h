@@ -32,6 +32,7 @@
 namespace Falcor
 {
     class ProgramReflection;
+    class CopyContext;
 
     class RootSignature
     {
@@ -64,6 +65,9 @@ namespace Falcor
 
         uint32_t getSizeInBytes() const { return mSizeInBytes; }
         uint32_t getElementByteOffset(uint32_t elementIndex) { return mElementByteOffset[elementIndex]; }
+
+        void bindForGraphics(CopyContext* pCtx);
+        void bindForCompute(CopyContext* pCtx);
     private:
         RootSignature(const Desc& desc);
         bool apiInit();

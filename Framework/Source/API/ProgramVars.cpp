@@ -610,23 +610,7 @@ namespace Falcor
                 // Allocate a GPU descriptor
                 const auto& pDescSet = rootSets[rootData.rootIndex].pDescSet;
                 assert(pDescSet);
-                VkDescriptorImageInfo info;
-                info.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
-                info.imageView = nullptr;
-                info.sampler = pSampler->getApiHandle();
-
-                VkWriteDescriptorSet write = {};
-                write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-                write.dstSet = pDescSet->getApiHandle();
-                write.dstBinding = samplerIt.first;
-                write.dstArrayElement = 0;
-                write.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER;
-                write.descriptorCount = 1;
-                write.pImageInfo = &info;
-
-                vkUpdateDescriptorSets(gpDevice->getApiHandle(), 1, &write, 0, nullptr);
-//                 auto srcHandle = pSampler->getApiHandle()->getCpuHandle(0);  // #VKTODO
-//                 pDescSet->setCpuHandle(rootData.rangeIndex, rootData.descIndex, srcHandle);
+                pDescSet->setSampler(rootData.rangeIndex, rootData.descIndex, samplerIt.first, pSampler->getApiHandle());
             }
         }
     }
@@ -684,24 +668,14 @@ namespace Falcor
             {
                 // Get the set and copy the GPU handle
                 const auto& pDescSet = rootSets[rootData.rootIndex].pDescSet;
-                assert(pDescSet);
-                VkDescriptorImageInfo info;
-                info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-                info.imageView = handle;
-                info.sampler = nullptr;
-
-                VkWriteDescriptorSet write = {};
-                write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-                write.dstSet = pDescSet->getApiHandle();
-                write.dstBinding = resIt.first;
-                write.dstArrayElement = 0;
-                write.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
-                write.descriptorCount = 1;
-                write.pImageInfo = &info;
-
-                vkUpdateDescriptorSets(gpDevice->getApiHandle(), 1, &write, 0, nullptr);
-//                 auto srcHandle = handle->getCpuHandle(0);
-//                 pDescSet->setCpuHandle(rootData.rangeIndex, rootData.descIndex, srcHandle);
+                if (isUav)
+                {
+                    pDescSet->setUav(rootData.rangeIndex, rootData.descIndex, resIt.first, handle);
+                }
+                else
+                {
+                    pDescSet->setSrv(rootData.rangeIndex, rootData.descIndex, resIt.first, handle);
+                }
             }
         }
     }
@@ -709,6 +683,18 @@ namespace Falcor
     template<bool forGraphics>
     void applyProgramVarsCommon(const ProgramVars* pVars, CopyContext* pContext, bool bindRootSig)
     {
+        if (bindRootSig)
+        {
+            if (forGraphics)
+            {
+                pVars->getRootSignature()->bindForGraphics(pContext);
+            }
+            else
+            {
+                pVars->getRootSignature()->bindForCompute(pContext);
+            }
+        }
+
         // Allocate and mark the dirty sets
         auto& rootSets = pVars->getRootSets();
         for (uint32_t i = 0; i < rootSets.size(); i++)
@@ -737,9 +723,14 @@ namespace Falcor
             if (rootSets[i].dirty)
             {
                 rootSets[i].dirty = false;
-                VkPipelineBindPoint bindPoint = forGraphics ? VK_PIPELINE_BIND_POINT_GRAPHICS : VK_PIPELINE_BIND_POINT_COMPUTE;
-                VkDescriptorSet set = rootSets[i].pDescSet->getApiHandle();
-                vkCmdBindDescriptorSets(cmdBuffer, bindPoint, pVars->getRootSignature()->getApiHandle(), i, 1, &set, 0, nullptr);
+                if (forGraphics)
+                {
+                    rootSets[i].pDescSet->bindForGraphics(pContext, pVars->getRootSignature().get(), i);
+                }
+                else
+                {
+                    rootSets[i].pDescSet->bindForCompute(pContext, pVars->getRootSignature().get(), i);
+                }
             }
         }
     }

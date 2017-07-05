@@ -249,4 +249,7 @@ namespace Falcor
         }
         return create(d);
     }
+
+    void RootSignature::bindForGraphics(CopyContext* pCtx) {}
+    void RootSignature::bindForCompute(CopyContext* pCtx) {}
 }
