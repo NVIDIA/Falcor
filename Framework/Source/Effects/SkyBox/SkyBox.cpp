@@ -77,7 +77,7 @@ namespace Falcor
 
         mpProgram = GraphicsProgram::createFromFile("Effects\\SkyBox.vs.hlsl", "Effects\\Skybox.ps.hlsl", defines);
         mpVars = GraphicsVars::create(mpProgram->getActiveVersion()->getReflector());
-        ConstantBuffer::SharedPtr& pCB = mpVars->getConstantBuffer(0);
+        ConstantBuffer::SharedPtr& pCB = mpVars->getConstantBuffer(0, 0);
         mScaleOffset = pCB->getVariableOffset("gScale");
         mMatOffset = pCB->getVariableOffset("gWorld");
 
@@ -135,7 +135,7 @@ namespace Falcor
     void SkyBox::render(RenderContext* pRenderCtx, Camera* pCamera)
     {
         glm::mat4 world = glm::translate(pCamera->getPosition());
-        ConstantBuffer::SharedPtr& pCB = mpVars->getConstantBuffer(0);
+        ConstantBuffer::SharedPtr& pCB = mpVars->getConstantBuffer(0, 0);
         pCB->setVariable(mMatOffset, world);
         pCB->setVariable(mScaleOffset, mScale);
 

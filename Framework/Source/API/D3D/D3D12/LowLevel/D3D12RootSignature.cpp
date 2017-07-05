@@ -226,7 +226,7 @@ namespace Falcor
 
             uint32_t count = resource.arraySize ? resource.arraySize : 1;
             RootSignature::DescriptorSetLayout descTable;
-            descTable.addRange(descType, resource.regIndex, count, resource.registerSpace);
+            descTable.addRange(descType, resource.regIndex, count, resource.regSpace);
             d.addDescriptorSet(descTable);
             cost += 1;
         }
@@ -237,5 +237,28 @@ namespace Falcor
             return nullptr;
         }
         return (cost != 0) ? RootSignature::create(d) : RootSignature::getEmpty();
+    }
+
+    template<bool forGraphics>
+    static void bindRootSigCommon(CopyContext* pCtx, RootSignature::ApiHandle rootSig)
+    {
+        if (forGraphics)
+        {
+            pCtx->getLowLevelData()->getCommandList()->SetGraphicsRootSignature(rootSig);
+        }
+        else
+        {
+            pCtx->getLowLevelData()->getCommandList()->SetComputeRootSignature(rootSig);
+        }
+    }
+
+    void RootSignature::bindForCompute(CopyContext* pCtx)
+    {
+        bindRootSigCommon<false>(pCtx, mApiHandle);
+    }
+
+    void RootSignature::bindForGraphics(CopyContext* pCtx)
+    {
+        bindRootSigCommon<true>(pCtx, mApiHandle);
     }
 }

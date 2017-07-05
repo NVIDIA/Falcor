@@ -149,7 +149,7 @@ namespace Falcor
         {
             const auto& set = mpRootSignature->getDescriptorSet(i);
 #ifdef FALCOR_D3D12
-            mRootSets[i].active = (set.getRangeCount() >= 1 && set.getRange(0).type != RootSignature::DescType::Cbv)
+            mRootSets[i].active = (set.getRangeCount() >= 1 && set.getRange(0).type != RootSignature::DescType::Cbv);
 #else
             mRootSets[i].active = true;
 #endif
@@ -723,7 +723,6 @@ namespace Falcor
         bindConstantBuffers<forGraphics>(pContext, pVars->getAssignedCbs(), rootSets, bindRootSig);
 
         // Bind the sets
-        VkCommandBuffer cmdBuffer = pContext->getLowLevelData()->getCommandList();
         for (uint32_t i = 0; i < rootSets.size(); i++)
         {
             if (rootSets[i].dirty)
@@ -731,11 +730,11 @@ namespace Falcor
                 rootSets[i].dirty = false;
                 if (forGraphics)
                 {
-                    rootSets[i].pDescSet->bindForGraphics(pContext, pVars->getRootSignature().get());
+                    rootSets[i].pDescSet->bindForGraphics(pContext, pVars->getRootSignature().get(), i);
                 }
                 else
                 {
-                    rootSets[i].pDescSet->bindForCompute(pContext, pVars->getRootSignature().get());
+                    rootSets[i].pDescSet->bindForCompute(pContext, pVars->getRootSignature().get(), i);
                 }
             }
         }

@@ -100,6 +100,6 @@ namespace Falcor
     void RenderContext::reset()
     {
         ComputeContext::reset();
-        mBindComputeRootSig = true;
+        mBindGraphicsRootSig = true;
     }
 }

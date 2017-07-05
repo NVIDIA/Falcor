@@ -54,6 +54,7 @@ namespace Falcor
             SharedPtrT() : std::shared_ptr<T>() {}
             SharedPtrT(T* pProgVars) : std::shared_ptr<T>(pProgVars) {}
             ConstantBuffer::SharedPtr operator[](const std::string& cbName) { return get()->getConstantBuffer(cbName); }
+            ConstantBuffer::SharedPtr operator[](uint32_t index) = delete; // No set by index. This is here because if we didn't explicitly delete it, the compiler will try to convert to int into a string, resulting in runtime error
         };
 
         /** Bind a constant buffer object by name.
@@ -246,6 +247,13 @@ namespace Falcor
         const ResourceMap<UnorderedAccessView>& getAssignedUavs() const { return mAssignedUavs; }
         const ResourceMap<Sampler>& getAssignedSamplers() const { return mAssignedSamplers; }
         const RootSetVec getRootSets() const { return mRootSets; }
+
+        // Delete some functions. If they are not deleted, the compiler will try to convert the uints to string, resulting in runtime error
+        Sampler::SharedPtr getSampler(uint32_t) const = delete;
+        bool setSampler(uint32_t, const Sampler::SharedPtr&) = delete;
+        bool setConstantBuffer(uint32_t, const ConstantBuffer::SharedPtr&) = delete;
+        ConstantBuffer::SharedPtr getConstantBuffer(uint32_t) const = delete;
+
     protected:
         template<bool forGraphics, typename ContextType>
         void applyCommon(ContextType* pContext) const;

@@ -93,8 +93,8 @@ namespace Falcor
     void runProgram(RenderContext* pRenderCtx, Texture::SharedPtr pInput, const FullScreenPass* pProgram, Fbo::SharedPtr pDst, GraphicsVars::SharedPtr pVars, Sampler::SharedPtr pPointSampler)
     {
         GraphicsState::SharedPtr pState = pRenderCtx->getGraphicsState();
-        pVars->setSrv(0u, 0, pInput->getSRV());
-        pVars->setSampler(0, pPointSampler);
+        pVars->setSrv(0, 0, pInput->getSRV());
+        pVars->setSampler(0, 0, pPointSampler);
 
         //Set draw params
         pState->pushFbo(pDst);

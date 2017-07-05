@@ -131,7 +131,7 @@ namespace Falcor
 
         /** Set the program variables for graphics
         */
-        void setGraphicsVars(const GraphicsVars::SharedPtr& pVars) { mBindComputeRootSig = mBindComputeRootSig || (mpGraphicsVars != pVars); mpGraphicsVars = pVars; applyProgramVars(); }
+        void setGraphicsVars(const GraphicsVars::SharedPtr& pVars) { mBindGraphicsRootSig = mBindGraphicsRootSig || (mpGraphicsVars != pVars); mpGraphicsVars = pVars; applyProgramVars(); }
         
         /** Get the bound graphics program variables object
         */

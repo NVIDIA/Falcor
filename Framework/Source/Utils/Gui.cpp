@@ -118,7 +118,7 @@ namespace Falcor
         UniquePtr pGui = UniquePtr(new Gui);
         pGui->init();
         pGui->onWindowResize(width, height);
-        pGui->mpProgramVars[0][64] = glm::vec3(1, 1, 1);
+        pGui->mpProgramVars->getConstantBuffer(0, 0)[64] = glm::vec3(1, 1, 1);
         ImGui::NewFrame();
         return pGui;
     }
@@ -154,7 +154,7 @@ namespace Falcor
         ImGuiIO& io = ImGui::GetIO();
         io.DisplaySize.x = (float)width;
         io.DisplaySize.y = (float)height;
-        mpProgramVars[0][0] = orthographicMatrix(0, float(width), float(height), 0, 0, 1);
+        mpProgramVars->getConstantBuffer(0, 0)[0] = orthographicMatrix(0, float(width), float(height), 0, 0, 1);
     }
 
     void Gui::setIoMouseEvents()
