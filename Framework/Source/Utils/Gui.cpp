@@ -154,7 +154,7 @@ namespace Falcor
         ImGuiIO& io = ImGui::GetIO();
         io.DisplaySize.x = (float)width;
         io.DisplaySize.y = (float)height;
-        mpProgramVars->getConstantBuffer(0, 0)[0] = orthographicMatrix(0, float(width), float(height), 0, 0, 1);
+        mpProgramVars->getConstantBuffer(0, 0)[0] = glm::ortho(0.0f, float(width), float(height), 0.0f, 0.0f, 1.0f);
     }
 
     void Gui::setIoMouseEvents()
