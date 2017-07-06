@@ -96,6 +96,7 @@ namespace Falcor
         pipelineCreateInfo.renderPass = mDesc.getRenderPass();
         pipelineCreateInfo.subpass = 0;
 
+
         if (VK_FAILED(vkCreateGraphicsPipelines(gpDevice->getApiHandle(), VK_NULL_HANDLE, 1, &pipelineCreateInfo, nullptr, &mApiHandle)))
         {
             logError("Could not create graphics pipeline.");

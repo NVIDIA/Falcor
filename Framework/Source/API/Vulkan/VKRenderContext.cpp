@@ -56,21 +56,12 @@ namespace Falcor
 
     RenderContext::~RenderContext() = default;
 
+    template<typename ViewType, typename ClearType>
+    void clearColorImageCommon(CopyContext* pCtx, const ViewType* pView, const ClearType& clearVal);
+
     void RenderContext::clearRtv(const RenderTargetView* pRtv, const glm::vec4& color)
     {
-        resourceBarrier(pRtv->getResource(), Resource::State::CopyDest);
-
-        VkClearColorValue colVal;
-        memcpy_s(colVal.float32, sizeof(colVal.float32), &color, sizeof(color));
-        VkImageSubresourceRange range;
-        const auto& viewInfo = pRtv->getViewInfo();
-        range.baseArrayLayer = viewInfo.firstArraySlice;
-        range.baseMipLevel = viewInfo.mostDetailedMip;
-        range.layerCount = viewInfo.arraySize;
-        range.levelCount = viewInfo.mipCount;
-        range.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-
-        vkCmdClearColorImage(mpLowLevelData->getCommandList(), pRtv->getResource()->getApiHandle().getImage(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &colVal, 1, &range);
+        clearColorImageCommon(this, pRtv, color);
         mCommandsPending = true;
     }
 

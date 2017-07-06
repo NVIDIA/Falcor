@@ -102,7 +102,7 @@ namespace Falcor
     using DescriptorSetApiHandle = VkDescriptorSet;
 
     using PsoHandle = VkPipeline;
-    using ComputeStateHandle = void*;
+    using ComputeStateHandle = VkPipeline;
     using ShaderHandle = VkShaderModule;
     using ShaderReflectionHandle = void*;
     using RootSignatureHandle = VkPipelineLayout;
