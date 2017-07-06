@@ -25,12 +25,11 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#include "ShaderCommon.h"
-#include "Shading.h"
-#define _COMPILE_DEFAULT_VS
-#include "VertexAttrib.h"
+__import ShaderCommon;
+__import Shading;
+__import DefaultVS;
 
-vec4 main(VS_OUT vOut) : SV_TARGET
+float4 main(VS_OUT vOut) : SV_TARGET
 {
     ShadingAttribs shAttr;
     prepareShadingAttribs(gMaterial, vOut.posW, gCam.position, vOut.normalW, vOut.bitangentW, vOut.texC, shAttr);
@@ -44,7 +43,7 @@ vec4 main(VS_OUT vOut) : SV_TARGET
         evalMaterial(shAttr, gLights[l], result, l == 0);
     }
 
-    finalColor = vec4(result.finalValue, 1.f);
+    finalColor = float4(result.finalValue, 1.f);
 
     // add ambient
     finalColor.rgb += gAmbientLighting * getDiffuseColor(shAttr).rgb;

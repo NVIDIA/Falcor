@@ -14,7 +14,7 @@
 #    from this software without specific prior written permission.
 #
 # THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS ``AS IS'' AND ANY
-# EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THEa
 # IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
 # PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR
 # CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
@@ -25,31 +25,53 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#include "ShaderCommon.h"
-#define _COMPILE_DEFAULT_VS
-#include "VertexAttrib.h"
 
-struct EditorVSOut
+#include "SceneEditorCommon.slang.h"
+
+#ifdef DEBUG_DRAW
+
+float4 main(DebugDrawVSOut vOut) : SV_TARGET
 {
-    VS_OUT vOut;
+    return float4(vOut.color, 1);
+}
 
-#ifdef PICKING
-    uint drawID : DRAW_ID;
+#else //////////////////////////////////////////////////////////////////////////////////////
+
+#ifndef PICKING
+cbuffer ConstColorCB : register(b0)
+{
+    float3 gColor;
+};
 #endif
+
+// PS Output
+#ifdef PICKING
+#define PSOut uint
+#else
+#define PSOut float4
+#endif
+
+PSOut main(EditorVSOut vOut) : SV_TARGET
+{
+    float3 toCamera = normalize(gCam.position - vOut.vOut.posW);
 
 #ifdef CULL_REAR_SECTION
-    float3 toVertex : VERTEX_DIR;
+    if(dot(toCamera, vOut.toVertex) < -0.1)
+    {
+        discard;
+    }
 #endif
-};
 
-struct DebugDrawVSIn
-{
-    float3 position : POSITION;
-    float3 color : COLOR;
-};
+#ifdef PICKING
+    return vOut.drawID;
+#else
+    #ifdef SHADING
+        float shading = lerp(0.5, 1, dot(toCamera, vOut.vOut.normalW));
+        return float4(gColor * shading, 1);
+    #else
+        return float4(gColor, 1);
+    #endif
+#endif
+}
 
-struct DebugDrawVSOut
-{
-    float4 position : SV_POSITION;
-    float3 color : COLOR;
-};
+#endif

@@ -34,9 +34,9 @@
 
 namespace Falcor
 {
-    const char* kDepthPassVSFile = "Effects/ShadowPass.vs.hlsl";
-    const char* kDepthPassGsFile = "Effects/ShadowPass.gs.hlsl";
-    const char* kDepthPassFsFile = "Effects/ShadowPass.ps.hlsl";
+    const char* kDepthPassVSFile = "Effects/ShadowPass.vs.slang";
+    const char* kDepthPassGsFile = "Effects/ShadowPass.gs.slang";
+    const char* kDepthPassFsFile = "Effects/ShadowPass.ps.slang";
 
     const Gui::DropdownList kFilterList = {
         { (uint32_t)CsmFilterPoint, "Point" },

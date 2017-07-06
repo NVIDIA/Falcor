@@ -25,34 +25,32 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#version 440
-#include "HlslGlslCommon.h"
+__import DefaultVS;
+__import ShaderCommon;
 
-CONSTANT_BUFFER(PerFrameCB, 0)
+struct ShadowPassVSOut
 {
-	mat4 gvpTransform;
-	vec3 gFontColor;
+#ifdef _APPLY_PROJECTION
+    float4 pos : SV_POSITION;
+#else
+    float4 pos : POSITION;
+#endif
+    float2 texC : TEXCOORD;
 };
 
-vec4 transform(vec2 posS)
+ShadowPassVSOut main(VS_IN vIn)
 {
-	return mul(gvpTransform, vec4(posS, 0.5f, 1));
-}
-
-#ifdef FALCOR_HLSL
-void main(float2 posS : POSITION, inout float2 texC : TEXCOORD, out float4 posSV : SV_POSITION)
-{
-	posSV = transform(posS);
-}
-
-#elif defined FALCOR_GLSL
-layout (location = 0) in vec2 posS;
-layout (location = 1) in vec2 texCIn;
-out vec2 texC;
-
-void main()
-{
-	gl_Position = transform(posS);
-	texC = texCIn;
-}
+    ShadowPassVSOut vOut; 
+    float4x4 worldMat = getWorldMat(vIn);
+    vOut.pos = mul(worldMat, vIn.pos);
+#ifdef _APPLY_PROJECTION
+    vOut.pos = mul(gCam.viewProjMat, vOut.pos);
 #endif
+
+#ifdef HAS_TEXCRD
+    vOut.texC = vIn.texC;
+#else
+    vOut.texC = float2(0.5f, 0.5f);
+#endif
+    return vOut;
+}

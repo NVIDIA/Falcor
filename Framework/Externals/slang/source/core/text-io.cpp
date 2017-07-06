@@ -28,7 +28,7 @@ namespace Slang
 	public:
 		virtual void GetBytes(List<char> & result, const String & str) override
 		{
-			int ptr = 0;
+			UInt ptr = 0;
 			while (ptr < str.Length())
 			{
 				int codePoint = GetUnicodePointFromUTF8([&](int)
@@ -66,7 +66,7 @@ namespace Slang
 		{}
 		virtual void GetBytes(List<char> & result, const String & str) override
 		{
-			int ptr = 0;
+			UInt ptr = 0;
 			while (ptr < str.Length())
 			{
 				int codePoint = GetUnicodePointFromUTF8([&](int)
@@ -156,7 +156,7 @@ namespace Slang
 #else
 		newLine = "\n";
 #endif
-		for (int i = 0; i < str.Length(); i++)
+		for (UInt i = 0; i < str.Length(); i++)
 		{
 			if (str[i] == '\r')
 				sb << newLine;
@@ -215,7 +215,7 @@ namespace Slang
 		{
 #ifdef _WIN32
 			int flag = IS_TEXT_UNICODE_SIGNATURE | IS_TEXT_UNICODE_REVERSE_SIGNATURE | IS_TEXT_UNICODE_STATISTICS | IS_TEXT_UNICODE_ASCII16;
-			int rs = IsTextUnicode(buffer.Buffer(), buffer.Count(), &flag);
+			int rs = IsTextUnicode(buffer.Buffer(), (int) buffer.Count(), &flag);
 			if (rs)
 			{
 				if (flag & (IS_TEXT_UNICODE_SIGNATURE | IS_TEXT_UNICODE_STATISTICS))

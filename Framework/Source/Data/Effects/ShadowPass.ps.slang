@@ -25,10 +25,56 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#define _COMPILE_DEFAULT_VS
-#include "VertexAttrib.h"
+__import ShaderCommon;
+__import Effects.CascadedShadowMap;
 
-VS_OUT main(VS_IN vIn)
+SamplerState alphaSampler : register(s0);
+texture2D alphaMap : register(t0);
+
+cbuffer PerLightCB : register(b0)
 {
-    return defaultVS(vIn);
+    CsmData gCsmData;
+};
+
+cbuffer AlphaMapCB : register(b1)
+{
+    float alphaThreshold;
+};
+
+struct ShadowPassPSIn
+{
+    float4 pos : SV_POSITION;
+    float2 texC : TexCoord;
+    uint rtIndex : SV_RenderTargetArrayIndex;
+};
+
+#if defined(_VSM) || defined(_EVSM2)
+float2 main(ShadowPassPSIn pIn) : SV_TARGET0
+#elif defined(_EVSM4)
+float4 main(ShadowPassPSIn pIn) : SV_TARGET0
+#else
+void main(ShadowPassPSIn pIn)
+#endif
+{
+#ifdef TEST_ALPHA
+    float alpha = alphaMap.Sample(alphaSampler, pIn.texC)._ALPHA_CHANNEL;
+    if(alpha < alphaThreshold)
+    {
+        discard;
+    }
+#endif
+
+    float2 depth = pIn.pos.zz;
+
+#if defined(_EVSM2) || defined(_EVSM4)
+    depth = applyEvsmExponents(depth.x, gCsmData.evsmExponents);
+#endif
+    float4 outDepth = float4(depth, depth*depth);
+
+#ifdef _EVSM4
+    return outDepth.xzyw;
+#elif defined(_VSM) || defined(_EVSM2)
+    return outDepth.xz;
+#else
+#endif
 }

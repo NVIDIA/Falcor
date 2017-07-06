@@ -35,9 +35,9 @@ const Gui::DropdownList kPixelShaders
     {2, "Textured"}
 };
 
-const char* kConstColorPs = "Effects/ParticleConstColor.ps.hlsl";
-const char* kColorInterpPs = "Effects/ParticleInterpColor.ps.hlsl";
-const char* kTexturedPs = "Effects/ParticleTexture.ps.hlsl";
+const char* kConstColorPs = "Effects/ParticleConstColor.ps.slang";
+const char* kColorInterpPs = "Effects/ParticleInterpColor.ps.slang";
+const char* kTexturedPs = "Effects/ParticleTexture.ps.slang";
 const std::string kDefaultTexture = "smoke-puff.png";
 
 void Particles::onGuiRender()

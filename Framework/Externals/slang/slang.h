@@ -204,16 +204,6 @@ extern "C"
         const char*             searchDir);
 
     /*!
-    @brief Add a path to use when searching for referenced files, that automatically treats `#include` as `__import`
-    This behaves just like `spAddSearchPath()` except that any `#include` file found through this path
-    will be treated as if it was referenced with `__import`.
-    @param ctx The compilation context.
-    @param searchDir The additional search directory.
-    */
-    SLANG_API void spAddAutoImportPath(
-        SlangCompileRequest*    request,
-        const char*             searchDir);
-    /*!
     @brief Add a macro definition to be used during preprocessing.
     @param key The name of the macro to define.
     @param value The value of the macro to define.
@@ -281,7 +271,7 @@ extern "C"
 
     /** Add an entry point in a particular translation unit
     */
-    SLANG_API int spAddTranslationUnitEntryPoint(
+    SLANG_API int spAddEntryPoint(
         SlangCompileRequest*    request,
         int                     translationUnitIndex,
         char const*             name,
@@ -337,7 +327,6 @@ extern "C"
     */
     SLANG_API char const* spGetEntryPointSource(
         SlangCompileRequest*    request,
-        int                     translationUnitIndex,
         int                     entryPointIndex);
 
 
@@ -912,6 +901,7 @@ namespace slang
 #include "source/slang/parser.cpp"
 #include "source/slang/preprocessor.cpp"
 #include "source/slang/lookup.cpp"
+#include "source/slang/lower.cpp"
 #include "source/slang/check.cpp"
 #include "source/slang/compiler.cpp"
 #include "source/slang/slang-stdlib.cpp"

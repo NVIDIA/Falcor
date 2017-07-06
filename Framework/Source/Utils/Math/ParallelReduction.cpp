@@ -33,7 +33,7 @@
 
 namespace Falcor
 {
-    const char* fsFilename = "Framework/Shaders/ParallelReduction.fs";
+    const char* fsFilename = "Framework/Shaders/ParallelReduction.fs.slang";
 
     ParallelReduction::ParallelReduction(ParallelReduction::Type reductionType, uint32_t readbackLatency, uint32_t width, uint32_t height) : mReductionType(reductionType)
     {

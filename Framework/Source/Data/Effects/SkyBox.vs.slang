@@ -25,22 +25,27 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#include "Helpers.h"
-
-#ifdef _SPHERICAL_MAP
-Texture2D gTexture;
-#else
-TextureCube gTexture;
+#ifdef _SINGLE_PASS_STEREO
+fixme
 #endif
-SamplerState gSampler;
 
-float4 main(float3 dir : NORMAL) : SV_TARGET
+__import ShaderCommon;
+
+cbuffer PerFrameCB : register(b0)
 {
-#ifdef _SPHERICAL_MAP
-    float2 uv = dirToSphericalCrd(dir) ;
-    float4 color = gTexture.Sample(gSampler, uv);
-    return color;
-#else
-	return gTexture.Sample(gSampler, normalize(dir), 0);
+    float4x4 gWorld;
+    float gScale;
+};
+
+void main(float4 posL : POSITION, out float3 dir : NORMAL, out float4 posH : SV_POSITION)
+{
+    dir = posL.xyz;
+    float4 viewPos = mul(gCam.viewMat, mul(gWorld, posL));
+    posH = mul(gCam.projMat, viewPos);
+    posH.xy *= gScale;
+    posH.z = posH.w;
+
+#ifdef _SINGLE_PASS_STEREO
+    fixme
 #endif
 }

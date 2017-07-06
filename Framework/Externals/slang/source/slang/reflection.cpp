@@ -191,11 +191,11 @@ SLANG_API size_t spReflectionType_GetElementCount(SlangReflectionType* inType)
 
     if(auto arrayType = dynamic_cast<ArrayExpressionType*>(type))
     {
-        return GetIntVal(arrayType->ArrayLength);
+        return (size_t) GetIntVal(arrayType->ArrayLength);
     }
     else if( auto vectorType = dynamic_cast<VectorExpressionType*>(type))
     {
-        return GetIntVal(vectorType->elementCount);
+        return (size_t) GetIntVal(vectorType->elementCount);
     }
 
     return 0;
@@ -233,7 +233,7 @@ SLANG_API unsigned int spReflectionType_GetRowCount(SlangReflectionType* inType)
 
     if(auto matrixType = dynamic_cast<MatrixExpressionType*>(type))
     {
-        return GetIntVal(matrixType->getRowCount());
+        return (unsigned int) GetIntVal(matrixType->getRowCount());
     }
     else if(auto vectorType = dynamic_cast<VectorExpressionType*>(type))
     {
@@ -254,11 +254,11 @@ SLANG_API unsigned int spReflectionType_GetColumnCount(SlangReflectionType* inTy
 
     if(auto matrixType = dynamic_cast<MatrixExpressionType*>(type))
     {
-        return GetIntVal(matrixType->getColumnCount());
+        return (unsigned int) GetIntVal(matrixType->getColumnCount());
     }
     else if(auto vectorType = dynamic_cast<VectorExpressionType*>(type))
     {
-        return GetIntVal(vectorType->elementCount);
+        return (unsigned int) GetIntVal(vectorType->elementCount);
     }
     else if( auto basicType = dynamic_cast<BasicExpressionType*>(type) )
     {
@@ -688,7 +688,7 @@ SLANG_API unsigned spReflection_GetParameterCount(SlangReflection* inProgram)
 
     if(auto globalStructLayout = globalLayout.As<StructTypeLayout>())
     {
-        return globalStructLayout->fields.Count();
+        return (unsigned) globalStructLayout->fields.Count();
     }
 
     return 0;

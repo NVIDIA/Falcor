@@ -25,56 +25,12 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#include "ShaderCommon.h"
-#include "csmdata.h"
 
-SamplerState alphaSampler : register(s0);
-texture2D alphaMap : register(t0);
+#ifndef _FALCOR_CAMERA_SHADERS_H_
+#define _FALCOR_CAMERA_SHADERS_H_
 
-cbuffer PerLightCB : register(b0)
-{
-    CsmData gCsmData;
-};
+// Make sure we get the macros like `_fn` and `_ref`
+// TODO: just eliminate these since we know this is pure Slang.
+#include "HostDeviceData.h"
 
-cbuffer AlphaMapCB : register(b1)
-{
-    float alphaThreshold;
-};
-
-struct ShadowPassPSIn
-{
-    float4 pos : SV_POSITION;
-    float2 texC : TexCoord;
-    uint rtIndex : SV_RenderTargetArrayIndex;
-};
-
-#if defined(_VSM) || defined(_EVSM2)
-vec2 main(ShadowPassPSIn pIn) : SV_TARGET0
-#elif defined(_EVSM4)
-vec4 main(ShadowPassPSIn pIn) : SV_TARGET0
-#else
-void main(ShadowPassPSIn pIn)
-#endif
-{
-#ifdef TEST_ALPHA
-    float alpha = alphaMap.Sample(alphaSampler, pIn.texC)._ALPHA_CHANNEL;
-    if(alpha < alphaThreshold)
-    {
-        discard;
-    }
-#endif
-
-    vec2 depth = pIn.pos.zz;
-
-#if defined(_EVSM2) || defined(_EVSM4)
-    depth = applyEvsmExponents(depth.x, gCsmData.evsmExponents);
-#endif
-    vec4 outDepth = vec4(depth, depth*depth);
-
-#ifdef _EVSM4
-    return outDepth.xzyw;
-#elif defined(_VSM) || defined(_EVSM2)
-    return outDepth.xz;
-#else
-#endif
-}
+#endif	// _FALCOR_CAMERA_SHADERS_H_
