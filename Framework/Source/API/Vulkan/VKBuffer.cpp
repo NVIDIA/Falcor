@@ -107,7 +107,7 @@ namespace Falcor
     
     bool Buffer::apiInit(bool hasInitData)
     {
-        if (mCpuAccess == CpuAccess::Write) // #VKTODO Can't get here. Same for DX12. It's handled in the common file
+        if (mCpuAccess == CpuAccess::Write)
         {
             mDynamicData = gpDevice->getResourceAllocator()->allocate(mSize);
             mApiHandle = mDynamicData.pResourceHandle;

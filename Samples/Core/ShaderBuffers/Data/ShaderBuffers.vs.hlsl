@@ -39,5 +39,6 @@ layout (location = 1) out vec3 normalW;
 void main()
 {
     gl_Position = gWvpMat * posL;
+    gl_Position.y = -gl_Position.y;
     normalW = (gWorldMat * vec4(normalL, 0)).xyz;
 }
