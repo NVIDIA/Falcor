@@ -25,34 +25,22 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#version 440
-#include "HlslGlslCommon.h"
+#version 450
+#extension GL_ARB_separate_shader_objects : enable
 
-CONSTANT_BUFFER(PerFrameCB, 0)
+layout(set = 0, binding = 0) uniform PerFrameCB
 {
-	mat4 gvpTransform;
 	vec3 gFontColor;
+	mat4 gvpTransform;
 };
 
-vec4 transform(vec2 posS)
-{
-	return mul(gvpTransform, vec4(posS, 0.5f, 1));
-}
-
-#ifdef FALCOR_HLSL
-void main(float2 posS : POSITION, inout float2 texC : TEXCOORD, out float4 posSV : SV_POSITION)
-{
-	posSV = transform(posS);
-}
-
-#elif defined FALCOR_GLSL
 layout (location = 0) in vec2 posS;
 layout (location = 1) in vec2 texCIn;
 out vec2 texC;
 
 void main()
 {
-	gl_Position = transform(posS);
+	gl_Position = gvpTransform * vec4(posS, 0.5f, 1);
+    gl_Position.y = -gl_Position.y;
 	texC = texCIn;
 }
-#endif

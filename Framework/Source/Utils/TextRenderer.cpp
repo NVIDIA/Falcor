@@ -95,7 +95,7 @@ namespace Falcor
             BlendState::BlendFunc::One,
             BlendState::BlendFunc::One);
 
-        mpPipelineState->setBlendState(BlendState::create(blendDesc));
+//        mpPipelineState->setBlendState(BlendState::create(blendDesc));
         mpFont = Font::create();
 
         // Create and initialize the program variables
@@ -133,7 +133,7 @@ namespace Falcor
 
         // Update the program variables
         mpProgramVars["PerFrameCB"]->setVariable(mVarOffsets.vpTransform, vpTransform);
-        mpProgramVars["PerFrameCB"]->setVariable(mVarOffsets.fontColor, mTextColor);
+        mpProgramVars["PerFrameCB"]["gFontColor"] = mTextColor;//->setVariable(mVarOffsets.fontColor, mTextColor);
         pRenderContext->setGraphicsVars(mpProgramVars);
 
 

@@ -26,34 +26,19 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 #version 440
-#include "HlslGlslCommon.h"
 
-CONSTANT_BUFFER(PerFrameCB, 0)
+layout(set = 0, binding = 0) uniform PerFrameCB
 {
-	mat4 gvpTransform;
 	vec3 gFontColor;
+	mat4 gvpTransform;
 };
 
-Texture2D gFontTex;
+layout(set = 1, binding = 0) uniform texture2D gFontTex;
 
-vec4 calcColor(vec2 texC)
-{
-	vec4 color = gFontTex.Load(ivec3(texC, 0));
-	color.rgb = gFontColor;
-	return color;
-}
-
-#ifdef FALCOR_HLSL
-vec4 main(float2 texC  : TEXCOORD) : SV_TARGET0
-{
-	return calcColor(texC);
-}
-
-#elif defined FALCOR_GLSL
 in vec2 texC;
 out vec4 fragColor;
 void main()
 {
-	fragColor = calcColor(texC);
+    sampler s;
+	fragColor = vec4(gFontColor, 1);//texelFetch(sampler2D(gFontTex, s), ivec2(texC), 0);    
 }
-#endif
