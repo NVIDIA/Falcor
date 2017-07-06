@@ -25,7 +25,6 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#include "VertexAttrib.h"
 
 cbuffer PerFrameCB
 {
@@ -33,18 +32,12 @@ cbuffer PerFrameCB
     float4x4 gWvpMat;
 };
 
-struct VSOut
+layout (location = 0) in vec4 posL;
+layout (location = 1) in vec3 normalL;
+layout (location = 1) out vec3 normalW;
+
+void main()
 {
-    float4 position : SV_POSITION;
-    float3 normalW : NORMAL;
-};
-
-VSOut main(in float4 posL : POSITION, in float3 normalL : NORMAL)
-{
-    VSOut vsOut;
-
-    vsOut.position = mul(gWvpMat, posL);
-    vsOut.normalW = (mul(gWorldMat, float4(normalL, 0))).xyz;
-
-    return vsOut;
+    gl_Position = gWvpMat * posL;
+    normalW = (gWorldMat * vec4(normalL, 0)).xyz;
 }

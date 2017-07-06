@@ -25,36 +25,12 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-struct LightCB
+
+layout (location = 1) in vec3 normalW;
+layout (location = 0) out vec4 fragColor;
+
+void main()
 {
-    float3 vec3Val; // We're using 2 values. [0]: worldDir [1]: intensity
-};
-
-RWStructuredBuffer<LightCB> gRWBuffer; // Only UAV counter used
-StructuredBuffer<LightCB> gLight;
-RWByteAddressBuffer gInvocationBuffer;
-Buffer<float3> gSurfaceColor;
-
-float4 calcColor(float3 normalW)
-{
-    float3 n = normalize(normalW);
-    float nDotL = dot(n, -gLight[0].vec3Val);
-    nDotL = clamp(nDotL, 0, 1);
-    float4 color = float4(nDotL * gLight[1].vec3Val * gSurfaceColor[0], 1);
-
-    gInvocationBuffer.InterlockedAdd(0, 1);
-    gRWBuffer.IncrementCounter();
-
-    return color;
-}
-
-struct VSOut
-{
-    float4 position : SV_POSITION;
-    float3 normalW : NORMAL;
-};
-
-float4 main(VSOut vsOut) : SV_TARGET
-{
-    return calcColor(vsOut.normalW);
+    fragColor.rgb = dot(normalize(normalW), vec3(0, 1, 0)).rrr;
+    fragColor.a = 1;
 }
