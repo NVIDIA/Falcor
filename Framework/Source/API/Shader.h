@@ -59,6 +59,7 @@ namespace Falcor
         static SharedPtr create(
             const std::string&  shaderString,
             ShaderType          type,
+            std::string const&  entryPointName,
             std::string&        log);
         virtual ~Shader();
 
@@ -73,9 +74,13 @@ namespace Falcor
 #ifdef FALCOR_D3D
         bool init(
             const std::string&  shaderString,
+            std::string const&  entryPointName,
             std::string&        log);
         ID3DBlobPtr getCodeBlob() const;
-        virtual ID3DBlobPtr compile(const std::string& source, std::string& errorLog);
+        virtual ID3DBlobPtr compile(
+            const std::string&  source,
+            std::string const&  entryPointName,
+            std::string&        errorLog);
 #endif
     protected:
         // API handle depends on the shader Type, so it stored be stored as part of the private data

@@ -26,6 +26,7 @@
     <None Include="Data\FeatureDemo.ps.hlsl">
       <FileType>Document</FileType>
     </None>
+    <None Include="Data\FeatureDemoCommon.hlsli" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Data\FeatureDemo.vs.hlsl">

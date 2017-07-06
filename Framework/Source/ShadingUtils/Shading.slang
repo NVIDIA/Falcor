@@ -29,7 +29,11 @@
 #ifndef _FALCOR_SHADING_H_
 #define _FALCOR_SHADING_H_
 
-#include "Helpers.h"
+// Make sure we get the macros like `_fn` and `_ref`
+// TODO: just eliminate these since we know this is pure Slang.
+#include "HostDeviceData.h"
+
+__import Helpers;
 
 /*******************************************************************
 Documentation
@@ -48,38 +52,20 @@ Shading routines
 *******************************************************************/
 
 /**
-This stores the information about the current light source at the shading point.
-This includes a direction from a shading point towards the light,
-radiance emitted from the light souce, which is *received* at the shading point.
-*/
-struct LightAttribs
-{
-    vec3	L;				///< Normalized direction to the light at shading hit
-    float   shadowFactor;   ///< Shadow factor
-    vec3	lightIntensity;	///< Radiance of the emitted light at shading hit
-
-    vec3    P;              ///< Sampled point on the light source
-    vec3    N;              ///< Normal of the sampled point on the light source
-	float   pdf;            ///< Probability density function of sampling the light source
-
-    vec3    points[4];
-};
-
-/**
 This is an output resulting radiance of a full pass over all material layers
 after evaluating the material for a single light source.
 This result can be accumulated to a total shading result for all light sources.
 */
 struct PassOutput
 {
-    vec3	value;					///< Outgoing radiance after evaluating the complete material for a single light
-    vec3	diffuseAlbedo;			///< Total view-independent albedo color component of the material
-    vec3	diffuseIllumination;	///< Total view-independent outgoing radiance from one light before multiplication by albedo
-    vec3	specularAlbedo;			///< Total view-dependent albedo (specular) color component of the material
-    vec3	specularIllumination;	///< Total view-dependent outgoing radiance from one light before multiplication by albedo
+    float3	value;					///< Outgoing radiance after evaluating the complete material for a single light
+    float3	diffuseAlbedo;			///< Total view-independent albedo color component of the material
+    float3	diffuseIllumination;	///< Total view-independent outgoing radiance from one light before multiplication by albedo
+    float3	specularAlbedo;			///< Total view-dependent albedo (specular) color component of the material
+    float3	specularIllumination;	///< Total view-dependent outgoing radiance from one light before multiplication by albedo
 
-    vec2    roughness;              ///< Roughness from the last layer
-    vec2    effectiveRoughness;     ///< Accumulated effective roughness
+    float2    roughness;              ///< Roughness from the last layer
+    float2    effectiveRoughness;     ///< Accumulated effective roughness
 };
 
 /**
@@ -88,38 +74,39 @@ of material evaluations with all light sources.
 */
 struct ShadingOutput
 {
-    vec3	diffuseAlbedo;			///< Total view-independent albedo color component of the material
-    vec3	diffuseIllumination;	///< Total view-independent outgoing radiance from all lights before multiplication by albedo
-    vec3	specularAlbedo;			///< Total view-dependent albedo (specular) color component of the material
-    vec3	specularIllumination;	///< Total view-dependent outgoing radiance from all light before multiplication by albedo
+    float3	diffuseAlbedo;			///< Total view-independent albedo color component of the material
+    float3	diffuseIllumination;	///< Total view-independent outgoing radiance from all lights before multiplication by albedo
+    float3	specularAlbedo;			///< Total view-dependent albedo (specular) color component of the material
+    float3	specularIllumination;	///< Total view-dependent outgoing radiance from all light before multiplication by albedo
 
-    vec3	finalValue;				///< Outgoing radiance after evaluating the complete material for all lights
+    float3	finalValue;				///< Outgoing radiance after evaluating the complete material for all lights
 
-	vec3    wi;                     ///< Incident direction after importance sampling the BRDF
+	float3    wi;                     ///< Incident direction after importance sampling the BRDF
 	float   pdf;                    ///< Probability density function for choosing the incident direction
-	vec3    thp;                    ///< Current path throughput
+	float3    thp;                    ///< Current path throughput
 
-	vec2    effectiveRoughness;     ///< Sampled brdf roughness, or for evaluated material, an effective roughness
+	float2    effectiveRoughness;     ///< Sampled brdf roughness, or for evaluated material, an effective roughness
 
 #ifdef CUDA_CODE
     _fn ShadingOutput()
     {
-        diffuseAlbedo = v3(0.f);
-        diffuseIllumination = v3(0.f);
-        specularAlbedo = v3(0.f);
-        specularIllumination = v3(0.f);
-        finalValue = v3(0.f);
-        wi = v3(0.f);
+        diffuseAlbedo = float3(0.f);
+        diffuseIllumination = float3(0.f);
+        specularAlbedo = float3(0.f);
+        specularIllumination = float3(0.f);
+        finalValue = float3(0.f);
+        wi = float3(0.f);
         pdf = 0.f;
-        thp = v3(0.f);
+        thp = float3(0.f);
     }
 #endif
 };
 
 /* Include all shading routines, including endpoints (camera and light) */
-#include "Cameras.h"
-#include "Lights.h"
-#include "BSDFs.h"
+
+__import Cameras;
+__import Lights;
+__import BSDFs;
 
 /*******************************************************************
 Material shading building blocks
@@ -131,10 +118,10 @@ This includes fetching all textures and computing final shading attributes, like
 After this step, one can save these shading attributes, e.g., in a G-Buffer to perform lighting afterwards.
 This routine also applies all material modifiers, like performs alpha test and applies a normal map.
 */
-void _fn prepareShadingAttribs(in const MaterialData material, in vec3 P, in vec3 camPos,
-    in vec3 normal, in vec3 bitangent, in vec2 uv,
+void _fn prepareShadingAttribs(in const MaterialData material, in float3 P, in float3 camPos,
+    in float3 normal, in float3 bitangent, in float2 uv,
 #ifdef _MS_USER_DERIVATIVES
-    in const vec2 dPdx, in const vec2 dPdy,
+    in const float2 dPdx, in const float2 dPdy,
 #else
     in const float lodBias,
 #endif
@@ -189,17 +176,17 @@ void _fn prepareShadingAttribs(in const MaterialData material, in vec3 P, in vec
 Another overload of PrepareShadingAttribs(), which does not require tangents.
 Instead it constructs a world-space axis-aligned tangent frame on the fly.
 */
-void _fn prepareShadingAttribs(in const MaterialData material, in vec3 P, in vec3 camPos,
-    in vec3 normal, in vec2 uv,
+void _fn prepareShadingAttribs(in const MaterialData material, in float3 P, in float3 camPos,
+    in float3 normal, in float2 uv,
 #ifdef _MS_USER_DERIVATIVES
-    in const vec2 dPdx, in const vec2 dPdy,
+    in const float2 dPdx, in const float2 dPdy,
 #else
     in const float lodBias,
 #endif
     _ref(ShadingAttribs) shAttr)
 {
     /* Generate an axis-aligned tangent frame */
-    vec3 bitangent;
+    float3 bitangent;
     createTangentFrame(normal, bitangent);
 
     prepareShadingAttribs(material, P, camPos, normal, bitangent, uv,
@@ -213,29 +200,29 @@ void _fn prepareShadingAttribs(in const MaterialData material, in vec3 P, in vec
 
 #ifndef _MS_USER_DERIVATIVES
 // Legacy version of prepareShadingAttribs() without LOD bias
-void _fn prepareShadingAttribs(in const MaterialData material, in vec3 P, in vec3 camPos, in vec3 normal, in vec2 uv, _ref(ShadingAttribs) shAttr)
+void _fn prepareShadingAttribs(in const MaterialData material, in float3 P, in float3 camPos, in float3 normal, in float2 uv, _ref(ShadingAttribs) shAttr)
 {
     prepareShadingAttribs(material, P, camPos, normal, uv, 0, shAttr);
 }
 
-void _fn prepareShadingAttribs(in const MaterialData material, in vec3 P, in vec3 camPos, in vec3 normal, in vec3 bitangent, in vec2 uv, _ref(ShadingAttribs) shAttr)
+void _fn prepareShadingAttribs(in const MaterialData material, in float3 P, in float3 camPos, in float3 normal, in float3 bitangent, in float2 uv, _ref(ShadingAttribs) shAttr)
 {
     prepareShadingAttribs(material, P, camPos, normal, bitangent, uv, 0, shAttr);
 }
 #endif
 
-vec4 _fn evalEmissiveLayer(in const MaterialLayerValues layer, _ref(PassOutput) result)
+float4 _fn evalEmissiveLayer(in const MaterialLayerValues layer, _ref(PassOutput) result)
 {
     result.diffuseAlbedo += 1.f;
     result.diffuseIllumination += layer.albedo.rgb;
     return (1).rrrr;
 }
 
-vec4 _fn evalDiffuseLayer(in const MaterialLayerValues layer, in const vec3 lightIntensity, in const vec3 lightDir, in const vec3 normal, _ref(PassOutput) result)
+float4 _fn evalDiffuseLayer(in const MaterialLayerValues layer, in const float3 lightIntensity, in const float3 lightDir, in const float3 normal, _ref(PassOutput) result)
 {
-    vec3 value = lightIntensity;
+    float3 value = lightIntensity;
     float weight = 0;
-    vec4 albedo = layer.albedo;
+    float4 albedo = layer.albedo;
     result.roughness = 1;
 #ifndef _MS_DISABLE_DIFFUSE
     value *= evalDiffuseBSDF(normal, lightDir);
@@ -245,39 +232,39 @@ vec4 _fn evalDiffuseLayer(in const MaterialLayerValues layer, in const vec3 ligh
 #else
     value = 0;
 #endif
-    return v4(value, weight);
+    return float4(value, weight);
 }
 
 // Implementation of NDF filtering code from the HPG'16 submission
 // The writeup is here: //research/graphics/projects/halfvectorSpace/SAA/paper/specaa-sub.pdf
-vec2 _fn filterRoughness(in const ShadingAttribs shAttr, in const LightAttribs lAttr, in vec2 roughness)
+float2 _fn filterRoughness(in const ShadingAttribs shAttr, in const LightAttribs lAttr, in float2 roughness)
 {
 #ifdef _MS_USER_HALF_VECTOR_DERIVATIVES
-    vec2  hppDx = shAttr.DHDX;
-    vec2  hppDy = shAttr.DHDY;
+    float2  hppDx = shAttr.DHDX;
+    float2  hppDy = shAttr.DHDY;
 #else
     // Compute half-vector derivatives
-    vec3  H = normalize(shAttr.E + lAttr.L);
-    vec2  hpp = v2(dot(H, shAttr.T), dot(H, shAttr.B));
-    vec2  hppDx = ddx_fine(hpp);
-    vec2  hppDy = ddy_fine(hpp);
+    float3  H = normalize(shAttr.E + lAttr.L);
+    float2  hpp = float2(dot(H, shAttr.T), dot(H, shAttr.B));
+    float2  hppDx = ddx_fine(hpp);
+    float2  hppDy = ddy_fine(hpp);
 #endif
     // Compute filtering region
-    vec2 rectFp = (abs(hppDx) + abs(hppDy)) * 0.5f;
+    float2 rectFp = (abs(hppDx) + abs(hppDy)) * 0.5f;
 
     // For grazing angles where the first-order footprint goes to very high values
     // Usually you don’t need such high values and the maximum value of 1.0 or even 0.1 is enough for filtering.
     rectFp = min(0.7f, rectFp);
 
     // Covariance matrix of pixel filter's Gaussian (remapped in roughness units)
-    vec2 covMx = rectFp * rectFp * 2.f;   // Need to x2 because roughness = sqrt(2) * pixel_sigma_hpp
+    float2 covMx = rectFp * rectFp * 2.f;   // Need to x2 because roughness = sqrt(2) * pixel_sigma_hpp
 
     roughness = sqrt(roughness*roughness + covMx);          // Beckmann proxy convolution for GGX
 
     return roughness;
 }
 
-vec4 _fn evalSpecularLayer(in const MaterialLayerDesc desc, in const MaterialLayerValues data, in const ShadingAttribs shAttr, in const LightAttribs lAttr, _ref(PassOutput) result)
+float4 _fn evalSpecularLayer(in const MaterialLayerDesc desc, in const MaterialLayerValues data, in const ShadingAttribs shAttr, in const LightAttribs lAttr, _ref(PassOutput) result)
 {
 #ifndef _MS_DISABLE_SPECULAR
     /* Add albedo regardless of facing */
@@ -289,12 +276,12 @@ vec4 _fn evalSpecularLayer(in const MaterialLayerDesc desc, in const MaterialLay
         return 0;
     }
 
-    vec3 value = lAttr.lightIntensity;
+    float3 value = lAttr.lightIntensity;
 
-    vec2 roughness;
+    float2 roughness;
     if(desc.hasTexture & ROUGHNESS_CHANNEL_BIT)
     {
-        roughness = v2(data.albedo.w, data.albedo.w);
+        roughness = float2(data.albedo.w, data.albedo.w);
     }
     else
     {
@@ -314,8 +301,8 @@ vec4 _fn evalSpecularLayer(in const MaterialLayerDesc desc, in const MaterialLay
     }
     
     // compute halfway vector
-    const vec3 hW = normalize(shAttr.E + lAttr.L);
-    const vec3 h = normalize(v3(dot(hW, shAttr.T), dot(hW, shAttr.B), dot(hW, shAttr.N)));
+    const float3 hW = normalize(shAttr.E + lAttr.L);
+    const float3 h = normalize(float3(dot(hW, shAttr.T), dot(hW, shAttr.B), dot(hW, shAttr.N)));
 
     result.roughness = roughness;
 
@@ -349,16 +336,16 @@ vec4 _fn evalSpecularLayer(in const MaterialLayerDesc desc, in const MaterialLay
 
     result.specularIllumination += value;
 
-    return v4(value, weight);
+    return float4(value, weight);
 #else
     return 0;
 #endif
 }
 
-vec3 _fn blendLayer(in const vec4 albedo, in const vec4 layerOut, in const uint blendType, in const vec3 currentValue)
+float3 _fn blendLayer(in const float4 albedo, in const float4 layerOut, in const uint blendType, in const float3 currentValue)
 {
     /* Account for albedo */
-    vec3 scaledLayerOut = layerOut.rgb * albedo.rgb;
+    float3 scaledLayerOut = layerOut.rgb * albedo.rgb;
     float weight = layerOut.w;
 
     /* Perform layer blending */
@@ -367,7 +354,7 @@ vec3 _fn blendLayer(in const vec4 albedo, in const vec4 layerOut, in const uint 
         weight = albedo.w;
     }
 
-    vec3 result;
+    float3 result;
     if(blendType != BlendAdd)
     {
         result = lerp(currentValue, scaledLayerOut, weight);
@@ -388,7 +375,7 @@ The output is the illumination of the current layer, blended into the results of
 void _fn evalMaterialLayer(in const int iLayer, in const ShadingAttribs attr, in const LightAttribs lAttr,
     _ref(PassOutput) result)
 {
-    vec4 value = 0;
+    float4 value = 0;
 
     const MaterialLayerValues values = attr.preparedMat.values.layers[iLayer];
     const MaterialLayerDesc desc = attr.preparedMat.desc.layers[iLayer];
@@ -406,7 +393,7 @@ void _fn evalMaterialLayer(in const int iLayer, in const ShadingAttribs attr, in
         break;
     };
 
-	vec3 oldValue = result.value;
+	float3 oldValue = result.value;
     result.value = blendLayer(values.albedo, value, desc.blending, result.value);
 
 	float delta = max(1e-3f, luminance(result.value - oldValue));
@@ -508,27 +495,27 @@ void _fn initNullLayer(_ref(MaterialLayerDesc) layer)
 /**
 Initializes a material layer with diffuse BRDF
 */
-void _fn initDiffuseLayer(_ref(MaterialLayerDesc) desc, _ref(MaterialLayerValues) data, in const vec3 albedo)
+void _fn initDiffuseLayer(_ref(MaterialLayerDesc) desc, _ref(MaterialLayerValues) data, in const float3 albedo)
 {
     desc.type = MatLambert;
     desc.blending = BlendAdd;
     desc.hasTexture = false;
     desc.ndf = NDFGGX;
-    data.albedo = v4(albedo, 1.f);
-    data.extraParam = v4(0,0,0,0);
-    data.roughness = v4(0,0,0,0);
-    data.pad = v3(0,0,0);
+    data.albedo = float4(albedo, 1.f);
+    data.extraParam = float4(0,0,0,0);
+    data.roughness = float4(0,0,0,0);
+    data.pad = float3(0,0,0);
     data.pmf = 1;
 }
 
 /**
 Initializes a material layer with conductor BRDF. IoR and Kappa are set to the values of chrome by default.
 */
-void _fn initConductorLayer(_ref(MaterialLayerDesc) desc, _ref(MaterialLayerValues) data, in const vec3 color, in const float roughness, in const float IoR = 3.f, in const float kappa = 4.2f)
+void _fn initConductorLayer(_ref(MaterialLayerDesc) desc, _ref(MaterialLayerValues) data, in const float3 color, in const float roughness, in const float IoR = 3.f, in const float kappa = 4.2f)
 {
     desc.type = MatConductor;
     desc.blending = BlendAdd;
-    data.albedo = v4(color, 1.f);
+    data.albedo = float4(color, 1.f);
     data.roughness = roughness.rrrr;
     data.extraParam.x = IoR;
     data.extraParam.y = kappa;
@@ -538,11 +525,11 @@ void _fn initConductorLayer(_ref(MaterialLayerDesc) desc, _ref(MaterialLayerValu
 /**
 Initializes a material layer with dielectric BRDF.
 */
-void _fn initDielectricLayer(_ref(MaterialLayerDesc) desc, _ref(MaterialLayerValues) data, in const vec3 color, in const float roughness, in const float IoR)
+void _fn initDielectricLayer(_ref(MaterialLayerDesc) desc, _ref(MaterialLayerValues) data, in const float3 color, in const float roughness, in const float IoR)
 {
     desc.type = MatDielectric;
     desc.blending = BlendFresnel;
-    data.albedo = v4(color, 1.f);
+    data.albedo = float4(color, 1.f);
     data.roughness = roughness.rrrr;
     data.extraParam.x = IoR;
     data.pmf = 1;
@@ -576,9 +563,9 @@ Tries to find a diffuse albedo color for a given material
 \param[in] Material Material to look in
 returns black if the layer is not found, diffuse albedo color otherwise
 */
-vec4 _fn getDiffuseColor(in const ShadingAttribs shAttr)
+float4 _fn getDiffuseColor(in const ShadingAttribs shAttr)
 {
-    vec4 ret = 0;
+    float4 ret = 0;
     // This is here because the HLSL compiler complains about 'data' not being completely initialized when used
     int layerId = shAttr.preparedMat.desc.layerIdByType[MatLambert].id;
     if (layerId != -1)
@@ -596,7 +583,7 @@ Tries to override a diffuse albedo color for all layers within a given material
 \param[in] Material Material to look in
 returns true if succeeded
 */
-bool _fn overrideDiffuseColor(_ref(ShadingAttribs) shAttr, const vec4 albedo, const bool allLayers = true)
+bool _fn overrideDiffuseColor(_ref(ShadingAttribs) shAttr, const float4 albedo, const bool allLayers = true)
 {
     bool found = false;
     if(!allLayers)
@@ -629,9 +616,9 @@ Tries to find a specular albedo color for a given material
 \param[in] material Material to look in
 returns black if the layer is not found, specular color otherwise
 */
-vec4 _fn getSpecularColor(in const ShadingAttribs shAttr)
+float4 _fn getSpecularColor(in const ShadingAttribs shAttr)
 {
-    vec4 ret = 0;
+    float4 ret = 0;
     MaterialLayerValues data;
     MaterialLayerDesc   desc;
     if(getLayerByType(shAttr.preparedMat, MatConductor, data, desc))
@@ -651,7 +638,7 @@ vec4 _fn getSpecularColor(in const ShadingAttribs shAttr)
 */
 void _fn sampleMaterial(
 	in const ShadingAttribs shAttr,
-	in vec2 rSample,
+	in float2 rSample,
 	_ref(ShadingOutput) result)
 {
 	bool sampleDiffuse = true;
@@ -674,9 +661,9 @@ void _fn sampleMaterial(
 
 			sampleDiffuse = false;
 
-			vec3 m;
-			const vec3 wo = toLocal(shAttr.E, shAttr.T, shAttr.B, shAttr.N);
-			const vec2 roughness = v2(specData.roughness.x, specData.roughness.y);
+			float3 m;
+			const float3 wo = toLocal(shAttr.E, shAttr.T, shAttr.B, shAttr.N);
+			const float2 roughness = float2(specData.roughness.x, specData.roughness.y);
 
 			// Set the specular reflectivity
 			result.specularAlbedo = specData.albedo.rgb;

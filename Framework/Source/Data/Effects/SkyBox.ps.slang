@@ -25,37 +25,22 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#ifndef LEAN_MAP_DATA_H
-#define LEAN_MAP_DATA_H
+__import Helpers;
 
-#include "Data/HostDeviceData.h"
-#include "Helpers.h"
-
-void applyLeanMap(in Texture2D leanMap, in SamplerState samplerState, inout ShadingAttribs shAttr)
-{
-    vec4 t = sampleTexture(leanMap, samplerState, shAttr);
-    // Reconstruct B 
-    vec2 B = 2 * t.xy - 1;
-    vec2 M = t.zw;
-
-    // Apply normal
-    vec3 unnormalizedNormal = vec3(B, 1);
-    applyNormalMap(unnormalizedNormal, shAttr.N, shAttr.T, shAttr.B);
-    // Reconstruct the diagonal covariance matrix
-    vec2 maxCov = max((0), M - B*B);     // Use only diagonal of covariance due to vec2 aniso roughness
-
-    [unroll]
-    for (uint iLayer = 0; iLayer < MatMaxLayers; iLayer++)
-    {
-        if (shAttr.preparedMat.desc.layers[iLayer].type == MatNone) break;
-
-        if (shAttr.preparedMat.desc.layers[iLayer].type != MatLambert)
-        {
-            float2 roughness = shAttr.preparedMat.values.layers[iLayer].roughness.xy;
-            roughness = sqrt(roughness*roughness + maxCov); // Approximate convolution that works for all
-            shAttr.preparedMat.values.layers[iLayer].roughness.rg = roughness;
-        }
-    }
-}
-
+#ifdef _SPHERICAL_MAP
+Texture2D gTexture;
+#else
+TextureCube gTexture;
 #endif
+SamplerState gSampler;
+
+float4 main(float3 dir : NORMAL) : SV_TARGET
+{
+#ifdef _SPHERICAL_MAP
+    float2 uv = dirToSphericalCrd(dir) ;
+    float4 color = gTexture.Sample(gSampler, uv);
+    return color;
+#else
+	return gTexture.Sample(gSampler, normalize(dir), 0);
+#endif
+}

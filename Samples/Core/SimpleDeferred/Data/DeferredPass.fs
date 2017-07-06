@@ -26,11 +26,10 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 #version 420
-#define _COMPILE_DEFAULT_VS
-#include "VertexAttrib.h"
-#include "ShaderCommon.h"
-#include "Shading.h"
+__import DefaultVS;
+__import ShaderCommon;
 
+__import Shading;
 
 struct PS_OUT
 {
@@ -46,8 +45,8 @@ PS_OUT main(VS_OUT vOut)
     prepareShadingAttribs(gMaterial, vOut.posW, gCam.position, vOut.normalW, vOut.texC, shAttr);
 
     PS_OUT psOut;
-    psOut.fragColor0 = vec4(shAttr.P, 1);
-    psOut.fragColor1 = vec4(shAttr.N, 1);
+    psOut.fragColor0 = float4(shAttr.P, 1);
+    psOut.fragColor1 = float4(shAttr.N, 1);
     psOut.fragColor2 = shAttr.preparedMat.values.layers[0].albedo;
 
     return psOut;

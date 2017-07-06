@@ -7,18 +7,15 @@
 
 namespace Slang
 {
-    class CompileOptions;
-    struct CompileRequest;
+    class CompileRequest;
     class ShaderCompiler;
     class ShaderLinkInfo;
     class ShaderSymbol;
-    class TranslationUnitOptions;
 
-    SyntaxVisitor* CreateSemanticsVisitor(
-        DiagnosticSink*                 err,
-        CompileOptions const&           options,
-        TranslationUnitOptions const&   translationUnitOptions,
-        CompileRequest*                 request);
+    class TranslationUnitRequest;
+
+    void checkTranslationUnit(
+        TranslationUnitRequest* translationUnit);
 
     // Look for a module that matches the given name:
     // either one we've loaded already, or one we
