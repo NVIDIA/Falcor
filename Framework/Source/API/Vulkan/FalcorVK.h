@@ -40,6 +40,7 @@
 #endif
 
 #include "API/Vulkan/VKResourceHelper.h"
+#include "API/Vulkan/VKSmartHandle.h"
 
 __forceinline BOOL vkBool(bool b) { return b ? VK_TRUE : VK_FALSE; }
 
@@ -68,8 +69,8 @@ namespace Falcor
         operator VkRenderPass() const { return mVkRenderPass; }
         operator VkFramebuffer() const { return mVkFbo; }
     private:
-        VkRenderPass mVkRenderPass = VK_NULL_HANDLE;
-        VkFramebuffer mVkFbo = VK_NULL_HANDLE;
+        VkRenderPassPtr mVkRenderPass = VK_NULL_HANDLE;
+        VkFramebufferPtr mVkFbo = VK_NULL_HANDLE;
     };
 
     using HeapCpuHandle = void*;
@@ -83,30 +84,30 @@ namespace Falcor
     using WindowHandle = void*;
 #endif
 
-    using DeviceHandle = VkDevice;
-    using CommandListHandle = VkCommandBuffer;
+    using DeviceHandle = VkDevicePtr;
+    using CommandListHandle = VkCommandBufferPtr;
     using CommandQueueHandle = VkQueue;
     using ApiCommandQueueType = uint32_t;
-    using CommandAllocatorHandle = VkCommandPool;
+    using CommandAllocatorHandle = VkCommandPoolPtr;
     using CommandSignatureHandle = void*;
     using FenceHandle = VkSemaphore;
     using ResourceHandle = VkResource<VkImage, VkBuffer>;
-    using RtvHandle = VkImageView;
-    using DsvHandle = VkImageView;
+    using RtvHandle = VkImageViewPtr;
+    using DsvHandle = VkImageViewPtr;
     using SrvHandle = VkResource<VkImageView, VkBufferView>;
     using UavHandle = VkResource<VkImageView, VkBufferView>;
-    using CbvHandle = VkBufferView;
+    using CbvHandle = VkBufferViewPtr;
     using FboHandle = VkFboHandle;
-    using SamplerHandle = VkSampler;
+    using SamplerHandle = VkSamplerPtr;
     using GpuAddress = size_t;
-    using DescriptorSetApiHandle = VkDescriptorSet;
+    using DescriptorSetApiHandle = VkDescriptorSetPtr;
 
-    using PsoHandle = VkPipeline;
+    using PsoHandle = VkPipelinePtr;
     using ComputeStateHandle = VkPipeline;
-    using ShaderHandle = VkShaderModule;
+    using ShaderHandle = VkShaderModulePtr;
     using ShaderReflectionHandle = void*;
-    using RootSignatureHandle = VkPipelineLayout;
-    using DescriptorHeapHandle = VkDescriptorPool;
+    using RootSignatureHandle = VkPipelineLayoutPtr;
+    using DescriptorHeapHandle = VkDescriptorPoolPtr;
 
     using VaoHandle = void*;
     using VertexShaderHandle = void*;
