@@ -25,34 +25,17 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#version 420
-#include "HlslGlslCommon.h"
+#version 450
 
-CONSTANT_BUFFER(PerImageCB, 0)
-{
-	sampler2D gTexture;
-};
+layout(set = 0, binding = 0) uniform texture2D gTexture;
+layout(set = 0, binding = 1) uniform sampler gSampler;
+layout(location = 0) in vec2 texC;
+layout (location = 0) out vec4 outColor;
 
-static const vec3 gLuminance = vec3(0.2126, 0.7152, 0.0722);
-
-vec4 calcColor(vec2 texC)
-{
-	vec4 fragColor = texture(gTexture, texC);
-	fragColor.rgb = (dot(fragColor.rgb, gLuminance)).xxx;
-	return fragColor;
-}
-
-#ifdef FALCOR_HLSL
-float4 main(in vec2 texC : TEXCOORD) : SV_TARGET
-{
-	return calcColor(texC);
-}
-#elif defined FALCOR_GLSL
-in vec2 texC;
-out vec4 fragColor;
+const vec3 gLuminance = vec3(0.2126, 0.7152, 0.0722);
 
 void main()
 {
-	fragColor = calcColor(texC);
+	outColor = texture(sampler2D(gTexture, gSampler), texC);
+	outColor.rgb = (dot(outColor.rgb, gLuminance)).xxx;
 }
-#endif

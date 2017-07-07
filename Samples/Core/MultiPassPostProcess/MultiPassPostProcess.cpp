@@ -68,8 +68,9 @@ void MultiPassPostProcess::loadImageFromFile(std::string filename)
     fboDesc.setColorTarget(0, mpImage->getFormat());
     mpTempFB = FboHelper::create2D(mpImage->getWidth(), mpImage->getHeight(), fboDesc);
 
-    resizeSwapChain(mpImage->getWidth(), mpImage->getHeight());
+//    resizeSwapChain(mpImage->getWidth(), mpImage->getHeight());
     mpProgVars = GraphicsVars::create(mpBlit->getProgram()->getActiveVersion()->getReflector());
+
 }
 
 void MultiPassPostProcess::onFrameRender()
@@ -85,17 +86,20 @@ void MultiPassPostProcess::onFrameRender()
         mEnableGrayscale = mEnableGaussianBlur && mEnableGrayscale;
 
         mpRenderContext->setGraphicsVars(mpProgVars);
+        mpProgVars->setTexture("gTexture", mpImage);
 
         if(mEnableGaussianBlur)
         {
-            mpGaussianBlur->execute(mpRenderContext.get(), mpImage, mpTempFB);
+            mpDefaultPipelineState->pushFbo(mpTempFB);
+            mpLuminance->execute(mpRenderContext.get());
+//            mpGaussianBlur->execute(mpRenderContext.get(), mpImage, mpTempFB);
             mpProgVars->setTexture("gTexture", mpTempFB->getColorTexture(0));
-            const FullScreenPass* pFinalPass = mEnableGrayscale ? mpLuminance.get() : mpBlit.get();
-            pFinalPass->execute(mpRenderContext.get());
+//            const FullScreenPass* pFinalPass = mEnableGrayscale ? mpLuminance.get() : mpBlit.get();
+            mpDefaultPipelineState->popFbo();
+            mpBlit->execute(mpRenderContext.get());
         }
         else
         {
-            mpProgVars->setTexture("gTexture", mpImage);
             mpBlit->execute(mpRenderContext.get());
         }
     }

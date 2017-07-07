@@ -26,30 +26,13 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 #version 420
-#include "HlslGlslCommon.h"
 
-CONSTANT_BUFFER(PerImageCB, 0)
-{
-	sampler2D gTexture;
-};
-
-vec4 calcColor(vec2 texC)
-{
-	return texture(gTexture, texC);
-}
-
-#ifdef FALCOR_HLSL
-vec4 main(float2 texC  : TEXCOORD) : SV_TARGET0
-{
-	return calcColor(texC);
-}
-
-#elif defined FALCOR_GLSL
-in vec2 texC;
-out vec4 fragColor;
+layout(set = 0, binding = 0) uniform texture2D gTexture;
+layout(set = 0, binding = 1) uniform sampler gSampler;
+layout(location = 0) in vec2 texC;
+layout (location = 0) out vec4 outColor;
 
 void main()
 {
-	fragColor = calcColor(texC);
+    outColor = texture(sampler2D(gTexture, gSampler), texC);
 }
-#endif
