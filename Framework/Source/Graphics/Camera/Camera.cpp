@@ -77,13 +77,13 @@ namespace Falcor
             {
                 if (fovY != 0.f)
                 {
-                    mData.projMat = perspectiveMatrix(fovY, mData.aspectRatio, mData.nearZ, mData.farZ);
+                    mData.projMat = glm::perspective(fovY, mData.aspectRatio, mData.nearZ, mData.farZ);
                 }
                 else
                 {
                     // Take the length of look-at vector as half a viewport size
                     const float halfLookAtLength = length(mData.position - mData.target) * 0.5f;
-                    mData.projMat = orthographicMatrix(-halfLookAtLength, halfLookAtLength, -halfLookAtLength, halfLookAtLength, mData.nearZ, mData.farZ);
+                    mData.projMat = glm::ortho(-halfLookAtLength, halfLookAtLength, -halfLookAtLength, halfLookAtLength, mData.nearZ, mData.farZ);
                 }
             }
 

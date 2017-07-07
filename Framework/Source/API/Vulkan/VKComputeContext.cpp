@@ -58,17 +58,34 @@ namespace Falcor
         // Code
     }
 
+    template<typename ViewType, typename ClearType>
+    void clearColorImageCommon(CopyContext* pCtx, const ViewType* pView, const ClearType& clearVal)
+    {
+        pCtx->resourceBarrier(pView->getResource(), Resource::State::CopyDest);
+        VkClearColorValue colVal;
+        memcpy_s(colVal.float32, sizeof(colVal.float32), &clearVal, sizeof(clearVal)); // VkClearColorValue is a union, so should work regardless of the ClearType
+        VkImageSubresourceRange range;
+        const auto& viewInfo = pView->getViewInfo();
+        range.baseArrayLayer = viewInfo.firstArraySlice;
+        range.baseMipLevel = viewInfo.mostDetailedMip;
+        range.layerCount = viewInfo.arraySize;
+        range.levelCount = viewInfo.mipCount;
+        range.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+
+        vkCmdClearColorImage(pCtx->getLowLevelData()->getCommandList(), pView->getResource()->getApiHandle().getImage(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &colVal, 1, &range);
+    }
+
+    template void clearColorImageCommon(CopyContext* pCtx, const RenderTargetView* pView, const vec4& clearVal);
+
     void ComputeContext::clearUAV(const UnorderedAccessView* pUav, const vec4& value)
     {
-        // Code
-
+        clearColorImageCommon(this, pUav, value);
         mCommandsPending = true;
     }
 
     void ComputeContext::clearUAV(const UnorderedAccessView* pUav, const uvec4& value)
     {
-        // Code
-
+        clearColorImageCommon(this, pUav, value);
         mCommandsPending = true;
     }
 

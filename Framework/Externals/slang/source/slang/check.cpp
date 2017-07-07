@@ -2,6 +2,7 @@
 
 #include "lookup.h"
 #include "compiler.h"
+#include "visitor.h"
 
 #include <assert.h>
 
@@ -42,31 +43,51 @@ namespace Slang
             return name;
     }
 
-    class SemanticsVisitor : public SyntaxVisitor
+    struct SemanticsVisitor
+        : ExprVisitor<SemanticsVisitor, RefPtr<ExpressionSyntaxNode>>
+        , StmtVisitor<SemanticsVisitor>
+        , DeclVisitor<SemanticsVisitor>
     {
-        ProgramSyntaxNode * program = nullptr;
+        DiagnosticSink* sink = nullptr;
+        DiagnosticSink* getSink()
+        {
+            return sink;
+        }
+
+//        ProgramSyntaxNode * program = nullptr;
         FunctionSyntaxNode * function = nullptr;
-        CompileOptions const* options = nullptr;
-        TranslationUnitOptions const* translationUnitOptions = nullptr;
+
         CompileRequest* request = nullptr;
+        TranslationUnitRequest* translationUnit = nullptr;
+
+        SourceLanguage getSourceLanguage()
+        {
+            return translationUnit->sourceLanguage;
+        }
 
         // lexical outer statements
         List<StatementSyntaxNode*> outerStmts;
+
+        // We need to track what has been `import`ed,
+        // to avoid importing the same thing more than once
+        //
+        // TODO: a smarter approach might be to filter
+        // out duplicate references during lookup.
+        HashSet<ProgramSyntaxNode*> importedModules;
+
     public:
         SemanticsVisitor(
-            DiagnosticSink * pErr,
-            CompileOptions const& options,
-            TranslationUnitOptions const& translationUnitOptions,
-            CompileRequest* request)
-            : SyntaxVisitor(pErr)
-            , options(&options)
-            , translationUnitOptions(&translationUnitOptions)
+            DiagnosticSink*         sink,
+            CompileRequest*         request,
+            TranslationUnitRequest* translationUnit)
+            : sink(sink)
             , request(request)
+            , translationUnit(translationUnit)
         {
         }
 
-        CompileOptions const& getOptions() { return *options; }
-        TranslationUnitOptions const& getTranslationUnitOptions() { return *translationUnitOptions; }
+        CompileRequest* getCompileRequest() { return request; }
+        TranslationUnitRequest* getTranslationUnit() { return translationUnit; }
 
     public:
         // Translate Types
@@ -74,7 +95,8 @@ namespace Slang
         RefPtr<ExpressionSyntaxNode> TranslateTypeNodeImpl(const RefPtr<ExpressionSyntaxNode> & node)
         {
             if (!node) return nullptr;
-            auto expr = node->Accept(this).As<ExpressionSyntaxNode>();
+
+            auto expr = CheckTerm(node);
             expr = ExpectATypeRepr(expr);
             return expr;
         }
@@ -149,7 +171,7 @@ namespace Slang
             auto derefExpr = new DerefExpr();
             derefExpr->Position = originalExpr->Position;
             derefExpr->base = base;
-            derefExpr->Type = ptrLikeType->elementType;
+            derefExpr->Type = QualType(ptrLikeType->elementType);
 
             // TODO(tfoley): handle l-value status here
 
@@ -192,7 +214,7 @@ namespace Slang
             {
                 auto overloadedExpr = new OverloadedExpr();
                 overloadedExpr->Position = originalExpr->Position;
-                overloadedExpr->Type = ExpressionType::Overloaded;
+                overloadedExpr->Type = QualType(ExpressionType::Overloaded);
                 overloadedExpr->base = baseExpr;
                 overloadedExpr->lookupResult2 = lookupResult;
                 return overloadedExpr;
@@ -230,7 +252,7 @@ namespace Slang
                 }
 
                 // TODO(tfoley): should we construct a new ErrorExpr here?
-                overloadedExpr->Type = ExpressionType::Error;
+                overloadedExpr->Type = QualType(ExpressionType::Error);
                 return overloadedExpr;
             }
 
@@ -342,9 +364,8 @@ namespace Slang
                 decl->SetCheckState(DeclCheckState::CheckingHeader);
             }
 
-            // TODO: not all of the `Visit` cases are ready to
-            // handle this being called on-the-fly
-            decl->Accept(this);
+            // Use visitor pattern to dispatch to correct case
+            DeclVisitor::dispatch(decl);
 
             decl->SetCheckState(DeclCheckState::Checked);
         }
@@ -507,12 +528,12 @@ namespace Slang
         RefPtr<ExpressionSyntaxNode> CheckTerm(RefPtr<ExpressionSyntaxNode> term)
         {
             if (!term) return nullptr;
-            return term->Accept(this).As<ExpressionSyntaxNode>();
+            return ExprVisitor::dispatch(term);
         }
 
         RefPtr<ExpressionSyntaxNode> CreateErrorExpr(ExpressionSyntaxNode* expr)
         {
-            expr->Type = ExpressionType::Error;
+            expr->Type = QualType(ExpressionType::Error);
             return expr;
         }
 
@@ -696,7 +717,7 @@ namespace Slang
                         // up with initializer arguments.
 
 
-                        int argIndex = 0;
+                        UInt argIndex = 0;
                         for(auto fieldDeclRef : getMembersOfType<StructField>(toStructDeclRef))
                         {
                             if(argIndex >= argCount)
@@ -781,7 +802,7 @@ namespace Slang
                 {
                     auto toInitializerListExpr = new InitializerListExpr();
                     toInitializerListExpr->Position = fromInitializerListExpr->Position;
-                    toInitializerListExpr->Type = toType;
+                    toInitializerListExpr->Type = QualType(toType);
                     toInitializerListExpr->args = coercedArgs;
 
 
@@ -954,7 +975,7 @@ namespace Slang
             auto castExpr = new TypeCastExpressionSyntaxNode();
             castExpr->Position = fromExpr->Position;
             castExpr->TargetType.type = toType;
-            castExpr->Type = toType;
+            castExpr->Type = QualType(toType);
             castExpr->Expression = fromExpr;
             return castExpr;
         }
@@ -969,7 +990,7 @@ namespace Slang
             // expressions without a type, and we need to ignore them.
             if( !fromExpr->Type.type )
             {
-                if(getTranslationUnitOptions().compileFlags & SLANG_COMPILE_FLAG_NO_CHECKING )
+                if(getTranslationUnit()->compileFlags & SLANG_COMPILE_FLAG_NO_CHECKING )
                     return fromExpr;
             }
 
@@ -981,7 +1002,7 @@ namespace Slang
                 fromExpr.Ptr(),
                 nullptr))
             {
-                if(!(getTranslationUnitOptions().compileFlags & SLANG_COMPILE_FLAG_NO_CHECKING))
+                if(!(getTranslationUnit()->compileFlags & SLANG_COMPILE_FLAG_NO_CHECKING))
                 {
                     getSink()->diagnose(fromExpr->Position, Diagnostics::typeMismatch, toType, fromExpr->Type);
                 }
@@ -1014,7 +1035,7 @@ namespace Slang
                 // then coerce any initializer to the type
                 if (initExpr)
                 {
-                    initExpr = Coerce(type, initExpr);
+                    initExpr = Coerce(type.Ptr(), initExpr);
                 }
             }
             else
@@ -1046,7 +1067,12 @@ namespace Slang
             decl->sup = TranslateTypeNode(decl->sup);
         }
 
-        virtual RefPtr<GenericDecl> VisitGenericDecl(GenericDecl* genericDecl) override
+        void checkDecl(Decl* decl)
+        {
+            EnsureDecl(decl, DeclCheckState::Checked);
+        }
+
+        void visit(GenericDecl* genericDecl)
         {
             // check the parameters
             for (auto m : genericDecl->Members)
@@ -1068,16 +1094,15 @@ namespace Slang
 
             // check the nested declaration
             // TODO: this needs to be done in an appropriate environment...
-            genericDecl->inner->Accept(this);
-            return genericDecl;
+            checkDecl(genericDecl->inner);
         }
 
-        virtual void visitInterfaceDecl(InterfaceDecl* /*decl*/) override
+        void visit(InterfaceDecl* /*decl*/)
         {
             // TODO: do some actual checking of members here
         }
 
-        virtual void visitInheritanceDecl(InheritanceDecl* inheritanceDecl) override
+        void visit(InheritanceDecl* inheritanceDecl)
         {
             // check the type being inherited from
             auto base = inheritanceDecl->base;
@@ -1119,6 +1144,31 @@ namespace Slang
             return constIntVal;
         }
 
+        void visit(ModifierDecl*)
+        {
+            // These are only used in the stdlib, so no checking is needed
+        }
+
+        void visit(GenericTypeParamDecl*)
+        {
+            // These are only used in the stdlib, so no checking is needed for now
+        }
+
+        void visit(GenericValueParamDecl*)
+        {
+            // These are only used in the stdlib, so no checking is needed for now
+        }
+
+        void visit(GenericTypeConstraintDecl*)
+        {
+            // These are only used in the stdlib, so no checking is needed for now
+        }
+
+        void visit(Modifier*)
+        {
+            // Do nothing with modifiers for now
+        }
+
         RefPtr<Modifier> checkModifier(
             RefPtr<Modifier>    m,
             Decl*               /*decl*/)
@@ -1149,9 +1199,9 @@ namespace Slang
                     hlslNumThreadsAttribute->Position   = hlslUncheckedAttribute->Position;
                     hlslNumThreadsAttribute->nameToken  = hlslUncheckedAttribute->nameToken;
                     hlslNumThreadsAttribute->args       = hlslUncheckedAttribute->args;
-                    hlslNumThreadsAttribute->x          = xVal->value;
-                    hlslNumThreadsAttribute->y          = yVal->value;
-                    hlslNumThreadsAttribute->z          = zVal->value;
+                    hlslNumThreadsAttribute->x          = (int32_t) xVal->value;
+                    hlslNumThreadsAttribute->y          = (int32_t) yVal->value;
+                    hlslNumThreadsAttribute->z          = (int32_t) zVal->value;
 
                     return hlslNumThreadsAttribute;
                 }
@@ -1220,7 +1270,7 @@ namespace Slang
             decl->modifiers.first = resultModifiers;
         }
 
-        virtual RefPtr<ProgramSyntaxNode> VisitProgram(ProgramSyntaxNode * programNode) override
+        void visit(ProgramSyntaxNode* programNode)
         {
             // Try to register all the builtin decls
             for (auto decl : programNode->Members)
@@ -1241,43 +1291,46 @@ namespace Slang
                 }
             }
 
+            // We need/want to visit any `import` declarations before
+            // anything else, to make sure that scoping works.
+            for(auto& importDecl : programNode->getMembersOfType<ImportDecl>())
+            {
+                EnsureDecl(importDecl);
+            }
+
             //
 
-            HashSet<String> funcNames;
-            this->program = programNode;
-            this->function = nullptr;
-
-            for (auto & s : program->GetTypeDefs())
-                VisitTypeDefDecl(s.Ptr());
-            for (auto & s : program->GetStructs())
+            for (auto & s : programNode->getMembersOfType<TypeDefDecl>())
+                checkDecl(s.Ptr());
+            for (auto & s : programNode->getMembersOfType<StructSyntaxNode>())
             {
-                VisitStruct(s.Ptr());
+                checkDecl(s.Ptr());
             }
-			for (auto & s : program->GetClasses())
+			for (auto & s : programNode->getMembersOfType<ClassSyntaxNode>())
 			{
-				VisitClass(s.Ptr());
+				checkDecl(s.Ptr());
 			}
             // HACK(tfoley): Visiting all generic declarations here,
             // because otherwise they won't get visited.
-            for (auto & g : program->getMembersOfType<GenericDecl>())
+            for (auto & g : programNode->getMembersOfType<GenericDecl>())
             {
-                VisitGenericDecl(g.Ptr());
+                checkDecl(g.Ptr());
             }
 
-            for (auto & func : program->GetFunctions())
+            for (auto & func : programNode->getMembersOfType<FunctionSyntaxNode>())
             {
                 if (!func->IsChecked(DeclCheckState::Checked))
                 {
                     VisitFunctionDeclaration(func.Ptr());
                 }
             }
-            for (auto & func : program->GetFunctions())
+            for (auto & func : programNode->getMembersOfType<FunctionSyntaxNode>())
             {
                 EnsureDecl(func);
             }
         
             if (sink->GetErrorCount() != 0)
-                return programNode;
+                return;
                
             // Force everything to be fully checked, just in case
             // Note that we don't just call this on the program,
@@ -1292,14 +1345,12 @@ namespace Slang
             {
                 checkModifiers(d.Ptr());
             }
-
-            return programNode;
         }
 
-		virtual RefPtr<ClassSyntaxNode> VisitClass(ClassSyntaxNode * classNode) override
+		void visit(ClassSyntaxNode * classNode)
 		{
 			if (classNode->IsChecked(DeclCheckState::Checked))
-				return classNode;
+				return;
 			classNode->SetCheckState(DeclCheckState::Checked);
 
 			for (auto field : classNode->GetFields())
@@ -1307,51 +1358,68 @@ namespace Slang
 				field->Type = CheckUsableType(field->Type);
 				field->SetCheckState(DeclCheckState::Checked);
 			}
-			return classNode;
 		}
 
-        virtual RefPtr<StructSyntaxNode> VisitStruct(StructSyntaxNode * structNode) override
+        void visit(StructField* field)
+        {
+            // TODO: bottleneck through general-case variable checking
+
+            field->Type = CheckUsableType(field->Type);
+            field->SetCheckState(DeclCheckState::Checked);
+        }
+
+        void visit(StructSyntaxNode * structNode)
         {
             if (structNode->IsChecked(DeclCheckState::Checked))
-                return structNode;
+                return;
             structNode->SetCheckState(DeclCheckState::Checked);
 
             for (auto field : structNode->GetFields())
             {
-                field->Type = CheckUsableType(field->Type);
-                field->SetCheckState(DeclCheckState::Checked);
+                checkDecl(field);
             }
-            return structNode;
         }
 
-        virtual RefPtr<TypeDefDecl> VisitTypeDefDecl(TypeDefDecl* decl) override
+        void visit(DeclGroup* declGroup)
         {
-            if (decl->IsChecked(DeclCheckState::Checked)) return decl;
+            for (auto decl : declGroup->decls)
+            {
+                checkDecl(decl);
+            }
+        }
+
+        void visit(TypeDefDecl* decl)
+        {
+            if (decl->IsChecked(DeclCheckState::Checked)) return;
 
             decl->SetCheckState(DeclCheckState::CheckingHeader);
             decl->Type = CheckProperType(decl->Type);
             decl->SetCheckState(DeclCheckState::Checked);
-            return decl;
         }
 
-        virtual RefPtr<FunctionSyntaxNode> VisitFunction(FunctionSyntaxNode *functionNode) override
+        void checkStmt(StatementSyntaxNode* stmt)
+        {
+            if (!stmt) return;
+            StmtVisitor::dispatch(stmt);
+        }
+
+        void visit(FunctionSyntaxNode *functionNode)
         {
             if (functionNode->IsChecked(DeclCheckState::Checked))
-                return functionNode;
+                return;
 
             VisitFunctionDeclaration(functionNode);
+            // TODO: This should really onlye set "checked header"
             functionNode->SetCheckState(DeclCheckState::Checked);
 
-            if (!functionNode->IsExtern())
+            // TODO: should put the checking of the body onto a "work list"
+            // to avoid recursion here.
+            if (functionNode->Body)
             {
                 this->function = functionNode;
-                if (functionNode->Body)
-                {
-                    functionNode->Body->Accept(this);
-                }
+                checkStmt(functionNode->Body);
                 this->function = nullptr;
             }
-            return functionNode;
         }
 
         // Check if two functions have the same signature for the purposes
@@ -1374,7 +1442,7 @@ namespace Slang
             if (fstParamCount != sndParamCount)
                 return false;
 
-            for (int ii = 0; ii < fstParamCount; ++ii)
+            for (UInt ii = 0; ii < fstParamCount; ++ii)
             {
                 auto fstParam = fstParams[ii];
                 auto sndParam = sndParams[ii];
@@ -1460,6 +1528,20 @@ namespace Slang
             }
         }
 
+        void visit(ScopeDecl*)
+        {
+            // Nothing to do
+        }
+
+        void visit(ParameterSyntaxNode* para)
+        {
+            // TODO: This needs to bottleneck through the common variable checks
+
+            para->Type = CheckUsableType(para->Type);
+            if (para->Type.Equals(ExpressionType::GetVoid()))
+                getSink()->diagnose(para, Diagnostics::parameterCannotBeVoid);
+        }
+
         void VisitFunctionDeclaration(FunctionSyntaxNode *functionNode)
         {
             if (functionNode->IsChecked(DeclCheckState::CheckedHeader)) return;
@@ -1471,13 +1553,12 @@ namespace Slang
             HashSet<String> paraNames;
             for (auto & para : functionNode->GetParameters())
             {
+                checkDecl(para);
+
                 if (paraNames.Contains(para->Name.Content))
                     getSink()->diagnose(para, Diagnostics::parameterAlreadyDefined, para->Name);
                 else
                     paraNames.Add(para->Name.Content);
-                para->Type = CheckUsableType(para->Type);
-                if (para->Type.Equals(ExpressionType::GetVoid()))
-                    getSink()->diagnose(para, Diagnostics::parameterCannotBeVoid);
             }
             this->function = NULL;
             functionNode->SetCheckState(DeclCheckState::CheckedHeader);
@@ -1486,22 +1567,40 @@ namespace Slang
             ValidateFunctionRedeclaration(functionNode);
         }
 
-        virtual RefPtr<StatementSyntaxNode> VisitBlockStatement(BlockStatementSyntaxNode *stmt) override
+        void visit(VarDeclrStatementSyntaxNode* stmt)
         {
-            for (auto & node : stmt->Statements)
+            // We directly dispatch here instead of using `EnsureDecl()` for two
+            // reasons:
+            //
+            // 1. We expect that a local declaration won't have been referenced
+            // before it is declared, so that we can just check things in-order
+            //
+            // 2. `EnsureDecl()` is specialized for `Decl*` instead of `DeclBase*`
+            // and trying to special case `DeclGroup*` here feels silly.
+            //
+            DeclVisitor::dispatch(stmt->decl);
+        }
+
+        void visit(BlockStmt* stmt)
+        {
+            checkStmt(stmt->body);
+        }
+
+        void visit(SeqStmt* stmt)
+        {
+            for(auto ss : stmt->stmts)
             {
-                node->Accept(this);
+                checkStmt(ss);
             }
-            return stmt;
         }
 
         template<typename T>
         T* FindOuterStmt()
         {
-            int outerStmtCount = outerStmts.Count();
-            for (int ii = outerStmtCount - 1; ii >= 0; --ii)
+            UInt outerStmtCount = outerStmts.Count();
+            for (UInt ii = outerStmtCount; ii > 0; --ii)
             {
-                auto outerStmt = outerStmts[ii];
+                auto outerStmt = outerStmts[ii-1];
                 auto found = dynamic_cast<T*>(outerStmt);
                 if (found)
                     return found;
@@ -1509,7 +1608,7 @@ namespace Slang
             return nullptr;
         }
 
-        virtual RefPtr<StatementSyntaxNode> VisitBreakStatement(BreakStatementSyntaxNode *stmt) override
+        void visit(BreakStatementSyntaxNode *stmt)
         {
             auto outer = FindOuterStmt<BreakableStmt>();
             if (!outer)
@@ -1517,9 +1616,8 @@ namespace Slang
                 getSink()->diagnose(stmt, Diagnostics::breakOutsideLoop);
             }
             stmt->parentStmt = outer;
-            return stmt;
         }
-        virtual RefPtr<StatementSyntaxNode> VisitContinueStatement(ContinueStatementSyntaxNode *stmt) override
+        void visit(ContinueStatementSyntaxNode *stmt)
         {
             auto outer = FindOuterStmt<LoopStmt>();
             if (!outer)
@@ -1527,7 +1625,6 @@ namespace Slang
                 getSink()->diagnose(stmt, Diagnostics::continueOutsideLoop);
             }
             stmt->parentStmt = outer;
-            return stmt;
         }
 
         void PushOuterStmt(StatementSyntaxNode* stmt)
@@ -1540,59 +1637,55 @@ namespace Slang
             outerStmts.RemoveAt(outerStmts.Count() - 1);
         }
 
-        virtual RefPtr<StatementSyntaxNode> VisitDoWhileStatement(DoWhileStatementSyntaxNode *stmt) override
+        RefPtr<ExpressionSyntaxNode> checkPredicateExpr(ExpressionSyntaxNode* expr)
+        {
+            RefPtr<ExpressionSyntaxNode> e = expr;
+            e = CheckTerm(e);
+            e = Coerce(ExpressionType::GetBool(), e);
+            return e;
+        }
+
+        void visit(DoWhileStatementSyntaxNode *stmt)
         {
             PushOuterStmt(stmt);
-            if (stmt->Predicate != NULL)
-                stmt->Predicate = stmt->Predicate->Accept(this).As<ExpressionSyntaxNode>();
-            if (!stmt->Predicate->Type->Equals(ExpressionType::GetError()) &&
-                !stmt->Predicate->Type->Equals(ExpressionType::GetInt()) &&
-                !stmt->Predicate->Type->Equals(ExpressionType::GetBool()))
-            {
-                getSink()->diagnose(stmt, Diagnostics::whilePredicateTypeError);
-            }
-            stmt->Statement->Accept(this);
+            stmt->Predicate = checkPredicateExpr(stmt->Predicate);
+            checkStmt(stmt->Statement);
 
             PopOuterStmt(stmt);
-            return stmt;
         }
-        virtual RefPtr<StatementSyntaxNode> VisitForStatement(ForStatementSyntaxNode *stmt) override
+        void visit(ForStatementSyntaxNode *stmt)
         {
             PushOuterStmt(stmt);
-            if (stmt->InitialStatement)
-            {
-                stmt->InitialStatement = stmt->InitialStatement->Accept(this).As<StatementSyntaxNode>();
-            }
+            checkStmt(stmt->InitialStatement);
             if (stmt->PredicateExpression)
             {
-                stmt->PredicateExpression = stmt->PredicateExpression->Accept(this).As<ExpressionSyntaxNode>();
-                if (!stmt->PredicateExpression->Type->Equals(ExpressionType::GetBool()) &&
-                    !stmt->PredicateExpression->Type->Equals(ExpressionType::GetInt()) &&
-                    !stmt->PredicateExpression->Type->Equals(ExpressionType::GetUInt()))
-                {
-                    getSink()->diagnose(stmt->PredicateExpression.Ptr(), Diagnostics::forPredicateTypeError);
-                }
+                stmt->PredicateExpression = checkPredicateExpr(stmt->PredicateExpression);
             }
             if (stmt->SideEffectExpression)
             {
-                stmt->SideEffectExpression = stmt->SideEffectExpression->Accept(this).As<ExpressionSyntaxNode>();
+                stmt->SideEffectExpression = CheckExpr(stmt->SideEffectExpression);
             }
-            stmt->Statement->Accept(this);
+            checkStmt(stmt->Statement);
 
             PopOuterStmt(stmt);
-            return stmt;
         }
-        virtual RefPtr<SwitchStmt> VisitSwitchStmt(SwitchStmt* stmt) override
+        void visit(SwitchStmt* stmt)
         {
             PushOuterStmt(stmt);
             // TODO(tfoley): need to coerce condition to an integral type...
             stmt->condition = CheckExpr(stmt->condition);
-            stmt->body->Accept(this);
+            checkStmt(stmt->body);
+
+            // TODO(tfoley): need to check that all case tags are unique
+
+            // TODO(tfoley): check that there is at most one `default` clause
+
             PopOuterStmt(stmt);
-            return stmt;
         }
-        virtual RefPtr<CaseStmt> VisitCaseStmt(CaseStmt* stmt) override
+        void visit(CaseStmt* stmt)
         {
+            // TODO(tfoley): Need to coerce to type being switch on,
+            // and ensure that value is a compile-time constant
             auto expr = CheckExpr(stmt->expr);
             auto switchStmt = FindOuterStmt<SwitchStmt>();
 
@@ -1608,10 +1701,8 @@ namespace Slang
 
             stmt->expr = expr;
             stmt->parentStmt = switchStmt;
-
-            return stmt;
         }
-        virtual RefPtr<DefaultStmt> VisitDefaultStmt(DefaultStmt* stmt) override
+        void visit(DefaultStmt* stmt)
         {
             auto switchStmt = FindOuterStmt<SwitchStmt>();
             if (!switchStmt)
@@ -1619,33 +1710,31 @@ namespace Slang
                 getSink()->diagnose(stmt, Diagnostics::defaultOutsideSwitch);
             }
             stmt->parentStmt = switchStmt;
-            return stmt;
         }
-        virtual RefPtr<StatementSyntaxNode> VisitIfStatement(IfStatementSyntaxNode *stmt) override
+        void visit(IfStatementSyntaxNode *stmt)
         {
-            auto condition = stmt->Predicate;
-            condition = CheckTerm(condition);
-            condition = Coerce(ExpressionType::GetBool(), condition);
-
-            stmt->Predicate = condition;
-
-#if 0
-            if (stmt->Predicate != NULL)
-                stmt->Predicate = stmt->Predicate->Accept(this).As<ExpressionSyntaxNode>();
-            if (!stmt->Predicate->Type->Equals(ExpressionType::GetError())
-                && (!stmt->Predicate->Type->Equals(ExpressionType::GetInt()) &&
-                    !stmt->Predicate->Type->Equals(ExpressionType::GetBool())))
-                getSink()->diagnose(stmt, Diagnostics::ifPredicateTypeError);
-#endif
-
-            if (stmt->PositiveStatement != NULL)
-                stmt->PositiveStatement->Accept(this);
-
-            if (stmt->NegativeStatement != NULL)
-                stmt->NegativeStatement->Accept(this);
-            return stmt;
+            stmt->Predicate = checkPredicateExpr(stmt->Predicate);
+            checkStmt(stmt->PositiveStatement);
+            checkStmt(stmt->NegativeStatement);
         }
-        virtual RefPtr<StatementSyntaxNode> VisitReturnStatement(ReturnStatementSyntaxNode *stmt) override
+
+        void visit(UnparsedStmt*)
+        {
+            // Nothing to do
+        }
+
+
+        void visit(EmptyStatementSyntaxNode*)
+        {
+            // Nothing to do
+        }
+
+        void visit(DiscardStatementSyntaxNode*)
+        {
+            // Nothing to do
+        }
+
+        void visit(ReturnStatementSyntaxNode *stmt)
         {
             if (!stmt->Expression)
             {
@@ -1654,12 +1743,12 @@ namespace Slang
             }
             else
             {
-                stmt->Expression = stmt->Expression->Accept(this).As<ExpressionSyntaxNode>();
+                stmt->Expression = CheckTerm(stmt->Expression);
                 if (!stmt->Expression->Type->Equals(ExpressionType::Error.Ptr()))
                 {
                     if (function)
                     {
-                        stmt->Expression = Coerce(function->ReturnType, stmt->Expression);
+                        stmt->Expression = Coerce(function->ReturnType.Ptr(), stmt->Expression);
                     }
                     else
                     {
@@ -1671,10 +1760,9 @@ namespace Slang
                     }
                 }
             }
-            return stmt;
         }
 
-        int GetMinBound(RefPtr<IntVal> val)
+        IntegerLiteralValue GetMinBound(RefPtr<IntVal> val)
         {
             if (auto constantVal = val.As<ConstantIntVal>())
                 return constantVal->value;
@@ -1749,7 +1837,7 @@ namespace Slang
             }
         }
 
-        virtual RefPtr<Variable> VisitDeclrVariable(Variable* varDecl)
+        void visit(Variable* varDecl)
         {
             TypeExp typeExp = CheckUsableType(varDecl->Type);
 #if 0
@@ -1792,92 +1880,31 @@ namespace Slang
                 // TODO(tfoley): should coercion of initializer lists be special-cased
                 // here, or handled as a general case for coercion?
 
-                initExpr = Coerce(varDecl->Type, initExpr);
+                initExpr = Coerce(varDecl->Type.Ptr(), initExpr);
                 varDecl->Expr = initExpr;
             }
 
             varDecl->SetCheckState(DeclCheckState::Checked);
-
-            return varDecl;
         }
 
-        virtual RefPtr<StatementSyntaxNode> VisitWhileStatement(WhileStatementSyntaxNode *stmt) override
+        void visit(WhileStatementSyntaxNode *stmt)
         {
             PushOuterStmt(stmt);
-            stmt->Predicate = stmt->Predicate->Accept(this).As<ExpressionSyntaxNode>();
-            if (!stmt->Predicate->Type->Equals(ExpressionType::GetError()) &&
-                !stmt->Predicate->Type->Equals(ExpressionType::GetInt()) &&
-                !stmt->Predicate->Type->Equals(ExpressionType::GetBool()))
-                getSink()->diagnose(stmt, Diagnostics::whilePredicateTypeError2);
-
-            stmt->Statement->Accept(this);
+            stmt->Predicate = checkPredicateExpr(stmt->Predicate);
+            checkStmt(stmt->Statement);
             PopOuterStmt(stmt);
-            return stmt;
         }
-        virtual RefPtr<StatementSyntaxNode> VisitExpressionStatement(ExpressionStatementSyntaxNode *stmt) override
+        void visit(ExpressionStatementSyntaxNode *stmt)
         {
-            stmt->Expression = stmt->Expression->Accept(this).As<ExpressionSyntaxNode>();
-            return stmt;
+            stmt->Expression = CheckExpr(stmt->Expression);
         }
-        virtual RefPtr<ExpressionSyntaxNode> VisitOperatorExpression(OperatorExpressionSyntaxNode *expr) override
+
+        RefPtr<ExpressionSyntaxNode> visit(ConstantExpressionSyntaxNode *expr)
         {
-#if 0
+            // The expression might already have a type, determined by its suffix
+            if(expr->Type.type)
+                return expr;
 
-            for (int i = 0; i < expr->Arguments.Count(); i++)
-                expr->Arguments[i] = expr->Arguments[i]->Accept(this).As<ExpressionSyntaxNode>();
-            auto & leftType = expr->Arguments[0]->Type;
-            QualType rightType;
-            if (expr->Arguments.Count() == 2)
-                rightType = expr->Arguments[1]->Type;
-            RefPtr<ExpressionType> matchedType;
-            auto checkAssign = [&]()
-            {
-                if (!leftType.IsLeftValue &&
-                    !leftType->Equals(ExpressionType::Error.Ptr()))
-                    getSink()->diagnose(expr->Arguments[0].Ptr(), Diagnostics::assignNonLValue);
-                if (expr->Operator == Operator::AndAssign ||
-                    expr->Operator == Operator::OrAssign ||
-                    expr->Operator == Operator::XorAssign ||
-                    expr->Operator == Operator::LshAssign ||
-                    expr->Operator == Operator::RshAssign)
-                {
-#if 0
-                    if (!(leftType->IsIntegral() && rightType->IsIntegral()))
-                    {
-                        // TODO(tfoley): This diagnostic shouldn't be handled here
-//                            getSink()->diagnose(expr, Diagnostics::bitOperationNonIntegral);
-                    }
-#endif
-                }
-
-                // TODO(tfoley): Need to actual insert coercion here...
-                if(CanCoerce(leftType, expr->Type))
-                    expr->Type = leftType;
-                else
-                    expr->Type = ExpressionType::Error;
-            };
-#if 0
-            if (expr->Operator == Operator::Assign)
-            {
-                expr->Type = rightType;
-                checkAssign();
-            }
-            else
-#endif
-            {
-                expr->FunctionExpr = CheckExpr(expr->FunctionExpr);
-                CheckInvokeExprWithCheckedOperands(expr);
-                if (expr->Operator > Operator::Assign)
-                    checkAssign();
-            }
-            return expr;
-#endif
-
-            // Treat operator application just like a function call
-            return VisitInvokeExpression(expr);
-        }
-        virtual RefPtr<ExpressionSyntaxNode> VisitConstantExpression(ConstantExpressionSyntaxNode *expr) override
-        {
             switch (expr->ConstType)
             {
             case ConstantExpressionSyntaxNode::ConstantType::Int:
@@ -1890,7 +1917,7 @@ namespace Slang
                 expr->Type = ExpressionType::GetFloat();
                 break;
             default:
-                expr->Type = ExpressionType::Error;
+                expr->Type = QualType(ExpressionType::Error);
                 throw "Invalid constant type.";
                 break;
             }
@@ -1900,7 +1927,7 @@ namespace Slang
         IntVal* GetIntVal(ConstantExpressionSyntaxNode* expr)
         {
             // TODO(tfoley): don't keep allocating here!
-            return new ConstantIntVal(expr->IntValue);
+            return new ConstantIntVal(expr->integerValue);
         }
 
         RefPtr<IntVal> TryConstantFoldExpr(
@@ -1926,7 +1953,7 @@ namespace Slang
 
             // Before checking the operation name, let's look at the arguments
             RefPtr<IntVal> argVals[kMaxArgs];
-            int constArgVals[kMaxArgs];
+            IntegerLiteralValue constArgVals[kMaxArgs];
             int argCount = 0;
             bool allConst = true;
             for (auto argExpr : invokeExpr->Arguments)
@@ -1964,7 +1991,7 @@ namespace Slang
             }
 
             // At this point, all the operands had simple integer values, so we are golden.
-            int resultValue = 0;
+            IntegerLiteralValue resultValue = 0;
             auto opName = funcDeclRef.GetName();
 
             // handle binary operators
@@ -2040,7 +2067,7 @@ namespace Slang
                 {
                     auto varDecl = varRef.getDecl();
 
-                    switch(sourceLanguage)
+                    switch(getSourceLanguage())
                     {
                     case SourceLanguage::Slang:
                     case SourceLanguage::HLSL:
@@ -2154,7 +2181,7 @@ namespace Slang
                 return CreateErrorExpr(subscriptExpr.Ptr());
             }
 
-            subscriptExpr->Type = elementType;
+            subscriptExpr->Type = QualType(elementType);
 
             // TODO(tfoley): need to be more careful about this stuff
             subscriptExpr->Type.IsLeftValue = baseExpr->Type.IsLeftValue;
@@ -2189,7 +2216,7 @@ namespace Slang
             return DeclRefType::Create(declRef)->As<VectorExpressionType>();
         }
 
-        virtual RefPtr<ExpressionSyntaxNode> VisitIndexExpression(IndexExpressionSyntaxNode* subscriptExpr) override
+        RefPtr<ExpressionSyntaxNode> visit(IndexExpressionSyntaxNode* subscriptExpr)
         {
             auto baseExpr = subscriptExpr->BaseExpression;
             baseExpr = CheckExpr(baseExpr);
@@ -2224,7 +2251,7 @@ namespace Slang
 
                 auto elementType = CoerceToUsableType(TypeExp(baseExpr, baseTypeType->type));
                 auto arrayType = new ArrayExpressionType();
-                arrayType->BaseType = elementType;
+                arrayType->BaseType = elementType.Ptr();
                 arrayType->ArrayLength = elementCount;
 
                 typeResult = arrayType;
@@ -2268,7 +2295,7 @@ namespace Slang
 
                     // Note(tfoley): The name used for lookup here is a bit magical, since
                     // it must match what the parser installed in subscript declarations.
-                    LookupResult lookupResult = LookUpLocal("operator[]", aggTypeDeclRef);
+                    LookupResult lookupResult = LookUpLocal(this, "operator[]", aggTypeDeclRef);
                     if (!lookupResult.isValid())
                     {
                         goto fail;
@@ -2388,14 +2415,32 @@ namespace Slang
         {
             // TODO(tfoley): Actual checking logic needs to go here...
 
-            appExpr->Type = type;
+            appExpr->Type = QualType(type);
             return appExpr;
+        }
+
+        //
+
+        RefPtr<ExpressionSyntaxNode> visit(AssignExpr* expr)
+        {
+            expr->left = CheckExpr(expr->left);
+
+            auto type = expr->left->Type;
+
+            expr->right = Coerce(type, CheckTerm(expr->right));
+
+            if (!type.IsLeftValue)
+            {
+                getSink()->diagnose(expr, Diagnostics::assignNonLValue);
+            }
+            expr->Type = type;
+            return expr;
         }
 
 
         //
 
-        virtual void VisitExtensionDecl(ExtensionDecl* decl) override
+        void visit(ExtensionDecl* decl)
         {
             if (decl->IsChecked(DeclCheckState::Checked)) return;
 
@@ -2438,7 +2483,7 @@ namespace Slang
             decl->SetCheckState(DeclCheckState::Checked);
         }
 
-        virtual void VisitConstructorDecl(ConstructorDecl* decl) override
+        void visit(ConstructorDecl* decl)
         {
             if (decl->IsChecked(DeclCheckState::Checked)) return;
             decl->SetCheckState(DeclCheckState::CheckingHeader);
@@ -2454,7 +2499,7 @@ namespace Slang
         }
 
 
-        virtual void visitSubscriptDecl(SubscriptDecl* decl) override
+        void visit(SubscriptDecl* decl)
         {
             if (decl->IsChecked(DeclCheckState::Checked)) return;
             decl->SetCheckState(DeclCheckState::CheckingHeader);
@@ -2471,7 +2516,7 @@ namespace Slang
             decl->SetCheckState(DeclCheckState::Checked);
         }
 
-        virtual void visitAccessorDecl(AccessorDecl* decl) override
+        void visit(AccessorDecl* decl)
         {
             // TODO: check the body!
 
@@ -2943,8 +2988,8 @@ namespace Slang
 
         struct ParamCounts
         {
-            int required;
-            int allowed;
+            UInt required;
+            UInt allowed;
         };
 
         // count the number of parameters required/allowed for a callable
@@ -3003,7 +3048,7 @@ namespace Slang
             OverloadResolveContext&		context,
             OverloadCandidate const&	candidate)
         {
-            int argCount = context.appExpr->Arguments.Count();
+            UInt argCount = context.appExpr->Arguments.Count();
             ParamCounts paramCounts = { 0, 0 };
             switch (candidate.flavor)
             {
@@ -3142,7 +3187,7 @@ namespace Slang
             OverloadCandidate&		candidate)
         {
             auto& args = context.appExpr->Arguments;
-            int argCount = args.Count();
+            UInt argCount = args.Count();
 
             List<DeclRef<ParameterSyntaxNode>> params;
             switch (candidate.flavor)
@@ -3163,7 +3208,7 @@ namespace Slang
             // case where one or more parameters had defaults.
             assert(argCount <= params.Count());
 
-            for (int ii = 0; ii < argCount; ++ii)
+            for (UInt ii = 0; ii < argCount; ++ii)
             {
                 auto& arg = args[ii];
                 auto param = params[ii];
@@ -3277,7 +3322,7 @@ namespace Slang
             }
 
             context.mode = OverloadResolveContext::Mode::ForReal;
-            context.appExpr->Type = ExpressionType::Error;
+            context.appExpr->Type = QualType(ExpressionType::Error);
 
             if (!TryCheckOverloadCandidateArity(context, candidate))
                 goto error;
@@ -3299,7 +3344,7 @@ namespace Slang
                 {
                 case OverloadCandidate::Flavor::Func:
                     context.appExpr->FunctionExpr = baseExpr;
-                    context.appExpr->Type = candidate.resultType;
+                    context.appExpr->Type = QualType(candidate.resultType);
 
                     // A call may yield an l-value, and we should take a look at the candidate to be sure
                     if(auto subscriptDeclRef = candidate.item.declRef.As<SubscriptDecl>())
@@ -3365,7 +3410,7 @@ namespace Slang
                 bool anyFiltered = false;
                 // Note that we are querying the list length on every iteration,
                 // because we might remove things.
-                for (int cc = 0; cc < context.bestCandidates.Count(); ++cc)
+                for (UInt cc = 0; cc < context.bestCandidates.Count(); ++cc)
                 {
                     int cmp = CompareOverloadCandidates(&candidate, &context.bestCandidates[cc]);
                     if (cmp < 0)
@@ -3579,8 +3624,8 @@ namespace Slang
 
             // Their arguments must unify
             assert(fst->args.Count() == snd->args.Count());
-            int argCount = fst->args.Count();
-            for (int aa = 0; aa < argCount; ++aa)
+            UInt argCount = fst->args.Count();
+            for (UInt aa = 0; aa < argCount; ++aa)
             {
                 if (!TryUnifyVals(constraints, fst->args[aa], snd->args[aa]))
                     return false;
@@ -3758,7 +3803,7 @@ namespace Slang
             {
                 ConstraintSystem constraints;
 
-                if (!TryUnifyTypes(constraints, extDecl->targetType, type))
+                if (!TryUnifyTypes(constraints, extDecl->targetType.Ptr(), type))
                     return DeclRef<Decl>().As<ExtensionDecl>();
 
                 auto constraintSubst = TrySolveConstraintSystem(&constraints, DeclRef<Decl>(extGenericDecl, nullptr).As<GenericDecl>());
@@ -3820,8 +3865,8 @@ namespace Slang
                 auto& args = context.appExpr->Arguments;
                 auto params = GetParameters(funcDeclRef).ToArray();
 
-                int argCount = args.Count();
-                int paramCount = params.Count();
+                UInt argCount = args.Count();
+                UInt paramCount = params.Count();
 
                 // Bail out on mismatch.
                 // TODO(tfoley): need more nuance here
@@ -3830,7 +3875,7 @@ namespace Slang
                     return DeclRef<Decl>(nullptr, nullptr);
                 }
 
-                for (int aa = 0; aa < argCount; ++aa)
+                for (UInt aa = 0; aa < argCount; ++aa)
                 {
 #if 0
                     if (!TryUnifyArgAndParamTypes(constraints, args[aa], params[aa]))
@@ -4244,9 +4289,9 @@ namespace Slang
                     }
                 }
 
-                int candidateCount = context.bestCandidates.Count();
-                int maxCandidatesToPrint = 10; // don't show too many candidates at once...
-                int candidateIndex = 0;
+                UInt candidateCount = context.bestCandidates.Count();
+                UInt maxCandidatesToPrint = 10; // don't show too many candidates at once...
+                UInt candidateIndex = 0;
                 for (auto candidate : context.bestCandidates)
                 {
                     String declString = getDeclSignatureString(candidate.item);
@@ -4278,7 +4323,7 @@ namespace Slang
             {
                 // Nothing at all was found that we could even consider invoking
                 getSink()->diagnose(expr->FunctionExpr, Diagnostics::expectedFunction);
-                expr->Type = ExpressionType::Error;
+                expr->Type = QualType(ExpressionType::Error);
                 return expr;
             }
         }
@@ -4324,7 +4369,7 @@ namespace Slang
             }
         }
 
-        RefPtr<ExpressionSyntaxNode> VisitGenericApp(GenericAppExpr * genericAppExpr) override
+        RefPtr<ExpressionSyntaxNode> visit(GenericAppExpr * genericAppExpr)
         {
             // We are applying a generic to arguments, but there might be multiple generic
             // declarations with the same name, so this becomes a specialized case of
@@ -4475,7 +4520,7 @@ namespace Slang
 #endif
         }
 
-        RefPtr<ExpressionSyntaxNode> VisitSharedTypeExpr(SharedTypeExpr* expr) override
+        RefPtr<ExpressionSyntaxNode> visit(SharedTypeExpr* expr)
         {
             if (!expr->Type.Ptr())
             {
@@ -4490,7 +4535,12 @@ namespace Slang
 
         RefPtr<ExpressionSyntaxNode> CheckExpr(RefPtr<ExpressionSyntaxNode> expr)
         {
-            return expr->Accept(this).As<ExpressionSyntaxNode>();
+            auto term = CheckTerm(expr);
+
+            // TODO(tfoley): Need a step here to ensure that the term actually
+            // resolves to a (single) expression with a real type.
+
+            return term;
         }
 
         RefPtr<ExpressionSyntaxNode> CheckInvokeExprWithCheckedOperands(InvokeExpressionSyntaxNode *expr)
@@ -4511,7 +4561,7 @@ namespace Slang
                     }
                     if (params)
                     {
-                        for (int i = 0; i < (*params).Count(); i++)
+                        for (UInt i = 0; i < (*params).Count(); i++)
                         {
                             if ((*params)[i]->HasModifier<OutModifier>())
                             {
@@ -4528,7 +4578,7 @@ namespace Slang
             return rs;
         }
 
-        virtual RefPtr<ExpressionSyntaxNode> VisitInvokeExpression(InvokeExpressionSyntaxNode *expr) override
+        RefPtr<ExpressionSyntaxNode> visit(InvokeExpressionSyntaxNode *expr)
         {
             // check the base expression first
             expr->FunctionExpr = CheckExpr(expr->FunctionExpr);
@@ -4543,15 +4593,15 @@ namespace Slang
         }
 
 
-        virtual RefPtr<ExpressionSyntaxNode> VisitVarExpression(VarExpressionSyntaxNode *expr) override
+        RefPtr<ExpressionSyntaxNode> visit(VarExpressionSyntaxNode *expr)
         {
             // If we've already resolved this expression, don't try again.
             if (expr->declRef)
                 return expr;
 
-            expr->Type = ExpressionType::Error;
+            expr->Type = QualType(ExpressionType::Error);
 
-            auto lookupResult = LookUp(expr->name, expr->scope);
+            auto lookupResult = LookUp(this, expr->name, expr->scope);
             if (lookupResult.isValid())
             {
                 return createLookupResultExpr(
@@ -4564,9 +4614,10 @@ namespace Slang
 
             return expr;
         }
-        virtual RefPtr<ExpressionSyntaxNode> VisitTypeCastExpression(TypeCastExpressionSyntaxNode * expr) override
+
+        RefPtr<ExpressionSyntaxNode> visit(TypeCastExpressionSyntaxNode * expr)
         {
-            expr->Expression = expr->Expression->Accept(this).As<ExpressionSyntaxNode>();
+            expr->Expression = CheckTerm(expr->Expression);
             auto targetType = CheckProperType(expr->TargetType);
             expr->TargetType = targetType;
 
@@ -4574,7 +4625,7 @@ namespace Slang
             if (expr->Expression->Type->Equals(ExpressionType::Error.Ptr()))
             {
                 // If the expression being casted has an error type, then just silently succeed
-                expr->Type = targetType;
+                expr->Type = targetType.Ptr();
                 return expr;
             }
             else if (auto targetArithType = targetType->AsArithmeticType())
@@ -4591,15 +4642,17 @@ namespace Slang
 
                     // TODO(tfoley): this checking is incomplete here, and could
                     // lead to downstream compilation failures
-                    expr->Type = targetType;
+                    expr->Type = targetType.Ptr();
                     return expr;
                 }
             }
+            // TODO: other cases? Should we allow a cast to succeeed whenever
+            // a single-argument constructor for the target type would work?
 
         fail:
             // Default: in no other case succeds, then the cast failed and we emit a diagnostic.
             getSink()->diagnose(expr, Diagnostics::invalidTypeCast, expr->Expression->Type, targetType->ToString());
-            expr->Type = ExpressionType::Error;
+            expr->Type = QualType(ExpressionType::Error);
             return expr;
         }
 #if TIMREMOVED
@@ -4635,6 +4688,34 @@ namespace Slang
                 &typeResult);
         }
 
+        //
+        // Some syntax nodes should not occur in the concrete input syntax,
+        // and will only appear *after* checking is complete. We need to
+        // deal with this cases here, even if they are no-ops.
+        //
+
+        RefPtr<ExpressionSyntaxNode> visit(DerefExpr* expr)
+        {
+            assert(!"unexpected");
+            return expr;
+        }
+
+        RefPtr<ExpressionSyntaxNode> visit(SwizzleExpr* expr)
+        {
+            assert(!"unexpected");
+            return expr;
+        }
+
+        RefPtr<ExpressionSyntaxNode> visit(OverloadedExpr* expr)
+        {
+            assert(!"unexpected");
+            return expr;
+        }
+
+        //
+        //
+        //
+
         RefPtr<ExpressionSyntaxNode> MaybeDereference(RefPtr<ExpressionSyntaxNode> inExpr)
         {
             RefPtr<ExpressionSyntaxNode> expr = inExpr;
@@ -4643,11 +4724,11 @@ namespace Slang
                 auto& type = expr->Type;
                 if (auto pointerLikeType = type->As<PointerLikeType>())
                 {
-                    type = pointerLikeType->elementType;
+                    type = QualType(pointerLikeType->elementType);
 
                     auto derefExpr = new DerefExpr();
                     derefExpr->base = expr;
-                    derefExpr->Type = pointerLikeType->elementType;
+                    derefExpr->Type = QualType(pointerLikeType->elementType);
 
                     // TODO(tfoley): deal with l-value-ness here
 
@@ -4661,15 +4742,15 @@ namespace Slang
         }
 
         RefPtr<ExpressionSyntaxNode> CheckSwizzleExpr(
-            MemberExpressionSyntaxNode*	memberRefExpr,
-            RefPtr<ExpressionType>		baseElementType,
-            int							baseElementCount)
+            MemberExpressionSyntaxNode* memberRefExpr,
+            RefPtr<ExpressionType>      baseElementType,
+            IntegerLiteralValue         baseElementCount)
         {
             RefPtr<SwizzleExpr> swizExpr = new SwizzleExpr();
             swizExpr->Position = memberRefExpr->Position;
             swizExpr->base = memberRefExpr->BaseExpression;
 
-            int limitElement = baseElementCount;
+            IntegerLiteralValue limitElement = baseElementCount;
 
             int elementIndices[4];
             int elementCount = 0;
@@ -4678,7 +4759,7 @@ namespace Slang
             bool anyDuplicates = false;
             bool anyError = false;
 
-            for (int i = 0; i < memberRefExpr->name.Length(); i++)
+            for (UInt i = 0; i < memberRefExpr->name.Length(); i++)
             {
                 auto ch = memberRefExpr->name[i];
                 int elementIndex = -1;
@@ -4725,7 +4806,7 @@ namespace Slang
 
             if (anyError)
             {
-                swizExpr->Type = ExpressionType::Error;
+                swizExpr->Type = QualType(ExpressionType::Error);
             }
             else if (elementCount == 1)
             {
@@ -4734,15 +4815,15 @@ namespace Slang
                 // Note(tfoley): the official HLSL rules seem to be that it produces
                 // a one-component vector, which is then implicitly convertible to
                 // a scalar, but that seems like it just adds complexity.
-                swizExpr->Type = baseElementType;
+                swizExpr->Type = QualType(baseElementType);
             }
             else
             {
                 // TODO(tfoley): would be nice to "re-sugar" type
                 // here if the input type had a sugared name...
-                swizExpr->Type = createVectorType(
+                swizExpr->Type = QualType(createVectorType(
                     baseElementType,
-                    new ConstantIntVal(elementCount));
+                    new ConstantIntVal(elementCount)));
             }
 
             // A swizzle can be used as an l-value as long as there
@@ -4769,7 +4850,7 @@ namespace Slang
         }
 
 
-        virtual RefPtr<ExpressionSyntaxNode> VisitMemberExpression(MemberExpressionSyntaxNode * expr) override
+        RefPtr<ExpressionSyntaxNode> visit(MemberExpressionSyntaxNode * expr)
         {
             expr->BaseExpression = CheckExpr(expr->BaseExpression);
 
@@ -4794,6 +4875,38 @@ namespace Slang
                     baseScalarType,
                     1);
             }
+            else if(auto typeType = baseType->As<TypeType>())
+            {
+                // We are looking up a member inside a type.
+                // We want to be careful here because we should only find members
+                // that are implicitly or explicitly `static`.
+                //
+                // TODO: this duplicates a *lot* of logic with the case below.
+                // We need to fix that.
+                auto type = typeType->type;
+                if(auto declRefType = type->AsDeclRefType())
+                {
+                    if (auto aggTypeDeclRef = declRefType->declRef.As<AggTypeDecl>())
+                    {
+                        // Checking of the type must be complete before we can reference its members safely
+                        EnsureDecl(aggTypeDeclRef.getDecl(), DeclCheckState::Checked);
+
+                        LookupResult lookupResult = LookUpLocal(this, expr->name, aggTypeDeclRef);
+                        if (!lookupResult.isValid())
+                        {
+                            goto fail;
+                        }
+
+                        // TODO: need to filter for declarations that are valid to refer
+                        // to in this context...
+
+                        return createLookupResultExpr(
+                            lookupResult,
+                            expr->BaseExpression,
+                            expr);
+                    }
+                }
+            }
             else if (auto declRefType = baseType->AsDeclRefType())
             {
                 if (auto aggTypeDeclRef = declRefType->declRef.As<AggTypeDecl>())
@@ -4801,8 +4914,7 @@ namespace Slang
                     // Checking of the type must be complete before we can reference its members safely
                     EnsureDecl(aggTypeDeclRef.getDecl(), DeclCheckState::Checked);
 
-
-                    LookupResult lookupResult = LookUpLocal(expr->name, aggTypeDeclRef);
+                    LookupResult lookupResult = LookUpLocal(this, expr->name, aggTypeDeclRef);
                     if (!lookupResult.isValid())
                     {
                         goto fail;
@@ -4812,101 +4924,19 @@ namespace Slang
                         lookupResult,
                         expr->BaseExpression,
                         expr);
-#if 0
-                    DeclRef<Decl> memberDeclRef(lookupResult.decl, aggTypeDeclRef.substitutions);
-                    return ConstructDeclRefExpr(memberDeclRef, expr->BaseExpression, expr);
-#endif
-
-#if 0
-
-
-                    // TODO(tfoley): It is unfortunate that the lookup strategy
-                    // here isn't unified with the ordinary `Scope` case.
-                    // In particular, if we add support for "transparent" declarations,
-                    // etc. here then we would need to add them in ordinary lookup
-                    // as well.
-
-                    Decl* memberDecl = nullptr; // The first declaration we found, if any
-                    Decl* secondDecl = nullptr; // Another declaration with the same name, if any
-                    for (auto m : aggTypeDeclRef.GetMembers())
-                    {
-                        if (m.GetName() != expr->MemberName)
-                            continue;
-
-                        if (!memberDecl)
-                        {
-                            memberDecl = m.getDecl();
-                        }
-                        else
-                        {
-                            secondDecl = m.getDecl();
-                            break;
-                        }
-                    }
-
-                    // If we didn't find any member, then we signal an error
-                    if (!memberDecl)
-                    {
-                        expr->Type = ExpressionType::Error;
-                        getSink()->diagnose(expr, Diagnostics::noMemberOfNameInType, expr->MemberName, baseType);
-                        return expr;
-                    }
-
-                    // If we found only a single member, then we are fine
-                    if (!secondDecl)
-                    {
-                        // TODO: need to
-                        DeclRef<Decl> memberDeclRef(memberDecl, aggTypeDeclRef.substitutions);
-
-                        expr->declRef = memberDeclRef;
-                        expr->Type = GetTypeForDeclRef(memberDeclRef);
-
-                        // When referencing a member variable, the result is an l-value
-                        // if and only if the base expression was.
-                        if (auto memberVarDecl = dynamic_cast<VarDeclBase*>(memberDecl))
-                        {
-                            expr->Type.IsLeftValue = expr->BaseExpression->Type.IsLeftValue;
-                        }
-                        return expr;
-                    }
-
-                    // We found multiple members with the same name, and need
-                    // to resolve the embiguity at some point...
-                    expr->Type = ExpressionType::Error;
-                    getSink()->diagnose(expr, Diagnostics::unimplemented, "ambiguous member reference");
-                    return expr;
-
-#endif
-
-#if 0
-
-                    StructField* field = structDecl->FindField(expr->MemberName);
-                    if (!field)
-                    {
-                        expr->Type = ExpressionType::Error;
-                        getSink()->diagnose(expr, Diagnostics::noMemberOfNameInType, expr->MemberName, baseType);
-                    }
-                    else
-                        expr->Type = field->Type;
-
-                    // A reference to a struct member is an l-value if the reference to the struct
-                    // value was also an l-value.
-                    expr->Type.IsLeftValue = expr->BaseExpression->Type.IsLeftValue;
-                    return expr;
-#endif
                 }
 
                 // catch-all
             fail:
                 getSink()->diagnose(expr, Diagnostics::noMemberOfNameInType, expr->name, baseType);
-                expr->Type = ExpressionType::Error;
+                expr->Type = QualType(ExpressionType::Error);
                 return expr;
             }
             // All remaining cases assume we have a `BasicType`
             else if (!baseType->AsBasicType())
-                expr->Type = ExpressionType::Error;
+                expr->Type = QualType(ExpressionType::Error);
             else
-                expr->Type = ExpressionType::Error;
+                expr->Type = QualType(ExpressionType::Error);
             if (!baseType->Equals(ExpressionType::Error.Ptr()) &&
                 expr->Type->Equals(ExpressionType::Error.Ptr()))
             {
@@ -4919,7 +4949,7 @@ namespace Slang
 
         //
 
-        virtual RefPtr<ExpressionSyntaxNode> visitInitializerListExpr(InitializerListExpr* expr) override
+        RefPtr<ExpressionSyntaxNode> visit(InitializerListExpr* expr)
         {
             // When faced with an initializer list, we first just check the sub-expressions blindly.
             // Actually making them conform to a desired type will wait for when we know the desired
@@ -4935,8 +4965,46 @@ namespace Slang
             return expr;
         }
 
-        virtual void visitImportDecl(ImportDecl* decl) override
+        void importModuleIntoScope(Scope* scope, ProgramSyntaxNode* moduleDecl)
         {
+            // If we've imported this one already, then
+            // skip the step where we modify the current scope.
+            if (importedModules.Contains(moduleDecl))
+            {
+                return;
+            }
+            importedModules.Add(moduleDecl);
+
+
+            // Create a new sub-scope to wire the module
+            // into our lookup chain.
+            auto subScope = new Scope();
+            subScope->containerDecl = moduleDecl;
+
+            subScope->nextSibling = scope->nextSibling;
+            scope->nextSibling = subScope;
+
+            // Also import any modules from nested `import` declarations
+            // with the `__exported` modifier
+            for (auto importDecl : moduleDecl->getMembersOfType<ImportDecl>())
+            {
+                if (!importDecl->HasModifier<ExportedModifier>())
+                    continue;
+
+                importModuleIntoScope(scope, importDecl->importedModuleDecl.Ptr());
+            }
+        }
+
+        void visit(EmptyDecl* /*decl*/)
+        {
+            // nothing to do
+        }
+
+        void visit(ImportDecl* decl)
+        {
+            if(decl->IsChecked(DeclCheckState::Checked))
+                return;
+
             // We need to look for a module with the specified name
             // (whether it has already been loaded, or needs to
             // be loaded), and then put its declarations into
@@ -4956,23 +5024,21 @@ namespace Slang
             // it later during code generation.
             decl->importedModuleDecl = importedModuleDecl;
 
-            // Create a new sub-scope to wire the module
-            // into our lookup chain.
-            auto subScope = new Scope();
-            subScope->containerDecl = importedModuleDecl.Ptr();
+            importModuleIntoScope(scope.Ptr(), importedModuleDecl.Ptr());
 
-            subScope->nextSibling = scope->nextSibling;
-            scope->nextSibling = subScope;
+            decl->SetCheckState(DeclCheckState::Checked);
         }
     };
 
-    SyntaxVisitor* CreateSemanticsVisitor(
-        DiagnosticSink*                 err,
-        CompileOptions const&           options,
-        TranslationUnitOptions const&   translationUnitOptions,
-        CompileRequest*                 request)
+    void checkTranslationUnit(
+        TranslationUnitRequest* translationUnit)
     {
-        return new SemanticsVisitor(err, options, translationUnitOptions, request);
+        SemanticsVisitor visitor(
+            &translationUnit->compileRequest->mSink,
+            translationUnit->compileRequest,
+            translationUnit);
+
+        visitor.checkDecl(translationUnit->SyntaxNode);
     }
 
     //
@@ -5033,7 +5099,7 @@ namespace Slang
         {
             sink->diagnose(declRef, Diagnostics::unimplemented, "cannot form reference to this kind of declaration");
         }
-        return ExpressionType::Error;
+        return QualType(ExpressionType::Error);
     }
 
     QualType getTypeForDeclRef(
@@ -5041,6 +5107,17 @@ namespace Slang
     {
         RefPtr<ExpressionType> typeResult;
         return getTypeForDeclRef(nullptr, nullptr, declRef, &typeResult);
+    }
+
+    DeclRef<ExtensionDecl> ApplyExtensionToType(
+        SemanticsVisitor*       semantics,
+        ExtensionDecl*          extDecl,
+        RefPtr<ExpressionType>  type)
+    {
+        if(!semantics)
+            return DeclRef<ExtensionDecl>();
+
+        return semantics->ApplyExtensionToType(extDecl, type);
     }
 
 }

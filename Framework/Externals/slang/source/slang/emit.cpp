@@ -1,6 +1,7 @@
 // emit.cpp
 #include "emit.h"
 
+#include "lower.h"
 #include "syntax.h"
 #include "type-layout.h"
 
@@ -13,8 +14,16 @@
 
 namespace Slang {
 
-struct EmitContext
+// Shared state for an entire emit session
+struct SharedEmitContext
 {
+    // The target language we want to generate code for
+    CodeGenTarget target;
+
+    // A set of words reserved by the target
+    Dictionary<String, String> reservedWords;
+
+    // The string of code we've built so far
     StringBuilder sb;
 
     // Current source position for tracking purposes...
@@ -22,18 +31,35 @@ struct EmitContext
     CodePosition nextSourceLocation;
     bool needToUpdateSourceLocation;
 
-    // The target language we want to generate code for
-    CodeGenTarget target;
-
-    // A set of words reserved by the target
-    Dictionary<String, String> reservedWords;
-
     // For GLSL output, we can't emit traidtional `#line` directives
     // with a file path in them, so we maintain a map that associates
     // each path with a unique integer, and then we output those
     // instead.
     Dictionary<String, int> mapGLSLSourcePathToID;
     int glslSourceIDCount = 0;
+
+    // We only want to emit each `import`ed module one time, so
+    // we maintain a set of already-emitted modules.
+    HashSet<ProgramSyntaxNode*> modulesAlreadyEmitted;
+
+    // We track the original global-scope layout so that we can
+    // find layout information for `import`ed parameters.
+    //
+    // TODO: This will probably change if we represent imports
+    // explicitly in the layout data.
+    StructTypeLayout*   globalStructLayout;
+
+    ProgramLayout*      programLayout;
+};
+
+struct EmitContext
+{
+    // The shared context that is in effect
+    SharedEmitContext* shared;
+
+    // Are we in "rewrite" mode, where we are trying to reproduce the input
+    // code as closely as posible?
+    bool isRewrite;
 };
 
 //
@@ -68,7 +94,7 @@ static void emitRawTextSpan(EmitContext* context, char const* textBegin, char co
     // TODO(tfoley): Need to make "corelib" not use `int` for pointer-sized things...
     auto len = int(textEnd - textBegin);
 
-    context->sb.Append(textBegin, len);
+    context->shared->sb.Append(textBegin, len);
 }
 
 static void emitRawText(EmitContext* context, char const* text)
@@ -88,7 +114,7 @@ static void emitTextSpan(EmitContext* context, char const* textBegin, char const
     // Update our logical position
     // TODO(tfoley): Need to make "corelib" not use `int` for pointer-sized things...
     auto len = int(textEnd - textBegin);
-    context->loc.Col += len;
+    context->shared->loc.Col += len;
 }
 
 static void Emit(EmitContext* context, char const* textBegin, char const* textEnd)
@@ -112,8 +138,8 @@ static void Emit(EmitContext* context, char const* textBegin, char const* textEn
             // At the end of a line, we need to update our tracking
             // information on code positions
             emitTextSpan(context, spanBegin, spanEnd);
-            context->loc.Line++;
-            context->loc.Col = 1;
+            context->shared->loc.Line++;
+            context->shared->loc.Col = 1;
 
             // Start a new span for emit purposes
             spanBegin = spanEnd;
@@ -133,7 +159,7 @@ static void emit(EmitContext* context, String const& text)
 
 static bool isReservedWord(EmitContext* context, String const& name)
 {
-    return context->reservedWords.TryGetValue(name) != nullptr;
+    return context->shared->reservedWords.TryGetValue(name) != nullptr;
 }
 
 static void emitName(
@@ -186,6 +212,14 @@ static void emitName(EmitContext* context, String const& name)
     emitName(context, name, CodePosition());
 }
 
+static void Emit(EmitContext* context, IntegerLiteralValue value)
+{
+    char buffer[32];
+    sprintf(buffer, "%lld", value);
+    Emit(context, buffer);
+}
+
+
 static void Emit(EmitContext* context, UInt value)
 {
     char buffer[32];
@@ -207,6 +241,8 @@ static void Emit(EmitContext* context, double value)
     sprintf(buffer, "%.20ff", value);
     Emit(context, buffer);
 }
+
+static void emitTokenWithLocation(EmitContext* context, Token const& token);
 
 // Expressions
 
@@ -428,7 +464,7 @@ static bool isTargetIntrinsicModifierApplicable(
     // we expect.
     auto const& targetName = targetToken.Content;
 
-    switch(context->target)
+    switch(context->shared->target)
     {
     default:
         assert(!"unexpected");
@@ -476,7 +512,7 @@ static String getStringOrIdentifierTokenValue(
     case TokenType::Identifier:
         return token.Content;
 
-    case TokenType::StringLiterial:
+    case TokenType::StringLiteral:
         return getStringLiteralTokenValue(token);
         break;
     }
@@ -513,8 +549,8 @@ static void emitSimpleCallExpr(
     }
 
     Emit(context, "(");
-    int argCount = callExpr->Arguments.Count();
-    for (int aa = 0; aa < argCount; ++aa)
+    UInt argCount = callExpr->Arguments.Count();
+    for (UInt aa = 0; aa < argCount; ++aa)
     {
         if (aa != 0) Emit(context, ", ");
         EmitExpr(context, callExpr->Arguments[aa]);
@@ -637,7 +673,7 @@ static void emitCallExpr(
             case IntrinsicOp::InnerProduct_Vector_Vector:
                 // HLSL allows `mul()` to be used as a synonym for `dot()`,
                 // so we need to translate to `dot` for GLSL
-                if (context->target == CodeGenTarget::GLSL)
+                if (context->shared->target == CodeGenTarget::GLSL)
                 {
                     Emit(context, "dot(");
                     EmitExpr(context, callExpr->Arguments[0]);
@@ -656,7 +692,7 @@ static void emitCallExpr(
                 //
                 // The other critical detail here is that the way we handle matrix
                 // conventions requires that the operands to the product be swapped.
-                if (context->target == CodeGenTarget::GLSL)
+                if (context->shared->target == CodeGenTarget::GLSL)
                 {
                     Emit(context, "((");
                     EmitExpr(context, callExpr->Arguments[1]);
@@ -685,8 +721,8 @@ static void emitCallExpr(
 
                     emit(context, name);
                     Emit(context, "(");
-                    int argCount = callExpr->Arguments.Count();
-                    for (int aa = 0; aa < argCount; ++aa)
+                    UInt argCount = callExpr->Arguments.Count();
+                    for (UInt aa = 0; aa < argCount; ++aa)
                     {
                         if (aa != 0) Emit(context, ", ");
                         EmitExpr(context, callExpr->Arguments[aa]);
@@ -698,7 +734,7 @@ static void emitCallExpr(
                 {
                     // General case: we are going to emit some more complex text.
 
-                    int argCount = callExpr->Arguments.Count();
+                    UInt argCount = callExpr->Arguments.Count();
 
                     Emit(context, "(");
 
@@ -719,7 +755,7 @@ static void emitCallExpr(
                         char d = *cursor++;
                         assert(('0' <= d) && (d <= '9'));
 
-                        int argIndex = d - '0';
+                        UInt argIndex = d - '0';
                         assert((0 <= argIndex) && (argIndex < argCount));
                         Emit(context, "(");
                         EmitExpr(context, callExpr->Arguments[argIndex]);
@@ -746,8 +782,8 @@ static void emitCallExpr(
                     Emit(context, "(");
                     EmitExpr(context, memberExpr->BaseExpression);
                     Emit(context, ")[");
-                    int argCount = callExpr->Arguments.Count();
-                    for (int aa = 0; aa < argCount; ++aa)
+                    UInt argCount = callExpr->Arguments.Count();
+                    for (UInt aa = 0; aa < argCount; ++aa)
                     {
                         if (aa != 0) Emit(context, ", ");
                         EmitExpr(context, callExpr->Arguments[aa]);
@@ -763,6 +799,34 @@ static void emitCallExpr(
     emitSimpleCallExpr(context, callExpr, outerPrec);
 }
 
+static void emitStringLiteral(
+    EmitContext*    context,
+    String const&   value)
+{
+    emit(context, "\"");
+    for (auto c : value)
+    {
+        // TODO: This needs a more complete implementation,
+        // especially if we want to support Unicode.
+
+        char buffer[] = { c, 0 };
+        switch (c)
+        {
+        default:
+            emit(context, buffer);
+            break;
+
+        case '\"': emit(context, "\\\"");
+        case '\'': emit(context, "\\\'");
+        case '\\': emit(context, "\\\\");
+        case '\n': emit(context, "\\n");
+        case '\r': emit(context, "\\r");
+        case '\t': emit(context, "\\t");
+        }
+    }
+    emit(context, "\"");
+}
+
 static void EmitExprWithPrecedence(EmitContext* context, RefPtr<ExpressionSyntaxNode> expr, int outerPrec)
 {
     bool needClose = false;
@@ -775,6 +839,13 @@ static void EmitExprWithPrecedence(EmitContext* context, RefPtr<ExpressionSyntax
         EmitExprWithPrecedence(context, selectExpr->Arguments[1], kPrecedence_Conditional);
         Emit(context, " : ");
         EmitExprWithPrecedence(context, selectExpr->Arguments[2], kPrecedence_Conditional);
+    }
+    else if (auto assignExpr = expr.As<AssignExpr>())
+    {
+        needClose = MaybeEmitParens(context, outerPrec, kPrecedence_Assign);
+        EmitExprWithPrecedence(context, assignExpr->left, kPrecedence_Assign);
+        Emit(context, " = ");
+        EmitExprWithPrecedence(context, assignExpr->right, kPrecedence_Assign);
     }
     else if (auto callExpr = expr.As<InvokeExpressionSyntaxNode>())
     {
@@ -861,16 +932,58 @@ static void EmitExprWithPrecedence(EmitContext* context, RefPtr<ExpressionSyntax
     {
         needClose = MaybeEmitParens(context, outerPrec, kPrecedence_Atomic);
 
+        char const* suffix = "";
+        auto type = litExpr->Type.type;
         switch (litExpr->ConstType)
         {
         case ConstantExpressionSyntaxNode::ConstantType::Int:
-            Emit(context, litExpr->IntValue);
+            if(!type)
+            {
+                // Special case for "rewrite" mode
+                emitTokenWithLocation(context, litExpr->token);
+                break;
+            }
+            if(type->Equals(ExpressionType::GetInt()))
+            {}
+            else if(type->Equals(ExpressionType::GetUInt()))
+            {
+                suffix = "u";
+            }
+            else
+            {
+                assert(!"unimplemented");
+            }
+            Emit(context, litExpr->integerValue);
+            Emit(context, suffix);
             break;
+
+
         case ConstantExpressionSyntaxNode::ConstantType::Float:
-            Emit(context, litExpr->FloatValue);
+            if(!type)
+            {
+                // Special case for "rewrite" mode
+                emitTokenWithLocation(context, litExpr->token);
+                break;
+            }
+            if(type->Equals(ExpressionType::GetFloat()))
+            {}
+            else if(type->Equals(ExpressionType::getDoubleType()))
+            {
+                suffix = "l";
+            }
+            else
+            {
+                assert(!"unimplemented");
+            }
+            Emit(context, litExpr->floatingPointValue);
+            Emit(context, suffix);
             break;
+
         case ConstantExpressionSyntaxNode::ConstantType::Bool:
-            Emit(context, litExpr->IntValue ? "true" : "false");
+            Emit(context, litExpr->integerValue ? "true" : "false");
+            break;
+        case ConstantExpressionSyntaxNode::ConstantType::String:
+            emitStringLiteral(context, litExpr->stringValue);
             break;
         default:
             assert(!"unreachable");
@@ -879,7 +992,7 @@ static void EmitExprWithPrecedence(EmitContext* context, RefPtr<ExpressionSyntax
     }
     else if (auto castExpr = expr.As<TypeCastExpressionSyntaxNode>())
     {
-        switch(context->target)
+        switch(context->shared->target)
         {
         case CodeGenTarget::GLSL:
             // GLSL requires constructor syntax for all conversions
@@ -1136,7 +1249,7 @@ static void emitTextureType(
     EmitContext*        context,
     RefPtr<TextureType> texType)
 {
-    switch(context->target)
+    switch(context->shared->target)
     {
     case CodeGenTarget::HLSL:
         emitHLSLTextureType(context, texType);
@@ -1156,7 +1269,7 @@ static void emitTextureSamplerType(
     EmitContext*                context,
     RefPtr<TextureSamplerType>  type)
 {
-    switch(context->target)
+    switch(context->shared->target)
     {
     case CodeGenTarget::GLSL:
         emitGLSLTextureSamplerType(context, type);
@@ -1172,7 +1285,7 @@ static void emitImageType(
     EmitContext*            context,
     RefPtr<GLSLImageType>   type)
 {
-    switch(context->target)
+    switch(context->shared->target)
     {
     case CodeGenTarget::HLSL:
         emitHLSLTextureType(context, type);
@@ -1209,7 +1322,7 @@ static void EmitType(EmitContext* context, RefPtr<ExpressionType> type, EDeclara
     }
     else if (auto vecType = type->As<VectorExpressionType>())
     {
-        switch(context->target)
+        switch(context->shared->target)
         {
         case CodeGenTarget::GLSL:
         case CodeGenTarget::GLSL_Vulkan:
@@ -1240,7 +1353,7 @@ static void EmitType(EmitContext* context, RefPtr<ExpressionType> type, EDeclara
     }
     else if (auto matType = type->As<MatrixExpressionType>())
     {
-        switch(context->target)
+        switch(context->shared->target)
         {
         case CodeGenTarget::GLSL:
         case CodeGenTarget::GLSL_Vulkan:
@@ -1295,7 +1408,7 @@ static void EmitType(EmitContext* context, RefPtr<ExpressionType> type, EDeclara
     }
     else if (auto samplerStateType = type->As<SamplerStateType>())
     {
-        switch(context->target)
+        switch(context->shared->target)
         {
         case CodeGenTarget::HLSL:
         default:
@@ -1370,12 +1483,6 @@ static void EmitType(EmitContext* context, RefPtr<ExpressionType> type, Token co
     EmitType(context, type, CodePosition(), nameToken.Content, nameToken.Position);
 }
 
-
-static void EmitType(EmitContext* context, RefPtr<ExpressionType> type, String const& name)
-{
-    EmitType(context, type, CodePosition(), name, CodePosition());
-}
-
 static void EmitType(EmitContext* context, RefPtr<ExpressionType> type)
 {
     EmitType(context, type, nullptr);
@@ -1383,20 +1490,17 @@ static void EmitType(EmitContext* context, RefPtr<ExpressionType> type)
 
 static void EmitType(EmitContext* context, TypeExp const& typeExp, Token const& nameToken)
 {
-    EmitType(context, typeExp.type, typeExp.exp->Position, nameToken.Content, nameToken.Position);
+    EmitType(context, typeExp.type,
+        typeExp.exp ? typeExp.exp->Position : CodePosition(),
+        nameToken.Content, nameToken.Position);
 }
 
 static void EmitType(EmitContext* context, TypeExp const& typeExp, String const& name)
 {
-    EmitType(context, typeExp.type, typeExp.exp->Position, name, CodePosition());
+    EmitType(context, typeExp.type,
+        typeExp.exp ? typeExp.exp->Position : CodePosition(),
+        name, CodePosition());
 }
-
-static void EmitType(EmitContext* context, TypeExp const& typeExp)
-{
-    advanceToSourceLocation(context, typeExp.exp->Position);
-    EmitType(context, typeExp.type, nullptr);
-}
-
 
 // Statements
 
@@ -1406,12 +1510,9 @@ static void EmitBlockStmt(EmitContext* context, RefPtr<StatementSyntaxNode> stmt
 {
     // TODO(tfoley): support indenting
     Emit(context, "{\n");
-    if( auto blockStmt = stmt.As<BlockStatementSyntaxNode>() )
+    if( auto blockStmt = stmt.As<BlockStmt>() )
     {
-        for (auto s : blockStmt->Statements)
-        {
-            EmitStmt(context, s);
-        }
+        EmitStmt(context, blockStmt->body);
     }
     else
     {
@@ -1453,7 +1554,7 @@ static void emitLineDirective(
 
     emitRawText(context, " ");
 
-    if(context->target == CodeGenTarget::GLSL)
+    if(context->shared->target == CodeGenTarget::GLSL)
     {
         auto path = sourceLocation.FileName;
 
@@ -1465,10 +1566,10 @@ static void emitLineDirective(
         // extension and then emit a traditional line directive.
 
         int id = 0;
-        if(!context->mapGLSLSourcePathToID.TryGetValue(path, id))
+        if(!context->shared->mapGLSLSourcePathToID.TryGetValue(path, id))
         {
-            id = context->glslSourceIDCount++;
-            context->mapGLSLSourcePathToID.Add(path, id);
+            id = context->shared->glslSourceIDCount++;
+            context->shared->mapGLSLSourcePathToID.Add(path, id);
         }
 
         sprintf(buffer, "%d", id);
@@ -1520,9 +1621,9 @@ static void emitLineDirectiveAndUpdateSourceLocation(
 {
     emitLineDirective(context, sourceLocation);
     
-    context->loc.FileName = sourceLocation.FileName;
-    context->loc.Line = sourceLocation.Line;
-    context->loc.Col = 1;
+    context->shared->loc.FileName = sourceLocation.FileName;
+    context->shared->loc.Line = sourceLocation.Line;
+    context->shared->loc.Col = 1;
 }
 
 static void emitLineDirectiveIfNeeded(
@@ -1537,24 +1638,24 @@ static void emitLineDirectiveIfNeeded(
     // a differnet file or line, *or* if the source location is
     // somehow later on the line than what we want to emit,
     // then we need to emit a new `#line` directive.
-    if(sourceLocation.FileName != context->loc.FileName
-        || sourceLocation.Line != context->loc.Line
-        || sourceLocation.Col < context->loc.Col)
+    if(sourceLocation.FileName != context->shared->loc.FileName
+        || sourceLocation.Line != context->shared->loc.Line
+        || sourceLocation.Col < context->shared->loc.Col)
     {
         // Special case: if we are in the same file, and within a small number
         // of lines of the target location, then go ahead and output newlines
         // to get us caught up.
         enum { kSmallLineCount = 3 };
-        auto lineDiff = sourceLocation.Line - context->loc.Line;
-        if(sourceLocation.FileName == context->loc.FileName
-            && sourceLocation.Line > context->loc.Line
+        auto lineDiff = sourceLocation.Line - context->shared->loc.Line;
+        if(sourceLocation.FileName == context->shared->loc.FileName
+            && sourceLocation.Line > context->shared->loc.Line
             && lineDiff <= kSmallLineCount)
         {
             for(int ii = 0; ii < lineDiff; ++ii )
             {
                 Emit(context, "\n");
             }
-            assert(sourceLocation.Line == context->loc.Line);
+            assert(sourceLocation.Line == context->shared->loc.Line);
         }
         else
         {
@@ -1570,14 +1671,14 @@ static void emitLineDirectiveIfNeeded(
     // came in as spaces or tabs, so there is necessarily going to be
     // coupling between how the downstream compiler counts columns,
     // and how we do.
-    if(sourceLocation.Col > context->loc.Col)
+    if(sourceLocation.Col > context->shared->loc.Col)
     {
-        int delta = sourceLocation.Col - context->loc.Col;
+        int delta = sourceLocation.Col - context->shared->loc.Col;
         for( int ii = 0; ii < delta; ++ii )
         {
             emitRawText(context, " ");
         }
-        context->loc.Col = sourceLocation.Col;
+        context->shared->loc.Col = sourceLocation.Col;
     }
 }
 
@@ -1589,22 +1690,22 @@ static void advanceToSourceLocation(
     if(sourceLocation.Line <= 0)
         return;
 
-    context->needToUpdateSourceLocation = true;
-    context->nextSourceLocation = sourceLocation;
+    context->shared->needToUpdateSourceLocation = true;
+    context->shared->nextSourceLocation = sourceLocation;
 }
 
 static void flushSourceLocationChange(
     EmitContext*        context)
 {
-    if(!context->needToUpdateSourceLocation)
+    if(!context->shared->needToUpdateSourceLocation)
         return;
 
     // Note: the order matters here, because trying to update
     // the source location may involve outputting text that
     // advances the location, and outputting text is what
     // triggers this flush operation.
-    context->needToUpdateSourceLocation = false;
-    emitLineDirectiveIfNeeded(context, context->nextSourceLocation);
+    context->shared->needToUpdateSourceLocation = false;
+    emitLineDirectiveIfNeeded(context, context->shared->nextSourceLocation);
 }
 
 static void emitTokenWithLocation(EmitContext* context, Token const& token)
@@ -1646,9 +1747,17 @@ static void EmitStmt(EmitContext* context, RefPtr<StatementSyntaxNode> stmt)
     // Try to ensure that debugging can find the right location
     advanceToSourceLocation(context, stmt->Position);
 
-    if (auto blockStmt = stmt.As<BlockStatementSyntaxNode>())
+    if (auto blockStmt = stmt.As<BlockStmt>())
     {
         EmitBlockStmt(context, blockStmt);
+        return;
+    }
+    else if (auto seqStmt = stmt.As<SeqStmt>())
+    {
+        for (auto ss : seqStmt->stmts)
+        {
+            EmitStmt(context, ss);
+        }
         return;
     }
     else if( auto unparsedStmt = stmt.As<UnparsedStmt>() )
@@ -1693,17 +1802,43 @@ static void EmitStmt(EmitContext* context, RefPtr<StatementSyntaxNode> stmt)
     }
     else if (auto forStmt = stmt.As<ForStatementSyntaxNode>())
     {
-        EmitLoopAttributes(context, forStmt);
+        // We are going to always take a `for` loop like:
+        //
+        //    for(A; B; C) { D }
+        //
+        // and emit it as:
+        //
+        //    { A; for(; B; C) { D } }
+        //
+        // This ensures that we are robust against any kind
+        // of statement appearing in `A`, including things
+        // that might occur due to lowering steps.
+        //
 
-        Emit(context, "for(");
-        if (auto initStmt = forStmt->InitialStatement)
+        // The one wrinkle is that HLSL implements the
+        // bad approach to scoping a `for` loop variable,
+        // so we need to avoid those outer `{...}` when
+        // we are generating HLSL via "rewrite" (that is,
+        // without our semantic checks).
+        //
+        bool brokenScoping = false;
+        if (context->shared->target == CodeGenTarget::HLSL
+            && context->isRewrite)
         {
+            brokenScoping = true;
+        }
+
+        auto initStmt = forStmt->InitialStatement;
+        if(initStmt)
+        {
+            if(!brokenScoping)
+                Emit(context, "{\n");
             EmitStmt(context, initStmt);
         }
-        else
-        {
-            Emit(context, ";");
-        }
+
+        EmitLoopAttributes(context, forStmt);
+
+        Emit(context, "for(;");
         if (auto testExp = forStmt->PredicateExpression)
         {
             EmitExpr(context, testExp);
@@ -1715,6 +1850,34 @@ static void EmitStmt(EmitContext* context, RefPtr<StatementSyntaxNode> stmt)
         }
         Emit(context, ")\n");
         EmitBlockStmt(context, forStmt->Statement);
+
+        if (initStmt)
+        {
+            if(!brokenScoping)
+                Emit(context, "}\n");
+        }
+
+        return;
+    }
+    else if (auto whileStmt = stmt.As<WhileStatementSyntaxNode>())
+    {
+        EmitLoopAttributes(context, whileStmt);
+
+        Emit(context, "while(");
+        EmitExpr(context, whileStmt->Predicate);
+        Emit(context, ")\n");
+        EmitBlockStmt(context, whileStmt->Statement);
+        return;
+    }
+    else if (auto doWhileStmt = stmt.As<DoWhileStatementSyntaxNode>())
+    {
+        EmitLoopAttributes(context, doWhileStmt);
+
+        Emit(context, "do(");
+        EmitBlockStmt(context, doWhileStmt->Statement);
+        Emit(context, " while(");
+        EmitExpr(context, doWhileStmt->Predicate);
+        Emit(context, ")\n");
         return;
     }
     else if (auto discardStmt = stmt.As<DiscardStatementSyntaxNode>())
@@ -1801,8 +1964,8 @@ static void EmitDeclRef(EmitContext* context, DeclRef<Decl> declRef)
 
         Substitutions* subst = declRef.substitutions.Ptr();
         Emit(context, "<");
-        int argCount = subst->args.Count();
-        for (int aa = 0; aa < argCount; ++aa)
+        UInt argCount = subst->args.Count();
+        for (UInt aa = 0; aa < argCount; ++aa)
         {
             if (aa != 0) Emit(context, ",");
             EmitVal(context, subst->args[aa]);
@@ -1891,7 +2054,7 @@ static void EmitModifiers(EmitContext* context, RefPtr<Decl> decl)
             if (argCount != 0)
             {
                 Emit(context, "(");
-                for (int aa = 0; aa < argCount; ++aa)
+                for (UInt aa = 0; aa < argCount; ++aa)
                 {
                     if (aa != 0) Emit(context, ", ");
                     EmitExpr(context, args[aa]);
@@ -1973,7 +2136,7 @@ static void EmitSemantic(EmitContext* context, RefPtr<HLSLSemantic> semantic, ES
 static void EmitSemantics(EmitContext* context, RefPtr<Decl> decl, ESemanticMask mask = kESemanticMask_Default )
 {
     // Don't emit semantics if we aren't translating down to HLSL
-    switch (context->target)
+    switch (context->shared->target)
     {
     case CodeGenTarget::HLSL:
         break;
@@ -2151,7 +2314,7 @@ static void emitHLSLRegisterSemantics(
 {
     if (!layout) return;
 
-    switch( context->target )
+    switch( context->shared->target )
     {
     default:
         return;
@@ -2164,6 +2327,25 @@ static void emitHLSLRegisterSemantics(
     {
         emitHLSLRegisterSemantic(context, rr);
     }
+}
+
+static RefPtr<VarLayout> maybeFetchLayout(
+    RefPtr<Decl>        decl,
+    RefPtr<VarLayout>   layout)
+{
+    // If we have already found layout info, don't go searching
+    if (layout) return layout;
+
+    // Otherwise, we need to look and see if computed layout
+    // information has been attached to the declaration.
+    auto modifier = decl->FindModifier<ComputedLayoutModifier>();
+    if (!modifier) return nullptr;
+
+    auto computedLayout = modifier->layout;
+    assert(computedLayout);
+
+    auto varLayout = computedLayout.As<VarLayout>();
+    return varLayout;
 }
 
 static void emitHLSLParameterBlockDecl(
@@ -2180,6 +2362,7 @@ static void emitHLSLParameterBlockDecl(
     assert(declRefType);
 
     // We expect to always have layout information
+    layout = maybeFetchLayout(varDecl, layout);
     assert(layout);
 
     // We expect the layout to be for a structured type...
@@ -2213,13 +2396,16 @@ static void emitHLSLParameterBlockDecl(
     Emit(context, "\n{\n");
     if (auto structRef = declRefType->declRef.As<StructSyntaxNode>())
     {
+        int fieldCounter = 0;
+
         for (auto field : getMembersOfType<StructField>(structRef))
         {
+            int fieldIndex = fieldCounter++;
+
             EmitVarDeclCommon(context, field);
 
-            RefPtr<VarLayout> fieldLayout;
-            structTypeLayout->mapVarToLayout.TryGetValue(field.getDecl(), fieldLayout);
-            assert(fieldLayout);
+            RefPtr<VarLayout> fieldLayout = structTypeLayout->fields[fieldIndex];
+            assert(fieldLayout->varDecl.GetName() == field.GetName());
 
             // Emit explicit layout annotations for every field
             for( auto rr : fieldLayout->resourceInfos )
@@ -2303,7 +2489,7 @@ emitGLSLLayoutQualifiers(
 {
     if(!layout) return;
 
-    switch( context->target )
+    switch( context->shared->target )
     {
     default:
         return;
@@ -2381,7 +2567,7 @@ static void emitGLSLParameterBlockDecl(
         {
             RefPtr<VarLayout> fieldLayout;
             structTypeLayout->mapVarToLayout.TryGetValue(field.getDecl(), fieldLayout);
-            assert(fieldLayout);
+//            assert(fieldLayout);
 
             // TODO(tfoley): We may want to emit *some* of these,
             // some of the time...
@@ -2409,7 +2595,7 @@ static void emitParameterBlockDecl(
     RefPtr<ParameterBlockType>  parameterBlockType,
     RefPtr<VarLayout>           layout)
 {
-    switch(context->target)
+    switch(context->shared->target)
     {
     case CodeGenTarget::HLSL:
         emitHLSLParameterBlockDecl(context, varDecl, parameterBlockType, layout);
@@ -2427,6 +2613,8 @@ static void emitParameterBlockDecl(
 
 static void EmitVarDecl(EmitContext* context, RefPtr<VarDeclBase> decl, RefPtr<VarLayout> layout)
 {
+    layout = maybeFetchLayout(decl, layout);
+
     // As a special case, a variable using a parameter block type
     // will be translated into a declaration using the more primitive
     // language syntax.
@@ -2494,7 +2682,7 @@ static void emitGLSLPreprocessorDirectives(
     EmitContext*                context,
     RefPtr<ProgramSyntaxNode>   program)
 {
-    switch(context->target)
+    switch(context->shared->target)
     {
     // Don't emit this stuff unless we are targetting GLSL
     default:
@@ -2546,74 +2734,6 @@ static void emitGLSLPreprocessorDirectives(
     // TODO: handle other cases...
 }
 
-static void EmitProgram(
-    EmitContext*                context,
-    RefPtr<ProgramSyntaxNode>   program,
-    RefPtr<ProgramLayout>       programLayout)
-{
-    // There may be global-scope modifiers that we should emit now
-    emitGLSLPreprocessorDirectives(context, program);
-
-    switch(context->target)
-    {
-    case CodeGenTarget::GLSL:
-        {
-            // TODO(tfoley): Need a plan for how to enable/disable these as needed...
-//            Emit(context, "#extension GL_GOOGLE_cpp_style_line_directive : require\n");
-        }
-        break;
-
-    default:
-        break;
-    }
-
-
-    // Layout information for the global scope is either an ordinary
-    // `struct` in the common case, or a constant buffer in the case
-    // where there were global-scope uniforms.
-    auto globalScopeLayout = programLayout->globalScopeLayout;
-    if( auto globalStructLayout = globalScopeLayout.As<StructTypeLayout>() )
-    {
-        // The `struct` case is easy enough to handle: we just
-        // emit all the declarations directly, using their layout
-        // information as a guideline.
-        EmitDeclsInContainerUsingLayout(context, program, globalStructLayout);
-    }
-    else if(auto globalConstantBufferLayout = globalScopeLayout.As<ParameterBlockTypeLayout>())
-    {
-        // TODO: the `cbuffer` case really needs to be emitted very
-        // carefully, but that is beyond the scope of what a simple rewriter
-        // can easily do (without semantic analysis, etc.).
-        //
-        // The crux of the problem is that we need to collect all the
-        // global-scope uniforms (but not declarations that don't involve
-        // uniform storage...) and put them in a single `cbuffer` declaration,
-        // so that we can give it an explicit location. The fields in that
-        // declaration might use various type declarations, so we'd really
-        // need to emit all the type declarations first, and that involves
-        // some large scale reorderings.
-        //
-        // For now we will punt and just emit the declarations normally,
-        // and hope that the global-scope block (`$Globals`) gets auto-assigned
-        // the same location that we manually asigned it.
-
-        auto elementTypeLayout = globalConstantBufferLayout->elementTypeLayout;
-        auto elementTypeStructLayout = elementTypeLayout.As<StructTypeLayout>();
-
-        // We expect all constant buffers to contain `struct` types for now
-        assert(elementTypeStructLayout);
-
-        EmitDeclsInContainerUsingLayout(
-            context,
-            program,
-            elementTypeStructLayout);
-    }
-    else
-    {
-        assert(!"unexpected");
-    }
-}
-
 static void EmitDeclImpl(EmitContext* context, RefPtr<Decl> decl, RefPtr<VarLayout> layout)
 {
     // Don't emit code for declarations that came from the stdlib.
@@ -2662,16 +2782,24 @@ static void EmitDeclImpl(EmitContext* context, RefPtr<Decl> decl, RefPtr<VarLayo
         // When in "rewriter" mode, we need to emit the code of the imported
         // module in-place at the `import` site.
 
-        auto moduleDecl = importDecl->importedModuleDecl;
+        auto moduleDecl = importDecl->importedModuleDecl.Ptr();
 
-        // TODO: do we need to modify the code generation environment at
-        // all when doing this recursive emit?
-        //
-        // TODO: what if we import the same module along two different
-        // paths? Probably need  logic to avoid emitting the same
-        // module more than once.
+        // We might import the same module along two different paths,
+        // so we need to be careful to only emit each module once
+        // per output.
+        if(!context->shared->modulesAlreadyEmitted.Contains(moduleDecl))
+        {
+            // Add the module to our set before emitting it, just
+            // in case a circular reference would lead us to
+            // infinite recursion (but that shouldn't be allowed
+            // in the first place).
+            context->shared->modulesAlreadyEmitted.Add(moduleDecl);
 
-        EmitDeclsInContainer(context, moduleDecl);
+            // TODO: do we need to modify the code generation environment at
+            // all when doing this recursive emit?
+
+            EmitDeclsInContainerUsingLayout(context, moduleDecl, context->shared->globalStructLayout);
+        }
 
         return;
     }
@@ -2715,7 +2843,7 @@ static void registerReservedWord(
     EmitContext*    context,
     String const&   name)
 {
-    context->reservedWords.Add(name, name);
+    context->shared->reservedWords.Add(name, name);
 }
 
 static void registerReservedWords(
@@ -2723,7 +2851,7 @@ static void registerReservedWords(
 {
 #define WORD(NAME) registerReservedWord(context, #NAME)
 
-    switch (context->target)
+    switch (context->shared->target)
     {
     case CodeGenTarget::GLSL:
         WORD(attribute);
@@ -2866,68 +2994,115 @@ static void registerReservedWords(
     }
 }
 
-String emitProgram(
-    ProgramSyntaxNode*  program,
+bool isRewriteRequest(
+    SourceLanguage  sourceLanguage,
+    CodeGenTarget   target);
+
+String emitEntryPoint(
+    EntryPointRequest*  entryPoint,
     ProgramLayout*      programLayout,
     CodeGenTarget       target)
 {
-    // TODO(tfoley): only emit symbols on-demand, as needed by a particular entry point
+    auto translationUnit = entryPoint->getTranslationUnit();
+
+    SharedEmitContext sharedContext;
+    sharedContext.target = target;
+
+    sharedContext.programLayout = programLayout;
+
+    // Layout information for the global scope is either an ordinary
+    // `struct` in the common case, or a constant buffer in the case
+    // where there were global-scope uniforms.
+    auto globalScopeLayout = programLayout->globalScopeLayout;
+    StructTypeLayout* globalStructLayout = nullptr;
+    if( auto gs = globalScopeLayout.As<StructTypeLayout>() )
+    {
+        globalStructLayout = gs.Ptr();
+    }
+    else if(auto globalConstantBufferLayout = globalScopeLayout.As<ParameterBlockTypeLayout>())
+    {
+        // TODO: the `cbuffer` case really needs to be emitted very
+        // carefully, but that is beyond the scope of what a simple rewriter
+        // can easily do (without semantic analysis, etc.).
+        //
+        // The crux of the problem is that we need to collect all the
+        // global-scope uniforms (but not declarations that don't involve
+        // uniform storage...) and put them in a single `cbuffer` declaration,
+        // so that we can give it an explicit location. The fields in that
+        // declaration might use various type declarations, so we'd really
+        // need to emit all the type declarations first, and that involves
+        // some large scale reorderings.
+        //
+        // For now we will punt and just emit the declarations normally,
+        // and hope that the global-scope block (`$Globals`) gets auto-assigned
+        // the same location that we manually asigned it.
+
+        auto elementTypeLayout = globalConstantBufferLayout->elementTypeLayout;
+        auto elementTypeStructLayout = elementTypeLayout.As<StructTypeLayout>();
+
+        // We expect all constant buffers to contain `struct` types for now
+        assert(elementTypeStructLayout);
+
+        globalStructLayout = elementTypeStructLayout.Ptr();
+    }
+    else
+    {
+        assert(!"unexpected");
+    }
+    sharedContext.globalStructLayout = globalStructLayout;
 
     EmitContext context;
-    context.target = target;
+    context.shared = &sharedContext;
+    context.isRewrite = isRewriteRequest(
+        translationUnit->sourceLanguage,
+        target);
 
+    // TODO: this should only need to take the shared context
     registerReservedWords(&context);
 
-    EmitProgram(&context, program, programLayout);
+    auto translationUnitSyntax = translationUnit->SyntaxNode.Ptr();
 
-    String code = context.sb.ProduceString();
 
-    return code;
+    // There may be global-scope modifiers that we should emit now
+    emitGLSLPreprocessorDirectives(&context, translationUnitSyntax);
 
-#if 0
-    // HACK(tfoley): Invoke the D3D HLSL compiler on the result, to validate it
-
-#ifdef _WIN32
+    switch(target)
     {
-        HMODULE d3dCompiler = LoadLibraryA("d3dcompiler_47");
-        assert(d3dCompiler);
-
-        pD3DCompile D3DCompile_ = (pD3DCompile)GetProcAddress(d3dCompiler, "D3DCompile");
-        assert(D3DCompile_);
-
-        ID3DBlob* codeBlob;
-        ID3DBlob* diagnosticsBlob;
-        HRESULT hr = D3DCompile_(
-            code.begin(),
-            code.Length(),
-            "slang",
-            nullptr,
-            nullptr,
-            "main",
-            "ps_5_0",
-            0,
-            0,
-            &codeBlob,
-            &diagnosticsBlob);
-        if (codeBlob) codeBlob->Release();
-        if (diagnosticsBlob)
+    case CodeGenTarget::GLSL:
         {
-            String diagnostics = (char const*) diagnosticsBlob->GetBufferPointer();
-            fprintf(stderr, "%s", diagnostics.begin());
-            OutputDebugStringA(diagnostics.begin());
-            diagnosticsBlob->Release();
+            // TODO(tfoley): Need a plan for how to enable/disable these as needed...
+//            Emit(context, "#extension GL_GOOGLE_cpp_style_line_directive : require\n");
         }
-        if (FAILED(hr))
-        {
-            int f = 9;
-        }
+        break;
+
+    default:
+        break;
     }
 
-    #include <d3dcompiler.h>
-#endif
+    auto lowered = lowerEntryPoint(entryPoint, programLayout, target);
+
+    EmitDeclsInContainer(&context, lowered.program.Ptr());
+
+#if 0
+    if( isRewrite )
+    {
+        // In rewrite mode, we will just emit the text of the translation unit as given,
+        // and not pay attention to the specific entry point that was requested.
+        //
+        // It is a user error to request GLSL output and have an entry point name
+        // other than `main`.
+        EmitDeclsInContainerUsingLayout(&context, translationUnitSyntax, globalStructLayout);
+    }
+    else
+    {
+        // We are being asked to emit a single entry point in "full" mode.
+        emitEntryPoint(&context, entryPoint);
+    }
 #endif
 
+    String code = sharedContext.sb.ProduceString();
+
+    return code;
 }
-
 
 } // namespace Slang

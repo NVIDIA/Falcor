@@ -32,6 +32,14 @@
 
 namespace Slang
 {
+
+    // EntryPointRequest
+
+    TranslationUnitRequest* EntryPointRequest::getTranslationUnit()
+    {
+        return compileRequest->translationUnits[translationUnitIndex].Ptr();
+    }
+
     //
 
     Profile Profile::LookUp(char const* name)
@@ -47,34 +55,92 @@ namespace Slang
 
     //
 
-    String EmitHLSL(ExtraContext& context)
+    String emitHLSLForEntryPoint(
+        EntryPointRequest*  entryPoint)
     {
-        if (context.getOptions().passThrough != PassThroughMode::None)
+        auto compileRequest = entryPoint->compileRequest;
+        auto translationUnit = entryPoint->getTranslationUnit();
+        if (compileRequest->passThrough != PassThroughMode::None)
         {
-            return context.sourceText;
+            // Generate a string that includes the content of
+            // the source file(s), along with a line directive
+            // to ensure that we get reasonable messages
+            // from the downstream compiler when in pass-through
+            // mode.
+
+            StringBuilder codeBuilder;
+            for(auto sourceFile : translationUnit->sourceFiles)
+            {
+                codeBuilder << "#line 1 \"";
+                for(auto c : sourceFile->path)
+                {
+                    char buffer[] = { c, 0 };
+                    switch(c)
+                    {
+                    default:
+                        codeBuilder << buffer;
+                        break;
+
+                    case '\\':
+                        codeBuilder << "\\\\";
+                    }
+                }
+                codeBuilder << "\"\n";
+                codeBuilder << sourceFile->content << "\n";
+            }
+
+            return codeBuilder.ProduceString();
         }
         else
         {
-            // TODO(tfoley): probably need a way to customize the emit logic...
-            return emitProgram(
-                context.programSyntax.Ptr(),
-                context.programLayout,
+            return emitEntryPoint(
+                entryPoint,
+                compileRequest->layout.Ptr(),
                 CodeGenTarget::HLSL);
         }
     }
 
-    String emitGLSLForEntryPoint(ExtraContext& context, EntryPointOption const& /*entryPoint*/)
+    String emitGLSLForEntryPoint(
+        EntryPointRequest*  entryPoint)
     {
-        if (context.getOptions().passThrough != PassThroughMode::None)
+        auto compileRequest = entryPoint->compileRequest;
+        auto translationUnit = entryPoint->getTranslationUnit();
+
+        if (compileRequest->passThrough != PassThroughMode::None)
         {
-            return context.sourceText;
+            // Generate a string that includes the content of
+            // the source file(s), along with a line directive
+            // to ensure that we get reasonable messages
+            // from the downstream compiler when in pass-through
+            // mode.
+
+            StringBuilder codeBuilder;
+            int translationUnitCounter = 0;
+            for(auto sourceFile : translationUnit->sourceFiles)
+            {
+                int translationUnitIndex = translationUnitCounter++;
+
+                // We want to output `#line` directives, but we need
+                // to skip this for the first file, since otherwise
+                // some GLSL implementations will get tripped up by
+                // not having the `#version` directive be the first
+                // thing in the file.
+                if(translationUnitIndex != 0)
+                {
+                    codeBuilder << "#line 1 " << translationUnitIndex << "\n";
+                }
+                codeBuilder << sourceFile->content << "\n";
+            }
+
+            return codeBuilder.ProduceString();
         }
         else
         {
-            // TODO(tfoley): probably need a way to customize the emit logic...
-            return emitProgram(
-                context.programSyntax.Ptr(),
-                context.programLayout,
+            // TODO(tfoley): need to pass along the entry point
+            // so that we properly emit it as the `main` function.
+            return emitEntryPoint(
+                entryPoint,
+                compileRequest->layout.Ptr(),
                 CodeGenTarget::GLSL);
         }
     }
@@ -103,8 +169,7 @@ namespace Slang
     }
 
     List<uint8_t> EmitDXBytecodeForEntryPoint(
-        ExtraContext&				context,
-        EntryPointOption const&		entryPoint)
+        EntryPointRequest*  entryPoint)
     {
         static pD3DCompile D3DCompile_ = nullptr;
         if (!D3DCompile_)
@@ -116,44 +181,18 @@ namespace Slang
             assert(D3DCompile_);
         }
 
-        // The HLSL compiler will try to "canonicalize" our input file path,
-        // and we don't want it to do that, because they it won't report
-        // the same locations on error messages that we would.
-        //
-        // To work around that, we prepend a custom `#line` directive.
-
-        String rawHlslCode = EmitHLSL(context);
-
-        StringBuilder hlslCodeBuilder;
-        hlslCodeBuilder << "#line 1 \"";
-        for(auto c : context.sourcePath)
-        {
-            char buffer[] = { c, 0 };
-            switch(c)
-            {
-            default:
-                hlslCodeBuilder << buffer;
-                break;
-
-            case '\\':
-                hlslCodeBuilder << "\\\\";
-            }
-        }
-        hlslCodeBuilder << "\"\n";
-        hlslCodeBuilder << rawHlslCode;
-
-        auto hlslCode = hlslCodeBuilder.ProduceString();
+        auto hlslCode = emitHLSLForEntryPoint(entryPoint);
 
         ID3DBlob* codeBlob;
         ID3DBlob* diagnosticsBlob;
         HRESULT hr = D3DCompile_(
             hlslCode.begin(),
             hlslCode.Length(),
-            context.sourcePath.begin(),
+            "slang",
             nullptr,
             nullptr,
-            entryPoint.name.begin(),
-            GetHLSLProfileName(entryPoint.profile),
+            entryPoint->name.begin(),
+            GetHLSLProfileName(entryPoint->profile),
             0,
             0,
             &codeBlob,
@@ -177,10 +216,12 @@ namespace Slang
         if (FAILED(hr))
         {
             // TODO(tfoley): What to do on failure?
+            exit(1);
         }
         return data;
     }
 
+#if 0
     List<uint8_t> EmitDXBytecode(
         ExtraContext&				context)
     {
@@ -200,10 +241,10 @@ namespace Slang
 
         return EmitDXBytecodeForEntryPoint(context, context.getTranslationUnitOptions().entryPoints[0]);
     }
+#endif
 
     String EmitDXBytecodeAssemblyForEntryPoint(
-        ExtraContext&				context,
-        EntryPointOption const&		entryPoint)
+        EntryPointRequest*  entryPoint)
     {
         static pD3DDisassemble D3DDisassemble_ = nullptr;
         if (!D3DDisassemble_)
@@ -215,7 +256,7 @@ namespace Slang
             assert(D3DDisassemble_);
         }
 
-        List<uint8_t> dxbc = EmitDXBytecodeForEntryPoint(context, entryPoint);
+        List<uint8_t> dxbc = EmitDXBytecodeForEntryPoint(entryPoint);
         if (!dxbc.Count())
         {
             return "";
@@ -242,7 +283,7 @@ namespace Slang
         return result;
     }
 
-
+#if 0
     String EmitDXBytecodeAssembly(
         ExtraContext&				context)
     {
@@ -260,6 +301,7 @@ namespace Slang
         }
         return sb.ProduceString();
     }
+#endif
 
 
     HMODULE getGLSLCompilerDLL()
@@ -273,10 +315,9 @@ namespace Slang
 
 
     String emitSPIRVAssemblyForEntryPoint(
-        ExtraContext&				context,
-        EntryPointOption const&		entryPoint)
+        EntryPointRequest*  entryPoint)
     {
-        String rawGLSL = emitGLSLForEntryPoint(context, entryPoint);
+        String rawGLSL = emitGLSLForEntryPoint(entryPoint);
 
         static glslang_CompileFunc glslang_compile = nullptr;
         if (!glslang_compile)
@@ -297,9 +338,9 @@ namespace Slang
         };
 
         glslang_CompileRequest request;
-        request.sourcePath = context.sourcePath.begin();
+        request.sourcePath = "slang";
         request.sourceText = rawGLSL.begin();
-        request.slangStage = (SlangStage) entryPoint.profile.GetStage();
+        request.slangStage = (SlangStage) entryPoint->profile.GetStage();
 
         request.diagnosticFunc = outputFunc;
         request.diagnosticUserData = &diagnosticBuilder;
@@ -323,6 +364,7 @@ namespace Slang
     }
 #endif
 
+#if 0
     String emitSPIRVAssembly(
         ExtraContext&				context)
     {
@@ -340,24 +382,35 @@ namespace Slang
         }
         return sb.ProduceString();
     }
+#endif
 
     // Do emit logic for a single entry point
-    EntryPointResult emitEntryPoint(ExtraContext& context, EntryPointOption& entryPoint)
+    EntryPointResult emitEntryPoint(
+        EntryPointRequest*  entryPoint)
     {
         EntryPointResult result;
 
-        switch (context.getOptions().Target)
+        auto compileRequest = entryPoint->compileRequest;
+
+        switch (compileRequest->Target)
         {
+        case CodeGenTarget::HLSL:
+            {
+                String code = emitHLSLForEntryPoint(entryPoint);
+                result.outputSource = code;
+            }
+            break;
+
         case CodeGenTarget::GLSL:
             {
-                String code = emitGLSLForEntryPoint(context, entryPoint);
+                String code = emitGLSLForEntryPoint(entryPoint);
                 result.outputSource = code;
             }
             break;
 
         case CodeGenTarget::DXBytecode:
             {
-                auto code = EmitDXBytecodeForEntryPoint(context, entryPoint);
+                auto code = EmitDXBytecodeForEntryPoint(entryPoint);
 
                 // TODO(tfoley): Need to figure out an appropriate interface
                 // for returning binary code, in addition to source.
@@ -396,14 +449,14 @@ namespace Slang
 
         case CodeGenTarget::DXBytecodeAssembly:
             {
-                String code = EmitDXBytecodeAssemblyForEntryPoint(context, entryPoint);
+                String code = EmitDXBytecodeAssemblyForEntryPoint(entryPoint);
                 result.outputSource = code;
             }
             break;
 
         case CodeGenTarget::SPIRVAssembly:
             {
-                String code = emitSPIRVAssemblyForEntryPoint(context, entryPoint);
+                String code = emitSPIRVAssemblyForEntryPoint(entryPoint);
                 result.outputSource = code;
             }
             break;
@@ -421,26 +474,28 @@ namespace Slang
 
     }
 
-    TranslationUnitResult emitTranslationUnitEntryPoints(ExtraContext& context)
+    TranslationUnitResult emitTranslationUnitEntryPoints(
+        TranslationUnitRequest* translationUnit)
     {
         TranslationUnitResult result;
 
-        for (auto& entryPoint : context.getTranslationUnitOptions().entryPoints)
+        for (auto& entryPoint : translationUnit->entryPoints)
         {
-            EntryPointResult entryPointResult = emitEntryPoint(context, entryPoint);
+            EntryPointResult entryPointResult = emitEntryPoint(entryPoint.Ptr());
 
-            result.entryPoints.Add(entryPointResult);
+            entryPoint->result = entryPointResult;
         }
 
         // The result for the translation unit will just be the concatenation
         // of the results for each entry point. This doesn't actually make
         // much sense, but it is good enough for now.
+        //
+        // TODO: Replace this with a packaged JSON and/or binary format.
         StringBuilder sb;
-        for (auto& entryPointResult : result.entryPoints)
+        for (auto& entryPoint : translationUnit->entryPoints)
         {
-            sb << entryPointResult.outputSource;
+            sb << entryPoint->result.outputSource;
         }
-
         result.outputSource = sb.ProduceString();
 
         return result;
@@ -448,78 +503,37 @@ namespace Slang
 
     // Do emit logic for an entire translation unit, which might
     // have zero or more entry points
-    TranslationUnitResult emitTranslationUnit(ExtraContext& context)
+    TranslationUnitResult emitTranslationUnit(
+        TranslationUnitRequest* translationUnit)
     {
-        // Most of our code generation targets will require us
-        // to proceed through one entry point at a time, but
-        // in some cases we can emit an entire translation unit
-        // in one go.
-
-        switch (context.getOptions().Target)
-        {
-        default:
-            // The default behavior is going to loop over all the entry
-            // points, and then collect an aggregate result.
-            return emitTranslationUnitEntryPoints(context);
-
-        case CodeGenTarget::HLSL:
-            // When targetting HLSL, we can emit the entire translation unit
-            // as a single HLSL program, and include all the entry points.
-            {
-
-                String hlsl = EmitHLSL(context);
-
-                TranslationUnitResult result;
-                result.outputSource = hlsl;
-
-                // Because the user might ask for per-entry-point source,
-                // we will just attach the same string as the result for
-                // each entry point.
-                for( auto& entryPoint : context.getTranslationUnitOptions().entryPoints )
-                {
-                    (void)entryPoint;
-
-                    EntryPointResult entryPointResult;
-                    entryPointResult.outputSource = hlsl;
-                    result.entryPoints.Add(entryPointResult);
-                }
-
-                return result;
-            }
-            break;
-        }
+        return emitTranslationUnitEntryPoints(translationUnit);
     }
 
+#if 0
     TranslationUnitResult generateOutput(ExtraContext& context)
     {
         TranslationUnitResult result = emitTranslationUnit(context);
         return result;
     }
+#endif
 
     void generateOutput(
-        ExtraContext&                   context,
-        CollectionOfTranslationUnits*   collectionOfTranslationUnits)
+        CompileRequest* compileRequest)
     {
-        switch (context.getOptions().Target)
+        switch (compileRequest->Target)
         {
         default:
             // For most targets, we will do things per-translation-unit
-            for( auto translationUnit : collectionOfTranslationUnits->translationUnits )
+            for( auto translationUnit : compileRequest->translationUnits )
             {
-                ExtraContext innerContext = context;
-                innerContext.translationUnitOptions = &translationUnit.options;
-                innerContext.programSyntax = translationUnit.SyntaxNode;
-                innerContext.sourcePath = "slang"; // don't have this any more!
-                innerContext.sourceText = "";
-
-                TranslationUnitResult translationUnitResult = generateOutput(innerContext);
-                context.compileResult->translationUnits.Add(translationUnitResult);
+                TranslationUnitResult translationUnitResult = emitTranslationUnit(translationUnit.Ptr());
+                translationUnit->result = translationUnitResult;
             }
             break;
 
         case CodeGenTarget::ReflectionJSON:
             {
-                String reflectionJSON = emitReflectionJSON(context.programLayout);
+                String reflectionJSON = emitReflectionJSON(compileRequest->layout.Ptr());
 
                 // HACK(tfoley): just print it out since that is what people probably expect.
                 // TODO: need a way to control where output gets routed across all possible targets.
@@ -528,20 +542,4 @@ namespace Slang
             break;
         }
     }
-
-    TranslationUnitResult passThrough(
-        String const&			sourceText,
-        String const&			sourcePath,
-        const CompileOptions &	options,
-        TranslationUnitOptions const& translationUnitOptions)
-    {
-        ExtraContext extra;
-        extra.options = &options;
-        extra.translationUnitOptions = &translationUnitOptions;
-        extra.sourcePath = sourcePath;
-        extra.sourceText = sourceText;
-
-        return generateOutput(extra);
-    }
-
 }

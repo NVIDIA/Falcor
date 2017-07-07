@@ -80,7 +80,7 @@ struct OptionsParser
     {
         auto translationUnitIndex = spAddTranslationUnit(compileRequest, language, nullptr);
 
-        assert(translationUnitIndex == rawTranslationUnits.Count());
+        assert(UInt(translationUnitIndex) == rawTranslationUnits.Count());
 
         RawTranslationUnit rawTranslationUnit;
         rawTranslationUnit.sourceLanguage = language;
@@ -238,7 +238,7 @@ struct OptionsParser
                     }
                     else
                     {
-                        fprintf(stderr, "unknown code generation target '%S'\n", name.ToWString());
+                        fprintf(stderr, "unknown code generation target '%S'\n", name.ToWString().begin());
                         exit(1);
                     }
 
@@ -302,7 +302,7 @@ struct OptionsParser
                     else if (name == "glslang") { passThrough = SLANG_PASS_THROUGH_GLSLANG; }
                     else
                     {
-                        fprintf(stderr, "unknown pass-through target '%S'\n", name.ToWString());
+                        fprintf(stderr, "unknown pass-through target '%S'\n", name.ToWString().begin());
                         exit(1);
                     }
 
@@ -375,14 +375,6 @@ struct OptionsParser
                         compileRequest,
                         String(includeDirStr).begin());
                 }
-                else if (argStr == "-auto-import-dir")
-                {
-                    char const* importDirStr = tryReadCommandLineArgumentRaw(arg, &argCursor, argEnd);
-
-                    spAddAutoImportPath(
-                        compileRequest,
-                        String(importDirStr).begin());
-                }
                 else if (argStr == "--")
                 {
                     // The `--` option causes us to stop trying to parse options,
@@ -395,7 +387,7 @@ struct OptionsParser
                 }
                 else
                 {
-                    fprintf(stderr, "unknown command-line option '%S'\n", argStr.ToWString());
+                    fprintf(stderr, "unknown command-line option '%S'\n", argStr.ToWString().begin());
                     // TODO: print a usage message
                     exit(1);
                 }
@@ -520,7 +512,7 @@ struct OptionsParser
             // Now place all those entry points where they belong
             for( auto& entryPoint : rawEntryPoints )
             {
-                spAddTranslationUnitEntryPoint(
+                spAddEntryPoint(
                     compileRequest,
                     entryPoint.translationUnitIndex,
                     entryPoint.name.begin(),
