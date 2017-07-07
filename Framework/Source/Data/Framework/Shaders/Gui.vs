@@ -28,8 +28,8 @@
 
 layout(set = 0, binding = 0) uniform PerFrameCB
 {
-	mat4 projMat;
-	vec3 textColor;
+    vec4 offset;
+    vec2 scale;
 };
 
 layout(location = 0) in vec2 pos;
@@ -43,6 +43,6 @@ void main()
 {
     color = colorIn;
     texC = texCIn;
-    gl_Position = projMat * vec4(pos, 0, 1);
-    gl_Position.y = -gl_Position.y;
+    gl_Position.xy = pos.xy * scale + offset.xy;
+    gl_Position.zw = vec2(0, 1);
 }

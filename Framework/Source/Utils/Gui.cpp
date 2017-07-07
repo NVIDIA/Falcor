@@ -86,7 +86,7 @@ namespace Falcor
             io.Fonts->AddFontFromFileTTF(fontFile.c_str(), 14);
         }
         io.Fonts->GetTexDataAsAlpha8(&pFontData, &width, &height);
-        Texture::SharedPtr pTexture = Texture::create2D(width, height, ResourceFormat::Alpha8Unorm, 1, 1, pFontData);
+        Texture::SharedPtr pTexture = Texture::create2D(width, height, ResourceFormat::R8Unorm, 1, 1, pFontData);
         mpProgramVars->setTexture("gFont", pTexture);
 
         // Create the blend state
@@ -96,7 +96,7 @@ namespace Falcor
 
         // Create the rasterizer state
         RasterizerState::Desc rsDesc;
-        rsDesc.setFillMode(RasterizerState::FillMode::Solid).setCullMode(RasterizerState::CullMode::None).setScissorTest(true).setDepthClamp(false);
+        rsDesc.setFillMode(RasterizerState::FillMode::Solid).setCullMode(RasterizerState::CullMode::None).setScissorTest(false).setDepthClamp(false);
         mpPipelineState->setRasterizerState(RasterizerState::create(rsDesc));
 
         // Create the depth-stencil state
@@ -118,7 +118,6 @@ namespace Falcor
         UniquePtr pGui = UniquePtr(new Gui);
         pGui->init();
         pGui->onWindowResize(width, height);
-        pGui->mpProgramVars->getConstantBuffer(0, 0)[64] = glm::vec3(1, 1, 1);
         ImGui::NewFrame();
         return pGui;
     }
@@ -148,13 +147,14 @@ namespace Falcor
         Buffer::SharedPtr pIB = createIB ? Buffer::create(requiredIbSize, Buffer::BindFlags::Index, Buffer::CpuAccess::Write, nullptr): mpVao->getIndexBuffer();
         mpVao = Vao::create(pVB, mpLayout, pIB, ResourceFormat::R16Uint, Vao::Topology::TriangleList);
     }
-
+    
     void Gui::onWindowResize(uint32_t width, uint32_t height)
     {
         ImGuiIO& io = ImGui::GetIO();
         io.DisplaySize.x = (float)width;
         io.DisplaySize.y = (float)height;
-        mpProgramVars->getConstantBuffer(0, 0)[0] = glm::ortho(0.0f, float(width), float(height), 0.0f, 0.0f, 1.0f);
+        mpProgramVars["PerFrameCB"]["scale"] = 2.0f / vec2(io.DisplaySize.x, io.DisplaySize.y);
+        mpProgramVars["PerFrameCB"]["offset"] = vec4(-1.0f); // #VKTODO This should be vec2, but Slang reports wrong offset for `scale` due to incorrect alignment rules
     }
 
     void Gui::setIoMouseEvents()
