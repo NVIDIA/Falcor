@@ -36,7 +36,7 @@ layout(set = 0, binding = 0) uniform PerFrameCB
 
 layout (location = 0) in vec2 posS;
 layout (location = 1) in vec2 texCIn;
-out vec2 texC;
+layout (location = 0) out vec2 texC;
 
 void main()
 {

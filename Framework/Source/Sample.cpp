@@ -437,19 +437,18 @@ namespace Falcor
         if (mShowText)
         {
             // Render outline first
-//             if (shadowOffset.x != 0.f || shadowOffset.y != 0)
-//             {
-//                 const glm::vec3 oldColor = mpTextRenderer->getTextColor();
-//                 mpTextRenderer->setTextColor(glm::vec3(0.f));   // Black outline 
-//                 mpTextRenderer->begin(mpRenderContext, position + shadowOffset);
-//                 mpTextRenderer->renderLine(msg);
-//                 mpTextRenderer->end();
-//                 mpTextRenderer->setTextColor(oldColor);
-//             }
+            if (shadowOffset.x != 0.f || shadowOffset.y != 0)
+            {
+                const glm::vec3 oldColor = mpTextRenderer->getTextColor();
+                mpTextRenderer->setTextColor(glm::vec3(0.f));   // Black outline 
+                mpTextRenderer->begin(mpRenderContext, position + shadowOffset);
+                mpTextRenderer->renderLine(msg);
+                mpTextRenderer->end();
+                mpTextRenderer->setTextColor(oldColor);
+            }
             mpTextRenderer->begin(mpRenderContext, position);
             mpTextRenderer->renderLine(msg);
             mpTextRenderer->end();
-            mpRenderContext->flush(true);
         }
     }
 
