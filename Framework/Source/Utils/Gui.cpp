@@ -96,7 +96,7 @@ namespace Falcor
 
         // Create the rasterizer state
         RasterizerState::Desc rsDesc;
-        rsDesc.setFillMode(RasterizerState::FillMode::Solid).setCullMode(RasterizerState::CullMode::None).setScissorTest(false).setDepthClamp(false);
+        rsDesc.setFillMode(RasterizerState::FillMode::Solid).setCullMode(RasterizerState::CullMode::None).setScissorTest(true).setDepthClamp(false);
         mpPipelineState->setRasterizerState(RasterizerState::create(rsDesc));
 
         // Create the depth-stencil state
