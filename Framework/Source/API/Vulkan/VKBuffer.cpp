@@ -60,7 +60,7 @@ namespace Falcor
         auto setBit = [&flags, &bindFlags](Buffer::BindFlags f, VkBufferUsageFlags vkBit) {if (is_set(bindFlags, f)) flags |= vkBit; };
         setBit(Buffer::BindFlags::Vertex,           VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
         setBit(Buffer::BindFlags::Index,            VK_BUFFER_USAGE_INDEX_BUFFER_BIT);
-        setBit(Buffer::BindFlags::UnorderedAccess,  VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT);
+        setBit(Buffer::BindFlags::UnorderedAccess,  VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
         setBit(Buffer::BindFlags::ShaderResource,   VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT);
         setBit(Buffer::BindFlags::IndirectArg,      VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT);
         setBit(Buffer::BindFlags::Constant,         VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
@@ -135,6 +135,12 @@ namespace Falcor
 
     void Buffer::unmap()
     {
+        // We only unmap staging buffers
+        if (mDynamicData.pData == nullptr && mBindFlags == BindFlags::None)
+        {
+            assert(mCpuAccess == CpuAccess::Read);
+            vkUnmapMemory(gpDevice->getApiHandle(), mApiHandle.getDeviceMem());
+        }
     }
 
     uint64_t Buffer::makeResident(Buffer::GpuAccessFlags flags) const

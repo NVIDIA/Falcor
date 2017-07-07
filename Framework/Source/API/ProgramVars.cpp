@@ -616,7 +616,7 @@ namespace Falcor
                 // Allocate a GPU descriptor
                 const auto& pDescSet = rootSets[rootData.rootIndex].pDescSet;
                 assert(pDescSet);
-                pDescSet->setSampler(rootData.rangeIndex, rootData.descIndex, samplerIt.first.regIndex, pSampler->getApiHandle());
+                pDescSet->setSampler(rootData.rangeIndex, rootData.descIndex, samplerIt.first.regIndex, pSampler);
             }
         }
     }
@@ -630,7 +630,7 @@ namespace Falcor
             auto& rootData = resDesc.rootData;
             Resource* pResource = resDesc.pResource.get();
 
-            ViewType::ApiHandle handle;
+            ViewType::SharedPtr view;
             if (pResource)
             {
                 // If it's a typed buffer, upload it to the GPU
@@ -663,11 +663,11 @@ namespace Falcor
                     }
                 }
 
-                handle = resDesc.pView->getApiHandle();
+                view = resDesc.pView;
             }
             else
             {
-                handle = isUav ? UnorderedAccessView::getNullView()->getApiHandle() : ShaderResourceView::getNullView()->getApiHandle();
+                view = ViewType::getNullView();
             }
 
             if (rootSets[rootData.rootIndex].dirty)
@@ -676,11 +676,11 @@ namespace Falcor
                 const auto& pDescSet = rootSets[rootData.rootIndex].pDescSet;
                 if (isUav)
                 {
-                    pDescSet->setUav(rootData.rangeIndex, rootData.descIndex, resIt.first.regIndex, handle);
+                    pDescSet->setUav(rootData.rangeIndex, rootData.descIndex, resIt.first.regIndex, (UnorderedAccessView*)view.get());
                 }
                 else
                 {
-                    pDescSet->setSrv(rootData.rangeIndex, rootData.descIndex, resIt.first.regIndex, handle);
+                    pDescSet->setSrv(rootData.rangeIndex, rootData.descIndex, resIt.first.regIndex, (ShaderResourceView*)view.get());
                 }
             }
         }

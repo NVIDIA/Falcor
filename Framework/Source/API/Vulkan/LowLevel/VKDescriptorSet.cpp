@@ -61,18 +61,23 @@ namespace Falcor
         return nullptr;
     }
 
-    template<bool isUav>
-    static void setSrvUavCommon(VkDescriptorSet set, uint32_t regIndex, const SrvHandle& handle)
+    template<bool isUav, typename ViewType>
+    static void setSrvUavCommon(VkDescriptorSet set, uint32_t regIndex, const ViewType* pView)
     {
         VkWriteDescriptorSet write = {};
         VkDescriptorImageInfo image;
         VkDescriptorBufferInfo buffer;
+        ViewType::ApiHandle handle = pView->getApiHandle();
 
         if (handle.getType() == VkResourceType::Buffer)
         {
-            assert(0); // #VKTODO Missing offset information in the handle
+            const Buffer* pBuffer = dynamic_cast<const Buffer*>(pView->getResource());
+            buffer.buffer = pBuffer->getApiHandle();
+            buffer.offset = pBuffer->getGpuAddressOffset();
+            buffer.range = pBuffer->getSize();
+
+            write.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
             write.pBufferInfo = &buffer;
-            write.descriptorType = isUav ? VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER : VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER;
         }
         else
         {
@@ -93,22 +98,22 @@ namespace Falcor
         vkUpdateDescriptorSets(gpDevice->getApiHandle(), 1, &write, 0, nullptr);
     }
 
-    void DescriptorSet::setSrv(uint32_t rangeIndex, uint32_t descIndex, uint32_t regIndex, const ShaderResourceView::ApiHandle& srv)
+    void DescriptorSet::setSrv(uint32_t rangeIndex, uint32_t descIndex, uint32_t regIndex, const ShaderResourceView* pSrv)
     {
-        setSrvUavCommon<false>(mApiHandle, regIndex, srv);
+        setSrvUavCommon<false>(mApiHandle, regIndex, pSrv);
     }
 
-    void DescriptorSet::setUav(uint32_t rangeIndex, uint32_t descIndex, uint32_t regIndex, const UnorderedAccessView::ApiHandle& uav)
+    void DescriptorSet::setUav(uint32_t rangeIndex, uint32_t descIndex, uint32_t regIndex, const UnorderedAccessView* pUav)
     {
-        setSrvUavCommon<true>(mApiHandle, regIndex, uav);
+        setSrvUavCommon<true>(mApiHandle, regIndex, pUav);
     }
 
-    void DescriptorSet::setSampler(uint32_t rangeIndex, uint32_t descIndex, uint32_t regIndex, const Sampler::ApiHandle& sampler)
+    void DescriptorSet::setSampler(uint32_t rangeIndex, uint32_t descIndex, uint32_t regIndex, const Sampler* pSampler)
     {
         VkDescriptorImageInfo info;
         info.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
         info.imageView = nullptr;
-        info.sampler = sampler;
+        info.sampler = pSampler->getApiHandle();
 
         VkWriteDescriptorSet write = {};
         write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;

@@ -80,27 +80,14 @@ namespace Falcor
 
     void initializeBufferViewInfo(const Buffer::SharedConstPtr& pBuffer, VkBufferViewCreateInfo& outInfo)
     {
+        TypedBufferBase::SharedConstPtr pTypedBuffer = std::dynamic_pointer_cast<const TypedBufferBase>(pBuffer);
+        assert(pTypedBuffer);
         outInfo = {};
         outInfo.sType = VK_STRUCTURE_TYPE_BUFFER_VIEW_CREATE_INFO;
         outInfo.buffer = pBuffer->getApiHandle().getBuffer();
         outInfo.offset = 0;
         outInfo.range = VK_WHOLE_SIZE;
-
-        TypedBufferBase::SharedConstPtr pTypedBuffer = std::dynamic_pointer_cast<const TypedBufferBase>(pBuffer);
-        StructuredBuffer::SharedConstPtr pStructuredBuffer = std::dynamic_pointer_cast<const StructuredBuffer>(pBuffer);
-
-        if (pTypedBuffer)
-        {
-            outInfo.format = getVkFormat(pTypedBuffer->getResourceFormat());
-        }
-        else if (pStructuredBuffer)
-        {
-            // #VKTODO what format for structured buffer?
-        }
-        else
-        {
-            // #VKTODO what format for raw buffer?
-        }
+        outInfo.format = getVkFormat(pTypedBuffer->getResourceFormat());
     }
 
     VkResource<VkImageView, VkBufferView> createViewCommon(const Resource::SharedConstPtr& pSharedPtr, uint32_t mostDetailedMip, uint32_t mipCount, uint32_t firstArraySlice, uint32_t arraySize)
@@ -112,16 +99,21 @@ namespace Falcor
             VkImageViewCreateInfo info;
             VkImageView imageView;
             initializeImageViewInfo(std::static_pointer_cast<const Texture>(pSharedPtr), firstArraySlice, arraySize, mostDetailedMip, mipCount, info);
-            vkCreateImageView(gpDevice->getApiHandle(), &info, nullptr, &imageView);
+            vk_call(vkCreateImageView(gpDevice->getApiHandle(), &info, nullptr, &imageView));
             return imageView;
         }
 
         case VkResourceType::Buffer:
         {
-            VkBufferViewCreateInfo info;
-            VkBufferView bufferView;
-            initializeBufferViewInfo(std::static_pointer_cast<const Buffer>(pSharedPtr), info);
-            vkCreateBufferView(gpDevice->getApiHandle(), &info, nullptr, &bufferView);
+            // We only create views for TypedBuffers
+            VkBufferView bufferView = {};
+            TypedBufferBase::SharedConstPtr pTypedBuffer = std::dynamic_pointer_cast<const TypedBufferBase>(pSharedPtr);
+            if(pTypedBuffer)
+            {
+                VkBufferViewCreateInfo info;
+                initializeBufferViewInfo(std::static_pointer_cast<const Buffer>(pSharedPtr), info);
+                vk_call(vkCreateBufferView(gpDevice->getApiHandle(), &info, nullptr, &bufferView));
+            }
             return bufferView;
         }
 
