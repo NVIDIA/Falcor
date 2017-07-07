@@ -186,7 +186,7 @@ namespace Falcor
             if (merged.size())
             {
                 auto& back = merged.back();
-                if (back.baseIndex + back.count + 1 == r.baseIndex)
+                if (back.baseIndex + back.count == r.baseIndex)
                 {
                     back.count += r.count;
                     continue;
