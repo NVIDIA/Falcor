@@ -57,7 +57,7 @@ namespace Falcor
         initVkRenderPassInfo(*mpDesc, renderPassInfo);
         VkRenderPass pass;
         vkCreateRenderPass(gpDevice->getApiHandle(), &renderPassInfo.info, nullptr, &pass);
-        mApiHandle = pass;
+        *mApiHandle = pass;
 
         // FBO handle
         std::vector<VkImageView> attachments(Fbo::getMaxColorTargetCount() + 1); // 1 if for the depth
@@ -88,7 +88,7 @@ namespace Falcor
 
         VkFramebuffer frameBuffer;
         vkCreateFramebuffer(gpDevice->getApiHandle(), &frameBufferInfo, nullptr, &frameBuffer);
-        mApiHandle = frameBuffer;
+        *mApiHandle = frameBuffer;
     }
 
     void Fbo::applyColorAttachment(uint32_t rtIndex)

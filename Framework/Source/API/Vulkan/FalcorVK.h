@@ -39,7 +39,6 @@
     #pragma comment(lib, "vulkan-1.lib")
 #endif
 
-#include "API/Vulkan/VKResourceHelper.h"
 #include "API/Vulkan/VKSmartHandle.h"
 
 __forceinline BOOL vkBool(bool b) { return b ? VK_TRUE : VK_FALSE; }
@@ -61,18 +60,6 @@ namespace Falcor
         return kVkFormatDesc[(uint32_t)format].vkFormat;
     }
 
-    class VkFboHandle
-    {
-    public:
-        VkFboHandle& operator=(VkRenderPass pass) { mVkRenderPass = pass; return *this; }
-        VkFboHandle& operator=(VkFramebuffer fb) { mVkFbo = fb; return *this; }
-        operator VkRenderPass() const { return mVkRenderPass; }
-        operator VkFramebuffer() const { return mVkFbo; }
-    private:
-        VkRenderPassPtr mVkRenderPass = VK_NULL_HANDLE;
-        VkFramebufferPtr mVkFbo = VK_NULL_HANDLE;
-    };
-
     using HeapCpuHandle = void*;
     using HeapGpuHandle = void*;
 
@@ -84,30 +71,30 @@ namespace Falcor
     using WindowHandle = void*;
 #endif
 
-    using DeviceHandle = VkDevicePtr;
-    using CommandListHandle = VkCommandBufferPtr;
+    using DeviceHandle = VkSimpleSmartHandle<VkDevice>::SharedPtr;
+    using CommandListHandle = VkCommandBuffer;
     using CommandQueueHandle = VkQueue;
     using ApiCommandQueueType = uint32_t;
-    using CommandAllocatorHandle = VkCommandPoolPtr;
+    using CommandAllocatorHandle = VkSimpleSmartHandle<VkCommandPool>::SharedPtr;
     using CommandSignatureHandle = void*;
-    using FenceHandle = VkSemaphore;
+    using FenceHandle = VkSimpleSmartHandle<VkSemaphore>::SharedPtr;
     using ResourceHandle = VkResource<VkImage, VkBuffer>;
-    using RtvHandle = VkImageViewPtr;
-    using DsvHandle = VkImageViewPtr;
+    using RtvHandle = VkSimpleSmartHandle<VkImageView>::SharedPtr;
+    using DsvHandle = VkSimpleSmartHandle<VkImageView>::SharedPtr;
     using SrvHandle = VkResource<VkImageView, VkBufferView>;
     using UavHandle = VkResource<VkImageView, VkBufferView>;
-    using CbvHandle = VkBufferViewPtr;
-    using FboHandle = VkFboHandle;
-    using SamplerHandle = VkSamplerPtr;
+    using CbvHandle = VkSimpleSmartHandle<VkBufferView>::SharedPtr;
+    using FboHandle = VkFbo::SharedPtr;
+    using SamplerHandle = VkSimpleSmartHandle<VkSampler>::SharedPtr;
     using GpuAddress = size_t;
-    using DescriptorSetApiHandle = VkDescriptorSetPtr;
+    using DescriptorSetApiHandle = VkDescriptorSet;
 
-    using PsoHandle = VkPipelinePtr;
+    using PsoHandle = VkPipeline;
     using ComputeStateHandle = VkPipeline;
-    using ShaderHandle = VkShaderModulePtr;
+    using ShaderHandle = VkShaderModule;
     using ShaderReflectionHandle = void*;
-    using RootSignatureHandle = VkPipelineLayoutPtr;
-    using DescriptorHeapHandle = VkDescriptorPoolPtr;
+    using RootSignatureHandle = VkSimpleSmartHandle<VkPipelineLayout>::SharedPtr;
+    using DescriptorHeapHandle = VkSimpleSmartHandle<VkDescriptorPool>::SharedPtr;
 
     using VaoHandle = void*;
     using VertexShaderHandle = void*;
@@ -123,7 +110,7 @@ namespace Falcor
 
     static const uint32_t kSwapChainBuffers = 3;
 
-    using ApiObjectHandle = ResourceHandle;
+    using ApiObjectHandle = VkBaseApiHandle;
 
     inline uint32_t getMaxViewportCount()
     {

@@ -58,10 +58,10 @@ namespace Falcor
 
     struct DeviceApiData
     {
-        VkSwapchainKHR swapchain;
+        VkSwapchainKHR      swapchain;
         VkInstance          instance;
         VkPhysicalDevice    physicalDevice;
-        VkDevice            device;
+        DeviceHandle        device;
         VkSurfaceKHR        surface;
         VkPhysicalDeviceProperties properties;
         uint32_t falcorToVulkanQueueType[Device::kQueueTypeCount];
@@ -378,11 +378,14 @@ namespace Falcor
         deviceInfo.ppEnabledExtensionNames = extensionNames;
         deviceInfo.pEnabledFeatures = &requiredFeatures;
 
+        //VkDevice device = VK_NULL_HANDLE;
         if (VK_FAILED(vkCreateDevice(pData->physicalDevice, &deviceInfo, nullptr, &pData->device)))
         {
             logError("Could not create Vulkan logical device.");
             return false;
         }
+
+        //pData->device = device;
 
         // Get the queues we created
         for (uint32_t type = 0; type < arraysize(pData->falcorToVulkanQueueType); type++)

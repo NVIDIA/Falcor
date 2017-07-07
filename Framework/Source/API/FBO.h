@@ -188,7 +188,7 @@ namespace Falcor
         mutable bool mIsLayered = false;
 		mutable bool mIsZeroAttachment = false;
 
-        mutable ApiHandle mApiHandle = {};
+        mutable ApiHandle mApiHandle;
         void* mpPrivateData = nullptr;
     };
 }

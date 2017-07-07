@@ -71,7 +71,7 @@ namespace Falcor
     size_t getBufferDataAlignment(const Buffer* pBuffer)
     {
         VkMemoryRequirements reqs;
-        vkGetBufferMemoryRequirements(gpDevice->getApiHandle(), pBuffer->getApiHandle().getBuffer(), &reqs);
+        vkGetBufferMemoryRequirements(gpDevice->getApiHandle(), pBuffer->getApiHandle(), &reqs);
         return reqs.alignment;
     }
 

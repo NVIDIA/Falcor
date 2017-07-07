@@ -68,7 +68,7 @@ namespace Falcor
         ResourceFormat texFormat = pTexture->getFormat();
 
         outInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-        outInfo.image = pTexture->getApiHandle().getImage();
+        outInfo.image = pTexture->getApiHandle();
         outInfo.viewType = getViewType(pTexture->getType(), pTexture->getArraySize() > 1);
         outInfo.format = getVkFormat(texFormat);
         outInfo.subresourceRange.aspectMask = getAspectFlagsFromFormat(texFormat);
@@ -82,7 +82,7 @@ namespace Falcor
     {
         outInfo = {};
         outInfo.sType = VK_STRUCTURE_TYPE_BUFFER_VIEW_CREATE_INFO;
-        outInfo.buffer = pBuffer->getApiHandle().getBuffer();
+        outInfo.buffer = pBuffer->getApiHandle();
         outInfo.offset = 0;
         outInfo.range = VK_WHOLE_SIZE;
 
@@ -163,7 +163,7 @@ namespace Falcor
         }
 
         auto view = createViewCommon(pSharedPtr, mipLevel, 1, firstArraySlice, arraySize);
-        return SharedPtr(new DepthStencilView(pResource, view.getImage(), mipLevel, firstArraySlice, arraySize));
+        return SharedPtr(new DepthStencilView(pResource, view, mipLevel, firstArraySlice, arraySize));
     }
 
     DepthStencilView::SharedPtr DepthStencilView::getNullView()
@@ -197,7 +197,7 @@ namespace Falcor
         // Create sNullView if we need to return it and it doesn't exist yet
         if (pSharedPtr == nullptr && sNullView== nullptr)
         {
-            sNullView = SharedPtr(new RenderTargetView(pResource, VK_NULL_HANDLE, mipLevel, firstArraySlice, arraySize));
+            sNullView = SharedPtr(new RenderTargetView(pResource, (VkImageView)VK_NULL_HANDLE, mipLevel, firstArraySlice, arraySize));
         }
 
         if (pSharedPtr != nullptr)
@@ -211,7 +211,7 @@ namespace Falcor
 
             // Create view
             auto view = createViewCommon(pSharedPtr, mipLevel, 1, firstArraySlice, arraySize);
-            return SharedPtr(new RenderTargetView(pResource, view.getImage(), mipLevel, firstArraySlice, arraySize));
+            return SharedPtr(new RenderTargetView(pResource, view, mipLevel, firstArraySlice, arraySize));
         }
         else
         {
