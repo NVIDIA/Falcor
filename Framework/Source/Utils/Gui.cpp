@@ -154,7 +154,7 @@ namespace Falcor
         io.DisplaySize.x = (float)width;
         io.DisplaySize.y = (float)height;
         mpProgramVars["PerFrameCB"]["scale"] = 2.0f / vec2(io.DisplaySize.x, io.DisplaySize.y);
-        mpProgramVars["PerFrameCB"]["offset"] = vec4(-1.0f); // #VKTODO This should be vec2, but Slang reports wrong offset for `scale` due to incorrect alignment rules
+        mpProgramVars["PerFrameCB"]["offset"] = vec2(-1.0f);
     }
 
     void Gui::setIoMouseEvents()

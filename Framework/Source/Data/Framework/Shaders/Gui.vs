@@ -28,8 +28,8 @@
 
 layout(set = 0, binding = 0) uniform PerFrameCB
 {
-    vec4 offset;
     vec2 scale;
+    vec2 offset;
 };
 
 layout(location = 0) in vec2 pos;
