@@ -154,4 +154,13 @@ namespace Falcor
 
         return handle;
     }
+
+    Buffer::~Buffer()
+    {
+        if (mCpuAccess == CpuAccess::Write)
+        {
+            gpDevice->getResourceAllocator()->release(mDynamicData);
+        }
+        gpDevice->releaseResource(mApiHandle);
+    }
 }

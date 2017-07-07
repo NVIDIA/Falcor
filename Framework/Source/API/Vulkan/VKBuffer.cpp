@@ -49,7 +49,7 @@ namespace Falcor
     void* mapBufferApi(const Buffer::ApiHandle& apiHandle, size_t size)
     {
         void* pData;
-        vk_call(vkMapMemory(gpDevice->getApiHandle(), apiHandle.getDeviceMem(), 0, size, 0, &pData));
+        vk_call(vkMapMemory(gpDevice->getApiHandle(), apiHandle->getDeviceMem(), 0, size, 0, &pData));
         return pData;
     }
 
@@ -99,7 +99,7 @@ namespace Falcor
         // Get the required buffer size
         Buffer::ApiHandle apiHandle = buffer;
         VkDeviceMemory mem = allocateDeviceMemory(memType, getBufferRequiredMemorySize(buffer));
-        apiHandle.setDeviceMem(mem);
+        apiHandle->setDeviceMem(mem);
         vk_call(vkBindBufferMemory(gpDevice->getApiHandle(), buffer, mem, 0));
 
         return apiHandle;
@@ -146,5 +146,14 @@ namespace Falcor
     void Buffer::evict() const
     {
         UNSUPPORTED_IN_VULKAN(__FUNCTION__);
+    }
+
+    Buffer::~Buffer()
+    {
+        if (mCpuAccess == CpuAccess::Write)
+        {
+            gpDevice->getResourceAllocator()->release(mDynamicData);
+        }
+        gpDevice->releaseResource(std::static_pointer_cast<VkBaseApiHandle>(mApiHandle));
     }
 }

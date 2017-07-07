@@ -193,7 +193,7 @@ namespace Falcor
     {
         if (pResource->getState() != newState)
         {
-            if(pResource->getApiHandle().getType() == VkResourceType::Image)
+            if(pResource->getApiHandle()->getType() == VkResourceType::Image)
             {
                 const Texture* pTexture = dynamic_cast<const Texture*>(pResource);
                 VkImageMemoryBarrier barrier = {};

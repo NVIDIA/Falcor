@@ -52,6 +52,8 @@ namespace Falcor
 
     void Fbo::initApiHandle() const
     {
+        mApiHandle = FboHandle(VkFbo());
+
         // Render Pass
         RenderPassCreateInfo renderPassInfo;
         initVkRenderPassInfo(*mpDesc, renderPassInfo);

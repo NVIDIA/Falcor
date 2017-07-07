@@ -45,15 +45,6 @@ namespace Falcor
         else return nullptr;
     }
 
-    Buffer::~Buffer()
-    {
-        if (mCpuAccess == CpuAccess::Write)
-        {
-            gpDevice->getResourceAllocator()->release(mDynamicData);
-        }
-        gpDevice->releaseResource(mApiHandle);
-    }
-
     void Buffer::updateData(const void* pData, size_t offset, size_t size)
     {
         if (mCpuAccess == CpuAccess::Write)

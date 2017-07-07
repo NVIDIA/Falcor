@@ -103,9 +103,9 @@ namespace Falcor
         }
     }
 
-    VkResource<VkImageView, VkBufferView> createViewCommon(const Resource::SharedConstPtr& pSharedPtr, uint32_t mostDetailedMip, uint32_t mipCount, uint32_t firstArraySlice, uint32_t arraySize)
+    VkResource<VkImageView, VkBufferView>::SharedPtr createViewCommon(const Resource::SharedConstPtr& pSharedPtr, uint32_t mostDetailedMip, uint32_t mipCount, uint32_t firstArraySlice, uint32_t arraySize)
     {
-        switch (pSharedPtr->getApiHandle().getType())
+        switch (pSharedPtr->getApiHandle()->getType())
         {
         case VkResourceType::Image:
         {
@@ -127,7 +127,7 @@ namespace Falcor
 
         default:
             should_not_get_here();
-            return VkResource<VkImageView, VkBufferView>();
+            return VkResource<VkImageView, VkBufferView>::SharedPtr();
         }
     }
 
@@ -156,7 +156,7 @@ namespace Falcor
             return sNullView;
         }
 
-        if (pSharedPtr->getApiHandle().getType() == VkResourceType::Buffer)
+        if (pSharedPtr->getApiHandle()->getType() == VkResourceType::Buffer)
         {
             logWarning("Cannot create DepthStencilView from a buffer!");
             return sNullView;
@@ -203,7 +203,7 @@ namespace Falcor
         if (pSharedPtr != nullptr)
         {
             // Check type
-            if (pSharedPtr->getApiHandle().getType() == VkResourceType::Buffer)
+            if (pSharedPtr->getApiHandle()->getType() == VkResourceType::Buffer)
             {
                 logWarning("Cannot create RenderTargetView from a buffer!");
                 return sNullView;

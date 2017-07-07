@@ -31,15 +31,9 @@
 
 namespace Falcor
 {
-    template<> VkSimpleSmartHandle<VkInstance>::~VkSimpleSmartHandle() { if(mApiHandle != VK_NULL_HANDLE) vkDestroyInstance(mApiHandle, nullptr); }
     template<> VkSimpleSmartHandle<VkSwapchainKHR>::~VkSimpleSmartHandle() { if(mApiHandle != VK_NULL_HANDLE) vkDestroySwapchainKHR(gpDevice->getApiHandle(), mApiHandle, nullptr); }
-    template<> VkSimpleSmartHandle<VkDevice>::~VkSimpleSmartHandle() { if(mApiHandle != VK_NULL_HANDLE) vkDestroyDevice(mApiHandle, nullptr); }
     template<> VkSimpleSmartHandle<VkCommandPool>::~VkSimpleSmartHandle() { if(mApiHandle != VK_NULL_HANDLE) vkDestroyCommandPool(gpDevice->getApiHandle(), mApiHandle, nullptr); }
     template<> VkSimpleSmartHandle<VkSemaphore>::~VkSimpleSmartHandle() { if(mApiHandle != VK_NULL_HANDLE) vkDestroySemaphore(gpDevice->getApiHandle(), mApiHandle, nullptr); }
-    template<> VkSimpleSmartHandle<VkImage>::~VkSimpleSmartHandle() { if(mApiHandle != VK_NULL_HANDLE) vkDestroyImage(gpDevice->getApiHandle(), mApiHandle, nullptr); }
-    template<> VkSimpleSmartHandle<VkBuffer>::~VkSimpleSmartHandle() { if(mApiHandle != VK_NULL_HANDLE) vkDestroyBuffer(gpDevice->getApiHandle(), mApiHandle, nullptr); }
-    template<> VkSimpleSmartHandle<VkImageView>::~VkSimpleSmartHandle() { if(mApiHandle != VK_NULL_HANDLE) vkDestroyImageView(gpDevice->getApiHandle(), mApiHandle, nullptr); }
-    template<> VkSimpleSmartHandle<VkBufferView>::~VkSimpleSmartHandle() { if(mApiHandle != VK_NULL_HANDLE) vkDestroyBufferView(gpDevice->getApiHandle(), mApiHandle, nullptr); }
     template<> VkSimpleSmartHandle<VkRenderPass>::~VkSimpleSmartHandle() { if(mApiHandle != VK_NULL_HANDLE) vkDestroyRenderPass(gpDevice->getApiHandle(), mApiHandle, nullptr); }
     template<> VkSimpleSmartHandle<VkFramebuffer>::~VkSimpleSmartHandle() { if(mApiHandle != VK_NULL_HANDLE) vkDestroyFramebuffer(gpDevice->getApiHandle(), mApiHandle, nullptr); }
     template<> VkSimpleSmartHandle<VkSampler>::~VkSimpleSmartHandle() { if(mApiHandle != VK_NULL_HANDLE) vkDestroySampler(gpDevice->getApiHandle(), mApiHandle, nullptr); }
@@ -48,6 +42,28 @@ namespace Falcor
     template<> VkSimpleSmartHandle<VkShaderModule>::~VkSimpleSmartHandle() { if(mApiHandle != VK_NULL_HANDLE) vkDestroyShaderModule(gpDevice->getApiHandle(), mApiHandle, nullptr); }
     template<> VkSimpleSmartHandle<VkPipelineLayout>::~VkSimpleSmartHandle() { if(mApiHandle != VK_NULL_HANDLE) vkDestroyPipelineLayout(gpDevice->getApiHandle(), mApiHandle, nullptr); }
     template<> VkSimpleSmartHandle<VkDescriptorPool>::~VkSimpleSmartHandle() { if(mApiHandle != VK_NULL_HANDLE) vkDestroyDescriptorPool(gpDevice->getApiHandle(), mApiHandle, nullptr); }
+
+    template<>
+    VkResource<VkImage, VkBuffer>::operator bool()
+    {
+        return ((mType == VkResourceType::Image && mImage != VK_NULL_HANDLE) || (mType == VkResourceType::Buffer && mBuffer != VK_NULL_HANDLE)) && mDeviceMem != VK_NULL_HANDLE;
+    }
+
+    template<>
+    VkResource<VkImageView, VkBufferView>::operator bool()
+    {
+        return (mType == VkResourceType::Image && mImage != VK_NULL_HANDLE) || (mType == VkResourceType::Buffer && mBuffer != VK_NULL_HANDLE);
+    }
+
+    VkDeviceData::~VkDeviceData()
+    {
+        if (mInstance != VK_NULL_HANDLE && mLogicalDevice != VK_NULL_HANDLE && mInstance != VK_NULL_HANDLE)
+        {
+            vkDestroySurfaceKHR(mInstance, mSurface, nullptr);
+            vkDestroyDevice(mLogicalDevice, nullptr);
+            vkDestroyInstance(mInstance, nullptr);
+        }
+    }
 
     template<>
     VkResource<VkImage, VkBuffer>::~VkResource()
@@ -90,25 +106,17 @@ namespace Falcor
 
     VkFbo::~VkFbo()
     {
-        vkDestroyRenderPass(gpDevice->getApiHandle(), mVkRenderPass, nullptr);
-        vkDestroyFramebuffer(gpDevice->getApiHandle(), mVkFbo, nullptr);
-    }
-
-    VkCommandList::~VkCommandList()
-    {
-        vkFreeCommandBuffers(gpDevice->getApiHandle(), mCommandPool, 1, &mCommandBuffer);
+        if (mVkRenderPass != VK_NULL_HANDLE && mVkFbo != VK_NULL_HANDLE)
+        {
+            vkDestroyRenderPass(gpDevice->getApiHandle(), mVkRenderPass, nullptr);
+            vkDestroyFramebuffer(gpDevice->getApiHandle(), mVkFbo, nullptr);
+        }
     }
 
     // Force template instantiation
-    template VkSimpleSmartHandle<VkInstance>::~VkSimpleSmartHandle();
     template VkSimpleSmartHandle<VkSwapchainKHR>::~VkSimpleSmartHandle();
-    template VkSimpleSmartHandle<VkDevice>::~VkSimpleSmartHandle();
     template VkSimpleSmartHandle<VkCommandPool>::~VkSimpleSmartHandle();
     template VkSimpleSmartHandle<VkSemaphore>::~VkSimpleSmartHandle();
-    template VkSimpleSmartHandle<VkImage>::~VkSimpleSmartHandle();
-    template VkSimpleSmartHandle<VkBuffer>::~VkSimpleSmartHandle();
-    template VkSimpleSmartHandle<VkImageView>::~VkSimpleSmartHandle();
-    template VkSimpleSmartHandle<VkBufferView>::~VkSimpleSmartHandle();
     template VkSimpleSmartHandle<VkRenderPass>::~VkSimpleSmartHandle();
     template VkSimpleSmartHandle<VkFramebuffer>::~VkSimpleSmartHandle();
     template VkSimpleSmartHandle<VkSampler>::~VkSimpleSmartHandle();
@@ -120,6 +128,5 @@ namespace Falcor
 
     template VkResource<VkImage, VkBuffer>::~VkResource();
     template VkResource<VkImageView, VkBufferView>::~VkResource();
-
 }
 

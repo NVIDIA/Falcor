@@ -33,7 +33,7 @@ namespace Falcor
 {
     struct DescriptorPoolApiData
     {
-        VkDescriptorPool descriptorPool;
+        DescriptorHeapHandle descriptorPool;
     };
 
     struct DescriptorSetApiData

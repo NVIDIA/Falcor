@@ -149,7 +149,6 @@ namespace Falcor
         uint64_t gpuVal = mpFrameFence->getGpuValue();
         while (mDeferredReleases.size() && mDeferredReleases.front().frameID < gpuVal)
         {
-            //mDeferredReleases.front().pApiObject.Release();
             mDeferredReleases.pop();
         }
         mpCpuDescPool->executeDeferredReleases();
@@ -172,6 +171,11 @@ namespace Falcor
 
         for (uint32_t i = 0; i < arraysize(mCmdQueues); i++) mCmdQueues[i].clear();
         for (uint32_t i = 0; i < arraysize(mpSwapChainFbos); i++) mpSwapChainFbos[i].reset();
+
+        while (mDeferredReleases.size())
+        {
+            mDeferredReleases.pop();
+        }
 
         mpRenderContext.reset();
         mpResourceAllocator.reset();

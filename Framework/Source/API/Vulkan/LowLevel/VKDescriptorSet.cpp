@@ -44,7 +44,7 @@ namespace Falcor
         allocInfo.descriptorSetCount = 1;
         allocInfo.pSetLayouts = &layout;
         vk_call(vkAllocateDescriptorSets(gpDevice->getApiHandle(), &allocInfo, &mApiHandle));
-        mpApiData = mpApiData = std::make_shared<DescriptorSetApiData>(layout, mpPool->getApiHandle(0), mApiHandle);
+        mpApiData = std::make_shared<DescriptorSetApiData>(layout, mpPool->getApiHandle(0), mApiHandle);
 
         return true;
     }
@@ -68,7 +68,7 @@ namespace Falcor
         VkDescriptorImageInfo image;
         VkDescriptorBufferInfo buffer;
 
-        if (handle.getType() == VkResourceType::Buffer)
+        if (handle->getType() == VkResourceType::Buffer)
         {
             assert(0); // #VKTODO Missing offset information in the handle
             write.pBufferInfo = &buffer;
@@ -76,7 +76,7 @@ namespace Falcor
         }
         else
         {
-            assert(handle.getType() == VkResourceType::Image);
+            assert(handle->getType() == VkResourceType::Image);
             image.imageLayout = isUav ? VK_IMAGE_LAYOUT_GENERAL : VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
             image.imageView = handle;
             image.sampler = nullptr;

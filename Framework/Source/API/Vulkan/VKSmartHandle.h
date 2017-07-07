@@ -1,3 +1,30 @@
+/***************************************************************************
+# Copyright (c) 2017, NVIDIA CORPORATION. All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions
+# are met:
+#  * Redistributions of source code must retain the above copyright
+#    notice, this list of conditions and the following disclaimer.
+#  * Redistributions in binary form must reproduce the above copyright
+#    notice, this list of conditions and the following disclaimer in the
+#    documentation and/or other materials provided with the distribution.
+#  * Neither the name of NVIDIA CORPORATION nor the names of its
+#    contributors may be used to endorse or promote products derived
+#    from this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS ``AS IS'' AND ANY
+# EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+# PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR
+# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+# EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+# PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+# PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+# OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+***************************************************************************/
 #pragma once
 
 namespace Falcor
@@ -27,6 +54,10 @@ namespace Falcor
 
         SmartHandle& operator&()
         {
+            if (*this == nullptr)
+            {
+                *this = VkSmartHandle((SmartHandle)VK_NULL_HANDLE);
+            }
             return *get();
         }
     };
@@ -45,6 +76,29 @@ namespace Falcor
         operator ApiHandle*() { return &mApiHandle; }
     private:
         ApiHandle mApiHandle = {};
+    };
+
+    class VkDeviceData : public VkBaseApiHandle, public inherit_shared_from_this<VkBaseApiHandle, VkDeviceData>
+    {
+    public:
+        using SharedPtr = VkSmartHandle<VkDeviceData>;
+
+        VkDeviceData() = default;
+        ~VkDeviceData();
+        VkDeviceData& operator=(VkInstance instance) { mInstance = instance; return *this; }
+        VkDeviceData& operator=(VkPhysicalDevice physicalDevice) { mPhysicalDevice = physicalDevice; return *this; }
+        VkDeviceData& operator=(VkDevice device) { mLogicalDevice = device; return *this; }
+        VkDeviceData& operator=(VkSurfaceKHR surface) { mSurface = surface; return *this; }
+        operator VkInstance() const { return mInstance; }
+        operator VkPhysicalDevice() const { return mPhysicalDevice; }
+        operator VkDevice() const { return mLogicalDevice; }
+        operator VkSurfaceKHR() const { return mSurface; }
+    private:
+        VkInstance          mInstance;
+        VkPhysicalDevice    mPhysicalDevice;
+        VkDevice            mLogicalDevice;
+        VkSurfaceKHR        mSurface;
+
     };
 
     enum class VkResourceType
@@ -66,7 +120,7 @@ namespace Falcor
         ~VkResource() { static_assert(false, "VkResource missing destructor specialization"); }
 
         VkResourceType getType() const { return mType; }
-        virtual operator bool() override { return ((mType == VkResourceType::Image && mImage != VK_NULL_HANDLE) || (mType == VkResourceType::Buffer && mBuffer != VK_NULL_HANDLE)) && (mDeviceMem != VK_NULL_HANDLE); }
+        virtual operator bool() override;
 
         operator ImageType() const { assert(mType == VkResourceType::Image); return mImage; }
         operator BufferType() const { assert(mType == VkResourceType::Buffer); return mBuffer; }
@@ -102,33 +156,13 @@ namespace Falcor
         VkFramebuffer mVkFbo = VK_NULL_HANDLE;
     };
 
-    class VkCommandList : public VkBaseApiHandle
-    {
-    public:
-        using SharedPtr = VkSmartHandle<VkCommandList>;
+    template<> VkResource<VkImage, VkBuffer>::operator bool();
+    template<> VkResource<VkImageView, VkBufferView>::operator bool();
 
-        ~VkCommandList();
-        virtual operator bool() override { return mCommandBuffer != VK_NULL_HANDLE && mCommandPool != VK_NULL_HANDLE; }
-        VkCommandList& operator=(VkCommandBuffer buffer) { mCommandBuffer = buffer; return *this; }
-        VkCommandList& operator=(VkCommandPool pool) { mCommandPool = pool; return *this; }
-        operator VkCommandBuffer() const { return mCommandBuffer; }
-        operator VkCommandPool() const { return mCommandPool; }
-
-    private:
-        VkCommandBuffer mCommandBuffer = VK_NULL_HANDLE;
-        VkCommandPool mCommandPool = VK_NULL_HANDLE; // Only used to destroy mCommandBuffer
-    };
-
-
-    template<> VkSimpleSmartHandle<VkInstance>::~VkSimpleSmartHandle();
+    // Destructors
     template<> VkSimpleSmartHandle<VkSwapchainKHR>::~VkSimpleSmartHandle();
-    template<> VkSimpleSmartHandle<VkDevice>::~VkSimpleSmartHandle();
     template<> VkSimpleSmartHandle<VkCommandPool>::~VkSimpleSmartHandle();
     template<> VkSimpleSmartHandle<VkSemaphore>::~VkSimpleSmartHandle();
-    template<> VkSimpleSmartHandle<VkImage>::~VkSimpleSmartHandle();
-    template<> VkSimpleSmartHandle<VkBuffer>::~VkSimpleSmartHandle();
-    template<> VkSimpleSmartHandle<VkImageView>::~VkSimpleSmartHandle();
-    template<> VkSimpleSmartHandle<VkBufferView>::~VkSimpleSmartHandle();
     template<> VkSimpleSmartHandle<VkRenderPass>::~VkSimpleSmartHandle();
     template<> VkSimpleSmartHandle<VkFramebuffer>::~VkSimpleSmartHandle();
     template<> VkSimpleSmartHandle<VkSampler>::~VkSimpleSmartHandle();

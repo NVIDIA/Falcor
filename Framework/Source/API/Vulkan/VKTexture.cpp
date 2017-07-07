@@ -41,10 +41,7 @@ namespace Falcor
 
     Texture::~Texture()
     {
-        if(gpDevice) // #VKTODO This shouldn't be here
-        {
-            gpDevice->releaseResource(mApiHandle);
-        }
+        gpDevice->releaseResource(std::static_pointer_cast<VkBaseApiHandle>(mApiHandle));
     }
 
     // Like getD3D12ResourceFlags but for Images specifically
@@ -143,7 +140,7 @@ namespace Falcor
         VkDeviceMemory deviceMem = allocateDeviceMemory(Device::MemoryType::Default, memRequirements.size);
         vkBindImageMemory(gpDevice->getApiHandle(), image, deviceMem, 0);
 
-        mApiHandle.setDeviceMem(deviceMem);
+        mApiHandle->setDeviceMem(deviceMem);
         if (pData != nullptr)
         {
             uploadInitData(pData, autoGenMips);

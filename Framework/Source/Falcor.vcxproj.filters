@@ -1601,9 +1601,6 @@
     <ClInclude Include="Effects\ParticleSystem\ParticleSystem.h">
       <Filter>Effects\ParticleSystem</Filter>
     </ClInclude>
-    <ClInclude Include="API\Vulkan\VKResourceHelper.h">
-      <Filter>API\Vulkan</Filter>
-    </ClInclude>
     <ClInclude Include="API\DescriptorSet.h">
       <Filter>API</Filter>
     </ClInclude>
