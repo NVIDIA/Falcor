@@ -26,31 +26,23 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 
-cbuffer PerFrameCB : register(b0)
+layout(set = 0, binding = 0) uniform PerFrameCB
 {
-    float4x4 projMat;
-    float3 textColor;
+	mat4 projMat;
+	vec3 textColor;
 };
 
-struct VsIn
-{
-    float2 pos : POSITION;
-    float4 color : COLOR;
-    float2 texC : TEXCOORD0;
-};
+layout(location = 0) in vec2 pos;
+layout(location = 1) in vec2 texCIn;
+layout(location = 2) in vec4 colorIn;
 
-struct VsOut
-{
-    float4 color : COLOR;
-    float2 texC : TEXCOORD0;
-    float4 pos : SV_POSITION;
-};
+layout(location = 0) out vec4 color;
+layout(location = 1) out vec2 texC;
 
-VsOut main(VsIn vIn)
+void main()
 {
-    VsOut vOut;
-    vOut.color = vIn.color;
-    vOut.texC = vIn.texC;
-    vOut.pos = mul(projMat, float4(vIn.pos, 0, 1));
-    return vOut;
+    color = colorIn;
+    texC = texCIn;
+    gl_Position = projMat * vec4(pos, 0, 1);
+    gl_Position.y = -gl_Position.y;
 }

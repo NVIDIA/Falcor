@@ -26,25 +26,24 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 
-SamplerState gSampler;
-Texture2D gFont;
+layout(set = 1, binding = 0) uniform texture2D gFont;
+layout(set = 1, binding = 1) uniform sampler gSampler;
 
-cbuffer PerFrameCB : register(b0)
+layout(set = 0, binding = 0) uniform PerFrameCB
 {
-    float4x4 projMat;
-    float3 textColor;
+	mat4 projMat;
+	vec3 textColor;
 };
 
-struct VsOut
-{
-    float4 color : COLOR;
-    float2 texC : TEXCOORD0;
-};
+layout(location = 0) in vec4 color;
+layout(location = 1) in vec2 texC;
 
-float4 main(VsOut vOut) : SV_TARGET
+layout(location = 0) out vec4 fragColor;
+
+void main()
 {
-    float4 c = vOut.color;
-    float fontAlpha = gFont.Sample(gSampler, vOut.texC).a;
-    c *= float4((fontAlpha * textColor), fontAlpha);
-    return c;
+    fragColor = color;
+    float fontAlpha = texture(sampler2D(gFont, gSampler), texC).r;
+    fragColor *= vec4((fontAlpha * textColor), fontAlpha);
+    fragColor = vec4(1,1,1,1);
 }

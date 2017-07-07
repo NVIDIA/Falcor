@@ -53,9 +53,8 @@ namespace Falcor
         mpDefaultPipelineState->setFbo(mpDefaultFBO);
 
         // Tell the GUI the swap-chain size changed
-#ifndef VK_DISABLE_UNIMPLEMENTED
         mpGui->onWindowResize(mpDefaultFBO->getWidth(), mpDefaultFBO->getHeight());
-#endif
+
         // Call the user callback
         onResizeSwapChain();
 
@@ -140,11 +139,11 @@ namespace Falcor
 
     void Sample::handleMouseEvent(const MouseEvent& mouseEvent)
     {
-#ifndef VK_DISABLE_UNIMPLEMENTED
         if (mpGui->onMouseEvent(mouseEvent))
         {
             return;
         }
+#ifndef VK_DISABLE_UNIMPLEMENTED
         mpPixelZoom->onMouseEvent(mouseEvent);
 #endif
         onMouseEvent(mouseEvent);
@@ -348,13 +347,11 @@ namespace Falcor
             onFrameRender();
         }
         {
-#ifndef VK_DISABLE_UNIMPLEMENTED
             PROFILE(renderGUI);
             if (mShowUI)
             {
                 renderGUI();
             }
-#endif        
         }
 
         renderText(getFpsMsg(), glm::vec2(10, 10));
@@ -396,9 +393,7 @@ namespace Falcor
 
     void Sample::initUI()
     {
-#ifndef VK_DISABLE_UNIMPLEMENTED
         mpGui = Gui::create(mpDefaultFBO->getWidth(), mpDefaultFBO->getHeight());
-#endif
         mpTextRenderer = TextRenderer::create();
     }
 
