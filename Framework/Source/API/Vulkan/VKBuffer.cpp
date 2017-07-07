@@ -75,10 +75,16 @@ namespace Falcor
         return reqs.alignment;
     }
 
+    size_t getBufferRequiredMemorySize(VkBuffer buffer)
+    {
+        VkMemoryRequirements reqs;
+        vkGetBufferMemoryRequirements(gpDevice->getApiHandle(), buffer, &reqs);
+        return reqs.size;
+    }
+
     Buffer::ApiHandle createBuffer(size_t size, Buffer::BindFlags bindFlags, Device::MemoryType memType)
     {
         VkBufferCreateInfo bufferInfo = {};
-
         bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
         bufferInfo.flags = 0;
         bufferInfo.size = size;
@@ -90,8 +96,9 @@ namespace Falcor
         VkBuffer buffer;
         vk_call(vkCreateBuffer(gpDevice->getApiHandle(), &bufferInfo, nullptr, &buffer));
 
+        // Get the required buffer size
         Buffer::ApiHandle apiHandle = buffer;
-        VkDeviceMemory mem = allocateDeviceMemory(memType, size);
+        VkDeviceMemory mem = allocateDeviceMemory(memType, getBufferRequiredMemorySize(buffer));
         apiHandle.setDeviceMem(mem);
         vk_call(vkBindBufferMemory(gpDevice->getApiHandle(), buffer, mem, 0));
 

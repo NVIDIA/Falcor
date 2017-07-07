@@ -155,19 +155,32 @@ struct GLSLConstantBufferLayoutRulesImpl : DefaultConstantBufferLayoutRulesImpl
 {
 };
 
+// The `std140` and `std430` rules require vectors to be aligned to the next power of
+// two up from their size (so a `float2` is 8-byte aligned, and a `float3` is
+// 16-byte aligned).
+//
+// Note that in this case we have a type layout where the size is *not* a multiple
+// of the alignment, so it should be possible to pack a scalar after a `float3`.
+static SimpleLayoutInfo getGLSLVectorLayout(
+    SimpleLayoutInfo elementInfo, size_t elementCount)
+{
+    assert(elementInfo.kind == LayoutResourceKind::Uniform);
+    auto size = elementInfo.size * elementCount;
+    SimpleLayoutInfo vectorInfo(
+        LayoutResourceKind::Uniform,
+        size,
+        RoundUpToPowerOfTwo(size));
+    return vectorInfo;
+}
+
+// The `std140` rules combine the GLSL-specific layout for 3-vectors with the
+// alignment padding for structures and arrays that is common to both HLSL
+// and GLSL constant buffers.
 struct Std140LayoutRulesImpl : GLSLConstantBufferLayoutRulesImpl
 {
-    // The `std140` rules require vectors to be aligned to the next power of two
-    // up from their size (so a `float2` is 8-byte aligned, and a `float3` is
-    // 16-byte aligned).
     SimpleLayoutInfo GetVectorLayout(SimpleLayoutInfo elementInfo, size_t elementCount) override
     {
-        assert(elementInfo.kind == LayoutResourceKind::Uniform);
-        SimpleLayoutInfo vectorInfo(
-            LayoutResourceKind::Uniform,
-            elementInfo.size * elementCount,
-            RoundUpToPowerOfTwo(elementInfo.size * elementInfo.alignment));
-        return vectorInfo;
+        return getGLSLVectorLayout(elementInfo, elementCount);
     }
 };
 
@@ -206,8 +219,15 @@ struct HLSLStructuredBufferLayoutRulesImpl : DefaultLayoutRulesImpl
     // TODO: customize these to be correct...
 };
 
-struct Std430LayoutRulesImpl : GLSLConstantBufferLayoutRulesImpl
+// The `std430` rules don't include the array/structure alignment padding that
+// gets applied to constant buffers, but they do include the padding of 3-vectors
+// to be aligned as 4-vectors.
+struct Std430LayoutRulesImpl : DefaultLayoutRulesImpl
 {
+    SimpleLayoutInfo GetVectorLayout(SimpleLayoutInfo elementInfo, size_t elementCount) override
+    {
+        return getGLSLVectorLayout(elementInfo, elementCount);
+    }
 };
 
 struct DefaultVaryingLayoutRulesImpl : DefaultLayoutRulesImpl
@@ -225,7 +245,7 @@ struct DefaultVaryingLayoutRulesImpl : DefaultLayoutRulesImpl
         return kind;
     }
 
-    SimpleLayoutInfo GetScalarLayout(BaseType baseType) override
+    SimpleLayoutInfo GetScalarLayout(BaseType) override
     {
         // Assume that all scalars take up one "slot"
         return SimpleLayoutInfo(
@@ -233,7 +253,7 @@ struct DefaultVaryingLayoutRulesImpl : DefaultLayoutRulesImpl
             1);
     }
 
-    virtual SimpleLayoutInfo GetScalarLayout(slang::TypeReflection::ScalarType scalarType)
+    virtual SimpleLayoutInfo GetScalarLayout(slang::TypeReflection::ScalarType)
     {
         // Assume that all scalars take up one "slot"
         return SimpleLayoutInfo(
@@ -241,7 +261,7 @@ struct DefaultVaryingLayoutRulesImpl : DefaultLayoutRulesImpl
             1);
     }
 
-    SimpleLayoutInfo GetVectorLayout(SimpleLayoutInfo elementInfo, size_t elementCount) override
+    SimpleLayoutInfo GetVectorLayout(SimpleLayoutInfo, size_t) override
     {
         // Vectors take up one slot by default
         //
@@ -276,7 +296,7 @@ struct GLSLSpecializationConstantLayoutRulesImpl : DefaultLayoutRulesImpl
         return LayoutResourceKind::SpecializationConstant;
     }
 
-    SimpleLayoutInfo GetScalarLayout(BaseType baseType) override
+    SimpleLayoutInfo GetScalarLayout(BaseType) override
     {
         // Assume that all scalars take up one "slot"
         return SimpleLayoutInfo(
@@ -284,7 +304,7 @@ struct GLSLSpecializationConstantLayoutRulesImpl : DefaultLayoutRulesImpl
             1);
     }
 
-    virtual SimpleLayoutInfo GetScalarLayout(slang::TypeReflection::ScalarType scalarType)
+    virtual SimpleLayoutInfo GetScalarLayout(slang::TypeReflection::ScalarType)
     {
         // Assume that all scalars take up one "slot"
         return SimpleLayoutInfo(
@@ -292,7 +312,7 @@ struct GLSLSpecializationConstantLayoutRulesImpl : DefaultLayoutRulesImpl
             1);
     }
 
-    SimpleLayoutInfo GetVectorLayout(SimpleLayoutInfo elementInfo, size_t elementCount) override
+    SimpleLayoutInfo GetVectorLayout(SimpleLayoutInfo, size_t elementCount) override
     {
         // GLSL doesn't support vectors of specialization constants,
         // but we will assume that, if supported, they would use one slot per element.
@@ -308,7 +328,7 @@ GLSLSpecializationConstantLayoutRulesImpl kGLSLSpecializationConstantLayoutRules
 
 struct GLSLObjectLayoutRulesImpl : ObjectLayoutRulesImpl
 {
-    virtual SimpleLayoutInfo GetObjectLayout(ShaderParameterKind kind) override
+    virtual SimpleLayoutInfo GetObjectLayout(ShaderParameterKind) override
     {
         // In Vulkan GLSL, pretty much every object is just a descriptor-table slot.
         // We can refine this method once we support a case where this isn't true.
@@ -544,7 +564,7 @@ static int GetElementCount(RefPtr<IntVal> val)
 {
     if (auto constantVal = val.As<ConstantIntVal>())
     {
-        return constantVal->value;
+        return (int) constantVal->value;
     }
     else if( auto varRefVal = val.As<GenericParamIntVal>() )
     {
@@ -632,9 +652,20 @@ createParameterBlockTypeLayout(
     RefPtr<TypeLayout>          elementTypeLayout,
     LayoutRulesImpl*            rules)
 {
-    auto info = getParameterBlockLayoutInfo(
-        parameterBlockType,
-        rules);
+    SimpleLayoutInfo info;
+    if (parameterBlockType)
+    {
+        info = getParameterBlockLayoutInfo(
+            parameterBlockType,
+            rules);
+    }
+    else
+    {
+        // If there is no concrete type, then it seems like we are
+        // being asked to compute layout for the global scope
+        info = rules->GetObjectLayout(ShaderParameterKind::ConstantBuffer);
+    }
+ 
 
     auto typeLayout = new ParameterBlockTypeLayout();
 
@@ -943,7 +974,7 @@ SimpleLayoutInfo GetLayoutImpl(
         return GetSimpleLayoutImpl(
             rules->GetVectorLayout(
                 GetLayout(vecType->elementType.Ptr(), rules),
-                GetIntVal(vecType->elementCount)),
+                (size_t) GetIntVal(vecType->elementCount)),
             type,
             rules,
             outTypeLayout);
@@ -953,8 +984,8 @@ SimpleLayoutInfo GetLayoutImpl(
         return GetSimpleLayoutImpl(
             rules->GetMatrixLayout(
                 GetLayout(matType->getElementType(), rules),
-                GetIntVal(matType->getRowCount()),
-                GetIntVal(matType->getColumnCount())),
+                (size_t) GetIntVal(matType->getRowCount()),
+                (size_t) GetIntVal(matType->getColumnCount())),
             type,
             rules,
             outTypeLayout);

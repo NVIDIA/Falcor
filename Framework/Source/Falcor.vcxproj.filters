@@ -504,6 +504,7 @@
     <ClCompile Include="API\LowLevel\ResourceAllocator.cpp" />
     <ClCompile Include="API\D3D\D3D12\D3D12ProgramVars.cpp" />
     <ClCompile Include="API\Vulkan\VkProgramVars.cpp" />
+    <ClCompile Include="API\Vulkan\VKComputeStateObject.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Graphics\Model\Animation.h">

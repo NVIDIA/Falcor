@@ -26,14 +26,10 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 
+#ifdef FALCOR_HLSL
+
 SamplerState gSampler;
 Texture2D gFont;
-
-cbuffer PerFrameCB : register(b0)
-{
-    float4x4 projMat;
-    float3 textColor;
-};
 
 struct VsOut
 {
@@ -44,7 +40,25 @@ struct VsOut
 float4 main(VsOut vOut) : SV_TARGET
 {
     float4 c = vOut.color;
-    float fontAlpha = gFont.Sample(gSampler, vOut.texC).a;
-    c *= float4((fontAlpha * textColor), fontAlpha);
+    float fontMask = gFont.Sample(gSampler, vOut.texC).r;
+    c *= fontMask;
     return c;
 }
+#endif
+
+#ifdef FALCOR_GLSL
+layout(set = 1, binding = 0) uniform texture2D gFont;
+layout(set = 1, binding = 1) uniform sampler gSampler;
+
+layout(location = 0) in vec4 color;
+layout(location = 1) in vec2 texC;
+
+layout(location = 0) out vec4 fragColor;
+
+void main()
+{
+    fragColor = color;
+    float fontMask = texture(sampler2D(gFont, gSampler), texC).r;
+    fragColor *= fontMask;
+}
+#endif

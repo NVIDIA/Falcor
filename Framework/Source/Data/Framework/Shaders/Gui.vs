@@ -26,10 +26,11 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 
+#ifdef FALCOR_HLSL
 cbuffer PerFrameCB : register(b0)
 {
-    float4x4 projMat;
-    float3 textColor;
+    float2 scale;
+    float2 offset;
 };
 
 struct VsIn
@@ -51,6 +52,31 @@ VsOut main(VsIn vIn)
     VsOut vOut;
     vOut.color = vIn.color;
     vOut.texC = vIn.texC;
-    vOut.pos = mul(projMat, float4(vIn.pos, 0, 1));
+    vOut.pos.xy = vIn.pos.xy * scale + offset;
+    vOut.pos.zw = float2(0,1);
     return vOut;
 }
+#endif
+
+#ifdef FALCOR_GLSL
+layout(set = 0, binding = 0) uniform PerFrameCB
+{
+    vec2 scale;
+    vec2 offset;
+};
+
+layout(location = 0) in vec2 pos;
+layout(location = 1) in vec2 texCIn;
+layout(location = 2) in vec4 colorIn;
+
+layout(location = 0) out vec4 color;
+layout(location = 1) out vec2 texC;
+
+void main()
+{
+    color = colorIn;
+    texC = texCIn;
+    gl_Position.xy = pos.xy * scale + offset;
+    gl_Position.zw = vec2(0, 1);
+}
+#endif

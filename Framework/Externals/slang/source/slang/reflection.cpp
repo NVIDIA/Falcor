@@ -100,6 +100,14 @@ SLANG_API SlangTypeKind spReflectionType_GetKind(SlangReflectionType* inType)
     {
         return SLANG_TYPE_KIND_CONSTANT_BUFFER;
     }
+    else if (type->As<TextureBufferType>())
+    {
+        return SLANG_TYPE_KIND_TEXTURE_BUFFER;
+    }
+    else if (type->As<GLSLShaderStorageBufferType>())
+    {
+        return SLANG_TYPE_KIND_SHADER_STORAGE_BUFFER;
+    }
     else if (auto samplerStateType = type->As<SamplerStateType>())
     {
         return SLANG_TYPE_KIND_SAMPLER_STATE;
@@ -191,11 +199,11 @@ SLANG_API size_t spReflectionType_GetElementCount(SlangReflectionType* inType)
 
     if(auto arrayType = dynamic_cast<ArrayExpressionType*>(type))
     {
-        return GetIntVal(arrayType->ArrayLength);
+        return (size_t) GetIntVal(arrayType->ArrayLength);
     }
     else if( auto vectorType = dynamic_cast<VectorExpressionType*>(type))
     {
-        return GetIntVal(vectorType->elementCount);
+        return (size_t) GetIntVal(vectorType->elementCount);
     }
 
     return 0;
@@ -233,7 +241,7 @@ SLANG_API unsigned int spReflectionType_GetRowCount(SlangReflectionType* inType)
 
     if(auto matrixType = dynamic_cast<MatrixExpressionType*>(type))
     {
-        return GetIntVal(matrixType->getRowCount());
+        return (unsigned int) GetIntVal(matrixType->getRowCount());
     }
     else if(auto vectorType = dynamic_cast<VectorExpressionType*>(type))
     {
@@ -254,11 +262,11 @@ SLANG_API unsigned int spReflectionType_GetColumnCount(SlangReflectionType* inTy
 
     if(auto matrixType = dynamic_cast<MatrixExpressionType*>(type))
     {
-        return GetIntVal(matrixType->getColumnCount());
+        return (unsigned int) GetIntVal(matrixType->getColumnCount());
     }
     else if(auto vectorType = dynamic_cast<VectorExpressionType*>(type))
     {
-        return GetIntVal(vectorType->elementCount);
+        return (unsigned int) GetIntVal(vectorType->elementCount);
     }
     else if( auto basicType = dynamic_cast<BasicExpressionType*>(type) )
     {
@@ -688,7 +696,7 @@ SLANG_API unsigned spReflection_GetParameterCount(SlangReflection* inProgram)
 
     if(auto globalStructLayout = globalLayout.As<StructTypeLayout>())
     {
-        return globalStructLayout->fields.Count();
+        return (unsigned) globalStructLayout->fields.Count();
     }
 
     return 0;
@@ -842,6 +850,10 @@ static void emitReflectionVarBindingInfoJSON(
     CASE(VERTEX_INPUT, vertexInput);
     CASE(FRAGMENT_OUTPUT, fragmentOutput);
     CASE(SAMPLER_STATE, samplerState);
+    CASE(UNIFORM, uniform);
+    CASE(DESCRIPTOR_TABLE_SLOT, descriptorTableSlot);
+    CASE(SPECIALIZATION_CONSTANT, specializationConstant);
+    CASE(MIXED, mixed);
     #undef CASE
 
         default:
@@ -1045,6 +1057,24 @@ static void emitReflectionTypeInfoJSON(
             type->getElementType());
         break;
 
+    case SLANG_TYPE_KIND_TEXTURE_BUFFER:
+        write(writer, "\"kind\": \"textureBuffer\"");
+        write(writer, ",\n");
+        write(writer, "\"elementType\": ");
+        emitReflectionTypeJSON(
+            writer,
+            type->getElementType());
+        break;
+
+    case SLANG_TYPE_KIND_SHADER_STORAGE_BUFFER:
+        write(writer, "\"kind\": \"shaderStorageBuffer\"");
+        write(writer, ",\n");
+        write(writer, "\"elementType\": ");
+        emitReflectionTypeJSON(
+            writer,
+            type->getElementType());
+        break;
+
     case SLANG_TYPE_KIND_SCALAR:
         write(writer, "\"kind\": \"scalar\"");
         write(writer, ",\n");
@@ -1180,6 +1210,23 @@ static void emitReflectionTypeLayoutInfoJSON(
             typeLayout->getElementTypeLayout());
         break;
 
+    case SLANG_TYPE_KIND_TEXTURE_BUFFER:
+        write(writer, "\"kind\": \"textureBuffer\"");
+        write(writer, ",\n");
+        write(writer, "\"elementType\": ");
+        emitReflectionTypeLayoutJSON(
+            writer,
+            typeLayout->getElementTypeLayout());
+        break;
+
+    case SLANG_TYPE_KIND_SHADER_STORAGE_BUFFER:
+        write(writer, "\"kind\": \"shaderStorageBuffer\"");
+        write(writer, ",\n");
+        write(writer, "\"elementType\": ");
+        emitReflectionTypeLayoutJSON(
+            writer,
+            typeLayout->getElementTypeLayout());
+        break;
     }
 
     // TODO: emit size info for types

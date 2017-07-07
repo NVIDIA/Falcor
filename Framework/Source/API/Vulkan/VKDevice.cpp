@@ -33,12 +33,10 @@
 #include <set>
 #include "Falcor.h"
 
+// #define VK_REPORT_PERF_WARNINGS // Uncomment this to see performance warnings
 namespace Falcor
 {
-    //
     // #VKTODO MOVEME - Temporary placement for debug report callback(s)
-    //
-
 #ifdef DEFAULT_ENABLE_DEBUG_LAYER
     VKAPI_ATTR VkBool32 VKAPI_CALL debugReportCallback(
         VkDebugReportFlagsEXT       flags,
@@ -50,7 +48,9 @@ namespace Falcor
         const char*                 pMessage,
         void*                       pUserData)
     {
-        printToDebugWindow(std::string(pMessage) + "\n");
+        std::string type = "FalcorVK ";
+        type += ((flags | VK_DEBUG_REPORT_ERROR_BIT_EXT) ? "Error: " : "Warning: ");
+        printToDebugWindow(type + std::string(pMessage) + "\n");
         return VK_FALSE;
     }
 
@@ -215,7 +215,10 @@ namespace Falcor
         {
             VkDebugReportCallbackCreateInfoEXT callbackCreateInfo = {};
             callbackCreateInfo.sType = VK_STRUCTURE_TYPE_DEBUG_REPORT_CREATE_INFO_EXT;
-            callbackCreateInfo.flags = VK_DEBUG_REPORT_ERROR_BIT_EXT | VK_DEBUG_REPORT_WARNING_BIT_EXT | VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT;
+            callbackCreateInfo.flags = VK_DEBUG_REPORT_ERROR_BIT_EXT | VK_DEBUG_REPORT_WARNING_BIT_EXT;
+#ifdef VK_REPORT_PERF_WARNINGS
+            callbackCreateInfo.flags |= VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT;
+#endif
             callbackCreateInfo.pfnCallback = &debugReportCallback;
             callbackCreateInfo.pUserData = nullptr;
 
