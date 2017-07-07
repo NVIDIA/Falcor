@@ -34,8 +34,6 @@ namespace Falcor
     template<> VkSimpleSmartHandle<VkSwapchainKHR>::~VkSimpleSmartHandle() { if(mApiHandle != VK_NULL_HANDLE) vkDestroySwapchainKHR(gpDevice->getApiHandle(), mApiHandle, nullptr); }
     template<> VkSimpleSmartHandle<VkCommandPool>::~VkSimpleSmartHandle() { if(mApiHandle != VK_NULL_HANDLE) vkDestroyCommandPool(gpDevice->getApiHandle(), mApiHandle, nullptr); }
     template<> VkSimpleSmartHandle<VkSemaphore>::~VkSimpleSmartHandle() { if(mApiHandle != VK_NULL_HANDLE) vkDestroySemaphore(gpDevice->getApiHandle(), mApiHandle, nullptr); }
-    template<> VkSimpleSmartHandle<VkRenderPass>::~VkSimpleSmartHandle() { if(mApiHandle != VK_NULL_HANDLE) vkDestroyRenderPass(gpDevice->getApiHandle(), mApiHandle, nullptr); }
-    template<> VkSimpleSmartHandle<VkFramebuffer>::~VkSimpleSmartHandle() { if(mApiHandle != VK_NULL_HANDLE) vkDestroyFramebuffer(gpDevice->getApiHandle(), mApiHandle, nullptr); }
     template<> VkSimpleSmartHandle<VkSampler>::~VkSimpleSmartHandle() { if(mApiHandle != VK_NULL_HANDLE) vkDestroySampler(gpDevice->getApiHandle(), mApiHandle, nullptr); }
     template<> VkSimpleSmartHandle<VkDescriptorSetLayout>::~VkSimpleSmartHandle() { if(mApiHandle != VK_NULL_HANDLE) vkDestroyDescriptorSetLayout(gpDevice->getApiHandle(), mApiHandle, nullptr); }
     template<> VkSimpleSmartHandle<VkPipeline>::~VkSimpleSmartHandle() { if(mApiHandle != VK_NULL_HANDLE) vkDestroyPipeline(gpDevice->getApiHandle(), mApiHandle, nullptr); }
@@ -117,8 +115,6 @@ namespace Falcor
     template VkSimpleSmartHandle<VkSwapchainKHR>::~VkSimpleSmartHandle();
     template VkSimpleSmartHandle<VkCommandPool>::~VkSimpleSmartHandle();
     template VkSimpleSmartHandle<VkSemaphore>::~VkSimpleSmartHandle();
-    template VkSimpleSmartHandle<VkRenderPass>::~VkSimpleSmartHandle();
-    template VkSimpleSmartHandle<VkFramebuffer>::~VkSimpleSmartHandle();
     template VkSimpleSmartHandle<VkSampler>::~VkSimpleSmartHandle();
     template VkSimpleSmartHandle<VkDescriptorSetLayout>::~VkSimpleSmartHandle();
     template VkSimpleSmartHandle<VkPipeline>::~VkSimpleSmartHandle();

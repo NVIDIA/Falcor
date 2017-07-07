@@ -163,8 +163,6 @@ namespace Falcor
     template<> VkSimpleSmartHandle<VkSwapchainKHR>::~VkSimpleSmartHandle();
     template<> VkSimpleSmartHandle<VkCommandPool>::~VkSimpleSmartHandle();
     template<> VkSimpleSmartHandle<VkSemaphore>::~VkSimpleSmartHandle();
-    template<> VkSimpleSmartHandle<VkRenderPass>::~VkSimpleSmartHandle();
-    template<> VkSimpleSmartHandle<VkFramebuffer>::~VkSimpleSmartHandle();
     template<> VkSimpleSmartHandle<VkSampler>::~VkSimpleSmartHandle();
     template<> VkSimpleSmartHandle<VkDescriptorSetLayout>::~VkSimpleSmartHandle();
     template<> VkSimpleSmartHandle<VkPipeline>::~VkSimpleSmartHandle();
