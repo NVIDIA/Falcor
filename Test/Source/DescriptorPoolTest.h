@@ -58,10 +58,8 @@ private:
     register_testing_func(TestDescriptorBasicReleases);
 
     //
-    register_testing_func(TestSub64DescriptorCountSize);
+    register_testing_func(TestDescriptorCountSize);
 
-    //  
-    register_testing_func(TestOver64DescriptorCountSize);
 
 
     //  Generate the Descriptor Pool Desc.

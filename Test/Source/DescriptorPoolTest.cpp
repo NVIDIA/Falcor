@@ -33,8 +33,7 @@ void DescriptorPoolTest::addTests()
 {
     addTestToList<TestCreates>();
     addTestToList<TestDescriptorBasicReleases>();
-    addTestToList<TestSub64DescriptorCountSize>();
-    addTestToList<TestOver64DescriptorCountSize>();
+    addTestToList<TestDescriptorCountSize>();
 }
 
 //  Test Creates
@@ -182,7 +181,7 @@ testing_func(DescriptorPoolTest, TestDescriptorBasicReleases)
     return test_pass();
 }
 //  Make sure it works for 64s.
-testing_func(DescriptorPoolTest, TestSub64DescriptorCountSize)
+testing_func(DescriptorPoolTest, TestDescriptorCountSize)
 {
 
     for (uint32_t allocPow = 0; allocPow < 4; allocPow++)
@@ -278,95 +277,6 @@ testing_func(DescriptorPoolTest, TestSub64DescriptorCountSize)
         {
             return test_fail("Deferred Releases Incomplete!");
         }
-    }
-    //
-    return test_pass();
-}
-
-
-
-//  
-testing_func(DescriptorPoolTest, TestOver64DescriptorCountSize)
-{
-    //  
-    srand(100);
-
-    for (uint32_t multfactor = 0; multfactor < 20; multfactor++)
-    {
-
-        //
-        uint32_t singleTypeAllocCount = 64 * (multfactor + 1);
-        uint32_t dsCount = 2 * 10;
-
-        //  
-        uint32_t countPerType = singleTypeAllocCount * (dsCount - 1);
-
-        //  Construct the GpuFence.
-        GpuFence::SharedPtr gpuFence = GpuFence::create();
-
-        //  Create the Descriptor Pool Descriptor.
-        DescriptorPool::Desc dpDesc = createDescriptorPoolDesc({ countPerType, countPerType , countPerType , countPerType , countPerType, countPerType });
-        dpDesc.setShaderVisible(false);
-
-        //  Create the Descriptor Pool.
-        DescriptorPool::SharedPtr pDP = DescriptorPool::create(dpDesc, gpuFence);
-
-        //  Create the Descriptor Set Layout.
-        DescriptorSet::Layout dsLayout = createDescriptorSetLayout({ singleTypeAllocCount , singleTypeAllocCount , singleTypeAllocCount , singleTypeAllocCount , singleTypeAllocCount , singleTypeAllocCount });
-
-        //  Added the Descriptor Sets Array.
-        std::vector<DescriptorSet::SharedPtr> dsArray(dsCount);
-
-        //  Create the Descriptor Sets, except for one.
-        for (uint32_t dsIndex = 0; dsIndex < dsCount - 1; dsIndex++)
-        {
-            dsArray[dsIndex] = DescriptorSet::create(pDP, dsLayout);
-        }
-
-
-        uint32_t nextActive = dsCount - 1;
-        uint32_t nextInactive = dsCount - 2;
-        uint32_t testsCount = 50;
-
-        //
-        for (uint32_t currentIndex = 0; currentIndex < testsCount; currentIndex++)
-        {
-            dsArray[nextInactive] = nullptr;
-            dsArray[nextActive] = DescriptorSet::create(pDP, dsLayout);
-
-            if (nextActive == 0)
-            {
-                nextActive = dsCount - 1;
-            }
-            else
-            {
-                nextActive = nextActive - 1;
-            }
-
-            if (nextInactive == 0)
-            {
-                nextInactive = dsCount - 1;
-            }
-            else
-            {
-                nextInactive = nextInactive - 1;
-            }
-        }
-
-        //  Execute the Deferred Releases.
-        pDP->executeDeferredReleases();
-
-        for (uint32_t dsIndex = 0; dsIndex < dsCount - 1; dsIndex++)
-        {
-            dsArray[dsIndex] = nullptr;
-        }
-
-        //  Confirm that all the Resources have been released.
-        if (pDP->getDeferredReleasesSize() != 0)
-        {
-            return test_fail("Deferred Releases Incomplete!");
-        }
-
     }
     //
     return test_pass();
