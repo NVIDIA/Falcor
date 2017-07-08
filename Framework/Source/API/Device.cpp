@@ -63,7 +63,7 @@ namespace Falcor
         poolDesc.setDescCount(DescriptorPool::Type::Cbv, 16 * 1024);
 #endif
         mpGpuDescPool = DescriptorPool::create(poolDesc, mpRenderContext->getLowLevelData()->getFence());
-        poolDesc.setShaderVisible(false).setDescCount(DescriptorPool::Type::Rtv, 1024).setDescCount(DescriptorPool::Type::Dsv, 1024);
+        poolDesc.setShaderVisible(false).setDescCount(DescriptorPool::Type::Rtv, 16 * 1024).setDescCount(DescriptorPool::Type::Dsv, 1024);
         mpCpuDescPool = DescriptorPool::create(poolDesc, mpRenderContext->getLowLevelData()->getFence());
 
         if(mpRenderContext) mpRenderContext->reset();
@@ -147,7 +147,7 @@ namespace Falcor
     {
         mpResourceAllocator->executeDeferredReleases();
         uint64_t gpuVal = mpFrameFence->getGpuValue();
-        while (mDeferredReleases.size() && mDeferredReleases.front().frameID < gpuVal)
+        while (mDeferredReleases.size() && mDeferredReleases.front().frameID <= gpuVal)
         {
             mDeferredReleases.front().pApiObject.Release();
             mDeferredReleases.pop();

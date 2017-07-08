@@ -61,7 +61,6 @@ namespace Falcor
                 mpApiData->allocations[i] = pHeap->allocateDescriptors(range.descCount);
                 if (!mpApiData->allocations[i])
                 {
-                    assert(0);
                     return false;
                 }
             }

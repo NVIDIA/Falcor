@@ -43,6 +43,7 @@ namespace Falcor
         ID3D12Device* pDevice = gpDevice->getApiHandle().GetInterfacePtr();
 
         HRESULT hr = pDevice->CreateFence(pFence->mCpuValue, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&pFence->mApiHandle));
+        pFence->mCpuValue++;
         if(FAILED(hr))
         {
             d3dTraceHR("Failed to create a fence object", hr);
@@ -54,24 +55,22 @@ namespace Falcor
 
     uint64_t GpuFence::gpuSignal(CommandQueueHandle pQueue)
     {
-        mCpuValue++;
         d3d_call(pQueue->Signal(mApiHandle, mCpuValue));
-        return mCpuValue;
+        mCpuValue++;
+        return mCpuValue - 1;
     }
 
     void GpuFence::syncGpu(CommandQueueHandle pQueue)
     {
-        assert(mCpuValue);
         d3d_call(pQueue->Wait(mApiHandle, mCpuValue));
     }
 
     void GpuFence::syncCpu()
     {
-        assert(mCpuValue);
         uint64_t gpuVal = getGpuValue();
-        if (gpuVal < mCpuValue)
+        if (gpuVal < mCpuValue - 1)
         {
-            d3d_call(mApiHandle->SetEventOnCompletion(mCpuValue, mEvent));
+            d3d_call(mApiHandle->SetEventOnCompletion(mCpuValue - 1, mEvent));
             WaitForSingleObject(mEvent, INFINITE);
         }
     }

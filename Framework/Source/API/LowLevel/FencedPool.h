@@ -44,7 +44,7 @@ namespace Falcor
 		{
 			// The queue is sorted based on time. Check if the first object is free
 			Data data = mQueue.front();
-			if (data.timestamp < mpFence->getGpuValue())
+			if (data.timestamp <= mpFence->getGpuValue())
 			{
 				mQueue.pop();
 			}

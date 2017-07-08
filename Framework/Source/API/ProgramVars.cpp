@@ -687,7 +687,7 @@ namespace Falcor
     }
 
     template<bool forGraphics>
-    void applyProgramVarsCommon(const ProgramVars* pVars, CopyContext* pContext, bool bindRootSig)
+    bool applyProgramVarsCommon(const ProgramVars* pVars, ProgramVars::RootSetVec& rootSets, CopyContext* pContext, bool bindRootSig)
     {
         if (bindRootSig)
         {
@@ -702,7 +702,6 @@ namespace Falcor
         }
 
         // Allocate and mark the dirty sets
-        auto& rootSets = pVars->getRootSets();
         for (uint32_t i = 0; i < rootSets.size(); i++)
         {
             if (rootSets[i].active)
@@ -713,6 +712,10 @@ namespace Falcor
                     DescriptorSet::Layout layout;
                     const auto& set = pVars->getRootSignature()->getDescriptorSet(i);
                     rootSets[i].pDescSet = DescriptorSet::create(gpDevice->getGpuDescriptorPool(), set);
+                    if (rootSets[i].pDescSet == nullptr)
+                    {
+                        return false;
+                    }
                 }
             }
         }
@@ -738,15 +741,16 @@ namespace Falcor
                 }
             }
         }
+        return true;
     }
 
-    void ComputeVars::apply(ComputeContext* pContext, bool bindRootSig) const
+    bool ComputeVars::apply(ComputeContext* pContext, bool bindRootSig)
     {
-        applyProgramVarsCommon<false>(this, pContext, bindRootSig);
+        return applyProgramVarsCommon<false>(this, mRootSets, pContext, bindRootSig);
     }
 
-    void GraphicsVars::apply(RenderContext* pContext, bool bindRootSig) const
+    bool GraphicsVars::apply(RenderContext* pContext, bool bindRootSig)
     {
-        applyProgramVarsCommon<true>(this, pContext, bindRootSig);
+        return applyProgramVarsCommon<true>(this, mRootSets, pContext, bindRootSig);
     }
 }

@@ -218,24 +218,33 @@ namespace Falcor
     void RenderContext::prepareForDraw()
     {
         assert(mpGraphicsState);
-#if _ENABLE_NVAPI
-        if(mpGraphicsState->isSinglePassStereoEnabled())
-        {
-            NvAPI_Status ret = NvAPI_D3D12_SetSinglePassStereoMode(mpLowLevelData->getCommandList(), 2, 1, false);
-            assert(ret == NVAPI_OK);
-    }
-#else
-        assert(mpGraphicsState->isSinglePassStereoEnabled() == false);
-#endif
+
         // Bind the root signature and the root signature data
         if (mpGraphicsVars)
         {
-            mpGraphicsVars->apply(const_cast<RenderContext*>(this), mBindGraphicsRootSig);
+            if (mpGraphicsVars->apply(const_cast<RenderContext*>(this), mBindGraphicsRootSig) == false)
+            {
+                logWarning("RenderContext::prepareForDraw() - applying GraphicsVars failed, most likely because we ran out of descriptors. Flushing the GPU and retrying");
+                flush(true);
+                bool b = mpGraphicsVars->apply(const_cast<RenderContext*>(this), mBindGraphicsRootSig);
+                assert(b);
+            }
         }
         else
         {
             mpLowLevelData->getCommandList()->SetGraphicsRootSignature(RootSignature::getEmpty()->getApiHandle());
         }
+
+#if _ENABLE_NVAPI
+        if (mpGraphicsState->isSinglePassStereoEnabled())
+        {
+            NvAPI_Status ret = NvAPI_D3D12_SetSinglePassStereoMode(mpLowLevelData->getCommandList(), 2, 1, false);
+            assert(ret == NVAPI_OK);
+        }
+#else
+        assert(mpGraphicsState->isSinglePassStereoEnabled() == false);
+#endif
+
         mBindGraphicsRootSig = false;
 
         CommandListHandle pList = mpLowLevelData->getCommandList();
