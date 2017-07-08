@@ -330,10 +330,6 @@ namespace Falcor
 
         pCB->setBlob(&mData, offset, dataSize);
 
-#ifdef FALCOR_GL
-#pragma error Fix material texture bindings for OpenGL
-#endif
-
         // Now set the textures
         std::string resourceName = std::string(varName) + ".textures.layers";
         const auto pResourceDesc = pVars->getReflection()->getResourceDesc(resourceName);
@@ -349,7 +345,7 @@ namespace Falcor
         {
             if (pTextures[i] != nullptr)
             {
-                pVars->setSrv(pResourceDesc->regIndex + i, pTextures[i]->getSRV());
+                pVars->setSrv(pResourceDesc->regIndex + i, pResourceDesc->regSpace, pTextures[i]->getSRV());
             }
         }
 
@@ -359,18 +355,6 @@ namespace Falcor
     bool Material::operator==(const Material& other) const
     {
         return memcmp(&mData, &other.mData, sizeof(mData)) == 0 && mData.samplerState == other.mData.samplerState;
-    }
-
-    void Material::evictTextures() const
-    {
-        Texture::SharedPtr* pTextures = (Texture::SharedPtr*)&mData.textures;
-        for(uint32_t i = 0; i < kTexCount ; i++)
-        {
-            if(pTextures[i])
-            {
-                pTextures[i]->evict(mData.samplerState.get());
-            }
-        }
     }
 
     void Material::setLayerTexture(uint32_t layerId, const Texture::SharedPtr& pTexture)

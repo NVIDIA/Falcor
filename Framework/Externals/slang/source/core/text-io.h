@@ -263,7 +263,7 @@ namespace Slang
 		}
         void ReleaseStream()
         {
-            stream.Release();
+            stream = 0;
         }
 	};
 
@@ -273,7 +273,7 @@ namespace Slang
 		RefPtr<Stream> stream;
 		List<char> buffer;
 		Encoding * encoding;
-		int ptr;
+		UInt ptr;
 		char ReadBufferChar();
 		void ReadBuffer();
 			
@@ -308,7 +308,7 @@ namespace Slang
 		}
         void ReleaseStream()
         {
-            stream.Release();
+            stream = 0;
         }
 	};
 }

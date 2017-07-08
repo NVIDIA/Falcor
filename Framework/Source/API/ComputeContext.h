@@ -39,7 +39,7 @@ namespace Falcor
         using SharedConstPtr = std::shared_ptr<const ComputeContext>;
         ~ComputeContext();
 
-        static SharedPtr create();
+        static SharedPtr create(CommandQueueHandle queue);
 
         /** Set the compute variables
         */

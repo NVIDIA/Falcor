@@ -99,7 +99,7 @@ float2 calcMotionVector(float2 pixelCrd, float4 prevPosH, float2 renderTargetDim
 /*******************************************************************
                     GLSL Evaluation routines
 *******************************************************************/
-#if defined(FALCOR_GL) || defined(FALCOR_GLSL)
+#if defined(FALCOR_GLSL)
 bool isSamplerBound(in sampler2D sampler)
 {
     return any(uvec2(sampler) != 0);
@@ -114,5 +114,5 @@ vec4 fetchTextureIfFound(in sampler2D sampler, in vec2 uv, in vec2 duvdx, in vec
     }
     return ret;
 }
-#endif // defined(FALCOR_GL) || defined(FALCOR_GLSL)
+#endif // defined(FALCOR_GLSL)
 #endif  // _FALCOR_SHADER_COMMON_H_

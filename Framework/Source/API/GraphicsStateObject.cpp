@@ -29,7 +29,7 @@
 #include "Framework.h"
 #include "GraphicsStateObject.h"
 #include "BlendState.h"
-#include "Vao.h"
+#include "VAO.h"
 #include "Device.h"
 
 namespace Falcor
@@ -81,7 +81,7 @@ namespace Falcor
 
     GraphicsStateObject::~GraphicsStateObject()
     {
-        gpDevice->releaseResource(mApiHandle);
+//        gpDevice->releaseResource(mApiHandle); // #VKTODO fixme
     }
 
     GraphicsStateObject::SharedPtr GraphicsStateObject::create(const Desc& desc)

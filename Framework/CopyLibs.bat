@@ -8,9 +8,7 @@ if "%2" == "x64" SET ATBDLL="AntTweakBar64.dll"
 
 if not exist %3 mkdir %3
 SET FALCOR_PROJECT_DIR=%~dp0
-robocopy "%FALCOR_PROJECT_DIR%\\Externals\\glew\\bin\\Release\%2" %3 glew32.dll /r:0 >nul
 robocopy "%FALCOR_PROJECT_DIR%\Externals\AntTweakBar\lib" %3  %ATBDLL% /r:0 >nul
-robocopy "%FALCOR_PROJECT_DIR%\Externals\GLFW\lib\%2\%1" %3  glfw3.dll /r:0 >nul
 robocopy "%FALCOR_PROJECT_DIR%\Externals\FreeImage" %3  freeimage.dll /r:0 >nul
 robocopy "%FALCOR_PROJECT_DIR%\Externals\assimp\bin\%2" %3  *.dll /r:0 >nul
 robocopy "%FALCOR_PROJECT_DIR%\Externals\FFMpeg\bin\%2" %3  *.dll /r:0 >nul

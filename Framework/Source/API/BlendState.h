@@ -182,7 +182,7 @@ namespace Falcor
 
         /** Get the render-target array size
         */
-        size_t getRtCount() const { return mDesc.mRtDesc.size(); }
+        uint32_t getRtCount() const { return (uint32_t)mDesc.mRtDesc.size(); }
 
         /** Get the API handle
         */

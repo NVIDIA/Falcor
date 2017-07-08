@@ -55,7 +55,7 @@ namespace Falcor
 
         /** create a new object
         */
-        static SharedPtr create();
+        static SharedPtr create(CommandQueueHandle queue);
 
         /** Clear an FBO
             \param[in] pFbo The FBO to clear
@@ -101,7 +101,7 @@ namespace Falcor
             \param[in] startIndexLocation The location of the first index to read from the index buffer (offset in indices)
             \param[in] baseVertexLocation A value which is added to each index before reading a vertex from the vertex buffer
         */
-        void drawIndexed(uint32_t indexCount, uint32_t startIndexLocation, int baseVertexLocation);
+        void drawIndexed(uint32_t indexCount, uint32_t startIndexLocation, int32_t baseVertexLocation);
 
         /** Indexed instanced draw call
             \param[in] indexCount Number of indices to draw per instance
@@ -110,7 +110,7 @@ namespace Falcor
             \param[in] baseVertexLocation A value which is added to each index before reading a vertex from the vertex buffer
             \param[in] startInstanceLocation A value which is added to each index before reading per-instance data from the vertex buffer
         */
-        void drawIndexedInstanced(uint32_t indexCount, uint32_t instanceCount, uint32_t startIndexLocation, int baseVertexLocation, uint32_t startInstanceLocation);
+        void drawIndexedInstanced(uint32_t indexCount, uint32_t instanceCount, uint32_t startIndexLocation, int32_t baseVertexLocation, uint32_t startInstanceLocation);
 
         /** Blits (low-level copy) an SRV into an RTV
             \param[in] pSrc Source view to copy from
@@ -131,7 +131,7 @@ namespace Falcor
 
         /** Set the program variables for graphics
         */
-        void setGraphicsVars(const GraphicsVars::SharedPtr& pVars) { mBindComputeRootSig = mBindComputeRootSig || (mpGraphicsVars != pVars); mpGraphicsVars = pVars; applyProgramVars(); }
+        void setGraphicsVars(const GraphicsVars::SharedPtr& pVars) { mBindGraphicsRootSig = mBindGraphicsRootSig || (mpGraphicsVars != pVars); mpGraphicsVars = pVars; applyProgramVars(); }
         
         /** Get the bound graphics program variables object
         */
@@ -168,7 +168,7 @@ namespace Falcor
         RenderContext() = default;
         GraphicsVars::SharedPtr mpGraphicsVars;
         GraphicsState::SharedPtr mpGraphicsState;
-        bool mBindComputeRootSig = true;
+        bool mBindGraphicsRootSig = true;
 
         std::stack<GraphicsState::SharedPtr> mPipelineStateStack;
         std::stack<GraphicsVars::SharedPtr> mpGraphicsVarsStack;
@@ -176,33 +176,10 @@ namespace Falcor
         static CommandSignatureHandle spDrawCommandSig;
         static CommandSignatureHandle spDrawIndexCommandSig;
 
-        struct BlitData
-        {
-            FullScreenPass::UniquePtr pPass;
-            GraphicsVars::SharedPtr pVars;
-            GraphicsState::SharedPtr pState;
-
-            Sampler::SharedPtr pLinearSampler;
-            Sampler::SharedPtr pPointSampler;
-
-            ConstantBuffer::SharedPtr pSrcRectBuffer;
-            vec2 prevSrcRectOffset;
-            vec2 prevSrcReftScale;
-
-            // Variable offsets in constant buffer
-            size_t offsetVarOffset;
-            size_t scaleVarOffset;
-        };
-
-        static BlitData sBlitData;
-
         /** Creates command signatures for DrawIndirect, DrawIndexedIndirect. Also calls
         compute context's initDispatchCommandSignature() to create command signature for dispatchIndirect
         */
         static void initDrawCommandSignatures();
-
-        static void initBlitData();
-        static void releaseBlitData();
 
         // Internal functions used by the API layers
         void applyProgramVars();

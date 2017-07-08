@@ -55,7 +55,6 @@ void TestBase::init(bool initDevice /* = false */)
         mpWindow = Window::create(Window::Desc(), &mDummyCallbacks);
         gpDevice = Device::create(mpWindow, Device::Desc());
         //avoid assert failure in ~Device()
-        gpDevice->getRenderContext()->getLowLevelData()->getFence()->cpuSignal();
     }
 
     onInit();

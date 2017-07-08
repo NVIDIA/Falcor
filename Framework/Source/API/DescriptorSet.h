@@ -27,10 +27,15 @@
 ***************************************************************************/
 #pragma once
 #include "LowLevel/DescriptorPool.h"
+#include "ResourceViews.h"
+#include "Sampler.h"
 
 namespace Falcor
 {
     struct DescriptorSetApiData;
+    class CopyContext;
+    class RootSignature;
+    class Buffer;
 
     enum class ShaderVisibility
     {
@@ -54,6 +59,7 @@ namespace Falcor
         using Type = DescriptorPool::Type;
         using CpuHandle = DescriptorPool::CpuHandle;
         using GpuHandle = DescriptorPool::GpuHandle;
+        using ApiHandle = DescriptorSetApiHandle;
 
         ~DescriptorSet();
 
@@ -86,6 +92,15 @@ namespace Falcor
 
         CpuHandle getCpuHandle(uint32_t rangeIndex, uint32_t descInRange = 0) const;
         GpuHandle getGpuHandle(uint32_t rangeIndex, uint32_t descInRange = 0) const;
+        ApiHandle getApiHandle() const { return mApiHandle; }
+
+        void setSrv(uint32_t rangeIndex, uint32_t descIndex, uint32_t regIndex, const ShaderResourceView::ApiHandle& srv);
+        void setUav(uint32_t rangeIndex, uint32_t descIndex, uint32_t regIndex, const UnorderedAccessView::ApiHandle& uav);
+        void setSampler(uint32_t rangeIndex, uint32_t descIndex, uint32_t regIndex, const Sampler::ApiHandle& sampler);
+        void setCb(uint32_t rangeIndex, uint32_t descIndex, uint32_t regIndex, const Buffer* pBuffer);
+
+        void bindForGraphics(CopyContext* pCtx, const RootSignature* pRootSig, uint32_t rootIndex);
+        void bindForCompute(CopyContext* pCtx, const RootSignature* pRootSig, uint32_t rootIndex);
     private:
         using ApiData = DescriptorSetApiData;
         DescriptorSet(DescriptorPool::SharedPtr pPool, const Layout& layout) : mpPool(pPool), mLayout(layout) {}
@@ -94,5 +109,6 @@ namespace Falcor
         Layout mLayout;
         std::shared_ptr<ApiData> mpApiData;
         DescriptorPool::SharedPtr mpPool;
+        ApiHandle mApiHandle = {};
     };
 }

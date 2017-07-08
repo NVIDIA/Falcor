@@ -30,7 +30,7 @@
 #include "API/Texture.h"
 #include "API/FBO.h"
 #include "API/RenderContext.h"
-#include "Api/LowLevel/DescriptorPool.h"
+#include "API/LowLevel/DescriptorPool.h"
 #include "API/LowLevel/ResourceAllocator.h"
 
 namespace Falcor
@@ -41,26 +41,33 @@ namespace Falcor
 #define DEFAULT_ENABLE_DEBUG_LAYER false
 #endif
 
+    struct DeviceApiData;
+
     class Device
     {
     public:
         using SharedPtr = std::shared_ptr<Device>;
         using SharedConstPtr = std::shared_ptr<const Device>;
         using ApiHandle = DeviceHandle;
+        static const uint32_t kQueueTypeCount = (uint32_t)LowLevelContextData::CommandQueueType::Count;
 
-		/** Device configuration
-		*/
+        /** Device configuration
+        */
         struct Desc
         {
-			ResourceFormat colorFormat = ResourceFormat::RGBA8UnormSrgb;    ///< The color buffer format
-			ResourceFormat depthFormat = ResourceFormat::D24UnormS8;        ///< The depth buffer format
-            int apiMajorVersion = DEFAULT_API_MAJOR_VERSION; ///< Requested API major version. Context creation fails if this version is not supported.
-            int apiMinorVersion = DEFAULT_API_MINOR_VERSION; ///< Requested API minor version. Context creation fails if this version is not supported.
-            bool useDebugContext = false;             ///< create a debug context. NOTE: Debug configuration always creates a debug context
-            std::vector<std::string> requiredExtensions; ///< Extensions required by the sample
-			bool enableVsync = false;           ///< Controls vertical-sync
-            bool enableDebugLayer = DEFAULT_ENABLE_DEBUG_LAYER;    ///< Enable the debug layer. The default for release build is false, for debug build it's true.
-            
+            // #HACK VK surface validation only allows BGRA8 on my machine - KY
+            ResourceFormat colorFormat = ResourceFormat::BGRA8UnormSrgb;    ///< The color buffer format
+            ResourceFormat depthFormat = ResourceFormat::D24UnormS8;        ///< The depth buffer format
+            int apiMajorVersion = DEFAULT_API_MAJOR_VERSION;                ///< Requested API major version. Context creation fails if this version is not supported.
+            int apiMinorVersion = DEFAULT_API_MINOR_VERSION;                ///< Requested API minor version. Context creation fails if this version is not supported.
+            bool useDebugContext = false;                                   ///< create a debug context. NOTE: Debug configuration always creates a debug context
+            std::vector<std::string> requiredExtensions;                    ///< Extensions required by the sample
+            bool enableVsync = false;                                       ///< Controls vertical-sync
+            bool enableDebugLayer = DEFAULT_ENABLE_DEBUG_LAYER;             ///< Enable the debug layer. The default for release build is false, for debug build it's true.
+
+            static_assert((uint32_t)LowLevelContextData::CommandQueueType::Direct == 2, "Default initialization of cmdQueues assumes that Direct queue index is 0");
+            uint32_t cmdQueues[kQueueTypeCount] = { 0, 0, 1 };  ///< Command queues to create. If not direct-queues are created, mpRenderContext will not be initialized
+
 #ifdef FALCOR_D3D
             /** The following callback allows the user to create its own device (for example, create a WARP device or choose a specific GPU in a multi-GPU machine)
             */
@@ -69,51 +76,59 @@ namespace Falcor
 #endif
         };
 
-		/** Create a new device.
-		\param[in] pWindow a previously-created window object
-		\param[in] desc Device configuration desctiptor.
-		\return nullptr if the function failed, otherwise a new device object
-		*/
-		static SharedPtr create(Window::SharedPtr& pWindow, const Desc& desc);
+        /** Create a new device.
+        \param[in] pWindow a previously-created window object
+        \param[in] desc Device configuration descriptor.
+        \return nullptr if the function failed, otherwise a new device object
+        */
+        static SharedPtr create(Window::SharedPtr& pWindow, const Desc& desc);
 
         /** Acts as the destructor for Device. Some resources use gpDevice in their cleanup.
             Cleaning up the SharedPtr directly would clear gpDevice before calling destructors.
         */
         void cleanup();
 
-		/** Enable/disable vertical sync
-		*/
-		void setVSync(bool enable);
+        /** Enable/disable vertical sync
+        */
+        void toggleVSync(bool enable);
 
-		/** Check if the window is occluded
-		*/
-		bool isWindowOccluded() const;
+        /** Check if the window is occluded
+        */
+        bool isWindowOccluded() const;
 
-		/** Check if the device support an extension
-		*/
-		static bool isExtensionSupported(const std::string & name);
+        /** Check if the device support an extension
+        */
+        static bool isExtensionSupported(const std::string & name);
 
-		/** Get the FBO object associated with the swap-chain.
-			This can change each frame, depending on the API used
-		*/
+        /** Get the FBO object associated with the swap-chain.
+            This can change each frame, depending on the API used
+        */
         Fbo::SharedPtr getSwapChainFbo() const;
 
-		/** Get the default render-context.
-			The default render-context is managed completly by the device. The user should just queue commands into it, the device will take care of allocation, submission and synchronization
-		*/
-		RenderContext::SharedPtr getRenderContext() const { return mpRenderContext; }
+        /** Get the default render-context.
+            The default render-context is managed completly by the device. The user should just queue commands into it, the device will take care of allocation, submission and synchronization
+        */
+        RenderContext::SharedPtr getRenderContext() const { return mpRenderContext; }
 
-		/** Get the native API handle
-		*/
-		DeviceHandle getApiHandle() { return mApiHandle; }
+        /** Get the command queue handle
+        */
+        CommandQueueHandle getCommandQueueHandle(LowLevelContextData::CommandQueueType type, uint32_t index) const;
 
-		/** Present the back-buffer to the window
-		*/
-		void present();
+        /** Get the API queue type
+        */
+        ApiCommandQueueType getApiCommandQueueType(LowLevelContextData::CommandQueueType type) const;
 
-		/** Check if vertical sync is enabled
-		*/
-		bool isVsyncEnabled() const { return mVsyncOn; }
+        /** Get the native API handle
+        */
+        DeviceHandle getApiHandle() { return mApiHandle; }
+
+        /** Present the back-buffer to the window
+        */
+        void present();
+
+        /** Check if vertical sync is enabled
+        */
+        bool isVsyncEnabled() const { return mVsyncOn; }
 
         /** Resize the swap-chain
             \return A new FBO object
@@ -125,23 +140,56 @@ namespace Falcor
         ResourceAllocator::SharedPtr getResourceAllocator() const { return mpResourceAllocator; }
         void releaseResource(ApiObjectHandle pResource);
 
+#ifdef FALCOR_VK
+        enum class MemoryType
+        {
+            Default,
+            Upload,
+            Readback,
+            Count
+        };
+        uint32_t getVkMemoryType(MemoryType falcorType);
+        const VkPhysicalDeviceLimits& getPhysicalDeviceLimits() const;
+#endif
     private:
-		Device(Window::SharedPtr pWindow) : mpWindow(pWindow) {}
-		bool init(const Desc& desc);
-        bool updateDefaultFBO(uint32_t width, uint32_t height, ResourceFormat colorFormat, ResourceFormat depthFormat);
+        struct ResourceRelease
+        {
+            size_t frameID;
+            ApiObjectHandle pApiObject;
+        };
+        std::queue<ResourceRelease> mDeferredReleases;
+
+        uint32_t mCurrentBackBufferIndex;
+        Fbo::SharedPtr mpSwapChainFbos[kSwapChainBuffers];
+
+        Device(Window::SharedPtr pWindow) : mpWindow(pWindow) {}
+        bool init(const Desc& desc);
         void executeDeferredReleases();
+        void releaseFboData();
+        bool updateDefaultFBO(uint32_t width, uint32_t height, ResourceFormat colorFormat, ResourceFormat depthFormat);
 
         ApiHandle mApiHandle;
         ResourceAllocator::SharedPtr mpResourceAllocator;
         DescriptorPool::SharedPtr mpCpuDescPool;
         DescriptorPool::SharedPtr mpGpuDescPool;
+        bool mIsWindowOccluded = false;
+        GpuFence::SharedPtr mpFrameFence;
 
-		Window::SharedPtr mpWindow;
-		void* mpPrivateData;
-		RenderContext::SharedPtr mpRenderContext;
-		bool mVsyncOn;
+        Window::SharedPtr mpWindow;
+        DeviceApiData* mpApiData;
+        RenderContext::SharedPtr mpRenderContext;
+        bool mVsyncOn;
         size_t mFrameID = 0;
-	};
+
+        std::vector<CommandQueueHandle> mCmdQueues[kQueueTypeCount];
+
+        // API specific functions
+        bool getApiFboData(uint32_t width, uint32_t height, ResourceFormat colorFormat, ResourceFormat depthFormat, std::vector<ResourceHandle>& apiHandles, uint32_t& currentBackBufferIndex);
+        void destroyApiObjects();
+        void apiPresent();
+        bool apiInit(const Desc& desc);
+        bool createSwapChain(ResourceFormat colorFormat);
+    };
 
     extern Device::SharedPtr gpDevice;
 }

@@ -42,7 +42,7 @@ namespace Falcor
 
     ComputeStateObject::~ComputeStateObject()
     {
-        gpDevice->releaseResource(mApiHandle);
+//        gpDevice->releaseResource(mApiHandle); // #VKTODO fixme
     }
 
     ComputeStateObject::SharedPtr ComputeStateObject::create(const Desc& desc)

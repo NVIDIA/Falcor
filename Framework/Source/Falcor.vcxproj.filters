@@ -199,57 +199,6 @@
     <ClCompile Include="API\LowLevel\RootSignature.cpp">
       <Filter>API\LowLevel</Filter>
     </ClCompile>
-    <ClCompile Include="API\OpenGL\GLBlendState.cpp">
-      <Filter>API\OpenGL</Filter>
-    </ClCompile>
-    <ClCompile Include="API\OpenGL\GLBuffer.cpp">
-      <Filter>API\OpenGL</Filter>
-    </ClCompile>
-    <ClCompile Include="API\OpenGL\GLDepthStencilState.cpp">
-      <Filter>API\OpenGL</Filter>
-    </ClCompile>
-    <ClCompile Include="API\OpenGL\GLFbo.cpp">
-      <Filter>API\OpenGL</Filter>
-    </ClCompile>
-    <ClCompile Include="API\OpenGL\GLFormats.cpp">
-      <Filter>API\OpenGL</Filter>
-    </ClCompile>
-    <ClCompile Include="API\OpenGL\GLGpuTimer.cpp">
-      <Filter>API\OpenGL</Filter>
-    </ClCompile>
-    <ClCompile Include="API\OpenGL\GLProgramReflection.cpp">
-      <Filter>API\OpenGL</Filter>
-    </ClCompile>
-    <ClCompile Include="API\OpenGL\GLProgramVersion.cpp">
-      <Filter>API\OpenGL</Filter>
-    </ClCompile>
-    <ClCompile Include="API\OpenGL\GLRasterizerState.cpp">
-      <Filter>API\OpenGL</Filter>
-    </ClCompile>
-    <ClCompile Include="API\OpenGL\GLRenderContext.cpp">
-      <Filter>API\OpenGL</Filter>
-    </ClCompile>
-    <ClCompile Include="API\OpenGL\GLSampler.cpp">
-      <Filter>API\OpenGL</Filter>
-    </ClCompile>
-    <ClCompile Include="API\OpenGL\GLScreenCapture.cpp">
-      <Filter>API\OpenGL</Filter>
-    </ClCompile>
-    <ClCompile Include="API\OpenGL\GLShader.cpp">
-      <Filter>API\OpenGL</Filter>
-    </ClCompile>
-    <ClCompile Include="API\OpenGL\GLTexture.cpp">
-      <Filter>API\OpenGL</Filter>
-    </ClCompile>
-    <ClCompile Include="API\OpenGL\GLUniformBuffer.cpp">
-      <Filter>API\OpenGL</Filter>
-    </ClCompile>
-    <ClCompile Include="API\OpenGL\GLVao.cpp">
-      <Filter>API\OpenGL</Filter>
-    </ClCompile>
-    <ClCompile Include="API\OpenGL\GLWindow.cpp">
-      <Filter>API\OpenGL</Filter>
-    </ClCompile>
     <ClCompile Include="API\D3D\D3DFormats.cpp">
       <Filter>API\D3D</Filter>
     </ClCompile>
@@ -310,9 +259,6 @@
     <ClCompile Include="API\D3D\D3D11\D3D11Window.cpp">
       <Filter>API\D3D\D3D11</Filter>
     </ClCompile>
-    <ClCompile Include="API\D3D\D3D12\D3D12ProgramVars.cpp">
-      <Filter>API\D3D\D3D12</Filter>
-    </ClCompile>
     <ClCompile Include="API\D3D\D3D12\D3D12RasterizerState.cpp">
       <Filter>API\D3D\D3D12</Filter>
     </ClCompile>
@@ -331,13 +277,7 @@
     <ClCompile Include="API\D3D\D3D12\D3D12Vao.cpp">
       <Filter>API\D3D\D3D12</Filter>
     </ClCompile>
-    <ClCompile Include="API\D3D\D3D12\D3D12BlendState.cpp">
-      <Filter>API\D3D\D3D12</Filter>
-    </ClCompile>
     <ClCompile Include="API\D3D\D3D12\D3D12Buffer.cpp">
-      <Filter>API\D3D\D3D12</Filter>
-    </ClCompile>
-    <ClCompile Include="API\D3D\D3D12\D3D12DepthStencilState.cpp">
       <Filter>API\D3D\D3D12</Filter>
     </ClCompile>
     <ClCompile Include="API\D3D\D3D12\D3D12Device.cpp">
@@ -471,9 +411,6 @@
     <ClCompile Include="API\DescriptorSet.cpp">
       <Filter>API</Filter>
     </ClCompile>
-    <ClCompile Include="API\ParameterBlock.cpp">
-      <Filter>API</Filter>
-    </ClCompile>
     <ClCompile Include="API\LowLevel\DescriptorPool.cpp">
       <Filter>API\LowLevel</Filter>
     </ClCompile>
@@ -483,6 +420,91 @@
     <ClCompile Include="API\D3D\D3D12\LowLevel\D3D12DescriptorSet.cpp">
       <Filter>API\D3D\D3D12\LowLevel</Filter>
     </ClCompile>
+    <ClCompile Include="API\vulkan\VKDevice.cpp">
+      <Filter>API\Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="API\vulkan\VKRenderContext.cpp">
+      <Filter>API\Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="API\vulkan\VKBuffer.cpp">
+      <Filter>API\Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="API\Vulkan\VKTexture.cpp">
+      <Filter>API\Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="API\Vulkan\VKFormats.cpp">
+      <Filter>API\Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="API\Vulkan\VKResourceViews.cpp">
+      <Filter>API\Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="API\Vulkan\VKShader.cpp">
+      <Filter>API\Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="API\Vulkan\VKFbo.cpp">
+      <Filter>API\Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="API\Vulkan\VKCopyContext.cpp">
+      <Filter>API\Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="API\Vulkan\VKGpuTimer.cpp">
+      <Filter>API\Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="API\Vulkan\VKComputeContext.cpp">
+      <Filter>API\Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="API\Vulkan\LowLevel\VKGpuFence.cpp">
+      <Filter>API\Vulkan\LowLevel</Filter>
+    </ClCompile>
+    <ClCompile Include="API\Vulkan\LowLevel\VKLowLevelContextData.cpp">
+      <Filter>API\Vulkan\LowLevel</Filter>
+    </ClCompile>
+    <ClCompile Include="API\Vulkan\LowLevel\VKRootSignature.cpp">
+      <Filter>API\Vulkan\LowLevel</Filter>
+    </ClCompile>
+    <ClCompile Include="API\Vulkan\VKRasterizerState.cpp">
+      <Filter>API\Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="API\Vulkan\VKProgramVersion.cpp">
+      <Filter>API\Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="API\Vulkan\VKVao.cpp">
+      <Filter>API\Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="API\Vulkan\VKSampler.cpp">
+      <Filter>API\Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="API\Vulkan\VKUniformBuffer.cpp">
+      <Filter>API\Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="API\Vulkan\VKGraphicsStateObject.cpp">
+      <Filter>API\Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="API\Vulkan\LowLevel\VKResourceAllocator.cpp">
+      <Filter>API\Vulkan\LowLevel</Filter>
+    </ClCompile>
+    <ClCompile Include="Utils\SlangSupport.cpp">
+      <Filter>Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="API\Vulkan\LowLevel\VKDescriptorPool.cpp">
+      <Filter>API\Vulkan\LowLevel</Filter>
+    </ClCompile>
+    <ClCompile Include="API\Vulkan\VKState.cpp">
+      <Filter>API\Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="API\Vulkan\LowLevel\VKDescriptorSet.cpp">
+      <Filter>API\Vulkan\LowLevel</Filter>
+    </ClCompile>
+    <ClCompile Include="API\Device.cpp" />
+    <ClCompile Include="API\CopyContext.cpp" />
+    <ClCompile Include="API\ComputeContext.cpp" />
+    <ClCompile Include="API\Buffer.cpp">
+      <Filter>API</Filter>
+    </ClCompile>
+    <ClCompile Include="API\LowLevel\ResourceAllocator.cpp" />
+    <ClCompile Include="API\D3D\D3D12\D3D12ProgramVars.cpp" />
+    <ClCompile Include="API\Vulkan\VkProgramVars.cpp" />
+    <ClCompile Include="API\Vulkan\VKComputeStateObject.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Graphics\Model\Animation.h">
@@ -772,12 +794,6 @@
     </ClInclude>
     <ClInclude Include="API\LowLevel\RootSignature.h">
       <Filter>API\LowLevel</Filter>
-    </ClInclude>
-    <ClInclude Include="API\OpenGL\FalcorGL.h">
-      <Filter>API\OpenGL</Filter>
-    </ClInclude>
-    <ClInclude Include="API\OpenGL\GlEnum2Str.h">
-      <Filter>API\OpenGL</Filter>
     </ClInclude>
     <ClInclude Include="API\D3D\D3DState.h">
       <Filter>API\D3D</Filter>
@@ -1576,23 +1592,29 @@
     <ClInclude Include="Data\Effects\ParticleData.h">
       <Filter>Data\Effects\Particles</Filter>
     </ClInclude>
+    <ClInclude Include="API\vulkan\FalcorVK.h">
+      <Filter>API\Vulkan</Filter>
+    </ClInclude>
     <ClInclude Include="Effects\ParticleSystem\ParticleSystem.h">
       <Filter>Effects\ParticleSystem</Filter>
     </ClInclude>
+    <ClInclude Include="API\Vulkan\VKResourceHelper.h">
+      <Filter>API\Vulkan</Filter>
+    </ClInclude>
     <ClInclude Include="API\DescriptorSet.h">
       <Filter>API</Filter>
-    </ClInclude>
-    <ClInclude Include="API\ParameterBlock.h">
-      <Filter>API</Filter>
-    </ClInclude>
-    <ClInclude Include="API\LowLevel\DescriptorTable.h">
-      <Filter>API\LowLevel</Filter>
     </ClInclude>
     <ClInclude Include="API\LowLevel\DescriptorPool.h">
       <Filter>API\LowLevel</Filter>
     </ClInclude>
     <ClInclude Include="API\D3D\D3D12\LowLevel\D3D12DescriptorData.h">
       <Filter>API\D3D\D3D12\LowLevel</Filter>
+    </ClInclude>
+    <ClInclude Include="API\Vulkan\LowLevel\VKDescriptorData.h">
+      <Filter>API\Vulkan\LowLevel</Filter>
+    </ClInclude>
+    <ClInclude Include="API\Vulkan\VKState.h">
+      <Filter>API\Vulkan</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -1719,9 +1741,6 @@
     <Filter Include="API\LowLevel">
       <UniqueIdentifier>{8bb5d38b-eb7d-40a8-a5aa-c934669015b5}</UniqueIdentifier>
     </Filter>
-    <Filter Include="API\OpenGL">
-      <UniqueIdentifier>{61d7bfbe-a0dc-47c5-b185-6811de4040c5}</UniqueIdentifier>
-    </Filter>
     <Filter Include="API\D3D">
       <UniqueIdentifier>{60aa2a7f-98dc-4717-99f2-a4fd141ad6b4}</UniqueIdentifier>
     </Filter>
@@ -1749,11 +1768,20 @@
     <Filter Include="Effects\AmbientOcclusion">
       <UniqueIdentifier>{723ff80c-2107-49c1-8a2b-e01f9d4eb6e9}</UniqueIdentifier>
     </Filter>
+    <Filter Include="API\Vulkan">
+      <UniqueIdentifier>{f191732c-c52a-4867-976e-f96cedcbf908}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Data\Effects\Particles">
       <UniqueIdentifier>{113ae44c-7970-429b-ba40-22c457f0003d}</UniqueIdentifier>
     </Filter>
     <Filter Include="Effects\ParticleSystem">
       <UniqueIdentifier>{be06907b-0403-4c3b-a59a-ec74cbfdfb86}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="API\Vulkan">
+      <UniqueIdentifier>{f191732c-c52a-4867-976e-f96cedcbf908}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="API\Vulkan\LowLevel">
+      <UniqueIdentifier>{230e7726-da32-47d7-bdf6-c77e62c21ada}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>

@@ -32,51 +32,21 @@
 
 namespace Falcor
 {
-    Device::SharedPtr gpDevice;
-
-	struct DeviceData
-	{
-		IDXGISwapChain3Ptr pSwapChain = nullptr;
-		uint32_t currentBackBufferIndex;
-
-        struct ResourceRelease
-        {
-            size_t frameID;
-            ApiObjectHandle pApiObject;
-        };
-
-        struct
-        {
-            Fbo::SharedPtr pFbo;
-        } frameData[kSwapChainBuffers];
-
-        std::queue<ResourceRelease> deferredReleases;
-        uint32_t syncInterval = 0;
-		bool isWindowOccluded = false;
-        GpuFence::SharedPtr pFrameFence;
-	};
-
-    void releaseFboData(DeviceData* pData)
+    struct DeviceApiData
     {
-        // First, delete all FBOs
-        for (uint32_t i = 0; i < arraysize(pData->frameData); i++)
-        {
-            pData->frameData[i].pFbo->attachColorTarget(nullptr, 0);
-            pData->frameData[i].pFbo->attachDepthStencilTarget(nullptr);
-        }
-
-        // Now execute all deferred releases
-        decltype(pData->deferredReleases)().swap(pData->deferredReleases);
-    }
+        IDXGIFactory4Ptr pDxgiFactory = nullptr;
+        IDXGISwapChain3Ptr pSwapChain = nullptr;
+        bool isWindowOccluded = false;
+    };
 
     void d3dTraceHR(const std::string& msg, HRESULT hr)
-	{
-		char hr_msg[512];
-		FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM, nullptr, hr, 0, hr_msg, ARRAYSIZE(hr_msg), nullptr);
+    {
+        char hr_msg[512];
+        FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM, nullptr, hr, 0, hr_msg, ARRAYSIZE(hr_msg), nullptr);
 
-		std::string error_msg = msg + ".\nError! " + hr_msg;
-		logError(error_msg);
-	}
+        std::string error_msg = msg + ".\nError! " + hr_msg;
+        logError(error_msg);
+    }
 
     D3D_FEATURE_LEVEL getD3DFeatureLevel(uint32_t majorVersion, uint32_t minorVersion)
     {
@@ -125,246 +95,189 @@ namespace Falcor
         return (D3D_FEATURE_LEVEL)0;
     }
 
-	IDXGISwapChain3Ptr createSwapChain(IDXGIFactory4* pFactory, const Window* pWindow, ID3D12CommandQueue* pCommandQueue, ResourceFormat colorFormat)
-	{
-		DXGI_SWAP_CHAIN_DESC1 swapChainDesc = {};
-		swapChainDesc.BufferCount = kSwapChainBuffers;
-		swapChainDesc.Width = pWindow->getClientAreaWidth();
-		swapChainDesc.Height = pWindow->getClientAreaHeight();
-		// Flip mode doesn't support SRGB formats, so we strip them down when creating the resource. We will create the RTV as SRGB instead.
-		// More details at the end of https://msdn.microsoft.com/en-us/library/windows/desktop/bb173064.aspx
-		swapChainDesc.Format = getDxgiFormat(srgbToLinearFormat(colorFormat));
-		swapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-		swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
-		swapChainDesc.SampleDesc.Count = 1;
+    IDXGISwapChain3Ptr createDxgiSwapChain(IDXGIFactory4* pFactory, const Window* pWindow, ID3D12CommandQueue* pCommandQueue, ResourceFormat colorFormat)
+    {
+        DXGI_SWAP_CHAIN_DESC1 swapChainDesc = {};
+        swapChainDesc.BufferCount = kSwapChainBuffers;
+        swapChainDesc.Width = pWindow->getClientAreaWidth();
+        swapChainDesc.Height = pWindow->getClientAreaHeight();
+        // Flip mode doesn't support SRGB formats, so we strip them down when creating the resource. We will create the RTV as SRGB instead.
+        // More details at the end of https://msdn.microsoft.com/en-us/library/windows/desktop/bb173064.aspx
+        swapChainDesc.Format = getDxgiFormat(srgbToLinearFormat(colorFormat));
+        swapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
+        swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
+        swapChainDesc.SampleDesc.Count = 1;
 
-		// CreateSwapChainForHwnd() doesn't accept IDXGISwapChain3 (Why MS? Why?)
-		MAKE_SMART_COM_PTR(IDXGISwapChain1);
-		IDXGISwapChain1Ptr pSwapChain;
+        // CreateSwapChainForHwnd() doesn't accept IDXGISwapChain3 (Why MS? Why?)
+        MAKE_SMART_COM_PTR(IDXGISwapChain1);
+        IDXGISwapChain1Ptr pSwapChain;
 
-		HRESULT hr = pFactory->CreateSwapChainForHwnd(pCommandQueue, pWindow->getApiHandle(), &swapChainDesc, nullptr, nullptr, &pSwapChain);
-		if (FAILED(hr))
-		{
-			d3dTraceHR("Failed to create the swap-chain", hr);
-			return false;
-		}
+        HRESULT hr = pFactory->CreateSwapChainForHwnd(pCommandQueue, pWindow->getApiHandle(), &swapChainDesc, nullptr, nullptr, &pSwapChain);
+        if (FAILED(hr))
+        {
+            d3dTraceHR("Failed to create the swap-chain", hr);
+            return false;
+        }
 
-		IDXGISwapChain3Ptr pSwapChain3;
-		d3d_call(pSwapChain->QueryInterface(IID_PPV_ARGS(&pSwapChain3)));
-		return pSwapChain3;
-	}
+        IDXGISwapChain3Ptr pSwapChain3;
+        d3d_call(pSwapChain->QueryInterface(IID_PPV_ARGS(&pSwapChain3)));
+        return pSwapChain3;
+    }
 
-	ID3D12DevicePtr createDevice(IDXGIFactory4* pFactory, D3D_FEATURE_LEVEL featureLevel, Device::Desc::CreateDeviceFunc createFunc)
-	{
-		// Find the HW adapter
-		IDXGIAdapter1Ptr pAdapter;
+    ID3D12DevicePtr createDevice(IDXGIFactory4* pFactory, D3D_FEATURE_LEVEL featureLevel, Device::Desc::CreateDeviceFunc createFunc)
+    {
+        // Find the HW adapter
+        IDXGIAdapter1Ptr pAdapter;
         ID3D12DevicePtr pDevice;
 
-		for (uint32_t i = 0; DXGI_ERROR_NOT_FOUND != pFactory->EnumAdapters1(i, &pAdapter); i++)
-		{
-			DXGI_ADAPTER_DESC1 desc;
-			pAdapter->GetDesc1(&desc);
+        for (uint32_t i = 0; DXGI_ERROR_NOT_FOUND != pFactory->EnumAdapters1(i, &pAdapter); i++)
+        {
+            DXGI_ADAPTER_DESC1 desc;
+            pAdapter->GetDesc1(&desc);
 
-			// Skip SW adapters
-			if (desc.Flags & DXGI_ADAPTER_FLAG_SOFTWARE)
-			{
-				continue;
-			}
+            // Skip SW adapters
+            if (desc.Flags & DXGI_ADAPTER_FLAG_SOFTWARE)
+            {
+                continue;
+            }
 
-			// Try and create a D3D12 device
+            // Try and create a D3D12 device
             if (createFunc)
             {
                 pDevice = createFunc(pAdapter, featureLevel);
                 if (pDevice) return pDevice;
             }
             else if (D3D12CreateDevice(pAdapter, featureLevel, IID_PPV_ARGS(&pDevice)) == S_OK)
-			{
-				return pDevice;
-			}
-		}
+            {
+                return pDevice;
+            }
+        }
 
-		logErrorAndExit("Could not find a GPU that supports D3D12 device");
-		return nullptr;
-	}
+        logErrorAndExit("Could not find a GPU that supports D3D12 device");
+        return nullptr;
+    }
 
-	bool Device::updateDefaultFBO(uint32_t width, uint32_t height, ResourceFormat colorFormat, ResourceFormat depthFormat)
-	{
-        DeviceData* pData = (DeviceData*)mpPrivateData;
+    CommandQueueHandle Device::getCommandQueueHandle(LowLevelContextData::CommandQueueType type, uint32_t index) const
+    {
+        DeviceApiData* pData = (DeviceApiData*)mpApiData;
+        return mCmdQueues[(uint32_t)type][index];
+    }
 
-		for (uint32_t i = 0; i < kSwapChainBuffers; i++)
-		{
-            // Create a texture object
-            auto pColorTex = Texture::SharedPtr(new Texture(width, height, 1, 1, 1, 1, colorFormat, Texture::Type::Texture2D, Texture::BindFlags::RenderTarget));            
-            HRESULT hr = pData->pSwapChain->GetBuffer(i, IID_PPV_ARGS(&pColorTex->mApiHandle));
-            if(FAILED(hr))
+    ApiCommandQueueType Device::getApiCommandQueueType(LowLevelContextData::CommandQueueType type) const
+    {
+        switch (type)
+        {
+        case LowLevelContextData::CommandQueueType::Copy:
+            return D3D12_COMMAND_LIST_TYPE_COPY;
+        case LowLevelContextData::CommandQueueType::Compute:
+            return D3D12_COMMAND_LIST_TYPE_COMPUTE;
+        case LowLevelContextData::CommandQueueType::Direct:
+            return D3D12_COMMAND_LIST_TYPE_DIRECT;
+        default:
+            should_not_get_here();
+            return D3D12_COMMAND_LIST_TYPE_DIRECT;
+        }
+    }
+
+    bool Device::getApiFboData(uint32_t width, uint32_t height, ResourceFormat colorFormat, ResourceFormat depthFormat, std::vector<ResourceHandle>& apiHandles, uint32_t& currentBackBufferIndex)
+    {
+        DeviceApiData* pData = (DeviceApiData*)mpApiData;
+        for (uint32_t i = 0; i < kSwapChainBuffers; i++)
+        {
+            HRESULT hr = pData->pSwapChain->GetBuffer(i, IID_PPV_ARGS(&apiHandles[i]));
+            if (FAILED(hr))
             {
                 d3dTraceHR("Failed to get back-buffer " + std::to_string(i) + " from the swap-chain", hr);
                 return false;
             }
+        }
+        currentBackBufferIndex = pData->pSwapChain->GetCurrentBackBufferIndex();
+        return true;
+    }
 
-            // Create the FBO if it's required
-            if (pData->frameData[i].pFbo == nullptr)
-            {
-                pData->frameData[i].pFbo = Fbo::create();
-            }
-            pData->frameData[i].pFbo->attachColorTarget(pColorTex, 0);
-
-            // Create a depth texture
-            if(depthFormat != ResourceFormat::Unknown)
-            {
-                auto pDepth = Texture::create2D(width, height, depthFormat, 1, 1, nullptr, Texture::BindFlags::DepthStencil);
-                pData->frameData[i].pFbo->attachDepthStencilTarget(pDepth);
-            }
-
-            pData->currentBackBufferIndex = pData->pSwapChain->GetCurrentBackBufferIndex();
-		}
-
-		return true;
-	}
-
-    void Device::cleanup()
+    void Device::destroyApiObjects()
     {
-        mpRenderContext->flush(true);
-        // Release all the bound resources. Need to do that before deleting the RenderContext
-        mpRenderContext->setGraphicsState(nullptr);
-        mpRenderContext->setGraphicsVars(nullptr);
-        mpRenderContext->setComputeState(nullptr);
-        mpRenderContext->setComputeVars(nullptr);
-        DeviceData* pData = (DeviceData*)mpPrivateData;
-        releaseFboData(pData);
-        mpRenderContext.reset();
-        mpResourceAllocator.reset();
-        safe_delete(pData);
+        safe_delete(mpApiData);
         mpWindow.reset();
     }
 
-	Device::SharedPtr Device::create(Window::SharedPtr& pWindow, const Device::Desc& desc)
-	{
-        if(gpDevice)
-        {
-            logError("D3D12 backend only supports a single device");
-            return false;
-        }
-        gpDevice = SharedPtr(new Device(pWindow));
-        if(gpDevice->init(desc) == false)
-        {
-            gpDevice = nullptr;
-        }
-		return gpDevice;
-	}
-
-    
-    Fbo::SharedPtr Device::getSwapChainFbo() const
+    void Device::apiPresent()
     {
-        DeviceData* pData = (DeviceData*)mpPrivateData;
-        return pData->frameData[pData->currentBackBufferIndex].pFbo;
+        DeviceApiData* pData = (DeviceApiData*)mpApiData;
+        pData->pSwapChain->Present(mVsyncOn ? 1 : 0, 0);
+        mCurrentBackBufferIndex = (mCurrentBackBufferIndex + 1) % kSwapChainBuffers;
     }
 
-	void Device::present()
-	{
-		DeviceData* pData = (DeviceData*)mpPrivateData;
-
-        mpRenderContext->resourceBarrier(pData->frameData[pData->currentBackBufferIndex].pFbo->getColorTexture(0).get(), Resource::State::Present);
-        mpRenderContext->flush();
-        pData->pSwapChain->Present(pData->syncInterval, 0);
-        pData->pFrameFence->gpuSignal(mpRenderContext->getLowLevelData()->getCommandQueue().GetInterfacePtr());
-        executeDeferredReleases();
-        mpRenderContext->reset();
-        pData->currentBackBufferIndex = (pData->currentBackBufferIndex + 1) % kSwapChainBuffers;
-        mFrameID++;
-    }
-
-	bool Device::init(const Desc& desc)
+    bool Device::apiInit(const Desc& desc)
     {
-		DeviceData* pData = new DeviceData;
-		mpPrivateData = pData;
+        DeviceApiData* pData = new DeviceApiData;
+        mpApiData = pData;
 
         if(desc.enableDebugLayer)
-		{
-			ID3D12DebugPtr pDebug;
-			if (SUCCEEDED(D3D12GetDebugInterface(IID_PPV_ARGS(&pDebug))))
-			{
-				pDebug->EnableDebugLayer();
-			}
-		}
+        {
+            ID3D12DebugPtr pDebug;
+            if (SUCCEEDED(D3D12GetDebugInterface(IID_PPV_ARGS(&pDebug))))
+            {
+                pDebug->EnableDebugLayer();
+            }
+        }
 
         // Create the DXGI factory
-		IDXGIFactory4Ptr pDxgiFactory;
-		d3d_call(CreateDXGIFactory1(IID_PPV_ARGS(&pDxgiFactory)));
+        d3d_call(CreateDXGIFactory1(IID_PPV_ARGS(&mpApiData->pDxgiFactory)));
 
-		// Create the device
-        mApiHandle = createDevice(pDxgiFactory, getD3DFeatureLevel(desc.apiMajorVersion, desc.apiMinorVersion), desc.createDeviceFunc);
-		if (mApiHandle == nullptr)
-		{
-			return false;
-		}
-
-        mpRenderContext = RenderContext::create();
-        // Create the descriptor heaps
-        DescriptorPool::Desc poolDesc;
-        poolDesc.setDescCount(DescriptorPool::Type::Srv, 16 * 1024).setDescCount(DescriptorPool::Type::Sampler, 2048).setShaderVisible(true);
-        mpGpuDescPool = DescriptorPool::create(poolDesc, mpRenderContext->getLowLevelData()->getFence());
-        poolDesc.setShaderVisible(false).setDescCount(DescriptorPool::Type::Rtv, 1024).setDescCount(DescriptorPool::Type::Dsv, 1024);
-        mpCpuDescPool = DescriptorPool::create(poolDesc, mpRenderContext->getLowLevelData()->getFence());
-
-        mpRenderContext->reset();
-
-		// Create the swap-chain
-        mpResourceAllocator = ResourceAllocator::create(1024 * 1024 * 2, mpRenderContext->getLowLevelData()->getFence());
-        pData->pSwapChain = createSwapChain(pDxgiFactory, mpWindow.get(), mpRenderContext->getLowLevelData()->getCommandQueue(), desc.colorFormat);
-		if(pData->pSwapChain == nullptr)
-		{
-			return false;
-		}
-
-        mVsyncOn = desc.enableVsync;
-
-        // Update the FBOs
-        if (updateDefaultFBO(mpWindow->getClientAreaWidth(), mpWindow->getClientAreaHeight(), desc.colorFormat, desc.depthFormat) == false)
+        mApiHandle = createDevice(mpApiData->pDxgiFactory, getD3DFeatureLevel(desc.apiMajorVersion, desc.apiMinorVersion), desc.createDeviceFunc);
+        if (mApiHandle == nullptr)
         {
             return false;
         }
 
-        pData->pFrameFence = GpuFence::create();
-		return true;
+        for (uint32_t i = 0; i < kQueueTypeCount; i++)
+        {
+            for (uint32_t j = 0; j < desc.cmdQueues[i]; j++)
+            {
+                // Create the command queue
+                D3D12_COMMAND_QUEUE_DESC cqDesc = {};
+                cqDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
+                cqDesc.Type = getApiCommandQueueType((LowLevelContextData::CommandQueueType)i);
+
+                ID3D12CommandQueuePtr pQueue;
+                if (FAILED(mApiHandle->CreateCommandQueue(&cqDesc, IID_PPV_ARGS(&pQueue))))
+                {
+                    logError("Failed to create command queue");
+                    return nullptr;
+                }
+
+                mCmdQueues[i].push_back(pQueue);
+            }
+        }
+       
+        return true;
     }
 
-    void Device::releaseResource(ApiObjectHandle pResource)
+    bool Device::createSwapChain(ResourceFormat colorFormat)
     {
-        if(pResource)
+        mpApiData->pSwapChain = createDxgiSwapChain(mpApiData->pDxgiFactory, mpWindow.get(), mpRenderContext->getLowLevelData()->getCommandQueue(), colorFormat);
+        if (mpApiData->pSwapChain == nullptr)
         {
-            DeviceData* pData = (DeviceData*)mpPrivateData;
-            pData->deferredReleases.push({ pData->pFrameFence->getCpuValue(), pResource });
+            return false;
         }
-    }
-
-    void Device::executeDeferredReleases()
-    {
-        mpResourceAllocator->executeDeferredReleases();
-        DeviceData* pData = (DeviceData*)mpPrivateData;
-        uint64_t gpuVal = pData->pFrameFence->getGpuValue();
-        while (pData->deferredReleases.size() && pData->deferredReleases.front().frameID < gpuVal)
-        {
-            pData->deferredReleases.pop();
-        }
-        mpCpuDescPool->executeDeferredReleases();
-        mpGpuDescPool->executeDeferredReleases();
+        return true;
     }
 
     Fbo::SharedPtr Device::resizeSwapChain(uint32_t width, uint32_t height)
     {
         mpRenderContext->flush(true);
         
-        DeviceData* pData = (DeviceData*)mpPrivateData;
+        DeviceApiData* pData = (DeviceApiData*)mpApiData;
 
         // Store the FBO parameters
-        ResourceFormat colorFormat = pData->frameData[0].pFbo->getColorTexture(0)->getFormat();
-        const auto& pDepth = pData->frameData[0].pFbo->getDepthStencilTexture();
+        ResourceFormat colorFormat = mpSwapChainFbos[0]->getColorTexture(0)->getFormat();
+        const auto& pDepth = mpSwapChainFbos[0]->getDepthStencilTexture();
         ResourceFormat depthFormat = pDepth ? pDepth->getFormat() : ResourceFormat::Unknown;
-        assert(pData->frameData[0].pFbo->getSampleCount() == 1);
+        assert(mpSwapChainFbos[0]->getSampleCount() == 1);
 
         // Delete all the FBOs
-        releaseFboData(pData);
+        releaseFboData();
 
         DXGI_SWAP_CHAIN_DESC desc;
         d3d_call(pData->pSwapChain->GetDesc(&desc));
@@ -374,18 +287,12 @@ namespace Falcor
         return getSwapChainFbo();
     }
 
-	void Device::setVSync(bool enable)
-	{
-		DeviceData* pData = (DeviceData*)mpPrivateData;
-		pData->syncInterval = enable ? 1 : 0;
-	}
-
-	bool Device::isWindowOccluded() const
+    bool Device::isWindowOccluded() const
     {
-		DeviceData* pData = (DeviceData*)mpPrivateData;
+        DeviceApiData* pData = (DeviceApiData*)mpApiData;
         if(pData->isWindowOccluded)
         {
-			pData->isWindowOccluded = (pData->pSwapChain->Present(0, DXGI_PRESENT_TEST) == DXGI_STATUS_OCCLUDED);
+            pData->isWindowOccluded = (pData->pSwapChain->Present(0, DXGI_PRESENT_TEST) == DXGI_STATUS_OCCLUDED);
         }
         return pData->isWindowOccluded;
     }

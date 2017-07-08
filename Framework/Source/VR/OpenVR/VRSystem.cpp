@@ -52,9 +52,7 @@ namespace Falcor
 
         // Create our VRSystem object and apply developer-specified parameters
         spVrSystem = new VRSystem;
-#if defined(FALCOR_GL)
-        spVrSystem->mRenderAPI = vr::API_OpenGL;
-#elif defined(FALCOR_D3D11)
+#ifdef FALCOR_D3D11
         spVrSystem->mRenderAPI = vr::API_DirectX;
 #endif
         spVrSystem->mVSyncEnabled = enableVSync;

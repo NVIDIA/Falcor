@@ -230,9 +230,23 @@ __generic<T> __magic_type(HLSLRWStructuredBufferType) struct RWStructuredBuffer
     __intrinsic __subscript(uint index) -> T { get; set; }
 };
 
-__generic<T> __magic_type(HLSLPointStreamType) struct PointStream {};
-__generic<T> __magic_type(HLSLLineStreamType) struct LineStream {};
-__generic<T> __magic_type(HLSLLineStreamType) struct TriangleStream {};
+__generic<T> __magic_type(HLSLPointStreamType) struct PointStream
+{
+    void Append(T value);
+    void RestartStrip();
+};
+
+__generic<T> __magic_type(HLSLLineStreamType) struct LineStream
+{
+    void Append(T value);
+    void RestartStrip();
+};
+
+__generic<T> __magic_type(HLSLLineStreamType) struct TriangleStream
+{
+    void Append(T value);
+    void RestartStrip();
+};
 
 )=", R"=(
 
@@ -1008,7 +1022,7 @@ namespace Slang
         OpInfo unaryOps[] = {
             { IntrinsicOp::Neg,     "-",    ARITHMETIC_MASK },
             { IntrinsicOp::Not,     "!",    ANY_MASK        },
-            { IntrinsicOp::Not,     "~",    INT_MASK        },
+            { IntrinsicOp::BitNot,  "~",    INT_MASK        },
             { IntrinsicOp::PreInc,  "++",   ARITHMETIC_MASK | ASSIGNMENT },
             { IntrinsicOp::PreDec,  "--",   ARITHMETIC_MASK | ASSIGNMENT },
             { IntrinsicOp::PostInc, "++",   ARITHMETIC_MASK | ASSIGNMENT | POSTFIX },
@@ -1136,6 +1150,7 @@ namespace Slang
         // Declare vector and matrix types
 
         sb << "__generic<T = float, let N : int = 4> __magic_type(Vector) struct vector\n{\n";
+        sb << "    typedef T Element;\n";
         sb << "    __init(T value);\n"; // initialize from single scalar
         sb << "};\n";
         sb << "__generic<T = float, let R : int = 4, let C : int = 4> __magic_type(Matrix) struct matrix {};\n";
@@ -1202,6 +1217,21 @@ namespace Slang
             // We should look for a way that we can define implicit
             // conversions directly in the stdlib instead...
             sb << "__generic<U> __init(vector<U," << N << ">);\n";
+
+            // Initialize from two vectors, of size M and N-M
+            for(int M = 2; M <= (N-2); ++M)
+            {
+                int K = N - M;
+                assert(K >= 2);
+
+                sb << "__init(vector<T," << M << "> " << kVectorNames[M];
+                sb << ", vector<T," << K << "> ";
+                for (int ii = 0; ii < K; ++ii)
+                {
+                    sb << kComponentNames[ii];
+                }
+                sb << ");\n";
+            }
 
             sb << "}\n";
         }
@@ -1314,13 +1344,9 @@ namespace Slang
 
                         sb << "float CalculateLevelOfDetailUnclamped(SamplerState s, ";
                         sb << "float" << kBaseTextureTypes[tt].coordCount << " location);\n";
-
-                        // TODO: `Gather` operation
-                        // (tricky because it returns a 4-vector of the element type
-                        // of the texture components...)
                     }
 
-                    // TODO: `GetDimensions` operations
+                    // `GetDimensions`
 
                     for(int isFloat = 0; isFloat < 2; ++isFloat)
                     for(int includeMipInfo = 0; includeMipInfo < 2; ++includeMipInfo)
@@ -1359,6 +1385,11 @@ namespace Slang
                             sb << ", " << t << "elements";
                         }
 
+                        if(isMultisample)
+                        {
+                            sb << ", " << t << "sampleCount";
+                        }
+
                         if(includeMipInfo)
                             sb << ", " << t << "numberOfLevels";
 
@@ -1375,22 +1406,35 @@ namespace Slang
 
                     if( kBaseTextureTypes[tt].coordCount + isArray < 4 )
                     {
-                        sb << "T Load(";
-                        sb << "int" << kBaseTextureTypes[tt].coordCount + isArray + 1 << " location);\n";
+                        int loadCoordCount = kBaseTextureTypes[tt].coordCount + isArray + (isMultisample?0:1);
 
-                        if( !isMultisample )
+                        sb << "T Load(";
+                        sb << "int" << loadCoordCount << " location";
+                        if(isMultisample)
                         {
-                            sb << "T Load(";
-                            sb << "int" << kBaseTextureTypes[tt].coordCount + isArray + 1 << " location, ";
-                            sb << "int" << kBaseTextureTypes[tt].coordCount << " offset);\n";
+                            sb << ", int sampleIndex";
                         }
-                        else
+                        sb << ");\n";
+
+                        sb << "T Load(";
+                        sb << "int" << loadCoordCount << " location";
+                        if(isMultisample)
                         {
-                            sb << "T Load(";
-                            sb << "int" << kBaseTextureTypes[tt].coordCount + isArray + 1 << " location, ";
-                            sb << "int sampleIndex, ";
-                            sb << "int" << kBaseTextureTypes[tt].coordCount << " offset);\n";
+                            sb << ", int sampleIndex";
                         }
+                        sb << ", int" << loadCoordCount << " offset";
+                        sb << ");\n";
+
+
+                        sb << "T Load(";
+                        sb << "int" << loadCoordCount << " location";
+                        if(isMultisample)
+                        {
+                            sb << ", int sampleIndex";
+                        }
+                        sb << ", int" << kBaseTextureTypes[tt].coordCount << " offset";
+                        sb << ", out uint status";
+                        sb << ");\n";
                     }
 
                     if(baseShape != TextureType::ShapeCube)
@@ -1503,12 +1547,103 @@ namespace Slang
                     }
 
                     sb << "\n};\n";
+
+                    // `Gather*()` operations are handled via an `extension` declaration,
+                    // because this lets us capture the element type of the texture.
+                    //
+                    // TODO: longer-term there should be something like a `TextureElementType`
+                    // interface, that both scalars and vectors implement, that then exposes
+                    // a `Scalar` associated type, and `Gather` can return `vector<T.Scalar, 4>`.
+                    //
+                    static const struct {
+                        char const* genericPrefix;
+                        char const* elementType;
+                    } kGatherExtensionCases[] = {
+                        { "__generic<T, let N : int>", "vector<T,N>" },
+
+                        // TODO: need a case here for scalars `T`, but also
+                        // need to ensure that case doesn't accidentally match
+                        // for `T = vector<...>`, which requires actual checking
+                        // of constraints on generic parameters.
+                    };
+                    for(auto cc : kGatherExtensionCases)
+                    {
+                        // TODO: this should really be an `if` around the entire `Gather` logic
+                        if (isMultisample) break;
+
+                        EMIT_LINE_DIRECTIVE();
+                        sb << cc.genericPrefix << " __extension ";
+                        sb << kBaseTextureAccessLevels[accessLevel].name;
+                        sb << name;
+                        if (isArray) sb << "Array";
+                        sb << "<" << cc.elementType << " >";
+                        sb << "\n{\n";
+
+
+                        // `Gather`
+                        // (tricky because it returns a 4-vector of the element type
+                        // of the texture components...)
+                        //
+                        // TODO: is it actually correct to restrict these so that, e.g.,
+                        // `GatherAlpha()` isn't allowed on `Texture2D<float3>` because
+                        // it nominally doesn't have an alpha component?
+                        static const struct {
+                            int componentIndex;
+                            char const* componentName;
+                        } kGatherComponets[] = {
+                            { 0, "" },
+                            { 0, "Red" },
+                            { 1, "Green" },
+                            { 2, "Blue" },
+                            { 3, "Alpha" },
+                        };
+
+                        for(auto kk : kGatherComponets)
+                        {
+                            auto componentName = kk.componentName;
+
+                            EMIT_LINE_DIRECTIVE();
+                            sb << "vector<T, 4> Gather" << componentName << "(SamplerState s, ";
+                            sb << "float" << kBaseTextureTypes[tt].coordCount << " location);\n";
+
+                            EMIT_LINE_DIRECTIVE();
+                            sb << "vector<T, 4> Gather" << componentName << "(SamplerState s, ";
+                            sb << "float" << kBaseTextureTypes[tt].coordCount << " location, ";
+                            sb << "int" << kBaseTextureTypes[tt].coordCount << " offset);\n";
+
+                            EMIT_LINE_DIRECTIVE();
+                            sb << "vector<T, 4> Gather" << componentName << "(SamplerState s, ";
+                            sb << "float" << kBaseTextureTypes[tt].coordCount << " location, ";
+                            sb << "int" << kBaseTextureTypes[tt].coordCount << " offset, ";
+                            sb << "out uint status);\n";
+
+                            EMIT_LINE_DIRECTIVE();
+                            sb << "vector<T, 4> Gather" << componentName << "(SamplerState s, ";
+                            sb << "float" << kBaseTextureTypes[tt].coordCount << " location, ";
+                            sb << "int" << kBaseTextureTypes[tt].coordCount << " offset1, ";
+                            sb << "int" << kBaseTextureTypes[tt].coordCount << " offset2, ";
+                            sb << "int" << kBaseTextureTypes[tt].coordCount << " offset3, ";
+                            sb << "int" << kBaseTextureTypes[tt].coordCount << " offset4);\n";
+
+                            EMIT_LINE_DIRECTIVE();
+                            sb << "vector<T, 4> Gather" << componentName << "(SamplerState s, ";
+                            sb << "float" << kBaseTextureTypes[tt].coordCount << " location, ";
+                            sb << "int" << kBaseTextureTypes[tt].coordCount << " offset1, ";
+                            sb << "int" << kBaseTextureTypes[tt].coordCount << " offset2, ";
+                            sb << "int" << kBaseTextureTypes[tt].coordCount << " offset3, ";
+                            sb << "int" << kBaseTextureTypes[tt].coordCount << " offset4, ";
+                            sb << "out uint status);\n";
+                        }
+
+                        EMIT_LINE_DIRECTIVE();
+                        sb << "\n}\n";
+                    }
                 }
             }
         }
 
         // Declare additional built-in generic types
-
+        EMIT_LINE_DIRECTIVE();
         sb << "__generic<T> __magic_type(ConstantBuffer) struct ConstantBuffer {};\n";
         sb << "__generic<T> __magic_type(TextureBuffer) struct TextureBuffer {};\n";
 
@@ -1586,85 +1721,6 @@ namespace Slang
             }
         }
 
-#if 0
-        for (auto op : intUnaryOps)
-        {
-            String opName = GetOperatorFunctionName(op);
-            for (int i = 0; i < 4; i++)
-            {
-                auto itype = intTypes[i];
-                auto utype = uintTypes[i];
-                for (int j = 0; j < 2; j++)
-                {
-                    auto retType = (op == Operator::Not) ? "bool" : j == 0 ? itype : utype;
-                    sb << "__intrinsic " << retType << " operator " << opName << "(" << (j == 0 ? itype : utype) << ");\n";
-                }
-            }
-        }
-
-        for (auto op : floatUnaryOps)
-        {
-            String opName = GetOperatorFunctionName(op);
-            for (int i = 0; i < 4; i++)
-            {
-                auto type = floatTypes[i];
-                auto retType = (op == Operator::Not) ? "bool" : type;
-                sb << "__intrinsic " << retType << " operator " << opName << "(" << type << ");\n";
-            }
-        }
-
-        for (auto op : floatOps)
-        {
-            String opName = GetOperatorFunctionName(op);
-            for (int i = 0; i < 4; i++)
-            {
-                auto type = floatTypes[i];
-                auto itype = intTypes[i];
-                auto utype = uintTypes[i];
-                auto retType = ((op >= Operator::Eql && op <= Operator::Leq) || op == Operator::And || op == Operator::Or) ? "bool" : type;
-                sb << "__intrinsic " << retType << " operator " << opName << "(" << type << ", " << type << ");\n";
-                sb << "__intrinsic " << retType << " operator " << opName << "(" << itype << ", " << type << ");\n";
-                sb << "__intrinsic " << retType << " operator " << opName << "(" << utype << ", " << type << ");\n";
-                sb << "__intrinsic " << retType << " operator " << opName << "(" << type << ", " << itype << ");\n";
-                sb << "__intrinsic " << retType << " operator " << opName << "(" << type << ", " << utype << ");\n";
-                if (i > 0)
-                {
-                    sb << "__intrinsic " << retType << " operator " << opName << "(" << type << ", " << floatTypes[0] << ");\n";
-                    sb << "__intrinsic " << retType << " operator " << opName << "(" << floatTypes[0] << ", " << type << ");\n";
-
-                    sb << "__intrinsic " << retType << " operator " << opName << "(" << type << ", " << intTypes[0] << ");\n";
-                    sb << "__intrinsic " << retType << " operator " << opName << "(" << intTypes[0] << ", " << type << ");\n";
-
-                    sb << "__intrinsic " << retType << " operator " << opName << "(" << type << ", " << uintTypes[0] << ");\n";
-                    sb << "__intrinsic " << retType << " operator " << opName << "(" << uintTypes[0] << ", " << type << ");\n";
-                }
-            }
-        }
-
-        for (auto op : intOps)
-        {
-            String opName = GetOperatorFunctionName(op);
-            for (int i = 0; i < 4; i++)
-            {
-                auto type = intTypes[i];
-                auto utype = uintTypes[i];
-                auto retType = ((op >= Operator::Eql && op <= Operator::Leq) || op == Operator::And || op == Operator::Or) ? "bool" : type;
-                sb << "__intrinsic " << retType << " operator " << opName << "(" << type << ", " << type << ");\n";
-                sb << "__intrinsic " << retType << " operator " << opName << "(" << utype << ", " << type << ");\n";
-                sb << "__intrinsic " << retType << " operator " << opName << "(" << type << ", " << utype << ");\n";
-                sb << "__intrinsic " << retType << " operator " << opName << "(" << utype << ", " << utype << ");\n";
-                if (i > 0)
-                {
-                    sb << "__intrinsic " << retType << " operator " << opName << "(" << type << ", " << intTypes[0] << ");\n";
-                    sb << "__intrinsic " << retType << " operator " << opName << "(" << intTypes[0] << ", " << type << ");\n";
-
-                    sb << "__intrinsic " << retType << " operator " << opName << "(" << type << ", " << uintTypes[0] << ");\n";
-                    sb << "__intrinsic " << retType << " operator " << opName << "(" << uintTypes[0] << ", " << type << ");\n";
-                }
-            }
-        }
-#endif
-
         // Output a suitable `#line` directive to point at our raw stdlib code above
         sb << "\n#line " << kLibIncludeStringLine << " \"" << path << "\"\n";
 
@@ -1691,10 +1747,6 @@ namespace Slang
         String path = getStdlibPath();
 
         StringBuilder sb;
-
-#define RAW(TEXT)           \
-EMIT_LINE_DIRECTIVE();  \
-sb << TEXT;
 
         static const struct {
             char const* name;
@@ -1839,7 +1891,7 @@ sb << TEXT;
 
     void SlangStdLib::Finalize()
     {
-        code = nullptr;
+        code = String();
         stdlibPath = String();
         glslLibraryCode = String();
     }

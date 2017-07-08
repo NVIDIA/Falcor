@@ -33,10 +33,12 @@
 #include "API/DepthStencilState.h"
 #include "API/BlendState.h"
 #include "API/LowLevel/RootSignature.h"
+#include "API/VAO.h"
 
 namespace Falcor
 {
     class RenderContext;
+    class GraphicsState;
 
     class GraphicsStateObject
     {
@@ -82,9 +84,11 @@ namespace Falcor
             VertexLayout::SharedConstPtr getVertexLayout() const { return mpLayout; }
             const Fbo::Desc& getFboDesc() const { return mFboDesc; }
             ProgramVersion::SharedConstPtr getProgramVersion() const { return mpProgram; }
+
             bool getSinglePassStereoEnabled() const { return mSinglePassStereoEnabled; }
 
             bool operator==(const Desc& other) const;
+
         private:
             friend class GraphicsStateObject;
             VertexLayout::SharedConstPtr mpLayout;
@@ -97,6 +101,17 @@ namespace Falcor
             RootSignature::SharedPtr mpRootSignature;
             PrimitiveType mPrimType = PrimitiveType::Undefined;
             bool mSinglePassStereoEnabled = false;
+
+#ifdef FALCOR_VK
+        public:
+            Desc& setVao(const Vao::SharedConstPtr& pVao) { mpVao = pVao; return *this; }
+            Desc& setRenderPass(VkRenderPass renderPass) { mRenderPass = renderPass; return *this; }
+            const Vao::SharedConstPtr& getVao() const { return mpVao; }
+            VkRenderPass getRenderPass() const {return mRenderPass;}
+        private:
+            Vao::SharedConstPtr mpVao;
+            VkRenderPass mRenderPass;
+#endif
         };
 
         static SharedPtr create(const Desc& desc);
@@ -104,6 +119,7 @@ namespace Falcor
         ApiHandle getApiHandle() { return mApiHandle; }
 
         const Desc& getDesc() const { return mDesc; }
+
     private:
         GraphicsStateObject(const Desc& desc) : mDesc(desc) {}
         Desc mDesc;

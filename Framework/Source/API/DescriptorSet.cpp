@@ -27,6 +27,7 @@
 ***************************************************************************/
 #include "Framework.h"
 #include "DescriptorSet.h"
+#include "API/Device.h"
 
 namespace Falcor
 {

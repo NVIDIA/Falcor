@@ -368,42 +368,42 @@ namespace Falcor
 
             \param[in] indexId buffer id for indices
         */
-        void setIndexBuffer(const Buffer::SharedConstPtr& indexBuf) { mIndexBuf = indexBuf; }
+        void setIndexBuffer(const Buffer::SharedPtr& indexBuf) { mIndexBuf = indexBuf; }
 
         /**
             Get buffer id for indices
 
             \return buffer id for indices
         */
-        const Buffer::SharedConstPtr& getIndexBuffer() const { return mIndexBuf; }
+        const Buffer::SharedPtr& getIndexBuffer() const { return mIndexBuf; }
 
         /**
             Set buffer id for vertices
 
             \param[in] vertex buffer id for vertices
         */
-        void setPositionsBuffer(const Buffer::SharedConstPtr& vertexBuf) { mVertexBuf = vertexBuf; }
+        void setPositionsBuffer(const Buffer::SharedPtr& vertexBuf) { mVertexBuf = vertexBuf; }
 
         /**
             Get buffer id for vertices
 
             \return buffer id for vertices
         */
-        const Buffer::SharedConstPtr& getPositionsBuffer() const { return mVertexBuf; }
+        const Buffer::SharedPtr& getPositionsBuffer() const { return mVertexBuf; }
 
         /**
             Set buffer id for texcoord
 
             \param[in] texCoord buffer id for texcoord
         */
-        void setTexCoordBuffer(const Buffer::SharedConstPtr& texCoordBuf) { mTexCoordBuf = texCoordBuf; }
+        void setTexCoordBuffer(const Buffer::SharedPtr& texCoordBuf) { mTexCoordBuf = texCoordBuf; }
 
         /**
             Get buffer id for texcoord
 
             \return buffer id for texcoord
         */
-        const Buffer::SharedConstPtr& getTexCoordBuffer() const { return mTexCoordBuf; }
+        const Buffer::SharedPtr& getTexCoordBuffer() const { return mTexCoordBuf; }
 
         /**
             Set buffer id for mesh CDF
@@ -442,10 +442,10 @@ namespace Falcor
         static Light::SharedPtr createAreaLight(const Model::MeshInstance::SharedPtr& pMeshInstance);
 
         Model::MeshInstance::SharedPtr mpMeshInstance;      ///< Geometry mesh data
-        Buffer::SharedConstPtr         mIndexBuf;           ///< Buffer id for indices
-        Buffer::SharedConstPtr         mVertexBuf;          ///< Buffer id for vertices
-        Buffer::SharedConstPtr         mTexCoordBuf;        ///< Buffer id for texcoord
-        Buffer::SharedPtr              mMeshCDFBuf;         ///< Buffer id for mesh Cumulative distribution function (CDF)
+        Buffer::SharedPtr         mIndexBuf;           ///< Buffer id for indices
+        Buffer::SharedPtr         mVertexBuf;          ///< Buffer id for vertices
+        Buffer::SharedPtr         mTexCoordBuf;        ///< Buffer id for texcoord
+        Buffer::SharedPtr         mMeshCDFBuf;         ///< Buffer id for mesh Cumulative distribution function (CDF)
 
         float                          mSurfaceArea;        ///< Surface area of the mesh
 		vec3                           mTangent;            ///< Unnormalized tangent vector of the light

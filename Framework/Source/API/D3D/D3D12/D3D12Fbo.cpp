@@ -74,15 +74,14 @@ namespace Falcor
         }
     }
 
-    Fbo::Fbo(bool initApiHandle)
+    Fbo::Fbo()
     {
-        mApiHandle = -1;
         mColorAttachments.resize(getMaxColorTargetCount());
     }
 
     Fbo::~Fbo() = default;
 
-    uint32_t Fbo::getApiHandle() const
+    Fbo::ApiHandle Fbo::getApiHandle() const
     {
         UNSUPPORTED_IN_D3D12("Fbo::getApiHandle()");
         return mApiHandle;
@@ -101,14 +100,7 @@ namespace Falcor
     {
     }
 
-    bool Fbo::checkStatus() const
-    {
-        if (mpDesc == nullptr)
-        {
-            return calcAndValidateProperties();
-        }
-        return true;
-    }
+    void Fbo::initApiHandle() const {}
 
     RenderTargetView::SharedPtr Fbo::getRenderTargetView(uint32_t rtIndex) const
     {

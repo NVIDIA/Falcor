@@ -33,7 +33,9 @@
 #include "API/RenderContext.h"
 #include "Scene.h"
 #include "Utils/OS.h"
+#ifndef VK_DISABLE_UNIMPLEMENTED
 #include "VR/OpenVR/VRSystem.h"
+#endif
 #include "API/Device.h"
 #include "glm/matrix.hpp"
 #include "Graphics/Material/MaterialSystem.h"
@@ -210,10 +212,6 @@ namespace Falcor
         // Bind material
         if(mpLastMaterial != pMesh->getMaterial().get())
         {
-            if(mUnloadTexturesOnMaterialChange && mpLastMaterial)
-            {
-                mpLastMaterial->evictTextures();
-            }
             setPerMaterialData(currentData, currentData.pMaterial);
             mpLastMaterial = pMesh->getMaterial().get();
 
@@ -320,6 +318,7 @@ namespace Falcor
 
     void SceneRenderer::setupVR()
     {
+#ifndef VK_DISABLE_UNIMPLEMENTED
         if(mRenderMode == RenderMode::SinglePassStereo || mRenderMode == RenderMode::Stereo)
         {
             VRSystem* pVR = VRSystem::instance();
@@ -331,6 +330,7 @@ namespace Falcor
                 pVR->refreshTracking();
             }
         }
+#endif
     }
 
     void SceneRenderer::renderScene(CurrentWorkingData& currentData)
@@ -406,12 +406,14 @@ namespace Falcor
     {
         if(mode == RenderMode::SinglePassStereo || mode == RenderMode::Stereo)
         {
+#ifndef VK_DISABLE_UNIMPLEMENTED
             // Stereo should have been initialized before
             if(VRSystem::instance() == nullptr)
             {
                 msgBox("Can't set SceneRenderer render mode to stereo. VRSystem() wasn't initialized or stereo is not available");
                 return;
             }
+#endif
             if(mode == RenderMode::SinglePassStereo)
             {
                 // Make sure single pass stereo is supported

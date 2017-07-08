@@ -70,13 +70,13 @@ namespace Falcor
         */
         ShaderType getType() const { return mType; }
 
+        bool init(const std::string& shaderString, std::string& log);
+
 #ifdef FALCOR_D3D
-        bool init(
-            const std::string&  shaderString,
-            std::string&        log);
         ID3DBlobPtr getCodeBlob() const;
         virtual ID3DBlobPtr compile(const std::string& source, std::string& errorLog);
 #endif
+
     protected:
         // API handle depends on the shader Type, so it stored be stored as part of the private data
         Shader(ShaderType Type);

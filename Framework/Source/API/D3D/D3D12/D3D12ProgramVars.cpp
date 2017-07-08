@@ -26,9 +26,37 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 #include "Framework.h"
+#include "API/CopyContext.h"
 #include "API/ProgramVars.h"
 
 namespace Falcor
 {
+    template<bool forGraphics>
+    void bindConstantBuffers(CopyContext* pContext, const ProgramVars::ResourceMap<ConstantBuffer>& cbMap, const ProgramVars::RootSetVec& rootSets, bool forceBind)
+    {
+        for (auto& bufIt : cbMap)
+        {
+            const auto& rootData = bufIt.second.rootData;
+            assert(rootData.descIndex == 0);
+            assert(rootData.rangeIndex == 0);
+            ConstantBuffer* pCB = dynamic_cast<ConstantBuffer*>(bufIt.second.pResource.get());
 
+            if (pCB->uploadToGPU() || forceBind)
+            {
+                auto& pList = pContext->getLowLevelData()->getCommandList();
+
+                if (forGraphics)
+                {
+                    pList->SetGraphicsRootConstantBufferView(rootData.rootIndex, pCB->getGpuAddress());
+                }
+                else
+                {
+                    pList->SetComputeRootConstantBufferView(rootData.rootIndex, pCB->getGpuAddress());
+                }
+            }
+        }
+    }
+
+    template void bindConstantBuffers<true>(CopyContext* pContext, const ProgramVars::ResourceMap<ConstantBuffer>& cbMap, const ProgramVars::RootSetVec& rootSets, bool forceBind);
+    template void bindConstantBuffers<false>(CopyContext* pContext, const ProgramVars::ResourceMap<ConstantBuffer>& cbMap, const ProgramVars::RootSetVec& rootSets, bool forceBind);
 }

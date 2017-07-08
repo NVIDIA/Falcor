@@ -157,17 +157,17 @@ namespace Falcor
 #include "Utils/Logger.h"
 #include "Utils/Profiler.h"
 
-#ifdef FALCOR_GL
-#include "API/OpenGL/FalcorGL.h"
-#elif defined(FALCOR_D3D11) || defined(FALCOR_D3D12)
+#if defined(FALCOR_D3D11) || defined(FALCOR_D3D12)
 #include "API/D3D/FalcorD3D.h"
+#elif defined(FALCOR_VK)
+#include "API/Vulkan/FalcorVK.h"
 #else
 #error Undefined falcor backend. Make sure that a backend is selected in "FalcorConfig.h"
 #endif
 
 #include "Utils/OS.h"
 
-#if defined(FALCOR_D3D12) || defined(FALCOR_VULKAN)
+#if defined(FALCOR_D3D12) || defined(FALCOR_VK)
 #define FALCOR_LOW_LEVEL_API
 #endif
 
