@@ -199,7 +199,7 @@ namespace Falcor
         transitionFboResources(this, mpGraphicsState->getFbo().get());
         setViewports(mpLowLevelData->getCommandList(), mpGraphicsState->getViewports());
         setScissors(mpLowLevelData->getCommandList(), mpGraphicsState->getScissors());
-        setVao(mpLowLevelData->getCommandList(), pGSO->getDesc().getVao().get());        
+        setVao(mpLowLevelData->getCommandList(), mpGraphicsState->getVao().get());        
         beginRenderPass(mpLowLevelData->getCommandList(), mpGraphicsState->getFbo().get());
     }
 
