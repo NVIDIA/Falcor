@@ -44,7 +44,7 @@ namespace Falcor
     void DescriptorPool::executeDeferredReleases()
     {
         uint64_t gpuVal = mpFence->getGpuValue();
-        while (mpDeferredReleases.size() && mpDeferredReleases.top().fenceValue < gpuVal)
+        while (mpDeferredReleases.size() && mpDeferredReleases.top().fenceValue <= gpuVal)
         {
             mpDeferredReleases.pop();
         }

@@ -102,6 +102,10 @@ namespace Falcor
         /** Reset the context
         */
         virtual void reset() override;
+
+        /** Submit the command list
+        */
+        virtual void flush(bool wait = false) override;
     protected:
         ComputeContext() = default;
         void prepareForDispatch();

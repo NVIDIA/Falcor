@@ -93,6 +93,12 @@ namespace Falcor
         mBindComputeRootSig = true;
     }
 
+    void ComputeContext::flush(bool wait)
+    {
+        CopyContext::flush(wait);
+        mBindComputeRootSig = true;
+    }
+
     void ComputeContext::applyComputeVars() {}
     void ComputeContext::applyComputeState() {}
 }
