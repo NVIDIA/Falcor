@@ -72,7 +72,7 @@ namespace Falcor
         range.levelCount = viewInfo.mipCount;
         range.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 
-        vkCmdClearColorImage(pCtx->getLowLevelData()->getCommandList(), pView->getResource()->getApiHandle().getImage(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &colVal, 1, &range);
+        vkCmdClearColorImage(pCtx->getLowLevelData()->getCommandList(), pView->getResource()->getApiHandle(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &colVal, 1, &range);
     }
 
     template void clearColorImageCommon(CopyContext* pCtx, const RenderTargetView* pView, const vec4& clearVal);

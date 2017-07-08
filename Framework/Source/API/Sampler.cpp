@@ -41,7 +41,7 @@ namespace Falcor
     Sampler::~Sampler()
     {
         sObjectCount--;
-        if (sObjectCount == 0)
+        if (sObjectCount == 1 && spDefaultSampler)
         {
             spDefaultSampler = nullptr;
         }

@@ -131,7 +131,7 @@ namespace Falcor
         {
             const Buffer* pVB = pVao->getVertexBuffer(i).get();
             VkDeviceSize offset = pVB->getGpuAddressOffset();
-            VkBuffer handle = pVB->getApiHandle().getBuffer();
+            VkBuffer handle = pVB->getApiHandle();
             vkCmdBindVertexBuffers(cmdList, i, 1, &handle, &offset);
         }
 
@@ -139,7 +139,7 @@ namespace Falcor
         if (pIB)
         {
             VkDeviceSize offset = pIB->getGpuAddressOffset();
-            VkBuffer handle = pIB->getApiHandle().getBuffer();
+            VkBuffer handle = pIB->getApiHandle();
             vkCmdBindIndexBuffer(cmdList, handle, offset, getVkIndexType(pVao->getIndexBufferFormat()));
         }
     }

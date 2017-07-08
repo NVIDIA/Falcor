@@ -124,6 +124,10 @@ namespace Falcor
 
     void Device::destroyApiObjects()
     {
+        PFN_vkDestroyDebugReportCallbackEXT DestroyDebugReportCallback = VK_NULL_HANDLE;
+        DestroyDebugReportCallback = (PFN_vkDestroyDebugReportCallbackEXT)vkGetInstanceProcAddr(mApiHandle, "vkDestroyDebugReportCallbackEXT");
+        DestroyDebugReportCallback(mApiHandle, mpApiData->debugReportCallbackHandle, nullptr);
+
         // VkSwapchain has internally associated VkImages handles.
         // Destructor for Falcor::Fbo holding VkImages queried from the VkSwapchain will destroy the swapchain's images, 
         // which would cause a double delete when destroying the swapchain here.
