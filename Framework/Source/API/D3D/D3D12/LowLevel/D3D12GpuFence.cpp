@@ -60,9 +60,9 @@ namespace Falcor
         return mCpuValue - 1;
     }
 
-    void GpuFence::syncGpu(CommandQueueHandle pQueue)
+    void GpuFence::syncGpu(CommandQueueHandle pQueue, uint32_t waitValue)
     {
-        d3d_call(pQueue->Wait(mApiHandle, mCpuValue));
+        d3d_call(pQueue->Wait(mApiHandle, waitValue));
     }
 
     void GpuFence::syncCpu()

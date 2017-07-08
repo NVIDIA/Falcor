@@ -61,7 +61,7 @@ namespace Falcor
 
         /** Tell the GPU to wait until the fence reaches the current value
         */
-        void syncGpu(CommandQueueHandle pQueue);
+        void syncGpu(CommandQueueHandle pQueue, uint32_t waitValue);
 
         /** Tell the CPU to wait until the fence reaches the current value
         */
