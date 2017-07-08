@@ -219,16 +219,10 @@ namespace Falcor
     {
         assert(mpGraphicsState);
 
-        // Bind the root signature and the root signature data
+        // Apply the vars. Must be first because applyGraphicsVars() might cause a flush
         if (mpGraphicsVars)
         {
-            if (mpGraphicsVars->apply(const_cast<RenderContext*>(this), mBindGraphicsRootSig) == false)
-            {
-                logWarning("RenderContext::prepareForDraw() - applying GraphicsVars failed, most likely because we ran out of descriptors. Flushing the GPU and retrying");
-                flush(true);
-                bool b = mpGraphicsVars->apply(const_cast<RenderContext*>(this), mBindGraphicsRootSig);
-                assert(b);
-            }
+            applyGraphicsVars();
         }
         else
         {
@@ -402,7 +396,4 @@ namespace Falcor
         popGraphicsState();
         popGraphicsVars();
     }
-
-    void RenderContext::applyProgramVars() {}
-    void RenderContext::applyGraphicsState() {}
 }

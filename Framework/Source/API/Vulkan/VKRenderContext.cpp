@@ -187,13 +187,14 @@ namespace Falcor
 
     void RenderContext::prepareForDraw()
     {
+        // Apply the vars. Must be first because applyGraphicsVars() might cause a flush
+        if(mpGraphicsVars)
+        {
+            applyGraphicsVars();
+        }
+
         GraphicsStateObject::SharedPtr pGSO = mpGraphicsState->getGSO(mpGraphicsVars.get());
         vkCmdBindPipeline(mpLowLevelData->getCommandList(), VK_PIPELINE_BIND_POINT_GRAPHICS, pGSO->getApiHandle());
-        if (mpGraphicsVars)
-        {
-            mpGraphicsVars->apply(const_cast<RenderContext*>(this), mBindGraphicsRootSig);
-            mBindGraphicsRootSig = false;
-        }
         
         transitionFboResources(this, mpGraphicsState->getFbo().get());
         setViewports(mpLowLevelData->getCommandList(), mpGraphicsState->getViewports());
@@ -275,7 +276,4 @@ namespace Falcor
         resourceBarrier(pDst->getResource(), Resource::State::CopyDest);
         vkCmdBlitImage(mpLowLevelData->getCommandList(), pSrc->getResource()->getApiHandle(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, pDst->getResource()->getApiHandle(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &blt, VK_FILTER_NEAREST);
     }
-    
-    void RenderContext::applyProgramVars() {}
-    void RenderContext::applyGraphicsState() {}
 }
