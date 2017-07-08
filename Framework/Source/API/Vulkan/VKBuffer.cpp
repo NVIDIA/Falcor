@@ -135,8 +135,13 @@ namespace Falcor
 
     void Buffer::unmap()
     {
+        if (mpStagingResource)
+        {
+            mpStagingResource->unmap();
+            mpStagingResource = nullptr;
+        }
         // We only unmap staging buffers
-        if (mDynamicData.pData == nullptr && mBindFlags == BindFlags::None)
+        else if (mDynamicData.pData == nullptr && mBindFlags == BindFlags::None)
         {
             assert(mCpuAccess == CpuAccess::Read);
             vkUnmapMemory(gpDevice->getApiHandle(), mApiHandle.getDeviceMem());

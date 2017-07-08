@@ -91,7 +91,7 @@ namespace Falcor
 
         VkResource& operator=(const VkResource& rhs) = default;
 
-        void Release()
+        void release()
         {
             switch (mType)
             {

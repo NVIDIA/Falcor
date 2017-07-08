@@ -527,6 +527,7 @@ namespace Falcor
         vk_call(vkQueuePresentKHR(mpRenderContext->getLowLevelData()->getCommandQueue(), &info));
 
         // Get the next back-buffer
+        mpFrameFence->gpuSignal(mpRenderContext->getLowLevelData()->getCommandQueue());
         vk_call(vkAcquireNextImageKHR(mApiHandle, mpApiData->swapchain, std::numeric_limits<uint64_t>::max(), mpFrameFence->getApiHandle(), VK_NULL_HANDLE, &mCurrentBackBufferIndex));        
     }
 
