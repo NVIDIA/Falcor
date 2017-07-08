@@ -53,6 +53,7 @@ void VKDev::onFrameRender()
     mpRenderContext->setGraphicsVars(mpVars);
     mpPass->execute(mpRenderContext.get());
     uint32_t count = pCountBuffer[0]["count"];
+    renderText(std::to_string(count), vec2(250, 20));
 }
 
 void VKDev::onShutdown()
