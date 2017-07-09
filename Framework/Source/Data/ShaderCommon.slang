@@ -99,7 +99,7 @@ float2 calcMotionVector(float2 pixelCrd, float4 prevPosH, float2 renderTargetDim
 /*******************************************************************
                     GLSL Evaluation routines
 *******************************************************************/
-#if defined(FALCOR_GLSL)
+#if 0
 bool isSamplerBound(in sampler2D sampler)
 {
     return any(ufloat2(sampler) != 0);

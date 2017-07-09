@@ -214,7 +214,7 @@ void _fn sampleLight(in const float3 shadingHitPos, in const LightData lData, co
 		}
 		break;
 
-#if defined(CUDA_CODE) || defined(FALCOR_GLSL)
+#if defined(CUDA_CODE)
 		case LightArea:
 		{
 			if (lData.numIndices != 0)

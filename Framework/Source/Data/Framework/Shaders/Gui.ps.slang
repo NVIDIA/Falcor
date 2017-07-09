@@ -26,7 +26,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 
-#ifdef FALCOR_HLSL
+#if 1
 
 SamplerState gSampler;
 Texture2D gFont;
@@ -46,7 +46,7 @@ float4 main(VsOut vOut) : SV_TARGET
 }
 #endif
 
-#ifdef FALCOR_GLSL
+#if 0
 layout(set = 1, binding = 0) uniform texture2D gFont;
 layout(set = 1, binding = 1) uniform sampler gSampler;
 

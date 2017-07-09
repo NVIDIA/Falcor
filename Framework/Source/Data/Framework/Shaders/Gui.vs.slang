@@ -26,7 +26,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 
-#ifdef FALCOR_HLSL
+#if 1
 cbuffer PerFrameCB : register(b0)
 {
     float2 scale;
@@ -58,7 +58,7 @@ VsOut main(VsIn vIn)
 }
 #endif
 
-#ifdef FALCOR_GLSL
+#if 0
 layout(set = 0, binding = 0) uniform PerFrameCB
 {
     vec2 scale;
