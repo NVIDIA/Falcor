@@ -60,7 +60,7 @@ namespace Falcor
         DescriptorPool::Desc poolDesc;
         poolDesc.setDescCount(DescriptorPool::Type::Srv, 16 * 1024).setDescCount(DescriptorPool::Type::Sampler, 2048).setShaderVisible(true);
 #ifndef FALCOR_D3D12
-        poolDesc.setDescCount(DescriptorPool::Type::Cbv, 16 * 1024);
+        poolDesc.setDescCount(DescriptorPool::Type::Cbv, 16 * 1024).setDescCount(DescriptorPool::Type::Uav, 16 * 1024);
 #endif
         mpGpuDescPool = DescriptorPool::create(poolDesc, mpRenderContext->getLowLevelData()->getFence());
         poolDesc.setShaderVisible(false).setDescCount(DescriptorPool::Type::Rtv, 16 * 1024).setDescCount(DescriptorPool::Type::Dsv, 1024);

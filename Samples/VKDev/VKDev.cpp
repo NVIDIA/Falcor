@@ -46,9 +46,14 @@ void VKDev::onFrameRender()
 {
     const glm::vec4 clearColor(0.38f, 0.52f, 0.10f, 1);
     mpRenderContext->clearFbo(mpDefaultFBO.get(), clearColor, 1.0f, 0, FboAttachmentType::All);
+    StructuredBuffer::SharedPtr pCountBuffer = mpVars->getStructuredBuffer("outImage");
+    pCountBuffer[0]["count"] = 0u;
+
     mpVars["PerFrameCB"]["offset"] = mTexOffset;
     mpRenderContext->setGraphicsVars(mpVars);
     mpPass->execute(mpRenderContext.get());
+    uint32_t count = pCountBuffer[0]["count"];
+    renderText(std::to_string(count), vec2(250, 20));
 }
 
 void VKDev::onShutdown()

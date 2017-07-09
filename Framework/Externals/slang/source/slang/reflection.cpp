@@ -385,6 +385,9 @@ SLANG_API SlangResourceAccess spReflectionType_GetResourceAccess(SlangReflection
     CASE(HLSLByteAddressBufferType,         SLANG_BYTE_ADDRESS_BUFFER,  SLANG_RESOURCE_ACCESS_READ);
     CASE(HLSLRWByteAddressBufferType,       SLANG_BYTE_ADDRESS_BUFFER,  SLANG_RESOURCE_ACCESS_READ_WRITE);
     CASE(UntypedBufferResourceType,         SLANG_BYTE_ADDRESS_BUFFER,  SLANG_RESOURCE_ACCESS_READ);
+
+    // #SLANG_VK
+    CASE(GLSLShaderStorageBufferType,       SLANG_STRUCTURED_BUFFER, SLANG_RESOURCE_ACCESS_READ_WRITE);
 #undef CASE
 
     return SLANG_RESOURCE_ACCESS_NONE;

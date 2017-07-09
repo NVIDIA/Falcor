@@ -125,14 +125,16 @@ namespace Falcor
         }
     }
 
-    void setVao(CommandListHandle cmdList, const Vao* pVao)
+    void setVao(CopyContext* pCtx, const Vao* pVao)
     {
+        CommandListHandle cmdList = pCtx->getLowLevelData()->getCommandList();
         for (uint32_t i = 0; i < pVao->getVertexBuffersCount(); i++)
         {
             const Buffer* pVB = pVao->getVertexBuffer(i).get();
             VkDeviceSize offset = pVB->getGpuAddressOffset();
             VkBuffer handle = pVB->getApiHandle();
             vkCmdBindVertexBuffers(cmdList, i, 1, &handle, &offset);
+            pCtx->resourceBarrier(pVB, Resource::State::VertexBuffer);
         }
 
         const Buffer* pIB = pVao->getIndexBuffer().get();
@@ -141,6 +143,7 @@ namespace Falcor
             VkDeviceSize offset = pIB->getGpuAddressOffset();
             VkBuffer handle = pIB->getApiHandle();
             vkCmdBindIndexBuffer(cmdList, handle, offset, getVkIndexType(pVao->getIndexBufferFormat()));
+            pCtx->resourceBarrier(pIB, Resource::State::IndexBuffer);
         }
     }
 
@@ -199,7 +202,7 @@ namespace Falcor
         transitionFboResources(this, mpGraphicsState->getFbo().get());
         setViewports(mpLowLevelData->getCommandList(), mpGraphicsState->getViewports());
         setScissors(mpLowLevelData->getCommandList(), mpGraphicsState->getScissors());
-        setVao(mpLowLevelData->getCommandList(), mpGraphicsState->getVao().get());        
+        setVao(this, mpGraphicsState->getVao().get());        
         beginRenderPass(mpLowLevelData->getCommandList(), mpGraphicsState->getFbo().get());
     }
 
@@ -218,7 +221,7 @@ namespace Falcor
     void RenderContext::drawIndexedInstanced(uint32_t indexCount, uint32_t instanceCount, uint32_t startIndexLocation, int32_t baseVertexLocation, uint32_t startInstanceLocation)
     {
         prepareForDraw();
-        vkCmdDrawIndexed(mpLowLevelData->getCommandList(), indexCount, instanceCount, startIndexLocation, baseVertexLocation, startIndexLocation);
+        vkCmdDrawIndexed(mpLowLevelData->getCommandList(), indexCount, instanceCount, startIndexLocation, baseVertexLocation, startInstanceLocation);
         endVkDraw(mpLowLevelData->getCommandList());
     }
 

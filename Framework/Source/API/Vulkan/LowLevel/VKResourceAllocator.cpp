@@ -37,7 +37,7 @@ namespace Falcor
     void ResourceAllocator::initBasePageData(BaseData& data, size_t size)
     {
         // Create a buffer
-        data.pResourceHandle = createBuffer(size, Buffer::BindFlags::Constant | Buffer::BindFlags::Vertex, Device::MemoryType::Upload);
+        data.pResourceHandle = createBuffer(size, Buffer::BindFlags::Constant | Buffer::BindFlags::Vertex | Buffer::BindFlags::Index, Device::MemoryType::Upload);
         data.offset = 0;
         vk_call(vkMapMemory(gpDevice->getApiHandle(), data.pResourceHandle, 0, VK_WHOLE_SIZE, 0, (void**)&data.pData));
     }

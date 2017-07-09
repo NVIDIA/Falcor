@@ -504,7 +504,8 @@ namespace Falcor
         {
         case TypeReflection::Kind::SamplerState:
             return ProgramReflection::Resource::ResourceType::Sampler;
-
+        case TypeReflection::Kind::ShaderStorageBuffer:
+            return ProgramReflection::Resource::ResourceType::StructuredBuffer;
         case TypeReflection::Kind::Resource:
             switch (pSlangType->getResourceShape() & SLANG_RESOURCE_BASE_SHAPE_MASK)
             {
@@ -539,6 +540,7 @@ namespace Falcor
             break;
 
         case TypeReflection::Kind::Resource:
+        case TypeReflection::Kind::ShaderStorageBuffer:
             switch (pSlangType->getResourceAccess())
             {
             case SLANG_RESOURCE_ACCESS_NONE:
