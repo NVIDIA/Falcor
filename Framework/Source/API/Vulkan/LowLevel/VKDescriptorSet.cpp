@@ -44,7 +44,7 @@ namespace Falcor
         allocInfo.descriptorSetCount = 1;
         allocInfo.pSetLayouts = &layout;
         vk_call(vkAllocateDescriptorSets(gpDevice->getApiHandle(), &allocInfo, &mApiHandle));
-        mpApiData = mpApiData = std::make_shared<DescriptorSetApiData>(layout, mpPool->getApiHandle(0), mApiHandle);
+        mpApiData = std::make_shared<DescriptorSetApiData>(layout, mpPool->getApiHandle(0), mApiHandle);
 
         return true;
     }

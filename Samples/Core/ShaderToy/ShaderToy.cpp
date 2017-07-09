@@ -66,11 +66,11 @@ void ShaderToy::onFrameRender()
     // iResolution
     float width = (float)mpDefaultFBO->getWidth();
     float height = (float)mpDefaultFBO->getHeight();
-    mpToyVars[mToyCBBinding]["iResolution"] = glm::vec2(width, height);;
+    mpToyVars->getConstantBuffer(mToyCBBinding, 0)["iResolution"] = glm::vec2(width, height);;
 
     // iGlobalTime
     float iGlobalTime = (float)mCurrentTime;  
-    mpToyVars[mToyCBBinding]["iGlobalTime"] = iGlobalTime;
+    mpToyVars->getConstantBuffer(mToyCBBinding,0)["iGlobalTime"] = iGlobalTime;
 
     // run final pass
     mpRenderContext->setGraphicsVars(mpToyVars);

@@ -82,7 +82,7 @@ namespace Falcor
         range.aspectMask = clearDepth ? VK_IMAGE_ASPECT_DEPTH_BIT : 0;
         range.aspectMask |= clearStencil ? VK_IMAGE_ASPECT_STENCIL_BIT : 0;
 
-        vkCmdClearDepthStencilImage(mpLowLevelData->getCommandList(), pDsv->getResource()->getApiHandle().getImage(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &val, 1, &range);
+        vkCmdClearDepthStencilImage(mpLowLevelData->getCommandList(), pDsv->getResource()->getApiHandle(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &val, 1, &range);
         mCommandsPending = true;
     }
 
@@ -131,7 +131,7 @@ namespace Falcor
         {
             const Buffer* pVB = pVao->getVertexBuffer(i).get();
             VkDeviceSize offset = pVB->getGpuAddressOffset();
-            VkBuffer handle = pVB->getApiHandle().getBuffer();
+            VkBuffer handle = pVB->getApiHandle();
             vkCmdBindVertexBuffers(cmdList, i, 1, &handle, &offset);
         }
 
@@ -139,7 +139,7 @@ namespace Falcor
         if (pIB)
         {
             VkDeviceSize offset = pIB->getGpuAddressOffset();
-            VkBuffer handle = pIB->getApiHandle().getBuffer();
+            VkBuffer handle = pIB->getApiHandle();
             vkCmdBindIndexBuffer(cmdList, handle, offset, getVkIndexType(pVao->getIndexBufferFormat()));
         }
     }
@@ -150,8 +150,8 @@ namespace Falcor
         const auto& fboHandle = pFbo->getApiHandle();
         VkRenderPassBeginInfo beginInfo = {};
         beginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-        beginInfo.renderPass = fboHandle;
-        beginInfo.framebuffer = fboHandle;
+        beginInfo.renderPass = *fboHandle;
+        beginInfo.framebuffer = *fboHandle;
         beginInfo.renderArea.offset = { 0, 0 };
         beginInfo.renderArea.extent = { pFbo->getWidth(), pFbo->getHeight() };
 
@@ -187,18 +187,19 @@ namespace Falcor
 
     void RenderContext::prepareForDraw()
     {
+        // Apply the vars. Must be first because applyGraphicsVars() might cause a flush
+        if(mpGraphicsVars)
+        {
+            applyGraphicsVars();
+        }
+
         GraphicsStateObject::SharedPtr pGSO = mpGraphicsState->getGSO(mpGraphicsVars.get());
         vkCmdBindPipeline(mpLowLevelData->getCommandList(), VK_PIPELINE_BIND_POINT_GRAPHICS, pGSO->getApiHandle());
-        if (mpGraphicsVars)
-        {
-            mpGraphicsVars->apply(const_cast<RenderContext*>(this), mBindGraphicsRootSig);
-            mBindGraphicsRootSig = false;
-        }
         
         transitionFboResources(this, mpGraphicsState->getFbo().get());
         setViewports(mpLowLevelData->getCommandList(), mpGraphicsState->getViewports());
         setScissors(mpLowLevelData->getCommandList(), mpGraphicsState->getScissors());
-        setVao(mpLowLevelData->getCommandList(), pGSO->getDesc().getVao().get());        
+        setVao(mpLowLevelData->getCommandList(), mpGraphicsState->getVao().get());        
         beginRenderPass(mpLowLevelData->getCommandList(), mpGraphicsState->getFbo().get());
     }
 
@@ -275,7 +276,4 @@ namespace Falcor
         resourceBarrier(pDst->getResource(), Resource::State::CopyDest);
         vkCmdBlitImage(mpLowLevelData->getCommandList(), pSrc->getResource()->getApiHandle(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, pDst->getResource()->getApiHandle(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &blt, VK_FILTER_NEAREST);
     }
-    
-    void RenderContext::applyProgramVars() {}
-    void RenderContext::applyGraphicsState() {}
 }

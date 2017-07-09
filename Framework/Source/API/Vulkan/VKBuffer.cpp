@@ -49,7 +49,7 @@ namespace Falcor
     void* mapBufferApi(const Buffer::ApiHandle& apiHandle, size_t size)
     {
         void* pData;
-        vk_call(vkMapMemory(gpDevice->getApiHandle(), apiHandle.getDeviceMem(), 0, size, 0, &pData));
+        vk_call(vkMapMemory(gpDevice->getApiHandle(), apiHandle, 0, size, 0, &pData));
         return pData;
     }
 
@@ -71,7 +71,7 @@ namespace Falcor
     size_t getBufferDataAlignment(const Buffer* pBuffer)
     {
         VkMemoryRequirements reqs;
-        vkGetBufferMemoryRequirements(gpDevice->getApiHandle(), pBuffer->getApiHandle().getBuffer(), &reqs);
+        vkGetBufferMemoryRequirements(gpDevice->getApiHandle(), pBuffer->getApiHandle(), &reqs);
         return reqs.alignment;
     }
 
@@ -97,10 +97,9 @@ namespace Falcor
         vk_call(vkCreateBuffer(gpDevice->getApiHandle(), &bufferInfo, nullptr, &buffer));
 
         // Get the required buffer size
-        Buffer::ApiHandle apiHandle = buffer;
         VkDeviceMemory mem = allocateDeviceMemory(memType, getBufferRequiredMemorySize(buffer));
-        apiHandle.setDeviceMem(mem);
         vk_call(vkBindBufferMemory(gpDevice->getApiHandle(), buffer, mem, 0));
+        Buffer::ApiHandle apiHandle = Buffer::ApiHandle::create(buffer, mem);
 
         return apiHandle;
     }

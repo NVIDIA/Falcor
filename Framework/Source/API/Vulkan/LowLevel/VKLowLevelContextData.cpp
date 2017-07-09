@@ -62,12 +62,13 @@ namespace Falcor
         commandPoolCreateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
         commandPoolCreateInfo.flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT | VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
         commandPoolCreateInfo.queueFamilyIndex = gpDevice->getApiCommandQueueType(type);
-        if (VK_FAILED(vkCreateCommandPool(gpDevice->getApiHandle(), &commandPoolCreateInfo, nullptr, &pThis->mpAllocator)))
+        VkCommandPool pool;
+        if (VK_FAILED(vkCreateCommandPool(gpDevice->getApiHandle(), &commandPoolCreateInfo, nullptr, &pool)))
         {
             logError("Could not create command pool");
             return nullptr;
         }
-
+        pThis->mpAllocator = CommandAllocatorHandle::create(pool);
         pThis->mpApiData = new LowLevelContextApiData;
         pThis->mpApiData->pCmdBufferAllocator = FencedPool<VkCommandBuffer>::create(pThis->mpFence, createCommandBuffer, pThis.get());
         pThis->mpList = pThis->mpApiData->pCmdBufferAllocator->newObject();

@@ -200,7 +200,7 @@ namespace Falcor
                 barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
                 barrier.newLayout = getImageLayout(newState);
                 barrier.oldLayout = getImageLayout(pResource->mState);
-                barrier.image = pResource->getApiHandle().getImage();
+                barrier.image = pResource->getApiHandle();
                 barrier.subresourceRange.aspectMask = getAspectFlagsFromFormat(pTexture->getFormat());
                 barrier.subresourceRange.baseArrayLayer = 0;
                 barrier.subresourceRange.baseMipLevel = 0;

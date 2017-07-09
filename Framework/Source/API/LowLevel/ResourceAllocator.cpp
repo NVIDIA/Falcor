@@ -33,7 +33,7 @@ namespace Falcor
 {
     ResourceAllocator::~ResourceAllocator()
     {
-        executeDeferredReleases();
+        mDeferredReleases = decltype(mDeferredReleases)();
     }
 
     ResourceAllocator::SharedPtr ResourceAllocator::create(size_t pageSize, GpuFence::SharedPtr pFence)

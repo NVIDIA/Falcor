@@ -36,16 +36,11 @@ namespace Falcor
     {
         assert(mpComputeState);
 
-        // Bind the root signature and the root signature data
+        // Apply the vars. Must be first because applyComputeVars() might cause a flush
         if (mpComputeVars)
         {
-            mpComputeVars->apply(const_cast<ComputeContext*>(this), mBindComputeRootSig);
+            applyComputeVars();
         }
-        else
-        {
-            // Set null/empty
-        }
-
         // Set pipeline state
 
         mCommandsPending = true;
@@ -72,7 +67,7 @@ namespace Falcor
         range.levelCount = viewInfo.mipCount;
         range.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 
-        vkCmdClearColorImage(pCtx->getLowLevelData()->getCommandList(), pView->getResource()->getApiHandle().getImage(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &colVal, 1, &range);
+        vkCmdClearColorImage(pCtx->getLowLevelData()->getCommandList(), pView->getResource()->getApiHandle(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &colVal, 1, &range);
     }
 
     template void clearColorImageCommon(CopyContext* pCtx, const RenderTargetView* pView, const vec4& clearVal);
