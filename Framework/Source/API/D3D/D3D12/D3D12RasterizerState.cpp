@@ -31,11 +31,6 @@
 namespace Falcor
 {
     RasterizerState::~RasterizerState() = default;
-    
-    RasterizerState::SharedPtr RasterizerState::create(const Desc& desc)
-    {
-        return SharedPtr(new RasterizerState(desc));
-    }
 
     RasterizerStateHandle RasterizerState::getApiHandle() const
     {

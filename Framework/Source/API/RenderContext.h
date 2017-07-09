@@ -131,7 +131,7 @@ namespace Falcor
 
         /** Set the program variables for graphics
         */
-        void setGraphicsVars(const GraphicsVars::SharedPtr& pVars) { mBindGraphicsRootSig = mBindGraphicsRootSig || (mpGraphicsVars != pVars); mpGraphicsVars = pVars; applyProgramVars(); }
+        void setGraphicsVars(const GraphicsVars::SharedPtr& pVars) { mBindGraphicsRootSig = true;/* mBindGraphicsRootSig || (mpGraphicsVars != pVars)*/; mpGraphicsVars = pVars; }
         
         /** Get the bound graphics program variables object
         */
@@ -147,7 +147,7 @@ namespace Falcor
 
         /** Set a graphics state
         */
-        void setGraphicsState(const GraphicsState::SharedPtr& pState) { mpGraphicsState = pState; applyGraphicsState(); }
+        void setGraphicsState(const GraphicsState::SharedPtr& pState) { mpGraphicsState = pState; }
         
         /** Get the currently bound graphics state
         */
@@ -164,6 +164,10 @@ namespace Falcor
         /** Reset the context
         */
         void reset() override;
+
+        /** Submit the command list
+        */
+        void flush(bool wait = false) override;
     private:
         RenderContext() = default;
         GraphicsVars::SharedPtr mpGraphicsVars;
@@ -180,10 +184,9 @@ namespace Falcor
         compute context's initDispatchCommandSignature() to create command signature for dispatchIndirect
         */
         static void initDrawCommandSignatures();
+        void applyGraphicsVars();
 
         // Internal functions used by the API layers
-        void applyProgramVars();
-        void applyGraphicsState();
         void prepareForDraw();
     };
 }

@@ -68,7 +68,7 @@ namespace Falcor
         ResourceFormat texFormat = pTexture->getFormat();
 
         outInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-        outInfo.image = pTexture->getApiHandle().getImage();
+        outInfo.image = pTexture->getApiHandle();
         outInfo.viewType = getViewType(pTexture->getType(), pTexture->getArraySize() > 1);
         outInfo.format = getVkFormat(texFormat);
         outInfo.subresourceRange.aspectMask = getAspectFlagsFromFormat(texFormat);
@@ -80,30 +80,17 @@ namespace Falcor
 
     void initializeBufferViewInfo(const Buffer::SharedConstPtr& pBuffer, VkBufferViewCreateInfo& outInfo)
     {
+        TypedBufferBase::SharedConstPtr pTypedBuffer = std::dynamic_pointer_cast<const TypedBufferBase>(pBuffer);
+        assert(pTypedBuffer);
         outInfo = {};
         outInfo.sType = VK_STRUCTURE_TYPE_BUFFER_VIEW_CREATE_INFO;
-        outInfo.buffer = pBuffer->getApiHandle().getBuffer();
+        outInfo.buffer = pBuffer->getApiHandle();
         outInfo.offset = 0;
         outInfo.range = VK_WHOLE_SIZE;
-
-        TypedBufferBase::SharedConstPtr pTypedBuffer = std::dynamic_pointer_cast<const TypedBufferBase>(pBuffer);
-        StructuredBuffer::SharedConstPtr pStructuredBuffer = std::dynamic_pointer_cast<const StructuredBuffer>(pBuffer);
-
-        if (pTypedBuffer)
-        {
-            outInfo.format = getVkFormat(pTypedBuffer->getResourceFormat());
-        }
-        else if (pStructuredBuffer)
-        {
-            // #VKTODO what format for structured buffer?
-        }
-        else
-        {
-            // #VKTODO what format for raw buffer?
-        }
+        outInfo.format = getVkFormat(pTypedBuffer->getResourceFormat());
     }
 
-    VkResource<VkImageView, VkBufferView> createViewCommon(const Resource::SharedConstPtr& pSharedPtr, uint32_t mostDetailedMip, uint32_t mipCount, uint32_t firstArraySlice, uint32_t arraySize)
+    VkResource<VkImageView, VkBufferView>::SharedPtr createViewCommon(const Resource::SharedConstPtr& pSharedPtr, uint32_t mostDetailedMip, uint32_t mipCount, uint32_t firstArraySlice, uint32_t arraySize)
     {
         switch (pSharedPtr->getApiHandle().getType())
         {
@@ -112,22 +99,27 @@ namespace Falcor
             VkImageViewCreateInfo info;
             VkImageView imageView;
             initializeImageViewInfo(std::static_pointer_cast<const Texture>(pSharedPtr), firstArraySlice, arraySize, mostDetailedMip, mipCount, info);
-            vkCreateImageView(gpDevice->getApiHandle(), &info, nullptr, &imageView);
-            return imageView;
+            vk_call(vkCreateImageView(gpDevice->getApiHandle(), &info, nullptr, &imageView));
+            return VkResource<VkImageView, VkBufferView>::SharedPtr::create(imageView, nullptr);
         }
 
         case VkResourceType::Buffer:
         {
-            VkBufferViewCreateInfo info;
-            VkBufferView bufferView;
-            initializeBufferViewInfo(std::static_pointer_cast<const Buffer>(pSharedPtr), info);
-            vkCreateBufferView(gpDevice->getApiHandle(), &info, nullptr, &bufferView);
-            return bufferView;
+            // We only create views for TypedBuffers
+            VkBufferView bufferView = {};
+            TypedBufferBase::SharedConstPtr pTypedBuffer = std::dynamic_pointer_cast<const TypedBufferBase>(pSharedPtr);
+            if(pTypedBuffer)
+            {
+                VkBufferViewCreateInfo info;
+                initializeBufferViewInfo(std::static_pointer_cast<const Buffer>(pSharedPtr), info);
+                vk_call(vkCreateBufferView(gpDevice->getApiHandle(), &info, nullptr, &bufferView));
+            }
+            return VkResource<VkImageView, VkBufferView>::SharedPtr::create(bufferView, nullptr);
         }
 
         default:
             should_not_get_here();
-            return VkResource<VkImageView, VkBufferView>();
+            return VkResource<VkImageView, VkBufferView>::SharedPtr();
         }
     }
 
@@ -163,7 +155,7 @@ namespace Falcor
         }
 
         auto view = createViewCommon(pSharedPtr, mipLevel, 1, firstArraySlice, arraySize);
-        return SharedPtr(new DepthStencilView(pResource, view.getImage(), mipLevel, firstArraySlice, arraySize));
+        return SharedPtr(new DepthStencilView(pResource, view, mipLevel, firstArraySlice, arraySize));
     }
 
     DepthStencilView::SharedPtr DepthStencilView::getNullView()
@@ -197,7 +189,7 @@ namespace Falcor
         // Create sNullView if we need to return it and it doesn't exist yet
         if (pSharedPtr == nullptr && sNullView== nullptr)
         {
-            sNullView = SharedPtr(new RenderTargetView(pResource, VK_NULL_HANDLE, mipLevel, firstArraySlice, arraySize));
+            sNullView = SharedPtr(new RenderTargetView(pResource, nullptr, mipLevel, firstArraySlice, arraySize));
         }
 
         if (pSharedPtr != nullptr)
@@ -211,7 +203,7 @@ namespace Falcor
 
             // Create view
             auto view = createViewCommon(pSharedPtr, mipLevel, 1, firstArraySlice, arraySize);
-            return SharedPtr(new RenderTargetView(pResource, view.getImage(), mipLevel, firstArraySlice, arraySize));
+            return SharedPtr(new RenderTargetView(pResource, view, mipLevel, firstArraySlice, arraySize));
         }
         else
         {

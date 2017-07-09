@@ -33,7 +33,7 @@ namespace Falcor
 {
     ResourceAllocator::~ResourceAllocator()
     {
-        executeDeferredReleases();
+        mDeferredReleases = decltype(mDeferredReleases)();
     }
 
     ResourceAllocator::SharedPtr ResourceAllocator::create(size_t pageSize, GpuFence::SharedPtr pFence)
@@ -99,10 +99,8 @@ namespace Falcor
 
     void ResourceAllocator::release(AllocationData& data)
     {
-        if (data.pResourceHandle) // #VKTODO this is always true, need to figure out how to handle VK deferred releases
-        {
-            mDeferredReleases.push(data);
-        }
+        assert(data.pResourceHandle);
+        mDeferredReleases.push(data);
     }
 
     void ResourceAllocator::executeDeferredReleases()

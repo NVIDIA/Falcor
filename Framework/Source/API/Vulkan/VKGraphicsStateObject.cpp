@@ -96,11 +96,13 @@ namespace Falcor
         pipelineCreateInfo.renderPass = mDesc.getRenderPass();
         pipelineCreateInfo.subpass = 0;
 
-        if (VK_FAILED(vkCreateGraphicsPipelines(gpDevice->getApiHandle(), VK_NULL_HANDLE, 1, &pipelineCreateInfo, nullptr, &mApiHandle)))
+        VkPipeline pipeline;
+        if (VK_FAILED(vkCreateGraphicsPipelines(gpDevice->getApiHandle(), VK_NULL_HANDLE, 1, &pipelineCreateInfo, nullptr, &pipeline)))
         {
             logError("Could not create graphics pipeline.");
             return false;
         }
+        mApiHandle = ApiHandle::create(pipeline);
 
         return true;
     }

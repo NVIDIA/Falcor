@@ -616,7 +616,7 @@ namespace Falcor
                 // Allocate a GPU descriptor
                 const auto& pDescSet = rootSets[rootData.rootIndex].pDescSet;
                 assert(pDescSet);
-                pDescSet->setSampler(rootData.rangeIndex, rootData.descIndex, samplerIt.first.regIndex, pSampler->getApiHandle());
+                pDescSet->setSampler(rootData.rangeIndex, rootData.descIndex, samplerIt.first.regIndex, pSampler);
             }
         }
     }
@@ -630,7 +630,7 @@ namespace Falcor
             auto& rootData = resDesc.rootData;
             Resource* pResource = resDesc.pResource.get();
 
-            ViewType::ApiHandle handle;
+            ViewType::SharedPtr view;
             if (pResource)
             {
                 // If it's a typed buffer, upload it to the GPU
@@ -663,11 +663,11 @@ namespace Falcor
                     }
                 }
 
-                handle = resDesc.pView->getApiHandle();
+                view = resDesc.pView;
             }
             else
             {
-                handle = isUav ? UnorderedAccessView::getNullView()->getApiHandle() : ShaderResourceView::getNullView()->getApiHandle();
+                view = ViewType::getNullView();
             }
 
             if (rootSets[rootData.rootIndex].dirty)
@@ -676,18 +676,18 @@ namespace Falcor
                 const auto& pDescSet = rootSets[rootData.rootIndex].pDescSet;
                 if (isUav)
                 {
-                    pDescSet->setUav(rootData.rangeIndex, rootData.descIndex, resIt.first.regIndex, handle);
+                    pDescSet->setUav(rootData.rangeIndex, rootData.descIndex, resIt.first.regIndex, (UnorderedAccessView*)view.get());
                 }
                 else
                 {
-                    pDescSet->setSrv(rootData.rangeIndex, rootData.descIndex, resIt.first.regIndex, handle);
+                    pDescSet->setSrv(rootData.rangeIndex, rootData.descIndex, resIt.first.regIndex, (ShaderResourceView*)view.get());
                 }
             }
         }
     }
 
     template<bool forGraphics>
-    void applyProgramVarsCommon(const ProgramVars* pVars, CopyContext* pContext, bool bindRootSig)
+    bool applyProgramVarsCommon(const ProgramVars* pVars, ProgramVars::RootSetVec& rootSets, CopyContext* pContext, bool bindRootSig)
     {
         if (bindRootSig)
         {
@@ -702,7 +702,6 @@ namespace Falcor
         }
 
         // Allocate and mark the dirty sets
-        auto& rootSets = pVars->getRootSets();
         for (uint32_t i = 0; i < rootSets.size(); i++)
         {
             if (rootSets[i].active)
@@ -713,6 +712,10 @@ namespace Falcor
                     DescriptorSet::Layout layout;
                     const auto& set = pVars->getRootSignature()->getDescriptorSet(i);
                     rootSets[i].pDescSet = DescriptorSet::create(gpDevice->getGpuDescriptorPool(), set);
+                    if (rootSets[i].pDescSet == nullptr)
+                    {
+                        return false;
+                    }
                 }
             }
         }
@@ -738,15 +741,16 @@ namespace Falcor
                 }
             }
         }
+        return true;
     }
 
-    void ComputeVars::apply(ComputeContext* pContext, bool bindRootSig) const
+    bool ComputeVars::apply(ComputeContext* pContext, bool bindRootSig)
     {
-        applyProgramVarsCommon<false>(this, pContext, bindRootSig);
+        return applyProgramVarsCommon<false>(this, mRootSets, pContext, bindRootSig);
     }
 
-    void GraphicsVars::apply(RenderContext* pContext, bool bindRootSig) const
+    bool GraphicsVars::apply(RenderContext* pContext, bool bindRootSig)
     {
-        applyProgramVarsCommon<true>(this, pContext, bindRootSig);
+        return applyProgramVarsCommon<true>(this, mRootSets, pContext, bindRootSig);
     }
 }

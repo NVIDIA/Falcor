@@ -215,7 +215,7 @@ namespace Falcor
         infoOut.rasterizerDiscardEnable = VK_FALSE; // #VKTODO We can set it to true if the PS and depth are disabled
         infoOut.polygonMode = getVkPolygonMode(pState->getFillMode());
         infoOut.cullMode = getVkCullMode(pState->getCullMode());
-        infoOut.frontFace = pState->isFrontCounterCW() ? VK_FRONT_FACE_CLOCKWISE : VK_FRONT_FACE_COUNTER_CLOCKWISE;
+        infoOut.frontFace = pState->isFrontCounterCW() ? VK_FRONT_FACE_COUNTER_CLOCKWISE : VK_FRONT_FACE_CLOCKWISE;
         infoOut.depthBiasEnable = vkBool(pState->getDepthBias() > 0);
         infoOut.depthBiasConstantFactor = (float)pState->getDepthBias();
         infoOut.depthBiasClamp = 0.0f;
@@ -303,8 +303,6 @@ namespace Falcor
         infoOut.stencilTestEnable = vkBool(pState->isStencilTestEnabled());
         infoOut.front = getVkStencilOpState(pState->getStencilDesc(DepthStencilState::Face::Front), pState->getStencilReadMask(), pState->getStencilWriteMask(), pState->getStencilRef());
         infoOut.back = getVkStencilOpState(pState->getStencilDesc(DepthStencilState::Face::Back), pState->getStencilReadMask(), pState->getStencilWriteMask(), pState->getStencilRef());
-
-        // #VKTODO do we need this?
         infoOut.depthBoundsTestEnable = VK_FALSE;
     }
 

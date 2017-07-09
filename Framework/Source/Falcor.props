@@ -14,7 +14,7 @@
       <WarningLevel>Level3</WarningLevel>
       <TreatWarningAsError>true</TreatWarningAsError>
       <AdditionalIncludeDirectories>$(FALCOR_PROJECT_DIR)\Externals\nvapi;$(FALCOR_PROJECT_DIR);$(FALCOR_PROJECT_DIR)\Externals\GLM;$(FALCOR_PROJECT_DIR)\Source;$(FALCOR_PROJECT_DIR)\Externals\OptiX\include;$(CUDA_PATH_V7_5)\include;$(FALCOR_PROJECT_DIR)\Externals\Cuda\include;$(FALCOR_PROJECT_DIR)\Externals\VulkanSDK\Include</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>$(FALCOR_BACKEND);_UNICODE;UNICODE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>GLM_FORCE_DEPTH_ZERO_TO_ONE;$(FALCOR_BACKEND);_UNICODE;UNICODE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <AdditionalLibraryDirectories>$(FALCOR_PROJECT_DIR)\Externals\AntTweakBar\lib;$(FALCOR_PROJECT_DIR)\Externals\FreeImage;$(FALCOR_PROJECT_DIR)\Externals\Assimp\lib\$(PlatformName)\;$(FALCOR_PROJECT_DIR)\Externals\FFMpeg\lib\$(PlatformName);$(FALCOR_PROJECT_DIR)\Externals\iViewNG-HMD-API\libs\$(PlatformName);$(FALCOR_PROJECT_DIR)\Externals\openvr\lib\win64;$(FALCOR_PROJECT_DIR)\..\..\Internals\OptiX\lib64;$(FALCOR_PROJECT_DIR)\Externals\OptiX\lib64;$(CUDA_PATH_V7_5)\lib\x64\;$(FALCOR_PROJECT_DIR)\Externals\nvapi\amd64;$(FALCOR_PROJECT_DIR)\Externals\VulkanSDK\Lib</AdditionalLibraryDirectories>

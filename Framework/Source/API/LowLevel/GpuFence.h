@@ -59,7 +59,7 @@ namespace Falcor
         */
         uint64_t getCpuValue() const { return mCpuValue; }
 
-        /** Tell the GPU to wait until the fence reaches the current value
+        /** Tell the GPU to wait until the fence reaches the last GPU-value signaled (which is (mCpuValue - 1))
         */
         void syncGpu(CommandQueueHandle pQueue);
 

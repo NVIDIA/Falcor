@@ -77,12 +77,13 @@ namespace Falcor
         moduleCreateInfo.codeSize = shaderString.size();
         moduleCreateInfo.pCode = (uint32_t*)shaderString.data();
 
-        if (VK_FAILED(vkCreateShaderModule(gpDevice->getApiHandle(), &moduleCreateInfo, nullptr, &mApiHandle)))
+        VkShaderModule shaderModule;
+        if (VK_FAILED(vkCreateShaderModule(gpDevice->getApiHandle(), &moduleCreateInfo, nullptr, &shaderModule)))
         {
             logError("Could not create shader!");
             return false;
         }
-
+        mApiHandle = ApiHandle::create(shaderModule);
         return true;
     }
 }

@@ -145,6 +145,7 @@ namespace Falcor
     {
         SharedPtr pFence = SharedPtr(new GpuFence());
         pFence->mpApiData = new FenceApiData;
+        pFence->mCpuValue = 1;
         return pFence;
     }
     
@@ -179,7 +180,7 @@ namespace Falcor
         {
             mpApiData->semaphoreWaitList.erase(mpApiData->semaphoreWaitList.begin(), mpApiData->semaphoreWaitList.begin() + waitCount);
         }
-        return mCpuValue;
+        return mCpuValue - 1;
     }
 
     FenceHandle GpuFence::getApiHandle() const

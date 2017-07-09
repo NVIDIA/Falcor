@@ -133,33 +133,6 @@ namespace Falcor
         return glm::vec3(xy.x, xy.y, z);
     }
 
-    inline glm::mat4 perspectiveMatrix(float fovy, float aspect, float zNear, float zFar)
-    {
-        assert(abs(aspect - std::numeric_limits<float>::epsilon()) > static_cast<float>(0));
-        assert(zFar > zNear);
-
-        const float tanHalfFovy = tan(fovy * 0.5f);
-        const float zRange = zFar / (zNear - zFar);
-
-        glm::mat4 result(0);
-        result[0][0] = 1 / (aspect * tanHalfFovy);
-        result[1][1] = 1 / (tanHalfFovy);
-        result[2][2] = zRange;
-        result[2][3] = -1.0f;
-        result[3][2] = zRange * zNear;
-        return result;
-    }
-
-    inline glm::mat4 orthographicMatrix(float left, float right, float bottom, float top, float zNear, float zFar)
-    {
-        glm::mat4 result = glm::ortho(left, right, bottom, top);
-        float zRange = 1 / (zNear - zFar);
-        result[2][2] = zRange;
-        result[3][2] = zNear * zRange;
-
-        return result;
-    }
-
     /** Calculates vertical FOV in radians from camera parameters.
         \param[in] focalLength Focal length in mm.
         \param[in] frameHeight Height of film/sensor in mm.
@@ -210,6 +183,9 @@ namespace Falcor
         float s = sqrt(1.0f - t * t);
         return vec3(s * cos(phi), s * sin(phi), t);
     }
+#ifndef GLM_CLIP_SPACE_Y_TOPDOWN
+#error GLM_CLIP_SPACE_Y_TOPDOWN is undefined. It means the custom fix we did in GLM to support Vulkan NDC space is missing. Look at GLM's `setup.hpp` and `glm\gtc\matrix_transform.inl`
+#endif
 
 /*! @} */
 }

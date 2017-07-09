@@ -191,7 +191,6 @@ namespace Falcor
                 for (uint32_t i = 0; i < arraysize(kVertexPos); i++, mCurrentVertexID++)
                 {
                     glm::vec2 posScale = kVertexPos[i];
-                    // #VKTODO Should we invert the y?
                     glm::vec2 pos = desc.size * posScale;
                     pos += mCurPos;
                     mpBufferData[mCurrentVertexID].screenPos = pos;

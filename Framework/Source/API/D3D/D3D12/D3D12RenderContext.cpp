@@ -218,24 +218,27 @@ namespace Falcor
     void RenderContext::prepareForDraw()
     {
         assert(mpGraphicsState);
-#if _ENABLE_NVAPI
-        if(mpGraphicsState->isSinglePassStereoEnabled())
-        {
-            NvAPI_Status ret = NvAPI_D3D12_SetSinglePassStereoMode(mpLowLevelData->getCommandList(), 2, 1, false);
-            assert(ret == NVAPI_OK);
-    }
-#else
-        assert(mpGraphicsState->isSinglePassStereoEnabled() == false);
-#endif
-        // Bind the root signature and the root signature data
+
+        // Apply the vars. Must be first because applyGraphicsVars() might cause a flush
         if (mpGraphicsVars)
         {
-            mpGraphicsVars->apply(const_cast<RenderContext*>(this), mBindGraphicsRootSig);
+            applyGraphicsVars();
         }
         else
         {
             mpLowLevelData->getCommandList()->SetGraphicsRootSignature(RootSignature::getEmpty()->getApiHandle());
         }
+
+#if _ENABLE_NVAPI
+        if (mpGraphicsState->isSinglePassStereoEnabled())
+        {
+            NvAPI_Status ret = NvAPI_D3D12_SetSinglePassStereoMode(mpLowLevelData->getCommandList(), 2, 1, false);
+            assert(ret == NVAPI_OK);
+        }
+#else
+        assert(mpGraphicsState->isSinglePassStereoEnabled() == false);
+#endif
+
         mBindGraphicsRootSig = false;
 
         CommandListHandle pList = mpLowLevelData->getCommandList();
@@ -393,7 +396,4 @@ namespace Falcor
         popGraphicsState();
         popGraphicsVars();
     }
-
-    void RenderContext::applyProgramVars() {}
-    void RenderContext::applyGraphicsState() {}
 }

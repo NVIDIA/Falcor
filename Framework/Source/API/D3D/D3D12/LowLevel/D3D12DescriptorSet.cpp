@@ -61,7 +61,6 @@ namespace Falcor
                 mpApiData->allocations[i] = pHeap->allocateDescriptors(range.descCount);
                 if (!mpApiData->allocations[i])
                 {
-                    assert(0);
                     return false;
                 }
             }
@@ -85,19 +84,19 @@ namespace Falcor
         gpDevice->getApiHandle()->CopyDescriptorsSimple(1, dstHandle, handle, falcorToDxDescType(pSet->getRange(rangeIndex).type));
     }
 
-    void DescriptorSet::setSrv(uint32_t rangeIndex, uint32_t descIndex, uint32_t regIndex, const ShaderResourceView::ApiHandle& srv)
+    void DescriptorSet::setSrv(uint32_t rangeIndex, uint32_t descIndex, uint32_t regIndex, const ShaderResourceView* pSrv)
     {
-        setCpuHandle(this, rangeIndex, descIndex, srv->getCpuHandle(0));
+        setCpuHandle(this, rangeIndex, descIndex, pSrv->getApiHandle()->getCpuHandle(0));
     }
 
-    void DescriptorSet::setUav(uint32_t rangeIndex, uint32_t descIndex, uint32_t regIndex, const UnorderedAccessView::ApiHandle& uav)
+    void DescriptorSet::setUav(uint32_t rangeIndex, uint32_t descIndex, uint32_t regIndex, const UnorderedAccessView* pUav)
     {
-        setCpuHandle(this, rangeIndex, descIndex, uav->getCpuHandle(0));
+        setCpuHandle(this, rangeIndex, descIndex, pUav->getApiHandle()->getCpuHandle(0));
     }
 
-    void DescriptorSet::setSampler(uint32_t rangeIndex, uint32_t descIndex, uint32_t regIndex, const Sampler::ApiHandle& sampler)
+    void DescriptorSet::setSampler(uint32_t rangeIndex, uint32_t descIndex, uint32_t regIndex, const Sampler* pSampler)
     {
-        setCpuHandle(this, rangeIndex, descIndex, sampler->getCpuHandle(0));
+        setCpuHandle(this, rangeIndex, descIndex, pSampler->getApiHandle()->getCpuHandle(0));
     }
 
     void DescriptorSet::bindForGraphics(CopyContext* pCtx, const RootSignature* pRootSig, uint32_t rootIndex)

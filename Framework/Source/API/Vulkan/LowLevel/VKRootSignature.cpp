@@ -98,7 +98,7 @@ namespace Falcor
             maxIndex = max(set.getRange(0).regSpace, maxIndex);
         }
 
-        static VkDescriptorSetLayout emptyLayout = createDescriptorSetLayout({});
+        static VkDescriptorSetLayout emptyLayout = createDescriptorSetLayout({});   // #VKTODO This gets deleted multiple times on exit
         std::vector<VkDescriptorSetLayout> vkSetLayouts(maxIndex + 1, emptyLayout);
         for (const auto& set : mDesc.mSets)
         {
@@ -109,8 +109,9 @@ namespace Falcor
         pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
         pipelineLayoutInfo.pSetLayouts = vkSetLayouts.data();
         pipelineLayoutInfo.setLayoutCount = (uint32_t)vkSetLayouts.size();
-        vk_call(vkCreatePipelineLayout(gpDevice->getApiHandle(), &pipelineLayoutInfo, nullptr, &mApiHandle));
-
+        VkPipelineLayout layout;
+        vk_call(vkCreatePipelineLayout(gpDevice->getApiHandle(), &pipelineLayoutInfo, nullptr, &layout));
+        mApiHandle = ApiHandle::create(layout, vkSetLayouts);
         return true;
     }
 

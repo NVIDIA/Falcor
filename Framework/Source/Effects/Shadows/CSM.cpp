@@ -103,7 +103,7 @@ namespace Falcor
     void createShadowMatrix(const DirectionalLight* pLight, const glm::vec3& center, float radius, glm::mat4& shadowVP)
     {
         glm::mat4 view = glm::lookAt(center, center + pLight->getWorldDirection(), glm::vec3(0, 1, 0));
-        glm::mat4 proj = orthographicMatrix(-radius, radius, -radius, radius, -radius, radius);
+        glm::mat4 proj = glm::ortho(-radius, radius, -radius, radius, -radius, radius);
 
         shadowVP = proj * view;
     }
@@ -123,7 +123,7 @@ namespace Falcor
         float nearZ = max(0.1f, distFromCenter - radius);
         float maxZ = min(radius * 2, distFromCenter + radius);
         float angle = pLight->getOpeningAngle() * 2;
-        glm::mat4 proj = perspectiveMatrix(angle, fboAspectRatio, nearZ, maxZ);
+        glm::mat4 proj = glm::perspective(angle, fboAspectRatio, nearZ, maxZ);
 
         shadowVP = proj * view;
     }

@@ -36,16 +36,11 @@ namespace Falcor
     {
         assert(mpComputeState);
 
-        // Bind the root signature and the root signature data
+        // Apply the vars. Must be first because applyComputeVars() might cause a flush
         if (mpComputeVars)
         {
-            mpComputeVars->apply(const_cast<ComputeContext*>(this), mBindComputeRootSig);
+            applyComputeVars();
         }
-        else
-        {
-            // Set null/empty
-        }
-
         // Set pipeline state
 
         mCommandsPending = true;
@@ -54,21 +49,36 @@ namespace Falcor
     void ComputeContext::dispatch(uint32_t groupSizeX, uint32_t groupSizeY, uint32_t groupSizeZ)
     {
         prepareForDispatch();
-
-        // Code
     }
+
+    template<typename ViewType, typename ClearType>
+    void clearColorImageCommon(CopyContext* pCtx, const ViewType* pView, const ClearType& clearVal)
+    {
+        pCtx->resourceBarrier(pView->getResource(), Resource::State::CopyDest);
+        VkClearColorValue colVal;
+        memcpy_s(colVal.float32, sizeof(colVal.float32), &clearVal, sizeof(clearVal)); // VkClearColorValue is a union, so should work regardless of the ClearType
+        VkImageSubresourceRange range;
+        const auto& viewInfo = pView->getViewInfo();
+        range.baseArrayLayer = viewInfo.firstArraySlice;
+        range.baseMipLevel = viewInfo.mostDetailedMip;
+        range.layerCount = viewInfo.arraySize;
+        range.levelCount = viewInfo.mipCount;
+        range.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+
+        vkCmdClearColorImage(pCtx->getLowLevelData()->getCommandList(), pView->getResource()->getApiHandle(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &colVal, 1, &range);
+    }
+
+    template void clearColorImageCommon(CopyContext* pCtx, const RenderTargetView* pView, const vec4& clearVal);
 
     void ComputeContext::clearUAV(const UnorderedAccessView* pUav, const vec4& value)
     {
-        // Code
-
+        clearColorImageCommon(this, pUav, value);
         mCommandsPending = true;
     }
 
     void ComputeContext::clearUAV(const UnorderedAccessView* pUav, const uvec4& value)
     {
-        // Code
-
+        clearColorImageCommon(this, pUav, value);
         mCommandsPending = true;
     }
 

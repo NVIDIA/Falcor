@@ -56,21 +56,12 @@ namespace Falcor
 
     RenderContext::~RenderContext() = default;
 
+    template<typename ViewType, typename ClearType>
+    void clearColorImageCommon(CopyContext* pCtx, const ViewType* pView, const ClearType& clearVal);
+
     void RenderContext::clearRtv(const RenderTargetView* pRtv, const glm::vec4& color)
     {
-        resourceBarrier(pRtv->getResource(), Resource::State::CopyDest);
-
-        VkClearColorValue colVal;
-        memcpy_s(colVal.float32, sizeof(colVal.float32), &color, sizeof(color));
-        VkImageSubresourceRange range;
-        const auto& viewInfo = pRtv->getViewInfo();
-        range.baseArrayLayer = viewInfo.firstArraySlice;
-        range.baseMipLevel = viewInfo.mostDetailedMip;
-        range.layerCount = viewInfo.arraySize;
-        range.levelCount = viewInfo.mipCount;
-        range.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-
-        vkCmdClearColorImage(mpLowLevelData->getCommandList(), pRtv->getResource()->getApiHandle().getImage(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &colVal, 1, &range);
+        clearColorImageCommon(this, pRtv, color);
         mCommandsPending = true;
     }
 
@@ -91,7 +82,7 @@ namespace Falcor
         range.aspectMask = clearDepth ? VK_IMAGE_ASPECT_DEPTH_BIT : 0;
         range.aspectMask |= clearStencil ? VK_IMAGE_ASPECT_STENCIL_BIT : 0;
 
-        vkCmdClearDepthStencilImage(mpLowLevelData->getCommandList(), pDsv->getResource()->getApiHandle().getImage(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &val, 1, &range);
+        vkCmdClearDepthStencilImage(mpLowLevelData->getCommandList(), pDsv->getResource()->getApiHandle(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &val, 1, &range);
         mCommandsPending = true;
     }
 
@@ -120,12 +111,40 @@ namespace Falcor
         vkCmdSetScissor(cmdList, 0, (uint32_t)scissors.size(), vkScissors.data());
     }
 
-    void setVao(CommandListHandle cmdList, const Vao* pVao)
+    static VkIndexType getVkIndexType(ResourceFormat format)
     {
-        // #VKTODO setVao() - Implement me properly
-        VkDeviceSize offset = pVao->getVertexBuffer(0)->getGpuAddressOffset();
-        VkBuffer vertexbuffer = pVao->getVertexBuffer(0)->getApiHandle().getBuffer();
-        vkCmdBindVertexBuffers(cmdList, 0, 1, &vertexbuffer, &offset);
+        switch (format)
+        {
+        case ResourceFormat::R16Uint:
+            return VK_INDEX_TYPE_UINT16;
+        case ResourceFormat::R32Uint:
+            return VK_INDEX_TYPE_UINT32;
+        default:
+            should_not_get_here();
+            return VK_INDEX_TYPE_MAX_ENUM;
+        }
+    }
+
+    void setVao(CopyContext* pCtx, const Vao* pVao)
+    {
+        CommandListHandle cmdList = pCtx->getLowLevelData()->getCommandList();
+        for (uint32_t i = 0; i < pVao->getVertexBuffersCount(); i++)
+        {
+            const Buffer* pVB = pVao->getVertexBuffer(i).get();
+            VkDeviceSize offset = pVB->getGpuAddressOffset();
+            VkBuffer handle = pVB->getApiHandle();
+            vkCmdBindVertexBuffers(cmdList, i, 1, &handle, &offset);
+            pCtx->resourceBarrier(pVB, Resource::State::VertexBuffer);
+        }
+
+        const Buffer* pIB = pVao->getIndexBuffer().get();
+        if (pIB)
+        {
+            VkDeviceSize offset = pIB->getGpuAddressOffset();
+            VkBuffer handle = pIB->getApiHandle();
+            vkCmdBindIndexBuffer(cmdList, handle, offset, getVkIndexType(pVao->getIndexBufferFormat()));
+            pCtx->resourceBarrier(pIB, Resource::State::IndexBuffer);
+        }
     }
 
     void beginRenderPass(CommandListHandle cmdList, const Fbo* pFbo)
@@ -134,8 +153,8 @@ namespace Falcor
         const auto& fboHandle = pFbo->getApiHandle();
         VkRenderPassBeginInfo beginInfo = {};
         beginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-        beginInfo.renderPass = fboHandle;
-        beginInfo.framebuffer = fboHandle;
+        beginInfo.renderPass = *fboHandle;
+        beginInfo.framebuffer = *fboHandle;
         beginInfo.renderArea.offset = { 0, 0 };
         beginInfo.renderArea.extent = { pFbo->getWidth(), pFbo->getHeight() };
 
@@ -146,29 +165,52 @@ namespace Falcor
         vkCmdBeginRenderPass(cmdList, &beginInfo, VK_SUBPASS_CONTENTS_INLINE);
     }
 
+    static void transitionFboResources(RenderContext* pCtx, const Fbo* pFbo)
+    {
+        // We are setting the entire RTV array to make sure everything that was previously bound is detached
+        uint32_t colorTargets = Fbo::getMaxColorTargetCount();
+
+        if (pFbo)
+        {
+            for (uint32_t i = 0; i < colorTargets; i++)
+            {
+                auto& pTexture = pFbo->getColorTexture(i);
+                if (pTexture) pCtx->resourceBarrier(pTexture.get(), Resource::State::RenderTarget);
+            }
+
+            auto& pTexture = pFbo->getDepthStencilTexture();
+            if (pTexture) pCtx->resourceBarrier(pTexture.get(), Resource::State::DepthStencil);
+        }
+    }
+
+    static void endVkDraw(VkCommandBuffer cmdBuffer)
+    {
+        vkCmdEndRenderPass(cmdBuffer);
+    }
+
     void RenderContext::prepareForDraw()
     {
+        // Apply the vars. Must be first because applyGraphicsVars() might cause a flush
+        if(mpGraphicsVars)
+        {
+            applyGraphicsVars();
+        }
+
         GraphicsStateObject::SharedPtr pGSO = mpGraphicsState->getGSO(mpGraphicsVars.get());
         vkCmdBindPipeline(mpLowLevelData->getCommandList(), VK_PIPELINE_BIND_POINT_GRAPHICS, pGSO->getApiHandle());
-        if (mpGraphicsVars)
-        {
-            mpGraphicsVars->apply(const_cast<RenderContext*>(this), mBindGraphicsRootSig);
-            mBindGraphicsRootSig = false;
-        }
         
+        transitionFboResources(this, mpGraphicsState->getFbo().get());
         setViewports(mpLowLevelData->getCommandList(), mpGraphicsState->getViewports());
         setScissors(mpLowLevelData->getCommandList(), mpGraphicsState->getScissors());
-        setVao(mpLowLevelData->getCommandList(), pGSO->getDesc().getVao().get());        
+        setVao(this, mpGraphicsState->getVao().get());        
         beginRenderPass(mpLowLevelData->getCommandList(), mpGraphicsState->getFbo().get());
     }
 
     void RenderContext::drawInstanced(uint32_t vertexCount, uint32_t instanceCount, uint32_t startVertexLocation, uint32_t startInstanceLocation)
     {
-        resourceBarrier(mpGraphicsState->getFbo()->getDepthStencilTexture().get(), Resource::State::DepthStencil);
-        resourceBarrier(mpGraphicsState->getFbo()->getColorTexture(0).get(), Resource::State::RenderTarget);
         prepareForDraw();
         vkCmdDraw(mpLowLevelData->getCommandList(), vertexCount, instanceCount, startVertexLocation, startInstanceLocation);
-        vkCmdEndRenderPass(mpLowLevelData->getCommandList());
+        endVkDraw(mpLowLevelData->getCommandList());
     }
 
     void RenderContext::draw(uint32_t vertexCount, uint32_t startVertexLocation)
@@ -179,7 +221,8 @@ namespace Falcor
     void RenderContext::drawIndexedInstanced(uint32_t indexCount, uint32_t instanceCount, uint32_t startIndexLocation, int32_t baseVertexLocation, uint32_t startInstanceLocation)
     {
         prepareForDraw();
-        vkCmdDrawIndexed(mpLowLevelData->getCommandList(), indexCount, instanceCount, startIndexLocation, baseVertexLocation, startIndexLocation);
+        vkCmdDrawIndexed(mpLowLevelData->getCommandList(), indexCount, instanceCount, startIndexLocation, baseVertexLocation, startInstanceLocation);
+        endVkDraw(mpLowLevelData->getCommandList());
     }
 
     void RenderContext::drawIndexed(uint32_t indexCount, uint32_t startIndexLocation, int32_t baseVertexLocation)
@@ -236,7 +279,4 @@ namespace Falcor
         resourceBarrier(pDst->getResource(), Resource::State::CopyDest);
         vkCmdBlitImage(mpLowLevelData->getCommandList(), pSrc->getResource()->getApiHandle(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, pDst->getResource()->getApiHandle(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &blt, VK_FILTER_NEAREST);
     }
-    
-    void RenderContext::applyProgramVars() {}
-    void RenderContext::applyGraphicsState() {}
 }

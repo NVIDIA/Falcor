@@ -37,10 +37,10 @@ namespace Falcor
     {
         assert(mpComputeState);
 
-        // Bind the root signature and the root signature data
+        // Apply the vars. Must be first because applyComputeVars() might cause a flush        
         if (mpComputeVars)
         {
-            mpComputeVars->apply(const_cast<ComputeContext*>(this), mBindComputeRootSig);
+            applyComputeVars();
         }
         else
         {

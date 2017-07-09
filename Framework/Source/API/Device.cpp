@@ -60,10 +60,10 @@ namespace Falcor
         DescriptorPool::Desc poolDesc;
         poolDesc.setDescCount(DescriptorPool::Type::Srv, 16 * 1024).setDescCount(DescriptorPool::Type::Sampler, 2048).setShaderVisible(true);
 #ifndef FALCOR_D3D12
-        poolDesc.setDescCount(DescriptorPool::Type::Cbv, 16 * 1024);
+        poolDesc.setDescCount(DescriptorPool::Type::Cbv, 16 * 1024).setDescCount(DescriptorPool::Type::Uav, 16 * 1024);
 #endif
         mpGpuDescPool = DescriptorPool::create(poolDesc, mpRenderContext->getLowLevelData()->getFence());
-        poolDesc.setShaderVisible(false).setDescCount(DescriptorPool::Type::Rtv, 1024).setDescCount(DescriptorPool::Type::Dsv, 1024);
+        poolDesc.setShaderVisible(false).setDescCount(DescriptorPool::Type::Rtv, 16 * 1024).setDescCount(DescriptorPool::Type::Dsv, 1024);
         mpCpuDescPool = DescriptorPool::create(poolDesc, mpRenderContext->getLowLevelData()->getFence());
 
         if(mpRenderContext) mpRenderContext->reset();
@@ -147,9 +147,8 @@ namespace Falcor
     {
         mpResourceAllocator->executeDeferredReleases();
         uint64_t gpuVal = mpFrameFence->getGpuValue();
-        while (mDeferredReleases.size() && mDeferredReleases.front().frameID < gpuVal)
+        while (mDeferredReleases.size() && mDeferredReleases.front().frameID <= gpuVal)
         {
-            mDeferredReleases.front().pApiObject.Release();
             mDeferredReleases.pop();
         }
         mpCpuDescPool->executeDeferredReleases();
@@ -172,6 +171,7 @@ namespace Falcor
 
         for (uint32_t i = 0; i < arraysize(mCmdQueues); i++) mCmdQueues[i].clear();
         for (uint32_t i = 0; i < arraysize(mpSwapChainFbos); i++) mpSwapChainFbos[i].reset();
+        mDeferredReleases = decltype(mDeferredReleases)();
 
         mpRenderContext.reset();
         mpResourceAllocator.reset();
@@ -188,6 +188,7 @@ namespace Falcor
         mpRenderContext->resourceBarrier(mpSwapChainFbos[mCurrentBackBufferIndex]->getColorTexture(0).get(), Resource::State::Present);
         mpRenderContext->flush();
         apiPresent();
+        mpFrameFence->gpuSignal(mpRenderContext->getLowLevelData()->getCommandQueue());
         executeDeferredReleases();
         mpRenderContext->reset();
         mFrameID++;
