@@ -49,8 +49,6 @@ namespace Falcor
     void ComputeContext::dispatch(uint32_t groupSizeX, uint32_t groupSizeY, uint32_t groupSizeZ)
     {
         prepareForDispatch();
-
-        // Code
     }
 
     template<typename ViewType, typename ClearType>

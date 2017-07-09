@@ -112,11 +112,7 @@ namespace Falcor
 
     using ApiObjectHandle = VkBaseApiHandle::SharedPtr;
 
-    inline uint32_t getMaxViewportCount()
-    {
-        // #VKTODO we need to get this from querying PhysicalDeviceProperties
-        return 8;
-    }
+    uint32_t getMaxViewportCount();
 }
 
 #define DEFAULT_API_MAJOR_VERSION 1

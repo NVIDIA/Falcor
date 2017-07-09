@@ -47,7 +47,7 @@ namespace Falcor
 
     Buffer::~Buffer()
     {
-        if (mCpuAccess == CpuAccess::Write)
+        if (mDynamicData.pResourceHandle)
         {
             gpDevice->getResourceAllocator()->release(mDynamicData);
         }

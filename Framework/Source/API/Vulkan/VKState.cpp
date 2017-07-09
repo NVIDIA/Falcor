@@ -303,8 +303,6 @@ namespace Falcor
         infoOut.stencilTestEnable = vkBool(pState->isStencilTestEnabled());
         infoOut.front = getVkStencilOpState(pState->getStencilDesc(DepthStencilState::Face::Front), pState->getStencilReadMask(), pState->getStencilWriteMask(), pState->getStencilRef());
         infoOut.back = getVkStencilOpState(pState->getStencilDesc(DepthStencilState::Face::Back), pState->getStencilReadMask(), pState->getStencilWriteMask(), pState->getStencilRef());
-
-        // #VKTODO do we need this?
         infoOut.depthBoundsTestEnable = VK_FALSE;
     }
 

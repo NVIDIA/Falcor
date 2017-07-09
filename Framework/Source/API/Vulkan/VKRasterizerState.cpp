@@ -32,14 +32,9 @@ namespace Falcor
 {
     RasterizerState::~RasterizerState() = default;
 
-    // #VKTODO Does this have to be in API specific implementation?
-    RasterizerState::SharedPtr RasterizerState::create(const Desc& desc)
-    {
-        return SharedPtr(new RasterizerState(desc));
-    }
-
     RasterizerStateHandle RasterizerState::getApiHandle() const
     {
+        UNSUPPORTED_IN_VULKAN("RasterizerState::getApiHandle()");
         return mApiHandle;
     }
 }
