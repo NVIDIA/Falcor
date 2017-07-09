@@ -73,12 +73,13 @@ namespace Falcor
         info.pPoolSizes = poolSizeForType;
         info.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
 
-        if (VK_FAILED(vkCreateDescriptorPool(gpDevice->getApiHandle(), &info, nullptr, &mpApiData->descriptorPool)))
+        VkDescriptorPool pool;
+        if (VK_FAILED(vkCreateDescriptorPool(gpDevice->getApiHandle(), &info, nullptr, &pool)))
         {
             logError("Error creating descriptor pool!");
             return false;
         }
-
+        mpApiData->descriptorPool = ApiHandle::create(pool);
         return true;
     }
 

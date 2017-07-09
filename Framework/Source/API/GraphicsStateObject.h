@@ -45,7 +45,7 @@ namespace Falcor
     public:
         using SharedPtr = std::shared_ptr<GraphicsStateObject>;
         using SharedConstPtr = std::shared_ptr<const GraphicsStateObject>;
-        using ApiHandle = PsoHandle;
+        using ApiHandle = GraphicsStateHandle;
 
         ~GraphicsStateObject();
 

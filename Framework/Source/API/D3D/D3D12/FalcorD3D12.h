@@ -78,7 +78,7 @@ namespace Falcor
     using FboHandle = void*;
     using GpuAddress = D3D12_GPU_VIRTUAL_ADDRESS;
     
-    using PsoHandle = ID3D12PipelineStatePtr;
+    using GraphicsStateHandle = ID3D12PipelineStatePtr;
     using ComputeStateHandle = ID3D12PipelineStatePtr;
     using ShaderHandle = D3D12_SHADER_BYTECODE;
     using RootSignatureHandle = ID3D12RootSignaturePtr;

@@ -505,6 +505,9 @@
     <ClCompile Include="API\D3D\D3D12\D3D12ProgramVars.cpp" />
     <ClCompile Include="API\Vulkan\VkProgramVars.cpp" />
     <ClCompile Include="API\Vulkan\VKComputeStateObject.cpp" />
+    <ClCompile Include="API\Vulkan\VkSmartHandle.cpp">
+      <Filter>API\Vulkan</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Graphics\Model\Animation.h">
@@ -1598,9 +1601,6 @@
     <ClInclude Include="Effects\ParticleSystem\ParticleSystem.h">
       <Filter>Effects\ParticleSystem</Filter>
     </ClInclude>
-    <ClInclude Include="API\Vulkan\VKResourceHelper.h">
-      <Filter>API\Vulkan</Filter>
-    </ClInclude>
     <ClInclude Include="API\DescriptorSet.h">
       <Filter>API</Filter>
     </ClInclude>
@@ -1614,6 +1614,9 @@
       <Filter>API\Vulkan\LowLevel</Filter>
     </ClInclude>
     <ClInclude Include="API\Vulkan\VKState.h">
+      <Filter>API\Vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="API\Vulkan\VKSmartHandle.h">
       <Filter>API\Vulkan</Filter>
     </ClInclude>
   </ItemGroup>

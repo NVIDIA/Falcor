@@ -82,7 +82,7 @@ namespace Falcor
         range.aspectMask = clearDepth ? VK_IMAGE_ASPECT_DEPTH_BIT : 0;
         range.aspectMask |= clearStencil ? VK_IMAGE_ASPECT_STENCIL_BIT : 0;
 
-        vkCmdClearDepthStencilImage(mpLowLevelData->getCommandList(), pDsv->getResource()->getApiHandle().getImage(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &val, 1, &range);
+        vkCmdClearDepthStencilImage(mpLowLevelData->getCommandList(), pDsv->getResource()->getApiHandle(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &val, 1, &range);
         mCommandsPending = true;
     }
 
@@ -131,7 +131,7 @@ namespace Falcor
         {
             const Buffer* pVB = pVao->getVertexBuffer(i).get();
             VkDeviceSize offset = pVB->getGpuAddressOffset();
-            VkBuffer handle = pVB->getApiHandle().getBuffer();
+            VkBuffer handle = pVB->getApiHandle();
             vkCmdBindVertexBuffers(cmdList, i, 1, &handle, &offset);
         }
 
@@ -139,7 +139,7 @@ namespace Falcor
         if (pIB)
         {
             VkDeviceSize offset = pIB->getGpuAddressOffset();
-            VkBuffer handle = pIB->getApiHandle().getBuffer();
+            VkBuffer handle = pIB->getApiHandle();
             vkCmdBindIndexBuffer(cmdList, handle, offset, getVkIndexType(pVao->getIndexBufferFormat()));
         }
     }
@@ -150,8 +150,8 @@ namespace Falcor
         const auto& fboHandle = pFbo->getApiHandle();
         VkRenderPassBeginInfo beginInfo = {};
         beginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-        beginInfo.renderPass = fboHandle;
-        beginInfo.framebuffer = fboHandle;
+        beginInfo.renderPass = *fboHandle;
+        beginInfo.framebuffer = *fboHandle;
         beginInfo.renderArea.offset = { 0, 0 };
         beginInfo.renderArea.extent = { pFbo->getWidth(), pFbo->getHeight() };
 

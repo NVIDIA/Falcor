@@ -43,8 +43,9 @@ namespace Falcor
 
         VkSamplerCreateInfo info;
         initVkSamplerInfo(pSampler.get(), info);
-        vk_call(vkCreateSampler(gpDevice->getApiHandle(), &info, nullptr, &pSampler->mApiHandle));
-
+        VkSampler handle;
+        vk_call(vkCreateSampler(gpDevice->getApiHandle(), &info, nullptr, &handle));
+        pSampler->mApiHandle = ApiHandle::create(handle);
         return pSampler;
     }
 }

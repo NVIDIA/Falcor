@@ -44,12 +44,13 @@ namespace Falcor
         info.stage = shaderStageInfos[0];
         info.layout = mDesc.mpRootSignature->getApiHandle();
 
-        if (VK_FAILED(vkCreateComputePipelines(gpDevice->getApiHandle(), VK_NULL_HANDLE, 1, &info, nullptr, &mApiHandle)))
+        VkPipeline pipeline;
+        if (VK_FAILED(vkCreateComputePipelines(gpDevice->getApiHandle(), VK_NULL_HANDLE, 1, &info, nullptr, &pipeline)))
         {
             logError("Could not create graphics pipeline.");
             return false;
         }
-
+        mApiHandle = ApiHandle::create(pipeline);
         return true;
     }
 }
