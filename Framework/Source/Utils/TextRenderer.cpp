@@ -63,7 +63,7 @@ namespace Falcor
 
     TextRenderer::TextRenderer()
     {
-        static const std::string kVsFile("Framework/Shaders/TextRenderer.vs");
+        static const std::string kVsFile("Framework/Shaders/TextRenderer.vs"); // #VKTODO This should be the slang files
         static const std::string kFsFile("Framework/Shaders/TextRenderer.fs");
 
         // Create a vertex buffer

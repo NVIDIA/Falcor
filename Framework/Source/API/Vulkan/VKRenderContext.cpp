@@ -230,18 +230,20 @@ namespace Falcor
         drawIndexedInstanced(indexCount, 1, startIndexLocation, baseVertexLocation, 0);
     }
 
-    void RenderContext::drawIndirect(const Buffer* argBuffer, uint64_t argBufferOffset)
+    void RenderContext::drawIndirect(const Buffer* pArgBuffer, uint64_t argBufferOffset)
     {
+        resourceBarrier(pArgBuffer, Resource::State::IndirectArg);
         prepareForDraw();
-        resourceBarrier(argBuffer, Resource::State::IndirectArg);
-        //mpLowLevelData->getCommandList()->ExecuteIndirect(spDrawCommandSig, 1, argBuffer->getApiHandle(), argBufferOffset, nullptr, 0);
+        vkCmdDrawIndirect(mpLowLevelData->getCommandList(), pArgBuffer->getApiHandle(), argBufferOffset + pArgBuffer->getGpuAddressOffset(), 1, 0);
+        endVkDraw(mpLowLevelData->getCommandList());
     }
 
-    void RenderContext::drawIndexedIndirect(const Buffer* argBuffer, uint64_t argBufferOffset)
+    void RenderContext::drawIndexedIndirect(const Buffer* pArgBuffer, uint64_t argBufferOffset)
     {
+        resourceBarrier(pArgBuffer, Resource::State::IndirectArg);
         prepareForDraw();
-        resourceBarrier(argBuffer, Resource::State::IndirectArg);
-        //mpLowLevelData->getCommandList()->ExecuteIndirect(spDrawIndexCommandSig, 1, argBuffer->getApiHandle(), argBufferOffset, nullptr, 0);
+        vkCmdDrawIndexedIndirect(mpLowLevelData->getCommandList(), pArgBuffer->getApiHandle(), argBufferOffset + pArgBuffer->getGpuAddressOffset(), 1, 0);
+        endVkDraw(mpLowLevelData->getCommandList());
     }
 
     void RenderContext::initDrawCommandSignatures()
