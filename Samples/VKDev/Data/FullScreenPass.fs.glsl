@@ -7,11 +7,6 @@ layout(set = 4, binding = 2) uniform sampler gSampler;
 layout(location = 0) in vec2 texC;
 layout (location = 0) out vec4 outColor;
 
-layout(set = 1, binding = 4) buffer outImage
-{
-    uint count;
-};
-
 layout(set = 7, binding = 10) uniform PerFrameCB
 {
     vec2 offset;
@@ -20,5 +15,4 @@ layout(set = 7, binding = 10) uniform PerFrameCB
 void main()
 {
     outColor = texture(sampler2D(gTex, gSampler), texC + offset);
-    atomicAdd(count, 1);
 }

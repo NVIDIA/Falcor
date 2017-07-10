@@ -68,7 +68,7 @@ namespace Falcor
             \return If success, a new shader object, otherwise nullptr
         */
         static SharedPtr create(
-            const std::vector<char>&  shaderBlob,
+            const std::vector<uint8_t>&  shaderBlob,
             ShaderType          type,
             std::string&        log);
 
@@ -84,7 +84,7 @@ namespace Falcor
 
         bool init(const std::string& shaderString, std::string& log);
 
-        bool init(const std::vector<char>& shaderBlob, std::string& log);
+        bool init(const std::vector<uint8_t>& shaderBlob, std::string& log);
 
 #ifdef FALCOR_D3D
         ID3DBlobPtr getCodeBlob() const;

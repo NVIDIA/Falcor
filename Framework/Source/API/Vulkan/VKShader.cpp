@@ -42,7 +42,7 @@ namespace Falcor
         return pShader->init(shaderString, log) ? pShader : nullptr;
     }
 
-    Shader::SharedPtr Shader::create(const std::vector<char>& shaderBlob, ShaderType type, std::string& log)
+    Shader::SharedPtr Shader::create(const std::vector<uint8_t>& shaderBlob, ShaderType type, std::string& log)
     {
         SharedPtr pShader = SharedPtr(new Shader(type));
         return pShader->init(shaderBlob, log) ? pShader : nullptr;
@@ -86,7 +86,7 @@ namespace Falcor
         return true;
     }
 
-    bool Shader::init(const std::vector<char>& shaderBlob, std::string& log)
+    bool Shader::init(const std::vector<uint8_t>& shaderBlob, std::string& log)
     {
         // Compile the shader
         ShaderData* pData = (ShaderData*)mpPrivateData;

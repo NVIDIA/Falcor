@@ -803,7 +803,7 @@ SLANG_API char const* spGetTranslationUnitSource(
     int                     translationUnitIndex)
 {
     auto req = REQ(request);
-    return req->translationUnits[translationUnitIndex]->result.outputSource.Buffer();
+    return (char const*)req->translationUnits[translationUnitIndex]->result.outputSource.Buffer();
 }
 
 SLANG_API void const* spGetTranslationUnitCode(
@@ -822,7 +822,7 @@ SLANG_API char const* spGetEntryPointSource(
     int                     entryPointIndex)
 {
     auto req = REQ(request);
-    return req->entryPoints[entryPointIndex]->result.outputSource.Buffer();
+    return (char const*)req->entryPoints[entryPointIndex]->result.outputSource.Buffer();
 
 }
 

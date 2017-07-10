@@ -32,7 +32,7 @@
 
 namespace Falcor
 {
-    Shader::SharedPtr createShaderFromString(const std::vector<char>& shaderString, ShaderType shaderType)
+    Shader::SharedPtr createShaderFromString(const std::vector<uint8_t>& shaderString, ShaderType shaderType)
     {
         //std::string shader = shaderString;
         std::string errorMsg;
