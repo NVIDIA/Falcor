@@ -26,8 +26,6 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 
-#if 1
-
 SamplerState gSampler;
 Texture2D gFont;
 
@@ -44,21 +42,3 @@ float4 main(VsOut vOut) : SV_TARGET
     c *= fontMask;
     return c;
 }
-#endif
-
-#if 0
-layout(set = 1, binding = 0) uniform texture2D gFont;
-layout(set = 1, binding = 1) uniform sampler gSampler;
-
-layout(location = 0) in vec4 color;
-layout(location = 1) in vec2 texC;
-
-layout(location = 0) out vec4 fragColor;
-
-void main()
-{
-    fragColor = color;
-    float fontMask = texture(sampler2D(gFont, gSampler), texC).r;
-    fragColor *= fontMask;
-}
-#endif
