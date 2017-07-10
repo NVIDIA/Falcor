@@ -41,7 +41,8 @@ namespace Falcor
 
     Texture::~Texture()
     {
-        gpDevice->releaseResource(std::static_pointer_cast<VkBaseApiHandle>(mApiHandle));
+        // #VKTODO the `if` is here because of the black texture in VkResourceView.cpp
+        if(gpDevice )gpDevice->releaseResource(std::static_pointer_cast<VkBaseApiHandle>(mApiHandle));
     }
 
     // Like getD3D12ResourceFlags but for Images specifically

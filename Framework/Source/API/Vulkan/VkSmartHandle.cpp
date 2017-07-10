@@ -66,6 +66,7 @@ namespace Falcor
     template<>
     VkResource<VkImage, VkBuffer>::~VkResource()
     {
+        if (!gpDevice) return; // #VKTODO This is here because of the black texture in VkResourceViews.cpp
         assert(mDeviceMem || mType == VkResourceType::Image); // All of our resources are allocated with memory, except for the swap-chain backbuffers that we shouldn't release
         if (mDeviceMem)
         {
@@ -87,6 +88,7 @@ namespace Falcor
     template<>
     VkResource<VkImageView, VkBufferView>::~VkResource()
     {
+        if (!gpDevice) return; // #VKTODO This is here because of the black texture in VkResourceViews.cpp
         switch (mType)
         {
         case VkResourceType::Image:

@@ -293,6 +293,7 @@
     <ClCompile Include="API\ProgramVersion.cpp" />
     <ClCompile Include="API\RenderContext.cpp" />
     <ClCompile Include="API\Resource.cpp" />
+    <ClCompile Include="API\ResourceViews.cpp" />
     <ClCompile Include="API\Sampler.cpp" />
     <ClCompile Include="API\StructuredBuffer.cpp" />
     <ClCompile Include="API\Texture.cpp" />

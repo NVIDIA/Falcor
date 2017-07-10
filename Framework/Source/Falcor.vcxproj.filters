@@ -508,6 +508,7 @@
     <ClCompile Include="API\Vulkan\VkSmartHandle.cpp">
       <Filter>API\Vulkan</Filter>
     </ClCompile>
+    <ClCompile Include="API\ResourceViews.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Graphics\Model\Animation.h">
