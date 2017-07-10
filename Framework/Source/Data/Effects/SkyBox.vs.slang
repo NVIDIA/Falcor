@@ -25,35 +25,27 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#version 450
-#extension GL_ARB_separate_shader_objects : enable
-#ifdef FALCOR_HLSL
+#ifdef _SINGLE_PASS_STEREO
+fixme
+#endif
+
+__import ShaderCommon;
+
 cbuffer PerFrameCB : register(b0)
 {
-	float4x4 gvpTransform;
-	float3 gFontColor;
+    float4x4 gWorld;
+    float gScale;
 };
 
-void main(float2 posS : POSITION, inout float2 texC : TEXCOORD, out float4 posSV : SV_POSITION)
+void main(float4 posL : POSITION, out float3 dir : NORMAL, out float4 posH : SV_POSITION)
 {
-	posSV = mul(gvpTransform, float4(posS, 0.5f, 1));
-}
-#endif
-#ifdef FALCOR_GLSL
-layout(set = 0, binding = 0) uniform PerFrameCB
-{
-	mat4 gvpTransform;
-	vec3 gFontColor;
-};
+    dir = posL.xyz;
+    float4 viewPos = mul(gCam.viewMat, mul(gWorld, posL));
+    posH = mul(gCam.projMat, viewPos);
+    posH.xy *= gScale;
+    posH.z = posH.w;
 
-layout (location = 0) in vec2 posS;
-layout (location = 1) in vec2 texCIn;
-layout (location = 0) out vec2 texC;
-
-void main()
-{
-	gl_Position = gvpTransform * vec4(posS, 0.5f, 1);
-    gl_Position.y = -gl_Position.y;
-	texC = texCIn;
-}
+#ifdef _SINGLE_PASS_STEREO
+    fixme
 #endif
+}

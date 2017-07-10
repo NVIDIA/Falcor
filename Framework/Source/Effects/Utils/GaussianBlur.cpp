@@ -35,7 +35,7 @@
 
 namespace Falcor
 {
-    static std::string kShaderFilename("Effects\\GaussianBlur.ps.hlsl");
+    static std::string kShaderFilename("Effects\\GaussianBlur.ps.slang");
 
     GaussianBlur::~GaussianBlur() = default;
 

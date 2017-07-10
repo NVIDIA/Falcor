@@ -1,6 +1,7 @@
 // lower.cpp
 #include "lower.h"
 
+#include "type-layout.h"
 #include "visitor.h"
 
 namespace Slang
@@ -76,6 +77,7 @@ struct StructuralTransformVisitorBase
     }
 };
 
+#if 0
 template<typename V>
 struct StructuralTransformStmtVisitor
     : StructuralTransformVisitorBase<V>
@@ -107,6 +109,7 @@ struct StructuralTransformStmtVisitor
 #include "object-meta-end.h"
 
 };
+#endif
 
 template<typename V>
 RefPtr<StatementSyntaxNode> structuralTransform(
@@ -130,7 +133,7 @@ struct StructuralTransformExprVisitor
 
 
 #define SYNTAX_CLASS(NAME, BASE, ...)                   \
-    RefPtr<ExpressionSyntaxNode> visit(NAME* obj) {     \
+    RefPtr<ExpressionSyntaxNode> visit##NAME(NAME* obj) {     \
         RefPtr<NAME> result = new NAME(*obj);           \
         transformFields(result, obj);                   \
         return result;                                  \
@@ -191,8 +194,19 @@ public:
 
 struct SharedLoweringContext
 {
+    CompileRequest* compileRequest;
+
     ProgramLayout*  programLayout;
+
+    // The target we are going to generate code for.
+    // 
+    // We may need to specialize how constructs get lowered based
+    // on the capabilities of the target language.
     CodeGenTarget   target;
+
+    // A set of words reserved by the target
+    Dictionary<String, String> reservedWords;
+
 
     RefPtr<ProgramSyntaxNode>   loweredProgram;
 
@@ -216,8 +230,7 @@ struct LoweringVisitor
     : ExprVisitor<LoweringVisitor, RefPtr<ExpressionSyntaxNode>>
     , StmtVisitor<LoweringVisitor, void>
     , DeclVisitor<LoweringVisitor, RefPtr<Decl>>
-    , TypeVisitor<LoweringVisitor, RefPtr<ExpressionType>>
-    , ValVisitor<LoweringVisitor, RefPtr<Val>>
+    , ValVisitor<LoweringVisitor, RefPtr<Val>, RefPtr<ExpressionType>>
 {
     //
     SharedLoweringContext*      shared;
@@ -237,6 +250,165 @@ struct LoweringVisitor
 
     CodeGenTarget getTarget() { return shared->target; }
 
+    bool isReservedWord(String const& name)
+    {
+        return shared->reservedWords.TryGetValue(name) != nullptr;
+    }
+
+    void registerReservedWord(
+        String const&   name)
+    {
+        shared->reservedWords.Add(name, name);
+    }
+
+    void registerReservedWords()
+    {
+    #define WORD(NAME) registerReservedWord(#NAME)
+
+        switch (shared->target)
+        {
+        case CodeGenTarget::GLSL:
+            WORD(attribute);
+            WORD(const);
+            WORD(uniform);
+            WORD(varying);
+            WORD(buffer);
+
+            WORD(shared);
+            WORD(coherent);
+            WORD(volatile);
+            WORD(restrict);
+            WORD(readonly);
+            WORD(writeonly);
+            WORD(atomic_unit);
+            WORD(layout);
+            WORD(centroid);
+            WORD(flat);
+            WORD(smooth);
+            WORD(noperspective);
+            WORD(patch);
+            WORD(sample);
+            WORD(break);
+            WORD(continue);
+            WORD(do);
+            WORD(for);
+            WORD(while);
+            WORD(switch);
+            WORD(case);
+            WORD(default);
+            WORD(if);
+            WORD(else);
+            WORD(subroutine);
+            WORD(in);
+            WORD(out);
+            WORD(inout);
+            WORD(float);
+            WORD(double);
+            WORD(int);
+            WORD(void);
+            WORD(bool);
+            WORD(true);
+            WORD(false);
+            WORD(invariant);
+            WORD(precise);
+            WORD(discard);
+            WORD(return);
+
+            WORD(lowp);
+            WORD(mediump);
+            WORD(highp);
+            WORD(precision);
+            WORD(struct);
+            WORD(uint);
+
+            WORD(common);
+            WORD(partition);
+            WORD(active);
+            WORD(asm);
+            WORD(class);
+            WORD(union);
+            WORD(enum);
+            WORD(typedef);
+            WORD(template);
+            WORD(this);
+            WORD(resource);
+
+            WORD(goto);
+            WORD(inline);
+            WORD(noinline);
+            WORD(public);
+            WORD(static);
+            WORD(extern);
+            WORD(external);
+            WORD(interface);
+            WORD(long);
+            WORD(short);
+            WORD(half);
+            WORD(fixed);
+            WORD(unsigned);
+            WORD(superp);
+            WORD(input);
+            WORD(output);
+            WORD(filter);
+            WORD(sizeof);
+            WORD(cast);
+            WORD(namespace);
+            WORD(using);
+
+    #define CASE(NAME) \
+        WORD(NAME ## 2); WORD(NAME ## 3); WORD(NAME ## 4)
+
+            CASE(mat);
+            CASE(dmat);
+            CASE(mat2x);
+            CASE(mat3x);
+            CASE(mat4x);
+            CASE(dmat2x);
+            CASE(dmat3x);
+            CASE(dmat4x);
+            CASE(vec);
+            CASE(ivec);
+            CASE(bvec);
+            CASE(dvec);
+            CASE(uvec);
+            CASE(hvec);
+            CASE(fvec);
+
+    #undef CASE
+
+    #define CASE(NAME)          \
+        WORD(NAME ## 1D);       \
+        WORD(NAME ## 2D);       \
+        WORD(NAME ## 3D);       \
+        WORD(NAME ## Cube);     \
+        WORD(NAME ## 1DArray);  \
+        WORD(NAME ## 2DArray);  \
+        WORD(NAME ## 3DArray);  \
+        WORD(NAME ## CubeArray);\
+        WORD(NAME ## 2DMS);     \
+        WORD(NAME ## 2DMSArray) \
+        /* end */
+
+    #define CASE2(NAME)     \
+        CASE(NAME);         \
+        CASE(i ## NAME);    \
+        CASE(u ## NAME)     \
+        /* end */
+
+        CASE2(sampler);
+        CASE2(image);
+        CASE2(texture);
+
+    #undef CASE2
+    #undef CASE
+            break;
+
+        default:
+            break;
+        }
+    }
+
+
     //
     // Values
     //
@@ -247,12 +419,12 @@ struct LoweringVisitor
         return ValVisitor::dispatch(val);
     }
 
-    RefPtr<Val> visit(GenericParamIntVal* val)
+    RefPtr<Val> visitGenericParamIntVal(GenericParamIntVal* val)
     {
         return new GenericParamIntVal(translateDeclRef(DeclRef<Decl>(val->declRef)).As<VarDeclBase>());
     }
 
-    RefPtr<Val> visit(ConstantIntVal* val)
+    RefPtr<Val> visitConstantIntVal(ConstantIntVal* val)
     {
         return val;
     }
@@ -276,40 +448,40 @@ struct LoweringVisitor
         return result;
     }
 
-    RefPtr<ExpressionType> visit(ErrorType* type)
+    RefPtr<ExpressionType> visitErrorType(ErrorType* type)
     {
         return type;
     }
 
-    RefPtr<ExpressionType> visit(OverloadGroupType* type)
+    RefPtr<ExpressionType> visitOverloadGroupType(OverloadGroupType* type)
     {
         return type;
     }
 
-    RefPtr<ExpressionType> visit(InitializerListType* type)
+    RefPtr<ExpressionType> visitInitializerListType(InitializerListType* type)
     {
         return type;
     }
 
-    RefPtr<ExpressionType> visit(GenericDeclRefType* type)
+    RefPtr<ExpressionType> visitGenericDeclRefType(GenericDeclRefType* type)
     {
         return new GenericDeclRefType(translateDeclRef(DeclRef<Decl>(type->declRef)).As<GenericDecl>());
     }
 
-    RefPtr<ExpressionType> visit(FuncType* type)
+    RefPtr<ExpressionType> visitFuncType(FuncType* type)
     {
         RefPtr<FuncType> loweredType = new FuncType();
         loweredType->declRef = translateDeclRef(DeclRef<Decl>(type->declRef)).As<CallableDecl>();
         return loweredType;
     }
 
-    RefPtr<ExpressionType> visit(DeclRefType* type)
+    RefPtr<ExpressionType> visitDeclRefType(DeclRefType* type)
     {
         auto loweredDeclRef = translateDeclRef(type->declRef);
         return DeclRefType::Create(loweredDeclRef);
     }
 
-    RefPtr<ExpressionType> visit(NamedExpressionType* type)
+    RefPtr<ExpressionType> visitNamedExpressionType(NamedExpressionType* type)
     {
         if (shared->target == CodeGenTarget::GLSL)
         {
@@ -320,12 +492,12 @@ struct LoweringVisitor
         return new NamedExpressionType(translateDeclRef(DeclRef<Decl>(type->declRef)).As<TypeDefDecl>());
     }
 
-    RefPtr<ExpressionType> visit(TypeType* type)
+    RefPtr<ExpressionType> visitTypeType(TypeType* type)
     {
         return new TypeType(lowerType(type->type));
     }
 
-    RefPtr<ExpressionType> visit(ArrayExpressionType* type)
+    RefPtr<ExpressionType> visitArrayExpressionType(ArrayExpressionType* type)
     {
         RefPtr<ArrayExpressionType> loweredType = new ArrayExpressionType();
         loweredType->BaseType = lowerType(type->BaseType);
@@ -350,7 +522,7 @@ struct LoweringVisitor
     }
 
     // catch-all
-    RefPtr<ExpressionSyntaxNode> visit(
+    RefPtr<ExpressionSyntaxNode> visitExpressionSyntaxNode(
         ExpressionSyntaxNode* expr)
     {
         return structuralTransform(expr, this);
@@ -404,7 +576,7 @@ struct LoweringVisitor
         return result;
     }
 
-    RefPtr<ExpressionSyntaxNode> visit(
+    RefPtr<ExpressionSyntaxNode> visitVarExpressionSyntaxNode(
         VarExpressionSyntaxNode* expr)
     {
         // If the expression didn't get resolved, we can leave it as-is
@@ -428,7 +600,7 @@ struct LoweringVisitor
         return loweredExpr;
     }
 
-    RefPtr<ExpressionSyntaxNode> visit(
+    RefPtr<ExpressionSyntaxNode> visitMemberExpressionSyntaxNode(
         MemberExpressionSyntaxNode* expr)
     {
         auto loweredBase = lowerExpr(expr->BaseExpression);
@@ -450,6 +622,7 @@ struct LoweringVisitor
         lowerExprCommon(loweredExpr, expr);
         loweredExpr->BaseExpression = loweredBase;
         loweredExpr->declRef = loweredDeclRef;
+        loweredExpr->name = expr->name;
 
         return loweredExpr;
     }
@@ -521,7 +694,7 @@ struct LoweringVisitor
         StmtVisitor::dispatch(stmt);
     }
 
-    RefPtr<ScopeDecl> visit(ScopeDecl* decl)
+    RefPtr<ScopeDecl> visitScopeDecl(ScopeDecl* decl)
     {
         RefPtr<ScopeDecl> loweredDecl = new ScopeDecl();
         lowerDeclCommon(loweredDecl, decl);
@@ -594,7 +767,7 @@ struct LoweringVisitor
         addStmt(stmt);
     }
 
-    void visit(BlockStmt* stmt)
+    void visitBlockStmt(BlockStmt* stmt)
     {
         RefPtr<BlockStmt> loweredStmt = new BlockStmt();
         lowerScopeStmtFields(loweredStmt, stmt);
@@ -606,7 +779,7 @@ struct LoweringVisitor
         addStmt(loweredStmt);
     }
 
-    void visit(SeqStmt* stmt)
+    void visitSeqStmt(SeqStmt* stmt)
     {
         for( auto ss : stmt->stmts )
         {
@@ -614,12 +787,12 @@ struct LoweringVisitor
         }
     }
 
-    void visit(ExpressionStatementSyntaxNode* stmt)
+    void visitExpressionStatementSyntaxNode(ExpressionStatementSyntaxNode* stmt)
     {
         addExprStmt(lowerExpr(stmt->Expression));
     }
 
-    void visit(VarDeclrStatementSyntaxNode* stmt)
+    void visitVarDeclrStatementSyntaxNode(VarDeclrStatementSyntaxNode* stmt)
     {
         DeclVisitor::dispatch(stmt->decl);
     }
@@ -651,42 +824,42 @@ struct LoweringVisitor
         loweredStmt->parentStmt = translateStmtRef(originalStmt->parentStmt);
     }
 
-    void visit(ContinueStatementSyntaxNode* stmt)
+    void visitContinueStatementSyntaxNode(ContinueStatementSyntaxNode* stmt)
     {
         RefPtr<ContinueStatementSyntaxNode> loweredStmt = new ContinueStatementSyntaxNode();
         lowerChildStmtFields(loweredStmt, stmt);
         addStmt(loweredStmt);
     }
 
-    void visit(BreakStatementSyntaxNode* stmt)
+    void visitBreakStatementSyntaxNode(BreakStatementSyntaxNode* stmt)
     {
         RefPtr<BreakStatementSyntaxNode> loweredStmt = new BreakStatementSyntaxNode();
         lowerChildStmtFields(loweredStmt, stmt);
         addStmt(loweredStmt);
     }
 
-    void visit(DefaultStmt* stmt)
+    void visitDefaultStmt(DefaultStmt* stmt)
     {
         RefPtr<DefaultStmt> loweredStmt = new DefaultStmt();
         lowerChildStmtFields(loweredStmt, stmt);
         addStmt(loweredStmt);
     }
 
-    void visit(DiscardStatementSyntaxNode* stmt)
+    void visitDiscardStatementSyntaxNode(DiscardStatementSyntaxNode* stmt)
     {
         RefPtr<DiscardStatementSyntaxNode> loweredStmt = new DiscardStatementSyntaxNode();
         lowerStmtFields(loweredStmt, stmt);
         addStmt(loweredStmt);
     }
 
-    void visit(EmptyStatementSyntaxNode* stmt)
+    void visitEmptyStatementSyntaxNode(EmptyStatementSyntaxNode* stmt)
     {
         RefPtr<EmptyStatementSyntaxNode> loweredStmt = new EmptyStatementSyntaxNode();
         lowerStmtFields(loweredStmt, stmt);
         addStmt(loweredStmt);
     }
 
-    void visit(UnparsedStmt* stmt)
+    void visitUnparsedStmt(UnparsedStmt* stmt)
     {
         RefPtr<UnparsedStmt> loweredStmt = new UnparsedStmt();
         lowerStmtFields(loweredStmt, stmt);
@@ -696,7 +869,7 @@ struct LoweringVisitor
         addStmt(loweredStmt);
     }
 
-    void visit(CaseStmt* stmt)
+    void visitCaseStmt(CaseStmt* stmt)
     {
         RefPtr<CaseStmt> loweredStmt = new CaseStmt();
         lowerChildStmtFields(loweredStmt, stmt);
@@ -706,7 +879,7 @@ struct LoweringVisitor
         addStmt(loweredStmt);
     }
 
-    void visit(IfStatementSyntaxNode* stmt)
+    void visitIfStatementSyntaxNode(IfStatementSyntaxNode* stmt)
     {
         RefPtr<IfStatementSyntaxNode> loweredStmt = new IfStatementSyntaxNode();
         lowerStmtFields(loweredStmt, stmt);
@@ -718,7 +891,7 @@ struct LoweringVisitor
         addStmt(loweredStmt);
     }
 
-    void visit(SwitchStmt* stmt)
+    void visitSwitchStmt(SwitchStmt* stmt)
     {
         RefPtr<SwitchStmt> loweredStmt = new SwitchStmt();
         lowerScopeStmtFields(loweredStmt, stmt);
@@ -731,10 +904,10 @@ struct LoweringVisitor
         addStmt(loweredStmt);
     }
 
-
-    void visit(ForStatementSyntaxNode* stmt)
+    void lowerForStmtCommon(
+        RefPtr<ForStatementSyntaxNode>  loweredStmt,
+        ForStatementSyntaxNode*         stmt)
     {
-        RefPtr<ForStatementSyntaxNode> loweredStmt = new ForStatementSyntaxNode();
         lowerScopeStmtFields(loweredStmt, stmt);
 
         LoweringVisitor subVisitor = pushScope(loweredStmt, stmt);
@@ -747,7 +920,17 @@ struct LoweringVisitor
         addStmt(loweredStmt);
     }
 
-    void visit(WhileStatementSyntaxNode* stmt)
+    void visitForStatementSyntaxNode(ForStatementSyntaxNode* stmt)
+    {
+        lowerForStmtCommon(new ForStatementSyntaxNode(), stmt);
+    }
+
+    void visitUnscopedForStmt(UnscopedForStmt* stmt)
+    {
+        lowerForStmtCommon(new UnscopedForStmt(), stmt);
+    }
+
+    void visitWhileStatementSyntaxNode(WhileStatementSyntaxNode* stmt)
     {
         RefPtr<WhileStatementSyntaxNode> loweredStmt = new WhileStatementSyntaxNode();
         lowerScopeStmtFields(loweredStmt, stmt);
@@ -760,7 +943,7 @@ struct LoweringVisitor
         addStmt(loweredStmt);
     }
 
-    void visit(DoWhileStatementSyntaxNode* stmt)
+    void visitDoWhileStatementSyntaxNode(DoWhileStatementSyntaxNode* stmt)
     {
         RefPtr<DoWhileStatementSyntaxNode> loweredStmt = new DoWhileStatementSyntaxNode();
         lowerScopeStmtFields(loweredStmt, stmt);
@@ -805,7 +988,7 @@ struct LoweringVisitor
         assign(expr, createVarRef(expr->Position, varDecl));
     }
 
-    void visit(ReturnStatementSyntaxNode* stmt)
+    void visitReturnStatementSyntaxNode(ReturnStatementSyntaxNode* stmt)
     {
         auto loweredStmt = new ReturnStatementSyntaxNode();
         lowerStmtCommon(loweredStmt, stmt);
@@ -963,6 +1146,43 @@ struct LoweringVisitor
         shared->mapLoweredDeclToOriginal.Add(loweredDecl, decl);
     }
 
+    // If the name of the declarations collides with a reserved word
+    // for the code generation target, then rename it to avoid the conflict
+    //
+    // Note that this does *not* implement any kind of comprehensive renaming
+    // to, e.g., avoid conflicts between user-defined and library functions.
+    void ensureDeclHasAValidName(Decl* decl)
+    {
+        // By default, we would like to emit a name in the generated
+        // code exactly as it appeared in the original program.
+        // When that isn't possible, we'd like to emit a name as
+        // close to the original as possible (to ensure that existing
+        // debugging tools still work reasonably well).
+        //
+        // One reason why a name might not be allowed as-is is that
+        // it could collide with a reserved word in the target language.
+        // Another reason is that it might not follow a naming convention
+        // imposed by the target (e.g., in GLSL names starting with
+        // `gl_` or containing `__` are reserved).
+        //
+        // Given a name that should not be allowed, we want to
+        // change it to a name that *is* allowed. e.g., by adding
+        // `_` to the end of a reserved word.
+        //
+        // The next problem this creates is that the modified name
+        // could not collide with an existing use of the same
+        // (valid) name.
+        //
+        // For now we are going to solve this problem in a simple
+        // and ad hoc fashion, but longer term we'll want to do
+        // something sytematic.
+
+        if (isReservedWord(decl->getName()))
+        {
+            decl->Name.Content.append("_");
+        }
+    }
+
     void lowerDeclCommon(
         Decl* loweredDecl,
         Decl* decl)
@@ -971,6 +1191,9 @@ struct LoweringVisitor
 
         loweredDecl->Position = decl->Position;
         loweredDecl->Name = decl->getNameToken();
+
+        // Deal with renaming - we shouldn't allow decls with names that are reserved words
+        ensureDeclHasAValidName(loweredDecl);
 
         // Lower modifiers as needed
 
@@ -1004,60 +1227,66 @@ struct LoweringVisitor
 
     // Catch-all
 
-    RefPtr<Decl> visit(ModifierDecl*)
+    RefPtr<Decl> visitModifierDecl(ModifierDecl*)
     {
         // should not occur in user code
         SLANG_UNEXPECTED("modifiers shouldn't occur in user code");
     }
 
-    RefPtr<Decl> visit(GenericValueParamDecl*)
+    RefPtr<Decl> visitGenericValueParamDecl(GenericValueParamDecl*)
     {
         SLANG_UNEXPECTED("generics should be lowered to specialized decls");
     }
 
-    RefPtr<Decl> visit(GenericTypeParamDecl*)
+    RefPtr<Decl> visitGenericTypeParamDecl(GenericTypeParamDecl*)
     {
         SLANG_UNEXPECTED("generics should be lowered to specialized decls");
     }
 
-    RefPtr<Decl> visit(GenericTypeConstraintDecl*)
+    RefPtr<Decl> visitGenericTypeConstraintDecl(GenericTypeConstraintDecl*)
     {
         SLANG_UNEXPECTED("generics should be lowered to specialized decls");
     }
 
-    RefPtr<Decl> visit(GenericDecl*)
+    RefPtr<Decl> visitGenericDecl(GenericDecl*)
     {
         SLANG_UNEXPECTED("generics should be lowered to specialized decls");
     }
 
-    RefPtr<Decl> visit(ProgramSyntaxNode*)
+    RefPtr<Decl> visitProgramSyntaxNode(ProgramSyntaxNode*)
     {
         SLANG_UNEXPECTED("module decls should be lowered explicitly");
     }
 
-    RefPtr<Decl> visit(SubscriptDecl*)
+    RefPtr<Decl> visitSubscriptDecl(SubscriptDecl*)
     {
         // We don't expect to find direct references to a subscript
         // declaration, but rather to the underlying accessors
         return nullptr;
     }
 
-    RefPtr<Decl> visit(InheritanceDecl*)
+    RefPtr<Decl> visitInheritanceDecl(InheritanceDecl*)
     {
         // We should deal with these explicitly, as part of lowering
         // the type that contains them.
         return nullptr;
     }
 
-    RefPtr<Decl> visit(ExtensionDecl*)
+    RefPtr<Decl> visitExtensionDecl(ExtensionDecl*)
     {
         // Extensions won't exist in the lowered code: their members
         // will turn into ordinary functions that get called explicitly
         return nullptr;
     }
 
-    RefPtr<Decl> visit(TypeDefDecl* decl)
+    RefPtr<Decl> visitTypeDefDecl(TypeDefDecl* decl)
     {
+        if (shared->target == CodeGenTarget::GLSL)
+        {
+            // GLSL does not support `typedef`, so we will lower it out of existence here
+            return nullptr;
+        }
+
         RefPtr<TypeDefDecl> loweredDecl = new TypeDefDecl();
         lowerDeclCommon(loweredDecl, decl);
 
@@ -1067,7 +1296,7 @@ struct LoweringVisitor
         return loweredDecl;
     }
 
-    RefPtr<ImportDecl> visit(ImportDecl* decl)
+    RefPtr<ImportDecl> visitImportDecl(ImportDecl* decl)
     {
         // No need to translate things here if we are
         // in "full" mode, because we will selectively
@@ -1086,7 +1315,7 @@ struct LoweringVisitor
         return nullptr;
     }
 
-    RefPtr<EmptyDecl> visit(EmptyDecl* decl)
+    RefPtr<EmptyDecl> visitEmptyDecl(EmptyDecl* decl)
     {
         // Empty declarations are really only useful in GLSL,
         // where they are used to hold metadata that doesn't
@@ -1103,7 +1332,7 @@ struct LoweringVisitor
         return loweredDecl;
     }
 
-    RefPtr<Decl> visit(AggTypeDecl* decl)
+    RefPtr<Decl> visitAggTypeDecl(AggTypeDecl* decl)
     {
         // We want to lower any aggregate type declaration
         // to just a `struct` type that contains its fields.
@@ -1145,7 +1374,24 @@ struct LoweringVisitor
         return loweredDecl;
     }
 
-    RefPtr<VarDeclBase> visit(
+    SourceLanguage getSourceLanguage(ProgramSyntaxNode* moduleDecl)
+    {
+        for (auto translationUnit : shared->compileRequest->translationUnits)
+        {
+            if (moduleDecl == translationUnit->SyntaxNode)
+                return translationUnit->sourceLanguage;
+        }
+
+        for (auto loadedModuleDecl : shared->compileRequest->loadedModulesList)
+        {
+            if (moduleDecl == loadedModuleDecl)
+                return SourceLanguage::Slang;
+        }
+
+        return SourceLanguage::Unknown;
+    }
+
+    RefPtr<VarDeclBase> visitVariable(
         Variable* decl)
     {
         auto loweredDecl = lowerVarDeclCommon(new Variable(), decl);
@@ -1173,13 +1419,13 @@ struct LoweringVisitor
         return loweredDecl;
     }
 
-    RefPtr<VarDeclBase> visit(
+    RefPtr<VarDeclBase> visitStructField(
         StructField* decl)
     {
         return lowerVarDeclCommon(new StructField(), decl);
     }
 
-    RefPtr<VarDeclBase> visit(
+    RefPtr<VarDeclBase> visitParameterSyntaxNode(
         ParameterSyntaxNode* decl)
     {
         return lowerVarDeclCommon(new ParameterSyntaxNode(), decl);
@@ -1191,7 +1437,7 @@ struct LoweringVisitor
     }
 
 
-    RefPtr<Decl> visit(
+    RefPtr<Decl> visitDeclGroup(
         DeclGroup* group)
     {
         for (auto decl : group->decls)
@@ -1201,7 +1447,7 @@ struct LoweringVisitor
         return nullptr;
     }
 
-    RefPtr<FunctionSyntaxNode> visit(
+    RefPtr<FunctionSyntaxNode> visitFunctionDeclBase(
         FunctionDeclBase*   decl)
     {
         // TODO: need to generate a name
@@ -1299,36 +1545,93 @@ struct LoweringVisitor
             type = arrayType;
         }
 
+        // We need to create a reference to the global-scope declaration
+        // of the proper GLSL input/output variable. This might
+        // be a user-defined input/output, or a system-defined `gl_` one.
+        RefPtr<ExpressionSyntaxNode> globalVarExpr;
+
+        // Handle system-value inputs/outputs
+        assert(varLayout);
+        auto systemValueSemantic = varLayout->systemValueSemantic;
+        if (systemValueSemantic.Length() != 0)
+        {
+            auto ns = systemValueSemantic.ToLower();
+
+            if (ns == "sv_target")
+            {
+                // Note: we do *not* need to generate some kind of `gl_`
+                // builtin for fragment-shader outputs: they are just
+                // ordinary `out` variables, with ordinary `location`s,
+                // as far as GLSL is concerned.
+            }
+            else if (ns == "sv_position")
+            {
+                RefPtr<VarExpressionSyntaxNode> globalVarRef = new VarExpressionSyntaxNode();
+                globalVarRef->name = "gl_Position";
+                globalVarExpr = globalVarRef;
+            }
+            else
+            {
+                assert(!"unhandled");
+            }
+        }
+
+        // If we didn't match some kind of builtin input/output,
+        // then declare a user input/output variable instead
+        if (!globalVarExpr)
+        {
+            RefPtr<Variable> globalVarDecl = new Variable();
+            globalVarDecl->Name.Content = info.name;
+            globalVarDecl->Type.type = type;
+
+            ensureDeclHasAValidName(globalVarDecl);
+
+            addMember(shared->loweredProgram, globalVarDecl);
+
+            // Add the layout information
+            RefPtr<ComputedLayoutModifier> modifier = new ComputedLayoutModifier();
+            modifier->layout = varLayout;
+            addModifier(globalVarDecl, modifier);
+
+            // Add appropriate in/out modifier
+            switch (info.direction)
+            {
+            case VaryingParameterDirection::Input:
+                addModifier(globalVarDecl, new InModifier());
+                break;
+
+            case VaryingParameterDirection::Output:
+                addModifier(globalVarDecl, new OutModifier());
+                break;
+            }
+
+
+            RefPtr<VarExpressionSyntaxNode> globalVarRef = new VarExpressionSyntaxNode();
+            globalVarRef->Position = globalVarDecl->Position;
+            globalVarRef->declRef = makeDeclRef(globalVarDecl.Ptr());
+            globalVarRef->name = globalVarDecl->getName();
+
+            globalVarExpr = globalVarRef;
+        }
+
         // TODO: if we are declaring an SOA-ized array,
         // this is where those array dimensions would need
         // to be tacked on.
+        //
+        // That is, this logic should be getting collected into a loop,
+        // and so we need to have a loop variable we can use to
+        // index into the two different expressions.
 
-        RefPtr<Variable> globalVarDecl = new Variable();
-        globalVarDecl->Name.Content = info.name;
-        globalVarDecl->Type.type = type;
-
-        addMember(shared->loweredProgram, globalVarDecl);
-
-        // Add the layout information
-        RefPtr<ComputedLayoutModifier> modifier = new ComputedLayoutModifier();
-        modifier->layout = varLayout;
-        addModifier(globalVarDecl, modifier);
 
         // Need to generate an assignment in the right direction.
-        //
-        // TODO: for now I am just dealing with input:
-
         switch (info.direction)
         {
         case VaryingParameterDirection::Input:
-            addModifier(globalVarDecl, new InModifier());
-            assign(varExpr, globalVarDecl);
+            assign(varExpr, globalVarExpr);
             break;
 
         case VaryingParameterDirection::Output:
-            addModifier(globalVarDecl, new OutModifier());
-
-            assign(globalVarDecl, varExpr);
+            assign(globalVarExpr, varExpr);
             break;
         }
     }
@@ -1455,6 +1758,18 @@ struct LoweringVisitor
         info.name = name;
         info.direction = direction;
 
+        // Ensure that we don't get name collisions on `inout` variables
+        switch (direction)
+        {
+        case VaryingParameterDirection::Input:
+            info.name = "SLANG_in_" + name;
+            break;
+
+        case VaryingParameterDirection::Output:
+            info.name = "SLANG_out_" + name;
+            break;
+        }
+
         lowerShaderParameterToGLSLGLobalsRec(
             info,
             localVarDecl->getType(),
@@ -1474,7 +1789,7 @@ struct LoweringVisitor
         RefPtr<EntryPointLayout>    entryPointLayout)
     {
         // First, loer the entry-point function as an ordinary function:
-        auto loweredEntryPointFunc = visit(entryPointDecl);
+        auto loweredEntryPointFunc = visitFunctionDeclBase(entryPointDecl);
 
         // Now we will generate a `void main() { ... }` function to call the lowered code.
         RefPtr<FunctionSyntaxNode> mainDecl = new FunctionSyntaxNode();
@@ -1485,10 +1800,14 @@ struct LoweringVisitor
         if (loweredEntryPointFunc->getName() == "main")
             loweredEntryPointFunc->Name.Content = "main_";
 
+        RefPtr<BlockStmt> bodyStmt = new BlockStmt();
+        bodyStmt->scopeDecl = new ScopeDecl();
+
         // We will want to generate declarations into the body of our new `main()`
         LoweringVisitor subVisitor = *this;
         subVisitor.isBuildingStmt = true;
         subVisitor.stmtBeingBuilt = nullptr;
+        subVisitor.parentDecl = bodyStmt->scopeDecl;
 
         // The parameters of the entry-point function will be translated to
         // both a local variable (for passing to/from the entry point func),
@@ -1507,6 +1826,8 @@ struct LoweringVisitor
             localVarDecl->Position = paramDecl->Position;
             localVarDecl->Name.Content = paramDecl->getName();
             localVarDecl->Type = lowerType(paramDecl->Type);
+
+            ensureDeclHasAValidName(localVarDecl);
 
             subVisitor.addDecl(localVarDecl);
 
@@ -1539,8 +1860,10 @@ struct LoweringVisitor
         {
             resultVarDecl = new Variable();
             resultVarDecl->Position = loweredEntryPointFunc->Position;
-            resultVarDecl->Name.Content = "_main_result";
+            resultVarDecl->Name.Content = "main_result";
             resultVarDecl->Type = TypeExp(loweredEntryPointFunc->ReturnType);
+
+            ensureDeclHasAValidName(resultVarDecl);
 
             subVisitor.addDecl(resultVarDecl);
         }
@@ -1606,7 +1929,9 @@ struct LoweringVisitor
                 VaryingParameterDirection::Output);
         }
 
-        mainDecl->Body = subVisitor.stmtBeingBuilt;
+        bodyStmt->body = subVisitor.stmtBeingBuilt;
+
+        mainDecl->Body = bodyStmt;
 
 
         // Once we are done building the body, we append our new declaration to the program.
@@ -1672,7 +1997,7 @@ struct LoweringVisitor
         {
         // Default case: lower an entry point just like any other function
         default:
-            return visit(entryPointDecl);
+            return visitFunctionDeclBase(entryPointDecl);
 
         // For Slang->GLSL translation, we need to lower things from HLSL-style
         // declarations over to GLSL conventions
@@ -1771,6 +2096,7 @@ LoweredEntryPoint lowerEntryPoint(
     CodeGenTarget       target)
 {
     SharedLoweringContext sharedContext;
+    sharedContext.compileRequest = entryPoint->compileRequest;
     sharedContext.programLayout = programLayout;
     sharedContext.target = target;
 
@@ -1785,6 +2111,9 @@ LoweredEntryPoint lowerEntryPoint(
     LoweringVisitor visitor;
     visitor.shared = &sharedContext;
     visitor.parentDecl = loweredProgram;
+
+    // TODO: this should only need to take the shared context
+    visitor.registerReservedWords();
 
     // We need to register the lowered program as the lowered version
     // of the existing translation unit declaration.

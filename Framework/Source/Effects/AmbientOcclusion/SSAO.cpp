@@ -170,7 +170,7 @@ namespace Falcor
 
     void SSAO::initShader()
     {
-        mpSSAOPass = FullScreenPass::create("Effects/SSAO.ps.hlsl");
+        mpSSAOPass = FullScreenPass::create("Effects/SSAO.ps.slang");
         mpSSAOPass->getProgram()->addDefine(mKernelShape == KernelShape::Hemisphere ? "HEMISPHERE": "SPHERE");
         mpSSAOVars = GraphicsVars::create(mpSSAOPass->getProgram()->getActiveVersion()->getReflector());
     }

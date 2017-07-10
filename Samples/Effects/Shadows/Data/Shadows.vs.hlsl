@@ -25,17 +25,16 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#define _COMPILE_DEFAULT_VS
-#include "VertexAttrib.h"
-#include "ShaderCommon.h"
-#include "Effects/CsmData.h"
+__import DefaultVS;
+__import ShaderCommon;
+__import Effects.CascadedShadowMap;
 
 cbuffer PerFrameCB : register(b0)
 {
-	vec3 gAmbient;
+	float3 gAmbient;
     CsmData gCsmData[_LIGHT_COUNT];
     bool visualizeCascades;
-    mat4 camVpAtLastCsmUpdate;
+    float4x4 camVpAtLastCsmUpdate;
 };
 
 struct ShadowsVSOut
@@ -50,6 +49,6 @@ ShadowsVSOut main(VS_IN vIn)
     ShadowsVSOut output;
     output.vsData = defaultOut;
 
-    output.shadowsDepthC = mul(camVpAtLastCsmUpdate, vec4(defaultOut.posW, 1)).z;
+    output.shadowsDepthC = mul(camVpAtLastCsmUpdate, float4(defaultOut.posW, 1)).z;
     return output;
 }

@@ -25,11 +25,22 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#version 420
-#include "hlslglslcommon.h"
-CONSTANT_BUFFER(ToyCB, 0)
+
+// Quicky-and-dirty definitions to support *some* GLSL
+// types in HLSL. This is by no means a complete solution.
+typedef float2 vec2;
+typedef float3 vec3;
+typedef float4 vec4;
+typedef float2x2 mat2;
+typedef float3x3 mat3;
+typedef float4x4 mat4;
+
+#define mix lerp
+#define fract frac
+
+cbuffer ToyCB : register(b0)
 {
-    vec2 iResolution;
+    float2 iResolution;
     float iGlobalTime;
     // // todo 
     // vec3 iMouse;
@@ -37,26 +48,19 @@ CONSTANT_BUFFER(ToyCB, 0)
     // sampler2D iChannel1;
     // sampler2D iChannel2;
     // sampler2D iChannel3;
-    // ivec2 iChannelResolution[4];
+    // ifloat2 iChannelResolution[4];
 };
 
-#ifdef FALCOR_HLSL
-static
-#endif
-vec3 iMouse = vec3(0, 0, 0);
+static vec3 iMouse = vec3(0, 0, 0);
 
 // ------------------------------------
 // Shader toy code goes inside toy.fs
 // ------------------------------------
 #include "toy.fs"
 
-#ifdef FALCOR_HLSL
-void main(in vec2 texC : TEXCOORD, out float4 fragColor : SV_TARGET)
-#elif defined(FALCOR_GLSL)
-out vec4 fragColor;
-in vec2 texC;
-void main()
-#endif
+void main(
+	in float2 texC : TEXCOORD,
+	out float4 fragColor : SV_TARGET)
 {
     fragColor = mainImage(texC * iResolution);   
 }

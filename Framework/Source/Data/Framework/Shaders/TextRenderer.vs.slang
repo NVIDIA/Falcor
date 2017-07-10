@@ -26,57 +26,21 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 
-#ifdef FALCOR_HLSL
 cbuffer PerFrameCB : register(b0)
 {
-    float2 scale;
-    float2 offset;
+	float4x4 gvpTransform;
+	float3 gFontColor;
 };
 
-struct VsIn
+float4 transform(float2 posS)
 {
-    float2 pos : POSITION;
-    float4 color : COLOR;
-    float2 texC : TEXCOORD0;
-};
-
-struct VsOut
-{
-    float4 color : COLOR;
-    float2 texC : TEXCOORD0;
-    float4 pos : SV_POSITION;
-};
-
-VsOut main(VsIn vIn)
-{
-    VsOut vOut;
-    vOut.color = vIn.color;
-    vOut.texC = vIn.texC;
-    vOut.pos.xy = vIn.pos.xy * scale + offset;
-    vOut.pos.zw = float2(0,1);
-    return vOut;
+	return mul(gvpTransform, float4(posS, 0.5f, 1));
 }
-#endif
 
-#ifdef FALCOR_GLSL
-layout(set = 0, binding = 0) uniform PerFrameCB
+void main(
+	float2 posS : POSITION,
+	inout float2 texC : TEXCOORD,
+	out float4 posSV : SV_POSITION)
 {
-    vec2 scale;
-    vec2 offset;
-};
-
-layout(location = 0) in vec2 pos;
-layout(location = 1) in vec2 texCIn;
-layout(location = 2) in vec4 colorIn;
-
-layout(location = 0) out vec4 color;
-layout(location = 1) out vec2 texC;
-
-void main()
-{
-    color = colorIn;
-    texC = texCIn;
-    gl_Position.xy = pos.xy * scale + offset;
-    gl_Position.zw = vec2(0, 1);
+	posSV = transform(posS);
 }
-#endif

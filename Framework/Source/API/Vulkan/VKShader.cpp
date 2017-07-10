@@ -36,10 +36,14 @@ namespace Falcor
         std::vector<uint8_t> compiledData;
     };
 
-    Shader::SharedPtr Shader::create(const std::string& shaderString, ShaderType type, std::string& log)
+    Shader::SharedPtr Shader::create(
+        const std::string&  shaderString,
+        ShaderType          type,
+        const std::string&  entryPointName,
+        std::string&        log)
     {
         SharedPtr pShader = SharedPtr(new Shader(type));
-        return pShader->init(shaderString, log) ? pShader : nullptr;
+        return pShader->init(shaderString, entryPointName, log) ? pShader : nullptr;
     }
 
     Shader::Shader(ShaderType type) : mType(type)
@@ -53,7 +57,10 @@ namespace Falcor
         safe_delete(pData);
     }
 
-    bool Shader::init(const std::string& shaderString, std::string& log)
+    bool Shader::init(
+        const std::string&  shaderString,
+        const std::string&  /*entryPointName*/,
+        std::string&        log)
     {
         // Compile the shader
         ShaderData* pData = (ShaderData*)mpPrivateData;

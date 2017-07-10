@@ -26,8 +26,8 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 #include "VertexAttrib.h"
-#include "ShaderCommon.h"
-#include "csmdata.h"
+__import ShaderCommon;
+__import Effects.CascadedShadowMap;
 
 cbuffer PerLightCB : register(b0)
 {

@@ -1,5 +1,5 @@
 /***************************************************************************
-# Copyright (c) 2015, NVIDIA CORPORATION. All rights reserved.
+# Copyright (c) 2017, NVIDIA CORPORATION. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -25,56 +25,30 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#include "ShaderCommon.h"
-#include "csmdata.h"
+__import ShaderCommon;
+__import DefaultVS;
 
-SamplerState alphaSampler : register(s0);
-texture2D alphaMap : register(t0);
-
-cbuffer PerLightCB : register(b0)
+struct EditorVSOut
 {
-    CsmData gCsmData;
+    VS_OUT vOut;
+
+#ifdef PICKING
+    uint drawID : DRAW_ID;
+#endif
+
+#ifdef CULL_REAR_SECTION
+    float3 toVertex : VERTEX_DIR;
+#endif
 };
 
-cbuffer AlphaMapCB : register(b1)
+struct DebugDrawVSIn
 {
-    float alphaThreshold;
+    float3 position : POSITION;
+    float3 color : COLOR;
 };
 
-struct ShadowPassPSIn
+struct DebugDrawVSOut
 {
-    float4 pos : SV_POSITION;
-    float2 texC : TexCoord;
-    uint rtIndex : SV_RenderTargetArrayIndex;
+    float4 position : SV_POSITION;
+    float3 color : COLOR;
 };
-
-#if defined(_VSM) || defined(_EVSM2)
-vec2 main(ShadowPassPSIn pIn) : SV_TARGET0
-#elif defined(_EVSM4)
-vec4 main(ShadowPassPSIn pIn) : SV_TARGET0
-#else
-void main(ShadowPassPSIn pIn)
-#endif
-{
-#ifdef TEST_ALPHA
-    float alpha = alphaMap.Sample(alphaSampler, pIn.texC)._ALPHA_CHANNEL;
-    if(alpha < alphaThreshold)
-    {
-        discard;
-    }
-#endif
-
-    vec2 depth = pIn.pos.zz;
-
-#if defined(_EVSM2) || defined(_EVSM4)
-    depth = applyEvsmExponents(depth.x, gCsmData.evsmExponents);
-#endif
-    vec4 outDepth = vec4(depth, depth*depth);
-
-#ifdef _EVSM4
-    return outDepth.xzyw;
-#elif defined(_VSM) || defined(_EVSM2)
-    return outDepth.xz;
-#else
-#endif
-}
