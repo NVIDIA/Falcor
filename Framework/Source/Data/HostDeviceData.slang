@@ -26,8 +26,6 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 
-#ifndef _FALCOR_CAMERA_SHADERS_H_
-#define _FALCOR_CAMERA_SHADERS_H_
+#include "HostDeviceSharedMacros.h"
 
-
-#endif	// _FALCOR_CAMERA_SHADERS_H_
+#include "HostDeviceSharedCode.h"

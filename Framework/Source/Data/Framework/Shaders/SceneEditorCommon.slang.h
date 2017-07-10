@@ -1,5 +1,5 @@
 /***************************************************************************
-# Copyright (c) 2015, NVIDIA CORPORATION. All rights reserved.
+# Copyright (c) 2017, NVIDIA CORPORATION. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -25,27 +25,30 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#ifdef _SINGLE_PASS_STEREO
-fixme
+__import ShaderCommon;
+__import DefaultVS;
+
+struct EditorVSOut
+{
+    VS_OUT vOut;
+
+#ifdef PICKING
+    uint drawID : DRAW_ID;
 #endif
 
-#include "ShaderCommon.h"
-
-cbuffer PerFrameCB : register(b0)
-{
-    float4x4 gWorld;
-    float gScale;
+#ifdef CULL_REAR_SECTION
+    float3 toVertex : VERTEX_DIR;
+#endif
 };
 
-void main(float4 posL : POSITION, out float3 dir : NORMAL, out float4 posH : SV_POSITION)
+struct DebugDrawVSIn
 {
-    dir = posL.xyz;
-    float4 viewPos = mul(gCam.viewMat, mul(gWorld, posL));
-    posH = mul(gCam.projMat, viewPos);
-    posH.xy *= gScale;
-    posH.z = posH.w;
+    float3 position : POSITION;
+    float3 color : COLOR;
+};
 
-#ifdef _SINGLE_PASS_STEREO
-    fixme
-#endif
-}
+struct DebugDrawVSOut
+{
+    float4 position : SV_POSITION;
+    float3 color : COLOR;
+};

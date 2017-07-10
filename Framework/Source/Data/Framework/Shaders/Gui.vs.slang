@@ -25,33 +25,33 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#define _COMPILE_DEFAULT_VS
-#include "VertexAttrib.h"
-#include "ShaderCommon.h"
 
-struct ShadowPassVSOut
+cbuffer PerFrameCB : register(b0)
 {
-#ifdef _APPLY_PROJECTION
-    float4 pos : SV_POSITION;
-#else
-    float4 pos : POSITION;
-#endif
-    float2 texC : TEXCOORD;
+    float2 scale;
+    float2 offset;
 };
 
-ShadowPassVSOut main(VS_IN vIn)
+struct VsIn
 {
-    ShadowPassVSOut vOut; 
-    mat4 worldMat = getWorldMat(vIn);
-    vOut.pos = mul(worldMat, vIn.pos);
-#ifdef _APPLY_PROJECTION
-    vOut.pos = mul(gCam.viewProjMat, vOut.pos);
-#endif
+    float2 pos : POSITION;
+    float2 texC : TEXCOORD0;
+    float4 color : COLOR;
+};
 
-#ifdef HAS_TEXCRD
+struct VsOut
+{
+    float4 color : COLOR;
+    float2 texC : TEXCOORD0;
+    float4 pos : SV_POSITION;
+};
+
+VsOut main(VsIn vIn)
+{
+    VsOut vOut;
+    vOut.color = vIn.color;
     vOut.texC = vIn.texC;
-#else
-    vOut.texC = float2(0.5f, 0.5f);
-#endif
+    vOut.pos.xy = vIn.pos.xy * scale + offset;
+    vOut.pos.zw = float2(0,1);
     return vOut;
 }

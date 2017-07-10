@@ -40,7 +40,7 @@ void ComputeShader::onGuiRender()
 Texture::SharedPtr createTmpTex(const Fbo* pFbo)
 {
     auto fboFormat = pFbo->getColorTexture(0)->getFormat();
-    return Texture::create2D(pFbo->getWidth(), pFbo->getHeight(), srgbToLinearFormat(fboFormat), 1, 1, nullptr, Resource::BindFlags::ShaderResource | Resource::BindFlags::UnorderedAccess);
+    return Texture::create2D(pFbo->getWidth(), pFbo->getHeight(), ResourceFormat::RGBA8Unorm, 1, 1, nullptr, Resource::BindFlags::ShaderResource | Resource::BindFlags::UnorderedAccess);
 }
 
 void ComputeShader::onLoad()
@@ -78,10 +78,11 @@ void ComputeShader::onFrameRender()
     beginTestFrame();
 
 	const glm::vec4 clearColor(0.38f, 0.52f, 0.10f, 1);
-    mpRenderContext->clearUAV(mpTmpTexture->getUAV().get(), clearColor);
 
     if(mpImage)
     {
+        mpRenderContext->clearUAV(mpTmpTexture->getUAV().get(), clearColor);
+
         if (mbPixelate)
         {
             mpProg->addDefine("_PIXELATE");
@@ -98,9 +99,12 @@ void ComputeShader::onFrameRender()
         uint32_t w = (mpImage->getWidth() / 16) + 1;
         uint32_t h = (mpImage->getHeight() / 16) + 1;
         mpRenderContext->dispatch(w, h, 1);
+        mpRenderContext->copyResource(mpDefaultFBO->getColorTexture(0).get(), mpTmpTexture.get());
     }
-
-    mpRenderContext->copyResource(mpDefaultFBO->getColorTexture(0).get(), mpTmpTexture.get());
+    else
+    {
+        mpRenderContext->clearRtv(mpDefaultFBO->getRenderTargetView(0).get(), clearColor);
+    }
 
     endTestFrame();
 }
@@ -126,5 +130,6 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
     config.windowDesc.title = "Falcor Project Template";
     config.windowDesc.resizableWindow = true;
     config.deviceDesc.depthFormat = ResourceFormat::Unknown;
+    config.deviceDesc.colorFormat = ResourceFormat::BGRA8Unorm;
     sample.run(config);
 }

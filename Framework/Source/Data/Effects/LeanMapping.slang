@@ -26,39 +26,33 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 
-#ifdef FALCOR_HLSL
+#include "Data/HostDeviceData.h"
 
-SamplerState gSampler;
-Texture2D gFont;
+__import Helpers;
 
-struct VsOut
+void applyLeanMap(in Texture2D leanMap, in SamplerState samplerState, inout ShadingAttribs shAttr)
 {
-    float4 color : COLOR;
-    float2 texC : TEXCOORD0;
-};
+    float4 t = sampleTexture(leanMap, samplerState, shAttr);
+    // Reconstruct B 
+    float2 B = 2 * t.xy - 1;
+    float2 M = t.zw;
 
-float4 main(VsOut vOut) : SV_TARGET
-{
-    float4 c = vOut.color;
-    float fontMask = gFont.Sample(gSampler, vOut.texC).r;
-    c *= fontMask;
-    return c;
+    // Apply normal
+    float3 unnormalizedNormal = float3(B, 1);
+    applyNormalMap(unnormalizedNormal, shAttr.N, shAttr.T, shAttr.B);
+    // Reconstruct the diagonal covariance matrix
+    float2 maxCov = max((0), M - B*B);     // Use only diagonal of covariance due to float2 aniso roughness
+
+    [unroll]
+    for (uint iLayer = 0; iLayer < MatMaxLayers; iLayer++)
+    {
+        if (shAttr.preparedMat.desc.layers[iLayer].type == MatNone) break;
+
+        if (shAttr.preparedMat.desc.layers[iLayer].type != MatLambert)
+        {
+            float2 roughness = shAttr.preparedMat.values.layers[iLayer].roughness.xy;
+            roughness = sqrt(roughness*roughness + maxCov); // Approximate convolution that works for all
+            shAttr.preparedMat.values.layers[iLayer].roughness.rg = roughness;
+        }
+    }
 }
-#endif
-
-#ifdef FALCOR_GLSL
-layout(set = 1, binding = 0) uniform texture2D gFont;
-layout(set = 1, binding = 1) uniform sampler gSampler;
-
-layout(location = 0) in vec4 color;
-layout(location = 1) in vec2 texC;
-
-layout(location = 0) out vec4 fragColor;
-
-void main()
-{
-    fragColor = color;
-    float fontMask = texture(sampler2D(gFont, gSampler), texC).r;
-    fragColor *= fontMask;
-}
-#endif

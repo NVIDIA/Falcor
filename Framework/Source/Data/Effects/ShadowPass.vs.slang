@@ -25,22 +25,32 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#include "Helpers.h"
+__import DefaultVS;
+__import ShaderCommon;
 
-#ifdef _SPHERICAL_MAP
-Texture2D gTexture;
-#else
-TextureCube gTexture;
-#endif
-SamplerState gSampler;
-
-float4 main(float3 dir : NORMAL) : SV_TARGET
+struct ShadowPassVSOut
 {
-#ifdef _SPHERICAL_MAP
-    float2 uv = dirToSphericalCrd(dir) ;
-    float4 color = gTexture.Sample(gSampler, uv);
-    return color;
+#ifdef _APPLY_PROJECTION
+    float4 pos : SV_POSITION;
 #else
-	return gTexture.Sample(gSampler, normalize(dir), 0);
+    float4 pos : POSITION;
 #endif
+    float2 texC : TEXCOORD;
+};
+
+ShadowPassVSOut main(VS_IN vIn)
+{
+    ShadowPassVSOut vOut; 
+    float4x4 worldMat = getWorldMat(vIn);
+    vOut.pos = mul(worldMat, vIn.pos);
+#ifdef _APPLY_PROJECTION
+    vOut.pos = mul(gCam.viewProjMat, vOut.pos);
+#endif
+
+#ifdef HAS_TEXCRD
+    vOut.texC = vIn.texC;
+#else
+    vOut.texC = float2(0.5f, 0.5f);
+#endif
+    return vOut;
 }

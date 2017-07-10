@@ -34,11 +34,11 @@
 
 namespace Falcor
 {
-    const char* ParticleSystem::kVertexShader = "Effects/ParticleVertex.vs.hlsl";
-    const char* ParticleSystem::kSortShader = "Effects/ParticleSort.cs.hlsl";
-    const char* ParticleSystem::kEmitShader = "Effects/ParticleEmit.cs.hlsl";
-    const char* ParticleSystem::kDefaultPixelShader = "Effects/ParitcleTexture.ps.hlsl";
-    const char* ParticleSystem::kDefaultSimulateShader = "Effects/ParticleSimulate.cs.hlsl";
+    const char* ParticleSystem::kVertexShader = "Effects/ParticleVertex.vs.slang";
+    const char* ParticleSystem::kSortShader = "Effects/ParticleSort.cs.slang";
+    const char* ParticleSystem::kEmitShader = "Effects/ParticleEmit.cs.slang";
+    const char* ParticleSystem::kDefaultPixelShader = "Effects/ParitcleTexture.ps.slang";
+    const char* ParticleSystem::kDefaultSimulateShader = "Effects/ParticleSimulate.cs.slang";
 
     ParticleSystem::SharedPtr ParticleSystem::create(RenderContext* pCtx, uint32_t maxParticles, uint32_t maxEmitPerFrame,
         std::string drawPixelShader, std::string simulateComputeShader, bool sorted)

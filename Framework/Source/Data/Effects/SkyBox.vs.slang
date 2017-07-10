@@ -25,50 +25,27 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#ifndef CSMDATA_H
-#define CSMDATA_H
-
-#include "Data/HostDeviceData.h"
-
-#define CSM_MAX_CASCADES 8
-
-#define CsmFilterPoint 0
-#define CsmFilterHwPcf 1
-#define CsmFilterFixedPcf 2
-#define CsmFilterVsm   3
-#define CsmFilterEvsm2 4
-#define CsmFilterEvsm4 5
-#define CsmFilterStochasticPcf 6
-
-struct CsmData
-{
-    float4x4 globalMat;
-    float4 cascadeScale[CSM_MAX_CASCADES];
-    float4 cascadeOffset[CSM_MAX_CASCADES];
-
-    //Only uses xy
-    float4 cascadeRange[CSM_MAX_CASCADES];  // In camera clip-space
-
-    float depthBias DEFAULTS(0.005f);
-    int cascadeCount DEFAULTS(4);
-    uint32_t filterMode DEFAULTS(CsmFilterHwPcf);
-
-    int32_t pcfKernelWidth DEFAULTS(5);
-    float3 lightDir;
-
-    float lightBleedingReduction DEFAULTS(0);
-    float cascadeBlendThreshold DEFAULTS(0.2f);
-
-    float2 evsmExponents DEFAULTS(v2(40.0f, 5.0f)); // posExp, negExp
-    //If this is only in host code, the final element in the array is not padded
-    uint32_t padding;
-#ifndef HOST_CODE
-    Texture2DArray shadowMap;
-    SamplerState csmSampler;
+#ifdef _SINGLE_PASS_STEREO
+fixme
 #endif
+
+__import ShaderCommon;
+
+cbuffer PerFrameCB : register(b0)
+{
+    float4x4 gWorld;
+    float gScale;
 };
 
-#ifdef HOST_CODE
-static_assert(sizeof(CsmData) % sizeof(float4) == 0, "CsmData size should be aligned on float4 size");
+void main(float4 posL : POSITION, out float3 dir : NORMAL, out float4 posH : SV_POSITION)
+{
+    dir = posL.xyz;
+    float4 viewPos = mul(gCam.viewMat, mul(gWorld, posL));
+    posH = mul(gCam.projMat, viewPos);
+    posH.xy *= gScale;
+    posH.z = posH.w;
+
+#ifdef _SINGLE_PASS_STEREO
+    fixme
 #endif
-#endif //CSMDATA_H
+}

@@ -1,5 +1,5 @@
 /***************************************************************************
-# Copyright (c) 2017, NVIDIA CORPORATION. All rights reserved.
+# Copyright (c) 2015, NVIDIA CORPORATION. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -14,7 +14,7 @@
 #    from this software without specific prior written permission.
 #
 # THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS ``AS IS'' AND ANY
-# EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THEa
+# EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
 # IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
 # PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR
 # CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
@@ -26,52 +26,19 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 
-#include "SceneEditorCommon.hlsli"
+SamplerState gSampler;
+Texture2D gFont;
 
-#ifdef DEBUG_DRAW
-
-float4 main(DebugDrawVSOut vOut) : SV_TARGET
+struct VsOut
 {
-    return float4(vOut.color, 1);
-}
-
-#else //////////////////////////////////////////////////////////////////////////////////////
-
-#ifndef PICKING
-cbuffer ConstColorCB : register(b0)
-{
-    float3 gColor;
+    float4 color : COLOR;
+    float2 texC : TEXCOORD0;
 };
-#endif
 
-// PS Output
-#ifdef PICKING
-#define PSOut uint
-#else
-#define PSOut vec4
-#endif
-
-PSOut main(EditorVSOut vOut) : SV_TARGET
+float4 main(VsOut vOut) : SV_TARGET
 {
-    float3 toCamera = normalize(gCam.position - vOut.vOut.posW);
-
-#ifdef CULL_REAR_SECTION
-    if(dot(toCamera, vOut.toVertex) < -0.1)
-    {
-        discard;
-    }
-#endif
-
-#ifdef PICKING
-    return vOut.drawID;
-#else
-    #ifdef SHADING
-        float shading = lerp(0.5, 1, dot(toCamera, vOut.vOut.normalW));
-        return vec4(gColor * shading, 1);
-    #else
-        return vec4(gColor, 1);
-    #endif
-#endif
+    float4 c = vOut.color;
+    float fontMask = gFont.Sample(gSampler, vOut.texC).r;
+    c *= fontMask;
+    return c;
 }
-
-#endif
