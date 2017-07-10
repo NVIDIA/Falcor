@@ -236,7 +236,7 @@ namespace Falcor
 
         // Pick the right target based on the current graphics API
 #ifdef FALCOR_VK
-        spSetCodeGenTarget(slangRequest, SLANG_GLSL);
+        spSetCodeGenTarget(slangRequest, SLANG_SPIRV);
         spAddPreprocessorDefine(slangRequest, "FALCOR_GLSL", "1");
         SlangSourceLanguage sourceLanguage = SLANG_SOURCE_LANGUAGE_GLSL;
 #elif defined FALCOR_D3D
@@ -303,7 +303,11 @@ namespace Falcor
             int translationUnitIndex = translationUnitsExtracted++;
             assert(translationUnitIndex < translationUnitsAdded);
 
-            mPreprocessedShaderStrings[i] = spGetTranslationUnitSource(slangRequest, translationUnitIndex);
+            size_t size = 0;
+            const void* data = spGetTranslationUnitCode(slangRequest, translationUnitIndex, &size);
+            mPreprocessedShaderStrings[i].resize(size);
+            memcpy(mPreprocessedShaderStrings[i].data(), data, size);
+            //mPreprocessedShaderStrings[i] = spGetTranslationUnitSource(slangRequest, translationUnitIndex);
         }
         assert(translationUnitsExtracted == translationUnitsAdded);
 

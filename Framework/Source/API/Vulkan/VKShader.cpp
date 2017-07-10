@@ -42,6 +42,12 @@ namespace Falcor
         return pShader->init(shaderString, log) ? pShader : nullptr;
     }
 
+    Shader::SharedPtr Shader::create(const std::vector<char>& shaderBlob, ShaderType type, std::string& log)
+    {
+        SharedPtr pShader = SharedPtr(new Shader(type));
+        return pShader->init(shaderBlob, log) ? pShader : nullptr;
+    }
+
     Shader::Shader(ShaderType type) : mType(type)
     {
         mpPrivateData = new ShaderData;
@@ -69,6 +75,32 @@ namespace Falcor
 
         moduleCreateInfo.codeSize = shaderString.size();
         moduleCreateInfo.pCode = (uint32_t*)shaderString.data();
+
+        VkShaderModule shaderModule;
+        if (VK_FAILED(vkCreateShaderModule(gpDevice->getApiHandle(), &moduleCreateInfo, nullptr, &shaderModule)))
+        {
+            logError("Could not create shader!");
+            return false;
+        }
+        mApiHandle = ApiHandle::create(shaderModule);
+        return true;
+    }
+
+    bool Shader::init(const std::vector<char>& shaderBlob, std::string& log)
+    {
+        // Compile the shader
+        ShaderData* pData = (ShaderData*)mpPrivateData;
+
+        //
+        // Create Shader Module
+        //
+
+        VkShaderModuleCreateInfo moduleCreateInfo = {};
+        moduleCreateInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+        moduleCreateInfo.codeSize = shaderBlob.size();
+        moduleCreateInfo.pCode = (uint32_t*)shaderBlob.data();
+
+        assert(moduleCreateInfo.codeSize % 4 == 0);
 
         VkShaderModule shaderModule;
         if (VK_FAILED(vkCreateShaderModule(gpDevice->getApiHandle(), &moduleCreateInfo, nullptr, &shaderModule)))

@@ -32,20 +32,20 @@
 
 namespace Falcor
 {
-    Shader::SharedPtr createShaderFromString(const std::string& shaderString, ShaderType shaderType)
+    Shader::SharedPtr createShaderFromString(const std::vector<char>& shaderString, ShaderType shaderType)
     {
-        std::string shader = shaderString;
+        //std::string shader = shaderString;
         std::string errorMsg;
 
         std::string log;
-        auto pShader = Shader::create(shader, shaderType, log);
+        auto pShader = Shader::create(shaderString, shaderType, log);
 
         if(pShader == nullptr)
         {
-            std::string msg = "Error when creating " + to_string(shaderType) + " shader from string\nError log:\n";
-            msg += log;
-            msg += "\nShader string:\n" + shaderString + "\n";
-            logError(msg);
+            //std::string msg = "Error when creating " + to_string(shaderType) + " shader from string\nError log:\n";
+            //msg += log;
+            //msg += "\nShader string:\n" + shaderString + "\n";
+            //logError(msg);
         }
         return pShader;
     }

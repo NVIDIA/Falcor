@@ -52,7 +52,7 @@ namespace Falcor
     \param[in] shaderDefines A string containing macro definitions to be patched into the shaders. Defines are separated by newline.
     \return A pointer to a new object if compilation was successful, otherwise nullptr.
     */
-    Shader::SharedPtr createShaderFromString(const std::string& shaderString, ShaderType type);
+    Shader::SharedPtr createShaderFromString(const std::vector<char>& shaderString, ShaderType type);
        
     template<typename ObjectType, typename EnumType>
     typename ObjectType::SharedPtr createShaderFromFile(const std::string& filename, EnumType shaderType)

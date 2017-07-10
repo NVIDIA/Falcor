@@ -60,6 +60,18 @@ namespace Falcor
             const std::string&  shaderString,
             ShaderType          type,
             std::string&        log);
+
+        /** create a shader object
+            \param[in] shaderString String containing the shader code.
+            \param[in] Type The Type of the shader
+            \param[out] log This string will contain the error log message in case shader compilation failed
+            \return If success, a new shader object, otherwise nullptr
+        */
+        static SharedPtr create(
+            const std::vector<char>&  shaderBlob,
+            ShaderType          type,
+            std::string&        log);
+
         virtual ~Shader();
 
         /** Get the API handle.
@@ -71,6 +83,8 @@ namespace Falcor
         ShaderType getType() const { return mType; }
 
         bool init(const std::string& shaderString, std::string& log);
+
+        bool init(const std::vector<char>& shaderBlob, std::string& log);
 
 #ifdef FALCOR_D3D
         ID3DBlobPtr getCodeBlob() const;
@@ -84,4 +98,5 @@ namespace Falcor
         ApiHandle mApiHandle;
         void* mpPrivateData = nullptr;
     };
+
 }

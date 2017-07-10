@@ -362,8 +362,8 @@ namespace Falcor
 
         const char* extensionNames[] =
         {
-            "VK_KHR_swapchain",
-            "VK_NV_glsl_shader"
+            "VK_KHR_swapchain"//,
+            //"VK_NV_glsl_shader"
         };
 
         // Logical Device

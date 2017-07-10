@@ -806,6 +806,17 @@ SLANG_API char const* spGetTranslationUnitSource(
     return req->translationUnits[translationUnitIndex]->result.outputSource.Buffer();
 }
 
+SLANG_API void const* spGetTranslationUnitCode(
+    SlangCompileRequest*    request,
+    int                     translationUnitIndex,
+    size_t*                 outSize)
+{
+    auto req = REQ(request);
+    auto& result = req->translationUnits[translationUnitIndex]->result;
+    *outSize = (size_t)result.outputSource.Count();
+    return result.outputSource.Buffer();
+}
+
 SLANG_API char const* spGetEntryPointSource(
     SlangCompileRequest*    request,
     int                     entryPointIndex)
@@ -813,6 +824,17 @@ SLANG_API char const* spGetEntryPointSource(
     auto req = REQ(request);
     return req->entryPoints[entryPointIndex]->result.outputSource.Buffer();
 
+}
+
+SLANG_API void const* spGetEntryPointCode(
+    SlangCompileRequest*    request,
+    int                     entryPointIndex,
+    size_t*                 outSize)
+{
+    auto req = REQ(request);
+    auto& result = req->entryPoints[entryPointIndex]->result;
+    *outSize = (size_t)result.outputSource.Count();
+    return result.outputSource.Buffer();
 }
 
 // Reflection API
@@ -825,6 +847,5 @@ SLANG_API SlangReflection* spGetReflection(
     auto req = REQ(request);
     return (SlangReflection*) req->layout.Ptr();
 }
-
 
 // ... rest of reflection API implementation is in `Reflection.cpp`

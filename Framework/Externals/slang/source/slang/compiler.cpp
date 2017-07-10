@@ -332,15 +332,16 @@ namespace Slang
         StringBuilder diagnosticBuilder;
         StringBuilder outputBuilder;
 
-        auto outputFunc = [](char const* text, void* userData)
+        auto outputFunc = [](void const* data, size_t size, void* userData)
         {
-            *(StringBuilder*)userData << text;
+            *(StringBuilder*)userData << (char const*)data;
         };
 
         glslang_CompileRequest request;
         request.sourcePath = "slang";
         request.sourceText = rawGLSL.begin();
         request.slangStage = (SlangStage) entryPoint->profile.GetStage();
+        request.disassembleResult = true;
 
         request.diagnosticFunc = outputFunc;
         request.diagnosticUserData = &diagnosticBuilder;
@@ -357,6 +358,54 @@ namespace Slang
         {
             OutputDebugStringA(diagnostics.Buffer());
             fprintf(stderr, "%s", diagnostics.Buffer());
+            exit(1);
+        }
+
+        return output;
+    }
+
+    List<char> emitSPIRVForEntryPoint(
+        EntryPointRequest*  entryPoint)
+    {
+        String rawGLSL = emitGLSLForEntryPoint(entryPoint);
+
+        static glslang_CompileFunc glslang_compile = nullptr;
+        if (!glslang_compile)
+        {
+            HMODULE glslCompiler = getGLSLCompilerDLL();
+            assert(glslCompiler);
+
+            glslang_compile = (glslang_CompileFunc)GetProcAddress(glslCompiler, "glslang_compile");
+            assert(glslang_compile);
+        }
+
+        List<char> diagnosticOutput;
+        List<char> output;
+
+        auto outputFunc = [](void const* data, size_t size, void* userData)
+        {
+            ((List<char>*)userData)->AddRange((char*)data, size);
+        };
+
+        glslang_CompileRequest request;
+        request.sourcePath = "slang";
+        request.sourceText = rawGLSL.begin();
+        request.slangStage = (SlangStage)entryPoint->profile.GetStage();
+        request.disassembleResult = false;
+
+        request.diagnosticFunc = outputFunc;
+        request.diagnosticUserData = &diagnosticOutput;
+
+        request.outputFunc = outputFunc;
+        request.outputUserData = &output;
+
+        int err = glslang_compile(&request);
+
+        if (err)
+        {
+            OutputDebugStringA(diagnosticOutput.Buffer());
+            //fprintf(stderr, "%s", diagnosticOutput.Buffer());
+            fwrite(diagnosticOutput.Buffer(), 1, diagnosticOutput.Count(), stderr);
             exit(1);
         }
 
@@ -397,14 +446,14 @@ namespace Slang
         case CodeGenTarget::HLSL:
             {
                 String code = emitHLSLForEntryPoint(entryPoint);
-                result.outputSource = code;
+                result.outputSource.AddRange(code.Buffer(), code.Length());
             }
             break;
 
         case CodeGenTarget::GLSL:
             {
                 String code = emitGLSLForEntryPoint(entryPoint);
-                result.outputSource = code;
+                result.outputSource.AddRange(code.Buffer(), code.Length());
             }
             break;
 
@@ -421,7 +470,7 @@ namespace Slang
                     sb.Append((char*) code.begin(), code.Count());
 
                     String codeString = sb.ProduceString();
-                    result.outputSource = codeString;
+                    result.outputSource.AddRange(codeString.Buffer(), codeString.Length());
                 }
                 else
 #endif
@@ -450,14 +499,21 @@ namespace Slang
         case CodeGenTarget::DXBytecodeAssembly:
             {
                 String code = EmitDXBytecodeAssemblyForEntryPoint(entryPoint);
-                result.outputSource = code;
+                result.outputSource.AddRange(code.Buffer(), code.Length());
+            }
+            break;
+
+        case CodeGenTarget::SPIRV:
+            {
+                List<char> code = emitSPIRVForEntryPoint(entryPoint);
+                result.outputSource.AddRange(code.Buffer(), code.Count());
             }
             break;
 
         case CodeGenTarget::SPIRVAssembly:
             {
                 String code = emitSPIRVAssemblyForEntryPoint(entryPoint);
-                result.outputSource = code;
+                result.outputSource.AddRange(code.Buffer(), code.Length());
             }
             break;
 
@@ -489,14 +545,11 @@ namespace Slang
         // The result for the translation unit will just be the concatenation
         // of the results for each entry point. This doesn't actually make
         // much sense, but it is good enough for now.
-        //
-        // TODO: Replace this with a packaged JSON and/or binary format.
-        StringBuilder sb;
         for (auto& entryPoint : translationUnit->entryPoints)
         {
-            sb << entryPoint->result.outputSource;
+            UInt size = entryPoint->result.outputSource.Count();
+            result.outputSource.AddRange(entryPoint->result.outputSource.Buffer(), size);
         }
-        result.outputSource = sb.ProduceString();
 
         return result;
     }
