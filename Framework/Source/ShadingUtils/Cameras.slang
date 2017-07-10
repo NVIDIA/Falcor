@@ -1,5 +1,5 @@
 /***************************************************************************
-# Copyright (c) 2017, NVIDIA CORPORATION. All rights reserved.
+# Copyright (c) 2015, NVIDIA CORPORATION. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -25,31 +25,12 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#include "ShaderCommon.h"
-#define _COMPILE_DEFAULT_VS
-#include "VertexAttrib.h"
 
-struct EditorVSOut
-{
-    VS_OUT vOut;
+#ifndef _FALCOR_CAMERA_SHADERS_H_
+#define _FALCOR_CAMERA_SHADERS_H_
 
-#ifdef PICKING
-    uint drawID : DRAW_ID;
-#endif
+// Make sure we get the macros like `_fn` and `_ref`
+// TODO: just eliminate these since we know this is pure Slang.
+#include "HostDeviceData.h"
 
-#ifdef CULL_REAR_SECTION
-    float3 toVertex : VERTEX_DIR;
-#endif
-};
-
-struct DebugDrawVSIn
-{
-    float3 position : POSITION;
-    float3 color : COLOR;
-};
-
-struct DebugDrawVSOut
-{
-    float4 position : SV_POSITION;
-    float3 color : COLOR;
-};
+#endif	// _FALCOR_CAMERA_SHADERS_H_

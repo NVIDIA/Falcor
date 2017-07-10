@@ -1,5 +1,5 @@
 /***************************************************************************
-# Copyright (c) 2015, NVIDIA CORPORATION. All rights reserved.
+# Copyright (c) 2017, NVIDIA CORPORATION. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -14,7 +14,7 @@
 #    from this software without specific prior written permission.
 #
 # THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS ``AS IS'' AND ANY
-# EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THEa
 # IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
 # PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR
 # CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
@@ -25,41 +25,53 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#version 440
 
-#ifdef FALCOR_HLSL
-cbuffer PerFrameCB : register(b0)
+#include "SceneEditorCommon.slang.h"
+
+#ifdef DEBUG_DRAW
+
+float4 main(DebugDrawVSOut vOut) : SV_TARGET
 {
-	float4x4 gvpTransform;
-	float3 gFontColor;
-};
-
-Texture2D gFontTex;
-
-float4 main(float2 texC  : TEXCOORD) : SV_TARGET0
-{
-	float4 color = gFontTex.Load(int3(texC, 0));
-	color.rgb = gFontColor;
-	return color;
+    return float4(vOut.color, 1);
 }
+
+#else //////////////////////////////////////////////////////////////////////////////////////
+
+#ifndef PICKING
+cbuffer ConstColorCB : register(b0)
+{
+    float3 gColor;
+};
 #endif
 
-#ifdef FALCOR_GLSL
-layout(set = 0, binding = 0) uniform PerFrameCB
+// PS Output
+#ifdef PICKING
+#define PSOut uint
+#else
+#define PSOut float4
+#endif
+
+PSOut main(EditorVSOut vOut) : SV_TARGET
 {
-    mat4 gvpTransform;
-    vec3 gFontColor;
-};
+    float3 toCamera = normalize(gCam.position - vOut.vOut.posW);
 
-layout(set = 1, binding = 0) uniform texture2D gFontTex;
-layout(set = 1, binding = 1) uniform sampler gSampler;
+#ifdef CULL_REAR_SECTION
+    if(dot(toCamera, vOut.toVertex) < -0.1)
+    {
+        discard;
+    }
+#endif
 
-layout(location = 0) in vec2 texC;
-layout (location = 0) out vec4 fragColor;
-
-void main()
-{
-    fragColor = texelFetch(sampler2D(gFontTex, gSampler), ivec2(texC), 0);
-    fragColor.rgb *= gFontColor;
+#ifdef PICKING
+    return vOut.drawID;
+#else
+    #ifdef SHADING
+        float shading = lerp(0.5, 1, dot(toCamera, vOut.vOut.normalW));
+        return float4(gColor * shading, 1);
+    #else
+        return float4(gColor, 1);
+    #endif
+#endif
 }
+
 #endif

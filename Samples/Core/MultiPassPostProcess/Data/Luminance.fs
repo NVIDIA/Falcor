@@ -25,34 +25,23 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#version 420
-#include "HlslGlslCommon.h"
 
-CONSTANT_BUFFER(PerImageCB, 0)
+cbuffer PerImageCB : register(b0)
 {
-	sampler2D gTexture;
+	Texture2D		gTexture;
+	SamplerState	gSampler;
 };
 
-static const vec3 gLuminance = vec3(0.2126, 0.7152, 0.0722);
+static const float3 gLuminance = float3(0.2126, 0.7152, 0.0722);
 
-vec4 calcColor(vec2 texC)
+float4 calcColor(float2 texC)
 {
-	vec4 fragColor = texture(gTexture, texC);
+	float4 fragColor = gTexture.Sample(gSampler, texC);
 	fragColor.rgb = (dot(fragColor.rgb, gLuminance)).xxx;
 	return fragColor;
 }
 
-#ifdef FALCOR_HLSL
-float4 main(in vec2 texC : TEXCOORD) : SV_TARGET
+float4 main(in float2 texC : TEXCOORD) : SV_TARGET
 {
 	return calcColor(texC);
 }
-#elif defined FALCOR_GLSL
-in vec2 texC;
-out vec4 fragColor;
-
-void main()
-{
-	fragColor = calcColor(texC);
-}
-#endif

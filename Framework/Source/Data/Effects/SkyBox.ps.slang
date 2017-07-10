@@ -25,9 +25,22 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
+__import Helpers;
 
-#ifndef _FALCOR_CAMERA_SHADERS_H_
-#define _FALCOR_CAMERA_SHADERS_H_
+#ifdef _SPHERICAL_MAP
+Texture2D gTexture;
+#else
+TextureCube gTexture;
+#endif
+SamplerState gSampler;
 
-
-#endif	// _FALCOR_CAMERA_SHADERS_H_
+float4 main(float3 dir : NORMAL) : SV_TARGET
+{
+#ifdef _SPHERICAL_MAP
+    float2 uv = dirToSphericalCrd(dir) ;
+    float4 color = gTexture.Sample(gSampler, uv);
+    return color;
+#else
+	return gTexture.Sample(gSampler, normalize(dir), 0);
+#endif
+}

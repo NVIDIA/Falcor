@@ -25,37 +25,32 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#ifndef LEAN_MAP_DATA_H
-#define LEAN_MAP_DATA_H
+__import DefaultVS;
+__import ShaderCommon;
 
-#include "Data/HostDeviceData.h"
-#include "Helpers.h"
-
-void applyLeanMap(in Texture2D leanMap, in SamplerState samplerState, inout ShadingAttribs shAttr)
+struct ShadowPassVSOut
 {
-    vec4 t = sampleTexture(leanMap, samplerState, shAttr);
-    // Reconstruct B 
-    vec2 B = 2 * t.xy - 1;
-    vec2 M = t.zw;
-
-    // Apply normal
-    vec3 unnormalizedNormal = vec3(B, 1);
-    applyNormalMap(unnormalizedNormal, shAttr.N, shAttr.T, shAttr.B);
-    // Reconstruct the diagonal covariance matrix
-    vec2 maxCov = max((0), M - B*B);     // Use only diagonal of covariance due to vec2 aniso roughness
-
-    [unroll]
-    for (uint iLayer = 0; iLayer < MatMaxLayers; iLayer++)
-    {
-        if (shAttr.preparedMat.desc.layers[iLayer].type == MatNone) break;
-
-        if (shAttr.preparedMat.desc.layers[iLayer].type != MatLambert)
-        {
-            float2 roughness = shAttr.preparedMat.values.layers[iLayer].roughness.xy;
-            roughness = sqrt(roughness*roughness + maxCov); // Approximate convolution that works for all
-            shAttr.preparedMat.values.layers[iLayer].roughness.rg = roughness;
-        }
-    }
-}
-
+#ifdef _APPLY_PROJECTION
+    float4 pos : SV_POSITION;
+#else
+    float4 pos : POSITION;
 #endif
+    float2 texC : TEXCOORD;
+};
+
+ShadowPassVSOut main(VS_IN vIn)
+{
+    ShadowPassVSOut vOut; 
+    float4x4 worldMat = getWorldMat(vIn);
+    vOut.pos = mul(worldMat, vIn.pos);
+#ifdef _APPLY_PROJECTION
+    vOut.pos = mul(gCam.viewProjMat, vOut.pos);
+#endif
+
+#ifdef HAS_TEXCRD
+    vOut.texC = vIn.texC;
+#else
+    vOut.texC = float2(0.5f, 0.5f);
+#endif
+    return vOut;
+}

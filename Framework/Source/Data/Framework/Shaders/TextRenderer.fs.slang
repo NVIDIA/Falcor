@@ -25,22 +25,23 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#include "Helpers.h"
 
-#ifdef _SPHERICAL_MAP
-Texture2D gTexture;
-#else
-TextureCube gTexture;
-#endif
-SamplerState gSampler;
-
-float4 main(float3 dir : NORMAL) : SV_TARGET
+cbuffer PerFrameCB : register(b0)
 {
-#ifdef _SPHERICAL_MAP
-    float2 uv = dirToSphericalCrd(dir) ;
-    float4 color = gTexture.Sample(gSampler, uv);
-    return color;
-#else
-	return gTexture.Sample(gSampler, normalize(dir), 0);
-#endif
+	float4x4 gvpTransform;
+	float3 gFontColor;
+};
+
+Texture2D gFontTex;
+
+float4 calcColor(float2 texC)
+{
+	float4 color = gFontTex.Load(int3(texC, 0));
+	color.rgb = gFontColor;
+	return color;
+}
+
+float4 main(float2 texC  : TEXCOORD) : SV_TARGET0
+{
+	return calcColor(texC);
 }

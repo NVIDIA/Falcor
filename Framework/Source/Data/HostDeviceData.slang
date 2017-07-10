@@ -25,27 +25,7 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#ifdef _SINGLE_PASS_STEREO
-fixme
-#endif
 
-#include "ShaderCommon.h"
+#include "HostDeviceSharedMacros.h"
 
-cbuffer PerFrameCB : register(b0)
-{
-    float4x4 gWorld;
-    float gScale;
-};
-
-void main(float4 posL : POSITION, out float3 dir : NORMAL, out float4 posH : SV_POSITION)
-{
-    dir = posL.xyz;
-    float4 viewPos = mul(gCam.viewMat, mul(gWorld, posL));
-    posH = mul(gCam.projMat, viewPos);
-    posH.xy *= gScale;
-    posH.z = posH.w;
-
-#ifdef _SINGLE_PASS_STEREO
-    fixme
-#endif
-}
+#include "HostDeviceSharedCode.h"

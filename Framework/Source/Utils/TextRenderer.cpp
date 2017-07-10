@@ -63,8 +63,8 @@ namespace Falcor
 
     TextRenderer::TextRenderer()
     {
-        static const std::string kVsFile("Framework/Shaders/TextRenderer.vs");
-        static const std::string kFsFile("Framework/Shaders/TextRenderer.fs");
+        static const std::string kVsFile("Framework/Shaders/TextRenderer.vs.slang");
+        static const std::string kFsFile("Framework/Shaders/TextRenderer.fs.slang");
 
         // Create a vertex buffer
         const uint32_t vbSize = (uint32_t)(sizeof(Vertex)*kMaxBatchSize*arraysize(kVertexPos));
