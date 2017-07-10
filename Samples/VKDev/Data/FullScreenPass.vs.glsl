@@ -1,8 +1,8 @@
 #version 450
 #extension GL_ARB_separate_shader_objects : enable
 
-__import ShaderCommon;
-__import Shading;
+//__import ShaderCommon;
+//__import Shading;
 
 layout (location = 0) in vec2 pos;
 layout (location = 1) in vec2 texCIn;
