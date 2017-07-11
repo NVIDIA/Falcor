@@ -42,6 +42,8 @@ void VKDev::onLoad()
     sampler.setFilterMode(Sampler::Filter::Point, Sampler::Filter::Point, Sampler::Filter::Point);
     mpVars->setSampler("gSampler", Sampler::create(sampler));
     mpVars->setTexture("gTex", createTextureFromFile("C:\\Users\\nbenty\\Pictures\\ff7.jpg", false, true));
+    mpTypedBuffer = TypedBuffer<uint32_t>::create(1);
+    mpVars->setTypedBuffer("typedBuffer", mpTypedBuffer);
 }
 
 void VKDev::onFrameRender()
@@ -51,11 +53,17 @@ void VKDev::onFrameRender()
     StructuredBuffer::SharedPtr pCountBuffer = mpVars->getStructuredBuffer("outImage");
     pCountBuffer[0]["count"] = 0u;
 
+    mpRenderContext->clearUAV(mpTypedBuffer->getUAV().get(), uvec4(0));
+
     mpVars["PerFrameCB"]["offset"] = mTexOffset;
     mpRenderContext->setGraphicsVars(mpVars);
     mpPass->execute(mpRenderContext.get());
-    uint32_t count = pCountBuffer[0]["count"];
-    renderText(std::to_string(count), vec2(250, 20));
+    std::string count;
+    count += "Structured Buffer =   " + std::to_string((uint32_t)pCountBuffer[0]["count"]) + "\n";
+    const uint32_t* pTyped = (uint32_t*)mpTypedBuffer->map(Buffer::MapType::Read);
+    count += "Typed Buffer      =   " + std::to_string(pTyped[0]) + "\n";
+    mpTypedBuffer->unmap();
+    renderText(count, vec2(250, 20));
 }
 
 void VKDev::onShutdown()
@@ -111,5 +119,10 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
     config.windowDesc.resizableWindow = true;
     sample.run(config);
 }
-
+#else
+#include <Windows.h>
+int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ LPSTR lpCmdLine, _In_ int nShowCmd)
+{
+    return 0;
+}
 #endif

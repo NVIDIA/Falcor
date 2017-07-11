@@ -47,5 +47,6 @@ private:
     FullScreenPass::UniquePtr mpPass;
     GraphicsVars::SharedPtr mpVars;
     vec2 mTexOffset;
+    TypedBuffer<uint32_t>::SharedPtr mpTypedBuffer;
 };
 #endif
