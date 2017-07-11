@@ -25,8 +25,9 @@ public:
     bool useCache = false;
     String cacheDir;
 
-    RefPtr<Scope>   slangLanguageScope;
+    RefPtr<Scope>   coreLanguageScope;
     RefPtr<Scope>   hlslLanguageScope;
+    RefPtr<Scope>   slangLanguageScope;
     RefPtr<Scope>   glslLanguageScope;
 
     List<RefPtr<ProgramSyntaxNode>> loadedModuleCode;
@@ -43,15 +44,19 @@ public:
         // TODO: load these on-demand to avoid parsing
         // stdlib code for languages the user won't use.
 
-        slangLanguageScope = new Scope();
+        coreLanguageScope = new Scope();
 
         hlslLanguageScope = new Scope();
-        hlslLanguageScope->parent = slangLanguageScope;
+        hlslLanguageScope->nextSibling = coreLanguageScope;
+
+        slangLanguageScope = new Scope();
+        slangLanguageScope->nextSibling = hlslLanguageScope;
 
         glslLanguageScope = new Scope();
-        glslLanguageScope->parent = slangLanguageScope;
+        glslLanguageScope->nextSibling = coreLanguageScope;
 
-        addBuiltinSource(slangLanguageScope, "stdlib", SlangStdLib::GetCode());
+        addBuiltinSource(coreLanguageScope, "core", getCoreLibraryCode());
+        addBuiltinSource(hlslLanguageScope, "hlsl", getHLSLLibraryCode());
         addBuiltinSource(glslLanguageScope, "glsl", getGLSLLibraryCode());
     }
 
@@ -61,7 +66,7 @@ public:
         // code that we might have allocated and loaded into static
         // variables (TODO: don't use `static` variables for this stuff)
 
-        SlangStdLib::Finalize();
+        finalizeShaderLibrary();
 
         // Ditto for our type represnetation stuff
 
@@ -174,6 +179,30 @@ void CompileRequest::checkAllTranslationUnits()
         checkTranslationUnit(translationUnit.Ptr());
     }
 }
+// Try to infer a single common source language for a request
+static SourceLanguage inferSourceLanguage(CompileRequest* request)
+{
+    SourceLanguage language = SourceLanguage::Unknown;
+    for (auto& translationUnit : request->translationUnits)
+    {
+        // Allow any other language to overide Slang as a choice
+        if (language == SourceLanguage::Unknown
+            || language == SourceLanguage::Slang)
+        {
+            language = translationUnit->sourceLanguage;
+        }
+        else if (language == translationUnit->sourceLanguage)
+        {
+            // same language as we currently have, so keep going
+        }
+        else
+        {
+            // we found a mismatch, so inference fails
+            return SourceLanguage::Unknown;
+        }
+    }
+    return language;
+}
 
 int CompileRequest::executeActionsInner()
 {
@@ -189,6 +218,26 @@ int CompileRequest::executeActionsInner()
         if( translationUnit->sourceLanguage == SourceLanguage::Slang )
         {
             translationUnit->compileFlags &= ~SLANG_COMPILE_FLAG_NO_CHECKING;
+        }
+    }
+
+    // If no code-generation target was specified, then try to infer one from the source language,
+    // just to make sure we can do something reasonable when `reflection-json` is specified
+    if (Target == CodeGenTarget::Unknown)
+    {
+        auto language = inferSourceLanguage(this);
+        switch (language)
+        {
+        case SourceLanguage::HLSL:
+            Target = CodeGenTarget::DXBytecodeAssembly;
+            break;
+
+        case SourceLanguage::GLSL:
+            Target = CodeGenTarget::SPIRVAssembly;
+            break;
+
+        default:
+            break;
         }
     }
 
@@ -623,7 +672,17 @@ SLANG_API void spSetCodeGenTarget(
         SlangCompileRequest*    request,
         int target)
 {
-    REQ(request)->Target = (Slang::CodeGenTarget)target;
+    if (target == SLANG_REFLECTION_JSON)
+    {
+        // HACK: We special case this because reflection JSON is actually
+        // an additional output step that layers on top of an existing
+        // target
+        REQ(request)->extraTarget = Slang::CodeGenTarget::ReflectionJSON;
+    }
+    else
+    {
+        REQ(request)->Target = (Slang::CodeGenTarget)target;
+    }
 }
 
 SLANG_API void spSetPassThrough(
@@ -803,18 +862,7 @@ SLANG_API char const* spGetTranslationUnitSource(
     int                     translationUnitIndex)
 {
     auto req = REQ(request);
-    return (char const*)req->translationUnits[translationUnitIndex]->result.outputSource.Buffer();
-}
-
-SLANG_API void const* spGetTranslationUnitCode(
-    SlangCompileRequest*    request,
-    int                     translationUnitIndex,
-    size_t*                 outSize)
-{
-    auto req = REQ(request);
-    auto& result = req->translationUnits[translationUnitIndex]->result;
-    *outSize = (size_t)result.outputSource.Count();
-    return result.outputSource.Buffer();
+    return req->translationUnits[translationUnitIndex]->result.outputString.Buffer();
 }
 
 SLANG_API char const* spGetEntryPointSource(
@@ -822,8 +870,7 @@ SLANG_API char const* spGetEntryPointSource(
     int                     entryPointIndex)
 {
     auto req = REQ(request);
-    return (char const*)req->entryPoints[entryPointIndex]->result.outputSource.Buffer();
-
+    return req->entryPoints[entryPointIndex]->result.outputString.Buffer();
 }
 
 SLANG_API void const* spGetEntryPointCode(
@@ -832,9 +879,9 @@ SLANG_API void const* spGetEntryPointCode(
     size_t*                 outSize)
 {
     auto req = REQ(request);
-    auto& result = req->entryPoints[entryPointIndex]->result;
-    *outSize = (size_t)result.outputSource.Count();
-    return result.outputSource.Buffer();
+    Slang::CompileResult& result = req->entryPoints[entryPointIndex]->result;
+    if(outSize) *outSize = result.outputBinary.Count();
+    return result.outputBinary.Buffer();
 }
 
 // Reflection API

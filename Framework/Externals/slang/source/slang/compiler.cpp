@@ -33,6 +33,33 @@
 namespace Slang
 {
 
+    // CompileResult
+
+    void CompileResult::append(CompileResult const& result)
+    {
+        // Find which to append to
+        ResultFormat appendTo = ResultFormat::None;
+
+        if (format == ResultFormat::None)
+        {
+            format = result.format;
+            appendTo = result.format;
+        }
+        else if (format == result.format)
+        {
+            appendTo = format;
+        }
+
+        if (appendTo == ResultFormat::Text)
+        {
+            outputString.append(result.outputString.Buffer());
+        }
+        else if (appendTo == ResultFormat::Binary)
+        {
+            outputBinary.AddRange(result.outputBinary.Buffer(), result.outputBinary.Count());
+        }
+    }
+
     // EntryPointRequest
 
     TranslationUnitRequest* EntryPointRequest::getTranslationUnit()
@@ -197,6 +224,7 @@ namespace Slang
             0,
             &codeBlob,
             &diagnosticsBlob);
+
         List<uint8_t> data;
         if (codeBlob)
         {
@@ -354,8 +382,11 @@ namespace Slang
 
         if (err)
         {
-            OutputDebugStringA((char const *)diagnosticOutput.Buffer());
-            fwrite(diagnosticOutput.Buffer(), 1, diagnosticOutput.Count(), stderr);
+            char const* diagnosticString = (char const*)diagnosticOutput.Buffer();
+            String debugStr(diagnosticString, diagnosticString + diagnosticOutput.Count());
+
+            OutputDebugStringA(debugStr.Buffer());
+            fprintf(stderr, "%s", debugStr.Buffer());
             exit(1);
         }
 
@@ -384,10 +415,10 @@ namespace Slang
 #endif
 
     // Do emit logic for a single entry point
-    EntryPointResult emitEntryPoint(
+    CompileResult emitEntryPoint(
         EntryPointRequest*  entryPoint)
     {
-        EntryPointResult result;
+        CompileResult result;
 
         auto compileRequest = entryPoint->compileRequest;
 
@@ -396,76 +427,47 @@ namespace Slang
         case CodeGenTarget::HLSL:
             {
                 String code = emitHLSLForEntryPoint(entryPoint);
-                result.outputSource.AddRange((uint8_t*)code.Buffer(), code.Length());
+                result = CompileResult(code);
             }
             break;
 
         case CodeGenTarget::GLSL:
             {
                 String code = emitGLSLForEntryPoint(entryPoint);
-                result.outputSource.AddRange((uint8_t*)code.Buffer(), code.Length());
+                result = CompileResult(code);
             }
             break;
 
         case CodeGenTarget::DXBytecode:
             {
                 List<uint8_t> code = EmitDXBytecodeForEntryPoint(entryPoint);
-                result.outputSource.AddRange(code.Buffer(), code.Count());
-
-                // TODO(tfoley): Need to figure out an appropriate interface
-                // for returning binary code, in addition to source.
-#if 0
-                if (context.compileResult)
-                {
-                    StringBuilder sb;
-                    sb.Append((char*) code.begin(), code.Count());
-
-                    String codeString = sb.ProduceString();
-                    result.outputSource.AddRange(codeString.Buffer(), codeString.Length());
-                }
-                else
-                {
-                    int col = 0;
-                    for(auto ii : code)
-                    {
-                        if(col != 0) fputs(" ", stdout);
-                        fprintf(stdout, "%02X", ii);
-                        col++;
-                        if(col == 8)
-                        {
-                            fputs("\n", stdout);
-                            col = 0;
-                        }
-                    }
-                    if(col != 0)
-                    {
-                        fputs("\n", stdout);
-                    }
-                }
-                return result;
-#endif
+                result = CompileResult(code);
             }
             break;
 
         case CodeGenTarget::DXBytecodeAssembly:
             {
                 List<uint8_t> code = EmitDXBytecodeAssemblyForEntryPoint(entryPoint);
-                result.outputSource.AddRange(code.Buffer(), code.Count());
+                result = CompileResult(code);
             }
             break;
 
         case CodeGenTarget::SPIRV:
             {
                 List<uint8_t> code = emitSPIRVForEntryPoint(entryPoint, false);
-                result.outputSource.AddRange(code.Buffer(), code.Count());
+                result = CompileResult(code);
             }
             break;
 
         case CodeGenTarget::SPIRVAssembly:
             {
                 List<uint8_t> code = emitSPIRVForEntryPoint(entryPoint, true);
-                result.outputSource.AddRange(code.Buffer(), code.Count());
+                result = CompileResult(code);
             }
+            break;
+
+        case CodeGenTarget::None:
+            // The user requested no output
             break;
 
         // Note(tfoley): We currently hit this case when compiling the stdlib
@@ -477,18 +479,16 @@ namespace Slang
         }
 
         return result;
-
-
     }
 
-    TranslationUnitResult emitTranslationUnitEntryPoints(
+    CompileResult emitTranslationUnitEntryPoints(
         TranslationUnitRequest* translationUnit)
     {
-        TranslationUnitResult result;
+        CompileResult result;
 
         for (auto& entryPoint : translationUnit->entryPoints)
         {
-            EntryPointResult entryPointResult = emitEntryPoint(entryPoint.Ptr());
+            CompileResult entryPointResult = emitEntryPoint(entryPoint.Ptr());
 
             entryPoint->result = entryPointResult;
         }
@@ -496,10 +496,11 @@ namespace Slang
         // The result for the translation unit will just be the concatenation
         // of the results for each entry point. This doesn't actually make
         // much sense, but it is good enough for now.
+        //
+        // TODO: Replace this with a packaged JSON and/or binary format.
         for (auto& entryPoint : translationUnit->entryPoints)
         {
-            UInt size = entryPoint->result.outputSource.Count();
-            result.outputSource.AddRange(entryPoint->result.outputSource.Buffer(), size);
+            result.append(entryPoint->result);
         }
 
         return result;
@@ -507,7 +508,7 @@ namespace Slang
 
     // Do emit logic for an entire translation unit, which might
     // have zero or more entry points
-    TranslationUnitResult emitTranslationUnit(
+    CompileResult emitTranslationUnit(
         TranslationUnitRequest* translationUnit)
     {
         return emitTranslationUnitEntryPoints(translationUnit);
@@ -524,17 +525,9 @@ namespace Slang
     void generateOutput(
         CompileRequest* compileRequest)
     {
-        switch (compileRequest->Target)
+        // Allow for an "extra" target to verride things first.
+        switch (compileRequest->extraTarget)
         {
-        default:
-            // For most targets, we will do things per-translation-unit
-            for( auto translationUnit : compileRequest->translationUnits )
-            {
-                TranslationUnitResult translationUnitResult = emitTranslationUnit(translationUnit.Ptr());
-                translationUnit->result = translationUnitResult;
-            }
-            break;
-
         case CodeGenTarget::ReflectionJSON:
             {
                 String reflectionJSON = emitReflectionJSON(compileRequest->layout.Ptr());
@@ -542,8 +535,21 @@ namespace Slang
                 // HACK(tfoley): just print it out since that is what people probably expect.
                 // TODO: need a way to control where output gets routed across all possible targets.
                 fprintf(stdout, "%s", reflectionJSON.begin());
+
+                return;
             }
             break;
+
+        default:
+            break;
+        }
+
+        // For most targets, we will do things per-translation-unit
+        for( auto translationUnit : compileRequest->translationUnits )
+        {
+            CompileResult translationUnitResult = emitTranslationUnit(translationUnit.Ptr());
+            translationUnit->result = translationUnitResult;
         }
     }
+
 }

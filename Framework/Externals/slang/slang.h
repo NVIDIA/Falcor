@@ -66,6 +66,7 @@ extern "C"
     enum
     {
         SLANG_TARGET_UNKNOWN,
+        SLANG_TARGET_NONE,
         SLANG_GLSL,
         SLANG_GLSL_VULKAN,
         SLANG_GLSL_VULKAN_ONE_DESC,
@@ -313,22 +314,13 @@ extern "C"
     spGetTranslationUnitCount(
         SlangCompileRequest*    request);
 
-    /** Get the output code associated with a specific translation unit
+    /** Get the output code associated with a specific translation unit.
 
     The lifetime of the output pointer is the same as `request`.
     */
     SLANG_API char const* spGetTranslationUnitSource(
         SlangCompileRequest*    request,
         int                     translationUnitIndex);
-
-    /** Get the output bytecode associated with a specific translation unit
-
-    The lifetime of the output pointer is the same as `request`.
-    */
-    SLANG_API void const* spGetTranslationUnitCode(
-        SlangCompileRequest*    request,
-        int                     translationUnitIndex,
-        size_t*                 outSize);
 
     /** Get the output source code associated with a specific entry point.
 

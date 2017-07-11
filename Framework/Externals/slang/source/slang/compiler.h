@@ -3,11 +3,9 @@
 
 #include "../core/basic.h"
 
-#include "compiled-program.h"
 #include "diagnostics.h"
 #include "profile.h"
 #include "syntax.h"
-#include "type-layout.h"
 
 #include "../../slang.h"
 
@@ -15,6 +13,7 @@ namespace Slang
 {
     struct IncludeHandler;
     class CompileRequest;
+    class ProgramLayout;
 
     enum class CompilerMode
     {
@@ -37,6 +36,7 @@ namespace Slang
     enum class CodeGenTarget
     {
         Unknown             = SLANG_TARGET_UNKNOWN,
+        None                = SLANG_TARGET_NONE,
         GLSL                = SLANG_GLSL,
         GLSL_Vulkan         = SLANG_GLSL_VULKAN,
         GLSL_Vulkan_OneDesc = SLANG_GLSL_VULKAN_ONE_DESC,
@@ -48,13 +48,30 @@ namespace Slang
         ReflectionJSON      = SLANG_REFLECTION_JSON,
     };
 
+    enum class ResultFormat
+    {
+        None,
+        Text,
+        Binary
+    };
+
     class CompileRequest;
     class TranslationUnitRequest;
 
-    // Result of compiling an entry point
-    struct EntryPointResult
+    // Result of compiling an entry point.
+    // Should only ever be string OR binary.
+    class CompileResult
     {
-        List<uint8_t> outputSource;
+    public:
+        CompileResult() = default;
+        CompileResult(String const& str) : format(ResultFormat::Text), outputString(str) {}
+        CompileResult(List<uint8_t> const& buffer) : format(ResultFormat::Binary), outputBinary(buffer) {}
+
+        void append(CompileResult const& result);
+
+        ResultFormat format = ResultFormat::None;
+        String outputString;
+        List<uint8_t> outputBinary;
     };
 
     // Describes an entry point that we've been requested to compile
@@ -80,7 +97,7 @@ namespace Slang
         // The resulting output for the enry point
         //
         // TODO: low-level code generation should be a distinct step
-        EntryPointResult result;
+        CompileResult result;
 
         // The translation unit that this entry point came from
         TranslationUnitRequest* getTranslationUnit();
@@ -103,12 +120,6 @@ namespace Slang
 
         // The actual contents of the file
         String content;
-    };
-
-    // Result of compiling a translation unit
-    struct TranslationUnitResult
-    {
-        List<uint8_t> outputSource;
     };
 
     // A single translation unit requested to be compiled.
@@ -144,7 +155,7 @@ namespace Slang
         // The resulting output for the translation unit
         //
         // TODO: low-level code generation should be a distinct step
-        TranslationUnitResult result;
+        CompileResult result;
     };
 
     // A directory to be searched when looking for files (e.g., `#include`)
@@ -169,6 +180,10 @@ namespace Slang
 
         // What target language are we compiling to?
         CodeGenTarget Target = CodeGenTarget::Unknown;
+
+        // An "extra" target that might override the first one
+        // when it comes to deciding output format, etc.
+        CodeGenTarget extraTarget = CodeGenTarget::Unknown;
 
         // Directories to search for `#include` files or `import`ed modules
         List<SearchDirectory> searchDirectories;
