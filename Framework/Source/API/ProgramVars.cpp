@@ -101,10 +101,12 @@ namespace Falcor
         switch (type)
         {
         case ProgramReflection::Resource::ResourceType::Texture:
+        case ProgramReflection::Resource::ResourceType::RawBuffer:  // Vulkan doesn't have raw-buffer and DX doesn't care
             return (access == ProgramReflection::ShaderAccess::Read) ? RootSignature::DescType::TextureSrv : RootSignature::DescType::TextureUav;
         case ProgramReflection::Resource::ResourceType::StructuredBuffer:
-        case ProgramReflection::Resource::ResourceType::RawBuffer:  // Vulkan doesn't have raw-buffer and DX doesn't care
             return (access == ProgramReflection::ShaderAccess::Read) ? RootSignature::DescType::StructuredBufferSrv : RootSignature::DescType::StructuredBufferUav;
+        case ProgramReflection::Resource::ResourceType::TypedBuffer:
+            return (access == ProgramReflection::ShaderAccess::Read) ? RootSignature::DescType::TypedBufferSrv : RootSignature::DescType::TypedBufferUav;
         default:
             should_not_get_here();
             return RootSignature::DescType(-1);
@@ -140,6 +142,7 @@ namespace Falcor
                     break;
                 case ProgramReflection::Resource::ResourceType::Texture:
                 case ProgramReflection::Resource::ResourceType::RawBuffer:
+                case ProgramReflection::Resource::ResourceType::TypedBuffer:
                     if (desc.shaderAccess == ProgramReflection::ShaderAccess::Read)
                     {
                         assert(mAssignedSrvs.find(loc) == mAssignedSrvs.end());
@@ -322,7 +325,7 @@ namespace Falcor
         // Find the buffer
         const ProgramReflection::Resource* pDesc = mpReflector->getResourceDesc(name);
 
-        if (verifyBufferResourceDesc(pDesc, name, ProgramReflection::Resource::ResourceType::RawBuffer, ProgramReflection::Resource::Dimensions::Unknown, "setRawBuffer()") == false)
+        if (verifyBufferResourceDesc(pDesc, name, ProgramReflection::Resource::ResourceType::RawBuffer, ProgramReflection::Resource::Dimensions::Buffer, "setRawBuffer()") == false)
         {
             return false;
         }
@@ -337,7 +340,7 @@ namespace Falcor
         // Find the buffer
         const ProgramReflection::Resource* pDesc = mpReflector->getResourceDesc(name);
 
-        if (verifyBufferResourceDesc(pDesc, name, ProgramReflection::Resource::ResourceType::Texture, ProgramReflection::Resource::Dimensions::Buffer, "setTypedBuffer()") == false)
+        if (verifyBufferResourceDesc(pDesc, name, ProgramReflection::Resource::ResourceType::TypedBuffer, ProgramReflection::Resource::Dimensions::Buffer, "setTypedBuffer()") == false)
         {
             return false;
         }
@@ -409,7 +412,7 @@ namespace Falcor
         // Find the buffer
         const ProgramReflection::Resource* pDesc = mpReflector->getResourceDesc(name);
 
-        if (verifyBufferResourceDesc(pDesc, name, ProgramReflection::Resource::ResourceType::RawBuffer, ProgramReflection::Resource::Dimensions::Unknown, "getRawBuffer()") == false)
+        if (verifyBufferResourceDesc(pDesc, name, ProgramReflection::Resource::ResourceType::RawBuffer, ProgramReflection::Resource::Dimensions::Buffer, "getRawBuffer()") == false)
         {
             return false;
         }
@@ -422,7 +425,7 @@ namespace Falcor
         // Find the buffer
         const ProgramReflection::Resource* pDesc = mpReflector->getResourceDesc(name);
 
-        if (verifyBufferResourceDesc(pDesc, name, ProgramReflection::Resource::ResourceType::Texture, ProgramReflection::Resource::Dimensions::Buffer, "getTypedBuffer()") == false)
+        if (verifyBufferResourceDesc(pDesc, name, ProgramReflection::Resource::ResourceType::TypedBuffer, ProgramReflection::Resource::Dimensions::Buffer, "getTypedBuffer()") == false)
         {
             return false;
         }

@@ -69,9 +69,13 @@ namespace Falcor
     {
         switch (type)
         {
-        case RootSignature::DescType::Srv:
+        case RootSignature::DescType::TextureSrv:
+        case RootSignature::DescType::TypedBufferSrv:
+        case RootSignature::DescType::StructuredBufferSrv:
             return D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
-        case RootSignature::DescType::Uav:
+        case RootSignature::DescType::TextureUav:
+        case RootSignature::DescType::TypedBufferUav:
+        case RootSignature::DescType::StructuredBufferUav:
             return D3D12_DESCRIPTOR_RANGE_TYPE_UAV;
         case RootSignature::DescType::Cbv:
             return D3D12_DESCRIPTOR_RANGE_TYPE_CBV;
@@ -197,8 +201,8 @@ namespace Falcor
         RootSignature::Desc d;
 
         cost += initializeBufferDescriptors(pReflector, d, ProgramReflection::BufferReflection::Type::Constant, RootSignature::DescType::Cbv);
-        cost += initializeBufferDescriptors(pReflector, d, ProgramReflection::BufferReflection::Type::Structured, RootSignature::DescType::Srv);
-        cost += initializeBufferDescriptors(pReflector, d, ProgramReflection::BufferReflection::Type::Structured, RootSignature::DescType::Uav);
+        cost += initializeBufferDescriptors(pReflector, d, ProgramReflection::BufferReflection::Type::Structured, RootSignature::DescType::StructuredBufferSrv);
+        cost += initializeBufferDescriptors(pReflector, d, ProgramReflection::BufferReflection::Type::Structured, RootSignature::DescType::StructuredBufferUav);
 
         const ProgramReflection::ResourceMap& resMap = pReflector->getResourceMap();
         for (auto& resIt : resMap)
@@ -211,14 +215,18 @@ namespace Falcor
             }
             else
             {
-                switch (resource.shaderAccess)
+                switch (resource.type)
                 {
-                case ProgramReflection::ShaderAccess::ReadWrite:
-                    descType = RootSignature::DescType::Uav;
+                case ProgramReflection::Resource::ResourceType::RawBuffer:
+                case ProgramReflection::Resource::ResourceType::Texture:
+                    descType = (resource.shaderAccess == ProgramReflection::ShaderAccess::ReadWrite) ? RootSignature::DescType::TextureUav : RootSignature::DescType::TextureSrv;
                     break;
-                case ProgramReflection::ShaderAccess::Read:
-                    descType = RootSignature::DescType::Srv;
+                case ProgramReflection::Resource::ResourceType::StructuredBuffer:
+                    descType = (resource.shaderAccess == ProgramReflection::ShaderAccess::ReadWrite) ? RootSignature::DescType::StructuredBufferUav : RootSignature::DescType::StructuredBufferSrv;
                     break;
+                case ProgramReflection::Resource::ResourceType::TypedBuffer:
+                    descType = (resource.shaderAccess == ProgramReflection::ShaderAccess::ReadWrite) ? RootSignature::DescType::TypedBufferUav : RootSignature::DescType::TypedBufferSrv;
+                    break;;
                 default:
                     should_not_get_here();
                 }

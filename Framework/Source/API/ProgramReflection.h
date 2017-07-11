@@ -458,6 +458,7 @@ namespace Falcor
             type_2_string(StructuredBuffer);
             type_2_string(RawBuffer);
             type_2_string(Sampler);
+            type_2_string(TypedBuffer);
         default:
             should_not_get_here();
             return "";

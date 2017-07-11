@@ -679,7 +679,7 @@ namespace Falcor
         ProgramReflection::Resource falcorDesc;
         falcorDesc.type = resourceType;
         falcorDesc.shaderAccess = getShaderAccess(pSlangType->getType());
-        if (resourceType == ProgramReflection::Resource::ResourceType::Texture)
+        if (resourceType != ProgramReflection::Resource::ResourceType::Sampler)
         {
             falcorDesc.retType = getReturnType(pSlangType->getResourceResultType());
             falcorDesc.dims = getResourceDimensions(pSlangType->getResourceShape());
