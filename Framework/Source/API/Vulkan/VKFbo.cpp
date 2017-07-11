@@ -47,7 +47,7 @@ namespace Falcor
 
     uint32_t Fbo::getMaxColorTargetCount()
     {
-        return gpDevice->getPhysicalDeviceLimits().maxFragmentOutputAttachments; // #VKTODO Is that correct?
+        return gpDevice->getPhysicalDeviceLimits().maxFragmentOutputAttachments;
     }
 
     void Fbo::initApiHandle() const
@@ -57,7 +57,7 @@ namespace Falcor
         initVkRenderPassInfo(*mpDesc, renderPassInfo);
         VkRenderPass pass;
         vkCreateRenderPass(gpDevice->getApiHandle(), &renderPassInfo.info, nullptr, &pass);
-
+        uint32_t arraySize = -1;
         // FBO handle
         std::vector<VkImageView> attachments(Fbo::getMaxColorTargetCount() + 1); // 1 if for the depth
         uint32_t rtCount = 0;
@@ -65,6 +65,8 @@ namespace Falcor
         {
             if(mColorAttachments[i].pTexture)
             {
+                assert(arraySize == -1 || arraySize == getRenderTargetView(i)->getViewInfo().arraySize);
+                arraySize = getRenderTargetView(i)->getViewInfo().arraySize;
                 attachments[rtCount] = getRenderTargetView(i)->getApiHandle();
                 rtCount++;
             }
@@ -72,6 +74,8 @@ namespace Falcor
 
         if(mDepthStencil.pTexture)
         {
+            assert(arraySize == -1 || arraySize == getDepthStencilView()->getViewInfo().arraySize);
+            if (arraySize == -1) arraySize = getDepthStencilView()->getViewInfo().arraySize;
             attachments[rtCount] = getDepthStencilView()->getApiHandle();
             rtCount++;
         }
@@ -83,7 +87,7 @@ namespace Falcor
         frameBufferInfo.pAttachments = attachments.data();
         frameBufferInfo.width = getWidth();
         frameBufferInfo.height = getHeight();
-        frameBufferInfo.layers = 1; // #VKTODO what are frame buffer "layers?"
+        frameBufferInfo.layers = arraySize;
 
         VkFramebuffer frameBuffer;
         vkCreateFramebuffer(gpDevice->getApiHandle(), &frameBufferInfo, nullptr, &frameBuffer);

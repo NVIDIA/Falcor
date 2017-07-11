@@ -29,6 +29,12 @@
 #ifndef _FALCOR_BSDFS_H_
 #define _FALCOR_BSDFS_H_
 
+// Make sure we get the macros like `_fn` and `_ref`
+// TODO: just eliminate these since we know this is pure Slang.
+#include "HostDeviceData.h"
+
+__import Helpers;
+
 /**********************************************************************************
 BRDF helpers
 **********************************************************************************/
@@ -100,7 +106,7 @@ Distribution functions
 /*******************************************************************************************
 Lambertian diffuse BSDF. Returns a clamped N.L factor.
 */
-float _fn evalDiffuseBSDF(in const vec3 shadeNormal, in const vec3 lightDir)
+float _fn evalDiffuseBSDF(in const float3 shadeNormal, in const float3 lightDir)
 {
     return max(0.f, dot(shadeNormal, lightDir)) * M_1_PIf;
 }
@@ -108,10 +114,10 @@ float _fn evalDiffuseBSDF(in const vec3 shadeNormal, in const vec3 lightDir)
 /*******************************************************************************************
 Blinn-Phong normal distribution function (NDF).
 */
-float _fn evalPhongDistribution(in vec3 N, in vec3 V, in vec3 L, in float roughness)
+float _fn evalPhongDistribution(in float3 N, in float3 V, in float3 L, in float roughness)
 {
     const float spec_power = convertRoughnessToShininess(roughness);
-    const vec3 H = normalize(L + V);
+    const float3 H = normalize(L + V);
     const float NoH = max(0.f, dot(N, H));
     const float normalization = (spec_power + 2.f) / (2.f * M_PIf);
     return pow(NoH, spec_power) * normalization;
@@ -120,7 +126,7 @@ float _fn evalPhongDistribution(in vec3 N, in vec3 V, in vec3 L, in float roughn
 /*******************************************************************************************
 Beckmann normal distribution function (NDF).
 */
-float _fn evalBeckmannDistribution(in const vec3 N, in const vec3 H, in float roughness)
+float _fn evalBeckmannDistribution(in const float3 N, in const float3 H, in float roughness)
 {
     const float a2 = roughness * roughness;
     // dot products that we need
@@ -131,10 +137,10 @@ float _fn evalBeckmannDistribution(in const vec3 N, in const vec3 H, in float ro
     return exp(-exponent) / (M_PIf * a2 * NoH2 * NoH2);
 }
 
-float _fn evalBeckmannDistribution(in const vec3 H, in const vec2 rgns)
+float _fn evalBeckmannDistribution(in const float3 H, in const float2 rgns)
 {
     const float NoH2 = H.z * H.z;
-    const vec2 Hproj = v2(H.x, H.y);
+    const float2 Hproj = float2(H.x, H.y);
     // Compute Beckmann distribution
     const float exponent = dot(Hproj / (rgns*rgns), Hproj) / NoH2;
     return exp(-exponent) / (M_PIf * rgns.x * rgns.y * NoH2 * NoH2);
@@ -156,7 +162,7 @@ N is the normal direction
 R is the mirror vector
 This approximation works fine for G smith correlated and uncorrelated
 */
-vec3 _fn getBeckmannDominantDir(in const vec3 N, in const vec3 R,
+float3 _fn getBeckmannDominantDir(in const float3 N, in const float3 R,
     in const float roughness)
 {
     const float smoothness = clamp(1.f - roughness, 0.0f, 1.0f);
@@ -169,7 +175,7 @@ vec3 _fn getBeckmannDominantDir(in const vec3 N, in const vec3 R,
 /*******************************************************************************************
 GGX normal distribution function (NDF).
 */
-float _fn evalGGXDistribution(in const vec3 N, in const vec3 H, in const float roughness)
+float _fn evalGGXDistribution(in const float3 N, in const float3 H, in const float roughness)
 {
     // This doesn't look correct, so disabled    
     const float a2 = roughness * roughness;
@@ -181,15 +187,15 @@ float _fn evalGGXDistribution(in const vec3 N, in const vec3 H, in const float r
     return a2 / D_denom;
 }
 
-float _fn evalGGXDistribution(in const vec3 H, in const vec2 rgns)
+float _fn evalGGXDistribution(in const float3 H, in const float2 rgns)
 {
     // Numerically robust (w.r.t rgns=0) implementation of anisotropic GGX
     const float anisoU = rgns.y < rgns.x ? rgns.y / rgns.x : 1.f;
     const float anisoV = rgns.x < rgns.y ? rgns.x / rgns.y : 1.f;
     const float r = min(rgns.x, rgns.y);
     const float NoH2 = H.z * H.z;
-    const vec2 Hproj = v2(H.x, H.y);
-    const float exponent = dot(Hproj / v2(anisoU*anisoU, anisoV*anisoV), Hproj);
+    const float2 Hproj = float2(H.x, H.y);
+    const float exponent = dot(Hproj / float2(anisoU*anisoU, anisoV*anisoV), Hproj);
     const float root = NoH2 * r*r + exponent;
     return r*r / (M_PIf * anisoU * anisoV * root * root);
 }
@@ -204,12 +210,12 @@ Computes the intermediate effective microfacet roughness observed from a particu
 \param[in] rghns original anisotropic roughness of the microfacet BSDF
 returns effective visible roughness
 */
-float _fn effectiveVisibleRoughness(const in vec3 dir, const in vec2 rghns)
+float _fn effectiveVisibleRoughness(const in float3 dir, const in float2 rghns)
 {
     const float recipSinThSq = 1.f / (1.f - dir.z * dir.z);
-    const vec2 dirPlane = v2(dir.x, dir.y);
-    const vec2 cosSinPhiSq = dirPlane * dirPlane * recipSinThSq;
-    const vec2 res = rghns * rghns * cosSinPhiSq;
+    const float2 dirPlane = float2(dir.x, dir.y);
+    const float2 cosSinPhiSq = dirPlane * dirPlane * recipSinThSq;
+    const float2 res = rghns * rghns * cosSinPhiSq;
     return sqrt(res.x + res.y);
 }
 
@@ -221,7 +227,7 @@ Computes the Smith'67 shadowing or masking term from a direction.
 \param[in] ndfType type of NDF. Only Beckmann and GGX are supported so far
 returns amount of visible microfacets
 */
-float _fn GSmith(const in vec3 dir, const in vec3 h, const in vec2 rghns, in const uint ndfType)
+float _fn GSmith(const in float3 dir, const in float3 h, const in float2 rghns, in const uint ndfType)
 {
     if(dot(dir, h) * dir.z <= 0.f)
         return 0.f;
@@ -242,18 +248,18 @@ float _fn GSmith(const in vec3 dir, const in vec3 h, const in vec2 rghns, in con
 
     // Otherwise it's GGX, use GGX shadowing/masking
     const float isectRoot = alpha * recipSlope;
-    return 2.f / (1.f + length(v2(1.f, isectRoot)));
+    return 2.f / (1.f + length(float2(1.f, isectRoot)));
 }
 
 /**
 Computes shadowing and masking term for microfacet BRDFs
 */
-float _fn evalMicrofacetTerms(in const vec3 T, in const vec3 B, in const vec3 N,
-    in const vec3 h, in const vec3 V, in const vec3 L,
-    in const vec2 roughness, in const uint ndfType, bool transmissive)
+float _fn evalMicrofacetTerms(in const float3 T, in const float3 B, in const float3 N,
+    in const float3 h, in const float3 V, in const float3 L,
+    in const float2 roughness, in const uint ndfType, bool transmissive)
 {
-    const vec3 lTg = v3(dot(T, L), dot(B, L), dot(N, L));
-    const vec3 vTg = v3(dot(T, V), dot(B, V), dot(N, V));
+    const float3 lTg = float3(dot(T, L), dot(B, L), dot(N, L));
+    const float3 vTg = float3(dot(T, V), dot(B, V), dot(N, V));
 
     /* If it's not transmission, they should be on the same side of the hemisphere */
     if(!transmissive && lTg.z*vTg.z <= 0.f)
@@ -278,11 +284,11 @@ float _fn evalMicrofacetTerms(in const vec3 T, in const vec3 B, in const vec3 N,
     \param[out] pdf Probability density function for choosing the incident direction
 */
 float _fn sampleBeckmannDistribution(
-	in const vec3 wo,
-	in const vec2 roughness,
-	in const vec2 rSample,
-	_ref(vec3) m,
-	_ref(vec3) wi,
+	in const float3 wo,
+	in const float2 roughness,
+	in const float2 rSample,
+	_ref(float3) m,
+	_ref(float3) wi,
 	_ref(float) pdf)
 {
 	float alphaSqr = roughness.x * roughness.x;
@@ -334,11 +340,11 @@ float _fn sampleBeckmannDistribution(
     \param[out] pdf Probability density function for choosing the incident direction
 */
 float _fn sampleGGXDistribution(
-	in const vec3 wo,
-	in vec2 roughness,
-	in const vec2 rSample,
-	_ref(vec3) m,
-	_ref(vec3) wi,
+	in const float3 wo,
+	in float2 roughness,
+	in const float2 rSample,
+	_ref(float3) m,
+	_ref(float3) wi,
 	_ref(float) pdf)
 {
 	float alphaSqr = roughness.x * roughness.x;

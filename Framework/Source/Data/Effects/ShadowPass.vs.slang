@@ -25,50 +25,32 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#ifndef CSMDATA_H
-#define CSMDATA_H
+__import DefaultVS;
+__import ShaderCommon;
 
-#include "Data/HostDeviceData.h"
-
-#define CSM_MAX_CASCADES 8
-
-#define CsmFilterPoint 0
-#define CsmFilterHwPcf 1
-#define CsmFilterFixedPcf 2
-#define CsmFilterVsm   3
-#define CsmFilterEvsm2 4
-#define CsmFilterEvsm4 5
-#define CsmFilterStochasticPcf 6
-
-struct CsmData
+struct ShadowPassVSOut
 {
-    float4x4 globalMat;
-    float4 cascadeScale[CSM_MAX_CASCADES];
-    float4 cascadeOffset[CSM_MAX_CASCADES];
-
-    //Only uses xy
-    float4 cascadeRange[CSM_MAX_CASCADES];  // In camera clip-space
-
-    float depthBias DEFAULTS(0.005f);
-    int cascadeCount DEFAULTS(4);
-    uint32_t filterMode DEFAULTS(CsmFilterHwPcf);
-
-    int32_t pcfKernelWidth DEFAULTS(5);
-    float3 lightDir;
-
-    float lightBleedingReduction DEFAULTS(0);
-    float cascadeBlendThreshold DEFAULTS(0.2f);
-
-    float2 evsmExponents DEFAULTS(v2(40.0f, 5.0f)); // posExp, negExp
-    //If this is only in host code, the final element in the array is not padded
-    uint32_t padding;
-#ifndef HOST_CODE
-    Texture2DArray shadowMap;
-    SamplerState csmSampler;
+#ifdef _APPLY_PROJECTION
+    float4 pos : SV_POSITION;
+#else
+    float4 pos : POSITION;
 #endif
+    float2 texC : TEXCOORD;
 };
 
-#ifdef HOST_CODE
-static_assert(sizeof(CsmData) % sizeof(float4) == 0, "CsmData size should be aligned on float4 size");
+ShadowPassVSOut main(VS_IN vIn)
+{
+    ShadowPassVSOut vOut; 
+    float4x4 worldMat = getWorldMat(vIn);
+    vOut.pos = mul(worldMat, vIn.pos);
+#ifdef _APPLY_PROJECTION
+    vOut.pos = mul(gCam.viewProjMat, vOut.pos);
 #endif
-#endif //CSMDATA_H
+
+#ifdef HAS_TEXCRD
+    vOut.texC = vIn.texC;
+#else
+    vOut.texC = float2(0.5f, 0.5f);
+#endif
+    return vOut;
+}

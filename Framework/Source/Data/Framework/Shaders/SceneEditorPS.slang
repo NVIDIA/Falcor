@@ -1,5 +1,5 @@
 /***************************************************************************
-# Copyright (c) 2015, NVIDIA CORPORATION. All rights reserved.
+# Copyright (c) 2017, NVIDIA CORPORATION. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -14,7 +14,7 @@
 #    from this software without specific prior written permission.
 #
 # THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS ``AS IS'' AND ANY
-# EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THEa
 # IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
 # PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR
 # CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
@@ -25,56 +25,53 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#include "ShaderCommon.h"
-#include "csmdata.h"
 
-SamplerState alphaSampler : register(s0);
-texture2D alphaMap : register(t0);
+#include "SceneEditorCommon.slang.h"
 
-cbuffer PerLightCB : register(b0)
+#ifdef DEBUG_DRAW
+
+float4 main(DebugDrawVSOut vOut) : SV_TARGET
 {
-    CsmData gCsmData;
-};
+    return float4(vOut.color, 1);
+}
 
-cbuffer AlphaMapCB : register(b1)
+#else //////////////////////////////////////////////////////////////////////////////////////
+
+#ifndef PICKING
+cbuffer ConstColorCB : register(b0)
 {
-    float alphaThreshold;
+    float3 gColor;
 };
-
-struct ShadowPassPSIn
-{
-    float4 pos : SV_POSITION;
-    float2 texC : TexCoord;
-    uint rtIndex : SV_RenderTargetArrayIndex;
-};
-
-#if defined(_VSM) || defined(_EVSM2)
-vec2 main(ShadowPassPSIn pIn) : SV_TARGET0
-#elif defined(_EVSM4)
-vec4 main(ShadowPassPSIn pIn) : SV_TARGET0
-#else
-void main(ShadowPassPSIn pIn)
 #endif
+
+// PS Output
+#ifdef PICKING
+#define PSOut uint
+#else
+#define PSOut float4
+#endif
+
+PSOut main(EditorVSOut vOut) : SV_TARGET
 {
-#ifdef TEST_ALPHA
-    float alpha = alphaMap.Sample(alphaSampler, pIn.texC)._ALPHA_CHANNEL;
-    if(alpha < alphaThreshold)
+    float3 toCamera = normalize(gCam.position - vOut.vOut.posW);
+
+#ifdef CULL_REAR_SECTION
+    if(dot(toCamera, vOut.toVertex) < -0.1)
     {
         discard;
     }
 #endif
 
-    vec2 depth = pIn.pos.zz;
-
-#if defined(_EVSM2) || defined(_EVSM4)
-    depth = applyEvsmExponents(depth.x, gCsmData.evsmExponents);
-#endif
-    vec4 outDepth = vec4(depth, depth*depth);
-
-#ifdef _EVSM4
-    return outDepth.xzyw;
-#elif defined(_VSM) || defined(_EVSM2)
-    return outDepth.xz;
+#ifdef PICKING
+    return vOut.drawID;
 #else
+    #ifdef SHADING
+        float shading = lerp(0.5, 1, dot(toCamera, vOut.vOut.normalW));
+        return float4(gColor * shading, 1);
+    #else
+        return float4(gColor, 1);
+    #endif
 #endif
 }
+
+#endif

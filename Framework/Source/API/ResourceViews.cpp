@@ -25,58 +25,61 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
+#pragma once
+#include "Framework.h"
+#include "ResourceViews.h"
 
-#ifdef FALCOR_HLSL
-cbuffer PerFrameCB : register(b0)
+namespace Falcor
 {
-    float2 scale;
-    float2 offset;
-};
+    DepthStencilView::SharedPtr DepthStencilView::sNullView;
+    RenderTargetView::SharedPtr RenderTargetView::sNullView;
+    UnorderedAccessView::SharedPtr UnorderedAccessView::sNullView;
+    ShaderResourceView::SharedPtr ShaderResourceView::sNullView;
+    ConstantBufferView::SharedPtr ConstantBufferView::sNullView;
 
-struct VsIn
-{
-    float2 pos : POSITION;
-    float4 color : COLOR;
-    float2 texC : TEXCOORD0;
-};
+    ShaderResourceView::SharedPtr ShaderResourceView::getNullView()
+    {
+        if (!sNullView)
+        {
+            sNullView = create(ResourceWeakPtr(), 0, 0, 0, 0);
+        }
+        return sNullView;
+    }
 
-struct VsOut
-{
-    float4 color : COLOR;
-    float2 texC : TEXCOORD0;
-    float4 pos : SV_POSITION;
-};
+    DepthStencilView::SharedPtr DepthStencilView::getNullView()
+    {
+        if (!sNullView)
+        {
+            sNullView = create(ResourceWeakPtr(), 0, 0, 0);
+        }
+        return sNullView;
+    }
 
-VsOut main(VsIn vIn)
-{
-    VsOut vOut;
-    vOut.color = vIn.color;
-    vOut.texC = vIn.texC;
-    vOut.pos.xy = vIn.pos.xy * scale + offset;
-    vOut.pos.zw = float2(0,1);
-    return vOut;
+    UnorderedAccessView::SharedPtr UnorderedAccessView::getNullView()
+    {
+        if (!sNullView)
+        {
+            sNullView = create(ResourceWeakPtr(), 0, 0, 0);
+        }
+        return sNullView;
+    }
+
+    RenderTargetView::SharedPtr RenderTargetView::getNullView()
+    {
+        if (!sNullView)
+        {
+            create(ResourceWeakPtr(), 0, 0, 0);
+        }
+        return sNullView;
+    }
+
+
+    ConstantBufferView::SharedPtr ConstantBufferView::getNullView()
+    {
+        if (!sNullView)
+        {
+            create(ResourceWeakPtr());
+        }
+        return sNullView;
+    }
 }
-#endif
-
-#ifdef FALCOR_GLSL
-layout(set = 0, binding = 0) uniform PerFrameCB
-{
-    vec2 scale;
-    vec2 offset;
-};
-
-layout(location = 0) in vec2 pos;
-layout(location = 1) in vec2 texCIn;
-layout(location = 2) in vec4 colorIn;
-
-layout(location = 0) out vec4 color;
-layout(location = 1) out vec2 texC;
-
-void main()
-{
-    color = colorIn;
-    texC = texCIn;
-    gl_Position.xy = pos.xy * scale + offset;
-    gl_Position.zw = vec2(0, 1);
-}
-#endif

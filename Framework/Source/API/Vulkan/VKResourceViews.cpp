@@ -34,12 +34,17 @@
 namespace Falcor
 {
     VkImageAspectFlags getAspectFlagsFromFormat(ResourceFormat format);
+    static Texture::SharedPtr sBlackTexture;
 
-    DepthStencilView::SharedPtr DepthStencilView::sNullView;
-    RenderTargetView::SharedPtr RenderTargetView::sNullView;
-    UnorderedAccessView::SharedPtr UnorderedAccessView::sNullView;
-    ShaderResourceView::SharedPtr ShaderResourceView::sNullView;
-    ConstantBufferView::SharedPtr ConstantBufferView::sNullView;
+    const Texture* getEmptyTexture()
+    {
+        if (sBlackTexture == nullptr)
+        {
+            uint8_t blackPixel[4] = { 0 };
+            sBlackTexture = Texture::create2D(1, 1, ResourceFormat::RGBA8Unorm, 1, 1, blackPixel, Resource::BindFlags::ShaderResource | Resource::BindFlags::RenderTarget | Resource::BindFlags::UnorderedAccess);
+        }
+        return sBlackTexture.get();
+    }
 
     VkImageViewType getViewType(Resource::Type type, bool isArray)
     {
@@ -61,7 +66,7 @@ namespace Falcor
         }
     }
 
-    void initializeImageViewInfo(const Texture::SharedConstPtr& pTexture, uint32_t mostDetailedMip, uint32_t mipCount, uint32_t firstArraySlice, uint32_t arraySize, VkImageViewCreateInfo& outInfo)
+    void initializeImageViewInfo(const Texture* pTexture, uint32_t mostDetailedMip, uint32_t mipCount, uint32_t firstArraySlice, uint32_t arraySize, VkImageViewCreateInfo& outInfo)
     {
         outInfo = {};
 
@@ -78,13 +83,11 @@ namespace Falcor
         outInfo.subresourceRange.layerCount = arraySize;
     }
 
-    void initializeBufferViewInfo(const Buffer::SharedConstPtr& pBuffer, VkBufferViewCreateInfo& outInfo)
+    void initializeBufferViewInfo(const TypedBufferBase* pTypedBuffer, VkBufferViewCreateInfo& outInfo)
     {
-        TypedBufferBase::SharedConstPtr pTypedBuffer = std::dynamic_pointer_cast<const TypedBufferBase>(pBuffer);
-        assert(pTypedBuffer);
         outInfo = {};
         outInfo.sType = VK_STRUCTURE_TYPE_BUFFER_VIEW_CREATE_INFO;
-        outInfo.buffer = pBuffer->getApiHandle();
+        outInfo.buffer = pTypedBuffer->getApiHandle();
         outInfo.offset = 0;
         outInfo.range = VK_WHOLE_SIZE;
         outInfo.format = getVkFormat(pTypedBuffer->getResourceFormat());
@@ -92,13 +95,15 @@ namespace Falcor
 
     VkResource<VkImageView, VkBufferView>::SharedPtr createViewCommon(const Resource::SharedConstPtr& pSharedPtr, uint32_t mostDetailedMip, uint32_t mipCount, uint32_t firstArraySlice, uint32_t arraySize)
     {
-        switch (pSharedPtr->getApiHandle().getType())
+        const Resource* pResource = pSharedPtr ? pSharedPtr.get() : getEmptyTexture();
+
+        switch (pResource->getApiHandle().getType())
         {
         case VkResourceType::Image:
         {
             VkImageViewCreateInfo info;
             VkImageView imageView;
-            initializeImageViewInfo(std::static_pointer_cast<const Texture>(pSharedPtr), firstArraySlice, arraySize, mostDetailedMip, mipCount, info);
+            initializeImageViewInfo((const Texture*)pResource, firstArraySlice, arraySize, mostDetailedMip, mipCount, info);
             vk_call(vkCreateImageView(gpDevice->getApiHandle(), &info, nullptr, &imageView));
             return VkResource<VkImageView, VkBufferView>::SharedPtr::create(imageView, nullptr);
         }
@@ -107,11 +112,11 @@ namespace Falcor
         {
             // We only create views for TypedBuffers
             VkBufferView bufferView = {};
-            TypedBufferBase::SharedConstPtr pTypedBuffer = std::dynamic_pointer_cast<const TypedBufferBase>(pSharedPtr);
+            const TypedBufferBase* pTypedBuffer = dynamic_cast<const TypedBufferBase*>(pResource);
             if(pTypedBuffer)
             {
                 VkBufferViewCreateInfo info;
-                initializeBufferViewInfo(std::static_pointer_cast<const Buffer>(pSharedPtr), info);
+                initializeBufferViewInfo(pTypedBuffer, info);
                 vk_call(vkCreateBufferView(gpDevice->getApiHandle(), &info, nullptr, &bufferView));
             }
             return VkResource<VkImageView, VkBufferView>::SharedPtr::create(bufferView, nullptr);
@@ -135,11 +140,6 @@ namespace Falcor
         return SharedPtr(new ShaderResourceView(pResource, view, mostDetailedMip, mipCount, firstArraySlice, arraySize));
     }
 
-    ShaderResourceView::SharedPtr ShaderResourceView::getNullView()
-    {
-        return create(ResourceWeakPtr(), 0, 0, 0, 0);
-    }
-
     DepthStencilView::SharedPtr DepthStencilView::create(ResourceWeakPtr pResource, uint32_t mipLevel, uint32_t firstArraySlice, uint32_t arraySize)
     {
         Resource::SharedConstPtr pSharedPtr = pResource.lock();
@@ -158,11 +158,6 @@ namespace Falcor
         return SharedPtr(new DepthStencilView(pResource, view, mipLevel, firstArraySlice, arraySize));
     }
 
-    DepthStencilView::SharedPtr DepthStencilView::getNullView()
-    {
-        return create(ResourceWeakPtr(), 0, 0, 0);
-    }
-
     UnorderedAccessView::SharedPtr UnorderedAccessView::create(ResourceWeakPtr pResource, uint32_t mipLevel, uint32_t firstArraySlice, uint32_t arraySize)
     {
         Resource::SharedConstPtr pSharedPtr = pResource.lock();
@@ -175,12 +170,6 @@ namespace Falcor
         auto view = createViewCommon(pSharedPtr, mipLevel, 1, firstArraySlice, arraySize);
         return SharedPtr(new UnorderedAccessView(pResource, view, mipLevel, firstArraySlice, arraySize));
     }
-
-    UnorderedAccessView::SharedPtr UnorderedAccessView::getNullView()
-    {
-        return create(ResourceWeakPtr(), 0, 0, 0);
-    }
-
 
     RenderTargetView::SharedPtr RenderTargetView::create(ResourceWeakPtr pResource, uint32_t mipLevel, uint32_t firstArraySlice, uint32_t arraySize)
     {
@@ -211,23 +200,10 @@ namespace Falcor
         }
     }
 
-    RenderTargetView::SharedPtr RenderTargetView::getNullView()
-    {
-        return create(ResourceWeakPtr(), 0, 0, 0);
-    }
-
     ConstantBufferView::SharedPtr ConstantBufferView::create(ResourceWeakPtr pResource)
     {
+        should_not_get_here();
         return nullptr;
-    }
-
-    ConstantBufferView::SharedPtr ConstantBufferView::getNullView()
-    {
-        if (!sNullView)
-        {
-            create(ResourceWeakPtr());
-        }
-        return sNullView;
     }
 }
 

@@ -1,5 +1,5 @@
 /***************************************************************************
-# Copyright (c) 2017, NVIDIA CORPORATION. All rights reserved.
+# Copyright (c) 2015, NVIDIA CORPORATION. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -25,31 +25,33 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#include "ShaderCommon.h"
-#define _COMPILE_DEFAULT_VS
-#include "VertexAttrib.h"
 
-struct EditorVSOut
+cbuffer PerFrameCB : register(b0)
 {
-    VS_OUT vOut;
-
-#ifdef PICKING
-    uint drawID : DRAW_ID;
-#endif
-
-#ifdef CULL_REAR_SECTION
-    float3 toVertex : VERTEX_DIR;
-#endif
+    float2 scale;
+    float2 offset;
 };
 
-struct DebugDrawVSIn
+struct VsIn
 {
-    float3 position : POSITION;
-    float3 color : COLOR;
+    float2 pos : POSITION;
+    float2 texC : TEXCOORD0;
+    float4 color : COLOR;
 };
 
-struct DebugDrawVSOut
+struct VsOut
 {
-    float4 position : SV_POSITION;
-    float3 color : COLOR;
+    float4 color : COLOR;
+    float2 texC : TEXCOORD0;
+    float4 pos : SV_POSITION;
 };
+
+VsOut main(VsIn vIn)
+{
+    VsOut vOut;
+    vOut.color = vIn.color;
+    vOut.texC = vIn.texC;
+    vOut.pos.xy = vIn.pos.xy * scale + offset;
+    vOut.pos.zw = float2(0,1);
+    return vOut;
+}

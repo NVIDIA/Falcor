@@ -1,6 +1,8 @@
 #version 450
 #extension GL_ARB_separate_shader_objects : enable
 
+//__import ShaderCommon;
+//__import Shading;
 
 layout(set = 1, binding = 1) uniform texture2D gTex;
 layout(set = 4, binding = 2) uniform sampler gSampler;

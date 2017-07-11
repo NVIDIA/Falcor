@@ -2,6 +2,7 @@
 #define SLANG_TYPE_LAYOUT_H
 
 #include "../core/basic.h"
+#include "compiler.h"
 #include "profile.h"
 #include "syntax.h"
 
@@ -236,6 +237,10 @@ public:
     // Additional flags
     VarLayoutFlags flags = 0;
 
+    // System-value semantic (and index) if this is a system value
+    String  systemValueSemantic;
+    int     systemValueSemanticIndex;
+
     // The start register(s) for any resources
     struct ResourceInfo
     {
@@ -410,6 +415,9 @@ enum class ShaderParameterKind
     InputRenderTarget,
 
     SamplerState,
+
+    Image,
+    MutableImage,
 };
 
 struct SimpleLayoutRulesImpl
@@ -513,7 +521,7 @@ struct LayoutRulesFamilyImpl
 
 LayoutRulesImpl* GetLayoutRulesImpl(LayoutRule rule);
 LayoutRulesFamilyImpl* GetLayoutRulesFamilyImpl(LayoutRulesFamily rule);
-LayoutRulesFamilyImpl* GetLayoutRulesFamilyImpl(SourceLanguage language);
+LayoutRulesFamilyImpl* GetLayoutRulesFamilyImpl(CodeGenTarget target);
 
 SimpleLayoutInfo GetLayout(ExpressionType* type, LayoutRulesImpl* rules);
 

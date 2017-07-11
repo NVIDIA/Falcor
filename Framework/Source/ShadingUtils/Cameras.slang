@@ -25,27 +25,12 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#ifdef _SINGLE_PASS_STEREO
-fixme
-#endif
 
-#include "ShaderCommon.h"
+#ifndef _FALCOR_CAMERA_SHADERS_H_
+#define _FALCOR_CAMERA_SHADERS_H_
 
-cbuffer PerFrameCB : register(b0)
-{
-    float4x4 gWorld;
-    float gScale;
-};
+// Make sure we get the macros like `_fn` and `_ref`
+// TODO: just eliminate these since we know this is pure Slang.
+#include "HostDeviceData.h"
 
-void main(float4 posL : POSITION, out float3 dir : NORMAL, out float4 posH : SV_POSITION)
-{
-    dir = posL.xyz;
-    float4 viewPos = mul(gCam.viewMat, mul(gWorld, posL));
-    posH = mul(gCam.projMat, viewPos);
-    posH.xy *= gScale;
-    posH.z = posH.w;
-
-#ifdef _SINGLE_PASS_STEREO
-    fixme
-#endif
-}
+#endif	// _FALCOR_CAMERA_SHADERS_H_

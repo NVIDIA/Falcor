@@ -49,11 +49,14 @@ namespace Falcor
     /** create a new shader from a string. The shader will be processed using the shader pre-processor before creating the hardware object. See CShaderPreprocessor reference to see its supported directives.
     \param[in] shaderString The shader.
     \param[in] type Shader Type
-    \param[in] shaderDefines A string containing macro definitions to be patched into the shaders. Defines are separated by newline.
+    \param[in] entryPointName Optional name for the main entry point of the shader.
     \return A pointer to a new object if compilation was successful, otherwise nullptr.
     */
-    Shader::SharedPtr createShaderFromString(const std::vector<uint8_t>& shaderString, ShaderType type);
-       
+    Shader::SharedPtr createShaderFromString(
+        const std::vector<uint8_t>& shaderString,
+        ShaderType                  type,
+        std::string const&          entryPointName = "main");
+
     template<typename ObjectType, typename EnumType>
     typename ObjectType::SharedPtr createShaderFromFile(const std::string& filename, EnumType shaderType)
     {
@@ -77,7 +80,7 @@ namespace Falcor
             {
                 // Preprocessing is good
                 std::string errorLog;
-                auto pShader = ObjectType::create(shader, shaderType, errorLog);
+                auto pShader = ObjectType::create(shader, shaderType, "main", errorLog);
 
                 if (pShader == nullptr)
                 {

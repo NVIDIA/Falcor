@@ -61,8 +61,8 @@ void main(uint3 groupId : SV_GroupID, uint3 groupThreadId : SV_GroupThreadId)
     }
 
     GroupMemoryBarrierWithGroupSync();
-    gOutput[crd] = pixelated;
+    gOutput[crd] = pixelated.bgra;
 #else
-    gOutput[crd] = colors[groupThreadId.x][groupThreadId.y];
+    gOutput[crd] = colors[groupThreadId.x][groupThreadId.y].bgra;
 #endif
 }

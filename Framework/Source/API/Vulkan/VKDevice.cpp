@@ -36,7 +36,6 @@
 // #define VK_REPORT_PERF_WARNINGS // Uncomment this to see performance warnings
 namespace Falcor
 {
-    // #VKTODO MOVEME - Temporary placement for debug report callback(s)
 #ifdef DEFAULT_ENABLE_DEBUG_LAYER
     VKAPI_ATTR VkBool32 VKAPI_CALL debugReportCallback(
         VkDebugReportFlagsEXT       flags,
@@ -53,8 +52,13 @@ namespace Falcor
         printToDebugWindow(type + std::string(pMessage) + "\n");
         return VK_FALSE;
     }
-
 #endif
+
+    uint32_t getMaxViewportCount()
+    {
+        assert(gpDevice);
+        return gpDevice->getPhysicalDeviceLimits().maxViewports;
+    }
 
     struct DeviceApiData
     {

@@ -29,6 +29,7 @@
 
 void VKDev::onGuiRender()
 {
+    mpGui->addButton("foo!");
 }
 
 void VKDev::onLoad()

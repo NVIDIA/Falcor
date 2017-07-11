@@ -59,6 +59,7 @@ namespace Falcor
         static SharedPtr create(
             const std::string&  shaderString,
             ShaderType          type,
+            std::string const&  entryPointName,
             std::string&        log);
 
         /** create a shader object
@@ -70,6 +71,7 @@ namespace Falcor
         static SharedPtr create(
             const std::vector<uint8_t>&  shaderBlob,
             ShaderType          type,
+            std::string const&  entryPointName,
             std::string&        log);
 
         virtual ~Shader();
@@ -82,13 +84,22 @@ namespace Falcor
         */
         ShaderType getType() const { return mType; }
 
-        bool init(const std::string& shaderString, std::string& log);
+        bool init(
+            const std::string&  shaderString,
+            const std::string&  entryPointName,
+            std::string&        log);
 
-        bool init(const std::vector<uint8_t>& shaderBlob, std::string& log);
+        bool init(
+            const std::vector<uint8_t>& shaderBlob,
+            const std::string&  entryPointName,
+            std::string&        log);
 
 #ifdef FALCOR_D3D
         ID3DBlobPtr getCodeBlob() const;
-        virtual ID3DBlobPtr compile(const std::string& source, std::string& errorLog);
+        virtual ID3DBlobPtr compile(
+            const std::string&  source,
+            const std::string&  entryPointName,
+            std::string&        errorLog);
 #endif
 
     protected:
