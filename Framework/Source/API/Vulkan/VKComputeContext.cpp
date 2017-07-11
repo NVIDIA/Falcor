@@ -54,6 +54,12 @@ namespace Falcor
     template<typename ViewType, typename ClearType>
     void clearColorImageCommon(CopyContext* pCtx, const ViewType* pView, const ClearType& clearVal)
     {
+        if(pView->getApiHandle().getType() != VkResourceType::Image)
+        {
+            logWarning("Looks like you are trying to clear a buffer. Vulkan only supports clearing Buffers with a single uint value. Please use the uint version of clearUav(). Call is ignored");
+            should_not_get_here();
+            return;
+        }
         pCtx->resourceBarrier(pView->getResource(), Resource::State::CopyDest);
         VkClearColorValue colVal;
         memcpy_s(colVal.float32, sizeof(colVal.float32), &clearVal, sizeof(clearVal)); // VkClearColorValue is a union, so should work regardless of the ClearType
@@ -78,7 +84,20 @@ namespace Falcor
 
     void ComputeContext::clearUAV(const UnorderedAccessView* pUav, const uvec4& value)
     {
-        clearColorImageCommon(this, pUav, value);
+        if(pUav->getApiHandle().getType() == VkResourceType::Buffer)
+        {
+
+            if ((value.x != value.y) || (value.x != value.z) && (value.x != value.w))
+            {
+                logWarning("Vulkan buffer clears only support a single element. A vector was supplied which has different elements per channel. only `x` will be used'");
+            }
+            const Buffer* pBuffer = dynamic_cast<const Buffer*>(pUav->getResource());
+            vkCmdFillBuffer(getLowLevelData()->getCommandList(), pBuffer->getApiHandle(), pBuffer->getGpuAddressOffset(), pBuffer->getSize(), value.x);
+        }
+        else
+        {
+            clearColorImageCommon(this, pUav, value);
+        }
         mCommandsPending = true;
     }
 
