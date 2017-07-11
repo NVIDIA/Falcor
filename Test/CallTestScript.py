@@ -81,6 +81,7 @@ def main():
         workingDir = repoDst + '\\' + testDir
         os.chdir(workingDir)
         subprocess.call(['git', 'reset', '--hard', 'b190d73ff9661a2840e6f336aae9ebfd89a68eae'])
+        sys.exit()
 
         #run tests
         testingResults = RunAllTests.main(True, args.showsummary, args.generatereference, refDir, testList, pullBranch)
