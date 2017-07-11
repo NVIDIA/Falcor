@@ -43,7 +43,9 @@ void VKDev::onLoad()
     mpVars->setSampler("gSampler", Sampler::create(sampler));
     mpVars->setTexture("gTex", createTextureFromFile("C:\\Users\\nbenty\\Pictures\\ff7.jpg", false, true));
     mpTypedBuffer = TypedBuffer<uint32_t>::create(1);
+    mpTex3D = Texture::create3D(10, 1, 1, ResourceFormat::R32Uint, 1, nullptr, Resource::BindFlags::UnorderedAccess);
     mpVars->setTypedBuffer("typedBuffer", mpTypedBuffer);
+    mpVars->setTexture("typed3D", mpTex3D);
 }
 
 void VKDev::onFrameRender()
@@ -54,6 +56,7 @@ void VKDev::onFrameRender()
     pCountBuffer[0]["count"] = 0u;
 
     mpRenderContext->clearUAV(mpTypedBuffer->getUAV().get(), uvec4(0));
+    mpRenderContext->clearUAV(mpTex3D->getUAV().get(), uvec4(0));
 
     mpVars["PerFrameCB"]["offset"] = mTexOffset;
     mpRenderContext->setGraphicsVars(mpVars);
@@ -62,6 +65,9 @@ void VKDev::onFrameRender()
     count += "Structured Buffer =   " + std::to_string((uint32_t)pCountBuffer[0]["count"]) + "\n";
     const uint32_t* pTyped = (uint32_t*)mpTypedBuffer->map(Buffer::MapType::Read);
     count += "Typed Buffer      =   " + std::to_string(pTyped[0]) + "\n";
+    const auto& tex3D = mpRenderContext->readTextureSubresource(mpTex3D.get(), 0);
+    pTyped = (uint32_t*)tex3D.data();
+    count += "Texture 3D        =   " + std::to_string(pTyped[5]) + "\n";
     mpTypedBuffer->unmap();
     renderText(count, vec2(250, 20));
 }

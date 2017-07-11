@@ -10,6 +10,7 @@ layout(location = 0) in vec2 texC;
 layout (location = 0) out vec4 outColor;
 
 layout(set = 1, binding = 9, r32ui) uniform uimageBuffer typedBuffer;
+layout(set = 1, binding = 11, r32ui) uniform uimage3D typed3D;
 
 layout(set = 1, binding = 4) buffer outImage
 {
@@ -26,4 +27,5 @@ void main()
     outColor = texture(sampler2D(gTex, gSampler), texC + offset);
     atomicAdd(count, 1);
     imageAtomicAdd(typedBuffer, 0, 2);
+    imageAtomicAdd(typed3D, ivec3(5,0,0), 5);
 }

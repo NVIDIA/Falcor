@@ -48,5 +48,6 @@ private:
     GraphicsVars::SharedPtr mpVars;
     vec2 mTexOffset;
     TypedBuffer<uint32_t>::SharedPtr mpTypedBuffer;
+    Texture::SharedPtr mpTex3D;
 };
 #endif
