@@ -25,6 +25,7 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
+#ifdef FALCOR_VK
 #include "VKDev.h"
 
 void VKDev::onGuiRender()
@@ -110,3 +111,5 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
     config.windowDesc.resizableWindow = true;
     sample.run(config);
 }
+
+#endif

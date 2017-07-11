@@ -26,6 +26,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 #pragma once
+#ifdef FALCOR_VK
 #include "Falcor.h"
 
 using namespace Falcor;
@@ -47,3 +48,4 @@ private:
     GraphicsVars::SharedPtr mpVars;
     vec2 mTexOffset;
 };
+#endif
