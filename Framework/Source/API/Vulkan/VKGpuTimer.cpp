@@ -27,74 +27,22 @@
 ***************************************************************************/
 #include "Framework.h"
 #include "API/GpuTimer.h"
+#include "API/Device.h"
 
 namespace Falcor
 {
-    GpuTimer::SharedPtr GpuTimer::create()
+    void GpuTimer::apiBegin()
+   {
+        vkCmdWriteTimestamp(mpLowLevelData->getCommandList(), VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, mpHeap, mStart);
+   }
+
+    void GpuTimer::apiEnd()
     {
-        return SharedPtr(new GpuTimer());
+        vkCmdWriteTimestamp(mpLowLevelData->getCommandList(), VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, mpHeap, mEnd);
     }
 
-    GpuTimer::GpuTimer()
+    void GpuTimer::apiResolve(uint64_t result[2])
     {
-        QueryData* pData = new QueryData;
-        mpApiData = pData;
+        vk_call(vkGetQueryPoolResults(gpDevice->getApiHandle(), mpHeap, mStart, 2, sizeof(uint64_t)*2, result, sizeof(result[0]), VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT));
     }
-
-    GpuTimer::~GpuTimer()
-    {
-        QueryData* pData = (QueryData*)mpApiData;
-        delete pData;
-    }
-
-    void GpuTimer::begin()
-    {
-        if (mStatus == Status::Begin)
-        {
-            logWarning("GpuTimer::begin() was followed by another call to GpuTimer::begin() without a GpuTimer::end() in-between. Ignoring call.");
-            return;
-        }
-
-        if (mStatus == Status::End)
-        {
-            logWarning("GpuTimer::begin() was followed by a call to GpuTimer::end() without querying the data first. The previous results will be discarded.");
-        }
-
-        QueryData* pData = (QueryData*)mpApiData;
-
-        // Code
-
-        mStatus = Status::Begin;
-    }
-
-    void GpuTimer::end()
-    {
-        if (mStatus != Status::Begin)
-        {
-            logWarning("GpuTimer::end() was called without a preciding GpuTimer::begin(). Ignoring call.");
-            return;
-        }
-        QueryData* pData = (QueryData*)mpApiData;
-
-        // Code
-
-        mStatus = Status::End;
-    }
-
-    double GpuTimer::getElapsedTime()
-    {
-        if (mStatus != Status::End)
-        {
-            logWarning("GpuTimer::getElapsedTime() was called but the GpuTimer::end() wasn't called. No data to fetch.");
-            return 0;
-        }
-
-        QueryData* pData = (QueryData*)mpApiData;
-
-        // Code
-
-        return 0;
-    }
-
-
 }

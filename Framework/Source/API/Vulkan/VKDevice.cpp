@@ -547,7 +547,7 @@ namespace Falcor
         if (initMemoryTypes(physicalDevice, mpApiData) == false) return false;
 
         mApiHandle = DeviceHandle::create(instance, physicalDevice, device, surface);
-
+        mGpuTimestampFrequency = getPhysicalDeviceLimits().timestampPeriod / (1000 * 1000);
         return true;
     }
 

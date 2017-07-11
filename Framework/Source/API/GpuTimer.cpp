@@ -45,6 +45,7 @@ namespace Falcor
         mEnd = pHeap->allocate();
         assert(mEnd == (mStart + 1));
         mpHeap = pHeap->getApiHandle();
+        mpLowLevelData = gpDevice->getRenderContext()->getLowLevelData();
     }
 
     GpuTimer::~GpuTimer()
@@ -90,15 +91,14 @@ namespace Falcor
             return 0;
         }
 
-        apiResolve();
-        uint64_t* pRes = (uint64*)mpResolveBuffer->map(Buffer::MapType::Read);
+        uint64_t result[2];
+        apiResolve(result);
 
-        double start = (double)pRes[0];
-        double end = (double)pRes[1];
+        double start = (double)result[0];
+        double end = (double)result[1];
         double range = end - start;
         double elapsedTime = range * gpDevice->getGpuTimestampFrequency();
         mStatus = Status::Idle;
-        mpResolveBuffer->unmap();
 
         return elapsedTime;
     }

@@ -28,7 +28,7 @@
 #pragma once
 #include "API/QueryHeap.h"
 #include "API/Buffer.h"
-
+#include "API/LowLevel/LowLevelContextData.h"
 #include <memory>
 
 namespace Falcor
@@ -75,11 +75,12 @@ namespace Falcor
         } mStatus = Idle;
 
         Buffer::SharedPtr mpResolveBuffer;
-        QueryHeap::ApiHandle mpHeap;
+        QueryHeapHandle mpHeap;
+        LowLevelContextData::SharedPtr mpLowLevelData;
         uint32_t mStart;
         uint32_t mEnd;
         void apiBegin();
         void apiEnd();
-        void apiResolve();
+        void apiResolve(uint64_t result[2]);
     };
 }
