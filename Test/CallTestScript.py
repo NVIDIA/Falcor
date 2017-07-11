@@ -80,6 +80,7 @@ def main():
         prevWorkingDir = os.getcwd()
         workingDir = repoDst + '\\' + testDir
         os.chdir(workingDir)
+        subprocess.call(['git', 'reset', '--hard', ''])
 
         #run tests
         testingResults = RunAllTests.main(True, args.showsummary, args.generatereference, refDir, testList, pullBranch)
