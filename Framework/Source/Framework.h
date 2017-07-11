@@ -176,9 +176,6 @@ namespace Falcor
     };
 }
 
-#include "Utils/Logger.h"
-#include "Utils/Profiler.h"
-
 #if defined(FALCOR_D3D11) || defined(FALCOR_D3D12)
 #include "API/D3D/FalcorD3D.h"
 #elif defined(FALCOR_VK)
@@ -186,8 +183,6 @@ namespace Falcor
 #else
 #error Undefined falcor backend. Make sure that a backend is selected in "FalcorConfig.h"
 #endif
-
-#include "Utils/OS.h"
 
 #if defined(FALCOR_D3D12) || defined(FALCOR_VK)
 #define FALCOR_LOW_LEVEL_API
@@ -217,6 +212,9 @@ namespace Falcor
         }
     }
 }
+
+#include "Utils/OS.h"
+#include "Utils/Profiler.h"
 
 #if (_ENABLE_NVAPI == true)
 #include "nvapi.h"

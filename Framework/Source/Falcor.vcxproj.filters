@@ -512,6 +512,7 @@
     <ClCompile Include="API\ResourceViews.cpp" />
     <ClCompile Include="API\D3D\D3D12\D3D12QueryHeap.cpp" />
     <ClCompile Include="API\Vulkan\VkQueryHeap.cpp" />
+    <ClCompile Include="API\GpuTimer.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Graphics\Model\Animation.h">

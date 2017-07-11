@@ -26,7 +26,8 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 #include "Framework.h"
-#include "API/GpuTimer.h"
+#include "Device.h"
+#include "GpuTimer.h"
 
 namespace Falcor
 {
@@ -37,14 +38,20 @@ namespace Falcor
 
     GpuTimer::GpuTimer()
     {
-        QueryData* pData = new QueryData;
-        mpApiData = pData;
+        mpResolveBuffer = Buffer::create(sizeof(uint64_t) * 2, Buffer::BindFlags::None, Buffer::CpuAccess::Read, nullptr);
+
+        auto& pHeap = gpDevice->getTimestampQueryHeap();
+        mStart = pHeap->allocate();
+        mEnd = pHeap->allocate();
+        assert(mEnd == (mStart + 1));
+        mpHeap = pHeap->getApiHandle();
     }
 
     GpuTimer::~GpuTimer()
     {
-        QueryData* pData = (QueryData*)mpApiData;
-        delete pData;
+        auto& pHeap = gpDevice->getTimestampQueryHeap();
+        pHeap->release(mStart);
+        pHeap->release(mEnd);
     }
 
     void GpuTimer::begin()
@@ -59,12 +66,8 @@ namespace Falcor
         {
             logWarning("GpuTimer::begin() was followed by a call to GpuTimer::end() without querying the data first. The previous results will be discarded.");
         }
-
-        QueryData* pData = (QueryData*)mpApiData;
-
-        // Code
-
         mStatus = Status::Begin;
+        apiBegin();
     }
 
     void GpuTimer::end()
@@ -74,12 +77,10 @@ namespace Falcor
             logWarning("GpuTimer::end() was called without a preciding GpuTimer::begin(). Ignoring call.");
             return;
         }
-        QueryData* pData = (QueryData*)mpApiData;
-
-        // Code
-
         mStatus = Status::End;
+        apiEnd();
     }
+
 
     double GpuTimer::getElapsedTime()
     {
@@ -89,12 +90,16 @@ namespace Falcor
             return 0;
         }
 
-        QueryData* pData = (QueryData*)mpApiData;
+        apiResolve();
+        uint64_t* pRes = (uint64*)mpResolveBuffer->map(Buffer::MapType::Read);
 
-        // Code
+        double start = (double)pRes[0];
+        double end = (double)pRes[1];
+        double range = end - start;
+        double elapsedTime = range * gpDevice->getGpuTimestampFrequency();
+        mStatus = Status::Idle;
+        mpResolveBuffer->unmap();
 
-        return 0;
+        return elapsedTime;
     }
-
-
 }

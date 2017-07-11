@@ -288,6 +288,7 @@
     <ClCompile Include="API\Device.cpp" />
     <ClCompile Include="API\FBO.cpp" />
     <ClCompile Include="API\Formats.cpp" />
+    <ClCompile Include="API\GpuTimer.cpp" />
     <ClCompile Include="API\LowLevel\DescriptorPool.cpp" />
     <ClCompile Include="API\LowLevel\ResourceAllocator.cpp" />
     <ClCompile Include="API\LowLevel\RootSignature.cpp" />

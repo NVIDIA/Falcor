@@ -140,6 +140,7 @@ namespace Falcor
         ResourceAllocator::SharedPtr getResourceAllocator() const { return mpResourceAllocator; }
         QueryHeap::SharedPtr getTimestampQueryHeap() const { return mTimestampQueryHeap; }
         void releaseResource(ApiObjectHandle pResource);
+        double getGpuTimestampFrequency() const { return mGpuTimestampFrequency; } // ms/tick
 
 #ifdef FALCOR_VK
         enum class MemoryType
@@ -182,6 +183,7 @@ namespace Falcor
         bool mVsyncOn;
         size_t mFrameID = 0;
         QueryHeap::SharedPtr mTimestampQueryHeap;
+        double mGpuTimestampFrequency;
 
         std::vector<CommandQueueHandle> mCmdQueues[kQueueTypeCount];
 

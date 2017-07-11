@@ -26,6 +26,8 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 #pragma once
+#include "API/QueryHeap.h"
+#include "API/Buffer.h"
 
 #include <memory>
 
@@ -71,6 +73,13 @@ namespace Falcor
             End,
             Idle
         } mStatus = Idle;
-        void* mpApiData = nullptr;
+
+        Buffer::SharedPtr mpResolveBuffer;
+        QueryHeap::ApiHandle mpHeap;
+        uint32_t mStart;
+        uint32_t mEnd;
+        void apiBegin();
+        void apiEnd();
+        void apiResolve();
     };
 }

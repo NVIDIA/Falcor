@@ -32,95 +32,18 @@
 
 namespace Falcor
 {
-    struct QueryData
+    void GpuTimer::apiBegin()
     {
-        Buffer::SharedPtr pResolveBuffer;
-        QueryHeap::ApiHandle pHeap;
-        double frequency;
-        uint32_t start;
-        uint32_t end;
-    };
-
-    GpuTimer::SharedPtr GpuTimer::create()
-    {
-        return SharedPtr(new GpuTimer());
+        gpDevice->getRenderContext()->getLowLevelData()->getCommandList()->EndQuery(mpHeap, D3D12_QUERY_TYPE_TIMESTAMP, mStart);
     }
 
-    GpuTimer::GpuTimer()
+    void GpuTimer::apiEnd()
     {
-        QueryData* pData = new QueryData;
-        mpApiData = pData;
-
-        pData->pResolveBuffer = Buffer::create(sizeof(uint64_t) * 2, Buffer::BindFlags::None, Buffer::CpuAccess::Read, nullptr);
-
-        uint64_t freq;
-        d3d_call(gpDevice->getRenderContext()->getLowLevelData()->getCommandQueue()->GetTimestampFrequency(&freq));
-        pData->frequency = 1000.0/(double)freq;
-
-        auto& pHeap = gpDevice->getTimestampQueryHeap();
-        pData->start = pHeap->allocate();
-        pData->end = pHeap->allocate();
-        assert(pData->end == (pData->start + 1));
-        pData->pHeap = pHeap->getApiHandle();
+        gpDevice->getRenderContext()->getLowLevelData()->getCommandList()->EndQuery(mpHeap, D3D12_QUERY_TYPE_TIMESTAMP, mEnd);
     }
 
-    GpuTimer::~GpuTimer()
+    void GpuTimer::apiResolve()
     {
-        QueryData* pData = (QueryData*)mpApiData;
-        auto& pHeap = gpDevice->getTimestampQueryHeap();
-        pHeap->release(pData->start);
-        pHeap->release(pData->end);
-        delete pData;
-    }
-
-    void GpuTimer::begin()
-    {
-        if (mStatus == Status::Begin)
-        {
-            logWarning("GpuTimer::begin() was followed by another call to GpuTimer::begin() without a GpuTimer::end() in-between. Ignoring call.");
-            return;
-        }
-
-        if (mStatus == Status::End)
-        {
-            logWarning("GpuTimer::begin() was followed by a call to GpuTimer::end() without querying the data first. The previous results will be discarded.");
-        }
-        QueryData* pData = (QueryData*)mpApiData;
-        gpDevice->getRenderContext()->getLowLevelData()->getCommandList()->EndQuery(pData->pHeap, D3D12_QUERY_TYPE_TIMESTAMP, pData->start);
-        mStatus = Status::Begin;
-    }
-
-    void GpuTimer::end()
-    {
-        if (mStatus != Status::Begin)
-        {
-            logWarning("GpuTimer::end() was called without a preciding GpuTimer::begin(). Ignoring call.");
-            return;
-        }
-        QueryData* pData = (QueryData*)mpApiData;
-        gpDevice->getRenderContext()->getLowLevelData()->getCommandList()->EndQuery(pData->pHeap, D3D12_QUERY_TYPE_TIMESTAMP, pData->end);
-        mStatus = Status::End;
-    }
-
-    double GpuTimer::getElapsedTime()
-    {
-        if (mStatus != Status::End)
-        {
-            logWarning("GpuTimer::getElapsedTime() was called but the GpuTimer::end() wasn't called. No data to fetch.");
-            return 0;
-        }
-        QueryData* pData = (QueryData*)mpApiData;
-        gpDevice->getRenderContext()->getLowLevelData()->getCommandList()->ResolveQueryData(pData->pHeap, D3D12_QUERY_TYPE_TIMESTAMP, pData->start, 2, pData->pResolveBuffer->getApiHandle(), 0);
-
-        uint64_t* pRes = (uint64*)pData->pResolveBuffer->map(Buffer::MapType::Read);
-        
-        double start = (double)pRes[0];
-        double end = (double)pRes[1];
-        double range = end - start;
-        double elapsedTime = range * pData->frequency;
-        mStatus = Status::Idle;
-        pData->pResolveBuffer->unmap();
-
-        return elapsedTime;
+        gpDevice->getRenderContext()->getLowLevelData()->getCommandList()->ResolveQueryData(mpHeap, D3D12_QUERY_TYPE_TIMESTAMP, mStart, 2, mpResolveBuffer->getApiHandle(), 0);
     }
 }
