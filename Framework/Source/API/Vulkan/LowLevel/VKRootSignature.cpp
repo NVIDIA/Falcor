@@ -136,24 +136,24 @@ namespace Falcor
     static ResData getResData(const ProgramReflection::Resource& resource)
     {
         ResData data;
-        if (resource.type == ProgramReflection::Resource::ResourceType::Sampler)
+        switch (resource.type)
         {
-            data.type = RootSignature::DescType::Sampler;
-        }
-        else
-        {
-            switch (resource.shaderAccess)
-            {
-            case ProgramReflection::ShaderAccess::ReadWrite:
-                data.type = RootSignature::DescType::Uav;
+        case ProgramReflection::Resource::ResourceType::Sampler:
+                data.type = RootSignature::DescType::Sampler;
                 break;
-            case ProgramReflection::ShaderAccess::Read:
-                data.type = RootSignature::DescType::Srv;
+            case ProgramReflection::Resource::ResourceType::StructuredBuffer:
+                data.type = (resource.shaderAccess == ProgramReflection::ShaderAccess::Read) ? RootSignature::DescType::StructuredBufferSrv : RootSignature::DescType::StructuredBufferUav;
+                break;
+            case ProgramReflection::Resource::ResourceType::TypedBuffer:
+                data.type = (resource.shaderAccess == ProgramReflection::ShaderAccess::Read) ? RootSignature::DescType::TypedBufferSrv : RootSignature::DescType::TypedBufferUav;
+                break;
+            case ProgramReflection::Resource::ResourceType::Texture:
+                data.type = (resource.shaderAccess == ProgramReflection::ShaderAccess::Read) ? RootSignature::DescType::TextureSrv : RootSignature::DescType::TextureUav;
                 break;
             default:
                 should_not_get_here();
-            }
         }
+
 
         data.count = resource.arraySize ? resource.arraySize : 1;
         data.regIndex = resource.regIndex;
@@ -233,8 +233,8 @@ namespace Falcor
         }
 
         insertBuffers(pReflector, setMap, ProgramReflection::BufferReflection::Type::Constant, RootSignature::DescType::Cbv);
-        insertBuffers(pReflector, setMap, ProgramReflection::BufferReflection::Type::Structured, RootSignature::DescType::Srv);
-        insertBuffers(pReflector, setMap, ProgramReflection::BufferReflection::Type::Structured, RootSignature::DescType::Uav);
+        insertBuffers(pReflector, setMap, ProgramReflection::BufferReflection::Type::Structured, RootSignature::DescType::StructuredBufferSrv);
+        insertBuffers(pReflector, setMap, ProgramReflection::BufferReflection::Type::Structured, RootSignature::DescType::StructuredBufferUav);
 
         std::map<uint32_t, DescriptorSetLayout> setLayouts;
         // Merge all the ranges

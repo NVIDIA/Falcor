@@ -514,7 +514,8 @@ namespace Falcor
 
             case SLANG_BYTE_ADDRESS_BUFFER:
                 return ProgramReflection::Resource::ResourceType::RawBuffer;
-
+            case SLANG_TEXTURE_BUFFER:
+                return ProgramReflection::Resource::ResourceType::TypedBuffer;
             default:
                 return ProgramReflection::Resource::ResourceType::Texture;
             }

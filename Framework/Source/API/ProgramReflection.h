@@ -133,6 +133,7 @@ namespace Falcor
                 Texture,
                 StructuredBuffer,
                 RawBuffer,
+                TypedBuffer,
                 Sampler
             };
 

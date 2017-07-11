@@ -51,9 +51,13 @@ namespace Falcor
 
         enum class Type
         {
-            Srv,
-            Uav,
+            TextureSrv,
+            TextureUav,
+            TypedBufferSrv,
+            TypedBufferUav,
             Cbv,
+            StructuredBufferUav,
+            StructuredBufferSrv,
             Dsv,
             Rtv,
             Sampler,

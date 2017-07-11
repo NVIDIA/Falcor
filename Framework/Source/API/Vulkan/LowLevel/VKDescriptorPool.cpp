@@ -36,19 +36,27 @@ namespace Falcor
     {
         switch (type)
         {
-        case DescriptorPool::Type::Srv:
-        case DescriptorPool::Type::Dsv:
-        case DescriptorPool::Type::Rtv: // #VKTODO SAMPLED_IMAGE doesn't feel right for a frame buffer. Double check the right Descriptor Type
+        case DescriptorPool::Type::TextureSrv:
             return VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
-        case DescriptorPool::Type::Uav:
-            return VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+        case DescriptorPool::Type::TextureUav:
+            return VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+        case DescriptorPool::Type::TypedBufferSrv:
+            return VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER;
+        case DescriptorPool::Type::TypedBufferUav:
+            return VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER;
         case DescriptorPool::Type::Cbv:
+        case DescriptorPool::Type::StructuredBufferSrv:
             return VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        case DescriptorPool::Type::StructuredBufferUav:
+            return VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+        case DescriptorPool::Type::Dsv:
+        case DescriptorPool::Type::Rtv:
+            return VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
         case DescriptorPool::Type::Sampler:
             return VK_DESCRIPTOR_TYPE_SAMPLER;
         default:
             should_not_get_here();
-            return VkDescriptorType(-1);
+            return VK_DESCRIPTOR_TYPE_MAX_ENUM;
         }
     }
 
