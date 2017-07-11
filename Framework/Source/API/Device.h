@@ -32,6 +32,7 @@
 #include "API/RenderContext.h"
 #include "API/LowLevel/DescriptorPool.h"
 #include "API/LowLevel/ResourceAllocator.h"
+#include "API/QueryHeap.h"
 
 namespace Falcor
 {
@@ -137,7 +138,9 @@ namespace Falcor
         DescriptorPool::SharedPtr getCpuDescriptorPool() const { return mpCpuDescPool; }
         DescriptorPool::SharedPtr getGpuDescriptorPool() const { return mpGpuDescPool; }
         ResourceAllocator::SharedPtr getResourceAllocator() const { return mpResourceAllocator; }
+        QueryHeap::SharedPtr getTimestampQueryHeap() const { return mTimestampQueryHeap; }
         void releaseResource(ApiObjectHandle pResource);
+        double getGpuTimestampFrequency() const { return mGpuTimestampFrequency; } // ms/tick
 
 #ifdef FALCOR_VK
         enum class MemoryType
@@ -179,6 +182,8 @@ namespace Falcor
         RenderContext::SharedPtr mpRenderContext;
         bool mVsyncOn;
         size_t mFrameID = 0;
+        QueryHeap::SharedPtr mTimestampQueryHeap;
+        double mGpuTimestampFrequency;
 
         std::vector<CommandQueueHandle> mCmdQueues[kQueueTypeCount];
 

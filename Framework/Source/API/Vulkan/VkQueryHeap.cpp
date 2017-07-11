@@ -26,23 +26,36 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 #include "Framework.h"
-#include "API/GpuTimer.h"
 #include "API/Device.h"
+#include "API/QueryHeap.h"
 
 namespace Falcor
 {
-    void GpuTimer::apiBegin()
-   {
-        vkCmdWriteTimestamp(mpLowLevelData->getCommandList(), VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, mpHeap, mStart);
-   }
-
-    void GpuTimer::apiEnd()
+    static VkQueryType getVkPoolType(QueryHeap::Type t)
     {
-        vkCmdWriteTimestamp(mpLowLevelData->getCommandList(), VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, mpHeap, mEnd);
+        switch (t)
+        {
+        case QueryHeap::Type::Timestamp:
+            return VK_QUERY_TYPE_TIMESTAMP;
+        case QueryHeap::Type::Occlusion:
+            return VK_QUERY_TYPE_OCCLUSION;
+        case QueryHeap::Type::PipelineStats:
+            return VK_QUERY_TYPE_PIPELINE_STATISTICS;
+        default:
+            should_not_get_here();
+            return VK_QUERY_TYPE_MAX_ENUM;
+        }
     }
 
-    void GpuTimer::apiResolve(uint64_t result[2])
+    QueryHeap::QueryHeap(Type type, uint32_t count) : mType(type), mCount(count)
     {
-        vk_call(vkGetQueryPoolResults(gpDevice->getApiHandle(), mpHeap, mStart, 2, sizeof(uint64_t)*2, result, sizeof(result[0]), VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT));
+        VkQueryPoolCreateInfo info = {};
+        info.sType = VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO;
+        info.queryCount = count;
+        info.queryType = getVkPoolType(type);
+        info.pipelineStatistics = VK_QUERY_PIPELINE_STATISTIC_FLAG_BITS_MAX_ENUM;
+        VkQueryPool pool;
+        vk_call(vkCreateQueryPool(gpDevice->getApiHandle(), &info, nullptr, &pool));
+        mApiHandle = ApiHandle::create(pool);
     }
 }

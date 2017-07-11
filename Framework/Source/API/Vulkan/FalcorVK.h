@@ -88,6 +88,7 @@ namespace Falcor
     using SamplerHandle = VkHandle<VkSampler>::SharedPtr;
     using GpuAddress = size_t;
     using DescriptorSetApiHandle = VkDescriptorSet;
+    using QueryHeapHandle = VkHandle<VkQueryPool>::SharedPtr;
 
     using GraphicsStateHandle = VkHandle<VkPipeline>::SharedPtr;
     using ComputeStateHandle = VkHandle<VkPipeline>::SharedPtr;

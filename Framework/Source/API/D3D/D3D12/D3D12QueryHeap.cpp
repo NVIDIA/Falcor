@@ -1,5 +1,5 @@
 /***************************************************************************
-# Copyright (c) 2017, NVIDIA CORPORATION. All rights reserved.
+# Copyright (c) 2015, NVIDIA CORPORATION. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -26,23 +26,35 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 #include "Framework.h"
-#include "API/GpuTimer.h"
-#include "API/Device.h"
+#include "Api/QueryHeap.h"
+#include "Api/Device.h"
 
 namespace Falcor
 {
-    void GpuTimer::apiBegin()
-   {
-        vkCmdWriteTimestamp(mpLowLevelData->getCommandList(), VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, mpHeap, mStart);
-   }
-
-    void GpuTimer::apiEnd()
+    static D3D12_QUERY_HEAP_TYPE getD3D12HeapType(QueryHeap::Type t)
     {
-        vkCmdWriteTimestamp(mpLowLevelData->getCommandList(), VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, mpHeap, mEnd);
+        switch (t)
+        {
+        case QueryHeap::Type::Timestamp:
+            return D3D12_QUERY_HEAP_TYPE_TIMESTAMP;
+        case QueryHeap::Type::Occlusion:
+            return D3D12_QUERY_HEAP_TYPE_OCCLUSION;
+        case QueryHeap::Type::PipelineStats:
+            return D3D12_QUERY_HEAP_TYPE_PIPELINE_STATISTICS;
+        default:
+            should_not_get_here();
+            return D3D12_QUERY_HEAP_TYPE(-1);
+        }
     }
 
-    void GpuTimer::apiResolve(uint64_t result[2])
+    QueryHeap::QueryHeap(Type type, uint32_t count) : mType(type), mCount(count)
     {
-        vk_call(vkGetQueryPoolResults(gpDevice->getApiHandle(), mpHeap, mStart, 2, sizeof(uint64_t)*2, result, sizeof(result[0]), VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT));
+        ID3D12Device* pDevice = gpDevice->getApiHandle().GetInterfacePtr();
+        D3D12_QUERY_HEAP_DESC desc;
+        desc.Count = count;
+        desc.NodeMask = 0;
+        desc.Type = getD3D12HeapType(type);
+
+        d3d_call(pDevice->CreateQueryHeap(&desc, IID_PPV_ARGS(&mApiHandle)));
     }
 }

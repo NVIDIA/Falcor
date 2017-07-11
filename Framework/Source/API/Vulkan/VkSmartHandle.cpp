@@ -40,6 +40,7 @@ namespace Falcor
     template<> VkHandle<VkShaderModule>::~VkHandle() { if(mApiHandle != VK_NULL_HANDLE) vkDestroyShaderModule(gpDevice->getApiHandle(), mApiHandle, nullptr); }
     template<> VkHandle<VkPipelineLayout>::~VkHandle() { if(mApiHandle != VK_NULL_HANDLE) vkDestroyPipelineLayout(gpDevice->getApiHandle(), mApiHandle, nullptr); }
     template<> VkHandle<VkDescriptorPool>::~VkHandle() { if(mApiHandle != VK_NULL_HANDLE) vkDestroyDescriptorPool(gpDevice->getApiHandle(), mApiHandle, nullptr); }
+    template<> VkHandle<VkQueryPool>::~VkHandle() { if (mApiHandle != VK_NULL_HANDLE && gpDevice) vkDestroyQueryPool(gpDevice->getApiHandle(), mApiHandle, nullptr); }
 
 //     template<>
 //     VkResource<VkImage, VkBuffer>::operator bool()
@@ -126,6 +127,7 @@ namespace Falcor
     template VkHandle<VkPipeline>::~VkHandle();
     template VkHandle<VkShaderModule>::~VkHandle();
     template VkHandle<VkDescriptorPool>::~VkHandle();
+    template VkHandle<VkQueryPool>::~VkHandle();
 
     template VkResource<VkImage, VkBuffer>::~VkResource();
     template VkResource<VkImageView, VkBufferView>::~VkResource();

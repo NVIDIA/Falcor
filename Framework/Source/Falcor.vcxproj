@@ -169,6 +169,10 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseVK|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugD3D11|x64'">true</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="API\D3D\D3D12\D3D12QueryHeap.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugVK|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseVK|x64'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="API\D3D\D3D12\D3D12RasterizerState.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseD3D11|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugD3D11|x64'">true</ExcludedFromBuild>
@@ -284,6 +288,7 @@
     <ClCompile Include="API\Device.cpp" />
     <ClCompile Include="API\FBO.cpp" />
     <ClCompile Include="API\Formats.cpp" />
+    <ClCompile Include="API\GpuTimer.cpp" />
     <ClCompile Include="API\LowLevel\DescriptorPool.cpp" />
     <ClCompile Include="API\LowLevel\ResourceAllocator.cpp" />
     <ClCompile Include="API\LowLevel\RootSignature.cpp" />
@@ -432,6 +437,12 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseVK|x64'">false</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugD3D11|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugD3D12|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="API\Vulkan\VkQueryHeap.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugD3D12|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugD3D11|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseD3D11|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseD3D12|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="API\Vulkan\VKRasterizerState.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseD3D11|x64'">true</ExcludedFromBuild>
@@ -899,6 +910,7 @@
     <ClInclude Include="API\ProgramReflection.h" />
     <ClInclude Include="API\ProgramVars.h" />
     <ClInclude Include="API\ProgramVersion.h" />
+    <ClInclude Include="API\QueryHeap.h" />
     <ClInclude Include="API\RasterizerState.h" />
     <ClInclude Include="API\RenderContext.h" />
     <ClInclude Include="API\Resource.h" />

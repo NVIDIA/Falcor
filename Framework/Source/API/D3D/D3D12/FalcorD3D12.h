@@ -77,7 +77,8 @@ namespace Falcor
     using CbvHandle = std::shared_ptr<DescriptorSet>;
     using FboHandle = void*;
     using GpuAddress = D3D12_GPU_VIRTUAL_ADDRESS;
-    
+    using QueryHeapHandle = ID3D12QueryHeapPtr;
+
     using GraphicsStateHandle = ID3D12PipelineStatePtr;
     using ComputeStateHandle = ID3D12PipelineStatePtr;
     using ShaderHandle = D3D12_SHADER_BYTECODE;

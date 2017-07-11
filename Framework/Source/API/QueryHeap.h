@@ -1,5 +1,5 @@
 /***************************************************************************
-# Copyright (c) 2017, NVIDIA CORPORATION. All rights reserved.
+# Copyright (c) 2015, NVIDIA CORPORATION. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -25,24 +25,51 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#include "Framework.h"
-#include "API/GpuTimer.h"
-#include "API/Device.h"
+#pragma once
+#include <deque>
 
 namespace Falcor
 {
-    void GpuTimer::apiBegin()
-   {
-        vkCmdWriteTimestamp(mpLowLevelData->getCommandList(), VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, mpHeap, mStart);
-   }
-
-    void GpuTimer::apiEnd()
+    class QueryHeap : public std::enable_shared_from_this<QueryHeap>
     {
-        vkCmdWriteTimestamp(mpLowLevelData->getCommandList(), VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, mpHeap, mEnd);
-    }
+    public:
+        using SharedPtr = std::shared_ptr<QueryHeap>;
+        using ApiHandle = QueryHeapHandle;
+        enum class Type
+        {
+            Timestamp,
+            Occlusion,
+            PipelineStats
+        };
 
-    void GpuTimer::apiResolve(uint64_t result[2])
-    {
-        vk_call(vkGetQueryPoolResults(gpDevice->getApiHandle(), mpHeap, mStart, 2, sizeof(uint64_t)*2, result, sizeof(result[0]), VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT));
-    }
+        static SharedPtr create(Type type, uint32_t count) { return SharedPtr(new QueryHeap(type, count)); }
+
+        ApiHandle getApiHandle() const { return mApiHandle; }
+        uint32_t getQueryCount() const { return mCount; }
+        Type getType() const { return mType; }
+
+        uint32_t allocate()
+        {
+            if (mFreeQueries.size())
+            {
+                uint32_t entry = mFreeQueries.back();
+                mFreeQueries.pop_back();
+                return entry;
+            }
+            assert(mCurrentObject < mCount);
+            return mCurrentObject++;
+        }
+
+        void release(uint32_t entry)
+        {
+            mFreeQueries.push_back(entry);
+        }
+    private:
+        QueryHeap(Type type, uint32_t count);
+        ApiHandle mApiHandle;
+        uint32_t mCount = 0;
+        uint32_t mCurrentObject = 0;
+        std::deque<uint32_t> mFreeQueries;
+        Type mType;
+    };
 }

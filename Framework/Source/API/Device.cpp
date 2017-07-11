@@ -45,6 +45,8 @@ namespace Falcor
         {
             gpDevice = nullptr;
         }
+
+        gpDevice->mTimestampQueryHeap = QueryHeap::create(QueryHeap::Type::Timestamp, 128 * 1024 * 1024);
         return gpDevice;
     }
 

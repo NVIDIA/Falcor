@@ -50,9 +50,9 @@ namespace Falcor
 
     D3D_FEATURE_LEVEL getD3DFeatureLevel(uint32_t majorVersion, uint32_t minorVersion)
     {
-        if(majorVersion == 12)
+        if (majorVersion == 12)
         {
-            switch(minorVersion)
+            switch (minorVersion)
             {
             case 0:
                 return D3D_FEATURE_LEVEL_12_0;
@@ -60,9 +60,9 @@ namespace Falcor
                 return D3D_FEATURE_LEVEL_12_1;
             }
         }
-        else if(majorVersion == 11)
+        else if (majorVersion == 11)
         {
-            switch(minorVersion)
+            switch (minorVersion)
             {
             case 0:
                 return D3D_FEATURE_LEVEL_11_1;
@@ -70,9 +70,9 @@ namespace Falcor
                 return D3D_FEATURE_LEVEL_11_0;
             }
         }
-        else if(majorVersion == 10)
+        else if (majorVersion == 10)
         {
-            switch(minorVersion)
+            switch (minorVersion)
             {
             case 0:
                 return D3D_FEATURE_LEVEL_10_0;
@@ -80,9 +80,9 @@ namespace Falcor
                 return D3D_FEATURE_LEVEL_10_1;
             }
         }
-        else if(majorVersion == 9)
+        else if (majorVersion == 9)
         {
-            switch(minorVersion)
+            switch (minorVersion)
             {
             case 1:
                 return D3D_FEATURE_LEVEL_9_1;
@@ -213,7 +213,7 @@ namespace Falcor
         DeviceApiData* pData = new DeviceApiData;
         mpApiData = pData;
 
-        if(desc.enableDebugLayer)
+        if (desc.enableDebugLayer)
         {
             ID3D12DebugPtr pDebug;
             if (SUCCEEDED(D3D12GetDebugInterface(IID_PPV_ARGS(&pDebug))))
@@ -250,7 +250,10 @@ namespace Falcor
                 mCmdQueues[i].push_back(pQueue);
             }
         }
-       
+
+        uint64_t freq;
+        d3d_call(getCommandQueueHandle(LowLevelContextData::CommandQueueType::Direct, 0)->GetTimestampFrequency(&freq));
+        mGpuTimestampFrequency = 1000.0 / (double)freq;
         return true;
     }
 
@@ -267,7 +270,7 @@ namespace Falcor
     Fbo::SharedPtr Device::resizeSwapChain(uint32_t width, uint32_t height)
     {
         mpRenderContext->flush(true);
-        
+
         DeviceApiData* pData = (DeviceApiData*)mpApiData;
 
         // Store the FBO parameters
@@ -290,7 +293,7 @@ namespace Falcor
     bool Device::isWindowOccluded() const
     {
         DeviceApiData* pData = (DeviceApiData*)mpApiData;
-        if(pData->isWindowOccluded)
+        if (pData->isWindowOccluded)
         {
             pData->isWindowOccluded = (pData->pSwapChain->Present(0, DXGI_PRESENT_TEST) == DXGI_STATUS_OCCLUDED);
         }
