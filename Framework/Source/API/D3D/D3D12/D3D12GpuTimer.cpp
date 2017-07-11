@@ -34,10 +34,11 @@ namespace Falcor
 {
     struct QueryData
     {
-        // OPTME Is there a cost for creating small heaps per query?
-        ID3D12QueryHeapPtr pHeap;
         Buffer::SharedPtr pResolveBuffer;
+        QueryHeap::ApiHandle pHeap;
         double frequency;
+        uint32_t start;
+        uint32_t end;
     };
 
     GpuTimer::SharedPtr GpuTimer::create()
@@ -49,23 +50,25 @@ namespace Falcor
     {
         QueryData* pData = new QueryData;
         mpApiData = pData;
-        ID3D12Device* pDevice = gpDevice->getApiHandle().GetInterfacePtr();
-        D3D12_QUERY_HEAP_DESC desc;
-        desc.Count = 2;
-        desc.NodeMask = 0;
-        desc.Type = D3D12_QUERY_HEAP_TYPE_TIMESTAMP;
 
-        d3d_call(pDevice->CreateQueryHeap(&desc, IID_PPV_ARGS(&pData->pHeap)));
         pData->pResolveBuffer = Buffer::create(sizeof(uint64_t) * 2, Buffer::BindFlags::None, Buffer::CpuAccess::Read, nullptr);
 
         uint64_t freq;
         d3d_call(gpDevice->getRenderContext()->getLowLevelData()->getCommandQueue()->GetTimestampFrequency(&freq));
         pData->frequency = 1000.0/(double)freq;
+
+        auto& pHeap = gpDevice->getTimestampQueryHeap();
+        pData->start = pHeap->allocate();
+        pData->end = pHeap->allocate();
+        pData->pHeap = pHeap->getApiHandle();
     }
 
     GpuTimer::~GpuTimer()
     {
         QueryData* pData = (QueryData*)mpApiData;
+        auto& pHeap = gpDevice->getTimestampQueryHeap();
+        pHeap->release(pData->start);
+        pHeap->release(pData->end);
         delete pData;
     }
 

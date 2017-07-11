@@ -63,6 +63,7 @@
 #include "API/TypedBuffer.h"
 #include "API/CopyContext.h"
 #include "API/ComputeContext.h"
+#include "API/QueryHeap.h"
 
 #if defined FALCOR_D3D12 || defined FALCOR_VULKAN
 #include "API/DescriptorSet.h"

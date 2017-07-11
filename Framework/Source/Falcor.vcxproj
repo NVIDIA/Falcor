@@ -169,6 +169,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseVK|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugD3D11|x64'">true</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="API\D3D\D3D12\D3D12QueryHeap.cpp" />
     <ClCompile Include="API\D3D\D3D12\D3D12RasterizerState.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseD3D11|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugD3D11|x64'">true</ExcludedFromBuild>
@@ -899,6 +900,7 @@
     <ClInclude Include="API\ProgramReflection.h" />
     <ClInclude Include="API\ProgramVars.h" />
     <ClInclude Include="API\ProgramVersion.h" />
+    <ClInclude Include="API\QueryHeap.h" />
     <ClInclude Include="API\RasterizerState.h" />
     <ClInclude Include="API\RenderContext.h" />
     <ClInclude Include="API\Resource.h" />
