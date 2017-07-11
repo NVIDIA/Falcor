@@ -16,7 +16,7 @@ import TestingUtil as testingUtil
 gBuildBatchFile = 'BuildFalcorTest.bat'
 gTestListFile = 'TestList.txt'
 gResultsDirBase = 'TestResults'
-gReferenceDir = 'ReferenceResults'
+gReferenceDir = 'VulkanReferenceResults'
 
 #default values
 #percent
