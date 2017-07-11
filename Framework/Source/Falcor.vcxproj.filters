@@ -495,24 +495,46 @@
     <ClCompile Include="API\Vulkan\LowLevel\VKDescriptorSet.cpp">
       <Filter>API\Vulkan\LowLevel</Filter>
     </ClCompile>
-    <ClCompile Include="API\Device.cpp" />
-    <ClCompile Include="API\CopyContext.cpp" />
-    <ClCompile Include="API\ComputeContext.cpp" />
     <ClCompile Include="API\Buffer.cpp">
       <Filter>API</Filter>
     </ClCompile>
-    <ClCompile Include="API\LowLevel\ResourceAllocator.cpp" />
-    <ClCompile Include="API\D3D\D3D12\D3D12ProgramVars.cpp" />
-    <ClCompile Include="API\Vulkan\VkProgramVars.cpp" />
     <ClCompile Include="Utils\SlangSupport.cpp" />
-    <ClCompile Include="API\Vulkan\VKComputeStateObject.cpp" />
     <ClCompile Include="API\Vulkan\VkSmartHandle.cpp">
       <Filter>API\Vulkan</Filter>
     </ClCompile>
-    <ClCompile Include="API\ResourceViews.cpp" />
-    <ClCompile Include="API\D3D\D3D12\D3D12QueryHeap.cpp" />
-    <ClCompile Include="API\Vulkan\VkQueryHeap.cpp" />
-    <ClCompile Include="API\GpuTimer.cpp" />
+    <ClCompile Include="API\D3D\D3D12\D3D12QueryHeap.cpp">
+      <Filter>API\D3D\D3D12</Filter>
+    </ClCompile>
+    <ClCompile Include="API\D3D\D3D12\D3D12ProgramVars.cpp">
+      <Filter>API\D3D\D3D12</Filter>
+    </ClCompile>
+    <ClCompile Include="API\ComputeContext.cpp">
+      <Filter>API</Filter>
+    </ClCompile>
+    <ClCompile Include="API\CopyContext.cpp">
+      <Filter>API</Filter>
+    </ClCompile>
+    <ClCompile Include="API\Device.cpp">
+      <Filter>API</Filter>
+    </ClCompile>
+    <ClCompile Include="API\GpuTimer.cpp">
+      <Filter>API</Filter>
+    </ClCompile>
+    <ClCompile Include="API\LowLevel\ResourceAllocator.cpp">
+      <Filter>API</Filter>
+    </ClCompile>
+    <ClCompile Include="API\ResourceViews.cpp">
+      <Filter>API</Filter>
+    </ClCompile>
+    <ClCompile Include="API\Vulkan\VKComputeStateObject.cpp">
+      <Filter>API\Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="API\Vulkan\VkProgramVars.cpp">
+      <Filter>API\Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="API\Vulkan\VkQueryHeap.cpp">
+      <Filter>API\Vulkan</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Graphics\Model\Animation.h">
@@ -1615,8 +1637,12 @@
     <ClInclude Include="API\Vulkan\VKSmartHandle.h">
       <Filter>API\Vulkan</Filter>
     </ClInclude>
-    <ClInclude Include="API\QueryHeap.h" />
-    <ClInclude Include="Data\Effects\LeanMapData.hlsli" />
+    <ClInclude Include="API\QueryHeap.h">
+      <Filter>API</Filter>
+    </ClInclude>
+    <ClInclude Include="Data\Effects\LeanMapData.hlsli">
+      <Filter>Data\Effects</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Externals">
@@ -1788,9 +1814,6 @@
   <ItemGroup>
     <None Include="..\CopyLibs.bat" />
     <None Include="..\CopyData.bat" />
-    <None Include="Data\Framework\ParallelReduction.fs">
-      <Filter>Utils\Math</Filter>
-    </None>
     <None Include="..\Externals\dear_imgui\LICENSE">
       <Filter>Externals\dear_imgui</Filter>
     </None>
@@ -2124,7 +2147,6 @@
     <None Include="..\Externals\GLM\glm\gtx\closest_point.inl">
       <Filter>Externals\GLM\gtx</Filter>
     </None>
-    <None Include="Data\Effects\SSAO.ps.hlsl" />
     <None Include="Data\Framework\Shaders\Blit.ps.slang">
       <Filter>Data\Framework\Shaders</Filter>
     </None>
@@ -2231,6 +2253,9 @@
       <Filter>Data\Effects</Filter>
     </None>
     <None Include="Data\Effects\LeanMapping.slang">
+      <Filter>Data\Effects</Filter>
+    </None>
+    <None Include="Data\Effects\SSAO.ps.hlsl">
       <Filter>Data\Effects</Filter>
     </None>
   </ItemGroup>
