@@ -514,7 +514,8 @@ namespace Falcor
 
             case SLANG_BYTE_ADDRESS_BUFFER:
                 return ProgramReflection::Resource::ResourceType::RawBuffer;
-
+            case SLANG_TEXTURE_BUFFER:
+                return ProgramReflection::Resource::ResourceType::TypedBuffer;
             default:
                 return ProgramReflection::Resource::ResourceType::Texture;
             }
@@ -678,7 +679,7 @@ namespace Falcor
         ProgramReflection::Resource falcorDesc;
         falcorDesc.type = resourceType;
         falcorDesc.shaderAccess = getShaderAccess(pSlangType->getType());
-        if (resourceType == ProgramReflection::Resource::ResourceType::Texture)
+        if (resourceType != ProgramReflection::Resource::ResourceType::Sampler)
         {
             falcorDesc.retType = getReturnType(pSlangType->getResourceResultType());
             falcorDesc.dims = getResourceDimensions(pSlangType->getResourceShape());

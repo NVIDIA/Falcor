@@ -399,29 +399,83 @@ __generic<T : __BuiltinArithmeticType> __intrinsic vector<T,3> cross(vector<T,3>
 __intrinsic int4 D3DCOLORtoUBYTE4(float4 x);
 
 // Partial-difference derivatives
-__generic<T : __BuiltinFloatingPointType> __intrinsic T ddx(T x);
-__generic<T : __BuiltinFloatingPointType, let N : int> __intrinsic vector<T,N> ddx(vector<T,N> x);
-__generic<T : __BuiltinFloatingPointType, let N : int, let M : int> __intrinsic matrix<T,N,M> ddx(matrix<T,N,M> x);
+__generic<T : __BuiltinFloatingPointType>
+__intrinsic(glsl, dFdx)
+__intrinsic
+T ddx(T x);
+__generic<T : __BuiltinFloatingPointType, let N : int>
+__intrinsic(glsl, dFdx)
+__intrinsic
+vector<T,N> ddx(vector<T,N> x);
+__generic<T : __BuiltinFloatingPointType, let N : int, let M : int>
+__intrinsic(glsl, dFdx)
+__intrinsic
+matrix<T,N,M> ddx(matrix<T,N,M> x);
 
-__generic<T : __BuiltinFloatingPointType> __intrinsic T ddx_coarse(T x);
-__generic<T : __BuiltinFloatingPointType, let N : int> __intrinsic vector<T,N> ddx_coarse(vector<T,N> x);
-__generic<T : __BuiltinFloatingPointType, let N : int, let M : int> __intrinsic matrix<T,N,M> ddx_coarse(matrix<T,N,M> x);
+__generic<T : __BuiltinFloatingPointType>
+__intrinsic(glsl, dFdxCoarse)
+__intrinsic
+T ddx_coarse(T x);
+__generic<T : __BuiltinFloatingPointType, let N : int>
+__intrinsic(glsl, dFdxCoarse)
+__intrinsic
+vector<T,N> ddx_coarse(vector<T,N> x);
+__generic<T : __BuiltinFloatingPointType, let N : int, let M : int>
+__intrinsic(glsl, dFdxCoarse)
+__intrinsic
+matrix<T,N,M> ddx_coarse(matrix<T,N,M> x);
 
-__generic<T : __BuiltinFloatingPointType> __intrinsic T ddx_fine(T x);
-__generic<T : __BuiltinFloatingPointType, let N : int> __intrinsic vector<T,N> ddx_fine(vector<T,N> x);
-__generic<T : __BuiltinFloatingPointType, let N : int, let M : int> __intrinsic matrix<T,N,M> ddx_fine(matrix<T,N,M> x);
+__generic<T : __BuiltinFloatingPointType>
+__intrinsic(glsl, dFdxFine)
+__intrinsic
+T ddx_fine(T x);
+__generic<T : __BuiltinFloatingPointType, let N : int>
+__intrinsic(glsl, dFdxFine)
+__intrinsic
+vector<T,N> ddx_fine(vector<T,N> x);
+__generic<T : __BuiltinFloatingPointType, let N : int, let M : int>
+__intrinsic(glsl, dFdxFine)
+__intrinsic
+matrix<T,N,M> ddx_fine(matrix<T,N,M> x);
 
-__generic<T : __BuiltinFloatingPointType> __intrinsic T ddy(T x);
-__generic<T : __BuiltinFloatingPointType, let N : int> __intrinsic vector<T,N> ddy(vector<T,N> x);
-__generic<T : __BuiltinFloatingPointType, let N : int, let M : int> __intrinsic matrix<T,N,M> ddy(matrix<T,N,M> x);
+__generic<T : __BuiltinFloatingPointType>
+__intrinsic(glsl, dFdy)
+__intrinsic
+T ddy(T x);
+__generic<T : __BuiltinFloatingPointType, let N : int>
+__intrinsic(glsl, dFdy)
+__intrinsic
+vector<T,N> ddy(vector<T,N> x);
+__generic<T : __BuiltinFloatingPointType, let N : int, let M : int>
+__intrinsic(glsl, dFdy)
+__intrinsic
+ matrix<T,N,M> ddy(matrix<T,N,M> x);
 
-__generic<T : __BuiltinFloatingPointType> __intrinsic T ddy_coarse(T x);
-__generic<T : __BuiltinFloatingPointType, let N : int> __intrinsic vector<T,N> ddy_coarse(vector<T,N> x);
-__generic<T : __BuiltinFloatingPointType, let N : int, let M : int> __intrinsic matrix<T,N,M> ddy_coarse(matrix<T,N,M> x);
+__generic<T : __BuiltinFloatingPointType>
+__intrinsic(glsl, dFdyCoarse)
+__intrinsic
+T ddy_coarse(T x);
+__generic<T : __BuiltinFloatingPointType, let N : int>
+__intrinsic(glsl, dFdyCoarse)
+__intrinsic
+vector<T,N> ddy_coarse(vector<T,N> x);
+__generic<T : __BuiltinFloatingPointType, let N : int, let M : int>
+__intrinsic(glsl, dFdyCoarse)
+__intrinsic
+matrix<T,N,M> ddy_coarse(matrix<T,N,M> x);
 
-__generic<T : __BuiltinFloatingPointType> __intrinsic T ddy_fine(T x);
-__generic<T : __BuiltinFloatingPointType, let N : int> __intrinsic vector<T,N> ddy_fine(vector<T,N> x);
-__generic<T : __BuiltinFloatingPointType, let N : int, let M : int> __intrinsic matrix<T,N,M> ddy_fine(matrix<T,N,M> x);
+__generic<T : __BuiltinFloatingPointType>
+__intrinsic(glsl, dFdyFine)
+__intrinsic
+T ddy_fine(T x);
+__generic<T : __BuiltinFloatingPointType, let N : int>
+__intrinsic(glsl, dFdyFine)
+__intrinsic
+vector<T,N> ddy_fine(vector<T,N> x);
+__generic<T : __BuiltinFloatingPointType, let N : int, let M : int>
+__intrinsic(glsl, dFdyFine)
+__intrinsic
+matrix<T,N,M> ddy_fine(matrix<T,N,M> x);
 
 
 // Radians to degrees
@@ -1434,7 +1488,6 @@ namespace Slang
                         // When translating to GLSL, we need to break apart the `location` argument.
                         //
                         // TODO: this should realy be handled by having this member actually get lowered!
-                        int glslLoadCoordCount = kBaseTextureTypes[tt].coordCount + isArray;
                         static const char* kGLSLLoadCoordsSwizzle[] = { "", "", "x", "xy", "xyz", "xyzw" };
                         static const char* kGLSLLoadLODSwizzle[]    = { "", "", "y", "z", "w", "error" };
 
@@ -1941,7 +1994,8 @@ namespace Slang
 
                 for (int isMultisample = 0; isMultisample < 2; ++isMultisample)
                 {
-                    auto access = SLANG_RESOURCE_ACCESS_READ;
+                    auto readAccess = SLANG_RESOURCE_ACCESS_READ;
+                    auto readWriteAccess = SLANG_RESOURCE_ACCESS_READ_WRITE;
 
                     // TODO: any constraints to enforce on what gets to be multisampled?
 
@@ -1951,7 +2005,10 @@ namespace Slang
                     if (isMultisample)	flavor |= TextureType::MultisampleFlag;
 //                        if (isShadow)		flavor |= TextureType::ShadowFlag;
 
-                    flavor |= (access << 8);
+
+
+                    unsigned readFlavor = flavor | (readAccess << 8);
+                    unsigned readWriteFlavor = flavor | (readWriteAccess << 8);
 
                     StringBuilder nameBuilder;
                     nameBuilder << shapeName;
@@ -1960,17 +2017,17 @@ namespace Slang
                     auto name = nameBuilder.ProduceString();
 
                     sb << "__generic<T> ";
-                    sb << "__magic_type(TextureSampler," << int(flavor) << ") struct ";
+                    sb << "__magic_type(TextureSampler," << int(readFlavor) << ") struct ";
                     sb << "__sampler" << name;
                     sb << " {};\n";
 
                     sb << "__generic<T> ";
-                    sb << "__magic_type(Texture," << int(flavor) << ") struct ";
+                    sb << "__magic_type(Texture," << int(readFlavor) << ") struct ";
                     sb << "__texture" << name;
                     sb << " {};\n";
 
                     sb << "__generic<T> ";
-                    sb << "__magic_type(GLSLImageType," << int(flavor) << ") struct ";
+                    sb << "__magic_type(GLSLImageType," << int(readWriteFlavor) << ") struct ";
                     sb << "__image" << name;
                     sb << " {};\n";
 

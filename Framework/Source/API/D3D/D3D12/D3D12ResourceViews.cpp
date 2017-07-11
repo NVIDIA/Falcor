@@ -60,7 +60,7 @@ namespace Falcor
         SharedPtr& pObj = pSharedPtr ? pNewObj : sNullView;
 
         DescriptorSet::Layout layout;
-        layout.addRange(DescriptorSet::Type::Srv, 0, 1);
+        layout.addRange(DescriptorSet::Type::TextureSrv, 0, 1);
         ApiHandle handle = DescriptorSet::create(gpDevice->getCpuDescriptorPool(), layout);
         gpDevice->getApiHandle()->CreateShaderResourceView(pSharedPtr ? pSharedPtr->getApiHandle() : nullptr, &desc, handle->getCpuHandle(0));
 
@@ -136,7 +136,7 @@ namespace Falcor
         SharedPtr& pObj = pSharedPtr ? pNewObj : sNullView;
 
         DescriptorSet::Layout layout;
-        layout.addRange(DescriptorSet::Type::Uav, 0, 1);
+        layout.addRange(DescriptorSet::Type::TextureUav, 0, 1);
         ApiHandle handle = DescriptorSet::create(gpDevice->getCpuDescriptorPool(), layout);
         gpDevice->getApiHandle()->CreateUnorderedAccessView(resHandle, counterHandle, &desc, handle->getCpuHandle(0));
 

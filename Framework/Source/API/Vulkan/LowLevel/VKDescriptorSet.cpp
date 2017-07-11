@@ -34,6 +34,7 @@
 namespace Falcor
 {
     VkDescriptorSetLayout createDescriptorSetLayout(const DescriptorSet::Layout& layout);
+    VkDescriptorType falcorToVkDescType(DescriptorPool::Type type);
 
     bool DescriptorSet::apiInit()
     {
@@ -62,22 +63,30 @@ namespace Falcor
     }
 
     template<bool isUav, typename ViewType>
-    static void setSrvUavCommon(VkDescriptorSet set, uint32_t regIndex, const ViewType* pView)
+    static void setSrvUavCommon(VkDescriptorSet set, uint32_t regIndex, const ViewType* pView, DescriptorPool::Type type)
     {
         VkWriteDescriptorSet write = {};
         VkDescriptorImageInfo image;
         VkDescriptorBufferInfo buffer;
         ViewType::ApiHandle handle = pView->getApiHandle();
+        VkBufferView texelBufferView = {};
 
         if (handle.getType() == VkResourceType::Buffer)
         {
-            const Buffer* pBuffer = dynamic_cast<const Buffer*>(pView->getResource());
-            buffer.buffer = pBuffer->getApiHandle();
-            buffer.offset = pBuffer->getGpuAddressOffset();
-            buffer.range = pBuffer->getSize();
-
-            write.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-            write.pBufferInfo = &buffer;
+            const TypedBufferBase* pTypedBuffer = dynamic_cast<const TypedBufferBase*>(pView->getResource());
+            if (pTypedBuffer)
+            {
+                texelBufferView = pTypedBuffer->getUAV()->getApiHandle();
+                write.pTexelBufferView = &texelBufferView;
+            }
+            else
+            {
+                const Buffer* pBuffer = dynamic_cast<const Buffer*>(pView->getResource());
+                buffer.buffer = pBuffer->getApiHandle();
+                buffer.offset = pBuffer->getGpuAddressOffset();
+                buffer.range = pBuffer->getSize();
+                write.pBufferInfo = &buffer;
+            }
         }
         else
         {
@@ -86,10 +95,10 @@ namespace Falcor
             image.imageView = handle;
             image.sampler = nullptr;
             write.pImageInfo = &image;
-            write.descriptorType = isUav ? VK_DESCRIPTOR_TYPE_STORAGE_IMAGE : VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
         }
 
         write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        write.descriptorType = falcorToVkDescType(type);
         write.dstSet = set;
         write.dstBinding = regIndex;
         write.dstArrayElement = 0;
@@ -100,12 +109,12 @@ namespace Falcor
 
     void DescriptorSet::setSrv(uint32_t rangeIndex, uint32_t descIndex, uint32_t regIndex, const ShaderResourceView* pSrv)
     {
-        setSrvUavCommon<false>(mApiHandle, regIndex, pSrv);
+        setSrvUavCommon<false>(mApiHandle, regIndex, pSrv, mLayout.getRange(rangeIndex).type);
     }
 
     void DescriptorSet::setUav(uint32_t rangeIndex, uint32_t descIndex, uint32_t regIndex, const UnorderedAccessView* pUav)
     {
-        setSrvUavCommon<true>(mApiHandle, regIndex, pUav);
+        setSrvUavCommon<true>(mApiHandle, regIndex, pUav, mLayout.getRange(rangeIndex).type);
     }
 
     void DescriptorSet::setSampler(uint32_t rangeIndex, uint32_t descIndex, uint32_t regIndex, const Sampler* pSampler)

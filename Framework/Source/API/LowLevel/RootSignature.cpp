@@ -79,11 +79,15 @@ namespace Falcor
     {
         switch (type)
         {
-        case Falcor::RootSignature::DescType::Srv:
+        case Falcor::RootSignature::DescType::TextureSrv:
+        case Falcor::RootSignature::DescType::TypedBufferSrv:
+        case Falcor::RootSignature::DescType::StructuredBufferSrv:
         case Falcor::RootSignature::DescType::Cbv:
         case Falcor::RootSignature::DescType::Sampler:
             return ProgramReflection::ShaderAccess::Read;
-        case Falcor::RootSignature::DescType::Uav:
+        case Falcor::RootSignature::DescType::TextureUav:
+        case Falcor::RootSignature::DescType::StructuredBufferUav:
+        case Falcor::RootSignature::DescType::TypedBufferUav:
             return ProgramReflection::ShaderAccess::ReadWrite;
         default:
             should_not_get_here();
