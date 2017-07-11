@@ -31,7 +31,7 @@
 
 namespace Falcor
 {
-    static D3D12_QUERY_HEAP_TYPE getHeapType(QueryHeap::Type t)
+    static D3D12_QUERY_HEAP_TYPE getD3D12HeapType(QueryHeap::Type t)
     {
         switch (t)
         {
@@ -53,7 +53,7 @@ namespace Falcor
         D3D12_QUERY_HEAP_DESC desc;
         desc.Count = count;
         desc.NodeMask = 0;
-        desc.Type = getHeapType(type);
+        desc.Type = getD3D12HeapType(type);
 
         d3d_call(pDevice->CreateQueryHeap(&desc, IID_PPV_ARGS(&mApiHandle)));
     }

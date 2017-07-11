@@ -188,6 +188,7 @@ namespace Falcor
     template<> VkHandle<VkShaderModule>::~VkHandle();
     template<> VkHandle<VkPipelineLayout>::~VkHandle();
     template<> VkHandle<VkDescriptorPool>::~VkHandle();
+    template<> VkHandle<VkQueryPool>::~VkHandle();
 
     template<> VkResource<VkImage, VkBuffer>::~VkResource();
     template<> VkResource<VkImageView, VkBufferView>::~VkResource();

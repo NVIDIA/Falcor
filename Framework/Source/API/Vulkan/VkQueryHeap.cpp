@@ -26,80 +26,36 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 #include "Framework.h"
-#include "API/GpuTimer.h"
+#include "API/Device.h"
+#include "API/QueryHeap.h"
 
 namespace Falcor
 {
-    struct QueryData
+    static VkQueryType getVkPoolType(QueryHeap::Type t)
     {
-
-    };
-
-    GpuTimer::SharedPtr GpuTimer::create()
-    {
-        return SharedPtr(new GpuTimer());
-    }
-
-    GpuTimer::GpuTimer()
-    {
-        QueryData* pData = new QueryData;
-        mpApiData = pData;
-    }
-
-    GpuTimer::~GpuTimer()
-    {
-        QueryData* pData = (QueryData*)mpApiData;
-        delete pData;
-    }
-
-    void GpuTimer::begin()
-    {
-        if (mStatus == Status::Begin)
+        switch (t)
         {
-            logWarning("GpuTimer::begin() was followed by another call to GpuTimer::begin() without a GpuTimer::end() in-between. Ignoring call.");
-            return;
+        case QueryHeap::Type::Timestamp:
+            return VK_QUERY_TYPE_TIMESTAMP;
+        case QueryHeap::Type::Occlusion:
+            return VK_QUERY_TYPE_OCCLUSION;
+        case QueryHeap::Type::PipelineStats:
+            return VK_QUERY_TYPE_PIPELINE_STATISTICS;
+        default:
+            should_not_get_here();
+            return VK_QUERY_TYPE_MAX_ENUM;
         }
-
-        if (mStatus == Status::End)
-        {
-            logWarning("GpuTimer::begin() was followed by a call to GpuTimer::end() without querying the data first. The previous results will be discarded.");
-        }
-
-        QueryData* pData = (QueryData*)mpApiData;
-
-        // Code
-
-        mStatus = Status::Begin;
     }
 
-    void GpuTimer::end()
+    QueryHeap::QueryHeap(Type type, uint32_t count) : mType(type), mCount(count)
     {
-        if (mStatus != Status::Begin)
-        {
-            logWarning("GpuTimer::end() was called without a preciding GpuTimer::begin(). Ignoring call.");
-            return;
-        }
-        QueryData* pData = (QueryData*)mpApiData;
-
-        // Code
-
-        mStatus = Status::End;
+        VkQueryPoolCreateInfo info = {};
+        info.sType = VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO;
+        info.queryCount = count;
+        info.queryType = getVkPoolType(type);
+        info.pipelineStatistics = VK_QUERY_PIPELINE_STATISTIC_FLAG_BITS_MAX_ENUM;
+        VkQueryPool pool;
+        vk_call(vkCreateQueryPool(gpDevice->getApiHandle(), &info, nullptr, &pool));
+        mApiHandle = ApiHandle::create(pool);
     }
-
-    double GpuTimer::getElapsedTime()
-    {
-        if (mStatus != Status::End)
-        {
-            logWarning("GpuTimer::getElapsedTime() was called but the GpuTimer::end() wasn't called. No data to fetch.");
-            return 0;
-        }
-
-        QueryData* pData = (QueryData*)mpApiData;
-
-        // Code
-
-        return 0;
-    }
-
-
 }
