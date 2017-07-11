@@ -51,7 +51,7 @@ namespace Falcor
     {
         ID3D12Device* pDevice = gpDevice->getApiHandle().GetInterfacePtr();
         D3D12_QUERY_HEAP_DESC desc;
-        desc.Count = 2;
+        desc.Count = count;
         desc.NodeMask = 0;
         desc.Type = getHeapType(type);
 

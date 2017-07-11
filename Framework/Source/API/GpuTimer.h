@@ -59,12 +59,9 @@ namespace Falcor
         void end();
 
         /** Get the elapsed time in miliseconds between a pair of Begin()/End() calls. \n
-            If this function called not after a Begin()/End() pair, false will be returned and a warning will be logged.
-            \param[in] waitForResult - if true, will wait until the results are ready, otherwise will return even if the GPU query did not finish.
-            \param[out] elapsedTime - if results are ready, will return the elapsed time, otherwise invalid
-            \return - true if results are ready, false if query did not finish or the function was called but Begin()/End() was not called before.
+            If this function called not after a Begin()/End() pair, zero will be returned and a warning will be logged.
         */
-        bool getElapsedTime(bool waitForResult, double& elapsedTime);
+        double getElapsedTime();
 
     private:
         GpuTimer();

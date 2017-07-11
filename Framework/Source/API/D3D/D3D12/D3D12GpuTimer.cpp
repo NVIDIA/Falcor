@@ -60,6 +60,7 @@ namespace Falcor
         auto& pHeap = gpDevice->getTimestampQueryHeap();
         pData->start = pHeap->allocate();
         pData->end = pHeap->allocate();
+        assert(pData->end == (pData->start + 1));
         pData->pHeap = pHeap->getApiHandle();
     }
 
@@ -85,7 +86,7 @@ namespace Falcor
             logWarning("GpuTimer::begin() was followed by a call to GpuTimer::end() without querying the data first. The previous results will be discarded.");
         }
         QueryData* pData = (QueryData*)mpApiData;
-        gpDevice->getRenderContext()->getLowLevelData()->getCommandList()->EndQuery(pData->pHeap, D3D12_QUERY_TYPE_TIMESTAMP, 0);
+        gpDevice->getRenderContext()->getLowLevelData()->getCommandList()->EndQuery(pData->pHeap, D3D12_QUERY_TYPE_TIMESTAMP, pData->start);
         mStatus = Status::Begin;
     }
 
@@ -97,29 +98,29 @@ namespace Falcor
             return;
         }
         QueryData* pData = (QueryData*)mpApiData;
-        gpDevice->getRenderContext()->getLowLevelData()->getCommandList()->EndQuery(pData->pHeap, D3D12_QUERY_TYPE_TIMESTAMP, 1);
+        gpDevice->getRenderContext()->getLowLevelData()->getCommandList()->EndQuery(pData->pHeap, D3D12_QUERY_TYPE_TIMESTAMP, pData->end);
         mStatus = Status::End;
     }
 
-    bool GpuTimer::getElapsedTime(bool waitForResult, double& elapsedTime)
+    double GpuTimer::getElapsedTime()
     {
         if (mStatus != Status::End)
         {
             logWarning("GpuTimer::getElapsedTime() was called but the GpuTimer::end() wasn't called. No data to fetch.");
-            return false;
+            return 0;
         }
         QueryData* pData = (QueryData*)mpApiData;
-        gpDevice->getRenderContext()->getLowLevelData()->getCommandList()->ResolveQueryData(pData->pHeap, D3D12_QUERY_TYPE_TIMESTAMP, 0, 2, pData->pResolveBuffer->getApiHandle(), 0);
+        gpDevice->getRenderContext()->getLowLevelData()->getCommandList()->ResolveQueryData(pData->pHeap, D3D12_QUERY_TYPE_TIMESTAMP, pData->start, 2, pData->pResolveBuffer->getApiHandle(), 0);
 
         uint64_t* pRes = (uint64*)pData->pResolveBuffer->map(Buffer::MapType::Read);
         
         double start = (double)pRes[0];
         double end = (double)pRes[1];
         double range = end - start;
-        elapsedTime = range * pData->frequency;
+        double elapsedTime = range * pData->frequency;
         mStatus = Status::Idle;
         pData->pResolveBuffer->unmap();
 
-        return true;
+        return elapsedTime;
     }
 }
