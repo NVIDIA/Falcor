@@ -34,19 +34,20 @@ namespace Falcor
 {
     void GpuTimer::apiBegin()
     {
-        mCmdList->EndQuery(mpHeap, D3D12_QUERY_TYPE_TIMESTAMP, mStart);
+        mpLowLevelData->getCommandList()->EndQuery(mpHeap, D3D12_QUERY_TYPE_TIMESTAMP, mStart);
     }
 
     void GpuTimer::apiEnd()
     {
-        mCmdList->EndQuery(mpHeap, D3D12_QUERY_TYPE_TIMESTAMP, mEnd);
+        mpLowLevelData->getCommandList()->EndQuery(mpHeap, D3D12_QUERY_TYPE_TIMESTAMP, mEnd);
     }
 
     void GpuTimer::apiResolve(uint64_t result[2])
     {
-        mCmdList->ResolveQueryData(mpHeap, D3D12_QUERY_TYPE_TIMESTAMP, mStart, 2, mpResolveBuffer->getApiHandle(), 0);
+        mpLowLevelData->getCommandList()->ResolveQueryData(mpHeap, D3D12_QUERY_TYPE_TIMESTAMP, mStart, 2, mpResolveBuffer->getApiHandle(), 0);
         uint64_t* pRes = (uint64*)mpResolveBuffer->map(Buffer::MapType::Read);
-        memcpy_s(result, sizeof(result), pRes, sizeof(result));
+        result[0] = pRes[0];
+        result[1] = pRes[1];
         mpResolveBuffer->unmap();
     }
 }

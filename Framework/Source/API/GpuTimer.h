@@ -74,7 +74,6 @@ namespace Falcor
             Idle
         } mStatus = Idle;
 
-        Buffer::SharedPtr mpResolveBuffer;
         QueryHeapHandle mpHeap;
         LowLevelContextData::SharedPtr mpLowLevelData;
         uint32_t mStart;
@@ -82,5 +81,9 @@ namespace Falcor
         void apiBegin();
         void apiEnd();
         void apiResolve(uint64_t result[2]);
+
+#ifdef FALCOR_D3D12
+        Buffer::SharedPtr mpResolveBuffer; // Yes, I know it's against my policy to put API specific code in common headers, but it's not worth the complications
+#endif
     };
 }

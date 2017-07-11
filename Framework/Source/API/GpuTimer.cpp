@@ -38,8 +38,9 @@ namespace Falcor
 
     GpuTimer::GpuTimer()
     {
+#ifdef FALCOR_D3D12
         mpResolveBuffer = Buffer::create(sizeof(uint64_t) * 2, Buffer::BindFlags::None, Buffer::CpuAccess::Read, nullptr);
-
+#endif
         auto& pHeap = gpDevice->getTimestampQueryHeap();
         mStart = pHeap->allocate();
         mEnd = pHeap->allocate();
