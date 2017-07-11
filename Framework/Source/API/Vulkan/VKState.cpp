@@ -415,6 +415,15 @@ namespace Falcor
         }
     }
 
+    VkBorderColor getVkBorderColor(const glm::vec4& color)
+    {
+        if (color == vec4(0)) return VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK;
+        if (color == vec4(0, 0, 0, 1)) return VK_BORDER_COLOR_FLOAT_OPAQUE_BLACK;
+        if (color == vec4(1)) return VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
+        logWarning("Unsupported Vulkan border color. Vulkan only supports transparent black, opaque black or opaque white. Defaulting to opaque black");
+        return VK_BORDER_COLOR_FLOAT_OPAQUE_BLACK;
+    }
+
     void initVkSamplerInfo(const Sampler* pSampler, VkSamplerCreateInfo& infoOut)
     {
         infoOut = {};
@@ -434,7 +443,7 @@ namespace Falcor
         infoOut.compareOp = getVkCompareOp(pSampler->getComparisonMode());
         infoOut.minLod = pSampler->getMinLod();
         infoOut.maxLod = pSampler->getMaxLod();
-        infoOut.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_BLACK;
+        infoOut.borderColor = getVkBorderColor(pSampler->getBorderColor());
         infoOut.unnormalizedCoordinates = VK_FALSE;
     }
 
