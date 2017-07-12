@@ -47,7 +47,7 @@ float4 getPosition(float2 uv)
     pos.z = gDepthTex.SampleLevel(gSampler, uv, 0).r;
     pos.w = 1.0f;
 
-    float4 posW = mul(gCam.invViewProj, pos);
+    float4 posW = mul(pos, gCam.invViewProj);
     posW /= posW.w;
 
     return posW;
@@ -96,7 +96,7 @@ float4 main(float2 texC : TEXCOORD) : SV_TARGET0
         float sampleDepth = length(samplePosW - gCam.position);
 
         // Get screen space pos of sample
-        float4 samplePosProj = mul(gCam.viewProjMat, float4(samplePosW, 1.0f));
+        float4 samplePosProj = mul(float4(samplePosW, 1.0f), gCam.viewProjMat);
         samplePosProj /= samplePosProj.w;
 
         // Sample depth buffer at the same place as sample

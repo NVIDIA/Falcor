@@ -268,9 +268,6 @@ void _fn applyNormalMap(in float3 texValue, _ref(float3) n, _ref(float3) t, _ref
     t = normalize(cross(b, n));
 }
 
-// Forward declare it, just in case someone overrides it later
-void _fn perturbNormal(in const MaterialData mat, _ref(ShadingAttribs) attr, bool forceSample = false);
-
 #ifndef _MS_USER_NORMAL_MAPPING
 void _fn perturbNormal(in const MaterialData mat, _ref(ShadingAttribs) attr, bool forceSample)
 {
@@ -280,7 +277,17 @@ void _fn perturbNormal(in const MaterialData mat, _ref(ShadingAttribs) attr, boo
         applyNormalMap(RGBToNormal(texValue), attr.N, attr.T, attr.B);
 	}
 }
+#else
+// Forward declare it, just in case someone overrides it later
+void _fn perturbNormal(in const MaterialData mat, _ref(ShadingAttribs) attr, bool forceSample /*= false*/);
 #endif
+
+// Note: explicit overload instead of default argument, at least until cross-compiler can handle defaults
+void _fn perturbNormal(in const MaterialData mat, _ref(ShadingAttribs) attr)
+{
+	perturbNormal(mat, attr, false);
+}
+
 
 /*******************************************************************
 					Alpha test

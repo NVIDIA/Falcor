@@ -49,6 +49,6 @@ ShadowsVSOut main(VS_IN vIn)
     ShadowsVSOut output;
     output.vsData = defaultOut;
 
-    output.shadowsDepthC = mul(camVpAtLastCsmUpdate, float4(defaultOut.posW, 1)).z;
+    output.shadowsDepthC = mul(float4(defaultOut.posW, 1), camVpAtLastCsmUpdate).z;
     return output;
 }

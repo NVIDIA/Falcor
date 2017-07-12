@@ -725,6 +725,7 @@ namespace Falcor
     template<bool forGraphics>
     bool applyProgramVarsCommon(const ProgramVars* pVars, ProgramVars::RootSetVec& rootSets, CopyContext* pContext, bool bindRootSig)
     {
+        bindRootSig = true;
         if (bindRootSig)
         {
             if (forGraphics)

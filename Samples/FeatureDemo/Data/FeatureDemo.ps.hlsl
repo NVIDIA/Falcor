@@ -27,6 +27,7 @@
 ***************************************************************************/
 #include "FeatureDemoCommon.hlsli"
 
+__import BSDFs;
 __import Shading;
 __import Helpers;
 

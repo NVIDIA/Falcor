@@ -55,7 +55,7 @@ void main(triangle ShadowPassVSOut input[3], uint InstanceID : SV_GSInstanceID, 
 
     for(int i = 0 ; i < 3 ; i++)
     {
-        outputData.pos = mul(gCsmData.globalMat, input[i].pos);
+        outputData.pos = mul(input[i].pos, gCsmData.globalMat);
         outputData.pos.xyz /= input[i].pos.w;
         outputData.pos.xyz *= gCsmData.cascadeScale[InstanceID].xyz;
         outputData.pos.xyz += gCsmData.cascadeOffset[InstanceID].xyz;

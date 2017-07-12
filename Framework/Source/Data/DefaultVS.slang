@@ -94,9 +94,9 @@ VS_OUT defaultVS(VS_IN vIn)
 {
     VS_OUT vOut;
     float4x4 worldMat = getWorldMat(vIn);
-    float4 posW = mul(worldMat, vIn.pos);
+    float4 posW = mul(vIn.pos, worldMat);
     vOut.posW = posW.xyz;
-    vOut.posH = mul(gCam.viewProjMat, posW);
+    vOut.posH = mul(posW, gCam.viewProjMat);
 
 #ifdef HAS_TEXCRD
     vOut.texC = vIn.texC;
@@ -110,12 +110,12 @@ VS_OUT defaultVS(VS_IN vIn)
     vOut.colorV = 0;
 #endif
 
-    vOut.normalW = mul(getWorldInvTransposeMat(vIn), vIn.normal).xyz;
-    vOut.bitangentW = mul((float3x3)worldMat, vIn.bitangent).xyz;
-    vOut.prevPosH = mul(gCam.prevViewProjMat, posW);
+    vOut.normalW = mul(vIn.normal, getWorldInvTransposeMat(vIn)).xyz;
+    vOut.bitangentW = mul(vIn.bitangent, (float3x3)worldMat).xyz;
+    vOut.prevPosH = mul(posW, gCam.prevViewProjMat);
 
 #ifdef _SINGLE_PASS_STEREO
-    vOut.rightEyePosS = mul(gCam.rightEyeViewProjMat, posW).x;
+    vOut.rightEyePosS = mul(posW, gCam.rightEyeViewProjMat).x;
     vOut.viewportMask = 0x00000001;
     vOut.renderTargetIndex = 0;
 #endif
