@@ -170,7 +170,6 @@ namespace Falcor
             }
             layerNames.push_back("VK_LAYER_LUNARG_standard_validation");
             enable_layer_if_present("VK_LAYER_NV_nsight");
-            enable_layer_if_present("VK_LAYER_LUNARG_api_dump");
         }
 
         // Enumerate implicitly available extensions. The debug layers above just have VK_EXT_debug_report

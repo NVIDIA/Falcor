@@ -431,8 +431,15 @@ namespace Falcor
             int entryPointIndex = entryPointCounter++;
 
             size_t size = 0;
+#ifdef FALCOR_VK
             const uint8_t* data = (uint8_t*)spGetEntryPointCode(slangRequest, entryPointIndex, &size);
             shaderBlob[i].data.assign(data, data + size);
+            shaderBlob[i].type = Shader::Blob::Type::Bytecode;
+#else
+            const char* data = spGetEntryPointSource(slangRequest, entryPointIndex);
+            shaderBlob[i].data.assign(data, data + strlen(data));
+            shaderBlob[i].type = Shader::Blob::Type::String;
+#endif
         }
 
         // Extract the reflection data

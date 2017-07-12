@@ -62,12 +62,16 @@ namespace Falcor
         };
 
         /** create a shader object
-            \param[in] shaderString String containing the shader code.
+            \param[in] shaderBlog A blob containing the shader code
             \param[in] Type The Type of the shader
             \param[out] log This string will contain the error log message in case shader compilation failed
             \return If success, a new shader object, otherwise nullptr
         */
-        static SharedPtr create(const Blob& shaderBlob, ShaderType type, std::string const&  entryPointName, std::string& log);
+        static SharedPtr create(const Blob& shaderBlob, ShaderType type, std::string const&  entryPointName, std::string& log)
+        {
+            SharedPtr pShader = SharedPtr(new Shader(type));
+            return pShader->init(shaderBlob, entryPointName, log) ? pShader : nullptr;
+        }
 
         virtual ~Shader();
 
