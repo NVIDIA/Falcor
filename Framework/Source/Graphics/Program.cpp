@@ -41,17 +41,10 @@
 
 namespace Falcor
 {
-    static Shader::SharedPtr createShaderFromBlob(const Shader::Blob& shaderBlob, ShaderType shaderType, const std::string& entryPointName)
+    static Shader::SharedPtr createShaderFromBlob(const Shader::Blob& shaderBlob, ShaderType shaderType, const std::string& entryPointName, std::string& log)
     {
         std::string errorMsg;
-        std::string log;
         auto pShader = Shader::create(shaderBlob, shaderType, entryPointName, log);
-
-        if (pShader == nullptr)
-        {
-            std::string msg = "Error when creating " + to_string(shaderType) + " shader from string\nError log:\n";
-            msg += log;
-        }
         return pShader;
     }
 
@@ -468,7 +461,8 @@ namespace Falcor
         {
             if (shaderBlob[i].data.size())
             { 
-                shaders[i] = createShaderFromBlob(shaderBlob[i], ShaderType(i), mDesc.mEntryPoints[i].name);
+                shaders[i] = createShaderFromBlob(shaderBlob[i], ShaderType(i), mDesc.mEntryPoints[i].name, log);
+                if (!shaders[i]) return nullptr;
             }           
         }
 
