@@ -381,10 +381,13 @@ namespace Falcor
             string_2_bindloc_map nameMap;
         };
 
-        void getThreadGroupSize(
-            uint32_t* outX,
-            uint32_t* outY,
-            uint32_t* outZ) const;
+        /** Get the thread group size. If the program is not a compute program, the return value is undefined
+        */
+        const uvec3& getThreadGroupSize() const { return mThreadGroupSize; }
+
+        /** Check if the program has a pixel shader that is required to run per sample
+        */
+        bool isSampleFrequency() const { return mIsSampleFrequency; }
 
     // TODO(tfoley): switch this back
     public://private:
@@ -405,7 +408,8 @@ namespace Falcor
         VariableMap mFragOut;
         VariableMap mVertAttr;
         ResourceMap mResources;
-        uint32_t mThreadGroupSizeX, mThreadGroupSizeY, mThreadGroupSizeZ;
+        uvec3 mThreadGroupSize;
+        bool mIsSampleFrequency = false;
     };
 
 

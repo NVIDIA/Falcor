@@ -447,13 +447,13 @@ namespace Falcor
         infoOut.unnormalizedCoordinates = VK_FALSE;
     }
 
-    void initVkMultiSampleInfo(const BlendState* pState, const Fbo::Desc& fboDesc, const uint32_t& sampleMask, VkPipelineMultisampleStateCreateInfo& infoOut)
+    void initVkMultiSampleInfo(const BlendState* pState, const Fbo::Desc& fboDesc, const uint32_t& sampleMask, VkPipelineMultisampleStateCreateInfo& infoOut, bool enableSampleFrequency)
     {
         infoOut = {};
 
         infoOut.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
         infoOut.rasterizationSamples = (VkSampleCountFlagBits)fboDesc.getSampleCount();
-        infoOut.sampleShadingEnable = VK_FALSE; // #VKTODO Figure out how to abstract it
+        infoOut.sampleShadingEnable = enableSampleFrequency;
         infoOut.minSampleShading = 1.0f;
         infoOut.pSampleMask = &sampleMask;
         infoOut.alphaToCoverageEnable = vkBool(pState->isAlphaToCoverageEnabled());

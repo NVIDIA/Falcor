@@ -207,16 +207,6 @@ namespace Falcor
         return pRes;
     }
 
-    void ProgramReflection::getThreadGroupSize(
-        uint32_t* outX,
-        uint32_t* outY,
-        uint32_t* outZ) const
-    {
-        if(outX) *outX = mThreadGroupSizeX;
-        if(outX) *outY = mThreadGroupSizeY;
-        if(outX) *outZ = mThreadGroupSizeZ;
-    }
-
     /************************************************************************/
     /*  SPIRE Reflection                                                    */
     /************************************************************************/
@@ -1329,17 +1319,20 @@ namespace Falcor
             {
                 SlangUInt sizeAlongAxis[3];
                 entryPoint->getComputeThreadGroupSize(3, &sizeAlongAxis[0]);
-                mThreadGroupSizeX = (uint32_t)sizeAlongAxis[0];
-                mThreadGroupSizeY = (uint32_t)sizeAlongAxis[1];
-                mThreadGroupSizeZ = (uint32_t)sizeAlongAxis[2];
+                mThreadGroupSize.x = (uint32_t)sizeAlongAxis[0];
+                mThreadGroupSize.y = (uint32_t)sizeAlongAxis[1];
+                mThreadGroupSize.z = (uint32_t)sizeAlongAxis[2];
             }
             break;
-
-            default:
+            case SLANG_STAGE_PIXEL:
+#ifdef FALCOR_VK
+                mIsSampleFrequency = entryPoint->usesAnySampleRateInput();
+#else
+                mIsSampleFrequency = true; // #VKTODO Slang reports false for DX shaders. There's an open issue, once it's fixed we should remove that
+#endif            default:
                 break;
             }
         }
-
         return res;
     }
 }

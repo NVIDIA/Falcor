@@ -70,14 +70,10 @@ namespace Falcor
         auto pSimulateReflect = simulateCs->getActiveVersion()->getReflector();
   
         //get num sim threads, required as a define for emit cs
-        uint32_t simThreadsX = 1, simThreadsY = 1, simThreadsZ= 1;
+        uvec3 simThreads;
 
-#ifndef VK_DISABLE_UNIMPLEMENTED
-
-
-        pSimulateReflect->getThreadGroupSize(&simThreadsX, &simThreadsY, &simThreadsZ);
-#endif
-        mSimulateThreads = simThreadsX * simThreadsY * simThreadsZ;
+        simThreads = pSimulateReflect->getThreadGroupSize();
+        mSimulateThreads = simThreads.x * simThreads.y * simThreads.z;
 
         //Emit cs
         Program::DefineList emitDefines;
