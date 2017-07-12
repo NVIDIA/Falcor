@@ -203,13 +203,12 @@ namespace Falcor
 
         bool link() const;
         ProgramVersion::SharedPtr preprocessAndCreateProgramVersion(std::string& log) const;
-        virtual ProgramVersion::SharedPtr createProgramVersion(std::string& log) const;
+        virtual ProgramVersion::SharedPtr createProgramVersion(std::string& log, const Shader::Blob shaderBlob[kShaderCount]) const;
 
         // The description used to create this program
         Desc mDesc;
 
         // Shader strings after being preprocessed for a particular version
-        mutable std::string mPreprocessedShaderStrings[kShaderCount];
 
         // Reflector for a particular version
         mutable ProgramReflection::SharedPtr mPreprocessedReflector;

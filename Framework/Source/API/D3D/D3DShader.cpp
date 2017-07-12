@@ -109,10 +109,7 @@ namespace Falcor
         }
     };
 
-    ID3DBlobPtr Shader::compile(
-        const std::string&  source,
-        const std::string&  entryPointName,
-        std::string&        errorLog)
+    ID3DBlobPtr Shader::compile(const Blob& blob, const std::string& entryPointName, std::string& errorLog)
     {
         ID3DBlob* pCode;
         ID3DBlobPtr pErrors;
@@ -123,8 +120,8 @@ namespace Falcor
 #endif
 
         HRESULT hr = D3DCompile(
-            source.c_str(),
-            source.size(),
+            blob.data.data(),
+            blob.data.size(),
             nullptr,
             nullptr,
             nullptr,
@@ -154,14 +151,16 @@ namespace Falcor
         safe_delete(pData);
     }
 
-    bool Shader::init(
-            const std::string&  shaderString,
-            std::string const&  entryPointName,
-            std::string&        log)
+    bool Shader::init(const Blob& shaderBlob, const std::string& entryPointName, std::string& log)
     {
+        if (shaderBlob.type != Blob::Type::String)
+        {
+            logError("D3D shader compilation only supports string inputs");
+            return false;
+        }
         // Compile the shader
         ShaderData* pData = (ShaderData*)mpPrivateData;
-        pData->pBlob = compile(shaderString, entryPointName, log);
+        pData->pBlob = compile(shaderBlob, entryPointName, log);
 
         if (pData->pBlob == nullptr)
         {
@@ -206,17 +205,13 @@ namespace Falcor
         return true;
     }
 
-    Shader::SharedPtr Shader::create(
-        const std::string&          shaderString,
-        ShaderType                  type,
-        const std::string&          entryPointName,
-        std::string&                log)
+    Shader::SharedPtr Shader::create(const Blob& shaderBlob, ShaderType type, std::string const& entryPointName, std::string& log)
     {
         SharedPtr pShader = SharedPtr(new Shader(type));
-        return pShader->init(shaderString, entryPointName, log) ? pShader : nullptr;
+        return pShader->init(shaderBlob, entryPointName, log) ? pShader : nullptr;
     }
 
-    ID3DBlobPtr Shader::getCodeBlob() const
+    ID3DBlobPtr Shader::getD3DBlob() const
     {
         const ShaderData* pData = (ShaderData*)mpPrivateData;
         return pData->pBlob;

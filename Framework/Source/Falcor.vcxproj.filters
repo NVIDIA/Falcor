@@ -79,9 +79,6 @@
     <ClCompile Include="Graphics\Paths\PathEditor.cpp">
       <Filter>Graphics\Paths</Filter>
     </ClCompile>
-    <ClCompile Include="Utils\ShaderUtils.cpp">
-      <Filter>Utils</Filter>
-    </ClCompile>
     <ClCompile Include="Graphics\Material\Material.cpp">
       <Filter>Graphics\Material</Filter>
     </ClCompile>
@@ -653,9 +650,6 @@
     </ClInclude>
     <ClInclude Include="Graphics\Paths\PathEditor.h">
       <Filter>Graphics\Paths</Filter>
-    </ClInclude>
-    <ClInclude Include="Utils\ShaderUtils.h">
-      <Filter>Utils</Filter>
     </ClInclude>
     <ClInclude Include="Data\HlslGlslCommon.h">
       <Filter>Data</Filter>

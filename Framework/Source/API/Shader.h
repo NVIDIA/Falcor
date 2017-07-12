@@ -42,6 +42,18 @@ namespace Falcor
         using SharedConstPtr = std::shared_ptr<const Shader>;
         using ApiHandle = ShaderHandle;
 
+        struct Blob
+        {
+            enum class Type
+            {
+                Undefined,
+                String,
+                Bytecode
+            };
+            std::vector<uint8_t> data;
+            Type type = Type::Undefined;
+        };
+
         class DefineList : public std::map<std::string, std::string>
         {
         public:
@@ -49,18 +61,14 @@ namespace Falcor
             void remove(const std::string& name) {(*this).erase(name); }
         };
 
-
         /** create a shader object
             \param[in] shaderString String containing the shader code.
             \param[in] Type The Type of the shader
             \param[out] log This string will contain the error log message in case shader compilation failed
             \return If success, a new shader object, otherwise nullptr
         */
-        static SharedPtr create(
-            const std::string&  shaderString,
-            ShaderType          type,
-            std::string const&  entryPointName,
-            std::string&        log);
+        static SharedPtr create(const Blob& shaderBlob, ShaderType type, std::string const&  entryPointName, std::string& log);
+
         virtual ~Shader();
 
         /** Get the API handle.
@@ -71,24 +79,20 @@ namespace Falcor
         */
         ShaderType getType() const { return mType; }
 
-        bool init(
-            const std::string&  shaderString,
-            const std::string&  entryPointName,
-            std::string&        log);
+
 
 #ifdef FALCOR_D3D
-        ID3DBlobPtr getCodeBlob() const;
-        virtual ID3DBlobPtr compile(
-            const std::string&  source,
-            const std::string&  entryPointName,
-            std::string&        errorLog);
+        ID3DBlobPtr getD3DBlob() const;
+        virtual ID3DBlobPtr compile(const Blob& blob, const std::string&  entryPointName, std::string& errorLog);
 #endif
 
     protected:
         // API handle depends on the shader Type, so it stored be stored as part of the private data
+        bool init(const Blob& shaderBlob, const std::string&  entryPointName, std::string& log);
         Shader(ShaderType Type);
         ShaderType mType;
         ApiHandle mApiHandle;
         void* mpPrivateData = nullptr;
     };
+
 }
