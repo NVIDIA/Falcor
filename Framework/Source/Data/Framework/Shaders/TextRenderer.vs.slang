@@ -34,7 +34,7 @@ cbuffer PerFrameCB : register(b0)
 
 float4 transform(float2 posS)
 {
-	return mul(gvpTransform, float4(posS, 0.5f, 1));
+	return mul(float4(posS, 0.5f, 1), gvpTransform);
 }
 
 void main(

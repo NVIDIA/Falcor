@@ -250,7 +250,7 @@ float calcShadowFactorWithCascadeIdx(const CsmData csmData, const uint32_t casca
     //posW.xyz += calcNormalOffset(csmData, normal, cascadeIndex);
 
     // Get the global shadow space position
-    float4 shadowPos = mul(csmData.globalMat, float4(posW, 1));
+    float4 shadowPos = mul(float4(posW, 1), csmData.globalMat);
     shadowPos /= shadowPos.w;
 
     // Calculate the texC

@@ -121,6 +121,7 @@ namespace Falcor
 #ifdef _DEBUG
         flags |= D3DCOMPILE_DEBUG;
 #endif
+        flags |= D3DCOMPILE_PACK_MATRIX_ROW_MAJOR;
 
         HRESULT hr = D3DCompile(
             source.c_str(),

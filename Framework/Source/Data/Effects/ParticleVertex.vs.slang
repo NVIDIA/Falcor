@@ -71,10 +71,10 @@ VSOut main(uint vId : SV_VertexID, uint iId : SV_InstanceID)
     Particle p = particlePool[poolIndex];
     uint billboardIndex = vId;
 
-    float4 viewPos = mul(frameData.view, float4(p.pos, 1.f));
+    float4 viewPos = mul(float4(p.pos, 1.f), frameData.view);
     float2 rotOffset = vectorRotate(float2(xOffset[billboardIndex], yOffset[billboardIndex]), sin(p.rot), cos(p.rot));
     viewPos.xy += float2(p.scale, p.scale) * rotOffset;
-    output.pos = mul(frameData.proj, viewPos);
+    output.pos = mul(viewPos, frameData.proj);
     output.texCoords = float2(xTex[billboardIndex], yTex[billboardIndex]);
     output.particleIndex = poolIndex;
     return output;

@@ -43,8 +43,8 @@ VSOut main(in float4 posL : POSITION, in float3 normalL : NORMAL)
 {
     VSOut vsOut;
 
-    vsOut.position = mul(gWvpMat, posL);
-    vsOut.normalW = (mul(gWorldMat, float4(normalL, 0))).xyz;
+    vsOut.position = mul(posL, gWvpMat);
+    vsOut.normalW = (mul(float4(normalL, 0), gWorldMat)).xyz;
 
     return vsOut;
 }

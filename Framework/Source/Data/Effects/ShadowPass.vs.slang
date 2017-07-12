@@ -42,9 +42,9 @@ ShadowPassVSOut main(VS_IN vIn)
 {
     ShadowPassVSOut vOut; 
     float4x4 worldMat = getWorldMat(vIn);
-    vOut.pos = mul(worldMat, vIn.pos);
+    vOut.pos = mul(vIn.pos, worldMat);
 #ifdef _APPLY_PROJECTION
-    vOut.pos = mul(gCam.viewProjMat, vOut.pos);
+    vOut.pos = mul(vOut.pos, gCam.viewProjMat);
 #endif
 
 #ifdef HAS_TEXCRD

@@ -65,7 +65,7 @@ inline float3 _fn getLightPos(in const LightData Light, in const float3 shadingP
     float3 lightPos = Light.worldPos;
     if(Light.type == LightArea)
     {
-        lightPos = mul(Light.transMat, float4(lightPos, 1.0)).xyz;
+        lightPos = mul(float4(lightPos, 1.0), Light.transMat).xyz;
     }    
     else if(Light.type == LightDirectional)
     {
@@ -167,7 +167,7 @@ inline void _fn prepareLightAttribs(in const LightData Light, in const ShadingAt
 			float3 p0 = float3(vertices[index * 3 + 0], vertices[index * 3 + 1], vertices[index * 3 + 2]);
 #endif
 			// Apply model instance transformation matrix
-			LightAttr.points[index] = float3(mul(Light.transMat, float4(p0, 1.0)));
+			LightAttr.points[index] = float3(mul(float4(p0, 1.0), Light.transMat));
 		}
 	}
 #endif
@@ -245,9 +245,9 @@ void _fn sampleLight(in const float3 shadingHitPos, in const LightData lData, co
 #endif
 
 				// Apply model instance transformation matrix
-				p0 = float3(mul(lData.transMat, float4(p0, 1.0)));
-				p1 = float3(mul(lData.transMat, float4(p1, 1.0)));
-				p2 = float3(mul(lData.transMat, float4(p2, 1.0)));
+				p0 = float3(mul(float4(p0, 1.0), lData.transMat));
+				p1 = float3(mul(float4(p1, 1.0), lData.transMat));
+				p2 = float3(mul(float4(p2, 1.0), lData.transMat));
 
 				// Sample a point on the triangle mesh using barycentric coordinates
 				float a = sqrt(rSample.x);
@@ -287,12 +287,12 @@ void _fn stratifiedSampleRectangularAreaLight(in const float3 shadingHitPos, in 
 		return;
 
 	// Transform light position and light normal
-	float3 lightPos = mul(lData.transMat, float4(lData.worldPos, 1.0f)).rgb;
-	lAttr.N = mul(lData.transMat, float4(lData.worldDir, 0.0f)).rgb;
+	float3 lightPos = mul(float4(lData.worldPos, 1.0f), lData.transMat).rgb;
+	lAttr.N = mul(float4(lData.worldDir, 0.0f), lData.transMat).rgb;
 
 	// Transform tangent frame
-	float3 transformedTangent = mul(lData.transMat, float4(lData.tangent, 0.0f)).rgb;
-	float3 transformedBitangent = mul(lData.transMat, float4(lData.bitangent, 0.0f)).rgb;
+	float3 transformedTangent = mul(float4(lData.tangent, 0.0f), lData.transMat).rgb;
+	float3 transformedBitangent = mul(float4(lData.bitangent, 0.0f), lData.transMat).rgb;
 
 	float lightSizeY1 = length(transformedTangent);
 	float lightSizeY2 = length(transformedBitangent);
