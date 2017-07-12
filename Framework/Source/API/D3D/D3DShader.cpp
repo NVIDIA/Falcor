@@ -205,12 +205,6 @@ namespace Falcor
         return true;
     }
 
-    Shader::SharedPtr Shader::create(const Blob& shaderBlob, ShaderType type, std::string const& entryPointName, std::string& log)
-    {
-        SharedPtr pShader = SharedPtr(new Shader(type));
-        return pShader->init(shaderBlob, entryPointName, log) ? pShader : nullptr;
-    }
-
     ID3DBlobPtr Shader::getD3DBlob() const
     {
         const ShaderData* pData = (ShaderData*)mpPrivateData;

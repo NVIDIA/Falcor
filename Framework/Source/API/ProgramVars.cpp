@@ -649,45 +649,7 @@ namespace Falcor
             auto& rootData = resDesc.rootData;
             Resource* pResource = resDesc.pResource.get();
 
-            ViewType::SharedPtr view;
-            if (pResource)
-            {
-                // If it's a typed buffer, upload it to the GPU
-                TypedBufferBase* pTypedBuffer = dynamic_cast<TypedBufferBase*>(pResource);
-                if (pTypedBuffer)
-                {
-                    pTypedBuffer->uploadToGPU();
-                }
-                StructuredBuffer* pStructured = dynamic_cast<StructuredBuffer*>(pResource);
-                if (pStructured)
-                {
-                    pStructured->uploadToGPU();
-
-                    if (isUav && pStructured->hasUAVCounter())
-                    {
-                        pContext->resourceBarrier(pStructured->getUAVCounter().get(), Resource::State::UnorderedAccess);
-                    }
-                }
-
-                pContext->resourceBarrier(resDesc.pResource.get(), isUav ? Resource::State::UnorderedAccess : Resource::State::ShaderResource);
-                if (isUav)
-                {
-                    if (pTypedBuffer)
-                    {
-                        pTypedBuffer->setGpuCopyDirty();
-                    }
-                    if (pStructured)
-                    {
-                        pStructured->setGpuCopyDirty();
-                    }
-                }
-
-                view = resDesc.pView;
-            }
-            else
-            {
-                view = ViewType::getNullView();
-            }
+            ViewType::SharedPtr view = pResource ? resDesc.pView : ViewType::getNullView();
 
             if (rootSets[rootData.rootIndex].dirty)
             {
@@ -701,6 +663,61 @@ namespace Falcor
                 {
                     pDescSet->setSrv(rootData.rangeIndex, rootData.descIndex, resIt.first.regIndex, (ShaderResourceView*)view.get());
                 }
+            }
+        }
+    }
+
+    void uploadConstantBuffers(const ProgramVars::ResourceMap<ConstantBuffer>& cbMap, ProgramVars::RootSetVec& rootSets)
+    {
+        for (auto& bufIt : cbMap)
+        {
+            const auto& rootData = bufIt.second.rootData;
+            ConstantBuffer* pCB = dynamic_cast<ConstantBuffer*>(bufIt.second.pResource.get());
+
+            if (pCB && pCB->uploadToGPU())
+            {
+                rootSets[rootData.rootIndex].pDescSet = nullptr;
+            }
+        }
+    }
+
+    template<typename ViewType, bool isUav>
+    void uploadUavSrvCommon(CopyContext* pContext, const ProgramVars::ResourceMap<ViewType>& resMap, ProgramVars::RootSetVec& rootSets)
+    {
+        for (auto& resIt : resMap)
+        {
+            auto& resDesc = resIt.second;
+            auto& rootData = resDesc.rootData;
+            Resource* pResource = resDesc.pResource.get();
+
+            ViewType::SharedPtr view;
+            if (pResource)
+            {
+                bool invalidate = false;
+                // If it's a typed buffer, upload it to the GPU
+                TypedBufferBase* pTypedBuffer = dynamic_cast<TypedBufferBase*>(pResource);
+                if (pTypedBuffer)
+                {
+                    invalidate = pTypedBuffer->uploadToGPU();
+                }
+                StructuredBuffer* pStructured = dynamic_cast<StructuredBuffer*>(pResource);
+                if (pStructured)
+                {
+                    invalidate = pStructured->uploadToGPU();
+
+                    if (isUav && pStructured->hasUAVCounter())
+                    {
+                        pContext->resourceBarrier(pStructured->getUAVCounter().get(), Resource::State::UnorderedAccess);
+                    }
+                }
+
+                pContext->resourceBarrier(resDesc.pResource.get(), isUav ? Resource::State::UnorderedAccess : Resource::State::ShaderResource);
+                if (isUav)
+                {
+                    if (pTypedBuffer) pTypedBuffer->setGpuCopyDirty();
+                    if (pStructured)  pStructured->setGpuCopyDirty();
+                }
+                if (invalidate) rootSets[rootData.rootIndex].pDescSet = nullptr;
             }
         }
     }
@@ -720,12 +737,17 @@ namespace Falcor
             }
         }
 
+        // Upload the resources. This will also invalidate descriptor-sets that contain dynamic resources
+        uploadConstantBuffers(pVars->getAssignedCbs(), rootSets);
+        uploadUavSrvCommon<ShaderResourceView, false>(pContext, pVars->getAssignedSrvs(), rootSets);
+        uploadUavSrvCommon<UnorderedAccessView, true>(pContext, pVars->getAssignedUavs(), rootSets);
+
         // Allocate and mark the dirty sets
         for (uint32_t i = 0; i < rootSets.size(); i++)
         {
             if (rootSets[i].active)
             {
-                rootSets[i].dirty = bindRootSig || (rootSets[i].pDescSet == nullptr);
+                rootSets[i].dirty = (rootSets[i].pDescSet == nullptr);
                 if (rootSets[i].pDescSet == nullptr)
                 {
                     DescriptorSet::Layout layout;
@@ -747,7 +769,9 @@ namespace Falcor
         // Bind the sets
         for (uint32_t i = 0; i < rootSets.size(); i++)
         {
-            if (rootSets[i].dirty)
+            if (rootSets[i].active == false) continue;
+
+            if (rootSets[i].dirty || bindRootSig)
             {
                 rootSets[i].dirty = false;
                 if (forGraphics)
