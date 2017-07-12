@@ -36,7 +36,7 @@ cbuffer PerFrameCB : register(b0)
 
 void main(float2 posS : POSITION, inout float2 texC : TEXCOORD, out float4 posSV : SV_POSITION)
 {
-	posSV = mul(gvpTransform, float4(posS, 0.5f, 1));
+	posSV = mul(float4(posS, 0.5f, 1), gvpTransform);
 }
 #endif
 #ifdef FALCOR_GLSL

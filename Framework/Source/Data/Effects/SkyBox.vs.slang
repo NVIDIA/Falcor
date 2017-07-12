@@ -40,8 +40,8 @@ cbuffer PerFrameCB : register(b0)
 void main(float4 posL : POSITION, out float3 dir : NORMAL, out float4 posH : SV_POSITION)
 {
     dir = posL.xyz;
-    float4 viewPos = mul(gCam.viewMat, mul(gWorld, posL));
-    posH = mul(gCam.projMat, viewPos);
+    float4 viewPos = mul(mul(posL, gWorld), gCam.viewMat);
+    posH = mul(viewPos, gCam.projMat);
     posH.xy *= gScale;
     posH.z = posH.w;
 
