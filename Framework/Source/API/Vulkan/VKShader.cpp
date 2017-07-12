@@ -31,51 +31,24 @@
 
 namespace Falcor
 {
-    struct ShaderData
-    {
-        std::vector<uint8_t> compiledData;
-    };
+    Shader::Shader(ShaderType type) : mType(type) {}
 
-    Shader::SharedPtr Shader::create(
-        const std::string&  shaderString,
-        ShaderType          type,
-        const std::string&  entryPointName,
-        std::string&        log)
-    {
-        SharedPtr pShader = SharedPtr(new Shader(type));
-        return pShader->init(shaderString, entryPointName, log) ? pShader : nullptr;
-    }
+    Shader::~Shader() = default;
 
-    Shader::Shader(ShaderType type) : mType(type)
+    bool Shader::init(const Blob& shaderBlob, const std::string& entryPointName, std::string& log)
     {
-        mpPrivateData = new ShaderData;
-    }
-
-    Shader::~Shader()
-    {
-        ShaderData* pData = (ShaderData*)mpPrivateData;
-        safe_delete(pData);
-    }
-
-    bool Shader::init(
-        const std::string&  shaderString,
-        const std::string&  /*entryPointName*/,
-        std::string&        log)
-    {
-        // Compile the shader
-        ShaderData* pData = (ShaderData*)mpPrivateData;
-
-        //
-        // Create Shader Module
-        //
+        if (shaderBlob.type != Blob::Type::Bytecode)
+        {
+            logError("Vulkan Shaders can only be created from SPIR-V bytecode");
+            return false;
+        }
 
         VkShaderModuleCreateInfo moduleCreateInfo = {};
         moduleCreateInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+        moduleCreateInfo.codeSize = shaderBlob.data.size();
+        moduleCreateInfo.pCode = (uint32_t*)shaderBlob.data.data();
 
-        assert(VK_NV_glsl_shader);
-
-        moduleCreateInfo.codeSize = shaderString.size();
-        moduleCreateInfo.pCode = (uint32_t*)shaderString.data();
+        assert(moduleCreateInfo.codeSize % 4 == 0);
 
         VkShaderModule shaderModule;
         if (VK_FAILED(vkCreateShaderModule(gpDevice->getApiHandle(), &moduleCreateInfo, nullptr, &shaderModule)))

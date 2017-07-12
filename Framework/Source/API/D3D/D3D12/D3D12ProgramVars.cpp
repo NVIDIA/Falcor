@@ -41,7 +41,7 @@ namespace Falcor
             assert(rootData.rangeIndex == 0);
             ConstantBuffer* pCB = dynamic_cast<ConstantBuffer*>(bufIt.second.pResource.get());
 
-            if (pCB->uploadToGPU() || forceBind)
+            if (rootSets[rootData.rootIndex].dirty || forceBind)
             {
                 auto& pList = pContext->getLowLevelData()->getCommandList();
 

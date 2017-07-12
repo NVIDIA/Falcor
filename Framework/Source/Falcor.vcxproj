@@ -591,7 +591,6 @@
     <ClCompile Include="Utils\ProgressBarWin.cpp" />
     <ClCompile Include="Utils\Psychophysics\Experiment.cpp" />
     <ClCompile Include="Utils\Psychophysics\SingleThresholdMeasurement.cpp" />
-    <ClCompile Include="Utils\ShaderUtils.cpp" />
     <ClCompile Include="Utils\SlangSupport.cpp" />
     <ClCompile Include="Utils\TextRenderer.cpp" />
     <ClCompile Include="Utils\Video\VideoDecoder.cpp" />
@@ -1050,7 +1049,6 @@
     <ClInclude Include="Utils\ProgressBar.h" />
     <ClInclude Include="Utils\Psychophysics\Experiment.h" />
     <ClInclude Include="Utils\Psychophysics\SingleThresholdMeasurement.h" />
-    <ClInclude Include="Utils\ShaderUtils.h" />
     <ClInclude Include="Utils\StringUtils.h" />
     <ClInclude Include="Utils\TextRenderer.h" />
     <ClInclude Include="Utils\UserInput.h" />

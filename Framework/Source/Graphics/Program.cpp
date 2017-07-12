@@ -36,13 +36,24 @@
 #include "API/ProgramVersion.h"
 #include "API/Texture.h"
 #include "API/Sampler.h"
-#include "Utils/ShaderUtils.h"
 #include "API/RenderContext.h"
 #include "Utils/StringUtils.h"
 
 namespace Falcor
 {
-    // Program::Desc
+    static Shader::SharedPtr createShaderFromBlob(const Shader::Blob& shaderBlob, ShaderType shaderType, const std::string& entryPointName)
+    {
+        std::string errorMsg;
+        std::string log;
+        auto pShader = Shader::create(shaderBlob, shaderType, entryPointName, log);
+
+        if (pShader == nullptr)
+        {
+            std::string msg = "Error when creating " + to_string(shaderType) + " shader from string\nError log:\n";
+            msg += log;
+        }
+        return pShader;
+    }
 
     Program::Desc::Desc()
     {}
@@ -304,7 +315,7 @@ namespace Falcor
 
         // Pick the right target based on the current graphics API
 #ifdef FALCOR_VK
-        spSetCodeGenTarget(slangRequest, SLANG_GLSL);
+        spSetCodeGenTarget(slangRequest, SLANG_SPIRV);
         spAddPreprocessorDefine(slangRequest, "FALCOR_GLSL", "1");
         SlangSourceLanguage sourceLanguage = SLANG_SOURCE_LANGUAGE_GLSL;
 #elif defined FALCOR_D3D
@@ -407,6 +418,8 @@ namespace Falcor
 
         // Extract the generated code for each stage
         int entryPointCounter = 0;
+        Shader::Blob shaderBlob[kShaderCount];
+
         for (uint32_t i = 0; i < kShaderCount; i++)
         {
             auto& entryPoint = mDesc.mEntryPoints[i];
@@ -417,7 +430,16 @@ namespace Falcor
 
             int entryPointIndex = entryPointCounter++;
 
-            mPreprocessedShaderStrings[i] = spGetEntryPointSource(slangRequest, entryPointIndex);
+            size_t size = 0;
+#ifdef FALCOR_VK
+            const uint8_t* data = (uint8_t*)spGetEntryPointCode(slangRequest, entryPointIndex, &size);
+            shaderBlob[i].data.assign(data, data + size);
+            shaderBlob[i].type = Shader::Blob::Type::Bytecode;
+#else
+            const char* data = spGetEntryPointSource(slangRequest, entryPointIndex);
+            shaderBlob[i].data.assign(data, data + strlen(data));
+            shaderBlob[i].type = Shader::Blob::Type::String;
+#endif
         }
 
         // Extract the reflection data
@@ -435,21 +457,18 @@ namespace Falcor
 
         // Now that we've preprocessed things, dispatch to the actual program creation logic,
         // which may vary in subclasses of `Program`
-        return createProgramVersion(log);
+        return createProgramVersion(log, shaderBlob);
     }
 
-    ProgramVersion::SharedPtr Program::createProgramVersion(std::string& log) const
+    ProgramVersion::SharedPtr Program::createProgramVersion(std::string& log, const Shader::Blob shaderBlob[kShaderCount]) const
     {
         // create the shaders
         Shader::SharedPtr shaders[kShaderCount] = {};
         for (uint32_t i = 0; i < kShaderCount; i++)
         {
-            if (mPreprocessedShaderStrings[i].size())
+            if (shaderBlob[i].data.size())
             { 
-                shaders[i] = createShaderFromString(
-                    mPreprocessedShaderStrings[i],
-                    ShaderType(i),
-                    mDesc.mEntryPoints[i].name);
+                shaders[i] = createShaderFromBlob(shaderBlob[i], ShaderType(i), mDesc.mEntryPoints[i].name);
             }           
         }
 

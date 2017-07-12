@@ -39,7 +39,7 @@ namespace Falcor
             const auto& rootData = bufIt.second.rootData;
             ConstantBuffer* pCB = dynamic_cast<ConstantBuffer*>(bufIt.second.pResource.get());
 
-            if (pCB->uploadToGPU() || rootSets[rootData.rootIndex].dirty)
+            if (rootSets[rootData.rootIndex].dirty)
             {
                 rootSets[rootData.rootIndex].pDescSet->setCb(rootData.rangeIndex, rootData.descIndex, bufIt.first.regIndex, pCB);
             }
