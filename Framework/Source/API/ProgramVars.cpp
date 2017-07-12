@@ -725,7 +725,6 @@ namespace Falcor
     template<bool forGraphics>
     bool applyProgramVarsCommon(const ProgramVars* pVars, ProgramVars::RootSetVec& rootSets, CopyContext* pContext, bool bindRootSig)
     {
-        bindRootSig = true;
         if (bindRootSig)
         {
             if (forGraphics)
@@ -746,9 +745,9 @@ namespace Falcor
         // Allocate and mark the dirty sets
         for (uint32_t i = 0; i < rootSets.size(); i++)
         {
+            rootSets[i].dirty = (rootSets[i].pDescSet == nullptr);
             if (rootSets[i].active)
             {
-                rootSets[i].dirty = (rootSets[i].pDescSet == nullptr);
                 if (rootSets[i].pDescSet == nullptr)
                 {
                     DescriptorSet::Layout layout;
