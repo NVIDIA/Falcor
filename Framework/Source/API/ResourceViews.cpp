@@ -37,11 +37,13 @@ namespace Falcor
     ShaderResourceView::SharedPtr ShaderResourceView::sNullView;
     ConstantBufferView::SharedPtr ConstantBufferView::sNullView;
 
+    ResourceWeakPtr getEmptyTexture();
+
     ShaderResourceView::SharedPtr ShaderResourceView::getNullView()
     {
         if (!sNullView)
         {
-            sNullView = create(ResourceWeakPtr(), 0, 0, 0, 0);
+            sNullView = create(getEmptyTexture(), 0, 1, 0, 1);
         }
         return sNullView;
     }
@@ -50,7 +52,7 @@ namespace Falcor
     {
         if (!sNullView)
         {
-            sNullView = create(ResourceWeakPtr(), 0, 0, 0);
+            sNullView = create(getEmptyTexture(), 0, 0, 1);
         }
         return sNullView;
     }
@@ -59,7 +61,7 @@ namespace Falcor
     {
         if (!sNullView)
         {
-            sNullView = create(ResourceWeakPtr(), 0, 0, 0);
+            sNullView = create(getEmptyTexture(), 0, 0, 1);
         }
         return sNullView;
     }
@@ -68,7 +70,7 @@ namespace Falcor
     {
         if (!sNullView)
         {
-            create(ResourceWeakPtr(), 0, 0, 0);
+            create(getEmptyTexture(), 0, 0, 1);
         }
         return sNullView;
     }
