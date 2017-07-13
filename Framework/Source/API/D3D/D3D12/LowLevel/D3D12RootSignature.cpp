@@ -61,6 +61,7 @@ namespace Falcor
         {
             return D3D12_SHADER_VISIBILITY_HULL;
         }
+        // If it was compute, it can't be anything else and so the first `if` would have handled it
         should_not_get_here();
         return (D3D12_SHADER_VISIBILITY)-1;
     }
