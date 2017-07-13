@@ -45,7 +45,7 @@ Texture::SharedPtr createTmpTex(const Fbo* pFbo)
 
 void ComputeShader::onLoad()
 {
-    mpProg = ComputeProgram::createFromFile("compute.hlsl");
+    mpProg = ComputeProgram::createFromFile("compute.glsl");
     mpState = ComputeState::create();
     mpState->setProgram(mpProg);
     mpProgVars = ComputeVars::create(mpProg->getActiveVersion()->getReflector());
@@ -68,7 +68,7 @@ void ComputeShader::loadImageFromFile(std::string filename)
 {
     mpImage = createTextureFromFile(filename, false, false);
 
-    resizeSwapChain(mpImage->getWidth(), mpImage->getHeight());
+//    resizeSwapChain(mpImage->getWidth(), mpImage->getHeight());
     mpProgVars->setTexture("gInput", mpImage);
     mpTmpTexture = createTmpTex(mpDefaultFBO.get());
 }

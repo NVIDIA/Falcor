@@ -58,7 +58,10 @@ namespace Falcor
         {
             flags |= VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT;
         }
-
+        if ((visibility & ShaderVisibility::Compute) != ShaderVisibility::None)
+        {
+            flags |= VK_SHADER_STAGE_COMPUTE_BIT;
+        }
         return flags;
     }
     
@@ -246,6 +249,7 @@ namespace Falcor
 
                 for (const auto& range : merged)
                 {
+                    // #VKTODO set the correct shader flags in the layout
                     if (setLayouts.find(s.first) == setLayouts.end()) setLayouts[s.first] = {};
                     setLayouts[s.first].addRange(r.first, range.baseIndex, range.count, s.first);
                 }

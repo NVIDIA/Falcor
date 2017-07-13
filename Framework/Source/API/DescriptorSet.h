@@ -45,6 +45,7 @@ namespace Falcor
         Hull = (1 << (uint32_t)ShaderType::Hull),
         Domain = (1 << (uint32_t)ShaderType::Domain),
         Geometry = (1 << (uint32_t)ShaderType::Geometry),
+        Compute = (1 << (uint32_t)ShaderType::Compute),
 
         All = (1 << (uint32_t)ShaderType::Count) - 1,
 

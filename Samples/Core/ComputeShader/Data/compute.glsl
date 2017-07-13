@@ -25,10 +25,11 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
+#version 450
 #extension GL_ARB_compute_shader : require
 
 layout(set = 0, binding = 0) uniform texture2D gInput;
-layout(set = 0, binding = 1, rgba32) uniform image2D gOutput;
+layout(set = 0, binding = 1, rgba32f) uniform image2D gOutput;
 layout(set = 0, binding = 2) uniform sampler gSampler;
 
 shared vec4 colors[16][16];
@@ -39,20 +40,21 @@ layout(local_size_x = 16, local_size_y = 16, local_size_z = 1) in;
 void main()
 {
     // Calculate the start position of the block    
-    ivec3 resDim = imageSize(gOutput);
+    ivec2 resDim = imageSize(gOutput);
 
     uvec2 posStart = gl_WorkGroupID.xy * 16;
     uvec2 crd = posStart + gl_LocalInvocationID.xy;
 
     // Fetch all of the data into the shared local memory
-    colors[gl_LocalInvocationID.x][gl_LocalInvocationID.y] = texelFetch(sampler2D(gSampler, gInput), crd, 0);
+    vec4 c = texelFetch(sampler2D(gInput, gSampler), ivec2(crd), 0);
+    colors[gl_LocalInvocationID.x][gl_LocalInvocationID.y] = c;
 
 #ifdef _PIXELATE
     groupMemoryBarrier();
     barrier();
-    if(any(gl_LocalInvocationID) == false)
+    if(gl_LocalInvocationID.xy == uvec2(0,0))
     {
-        pixelated = 0;
+        pixelated = vec4(0,0,0,0);
         for(int i = 0 ; i < 16 ; i++)
         {
             for(int j = 0 ; j < 16 ; j++)
@@ -65,8 +67,8 @@ void main()
     
     groupMemoryBarrier();
     barrier();
-    imageStore(gOutput, crd, pixelated.bgra);
+    imageStore(gOutput, ivec2(crd), pixelated.bgra);
 #else
-    imageStore(gOutput, crd, colors[gl_LocalInvocationID.x][gl_LocalInvocationID.y].bgra);
+    imageStore(gOutput, ivec2(crd), colors[gl_LocalInvocationID.x][gl_LocalInvocationID.y].bgra);
 #endif
 }
