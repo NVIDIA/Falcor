@@ -250,8 +250,8 @@ namespace Falcor
     {
     }
 
-    template<typename ViewType>
-    void initBlitData(const ViewType* pView, const uvec4& rect, VkImageSubresourceLayers& layer, VkOffset3D offset[2])
+    template<uint32_t offsetCount, typename ViewType>
+    void initBlitData(const ViewType* pView, const uvec4& rect, VkImageSubresourceLayers& layer, VkOffset3D offset[offsetCount])
     {
         const Texture* pTex = dynamic_cast<const Texture*>(pView->getResource());
 
@@ -266,19 +266,40 @@ namespace Falcor
         offset[0].y = (rect.y == -1) ? 0 : rect.y;
         offset[0].z = 0;
 
-        offset[1].x = (rect.z == -1) ? pTex->getWidth(viewInfo.mostDetailedMip) : rect.z;
-        offset[1].y = (rect.w == -1) ? pTex->getHeight(viewInfo.mostDetailedMip) : rect.w;
-        offset[1].z = 1;
+        if(offsetCount > 1)
+        {
+            offset[1].x = (rect.z == -1) ? pTex->getWidth(viewInfo.mostDetailedMip) : rect.z;
+            offset[1].y = (rect.w == -1) ? pTex->getHeight(viewInfo.mostDetailedMip) : rect.w;
+            offset[1].z = 1;
+        }
     }
 
     void RenderContext::blit(ShaderResourceView::SharedPtr pSrc, RenderTargetView::SharedPtr pDst, const uvec4& srcRect, const uvec4& dstRect, Sampler::Filter filter)
     {
-        VkImageBlit blt;
-        initBlitData(pSrc.get(), srcRect, blt.srcSubresource, blt.srcOffsets);
-        initBlitData(pDst.get(), dstRect, blt.dstSubresource, blt.dstOffsets);
-
+        const Texture* pTexture = dynamic_cast<const Texture*>(pSrc->getResource());
         resourceBarrier(pSrc->getResource(), Resource::State::CopySource);
         resourceBarrier(pDst->getResource(), Resource::State::CopyDest);
-        vkCmdBlitImage(mpLowLevelData->getCommandList(), pSrc->getResource()->getApiHandle(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, pDst->getResource()->getApiHandle(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &blt, VK_FILTER_NEAREST);
+
+        if (pTexture && pTexture->getSampleCount() > 1)
+        {
+            // Resolve
+            VkImageResolve resolve;
+            initBlitData<1>(pSrc.get(), srcRect, resolve.srcSubresource, &resolve.srcOffset);
+            initBlitData<1>(pDst.get(), dstRect, resolve.dstSubresource, &resolve.dstOffset);
+            const auto& viewInfo = pSrc->getViewInfo();
+            resolve.extent.width = pTexture->getWidth(viewInfo.mostDetailedMip);
+            resolve.extent.height = pTexture->getHeight(viewInfo.mostDetailedMip);
+            resolve.extent.depth = 1;
+            
+            vkCmdResolveImage(mpLowLevelData->getCommandList(), pSrc->getResource()->getApiHandle(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, pDst->getResource()->getApiHandle(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &resolve);
+        }
+        else
+        {
+            VkImageBlit blt;
+            initBlitData<2>(pSrc.get(), srcRect, blt.srcSubresource, blt.srcOffsets);
+            initBlitData<2>(pDst.get(), dstRect, blt.dstSubresource, blt.dstOffsets);
+
+            vkCmdBlitImage(mpLowLevelData->getCommandList(), pSrc->getResource()->getApiHandle(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, pDst->getResource()->getApiHandle(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &blt, VK_FILTER_NEAREST);
+        }
     }
 }

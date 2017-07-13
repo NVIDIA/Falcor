@@ -42,18 +42,6 @@ namespace Falcor
     template<> VkHandle<VkDescriptorPool>::~VkHandle() { if(mApiHandle != VK_NULL_HANDLE) vkDestroyDescriptorPool(gpDevice->getApiHandle(), mApiHandle, nullptr); }
     template<> VkHandle<VkQueryPool>::~VkHandle() { if (mApiHandle != VK_NULL_HANDLE && gpDevice) vkDestroyQueryPool(gpDevice->getApiHandle(), mApiHandle, nullptr); }
 
-//     template<>
-//     VkResource<VkImage, VkBuffer>::operator bool()
-//     {
-//         return ((mType == VkResourceType::Image && mImage != VK_NULL_HANDLE) || (mType == VkResourceType::Buffer && mBuffer != VK_NULL_HANDLE)) && mDeviceMem != VK_NULL_HANDLE;
-//     }
-// 
-//     template<>
-//     VkResource<VkImageView, VkBufferView>::operator bool()
-//     {
-//         return (mType == VkResourceType::Image && mImage != VK_NULL_HANDLE) || (mType == VkResourceType::Buffer && mBuffer != VK_NULL_HANDLE);
-//     }
-
     VkDeviceData::~VkDeviceData()
     {
         if (mInstance != VK_NULL_HANDLE && mLogicalDevice != VK_NULL_HANDLE && mInstance != VK_NULL_HANDLE)

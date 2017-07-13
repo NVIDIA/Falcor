@@ -49,5 +49,6 @@ private:
     vec2 mTexOffset;
     TypedBuffer<uint32_t>::SharedPtr mpTypedBuffer;
     Texture::SharedPtr mpTex3D;
+    Fbo::SharedPtr mp4SampleFbo;
 };
 #endif

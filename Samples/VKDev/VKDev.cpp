@@ -46,12 +46,18 @@ void VKDev::onLoad()
     mpTex3D = Texture::create3D(10, 1, 1, ResourceFormat::R32Uint, 1, nullptr, Resource::BindFlags::UnorderedAccess);
     mpVars->setTypedBuffer("typedBuffer", mpTypedBuffer);
     mpVars->setTexture("typed3D", mpTex3D);
+
+    Fbo::Desc fboDesc;
+    fboDesc.setSampleCount(4).setColorTarget(0, mpDefaultFBO->getColorTexture(0)->getFormat());
+    mp4SampleFbo = FboHelper::create2D(mpDefaultFBO->getWidth(), mpDefaultFBO->getHeight(), fboDesc);
 }
 
 void VKDev::onFrameRender()
 {
     const glm::vec4 clearColor(0.38f, 0.52f, 0.10f, 1);
-    mpRenderContext->clearFbo(mpDefaultFBO.get(), clearColor, 1.0f, 0, FboAttachmentType::All);
+    mpRenderContext->clearFbo(mp4SampleFbo.get(), clearColor, 1.0f, 0, FboAttachmentType::Color);
+    mpDefaultPipelineState->pushFbo(mp4SampleFbo);
+
     StructuredBuffer::SharedPtr pCountBuffer = mpVars->getStructuredBuffer("outImage");
     pCountBuffer[0]["count"] = 0u;
 
@@ -61,6 +67,9 @@ void VKDev::onFrameRender()
     mpVars["PerFrameCB"]["offset"] = mTexOffset;
     mpRenderContext->setGraphicsVars(mpVars);
     mpPass->execute(mpRenderContext.get());
+    mpRenderContext->blit(mp4SampleFbo->getColorTexture(0)->getSRV(), mpDefaultFBO->getRenderTargetView(0));
+
+    mpDefaultPipelineState->popFbo();
     std::string count;
     count += "Structured Buffer =   " + std::to_string((uint32_t)pCountBuffer[0]["count"]) + "\n";
     const uint32_t* pTyped = (uint32_t*)mpTypedBuffer->map(Buffer::MapType::Read);
