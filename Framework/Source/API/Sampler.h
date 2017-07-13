@@ -181,7 +181,7 @@ namespace Falcor
     private:
         Sampler(const Desc& desc);
         Desc mDesc;
-        ApiHandle mApiHandle = { 0 };
+        ApiHandle mApiHandle = {};
         static uint32_t getApiMaxAnisotropy();
         static Sampler::SharedPtr spDefaultSampler;
         static uint32_t sObjectCount;

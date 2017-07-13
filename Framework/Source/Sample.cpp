@@ -33,7 +33,9 @@
 #include "Graphics/Program.h"
 #include "Utils/OS.h"
 #include "API/FBO.h"
+#ifndef VK_DISABLE_UNIMPLEMENTED
 #include "VR\OpenVR\VRSystem.h"
+#endif
 #include "Utils\ProgressBar.h"
 #include <sstream>
 #include <iomanip>
@@ -101,7 +103,7 @@ namespace Falcor
 #endif
                 case KeyboardEvent::Key::V:
                     mVsyncOn = !mVsyncOn;
-                    gpDevice->setVSync(mVsyncOn);
+                    gpDevice->toggleVSync(mVsyncOn);
                     mFrameRate.resetClock();
                     break;
                 case KeyboardEvent::Key::F1:
@@ -141,7 +143,9 @@ namespace Falcor
         {
             return;
         }
+#ifndef VK_DISABLE_UNIMPLEMENTED
         mpPixelZoom->onMouseEvent(mouseEvent);
+#endif
         onMouseEvent(mouseEvent);
     }
 
@@ -154,7 +158,9 @@ namespace Falcor
             endVideoCapture();
         }
 
+#ifndef VK_DISABLE_UNIMPLEMENTED
         VRSystem::cleanup();
+#endif
 
         mpGui.reset();
         mpDefaultPipelineState.reset();
@@ -204,7 +210,7 @@ namespace Falcor
             return;
         }
 
-        if (config.deviceCreatedCallback)
+        if (config.deviceCreatedCallback != nullptr)
         {
             config.deviceCreatedCallback();
         }
@@ -222,6 +228,7 @@ namespace Falcor
         // Init the UI
         initUI();
 
+#ifndef VK_DISABLE_UNIMPLEMENTED
         // Init VR
         mVrEnabled = config.enableVR;
         if (mVrEnabled)
@@ -233,6 +240,8 @@ namespace Falcor
         mArgList.parseCommandLine(GetCommandLineA());
         mpPixelZoom = PixelZoom::create();
         mpPixelZoom->init(mpDefaultFBO.get());
+#endif
+
         onLoad();
         pBar = nullptr;
         mpWindow->msgLoop();
@@ -346,7 +355,9 @@ namespace Falcor
         }
 
         renderText(getFpsMsg(), glm::vec2(10, 10));
+#ifndef VK_DISABLE_UNIMPLEMENTED
         mpPixelZoom->render(mpRenderContext.get(), gpDevice->getSwapChainFbo().get());
+#endif
 
         captureVideoFrame();
         printProfileData();
@@ -408,7 +419,9 @@ namespace Falcor
     void Sample::resizeSwapChain(uint32_t width, uint32_t height)
     {
         mpWindow->resize(width, height);
+#ifndef VK_DISABLE_UNIMPLEMENTED
         mpPixelZoom->init(gpDevice->getSwapChainFbo().get());
+#endif
     }
 
     bool Sample::isKeyPressed(const KeyboardEvent::Key& key) const

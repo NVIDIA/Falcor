@@ -58,9 +58,9 @@ namespace Falcor
             return D3Dx(BLEND_DEST_ALPHA);
         case BlendState::BlendFunc::OneMinusDstAlpha:
             return D3Dx(BLEND_INV_DEST_ALPHA);
-        case BlendState::BlendFunc::RgbaFactor:
+        case BlendState::BlendFunc::BlendFactor:
             return D3Dx(BLEND_BLEND_FACTOR);
-        case BlendState::BlendFunc::OneMinusRgbaFactor:
+        case BlendState::BlendFunc::OneMinusBlendFactor:
             return D3Dx(BLEND_INV_BLEND_FACTOR);
         case BlendState::BlendFunc::SrcAlphaSaturate:
             return D3Dx(BLEND_SRC_ALPHA_SAT);
@@ -102,7 +102,7 @@ namespace Falcor
     {
         desc.AlphaToCoverageEnable = dxBool(pState->isAlphaToCoverageEnabled());
         desc.IndependentBlendEnable = dxBool(pState->isIndependentBlendEnabled());
-        for (size_t rt = 0; rt < pState->getRtCount(); rt++)
+        for (uint32_t rt = 0; rt < pState->getRtCount(); rt++)
         {
             const BlendState::Desc::RenderTargetDesc& rtDesc = pState->getRtDesc(rt);
             D3Dx(RENDER_TARGET_BLEND_DESC)& d3dRtDesc = desc.RenderTarget[rt];
@@ -228,7 +228,7 @@ namespace Falcor
                     for (uint32_t arrayIndex = 0; arrayIndex < pVB->getElementArraySize(elemID); arrayIndex++)
                     {
                         // Reallocating name for each array index simplifies the destructor
-                        char* name = new char[SemanticName.size() + 1];
+                        char* name = new char[SemanticName.size() + 1]; // #FIXME Mem leak
                         memcpy(name, SemanticName.c_str(), SemanticName.size());
                         name[SemanticName.size()] = 0;
                         element.SemanticName = name;

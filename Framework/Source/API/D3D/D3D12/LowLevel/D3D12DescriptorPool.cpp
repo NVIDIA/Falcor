@@ -36,8 +36,12 @@ namespace Falcor
     {
         switch (t)
         {
-        case DescriptorPool::Type::Srv:
-        case DescriptorPool::Type::Uav:
+        case DescriptorPool::Type::TextureSrv:
+        case DescriptorPool::Type::TextureUav:
+        case DescriptorPool::Type::StructuredBufferSrv:
+        case DescriptorPool::Type::StructuredBufferUav:
+        case DescriptorPool::Type::TypedBufferSrv:
+        case DescriptorPool::Type::TypedBufferUav:
         case DescriptorPool::Type::Cbv:
             return D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
         case DescriptorPool::Type::Dsv:
@@ -55,15 +59,15 @@ namespace Falcor
     bool DescriptorPool::apiInit()
     {
         // Find out how many heaps we need
-        static_assert(DescriptorPool::kTypeCount == 6, "Unexpected desc count, make sure all desc types are supported");
+        static_assert(DescriptorPool::kTypeCount == 10, "Unexpected desc count, make sure all desc types are supported");
         uint32_t descCount[D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES] = { 0 };
 
         descCount[D3D12_DESCRIPTOR_HEAP_TYPE_RTV] = mDesc.mDescCount[(uint32_t)Type::Rtv];
         descCount[D3D12_DESCRIPTOR_HEAP_TYPE_DSV] = mDesc.mDescCount[(uint32_t)Type::Dsv];
         descCount[D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER] = mDesc.mDescCount[(uint32_t)Type::Sampler];
         descCount[D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV] = mDesc.mDescCount[(uint32_t)Type::Cbv];
-        descCount[D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV] += mDesc.mDescCount[(uint32_t)Type::Uav];
-        descCount[D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV] += mDesc.mDescCount[(uint32_t)Type::Srv];
+        descCount[D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV] += mDesc.mDescCount[(uint32_t)Type::TextureUav] + mDesc.mDescCount[(uint32_t)Type::TypedBufferUav] + mDesc.mDescCount[(uint32_t)Type::StructuredBufferUav];
+        descCount[D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV] += mDesc.mDescCount[(uint32_t)Type::TextureSrv] + mDesc.mDescCount[(uint32_t)Type::TypedBufferSrv] + mDesc.mDescCount[(uint32_t)Type::StructuredBufferSrv];
 
         mpApiData = std::make_shared<DescriptorPoolApiData>();
         for (uint32_t i = 0; i < arraysize(mpApiData->pHeaps); i++)

@@ -29,6 +29,7 @@
 #include "API/DescriptorSet.h"
 #include "D3D12DescriptorHeap.h"
 #include "D3D12DescriptorData.h"
+#include "API/Device.h"
 
 namespace Falcor
 {
@@ -60,7 +61,6 @@ namespace Falcor
                 mpApiData->allocations[i] = pHeap->allocateDescriptors(range.descCount);
                 if (!mpApiData->allocations[i])
                 {
-                    assert(0);
                     return false;
                 }
             }
@@ -76,5 +76,41 @@ namespace Falcor
     DescriptorSet::GpuHandle DescriptorSet::getGpuHandle(uint32_t rangeIndex, uint32_t descInRange) const
     {
         return mpApiData->allocations[rangeIndex]->getGpuHandle(descInRange);
+    }
+
+    void setCpuHandle(DescriptorSet* pSet, uint32_t rangeIndex, uint32_t descIndex, const DescriptorSet::CpuHandle& handle)
+    {
+        auto dstHandle = pSet->getCpuHandle(rangeIndex, descIndex);
+        gpDevice->getApiHandle()->CopyDescriptorsSimple(1, dstHandle, handle, falcorToDxDescType(pSet->getRange(rangeIndex).type));
+    }
+
+    void DescriptorSet::setSrv(uint32_t rangeIndex, uint32_t descIndex, uint32_t regIndex, const ShaderResourceView* pSrv)
+    {
+        setCpuHandle(this, rangeIndex, descIndex, pSrv->getApiHandle()->getCpuHandle(0));
+    }
+
+    void DescriptorSet::setUav(uint32_t rangeIndex, uint32_t descIndex, uint32_t regIndex, const UnorderedAccessView* pUav)
+    {
+        setCpuHandle(this, rangeIndex, descIndex, pUav->getApiHandle()->getCpuHandle(0));
+    }
+
+    void DescriptorSet::setSampler(uint32_t rangeIndex, uint32_t descIndex, uint32_t regIndex, const Sampler* pSampler)
+    {
+        setCpuHandle(this, rangeIndex, descIndex, pSampler->getApiHandle()->getCpuHandle(0));
+    }
+
+    void DescriptorSet::bindForGraphics(CopyContext* pCtx, const RootSignature* pRootSig, uint32_t rootIndex)
+    {
+        pCtx->getLowLevelData()->getCommandList()->SetGraphicsRootDescriptorTable(rootIndex, getGpuHandle(0));
+    }
+
+    void DescriptorSet::bindForCompute(CopyContext* pCtx, const RootSignature* pRootSig, uint32_t rootIndex)
+    {
+        pCtx->getLowLevelData()->getCommandList()->SetComputeRootDescriptorTable(rootIndex, getGpuHandle(0));
+    }
+
+    void DescriptorSet::setCb(uint32_t rangeIndex, uint32_t descIndex, uint32_t regIndex, const Buffer* pBuffer)
+    {
+        UNSUPPORTED_IN_D3D12("DescriptorSet::setCb");
     }
 }

@@ -33,7 +33,7 @@
 #include "API/GpuTimer.h"
 #include "Utils/CpuTimer.h"
 #include "FalcorConfig.h"
-
+#include <stack>
 
 namespace Falcor
 {
@@ -68,7 +68,14 @@ namespace Falcor
         {
 			virtual ~EventData() {}
             std::string name;
-            GpuTimer::SharedPtr pGpuTimer[2];    // Double-buffering, to avoid GPU flushes
+            struct FrameData
+            {
+                std::vector<GpuTimer::SharedPtr> pTimers;
+                size_t currentTimer = 0;
+            };
+            FrameData frameData[2]; // Double-buffering, to avoid GPU flushes
+
+            std::stack<size_t> callStack;
             CpuTimer::TimePoint cpuStart;
             CpuTimer::TimePoint cpuEnd;
             float cpuTotal = 0;

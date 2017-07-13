@@ -84,11 +84,6 @@ namespace Falcor
         */
         void setMaxInstanceCount(uint32_t instanceCount) { mMaxInstanceCount = instanceCount; }
 
-        /** This setting controls whether to unload textures from GPU memory before binding a new material.\n
-        Useful for rendering very large models with many textures that can't fit into GPU memory at once. Setting this to true usually results in performance loss.
-        */
-        void setUnloadTexturesOnMaterialChange(bool unload) { mUnloadTexturesOnMaterialChange = unload; }
-
         enum class CameraControllerType
         {
             FirstPerson,
@@ -160,7 +155,6 @@ namespace Falcor
         uint32_t mMaxInstanceCount = 64;
         const Material* mpLastMaterial = nullptr;
         bool mCullEnabled = true;
-        bool mUnloadTexturesOnMaterialChange = false;
         RenderMode mRenderMode = RenderMode::Mono;
         bool mCompileMaterialWithProgram = true;
     };

@@ -33,35 +33,36 @@ namespace Falcor
     class Resource;
     using ResourceWeakPtr = std::weak_ptr<const Resource>;
 
+    struct ResourceViewInfo
+    {
+        ResourceViewInfo(uint32_t mostDetailedMip_, uint32_t mipCount_, uint32_t firstArraySlice_, uint32_t arraySize_) : mostDetailedMip(mostDetailedMip_), mipCount(mipCount_), firstArraySlice(firstArraySlice_), arraySize(arraySize_) {}
+        uint32_t mostDetailedMip;
+        uint32_t mipCount;
+        uint32_t firstArraySlice;
+        uint32_t arraySize;
+
+        bool operator==(const ResourceViewInfo& other) const
+        {
+            return (firstArraySlice == other.firstArraySlice) && (arraySize == other.arraySize) && (mipCount == other.mipCount) && (mostDetailedMip == other.mostDetailedMip);
+        }
+    };
+
     template<typename ApiHandleType>
     class ResourceView
     {
     public:
-        using ApiHandle = typename ApiHandleType;
+        using ApiHandle = ApiHandleType;
         static const uint32_t kMaxPossible = -1;
-        struct ViewInfo
-        {
-            ViewInfo(uint32_t mostDetailedMip_, uint32_t mipCount_, uint32_t firstArraySlice_, uint32_t arraySize_) : mostDetailedMip(mostDetailedMip_), mipCount(mipCount_), firstArraySlice(firstArraySlice_), arraySize(arraySize_) {}
-            uint32_t mostDetailedMip;
-            uint32_t mipCount;
-            uint32_t firstArraySlice;
-            uint32_t arraySize;
 
-            bool operator==(const ViewInfo& other) const
-            {
-                return (firstArraySlice == other.firstArraySlice) && (arraySize == other.arraySize) && (mipCount == other.mipCount) && (mostDetailedMip == other.mostDetailedMip);
-            }
-        };
-
-        ResourceView(ResourceWeakPtr& pResource, ApiHandle handle, uint32_t mostDetailedMip_, uint32_t mipCount_, uint32_t firstArraySlice_, uint32_t arraySize_)
-            : mApiHandle(handle), mpResource(pResource), mViewInfo(mostDetailedMip_, mipCount_, firstArraySlice_, arraySize_) {}
+        ResourceView(ResourceWeakPtr& pResource, ApiHandle handle, uint32_t mostDetailedMip, uint32_t mipCount, uint32_t firstArraySlice, uint32_t arraySize)
+            : mApiHandle(handle), mpResource(pResource), mViewInfo(mostDetailedMip, mipCount, firstArraySlice, arraySize) {}
 
         ApiHandle getApiHandle() const { return mApiHandle; }
-        const ViewInfo& getViewInfo() const { return mViewInfo; }
+        const ResourceViewInfo& getViewInfo() const { return mViewInfo; }
         const Resource* getResource() const { return mpResource.lock().get(); }
     private:
         ApiHandle mApiHandle;
-        ViewInfo mViewInfo;
+        ResourceViewInfo mViewInfo;
         ResourceWeakPtr mpResource;
     };
 
@@ -107,7 +108,7 @@ namespace Falcor
         static SharedPtr sNullView;
     };
 
-    class RenderTargetView : public ResourceView<UavHandle>
+    class RenderTargetView : public ResourceView<RtvHandle>
     {
     public:
         using SharedPtr = std::shared_ptr<RenderTargetView>;

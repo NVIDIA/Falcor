@@ -36,8 +36,6 @@ namespace Falcor
         ID3DBlobPtr pBlob;
     };
 
-    static const char* kEntryPoint = "main";
-
     const char* getTargetString(ShaderType type)
     {
         switch (type)
@@ -111,7 +109,7 @@ namespace Falcor
         }
     };
 
-    ID3DBlobPtr Shader::compile(const std::string& source, std::string& errorLog)
+    ID3DBlobPtr Shader::compile(const Blob& blob, const std::string& entryPointName, std::string& errorLog)
     {
         ID3DBlob* pCode;
         ID3DBlobPtr pErrors;
@@ -120,8 +118,20 @@ namespace Falcor
 #ifdef _DEBUG
         flags |= D3DCOMPILE_DEBUG;
 #endif
+        flags |= D3DCOMPILE_PACK_MATRIX_ROW_MAJOR;
 
-        HRESULT hr = D3DCompile(source.c_str(), source.size(), nullptr, nullptr, nullptr, kEntryPoint, getTargetString(mType), flags, 0, &pCode, &pErrors);
+        HRESULT hr = D3DCompile(
+            blob.data.data(),
+            blob.data.size(),
+            nullptr,
+            nullptr,
+            nullptr,
+            entryPointName.c_str(),
+            getTargetString(mType),
+            flags,
+            0,
+            &pCode,
+            &pErrors);
         if(FAILED(hr))
         {
             errorLog = convertBlobToString(pErrors.GetInterfacePtr());
@@ -142,13 +152,16 @@ namespace Falcor
         safe_delete(pData);
     }
 
-    bool Shader::init(
-            const std::string&  shaderString,
-            std::string&        log)
+    bool Shader::init(const Blob& shaderBlob, const std::string& entryPointName, std::string& log)
     {
+        if (shaderBlob.type != Blob::Type::String)
+        {
+            logError("D3D shader compilation only supports string inputs");
+            return false;
+        }
         // Compile the shader
         ShaderData* pData = (ShaderData*)mpPrivateData;
-        pData->pBlob = compile(shaderString, log);
+        pData->pBlob = compile(shaderBlob, entryPointName, log);
 
         if (pData->pBlob == nullptr)
         {
@@ -193,16 +206,7 @@ namespace Falcor
         return true;
     }
 
-    Shader::SharedPtr Shader::create(
-        const std::string&          shaderString,
-        ShaderType                  type,
-        std::string&                log)
-    {
-        SharedPtr pShader = SharedPtr(new Shader(type));
-        return pShader->init(shaderString, log) ? pShader : nullptr;
-    }
-
-    ID3DBlobPtr Shader::getCodeBlob() const
+    ID3DBlobPtr Shader::getD3DBlob() const
     {
         const ShaderData* pData = (ShaderData*)mpPrivateData;
         return pData->pBlob;

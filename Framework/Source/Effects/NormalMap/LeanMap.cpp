@@ -42,7 +42,7 @@ namespace Falcor
 
         leanData.resize(texW * texH);
 
-        uint32_t normalMapDataSize = pNormalMap->getMipLevelDataSize(0);
+        uint32_t normalMapDataSize = pNormalMap->getMipLevelPackedDataSize(0);
         auto normalMapData = gpDevice->getRenderContext()->readTextureSubresource(pNormalMap, 0);
 
         const float oneBy255 = 1.0f / 255.0f;
@@ -165,7 +165,7 @@ namespace Falcor
             uint32_t id = pMap.first;
             uint32_t regIndex = id + texIndex;
             Texture::SharedPtr pTex = pMap.second;
-            pVars->setSrv(regIndex, pTex->getSRV());
+            pVars->setSrv(regIndex, 0, pTex->getSRV());
         }
     }
 

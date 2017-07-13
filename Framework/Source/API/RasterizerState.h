@@ -111,7 +111,7 @@ namespace Falcor
         /** create a new rasterizer state object
             \return A new object, or nullptr if creation failed
         */
-        static SharedPtr create(const Desc& desc);
+        static SharedPtr create(const Desc& desc) { return SharedPtr(new RasterizerState(desc));}
         ~RasterizerState();
 
         /** Get the cull mode

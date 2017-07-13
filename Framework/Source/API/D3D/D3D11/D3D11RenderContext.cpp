@@ -222,7 +222,7 @@ namespace Falcor
         ID3D11InputLayoutPtr pLayout = nullptr;
         if(mState.pVao && pShader)
         {
-            pLayout = mState.pVao->getInputLayout(pShader->getCodeBlob());
+            pLayout = mState.pVao->getInputLayout(pShader->getD3DBlob());
         }
 
         ID3D11DeviceContextPtr pCtx = getD3D11ImmediateContext();

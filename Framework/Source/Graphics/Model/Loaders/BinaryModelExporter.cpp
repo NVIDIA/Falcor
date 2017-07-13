@@ -446,7 +446,7 @@ namespace Falcor
         ResourceFormat format = pTexture->getFormat();
         uint32_t bpp = getFormatBytesPerBlock(format);
 
-        uint32_t dataSize = pTexture->getMipLevelDataSize(0);
+        uint32_t dataSize = pTexture->getMipLevelPackedDataSize(0);
         int32_t formatID = getBinaryFormatID(pTexture->getFormat());
 
         writeString(mStream, pTexture->getSourceFilename());

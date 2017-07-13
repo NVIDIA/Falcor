@@ -39,9 +39,9 @@ namespace Falcor
 {
     bool checkForViewportArray2Support()
     {
-#ifdef FALCOR_GL
-        return Device::isExtensionSupported("GL_NV_viewport_array2");
-#elif defined FALCOR_D3D
+#ifdef FALCOR_D3D
+        return false;
+#elif defined FALCOR_VK
         return false;
 #else
 #error Unknown API
@@ -57,19 +57,20 @@ namespace Falcor
     Vao::SharedPtr FullScreenPass::spVao;
     uint64_t FullScreenPass::sObjectCount = 0;
 
-#ifdef FALCOR_D3D
-#define INVERT_Y(a) ((a == 1) ? 0 : 1)
-#elif defined FALCOR_GL
-#define INVERT_Y(a) (a)
+#ifdef FALCOR_VK
+#define ADJUST_Y(a) (-(a))
+#else
+#define ADJUST_Y(a) a
 #endif
+
     static const Vertex kVertices[] =
     {
-        {glm::vec2(-1,  1), glm::vec2(0, INVERT_Y(1))},
-        {glm::vec2(-1, -1), glm::vec2(0, INVERT_Y(0))},
-        {glm::vec2( 1,  1), glm::vec2(1, INVERT_Y(1))},
-        {glm::vec2( 1, -1), glm::vec2(1, INVERT_Y(0))},
+        {glm::vec2(-1, ADJUST_Y( 1)), glm::vec2(0, 0)},
+        {glm::vec2(-1, ADJUST_Y(-1)), glm::vec2(0, 1)},
+        {glm::vec2( 1, ADJUST_Y( 1)), glm::vec2(1, 0)},
+        {glm::vec2( 1, ADJUST_Y(-1)), glm::vec2(1, 1)},
     };
-#undef INVERT_Y
+#undef ADJUST_Y
 
     static void initStaticObjects(Buffer::SharedPtr& pVB, Vao::SharedPtr& pVao)
     {
@@ -140,11 +141,11 @@ namespace Falcor
             else
             {
                 defs.add("_OUTPUT_PRIM_COUNT", std::to_string(__popcnt(viewportMask)));
-                gs = "Framework/Shaders/FullScreenPass.gs.hlsl";
+                gs = "Framework/Shaders/FullScreenPass.gs.slang";
             }
         }
 
-        const std::string vs(vsFile.empty() ? "Framework/Shaders/FullScreenPass.vs.hlsl" : vsFile);
+        const std::string vs(vsFile.empty() ? "Framework/Shaders/FullScreenPass.vs.slang" : vsFile);
         mpProgram = GraphicsProgram::createFromFile(vs, psFile, gs, "", "", defs);
         mpPipelineState->setProgram(mpProgram);
 

@@ -55,7 +55,7 @@ namespace Falcor
 
         /** create a new object
         */
-        static SharedPtr create();
+        static SharedPtr create(CommandQueueHandle queue);
 
         /** Clear an FBO
             \param[in] pFbo The FBO to clear
@@ -101,7 +101,7 @@ namespace Falcor
             \param[in] startIndexLocation The location of the first index to read from the index buffer (offset in indices)
             \param[in] baseVertexLocation A value which is added to each index before reading a vertex from the vertex buffer
         */
-        void drawIndexed(uint32_t indexCount, uint32_t startIndexLocation, int baseVertexLocation);
+        void drawIndexed(uint32_t indexCount, uint32_t startIndexLocation, int32_t baseVertexLocation);
 
         /** Indexed instanced draw call
             \param[in] indexCount Number of indices to draw per instance
@@ -110,7 +110,7 @@ namespace Falcor
             \param[in] baseVertexLocation A value which is added to each index before reading a vertex from the vertex buffer
             \param[in] startInstanceLocation A value which is added to each index before reading per-instance data from the vertex buffer
         */
-        void drawIndexedInstanced(uint32_t indexCount, uint32_t instanceCount, uint32_t startIndexLocation, int baseVertexLocation, uint32_t startInstanceLocation);
+        void drawIndexedInstanced(uint32_t indexCount, uint32_t instanceCount, uint32_t startIndexLocation, int32_t baseVertexLocation, uint32_t startInstanceLocation);
 
         /** Blits (low-level copy) an SRV into an RTV
             \param[in] pSrc Source view to copy from
@@ -121,17 +121,17 @@ namespace Falcor
 
         /** Executes a draw call. Args to the draw call are contained in argbuffer
         */
-        void drawIndirect(const Buffer* argBuffer, uint64_t argBufferOffset);
+        void drawIndirect(const Buffer* pArgBuffer, uint64_t argBufferOffset);
 
         /** Executes a drawIndexed call. Args to the drawIndexed call are contained in argbuffer
         */
-        void drawIndexedIndirect(const Buffer* argBuffer, uint64_t argBufferOffset);
+        void drawIndexedIndirect(const Buffer* pArgBuffer, uint64_t argBufferOffset);
 
         void blit(ShaderResourceView::SharedPtr pSrc, RenderTargetView::SharedPtr pDst, const uvec4& srcRect = uvec4(-1), const uvec4& dstRect = uvec4(-1), Sampler::Filter = Sampler::Filter::Linear);
 
         /** Set the program variables for graphics
         */
-        void setGraphicsVars(const GraphicsVars::SharedPtr& pVars) { mBindComputeRootSig = mBindComputeRootSig || (mpGraphicsVars != pVars); mpGraphicsVars = pVars; applyProgramVars(); }
+        void setGraphicsVars(const GraphicsVars::SharedPtr& pVars) { mBindGraphicsRootSig = true;/* mBindGraphicsRootSig || (mpGraphicsVars != pVars)*/; mpGraphicsVars = pVars; }
         
         /** Get the bound graphics program variables object
         */
@@ -147,7 +147,7 @@ namespace Falcor
 
         /** Set a graphics state
         */
-        void setGraphicsState(const GraphicsState::SharedPtr& pState) { mpGraphicsState = pState; applyGraphicsState(); }
+        void setGraphicsState(const GraphicsState::SharedPtr& pState) { mpGraphicsState = pState; }
         
         /** Get the currently bound graphics state
         */
@@ -164,11 +164,15 @@ namespace Falcor
         /** Reset the context
         */
         void reset() override;
+
+        /** Submit the command list
+        */
+        void flush(bool wait = false) override;
     private:
         RenderContext() = default;
         GraphicsVars::SharedPtr mpGraphicsVars;
         GraphicsState::SharedPtr mpGraphicsState;
-        bool mBindComputeRootSig = true;
+        bool mBindGraphicsRootSig = true;
 
         std::stack<GraphicsState::SharedPtr> mPipelineStateStack;
         std::stack<GraphicsVars::SharedPtr> mpGraphicsVarsStack;
@@ -176,37 +180,13 @@ namespace Falcor
         static CommandSignatureHandle spDrawCommandSig;
         static CommandSignatureHandle spDrawIndexCommandSig;
 
-        struct BlitData
-        {
-            FullScreenPass::UniquePtr pPass;
-            GraphicsVars::SharedPtr pVars;
-            GraphicsState::SharedPtr pState;
-
-            Sampler::SharedPtr pLinearSampler;
-            Sampler::SharedPtr pPointSampler;
-
-            ConstantBuffer::SharedPtr pSrcRectBuffer;
-            vec2 prevSrcRectOffset;
-            vec2 prevSrcReftScale;
-
-            // Variable offsets in constant buffer
-            size_t offsetVarOffset;
-            size_t scaleVarOffset;
-        };
-
-        static BlitData sBlitData;
-
         /** Creates command signatures for DrawIndirect, DrawIndexedIndirect. Also calls
         compute context's initDispatchCommandSignature() to create command signature for dispatchIndirect
         */
         static void initDrawCommandSignatures();
-
-        static void initBlitData();
-        static void releaseBlitData();
+        void applyGraphicsVars();
 
         // Internal functions used by the API layers
-        void applyProgramVars();
-        void applyGraphicsState();
         void prepareForDraw();
     };
 }

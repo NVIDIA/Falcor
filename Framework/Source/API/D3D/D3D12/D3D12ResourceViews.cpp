@@ -34,13 +34,7 @@
 
 namespace Falcor
 {
-    DepthStencilView::SharedPtr DepthStencilView::sNullView;
-    RenderTargetView::SharedPtr RenderTargetView::sNullView;
-    UnorderedAccessView::SharedPtr UnorderedAccessView::sNullView;
-    ShaderResourceView::SharedPtr ShaderResourceView::sNullView;
-    ConstantBufferView::SharedPtr ConstantBufferView::sNullView;
-
-    ShaderResourceView::SharedPtr ShaderResourceView::create(ResourceWeakPtr pResource, uint32_t mostDetailedMip, uint32_t mipCount, uint32_t firstArraySlice, uint32_t arraySize)
+     ShaderResourceView::SharedPtr ShaderResourceView::create(ResourceWeakPtr pResource, uint32_t mostDetailedMip, uint32_t mipCount, uint32_t firstArraySlice, uint32_t arraySize)
     {
         Resource::SharedConstPtr pSharedPtr = pResource.lock();
         if (!pSharedPtr && sNullView)
@@ -66,7 +60,7 @@ namespace Falcor
         SharedPtr& pObj = pSharedPtr ? pNewObj : sNullView;
 
         DescriptorSet::Layout layout;
-        layout.addRange(DescriptorSet::Type::Srv, 0, 1);
+        layout.addRange(DescriptorSet::Type::TextureSrv, 0, 1);
         ApiHandle handle = DescriptorSet::create(gpDevice->getCpuDescriptorPool(), layout);
         gpDevice->getApiHandle()->CreateShaderResourceView(pSharedPtr ? pSharedPtr->getApiHandle() : nullptr, &desc, handle->getCpuHandle(0));
 
@@ -74,15 +68,6 @@ namespace Falcor
         return pObj;
     }
 
-    ShaderResourceView::SharedPtr ShaderResourceView::getNullView()
-    {
-        if(!sNullView)
-        {
-            sNullView = create(ResourceWeakPtr(), 0, 0, 0, 0);
-        }
-        return sNullView;
-    }
-    
     DepthStencilView::SharedPtr DepthStencilView::create(ResourceWeakPtr pResource, uint32_t mipLevel, uint32_t firstArraySlice, uint32_t arraySize)
     {
         Resource::SharedConstPtr pSharedPtr = pResource.lock();
@@ -114,15 +99,6 @@ namespace Falcor
 
         pObj = SharedPtr(new DepthStencilView(pResource, handle, mipLevel, firstArraySlice, arraySize));
         return pObj;
-    }
-
-    DepthStencilView::SharedPtr DepthStencilView::getNullView()
-    {
-        if(!sNullView)
-        {
-            sNullView = create(ResourceWeakPtr(), 0, 0, 0);
-        }
-        return sNullView;
     }
 
     UnorderedAccessView::SharedPtr UnorderedAccessView::create(ResourceWeakPtr pResource, uint32_t mipLevel, uint32_t firstArraySlice, uint32_t arraySize)
@@ -160,7 +136,7 @@ namespace Falcor
         SharedPtr& pObj = pSharedPtr ? pNewObj : sNullView;
 
         DescriptorSet::Layout layout;
-        layout.addRange(DescriptorSet::Type::Uav, 0, 1);
+        layout.addRange(DescriptorSet::Type::TextureUav, 0, 1);
         ApiHandle handle = DescriptorSet::create(gpDevice->getCpuDescriptorPool(), layout);
         gpDevice->getApiHandle()->CreateUnorderedAccessView(resHandle, counterHandle, &desc, handle->getCpuHandle(0));
 
@@ -168,16 +144,6 @@ namespace Falcor
 
         return pObj;
     }
-
-    UnorderedAccessView::SharedPtr UnorderedAccessView::getNullView()
-    {
-        if(!sNullView)
-        {
-            sNullView = create(ResourceWeakPtr(), 0, 0, 0);
-        }
-        return sNullView;
-    }
-
 
     RenderTargetView::SharedPtr RenderTargetView::create(ResourceWeakPtr pResource, uint32_t mipLevel, uint32_t firstArraySlice, uint32_t arraySize)
     {
@@ -214,15 +180,6 @@ namespace Falcor
         return pObj;
     }
 
-    RenderTargetView::SharedPtr RenderTargetView::getNullView()
-    {
-        if (!sNullView)
-        {
-            create(ResourceWeakPtr(), 0, 0, 0);
-        }
-        return sNullView;
-    }
-
     ConstantBufferView::SharedPtr ConstantBufferView::create(ResourceWeakPtr pResource)
     {
         Resource::SharedConstPtr pSharedPtr = pResource.lock();
@@ -256,15 +213,6 @@ namespace Falcor
 
         pObj = SharedPtr(new ConstantBufferView(pResource, handle));
         return pObj;
-    }
-
-    ConstantBufferView::SharedPtr ConstantBufferView::getNullView()
-    {
-        if (!sNullView)
-        {
-            create(ResourceWeakPtr());
-        }
-        return sNullView;
     }
 }
 

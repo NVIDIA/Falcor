@@ -26,8 +26,10 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 #include "FeatureDemoCommon.hlsli"
-#include "Shading.h"
-#include "Helpers.h"
+
+__import BSDFs;
+__import Shading;
+__import Helpers;
 
 Texture2D gEnvMap;
 SamplerState gSampler;
@@ -64,7 +66,7 @@ PsOut main(MainVsOut vOut)
         evalMaterial(shAttr, gLights[l], shadowFactor, result, l == 0);
     }
 
-    finalColor = vec4(result.finalValue, 1.f);
+    finalColor = float4(result.finalValue, 1.f);
 
 #ifdef _ENABLE_REFLECTIONS
     // Calculate the view vector

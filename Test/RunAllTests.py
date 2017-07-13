@@ -16,7 +16,7 @@ import TestingUtil as testingUtil
 gBuildBatchFile = 'BuildFalcorTest.bat'
 gTestListFile = 'TestList.txt'
 gResultsDirBase = 'TestResults'
-gReferenceDir = 'ReferenceResults'
+gReferenceDir = 'VulkanReferenceResults'
 
 #default values
 #percent
@@ -397,12 +397,11 @@ def readTestList(generateReference, buildTests, pullBranch):
             configName = configDataList[i].lower()
             slnInfo.configDict[configName] = exeDir
             if buildTests:
-                callBatchFile(['clean', slnName, configName])
                 #delete bin dir
                 if os.path.isdir(exeDir):
                     shutil.rmtree(exeDir)
                 #returns 1 on fail
-                if callBatchFile(['rebuild', slnName, configName]):
+                if callBatchFile(['build', slnName, configName]):
                     buildFail(slnName, configName, slnInfo)
             else:
                 testingUtil.cleanDir(exeDir, None, '.png')

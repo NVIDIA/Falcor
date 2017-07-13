@@ -26,34 +26,40 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 #version 440
-#include "HlslGlslCommon.h"
 
-CONSTANT_BUFFER(PerFrameCB, 0)
+#ifdef FALCOR_HLSL
+cbuffer PerFrameCB : register(b0)
 {
-	mat4 gvpTransform;
-	vec3 gFontColor;
+	float4x4 gvpTransform;
+	float3 gFontColor;
 };
 
 Texture2D gFontTex;
 
-vec4 calcColor(vec2 texC)
+float4 main(float2 texC  : TEXCOORD) : SV_TARGET0
 {
-	vec4 color = gFontTex.Load(ivec3(texC, 0));
+	float4 color = gFontTex.Load(int3(texC, 0));
 	color.rgb = gFontColor;
 	return color;
 }
+#endif
 
-#ifdef FALCOR_HLSL
-vec4 main(float2 texC  : TEXCOORD) : SV_TARGET0
+#ifdef FALCOR_GLSL
+layout(set = 0, binding = 0) uniform PerFrameCB
 {
-	return calcColor(texC);
-}
+    mat4 gvpTransform;
+    vec3 gFontColor;
+};
 
-#elif defined FALCOR_GLSL
-in vec2 texC;
-out vec4 fragColor;
+layout(set = 1, binding = 0) uniform texture2D gFontTex;
+layout(set = 1, binding = 1) uniform sampler gSampler;
+
+layout(location = 0) in vec2 texC;
+layout (location = 0) out vec4 fragColor;
+
 void main()
 {
-	fragColor = calcColor(texC);
+    fragColor = texelFetch(sampler2D(gFontTex, gSampler), ivec2(texC), 0);
+    fragColor.rgb *= gFontColor;
 }
 #endif

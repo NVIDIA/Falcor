@@ -122,6 +122,9 @@ namespace glm
 		tmat4x4<T, defaultp> Result(1);
 		Result[0][0] = static_cast<T>(2) / (right - left);
 		Result[1][1] = static_cast<T>(2) / (top - bottom);
+#		if GLM_CLIP_SPACE_Y == GLM_CLIP_SPACE_Y_TOPDOWN
+        Result[1][1] = -Result[1][1];
+#       endif
 		Result[3][0] = - (right + left) / (right - left);
 		Result[3][1] = - (top + bottom) / (top - bottom);
 
@@ -147,6 +150,10 @@ namespace glm
 		tmat4x4<T, defaultp> Result(1);
 		Result[0][0] = static_cast<T>(2) / (right - left);
 		Result[1][1] = static_cast<T>(2) / (top - bottom);
+#		if GLM_CLIP_SPACE_Y == GLM_CLIP_SPACE_Y_TOPDOWN
+        Result[1][1] = -Result[1][1];
+#       endif
+
 		Result[3][0] = - (right + left) / (right - left);
 		Result[3][1] = - (top + bottom) / (top - bottom);
 
@@ -203,6 +210,10 @@ namespace glm
 		tmat4x4<T, defaultp> Result(0);
 		Result[0][0] = (static_cast<T>(2) * nearVal) / (right - left);
 		Result[1][1] = (static_cast<T>(2) * nearVal) / (top - bottom);
+#		if GLM_CLIP_SPACE_Y == GLM_CLIP_SPACE_Y_TOPDOWN
+        Result[1][1] = -Result[1][1];
+#       endif
+
 		Result[2][0] = (right + left) / (right - left);
 		Result[2][1] = (top + bottom) / (top - bottom);
 		Result[2][3] = static_cast<T>(1);
@@ -229,6 +240,10 @@ namespace glm
 		tmat4x4<T, defaultp> Result(0);
 		Result[0][0] = (static_cast<T>(2) * nearVal) / (right - left);
 		Result[1][1] = (static_cast<T>(2) * nearVal) / (top - bottom);
+#		if GLM_CLIP_SPACE_Y == GLM_CLIP_SPACE_Y_TOPDOWN
+        Result[1][1] = -Result[1][1];
+#       endif
+
 		Result[2][0] = (right + left) / (right - left);
 		Result[2][1] = (top + bottom) / (top - bottom);
 		Result[2][3] = static_cast<T>(-1);
@@ -264,6 +279,10 @@ namespace glm
 		tmat4x4<T, defaultp> Result(static_cast<T>(0));
 		Result[0][0] = static_cast<T>(1) / (aspect * tanHalfFovy);
 		Result[1][1] = static_cast<T>(1) / (tanHalfFovy);
+#		if GLM_CLIP_SPACE_Y == GLM_CLIP_SPACE_Y_TOPDOWN
+        Result[1][1] = -Result[1][1];
+#       endif
+
 		Result[2][3] = - static_cast<T>(1);
 
 #		if GLM_DEPTH_CLIP_SPACE == GLM_DEPTH_ZERO_TO_ONE
@@ -287,6 +306,10 @@ namespace glm
 		tmat4x4<T, defaultp> Result(static_cast<T>(0));
 		Result[0][0] = static_cast<T>(1) / (aspect * tanHalfFovy);
 		Result[1][1] = static_cast<T>(1) / (tanHalfFovy);
+#		if GLM_CLIP_SPACE_Y == GLM_CLIP_SPACE_Y_TOPDOWN
+        Result[1][1] = -Result[1][1];
+#       endif
+
 		Result[2][3] = static_cast<T>(1);
 
 #		if GLM_DEPTH_CLIP_SPACE == GLM_DEPTH_ZERO_TO_ONE
@@ -324,6 +347,10 @@ namespace glm
 		tmat4x4<T, defaultp> Result(static_cast<T>(0));
 		Result[0][0] = w;
 		Result[1][1] = h;
+#		if GLM_CLIP_SPACE_Y == GLM_CLIP_SPACE_Y_TOPDOWN
+        Result[1][1] = -Result[1][1];
+#       endif
+
 		Result[2][3] = - static_cast<T>(1);
 
 #		if GLM_DEPTH_CLIP_SPACE == GLM_DEPTH_ZERO_TO_ONE
@@ -351,6 +378,10 @@ namespace glm
 		tmat4x4<T, defaultp> Result(static_cast<T>(0));
 		Result[0][0] = w;
 		Result[1][1] = h;
+#		if GLM_CLIP_SPACE_Y == GLM_CLIP_SPACE_Y_TOPDOWN
+        Result[1][1] = -Result[1][1];
+#       endif
+
 		Result[2][3] = static_cast<T>(1);
 
 #		if GLM_DEPTH_CLIP_SPACE == GLM_DEPTH_ZERO_TO_ONE
@@ -457,6 +488,9 @@ namespace glm
 #		endif
 		tmp[0] = tmp[0] * T(viewport[2]) + T(viewport[0]);
 		tmp[1] = tmp[1] * T(viewport[3]) + T(viewport[1]);
+#		if GLM_CLIP_SPACE_Y == GLM_CLIP_SPACE_Y_TOPDOWN
+        tmp[1] = -tmp[1];
+#       endif
 
 		return tvec3<T, P>(tmp);
 	}
@@ -484,6 +518,9 @@ namespace glm
 
 		tvec4<T, P> obj = Inverse * tmp;
 		obj /= obj.w;
+#		if GLM_CLIP_SPACE_Y == GLM_CLIP_SPACE_Y_TOPDOWN
+        obj.y = -obj.y;
+#       endif
 
 		return tvec3<T, P>(obj);
 	}

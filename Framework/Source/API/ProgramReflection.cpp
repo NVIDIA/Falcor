@@ -45,14 +45,14 @@ namespace Falcor
         // Names are unique regardless of buffer type. Search in each map
         for (const auto& desc : mBuffers)
         {
-            auto& it = desc.nameMap.find(name);
+            const auto& it = desc.nameMap.find(name);
             if (it != desc.nameMap.end())
             {
                 return it->second;
             }
         }
 
-        static const BindLocation invalidBind(kInvalidLocation, ShaderAccess::Undefined);
+        static const BindLocation invalidBind(kInvalidLocation, kInvalidLocation, ShaderAccess::Undefined);
         return invalidBind;
     }
 
@@ -72,7 +72,7 @@ namespace Falcor
         offset = kInvalidLocation;
 
         // Look for the variable
-        auto& var = mVariables.find(name);
+        auto&& var = mVariables.find(name);
 
 #ifdef FALCOR_DX11
         if (var == mVariables.end())
@@ -130,10 +130,10 @@ namespace Falcor
         return getVariableData(name, t);
     }
 
-    ProgramReflection::BufferReflection::SharedConstPtr ProgramReflection::getBufferDesc(uint32_t bindLocation, ShaderAccess shaderAccess, BufferReflection::Type bufferType) const
+    ProgramReflection::BufferReflection::SharedConstPtr ProgramReflection::getBufferDesc(uint32_t regIndex, uint32_t regSpace, ShaderAccess shaderAccess, BufferReflection::Type bufferType) const
     {
         const auto& descMap = mBuffers[uint32_t(bufferType)].descMap;
-        auto& desc = descMap.find({ bindLocation, shaderAccess });
+        const auto& desc = descMap.find({ regIndex, regSpace, shaderAccess });
         if (desc == descMap.end())
         {
             return nullptr;
@@ -146,14 +146,14 @@ namespace Falcor
         BindLocation bindLoc = getBufferBinding(name);
         if (bindLoc.regIndex != kInvalidLocation)
         {
-            return getBufferDesc(bindLoc.regIndex, bindLoc.shaderAccess, bufferType);
+            return getBufferDesc(bindLoc.regIndex, bindLoc.regSpace, bindLoc.shaderAccess, bufferType);
         }
         return nullptr;
     }
 
     const ProgramReflection::Resource* ProgramReflection::BufferReflection::getResourceData(const std::string& name) const
     {
-        auto& it = mResources.find(name);
+        const auto& it = mResources.find(name);
         return it == mResources.end() ? nullptr : &(it->second);
     }
 
@@ -165,13 +165,13 @@ namespace Falcor
         mVariables(varMap),
         mResources(resourceMap),
         mRegIndex(registerIndex),
+        mRegSpace(regSpace),
         mShaderAccess(shaderAccess)
     {
     }
 
     ProgramReflection::BufferReflection::SharedPtr ProgramReflection::BufferReflection::create(const std::string& name, uint32_t regIndex, uint32_t regSpace, Type type, StructuredType structuredType, size_t size, const VariableMap& varMap, const ResourceMap& resourceMap, ShaderAccess shaderAccess)
     {
-        assert(regSpace == 0);
         return SharedPtr(new BufferReflection(name, regIndex, regSpace, type, structuredType, size, varMap, resourceMap, shaderAccess));
     }
 
@@ -205,16 +205,6 @@ namespace Falcor
             }
         }
         return pRes;
-    }
-
-    void ProgramReflection::getThreadGroupSize(
-        uint32_t* outX,
-        uint32_t* outY,
-        uint32_t* outZ) const
-    {
-        if(outX) *outX = mThreadGroupSizeX;
-        if(outX) *outY = mThreadGroupSizeY;
-        if(outX) *outZ = mThreadGroupSizeZ;
     }
 
     /************************************************************************/
@@ -495,8 +485,7 @@ namespace Falcor
 
     uint32_t getBindingSpace(ReflectionPath* path, SlangParameterCategory category)
     {
-        // TODO: implement
-        return 0;
+        return (uint32_t)path->var->getBindingSpace(category);
     }
 
     static ProgramReflection::Resource::ResourceType getResourceType(TypeReflection* pSlangType)
@@ -505,7 +494,8 @@ namespace Falcor
         {
         case TypeReflection::Kind::SamplerState:
             return ProgramReflection::Resource::ResourceType::Sampler;
-
+        case TypeReflection::Kind::ShaderStorageBuffer:
+            return ProgramReflection::Resource::ResourceType::StructuredBuffer;
         case TypeReflection::Kind::Resource:
             switch (pSlangType->getResourceShape() & SLANG_RESOURCE_BASE_SHAPE_MASK)
             {
@@ -514,7 +504,8 @@ namespace Falcor
 
             case SLANG_BYTE_ADDRESS_BUFFER:
                 return ProgramReflection::Resource::ResourceType::RawBuffer;
-
+            case SLANG_TEXTURE_BUFFER:
+                return ProgramReflection::Resource::ResourceType::TypedBuffer;
             default:
                 return ProgramReflection::Resource::ResourceType::Texture;
             }
@@ -540,6 +531,7 @@ namespace Falcor
             break;
 
         case TypeReflection::Kind::Resource:
+        case TypeReflection::Kind::ShaderStorageBuffer:
             switch (pSlangType->getResourceAccess())
             {
             case SLANG_RESOURCE_ACCESS_NONE:
@@ -635,7 +627,7 @@ namespace Falcor
         test_field(dims);
         test_field(retType);
         test_field(regIndex);
-        test_field(registerSpace);
+        test_field(regSpace);
         test_field(arraySize);
 #undef test_field
 #undef error_msg
@@ -677,15 +669,14 @@ namespace Falcor
         ProgramReflection::Resource falcorDesc;
         falcorDesc.type = resourceType;
         falcorDesc.shaderAccess = getShaderAccess(pSlangType->getType());
-        if (resourceType == ProgramReflection::Resource::ResourceType::Texture)
+        if (resourceType != ProgramReflection::Resource::ResourceType::Sampler)
         {
             falcorDesc.retType = getReturnType(pSlangType->getResourceResultType());
             falcorDesc.dims = getResourceDimensions(pSlangType->getResourceShape());
         }
         bool isArray = pSlangType->isArray();
         falcorDesc.regIndex = (uint32_t)getBindingIndex(path, pSlangType->getParameterCategory());
-        falcorDesc.registerSpace = (uint32_t)getBindingSpace(path, pSlangType->getParameterCategory());
-        assert(falcorDesc.registerSpace == 0);
+        falcorDesc.regSpace = (uint32_t)getBindingSpace(path, pSlangType->getParameterCategory());
         falcorDesc.arraySize = isArray ? (uint32_t)pSlangType->getTotalArrayElementCount() : 0;
 
         // If this already exists, definitions should match
@@ -1025,6 +1016,7 @@ namespace Falcor
         auto bindingSpace = getBindingSpace(pPath, category);
         ProgramReflection::BindLocation bindLocation(
             bindingIndex,
+            bindingSpace,
             shaderAccess);
         // If the buffer already exists in the program, make sure the definitions match
         const auto& prevDef = bufferDesc.nameMap.find(name);
@@ -1327,17 +1319,20 @@ namespace Falcor
             {
                 SlangUInt sizeAlongAxis[3];
                 entryPoint->getComputeThreadGroupSize(3, &sizeAlongAxis[0]);
-                mThreadGroupSizeX = (uint32_t)sizeAlongAxis[0];
-                mThreadGroupSizeY = (uint32_t)sizeAlongAxis[1];
-                mThreadGroupSizeZ = (uint32_t)sizeAlongAxis[2];
+                mThreadGroupSize.x = (uint32_t)sizeAlongAxis[0];
+                mThreadGroupSize.y = (uint32_t)sizeAlongAxis[1];
+                mThreadGroupSize.z = (uint32_t)sizeAlongAxis[2];
             }
             break;
-
-            default:
+            case SLANG_STAGE_PIXEL:
+#ifdef FALCOR_VK
+                mIsSampleFrequency = entryPoint->usesAnySampleRateInput();
+#else
+                mIsSampleFrequency = true; // #VKTODO Slang reports false for DX shaders. There's an open issue, once it's fixed we should remove that
+#endif            default:
                 break;
             }
         }
-
         return res;
     }
 }
