@@ -125,7 +125,7 @@ namespace Falcor
 
         bool operator<(const Range& other) const { return baseIndex < other.baseIndex; }
     };
-    using SetRangeMap = std::map<RootSignature::DescType, std::set<Range>>;
+    using SetRangeMap = std::map<RootSignature::DescType, std::vector<Range>>;
     using SetMap = std::map<uint32_t, SetRangeMap>;
 
     struct ResData
@@ -177,7 +177,7 @@ namespace Falcor
             rangeMap[data.type] = {};
         }
 
-        rangeMap[data.type].insert({ data.regIndex, data.count });
+        rangeMap[data.type].push_back({ data.regIndex, data.count });
     }
 
     std::vector<Range> mergeRanges(std::set<Range>& ranges)
@@ -240,14 +240,11 @@ namespace Falcor
         insertBuffers(pReflector, setMap, ProgramReflection::BufferReflection::Type::Structured, RootSignature::DescType::StructuredBufferUav);
 
         std::map<uint32_t, DescriptorSetLayout> setLayouts;
-        // Merge all the ranges
         for (auto& s : setMap)
         {
             for (auto& r : s.second)
             {
-                auto& merged = mergeRanges(r.second);
-
-                for (const auto& range : merged)
+                for (const auto& range : r.second)
                 {
                     // #VKTODO set the correct shader flags in the layout
                     if (setLayouts.find(s.first) == setLayouts.end()) setLayouts[s.first] = {};

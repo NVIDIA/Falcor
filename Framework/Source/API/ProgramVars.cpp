@@ -635,7 +635,7 @@ namespace Falcor
                 // Allocate a GPU descriptor
                 const auto& pDescSet = rootSets[rootData.rootIndex].pDescSet;
                 assert(pDescSet);
-                pDescSet->setSampler(rootData.rangeIndex, rootData.descIndex, samplerIt.first.regIndex, pSampler);
+                pDescSet->setSampler(rootData.rangeIndex, rootData.descIndex, pSampler);
             }
         }
     }
@@ -657,11 +657,11 @@ namespace Falcor
                 const auto& pDescSet = rootSets[rootData.rootIndex].pDescSet;
                 if (isUav)
                 {
-                    pDescSet->setUav(rootData.rangeIndex, rootData.descIndex, resIt.first.regIndex, (UnorderedAccessView*)view.get());
+                    pDescSet->setUav(rootData.rangeIndex, rootData.descIndex, (UnorderedAccessView*)view.get());
                 }
                 else
                 {
-                    pDescSet->setSrv(rootData.rangeIndex, rootData.descIndex, resIt.first.regIndex, (ShaderResourceView*)view.get());
+                    pDescSet->setSrv(rootData.rangeIndex, rootData.descIndex, (ShaderResourceView*)view.get());
                 }
             }
         }

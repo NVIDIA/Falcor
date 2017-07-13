@@ -95,10 +95,10 @@ namespace Falcor
         GpuHandle getGpuHandle(uint32_t rangeIndex, uint32_t descInRange = 0) const;
         ApiHandle getApiHandle() const { return mApiHandle; }
 
-        void setSrv(uint32_t rangeIndex, uint32_t descIndex, uint32_t regIndex, const ShaderResourceView* pSrv);
-        void setUav(uint32_t rangeIndex, uint32_t descIndex, uint32_t regIndex, const UnorderedAccessView* pUav);
-        void setSampler(uint32_t rangeIndex, uint32_t descIndex, uint32_t regIndex, const Sampler* pSampler);
-        void setCb(uint32_t rangeIndex, uint32_t descIndex, uint32_t regIndex, const Buffer* pBuffer);
+        void setSrv(uint32_t rangeIndex, uint32_t descIndex, const ShaderResourceView* pSrv);
+        void setUav(uint32_t rangeIndex, uint32_t descIndex, const UnorderedAccessView* pUav);
+        void setSampler(uint32_t rangeIndex, uint32_t descIndex, const Sampler* pSampler);
+        void setCb(uint32_t rangeIndex, uint32_t descIndex, const Buffer* pBuffer);
 
         void bindForGraphics(CopyContext* pCtx, const RootSignature* pRootSig, uint32_t rootIndex);
         void bindForCompute(CopyContext* pCtx, const RootSignature* pRootSig, uint32_t rootIndex);
