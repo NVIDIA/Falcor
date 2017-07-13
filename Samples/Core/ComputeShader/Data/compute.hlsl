@@ -1,4 +1,4 @@
-/***************************************************************************
+﻿/***************************************************************************
 # Copyright (c) 2015, NVIDIA CORPORATION. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -25,29 +25,32 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
+#extension GL_ARB_compute_shader : require
 
-Texture2D gInput;
-RWTexture2D<float4> gOutput;
+layout(set = 0, binding = 0) uniform texture2D gInput;
+layout(set = 0, binding = 1, rgba32) uniform image2D gOutput;
+layout(set = 0, binding = 2) uniform sampler gSampler;
 
-groupshared float4 colors[16][16];
-groupshared float4 pixelated;
+shared vec4 colors[16][16];
+shared vec4 pixelated;
 
-[numthreads(16, 16, 1)]
-void main(uint3 groupId : SV_GroupID, uint3 groupThreadId : SV_GroupThreadId)
+layout(local_size_x = 16, local_size_y = 16, local_size_z = 1) in;
+
+void main()
 {
     // Calculate the start position of the block    
-    uint3 resDim;
-    gOutput.GetDimensions(resDim.x, resDim.y);
+    ivec3 resDim = imageSize(gOutput);
 
-    uint2 posStart = groupId.xy * 16;
-    uint2 crd = posStart + groupThreadId.xy;
+    uvec2 posStart = gl_WorkGroupID.xy * 16;
+    uvec2 crd = posStart + gl_LocalInvocationID.xy;
 
     // Fetch all of the data into the shared local memory
-    colors[groupThreadId.x][groupThreadId.y] = gInput[crd];
+    colors[gl_LocalInvocationID.x][gl_LocalInvocationID.y] = texelFetch(sampler2D(gSampler, gInput), crd, 0);
 
 #ifdef _PIXELATE
-    GroupMemoryBarrierWithGroupSync();
-    if(any(groupThreadId) == false)
+    groupMemoryBarrier();
+    barrier();
+    if(any(gl_LocalInvocationID) == false)
     {
         pixelated = 0;
         for(int i = 0 ; i < 16 ; i++)
@@ -59,10 +62,11 @@ void main(uint3 groupId : SV_GroupID, uint3 groupThreadId : SV_GroupThreadId)
         }
         pixelated /= 16*16;
     }
-
-    GroupMemoryBarrierWithGroupSync();
-    gOutput[crd] = pixelated.bgra;
+    
+    groupMemoryBarrier();
+    barrier();
+    imageStore(gOutput, crd, pixelated.bgra);
 #else
-    gOutput[crd] = colors[groupThreadId.x][groupThreadId.y].bgra;
+    imageStore(gOutput, crd, colors[gl_LocalInvocationID.x][gl_LocalInvocationID.y].bgra);
 #endif
 }

@@ -130,6 +130,6 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
     config.windowDesc.title = "Falcor Project Template";
     config.windowDesc.resizableWindow = true;
     config.deviceDesc.depthFormat = ResourceFormat::Unknown;
-    config.deviceDesc.colorFormat = ResourceFormat::BGRA8Unorm;
+//    config.deviceDesc.colorFormat = ResourceFormat::BGRA8Unorm;
     sample.run(config);
 }
