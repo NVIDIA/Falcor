@@ -147,7 +147,7 @@ namespace Falcor
         }
     }
 
-    void beginRenderPass(CommandListHandle cmdList, const Fbo* pFbo)
+    static void beginRenderPass(CommandListHandle cmdList, const Fbo* pFbo)
     {
         // Begin Render Pass
         const auto& fboHandle = pFbo->getApiHandle();

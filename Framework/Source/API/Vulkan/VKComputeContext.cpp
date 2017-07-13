@@ -35,20 +35,12 @@ namespace Falcor
     void ComputeContext::prepareForDispatch()
     {
         assert(mpComputeState);
+        if(mpComputeVars) applyComputeVars();
 
-        // Apply the vars. Must be first because applyComputeVars() might cause a flush
-        if (mpComputeVars)
-        {
-            applyComputeVars();
-        }
-        // Set pipeline state
-
+        ComputeStateObject::SharedPtr pCso = mpComputeState->getCSO(mpComputeVars.get());
+        vkCmdBindPipeline(mpLowLevelData->getCommandList(), VK_PIPELINE_BIND_POINT_COMPUTE, pCso->getApiHandle());
+        mBindComputeRootSig = false;
         mCommandsPending = true;
-    }
-
-    void ComputeContext::dispatch(uint32_t groupSizeX, uint32_t groupSizeY, uint32_t groupSizeZ)
-    {
-        prepareForDispatch();
     }
 
     template<typename ViewType, typename ClearType>
@@ -111,14 +103,19 @@ namespace Falcor
 
     void ComputeContext::initDispatchCommandSignature()
     {
-        
+
     }
 
-    void ComputeContext::dispatchIndirect(const Buffer* argBuffer, uint64_t argBufferOffset)
+    void ComputeContext::dispatch(uint32_t groupSizeX, uint32_t groupSizeY, uint32_t groupSizeZ)
     {
         prepareForDispatch();
-        resourceBarrier(argBuffer, Resource::State::IndirectArg);
+        vkCmdDispatch(mpLowLevelData->getCommandList(), groupSizeX, groupSizeY, groupSizeZ);
+    }
 
-        // Code
+    void ComputeContext::dispatchIndirect(const Buffer* pArgBuffer, uint64_t argBufferOffset)
+    {
+        prepareForDispatch();
+        resourceBarrier(pArgBuffer, Resource::State::IndirectArg);
+        vkCmdDispatchIndirect(mpLowLevelData->getCommandList(), pArgBuffer->getApiHandle(), pArgBuffer->getGpuAddressOffset() + argBufferOffset);
     }
 }
