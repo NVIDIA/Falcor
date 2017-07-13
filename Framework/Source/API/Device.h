@@ -193,6 +193,7 @@ namespace Falcor
         void apiPresent();
         bool apiInit(const Desc& desc);
         bool createSwapChain(ResourceFormat colorFormat);
+        void apiResizeSwapChain(uint32_t width, uint32_t height, ResourceFormat colorFormat);
     };
 
     extern Device::SharedPtr gpDevice;

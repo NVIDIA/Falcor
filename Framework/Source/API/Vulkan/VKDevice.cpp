@@ -550,37 +550,14 @@ namespace Falcor
         return true;
     }
 
-    Fbo::SharedPtr Device::resizeSwapChain(uint32_t width, uint32_t height)
+    void Device::apiResizeSwapChain(uint32_t width, uint32_t height, ResourceFormat colorFormat)
     {
-        //mpRenderContext->flush(true);
-
-        //DeviceData* pData = (DeviceData*)mpPrivateData;
-
-        //// Store the FBO parameters
-        //ResourceFormat colorFormat = pData->frameData[0].pFbo->getColorTexture(0)->getFormat();
-        //const auto& pDepth = pData->frameData[0].pFbo->getDepthStencilTexture();
-        //ResourceFormat depthFormat = pDepth ? pDepth->getFormat() : ResourceFormat::Unknown;
-        //assert(pData->frameData[0].pFbo->getSampleCount() == 1);
-
-        //// Delete all the FBOs
-        //releaseFboData(pData);
-
-        //DXGI_SWAP_CHAIN_DESC desc;
-        //d3d_call(pData->pSwapChain->GetDesc(&desc));
-        //d3d_call(pData->pSwapChain->ResizeBuffers(kSwapChainBuffers, width, height, desc.BufferDesc.Format, desc.Flags));
-        //updateDefaultFBO(width, height, colorFormat, depthFormat);
-
-        return getSwapChainFbo();
+        vkDestroySwapchainKHR(mApiHandle, mpApiData->swapchain, nullptr);
+        createSwapChain(colorFormat);
     }
 
     bool Device::isWindowOccluded() const
     {
-        //DeviceData* pData = (DeviceData*)mpPrivateData;
-        //if (pData->isWindowOccluded)
-        //{
-        //    pData->isWindowOccluded = (pData->pSwapChain->Present(0, DXGI_PRESENT_TEST) == DXGI_STATUS_OCCLUDED);
-        //}
-        //return pData->isWindowOccluded;
         return false;
     }
 

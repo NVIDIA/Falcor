@@ -419,7 +419,9 @@ namespace Falcor
     void Sample::resizeSwapChain(uint32_t width, uint32_t height)
     {
         mpWindow->resize(width, height);
+#ifndef VK_DISABLE_UNIMPLEMENTED
         mpPixelZoom->init(gpDevice->getSwapChainFbo().get());
+#endif
     }
 
     bool Sample::isKeyPressed(const KeyboardEvent::Key& key) const

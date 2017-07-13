@@ -63,8 +63,8 @@ namespace Falcor
             OneMinusSrcAlpha,   ///< One minus the fragment-shader output alpha value
             DstAlpha,           ///< The render-target alpha value
             OneMinusDstAlpha,   ///< One minue the render-target alpha value
-            RgbaFactor,         ///< Constant color, set using Desc#SetBlendFactor()
-            OneMinusRgbaFactor, ///< One minus constant color, set using Desc#SetBlendFactor()
+            BlendFactor,         ///< Constant color, set using Desc#SetBlendFactor()
+            OneMinusBlendFactor, ///< One minus constant color, set using Desc#SetBlendFactor()
             SrcAlphaSaturate,   ///< (f, f, f, 1), where f = min(fragment shader output alpha, 1 - render-target pixel alpha)
             Src1Color,          ///< Fragment-shader output color 1
             OneMinusSrc1Color,  ///< One minus fragment-shader output color 1

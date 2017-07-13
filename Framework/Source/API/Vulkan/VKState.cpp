@@ -99,9 +99,9 @@ namespace Falcor
             return VK_BLEND_FACTOR_DST_ALPHA;
         case BlendState::BlendFunc::OneMinusDstAlpha:
             return VK_BLEND_FACTOR_ONE_MINUS_DST_ALPHA;
-        case BlendState::BlendFunc::RgbaFactor:
+        case BlendState::BlendFunc::BlendFactor:
             return VK_BLEND_FACTOR_CONSTANT_COLOR;
-        case BlendState::BlendFunc::OneMinusRgbaFactor:
+        case BlendState::BlendFunc::OneMinusBlendFactor:
             return VK_BLEND_FACTOR_ONE_MINUS_CONSTANT_COLOR;
         case BlendState::BlendFunc::SrcAlphaSaturate:
             return VK_BLEND_FACTOR_SRC_ALPHA_SATURATE;

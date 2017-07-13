@@ -159,7 +159,6 @@ namespace Falcor
 
     CommandQueueHandle Device::getCommandQueueHandle(LowLevelContextData::CommandQueueType type, uint32_t index) const
     {
-        DeviceApiData* pData = (DeviceApiData*)mpApiData;
         return mCmdQueues[(uint32_t)type][index];
     }
 
@@ -181,17 +180,16 @@ namespace Falcor
 
     bool Device::getApiFboData(uint32_t width, uint32_t height, ResourceFormat colorFormat, ResourceFormat depthFormat, std::vector<ResourceHandle>& apiHandles, uint32_t& currentBackBufferIndex)
     {
-        DeviceApiData* pData = (DeviceApiData*)mpApiData;
         for (uint32_t i = 0; i < kSwapChainBuffers; i++)
         {
-            HRESULT hr = pData->pSwapChain->GetBuffer(i, IID_PPV_ARGS(&apiHandles[i]));
+            HRESULT hr = mpApiData->pSwapChain->GetBuffer(i, IID_PPV_ARGS(&apiHandles[i]));
             if (FAILED(hr))
             {
                 d3dTraceHR("Failed to get back-buffer " + std::to_string(i) + " from the swap-chain", hr);
                 return false;
             }
         }
-        currentBackBufferIndex = pData->pSwapChain->GetCurrentBackBufferIndex();
+        currentBackBufferIndex = mpApiData->pSwapChain->GetCurrentBackBufferIndex();
         return true;
     }
 
@@ -203,8 +201,7 @@ namespace Falcor
 
     void Device::apiPresent()
     {
-        DeviceApiData* pData = (DeviceApiData*)mpApiData;
-        pData->pSwapChain->Present(mVsyncOn ? 1 : 0, 0);
+        mpApiData->pSwapChain->Present(mVsyncOn ? 1 : 0, 0);
         mCurrentBackBufferIndex = (mCurrentBackBufferIndex + 1) % kSwapChainBuffers;
     }
 
@@ -267,37 +264,20 @@ namespace Falcor
         return true;
     }
 
-    Fbo::SharedPtr Device::resizeSwapChain(uint32_t width, uint32_t height)
+    void Device::apiResizeSwapChain(uint32_t width, uint32_t height, ResourceFormat colorFormat)
     {
-        mpRenderContext->flush(true);
-
-        DeviceApiData* pData = (DeviceApiData*)mpApiData;
-
-        // Store the FBO parameters
-        ResourceFormat colorFormat = mpSwapChainFbos[0]->getColorTexture(0)->getFormat();
-        const auto& pDepth = mpSwapChainFbos[0]->getDepthStencilTexture();
-        ResourceFormat depthFormat = pDepth ? pDepth->getFormat() : ResourceFormat::Unknown;
-        assert(mpSwapChainFbos[0]->getSampleCount() == 1);
-
-        // Delete all the FBOs
-        releaseFboData();
-
         DXGI_SWAP_CHAIN_DESC desc;
-        d3d_call(pData->pSwapChain->GetDesc(&desc));
-        d3d_call(pData->pSwapChain->ResizeBuffers(kSwapChainBuffers, width, height, desc.BufferDesc.Format, desc.Flags));
-        updateDefaultFBO(width, height, colorFormat, depthFormat);
-
-        return getSwapChainFbo();
+        d3d_call(mpApiData->pSwapChain->GetDesc(&desc));
+        d3d_call(mpApiData->pSwapChain->ResizeBuffers(kSwapChainBuffers, width, height, desc.BufferDesc.Format, desc.Flags));
     }
 
     bool Device::isWindowOccluded() const
     {
-        DeviceApiData* pData = (DeviceApiData*)mpApiData;
-        if (pData->isWindowOccluded)
+        if (mpApiData->isWindowOccluded)
         {
-            pData->isWindowOccluded = (pData->pSwapChain->Present(0, DXGI_PRESENT_TEST) == DXGI_STATUS_OCCLUDED);
+            mpApiData->isWindowOccluded = (mpApiData->pSwapChain->Present(0, DXGI_PRESENT_TEST) == DXGI_STATUS_OCCLUDED);
         }
-        return pData->isWindowOccluded;
+        return mpApiData->isWindowOccluded;
     }
 
     bool Device::isExtensionSupported(const std::string& name)

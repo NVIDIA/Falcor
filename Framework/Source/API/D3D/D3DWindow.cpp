@@ -84,9 +84,6 @@ namespace Falcor
                 case WM_MOUSEWHEEL:
                     dispatchMouseEvent(pWindow, msg, wParam, lParam);
                     return 0;
-                case WM_WINDOWPOSCHANGED:
-                    // Triggers a WM_SIZE message which we want to ignore
-                    return 0;
                 }
                 return DefWindowProc(hwnd, msg, wParam, lParam);
             }

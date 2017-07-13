@@ -35,6 +35,7 @@ void VKDev::onGuiRender()
 
 void VKDev::onLoad()
 {
+    resizeSwapChain(1000, 1000);
     mpPass = FullScreenPass::create("FullScreenPass.vs.glsl", "FullScreenPass.fs.glsl");
     mpVars = GraphicsVars::create(mpPass->getProgram()->getActiveVersion()->getReflector());
 
@@ -46,10 +47,6 @@ void VKDev::onLoad()
     mpTex3D = Texture::create3D(10, 1, 1, ResourceFormat::R32Uint, 1, nullptr, Resource::BindFlags::UnorderedAccess);
     mpVars->setTypedBuffer("typedBuffer", mpTypedBuffer);
     mpVars->setTexture("typed3D", mpTex3D);
-
-    Fbo::Desc fboDesc;
-    fboDesc.setSampleCount(4).setColorTarget(0, mpDefaultFBO->getColorTexture(0)->getFormat());
-    mp4SampleFbo = FboHelper::create2D(mpDefaultFBO->getWidth(), mpDefaultFBO->getHeight(), fboDesc);
 }
 
 void VKDev::onFrameRender()
@@ -124,6 +121,9 @@ void VKDev::onDataReload()
 
 void VKDev::onResizeSwapChain()
 {
+    Fbo::Desc fboDesc;
+    fboDesc.setSampleCount(4).setColorTarget(0, mpDefaultFBO->getColorTexture(0)->getFormat());
+    mp4SampleFbo = FboHelper::create2D(mpDefaultFBO->getWidth(), mpDefaultFBO->getHeight(), fboDesc);
 }
 
 int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ LPSTR lpCmdLine, _In_ int nShowCmd)

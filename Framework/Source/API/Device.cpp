@@ -197,4 +197,22 @@ namespace Falcor
         mpRenderContext->reset();
         mFrameID++;
     }
+
+    Fbo::SharedPtr Device::resizeSwapChain(uint32_t width, uint32_t height)
+    {
+        mpRenderContext->flush(true);
+
+        // Store the FBO parameters
+        ResourceFormat colorFormat = mpSwapChainFbos[0]->getColorTexture(0)->getFormat();
+        const auto& pDepth = mpSwapChainFbos[0]->getDepthStencilTexture();
+        ResourceFormat depthFormat = pDepth ? pDepth->getFormat() : ResourceFormat::Unknown;
+        assert(mpSwapChainFbos[0]->getSampleCount() == 1);
+
+        // Delete all the FBOs
+        releaseFboData();
+        apiResizeSwapChain(width, height, colorFormat);
+        updateDefaultFBO(width, height, colorFormat, depthFormat);
+
+        return getSwapChainFbo();
+    }
 }
