@@ -558,12 +558,14 @@ namespace Falcor
 
     bool Device::isWindowOccluded() const
     {
+        // #VKTODO Is there a test for it?
         return false;
     }
 
     bool Device::isExtensionSupported(const std::string& name)
     {
-        return _ENABLE_NVAPI;
+        // #VKTODO add the call
+        return false;
     }
 
     ApiCommandQueueType Device::getApiCommandQueueType(LowLevelContextData::CommandQueueType type) const
