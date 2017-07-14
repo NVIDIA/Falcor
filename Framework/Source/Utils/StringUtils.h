@@ -162,7 +162,7 @@ namespace Falcor
 
     /** Remove the last array index from a string, if it exists
     */
-    inline const std::string removeLastArrayIndex(const std::string& name)
+    inline bool parseArrayIndex(const std::string& name, std::string& nonArray, uint32_t& index)
     {
         size_t dot = name.find_last_of(".");
         size_t bracket = name.find_last_of("[");
@@ -172,11 +172,17 @@ namespace Falcor
             // Ignore cases where the last index is an array of struct index (SomeStruct[1].v should be ignored)
             if((dot == std::string::npos) || (bracket > dot))
             {
-                return name.substr(0, bracket);
+                // We know we have an array index. Make sure it's in range
+                std::string indexStr = name.substr(bracket + 1);
+                char* pEndPtr;
+                index = strtol(indexStr.c_str(), &pEndPtr, 0);
+                assert(*pEndPtr == ']');
+                name.substr(0, bracket);
+                return true;
             }
         }
 
-        return name;
+        return false;
     }
 
     /** convert string to wstring

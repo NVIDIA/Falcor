@@ -32,6 +32,7 @@
 #include "API/RenderContext.h"
 #include "API/DescriptorSet.h"
 #include "API/Device.h"
+#include "Utils/StringUtils.h"
 
 namespace Falcor
 {
@@ -52,13 +53,13 @@ namespace Falcor
                 {
                     if (range.baseRegIndex <= regIndex && (range.baseRegIndex + range.descCount) > regIndex)
                     {
-                        return{ (uint32_t)i, r, regIndex - range.baseRegIndex };
+                        return{ (uint32_t)i, r };
                     }
                 }
             }
         }
         should_not_get_here();
-        return{ (uint32_t)-1, (uint32_t)-1, (uint32_t)-1 };
+        return{ (uint32_t)-1, (uint32_t)-1};
     }
 
     template<typename BufferType, typename ViewType, RootSignature::DescType descType, typename ViewInitFunc>
@@ -74,7 +75,12 @@ namespace Falcor
                 uint32_t regIndex = pReflector->getRegisterIndex();
                 uint32_t regSpace = pReflector->getRegisterSpace();
 
-                ProgramVars::ResourceData<ViewType> data;
+                ProgramVars::ResourceData<ViewType> data(findRootData(pRootSig, regIndex, regSpace, descType));
+                if (data.rootData.rootIndex == -1)
+                {
+                    logError("Can't find a root-signature information matching buffer '" + pReflector->getName() + " when creating ProgramVars");
+                    return false;
+                }
 
                 // Only create the buffer if needed
                 if (createBuffers)
@@ -83,14 +89,7 @@ namespace Falcor
                     data.pView = viewInitFunc(data.pResource);
                 }
 
-                data.rootData = findRootData(pRootSig, regIndex, regSpace, descType);
-                if (data.rootData.rootIndex == -1)
-                {
-                    logError("Can't find a root-signature information matching buffer '" + pReflector->getName() + " when creating ProgramVars");
-                    return false;
-                }
-
-                bufferMap.emplace(ProgramVars::BindLocation(regIndex, regSpace), data);
+                bufferMap[ProgramVars::BindLocation(regSpace, regIndex)].push_back(data);
             }
         }
         return true;
@@ -112,6 +111,7 @@ namespace Falcor
             return RootSignature::DescType(-1);
         }
     }
+
     ProgramVars::ProgramVars(const ProgramReflection::SharedConstPtr& pReflector, bool createBuffers, const RootSignature::SharedPtr& pRootSig) : mpReflector(pReflector)
     {
         // Initialize the CB and StructuredBuffer maps. We always do it, to mark which slots are used in the shader.
@@ -132,27 +132,26 @@ namespace Falcor
             uint32_t count = desc.arraySize ? desc.arraySize : 1;
             for (uint32_t index = 0; index < count; ++index)
             {
-                uint32_t regIndex = desc.regIndex + index;
-                BindLocation loc(regIndex, desc.regSpace);
+                uint32_t regIndex = desc.regIndex;
+                BindLocation loc(desc.regSpace, regIndex);
                 switch (desc.type)
                 {
                 case ProgramReflection::Resource::ResourceType::Sampler:
-                    mAssignedSamplers[loc].pSampler = nullptr;
-                    mAssignedSamplers[loc].rootData = findRootData(mpRootSignature.get(), regIndex, desc.regSpace, RootSignature::DescType::Sampler);
+                    mAssignedSamplers[loc].push_back(findRootData(mpRootSignature.get(), regIndex, desc.regSpace, RootSignature::DescType::Sampler));
                     break;
                 case ProgramReflection::Resource::ResourceType::Texture:
                 case ProgramReflection::Resource::ResourceType::RawBuffer:
                 case ProgramReflection::Resource::ResourceType::TypedBuffer:
                     if (desc.shaderAccess == ProgramReflection::ShaderAccess::Read)
                     {
-                        assert(mAssignedSrvs.find(loc) == mAssignedSrvs.end());
-                        mAssignedSrvs[loc].rootData = findRootData(mpRootSignature.get(), regIndex, desc.regSpace, getRootDescTypeFromResourceType(desc.type, desc.shaderAccess));
+                        assert(mAssignedSrvs.find(loc) == mAssignedSrvs.end() || mAssignedSrvs[loc].size() == index);
+                        mAssignedSrvs[loc].push_back(findRootData(mpRootSignature.get(), regIndex, desc.regSpace, getRootDescTypeFromResourceType(desc.type, desc.shaderAccess)));
                     }
                     else
                     {
-                        assert(mAssignedUavs.find(loc) == mAssignedUavs.end());
+                        assert(mAssignedUavs.find(loc) == mAssignedUavs.end() || mAssignedUavs[loc].size() == index);
                         assert(desc.shaderAccess == ProgramReflection::ShaderAccess::ReadWrite);
-                        mAssignedUavs[loc].rootData = findRootData(mpRootSignature.get(), regIndex, desc.regSpace, getRootDescTypeFromResourceType(desc.type, desc.shaderAccess));
+                        mAssignedUavs[loc].push_back(findRootData(mpRootSignature.get(), regIndex, desc.regSpace, getRootDescTypeFromResourceType(desc.type, desc.shaderAccess)));
                     }
                     break;
                 default:
@@ -175,6 +174,7 @@ namespace Falcor
         }
     }
 
+
     GraphicsVars::SharedPtr GraphicsVars::create(const ProgramReflection::SharedConstPtr& pReflector, bool createBuffers, const RootSignature::SharedPtr& pRootSig)
     {
         return SharedPtr(new GraphicsVars(pReflector, createBuffers, pRootSig));
@@ -188,7 +188,7 @@ namespace Falcor
     ConstantBuffer::SharedPtr ProgramVars::getConstantBuffer(const std::string& name) const
     {
         const auto& binding = mpReflector->getBufferBinding(name);
-        if (binding.regIndex == ProgramReflection::kInvalidLocation || binding.regSpace == ProgramReflection::kInvalidLocation)
+        if (binding.baseRegIndex == ProgramReflection::kInvalidLocation || binding.regSpace == ProgramReflection::kInvalidLocation)
         {
             logWarning("Constant buffer \"" + name + "\" was not found. Ignoring getConstantBuffer() call.");
             return nullptr;
@@ -202,40 +202,40 @@ namespace Falcor
             return nullptr;
         }
 
-        return getConstantBuffer(binding.regIndex, binding.regSpace);
+        return getConstantBuffer(binding.regSpace, binding.baseRegIndex, 0);
     }
 
-    ConstantBuffer::SharedPtr ProgramVars::getConstantBuffer(uint32_t regIndex, uint32_t regSpace) const
+    ConstantBuffer::SharedPtr ProgramVars::getConstantBuffer(uint32_t regSpace, uint32_t baseRegIndex, uint32_t arrayIndex) const
     {
-        auto& it = mAssignedCbs.find({ regIndex, regSpace });
+        auto& it = mAssignedCbs.find({ regSpace, baseRegIndex });
         if (it == mAssignedCbs.end())
         {
-            logWarning("Can't find constant buffer at index " + std::to_string(regIndex) + ", space " + std::to_string(regSpace) + ". Ignoring getConstantBuffer() call.");
+            logWarning("Can't find constant buffer at index " + std::to_string(baseRegIndex) + ", space " + std::to_string(regSpace) + ". Ignoring getConstantBuffer() call.");
             return nullptr;
         }
 
-        return std::static_pointer_cast<ConstantBuffer>(it->second.pResource);
+        return std::static_pointer_cast<ConstantBuffer>(it->second[arrayIndex].pResource);
     }
 
-    bool ProgramVars::setConstantBuffer(uint32_t regIndex, uint32_t regSpace, const ConstantBuffer::SharedPtr& pCB)
+    bool ProgramVars::setConstantBuffer(uint32_t regSpace, uint32_t baseRegIndex, uint32_t arrayIndex, const ConstantBuffer::SharedPtr& pCB)
     {
-        BindLocation loc(regIndex, regSpace);
+        BindLocation loc(regSpace, baseRegIndex);
         // Check that the index is valid
         if (mAssignedCbs.find(loc) == mAssignedCbs.end())
         {
-            logWarning("No constant buffer was found at index " + std::to_string(regIndex) + ", space " + std::to_string(regSpace) + ". Ignoring setConstantBuffer() call.");
+            logWarning("No constant buffer was found at index " + std::to_string(baseRegIndex) + ", space " + std::to_string(regSpace) + ". Ignoring setConstantBuffer() call.");
             return false;
         }
 
         // Just need to make sure the buffer is large enough
-        const auto& desc = mpReflector->getBufferDesc(regIndex, regSpace, ProgramReflection::ShaderAccess::Read, ProgramReflection::BufferReflection::Type::Constant);
+        const auto& desc = mpReflector->getBufferDesc(regSpace, baseRegIndex, ProgramReflection::ShaderAccess::Read, ProgramReflection::BufferReflection::Type::Constant);
         if (desc->getRequiredSize() > pCB->getSize())
         {
             logError("Can't attach the constant buffer. Size mismatch.");
             return false;
         }
 
-        mAssignedCbs[loc].pResource = pCB;
+        mAssignedCbs[loc][arrayIndex].pResource = pCB;
         return true;
     }
 
@@ -243,16 +243,16 @@ namespace Falcor
     {
         // Find the buffer
         const auto& loc = mpReflector->getBufferBinding(name);
-        if (loc.regIndex == ProgramReflection::kInvalidLocation || loc.regSpace == ProgramReflection::kInvalidLocation)
+        if (loc.baseRegIndex == ProgramReflection::kInvalidLocation || loc.regSpace == ProgramReflection::kInvalidLocation)
         {
             logWarning("Constant buffer \"" + name + "\" was not found. Ignoring setConstantBuffer() call.");
             return false;
         }
 
-        return setConstantBuffer(loc.regIndex, loc.regSpace, pCB);
+        return setConstantBuffer(loc.regSpace, loc.baseRegIndex, 0, pCB);
     }
 
-    void setResourceSrvUavCommon(const ProgramVars::BindLocation& bindLoc, ProgramReflection::ShaderAccess shaderAccess, const Resource::SharedPtr& resource, ProgramVars::ResourceMap<ShaderResourceView>& assignedSrvs, ProgramVars::ResourceMap<UnorderedAccessView>& assignedUavs,
+    void setResourceSrvUavCommon(const ProgramVars::BindLocation& bindLoc, uint32_t arrayIndex, ProgramReflection::ShaderAccess shaderAccess, const Resource::SharedPtr& resource, ProgramVars::ResourceMap<ShaderResourceView>& assignedSrvs, ProgramVars::ResourceMap<UnorderedAccessView>& assignedUavs,
         std::vector<ProgramVars::RootSet>& rootSets)
     {
         switch (shaderAccess)
@@ -262,12 +262,12 @@ namespace Falcor
             auto uavIt = assignedUavs.find(bindLoc);
             assert(uavIt != assignedUavs.end());
             auto resUav = resource ? resource->getUAV() : nullptr;
-
-            if (uavIt->second.pView != resUav)
+            auto& data = uavIt->second[arrayIndex];
+            if (data.pView != resUav)
             {
-                rootSets[uavIt->second.rootData.rootIndex].pDescSet = nullptr;
-                uavIt->second.pResource = resource;
-                uavIt->second.pView = resUav;
+                rootSets[data.rootData.rootIndex].pDescSet = nullptr;
+                data.pResource = resource;
+                data.pView = resUav;
             }
             break;
         }
@@ -278,12 +278,13 @@ namespace Falcor
             assert(srvIt != assignedSrvs.end());
 
             auto resSrv = resource ? resource->getSRV() : nullptr;
+            auto& data = srvIt->second[arrayIndex];
 
-            if (srvIt->second.pView != resSrv)
+            if (data.pView != resSrv)
             {
-                rootSets[srvIt->second.rootData.rootIndex].pDescSet = nullptr;
-                srvIt->second.pResource = resource;
-                srvIt->second.pView = resSrv;
+                rootSets[data.rootData.rootIndex].pDescSet = nullptr;
+                data.pResource = resource;
+                data.pView = resSrv;
             }
             break;
         }
@@ -293,17 +294,17 @@ namespace Falcor
         }
     }
 
-    void setResourceSrvUavCommon(const ProgramReflection::Resource* pDesc, const Resource::SharedPtr& resource, ProgramVars::ResourceMap<ShaderResourceView>& assignedSrvs, ProgramVars::ResourceMap<UnorderedAccessView>& assignedUavs, std::vector<ProgramVars::RootSet>& rootSets)
+    void setResourceSrvUavCommon(const ProgramReflection::Resource* pDesc, uint32_t arrayIndex, const Resource::SharedPtr& resource, ProgramVars::ResourceMap<ShaderResourceView>& assignedSrvs, ProgramVars::ResourceMap<UnorderedAccessView>& assignedUavs, std::vector<ProgramVars::RootSet>& rootSets)
     {
-        setResourceSrvUavCommon({ pDesc->regIndex, pDesc->regSpace }, pDesc->shaderAccess, resource, assignedSrvs, assignedUavs, rootSets);
+        setResourceSrvUavCommon({ pDesc->regSpace, pDesc->regIndex }, arrayIndex, pDesc->shaderAccess, resource, assignedSrvs, assignedUavs, rootSets);
     }
 
-    void setResourceSrvUavCommon(const ProgramReflection::BufferReflection *pDesc, const Resource::SharedPtr& resource, ProgramVars::ResourceMap<ShaderResourceView>& assignedSrvs, ProgramVars::ResourceMap<UnorderedAccessView>& assignedUavs, std::vector<ProgramVars::RootSet>& rootSets)
+    void setResourceSrvUavCommon(const ProgramReflection::BufferReflection *pDesc, uint32_t arrayIndex, const Resource::SharedPtr& resource, ProgramVars::ResourceMap<ShaderResourceView>& assignedSrvs, ProgramVars::ResourceMap<UnorderedAccessView>& assignedUavs, std::vector<ProgramVars::RootSet>& rootSets)
     {
-        setResourceSrvUavCommon({ pDesc->getRegisterIndex(), pDesc->getRegisterSpace() }, pDesc->getShaderAccess(), resource, assignedSrvs, assignedUavs, rootSets);
+        setResourceSrvUavCommon({ pDesc->getRegisterSpace(), pDesc->getRegisterIndex() }, arrayIndex, pDesc->getShaderAccess(), resource, assignedSrvs, assignedUavs, rootSets);
     }
 
-    bool verifyBufferResourceDesc(const ProgramReflection::Resource *pDesc, const std::string& name, ProgramReflection::Resource::ResourceType expectedType, ProgramReflection::Resource::Dimensions expectedDims, const std::string& funcName)
+    bool verifyBufferResourceDesc(const ProgramReflection::Resource* pDesc, uint32_t arrayIndex, const std::string& name, ProgramReflection::Resource::ResourceType expectedType, ProgramReflection::Resource::Dimensions expectedDims, const std::string& funcName)
     {
         if (pDesc == nullptr)
         {
@@ -317,20 +318,41 @@ namespace Falcor
             return false;
         }
 
+        if (pDesc->arraySize && arrayIndex >= pDesc->arraySize)
+        {
+            logWarning("ProgramVars::" + funcName + " was called, but array index is out-of-bound. Ignoring call");
+            return false;
+        }
+
         return true;
+    }
+
+    static const ProgramReflection::Resource* getResourceDescAndArrayIndex(const ProgramReflection* pReflector, const std::string& name, uint32_t& arrayIndex)
+    {
+        const ProgramReflection::Resource* pDesc = pReflector->getResourceDesc(name);
+        arrayIndex = 0;
+        if (!pDesc)
+        {
+            std::string nameNoIndex;
+            if (parseArrayIndex(name, nameNoIndex, arrayIndex) == false) return nullptr;
+            pDesc = pReflector->getResourceDesc(name);
+            if (pDesc->arraySize == 0) return nullptr;
+        }
+        return pDesc;
     }
 
     bool ProgramVars::setRawBuffer(const std::string& name, Buffer::SharedPtr pBuf)
     {
         // Find the buffer
-        const ProgramReflection::Resource* pDesc = mpReflector->getResourceDesc(name);
+        uint32_t arrayIndex;
+        const ProgramReflection::Resource* pDesc = getResourceDescAndArrayIndex(mpReflector.get(), name, arrayIndex);
 
-        if (verifyBufferResourceDesc(pDesc, name, ProgramReflection::Resource::ResourceType::RawBuffer, ProgramReflection::Resource::Dimensions::Buffer, "setRawBuffer()") == false)
+        if (verifyBufferResourceDesc(pDesc, arrayIndex, name, ProgramReflection::Resource::ResourceType::RawBuffer, ProgramReflection::Resource::Dimensions::Buffer, "setRawBuffer()") == false)
         {
             return false;
         }
 
-        setResourceSrvUavCommon(pDesc, pBuf, mAssignedSrvs, mAssignedUavs, mRootSets);
+        setResourceSrvUavCommon(pDesc, arrayIndex, pBuf, mAssignedSrvs, mAssignedUavs, mRootSets);
 
         return true;
     }
@@ -338,14 +360,15 @@ namespace Falcor
     bool ProgramVars::setTypedBuffer(const std::string& name, TypedBufferBase::SharedPtr pBuf)
     {
         // Find the buffer
-        const ProgramReflection::Resource* pDesc = mpReflector->getResourceDesc(name);
+        uint32_t arrayIndex;
+        const ProgramReflection::Resource* pDesc = getResourceDescAndArrayIndex(mpReflector.get(), name, arrayIndex);
 
-        if (verifyBufferResourceDesc(pDesc, name, ProgramReflection::Resource::ResourceType::TypedBuffer, ProgramReflection::Resource::Dimensions::Buffer, "setTypedBuffer()") == false)
+        if (verifyBufferResourceDesc(pDesc, arrayIndex, name, ProgramReflection::Resource::ResourceType::TypedBuffer, ProgramReflection::Resource::Dimensions::Buffer, "setTypedBuffer()") == false)
         {
             return false;
         }
 
-        setResourceSrvUavCommon(pDesc, pBuf, mAssignedSrvs, mAssignedUavs, mRootSets);
+        setResourceSrvUavCommon(pDesc, arrayIndex, pBuf, mAssignedSrvs, mAssignedUavs, mRootSets);
 
         return true;
     }
@@ -361,15 +384,15 @@ namespace Falcor
             return false;
         }
 
-        setResourceSrvUavCommon(pBufDesc, pBuf, mAssignedSrvs, mAssignedUavs, mRootSets);
+        setResourceSrvUavCommon(pBufDesc, 0, pBuf, mAssignedSrvs, mAssignedUavs, mRootSets);
 
         return true;
     }
 
     template<typename ResourceType>
-    typename ResourceType::SharedPtr getResourceFromSrvUavCommon(uint32_t regIndex, uint32_t regSpace, ProgramReflection::ShaderAccess shaderAccess, const ProgramVars::ResourceMap<ShaderResourceView>& assignedSrvs, const ProgramVars::ResourceMap<UnorderedAccessView>& assignedUavs, const std::string& varName, const std::string& funcName)
+    typename ResourceType::SharedPtr getResourceFromSrvUavCommon(uint32_t regSpace, uint32_t regIndex, uint32_t arrayIndex, ProgramReflection::ShaderAccess shaderAccess, const ProgramVars::ResourceMap<ShaderResourceView>& assignedSrvs, const ProgramVars::ResourceMap<UnorderedAccessView>& assignedUavs, const std::string& varName, const std::string& funcName)
     {
-        ProgramVars::BindLocation bindLoc(regIndex, regSpace);
+        ProgramVars::BindLocation bindLoc(regSpace, regIndex);
         switch (shaderAccess)
         {
         case ProgramReflection::ShaderAccess::ReadWrite:
@@ -378,7 +401,7 @@ namespace Falcor
                 logWarning("ProgramVars::" + funcName + " - variable \"" + varName + "\' was not found in UAVs. Shader Access = " + to_string(shaderAccess));
                 return nullptr;
             }
-            return std::dynamic_pointer_cast<ResourceType>(assignedUavs.at(bindLoc).pResource);
+            return std::dynamic_pointer_cast<ResourceType>(assignedUavs.at(bindLoc)[arrayIndex].pResource);
 
         case ProgramReflection::ShaderAccess::Read:
             if (assignedSrvs.find(bindLoc) == assignedSrvs.end())
@@ -386,7 +409,7 @@ namespace Falcor
                 logWarning("ProgramVars::" + funcName + " - variable \"" + varName + "\' was not found in SRVs. Shader Access = " + to_string(shaderAccess));
                 return nullptr;
             }
-            return std::dynamic_pointer_cast<ResourceType>(assignedSrvs.at(bindLoc).pResource);
+            return std::dynamic_pointer_cast<ResourceType>(assignedSrvs.at(bindLoc)[arrayIndex].pResource);
 
         default:
             should_not_get_here();
@@ -396,41 +419,43 @@ namespace Falcor
     }
 
     template<typename ResourceType>
-    typename ResourceType::SharedPtr getResourceFromSrvUavCommon(const ProgramReflection::Resource *pDesc, const ProgramVars::ResourceMap<ShaderResourceView>& assignedSrvs, const ProgramVars::ResourceMap<UnorderedAccessView>& assignedUavs, const std::string& varName, const std::string& funcName)
+    typename ResourceType::SharedPtr getResourceFromSrvUavCommon(const ProgramReflection::Resource *pDesc, uint32_t arrayIndex, const ProgramVars::ResourceMap<ShaderResourceView>& assignedSrvs, const ProgramVars::ResourceMap<UnorderedAccessView>& assignedUavs, const std::string& varName, const std::string& funcName)
     {
-        return getResourceFromSrvUavCommon<ResourceType>(pDesc->regIndex, pDesc->regSpace, pDesc->shaderAccess, assignedSrvs, assignedUavs, varName, funcName);
+        return getResourceFromSrvUavCommon<ResourceType>(pDesc->regSpace, pDesc->regIndex, arrayIndex, pDesc->shaderAccess, assignedSrvs, assignedUavs, varName, funcName);
     }
 
     template<typename ResourceType>
-    typename ResourceType::SharedPtr getResourceFromSrvUavCommon(const ProgramReflection::BufferReflection *pBufDesc, const ProgramVars::ResourceMap<ShaderResourceView>& assignedSrvs, const ProgramVars::ResourceMap<UnorderedAccessView>& assignedUavs, const std::string& varName, const std::string& funcName)
+    typename ResourceType::SharedPtr getResourceFromSrvUavCommon(const ProgramReflection::BufferReflection *pBufDesc, uint32_t arrayIndex, const ProgramVars::ResourceMap<ShaderResourceView>& assignedSrvs, const ProgramVars::ResourceMap<UnorderedAccessView>& assignedUavs, const std::string& varName, const std::string& funcName)
     {
-        return getResourceFromSrvUavCommon<ResourceType>(pBufDesc->getRegisterIndex(), pBufDesc->getRegisterSpace(), pBufDesc->getShaderAccess(), assignedSrvs, assignedUavs, varName, funcName);
+        return getResourceFromSrvUavCommon<ResourceType>(pBufDesc->getRegisterSpace(), pBufDesc->getRegisterIndex(), arrayIndex, pBufDesc->getShaderAccess(), assignedSrvs, assignedUavs, varName, funcName);
     }
 
     Buffer::SharedPtr ProgramVars::getRawBuffer(const std::string& name) const
     {
         // Find the buffer
-        const ProgramReflection::Resource* pDesc = mpReflector->getResourceDesc(name);
+        uint32_t arrayIndex;
+        const ProgramReflection::Resource* pDesc = getResourceDescAndArrayIndex(mpReflector.get(), name, arrayIndex);
 
-        if (verifyBufferResourceDesc(pDesc, name, ProgramReflection::Resource::ResourceType::RawBuffer, ProgramReflection::Resource::Dimensions::Buffer, "getRawBuffer()") == false)
+        if (verifyBufferResourceDesc(pDesc,arrayIndex,  name, ProgramReflection::Resource::ResourceType::RawBuffer, ProgramReflection::Resource::Dimensions::Buffer, "getRawBuffer()") == false)
         {
             return false;
         }
 
-        return getResourceFromSrvUavCommon<Buffer>(pDesc, mAssignedSrvs, mAssignedUavs, name, "getRawBuffer()");
+        return getResourceFromSrvUavCommon<Buffer>(pDesc, arrayIndex, mAssignedSrvs, mAssignedUavs, name, "getRawBuffer()");
     }
 
     TypedBufferBase::SharedPtr ProgramVars::getTypedBuffer(const std::string& name) const
     {
         // Find the buffer
-        const ProgramReflection::Resource* pDesc = mpReflector->getResourceDesc(name);
+        uint32_t arrayIndex;
+        const ProgramReflection::Resource* pDesc = getResourceDescAndArrayIndex(mpReflector.get(), name, arrayIndex);
 
-        if (verifyBufferResourceDesc(pDesc, name, ProgramReflection::Resource::ResourceType::TypedBuffer, ProgramReflection::Resource::Dimensions::Buffer, "getTypedBuffer()") == false)
+        if (verifyBufferResourceDesc(pDesc, arrayIndex, name, ProgramReflection::Resource::ResourceType::TypedBuffer, ProgramReflection::Resource::Dimensions::Buffer, "getTypedBuffer()") == false)
         {
             return false;
         }
 
-        return getResourceFromSrvUavCommon<TypedBufferBase>(pDesc, mAssignedSrvs, mAssignedUavs, name, "getTypedBuffer()");
+        return getResourceFromSrvUavCommon<TypedBufferBase>(pDesc, arrayIndex, mAssignedSrvs, mAssignedUavs, name, "getTypedBuffer()");
     }
 
     StructuredBuffer::SharedPtr ProgramVars::getStructuredBuffer(const std::string& name) const
@@ -443,10 +468,10 @@ namespace Falcor
             return false;
         }
 
-        return getResourceFromSrvUavCommon<StructuredBuffer>(pBufDesc, mAssignedSrvs, mAssignedUavs, name, "getStructuredBuffer()");
+        return getResourceFromSrvUavCommon<StructuredBuffer>(pBufDesc, 0, mAssignedSrvs, mAssignedUavs, name, "getStructuredBuffer()");
     }
 
-    bool verifyResourceDesc(const ProgramReflection::Resource* pDesc, ProgramReflection::Resource::ResourceType type, ProgramReflection::ShaderAccess access, const std::string& varName, const std::string& funcName)
+    bool verifyResourceDesc(const ProgramReflection::Resource* pDesc, uint32_t arrayIndex, ProgramReflection::Resource::ResourceType type, ProgramReflection::ShaderAccess access, const std::string& varName, const std::string& funcName)
     {
         if (pDesc == nullptr)
         {
@@ -466,12 +491,17 @@ namespace Falcor
             return false;
         }
 
+        if (pDesc->arraySize && arrayIndex >= pDesc->arraySize)
+        {
+            logWarning("ProgramVars::" + funcName + " was called, but array index is out-of-bound. Ignoring call");
+            return false;
+        }
         return true;
     }
 
-    bool ProgramVars::setSampler(uint32_t regIndex, uint32_t regSpace, const Sampler::SharedPtr& pSampler)
+    bool ProgramVars::setSampler(uint32_t regSpace, uint32_t baseRegIndex, uint32_t arrayIndex, const Sampler::SharedPtr& pSampler)
     {
-        auto& it = mAssignedSamplers.at({regIndex, regSpace});
+        auto& it = mAssignedSamplers.at({regSpace, baseRegIndex})[arrayIndex];
         if (it.pSampler != pSampler)
         {
             it.pSampler = pSampler;
@@ -482,86 +512,90 @@ namespace Falcor
 
     bool ProgramVars::setSampler(const std::string& name, const Sampler::SharedPtr& pSampler)
     {
-        const ProgramReflection::Resource* pDesc = mpReflector->getResourceDesc(name);
-        if (verifyResourceDesc(pDesc, ProgramReflection::Resource::ResourceType::Sampler, ProgramReflection::ShaderAccess::Read, name, "setSampler()") == false)
+        uint32_t arrayIndex;
+        const ProgramReflection::Resource* pDesc = getResourceDescAndArrayIndex(mpReflector.get(), name, arrayIndex);
+        if (verifyResourceDesc(pDesc, arrayIndex, ProgramReflection::Resource::ResourceType::Sampler, ProgramReflection::ShaderAccess::Read, name, "setSampler()") == false)
         {
             return false;
         }
 
-        return setSampler(pDesc->regIndex, pDesc->regSpace, pSampler);
+        return setSampler(pDesc->regSpace, pDesc->regIndex, arrayIndex, pSampler);
     }
 
     Sampler::SharedPtr ProgramVars::getSampler(const std::string& name) const
     {
-        const ProgramReflection::Resource* pDesc = mpReflector->getResourceDesc(name);
-        if (verifyResourceDesc(pDesc, ProgramReflection::Resource::ResourceType::Sampler, ProgramReflection::ShaderAccess::Read, name, "getSampler()") == false)
+        uint32_t arrayIndex;
+        const ProgramReflection::Resource* pDesc = getResourceDescAndArrayIndex(mpReflector.get(), name, arrayIndex);
+        if (verifyResourceDesc(pDesc, 0, ProgramReflection::Resource::ResourceType::Sampler, ProgramReflection::ShaderAccess::Read, name, "getSampler()") == false)
         {
             return nullptr;
         }
 
-        return getSampler(pDesc->regIndex, pDesc->regSpace);
+        return getSampler(pDesc->regSpace, pDesc->regIndex, arrayIndex);
     }
 
-    Sampler::SharedPtr ProgramVars::getSampler(uint32_t regIndex, uint32_t regSpace) const
+    Sampler::SharedPtr ProgramVars::getSampler(uint32_t regSpace, uint32_t baseRegIndex, uint32_t arrayIndex) const
     {
-        auto it = mAssignedSamplers.find({regIndex, regSpace});
+        auto it = mAssignedSamplers.find({regSpace, baseRegIndex});
         if (it == mAssignedSamplers.end())
         {
-            logWarning("ProgramVars::getSampler() - Cannot find sampler at index " + std::to_string(regIndex) + ", space " + std::to_string(regSpace));
+            logWarning("ProgramVars::getSampler() - Cannot find sampler at index " + std::to_string(baseRegIndex) + ", space " + std::to_string(regSpace));
             return nullptr;
         }
 
-        return it->second.pSampler;
+        return it->second[arrayIndex].pSampler;
     }
 
-    ShaderResourceView::SharedPtr ProgramVars::getSrv(uint32_t regIndex, uint32_t regSpace) const
+    ShaderResourceView::SharedPtr ProgramVars::getSrv(uint32_t regSpace, uint32_t baseRegIndex, uint32_t arrayIndex) const
     {
-        auto it = mAssignedSrvs.find({ regIndex, regSpace });
+        auto it = mAssignedSrvs.find({ regSpace, baseRegIndex});
         if (it == mAssignedSrvs.end())
         {
-            logWarning("ProgramVars::getSrv() - Cannot find SRV at index " + std::to_string(regIndex) + ", space " + std::to_string(regSpace));
+            logWarning("ProgramVars::getSrv() - Cannot find SRV at index " + std::to_string(baseRegIndex) + ", space " + std::to_string(regSpace));
             return nullptr;
         }
 
-        return it->second.pView;
+        return it->second[arrayIndex].pView;
     }
 
-    UnorderedAccessView::SharedPtr ProgramVars::getUav(uint32_t regIndex, uint32_t regSpace) const
+    UnorderedAccessView::SharedPtr ProgramVars::getUav(uint32_t regSpace, uint32_t baseRegIndex, uint32_t arrayIndex) const
     {
-        auto it = mAssignedUavs.find({ regIndex, regSpace });
+        auto it = mAssignedUavs.find({ regSpace, baseRegIndex});
         if (it == mAssignedUavs.end())
         {
-            logWarning("ProgramVars::getUav() - Cannot find UAV at index " + std::to_string(regIndex) + ", space " + std::to_string(regSpace));
+            logWarning("ProgramVars::getUav() - Cannot find UAV at index " + std::to_string(baseRegIndex) + ", space " + std::to_string(regSpace));
             return nullptr;
         }
 
-        return it->second.pView;
+        return it->second[arrayIndex].pView;
     }
 
     bool ProgramVars::setTexture(const std::string& name, const Texture::SharedPtr& pTexture)
     {
-        const ProgramReflection::Resource* pDesc = mpReflector->getResourceDesc(name);
+        uint32_t arrayIndex;
+        const ProgramReflection::Resource* pDesc = getResourceDescAndArrayIndex(mpReflector.get(), name, arrayIndex);
 
-        if (verifyResourceDesc(pDesc, ProgramReflection::Resource::ResourceType::Texture, ProgramReflection::ShaderAccess::Undefined, name, "setTexture()") == false)
+        if (verifyResourceDesc(pDesc, arrayIndex, ProgramReflection::Resource::ResourceType::Texture, ProgramReflection::ShaderAccess::Undefined,  name, "setTexture()") == false)
         {
             return false;
         }
 
-        setResourceSrvUavCommon(pDesc, pTexture, mAssignedSrvs, mAssignedUavs, mRootSets);
+        setResourceSrvUavCommon(pDesc, arrayIndex, pTexture, mAssignedSrvs, mAssignedUavs, mRootSets);
 
         return true;
     }
 
     Texture::SharedPtr ProgramVars::getTexture(const std::string& name) const
     {
-        const ProgramReflection::Resource* pDesc = mpReflector->getResourceDesc(name);
+        uint32_t arrayIndex;
+        const ProgramReflection::Resource* pDesc = getResourceDescAndArrayIndex(mpReflector.get(), name, arrayIndex);
 
-        if (verifyResourceDesc(pDesc, ProgramReflection::Resource::ResourceType::Texture, ProgramReflection::ShaderAccess::Undefined, name, "getTexture()") == false)
+        if (verifyResourceDesc(pDesc, arrayIndex, ProgramReflection::Resource::ResourceType::Texture, ProgramReflection::ShaderAccess::Undefined, name, "getTexture()") == false)
         {
             return nullptr;
         }
 
-        return getResourceFromSrvUavCommon<Texture>(pDesc, mAssignedSrvs, mAssignedUavs, name, "getTexture()");
+        return getResourceFromSrvUavCommon<Texture>(pDesc, arrayIndex, mAssignedSrvs, mAssignedUavs, name, "getTexture()");
     }
 
     template<typename ViewType>
@@ -577,42 +611,44 @@ namespace Falcor
         }
     }
 
-    bool ProgramVars::setSrv(uint32_t regIndex, uint32_t regSpace, const ShaderResourceView::SharedPtr& pSrv)
+    bool ProgramVars::setSrv(uint32_t regSpace, uint32_t baseRegIndex, uint32_t arrayIndex, const ShaderResourceView::SharedPtr& pSrv)
     {
-        auto it = mAssignedSrvs.find({ regIndex, regSpace });
+        auto it = mAssignedSrvs.find({ regSpace, baseRegIndex });
         if (it != mAssignedSrvs.end())
         {
-            if (it->second.pView != pSrv)
+            auto& data = it->second[arrayIndex];
+            if (data.pView != pSrv)
             {
-                mRootSets[it->second.rootData.rootIndex].pDescSet = nullptr;
-                it->second.pView = pSrv;
-                it->second.pResource = getResourceFromView(pSrv.get()); // TODO: Fix resource/view const-ness so we don't need to do this
+                mRootSets[data.rootData.rootIndex].pDescSet = nullptr;
+                data.pView = pSrv;
+                data.pResource = getResourceFromView(pSrv.get()); // TODO: Fix resource/view const-ness so we don't need to do this
             }
         }
         else
         {
-            logWarning("Can't find SRV with index " + std::to_string(regIndex) + ", space " + std::to_string(regSpace) + ". Ignoring call to ProgramVars::setSrv()");
+            logWarning("Can't find SRV with index " + std::to_string(baseRegIndex) + ", space " + std::to_string(regSpace) + ". Ignoring call to ProgramVars::setSrv()");
             return false;
         }
 
         return true;
     }
 
-    bool ProgramVars::setUav(uint32_t regIndex, uint32_t regSpace, const UnorderedAccessView::SharedPtr& pUav)
+    bool ProgramVars::setUav(uint32_t regSpace, uint32_t baseRegIndex, uint32_t arrayIndex, const UnorderedAccessView::SharedPtr& pUav)
     {
-        auto it = mAssignedUavs.find({ regIndex, regSpace });
+        auto it = mAssignedUavs.find({ regSpace, baseRegIndex });
         if (it != mAssignedUavs.end())
         {
-            if (it->second.pView != pUav)
+            auto& data = it->second[arrayIndex];
+            if (data.pView != pUav)
             {
-                mRootSets[it->second.rootData.rootIndex].pDescSet = nullptr;
-                it->second.pView = pUav;
-                it->second.pResource = getResourceFromView(pUav.get()); // TODO: Fix resource/view const-ness so we don't need to do this
+                mRootSets[data.rootData.rootIndex].pDescSet = nullptr;
+                data.pView = pUav;
+                data.pResource = getResourceFromView(pUav.get()); // TODO: Fix resource/view const-ness so we don't need to do this
             }
         }
         else
         {
-            logWarning("Can't find UAV with index " + std::to_string(regIndex) + ", space " + std::to_string(regSpace) + ". Ignoring call to ProgramVars::setUav()");
+            logWarning("Can't find UAV with index " + std::to_string(baseRegIndex) + ", space " + std::to_string(regSpace) + ". Ignoring call to ProgramVars::setUav()");
             return false;
         }
 
@@ -624,18 +660,22 @@ namespace Falcor
         // Bind the samplers
         for (auto& samplerIt : samplers)
         {
-            const auto& rootData = samplerIt.second.rootData;
+            const auto& samplerVec = samplerIt.second;
+            const auto& rootData = samplerVec[0].rootData;
             if (rootSets[rootData.rootIndex].dirty)
             {
-                const Sampler* pSampler = samplerIt.second.pSampler.get();
-                if (pSampler == nullptr)
+                for(uint32_t i = 0 ; i < samplerVec.size() ; i++)
                 {
-                    pSampler = Sampler::getDefault().get();
+                    const Sampler* pSampler = samplerVec[i].pSampler.get();
+                    if (pSampler == nullptr)
+                    {
+                        pSampler = Sampler::getDefault().get();
+                    }
+                    // Allocate a GPU descriptor
+                    const auto& pDescSet = rootSets[rootData.rootIndex].pDescSet;
+                    assert(pDescSet);
+                    pDescSet->setSampler(rootData.rangeIndex, i, pSampler);
                 }
-                // Allocate a GPU descriptor
-                const auto& pDescSet = rootSets[rootData.rootIndex].pDescSet;
-                assert(pDescSet);
-                pDescSet->setSampler(rootData.rangeIndex, rootData.descIndex, pSampler);
             }
         }
     }
@@ -645,23 +685,27 @@ namespace Falcor
     {
         for (auto& resIt : resMap)
         {
-            auto& resDesc = resIt.second;
-            auto& rootData = resDesc.rootData;
-            Resource* pResource = resDesc.pResource.get();
-
-            ViewType::SharedPtr view = pResource ? resDesc.pView : ViewType::getNullView();
+            const auto& resVec = resIt.second;
+            auto& rootData = resVec[0].rootData;
 
             if (rootSets[rootData.rootIndex].dirty)
             {
-                // Get the set and copy the GPU handle
-                const auto& pDescSet = rootSets[rootData.rootIndex].pDescSet;
-                if (isUav)
+                for (uint32_t i = 0; i < resVec.size(); i++)
                 {
-                    pDescSet->setUav(rootData.rangeIndex, rootData.descIndex, (UnorderedAccessView*)view.get());
-                }
-                else
-                {
-                    pDescSet->setSrv(rootData.rangeIndex, rootData.descIndex, (ShaderResourceView*)view.get());
+                    auto& resDesc = resVec[i];
+                    Resource* pResource = resDesc.pResource.get();
+                    ViewType::SharedPtr view = pResource ? resDesc.pView : ViewType::getNullView();
+
+                    // Get the set and copy the GPU handle
+                    const auto& pDescSet = rootSets[rootData.rootIndex].pDescSet;
+                    if (isUav)
+                    {
+                        pDescSet->setUav(rootData.rangeIndex, i, (UnorderedAccessView*)view.get());
+                    }
+                    else
+                    {
+                        pDescSet->setSrv(rootData.rangeIndex, i, (ShaderResourceView*)view.get());
+                    }
                 }
             }
         }
@@ -671,8 +715,9 @@ namespace Falcor
     {
         for (auto& bufIt : cbMap)
         {
-            const auto& rootData = bufIt.second.rootData;
-            ConstantBuffer* pCB = dynamic_cast<ConstantBuffer*>(bufIt.second.pResource.get());
+            assert(bufIt.second.size() == 1);
+            const auto& rootData = bufIt.second[0].rootData;
+            ConstantBuffer* pCB = dynamic_cast<ConstantBuffer*>(bufIt.second[0].pResource.get());
 
             if (pCB && pCB->uploadToGPU())
             {
@@ -686,38 +731,40 @@ namespace Falcor
     {
         for (auto& resIt : resMap)
         {
-            auto& resDesc = resIt.second;
-            auto& rootData = resDesc.rootData;
-            Resource* pResource = resDesc.pResource.get();
+            const auto& resVec = resIt.second;
+            auto& rootData = resVec[0].rootData;
 
-            ViewType::SharedPtr view;
-            if (pResource)
+            for(const auto& resDesc : resVec)
             {
-                bool invalidate = false;
-                // If it's a typed buffer, upload it to the GPU
-                TypedBufferBase* pTypedBuffer = dynamic_cast<TypedBufferBase*>(pResource);
-                if (pTypedBuffer)
+                Resource* pResource = resDesc.pResource.get();
+                if (pResource)
                 {
-                    invalidate = pTypedBuffer->uploadToGPU();
-                }
-                StructuredBuffer* pStructured = dynamic_cast<StructuredBuffer*>(pResource);
-                if (pStructured)
-                {
-                    invalidate = pStructured->uploadToGPU();
-
-                    if (isUav && pStructured->hasUAVCounter())
+                    bool invalidate = false;
+                    // If it's a typed buffer, upload it to the GPU
+                    TypedBufferBase* pTypedBuffer = dynamic_cast<TypedBufferBase*>(pResource);
+                    if (pTypedBuffer)
                     {
-                        pContext->resourceBarrier(pStructured->getUAVCounter().get(), Resource::State::UnorderedAccess);
+                        invalidate = pTypedBuffer->uploadToGPU();
                     }
-                }
+                    StructuredBuffer* pStructured = dynamic_cast<StructuredBuffer*>(pResource);
+                    if (pStructured)
+                    {
+                        invalidate = pStructured->uploadToGPU();
 
-                pContext->resourceBarrier(resDesc.pResource.get(), isUav ? Resource::State::UnorderedAccess : Resource::State::ShaderResource);
-                if (isUav)
-                {
-                    if (pTypedBuffer) pTypedBuffer->setGpuCopyDirty();
-                    if (pStructured)  pStructured->setGpuCopyDirty();
+                        if (isUav && pStructured->hasUAVCounter())
+                        {
+                            pContext->resourceBarrier(pStructured->getUAVCounter().get(), Resource::State::UnorderedAccess);
+                        }
+                    }
+
+                    pContext->resourceBarrier(resDesc.pResource.get(), isUav ? Resource::State::UnorderedAccess : Resource::State::ShaderResource);
+                    if (isUav)
+                    {
+                        if (pTypedBuffer) pTypedBuffer->setGpuCopyDirty();
+                        if (pStructured)  pStructured->setGpuCopyDirty();
+                    }
+                    if (invalidate) rootSets[rootData.rootIndex].pDescSet = nullptr;
                 }
-                if (invalidate) rootSets[rootData.rootIndex].pDescSet = nullptr;
             }
         }
     }

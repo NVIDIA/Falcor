@@ -322,11 +322,11 @@ namespace Falcor
         initBlitData(); // This has to be here and can't be in the constructor. FullScreenPass will allocate some buffers which depends on the ResourceAllocator which depends on the fence inside the RenderContext. Dependencies are fun!
         if (filter == Sampler::Filter::Linear)
         {
-            gBlitData.pVars->setSampler(0, 0, gBlitData.pLinearSampler);
+            gBlitData.pVars->setSampler(0, 0, 0, gBlitData.pLinearSampler);
         }
         else
         {
-            gBlitData.pVars->setSampler(0, 0, gBlitData.pPointSampler);
+            gBlitData.pVars->setSampler(0, 0, 0, gBlitData.pPointSampler);
         }
 
         assert(pSrc->getViewInfo().arraySize == 1 && pSrc->getViewInfo().mipCount == 1);
@@ -387,11 +387,11 @@ namespace Falcor
         Texture::SharedPtr pSharedTex = std::const_pointer_cast<Texture>(pDstTexture->shared_from_this());
         pFbo->attachColorTarget(pSharedTex, 0, pDst->getViewInfo().mostDetailedMip, pDst->getViewInfo().firstArraySlice, pDst->getViewInfo().arraySize);
         gBlitData.pState->pushFbo(pFbo, false);
-        gBlitData.pVars->setSrv(0, 0, pSrc);
+        gBlitData.pVars->setSrv(0, 0, 0, pSrc);
         gBlitData.pPass->execute(this);
 
         // Release the resources we bound
-        gBlitData.pVars->setSrv(0, 0, nullptr);
+        gBlitData.pVars->setSrv(0, 0, 0, nullptr);
         gBlitData.pState->popFbo(false);
         popGraphicsState();
         popGraphicsVars();

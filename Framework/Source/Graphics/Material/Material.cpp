@@ -339,13 +339,22 @@ namespace Falcor
             return;
         }
 
+        // Bind the layers (they are an array)
         auto pTextures = (Texture::SharedPtr*)&mData.textures;
-
-        for (uint32_t i = 0; i < kTexCount; i++)
+        for (uint32_t i = 0; i < MatMaxLayers; i++)
         {
             if (pTextures[i] != nullptr)
             {
-                pVars->setSrv(pResourceDesc->regIndex + i, pResourceDesc->regSpace, pTextures[i]->getSRV());
+                pVars->setSrv(pResourceDesc->regSpace, pResourceDesc->regIndex, i, pTextures[i]->getSRV());
+            }
+        }
+
+        // Bind the rest
+        for (uint32_t i = MatMaxLayers; i < kTexCount; i++)
+        {
+            if (pTextures[i] != nullptr)
+            {
+                pVars->setSrv(pResourceDesc->regSpace, pResourceDesc->regIndex + i, 0, pTextures[i]->getSRV());
             }
         }
 
