@@ -337,6 +337,19 @@ struct GLSLObjectLayoutRulesImpl : ObjectLayoutRulesImpl
 };
 GLSLObjectLayoutRulesImpl kGLSLObjectLayoutRulesImpl;
 
+struct GLSLPushConstantBufferObjectLayoutRulesImpl : GLSLObjectLayoutRulesImpl
+{
+    virtual SimpleLayoutInfo GetObjectLayout(ShaderParameterKind kind) override
+    {
+        // Special-case the layout for a constant-buffer, because we don't
+        // want it to allocate a descriptor-table slot
+        return SimpleLayoutInfo(LayoutResourceKind::PushConstantBuffer, 1);
+
+        return GLSLObjectLayoutRulesImpl::GetObjectLayout(kind);
+    }
+};
+GLSLPushConstantBufferObjectLayoutRulesImpl kGLSLPushConstantBufferObjectLayoutRulesImpl_;
+
 struct HLSLObjectLayoutRulesImpl : ObjectLayoutRulesImpl
 {
     virtual SimpleLayoutInfo GetObjectLayout(ShaderParameterKind kind) override
@@ -392,6 +405,7 @@ HLSLVaryingLayoutRulesImpl kHLSLVaryingOutputLayoutRulesImpl(LayoutResourceKind:
 struct GLSLLayoutRulesFamilyImpl : LayoutRulesFamilyImpl
 {
     virtual LayoutRulesImpl* getConstantBufferRules() override;
+    virtual LayoutRulesImpl* getPushConstantBufferRules() override;
     virtual LayoutRulesImpl* getTextureBufferRules() override;
     virtual LayoutRulesImpl* getVaryingInputRules() override;
     virtual LayoutRulesImpl* getVaryingOutputRules() override;
@@ -402,6 +416,7 @@ struct GLSLLayoutRulesFamilyImpl : LayoutRulesFamilyImpl
 struct HLSLLayoutRulesFamilyImpl : LayoutRulesFamilyImpl
 {
     virtual LayoutRulesImpl* getConstantBufferRules() override;
+    virtual LayoutRulesImpl* getPushConstantBufferRules() override;
     virtual LayoutRulesImpl* getTextureBufferRules() override;
     virtual LayoutRulesImpl* getVaryingInputRules() override;
     virtual LayoutRulesImpl* getVaryingOutputRules() override;
@@ -421,6 +436,10 @@ LayoutRulesImpl kStd140LayoutRulesImpl_ = {
 
 LayoutRulesImpl kStd430LayoutRulesImpl_ = {
     &kGLSLLayoutRulesFamilyImpl, &kStd430LayoutRulesImpl, &kGLSLObjectLayoutRulesImpl,
+};
+
+LayoutRulesImpl kGLSLPushConstantLayoutRulesImpl_ = {
+    &kGLSLLayoutRulesFamilyImpl, &kStd430LayoutRulesImpl, &kGLSLPushConstantBufferObjectLayoutRulesImpl_,
 };
 
 LayoutRulesImpl kGLSLVaryingInputLayoutRulesImpl_ = {
@@ -460,6 +479,11 @@ LayoutRulesImpl* GLSLLayoutRulesFamilyImpl::getConstantBufferRules()
     return &kStd140LayoutRulesImpl_;
 }
 
+LayoutRulesImpl* GLSLLayoutRulesFamilyImpl::getPushConstantBufferRules()
+{
+    return &kGLSLPushConstantLayoutRulesImpl_;
+}
+
 LayoutRulesImpl* GLSLLayoutRulesFamilyImpl::getTextureBufferRules()
 {
     return nullptr;
@@ -488,6 +512,11 @@ LayoutRulesImpl* GLSLLayoutRulesFamilyImpl::getShaderStorageBufferRules()
 //
 
 LayoutRulesImpl* HLSLLayoutRulesFamilyImpl::getConstantBufferRules()
+{
+    return &kHLSLConstantBufferLayoutRulesImpl_;
+}
+
+LayoutRulesImpl* HLSLLayoutRulesFamilyImpl::getPushConstantBufferRules()
 {
     return &kHLSLConstantBufferLayoutRulesImpl_;
 }
@@ -652,28 +681,14 @@ static SimpleLayoutInfo getParameterBlockLayoutInfo(
 RefPtr<ParameterBlockTypeLayout>
 createParameterBlockTypeLayout(
     RefPtr<ParameterBlockType>  parameterBlockType,
-    RefPtr<TypeLayout>          elementTypeLayout,
-    LayoutRulesImpl*            rules)
+    LayoutRulesImpl*            parameterBlockRules,
+    SimpleLayoutInfo            parameterBlockInfo,
+    RefPtr<TypeLayout>          elementTypeLayout)
 {
-    SimpleLayoutInfo info;
-    if (parameterBlockType)
-    {
-        info = getParameterBlockLayoutInfo(
-            parameterBlockType,
-            rules);
-    }
-    else
-    {
-        // If there is no concrete type, then it seems like we are
-        // being asked to compute layout for the global scope
-        info = rules->GetObjectLayout(ShaderParameterKind::ConstantBuffer);
-    }
- 
-
     auto typeLayout = new ParameterBlockTypeLayout();
 
     typeLayout->type = parameterBlockType;
-    typeLayout->rules = rules;
+    typeLayout->rules = parameterBlockRules;
 
     typeLayout->elementTypeLayout = elementTypeLayout;
 
@@ -682,7 +697,7 @@ createParameterBlockTypeLayout(
     // originally (which should be a single binding "slot"
     // and hence no uniform data).
     // 
-    typeLayout->uniformAlignment = info.alignment;
+    typeLayout->uniformAlignment = parameterBlockInfo.alignment;
     assert(!typeLayout->FindResourceInfo(LayoutResourceKind::Uniform));
     assert(typeLayout->uniformAlignment == 1);
 
@@ -696,11 +711,11 @@ createParameterBlockTypeLayout(
 
     // Make sure that we allocate resource usage for the
     // parameter block itself.
-    if( info.size )
+    if( parameterBlockInfo.size )
     {
         typeLayout->addResourceUsage(
-            info.kind,
-            info.size);
+            parameterBlockInfo.kind,
+            parameterBlockInfo.size);
     }
 
     // Now, if the element type itself had any resources, then
@@ -718,6 +733,48 @@ createParameterBlockTypeLayout(
     }
 
     return typeLayout;
+}
+
+RefPtr<ParameterBlockTypeLayout>
+createParameterBlockTypeLayout(
+    RefPtr<ParameterBlockType>  parameterBlockType,
+    LayoutRulesImpl*            parameterBlockRules,
+    RefPtr<ExpressionType>      elementType,
+    LayoutRulesImpl*            elementTypeRules)
+{
+    // First compute resource usage of the block itself.
+    // For now we assume that the layout of the block can
+    // always be described in a `SimpleLayoutInfo` (only
+    // a single resource kind consumed).
+    SimpleLayoutInfo info;
+    if (parameterBlockType)
+    {
+        info = getParameterBlockLayoutInfo(
+            parameterBlockType,
+            parameterBlockRules);
+    }
+    else
+    {
+        // If there is no concrete type, then it seems like we are
+        // being asked to compute layout for the global scope
+        info = parameterBlockRules->GetObjectLayout(ShaderParameterKind::ConstantBuffer);
+    }
+
+    // Now compute a layout for the elements of the parameter block.
+    // Note that we need to be careful and deal with the case where
+    // the elements of the block use the same resource kind consumed
+    // by the block itself.
+
+    auto elementTypeLayout = CreateTypeLayout(
+        elementType,
+        elementTypeRules,
+        info);
+
+    return createParameterBlockTypeLayout(
+        parameterBlockType,
+        parameterBlockRules,
+        info,
+        elementTypeLayout);
 }
 
 LayoutRulesImpl* getParameterBufferElementTypeLayoutRules(
@@ -754,22 +811,20 @@ LayoutRulesImpl* getParameterBufferElementTypeLayoutRules(
 RefPtr<ParameterBlockTypeLayout>
 createParameterBlockTypeLayout(
     RefPtr<ParameterBlockType>  parameterBlockType,
-    LayoutRulesImpl*            rules)
+    LayoutRulesImpl*            parameterBlockRules)
 {
     // Determine the layout rules to use for the contents of the block
-    auto parameterBlockLayoutRules = getParameterBufferElementTypeLayoutRules(
+    auto elementTypeRules = getParameterBufferElementTypeLayoutRules(
         parameterBlockType,
-        rules);
+        parameterBlockRules);
 
-    // Create and save type layout for the buffer contents.
-    auto elementTypeLayout = CreateTypeLayout(
-        parameterBlockType->elementType.Ptr(),
-        parameterBlockLayoutRules);
+    auto elementType = parameterBlockType->elementType;
 
     return createParameterBlockTypeLayout(
         parameterBlockType,
-        elementTypeLayout,
-        rules);
+        parameterBlockRules,
+        elementType,
+        elementTypeRules);
 }
 
 // Create a type layout for a structured buffer type.
@@ -834,7 +889,22 @@ createStructuredBufferTypeLayout(
 SimpleLayoutInfo GetLayoutImpl(
     ExpressionType*     type,
     LayoutRulesImpl*    rules,
+    RefPtr<TypeLayout>* outTypeLayout,
+    SimpleLayoutInfo    offset);
+
+SimpleLayoutInfo GetLayoutImpl(
+    ExpressionType*     type,
+    LayoutRulesImpl*    rules,
     RefPtr<TypeLayout>* outTypeLayout)
+{
+    return GetLayoutImpl(type, rules, outTypeLayout, SimpleLayoutInfo());
+}
+
+SimpleLayoutInfo GetLayoutImpl(
+    ExpressionType*     type,
+    LayoutRulesImpl*    rules,
+    RefPtr<TypeLayout>* outTypeLayout,
+    SimpleLayoutInfo    offset)
 {
     if (auto parameterBlockType = type->As<ParameterBlockType>())
     {
@@ -1155,6 +1225,15 @@ SimpleLayoutInfo GetLayoutImpl(
                         fieldResourceInfo->index = structTypeResourceInfo->count;
                         structTypeResourceInfo->count += fieldTypeResourceInfo.count;
                     }
+
+                    // If the user passed in offset info, then apply it here
+                    if (offset.size)
+                    {
+                        if (auto fieldResInfo = fieldLayout->FindResourceInfo(offset.kind))
+                        {
+                            fieldResInfo->index += offset.size;
+                        }
+                    }
                 }
             }
 
@@ -1197,11 +1276,16 @@ SimpleLayoutInfo GetLayout(ExpressionType* inType, LayoutRulesImpl* rules)
     return GetLayoutImpl(inType, rules, nullptr);
 }
 
-RefPtr<TypeLayout> CreateTypeLayout(ExpressionType* type, LayoutRulesImpl* rules)
+RefPtr<TypeLayout> CreateTypeLayout(ExpressionType* type, LayoutRulesImpl* rules, SimpleLayoutInfo offset)
 {
     RefPtr<TypeLayout> typeLayout;
-    GetLayoutImpl(type, rules, &typeLayout);
+    GetLayoutImpl(type, rules, &typeLayout, offset);
     return typeLayout;
+}
+
+RefPtr<TypeLayout> CreateTypeLayout(ExpressionType* type, LayoutRulesImpl* rules)
+{
+    return CreateTypeLayout(type, rules, SimpleLayoutInfo());
 }
 
 SimpleLayoutInfo GetLayout(ExpressionType* type, LayoutRule rule)
