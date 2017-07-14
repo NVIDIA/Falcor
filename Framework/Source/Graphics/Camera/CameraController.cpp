@@ -32,9 +32,7 @@
 #include "glm/mat3x3.hpp"
 #include "glm/gtx/euler_angles.hpp"
 
-#ifndef VK_DISABLE_UNIMPLEMENTED
 #include "VR/OpenVR/VRSystem.h"
-#endif
 
 namespace Falcor
 {

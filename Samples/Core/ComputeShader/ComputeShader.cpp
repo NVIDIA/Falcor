@@ -66,7 +66,7 @@ void ComputeShader::loadImage()
 
 void ComputeShader::loadImageFromFile(std::string filename)
 {
-    mpImage = createTextureFromFile(filename, false, false);
+    mpImage = createTextureFromFile(filename, false, true);
 
     resizeSwapChain(mpImage->getWidth(), mpImage->getHeight());
     mpProgVars->setTexture("gInput", mpImage);
@@ -130,6 +130,5 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
     config.windowDesc.title = "Falcor Project Template";
     config.windowDesc.resizableWindow = true;
     config.deviceDesc.depthFormat = ResourceFormat::Unknown;
-    config.deviceDesc.colorFormat = ResourceFormat::BGRA8Unorm;
     sample.run(config);
 }

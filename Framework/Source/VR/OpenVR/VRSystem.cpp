@@ -32,9 +32,41 @@
 #include "openvr.h"
 #include "glm/glm.hpp"
 #include "glm/gtx/transform.hpp"
+#include "API/Device.h"
 
 namespace Falcor
 {
+#ifdef FALCOR_D3D12
+    static vr::D3D12TextureData_t prepareSubmitData(const Texture::SharedConstPtr& pTex, RenderContext* pRenderCtx)
+    {
+        vr::D3D12TextureData_t submitTex;
+        submitTex.m_pResource = pTex->getApiHandle();
+        submitTex.m_pCommandQueue = pRenderCtx->getLowLevelData()->getCommandQueue();
+        submitTex.m_nNodeMask = 0;
+        return submitTex;
+    }
+
+    static vr::ETextureType getVrTextureType()
+    {
+        return vr::TextureType_DirectX12;
+    }
+
+#elif defined FALCOR_VK
+    static vr::D3D12TextureData_t prepareSubmitData(const Texture::SharedConstPtr& pTex, RenderContext* pRenderCtx)
+    {
+        UNSUPPORTED_IN_VULKAN(__FUNCTION__);
+        return{};
+    }
+
+    static vr::ETextureType getVrTextureType()
+    {
+        return vr::TextureType_Vulkan;
+    }
+#else
+#error VRSystem doesn't support the selected API backend
+#endif
+
+
     VRSystem* VRSystem::spVrSystem = nullptr;
 
     // Private default constructor
@@ -352,41 +384,15 @@ namespace Falcor
 
     }
 
-    bool VRSystem::submit(VRDisplay::Eye whichEye, Texture::SharedConstPtr displayTex, RenderContext* pRenderCtx)
-    {
-        if(!mpCompositor) return false;
-
-        vr::D3D12TextureData_t submitTex;
-
-        submitTex.m_pResource = displayTex->getApiHandle();
-        submitTex.m_pCommandQueue = pRenderCtx->getLowLevelData()->getCommandQueue();
-        submitTex.m_nNodeMask = 0;
-
-        vr::Texture_t subTex;
-
-        subTex.eType = vr::TextureType_DirectX12;
-        subTex.handle = &submitTex;
-        subTex.eColorSpace = isSrgbFormat(displayTex->getFormat()) ? vr::EColorSpace::ColorSpace_Gamma : vr::EColorSpace::ColorSpace_Linear;
-
-        mpCompositor->Submit((whichEye == VRDisplay::Eye::Right) ? vr::Eye_Right : vr::Eye_Left, &subTex, NULL);
-        return true;
-    }
-    
-    bool VRSystem::submit(VRDisplay::Eye whichEye, Fbo::SharedConstPtr displayFbo, RenderContext* pRenderCtx)
+    bool VRSystem::submit(VRDisplay::Eye whichEye, const Texture::SharedConstPtr& pDisplayTex, RenderContext* pRenderCtx)
     {
         if (!mpCompositor) return false;
 
-        vr::D3D12TextureData_t submitTex;
-
-        submitTex.m_pResource = displayFbo->getColorTexture(0)->getApiHandle();
-        submitTex.m_pCommandQueue = pRenderCtx->getLowLevelData()->getCommandQueue();
-        submitTex.m_nNodeMask = 0;
-
+        auto submitTex = prepareSubmitData(pDisplayTex, pRenderCtx);
         vr::Texture_t subTex;
-
-        subTex.eType = vr::TextureType_DirectX12;
+        subTex.eType = getVrTextureType();
         subTex.handle = &submitTex;
-        subTex.eColorSpace = isSrgbFormat(displayFbo->getColorTexture(0)->getFormat()) ? vr::EColorSpace::ColorSpace_Gamma : vr::EColorSpace::ColorSpace_Linear;
+        subTex.eColorSpace = isSrgbFormat(pDisplayTex->getFormat()) ? vr::EColorSpace::ColorSpace_Gamma : vr::EColorSpace::ColorSpace_Linear;
 
         mpCompositor->Submit((whichEye == VRDisplay::Eye::Right) ? vr::Eye_Right : vr::Eye_Left, &subTex, NULL);
         return true;

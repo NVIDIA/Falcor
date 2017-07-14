@@ -25,7 +25,6 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#ifdef FALCOR_HLSL
 struct VsOut
 {
     float2 texC       : TEXCOORD;
@@ -49,16 +48,3 @@ VsOut main(float4 posS : POSITION, float2 texC : TEXCOORD)
 #endif
     return vOut;
 }
-#endif
-#ifdef FALCOR_GLSL
-layout(location = 0) in vec2 pos;
-layout(location = 1) in vec2 texCIn;
-
-layout(location = 0) out vec2 texC;
-
-void main()
-{
-    gl_Position = vec4(pos, 0.0, 1.0);
-    texC = texCIn;
-}
-#endif

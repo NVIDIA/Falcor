@@ -117,7 +117,6 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
     SampleConfig config;
     config.windowDesc.width = 1280;
     config.windowDesc.height = 720;
-    config.deviceDesc.colorFormat = ResourceFormat::RGBA8UnormSrgb;
     config.deviceDesc.enableVsync = true;
     config.windowDesc.resizableWindow = true;
     config.windowDesc.title = "Falcor Shader Toy";

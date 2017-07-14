@@ -65,10 +65,6 @@
 #include "VRDisplay.h"
 #include "VRPlayArea.h"
 
-#ifndef FALCOR_D3D
-#error VRWrapper.h requires preprocessor definitions of FALCOR_D3D
-#endif
-
 #pragma comment(lib, "openvr_api.lib")
 
 // Forward declare OpenVR system class types to remove "openvr.h" dependencies from the headers
@@ -127,10 +123,8 @@ namespace Falcor
 
         // Submit rendered frames to the HMD.  Should submit one image to left eye and one to right eye 
         //     each frame.  The submit() routines handle all warping due to lens and color distortions.
-        //     Can either pass in explicit texture, or an FBO (and it will pull colorTexture(0) from FBO).
         //     Size of each texture should be:  getHMD()->getRecommendedRenderSize() for best results.
-        bool submit( VRDisplay::Eye whichEye, Texture::SharedConstPtr displayTex, RenderContext* pRenderCtx);
-        bool submit( VRDisplay::Eye whichEye, Fbo::SharedConstPtr displayFbo, RenderContext* pRenderCtx);
+        bool submit( VRDisplay::Eye whichEye, const Texture::SharedConstPtr& pDisplayTex, RenderContext* pRenderCtx);
 
 
         //////////////////////////////////////////////////////////////////////////////////////////////////
