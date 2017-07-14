@@ -51,7 +51,7 @@ namespace Falcor
                 const RootSignature::DescriptorSetLayout::Range& range = set.getRange(r);
                 if (range.type == descType && range.regSpace == regSpace)
                 {
-                    if (range.baseRegIndex <= regIndex && (range.baseRegIndex + range.descCount) > regIndex)
+                    if (range.baseRegIndex == regIndex)
                     {
                         return ProgramVars::RootData((uint32_t)i, r);
                     }

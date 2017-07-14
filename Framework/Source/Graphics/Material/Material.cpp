@@ -354,7 +354,12 @@ namespace Falcor
         {
             if (pTextures[i] != nullptr)
             {
-                pVars->setSrv(pResourceDesc->regSpace, pResourceDesc->regIndex + i, 0, pTextures[i]->getSRV());
+#ifdef FALCOR_VK
+                uint32_t bindIndex = pResourceDesc->regIndex + 1 + i - MatMaxLayers;
+#else
+                uint32_t bindIndex = pResourceDesc->regIndex + i;
+#endif
+                pVars->setSrv(pResourceDesc->regSpace, bindIndex, 0, pTextures[i]->getSRV());
             }
         }
 

@@ -517,10 +517,11 @@ struct LayoutRulesImpl
 
 struct LayoutRulesFamilyImpl
 {
-    virtual LayoutRulesImpl* getConstantBufferRules()   = 0;
-    virtual LayoutRulesImpl* getTextureBufferRules()    = 0;
-    virtual LayoutRulesImpl* getVaryingInputRules()     = 0;
-    virtual LayoutRulesImpl* getVaryingOutputRules()    = 0;
+    virtual LayoutRulesImpl* getConstantBufferRules()       = 0;
+    virtual LayoutRulesImpl* getPushConstantBufferRules()   = 0;
+    virtual LayoutRulesImpl* getTextureBufferRules()        = 0;
+    virtual LayoutRulesImpl* getVaryingInputRules()         = 0;
+    virtual LayoutRulesImpl* getVaryingOutputRules()        = 0;
     virtual LayoutRulesImpl* getSpecializationConstantRules()   = 0;
     virtual LayoutRulesImpl* getShaderStorageBufferRules()      = 0;
 };
@@ -534,6 +535,7 @@ SimpleLayoutInfo GetLayout(ExpressionType* type, LayoutRulesImpl* rules);
 SimpleLayoutInfo GetLayout(ExpressionType* type, LayoutRule rule = LayoutRule::Std430);
 
 RefPtr<TypeLayout> CreateTypeLayout(ExpressionType* type, LayoutRulesImpl* rules);
+RefPtr<TypeLayout> CreateTypeLayout(ExpressionType* type, LayoutRulesImpl* rules, SimpleLayoutInfo offset);
 
 //
 
@@ -543,15 +545,19 @@ createParameterBlockTypeLayout(
     RefPtr<ParameterBlockType>  parameterBlockType,
     LayoutRulesImpl*            rules);
 
-// Create a type layout for a constant buffer type,
-// in the case where we already know the layout
-// for the element type.
 RefPtr<ParameterBlockTypeLayout>
 createParameterBlockTypeLayout(
     RefPtr<ParameterBlockType>  parameterBlockType,
-    RefPtr<TypeLayout>          elementTypeLayout,
-    LayoutRulesImpl*            rules);
+    LayoutRulesImpl*            parameterBlockRules,
+    RefPtr<ExpressionType>      elementType,
+    LayoutRulesImpl*            elementTypeRules);
 
+RefPtr<ParameterBlockTypeLayout>
+createParameterBlockTypeLayout(
+    RefPtr<ParameterBlockType>  parameterBlockType,
+    LayoutRulesImpl*            parameterBlockRules,
+    SimpleLayoutInfo            parameterBlockInfo,
+    RefPtr<TypeLayout>          elementTypeLayout);
 
 // Create a type layout for a structured buffer type.
 RefPtr<StructuredBufferTypeLayout>

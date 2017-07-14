@@ -170,6 +170,13 @@ extern "C"
         SlangCompileFlags       flags);
 
     /*!
+    @brief Set whether to dump intermediate results (for debugging) or not.
+    */
+    SLANG_API void spSetDumpIntermediates(
+        SlangCompileRequest*    request,
+        int                     enable);
+
+    /*!
     @brief Sets the target for code generation.
     @param ctx The compilation context.
     @param target The code generation target. Possible values are:
@@ -433,6 +440,7 @@ extern "C"
     enum
     {
         SLANG_PARAMETER_CATEGORY_NONE,
+        SLANG_PARAMETER_CATEGORY_MIXED,
         SLANG_PARAMETER_CATEGORY_CONSTANT_BUFFER,
         SLANG_PARAMETER_CATEGORY_SHADER_RESOURCE,
         SLANG_PARAMETER_CATEGORY_UNORDERED_ACCESS,
@@ -442,7 +450,10 @@ extern "C"
         SLANG_PARAMETER_CATEGORY_UNIFORM,
         SLANG_PARAMETER_CATEGORY_DESCRIPTOR_TABLE_SLOT,
         SLANG_PARAMETER_CATEGORY_SPECIALIZATION_CONSTANT,
-        SLANG_PARAMETER_CATEGORY_MIXED,
+        SLANG_PARAMETER_CATEGORY_PUSH_CONSTANT_BUFFER,
+
+        //
+        SLANG_PARAMETER_CATEGORY_COUNT,
     };
 
     typedef SlangUInt32 SlangStage;
@@ -679,6 +690,7 @@ namespace slang
     {
         // TODO: these aren't scoped...
         None = SLANG_PARAMETER_CATEGORY_NONE,
+        Mixed = SLANG_PARAMETER_CATEGORY_MIXED,
         ConstantBuffer = SLANG_PARAMETER_CATEGORY_CONSTANT_BUFFER,
         ShaderResource = SLANG_PARAMETER_CATEGORY_SHADER_RESOURCE,
         UnorderedAccess = SLANG_PARAMETER_CATEGORY_UNORDERED_ACCESS,
@@ -688,7 +700,7 @@ namespace slang
         Uniform = SLANG_PARAMETER_CATEGORY_UNIFORM,
         DescriptorTableSlot = SLANG_PARAMETER_CATEGORY_DESCRIPTOR_TABLE_SLOT,
         SpecializationConstant = SLANG_PARAMETER_CATEGORY_SPECIALIZATION_CONSTANT,
-        Mixed = SLANG_PARAMETER_CATEGORY_MIXED,
+        PushConstantBuffer = SLANG_PARAMETER_CATEGORY_PUSH_CONSTANT_BUFFER,
     };
 
     struct TypeLayoutReflection
