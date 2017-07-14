@@ -177,7 +177,7 @@ namespace Falcor
                 char* pEndPtr;
                 index = strtol(indexStr.c_str(), &pEndPtr, 0);
                 assert(*pEndPtr == ']');
-                name.substr(0, bracket);
+                nonArray = name.substr(0, bracket);
                 return true;
             }
         }

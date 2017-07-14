@@ -36,12 +36,12 @@ namespace Falcor
     {
         for (auto& bufIt : cbMap)
         {
-            const auto& rootData = bufIt.second.rootData;
-            ConstantBuffer* pCB = dynamic_cast<ConstantBuffer*>(bufIt.second.pResource.get());
+            const auto& rootData = bufIt.second[0].rootData;
+            ConstantBuffer* pCB = dynamic_cast<ConstantBuffer*>(bufIt.second[0].pResource.get());
 
             if (rootSets[rootData.rootIndex].dirty)
             {
-                rootSets[rootData.rootIndex].pDescSet->setCb(rootData.rangeIndex, rootData.descIndex, pCB);
+                rootSets[rootData.rootIndex].pDescSet->setCb(rootData.rangeIndex, 0, pCB);
             }
         }
     }

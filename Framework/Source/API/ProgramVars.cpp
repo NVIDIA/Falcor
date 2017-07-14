@@ -335,7 +335,7 @@ namespace Falcor
         {
             std::string nameNoIndex;
             if (parseArrayIndex(name, nameNoIndex, arrayIndex) == false) return nullptr;
-            pDesc = pReflector->getResourceDesc(name);
+            pDesc = pReflector->getResourceDesc(nameNoIndex);
             if (pDesc->arraySize == 0) return nullptr;
         }
         return pDesc;
