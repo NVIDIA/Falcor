@@ -121,8 +121,6 @@ namespace Falcor
 
 #define VK_FAILED(res) (res != VK_SUCCESS)
 
-#define VK_DISABLE_UNIMPLEMENTED
-
 #ifdef _LOG_ENABLED
 #define vk_call(a) {auto r = a; if(VK_FAILED(r)) { logError("Vulkan call failed.\n"#a); }}
 #else

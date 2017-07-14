@@ -30,16 +30,47 @@
 
 namespace Falcor
 {
-    PixelZoom::SharedPtr PixelZoom::create()
+    static void clampToEdge(vec2& pix, uint32_t width, uint32_t height, uint32_t offset)
     {
-        return SharedPtr(new PixelZoom());
+        vec2 posOffset = pix + vec2(offset, offset);
+        vec2 negOffset = pix - vec2(offset, offset);
+
+        //x
+        if (posOffset.x > width)
+        {
+            pix.x = pix.x - (posOffset.x - width);
+        }
+        else if (negOffset.x < 0)
+        {
+            pix.x = pix.x - negOffset.x;
+        }
+
+        //y
+        if (posOffset.y > height)
+        {
+            pix.y = pix.y - (posOffset.y - height);
+        }
+        else if (negOffset.y < 0)
+        {
+            pix.y = pix.y - negOffset.y;
+        }
     }
 
-    void PixelZoom::init(Fbo* backBuffer)
+    PixelZoom::SharedPtr PixelZoom::create(const Fbo* pBackbuffer)
     {
-        Fbo::Desc desc = backBuffer->getDesc();
-        mpSrcBlitFbo = FboHelper::create2D(backBuffer->getWidth(), backBuffer->getHeight(), desc);
-        mpDstBlitFbo = FboHelper::create2D(mDstZoomSize, mDstZoomSize, desc);
+        SharedPtr pThis = SharedPtr(new PixelZoom());
+        pThis->onResizeSwapChain(pBackbuffer);
+        return pThis;
+    }
+
+    void PixelZoom::onResizeSwapChain(const Fbo* pBackbuffer)
+    {
+        const Fbo::Desc& desc = pBackbuffer->getDesc();
+        mpSrcBlitFbo = FboHelper::create2D(pBackbuffer->getWidth(), pBackbuffer->getHeight(), desc);
+        if(mpDstBlitFbo == nullptr)
+        {
+            mpDstBlitFbo = FboHelper::create2D(mDstZoomSize, mDstZoomSize, desc);
+        }
     }
 
     void PixelZoom::render(RenderContext* pCtx, Fbo* backBuffer)
@@ -66,7 +97,7 @@ namespace Falcor
         }
     }
 
-    void PixelZoom::onMouseEvent(const MouseEvent& me)
+    bool PixelZoom::onMouseEvent(const MouseEvent& me)
     {
         if (mShouldZoom)
         {
@@ -74,48 +105,19 @@ namespace Falcor
             //negative to swap scroll up to zoom in and scoll down to zoom out
             int32_t zoomDelta = -1 * mZoomCoefficient * (int32_t)me.wheelDelta.y;
             mSrcZoomSize = max(mSrcZoomSize + zoomDelta, 3);
+            return true;
         }
+        return false;
     }
 
-    void PixelZoom::clampToEdge(vec2& pix, uint32_t width, uint32_t height, uint32_t offset)
-    {
-        vec2 posOffset = pix + vec2(offset, offset);
-        vec2 negOffset = pix - vec2(offset, offset);
-
-        //x
-        if (posOffset.x > width)
-        {
-            pix.x = pix.x - (posOffset.x - width);
-        }
-        else if (negOffset.x < 0)
-        {
-            pix.x = pix.x - negOffset.x;
-        }
-
-        //y
-        if (posOffset.y > height)
-        {
-            pix.y = pix.y - (posOffset.y - height);
-        }
-        else if (negOffset.y < 0)
-        {
-            pix.y = pix.y - negOffset.y;
-        }
-    }
-
-    void PixelZoom::onKeyboardEvent(const KeyboardEvent& ke)
+    bool PixelZoom::onKeyboardEvent(const KeyboardEvent& ke)
     {
         if (ke.key == KeyboardEvent::Key::Z)
         {
-            if (ke.type == KeyboardEvent::Type::KeyPressed)
-            {
-                mShouldZoom = true;
-            }
-            else
-            {
-                mShouldZoom = false;
-            }
+            mShouldZoom = (ke.type == KeyboardEvent::Type::KeyPressed);
+            return true;
         }
+        return false;
     }
 
 }

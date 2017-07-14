@@ -134,13 +134,8 @@ namespace Falcor
 
     void Sample::handleMouseEvent(const MouseEvent& mouseEvent)
     {
-        if (mpGui->onMouseEvent(mouseEvent))
-        {
-            return;
-        }
-#ifndef VK_DISABLE_UNIMPLEMENTED
-        mpPixelZoom->onMouseEvent(mouseEvent);
-#endif
+        if (mpGui->onMouseEvent(mouseEvent)) return;
+        if (mpPixelZoom->onMouseEvent(mouseEvent)) return;
         onMouseEvent(mouseEvent);
     }
 
@@ -230,10 +225,7 @@ namespace Falcor
 
         // Load and run
         mArgList.parseCommandLine(GetCommandLineA());
-#ifndef VK_DISABLE_UNIMPLEMENTED
-        mpPixelZoom = PixelZoom::create();
-        mpPixelZoom->init(mpDefaultFBO.get());
-#endif
+        mpPixelZoom = PixelZoom::create(mpDefaultFBO.get());
 
         onLoad();
         pBar = nullptr;
@@ -348,9 +340,7 @@ namespace Falcor
         }
 
         renderText(getFpsMsg(), glm::vec2(10, 10));
-#ifndef VK_DISABLE_UNIMPLEMENTED
         mpPixelZoom->render(mpRenderContext.get(), gpDevice->getSwapChainFbo().get());
-#endif
 
         captureVideoFrame();
         printProfileData();
@@ -412,9 +402,7 @@ namespace Falcor
     void Sample::resizeSwapChain(uint32_t width, uint32_t height)
     {
         mpWindow->resize(width, height);
-#ifndef VK_DISABLE_UNIMPLEMENTED
-        mpPixelZoom->init(gpDevice->getSwapChainFbo().get());
-#endif
+        mpPixelZoom->onResizeSwapChain(gpDevice->getSwapChainFbo().get());
     }
 
     bool Sample::isKeyPressed(const KeyboardEvent::Key& key) const
