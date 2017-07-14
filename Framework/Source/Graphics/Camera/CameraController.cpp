@@ -293,7 +293,6 @@ namespace Falcor
 
     void HmdCameraController::attachCamera(const Camera::SharedPtr& pCamera)
     {
-#ifndef VK_DISABLE_UNIMPLEMENTED
         if(VRSystem::instance() == nullptr)
         {
             logError("Can't attach camera to HmdCameraController. VRSystem not initialized", true);
@@ -322,7 +321,6 @@ namespace Falcor
 
             mInvPrevHmdViewMat = glm::mat4();
         }
-#endif
     }
 
     void setCameraParamsFromViewMat(Camera* pCamera, const glm::mat4& viewMat)
@@ -338,7 +336,6 @@ namespace Falcor
 
     bool HmdCameraController::update()
     {
-#ifndef VK_DISABLE_UNIMPLEMENTED
         if(mpCamera)
         {
             VRDisplay* pDisplay = VRSystem::instance()->getHMD().get();
@@ -371,13 +368,11 @@ namespace Falcor
             mpCamera->setViewMatrix(leftEyeOffset * viewMat);
             mInvPrevHmdViewMat = glm::inverse(leftEyeOffset * hmdWorldMat);
         }
-#endif
         return true;
     }
 
     void HmdCameraController::detachCamera()
     {
-#ifndef VK_DISABLE_UNIMPLEMENTED
         if(mpCamera)
         {
             VRDisplay* pDisplay = VRSystem::instance()->getHMD().get();
@@ -393,7 +388,6 @@ namespace Falcor
 
             mpCamera = nullptr;
         }
-#endif
     }
 
     HmdCameraController::~HmdCameraController()

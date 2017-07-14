@@ -33,9 +33,7 @@
 #include "Graphics/Program.h"
 #include "Utils/OS.h"
 #include "API/FBO.h"
-#ifndef VK_DISABLE_UNIMPLEMENTED
 #include "VR\OpenVR\VRSystem.h"
-#endif
 #include "Utils\ProgressBar.h"
 #include <sstream>
 #include <iomanip>
@@ -155,9 +153,7 @@ namespace Falcor
             endVideoCapture();
         }
 
-#ifndef VK_DISABLE_UNIMPLEMENTED
         VRSystem::cleanup();
-#endif
 
         mpGui.reset();
         mpDefaultPipelineState.reset();
@@ -225,7 +221,6 @@ namespace Falcor
         // Init the UI
         initUI();
 
-#ifndef VK_DISABLE_UNIMPLEMENTED
         // Init VR
         mVrEnabled = config.enableVR;
         if (mVrEnabled)
@@ -235,6 +230,7 @@ namespace Falcor
 
         // Load and run
         mArgList.parseCommandLine(GetCommandLineA());
+#ifndef VK_DISABLE_UNIMPLEMENTED
         mpPixelZoom = PixelZoom::create();
         mpPixelZoom->init(mpDefaultFBO.get());
 #endif
