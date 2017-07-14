@@ -213,7 +213,7 @@ namespace Falcor
                 \param[in] shaderAccess How the buffer will be access by the shader
                 \return A shared pointer for a new buffer object
             */
-            static SharedPtr create(const std::string& name, uint32_t regIndex, uint32_t regSpace, Type type, StructuredType structuredType, size_t size, const VariableMap& varMap, const ResourceMap& resourceMap, ShaderAccess shaderAccess);
+            static SharedPtr create(const std::string& name, uint32_t regSpace, uint32_t baseRegIndex, uint32_t arraySize, Type type, StructuredType structuredType, size_t size, const VariableMap& varMap, const ResourceMap& resourceMap, ShaderAccess shaderAccess);
 
             /** Get variable data
                 \param[in] name The name of the requested variable
@@ -303,12 +303,16 @@ namespace Falcor
             */
             uint32_t getRegisterSpace() const { return mRegSpace; }
 
+            /** Get the array size
+            */
+            uint32_t getArraySize() const { return mArraySize; }
+
             /** Get the shader access
             */
             ShaderAccess getShaderAccess() const { return mShaderAccess; }
 
         private:
-            BufferReflection(const std::string& name, uint32_t regIndex, uint32_t regSpace, Type type, StructuredType structuredType, size_t size, const VariableMap& varMap, const ResourceMap& resourceMap, ShaderAccess shaderAccess);
+            BufferReflection(const std::string& name, uint32_t regSpace, uint32_t baseRegIndex, uint32_t arraySize,Type type, StructuredType structuredType, size_t size, const VariableMap& varMap, const ResourceMap& resourceMap, ShaderAccess shaderAccess);
             std::string mName;
             size_t mSizeInBytes = 0;
             Type mType;
@@ -318,6 +322,7 @@ namespace Falcor
             uint32_t mShaderMask = 0;
             uint32_t mRegIndex;
             uint32_t mRegSpace = 0;
+            uint32_t mArraySize = 0;
             ShaderAccess mShaderAccess;
         };
 
@@ -411,7 +416,6 @@ namespace Falcor
         uvec3 mThreadGroupSize;
         bool mIsSampleFrequency = false;
     };
-
 
     inline const std::string to_string(ProgramReflection::Variable::Type type)
     {

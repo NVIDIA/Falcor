@@ -150,22 +150,23 @@ namespace Falcor
         return it == mResources.end() ? nullptr : &(it->second);
     }
 
-    ProgramReflection::BufferReflection::BufferReflection(const std::string& name, uint32_t registerIndex, uint32_t regSpace, Type type, StructuredType structuredType, size_t size, const VariableMap& varMap, const ResourceMap& resourceMap, ShaderAccess shaderAccess) :
+    ProgramReflection::BufferReflection::BufferReflection(const std::string& name, uint32_t regSpace, uint32_t baseRegIndex, uint32_t arraySize, Type type, StructuredType structuredType, size_t size, const VariableMap& varMap, const ResourceMap& resourceMap, ShaderAccess shaderAccess) :
         mName(name),
         mType(type),
         mStructuredType(structuredType),
         mSizeInBytes(size),
         mVariables(varMap),
         mResources(resourceMap),
-        mRegIndex(registerIndex),
+        mRegIndex(baseRegIndex),
         mRegSpace(regSpace),
+        mArraySize(arraySize),
         mShaderAccess(shaderAccess)
     {
     }
 
-    ProgramReflection::BufferReflection::SharedPtr ProgramReflection::BufferReflection::create(const std::string& name, uint32_t regIndex, uint32_t regSpace, Type type, StructuredType structuredType, size_t size, const VariableMap& varMap, const ResourceMap& resourceMap, ShaderAccess shaderAccess)
+    ProgramReflection::BufferReflection::SharedPtr ProgramReflection::BufferReflection::create(const std::string& name, uint32_t regSpace, uint32_t baseRegIndex, uint32_t arraySize, Type type, StructuredType structuredType, size_t size, const VariableMap& varMap, const ResourceMap& resourceMap, ShaderAccess shaderAccess)
     {
-        return SharedPtr(new BufferReflection(name, regIndex, regSpace, type, structuredType, size, varMap, resourceMap, shaderAccess));
+        return SharedPtr(new BufferReflection(name, regSpace, baseRegIndex, arraySize, type, structuredType, size, varMap, resourceMap, shaderAccess));
     }
 
     const ProgramReflection::Variable* ProgramReflection::getVertexAttribute(const std::string& name) const
@@ -1023,12 +1024,15 @@ namespace Falcor
         }
         else
         {
+            bool isArray = pSlangType->isArray();
+
             // Create the buffer reflection
             bufferDesc.nameMap[name] = bindLocation;
             bufferDesc.descMap[bindLocation] = ProgramReflection::BufferReflection::create(
                 name,
-                bindingIndex,
                 bindingSpace,
+                bindingIndex,
+                isArray ? (uint32_t)pSlangType->getTotalArrayElementCount() : 0,
                 bufferType,
                 getStructuredBufferType(pSlangType->getType()),
                 (uint32_t)pSlangElementType->getSize(),

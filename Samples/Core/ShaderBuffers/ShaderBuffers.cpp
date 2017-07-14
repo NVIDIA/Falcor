@@ -75,7 +75,7 @@ void ShaderBuffersSample::onLoad()
     uint32_t z = 0;
     mpInvocationsBuffer = Buffer::create(sizeof(uint32_t), Buffer::BindFlags::UnorderedAccess, Buffer::CpuAccess::Read, &z);
     mpProgramVars->setRawBuffer("gInvocationBuffer", mpInvocationsBuffer);
-    mpProgramVars->setTypedBuffer("gSurfaceColor", mpSurfaceColorBuffer);
+    mpProgramVars->setTypedBuffer("gSurfaceColor[1]", mpSurfaceColorBuffer);
 
     mpRWBuffer = StructuredBuffer::create(mpProgram, "gRWBuffer", 4);
     mpProgramVars->setStructuredBuffer("gRWBuffer", mpRWBuffer);
