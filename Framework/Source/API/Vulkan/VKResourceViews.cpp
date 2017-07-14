@@ -34,16 +34,17 @@
 namespace Falcor
 {
     VkImageAspectFlags getAspectFlagsFromFormat(ResourceFormat format);
-    static Texture::SharedPtr sBlackTexture;
 
-    const Texture* getEmptyTexture()
+    Texture::SharedPtr createBlackTexture()
     {
-        if (sBlackTexture == nullptr)
-        {
-            uint8_t blackPixel[4] = { 0 };
-            sBlackTexture = Texture::create2D(1, 1, ResourceFormat::RGBA8Unorm, 1, 1, blackPixel, Resource::BindFlags::ShaderResource | Resource::BindFlags::RenderTarget | Resource::BindFlags::UnorderedAccess);
-        }
-        return sBlackTexture.get();
+        uint8_t blackPixel[4] = { 0 };
+        return Texture::create2D(1, 1, ResourceFormat::RGBA8Unorm, 1, 1, blackPixel, Resource::BindFlags::ShaderResource | Resource::BindFlags::RenderTarget | Resource::BindFlags::UnorderedAccess);
+    }
+
+    ResourceWeakPtr getEmptyTexture()
+    {
+        static Texture::SharedPtr sBlackTexture = createBlackTexture();
+        return sBlackTexture;
     }
 
     VkImageViewType getViewType(Resource::Type type, bool isArray)
@@ -95,7 +96,8 @@ namespace Falcor
 
     VkResource<VkImageView, VkBufferView>::SharedPtr createViewCommon(const Resource::SharedConstPtr& pSharedPtr, uint32_t mostDetailedMip, uint32_t mipCount, uint32_t firstArraySlice, uint32_t arraySize)
     {
-        const Resource* pResource = pSharedPtr ? pSharedPtr.get() : getEmptyTexture();
+        const Resource* pResource = pSharedPtr.get();
+        assert(pResource);
 
         switch (pResource->getApiHandle().getType())
         {

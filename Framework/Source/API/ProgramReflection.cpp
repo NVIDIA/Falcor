@@ -52,7 +52,7 @@ namespace Falcor
             }
         }
 
-        static const BindLocation invalidBind(kInvalidLocation, kInvalidLocation, ShaderAccess::Undefined);
+        static const BindLocation invalidBind;
         return invalidBind;
     }
 
@@ -85,37 +85,30 @@ namespace Falcor
         if (var == mVariables.end())
         {
             // The name might contain an array index. Remove the last array index and search again
-            std::string nameV2 = removeLastArrayIndex(name);
-            var = mVariables.find(nameV2);
-
-            if (var == mVariables.end())
+            std::string nameV2;
+            uint32_t arrayIndex;
+            if(parseArrayIndex(name, nameV2, arrayIndex))
             {
-                logWarning(msg + "Variable not found.");
-                return nullptr;
-            }
+                var = mVariables.find(nameV2);
+                if (var == mVariables.end())
+                {
+                    logWarning(msg + "Variable " + name + "not found");
+                    return nullptr;
+                }
 
-            const auto& data = var->second;
-            if (data.arraySize == 0)
-            {
-                // Not an array, so can't have an array index
-                logError(msg + "Variable is not an array, so name can't include an array index.");
-                return nullptr;
-            }
+                const auto& data = var->second;
+                if (data.arraySize == 0)
+                {
+                    // Not an array, so can't have an array index
+                    logError(msg + "Variable is not an array, so name can't include an array index.");
+                    return nullptr;
+                }
 
-            // We know we have an array index. Make sure it's in range
-            std::string indexStr = name.substr(nameV2.length() + 1);
-            char* pEndPtr;
-            arrayIndex = strtol(indexStr.c_str(), &pEndPtr, 0);
-            if (*pEndPtr != ']')
-            {
-                logError(msg + "Array index must be a literal number (no whitespace are allowed)");
-                return nullptr;
-            }
-
-            if (arrayIndex >= data.arraySize)
-            {
-                logError(msg + "Array index (" + std::to_string(arrayIndex) + ") out-of-range. Array size == " + std::to_string(data.arraySize) + ".");
-                return nullptr;
+                if (arrayIndex >= data.arraySize)
+                {
+                    logError(msg + "Array index (" + std::to_string(arrayIndex) + ") out-of-range. Array size == " + std::to_string(data.arraySize) + ".");
+                    return nullptr;
+                }
             }
         }
 
@@ -130,10 +123,10 @@ namespace Falcor
         return getVariableData(name, t);
     }
 
-    ProgramReflection::BufferReflection::SharedConstPtr ProgramReflection::getBufferDesc(uint32_t regIndex, uint32_t regSpace, ShaderAccess shaderAccess, BufferReflection::Type bufferType) const
+    ProgramReflection::BufferReflection::SharedConstPtr ProgramReflection::getBufferDesc(uint32_t regSpace, uint32_t regIndex, ShaderAccess shaderAccess, BufferReflection::Type bufferType) const
     {
         const auto& descMap = mBuffers[uint32_t(bufferType)].descMap;
-        const auto& desc = descMap.find({ regIndex, regSpace, shaderAccess });
+        const auto& desc = descMap.find({ regSpace, regIndex, shaderAccess });
         if (desc == descMap.end())
         {
             return nullptr;
@@ -144,9 +137,9 @@ namespace Falcor
     ProgramReflection::BufferReflection::SharedConstPtr ProgramReflection::getBufferDesc(const std::string& name, BufferReflection::Type bufferType) const
     {
         BindLocation bindLoc = getBufferBinding(name);
-        if (bindLoc.regIndex != kInvalidLocation)
+        if (bindLoc.baseRegIndex != kInvalidLocation)
         {
-            return getBufferDesc(bindLoc.regIndex, bindLoc.regSpace, bindLoc.shaderAccess, bufferType);
+            return getBufferDesc(bindLoc.regSpace, bindLoc.baseRegIndex, bindLoc.shaderAccess, bufferType);
         }
         return nullptr;
     }
@@ -194,15 +187,7 @@ namespace Falcor
 
         if (pRes == nullptr)
         {
-            // Check if this is the internal struct
-#ifdef FALCOR_D3D
-            const auto& it = mResources.find(name + ".t");
-            pRes = (it == mResources.end()) ? nullptr : &(it->second);
-#endif
-            if(pRes == nullptr)
-            {
-                logWarning("Can't find resource '" + name + "' in program");
-            }
+            logWarning("Can't find resource '" + name + "' in program");
         }
         return pRes;
     }
@@ -1015,8 +1000,8 @@ namespace Falcor
         auto bindingIndex = getBindingIndex(pPath, category);
         auto bindingSpace = getBindingSpace(pPath, category);
         ProgramReflection::BindLocation bindLocation(
-            bindingIndex,
             bindingSpace,
+            bindingIndex,
             shaderAccess);
         // If the buffer already exists in the program, make sure the definitions match
         const auto& prevDef = bufferDesc.nameMap.find(name);

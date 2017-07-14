@@ -4,7 +4,7 @@
 //__import ShaderCommon;
 //__import Shading;
 
-layout(set = 1, binding = 1) uniform texture2D gTex;
+layout(set = 1, binding = 1) uniform texture2D gTex[2];
 layout(set = 4, binding = 2) uniform sampler gSampler;
 layout(location = 0) in vec2 texC;
 layout (location = 0) out vec4 outColor;
@@ -24,7 +24,7 @@ layout(set = 7, binding = 10) uniform PerFrameCB
 
 void main()
 {
-    outColor = texture(sampler2D(gTex, gSampler), texC + offset);
+    outColor = texture(sampler2D(gTex[1], gSampler), texC + offset);
     atomicAdd(count, 1);
     imageAtomicAdd(typedBuffer, 0, 2);
     imageAtomicAdd(typed3D, ivec3(5,0,0), 5);

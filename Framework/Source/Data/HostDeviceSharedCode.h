@@ -185,7 +185,7 @@ struct MaterialValues
 
 struct MaterialTextures
 {
-    Texture2D layers[3];        // A single texture per layer
+    Texture2D layers[MatMaxLayers];        // A single texture per layer
     Texture2D alphaMap;         // Alpha test parameter, if texture is non-null, alpha test is enabled, alpha threshold is stored in the constant color
     Texture2D normalMap;        // Normal map modifier, if texture is non-null, shading normal is perturbed
     Texture2D heightMap;        // Height (displacement) map modifier, if texture is non-null, one can apply a displacement or parallax mapping

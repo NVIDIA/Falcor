@@ -42,7 +42,7 @@ void VKDev::onLoad()
     Sampler::Desc sampler;
     sampler.setFilterMode(Sampler::Filter::Point, Sampler::Filter::Point, Sampler::Filter::Point);
     mpVars->setSampler("gSampler", Sampler::create(sampler));
-    mpVars->setTexture("gTex", createTextureFromFile("C:\\Users\\nbenty\\Pictures\\ff7.jpg", false, true));
+    mpVars->setTexture("gTex[1]", createTextureFromFile("C:\\Users\\nbenty\\Pictures\\ff7.jpg", false, true));
     mpTypedBuffer = TypedBuffer<uint32_t>::create(1);
     mpTex3D = Texture::create3D(10, 1, 1, ResourceFormat::R32Uint, 1, nullptr, Resource::BindFlags::UnorderedAccess);
     mpVars->setTypedBuffer("typedBuffer", mpTypedBuffer);

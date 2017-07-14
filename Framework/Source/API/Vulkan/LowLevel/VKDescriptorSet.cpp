@@ -63,7 +63,7 @@ namespace Falcor
     }
 
     template<bool isUav, typename ViewType>
-    static void setSrvUavCommon(VkDescriptorSet set, uint32_t regIndex, const ViewType* pView, DescriptorPool::Type type)
+    static void setSrvUavCommon(VkDescriptorSet set, uint32_t bindIndex, uint32_t arrayIndex, const ViewType* pView, DescriptorPool::Type type)
     {
         VkWriteDescriptorSet write = {};
         VkDescriptorImageInfo image;
@@ -100,24 +100,24 @@ namespace Falcor
         write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
         write.descriptorType = falcorToVkDescType(type);
         write.dstSet = set;
-        write.dstBinding = regIndex;
-        write.dstArrayElement = 0;
+        write.dstBinding = bindIndex;
+        write.dstArrayElement = arrayIndex;
         write.descriptorCount = 1;
 
         vkUpdateDescriptorSets(gpDevice->getApiHandle(), 1, &write, 0, nullptr);
     }
 
-    void DescriptorSet::setSrv(uint32_t rangeIndex, uint32_t descIndex, uint32_t regIndex, const ShaderResourceView* pSrv)
+    void DescriptorSet::setSrv(uint32_t rangeIndex, uint32_t descIndex, const ShaderResourceView* pSrv)
     {
-        setSrvUavCommon<false>(mApiHandle, regIndex, pSrv, mLayout.getRange(rangeIndex).type);
+        setSrvUavCommon<false>(mApiHandle, mLayout.getRange(rangeIndex).baseRegIndex, descIndex, pSrv, mLayout.getRange(rangeIndex).type);
     }
 
-    void DescriptorSet::setUav(uint32_t rangeIndex, uint32_t descIndex, uint32_t regIndex, const UnorderedAccessView* pUav)
+    void DescriptorSet::setUav(uint32_t rangeIndex, uint32_t descIndex, const UnorderedAccessView* pUav)
     {
-        setSrvUavCommon<true>(mApiHandle, regIndex, pUav, mLayout.getRange(rangeIndex).type);
+        setSrvUavCommon<true>(mApiHandle, mLayout.getRange(rangeIndex).baseRegIndex, descIndex, pUav, mLayout.getRange(rangeIndex).type);
     }
 
-    void DescriptorSet::setSampler(uint32_t rangeIndex, uint32_t descIndex, uint32_t regIndex, const Sampler* pSampler)
+    void DescriptorSet::setSampler(uint32_t rangeIndex, uint32_t descIndex, const Sampler* pSampler)
     {
         VkDescriptorImageInfo info;
         info.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
@@ -127,8 +127,8 @@ namespace Falcor
         VkWriteDescriptorSet write = {};
         write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
         write.dstSet = mApiHandle;
-        write.dstBinding = regIndex;
-        write.dstArrayElement = 0;
+        write.dstBinding = mLayout.getRange(rangeIndex).baseRegIndex;
+        write.dstArrayElement = descIndex;
         write.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER;
         write.descriptorCount = 1;
         write.pImageInfo = &info;
@@ -136,7 +136,7 @@ namespace Falcor
         vkUpdateDescriptorSets(gpDevice->getApiHandle(), 1, &write, 0, nullptr);
     }
 
-    void DescriptorSet::setCb(uint32_t rangeIndex, uint32_t descIndex, uint32_t regIndex, const Buffer* pBuffer)
+    void DescriptorSet::setCb(uint32_t rangeIndex, uint32_t descIndex, const Buffer* pBuffer)
     {
         VkDescriptorBufferInfo info;
         info.buffer = pBuffer->getApiHandle();
@@ -146,8 +146,8 @@ namespace Falcor
         VkWriteDescriptorSet write = {};
         write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
         write.dstSet = mApiHandle;
-        write.dstBinding = regIndex;
-        write.dstArrayElement = 0;
+        write.dstBinding = mLayout.getRange(rangeIndex).baseRegIndex;
+        write.dstArrayElement = descIndex;
         write.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
         write.descriptorCount = 1;
         write.pBufferInfo = &info;

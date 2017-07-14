@@ -179,7 +179,7 @@ namespace Falcor
 
         //Send vars and call
         pCtx->pushComputeState(mEmitResources.pState);
-        mEmitResources.pVars->getConstantBuffer(0, 0)->setBlob(&emitData, 0u, sizeof(EmitData));
+        mEmitResources.pVars->getConstantBuffer(0, 0, 0)->setBlob(&emitData, 0u, sizeof(EmitData));
         pCtx->pushComputeVars(mEmitResources.pVars);
         uint32_t numGroups = (uint32_t)std::ceil((float)num / EMIT_THREADS);
         pCtx->dispatch(1, numGroups, 1);
@@ -204,7 +204,7 @@ namespace Falcor
             perFrame.view = view;
             perFrame.dt = dt;
             perFrame.maxParticles = mMaxParticles;
-            mSimulateResources.pVars->getConstantBuffer(0, 0)->setBlob(&perFrame, 0u, sizeof(SimulateWithSortPerFrame));
+            mSimulateResources.pVars->getConstantBuffer(0, 0, 0)->setBlob(&perFrame, 0u, sizeof(SimulateWithSortPerFrame));
             mpAliveList->setBlob(mSortDataReset.data(), 0, sizeof(SortData) * mMaxParticles);
         }
         else
@@ -212,7 +212,7 @@ namespace Falcor
             SimulatePerFrame perFrame;
             perFrame.dt = dt;
             perFrame.maxParticles = mMaxParticles;
-            mSimulateResources.pVars->getConstantBuffer(0, 0)->setBlob(&perFrame, 0u, sizeof(SimulatePerFrame));
+            mSimulateResources.pVars->getConstantBuffer(0, 0, 0)->setBlob(&perFrame, 0u, sizeof(SimulatePerFrame));
         }
 
         //reset alive list counter to 0
@@ -244,7 +244,7 @@ namespace Falcor
         VSPerFrame cbuf;
         cbuf.view = view;
         cbuf.proj = proj;
-        mDrawResources.pVars->getConstantBuffer(0, 0)->setBlob(&cbuf, 0, sizeof(cbuf));
+        mDrawResources.pVars->getConstantBuffer(0, 0, 0)->setBlob(&cbuf, 0, sizeof(cbuf));
 
         //particle draw uses many of render context's existing state's properties 
         GraphicsState::SharedPtr state = pCtx->getGraphicsState();

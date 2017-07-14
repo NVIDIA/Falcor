@@ -86,9 +86,9 @@ namespace Falcor
             {
                 float alphaThreshold = currentData.pMaterial->getAlphaThreshold();
                 auto& pVars = currentData.pContext->getGraphicsVars();
-                pVars->getConstantBuffer(1u, 0)->setBlob(&alphaThreshold, 0u, sizeof(float));
-                pVars->setSrv(0u, 0, currentData.pMaterial->getAlphaMap()->getSRV());
-                pVars->setSampler(0, 0, mpAlphaSampler);
+                pVars->getConstantBuffer(0, 1, 0)->setBlob(&alphaThreshold, 0u, sizeof(float));
+                pVars->setSrv(0, 0, 0, currentData.pMaterial->getAlphaMap()->getSRV());
+                pVars->setSampler(0, 0, 0, mpAlphaSampler);
                 currentData.pContext->getGraphicsState()->getProgram()->addDefine("TEST_ALPHA");
             }
             else
@@ -523,7 +523,7 @@ namespace Falcor
 
     void CascadedShadowMaps::renderScene(RenderContext* pCtx)
     {
-        mShadowPass.pGraphicsVars->getConstantBuffer(0, 0)->setBlob(&mCsmData, 0, sizeof(mCsmData));
+        mShadowPass.pGraphicsVars->getConstantBuffer(0, 0, 0)->setBlob(&mCsmData, 0, sizeof(mCsmData));
         pCtx->pushGraphicsVars(mShadowPass.pGraphicsVars);
         pCtx->pushGraphicsState(mShadowPass.pState);
         mpCsmSceneRenderer->renderScene(pCtx, mpLightCamera.get());

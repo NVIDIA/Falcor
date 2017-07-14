@@ -57,9 +57,6 @@ namespace Falcor
 
         // Call the user callback
         onResizeSwapChain();
-
-        // Reset the clock, so that the first frame duration will be correct
-        mFrameRate.resetClock();
     }
 
     void Sample::handleKeyboardEvent(const KeyboardEvent& keyEvent)

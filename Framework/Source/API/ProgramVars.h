@@ -73,7 +73,7 @@ namespace Falcor
             \param[in] pCB The constant buffer object
             \return false is the call failed, otherwise true
         */
-        bool setConstantBuffer(uint32_t regIndex, uint32_t regSpace, const ConstantBuffer::SharedPtr& pCB);
+        bool setConstantBuffer(uint32_t regSpace, uint32_t baseRegIndex, uint32_t arrayIndex, const ConstantBuffer::SharedPtr& pCB);
 
         /** Get a constant buffer object.
             \param[in] name The name of the buffer
@@ -85,7 +85,7 @@ namespace Falcor
             \param[in] index The index of the buffer
             \return If the index is valid, a shared pointer to the buffer. Otherwise returns nullptr
         */
-        ConstantBuffer::SharedPtr getConstantBuffer(uint32_t regIndex, uint32_t regSpace) const;
+        ConstantBuffer::SharedPtr getConstantBuffer(uint32_t regSpace, uint32_t baseRegIndex, uint32_t arrayIndex) const;
 
         /** Set a raw-buffer. Based on the shader reflection, it will be bound as either an SRV or a UAV
             \param[in] name The name of the buffer
@@ -139,25 +139,25 @@ namespace Falcor
             \param[in] index The index of the SRV object in the shader
             \param[in] pSrv The SRV object to bind 
         */
-        bool setSrv(uint32_t regIndex, uint32_t regSpace, const ShaderResourceView::SharedPtr& pSrv);
+        bool setSrv(uint32_t regSpace, uint32_t baseRegIndex, uint32_t arrayIndex, const ShaderResourceView::SharedPtr& pSrv);
 
         /** Bind a UAV
             \param[in] index The index of the UAV object in the shader
             \param[in] pSrv The UAV object to bind
         */
-        bool setUav(uint32_t regIndex, uint32_t regSpace, const UnorderedAccessView::SharedPtr& pUav);
+        bool setUav(uint32_t regSpace, uint32_t baseRegIndex, uint32_t arrayIndex, const UnorderedAccessView::SharedPtr& pUav);
 
         /** Get an SRV object
             \param[in] index The index of the SRV
             \return If the index is valid, a shared pointer to the SRV. Otherwise returns nullptr
         */
-        ShaderResourceView::SharedPtr getSrv(uint32_t regIndex, uint32_t regSpace) const;
+        ShaderResourceView::SharedPtr getSrv(uint32_t regSpace, uint32_t baseRegIndex, uint32_t arrayIndex) const;
 
         /** Get a UAV object
             \param[in] index The index of the UAV
             \return If the index is valid, a shared pointer to the UAV. Otherwise returns nullptr
         */
-        UnorderedAccessView::SharedPtr getUav(uint32_t regIndex, uint32_t regSpace) const;
+        UnorderedAccessView::SharedPtr getUav(uint32_t regSpace, uint32_t baseRegIndex, uint32_t arrayIndex) const;
 
         /** Bind a sampler to the program in the global namespace.
             If you are using bindless textures, than this is not the right call for you. You should use the ConstantBuffer::setTexture() method instead.
@@ -173,7 +173,7 @@ namespace Falcor
             \param[in] pSampler The sampler object to bind
             \return false if the sampler was not found in the program, otherwise true
         */
-        bool setSampler(uint32_t regIndex, uint32_t regSpace, const Sampler::SharedPtr& pSampler);
+        bool setSampler(uint32_t regSpace, uint32_t baseRegIndex, uint32_t arrayIndex, const Sampler::SharedPtr& pSampler);
 
         /** Gets a sampler object.
             \return If the index is valid, a shared pointer to the sampler. Otherwise returns nullptr
@@ -183,7 +183,7 @@ namespace Falcor
         /** Gets a sampler object.
             \return If the index is valid, a shared pointer to the sampler. Otherwise returns nullptr
         */
-        Sampler::SharedPtr getSampler(uint32_t regIndex, uint32_t regSpace) const;
+        Sampler::SharedPtr getSampler(uint32_t regSpace, uint32_t baseRegIndex, uint32_t arrayIndex) const;
 
         /** Get the program reflection interface
         */
@@ -195,22 +195,25 @@ namespace Falcor
 
         struct RootData
         {
-            uint32_t rootIndex;
-            uint32_t rangeIndex;
-            uint32_t descIndex;
+            RootData() = default;
+            RootData(uint32_t root, uint32_t range) : rootIndex(root), rangeIndex(range) {}
+            uint32_t rootIndex = uint32_t(-1);
+            uint32_t rangeIndex = uint32_t(-1);
         };
 
         template<typename ViewType>
         struct ResourceData
         {
-            typename ViewType::SharedPtr pView;
-            Resource::SharedPtr pResource;
+            ResourceData(const RootData& data) : rootData(data) {}
+            typename ViewType::SharedPtr pView = nullptr;
+            Resource::SharedPtr pResource = nullptr;
             RootData rootData;
         };
 
         template<>
         struct ResourceData<Sampler>
         {
+            ResourceData(const RootData& data) : rootData(data) {}
             Sampler::SharedPtr pSampler;
             RootData rootData;
         };
@@ -226,10 +229,10 @@ namespace Falcor
         union BindLocation
         {
             BindLocation() = default;
-            BindLocation(uint32_t index, uint32_t space) : regIndex(index), regSpace(space) {}
+            BindLocation(uint32_t space, uint32_t index) : baseRegIndex(index), regSpace(space) {}
             struct  
             {
-                uint32_t regIndex;
+                uint32_t baseRegIndex;
                 uint32_t regSpace;
             };
             uint64_t u64 = -1;
@@ -238,8 +241,8 @@ namespace Falcor
         };
 
         template<typename T>
-        using ResourceMap = std::unordered_map<BindLocation, ResourceData<T>, BindLocation>;
-        using SamplerMap = std::unordered_map<BindLocation, ResourceData<Sampler::SharedConstPtr>, BindLocation>;
+        using ResourceMap = std::unordered_map<BindLocation, std::vector<ResourceData<T>>, BindLocation>;
+        using SamplerMap = std::unordered_map<BindLocation, std::vector<Sampler::SharedConstPtr>, BindLocation>;
         using RootSetVec = std::vector<RootSet>;
 
         const ResourceMap<ConstantBuffer>& getAssignedCbs() const { return mAssignedCbs; }
