@@ -56,7 +56,7 @@ void PostProcess::onLoad()
     Sampler::Desc samplerDesc;
     samplerDesc.setFilterMode(Sampler::Filter::Linear, Sampler::Filter::Linear, Sampler::Filter::Linear);
     mpTriLinearSampler = Sampler::create(samplerDesc);
-    mpProgramVars->setSampler(0, 0, mpTriLinearSampler);
+    mpProgramVars->setSampler(0, 0, 0, mpTriLinearSampler);
 
     mpToneMapper = ToneMapping::create(ToneMapping::Operator::HableUc2);
     mpToneMapper->setExposureKey(0.104f);
@@ -210,7 +210,6 @@ void PostProcess::onEndTestFrame()
             //Next operator
             ++mToneMapOperatorIndex;
         }
-
         mpToneMapper->setOperator(static_cast<ToneMapping::Operator>(mToneMapOperatorIndex));
     }
 }
