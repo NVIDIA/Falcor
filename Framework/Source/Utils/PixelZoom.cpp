@@ -102,7 +102,7 @@ namespace Falcor
         if (mShouldZoom)
         {
             mMousePos = me.pos;
-            //negative to swap scroll up to zoom in and scoll down to zoom out
+            //negative to swap scroll up to zoom in and scroll down to zoom out
             int32_t zoomDelta = -1 * mZoomCoefficient * (int32_t)me.wheelDelta.y;
             mSrcZoomSize = max(mSrcZoomSize + zoomDelta, 3);
             return true;

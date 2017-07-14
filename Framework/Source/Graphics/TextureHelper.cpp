@@ -33,7 +33,7 @@
 #include "Utils/BinaryFileStream.h"
 #include "Utils/StringUtils.h"
 
-static const bool kTopDown = true; // #VKTODO verify correctness
+static const bool kTopDown = true;
 
 namespace Falcor
 {

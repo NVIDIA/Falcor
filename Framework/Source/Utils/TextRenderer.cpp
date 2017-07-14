@@ -63,8 +63,8 @@ namespace Falcor
 
     TextRenderer::TextRenderer()
     {
-        static const std::string kVsFile("Framework/Shaders/TextRenderer.vs"); // #VKTODO This should be the slang files
-        static const std::string kFsFile("Framework/Shaders/TextRenderer.fs");
+        static const std::string kVsFile("Framework/Shaders/TextRenderer.vs.slang");
+        static const std::string kFsFile("Framework/Shaders/TextRenderer.fs.slang");
 
         // Create a vertex buffer
         const uint32_t vbSize = (uint32_t)(sizeof(Vertex)*kMaxBatchSize*arraysize(kVertexPos));
@@ -130,6 +130,10 @@ namespace Falcor
         vpTransform[1][1] = -2 / VP.height;
         vpTransform[3][0] = -(VP.originX + VP.width) / VP.width;
         vpTransform[3][1] = (VP.originX + VP.height) / VP.height;
+#ifdef FALCOR_VK
+        vpTransform[1][1] *= -1.0f;
+        vpTransform[3][1] *= -1.0f;
+#endif
 
         // Update the program variables
         mpProgramVars["PerFrameCB"]->setVariable(mVarOffsets.vpTransform, vpTransform);

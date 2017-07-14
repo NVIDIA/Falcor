@@ -1317,7 +1317,7 @@ namespace Falcor
 #ifdef FALCOR_VK
                 mIsSampleFrequency = entryPoint->usesAnySampleRateInput();
 #else
-                mIsSampleFrequency = true; // #VKTODO Slang reports false for DX shaders. There's an open issue, once it's fixed we should remove that
+                mIsSampleFrequency = true; // #SLANG Slang reports false for DX shaders. There's an open issue, once it's fixed we should remove that
 #endif            default:
                 break;
             }
