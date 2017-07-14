@@ -200,6 +200,12 @@ struct MaterialData
     SamplerState samplerState;  // The sampler state to use when sampling the object
 };
 
+struct PreparedMaterialData
+{
+    MaterialDesc    desc;
+    MaterialValues  values;
+};
+
 /**
     The structure stores the complete information about the shading point,
     except for a light source information.
@@ -226,7 +232,7 @@ struct ShadingAttribs
     float2    DHDX            DEFAULTS(float2(0, 0));
     float2    DHDY            DEFAULTS(float2(0, 0));  ///< User-defined half-vector derivatives
 #endif
-    MaterialData preparedMat;                   ///< Copy of the original material with evaluated parameters (i.e., textures are fetched etc.)
+    PreparedMaterialData preparedMat;               ///< Copy of the original material with evaluated parameters (i.e., textures are fetched etc.)
     float aoFactor;
 };
 

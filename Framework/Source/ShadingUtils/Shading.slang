@@ -151,11 +151,9 @@ void _fn prepareShadingAttribs(in const MaterialData material, in float3 P, in f
 
     shAttr.preparedMat.values = material.values;
     shAttr.preparedMat.desc = desc;
-    shAttr.preparedMat.textures = material.textures;
-    shAttr.preparedMat.samplerState = material.samplerState;
 
     /* Evaluate alpha test material modifier */
-    applyAlphaTest(shAttr.preparedMat, shAttr);
+    applyAlphaTest(material, shAttr);
     shAttr.aoFactor = 1;
 
     /* Prefetch textures */
@@ -169,7 +167,7 @@ void _fn prepareShadingAttribs(in const MaterialData material, in float3 P, in f
     }
 
     /* Perturb shading normal is needed */
-    perturbNormal(shAttr.preparedMat, shAttr);
+    perturbNormal(material, shAttr);
 }
 
 /**
@@ -546,7 +544,7 @@ Tries to find a layer data for a given material type (diffuse/conductor/etc).
 \param[out] data           Layer data, if found
 returns false if the layer is not found, true otherwise
 */
-bool _fn getLayerByType(in const MaterialData material, in const uint layerType, _ref(MaterialLayerValues) data, _ref(MaterialLayerDesc) desc)
+bool _fn getLayerByType(in const PreparedMaterialData material, in const uint layerType, _ref(MaterialLayerValues) data, _ref(MaterialLayerDesc) desc)
 {
     int layerId = material.desc.layerIdByType[layerType].id;
     if(layerId != -1)

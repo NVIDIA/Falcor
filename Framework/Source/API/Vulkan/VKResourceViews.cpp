@@ -67,9 +67,9 @@ namespace Falcor
         }
     }
 
-    void initializeImageViewInfo(const Texture* pTexture, uint32_t mostDetailedMip, uint32_t mipCount, uint32_t firstArraySlice, uint32_t arraySize, VkImageViewCreateInfo& outInfo)
+    VkImageViewCreateInfo initializeImageViewInfo(const Texture* pTexture, uint32_t mostDetailedMip, uint32_t mipCount, uint32_t firstArraySlice, uint32_t arraySize)
     {
-        outInfo = {};
+        VkImageViewCreateInfo outInfo = {};
 
         ResourceFormat texFormat = pTexture->getFormat();
 
@@ -82,16 +82,19 @@ namespace Falcor
         outInfo.subresourceRange.levelCount = mipCount;
         outInfo.subresourceRange.baseArrayLayer = firstArraySlice;
         outInfo.subresourceRange.layerCount = arraySize;
+
+        return outInfo;
     }
 
-    void initializeBufferViewInfo(const TypedBufferBase* pTypedBuffer, VkBufferViewCreateInfo& outInfo)
+    VkBufferViewCreateInfo initializeBufferViewInfo(const TypedBufferBase* pTypedBuffer)
     {
-        outInfo = {};
+        VkBufferViewCreateInfo outInfo = {};
         outInfo.sType = VK_STRUCTURE_TYPE_BUFFER_VIEW_CREATE_INFO;
         outInfo.buffer = pTypedBuffer->getApiHandle();
         outInfo.offset = 0;
         outInfo.range = VK_WHOLE_SIZE;
         outInfo.format = getVkFormat(pTypedBuffer->getResourceFormat());
+        return outInfo;
     }
 
     VkResource<VkImageView, VkBufferView>::SharedPtr createViewCommon(const Resource::SharedConstPtr& pSharedPtr, uint32_t mostDetailedMip, uint32_t mipCount, uint32_t firstArraySlice, uint32_t arraySize)
@@ -103,9 +106,8 @@ namespace Falcor
         {
         case VkResourceType::Image:
         {
-            VkImageViewCreateInfo info;
+            VkImageViewCreateInfo info = initializeImageViewInfo((const Texture*)pResource, mostDetailedMip, mipCount, firstArraySlice, arraySize);
             VkImageView imageView;
-            initializeImageViewInfo((const Texture*)pResource, firstArraySlice, arraySize, mostDetailedMip, mipCount, info);
             vk_call(vkCreateImageView(gpDevice->getApiHandle(), &info, nullptr, &imageView));
             return VkResource<VkImageView, VkBufferView>::SharedPtr::create(imageView, nullptr);
         }
@@ -117,8 +119,7 @@ namespace Falcor
             const TypedBufferBase* pTypedBuffer = dynamic_cast<const TypedBufferBase*>(pResource);
             if(pTypedBuffer)
             {
-                VkBufferViewCreateInfo info;
-                initializeBufferViewInfo(pTypedBuffer, info);
+                VkBufferViewCreateInfo info = initializeBufferViewInfo(pTypedBuffer);
                 vk_call(vkCreateBufferView(gpDevice->getApiHandle(), &info, nullptr, &bufferView));
             }
             return VkResource<VkImageView, VkBufferView>::SharedPtr::create(bufferView, nullptr);
