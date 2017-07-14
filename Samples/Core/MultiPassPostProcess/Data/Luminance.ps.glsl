@@ -26,18 +26,16 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 
-cbuffer PerImageCB : register(b0)
-{
-	Texture2D		gTexture;
-	SamplerState	gSampler;
-};
+layout(set = 0, binding = 0) uniform texture2D gTexture;
+layout(set = 0, binding = 1) uniform sampler gSampler;
 
-float4 calcColor(float2 texC)
-{
-	return gTexture.Sample(gSampler, texC);
-}
+layout(location = 0) in vec2 texC;
+layout(location =0) out vec4 fragColor;
 
-float4 main(float2 texC  : TEXCOORD) : SV_TARGET0
+const float3 gLuminance = float3(0.2126, 0.7152, 0.0722);
+
+void main()
 {
-	return calcColor(texC);
+	fragColor = texture(sampler2D(gTexture, gSampler), texC);
+	fragColor.rgb = (dot(fragColor.rgb, gLuminance)).xxx;
 }

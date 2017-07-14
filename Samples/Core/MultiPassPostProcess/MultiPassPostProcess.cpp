@@ -27,6 +27,12 @@
 ***************************************************************************/
 #include "MultiPassPostProcess.h"
 
+#ifdef FALCOR_VK
+const std::string kShaderExt = ".glsl";
+#else
+const std::string kShaderExt = ".hlsl";
+#endif
+
 void MultiPassPostProcess::onGuiRender()
 {
     if (mpGui->addButton("Load Image"))
@@ -43,9 +49,9 @@ void MultiPassPostProcess::onGuiRender()
 
 void MultiPassPostProcess::onLoad()
 {
-    mpLuminance = FullScreenPass::create("Luminance.fs");
+    mpLuminance = FullScreenPass::create("Luminance.ps" + kShaderExt);
     mpGaussianBlur = GaussianBlur::create(5);
-    mpBlit = FullScreenPass::create("Blit.fs");
+    mpBlit = FullScreenPass::create("Blit.ps" + kShaderExt);
 
     initializeTesting();
 }
