@@ -53,13 +53,13 @@ namespace Falcor
                 {
                     if (range.baseRegIndex <= regIndex && (range.baseRegIndex + range.descCount) > regIndex)
                     {
-                        return{ (uint32_t)i, r };
+                        return ProgramVars::RootData((uint32_t)i, r);
                     }
                 }
             }
         }
         should_not_get_here();
-        return{ (uint32_t)-1, (uint32_t)-1};
+        return ProgramVars::RootData();
     }
 
     template<typename BufferType, typename ViewType, RootSignature::DescType descType, typename ViewInitFunc>
