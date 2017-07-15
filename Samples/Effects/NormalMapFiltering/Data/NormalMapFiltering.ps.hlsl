@@ -25,9 +25,6 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-__import ShaderCommon;
-__import Shading;
-__import DefaultVS;
 __import Effects.LeanMapping;
 
 cbuffer PerFrameCB : register(b0)
@@ -48,7 +45,9 @@ void perturbNormal(in const MaterialData mat, inout ShadingAttribs shAttr, bool 
 }
 #endif
 
-__import Shading;
+#import "ShaderCommon.slang"
+#import "Shading.slang"
+__import DefaultVS;
 
 float4 main(VS_OUT vOut) : SV_TARGET
 {
