@@ -54,27 +54,12 @@ vec4 getRBCColor(float x)
     return mix(v4DarkRed, v4LightRed, poly);
 }
 
-//inline float _fn LinearToSRGB(const float linear)
-//{
-//    if (linear <= 0.0031308f)
-//    {
-//        return linear * 12.92f;
-//    }
-//    else
-//    {
-//        return pow(linear, (1.0f / 2.4f)) * (1.055f) - 0.055f;
-//    }
-//}
-
 vec4 mainImage(in vec2 fragCoord)
 {
     vec2 uv = fragCoord / iResolution.y;
 
     float freq = 7.0;
     float gap = 1. / freq;
-
-
-
     vec2 param_pos = (uv + vec2(iGlobalTime / 5.0, 0.0));
 
     //param_pos = uv;

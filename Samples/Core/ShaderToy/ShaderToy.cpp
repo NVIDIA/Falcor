@@ -27,6 +27,12 @@
 ***************************************************************************/
 #include "ShaderToy.h"
 
+#ifdef FALCOR_VK
+const std::string kShaderExt = ".glsl";
+#else
+const std::string kShaderExt = ".hlsl";
+#endif
+
 ShaderToy::~ShaderToy()
 {
 }
@@ -52,7 +58,7 @@ void ShaderToy::onLoad()
     mpLinearSampler = Sampler::create(samplerDesc);
 
     // Load shaders
-    mpMainPass = FullScreenPass::create("toyContainer.fs");
+    mpMainPass = FullScreenPass::create("toyContainer.ps" + kShaderExt);
 
     // Create Constant buffer
     mpToyVars = GraphicsVars::create(mpMainPass->getProgram()->getActiveVersion()->getReflector());

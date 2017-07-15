@@ -42,13 +42,6 @@ cbuffer ToyCB : register(b0)
 {
     float2 iResolution;
     float iGlobalTime;
-    // // todo 
-    // vec3 iMouse;
-    // sampler2D iChannel0;
-    // sampler2D iChannel1;
-    // sampler2D iChannel2;
-    // sampler2D iChannel3;
-    // ifloat2 iChannelResolution[4];
 };
 
 static vec3 iMouse = vec3(0, 0, 0);
