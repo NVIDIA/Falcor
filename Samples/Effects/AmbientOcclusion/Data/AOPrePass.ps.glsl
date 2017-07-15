@@ -29,18 +29,12 @@ __import ShaderCommon;
 __import Shading;
 __import DefaultVS;
 
-struct PSOut
+layout(location = 1) in vec3 normalW;
+layout(location = 0) out vec4 color;
+layout(location = 1) out vec4 normal;
+
+void main()
 {
-    float4 color : SV_TARGET0;
-    float4 normal: SV_TARGET1;
-};
-
-PSOut main(VS_OUT vsOut)
-{
-    PSOut psOut;
-
-    psOut.color = 1.0.xxxx;
-    psOut.normal = float4(vsOut.normalW * 0.5f + 0.5f, 1.0f);
-
-    return psOut;
+    color = 1.0.xxxx;
+    normal = vec4(normalW * 0.5f + 0.5f, 1.0f);
 }

@@ -25,22 +25,17 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-__import ShaderCommon;
-__import Shading;
-__import DefaultVS;
+__import Helpers;
 
-struct PSOut
-{
-    float4 color : SV_TARGET0;
-    float4 normal: SV_TARGET1;
-};
+layout(set = 0, binding = 0) uniform sampler gSampler;
+layout(set = 0, binding = 1) uniform texture2D gColor;
+layout(set = 0, binding = 2) uniform texture2D gAOMap;
 
-PSOut main(VS_OUT vsOut)
-{
-    PSOut psOut;
+layout(location = 0) in vec2 texC;
+layout(location = 0) out vec4 color;
 
-    psOut.color = 1.0.xxxx;
-    psOut.normal = float4(vsOut.normalW * 0.5f + 0.5f, 1.0f);
-
-    return psOut;
+void main()
+{   
+    color = textureLod(sampler2D(gColor, gSampler), texC, 0);
+    color = applyAmbientOcclusion(color, gAOMap, gSampler, texC);
 }
