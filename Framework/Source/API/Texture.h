@@ -167,7 +167,7 @@ namespace Falcor
 
         /** Generates mipmaps for a specified texture object.
         */
-        void generateMips() const;
+        void generateMips();
 
         /** Name the texture
         */
@@ -200,7 +200,7 @@ namespace Falcor
         friend class Device;
         void apinit(const void* pData, bool autoGenMips);
         void uploadInitData(const void* pData, bool autoGenMips);
-
+		bool mReleaseRtvsAfterGenMips = true;
         static RtvHandle spNullRTV;
         static DsvHandle spNullDSV;
 

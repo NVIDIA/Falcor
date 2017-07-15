@@ -141,7 +141,7 @@ namespace Falcor
         }
     }
 
-    void Texture::generateMips() const
+    void Texture::generateMips()
     {
         if (mType != Type::Texture2D)
         {
@@ -157,8 +157,14 @@ namespace Falcor
             pContext->blit(srv, rtv);
         }
 
-        logInfo("Releasing RTVs after Texture::generateMips() to save space in the descriptor-pool");
-        mRtvs.clear();
+		if(mReleaseRtvsAfterGenMips)
+		{
+			// Releasing RTVs to free space on the heap.
+			// We only do it once to handle the case that generateMips() was called during load. 
+			// If it was called more then once, the texture is probably dynamic and it's better to keep the RTVs around
+			mRtvs.clear();
+			mReleaseRtvsAfterGenMips = false;
+		}
     }
 
     uint32_t Texture::getMipLevelPackedDataSize(uint32_t mipLevel) const
