@@ -1,5 +1,5 @@
 /***************************************************************************
-# Copyright (c) 2015, NVIDIA CORPORATION. All rights reserved.
+# Copyright (c) 2017, NVIDIA CORPORATION. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -25,42 +25,20 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-__import Effects.LeanMapping;
-#import "ShaderCommon.slang"
-#import "Shading.slang"
-__import DefaultVS;
 
-cbuffer PerFrameCB : register(b0)
+layout(location = 0) in vec4 posL;
+layout(location = 1) in vec3 normalL;
+
+layout(location = 0) out vec3 normalW;
+
+layout(set = 0, binding = 0) uniform PerFrameCB
 {
-    float3 gAmbient;
+    mat4 gWorldMat;
+    mat4 gWvpMat;
 };
 
-#ifdef _MS_USER_NORMAL_MAPPING
-Texture2D gLeanMaps[_LEAN_MAP_COUNT] : register(t20);
-SamplerState gSampler : register(s10);
-
-void perturbNormal(in const MaterialData mat, inout ShadingAttribs shAttr, bool forceSample)
+void main()
 {
-    if (mat.desc.hasNormalMap != 0)
-    {
-        applyLeanMap(gLeanMaps[mat.values.id], gSampler, shAttr);
-    }
-}
-#endif
-
-float4 main(VS_OUT vOut) : SV_TARGET
-{
-    ShadingAttribs shAttr;
-    prepareShadingAttribs(gMaterial, vOut.posW, gCam.position, vOut.normalW, vOut.bitangentW, vOut.texC, shAttr);
-
-    ShadingOutput result;
-
-    [unroll]
-    for (uint l = 0; l < _LIGHT_COUNT; l++)
-    {
-        evalMaterial(shAttr, gLights[l], result, l == 0);
-    }
-
-    float4 finalColor = float4(result.finalValue + gAmbient * result.diffuseAlbedo, 1.f);
-    return finalColor;
+    gl_Position = gWvpMat * posL;
+    normalW = (gWorldMat * vec4(normalL, 0)).xyz;
 }

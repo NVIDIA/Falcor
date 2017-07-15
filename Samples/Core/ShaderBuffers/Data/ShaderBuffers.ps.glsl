@@ -25,21 +25,23 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#pragma once
-#include "Falcor.h"
+#version 450
 
-using namespace Falcor;
-
-class ObjToBin : public Sample
+layout(set = 1, binding = 0) buffer gLightIn
 {
-public:    
-    void onLoad() override;
-    void onShutdown() override;
-
-    ObjToBin(std::vector<std::string> objFiles);
-    void convertObjToBin(const std::string& objFile);
-private:
-    inline void shutdown() {}
-
-    std::vector<std::string> mObjFiles;
+    vec3 vec3Val[]; // We're using 2 values. [0]: worldDir [1]: intensity
 };
+
+layout(set = 1, binding = 1, rgba32f) uniform readonly imageBuffer gSurfaceColor[2];
+
+layout(location = 0) in vec3 normalW;
+layout(location = 0) out vec4 fragColor;
+
+void main()
+{
+    vec3 n = normalize(normalW);
+    float nDotL = dot(n, -vec3Val[0]);
+    nDotL = clamp(nDotL, 0, 1);
+    vec3 surfaceColor = imageLoad(gSurfaceColor[1], 0).rgb;
+    fragColor = vec4(nDotL * vec3Val[1] * surfaceColor, 1);
+}

@@ -30,14 +30,14 @@ __import Effects.LeanMapping;
 #import "Shading.slang"
 __import DefaultVS;
 
-cbuffer PerFrameCB : register(b0)
+layout(set = 0, binding = 0) uniform PerFrameCB
 {
-    float3 gAmbient;
+    vec3 gAmbient;
 };
 
 #ifdef _MS_USER_NORMAL_MAPPING
-Texture2D gLeanMaps[_LEAN_MAP_COUNT] : register(t20);
-SamplerState gSampler : register(s10);
+layout(set = 1, location = 0) uniform texture2D gLeanMaps[_LEAN_MAP_COUNT];
+layout(set = 1, location = 1) uniform sampler gSampler;
 
 void perturbNormal(in const MaterialData mat, inout ShadingAttribs shAttr, bool forceSample)
 {
@@ -48,10 +48,16 @@ void perturbNormal(in const MaterialData mat, inout ShadingAttribs shAttr, bool 
 }
 #endif
 
+layout(location = 1) in vec3 normal;
+layout(location = 2) in vec3 bitangent;
+layout(location = 3) in vec2 texC;
+
+layout(location = 2) out vec4 finalColor;
+
 float4 main(VS_OUT vOut) : SV_TARGET
 {
     ShadingAttribs shAttr;
-    prepareShadingAttribs(gMaterial, vOut.posW, gCam.position, vOut.normalW, vOut.bitangentW, vOut.texC, shAttr);
+    prepareShadingAttribs(gMaterial, posW, gCam.position, normalW, bitangentW, texC, shAttr);
 
     ShadingOutput result;
 
@@ -61,6 +67,5 @@ float4 main(VS_OUT vOut) : SV_TARGET
         evalMaterial(shAttr, gLights[l], result, l == 0);
     }
 
-    float4 finalColor = float4(result.finalValue + gAmbient * result.diffuseAlbedo, 1.f);
-    return finalColor;
+    finalColor = float4(result.finalValue + gAmbient * result.diffuseAlbedo, 1.f);
 }

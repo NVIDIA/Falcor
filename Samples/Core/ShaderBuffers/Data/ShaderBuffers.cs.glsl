@@ -1,5 +1,5 @@
 /***************************************************************************
-# Copyright (c) 2015, NVIDIA CORPORATION. All rights reserved.
+# Copyright (c) 2017, NVIDIA CORPORATION. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -25,80 +25,23 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#include "ObjToBin.h"
-
-ObjToBin::ObjToBin(std::vector<std::string> objFiles)
+layout(set = 0, binding = 0) readonly buffer gLightIn
 {
-    mObjFiles = objFiles;
+    vec3 vec3ValIn[]; // We're using 2 values. [0]: worldDir [1]: intensity
+};
+
+layout(set = 0, binding = 1) writeonly buffer gLightOut
+{
+    vec3 vec3ValOut[]; // We're using 2 values. [0]: worldDir [1]: intensity
 }
 
-void ObjToBin::convertObjToBin(const std::string& objFile)
+layout(set = 0, binding = 2) uniform sampler gSampler;
+layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
+
+void main()
 {
-    printf("Converting %s ...\n", objFile.c_str());
-    auto pModel = Model::createFromFile(objFile.c_str());
-
-    if (pModel)
+    for (uint i = 0; i < gIn.length(); i++)
     {
-
-        std::string fullpath;
-        if (findFileInDataDirectories(objFile, fullpath) == false)
-        {
-            printf("    Cannot find OBJ file.\n");
-        }
-
-        std::string binFilename = Falcor::swapFileExtension(fullpath, ".obj", ".bin");
-
-        if (!Falcor::doesFileExist(binFilename))
-        {
-            printf("    Writing %s ...\n", binFilename.c_str());
-            pModel->exportToBinaryFile(binFilename);
-        }
-        else
-        {
-            printf("    BIN file already exists.\n");
-        }
-    }
-    else
-    {
-        printf("   ");
-    }
-}
-
-void ObjToBin::onLoad()
-{
-    for (const auto& objFile : mObjFiles)
-    {
-        convertObjToBin(objFile);
-    }
-    shutdownApp();
-}
-
-void ObjToBin::onShutdown()
-{
-
-}
-
-
-int main(int argc, char* argv[])
-{
-    if (argc >= 2)
-    {
-        std::vector<std::string> objFiles;
-
-        for (int argi = 1; argi < argc; ++argi)
-        {
-            objFiles.push_back(std::string(argv[argi]));
-        }
-
-        ObjToBin ObjToBin(objFiles);
-        SampleConfig config;
-        config.windowDesc.width = 256;
-        config.windowDesc.height = 256;
-        config.windowDesc.title = "ObjToBin";
-        ObjToBin.run(config);
-    }
-    else
-    {
-        printf("Syntax: ObjToBin <list of obj files>\n");
+        vec3ValOut[i] = vec3ValIn[i];
     }
 }

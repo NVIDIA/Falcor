@@ -25,42 +25,46 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-__import Effects.LeanMapping;
-#import "ShaderCommon.slang"
-#import "Shading.slang"
+__import ShaderCommon;
+__import Shading;
 __import DefaultVS;
 
-cbuffer PerFrameCB : register(b0)
+layout(location = 0) in vec3 normalW;
+layout(location = 1) in vec3 bitangentW;
+layout(location = 2) in vec2 texC;
+layout(location = 3) in vec3 posW;
+layout(location = 4) in vec3 colorV;
+layout(location = 5) in vec4 prevPosH;
+
+layout(set = 0, binding = 0) uniform PerFrameCB
 {
-    float3 gAmbient;
+    LightData gDirLight;
+    LightData gPointLight;
+    bool gConstColor;
+    vec3 gAmbient;
 };
 
-#ifdef _MS_USER_NORMAL_MAPPING
-Texture2D gLeanMaps[_LEAN_MAP_COUNT] : register(t20);
-SamplerState gSampler : register(s10);
+layout(location = 0) out vec4 fragColor;
 
-void perturbNormal(in const MaterialData mat, inout ShadingAttribs shAttr, bool forceSample)
+void main()
 {
-    if (mat.desc.hasNormalMap != 0)
+    if(gConstColor)
     {
-        applyLeanMap(gLeanMaps[mat.values.id], gSampler, shAttr);
+        fragColor = vec4(0, 1, 0, 1);
     }
-}
-#endif
-
-float4 main(VS_OUT vOut) : SV_TARGET
-{
-    ShadingAttribs shAttr;
-    prepareShadingAttribs(gMaterial, vOut.posW, gCam.position, vOut.normalW, vOut.bitangentW, vOut.texC, shAttr);
-
-    ShadingOutput result;
-
-    [unroll]
-    for (uint l = 0; l < _LIGHT_COUNT; l++)
+    else
     {
-        evalMaterial(shAttr, gLights[l], result, l == 0);
-    }
+        ShadingAttribs shAttr;
+        prepareShadingAttribs(gMaterial, posW, gCam.position, normalW, bitangentW, texC, shAttr);
 
-    float4 finalColor = float4(result.finalValue + gAmbient * result.diffuseAlbedo, 1.f);
-    return finalColor;
+        ShadingOutput result;
+
+        // Directional light
+        evalMaterial(shAttr, gDirLight, result, true);
+
+        // Point light
+        evalMaterial(shAttr, gPointLight, result, false);
+
+        fragColor = vec4(result.finalValue + gAmbient * result.diffuseAlbedo, 1.f);
+    }
 }
