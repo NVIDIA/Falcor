@@ -27,6 +27,12 @@
 ***************************************************************************/
 #include "SimpleDeferred.h"
 
+#ifdef FALCOR_VK
+const std::string kShaderExt = ".glsl";
+#else
+const std::string kShaderExt = ".hlsl";
+#endif
+
 SimpleDeferred::~SimpleDeferred()
 {
 }
@@ -175,9 +181,9 @@ void SimpleDeferred::onLoad()
 {
     mpCamera = Camera::create();
 
-	mpDeferredPassProgram = GraphicsProgram::createFromFile("", "DeferredPass.fs");
+	mpDeferredPassProgram = GraphicsProgram::createFromFile("", "DeferredPass.ps" + kShaderExt);
 
-    mpLightingPass = FullScreenPass::create("LightingPass.fs");
+    mpLightingPass = FullScreenPass::create("LightingPass.ps" + kShaderExt);
 
     // create rasterizer state
     RasterizerState::Desc rsDesc;

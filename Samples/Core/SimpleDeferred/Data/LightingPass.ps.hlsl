@@ -25,16 +25,8 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#version 420
-
 __import ShaderCommon;
 __import Shading;
-
-// Debug modes
-#define ShowPos         1
-#define ShowNormals     2
-#define ShowAlbedo      3
-#define ShowLighting    4
 
 cbuffer PerImageCB
 {
@@ -47,6 +39,8 @@ cbuffer PerImageCB
 	uint gDebugMode;
 };
 
+#include "LightingPassCommon.h"
+
 Texture2D gGBuf0;
 Texture2D gGBuf1;
 Texture2D gGBuf2;
@@ -58,44 +52,7 @@ float4 main(float2 texC : TEXCOORD, float4 pos : SV_POSITION) : SV_TARGET
     const float3 normalW = gGBuf1.Load(int3(pos.xy, 0)).rgb;
     const float4 albedo  = gGBuf2.Load(int3(pos.xy, 0));
 
-    // Discard empty pixels
-    if(any(albedo.a <= 0))
-    {
-        discard;
-    }
-	
-	/* Reconstruct shading attributes */
-	ShadingAttribs shAttr;
-	shAttr.P = posW;
-	shAttr.E = normalize(gCam.position - posW);
-	shAttr.N = normalW;
+    float3 color = shade(posW, normalW, albedo);
 
-	/* Reconstruct layers (one diffuse layer) */
-	initDiffuseLayer(shAttr.preparedMat.desc.layers[0], shAttr.preparedMat.values.layers[0], albedo.rgb);
-	initNullLayer(shAttr.preparedMat.desc.layers[1]);
-
-    /* Do lighting */
-	ShadingOutput result;
-	// Directional light
-	evalMaterial(shAttr, gDirLight, result, true);
-	// Point light
-	evalMaterial(shAttr, gPointLight, result, false);
-	// Add ambient term
-	result.finalValue += gAmbient * result.diffuseAlbedo;
-	result.diffuseIllumination += gAmbient;
-
-    // Debug vis
-    if(gDebugMode != 0)
-    {
-        if(gDebugMode == ShowPos)
-            result.finalValue = posW;
-        else if(gDebugMode == ShowNormals)
-            result.finalValue = 0.5 * normalW + 0.5f;
-        else if(gDebugMode == ShowAlbedo)
-            result.finalValue = albedo.rgb;
-        else
-            result.finalValue = result.diffuseIllumination;
-    }
-
-	return float4(result.finalValue, 1);
+	return float4(color, 1);
 }

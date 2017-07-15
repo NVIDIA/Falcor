@@ -6,10 +6,16 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <None Include="Data\DeferredPass.fs">
+    <None Include="Data\DeferredPass.ps.hlsl">
       <Filter>Data</Filter>
     </None>
-    <None Include="Data\LightingPass.fs">
+    <None Include="Data\LightingPass.ps.hlsl">
+      <Filter>Data</Filter>
+    </None>
+    <None Include="Data\DeferredPass.ps.glsl">
+      <Filter>Data</Filter>
+    </None>
+    <None Include="Data\LightingPass.ps.glsl">
       <Filter>Data</Filter>
     </None>
   </ItemGroup>
@@ -18,5 +24,8 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="SimpleDeferred.h" />
+    <ClInclude Include="Data\LightingPassCommon.h">
+      <Filter>Data</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
