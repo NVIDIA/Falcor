@@ -26,7 +26,6 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 #include "ComputeShader.h"
-#include "API/D3D/FalcorD3D.h"
 
 void ComputeShader::onGuiRender()
 {

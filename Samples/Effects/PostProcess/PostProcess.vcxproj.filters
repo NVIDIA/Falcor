@@ -7,8 +7,12 @@
     <ClInclude Include="PostProcess.h" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="Data\PostProcess.ps.glsl" />
-    <None Include="Data\PostProcess.vs.glsl" />
+    <None Include="Data\PostProcess.ps.glsl">
+      <Filter>Data</Filter>
+    </None>
+    <None Include="Data\PostProcess.vs.glsl">
+      <Filter>Data</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Data">

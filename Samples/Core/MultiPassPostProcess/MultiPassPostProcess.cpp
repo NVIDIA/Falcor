@@ -43,9 +43,9 @@ void MultiPassPostProcess::onGuiRender()
 
 void MultiPassPostProcess::onLoad()
 {
-    mpLuminance = FullScreenPass::create(addShaderExtension("Luminance.ps"));
+    mpLuminance = FullScreenPass::create(appendShaderExtension("Luminance.ps"));
     mpGaussianBlur = GaussianBlur::create(5);
-    mpBlit = FullScreenPass::create(addShaderExtension("Blit.ps"));
+    mpBlit = FullScreenPass::create(appendShaderExtension("Blit.ps"));
 
     initializeTesting();
 }

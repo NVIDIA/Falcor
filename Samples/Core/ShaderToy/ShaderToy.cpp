@@ -52,7 +52,7 @@ void ShaderToy::onLoad()
     mpLinearSampler = Sampler::create(samplerDesc);
 
     // Load shaders
-    mpMainPass = FullScreenPass::create(addShaderExtension("toyContainer.ps"));
+    mpMainPass = FullScreenPass::create(appendShaderExtension("toyContainer.ps"));
 
     // Create Constant buffer
     mpToyVars = GraphicsVars::create(mpMainPass->getProgram()->getActiveVersion()->getReflector());

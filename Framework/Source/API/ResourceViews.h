@@ -53,6 +53,7 @@ namespace Falcor
     public:
         using ApiHandle = ApiHandleType;
         static const uint32_t kMaxPossible = -1;
+        ~ResourceView();
 
         ResourceView(ResourceWeakPtr& pResource, ApiHandle handle, uint32_t mostDetailedMip, uint32_t mipCount, uint32_t firstArraySlice, uint32_t arraySize)
             : mApiHandle(handle), mpResource(pResource), mViewInfo(mostDetailedMip, mipCount, firstArraySlice, arraySize) {}

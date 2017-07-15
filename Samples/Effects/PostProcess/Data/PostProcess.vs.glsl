@@ -25,33 +25,26 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-cbuffer PerFrameCB : register(b0)
+#version 450
+
+layout(set = 0, binding = 0) uniform PerFrameCB
 {
-    float4x4 gWvpMat;
-    float4x4 gWorldMat;
-    float3 gEyePosW;
+    mat4 gWvpMat;
+    mat4 gWorldMat;
+    vec3 gEyePosW;
     float gLightIntensity;
     float gSurfaceRoughness;
 };
 
-struct PostProcessIn
-{
-    float4 pos : POSITION;
-    float3 normal : NORMAL;
-};
+layout(location = 0) in vec4 posL;
+layout(location = 1) in vec3 normalL;
 
-struct PostProcessOut
-{
-    float4 pos : SV_POSITION;
-    float3 posW : POSITION;
-    float3 normalW : NORMAL;
-};
+layout(location = 0) out vec3 posW;
+layout(location = 1) out vec3 normalW;
 
-PostProcessOut main(PostProcessIn vIn)
+void main()
 {
-    PostProcessOut vOut;
-    vOut.pos = (mul(vIn.pos, gWvpMat));
-    vOut.posW = (mul(vIn.pos, gWvpMat)).xyz;
-	vOut.normalW = (mul(float4(vIn.normal, 0), gWorldMat)).xyz;
-    return vOut;
+    gl_Position = gWvpMat * posL;
+    posW = (gWvpMat * posL).xyz;
+	normalW = (gWorldMat * vec4(normalL, 0)).xyz;
 }

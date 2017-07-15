@@ -126,5 +126,5 @@ namespace Falcor
         return std::string(infoLog.data());
     }
 
-#define addShaderExtension(_a)  _a ".hlsl"
+#define appendShaderExtension(_a)  _a ".hlsl"
 }

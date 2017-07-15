@@ -34,6 +34,8 @@
 
 namespace Falcor
 {
+    ResourceView::ResourceView() = default;
+
     ResourceWeakPtr getEmptyTexture()
     {
         return ResourceWeakPtr();

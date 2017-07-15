@@ -35,6 +35,12 @@ namespace Falcor
 {
     VkImageAspectFlags getAspectFlagsFromFormat(ResourceFormat format);
 
+    template<typename ApiHandleType>
+    ResourceView<ApiHandleType>::~ResourceView()
+    {
+        gpDevice->releaseResource(mApiHandle);
+    }
+
     Texture::SharedPtr createBlackTexture()
     {
         uint8_t blackPixel[4] = { 0 };
