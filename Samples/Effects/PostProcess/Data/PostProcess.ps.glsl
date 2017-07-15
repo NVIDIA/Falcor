@@ -49,7 +49,7 @@ void main()
 {
     vec3 p = normalize(normalW);
     vec2 uv;
-    uv.x = ( 1 + atan(p.x, -p.z) / PI) * 0.5;
+    uv.x = ( 1 + atan(-p.z, p.x) / PI) * 0.5;
     uv.y = 1 - (-acos(p.y) / PI);
     fragColor = texture(sampler2D(gEnvMap, gSampler), uv);
     fragColor.rgb *= gLightIntensity;

@@ -22,7 +22,7 @@
     <ClInclude Include="SceneEditorSample.h" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="Data\SceneEditorSample.fs" />
+    <None Include="Data\SceneEditorSample.ps.hlsl" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{DE6A0005-923E-4007-B58C-3C35F690773F}</ProjectGuid>

@@ -25,21 +25,46 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#pragma once
-#include "Falcor.h"
+__import ShaderCommon;
+__import Shading;
+__import DefaultVS;
 
-using namespace Falcor;
+layout(location = 0) in vec3 normalW;
+layout(location = 1) in vec3 bitangentW;
+layout(location = 2) in vec2 texC;
+layout(location = 3) in vec3 posW;
+layout(location = 4) in vec3 colorV;
+layout(location = 5) in vec4 prevPosH;
 
-class ObjToBin : public Sample
+layout(set = 0, binding = 0) uniform PerFrameCB
 {
-public:    
-    void onLoad() override;
-    void onShutdown() override;
-
-    ObjToBin(std::vector<std::string> objFiles);
-    void convertObjToBin(const std::string& objFile);
-private:
-    inline void shutdown() {}
-
-    std::vector<std::string> mObjFiles;
+    LightData gDirLight;
+    LightData gPointLight;
+    bool gConstColor;
+    vec3 gAmbient;
 };
+
+layout(location = 0) out vec4 fragColor;
+
+void main()
+{
+    if(gConstColor)
+    {
+        fragColor = vec4(0, 1, 0, 1);
+    }
+    else
+    {
+        ShadingAttribs shAttr;
+        prepareShadingAttribs(gMaterial, posW, gCam.position, normalW, bitangentW, texC, shAttr);
+
+        ShadingOutput result;
+
+        // Directional light
+        evalMaterial(shAttr, gDirLight, result, true);
+
+        // Point light
+        evalMaterial(shAttr, gPointLight, result, false);
+
+        fragColor = vec4(result.finalValue + gAmbient * result.diffuseAlbedo, 1.f);
+    }
+}
