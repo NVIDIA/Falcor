@@ -114,6 +114,8 @@ namespace Falcor
     using ApiObjectHandle = VkBaseApiHandle::SharedPtr;
 
     uint32_t getMaxViewportCount();
+
+#define addShaderExtension(_a)  _a ".glsl"
 }
 
 #define DEFAULT_API_MAJOR_VERSION 1
