@@ -65,13 +65,13 @@
 #include "API/ComputeContext.h"
 #include "API/QueryHeap.h"
 
-#if defined FALCOR_D3D12 || defined FALCOR_VULKAN
+#if defined FALCOR_D3D12 || defined FALCOR_VK
 #include "API/DescriptorSet.h"
 #include "API/LowLevel/DescriptorPool.h"
 #include "API/LowLevel/FencedPool.h"
 #include "API/LowLevel/GpuFence.h"
 #include "API/LowLevel/RootSignature.h"
-#endif //FALCOR_D3D12 || defined FALCOR_VULKAN
+#endif //FALCOR_D3D12 || defined FALCOR_VK
 
 // Graphics
 #include "Graphics/Camera/Camera.h"
