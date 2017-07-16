@@ -61,4 +61,6 @@ namespace Falcor
     void initVkMultiSampleInfo(const BlendState* pState, const Fbo::Desc& fboDesc, const uint32_t& sampleMask, VkPipelineMultisampleStateCreateInfo& infoOut, bool enableSampleFrequency);
     void initVkInputAssemblyInfo(const Vao* pVao, VkPipelineInputAssemblyStateCreateInfo& infoOut);
     void initVkRenderPassInfo(const Fbo::Desc& fboDesc, RenderPassCreateInfo& infoOut);
+
+    VkFilter getVkFilter(Sampler::Filter filter);
 }

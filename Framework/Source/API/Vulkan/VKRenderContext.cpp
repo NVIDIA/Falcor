@@ -30,6 +30,7 @@
 #include "API/LowLevel/DescriptorPool.h"
 #include "API/Device.h"
 #include "glm/gtc/type_ptr.hpp"
+#include "VKState.h"
 
 namespace Falcor
 {
@@ -299,7 +300,7 @@ namespace Falcor
             initBlitData<2>(pSrc.get(), srcRect, blt.srcSubresource, blt.srcOffsets);
             initBlitData<2>(pDst.get(), dstRect, blt.dstSubresource, blt.dstOffsets);
 
-            vkCmdBlitImage(mpLowLevelData->getCommandList(), pSrc->getResource()->getApiHandle(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, pDst->getResource()->getApiHandle(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &blt, VK_FILTER_NEAREST);
+            vkCmdBlitImage(mpLowLevelData->getCommandList(), pSrc->getResource()->getApiHandle(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, pDst->getResource()->getApiHandle(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &blt, getVkFilter(filter));
         }
     }
 }
