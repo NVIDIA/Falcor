@@ -251,6 +251,7 @@ namespace Falcor
         uint64_t freq;
         d3d_call(getCommandQueueHandle(LowLevelContextData::CommandQueueType::Direct, 0)->GetTimestampFrequency(&freq));
         mGpuTimestampFrequency = 1000.0 / (double)freq;
+
         return true;
     }
 
@@ -280,7 +281,7 @@ namespace Falcor
         return mpApiData->isWindowOccluded;
     }
 
-    bool Device::isExtensionSupported(const std::string& name)
+    bool Device::isExtensionSupported(const std::string& name) const
     {
         return _ENABLE_NVAPI;
     }

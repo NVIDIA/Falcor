@@ -85,7 +85,7 @@ namespace Falcor
     {
     }
 
-    VRSystem* VRSystem::start(RenderContext::SharedPtr renderCtx, bool enableVSync)
+    VRSystem* VRSystem::start(bool enableVSync)
     {
         if(spVrSystem)
         {
@@ -96,10 +96,7 @@ namespace Falcor
         // Create our VRSystem object and apply developer-specified parameters
         spVrSystem = new VRSystem;
         spVrSystem->mVSyncEnabled = enableVSync;
-
-        // Ensure our VR system knows what our render context is.
-        spVrSystem->mpContext = renderCtx;
-
+        
         // Initialize the HMD system and check for initialization errors
         vr::HmdError hmdError;
         spVrSystem->mpHMD = vr::VR_Init(&hmdError, vr::VRApplication_Scene);
@@ -172,7 +169,12 @@ namespace Falcor
             return spVrSystem;
         }
 
-        hmdError = vr::VRInitError_None;
+        return spVrSystem;
+    }
+
+    void VRSystem::initDisplayAndController(RenderContext::SharedPtr pRenderContext)
+    {
+        mpContext = pRenderContext;
 
         // Create a display/hmd object for our system
         spVrSystem->mDisplay = VRDisplay::create(spVrSystem->mpHMD, spVrSystem->mpModels);
@@ -192,7 +194,6 @@ namespace Falcor
         // All right!  Done with basic setup.  If we get this far, we should be ready and able to render
         //    (even if we have issues with controllers, etc).
         spVrSystem->mReadyToRender = true;
-        return spVrSystem;
     }
 
     void VRSystem::cleanup(void)

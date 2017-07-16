@@ -32,6 +32,7 @@
 #include "API/Vulkan/FalcorVK.h"
 #include <set>
 #include "Falcor.h"
+#include "VR/OpenVR/VRSystem.h"
 
 // #define VK_REPORT_PERF_WARNINGS // Uncomment this to see performance warnings
 namespace Falcor

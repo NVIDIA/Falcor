@@ -217,13 +217,6 @@ namespace Falcor
         // Init the UI
         initUI();
 
-        // Init VR
-        mVrEnabled = config.deviceDesc.enableVR;
-        if (mVrEnabled)
-        {
-            VRSystem::start(mpRenderContext);
-        }
-
         // Load and run
         mArgList.parseCommandLine(GetCommandLineA());
         mpPixelZoom = PixelZoom::create(mpDefaultFBO.get());

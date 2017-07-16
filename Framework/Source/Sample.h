@@ -189,7 +189,6 @@ namespace Falcor
         bool mVsyncOn = false;
         bool mShowText = true;
         bool mShowUI = true;
-        bool mVrEnabled = false;
         bool mCaptureScreen = false;
 
         struct VideoCaptureData
