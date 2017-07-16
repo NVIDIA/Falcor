@@ -394,6 +394,16 @@ namespace Falcor
 
     }
 
+    void VRSystem::refresh()
+    {
+        if (isReady())
+        {
+            // Get the VR data
+            pollEvents();
+            refreshTracking();
+        }
+    }
+
     bool VRSystem::submit(VRDisplay::Eye whichEye, const Texture::SharedConstPtr& pDisplayTex, RenderContext* pRenderCtx)
     {
         if (!mpCompositor) return false;

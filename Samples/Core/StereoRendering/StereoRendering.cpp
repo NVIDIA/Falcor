@@ -37,10 +37,10 @@ void StereoRendering::onGuiRender()
         loadScene();
     }
     Gui::DropdownList submitModeList;
-    submitModeList.push_back({ (int)SceneRenderer::RenderMode::Mono, "Render to Screen" });
-    if(VRSystem::instance() && gpDevice->isExtensionSupported(""))
+    submitModeList.push_back({ (int)RenderMode::Mono, "Render to Screen" });
+    if(VRSystem::instance())
     {
-        submitModeList.push_back({(int)SceneRenderer::RenderMode::SinglePassStereo, "Single Pass Stereo"});
+        submitModeList.push_back({(int)RenderMode::SinglePassStereo, "Single Pass Stereo"});
         mpGui->addCheckBox("Display VR FBO", mShowStereoViews);
     }
     if (mpGui->addDropdown("Submission Mode", submitModeList, (uint32_t&)mRenderMode))
@@ -81,6 +81,7 @@ void StereoRendering::initVR()
 void StereoRendering::submitSinglePassStereo()
 {
     PROFILE(SPS);
+    VRSystem::instance()->refresh();
 
     // Clear the FBO
     mpRenderContext->clearFbo(mpVrFbo->getFbo().get(), kClearColor, 1.0f, 0, FboAttachmentType::All);
@@ -122,12 +123,15 @@ void StereoRendering::setRenderMode()
         mpGraphicsState->toggleSinglePassStereo(false);
         switch(mRenderMode)
         {
-        case SceneRenderer::RenderMode::SinglePassStereo:
+        case RenderMode::SinglePassStereo:
             mpProgram->addDefine("_SINGLE_PASS_STEREO");
             mpGraphicsState->toggleSinglePassStereo(true);
+            mpSceneRenderer->setCameraControllerType(SceneRenderer::CameraControllerType::Hmd);
+            break;
+        case RenderMode::Mono:
+            mpSceneRenderer->setCameraControllerType(SceneRenderer::CameraControllerType::SixDof);
             break;
         }
-        mpSceneRenderer->setRenderMode(mRenderMode);
     }
 }
 
@@ -190,10 +194,10 @@ void StereoRendering::onFrameRender()
 
         switch(mRenderMode)
         {
-        case SceneRenderer::RenderMode::Mono:
+        case RenderMode::Mono:
             submitToScreen();
             break;
-        case SceneRenderer::RenderMode::SinglePassStereo:
+        case RenderMode::SinglePassStereo:
             submitSinglePassStereo();
             break;
         default:
@@ -215,7 +219,7 @@ bool StereoRendering::onKeyEvent(const KeyboardEvent& keyEvent)
     {
         if (VRSystem::instance() && gpDevice->isExtensionSupported(""))
         {
-            mRenderMode = (mRenderMode == SceneRenderer::RenderMode::SinglePassStereo) ? SceneRenderer::RenderMode::Mono : SceneRenderer::RenderMode::SinglePassStereo;
+            mRenderMode = (mRenderMode == RenderMode::SinglePassStereo) ? RenderMode::Mono : RenderMode::SinglePassStereo;
             setRenderMode();
             return true;
         }

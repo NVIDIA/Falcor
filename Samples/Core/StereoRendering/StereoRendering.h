@@ -54,7 +54,13 @@ private:
     void loadScene();
     void loadScene(const std::string & filename);
 
-    SceneRenderer::RenderMode mRenderMode = SceneRenderer::RenderMode::Mono;
+    enum class RenderMode
+    {
+        Mono,
+        Stereo,
+        SinglePassStereo
+    };
+    RenderMode mRenderMode = RenderMode::Mono;
     void submitToScreen();
     void initVR();
     void blitTexture(Texture::SharedPtr pTexture, uint32_t xStart);

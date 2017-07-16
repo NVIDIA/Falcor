@@ -109,21 +109,24 @@ namespace Falcor
         //////////////////////////////////////////////////////////////////////////////////////////////////
        
         // Is the VR HMD initialized and read to render?  If false, go grab errors via getError()
-        bool isReady( void );
+        bool isReady();
 
         // Is VSync currently enabled?  (TODO: Add toggle.  But mostly you just want vSync always ON.)
-        bool isVSyncEnabled( void ) const { return mVSyncEnabled; }
+        bool isVSyncEnabled() const { return mVSyncEnabled; }
 
         //////////////////////////////////////////////////////////////////////////////////////////////////
         // Basic wrapper usage methods
         //////////////////////////////////////////////////////////////////////////////////////////////////
 
         // Query the HMD for the current position of tracked devices
-        void refreshTracking( void );
+        void refreshTracking();
 
         // Poll for events (device [de]activate, button presses, etc).  Returns true if event(s) occurs.
         //     Updates internal state (i.e., in the HMD, controller, tracker classes) to reflect these events
-        bool pollEvents( void );
+        bool pollEvents();
+
+        // Refresh the HMD. This is just a wrapper which calls refreshTracking() and pollEvents()
+        void refresh();
 
         // Submit rendered frames to the HMD.  Should submit one image to left eye and one to right eye 
         //     each frame.  The submit() routines handle all warping due to lens and color distortions.
@@ -136,7 +139,7 @@ namespace Falcor
         //////////////////////////////////////////////////////////////////////////////////////////////////
 
         // Get our head mounted display object.  Includes rendering matrices and target size.
-        VRDisplay::SharedPtr    getHMD( void ) { return mDisplay; }
+        VRDisplay::SharedPtr    getHMD() { return mDisplay; }
 
         // Get our controller(s).  Includes position, button state, aim, etc.
         VRController::SharedPtr getController( uint32_t idx ) { return (idx < 2) ? mControllers[idx] : nullptr; }
@@ -145,7 +148,7 @@ namespace Falcor
         VRTrackerBox::SharedPtr getTracker( uint32_t idx ) { return (idx < 2) ? mTracker[idx] : nullptr; }
 
         // Get information about our room/play area.
-        VRPlayArea::SharedPtr   getPlayArea( void ) { return mPlayArea; }
+        VRPlayArea::SharedPtr   getPlayArea() { return mPlayArea; }
 
         //////////////////////////////////////////////////////////////////////////////////////////////////
         // Access renderable geometry.  These are shortcuts (can also be accessed through controller, hmd,
@@ -153,12 +156,12 @@ namespace Falcor
         //     not built-in model for them.
         //////////////////////////////////////////////////////////////////////////////////////////////////
 
-        Model::SharedPtr getControllerModel( void ) { return mpControlModel; }
-        Model::SharedPtr getTrackerModel( void ) { return mpLighthouseModel; }
-        Model::SharedPtr getHMDModel( void ) { return mpHMDModel; }
+        Model::SharedPtr getControllerModel() { return mpControlModel; }
+        Model::SharedPtr getTrackerModel() { return mpLighthouseModel; }
+        Model::SharedPtr getHMDModel() { return mpHMDModel; }
 
         // This is an extra, added by Chris, for a simple xyz axis model for controllers.
-        Model::SharedPtr getAxesModel( void ) { return mpAxisModel; }
+        Model::SharedPtr getAxesModel() { return mpAxisModel; }
 
         // Gets a very simple Falcor model representing the HMD's lens distortion.
         //    -> AttirbuteLocation 'Position' is position.  2 components directly representing NDC.
@@ -227,7 +230,7 @@ namespace Falcor
         vr::TrackedDevicePose_t *mDevicePoses = nullptr;
 
         // Some experimental display stuff concerning the HMD's image distortion 
-        void createDistortionVBO( void );
+        void createDistortionVBO();
 
         // Our sub-classes that store state for controllers, hmds, trackers, and the play area
         VRController::SharedPtr mControllers[2];
