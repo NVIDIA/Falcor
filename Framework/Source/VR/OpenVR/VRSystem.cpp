@@ -33,6 +33,7 @@
 #include "glm/glm.hpp"
 #include "glm/gtx/transform.hpp"
 #include "API/Device.h"
+#include "Utils/StringUtils.h"
 
 namespace Falcor
 {
@@ -499,10 +500,25 @@ namespace Falcor
 #endif
 
 #ifdef FALCOR_VK
-    std::vector<std::string> VRSystem::getRequiredVulkanExtensions(VkPhysicalDevice device)
+    std::vector<std::string> VRSystem::getRequiredVkInstanceExtensions()
     {
-        std::vector<std::string> ext;
-        ext.push_back("VK_NV_external_memory_capabilities");
+        uint32_t size = spVrSystem->mpCompositor->GetVulkanInstanceExtensionsRequired(nullptr, 0);
+        std::vector<char> charVec(size);
+        spVrSystem->mpCompositor->GetVulkanInstanceExtensionsRequired(charVec.data(), size);
+        std::string str(charVec.data());
+
+        std::vector<std::string> ext = splitString(str, " ");
+        return ext;
+    }
+
+    std::vector<std::string> VRSystem::getRequiredVkDeviceExtensions(VkPhysicalDevice device)
+    {
+        uint32_t size = spVrSystem->mpCompositor->GetVulkanDeviceExtensionsRequired(device, nullptr, 0);
+        std::vector<char> charVec(size);
+        spVrSystem->mpCompositor->GetVulkanDeviceExtensionsRequired(device, charVec.data(), size);
+        std::string str(charVec.data());
+
+        std::vector<std::string> ext = splitString(str, " ");
         return ext;
     }
 #endif
