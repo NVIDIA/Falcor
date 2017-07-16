@@ -105,7 +105,7 @@ namespace Falcor
         return c;
     }
 
-    void Logger::log(Level L, const std::string& msg, const bool forceMsgBox /* = false*/)
+    void Logger::log(Level L, const std::string& msg, bool forceMsgBox)
     {
 #if _LOG_ENABLED
         if(sInit)
@@ -130,10 +130,12 @@ namespace Falcor
                 debugBreak();
             }
 
-            if(sShowErrorBox || forceMsgBox)
-            {
-                msgBox(msg);
-            }
+            forceMsgBox = sShowErrorBox;
+        }
+
+        if (forceMsgBox)
+        {
+            msgBox(msg);
         }
     }
 }
