@@ -116,12 +116,12 @@ namespace Falcor
         initD3DRasterizerDesc(mDesc.mpRasterizerState.get(), desc.RasterizerState);
         initD3DDepthStencilDesc(mDesc.mpDepthStencilState.get(), desc.DepthStencilState);
 
-        InputElementDescVec inputElements;
+        InputLayoutDesc layoutDesc;
         if(mDesc.mpLayout)
         {
-            initD3DVertexLayout(mDesc.mpLayout.get(), inputElements);
-            desc.InputLayout.NumElements = (uint32_t)inputElements.size();
-            desc.InputLayout.pInputElementDescs = inputElements.data();
+            initD3DVertexLayout(mDesc.mpLayout.get(), layoutDesc);
+            desc.InputLayout.NumElements = (uint32_t)layoutDesc.elements.size();
+            desc.InputLayout.pInputElementDescs = layoutDesc.elements.data();
         }
         desc.SampleMask = mDesc.mSampleMask;
         desc.pRootSignature = mDesc.mpRootSignature ? mDesc.mpRootSignature->getApiHandle() : nullptr;

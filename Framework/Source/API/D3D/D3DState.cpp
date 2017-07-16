@@ -206,9 +206,10 @@ namespace Falcor
         }
     }
 
-    void initD3DVertexLayout(const VertexLayout* pLayout, InputElementDescVec& elemDesc)
+    void initD3DVertexLayout(const VertexLayout* pLayout, InputLayoutDesc& layoutDesc)
     {
-        elemDesc.clear();
+        layoutDesc.elements.clear();
+        layoutDesc.names.clear();
 
         for (size_t vb = 0; vb < pLayout->getBufferCount(); vb++)
         {
@@ -224,16 +225,16 @@ namespace Falcor
                     element.InputSlotClass = getD3DInputClass(pVB->getInputClass());
                     element.InstanceDataStepRate = pVB->getInstanceStepRate();
                     const auto& SemanticName = pVB->getElementName(elemID);
+                    layoutDesc.names.push_back(std::make_unique<char[]>(SemanticName.size() + 1));
+                    char* name = layoutDesc.names.back().get();
+                    memcpy(name, SemanticName.c_str(), SemanticName.size());
+                    name[SemanticName.size()] = 0;
 
                     for (uint32_t arrayIndex = 0; arrayIndex < pVB->getElementArraySize(elemID); arrayIndex++)
                     {
-                        // Reallocating name for each array index simplifies the destructor
-                        char* name = new char[SemanticName.size() + 1]; // #FIXME Mem leak
-                        memcpy(name, SemanticName.c_str(), SemanticName.size());
-                        name[SemanticName.size()] = 0;
                         element.SemanticName = name;
                         element.SemanticIndex = arrayIndex;
-                        elemDesc.push_back(element);
+                        layoutDesc.elements.push_back(element);
 
                         element.AlignedByteOffset += getFormatBytesPerBlock(pVB->getElementFormat(elemID));
                     }
