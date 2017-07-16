@@ -67,6 +67,7 @@ namespace Falcor
         uint32_t falcorToVulkanQueueType[Device::kQueueTypeCount];
         uint32_t falcorToVkMemoryType[(uint32_t)Device::MemoryType::Count];
         VkPhysicalDeviceLimits deviceLimits;
+        std::vector<VkExtensionProperties> deviceExtensions;
 
 #ifdef DEFAULT_ENABLE_DEBUG_LAYER
         VkDebugReportCallbackEXT debugReportCallbackHandle;
@@ -185,12 +186,15 @@ namespace Falcor
 
         // Extensions to use when creating instance
         std::vector<const char*> extensionNames = { "VK_KHR_surface", "VK_KHR_win32_surface" };
-        
-        if(enableDebugLayers)
+        if (enableDebugLayers)
         {
             extensionNames.push_back("VK_EXT_debug_report");
         }
 
+        if (enableOpenVR)
+        {
+            dosomething
+        }
         VkApplicationInfo appInfo = {};
         appInfo.pEngineName = "Falcor";
         appInfo.engineVersion = VK_MAKE_VERSION(FALCOR_MAJOR_VERSION, FALCOR_MINOR_VERSION, 0);
@@ -324,6 +328,15 @@ namespace Falcor
         return physicalDevice;
     }
 
+    bool isExtensionSupport(const std::string& str, const std::vector<VkExtensionProperties>& vec)
+    {
+        for (const auto& s : vec)
+        {
+            if (str == s.extensionName) return true;
+        }
+        return false;
+    }
+
     VkDevice createLogicalDevice(VkPhysicalDevice physicalDevice, DeviceApiData *pData, const Device::Desc& desc, std::vector<CommandQueueHandle> cmdQueues[Device::kQueueTypeCount])
     {
         // Features
@@ -356,26 +369,54 @@ namespace Falcor
         // Extensions
         uint32_t extensionCount = 0;
         vkEnumerateDeviceExtensionProperties(physicalDevice, nullptr, &extensionCount, nullptr);
-        std::vector<VkExtensionProperties> deviceExtensions(extensionCount);
-        vkEnumerateDeviceExtensionProperties(physicalDevice, nullptr, &extensionCount, deviceExtensions.data());
+        pData->deviceExtensions.resize(extensionCount);
+        vkEnumerateDeviceExtensionProperties(physicalDevice, nullptr, &extensionCount, pData->deviceExtensions.data());
 
-        for (const VkExtensionProperties& extension : deviceExtensions)
+        for (const VkExtensionProperties& extension : pData->deviceExtensions)
         {
             logInfo("Available Device Extension: " + std::string(extension.extensionName) + " - VK Spec Version: " + std::to_string(extension.specVersion));
         }
 
-        const char* extensionNames[] =
+        std::vector<const char*> extensionNames = { "VK_KHR_swapchain" };
+        assert(isExtensionSupported(extensionNames[0], pData->deviceExtensions));
+
+#ifdef FALCOR_VK
+        if (desc.enableVR)
         {
-            "VK_KHR_swapchain"
-        };
+            const auto requiredOpenVRExt = VRSystem::getRequiredVkDeviceExtensions(physicalDevice);
+            for (const auto& a : requiredOpenVRExt)
+            {
+                if(isExtensionSupport(a, pData->deviceExtensions) == false)
+                {
+                    logError("Can't start OpenVR. Missing device extension " + a);
+                }
+                else
+                {
+                    extensionNames.push_back(a.c_str());
+                }
+            }
+        }
+#endif
+
+        for (const auto& a : desc.requiredExtensions)
+        {
+            if (isExtensionSupported(a, pData->deviceExtensions))
+            {
+                extensionNames.push_back(a.c_str());
+            }
+            else
+            {
+                logWarning("The device doesn't support the requested '" + a + "` extension");
+            }
+        }
 
         // Logical Device
         VkDeviceCreateInfo deviceInfo = {};
         deviceInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
         deviceInfo.queueCreateInfoCount = (uint32_t)queueInfos.size();
         deviceInfo.pQueueCreateInfos = queueInfos.data();
-        deviceInfo.enabledExtensionCount = arraysize(extensionNames);
-        deviceInfo.ppEnabledExtensionNames = extensionNames;
+        deviceInfo.enabledExtensionCount = (uint32_t)extensionNames.size();
+        deviceInfo.ppEnabledExtensionNames = extensionNames.data();
         deviceInfo.pEnabledFeatures = &requiredFeatures;
 
         VkDevice device;
@@ -541,7 +582,7 @@ namespace Falcor
         if (!physicalDevice) return false;
         VkSurfaceKHR surface = createSurface(instance, physicalDevice, mpApiData, mpWindow.get());
         if (!surface) return false;
-        VkDevice device = createLogicalDevice(physicalDevice, mpApiData, desc, mCmdQueues);
+        VkDevice device = createLogicalDevice(this, physicalDevice, mpApiData, desc, mCmdQueues);
         if (!device) return false;
         if (initMemoryTypes(physicalDevice, mpApiData) == false) return false;
 
@@ -562,9 +603,12 @@ namespace Falcor
         return false;
     }
 
-    bool Device::isExtensionSupported(const std::string& name)
+    bool Device::isExtensionSupported(const std::string& name) const
     {
-        // #VKTODO add the call
+        for (const auto& ext : mpApiData->deviceExtensions)
+        {
+            if (name == ext.extensionName) return true;
+        }
         return false;
     }
 
@@ -573,7 +617,7 @@ namespace Falcor
         return mpApiData->falcorToVulkanQueueType[(uint32_t)type];
     }
 
-    uint32_t Device::getVkMemoryType(MemoryType falcorType)
+    uint32_t Device::getVkMemoryType(MemoryType falcorType) const
     {
         return mpApiData->falcorToVkMemoryType[(uint32_t)falcorType];
     }

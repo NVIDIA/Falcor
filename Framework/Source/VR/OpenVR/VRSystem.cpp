@@ -52,10 +52,21 @@ namespace Falcor
     }
 
 #elif defined FALCOR_VK
-    static vr::D3D12TextureData_t prepareSubmitData(const Texture::SharedConstPtr& pTex, RenderContext* pRenderCtx)
+    static vr::VRVulkanTextureData_t prepareSubmitData(const Texture::SharedConstPtr& pTex, RenderContext* pRenderCtx)
     {
-        UNSUPPORTED_IN_VULKAN(__FUNCTION__);
-        return{};
+        vr::VRVulkanTextureData_t data;
+        data.m_nImage = (uint64_t)(VkImage)pTex->getApiHandle();
+        data.m_pDevice = gpDevice->getApiHandle();
+        data.m_pPhysicalDevice = gpDevice->getApiHandle();
+        data.m_pInstance = gpDevice->getApiHandle();
+        data.m_pQueue = pRenderCtx->getLowLevelData()->getCommandQueue();
+        data.m_nQueueFamilyIndex = gpDevice->getApiCommandQueueType(LowLevelContextData::CommandQueueType::Direct);
+        data.m_nWidth = pTex->getWidth();
+        data.m_nHeight = pTex->getHeight();
+        data.m_nFormat = getVkFormat(pTex->getFormat());
+        data.m_nSampleCount = pTex->getSampleCount();
+
+        return data;
     }
 
     static vr::ETextureType getVrTextureType()
@@ -84,9 +95,6 @@ namespace Falcor
 
         // Create our VRSystem object and apply developer-specified parameters
         spVrSystem = new VRSystem;
-#ifdef FALCOR_D3D11
-        spVrSystem->mRenderAPI = vr::API_DirectX;
-#endif
         spVrSystem->mVSyncEnabled = enableVSync;
 
         // Ensure our VR system knows what our render context is.
@@ -486,6 +494,15 @@ namespace Falcor
         {
             logWarning("VR system not initialized");
         }
+    }
+#endif
+
+#ifdef FALCOR_VK
+    std::vector<std::string> VRSystem::getRequiredVulkanExtensions(VkPhysicalDevice device)
+    {
+        std::vector<std::string> ext;
+        ext.push_back("VK_NV_external_memory_capabilities");
+        return ext;
     }
 #endif
 }

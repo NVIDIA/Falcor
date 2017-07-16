@@ -191,6 +191,7 @@ namespace Falcor
             return;
         }
 
+        Device::Desc d = config.deviceDesc;
         gpDevice = Device::create(mpWindow, config.deviceDesc);
         if (gpDevice == nullptr)
         {
@@ -217,7 +218,7 @@ namespace Falcor
         initUI();
 
         // Init VR
-        mVrEnabled = config.enableVR;
+        mVrEnabled = config.deviceDesc.enableVR;
         if (mVrEnabled)
         {
             VRSystem::start(mpRenderContext);

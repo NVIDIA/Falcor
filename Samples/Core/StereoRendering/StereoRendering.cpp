@@ -64,11 +64,11 @@ void StereoRendering::initVR()
         mpVrFbo = VrFbo::create(vrFboDesc);
 
         static bool first = true;
-        if (Device::isExtensionSupported("") == false && first)
-        {
-            first = false;
-            msgBox("The sample relies on NVIDIA's Single Pass Stereo extension to operate correctly.\nMake sure you have an NVIDIA GPU, you enabled NVAPI support in FalcorConfig.h at that you downloaded the NVAPI SDK.\nCheck the readme for instructions");
-        }
+//         if (Device::isExtensionSupported("") == false && first)
+//         {
+//             first = false;
+//             msgBox("The sample relies on NVIDIA's Single Pass Stereo extension to operate correctly.\nMake sure you have an NVIDIA GPU, you enabled NVAPI support in FalcorConfig.h at that you downloaded the NVAPI SDK.\nCheck the readme for instructions");
+//         }
     }
     else
     {
@@ -180,7 +180,19 @@ void StereoRendering::onFrameRender()
 {
     static uint32_t frameCount = 0u;
 
+    VRSystem* pVR = VRSystem::instance();
+
+    if (pVR && pVR->isReady())
+    {
+        // Get the VR data
+        pVR->pollEvents();
+        pVR->refreshTracking();
+    }
+
     mpRenderContext->clearFbo(mpDefaultFBO.get(), kClearColor, 1.0f, 0, FboAttachmentType::All);
+    mpRenderContext->clearRtv(mpVrFbo->getFbo()->getColorTexture(0)->getRTV(0, 0, 1).get(), kClearColor);
+    mpRenderContext->clearRtv(mpVrFbo->getFbo()->getColorTexture(0)->getRTV(0, 1, 1).get(), vec4(1,1,1,1));
+    mpVrFbo->submitToHmd(mpRenderContext.get());
 
     if(mpSceneRenderer)
     {      
@@ -244,6 +256,9 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
     config.windowDesc.height = 1024;
     config.windowDesc.width = 1600;
     config.windowDesc.resizableWindow = true;
-    config.enableVR = true;
+    config.deviceDesc.enableVR = true;
+#ifdef FALCOR_VK
+    config.deviceDesc.enableDebugLayer = false; // OpenVR requires an extension that the debug layer doesn't recognize. It causes the application to crash
+#endif
     sample.run(config);
 }

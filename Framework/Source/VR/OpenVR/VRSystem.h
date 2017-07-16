@@ -185,6 +185,10 @@ namespace Falcor
         //////////////////////////////////////////////////////////////////////////////////////////////////
         bool getTimeSinceLastVsync(float *pfSecondsSinceLastVsync, uint64_t *pulFrameCounter);
 
+#ifdef FALCOR_VK
+        static std::vector<std::string> getRequiredVkInstanceExtensions();
+        static std::vector<std::string> getRequiredVkDeviceExtensions(VkPhysicalDevice device);
+#endif
     private:
         //////////////////////////////////////////////////////////////////////////////////////////////////
         // Declare private stuff..
