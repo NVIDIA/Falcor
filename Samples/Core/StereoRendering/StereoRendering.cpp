@@ -156,9 +156,6 @@ void StereoRendering::onLoad()
     initVR();
 
     mpGraphicsState = GraphicsState::create();
-
-    mpBlit = FullScreenPass::create("blit.fs");
-    mpBlitVars = GraphicsVars::create(mpBlit->getProgram()->getActiveVersion()->getReflector());
     setRenderMode();
 
     Sampler::Desc samplerDesc;
@@ -170,17 +167,12 @@ void StereoRendering::blitTexture(Texture::SharedPtr pTexture, uint32_t xStart)
 {
     if(mShowStereoViews)
     {
-        uint32_t w = mpDefaultFBO->getWidth() / 2;
-        uint32_t h = mpDefaultFBO->getHeight();
-        GraphicsState::Viewport vp(float(xStart), 0, float(w), float(h), 0, 1);
-        mpGraphicsState->setViewport(0, vp, true);
-        
-        mpGraphicsState->setFbo(mpDefaultFBO, false);
-        mpRenderContext->setGraphicsState(mpGraphicsState);
-        mpBlitVars->setTexture("gTexture", pTexture);
-        mpRenderContext->setGraphicsVars(mpBlitVars);  
-
-        mpBlit->execute(mpRenderContext.get());
+        uvec4 dstRect;
+        dstRect.x = xStart;
+        dstRect.y = 0;
+        dstRect.z = xStart + (mpDefaultFBO->getWidth() / 2);
+        dstRect.w = mpDefaultFBO->getHeight();
+        mpRenderContext->blit(pTexture->getSRV(0, 1, 0, 1), mpDefaultFBO->getRenderTargetView(0), uvec4(-1), dstRect);
     }
 }
 
