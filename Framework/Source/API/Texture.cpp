@@ -28,6 +28,7 @@
 #include "Framework.h"
 #include "API/Texture.h"
 #include "API/Device.h"
+#include "Utils/ThreadPool.h"
 
 namespace Falcor
 {
@@ -110,7 +111,14 @@ namespace Falcor
     {
         uint32_t subresource = getSubresourceIndex(arraySlice, mipLevel);
         std::vector<uint8> textureData = gpDevice->getRenderContext()->readTextureSubresource(this, subresource);
-        Bitmap::saveImage(filename, getWidth(mipLevel), getHeight(mipLevel), format, exportFlags, getFormat(), true, textureData.data());
+
+        auto& func = [=]
+        {
+            Bitmap::saveImage(filename, getWidth(mipLevel), getHeight(mipLevel), format, exportFlags, getFormat(), true, (void*)textureData.data());
+        };
+
+        static ThreadPool<16> sThreadPool;
+        sThreadPool.getAvailable() = std::thread(func);
     }
 
     void Texture::uploadInitData(const void* pData, bool autoGenMips)

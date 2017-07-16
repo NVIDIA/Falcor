@@ -126,6 +126,7 @@
 #include "Utils/Video/VideoEncoderUI.h"
 #include "Utils/Video/VideoDecoder.h"
 #include "Utils/ProgressBar.h"
+#include "Utils/ThreadPool.h"
 
 // VR
 #include "VR/OpenVR/VRSystem.h"

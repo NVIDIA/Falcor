@@ -1637,6 +1637,7 @@
     <ClInclude Include="Data\Effects\LeanMapData.hlsli">
       <Filter>Data\Effects</Filter>
     </ClInclude>
+    <ClInclude Include="Utils\ThreadPool.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Externals">

@@ -1075,6 +1075,7 @@
     <ClInclude Include="Utils\Psychophysics\SingleThresholdMeasurement.h" />
     <ClInclude Include="Utils\StringUtils.h" />
     <ClInclude Include="Utils\TextRenderer.h" />
+    <ClInclude Include="Utils\ThreadPool.h" />
     <ClInclude Include="Utils\UserInput.h" />
     <ClInclude Include="Utils\Video\VideoDecoder.h" />
     <ClInclude Include="Utils\Video\VideoEncoder.h" />
