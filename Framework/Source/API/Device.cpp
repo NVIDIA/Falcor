@@ -28,6 +28,7 @@
 #pragma once
 #include "Framework.h"
 #include "API/Device.h"
+#include "VR/OpenVR/VRSystem.h"
 
 namespace Falcor
 {
@@ -41,17 +42,14 @@ namespace Falcor
             return false;
         }
         gpDevice = SharedPtr(new Device(pWindow));
-        if (gpDevice->init(desc) == false)
-        {
-            gpDevice = nullptr;
-        }
-
-        gpDevice->mTimestampQueryHeap = QueryHeap::create(QueryHeap::Type::Timestamp, 128 * 1024 * 1024);
+        if (gpDevice->init(desc) == false) { gpDevice = nullptr;}
         return gpDevice;
     }
 
     bool Device::init(const Desc& desc)
     {
+        if (desc.enableVR) VRSystem::start(desc.enableVsync);
+
         const uint32_t kDirectQueueIndex = (uint32_t)LowLevelContextData::CommandQueueType::Direct;
         assert(desc.cmdQueues[kDirectQueueIndex] > 0);
         if (apiInit(desc) == false) return false;
@@ -88,6 +86,9 @@ namespace Falcor
         {
             return false;
         }
+
+        if (desc.enableVR) VRSystem::instance()->initDisplayAndController(mpRenderContext);
+        gpDevice->mTimestampQueryHeap = QueryHeap::create(QueryHeap::Type::Timestamp, 128 * 1024 * 1024);
 
         return true;
     }

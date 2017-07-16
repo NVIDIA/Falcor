@@ -33,6 +33,7 @@
 #include "glm/glm.hpp"
 #include "glm/gtx/transform.hpp"
 #include "API/Device.h"
+#include "Utils/StringUtils.h"
 
 namespace Falcor
 {
@@ -52,10 +53,21 @@ namespace Falcor
     }
 
 #elif defined FALCOR_VK
-    static vr::D3D12TextureData_t prepareSubmitData(const Texture::SharedConstPtr& pTex, RenderContext* pRenderCtx)
+    static vr::VRVulkanTextureData_t prepareSubmitData(const Texture::SharedConstPtr& pTex, RenderContext* pRenderCtx)
     {
-        UNSUPPORTED_IN_VULKAN(__FUNCTION__);
-        return{};
+        vr::VRVulkanTextureData_t data;
+        data.m_nImage = (uint64_t)(VkImage)pTex->getApiHandle();
+        data.m_pDevice = gpDevice->getApiHandle();
+        data.m_pPhysicalDevice = gpDevice->getApiHandle();
+        data.m_pInstance = gpDevice->getApiHandle();
+        data.m_pQueue = pRenderCtx->getLowLevelData()->getCommandQueue();
+        data.m_nQueueFamilyIndex = gpDevice->getApiCommandQueueType(LowLevelContextData::CommandQueueType::Direct);
+        data.m_nWidth = pTex->getWidth();
+        data.m_nHeight = pTex->getHeight();
+        data.m_nFormat = getVkFormat(pTex->getFormat());
+        data.m_nSampleCount = pTex->getSampleCount();
+
+        return data;
     }
 
     static vr::ETextureType getVrTextureType()
@@ -74,7 +86,7 @@ namespace Falcor
     {
     }
 
-    VRSystem* VRSystem::start(RenderContext::SharedPtr renderCtx, bool enableVSync)
+    VRSystem* VRSystem::start(bool enableVSync)
     {
         if(spVrSystem)
         {
@@ -84,14 +96,8 @@ namespace Falcor
 
         // Create our VRSystem object and apply developer-specified parameters
         spVrSystem = new VRSystem;
-#ifdef FALCOR_D3D11
-        spVrSystem->mRenderAPI = vr::API_DirectX;
-#endif
         spVrSystem->mVSyncEnabled = enableVSync;
-
-        // Ensure our VR system knows what our render context is.
-        spVrSystem->mpContext = renderCtx;
-
+        
         // Initialize the HMD system and check for initialization errors
         vr::HmdError hmdError;
         spVrSystem->mpHMD = vr::VR_Init(&hmdError, vr::VRApplication_Scene);
@@ -164,7 +170,12 @@ namespace Falcor
             return spVrSystem;
         }
 
-        hmdError = vr::VRInitError_None;
+        return spVrSystem;
+    }
+
+    void VRSystem::initDisplayAndController(RenderContext::SharedPtr pRenderContext)
+    {
+        mpContext = pRenderContext;
 
         // Create a display/hmd object for our system
         spVrSystem->mDisplay = VRDisplay::create(spVrSystem->mpHMD, spVrSystem->mpModels);
@@ -184,7 +195,6 @@ namespace Falcor
         // All right!  Done with basic setup.  If we get this far, we should be ready and able to render
         //    (even if we have issues with controllers, etc).
         spVrSystem->mReadyToRender = true;
-        return spVrSystem;
     }
 
     void VRSystem::cleanup(void)
@@ -486,6 +496,30 @@ namespace Falcor
         {
             logWarning("VR system not initialized");
         }
+    }
+#endif
+
+#ifdef FALCOR_VK
+    std::vector<std::string> VRSystem::getRequiredVkInstanceExtensions()
+    {
+        uint32_t size = spVrSystem->mpCompositor->GetVulkanInstanceExtensionsRequired(nullptr, 0);
+        std::vector<char> charVec(size);
+        spVrSystem->mpCompositor->GetVulkanInstanceExtensionsRequired(charVec.data(), size);
+        std::string str(charVec.data());
+
+        std::vector<std::string> ext = splitString(str, " ");
+        return ext;
+    }
+
+    std::vector<std::string> VRSystem::getRequiredVkDeviceExtensions(VkPhysicalDevice device)
+    {
+        uint32_t size = spVrSystem->mpCompositor->GetVulkanDeviceExtensionsRequired(device, nullptr, 0);
+        std::vector<char> charVec(size);
+        spVrSystem->mpCompositor->GetVulkanDeviceExtensionsRequired(device, charVec.data(), size);
+        std::string str(charVec.data());
+
+        std::vector<std::string> ext = splitString(str, " ");
+        return ext;
     }
 #endif
 }

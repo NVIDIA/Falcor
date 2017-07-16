@@ -87,9 +87,11 @@ namespace Falcor
         // Constructor and destructor methods 
         //////////////////////////////////////////////////////////////////////////////////////////////////
 
-        // Create an OpenVR system class and initialize the system
-        static VRSystem* start( RenderContext::SharedPtr renderCtx, bool enableVSync = true );
-
+        /** Create an OpenVR system class and initialize the system.
+            If using Vulkan, this function needs to be called before creating VkInstance, so that we can retrieve the required extensions.
+            For D3D11 and D3D12 this can be called after the device was created
+        */
+        static VRSystem* start( bool enableVSync = true );
         static VRSystem* instance() { checkInit(); return spVrSystem; }
 
 		// If you want to clean up resources and shut down the VR system, call cleanup(), which acts as
@@ -98,6 +100,9 @@ namespace Falcor
 		//     or destroys them in an inappropriate order when exiting the program.  (TODO: Debug?)
 		static void cleanup(void);
 
+        /** Initialize the display and the controllers
+        */
+        void initDisplayAndController(RenderContext::SharedPtr pRenderContext);
 
         //////////////////////////////////////////////////////////////////////////////////////////////////
         // Simple accessors
@@ -108,7 +113,6 @@ namespace Falcor
 
         // Is VSync currently enabled?  (TODO: Add toggle.  But mostly you just want vSync always ON.)
         bool isVSyncEnabled( void ) const { return mVSyncEnabled; }
-
 
         //////////////////////////////////////////////////////////////////////////////////////////////////
         // Basic wrapper usage methods
@@ -185,6 +189,10 @@ namespace Falcor
         //////////////////////////////////////////////////////////////////////////////////////////////////
         bool getTimeSinceLastVsync(float *pfSecondsSinceLastVsync, uint64_t *pulFrameCounter);
 
+#ifdef FALCOR_VK
+        static std::vector<std::string> getRequiredVkInstanceExtensions();
+        static std::vector<std::string> getRequiredVkDeviceExtensions(VkPhysicalDevice device);
+#endif
     private:
         //////////////////////////////////////////////////////////////////////////////////////////////////
         // Declare private stuff..

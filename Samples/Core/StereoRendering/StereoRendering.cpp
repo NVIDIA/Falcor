@@ -63,12 +63,14 @@ void StereoRendering::initVR()
 
         mpVrFbo = VrFbo::create(vrFboDesc);
 
+#if !(_ENABLE_NVAPI) && defined(FALCOR_D3D12)
         static bool first = true;
-        if (Device::isExtensionSupported("") == false && first)
+        if (first)
         {
             first = false;
             msgBox("The sample relies on NVIDIA's Single Pass Stereo extension to operate correctly.\nMake sure you have an NVIDIA GPU, you enabled NVAPI support in FalcorConfig.h at that you downloaded the NVAPI SDK.\nCheck the readme for instructions");
         }
+#endif
     }
     else
     {
@@ -156,9 +158,6 @@ void StereoRendering::onLoad()
     initVR();
 
     mpGraphicsState = GraphicsState::create();
-
-    mpBlit = FullScreenPass::create("blit.fs");
-    mpBlitVars = GraphicsVars::create(mpBlit->getProgram()->getActiveVersion()->getReflector());
     setRenderMode();
 
     Sampler::Desc samplerDesc;
@@ -170,17 +169,12 @@ void StereoRendering::blitTexture(Texture::SharedPtr pTexture, uint32_t xStart)
 {
     if(mShowStereoViews)
     {
-        uint32_t w = mpDefaultFBO->getWidth() / 2;
-        uint32_t h = mpDefaultFBO->getHeight();
-        GraphicsState::Viewport vp(float(xStart), 0, float(w), float(h), 0, 1);
-        mpGraphicsState->setViewport(0, vp, true);
-        
-        mpGraphicsState->setFbo(mpDefaultFBO, false);
-        mpRenderContext->setGraphicsState(mpGraphicsState);
-        mpBlitVars->setTexture("gTexture", pTexture);
-        mpRenderContext->setGraphicsVars(mpBlitVars);  
-
-        mpBlit->execute(mpRenderContext.get());
+        uvec4 dstRect;
+        dstRect.x = xStart;
+        dstRect.y = 0;
+        dstRect.z = xStart + (mpDefaultFBO->getWidth() / 2);
+        dstRect.w = mpDefaultFBO->getHeight();
+        mpRenderContext->blit(pTexture->getSRV(0, 1, 0, 1), mpDefaultFBO->getRenderTargetView(0), uvec4(-1), dstRect);
     }
 }
 
@@ -252,6 +246,9 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
     config.windowDesc.height = 1024;
     config.windowDesc.width = 1600;
     config.windowDesc.resizableWindow = true;
-    config.enableVR = true;
+    config.deviceDesc.enableVR = true;
+#ifdef FALCOR_VK
+    config.deviceDesc.enableDebugLayer = false; // OpenVR requires an extension that the debug layer doesn't recognize. It causes the application to crash
+#endif
     sample.run(config);
 }

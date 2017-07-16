@@ -32,6 +32,7 @@
 #include "API/Vulkan/FalcorVK.h"
 #include <set>
 #include "Falcor.h"
+#include "VR/OpenVR/VRSystem.h"
 
 // #define VK_REPORT_PERF_WARNINGS // Uncomment this to see performance warnings
 namespace Falcor
@@ -67,6 +68,7 @@ namespace Falcor
         uint32_t falcorToVulkanQueueType[Device::kQueueTypeCount];
         uint32_t falcorToVkMemoryType[(uint32_t)Device::MemoryType::Count];
         VkPhysicalDeviceLimits deviceLimits;
+        std::vector<VkExtensionProperties> deviceExtensions;
 
 #ifdef DEFAULT_ENABLE_DEBUG_LAYER
         VkDebugReportCallbackEXT debugReportCallbackHandle;
@@ -135,74 +137,143 @@ namespace Falcor
         safe_delete(mpApiData);
     }
 
-    VkInstance createInstance(DeviceApiData* pData, bool enableDebugLayers, uint32_t apiMajorVersion, uint32_t apiMinorVersion)
+    static std::vector<VkLayerProperties> enumarateInstanceLayersProperties()
     {
-        // Find out which layers are supported
         uint32_t layerCount = 0;
         vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
-        std::vector<VkLayerProperties> allLayers(layerCount);
-        vkEnumerateInstanceLayerProperties(&layerCount, allLayers.data());
-
-        for (const VkLayerProperties& layer : allLayers)
+        std::vector<VkLayerProperties> layerProperties(layerCount);
+        vkEnumerateInstanceLayerProperties(&layerCount, layerProperties.data());
+        
+        for (const VkLayerProperties& layer : layerProperties)
         {
             logInfo("Available Vulkan Layer: " + std::string(layer.layerName) + " - VK Spec Version: " + std::to_string(layer.specVersion) + " - Implementation Version: " + std::to_string(layer.implementationVersion));
         }
 
-        // Layers to use when creating instance
-        std::vector<const char*> layerNames;
-        auto findLayer = [allLayers](const std::string& layer) 
-        {
-            for (const auto& l : allLayers)
-            {
-                if (std::string(l.layerName) == layer) return true;
-            }
-            return false;
-        };
+        return layerProperties;
+    }
 
-#define enable_layer_if_present(_layer) if(findLayer(_layer)) layerNames.push_back(_layer)
-
-        if (enableDebugLayers)
+    static bool isLayerSupported(const std::string& layer, const std::vector<VkLayerProperties>& supportedLayers)
+    {
+        for (const auto& l : supportedLayers)
         {
-            if (!findLayer("VK_LAYER_LUNARG_standard_validation"))
-            {
-                logError("Can't enable the Vulkan debug layer. Please install the Vulkan SDK or use non-debug device");
-                return nullptr;
-            }
-            layerNames.push_back("VK_LAYER_LUNARG_standard_validation");
-            enable_layer_if_present("VK_LAYER_NV_nsight");
+            if (l.layerName == layer) return true;
         }
+        return false;
+    }
 
+    void enableLayerIfPresent(const std::string& layerName, const std::vector<VkLayerProperties>& supportedLayers, std::vector<const char*> requiredLayers)
+    {
+        if (isLayerSupported(layerName, supportedLayers))
+        {
+            requiredLayers.push_back(layerName.c_str());
+        }
+        else
+        {
+            logError("Can't enable requested Vulkan layer " + layerName + ". Something bad might happen. Or not, depends on the layer.");
+        }
+    }
+
+    static std::vector<VkExtensionProperties> enumarateInstanceExtensions()
+    {
         // Enumerate implicitly available extensions. The debug layers above just have VK_EXT_debug_report
         uint32_t extensionCount = 0;
         vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, nullptr);
-        std::vector<VkExtensionProperties> defaultExtensions(extensionCount);
-        vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, defaultExtensions.data());
+        std::vector<VkExtensionProperties> supportedExtensions(extensionCount);
+        vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, supportedExtensions.data());
 
-        for (const VkExtensionProperties& extension : defaultExtensions)
+        for (const VkExtensionProperties& extension : supportedExtensions)
         {
             logInfo("Available Instance Extension: " + std::string(extension.extensionName) + " - VK Spec Version: " + std::to_string(extension.specVersion));
         }
 
-        // Extensions to use when creating instance
-        std::vector<const char*> extensionNames = { "VK_KHR_surface", "VK_KHR_win32_surface" };
-        
-        if(enableDebugLayers)
+        return supportedExtensions;
+    }
+
+    static void initDebugCallback(VkInstance instance, VkDebugReportCallbackEXT* pCallback)
+    {
+        VkDebugReportCallbackCreateInfoEXT callbackCreateInfo = {};
+        callbackCreateInfo.sType = VK_STRUCTURE_TYPE_DEBUG_REPORT_CREATE_INFO_EXT;
+        callbackCreateInfo.flags = VK_DEBUG_REPORT_ERROR_BIT_EXT | VK_DEBUG_REPORT_WARNING_BIT_EXT;
+#ifdef VK_REPORT_PERF_WARNINGS
+        callbackCreateInfo.flags |= VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT;
+#endif
+        callbackCreateInfo.pfnCallback = &debugReportCallback;
+        callbackCreateInfo.pUserData = nullptr;
+
+        // Function to create a debug callback has to be dynamically queried from the instance...
+        PFN_vkCreateDebugReportCallbackEXT CreateDebugReportCallback = VK_NULL_HANDLE;
+        CreateDebugReportCallback = (PFN_vkCreateDebugReportCallbackEXT)vkGetInstanceProcAddr(instance, "vkCreateDebugReportCallbackEXT");
+
+        if (VK_FAILED(CreateDebugReportCallback(instance, &callbackCreateInfo, nullptr, pCallback)))
         {
-            extensionNames.push_back("VK_EXT_debug_report");
+            logWarning("Could not initialize debug report callbacks.");
+        }
+    }
+
+
+    static bool isExtensionSupported(const std::string& str, const std::vector<VkExtensionProperties>& vec)
+    {
+        for (const auto& s : vec)
+        {
+            if (str == std::string(s.extensionName)) return true;
+        }
+        return false;
+    }
+
+    static void appendVrExtensions(std::vector<const char*>& vkExt, const std::vector<std::string>& vrSystemExt, const std::vector<VkExtensionProperties>& supportedExt)
+    {
+        for (const auto& a : vrSystemExt)
+        {
+            if (isExtensionSupported(a, supportedExt) == false)
+            {
+                logError("Can't start OpenVR. Missing device extension " + a);
+            }
+            else
+            {
+                vkExt.push_back(a.c_str());
+            }
+        }
+    }
+
+    VkInstance createInstance(DeviceApiData* pData, const Device::Desc& desc)
+    {
+        // Initialize the layers
+        const auto layerProperties = enumarateInstanceLayersProperties();
+        std::vector<const char*> requiredLayers;
+
+        if (desc.enableDebugLayer)
+        {
+            enableLayerIfPresent("VK_LAYER_LUNARG_standard_validation", layerProperties, requiredLayers);
+            enableLayerIfPresent("VK_LAYER_NV_nsight", layerProperties, requiredLayers);
+        }
+
+        // Initialize the extensions
+        std::vector<VkExtensionProperties> supportedExtensions = enumarateInstanceExtensions();
+
+        // Extensions to use when creating instance
+        std::vector<const char*> requiredExtensions = { "VK_KHR_surface", "VK_KHR_win32_surface" };
+        if (desc.enableDebugLayer) { requiredExtensions.push_back("VK_EXT_debug_report"); }
+
+        // Get the VR extensions
+        std::vector<std::string> vrExt;
+        if (desc.enableVR)
+        {
+            vrExt = VRSystem::getRequiredVkInstanceExtensions();
+            appendVrExtensions(requiredExtensions, vrExt, supportedExtensions);
         }
 
         VkApplicationInfo appInfo = {};
         appInfo.pEngineName = "Falcor";
         appInfo.engineVersion = VK_MAKE_VERSION(FALCOR_MAJOR_VERSION, FALCOR_MINOR_VERSION, 0);
-        appInfo.apiVersion = VK_MAKE_VERSION(apiMajorVersion, apiMinorVersion, 0);
+        appInfo.apiVersion = VK_MAKE_VERSION(desc.apiMajorVersion, desc.apiMinorVersion, 0);
 
         VkInstanceCreateInfo instanceCreateInfo = {};
         instanceCreateInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
         instanceCreateInfo.pApplicationInfo = &appInfo;
-        instanceCreateInfo.enabledLayerCount = (uint32_t)layerNames.size();
-        instanceCreateInfo.ppEnabledLayerNames = layerNames.data();
-        instanceCreateInfo.enabledExtensionCount = (uint32_t)extensionNames.size();
-        instanceCreateInfo.ppEnabledExtensionNames = extensionNames.data();
+        instanceCreateInfo.enabledLayerCount = (uint32_t)requiredLayers.size();
+        instanceCreateInfo.ppEnabledLayerNames = requiredLayers.data();
+        instanceCreateInfo.enabledExtensionCount = (uint32_t)requiredExtensions.size();
+        instanceCreateInfo.ppEnabledExtensionNames = requiredExtensions.data();
 
         VkInstance instance;
         if (VK_FAILED(vkCreateInstance(&instanceCreateInfo, nullptr, &instance)))
@@ -212,25 +283,9 @@ namespace Falcor
         }
 
         // Hook up callbacks for VK_EXT_debug_report
-        if (enableDebugLayers)
+        if (desc.enableDebugLayer)
         {
-            VkDebugReportCallbackCreateInfoEXT callbackCreateInfo = {};
-            callbackCreateInfo.sType = VK_STRUCTURE_TYPE_DEBUG_REPORT_CREATE_INFO_EXT;
-            callbackCreateInfo.flags = VK_DEBUG_REPORT_ERROR_BIT_EXT | VK_DEBUG_REPORT_WARNING_BIT_EXT;
-#ifdef VK_REPORT_PERF_WARNINGS
-            callbackCreateInfo.flags |= VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT;
-#endif
-            callbackCreateInfo.pfnCallback = &debugReportCallback;
-            callbackCreateInfo.pUserData = nullptr;
-
-            // Function to create a debug callback has to be dynamically queried from the instance...
-            PFN_vkCreateDebugReportCallbackEXT CreateDebugReportCallback = VK_NULL_HANDLE;
-            CreateDebugReportCallback = (PFN_vkCreateDebugReportCallbackEXT)vkGetInstanceProcAddr(instance, "vkCreateDebugReportCallbackEXT");
-
-            if (VK_FAILED(CreateDebugReportCallback(instance, &callbackCreateInfo, nullptr, &pData->debugReportCallbackHandle)))
-            {
-                logWarning("Could not initialize debug report callbacks.");
-            }
+            initDebugCallback(instance, &pData->debugReportCallbackHandle);
         }
 
         return instance;
@@ -324,15 +379,9 @@ namespace Falcor
         return physicalDevice;
     }
 
-    VkDevice createLogicalDevice(VkPhysicalDevice physicalDevice, DeviceApiData *pData, const Device::Desc& desc, std::vector<CommandQueueHandle> cmdQueues[Device::kQueueTypeCount])
+    static void initDeviceQueuesInfo(const Device::Desc& desc, const DeviceApiData *pData, std::vector<VkDeviceQueueCreateInfo>& queueInfos, std::vector<CommandQueueHandle> cmdQueues[Device::kQueueTypeCount], std::vector<std::vector<float>>& queuePriorities)
     {
-        // Features
-        VkPhysicalDeviceFeatures requiredFeatures;
-        vkGetPhysicalDeviceFeatures(physicalDevice, &requiredFeatures);
-
-        // Queues
-        std::vector<VkDeviceQueueCreateInfo> queueInfos;
-        std::vector<std::vector<float>> queuePriorities(arraysize(pData->falcorToVulkanQueueType));
+        queuePriorities.resize(arraysize(pData->falcorToVulkanQueueType));
 
         // Set up info to create queues for each type
         for (uint32_t type = 0; type < arraysize(pData->falcorToVulkanQueueType); type++)
@@ -352,30 +401,59 @@ namespace Falcor
                 queueInfos.push_back(info);
             }
         }
+    }
+
+    VkDevice createLogicalDevice(VkPhysicalDevice physicalDevice, DeviceApiData *pData, const Device::Desc& desc, std::vector<CommandQueueHandle> cmdQueues[Device::kQueueTypeCount])
+    {
+        // Features
+        VkPhysicalDeviceFeatures requiredFeatures;
+        vkGetPhysicalDeviceFeatures(physicalDevice, &requiredFeatures);
+
+        // Queues
+        std::vector<VkDeviceQueueCreateInfo> queueInfos;
+        std::vector<std::vector<float>> queuePriorities;
+        initDeviceQueuesInfo(desc, pData, queueInfos, cmdQueues, queuePriorities);
 
         // Extensions
         uint32_t extensionCount = 0;
         vkEnumerateDeviceExtensionProperties(physicalDevice, nullptr, &extensionCount, nullptr);
-        std::vector<VkExtensionProperties> deviceExtensions(extensionCount);
-        vkEnumerateDeviceExtensionProperties(physicalDevice, nullptr, &extensionCount, deviceExtensions.data());
+        pData->deviceExtensions.resize(extensionCount);
+        vkEnumerateDeviceExtensionProperties(physicalDevice, nullptr, &extensionCount, pData->deviceExtensions.data());
 
-        for (const VkExtensionProperties& extension : deviceExtensions)
+        for (const VkExtensionProperties& extension : pData->deviceExtensions)
         {
             logInfo("Available Device Extension: " + std::string(extension.extensionName) + " - VK Spec Version: " + std::to_string(extension.specVersion));
         }
 
-        const char* extensionNames[] =
+        std::vector<const char*> extensionNames = { "VK_KHR_swapchain" };
+        assert(isExtensionSupported(extensionNames[0], pData->deviceExtensions));
+
+        std::vector<std::string> requiredOpenVRExt;
+        if (desc.enableVR)
         {
-            "VK_KHR_swapchain"
-        };
+            requiredOpenVRExt = VRSystem::getRequiredVkDeviceExtensions(physicalDevice);
+            appendVrExtensions(extensionNames, requiredOpenVRExt, pData->deviceExtensions);
+        }
+
+        for (const auto& a : desc.requiredExtensions)
+        {
+            if (isExtensionSupported(a, pData->deviceExtensions))
+            {
+                extensionNames.push_back(a.c_str());
+            }
+            else
+            {
+                logWarning("The device doesn't support the requested '" + a + "` extension");
+            }
+        }
 
         // Logical Device
         VkDeviceCreateInfo deviceInfo = {};
         deviceInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
         deviceInfo.queueCreateInfoCount = (uint32_t)queueInfos.size();
         deviceInfo.pQueueCreateInfos = queueInfos.data();
-        deviceInfo.enabledExtensionCount = arraysize(extensionNames);
-        deviceInfo.ppEnabledExtensionNames = extensionNames;
+        deviceInfo.enabledExtensionCount = (uint32_t)extensionNames.size();
+        deviceInfo.ppEnabledExtensionNames = extensionNames.data();
         deviceInfo.pEnabledFeatures = &requiredFeatures;
 
         VkDevice device;
@@ -535,7 +613,7 @@ namespace Falcor
     bool Device::apiInit(const Desc& desc)
     {
         mpApiData = new DeviceApiData;
-        VkInstance instance = createInstance(mpApiData, desc.enableDebugLayer, desc.apiMajorVersion, desc.apiMinorVersion);
+        VkInstance instance = createInstance(mpApiData, desc);
         if (!instance) return false;
         VkPhysicalDevice physicalDevice = initPhysicalDevice(instance, mpApiData);
         if (!physicalDevice) return false;
@@ -562,10 +640,9 @@ namespace Falcor
         return false;
     }
 
-    bool Device::isExtensionSupported(const std::string& name)
+    bool Device::isExtensionSupported(const std::string& name) const
     {
-        // #VKTODO add the call
-        return false;
+        return Falcor::isExtensionSupported(name, mpApiData->deviceExtensions);
     }
 
     ApiCommandQueueType Device::getApiCommandQueueType(LowLevelContextData::CommandQueueType type) const
@@ -573,7 +650,7 @@ namespace Falcor
         return mpApiData->falcorToVulkanQueueType[(uint32_t)type];
     }
 
-    uint32_t Device::getVkMemoryType(MemoryType falcorType)
+    uint32_t Device::getVkMemoryType(MemoryType falcorType) const
     {
         return mpApiData->falcorToVkMemoryType[(uint32_t)falcorType];
     }

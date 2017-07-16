@@ -53,10 +53,10 @@ namespace Falcor
         }
 
         auto uav = desc.getProgramVersion()->getReflector()->getBufferBinding("g_NvidiaExt");
-        if (uav.regIndex != ProgramReflection::kInvalidLocation)
+        if (uav.baseRegIndex != ProgramReflection::kInvalidLocation)
         {
             nvApiPsoExDescs.push_back(NvApiPsoExDesc());
-            createNvApiUavSlotExDesc(nvApiPsoExDescs.back(), uav.regIndex);
+            createNvApiUavSlotExDesc(nvApiPsoExDescs.back(), uav.baseRegIndex);
         }
     }
     
@@ -91,7 +91,7 @@ namespace Falcor
     bool getIsNvApiGraphicsPsoRequired(const GraphicsStateObject::Desc& desc)
     {
         auto uav = desc.getProgramVersion()->getReflector()->getBufferBinding("g_NvidiaExt");
-        return uav.regIndex != ProgramReflection::kInvalidLocation || desc.getSinglePassStereoEnabled();
+        return uav.baseRegIndex != ProgramReflection::kInvalidLocation || desc.getSinglePassStereoEnabled();
     }
 #else
     void getNvApiGraphicsPsoDesc(const GraphicsStateObject::Desc& desc, std::vector<NvApiPsoExDesc>& nvApiPsoExDescs) { should_not_get_here(); }

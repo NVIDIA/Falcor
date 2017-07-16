@@ -64,6 +64,7 @@ namespace Falcor
             std::vector<std::string> requiredExtensions;                    ///< Extensions required by the sample
             bool enableVsync = false;                                       ///< Controls vertical-sync
             bool enableDebugLayer = DEFAULT_ENABLE_DEBUG_LAYER;             ///< Enable the debug layer. The default for release build is false, for debug build it's true.
+            bool enableVR = false;                                          ///< Create a device matching OpenVR requirements
 
             static_assert((uint32_t)LowLevelContextData::CommandQueueType::Direct == 2, "Default initialization of cmdQueues assumes that Direct queue index is 0");
             uint32_t cmdQueues[kQueueTypeCount] = { 0, 0, 1 };  ///< Command queues to create. If not direct-queues are created, mpRenderContext will not be initialized
@@ -98,7 +99,7 @@ namespace Falcor
 
         /** Check if the device support an extension
         */
-        static bool isExtensionSupported(const std::string & name);
+        bool isExtensionSupported(const std::string & name) const;
 
         /** Get the FBO object associated with the swap-chain.
             This can change each frame, depending on the API used
@@ -150,7 +151,7 @@ namespace Falcor
             Readback,
             Count
         };
-        uint32_t getVkMemoryType(MemoryType falcorType);
+        uint32_t getVkMemoryType(MemoryType falcorType) const;
         const VkPhysicalDeviceLimits& getPhysicalDeviceLimits() const;
 #endif
     private:

@@ -59,8 +59,6 @@ private:
     void initVR();
     void blitTexture(Texture::SharedPtr pTexture, uint32_t xStart);
     VrFbo::UniquePtr mpVrFbo;
-    FullScreenPass::UniquePtr mpBlit;
-    GraphicsVars::SharedPtr mpBlitVars;
     bool mShowStereoViews = true;
     void submitSinglePassStereo();
     void setRenderMode();
