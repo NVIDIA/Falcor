@@ -44,10 +44,10 @@ namespace Falcor
         }
 
         auto uav = desc.getProgramVersion()->getReflector()->getBufferBinding("g_NvidiaExt");
-        if (uav.regIndex != ProgramReflection::kInvalidLocation)
+        if (uav.baseRegIndex != ProgramReflection::kInvalidLocation)
         {
             nvApiPsoExDescs.push_back(NvApiPsoExDesc());
-            createNvApiUavSlotExDesc(nvApiPsoExDescs.back(), uav.regIndex);
+            createNvApiUavSlotExDesc(nvApiPsoExDescs.back(), uav.baseRegIndex);
         }
     }
 
@@ -78,7 +78,7 @@ namespace Falcor
     bool getIsNvApiComputePsoRequired(const ComputeStateObject::Desc& desc)
     {
         auto uav = desc.getProgramVersion()->getReflector()->getBufferBinding("g_NvidiaExt");
-        return uav.regIndex != ProgramReflection::kInvalidLocation;
+        return uav.baseRegIndex != ProgramReflection::kInvalidLocation;
     }
 
 #else

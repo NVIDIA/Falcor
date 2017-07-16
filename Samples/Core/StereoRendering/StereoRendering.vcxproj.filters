@@ -12,9 +12,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <None Include="Data\Blit.fs">
-      <Filter>Data</Filter>
-    </None>
     <None Include="Data\StereoRendering.ps.hlsl">
       <Filter>Data</Filter>
     </None>

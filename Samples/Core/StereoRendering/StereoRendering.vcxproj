@@ -22,7 +22,6 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <None Include="Data\Blit.fs" />
     <None Include="Data\StereoRendering.ps.hlsl" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
