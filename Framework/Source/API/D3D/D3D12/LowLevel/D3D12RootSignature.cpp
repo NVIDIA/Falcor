@@ -188,7 +188,8 @@ namespace Falcor
             if (pBuffer->getShaderAccess() == getRequiredShaderAccess(descType))
             {
                 RootSignature::DescriptorSetLayout descTable;
-                descTable.addRange(descType, pBuffer->getRegisterIndex(), 1, pBuffer->getRegisterSpace());
+                uint32_t count = buf.second->getArraySize() ? buf.second->getArraySize() : 1;
+                descTable.addRange(descType, pBuffer->getRegisterIndex(), count, pBuffer->getRegisterSpace());
                 cost += 1;
                 desc.addDescriptorSet(descTable);
             }

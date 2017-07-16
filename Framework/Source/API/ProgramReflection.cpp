@@ -975,7 +975,7 @@ namespace Falcor
         ProgramReflection::BufferReflection::Type   bufferType,
         ProgramReflection::ShaderAccess             shaderAccess)
     {
-        auto pSlangElementType = pSlangType->getElementTypeLayout();
+        auto pSlangElementType = pSlangType->unwrapArray()->getElementTypeLayout();
 
         ProgramReflection::VariableMap varMap;
 

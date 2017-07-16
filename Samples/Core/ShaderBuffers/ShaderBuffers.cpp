@@ -138,7 +138,7 @@ void ShaderBuffersSample::onFrameRender()
     //
 
     // Bind compute output
-    mpProgramVars->setStructuredBuffer("gLight", mpAppendLightData);
+    mpProgramVars->setStructuredBuffer("gLight[3]", mpAppendLightData);
     mpRenderContext->setGraphicsState(mpDefaultPipelineState);
 
     // Update uniform-buffers data

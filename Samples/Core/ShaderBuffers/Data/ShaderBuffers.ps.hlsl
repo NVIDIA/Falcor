@@ -31,16 +31,16 @@ struct LightCB
 };
 
 RWStructuredBuffer<LightCB> gRWBuffer; // Only UAV counter used
-StructuredBuffer<LightCB> gLight;
+StructuredBuffer<LightCB> gLight[4];
 RWByteAddressBuffer gInvocationBuffer;
 Buffer<float3> gSurfaceColor[2];
 
 float4 calcColor(float3 normalW)
 {
     float3 n = normalize(normalW);
-    float nDotL = dot(n, -gLight[0].vec3Val);
+    float nDotL = dot(n, -gLight[3][0].vec3Val);
     nDotL = clamp(nDotL, 0, 1);
-    float4 color = float4(nDotL * gLight[1].vec3Val * gSurfaceColor[1][0], 1);
+    float4 color = float4(nDotL * gLight[3][1].vec3Val * gSurfaceColor[1][0], 1);
 
     gInvocationBuffer.InterlockedAdd(0, 1);
     gRWBuffer.IncrementCounter();
