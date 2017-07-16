@@ -55,7 +55,6 @@ void TestBase::init(bool initDevice /* = false */)
         mpWindow = Window::create(Window::Desc(), &mDummyCallbacks);
         gpDevice = Device::create(mpWindow, Device::Desc());
         //avoid assert failure in ~Device()
-        gpDevice->getRenderContext()->getLowLevelData()->getFence()->cpuSignal();
     }
 
     onInit();
@@ -81,7 +80,7 @@ std::vector<TestBase::TestData> TestBase::runTests()
 
     for (auto it = mpTestList.begin(); it != mpTestList.end(); ++it)
     {
-        try 
+        try
         {
             results.push_back((**it)());
         }
@@ -97,7 +96,7 @@ std::vector<TestBase::TestData> TestBase::runTests()
 void TestBase::GenerateXML(const std::vector<std::string>& xmlStrings)
 {
     std::ofstream of;
-    
+
     of.open(mTestName + "_TestingLog_0.xml");
     of << "<?xml version = \"1.0\" encoding = \"UTF-8\"?>\n";
     of << "<TestLog>\n";
@@ -120,9 +119,9 @@ std::string TestBase::XMLFromTestResult(const TestData& d)
     std::string xml;
     xml += "<TestResult\n";
     xml += "\tTestName=\"" + d.testName + "\"\n";
-    if(d.result == TestResult::Pass)
+    if (d.result == TestResult::Pass)
         xml += "\tPassed=\"1\"\n";
-    else if(d.result == TestResult::Fail)
+    else if (d.result == TestResult::Fail)
         xml += "\tPassed=\"0\"\n";
     else //r.result == Result::Crash
         xml += "\tPassed=\"-1\"\n";
