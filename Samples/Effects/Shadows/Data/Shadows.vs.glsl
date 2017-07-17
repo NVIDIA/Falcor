@@ -1,5 +1,5 @@
 /***************************************************************************
-# Copyright (c) 2015, NVIDIA CORPORATION. All rights reserved.
+# Copyright (c) 2017, NVIDIA CORPORATION. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -25,20 +25,36 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#version 420
+__import DefaultVS;
+__import ShaderCommon;
+__import Effects.CascadedShadowMap;
 
-#include "VertexAttrib.h"
-#include "ShaderCommon.h"
-
-layout(location = VERTEX_POSITION_LOC)  in vec4 posL;
-
-layout(binding = 0) uniform PerFrameCB
+layout(set = 0, binding = 0) uniform PerFrameCB
 {
-	mat4 gLightMat;
+	vec3 gAmbient;
+    CsmData gCsmData[_LIGHT_COUNT];
+    bool visualizeCascades;
+    mat4 camVpAtLastCsmUpdate;
 };
+
+layout(location = 0) out vec3 normalW;
+layout(location = 1) out vec3 bitangentW;
+layout(location = 2) out vec2 texC;
+layout(location = 3) out vec3 posW;
+layout(location = 4) out vec3 colorV;
+layout(location = 5) out vec4 prevPosH;
+layout(location = 6) out float shadowsDepthC : DEPTH;
+VS_IN vIn;
 
 void main()
 {
-	mat4 worldMat = gWorldMat[gl_InstanceID];
-	gl_Position = gLightMat * worldMat * posL;
+    VS_OUT defaultOut = defaultVS(vIn);
+    normalW = defaultOut.normalW;
+    bitangentW = defaultOut.bitangentW;
+    texC = defaultOut.texC;
+    posW = defaultOut.posW;
+    colorV = defaultOut.colorV;
+    prevPosH = defaultOut.prevPosH;
+
+    shadowsDepthC = (camVpAtLastCsmUpdate * vec4(posW, 1)).z;
 }

@@ -1,5 +1,5 @@
 /***************************************************************************
-# Copyright (c) 2017, NVIDIA CORPORATION. All rights reserved.
+# Copyright (c) 2015, NVIDIA CORPORATION. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -25,49 +25,46 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-__import DefaultVS;
-__import Shading;
+#include "VertexAttrib.h"
 __import ShaderCommon;
 __import Effects.CascadedShadowMap;
 
-cbuffer PerFrameCB : register(b0)
+layout(binding = 0)
+uniform PerLightCB
 {
-	float3 gAmbient;
-    CsmData gCsmData[_LIGHT_COUNT];
-    bool visualizeCascades;
-    float4x4 camVpAtLastCsmUpdate;
+    CsmData gCsmData;
 };
 
-struct ShadowsVSOut
-{
-    VS_OUT vsData;
-    float shadowsDepthC : DEPTH;
-};
+out vec4 outputData_pos;
+out vec2 outputData_texC;
 
-float4 main(ShadowsVSOut pIn) : SV_TARGET0
+in vec4 input_pos[3];
+in vec2 input_texC[3];
+
+
+layout(invocations = _CASCADE_COUNT) in;
+layout(triangles) in;
+layout(triangle_strip, max_vertices = 3) out;
+
+void main()
 {
-    ShadingAttribs shAttr;
-    prepareShadingAttribs(gMaterial, pIn.vsData.posW, gCam.position, pIn.vsData.normalW, pIn.vsData.bitangentW, pIn.vsData.texC, 0, shAttr);
-    ShadingOutput result;
-    float4 fragColor = float4(0,0,0,1);
-    
-    [unroll]
-    for(uint l = 0 ; l < _LIGHT_COUNT ; l++)
+    int InstanceID = gl_InvocationID;
+
+    // void main(triangle ShadowPassVSOut input[3], uint InstanceID : SV_GSInstanceID, inout TriangleStream<ShadowPassPSIn> outStream)
+
+    for(int i = 0 ; i < 3 ; i++)
     {
-        float shadowFactor = calcShadowFactor(gCsmData[l], pIn.shadowsDepthC, shAttr.P, pIn.vsData.posH.xy/pIn.vsData.posH.w);
-        evalMaterial(shAttr, gLights[l], result, l == 0);
-        fragColor.rgb += result.diffuseAlbedo * result.diffuseIllumination * shadowFactor;
-        fragColor.rgb += result.specularAlbedo * result.specularIllumination * (0.01f + shadowFactor * 0.99f);
+        outputData_pos = gCsmData.globalMat * input_pos[i];
+        outputData_pos.xyz /= input_pos[i].w;
+        outputData_pos.xyz *= gCsmData.cascadeScale[InstanceID].xyz;
+        outputData_pos.xyz += gCsmData.cascadeOffset[InstanceID].xyz;
+
+        outputData_texC = input_texC[i];
+
+        gl_Layer = InstanceID;
+
+        EmitVertex();
     }
 
-    fragColor.rgb += gAmbient * result.diffuseAlbedo * 0.1;
-    if(visualizeCascades)
-    {
-        //Ideally this would be light index so you can visualize the cascades of the 
-        //currently selected light. However, because csmData contains Textures, it doesn't
-        //like getting them with a non literal index.
-        fragColor.rgb *= getCascadeColor(getCascadeIndex(gCsmData[_LIGHT_INDEX], pIn.shadowsDepthC));
-    }
-
-    return fragColor;
+    EndPrimitive();
 }

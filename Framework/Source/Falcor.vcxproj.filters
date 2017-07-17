@@ -2244,13 +2244,13 @@
     <None Include="Data\HostDeviceData.slang">
       <Filter>Data</Filter>
     </None>
-    <None Include="Data\Effects\CascadedShdowMap.slang">
-      <Filter>Data\Effects</Filter>
-    </None>
     <None Include="Data\Effects\LeanMapping.slang">
       <Filter>Data\Effects</Filter>
     </None>
     <None Include="Data\Effects\SSAO.ps.hlsl">
+      <Filter>Data\Effects</Filter>
+    </None>
+    <None Include="Data\Effects\CascadedShadowMap.slang">
       <Filter>Data\Effects</Filter>
     </None>
   </ItemGroup>

@@ -30,26 +30,30 @@ __import Shading;
 __import ShaderCommon;
 __import Effects.CascadedShadowMap;
 
-cbuffer PerFrameCB : register(b0)
+layout(set = 0, binding = 0) uniform PerFrameCB
 {
-	float3 gAmbient;
+	vec3 gAmbient;
     CsmData gCsmData[_LIGHT_COUNT];
     bool visualizeCascades;
-    float4x4 camVpAtLastCsmUpdate;
+    mat4 camVpAtLastCsmUpdate;
 };
 
-struct ShadowsVSOut
-{
-    VS_OUT vsData;
-    float shadowsDepthC : DEPTH;
-};
+layout(location = 0) in vec3 normalW;
+layout(location = 1) in vec3 bitangentW;
+layout(location = 2) in vec2 texC;
+layout(location = 3) in vec3 posW;
+layout(location = 4) in vec3 colorV;
+layout(location = 5) in vec4 prevPosH;
+layout(location = 6) in float shadowsDepthC : DEPTH;
 
-float4 main(ShadowsVSOut pIn) : SV_TARGET0
+layout(location = 0) out vec4 fragColor;
+
+void main()
 {
     ShadingAttribs shAttr;
     prepareShadingAttribs(gMaterial, pIn.vsData.posW, gCam.position, pIn.vsData.normalW, pIn.vsData.bitangentW, pIn.vsData.texC, 0, shAttr);
     ShadingOutput result;
-    float4 fragColor = float4(0,0,0,1);
+    fragColor = float4(0,0,0,1);
     
     [unroll]
     for(uint l = 0 ; l < _LIGHT_COUNT ; l++)
@@ -68,6 +72,4 @@ float4 main(ShadowsVSOut pIn) : SV_TARGET0
         //like getting them with a non literal index.
         fragColor.rgb *= getCascadeColor(getCascadeIndex(gCsmData[_LIGHT_INDEX], pIn.shadowsDepthC));
     }
-
-    return fragColor;
 }

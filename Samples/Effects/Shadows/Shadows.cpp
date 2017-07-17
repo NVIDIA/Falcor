@@ -82,6 +82,7 @@ void Shadows::createScene(const std::string& filename)
 {
     // Load the scene
     mpScene = Scene::loadFromFile(filename);
+    for (uint32_t i = 1; i < mpScene->getLightCount(); i++) mpScene->deleteLight(i);
 
     for (uint32_t i = 0; i < mpScene->getPathCount(); i++)
     {
@@ -101,7 +102,7 @@ void Shadows::createScene(const std::string& filename)
     setLightIndex(0);
 
     // Create the main effect
-    mLightingPass.pProgram = GraphicsProgram::createFromFile("Shadows.vs.hlsl", "Shadows.ps.hlsl");
+    mLightingPass.pProgram = GraphicsProgram::createFromFile(appendShaderExtension("Shadows.vs"), appendShaderExtension("Shadows.ps"));
     mLightingPass.pProgram->addDefine("_LIGHT_COUNT", std::to_string(mpScene->getLightCount()));
     mLightingPass.pProgram->addDefine("_LIGHT_INDEX", std::to_string(mControls.lightIndex));
     mLightingPass.pProgramVars = GraphicsVars::create(mLightingPass.pProgram->getActiveVersion()->getReflector());
@@ -215,7 +216,7 @@ void Shadows::onResizeSwapChain()
 void Shadows::createVisualizationProgram()
 {
     // Create the shadow visualizer
-    mShadowVisualizer.pProgram = FullScreenPass::create("VisualizeMap.ps.hlsl");
+    mShadowVisualizer.pProgram = FullScreenPass::create(appendShaderExtension("VisualizeMap.ps"));
     if(mControls.cascadeCount > 1)
     {
         mShadowVisualizer.pProgram->getProgram()->addDefine("_USE_2D_ARRAY");

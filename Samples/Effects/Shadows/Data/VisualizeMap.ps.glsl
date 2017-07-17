@@ -1,5 +1,5 @@
 /***************************************************************************
-# Copyright (c) 2017, NVIDIA CORPORATION. All rights reserved.
+# Copyright (c) 2015, NVIDIA CORPORATION. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -25,49 +25,28 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-__import DefaultVS;
-__import Shading;
-__import ShaderCommon;
-__import Effects.CascadedShadowMap;
+layout(set = 0, binding = 0) uniform sampler gSampler;
 
-cbuffer PerFrameCB : register(b0)
+cbuffer PerImageCB : register(b0)
 {
-	float3 gAmbient;
-    CsmData gCsmData[_LIGHT_COUNT];
-    bool visualizeCascades;
-    float4x4 camVpAtLastCsmUpdate;
+    int cascade;
 };
 
-struct ShadowsVSOut
+#ifdef _USE_2D_ARRAY
+layout(set = 0, binding = 1) uniform texture2DArray gTexture;
+#else
+layout(set = 0, binding = 1) uniform texture2D gTexture;
+#endif
+
+layout(location = 0) in vec2 texC;
+layout(location = 0) out vec4 fragColor;
+
+void main()
 {
-    VS_OUT vsData;
-    float shadowsDepthC : DEPTH;
-};
-
-float4 main(ShadowsVSOut pIn) : SV_TARGET0
-{
-    ShadingAttribs shAttr;
-    prepareShadingAttribs(gMaterial, pIn.vsData.posW, gCam.position, pIn.vsData.normalW, pIn.vsData.bitangentW, pIn.vsData.texC, 0, shAttr);
-    ShadingOutput result;
-    float4 fragColor = float4(0,0,0,1);
-    
-    [unroll]
-    for(uint l = 0 ; l < _LIGHT_COUNT ; l++)
-    {
-        float shadowFactor = calcShadowFactor(gCsmData[l], pIn.shadowsDepthC, shAttr.P, pIn.vsData.posH.xy/pIn.vsData.posH.w);
-        evalMaterial(shAttr, gLights[l], result, l == 0);
-        fragColor.rgb += result.diffuseAlbedo * result.diffuseIllumination * shadowFactor;
-        fragColor.rgb += result.specularAlbedo * result.specularIllumination * (0.01f + shadowFactor * 0.99f);
-    }
-
-    fragColor.rgb += gAmbient * result.diffuseAlbedo * 0.1;
-    if(visualizeCascades)
-    {
-        //Ideally this would be light index so you can visualize the cascades of the 
-        //currently selected light. However, because csmData contains Textures, it doesn't
-        //like getting them with a non literal index.
-        fragColor.rgb *= getCascadeColor(getCascadeIndex(gCsmData[_LIGHT_INDEX], pIn.shadowsDepthC));
-    }
-
-    return fragColor;
+#ifdef _USE_2D_ARRAY
+	float d = textureLod(sampler2DArray(gTexture, gSampler), vec3(texC, float(cascade)), 0).r
+#else
+    float d = textureLod(sampler2D(gTexture, gSampler), texC, 0).r;
+#endif
+    fragColor = vec4(d.xxx, 1);
 }
