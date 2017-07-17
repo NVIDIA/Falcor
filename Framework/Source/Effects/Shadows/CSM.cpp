@@ -36,6 +36,7 @@ namespace Falcor
 {
     const char* kDepthPassVSFile = "Effects/ShadowPass.vs.slang";
     const char* kDepthPassGsFile = "Effects/ShadowPass.gs.slang";
+    const char* kGLSLDepthPassGsFile = "Effects/ShadowPass.gs.glsl";
     const char* kDepthPassFsFile = "Effects/ShadowPass.ps.slang";
 
     const Gui::DropdownList kFilterList = {
@@ -266,7 +267,16 @@ namespace Falcor
         mShadowPass.fboAspectRatio = (float)mapWidth / (float)mapHeight;
 
         // Create the shadows program
-        GraphicsProgram::SharedPtr pProg = GraphicsProgram::createFromFile(kDepthPassVSFile, kDepthPassFsFile, kDepthPassGsFile, "", "", progDef);
+        GraphicsProgram::SharedPtr pProg = GraphicsProgram::createFromFile(
+            kDepthPassVSFile,
+            kDepthPassFsFile,
+#ifdef FALCOR_VK
+            kGLSLDepthPassGsFile,
+#else
+            kDepthPassGsFile,
+#endif
+            
+            "", "", progDef);
         mShadowPass.pState = GraphicsState::create();
         mShadowPass.pState->setProgram(pProg);
         mShadowPass.pState->setDepthStencilState(nullptr);

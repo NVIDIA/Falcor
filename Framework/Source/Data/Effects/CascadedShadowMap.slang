@@ -244,7 +244,7 @@ float csmEvsmFilter(const CsmData csmData, const float2 texC, float sampleDepth,
     return res;
 }
 
-float calcShadowFactorWithCascadeIdx(const CsmData csmData, const uint32_t cascadeIndex, float3 posW, float2 posSxy, bool calcDrv, inout float2 drvX, inout float2 drvY)
+float calcShadowFactorWithCascadeIdx(CsmData csmData, uint32_t cascadeIndex, float3 posW, float2 posSxy, bool calcDrv, inout float2 drvX, inout float2 drvY)
 {
     // Apply normal offset
     //posW.xyz += calcNormalOffset(csmData, normal, cascadeIndex);
@@ -284,7 +284,7 @@ float calcShadowFactorWithCascadeIdx(const CsmData csmData, const uint32_t casca
     }
 }
 
-float calcShadowFactor(const CsmData csmData, const float cameraDepth, float3 posW, float2 posSxy)
+float calcShadowFactor(CsmData csmData, float cameraDepth, float3 posW, float2 posSxy)
 {
     float weight = 0;
     float s;
