@@ -580,10 +580,7 @@ namespace Falcor
 
     static ResourceFormat convertBgrxFormatToBgra(DdsData& ddsData, ResourceFormat format)
     {
-#ifndef FALCOR_VK
-        return format;
-#else
-#endif
+#ifdef FALCOR_VK
         switch (format)
         {
         case ResourceFormat::BGRX8Unorm:
@@ -600,6 +597,7 @@ namespace Falcor
         {
             ddsData.data[i] = 0xFF;
         }
+#endif
         return format;
     }
 
