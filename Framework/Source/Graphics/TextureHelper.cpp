@@ -578,8 +578,35 @@ namespace Falcor
         stream.read(ddsData.data.data(), dataSize);
 	}
 
+    static ResourceFormat convertBgrxFormatToBgra(DdsData& ddsData, ResourceFormat format)
+    {
+#ifndef FALCOR_VK
+        return format;
+#else
+#endif
+        switch (format)
+        {
+        case ResourceFormat::BGRX8Unorm:
+            format = ResourceFormat::BGRA8Unorm;
+            break;
+        case ResourceFormat::BGRA8UnormSrgb:
+            format = ResourceFormat::BGRA8UnormSrgb;
+            break;
+        default:
+            return format;
+        }
+
+        for (size_t i = 3; i < ddsData.data.size(); i+=4)
+        {
+            ddsData.data[i] = 0xFF;
+        }
+        return format;
+    }
+
     Texture::SharedPtr createTextureFromDx10Dds(DdsData& ddsData, const std::string& filename, ResourceFormat format, uint32_t mipLevels, Texture::BindFlags bindFlags)
     {
+        format = convertBgrxFormatToBgra(ddsData, format);
+
         uint32_t arraySize = ddsData.dx10Header.arraySize;
         assert(arraySize > 0);
 
@@ -613,6 +640,8 @@ namespace Falcor
 
     Texture::SharedPtr createTextureFromLegacyDds(DdsData& ddsData, const std::string& filename, ResourceFormat format, uint32_t mipLevels, Texture::BindFlags bindFlags)
     {
+        format = convertBgrxFormatToBgra(ddsData, format);
+
         //load the volume or 3D texture
         if(ddsData.header.flags & DdsHeader::kDepthMask)
         {
