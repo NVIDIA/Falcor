@@ -60,6 +60,7 @@ namespace Falcor
     template<typename posType>
     void generateSubmeshTangentData(
         const std::vector<uint32_t>& indices,
+        uint32_t vertexCount,
         const posType* vertexPosData,
         const glm::vec3* vertexNormalData,
         const glm::vec2* texCrdData,
@@ -171,7 +172,7 @@ namespace Falcor
                 }
             }
 
-            generateSubmeshTangentData<glm::vec3>(indices, pPos, pNormals, (texCrdCount > 0 ? texCrd.data() : nullptr), texCrdCount, pBi);
+            generateSubmeshTangentData<glm::vec3>(indices, pAiMesh->mNumVertices, pPos, pNormals, (texCrdCount > 0 ? texCrd.data() : nullptr), texCrdCount, pBi);
         }
     }
 
