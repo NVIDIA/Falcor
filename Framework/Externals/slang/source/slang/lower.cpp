@@ -7,6 +7,19 @@
 namespace Slang
 {
 
+struct CloneVisitor
+    : ModifierVisitor<CloneVisitor, RefPtr<Modifier>>
+{
+#define ABSTRACT_SYNTAX_CLASS(NAME, BASE) /* empty */
+#define SYNTAX_CLASS(NAME, BASE, ...)                   \
+    RefPtr<NAME> visit ## NAME(NAME* obj) { return new NAME(*obj); }
+
+#include "object-meta-begin.h"
+#include "modifier-defs.h"
+#include "object-meta-end.h"
+
+};
+
 //
 
 template<typename V>
@@ -208,7 +221,8 @@ public:
 
 struct SharedLoweringContext
 {
-    CompileRequest* compileRequest;
+    CompileRequest*     compileRequest;
+    EntryPointRequest*  entryPointRequest;
 
     ProgramLayout*      programLayout;
     EntryPointLayout*   entryPointLayout;
@@ -602,7 +616,7 @@ struct LoweringVisitor
             result->tupleElements.Add(elem);
         }
 
-        return result;
+return result;
     }
 
     RefPtr<ExpressionSyntaxNode> visitVarExpressionSyntaxNode(
@@ -692,6 +706,84 @@ struct LoweringVisitor
         auto loweredExpr = createAssignExpr(leftExpr, rightExpr);
         lowerExprCommon(loweredExpr, expr);
         return loweredExpr;
+    }
+
+    RefPtr<ExpressionType> getSubscripResultType(
+        RefPtr<ExpressionType>  type)
+    {
+        if (auto arrayType = type->As<ArrayExpressionType>())
+        {
+            return arrayType->BaseType;
+        }
+        return nullptr;
+    }
+
+    RefPtr<ExpressionSyntaxNode> createSubscriptExpr(
+        RefPtr<ExpressionSyntaxNode>    baseExpr,
+        RefPtr<ExpressionSyntaxNode>    indexExpr)
+    {
+        // TODO: This logic ends up duplicating the `indexExpr`
+        // that was given, without worrying about any side
+        // effects it might contain. That needs to be fixed.
+
+        if (auto baseTuple = baseExpr.As<TupleExpr>())
+        {
+            auto loweredExpr = new TupleExpr();
+            loweredExpr->Type.type = getSubscripResultType(baseExpr->Type.type);
+
+            if (auto basePrimary = baseTuple->primaryExpr)
+            {
+                loweredExpr->primaryExpr = createSubscriptExpr(
+                    basePrimary,
+                    indexExpr);
+            }
+            for (auto elem : baseTuple->tupleElements)
+            {
+                TupleExpr::Element loweredElem;
+                loweredElem.tupleFieldDeclRef = elem.tupleFieldDeclRef;
+                loweredElem.expr = createSubscriptExpr(
+                    elem.expr,
+                    indexExpr);
+
+                loweredExpr->tupleElements.Add(loweredElem);
+            }
+
+            return loweredExpr;
+        }
+        else
+        {
+            // Default case: just reconstrut a subscript expr
+            auto loweredExpr = new IndexExpressionSyntaxNode();
+
+            loweredExpr->Type.type = getSubscripResultType(baseExpr->Type.type);
+
+            loweredExpr->BaseExpression = baseExpr;
+            loweredExpr->IndexExpression = indexExpr;
+            return loweredExpr;
+        }
+    }
+
+    RefPtr<ExpressionSyntaxNode> visitIndexExpressionSyntaxNode(
+        IndexExpressionSyntaxNode* subscriptExpr)
+    {
+        auto baseExpr = lowerExpr(subscriptExpr->BaseExpression);
+        auto indexExpr = lowerExpr(subscriptExpr->IndexExpression);
+
+        // An attempt to subscript a tuple must be turned into a
+        // tuple of subscript expressions.
+        if (auto baseTuple = baseExpr.As<TupleExpr>())
+        {
+            return createSubscriptExpr(baseExpr, indexExpr);
+        }
+        else
+        {
+            // Default case: just reconstrut a subscript expr
+            RefPtr<IndexExpressionSyntaxNode> loweredExpr = new IndexExpressionSyntaxNode();
+            lowerExprCommon(loweredExpr, subscriptExpr);
+            loweredExpr->BaseExpression = baseExpr;
+            loweredExpr->IndexExpression = indexExpr;
+            return loweredExpr;
+        }
     }
 
     void addArgs(
@@ -1601,6 +1693,21 @@ struct LoweringVisitor
         return nullptr;
     }
 
+    ExpressionType* unwrapArray(ExpressionType* inType)
+    {
+        auto type = inType;
+        while (auto arrayType = type->As<ArrayExpressionType>())
+        {
+            type = arrayType->BaseType;
+        }
+        return type;
+    }
+
+    TupleTypeModifier* isTupleTypeOrArrayOfTupleType(ExpressionType* type)
+    {
+        return isTupleType(unwrapArray(type));
+    }
+
     bool isResourceType(ExpressionType* type)
     {
         while (auto arrayType = type->As<ArrayExpressionType>())
@@ -1678,7 +1785,7 @@ struct LoweringVisitor
             bool isTupleField = false;
             bool fieldHasAnyNonTupleFields = false;
             bool fieldHasTupleType = false;
-            if (auto fieldTupleTypeMod = isTupleType(loweredFieldType))
+            if (auto fieldTupleTypeMod = isTupleTypeOrArrayOfTupleType(loweredFieldType))
             {
                 isTupleField = true;
                 fieldHasTupleType = true;
@@ -1766,19 +1873,60 @@ struct LoweringVisitor
         return lowerSimpleVarDeclCommon(loweredDecl, decl, loweredType);
     }
 
-    void createTupleTypeSecondaryVarDecls(
-        RefPtr<TupleVarDecl>            tupleDecl,
-        SyntaxClass<VarDeclBase>        varDeclClass,
-        String const&                   name,
-        RefPtr<ExpressionType>          tupleType,
-        DeclRef<AggTypeDecl>            tupleTypeDecl,
-        RefPtr<ExpressionSyntaxNode>    initExpr,
-        RefPtr<VarLayout>               primaryVarLayout,
-        RefPtr<StructTypeLayout>        tupleTypeLayout)
+    struct TupleTypeSecondaryVarArraySpec
     {
+        TupleTypeSecondaryVarArraySpec* next;
+        RefPtr<IntVal>                  elementCount;
+    };
+
+    struct TupleSecondaryVarInfo
+    {
+        // Parent tuple decl to add the secondary decl into
+        RefPtr<TupleVarDecl>        tupleDecl;
+
+        // Syntax class for declarations to create
+        SyntaxClass<VarDeclBase>    varDeclClass;
+
+        // Name "stem" to use for any actual variables we create
+        String                      name;
+
+        // The parent tuple type (or array thereof) we are scalarizing
+        RefPtr<ExpressionType>  tupleType;
+
+        // The actual declaration of the tuple type (which will give us the fields)
+        DeclRef<AggTypeDecl>    tupleTypeDecl;
+
+        // An initializer expression to use for the tuple members
+        RefPtr<ExpressionSyntaxNode>    initExpr;
+
+        // The original layout given to the top-level variable
+        RefPtr<VarLayout>               primaryVarLayout;
+
+        // The computed layout of the tuple type itself
+        RefPtr<StructTypeLayout>            tupleTypeLayout;
+
+        TupleTypeSecondaryVarArraySpec* arraySpecs = nullptr;
+    };
+
+    void createTupleTypeSecondaryVarDecls(
+        TupleSecondaryVarInfo const& info)
+    {
+        if (auto arrayType = info.tupleType->As<ArrayExpressionType>())
+        {
+            TupleTypeSecondaryVarArraySpec arraySpec;
+            arraySpec.next = info.arraySpecs;
+            arraySpec.elementCount = arrayType->ArrayLength;
+
+            TupleSecondaryVarInfo subInfo = info;
+            subInfo.tupleType = arrayType->BaseType;
+            subInfo.arraySpecs = &arraySpec;
+            createTupleTypeSecondaryVarDecls(subInfo);
+            return;
+        }
+
         // Next, we need to go through the declarations in the aggregate
         // type, and deal with all of those that should be tuple-ified.
-        for (auto dd : getMembersOfType<VarDeclBase>(tupleTypeDecl))
+        for (auto dd : getMembersOfType<VarDeclBase>(info.tupleTypeDecl))
         {
             if (dd.getDecl()->HasModifier<HLSLStaticModifier>())
                 continue;
@@ -1788,10 +1936,10 @@ struct LoweringVisitor
                 continue;
 
             // TODO: need to extract the initializer for this field
-            assert(!initExpr);
+            assert(!info.initExpr);
             RefPtr<ExpressionSyntaxNode> fieldInitExpr;
 
-            String fieldName = name + "_" + dd.GetName();
+            String fieldName = info.name + "_" + dd.GetName();
 
             auto fieldType = GetType(dd);
 
@@ -1800,11 +1948,11 @@ struct LoweringVisitor
             assert(originalFieldDecl);
 
             RefPtr<VarLayout> fieldLayout;
-            if(tupleTypeLayout)
+            if(info.tupleTypeLayout)
             {
-                tupleTypeLayout->mapVarToLayout.TryGetValue(originalFieldDecl, fieldLayout);
+                info.tupleTypeLayout->mapVarToLayout.TryGetValue(originalFieldDecl, fieldLayout);
             }
-            if (fieldLayout && primaryVarLayout)
+            if (fieldLayout && info.primaryVarLayout)
             {
                 // The layout for a field may need to be adjusted
                 // based on a base offset stored in the primary
@@ -1821,7 +1969,7 @@ struct LoweringVisitor
                 bool needsOffset = false;
                 for (auto rr : fieldLayout->resourceInfos)
                 {
-                    if (auto parentInfo = primaryVarLayout->FindResourceInfo(rr.kind))
+                    if (auto parentInfo = info.primaryVarLayout->FindResourceInfo(rr.kind))
                     {
                         if (parentInfo->index != 0 || parentInfo->space != 0)
                         {
@@ -1844,7 +1992,7 @@ struct LoweringVisitor
                         auto newResInfo = newFieldLayout->findOrAddResourceInfo(resInfo.kind);
                         newResInfo->index = resInfo.index;
                         newResInfo->space = resInfo.space;
-                        if (auto parentInfo = primaryVarLayout->FindResourceInfo(resInfo.kind))
+                        if (auto parentInfo = info.primaryVarLayout->FindResourceInfo(resInfo.kind))
                         {
                             newResInfo->index += parentInfo->index;
                             newResInfo->space += parentInfo->space;
@@ -1857,29 +2005,44 @@ struct LoweringVisitor
             }
 
             RefPtr<VarDeclBase> fieldVarOrTupleDecl;
-            if (auto fieldTupleTypeMod = isTupleType(fieldType))
+            if (auto fieldTupleTypeMod = isTupleTypeOrArrayOfTupleType(fieldType))
             {
                 // If the field is itself a tuple, then recurse
                 RefPtr<TupleVarDecl> fieldTupleDecl = new TupleVarDecl();
+
+                TupleSecondaryVarInfo fieldInfo;
+                fieldInfo.tupleDecl = fieldTupleDecl;
+                fieldInfo.varDeclClass = info.varDeclClass;
+                fieldInfo.name = fieldName;
+                fieldInfo.tupleType = fieldType;
+                fieldInfo.tupleTypeDecl = makeDeclRef(fieldTupleTypeMod->decl);
+                fieldInfo.initExpr = fieldInitExpr;
+                fieldInfo.primaryVarLayout = fieldLayout;
+                fieldInfo.tupleTypeLayout = getBodyStructTypeLayout(fieldLayout ? fieldLayout->typeLayout : nullptr);
+                fieldInfo.arraySpecs = info.arraySpecs;
+
                 fieldTupleDecl->tupleType = fieldTupleTypeMod;
-                createTupleTypeSecondaryVarDecls(
-                    fieldTupleDecl,
-                    varDeclClass,
-                    fieldName,
-                    fieldType,
-                    makeDeclRef(fieldTupleTypeMod->decl),
-                    fieldInitExpr,
-                    fieldLayout,
-                    getBodyStructTypeLayout(fieldLayout ? fieldLayout->typeLayout : nullptr));
+                createTupleTypeSecondaryVarDecls(fieldInfo);
 
                  fieldVarOrTupleDecl = fieldTupleDecl;
             }
             else
             {
                 // Otherwise the field has a simple type, and we just need to declare the variable here
-                RefPtr<VarDeclBase> fieldVarDecl = varDeclClass.createInstance();
+
+                RefPtr<ExpressionType> fieldVarType = fieldType;
+                for (auto aa = info.arraySpecs; aa; aa = aa->next)
+                {
+                    RefPtr<ArrayExpressionType> arrayType = new ArrayExpressionType();
+                    arrayType->BaseType = fieldVarType;
+                    arrayType->ArrayLength = aa->elementCount;
+
+                    fieldVarType = arrayType;
+                }
+
+                RefPtr<VarDeclBase> fieldVarDecl = info.varDeclClass.createInstance();
                 fieldVarDecl->Name.Content = fieldName;
-                fieldVarDecl->Type.type = fieldType;
+                fieldVarDecl->Type.type = fieldVarType;
 
                 addDecl(fieldVarDecl);
 
@@ -1897,7 +2060,7 @@ struct LoweringVisitor
             fieldTupleVarMod->tupleField = tupleFieldMod;
             addModifier(fieldVarOrTupleDecl, fieldTupleVarMod);
 
-            tupleDecl->tupleDecls.Add(fieldVarOrTupleDecl);
+            info.tupleDecl->tupleDecls.Add(fieldVarOrTupleDecl);
         }
     }
 
@@ -1941,15 +2104,17 @@ struct LoweringVisitor
             addDecl(primaryVarDecl);
         }
 
-        createTupleTypeSecondaryVarDecls(
-            tupleDecl,
-            varDeclClass,
-            name,
-            tupleType,
-            tupleTypeDecl,
-            initExpr,
-            primaryVarLayout,
-            tupleTypeLayout);
+        TupleSecondaryVarInfo info;
+        info.tupleDecl = tupleDecl;
+        info.varDeclClass = varDeclClass;
+        info.name = name;
+        info.tupleType = tupleType;
+        info.tupleTypeDecl = tupleTypeDecl;
+        info.initExpr = initExpr;
+        info.primaryVarLayout = primaryVarLayout;
+        info.tupleTypeLayout = tupleTypeLayout;
+
+        createTupleTypeSecondaryVarDecls(info);
 
         return tupleDecl;
     }
@@ -1962,6 +2127,11 @@ struct LoweringVisitor
         while (auto parameterBlockTypeLayout = typeLayout.As<ParameterBlockTypeLayout>())
         {
             typeLayout = parameterBlockTypeLayout->elementTypeLayout;
+        }
+
+        while (auto arrayTypeLayout = typeLayout.As<ArrayTypeLayout>())
+        {
+            typeLayout = arrayTypeLayout->elementTypeLayout;
         }
 
         if (auto structTypeLayout = typeLayout.As<StructTypeLayout>())
@@ -2006,7 +2176,7 @@ struct LoweringVisitor
     {
         auto loweredType = lowerType(decl->Type);
 
-        if (auto tupleTypeMod = isTupleType(loweredType))
+        if (auto tupleTypeMod = isTupleTypeOrArrayOfTupleType(loweredType))
         {
             auto varLayout = tryToFindLayout(decl).As<VarLayout>();
 
@@ -2037,7 +2207,7 @@ struct LoweringVisitor
             auto varLayout = tryToFindLayout(decl).As<VarLayout>();
 
             auto elementType = bufferType->elementType;
-            if (auto elementTupleTypeMod = isTupleType(elementType))
+            if (auto elementTupleTypeMod = isTupleTypeOrArrayOfTupleType(elementType))
             {
                 auto tupleDecl = createTupleTypeVarDecls(
                     loweredDeclClass,
@@ -2244,11 +2414,40 @@ struct LoweringVisitor
         IntVal*                     elementCount;
     };
 
+    struct VaryingParameterVarChain
+    {
+        VaryingParameterVarChain*   next = nullptr;
+        VarDeclBase*                varDecl;
+    };
+
+    template<typename T>
+    T* findModifier(VaryingParameterVarChain* chain)
+    {
+        for (auto c = chain; c; c = c->next)
+        {
+            auto v = c->varDecl;
+            if (auto mod = v->FindModifier<T>())
+                return mod;
+        }
+        return nullptr;
+    }
+
+    RefPtr<Modifier> cloneModifier(Modifier* modifier)
+    {
+        if (!modifier) return nullptr;
+
+        // For now we just do a shallow copy of the modifier
+
+        CloneVisitor visitor;
+        return visitor.dispatch(modifier);
+    }
+
     struct VaryingParameterInfo
     {
         String                      name;
         VaryingParameterDirection   direction;
         VaryingParameterArraySpec*  arraySpecs = nullptr;
+        VaryingParameterVarChain*   varChain = nullptr;
     };
 
     RefPtr<ExpressionSyntaxNode> createGLSLBuiltinRef(
@@ -2259,6 +2458,58 @@ struct LoweringVisitor
         return globalVarRef;
     }
 
+    bool isIntegralType(
+        ExpressionType* type)
+    {
+        if (auto baseType = type->As<BasicExpressionType>())
+        {
+            switch (baseType->BaseType)
+            {
+            default:
+                return false;
+
+            case BaseType::Int:
+            case BaseType::UInt:
+            case BaseType::UInt64:
+                return true;
+            }
+        }
+        else if (auto vecType = type->As<VectorExpressionType>())
+        {
+            return isIntegralType(vecType->elementType);
+        }
+        else if (auto matType = type->As<MatrixExpressionType>())
+        {
+            return isIntegralType(matType->getElementType());
+        }
+
+        return false;
+    }
+
+    void requireGLSLVersion(ProfileVersion version)
+    {
+        if (shared->target != CodeGenTarget::GLSL)
+            return;
+
+        auto entryPoint = shared->entryPointRequest;
+        auto profile = entryPoint->profile;
+        auto currentVersion = profile.GetVersion();
+        if (profile.getFamily() == ProfileFamily::GLSL)
+        {
+            // Check if this profile is newer
+            if ((UInt)version > (UInt)profile.GetVersion())
+            {
+                profile.setVersion(version);
+                entryPoint->profile = profile;
+            }
+        }
+        else
+        {
+            // Non-GLSL target? Set it to a GLSL one.
+            profile.setVersion(version);
+            entryPoint->profile = profile;
+        }
+    }
 
     void lowerSimpleShaderParameterToGLSLGlobal(
         VaryingParameterInfo const&     info,
@@ -2391,6 +2642,10 @@ struct LoweringVisitor
             }
             else if (ns == "sv_rendertargetarrayindex")
             {
+                if (info.direction == VaryingParameterDirection::Input)
+                {
+                    requireGLSLVersion(ProfileVersion::GLSL_430);
+                }
                 globalVarExpr = createGLSLBuiltinRef("gl_Layer");
             }
             else if (ns == "sv_sampleindex")
@@ -2447,6 +2702,26 @@ struct LoweringVisitor
             case VaryingParameterDirection::Output:
                 addModifier(globalVarDecl, new OutModifier());
                 break;
+            }
+
+            // We want to copy certain modifiers from the declaration as given,
+            // over to the newly created global variable. The most important
+            // of these is any interpolation-mode modifier.
+            //
+            // Note that a shader parameter could have been nested inside
+            // a `struct` type, so we will look for interpolation modifiers
+            // starting on the "deepest" field, and working out way out.
+
+            // Look for interpolation mode modifier
+            if (auto interpolationModeModifier = findModifier<InterpolationModeModifier>(info.varChain))
+            {
+                addModifier(globalVarDecl, cloneModifier(interpolationModeModifier));
+            }
+            // Otherwise, check if we need to add one:
+            else if (isIntegralType(varType))
+            {
+                auto mod = new HLSLNoInterpolationModifier();
+                addModifier(globalVarDecl, mod);
             }
 
 
@@ -2554,8 +2829,13 @@ struct LoweringVisitor
                     fieldExpr->declRef = fieldDeclRef;
                     fieldExpr->BaseExpression = varExpr;
 
+                    VaryingParameterVarChain fieldVarChain;
+                    fieldVarChain.next = info.varChain;
+                    fieldVarChain.varDecl = fieldDeclRef.getDecl();
+
                     VaryingParameterInfo fieldInfo = info;
                     fieldInfo.name = info.name + "_" + fieldDeclRef.GetName();
+                    fieldInfo.varChain = &fieldVarChain;
 
                     // Need to find the layout for the given field...
                     Decl* originalFieldDecl = nullptr;
@@ -2598,9 +2878,14 @@ struct LoweringVisitor
         expr->declRef = declRef;
         expr->Type.type = GetType(declRef);
 
+        VaryingParameterVarChain varChain;
+        varChain.next = nullptr;
+        varChain.varDecl = localVarDecl;
+
         VaryingParameterInfo info;
         info.name = name;
         info.direction = direction;
+        info.varChain = &varChain;
 
         // Ensure that we don't get name collisions on `inout` variables
         switch (direction)
@@ -2941,6 +3226,7 @@ LoweredEntryPoint lowerEntryPoint(
 {
     SharedLoweringContext sharedContext;
     sharedContext.compileRequest = entryPoint->compileRequest;
+    sharedContext.entryPointRequest = entryPoint;
     sharedContext.programLayout = programLayout;
     sharedContext.target = target;
 
