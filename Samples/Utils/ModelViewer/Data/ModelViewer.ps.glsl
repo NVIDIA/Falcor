@@ -29,7 +29,7 @@ __import ShaderCommon;
 __import Shading;
 __import DefaultVS;
 
-in VS_IN vIn;
+in VS_OUT vOut;
 
 layout(set = 0, binding = 0) uniform PerFrameCB
 {
@@ -50,7 +50,7 @@ void main()
     else
     {
         ShadingAttribs shAttr;
-        prepareShadingAttribs(gMaterial, vIn.posW, gCam.position, vIn.normalW, vIn.bitangentW, texC, shAttr);
+        prepareShadingAttribs(gMaterial, vOut.posW, gCam.position, vOut.normalW, vOut.bitangentW, vOut.texC, shAttr);
 
         ShadingOutput result;
 
