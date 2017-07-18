@@ -151,7 +151,7 @@ namespace Falcor
             Readback,
             Count
         };
-        uint32_t getVkMemoryType(MemoryType falcorType) const;
+        uint32_t getVkMemoryType(MemoryType falcorType, uint32_t memoryTypeBits) const;
         const VkPhysicalDeviceLimits& getPhysicalDeviceLimits() const;
 #endif
     private:

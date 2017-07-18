@@ -33,7 +33,7 @@
 
 namespace Falcor
 {
-    VkDeviceMemory allocateDeviceMemory(Device::MemoryType memType, size_t size);
+    VkDeviceMemory allocateDeviceMemory(Device::MemoryType memType, uint32_t memoryTypeBits, size_t size);
 
     struct TextureApiData
     {
@@ -137,7 +137,7 @@ namespace Falcor
         // Allocate the GPU memory                
         VkMemoryRequirements memRequirements;
         vkGetImageMemoryRequirements(gpDevice->getApiHandle(), image, &memRequirements);
-        VkDeviceMemory deviceMem = allocateDeviceMemory(Device::MemoryType::Default, memRequirements.size);
+        VkDeviceMemory deviceMem = allocateDeviceMemory(Device::MemoryType::Default, memRequirements.memoryTypeBits, memRequirements.size);
         vkBindImageMemory(gpDevice->getApiHandle(), image, deviceMem, 0);
 
         mApiHandle = ApiHandle::create(image, deviceMem);

@@ -66,7 +66,7 @@ namespace Falcor
         VkSwapchainKHR swapchain;
         VkPhysicalDeviceProperties properties;
         uint32_t falcorToVulkanQueueType[Device::kQueueTypeCount];
-        uint32_t falcorToVkMemoryType[(uint32_t)Device::MemoryType::Count];
+        uint32_t vkMemoryTypeBits[(uint32_t)Device::MemoryType::Count];
         VkPhysicalDeviceLimits deviceLimits;
         std::vector<VkExtensionProperties> deviceExtensions;
 
@@ -75,19 +75,19 @@ namespace Falcor
 #endif
     };
 
-    static uint32_t findMemoryType(VkPhysicalDevice physicalDevice, VkMemoryPropertyFlagBits memFlagBits)
+    static uint32_t getMemoryBits(VkPhysicalDevice physicalDevice, VkMemoryPropertyFlagBits memFlagBits)
     {
         VkPhysicalDeviceMemoryProperties memProperties;
         vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memProperties);
-
+		uint32_t bits = 0;
         for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++)
         {
             if ((memProperties.memoryTypes[i].propertyFlags & memFlagBits) == memFlagBits)
             {
-                return i;
+				bits |= (1 << i);
             }
         }
-        return -1;
+		return bits;
     }
 
     static bool initMemoryTypes(VkPhysicalDevice physicalDevice, DeviceApiData* pApiData)
@@ -99,8 +99,8 @@ namespace Falcor
 
         for(uint32_t i = 0 ; i < arraysize(bits) ; i++)
         {
-            pApiData->falcorToVkMemoryType[i] = findMemoryType(physicalDevice, bits[i]);
-            if (pApiData->falcorToVkMemoryType[i] == -1)
+            pApiData->vkMemoryTypeBits[i] = getMemoryBits(physicalDevice, bits[i]);
+            if (pApiData->vkMemoryTypeBits[i] == 0)
             {
                 logError("Missing memory type " + std::to_string(i));
                 return false;
@@ -650,9 +650,13 @@ namespace Falcor
         return mpApiData->falcorToVulkanQueueType[(uint32_t)type];
     }
 
-    uint32_t Device::getVkMemoryType(MemoryType falcorType) const
+    uint32_t Device::getVkMemoryType(MemoryType falcorType, uint32_t memoryTypeBits) const
     {
-        return mpApiData->falcorToVkMemoryType[(uint32_t)falcorType];
+		uint32_t mask = mpApiData->vkMemoryTypeBits[(uint32_t)falcorType] & memoryTypeBits;
+		assert(mask != 0);
+		unsigned long index;
+		BitScanForward(&index, mask);
+		return index;
     }
 
     const VkPhysicalDeviceLimits& Device::getPhysicalDeviceLimits() const
