@@ -29,12 +29,7 @@ __import ShaderCommon;
 __import Shading;
 __import DefaultVS;
 
-layout(location = 0) in vec3 normalW;
-layout(location = 1) in vec3 bitangentW;
-layout(location = 2) in vec2 texC;
-layout(location = 3) in vec3 posW;
-layout(location = 4) in vec3 colorV;
-layout(location = 5) in vec4 prevPosH;
+in VS_IN vIn;
 
 layout(set = 0, binding = 0) uniform PerFrameCB
 {
@@ -55,7 +50,7 @@ void main()
     else
     {
         ShadingAttribs shAttr;
-        prepareShadingAttribs(gMaterial, posW, gCam.position, normalW, bitangentW, texC, shAttr);
+        prepareShadingAttribs(gMaterial, vIn.posW, gCam.position, vIn.normalW, vIn.bitangentW, texC, shAttr);
 
         ShadingOutput result;
 
