@@ -25,33 +25,24 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-__import ShaderCommon;
-__import Shading;
-
-#ifdef STEREO
-#include "StereoRenderingCommon.h"
-#else
-__import DefaultVS;
+#ifndef INTERPOLATION_MODE
+#define INTERPOLATION_MODE linear
 #endif
 
-#ifdef STEREO
-float4 main(GS_OUT gsOut) : SV_TARGET
+struct VS_OUT
 {
-    VS_OUT vOut = gsOut.vsOut;
-#else
-float4 main(VS_OUT vOut) : SV_TARGET
+    INTERPOLATION_MODE float3 normalW : NORMAL;
+    INTERPOLATION_MODE float3 bitangentW : BITANGENT;
+    INTERPOLATION_MODE float2 texC : TEXCRD;
+    INTERPOLATION_MODE float3 posW : POSW;
+    INTERPOLATION_MODE float3 colorV : COLOR;
+};
+
+struct GS_OUT
 {
-#endif
+    VS_OUT vsOut;
 
-    ShadingAttribs shAttr;
-    prepareShadingAttribs(gMaterial, vOut.posW, gCam.position, vOut.normalW, vOut.bitangentW, vOut.texC, shAttr);
-
-    ShadingOutput result;
-
-    for (uint l = 0; l < gLightsCount; l++)
-    {
-        evalMaterial(shAttr, gLights[l], result, l == 0);
-    }
-
-    return float4(result.finalValue, 1.f);
-}
+    float4 posH : SV_POSITION;
+    INTERPOLATION_MODE float4 prevPosH : PREVPOSH;
+    uint rtIndex : SV_RenderTargetArrayIndex;
+};

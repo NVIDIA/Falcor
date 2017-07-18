@@ -14,6 +14,7 @@
     <ClCompile Include="StereoRendering.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Data\StereoRenderingCommon.h" />
     <ClInclude Include="StereoRendering.h" />
   </ItemGroup>
   <ItemGroup>
@@ -22,7 +23,20 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <None Include="Data\StereoRendering.gs.glsl" />
+    <None Include="Data\StereoRendering.ps.glsl" />
     <None Include="Data\StereoRendering.ps.hlsl" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Data\StereoRendering.gs.hlsl">
+      <FileType>Document</FileType>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Data\StereoRendering.vs.glsl" />
+    <None Include="Data\StereoRendering.vs.hlsl">
+      <FileType>Document</FileType>
+    </None>
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{7C6C43DE-EEF4-4165-BE92-ED753D3799EE}</ProjectGuid>

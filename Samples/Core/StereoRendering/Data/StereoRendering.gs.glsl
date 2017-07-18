@@ -1,5 +1,5 @@
 /***************************************************************************
-# Copyright (c) 2015, NVIDIA CORPORATION. All rights reserved.
+# Copyright (c) 2017, NVIDIA CORPORATION. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -26,32 +26,58 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 __import ShaderCommon;
-__import Shading;
 
-#ifdef STEREO
-#include "StereoRenderingCommon.h"
-#else
-__import DefaultVS;
-#endif
+layout(triangles) in;
+layout(triangle_strip, max_vertices = 6) out;
 
-#ifdef STEREO
-float4 main(GS_OUT gsOut) : SV_TARGET
+layout(location = 0) in vec3 inNormalW[];
+layout(location = 1) in vec3 inBitangentW[];
+layout(location = 2) in vec2 inTexC[];
+layout(location = 3) in vec3 inPosW[];
+layout(location = 4) in vec3 inColorV[];
+
+layout(location = 0) out vec3 outNormalW;
+layout(location = 1) out vec3 outBitangentW;
+layout(location = 2) out vec2 outTexC;
+layout(location = 3) out vec3 outPosW;
+layout(location = 4) out vec3 outColorV;
+layout(location = 5) out vec4 outPrevPosH;
+
+void main()
 {
-    VS_OUT vOut = gsOut.vsOut;
-#else
-float4 main(VS_OUT vOut) : SV_TARGET
-{
-#endif
-
-    ShadingAttribs shAttr;
-    prepareShadingAttribs(gMaterial, vOut.posW, gCam.position, vOut.normalW, vOut.bitangentW, vOut.texC, shAttr);
-
-    ShadingOutput result;
-
-    for (uint l = 0; l < gLightsCount; l++)
+    // Left Eye
+    gl_Layer = 0;
+    for (int i = 0; i < 3; i++)
     {
-        evalMaterial(shAttr, gLights[l], result, l == 0);
-    }
+        outNormalW = inNormalW[i];
+        outBitangentW = inBitangentW[i];
+        outTexC = inTexC[i];
+        outPosW = inPosW[i];
+        outColorV = inColorV[i];
 
-    return float4(result.finalValue, 1.f);
+        vec4 posW = vec4(inPosW[i], 1.0f);
+        outPrevPosH = gCam.prevViewProjMat * posW;
+        gl_Position = gCam.viewProjMat * posW;
+
+        EmitVertex();
+    }
+    EndPrimitive();
+
+    // Right Eye
+    gl_Layer = 1;
+    for (int i = 0; i < 3; i++)
+    {
+        outNormalW = inNormalW[i];
+        outBitangentW = inBitangentW[i];
+        outTexC = inTexC[i];
+        outPosW = inPosW[i];
+        outColorV = inColorV[i];
+
+        vec4 posW = vec4(inPosW[i], 1.0f);
+        outPrevPosH = gCam.rightEyePrevViewProjMat * posW;
+        gl_Position = gCam.rightEyeViewProjMat * posW;
+
+        EmitVertex();
+    }
+    EndPrimitive();
 }

@@ -26,32 +26,39 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 __import ShaderCommon;
-__import Shading;
 
-#ifdef STEREO
 #include "StereoRenderingCommon.h"
-#else
-__import DefaultVS;
-#endif
 
-#ifdef STEREO
-float4 main(GS_OUT gsOut) : SV_TARGET
+[maxvertexcount(6)]
+void main(triangle VS_OUT input[3], inout TriangleStream<GS_OUT> outStream)
 {
-    VS_OUT vOut = gsOut.vsOut;
-#else
-float4 main(VS_OUT vOut) : SV_TARGET
-{
-#endif
+    GS_OUT output;
 
-    ShadingAttribs shAttr;
-    prepareShadingAttribs(gMaterial, vOut.posW, gCam.position, vOut.normalW, vOut.bitangentW, vOut.texC, shAttr);
-
-    ShadingOutput result;
-
-    for (uint l = 0; l < gLightsCount; l++)
+    // Left Eye
+    for (int i = 0; i < 3; i++)
     {
-        evalMaterial(shAttr, gLights[l], result, l == 0);
-    }
+        output.rtIndex = 0;
+        output.vsOut = input[i];
 
-    return float4(result.finalValue, 1.f);
+        float4 posW = float4(input[i].posW, 1.0f);
+        output.posH = mul(posW, gCam.viewProjMat);
+        output.prevPosH = mul(posW, gCam.prevViewProjMat);
+
+        outStream.Append(output);
+    }
+    outStream.RestartStrip();
+
+    // Right Eye
+    for (i = 0; i < 3; i++) // Why is putting int i here a redefinition?
+    {
+        output.rtIndex = 1;
+        output.vsOut = input[i];
+
+        float4 posW = float4(input[i].posW, 1.0f);
+        output.posH = mul(posW, gCam.rightEyeViewProjMat);
+        output.prevPosH = mul(posW, gCam.rightEyePrevViewProjMat);
+
+        outStream.Append(output);
+    }
+    outStream.RestartStrip();
 }

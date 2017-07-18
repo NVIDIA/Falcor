@@ -132,7 +132,12 @@ namespace Falcor
     {
         PFN_vkDestroyDebugReportCallbackEXT DestroyDebugReportCallback = VK_NULL_HANDLE;
         DestroyDebugReportCallback = (PFN_vkDestroyDebugReportCallbackEXT)vkGetInstanceProcAddr(mApiHandle, "vkDestroyDebugReportCallbackEXT");
-        DestroyDebugReportCallback(mApiHandle, mpApiData->debugReportCallbackHandle, nullptr);
+        
+        if (DestroyDebugReportCallback != nullptr)
+        {
+            DestroyDebugReportCallback(mApiHandle, mpApiData->debugReportCallbackHandle, nullptr);
+        }
+
         vkDestroySwapchainKHR(mApiHandle, mpApiData->swapchain, nullptr);
         safe_delete(mpApiData);
     }

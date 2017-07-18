@@ -28,23 +28,19 @@
 __import ShaderCommon;
 __import Shading;
 
-#ifdef STEREO
-#include "StereoRenderingCommon.h"
-#else
-__import DefaultVS;
-#endif
+layout(location = 0) in vec3 normalW;
+layout(location = 1) in vec3 bitangentW;
+layout(location = 2) in vec2 texC;
+layout(location = 3) in vec3 posW;
+layout(location = 4) in vec3 colorV;
+layout(location = 5) in vec4 prevPosH;
 
-#ifdef STEREO
-float4 main(GS_OUT gsOut) : SV_TARGET
-{
-    VS_OUT vOut = gsOut.vsOut;
-#else
-float4 main(VS_OUT vOut) : SV_TARGET
-{
-#endif
+layout(location = 0) out vec4 fragColor;
 
+void main()
+{
     ShadingAttribs shAttr;
-    prepareShadingAttribs(gMaterial, vOut.posW, gCam.position, vOut.normalW, vOut.bitangentW, vOut.texC, shAttr);
+    prepareShadingAttribs(gMaterial, posW, gCam.position, normalW, bitangentW, texC, shAttr);
 
     ShadingOutput result;
 
@@ -53,5 +49,5 @@ float4 main(VS_OUT vOut) : SV_TARGET
         evalMaterial(shAttr, gLights[l], result, l == 0);
     }
 
-    return float4(result.finalValue, 1.f);
+    fragColor = vec4(result.finalValue, 1.f);
 }

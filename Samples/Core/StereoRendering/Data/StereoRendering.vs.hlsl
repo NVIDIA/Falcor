@@ -25,33 +25,73 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
+#include "VertexAttrib.h"
 __import ShaderCommon;
-__import Shading;
 
-#ifdef STEREO
 #include "StereoRenderingCommon.h"
+
+struct VS_IN
+{
+    float4 pos         : POSITION;
+    float3 normal      : NORMAL;
+    float3 bitangent   : BITANGENT;
+#ifdef HAS_TEXCRD
+    float2 texC        : TEXCOORD;
+#endif
+#ifdef HAS_LIGHTMAP_UV
+    float2 lightmapC   : LIGHTMAP_UV;
+#endif
+#ifdef HAS_COLORS
+    float3 color       : DIFFUSE_COLOR;
+#endif
+#ifdef _VERTEX_BLENDING
+    float4 boneWeights : BONE_WEIGHTS;
+    uint4  boneIds     : BONE_IDS;
+#endif
+    uint instanceID : SV_INSTANCEID;
+};
+
+float4x4 getWorldMat(VS_IN vIn)
+{
+#ifdef _VERTEX_BLENDING
+    float4x4 worldMat = getBlendedWorldMat(vIn.boneWeights, vIn.boneIds);
 #else
-__import DefaultVS;
+    float4x4 worldMat = gWorldMat[vIn.instanceID];
+#endif
+    return worldMat;
+}
+
+float3x3 getWorldInvTransposeMat(VS_IN vIn)
+{
+#ifdef _VERTEX_BLENDING
+    float3x3 worldInvTransposeMat = getBlendedInvTransposeWorldMat(vIn.boneWeights, vIn.boneIds);
+#else
+    float3x3 worldInvTransposeMat = gWorldInvTransposeMat[vIn.instanceID];
+#endif
+    return worldInvTransposeMat;
+}
+
+VS_OUT main(VS_IN vIn)
+{
+    VS_OUT vOut;
+    float4x4 worldMat = getWorldMat(vIn);
+    float4 posW = mul(vIn.pos, worldMat);
+    vOut.posW = posW.xyz;
+
+#ifdef HAS_TEXCRD
+    vOut.texC = vIn.texC;
+#else
+    vOut.texC = 0;
 #endif
 
-#ifdef STEREO
-float4 main(GS_OUT gsOut) : SV_TARGET
-{
-    VS_OUT vOut = gsOut.vsOut;
+#ifdef HAS_COLORS
+    vOut.colorV = vIn.color;
 #else
-float4 main(VS_OUT vOut) : SV_TARGET
-{
+    vOut.colorV = 0;
 #endif
 
-    ShadingAttribs shAttr;
-    prepareShadingAttribs(gMaterial, vOut.posW, gCam.position, vOut.normalW, vOut.bitangentW, vOut.texC, shAttr);
+    vOut.normalW = mul(vIn.normal, getWorldInvTransposeMat(vIn)).xyz;
+    vOut.bitangentW = mul(vIn.bitangent, (float3x3)worldMat).xyz;
 
-    ShadingOutput result;
-
-    for (uint l = 0; l < gLightsCount; l++)
-    {
-        evalMaterial(shAttr, gLights[l], result, l == 0);
-    }
-
-    return float4(result.finalValue, 1.f);
+    return vOut;
 }

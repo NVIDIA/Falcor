@@ -1,5 +1,5 @@
 /***************************************************************************
-# Copyright (c) 2015, NVIDIA CORPORATION. All rights reserved.
+# Copyright (c) 2017, NVIDIA CORPORATION. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -26,32 +26,69 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 __import ShaderCommon;
-__import Shading;
 
-#ifdef STEREO
-#include "StereoRenderingCommon.h"
-#else
-__import DefaultVS;
+layout(location = 0) in vec3 inPosition;
+layout(location = 1) in vec3 inNormal;
+layout(location = 2) in vec3 inBitangent;
+#ifdef HAS_TEXCRD
+layout(location = 3) in vec2 inTexC;
+#endif
+#ifdef HAS_LIGHTMAP_UV
+layout(location = 4) in vec2 inLightmapC;
+#endif
+#ifdef HAS_COLORS
+layout(location = 5) in vec3 inColor;
+#endif
+#ifdef _VERTEX_BLENDING
+layout(location = 6) in vec4 inBoneWeights;
+layout(location = 7) in uvec4 inBoneIds;
 #endif
 
-#ifdef STEREO
-float4 main(GS_OUT gsOut) : SV_TARGET
+layout(location = 0) out vec3 outNormalW;
+layout(location = 1) out vec3 outBitangentW;
+layout(location = 2) out vec2 outTexC;
+layout(location = 3) out vec3 outPosW;
+layout(location = 4) out vec3 outColorV;
+
+
+mat4x4 getWorldMat()
 {
-    VS_OUT vOut = gsOut.vsOut;
+#ifdef _VERTEX_BLENDING
+    mat4x4 worldMat = getBlendedWorldMat(inBoneWeights, inBoneIds);
 #else
-float4 main(VS_OUT vOut) : SV_TARGET
+    mat4x4 worldMat = gWorldMat[gl_InstanceIndex];
+#endif
+    return worldMat;
+}
+
+mat3x3 getWorldInvTransposeMat()
 {
+#ifdef _VERTEX_BLENDING
+    mat3x3 worldInvTransposeMat = getBlendedInvTransposeWorldMat(inBoneWeights, inBoneIds);
+#else
+    mat3x3 worldInvTransposeMat = gWorldInvTransposeMat[gl_InstanceIndex];
+#endif
+    return worldInvTransposeMat;
+}
+
+void main()
+{
+    mat4x4 worldMat = getWorldMat();
+    vec4 posW = worldMat * vec4(inPosition, 1.0f);
+    outPosW = posW.xyz;
+
+#ifdef HAS_TEXCRD
+    outTexC = inTexC;
+#else
+    outTexC = vec2(0.0f);
 #endif
 
-    ShadingAttribs shAttr;
-    prepareShadingAttribs(gMaterial, vOut.posW, gCam.position, vOut.normalW, vOut.bitangentW, vOut.texC, shAttr);
+#ifdef HAS_COLORS
+    outColorV = inColor;
+#else
+    outColorV = vec3(0.0f);
+#endif
 
-    ShadingOutput result;
-
-    for (uint l = 0; l < gLightsCount; l++)
-    {
-        evalMaterial(shAttr, gLights[l], result, l == 0);
-    }
-
-    return float4(result.finalValue, 1.f);
+    outNormalW = (getWorldInvTransposeMat() * inNormal).xyz;
+    outBitangentW = (mat3x3(worldMat) * inBitangent).xyz;
 }
