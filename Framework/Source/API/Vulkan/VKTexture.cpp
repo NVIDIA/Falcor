@@ -112,7 +112,6 @@ namespace Falcor
         imageInfo.extent.depth = mDepth;
         imageInfo.extent.height = align_to(getFormatHeightCompressionRatio(mFormat), mHeight);
         imageInfo.extent.width = align_to(getFormatWidthCompressionRatio(mFormat), mWidth);
-        imageInfo.flags = (mType == Texture::Type::TextureCube) ? VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT : 0;
         imageInfo.format = getVkFormat(mFormat);
         imageInfo.imageType = getVkImageType(mType);
         imageInfo.initialLayout = pData ? VK_IMAGE_LAYOUT_PREINITIALIZED : VK_IMAGE_LAYOUT_UNDEFINED;
@@ -124,6 +123,12 @@ namespace Falcor
         imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
         imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
         imageInfo.usage = getVkImageUsageFlags(mBindFlags);
+
+        if (mType == Texture::Type::TextureCube)
+        {
+            imageInfo.flags = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
+            imageInfo.arrayLayers *= 6;
+        }
 
         mState = pData ? Resource::State::PreInitialized : Resource::State::Undefined;
 

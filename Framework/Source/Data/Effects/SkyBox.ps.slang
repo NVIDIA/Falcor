@@ -41,6 +41,6 @@ float4 main(float3 dir : NORMAL) : SV_TARGET
     float4 color = gTexture.Sample(gSampler, uv);
     return color;
 #else
-	return gTexture.Sample(gSampler, normalize(dir), 0);
+	return gTexture.SampleLevel(gSampler, normalize(dir), 0);
 #endif
 }
