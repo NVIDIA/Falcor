@@ -25,70 +25,30 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
+__import DefaultVS;
 __import ShaderCommon;
 
-layout(location = 0) in vec3 inPosition;
-layout(location = 1) in vec3 inNormal;
-layout(location = 2) in vec3 inBitangent;
-#ifdef HAS_TEXCRD
-layout(location = 3) in vec2 inTexC;
-#endif
-#ifdef HAS_LIGHTMAP_UV
-layout(location = 4) in vec2 inLightmapC;
-#endif
-#ifdef HAS_COLORS
-layout(location = 5) in vec3 inColor;
-#endif
-#ifdef _VERTEX_BLENDING
-layout(location = 6) in vec4 inBoneWeights;
-layout(location = 7) in uvec4 inBoneIds;
-#endif
+in VS_IN vIn;
 
-layout(location = 0) out vec3 outNormalW;
-layout(location = 1) out vec3 outBitangentW;
-layout(location = 2) out vec2 outTexC;
-layout(location = 3) out vec3 outPosW;
-layout(location = 4) out vec3 outColorV;
-
-
-mat4x4 getWorldMat()
-{
-#ifdef _VERTEX_BLENDING
-    mat4x4 worldMat = getBlendedWorldMat(inBoneWeights, inBoneIds);
-#else
-    mat4x4 worldMat = gWorldMat[gl_InstanceIndex];
-#endif
-    return worldMat;
-}
-
-mat3x3 getWorldInvTransposeMat()
-{
-#ifdef _VERTEX_BLENDING
-    mat3x3 worldInvTransposeMat = getBlendedInvTransposeWorldMat(inBoneWeights, inBoneIds);
-#else
-    mat3x3 worldInvTransposeMat = gWorldInvTransposeMat[gl_InstanceIndex];
-#endif
-    return worldInvTransposeMat;
-}
+out VS_OUT vOut;
 
 void main()
 {
-    mat4x4 worldMat = getWorldMat();
-    vec4 posW = worldMat * vec4(inPosition, 1.0f);
-    outPosW = posW.xyz;
+    mat4x4 worldMat = getWorldMat(vIn);
+    vOut.posW = (worldMat * vIn.pos).xyz;
 
 #ifdef HAS_TEXCRD
-    outTexC = inTexC;
+    vOut.texC = vIn.texC;
 #else
-    outTexC = vec2(0.0f);
+    vOut.texC = vec2(0.0f);
 #endif
 
 #ifdef HAS_COLORS
-    outColorV = inColor;
+    vOut.colorV = vIn.color;
 #else
-    outColorV = vec3(0.0f);
+    vOut.colorV = vec3(0.0f);
 #endif
 
-    outNormalW = (getWorldInvTransposeMat() * inNormal).xyz;
-    outBitangentW = (mat3x3(worldMat) * inBitangent).xyz;
+    vOut.normalW = (getWorldInvTransposeMat(vIn) * vIn.normal).xyz;
+    vOut.bitangentW = (mat3x3(worldMat) * vIn.bitangent).xyz;
 }
