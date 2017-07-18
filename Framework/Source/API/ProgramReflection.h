@@ -28,6 +28,11 @@
 #pragma once
 #include <unordered_map>
 
+namespace slang
+{
+    struct ShaderReflection;
+}
+
 namespace Falcor {namespace Reflection
 {
     class BaseType
@@ -136,7 +141,7 @@ namespace Falcor {namespace Reflection
         BaseType::SharedPtr mpType;
     };
 
-    class ResourceType
+    class ResourceType : public BaseType
     {
     public:
         using SharedPtr = std::shared_ptr<ResourceType>;
@@ -169,7 +174,7 @@ namespace Falcor {namespace Reflection
         };
 
         static SharedPtr create(Type type, ShaderAccess access, const BaseType::SharedPtr& pBaseType)
-            { return SharedPtr(new ResourceType(type, acess, pBaseType)); }
+            { return SharedPtr(new ResourceType(type, access, pBaseType)); }
 
         Type getType() const { return mType; }
         ShaderAccess getShaderAccess() const { return mShaderAccess; }
@@ -181,26 +186,18 @@ namespace Falcor {namespace Reflection
         BaseType::SharedPtr mpBaseType;
     };
 
-    class Variable
-    {
-    public:
-        Variable(uint32_t offset, const BaseType::SharedPtr& pType) : mOffset(offset), mpType(pType) {}
-        Variable operator[](const std::string& field) const;
-        Variable operator[](uint32_t arrayIndex) const;
-    private:
-        uint32_t mSetIndex;
-        uint32_t mBindLocation;
-        uint32_t mArrayIndex;
-        BaseType::SharedPtr mpType;
-    };
-
     class Reflector : public std::enable_shared_from_this<Reflector>
     {
     public:
         using SharedPtr = std::shared_ptr<Reflector>;
-        static SharedPtr create();
-
+        /** Create a new object
+        */
+        static SharedPtr create(slang::ShaderReflection* pSlangReflector, std::string& log);
     private:
         Reflector() = default;
+        bool init(slang::ShaderReflection* pSlangReflector, std::string& log);
+        StructType::SharedPtr mpGlobalResources;
+        uvec3 mThreadGroupSize;
+        bool mIsSampleFrequency = false;
     };
 }}
