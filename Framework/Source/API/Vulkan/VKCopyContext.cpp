@@ -41,6 +41,18 @@ namespace Falcor
         return flags;
     }
 
+    static uint32_t getMipLevelPackedDataSize(const Texture* pTexture, uint32_t mipLevel)
+    {
+        assert(mipLevel < pTexture->getMipCount());
+        ResourceFormat format = pTexture->getFormat();
+        uint32_t size = pTexture->getWidth(mipLevel) * pTexture->getHeight(mipLevel) * pTexture->getDepth(mipLevel) * getFormatBytesPerBlock(format);
+        uint32_t compression = getFormatHeightCompressionRatio(format) * getFormatWidthCompressionRatio(format);
+        assert(compression >= 1);
+        assert((size % compression) == 0);
+        size /= compression;
+        return size;
+    }
+
     static VkImageLayout getImageLayout(Resource::State state)
     {
         switch (state)
@@ -125,7 +137,7 @@ namespace Falcor
             uint32_t subresource = i + firstSubresource;
             updateTextureSubresource(pTexture, subresource, pSubResData);
             uint32_t mipLevel = pTexture->getSubresourceMipLevel(subresource);
-            uint32_t offset = pTexture->getMipLevelPackedDataSize(mipLevel);
+            uint32_t offset = getMipLevelPackedDataSize(pTexture, mipLevel);
             pSubResData += offset;
         }
     }
@@ -134,7 +146,7 @@ namespace Falcor
     {
         assert(isDepthStencilFormat(pTexture->getFormat()) == false); // #VKTODO Nothing complicated here, just that Vulkan doesn't support writing to both depth and stencil, which may be confusing to the user
         uint32_t mipLevel = pTexture->getSubresourceMipLevel(subresourceIndex);
-        dataSize = pTexture->getMipLevelPackedDataSize(mipLevel);
+        dataSize = getMipLevelPackedDataSize(pTexture, mipLevel);
 
         // Upload the data to a staging buffer
         pStaging = Buffer::create(dataSize, Buffer::BindFlags::None, pSrcData ? Buffer::CpuAccess::Write : Buffer::CpuAccess::Read, pSrcData);

@@ -147,15 +147,7 @@ namespace Falcor
         */
 
         static SharedPtr create2DMS(uint32_t width, uint32_t height, ResourceFormat format, uint32_t sampleCount, uint32_t arraySize = 1, BindFlags bindFlags = BindFlags::ShaderResource);
-
-        /** Get the required buffer size for a single array slice in a mip-level, assuming the data is tightly packed
-        */
-        uint32_t getMipLevelPackedDataSize(uint32_t mipLevel) const;
-
-        /** Get the required buffer size for the full mip-map pyramid, assuming the data is tightly packed
-        */
-        uint32_t getPackedDataSize() const;
-
+        
         /** Capture the texture to a PNG image.\n
             \param[in] mipLevel Requested mip-level
             \param[in] arraySlice Requested array-slice

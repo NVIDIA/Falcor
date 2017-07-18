@@ -97,16 +97,6 @@ namespace Falcor
         }
     }
 
-    uint32_t Texture::getPackedDataSize() const
-    {
-        uint32_t res = 0;
-        for(uint32_t l = 0; l < mMipLevels; l++)
-        {
-            res += getMipLevelPackedDataSize(l);
-        }
-        return res;
-    }
-
     void Texture::captureToFile(uint32_t mipLevel, uint32_t arraySlice, const std::string& filename, Bitmap::FileFormat format, Bitmap::ExportFlags exportFlags) const
     {
         uint32_t subresource = getSubresourceIndex(arraySlice, mipLevel);
@@ -173,11 +163,5 @@ namespace Falcor
 			mRtvs.clear();
 			mReleaseRtvsAfterGenMips = false;
 		}
-    }
-
-    uint32_t Texture::getMipLevelPackedDataSize(uint32_t mipLevel) const
-    {
-        assert(mipLevel < mMipLevels);
-        return getWidth(mipLevel) * getHeight(mipLevel) * getDepth(mipLevel) * getFormatBytesPerBlock(mFormat);
     }
 }

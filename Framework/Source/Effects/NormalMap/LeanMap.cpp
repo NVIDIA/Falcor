@@ -42,7 +42,6 @@ namespace Falcor
 
         leanData.resize(texW * texH);
 
-        uint32_t normalMapDataSize = pNormalMap->getMipLevelPackedDataSize(0);
         auto normalMapData = gpDevice->getRenderContext()->readTextureSubresource(pNormalMap, 0);
 
         const float oneBy255 = 1.0f / 255.0f;
