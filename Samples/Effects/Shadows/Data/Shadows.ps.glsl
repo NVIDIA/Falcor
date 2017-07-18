@@ -38,27 +38,22 @@ layout(set = 0, binding = 0) uniform PerFrameCB
     mat4 camVpAtLastCsmUpdate;
 };
 
-layout(location = 0) in vec3 normalW;
-layout(location = 1) in vec3 bitangentW;
-layout(location = 2) in vec2 texC;
-layout(location = 3) in vec3 posW;
-layout(location = 4) in vec3 colorV;
-layout(location = 5) in vec4 prevPosH;
-layout(location = 6) in float shadowsDepthC : DEPTH;
+in VS_OUT vsData;
+in float shadowsDepthC;
 
 layout(location = 0) out vec4 fragColor;
 
 void main()
 {
     ShadingAttribs shAttr;
-    prepareShadingAttribs(gMaterial, pIn.vsData.posW, gCam.position, pIn.vsData.normalW, pIn.vsData.bitangentW, pIn.vsData.texC, 0, shAttr);
+    prepareShadingAttribs(gMaterial, vsData.posW, gCam.position, vsData.normalW, vsData.bitangentW, vsData.texC, 0, shAttr);
     ShadingOutput result;
     fragColor = float4(0,0,0,1);
     
     [unroll]
     for(uint l = 0 ; l < _LIGHT_COUNT ; l++)
     {
-        float shadowFactor = calcShadowFactor(gCsmData[l], pIn.shadowsDepthC, shAttr.P, pIn.vsData.posH.xy/pIn.vsData.posH.w);
+        float shadowFactor = calcShadowFactor(gCsmData[l], shadowsDepthC, shAttr.P, gl_FragCoord.xy/gl_FragCoord.w);
         evalMaterial(shAttr, gLights[l], result, l == 0);
         fragColor.rgb += result.diffuseAlbedo * result.diffuseIllumination * shadowFactor;
         fragColor.rgb += result.specularAlbedo * result.specularIllumination * (0.01f + shadowFactor * 0.99f);
@@ -70,6 +65,6 @@ void main()
         //Ideally this would be light index so you can visualize the cascades of the 
         //currently selected light. However, because csmData contains Textures, it doesn't
         //like getting them with a non literal index.
-        fragColor.rgb *= getCascadeColor(getCascadeIndex(gCsmData[_LIGHT_INDEX], pIn.shadowsDepthC));
+        fragColor.rgb *= getCascadeColor(getCascadeIndex(gCsmData[_LIGHT_INDEX], shadowsDepthC));
     }
 }

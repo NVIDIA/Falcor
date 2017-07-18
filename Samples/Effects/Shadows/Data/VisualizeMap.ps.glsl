@@ -25,9 +25,8 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-layout(set = 0, binding = 0) uniform sampler gSampler;
-
-cbuffer PerImageCB : register(b0)
+layout(set = 0, binding = 0)
+uniform PerImageCB
 {
     int cascade;
 };
@@ -38,15 +37,17 @@ layout(set = 0, binding = 1) uniform texture2DArray gTexture;
 layout(set = 0, binding = 1) uniform texture2D gTexture;
 #endif
 
+layout(set = 0, binding = 2) uniform sampler gSampler;
+
 layout(location = 0) in vec2 texC;
 layout(location = 0) out vec4 fragColor;
 
 void main()
 {
 #ifdef _USE_2D_ARRAY
-	float d = textureLod(sampler2DArray(gTexture, gSampler), vec3(texC, float(cascade)), 0).r
+    float d = textureLod(sampler2DArray(gTexture, gSampler), vec3(texC, float(cascade)), 0).r;
 #else
     float d = textureLod(sampler2D(gTexture, gSampler), texC, 0).r;
 #endif
-    fragColor = vec4(d.xxx, 1);
+    fragColor = vec4(vec3(d), 1);
 }

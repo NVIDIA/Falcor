@@ -37,24 +37,16 @@ layout(set = 0, binding = 0) uniform PerFrameCB
     mat4 camVpAtLastCsmUpdate;
 };
 
-layout(location = 0) out vec3 normalW;
-layout(location = 1) out vec3 bitangentW;
-layout(location = 2) out vec2 texC;
-layout(location = 3) out vec3 posW;
-layout(location = 4) out vec3 colorV;
-layout(location = 5) out vec4 prevPosH;
-layout(location = 6) out float shadowsDepthC : DEPTH;
-VS_IN vIn;
+in VS_IN vIn;
+
+out VS_OUT vOut;
+
+out float shadowsDepthC;
 
 void main()
 {
     VS_OUT defaultOut = defaultVS(vIn);
-    normalW = defaultOut.normalW;
-    bitangentW = defaultOut.bitangentW;
-    texC = defaultOut.texC;
-    posW = defaultOut.posW;
-    colorV = defaultOut.colorV;
-    prevPosH = defaultOut.prevPosH;
 
-    shadowsDepthC = (camVpAtLastCsmUpdate * vec4(posW, 1)).z;
+    vOut = defaultOut;
+    shadowsDepthC = (camVpAtLastCsmUpdate * vec4(defaultOut.posW, 1)).z;
 }
