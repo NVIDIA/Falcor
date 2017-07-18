@@ -25,7 +25,6 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-__import Effects.LeanMapping;
 #import "ShaderCommon.slang"
 #import "Shading.slang"
 __import DefaultVS;
@@ -34,19 +33,6 @@ cbuffer PerFrameCB : register(b0)
 {
     float3 gAmbient;
 };
-
-#ifdef _MS_USER_NORMAL_MAPPING
-Texture2D gLeanMaps[_LEAN_MAP_COUNT] : register(t20);
-SamplerState gSampler : register(s10);
-
-void perturbNormal(in const MaterialData mat, inout ShadingAttribs shAttr, bool forceSample)
-{
-    if (mat.desc.hasNormalMap != 0)
-    {
-        applyLeanMap(gLeanMaps[mat.values.id], gSampler, shAttr);
-    }
-}
-#endif
 
 float4 main(VS_OUT vOut) : SV_TARGET
 {

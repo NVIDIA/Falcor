@@ -29,3 +29,8 @@
 #include "HostDeviceSharedMacros.h"
 
 #include "HostDeviceSharedCode.h"
+
+#ifdef _LEAN_MAP_COUNT
+Texture2D gLeanMaps[_LEAN_MAP_COUNT] : register(t20);
+SamplerState gLeanMapSampler : register(s10);
+#endif

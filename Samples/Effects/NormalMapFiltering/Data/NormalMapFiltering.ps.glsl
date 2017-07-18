@@ -25,7 +25,6 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-__import Effects.LeanMapping;
 #import "ShaderCommon.slang"
 #import "Shading.slang"
 __import DefaultVS;
@@ -35,18 +34,6 @@ layout(set = 0, binding = 0) uniform PerFrameCB
     vec3 gAmbient;
 };
 
-#ifdef _MS_USER_NORMAL_MAPPING
-layout(set = 1, location = 0) uniform texture2D gLeanMaps[_LEAN_MAP_COUNT];
-layout(set = 1, location = 1) uniform sampler gSampler;
-
-void perturbNormal(in const MaterialData mat, inout ShadingAttribs shAttr, bool forceSample)
-{
-    if (mat.desc.hasNormalMap != 0)
-    {
-        applyLeanMap(gLeanMaps[mat.values.id], gSampler, shAttr);
-    }
-}
-#endif
 
 layout(location = 1) in vec3 normal;
 layout(location = 2) in vec3 bitangent;

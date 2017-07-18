@@ -157,20 +157,20 @@ namespace Falcor
         return pLeanMaps;
     }
 
-    void LeanMap::setIntoProgramVars(ProgramVars* pVars, uint32_t texIndex) const
+    void LeanMap::setIntoProgramVars(ProgramVars* pVars, const Sampler::SharedPtr& pSampler) const
     {
-        for(const auto& pMap : mpLeanMaps)
+        for (const auto& pMap : mpLeanMaps)
         {
-            uint32_t id = pMap.first;
-            uint32_t regIndex = id + texIndex;
+            std::string name("gLeanMaps");
+            if(mpLeanMaps.size() > 1)
+            {
+                uint32_t id = pMap.first;
+                std::string name = "gLeanMaps[" + std::to_string(id) + "]";
+            }
             Texture::SharedPtr pTex = pMap.second;
-            pVars->setSrv(0, regIndex, 0, pTex->getSRV());
+            pVars->setTexture(name, pTex);
         }
-    }
 
-    void LeanMap::setIntoProgramVars(ProgramVars* pVars, const std::string& texName) const
-    {
-        size_t regIndex = pVars->getReflection()->getResourceDesc(texName)->regIndex;
-        setIntoProgramVars(pVars, (uint32_t)regIndex);
+        pVars->setSampler("gLeanMapSampler", pSampler);
     }
 }

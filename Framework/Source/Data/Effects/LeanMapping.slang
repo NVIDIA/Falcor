@@ -29,30 +29,3 @@
 #include "Data/HostDeviceData.h"
 
 __import Helpers;
-
-void applyLeanMap(in Texture2D leanMap, in SamplerState samplerState, inout ShadingAttribs shAttr)
-{
-    float4 t = sampleTexture(leanMap, samplerState, shAttr);
-    // Reconstruct B 
-    float2 B = 2 * t.xy - 1;
-    float2 M = t.zw;
-
-    // Apply normal
-    float3 unnormalizedNormal = float3(B, 1);
-    applyNormalMap(unnormalizedNormal, shAttr.N, shAttr.T, shAttr.B);
-    // Reconstruct the diagonal covariance matrix
-    float2 maxCov = max((0), M - B*B);     // Use only diagonal of covariance due to float2 aniso roughness
-
-    [unroll]
-    for (uint iLayer = 0; iLayer < MatMaxLayers; iLayer++)
-    {
-        if (shAttr.preparedMat.desc.layers[iLayer].type == MatNone) break;
-
-        if (shAttr.preparedMat.desc.layers[iLayer].type != MatLambert)
-        {
-            float2 roughness = shAttr.preparedMat.values.layers[iLayer].roughness.xy;
-            roughness = sqrt(roughness*roughness + maxCov); // Approximate convolution that works for all
-            shAttr.preparedMat.values.layers[iLayer].roughness.rg = roughness;
-        }
-    }
-}

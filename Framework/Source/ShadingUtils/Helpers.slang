@@ -268,7 +268,7 @@ void _fn applyNormalMap(in float3 texValue, _ref(float3) n, _ref(float3) t, _ref
     t = normalize(cross(b, n));
 }
 
-#ifndef _MS_USER_NORMAL_MAPPING
+#ifndef _MS_LEAN_MAPPING
 void _fn perturbNormal(in const MaterialData mat, _ref(ShadingAttribs) attr, bool forceSample)
 {
 	if(forceSample || mat.desc.hasNormalMap != 0)
@@ -278,8 +278,40 @@ void _fn perturbNormal(in const MaterialData mat, _ref(ShadingAttribs) attr, boo
 	}
 }
 #else
-// Forward declare it, just in case someone overrides it later
-void _fn perturbNormal(in const MaterialData mat, _ref(ShadingAttribs) attr, bool forceSample /*= false*/);
+void applyLeanMap(in Texture2D leanMap, in SamplerState samplerState, inout ShadingAttribs shAttr)
+{
+    float4 t = sampleTexture(leanMap, samplerState, shAttr);
+    // Reconstruct B 
+    float2 B = 2 * t.xy - 1;
+    float2 M = t.zw;
+
+    // Apply normal
+    float3 unnormalizedNormal = float3(B, 1);
+    applyNormalMap(unnormalizedNormal, shAttr.N, shAttr.T, shAttr.B);
+    // Reconstruct the diagonal covariance matrix
+    float2 maxCov = max((0), M - B*B);     // Use only diagonal of covariance due to float2 aniso roughness
+
+    [unroll]
+    for (uint iLayer = 0; iLayer < MatMaxLayers; iLayer++)
+    {
+        if (shAttr.preparedMat.desc.layers[iLayer].type == MatNone) break;
+
+        if (shAttr.preparedMat.desc.layers[iLayer].type != MatLambert)
+        {
+            float2 roughness = shAttr.preparedMat.values.layers[iLayer].roughness.xy;
+            roughness = sqrt(roughness*roughness + maxCov); // Approximate convolution that works for all
+            shAttr.preparedMat.values.layers[iLayer].roughness.rg = roughness;
+        }
+    }
+}
+
+void perturbNormal(in const MaterialData mat, inout ShadingAttribs shAttr, bool forceSample)
+{
+    if (mat.desc.hasNormalMap != 0)
+    {
+        applyLeanMap(gLeanMaps[mat.values.id], gLeanMapSampler, shAttr);
+    }
+}
 #endif
 
 // Note: explicit overload instead of default argument, at least until cross-compiler can handle defaults
