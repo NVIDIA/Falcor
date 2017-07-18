@@ -26,7 +26,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 SamplerState gSampler : register(s0);
-texture2D gInputTex : register(t0);
+texture2D gInputTex : register(t1);
 
 #ifdef _FIRST_ITERATION
 float2 compareMinMax(float2 crd, float2 range)

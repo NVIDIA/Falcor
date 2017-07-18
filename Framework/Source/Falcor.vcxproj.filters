@@ -2160,9 +2160,6 @@
     <None Include="Data\Framework\Shaders\Gui.vs.slang">
       <Filter>Data\Framework\Shaders</Filter>
     </None>
-    <None Include="Data\Framework\Shaders\ParallelReduction.fs.slang">
-      <Filter>Data\Framework\Shaders</Filter>
-    </None>
     <None Include="Data\Framework\Shaders\SceneEditorPS.slang">
       <Filter>Data\Framework\Shaders</Filter>
     </None>
@@ -2252,6 +2249,9 @@
     </None>
     <None Include="Data\Effects\CascadedShadowMap.slang">
       <Filter>Data\Effects</Filter>
+    </None>
+    <None Include="Data\Framework\Shaders\ParallelReduction.ps.slang">
+      <Filter>Data\Framework\Shaders</Filter>
     </None>
   </ItemGroup>
 </Project>

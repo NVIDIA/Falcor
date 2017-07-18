@@ -33,7 +33,7 @@
 
 namespace Falcor
 {
-    const char* fsFilename = "Framework/Shaders/ParallelReduction.fs.slang";
+    const char* fsFilename = "Framework/Shaders/ParallelReduction.ps.slang";
 
     ParallelReduction::ParallelReduction(ParallelReduction::Type reductionType, uint32_t readbackLatency, uint32_t width, uint32_t height) : mReductionType(reductionType)
     {
@@ -93,7 +93,7 @@ namespace Falcor
     void runProgram(RenderContext* pRenderCtx, Texture::SharedPtr pInput, const FullScreenPass* pProgram, Fbo::SharedPtr pDst, GraphicsVars::SharedPtr pVars, Sampler::SharedPtr pPointSampler)
     {
         GraphicsState::SharedPtr pState = pRenderCtx->getGraphicsState();
-        pVars->setSrv(0, 0, 0, pInput->getSRV());
+        pVars->setSrv(0, 1, 0, pInput->getSRV());
         pVars->setSampler(0, 0, 0, pPointSampler);
 
         //Set draw params
