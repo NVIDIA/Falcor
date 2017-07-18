@@ -133,6 +133,7 @@ namespace Falcor
         RootSignature::DescType type;
         uint32_t regSpace;
         uint32_t regIndex;
+		uint32_t descOffst;
         uint32_t count;
     };
 
@@ -161,6 +162,7 @@ namespace Falcor
         data.count = resource.arraySize ? resource.arraySize : 1;
         data.regIndex = resource.regIndex;
         data.regSpace = resource.regSpace;
+		data.descOffst = resource.descOffset;
         return data;
     }
 
@@ -177,28 +179,18 @@ namespace Falcor
             rangeMap[data.type] = {};
         }
 
-        rangeMap[data.type].push_back({ data.regIndex, data.count });
-    }
+		// Check if we already have a range with the same base index
+		for (auto& r : rangeMap[data.type])
+		{
+			if (r.baseIndex == data.regIndex)
+			{
+				r.count = max(r.count, data.count + data.descOffst);
+				return;
+			}
+		}
 
-    std::vector<Range> mergeRanges(std::set<Range>& ranges)
-    {
-        std::vector<Range> merged;
-        // The ranges are already sorted, we only need to check if we can merge the last entry with the current one
-
-        for (const auto& r : ranges)
-        {
-            if (merged.size())
-            {
-                auto& back = merged.back();
-                if (back.baseIndex + back.count == r.baseIndex)
-                {
-                    back.count += r.count;
-                    continue;
-                }
-            }
-            merged.push_back(r);
-        }
-        return merged;
+		// New Range
+        rangeMap[data.type].push_back({ data.regIndex, data.count + data.descOffst });
     }
 
     ProgramReflection::ShaderAccess getRequiredShaderAccess(RootSignature::DescType type);
@@ -214,6 +206,7 @@ namespace Falcor
             {
                 ResData resData;
                 resData.count = 1;
+				resData.descOffst = 0;
                 resData.regIndex = pBuffer->getRegisterIndex();
                 resData.regSpace = pBuffer->getRegisterSpace();
                 resData.type = descType;

@@ -82,8 +82,6 @@ void Shadows::createScene(const std::string& filename)
 {
     // Load the scene
     mpScene = Scene::loadFromFile(filename);
-    for (uint32_t i = 1; i < mpScene->getLightCount(); i++) mpScene->deleteLight(i);
-
     for (uint32_t i = 0; i < mpScene->getPathCount(); i++)
     {
         mpScene->getPath(i)->detachAllObjects();

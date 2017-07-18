@@ -169,7 +169,7 @@ namespace Falcor
         }
         else
         {
-            logError("Can't enable requested Vulkan layer " + layerName + ". Something bad might happen. Or not, depends on the layer.");
+            logWarning("Can't enable requested Vulkan layer " + layerName + ". Something bad might happen. Or not, depends on the layer.");
         }
     }
 

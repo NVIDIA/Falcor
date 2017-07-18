@@ -133,7 +133,7 @@ namespace Falcor
         {
             const auto& desc = res.second;
             uint32_t count = desc.arraySize ? desc.arraySize : 1;
-            for (uint32_t index = 0; index < count; ++index)
+            for (uint32_t index = desc.descOffset; index < (desc.descOffset + count); ++index)
             {
                 uint32_t regIndex = desc.regIndex;
                 BindLocation loc(desc.regSpace, regIndex);
@@ -323,6 +323,7 @@ namespace Falcor
 
     void setResourceSrvUavCommon(const ProgramReflection::Resource* pDesc, uint32_t arrayIndex, const Resource::SharedPtr& resource, ProgramVars::ResourceMap<ShaderResourceView>& assignedSrvs, ProgramVars::ResourceMap<UnorderedAccessView>& assignedUavs, std::vector<ProgramVars::RootSet>& rootSets)
     {
+		arrayIndex += pDesc->descOffset;
         setResourceSrvUavCommon({ pDesc->regSpace, pDesc->regIndex }, arrayIndex, pDesc->shaderAccess, resource, assignedSrvs, assignedUavs, rootSets);
     }
 
@@ -464,7 +465,7 @@ namespace Falcor
     template<typename ResourceType>
     typename ResourceType::SharedPtr getResourceFromSrvUavCommon(const ProgramReflection::Resource *pDesc, uint32_t arrayIndex, const ProgramVars::ResourceMap<ShaderResourceView>& assignedSrvs, const ProgramVars::ResourceMap<UnorderedAccessView>& assignedUavs, const std::string& varName, const std::string& funcName)
     {
-        return getResourceFromSrvUavCommon<ResourceType>(pDesc->regSpace, pDesc->regIndex, arrayIndex, pDesc->shaderAccess, assignedSrvs, assignedUavs, varName, funcName);
+        return getResourceFromSrvUavCommon<ResourceType>(pDesc->regSpace, pDesc->regIndex, arrayIndex + pDesc->descOffset, pDesc->shaderAccess, assignedSrvs, assignedUavs, varName, funcName);
     }
 
     template<typename ResourceType>
@@ -558,7 +559,7 @@ namespace Falcor
             return false;
         }
 
-        return setSampler(pDesc->regSpace, pDesc->regIndex, arrayIndex, pSampler);
+        return setSampler(pDesc->regSpace, pDesc->regIndex, arrayIndex + pDesc->descOffset, pSampler);
     }
 
     Sampler::SharedPtr ProgramVars::getSampler(const std::string& name) const
@@ -570,7 +571,7 @@ namespace Falcor
             return nullptr;
         }
 
-        return getSampler(pDesc->regSpace, pDesc->regIndex, arrayIndex);
+        return getSampler(pDesc->regSpace, pDesc->regIndex, arrayIndex + pDesc->descOffset);
     }
 
     Sampler::SharedPtr ProgramVars::getSampler(uint32_t regSpace, uint32_t baseRegIndex, uint32_t arrayIndex) const

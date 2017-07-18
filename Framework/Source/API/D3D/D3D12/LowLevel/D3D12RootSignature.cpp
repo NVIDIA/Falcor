@@ -210,6 +210,7 @@ namespace Falcor
         for (auto& resIt : resMap)
         {
             const ProgramReflection::Resource& resource = resIt.second;
+			assert(resource.descOffset == 0);
             RootSignature::DescType descType;
             if (resource.type == ProgramReflection::Resource::ResourceType::Sampler)
             {
