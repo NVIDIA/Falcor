@@ -2178,9 +2178,6 @@
     <None Include="Data\Effects\ParticleConstColor.ps.slang">
       <Filter>Data\Effects</Filter>
     </None>
-    <None Include="Data\Effects\ShadowPass.gs.slang">
-      <Filter>Data\Effects</Filter>
-    </None>
     <None Include="Data\Effects\ShadowPass.ps.slang">
       <Filter>Data\Effects</Filter>
     </None>
@@ -2253,5 +2250,9 @@
     <None Include="Data\Framework\Shaders\ParallelReduction.ps.slang">
       <Filter>Data\Framework\Shaders</Filter>
     </None>
+    <None Include="Data\Effects\ShadowPass.gs.slang">
+      <Filter>Data\Effects</Filter>
+    </None>
+    <None Include="Data\Framework\Shaders\FullScreenPass.gs.glsl" />
   </ItemGroup>
 </Project>

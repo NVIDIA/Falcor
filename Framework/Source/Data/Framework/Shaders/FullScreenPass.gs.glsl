@@ -1,5 +1,5 @@
 /***************************************************************************
-# Copyright (c) 2015, NVIDIA CORPORATION. All rights reserved.
+# Copyright (c) 2017, NVIDIA CORPORATION. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -25,37 +25,29 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-struct VsOut
-{
-    float2 texC       : TEXCOORD;
-    float4 posH       : SV_POSITION;
-};
+layout(location = 0) in vec2 inTexC[3];
+layout(location = 1) in vec4 inPosH[3];
 
-struct GsOut
-{
-    float2 texC : TEXCOORD;
-    float4 posH : SV_POSITION;
-    uint rtIndex : SV_RenderTargetArrayIndex;
-};
+layout(location = 0) out vec2 outTexC;
 
-[maxvertexcount(_OUTPUT_VERTEX_COUNT)]
-void main(triangle VsOut input[3], inout TriangleStream<GsOut> outStream)
+layout(triangles) in;
+layout(triangle_strip, max_vertices = _OUTPUT_VERTEX_COUNT) out;
+
+void main()
 {
-    GsOut output;
     uint mask = _VIEWPORT_MASK;
 
     while(mask != 0)
     {
-        uint layer = firstbitlow(mask);
+        gl_Layer = findLSB(mask);
         
         for(int i = 0 ; i < 3 ; i++)
         {
-            output.rtIndex = layer;
-            output.posH = input[i].posH;
-            output.texC = input[i].texC;
-            outStream.Append(output);
+            gl_Position = inPosH[i];
+            outTexC = inTexC[i];
+            EmitVertex();
         }
-        outStream.RestartStrip();
-        mask &= ~(1 << layer);
+        EndPrimitive();
+        mask &= ~(1 << gl_Layer);
     }
 }
