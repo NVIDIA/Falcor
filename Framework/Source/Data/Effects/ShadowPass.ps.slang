@@ -28,17 +28,17 @@
 __import ShaderCommon;
 __import Effects.CascadedShadowMap;
 
-SamplerState alphaSampler : register(s0);
-texture2D alphaMap : register(t0);
+layout(binding = 0) SamplerState alphaSampler : register(s0);
+layout(binding = 1) texture2D alphaMap : register(t0);
 
-cbuffer PerLightCB : register(b0)
-{
-    CsmData gCsmData;
-};
-
-cbuffer AlphaMapCB : register(b1)
+layout(binding = 2) cbuffer AlphaMapCB : register(b1)
 {
     float alphaThreshold;
+};
+
+layout(binding = 3) cbuffer PerLightCB : register(b0)
+{
+    CsmData gCsmData;
 };
 
 struct ShadowPassPSIn

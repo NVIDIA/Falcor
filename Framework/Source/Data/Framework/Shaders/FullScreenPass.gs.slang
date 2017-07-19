@@ -38,7 +38,7 @@ struct GsOut
     uint rtIndex : SV_RenderTargetArrayIndex;
 };
 
-[maxvertexcount(3 * _OUTPUT_PRIM_COUNT)]
+[maxvertexcount(_OUTPUT_VERTEX_COUNT)]
 void main(triangle VsOut input[3], inout TriangleStream<GsOut> outStream)
 {
     GsOut output;

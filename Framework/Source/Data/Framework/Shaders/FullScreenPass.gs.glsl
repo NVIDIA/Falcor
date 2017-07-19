@@ -1,5 +1,5 @@
 /***************************************************************************
-# Copyright (c) 2015, NVIDIA CORPORATION. All rights reserved.
+# Copyright (c) 2017, NVIDIA CORPORATION. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -25,30 +25,29 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#pragma once
-#ifdef FALCOR_VK
-#include "Falcor.h"
+layout(location = 0) in vec2 inTexC[3];
+layout(location = 1) in vec4 inPosH[3];
 
-using namespace Falcor;
+layout(location = 0) out vec2 outTexC;
 
-class VKDev : public Sample
+layout(triangles) in;
+layout(triangle_strip, max_vertices = _OUTPUT_VERTEX_COUNT) out;
+
+void main()
 {
-public:
-    void onLoad() override;
-    void onFrameRender() override;
-    void onShutdown() override;
-    void onResizeSwapChain() override;
-    bool onKeyEvent(const KeyboardEvent& keyEvent) override;
-    bool onMouseEvent(const MouseEvent& mouseEvent) override;
-    void onDataReload() override;
-    void onGuiRender() override;
+    uint mask = _VIEWPORT_MASK;
 
-private:
-    FullScreenPass::UniquePtr mpPass;
-    GraphicsVars::SharedPtr mpVars;
-    vec2 mTexOffset;
-    TypedBuffer<uint32_t>::SharedPtr mpTypedBuffer;
-    Texture::SharedPtr mpTex3D;
-    Fbo::SharedPtr mp4SampleFbo;
-};
-#endif
+    while(mask != 0)
+    {
+        gl_Layer = findLSB(mask);
+        
+        for(int i = 0 ; i < 3 ; i++)
+        {
+            gl_Position = inPosH[i];
+            outTexC = inTexC[i];
+            EmitVertex();
+        }
+        EndPrimitive();
+        mask &= ~(1 << gl_Layer);
+    }
+}

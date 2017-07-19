@@ -883,4 +883,23 @@ namespace Falcor
     {
         return applyProgramVarsCommon<true>(this, mRootSets, pContext, bindRootSig);
     }
+
+    ProgramVars::BindLocation getResourceBindLocation(const ProgramReflection* pReflector, const std::string& name)
+    {
+        ProgramVars::BindLocation loc;
+        const auto& pDesc = pReflector->getResourceDesc(name);
+        if (!pDesc) return loc;
+        loc.baseRegIndex = pDesc->regIndex;
+        loc.regSpace = pDesc->regSpace;
+        return loc;
+    }
+
+    ProgramVars::BindLocation getBufferBindLocation(const ProgramReflection* pReflector, const std::string& name)
+    {
+        ProgramVars::BindLocation loc;
+        const auto& desc = pReflector->getBufferBinding(name);
+        loc.baseRegIndex = desc.baseRegIndex;
+        loc.regSpace = desc.regSpace;
+        return loc;
+    }
 }

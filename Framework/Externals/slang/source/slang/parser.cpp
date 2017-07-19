@@ -729,6 +729,19 @@ namespace Slang
                 AddModifier(&modifierLink, modifier);
             }
 
+            else if (AdvanceIf(parser, "__glsl_version"))
+            {
+                auto modifier = new RequiredGLSLVersionModifier();
+                modifier->Position = loc;
+
+                parser->ReadToken(TokenType::LParent);
+                modifier->versionNumberToken = parser->ReadToken(TokenType::IntegerLiteral);
+                parser->ReadToken(TokenType::RParent);
+
+                AddModifier(&modifierLink, modifier);
+            }
+
+
             else if (AdvanceIf(parser, "layout"))
             {
                 parser->ReadToken(TokenType::LParent);
@@ -1126,15 +1139,15 @@ namespace Slang
     }
 
 
-    static String GenerateName(Parser* /*parser*/, String const& base)
+    static String generateName(Parser* /*parser*/, String const& base)
     {
         // TODO: somehow mangle the name to avoid clashes
-        return base;
+        return "SLANG_" + base;
     }
 
-    static String GenerateName(Parser* parser)
+    static String generateName(Parser* parser)
     {
-        return GenerateName(parser, "_anonymous_" + String(parser->anonymousCounter++));
+        return generateName(parser, "anonymous_" + String(parser->anonymousCounter++));
     }
 
 
@@ -1149,7 +1162,7 @@ namespace Slang
         if( declaratorInfo.nameToken.Type == TokenType::Unknown )
         {
             // HACK(tfoley): we always give a name, even if the declarator didn't include one... :(
-            decl->Name.Content = GenerateName(parser);
+            decl->Name.Content = generateName(parser);
         }
         else
         {
@@ -1791,8 +1804,8 @@ namespace Slang
         addModifier(bufferVarDecl, reflectionNameModifier);
 
         // Both the buffer variable and its type need to have names generated
-        bufferVarDecl->Name.Content = GenerateName(parser, "SLANG_constantBuffer_" + reflectionNameToken.Content);
-        bufferDataTypeDecl->Name.Content = GenerateName(parser, "SLANG_ConstantBuffer_" + reflectionNameToken.Content);
+        bufferVarDecl->Name.Content = generateName(parser, "parameterBlock_" + reflectionNameToken.Content);
+        bufferDataTypeDecl->Name.Content = generateName(parser, "ParameterBlock_" + reflectionNameToken.Content);
 
         addModifier(bufferDataTypeDecl, new ImplicitParameterBlockElementTypeModifier());
         addModifier(bufferVarDecl, new ImplicitParameterBlockVariableModifier());
@@ -1948,7 +1961,7 @@ namespace Slang
         parser->FillPosition(blockVarDecl.Ptr());
 
         // Generate a unique name for the data type
-        blockDataTypeDecl->Name.Content = GenerateName(parser, "SLANG_ParameterBlock_" + reflectionNameToken.Content);
+        blockDataTypeDecl->Name.Content = generateName(parser, "ParameterBlock_" + reflectionNameToken.Content);
 
         // TODO(tfoley): We end up constructing unchecked syntax here that
         // is expected to type check into the right form, but it might be
@@ -1993,7 +2006,7 @@ namespace Slang
         else
         {
             // synthesize a dummy name
-            blockVarDecl->Name.Content = GenerateName(parser, "SLANG_parameterBlock_" + reflectionNameToken.Content);
+            blockVarDecl->Name.Content = generateName(parser, "parameterBlock_" + reflectionNameToken.Content);
 
             // Otherwise we have a transparent declaration, similar
             // to an HLSL `cbuffer`
