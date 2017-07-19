@@ -369,6 +369,7 @@ def processSystemTest(xmlElement, testInfo, slnInfo):
     testingUtil.overwriteMove(resultFile, testInfo.getResultsDir())
 
 def readTestList(generateReference, buildTests, pullBranch):
+    exit()
     testFile = open(gTestListFile)
     contents = testFile.read()
 
@@ -414,8 +415,6 @@ def readTestList(generateReference, buildTests, pullBranch):
                     buildFail(slnName, configName, slnInfo)
             else:
                 testingUtil.cleanDir(exeDir, None, '.png')
-
-		exit()
 		
         #move buffer to beginning of args
         solutionData = solutionData[slnConfigEndIndex + 1 :]
