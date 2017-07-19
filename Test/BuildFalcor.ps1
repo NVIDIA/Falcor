@@ -32,8 +32,9 @@ param
     [ValidateNotNullOrEmpty()]
     [string]$argBuildConfiguration,
 
-    [Parameter(Mandatory=$false, Position=2, HelpMessage = "Target Build Type - Clean / Build / Rebuild ")]
-    [string]$argBuildType = "rebuild",
+    [Parameter(Mandatory=$true, Position=2, HelpMessage = "Target Build Type - Clean / Build / Rebuild ")]
+    [ValidateNotNullOrEmpty()]
+    [string]$argBuildType,
 
     [Parameter(Mandatory=$false, Position=3, HelpMessage = "Target Build Verbosity ")]
     [string]$argBuildVerbosity = "normal"
