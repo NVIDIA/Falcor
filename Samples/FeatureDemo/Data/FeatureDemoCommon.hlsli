@@ -29,7 +29,7 @@ __import ShaderCommon;
 __import DefaultVS;
 __import Effects.CascadedShadowMap;
 
-cbuffer PerFrameCB : register(b0)
+layout(binding = 0) cbuffer PerFrameCB : register(b0)
 {
 	float3 gAmbient;
     CsmData gCsmData;

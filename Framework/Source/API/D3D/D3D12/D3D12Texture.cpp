@@ -38,31 +38,6 @@
 
 namespace Falcor
 {
-    RtvHandle Texture::spNullRTV;
-    DsvHandle Texture::spNullDSV;
-
-    struct GenMipsData
-    {
-        FullScreenPass::UniquePtr pFullScreenPass;
-        GraphicsVars::SharedPtr pVars;
-        GraphicsState::SharedPtr pState;
-    };
-
-    struct TextureApiData
-    {
-        TextureApiData() { sObjCount++; }
-        ~TextureApiData() { sObjCount--; if (sObjCount == 0) spGenMips = nullptr; }
-
-        static std::unique_ptr<GenMipsData> spGenMips;
-        Fbo::SharedPtr pGenMipsFbo;
-
-    private:
-        static uint64_t sObjCount;
-    };
-
-    uint64_t TextureApiData::sObjCount = 0;
-    std::unique_ptr<GenMipsData> TextureApiData::spGenMips;
-
     template<>
     D3D12_UAV_DIMENSION getViewDimension<D3D12_UAV_DIMENSION>(Texture::Type type, bool isTextureArray)
     {

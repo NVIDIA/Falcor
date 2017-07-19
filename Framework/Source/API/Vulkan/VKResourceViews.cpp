@@ -86,6 +86,11 @@ namespace Falcor
         outInfo.subresourceRange.aspectMask = getAspectFlagsFromFormat(texFormat);
         outInfo.subresourceRange.baseMipLevel = mostDetailedMip;
         outInfo.subresourceRange.levelCount = mipCount;
+        if (pTexture->getType() == Resource::Type::TextureCube)
+        {
+            firstArraySlice *= 6;
+            arraySize *= 6;
+        }
         outInfo.subresourceRange.baseArrayLayer = firstArraySlice;
         outInfo.subresourceRange.layerCount = arraySize;
 

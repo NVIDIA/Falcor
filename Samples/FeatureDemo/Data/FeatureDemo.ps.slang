@@ -31,8 +31,8 @@ __import BSDFs;
 __import Shading;
 __import Helpers;
 
-Texture2D gEnvMap;
-SamplerState gSampler;
+layout(set = 1, binding = 0) Texture2D gEnvMap;
+layout(set = 1, binding = 1) SamplerState gSampler;
 
 struct PsOut
 {

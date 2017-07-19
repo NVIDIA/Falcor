@@ -28,7 +28,11 @@
 struct VsOut
 {
     float2 texC       : TEXCOORD;
+#ifndef _VIEWPORT_MASK
     float4 posH       : SV_POSITION;
+#else
+    float4 posH       : POSITION;
+#endif
 #ifdef _SINGLE_PASS_STEREO
     float4 rightPosH  : NV_X_RIGHT;
     uint4 viewportMask : NV_VIEWPORT_MASK;

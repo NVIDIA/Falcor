@@ -256,7 +256,7 @@ namespace Falcor
     {
         const Texture* pTex = dynamic_cast<const Texture*>(pView->getResource());
 
-        layer.aspectMask = getAspectFlagsFromFormat(pTex->getFormat());
+        layer.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT; // Can't blit depth texture
         const auto& viewInfo = pView->getViewInfo();
         layer.baseArrayLayer = viewInfo.firstArraySlice;
         layer.layerCount = viewInfo.arraySize;

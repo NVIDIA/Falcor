@@ -132,7 +132,10 @@ namespace Falcor
     {
         PFN_vkDestroyDebugReportCallbackEXT DestroyDebugReportCallback = VK_NULL_HANDLE;
         DestroyDebugReportCallback = (PFN_vkDestroyDebugReportCallbackEXT)vkGetInstanceProcAddr(mApiHandle, "vkDestroyDebugReportCallbackEXT");
-        DestroyDebugReportCallback(mApiHandle, mpApiData->debugReportCallbackHandle, nullptr);
+        if(DestroyDebugReportCallback)
+        {
+            DestroyDebugReportCallback(mApiHandle, mpApiData->debugReportCallbackHandle, nullptr);
+        }
         vkDestroySwapchainKHR(mApiHandle, mpApiData->swapchain, nullptr);
         safe_delete(mpApiData);
     }
@@ -161,15 +164,15 @@ namespace Falcor
         return false;
     }
 
-    void enableLayerIfPresent(const std::string& layerName, const std::vector<VkLayerProperties>& supportedLayers, std::vector<const char*> requiredLayers)
+    void enableLayerIfPresent(const char* layerName, const std::vector<VkLayerProperties>& supportedLayers, std::vector<const char*>& requiredLayers)
     {
         if (isLayerSupported(layerName, supportedLayers))
         {
-            requiredLayers.push_back(layerName.c_str());
+            requiredLayers.push_back(layerName);
         }
         else
         {
-            logWarning("Can't enable requested Vulkan layer " + layerName + ". Something bad might happen. Or not, depends on the layer.");
+            logWarning("Can't enable requested Vulkan layer " + std::string(layerName) + ". Something bad might happen. Or not, depends on the layer.");
         }
     }
 
