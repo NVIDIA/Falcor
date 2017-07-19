@@ -113,6 +113,12 @@ namespace Falcor
 
         struct
         {
+            ProgramVars::BindLocation luminanceSampler;
+            ProgramVars::BindLocation colorSampler;
+        } mBindLocations;
+
+        struct
+        {
             float exposureKey = 0.042f;
             float whiteMaxLuminance = 1.0f;
             float luminanceLod = 16; // Max possible LOD, will result in global operation

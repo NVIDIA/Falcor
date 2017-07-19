@@ -27,7 +27,7 @@
 ***************************************************************************/
 
 SamplerState gLuminanceTexSampler : register(s0);
-SamplerState gPointSampler : register(s1);
+SamplerState gColorSampler : register(s1);
 
 Texture2D gColorTex;
 Texture2D gLuminanceTex;
@@ -125,7 +125,7 @@ float3 AcesToneMap(float3 color)
 
 float4 calcColor(float2 texC)
 {
-    float4 color = gColorTex.Sample(gPointSampler, texC);
+    float4 color = gColorTex.Sample(gColorSampler, texC);
     float3 exposedColor = calcExposedColor(color.rgb, texC);
 #ifdef _LUMINANCE
     float luminance = calcLuminance(color.xyz);
