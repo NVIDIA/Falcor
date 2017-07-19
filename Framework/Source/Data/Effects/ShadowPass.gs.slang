@@ -29,7 +29,7 @@
 __import ShaderCommon;
 __import Effects.CascadedShadowMap;
 
-cbuffer PerLightCB : register(b0)
+layout(binding = 3) cbuffer PerLightCB : register(b0)
 {
     CsmData gCsmData;
 };

@@ -306,4 +306,7 @@ namespace Falcor
         ComputeVars(const ProgramReflection::SharedConstPtr& pReflector, bool createBuffers, const RootSignature::SharedPtr& pRootSig) :
             ProgramVars(pReflector, createBuffers, pRootSig) {}
     };
+
+    ProgramVars::BindLocation getResourceBindLocation(const ProgramReflection* pReflector, const std::string& name);
+    ProgramVars::BindLocation getBufferBindLocation(const ProgramReflection* pReflector, const std::string& name);
 }
