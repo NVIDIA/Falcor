@@ -1406,10 +1406,10 @@
       <Command>$(ProjectDir)\..\PatchFalcorPropertySheet.exe $(SolutionPath) $(ProjectDir)\Falcor.props FALCOR_D3D11</Command>
     </PreBuildEvent>
     <CustomBuildStep>
-      <Command>$(ProjectDir)..\CleanDir.bat $(SolutionDir)Bin\$(PlatformShortName)\Debug\</Command>
+      <Command></Command>
     </CustomBuildStep>
     <CustomBuildStep>
-      <Outputs>needs output to run </Outputs>
+      <Outputs></Outputs>
     </CustomBuildStep>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='DebugD3D12|x64'">
@@ -1435,10 +1435,10 @@
       <Command>$(ProjectDir)\..\PatchFalcorPropertySheet.exe $(SolutionPath) $(ProjectDir)\Falcor.props FALCOR_D3D12</Command>
     </PreBuildEvent>
     <CustomBuildStep>
-      <Command>$(ProjectDir)..\CleanDir.bat $(SolutionDir)Bin\$(PlatformShortName)\Debug\</Command>
+      <Command></Command>
     </CustomBuildStep>
     <CustomBuildStep>
-      <Outputs>needs output to run </Outputs>
+      <Outputs></Outputs>
     </CustomBuildStep>
     <Lib>
       <AdditionalDependencies>
@@ -1468,10 +1468,10 @@
       <Command>$(ProjectDir)\..\PatchFalcorPropertySheet.exe $(SolutionPath) $(ProjectDir)\Falcor.props FALCOR_VK</Command>
     </PreBuildEvent>
     <CustomBuildStep>
-      <Command>$(ProjectDir)..\CleanDir.bat $(SolutionDir)Bin\$(PlatformShortName)\Debug\</Command>
+      <Command></Command>
     </CustomBuildStep>
     <CustomBuildStep>
-      <Outputs>needs output to run </Outputs>
+      <Outputs></Outputs>
     </CustomBuildStep>
     <Lib>
       <AdditionalDependencies>
@@ -1506,10 +1506,10 @@
       <Command>$(ProjectDir)\..\PatchFalcorPropertySheet.exe $(SolutionPath) $(ProjectDir)\Falcor.props FALCOR_D3D11</Command>
     </PreBuildEvent>
     <CustomBuildStep>
-      <Command>$(ProjectDir)..\CleanDir.bat $(SolutionDir)Bin\$(PlatformShortName)\Release\</Command>
+      <Command></Command>
     </CustomBuildStep>
     <CustomBuildStep>
-      <Outputs>needs output to run </Outputs>
+      <Outputs></Outputs>
     </CustomBuildStep>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseD3D12|x64'">
@@ -1538,10 +1538,10 @@
       <Command>$(ProjectDir)\..\PatchFalcorPropertySheet.exe $(SolutionPath) $(ProjectDir)\Falcor.props FALCOR_D3D12</Command>
     </PreBuildEvent>
     <CustomBuildStep>
-      <Command>$(ProjectDir)..\CleanDir.bat $(SolutionDir)Bin\$(PlatformShortName)\Release\</Command>
+      <Command></Command>
     </CustomBuildStep>
     <CustomBuildStep>
-      <Outputs>needs output to run </Outputs>
+      <Outputs></Outputs>
     </CustomBuildStep>
     <Lib>
       <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
@@ -1575,10 +1575,10 @@
       <Command>$(ProjectDir)\..\PatchFalcorPropertySheet.exe $(SolutionPath) $(ProjectDir)\Falcor.props FALCOR_VK</Command>
     </PreBuildEvent>
     <CustomBuildStep>
-      <Command>$(ProjectDir)..\CleanDir.bat $(SolutionDir)Bin\$(PlatformShortName)\Release\</Command>
+      <Command></Command>
     </CustomBuildStep>
     <CustomBuildStep>
-      <Outputs>needs output to run </Outputs>
+      <Outputs></Outputs>
     </CustomBuildStep>
     <Lib>
       <AdditionalLibraryDirectories>
