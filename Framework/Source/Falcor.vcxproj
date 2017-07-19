@@ -1403,7 +1403,7 @@
       <Command>$(ProjectDir)\..\CopyLibs.bat Debug $(PlatformName) $(SolutionDir)Bin\$(PlatformShortName)\Debug</Command>
     </PostBuildEvent>
     <PreBuildEvent>
-      <Command>$(ProjectDir)\..\PatchFalcorPropertySheet.exe $(SolutionPath) $(ProjectDir)\Falcor.props FALCOR_D3D11</Command>
+      <Command></Command>
     </PreBuildEvent>
     <CustomBuildStep>
       <Command></Command>
@@ -1432,7 +1432,7 @@
       <Command>$(ProjectDir)\..\CopyLibs.bat Debug $(PlatformName) $(SolutionDir)Bin\$(PlatformShortName)\Debug</Command>
     </PostBuildEvent>
     <PreBuildEvent>
-      <Command>$(ProjectDir)\..\PatchFalcorPropertySheet.exe $(SolutionPath) $(ProjectDir)\Falcor.props FALCOR_D3D12</Command>
+      <Command></Command>
     </PreBuildEvent>
     <CustomBuildStep>
       <Command></Command>
@@ -1465,7 +1465,7 @@
       <Command>$(ProjectDir)\..\CopyLibs.bat Debug $(PlatformName) $(SolutionDir)Bin\$(PlatformShortName)\Debug</Command>
     </PostBuildEvent>
     <PreBuildEvent>
-      <Command>$(ProjectDir)\..\PatchFalcorPropertySheet.exe $(SolutionPath) $(ProjectDir)\Falcor.props FALCOR_VK</Command>
+      <Command></Command>
     </PreBuildEvent>
     <CustomBuildStep>
       <Command></Command>
@@ -1503,7 +1503,7 @@
       <Command>$(ProjectDir)\..\CopyLibs.bat Release $(PlatformName) $(SolutionDir)Bin\$(PlatformShortName)\Release</Command>
     </PostBuildEvent>
     <PreBuildEvent>
-      <Command>$(ProjectDir)\..\PatchFalcorPropertySheet.exe $(SolutionPath) $(ProjectDir)\Falcor.props FALCOR_D3D11</Command>
+      <Command></Command>
     </PreBuildEvent>
     <CustomBuildStep>
       <Command></Command>
@@ -1535,7 +1535,7 @@
       <Command>$(ProjectDir)\..\CopyLibs.bat Release $(PlatformName) $(SolutionDir)Bin\$(PlatformShortName)\Release</Command>
     </PostBuildEvent>
     <PreBuildEvent>
-      <Command>$(ProjectDir)\..\PatchFalcorPropertySheet.exe $(SolutionPath) $(ProjectDir)\Falcor.props FALCOR_D3D12</Command>
+      <Command></Command>
     </PreBuildEvent>
     <CustomBuildStep>
       <Command></Command>
@@ -1572,7 +1572,7 @@
       <Command>$(ProjectDir)\..\CopyLibs.bat Release $(PlatformName) $(SolutionDir)Bin\$(PlatformShortName)\Release</Command>
     </PostBuildEvent>
     <PreBuildEvent>
-      <Command>$(ProjectDir)\..\PatchFalcorPropertySheet.exe $(SolutionPath) $(ProjectDir)\Falcor.props FALCOR_VK</Command>
+      <Command></Command>
     </PreBuildEvent>
     <CustomBuildStep>
       <Command></Command>
