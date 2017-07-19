@@ -156,7 +156,7 @@ def compareImages(resultObj, testInfo, numScreenshots, slnInfo):
             testingUtil.makeDirIfDoesntExist(imagesDir)
             testingUtil.overwriteMove(testScreenshot, imagesDir)
             resultObj.CompareImageResults.append(-1)
-            continue
+            
 
         # Append the Result Value String.
         resultObj.CompareImageResults.append(resultVal)
