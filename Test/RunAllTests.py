@@ -369,7 +369,6 @@ def processSystemTest(xmlElement, testInfo, slnInfo):
     testingUtil.overwriteMove(resultFile, testInfo.getResultsDir())
 
 def readTestList(generateReference, buildTests, pullBranch):
-    exit()
     testFile = open(gTestListFile)
     contents = testFile.read()
 
@@ -415,7 +414,7 @@ def readTestList(generateReference, buildTests, pullBranch):
                     buildFail(slnName, configName, slnInfo)
             else:
                 testingUtil.cleanDir(exeDir, None, '.png')
-		
+
         #move buffer to beginning of args
         solutionData = solutionData[slnConfigEndIndex + 1 :]
 
@@ -430,16 +429,6 @@ def readTestList(generateReference, buildTests, pullBranch):
             configStartIndex = solutionData.find('{')
             configEndIndex = solutionData.find('}')
             configList = testingUtil.cleanupString(solutionData[configStartIndex + 1 : configEndIndex]).split(' ')
-            #run test for each config and each set of args
-            for config in configList:
-                print 'Running ' + testName + ' in config ' + config
-                testInfo = TestInfo(testName, config, slnInfo)
-                if generateReference:
-                    testingUtil.cleanDir(testInfo.getReferenceDir(), testName, '.png')
-                    testingUtil.cleanDir(testInfo.getReferenceDir(), testName, '.xml')
-                for argSet in argsList:
-                    testInfo = TestInfo(testName, config, slnInfo)
-                    runTest(testInfo, testingUtil.cleanupString(argSet), generateReference, slnInfo)
 
             #goto next set
             solutionData = solutionData[configEndIndex + 1 :]
