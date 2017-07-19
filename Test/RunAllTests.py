@@ -412,6 +412,9 @@ def readTestList(generateReference, buildTests, pullBranch):
                 #returns 1 on fail
                 if callBuildScript([slnName, configName, 'rebuild']):
                     buildFail(slnName, configName, slnInfo)
+                #returns 1 on fail
+                if callBuildScript([slnName, configName, 'build']):
+                    buildFail(slnName, configName, slnInfo)
             else:
                 testingUtil.cleanDir(exeDir, None, '.png')
 
