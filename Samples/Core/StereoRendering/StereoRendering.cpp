@@ -66,19 +66,20 @@ void StereoRendering::initVR()
         mpVrFbo = VrFbo::create(vrFboDesc);
 
         mSubmitModeList.push_back({ (int)RenderMode::Stereo, "Stereo" });
-        if (gpDevice->isExtensionSupported("VK_NVX_multiview_per_view_attributes"))
+
+        if (mSPSSupported)
         {
             mSubmitModeList.push_back({ (int)RenderMode::SinglePassStereo, "Single Pass Stereo" });
         }
-
-#if !(_ENABLE_NVAPI) && defined(FALCOR_D3D12)
-        static bool first = true;
-        if (first)
+        else
         {
-            first = false;
-            msgBox("The sample relies on NVIDIA's Single Pass Stereo extension to operate correctly.\nMake sure you have an NVIDIA GPU, you enabled NVAPI support in FalcorConfig.h at that you downloaded the NVAPI SDK.\nCheck the readme for instructions");
+            static bool first = true;
+            if (first)
+            {
+                first = false;
+                msgBox("The sample relies on NVIDIA's Single Pass Stereo extension to operate correctly.\nMake sure you have an NVIDIA GPU, you enabled NVAPI support in FalcorConfig.h at that you downloaded the NVAPI SDK.\nCheck the readme for instructions");
+            }
         }
-#endif
     }
     else
     {
@@ -158,10 +159,10 @@ void StereoRendering::setRenderMode()
 
 void StereoRendering::loadScene()
 {
-    std::string Filename;
-    if(openFileDialog("Scene files\0*.fscene\0\0", Filename))
+    std::string filename;
+    if(openFileDialog("Scene files\0*.fscene\0\0", filename))
     {
-        loadScene(Filename);
+        loadScene(filename);
     }
 }
 
@@ -185,6 +186,8 @@ void StereoRendering::loadScene(const std::string& filename)
 
 void StereoRendering::onLoad()
 {
+    mSPSSupported = gpDevice->isExtensionSupported("VK_NVX_multiview_per_view_attributes") && _ENABLE_NVAPI;
+
     initVR();
 
     mpGraphicsState = GraphicsState::create();
@@ -248,7 +251,9 @@ bool StereoRendering::onKeyEvent(const KeyboardEvent& keyEvent)
     {
         if (VRSystem::instance() && gpDevice->isExtensionSupported(""))
         {
-            mRenderMode = (mRenderMode == RenderMode::SinglePassStereo) ? RenderMode::Mono : RenderMode::SinglePassStereo;
+            // Cycle through modes
+            uint32_t nextMode = (uint32_t)mRenderMode + 1;
+            mRenderMode = (RenderMode)(nextMode % (mSPSSupported ? 3 : 2));
             setRenderMode();
             return true;
         }

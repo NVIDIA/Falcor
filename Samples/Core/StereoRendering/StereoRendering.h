@@ -64,6 +64,8 @@ private:
         Stereo,
         SinglePassStereo
     };
+
+    bool mSPSSupported = false;
     RenderMode mRenderMode = RenderMode::Mono;
     Gui::DropdownList mSubmitModeList;
 
