@@ -144,7 +144,11 @@ namespace Falcor
     {
         if (pResource)
         {
-            mDeferredReleases.push({ mpFrameFence->getCpuValue(), pResource });
+            // Some static objects get here when the application exits
+            if(this)
+            {
+                mDeferredReleases.push({ mpFrameFence->getCpuValue(), pResource });
+            }
         }
     }
 
