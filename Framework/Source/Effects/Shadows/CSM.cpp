@@ -531,9 +531,40 @@ namespace Falcor
         }
     }
 
+    static bool checkOffset(size_t cbOffset, size_t cppOffset, const char* field)
+    {
+        if (cbOffset != cppOffset)
+        {
+            logError("CsmData::" + std::string(field) + " CB offset mismatch. CB offset is " + std::to_string(cbOffset) + ", C++ data offset is " + std::to_string(cppOffset));
+            return false;
+        }
+        return true;
+    }
+
+#if _LOG_ENABLED
+#define check_offset(_a) {static bool b = true; if(b) {assert(checkOffset(pCB->getVariableOffset("gCsmData." #_a), offsetof(CsmData, _a), #_a));} b = false;}
+#else
+#define check_offset(_a)
+#endif
+
     void CascadedShadowMaps::renderScene(RenderContext* pCtx)
     {
-        mShadowPass.pGraphicsVars->getConstantBuffer(0, 0, 0)->setBlob(&mCsmData, 0, sizeof(mCsmData));
+        auto& pCB = mShadowPass.pGraphicsVars->getConstantBuffer(0, 0, 0);
+        check_offset(globalMat);
+        check_offset(cascadeScale[0]);
+        check_offset(cascadeOffset[0]);
+        check_offset(cascadeRange[0]);
+        check_offset(depthBias);
+        check_offset(cascadeCount);
+        check_offset(filterMode);
+        check_offset(pcfKernelWidth);
+        check_offset(lightDir);
+        check_offset(lightBleedingReduction);
+        check_offset(evsmExponents);
+        check_offset(cascadeBlendThreshold);
+
+
+        pCB->setBlob(&mCsmData, 0, sizeof(mCsmData));
         pCtx->pushGraphicsVars(mShadowPass.pGraphicsVars);
         pCtx->pushGraphicsState(mShadowPass.pState);
         mpCsmSceneRenderer->renderScene(pCtx, mpLightCamera.get());

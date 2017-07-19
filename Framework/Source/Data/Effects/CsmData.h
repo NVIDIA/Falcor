@@ -52,16 +52,15 @@ struct CsmData
     float depthBias DEFAULTS(0.005f);
     int cascadeCount DEFAULTS(4);
     uint32_t filterMode DEFAULTS(CsmFilterHwPcf);
-
     int32_t pcfKernelWidth DEFAULTS(5);
+    
     float3 lightDir;
-
     float lightBleedingReduction DEFAULTS(0);
-    float cascadeBlendThreshold DEFAULTS(0.2f);
 
     float2 evsmExponents DEFAULTS(v2(40.0f, 5.0f)); // posExp, negExp
-    //If this is only in host code, the final element in the array is not padded
+    float cascadeBlendThreshold DEFAULTS(0.2f);
     uint32_t padding;
+
 #ifndef HOST_CODE
     Texture2DArray shadowMap;
     SamplerState csmSampler;
