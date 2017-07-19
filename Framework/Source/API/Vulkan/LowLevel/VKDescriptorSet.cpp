@@ -44,7 +44,9 @@ namespace Falcor
         allocInfo.descriptorPool = mpPool->getApiHandle(0);
         allocInfo.descriptorSetCount = 1;
         allocInfo.pSetLayouts = &layout;
-        vk_call(vkAllocateDescriptorSets(gpDevice->getApiHandle(), &allocInfo, &mApiHandle));
+        VkDescriptorSet set;
+        vk_call(vkAllocateDescriptorSets(gpDevice->getApiHandle(), &allocInfo, &set));
+        mApiHandle = ApiHandle::create(set, mpPool->getApiHandle(0));
         mpApiData = std::make_shared<DescriptorSetApiData>(layout, mpPool->getApiHandle(0), mApiHandle);
 
         return true;
@@ -158,7 +160,8 @@ namespace Falcor
     static void bindCommon(DescriptorSet::ApiHandle set, CopyContext* pCtx, const RootSignature* pRootSig, uint32_t bindLocation)
     {
         VkPipelineBindPoint bindPoint = forGraphics ? VK_PIPELINE_BIND_POINT_GRAPHICS : VK_PIPELINE_BIND_POINT_COMPUTE;
-        vkCmdBindDescriptorSets(pCtx->getLowLevelData()->getCommandList(), bindPoint, pRootSig->getApiHandle(), bindLocation, 1, &set, 0, nullptr);
+        VkDescriptorSet vkSet = set;
+        vkCmdBindDescriptorSets(pCtx->getLowLevelData()->getCommandList(), bindPoint, pRootSig->getApiHandle(), bindLocation, 1, &vkSet, 0, nullptr);
     }
 
     void DescriptorSet::bindForGraphics(CopyContext* pCtx, const RootSignature* pRootSig, uint32_t rootIndex)

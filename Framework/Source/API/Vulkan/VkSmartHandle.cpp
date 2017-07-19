@@ -52,6 +52,14 @@ namespace Falcor
         }
     }
 
+    VkDescriptorSetHandle::~VkDescriptorSetHandle()
+    {
+        if (mApiHandle != VK_NULL_HANDLE && gpDevice)
+        {
+            vkFreeDescriptorSets(gpDevice->getApiHandle(), mPool, 1, &mApiHandle);
+        }
+    }
+
     template<>
     VkResource<VkImage, VkBuffer>::~VkResource()
     {
