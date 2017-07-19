@@ -13,10 +13,11 @@ import OutputTestingHtml as htmlWriter
 import TestingUtil as testingUtil
 
 #relevant paths
-gBuildBatchFile = 'BuildFalcorTest.bat'
+gBuildBatchFile = 'BuildFalcor.ps1 '
 gTestListFile = 'TestList.txt'
 gResultsDirBase = 'TestResults'
 gReferenceDir = 'VulkanReferenceResults'
+gPowerShell = "C:\\WINDOWS\\system32\\WindowsPowerShell\\v1.0\\powershell.exe"
 
 #default values
 #percent
@@ -230,17 +231,25 @@ def addSystemTestReferences(testInfo, numScreenshots):
 
 #args should be action(build, rebuild, clean), solution, config(debug, release), and optionally project
 #if no project given, performs action on entire solution
-def callBatchFile(batchArgs):
+
+#Calls PowerShell Build Script
+# Arguments should be - (Target Solution, Target Build Configuration, Build Type - Clean / Build / Rebuild)
+def callBuildScript(batchArgs):
     numArgs = len(batchArgs)
-    if numArgs == 3 or numArgs == 4:
-        batchArgs.insert(0, gBuildBatchFile)
+    if numArgs == 3 :
+        batchArgs[0] = batchArgs[0] + " "
+        batchArgs[1] = batchArgs[1] + " "
+        batchArgs[2] = batchArgs[2] + " "
+        batchArgs.insert(0, " " + os.getcwd() + "\\" + gBuildBatchFile + " ")
+        batchArgs.insert(0, gPowerShell)
+        print ''.join(batchArgs)
         try:
             return subprocess.call(batchArgs)
         except (WindowsError, subprocess.CalledProcessError) as info:
-            print 'Error calling batch file. Exception: ', info
+            print 'Error with Build Script. Exception: ', info
             return 1
     else:
-        print 'Incorrect batch file call, found ' + str(numArgs) + ' in arg list :' + batchArgs.tostring()
+        print 'Wrong number of arguments provided. Expected 3, got ' + str(numArgs)
         return 1
 
 def buildFail(slnName, configName, slnInfo):
@@ -401,7 +410,7 @@ def readTestList(generateReference, buildTests, pullBranch):
                 if os.path.isdir(exeDir):
                     shutil.rmtree(exeDir)
                 #returns 1 on fail
-                if callBatchFile(['build', slnName, configName]):
+                if callBuildScript([slnName, configName, 'build']):
                     buildFail(slnName, configName, slnInfo)
             else:
                 testingUtil.cleanDir(exeDir, None, '.png')
