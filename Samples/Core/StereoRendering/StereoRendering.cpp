@@ -248,7 +248,7 @@ bool StereoRendering::onKeyEvent(const KeyboardEvent& keyEvent)
 {
     if(keyEvent.key == KeyboardEvent::Key::Space && keyEvent.type == KeyboardEvent::Type::KeyPressed)
     {
-        if (VRSystem::instance() && gpDevice->isExtensionSupported(""))
+        if (VRSystem::instance())
         {
             // Cycle through modes
             uint32_t nextMode = (uint32_t)mRenderMode + 1;
