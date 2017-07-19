@@ -410,7 +410,7 @@ def readTestList(generateReference, buildTests, pullBranch):
                 if os.path.isdir(exeDir):
                     shutil.rmtree(exeDir)
                 #returns 1 on fail
-                if callBuildScript([slnName, configName, 'build']):
+                if callBuildScript([slnName, configName, 'rebuild']):
                     buildFail(slnName, configName, slnInfo)
             else:
                 testingUtil.cleanDir(exeDir, None, '.png')
