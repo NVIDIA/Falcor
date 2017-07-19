@@ -67,11 +67,19 @@ namespace Falcor
     {
     public:
         using UniquePtr = std::unique_ptr<CsmSceneRenderer>;
-        static UniquePtr create(const Scene::SharedConstPtr& pScene) { return UniquePtr(new CsmSceneRenderer(pScene)); }
+        static UniquePtr create(const Scene::SharedConstPtr& pScene, const ProgramVars::BindLocation& alphaMapCbLoc, const ProgramVars::BindLocation& alphaMapLoc, const ProgramVars::BindLocation& alphaMapSamplerLoc) 
+        { 
+            return UniquePtr(new CsmSceneRenderer(pScene, alphaMapCbLoc, alphaMapLoc, alphaMapSamplerLoc)); 
+        }
 
     protected:
-        CsmSceneRenderer(const Scene::SharedConstPtr& pScene) : SceneRenderer(std::const_pointer_cast<Scene>(pScene)) 
+        CsmSceneRenderer(const Scene::SharedConstPtr& pScene, const ProgramVars::BindLocation& alphaMapCbLoc, const ProgramVars::BindLocation& alphaMapLoc, const ProgramVars::BindLocation& alphaMapSamplerLoc) 
+            : SceneRenderer(std::const_pointer_cast<Scene>(pScene))
         { 
+            mBindLocations.alphaCB = alphaMapCbLoc;
+            mBindLocations.alphaMap = alphaMapLoc;
+            mBindLocations.alphaMapSampler = alphaMapSamplerLoc;
+
             setObjectCullState(false); 
             Sampler::Desc desc;
             desc.setFilterMode(Sampler::Filter::Linear, Sampler::Filter::Linear, Sampler::Filter::Linear);
@@ -80,6 +88,14 @@ namespace Falcor
 
         bool mMaterialChanged = false;
         Sampler::SharedPtr mpAlphaSampler;
+
+        struct
+        {
+            ProgramVars::BindLocation alphaMap;
+            ProgramVars::BindLocation alphaCB;
+            ProgramVars::BindLocation alphaMapSampler;
+        } mBindLocations;
+
         bool setPerMaterialData(const CurrentWorkingData& currentData, const Material* pMaterial) override
         {
             mMaterialChanged = true;
@@ -87,9 +103,9 @@ namespace Falcor
             {
                 float alphaThreshold = currentData.pMaterial->getAlphaThreshold();
                 auto& pVars = currentData.pContext->getGraphicsVars();
-                pVars->getConstantBuffer(0, 1, 0)->setBlob(&alphaThreshold, 0u, sizeof(float));
-                pVars->setSrv(0, 0, 0, currentData.pMaterial->getAlphaMap()->getSRV());
-                pVars->setSampler(0, 0, 0, mpAlphaSampler);
+                pVars->getConstantBuffer(mBindLocations.alphaCB.regSpace, mBindLocations.alphaCB.baseRegIndex, 0)->setBlob(&alphaThreshold, 0u, sizeof(float));
+                pVars->setSrv(mBindLocations.alphaCB.regSpace, mBindLocations.alphaCB.baseRegIndex, 0, currentData.pMaterial->getAlphaMap()->getSRV());
+                pVars->setSampler(mBindLocations.alphaMapSampler.regSpace, mBindLocations.alphaMapSampler.baseRegIndex, 0, mpAlphaSampler);
                 currentData.pContext->getGraphicsState()->getProgram()->addDefine("TEST_ALPHA");
             }
             else
@@ -281,12 +297,17 @@ namespace Falcor
         mShadowPass.pState->setProgram(pProg);
         mShadowPass.pState->setDepthStencilState(nullptr);
         mShadowPass.pState->setFbo(mShadowPass.pFbo);
-        mShadowPass.pGraphicsVars = GraphicsVars::create(pProg->getActiveVersion()->getReflector());
+        const auto& pReflector = pProg->getActiveVersion()->getReflector();
+        mShadowPass.pGraphicsVars = GraphicsVars::create(pReflector);
 
-        mpCsmSceneRenderer = CsmSceneRenderer::create(mpScene);
+        auto alphaSampler = getResourceBindLocation(pReflector.get(), "alphaSampler");
+        auto alphaMapCB = getBufferBindLocation(pReflector.get(), "AlphaMapCB");
+        auto alphaMap = getResourceBindLocation(pReflector.get(), "alphaMap");
+        mPerLightCbLoc = getBufferBindLocation(pReflector.get(), "PerLightCB");
+
+        mpCsmSceneRenderer = CsmSceneRenderer::create(mpScene, alphaMapCB, alphaMap, alphaMap);
         mpSceneRenderer = SceneRenderer::create(std::const_pointer_cast<Scene>(mpScene));
         mpSceneRenderer->setObjectCullState(true);
-
     }
 
     void CascadedShadowMaps::setCascadeCount(uint32_t cascadeCount)
@@ -549,7 +570,7 @@ namespace Falcor
 
     void CascadedShadowMaps::renderScene(RenderContext* pCtx)
     {
-        auto& pCB = mShadowPass.pGraphicsVars->getConstantBuffer(0, 0, 0);
+        auto& pCB = mShadowPass.pGraphicsVars->getConstantBuffer(mPerLightCbLoc.regSpace, mPerLightCbLoc.baseRegIndex, 0);
         check_offset(globalMat);
         check_offset(cascadeScale[0]);
         check_offset(cascadeOffset[0]);
