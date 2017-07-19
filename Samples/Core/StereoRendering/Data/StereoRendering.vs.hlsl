@@ -1,5 +1,5 @@
 /***************************************************************************
-# Copyright (c) 2015, NVIDIA CORPORATION. All rights reserved.
+# Copyright (c) 2017, NVIDIA CORPORATION. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -27,53 +27,16 @@
 ***************************************************************************/
 #include "VertexAttrib.h"
 __import ShaderCommon;
-
-#include "StereoRenderingCommon.h"
-
-struct VS_IN
-{
-    float4 pos         : POSITION;
-    float3 normal      : NORMAL;
-    float3 bitangent   : BITANGENT;
-#ifdef HAS_TEXCRD
-    float2 texC        : TEXCOORD;
-#endif
-#ifdef HAS_LIGHTMAP_UV
-    float2 lightmapC   : LIGHTMAP_UV;
-#endif
-#ifdef HAS_COLORS
-    float3 color       : DIFFUSE_COLOR;
-#endif
-#ifdef _VERTEX_BLENDING
-    float4 boneWeights : BONE_WEIGHTS;
-    uint4  boneIds     : BONE_IDS;
-#endif
-    uint instanceID : SV_INSTANCEID;
-};
-
-float4x4 getWorldMat(VS_IN vIn)
-{
-#ifdef _VERTEX_BLENDING
-    float4x4 worldMat = getBlendedWorldMat(vIn.boneWeights, vIn.boneIds);
-#else
-    float4x4 worldMat = gWorldMat[vIn.instanceID];
-#endif
-    return worldMat;
-}
-
-float3x3 getWorldInvTransposeMat(VS_IN vIn)
-{
-#ifdef _VERTEX_BLENDING
-    float3x3 worldInvTransposeMat = getBlendedInvTransposeWorldMat(vIn.boneWeights, vIn.boneIds);
-#else
-    float3x3 worldInvTransposeMat = gWorldInvTransposeMat[vIn.instanceID];
-#endif
-    return worldInvTransposeMat;
-}
+__import DefaultVS;
 
 VS_OUT main(VS_IN vIn)
 {
     VS_OUT vOut;
+
+    // Filled out in geometry shader
+    vOut.posH = float4(0.0f, 0.0f, 0.0f, 0.0f);
+    vOut.prevPosH = float4(0.0f, 0.0f, 0.0f, 0.0f);
+
     float4x4 worldMat = getWorldMat(vIn);
     float4 posW = mul(vIn.pos, worldMat);
     vOut.posW = posW.xyz;

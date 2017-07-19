@@ -172,7 +172,6 @@ void StereoRendering::loadScene(const std::string& filename)
     mpSceneRenderer = SceneRenderer::create(mpScene);
     mpMonoSPSProgram = GraphicsProgram::createFromFile("", appendShaderExtension("StereoRendering.ps"));
     mpStereoProgram = GraphicsProgram::createFromFile(appendShaderExtension("StereoRendering.vs"), appendShaderExtension("StereoRendering.ps"), appendShaderExtension("StereoRendering.gs"), "", "");
-    mpStereoProgram->addDefine("STEREO");
 
     setRenderMode();
     mpMonoSPSVars = GraphicsVars::create(mpMonoSPSProgram->getActiveVersion()->getReflector());

@@ -1,5 +1,5 @@
 /***************************************************************************
-# Copyright (c) 2015, NVIDIA CORPORATION. All rights reserved.
+# Copyright (c) 2017, NVIDIA CORPORATION. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -27,22 +27,10 @@
 ***************************************************************************/
 __import ShaderCommon;
 __import Shading;
-
-#ifdef STEREO
-#include "StereoRenderingCommon.h"
-#else
 __import DefaultVS;
-#endif
 
-#ifdef STEREO
-float4 main(GS_OUT gsOut) : SV_TARGET
-{
-    VS_OUT vOut = gsOut.vsOut;
-#else
 float4 main(VS_OUT vOut) : SV_TARGET
 {
-#endif
-
     ShadingAttribs shAttr;
     prepareShadingAttribs(gMaterial, vOut.posW, gCam.position, vOut.normalW, vOut.bitangentW, vOut.texC, shAttr);
 

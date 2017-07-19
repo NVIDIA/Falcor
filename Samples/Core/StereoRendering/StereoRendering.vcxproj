@@ -14,7 +14,6 @@
     <ClCompile Include="StereoRendering.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Data\StereoRenderingCommon.h" />
     <ClInclude Include="StereoRendering.h" />
   </ItemGroup>
   <ItemGroup>

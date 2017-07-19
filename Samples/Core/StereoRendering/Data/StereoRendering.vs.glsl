@@ -29,7 +29,6 @@ __import DefaultVS;
 __import ShaderCommon;
 
 in VS_IN vIn;
-
 out VS_OUT vOut;
 
 void main()

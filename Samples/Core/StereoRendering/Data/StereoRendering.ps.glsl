@@ -1,5 +1,5 @@
 /***************************************************************************
-# Copyright (c) 2015, NVIDIA CORPORATION. All rights reserved.
+# Copyright (c) 2017, NVIDIA CORPORATION. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -27,20 +27,16 @@
 ***************************************************************************/
 __import ShaderCommon;
 __import Shading;
+__import DefaultVS;
 
-layout(location = 0) in vec3 normalW;
-layout(location = 1) in vec3 bitangentW;
-layout(location = 2) in vec2 texC;
-layout(location = 3) in vec3 posW;
-layout(location = 4) in vec3 colorV;
-layout(location = 5) in vec4 prevPosH;
+in VS_OUT vsOut;
 
 layout(location = 0) out vec4 fragColor;
 
 void main()
 {
     ShadingAttribs shAttr;
-    prepareShadingAttribs(gMaterial, posW, gCam.position, normalW, bitangentW, texC, shAttr);
+    prepareShadingAttribs(gMaterial, vsOut.posW, gCam.position, vsOut.normalW, vsOut.bitangentW, vsOut.texC, shAttr);
 
     ShadingOutput result;
 

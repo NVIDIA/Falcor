@@ -1,5 +1,5 @@
 /***************************************************************************
-# Copyright (c) 2015, NVIDIA CORPORATION. All rights reserved.
+# Copyright (c) 2017, NVIDIA CORPORATION. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -26,39 +26,44 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 __import ShaderCommon;
+__import DefaultVS;
 
-#include "StereoRenderingCommon.h"
+struct GS_OUT
+{
+    VS_OUT vsOut;
+    uint rtIndex : SV_RenderTargetArrayIndex;
+};
 
 [maxvertexcount(6)]
 void main(triangle VS_OUT input[3], inout TriangleStream<GS_OUT> outStream)
 {
-    GS_OUT output;
+    GS_OUT gsOut;
 
     // Left Eye
     for (int i = 0; i < 3; i++)
     {
-        output.rtIndex = 0;
-        output.vsOut = input[i];
+        gsOut.rtIndex = 0;
+        gsOut.vsOut = input[i];
 
         float4 posW = float4(input[i].posW, 1.0f);
-        output.posH = mul(posW, gCam.viewProjMat);
-        output.prevPosH = mul(posW, gCam.prevViewProjMat);
+        gsOut.vsOut.posH = mul(posW, gCam.viewProjMat);
+        gsOut.vsOut.prevPosH = mul(posW, gCam.prevViewProjMat);
 
-        outStream.Append(output);
+        outStream.Append(gsOut);
     }
     outStream.RestartStrip();
 
     // Right Eye
-    for (i = 0; i < 3; i++) // Why is putting int i here a redefinition?
+    for (i = 0; i < 3; i++) 
     {
-        output.rtIndex = 1;
-        output.vsOut = input[i];
+        gsOut.rtIndex = 1;
+        gsOut.vsOut = input[i];
 
         float4 posW = float4(input[i].posW, 1.0f);
-        output.posH = mul(posW, gCam.rightEyeViewProjMat);
-        output.prevPosH = mul(posW, gCam.rightEyePrevViewProjMat);
+        gsOut.vsOut.posH = mul(posW, gCam.rightEyeViewProjMat);
+        gsOut.vsOut.prevPosH = mul(posW, gCam.rightEyePrevViewProjMat);
 
-        outStream.Append(output);
+        outStream.Append(gsOut);
     }
     outStream.RestartStrip();
 }

@@ -31,14 +31,8 @@ __import ShaderCommon;
 layout(triangles) in;
 layout(triangle_strip, max_vertices = 6) out;
 
-in VS_OUT vOut[];
-
-layout(location = 0) out vec3 outNormalW;
-layout(location = 1) out vec3 outBitangentW;
-layout(location = 2) out vec2 outTexC;
-layout(location = 3) out vec3 outPosW;
-layout(location = 4) out vec3 outColorV;
-layout(location = 5) out vec4 outPrevPosH;
+in VS_OUT vsOut[];
+out VS_OUT gsOut;
 
 void main()
 {
@@ -46,14 +40,14 @@ void main()
     gl_Layer = 0;
     for (int i = 0; i < 3; i++)
     {
-        outNormalW = vOut[i].normalW;
-        outBitangentW = vOut[i].bitangentW;
-        outTexC = vOut[i].texC;
-        outPosW = vOut[i].posW;
-        outColorV = vOut[i].colorV;
+        gsOut.normalW = vsOut[i].normalW;
+        gsOut.bitangentW = vsOut[i].bitangentW;
+        gsOut.texC = vsOut[i].texC;
+        gsOut.posW = vsOut[i].posW;
+        gsOut.colorV = vsOut[i].colorV;
 
-        vec4 posW = vec4(vOut[i].posW, 1.0f);
-        outPrevPosH = gCam.prevViewProjMat * posW;
+        vec4 posW = vec4(vsOut[i].posW, 1.0f);
+        gsOut.prevPosH = gCam.prevViewProjMat * posW;
         gl_Position = gCam.viewProjMat * posW;
 
         EmitVertex();
@@ -64,14 +58,14 @@ void main()
     gl_Layer = 1;
     for (int i = 0; i < 3; i++)
     {
-        outNormalW = vOut[i].normalW;
-        outBitangentW = vOut[i].bitangentW;
-        outTexC = vOut[i].texC;
-        outPosW = vOut[i].posW;
-        outColorV = vOut[i].colorV;
+        gsOut.normalW = vsOut[i].normalW;
+        gsOut.bitangentW = vsOut[i].bitangentW;
+        gsOut.texC = vsOut[i].texC;
+        gsOut.posW = vsOut[i].posW;
+        gsOut.colorV = vsOut[i].colorV;
 
-        vec4 posW = vec4(vOut[i].posW, 1.0f);
-        outPrevPosH = gCam.rightEyePrevViewProjMat * posW;
+        vec4 posW = vec4(vsOut[i].posW, 1.0f);
+        gsOut.prevPosH = gCam.rightEyePrevViewProjMat * posW;
         gl_Position = gCam.rightEyeViewProjMat * posW;
 
         EmitVertex();

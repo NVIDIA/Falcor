@@ -5,9 +5,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="StereoRendering.h" />
-    <ClInclude Include="Data\StereoRenderingCommon.h">
-      <Filter>Data</Filter>
-    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Data">
