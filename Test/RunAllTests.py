@@ -415,6 +415,8 @@ def readTestList(generateReference, buildTests, pullBranch):
             else:
                 testingUtil.cleanDir(exeDir, None, '.png')
 
+		exit()
+		
         #move buffer to beginning of args
         solutionData = solutionData[slnConfigEndIndex + 1 :]
 
