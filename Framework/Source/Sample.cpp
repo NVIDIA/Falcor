@@ -223,6 +223,7 @@ namespace Falcor
 
         onLoad();
         pBar = nullptr;
+        mFrameRate.resetClock();
         mpWindow->msgLoop();
 
         onShutdown();

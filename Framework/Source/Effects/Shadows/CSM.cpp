@@ -104,7 +104,7 @@ namespace Falcor
                 float alphaThreshold = currentData.pMaterial->getAlphaThreshold();
                 auto& pVars = currentData.pContext->getGraphicsVars();
                 pVars->getConstantBuffer(mBindLocations.alphaCB.regSpace, mBindLocations.alphaCB.baseRegIndex, 0)->setBlob(&alphaThreshold, 0u, sizeof(float));
-                pVars->setSrv(mBindLocations.alphaCB.regSpace, mBindLocations.alphaCB.baseRegIndex, 0, currentData.pMaterial->getAlphaMap()->getSRV());
+                pVars->setSrv(mBindLocations.alphaMap.regSpace, mBindLocations.alphaMap.baseRegIndex, 0, currentData.pMaterial->getAlphaMap()->getSRV());
                 pVars->setSampler(mBindLocations.alphaMapSampler.regSpace, mBindLocations.alphaMapSampler.baseRegIndex, 0, mpAlphaSampler);
                 currentData.pContext->getGraphicsState()->getProgram()->addDefine("TEST_ALPHA");
             }
@@ -305,7 +305,7 @@ namespace Falcor
         auto alphaMap = getResourceBindLocation(pReflector.get(), "alphaMap");
         mPerLightCbLoc = getBufferBindLocation(pReflector.get(), "PerLightCB");
 
-        mpCsmSceneRenderer = CsmSceneRenderer::create(mpScene, alphaMapCB, alphaMap, alphaMap);
+        mpCsmSceneRenderer = CsmSceneRenderer::create(mpScene, alphaMapCB, alphaMap, alphaSampler);
         mpSceneRenderer = SceneRenderer::create(std::const_pointer_cast<Scene>(mpScene));
         mpSceneRenderer->setObjectCullState(true);
     }
