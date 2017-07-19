@@ -75,7 +75,7 @@ private:
         bool updateShadowMap = true;
         bool showShadowMap = false;
         int32_t displayedCascade = 0;
-        int32_t cascadeCount = 4;
+        int32_t cascadeCount = 1;
         int32_t lightIndex = 0;
     };
     Controls mControls;

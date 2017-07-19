@@ -90,11 +90,11 @@ void Shadows::createScene(const std::string& filename)
     mpRenderer = SceneRenderer::create(mpScene);
     mpRenderer->setCameraControllerType(SceneRenderer::CameraControllerType::FirstPerson);
 
-    mpCsmTech.resize(mpScene->getLightCount());
-    for(uint32_t i = 0; i < mpScene->getLightCount(); i++)
+    mpCsmTech.resize(1);// mpScene->getLightCount());
+    for(uint32_t i = 0; i <1; i++)
     {
         mpCsmTech[i] = CascadedShadowMaps::create(2048, 2048, mpScene->getLight(i), mpScene, mControls.cascadeCount);
-        mpCsmTech[i]->setFilterMode(CsmFilterHwPcf);
+        mpCsmTech[i]->setFilterMode(CsmFilterEvsm2);
         mpCsmTech[i]->setVsmLightBleedReduction(0.3f);
     }
     setLightIndex(0);
