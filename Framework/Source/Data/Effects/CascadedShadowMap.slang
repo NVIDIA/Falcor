@@ -260,7 +260,9 @@ float calcShadowFactorWithCascadeIdx(CsmData csmData, uint32_t cascadeIndex, flo
     // Apply TexC transformation
     shadowPos.xy += 1;
     shadowPos.xy *= 0.5;
+#ifdef FALCOR_HLSL
     shadowPos.y = 1 - shadowPos.y;
+#endif
 
     // Calculate the texC
     shadowPos.z -= csmData.depthBias;

@@ -29,17 +29,16 @@
 __import ShaderCommon;
 __import Effects.CascadedShadowMap;
 
-layout(binding = 0)
-uniform PerLightCB
+layout(set = 0, binding = 0) uniform PerLightCB
 {
     CsmData gCsmData;
 };
 
-out vec4 outputData_pos;
-out vec2 outputData_texC;
+layout(location = 0) out vec4 outputData_pos;
+layout(location = 1) out vec2 outputData_texC;
 
-in vec4 input_pos[3];
-in vec2 input_texC[3];
+layout(location = 0) in vec4 input_pos[3];
+layout(location = 1) in vec2 input_texC[3];
 
 
 layout(invocations = _CASCADE_COUNT) in;
@@ -60,7 +59,7 @@ void main()
         outputData_pos.xyz += gCsmData.cascadeOffset[InstanceID].xyz;
 
         outputData_texC = input_texC[i];
-
+        gl_Position = outputData_pos;
         gl_Layer = InstanceID;
 
         EmitVertex();
