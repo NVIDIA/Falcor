@@ -286,6 +286,33 @@ float calcShadowFactorWithCascadeIdx(CsmData csmData, uint32_t cascadeIndex, flo
     }
 }
 
+float3 getBlendedCascadeColor(CsmData csmData, float cameraDepth)
+{
+    float weight = 0;
+    float s;
+    int cascadeIndex = 0;
+    bool blend = false;
+#if !defined(_CSM_CASCADE_COUNT) || (_CSM_CASCADE_COUNT != 1)
+    cascadeIndex = getCascadeIndex(csmData, cameraDepth);
+    // Get the prev cascade factor
+    weight = (cameraDepth - csmData.cascadeRange[cascadeIndex].x) / csmData.cascadeRange[cascadeIndex].y;
+    blend = weight < csmData.cascadeBlendThreshold;
+#endif
+
+    if(blend)
+    {
+        weight = smoothstep(0.0, csmData.cascadeBlendThreshold, weight);
+        int prevCascade = max(0, cascadeIndex - 1);
+        float3 col1 = getCascadeColor(prevCascade);
+        float3 col0 = getCascadeColor(cascadeIndex);
+        return lerp(col1, col0, weight);
+    }
+    else
+    {
+        return getCascadeColor(cascadeIndex);
+    }
+}
+
 float calcShadowFactor(CsmData csmData, float cameraDepth, float3 posW, float2 posSxy)
 {
     float weight = 0;
