@@ -45,11 +45,16 @@ namespace Falcor
     {
         assert(mipLevel < pTexture->getMipCount());
         ResourceFormat format = pTexture->getFormat();
-        uint32_t size = pTexture->getWidth(mipLevel) * pTexture->getHeight(mipLevel) * pTexture->getDepth(mipLevel) * getFormatBytesPerBlock(format);
-        uint32_t compression = getFormatHeightCompressionRatio(format) * getFormatWidthCompressionRatio(format);
-        assert(compression >= 1);
-        assert((size % compression) == 0);
-        size /= compression;
+
+        uint32_t w = pTexture->getWidth(mipLevel);
+        uint32_t perW = getFormatWidthCompressionRatio(format);
+        uint32_t bw = align_to(perW, w) / perW;
+
+        uint32_t h = pTexture->getHeight(mipLevel);
+        uint32_t perH = getFormatHeightCompressionRatio(format);
+        uint32_t bh = align_to(perH, h) / perH;
+
+        uint32_t size = bh * bw * getFormatBytesPerBlock(format);
         return size;
     }
 
