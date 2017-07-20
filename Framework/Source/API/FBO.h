@@ -43,6 +43,7 @@ namespace Falcor
     public:
         using SharedPtr = std::shared_ptr<Fbo>;
         using SharedConstPtr = std::shared_ptr<const Fbo>;
+        using ApiHandle = FboHandle;
 
         class Desc
         {
@@ -112,7 +113,7 @@ namespace Falcor
 
         /** Get the object's API handle.      
         */
-        uint32_t getApiHandle() const;
+        ApiHandle getApiHandle() const;
 
         /** Get the maximum number of color targets
         */
@@ -148,10 +149,9 @@ namespace Falcor
         */
         const Desc& getDesc() const { checkStatus();  return *mpDesc; }
 
-#ifdef FALCOR_D3D
         DepthStencilView::SharedPtr getDepthStencilView() const;
         RenderTargetView::SharedPtr getRenderTargetView(uint32_t rtIndex) const;
-#endif
+
         struct Attachment
         {
             Texture::SharedPtr pTexture = nullptr;
@@ -173,8 +173,9 @@ namespace Falcor
 
         void applyColorAttachment(uint32_t rtIndex);
         void applyDepthAttachment();
+        void initApiHandle() const;
 
-        Fbo(bool initApiHandle = true);
+        Fbo();
         std::vector<Attachment> mColorAttachments;
         Attachment mDepthStencil;
 
@@ -187,7 +188,7 @@ namespace Falcor
         mutable bool mIsLayered = false;
 		mutable bool mIsZeroAttachment = false;
 
-        uint32_t mApiHandle = 0;
+        mutable ApiHandle mApiHandle = {};
         void* mpPrivateData = nullptr;
     };
 }

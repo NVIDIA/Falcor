@@ -32,8 +32,7 @@ namespace Slang
     class Parser
     {
     public:
-        CompileOptions const&           options;
-        TranslationUnitOptions const&   translationUnitOptions;
+        TranslationUnitRequest* translationUnit;
 
         int anonymousCounter = 0;
 
@@ -44,6 +43,11 @@ namespace Slang
         DiagnosticSink * sink;
         String fileName;
         int genericDepth = 0;
+
+        // Have we seen any `import` declarations? If so, we need
+        // to parse function bodies completely, even if we are in
+        // "rewrite" mode.
+        bool haveSeenAnyImportDecls = false;
 
         // Is the parser in a "recovering" state?
         // During recovery we don't emit additional errors, until we find
@@ -67,15 +71,11 @@ namespace Slang
             currentScope = currentScope->parent;
         }
         Parser(
-            CompileOptions const& options,
-            TranslationUnitOptions const& translationUnitOptions,
             TokenSpan const& _tokens,
             DiagnosticSink * sink,
             String _fileName,
             RefPtr<Scope> const& outerScope)
-            : options(options)
-            , translationUnitOptions(translationUnitOptions)
-            , tokenReader(_tokens)
+            : tokenReader(_tokens)
             , sink(sink)
             , fileName(_fileName)
             , outerScope(outerScope)
@@ -303,17 +303,40 @@ namespace Slang
         if (!parser->isRecovering)
             return true;
 
-        // Determine if we are looking for a closing token at all...
-        bool lookingForClose = false;
+        // Determine if we are looking for common closing tokens,
+        // so that we can know whether or we are allowed to skip
+        // over them.
+
+        bool lookingForEOF = false;
+        bool lookingForRCurly = false;
+        bool lookingForRParen = false;
+        bool lookingForRSquare = false;
+
         for (int ii = 0; ii < recoverBeforeCount; ++ii)
         {
-            if (IsClosingToken(recoverBefore[ii]))
-                lookingForClose = true;
+            switch (recoverBefore[ii])
+            {
+            default:
+                break;
+
+            case TokenType::EndOfFile:  lookingForEOF       = true; break;
+            case TokenType::RBrace:     lookingForRCurly    = true; break;
+            case TokenType::RParent:    lookingForRParen    = true; break;
+            case TokenType::RBracket:   lookingForRSquare   = true; break;
+            }
         }
         for (int ii = 0; ii < recoverAfterCount; ++ii)
         {
-            if (IsClosingToken(recoverAfter[ii]))
-                lookingForClose = true;
+            switch (recoverBefore[ii])
+            {
+            default:
+                break;
+
+            case TokenType::EndOfFile:  lookingForEOF       = true; break;
+            case TokenType::RBrace:     lookingForRCurly    = true; break;
+            case TokenType::RParent:    lookingForRParen    = true; break;
+            case TokenType::RBracket:   lookingForRSquare   = true; break;
+            }
         }
 
         TokenReader* tokenReader = &parser->tokenReader;
@@ -354,12 +377,23 @@ namespace Slang
             // we are looking for a closing token
             case TokenType::RParent:
             case TokenType::RBracket:
-                if (!lookingForClose)
+                if (lookingForRParen || lookingForRSquare || lookingForRCurly || lookingForEOF)
+                {
+                    // We are looking for a closing token, so it is okay to skip these
+                }
+                else
                     return false;
                 break;
 
-            // never skip a `}`, to avoid spurious errors
+            // Don't skip a `}`, to avoid spurious errors,
+            // with the exception of when we are looking for EOF
             case TokenType::RBrace:
+                if (lookingForRCurly || lookingForEOF)
+                {
+                    // We are looking for end-of-file, so it is okay to skip here
+                }
+                else
+
                 return false;
             }
 
@@ -493,6 +527,9 @@ namespace Slang
 
     RefPtr<TypeDefDecl> ParseTypeDef(Parser* parser)
     {
+        RefPtr<TypeDefDecl> typeDefDecl = new TypeDefDecl();
+        typeDefDecl->Position = parser->tokenReader.PeekLoc();
+
         // Consume the `typedef` keyword
         parser->ReadToken("typedef");
 
@@ -501,7 +538,6 @@ namespace Slang
 
         auto nameToken = parser->ReadToken(TokenType::Identifier);
 
-        RefPtr<TypeDefDecl> typeDefDecl = new TypeDefDecl();
         typeDefDecl->Name = nameToken;
         typeDefDecl->Type = type;
 
@@ -622,6 +658,9 @@ namespace Slang
             CASE(__prefix,   PrefixModifier);
             CASE(__postfix,  PostfixModifier);
 
+            // Modifier to apply to `import` that should be re-exported
+            CASE(__exported,  ExportedModifier);
+
             #undef CASE
 
             else if (AdvanceIf(parser, "__intrinsic_op"))
@@ -630,7 +669,7 @@ namespace Slang
                 modifier->Position = loc;
 
                 parser->ReadToken(TokenType::LParent);
-                if (parser->LookAheadToken(TokenType::IntLiterial))
+                if (parser->LookAheadToken(TokenType::IntegerLiteral))
                 {
                     modifier->op = (IntrinsicOp)StringToInt(parser->ReadToken().Content);
                 }
@@ -662,7 +701,7 @@ namespace Slang
 
                     if( AdvanceIf(parser, TokenType::Comma) )
                     {
-                        if( parser->LookAheadToken(TokenType::StringLiterial) )
+                        if( parser->LookAheadToken(TokenType::StringLiteral) )
                         {
                             modifier->definitionToken = parser->ReadToken();
                         }
@@ -674,6 +713,30 @@ namespace Slang
 
                     parser->ReadToken(TokenType::RParent);
                 }
+
+                AddModifier(&modifierLink, modifier);
+            }
+
+            else if (AdvanceIf(parser, "__glsl_extension"))
+            {
+                auto modifier = new RequiredGLSLExtensionModifier();
+                modifier->Position = loc;
+
+                parser->ReadToken(TokenType::LParent);
+                modifier->extensionNameToken = parser->ReadToken(TokenType::Identifier);
+                parser->ReadToken(TokenType::RParent);
+
+                AddModifier(&modifierLink, modifier);
+            }
+
+            else if (AdvanceIf(parser, "__glsl_version"))
+            {
+                auto modifier = new RequiredGLSLVersionModifier();
+                modifier->Position = loc;
+
+                parser->ReadToken(TokenType::LParent);
+                modifier->versionNumberToken = parser->ReadToken(TokenType::IntegerLiteral);
+                parser->ReadToken(TokenType::RParent);
 
                 AddModifier(&modifierLink, modifier);
             }
@@ -697,6 +760,10 @@ namespace Slang
                     CASE(binding,       GLSLBindingLayoutModifier);
                     CASE(set,           GLSLSetLayoutModifier);
                     CASE(location,      GLSLLocationLayoutModifier);
+                    CASE(push_constant, GLSLPushConstantLayoutModifier);
+                    CASE(local_size_x,  GLSLLocalSizeXLayoutModifier);
+                    CASE(local_size_y,  GLSLLocalSizeYLayoutModifier);
+                    CASE(local_size_z,  GLSLLocalSizeZLayoutModifier);
 
                 #undef CASE
                     else
@@ -708,7 +775,7 @@ namespace Slang
 
                     if(AdvanceIf(parser, TokenType::OpAssign))
                     {
-                        modifier->valToken = parser->ReadToken(TokenType::IntLiterial);
+                        modifier->valToken = parser->ReadToken(TokenType::IntegerLiteral);
                     }
 
                     AddModifier(&modifierLink, modifier);
@@ -726,7 +793,7 @@ namespace Slang
             {
                 RefPtr<BuiltinTypeModifier> modifier = new BuiltinTypeModifier();
                 parser->ReadToken(TokenType::LParent);
-                modifier->tag = BaseType(StringToInt(parser->ReadToken(TokenType::IntLiterial).Content));
+                modifier->tag = BaseType(StringToInt(parser->ReadToken(TokenType::IntegerLiteral).Content));
                 parser->ReadToken(TokenType::RParent);
 
                 AddModifier(&modifierLink, modifier);
@@ -738,7 +805,7 @@ namespace Slang
                 modifier->name = parser->ReadToken(TokenType::Identifier).Content;
                 if (AdvanceIf(parser, TokenType::Comma))
                 {
-                    modifier->tag = uint32_t(StringToInt(parser->ReadToken(TokenType::IntLiterial).Content));
+                    modifier->tag = uint32_t(StringToInt(parser->ReadToken(TokenType::IntegerLiteral).Content));
                 }
                 parser->ReadToken(TokenType::RParent);
 
@@ -753,6 +820,7 @@ namespace Slang
                 if( parser->LookAheadToken(TokenType::Identifier) )
                 {
                     LookupResult lookupResult = LookUp(
+                        nullptr, // No semantics visitor available yet!
                         parser->tokenReader.PeekToken().Content,
                         parser->currentScope);
 
@@ -793,24 +861,59 @@ namespace Slang
         }
     }
 
+    static TokenType peekTokenType(Parser* parser)
+    {
+        return parser->tokenReader.PeekTokenType();
+    }
+
     static RefPtr<Decl> parseImportDecl(
         Parser* parser)
     {
+        parser->haveSeenAnyImportDecls = true;
+
         parser->ReadToken("__import");
 
         auto decl = new ImportDecl();
-        decl->nameToken = parser->ReadToken(TokenType::Identifier);
         decl->scope = parser->currentScope;
+
+        if (peekTokenType(parser) == TokenType::StringLiteral)
+        {
+            auto nameToken = parser->ReadToken(TokenType::StringLiteral);
+            nameToken.Content = getStringLiteralTokenValue(nameToken);
+            decl->nameToken = nameToken;
+        }
+        else
+        {
+            auto nameToken = parser->ReadToken(TokenType::Identifier);
+
+            // We allow a dotted format for the name, as sugar
+            if (peekTokenType(parser) == TokenType::Dot)
+            {
+                StringBuilder sb;
+                sb << nameToken.Content;
+                while (AdvanceIf(parser, TokenType::Dot))
+                {
+                    sb << "/";
+                    sb << parser->ReadToken(TokenType::Identifier).Content;
+                }
+
+                nameToken.Content = sb.ProduceString();
+            }
+
+            decl->nameToken = nameToken;
+        }
 
         parser->ReadToken(TokenType::Semicolon);
 
         return decl;
     }
 
-    static RefPtr<Decl> parseAutoImportDecl(
+    static RefPtr<Decl> parsePoundImportDecl(
         Parser* parser)
     {
-        Token importToken = parser->ReadToken(TokenType::AutoImport);
+        parser->haveSeenAnyImportDecls = true;
+
+        Token importToken = parser->ReadToken(TokenType::PoundImport);
 
         auto decl = new ImportDecl();
         decl->nameToken = importToken;
@@ -1036,15 +1139,15 @@ namespace Slang
     }
 
 
-    static String GenerateName(Parser* /*parser*/, String const& base)
+    static String generateName(Parser* /*parser*/, String const& base)
     {
         // TODO: somehow mangle the name to avoid clashes
-        return base;
+        return "SLANG_" + base;
     }
 
-    static String GenerateName(Parser* parser)
+    static String generateName(Parser* parser)
     {
-        return GenerateName(parser, "_anonymous_" + String(parser->anonymousCounter++));
+        return generateName(parser, "anonymous_" + String(parser->anonymousCounter++));
     }
 
 
@@ -1059,7 +1162,7 @@ namespace Slang
         if( declaratorInfo.nameToken.Type == TokenType::Unknown )
         {
             // HACK(tfoley): we always give a name, even if the declarator didn't include one... :(
-            decl->Name.Content = GenerateName(parser);
+            decl->Name.Content = generateName(parser);
         }
         else
         {
@@ -1334,6 +1437,54 @@ namespace Slang
         RefPtr<ExpressionSyntaxNode>    expr;
     };
 
+    static RefPtr<ExpressionSyntaxNode> parseGenericApp(
+        Parser*                         parser,
+        RefPtr<ExpressionSyntaxNode>    base)
+    {
+        RefPtr<GenericAppExpr> genericApp = new GenericAppExpr();
+
+        parser->FillPosition(genericApp.Ptr()); // set up scope for lookup
+        genericApp->FunctionExpr = base;
+        parser->ReadToken(TokenType::OpLess);
+        parser->genericDepth++;
+        // For now assume all generics have at least one argument
+        genericApp->Arguments.Add(ParseGenericArg(parser));
+        while (AdvanceIf(parser, TokenType::Comma))
+        {
+            genericApp->Arguments.Add(ParseGenericArg(parser));
+        }
+        parser->genericDepth--;
+
+        // TODO: probably want to suppot `>>` and `>=` here as well,
+        // and split up those tokens as needed.
+        //
+        parser->ReadToken(TokenType::OpGreater);
+
+        return genericApp;
+    }
+
+    // Parse option `[]` braces after a type expression, that indicate an array type
+    static RefPtr<ExpressionSyntaxNode> parsePostfixTypeSuffix(
+        Parser* parser,
+        RefPtr<ExpressionSyntaxNode> inTypeExpr)
+    {
+        auto typeExpr = inTypeExpr;
+        while (parser->LookAheadToken(TokenType::LBracket))
+        {
+            RefPtr<IndexExpressionSyntaxNode> arrType = new IndexExpressionSyntaxNode();
+            arrType->Position = typeExpr->Position;
+            arrType->BaseExpression = typeExpr;
+            parser->ReadToken(TokenType::LBracket);
+            if (!parser->LookAheadToken(TokenType::RBracket))
+            {
+                arrType->IndexExpression = parser->ParseExpression();
+            }
+            parser->ReadToken(TokenType::RBracket);
+            typeExpr = arrType;
+        }
+        return typeExpr;
+    }
+
     static TypeSpec
     parseTypeSpec(Parser* parser)
     {
@@ -1370,27 +1521,18 @@ namespace Slang
 
         if (parser->LookAheadToken(TokenType::OpLess))
         {
-            RefPtr<GenericAppExpr> gtype = new GenericAppExpr();
-            parser->FillPosition(gtype.Ptr()); // set up scope for lookup
-            gtype->Position = typeName.Position;
-            gtype->FunctionExpr = typeExpr;
-            parser->ReadToken(TokenType::OpLess);
-            parser->genericDepth++;
-            // For now assume all generics have at least one argument
-            gtype->Arguments.Add(ParseGenericArg(parser));
-            while (AdvanceIf(parser, TokenType::Comma))
-            {
-                gtype->Arguments.Add(ParseGenericArg(parser));
-            }
-            parser->genericDepth--;
-            parser->ReadToken(TokenType::OpGreater);
-            typeExpr = gtype;
+            typeExpr = parseGenericApp(parser, typeExpr);
+        }
+
+        // GLSL allows `[]` directly in a type specifier
+        if (parser->translationUnit->sourceLanguage == SourceLanguage::GLSL)
+        {
+            typeExpr = parsePostfixTypeSuffix(parser, typeExpr);
         }
 
         typeSpec.expr = typeExpr;
         return typeSpec;
     }
-
 
     static RefPtr<DeclBase> ParseDeclaratorDecl(
         Parser*         parser,
@@ -1662,8 +1804,8 @@ namespace Slang
         addModifier(bufferVarDecl, reflectionNameModifier);
 
         // Both the buffer variable and its type need to have names generated
-        bufferVarDecl->Name.Content = GenerateName(parser, "SLANG_constantBuffer_" + reflectionNameToken.Content);
-        bufferDataTypeDecl->Name.Content = GenerateName(parser, "SLANG_ConstantBuffer_" + reflectionNameToken.Content);
+        bufferVarDecl->Name.Content = generateName(parser, "parameterBlock_" + reflectionNameToken.Content);
+        bufferDataTypeDecl->Name.Content = generateName(parser, "ParameterBlock_" + reflectionNameToken.Content);
 
         addModifier(bufferDataTypeDecl, new ImplicitParameterBlockElementTypeModifier());
         addModifier(bufferVarDecl, new ImplicitParameterBlockVariableModifier());
@@ -1819,7 +1961,7 @@ namespace Slang
         parser->FillPosition(blockVarDecl.Ptr());
 
         // Generate a unique name for the data type
-        blockDataTypeDecl->Name.Content = GenerateName(parser, "SLANG_ParameterBlock_" + reflectionNameToken.Content);
+        blockDataTypeDecl->Name.Content = generateName(parser, "ParameterBlock_" + reflectionNameToken.Content);
 
         // TODO(tfoley): We end up constructing unchecked syntax here that
         // is expected to type check into the right form, but it might be
@@ -1864,7 +2006,7 @@ namespace Slang
         else
         {
             // synthesize a dummy name
-            blockVarDecl->Name.Content = GenerateName(parser, "SLANG_parameterBlock_" + reflectionNameToken.Content);
+            blockVarDecl->Name.Content = generateName(parser, "parameterBlock_" + reflectionNameToken.Content);
 
             // Otherwise we have a transparent declaration, similar
             // to an HLSL `cbuffer`
@@ -1962,10 +2104,10 @@ namespace Slang
         {
             AddMember(decl, ParseGenericParamDecl(parser, decl));
 
-if( parser->LookAheadToken(TokenType::OpGreater) )
-break;
+            if( parser->LookAheadToken(TokenType::OpGreater) )
+                break;
 
-parser->ReadToken(TokenType::Comma);
+            parser->ReadToken(TokenType::Comma);
         }
         parser->genericDepth--;
         parser->ReadToken(TokenType::OpGreater);
@@ -2176,8 +2318,8 @@ parser->ReadToken(TokenType::Comma);
             decl = parseModifierDecl(parser);
         else if(parser->LookAheadToken("__import"))
             decl = parseImportDecl(parser);
-        else if(parser->LookAheadToken(TokenType::AutoImport))
-            decl = parseAutoImportDecl(parser);
+        else if(parser->LookAheadToken(TokenType::PoundImport))
+            decl = parsePoundImportDecl(parser);
         else if (AdvanceIf(parser, TokenType::Semicolon))
         {
             decl = new EmptyDecl();
@@ -2262,7 +2404,6 @@ parser->ReadToken(TokenType::Comma);
         while(!AdvanceIfMatch(parser, closingToken))
         {
             ParseDecl(parser, containerDecl);
-            TryRecover(parser);
         }
     }
 
@@ -2373,14 +2514,33 @@ parser->ReadToken(TokenType::Comma);
         return stmt;
     }
 
-    static bool peekTypeName(Parser* parser)
+    static bool isGenericName(Parser* parser, String const& name)
     {
-        if(!parser->LookAheadToken(TokenType::Identifier))
+        auto lookupResult = LookUp(
+            nullptr, // no semantics visitor available yet
+            name,
+            parser->currentScope);
+        if(!lookupResult.isValid() || lookupResult.isOverloaded())
             return false;
 
-        auto name = parser->tokenReader.PeekToken().Content;
+        auto decl = lookupResult.item.declRef.getDecl();
+        if( auto genericDecl = dynamic_cast<GenericDecl*>(decl) )
+        {
+            return true;
+        }
+        else
+        {
+            return false;
+        }
+    }
 
-        auto lookupResult = LookUp(name, parser->currentScope);
+
+    static bool isTypeName(Parser* parser, String const& name)
+    {
+        auto lookupResult = LookUp(
+            nullptr, // no semantics visitor available yet
+            name,
+            parser->currentScope);
         if(!lookupResult.isValid() || lookupResult.isOverloaded())
             return false;
 
@@ -2396,6 +2556,76 @@ parser->ReadToken(TokenType::Comma);
         else
         {
             return false;
+        }
+    }
+
+    static bool peekTypeName(Parser* parser)
+    {
+        if(!parser->LookAheadToken(TokenType::Identifier))
+            return false;
+
+        auto name = parser->tokenReader.PeekToken().Content;
+        return isTypeName(parser, name);
+    }
+
+    RefPtr<StatementSyntaxNode> parseCompileTimeForStmt(
+        Parser* parser)
+    {
+        RefPtr<ScopeDecl> scopeDecl = new ScopeDecl();
+        RefPtr<CompileTimeForStmt> stmt = new CompileTimeForStmt();
+        stmt->scopeDecl = scopeDecl;
+
+
+        parser->ReadToken("for");
+        parser->ReadToken(TokenType::LParent);
+
+        Token varNameToken = parser->ReadToken(TokenType::Identifier);
+        RefPtr<Variable> varDecl = new Variable();
+        varDecl->Name = varNameToken;
+        varDecl->Position = varNameToken.Position;
+
+        stmt->varDecl = varDecl;
+
+        parser->ReadToken("in");
+        parser->ReadToken("Range");
+        parser->ReadToken(TokenType::LParent);
+
+        RefPtr<ExpressionSyntaxNode> rangeBeginExpr;
+        RefPtr<ExpressionSyntaxNode> rangeEndExpr = parser->ParseArgExpr();
+        if (AdvanceIf(parser, TokenType::Comma))
+        {
+            rangeBeginExpr = rangeEndExpr;
+            rangeEndExpr = parser->ParseArgExpr();
+        }
+
+        stmt->rangeBeginExpr = rangeBeginExpr;
+        stmt->rangeEndExpr = rangeEndExpr;
+
+        parser->ReadToken(TokenType::RParent);
+        parser->ReadToken(TokenType::RParent);
+
+        parser->PushScope(scopeDecl);
+        AddMember(parser->currentScope, varDecl);
+
+        stmt->body = parser->ParseStatement();
+
+        parser->PopScope();
+
+        return stmt;
+    }
+
+    RefPtr<StatementSyntaxNode> parseCompileTimeStmt(
+        Parser* parser)
+    {
+        parser->ReadToken(TokenType::Dollar);
+        if (parser->LookAheadToken("for"))
+        {
+            return parseCompileTimeForStmt(parser);
+        }
+        else
+        {
+            Unexpected(parser);
+            return nullptr;
         }
     }
 
@@ -2435,6 +2665,10 @@ parser->ReadToken(TokenType::Comma);
             statement = ParseCaseStmt(this);
         else if (LookAheadToken("default"))
             statement = ParseDefaultStmt(this);
+        else if (LookAheadToken(TokenType::Dollar))
+        {
+            statement = parseCompileTimeStmt(this);
+        }
         else if (LookAheadToken(TokenType::Identifier))
         {
             // We might be looking at a local declaration, or an
@@ -2500,7 +2734,11 @@ parser->ReadToken(TokenType::Comma);
 
     RefPtr<StatementSyntaxNode> Parser::ParseBlockStatement()
     {
-        if( translationUnitOptions.compileFlags & SLANG_COMPILE_FLAG_NO_CHECKING )
+        // If we are being asked not to check things *and* we haven't
+        // seen any `import` declarations yet, then we can safely assume
+        // that function bodies should be left as-is.
+        if( (translationUnit->compileFlags & SLANG_COMPILE_FLAG_NO_CHECKING)
+            && !haveSeenAnyImportDecls )
         {
             // We have been asked to parse the input, but not attempt to understand it.
 
@@ -2543,12 +2781,14 @@ parser->ReadToken(TokenType::Comma);
             return unparsedStmt;
         }
 
-
         RefPtr<ScopeDecl> scopeDecl = new ScopeDecl();
-        RefPtr<BlockStatementSyntaxNode> blockStatement = new BlockStatementSyntaxNode();
+        RefPtr<BlockStmt> blockStatement = new BlockStmt();
         blockStatement->scopeDecl = scopeDecl;
         PushScope(scopeDecl.Ptr());
         ReadToken(TokenType::LBrace);
+
+        RefPtr<StatementSyntaxNode> body;
+
         if(!tokenReader.IsAtEnd())
         {
             FillPosition(blockStatement.Ptr());
@@ -2558,11 +2798,29 @@ parser->ReadToken(TokenType::Comma);
             auto stmt = ParseStatement();
             if(stmt)
             {
-                blockStatement->Statements.Add(stmt);
+                if (!body)
+                {
+                    body = stmt;
+                }
+                else if (auto seqStmt = body.As<SeqStmt>())
+                {
+                    seqStmt->stmts.Add(stmt);
+                }
+                else
+                {
+                    RefPtr<SeqStmt> newBody = new SeqStmt();
+                    newBody->Position = blockStatement->Position;
+                    newBody->stmts.Add(body);
+                    newBody->stmts.Add(stmt);
+
+                    body = newBody;
+                }
             }
             TryRecover(this);
         }
         PopScope();
+
+        blockStatement->body = body;
         return blockStatement;
     }
 
@@ -2597,12 +2855,32 @@ parser->ReadToken(TokenType::Comma);
     RefPtr<ForStatementSyntaxNode> Parser::ParseForStatement()
     {
         RefPtr<ScopeDecl> scopeDecl = new ScopeDecl();
-        RefPtr<ForStatementSyntaxNode> stmt = new ForStatementSyntaxNode();
+
+        // HLSL implements the bad approach to scoping a `for` loop
+        // variable, and we want to respect that, but *only* when
+        // parsing HLSL code.
+        //
+
+        bool brokenScoping = translationUnit->sourceLanguage == SourceLanguage::HLSL;
+
+        // We will create a distinct syntax node class for the unscoped
+        // case, just so that we can correctly handle it in downstream
+        // logic.
+        //
+        RefPtr<ForStatementSyntaxNode> stmt;
+        if (brokenScoping)
+        {
+            stmt = new UnscopedForStmt();
+        }
+        else
+        {
+            stmt = new ForStatementSyntaxNode();
+        }
+
         stmt->scopeDecl = scopeDecl;
 
-        // Note(tfoley): HLSL implements `for` with incorrect scoping.
-        // We need an option to turn on this behavior in a kind of "legacy" mode
-//			PushScope(scopeDecl.Ptr());
+        if(!brokenScoping)
+            PushScope(scopeDecl.Ptr());
         FillPosition(stmt.Ptr());
         ReadToken("for");
         ReadToken(TokenType::LParent);
@@ -2628,7 +2906,10 @@ parser->ReadToken(TokenType::Comma);
             stmt->SideEffectExpression = ParseExpression();
         ReadToken(TokenType::RParent);
         stmt->Statement = ParseStatement();
-//			PopScope();
+
+        if (!brokenScoping)
+            PopScope();
+
         return stmt;
     }
 
@@ -2723,19 +3004,7 @@ parser->ReadToken(TokenType::Comma);
         }
         auto typeExpr = typeSpec.expr;
 
-        while (LookAheadToken(TokenType::LBracket))
-        {
-            RefPtr<IndexExpressionSyntaxNode> arrType = new IndexExpressionSyntaxNode();
-            arrType->Position = typeExpr->Position;
-            arrType->BaseExpression = typeExpr;
-            ReadToken(TokenType::LBracket);
-            if (!LookAheadToken(TokenType::RBracket))
-            {
-                arrType->IndexExpression = ParseExpression();
-            }
-            ReadToken(TokenType::RBracket);
-            typeExpr = arrType;
-        }
+        typeExpr = parsePostfixTypeSuffix(this, typeExpr);
 
         return typeExpr;
     }
@@ -2769,6 +3038,8 @@ parser->ReadToken(TokenType::Comma);
     {
         switch(type)
         {
+        case TokenType::QuestionMark:
+            return Precedence::TernaryConditional;
         case TokenType::Comma:
             return Precedence::Comma;
         case TokenType::OpAssign:
@@ -2820,83 +3091,6 @@ parser->ReadToken(TokenType::Comma);
         }
     }
 
-    Operator GetOpFromToken(Token & token)
-    {
-        switch(token.Type)
-        {
-        case TokenType::Comma:
-            return Operator::Sequence;
-        case TokenType::OpAssign:
-            return Operator::Assign;
-        case TokenType::OpAddAssign:
-            return Operator::AddAssign;
-        case TokenType::OpSubAssign:
-            return Operator::SubAssign;
-        case TokenType::OpMulAssign:
-            return Operator::MulAssign;
-        case TokenType::OpDivAssign:
-            return Operator::DivAssign;
-        case TokenType::OpModAssign:
-            return Operator::ModAssign;
-        case TokenType::OpShlAssign:
-            return Operator::LshAssign;
-        case TokenType::OpShrAssign:
-            return Operator::RshAssign;
-        case TokenType::OpOrAssign:
-            return Operator::OrAssign;
-        case TokenType::OpAndAssign:
-            return Operator::AddAssign;
-        case TokenType::OpXorAssign:
-            return Operator::XorAssign;
-        case TokenType::OpOr:
-            return Operator::Or;
-        case TokenType::OpAnd:
-            return Operator::And;
-        case TokenType::OpBitOr:
-            return Operator::BitOr;
-        case TokenType::OpBitXor:
-            return Operator::BitXor;
-        case TokenType::OpBitAnd:
-            return Operator::BitAnd;
-        case TokenType::OpEql:
-            return Operator::Eql;
-        case TokenType::OpNeq:
-            return Operator::Neq;
-        case TokenType::OpGeq:
-            return Operator::Geq;
-        case TokenType::OpLeq:
-            return Operator::Leq;
-        case TokenType::OpGreater:
-            return Operator::Greater;
-        case TokenType::OpLess:
-            return Operator::Less;
-        case TokenType::OpLsh:
-            return Operator::Lsh;
-        case TokenType::OpRsh:
-            return Operator::Rsh;
-        case TokenType::OpAdd:
-            return Operator::Add;
-        case TokenType::OpSub:
-            return Operator::Sub;
-        case TokenType::OpMul:
-            return Operator::Mul;
-        case TokenType::OpDiv:
-            return Operator::Div;
-        case TokenType::OpMod:
-            return Operator::Mod;
-        case TokenType::OpInc:
-            return Operator::PostInc;
-        case TokenType::OpDec:
-            return Operator::PostDec;
-        case TokenType::OpNot:
-            return Operator::Not;
-        case TokenType::OpBitNot:
-            return Operator::BitNot;
-        default:
-            throw "Illegal TokenType.";
-        }
-    }
-
     static RefPtr<ExpressionSyntaxNode> parseOperator(Parser* parser)
     {
         Token opToken;
@@ -2921,8 +3115,89 @@ parser->ReadToken(TokenType::Comma);
 
     }
 
+    static RefPtr<ExpressionSyntaxNode> createInfixExpr(
+        Parser*                         /*parser*/,
+        RefPtr<ExpressionSyntaxNode>    left,
+        RefPtr<ExpressionSyntaxNode>    op,
+        RefPtr<ExpressionSyntaxNode>    right)
+    {
+        RefPtr<InfixExpr> expr = new InfixExpr();
+        expr->Position = op->Position;
+        expr->FunctionExpr = op;
+        expr->Arguments.Add(left);
+        expr->Arguments.Add(right);
+        return expr;
+    }
+
+    static RefPtr<ExpressionSyntaxNode> parseInfixExprWithPrecedence(
+        Parser*                         parser,
+        RefPtr<ExpressionSyntaxNode>    inExpr,
+        Precedence                      prec)
+    {
+        auto expr = inExpr;
+        for(;;)
+        {
+            auto opTokenType = parser->tokenReader.PeekTokenType();
+            auto opPrec = GetOpLevel(parser, opTokenType);
+            if(opPrec < prec)
+                break;
+
+            auto op = parseOperator(parser);
+
+            // Special case the `?:` operator since it is the
+            // one non-binary case we need to deal with.
+            if(opTokenType == TokenType::QuestionMark)
+            {
+                RefPtr<SelectExpressionSyntaxNode> select = new SelectExpressionSyntaxNode();
+                select->Position = op->Position;
+                select->FunctionExpr = op;
+
+                select->Arguments.Add(expr);
+
+                select->Arguments.Add(parser->ParseExpression(opPrec));
+                parser->ReadToken(TokenType::Colon);
+                select->Arguments.Add(parser->ParseExpression(opPrec));
+
+                expr = select;
+                continue;
+            }
+
+            auto right = parser->ParseLeafExpression();
+
+            for(;;)
+            {
+                auto nextOpPrec = GetOpLevel(parser, parser->tokenReader.PeekTokenType());
+                
+                if((GetAssociativityFromLevel(nextOpPrec) == Associativity::Right) ? (nextOpPrec < opPrec) : (nextOpPrec <= opPrec))
+                    break;
+
+                right = parseInfixExprWithPrecedence(parser, right, nextOpPrec);
+            }
+
+            if (opTokenType == TokenType::OpAssign)
+            {
+                RefPtr<AssignExpr> assignExpr = new AssignExpr();
+                assignExpr->Position = op->Position;
+                assignExpr->left = expr;
+                assignExpr->right = right;
+
+                expr = assignExpr;
+            }
+            else
+            {
+                expr = createInfixExpr(parser, expr, op, right);
+            }
+        }
+        return expr;
+    }
+
     RefPtr<ExpressionSyntaxNode> Parser::ParseExpression(Precedence level)
     {
+        auto expr = ParseLeafExpression();
+        return parseInfixExprWithPrecedence(this, expr, level);
+
+#if 0
+
         if (level == Precedence::Prefix)
             return ParseLeafExpression();
         if (level == Precedence::TernaryConditional)
@@ -2978,10 +3253,415 @@ parser->ReadToken(TokenType::Comma);
                 return left;
             }
         }
+#endif
+    }
+
+    // We *might* be looking at an application of a generic to arguments,
+    // but we need to disambiguate to make sure.
+    static RefPtr<ExpressionSyntaxNode> maybeParseGenericApp(
+        Parser*                             parser,
+
+        // TODO: need to support more general expressions here
+        RefPtr<VarExpressionSyntaxNode>     base)
+    {
+        if(peekTokenType(parser) != TokenType::OpLess)
+            return base;
+
+        if(!isGenericName(parser, base->name))
+            return base;
+
+        // Okay, seems likely that we are looking at a generic app
+
+        return parseGenericApp(parser, base);
+    }
+
+    static RefPtr<ExpressionSyntaxNode> parseAtomicExpr(Parser* parser)
+    {
+        switch( peekTokenType(parser) )
+        {
+        default:
+            // TODO: should this return an error expression instead of NULL?
+            parser->sink->diagnose(parser->tokenReader.PeekLoc(), Diagnostics::syntaxError);
+            return nullptr;
+
+        // Either:
+        // - parenthized expression `(exp)`
+        // - cast `(type) exp`
+        //
+        // Proper disambiguation requires mixing up parsing
+        // and semantic checking (which we should do eventually)
+        // but for now we will follow some hueristics.
+        case TokenType::LParent:
+            {
+                Token openParen = parser->ReadToken(TokenType::LParent);
+
+                if (peekTypeName(parser) && parser->LookAheadToken(TokenType::RParent, 1))
+                {
+                    RefPtr<TypeCastExpressionSyntaxNode> tcexpr = new ExplicitCastExpr();
+                    parser->FillPosition(tcexpr.Ptr());
+                    tcexpr->TargetType = parser->ParseTypeExp();
+                    parser->ReadToken(TokenType::RParent);
+                    tcexpr->Expression = parser->ParseExpression(Precedence::Multiplicative); // Note(tfoley): need to double-check this
+                    return tcexpr;
+                }
+                else
+                {
+                    RefPtr<ExpressionSyntaxNode> base = parser->ParseExpression();
+                    parser->ReadToken(TokenType::RParent);
+
+                    RefPtr<ParenExpr> parenExpr = new ParenExpr();
+                    parenExpr->Position = openParen.Position;
+                    parenExpr->base = base;
+                    return parenExpr;
+                }
+            }
+
+        // An initializer list `{ expr, ... }`
+        case TokenType::LBrace:
+            {
+                RefPtr<InitializerListExpr> initExpr = new InitializerListExpr();
+                parser->FillPosition(initExpr.Ptr());
+
+                // Initializer list
+                parser->ReadToken(TokenType::LBrace);
+
+                List<RefPtr<ExpressionSyntaxNode>> exprs;
+
+                for(;;)
+                {
+                    if(AdvanceIfMatch(parser, TokenType::RBrace))
+                        break;
+
+                    auto expr = parser->ParseArgExpr();
+                    if( expr )
+                    {
+                        initExpr->args.Add(expr);
+                    }
+
+                    if(AdvanceIfMatch(parser, TokenType::RBrace))
+                        break;
+
+                    parser->ReadToken(TokenType::Comma);
+                }
+
+                return initExpr;
+            }
+
+        case TokenType::IntegerLiteral:
+            {
+                RefPtr<ConstantExpressionSyntaxNode> constExpr = new ConstantExpressionSyntaxNode();
+                parser->FillPosition(constExpr.Ptr());
+
+                auto token = parser->tokenReader.AdvanceToken();
+                constExpr->token = token;
+
+                String suffix;
+                IntegerLiteralValue value = getIntegerLiteralValue(token, &suffix);
+
+                // Look at any suffix on the value
+                char const* suffixCursor = suffix.begin();
+
+                RefPtr<ExpressionType> suffixType = nullptr;
+                if( suffixCursor && *suffixCursor )
+                {
+                    int lCount = 0;
+                    int uCount = 0;
+                    int unknownCount = 0;
+                    while(*suffixCursor)
+                    {
+                        switch( *suffixCursor++ )
+                        {
+                        case 'l': case 'L':
+                            lCount++;
+                            break;
+
+                        case 'u': case 'U':
+                            uCount++;
+                            break;
+
+                        default:
+                            unknownCount++;
+                            break;
+                        }
+                    }
+
+                    if(unknownCount)
+                    {
+                        parser->sink->diagnose(token, Diagnostics::invalidIntegerLiteralSuffix, suffix);
+                        suffixType = ExpressionType::GetError();
+                    }
+                    // `u` or `ul` suffix -> `uint`
+                    else if(uCount == 1 && (lCount <= 1))
+                    {
+                        suffixType = ExpressionType::GetUInt();
+                    }
+                    // `l` suffix on integer -> `int` (== `long`)
+                    else if(lCount == 1 && !uCount)
+                    {
+                        suffixType = ExpressionType::GetInt();
+                    }
+                    // TODO: probably need `ll` and `ull`
+                    // TODO: are there other suffixes we need to handle?
+                    else
+                    {
+                        parser->sink->diagnose(token, Diagnostics::invalidIntegerLiteralSuffix, suffix);
+                        suffixType = ExpressionType::GetError();
+                    }
+                }
+
+                constExpr->ConstType = ConstantExpressionSyntaxNode::ConstantType::Int;
+                constExpr->integerValue = value;
+                constExpr->Type = QualType(suffixType);
+
+                return constExpr;
+            }
+
+
+        case TokenType::FloatingPointLiteral:
+            {
+                RefPtr<ConstantExpressionSyntaxNode> constExpr = new ConstantExpressionSyntaxNode();
+                parser->FillPosition(constExpr.Ptr());
+
+                auto token = parser->tokenReader.AdvanceToken();
+                constExpr->token = token;
+
+                String suffix;
+                FloatingPointLiteralValue value = getFloatingPointLiteralValue(token, &suffix);
+
+                // Look at any suffix on the value
+                char const* suffixCursor = suffix.begin();
+
+                RefPtr<ExpressionType> suffixType = nullptr;
+                if( suffixCursor && *suffixCursor )
+                {
+                    int fCount = 0;
+                    int lCount = 0;
+                    int unknownCount = 0;
+                    while(*suffixCursor)
+                    {
+                        switch( *suffixCursor++ )
+                        {
+                        case 'f': case 'F':
+                            fCount++;
+                            break;
+
+                        case 'l': case 'L':
+                            lCount++;
+                            break;
+
+                        default:
+                            unknownCount++;
+                            break;
+                        }
+                    }
+
+                    if(unknownCount)
+                    {
+                        parser->sink->diagnose(token, Diagnostics::invalidFloatingPOintLiteralSuffix, suffix);
+                        suffixType = ExpressionType::GetError();
+                    }
+                    // `f` suffix -> `float`
+                    if(fCount == 1 && !lCount)
+                    {
+                        suffixType = ExpressionType::GetFloat();
+                    }
+                    // `l` or `lf` suffix on float -> `double`
+                    else if(lCount == 1 && (fCount <= 1))
+                    {
+                        suffixType = ExpressionType::getDoubleType();
+                    }
+                    // TODO: are there other suffixes we need to handle?
+                    else
+                    {
+                        parser->sink->diagnose(token, Diagnostics::invalidFloatingPOintLiteralSuffix, suffix);
+                        suffixType = ExpressionType::GetError();
+                    }
+                }
+
+                constExpr->ConstType = ConstantExpressionSyntaxNode::ConstantType::Float;
+                constExpr->floatingPointValue = value;
+                constExpr->Type = QualType(suffixType);
+
+                return constExpr;
+            }
+
+        case TokenType::StringLiteral:
+            {
+                RefPtr<ConstantExpressionSyntaxNode> constExpr = new ConstantExpressionSyntaxNode();
+                auto token = parser->tokenReader.AdvanceToken();
+                constExpr->token = token;
+                parser->FillPosition(constExpr.Ptr());
+                constExpr->ConstType = ConstantExpressionSyntaxNode::ConstantType::String;
+
+                if (!parser->LookAheadToken(TokenType::StringLiteral))
+                {
+                    // Easy/common case: a single string
+                    constExpr->stringValue = getStringLiteralTokenValue(token);
+                }
+                else
+                {
+                    StringBuilder sb;
+                    sb << getStringLiteralTokenValue(token);
+                    while (parser->LookAheadToken(TokenType::StringLiteral))
+                    {
+                        token = parser->tokenReader.AdvanceToken();
+                        sb << getStringLiteralTokenValue(token);
+                    }
+                    constExpr->stringValue = sb.ProduceString();
+                }
+
+                return constExpr;
+            }
+
+        case TokenType::Identifier:
+            {
+                // TODO(tfoley): Need a name-lookup step here to resolve
+                // syntactic keywords in expression context.
+
+                if (parser->LookAheadToken("true") || parser->LookAheadToken("false"))
+                {
+                    RefPtr<ConstantExpressionSyntaxNode> constExpr = new ConstantExpressionSyntaxNode();
+                    auto token = parser->tokenReader.AdvanceToken();
+                    constExpr->token = token;
+                    parser->FillPosition(constExpr.Ptr());
+                    constExpr->ConstType = ConstantExpressionSyntaxNode::ConstantType::Bool;
+                    constExpr->integerValue = token.Content == "true" ? 1 : 0;
+
+                    return constExpr;
+                }
+
+                // Default behavior is just to create a name expression
+                RefPtr<VarExpressionSyntaxNode> varExpr = new VarExpressionSyntaxNode();
+                varExpr->scope = parser->currentScope.Ptr();
+                parser->FillPosition(varExpr.Ptr());
+                auto token = parser->ReadToken(TokenType::Identifier);
+                varExpr->name = token.Content;
+
+                if(peekTokenType(parser) == TokenType::OpLess)
+                {
+                    return maybeParseGenericApp(parser, varExpr);
+                }
+
+                return varExpr;
+            }
+        }
+    }
+
+    static RefPtr<ExpressionSyntaxNode> parsePostfixExpr(Parser* parser)
+    {
+        auto expr = parseAtomicExpr(parser);
+        for(;;)
+        {
+            switch( peekTokenType(parser) )
+            {
+            default:
+                return expr;
+
+            // Postfix increment/decrement
+            case TokenType::OpInc:
+            case TokenType::OpDec:
+                {
+                    RefPtr<OperatorExpressionSyntaxNode> postfixExpr = new PostfixExpr();
+                    parser->FillPosition(postfixExpr.Ptr());
+                    postfixExpr->FunctionExpr = parseOperator(parser);
+                    postfixExpr->Arguments.Add(expr);
+
+                    expr = postfixExpr;
+                }
+                break;
+
+            // Subscript operation `a[i]`
+            case TokenType::LBracket:
+                {
+                    RefPtr<IndexExpressionSyntaxNode> indexExpr = new IndexExpressionSyntaxNode();
+                    indexExpr->BaseExpression = expr;
+                    parser->FillPosition(indexExpr.Ptr());
+                    parser->ReadToken(TokenType::LBracket);
+                    // TODO: eventually we may want to support multiple arguments inside the `[]`
+                    if (!parser->LookAheadToken(TokenType::RBracket))
+                    {
+                        indexExpr->IndexExpression = parser->ParseExpression();
+                    }
+                    parser->ReadToken(TokenType::RBracket);
+
+                    expr = indexExpr;
+                }
+                break;
+
+            // Call oepration `f(x)`
+            case TokenType::LParent:
+                {
+                    RefPtr<InvokeExpressionSyntaxNode> invokeExpr = new InvokeExpressionSyntaxNode();
+                    invokeExpr->FunctionExpr = expr;
+                    parser->FillPosition(invokeExpr.Ptr());
+                    parser->ReadToken(TokenType::LParent);
+                    while (!parser->tokenReader.IsAtEnd())
+                    {
+                        if (!parser->LookAheadToken(TokenType::RParent))
+                            invokeExpr->Arguments.Add(parser->ParseArgExpr());
+                        else
+                        {
+                            break;
+                        }
+                        if (!parser->LookAheadToken(TokenType::Comma))
+                            break;
+                        parser->ReadToken(TokenType::Comma);
+                    }
+                    parser->ReadToken(TokenType::RParent);
+
+                    expr = invokeExpr;
+                }
+                break;
+
+            // Member access `x.m`
+            case TokenType::Dot:
+                {
+                    RefPtr<MemberExpressionSyntaxNode> memberExpr = new MemberExpressionSyntaxNode();
+
+                    // TODO(tfoley): why would a member expression need this?
+                    memberExpr->scope = parser->currentScope.Ptr();
+
+                    parser->FillPosition(memberExpr.Ptr());
+                    memberExpr->BaseExpression = expr;
+                    parser->ReadToken(TokenType::Dot); 
+                    memberExpr->name = parser->ReadToken(TokenType::Identifier).Content;
+
+                    expr = memberExpr;
+                }
+                break;
+            }
+        }
+    }
+
+    static RefPtr<ExpressionSyntaxNode> parsePrefixExpr(Parser* parser)
+    {
+        switch( peekTokenType(parser) )
+        {
+        default:
+            return parsePostfixExpr(parser);
+
+        case TokenType::OpInc:
+        case TokenType::OpDec:
+        case TokenType::OpNot:
+        case TokenType::OpBitNot:
+        case TokenType::OpAdd:
+        case TokenType::OpSub:
+            {
+                RefPtr<PrefixExpr> prefixExpr = new PrefixExpr();
+                parser->FillPosition(prefixExpr.Ptr());
+                prefixExpr->FunctionExpr = parseOperator(parser);
+                prefixExpr->Arguments.Add(parsePrefixExpr(parser));
+                return prefixExpr;
+            }
+            break;
+        }
     }
 
     RefPtr<ExpressionSyntaxNode> Parser::ParseLeafExpression()
     {
+        return parsePrefixExpr(this);
+
+#if 0
         RefPtr<ExpressionSyntaxNode> rs;
         if (LookAheadToken(TokenType::OpInc) ||
             LookAheadToken(TokenType::OpDec) ||
@@ -3046,18 +3726,18 @@ parser->ReadToken(TokenType::Comma);
             rs = initExpr;
         }
 
-        else if (LookAheadToken(TokenType::IntLiterial) ||
-            LookAheadToken(TokenType::DoubleLiterial))
+        else if (LookAheadToken(TokenType::IntegerLiteral) ||
+            LookAheadToken(TokenType::FloatingPointLiteral))
         {
             RefPtr<ConstantExpressionSyntaxNode> constExpr = new ConstantExpressionSyntaxNode();
             auto token = tokenReader.AdvanceToken();
             FillPosition(constExpr.Ptr());
-            if (token.Type == TokenType::IntLiterial)
+            if (token.Type == TokenType::IntegerLiteral)
             {
                 constExpr->ConstType = ConstantExpressionSyntaxNode::ConstantType::Int;
                 constExpr->IntValue = StringToInt(token.Content);
             }
-            else if (token.Type == TokenType::DoubleLiterial)
+            else if (token.Type == TokenType::FloatingPointLiteral)
             {
                 constExpr->ConstType = ConstantExpressionSyntaxNode::ConstantType::Float;
                 constExpr->FloatValue = (FloatingPointLiteralValue) StringToDouble(token.Content);
@@ -3153,19 +3833,21 @@ parser->ReadToken(TokenType::Comma);
             sink->diagnose(tokenReader.PeekLoc(), Diagnostics::syntaxError);
         }
         return rs;
+#endif
     }
 
     // Parse a source file into an existing translation unit
     void parseSourceFile(
-        ProgramSyntaxNode*              translationUnitSyntax,
-        CompileOptions const&           options,
-        TranslationUnitOptions const&   translationUnitOptions,
+        TranslationUnitRequest*         translationUnit,
         TokenSpan const&                tokens,
         DiagnosticSink*                 sink,
         String const&                   fileName,
         RefPtr<Scope> const&            outerScope)
     {
-        Parser parser(options, translationUnitOptions, tokens, sink, fileName, outerScope);
-        return parser.parseSourceFile(translationUnitSyntax);
+        Parser parser(tokens, sink, fileName, outerScope);
+
+        parser.translationUnit = translationUnit;
+
+        return parser.parseSourceFile(translationUnit->SyntaxNode.Ptr());
     }
 }

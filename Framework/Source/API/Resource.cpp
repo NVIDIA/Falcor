@@ -156,7 +156,7 @@ namespace Falcor
             arraySize = resArraySize - firstArraySlice;
         }
 
-        ViewClass::ViewInfo view = ViewClass::ViewInfo(mostDetailedMip, mipCount, firstArraySlice, arraySize);
+        ResourceViewInfo view = ResourceViewInfo(mostDetailedMip, mipCount, firstArraySlice, arraySize);
 
         if (viewMap.find(view) == viewMap.end())
         {

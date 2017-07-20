@@ -26,6 +26,12 @@ void printDiagnosticArg(StringBuilder& sb, int str)
     sb << str;
 }
 
+void printDiagnosticArg(StringBuilder& sb, UInt val)
+{
+    // TODO: make this robust
+    sb << (int) val;
+}
+
 void printDiagnosticArg(StringBuilder& sb, Slang::String const& str)
 {
     sb << str;
@@ -187,6 +193,36 @@ void DiagnosticSink::diagnoseImpl(CodePosition const& pos, DiagnosticInfo const&
         throw InvalidOperationException();
     }
 }
+
+void DiagnosticSink::diagnoseRaw(
+    Severity    severity,
+    char const* message)
+{
+    if (severity >= Severity::Error)
+    {
+        errorCount++;
+    }
+
+    // Did the client supply a callback for us to use?
+    if( callback )
+    {
+        // If so, pass the error string along to them
+        callback(message, callbackUserData);
+    }
+    else
+    {
+        // If the user doesn't have a callback, then just
+        // collect our diagnostic messages into a buffer
+        outputBuffer.append(message);
+    }
+
+    if (severity >= Severity::Fatal)
+    {
+        // TODO: figure out a better policy for aborting compilation
+        throw InvalidOperationException();
+    }
+}
+
 
 namespace Diagnostics
 {

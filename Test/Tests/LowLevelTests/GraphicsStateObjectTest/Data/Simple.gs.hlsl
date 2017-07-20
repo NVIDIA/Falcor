@@ -25,10 +25,9 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#include "ShaderCommon.h"
-#include "Shading.h"
-#define _COMPILE_DEFAULT_VS
-#include "VertexAttrib.h"
+__import DefaultVS;
+__import ShaderCommon;
+__import Shading;
 
 [maxvertexcount(3)]
 void main(InputPatch<VS_OUT, 3> input, inout TriangleStream<VS_OUT> outStream)

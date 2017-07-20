@@ -14,7 +14,7 @@
 #include "emit.h"
 
 // Utilities for pass-through modes
-#include "../../tools/glslang/glslang.h"
+#include "../slang-glslang/slang-glslang.h"
 
 
 #ifdef _WIN32
@@ -26,55 +26,150 @@
 #include <d3dcompiler.h>
 #endif
 
+#ifdef _MSC_VER
+#pragma warning(disable: 4996)
+#endif
+
 #ifdef CreateDirectory
 #undef CreateDirectory
 #endif
 
 namespace Slang
 {
+
+    // CompileResult
+
+    void CompileResult::append(CompileResult const& result)
+    {
+        // Find which to append to
+        ResultFormat appendTo = ResultFormat::None;
+
+        if (format == ResultFormat::None)
+        {
+            format = result.format;
+            appendTo = result.format;
+        }
+        else if (format == result.format)
+        {
+            appendTo = format;
+        }
+
+        if (appendTo == ResultFormat::Text)
+        {
+            outputString.append(result.outputString.Buffer());
+        }
+        else if (appendTo == ResultFormat::Binary)
+        {
+            outputBinary.AddRange(result.outputBinary.Buffer(), result.outputBinary.Count());
+        }
+    }
+
+    // EntryPointRequest
+
+    TranslationUnitRequest* EntryPointRequest::getTranslationUnit()
+    {
+        return compileRequest->translationUnits[translationUnitIndex].Ptr();
+    }
+
     //
 
     Profile Profile::LookUp(char const* name)
     {
         #define PROFILE(TAG, NAME, STAGE, VERSION)	if(strcmp(name, #NAME) == 0) return Profile::TAG;
-        #define PROFILE_ALIAS(TAG, NAME)			if(strcmp(name, #NAME) == 0) return Profile::TAG;
+        #define PROFILE_ALIAS(TAG, DEF, NAME)		if(strcmp(name, #NAME) == 0) return Profile::TAG;
         #include "profile-defs.h"
 
         return Profile::Unknown;
     }
 
-
-
     //
 
-    String EmitHLSL(ExtraContext& context)
+    String emitHLSLForEntryPoint(
+        EntryPointRequest*  entryPoint)
     {
-        if (context.getOptions().passThrough != PassThroughMode::None)
+        auto compileRequest = entryPoint->compileRequest;
+        auto translationUnit = entryPoint->getTranslationUnit();
+        if (compileRequest->passThrough != PassThroughMode::None)
         {
-            return context.sourceText;
+            // Generate a string that includes the content of
+            // the source file(s), along with a line directive
+            // to ensure that we get reasonable messages
+            // from the downstream compiler when in pass-through
+            // mode.
+
+            StringBuilder codeBuilder;
+            for(auto sourceFile : translationUnit->sourceFiles)
+            {
+                codeBuilder << "#line 1 \"";
+                for(auto c : sourceFile->path)
+                {
+                    char buffer[] = { c, 0 };
+                    switch(c)
+                    {
+                    default:
+                        codeBuilder << buffer;
+                        break;
+
+                    case '\\':
+                        codeBuilder << "\\\\";
+                    }
+                }
+                codeBuilder << "\"\n";
+                codeBuilder << sourceFile->content << "\n";
+            }
+
+            return codeBuilder.ProduceString();
         }
         else
         {
-            // TODO(tfoley): probably need a way to customize the emit logic...
-            return emitProgram(
-                context.programSyntax.Ptr(),
-                context.programLayout,
+            return emitEntryPoint(
+                entryPoint,
+                compileRequest->layout.Ptr(),
                 CodeGenTarget::HLSL);
         }
     }
 
-    String emitGLSLForEntryPoint(ExtraContext& context, EntryPointOption const& /*entryPoint*/)
+    String emitGLSLForEntryPoint(
+        EntryPointRequest*  entryPoint)
     {
-        if (context.getOptions().passThrough != PassThroughMode::None)
+        auto compileRequest = entryPoint->compileRequest;
+        auto translationUnit = entryPoint->getTranslationUnit();
+
+        if (compileRequest->passThrough != PassThroughMode::None)
         {
-            return context.sourceText;
+            // Generate a string that includes the content of
+            // the source file(s), along with a line directive
+            // to ensure that we get reasonable messages
+            // from the downstream compiler when in pass-through
+            // mode.
+
+            StringBuilder codeBuilder;
+            int translationUnitCounter = 0;
+            for(auto sourceFile : translationUnit->sourceFiles)
+            {
+                int translationUnitIndex = translationUnitCounter++;
+
+                // We want to output `#line` directives, but we need
+                // to skip this for the first file, since otherwise
+                // some GLSL implementations will get tripped up by
+                // not having the `#version` directive be the first
+                // thing in the file.
+                if(translationUnitIndex != 0)
+                {
+                    codeBuilder << "#line 1 " << translationUnitIndex << "\n";
+                }
+                codeBuilder << sourceFile->content << "\n";
+            }
+
+            return codeBuilder.ProduceString();
         }
         else
         {
-            // TODO(tfoley): probably need a way to customize the emit logic...
-            return emitProgram(
-                context.programSyntax.Ptr(),
-                context.programLayout,
+            // TODO(tfoley): need to pass along the entry point
+            // so that we properly emit it as the `main` function.
+            return emitEntryPoint(
+                entryPoint,
+                compileRequest->layout.Ptr(),
                 CodeGenTarget::GLSL);
         }
     }
@@ -103,8 +198,7 @@ namespace Slang
     }
 
     List<uint8_t> EmitDXBytecodeForEntryPoint(
-        ExtraContext&				context,
-        EntryPointOption const&		entryPoint)
+        EntryPointRequest*  entryPoint)
     {
         static pD3DCompile D3DCompile_ = nullptr;
         if (!D3DCompile_)
@@ -116,48 +210,24 @@ namespace Slang
             assert(D3DCompile_);
         }
 
-        // The HLSL compiler will try to "canonicalize" our input file path,
-        // and we don't want it to do that, because they it won't report
-        // the same locations on error messages that we would.
-        //
-        // To work around that, we prepend a custom `#line` directive.
-
-        String rawHlslCode = EmitHLSL(context);
-
-        StringBuilder hlslCodeBuilder;
-        hlslCodeBuilder << "#line 1 \"";
-        for(auto c : context.sourcePath)
-        {
-            char buffer[] = { c, 0 };
-            switch(c)
-            {
-            default:
-                hlslCodeBuilder << buffer;
-                break;
-
-            case '\\':
-                hlslCodeBuilder << "\\\\";
-            }
-        }
-        hlslCodeBuilder << "\"\n";
-        hlslCodeBuilder << rawHlslCode;
-
-        auto hlslCode = hlslCodeBuilder.ProduceString();
+        auto hlslCode = emitHLSLForEntryPoint(entryPoint);
+        maybeDumpIntermediate(entryPoint->compileRequest, hlslCode.Buffer(), CodeGenTarget::HLSL);
 
         ID3DBlob* codeBlob;
         ID3DBlob* diagnosticsBlob;
         HRESULT hr = D3DCompile_(
             hlslCode.begin(),
             hlslCode.Length(),
-            context.sourcePath.begin(),
+            "slang",
             nullptr,
             nullptr,
-            entryPoint.name.begin(),
-            GetHLSLProfileName(entryPoint.profile),
+            entryPoint->name.begin(),
+            GetHLSLProfileName(entryPoint->profile),
             0,
             0,
             &codeBlob,
             &diagnosticsBlob);
+
         List<uint8_t> data;
         if (codeBlob)
         {
@@ -169,18 +239,19 @@ namespace Slang
             // TODO(tfoley): need a better policy for how we translate diagnostics
             // back into the Slang world (although we should always try to generate
             // HLSL that doesn't produce any diagnostics...)
-            String diagnostics = (char const*) diagnosticsBlob->GetBufferPointer();
-            fprintf(stderr, "%s", diagnostics.begin());
-            OutputDebugStringA(diagnostics.begin());
+            entryPoint->compileRequest->mSink.diagnoseRaw(
+                FAILED(hr) ? Severity::Error : Severity::Warning,
+                (char const*) diagnosticsBlob->GetBufferPointer());
             diagnosticsBlob->Release();
         }
         if (FAILED(hr))
         {
-            // TODO(tfoley): What to do on failure?
+            return List<uint8_t>();
         }
         return data;
     }
 
+#if 0
     List<uint8_t> EmitDXBytecode(
         ExtraContext&				context)
     {
@@ -200,10 +271,12 @@ namespace Slang
 
         return EmitDXBytecodeForEntryPoint(context, context.getTranslationUnitOptions().entryPoints[0]);
     }
+#endif
 
-    String EmitDXBytecodeAssemblyForEntryPoint(
-        ExtraContext&				context,
-        EntryPointOption const&		entryPoint)
+    String dissassembleDXBC(
+        CompileRequest*,
+        void const*         data,
+        size_t              size)
     {
         static pD3DDisassemble D3DDisassemble_ = nullptr;
         if (!D3DDisassemble_)
@@ -215,16 +288,15 @@ namespace Slang
             assert(D3DDisassemble_);
         }
 
-        List<uint8_t> dxbc = EmitDXBytecodeForEntryPoint(context, entryPoint);
-        if (!dxbc.Count())
+        if (!data || !size)
         {
-            return "";
+            return String();
         }
 
         ID3DBlob* codeBlob;
         HRESULT hr = D3DDisassemble_(
-            &dxbc[0],
-            dxbc.Count(),
+            data,
+            size,
             0,
             nullptr,
             &codeBlob);
@@ -232,7 +304,9 @@ namespace Slang
         String result;
         if (codeBlob)
         {
-            result = String((char const*) codeBlob->GetBufferPointer());
+            char const* codeBegin = (char const*)codeBlob->GetBufferPointer();
+            char const* codeEnd = codeBegin + codeBlob->GetBufferSize();
+            result.append(codeBegin, codeEnd);
             codeBlob->Release();
         }
         if (FAILED(hr))
@@ -242,7 +316,22 @@ namespace Slang
         return result;
     }
 
+    String EmitDXBytecodeAssemblyForEntryPoint(
+        EntryPointRequest*  entryPoint)
+    {
 
+        List<uint8_t> dxbc = EmitDXBytecodeForEntryPoint(entryPoint);
+        if (!dxbc.Count())
+        {
+            return String();
+        }
+
+        String result = dissassembleDXBC(entryPoint->compileRequest, dxbc.Buffer(), dxbc.Count());
+
+        return result;
+    }
+
+#if 0
     String EmitDXBytecodeAssembly(
         ExtraContext&				context)
     {
@@ -260,23 +349,22 @@ namespace Slang
         }
         return sb.ProduceString();
     }
-
+#endif
 
     HMODULE getGLSLCompilerDLL()
     {
         // TODO(tfoley): let user specify version of glslang DLL to use.
-        static HMODULE glslCompiler =  LoadLibraryA("glslang");
+        static HMODULE glslCompiler =  LoadLibraryA("slang-glslang");
         // TODO(tfoley): handle case where we can't find it gracefully
         assert(glslCompiler);
         return glslCompiler;
     }
 
 
-    String emitSPIRVAssemblyForEntryPoint(
-        ExtraContext&				context,
-        EntryPointOption const&		entryPoint)
+    int invokeGLSLCompiler(
+        CompileRequest*             slangCompileRequest,
+        glslang_CompileRequest&     request)
     {
-        String rawGLSL = emitGLSLForEntryPoint(context, entryPoint);
 
         static glslang_CompileFunc glslang_compile = nullptr;
         if (!glslang_compile)
@@ -288,41 +376,104 @@ namespace Slang
             assert(glslang_compile);
         }
 
-        StringBuilder diagnosticBuilder;
-        StringBuilder outputBuilder;
-
-        auto outputFunc = [](char const* text, void* userData)
+        String diagnosticOutput;
+        auto diagnosticOutputFunc = [](void const* data, size_t size, void* userData)
         {
-            *(StringBuilder*)userData << text;
+            (*(String*)userData).append((char const*)data, (char const*)data + size);
         };
 
-        glslang_CompileRequest request;
-        request.sourcePath = context.sourcePath.begin();
-        request.sourceText = rawGLSL.begin();
-        request.slangStage = (SlangStage) entryPoint.profile.GetStage();
-
-        request.diagnosticFunc = outputFunc;
-        request.diagnosticUserData = &diagnosticBuilder;
-
-        request.outputFunc = outputFunc;
-        request.outputUserData = &outputBuilder;
+        request.diagnosticFunc = diagnosticOutputFunc;
+        request.diagnosticUserData = &diagnosticOutput;
 
         int err = glslang_compile(&request);
 
-        String diagnostics = diagnosticBuilder.ProduceString();
-        String output = outputBuilder.ProduceString();
-
-        if(err)
+        if (err)
         {
-            OutputDebugStringA(diagnostics.Buffer());
-            fprintf(stderr, "%s", diagnostics.Buffer());
-            exit(1);
+            slangCompileRequest->mSink.diagnoseRaw(
+                Severity::Error,
+                diagnosticOutput.begin());
+            return err;
+        }
+
+        return 0;
+    }
+
+    String dissassembleSPIRV(
+        CompileRequest*     slangRequest,
+        void const*         data,
+        size_t              size)
+    {
+        String output;
+        auto outputFunc = [](void const* data, size_t size, void* userData)
+        {
+            (*(String*)userData).append((char const*)data, (char const*)data + size);
+        };
+
+        glslang_CompileRequest request;
+        request.action = GLSLANG_ACTION_DISSASSEMBLE_SPIRV;
+
+        request.inputBegin  = data;
+        request.inputEnd    = (char*)data + size;
+
+        request.outputFunc = outputFunc;
+        request.outputUserData = &output;
+
+        int err = invokeGLSLCompiler(slangRequest, request);
+
+        if (err)
+        {
+            String();
         }
 
         return output;
     }
+
+    List<uint8_t> emitSPIRVForEntryPoint(
+        EntryPointRequest*  entryPoint)
+    {
+        String rawGLSL = emitGLSLForEntryPoint(entryPoint);
+        maybeDumpIntermediate(entryPoint->compileRequest, rawGLSL.Buffer(), CodeGenTarget::GLSL);
+
+        List<uint8_t> output;
+        auto outputFunc = [](void const* data, size_t size, void* userData)
+        {
+            ((List<uint8_t>*)userData)->AddRange((uint8_t*)data, size);
+        };
+
+        glslang_CompileRequest request;
+        request.action = GLSLANG_ACTION_COMPILE_GLSL_TO_SPIRV;
+        request.sourcePath = "slang";
+        request.slangStage = (SlangStage)entryPoint->profile.GetStage();
+
+        request.inputBegin  = rawGLSL.begin();
+        request.inputEnd    = rawGLSL.end();
+
+        request.outputFunc = outputFunc;
+        request.outputUserData = &output;
+
+        int err = invokeGLSLCompiler(entryPoint->compileRequest, request);
+
+        if (err)
+        {
+            return List<uint8_t>();
+        }
+
+        return output;
+    }
+
+    String emitSPIRVAssemblyForEntryPoint(
+        EntryPointRequest*  entryPoint)
+    {
+        List<uint8_t> spirv = emitSPIRVForEntryPoint(entryPoint);
+        if (spirv.Count() == 0)
+            return String();
+
+        String result = dissassembleSPIRV(entryPoint->compileRequest, spirv.begin(), spirv.Count());
+        return result;
+    }
 #endif
 
+#if 0
     String emitSPIRVAssembly(
         ExtraContext&				context)
     {
@@ -340,72 +491,69 @@ namespace Slang
         }
         return sb.ProduceString();
     }
+#endif
 
     // Do emit logic for a single entry point
-    EntryPointResult emitEntryPoint(ExtraContext& context, EntryPointOption& entryPoint)
+    CompileResult emitEntryPoint(
+        EntryPointRequest*  entryPoint)
     {
-        EntryPointResult result;
+        CompileResult result;
 
-        switch (context.getOptions().Target)
+        auto compileRequest = entryPoint->compileRequest;
+        auto target = compileRequest->Target;
+
+        switch (target)
         {
+        case CodeGenTarget::HLSL:
+            {
+                String code = emitHLSLForEntryPoint(entryPoint);
+                maybeDumpIntermediate(compileRequest, code.Buffer(), target);
+                result = CompileResult(code);
+            }
+            break;
+
         case CodeGenTarget::GLSL:
             {
-                String code = emitGLSLForEntryPoint(context, entryPoint);
-                result.outputSource = code;
+                String code = emitGLSLForEntryPoint(entryPoint);
+                maybeDumpIntermediate(compileRequest, code.Buffer(), target);
+                result = CompileResult(code);
             }
             break;
 
         case CodeGenTarget::DXBytecode:
             {
-                auto code = EmitDXBytecodeForEntryPoint(context, entryPoint);
-
-                // TODO(tfoley): Need to figure out an appropriate interface
-                // for returning binary code, in addition to source.
-#if 0
-                if (context.compileResult)
-                {
-                    StringBuilder sb;
-                    sb.Append((char*) code.begin(), code.Count());
-
-                    String codeString = sb.ProduceString();
-                    result.outputSource = codeString;
-                }
-                else
-#endif
-                {
-                    int col = 0;
-                    for(auto ii : code)
-                    {
-                        if(col != 0) fputs(" ", stdout);
-                        fprintf(stdout, "%02X", ii);
-                        col++;
-                        if(col == 8)
-                        {
-                            fputs("\n", stdout);
-                            col = 0;
-                        }
-                    }
-                    if(col != 0)
-                    {
-                        fputs("\n", stdout);
-                    }
-                }
-                return result;
+                List<uint8_t> code = EmitDXBytecodeForEntryPoint(entryPoint);
+                maybeDumpIntermediate(compileRequest, code.Buffer(), code.Count(), target);
+                result = CompileResult(code);
             }
             break;
 
         case CodeGenTarget::DXBytecodeAssembly:
             {
-                String code = EmitDXBytecodeAssemblyForEntryPoint(context, entryPoint);
-                result.outputSource = code;
+                String code = EmitDXBytecodeAssemblyForEntryPoint(entryPoint);
+                maybeDumpIntermediate(compileRequest, code.Buffer(), target);
+                result = CompileResult(code);
+            }
+            break;
+
+        case CodeGenTarget::SPIRV:
+            {
+                List<uint8_t> code = emitSPIRVForEntryPoint(entryPoint);
+                maybeDumpIntermediate(compileRequest, code.Buffer(), code.Count(), target);
+                result = CompileResult(code);
             }
             break;
 
         case CodeGenTarget::SPIRVAssembly:
             {
-                String code = emitSPIRVAssemblyForEntryPoint(context, entryPoint);
-                result.outputSource = code;
+                String code = emitSPIRVAssemblyForEntryPoint(entryPoint);
+                maybeDumpIntermediate(compileRequest, code.Buffer(), target);
+                result = CompileResult(code);
             }
+            break;
+
+        case CodeGenTarget::None:
+            // The user requested no output
             break;
 
         // Note(tfoley): We currently hit this case when compiling the stdlib
@@ -417,131 +565,192 @@ namespace Slang
         }
 
         return result;
-
-
     }
 
-    TranslationUnitResult emitTranslationUnitEntryPoints(ExtraContext& context)
+    CompileResult emitTranslationUnitEntryPoints(
+        TranslationUnitRequest* translationUnit)
     {
-        TranslationUnitResult result;
+        CompileResult result;
 
-        for (auto& entryPoint : context.getTranslationUnitOptions().entryPoints)
+        for (auto& entryPoint : translationUnit->entryPoints)
         {
-            EntryPointResult entryPointResult = emitEntryPoint(context, entryPoint);
+            CompileResult entryPointResult = emitEntryPoint(entryPoint.Ptr());
 
-            result.entryPoints.Add(entryPointResult);
+            entryPoint->result = entryPointResult;
         }
 
         // The result for the translation unit will just be the concatenation
         // of the results for each entry point. This doesn't actually make
         // much sense, but it is good enough for now.
-        StringBuilder sb;
-        for (auto& entryPointResult : result.entryPoints)
+        //
+        // TODO: Replace this with a packaged JSON and/or binary format.
+        for (auto& entryPoint : translationUnit->entryPoints)
         {
-            sb << entryPointResult.outputSource;
+            result.append(entryPoint->result);
         }
-
-        result.outputSource = sb.ProduceString();
 
         return result;
     }
 
     // Do emit logic for an entire translation unit, which might
     // have zero or more entry points
-    TranslationUnitResult emitTranslationUnit(ExtraContext& context)
+    CompileResult emitTranslationUnit(
+        TranslationUnitRequest* translationUnit)
     {
-        // Most of our code generation targets will require us
-        // to proceed through one entry point at a time, but
-        // in some cases we can emit an entire translation unit
-        // in one go.
-
-        switch (context.getOptions().Target)
-        {
-        default:
-            // The default behavior is going to loop over all the entry
-            // points, and then collect an aggregate result.
-            return emitTranslationUnitEntryPoints(context);
-
-        case CodeGenTarget::HLSL:
-            // When targetting HLSL, we can emit the entire translation unit
-            // as a single HLSL program, and include all the entry points.
-            {
-
-                String hlsl = EmitHLSL(context);
-
-                TranslationUnitResult result;
-                result.outputSource = hlsl;
-
-                // Because the user might ask for per-entry-point source,
-                // we will just attach the same string as the result for
-                // each entry point.
-                for( auto& entryPoint : context.getTranslationUnitOptions().entryPoints )
-                {
-                    (void)entryPoint;
-
-                    EntryPointResult entryPointResult;
-                    entryPointResult.outputSource = hlsl;
-                    result.entryPoints.Add(entryPointResult);
-                }
-
-                return result;
-            }
-            break;
-        }
+        return emitTranslationUnitEntryPoints(translationUnit);
     }
 
+#if 0
     TranslationUnitResult generateOutput(ExtraContext& context)
     {
         TranslationUnitResult result = emitTranslationUnit(context);
         return result;
     }
+#endif
 
     void generateOutput(
-        ExtraContext&                   context,
-        CollectionOfTranslationUnits*   collectionOfTranslationUnits)
+        CompileRequest* compileRequest)
     {
-        switch (context.getOptions().Target)
+        // Start of with per-translation-unit and per-entry-point lowering
+        for( auto translationUnit : compileRequest->translationUnits )
         {
-        default:
-            // For most targets, we will do things per-translation-unit
-            for( auto translationUnit : collectionOfTranslationUnits->translationUnits )
-            {
-                ExtraContext innerContext = context;
-                innerContext.translationUnitOptions = &translationUnit.options;
-                innerContext.programSyntax = translationUnit.SyntaxNode;
-                innerContext.sourcePath = "slang"; // don't have this any more!
-                innerContext.sourceText = "";
+            CompileResult translationUnitResult = emitTranslationUnit(translationUnit.Ptr());
+            translationUnit->result = translationUnitResult;
+        }
 
-                TranslationUnitResult translationUnitResult = generateOutput(innerContext);
-                context.compileResult->translationUnits.Add(translationUnitResult);
-            }
-            break;
 
+        // Allow for an "extra" target to verride things before we finish.
+        switch (compileRequest->extraTarget)
+        {
         case CodeGenTarget::ReflectionJSON:
             {
-                String reflectionJSON = emitReflectionJSON(context.programLayout);
+                String reflectionJSON = emitReflectionJSON(compileRequest->layout.Ptr());
+
+                // Clobber existing output so we don't have to deal with it
+                for( auto translationUnit : compileRequest->translationUnits )
+                {
+                    translationUnit->result = CompileResult();
+                }
+                for( auto entryPoint : compileRequest->entryPoints )
+                {
+                    entryPoint->result = CompileResult();
+                }
 
                 // HACK(tfoley): just print it out since that is what people probably expect.
                 // TODO: need a way to control where output gets routed across all possible targets.
                 fprintf(stdout, "%s", reflectionJSON.begin());
+
+                return;
+            }
+            break;
+
+        default:
+            break;
+        }
+
+    }
+
+    // Debug logic for dumping intermediate outputs
+
+    //
+
+    void dumpIntermediate(
+        CompileRequest*,
+        void const*     data,
+        size_t          size,
+        char const*     ext,
+        bool            isBinary)
+    {
+        static int counter = 0;
+        int id = counter++;
+
+        String path;
+        path.append("slang-");
+        path.append(id);
+        path.append(ext);
+
+        FILE* file = fopen(path.Buffer(), isBinary ? "wb" : "w");
+        if (!file) return;
+
+        fwrite(data, size, 1, file);
+        fclose(file);
+    }
+
+    void dumpIntermediateText(
+        CompileRequest* compileRequest,
+        void const*     data,
+        size_t          size,
+        char const*     ext)
+    {
+        dumpIntermediate(compileRequest, data, size, ext, false);
+    }
+
+    void dumpIntermediateBinary(
+        CompileRequest* compileRequest,
+        void const*     data,
+        size_t          size,
+        char const*     ext)
+    {
+        dumpIntermediate(compileRequest, data, size, ext, true);
+    }
+
+    void maybeDumpIntermediate(
+        CompileRequest* compileRequest,
+        void const*     data,
+        size_t          size,
+        CodeGenTarget   target)
+    {
+        if (!compileRequest->shouldDumpIntermediates)
+            return;
+
+        switch (target)
+        {
+        default:
+            break;
+
+        case CodeGenTarget::HLSL:
+            dumpIntermediateText(compileRequest, data, size, ".hlsl");
+            break;
+
+        case CodeGenTarget::GLSL:
+            dumpIntermediateText(compileRequest, data, size, ".glsl");
+            break;
+
+        case CodeGenTarget::SPIRVAssembly:
+            dumpIntermediateText(compileRequest, data, size, ".spv.asm");
+            break;
+
+        case CodeGenTarget::DXBytecodeAssembly:
+            dumpIntermediateText(compileRequest, data, size, ".dxbc.asm");
+            break;
+
+        case CodeGenTarget::SPIRV:
+            dumpIntermediateBinary(compileRequest, data, size, ".spv");
+            {
+                String spirvAssembly = dissassembleSPIRV(compileRequest, data, size);
+                dumpIntermediateText(compileRequest, spirvAssembly.begin(), spirvAssembly.Length(), ".spv.asm");
+            }
+            break;
+
+        case CodeGenTarget::DXBytecode:
+            dumpIntermediateBinary(compileRequest, data, size, ".dxbc");
+            {
+                String dxbcAssembly = dissassembleDXBC(compileRequest, data, size);
+                dumpIntermediateText(compileRequest, dxbcAssembly.begin(), dxbcAssembly.Length(), ".dxbc.asm");
             }
             break;
         }
     }
 
-    TranslationUnitResult passThrough(
-        String const&			sourceText,
-        String const&			sourcePath,
-        const CompileOptions &	options,
-        TranslationUnitOptions const& translationUnitOptions)
+    void maybeDumpIntermediate(
+        CompileRequest* compileRequest,
+        char const*     text,
+        CodeGenTarget   target)
     {
-        ExtraContext extra;
-        extra.options = &options;
-        extra.translationUnitOptions = &translationUnitOptions;
-        extra.sourcePath = sourcePath;
-        extra.sourceText = sourceText;
+        if (!compileRequest->shouldDumpIntermediates)
+            return;
 
-        return generateOutput(extra);
+        maybeDumpIntermediate(compileRequest, text, strlen(text), target);
     }
 
 }

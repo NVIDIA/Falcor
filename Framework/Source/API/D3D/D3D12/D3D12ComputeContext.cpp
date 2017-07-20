@@ -33,36 +33,14 @@
 
 namespace Falcor
 {
-    CommandSignatureHandle RenderContext::spDispatchCommandSig = nullptr;
-
-    ComputeContext::~ComputeContext() = default;
-
-    ComputeContext::SharedPtr ComputeContext::create()
-    {
-        SharedPtr pCtx = SharedPtr(new ComputeContext());
-        pCtx->mpLowLevelData = LowLevelContextData::create(LowLevelContextData::CommandListType::Compute);
-        if (pCtx->mpLowLevelData == nullptr)
-        {
-            return nullptr;
-        }
-        pCtx->bindDescriptorHeaps();
-
-        if (spDispatchCommandSig == nullptr)
-        {
-            initDispatchCommandSignature();
-        }
-
-        return pCtx;
-    }
-
     void ComputeContext::prepareForDispatch()
     {
         assert(mpComputeState);
 
-        // Bind the root signature and the root signature data
+        // Apply the vars. Must be first because applyComputeVars() might cause a flush        
         if (mpComputeVars)
         {
-            mpComputeVars->apply(const_cast<ComputeContext*>(this), mBindComputeRootSig);
+            applyComputeVars();
         }
         else
         {
@@ -119,42 +97,6 @@ namespace Falcor
         }
     }
 
-    void ComputeContext::pushComputeVars(const ComputeVars::SharedPtr& pVars)
-    {
-        mpComputeVarsStack.push(mpComputeVars);
-        setComputeVars(pVars);
-    }
-
-    void ComputeContext::popComputeVars()
-    {
-        if (mpComputeVarsStack.empty())
-        {
-            logWarning("Can't pop from the compute vars stack. The stack is empty");
-            return;
-        }
-
-        setComputeVars(mpComputeVarsStack.top());
-        mpComputeVarsStack.pop();
-    }
-
-    void ComputeContext::pushComputeState(const ComputeState::SharedPtr& pState)
-    {
-        mpComputeStateStack.push(mpComputeState);
-        setComputeState(pState);
-    }
-
-    void ComputeContext::popComputeState()
-    {
-        if (mpComputeStateStack.empty())
-        {
-            logWarning("Can't pop from the compute state stack. The stack is empty");
-            return;
-        }
-
-        setComputeState(mpComputeStateStack.top());
-        mpComputeStateStack.pop();
-    }
-
     void ComputeContext::initDispatchCommandSignature()
     {
         D3D12_COMMAND_SIGNATURE_DESC sigDesc;
@@ -173,13 +115,4 @@ namespace Falcor
         resourceBarrier(argBuffer, Resource::State::IndirectArg);
         mpLowLevelData->getCommandList()->ExecuteIndirect(spDispatchCommandSig, 1, argBuffer->getApiHandle(), argBufferOffset, nullptr, 0);
     }
-
-    void ComputeContext::reset()
-    {
-        CopyContext::reset();
-        mBindComputeRootSig = true;
-    }
-
-    void ComputeContext::applyComputeVars() {}
-    void ComputeContext::applyComputeState() {}
 }

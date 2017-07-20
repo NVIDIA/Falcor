@@ -2,7 +2,7 @@
 #define SLANG_H
 
 #ifdef _MSC_VER
-#ifdef SLANG_COMPILING_DLL
+#ifdef SLANG_DYNAMIC_EXPORT
 #define SLANG_API __declspec(dllexport)
 #else
 #ifdef SLANG_DYNAMIC
@@ -66,6 +66,7 @@ extern "C"
     enum
     {
         SLANG_TARGET_UNKNOWN,
+        SLANG_TARGET_NONE,
         SLANG_GLSL,
         SLANG_GLSL_VULKAN,
         SLANG_GLSL_VULKAN_ONE_DESC,
@@ -169,6 +170,13 @@ extern "C"
         SlangCompileFlags       flags);
 
     /*!
+    @brief Set whether to dump intermediate results (for debugging) or not.
+    */
+    SLANG_API void spSetDumpIntermediates(
+        SlangCompileRequest*    request,
+        int                     enable);
+
+    /*!
     @brief Sets the target for code generation.
     @param ctx The compilation context.
     @param target The code generation target. Possible values are:
@@ -203,16 +211,6 @@ extern "C"
         SlangCompileRequest*    request,
         const char*             searchDir);
 
-    /*!
-    @brief Add a path to use when searching for referenced files, that automatically treats `#include` as `__import`
-    This behaves just like `spAddSearchPath()` except that any `#include` file found through this path
-    will be treated as if it was referenced with `__import`.
-    @param ctx The compilation context.
-    @param searchDir The additional search directory.
-    */
-    SLANG_API void spAddAutoImportPath(
-        SlangCompileRequest*    request,
-        const char*             searchDir);
     /*!
     @brief Add a macro definition to be used during preprocessing.
     @param key The name of the macro to define.
@@ -281,7 +279,7 @@ extern "C"
 
     /** Add an entry point in a particular translation unit
     */
-    SLANG_API int spAddTranslationUnitEntryPoint(
+    SLANG_API int spAddEntryPoint(
         SlangCompileRequest*    request,
         int                     translationUnitIndex,
         char const*             name,
@@ -323,7 +321,7 @@ extern "C"
     spGetTranslationUnitCount(
         SlangCompileRequest*    request);
 
-    /** Get the output code associated with a specific translation unit
+    /** Get the output code associated with a specific translation unit.
 
     The lifetime of the output pointer is the same as `request`.
     */
@@ -331,14 +329,22 @@ extern "C"
         SlangCompileRequest*    request,
         int                     translationUnitIndex);
 
-    /** Get the output code associated with a specific entry point.
+    /** Get the output source code associated with a specific entry point.
 
     The lifetime of the output pointer is the same as `request`.
     */
     SLANG_API char const* spGetEntryPointSource(
         SlangCompileRequest*    request,
-        int                     translationUnitIndex,
         int                     entryPointIndex);
+
+    /** Get the output bytecode associated with a specific entry point.
+
+    The lifetime of the output pointer is the same as `request`.
+    */
+    SLANG_API void const* spGetEntryPointCode(
+        SlangCompileRequest*    request,
+        int                     entryPointIndex,
+        size_t*                 outSize);
 
 
     /* Note(tfoley): working on new reflection interface...
@@ -369,7 +375,9 @@ extern "C"
         SLANG_TYPE_KIND_CONSTANT_BUFFER,
         SLANG_TYPE_KIND_RESOURCE,
         SLANG_TYPE_KIND_SAMPLER_STATE,
-    
+        SLANG_TYPE_KIND_TEXTURE_BUFFER,
+        SLANG_TYPE_KIND_SHADER_STORAGE_BUFFER,
+
         SLANG_TYPE_KIND_COUNT,
     };
 
@@ -432,6 +440,7 @@ extern "C"
     enum
     {
         SLANG_PARAMETER_CATEGORY_NONE,
+        SLANG_PARAMETER_CATEGORY_MIXED,
         SLANG_PARAMETER_CATEGORY_CONSTANT_BUFFER,
         SLANG_PARAMETER_CATEGORY_SHADER_RESOURCE,
         SLANG_PARAMETER_CATEGORY_UNORDERED_ACCESS,
@@ -440,8 +449,11 @@ extern "C"
         SLANG_PARAMETER_CATEGORY_SAMPLER_STATE,
         SLANG_PARAMETER_CATEGORY_UNIFORM,
         SLANG_PARAMETER_CATEGORY_DESCRIPTOR_TABLE_SLOT,
-        SLANG_PARAMETER_CATEGORY_SPECIALIZTION_CONSTANT,
-        SLANG_PARAMETER_CATEGORY_MIXED,
+        SLANG_PARAMETER_CATEGORY_SPECIALIZATION_CONSTANT,
+        SLANG_PARAMETER_CATEGORY_PUSH_CONSTANT_BUFFER,
+
+        //
+        SLANG_PARAMETER_CATEGORY_COUNT,
     };
 
     typedef SlangUInt32 SlangStage;
@@ -513,12 +525,25 @@ extern "C"
 
     // Entry Point Reflection
 
+    SLANG_API char const* spReflectionEntryPoint_getName(
+        SlangReflectionEntryPoint* entryPoint);
+
+    SLANG_API unsigned spReflectionEntryPoint_getParameterCount(
+        SlangReflectionEntryPoint* entryPoint);
+
+    SLANG_API SlangReflectionVariableLayout* spReflectionEntryPoint_getParameterByIndex(
+        SlangReflectionEntryPoint*  entryPoint,
+        unsigned                    index);
+
     SLANG_API SlangStage spReflectionEntryPoint_getStage(SlangReflectionEntryPoint* entryPoint);
 
     SLANG_API void spReflectionEntryPoint_getComputeThreadGroupSize(
         SlangReflectionEntryPoint*  entryPoint,
         SlangUInt                   axisCount,
         SlangUInt*                  outSizeAlongAxis);
+
+    SLANG_API int spReflectionEntryPoint_usesAnySampleRateInput(
+        SlangReflectionEntryPoint* entryPoint);
 
     // Shader Reflection
 
@@ -558,6 +583,8 @@ namespace slang
             ConstantBuffer = SLANG_TYPE_KIND_CONSTANT_BUFFER,
             Resource = SLANG_TYPE_KIND_RESOURCE,
             SamplerState = SLANG_TYPE_KIND_SAMPLER_STATE,
+            TextureBuffer = SLANG_TYPE_KIND_TEXTURE_BUFFER,
+            ShaderStorageBuffer = SLANG_TYPE_KIND_SHADER_STORAGE_BUFFER,
         };
 
         enum ScalarType : SlangScalarType
@@ -663,6 +690,7 @@ namespace slang
     {
         // TODO: these aren't scoped...
         None = SLANG_PARAMETER_CATEGORY_NONE,
+        Mixed = SLANG_PARAMETER_CATEGORY_MIXED,
         ConstantBuffer = SLANG_PARAMETER_CATEGORY_CONSTANT_BUFFER,
         ShaderResource = SLANG_PARAMETER_CATEGORY_SHADER_RESOURCE,
         UnorderedAccess = SLANG_PARAMETER_CATEGORY_UNORDERED_ACCESS,
@@ -671,8 +699,8 @@ namespace slang
         SamplerState = SLANG_PARAMETER_CATEGORY_SAMPLER_STATE,
         Uniform = SLANG_PARAMETER_CATEGORY_UNIFORM,
         DescriptorTableSlot = SLANG_PARAMETER_CATEGORY_DESCRIPTOR_TABLE_SLOT,
-        SpecializationConstant = SLANG_PARAMETER_CATEGORY_SPECIALIZTION_CONSTANT,
-        Mixed = SLANG_PARAMETER_CATEGORY_MIXED,
+        SpecializationConstant = SLANG_PARAMETER_CATEGORY_SPECIALIZATION_CONSTANT,
+        PushConstantBuffer = SLANG_PARAMETER_CATEGORY_PUSH_CONSTANT_BUFFER,
     };
 
     struct TypeLayoutReflection
@@ -854,6 +882,21 @@ namespace slang
 
     struct EntryPointReflection
     {
+        char const* getName()
+        {
+            return spReflectionEntryPoint_getName((SlangReflectionEntryPoint*) this);
+        }
+
+        unsigned getParameterCount()
+        {
+            return spReflectionEntryPoint_getParameterCount((SlangReflectionEntryPoint*) this);
+        }
+
+        VariableLayoutReflection* getParameterByIndex(unsigned index)
+        {
+            return (VariableLayoutReflection*) spReflectionEntryPoint_getParameterByIndex((SlangReflectionEntryPoint*) this, index);
+        }
+
         SlangStage getStage()
         {
             return spReflectionEntryPoint_getStage((SlangReflectionEntryPoint*) this);
@@ -864,6 +907,11 @@ namespace slang
             SlangUInt*  outSizeAlongAxis)
         {
             return spReflectionEntryPoint_getComputeThreadGroupSize((SlangReflectionEntryPoint*) this, axisCount, outSizeAlongAxis);
+        }
+
+        bool usesAnySampleRateInput()
+        {
+            return 0 != spReflectionEntryPoint_usesAnySampleRateInput((SlangReflectionEntryPoint*) this);
         }
     };
 
@@ -911,7 +959,9 @@ namespace slang
 #include "source/slang/parameter-binding.cpp"
 #include "source/slang/parser.cpp"
 #include "source/slang/preprocessor.cpp"
+#include "source/slang/profile.cpp"
 #include "source/slang/lookup.cpp"
+#include "source/slang/lower.cpp"
 #include "source/slang/check.cpp"
 #include "source/slang/compiler.cpp"
 #include "source/slang/slang-stdlib.cpp"

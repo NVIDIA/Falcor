@@ -210,10 +210,6 @@ namespace Falcor
         // Bind material
         if(mpLastMaterial != pMesh->getMaterial().get())
         {
-            if(mUnloadTexturesOnMaterialChange && mpLastMaterial)
-            {
-                mpLastMaterial->evictTextures();
-            }
             setPerMaterialData(currentData, currentData.pMaterial);
             mpLastMaterial = pMesh->getMaterial().get();
 
@@ -318,24 +314,8 @@ namespace Falcor
         renderScene(pContext, mpScene->getActiveCamera().get());
     }
 
-    void SceneRenderer::setupVR()
-    {
-        if(mRenderMode == RenderMode::SinglePassStereo || mRenderMode == RenderMode::Stereo)
-        {
-            VRSystem* pVR = VRSystem::instance();
-
-            if(pVR && pVR->isReady())
-            {
-                // Get the VR data
-                pVR->pollEvents();
-                pVR->refreshTracking();
-            }
-        }
-    }
-
     void SceneRenderer::renderScene(CurrentWorkingData& currentData)
     {
-        setupVR();
         setPerFrameData(currentData);
 
         for (uint32_t modelID = 0; modelID < mpScene->getModelCount(); modelID++)
@@ -371,6 +351,11 @@ namespace Falcor
         renderScene(currentData);
     }
 
+    static CameraController::SharedPtr createHmdCameraController()
+    {
+
+    }
+
     void SceneRenderer::setCameraControllerType(CameraControllerType type)
     {
         switch(type)
@@ -380,6 +365,9 @@ namespace Falcor
             break;
         case CameraControllerType::SixDof:
             mpCameraController = CameraController::SharedPtr(new SixDoFCameraController);
+            break;
+        case CameraControllerType::Hmd:
+            mpCameraController = CameraController::SharedPtr(new HmdCameraController);
             break;
         default:
             should_not_get_here();
@@ -400,34 +388,5 @@ namespace Falcor
     bool SceneRenderer::onKeyEvent(const KeyboardEvent& keyEvent)
     {
         return mpCameraController->onKeyEvent(keyEvent);
-    }
-
-    void SceneRenderer::setRenderMode(RenderMode mode)
-    {
-        if(mode == RenderMode::SinglePassStereo || mode == RenderMode::Stereo)
-        {
-            // Stereo should have been initialized before
-            if(VRSystem::instance() == nullptr)
-            {
-                msgBox("Can't set SceneRenderer render mode to stereo. VRSystem() wasn't initialized or stereo is not available");
-                return;
-            }
-            if(mode == RenderMode::SinglePassStereo)
-            {
-                // Make sure single pass stereo is supported
-                if(Device::isExtensionSupported("GL_NV_stereo_view_rendering") == false)
-                {
-                    msgBox("Can't set SceneRenderer render mode to single pass stereo. Extension is not supported on this machine");
-                    return;
-                }
-            }
-            mpCameraController = CameraController::SharedPtr(new HmdCameraController);
-        }
-        else
-        {
-            setCameraControllerType(mCamControllerType);
-        }
-
-        mRenderMode = mode;
     }
 }

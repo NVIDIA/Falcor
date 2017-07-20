@@ -36,10 +36,10 @@ namespace Falcor
         mElementCount(elementCount), 
         mFormat(format)
     {
-        init(nullptr);
+        apiInit(false);
     }
 
-    bool TypedBufferBase::uploadToGPU() const
+    bool TypedBufferBase::uploadToGPU()
     {
         if (mCpuDirty == false)
         {

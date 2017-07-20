@@ -53,10 +53,10 @@ namespace Falcor
         }
 
         auto uav = desc.getProgramVersion()->getReflector()->getBufferBinding("g_NvidiaExt");
-        if (uav.regIndex != ProgramReflection::kInvalidLocation)
+        if (uav.baseRegIndex != ProgramReflection::kInvalidLocation)
         {
             nvApiPsoExDescs.push_back(NvApiPsoExDesc());
-            createNvApiUavSlotExDesc(nvApiPsoExDescs.back(), uav.regIndex);
+            createNvApiUavSlotExDesc(nvApiPsoExDescs.back(), uav.baseRegIndex);
         }
     }
     
@@ -91,7 +91,7 @@ namespace Falcor
     bool getIsNvApiGraphicsPsoRequired(const GraphicsStateObject::Desc& desc)
     {
         auto uav = desc.getProgramVersion()->getReflector()->getBufferBinding("g_NvidiaExt");
-        return uav.regIndex != ProgramReflection::kInvalidLocation || desc.getSinglePassStereoEnabled();
+        return uav.baseRegIndex != ProgramReflection::kInvalidLocation || desc.getSinglePassStereoEnabled();
     }
 #else
     void getNvApiGraphicsPsoDesc(const GraphicsStateObject::Desc& desc, std::vector<NvApiPsoExDesc>& nvApiPsoExDescs) { should_not_get_here(); }
@@ -116,12 +116,12 @@ namespace Falcor
         initD3DRasterizerDesc(mDesc.mpRasterizerState.get(), desc.RasterizerState);
         initD3DDepthStencilDesc(mDesc.mpDepthStencilState.get(), desc.DepthStencilState);
 
-        InputElementDescVec inputElements;
+        InputLayoutDesc layoutDesc;
         if(mDesc.mpLayout)
         {
-            initD3DVertexLayout(mDesc.mpLayout.get(), inputElements);
-            desc.InputLayout.NumElements = (uint32_t)inputElements.size();
-            desc.InputLayout.pInputElementDescs = inputElements.data();
+            initD3DVertexLayout(mDesc.mpLayout.get(), layoutDesc);
+            desc.InputLayout.NumElements = (uint32_t)layoutDesc.elements.size();
+            desc.InputLayout.pInputElementDescs = layoutDesc.elements.data();
         }
         desc.SampleMask = mDesc.mSampleMask;
         desc.pRootSignature = mDesc.mpRootSignature ? mDesc.mpRootSignature->getApiHandle() : nullptr;

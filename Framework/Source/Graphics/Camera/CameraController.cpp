@@ -31,6 +31,7 @@
 #include "Utils/Math/FalcorMath.h"
 #include "glm/mat3x3.hpp"
 #include "glm/gtx/euler_angles.hpp"
+
 #include "VR/OpenVR/VRSystem.h"
 
 namespace Falcor
@@ -367,7 +368,6 @@ namespace Falcor
             mpCamera->setViewMatrix(leftEyeOffset * viewMat);
             mInvPrevHmdViewMat = glm::inverse(leftEyeOffset * hmdWorldMat);
         }
-
         return true;
     }
 

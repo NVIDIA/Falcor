@@ -49,13 +49,6 @@ namespace Falcor
         using SharedPtr = std::shared_ptr<SceneRenderer>;
         using SharedConstPtr = std::shared_ptr<const SceneRenderer>;
 
-        enum class RenderMode
-        {
-            Mono,
-            Stereo,
-            SinglePassStereo,
-        };
-
         static SharedPtr create(const Scene::SharedPtr& pScene);
 
         /** Renders the full scene, does update of the camera internally
@@ -84,15 +77,11 @@ namespace Falcor
         */
         void setMaxInstanceCount(uint32_t instanceCount) { mMaxInstanceCount = instanceCount; }
 
-        /** This setting controls whether to unload textures from GPU memory before binding a new material.\n
-        Useful for rendering very large models with many textures that can't fit into GPU memory at once. Setting this to true usually results in performance loss.
-        */
-        void setUnloadTexturesOnMaterialChange(bool unload) { mUnloadTexturesOnMaterialChange = unload; }
-
         enum class CameraControllerType
         {
             FirstPerson,
-            SixDof
+            SixDof,
+            Hmd
         };
 
         void setCameraControllerType(CameraControllerType type);
@@ -101,7 +90,6 @@ namespace Falcor
 
         const Scene* getScene() const { return mpScene.get(); }
 
-        void setRenderMode(RenderMode mode);
         void toggleStaticMaterialCompilation(bool on) { mCompileMaterialWithProgram = on; }
 
     protected:
@@ -151,7 +139,6 @@ namespace Falcor
         void renderMeshInstances(CurrentWorkingData& currentData, const Scene::ModelInstance* pModelInstance, uint32_t meshID);
         void draw(CurrentWorkingData& currentData, const Mesh* pMesh, uint32_t instanceCount);
 
-        void setupVR();
         void renderScene(CurrentWorkingData& currentData);
 
         CameraControllerType mCamControllerType = CameraControllerType::SixDof;
@@ -160,8 +147,6 @@ namespace Falcor
         uint32_t mMaxInstanceCount = 64;
         const Material* mpLastMaterial = nullptr;
         bool mCullEnabled = true;
-        bool mUnloadTexturesOnMaterialChange = false;
-        RenderMode mRenderMode = RenderMode::Mono;
         bool mCompileMaterialWithProgram = true;
     };
 }

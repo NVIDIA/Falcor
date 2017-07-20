@@ -92,6 +92,7 @@ DIAGNOSTIC(-1, Note, seeOpeningToken, "see opening '$0'")
 
 // 153xx - #include
 DIAGNOSTIC(15300, Error, includeFailed, "failed to find include file '$0'")
+DIAGNOSTIC(15301, Error, importFailed, "failed to find imported file '$0'")
 DIAGNOSTIC(-1, Error, noIncludeHandlerSpecified, "no `#include` handler was specified")
 
 // 154xx - macro definition
@@ -282,6 +283,12 @@ DIAGNOSTIC(39999, Error, expectedPostfixOperator, "function called as postfix op
 
 DIAGNOSTIC(39999, Error, notEnoughArguments, "not enough arguments to call (got $0, expected $1)")
 DIAGNOSTIC(39999, Error, tooManyArguments, "too many arguments to call (got $0, expected $1)")
+
+DIAGNOSTIC(39999, Error, invalidIntegerLiteralSuffix, "invalid suffix '$0' on integer literal")
+DIAGNOSTIC(39999, Error, invalidFloatingPOintLiteralSuffix, "invalid suffix '$0' on floating-point literal")
+
+DIAGNOSTIC(39999, Error, conflictingExplicitBindingsForParameter, "conflicting explicit bindings for parameter '$0'")
+DIAGNOSTIC(39999, Error, parameterBindingsOverlap, "explicit parameter bindings overlap for parameters '$0' and '$1'")
 
 //
 // 4xxxx - IL code generation.

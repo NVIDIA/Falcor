@@ -121,9 +121,9 @@ testing_func(BlendStateTest, TestRtArray)
                                     }
 
                                     //Set all properties
-                                    desc.setRtParams(rtIndex, 
-                                        static_cast<BlendState::BlendOp>(i), 
-                                        static_cast<BlendState::BlendOp>(j), 
+                                    desc.setRtParams(rtIndex,
+                                        static_cast<BlendState::BlendOp>(i),
+                                        static_cast<BlendState::BlendOp>(j),
                                         static_cast<BlendState::BlendFunc>(k),
                                         static_cast<BlendState::BlendFunc>(x),
                                         static_cast<BlendState::BlendFunc>(y),
@@ -163,8 +163,8 @@ testing_func(BlendStateTest, TestBlend)
     const uint32_t numAlphaBlendFuncs = 9;
     const BlendState::BlendFunc alphaFuncs[numAlphaBlendFuncs] = { BlendState::BlendFunc::Zero, BlendState::BlendFunc::One,
         BlendState::BlendFunc::SrcAlpha, BlendState::BlendFunc::OneMinusSrcAlpha, BlendState::BlendFunc::DstAlpha,
-        BlendState::BlendFunc::OneMinusDstAlpha, BlendState::BlendFunc::SrcAlphaSaturate, BlendState::BlendFunc::RgbaFactor,
-        BlendState::BlendFunc::OneMinusRgbaFactor };
+        BlendState::BlendFunc::OneMinusDstAlpha, BlendState::BlendFunc::SrcAlphaSaturate, BlendState::BlendFunc::BlendFactor,
+        BlendState::BlendFunc::OneMinusBlendFactor };
     //Multi source blend funcs will be tested in another test
     const uint32_t numRgbBlendFuncs = static_cast<uint32_t>(BlendState::BlendFunc::Src1Color);
     const uint32_t numBlendOps = 5;
@@ -399,9 +399,9 @@ vec3 BlendStateTest::applyBlendFuncRgb(vec4 srcColor, vec4 dstColor, vec4 blendF
         return result * dstVec3a;
     case BlendState::BlendFunc::OneMinusDstAlpha:
         return result * (oneVec3 - dstVec3a);
-    case BlendState::BlendFunc::RgbaFactor:
+    case BlendState::BlendFunc::BlendFactor:
         return result * blendVec3;
-    case BlendState::BlendFunc::OneMinusRgbaFactor:
+    case BlendState::BlendFunc::OneMinusBlendFactor:
         return result * (oneVec3 - blendVec3);
     case BlendState::BlendFunc::SrcAlphaSaturate:
     {
@@ -454,9 +454,9 @@ float BlendStateTest::applyBlendFuncAlpha(float srcAlpha, float dstAlpha, float 
         return result * dstAlpha;
     case BlendState::BlendFunc::OneMinusDstAlpha:
         return result * (1 - dstAlpha);
-    case BlendState::BlendFunc::RgbaFactor:
+    case BlendState::BlendFunc::BlendFactor:
         return result * blendFactorAlpha;
-    case BlendState::BlendFunc::OneMinusRgbaFactor:
+    case BlendState::BlendFunc::OneMinusBlendFactor:
         return result * (1 - blendFactorAlpha);
     case BlendState::BlendFunc::SrcAlphaSaturate:
         return result;

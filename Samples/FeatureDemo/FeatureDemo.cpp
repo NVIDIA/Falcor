@@ -26,11 +26,10 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 #include "FeatureDemo.h"
-#include "API/D3D/FalcorD3D.h"
 
 void FeatureDemo::initLightingPass()
 {
-    mLightingPass.pProgram = GraphicsProgram::createFromFile("FeatureDemo.vs.hlsl", "FeatureDemo.ps.hlsl");
+    mLightingPass.pProgram = GraphicsProgram::createFromFile("FeatureDemo.vs.slang", "FeatureDemo.ps.slang");
     mLightingPass.pProgram->addDefine("_LIGHT_COUNT", std::to_string(mpSceneRenderer->getScene()->getLightCount()));
     initControls();
     mLightingPass.pVars = GraphicsVars::create(mLightingPass.pProgram->getActiveVersion()->getReflector());
@@ -46,7 +45,7 @@ void FeatureDemo::initShadowPass()
 void FeatureDemo::initSSAO()
 {
     mSSAO.pSSAO = SSAO::create(uvec2(1024));
-    mSSAO.pApplySSAOPass = FullScreenPass::create("ApplyAO.ps.hlsl");
+    mSSAO.pApplySSAOPass = FullScreenPass::create("ApplyAO.ps.slang");
     mSSAO.pVars = GraphicsVars::create(mSSAO.pApplySSAOPass->getProgram()->getActiveVersion()->getReflector());
 
     Sampler::Desc desc;

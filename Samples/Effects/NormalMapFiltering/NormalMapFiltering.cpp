@@ -53,7 +53,7 @@ void NormalMapFiltering::updateProgram()
     mpProgram->addDefine("_LIGHT_COUNT", std::to_string(mpRenderer->getScene()->getLightCount()));
     if (mUseLeanMap)
     {
-        mpProgram->addDefine("_MS_USER_NORMAL_MAPPING");
+        mpProgram->addDefine("_MS_LEAN_MAPPING");
         mpProgram->addDefine("_LEAN_MAP_COUNT", std::to_string(mpLeanMap->getRequiredLeanMapShaderArraySize()));
     }
     if (mUseSpecAA == false)
@@ -64,8 +64,7 @@ void NormalMapFiltering::updateProgram()
     mpVars = GraphicsVars::create(mpProgram->getActiveVersion()->getReflector());
     if(mUseLeanMap)
     {
-        mpLeanMap->setIntoProgramVars(mpVars.get(), "gLeanMaps");
-        mpVars->setSampler("gSampler", mpLinearSampler);
+        mpLeanMap->setIntoProgramVars(mpVars.get(), mpLinearSampler);
     }
 }
 

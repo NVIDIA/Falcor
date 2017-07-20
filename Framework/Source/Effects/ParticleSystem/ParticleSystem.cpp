@@ -34,11 +34,11 @@
 
 namespace Falcor
 {
-    const char* ParticleSystem::kVertexShader = "Effects/ParticleVertex.vs.hlsl";
-    const char* ParticleSystem::kSortShader = "Effects/ParticleSort.cs.hlsl";
-    const char* ParticleSystem::kEmitShader = "Effects/ParticleEmit.cs.hlsl";
-    const char* ParticleSystem::kDefaultPixelShader = "Effects/ParitcleTexture.ps.hlsl";
-    const char* ParticleSystem::kDefaultSimulateShader = "Effects/ParticleSimulate.cs.hlsl";
+    const char* ParticleSystem::kVertexShader = "Effects/ParticleVertex.vs.slang";
+    const char* ParticleSystem::kSortShader = "Effects/ParticleSort.cs.slang";
+    const char* ParticleSystem::kEmitShader = "Effects/ParticleEmit.cs.slang";
+    const char* ParticleSystem::kDefaultPixelShader = "Effects/ParticleTexture.ps.slang";
+    const char* ParticleSystem::kDefaultSimulateShader = "Effects/ParticleSimulate.cs.slang";
 
     ParticleSystem::SharedPtr ParticleSystem::create(RenderContext* pCtx, uint32_t maxParticles, uint32_t maxEmitPerFrame,
         std::string drawPixelShader, std::string simulateComputeShader, bool sorted)
@@ -70,11 +70,10 @@ namespace Falcor
         auto pSimulateReflect = simulateCs->getActiveVersion()->getReflector();
   
         //get num sim threads, required as a define for emit cs
-        uint32_t simThreadsX = 1, simThreadsY = 1, simThreadsZ= 1;
+        uvec3 simThreads;
 
-
-        pSimulateReflect->getThreadGroupSize(&simThreadsX, &simThreadsY, &simThreadsZ);
-        mSimulateThreads = simThreadsX * simThreadsY * simThreadsZ;
+        simThreads = pSimulateReflect->getThreadGroupSize();
+        mSimulateThreads = simThreads.x * simThreads.y * simThreads.z;
 
         //Emit cs
         Program::DefineList emitDefines;
@@ -83,6 +82,7 @@ namespace Falcor
 
         //draw shader
         GraphicsProgram::SharedPtr pDrawProgram = GraphicsProgram::createFromFile(kVertexShader, drawPixelShader, defineList);
+        ProgramReflection::SharedConstPtr pDrawReflect = pDrawProgram->getActiveVersion()->getReflector();
 
         //Buffers
         ProgramReflection::SharedConstPtr pEmitReflect = emitCs->getActiveVersion()->getReflector();
@@ -134,7 +134,7 @@ namespace Falcor
             mSortResources.pVars->setStructuredBuffer("iterationCounter", mSortResources.pSortIterationCounter);
         }
         //draw
-        mDrawResources.pVars = GraphicsVars::create(pDrawProgram->getActiveVersion()->getReflector());
+        mDrawResources.pVars = GraphicsVars::create(pDrawReflect);
         mDrawResources.pVars->setStructuredBuffer("aliveList", mpAliveList);
         mDrawResources.pVars->setStructuredBuffer("particlePool", mpParticlePool);
 
@@ -151,6 +151,11 @@ namespace Falcor
         VertexLayout::SharedPtr pLayout = VertexLayout::create();
         Vao::Topology topology = Vao::Topology::TriangleStrip;
         mDrawResources.pState->setVao(Vao::create(bufferVec, pLayout, nullptr, ResourceFormat::R32Uint, topology));
+
+        // Save bind locations for resourced updated during draw
+        mBindLocations.simulateCB = getBufferBindLocation(pSimulateReflect.get(), "PerFrame");
+        mBindLocations.drawCB = getBufferBindLocation(pDrawReflect.get(), "PerFrame");
+        mBindLocations.emitCB = getBufferBindLocation(pEmitReflect.get(), "PerEmit");
     }
 
     void ParticleSystem::emit(RenderContext* pCtx, uint32_t num)
@@ -180,7 +185,7 @@ namespace Falcor
 
         //Send vars and call
         pCtx->pushComputeState(mEmitResources.pState);
-        mEmitResources.pVars->getConstantBuffer(0)->setBlob(&emitData, 0u, sizeof(EmitData));
+        mEmitResources.pVars->getConstantBuffer(mBindLocations.emitCB.regSpace, mBindLocations.emitCB.baseRegIndex, 0)->setBlob(&emitData, 0u, sizeof(EmitData));
         pCtx->pushComputeVars(mEmitResources.pVars);
         uint32_t numGroups = (uint32_t)std::ceil((float)num / EMIT_THREADS);
         pCtx->dispatch(1, numGroups, 1);
@@ -205,7 +210,7 @@ namespace Falcor
             perFrame.view = view;
             perFrame.dt = dt;
             perFrame.maxParticles = mMaxParticles;
-            mSimulateResources.pVars->getConstantBuffer(0)->setBlob(&perFrame, 0u, sizeof(SimulateWithSortPerFrame));
+            mSimulateResources.pVars->getConstantBuffer(mBindLocations.simulateCB.regSpace, mBindLocations.simulateCB.baseRegIndex, 0)->setBlob(&perFrame, 0u, sizeof(SimulateWithSortPerFrame));
             mpAliveList->setBlob(mSortDataReset.data(), 0, sizeof(SortData) * mMaxParticles);
         }
         else
@@ -213,7 +218,7 @@ namespace Falcor
             SimulatePerFrame perFrame;
             perFrame.dt = dt;
             perFrame.maxParticles = mMaxParticles;
-            mSimulateResources.pVars->getConstantBuffer(0)->setBlob(&perFrame, 0u, sizeof(SimulatePerFrame));
+            mSimulateResources.pVars->getConstantBuffer(mBindLocations.simulateCB.regSpace, mBindLocations.simulateCB.baseRegIndex, 0)->setBlob(&perFrame, 0u, sizeof(SimulatePerFrame));
         }
 
         //reset alive list counter to 0
@@ -245,7 +250,7 @@ namespace Falcor
         VSPerFrame cbuf;
         cbuf.view = view;
         cbuf.proj = proj;
-        mDrawResources.pVars->getConstantBuffer(0)->setBlob(&cbuf, 0, sizeof(cbuf));
+        mDrawResources.pVars->getConstantBuffer(mBindLocations.drawCB.regSpace, mBindLocations.drawCB.baseRegIndex, 0)->setBlob(&cbuf, 0, sizeof(cbuf));
 
         //particle draw uses many of render context's existing state's properties 
         GraphicsState::SharedPtr state = pCtx->getGraphicsState();

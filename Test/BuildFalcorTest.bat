@@ -1,4 +1,4 @@
-@echo off
+@echo on
 setlocal ENABLEDELAYEDEXPANSION 
 set CL=/D_AUTOTESTING
 
@@ -10,11 +10,9 @@ if not defined action goto usage
 
 set "config="
 if "%3"=="released3d12" set config=released3d12
-if "%3"=="released3d11" set config=released3d11
-if "%3"=="releasegl" set config=releasegl
 if "%3"=="debugd3d12" set config=debugd3d12
-if "%3"=="debugd3d11" set config=debugd3d11
-if "%3"=="debuggl" set config=debuggl
+if "%3"=="releasevk" set config=releasevk
+if "%3"=="debugvk" set config=debugvk
 if not defined config goto usage
 
 goto findVS

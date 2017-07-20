@@ -34,9 +34,10 @@
 
 namespace Falcor
 {
-    const char* kDepthPassVSFile = "Effects/ShadowPass.vs.hlsl";
-    const char* kDepthPassGsFile = "Effects/ShadowPass.gs.hlsl";
-    const char* kDepthPassFsFile = "Effects/ShadowPass.ps.hlsl";
+    const char* kDepthPassVSFile = "Effects/ShadowPass.vs.slang";
+    const char* kDepthPassGsFile = "Effects/ShadowPass.gs.slang";
+    const char* kGLSLDepthPassGsFile = "Effects/ShadowPass.gs.glsl";
+    const char* kDepthPassFsFile = "Effects/ShadowPass.ps.slang";
 
     const Gui::DropdownList kFilterList = {
         { (uint32_t)CsmFilterPoint, "Point" },
@@ -66,11 +67,19 @@ namespace Falcor
     {
     public:
         using UniquePtr = std::unique_ptr<CsmSceneRenderer>;
-        static UniquePtr create(const Scene::SharedConstPtr& pScene) { return UniquePtr(new CsmSceneRenderer(pScene)); }
+        static UniquePtr create(const Scene::SharedConstPtr& pScene, const ProgramVars::BindLocation& alphaMapCbLoc, const ProgramVars::BindLocation& alphaMapLoc, const ProgramVars::BindLocation& alphaMapSamplerLoc) 
+        { 
+            return UniquePtr(new CsmSceneRenderer(pScene, alphaMapCbLoc, alphaMapLoc, alphaMapSamplerLoc)); 
+        }
 
     protected:
-        CsmSceneRenderer(const Scene::SharedConstPtr& pScene) : SceneRenderer(std::const_pointer_cast<Scene>(pScene)) 
+        CsmSceneRenderer(const Scene::SharedConstPtr& pScene, const ProgramVars::BindLocation& alphaMapCbLoc, const ProgramVars::BindLocation& alphaMapLoc, const ProgramVars::BindLocation& alphaMapSamplerLoc) 
+            : SceneRenderer(std::const_pointer_cast<Scene>(pScene))
         { 
+            mBindLocations.alphaCB = alphaMapCbLoc;
+            mBindLocations.alphaMap = alphaMapLoc;
+            mBindLocations.alphaMapSampler = alphaMapSamplerLoc;
+
             setObjectCullState(false); 
             Sampler::Desc desc;
             desc.setFilterMode(Sampler::Filter::Linear, Sampler::Filter::Linear, Sampler::Filter::Linear);
@@ -79,6 +88,14 @@ namespace Falcor
 
         bool mMaterialChanged = false;
         Sampler::SharedPtr mpAlphaSampler;
+
+        struct
+        {
+            ProgramVars::BindLocation alphaMap;
+            ProgramVars::BindLocation alphaCB;
+            ProgramVars::BindLocation alphaMapSampler;
+        } mBindLocations;
+
         bool setPerMaterialData(const CurrentWorkingData& currentData, const Material* pMaterial) override
         {
             mMaterialChanged = true;
@@ -86,9 +103,9 @@ namespace Falcor
             {
                 float alphaThreshold = currentData.pMaterial->getAlphaThreshold();
                 auto& pVars = currentData.pContext->getGraphicsVars();
-                pVars->getConstantBuffer(1u)->setBlob(&alphaThreshold, 0u, sizeof(float));
-                pVars->setSrv(0u, currentData.pMaterial->getAlphaMap()->getSRV());
-                pVars->setSampler(0, mpAlphaSampler);
+                pVars->getConstantBuffer(mBindLocations.alphaCB.regSpace, mBindLocations.alphaCB.baseRegIndex, 0)->setBlob(&alphaThreshold, 0u, sizeof(float));
+                pVars->setSrv(mBindLocations.alphaMap.regSpace, mBindLocations.alphaMap.baseRegIndex, 0, currentData.pMaterial->getAlphaMap()->getSRV());
+                pVars->setSampler(mBindLocations.alphaMapSampler.regSpace, mBindLocations.alphaMapSampler.baseRegIndex, 0, mpAlphaSampler);
                 currentData.pContext->getGraphicsState()->getProgram()->addDefine("TEST_ALPHA");
             }
             else
@@ -98,21 +115,12 @@ namespace Falcor
             
             return true;
         };
-
-        void postFlushDraw(const CurrentWorkingData& currentData) override
-        {
-            if(mUnloadTexturesOnMaterialChange && mMaterialChanged)
-            {
-                mpLastMaterial = currentData.pMaterial;
-                mMaterialChanged = false;
-            }
-        }
     };
 
     void createShadowMatrix(const DirectionalLight* pLight, const glm::vec3& center, float radius, glm::mat4& shadowVP)
     {
         glm::mat4 view = glm::lookAt(center, center + pLight->getWorldDirection(), glm::vec3(0, 1, 0));
-        glm::mat4 proj = orthographicMatrix(-radius, radius, -radius, radius, -radius, radius);
+        glm::mat4 proj = glm::ortho(-radius, radius, -radius, radius, -radius, radius);
 
         shadowVP = proj * view;
     }
@@ -132,7 +140,7 @@ namespace Falcor
         float nearZ = max(0.1f, distFromCenter - radius);
         float maxZ = min(radius * 2, distFromCenter + radius);
         float angle = pLight->getOpeningAngle() * 2;
-        glm::mat4 proj = perspectiveMatrix(angle, fboAspectRatio, nearZ, maxZ);
+        glm::mat4 proj = glm::perspective(angle, fboAspectRatio, nearZ, maxZ);
 
         shadowVP = proj * view;
     }
@@ -275,17 +283,31 @@ namespace Falcor
         mShadowPass.fboAspectRatio = (float)mapWidth / (float)mapHeight;
 
         // Create the shadows program
-        GraphicsProgram::SharedPtr pProg = GraphicsProgram::createFromFile(kDepthPassVSFile, kDepthPassFsFile, kDepthPassGsFile, "", "", progDef);
+        GraphicsProgram::SharedPtr pProg = GraphicsProgram::createFromFile(
+            kDepthPassVSFile,
+            kDepthPassFsFile,
+#ifdef FALCOR_VK
+            kGLSLDepthPassGsFile,
+#else
+            kDepthPassGsFile,
+#endif
+            
+            "", "", progDef);
         mShadowPass.pState = GraphicsState::create();
         mShadowPass.pState->setProgram(pProg);
         mShadowPass.pState->setDepthStencilState(nullptr);
         mShadowPass.pState->setFbo(mShadowPass.pFbo);
-        mShadowPass.pGraphicsVars = GraphicsVars::create(pProg->getActiveVersion()->getReflector());
+        const auto& pReflector = pProg->getActiveVersion()->getReflector();
+        mShadowPass.pGraphicsVars = GraphicsVars::create(pReflector);
 
-        mpCsmSceneRenderer = CsmSceneRenderer::create(mpScene);
+        auto alphaSampler = getResourceBindLocation(pReflector.get(), "alphaSampler");
+        auto alphaMapCB = getBufferBindLocation(pReflector.get(), "AlphaMapCB");
+        auto alphaMap = getResourceBindLocation(pReflector.get(), "alphaMap");
+        mPerLightCbLoc = getBufferBindLocation(pReflector.get(), "PerLightCB");
+
+        mpCsmSceneRenderer = CsmSceneRenderer::create(mpScene, alphaMapCB, alphaMap, alphaSampler);
         mpSceneRenderer = SceneRenderer::create(std::const_pointer_cast<Scene>(mpScene));
         mpSceneRenderer->setObjectCullState(true);
-
     }
 
     void CascadedShadowMaps::setCascadeCount(uint32_t cascadeCount)
@@ -530,9 +552,40 @@ namespace Falcor
         }
     }
 
+    static bool checkOffset(size_t cbOffset, size_t cppOffset, const char* field)
+    {
+        if (cbOffset != cppOffset)
+        {
+            logError("CsmData::" + std::string(field) + " CB offset mismatch. CB offset is " + std::to_string(cbOffset) + ", C++ data offset is " + std::to_string(cppOffset));
+            return false;
+        }
+        return true;
+    }
+
+#if _LOG_ENABLED
+#define check_offset(_a) {static bool b = true; if(b) {assert(checkOffset(pCB->getVariableOffset("gCsmData." #_a), offsetof(CsmData, _a), #_a));} b = false;}
+#else
+#define check_offset(_a)
+#endif
+
     void CascadedShadowMaps::renderScene(RenderContext* pCtx)
     {
-        mShadowPass.pGraphicsVars->getConstantBuffer(0u)->setBlob(&mCsmData, 0, sizeof(mCsmData));
+        auto& pCB = mShadowPass.pGraphicsVars->getConstantBuffer(mPerLightCbLoc.regSpace, mPerLightCbLoc.baseRegIndex, 0);
+        check_offset(globalMat);
+        check_offset(cascadeScale[0]);
+        check_offset(cascadeOffset[0]);
+        check_offset(cascadeRange[0]);
+        check_offset(depthBias);
+        check_offset(cascadeCount);
+        check_offset(filterMode);
+        check_offset(pcfKernelWidth);
+        check_offset(lightDir);
+        check_offset(lightBleedingReduction);
+        check_offset(evsmExponents);
+        check_offset(cascadeBlendThreshold);
+
+
+        pCB->setBlob(&mCsmData, 0, sizeof(mCsmData));
         pCtx->pushGraphicsVars(mShadowPass.pGraphicsVars);
         pCtx->pushGraphicsState(mShadowPass.pState);
         mpCsmSceneRenderer->renderScene(pCtx, mpLightCamera.get());
@@ -564,14 +617,6 @@ namespace Falcor
 
     void CascadedShadowMaps::createVsmSampleState(uint32_t maxAnisotropy)
     {
-        if(mShadowPass.pVSMTrilinearSampler)
-        {
-            const auto pTexture = mShadowPass.pFbo->getColorTexture(0);
-            if(pTexture)
-            {
-                pTexture->evict(mShadowPass.pVSMTrilinearSampler.get());
-            }
-        }
         Sampler::Desc samplerDesc;
         samplerDesc.setFilterMode(Sampler::Filter::Linear, Sampler::Filter::Linear, Sampler::Filter::Linear);
         samplerDesc.setAddressingMode(Sampler::AddressMode::Clamp, Sampler::AddressMode::Clamp, Sampler::AddressMode::Clamp);

@@ -28,6 +28,7 @@
 #include "Framework.h"
 #include "Profiler.h"
 #include "API/GpuTimer.h"
+#include "API/LowLevel/FencedPool.h"
 
 #include <iostream>
 #include <fstream>
@@ -48,13 +49,6 @@ namespace Falcor
     {
 	    pEvent->name = name.str;
         pEvent->level = sCurrentLevel;
-        pEvent->pGpuTimer[0] = GpuTimer::create();
-        pEvent->pGpuTimer[1] = GpuTimer::create();
-
-        // Call begin/end for the next-frame GPU timer to fool it, otherwise it will report an error when calling GetData() (double-buffering issue).
-        pEvent->pGpuTimer[1 - sGpuTimerIndex]->begin();
-        pEvent->pGpuTimer[1 - sGpuTimerIndex]->end();
-
 		sProfilerEvents[name.hash] = pEvent;
         sProfilerVector.push_back(pEvent);
 	}
@@ -95,8 +89,14 @@ namespace Falcor
     void Profiler::startEvent(const HashedString& name, EventData* pData)
     {
         pData->cpuStart = CpuTimer::getCurrentTimePoint();
-        pData->pGpuTimer[sGpuTimerIndex]->begin();
-
+        EventData::FrameData& frame = pData->frameData[sGpuTimerIndex];
+        if (frame.currentTimer >= frame.pTimers.size())
+        {
+            frame.pTimers.push_back(GpuTimer::create());
+        }
+        frame.pTimers[frame.currentTimer]->begin();
+        pData->callStack.push(frame.currentTimer);
+        frame.currentTimer++;
         sCurrentLevel++;
     }
 
@@ -105,7 +105,8 @@ namespace Falcor
         pData->cpuEnd = CpuTimer::getCurrentTimePoint();
         pData->cpuTotal += CpuTimer::calcDuration(pData->cpuStart, pData->cpuEnd);
 
-        pData->pGpuTimer[sGpuTimerIndex]->end();
+        pData->frameData[sGpuTimerIndex].pTimers[pData->callStack.top()]->end();
+        pData->callStack.pop();
 
         sCurrentLevel--;
     }
@@ -116,8 +117,14 @@ namespace Falcor
 
 		for (EventData* pData : sProfilerVector)
 		{
-            double gpuTime;
-			pData->pGpuTimer[1 - sGpuTimerIndex]->getElapsedTime(true, gpuTime);
+            double gpuTime = 0;
+            for(size_t i = 0 ; i < pData->frameData[1 - sGpuTimerIndex].currentTimer ; i++)
+            {
+                gpuTime += pData->frameData[1 - sGpuTimerIndex].pTimers[i]->getElapsedTime();
+            }
+
+            pData->frameData[1 - sGpuTimerIndex].currentTimer = 0;
+            assert(pData->callStack.empty());
 
 			char event[1000];
 			uint32_t nameIndent = pData->level * 2 + 1;

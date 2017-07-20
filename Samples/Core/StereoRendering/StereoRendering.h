@@ -54,13 +54,17 @@ private:
     void loadScene();
     void loadScene(const std::string & filename);
 
-    SceneRenderer::RenderMode mRenderMode = SceneRenderer::RenderMode::Mono;
+    enum class RenderMode
+    {
+        Mono,
+        Stereo,
+        SinglePassStereo
+    };
+    RenderMode mRenderMode = RenderMode::Mono;
     void submitToScreen();
     void initVR();
     void blitTexture(Texture::SharedPtr pTexture, uint32_t xStart);
     VrFbo::UniquePtr mpVrFbo;
-    FullScreenPass::UniquePtr mpBlit;
-    GraphicsVars::SharedPtr mpBlitVars;
     bool mShowStereoViews = true;
     void submitSinglePassStereo();
     void setRenderMode();

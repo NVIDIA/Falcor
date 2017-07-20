@@ -1,0 +1,110 @@
+{
+    "version": 2,
+    "camera_speed": 1.0,
+    "lighting_scale": 1.0,
+    "active_camera": "Camera0",
+    "ambient_intensity": [
+        0.0,
+        0.0,
+        0.0
+    ],
+    "models": [
+        {
+            "file": "Bumpy\\bumpyplane.obj",
+            "name": "bumpyplane",
+            "instances": [
+                {
+                    "name": "bumpyplane0",
+                    "translation": [
+                        0.0,
+                        0.0,
+                        0.0
+                    ],
+                    "scaling": [
+                        1.0,
+                        1.0,
+                        1.0
+                    ],
+                    "rotation": [
+                        0.0,
+                        -90.0,
+                        0.0
+                    ]
+                }
+            ]
+        },
+        {
+            "file": "alphatest\\alpha_test.obj",
+            "name": "alpha_test",
+            "instances": [
+                {
+                    "name": "alpha_test0",
+                    "translation": [
+                        0.0,
+                        3.0,
+                        0.0
+                    ],
+                    "scaling": [
+                        0.5,
+                        0.5,
+                        0.5
+                    ],
+                    "rotation": [
+                        0.0,
+                        -44.999996185302737,
+                        0.0
+                    ]
+                }
+            ]
+        }
+    ],
+    "lights": [
+        {
+            "name": "pointLight0",
+            "type": "point_light",
+            "intensity": [
+                100.0,
+                100.0,
+                100.0
+            ],
+            "pos": [
+                0.0,
+                10.0,
+                0.0
+            ],
+            "direction": [
+                0.0,
+                -1.0,
+                0.0
+            ],
+            "opening_angle": 180.0,
+            "penumbra_angle": 0.0
+        }
+    ],
+    "cameras": [
+        {
+            "name": "Camera0",
+            "pos": [
+                6.103404521942139,
+                10.563396453857422,
+                4.979168891906738
+            ],
+            "target": [
+                5.65049409866333,
+                9.902959823608399,
+                4.380256175994873
+            ],
+            "up": [
+                -0.04025181010365486,
+                0.997499406337738,
+                -0.05807386338710785
+            ],
+            "focal_length": 21.0,
+            "depth_range": [
+                0.10000000149011612,
+                10000.0
+            ],
+            "aspect_ratio": 1.7777777910232545
+        }
+    ]
+}

@@ -2,6 +2,7 @@
 #define SLANG_TYPE_LAYOUT_H
 
 #include "../core/basic.h"
+#include "compiler.h"
 #include "profile.h"
 #include "syntax.h"
 
@@ -143,8 +144,13 @@ struct SimpleArrayLayoutInfo : SimpleLayoutInfo
 
 struct LayoutRulesImpl;
 
+// Base class for things that store layout info
+class Layout : public RefObject
+{
+};
+
 // A reified reprsentation of a particular laid-out type
-class TypeLayout : public RefObject
+class TypeLayout : public Layout
 {
 public:
     // The type that was laid out
@@ -215,7 +221,7 @@ enum VarLayoutFlag : VarLayoutFlags
 };
 
 // A reified layout for a particular variable, field, etc.
-class VarLayout : public RefObject
+class VarLayout : public Layout
 {
 public:
     // The variable we are laying out
@@ -230,6 +236,10 @@ public:
 
     // Additional flags
     VarLayoutFlags flags = 0;
+
+    // System-value semantic (and index) if this is a system value
+    String  systemValueSemantic;
+    int     systemValueSemanticIndex;
 
     // The start register(s) for any resources
     struct ResourceInfo
@@ -324,7 +334,14 @@ public:
 
 // Layout information for a single shader entry point
 // within a program
-class EntryPointLayout : public RefObject
+//
+// Treated as a subclass of `StructTypeLayout` becase
+// it needs to include computed layout information
+// for the parameters of the entry point.
+//
+// TODO: where to store layout info for the return
+// type of the function?
+class EntryPointLayout : public StructTypeLayout
 {
 public:
     // The corresponding function declaration
@@ -332,10 +349,19 @@ public:
 
     // The shader profile that was used to compile the entry point
     Profile profile;
+
+    // Layout for any results of the entry point
+    RefPtr<VarLayout> resultLayout;
+
+    enum Flag : unsigned
+    {
+        usesAnySampleRateInput = 0x1,
+    };
+    unsigned flags = 0;
 };
 
 // Layout information for the global scope of a program
-class ProgramLayout : public RefObject
+class ProgramLayout : public Layout
 {
 public:
     // We store a layout for the declarations at the global
@@ -359,14 +385,6 @@ public:
     List<RefPtr<EntryPointLayout>> entryPoints;
 };
 
-// A modifier to be attached to syntax after we've computed layout
-class ComputedLayoutModifier : public Modifier
-{
-public:
-    RefPtr<TypeLayout> typeLayout;
-};
-
-
 struct LayoutRulesFamilyImpl;
 
 // A delineation of shader parameter types into fine-grained
@@ -385,9 +403,6 @@ enum class ShaderParameterKind
     StructuredBuffer,
     MutableStructuredBuffer,
 
-    SampledBuffer,
-    MutableSampledBuffer,
-
     RawBuffer,
     MutableRawBuffer,
 
@@ -403,6 +418,9 @@ enum class ShaderParameterKind
     InputRenderTarget,
 
     SamplerState,
+
+    Image,
+    MutableImage,
 };
 
 struct SimpleLayoutRulesImpl
@@ -496,23 +514,25 @@ struct LayoutRulesImpl
 
 struct LayoutRulesFamilyImpl
 {
-    virtual LayoutRulesImpl* getConstantBufferRules()   = 0;
-    virtual LayoutRulesImpl* getTextureBufferRules()    = 0;
-    virtual LayoutRulesImpl* getVaryingInputRules()     = 0;
-    virtual LayoutRulesImpl* getVaryingOutputRules()    = 0;
+    virtual LayoutRulesImpl* getConstantBufferRules()       = 0;
+    virtual LayoutRulesImpl* getPushConstantBufferRules()   = 0;
+    virtual LayoutRulesImpl* getTextureBufferRules()        = 0;
+    virtual LayoutRulesImpl* getVaryingInputRules()         = 0;
+    virtual LayoutRulesImpl* getVaryingOutputRules()        = 0;
     virtual LayoutRulesImpl* getSpecializationConstantRules()   = 0;
     virtual LayoutRulesImpl* getShaderStorageBufferRules()      = 0;
 };
 
 LayoutRulesImpl* GetLayoutRulesImpl(LayoutRule rule);
 LayoutRulesFamilyImpl* GetLayoutRulesFamilyImpl(LayoutRulesFamily rule);
-LayoutRulesFamilyImpl* GetLayoutRulesFamilyImpl(SourceLanguage language);
+LayoutRulesFamilyImpl* GetLayoutRulesFamilyImpl(CodeGenTarget target);
 
 SimpleLayoutInfo GetLayout(ExpressionType* type, LayoutRulesImpl* rules);
 
 SimpleLayoutInfo GetLayout(ExpressionType* type, LayoutRule rule = LayoutRule::Std430);
 
 RefPtr<TypeLayout> CreateTypeLayout(ExpressionType* type, LayoutRulesImpl* rules);
+RefPtr<TypeLayout> CreateTypeLayout(ExpressionType* type, LayoutRulesImpl* rules, SimpleLayoutInfo offset);
 
 //
 
@@ -522,15 +542,19 @@ createParameterBlockTypeLayout(
     RefPtr<ParameterBlockType>  parameterBlockType,
     LayoutRulesImpl*            rules);
 
-// Create a type layout for a constant buffer type,
-// in the case where we already know the layout
-// for the element type.
 RefPtr<ParameterBlockTypeLayout>
 createParameterBlockTypeLayout(
     RefPtr<ParameterBlockType>  parameterBlockType,
-    RefPtr<TypeLayout>          elementTypeLayout,
-    LayoutRulesImpl*            rules);
+    LayoutRulesImpl*            parameterBlockRules,
+    RefPtr<ExpressionType>      elementType,
+    LayoutRulesImpl*            elementTypeRules);
 
+RefPtr<ParameterBlockTypeLayout>
+createParameterBlockTypeLayout(
+    RefPtr<ParameterBlockType>  parameterBlockType,
+    LayoutRulesImpl*            parameterBlockRules,
+    SimpleLayoutInfo            parameterBlockInfo,
+    RefPtr<TypeLayout>          elementTypeLayout);
 
 // Create a type layout for a structured buffer type.
 RefPtr<StructuredBufferTypeLayout>

@@ -63,8 +63,8 @@ namespace Falcor
 
     TextRenderer::TextRenderer()
     {
-        static const std::string kVsFile("Framework/Shaders/TextRenderer.vs");
-        static const std::string kFsFile("Framework/Shaders/TextRenderer.fs");
+        static const std::string kVsFile("Framework/Shaders/TextRenderer.vs.slang");
+        static const std::string kFsFile("Framework/Shaders/TextRenderer.fs.slang");
 
         // Create a vertex buffer
         const uint32_t vbSize = (uint32_t)(sizeof(Vertex)*kMaxBatchSize*arraysize(kVertexPos));
@@ -130,6 +130,10 @@ namespace Falcor
         vpTransform[1][1] = -2 / VP.height;
         vpTransform[3][0] = -(VP.originX + VP.width) / VP.width;
         vpTransform[3][1] = (VP.originX + VP.height) / VP.height;
+#ifdef FALCOR_VK
+        vpTransform[1][1] *= -1.0f;
+        vpTransform[3][1] *= -1.0f;
+#endif
 
         // Update the program variables
         mpProgramVars["PerFrameCB"]->setVariable(mVarOffsets.vpTransform, vpTransform);
@@ -191,11 +195,6 @@ namespace Falcor
                 for (uint32_t i = 0; i < arraysize(kVertexPos); i++, mCurrentVertexID++)
                 {
                     glm::vec2 posScale = kVertexPos[i];
-#ifdef FALCOR_GL
-                    // Invert the y-axis for opengl
-                    posScale.y = 1 - posScale.y;
-
-#endif
                     glm::vec2 pos = desc.size * posScale;
                     pos += mCurPos;
                     mpBufferData[mCurrentVertexID].screenPos = pos;

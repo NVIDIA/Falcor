@@ -12,10 +12,16 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <None Include="Data\Blit.fs">
+    <None Include="Data\Blit.ps.hlsl">
       <Filter>Data</Filter>
     </None>
-    <None Include="Data\Luminance.fs">
+    <None Include="Data\Luminance.ps.hlsl">
+      <Filter>Data</Filter>
+    </None>
+    <None Include="Data\Blit.ps.glsl">
+      <Filter>Data</Filter>
+    </None>
+    <None Include="Data\Luminance.ps.glsl">
       <Filter>Data</Filter>
     </None>
   </ItemGroup>

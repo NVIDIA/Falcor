@@ -42,7 +42,6 @@ namespace Falcor
 
         leanData.resize(texW * texH);
 
-        uint32_t normalMapDataSize = pNormalMap->getMipLevelDataSize(0);
         auto normalMapData = gpDevice->getRenderContext()->readTextureSubresource(pNormalMap, 0);
 
         const float oneBy255 = 1.0f / 255.0f;
@@ -158,20 +157,20 @@ namespace Falcor
         return pLeanMaps;
     }
 
-    void LeanMap::setIntoProgramVars(ProgramVars* pVars, uint32_t texIndex) const
+    void LeanMap::setIntoProgramVars(ProgramVars* pVars, const Sampler::SharedPtr& pSampler) const
     {
-        for(const auto& pMap : mpLeanMaps)
+        for (const auto& pMap : mpLeanMaps)
         {
-            uint32_t id = pMap.first;
-            uint32_t regIndex = id + texIndex;
+            std::string name("gLeanMaps");
+            if(mpLeanMaps.size() > 1)
+            {
+                uint32_t id = pMap.first;
+                name += "[" + std::to_string(id) + "]";
+            }
             Texture::SharedPtr pTex = pMap.second;
-            pVars->setSrv(regIndex, pTex->getSRV());
+            pVars->setTexture(name, pTex);
         }
-    }
 
-    void LeanMap::setIntoProgramVars(ProgramVars* pVars, const std::string& texName) const
-    {
-        size_t regIndex = pVars->getReflection()->getResourceDesc(texName)->regIndex;
-        setIntoProgramVars(pVars, (uint32_t)regIndex);
+        pVars->setSampler("gLeanMapSampler", pSampler);
     }
 }

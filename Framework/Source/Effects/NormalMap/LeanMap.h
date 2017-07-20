@@ -29,6 +29,7 @@
 #include <map>
 #include <memory>
 #include "API/Texture.h"
+#include "API/Sampler.h"
 
 namespace Falcor
 {
@@ -36,7 +37,6 @@ namespace Falcor
     class Scene;
     class Material;
     class ProgramVars;
-    class Sampler;
 
     class LeanMap
     {
@@ -46,8 +46,7 @@ namespace Falcor
         static Falcor::Texture::SharedPtr createFromNormalMap(const Falcor::Texture* pNormalMap);
 
         Falcor::Texture* getLeanMap(uint32_t sceneMaterialID) { return mpLeanMaps[sceneMaterialID].get(); }
-        void setIntoProgramVars(ProgramVars* pVars, const std::string& texName) const;
-        void setIntoProgramVars(ProgramVars* pVars, uint32_t texIndex) const;
+        void setIntoProgramVars(ProgramVars* pVars, const Sampler::SharedPtr& pSampler) const;
         uint32_t getRequiredLeanMapShaderArraySize() const { return mShaderArraySize; }
     private:
         LeanMap() = default;

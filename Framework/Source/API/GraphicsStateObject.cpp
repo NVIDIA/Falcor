@@ -29,7 +29,7 @@
 #include "Framework.h"
 #include "GraphicsStateObject.h"
 #include "BlendState.h"
-#include "Vao.h"
+#include "VAO.h"
 #include "Device.h"
 
 namespace Falcor
