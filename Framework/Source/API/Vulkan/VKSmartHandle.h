@@ -79,30 +79,7 @@ namespace Falcor
         VkPipelineLayout mApiHandle;
         std::vector<VkDescriptorSetLayout> mSets;
     };
-
-    class VkDescriptorSetHandle : public VkBaseApiHandle, public inherit_shared_from_this<VkBaseApiHandle, VkDescriptorSetHandle>
-    {
-    public:
-        class SharedPtr : public std::shared_ptr<VkDescriptorSetHandle>
-        {
-        public:
-            SharedPtr() = default;
-            SharedPtr(VkDescriptorSetHandle* pHandle) : std::shared_ptr<VkDescriptorSetHandle>(pHandle) {}
-            static SharedPtr create(VkDescriptorSet set, VkDescriptorPool pool) { return SharedPtr(new VkDescriptorSetHandle(set, pool)); }
-            operator VkDescriptorSet() const { return get()->mApiHandle; }
-            VkDescriptorPool getPool() const { return get()->mPool; }
-        private:
-            VkDescriptorSetHandle* get() const { return std::shared_ptr<VkDescriptorSetHandle>::get(); }
-        };
-
-        ~VkDescriptorSetHandle();
-    private:
-        friend class SharedPtr;
-        VkDescriptorSetHandle(VkDescriptorSet set, VkDescriptorPool pool) : mApiHandle(set), mPool(pool) {}
-        VkDescriptorSet mApiHandle;
-        VkDescriptorPool mPool;
-    };
-
+    
     class VkDeviceData : public VkBaseApiHandle, public inherit_shared_from_this<VkBaseApiHandle, VkDeviceData>
     {
     public:
