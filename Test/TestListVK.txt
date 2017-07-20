@@ -31,13 +31,3 @@ SimpleDeferred { -test -incrementDebugMode 100 200 300 400 -ssframes 50 150 250 
 EnvMap {-test -changeView 100 200 300 400 500 -ssframes 50 150 250 350 450 550 -shutdown 600} {releasevk}
 NormalMapFiltering {-test -changeMode 100 200 300 -ssframes 50 150 250 350 -shutdown 400} {releasevk}
 ]
-[
-FalcorTest.sln {Releasevk Bin\x64\Release\ }
-BlendStateTest {} {releasevk}
-RasterizerStateTest {} {releasevk}
-DepthStencilStateTest {} {releasevk}
-FboTest {} {releasevk}
-SamplerTest {} {releasevk}
-VaoTest {} {releasevk}
-GraphicsStateObjectTest {} {releasevk}
-]

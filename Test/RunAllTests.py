@@ -156,7 +156,7 @@ def compareImages(resultObj, testInfo, numScreenshots, slnInfo):
             testingUtil.makeDirIfDoesntExist(imagesDir)
             testingUtil.overwriteMove(testScreenshot, imagesDir)
             resultObj.CompareImageResults.append(-1)
-            continue
+            
 
         # Append the Result Value String.
         resultObj.CompareImageResults.append(resultVal)
@@ -410,6 +410,9 @@ def readTestList(generateReference, buildTests, pullBranch):
                 if os.path.isdir(exeDir):
                     shutil.rmtree(exeDir)
                 #returns 1 on fail
+                if callBuildScript([slnName, configName, 'rebuild']):
+                    buildFail(slnName, configName, slnInfo)
+                #returns 1 on fail
                 if callBuildScript([slnName, configName, 'build']):
                     buildFail(slnName, configName, slnInfo)
             else:
@@ -439,7 +442,7 @@ def readTestList(generateReference, buildTests, pullBranch):
                 for argSet in argsList:
                     testInfo = TestInfo(testName, config, slnInfo)
                     runTest(testInfo, testingUtil.cleanupString(argSet), generateReference, slnInfo)
-
+					
             #goto next set
             solutionData = solutionData[configEndIndex + 1 :]
             argStartIndex = solutionData.find('{')
