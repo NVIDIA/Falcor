@@ -25,21 +25,36 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
+#include "VertexAttrib.h"
 __import ShaderCommon;
-__import Shading;
 __import DefaultVS;
 
-float4 main(VS_OUT vOut) : SV_TARGET
+VS_OUT main(VS_IN vIn)
 {
-    ShadingAttribs shAttr;
-    prepareShadingAttribs(gMaterial, vOut.posW, gCam.position, vOut.normalW, vOut.bitangentW, vOut.texC, shAttr);
+    VS_OUT vOut;
 
-    ShadingOutput result;
+    // Filled out in geometry shader
+    vOut.posH = float4(0.0f, 0.0f, 0.0f, 0.0f);
+    vOut.prevPosH = float4(0.0f, 0.0f, 0.0f, 0.0f);
 
-    for (uint l = 0; l < gLightsCount; l++)
-    {
-        evalMaterial(shAttr, gLights[l], result, l == 0);
-    }
+    float4x4 worldMat = getWorldMat(vIn);
+    float4 posW = mul(vIn.pos, worldMat);
+    vOut.posW = posW.xyz;
 
-    return float4(result.finalValue, 1.f);
+#ifdef HAS_TEXCRD
+    vOut.texC = vIn.texC;
+#else
+    vOut.texC = 0;
+#endif
+
+#ifdef HAS_COLORS
+    vOut.colorV = vIn.color;
+#else
+    vOut.colorV = 0;
+#endif
+
+    vOut.normalW = mul(vIn.normal, getWorldInvTransposeMat(vIn)).xyz;
+    vOut.bitangentW = mul(vIn.bitangent, (float3x3)worldMat).xyz;
+
+    return vOut;
 }

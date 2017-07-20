@@ -29,10 +29,14 @@ __import ShaderCommon;
 __import Shading;
 __import DefaultVS;
 
-float4 main(VS_OUT vOut) : SV_TARGET
+in VS_OUT vsOut;
+
+layout(location = 0) out vec4 fragColor;
+
+void main()
 {
     ShadingAttribs shAttr;
-    prepareShadingAttribs(gMaterial, vOut.posW, gCam.position, vOut.normalW, vOut.bitangentW, vOut.texC, shAttr);
+    prepareShadingAttribs(gMaterial, vsOut.posW, gCam.position, vsOut.normalW, vsOut.bitangentW, vsOut.texC, shAttr);
 
     ShadingOutput result;
 
@@ -41,5 +45,5 @@ float4 main(VS_OUT vOut) : SV_TARGET
         evalMaterial(shAttr, gLights[l], result, l == 0);
     }
 
-    return float4(result.finalValue, 1.f);
+    fragColor = vec4(result.finalValue, 1.f);
 }

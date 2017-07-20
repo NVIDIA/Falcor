@@ -26,20 +26,44 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 __import ShaderCommon;
-__import Shading;
 __import DefaultVS;
 
-float4 main(VS_OUT vOut) : SV_TARGET
+struct GS_OUT
 {
-    ShadingAttribs shAttr;
-    prepareShadingAttribs(gMaterial, vOut.posW, gCam.position, vOut.normalW, vOut.bitangentW, vOut.texC, shAttr);
+    VS_OUT vsOut;
+    uint rtIndex : SV_RenderTargetArrayIndex;
+};
 
-    ShadingOutput result;
+[maxvertexcount(6)]
+void main(triangle VS_OUT input[3], inout TriangleStream<GS_OUT> outStream)
+{
+    GS_OUT gsOut;
 
-    for (uint l = 0; l < gLightsCount; l++)
+    // Left Eye
+    for (int i = 0; i < 3; i++)
     {
-        evalMaterial(shAttr, gLights[l], result, l == 0);
-    }
+        gsOut.rtIndex = 0;
+        gsOut.vsOut = input[i];
 
-    return float4(result.finalValue, 1.f);
+        float4 posW = float4(input[i].posW, 1.0f);
+        gsOut.vsOut.posH = mul(posW, gCam.viewProjMat);
+        gsOut.vsOut.prevPosH = mul(posW, gCam.prevViewProjMat);
+
+        outStream.Append(gsOut);
+    }
+    outStream.RestartStrip();
+
+    // Right Eye
+    for (i = 0; i < 3; i++) 
+    {
+        gsOut.rtIndex = 1;
+        gsOut.vsOut = input[i];
+
+        float4 posW = float4(input[i].posW, 1.0f);
+        gsOut.vsOut.posH = mul(posW, gCam.rightEyeViewProjMat);
+        gsOut.vsOut.prevPosH = mul(posW, gCam.rightEyePrevViewProjMat);
+
+        outStream.Append(gsOut);
+    }
+    outStream.RestartStrip();
 }

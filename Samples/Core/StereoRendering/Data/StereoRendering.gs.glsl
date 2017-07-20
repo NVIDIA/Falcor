@@ -25,21 +25,50 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-__import ShaderCommon;
-__import Shading;
 __import DefaultVS;
+__import ShaderCommon;
 
-float4 main(VS_OUT vOut) : SV_TARGET
+layout(triangles) in;
+layout(triangle_strip, max_vertices = 6) out;
+
+in VS_OUT vsOut[];
+out VS_OUT gsOut;
+
+void main()
 {
-    ShadingAttribs shAttr;
-    prepareShadingAttribs(gMaterial, vOut.posW, gCam.position, vOut.normalW, vOut.bitangentW, vOut.texC, shAttr);
-
-    ShadingOutput result;
-
-    for (uint l = 0; l < gLightsCount; l++)
+    // Left Eye
+    gl_Layer = 0;
+    for (int i = 0; i < 3; i++)
     {
-        evalMaterial(shAttr, gLights[l], result, l == 0);
-    }
+        gsOut.normalW = vsOut[i].normalW;
+        gsOut.bitangentW = vsOut[i].bitangentW;
+        gsOut.texC = vsOut[i].texC;
+        gsOut.posW = vsOut[i].posW;
+        gsOut.colorV = vsOut[i].colorV;
 
-    return float4(result.finalValue, 1.f);
+        vec4 posW = vec4(vsOut[i].posW, 1.0f);
+        gsOut.prevPosH = gCam.prevViewProjMat * posW;
+        gl_Position = gCam.viewProjMat * posW;
+
+        EmitVertex();
+    }
+    EndPrimitive();
+
+    // Right Eye
+    gl_Layer = 1;
+    for (int i = 0; i < 3; i++)
+    {
+        gsOut.normalW = vsOut[i].normalW;
+        gsOut.bitangentW = vsOut[i].bitangentW;
+        gsOut.texC = vsOut[i].texC;
+        gsOut.posW = vsOut[i].posW;
+        gsOut.colorV = vsOut[i].colorV;
+
+        vec4 posW = vec4(vsOut[i].posW, 1.0f);
+        gsOut.prevPosH = gCam.rightEyePrevViewProjMat * posW;
+        gl_Position = gCam.rightEyeViewProjMat * posW;
+
+        EmitVertex();
+    }
+    EndPrimitive();
 }

@@ -46,8 +46,12 @@ private:
     Scene::SharedPtr mpScene;
     SceneRenderer::SharedPtr mpSceneRenderer;
 
-    GraphicsProgram::SharedPtr mpProgram = nullptr;
-    GraphicsVars::SharedPtr mpProgramVars = nullptr;
+    GraphicsProgram::SharedPtr mpMonoSPSProgram = nullptr;
+    GraphicsVars::SharedPtr mpMonoSPSVars = nullptr;
+
+    GraphicsProgram::SharedPtr mpStereoProgram = nullptr;
+    GraphicsVars::SharedPtr mpStereoVars = nullptr;
+
     GraphicsState::SharedPtr mpGraphicsState = nullptr;
     Sampler::SharedPtr mpTriLinearSampler;
 
@@ -60,12 +64,16 @@ private:
         Stereo,
         SinglePassStereo
     };
+
+    bool mSPSSupported = false;
     RenderMode mRenderMode = RenderMode::Mono;
+    Gui::DropdownList mSubmitModeList;
+
     void submitToScreen();
     void initVR();
     void blitTexture(Texture::SharedPtr pTexture, uint32_t xStart);
     VrFbo::UniquePtr mpVrFbo;
     bool mShowStereoViews = true;
-    void submitSinglePassStereo();
+    void submitStereo(bool singlePassStereo);
     void setRenderMode();
 };

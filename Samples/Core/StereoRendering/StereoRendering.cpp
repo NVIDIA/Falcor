@@ -36,21 +36,31 @@ void StereoRendering::onGuiRender()
     {
         loadScene();
     }
-    Gui::DropdownList submitModeList;
-    submitModeList.push_back({ (int)RenderMode::Mono, "Render to Screen" });
+
     if(VRSystem::instance())
     {
-        submitModeList.push_back({(int)RenderMode::SinglePassStereo, "Single Pass Stereo"});
         mpGui->addCheckBox("Display VR FBO", mShowStereoViews);
     }
-    if (mpGui->addDropdown("Submission Mode", submitModeList, (uint32_t&)mRenderMode))
+
+    if (mpGui->addDropdown("Submission Mode", mSubmitModeList, (uint32_t&)mRenderMode))
     {
         setRenderMode();
     }
 }
 
+bool displaySpsWarning()
+{
+#ifdef FALCOR_D3D12
+    logWarning("The sample will run faster if you use NVIDIA's Single Pass Stereo\nIf you have an NVIDIA GPU, download the NVAPI SDK and enable NVAPI support in FalcorConfig.h.\nCheck the readme for instructions");
+#endif
+    return false;
+}
+
 void StereoRendering::initVR()
 {
+    mSubmitModeList.clear();
+    mSubmitModeList.push_back({ (int)RenderMode::Mono, "Render to Screen" });
+
     if (VRSystem::instance())
     {
         VRDisplay* pDisplay = VRSystem::instance()->getHMD().get();
@@ -63,14 +73,16 @@ void StereoRendering::initVR()
 
         mpVrFbo = VrFbo::create(vrFboDesc);
 
-#if !(_ENABLE_NVAPI) && defined(FALCOR_D3D12)
-        static bool first = true;
-        if (first)
+        mSubmitModeList.push_back({ (int)RenderMode::Stereo, "Stereo" });
+
+        if (mSPSSupported)
         {
-            first = false;
-            msgBox("The sample relies on NVIDIA's Single Pass Stereo extension to operate correctly.\nMake sure you have an NVIDIA GPU, you enabled NVAPI support in FalcorConfig.h at that you downloaded the NVAPI SDK.\nCheck the readme for instructions");
+            mSubmitModeList.push_back({ (int)RenderMode::SinglePassStereo, "Single Pass Stereo" });
         }
-#endif
+        else
+        {
+            static bool first = displaySpsWarning();
+        }
     }
     else
     {
@@ -78,19 +90,27 @@ void StereoRendering::initVR()
     }
 }
 
-void StereoRendering::submitSinglePassStereo()
+void StereoRendering::submitStereo(bool singlePassStereo)
 {
-    PROFILE(SPS);
+    PROFILE(STEREO);
     VRSystem::instance()->refresh();
 
     // Clear the FBO
     mpRenderContext->clearFbo(mpVrFbo->getFbo().get(), kClearColor, 1.0f, 0, FboAttachmentType::All);
     
     // update state
-    mpGraphicsState->setProgram(mpProgram);
+    if (singlePassStereo)
+    {
+        mpGraphicsState->setProgram(mpMonoSPSProgram);
+        mpRenderContext->setGraphicsVars(mpMonoSPSVars);
+    }
+    else
+    {
+        mpGraphicsState->setProgram(mpStereoProgram);
+        mpRenderContext->setGraphicsVars(mpStereoVars);
+    }
     mpGraphicsState->setFbo(mpVrFbo->getFbo());
     mpRenderContext->pushGraphicsState(mpGraphicsState);
-    mpRenderContext->setGraphicsVars(mpProgramVars);
 
     // Render
     mpSceneRenderer->renderScene(mpRenderContext.get());
@@ -106,10 +126,10 @@ void StereoRendering::submitSinglePassStereo()
 
 void StereoRendering::submitToScreen()
 {
-    mpGraphicsState->setProgram(mpProgram);
+    mpGraphicsState->setProgram(mpMonoSPSProgram);
     mpGraphicsState->setFbo(mpDefaultFBO);
     mpRenderContext->setGraphicsState(mpGraphicsState);
-    mpRenderContext->setGraphicsVars(mpProgramVars);
+    mpRenderContext->setGraphicsVars(mpMonoSPSVars);
     mpSceneRenderer->renderScene(mpRenderContext.get());
 }
 
@@ -119,13 +139,19 @@ void StereoRendering::setRenderMode()
     {
         std::string lights;
         getSceneLightString(mpScene.get(), lights);
-        mpProgram->addDefine("_LIGHT_SOURCES", lights);
+        mpMonoSPSProgram->addDefine("_LIGHT_SOURCES", lights);
+        mpStereoProgram->addDefine("_LIGHT_SOURCES", lights);
+        mpMonoSPSProgram->removeDefine("_SINGLE_PASS_STEREO");
+
         mpGraphicsState->toggleSinglePassStereo(false);
         switch(mRenderMode)
         {
         case RenderMode::SinglePassStereo:
-            mpProgram->addDefine("_SINGLE_PASS_STEREO");
+            mpMonoSPSProgram->addDefine("_SINGLE_PASS_STEREO");
             mpGraphicsState->toggleSinglePassStereo(true);
+            mpSceneRenderer->setCameraControllerType(SceneRenderer::CameraControllerType::Hmd);
+            break;
+        case RenderMode::Stereo:
             mpSceneRenderer->setCameraControllerType(SceneRenderer::CameraControllerType::Hmd);
             break;
         case RenderMode::Mono:
@@ -137,10 +163,10 @@ void StereoRendering::setRenderMode()
 
 void StereoRendering::loadScene()
 {
-    std::string Filename;
-    if(openFileDialog("Scene files\0*.fscene\0\0", Filename))
+    std::string filename;
+    if(openFileDialog("Scene files\0*.fscene\0\0", filename))
     {
-        loadScene(Filename);
+        loadScene(filename);
     }
 }
 
@@ -148,9 +174,13 @@ void StereoRendering::loadScene(const std::string& filename)
 {
     mpScene = Scene::loadFromFile(filename);
     mpSceneRenderer = SceneRenderer::create(mpScene);
-    mpProgram = GraphicsProgram::createFromFile("", "StereoRendering.ps.hlsl");
+    mpMonoSPSProgram = GraphicsProgram::createFromFile("", appendShaderExtension("StereoRendering.ps"));
+    mpStereoProgram = GraphicsProgram::createFromFile(appendShaderExtension("StereoRendering.vs"), appendShaderExtension("StereoRendering.ps"), appendShaderExtension("StereoRendering.gs"), "", "");
+
     setRenderMode();
-    mpProgramVars = GraphicsVars::create(mpProgram->getActiveVersion()->getReflector());
+    mpMonoSPSVars = GraphicsVars::create(mpMonoSPSProgram->getActiveVersion()->getReflector());
+    mpStereoVars = GraphicsVars::create(mpStereoProgram->getActiveVersion()->getReflector());
+
     for (uint32_t m = 0; m < mpScene->getModelCount(); m++)
     {
         mpScene->getModel(m)->bindSamplerToMaterials(mpTriLinearSampler);
@@ -159,6 +189,8 @@ void StereoRendering::loadScene(const std::string& filename)
 
 void StereoRendering::onLoad()
 {
+    mSPSSupported = gpDevice->isExtensionSupported("VK_NVX_multiview_per_view_attributes");
+
     initVR();
 
     mpGraphicsState = GraphicsState::create();
@@ -198,7 +230,10 @@ void StereoRendering::onFrameRender()
             submitToScreen();
             break;
         case RenderMode::SinglePassStereo:
-            submitSinglePassStereo();
+            submitStereo(true);
+            break;
+        case RenderMode::Stereo:
+            submitStereo(false);
             break;
         default:
             should_not_get_here();
@@ -217,9 +252,11 @@ bool StereoRendering::onKeyEvent(const KeyboardEvent& keyEvent)
 {
     if(keyEvent.key == KeyboardEvent::Key::Space && keyEvent.type == KeyboardEvent::Type::KeyPressed)
     {
-        if (VRSystem::instance() && gpDevice->isExtensionSupported(""))
+        if (VRSystem::instance())
         {
-            mRenderMode = (mRenderMode == RenderMode::SinglePassStereo) ? RenderMode::Mono : RenderMode::SinglePassStereo;
+            // Cycle through modes
+            uint32_t nextMode = (uint32_t)mRenderMode + 1;
+            mRenderMode = (RenderMode)(nextMode % (mSPSSupported ? 3 : 2));
             setRenderMode();
             return true;
         }

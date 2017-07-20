@@ -25,21 +25,29 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-__import ShaderCommon;
-__import Shading;
 __import DefaultVS;
+__import ShaderCommon;
 
-float4 main(VS_OUT vOut) : SV_TARGET
+in VS_IN vIn;
+out VS_OUT vOut;
+
+void main()
 {
-    ShadingAttribs shAttr;
-    prepareShadingAttribs(gMaterial, vOut.posW, gCam.position, vOut.normalW, vOut.bitangentW, vOut.texC, shAttr);
+    mat4x4 worldMat = getWorldMat(vIn);
+    vOut.posW = (worldMat * vIn.pos).xyz;
 
-    ShadingOutput result;
+#ifdef HAS_TEXCRD
+    vOut.texC = vIn.texC;
+#else
+    vOut.texC = vec2(0.0f);
+#endif
 
-    for (uint l = 0; l < gLightsCount; l++)
-    {
-        evalMaterial(shAttr, gLights[l], result, l == 0);
-    }
+#ifdef HAS_COLORS
+    vOut.colorV = vIn.color;
+#else
+    vOut.colorV = vec3(0.0f);
+#endif
 
-    return float4(result.finalValue, 1.f);
+    vOut.normalW = (getWorldInvTransposeMat(vIn) * vIn.normal).xyz;
+    vOut.bitangentW = (mat3x3(worldMat) * vIn.bitangent).xyz;
 }
