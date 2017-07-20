@@ -28,7 +28,7 @@
 struct VsOut
 {
     float2 texC       : TEXCOORD;
-    float4 posH       : SV_POSITION;
+    float4 posH       : POSITION;
 };
 
 struct GsOut
