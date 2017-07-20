@@ -142,7 +142,7 @@ namespace Falcor
             bool useMinMaxSdsm = true;
             glm::vec2 distanceRange = glm::vec2(0, 1);
             float pssmLambda = 0.5f;
-            PartitionMode partitionMode = PartitionMode::PSSM;
+            PartitionMode partitionMode = PartitionMode::Logarithmic;
             bool stabilizeCascades = false;
             bool concentricCascades = false;
         };
