@@ -97,5 +97,11 @@ namespace Falcor
         Sampler::SharedPtr mpSampler;
         bool mDirty = true;
         GraphicsVars::SharedPtr mpVars;
+
+        struct
+        {
+            ProgramVars::BindLocation sampler;
+            ProgramVars::BindLocation srcTexture;
+        } mBindLocations;
     };
 }

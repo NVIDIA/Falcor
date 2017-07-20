@@ -64,8 +64,17 @@ namespace Falcor
 
         float mScale = 1;
         Model::SharedPtr mpCubeModel;
+        Texture::SharedPtr mpTexture;
+
         GraphicsProgram::SharedPtr mpProgram;
         GraphicsVars::SharedPtr mpVars;
         GraphicsState::SharedPtr mpState;
+
+        struct
+        {
+            ProgramVars::BindLocation perFrameCB;
+            ProgramVars::BindLocation sampler;
+            ProgramVars::BindLocation texture;
+        } mBindLocations;
     };
 }

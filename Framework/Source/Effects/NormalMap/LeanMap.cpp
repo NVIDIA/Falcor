@@ -165,7 +165,7 @@ namespace Falcor
             if(mpLeanMaps.size() > 1)
             {
                 uint32_t id = pMap.first;
-                std::string name = "gLeanMaps[" + std::to_string(id) + "]";
+                name += "[" + std::to_string(id) + "]";
             }
             Texture::SharedPtr pTex = pMap.second;
             pVars->setTexture(name, pTex);

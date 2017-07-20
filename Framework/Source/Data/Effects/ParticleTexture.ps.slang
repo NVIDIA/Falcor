@@ -28,8 +28,8 @@
 #include "ParticleData.h"
 
 SamplerState gSampler;
-StructuredBuffer<Particle> ParticlePool : register(t1);
-Texture2D gTex : register(t2);
+StructuredBuffer<Particle> ParticlePool : register(t2);
+Texture2D gTex : register(t3);
 
 struct VSOut
 {
