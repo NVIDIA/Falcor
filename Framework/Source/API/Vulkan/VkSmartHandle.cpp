@@ -34,7 +34,7 @@ namespace Falcor
     template<> VkHandle<VkSwapchainKHR>::~VkHandle() { if(mApiHandle != VK_NULL_HANDLE) vkDestroySwapchainKHR(gpDevice->getApiHandle(), mApiHandle, nullptr); }
     template<> VkHandle<VkCommandPool>::~VkHandle() { if(mApiHandle != VK_NULL_HANDLE) vkDestroyCommandPool(gpDevice->getApiHandle(), mApiHandle, nullptr); }
     template<> VkHandle<VkSemaphore>::~VkHandle() { if(mApiHandle != VK_NULL_HANDLE) vkDestroySemaphore(gpDevice->getApiHandle(), mApiHandle, nullptr); }
-    template<> VkHandle<VkSampler>::~VkHandle() { if(mApiHandle != VK_NULL_HANDLE) vkDestroySampler(gpDevice->getApiHandle(), mApiHandle, nullptr); }
+    template<> VkHandle<VkSampler>::~VkHandle() { if(mApiHandle != VK_NULL_HANDLE && gpDevice) vkDestroySampler(gpDevice->getApiHandle(), mApiHandle, nullptr); }
     template<> VkHandle<VkDescriptorSetLayout>::~VkHandle() { if(mApiHandle != VK_NULL_HANDLE) vkDestroyDescriptorSetLayout(gpDevice->getApiHandle(), mApiHandle, nullptr); }
     template<> VkHandle<VkPipeline>::~VkHandle() { if(mApiHandle != VK_NULL_HANDLE) vkDestroyPipeline(gpDevice->getApiHandle(), mApiHandle, nullptr); }
     template<> VkHandle<VkShaderModule>::~VkHandle() { if(mApiHandle != VK_NULL_HANDLE) vkDestroyShaderModule(gpDevice->getApiHandle(), mApiHandle, nullptr); }
