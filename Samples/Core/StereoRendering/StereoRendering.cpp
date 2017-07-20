@@ -37,7 +37,7 @@ void StereoRendering::onGuiRender()
         loadScene();
     }
 
-    if(VRSystem::instance())
+    //if(VRSystem::instance())
     {
         mpGui->addCheckBox("Display VR FBO", mShowStereoViews);
     }
@@ -60,40 +60,46 @@ void StereoRendering::initVR()
 {
     mSubmitModeList.clear();
     mSubmitModeList.push_back({ (int)RenderMode::Mono, "Render to Screen" });
+    mSubmitModeList.push_back({ (int)RenderMode::Stereo, "Stereo" });
 
-    if (VRSystem::instance())
+    if (mSPSSupported)
     {
-        VRDisplay* pDisplay = VRSystem::instance()->getHMD().get();
-
-        // Create the FBOs
-        Fbo::Desc vrFboDesc;
-
-        vrFboDesc.setColorTarget(0, mpDefaultFBO->getColorTexture(0)->getFormat());
-        vrFboDesc.setDepthStencilTarget(mpDefaultFBO->getDepthStencilTexture()->getFormat());
-
-        mpVrFbo = VrFbo::create(vrFboDesc);
-
-        mSubmitModeList.push_back({ (int)RenderMode::Stereo, "Stereo" });
-
-        if (mSPSSupported)
-        {
-            mSubmitModeList.push_back({ (int)RenderMode::SinglePassStereo, "Single Pass Stereo" });
-        }
-        else
-        {
-            static bool first = displaySpsWarning();
-        }
+        mSubmitModeList.push_back({ (int)RenderMode::SinglePassStereo, "Single Pass Stereo" });
     }
     else
     {
-        msgBox("Can't initialize the VR system. Make sure that your HMD is connected properly");
+        static bool first = displaySpsWarning();
     }
+
+    Fbo::Desc vrFboDesc;
+
+    vrFboDesc.setColorTarget(0, mpDefaultFBO->getColorTexture(0)->getFormat());
+    vrFboDesc.setDepthStencilTarget(mpDefaultFBO->getDepthStencilTexture()->getFormat());
+
+    mpVrFbo = VrFbo::create(vrFboDesc);
+
+    //if (VRSystem::instance())
+    //{
+    //    VRDisplay* pDisplay = VRSystem::instance()->getHMD().get();
+
+    //    // Create the FBOs
+    //    Fbo::Desc vrFboDesc;
+
+    //    vrFboDesc.setColorTarget(0, mpDefaultFBO->getColorTexture(0)->getFormat());
+    //    vrFboDesc.setDepthStencilTarget(mpDefaultFBO->getDepthStencilTexture()->getFormat());
+
+    //    mpVrFbo = VrFbo::create(vrFboDesc);
+    //}
+    //else
+    //{
+    //    msgBox("Can't initialize the VR system. Make sure that your HMD is connected properly");
+    //}
 }
 
 void StereoRendering::submitStereo(bool singlePassStereo)
 {
     PROFILE(STEREO);
-    VRSystem::instance()->refresh();
+    //VRSystem::instance()->refresh();
 
     // Clear the FBO
     mpRenderContext->clearFbo(mpVrFbo->getFbo().get(), kClearColor, 1.0f, 0, FboAttachmentType::All);
@@ -149,10 +155,10 @@ void StereoRendering::setRenderMode()
         case RenderMode::SinglePassStereo:
             mpMonoSPSProgram->addDefine("_SINGLE_PASS_STEREO");
             mpGraphicsState->toggleSinglePassStereo(true);
-            mpSceneRenderer->setCameraControllerType(SceneRenderer::CameraControllerType::Hmd);
+            mpSceneRenderer->setCameraControllerType(SceneRenderer::CameraControllerType::SixDof);
             break;
         case RenderMode::Stereo:
-            mpSceneRenderer->setCameraControllerType(SceneRenderer::CameraControllerType::Hmd);
+            mpSceneRenderer->setCameraControllerType(SceneRenderer::CameraControllerType::SixDof);
             break;
         case RenderMode::Mono:
             mpSceneRenderer->setCameraControllerType(SceneRenderer::CameraControllerType::SixDof);
@@ -252,7 +258,7 @@ bool StereoRendering::onKeyEvent(const KeyboardEvent& keyEvent)
 {
     if(keyEvent.key == KeyboardEvent::Key::Space && keyEvent.type == KeyboardEvent::Type::KeyPressed)
     {
-        if (VRSystem::instance())
+        //if (VRSystem::instance())
         {
             // Cycle through modes
             uint32_t nextMode = (uint32_t)mRenderMode + 1;
@@ -287,9 +293,10 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
     config.windowDesc.height = 1024;
     config.windowDesc.width = 1600;
     config.windowDesc.resizableWindow = true;
-    config.deviceDesc.enableVR = true;
+    //config.deviceDesc.enableVR = true;
 #ifdef FALCOR_VK
     config.deviceDesc.enableDebugLayer = false; // OpenVR requires an extension that the debug layer doesn't recognize. It causes the application to crash
+    config.deviceDesc.requiredExtensions.push_back("VK_NVX_multiview_per_view_attributes");
 #endif
     sample.run(config);
 }

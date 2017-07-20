@@ -125,6 +125,10 @@ namespace Falcor
             const float vlen = lookdir_len * tanf(fovY * 0.5f);
             mData.cameraV *= vlen;
 
+            mData.rightEyeViewMat = mData.viewMat;
+            mData.rightEyeViewProjMat = mData.viewProjMat;
+            mData.rightEyePrevViewProjMat = mData.prevViewProjMat;
+
             mDirty = false;
         }
     }

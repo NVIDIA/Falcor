@@ -36,6 +36,7 @@ namespace Falcor
 {
     glm::ivec2 getHmdRenderSize()
     {
+        return ivec2(960, 1080);
         VRSystem* pVrSystem = VRSystem::instance();
         VRDisplay* pDisplay = pVrSystem->getHMD().get();
         glm::ivec2 renderSize = pDisplay->getRecommendedRenderSize();
@@ -74,7 +75,7 @@ namespace Falcor
         pRenderCtx->copySubresource(mpLeftView.get(),  ltDstSubresourceIdx, mpFbo->getColorTexture(0).get(), ltSrcSubresourceIdx);
         pRenderCtx->copySubresource(mpRightView.get(), rtDstSubresourceIdx, mpFbo->getColorTexture(0).get(), rtSrcSubresourceIdx);
 
-        pVrSystem->submit(VRDisplay::Eye::Left, mpLeftView, pRenderCtx);
-        pVrSystem->submit(VRDisplay::Eye::Right, mpRightView, pRenderCtx);
+        //pVrSystem->submit(VRDisplay::Eye::Left, mpLeftView, pRenderCtx);
+        //pVrSystem->submit(VRDisplay::Eye::Right, mpRightView, pRenderCtx);
     }
 }
