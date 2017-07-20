@@ -89,7 +89,7 @@ namespace Falcor
         switch (mType)
         {
         case VkResourceType::Image:
-            vkDestroyImageView(gpDevice->getApiHandle(), mImage, nullptr);
+            //  vkDestroyImageView(gpDevice->getApiHandle(), mImage, nullptr);
             break;
         case VkResourceType::Buffer:
             vkDestroyBufferView(gpDevice->getApiHandle(), mBuffer, nullptr);
