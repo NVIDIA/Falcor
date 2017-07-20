@@ -49,7 +49,7 @@ $build_parallel = " /m "
 $build_configuration = " /p:Configuration=${argBuildConfiguration}"
 $build_target = "/target:${argBuildType}"
 
-$msbuild = "msbuild.exe"
+$msbuild = "C:\Program Files (x86)\MSBuild\14.0\Bin\msbuild.exe"
 $args_escaper = "--%"
 
 Write-Output "Starting Build with Configuration : ${configuration} ."
