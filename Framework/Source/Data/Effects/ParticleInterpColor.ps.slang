@@ -27,7 +27,7 @@
 ***************************************************************************/
 #include "ParticleData.h"
 
-StructuredBuffer<Particle> ParticlePool : register(t1);
+StructuredBuffer<Particle> ParticlePool : register(t2);
 
 struct VSOut
 {
