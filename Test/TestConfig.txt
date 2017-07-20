@@ -2,7 +2,6 @@
     \\netapp-wa02\public\Falcor\VulkanReferenceResultsHub\, Test, TestListD3D12.txt, https://github.com/NVIDIA/Falcor.git, C:\Falcor\FalcorD3D12, Vulkan
 }
 
-
 {
     \\netapp-wa02\public\Falcor\VulkanReferenceResultsHub\, Test, TestListVK.txt, https://github.com/NVIDIA/Falcor.git, C:\Falcor\FalcorVulkan, Vulkan
 }

@@ -229,7 +229,18 @@ void Shadows::createVisualizationProgram()
 
 void Shadows::onInitializeTesting()
 {
+    std::vector<ArgList::Arg> specifiedScene = mArgList.getValues("loadscene");
+
+    if (!specifiedScene.empty())
+    {
+        createScene(specifiedScene[0].asString());
+    }
+
     std::vector<ArgList::Arg> filterFrames = mArgList.getValues("incrementFilter");
+    
+
+
+
     if (!filterFrames.empty())
     {
         mFilterFrames.resize(filterFrames.size());
