@@ -70,6 +70,11 @@ namespace Falcor
         VkPhysicalDeviceLimits deviceLimits;
         std::vector<VkExtensionProperties> deviceExtensions;
 
+        struct  
+        {
+            VkFence f[kSwapChainBuffers];
+            uint32_t cur = 0;
+        } presentFences;
 #ifdef DEFAULT_ENABLE_DEBUG_LAYER
         VkDebugReportCallbackEXT debugReportCallbackHandle;
 #endif
@@ -88,6 +93,19 @@ namespace Falcor
             }
         }
 		return bits;
+    }
+
+    static uint32_t getCurrentBackBufferIndex(VkDevice device, DeviceApiData* pApiData)
+    {
+        VkFence fence = pApiData->presentFences.f[pApiData->presentFences.cur];
+        vk_call(vkWaitForFences(device, 1, &fence, false, -1));
+
+        pApiData->presentFences.cur = (pApiData->presentFences.cur + 1) % kSwapChainBuffers;
+        fence = pApiData->presentFences.f[pApiData->presentFences.cur];
+        vkResetFences(device, 1, &fence);
+        uint32_t newIndex;
+        vk_call(vkAcquireNextImageKHR(device, pApiData->swapchain, std::numeric_limits<uint64_t>::max(), nullptr, fence, &newIndex));
+        return newIndex;
     }
 
     static bool initMemoryTypes(VkPhysicalDevice physicalDevice, DeviceApiData* pApiData)
@@ -123,8 +141,7 @@ namespace Falcor
         }
 
         // Get the back-buffer
-        vk_call(vkAcquireNextImageKHR(mApiHandle, mpApiData->swapchain, std::numeric_limits<uint64_t>::max(), mpFrameFence->getApiHandle(), VK_NULL_HANDLE, &currentBackBufferIndex));
-
+        mCurrentBackBufferIndex = getCurrentBackBufferIndex(mApiHandle, mpApiData);
         return true;
     }
 
@@ -137,6 +154,10 @@ namespace Falcor
             DestroyDebugReportCallback(mApiHandle, mpApiData->debugReportCallbackHandle, nullptr);
         }
         vkDestroySwapchainKHR(mApiHandle, mpApiData->swapchain, nullptr);
+        for (auto& f : mpApiData->presentFences.f)
+        {
+            vkDestroyFence(mApiHandle, f, nullptr);
+        }
         safe_delete(mpApiData);
     }
 
@@ -607,18 +628,8 @@ namespace Falcor
         info.swapchainCount = 1;
         info.pSwapchains = &mpApiData->swapchain;
         info.pImageIndices = &mCurrentBackBufferIndex;
-
-        VkFence f;
-        VkFenceCreateInfo fi = { VK_STRUCTURE_TYPE_FENCE_CREATE_INFO };
-
         vk_call(vkQueuePresentKHR(mpRenderContext->getLowLevelData()->getCommandQueue(), &info));
-
-        vkCreateFence(mApiHandle, &fi, nullptr, &f);
-
-        // Get the next back-buffer
-        vk_call(vkAcquireNextImageKHR(mApiHandle, mpApiData->swapchain, std::numeric_limits<uint64_t>::max(), nullptr, f, &mCurrentBackBufferIndex));        
-        vk_call(vkWaitForFences(mApiHandle, 1, &f, false, -1));
-        vkDestroyFence(mApiHandle, f, nullptr);
+        mCurrentBackBufferIndex = getCurrentBackBufferIndex(mApiHandle, mpApiData);
     }
 
     bool Device::apiInit(const Desc& desc)
@@ -636,6 +647,13 @@ namespace Falcor
 
         mApiHandle = DeviceHandle::create(instance, physicalDevice, device, surface);
         mGpuTimestampFrequency = getPhysicalDeviceLimits().timestampPeriod / (1000 * 1000);
+
+        for (auto& f : mpApiData->presentFences.f)
+        {
+            VkFenceCreateInfo info = { VK_STRUCTURE_TYPE_FENCE_CREATE_INFO };
+            info.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+            vk_call(vkCreateFence(device, &info, nullptr, &f));
+        }
         return true;
     }
 
