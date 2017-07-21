@@ -26,53 +26,46 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 #pragma once
-#include "Framework.h"
-#include "DescriptorPool.h"
 
-namespace Falcor
+#include "Testbase.h"
+#include "TestHelper.h"
+#include <string.h>
+#include <map>
+#include <vector>
+#include <set>
+#include <random>
+#include <algorithm>
+#include <ctime>
+#include <cstdlib>
+
+
+class DescriptorPoolTest : public TestBase
 {
-    //  Create the Descriptor Pool, with the provided Descriptor and the provided Fence.
-    DescriptorPool::SharedPtr DescriptorPool::create(const Desc& desc, GpuFence::SharedPtr pFence)
-    {
-        SharedPtr pThis = SharedPtr(new DescriptorPool(desc, pFence));
-        return pThis->apiInit() ? pThis : nullptr;
-    }
 
-    //  Create the Descriptor Pool, with the Descriptor and the GpuFence.
-    DescriptorPool::DescriptorPool(const Desc& desc, GpuFence::SharedPtr pFence) : mDesc(desc), mpFence(pFence) {}
+private:
 
-    //  Default Descriptor Pool Destructor.
-    DescriptorPool::~DescriptorPool() = default;
-
-    //  Execute the Deferred Releases.
-    void DescriptorPool::executeDeferredReleases()
-    {
-        uint64_t gpuVal = mpFence->getGpuValue();
-        while (mpDeferredReleases.size() && mpDeferredReleases.top().fenceValue <= gpuVal)
-        {
-            mpDeferredReleases.pop();
-        }
-    }
+    //  Add the Tests.
+    void addTests() override;
 
     //  
-    uint32_t DescriptorPool::getDeferredReleasesSize() const
-    {
-        return(uint32_t)mpDeferredReleases.size();
-    }
+    void onInit() override {};
+    
 
-    uint32_t DescriptorPool::getDeferredReleaseValue() const
-    {
-        return (uint32_t)mpDeferredReleases.top().fenceValue;
-    }
+    //  
+    register_testing_func(TestCreates);
 
-    //  Release the Allocation.
-    void DescriptorPool::releaseAllocation(std::shared_ptr<DescriptorSetApiData> pData)
-    {
-        DeferredRelease d;
-        d.pData = pData;
-        d.fenceValue = mpFence->getCpuValue();
-        mpDeferredReleases.push(d);
-    }
+    //
+    register_testing_func(TestDescriptorBasicReleases);
+
+    //
+    register_testing_func(TestDescriptorCountSize);
 
 
-}
+
+    //  Generate the Descriptor Pool Desc.
+    static DescriptorPool::Desc createDescriptorPoolDesc(std::vector<uint32_t> typeCounts);
+    
+    //  Generate the Descriptor Set Layout.
+    static DescriptorSet::Layout createDescriptorSetLayout(std::vector<uint32_t> typeCounts);
+
+};

@@ -95,6 +95,10 @@ namespace Falcor
         ApiHandle getApiHandle(uint32_t heapIndex) const;
         const ApiData* getApiData() const { return mpApiData.get(); }
         void executeDeferredReleases();
+
+        uint32_t getDeferredReleasesSize() const;
+        uint32_t getDeferredReleaseValue() const;
+
     private:
         friend DescriptorSet;
         DescriptorPool(const Desc& desc, GpuFence::SharedPtr pFence);
