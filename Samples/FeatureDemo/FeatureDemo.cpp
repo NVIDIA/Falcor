@@ -32,7 +32,15 @@ void FeatureDemo::initLightingPass()
     mLightingPass.pProgram = GraphicsProgram::createFromFile("FeatureDemo.vs.slang", "FeatureDemo.ps.slang");
     mLightingPass.pProgram->addDefine("_LIGHT_COUNT", std::to_string(mpSceneRenderer->getScene()->getLightCount()));
     initControls();
-    mLightingPass.pVars = GraphicsVars::create(mLightingPass.pProgram->getActiveVersion()->getReflector());
+
+    ProgramReflection::SharedConstPtr pReflector = mLightingPass.pProgram->getActiveVersion()->getReflector();
+    mLightingPass.pVars = GraphicsVars::create(pReflector);
+
+    mLightingBindLocs.perFrameCB = getBufferBindLocation(pReflector.get(), "PerFrameCB");
+    mLightingBindLocs.lastCsmUpdateOffset = pReflector->getBufferDesc("PerFrameCB", ProgramReflection::BufferReflection::Type::Constant)->getVariableData("camVpAtLastCsmUpdate")->location;
+    mLightingBindLocs.csmData = getBufferBindLocation(pReflector.get(), "gCsmData");
+    mLightingBindLocs.envMapTex = getResourceBindLocation(pReflector.get(), "gEnvMap");
+    mLightingBindLocs.sampler = getResourceBindLocation(pReflector.get(), "gSampler");
 }
 
 void FeatureDemo::initShadowPass()
@@ -46,11 +54,16 @@ void FeatureDemo::initSSAO()
 {
     mSSAO.pSSAO = SSAO::create(uvec2(1024));
     mSSAO.pApplySSAOPass = FullScreenPass::create("ApplyAO.ps.slang");
-    mSSAO.pVars = GraphicsVars::create(mSSAO.pApplySSAOPass->getProgram()->getActiveVersion()->getReflector());
+
+    ProgramReflection::SharedConstPtr pReflector = mSSAO.pApplySSAOPass->getProgram()->getActiveVersion()->getReflector();
+    mSSAO.pVars = GraphicsVars::create(pReflector);
 
     Sampler::Desc desc;
     desc.setFilterMode(Sampler::Filter::Linear, Sampler::Filter::Linear, Sampler::Filter::Linear);
     mSSAO.pVars->setSampler("gSampler", Sampler::create(desc));
+
+    mSSAOBindLocs.colorTex = getResourceBindLocation(pReflector.get(), "gColor");
+    mSSAOBindLocs.aoMapTex = getResourceBindLocation(pReflector.get(), "gAOMap");
 }
 
 void FeatureDemo::setSceneSampler(uint32_t maxAniso)
@@ -200,16 +213,16 @@ void FeatureDemo::lightingPass()
 {
     mpState->setProgram(mLightingPass.pProgram);
     mpRenderContext->setGraphicsVars(mLightingPass.pVars);
-    ConstantBuffer::SharedPtr pCB = mLightingPass.pVars->getConstantBuffer("PerFrameCB");
+    ConstantBuffer::SharedPtr pCB = mLightingPass.pVars->getConstantBuffer(mLightingBindLocs.perFrameCB.regSpace, mLightingBindLocs.perFrameCB.baseRegIndex, 0);
     if(mControls[ControlID::EnableShadows].enabled)
     {
-        pCB["camVpAtLastCsmUpdate"] = mShadowPass.camVpAtLastCsmUpdate;
+        pCB->setVariable(mLightingBindLocs.lastCsmUpdateOffset, mShadowPass.camVpAtLastCsmUpdate);
         mShadowPass.pCsm->setDataIntoGraphicsVars(mLightingPass.pVars, "gCsmData");
     }
     if (mControls[EnableReflections].enabled)
     {
-        mLightingPass.pVars->setTexture("gEnvMap", mpEnvMap);
-        mLightingPass.pVars->setSampler("gSampler", mpSceneSampler);
+        mLightingPass.pVars->setSrv(mLightingBindLocs.envMapTex.regSpace, mLightingBindLocs.envMapTex.baseRegIndex, 0, mpEnvMap->getSRV());
+        mLightingPass.pVars->setSampler(mLightingBindLocs.sampler.regSpace, mLightingBindLocs.sampler.baseRegIndex, 0, mpSceneSampler);
     }
     mpSceneRenderer->renderScene(mpRenderContext.get());
 }
@@ -235,8 +248,8 @@ void FeatureDemo::ambientOcclusion()
     if (mControls[EnableSSAO].enabled)
     {
         Texture::SharedPtr pAOMap = mSSAO.pSSAO->generateAOMap(mpRenderContext.get(), mpSceneRenderer->getScene()->getActiveCamera().get(), mpResolveFbo->getColorTexture(2), mpResolveFbo->getColorTexture(1));
-        mSSAO.pVars->setTexture("gColor", mpPostProcessFbo->getColorTexture(0));
-        mSSAO.pVars->setTexture("gAOMap", pAOMap);
+        mSSAO.pVars->setSrv(mSSAOBindLocs.colorTex.regSpace, mSSAOBindLocs.colorTex.baseRegIndex, 0, mpPostProcessFbo->getColorTexture(0)->getSRV());
+        mSSAO.pVars->setSrv(mSSAOBindLocs.aoMapTex.regSpace, mSSAOBindLocs.aoMapTex.baseRegIndex, 0, pAOMap->getSRV());
 
         mpRenderContext->getGraphicsState()->setFbo(mpDefaultFBO);
         mpRenderContext->setGraphicsVars(mSSAO.pVars);

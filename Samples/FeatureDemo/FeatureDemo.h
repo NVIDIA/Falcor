@@ -76,6 +76,22 @@ private:
         GraphicsVars::SharedPtr pVars;
     } mSSAO;
 
+    struct
+    {
+        ProgramVars::BindLocation perFrameCB;
+        size_t lastCsmUpdateOffset;
+
+        ProgramVars::BindLocation csmData;
+        ProgramVars::BindLocation envMapTex;
+        ProgramVars::BindLocation sampler;
+    } mLightingBindLocs;
+
+    struct
+    {
+        ProgramVars::BindLocation colorTex;
+        ProgramVars::BindLocation aoMapTex;
+    } mSSAOBindLocs;
+
     void beginFrame();
     void endFrame();
     void renderSkyBox();
