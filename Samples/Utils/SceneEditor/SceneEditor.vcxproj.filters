@@ -12,7 +12,7 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <None Include="Data\SceneEditorSample.ps.hlsl">
+    <None Include="Data\SceneEditorSample.ps.slang">
       <Filter>Data</Filter>
     </None>
   </ItemGroup>
