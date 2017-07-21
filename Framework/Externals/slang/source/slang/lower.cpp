@@ -3458,10 +3458,22 @@ struct LoweringVisitor
             }
             else if (ns == "sv_rendertargetarrayindex")
             {
-                if (info.direction == VaryingParameterDirection::Input)
+                switch (shared->entryPointRequest->profile.GetStage())
                 {
+                case Stage::Geometry:
+                    requireGLSLVersion(ProfileVersion::GLSL_150);
+                    break;
+
+                case Stage::Fragment:
                     requireGLSLVersion(ProfileVersion::GLSL_430);
+                    break;
+
+                default:
+                    requireGLSLVersion(ProfileVersion::GLSL_450);
+                    requireGLSLExtension(shared->extensionUsageTracker, "GL_ARB_shader_viewport_layer_array");
+                    break;
                 }
+
                 globalVarExpr = createGLSLBuiltinRef("gl_Layer", getIntType());
             }
             else if (ns == "sv_sampleindex")
@@ -3570,9 +3582,14 @@ struct LoweringVisitor
             else if (isIntegralType(varType))
             {
                 if (info.direction == VaryingParameterDirection::Input
-                    && shared->entryPointRequest->profile.GetStage() == Stage::Vertex)
+                    && shared->entryPointRequest->profile.GetStage() != Stage::Fragment)
                 {
-                    // Don't add extra qualification to VS inputs
+                    // Don't add extra qualification to vertex shader inputs
+                }
+                else if (info.direction == VaryingParameterDirection::Output
+                    && shared->entryPointRequest->profile.GetStage() == Stage::Fragment)
+                {
+                    // Don't add extra qualification to fragment shader outputs
                 }
                 else
                 {
