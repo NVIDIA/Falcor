@@ -728,7 +728,7 @@ namespace Falcor
         auto pIB = createIndexBuffer(pAiMesh);
         BoundingBox boundingBox = createMeshBbox(pAiMesh);
 
-        if(is_set(mFlags, Model::LoadFlags::DontGenerateTangentSpace) == false)
+        if((pAiMesh->HasTangentsAndBitangents() == false) && (is_set(mFlags, Model::LoadFlags::DontGenerateTangentSpace) == false))
         {
             genTangentSpace(pAiMesh);
         }
