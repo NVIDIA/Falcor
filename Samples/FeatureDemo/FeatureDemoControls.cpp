@@ -37,11 +37,12 @@ Gui::DropdownList kSampleCountList = {
 void FeatureDemo::initControls()
 {
     mControls.resize(ControlID::Count);
-    mControls[ControlID::SuperSampling] = { false, "INTERPOLATION_MODE", "sample" };
-    mControls[ControlID::DisableSpecAA] = { false, "_MS_DISABLE_ROUGHNESS_FILTERING" };
-    mControls[ControlID::EnableShadows] = { true, "_ENABLE_SHADOWS" };
-    mControls[ControlID::EnableReflections] = { true, "_ENABLE_REFLECTIONS" };
-    mControls[ControlID::EnableSSAO] = { false, "" };
+    mControls[ControlID::SuperSampling] = { false, false, "INTERPOLATION_MODE", "sample" };
+    mControls[ControlID::EnableSpecAA] = { true, true, "_MS_DISABLE_ROUGHNESS_FILTERING" };
+    mControls[ControlID::EnableShadows] = { true, false, "_ENABLE_SHADOWS" };
+    mControls[ControlID::EnableReflections] = { true, false, "_ENABLE_REFLECTIONS" };
+    mControls[ControlID::EnableHashedAlpha] = { true, true, "_DEFAULT_ALPHA_TEST" };
+    mControls[ControlID::EnableSSAO] = { false, false, "" };
 
     for (uint32_t i = 0 ; i < ControlID::Count ; i++)
     {
@@ -54,7 +55,8 @@ void FeatureDemo::applyLightingProgramControl(ControlID controlId)
     const ProgramControl control = mControls[controlId];
     if(control.define.size())
     {
-        if (control.enabled)
+        bool add = control.unsetOnEnabled ? !control.enabled : control.enabled;
+        if (add)
         {
             mLightingPass.pProgram->addDefine(control.define, control.value);
         }
@@ -114,11 +116,9 @@ void FeatureDemo::onGuiRender()
         }
 
 
-        bool saaEnabled = !mControls[ControlID::DisableSpecAA].enabled;
-        if (mpGui->addCheckBox("Specular AA", saaEnabled))
+        if (mpGui->addCheckBox("Specular AA", mControls[ControlID::EnableSpecAA].enabled))
         {
-            mControls[ControlID::DisableSpecAA].enabled = !saaEnabled;
-            applyLightingProgramControl(ControlID::DisableSpecAA);
+            applyLightingProgramControl(ControlID::EnableSpecAA);
         }
 
         if (mpGui->addCheckBox("Reflections", mControls[ControlID::EnableReflections].enabled))
@@ -185,6 +185,11 @@ void FeatureDemo::onGuiRender()
                 mSSAO.pSSAO->renderGui(mpGui.get());
             }
             mpGui->endGroup();
+        }
+
+        if (mpGui->addCheckBox("Hashed-Alpha Test", mControls[ControlID::EnableHashedAlpha].enabled))
+        {
+            applyLightingProgramControl(ControlID::EnableHashedAlpha);
         }
     }
 }

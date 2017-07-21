@@ -109,6 +109,7 @@ private:
     struct ProgramControl
     {
         bool enabled;
+        bool unsetOnEnabled;
         std::string define;
         std::string value;
     };
@@ -116,10 +117,11 @@ private:
     enum ControlID
     {
         SuperSampling,
-        DisableSpecAA,
+        EnableSpecAA,
         EnableShadows,
         EnableReflections,
         EnableSSAO,
+        EnableHashedAlpha,
 
         Count
     };
