@@ -66,7 +66,7 @@ float4 main(ShadowsVSOut pIn) : SV_TARGET0
         //Ideally this would be light index so you can visualize the cascades of the 
         //currently selected light. However, because csmData contains Textures, it doesn't
         //like getting them with a non literal index.
-        fragColor.rgb *= getCascadeColor(getCascadeIndex(gCsmData[_LIGHT_INDEX], pIn.shadowsDepthC));
+        fragColor.rgb *= getBlendedCascadeColor(gCsmData[_LIGHT_INDEX], pIn.shadowsDepthC);
     }
 
     return fragColor;

@@ -44,9 +44,7 @@ namespace Falcor
         allocInfo.descriptorPool = mpPool->getApiHandle(0);
         allocInfo.descriptorSetCount = 1;
         allocInfo.pSetLayouts = &layout;
-        VkDescriptorSet set;
-        vk_call(vkAllocateDescriptorSets(gpDevice->getApiHandle(), &allocInfo, &set));
-        mApiHandle = ApiHandle::create(set, mpPool->getApiHandle(0));
+        vk_call(vkAllocateDescriptorSets(gpDevice->getApiHandle(), &allocInfo, &mApiHandle));
         mpApiData = std::make_shared<DescriptorSetApiData>(layout, mpPool->getApiHandle(0), mApiHandle);
 
         return true;

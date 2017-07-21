@@ -513,26 +513,31 @@ namespace Falcor
         float farPlane = pCamera->getFarPlane();
         float depthRange = farPlane - nearPlane;
 
-        float cascadeEnd = 0;
+        float nextCascadeStart = distanceRange.x;
 
         for(int32_t c = 0; c < mCsmData.cascadeCount; c++)
         {
-            float cascadeStart = (c == 0) ? distanceRange.x : cascadeEnd;
+            float cascadeStart = nextCascadeStart;
 
             switch(mControls.partitionMode)
             {
             case PartitionMode::Linear:
-                cascadeEnd = cascadeStart + (distanceRange.y - distanceRange.x) / float(mCsmData.cascadeCount);
+                nextCascadeStart = cascadeStart + (distanceRange.y - distanceRange.x) / float(mCsmData.cascadeCount);
                 break;
             case PartitionMode::Logarithmic:
-                cascadeEnd = calcPssmPartitionEnd(nearPlane, depthRange, distanceRange, 1.0f, c, mCsmData.cascadeCount);
+                nextCascadeStart = calcPssmPartitionEnd(nearPlane, depthRange, distanceRange, 1.0f, c, mCsmData.cascadeCount);
                 break;
             case PartitionMode::PSSM:
-                cascadeEnd = calcPssmPartitionEnd(nearPlane, depthRange, distanceRange, mControls.pssmLambda, c, mCsmData.cascadeCount);
+                nextCascadeStart = calcPssmPartitionEnd(nearPlane, depthRange, distanceRange, mControls.pssmLambda, c, mCsmData.cascadeCount);
                 break;
             default:
                 should_not_get_here();
             }
+
+            // If we blend between cascades, we need to expand the range to make sure we will not try to read of the edge of the shadow-map
+            float blendCorrection = (nextCascadeStart - cascadeStart) * mCsmData.cascadeBlendThreshold * 1.1f;
+            float cascadeEnd = nextCascadeStart + blendCorrection;
+            nextCascadeStart -= blendCorrection;
 
             // Calculate the cascade distance in camera-clip space
             mCsmData.cascadeRange[c].x = depthRange * cascadeStart + nearPlane;
