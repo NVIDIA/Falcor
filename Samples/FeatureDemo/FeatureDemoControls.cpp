@@ -27,12 +27,20 @@
 ***************************************************************************/
 #include "FeatureDemo.h"
 
-Gui::DropdownList kSampleCountList = {
-    { 1, "1"},
+Gui::DropdownList kSampleCountList = 
+{
+    { 1, "1" },
     { 2, "2" },
     { 4, "4" },
     { 8, "8" },
 };
+
+const Gui::DropdownList aaModeList = 
+{
+    { 0, "MSAA" },
+    { 1, "TAA" }
+};
+
 
 void FeatureDemo::initControls()
 {
@@ -67,6 +75,40 @@ void FeatureDemo::applyLightingProgramControl(ControlID controlId)
     }
 }
 
+void FeatureDemo::applyAaMode()
+{
+    if (mLightingPass.pProgram == nullptr) return;
+
+    uint32_t w = mpDefaultFBO->getWidth();
+    uint32_t h = mpDefaultFBO->getHeight();
+
+    // Common FBO desc (2 color outputs - color and normal)
+    Fbo::Desc fboDesc;
+    fboDesc.setColorTarget(0, ResourceFormat::RGBA32Float).setColorTarget(1, ResourceFormat::RGBA8Unorm).setDepthStencilTarget(ResourceFormat::D32Float);
+
+    // Release the TAA FBOs
+    mTAA.resetFbos();
+
+    if (mAAMode == AAMode::MSAA)
+    {
+        mLightingPass.pProgram->removeDefine("_OUTPUT_MOTION_VECTORS");
+        applyLightingProgramControl(SuperSampling);
+        fboDesc.setSampleCount(mMSAASampleCount);
+    }
+    else if (mAAMode == AAMode::TAA)
+    {
+        mLightingPass.pProgram->removeDefine("INTERPOLATION_MODE");
+        mLightingPass.pProgram->addDefine("_OUTPUT_MOTION_VECTORS");
+        fboDesc.setColorTarget(2, ResourceFormat::RG16Float);
+
+        Fbo::Desc taaFboDesc;
+        taaFboDesc.setColorTarget(0, ResourceFormat::RGBA32Float);
+        mTAA.createFbos(w, h, taaFboDesc);
+    }
+
+    mpMainFbo = FboHelper::create2D(w, h, fboDesc);
+}
+
 void FeatureDemo::onGuiRender()
 {
     static const char* kImageFileString = "Image files\0*.jpg;*.bmp;*.dds;*.png;*.tiff;*.tif;*.tga\0\0";
@@ -90,11 +132,6 @@ void FeatureDemo::onGuiRender()
 
     if (mpSceneRenderer)
     {
-        if (mpGui->addDropdown("Sample Count", kSampleCountList, mSampleCount))
-        {
-            onResizeSwapChain();
-        }
-
         uint32_t maxAniso = mpSceneSampler->getMaxAnisotropy();
         if (mpGui->addIntVar("Max Anisotropy", (int&)maxAniso, 1, 16))
         {
@@ -110,64 +147,109 @@ void FeatureDemo::onGuiRender()
             }
         }
 
-        if (mpGui->addCheckBox("Super Sampling", mControls[ControlID::SuperSampling].enabled))
+        //  Anti-Aliasing Controls.
+        if (mpGui->beginGroup("Anti-Aliasing"))
         {
-            applyLightingProgramControl(ControlID::SuperSampling);
-        }
+            bool reapply = false;
+            reapply = reapply || mpGui->addDropdown("AA Mode", aaModeList, (uint32_t&)mAAMode);
 
-
-        if (mpGui->addCheckBox("Specular AA", mControls[ControlID::EnableSpecAA].enabled))
-        {
-            applyLightingProgramControl(ControlID::EnableSpecAA);
-        }
-
-        if (mpGui->addCheckBox("Reflections", mControls[ControlID::EnableReflections].enabled))
-        {
-            applyLightingProgramControl(ControlID::EnableReflections);
-        }
-
-        if (mpGui->addButton("Load Reflection Texture"))
-        {
-            std::string filename;
-            if (openFileDialog(kImageFileString, filename))
+            if (mAAMode == AAMode::MSAA)
             {
-                initEnvMap(filename);
+                reapply = reapply || mpGui->addDropdown("Sample Count", kSampleCountList, mMSAASampleCount);
+
+                if (mpGui->addCheckBox("Super Sampling", mControls[ControlID::SuperSampling].enabled))
+                {
+                    applyLightingProgramControl(ControlID::SuperSampling);
+                }
             }
-        }
 
-        const Scene* pScene = mpSceneRenderer->getScene();
-
-        vec2 depthRange(pScene->getActiveCamera()->getNearPlane(), pScene->getActiveCamera()->getFarPlane());
-        if (mpGui->addFloat2Var("Depth Range", depthRange, 0, FLT_MAX))
-        {
-            pScene->getActiveCamera()->setDepthRange(depthRange.x, depthRange.y);
-        }
-
-        if (pScene->getPathCount() > 0)
-        {
-            if (mpGui->addCheckBox("Camera Path", mUseCameraPath))
+            //  Temporal Anti-Aliasing.
+            if (mAAMode == AAMode::TAA)
             {
-                applyCameraPathState();
+                if (mpGui->beginGroup("TAA"))
+                {
+                    //  Render the TAA UI.
+                    mTAA.pTAA->renderUI(mpGui.get());
+
+                    //  Choose the Sample Pattern for TAA.
+                    Gui::DropdownList samplePatternList;
+                    samplePatternList.push_back({ (uint32_t)SamplePattern::Halton, "Halton" });
+                    samplePatternList.push_back({ (uint32_t)SamplePattern::DX11, "DX11" });
+                    mpGui->addDropdown("Sample Pattern", samplePatternList, (uint32_t&)mTAASamplePattern);
+
+                    // Disable super-sampling
+                    mpGui->endGroup();
+                }
             }
-        }
 
-        if(pScene->getLightCount() && mpGui->beginGroup("Light Sources"))
-        {
-            for (uint32_t i = 0; i < pScene->getLightCount(); i++)
+            if (reapply) applyAaMode();
+
+            if (mpGui->addCheckBox("Specular AA", mControls[ControlID::EnableSpecAA].enabled))
             {
-                Light* pLight = pScene->getLight(i).get();
-                pLight->renderUI(mpGui.get(), pLight->getName().c_str());
+                applyLightingProgramControl(ControlID::EnableSpecAA);
             }
             mpGui->endGroup();
         }
 
-        if(mpGui->beginGroup("Shadows"))
+        if (mpGui->beginGroup("Reflections"))
+        {
+            if (mpGui->addCheckBox("Enable", mControls[ControlID::EnableReflections].enabled))
+            {
+                applyLightingProgramControl(ControlID::EnableReflections);
+            }
+
+            if(mControls[ControlID::EnableReflections].enabled)
+            {
+                if (mpGui->addButton("Load Reflection Texture"))
+                {
+                    std::string filename;
+                    if (openFileDialog(kImageFileString, filename))
+                    {
+                        initEnvMap(filename);
+                    }
+                }
+            }
+            mpGui->endGroup();
+        }
+
+        if(mpGui->beginGroup("Scene Controls"))
+        {
+            const Scene* pScene = mpSceneRenderer->getScene();
+
+            vec2 depthRange(pScene->getActiveCamera()->getNearPlane(), pScene->getActiveCamera()->getFarPlane());
+            if (mpGui->addFloat2Var("Depth Range", depthRange, 0, FLT_MAX))
+            {
+                pScene->getActiveCamera()->setDepthRange(depthRange.x, depthRange.y);
+            }
+
+            if (pScene->getPathCount() > 0)
+            {
+                if (mpGui->addCheckBox("Camera Path", mUseCameraPath))
+                {
+                    applyCameraPathState();
+                }
+            }
+
+            if (pScene->getLightCount() && mpGui->beginGroup("Light Sources"))
+            {
+                for (uint32_t i = 0; i < pScene->getLightCount(); i++)
+                {
+                    Light* pLight = pScene->getLight(i).get();
+                    pLight->renderUI(mpGui.get(), pLight->getName().c_str());
+                }
+                mpGui->endGroup();
+            }
+        }
+
+        mpToneMapper->renderUI(mpGui.get(), "Tone-Mapping");
+
+        if (mpGui->beginGroup("Shadows"))
         {
             if (mpGui->addCheckBox("Enable Shadows", mControls[ControlID::EnableShadows].enabled))
             {
                 applyLightingProgramControl(ControlID::EnableShadows);
             }
-            if(mControls[ControlID::EnableShadows].enabled)
+            if (mControls[ControlID::EnableShadows].enabled)
             {
                 mpGui->addCheckBox("Update Map", mShadowPass.updateShadowMap);
                 mShadowPass.pCsm->renderUi(mpGui.get());
@@ -175,12 +257,10 @@ void FeatureDemo::onGuiRender()
             mpGui->endGroup();
         }
 
-        mpToneMapper->renderUI(mpGui.get(), "Tone-Mapping");
-
         if (mpGui->beginGroup("SSAO"))
         {
             mpGui->addCheckBox("Enable SSAO", mControls[ControlID::EnableSSAO].enabled);
-            if(mControls[ControlID::EnableSSAO].enabled)
+            if (mControls[ControlID::EnableSSAO].enabled)
             {
                 mSSAO.pSSAO->renderGui(mpGui.get());
             }

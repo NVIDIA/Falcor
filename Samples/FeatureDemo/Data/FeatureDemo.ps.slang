@@ -38,9 +38,12 @@ struct PsOut
 {
     float4 color : SV_TARGET0;
     float4 normal : SV_TARGET1;
+#ifdef _OUTPUT_MOTION_VECTORS
+    float2 motion : SV_TARGET2;
+#endif
 };
 
-PsOut main(MainVsOut vOut)
+PsOut main(MainVsOut vOut, float4 pixelCrd : SV_POSITION)
 {
     PsOut psOut;
 
@@ -87,6 +90,10 @@ PsOut main(MainVsOut vOut)
     
     psOut.color = finalColor;
     psOut.normal = float4(vOut.vsData.normalW * 0.5f + 0.5f, 1.0f);
+
+#ifdef _OUTPUT_MOTION_VECTORS
+    psOut.motion = calcMotionVector(pixelCrd.xy, vOut.vsData.prevPosH, gRenderTargetDim);
+#endif
 
     return psOut;
 }

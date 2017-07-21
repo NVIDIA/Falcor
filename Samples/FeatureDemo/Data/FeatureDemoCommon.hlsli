@@ -28,12 +28,14 @@
 __import ShaderCommon;
 __import DefaultVS;
 __import Effects.CascadedShadowMap;
+#include "VertexAttrib.h"
 
 layout(binding = 0) cbuffer PerFrameCB : register(b0)
 {
 	float3 gAmbient;
     CsmData gCsmData;
     float4x4 camVpAtLastCsmUpdate;
+    float2 gRenderTargetDim;
 };
 
 struct MainVsOut
