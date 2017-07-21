@@ -41,7 +41,7 @@ void FeatureDemo::initControls()
     mControls[ControlID::DisableSpecAA] = { false, "_MS_DISABLE_ROUGHNESS_FILTERING" };
     mControls[ControlID::EnableShadows] = { true, "_ENABLE_SHADOWS" };
     mControls[ControlID::EnableReflections] = { true, "_ENABLE_REFLECTIONS" };
-    mControls[ControlID::EnableSSAO] = { true, "" };
+    mControls[ControlID::EnableSSAO] = { false, "" };
 
     for (uint32_t i = 0 ; i < ControlID::Count ; i++)
     {

@@ -607,10 +607,18 @@ namespace Falcor
         info.swapchainCount = 1;
         info.pSwapchains = &mpApiData->swapchain;
         info.pImageIndices = &mCurrentBackBufferIndex;
+
+        VkFence f;
+        VkFenceCreateInfo fi = { VK_STRUCTURE_TYPE_FENCE_CREATE_INFO };
+
         vk_call(vkQueuePresentKHR(mpRenderContext->getLowLevelData()->getCommandQueue(), &info));
 
+        vkCreateFence(mApiHandle, &fi, nullptr, &f);
+
         // Get the next back-buffer
-        vk_call(vkAcquireNextImageKHR(mApiHandle, mpApiData->swapchain, std::numeric_limits<uint64_t>::max(), mpFrameFence->getApiHandle(), VK_NULL_HANDLE, &mCurrentBackBufferIndex));        
+        vk_call(vkAcquireNextImageKHR(mApiHandle, mpApiData->swapchain, std::numeric_limits<uint64_t>::max(), nullptr, f, &mCurrentBackBufferIndex));        
+        vk_call(vkWaitForFences(mApiHandle, 1, &f, false, -1));
+        vkDestroyFence(mApiHandle, f, nullptr);
     }
 
     bool Device::apiInit(const Desc& desc)
