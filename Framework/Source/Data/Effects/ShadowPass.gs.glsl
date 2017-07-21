@@ -34,11 +34,10 @@ layout(set = 0, binding = 3) uniform PerLightCB
     CsmData gCsmData;
 };
 
-layout(location = 0) out vec4 outputData_pos;
-layout(location = 1) out vec2 outputData_texC;
+layout(location = 0) out vec2 outputData_texC;
 
-layout(location = 0) in vec4 input_pos[3];
-layout(location = 1) in vec2 input_texC[3];
+layout(location = 0) in vec2 input_texC[3];
+layout(location = 1) in vec4 input_pos[3];
 
 
 layout(invocations = _CASCADE_COUNT) in;
@@ -53,13 +52,12 @@ void main()
 
     for(int i = 0 ; i < 3 ; i++)
     {
-        outputData_pos = gCsmData.globalMat * input_pos[i];
-        outputData_pos.xyz /= input_pos[i].w;
-        outputData_pos.xyz *= gCsmData.cascadeScale[InstanceID].xyz;
-        outputData_pos.xyz += gCsmData.cascadeOffset[InstanceID].xyz;
+        gl_Position = gCsmData.globalMat * input_pos[i];
+        gl_Position.xyz /= input_pos[i].w;
+        gl_Position.xyz *= gCsmData.cascadeScale[InstanceID].xyz;
+        gl_Position.xyz += gCsmData.cascadeOffset[InstanceID].xyz;
 
         outputData_texC = input_texC[i];
-        gl_Position = outputData_pos;
         gl_Layer = InstanceID;
 
         EmitVertex();

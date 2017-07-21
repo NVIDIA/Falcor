@@ -36,15 +36,15 @@ layout(binding = 3) cbuffer PerLightCB : register(b0)
 
 struct ShadowPassPSIn
 {
-    float4 pos : SV_POSITION;
     float2 texC : TexCoord;
+    float4 pos : SV_POSITION;
     uint rtIndex : SV_RenderTargetArrayIndex;
 };
 
 struct ShadowPassVSOut
 {
-    float4 pos : POSITION;
     float2 texC : TEXCOORD;
+    float4 pos : POSITION;
 };
 
 [instance(_CASCADE_COUNT)]

@@ -30,12 +30,12 @@ __import ShaderCommon;
 
 struct ShadowPassVSOut
 {
+    float2 texC : TEXCOORD;
 #ifdef _APPLY_PROJECTION
     float4 pos : SV_POSITION;
 #else
     float4 pos : POSITION;
 #endif
-    float2 texC : TEXCOORD;
 };
 
 ShadowPassVSOut main(VS_IN vIn)
