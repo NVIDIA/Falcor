@@ -201,6 +201,7 @@ void FeatureDemo::onLoad()
 
 void FeatureDemo::renderSkyBox()
 {
+    PROFILE(skyBox);
     mpState->setDepthStencilState(mSkyBox.pDS);
     mSkyBox.pEffect->render(mpRenderContext.get(), mpSceneRenderer->getScene()->getActiveCamera().get());
     mpState->setDepthStencilState(nullptr);
@@ -234,11 +235,13 @@ void FeatureDemo::endFrame()
 
 void FeatureDemo::postProcess()
 {
+    PROFILE(postProcess);
     mpToneMapper->execute(mpRenderContext.get(), mpResolveFbo, mControls[EnableSSAO].enabled ? mpPostProcessFbo : mpDefaultFBO);
 }
 
 void FeatureDemo::lightingPass()
 {
+    PROFILE(lightingPass);
     mpState->setProgram(mLightingPass.pProgram);
     mpRenderContext->setGraphicsVars(mLightingPass.pVars);
     ConstantBuffer::SharedPtr pCB = mLightingPass.pVars->getConstantBuffer("PerFrameCB");
@@ -273,6 +276,7 @@ void FeatureDemo::resolveMSAA()
 
 void FeatureDemo::shadowPass()
 {
+    PROFILE(shadowPass);
     if (mControls[EnableShadows].enabled && mShadowPass.updateShadowMap)
     {
         mShadowPass.camVpAtLastCsmUpdate = mpSceneRenderer->getScene()->getActiveCamera()->getViewProjMatrix();
@@ -282,6 +286,7 @@ void FeatureDemo::shadowPass()
 
 void FeatureDemo::antiAliasing()
 {
+    PROFILE(resolveMSAA);
     switch (mAAMode)
     {
     case AAMode::MSAA:
@@ -320,6 +325,7 @@ void FeatureDemo::runTAA()
 
 void FeatureDemo::ambientOcclusion()
 {
+    PROFILE(ssao);
     if (mControls[EnableSSAO].enabled)
     {
         Texture::SharedPtr pAOMap = mSSAO.pSSAO->generateAOMap(mpRenderContext.get(), mpSceneRenderer->getScene()->getActiveCamera().get(), mpResolveFbo->getColorTexture(2), mpResolveFbo->getColorTexture(1));
@@ -350,7 +356,10 @@ void FeatureDemo::onFrameRender()
     {
         beginFrame();
 
-        mpSceneRenderer->update(mCurrentTime);
+        {
+            PROFILE(updateScene);
+            mpSceneRenderer->update(mCurrentTime);
+        }
         shadowPass();
         renderSkyBox();
         lightingPass();
