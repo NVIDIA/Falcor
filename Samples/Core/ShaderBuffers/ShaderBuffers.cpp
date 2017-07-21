@@ -206,6 +206,11 @@ void ShaderBuffersSample::onResizeSwapChain()
 
 int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ LPSTR lpCmdLine, _In_ int nShowCmd)
 {
+#ifdef FALCOR_VK
+    msgBox("Vulkan support for the features used in the Shader Buffers sample is coming soon!");
+    return 0;
+#endif
+
     ShaderBuffersSample buffersSample;
     SampleConfig config;
     config.windowDesc.title = "Shader Buffers";
