@@ -153,6 +153,8 @@ namespace Falcor
         return pObj;
     }
 
+    RenderTargetView::~RenderTargetView() = default;
+
     RenderTargetView::SharedPtr RenderTargetView::create(ResourceWeakPtr pResource, uint32_t mipLevel, uint32_t firstArraySlice, uint32_t arraySize)
     {
         Resource::SharedConstPtr pSharedPtr = pResource.lock();

@@ -185,6 +185,12 @@ namespace Falcor
         return SharedPtr(new UnorderedAccessView(pResource, view, mipLevel, firstArraySlice, arraySize));
     }
 
+    RenderTargetView::~RenderTargetView()
+    {
+        static std::vector<RenderTargetView::ApiHandle> hdl;
+        hdl.push_back(mApiHandle);
+    }
+
     RenderTargetView::SharedPtr RenderTargetView::create(ResourceWeakPtr pResource, uint32_t mipLevel, uint32_t firstArraySlice, uint32_t arraySize)
     {
         Resource::SharedConstPtr pSharedPtr = pResource.lock();

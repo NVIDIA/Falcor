@@ -53,7 +53,7 @@ namespace Falcor
     public:
         using ApiHandle = ApiHandleType;
         static const uint32_t kMaxPossible = -1;
-        ~ResourceView();
+        virtual ~ResourceView();
 
         ResourceView(ResourceWeakPtr& pResource, ApiHandle handle, uint32_t mostDetailedMip, uint32_t mipCount, uint32_t firstArraySlice, uint32_t arraySize)
             : mApiHandle(handle), mpResource(pResource), mViewInfo(mostDetailedMip, mipCount, firstArraySlice, arraySize) {}
@@ -61,7 +61,7 @@ namespace Falcor
         ApiHandle getApiHandle() const { return mApiHandle; }
         const ResourceViewInfo& getViewInfo() const { return mViewInfo; }
         const Resource* getResource() const { return mpResource.lock().get(); }
-    private:
+    protected:
         ApiHandle mApiHandle;
         ResourceViewInfo mViewInfo;
         ResourceWeakPtr mpResource;
@@ -116,6 +116,7 @@ namespace Falcor
         using SharedConstPtr = std::shared_ptr<const RenderTargetView>;
         static SharedPtr create(ResourceWeakPtr pResource, uint32_t mipLevel, uint32_t firstArraySlice = 0, uint32_t arraySize = kMaxPossible);
         static SharedPtr getNullView();
+        ~RenderTargetView();
     private:
         RenderTargetView(ResourceWeakPtr& pResource, ApiHandle handle, uint32_t mipLevel, uint32_t firstArraySlice, uint32_t arraySize) :
             ResourceView(pResource, handle, mipLevel, 1, firstArraySlice, arraySize) {}
