@@ -532,6 +532,9 @@
     <ClCompile Include="API\Vulkan\VkQueryHeap.cpp">
       <Filter>API\Vulkan</Filter>
     </ClCompile>
+    <ClCompile Include="Effects\TAA\TAA.cpp">
+      <Filter>Effects\TAA</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Graphics\Model\Animation.h">
@@ -1637,7 +1640,12 @@
     <ClInclude Include="Data\Effects\LeanMapData.hlsli">
       <Filter>Data\Effects</Filter>
     </ClInclude>
-    <ClInclude Include="Utils\ThreadPool.h" />
+    <ClInclude Include="Effects\TAA\TAA.h">
+      <Filter>Effects\TAA</Filter>
+    </ClInclude>
+    <ClInclude Include="Utils\ThreadPool.h">
+      <Filter>Utils</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Externals">
@@ -1804,6 +1812,9 @@
     </Filter>
     <Filter Include="API\Vulkan\LowLevel">
       <UniqueIdentifier>{230e7726-da32-47d7-bdf6-c77e62c21ada}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Effects\TAA">
+      <UniqueIdentifier>{d1b8a19e-aea1-4b27-862a-06434b845be7}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -2166,9 +2177,6 @@
     <None Include="Data\Framework\Shaders\SceneEditorVS.slang">
       <Filter>Data\Framework\Shaders</Filter>
     </None>
-    <None Include="Data\Framework\Shaders\TextRenderer.fs.slang">
-      <Filter>Data\Framework\Shaders</Filter>
-    </None>
     <None Include="Data\Framework\Shaders\TextRenderer.vs.slang">
       <Filter>Data\Framework\Shaders</Filter>
     </None>
@@ -2241,9 +2249,6 @@
     <None Include="Data\Effects\LeanMapping.slang">
       <Filter>Data\Effects</Filter>
     </None>
-    <None Include="Data\Effects\SSAO.ps.hlsl">
-      <Filter>Data\Effects</Filter>
-    </None>
     <None Include="Data\Effects\CascadedShadowMap.slang">
       <Filter>Data\Effects</Filter>
     </None>
@@ -2253,6 +2258,14 @@
     <None Include="Data\Effects\ShadowPass.gs.slang">
       <Filter>Data\Effects</Filter>
     </None>
-    <None Include="Data\Framework\Shaders\FullScreenPass.gs.glsl" />
+    <None Include="Data\Framework\Shaders\FullScreenPass.gs.glsl">
+      <Filter>Data\Framework\Shaders</Filter>
+    </None>
+    <None Include="Data\Effects\TAA.ps.slang">
+      <Filter>Data\Effects</Filter>
+    </None>
+    <None Include="Data\Framework\Shaders\TextRenderer.ps.slang">
+      <Filter>Data\Framework\Shaders</Filter>
+    </None>
   </ItemGroup>
 </Project>

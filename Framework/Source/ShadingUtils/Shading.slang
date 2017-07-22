@@ -153,7 +153,7 @@ void _fn prepareShadingAttribs(in const MaterialData material, in float3 P, in f
     shAttr.preparedMat.desc = desc;
 
     /* Evaluate alpha test material modifier */
-    applyAlphaTest(material, shAttr);
+    applyAlphaTest(material, shAttr, P);
     shAttr.aoFactor = 1;
 
     /* Prefetch textures */

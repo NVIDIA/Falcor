@@ -25,23 +25,15 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
+__import ShaderCommon;
+__import Shading;
+__import DefaultVS;
 
-cbuffer PerFrameCB : register(b0)
+float4 main(VS_OUT vOut) : SV_TARGET0
 {
-	float4x4 gvpTransform;
-	float3 gFontColor;
-};
+    ShadingAttribs shAttr;
 
-Texture2D gFontTex;
+    prepareShadingAttribs(gMaterial, vOut.posW, gCam.position, vOut.normalW, vOut.bitangentW, vOut.texC, 0.0f, shAttr);
 
-float4 calcColor(float2 texC)
-{
-	float4 color = gFontTex.Load(int3(texC, 0));
-	color.rgb = gFontColor;
-	return color;
-}
-
-float4 main(float2 texC  : TEXCOORD) : SV_TARGET0
-{
-	return calcColor(texC);
+    return shAttr.preparedMat.values.layers[0].albedo;
 }

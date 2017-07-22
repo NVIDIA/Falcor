@@ -36,7 +36,6 @@ class FeatureDemo : public SampleTest
 public:
     void onLoad() override;
     void onFrameRender() override;
-    void onShutdown() override;
     void onResizeSwapChain() override;
     bool onKeyEvent(const KeyboardEvent& keyEvent) override;
     bool onMouseEvent(const MouseEvent& mouseEvent) override;
@@ -46,18 +45,6 @@ private:
     Fbo::SharedPtr mpMainFbo;
     Fbo::SharedPtr mpResolveFbo;
     Fbo::SharedPtr mpPostProcessFbo;
-    struct
-    {
-        SkyBox::UniquePtr pEffect;
-        DepthStencilState::SharedPtr pDS;
-        Sampler::SharedPtr pSampler;
-    } mSkyBox;
-
-    struct
-    {
-        GraphicsVars::SharedPtr pVars;
-        GraphicsProgram::SharedPtr pProgram;
-    } mLightingPass;
 
     struct ShadowPass
     {
@@ -66,6 +53,51 @@ private:
         glm::mat4 camVpAtLastCsmUpdate = glm::mat4();
     };
     ShadowPass mShadowPass;
+
+    //  SkyBox Pass.
+    struct
+    {
+        SkyBox::UniquePtr pEffect;
+        DepthStencilState::SharedPtr pDS;
+        Sampler::SharedPtr pSampler;
+    } mSkyBox;
+
+    //  Lighting Pass.
+    struct
+    {
+        GraphicsVars::SharedPtr pVars;
+        GraphicsProgram::SharedPtr pProgram;
+    } mLightingPass;
+
+
+    //  The Temporal Anti-Aliasing Pass.
+    class
+    {
+    public:
+        TemporalAA::UniquePtr pTAA;
+        Fbo::SharedPtr getActiveFbo() { return pTAAFbos[activeFboIndex]; }
+        Fbo::SharedPtr getInactiveFbo()  { return pTAAFbos[1 - activeFboIndex]; }
+        void createFbos(uint32_t width, uint32_t height, const Fbo::Desc & fboDesc)
+        {
+            pTAAFbos[0] = FboHelper::create2D(width, height, fboDesc);
+            pTAAFbos[1] = FboHelper::create2D(width, height, fboDesc);
+        }
+
+        void switchFbos() { activeFboIndex = 1 - activeFboIndex; }
+        void resetFbos()
+        {
+            activeFboIndex = 0;
+            pTAAFbos[0] = nullptr;
+            pTAAFbos[1] = nullptr;
+        }
+
+        void resetFboActiveIndex() { activeFboIndex = 0;}
+
+    private:
+        Fbo::SharedPtr pTAAFbos[2];
+        uint32_t activeFboIndex = 0;
+    } mTAA;
+
 
     ToneMapping::UniquePtr mpToneMapper;
 
@@ -78,11 +110,13 @@ private:
 
     void beginFrame();
     void endFrame();
-    void renderSkyBox();
-    void postProcess();
-    void lightingPass();
-    void resolveMSAA();
     void shadowPass();
+    void renderSkyBox();
+    void lightingPass();
+    void antiAliasing();
+    void resolveMSAA();
+    void runTAA();
+    void postProcess();
     void ambientOcclusion();
 
     void initSkyBox(const std::string& name);
@@ -91,9 +125,10 @@ private:
     void initShadowPass();
     void initSSAO();
     void initEnvMap(const std::string& name);
+    void initTAA();
 
     void initControls();
-    
+
     GraphicsState::SharedPtr mpState;
     SceneRenderer::SharedPtr mpSceneRenderer;
     void loadModel(const std::string& filename, bool showProgressBar);
@@ -102,13 +137,14 @@ private:
     void setActiveCameraAspectRatio();
     void setSceneSampler(uint32_t maxAniso);
 
-    uint32_t mSampleCount = 4;
+
     Texture::SharedPtr mpEnvMap;
     Sampler::SharedPtr mpSceneSampler;
 
     struct ProgramControl
     {
         bool enabled;
+        bool unsetOnEnabled;
         std::string define;
         std::string value;
     };
@@ -116,14 +152,33 @@ private:
     enum ControlID
     {
         SuperSampling,
-        DisableSpecAA,
+        EnableSpecAA,
         EnableShadows,
         EnableReflections,
         EnableSSAO,
-
+        EnableHashedAlpha,
         Count
     };
 
+
+    enum class SamplePattern : uint32_t
+    {
+        Halton,
+        DX11
+    };
+
+    enum class AAMode
+    {
+        MSAA,
+        TAA
+    };
+
+    float mEnvMapFactorScale = 0.25f;
+    AAMode mAAMode = AAMode::TAA;
+    uint32_t mMSAASampleCount = 4;
+    SamplePattern mTAASamplePattern = SamplePattern::Halton;
+    void applyAaMode();
+    
     std::vector<ProgramControl> mControls;
     void applyLightingProgramControl(ControlID controlID);
 
@@ -131,7 +186,7 @@ private:
     void applyCameraPathState();
     bool mOptimizedShaders = true;
 
-    //Testing 
+    // Testing 
     void onInitializeTesting() override;
     void onBeginTestFrame() override;
 };

@@ -25,39 +25,44 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-__import ShaderCommon;
-__import Shading;
+#pragma once
+#include "Falcor.h"
 
-#ifdef FALCOR_GLSL
-layout(binding = 0) SamplerState gDummySampler;		// The shader uses `Load`, which in GLSL requires a sampler-state. Slang will create a dummy declaration but will not expose it in the reflection.
-													// This hack ensures that we will bind a valid sampler to Slang's dummy declaration
-#endif
+using namespace Falcor;
 
-cbuffer PerImageCB
+class HashedAlpha : public Sample
 {
-    // G-Buffer
-    // Lighting params
-	LightData gDirLight;
-	LightData gPointLight;
-	float3 gAmbient;
-    // Debug mode
-	uint gDebugMode;
+public:
+    void onLoad() override;
+    void onFrameRender() override;
+    void onShutdown() override;
+    void onResizeSwapChain() override;
+    bool onKeyEvent(const KeyboardEvent& keyEvent) override;
+    bool onMouseEvent(const MouseEvent& mouseEvent) override;
+    void onDataReload() override;
+    void onGuiRender() override;
+
+private:
+    void loadModel();
+    void updateProgram();
+
+    enum class AlphaTestMode
+    {
+        HashedAlphaIsotropic,
+        HashedAlphaAnisotropic,
+        AlphaTest
+    };
+
+    GraphicsProgram::SharedPtr mpProgram;
+    GraphicsVars::SharedPtr mpVars;
+    GraphicsState::SharedPtr mpState;
+
+    Model::SharedPtr mpModel;
+    Camera::SharedPtr mpCamera;
+    ModelViewCameraController mCameraController;
+
+    bool mDirty = true;
+    static const Gui::DropdownList kModeList;
+    AlphaTestMode mAlphaTestMode = AlphaTestMode::HashedAlphaIsotropic;
+    float mHashScale = 1.0f;
 };
-
-#include "LightingPassCommon.h"
-
-Texture2D gGBuf0;
-Texture2D gGBuf1;
-Texture2D gGBuf2;
-
-float4 main(float2 texC : TEXCOORD, float4 pos : SV_POSITION) : SV_TARGET
-{
-    // Fetch a G-Buffer
-    const float3 posW    = gGBuf0.Load(int3(pos.xy, 0)).rgb;
-    const float3 normalW = gGBuf1.Load(int3(pos.xy, 0)).rgb;
-    const float4 albedo  = gGBuf2.Load(int3(pos.xy, 0));
-
-    float3 color = shade(posW, normalW, albedo);
-
-	return float4(color, 1);
-}
