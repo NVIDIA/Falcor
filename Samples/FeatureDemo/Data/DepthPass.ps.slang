@@ -26,11 +26,14 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 __import DefaultVS;
+__import ShaderCommon;
+__import Shading;
+__import Helpers;
 
-void main(VS_IN vIn, out float2 texC : TEXCRD, out float3 posW : POSITION, out float4 posH : SV_POSITION)
+void main(float2 texC : TEXCRD, float3 posW : POSITION)
 {
-    VS_OUT vOut = defaultVS(vIn);
-	posH = vOut.posH;
-    texC = vOut.texC;
-    posW = vOut.posW;
+    ShadingAttribs attr;
+    attr.lodBias = 0;
+    attr.UV = texC;
+    applyAlphaTest(gMaterial, attr, posW);
 }

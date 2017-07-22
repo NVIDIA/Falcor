@@ -49,7 +49,7 @@ static const float kDX11SamplePattern[8][2] = { { 1.0f / 16.0f, -3.0f / 16.0f },
 
 void FeatureDemo::initDepthPass()
 {
-	mDepthPass.pProgram = GraphicsProgram::createFromFile("DepthPass.vs.slang", "");
+	mDepthPass.pProgram = GraphicsProgram::createFromFile("DepthPass.vs.slang", "DepthPass.ps.slang");
 	mDepthPass.pVars = GraphicsVars::create(mDepthPass.pProgram->getActiveVersion()->getReflector());
 }
 
@@ -128,8 +128,8 @@ void FeatureDemo::initScene(Scene::SharedPtr pScene)
     mpSceneRenderer->toggleStaticMaterialCompilation(mOptimizedShaders);
     setSceneSampler(mpSceneSampler ? mpSceneSampler->getMaxAnisotropy() : 4);
     setActiveCameraAspectRatio();
+    initDepthPass();
     initLightingPass();
-	initDepthPass();
     initShadowPass();
     initSSAO();
     initTAA();
@@ -208,9 +208,6 @@ void FeatureDemo::onLoad()
     initEnvMap("LightProbes\\10-Shiodome_Stairs_3k.dds");
     initPostProcess();
     initializeTesting();
-
-	loadScene("D:\\P4\\notnv\\nvresearch-gfx\\Falcor\\UE4\\SunTemple\\SunTemple.fscene", false);
-	toggleUI(false);
 }
 
 void FeatureDemo::renderSkyBox()
@@ -386,7 +383,6 @@ void FeatureDemo::onFrameRender()
 	
     if (mpSceneRenderer)
     {
-		mCurrentTime = 30;
         beginFrame();
 
         {

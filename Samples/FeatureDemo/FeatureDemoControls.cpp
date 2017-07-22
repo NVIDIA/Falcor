@@ -66,11 +66,13 @@ void FeatureDemo::applyLightingProgramControl(ControlID controlId)
         bool add = control.unsetOnEnabled ? !control.enabled : control.enabled;
         if (add)
         {
-            mLightingPass.pProgram->addDefine(control.define, control.value);
+            mLightingPass.pProgram->addDefine(control.define, control.value);            
+            if (controlId == ControlID::EnableHashedAlpha) mDepthPass.pProgram->addDefine(control.define, control.value);
         }
         else
         {
             mLightingPass.pProgram->removeDefine(control.define);
+            if (controlId == ControlID::EnableHashedAlpha) mDepthPass.pProgram->removeDefine(control.define);
         }
     }
 }
