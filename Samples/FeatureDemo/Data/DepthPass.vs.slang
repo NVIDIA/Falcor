@@ -25,23 +25,12 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
+__import DefaultVS;
 
-cbuffer PerFrameCB : register(b0)
+void main(VS_IN vIn, out float2 texC : TEXCRD, out float3 posW : POSITION, out float4 posH : SV_POSITION)
 {
-	float4x4 gvpTransform;
-	float3 gFontColor;
-};
-
-Texture2D gFontTex;
-
-float4 calcColor(float2 texC)
-{
-	float4 color = gFontTex.Load(int3(texC, 0));
-	color.rgb = gFontColor;
-	return color;
-}
-
-float4 main(float2 texC  : TEXCOORD) : SV_TARGET0
-{
-	return calcColor(texC);
+    VS_OUT vOut = defaultVS(vIn);
+	posH = vOut.posH;
+    texC = vOut.texC;
+    posW = vOut.posW;
 }
