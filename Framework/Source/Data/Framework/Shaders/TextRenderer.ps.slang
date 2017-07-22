@@ -26,13 +26,18 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 
-cbuffer PerFrameCB : register(b0)
+layout(set = 0, binding = 1) cbuffer PerFrameCB : register(b0)
 {
 	float4x4 gvpTransform;
 	float3 gFontColor;
 };
 
-Texture2D gFontTex;
+layout(set = 0, binding = 2) Texture2D gFontTex;
+
+#ifdef FALCOR_GLSL
+layout(set = 0, binding = 0) SamplerState gDummySampler; // The shader uses `Load`, which in GLSL requires a sampler-state. Slang will create a dummy declaration but will not expose it in the reflection.
+													     // This hack ensures that we will bind a valid sampler to Slang's dummy declaration
+#endif
 
 float4 calcColor(float2 texC)
 {

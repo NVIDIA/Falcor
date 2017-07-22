@@ -2177,9 +2177,6 @@
     <None Include="Data\Framework\Shaders\SceneEditorVS.slang">
       <Filter>Data\Framework\Shaders</Filter>
     </None>
-    <None Include="Data\Framework\Shaders\TextRenderer.fs.slang">
-      <Filter>Data\Framework\Shaders</Filter>
-    </None>
     <None Include="Data\Framework\Shaders\TextRenderer.vs.slang">
       <Filter>Data\Framework\Shaders</Filter>
     </None>
@@ -2266,6 +2263,9 @@
     </None>
     <None Include="Data\Effects\TAA.ps.slang">
       <Filter>Data\Effects</Filter>
+    </None>
+    <None Include="Data\Framework\Shaders\TextRenderer.ps.slang">
+      <Filter>Data\Framework\Shaders</Filter>
     </None>
   </ItemGroup>
 </Project>

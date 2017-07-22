@@ -3,6 +3,11 @@ Copyright (c) 2017, NVIDIA CORPORATION.  All rights reserved.
 ***************************************************************************/
 #include "HostDeviceData.h"
 
+#ifdef FALCOR_GLSL
+layout(binding = 0) SamplerState gDummySampler; // The shader uses `Load`, which in GLSL requires a sampler-state. Slang will create a dummy declaration but will not expose it in the reflection.
+												// This hack ensures that we will bind a valid sampler to Slang's dummy declaration
+#endif
+
 cbuffer PerFrameCB : register(b0)
 {
     float gAlpha;

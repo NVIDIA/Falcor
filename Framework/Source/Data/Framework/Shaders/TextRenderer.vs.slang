@@ -26,7 +26,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 
-cbuffer PerFrameCB : register(b0)
+layout(set = 0, binding = 1) cbuffer PerFrameCB : register(b0)
 {
 	float4x4 gvpTransform;
 	float3 gFontColor;

@@ -1273,7 +1273,7 @@
     <None Include="Data\Framework\Shaders\ParallelReduction.ps.slang" />
     <None Include="Data\Framework\Shaders\SceneEditorPS.slang" />
     <None Include="Data\Framework\Shaders\SceneEditorVS.slang" />
-    <None Include="Data\Framework\Shaders\TextRenderer.fs.slang" />
+    <None Include="Data\Framework\Shaders\TextRenderer.ps.slang" />
     <None Include="Data\Framework\Shaders\TextRenderer.vs.slang" />
     <None Include="Data\HostDeviceData.slang" />
     <None Include="Data\ShaderCommon.slang" />
