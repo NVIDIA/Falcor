@@ -198,6 +198,9 @@ void FeatureDemo::onLoad()
     initEnvMap("LightProbes\\10-Shiodome_Stairs_3k.dds");
     initPostProcess();
     initializeTesting();
+
+	loadScene("D:\\P4\\notnv\\nvresearch-gfx\\Falcor\\UE4\\SunTemple\\SunTemple.fscene", false);
+	toggleUI(false);
 }
 
 void FeatureDemo::renderSkyBox()
@@ -267,6 +270,7 @@ void FeatureDemo::lightingPass()
     }
 
     mpSceneRenderer->renderScene(mpRenderContext.get());
+	mpRenderContext->flush();
 }
 
 void FeatureDemo::resolveMSAA()
@@ -283,6 +287,7 @@ void FeatureDemo::shadowPass()
     {
         mShadowPass.camVpAtLastCsmUpdate = mpSceneRenderer->getScene()->getActiveCamera()->getViewProjMatrix();
         mShadowPass.pCsm->setup(mpRenderContext.get(), mpSceneRenderer->getScene()->getActiveCamera().get(), nullptr);
+		mpRenderContext->flush();
     }
 }
 
@@ -353,9 +358,10 @@ void FeatureDemo::onBeginTestFrame()
 void FeatureDemo::onFrameRender()
 {
     beginTestFrame();
-
+	
     if (mpSceneRenderer)
     {
+		mCurrentTime = 30;
         beginFrame();
 
         {
