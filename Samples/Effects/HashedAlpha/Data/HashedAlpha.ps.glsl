@@ -25,39 +25,17 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
+#version 450
 __import ShaderCommon;
 __import Shading;
+__import DefaultVS;
 
-#ifdef FALCOR_GLSL
-layout(binding = 0) SamplerState gDummySampler;		// The shader uses `Load`, which in GLSL requires a sampler-state. Slang will create a dummy declaration but will not expose it in the reflection.
-													// This hack ensures that we will bind a valid sampler to Slang's dummy declaration
-#endif
+in VS_OUT vOut;
+layout(location = 0) out vec4 fragColor;
 
-cbuffer PerImageCB
+void main()
 {
-    // G-Buffer
-    // Lighting params
-	LightData gDirLight;
-	LightData gPointLight;
-	float3 gAmbient;
-    // Debug mode
-	uint gDebugMode;
-};
-
-#include "LightingPassCommon.h"
-
-Texture2D gGBuf0;
-Texture2D gGBuf1;
-Texture2D gGBuf2;
-
-float4 main(float2 texC : TEXCOORD, float4 pos : SV_POSITION) : SV_TARGET
-{
-    // Fetch a G-Buffer
-    const float3 posW    = gGBuf0.Load(int3(pos.xy, 0)).rgb;
-    const float3 normalW = gGBuf1.Load(int3(pos.xy, 0)).rgb;
-    const float4 albedo  = gGBuf2.Load(int3(pos.xy, 0));
-
-    float3 color = shade(posW, normalW, albedo);
-
-	return float4(color, 1);
+    ShadingAttribs shAttr;
+    prepareShadingAttribs(gMaterial, vOut.posW, gCam.position, vOut.normalW, vOut.bitangentW, vOut.texC, 0.0f, shAttr);
+    fragColor = shAttr.preparedMat.values.layers[0].albedo;
 }

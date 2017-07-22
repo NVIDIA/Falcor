@@ -25,6 +25,11 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
+#ifdef FALCOR_GLSL
+layout(set = 0, binding = 0) SamplerState gDummySampler; // The shader uses `Load`, which in GLSL requires a sampler-state. Slang will create a dummy declaration but will not expose it in the reflection.
+													     // This hack ensures that we will bind a valid sampler to Slang's dummy declaration
+#endif
+
 #ifndef SAMPLE_COUNT
 Texture2D gTex;
 #else

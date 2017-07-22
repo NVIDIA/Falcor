@@ -88,7 +88,7 @@ namespace Falcor
 
         void detachCameraController();
 
-        const Scene* getScene() const { return mpScene.get(); }
+        Scene* getScene() const { return mpScene.get(); }
 
         void toggleStaticMaterialCompilation(bool on) { mCompileMaterialWithProgram = on; }
 

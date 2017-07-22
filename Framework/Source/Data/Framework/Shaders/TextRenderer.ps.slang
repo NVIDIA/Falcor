@@ -25,39 +25,28 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-__import ShaderCommon;
-__import Shading;
 
-#ifdef FALCOR_GLSL
-layout(binding = 0) SamplerState gDummySampler;		// The shader uses `Load`, which in GLSL requires a sampler-state. Slang will create a dummy declaration but will not expose it in the reflection.
-													// This hack ensures that we will bind a valid sampler to Slang's dummy declaration
-#endif
-
-cbuffer PerImageCB
+layout(set = 0, binding = 1) cbuffer PerFrameCB : register(b0)
 {
-    // G-Buffer
-    // Lighting params
-	LightData gDirLight;
-	LightData gPointLight;
-	float3 gAmbient;
-    // Debug mode
-	uint gDebugMode;
+	float4x4 gvpTransform;
+	float3 gFontColor;
 };
 
-#include "LightingPassCommon.h"
+layout(set = 0, binding = 2) Texture2D gFontTex;
 
-Texture2D gGBuf0;
-Texture2D gGBuf1;
-Texture2D gGBuf2;
+#ifdef FALCOR_GLSL
+layout(set = 0, binding = 0) SamplerState gDummySampler; // The shader uses `Load`, which in GLSL requires a sampler-state. Slang will create a dummy declaration but will not expose it in the reflection.
+													     // This hack ensures that we will bind a valid sampler to Slang's dummy declaration
+#endif
 
-float4 main(float2 texC : TEXCOORD, float4 pos : SV_POSITION) : SV_TARGET
+float4 calcColor(float2 texC)
 {
-    // Fetch a G-Buffer
-    const float3 posW    = gGBuf0.Load(int3(pos.xy, 0)).rgb;
-    const float3 normalW = gGBuf1.Load(int3(pos.xy, 0)).rgb;
-    const float4 albedo  = gGBuf2.Load(int3(pos.xy, 0));
+	float4 color = gFontTex.Load(int3(texC, 0));
+	color.rgb = gFontColor;
+	return color;
+}
 
-    float3 color = shade(posW, normalW, albedo);
-
-	return float4(color, 1);
+float4 main(float2 texC  : TEXCOORD) : SV_TARGET0
+{
+	return calcColor(texC);
 }

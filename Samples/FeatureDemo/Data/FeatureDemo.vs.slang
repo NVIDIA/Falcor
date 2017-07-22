@@ -31,6 +31,11 @@ MainVsOut main(VS_IN vIn)
 {
     MainVsOut vsOut;
     vsOut.vsData = defaultVS(vIn);
+
+#ifdef _OUTPUT_MOTION_VECTORS
+    vsOut.vsData.prevPosH.xy += vsOut.vsData.prevPosH.w * 2 * float2(gCam.jitterX, gCam.jitterY);
+#endif
+
     vsOut.shadowsDepthC = mul(float4(vsOut.vsData.posW, 1), camVpAtLastCsmUpdate).z;
     return vsOut;
 }
