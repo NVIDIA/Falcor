@@ -73,9 +73,17 @@ namespace Falcor
     */
     inline glm::vec3 mousePosToWorldRay(const glm::vec2& mousePos, const glm::mat4& viewMat, const glm::mat4& projMat)
     {
-        // Convert from [0, 1] to [-1, 1] range, and flip Y
+        // Convert from [0, 1] to [-1, 1] range
         const float x = mousePos.x * 2.0f - 1.0f;
-        const float y = (1.0f - mousePos.y) * 2.0f - 1.0f;
+
+        // Vulkan has flipped Y in clip space. Otherwise Y has to be flipped
+        const float y = 
+#ifdef FALCOR_VK
+            mousePos.y
+#else
+            (1.0f - mousePos.y) 
+#endif
+            * 2.0f - 1.0f;
 
         // NDC/Clip
         glm::vec4 ray(x, y, -1.0f, 1.0f);

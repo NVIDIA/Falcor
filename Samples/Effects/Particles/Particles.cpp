@@ -233,6 +233,11 @@ void Particles::UpdateColorInterpolation()
 
 int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ LPSTR lpCmdLine, _In_ int nShowCmd)
 {
+#ifdef FALCOR_VK
+    msgBox("Support for Particle Systems in Vulkan is coming soon!");
+    return 0 ;
+#endif
+
     Particles sample;
     SampleConfig config;
     config.windowDesc.title = "Particles";

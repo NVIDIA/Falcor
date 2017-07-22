@@ -54,10 +54,10 @@ EditorVSOut main(VS_IN vIn)
 #ifdef CULL_REAR_SECTION
     // Get instance origin
     float4x4 worldMtx = getWorldMat(vIn);
-    float3 instancePos = float3(worldMtx._m03, worldMtx._m13, worldMtx._m23);
+    float3 instancePos = float3(worldMtx[3][0], worldMtx[3][1], worldMtx[3][2]);
 
     // Direction to vertex
-    vOut.toVertex = vOut.vOut.posW - instancePos;
+    vOut.toVertex = normalize(vOut.vOut.posW - instancePos);
 #endif
 
     return vOut;
