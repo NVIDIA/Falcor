@@ -446,17 +446,17 @@ namespace Falcor
         ResourceFormat format = pTexture->getFormat();
         uint32_t bpp = getFormatBytesPerBlock(format);
 
-        uint32_t dataSize = pTexture->getMipLevelDataSize(0);
         int32_t formatID = getBinaryFormatID(pTexture->getFormat());
+
+        // Write the data
+        std::vector<uint8_t> data = gpDevice->getRenderContext()->readTextureSubresource(pTexture, 0);
 
         writeString(mStream, pTexture->getSourceFilename());
         mStream.write("BinImage", 8);
         // Version, width, height, bytes-per-pixel, channel count, FormatID, DataSize
-        mStream << (int32_t)2 << (int32_t)width << (int32_t)height << bpp << (int32_t)0 << formatID << (int32_t)dataSize;
+        mStream << (int32_t)2 << (int32_t)width << (int32_t)height << bpp << (int32_t)0 << formatID << (int32_t)data.size();
 
-        // Write the data
-        std::vector<uint8_t> data = gpDevice->getRenderContext()->readTextureSubresource(pTexture, 0);
-        mStream.write(data.data(), dataSize);
+        mStream.write(data.data(), data.size());
         return true;
     }
 }

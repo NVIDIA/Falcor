@@ -31,6 +31,7 @@
 #include "Utils/Math/FalcorMath.h"
 #include "glm/mat3x3.hpp"
 #include "glm/gtx/euler_angles.hpp"
+
 #include "VR/OpenVR/VRSystem.h"
 
 namespace Falcor
@@ -154,12 +155,9 @@ namespace Falcor
             break;
         }
 
-        if(mMovement.b)
-        {
-            mSpeedModifier = 1.0f;
-            mSpeedModifier *= event.mods.isCtrlDown ? 0.25f : 1.0f;
-            mSpeedModifier *= event.mods.isShiftDown ? 10.0f : 1.0f;
-        }
+        mSpeedModifier = 1.0f;
+        if (event.mods.isCtrlDown) mSpeedModifier = 0.25f;
+        else if (event.mods.isShiftDown) mSpeedModifier = 10.0f;
 
         return handled;
     }
@@ -184,13 +182,13 @@ namespace Falcor
                     glm::vec3 sideway = glm::cross(viewDir, normalize(camUp));
 
                     // Rotate around x-axis
-                    glm::quat qy = glm::angleAxis(mMouseDelta.y, sideway);
+                    glm::quat qy = glm::angleAxis(mMouseDelta.y * mSpeedModifier, sideway);
                     glm::mat3 rotY(qy);
                     viewDir = viewDir * rotY;
                     camUp = camUp * rotY;
 
                     // Rotate around y-axis
-                    glm::quat qx = glm::angleAxis(mMouseDelta.x, camUp);
+                    glm::quat qx = glm::angleAxis(mMouseDelta.x * mSpeedModifier, camUp);
                     glm::mat3 rotX(qx);
                     viewDir = viewDir * rotX;
 
@@ -202,7 +200,7 @@ namespace Falcor
                 if(b6DoF && mIsRightButtonDown)
                 {
                     // Rotate around x-axis
-                    glm::quat q = glm::angleAxis(mMouseDelta.x, viewDir);
+                    glm::quat q = glm::angleAxis(mMouseDelta.x * mSpeedModifier, viewDir);
                     glm::mat3 rot(q);
                     camUp = camUp * rot;
                     mpCamera->setUpVector(camUp);
@@ -367,7 +365,6 @@ namespace Falcor
             mpCamera->setViewMatrix(leftEyeOffset * viewMat);
             mInvPrevHmdViewMat = glm::inverse(leftEyeOffset * hmdWorldMat);
         }
-
         return true;
     }
 

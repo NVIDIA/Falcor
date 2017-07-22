@@ -36,8 +36,6 @@ namespace Falcor
     class Sampler;
     class Device;
 
-    struct TextureApiData;
-
     /** Abstracts the API texture objects
     */
     class Texture : public Resource, public inherit_shared_from_this<Resource, Texture>
@@ -48,17 +46,6 @@ namespace Falcor
         using WeakPtr = std::weak_ptr<Texture>;
         using WeakConstPtr = std::weak_ptr<const Texture>;
         using inherit_shared_from_this<Resource, Texture>::shared_from_this;
-
-        /** Load the texture to the GPU memory.
-            \params[in] pSampler If not null, will get a pointer to the combination of the texture/sampler.
-            \return The GPU address, which can be used as a pointer in shaders.
-        */
-        uint64_t makeResident(const Sampler* pSampler) const;
-
-        /** Evict the texture from the GPU memory. This function is only valid after makeResident() call was made with a matching sample. If makeResident() wasn't called, the evict() will be silently ignored.
-            \params[in] pSampler The sampler object used in a matching makeResident() call.
-        */
-        void evict(const Sampler* pSampler) const;
 
         ~Texture();
 
@@ -160,19 +147,7 @@ namespace Falcor
         */
 
         static SharedPtr create2DMS(uint32_t width, uint32_t height, ResourceFormat format, uint32_t sampleCount, uint32_t arraySize = 1, BindFlags bindFlags = BindFlags::ShaderResource);
-
-        /** Get the image size for a single array slice in a mip-level
-        */
-        void getMipLevelImageSize(uint32_t mipLevel, uint32_t& width, uint32_t& height, uint32_t& depth = tempDefaultUint) const;
-
-        /** Get the required buffer size for a single array slice in a mip-level
-        */
-        uint32_t getMipLevelDataSize(uint32_t mipLevel) const;
-
-        /** Get the required buffer size for the full mip-map pyramid
-        */
-        uint32_t getDataSize() const;
-
+        
         /** Capture the texture to a PNG image.\n
             \param[in] mipLevel Requested mip-level
             \param[in] arraySlice Requested array-slice
@@ -182,11 +157,9 @@ namespace Falcor
         */
         void captureToFile(uint32_t mipLevel, uint32_t arraySlice, const std::string& filename, Bitmap::FileFormat format = Bitmap::FileFormat::PngFile, Bitmap::ExportFlags exportFlags = Bitmap::ExportFlags::None) const;
 
-        void compress2DTexture();
-
         /** Generates mipmaps for a specified texture object.
         */
-        void generateMips() const;
+        void generateMips();
 
         /** Name the texture
         */
@@ -217,8 +190,9 @@ namespace Falcor
 
     protected:
         friend class Device;
-        TextureApiData* mpApiData = nullptr;
-        void apiInit();
+        void apinit(const void* pData, bool autoGenMips);
+        void uploadInitData(const void* pData, bool autoGenMips);
+		bool mReleaseRtvsAfterGenMips = true;
         static RtvHandle spNullRTV;
         static DsvHandle spNullDSV;
 

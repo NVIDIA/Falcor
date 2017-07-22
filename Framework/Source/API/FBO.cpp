@@ -76,6 +76,9 @@ namespace Falcor
 
     static bool checkAttachmentParams(const Texture* pTexture, uint32_t mipLevel, uint32_t firstArraySlice, uint32_t arraySize, bool isDepthAttachment)
     {
+#ifndef _DEBUG
+        return true;
+#endif
         if(pTexture == nullptr)
         {
             return true;
@@ -149,7 +152,7 @@ namespace Falcor
 
     Fbo::SharedPtr Fbo::create()
     {
-        return SharedPtr(new Fbo(true));
+        return SharedPtr(new Fbo());
     }
 
     Fbo::SharedPtr Fbo::getDefault()
@@ -157,7 +160,7 @@ namespace Falcor
         static Fbo::SharedPtr pDefault;
         if(pDefault == nullptr)
         {
-            pDefault = Fbo::SharedPtr(new Fbo(false));
+            pDefault = Fbo::SharedPtr(new Fbo());
         }
         return pDefault;
     }
@@ -289,5 +292,16 @@ namespace Falcor
     Texture::SharedPtr Fbo::getDepthStencilTexture() const
     {
         return mDepthStencil.pTexture;
+    }
+
+    bool Fbo::checkStatus() const
+    {
+        if (mpDesc == nullptr)
+        {
+            if (calcAndValidateProperties() == false) return false;
+            initApiHandle();
+            return true;
+        }
+        return true;
     }
 }

@@ -111,6 +111,14 @@ namespace Falcor
         Sampler::SharedPtr mpPointSampler;
         Sampler::SharedPtr mpLinearSampler;
 
+        struct PassBindLocations
+        {
+            ProgramVars::BindLocation luminanceSampler;
+            ProgramVars::BindLocation colorSampler;
+            ProgramVars::BindLocation colorTex;
+            ProgramVars::BindLocation luminanceTex;
+        } mBindLocations;
+
         struct
         {
             float exposureKey = 0.042f;

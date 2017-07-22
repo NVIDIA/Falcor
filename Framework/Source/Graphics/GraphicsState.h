@@ -57,8 +57,8 @@ namespace Falcor
             Viewport(float x, float y, float w, float h, float minZ, float maxZ) : originX(x), originY(y), width(w), height(h), minDepth(minZ), maxDepth(maxZ) {}
             float originX = 0;
             float originY = 0;
-            float width = 0;
-            float height = 0;
+            float width = 1.0f;  // Cannot be 0 in Vulkan
+            float height = 1.0f; // Cannot be 0 in Vulkan
             float minDepth = 0;
             float maxDepth = 1;
         };
@@ -67,9 +67,9 @@ namespace Falcor
         {
             Scissor() = default;
             Scissor(int32_t l, int32_t t, int32_t r, int32_t b) : left(l), top(t), right(r), bottom(b) {}
-            int32_t left  = 0;
-            int32_t top    = 0;
-            int32_t right   = 0;
+            int32_t left = 0;
+            int32_t top = 0;
+            int32_t right = 0;
             int32_t bottom = 0;
         };
 
@@ -131,6 +131,10 @@ namespace Falcor
         */
         const Viewport& getViewport(uint32_t index) const { return mViewports[index]; }
 
+        /** Get the array of all the current viewports.
+        */
+        const std::vector<Viewport>& getViewports() const { return mViewports; }
+
         /** Push the current viewport and sets a new one
         \param[in] index Viewport index
         \param[in] vp Viewport to set
@@ -154,6 +158,10 @@ namespace Falcor
         \param[in] index scissor index
         */
         const Scissor& getScissors(uint32_t index) const { return mScissors[index]; }
+
+        /** Get the array of all the current scissors.
+        */
+        const std::vector<Scissor>& getScissors() const { return mScissors; }
 
         /** Push the current Scissor and sets a new one
         */

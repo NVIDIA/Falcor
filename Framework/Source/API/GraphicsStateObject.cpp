@@ -29,7 +29,7 @@
 #include "Framework.h"
 #include "GraphicsStateObject.h"
 #include "BlendState.h"
-#include "Vao.h"
+#include "VAO.h"
 #include "Device.h"
 
 namespace Falcor
@@ -55,7 +55,7 @@ namespace Falcor
         }
         else
         {
-            b == b && (other.mpRasterizerState == nullptr || other.mpRasterizerState == spDefaultRasterizerState);
+            b = b && (other.mpRasterizerState == nullptr || other.mpRasterizerState == spDefaultRasterizerState);
         }
 
         if (mpBlendState)
@@ -64,7 +64,7 @@ namespace Falcor
         }
         else
         {
-            b == b && (other.mpBlendState == nullptr || other.mpBlendState == spDefaultBlendState);
+            b = b && (other.mpBlendState == nullptr || other.mpBlendState == spDefaultBlendState);
         }
 
         if (mpDepthStencilState)
@@ -73,7 +73,7 @@ namespace Falcor
         }
         else
         {
-            b == b && (other.mpDepthStencilState == nullptr || other.mpDepthStencilState == spDefaultDepthStencilState);
+            b = b && (other.mpDepthStencilState == nullptr || other.mpDepthStencilState == spDefaultDepthStencilState);
         }
 
         return b;

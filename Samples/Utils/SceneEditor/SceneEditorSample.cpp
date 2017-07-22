@@ -82,7 +82,7 @@ void SceneEditorSample::initNewScene()
 
 void SceneEditorSample::initShader()
 {
-    mpProgram = GraphicsProgram::createFromFile("", "SceneEditorSample.fs");
+    mpProgram = GraphicsProgram::createFromFile("", "SceneEditorSample.ps.slang");
     std::string lights;
     getSceneLightString(mpScene.get(), lights);
     mpProgram->addDefine("_LIGHT_SOURCES", lights);

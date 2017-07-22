@@ -37,20 +37,20 @@ namespace Falcor
 	public:
 		using SharedPtr = std::shared_ptr<FencedPool<ObjectType>>;
 		using SharedConstPtr = std::shared_ptr<const FencedPool<ObjectType>>;
-        using NewObjectFuncType = ObjectType(*)();
+        using NewObjectFuncType = ObjectType(*)(void*);
 
-		static SharedPtr create(GpuFence::SharedConstPtr pFence, NewObjectFuncType newFunc) { return SharedPtr(new FencedPool(pFence, newFunc)); }
+		static SharedPtr create(GpuFence::SharedConstPtr pFence, NewObjectFuncType newFunc, void* pUserData = nullptr) { return SharedPtr(new FencedPool(pFence, newFunc, pUserData)); }
 		ObjectType newObject()
 		{
 			// The queue is sorted based on time. Check if the first object is free
 			Data data = mQueue.front();
-			if (data.timestamp < mpFence->getGpuValue())
+			if (data.timestamp <= mpFence->getGpuValue())
 			{
 				mQueue.pop();
 			}
 			else
 			{
-				data.alloc = mNewObjFunc();
+				data.alloc = mNewObjFunc(mpUserData);
 			}
 
 			data.timestamp = mpFence->getCpuValue();
@@ -59,9 +59,10 @@ namespace Falcor
 		}
 
 	private:
-		FencedPool(GpuFence::SharedConstPtr pFence, NewObjectFuncType newFunc) : mpFence(pFence), mNewObjFunc(newFunc) { mQueue.push({ mNewObjFunc(), mpFence->getCpuValue()}); }
+		FencedPool(GpuFence::SharedConstPtr pFence, NewObjectFuncType newFunc, void* pUserData) : mpUserData(pUserData), mpFence(pFence), mNewObjFunc(newFunc) { mQueue.push({ mNewObjFunc(pUserData), mpFence->getCpuValue()}); }
 		GpuFence::SharedConstPtr mpFence;
-		
+        void* mpUserData;
+
 		struct Data
 		{
 			ObjectType alloc;

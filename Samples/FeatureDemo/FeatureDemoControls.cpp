@@ -26,23 +26,31 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 #include "FeatureDemo.h"
-#include "API/D3D/FalcorD3D.h"
 
-Gui::DropdownList kSampleCountList = {
-    { 1, "1"},
+Gui::DropdownList kSampleCountList = 
+{
+    { 1, "1" },
     { 2, "2" },
     { 4, "4" },
     { 8, "8" },
 };
 
+const Gui::DropdownList aaModeList = 
+{
+    { 0, "MSAA" },
+    { 1, "TAA" }
+};
+
+
 void FeatureDemo::initControls()
 {
     mControls.resize(ControlID::Count);
-    mControls[ControlID::SuperSampling] = { false, "INTERPOLATION_MODE", "sample" };
-    mControls[ControlID::DisableSpecAA] = { false, "_MS_DISABLE_ROUGHNESS_FILTERING" };
-    mControls[ControlID::EnableShadows] = { true, "_ENABLE_SHADOWS" };
-    mControls[ControlID::EnableReflections] = { true, "_ENABLE_REFLECTIONS" };
-    mControls[ControlID::EnableSSAO] = { true, "" };
+    mControls[ControlID::SuperSampling] = { false, false, "INTERPOLATION_MODE", "sample" };
+    mControls[ControlID::EnableSpecAA] = { true, true, "_MS_DISABLE_ROUGHNESS_FILTERING" };
+    mControls[ControlID::EnableShadows] = { true, false, "_ENABLE_SHADOWS" };
+    mControls[ControlID::EnableReflections] = { true, false, "_ENABLE_REFLECTIONS" };
+    mControls[ControlID::EnableHashedAlpha] = { true, true, "_DEFAULT_ALPHA_TEST" };
+    mControls[ControlID::EnableSSAO] = { false, false, "" };
 
     for (uint32_t i = 0 ; i < ControlID::Count ; i++)
     {
@@ -55,15 +63,54 @@ void FeatureDemo::applyLightingProgramControl(ControlID controlId)
     const ProgramControl control = mControls[controlId];
     if(control.define.size())
     {
-        if (control.enabled)
+        bool add = control.unsetOnEnabled ? !control.enabled : control.enabled;
+        if (add)
         {
-            mLightingPass.pProgram->addDefine(control.define, control.value);
+            mLightingPass.pProgram->addDefine(control.define, control.value);            
+            if (controlId == ControlID::EnableHashedAlpha) mDepthPass.pProgram->addDefine(control.define, control.value);
         }
         else
         {
             mLightingPass.pProgram->removeDefine(control.define);
+            if (controlId == ControlID::EnableHashedAlpha) mDepthPass.pProgram->removeDefine(control.define);
         }
     }
+}
+
+void FeatureDemo::applyAaMode()
+{
+    if (mLightingPass.pProgram == nullptr) return;
+
+    uint32_t w = mpDefaultFBO->getWidth();
+    uint32_t h = mpDefaultFBO->getHeight();
+
+    // Common FBO desc (2 color outputs - color and normal)
+    Fbo::Desc fboDesc;
+    fboDesc.setColorTarget(0, ResourceFormat::RGBA32Float).setColorTarget(1, ResourceFormat::RGBA8Unorm).setDepthStencilTarget(ResourceFormat::D32Float);
+
+    // Release the TAA FBOs
+    mTAA.resetFbos();
+
+    if (mAAMode == AAMode::MSAA)
+    {
+        mLightingPass.pProgram->removeDefine("_OUTPUT_MOTION_VECTORS");
+        applyLightingProgramControl(SuperSampling);
+        fboDesc.setSampleCount(mMSAASampleCount);
+    }
+    else if (mAAMode == AAMode::TAA)
+    {
+        mLightingPass.pProgram->removeDefine("INTERPOLATION_MODE");
+        mLightingPass.pProgram->addDefine("_OUTPUT_MOTION_VECTORS");
+        fboDesc.setColorTarget(2, ResourceFormat::RG16Float);
+
+        Fbo::Desc taaFboDesc;
+        taaFboDesc.setColorTarget(0, ResourceFormat::RGBA32Float);
+        mTAA.createFbos(w, h, taaFboDesc);
+    }
+
+    mpMainFbo = FboHelper::create2D(w, h, fboDesc);
+	mpDepthPassFbo = Fbo::create();
+	mpDepthPassFbo->attachDepthStencilTarget(mpMainFbo->getDepthStencilTexture());
 }
 
 void FeatureDemo::onGuiRender()
@@ -89,15 +136,132 @@ void FeatureDemo::onGuiRender()
 
     if (mpSceneRenderer)
     {
-        if (mpGui->addDropdown("Sample Count", kSampleCountList, mSampleCount))
+        if(mpGui->beginGroup("Scene Settings"))
         {
-            onResizeSwapChain();
+            Scene* pScene = mpSceneRenderer->getScene();
+            float camSpeed = pScene->getCameraSpeed();
+            if (mpGui->addFloatVar("Camera Speed", camSpeed))
+            {
+                pScene->setCameraSpeed(camSpeed);
+            }
+
+            vec3 ambient = pScene->getAmbientIntensity();
+            if (mpGui->addRgbColor("Ambient Intensity", ambient))
+            {
+                pScene->setAmbientIntensity(ambient);
+            }
+
+            vec2 depthRange(pScene->getActiveCamera()->getNearPlane(), pScene->getActiveCamera()->getFarPlane());
+            if (mpGui->addFloat2Var("Depth Range", depthRange, 0, FLT_MAX))
+            {
+                pScene->getActiveCamera()->setDepthRange(depthRange.x, depthRange.y);
+            }
+
+            if (pScene->getPathCount() > 0)
+            {
+                if (mpGui->addCheckBox("Camera Path", mUseCameraPath))
+                {
+                    applyCameraPathState();
+                }
+            }
+
+            if (pScene->getLightCount() && mpGui->beginGroup("Light Sources"))
+            {
+                for (uint32_t i = 0; i < pScene->getLightCount(); i++)
+                {
+                    Light* pLight = pScene->getLight(i).get();
+                    pLight->renderUI(mpGui.get(), pLight->getName().c_str());
+                }
+                mpGui->endGroup();
+            }
+            mpGui->endGroup();
         }
 
-        uint32_t maxAniso = mpSceneSampler->getMaxAnisotropy();
-        if (mpGui->addIntVar("Max Anisotropy", (int&)maxAniso, 1, 16))
+		if(mpGui->beginGroup("Renderer Settings"))
+		{
+			mpGui->addCheckBox("Depth Pass", mEnableDepthPass);
+			mpGui->addTooltip("Run a depth-pass at the beginning of the frame");
+
+			if (mpGui->addCheckBox("Per-Material Shaders", mOptimizedShaders))
+			{
+				mpSceneRenderer->toggleStaticMaterialCompilation(mOptimizedShaders);
+			}
+			mpGui->addTooltip("Create a specialized, per-material version of the lighting program");
+
+			uint32_t maxAniso = mpSceneSampler->getMaxAnisotropy();
+			if (mpGui->addIntVar("Max Anisotropy", (int&)maxAniso, 1, 16))
+			{
+				setSceneSampler(maxAniso);
+			}
+
+			mpGui->endGroup();
+		}
+
+        //  Anti-Aliasing Controls.
+        if (mpGui->beginGroup("Anti-Aliasing"))
         {
-            setSceneSampler(maxAniso);
+            bool reapply = false;
+            reapply = reapply || mpGui->addDropdown("AA Mode", aaModeList, (uint32_t&)mAAMode);
+
+            if (mAAMode == AAMode::MSAA)
+            {
+                reapply = reapply || mpGui->addDropdown("Sample Count", kSampleCountList, mMSAASampleCount);
+
+                if (mpGui->addCheckBox("Super Sampling", mControls[ControlID::SuperSampling].enabled))
+                {
+                    applyLightingProgramControl(ControlID::SuperSampling);
+                }
+            }
+
+            //  Temporal Anti-Aliasing.
+            if (mAAMode == AAMode::TAA)
+            {
+                if (mpGui->beginGroup("TAA"))
+                {
+                    //  Render the TAA UI.
+                    mTAA.pTAA->renderUI(mpGui.get());
+
+                    //  Choose the Sample Pattern for TAA.
+                    Gui::DropdownList samplePatternList;
+                    samplePatternList.push_back({ (uint32_t)SamplePattern::Halton, "Halton" });
+                    samplePatternList.push_back({ (uint32_t)SamplePattern::DX11, "DX11" });
+                    mpGui->addDropdown("Sample Pattern", samplePatternList, (uint32_t&)mTAASamplePattern);
+
+                    // Disable super-sampling
+                    mpGui->endGroup();
+                }
+            }
+
+            if (reapply) applyAaMode();
+
+            if (mpGui->addCheckBox("Specular AA", mControls[ControlID::EnableSpecAA].enabled))
+            {
+                applyLightingProgramControl(ControlID::EnableSpecAA);
+            }
+            mpGui->endGroup();
+        }
+
+        if (mpGui->beginGroup("Reflections"))
+        {
+            if (mpGui->addCheckBox("Enable", mControls[ControlID::EnableReflections].enabled))
+            {
+                applyLightingProgramControl(ControlID::EnableReflections);
+            }
+
+            if(mControls[ControlID::EnableReflections].enabled)
+            {
+                mpGui->addFloatVar("Intensity", mEnvMapFactorScale, 0);
+
+                if (mpGui->addButton("Load Reflection Texture"))
+                {
+                    std::string filename;
+                    if (openFileDialog(kImageFileString, filename))
+                    {
+                        initEnvMap(filename);
+                    }
+                }
+            }
+            mpGui->endGroup();
         }
 
         if (mpGui->addButton("Load SkyBox Texture"))
@@ -109,66 +273,15 @@ void FeatureDemo::onGuiRender()
             }
         }
 
-        if (mpGui->addCheckBox("Super Sampling", mControls[ControlID::SuperSampling].enabled))
-        {
-            applyLightingProgramControl(ControlID::SuperSampling);
-        }
+        mpToneMapper->renderUI(mpGui.get(), "Tone-Mapping");
 
-
-        bool saaEnabled = !mControls[ControlID::DisableSpecAA].enabled;
-        if (mpGui->addCheckBox("Specular AA", saaEnabled))
-        {
-            mControls[ControlID::DisableSpecAA].enabled = !saaEnabled;
-            applyLightingProgramControl(ControlID::DisableSpecAA);
-        }
-
-        if (mpGui->addCheckBox("Reflections", mControls[ControlID::EnableReflections].enabled))
-        {
-            applyLightingProgramControl(ControlID::EnableReflections);
-        }
-
-        if (mpGui->addButton("Load Reflection Texture"))
-        {
-            std::string filename;
-            if (openFileDialog(kImageFileString, filename))
-            {
-                initEnvMap(filename);
-            }
-        }
-
-        const Scene* pScene = mpSceneRenderer->getScene();
-
-        vec2 depthRange(pScene->getActiveCamera()->getNearPlane(), pScene->getActiveCamera()->getFarPlane());
-        if (mpGui->addFloat2Var("Depth Range", depthRange, 0, FLT_MAX))
-        {
-            pScene->getActiveCamera()->setDepthRange(depthRange.x, depthRange.y);
-        }
-
-        if (pScene->getPathCount() > 0)
-        {
-            if (mpGui->addCheckBox("Camera Path", mUseCameraPath))
-            {
-                applyCameraPathState();
-            }
-        }
-
-        if(pScene->getLightCount() && mpGui->beginGroup("Light Sources"))
-        {
-            for (uint32_t i = 0; i < pScene->getLightCount(); i++)
-            {
-                Light* pLight = pScene->getLight(i).get();
-                pLight->renderUI(mpGui.get(), pLight->getName().c_str());
-            }
-            mpGui->endGroup();
-        }
-
-        if(mpGui->beginGroup("Shadows"))
+        if (mpGui->beginGroup("Shadows"))
         {
             if (mpGui->addCheckBox("Enable Shadows", mControls[ControlID::EnableShadows].enabled))
             {
                 applyLightingProgramControl(ControlID::EnableShadows);
             }
-            if(mControls[ControlID::EnableShadows].enabled)
+            if (mControls[ControlID::EnableShadows].enabled)
             {
                 mpGui->addCheckBox("Update Map", mShadowPass.updateShadowMap);
                 mShadowPass.pCsm->renderUi(mpGui.get());
@@ -176,16 +289,19 @@ void FeatureDemo::onGuiRender()
             mpGui->endGroup();
         }
 
-        mpToneMapper->renderUI(mpGui.get(), "Tone-Mapping");
-
         if (mpGui->beginGroup("SSAO"))
         {
             mpGui->addCheckBox("Enable SSAO", mControls[ControlID::EnableSSAO].enabled);
-            if(mControls[ControlID::EnableSSAO].enabled)
+            if (mControls[ControlID::EnableSSAO].enabled)
             {
                 mSSAO.pSSAO->renderGui(mpGui.get());
             }
             mpGui->endGroup();
+        }
+
+        if (mpGui->addCheckBox("Hashed-Alpha Test", mControls[ControlID::EnableHashedAlpha].enabled))
+        {
+            applyLightingProgramControl(ControlID::EnableHashedAlpha);
         }
     }
 }

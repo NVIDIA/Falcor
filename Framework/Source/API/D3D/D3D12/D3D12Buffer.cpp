@@ -33,11 +33,6 @@
 
 namespace Falcor
 {
-    struct BufferData
-    {
-        ResourceAllocator::AllocationData dynamicData;
-        Buffer::SharedPtr pStagingResource; // For buffers that have both CPU read flag and can be used by the GPU
-    };
 
     ID3D12ResourcePtr createBuffer(Buffer::State initState, size_t size, const D3D12_HEAP_PROPERTIES& heapProps, Buffer::BindFlags bindFlags)
     {
@@ -65,17 +60,9 @@ namespace Falcor
         return pApiHandle;
     }
 
-    Buffer::~Buffer()
+    size_t getBufferDataAlignment(const Buffer* pBuffer)
     {
-        BufferData* pApiData = (BufferData*)mpApiData;
-        gpDevice->getResourceAllocator()->release(pApiData->dynamicData);
-        safe_delete(pApiData);
-        gpDevice->releaseResource(mApiHandle);
-    }
-
-    size_t getDataAlignmentFromUsage(Buffer::BindFlags flags)
-    {
-        switch (flags)
+        switch (pBuffer->getBindFlags())
         {
         case Buffer::BindFlags::Constant:
             return D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT;
@@ -86,28 +73,28 @@ namespace Falcor
         }
     }
 
-    Buffer::SharedPtr Buffer::create(size_t size, BindFlags usage, CpuAccess cpuAccess, const void* pInitData)
+    void* mapBufferApi(const Buffer::ApiHandle& apiHandle, size_t size)
     {
-        Buffer::SharedPtr pBuffer = SharedPtr(new Buffer(size, usage, cpuAccess));
-        return pBuffer->init(pInitData) ? pBuffer : nullptr;
+        D3D12_RANGE r{ 0, size };
+        void* pData;
+        d3d_call(apiHandle->Map(0, &r, &pData));
+        return pData;
     }
 
-    bool Buffer::init(const void* pInitData)
+    bool Buffer::apiInit(bool hasInitData)
     {
         if (mBindFlags == BindFlags::Constant)
         {
             mSize = align_to(D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT, mSize);
         }
 
-        BufferData* pApiData = new BufferData;
-        mpApiData = pApiData;
         if (mCpuAccess == CpuAccess::Write)
         {
             mState = Resource::State::GenericRead;
-            if(pInitData == nullptr) // Else the allocation will happen when updating the data
+            if(hasInitData == false) // Else the allocation will happen when updating the data
             {
-                pApiData->dynamicData = gpDevice->getResourceAllocator()->allocate(mSize, getDataAlignmentFromUsage(mBindFlags));
-                mApiHandle = pApiData->dynamicData.pResourceHandle;
+                mDynamicData = gpDevice->getResourceAllocator()->allocate(mSize, getBufferDataAlignment(this));
+                mApiHandle = mDynamicData.pResourceHandle;
             }
         }
         else if (mCpuAccess == CpuAccess::Read && mBindFlags == BindFlags::None)
@@ -121,113 +108,21 @@ namespace Falcor
             mApiHandle = createBuffer(mState, mSize, kDefaultHeapProps, mBindFlags);
         }
 
-        if (pInitData)
-        {
-            updateData(pInitData, 0, mSize);
-        }
-
         return true;
-    }
-
-    void Buffer::updateData(const void* pData, size_t offset, size_t size) const
-    {
-        // Clamp the offset and size
-        if (adjustSizeOffsetParams(size, offset) == false)
-        {
-            logWarning("Buffer::updateData() - size and offset are invalid. Nothing to update.");
-            return;
-        }
-
-        if (mCpuAccess == CpuAccess::Write)
-        {
-            uint8_t* pDst = (uint8_t*)map(MapType::WriteDiscard) + offset;
-            memcpy(pDst, pData, size);
-        }
-        else
-        {
-            gpDevice->getRenderContext()->updateBuffer(this, pData, offset, size);
-        }
-    }
-
-    void Buffer::readData(void* pData, size_t offset, size_t size) const
-    {
-        UNSUPPORTED_IN_D3D12("Buffer::ReadData(). If you really need this, create the resource with CPU read flag, and use Buffer::Map()");
-    }
-
-    void* Buffer::map(MapType type) const
-    {
-        BufferData* pApiData = (BufferData*)mpApiData;
-
-        if(type == MapType::WriteDiscard)
-        {
-            if (mCpuAccess != CpuAccess::Write)
-            {
-                logError("Trying to map a buffer for write, but it wasn't created with the write permissions");
-                return nullptr;
-            }
-
-            // Allocate a new buffer
-            if(pApiData->dynamicData.pResourceHandle)
-            {
-                gpDevice->getResourceAllocator()->release(pApiData->dynamicData);
-            }
-            pApiData->dynamicData = gpDevice->getResourceAllocator()->allocate(mSize, getDataAlignmentFromUsage(mBindFlags));
-
-            // I don't want to make mApiHandle mutable, so let's just const_cast here. This is D3D12 specific case
-            const_cast<Buffer*>(this)->mApiHandle = pApiData->dynamicData.pResourceHandle;
-            
-            invalidateViews();
-            return pApiData->dynamicData.pData;
-        }
-        else
-        {
-            assert(type == MapType::Read);
-
-            if (mBindFlags == BindFlags::None)
-            {
-                D3D12_RANGE r{ 0, mSize };
-                void* pData;
-                d3d_call(mApiHandle->Map(0, &r, &pData));
-                return pData;
-            }
-            else
-            {
-                logWarning("Buffer::map() performance warning - using staging resource which require us to flush the pipeline and wait for the GPU to finish its work");
-                if (pApiData->pStagingResource == nullptr)
-                {
-                    pApiData->pStagingResource = Buffer::create(mSize, Buffer::BindFlags::None, Buffer::CpuAccess::Read, nullptr);
-                }
-                // Copy the buffer and flush the pipeline
-                RenderContext* pContext = gpDevice->getRenderContext().get();
-                pContext->resourceBarrier(this, Resource::State::CopySource);
-                pContext->getLowLevelData()->getCommandList()->CopyResource(pApiData->pStagingResource->getApiHandle(), mApiHandle);
-                pContext->flush(true);
-                return pApiData->pStagingResource->map(MapType::Read);
-            }
-        }        
     }
 
     uint64_t Buffer::getGpuAddress() const
     {
-        if (mCpuAccess == CpuAccess::Write)
-        {
-            BufferData* pApiData = (BufferData*)mpApiData;
-            return pApiData->dynamicData.gpuAddress;
-        }
-        else
-        {
-            return mApiHandle->GetGPUVirtualAddress();
-        }
+        return mDynamicData.offset + mApiHandle->GetGPUVirtualAddress();
     }
 
-    void Buffer::unmap() const
+    void Buffer::unmap()
     {
         // Only unmap read buffers
-        BufferData* pApiData = (BufferData*)mpApiData;
         D3D12_RANGE r{};
-        if (pApiData->pStagingResource)
+        if (mpStagingResource)
         {
-            pApiData->pStagingResource->mApiHandle->Unmap(0, &r);
+            mpStagingResource->mApiHandle->Unmap(0, &r);
         }
         else if (mCpuAccess == CpuAccess::Read)
         {

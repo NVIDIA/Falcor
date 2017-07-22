@@ -12,10 +12,22 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <None Include="Data\Blit.fs">
+    <None Include="Data\StereoRendering.ps.hlsl">
       <Filter>Data</Filter>
     </None>
-    <None Include="Data\StereoRendering.ps.hlsl">
+    <None Include="Data\StereoRendering.gs.glsl">
+      <Filter>Data</Filter>
+    </None>
+    <None Include="Data\StereoRendering.gs.hlsl">
+      <Filter>Data</Filter>
+    </None>
+    <None Include="Data\StereoRendering.vs.hlsl">
+      <Filter>Data</Filter>
+    </None>
+    <None Include="Data\StereoRendering.ps.glsl">
+      <Filter>Data</Filter>
+    </None>
+    <None Include="Data\StereoRendering.vs.glsl">
       <Filter>Data</Filter>
     </None>
   </ItemGroup>

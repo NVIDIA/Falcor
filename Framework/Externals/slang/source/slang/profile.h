@@ -54,6 +54,7 @@ namespace Slang
         Unknown,
 
 #define PROFILE(TAG, NAME, STAGE, VERSION) TAG = (uint32_t(Stage::STAGE) << 16) | uint32_t(ProfileVersion::VERSION),
+#define PROFILE_ALIAS(TAG, DEF, NAME) TAG = DEF,
 #include "profile-defs.h"
         };
 
@@ -68,6 +69,11 @@ namespace Slang
         Stage GetStage() const { return Stage((uint32_t(raw) >> 16) & 0xFFFF); }
         ProfileVersion GetVersion() const { return ProfileVersion(uint32_t(raw) & 0xFFFF); }
         ProfileFamily getFamily() const { return getProfileFamily(GetVersion()); }
+
+        void setVersion(ProfileVersion version)
+        {
+            raw = (raw & ~0xFFFF) | uint32_t(version);
+        }
 
         static Profile LookUp(char const* name);
 

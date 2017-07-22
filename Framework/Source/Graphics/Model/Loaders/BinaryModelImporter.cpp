@@ -60,15 +60,37 @@ namespace Falcor
         return d == 0xff;
     }
 
+    static vec3 projectNormalToBitangent(const vec3& normal)
+    {
+        vec3 bitangent;
+        if (abs(normal.x) > abs(normal.y))
+        {
+            bitangent = v3(normal.z, 0.f, -normal.x) / length(v2(normal.x, normal.z));
+        }
+        else
+        {
+            bitangent = v3(0.f, normal.z, -normal.y) / length(v2(normal.y, normal.z));
+        }
+        return normalize(bitangent);
+    }
+
+    static bool isInvalidVec(const vec3& v)
+    {
+        return isSpecialFloat(v.x) || isSpecialFloat(v.y) || isSpecialFloat(v.z);
+    }
+
     template<typename posType>
     void generateSubmeshTangentData(
         const std::vector<uint32_t>& indices,
+        uint32_t vertexCount,
         const posType* vertexPosData,
         const glm::vec3* vertexNormalData,
         const glm::vec2* texCrdData,
         uint32_t texCrdCount,
         glm::vec3* bitangentData)
     {
+        ZeroMemory(bitangentData, vertexCount * sizeof(vec3));
+
         // calculate the tangent and bitangent for every face
         size_t primCount = indices.size() / 3;
         for(size_t primID = 0; primID < primCount; primID++)
@@ -87,15 +109,7 @@ namespace Falcor
                 uint32_t index = indices[primID * 3 + i];
                 V[i].position = vertexPosData[index];
                 V[i].normal = vertexNormalData[index];
-
-                if(texCrdData)
-                {
-                    V[i].uv = texCrdData[index * texCrdCount];
-                }
-                else
-                {
-                    V[i].uv = glm::vec2(0.f, 0.f);
-                }
+                V[i].uv = texCrdData ? V[i].uv = texCrdData[index * texCrdCount] : vec2(0);
             }
 
             // Position delta
@@ -106,8 +120,6 @@ namespace Falcor
             // Texture offset
             glm::vec2 s = V[1].uv - V[0].uv;
             glm::vec2 t = V[2].uv - V[0].uv;
-            s.y = -s.y;
-            t.y = -t.y;
 
             glm::vec3 tangent;
             glm::vec3 bitangent;
@@ -116,26 +128,18 @@ namespace Falcor
             if((s == glm::vec2(0, 0)) || (t == glm::vec2(0, 0)))
             {
 				const glm::vec3 &normal = V[0].normal;
-				if(abs(normal.x) > abs(normal.y))
-					bitangent = v3(normal.z, 0.f, -normal.x) / length(v2(normal.x, normal.z));
-				else
-					bitangent = v3(0.f, normal.z, -normal.y) / length(v2(normal.y, normal.z));
+                bitangent = projectNormalToBitangent(normal);
 				tangent = cross(bitangent, normal);
             }
-			else
-			{
-				float dirCorrection = (t.x * s.y - t.y * s.x) < 0.0f ? -1.0f : 1.0f;
+            else
+            {
+                float dirCorrection = 1.0f / (s.x * t.y - s.y * t.x);
 
-				// tangent points in the direction where to positive X axis of the texture coord's would point in model space
-				// bitangent's points along the positive Y axis of the texture coord's, respectively
-				tangent.x = (posDelta[1].x * s.y - posDelta[0].x * t.y) * dirCorrection;
-				tangent.y = (posDelta[1].y * s.y - posDelta[0].y * t.y) * dirCorrection;
-				tangent.z = (posDelta[1].z * s.y - posDelta[0].z * t.y) * dirCorrection;
-
-				bitangent.x = (posDelta[1].x * s.x - posDelta[0].x * t.x) * dirCorrection;
-				bitangent.y = (posDelta[1].y * s.x - posDelta[0].y * t.x) * dirCorrection;
-				bitangent.z = (posDelta[1].z * s.x - posDelta[0].z * t.x) * dirCorrection;
-			}
+                // tangent points in the direction where to positive X axis of the texture coord's would point in model space
+                // bitangent's points along the positive Y axis of the texture coord's, respectively
+                tangent   = (posDelta[0] * t.y - posDelta[1] * t.x) * dirCorrection;
+                bitangent = (posDelta[1] * s.x - posDelta[0] * s.y) * dirCorrection;
+            }
 
             // store for every vertex of that face
             for(uint32_t i = 0; i < 3; i++)
@@ -148,18 +152,21 @@ namespace Falcor
                 localBitangent = localBitangent - localTangent * (glm::dot(localBitangent, localTangent));
                 localBitangent = glm::normalize(localBitangent);
 
-                // reconstruct tangent/bitangent according to normal and bitangent/tangent when it's infinite or NaN.
-                bool isInvalidBitangent = isSpecialFloat(localBitangent.x) || isSpecialFloat(localBitangent.y) || isSpecialFloat(localBitangent.z);
-
-                if (isInvalidBitangent)
+                if (isInvalidVec(bitangent) == false)
                 {
-                    localBitangent = glm::cross(localTangent, V[i].normal);
-                    localBitangent = glm::normalize(localBitangent);
+                    // and write it into the mesh
+                    uint32_t index = indices[primID * 3 + i];
+                    bitangentData[index] += normalize(localBitangent);
                 }
+            }
+        }
 
-                // and write it into the mesh
-                uint32_t index = indices[primID * 3 + i];
-                bitangentData[index] = localBitangent;
+        for (uint32_t v = 0; v < vertexCount; v++)
+        {
+            bitangentData[v] = normalize(bitangentData[v]);
+            if (isInvalidVec(bitangentData[v]))
+            {
+                bitangentData[v] = projectNormalToBitangent(vertexNormalData[v]);
             }
         }
     }
@@ -897,11 +904,11 @@ namespace Falcor
 
                     if (posFormat == ResourceFormat::RGB32Float)
                     {
-                        generateSubmeshTangentData<glm::vec3>(indices, (glm::vec3*)buffers[positionBufferIndex].vec.data(), (glm::vec3*)buffers[normalBufferIndex].vec.data(), texCrd, texCrdCount, (glm::vec3*)buffers[bitangentBufferIndex].vec.data());
+                        generateSubmeshTangentData<glm::vec3>(indices, numVertices, (glm::vec3*)buffers[positionBufferIndex].vec.data(), (glm::vec3*)buffers[normalBufferIndex].vec.data(), texCrd, texCrdCount, (glm::vec3*)buffers[bitangentBufferIndex].vec.data());
                     }
                     else if (posFormat == ResourceFormat::RGBA32Float)
                     {
-                        generateSubmeshTangentData<glm::vec4>(indices, (glm::vec4*)buffers[positionBufferIndex].vec.data(), (glm::vec3*)buffers[normalBufferIndex].vec.data(), texCrd, texCrdCount, (glm::vec3*)buffers[bitangentBufferIndex].vec.data());
+                        generateSubmeshTangentData<glm::vec4>(indices, numVertices, (glm::vec4*)buffers[positionBufferIndex].vec.data(), (glm::vec3*)buffers[normalBufferIndex].vec.data(), texCrd, texCrdCount, (glm::vec3*)buffers[bitangentBufferIndex].vec.data());
                     }
 
                     pVBs[bitangentBufferIndex] = Buffer::create(buffers[bitangentBufferIndex].vec.size(), Buffer::BindFlags::Vertex, Buffer::CpuAccess::None, buffers[bitangentBufferIndex].vec.data());

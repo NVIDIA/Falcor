@@ -284,10 +284,6 @@ namespace Falcor
         */
         Sampler::SharedPtr getSampler() const { return mData.samplerState; }
 
-        /** Evict all the textures from the GPU memory.
-        */
-        void evictTextures() const;
-
         /** Comparison operator
         */
         bool operator==(const Material& other) const;

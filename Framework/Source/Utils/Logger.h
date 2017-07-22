@@ -73,12 +73,12 @@ namespace Falcor
         */
         static void setVerbosity(Level level) { sVerbosity = level; }
     private:
-        friend void logInfo(const std::string& msg, const bool forceMsgBox);
-        friend void logWarning(const std::string& msg, const bool forceMsgBox);
-        friend void logError(const std::string& msg, const bool forceMsgBox);
-        friend void logErrorAndExit(const std::string& msg, const bool forceMsgBox);
+        friend void logInfo(const std::string& msg, bool forceMsgBox);
+        friend void logWarning(const std::string& msg, bool forceMsgBox);
+        friend void logError(const std::string& msg, bool forceMsgBox);
+        friend void logErrorAndExit(const std::string& msg, bool forceMsgBox);
 
-        static void log(Level L, const std::string& msg, const bool forceMsgBox = false);
+        static void log(Level L, const std::string& msg, bool forceMsgBox = false);
 
         Logger() = delete;
         static bool sShowErrorBox;
@@ -87,8 +87,8 @@ namespace Falcor
         static Level sVerbosity;
     };
 
-    inline void logInfo(const std::string& msg, const bool forceMsgBox = false) { Logger::log(Logger::Level::Info, msg, forceMsgBox); }
-    inline void logWarning(const std::string& msg, const bool forceMsgBox = false) { Logger::log(Logger::Level::Warning, msg, forceMsgBox); }
-    inline void logError(const std::string& msg, const bool forceMsgBox = false) { Logger::log(Logger::Level::Error, msg, forceMsgBox); }
-    inline void logErrorAndExit(const std::string& msg, const bool forceMsgBox = false) { Logger::log(Logger::Level::Error, msg + "\nTerminating...", forceMsgBox); exit(1); }
+    inline void logInfo(const std::string& msg, bool forceMsgBox = false) { Logger::log(Logger::Level::Info, msg, forceMsgBox); }
+    inline void logWarning(const std::string& msg, bool forceMsgBox = false) { Logger::log(Logger::Level::Warning, msg, forceMsgBox); }
+    inline void logError(const std::string& msg, bool forceMsgBox = false) { Logger::log(Logger::Level::Error, msg, forceMsgBox); }
+    inline void logErrorAndExit(const std::string& msg, bool forceMsgBox = false) { Logger::log(Logger::Level::Error, msg + "\nTerminating...", forceMsgBox); exit(1); }
 }

@@ -82,7 +82,6 @@ void Shadows::createScene(const std::string& filename)
 {
     // Load the scene
     mpScene = Scene::loadFromFile(filename);
-
     for (uint32_t i = 0; i < mpScene->getPathCount(); i++)
     {
         mpScene->getPath(i)->detachAllObjects();
@@ -101,11 +100,11 @@ void Shadows::createScene(const std::string& filename)
     setLightIndex(0);
 
     // Create the main effect
-    mLightingPass.pProgram = GraphicsProgram::createFromFile("Shadows.vs.hlsl", "Shadows.ps.hlsl");
+    mLightingPass.pProgram = GraphicsProgram::createFromFile(appendShaderExtension("Shadows.vs"), appendShaderExtension("Shadows.ps"));
     mLightingPass.pProgram->addDefine("_LIGHT_COUNT", std::to_string(mpScene->getLightCount()));
     mLightingPass.pProgram->addDefine("_LIGHT_INDEX", std::to_string(mControls.lightIndex));
     mLightingPass.pProgramVars = GraphicsVars::create(mLightingPass.pProgram->getActiveVersion()->getReflector());
-    ConstantBuffer::SharedPtr pCB = mLightingPass.pProgramVars->getConstantBuffer(0u);
+    ConstantBuffer::SharedPtr pCB = mLightingPass.pProgramVars->getConstantBuffer(0, 0, 0);
     mOffsets.visualizeCascades = static_cast<uint32_t>(pCB->getVariableOffset("visualizeCascades"));
 }
 
@@ -122,7 +121,7 @@ void Shadows::runMainPass()
     mpRenderContext->getGraphicsState()->setProgram(mLightingPass.pProgram);
 
     //vars
-    ConstantBuffer::SharedPtr pPerFrameCB = mLightingPass.pProgramVars->getConstantBuffer(0u);
+    ConstantBuffer::SharedPtr pPerFrameCB = mLightingPass.pProgramVars->getConstantBuffer(0, 0, 0);
     pPerFrameCB->setBlob(&mPerFrameCBData, mOffsets.visualizeCascades, sizeof(mPerFrameCBData));
     mpRenderContext->pushGraphicsVars(mLightingPass.pProgramVars);
     
@@ -133,10 +132,10 @@ void Shadows::runMainPass()
 
 void Shadows::displayShadowMap()
 {
-    mShadowVisualizer.pProgramVars->setSrv(0u, mpCsmTech[mControls.lightIndex]->getShadowMap()->getSRV());
+    mShadowVisualizer.pProgramVars->setSrv(0, 0, 0, mpCsmTech[mControls.lightIndex]->getShadowMap()->getSRV());
     if (mControls.cascadeCount > 1)
     {
-        mShadowVisualizer.pProgramVars->getConstantBuffer(0u)->setBlob(&mControls.displayedCascade, mOffsets.displayedCascade, sizeof(mControls.displayedCascade));
+        mShadowVisualizer.pProgramVars->getConstantBuffer(0, 0, 0)->setBlob(&mControls.displayedCascade, mOffsets.displayedCascade, sizeof(mControls.displayedCascade));
     }
     mpRenderContext->pushGraphicsVars(mShadowVisualizer.pProgramVars);
     mShadowVisualizer.pProgram->execute(mpRenderContext.get());
@@ -215,12 +214,12 @@ void Shadows::onResizeSwapChain()
 void Shadows::createVisualizationProgram()
 {
     // Create the shadow visualizer
-    mShadowVisualizer.pProgram = FullScreenPass::create("VisualizeMap.ps.hlsl");
+    mShadowVisualizer.pProgram = FullScreenPass::create(appendShaderExtension("VisualizeMap.ps"));
     if(mControls.cascadeCount > 1)
     {
         mShadowVisualizer.pProgram->getProgram()->addDefine("_USE_2D_ARRAY");
         mShadowVisualizer.pProgramVars = GraphicsVars::create(mShadowVisualizer.pProgram->getProgram()->getActiveVersion()->getReflector());
-        mOffsets.displayedCascade = static_cast<uint32_t>(mShadowVisualizer.pProgramVars->getConstantBuffer(0u)->getVariableOffset("cascade"));
+        mOffsets.displayedCascade = static_cast<uint32_t>(mShadowVisualizer.pProgramVars->getConstantBuffer(0, 0, 0)->getVariableOffset("cascade"));
     }
     else
     {
@@ -230,7 +229,18 @@ void Shadows::createVisualizationProgram()
 
 void Shadows::onInitializeTesting()
 {
+    std::vector<ArgList::Arg> specifiedScene = mArgList.getValues("loadscene");
+
+    if (!specifiedScene.empty())
+    {
+        createScene(specifiedScene[0].asString());
+    }
+
     std::vector<ArgList::Arg> filterFrames = mArgList.getValues("incrementFilter");
+    
+
+
+
     if (!filterFrames.empty())
     {
         mFilterFrames.resize(filterFrames.size());

@@ -28,9 +28,9 @@
 #include "Framework.h"
 #include "VariablesBuffer.h"
 #include "ProgramVersion.h"
-#include "buffer.h"
+#include "Buffer.h"
 #include "glm/glm.hpp"
-#include "texture.h"
+#include "Texture.h"
 #include "API/ProgramReflection.h"
 #include "API/Device.h"
 
@@ -83,7 +83,7 @@ namespace Falcor
     VariablesBuffer::VariablesBuffer(const ProgramReflection::BufferReflection::SharedConstPtr& pReflector, size_t elementSize, size_t elementCount, BindFlags bindFlags, CpuAccess cpuAccess) :
         mpReflector(pReflector), Buffer(elementSize * elementCount, bindFlags, cpuAccess), mElementCount(elementCount), mElementSize(elementSize)
     {
-        Buffer::init(nullptr);
+        Buffer::apiInit(false);
         mData.assign(mSize, 0);
     }
 
@@ -94,7 +94,7 @@ namespace Falcor
         return offset;
     }
 
-    bool VariablesBuffer::uploadToGPU(size_t offset, size_t size) const
+    bool VariablesBuffer::uploadToGPU(size_t offset, size_t size)
     {
         if(mDirty == false)
         {

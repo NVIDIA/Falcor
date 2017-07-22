@@ -100,18 +100,16 @@ namespace Falcor
 
         // Update state/vars
         mpSSAOState->setFbo(mpAOFbo);
-
-        mpSSAOVars->setSampler("gSampler", mpPointSampler);
-
-        mpSSAOVars->setTexture("gDepthTex", pDepthTexture);
-        mpSSAOVars->setTexture("gNoiseTex", mpNoiseTexture);
+        mpSSAOVars->setSampler(mBindLocations.sampler.regSpace, mBindLocations.sampler.baseRegIndex, 0, mpPointSampler);
+        mpSSAOVars->setSrv(mBindLocations.depthTex.regSpace, mBindLocations.depthTex.baseRegIndex, 0, pDepthTexture->getSRV());
+        mpSSAOVars->setSrv(mBindLocations.noiseTex.regSpace, mBindLocations.noiseTex.baseRegIndex, 0, mpNoiseTexture->getSRV());
 
         if (mKernelShape == KernelShape::Hemisphere)
         {
-            mpSSAOVars->setTexture("gNormalTex", pNormalTexture);
+            mpSSAOVars->setSrv(mBindLocations.normalTex.regSpace, mBindLocations.normalTex.baseRegIndex, 0, pNormalTexture->getSRV());
         }
 
-        ConstantBuffer* pCB = mpSSAOVars->getConstantBuffer("InternalPerFrameCB").get();
+        ConstantBuffer* pCB = mpSSAOVars->getConstantBuffer(mBindLocations.internalPerFrameCB.regSpace, mBindLocations.internalPerFrameCB.baseRegIndex, 0).get();
         if (pCB != nullptr)
         {
             pCamera->setIntoConstantBuffer(pCB, 0);
@@ -158,7 +156,7 @@ namespace Falcor
     {
         if (mDirty)
         {
-            ConstantBuffer* pCB = mpSSAOVars->getConstantBuffer("SSAOCB").get();
+            ConstantBuffer* pCB = mpSSAOVars->getConstantBuffer(mBindLocations.ssaoCB.regSpace, mBindLocations.ssaoCB.baseRegIndex, 0).get();
             if (pCB != nullptr)
             {
                 pCB->setBlob(&mData, 0, sizeof(mData));
@@ -170,9 +168,17 @@ namespace Falcor
 
     void SSAO::initShader()
     {
-        mpSSAOPass = FullScreenPass::create("Effects/SSAO.ps.hlsl");
+        mpSSAOPass = FullScreenPass::create("Effects/SSAO.ps.slang");
         mpSSAOPass->getProgram()->addDefine(mKernelShape == KernelShape::Hemisphere ? "HEMISPHERE": "SPHERE");
         mpSSAOVars = GraphicsVars::create(mpSSAOPass->getProgram()->getActiveVersion()->getReflector());
+
+        const ProgramReflection* pReflector = mpSSAOPass->getProgram()->getActiveVersion()->getReflector().get();
+        mBindLocations.internalPerFrameCB = getBufferBindLocation(pReflector, "InternalPerFrameCB");
+        mBindLocations.ssaoCB = getBufferBindLocation(pReflector, "SSAOCB");
+        mBindLocations.sampler = getResourceBindLocation(pReflector, "gSampler");
+        mBindLocations.depthTex = getResourceBindLocation(pReflector, "gDepthTex");
+        mBindLocations.normalTex = getResourceBindLocation(pReflector, "gNormalTex");
+        mBindLocations.noiseTex = getResourceBindLocation(pReflector, "gNoiseTex");
     }
 
     void SSAO::setKernel(uint32_t kernelSize, SampleDistribution distribution)

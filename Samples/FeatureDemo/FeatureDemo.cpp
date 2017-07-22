@@ -26,14 +26,42 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 #include "FeatureDemo.h"
-#include "API/D3D/FalcorD3D.h"
+
+//  Halton Sampler Pattern.
+static const float kHaltonSamplePattern[8][2] = { { 1.0f / 2.0f - 0.5f, 1.0f / 3.0f - 0.5f },
+{ 1.0f / 4.0f - 0.5f, 2.0f / 3.0f - 0.5f },
+{ 3.0f / 4.0f - 0.5f, 1.0f / 9.0f - 0.5f },
+{ 1.0f / 8.0f - 0.5f, 4.0f / 9.0f - 0.5f },
+{ 5.0f / 8.0f - 0.5f, 7.0f / 9.0f - 0.5f },
+{ 3.0f / 8.0f - 0.5f, 2.0f / 9.0f - 0.5f },
+{ 7.0f / 8.0f - 0.5f, 5.0f / 9.0f - 0.5f },
+{ 0.5f / 8.0f - 0.5f, 8.0f / 9.0f - 0.5f } };
+
+//  DirectX 11 Sample Pattern.
+static const float kDX11SamplePattern[8][2] = { { 1.0f / 16.0f, -3.0f / 16.0f },
+{ -1.0f / 16.0f, 3.0f / 16.0f },
+{ 5.0f / 16.0f, 1.0f / 16.0f },
+{ -3.0f / 16.0f, -5.0f / 16.0f },
+{ -5.0f / 16.0f, 5.0f / 16.0f },
+{ -7.0f / 16.0f, -1.0f / 16.0f },
+{ 3.0f / 16.0f, 7.0f / 16.0f },
+{ 7.0f / 16.0f, -7.0f / 16.0f } };
+
+void FeatureDemo::initDepthPass()
+{
+	mDepthPass.pProgram = GraphicsProgram::createFromFile("DepthPass.vs.slang", "DepthPass.ps.slang");
+	mDepthPass.pVars = GraphicsVars::create(mDepthPass.pProgram->getActiveVersion()->getReflector());
+}
 
 void FeatureDemo::initLightingPass()
 {
-    mLightingPass.pProgram = GraphicsProgram::createFromFile("FeatureDemo.vs.hlsl", "FeatureDemo.ps.hlsl");
+    mLightingPass.pProgram = GraphicsProgram::createFromFile("FeatureDemo.vs.slang", "FeatureDemo.ps.slang");
     mLightingPass.pProgram->addDefine("_LIGHT_COUNT", std::to_string(mpSceneRenderer->getScene()->getLightCount()));
     initControls();
     mLightingPass.pVars = GraphicsVars::create(mLightingPass.pProgram->getActiveVersion()->getReflector());
+	DepthStencilState::Desc dsDesc;
+	dsDesc.setDepthTest(true).setStencilTest(false).setDepthWriteMask(false).setDepthFunc(DepthStencilState::Func::LessEqual);
+	mLightingPass.pDsState = DepthStencilState::create(dsDesc);
 }
 
 void FeatureDemo::initShadowPass()
@@ -46,7 +74,7 @@ void FeatureDemo::initShadowPass()
 void FeatureDemo::initSSAO()
 {
     mSSAO.pSSAO = SSAO::create(uvec2(1024));
-    mSSAO.pApplySSAOPass = FullScreenPass::create("ApplyAO.ps.hlsl");
+    mSSAO.pApplySSAOPass = FullScreenPass::create("ApplyAO.ps.slang");
     mSSAO.pVars = GraphicsVars::create(mSSAO.pApplySSAOPass->getProgram()->getActiveVersion()->getReflector());
 
     Sampler::Desc desc;
@@ -100,14 +128,17 @@ void FeatureDemo::initScene(Scene::SharedPtr pScene)
     mpSceneRenderer->toggleStaticMaterialCompilation(mOptimizedShaders);
     setSceneSampler(mpSceneSampler ? mpSceneSampler->getMaxAnisotropy() : 4);
     setActiveCameraAspectRatio();
+    initDepthPass();
     initLightingPass();
     initShadowPass();
     initSSAO();
+    initTAA();
     mCurrentTime = 0;
 }
 
 void FeatureDemo::loadModel(const std::string& filename, bool showProgressBar)
 {
+    mpSceneRenderer = nullptr;
     ProgressBar::SharedPtr pBar;
     if (showProgressBar)
     {
@@ -123,6 +154,7 @@ void FeatureDemo::loadModel(const std::string& filename, bool showProgressBar)
 
 void FeatureDemo::loadScene(const std::string& filename, bool showProgressBar)
 {
+    mpSceneRenderer = nullptr;
     ProgressBar::SharedPtr pBar;
     if (showProgressBar)
     {
@@ -157,6 +189,12 @@ void FeatureDemo::initEnvMap(const std::string& name)
     }
 }
 
+void FeatureDemo::initTAA()
+{
+    mTAA.pTAA = TemporalAA::create();
+    applyAaMode();
+}
+
 void FeatureDemo::initPostProcess()
 {
     mpToneMapper = ToneMapping::create(ToneMapping::Operator::HableUc2);
@@ -174,6 +212,7 @@ void FeatureDemo::onLoad()
 
 void FeatureDemo::renderSkyBox()
 {
+    PROFILE(skyBox);
     mpState->setDepthStencilState(mSkyBox.pDS);
     mSkyBox.pEffect->render(mpRenderContext.get(), mpSceneRenderer->getScene()->getActiveCamera().get());
     mpState->setDepthStencilState(nullptr);
@@ -182,9 +221,21 @@ void FeatureDemo::renderSkyBox()
 void FeatureDemo::beginFrame()
 {
     mpRenderContext->pushGraphicsState(mpState);
-    mpState->setFbo(mpMainFbo);
     mpRenderContext->clearFbo(mpMainFbo.get(), glm::vec4(), 1, 0, FboAttachmentType::All);
     mpRenderContext->clearFbo(mpPostProcessFbo.get(), glm::vec4(), 1, 0, FboAttachmentType::Color);
+
+    if (mAAMode == AAMode::TAA)
+    {
+        glm::vec2 targetResolution = glm::vec2(mpDefaultFBO->getWidth(), mpDefaultFBO->getHeight());
+        mpRenderContext->clearRtv(mpMainFbo->getColorTexture(2)->getRTV().get(), vec4(0));
+        mpRenderContext->clearFbo(mpResolveFbo.get(), glm::vec4(), 1, 0, FboAttachmentType::Color);
+
+        //  Select the sample pattern and set the camera jitter
+        const auto& samplePattern = (mTAASamplePattern == SamplePattern::Halton) ? kHaltonSamplePattern : kDX11SamplePattern;
+        static_assert(arraysize(kHaltonSamplePattern) == arraysize(kDX11SamplePattern), "Mismatch in the array size of the sample patterns");
+        uint32_t patternIndex = getFrameID() % arraysize(kHaltonSamplePattern);
+        mpSceneRenderer->getScene()->getActiveCamera()->setJitter(samplePattern[patternIndex][0] / targetResolution.x, samplePattern[patternIndex][1] / targetResolution.y);
+    }
 }
 
 void FeatureDemo::endFrame()
@@ -194,25 +245,54 @@ void FeatureDemo::endFrame()
 
 void FeatureDemo::postProcess()
 {
+    PROFILE(postProcess);
     mpToneMapper->execute(mpRenderContext.get(), mpResolveFbo, mControls[EnableSSAO].enabled ? mpPostProcessFbo : mpDefaultFBO);
+}
+
+void FeatureDemo::depthPass()
+{
+	PROFILE(depthPass);
+	if (mEnableDepthPass == false) 
+	{
+		return;
+	}
+
+	mpState->setFbo(mpDepthPassFbo);
+	mpState->setProgram(mDepthPass.pProgram);
+	mpRenderContext->setGraphicsVars(mDepthPass.pVars);
+	mpSceneRenderer->renderScene(mpRenderContext.get());
 }
 
 void FeatureDemo::lightingPass()
 {
+    PROFILE(lightingPass);
     mpState->setProgram(mLightingPass.pProgram);
+	mpState->setDepthStencilState(mEnableDepthPass ? mLightingPass.pDsState : nullptr);
     mpRenderContext->setGraphicsVars(mLightingPass.pVars);
     ConstantBuffer::SharedPtr pCB = mLightingPass.pVars->getConstantBuffer("PerFrameCB");
-    if(mControls[ControlID::EnableShadows].enabled)
+    pCB["gEnvMapFactorScale"] = mEnvMapFactorScale;
+
+    if (mControls[ControlID::EnableShadows].enabled)
     {
         pCB["camVpAtLastCsmUpdate"] = mShadowPass.camVpAtLastCsmUpdate;
         mShadowPass.pCsm->setDataIntoGraphicsVars(mLightingPass.pVars, "gCsmData");
     }
+
     if (mControls[EnableReflections].enabled)
     {
         mLightingPass.pVars->setTexture("gEnvMap", mpEnvMap);
         mLightingPass.pVars->setSampler("gSampler", mpSceneSampler);
     }
+
+    if (mAAMode == AAMode::TAA)
+    {
+        mpRenderContext->clearFbo(mTAA.getActiveFbo().get(), vec4(0.0, 0.0, 0.0, 0.0), 1, 0, FboAttachmentType::Color);
+        pCB["gRenderTargetDim"] = glm::vec2(mpDefaultFBO->getWidth(), mpDefaultFBO->getHeight());
+    }
+
     mpSceneRenderer->renderScene(mpRenderContext.get());
+	mpRenderContext->flush();
+	mpState->setDepthStencilState(nullptr);
 }
 
 void FeatureDemo::resolveMSAA()
@@ -224,15 +304,57 @@ void FeatureDemo::resolveMSAA()
 
 void FeatureDemo::shadowPass()
 {
+    PROFILE(shadowPass);
     if (mControls[EnableShadows].enabled && mShadowPass.updateShadowMap)
     {
         mShadowPass.camVpAtLastCsmUpdate = mpSceneRenderer->getScene()->getActiveCamera()->getViewProjMatrix();
-        mShadowPass.pCsm->setup(mpRenderContext.get(), mpSceneRenderer->getScene()->getActiveCamera().get(), nullptr);
+        mShadowPass.pCsm->setup(mpRenderContext.get(), mpSceneRenderer->getScene()->getActiveCamera().get(), mEnableDepthPass ? mpDepthPassFbo->getDepthStencilTexture() : nullptr);
+		mpRenderContext->flush();
     }
+}
+
+void FeatureDemo::antiAliasing()
+{
+    PROFILE(resolveMSAA);
+    switch (mAAMode)
+    {
+    case AAMode::MSAA:
+        return resolveMSAA();
+    case AAMode::TAA:
+        return runTAA();
+    default:
+        should_not_get_here();
+    }
+}
+
+void FeatureDemo::runTAA()
+{
+    //  Get the Current Color and Motion Vectors
+    const Texture::SharedPtr pCurColor = mpMainFbo->getColorTexture(0);
+    const Texture::SharedPtr pMotionVec = mpMainFbo->getColorTexture(2);
+
+    //  Get the Previous Color
+    const Texture::SharedPtr pPrevColor = mTAA.getInactiveFbo()->getColorTexture(0);
+
+    //  Execute the Temporal Anti-Aliasing
+    mpRenderContext->getGraphicsState()->pushFbo(mTAA.getActiveFbo());
+    mTAA.pTAA->execute(mpRenderContext.get(), pCurColor, pPrevColor, pMotionVec);
+    mpRenderContext->getGraphicsState()->popFbo();
+
+    //  Copy over the Anti-Aliased Color Texture
+    mpRenderContext->blit(mTAA.getActiveFbo()->getColorTexture(0)->getSRV(0, 1), mpResolveFbo->getColorTexture(0)->getRTV());
+
+    //  Copy over the Remaining Texture Data
+    mpRenderContext->blit(mpMainFbo->getColorTexture(1)->getSRV(), mpResolveFbo->getRenderTargetView(1));
+    mpRenderContext->blit(mpMainFbo->getDepthStencilTexture()->getSRV(), mpResolveFbo->getRenderTargetView(2));
+
+    //  Swap the Fbos
+    mTAA.switchFbos();
 }
 
 void FeatureDemo::ambientOcclusion()
 {
+    PROFILE(ssao);
     if (mControls[EnableSSAO].enabled)
     {
         Texture::SharedPtr pAOMap = mSSAO.pSSAO->generateAOMap(mpRenderContext.get(), mpSceneRenderer->getScene()->getActiveCamera().get(), mpResolveFbo->getColorTexture(2), mpResolveFbo->getColorTexture(1));
@@ -258,16 +380,22 @@ void FeatureDemo::onBeginTestFrame()
 void FeatureDemo::onFrameRender()
 {
     beginTestFrame();
-
-    if(mpSceneRenderer)
+	
+    if (mpSceneRenderer)
     {
         beginFrame();
 
-        mpSceneRenderer->update(mCurrentTime);
+        {
+            PROFILE(updateScene);
+            mpSceneRenderer->update(mCurrentTime);
+        }
+
+		depthPass();
         shadowPass();
+		mpState->setFbo(mpMainFbo);
         renderSkyBox();
         lightingPass();
-        resolveMSAA();
+        antiAliasing();
         postProcess();
         ambientOcclusion();
         endFrame();
@@ -278,11 +406,6 @@ void FeatureDemo::onFrameRender()
     }
 
     endTestFrame();
-}
-
-void FeatureDemo::onShutdown()
-{
-
 }
 
 void FeatureDemo::applyCameraPathState()
@@ -325,20 +448,18 @@ bool FeatureDemo::onMouseEvent(const MouseEvent& mouseEvent)
 
 void FeatureDemo::onResizeSwapChain()
 {
-    // Create the main FBO
     uint32_t w = mpDefaultFBO->getWidth();
     uint32_t h = mpDefaultFBO->getHeight();
 
+    // Create the post-process FBO and AA resolve Fbo
     Fbo::Desc fboDesc;
     fboDesc.setColorTarget(0, ResourceFormat::RGBA8UnormSrgb);
     mpPostProcessFbo = FboHelper::create2D(w, h, fboDesc);
-
     fboDesc.setColorTarget(0, ResourceFormat::RGBA32Float).setColorTarget(1, ResourceFormat::RGBA8Unorm).setColorTarget(2, ResourceFormat::R32Float);
     mpResolveFbo = FboHelper::create2D(w, h, fboDesc);
 
-    fboDesc.setSampleCount(mSampleCount).setColorTarget(2, ResourceFormat::Unknown).setDepthStencilTarget(ResourceFormat::D32Float);
-    mpMainFbo = FboHelper::create2D(w, h, fboDesc);
-
+    applyAaMode();
+    
     if(mpSceneRenderer)
     {
         setActiveCameraAspectRatio();

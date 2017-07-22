@@ -47,7 +47,7 @@ void ShaderBuffersSample::onLoad()
     mpCamera = Camera::create();
 
     // create the program
-    mpProgram = GraphicsProgram::createFromFile("ShaderBuffers.vs.hlsl", "ShaderBuffers.ps.hlsl");
+    mpProgram = GraphicsProgram::createFromFile(appendShaderExtension("ShaderBuffers.vs"), appendShaderExtension("ShaderBuffers.ps"));
 
     // Load the model
     mpModel = Model::createFromFile("teapot.obj");
@@ -75,7 +75,7 @@ void ShaderBuffersSample::onLoad()
     uint32_t z = 0;
     mpInvocationsBuffer = Buffer::create(sizeof(uint32_t), Buffer::BindFlags::UnorderedAccess, Buffer::CpuAccess::Read, &z);
     mpProgramVars->setRawBuffer("gInvocationBuffer", mpInvocationsBuffer);
-    mpProgramVars->setTypedBuffer("gSurfaceColor", mpSurfaceColorBuffer);
+    mpProgramVars->setTypedBuffer("gSurfaceColor[1]", mpSurfaceColorBuffer);
 
     mpRWBuffer = StructuredBuffer::create(mpProgram, "gRWBuffer", 4);
     mpProgramVars->setStructuredBuffer("gRWBuffer", mpRWBuffer);
@@ -94,7 +94,7 @@ void ShaderBuffersSample::onLoad()
     mpDefaultPipelineState->setProgram(mpProgram);
 
     // Compute
-    mpComputeProgram = ComputeProgram::createFromFile("ShaderBuffers.cs.hlsl");
+    mpComputeProgram = ComputeProgram::createFromFile(appendShaderExtension("ShaderBuffers.cs"));
     mpComputeState = ComputeState::create();
     mpComputeState->setProgram(mpComputeProgram);
 
@@ -138,7 +138,7 @@ void ShaderBuffersSample::onFrameRender()
     //
 
     // Bind compute output
-    mpProgramVars->setStructuredBuffer("gLight", mpAppendLightData);
+    mpProgramVars->setStructuredBuffer("gLight[3]", mpAppendLightData);
     mpRenderContext->setGraphicsState(mpDefaultPipelineState);
 
     // Update uniform-buffers data
@@ -206,6 +206,11 @@ void ShaderBuffersSample::onResizeSwapChain()
 
 int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ LPSTR lpCmdLine, _In_ int nShowCmd)
 {
+#ifdef FALCOR_VK
+    msgBox("Vulkan support for the features used in the Shader Buffers sample is coming soon!");
+    return 0;
+#endif
+
     ShaderBuffersSample buffersSample;
     SampleConfig config;
     config.windowDesc.title = "Shader Buffers";

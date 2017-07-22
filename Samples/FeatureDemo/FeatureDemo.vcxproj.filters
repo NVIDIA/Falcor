@@ -13,13 +13,22 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <None Include="Data\FeatureDemo.ps.hlsl">
+    <None Include="Data\FeatureDemoCommon.hlsli">
       <Filter>Data</Filter>
     </None>
-    <None Include="Data\FeatureDemo.vs.hlsl">
+    <None Include="Data\FeatureDemo.ps.slang">
       <Filter>Data</Filter>
     </None>
-    <None Include="Data\ApplyAO.ps.hlsl">
+    <None Include="Data\FeatureDemo.vs.slang">
+      <Filter>Data</Filter>
+    </None>
+    <None Include="Data\ApplyAO.ps.slang">
+      <Filter>Data</Filter>
+    </None>
+    <None Include="Data\DepthPass.vs.slang">
+      <Filter>Data</Filter>
+    </None>
+    <None Include="Data\DepthPass.ps.slang">
       <Filter>Data</Filter>
     </None>
   </ItemGroup>

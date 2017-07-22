@@ -1,2 +1,1 @@
-OpenVR SDK 1.0.6
-GitHub revision 7fa6470
+OpenVR SDK 1.0.8

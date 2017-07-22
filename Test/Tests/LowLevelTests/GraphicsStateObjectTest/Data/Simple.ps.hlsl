@@ -25,17 +25,17 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#include "ShaderCommon.h"
-#include "Shading.h"
-#define _COMPILE_DEFAULT_VS
-#include "VertexAttrib.h"
+__import Shading;
+__import DefaultVS;
+__import ShaderCommon;
+
 
 cbuffer PerFrameCB : register(b0)
 {
-    vec3 color;
+    float3 color;
 };
 
-vec4 main(VS_OUT vOut) : SV_TARGET
+float4 main(VS_OUT vOut) : SV_TARGET
 {
 	vOut.posW += vOut.normalW + vOut.bitangentW;
 	vOut.posW = normalize(vOut.posW);

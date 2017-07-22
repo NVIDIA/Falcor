@@ -77,6 +77,7 @@ namespace Slang
 
     void printDiagnosticArg(StringBuilder& sb, char const* str);
     void printDiagnosticArg(StringBuilder& sb, int val);
+    void printDiagnosticArg(StringBuilder& sb, UInt val);
     void printDiagnosticArg(StringBuilder& sb, Slang::String const& str);
     void printDiagnosticArg(StringBuilder& sb, Decl* decl);
     void printDiagnosticArg(StringBuilder& sb, Type* type);
@@ -184,6 +185,12 @@ namespace Slang
         }
 
         void diagnoseImpl(CodePosition const& pos, DiagnosticInfo const& info, int argCount, DiagnosticArg const* const* args);
+
+        // Add a diagnostic with raw text
+        // (used when we get errors from a downstream compiler)
+        void diagnoseRaw(
+            Severity    severity,
+            char const* message);
     };
 
     namespace Diagnostics
@@ -199,15 +206,15 @@ namespace Slang
 #define SLANG_UNIMPLEMENTED(sink, pos, what) \
     (sink)->diagnose(Slang::CodePosition(__LINE__, 0, 0, __FILE__), Slang::Diagnostics::unimplemented, what)
 
-#define SLANG_UNREACHABLE(msg) do { assert(!"ureachable code:" msg); exit(1); } while(0)
 #else
 #define SLANG_INTERNAL_ERROR(sink, pos) \
     (sink)->diagnose(pos, Slang::Diagnostics::internalCompilerError)
 #define SLANG_UNIMPLEMENTED(sink, pos, what) \
     (sink)->diagnose(pos, Slang::Diagnostics::unimplemented, what)
 
-// TODO: find something that will perform better
-#define SLANG_UNREACHABLE(msg) exit(1)
 #endif
+
+#define SLANG_DIAGNOSE_UNEXPECTED(sink, pos, message) \
+    (sink)->diagnose(pos, Slang::Diagnostics::unexpected, message)
 
 #endif

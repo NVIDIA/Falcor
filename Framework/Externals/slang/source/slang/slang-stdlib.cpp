@@ -7,17 +7,39 @@
 #define STRINGIZE2(x) #x
 #define LINE_STRING STRINGIZE(__LINE__)
 
-enum { kLibIncludeStringLine = __LINE__+1 };
-const char * LibIncludeStringChunks[] = { R"=(
+enum { kCoreLibIncludeStringLine = __LINE__ + 1 };
+const char* kCoreLibIncludeStringChunks[] = { R"=(
 
-typedef uint UINT;
+// A type that can be used as an operand for builtins
+interface __BuiltinType {}
 
-__generic<T> __intrinsic_op(Assign) T operator=(out T left, T right);
+// A type that can be used for arithmetic operations
+interface __BuiltinArithmeticType : __BuiltinType {}
+
+// A type that logically has a sign (positive/negative/zero)
+interface __BuiltinSignedArithmeticType : __BuiltinArithmeticType {}
+
+// A type that can represent integers
+interface __BuiltinIntegerType : __BuiltinArithmeticType {}
+
+// A type that can represent non-integers
+interface __BuiltinRealType : __BuiltinArithmeticType {}
+
+// A type that uses a floating-point representation
+interface __BuiltinFloatingPointType : __BuiltinRealType, __BuiltinSignedArithmeticType {}
 
 __generic<T,U> __intrinsic_op(Sequence) U operator,(T left, U right);
 
 __generic<T> __intrinsic_op(Select) T operator?:(bool condition, T ifTrue, T ifFalse);
 __generic<T, let N : int> __intrinsic_op(Select) vector<T,N> operator?:(vector<bool,N> condition, vector<T,N> ifTrue, vector<T,N> ifFalse);
+
+)=" };
+
+
+enum { kHLSLLibIncludeStringLine = __LINE__+1 };
+const char * kHLSLLibIncludeStringChunks[] = { R"=(
+
+typedef uint UINT;
 
 __generic<T> __magic_type(HLSLAppendStructuredBufferType) struct AppendStructuredBuffer
 {
@@ -26,17 +48,6 @@ __generic<T> __magic_type(HLSLAppendStructuredBufferType) struct AppendStructure
     __intrinsic void GetDimensions(
         out uint numStructs,
         out uint stride);
-};
-
-__generic<T> __magic_type(HLSLBufferType) struct Buffer
-{
-    __intrinsic void GetDimensions(
-        out uint dim);
-
-    __intrinsic T Load(int location);
-    __intrinsic T Load(int location, out uint status);
-
-    __intrinsic __subscript(uint index) -> T;
 };
 
 __magic_type(HLSLByteAddressBufferType) struct ByteAddressBuffer
@@ -86,19 +97,6 @@ __generic<T, let N : int> __magic_type(HLSLInputPatchType) struct InputPatch
 __generic<T, let N : int> __magic_type(HLSLOutputPatchType) struct OutputPatch
 {
     __intrinsic __subscript(uint index) -> T { set; }
-};
-
-__generic<T> __magic_type(HLSLRWBufferType) struct RWBuffer
-{
-    // Note(tfoley): duplication with declaration of `Buffer`
-
-    __intrinsic void GetDimensions(
-        out uint dim);
-
-    __intrinsic T Load(int location);
-    __intrinsic T Load(int location, out uint status);
-
-    __intrinsic __subscript(uint index) -> T { get; set; }
 };
 
 __magic_type(HLSLRWByteAddressBufferType) struct RWByteAddressBuffer
@@ -230,31 +228,27 @@ __generic<T> __magic_type(HLSLRWStructuredBufferType) struct RWStructuredBuffer
     __intrinsic __subscript(uint index) -> T { get; set; }
 };
 
-__generic<T> __magic_type(HLSLPointStreamType) struct PointStream {};
-__generic<T> __magic_type(HLSLLineStreamType) struct LineStream {};
-__generic<T> __magic_type(HLSLLineStreamType) struct TriangleStream {};
+__generic<T> __magic_type(HLSLPointStreamType) struct PointStream
+{
+    void Append(T value);
+    void RestartStrip();
+};
+
+__generic<T> __magic_type(HLSLLineStreamType) struct LineStream
+{
+    void Append(T value);
+    void RestartStrip();
+};
+
+__generic<T> __magic_type(HLSLTriangleStreamType) struct TriangleStream
+{
+    void Append(T value);
+    void RestartStrip();
+};
 
 )=", R"=(
 
 // Note(tfoley): Trying to systematically add all the HLSL builtins
-
-// A type that can be used as an operand for builtins
-interface __BuiltinType {}
-
-// A type that can be used for arithmetic operations
-interface __BuiltinArithmeticType : __BuiltinType {}
-
-// A type that logically has a sign (positive/negative/zero)
-interface __BuiltinSignedArithmeticType : __BuiltinArithmeticType {}
-
-// A type that can represent integers
-interface __BuiltinIntegerType : __BuiltinArithmeticType {}
-
-// A type that can represent non-integers
-interface __BuiltinRealType : __BuiltinArithmeticType {}
-
-// A type that uses a floating-point representation
-interface __BuiltinFloatingPointType : __BuiltinRealType, __BuiltinSignedArithmeticType {}
 
 // Try to terminate the current draw or dispatch call (HLSL SM 4.0)
 __intrinsic void abort();
@@ -327,9 +321,20 @@ __generic<T : __BuiltinFloatingPointType> __intrinsic T atan(T x);
 __generic<T : __BuiltinFloatingPointType, let N : int> __intrinsic vector<T,N> atan(vector<T,N> x);
 __generic<T : __BuiltinFloatingPointType, let N : int, let M : int> __intrinsic matrix<T,N,M> atan(matrix<T,N,M> x);
 
-__generic<T : __BuiltinFloatingPointType> __intrinsic T atan2(T y, T x);
-__generic<T : __BuiltinFloatingPointType, let N : int> __intrinsic vector<T,N> atan2(vector<T,N> y, vector<T,N> x);
-__generic<T : __BuiltinFloatingPointType, let N : int, let M : int> __intrinsic matrix<T,N,M> atan2(matrix<T,N,M> y, matrix<T,N,M> x);
+__generic<T : __BuiltinFloatingPointType>
+__intrinsic(glsl,"atan($0,$1)")
+__intrinsic
+T atan2(T y, T x);
+
+__generic<T : __BuiltinFloatingPointType, let N : int>
+__intrinsic(glsl,"atan($0,$1)")
+__intrinsic
+vector<T,N> atan2(vector<T,N> y, vector<T,N> x);
+
+__generic<T : __BuiltinFloatingPointType, let N : int, let M : int>
+__intrinsic(glsl,"atan($0,$1)")
+__intrinsic
+matrix<T,N,M> atan2(matrix<T,N,M> y, matrix<T,N,M> x);
 
 // Ceiling (HLSL SM 1.0)
 __generic<T : __BuiltinFloatingPointType> __intrinsic T ceil(T x);
@@ -370,29 +375,95 @@ __generic<T : __BuiltinArithmeticType> __intrinsic vector<T,3> cross(vector<T,3>
 __intrinsic int4 D3DCOLORtoUBYTE4(float4 x);
 
 // Partial-difference derivatives
-__generic<T : __BuiltinFloatingPointType> __intrinsic T ddx(T x);
-__generic<T : __BuiltinFloatingPointType, let N : int> __intrinsic vector<T,N> ddx(vector<T,N> x);
-__generic<T : __BuiltinFloatingPointType, let N : int, let M : int> __intrinsic matrix<T,N,M> ddx(matrix<T,N,M> x);
+__generic<T : __BuiltinFloatingPointType>
+__intrinsic(glsl, dFdx)
+__intrinsic
+T ddx(T x);
+__generic<T : __BuiltinFloatingPointType, let N : int>
+__intrinsic(glsl, dFdx)
+__intrinsic
+vector<T,N> ddx(vector<T,N> x);
+__generic<T : __BuiltinFloatingPointType, let N : int, let M : int>
+__intrinsic(glsl, dFdx)
+__intrinsic
+matrix<T,N,M> ddx(matrix<T,N,M> x);
 
-__generic<T : __BuiltinFloatingPointType> __intrinsic T ddx_coarse(T x);
-__generic<T : __BuiltinFloatingPointType, let N : int> __intrinsic vector<T,N> ddx_coarse(vector<T,N> x);
-__generic<T : __BuiltinFloatingPointType, let N : int, let M : int> __intrinsic matrix<T,N,M> ddx_coarse(matrix<T,N,M> x);
+__generic<T : __BuiltinFloatingPointType>
+__glsl_extension(GL_ARB_derivative_control)
+__intrinsic(glsl, dFdxCoarse)
+__intrinsic
+T ddx_coarse(T x);
+__generic<T : __BuiltinFloatingPointType, let N : int>
+__glsl_extension(GL_ARB_derivative_control)
+__intrinsic(glsl, dFdxCoarse)
+__intrinsic
+vector<T,N> ddx_coarse(vector<T,N> x);
+__generic<T : __BuiltinFloatingPointType, let N : int, let M : int>
+__glsl_extension(GL_ARB_derivative_control)
+__intrinsic(glsl, dFdxCoarse)
+__intrinsic
+matrix<T,N,M> ddx_coarse(matrix<T,N,M> x);
 
-__generic<T : __BuiltinFloatingPointType> __intrinsic T ddx_fine(T x);
-__generic<T : __BuiltinFloatingPointType, let N : int> __intrinsic vector<T,N> ddx_fine(vector<T,N> x);
-__generic<T : __BuiltinFloatingPointType, let N : int, let M : int> __intrinsic matrix<T,N,M> ddx_fine(matrix<T,N,M> x);
+__generic<T : __BuiltinFloatingPointType>
+__glsl_extension(GL_ARB_derivative_control)
+__intrinsic(glsl, dFdxFine)
+__intrinsic
+T ddx_fine(T x);
+__generic<T : __BuiltinFloatingPointType, let N : int>
+__glsl_extension(GL_ARB_derivative_control)
+__intrinsic(glsl, dFdxFine)
+__intrinsic
+vector<T,N> ddx_fine(vector<T,N> x);
+__generic<T : __BuiltinFloatingPointType, let N : int, let M : int>
+__glsl_extension(GL_ARB_derivative_control)
+__intrinsic(glsl, dFdxFine)
+__intrinsic
+matrix<T,N,M> ddx_fine(matrix<T,N,M> x);
 
-__generic<T : __BuiltinFloatingPointType> __intrinsic T ddy(T x);
-__generic<T : __BuiltinFloatingPointType, let N : int> __intrinsic vector<T,N> ddy(vector<T,N> x);
-__generic<T : __BuiltinFloatingPointType, let N : int, let M : int> __intrinsic matrix<T,N,M> ddy(matrix<T,N,M> x);
+__generic<T : __BuiltinFloatingPointType>
+__intrinsic(glsl, dFdy)
+__intrinsic
+T ddy(T x);
+__generic<T : __BuiltinFloatingPointType, let N : int>
+__intrinsic(glsl, dFdy)
+__intrinsic
+vector<T,N> ddy(vector<T,N> x);
+__generic<T : __BuiltinFloatingPointType, let N : int, let M : int>
+__intrinsic(glsl, dFdy)
+__intrinsic
+ matrix<T,N,M> ddy(matrix<T,N,M> x);
 
-__generic<T : __BuiltinFloatingPointType> __intrinsic T ddy_coarse(T x);
-__generic<T : __BuiltinFloatingPointType, let N : int> __intrinsic vector<T,N> ddy_coarse(vector<T,N> x);
-__generic<T : __BuiltinFloatingPointType, let N : int, let M : int> __intrinsic matrix<T,N,M> ddy_coarse(matrix<T,N,M> x);
+__generic<T : __BuiltinFloatingPointType>
+__glsl_extension(GL_ARB_derivative_control)
+__intrinsic(glsl, dFdyCoarse)
+__intrinsic
+T ddy_coarse(T x);
+__generic<T : __BuiltinFloatingPointType, let N : int>
+__glsl_extension(GL_ARB_derivative_control)
+__intrinsic(glsl, dFdyCoarse)
+__intrinsic
+vector<T,N> ddy_coarse(vector<T,N> x);
+__generic<T : __BuiltinFloatingPointType, let N : int, let M : int>
+__glsl_extension(GL_ARB_derivative_control)
+__intrinsic(glsl, dFdyCoarse)
+__intrinsic
+matrix<T,N,M> ddy_coarse(matrix<T,N,M> x);
 
-__generic<T : __BuiltinFloatingPointType> __intrinsic T ddy_fine(T x);
-__generic<T : __BuiltinFloatingPointType, let N : int> __intrinsic vector<T,N> ddy_fine(vector<T,N> x);
-__generic<T : __BuiltinFloatingPointType, let N : int, let M : int> __intrinsic matrix<T,N,M> ddy_fine(matrix<T,N,M> x);
+__generic<T : __BuiltinFloatingPointType>
+__glsl_extension(GL_ARB_derivative_control)
+__intrinsic(glsl, dFdyFine)
+__intrinsic
+T ddy_fine(T x);
+__generic<T : __BuiltinFloatingPointType, let N : int>
+__glsl_extension(GL_ARB_derivative_control)
+__intrinsic(glsl, dFdyFine)
+__intrinsic
+vector<T,N> ddy_fine(vector<T,N> x);
+__generic<T : __BuiltinFloatingPointType, let N : int, let M : int>
+__glsl_extension(GL_ARB_derivative_control)
+__intrinsic(glsl, dFdyFine)
+__intrinsic
+matrix<T,N,M> ddy_fine(matrix<T,N,M> x);
 
 
 // Radians to degrees
@@ -489,9 +560,20 @@ __generic<T : __BuiltinFloatingPointType, let N : int> __intrinsic vector<T,N> f
 __generic<T : __BuiltinFloatingPointType, let N : int, let M : int> __intrinsic matrix<T,N,M> fmod(matrix<T,N,M> x, matrix<T,N,M> y);
 
 // Fractional part
-__generic<T : __BuiltinFloatingPointType> __intrinsic T frac(T x);
-__generic<T : __BuiltinFloatingPointType, let N : int> __intrinsic vector<T,N> frac(vector<T,N> x);
-__generic<T : __BuiltinFloatingPointType, let N : int, let M : int> __intrinsic matrix<T,N,M> frac(matrix<T,N,M> x);
+__generic<T : __BuiltinFloatingPointType>
+__intrinsic(glsl, fract)
+__intrinsic
+T frac(T x);
+
+__generic<T : __BuiltinFloatingPointType, let N : int>
+__intrinsic(glsl, fract)
+__intrinsic
+vector<T,N> frac(vector<T,N> x);
+
+__generic<T : __BuiltinFloatingPointType, let N : int, let M : int>
+__intrinsic(glsl, fract)
+__intrinsic
+matrix<T,N,M> frac(matrix<T,N,M> x);
 
 // Split float into mantissa and exponent
 __generic<T : __BuiltinFloatingPointType> __intrinsic T frexp(T x, out T exp);
@@ -567,9 +649,20 @@ __generic<T : __BuiltinFloatingPointType, let N : int, let M : int> __intrinsic 
 __generic<T : __BuiltinFloatingPointType, let N : int> __intrinsic T length(vector<T,N> x);
 
 // Linear interpolation
-__generic<T : __BuiltinFloatingPointType> __intrinsic T lerp(T x, T y, T s);
-__generic<T : __BuiltinFloatingPointType, let N : int> __intrinsic vector<T,N> lerp(vector<T,N> x, vector<T,N> y, vector<T,N> s);
-__generic<T : __BuiltinFloatingPointType, let N : int, let M : int> __intrinsic matrix<T,N,M> lerp(matrix<T,N,M> x, matrix<T,N,M> y, matrix<T,N,M> s);
+__generic<T : __BuiltinFloatingPointType>
+__intrinsic(glsl, mix)
+__intrinsic
+T lerp(T x, T y, T s);
+
+__generic<T : __BuiltinFloatingPointType, let N : int>
+__intrinsic(glsl, mix)
+__intrinsic
+vector<T,N> lerp(vector<T,N> x, vector<T,N> y, vector<T,N> s);
+
+__generic<T : __BuiltinFloatingPointType, let N : int, let M : int>
+__intrinsic(glsl, mix)
+__intrinsic
+matrix<T,N,M> lerp(matrix<T,N,M> x, matrix<T,N,M> y, matrix<T,N,M> s);
 
 // Legacy lighting function (obsolete)
 __intrinsic float4 lit(float n_dot_l, float n_dot_h, float m);
@@ -975,7 +1068,11 @@ namespace Slang
         return stdlibPath;
     }
 
-    String SlangStdLib::code;
+    // Cached code for the various libraries
+    String coreLibraryCode;
+    String slangLibraryCode;
+    String hlslLibraryCode;
+    String glslLibraryCode;
 
     enum
     {
@@ -993,93 +1090,88 @@ namespace Slang
         ANY_MASK = INT_MASK | FLOAT_MASK | BOOL_MASK,
     };
 
-    String SlangStdLib::GetCode()
+    static const struct {
+        char const* name;
+        BaseType	tag;
+        unsigned    flags;
+    } kBaseTypes[] = {
+        { "void",	BaseType::Void,     0 },
+        { "int",	BaseType::Int,      SINT_MASK },
+        { "half",	BaseType::Half,     FLOAT_MASK },
+        { "float",	BaseType::Float,    FLOAT_MASK },
+        { "double",	BaseType::Double,   FLOAT_MASK },
+        { "uint",	BaseType::UInt,     UINT_MASK },
+        { "bool",	BaseType::Bool,     BOOL_MASK },
+        { "uint64_t", BaseType::UInt64, UINT_MASK },
+    };
+
+    struct OpInfo { IntrinsicOp opCode; char const* opName; unsigned flags; };
+
+    static const OpInfo unaryOps[] = {
+        { IntrinsicOp::Pos,     "+",    ARITHMETIC_MASK },
+        { IntrinsicOp::Neg,     "-",    ARITHMETIC_MASK },
+        { IntrinsicOp::Not,     "!",    ANY_MASK        },
+        { IntrinsicOp::BitNot,  "~",    INT_MASK        },
+        { IntrinsicOp::PreInc,  "++",   ARITHMETIC_MASK | ASSIGNMENT },
+        { IntrinsicOp::PreDec,  "--",   ARITHMETIC_MASK | ASSIGNMENT },
+        { IntrinsicOp::PostInc, "++",   ARITHMETIC_MASK | ASSIGNMENT | POSTFIX },
+        { IntrinsicOp::PostDec, "--",   ARITHMETIC_MASK | ASSIGNMENT | POSTFIX },
+    };
+
+    static const OpInfo binaryOps[] = {
+        { IntrinsicOp::Add,     "+",    ARITHMETIC_MASK },
+        { IntrinsicOp::Sub,     "-",    ARITHMETIC_MASK },
+        { IntrinsicOp::Mul,     "*",    ARITHMETIC_MASK },
+        { IntrinsicOp::Div,     "/",    ARITHMETIC_MASK },
+        { IntrinsicOp::Mod,     "%",    INT_MASK },
+
+        { IntrinsicOp::And,     "&&",   LOGICAL_MASK },
+        { IntrinsicOp::Or,      "||",   LOGICAL_MASK },
+
+        { IntrinsicOp::BitAnd,  "&",    LOGICAL_MASK },
+        { IntrinsicOp::BitOr,   "|",    LOGICAL_MASK },
+        { IntrinsicOp::BitXor,  "^",    LOGICAL_MASK },
+
+        { IntrinsicOp::Lsh,     "<<",   INT_MASK },
+        { IntrinsicOp::Rsh,     ">>",   INT_MASK },
+
+        { IntrinsicOp::Eql,     "==",   ANY_MASK | COMPARISON },
+        { IntrinsicOp::Neq,     "!=",   ANY_MASK | COMPARISON },
+
+        { IntrinsicOp::Greater, ">",    ARITHMETIC_MASK | COMPARISON },
+        { IntrinsicOp::Less,    "<",    ARITHMETIC_MASK | COMPARISON },
+        { IntrinsicOp::Geq,     ">=",   ARITHMETIC_MASK | COMPARISON },
+        { IntrinsicOp::Leq,     "<=",   ARITHMETIC_MASK | COMPARISON },
+
+        { IntrinsicOp::AddAssign,     "+=",    ASSIGNMENT | ARITHMETIC_MASK },
+        { IntrinsicOp::SubAssign,     "-=",    ASSIGNMENT | ARITHMETIC_MASK },
+        { IntrinsicOp::MulAssign,     "*=",    ASSIGNMENT | ARITHMETIC_MASK },
+        { IntrinsicOp::DivAssign,     "/=",    ASSIGNMENT | ARITHMETIC_MASK },
+        { IntrinsicOp::ModAssign,     "%=",    ASSIGNMENT | ARITHMETIC_MASK },
+        { IntrinsicOp::AndAssign,     "&=",    ASSIGNMENT | LOGICAL_MASK },
+        { IntrinsicOp::OrAssign,      "|=",    ASSIGNMENT | LOGICAL_MASK },
+        { IntrinsicOp::XorAssign,     "^=",    ASSIGNMENT | LOGICAL_MASK },
+        { IntrinsicOp::LshAssign,     "<<=",   ASSIGNMENT | INT_MASK },
+        { IntrinsicOp::RshAssign,     ">>=",   ASSIGNMENT | INT_MASK },
+    };
+
+
+    String getCoreLibraryCode()
     {
-        if (code.Length() > 0)
-            return code;
+        if (coreLibraryCode.Length() > 0)
+            return coreLibraryCode;
+
         StringBuilder sb;
 
         // generate operator overloads
 
 
-
-        struct OpInfo { IntrinsicOp opCode; char const* opName; unsigned flags;  };
-
-        OpInfo unaryOps[] = {
-            { IntrinsicOp::Neg,     "-",    ARITHMETIC_MASK },
-            { IntrinsicOp::Not,     "!",    ANY_MASK        },
-            { IntrinsicOp::Not,     "~",    INT_MASK        },
-            { IntrinsicOp::PreInc,  "++",   ARITHMETIC_MASK | ASSIGNMENT },
-            { IntrinsicOp::PreDec,  "--",   ARITHMETIC_MASK | ASSIGNMENT },
-            { IntrinsicOp::PostInc, "++",   ARITHMETIC_MASK | ASSIGNMENT | POSTFIX },
-            { IntrinsicOp::PostDec, "--",   ARITHMETIC_MASK | ASSIGNMENT | POSTFIX },
-        };
-
-        OpInfo binaryOps[] = {
-            { IntrinsicOp::Add,     "+",    ARITHMETIC_MASK },
-            { IntrinsicOp::Sub,     "-",    ARITHMETIC_MASK },
-            { IntrinsicOp::Mul,     "*",    ARITHMETIC_MASK },
-            { IntrinsicOp::Div,     "/",    ARITHMETIC_MASK },
-            { IntrinsicOp::Mod,     "%",    INT_MASK },
-
-            { IntrinsicOp::And,     "&&",   LOGICAL_MASK },
-            { IntrinsicOp::Or,      "||",   LOGICAL_MASK },
-
-            { IntrinsicOp::BitAnd,  "&",    LOGICAL_MASK },
-            { IntrinsicOp::BitOr,   "|",    LOGICAL_MASK },
-            { IntrinsicOp::BitXor,  "^",    LOGICAL_MASK },
-
-            { IntrinsicOp::Lsh,     "<<",   INT_MASK },
-            { IntrinsicOp::Rsh,     ">>",   INT_MASK },
-
-            { IntrinsicOp::Eql,     "==",   ANY_MASK | COMPARISON },
-            { IntrinsicOp::Neq,     "!=",   ANY_MASK | COMPARISON },
-
-            { IntrinsicOp::Greater, ">",    ARITHMETIC_MASK | COMPARISON },
-            { IntrinsicOp::Less,    "<",    ARITHMETIC_MASK | COMPARISON },
-            { IntrinsicOp::Geq,     ">=",   ARITHMETIC_MASK | COMPARISON },
-            { IntrinsicOp::Leq,     "<=",   ARITHMETIC_MASK | COMPARISON },
-
-            { IntrinsicOp::AddAssign,     "+=",    ASSIGNMENT | ARITHMETIC_MASK },
-            { IntrinsicOp::SubAssign,     "-=",    ASSIGNMENT | ARITHMETIC_MASK },
-            { IntrinsicOp::MulAssign,     "*=",    ASSIGNMENT | ARITHMETIC_MASK },
-            { IntrinsicOp::DivAssign,     "/=",    ASSIGNMENT | ARITHMETIC_MASK },
-            { IntrinsicOp::ModAssign,     "%=",    ASSIGNMENT | ARITHMETIC_MASK },
-            { IntrinsicOp::AndAssign,     "&=",    ASSIGNMENT | LOGICAL_MASK },
-            { IntrinsicOp::OrAssign,      "|=",    ASSIGNMENT | LOGICAL_MASK },
-            { IntrinsicOp::XorAssign,     "^=",    ASSIGNMENT | LOGICAL_MASK },
-            { IntrinsicOp::LshAssign,     "<<=",   ASSIGNMENT | INT_MASK },
-            { IntrinsicOp::RshAssign,     ">>=",   ASSIGNMENT | INT_MASK },
-
-
-        };
-
-        /*
-        String floatTypes[] = { "float", "float2", "float3", "float4" };
-        String intTypes[] = { "int", "int2", "int3", "int4" };
-        String uintTypes[] = { "uint", "uint2", "uint3", "uint4" };
-        */
-
         String path = getStdlibPath();
-
-
 
 #define EMIT_LINE_DIRECTIVE() sb << "#line " << (__LINE__+1) << " \"" << path << "\"\n"
 
         // Generate declarations for all the base types
 
-        static const struct {
-            char const* name;
-            BaseType	tag;
-            unsigned    flags;
-        } kBaseTypes[] = {
-            { "void",	BaseType::Void,     0 },
-            { "int",	BaseType::Int,      SINT_MASK },
-            { "float",	BaseType::Float,    FLOAT_MASK },
-            { "uint",	BaseType::UInt,     UINT_MASK },
-            { "bool",	BaseType::Bool,     BOOL_MASK },
-            { "uint64_t", BaseType::UInt64, UINT_MASK },
-        };
         static const int kBaseTypeCount = sizeof(kBaseTypes) / sizeof(kBaseTypes[0]);
         for (int tt = 0; tt < kBaseTypeCount; ++tt)
         {
@@ -1090,7 +1182,7 @@ namespace Slang
 
             sb << "\n    : __BuiltinType\n";
 
-            switch( kBaseTypes[tt].tag )
+            switch (kBaseTypes[tt].tag)
             {
             case BaseType::Float:
                 sb << "\n    , __BuiltinFloatingPointType\n";
@@ -1115,9 +1207,9 @@ namespace Slang
 
 
             // Declare initializers to convert from various other types
-            for( int ss = 0; ss < kBaseTypeCount; ++ss )
+            for (int ss = 0; ss < kBaseTypeCount; ++ss)
             {
-                if( kBaseTypes[ss].tag == BaseType::Void )
+                if (kBaseTypes[ss].tag == BaseType::Void)
                     continue;
 
                 EMIT_LINE_DIRECTIVE();
@@ -1127,15 +1219,10 @@ namespace Slang
             sb << "};\n";
         }
 
-        // Declare ad hoc aliases for some types, just to get things compiling
-        //
-        // TODO(tfoley): At the very least, `double` should be treated as a distinct type.
-        sb << "typedef float double;\n";
-        sb << "typedef float half;\n";
-
         // Declare vector and matrix types
 
         sb << "__generic<T = float, let N : int = 4> __magic_type(Vector) struct vector\n{\n";
+        sb << "    typedef T Element;\n";
         sb << "    __init(T value);\n"; // initialize from single scalar
         sb << "};\n";
         sb << "__generic<T = float, let R : int = 4, let C : int = 4> __magic_type(Matrix) struct matrix {};\n";
@@ -1167,6 +1254,12 @@ namespace Slang
                 sb << "typedef matrix<" << kTypes[tt].name << "," << rr << "," << cc << "> " << kTypes[tt].name << rr << "x" << cc << ";\n";
             }
         }
+
+        // Declare additional built-in generic types
+//        EMIT_LINE_DIRECTIVE();
+        sb << "__generic<T> __magic_type(ConstantBuffer) struct ConstantBuffer {};\n";
+        sb << "__generic<T> __magic_type(TextureBuffer) struct TextureBuffer {};\n";
+
 
         static const char* kComponentNames[]{ "x", "y", "z", "w" };
         static const char* kVectorNames[]{ "", "x", "xy", "xyz", "xyzw" };
@@ -1202,6 +1295,21 @@ namespace Slang
             // We should look for a way that we can define implicit
             // conversions directly in the stdlib instead...
             sb << "__generic<U> __init(vector<U," << N << ">);\n";
+
+            // Initialize from two vectors, of size M and N-M
+            for(int M = 2; M <= (N-2); ++M)
+            {
+                int K = N - M;
+                SLANG_ASSERT(K >= 2);
+
+                sb << "__init(vector<T," << M << "> " << kVectorNames[M];
+                sb << ", vector<T," << K << "> ";
+                for (int ii = 0; ii < K; ++ii)
+                {
+                    sb << kComponentNames[ii];
+                }
+                sb << ");\n";
+            }
 
             sb << "}\n";
         }
@@ -1239,7 +1347,6 @@ namespace Slang
 
             sb << "}\n";
         }
-
 
         // Declare built-in texture and sampler types
 
@@ -1294,7 +1401,6 @@ namespace Slang
 
                     flavor |= (access << 8);
 
-
                     // emit a generic signature
                     // TODO: allow for multisample count to come in as well...
                     sb << "__generic<T = float4> ";
@@ -1314,22 +1420,80 @@ namespace Slang
 
                         sb << "float CalculateLevelOfDetailUnclamped(SamplerState s, ";
                         sb << "float" << kBaseTextureTypes[tt].coordCount << " location);\n";
-
-                        // TODO: `Gather` operation
-                        // (tricky because it returns a 4-vector of the element type
-                        // of the texture components...)
                     }
 
-                    // TODO: `GetDimensions` operations
+                    // `GetDimensions`
 
                     for(int isFloat = 0; isFloat < 2; ++isFloat)
                     for(int includeMipInfo = 0; includeMipInfo < 2; ++includeMipInfo)
                     {
-                        char const* t = isFloat ? "out float " : "out UINT ";
+                        {
+                            sb << "__glsl_version(450)\n";
+                            sb << "__intrinsic(glsl, \"(";
+
+                            int aa = 0;
+                            String lodStr = "0";
+                            if (includeMipInfo)
+                            {
+                                int mipLevelArg = aa++;
+                                lodStr = "int($";
+                                lodStr.append(mipLevelArg);
+                                lodStr.append(")");
+                            }
+
+                            int cc = 0;
+                            switch(baseShape)
+                            {
+                            case TextureType::Shape1D:
+                                sb << "($" << aa++ << " = textureSize($P, " << lodStr << "))";
+                                cc = 1;
+                                break;
+
+                            case TextureType::Shape2D:
+                            case TextureType::ShapeCube:
+                                sb << "($" << aa++ << " = textureSize($P, " << lodStr << ").x)";
+                                sb << ", ($" << aa++ << " = textureSize($P, " << lodStr << ").y)";
+                                cc = 2;
+                                break;
+
+                            case TextureType::Shape3D:
+                                sb << "($" << aa++ << " = textureSize($P, " << lodStr << ").x)";
+                                sb << ", ($" << aa++ << " = textureSize($P, " << lodStr << ").y)";
+                                sb << ", ($" << aa++ << " = textureSize($P, " << lodStr << ").z)";
+                                cc = 3;
+                                break;
+
+                            default:
+                                SLANG_UNEXPECTED("unhandled resource shape");
+                                break;
+                            }
+
+                            if(isArray)
+                            {
+                                sb << ", ($" << aa++ << " = textureSize($P, " << lodStr << ")." << kComponentNames[cc] << ")";
+                            }
+
+                            if(isMultisample)
+                            {
+                                sb << ", ($" << aa++ << " = textureSamples($P))";
+                            }
+
+                            if (includeMipInfo)
+                            {
+                                sb << ", ($" << aa++ << " = textureQueryLevels($P))";
+                            }
+
+
+                            sb << ")\")\n";
+                            sb << "__intrinsic\n";
+
+                        }
+
+                        char const* t = isFloat ? "out float " : "out uint ";
 
                         sb << "void GetDimensions(";
                         if(includeMipInfo)
-                            sb << "UINT mipLevel, ";
+                            sb << "uint mipLevel, ";
 
                         switch(baseShape)
                         {
@@ -1359,6 +1523,11 @@ namespace Slang
                             sb << ", " << t << "elements";
                         }
 
+                        if(isMultisample)
+                        {
+                            sb << ", " << t << "sampleCount";
+                        }
+
                         if(includeMipInfo)
                             sb << ", " << t << "numberOfLevels";
 
@@ -1375,22 +1544,59 @@ namespace Slang
 
                     if( kBaseTextureTypes[tt].coordCount + isArray < 4 )
                     {
-                        sb << "T Load(";
-                        sb << "int" << kBaseTextureTypes[tt].coordCount + isArray + 1 << " location);\n";
+                        int loadCoordCount = kBaseTextureTypes[tt].coordCount + isArray + (isMultisample?0:1);
 
-                        if( !isMultisample )
+                        // When translating to GLSL, we need to break apart the `location` argument.
+                        //
+                        // TODO: this should realy be handled by having this member actually get lowered!
+                        static const char* kGLSLLoadCoordsSwizzle[] = { "", "", "x", "xy", "xyz", "xyzw" };
+                        static const char* kGLSLLoadLODSwizzle[]    = { "", "", "y", "z", "w", "error" };
+
+                        if (isMultisample)
                         {
-                            sb << "T Load(";
-                            sb << "int" << kBaseTextureTypes[tt].coordCount + isArray + 1 << " location, ";
-                            sb << "int" << kBaseTextureTypes[tt].coordCount << " offset);\n";
+                            sb << "__intrinsic(glsl, \"texelFetch($P, $0, $1)\")\n";
                         }
                         else
                         {
-                            sb << "T Load(";
-                            sb << "int" << kBaseTextureTypes[tt].coordCount + isArray + 1 << " location, ";
-                            sb << "int sampleIndex, ";
-                            sb << "int" << kBaseTextureTypes[tt].coordCount << " offset);\n";
+                            sb << "__intrinsic(glsl, \"texelFetch($P, ($0)." << kGLSLLoadCoordsSwizzle[loadCoordCount] << ", ($0)." << kGLSLLoadLODSwizzle[loadCoordCount] << ")\")\n";
                         }
+                        sb << "__intrinsic\n";
+                        sb << "T Load(";
+                        sb << "int" << loadCoordCount << " location";
+                        if(isMultisample)
+                        {
+                            sb << ", int sampleIndex";
+                        }
+                        sb << ");\n";
+
+                        if (isMultisample)
+                        {
+                            sb << "__intrinsic(glsl, \"texelFetchOffset($P, $0, $1, $2)\")\n";
+                        }
+                        else
+                        {
+                            sb << "__intrinsic(glsl, \"texelFetch($P, ($0)." << kGLSLLoadCoordsSwizzle[loadCoordCount] << ", ($0)." << kGLSLLoadLODSwizzle[loadCoordCount] << ", $1)\")\n";
+                        }
+                        sb << "__intrinsic\n";
+                        sb << "T Load(";
+                        sb << "int" << loadCoordCount << " location";
+                        if(isMultisample)
+                        {
+                            sb << ", int sampleIndex";
+                        }
+                        sb << ", int" << loadCoordCount << " offset";
+                        sb << ");\n";
+
+
+                        sb << "T Load(";
+                        sb << "int" << loadCoordCount << " location";
+                        if(isMultisample)
+                        {
+                            sb << ", int sampleIndex";
+                        }
+                        sb << ", int" << kBaseTextureTypes[tt].coordCount << " offset";
+                        sb << ", out uint status";
+                        sb << ");\n";
                     }
 
                     if(baseShape != TextureType::ShapeCube)
@@ -1403,11 +1609,15 @@ namespace Slang
                     {
                         // `Sample()`
 
+                        sb << "__intrinsic(glsl, \"texture($p, $1)\")\n";
+                        sb << "__intrinsic\n";
                         sb << "T Sample(SamplerState s, ";
                         sb << "float" << kBaseTextureTypes[tt].coordCount + isArray << " location);\n";
 
                         if( baseShape != TextureType::ShapeCube )
                         {
+                            sb << "__intrinsic(glsl, \"textureOffset($p, $1, $2)\")\n";
+                            sb << "__intrinsic\n";
                             sb << "T Sample(SamplerState s, ";
                             sb << "float" << kBaseTextureTypes[tt].coordCount + isArray << " location, ";
                             sb << "int" << kBaseTextureTypes[tt].coordCount << " offset);\n";
@@ -1431,11 +1641,15 @@ namespace Slang
 
 
                         // `SampleBias()`
+                        sb << "__intrinsic(glsl, \"texture($p, $1, $2)\")\n";
+                        sb << "__intrinsic\n";
                         sb << "T SampleBias(SamplerState s, ";
                         sb << "float" << kBaseTextureTypes[tt].coordCount + isArray << " location, float bias);\n";
 
                         if( baseShape != TextureType::ShapeCube )
                         {
+                            sb << "__intrinsic(glsl, \"textureOffset($p, $1, $2, $3)\")\n";
+                            sb << "__intrinsic\n";
                             sb << "T SampleBias(SamplerState s, ";
                             sb << "float" << kBaseTextureTypes[tt].coordCount + isArray << " location, float bias, ";
                             sb << "int" << kBaseTextureTypes[tt].coordCount << " offset);\n";
@@ -1447,6 +1661,48 @@ namespace Slang
                         sb << "float compareValue";
                         sb << ");\n";
 
+                        int baseCoordCount = kBaseTextureTypes[tt].coordCount;
+                        int arrCoordCount = baseCoordCount + isArray;
+                        if (arrCoordCount < 3)
+                        {
+                            int extCoordCount = arrCoordCount + 1;
+
+                            if (extCoordCount < 3)
+                                extCoordCount = 3;
+
+                            sb << "__intrinsic(glsl, \"textureLod($p, ";
+
+                            sb << "vec" << extCoordCount << "($1,";
+                            for (int ii = arrCoordCount; ii < extCoordCount - 1; ++ii)
+                            {
+                                sb << " 0.0,";
+                            }
+                            sb << "$2)";
+
+                            sb << ", 0.0)\")\n";
+                        }
+                        else if(arrCoordCount <= 3)
+                        {
+                            int extCoordCount = arrCoordCount + 1;
+
+                            if (extCoordCount < 3)
+                                extCoordCount = 3;
+
+                            sb << "__intrinsic(glsl, \"textureGrad($p, ";
+
+                            sb << "vec" << extCoordCount << "($1,";
+                            for (int ii = arrCoordCount; ii < extCoordCount - 1; ++ii)
+                            {
+                                sb << " 0.0,";
+                            }
+                            sb << "$2)";
+
+                            // Construct gradients
+                            sb << ", vec" << baseCoordCount << "(0.0)";
+                            sb << ", vec" << baseCoordCount << "(0.0)";
+                            sb << ")\")\n";
+                        }
+                        sb << "__intrinsic\n";
                         sb << "T SampleCmpLevelZero(SamplerComparisonState s, ";
                         sb << "float" << kBaseTextureTypes[tt].coordCount + isArray << " location, ";
                         sb << "float compareValue";
@@ -1472,6 +1728,9 @@ namespace Slang
                             sb << "int" << kBaseTextureTypes[tt].coordCount << " offset);\n";
                         }
 
+
+                        sb << "__intrinsic(glsl, \"textureGrad($p, $1, $2, $3)\")\n";
+                        sb << "__intrinsic\n";
                         sb << "T SampleGrad(SamplerState s, ";
                         sb << "float" << kBaseTextureTypes[tt].coordCount + isArray << " location, ";
                         sb << "float" << kBaseTextureTypes[tt].coordCount << " gradX, ";
@@ -1480,6 +1739,8 @@ namespace Slang
 
                         if( baseShape != TextureType::ShapeCube )
                         {
+                            sb << "__intrinsic(glsl, \"textureGradOffset($p, $1, $2, $3, $4)\")\n";
+                            sb << "__intrinsic\n";
                             sb << "T SampleGrad(SamplerState s, ";
                             sb << "float" << kBaseTextureTypes[tt].coordCount + isArray << " location, ";
                             sb << "float" << kBaseTextureTypes[tt].coordCount << " gradX, ";
@@ -1489,12 +1750,16 @@ namespace Slang
 
                         // `SampleLevel`
 
+                        sb << "__intrinsic(glsl, \"textureLod($p, $1, $2)\")\n";
+                        sb << "__intrinsic\n";
                         sb << "T SampleLevel(SamplerState s, ";
                         sb << "float" << kBaseTextureTypes[tt].coordCount + isArray << " location, ";
                         sb << "float level);\n";
 
                         if( baseShape != TextureType::ShapeCube )
                         {
+                            sb << "__intrinsic(glsl, \"textureLodOffset($p, $1, $2, $3)\")\n";
+                            sb << "__intrinsic\n";
                             sb << "T SampleLevel(SamplerState s, ";
                             sb << "float" << kBaseTextureTypes[tt].coordCount + isArray << " location, ";
                             sb << "float level, ";
@@ -1503,31 +1768,109 @@ namespace Slang
                     }
 
                     sb << "\n};\n";
+
+                    // `Gather*()` operations are handled via an `extension` declaration,
+                    // because this lets us capture the element type of the texture.
+                    //
+                    // TODO: longer-term there should be something like a `TextureElementType`
+                    // interface, that both scalars and vectors implement, that then exposes
+                    // a `Scalar` associated type, and `Gather` can return `vector<T.Scalar, 4>`.
+                    //
+                    static const struct {
+                        char const* genericPrefix;
+                        char const* elementType;
+                    } kGatherExtensionCases[] = {
+                        { "__generic<T, let N : int>", "vector<T,N>" },
+
+                        // TODO: need a case here for scalars `T`, but also
+                        // need to ensure that case doesn't accidentally match
+                        // for `T = vector<...>`, which requires actual checking
+                        // of constraints on generic parameters.
+                    };
+                    for(auto cc : kGatherExtensionCases)
+                    {
+                        // TODO: this should really be an `if` around the entire `Gather` logic
+                        if (isMultisample) break;
+
+                        EMIT_LINE_DIRECTIVE();
+                        sb << cc.genericPrefix << " __extension ";
+                        sb << kBaseTextureAccessLevels[accessLevel].name;
+                        sb << name;
+                        if (isArray) sb << "Array";
+                        sb << "<" << cc.elementType << " >";
+                        sb << "\n{\n";
+
+
+                        // `Gather`
+                        // (tricky because it returns a 4-vector of the element type
+                        // of the texture components...)
+                        //
+                        // TODO: is it actually correct to restrict these so that, e.g.,
+                        // `GatherAlpha()` isn't allowed on `Texture2D<float3>` because
+                        // it nominally doesn't have an alpha component?
+                        static const struct {
+                            int componentIndex;
+                            char const* componentName;
+                        } kGatherComponets[] = {
+                            { 0, "" },
+                            { 0, "Red" },
+                            { 1, "Green" },
+                            { 2, "Blue" },
+                            { 3, "Alpha" },
+                        };
+
+                        for(auto kk : kGatherComponets)
+                        {
+                            auto componentIndex = kk.componentIndex;
+                            auto componentName = kk.componentName;
+
+                            EMIT_LINE_DIRECTIVE();
+                            
+                            sb << "__intrinsic(glsl, \"textureGather($p, $1, " << componentIndex << ")\")\n";
+                            sb << "__intrinsic\n";
+                            sb << "vector<T, 4> Gather" << componentName << "(SamplerState s, ";
+                            sb << "float" << kBaseTextureTypes[tt].coordCount << " location);\n";
+
+                            EMIT_LINE_DIRECTIVE();
+                            sb << "__intrinsic(glsl, \"textureGatherOffset($p, $1, $2, " << componentIndex << ")\")\n";
+                            sb << "__intrinsic\n";
+                            sb << "vector<T, 4> Gather" << componentName << "(SamplerState s, ";
+                            sb << "float" << kBaseTextureTypes[tt].coordCount << " location, ";
+                            sb << "int" << kBaseTextureTypes[tt].coordCount << " offset);\n";
+
+                            EMIT_LINE_DIRECTIVE();
+                            sb << "vector<T, 4> Gather" << componentName << "(SamplerState s, ";
+                            sb << "float" << kBaseTextureTypes[tt].coordCount << " location, ";
+                            sb << "int" << kBaseTextureTypes[tt].coordCount << " offset, ";
+                            sb << "out uint status);\n";
+
+                            EMIT_LINE_DIRECTIVE();
+                            sb << "__intrinsic(glsl, \"textureGatherOffsets($p, $1, int" << kBaseTextureTypes[tt].coordCount << "[]($2, $3, $4, $5), " << componentIndex << ")\")\n";
+                            sb << "__intrinsic\n";
+                            sb << "vector<T, 4> Gather" << componentName << "(SamplerState s, ";
+                            sb << "float" << kBaseTextureTypes[tt].coordCount << " location, ";
+                            sb << "int" << kBaseTextureTypes[tt].coordCount << " offset1, ";
+                            sb << "int" << kBaseTextureTypes[tt].coordCount << " offset2, ";
+                            sb << "int" << kBaseTextureTypes[tt].coordCount << " offset3, ";
+                            sb << "int" << kBaseTextureTypes[tt].coordCount << " offset4);\n";
+
+                            EMIT_LINE_DIRECTIVE();
+                            sb << "vector<T, 4> Gather" << componentName << "(SamplerState s, ";
+                            sb << "float" << kBaseTextureTypes[tt].coordCount << " location, ";
+                            sb << "int" << kBaseTextureTypes[tt].coordCount << " offset1, ";
+                            sb << "int" << kBaseTextureTypes[tt].coordCount << " offset2, ";
+                            sb << "int" << kBaseTextureTypes[tt].coordCount << " offset3, ";
+                            sb << "int" << kBaseTextureTypes[tt].coordCount << " offset4, ";
+                            sb << "out uint status);\n";
+                        }
+
+                        EMIT_LINE_DIRECTIVE();
+                        sb << "\n}\n";
+                    }
                 }
             }
         }
 
-        // Declare additional built-in generic types
-
-        sb << "__generic<T> __magic_type(ConstantBuffer) struct ConstantBuffer {};\n";
-        sb << "__generic<T> __magic_type(TextureBuffer) struct TextureBuffer {};\n";
-
-        sb << "__generic<T> __magic_type(PackedBuffer) struct PackedBuffer {};\n";
-        sb << "__generic<T> __magic_type(Uniform) struct Uniform {};\n";
-        sb << "__generic<T> __magic_type(Patch) struct Patch {};\n";
-
-
-        // Stale declarations for GLSL inner-product builtins
-#if 0
-        sb << "__intrinsic vec3 operator * (vec3, mat3);\n";
-        sb << "__intrinsic vec3 operator * (mat3, vec3);\n";
-
-        sb << "__intrinsic vec4 operator * (vec4, mat4);\n";
-        sb << "__intrinsic vec4 operator * (mat4, vec4);\n";
-
-        sb << "__intrinsic mat3 operator * (mat3, mat3);\n";
-        sb << "__intrinsic mat4 operator * (mat4, mat4);\n";
-#endif
 
         for (auto op : unaryOps)
         {
@@ -1581,107 +1924,154 @@ namespace Slang
                 sb << "__intrinsic_op(" << int(op.opCode) << ") vector<" << resultType << ",N> operator" << op.opName << "(" << leftQual << "vector<" << leftType << ",N> left, vector<" << rightType << ",N> right);\n";
 
                 // matrix version
+
+                // skip matrix-matrix multiply operations here, so that GLSL doesn't see them
+                switch (op.opCode)
+                {
+                case IntrinsicOp::Mul:
+                case IntrinsicOp::MulAssign:
+                    break;
+
+                default:
+                    sb << "__generic<let N : int, let M : int> ";
+                    sb << "__intrinsic_op(" << int(op.opCode) << ") matrix<" << resultType << ",N,M> operator" << op.opName << "(" << leftQual << "matrix<" << leftType << ",N,M> left, matrix<" << rightType << ",N,M> right);\n";
+                    break;
+                }
+
+                // We are going to go ahead and explicitly define combined
+                // operations for the scalar-op-vector, etc. cases, rather
+                // than rely on promotion rules.
+
+                // scalar-vector and scalar-matrix
+                if (!(op.flags & ASSIGNMENT))
+                {
+                    sb << "__generic<let N : int> ";
+                    sb << "__intrinsic_op(" << int(op.opCode) << ") vector<" << resultType << ",N> operator" << op.opName << "(" << leftQual << leftType << " left, vector<" << rightType << ",N> right);\n";
+
+                    sb << "__generic<let N : int, let M : int> ";
+                    sb << "__intrinsic_op(" << int(op.opCode) << ") matrix<" << resultType << ",N,M> operator" << op.opName << "(" << leftQual << leftType << " left, matrix<" << rightType << ",N,M> right);\n";
+                }
+
+                // vector-scalar and matrix-scalar
+                sb << "__generic<let N : int> ";
+                sb << "__intrinsic_op(" << int(op.opCode) << ") vector<" << resultType << ",N> operator" << op.opName << "(" << leftQual << "vector<" << leftType << ",N> left, " << rightType << " right);\n";
+
+                sb << "__generic<let N : int, let M : int> ";
+                sb << "__intrinsic_op(" << int(op.opCode) << ") matrix<" << resultType << ",N,M> operator" << op.opName << "(" << leftQual << "matrix<" << leftType << ",N,M> left, " << rightType << " right);\n";
+            }
+        }
+
+        // Output a suitable `#line` directive to point at our raw stdlib code above
+        sb << "\n#line " << kCoreLibIncludeStringLine << " \"" << path << "\"\n";
+
+        int chunkCount = sizeof(kCoreLibIncludeStringChunks) / sizeof(kCoreLibIncludeStringChunks[0]);
+        for (int cc = 0; cc < chunkCount; ++cc)
+        {
+            sb << kCoreLibIncludeStringChunks[cc];
+        }
+
+        coreLibraryCode = sb.ProduceString();
+        return coreLibraryCode;
+    }
+
+    String getHLSLLibraryCode()
+    {
+        if (hlslLibraryCode.Length() > 0)
+            return hlslLibraryCode;
+
+        StringBuilder sb;
+
+
+        // Component-wise multiplication ops
+        for(auto op : binaryOps)
+        {
+            switch (op.opCode)
+            {
+            default:
+                continue;
+
+            case IntrinsicOp::Mul:
+            case IntrinsicOp::MulAssign:
+                break;
+            }
+
+            for (auto type : kBaseTypes)
+            {
+                if ((type.flags & op.flags) == 0)
+                    continue;
+
+                char const* leftType = type.name;
+                char const* rightType = leftType;
+                char const* resultType = leftType;
+
+                char const* leftQual = "";
+                if(op.flags & ASSIGNMENT) leftQual = "in out ";
+
                 sb << "__generic<let N : int, let M : int> ";
                 sb << "__intrinsic_op(" << int(op.opCode) << ") matrix<" << resultType << ",N,M> operator" << op.opName << "(" << leftQual << "matrix<" << leftType << ",N,M> left, matrix<" << rightType << ",N,M> right);\n";
             }
         }
 
-#if 0
-        for (auto op : intUnaryOps)
+        //
+
+        // Buffer types
+
+        static const struct {
+            char const*         name;
+            SlangResourceAccess access;
+        } kBaseBufferAccessLevels[] = {
+            { "",                   SLANG_RESOURCE_ACCESS_READ },
+            { "RW",                 SLANG_RESOURCE_ACCESS_READ_WRITE },
+            { "RasterizerOrdered",  SLANG_RESOURCE_ACCESS_RASTER_ORDERED },
+        };
+        static const int kBaseBufferAccessLevelCount = sizeof(kBaseBufferAccessLevels) / sizeof(kBaseBufferAccessLevels[0]);
+
+        for (int aa = 0; aa < kBaseBufferAccessLevelCount; ++aa)
         {
-            String opName = GetOperatorFunctionName(op);
-            for (int i = 0; i < 4; i++)
+
+            sb << "__generic<T> __magic_type(Texture, ";
+            sb << ResourceType::makeFlavor(ResourceType::Shape::ShapeBuffer, kBaseBufferAccessLevels[aa].access);
+            sb << ") struct ";
+            sb << kBaseBufferAccessLevels[aa].name;
+            sb << "Buffer {\n";
+
+            sb << "__intrinsic void GetDimensions(out uint dim);\n";
+
+            sb << "__intrinsic(glsl, \"texelFetch($P, $0)$z\")\n";
+            sb << "__intrinsic T Load(int location);\n";
+
+            sb << "__intrinsic T Load(int location, out uint status);\n";
+
+            sb << "__intrinsic(glsl, \"texelFetch($P, int($0))$z\")\n";
+            sb << "__intrinsic __subscript(uint index) -> T";
+
+            if (kBaseBufferAccessLevels[aa].access != SLANG_RESOURCE_ACCESS_READ)
             {
-                auto itype = intTypes[i];
-                auto utype = uintTypes[i];
-                for (int j = 0; j < 2; j++)
-                {
-                    auto retType = (op == Operator::Not) ? "bool" : j == 0 ? itype : utype;
-                    sb << "__intrinsic " << retType << " operator " << opName << "(" << (j == 0 ? itype : utype) << ");\n";
-                }
+                sb << " { get; set; }\n";
             }
-        }
-
-        for (auto op : floatUnaryOps)
-        {
-            String opName = GetOperatorFunctionName(op);
-            for (int i = 0; i < 4; i++)
+            else
             {
-                auto type = floatTypes[i];
-                auto retType = (op == Operator::Not) ? "bool" : type;
-                sb << "__intrinsic " << retType << " operator " << opName << "(" << type << ");\n";
+                sb << ";\n";
             }
+
+            sb << "};\n";
         }
-
-        for (auto op : floatOps)
-        {
-            String opName = GetOperatorFunctionName(op);
-            for (int i = 0; i < 4; i++)
-            {
-                auto type = floatTypes[i];
-                auto itype = intTypes[i];
-                auto utype = uintTypes[i];
-                auto retType = ((op >= Operator::Eql && op <= Operator::Leq) || op == Operator::And || op == Operator::Or) ? "bool" : type;
-                sb << "__intrinsic " << retType << " operator " << opName << "(" << type << ", " << type << ");\n";
-                sb << "__intrinsic " << retType << " operator " << opName << "(" << itype << ", " << type << ");\n";
-                sb << "__intrinsic " << retType << " operator " << opName << "(" << utype << ", " << type << ");\n";
-                sb << "__intrinsic " << retType << " operator " << opName << "(" << type << ", " << itype << ");\n";
-                sb << "__intrinsic " << retType << " operator " << opName << "(" << type << ", " << utype << ");\n";
-                if (i > 0)
-                {
-                    sb << "__intrinsic " << retType << " operator " << opName << "(" << type << ", " << floatTypes[0] << ");\n";
-                    sb << "__intrinsic " << retType << " operator " << opName << "(" << floatTypes[0] << ", " << type << ");\n";
-
-                    sb << "__intrinsic " << retType << " operator " << opName << "(" << type << ", " << intTypes[0] << ");\n";
-                    sb << "__intrinsic " << retType << " operator " << opName << "(" << intTypes[0] << ", " << type << ");\n";
-
-                    sb << "__intrinsic " << retType << " operator " << opName << "(" << type << ", " << uintTypes[0] << ");\n";
-                    sb << "__intrinsic " << retType << " operator " << opName << "(" << uintTypes[0] << ", " << type << ");\n";
-                }
-            }
-        }
-
-        for (auto op : intOps)
-        {
-            String opName = GetOperatorFunctionName(op);
-            for (int i = 0; i < 4; i++)
-            {
-                auto type = intTypes[i];
-                auto utype = uintTypes[i];
-                auto retType = ((op >= Operator::Eql && op <= Operator::Leq) || op == Operator::And || op == Operator::Or) ? "bool" : type;
-                sb << "__intrinsic " << retType << " operator " << opName << "(" << type << ", " << type << ");\n";
-                sb << "__intrinsic " << retType << " operator " << opName << "(" << utype << ", " << type << ");\n";
-                sb << "__intrinsic " << retType << " operator " << opName << "(" << type << ", " << utype << ");\n";
-                sb << "__intrinsic " << retType << " operator " << opName << "(" << utype << ", " << utype << ");\n";
-                if (i > 0)
-                {
-                    sb << "__intrinsic " << retType << " operator " << opName << "(" << type << ", " << intTypes[0] << ");\n";
-                    sb << "__intrinsic " << retType << " operator " << opName << "(" << intTypes[0] << ", " << type << ");\n";
-
-                    sb << "__intrinsic " << retType << " operator " << opName << "(" << type << ", " << uintTypes[0] << ");\n";
-                    sb << "__intrinsic " << retType << " operator " << opName << "(" << uintTypes[0] << ", " << type << ");\n";
-                }
-            }
-        }
-#endif
 
         // Output a suitable `#line` directive to point at our raw stdlib code above
-        sb << "\n#line " << kLibIncludeStringLine << " \"" << path << "\"\n";
+        sb << "\n#line " << kHLSLLibIncludeStringLine << " \"" << getStdlibPath() << "\"\n";
 
-        int chunkCount = sizeof(LibIncludeStringChunks) / sizeof(LibIncludeStringChunks[0]);
+        int chunkCount = sizeof(kHLSLLibIncludeStringChunks) / sizeof(kHLSLLibIncludeStringChunks[0]);
         for (int cc = 0; cc < chunkCount; ++cc)
         {
-            sb << LibIncludeStringChunks[cc];
+            sb << kHLSLLibIncludeStringChunks[cc];
         }
 
-        code = sb.ProduceString();
-        return code;
+        hlslLibraryCode = sb.ProduceString();
+        return hlslLibraryCode;
     }
 
 
     // GLSL-specific library code
-
-    String glslLibraryCode;
 
     String getGLSLLibraryCode()
     {
@@ -1691,10 +2081,6 @@ namespace Slang
         String path = getStdlibPath();
 
         StringBuilder sb;
-
-#define RAW(TEXT)           \
-EMIT_LINE_DIRECTIVE();  \
-sb << TEXT;
 
         static const struct {
             char const* name;
@@ -1713,15 +2099,41 @@ sb << TEXT;
             // Declare GLSL aliases for HLSL types
             for (int vv = 2; vv <= 4; ++vv)
             {
-                sb << "typedef " << kTypes[tt].name << vv << " " << kTypes[tt].glslPrefix << "vec" << vv << ";\n";
-                sb << "typedef " << kTypes[tt].name << vv << "x" << vv << " " << kTypes[tt].glslPrefix << "mat" << vv << ";\n";
+                sb << "typedef vector<" << kTypes[tt].name << "," << vv << "> " << kTypes[tt].glslPrefix << "vec" << vv << ";\n";
+                sb << "typedef matrix<" << kTypes[tt].name << "," << vv << "," << vv << "> " << kTypes[tt].glslPrefix << "mat" << vv << ";\n";
             }
             for (int rr = 2; rr <= 4; ++rr)
             for (int cc = 2; cc <= 4; ++cc)
             {
-                sb << "typedef " << kTypes[tt].name << rr << "x" << cc << " " << kTypes[tt].glslPrefix << "mat" << rr << "x" << cc << ";\n";
+                sb << "typedef matrix<" << kTypes[tt].name << "," << rr << "," << cc << "> " << kTypes[tt].glslPrefix << "mat" << rr << "x" << cc << ";\n";
             }
         }
+
+        // Multiplication operations for vectors + matrices
+
+        // scalar-vector and vector-scalar
+        sb << "__generic<T : __BuiltinArithmeticType, let N : int> __intrinsic_op(Mul) vector<T,N> operator*(vector<T,N> x, T y);\n";
+        sb << "__generic<T : __BuiltinArithmeticType, let N : int> __intrinsic_op(Mul) vector<T,N> operator*(T x, vector<T,N> y);\n";
+
+        // scalar-matrix and matrix-scalar
+        sb << "__generic<T : __BuiltinArithmeticType, let N : int, let M :int> __intrinsic_op(Mul) matrix<T,N,M> operator*(matrix<T,N,M> x, T y);\n";
+        sb << "__generic<T : __BuiltinArithmeticType, let N : int, let M :int> __intrinsic_op(Mul) matrix<T,N,M> operator*(T x, matrix<T,N,M> y);\n";
+
+        // vector-vector (dot product)
+        sb << "__generic<T : __BuiltinArithmeticType, let N : int> __intrinsic_op(Mul) T operator*(vector<T,N> x, vector<T,N> y);\n";
+
+        // vector-matrix
+        sb << "__generic<T : __BuiltinArithmeticType, let N : int, let M : int> __intrinsic_op(Mul) vector<T,M> operator*(vector<T,N> x, matrix<T,N,M> y);\n";
+
+        // matrix-vector
+        sb << "__generic<T : __BuiltinArithmeticType, let N : int, let M : int> __intrinsic_op(Mul) vector<T,N> operator*(matrix<T,N,M> x, vector<T,M> y);\n";
+
+        // matrix-matrix
+        sb << "__generic<T : __BuiltinArithmeticType, let R : int, let N : int, let C : int> __intrinsic_op(Mul) matrix<T,R,C> operator*(matrix<T,R,N> x, matrix<T,N,C> y);\n";
+
+
+
+        //
 
         // TODO(tfoley): Need to handle `RW*` variants of texture types as well...
         static const struct {
@@ -1733,6 +2145,7 @@ sb << TEXT;
             { "2D",		TextureType::Shape2D,	2 },
             { "3D",		TextureType::Shape3D,	3 },
             { "Cube",	TextureType::ShapeCube,	3 },
+            { "Buffer", TextureType::ShapeBuffer,   1 },
         };
         static const int kBaseTextureTypeCount = sizeof(kBaseTextureTypes) / sizeof(kBaseTextureTypes[0]);
 
@@ -1759,7 +2172,8 @@ sb << TEXT;
 
                 for (int isMultisample = 0; isMultisample < 2; ++isMultisample)
                 {
-                    auto access = SLANG_RESOURCE_ACCESS_READ;
+                    auto readAccess = SLANG_RESOURCE_ACCESS_READ;
+                    auto readWriteAccess = SLANG_RESOURCE_ACCESS_READ_WRITE;
 
                     // TODO: any constraints to enforce on what gets to be multisampled?
 
@@ -1769,7 +2183,10 @@ sb << TEXT;
                     if (isMultisample)	flavor |= TextureType::MultisampleFlag;
 //                        if (isShadow)		flavor |= TextureType::ShadowFlag;
 
-                    flavor |= (access << 8);
+
+
+                    unsigned readFlavor = flavor | (readAccess << 8);
+                    unsigned readWriteFlavor = flavor | (readWriteAccess << 8);
 
                     StringBuilder nameBuilder;
                     nameBuilder << shapeName;
@@ -1778,17 +2195,17 @@ sb << TEXT;
                     auto name = nameBuilder.ProduceString();
 
                     sb << "__generic<T> ";
-                    sb << "__magic_type(TextureSampler," << int(flavor) << ") struct ";
+                    sb << "__magic_type(TextureSampler," << int(readFlavor) << ") struct ";
                     sb << "__sampler" << name;
                     sb << " {};\n";
 
                     sb << "__generic<T> ";
-                    sb << "__magic_type(Texture," << int(flavor) << ") struct ";
+                    sb << "__magic_type(Texture," << int(readFlavor) << ") struct ";
                     sb << "__texture" << name;
                     sb << " {};\n";
 
                     sb << "__generic<T> ";
-                    sb << "__magic_type(GLSLImageType," << int(flavor) << ") struct ";
+                    sb << "__magic_type(GLSLImageType," << int(readWriteFlavor) << ") struct ";
                     sb << "__image" << name;
                     sb << " {};\n";
 
@@ -1822,12 +2239,46 @@ sb << TEXT;
         sb << "__magic_type(GLSLInputAttachmentType) struct subpassInput {};";
 
         // Define additional keywords
-        sb << "__modifier(GLSLBufferModifier)       buffer;\n";
-        sb << "__modifier(GLSLWriteOnlyModifier)    writeonly;\n";
-        sb << "__modifier(GLSLReadOnlyModifier)     readonly;\n";
-        sb << "__modifier(GLSLPatchModifier)        patch;\n";
 
-        sb << "__modifier(SimpleModifier)           flat;\n";
+        sb << "__modifier(GLSLBufferModifier)       buffer;\n";
+
+        // [GLSL 4.3] Storage Qualifiers
+
+        // TODO: need to support `shared` here with its GLSL meaning
+
+        sb << "__modifier(GLSLPatchModifier)        patch;\n";
+        // `centroid` and `sample` handled centrally
+
+        // [GLSL 4.5] Interpolation Qualifiers
+        sb << "__modifier(SimpleModifier)   smooth;\n";
+        sb << "__modifier(SimpleModifier)   flat;\n";
+        sb << "__modifier(SimpleModifier)   noperspective;\n";
+
+
+        // [GLSL 4.3.2] Constant Qualifier
+
+        // We need to handle GLSL `const` separately from HLSL `const`,
+        // since they mean such different things.
+
+        // [GLSL 4.7.2] Precision Qualifiers
+        sb << "__modifier(SimpleModifier)   highp;\n";
+        sb << "__modifier(SimpleModifier)   mediump;\n";
+        sb << "__modifier(SimpleModifier)   lowp;\n";
+
+        // [GLSL 4.8.1] The Invariant Qualifier
+
+        sb << "__modifier(GLSLWriteOnlyModifier)    invariant;\n";
+
+        // [GLSL 4.10] Memory Qualifiers
+
+        sb << "__modifier(SimpleModifier)           coherent;\n";
+        sb << "__modifier(SimpleModifier)           volatile;\n";
+        sb << "__modifier(SimpleModifier)           restrict;\n";
+        sb << "__modifier(GLSLReadOnlyModifier)     readonly;\n";
+        sb << "__modifier(GLSLWriteOnlyModifier)    writeonly;\n";
+
+        // We will treat `subroutine` as a qualifier
+        sb << "__modifier(SimpleModifier)   subroutine;\n";
 
         glslLibraryCode = sb.ProduceString();
         return glslLibraryCode;
@@ -1837,10 +2288,12 @@ sb << TEXT;
 
     //
 
-    void SlangStdLib::Finalize()
+    void finalizeShaderLibrary()
     {
-        code = nullptr;
         stdlibPath = String();
+
+        coreLibraryCode = String();
+        hlslLibraryCode = String();
         glslLibraryCode = String();
     }
 
