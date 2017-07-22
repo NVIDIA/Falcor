@@ -1,6 +1,5 @@
 [
 ../Falcor.sln {ReleaseVK ..\Bin\x64\Release\}
-ShaderBuffers {-test -ssframes 50 -shutdown 100} {releasevk}
 ComputeShader {
      -test -ssframes 50 -shutdown 100 -loadimage \\netapp-wa02\\public\\Falcor\\TestMedia\\StockImage.jpg, 
      -test -ssframes 50 -shutdown 100 -pixelate -loadimage \\netapp-wa02\\public\\Falcor\\TestMedia\\StockImage.jpg,
