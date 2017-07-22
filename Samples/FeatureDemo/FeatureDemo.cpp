@@ -129,6 +129,7 @@ void FeatureDemo::initScene(Scene::SharedPtr pScene)
 
 void FeatureDemo::loadModel(const std::string& filename, bool showProgressBar)
 {
+    mpSceneRenderer = nullptr;
     ProgressBar::SharedPtr pBar;
     if (showProgressBar)
     {
@@ -144,6 +145,7 @@ void FeatureDemo::loadModel(const std::string& filename, bool showProgressBar)
 
 void FeatureDemo::loadScene(const std::string& filename, bool showProgressBar)
 {
+    mpSceneRenderer = nullptr;
     ProgressBar::SharedPtr pBar;
     if (showProgressBar)
     {
@@ -245,6 +247,7 @@ void FeatureDemo::lightingPass()
     mpState->setProgram(mLightingPass.pProgram);
     mpRenderContext->setGraphicsVars(mLightingPass.pVars);
     ConstantBuffer::SharedPtr pCB = mLightingPass.pVars->getConstantBuffer("PerFrameCB");
+    pCB["gEnvMapFactorScale"] = mEnvMapFactorScale;
 
     if (mControls[ControlID::EnableShadows].enabled)
     {

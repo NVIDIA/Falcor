@@ -132,19 +132,51 @@ void FeatureDemo::onGuiRender()
 
     if (mpSceneRenderer)
     {
+        if(mpGui->beginGroup("Scene Settings"))
+        {
+            Scene* pScene = mpSceneRenderer->getScene();
+            float camSpeed = pScene->getCameraSpeed();
+            if (mpGui->addFloatVar("Camera Speed", camSpeed))
+            {
+                pScene->setCameraSpeed(camSpeed);
+            }
+
+            vec3 ambient = pScene->getAmbientIntensity();
+            if (mpGui->addRgbColor("Ambient Intensity", ambient))
+            {
+                pScene->setAmbientIntensity(ambient);
+            }
+
+            vec2 depthRange(pScene->getActiveCamera()->getNearPlane(), pScene->getActiveCamera()->getFarPlane());
+            if (mpGui->addFloat2Var("Depth Range", depthRange, 0, FLT_MAX))
+            {
+                pScene->getActiveCamera()->setDepthRange(depthRange.x, depthRange.y);
+            }
+
+            if (pScene->getPathCount() > 0)
+            {
+                if (mpGui->addCheckBox("Camera Path", mUseCameraPath))
+                {
+                    applyCameraPathState();
+                }
+            }
+
+            if (pScene->getLightCount() && mpGui->beginGroup("Light Sources"))
+            {
+                for (uint32_t i = 0; i < pScene->getLightCount(); i++)
+                {
+                    Light* pLight = pScene->getLight(i).get();
+                    pLight->renderUI(mpGui.get(), pLight->getName().c_str());
+                }
+                mpGui->endGroup();
+            }
+            mpGui->endGroup();
+        }
+
         uint32_t maxAniso = mpSceneSampler->getMaxAnisotropy();
         if (mpGui->addIntVar("Max Anisotropy", (int&)maxAniso, 1, 16))
         {
             setSceneSampler(maxAniso);
-        }
-
-        if (mpGui->addButton("Load SkyBox Texture"))
-        {
-            std::string filename;
-            if (openFileDialog(kImageFileString, filename))
-            {
-                initSkyBox(filename);
-            }
         }
 
         //  Anti-Aliasing Controls.
@@ -200,6 +232,8 @@ void FeatureDemo::onGuiRender()
 
             if(mControls[ControlID::EnableReflections].enabled)
             {
+                mpGui->addFloatVar("Intensity", mEnvMapFactorScale, 0);
+
                 if (mpGui->addButton("Load Reflection Texture"))
                 {
                     std::string filename;
@@ -212,32 +246,12 @@ void FeatureDemo::onGuiRender()
             mpGui->endGroup();
         }
 
-        if(mpGui->beginGroup("Scene Controls"))
+        if (mpGui->addButton("Load SkyBox Texture"))
         {
-            const Scene* pScene = mpSceneRenderer->getScene();
-
-            vec2 depthRange(pScene->getActiveCamera()->getNearPlane(), pScene->getActiveCamera()->getFarPlane());
-            if (mpGui->addFloat2Var("Depth Range", depthRange, 0, FLT_MAX))
+            std::string filename;
+            if (openFileDialog(kImageFileString, filename))
             {
-                pScene->getActiveCamera()->setDepthRange(depthRange.x, depthRange.y);
-            }
-
-            if (pScene->getPathCount() > 0)
-            {
-                if (mpGui->addCheckBox("Camera Path", mUseCameraPath))
-                {
-                    applyCameraPathState();
-                }
-            }
-
-            if (pScene->getLightCount() && mpGui->beginGroup("Light Sources"))
-            {
-                for (uint32_t i = 0; i < pScene->getLightCount(); i++)
-                {
-                    Light* pLight = pScene->getLight(i).get();
-                    pLight->renderUI(mpGui.get(), pLight->getName().c_str());
-                }
-                mpGui->endGroup();
+                initSkyBox(filename);
             }
         }
 

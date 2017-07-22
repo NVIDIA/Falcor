@@ -173,6 +173,7 @@ private:
         TAA
     };
 
+    float mEnvMapFactorScale = 0.25f;
     AAMode mAAMode = AAMode::TAA;
     uint32_t mMSAASampleCount = 4;
     SamplePattern mTAASamplePattern = SamplePattern::Halton;
