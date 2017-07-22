@@ -26,7 +26,6 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 #include "HashedAlpha.h"
-#include "API/D3D/FalcorD3D.h"
 
 const Gui::DropdownList HashedAlpha::kModeList = { 
     { (uint32_t)AlphaTestMode::HashedAlphaIsotropic, "Hashed Alpha Isotropic" },
@@ -108,7 +107,7 @@ void HashedAlpha::updateProgram()
 
 void HashedAlpha::onLoad()
 {
-    mpProgram = GraphicsProgram::createFromFile("", "HashedAlpha.ps.hlsl");
+    mpProgram = GraphicsProgram::createFromFile("", appendShaderExtension("HashedAlpha.ps"));
     mpVars = GraphicsVars::create(mpProgram->getActiveVersion()->getReflector());
     updateProgram();
 
